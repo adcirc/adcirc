@@ -1,0 +1,11685 @@
+      !=================================================================
+      !=================================================================
+      !=================================================================
+      !      =====                                           =====
+      !      =====            MODULE NetCDFIO                =====
+      !      =====                                           =====
+      !=================================================================
+      !=================================================================
+      !=================================================================
+      
+      !=================================================================
+      ! This module provides a NetCDF I/O capability for ADCIRC.
+      !
+      ! Revision history:
+      !
+      ! Date      Programmer                       Description of change
+      ! ----      ----------                       ---------------------
+      ! 03/30/07  Cristina Forbes, PSGS @ UNC-IMS  Wrote original code
+      !=================================================================
+      MODULE NETCDFIO
+
+!     USE SIZES, ONLY : SZ, DIRNAME, NBYTE
+      USE GLOBAL
+      USE SIZES
+      USE HARM
+      USE NodalAttributes
+      USE WIND
+      USE VERSION  ! uncomment for version 48
+!--------------------------------------------
+!     Force explicit declaration of all variables
+!--------------------------------------------
+      IMPLICIT NONE
+!     -------------------
+!     netCDF header file
+!     -------------------
+!        include '/ifs1/home/cforbes/usr/local/netcdf/include/netcdf.inc'  ! Topsail
+!        include '/usr/local/netcdf/include/netcdf.inc'                    ! Mac
+       include 'netcdf.inc'                                              ! Jason
+!     -------------
+!     Dimension ids
+!     -------------
+       INTEGER  timenc_dim
+!     -----------------
+!     Dimension lengths
+!     -----------------
+       INTEGER timenc_len
+!     ------------
+!     Variable ids
+!     ------------
+       INTEGER  timenc_id
+!     ---------------------------------------------
+!     Rank (number of dimensions) for each variable
+!     ---------------------------------------------
+      INTEGER  timenc_rank
+!     ----------------------------
+!     Parameters for each variable
+!     ----------------------------
+      PARAMETER (timenc_rank = 1)
+!     ---------------
+!     Variable shapes
+!     ---------------
+      INTEGER  timenc_dims(timenc_rank)
+!     --------------
+!     Data variables
+!     --------------
+      REAL(SZ), ALLOCATABLE ::  timenc(:) 
+      REAL(SZ), ALLOCATABLE ::  eta22(:,:)                              ! global surface elevation
+      REAL(SZ), ALLOCATABLE ::  uu22(:,:), vv22(:,:)                    ! global surface speed
+      REAL(SZ), ALLOCATABLE ::  xnc(:), ync(:)                          ! coordinates
+      REAL(SZ), ALLOCATABLE ::  xenc(:), yenc(:)                        ! coordinates station velocities
+      REAL(SZ), ALLOCATABLE ::  xvnc(:), yvnc(:)                        ! coordinates station velocities
+      REAL(SZ), ALLOCATABLE ::  pr22(:,:)                               ! pressure
+
+      REAL(SZ), ALLOCATABLE ::  xpnc(:), ypnc(:)                        ! coordinates station pressure
+      REAL(SZ), ALLOCATABLE ::  xwnc(:), ywnc(:)                        ! coordinates station wind speed
+
+
+      REAL(SZ), ALLOCATABLE ::  WNCX22(:,:), WNCY22(:,:)                ! wind speed
+      REAL(SZ), ALLOCATABLE ::  ET00NC(:,:)                             ! station surface elevation
+      REAL(SZ), ALLOCATABLE ::  UU00nc(:,:), VV00nc(:,:)                ! station surface speed
+      REAL(SZ), ALLOCATABLE ::  RMP00nc(:,:)                            ! station pressure
+      REAL(SZ), ALLOCATABLE ::  RMU00nc(:,:), RMV00nc(:,:)              ! station wind speed
+
+      DOUBLE PRECISION, PARAMETER ::  doubleval(1)=-99999.D0
+
+      INTEGER, ALLOCATABLE ::  nbvvnc(:,:)                              ! boundary array
+      INTEGER, ALLOCATABLE ::  nbounc(:)                                ! boundary array
+      INTEGER, ALLOCATABLE ::  nvellnc(:)                               ! boundary array
+      INTEGER, ALLOCATABLE ::  nopenc(:)                                ! boundary array
+      INTEGER, ALLOCATABLE ::  nvdllnc(:)                               ! boundary array
+      INTEGER nvelnc
+!     INTEGER, ALLOCATABLE ::  nopenc(:)                                ! boundary array
+!     INTEGER, ALLOCATABLE ::  nvdllnc(:)                               ! boundary array
+      INTEGER netanc
+CCCCC CF 
+!     -----------------
+!     ADCIRC input variables
+!     -----------------
+      INTEGER fileunit
+      LOGICAL fileexist  
+      INTEGER irtype
+      
+      CHARACTER*50, PARAMETER :: VAR61_LN='station sea surface elevation'
+      CHARACTER*25, PARAMETER :: VAR61_ST='station_surface_elevation'
+
+      CHARACTER*29, PARAMETER :: VAR62_LN='station velocity'
+      CHARACTER*25, PARAMETER :: VAR62_ST='station_velocity'
+
+      CHARACTER*21, PARAMETER :: VAR63_LN='sea surface elevation'
+      CHARACTER*17, PARAMETER :: VAR63_ST='surface_elevation'
+
+      CHARACTER*36, PARAMETER :: VAR71_LN='station atmospheric surface pressure'
+      CHARACTER*28, PARAMETER :: VAR71_ST='station_atmospheric_pressure'
+      CHARACTER*15, PARAMETER :: VAR71_UN='meters of water'
+
+      CHARACTER*28, PARAMETER :: VAR73_LN='atmospheric surface pressure'
+      CHARACTER*20, PARAMETER :: VAR73_ST='atmospheric_pressure'
+      CHARACTER*15, PARAMETER :: VAR73_UN='meters of water'
+      
+      CHARACTER*14 , PARAMETER :: VAR_NOND='nondimensional'
+      CHARACTER*4  , PARAMETER :: VAR_SECS='secs'
+      CHARACTER*6  , PARAMETER :: VAR_METS='meters'
+      CHARACTER*4  , PARAMETER :: VAR_FEET='feet'
+      CHARACTER*2  , PARAMETER :: VAR_UP='up'
+      CHARACTER*4  , PARAMETER :: VAR_DW='down'
+      CHARACTER*5  , PARAMETER :: VAR_RG='right'
+      CHARACTER*4  , PARAMETER :: VAR_EAST='east'
+      CHARACTER*5  , PARAMETER :: VAR_NORTH='north'
+      CHARACTER*13 , PARAMETER :: VAR_MPS='meters/second'
+      CHARACTER*11 , PARAMETER :: VAR_FPS='feet/second'
+      CHARACTER*19 , PARAMETER :: VAR_MPS_2='meters**2/second**2'
+      CHARACTER*17 , PARAMETER :: VAR_FPS_2='feet**2/second**2'
+      CHARACTER*23 , PARAMETER :: VAR_TUN='seconds since base_date'
+      CHARACTER*12 , PARAMETER :: VAR_DEGE='degrees_east'
+      CHARACTER*13 , PARAMETER :: VAR_DEGN='degrees_north'
+
+         CONTAINS
+
+!=======================================================================
+!     Subroutine writenc63
+!     Writes a netCDF file equivalent to ADCIRC's fort.63 ascii file
+!
+!     Dimensions:
+!     timenc_len  : Number of Times
+!     node_len  : Number of Nodes
+!
+!     Variables :
+!     time      : Time
+!     zeta      : Sea surface elevation 
+!
+!     Attributes:
+!     rundes    : Run description
+!     runid     : Run ID
+!     agrid     : Grid ID
+!     irtype    : Record Type (1=1D, 2=2D, 3=3D)
+!     dtdp      : Timestep (secs)
+!
+!     Revision history:
+!
+!     Date            Programmer                  Description of change
+!     ----            ----------                  ----------------------
+!     03/30/07  Cristina Forbes, PSGS @ UNC-IMS   Wrote original code
+!=======================================================================
+      subroutine writenc63 (nout,fileunit,timenc_len, node_len,timenc,
+     &                      zeta,nt, NDATA, rundes,runid, agrid, irtype,
+     &                      dtdp, ihot, ics, nolibf,  nolifa,
+     &                      nolica, nolicat, nwp,
+     &                      ncor, ntip, nws, nramp, tau0,
+     &                      statim, reftim, rnday, dramp,
+     &                      a00, b00, c00, h0,
+     &                      slam0, sfea0, ffactor,esl, cori,
+     &                      ntif, nbfr, elem_len, nface_len, nm,
+     &                      x,y,depth,
+     &                      nope_len, neta_len, nbdv, nopenc,netanc_len,
+     &                      nvdllnc,
+     &                      nbou_len, nvel_len, nbvv,nbounc,nvelnc_len,
+     &                      nvellnc,ibtypenc,
+     &                      title, institution, source, history,
+     &                      references, comments, host, convention,
+     &                      contact,
+     &                      base_date)
+
+!--------------------------------------------
+!     Force explicit declaration of all variables
+!--------------------------------------------
+      IMPLICIT NONE
+!     -------------------
+!     netCDF header file
+!     -------------------
+!      include 'netcdf.inc'
+!     -------------------
+!     Error status return
+!     -------------------
+      INTEGER  iret
+!     ---------
+!     netCDF id
+!     ---------
+      INTEGER  ncid
+!     -------------
+!     Dimension ids
+!     -------------
+      INTEGER  node_dim
+      INTEGER  timenc_dim
+      INTEGER  elem_dim
+      INTEGER  nface_dim
+      INTEGER  nope_dim
+      INTEGER  neta_dim
+      INTEGER  nbou_dim
+      INTEGER  nvel_dim
+      INTEGER  nvelnc_dim
+      
+      INTEGER  netanc_dim
+!     -----------------
+!     Dimension lengths
+!     -----------------
+      INTEGER  node_len
+      INTEGER  timenc_len
+      INTEGER  elem_len
+      INTEGER  nface_len
+      INTEGER  nope_len
+      INTEGER  neta_len
+      INTEGER  nbou_len
+      INTEGER  nvel_len
+      INTEGER  nvelnc_len
+      
+      INTEGER  netanc_len
+!     ------------
+!     Variable ids
+!     ------------
+      INTEGER  timenc_id
+      INTEGER  zeta_id
+      INTEGER  minzetat_id
+      INTEGER  maxzetat_id
+      INTEGER  minzetan_id
+      INTEGER  maxzetan_id
+      INTEGER  minznodet_id
+      INTEGER  maxznodet_id
+      INTEGER  minztimen_id
+      INTEGER  maxztimen_id
+      INTEGER  X_id
+      INTEGER  Y_id
+      INTEGER  DEPTH_id
+      INTEGER  ELE_id
+      INTEGER  mindepth_id
+      INTEGER  maxdepth_id
+      INTEGER  nbdv_id
+      INTEGER  nbvv_id
+      
+      INTEGER  nvdll_id
+      INTEGER  nbounc_id
+      INTEGER  ibtypenc_id
+      INTEGER  nvellnc_id
+      
+      INTEGER  nvdllnc_id
+      INTEGER  nopenc_id
+
+!     ---------------------------------------------
+!     Rank (number of dimensions) for each variable
+!     ---------------------------------------------
+      INTEGER  timenc_rank
+      INTEGER  zeta_rank
+      INTEGER  minzetat_rank
+      INTEGER  maxzetat_rank
+      INTEGER  minzetan_rank
+      INTEGER  maxzetan_rank
+      INTEGER  minznodet_rank
+      INTEGER  maxznodet_rank
+      INTEGER  minztimen_rank
+      INTEGER  maxztimen_rank
+      INTEGER  depth_rank
+      INTEGER  ele_rank
+      INTEGER  mindepth_rank
+      INTEGER  maxdepth_rank
+      INTEGER  x_rank
+      INTEGER  y_rank
+
+      INTEGER  nbounc_rank
+      INTEGER  nvdll_rank
+      INTEGER  ibtypenc_rank
+      INTEGER  nvellnc_rank
+
+      INTEGER  nvdllnc_rank
+      INTEGER  nopenc_rank
+
+      INTEGER  nbdv_rank
+      INTEGER  nbvv_rank
+      
+      PARAMETER (timenc_rank = 1)
+      PARAMETER (zeta_rank = 2)
+      PARAMETER (minzetat_rank = 1)
+      PARAMETER (maxzetat_rank = 1)
+      PARAMETER (minzetan_rank = 1)
+      PARAMETER (maxzetan_rank = 1)
+      PARAMETER (minznodet_rank = 1)
+      PARAMETER (maxznodet_rank = 1)
+      PARAMETER (minztimen_rank = 1)
+      PARAMETER (maxztimen_rank = 1)
+      PARAMETER (depth_rank = 1)
+      PARAMETER (ele_rank = 2)
+      PARAMETER (mindepth_rank = 0)
+      PARAMETER (maxdepth_rank = 0)
+      PARAMETER (x_rank = 1)
+      PARAMETER (y_rank = 1)
+
+      PARAMETER (nvdll_rank = 1)
+      PARAMETER (nbounc_rank = 1)
+      PARAMETER (ibtypenc_rank = 1)
+      PARAMETER (nvellnc_rank = 1)
+
+      PARAMETER (nvdllnc_rank=1)
+      PARAMETER (nopenc_rank=1)
+
+      PARAMETER (nbdv_rank = 2)
+      PARAMETER (nbvv_rank = 2)
+!     ---------------
+!     Variable shapes
+!     ---------------
+      INTEGER  timenc_dims(timenc_rank)
+      INTEGER  zeta_dims(zeta_rank)
+      INTEGER  minzetat_dims(minzetat_rank)
+      INTEGER  maxzetat_dims(maxzetat_rank)
+      INTEGER  minzetan_dims(minzetan_rank)
+      INTEGER  maxzetan_dims(maxzetan_rank)
+      INTEGER  minznodet_dims(minznodet_rank)
+      INTEGER  maxznodet_dims(maxznodet_rank)
+      INTEGER  minztimen_dims(minztimen_rank)
+      INTEGER  maxztimen_dims(maxztimen_rank)
+      INTEGER  x_dims(x_rank)
+      INTEGER  y_dims(y_rank)
+      INTEGER  depth_dims(depth_rank)
+      INTEGER  ele_dims(ele_rank)
+
+      INTEGER  nvdll_dims(nvdll_rank)
+      INTEGER  nbounc_dims(nbounc_rank)
+      INTEGER  ibtypenc_dims(ibtypenc_rank)
+      INTEGER  nvellnc_dims(nvellnc_rank)
+
+      INTEGER  nvdllnc_dims(nvdllnc_rank)
+      INTEGER  nopenc_dims(nopenc_rank)
+
+      INTEGER  nbdv_dims(nbdv_rank)
+      INTEGER  nbvv_dims(nbvv_rank)
+!     --------------
+!     Data variables
+!     --------------
+      CHARACTER*5 FILEFORT
+      CHARACTER*10 FILENAME
+      CHARACTER*3 FILEEXT
+      INTEGER  t,ntif,nbfr,nt
+      INTEGER  irtype, ihot, ics, nolibf, nolifa, nolica, nolicat, nwp
+      INTEGER  ntip, nws, nramp,ncor
+      INTEGER   nout
+      INTEGER   element (nface_len , elem_len)
+      INTEGER   nbdv (nope_len, neta_len)
+      INTEGER   nbvv (nbou_len, nvel_len)
+
+      INTEGER   nvellnc(nbou_len)
+      INTEGER   nbounc (nvel_len)
+      INTEGER   ibtype(nbou_len)
+      INTEGER   ibtypenc(nbou_len)
+
+      INTEGER   nvdllnc (nope_len)
+      INTEGER   nopenc (neta_len)
+
+      INTEGER   nm (elem_len, nface_len)
+      INTEGER   fileunit
+      REAL(sz)  timenc(timenc_len)
+      REAL(sz)  x(node_len)
+      REAL(sz)  y(node_len)
+      REAL(sz)  depth(node_len)
+      REAL(sz)  zeta (node_len, timenc_len)
+      REAL(sz), ALLOCATABLE, SAVE ::  minzetat(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxzetat(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minzetan(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxzetan(:)
+      INTEGER , ALLOCATABLE, SAVE ::  minznodet(:)
+      INTEGER , ALLOCATABLE, SAVE ::  maxznodet(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minztimen(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxztimen(:)
+      real*8  mindepth
+      real*8  maxdepth
+      REAL*8  dtdp, statim,reftim, rnday, dramp, tau0
+      REAL*8  a00, b00, c00,h0
+      REAL(sz) slam0, sfea0
+      REAL(sz) slam0deg, sfea0deg
+      REAL*8 ffactor,esl, cori
+      CHARACTER(80) rundes, runid, agrid
+      INTEGER, SAVE  :: FIRST = 1 
+      INTEGER NDATA
+      INTEGER, SAVE  :: NREC = 0
+!     -----------------
+!     Attribute vectors
+!     -----------------
+      INTEGER intval(1),i,j
+      INTEGER counti(1), starti(1), n
+      INTEGER count(2), start(2)
+      REAL    realval(1)
+!      DOUBLE PRECISION  doubleval(1)
+!     -----------------
+!     Attribute general
+!     -----------------
+      CHARACTER(*) :: title, institution, source, history
+      CHARACTER(*) :: references, comments, host, convention, contact
+      CHARACTER(*) :: base_date
+!     -----------------
+!      date_string variables for time attribute
+!     -----------------
+      character date_string*40
+      character now_date*8
+      character big_ben*10
+      character zone*5
+      integer values(8)
+      real*8 xmin, xmax
+
+      save node_dim, elem_dim, nface_dim
+      save nope_dim, neta_dim, nbou_dim, nvel_dim
+      save  zeta_id, X_id, Y_id
+      save minzetat_id, maxzetat_id, minzetan_id, maxzetan_id
+      save minznodet_id, maxznodet_id, minztimen_id, maxztimen_id
+      save DEPTH_id,ELE_id, mindepth_id, maxdepth_id, nbdv_id, nbvv_id
+      save timenc_dim, timenc_id
+      save mindepth, maxdepth
+      
+      save nvelnc_dim
+      save nvdll_id, nbounc_id, ibtypenc_id, nvellnc_id
+      save netanc_dim
+      save nopenc_id,nvdllnc_id
+
+!     ---------------------------
+!     Opening fort.63 netCDF file
+!     ---------------------------
+      WRITE(6,*) "-----------------------------------------------------"
+      NREC = NREC + 1
+!     --------------------------------
+!     Switch order in array for NETCDF
+!     --------------------------------
+      do i=1, elem_len
+         do j=1, nface_len
+            element(j,i) = nm (i,j)
+         end do
+      end do
+!      write (6,*)" nope_len,neta_len ================",nope_len,neta_len
+!      do i=1, nope_len
+!         do j=1, neta_len
+!           write (6,*)" nbdv ================", i,j, nbdv(i,j)
+!        end do
+!      end do
+!      write (6,*)" nbou_len,nvel_len ================",nbou_len,nvel_len
+!            write (6,*)" nvelnc ================",nvelnc
+!         do i=1, nvel_len
+!            write (6,*)" nbounc ================",i, nbounc(i)
+!         end do
+!         do i=1, nbou_len
+!            write (6,*)" nvell ===========",i, nvellnc(i),ibtypenc(i)
+!         end do
+!       FIRST=0
+!     -----------------
+!     Enter define mode
+!     -----------------
+!         WRITE (6,*)'****FIRST = 1 ****',FIRST
+         FILEFORT = 'fort.'
+         FILEEXT = '.nc'
+!         WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+                  
+       IF(FIRST.EQ.1) THEN
+        IF(nout.eq. 3) THEN
+           iret = nf_create(FILENAME, NF_CLOBBER, ncid)
+           CALL check_err(iret)
+           FIRST=0
+         ENDIF
+         
+         ALLOCATE ( minzetan (node_len) )
+         ALLOCATE ( maxzetan (node_len) )
+         ALLOCATE ( minztimen (node_len) )
+         ALLOCATE ( maxztimen (node_len) )
+        
+         do n=1,node_len
+            minzetan (n) = 9999.d0
+            maxzetan (n) = -9999.d0
+            minztimen (n) = -9999.d0
+            maxztimen (n) = -9999.d0
+         end do
+
+!     --------------------------------
+!     Convert to degress for NETCDF I/O
+!     --------------------------------
+               SLAM0DEG=SLAM0*RAD2DEG
+               SFEA0DEG=SFEA0*RAD2DEG
+
+!     =================
+!     Define dimensions
+!     =================
+      iret = nf_def_dim(ncid, 'node', node_len, node_dim)
+      CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'nele', elem_len, elem_dim)
+      call check_err(iret)
+      iret = nf_def_dim(ncid, 'nface', 3, nface_dim)
+      call check_err(iret)
+!      write (6,*)'nope_len,neta_len,nbou_len,nvel_len',
+!     &      nope_len,neta_len,nbou_len,nvel_len
+      if(nope_len.ne.0) then
+         iret = nf_def_dim(ncid, 'nope', nope_len, nope_dim)
+         call check_err(iret)
+      endif
+      if(neta_len.ne.0) then
+         iret = nf_def_dim(ncid, 'neta', neta_len, neta_dim)
+         call check_err(iret)
+      endif
+      if(nbou_len.ne.0) then
+         iret = nf_def_dim(ncid, 'nbou', nbou_len, nbou_dim)
+         call check_err(iret)
+      endif
+      if(nvel_len.ne.0) then
+         iret = nf_def_dim(ncid, 'nvel', nvel_len, nvel_dim)
+         call check_err(iret)
+      endif
+      
+      iret = nf_def_dim(ncid, 'time', nf_unlimited, timenc_dim)
+      CALL check_err(iret)
+
+!     ================
+!     Define variables
+!     ================
+!     ----------------
+!     Define time
+!     ----------------
+
+      timenc_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'time',NF_DOUBLE,timenc_rank, timenc_dims, 
+     &                  timenc_id)
+      CALL check_err(iret)
+     
+!     -------------------
+!     Define X
+!     -------------------
+      X_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'x', NF_DOUBLE, X_rank, X_dims, X_id)
+      CALL check_err(iret)
+!     -------------------
+!     Define Y coordinate
+!     --------------------
+      Y_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'y', NF_DOUBLE, Y_rank, Y_dims, Y_id)
+      CALL check_err(iret)
+!     -------------------
+!     Define elements
+!     --------------------
+      ELE_dims(1) = nface_dim
+      ELE_dims(2) = elem_dim
+      iret = nf_def_var(ncid, 'element',NF_INT,ELE_rank,ELE_dims,ELE_id)
+      CALL check_err(iret)
+!     -----------------------------------------------------------------
+!     Define elevation specified boundary forcing segments information
+!     -----------------------------------------------------------------
+!      if(nope_len.ne.0.and.neta_len.ne.0) then
+!        nbdv_dims(2) = nope_dim
+!        nbdv_dims(1) = neta_dim      
+!        iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
+!     &                  nbdv_id)
+!         CALL check_err(iret)
+
+!      endif
+!     -----------------------------------------------------------------
+!     Define elevation specified boundary forcing segments information
+!     -----------------------------------------------------------------
+      if(nope_len.ne.0.and.neta_len.ne.0) then
+        nvdllnc_dims(1) = nope_dim      
+        iret = nf_def_var(ncid, 'nvdll',NF_INT, nvdllnc_rank, 
+     &                  nvdllnc_dims, nvdllnc_id)
+        CALL check_err(iret)
+
+        nopenc_dims(1) = neta_dim      
+        iret = nf_def_var(ncid, 'nbdv',NF_INT, nopenc_rank, nopenc_dims, 
+     &                  nopenc_id)
+        CALL check_err(iret)
+
+      endif
+!     ----------------------------------------------------------
+!     Define normal flow specified boundary segments information
+!     ----------------------------------------------------------
+!      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+!        nbvv_dims(2) = nbou_dim
+!        nbvv_dims(1) = nvel_dim      
+!        iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
+!     &                  nbvv_id)
+!        CALL check_err(iret)
+!      endif
+
+!     ----------------------------------------
+!     Define normal flow boundary information
+!     ----------------------------------------
+      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+
+        nvellnc_dims(1) = nbou_dim      
+        iret = nf_def_var(ncid, 'nvell',NF_INT, nvellnc_rank, 
+     &                  nvellnc_dims, nvellnc_id)
+        CALL check_err(iret)
+        
+        ibtypenc_dims(1) = nbou_dim      
+        iret = nf_def_var(ncid, 'ibtype',NF_INT, ibtypenc_rank, 
+     &                  ibtypenc_dims, ibtypenc_id)
+        CALL check_err(iret)
+        
+        nbounc_dims(1) = nvel_dim      
+        iret = nf_def_var(ncid, 'nbvv',NF_INT, nbounc_rank, nbounc_dims, 
+     &                  nbounc_id)
+        CALL check_err(iret)
+     
+       endif
+!     -------------------
+!     Define Z coordinate
+!     --------------------
+      DEPTH_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'depth',NF_DOUBLE, DEPTH_rank, DEPTH_dims, 
+     &                  DEPTH_id)
+      CALL check_err(iret)
+!     --------------------
+!     Define minimum depth
+!     --------------------
+      iret = nf_def_var(ncid, 'mindepth',NF_DOUBLE, mindepth_rank, 0, 
+     &                  mindepth_id)
+      CALL check_err(iret)
+!     --------------------
+!     Define maximum depth
+!     --------------------
+      iret = nf_def_var(ncid, 'maxdepth', NF_DOUBLE, maxdepth_rank, 0, 
+     &                  maxdepth_id)
+      CALL check_err(iret)
+      
+!     ----------------
+!     Define zeta
+!     ----------------
+      zeta_dims(1) = node_dim
+      zeta_dims(2) = timenc_dim
+      
+      iret = nf_def_var(ncid, 'zeta', NF_DOUBLE, zeta_rank, zeta_dims, 
+     &                  ZETA_id)
+      
+      CALL check_err(iret)
+!       WRITE(6,*)'AFTER DEFINE ZETA'
+!     ----------------------------
+!     Define minimum zeta at times
+!     ----------------------------
+!      WRITE(6,*) ' BEFORE  Define minimum zeta'
+      minzetat_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minzetat', NF_DOUBLE, minzetat_rank, 
+     &                  minzetat_dims, minzetat_id)
+      CALL check_err(iret)
+!      WRITE(6,*) ' AFTER  Define minimum zeta'
+!     ----------------------------
+!     Define maximum zeta at times
+!     ----------------------------
+      maxzetat_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxzetat', NF_DOUBLE, maxzetat_rank, 
+     &                  maxzetat_dims, maxzetat_id)
+      CALL check_err(iret)
+
+!     ----------------------------
+!     Define minimum zeta at nodes
+!     ----------------------------
+!      WRITE(6,*) ' BEFORE  Define minimum zeta at nodes'
+      minzetan_dims(1) = node_dim
+       iret = nf_def_var(ncid, 'minzetan', NF_DOUBLE, minzetan_rank, 
+     &                  minzetan_dims, minzetan_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum zeta at nodes
+!     ----------------------------
+      maxzetan_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxzetan', NF_DOUBLE, maxzetan_rank, 
+     &                  maxzetan_dims, maxzetan_id)
+      CALL check_err(iret)
+      
+!               WRITE(6,*) "Start defining... "
+
+!     ----------------------------
+!     Define minimum zeta nodes at times
+!     ----------------------------
+      minznodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minznodet', NF_INT, minznodet_rank, 
+     &                  minznodet_dims, minznodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum zeta nodes at times
+!     ----------------------------
+      maxznodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxznodet', NF_INT, maxznodet_rank, 
+     &                  maxznodet_dims, maxznodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define minimum zeta nodes at nodes
+!     ----------------------------
+      minztimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minztimen', NF_DOUBLE, minztimen_rank, 
+     &                  minztimen_dims, minztimen_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum zeta nodes at nodes
+!     ----------------------------
+      maxztimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxztimen', NF_DOUBLE, maxztimen_rank, 
+     &                  maxztimen_dims, maxztimen_id)
+      CALL check_err(iret)
+
+!               WRITE(6,*) "Finish defining... "
+       
+!     -----------------
+!     Assign attributes
+!     -----------------
+!      WRITE(6,*) ' BEFORE assign attributes'
+      
+!     ----------------------------
+!     Define longitude attributes
+!     ----------------------------
+      if(ics.eq.2) then
+      
+      	iret = nf_put_att_text(ncid,X_id,'long_name',9,'longitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'standard_name', 9, 
+     &                      'longitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'units', 12, VAR_DEGE)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE, 
+     &                       1, doubleval)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      	       CALL check_err(iret)      
+      
+!     ----------------------------
+!     Define latitude attributes
+!     ----------------------------
+      	iret = nf_put_att_text(ncid, Y_id, 'long_name', 8, 'latitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'standard_name', 8, 
+     &                       'latitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'units', 13, VAR_DEGN)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
+      	       CALL check_err(iret)
+       
+      	iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
+     &       NF_DOUBLE, 1, doubleval)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &      doubleval)
+      	       CALL check_err(iret)
+ 
+       else
+      
+!     ------------------------------
+!     Define x-coordinate attributes
+!     ------------------------------
+      	iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
+     &       'Cartesian coordinate x')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'standard_name',12, 
+     &                      'x-coordinate')
+      	       CALL check_err(iret)
+      	       
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+      	    iret = nf_put_att_text(ncid, X_id, 'units', 6, VAR_METS) 
+      	    CALL check_err(iret)
+      else
+      	    iret = nf_put_att_text(ncid, X_id, 'units', 4, VAR_FEET) 
+      	    CALL check_err(iret)
+      endif      	
+        
+      	iret = nf_put_att_text(ncid, X_id, 'positive', 5,  VAR_RG)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE,
+     &                        1, doubleval)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      	       CALL check_err(iret)
+!     ------------------------------
+!     Define y-coordinate attributes
+!     ------------------------------     
+      	iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
+     &       'Cartesian coordinate y')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
+     &                       'y-coordinate')
+      	       CALL check_err(iret)
+      	if (G.LT.11.D0) then       
+     	    iret = nf_put_att_text(ncid, Y_id, 'units', 6,  VAR_METS)
+      	    CALL check_err(iret)
+      	else 
+     	    iret = nf_put_att_text(ncid, Y_id, 'units', 4,  VAR_FEET)
+      	    CALL check_err(iret)      	
+      	endif   
+      	
+      	iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_double(ncid, Y_id, 'missing_values',NF_DOUBLE, 
+     &       1, doubleval)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &       doubleval)
+      	       CALL check_err(iret)
+      
+      endif
+!     ------------------------------
+!     Define bathymetry attributes
+!     ------------------------------
+      iret = nf_put_att_text(ncid, DEPTH_id,'long_name',10,'bathymetry')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,'depth')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'units', 6, VAR_METS)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, DEPTH_id, 'missing_values', 
+     &                      NF_DOUBLE, 1, doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, DEPTH_id, '_FillValue', NF_DOUBLE,
+     &                        1, doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'positive', 4, VAR_DW)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, ELE_id, 'long_name', 7, 'element')
+      CALL check_err(iret)
+      intval(1) = -1
+!      iret = nf_put_att_int(ncid, ELE_id, 'missing_values', NF_INT, 1, 
+!     &                      intval)
+      iret = nf_put_att_text(ncid, ELE_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+      
+!     ------------------------------------
+!     Define minimum bathymetry attributes
+!     ------------------------------------
+      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 18, 
+     &                       'minimum bathymetry')
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, mindepth_id, 'standard_name', 13,
+     &                'minimum_depth')
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, mindepth_id, 'units', 6, VAR_METS)
+      CALL check_err(iret)
+      
+!     ------------------------------------
+!     Define maximum bathymetry attributes
+!     ------------------------------------
+      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 18, 
+     &                       'maximum bathymetry')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxdepth_id, 'standard_name', 13,
+     &                'maximum_depth')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxdepth_id, 'units', 6, VAR_METS)
+      CALL check_err(iret)
+      
+!     -----------------------------------------------
+!     Define minimum sea surface elevation attributes
+!     -----------------------------------------------
+      iret = nf_put_att_text(ncid, minzetat_id, 'long_name', 50, 
+     &      'minimum sea surface elevation for each output time')
+      CALL check_err(iret)
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, minzetat_id, 'units', 6, VAR_METS)
+         CALL check_err(iret)
+      else
+         iret = nf_put_att_text(ncid, minzetat_id, 'units', 6, VAR_FEET)
+         CALL check_err(iret)
+      endif
+      
+      iret = nf_put_att_text(ncid, maxzetat_id, 'long_name', 50, 
+     &       'maximum sea surface elevation for each output time')
+      CALL check_err(iret)
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, maxzetat_id, 'units', 6, VAR_METS)
+         CALL check_err(iret)
+      else
+         iret = nf_put_att_text(ncid, maxzetat_id, 'units', 4, VAR_FEET)
+         CALL check_err(iret)
+      endif
+!     -----------------------------------------------
+!     Define maximum sea surface elevation attributes
+!     -----------------------------------------------
+      iret = nf_put_att_text(ncid, minzetan_id, 'long_name', 42, 
+     &      'minimum sea surface elevation at each node')
+      CALL check_err(iret)
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, minzetan_id, 'units', 6, VAR_METS)
+         CALL check_err(iret)
+      else
+         iret = nf_put_att_text(ncid, minzetan_id, 'units', 4, VAR_FEET)
+         CALL check_err(iret)
+      endif      
+      iret = nf_put_att_text(ncid, maxzetan_id, 'long_name', 42, 
+     &       'maximum sea surface elevation at each node')
+      CALL check_err(iret)
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, maxzetan_id, 'units', 6, VAR_METS)
+         CALL check_err(iret)
+      else      
+         iret = nf_put_att_text(ncid, maxzetan_id, 'units', 6, VAR_FEET)
+         CALL check_err(iret)
+      endif      
+!     -------------------------------------------------------------
+!     Define max and min in time sea surface elevation attributes 
+!     -------------------------------------------------------------
+      iret = nf_put_att_text(ncid, minznodet_id, 'long_name', 57, 
+     &    'node of minimum sea surface elevation at each output time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minznodet_id, 'units',14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, maxznodet_id, 'long_name', 57, 
+     &    'node of maximum sea surface elevation at each output time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxznodet_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+!     -------------------------------------------------------------
+!     Define max and min in nodes sea surface elevation attributes
+!     -------------------------------------------------------------
+      iret = nf_put_att_text(ncid, minztimen_id, 'long_name', 50, 
+     &     'time of minimum sea surface elevation at each node')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minztimen_id, 'units', 4, VAR_SECS)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, maxztimen_id, 'long_name', 50, 
+     &     'time of maximum sea surface elevation at each node')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxztimen_id, 'units', 4, VAR_SECS)
+      CALL check_err(iret)
+      
+!      endif
+!     -----------------------------------------------------------------------
+!     Define node numbers on elevation specified boundary segments attributes
+!     -----------------------------------------------------------------------      
+!      iret = nf_put_att_text(ncid, nbdv_id, 'long_name', 53, 
+!     &       'node numbers on elevation specified boundary segments')
+!      CALL check_err(iret)
+!      iret = nf_put_att_text(ncid, nbdv_id, 'units', 14, 
+!     &                      VAR_NOND)
+!      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, nopenc_id, 'long_name', 53, 
+     &       'node numbers on elevation specified boundary segments')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nopenc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, nvdllnc_id, 'long_name', 60, 
+     &'number of nodes in each elevation specified boundary segment')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nvdllnc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+!     ---------------------------------------------------------------
+!     Define node numbers on normal flow boundary segments attributes
+!     ----------------------------------------------------------------  
+!      iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
+!     &       'node numbers on normal flow boundary segments')
+!      CALL check_err(iret)
+!      iret = nf_put_att_text(ncid, nbvv_id, 'units', 14, 
+!     &                      VAR_NOND)
+!      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, nbounc_id, 'long_name', 59, 
+     & 'node numbers in each normal flow specified boundary segment')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nbounc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, ibtypenc_id, 'long_name', 13, 
+     &       'boundary type')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, ibtypenc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, nvellnc_id, 'long_name', 62, 
+     &'number of nodes in each normal flow specified boundary segment')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nvellnc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+
+!    -----------------------
+!     Define time attributes
+!    -----------------------
+      iret = nf_put_att_text(ncid,timenc_id,'long_name',10,'model time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid,timenc_id, 'standard_name', 4, 'time')
+      CALL check_err(iret)
+!      iret = nf_put_att_text(ncid, timenc_id, 'units', 7, 'seconds')
+!      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'units', 23,VAR_TUN)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'base_date',
+     .      (LEN(TRIM(base_date(1:INDEX(base_date,"!")-1)))), base_date)
+      CALL check_err(iret)
+
+!    --------------------------------------------
+!     Define sea surface elevation attributes
+!    --------------------------------------------
+      
+      iret = nf_put_att_text(ncid, zeta_id,'long_name',21, VAR63_LN)
+     &                   
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, zeta_id, 'standard_name', 17, 
+     &                      VAR63_ST)
+      CALL check_err(iret)
+      
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, zeta_id, 'units', 6, VAR_METS)
+          CALL check_err(iret)
+      else
+         iret = nf_put_att_text(ncid, zeta_id, 'units', 4, VAR_FEET)
+         CALL check_err(iret)
+      endif      
+      
+!      doubleval(1) = -99999.
+      iret = nf_put_att_DOUBLE(ncid,zeta_id,'missing_values',NF_DOUBLE,
+     &1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_DOUBLE(ncid, zeta_id, '_FillValue', NF_DOUBLE, 
+     &                      1, doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, zeta_id,'positive', 2, VAR_UP)
+      CALL check_err(iret)
+
+!     -----------------
+!     Global attributes
+!     -----------------
+
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'model', 6, 'ADCIRC')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'version', 
+     &       LEN(TRIM(ADC_VERSION)), ADC_VERSION)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid_type', 10, 
+     &                      'Triangular')
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'description',
+     &       LEN(TRIM(rundes(1:INDEX(rundes,"!")-1))), rundes)      
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid',
+     &       LEN(TRIM(agrid)), agrid)       
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'title',
+     &       LEN(TRIM(title(1:INDEX(title,"!")-1))), title)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'institution', 
+     &       LEN(TRIM(institution(1:INDEX(institution,"!")-1))), 
+     &       institution)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'source', 
+     &       LEN(TRIM(source(1:INDEX(source,"!")-1))), source)     
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'history', 
+     &       LEN(TRIM(history(1:INDEX(history,"!")-1))),  history)    
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'references', 
+     &       LEN(TRIM(references(1:INDEX(references,"!")-1))), 
+     &       references)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'comments', 
+     &       LEN(TRIM(comments(1:INDEX(comments,"!")-1))), 
+     &       comments)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'host', 
+     &       LEN(TRIM(host(1:INDEX(host,"!")-1))),  host)    
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'convention', 
+     &       LEN(TRIM(convention(1:INDEX(convention,"!")-1))), 
+     &       convention)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'contact', 
+     &       LEN(TRIM(contact(1:INDEX(contact,"!")-1))), contact)
+      CALL check_err(iret)
+ 
+ 
+      CALL date_and_time(now_date,big_ben,zone,values)
+      WRITE(date_string,71) values(1),values(2),values(3),
+     &      values(5),values(6),values(7),   (values(4))/60
+ 71   FORMAT(I4,'-',I2.2,'-',i2.2,' ',i2,':',i2.2,':',i2.2,' '
+     &  ,i3.2,':00')
+      iret = nf_put_att_text(ncid, NF_GLOBAL,'creation_date',
+     &       len_trim(date_string),date_string)
+      CALL check_err(iret)
+ 
+!      WRITE(6,*)'BEFORE global attributes from fort.15'
+!     -------------------------------------------
+!     writing global attributes from fort.15 file 
+!     -------------------------------------------
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'fort.15', 40, 
+     &                      '==== Input File Parameters (below) ====')
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dt', NF_DOUBLE, 1, dtdp)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'irtype', NF_INT, 1, irtype)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ihot', NF_INT, 1, ihot)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ics', NF_INT, 1, ics)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolibf', NF_INT, 1, nolibf)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolifa', NF_INT, 1, nolifa)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolica', NF_INT, 1, nolica)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolicat', NF_INT, 1, 
+     &                      nolicat)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nwp', NF_INT, 1, nwp)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ncor', NF_INT, 1, ncor)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntip', NF_INT, 1, ntip)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nws', NF_INT, 1, nws)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nramp', NF_INT, 1, nramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'tau0', NF_DOUBLE, 1, 
+     &                         tau0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'statim', NF_DOUBLE, 1, 
+     &                         statim)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'reftim', NF_DOUBLE, 1, 
+     &                         reftim)
+      CALL check_err(iret)
+      intval(1) = 5
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'rnday', NF_DOUBLE, 1,
+     &                         rnday)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dramp', NF_DOUBLE, 1, 
+     &                         dramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'a00', NF_DOUBLE, 1, 
+     &                         a00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'b00', NF_DOUBLE, 1, 
+     &                         b00)
+
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'c00', NF_DOUBLE, 1, 
+     &                         c00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'h0', NF_DOUBLE, 1, 
+     &                         h0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'slam0', NF_DOUBLE, 1, 
+     &                         slam0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'sfea0', NF_DOUBLE, 1, 
+     &                         sfea0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'ffactor', NF_DOUBLE, 1, 
+     &                         ffactor)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'esl', NF_DOUBLE, 1, 
+     &                         esl)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'cori', NF_DOUBLE, 1, 
+     &                         cori)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntif', NF_INT, 1, ntif)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nbfr', NF_INT, 1, nbfr)
+      CALL check_err(iret)
+!     ======================
+!     Leave define mode
+!     ======================
+      iret = nf_enddef(ncid)
+      CALL check_err(iret)
+!     ======================
+!     Store static variables
+!     ======================
+!     -------
+!     Store X
+!     -------
+      iret = nf_put_var_double(ncid, X_id, X)
+      CALL check_err(iret)
+!     -------
+!     Store Y
+!     -------
+      iret = nf_put_var_double(ncid, Y_id, Y)
+      CALL check_err(iret)
+!     ------------
+!     Store depth
+!     ------------
+      iret = nf_put_var_double(ncid, DEPTH_id, depth)
+      CALL check_err(iret)
+!     --------------
+!     Store elements
+!     --------------
+      count(1)=nface_len
+      count(2)=elem_len
+      start(1)=1
+      start(2)=1
+      iret=nf_put_vara_int(ncid,ele_id,start,count,element)
+      call check_err(iret)
+!     ------------------------------------
+!     Store elevation boundary information
+!     -------------------------------------
+      iret = nf_put_var_int(ncid, nopenc_id, nopenc)
+      CALL check_err(iret)
+      iret = nf_put_var_int(ncid, nvdllnc_id, nvdllnc)
+      CALL check_err(iret)
+!     --------------------------------------
+!     Store normal flow boundary information
+!     --------------------------------------
+      iret = nf_put_var_int(ncid, nbounc_id, nbounc)
+      CALL check_err(iret)
+      iret = nf_put_var_int(ncid, ibtypenc_id, ibtypenc)
+      CALL check_err(iret)
+      iret = nf_put_var_int(ncid, nvellnc_id, nvellnc)
+      CALL check_err(iret)
+!     --------------------
+!     Store maximum depth
+!     --------------------
+      maxdepth = maxval (depth)
+      iret = nf_put_var_double(ncid, maxdepth_id, maxdepth)
+      CALL check_err(iret)
+!     --------------------
+!     Store minimum depth
+!     --------------------
+      mindepth = minval (depth)
+      iret = nf_put_var_double(ncid, mindepth_id, mindepth)
+      CALL check_err(iret)
+!     ---------------------------------------
+!     Store node numbers on elevation specified boundary segment
+!     ---------------------------------------
+!      if(nope_len.ne.0.and.neta_len.ne.0) then
+!         iret = nf_put_var_int (ncid, nbdv_id, nbdv)
+!      count(1)=neta_len
+!      count(2)=nope_len
+!      start(1)=1
+!      start(2)=1
+!      iret=nf_put_vara_int(ncid,nbdv_id,start,count,nbdv)
+!         CALL check_err(iret)
+!      endif
+!     ---------------------------------------
+!     Store number of nodes of land boundary
+!     ---------------------------------------
+!      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+! !        iret = nf_put_var_int (ncid, nbvv_id, nbvv)
+!      count(1)=nvel_len
+!      count(2)=nbou_len
+!      start(1)=1
+!      start(2)=1
+!      iret=nf_put_vara_int(ncid,nbvv_id,start,count,nbvv)
+!         CALL check_err(iret)
+!      endif
+
+!     =====================
+!     Open old netcdf file
+!     =====================
+      ELSE
+!          WRITE (6,*)'****FIRST = 0 ****',FIRST, FILENAME
+          iret = NF_OPEN(FILENAME, NF_WRITE, ncid)
+          CALL check_err(iret)   
+          FIRST=0
+      ENDIF
+
+!      WRITE(6,*)'BEFORE store time'
+!     ----------
+!     Store time
+!     ----------
+      starti(1)=nrec
+      counti(1)=timenc_len
+      iret = nf_put_vara_DOUBLE(ncid, timenc_id, starti,counti, timenc)
+      CALL check_err(iret)
+
+!     ---------------------------
+!     Store zeta
+!     ---------------------------
+      count(1)=node_len
+      count(2)=timenc_len
+      start(1)=1
+      start(2)=nrec
+      iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, count, zeta)
+      CALL check_err(iret)
+
+!     ---------------------------
+!     Calculating zeta minimum
+!     ---------------------------
+!      WRITE(6,*)'BEFORE CALCULATE ZETA MIN'
+      
+      IF(.NOT. ALLOCATED(minzetat))ALLOCATE( minzetat(timenc_len))
+      IF(.NOT. ALLOCATED(maxzetat))ALLOCATE( maxzetat(timenc_len))
+      IF(.NOT. ALLOCATED(minzetan))ALLOCATE( minzetan(node_len))
+      IF(.NOT. ALLOCATED(maxzetan))ALLOCATE( maxzetan(node_len))
+
+      IF(.NOT. ALLOCATED(minznodet))ALLOCATE( minznodet(timenc_len))
+      IF(.NOT. ALLOCATED(maxznodet))ALLOCATE( maxznodet(timenc_len))
+      IF(.NOT. ALLOCATED(minztimen))ALLOCATE( minztimen(  node_len))
+      IF(.NOT. ALLOCATED(maxztimen))ALLOCATE( maxztimen(  node_len))
+
+!     ------------
+!     in each node
+!     ------------
+!      WRITE(6,*)'BEFORE CALCULATE ZETA MIN in each node'
+  	  do n=1,node_len
+ 		 if(zeta (n,1).lt.minzetan(n) ) then
+ 		    minzetan (n) = zeta (n,1)
+		    minztimen(n) = timenc(1)
+ 		 endif
+ 	  end do
+!     --------------
+!     for each time
+!     --------------
+      minzetat (1) = 9999.d0
+ 	  do n=1,node_len
+ 		 if(zeta (n,1).gt.-9999.d0.and.zeta(n,1).lt. minzetat (1) )then 
+ 		   minzetat (1) = zeta (n,1)
+ 		   minznodet(1) = n
+ 		 endif
+ 	  end do
+
+      iret=nf_put_vara_DOUBLE(ncid, minzetat_id,(/nrec/),(/1/),minzetat)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid, minznodet_id,(/nrec/),(/1/),minznodet)
+      CALL check_err(iret)
+
+!     ---------------------------
+!     Calculating zeta maximum
+!     ---------------------------
+!     ------------
+!     in each node
+!     ------------
+  	  do n=1,node_len
+ 		 if(zeta (n,1).gt.maxzetan(n) ) then
+ 		   maxzetan (n) = zeta (n,1)
+           maxztimen(n) = timenc(1)
+         endif
+ 	  end do
+!     --------------
+!     for each time
+!     --------------
+      maxzetat (1) = -9999.d0
+ 	  do n=1,node_len
+ 		 if(zeta(n,1).gt.maxzetat(1))then
+ 		    maxzetat (1) = zeta (n,1)
+ 		    maxznodet(1) = n
+ 		 endif
+ 	  end do
+
+!       WRITE(6,*) "sea surface elevation maximum - 1:  ", maxzetat (1),
+!     &  maxznodet(1)
+      iret=nf_put_vara_DOUBLE(ncid,maxzetat_id,(/nrec/),(/1/),maxzetat)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid,maxznodet_id,(/nrec/),(/1/),maxznodet)
+      CALL check_err(iret)
+
+
+!     ---------------------------
+!     Closing fort.X3 netCDF file
+!     ---------------------------
+!      WRITE(6,*)"NREC = ", NREC," NDATA = ",NDATA
+      IF(NREC.EQ.NDATA) THEN
+         iret = nf_put_var_double(ncid, minzetan_id, minzetan)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxzetan_id, maxzetan)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, minztimen_id, minztimen)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxztimen_id, maxztimen)
+         CALL check_err(iret)
+      ENDIF
+      
+      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      WRITE(6,*) "-----------------------------------------------------"
+      
+      iret = nf_close(ncid)
+      CALL check_err(iret)
+      WRITE(6,*)'end subroutine writenc63'
+     
+      end subroutine writenc63
+!=======================================================================
+!     -----------------------
+!     Subroutine check errors
+!     -----------------------
+      subroutine check_err(iret)
+      INTEGER iret
+!      include 'netcdf.inc'
+      if (iret .ne. NF_NOERR) then
+      print *, nf_strerror(iret)
+      stop
+      endif
+      end subroutine check_err
+!=======================================================================
+!     Subroutine writenc64
+!     Writes a netCDF file equivalent to ADCIRC's fort.63 ascii file
+!
+!     Dimensions:
+!     time_len  : Number of Times
+!     node_len  : Number of Nodes
+!
+!     Variables :
+!     time      : Time
+!     u         : u velocity in x-direction
+!     v         : v velocity in y-direction
+!
+!     Attributes:
+!     rundes    : Run description
+!     runid     : Run ID
+!     agrid     : Grid ID
+!     irtype    : Record Type (1=1D, 2=2D, 3=3D)
+!     dtdp      : Timestep (secs)
+!
+!     Revision history:
+!
+!     Date            Programmer                  Description of change
+!     ----            ----------                  ----------------------
+!     03/30/07  Cristina Forbes, PSGS @ UNC-IMS   Wrote original code
+!=======================================================================
+      subroutine writenc64 (nout,fileunit,timenc_len,node_len,timenc,
+     &                      nt, NDATA, u,v,
+     &                      rundes, runid, agrid, irtype,
+     &                      dtdp, ihot, ics, nolibf, nolifa,
+     &                      nolica, nolicat, nwp, 
+     &                      ncor, ntip, nws, nramp, tau0,
+     &                      statim, reftim, rnday, dramp,
+     &                      a00, b00, c00, h0,
+     &                      slam0, sfea0, ffactor,esl, cori,
+     &                      ntif, nbfr, elem_len, nface_len, nm,
+     &                      x,y,depth,
+     &                      nope_len, neta_len, nbdv,nopenc,netanc_len,
+     &                      nvdllnc, 
+     &                      nbou_len, nvel_len, nbvv,nbounc,nvelnc_len,
+     &                      nvellnc,ibtypenc,
+     &                      title, institution, source, history,
+     &                      references, comments, host, convention,
+     &                      contact,
+     &                      base_date)
+
+
+!--------------------------------------------
+!     Force explicit declaration of all variables
+!--------------------------------------------
+      IMPLICIT NONE
+!     -------------------
+!     netCDF header file
+!     -------------------
+ !     include 'netcdf.inc'
+!     -------------------
+!     Error status return
+!     -------------------
+      INTEGER  iret
+!     ---------
+!     netCDF id
+!     ---------
+      INTEGER  ncid
+!     -------------
+!     Dimension ids
+!     -------------
+      INTEGER  node_dim
+      INTEGER  timenc_dim
+      INTEGER  elem_dim
+      INTEGER  nface_dim
+      INTEGER  nope_dim
+      INTEGER  neta_dim
+      INTEGER  nbou_dim
+      INTEGER  nvel_dim
+      INTEGER  nvelnc_dim
+      INTEGER  netanc_dim
+!     -----------------
+!     Dimension lengths
+!     -----------------
+      INTEGER  node_len
+      INTEGER  timenc_len
+      INTEGER  elem_len
+      INTEGER  nface_len
+      INTEGER  nope_len
+      INTEGER  neta_len
+      INTEGER  nbou_len
+      INTEGER  nvel_len
+      INTEGER  nvelnc_len
+      INTEGER  netanc_len
+!     ------------
+!     Variable ids
+!     ------------
+      INTEGER  timenc_id
+      INTEGER  X_id
+      INTEGER  Y_id
+      INTEGER  DEPTH_id
+      INTEGER  ELE_id
+      INTEGER  mindepth_id
+      INTEGER  maxdepth_id
+      INTEGER  nbdv_id
+      INTEGER  nbvv_id
+      INTEGER  u_id
+      INTEGER  v_id
+      INTEGER  minut_id
+      INTEGER  maxut_id
+      INTEGER  minvt_id
+      INTEGER  maxvt_id
+      INTEGER  minun_id
+      INTEGER  maxun_id
+      INTEGER  minvn_id
+      INTEGER  maxvn_id
+      
+      INTEGER  minunodet_id
+      INTEGER  maxunodet_id
+      INTEGER  minutimen_id
+      INTEGER  maxutimen_id
+      INTEGER  minvnodet_id
+      INTEGER  maxvnodet_id
+      INTEGER  minvtimen_id
+      INTEGER  maxvtimen_id
+
+      INTEGER  nvdll_id
+      INTEGER  nbounc_id
+      INTEGER  ibtypenc_id
+      INTEGER  nvellnc_id
+      INTEGER  nvdllnc_id
+      INTEGER  nopenc_id
+      
+!     ---------------------------------------------
+!     Rank (number of dimensions) for each variable
+!     ---------------------------------------------
+      INTEGER  timenc_rank
+      INTEGER  depth_rank
+      INTEGER  ele_rank
+      INTEGER  mindepth_rank
+      INTEGER  maxdepth_rank
+      INTEGER  x_rank
+      INTEGER  y_rank
+      INTEGER  nvdll_rank
+      INTEGER  nbdv_rank
+      INTEGER  nbvv_rank
+      INTEGER  u_rank
+      INTEGER  v_rank
+      INTEGER  minut_rank
+      INTEGER  maxut_rank
+      INTEGER  minvt_rank
+      INTEGER  maxvt_rank
+      INTEGER  minun_rank
+      INTEGER  maxun_rank
+      INTEGER  minvn_rank
+      INTEGER  maxvn_rank
+
+      INTEGER  nbounc_rank
+!      INTEGER  nvdll_rank
+      INTEGER  ibtypenc_rank
+      INTEGER  nvellnc_rank
+      INTEGER  nvdllnc_rank
+      INTEGER  nopenc_rank
+
+      INTEGER  minunodet_rank
+      INTEGER  maxunodet_rank
+      INTEGER  minutimen_rank
+      INTEGER  maxutimen_rank
+      
+      INTEGER  minvnodet_rank
+      INTEGER  maxvnodet_rank
+      INTEGER  minvtimen_rank
+      INTEGER  maxvtimen_rank
+
+      PARAMETER (timenc_rank = 1)
+      PARAMETER (depth_rank = 1)
+      PARAMETER (ele_rank = 2)
+      PARAMETER (mindepth_rank = 0)
+      PARAMETER (maxdepth_rank = 0)
+      PARAMETER (x_rank = 1)
+      PARAMETER (y_rank = 1)
+!      PARAMETER (nvdll_rank = 1)
+      PARAMETER (nbdv_rank = 2)
+      PARAMETER (nbvv_rank = 2)
+      PARAMETER (u_rank = 2)
+      PARAMETER (v_rank = 2)
+      PARAMETER (minut_rank = 1)
+      PARAMETER (maxut_rank = 1)
+      PARAMETER (minvt_rank = 1)
+      PARAMETER (maxvt_rank = 1)
+      PARAMETER (minun_rank = 1)
+      PARAMETER (maxun_rank = 1)
+      PARAMETER (minvn_rank = 1)
+      PARAMETER (maxvn_rank = 1)
+
+      PARAMETER (minunodet_rank = 1)
+      PARAMETER (maxunodet_rank = 1)
+      PARAMETER (minutimen_rank = 1)
+      PARAMETER (maxutimen_rank = 1)
+
+      PARAMETER (minvnodet_rank = 1)
+      PARAMETER (maxvnodet_rank = 1)
+      PARAMETER (minvtimen_rank = 1)
+      PARAMETER (maxvtimen_rank = 1)
+
+      PARAMETER (nvdll_rank = 1)
+      PARAMETER (nbounc_rank = 1)
+      PARAMETER (ibtypenc_rank = 1)
+      PARAMETER (nvellnc_rank = 1)
+      PARAMETER (nvdllnc_rank=1)
+      PARAMETER (nopenc_rank=1)
+
+!     ---------------
+!     Variable shapes
+!     ---------------
+      INTEGER  timenc_dims(timenc_rank)
+      INTEGER  x_dims(x_rank)
+      INTEGER  y_dims(y_rank)
+      INTEGER  depth_dims(depth_rank)
+      INTEGER  ele_dims(ele_rank)
+!      INTEGER  nvdll_dims(nvdll_rank)
+      INTEGER  nbdv_dims(nbdv_rank)
+      INTEGER  nbvv_dims(nbvv_rank)
+      INTEGER  u_dims(u_rank)
+      INTEGER  v_dims(v_rank)
+      INTEGER  minut_dims(minut_rank)
+      INTEGER  maxut_dims(maxut_rank)
+      INTEGER  minvt_dims(minvt_rank)
+      INTEGER  maxvt_dims(maxvt_rank)
+      INTEGER  minun_dims(minun_rank)
+      INTEGER  maxun_dims(maxun_rank)
+      INTEGER  minvn_dims(minvn_rank)
+      INTEGER  maxvn_dims(maxvn_rank)
+
+      INTEGER  nvdll_dims(nvdll_rank)
+      INTEGER  nbounc_dims(nbounc_rank)
+      INTEGER  ibtypenc_dims(ibtypenc_rank)
+      INTEGER  nvellnc_dims(nvellnc_rank)
+      INTEGER  nvdllnc_dims(nvdllnc_rank)
+      INTEGER  nopenc_dims(nopenc_rank)
+
+
+      INTEGER  minunodet_dims(minunodet_rank)
+      INTEGER  maxunodet_dims(maxunodet_rank)
+      INTEGER  minutimen_dims(minutimen_rank)
+      INTEGER  maxutimen_dims(maxutimen_rank)
+
+      INTEGER  minvnodet_dims(minvnodet_rank)
+      INTEGER  maxvnodet_dims(maxvnodet_rank)
+      INTEGER  minvtimen_dims(minvtimen_rank)
+      INTEGER  maxvtimen_dims(maxvtimen_rank)
+
+!     --------------
+!     Data variables
+!     --------------
+      CHARACTER*5 FILEFORT
+      CHARACTER*10 FILENAME
+      CHARACTER*3 FILEEXT
+      INTEGER   t,ntif,nbfr,nt
+      INTEGER   irtype, ihot, ics, nolibf, nolifa, nolica, nolicat, nwp
+      INTEGER   ntip, nws, nramp,ncor
+!     INTEGER   nvel, neta
+      INTEGER   nout
+      INTEGER   element (nface_len , elem_len)
+      INTEGER   nbdv (nope_len, neta_len)
+      INTEGER   nbvv (nbou_len, nvel_len)
+      
+      INTEGER   nvellnc(nbou_len)
+      INTEGER   nbounc (nvel_len)
+      INTEGER   ibtype(nbou_len)
+      INTEGER   ibtypenc(nbou_len)
+      INTEGER   nvdllnc (nope_len)
+      INTEGER   nopenc (neta_len)
+      
+      INTEGER   nm (elem_len, nface_len)
+      INTEGER   fileunit
+      REAL(sz)  timenc(timenc_len)
+      REAL(sz)  x(node_len)
+      REAL(sz)  y(node_len)
+      REAL(sz)  depth(node_len)
+      REAL(sz)  u(node_len, timenc_len)
+      REAL(sz)  v(node_len, timenc_len)
+      REAL(sz), ALLOCATABLE, SAVE ::   minut(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxut(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   minvt(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxvt(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   minun(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxun(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   minvn(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxvn(:)
+
+      INTEGER , ALLOCATABLE, SAVE ::  minunodet(:)
+      INTEGER , ALLOCATABLE, SAVE ::  maxunodet(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minutimen64(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxutimen64(:)
+      
+      INTEGER , ALLOCATABLE, SAVE ::  minvnodet(:)
+      INTEGER , ALLOCATABLE, SAVE ::  maxvnodet(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minvtimen64(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxvtimen64(:)
+
+      REAL  minull
+      REAL  maxull
+      REAL  minvll
+      REAL  maxvll
+      real*8  mindepth
+      real*8  maxdepth
+      REAL*8 dtdp, statim,reftim, rnday, dramp, tau0
+      REAL*8 a00, b00, c00,h0
+      REAL(sz) slam0, sfea0, ffactor,esl, cori
+      REAL(sz) slam0deg, sfea0deg
+!      REAL*8 nele
+      CHARACTER(80) rundes, runid, agrid
+      INTEGER, SAVE  :: FIRSTV = 1 
+      INTEGER NDATA
+      INTEGER, SAVE  :: NREC = 0
+
+!     -----------------
+!     Attribute vectors
+!     -----------------
+      INTEGER intval(1),i,j
+      INTEGER counti(1), starti(1), n
+      INTEGER count(2), start(2)
+      REAL    realval(1)
+!      DOUBLE PRECISION  doubleval(1)
+!     -----------------
+!     Attribute general
+!     -----------------
+      CHARACTER(*) :: title, institution, source, history
+      CHARACTER(*) :: references, comments, host, convention, contact
+      CHARACTER(*) :: base_date
+
+!     -----------------
+!      date_string variables for time attribute
+!     -----------------
+      character date_string*40
+      character now_date*8
+      character big_ben*10
+      character zone*5
+      integer values(8)
+
+      save node_dim,  elem_dim, nface_dim
+      save nope_dim, neta_dim, nbou_dim, nvel_dim
+      save u_id, v_id, X_id, Y_id
+      save minut_id, maxut_id, minun_id, maxun_id
+      save minvt_id, maxvt_id, minvn_id, maxvn_id
+
+      save minunodet_id, maxunodet_id, minutimen_id, maxutimen_id
+      save minvnodet_id, maxvnodet_id, minvtimen_id, maxvtimen_id
+
+      save DEPTH_id,ELE_id, mindepth_id, maxdepth_id, nbdv_id, nbvv_id
+      save timenc_dim, timenc_id
+      save mindepth, maxdepth
+
+      save nvelnc_dim
+      save nvdll_id, nbounc_id, ibtypenc_id, nvellnc_id
+      save netanc_dim
+      save nopenc_id,nvdllnc_id
+
+!     ---------------------------
+!     Opening fort.64 netCDF file
+!     ---------------------------
+      WRITE(6,*) "-----------------------------------------------------"
+
+!       write(6,*) "*****************Time inside subroutine ", timenc(1)
+       NREC = NREC + 1
+!       WRITE (6,*)'========= FILEUNIT =======', FILEUNIT
+!       WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
+!       WRITE (6,*)'========= time_len, node_len =======',
+!     &  timenc_len, node_len     
+
+!     --------------------------------
+!     Switch order in array for NETCDF
+!     --------------------------------
+      do i=1, elem_len
+         do j=1, nface_len
+            element(j,i) = nm (i,j)
+         end do
+      end do
+      
+!     -----------------
+!     Enter define mode
+!     -----------------
+      IF(FIRSTV.EQ.1) THEN
+         WRITE (6,*)'****FIRSTV = 1 ****',FIRSTV
+         FILEFORT = 'fort.'
+         FILEEXT = '.nc'
+         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+         
+         if(nout.eq. 3) then
+            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
+         CALL check_err(iret)
+          FIRSTV=0
+         endif
+         
+         ALLOCATE ( minun (node_len) )
+         ALLOCATE ( maxun (node_len) )
+         ALLOCATE ( minvn (node_len) )
+         ALLOCATE ( maxvn (node_len) )
+         
+         ALLOCATE ( minutimen64 (node_len) )
+         ALLOCATE ( maxutimen64 (node_len) )
+         ALLOCATE ( minvtimen64 (node_len) )
+         ALLOCATE ( maxvtimen64 (node_len) )
+
+         do n=1,node_len
+            minun (n) =  9999.d0
+            maxun (n) = -9999.d0
+            minvn (n) =  9999.d0
+            maxvn (n) = -9999.d0
+            minutimen64 (n) = -9999.d0
+            maxutimen64 (n) = -9999.d0
+            minvtimen64 (n) = -9999.d0
+            maxvtimen64 (n) = -9999.d0
+         end do
+!     --------------------------------
+!     Convert to degress for NETCDF I/O
+!     --------------------------------
+               SLAM0DEG=SLAM0*RAD2DEG
+               SFEA0DEG=SFEA0*RAD2DEG
+!      IF(ICS.EQ.2) THEN
+!             DO I=1,np
+!                x(i)=slam(i)*RAD2DEG
+!                y(i)=sfea(i)*RAD2DEG
+!             END DO
+!      ENDIF
+!     -----------------
+!     Define dimensions
+!     -----------------
+      iret = nf_def_dim(ncid, 'node', node_len, node_dim)
+      CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'nele', elem_len, elem_dim)
+      CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'nface', 3, nface_dim)
+      CALL check_err(iret)
+      write (6,*)'nope_len,neta_len,nbou_len,nvel_len',
+     &      nope_len,neta_len,nbou_len,nvel_len
+      if(nope_len.ne.0) then
+         iret = nf_def_dim(ncid, 'nope', nope_len, nope_dim)
+         call check_err(iret)
+      endif
+      if(neta_len.ne.0) then
+         iret = nf_def_dim(ncid, 'neta', neta_len, neta_dim)
+         call check_err(iret)
+      endif
+      if(nbou_len.ne.0) then
+         iret = nf_def_dim(ncid, 'nbou', nbou_len, nbou_dim)
+         call check_err(iret)
+      endif
+      if(nvel_len.ne.0) then
+         iret = nf_def_dim(ncid, 'nvel', nvel_len, nvel_dim)
+         call check_err(iret)
+      endif
+      
+      iret = nf_def_dim(ncid, 'time', nf_unlimited, timenc_dim)
+      CALL check_err(iret)
+      
+!     ================
+!     Define variables
+!     ================
+!     ----------------
+!     Define time
+!     ----------------
+      timenc_dims(1) = timenc_dim
+      iret = nf_def_var(ncid,'time',NF_DOUBLE, timenc_rank, timenc_dims, 
+     &                  timenc_id)
+      CALL check_err(iret)
+      
+!     -------------------
+!     Define x
+!     -------------------
+      x_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'x', NF_DOUBLE, x_rank, x_dims, x_id)
+      CALL check_err(iret)
+!     -------------------
+!     Define Y coordinate
+!     --------------------
+      Y_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'y', NF_DOUBLE, Y_rank, Y_dims, Y_id)
+      CALL check_err(iret)
+!     -------------------
+!     Define elements
+!     --------------------
+      ELE_dims(1) = nface_dim
+      ELE_dims(2) = elem_dim
+      iret = nf_def_var(ncid, 'element',NF_INT,ELE_rank,ELE_dims,ELE_id)
+      CALL check_err(iret)
+
+!     -------------------------------------
+!     Define open boundary forcing segments
+!     -------------------------------------
+!      if(nope_len.ne.0.and.neta_len.ne.0) then
+!        nbdv_dims(2) = nope_dim
+!        nbdv_dims(1) = neta_dim      
+!        iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
+!     &                  nbdv_id)
+!         CALL check_err(iret)
+!      endif
+!     -----------------------------------------------------------------
+!     Define elevation specified boundary forcing segments information
+!     -----------------------------------------------------------------
+      if(nope_len.ne.0.and.neta_len.ne.0) then
+        nvdllnc_dims(1) = nope_dim      
+        iret = nf_def_var(ncid, 'nvdll',NF_INT, nvdllnc_rank, 
+     &                  nvdllnc_dims, nvdllnc_id)
+        CALL check_err(iret)
+
+        nopenc_dims(1) = neta_dim      
+        iret = nf_def_var(ncid, 'nbbv',NF_INT, nopenc_rank, nopenc_dims, 
+     &                  nopenc_id)
+        CALL check_err(iret)
+
+      endif
+
+!     ----------------------------------------------------------
+!     Define normal flow specified boundary segments information
+!     ----------------------------------------------------------
+!      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+!        nbvv_dims(2) = nbou_dim
+!        nbvv_dims(1) = nvel_dim      
+!        iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
+!     &                  nbvv_id)
+!        CALL check_err(iret)
+!      endif
+
+!     ----------------------------------------------------------
+!     Define normal flow specified boundary segments information
+!     ----------------------------------------------------------
+      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+
+        nvellnc_dims(1) = nbou_dim      
+        iret = nf_def_var(ncid, 'nvell',NF_INT, nvellnc_rank, 
+     &                  nvellnc_dims, nvellnc_id)
+        CALL check_err(iret)
+        
+        ibtypenc_dims(1) = nbou_dim      
+        iret = nf_def_var(ncid, 'ibtype',NF_INT, ibtypenc_rank, 
+     &                  ibtypenc_dims, ibtypenc_id)
+        CALL check_err(iret)
+        nbounc_dims(1) = nvel_dim      
+        iret = nf_def_var(ncid, 'nbvv',NF_INT, nbounc_rank, nbounc_dims, 
+     &                  nbounc_id)
+        CALL check_err(iret)
+     
+       endif
+
+!     -------------------
+!     Define Z coordinate
+!     --------------------
+      DEPTH_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'depth', NF_DOUBLE,DEPTH_rank, DEPTH_dims, 
+     &                  DEPTH_id)
+      CALL check_err(iret)
+!     --------------------
+!     Define minimum depth
+!     --------------------
+      iret = nf_def_var(ncid, 'mindepth', NF_DOUBLE, mindepth_rank, 0, 
+     &                  mindepth_id)
+      CALL check_err(iret)
+!     --------------------
+!     Define maximum depth
+!     --------------------
+      iret = nf_def_var(ncid, 'maxdepth', NF_DOUBLE, maxdepth_rank, 0, 
+     &                  maxdepth_id)
+      CALL check_err(iret)
+
+!     ----------------
+!     Define u vel
+!     ----------------
+      u_dims(1) = node_dim
+      u_dims(2) = timenc_dim
+      iret = nf_def_var(ncid, 'u-vel', NF_DOUBLE, u_rank, u_dims, 
+     &                  u_id)
+      CALL check_err(iret)
+
+!     ----------------
+!     Define v vel
+!     ----------------
+      v_dims(1) = node_dim
+      v_dims(2) = timenc_dim
+      iret = nf_def_var(ncid, 'v-vel', NF_DOUBLE, v_rank, v_dims, 
+     &                  v_id)
+      CALL check_err(iret)
+
+!      WRITE(6,*)"Define MIN u/v at times"
+!     -------------------------
+!     Define minimum u at times
+!     -------------------------
+      minut_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minuvelt', NF_DOUBLE, minut_rank, 
+     &                  minut_dims, minut_id)
+      CALL check_err(iret)
+!      WRITE(6,*)"Define MAX u/v"
+!     -------------------------
+!     Define maximum u at times
+!     -------------------------
+      maxut_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxuvelt', NF_DOUBLE, maxut_rank, 
+     &                  maxut_dims, maxut_id)
+      CALL check_err(iret)
+
+!      WRITE(6,*)"Define min v"
+
+!     -------------------------
+!     Define minimum v at times
+!     -------------------------
+      minvt_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minvvelt', NF_DOUBLE, minvt_rank, 
+     &                  minvt_dims, minvt_id)
+      CALL check_err(iret)
+      
+!      WRITE(6,*)"Define max v"
+!     -------------------------
+!     Define maximum v at times
+!     -------------------------
+      maxvt_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxvvelt', NF_DOUBLE, maxvt_rank, 
+     &                  maxvt_dims, maxvt_id)
+      CALL check_err(iret)
+
+!     -------------------------
+!     Define minimum u at times
+!     -------------------------
+!      WRITE(6,*)"Define MIN u/v at nodes"
+      minun_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minuveln', NF_DOUBLE, minun_rank, 
+     &                  minun_dims, minun_id)
+      CALL check_err(iret)
+!     WRITE(6,*)"Define MAX u/v at nodes"
+!     -------------------------
+!     Define maximum u at nodes
+!     -------------------------
+      maxun_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxuveln', NF_DOUBLE, maxun_rank, 
+     &                  maxun_dims, maxun_id)
+      CALL check_err(iret)
+
+!      WRITE(6,*)"Define min v at nodes"
+!     -------------------------
+!     Define minimum v at nodes
+!     -------------------------
+      minvn_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minvveln', NF_DOUBLE, minvn_rank, 
+     &                  minvn_dims, minvn_id)
+      CALL check_err(iret)
+!     -------------------------
+!     Define maximum v at nodes
+!     -------------------------
+!      WRITE(6,*)"Define max v at nodes"
+      maxvn_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxvveln', NF_DOUBLE, maxvn_rank, 
+     &                  maxvn_dims, maxvn_id)
+      CALL check_err(iret)
+!      WRITE(6,*)"FINISH Define max v at nodes"      
+
+!!!!!
+
+!     ----------------------------
+!     Define minimum u nodes at times
+!     ----------------------------
+      minunodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minunodet', NF_INT, minunodet_rank, 
+     &                  minunodet_dims, minunodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum u nodes at times
+!     ----------------------------
+      maxunodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxunodet', NF_INT, maxunodet_rank, 
+     &                  maxunodet_dims, maxunodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define minimum u nodes at nodes
+!     ----------------------------
+      minutimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minutimen', NF_DOUBLE, minutimen_rank, 
+     &                  minutimen_dims, minutimen_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum u nodes at nodes
+!     ----------------------------
+      maxutimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxutimen', NF_DOUBLE, maxutimen_rank, 
+     &                  maxutimen_dims, maxutimen_id)
+      CALL check_err(iret)
+
+            
+!     ----------------------------
+!     Define minimum v nodes at times
+!     ----------------------------
+      minvnodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minvnodet', NF_INT, minvnodet_rank, 
+     &                  minvnodet_dims, minvnodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum v nodes at times
+!     ----------------------------
+      maxvnodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxvnodet', NF_INT, maxvnodet_rank, 
+     &                  maxvnodet_dims, maxvnodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define minimum v nodes at nodes
+!     ----------------------------
+      minvtimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minvtimen', NF_DOUBLE, minvtimen_rank, 
+     &                  minvtimen_dims, minvtimen_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum v nodes at nodes
+!     ----------------------------
+      maxvtimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxvtimen', NF_DOUBLE, maxvtimen_rank, 
+     &                  maxvtimen_dims, maxvtimen_id)
+      CALL check_err(iret)
+
+!     -----------------
+!     Assign attributes
+!     -----------------
+
+      if(ics.eq.2) then
+      
+      WRITE(6,*)"ics.eq.2"
+      iret = nf_put_att_text(ncid, X_id, 'long_name', 9, 'longitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'standard_name', 9, 
+     &                      'longitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'units', 12, VAR_DEGE)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE,
+     &                        1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)      
+      
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 8, 'latitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 8, 
+     &                       'latitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'units', 13, VAR_DEGN)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
+      CALL check_err(iret)
+       
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, Y_id, 'missing_values', NF_DOUBLE, 
+     &       1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &       doubleval)
+      CALL check_err(iret)
+
+      else
+      
+      iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
+     &       'Cartesian coordinate x')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, 
+     &                      'x_coordinate')
+      CALL check_err(iret)
+      
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, X_id, 'units', 6,  VAR_METS)
+         CALL check_err(iret)
+      else
+         iret = nf_put_att_text(ncid, X_id, 'units', 4,  VAR_FEET)
+         CALL check_err(iret)
+      endif
+      
+      iret = nf_put_att_text(ncid, X_id, 'positive', 5,  VAR_RG)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE, 
+     &                       1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+!     ------------------------------
+!     Define y-coordinate attributes
+!     ------------------------------     
+      
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
+     &       'Cartesian coordinate y')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
+     &                       'y_coordinate')
+      CALL check_err(iret)
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, Y_id, 'units', 6, VAR_METS)
+         CALL check_err(iret)
+      else
+         iret = nf_put_att_text(ncid, Y_id, 'units', 4, VAR_FEET)
+         CALL check_err(iret)
+      endif
+      iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
+      CALL check_err(iret)
+!      doubleval(1) = -99999
+      iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
+     &       NF_DOUBLE, 1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999
+      iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &       doubleval)
+      CALL check_err(iret)
+      
+      endif
+
+!     ------------------------------
+!     Define bathymetry attributes
+!     ------------------------------
+      WRITE(6,*)"Define bathymetry attributes"
+
+      iret = nf_put_att_text(ncid, DEPTH_id,'long_name',10,'bathymetry')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,'depth')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'units', 6, VAR_METS)
+      CALL check_err(iret)
+!      doubleval(1) = -99999
+      iret = nf_put_att_double(ncid, DEPTH_id, 'missing_values', 
+     &                      NF_DOUBLE,  1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999
+      iret = nf_put_att_double(ncid,DEPTH_id, '_FillValue',NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'positive', 4, VAR_DW)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, ELE_id, 'long_name', 7, 'element')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, ELE_id, 'units', 14, VAR_NOND)
+      intval(1) = -1
+      
+!    ---------------------------
+!     minimum/maximum bathymetry
+!    ---------------------------
+!      WRITE(6,*)"Define minimum bathymetry"
+
+      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 18, 
+     &                       'minimum bathymetry')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, mindepth_id, 'standard_name', 13,
+     &                'minimum_depth')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, mindepth_id, 'units', 6, VAR_METS)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 18, 
+     &                       'maximum bathymetry')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxdepth_id, 'standard_name', 13,
+     &           'maximum_depth')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxdepth_id, 'units', 6, VAR_METS)
+      CALL check_err(iret)
+      
+!    ----------------------------------------------------
+!     minimum/maximum e/w and n/s velocities at each time
+!    ----------------------------------------------------
+
+!    --------------------------------------------------
+!     determine variable names according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+         iret = nf_put_att_text(ncid, minut_id, 'long_name', 53, 
+     &   'minimum vertiCALLy averaged e/w velocity at each time')
+      else
+          iret = nf_put_att_text(ncid, minut_id, 'long_name', 64, 
+     &'minimum vertiCALLy averaged velocity in x-direction at each time
+     &')
+      endif
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, minut_id, 'standard_name', 18,
+     &                'minimum_u_velocity')
+      CALL check_err(iret)
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, minut_id,'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, minut_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+      
+!    --------------------------------------------------
+!     determine variable names according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, maxut_id, 'long_name', 53, 
+     &    'maximum vertical averaged e/w - velocity at each time')
+      else
+          iret = nf_put_att_text(ncid, maxut_id, 'long_name', 62, 
+     & 'maximum vertical averaged velocity in x-direction at each time')
+      endif
+      CALL check_err(iret)
+       
+      iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 18,
+     &                'maximum_u_velocity')
+      CALL check_err(iret)
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, maxut_id,'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, maxut_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+      
+!    --------------------------------------------------
+!     determine variable names according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, minvt_id, 'long_name', 53, 
+     &    'minimum vertiCALLy averaged n/s velocity at each time')
+      else
+          iret = nf_put_att_text(ncid, minvt_id, 'long_name', 64, 
+     &'minimum vertiCALLy averaged velocity in y-direction at each time
+     &')
+      endif
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 18,
+     &                'minimum_v_velocity')
+      CALL check_err(iret)
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, minvt_id,'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, minvt_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+      
+!    --------------------------------------------------
+!     determine variable names according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 53, 
+     &          'maximum vertiCALLy averaged n/s velocity at each time')
+      else
+            iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 64, 
+     &'maximum vertiCALLy averaged velocity in y-direction at each time
+     &')
+      endif
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 18,
+     &                'maximum_v_velocity')
+      CALL check_err(iret)
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, maxvt_id,'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, maxvt_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+
+!    ----------------------------------------------------
+!     minimum/maximum e/w and n/s velocities at each node
+!    ----------------------------------------------------
+!    --------------------------------------------------
+!     determine variable names according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+         iret = nf_put_att_text(ncid, minun_id, 'long_name', 53, 
+     &    'minimum vertiCALLy averaged e/w velocity at each node')
+      else
+          iret = nf_put_att_text(ncid, minun_id, 'long_name', 64, 
+     &'minimum vertiCALLy averaged velocity in x-direction at each node
+     &')
+      endif
+      CALL check_err(iret)      
+      iret = nf_put_att_text(ncid, minun_id, 'standard_name', 18,
+     &                'minimum_u_velocity')
+      CALL check_err(iret)
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, minun_id,'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, minun_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+      
+!    --------------------------------------------------
+!     determine variable names according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, maxun_id, 'long_name', 53, 
+     &    'maximum vertiCALLy averaged e/w velocity at each node')
+      else      
+          iret = nf_put_att_text(ncid, maxun_id, 'long_name', 64, 
+     &'maximum vertiCALLy averaged velocity in x-direction at each node
+     &')
+      endif
+      CALL check_err(iret)
+       
+      iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 18,
+     &                'maximum_u_velocity')
+      CALL check_err(iret)
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, maxun_id,'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, maxun_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+      
+!    --------------------------------------------------
+!     determine variable name according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, minvn_id, 'long_name', 53, 
+     &    'minimum vertiCALLy averaged n/s velocity at each node')
+      else
+          iret = nf_put_att_text(ncid, minvn_id, 'long_name', 64, 
+     &'minimum vertiCALLy averaged velocity in y-direction at each node
+     &')
+      endif
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 18,
+     &                'minimum_v_velocity')
+      CALL check_err(iret)
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, minvn_id,'units',13, VAR_MPS)
+      else
+         iret = nf_put_att_text(ncid, minvn_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+      
+!    --------------------------------------------------
+!     determine variable name according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 53, 
+     &          'maximum vertiCALLy averaged n/s velocity at each node')
+      else      
+          iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 64, 
+     &'maximum vertiCALLy averaged velocity in y-direction at each node
+     &')
+      endif
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, maxvn_id, 'standard_name', 18,
+     &                'maximum_v_velocity')
+      CALL check_err(iret)
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, maxvn_id,'units',13,  VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, maxvn_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+
+!    ----------------------------------------------------
+!     minimum/maximum e/w and n/s velocities at each time
+!    ----------------------------------------------------
+
+!    --------------------------------------------------
+!     determine variable names according to coordinates
+!    ---------------------------------------------------
+
+      if (ics.eq.2) then
+         iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 58, 
+     &   'node where minimum e/w velocity occurs at each output time ')
+      else
+          iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 59, 
+     &'node where minimum velocity in x-direction occurs at each output
+     &time')
+      endif
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, minunodet_id, 'standard_name', 28,
+     &                'node_of_minimum_e/w_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minunodet_id,'units',14, VAR_NOND)
+      CALL check_err(iret)
+      
+!    --------------------------------------------------
+!     determine variable name according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+         iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 58, 
+     &    'node where maximum e/w velocity occurs at each output time')
+      else
+         iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 69, 
+     &'node where maximum velocity in x-direction occurs at each output 
+     &time')
+      endif
+      CALL check_err(iret)
+       
+      iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name', 28,
+     &                'node_of_maximum_e/w_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxunodet_id,'units',14,  VAR_NOND)
+      CALL check_err(iret)
+      
+!    --------------------------------------------------
+!     determine variable name according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+         iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 58, 
+     &   'node where minimum n/s velocity occurs at each output time')
+      else
+          iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 69, 
+     &'node where minimum velocity in y-direction occurs at each output 
+     &time')
+      endif
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name', 28,
+     &                'node_of_minimum_n/s_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvnodet_id,'units',14,  VAR_NOND)
+      CALL check_err(iret)
+!    --------------------------------------------------
+!     determine variable name according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+         iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 58, 
+     &    'node where maximum n/s velocity occurs at each output time')
+      else
+         iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 69, 
+     &'node where maximum velocity in y-direction occurs at each output 
+     &time')
+      endif
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name', 28,
+     &                'node_of_maximum_n/s_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxvnodet_id,'units',14, VAR_NOND)
+      CALL check_err(iret)
+!    ----------------------------------------------------
+!     minimum/maximum e/w and n/s velocities at each node
+!    ----------------------------------------------------
+!    --------------------------------------------------
+!     determine variable name according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+         iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 50, 
+     &   'time when minimum e/w velocity occurs at each node')
+      else
+
+         iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 61, 
+     &  'time when minimum velocity in x-direction occurs at each node')
+      endif
+      CALL check_err(iret)
+
+      
+      iret = nf_put_att_text(ncid, minutimen_id, 'standard_name', 28,
+     &                'time_of_minimum_e/w_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minutimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+      
+!    --------------------------------------------------
+!     determine variable name according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 50, 
+     &    'time when maximum e/w velocity occurs at each node')
+      else
+
+          iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 61, 
+     &  'time when maximum velocity in x-direction occurs at each node')
+      endif
+      CALL check_err(iret)
+       
+      iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name', 28,
+     &                'time_of_maximum_e/w_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxutimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+      
+!    --------------------------------------------------
+!     determine variable name according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+         iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 50, 
+     &   'time when minimum n/s velocity occurs at each node')
+      else
+
+         iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 61, 
+     &  'time when minimum velocity in y-direction occurs at each node')
+      endif
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name', 28,
+     &                'time_of_minimum_n/s_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvtimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+      
+!    --------------------------------------------------
+!     determine variable name according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 50, 
+     &      'time when maximum n/s velocity occurs at each_node')
+       else
+
+         iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 61, 
+     &  'time when maximum velocity in y-direction occurs at each node')
+      endif
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name', 28,
+     &                'time_of_maximum_n/s_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxvtimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+
+!     -----------------------------------------------------------------------
+!     Define node numbers on elevation specified boundary segments attributes
+!     -----------------------------------------------------------------------      
+!      WRITE(6,*)" node numbers on boundary segments"
+      
+!      iret = nf_put_att_text(ncid, nbdv_id, 'long_name', 53, 
+!     &       'node numbers on elevation specified boundary segments')
+!      CALL check_err(iret)
+!      iret = nf_put_att_text(ncid, nbdv_id, 'units', 14, 
+!     &                      VAR_NOND)
+!      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nopenc_id, 'long_name', 53, 
+     &       'node numbers on elevation specified boundary segments')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nopenc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, nvdllnc_id, 'long_name', 60, 
+     &'number of nodes in each elevation specified boundary segment')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nvdllnc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+!     ---------------------------------------------------------------
+!     Define node numbers on normal flow boundary segments attributes
+!     ----------------------------------------------------------------  
+
+!      iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
+!     &       'node numbers on normal flow boundary segments')
+!      CALL check_err(iret)
+!      iret = nf_put_att_text(ncid, nbvv_id, 'units', 14, 
+!     &                      VAR_NOND)
+!      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, nbounc_id, 'long_name', 59, 
+     & 'node numbers in each normal flow specified boundary segment')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nbounc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, ibtypenc_id, 'long_name', 13, 
+     &       'boundary type')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, ibtypenc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, nvellnc_id, 'long_name', 62, 
+     &'number of nodes in each normal flow specified boundary segment')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nvellnc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+
+!    -----------------------
+!     Define time attributes
+!    -----------------------
+      iret = nf_put_att_text(ncid,timenc_id,'long_name',10,'model time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'standard_name', 4,'time')
+      CALL check_err(iret)
+!      iret = nf_put_att_text(ncid, time_id, 'units', 7, 'seconds')
+!      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, timenc_id, 'units', 23,VAR_TUN)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'base_date',
+     . (LEN(TRIM(base_date(1:INDEX(base_date,"!")-1)))), base_date)
+      CALL check_err(iret)
+
+!    -----------
+!     Define u velocity
+!    -----------
+
+!    --------------------------------------------------
+!     determine variable name according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, u_id, 'long_name', 32, 
+     &                       'vertical averaged e/w - velocity')
+       else
+         iret = nf_put_att_text(ncid, u_id, 'long_name', 41, 
+     &            'vertical averaged velocity in x-direction')
+      endif
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, u_id, 'standard_name', 10, 
+     &                      'u_velocity')
+      CALL check_err(iret)
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, u_id, 'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, u_id, 'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+!    --------------------------------------------------
+!     determine variable name according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, u_id, 'positive', 4, VAR_EAST)
+      else
+          iret = nf_put_att_text(ncid, u_id, 'positive', 5, VAR_RG)
+      endif
+      CALL check_err(iret)
+!       doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, u_id, 'missing_values', 
+     &       NF_DOUBLE, 1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, u_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+      
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, u_id, 'dry_Value', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+!    -----------
+!     Define v velocity
+!    -----------
+!    --------------------------------------------------
+!     determine variable name according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, v_id, 'long_name', 32, 
+     &           'vertical averaged n/s - velocity')
+      else
+          iret = nf_put_att_text(ncid, v_id, 'long_name', 41, 
+     &           'vertical averaged velocity in y-direction')
+      endif
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, v_id, 'standard_name', 10, 
+     &                      'v_velocity')
+      CALL check_err(iret)
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, v_id, 'units',13, VAR_MPS)
+      else
+         iret = nf_put_att_text(ncid, v_id, 'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+
+!    --------------------------------------------------
+!     determine variable name according to coordinates
+!    ---------------------------------------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, v_id, 'positive', 5, VAR_NORTH)
+      else
+          iret = nf_put_att_text(ncid, v_id, 'positive', 2, VAR_UP)
+      endif
+      CALL check_err(iret)
+
+!      doubleval(1) = -99999.
+      iret = nf_put_att_DOUBLE(ncid, v_id, 'missing_values', 
+     &       NF_DOUBLE, 1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_DOUBLE(ncid, v_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_DOUBLE(ncid, v_id, 'dry_Value', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+
+!     -----------------
+!     Global attributes
+!     -----------------
+
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'model', 6, 'ADCIRC')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'version', 
+     &       LEN(TRIM(ADC_VERSION)), ADC_VERSION)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid_type', 10, 
+     &                      'Triangular')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'description', 
+     &       LEN(TRIM(rundes(1:INDEX(rundes,"!")-1))), rundes)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid',
+     &       LEN(TRIM(agrid)), agrid)       
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'title',
+     &       LEN(TRIM(title(1:INDEX(title,"!")-1))), 
+     &       title)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'institution', 
+     &       LEN(TRIM(institution(1:INDEX(institution,"!")-1))), 
+     &       institution)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'source', 
+     &       LEN(TRIM(source(1:INDEX(source,"!")-1))),
+     &       source)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'history', 
+     &       LEN(TRIM(history(1:INDEX(history,"!")-1))),
+     &       history)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'references', 
+     &       LEN(TRIM(references(1:INDEX(references,"!")-1))), 
+     &       references)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'comments', 
+     &       LEN(TRIM(comments(1:INDEX(comments,"!")-1))), 
+     &       comments)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'host', 
+     &       LEN(TRIM(host(1:INDEX(host,"!")-1))), 
+     &       host)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'convention', 
+     &       LEN(TRIM(convention(1:INDEX(convention,"!")-1))), 
+     &       convention)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'contact', 
+     &       LEN(TRIM(contact(1:INDEX(contact,"!")-1))), 
+     &       contact)
+      CALL check_err(iret)
+ 
+ 
+      CALL date_and_Time(now_date,big_ben,zone,values)
+      write(date_string,71) values(1),values(2),values(3)
+     & ,values(5),values(6),values(7),   (values(4))/60
+ 71   format(I4,'-',I2.2,'-',i2.2,' ',i2,':',i2.2,':',i2.2,' '
+     &  ,i3.2,':00')
+      iret = nf_put_att_text(ncid, NF_GLOBAL,'creation_date'
+     & ,len_trim(date_string),date_string)
+      CALL check_err(iret)
+ 
+!     -------------------------------------------
+!     writing global attributes from fort.15 file 
+!     -------------------------------------------
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'fort.15', 40, 
+     &                      '==== Input File Parameters (below) ====')
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dt', NF_DOUBLE, 1, dtdp)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'irtype', NF_INT, 1, irtype)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ihot', NF_INT, 1, ihot)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ics', NF_INT, 1, ics)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolibf', NF_INT, 1, nolibf)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolifa', NF_INT, 1, nolifa)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolica', NF_INT, 1, nolica)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolicat', NF_INT, 1, 
+     &                      nolicat)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nwp', NF_INT, 1, nwp)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ncor', NF_INT, 1, ncor)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntip', NF_INT, 1, ntip)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nws', NF_INT, 1, nws)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nramp', NF_INT, 1, nramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'tau0', NF_DOUBLE, 1, 
+     &                         tau0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'statim', NF_DOUBLE, 1, 
+     &                         statim)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'reftim', NF_DOUBLE, 1, 
+     &                         reftim)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'rnday', NF_DOUBLE, 1,
+     &                         rnday)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dramp', NF_DOUBLE, 1, 
+     &                         dramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'a00', NF_DOUBLE, 1, 
+     &                         a00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'b00', NF_DOUBLE, 1, 
+     &                         b00)
+
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'c00', NF_DOUBLE, 1, 
+     &                         c00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'h0', NF_DOUBLE, 1, 
+     &                         h0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'slam0', NF_DOUBLE, 1, 
+     &                         slam0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'sfea0', NF_DOUBLE, 1, 
+     &                         sfea0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'ffactor', NF_DOUBLE, 1, 
+     &                         ffactor)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'esl', NF_DOUBLE, 1, 
+     &                         esl)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'cori', NF_DOUBLE, 1, 
+     &                         cori)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntif', NF_INT, 1, ntif)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nbfr', NF_INT, 1, nbfr)
+      CALL check_err(iret)
+     
+!     ======================
+!     Leave define mode
+!     ======================
+      iret = nf_enddef(ncid)
+      CALL check_err(iret)
+!     ======================
+!     Store static variables
+!     ======================
+!     -------
+!     Store X
+!     -------
+      iret = nf_put_var_double(ncid, X_id, X)
+      CALL check_err(iret)
+!     -------
+!     Store Y
+!     -------
+      iret = nf_put_var_double(ncid, Y_id, Y)
+      CALL check_err(iret)
+!     ------------
+!     Store depth
+!     ------------
+      iret = nf_put_var_double(ncid, DEPTH_id, depth)
+      CALL check_err(iret)
+!     --------------
+!     Store elements
+!     --------------
+      count(1)=nface_len
+      count(2)=elem_len
+      start(1)=1
+      start(2)=1
+      iret=nf_put_vara_int(ncid,ele_id,start,count,element)
+      CALL check_err(iret)
+!     ------------------------------------
+!     Store elevation boundary information
+!     -------------------------------------
+      iret = nf_put_var_int(ncid, nopenc_id, nopenc)
+      CALL check_err(iret)
+      iret = nf_put_var_int(ncid, nvdllnc_id, nvdllnc)
+      CALL check_err(iret)
+!     --------------------------------------
+!     Store normal flow boundary information
+!     --------------------------------------
+      iret = nf_put_var_int(ncid, nbounc_id, nbounc)
+      CALL check_err(iret)
+      iret = nf_put_var_int(ncid, ibtypenc_id, ibtypenc)
+      CALL check_err(iret)
+      iret = nf_put_var_int(ncid, nvellnc_id, nvellnc)
+      CALL check_err(iret)      
+!     --------------------
+!     Store maximum depth
+!     --------------------
+      maxdepth = maxval (depth)
+      iret = nf_put_var_double(ncid, maxdepth_id, maxdepth)
+      CALL check_err(iret)
+!     --------------------
+!     Store minimum depth
+!     --------------------
+      mindepth = minval (depth)
+      iret = nf_put_var_double(ncid, mindepth_id, mindepth)
+      CALL check_err(iret)
+!     ---------------------------------------
+!     Store node numbers on elevation specified boundary segment
+!     ---------------------------------------
+!      if(nope_len.ne.0.and.neta_len.ne.0) then
+!!         iret = nf_put_var_int (ncid, nbdv_id, nbdv)
+!      count(1)=neta_len
+!      count(2)=nope_len
+!      start(1)=1
+!      start(2)=1
+!      iret=nf_put_vara_int(ncid,nbdv_id,start,count,nbdv)
+!         CALL check_err(iret)
+!      endif
+!     ---------------------------------------
+!     Store number of nodes of land boundary
+!     ---------------------------------------
+!      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+!         iret = nf_put_var_int (ncid, nbvv_id, nbvv)
+!         CALL check_err(iret)
+!      endif
+      
+!     =====================
+!     Open old netcdf file
+!     =====================
+      ELSE
+!          WRITE (6,*)'****FIRSTV = 0 ****',FIRSTV
+          iret = NF_OPEN(FILENAME, NF_WRITE, ncid)
+          CALL check_err(iret)   
+          FIRSTV=0
+      ENDIF
+!     ----------
+!     Store time
+!     ----------
+      starti(1)=nrec
+      counti(1)=timenc_len
+      iret = nf_put_vara_DOUBLE(ncid, timenc_id, starti,counti, timenc)
+      CALL check_err(iret)
+!     ---------------------------
+!     Store u
+!     ---------------------------
+      count(1)=node_len
+      count(2)=timenc_len
+      start(1)=1
+      start(2)=nrec
+      iret = nf_put_vara_DOUBLE(ncid, u_id, start, count, u)
+      CALL check_err(iret)
+!     ---------------------------
+!     Store v
+!     ---------------------------
+      count(1)=node_len
+      count(2)=timenc_len
+      start(1)=1
+      start(2)=nrec
+      iret = nf_put_vara_DOUBLE(ncid, v_id, start, count, v)
+      CALL check_err(iret)
+      
+!     ---------------------------
+!     Calculating u minimum in each node
+!     ---------------------------
+      IF(.NOT. ALLOCATED(minut))ALLOCATE( minut(timenc_len))
+      IF(.NOT. ALLOCATED(maxut))ALLOCATE( maxut(timenc_len))
+      IF(.NOT. ALLOCATED(minun))ALLOCATE( minun(node_len))
+      IF(.NOT. ALLOCATED(maxun))ALLOCATE( maxun(node_len))
+
+      IF(.NOT. ALLOCATED(minvt))ALLOCATE( minvt(timenc_len))
+      IF(.NOT. ALLOCATED(maxvt))ALLOCATE( maxvt(timenc_len))
+      IF(.NOT. ALLOCATED(minvn))ALLOCATE( minvn(node_len))
+      IF(.NOT. ALLOCATED(maxvn))ALLOCATE( maxvn(node_len))
+
+      IF(.NOT. ALLOCATED(minunodet))ALLOCATE( minunodet(timenc_len))
+      IF(.NOT. ALLOCATED(maxunodet))ALLOCATE( maxunodet(timenc_len))
+      IF(.NOT. ALLOCATED(minutimen64))ALLOCATE( minutimen64(  node_len))
+      IF(.NOT. ALLOCATED(maxutimen64))ALLOCATE( maxutimen64(  node_len))
+
+      IF(.NOT. ALLOCATED(minvnodet))ALLOCATE( minvnodet(timenc_len))
+      IF(.NOT. ALLOCATED(maxvnodet))ALLOCATE( maxvnodet(timenc_len))
+      IF(.NOT. ALLOCATED(minvtimen64))ALLOCATE( minvtimen64(  node_len))
+      IF(.NOT. ALLOCATED(maxvtimen64))ALLOCATE( maxvtimen64(  node_len))
+
+  	  do n=1,node_len
+ 		 if(u (n, 1).lt.minun(n) ) then
+ 		    minun (n)=u (n,1)
+ 		    minutimen64 (n) = timenc(1)
+ 		 endif
+ 	  end do
+
+!     --------------
+!     for each time
+!     --------------
+      minut (1) = 99999.
+ 	  do n=1,node_len
+ 		 if(u (n,1).gt.-99999.and.u(n,1).lt. minut (1) ) then
+           minut (1) = u (n,1)
+            minunodet(1) = n
+         endif
+ 	  end do
+
+!	  WRITE(6,*) "u minimum - time:  ", minut (1)
+      iret = nf_put_vara_DOUBLE(ncid, minut_id,(/nrec/),(/1/),minut)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid, minunodet_id,(/nrec/),(/1/),minunodet)
+      CALL check_err(iret)
+!      WRITE(6,*)'AFTER CALCULATE U MIN'
+!     ---------------------------
+!     Calculating u maximum
+!     ---------------------------
+  	  do n=1,node_len
+ 		 if(u (n,1).gt.maxun(n) ) then
+ 		    maxun (n) = u (n,1)
+            maxutimen64 (n) = timenc(1)
+ 		 endif
+	  end do
+!     --------------
+!     for each time
+!     --------------
+!	  maxut (1) = maxval ( u (1:node_len, 1) )
+      maxut (1) = -9999.
+ 	  do n=1,node_len
+ 		 if(u(n,1).gt.maxut(1))  then
+ 		    maxut (1) = u (n,1)
+ 		    maxunodet(1) = n 		    
+ 		 endif
+      end do
+      iret = nf_put_vara_DOUBLE(ncid,maxut_id,(/nrec/),(/1/),maxut)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid,maxunodet_id,(/nrec/),(/1/),maxunodet)
+      CALL check_err(iret)
+!      WRITE(6,*)'AFTER CALCULATE U MAX - Time', maxut(1)
+!     ---------------------------
+!     Calculating v minimum each node
+!     ---------------------------
+  	  do n=1,node_len
+ 		 if(v (n,1).lt.minvn(n) ) then
+ 		    minvn (n)=v (n,1)
+		    minvtimen64 (n) = timenc(1)
+ 		 endif
+ 	  end do
+!     --------------
+!     Calculating v minimum for each time
+!     --------------
+      minvt (1) = 99999.
+ 	  do n=1,node_len
+ 		 if(v (n,1).gt.-99999.and.v(n,1).lt. minvt (1) ) then
+           minvt (1) = v (n,1)
+           minvnodet(1) = n
+          endif
+ 	  end do
+
+!	  WRITE(6,*) "v minimum - time:  ", minvt (1)
+      iret = nf_put_vara_DOUBLE(ncid, minvt_id,(/nrec/),(/1/),minvt)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid, minvnodet_id,(/nrec/),(/1/),minvnodet)
+      CALL check_err(iret)
+!      WRITE(6,*)'AFTER CALCULATE v MIN time'
+! 	  iret = nf_put_var_REAL(ncid, minv_id, minv)
+!      CALL check_err(iret)
+!     ---------------------------
+!     Calculating v maximum
+!     ---------------------------
+!     ------------
+!     Calculating v maximum in each node
+!     ------------
+  	  do n=1,node_len
+ 		 if(v (n,1).gt.maxvn(n) ) then
+ 		    maxvn (n) = v (n,1)
+ 		    maxvtimen64(n) = timenc(1)
+         endif
+ 	  end do
+!     --------------
+!     Calculating v maximum for each time
+!     --------------
+!	  maxvt (1) = maxval ( v (1:node_len, 1) )
+      maxvt (1) = -9999.
+ 	  do n=1,node_len
+ 		 if(v(n,1).gt.maxvt(1)) then
+ 		    maxvt (1) = v (n,1)
+ 		    maxvnodet(1) = n 		    
+ 		 endif
+      end do
+      iret = nf_put_vara_DOUBLE(ncid,maxvt_id,(/nrec/),(/1/),maxvt)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid,maxvnodet_id,(/nrec/),(/1/),maxvnodet)
+      CALL check_err(iret)
+!      WRITE(6,*)'AFTER CALCULATE v MAX - time'
+
+!     ---------------------------
+!     Closing fort.X4 netCDF file
+!     ---------------------------
+!       WRITE(6,*)'NREC NDATA',NREC,NDATA
+      IF(NREC.EQ.NDATA) THEN
+         iret = nf_put_var_double(ncid, minun_id, minun)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxun_id, maxun)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, minvn_id, minvn)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxvn_id, maxvn)
+         CALL check_err(iret)
+         
+         iret = nf_put_var_double(ncid, minutimen_id, minutimen64)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxutimen_id, maxutimen64)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, minvtimen_id, minvtimen64)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxvtimen_id, maxvtimen64)
+         CALL check_err(iret)
+      ENDIF
+
+!     ---------------------------
+!     Closing netCDF file
+!     ---------------------------
+      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      WRITE(6,*) "-----------------------------------------------------"
+      
+      iret = nf_close(ncid)
+      CALL check_err(iret)
+      WRITE(6,*)'end subroutine writenc64'
+
+      end subroutine writenc64     
+      
+
+
+!=======================================================================
+!     Subroutine writenc73
+!     Writes a netCDF file equivalent to ADCIRC's fort.63 ascii file
+!
+!     Dimensions:
+!     timenc_len  : Number of Times
+!     node_len  : Number of Nodes
+!
+!     Variables :
+!     time      : Time
+!     zeta      : Sea surface elevation 
+!
+!     Attributes:
+!     rundes    : Run description
+!     runid     : Run ID
+!     agrid     : Grid ID
+!     irtype    : Record Type (1=1D, 2=2D, 3=3D)
+!     dtdp      : Timestep (secs)
+!
+!     Revision history:
+!
+!     Date            Programmer                  Description of change
+!     ----            ----------                  ----------------------
+!     03/30/07  Cristina Forbes, PSGS @ UNC-IMS   Wrote original code
+!=======================================================================
+      subroutine writenc73 (nout,fileunit,timenc_len, node_len,timenc,
+     &                      zeta,nt, NDATA, rundes,runid, agrid, irtype,
+     &                      dtdp, ihot, ics, nolibf,  nolifa,
+     &                      nolica, nolicat, nwp,
+     &                      ncor, ntip, nws, nramp, tau0,
+     &                      statim, reftim, rnday, dramp,
+     &                      a00, b00, c00, h0,
+     &                      slam0, sfea0, ffactor,esl, cori,
+     &                      ntif, nbfr, elem_len, nface_len, nm,
+     &                      x,y,depth,
+     &                      nope_len, neta_len, nbdv, nopenc,netanc_len,
+     &                      nvdllnc,
+     &                      nbou_len, nvel_len, nbvv,nbounc,nvelnc_len,
+     &                      nvellnc,ibtypenc,
+     &                      title, institution, source, history,
+     &                      references, comments, host, convention,
+     &                      contact,
+     &                      base_date)
+
+!--------------------------------------------
+!     Force explicit declaration of all variables
+!--------------------------------------------
+      IMPLICIT NONE
+!     -------------------
+!     netCDF header file
+!     -------------------
+!      include 'netcdf.inc'
+!     -------------------
+!     Error status return
+!     -------------------
+      INTEGER  iret
+!     ---------
+!     netCDF id
+!     ---------
+      INTEGER  ncid
+!     -------------
+!     Dimension ids
+!     -------------
+      INTEGER  node_dim
+      INTEGER  timenc_dim
+      INTEGER  elem_dim
+      INTEGER  nface_dim
+      INTEGER  nope_dim
+      INTEGER  neta_dim
+      INTEGER  nbou_dim
+      INTEGER  nvel_dim
+      INTEGER  slen_dim
+      INTEGER  scode_dim
+      INTEGER  nvelnc_dim
+      INTEGER  netanc_dim
+!     -----------------
+!     Dimension lengths
+!     -----------------
+      INTEGER  node_len
+      INTEGER  timenc_len
+      INTEGER  elem_len
+      INTEGER  nface_len
+      INTEGER  nope_len
+      INTEGER  neta_len
+      INTEGER  nbou_len
+      INTEGER  nvel_len
+      INTEGER  nvelnc_len
+      INTEGER  netanc_len
+!     ------------
+!     Variable ids
+!     ------------
+      INTEGER  timenc_id
+      INTEGER  zeta_id
+      INTEGER  minzetat_id
+      INTEGER  maxzetat_id
+      INTEGER  minzetan_id
+      INTEGER  maxzetan_id
+      INTEGER  minznodet_id
+      INTEGER  maxznodet_id
+      INTEGER  minztimen_id
+      INTEGER  maxztimen_id
+      INTEGER  station_id
+      INTEGER  scode_id
+      INTEGER  X_id
+      INTEGER  Y_id
+      INTEGER  DEPTH_id
+      INTEGER  ELE_id
+      INTEGER  mindepth_id
+      INTEGER  maxdepth_id
+      INTEGER  nbdv_id
+      INTEGER  nbvv_id
+
+      INTEGER  nvdll_id
+      INTEGER  nbounc_id
+      INTEGER  ibtypenc_id
+      INTEGER  nvellnc_id
+      INTEGER  nvdllnc_id
+      INTEGER  nopenc_id
+!     ---------------------------------------------
+!     Rank (number of dimensions) for each variable
+!     ---------------------------------------------
+      INTEGER  timenc_rank
+      INTEGER  zeta_rank
+      INTEGER  station_rank
+      INTEGER  scode_rank
+      INTEGER  minzetat_rank
+      INTEGER  maxzetat_rank
+      INTEGER  minzetan_rank
+      INTEGER  maxzetan_rank
+      INTEGER  minznodet_rank
+      INTEGER  maxznodet_rank
+      INTEGER  minztimen_rank
+      INTEGER  maxztimen_rank
+      INTEGER  depth_rank
+      INTEGER  ele_rank
+      INTEGER  mindepth_rank
+      INTEGER  maxdepth_rank
+      INTEGER  x_rank
+      INTEGER  y_rank
+
+      INTEGER  nbounc_rank
+      INTEGER  nvdll_rank
+      INTEGER  ibtypenc_rank
+      INTEGER  nvellnc_rank
+      INTEGER  nvdllnc_rank
+      INTEGER  nopenc_rank
+      
+      INTEGER  nbdv_rank
+      INTEGER  nbvv_rank
+      PARAMETER (timenc_rank = 1)
+      PARAMETER (station_rank = 2)
+      PARAMETER (scode_rank = 2)
+      PARAMETER (zeta_rank = 2)
+      PARAMETER (minzetat_rank = 1)
+      PARAMETER (maxzetat_rank = 1)
+      PARAMETER (minzetan_rank = 1)
+      PARAMETER (maxzetan_rank = 1)
+      PARAMETER (minznodet_rank = 1)
+      PARAMETER (maxznodet_rank = 1)
+      PARAMETER (minztimen_rank = 1)
+      PARAMETER (maxztimen_rank = 1)
+      PARAMETER (depth_rank = 1)
+      PARAMETER (ele_rank = 2)
+      PARAMETER (mindepth_rank = 0)
+      PARAMETER (maxdepth_rank = 0)
+      PARAMETER (x_rank = 1)
+      PARAMETER (y_rank = 1)
+
+      PARAMETER (nvdll_rank = 1)
+      PARAMETER (nbounc_rank = 1)
+      PARAMETER (ibtypenc_rank = 1)
+      PARAMETER (nvellnc_rank = 1)
+
+      PARAMETER (nvdllnc_rank=1)
+      PARAMETER (nopenc_rank=1)
+
+      PARAMETER (nbdv_rank = 2)
+      PARAMETER (nbvv_rank = 2)
+!     ---------------
+!     Variable shapes
+!     ---------------
+      INTEGER  timenc_dims(timenc_rank)
+      INTEGER  zeta_dims(zeta_rank)
+      INTEGER  station_dims  (station_rank)
+      INTEGER  scode_dims    (scode_rank)
+      INTEGER  minzetat_dims(minzetat_rank)
+      INTEGER  maxzetat_dims(maxzetat_rank)
+      INTEGER  minzetan_dims(minzetan_rank)
+      INTEGER  maxzetan_dims(maxzetan_rank)
+      INTEGER  minznodet_dims(minznodet_rank)
+      INTEGER  maxznodet_dims(maxznodet_rank)
+      INTEGER  minztimen_dims(minztimen_rank)
+      INTEGER  maxztimen_dims(maxztimen_rank)
+      INTEGER  x_dims(x_rank)
+      INTEGER  y_dims(y_rank)
+      INTEGER  depth_dims(depth_rank)
+      INTEGER  ele_dims(ele_rank)
+
+      INTEGER  nvdll_dims(nvdll_rank)
+      INTEGER  nbounc_dims(nbounc_rank)
+      INTEGER  ibtypenc_dims(ibtypenc_rank)
+      INTEGER  nvellnc_dims(nvellnc_rank)
+      INTEGER  nvdllnc_dims(nvdllnc_rank)
+      INTEGER  nopenc_dims(nopenc_rank)
+
+      INTEGER  nbdv_dims(nbdv_rank)
+      INTEGER  nbvv_dims(nbvv_rank)
+!     --------------
+!     Data variables
+!     --------------
+      CHARACTER*5 FILEFORT
+      CHARACTER*10 FILENAME
+      CHARACTER*3 FILEEXT
+      INTEGER   t,ntif,nbfr,nt
+      INTEGER   irtype, ihot, ics, nolibf, nolifa, nolica, nolicat, nwp
+      INTEGER   ntip, nws, nramp,ncor
+      INTEGER   nvel, neta, nout
+      INTEGER   element (nface_len , elem_len)
+      INTEGER   nbdv (nope_len, neta_len)
+      INTEGER   nbvv (nbou_len, nvel_len)
+
+      INTEGER   nvellnc(nbou_len)
+      INTEGER   nbounc (nvel_len)
+      INTEGER   ibtype(nbou_len)
+      INTEGER   ibtypenc(nbou_len)
+      INTEGER   nvdllnc (nope_len)
+      INTEGER   nopenc (neta_len)
+
+      INTEGER   nm (elem_len, nface_len)
+      INTEGER   fileunit
+      REAL(sz)   timenc(timenc_len)
+      REAL(sz)  x(node_len)
+      REAL(sz)  y(node_len)
+      REAL(sz)  depth(node_len)
+      REAL(sz)  zeta (node_len, timenc_len)
+      REAL(sz), ALLOCATABLE, SAVE ::  minzetat(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxzetat(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minzetan(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxzetan(:)
+      INTEGER , ALLOCATABLE, SAVE ::  minznodet(:)
+      INTEGER , ALLOCATABLE, SAVE ::  maxznodet(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minztimen73(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxztimen73(:)
+!      REAL  minzetatll
+!      REAL  maxzetatll
+      real*8  mindepth
+      real*8  maxdepth
+      REAL*8  dtdp, statim,reftim, rnday, dramp, tau0
+      REAL*8  a00, b00, c00,h0
+      REAL(sz) slam0, sfea0
+      REAL(sz) slam0deg, sfea0deg
+      REAL*8 ffactor,esl, cori
+!      REAL*8 nele
+      CHARACTER(80) rundes, runid, agrid
+      INTEGER, SAVE  :: FIRST73 = 1 
+      INTEGER NDATA
+      INTEGER, SAVE  :: NREC = 0
+!     -----------------
+!     Attribute vectors
+!     -----------------
+      INTEGER intval(1),i,j
+      INTEGER counti(1), starti(1), n
+      INTEGER count(2), start(2)
+      REAL    realval(1)
+!      DOUBLE PRECISION  doubleval(1)
+!     -----------------
+!     Attribute general
+!     -----------------
+      CHARACTER(*) :: title, institution, source, history
+      CHARACTER(*) :: references, comments, host, convention, contact
+      CHARACTER(*) :: base_date
+!     -----------------
+!      date_string variables for time attribute
+!     -----------------
+      character date_string*40
+      character now_date*8
+      character big_ben*10
+      character zone*5
+      integer   values(8)
+      real*8    xmin, xmax
+
+      save node_dim, elem_dim, nface_dim
+      save nope_dim, neta_dim, nbou_dim, nvel_dim
+      save zeta_id, X_id, Y_id
+      save minzetat_id, maxzetat_id, minzetan_id, maxzetan_id
+      save minznodet_id, maxznodet_id, minztimen_id, maxztimen_id
+      save DEPTH_id,ELE_id, mindepth_id, maxdepth_id, nbdv_id, nbvv_id
+      save timenc_dim, timenc_id
+      save station_id, scode_id
+      save mindepth, maxdepth
+
+      save nvelnc_dim
+      save nvdll_id, nbounc_id, ibtypenc_id, nvellnc_id
+      save netanc_dim
+      save nopenc_id,nvdllnc_id
+
+!     ---------------------------
+!     Opening fort.63 netCDF file
+!     ---------------------------
+      WRITE(6,*) "-----------------------------------------------------"
+      NREC = NREC + 1
+
+!     --------------------------------
+!     Switch order in array for NETCDF
+!     --------------------------------
+      do i=1, elem_len
+         do j=1, nface_len
+            element(j,i) = nm (i,j)
+         end do
+      end do
+!     -----------------
+!     Enter define mode
+!     -----------------
+      IF(FIRST73.EQ.1) THEN
+!         WRITE (6,*)'****FIRST73 = 1 ****',FIRST73
+         FILEFORT = 'fort.'
+         FILEEXT = '.nc'
+!         WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+                  
+         IF(nout.eq. 3) THEN
+           iret = nf_create(FILENAME, NF_CLOBBER, ncid)
+           CALL check_err(iret)
+           FIRST73=0
+         ENDIF
+         
+!         WRITE (6,*)' Allocate  = minzetan'
+         ALLOCATE ( minzetan    (node_len) )
+         ALLOCATE ( maxzetan    (node_len) )
+         ALLOCATE ( minztimen73 (node_len) )
+         ALLOCATE ( maxztimen73 (node_len) )
+        
+!         WRITE (6,*)' Initialize minzetan'
+         do n=1,node_len
+            minzetan    (n) =  9999.d0
+            maxzetan    (n) = -9999.d0
+            minztimen73 (n) = -9999.d0
+            maxztimen73 (n) = -9999.d0
+         end do
+
+!     --------------------------------
+!     Convert to degress for NETCDF I/O
+!     --------------------------------
+               SLAM0DEG=SLAM0*RAD2DEG
+               SFEA0DEG=SFEA0*RAD2DEG
+
+!     =================
+!     Define dimensions
+!     =================
+      iret = nf_def_dim(ncid, 'node', node_len, node_dim)
+      CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'nele', elem_len, elem_dim)
+      CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'nface', 3, nface_dim)
+      CALL check_err(iret)
+      if(nope_len.ne.0) then
+         iret = nf_def_dim(ncid, 'nope', nope_len, nope_dim)
+         call check_err(iret)
+      endif
+      if(neta_len.ne.0) then
+         iret = nf_def_dim(ncid, 'neta', neta_len, neta_dim)
+         call check_err(iret)
+      endif
+      if(nbou_len.ne.0) then
+         iret = nf_def_dim(ncid, 'nbou', nbou_len, nbou_dim)
+         call check_err(iret)
+      endif
+      if(nvel_len.ne.0) then
+         iret = nf_def_dim(ncid, 'nvel', nvel_len, nvel_dim)
+         call check_err(iret)
+      endif
+      iret = nf_def_dim(ncid, 'time', nf_unlimited, timenc_dim)
+      CALL check_err(iret)
+!     ================
+!     Define variables
+!     ================
+!     ----------------
+!     Define time
+!     ----------------
+
+      timenc_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'time',NF_DOUBLE,timenc_rank, timenc_dims, 
+     &                  timenc_id)
+      CALL check_err(iret)
+     
+!     -------------------
+!     Define X
+!     -------------------
+      X_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'x', NF_DOUBLE, X_rank, X_dims, X_id)
+      CALL check_err(iret)
+!     -------------------
+!     Define Y coordinate
+!     --------------------
+      Y_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'y', NF_DOUBLE, Y_rank, Y_dims, Y_id)
+      CALL check_err(iret)
+!     -------------------
+!     Define elements
+!     --------------------
+      ELE_dims(1) = nface_dim
+      ELE_dims(2) = elem_dim
+      iret = nf_def_var(ncid, 'element',NF_INT,ELE_rank,ELE_dims,ELE_id)
+      CALL check_err(iret)
+!     -----------------------------------------------------------------
+!     Define elevation specified boundary forcing segments information
+!     -----------------------------------------------------------------
+!      if(nope_len.ne.0.and.neta_len.ne.0) then
+!        nbdv_dims(2) = nope_dim
+!        nbdv_dims(1) = neta_dim      
+!        iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
+!     &                  nbdv_id)
+!         CALL check_err(iret)
+!      endif
+!     -----------------------------------------------------------------
+!     Define elevation specified boundary forcing segments information
+!     -----------------------------------------------------------------
+      if(nope_len.ne.0.and.neta_len.ne.0) then
+        nvdllnc_dims(1) = nope_dim      
+        iret = nf_def_var(ncid, 'nvdll',NF_INT, nvdllnc_rank, 
+     &                  nvdllnc_dims, nvdllnc_id)
+        CALL check_err(iret)
+
+        nopenc_dims(1) = neta_dim      
+        iret = nf_def_var(ncid, 'nbdv',NF_INT, nopenc_rank, nopenc_dims, 
+     &                  nopenc_id)
+        CALL check_err(iret)
+
+      endif
+!     ----------------------------------------------------------
+!     Define normal flow specified boundary segments information
+!     ----------------------------------------------------------
+!      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+!        nbvv_dims(2) = nbou_dim
+!        nbvv_dims(1) = nvel_dim      
+!        iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
+!     &                  nbvv_id)
+!        CALL check_err(iret)
+!      endif
+!     ----------------------------------------------------------
+!     Define normal flow specified boundary segments information
+!     ----------------------------------------------------------
+      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+
+        nvellnc_dims(1) = nbou_dim      
+        iret = nf_def_var(ncid, 'nvell',NF_INT, nvellnc_rank, 
+     &                  nvellnc_dims, nvellnc_id)
+        CALL check_err(iret)
+        
+        ibtypenc_dims(1) = nbou_dim      
+        iret = nf_def_var(ncid, 'ibtype',NF_INT, ibtypenc_rank, 
+     &                  ibtypenc_dims, ibtypenc_id)
+        CALL check_err(iret)
+     
+         nbounc_dims(1) = nvel_dim      
+        iret = nf_def_var(ncid, 'nbvv',NF_INT, nbounc_rank, nbounc_dims, 
+     &                  nbounc_id)
+        CALL check_err(iret)
+      endif
+!     -------------------
+!     Define Z coordinate
+!     --------------------
+      DEPTH_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'depth',NF_DOUBLE, DEPTH_rank, DEPTH_dims, 
+     &                  DEPTH_id)
+      CALL check_err(iret)
+!     --------------------
+!     Define minimum depth
+!     --------------------
+      iret = nf_def_var(ncid, 'mindepth',NF_DOUBLE, mindepth_rank, 0, 
+     &                  mindepth_id)
+      CALL check_err(iret)
+!     --------------------
+!     Define maximum depth
+!     --------------------
+      iret = nf_def_var(ncid, 'maxdepth', NF_DOUBLE, maxdepth_rank, 0, 
+     &                  maxdepth_id)
+      CALL check_err(iret)
+      
+!     ----------------
+!     Define zeta
+!     ----------------
+      zeta_dims(1) = node_dim
+      zeta_dims(2) = timenc_dim     
+      iret = nf_def_var(ncid, 'pres', NF_DOUBLE, zeta_rank, zeta_dims, 
+     &                  ZETA_id)            
+      CALL check_err(iret)
+
+!       WRITE(6,*)'AFTER DEFINE ZETA'
+!     ----------------------------
+!     Define minimum zeta at times
+!     ----------------------------
+!      WRITE(6,*) ' BEFORE  Define minimum zeta'
+      minzetat_dims(1) = timenc_dim
+
+      iret = nf_def_var(ncid, 'minprest', NF_DOUBLE, minzetat_rank, 
+     &                  minzetat_dims, minzetat_id)
+      CALL check_err(iret)
+!      WRITE(6,*) ' AFTER  Define minimum zeta'
+!     ----------------------------
+!     Define maximum zeta at times
+!     ----------------------------
+      maxzetat_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxprest', NF_DOUBLE, maxzetat_rank, 
+     &                  maxzetat_dims, maxzetat_id)
+      CALL check_err(iret)
+
+!     ----------------------------
+!     Define minimum zeta at nodes
+!     ----------------------------
+!      WRITE(6,*) ' BEFORE  Define minimum zeta at nodes'
+      minzetan_dims(1) = node_dim
+       iret = nf_def_var(ncid, 'minpresn', NF_DOUBLE, minzetan_rank, 
+     &                  minzetan_dims, minzetan_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum zeta at nodes
+!     ----------------------------
+      maxzetan_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxpresn', NF_DOUBLE, maxzetan_rank, 
+     &                  maxzetan_dims, maxzetan_id)
+      CALL check_err(iret)
+      
+!     ----------------------------
+!     Define minimum zeta nodes at times
+!     ----------------------------
+      minznodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minpnodet', NF_INT, minznodet_rank, 
+     &                  minznodet_dims, minznodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum zeta nodes at times
+!     ----------------------------
+      maxznodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxpnodet', NF_INT, maxznodet_rank, 
+     &                  maxznodet_dims, maxznodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define minimum zeta nodes at nodes
+!     ----------------------------
+      minztimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minptimen', NF_DOUBLE, minztimen_rank, 
+     &                  minztimen_dims, minztimen_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum zeta nodes at nodes
+!     ----------------------------
+      maxztimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxptimen', NF_DOUBLE, maxztimen_rank, 
+     &                  maxztimen_dims, maxztimen_id)
+      CALL check_err(iret)
+       
+!     -----------------
+!     Assign attributes
+!     -----------------
+!      WRITE(6,*) ' BEFORE assign attributes'
+      
+!     ----------------------------
+!     Define longitude attributes
+!     ----------------------------
+      if(ics.eq.2) then
+      
+      	iret = nf_put_att_text(ncid,X_id,'long_name',9,'longitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'standard_name', 9, 
+     &                      'longitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'units', 12, VAR_DEGE)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
+      	       CALL check_err(iret)
+
+      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE, 
+     &                       1, doubleval)
+      	       CALL check_err(iret)
+
+      	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      	       CALL check_err(iret)      
+      
+!     ----------------------------
+!     Define latitude attributes
+!     ----------------------------
+      	iret = nf_put_att_text(ncid, Y_id, 'long_name', 8, 'latitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'standard_name', 8, 
+     &                       'latitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'units', 13, VAR_DEGN)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
+      	       CALL check_err(iret)
+       
+ 
+      	iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
+     &       NF_DOUBLE, 1, doubleval)
+      	       CALL check_err(iret)
+ 
+      	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &      doubleval)
+      	       CALL check_err(iret)
+       else
+      
+!     ------------------------------
+!     Define x-coordinate attributes
+!     ------------------------------
+      	iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
+     &       'Cartesian coordinate x')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'standard_name',12, 
+     &                      'x-coordinate')
+      	       CALL check_err(iret)
+      if (G.LT.11.D0) then
+        	iret = nf_put_att_text(ncid, X_id, 'units', 6,  VAR_METS)
+      	    CALL check_err(iret)
+      else
+        	iret = nf_put_att_text(ncid, X_id, 'units', 4,  VAR_FEET)
+      	    CALL check_err(iret)
+      endif
+      	iret = nf_put_att_text(ncid, X_id, 'positive', 5,  VAR_RG)
+      	       CALL check_err(iret)
+
+      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE,
+     &                        1, doubleval)
+      	       CALL check_err(iret)
+
+      	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      	       CALL check_err(iret)
+!     ------------------------------
+!     Define y-coordinate attributes
+!     ------------------------------     
+      	iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
+     &       'Cartesian coordinate y')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
+     &                       'y-coordinate')
+      	       CALL check_err(iret)
+       if (G.LT.11.D0) then
+     	  iret = nf_put_att_text(ncid, Y_id, 'units', 6, VAR_METS)
+       else
+     	  iret = nf_put_att_text(ncid, Y_id, 'units', 4, VAR_FEET)
+       endif
+      	CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
+      	       CALL check_err(iret)
+ 
+      	iret = nf_put_att_double(ncid, Y_id, 'missing_values',NF_DOUBLE, 
+     &       1, doubleval)
+      	       CALL check_err(iret)
+ 
+      	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &       doubleval)
+      	       CALL check_err(iret)
+      
+      endif
+!     ------------------------------
+!     Define bathymetry attributes
+!     ------------------------------
+      iret = nf_put_att_text(ncid, DEPTH_id,'long_name',10,'bathymetry')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,'depth')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'units', 6, VAR_METS)
+      CALL check_err(iret)
+!      doubleval(1) = -99999
+      iret = nf_put_att_double(ncid, DEPTH_id, 'missing_values', 
+     &                      NF_DOUBLE, 1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999
+      iret = nf_put_att_double(ncid, DEPTH_id, '_FillValue', NF_DOUBLE,
+     &                        1, doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'positive', 4, VAR_DW)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, ELE_id, 'long_name', 7, 'element')
+      CALL check_err(iret)
+      intval(1) = -1
+!      iret = nf_put_att_int(ncid, ELE_id, 'missing_values', NF_INT, 1, 
+!     &                      intval)
+      iret = nf_put_att_text(ncid, ELE_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+      
+!     ------------------------------------
+!     Define minimum bathymetry attributes
+!     ------------------------------------
+      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 18, 
+     &                       'minimum bathymetry')
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, mindepth_id, 'standard_name', 13,
+     &                'minimum_epth')
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, mindepth_id, 'units', 6, VAR_METS)
+      CALL check_err(iret)
+      
+!     ------------------------------------
+!     Define maximum bathymetry attributes
+!     ------------------------------------
+      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 18, 
+     &                       'maximum bathymetry')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxdepth_id, 'standard_name', 13,
+     &                'maximum_depth')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxdepth_id, 'units', 6, VAR_METS)
+      CALL check_err(iret)
+      
+!     -------------------------------------------------------------
+!     Define max and min in time sea surface pressure attributes 
+!     -------------------------------------------------------------
+      
+      iret = nf_put_att_text(ncid, minzetat_id, 'long_name', 50, 
+     &      'minimum sea surface pressure for each output time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minzetat_id, 'units', 15, VAR73_UN)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, maxzetat_id, 'long_name', 50, 
+     &       'maximum sea surface pressure for each output time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxzetat_id, 'units',15,VAR73_UN) 
+       CALL check_err(iret)
+      
+!     -----------------------------------------------
+!     Define maximum sea surface pressure attributes
+!     -----------------------------------------------
+      iret = nf_put_att_text(ncid, minzetan_id, 'long_name', 42, 
+     &      'minimum sea surface pressure at each node')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minzetan_id, 'units', 15, VAR73_UN)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, maxzetan_id, 'long_name', 42, 
+     &       'maximum sea surface pressure at each node')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxzetan_id, 'units', 15, VAR73_UN)
+      CALL check_err(iret)
+
+!     -------------------------------------------------------------
+!     Define max and min in time sea surface elevation attributes 
+!     -------------------------------------------------------------
+      iret = nf_put_att_text(ncid, minznodet_id, 'long_name', 64, 
+     &     'node of minimum atmospheric surface pressure at each output
+     & time')
+             CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minznodet_id, 'units',14, VAR_NOND)
+             CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, maxznodet_id, 'long_name', 64, 
+     &     'node of maximum atmospheric surface pressure at each output
+     & time')
+             CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxznodet_id, 'units', 14, VAR_NOND)
+             CALL check_err(iret)
+!     -------------------------------------------------------------
+!     Define max and min in nodes sea surface elevation attributes
+!     -------------------------------------------------------------
+      iret = nf_put_att_text(ncid, minztimen_id, 'long_name', 57, 
+     &     'time of minimum atmospheric surface pressure at each node')
+            CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minztimen_id, 'units', 4, VAR_SECS)
+            CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, maxztimen_id, 'long_name', 58, 
+     &     'time of maximum atmospheric surface pressure at each node')
+            CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxztimen_id, 'units', 4, VAR_SECS)
+            CALL check_err(iret)
+      
+!     -------------------------------------------------------------
+!     Define station names and code attributes
+!     -------------------------------------------------------------
+
+!      iret = nf_put_att_text(ncid,station_id,'long_name',12,
+!     &       'station name')
+!      CALL check_err(iret)
+
+!     -----------------------------------------------------------------------
+!     Define node numbers on elevation specified boundary segments attributes
+!     -----------------------------------------------------------------------      
+!      iret = nf_put_att_text(ncid, nbdv_id, 'long_name', 53, 
+!     &       'node numbers on elevation specified boundary segments')
+!      CALL check_err(iret)
+!      iret = nf_put_att_text(ncid, nbdv_id, 'units', 14, 
+!     &                      VAR_NOND)
+!      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nopenc_id, 'long_name', 53, 
+     &       'node numbers on elevation specified boundary segments')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nopenc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, nvdllnc_id, 'long_name', 60, 
+     &'number of nodes in each elevation specified boundary segment')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nvdllnc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+!     ---------------------------------------------------------------
+!     Define node numbers on normal flow boundary segments attributes
+!     ----------------------------------------------------------------  
+!      iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
+!     &       'node numbers on normal flow boundary segments')
+!      CALL check_err(iret)
+!      iret = nf_put_att_text(ncid, nbvv_id, 'units', 14, 
+!     &                      VAR_NOND)
+!      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, nbounc_id, 'long_name', 59, 
+     & 'node numbers in each normal flow specified boundary segment')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nbounc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, ibtypenc_id, 'long_name', 13, 
+     &       'boundary type')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, ibtypenc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, nvellnc_id, 'long_name', 62, 
+     &'number of nodes in each normal flow specified boundary segment')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nvellnc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+
+!    -----------------------
+!     Define time attributes
+!    -----------------------
+      iret = nf_put_att_text(ncid,timenc_id,'long_name',10,'model time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid,timenc_id, 'standard_name', 4, 'time')
+      CALL check_err(iret)
+!      iret = nf_put_att_text(ncid, timenc_id, 'units', 7, 'seconds')
+!      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'units', 23, 
+     .       'seconds since base_date')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'base_date',
+     .       (LEN(TRIM(base_date(1:INDEX(base_date,"!")-1)))), base_date)
+      CALL check_err(iret)
+
+!    --------------------------------------------
+!     Define sea surface pressure attributes
+!    --------------------------------------------
+
+      iret = nf_put_att_text(ncid, zeta_id,'long_name',21, VAR73_LN)
+     &                   
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, zeta_id, 'standard_name', 17, 
+     &                      VAR73_ST)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, zeta_id, 'units', 15, VAR73_UN)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_DOUBLE(ncid,zeta_id,'missing_values',NF_DOUBLE,
+     &1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_DOUBLE(ncid, zeta_id, '_FillValue', NF_DOUBLE, 
+     &                      1, doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, zeta_id,'positive', 2, VAR_UP)
+      CALL check_err(iret)
+      
+!     -----------------
+!     Global attributes
+!     -----------------
+
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'model', 6, 'ADCIRC')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'version', 
+     &       LEN(TRIM(ADC_VERSION)), ADC_VERSION)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid_type', 10, 
+     &                      'Triangular')
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'description',
+     &       LEN(TRIM(rundes(1:INDEX(rundes,"!")-1))), rundes)      
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid',
+     &       LEN(TRIM(agrid)), agrid)       
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'title',
+     &       LEN(TRIM(title(1:INDEX(title,"!")-1))), title)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'institution', 
+     &       LEN(TRIM(institution(1:INDEX(institution,"!")-1))), 
+     &       institution)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'source', 
+     &       LEN(TRIM(source(1:INDEX(source,"!")-1))), source)     
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'history', 
+     &       LEN(TRIM(history(1:INDEX(history,"!")-1))),  history)    
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'references', 
+     &       LEN(TRIM(references(1:INDEX(references,"!")-1))), 
+     &       references)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'comments', 
+     &       LEN(TRIM(comments(1:INDEX(comments,"!")-1))), 
+     &       comments)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'host', 
+     &       LEN(TRIM(host(1:INDEX(host,"!")-1))),  host)    
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'convention', 
+     &       LEN(TRIM(convention(1:INDEX(convention,"!")-1))), 
+     &       convention)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'contact', 
+     &       LEN(TRIM(contact(1:INDEX(contact,"!")-1))), contact)
+      CALL check_err(iret)
+ 
+ 
+      CALL date_and_time(now_date,big_ben,zone,values)
+      WRITE(date_string,71) values(1),values(2),values(3),
+     &      values(5),values(6),values(7),   (values(4))/60
+ 71   FORMAT(I4,'-',I2.2,'-',i2.2,' ',i2,':',i2.2,':',i2.2,' '
+     &  ,i3.2,':00')
+      iret = nf_put_att_text(ncid, NF_GLOBAL,'creation_date',
+     &       len_trim(date_string),date_string)
+      CALL check_err(iret)
+ 
+!      WRITE(6,*)'BEFORE global attributes from fort.15'
+!     -------------------------------------------
+!     writing global attributes from fort.15 file 
+!     -------------------------------------------
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'fort.15', 40, 
+     &                      '==== Input File Parameters (below) ====')
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dt', NF_DOUBLE, 1, dtdp)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'irtype', NF_INT, 1, irtype)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ihot', NF_INT, 1, ihot)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ics', NF_INT, 1, ics)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolibf', NF_INT, 1, nolibf)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolifa', NF_INT, 1, nolifa)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolica', NF_INT, 1, nolica)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolicat', NF_INT, 1, 
+     &                      nolicat)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nwp', NF_INT, 1, nwp)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ncor', NF_INT, 1, ncor)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntip', NF_INT, 1, ntip)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nws', NF_INT, 1, nws)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nramp', NF_INT, 1, nramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'tau0', NF_DOUBLE, 1, 
+     &                         tau0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'statim', NF_DOUBLE, 1, 
+     &                         statim)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'reftim', NF_DOUBLE, 1, 
+     &                         reftim)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'rnday', NF_DOUBLE, 1,
+     &                         rnday)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dramp', NF_DOUBLE, 1, 
+     &                         dramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'a00', NF_DOUBLE, 1, 
+     &                         a00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'b00', NF_DOUBLE, 1, 
+     &                         b00)
+
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'c00', NF_DOUBLE, 1, 
+     &                         c00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'h0', NF_DOUBLE, 1, 
+     &                         h0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'slam0', NF_DOUBLE, 1, 
+     &                         slam0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'sfea0', NF_DOUBLE, 1, 
+     &                         sfea0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'ffactor', NF_DOUBLE, 1, 
+     &                         ffactor)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'esl', NF_DOUBLE, 1, 
+     &                         esl)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'cori', NF_DOUBLE, 1, 
+     &                         cori)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntif', NF_INT, 1, ntif)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nbfr', NF_INT, 1, nbfr)
+      CALL check_err(iret)
+      
+!     ======================
+!     Leave define mode
+!     ======================
+      iret = nf_enddef(ncid)
+      CALL check_err(iret)
+!     ======================
+!     Store static variables
+!     ======================
+!     -------
+!     Store X
+!     -------
+      iret = nf_put_var_double(ncid, X_id, X)
+      CALL check_err(iret)
+!     -------
+!     Store Y
+!     -------
+      iret = nf_put_var_double(ncid, Y_id, Y)
+      CALL check_err(iret)
+!     ------------
+!     Store depth
+!     ------------
+      iret = nf_put_var_double(ncid, DEPTH_id, depth)
+      CALL check_err(iret)
+!     --------------
+!     Store elements
+!     --------------
+      count(1)=nface_len
+      count(2)=elem_len
+      start(1)=1
+      start(2)=1
+      iret=nf_put_vara_int(ncid,ele_id,start,count,element)
+      CALL check_err(iret)
+!     ------------------------------------
+!     Store elevation boundary information
+!     -------------------------------------
+      iret = nf_put_var_int(ncid, nopenc_id, nopenc)
+      CALL check_err(iret)
+      iret = nf_put_var_int(ncid, nvdllnc_id, nvdllnc)
+      CALL check_err(iret)
+!     --------------------------------------
+!     Store normal flow boundary information
+!     --------------------------------------
+      iret = nf_put_var_int(ncid, nbounc_id, nbounc)
+      CALL check_err(iret)
+      iret = nf_put_var_int(ncid, ibtypenc_id, ibtypenc)
+      CALL check_err(iret)
+      iret = nf_put_var_int(ncid, nvellnc_id, nvellnc)
+      CALL check_err(iret)
+!     --------------------
+!     Store maximum depth
+!     --------------------
+      maxdepth = maxval (depth)
+      iret = nf_put_var_double(ncid, maxdepth_id, maxdepth)
+      CALL check_err(iret)
+!     --------------------
+!     Store minimum depth
+!     --------------------
+      mindepth = minval (depth)
+      iret = nf_put_var_double(ncid, mindepth_id, mindepth)
+      CALL check_err(iret)
+!     ---------------------------------------
+!     Store node numbers on elevation specified boundary segment
+!     ---------------------------------------
+      if(nope_len.ne.0.and.neta_len.ne.0) then
+!         iret = nf_put_var_int (ncid, nbdv_id, nbdv)
+      count(1)=neta_len
+      count(2)=nope_len
+      start(1)=1
+      start(2)=1
+      iret=nf_put_vara_int(ncid,nbdv_id,start,count,nbdv)
+         CALL check_err(iret)
+      endif
+!     ---------------------------------------
+!     Store number of nodes of land boundary
+!     ---------------------------------------
+!      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+!         iret = nf_put_var_int (ncid, nbvv_id, nbvv)
+!         CALL check_err(iret)
+!      endif
+
+!     =====================
+!     Open old netcdf file
+!     =====================
+      ELSE
+!          WRITE (6,*)'****FIRST73 = 0 ****',FIRST73, FILENAME
+          iret = NF_OPEN(FILENAME, NF_WRITE, ncid)
+          CALL check_err(iret)   
+          FIRST73=0
+      ENDIF
+
+
+!      WRITE(6,*)'BEFORE store time'
+!     ----------
+!     Store time
+!     ----------
+      starti(1)=nrec
+      counti(1)=timenc_len
+      iret = nf_put_vara_DOUBLE(ncid, timenc_id, starti,counti, timenc)
+      CALL check_err(iret)
+      
+!     ---------------------------
+!     Store zeta
+!     ---------------------------
+      count(1)=node_len
+      count(2)=timenc_len
+      start(1)=1
+      start(2)=nrec
+!      WRITE(6,*)'Z--START COUNT',start(1),start(2),count(1),count(2)
+      iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, count, zeta)
+      CALL check_err(iret)
+
+!     ---------------------------
+!     Calculating zeta minimum
+!     ---------------------------
+      
+      IF(.NOT. ALLOCATED(minzetat))ALLOCATE( minzetat(timenc_len))
+      IF(.NOT. ALLOCATED(maxzetat))ALLOCATE( maxzetat(timenc_len))
+      IF(.NOT. ALLOCATED(minzetan))ALLOCATE( minzetan(node_len))
+      IF(.NOT. ALLOCATED(maxzetan))ALLOCATE( maxzetan(node_len))
+
+      IF(.NOT. ALLOCATED(minznodet  ))ALLOCATE( minznodet  (timenc_len))
+      IF(.NOT. ALLOCATED(maxznodet  ))ALLOCATE( maxznodet  (timenc_len))
+      IF(.NOT. ALLOCATED(minztimen73))ALLOCATE( minztimen73(  node_len))
+      IF(.NOT. ALLOCATED(maxztimen73))ALLOCATE( maxztimen73(  node_len))
+
+!     ------------
+!     in each node
+!     ------------
+  	  do n=1,node_len
+ 		 if(zeta (n,1).lt.minzetan(n) ) then
+ 		    minzetan    (n) = zeta (n,1)
+ 		   	minztimen73 (n) = timenc(1)
+ 		 endif
+ 	  end do
+!     --------------
+!     for each time
+!     --------------
+      minzetat (1) = 9999.d0
+ 	  do n=1,node_len
+ 		 if(zeta (n,1).gt.-9999.d0.and.zeta(n,1).lt. minzetat (1) ) then 
+           minzetat (1) = zeta (n,1)
+           minznodet(1) = n
+        endif
+ 	  end do
+
+!	  WRITE(6,*) "sea surface elevation minimum - 1:  ", minzetat (1)
+      iret=nf_put_vara_DOUBLE(ncid, minzetat_id,(/nrec/),(/1/),minzetat)
+           CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid, minznodet_id,(/nrec/),(/1/),minznodet)
+           CALL check_err(iret)
+
+!     ---------------------------
+!     Calculating zeta maximum
+!     ---------------------------
+!      WRITE(6,*)'BEFORE CALCULATE ZETA MAX'
+!     ------------
+!     in each node
+!     ------------
+  	  do n=1,node_len
+ 		 if(zeta (n,1).gt.maxzetan(n) ) then
+ 		    maxzetan (n) = zeta (n,1)
+            maxztimen73(n) = timenc(1)
+          endif
+ 	  end do
+!     --------------
+!     for each time
+!     --------------
+      maxzetat (1) = -9999.d0
+ 	  do n=1,node_len
+ 		 if(zeta(n,1).gt.maxzetat(1))  then
+ 		    maxzetat (1) = zeta (n,1)
+ 		    maxznodet(1) = n
+ 		 endif
+ 	  end do
+
+!	  WRITE(6,*) "sea surface elevation maximum - 1:  ", maxzetat (1)
+      iret=nf_put_vara_DOUBLE(ncid,maxzetat_id,(/nrec/),(/1/),maxzetat)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid,maxznodet_id,(/nrec/),(/1/),maxznodet)
+      CALL check_err(iret)
+!      WRITE(6,*)'AFTER CALCULATE ZETA MAX'
+
+!     ---------------------------
+!     Closing fort.X3 netCDF file
+!     ---------------------------
+!      WRITE(6,*)"NREC = ", NREC," NDATA = ",NDATA
+      IF(NREC.EQ.NDATA) THEN
+         iret = nf_put_var_double(ncid, minzetan_id, minzetan)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxzetan_id, maxzetan)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, minztimen_id, minztimen73)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxztimen_id, maxztimen73)
+         CALL check_err(iret)
+      ENDIF
+      
+      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      WRITE(6,*) "-----------------------------------------------------"
+      
+      iret = nf_close(ncid)
+      CALL check_err(iret)
+      WRITE(6,*)'end subroutine writenc73'
+     
+      end subroutine writenc73
+!=======================================================================
+!     Subroutine writenc74
+!     Writes a netCDF file equivalent to ADCIRC's fort.63 ascii file
+!
+!     Dimensions:
+!     time_len  : Number of Times
+!     node_len  : Number of Nodes
+!
+!     Variables :
+!     time      : Time
+!     u         : u velocity in x-direction
+!     v         : v velocity in y-direction
+!
+!     Attributes:
+!     rundes    : Run description
+!     runid     : Run ID
+!     agrid     : Grid ID
+!     irtype    : Record Type (1=1D, 2=2D, 3=3D)
+!     dtdp      : Timestep (secs)
+!
+!     Revision history:
+!
+!     Date            Programmer                  Description of change
+!     ----            ----------                  ----------------------
+!     03/30/07  Cristina Forbes, PSGS @ UNC-IMS   Wrote original code
+!=======================================================================
+      subroutine writenc74 (nout,fileunit,timenc_len,node_len,timenc,
+     &                      nt, NDATA, u,v,
+     &                      rundes, runid, agrid, irtype,
+     &                      dtdp, ihot, ics, nolibf, nolifa,
+     &                      nolica, nolicat, nwp, 
+     &                      ncor, ntip, nws, nramp, tau0,
+     &                      statim, reftim, rnday, dramp,
+     &                      a00, b00, c00, h0,
+     &                      slam0, sfea0, ffactor,esl, cori,
+     &                      ntif, nbfr, elem_len, nface_len, nm,
+     &                      x,y,depth,
+     &                      nope_len, neta_len, nbdv, nopenc,netanc_len,
+     &                      nvdllnc,
+     &                      nbou_len, nvel_len, nbvv,nbounc,nvelnc_len,
+     &                      nvellnc,ibtypenc,
+     &                      title, institution, source, history,
+     &                      references, comments, host, convention,
+     &                      contact,
+     &                      base_date)
+
+
+!--------------------------------------------
+!     Force explicit declaration of all variables
+!--------------------------------------------
+      IMPLICIT NONE
+!     -------------------
+!     netCDF header file
+!     -------------------
+ !     include 'netcdf.inc'
+!     -------------------
+!     Error status return
+!     -------------------
+      INTEGER  iret
+!     ---------
+!     netCDF id
+!     ---------
+      INTEGER  ncid
+!     -------------
+!     Dimension ids
+!     -------------
+      INTEGER  node_dim
+      INTEGER  timenc_dim
+      INTEGER  elem_dim
+      INTEGER  nface_dim
+      INTEGER  nope_dim
+      INTEGER  neta_dim
+      INTEGER  nbou_dim
+      INTEGER  nvel_dim
+      INTEGER  nvelnc_dim
+      INTEGER  netanc_dim
+!     -----------------
+!     Dimension lengths
+!     -----------------
+      INTEGER  node_len
+      INTEGER  timenc_len
+      INTEGER  elem_len
+      INTEGER  nface_len
+      INTEGER  nope_len
+      INTEGER  neta_len
+      INTEGER  nbou_len
+      INTEGER  nvel_len
+      INTEGER  nvelnc_len
+      INTEGER  netanc_len
+!     ------------
+!     Variable ids
+!     ------------
+      INTEGER  timenc_id
+      INTEGER  X_id
+      INTEGER  Y_id
+      INTEGER  DEPTH_id
+      INTEGER  ELE_id
+      INTEGER  mindepth_id
+      INTEGER  maxdepth_id
+      INTEGER  nbdv_id
+      INTEGER  nbvv_id
+      INTEGER  u_id
+      INTEGER  v_id
+      INTEGER  minut_id
+      INTEGER  maxut_id
+      INTEGER  minvt_id
+      INTEGER  maxvt_id
+      INTEGER  minun_id
+      INTEGER  maxun_id
+      INTEGER  minvn_id
+      INTEGER  maxvn_id
+      
+      INTEGER  minunodet_id
+      INTEGER  maxunodet_id
+      INTEGER  minutimen_id
+      INTEGER  maxutimen_id
+      INTEGER  minvnodet_id
+      INTEGER  maxvnodet_id
+      INTEGER  minvtimen_id
+      INTEGER  maxvtimen_id
+      
+      INTEGER  nvdll_id
+      INTEGER  nbounc_id
+      INTEGER  ibtypenc_id
+      INTEGER  nvellnc_id
+      INTEGER  nvdllnc_id
+      INTEGER  nopenc_id
+!     ---------------------------------------------
+!     Rank (number of dimensions) for each variable
+!     ---------------------------------------------
+      INTEGER  timenc_rank
+      INTEGER  depth_rank
+      INTEGER  ele_rank
+      INTEGER  mindepth_rank
+      INTEGER  maxdepth_rank
+      INTEGER  x_rank
+      INTEGER  y_rank
+
+      INTEGER  nbounc_rank
+      INTEGER  nvdll_rank
+      INTEGER  ibtypenc_rank
+      INTEGER  nvellnc_rank
+      INTEGER  nvdllnc_rank
+      INTEGER  nopenc_rank
+
+      INTEGER  nbdv_rank
+      INTEGER  nbvv_rank
+      INTEGER  u_rank
+      INTEGER  v_rank
+      INTEGER  minut_rank
+      INTEGER  maxut_rank
+      INTEGER  minvt_rank
+      INTEGER  maxvt_rank
+      INTEGER  minun_rank
+      INTEGER  maxun_rank
+      INTEGER  minvn_rank
+      INTEGER  maxvn_rank
+
+      INTEGER  minunodet_rank
+      INTEGER  maxunodet_rank
+      INTEGER  minutimen_rank
+      INTEGER  maxutimen_rank
+      
+      INTEGER  minvnodet_rank
+      INTEGER  maxvnodet_rank
+      INTEGER  minvtimen_rank
+      INTEGER  maxvtimen_rank
+
+      PARAMETER (timenc_rank = 1)
+      PARAMETER (depth_rank = 1)
+      PARAMETER (ele_rank = 2)
+      PARAMETER (mindepth_rank = 0)
+      PARAMETER (maxdepth_rank = 0)
+      PARAMETER (x_rank = 1)
+      PARAMETER (y_rank = 1)
+      
+      PARAMETER (nvdll_rank = 1)
+      PARAMETER (nbounc_rank = 1)
+      PARAMETER (ibtypenc_rank = 1)
+      PARAMETER (nvellnc_rank = 1)
+      PARAMETER (nvdllnc_rank=1)
+      PARAMETER (nopenc_rank=1)
+
+      PARAMETER (nbdv_rank = 2)
+      PARAMETER (nbvv_rank = 2)
+      PARAMETER (u_rank = 2)
+      PARAMETER (v_rank = 2)
+      PARAMETER (minut_rank = 1)
+      PARAMETER (maxut_rank = 1)
+      PARAMETER (minvt_rank = 1)
+      PARAMETER (maxvt_rank = 1)
+      PARAMETER (minun_rank = 1)
+      PARAMETER (maxun_rank = 1)
+      PARAMETER (minvn_rank = 1)
+      PARAMETER (maxvn_rank = 1)
+
+      PARAMETER (minunodet_rank = 1)
+      PARAMETER (maxunodet_rank = 1)
+      PARAMETER (minutimen_rank = 1)
+      PARAMETER (maxutimen_rank = 1)
+
+      PARAMETER (minvnodet_rank = 1)
+      PARAMETER (maxvnodet_rank = 1)
+      PARAMETER (minvtimen_rank = 1)
+      PARAMETER (maxvtimen_rank = 1)
+
+!     ---------------
+!     Variable shapes
+!     ---------------
+      INTEGER  timenc_dims(timenc_rank)
+      INTEGER  x_dims(x_rank)
+      INTEGER  y_dims(y_rank)
+      INTEGER  depth_dims(depth_rank)
+      INTEGER  ele_dims(ele_rank)
+
+      INTEGER  nvdll_dims(nvdll_rank)
+      INTEGER  nbounc_dims(nbounc_rank)
+      INTEGER  ibtypenc_dims(ibtypenc_rank)
+      INTEGER  nvellnc_dims(nvellnc_rank)
+      INTEGER  nvdllnc_dims(nvdllnc_rank)
+      INTEGER  nopenc_dims(nopenc_rank)
+
+      INTEGER  nbdv_dims(nbdv_rank)
+      INTEGER  nbvv_dims(nbvv_rank)
+      INTEGER  u_dims(u_rank)
+      INTEGER  v_dims(v_rank)
+      INTEGER  minut_dims(minut_rank)
+      INTEGER  maxut_dims(maxut_rank)
+      INTEGER  minvt_dims(minvt_rank)
+      INTEGER  maxvt_dims(maxvt_rank)
+      INTEGER  minun_dims(minun_rank)
+      INTEGER  maxun_dims(maxun_rank)
+      INTEGER  minvn_dims(minvn_rank)
+      INTEGER  maxvn_dims(maxvn_rank)
+      
+      INTEGER  minunodet_dims(minunodet_rank)
+      INTEGER  maxunodet_dims(maxunodet_rank)
+      INTEGER  minutimen_dims(minutimen_rank)
+      INTEGER  maxutimen_dims(maxutimen_rank)
+
+      INTEGER  minvnodet_dims(minvnodet_rank)
+      INTEGER  maxvnodet_dims(maxvnodet_rank)
+      INTEGER  minvtimen_dims(minvtimen_rank)
+      INTEGER  maxvtimen_dims(maxvtimen_rank)
+!     --------------
+!     Data variables
+!     --------------
+      INTEGER t,ntif,nbfr,nt
+      INTEGER irtype, ihot, ics, nolibf, nolifa, nolica, nolicat, nwp
+      INTEGER ntip, nws, nramp,ncor
+      INTEGER nvel, neta, nout
+      INTEGER element (nface_len , elem_len)
+      INTEGER nbdv (nope_len, neta_len)
+      INTEGER nbvv (nbou_len, nvel_len)
+      
+      INTEGER   nvellnc(nbou_len)
+      INTEGER   nbounc (nvel_len)
+      INTEGER   ibtype(nbou_len)
+      INTEGER   ibtypenc(nbou_len)
+      INTEGER   nvdllnc (nope_len)
+      INTEGER   nopenc (neta_len)
+
+      INTEGER nm (elem_len, nface_len)
+      INTEGER fileunit
+      CHARACTER*5 FILEFORT
+      CHARACTER*10 FILENAME
+      CHARACTER*3 FILEEXT
+      REAL(sz)  timenc(timenc_len)
+      REAL(sz)  x(node_len)
+      REAL(sz)  y(node_len)
+      REAL(sz)  depth(node_len)
+      REAL(sz)  u(node_len, timenc_len)
+      REAL(sz)  v(node_len, timenc_len)
+      REAL(sz), ALLOCATABLE, SAVE ::   minut(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxut(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   minvt(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxvt(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   minun(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxun(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   minvn(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxvn(:)
+
+      INTEGER , ALLOCATABLE, SAVE ::  minunodet(:)
+      INTEGER , ALLOCATABLE, SAVE ::  maxunodet(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minutimen74(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxutimen74(:)
+      
+      INTEGER , ALLOCATABLE, SAVE ::  minvnodet(:)
+      INTEGER , ALLOCATABLE, SAVE ::  maxvnodet(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minvtimen74(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxvtimen74(:)
+
+      REAL  minull
+      REAL  maxull
+      REAL  minvll
+      REAL  maxvll
+      real*8  mindepth
+      real*8  maxdepth
+      REAL*8 dtdp, statim,reftim, rnday, dramp, tau0
+      REAL*8 a00, b00, c00,h0
+      REAL(sz) slam0, sfea0, ffactor,esl, cori
+      REAL(sz) slam0deg, sfea0deg
+!      REAL*8 nele
+      CHARACTER(80) rundes, runid, agrid
+      INTEGER, SAVE  :: FIRST74 = 1 
+      INTEGER NDATA
+      INTEGER, SAVE  :: NREC = 0
+
+!     -----------------
+!     Attribute vectors
+!     -----------------
+      INTEGER intval(1),i,j
+      INTEGER counti(1), starti(1), n
+      INTEGER count(2), start(2)
+      REAL    realval(1)
+!      DOUBLE PRECISION  doubleval(1)
+!     -----------------
+!     Attribute general
+!     -----------------
+      CHARACTER(*) :: title, institution, source, history
+      CHARACTER(*) :: references, comments, host, convention, contact
+      CHARACTER(*) :: base_date
+
+!     -----------------
+!      date_string variables for time attribute
+!     -----------------
+      character date_string*40
+      character now_date*8
+      character big_ben*10
+      character zone*5
+      integer   values(8)
+
+      save node_dim,  elem_dim, nface_dim
+      save nope_dim, neta_dim, nbou_dim, nvel_dim
+      save u_id, v_id, X_id, Y_id
+      save minut_id, maxut_id, minun_id, maxun_id
+      save minvt_id, maxvt_id, minvn_id, maxvn_id
+      
+      save minunodet_id, maxunodet_id, minutimen_id, maxutimen_id
+      save minvnodet_id, maxvnodet_id, minvtimen_id, maxvtimen_id
+
+      save DEPTH_id,ELE_id, mindepth_id, maxdepth_id, nbdv_id, nbvv_id
+      save timenc_dim, timenc_id
+      save mindepth, maxdepth
+
+      save nvelnc_dim
+      save nvdll_id, nbounc_id, ibtypenc_id, nvellnc_id
+      save netanc_dim
+      save nopenc_id,nvdllnc_id
+
+!     ---------------------------
+!     Opening fort.74 netCDF file
+!     ---------------------------
+      WRITE(6,*) "-----------------------------------------------------"
+      NREC = NREC + 1
+
+!     --------------------------------
+!     Switch order in array for NETCDF
+!     --------------------------------
+      do i=1, elem_len
+         do j=1, nface_len
+            element(j,i) = nm (i,j)
+         end do
+      end do
+      
+!     -----------------
+!     Enter define mode
+!     -----------------
+      IF(FIRST74.EQ.1) THEN
+!         WRITE (6,*)'****FIRST74 = 1 ****',FIRST74
+         FILEFORT = 'fort.'
+         FILEEXT = '.nc'
+         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+         
+         if(nout.eq. 3) then
+            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
+         CALL check_err(iret)
+          FIRST74=0
+         endif
+         
+         ALLOCATE ( minun (node_len) )
+         ALLOCATE ( maxun (node_len) )
+         ALLOCATE ( minvn (node_len) )
+         ALLOCATE ( maxvn (node_len) )
+         
+         ALLOCATE ( minutimen74 (node_len) )
+         ALLOCATE ( maxutimen74 (node_len) )
+         ALLOCATE ( minvtimen74 (node_len) )
+         ALLOCATE ( maxvtimen74 (node_len) )
+
+         do n=1,node_len
+            minun (n) =  9999.d0
+            maxun (n) = -9999.d0
+            minvn (n) =  9999.d0
+            maxvn (n) = -9999.d0
+            minutimen74 (n) = -9999.d0
+            maxutimen74 (n) = -9999.d0
+            minvtimen74 (n) = -9999.d0
+            maxvtimen74 (n) = -9999.d0
+         end do
+!     --------------------------------
+!     Convert to degress for NETCDF I/O
+!     --------------------------------
+               SLAM0DEG=SLAM0*RAD2DEG
+               SFEA0DEG=SFEA0*RAD2DEG
+!     -----------------
+!     Define dimensions
+!     -----------------
+      iret = nf_def_dim(ncid, 'node', node_len, node_dim)
+      CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'nele', elem_len, elem_dim)
+      CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'nface', 3, nface_dim)
+      CALL check_err(iret)
+      if(nope_len.ne.0) then
+         iret = nf_def_dim(ncid, 'nope', nope_len, nope_dim)
+         call check_err(iret)
+      endif
+      if(neta_len.ne.0) then
+         iret = nf_def_dim(ncid, 'neta', neta_len, neta_dim)
+         call check_err(iret)
+      endif
+      if(nbou_len.ne.0) then
+         iret = nf_def_dim(ncid, 'nbou', nbou_len, nbou_dim)
+         call check_err(iret)
+      endif
+      if(nvel_len.ne.0) then
+         iret = nf_def_dim(ncid, 'nvel', nvel_len, nvel_dim)
+         call check_err(iret)
+      endif
+      
+      iret = nf_def_dim(ncid, 'time', nf_unlimited, timenc_dim)
+      CALL check_err(iret)
+
+!     ================
+!     Define variables
+!     ================
+!     ----------------
+!     Define time
+!     ----------------
+      timenc_dims(1) = timenc_dim
+      iret = nf_def_var(ncid,'time',NF_DOUBLE, timenc_rank, timenc_dims, 
+     &                  timenc_id)
+      CALL check_err(iret)
+      
+!     -------------------
+!     Define x
+!     -------------------
+      x_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'x', NF_DOUBLE, x_rank, x_dims, x_id)
+      CALL check_err(iret)
+!     -------------------
+!     Define Y coordinate
+!     --------------------
+      Y_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'y', NF_DOUBLE, Y_rank, Y_dims, Y_id)
+      CALL check_err(iret)
+!     -------------------
+!     Define elements
+!     --------------------
+      ELE_dims(1) = nface_dim
+      ELE_dims(2) = elem_dim
+      iret = nf_def_var(ncid, 'element',NF_INT,ELE_rank,ELE_dims,ELE_id)
+      CALL check_err(iret)
+
+!     -----------------------------------------------------------------
+!     Define elevation specified boundary forcing segments information
+!     -----------------------------------------------------------------
+!      if(nope_len.ne.0.and.neta_len.ne.0) then
+!        nbdv_dims(2) = nope_dim
+!        nbdv_dims(1) = neta_dim      
+!        iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
+!     &                  nbdv_id)
+!         CALL check_err(iret)
+!      endif
+!     -----------------------------------------------------------------
+!     Define elevation specified boundary forcing segments information
+!     -----------------------------------------------------------------
+      if(nope_len.ne.0.and.neta_len.ne.0) then
+        nvdllnc_dims(1) = nope_dim      
+        iret = nf_def_var(ncid, 'nvdll',NF_INT, nvdllnc_rank, 
+     &                  nvdllnc_dims, nvdllnc_id)
+        CALL check_err(iret)
+
+        nopenc_dims(1) = neta_dim      
+        iret = nf_def_var(ncid, 'nbdv',NF_INT, nopenc_rank, nopenc_dims, 
+     &                  nopenc_id)
+        CALL check_err(iret)
+
+      endif
+!     ----------------------------------------------------------
+!     Define normal flow specified boundary segments information
+!     ----------------------------------------------------------
+!      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+!        nbvv_dims(2) = nbou_dim
+!        nbvv_dims(1) = nvel_dim      
+!        iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
+!     &                  nbvv_id)
+!        CALL check_err(iret)
+!      endif
+      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+
+        nvellnc_dims(1) = nbou_dim      
+        iret = nf_def_var(ncid, 'nvell',NF_INT, nvellnc_rank, 
+     &                  nvellnc_dims, nvellnc_id)
+        CALL check_err(iret)
+        
+        ibtypenc_dims(1) = nbou_dim      
+        iret = nf_def_var(ncid, 'ibtype',NF_INT, ibtypenc_rank, 
+     &                  ibtypenc_dims, ibtypenc_id)
+        CALL check_err(iret)
+        nbounc_dims(1) = nvel_dim      
+        iret = nf_def_var(ncid, 'nbvv',NF_INT, nbounc_rank, nbounc_dims, 
+     &                  nbounc_id)
+        CALL check_err(iret)
+     
+       endif
+!     -------------------
+!     Define Z coordinate
+!     --------------------
+      DEPTH_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'depth', NF_DOUBLE,DEPTH_rank, DEPTH_dims, 
+     &                  DEPTH_id)
+      CALL check_err(iret)
+!     --------------------
+!     Define minimum depth
+!     --------------------
+      iret = nf_def_var(ncid, 'mindepth', NF_DOUBLE, mindepth_rank, 0, 
+     &                  mindepth_id)
+      CALL check_err(iret)
+!     --------------------
+!     Define maximum depth
+!     --------------------
+      iret = nf_def_var(ncid, 'maxdepth', NF_DOUBLE, maxdepth_rank, 0, 
+     &                  maxdepth_id)
+      CALL check_err(iret)
+
+!     ----------------
+!     Define u vel
+!     ----------------
+      u_dims(1) = node_dim
+      u_dims(2) = timenc_dim
+      iret = nf_def_var(ncid, 'windx', NF_DOUBLE, u_rank, u_dims, 
+     &                  u_id)
+      CALL check_err(iret)
+
+!     WRITE(6,*)"Define v"
+!     ----------------
+!     Define v vel
+!     ----------------
+      v_dims(1) = node_dim
+      v_dims(2) = timenc_dim
+      iret = nf_def_var(ncid, 'windy', NF_DOUBLE, v_rank, v_dims, 
+     &                  v_id)
+      CALL check_err(iret)
+
+!!      WRITE(6,*)"Define MIN u/v at times"
+!     -------------------------
+!     Define minimum u at times
+!     -------------------------
+      minut_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minwxt', NF_DOUBLE, minut_rank, 
+     &                  minut_dims, minut_id)
+      CALL check_err(iret)
+!      WRITE(6,*)"Define MAX u/v"
+!     -------------------------
+!     Define maximum u at times
+!     -------------------------
+      maxut_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxwxt', NF_DOUBLE, maxut_rank, 
+     &                  maxut_dims, maxut_id)
+      CALL check_err(iret)
+
+!      WRITE(6,*)"Define min v"
+
+!     -------------------------
+!     Define minimum v at times
+!     -------------------------
+      minvt_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minwyt', NF_DOUBLE, minvt_rank, 
+     &                  minvt_dims, minvt_id)
+      CALL check_err(iret)
+      
+!      WRITE(6,*)"Define max v"
+!     -------------------------
+!     Define maximum v at times
+!     -------------------------
+      maxvt_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxwyt', NF_DOUBLE, maxvt_rank, 
+     &                  maxvt_dims, maxvt_id)
+      CALL check_err(iret)
+
+!     -------------------------
+!     Define minimum u at times
+!     -------------------------
+!      WRITE(6,*)"Define MIN u/v at nodes"
+      minun_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minwxn', NF_DOUBLE, minun_rank, 
+     &                  minun_dims, minun_id)
+      CALL check_err(iret)
+!      WRITE(6,*)"Define MAX u/v at nodes"
+!     -------------------------
+!     Define maximum u at nodes
+!     -------------------------
+      maxun_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxwxn', NF_DOUBLE, maxun_rank, 
+     &                  maxun_dims, maxun_id)
+      CALL check_err(iret)
+
+!      WRITE(6,*)"Define min v at nodes"
+!     -------------------------
+!     Define minimum v at nodes
+!     -------------------------
+      minvn_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minwyn', NF_DOUBLE, minvn_rank, 
+     &                  minvn_dims, minvn_id)
+      CALL check_err(iret)
+!     -------------------------
+!     Define maximum v at nodes
+!     -------------------------
+!      WRITE(6,*)"Define max v at nodes"
+      maxvn_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxwyn', NF_DOUBLE, maxvn_rank, 
+     &                  maxvn_dims, maxvn_id)
+      CALL check_err(iret)
+!      WRITE(6,*)"FINISH Define max v at nodes"  
+      
+      
+!     ----------------------------
+!     Define minimum u nodes at times
+!     ----------------------------
+      minunodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minwxnodet', NF_INT, minunodet_rank, 
+     &                  minunodet_dims, minunodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum u nodes at times
+!     ----------------------------
+      maxunodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxwxnodet', NF_INT, maxunodet_rank, 
+     &                  maxunodet_dims, maxunodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define minimum u nodes at nodes
+!     ----------------------------
+      minutimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minwxtimen', NF_DOUBLE, minutimen_rank, 
+     &                  minutimen_dims, minutimen_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum u nodes at nodes
+!     ----------------------------
+      maxutimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxwxtimen', NF_DOUBLE, maxutimen_rank, 
+     &                  maxutimen_dims, maxutimen_id)
+      CALL check_err(iret)
+
+            
+!     ----------------------------
+!     Define minimum v nodes at times
+!     ----------------------------
+      minvnodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minwynodet', NF_INT, minvnodet_rank, 
+     &                  minvnodet_dims, minvnodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum v nodes at times
+!     ----------------------------
+      maxvnodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxwynodet', NF_INT, maxvnodet_rank, 
+     &                  maxvnodet_dims, maxvnodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define minimum v nodes at nodes
+!     ----------------------------
+      minvtimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minwytimen', NF_DOUBLE, minvtimen_rank, 
+     &                  minvtimen_dims, minvtimen_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum v nodes at nodes
+!     ----------------------------
+      maxvtimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxwytimen', NF_DOUBLE, maxvtimen_rank, 
+     &                  maxvtimen_dims, maxvtimen_id)
+      CALL check_err(iret)
+      
+      
+!     -----------------
+!     Assign attributes
+!     -----------------
+
+      if(ics.eq.2) then
+      
+!      WRITE(6,*)"ics.eq.2"
+      iret = nf_put_att_text(ncid, X_id, 'long_name', 9, 'longitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'standard_name', 9, 
+     &                      'longitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'units', 12, VAR_DEGE)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE,
+     &                        1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)      
+      
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 8, 'latitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 8, 
+     &                       'latitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'units', 13,  VAR_DEGN)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
+      CALL check_err(iret)
+       
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, Y_id, 'missing_values', NF_DOUBLE, 
+     &       1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &       doubleval)
+      CALL check_err(iret)
+!      endif
+!      if(ics.eq.1) then
+
+      else
+      
+      iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
+     &       'Cartesian coordinate x')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, 
+     &                      'x_coordinate')
+      CALL check_err(iret)
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, X_id, 'units', 6,  VAR_METS) 
+      else
+         iret = nf_put_att_text(ncid, X_id, 'units', 4,  VAR_FEET) 
+      endif
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, X_id, 'positive', 5, VAR_RG)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE, 
+     &                       1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+!     ------------------------------
+!     Define y-coordinate attributes
+!     ------------------------------     
+      
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
+     &       'Cartesian coordinate y')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
+     &                       'y_coordinate')
+      CALL check_err(iret)
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, Y_id, 'units', 6, VAR_METS)
+      else
+         iret = nf_put_att_text(ncid, Y_id, 'units', 4, VAR_FEET) 
+      endif
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
+      CALL check_err(iret)
+!      doubleval(1) = -99999
+      iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
+     &       NF_DOUBLE, 1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999
+      iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &       doubleval)
+      CALL check_err(iret)
+      
+      endif
+
+!     ------------------------------
+!     Define bathymetry attributes
+!     ------------------------------
+
+      iret = nf_put_att_text(ncid, DEPTH_id,'long_name',10,'bathymetry')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,'depth')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'units', 6, VAR_METS)
+      CALL check_err(iret)
+!      doubleval(1) = -99999
+      iret = nf_put_att_double(ncid, DEPTH_id, 'missing_values', 
+     &                      NF_DOUBLE,  1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999
+      iret = nf_put_att_double(ncid,DEPTH_id, '_FillValue',NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'positive', 4, VAR_DW)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, ELE_id, 'long_name', 7, 'element')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, ELE_id, 'units', 14,  VAR_NOND)
+      intval(1) = -1
+!    ---------------------------
+!     minimum/maximum bathymetry
+!    ---------------------------
+!      WRITE(6,*)"Define minimum bathymetry"
+
+      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 18, 
+     &                       'minimum bathymetry')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, mindepth_id, 'standard_name', 13,
+     &                'minimum_depth')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, mindepth_id, 'units', 6, VAR_METS)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 18, 
+     &                       'maximum bathymetry')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxdepth_id, 'standard_name', 13,
+     &           'maximum_depth')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxdepth_id, 'units', 6, VAR_METS)
+      CALL check_err(iret)
+      
+!    ----------------------------------------------------------
+!     determine variable names according to coordinates and nws
+!    ----------------------------------------------------------
+      if (ics.eq.2) then
+        if (abs(nws).eq.1.or.abs(nws).eq.2) then
+             iret = nf_put_att_text(ncid, minut_id, 'long_name', 36, 
+     &       'minimum e/w wind stress at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 23,
+     &       'minimum_e/w_wind_stress')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvt_id, 'long_name', 36, 
+     &       'minimum n/s wind stress at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 23,
+     &       'minimum_n/s_wind_stress')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxut_id, 'long_name', 36, 
+     &       'maximum e/w wind stress at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 23,
+     &       'maximum_e/w_wind_stress')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 36, 
+     &       'maximum n/s wind stress at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 23,
+     &       'maximum_n/s_wind_stress')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minun_id, 'long_name', 36, 
+     &       'minimum e/w wind stress at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minun_id, 'standard_name', 23,
+     &       'minimum_e/w_wind_stress')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'long_name', 36, 
+     &        'maximum e/w wind stress at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 23,
+     &       'maximum_e/w_wind_stress')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'long_name', 36, 
+     &       'minimum n/s wind stress at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 23,
+     &       'minimum_n/s_wind_stress')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 36, 
+     &       'maximum n/s wind stress at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id, 'standard_name', 23,
+     &       'maximum_n/s_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 
+     &        51, 'node of minimum e/w wind stress at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minunodet_id, 'standard_name',
+     &        31,'node_of_minimum_e/w_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 
+     &        51, 'node of maximum e/w wind stress at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name',
+     &        31,'node_of_maximum_e/w_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 
+     &        51, 'node of minimum n/s wind stress at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name',
+     &        31,'node_of_minimum_n/s_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 
+     &        51, 'node of maximum n/s wind stress at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name',
+     &        31,'node_of_maximum_n/s_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 
+     &        44, 'time of minimum e/w wind stress at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minutimen_id, 'standard_name',
+     &        31,'time_of_minimum_e/w_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 
+     &        44, 'time of maximum e/w wind stress at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name',
+     &        31,'time_of_maximum_e/w_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 
+     &        44, 'time of minimum n/s wind stress at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name',
+     &        31,'time_of_minimum_n/s_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 
+     &        44, 'time of maximum n/s wind stress at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name',
+     &        31,'time_of_maximum_n/s_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, u_id, 'long_name', 15, 
+     &                       'e/w wind stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, u_id, 'standard_name', 15, 
+     &                      'e/w_wind_stress')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, u_id, 'positive', 4, VAR_EAST)
+
+              iret = nf_put_att_text(ncid, v_id, 'long_name', 15, 
+     &                       'n/s wind stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, v_id, 'standard_name', 15, 
+     &                      'n/s_wind_stress')
+             CALL check_err(iret)
+            iret = nf_put_att_text(ncid, v_id, 'positive', 5, VAR_NORTH)
+
+
+
+        else
+              iret = nf_put_att_text(ncid, minut_id, 'long_name', 38, 
+     &       'minimum e/w wind velocity at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 25,
+     &       'minimum_e/w_wind_velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minvt_id, 'long_name', 38, 
+     &       'minimum n/s wind velocity at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 25,
+     &       'minimum_n/s_wind_velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxut_id, 'long_name', 38, 
+     &       'maximum e/w wind velocity at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 25,
+     &       'maximum_e/w_wind_velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 38, 
+     &       'maximum n/s wind velocity at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 25,
+     &       'maximum_n/s_wind_velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minun_id, 'long_name', 38, 
+     &       'minimum e/w wind velocity at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minun_id, 'standard_name', 25,
+     &       'minimum_e/w_wind_velocity')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'long_name', 38, 
+     &       'maximum e/w wind velocity at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 25,
+     &       'maximum_e/w_wind_velocity')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'long_name', 38, 
+     &       'minimum n/s wind velocity at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 25,
+     &       'minimum_n/s_wind_velocity')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 38, 
+     &       'maximum n/s wind velocity at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id,'standard_name', 25,
+     &       'maximum_n/s_wind_velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 
+     &       53,'node of minimum e/w wind velocity at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minunodet_id, 'standard_name',
+     &        33,'node_of_minimum_e/w_wind_velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 
+     &       53,'node of maximum e/w wind velocity at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name',
+     &        33,'node_of_maximum_e/w_wind_velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 
+     &       53,'node of minimum n/s wind velocity at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name',
+     &        33,'node_of_minimum_n/s_wind_velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 
+     &       53,'node of maximum n/s wind velocity at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name',
+     &        33,'node_of_maximum_n/s_wind_velocity')
+              CALL check_err(iret)
+
+              iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 
+     &       46,'time of minimum e/w wind velocity at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minutimen_id, 'standard_name',
+     &        33,'time_of_minimum_e/w_wind_velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 
+     &       46,'time of maximum e/w wind velocity at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name',
+     &        33,'time_of_maximum_e/w_wind_velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 
+     &       46,'time of minimum n/s wind velocity at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name',
+     &        33,'time_of_minimum_n/s_wind_velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 
+     &       46,'time of maximum n/s wind velocity at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name',
+     &        33,'time_of_maximum_n/s_wind_velocity')
+              CALL check_err(iret)
+
+              iret = nf_put_att_text(ncid, u_id, 'long_name', 17, 
+     &                       'e/w wind velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, u_id, 'standard_name', 17, 
+     &                      'e/w_wind_velocity')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, u_id, 'positive', 4, VAR_EAST)
+
+              iret = nf_put_att_text(ncid, v_id, 'long_name', 17, 
+     &                       'n/s wind velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, v_id, 'standard_name', 17, 
+     &                      'n/s_wind_velocity')
+             CALL check_err(iret)
+            iret = nf_put_att_text(ncid, v_id, 'positive', 5, VAR_NORTH)
+
+
+          endif
+       else
+         if (abs(nws).eq.1.or.abs(nws).eq.2) then
+             iret = nf_put_att_text(ncid, minut_id, 'long_name', 47, 
+     &       'minimum wind stress in x-direction at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 35,
+     &       'minimum_wind_stress_in_x_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvt_id, 'long_name', 47, 
+     &       'minimum wind stress in y-direction at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 35,
+     &       'minimum_wind_stress_in_y_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxut_id, 'long_name', 47, 
+     &       'maximum wind stress in x-direction at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 35,
+     &       'maximum_wind_stress_in_x_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 47, 
+     &       'maximum wind stress in y-direction at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 35,
+     &       'maximum_wind_stress_in_y_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minun_id, 'long_name', 47, 
+     &       'minimum wind stress in x-direction at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minun_id, 'standard_name', 35,
+     &       'minimum_wind_stress_in_x_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'long_name', 47, 
+     &       'maximum wind stress in x-direction at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 35,
+     &       'maximum_wind_stress_in_x_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'long_name', 47, 
+     &       'minimum wind stress in y-direction at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 35,
+     &       'minimum_wind_stress_in_y_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 47, 
+     &       'maximum wind stress in y-direction at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id, 'standard_name', 35,
+     &       'maximum_wind_stress_in_y_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 62, 
+     &       'node of minimum wind stress in x-direction at each output 
+     &time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minunodet_id, 'standard_name', 
+     &       43,'node_of_minimum_wind_stress_in_x_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 62, 
+     &       'node of maximum wind stress in x-direction at each output 
+     &time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name', 
+     &       43,'node_of_maximum_wind_stress_in_x_direction')
+              CALL check_err(iret)
+
+             iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 62, 
+     &       'node of minimum wind stress in y-direction at each output 
+     &time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name', 
+     &       43,'node_of_minimum_wind_stress_in_y_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 62, 
+     &       'node of maximum wind stress in y-direction at each output 
+     &time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name', 
+     &       43,'node_of_maximum_wind_stress_in_y_direction')
+              CALL check_err(iret)
+
+             iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 55, 
+     &       'time of minimum wind stress in x-direction at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minutimen_id, 'standard_name', 
+     &       43,'time_of_minimum_wind_stress_in_x_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 55, 
+     &       'time of maximum wind stress in x-direction at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name', 
+     &       43,'time_of_maximum_wind_stress_in_x_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 55, 
+     &       'time of minimum wind stress in y-direction at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name', 
+     &       43,'time_of_minimum_wind_stress_in_y_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 55, 
+     &       'time of maximum wind stress in y-direction at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name', 
+     &       43,'time_of_maximum_wind_stress_in_y_direction')
+              CALL check_err(iret)
+
+              iret = nf_put_att_text(ncid, u_id, 'long_name', 26, 
+     &                       'wind stress in x-direction')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, u_id, 'standard_name', 26, 
+     &                      'wind_stress_in_x_direction')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, u_id, 'positive', 5, VAR_RG)
+
+              iret = nf_put_att_text(ncid, v_id, 'long_name', 26, 
+     &                       'wind stress in y-direction')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, v_id, 'standard_name', 26, 
+     &                      'wind_stress_in_y_direction')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, v_id, 'positive', 2, VAR_UP)
+
+              
+
+         else
+             iret = nf_put_att_text(ncid, minut_id, 'long_name', 49, 
+     &       'minimum wind velocity in x-direction at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 36,
+     &       'minimum_wind_velocity_in_x_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvt_id, 'long_name', 49, 
+     &       'minimum wind velocity in y-direction at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 36,
+     &       'minimum_wind_velocity_in_y_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxut_id, 'long_name', 49, 
+     &       'maximum wind velocity in x-direction at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 36,
+     &       'maximum_wind_velocity_in_x_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 49, 
+     &       'maximum wind velocity in y-direction at each time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 36,
+     &       'maximum_wind_velocity_in_y_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minun_id, 'long_name', 49, 
+     &       'minimum wind velocity in x-direction at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minun_id, 'standard_name', 36,
+     &       'minimum_wind_velocity_in_x_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'long_name', 49, 
+     &       'maximum wind velocity in x-direction at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 36,
+     &       'maximum_wind_velocity_in_x_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'long_name', 49, 
+     &       'minimum wind velocity in y-direction at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 36,
+     &       'minimum_wind_velocity_in_y_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 49, 
+     &       'maximum wind velocity in y-direction at each node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id, 'standard_name', 36,
+     &       'maximum_wind_velocity_in_y_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 64, 
+     &            'node of minimum wind velocity in x-direction at each 
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minunodet_id, 'standard_name', 
+     &       54,'node_of_minimum_wind_velocity_in_x_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 64, 
+     &            'node of maximum wind velocity in x-direction at each 
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name', 
+     &       54,'node_of_maximum_wind_velocity_in_x_direction')
+              CALL check_err(iret)
+
+             iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 64, 
+     &            'node of minimum wind velocity in y-direction at each 
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name', 
+     &       54,'node_of_minimum_wind_velocity_in_y_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 64, 
+     &            'node of maximum wind velocity in y-direction at each 
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name', 
+     &       54,'node_of_maximum_wind_velocity_in_y_direction')
+              CALL check_err(iret)
+
+             iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 57, 
+     &            'time of minimum wind velocity in x-direction at each 
+     &node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minutimen_id, 'standard_name', 
+     &       54,'time_of_minimum_wind_velocity_in_x_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 57, 
+     &            'time of maximum wind velocity in x-direction at each 
+     &node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name', 
+     &       54,'time_of_maximum_wind_velocity_in_x_direction')
+              CALL check_err(iret)
+
+             iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 57, 
+     &            'time of minimum wind velocity in y-direction at each 
+     &node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name', 
+     &       54,'time_of_minimum_wind_velocity_in_y_direction')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 57, 
+     &            'time of maximum wind velocity in y-direction at each 
+     &node')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name', 
+     &       54,'time_of_maximum_wind_velocity_in_y_direction')
+              CALL check_err(iret)
+
+              iret = nf_put_att_text(ncid, u_id, 'long_name', 28, 
+     &                       'wind velocity in x-direction')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, u_id, 'standard_name', 28, 
+     &                      'wind_velocity_in_x_direction')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, u_id, 'positive', 5, VAR_RG)
+
+              iret = nf_put_att_text(ncid, v_id, 'long_name', 28, 
+     &                       'wind velocity in y-direction')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, v_id, 'standard_name', 28, 
+     &                      'wind_velocity_in_y_direction')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, v_id, 'positive', 2, VAR_UP)
+             CALL check_err(iret)
+
+         endif
+      endif
+
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+         if (abs(nws).gt.2.and.abs(nws).lt.100) then
+            iret = nf_put_att_text(ncid, minut_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvt_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxut_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvt_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minun_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxun_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvn_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvn_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, u_id, 'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, v_id, 'units',13, VAR_MPS)
+            CALL check_err(iret)
+         else
+            iret = nf_put_att_text(ncid, minut_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvt_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxut_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvt_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minun_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxun_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvn_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvn_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, u_id, 'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, v_id, 'units',19, VAR_MPS_2)
+            CALL check_err(iret)         
+         endif
+      else
+         if (abs(nws).gt.2.and.abs(nws).lt.100) then
+            iret = nf_put_att_text(ncid, minut_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvt_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxut_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvt_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minun_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxun_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvn_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvn_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, u_id, 'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, v_id, 'units',11, VAR_FPS)
+            CALL check_err(iret)
+         else
+            iret = nf_put_att_text(ncid, minut_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvt_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxut_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvt_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minun_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxun_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvn_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvn_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, u_id, 'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, v_id, 'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+         endif
+      endif
+      CALL check_err(iret)
+      
+!    -------------------------------------
+!     other variables units attributes
+!    ------------------------------------      
+
+      iret = nf_put_att_text(ncid, minunodet_id,'units',14,  VAR_NOND)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxunodet_id,'units',14,  VAR_NOND)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvnodet_id,'units',14,  VAR_NOND)
+      CALL check_err(iret)      
+      iret = nf_put_att_text(ncid, maxvnodet_id,'units',14,  VAR_NOND)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minutimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxutimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvtimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxvtimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+
+!    -------------------------------------
+!     u and v velocities other attributes
+!    ------------------------------------      
+
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, u_id, 'missing_values', 
+     &       NF_DOUBLE, 1, doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, u_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, u_id, 'dry_Value', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_DOUBLE(ncid, v_id, 'missing_values', 
+     &       NF_DOUBLE, 1, doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_DOUBLE(ncid, v_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_DOUBLE(ncid, v_id, 'dry_Value', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+    
+!     -----------------------------------------------------------------------
+!     Define node numbers on elevation specified boundary segments attributes
+!     -----------------------------------------------------------------------      
+!      iret = nf_put_att_text(ncid, nbdv_id, 'long_name', 53, 
+!     &       'node numbers on elevation specified boundary segments')
+!      CALL check_err(iret)
+!      iret = nf_put_att_text(ncid, nbdv_id, 'units', 14, VAR_NOND)
+!      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nopenc_id, 'long_name', 53, 
+     &       'node numbers on elevation specified boundary segments')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nopenc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, nvdllnc_id, 'long_name', 60, 
+     &'number of nodes in each elevation specified boundary segment')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nvdllnc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+!     ---------------------------------------------------------------
+!     Define node numbers on normal flow boundary segments attributes
+!     ----------------------------------------------------------------  
+!      iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
+!     &       'node numbers on normal flow boundary segments')
+!      CALL check_err(iret)
+!      iret = nf_put_att_text(ncid, nbvv_id, 'units', 14,  VAR_NOND)
+!      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, nbounc_id, 'long_name', 59, 
+     & 'node numbers in each normal flow specified boundary segment')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nbounc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, ibtypenc_id, 'long_name', 13, 
+     &       'boundary type')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, ibtypenc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, nvellnc_id, 'long_name', 62, 
+     &'number of nodes in each normal flow specified boundary segment')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, nvellnc_id, 'units', 14, 
+     &                      VAR_NOND)
+      CALL check_err(iret)
+
+!    -----------------------
+!     Define time attributes
+!    -----------------------
+      iret = nf_put_att_text(ncid,timenc_id,'long_name',10,'model time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'standard_name', 4,'time')
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, timenc_id, 'units', 23,VAR_TUN)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'base_date',
+     . (LEN(TRIM(base_date(1:INDEX(base_date,"!")-1)))), base_date)
+      CALL check_err(iret)
+
+!     -----------------
+!     Global attributes
+!     -----------------
+
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'model', 6, 'ADCIRC')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'version', 
+     &       LEN(TRIM(ADC_VERSION)), ADC_VERSION)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid_type', 10, 
+     &                      'Triangular')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'description', 
+     &       LEN(TRIM(rundes(1:INDEX(rundes,"!")-1))), rundes)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid',
+     &       LEN(TRIM(agrid)), agrid)       
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'title',
+     &       LEN(TRIM(title(1:INDEX(title,"!")-1))), 
+     &       title)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'institution', 
+     &       LEN(TRIM(institution(1:INDEX(institution,"!")-1))), 
+     &       institution)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'source', 
+     &       LEN(TRIM(source(1:INDEX(source,"!")-1))),
+     &       source)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'history', 
+     &       LEN(TRIM(history(1:INDEX(history,"!")-1))),
+     &       history)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'references', 
+     &       LEN(TRIM(references(1:INDEX(references,"!")-1))), 
+     &       references)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'comments', 
+     &       LEN(TRIM(comments(1:INDEX(comments,"!")-1))), 
+     &       comments)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'host', 
+     &       LEN(TRIM(host(1:INDEX(host,"!")-1))), 
+     &       host)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'convention', 
+     &       LEN(TRIM(convention(1:INDEX(convention,"!")-1))), 
+     &       convention)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'contact', 
+     &       LEN(TRIM(contact(1:INDEX(contact,"!")-1))), 
+     &       contact)
+      CALL check_err(iret)
+ 
+ 
+      CALL date_and_Time(now_date,big_ben,zone,values)
+      write(date_string,71) values(1),values(2),values(3)
+     & ,values(5),values(6),values(7),   (values(4))/60
+ 71   format(I4,'-',I2.2,'-',i2.2,' ',i2,':',i2.2,':',i2.2,' '
+     &  ,i3.2,':00')
+      iret = nf_put_att_text(ncid, NF_GLOBAL,'creation_date'
+     & ,len_trim(date_string),date_string)
+      CALL check_err(iret)
+ 
+!     -------------------------------------------
+!     writing global attributes from fort.15 file 
+!     -------------------------------------------
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'fort.15', 40, 
+     &                      '==== Input File Parameters (below) ====')
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dt', NF_DOUBLE, 1, dtdp)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'irtype', NF_INT, 1, irtype)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ihot', NF_INT, 1, ihot)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ics', NF_INT, 1, ics)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolibf', NF_INT, 1, nolibf)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolifa', NF_INT, 1, nolifa)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolica', NF_INT, 1, nolica)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolicat', NF_INT, 1, 
+     &                      nolicat)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nwp', NF_INT, 1, nwp)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ncor', NF_INT, 1, ncor)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntip', NF_INT, 1, ntip)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nws', NF_INT, 1, nws)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nramp', NF_INT, 1, nramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'tau0', NF_DOUBLE, 1, 
+     &                         tau0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'statim', NF_DOUBLE, 1, 
+     &                         statim)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'reftim', NF_DOUBLE, 1, 
+     &                         reftim)
+      CALL check_err(iret)
+      intval(1) = 5
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'rnday', NF_DOUBLE, 1,
+     &                         rnday)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dramp', NF_DOUBLE, 1, 
+     &                         dramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'a00', NF_DOUBLE, 1, 
+     &                         a00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'b00', NF_DOUBLE, 1, 
+     &                         b00)
+
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'c00', NF_DOUBLE, 1, 
+     &                         c00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'h0', NF_DOUBLE, 1, 
+     &                         h0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'slam0', NF_DOUBLE, 1, 
+     &                         slam0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'sfea0', NF_DOUBLE, 1, 
+     &                         sfea0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'ffactor', NF_DOUBLE, 1, 
+     &                         ffactor)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'esl', NF_DOUBLE, 1, 
+     &                         esl)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'cori', NF_DOUBLE, 1, 
+     &                         cori)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntif', NF_INT, 1, ntif)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nbfr', NF_INT, 1, nbfr)
+      CALL check_err(iret)
+     
+!     ======================
+!     Leave define mode
+!     ======================
+      iret = nf_enddef(ncid)
+      CALL check_err(iret)
+!     ======================
+!     Store static variables
+!     ======================
+!     -------
+!     Store X
+!     -------
+      iret = nf_put_var_double(ncid, X_id, X)
+      CALL check_err(iret)
+!     -------
+!     Store Y
+!     -------
+      iret = nf_put_var_double(ncid, Y_id, Y)
+      CALL check_err(iret)
+!     ------------
+!     Store depth
+!     ------------
+      iret = nf_put_var_double(ncid, DEPTH_id, depth)
+      CALL check_err(iret)
+!     --------------
+!     Store elements
+!     --------------
+      count(1)=nface_len
+      count(2)=elem_len
+      start(1)=1
+      start(2)=1
+      iret=nf_put_vara_int(ncid,ele_id,start,count,element)
+      CALL check_err(iret)
+!     ------------------------------------
+!     Store elevation boundary information
+!     -------------------------------------
+      iret = nf_put_var_int(ncid, nopenc_id, nopenc)
+      CALL check_err(iret)
+      iret = nf_put_var_int(ncid, nvdllnc_id, nvdllnc)
+      CALL check_err(iret)
+!     --------------------------------------
+!     Store normal flow boundary information
+!     --------------------------------------
+      iret = nf_put_var_int(ncid, nbounc_id, nbounc)
+      CALL check_err(iret)
+      iret = nf_put_var_int(ncid, ibtypenc_id, ibtypenc)
+      CALL check_err(iret)
+      iret = nf_put_var_int(ncid, nvellnc_id, nvellnc)
+      CALL check_err(iret)      
+!     --------------------
+!     Store maximum depth
+!     --------------------
+      maxdepth = maxval (depth)
+      iret = nf_put_var_double(ncid, maxdepth_id, maxdepth)
+      CALL check_err(iret)
+!     --------------------
+!     Store minimum depth
+!     --------------------
+      mindepth = minval (depth)
+      iret = nf_put_var_double(ncid, mindepth_id, mindepth)
+      CALL check_err(iret)
+!     ---------------------------------------
+!     Store node numbers on elevation specified boundary segment
+!     ---------------------------------------
+!      if(nope_len.ne.0.and.neta_len.ne.0) then
+!         iret = nf_put_var_int (ncid, nbdv_id, nbdv)
+!         CALL check_err(iret)
+!      endif
+!     ---------------------------------------
+!     Store number of nodes of land boundary
+!     ---------------------------------------
+!      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+!         iret = nf_put_var_int (ncid, nbvv_id, nbvv)
+!         CALL check_err(iret)
+!      endif
+
+!     ---------------------
+!     Open old netcdf file
+!     ---------------------
+      ELSE
+!          WRITE (6,*)'****FIRST74 = 0 ****',FIRST74
+          iret = NF_OPEN(FILENAME, NF_WRITE, ncid)
+          CALL check_err(iret)   
+          FIRST74=0
+      ENDIF
+
+!     ----------
+!     Store time
+!     ----------
+      starti(1)=nrec
+      counti(1)=timenc_len
+      iret = nf_put_vara_DOUBLE(ncid, timenc_id, starti,counti, timenc)
+      CALL check_err(iret)
+      
+!     ---------------------------
+!     Store u
+!     ---------------------------
+      count(1)=node_len
+      count(2)=timenc_len
+      start(1)=1
+      start(2)=nrec
+      iret = nf_put_vara_DOUBLE(ncid, u_id, start, count, u)
+      CALL check_err(iret)
+!     ---------------------------
+!     Store v
+!     ---------------------------
+      count(1)=node_len
+      count(2)=timenc_len
+      start(1)=1
+      start(2)=nrec
+      iret = nf_put_vara_DOUBLE(ncid, v_id, start, count, v)
+      CALL check_err(iret)
+      
+!     ---------------------------
+!     Calculating u minimum in each node
+!     ---------------------------
+      IF(.NOT. ALLOCATED(minut))ALLOCATE( minut(timenc_len))
+      IF(.NOT. ALLOCATED(maxut))ALLOCATE( maxut(timenc_len))
+      IF(.NOT. ALLOCATED(minun))ALLOCATE( minun(node_len))
+      IF(.NOT. ALLOCATED(maxun))ALLOCATE( maxun(node_len))
+
+      IF(.NOT. ALLOCATED(minvt))ALLOCATE( minvt(timenc_len))
+      IF(.NOT. ALLOCATED(maxvt))ALLOCATE( maxvt(timenc_len))
+      IF(.NOT. ALLOCATED(minvn))ALLOCATE( minvn(node_len))
+      IF(.NOT. ALLOCATED(maxvn))ALLOCATE( maxvn(node_len))
+
+      IF(.NOT. ALLOCATED(minunodet))ALLOCATE( minunodet(timenc_len))
+      IF(.NOT. ALLOCATED(maxunodet))ALLOCATE( maxunodet(timenc_len))
+      IF(.NOT. ALLOCATED(minutimen74))ALLOCATE( minutimen74(  node_len))
+      IF(.NOT. ALLOCATED(maxutimen74))ALLOCATE( maxutimen74(  node_len))
+
+      IF(.NOT. ALLOCATED(minvnodet))ALLOCATE( minvnodet(timenc_len))
+      IF(.NOT. ALLOCATED(maxvnodet))ALLOCATE( maxvnodet(timenc_len))
+      IF(.NOT. ALLOCATED(minvtimen74))ALLOCATE( minvtimen74(  node_len))
+      IF(.NOT. ALLOCATED(maxvtimen74))ALLOCATE( maxvtimen74(  node_len))
+
+  	  do n=1,node_len
+ 		 if(u (n, 1).lt.minun(n) ) then
+ 		    minun (n)       = u (n,1)
+ 		    minutimen74 (n) = timenc(1)
+ 		 endif
+ 	  end do
+
+!     --------------
+!     for each time
+!     --------------
+      minut (1) = 99999.
+ 	  do n=1,node_len
+ 		 if(u (n,1).gt.-99999.and.u(n,1).lt. minut (1) ) then
+            minut (1) = u (n,1)
+            minunodet(1) = n
+         endif
+ 	  end do
+
+!	  WRITE(6,*) "u minimum - time:  ", minut (1)
+      iret = nf_put_vara_DOUBLE(ncid, minut_id,(/nrec/),(/1/),minut)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid, minunodet_id,(/nrec/),(/1/),minunodet)
+      CALL check_err(iret)
+!      WRITE(6,*)'74 --- AFTER CALCULATE U MIN'
+!     ---------------------------
+!     Calculating u maximum
+!     ---------------------------
+  	  do n=1,node_len
+ 		 if(u (n,1).gt.maxun(n) ) then
+ 		   maxun (n)       = u (n,1)
+           maxutimen74 (n) = timenc(1)
+ 		 endif
+	  end do
+!     --------------
+!     for each time
+!     --------------
+      maxut (1) = -9999.
+ 	  do n=1,node_len
+ 		 if(u(n,1).gt.maxut(1))  then
+ 		    maxut (1) = u (n,1)
+ 		    maxunodet(1) = n 		    
+ 		 endif
+      end do
+      iret = nf_put_vara_DOUBLE(ncid,maxut_id,(/nrec/),(/1/),maxut)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid,maxunodet_id,(/nrec/),(/1/),maxunodet)
+      CALL check_err(iret)
+!      WRITE(6,*)'AFTER CALCULATE U MAX - Time', maxut(1)
+!     ---------------------------
+!     Calculating v minimum each node
+!     ---------------------------
+  	  do n=1,node_len
+ 		 if(v (n,1).lt.minvn(n) ) then
+ 		    minvn (n)       = v (n,1)
+		    minvtimen74 (n) = timenc(1)
+ 		 endif
+ 	  end do
+!     --------------
+!     Calculating v minimum for each time
+!     --------------
+      minvt (1) = 99999.
+ 	  do n=1,node_len
+ 		 if(v (n,1).gt.-99999.and.v(n,1).lt. minvt (1) )  then
+           minvt (1) = v (n,1)
+           minvnodet(1) = n
+          endif
+ 	  end do
+
+!	  WRITE(6,*) "v minimum - time:  ", minvt (1)
+      iret = nf_put_vara_DOUBLE(ncid, minvt_id,(/nrec/),(/1/),minvt)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid, minvnodet_id,(/nrec/),(/1/),minvnodet)
+      CALL check_err(iret)
+!      WRITE(6,*)'AFTER CALCULATE v MIN time'
+! 	  iret = nf_put_var_REAL(ncid, minv_id, minv)
+!      CALL check_err(iret)
+!     ---------------------------
+!     Calculating v maximum
+!     ---------------------------
+!     ------------
+!     Calculating v maximum in each node
+!     ------------
+  	  do n=1,node_len
+ 		 if(v (n,1).gt.maxvn(n) ) then
+ 		    maxvn (n)     = v (n,1)
+ 		    maxvtimen74(n) = timenc(1)
+         endif
+ 	  end do
+!     --------------
+!     Calculating v maximum for each time
+!     --------------
+!	  maxvt (1) = maxval ( v (1:node_len, 1) )
+      maxvt (1) = -9999.
+ 	  do n=1,node_len
+ 		 if(v(n,1).gt.maxvt(1)) then
+ 		    maxvt (1) = v (n,1)
+ 		    maxvnodet(1) = n 		    
+ 		 endif
+      end do
+      iret = nf_put_vara_DOUBLE(ncid,maxvt_id,(/nrec/),(/1/),maxvt)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid,maxvnodet_id,(/nrec/),(/1/),maxvnodet)
+      CALL check_err(iret)
+!      WRITE(6,*)'AFTER CALCULATE v MAX - time'
+
+!     ---------------------------
+!     Closing fort.X4 netCDF file
+!     ---------------------------
+!      WRITE(6,*)'NREC NDATA',NREC,NDATA
+      IF(NREC.EQ.NDATA) THEN
+         iret = nf_put_var_double(ncid, minun_id, minun)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxun_id, maxun)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, minvn_id, minvn)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxvn_id, maxvn)
+         CALL check_err(iret)
+
+         iret = nf_put_var_double(ncid, minutimen_id, minutimen74)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxutimen_id, maxutimen74)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, minvtimen_id, minvtimen74)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxvtimen_id, maxvtimen74)
+         CALL check_err(iret)
+
+      ENDIF
+
+!     ---------------------------
+!     Closing netCDF file
+!     ---------------------------
+      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      WRITE(6,*) "-----------------------------------------------------"
+      
+      iret = nf_close(ncid)
+      CALL check_err(iret)
+      WRITE(6,*)'end subroutine writenc74'
+
+      end subroutine writenc74
+      
+      
+!=======================================================================
+!     Subroutine writenc61
+!     Writes a netCDF file equivalent to ADCIRC's fort.63 ascii file
+!
+!     Dimensions:
+!     timenc_len  : Number of Times
+!     node_len  : Number of Nodes
+!
+!     Variables :
+!     time      : Time
+!     zeta      : Sea surface elevation 
+!
+!     Attributes:
+!     rundes    : Run description
+!     runid     : Run ID
+!     agrid     : Grid ID
+!     irtype    : Record Type (1=1D, 2=2D, 3=3D)
+!     dtdp      : Timestep (secs)
+!
+!     Revision history:
+!
+!     Date            Programmer                  Description of change
+!     ----            ----------                  ----------------------
+!     03/30/07  Cristina Forbes, PSGS @ UNC-IMS   Wrote original code
+!=======================================================================
+      subroutine writenc61 (nout,fileunit,timenc_len, node_len,timenc,
+     &                      zeta,nt, NDATA, rundes,runid, agrid, irtype,
+     &                      dtdp, ihot, ics, nolibf,  nolifa,
+     &                      nolica, nolicat, nwp,
+     &                      ncor, ntip, nws, nramp, tau0,
+     &                      statim, reftim, rnday, dramp,
+     &                      a00, b00, c00, h0,
+     &                      slam0, sfea0, ffactor,esl, cori,
+     &                      ntif, nbfr, elem_len, nface_len, nm,
+     &                      x,y,depth,
+     &                      nope_len, neta_len, nbdv, 
+     &                      nbou_len, nvel_len, nbvv,
+     &                      title, institution, source, history,
+     &                      references, comments, host, convention,
+     &                      contact,
+     &                      base_date)
+
+!--------------------------------------------
+!     Force explicit declaration of all variables
+!--------------------------------------------
+      IMPLICIT NONE
+!     -------------------
+!     netCDF header file
+!     -------------------
+!      include 'netcdf.inc'
+!     -------------------
+!     Error status return
+!     -------------------
+      INTEGER  iret
+!     ---------
+!     netCDF id
+!     ---------
+      INTEGER  ncid
+!     -------------
+!     Dimension ids
+!     -------------
+      INTEGER  node_dim
+      INTEGER  timenc_dim
+      INTEGER  elem_dim
+      INTEGER  nface_dim
+      INTEGER  nope_dim
+      INTEGER  neta_dim
+      INTEGER  nbou_dim
+      INTEGER  nvel_dim
+      INTEGER  slen_dim
+      INTEGER  scode_dim
+      
+!     -----------------
+!     Dimension lengths
+!     -----------------
+      INTEGER  node_len
+      INTEGER  timenc_len
+      INTEGER  elem_len
+      INTEGER  nface_len
+      INTEGER  nope_len
+      INTEGER  neta_len
+      INTEGER  nbou_len
+      INTEGER  nvel_len
+!     ------------
+!     Variable ids
+!     ------------
+      INTEGER  timenc_id
+      INTEGER  zeta_id
+      INTEGER  minzetat_id
+      INTEGER  maxzetat_id
+      INTEGER  minzetan_id
+      INTEGER  maxzetan_id
+      INTEGER  minznodet_id
+      INTEGER  maxznodet_id
+      INTEGER  minztimen_id
+      INTEGER  maxztimen_id
+      INTEGER  station_id
+      INTEGER  scode_id
+      INTEGER  X_id
+      INTEGER  Y_id
+      INTEGER  DEPTH_id
+      INTEGER  ELE_id
+      INTEGER  mindepth_id
+      INTEGER  maxdepth_id
+      INTEGER  nbdv_id
+      INTEGER  nbvv_id
+!     ---------------------------------------------
+!     Rank (number of dimensions) for each variable
+!     ---------------------------------------------
+      INTEGER  timenc_rank
+      INTEGER  zeta_rank
+      INTEGER  station_rank
+      INTEGER  scode_rank
+      INTEGER  minzetat_rank
+      INTEGER  maxzetat_rank
+      INTEGER  minzetan_rank
+      INTEGER  maxzetan_rank
+      INTEGER  minznodet_rank
+      INTEGER  maxznodet_rank
+      INTEGER  minztimen_rank
+      INTEGER  maxztimen_rank
+      INTEGER  depth_rank
+      INTEGER  ele_rank
+      INTEGER  mindepth_rank
+      INTEGER  maxdepth_rank
+      INTEGER  x_rank
+      INTEGER  y_rank
+      INTEGER  nvdll_rank
+      INTEGER  nbdv_rank
+      INTEGER  nbvv_rank
+      PARAMETER (timenc_rank = 1)
+      PARAMETER (station_rank = 2)
+      PARAMETER (scode_rank = 2)
+      PARAMETER (zeta_rank = 2)
+      PARAMETER (minzetat_rank = 1)
+      PARAMETER (maxzetat_rank = 1)
+      PARAMETER (minzetan_rank = 1)
+      PARAMETER (maxzetan_rank = 1)
+      PARAMETER (minznodet_rank = 1)
+      PARAMETER (maxznodet_rank = 1)
+      PARAMETER (minztimen_rank = 1)
+      PARAMETER (maxztimen_rank = 1)
+      PARAMETER (depth_rank = 1)
+      PARAMETER (ele_rank = 2)
+      PARAMETER (mindepth_rank = 0)
+      PARAMETER (maxdepth_rank = 0)
+      PARAMETER (x_rank = 1)
+      PARAMETER (y_rank = 1)
+      PARAMETER (nvdll_rank = 1)
+      PARAMETER (nbdv_rank = 2)
+      PARAMETER (nbvv_rank = 2)
+!     ---------------
+!     Variable shapes
+!     ---------------
+      INTEGER  timenc_dims   (timenc_rank)
+      INTEGER  zeta_dims     (zeta_rank)
+      INTEGER  station_dims  (station_rank)
+      INTEGER  scode_dims    (scode_rank)
+      INTEGER  minzetat_dims (minzetat_rank)
+      INTEGER  maxzetat_dims (maxzetat_rank)
+      INTEGER  minzetan_dims (minzetan_rank)
+      INTEGER  maxzetan_dims (maxzetan_rank)
+      INTEGER  minznodet_dims(minznodet_rank)
+      INTEGER  maxznodet_dims(maxznodet_rank)
+      INTEGER  minztimen_dims(minztimen_rank)
+      INTEGER  maxztimen_dims(maxztimen_rank)
+      INTEGER  x_dims        (x_rank)
+      INTEGER  y_dims        (y_rank)
+      INTEGER  depth_dims    (depth_rank)
+      INTEGER  ele_dims      (ele_rank)
+      INTEGER  nvdll_dims    (nvdll_rank)
+      INTEGER  nbdv_dims     (nbdv_rank)
+      INTEGER  nbvv_dims     (nbvv_rank)
+!     --------------
+!     Data variables
+!     --------------
+      CHARACTER*5 FILEFORT
+      CHARACTER*10 FILENAME
+      CHARACTER*3 FILEEXT
+      INTEGER   t,ntif,nbfr,nt
+      INTEGER   irtype, ihot, ics, nolibf, nolifa, nolica, nolicat, nwp
+      INTEGER   ntip, nws, nramp,ncor
+      INTEGER   nvel, neta, nout
+      INTEGER   element (nface_len , elem_len)
+      INTEGER   nbdv (nope_len, neta_len)
+      INTEGER   nbvv (nbou_len, nvel_len)
+      INTEGER   nm (elem_len, nface_len)
+      INTEGER   fileunit
+      REAL(8)   timenc(timenc_len)
+      REAL(sz)  x(node_len)
+      REAL(sz)  y(node_len)
+      REAL(sz)  depth(node_len)
+      REAL(sz)  zeta (node_len, timenc_len)
+      REAL(sz), ALLOCATABLE, SAVE ::  minzetat(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxzetat(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minzetan61(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxzetan61(:)
+      INTEGER , ALLOCATABLE, SAVE ::  minznodet(:)
+      INTEGER , ALLOCATABLE, SAVE ::  maxznodet(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minztimen61(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxztimen61(:)
+      real*8    mindepth
+      real*8    maxdepth
+      REAL*8    dtdp, statim,reftim, rnday, dramp, tau0
+      REAL*8    a00, b00, c00,h0
+      REAL*8    ffactor,esl, cori
+      REAL*8    nele
+      REAL(sz)  slam0, sfea0
+      REAL(sz)  slam0deg, sfea0deg
+      CHARACTER(80) rundes, runid, agrid
+      INTEGER, SAVE  :: FIRST61 = 1 
+      INTEGER NDATA
+      INTEGER, SAVE  :: NREC = 0
+!     -----------------
+!     Attribute vectors
+!     -----------------
+      INTEGER  intval(1),i,j
+      INTEGER  counti(1), starti(1), n
+      INTEGER  count(2), start(2)
+      REAL     realval(1)
+!      DOUBLE PRECISION  doubleval(1)
+!     -----------------
+!     Attribute general
+!     -----------------
+      CHARACTER(*) :: title, institution, source, history
+      CHARACTER(*) :: references, comments, host, convention, contact
+      CHARACTER(*) :: base_date
+!     -----------------
+!      date_string variables for time attribute
+!     -----------------
+      character date_string*40
+      character now_date*8
+      character big_ben*10
+      character zone*5
+      integer values(8)
+      real*8 xmin, xmax
+
+      save node_dim, elem_dim, nface_dim
+      save nope_dim, neta_dim, nbou_dim, nvel_dim
+      save zeta_id, X_id, Y_id
+      save minzetat_id, maxzetat_id, minzetan_id, maxzetan_id
+      save minznodet_id, maxznodet_id, minztimen_id, maxztimen_id
+      save DEPTH_id,ELE_id, mindepth_id, maxdepth_id, nbdv_id, nbvv_id
+      save timenc_dim, timenc_id
+      save station_id, scode_id
+      save mindepth, maxdepth
+!     ---------------------------
+!     Opening fort.61 netCDF file
+!     ---------------------------
+      WRITE(6,*) "-----------------------------------------------------"
+!      write(6,*) "*****************Time inside subroutine ", timenc(1)
+      NREC = NREC + 1
+!      WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
+!      WRITE (6,*)'========= timenc_len, node_len =======',
+!     &  timenc_len, node_len
+!      WRITE(6,*) "BASE DATE", base_date
+!      WRITE(6,*) "ADC_VERSION", ADC_VERSION
+!      WRITE(6,*) "AGRID", AGRID
+      
+
+!     --------------------------------
+!     Switch order in array for NETCDF
+!     --------------------------------
+      do i=1, elem_len
+         do j=1, nface_len
+            element(j,i) = nm (i,j)
+         end do
+      end do
+!      do n=1,node_len
+!         write(6,*)"WRITE STATION ", 
+!     &              STATNAME(n,SNAMLEN)
+!     &              STATNUMB(n,SNUMLEN),STATNAME(n,SNAMLEN)
+!      end do
+!     -----------------
+!     Enter define mode
+!     -----------------
+      IF(FIRST61.EQ.1) THEN
+         WRITE (6,*)'****FIRST61 = 1 ****',FIRST61
+         FILEFORT = 'fort.'
+         FILEEXT = '.nc'
+         WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+                  
+         IF(nout.eq. 3) THEN
+           iret = nf_create(FILENAME, NF_CLOBBER, ncid)
+           CALL check_err(iret)
+           FIRST61=0
+         ENDIF
+         
+         ALLOCATE ( minzetan61 (node_len) )
+         ALLOCATE ( maxzetan61 (node_len) )
+         ALLOCATE ( minztimen61 (node_len) )
+         ALLOCATE ( maxztimen61 (node_len) )
+         
+         DO n=1,node_len
+            minzetan61  (n) =  9999.d0
+            maxzetan61  (n) = -9999.d0
+            minztimen61 (n) = -9999.d0
+            maxztimen61 (n) = -9999.d0
+         END DO         
+
+!     --------------------------------
+!     Convert to degress for NETCDF I/O
+!     --------------------------------
+               SLAM0DEG=SLAM0*RAD2DEG
+               SFEA0DEG=SFEA0*RAD2DEG
+
+!     =================
+!     Define dimensions
+!     =================
+!      WRITE(6,*)"Define dimensions"
+      iret = nf_def_dim(ncid, 'station', node_len, node_dim)
+             CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'namelen', SNAMLEN, slen_dim)
+             CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'time', nf_unlimited, timenc_dim)
+             CALL check_err(iret)
+!      WRITE(6,*)"START CODE"
+!      iret = nf_def_dim(ncid, 'codelen', SNUMLEN, scode_dim)
+!      CALL check_err(iret)
+!      WRITE(6,*)"END CODE"
+!     ================
+!     Define variables
+!     ================
+!     ----------------
+!     Define time
+!     ----------------
+      timenc_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'time',NF_DOUBLE,timenc_rank, timenc_dims, 
+     &                  timenc_id)
+      CALL check_err(iret)
+!     -------------------
+!     Define X
+!     -------------------
+      X_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'x', NF_DOUBLE, X_rank, X_dims, X_id)
+      CALL check_err(iret)
+!     -------------------
+!     Define Y coordinate
+!     --------------------
+      Y_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'y', NF_DOUBLE, Y_rank, Y_dims, Y_id)
+      CALL check_err(iret)
+!     ---------------------
+!     Define stations name
+!     --------------------
+      station_dims(1) = slen_dim
+      station_dims(2) = node_dim
+      iret = nf_def_var(ncid, 'station_name', NF_CHAR, station_rank, 
+     1      station_dims, station_id)
+      CALL check_err(iret)
+!     ---------------------
+!     Define stations code
+!     --------------------
+!     WRITE(6,*)"START Define stations code"
+!      scode_dims(1) = scode_dim
+!      scode_dims(2) = node_dim
+!      iret = nf_def_var(ncid, 'station_code', NF_CHAR, scode_rank, 
+!     1      scode_dims, scode_id)
+!      CALL check_err(iret)
+!      WRITE(6,*)"END Define stations code"
+      
+!     ----------------
+!     Define zeta
+!     ----------------
+      zeta_dims(1) = node_dim
+      zeta_dims(2) = timenc_dim
+      
+      iret = nf_def_var(ncid, 'zeta', NF_DOUBLE, zeta_rank, zeta_dims, 
+     &                  ZETA_id)
+      
+      CALL check_err(iret)
+!       WRITE(6,*)'AFTER DEFINE ZETA'
+!     ----------------------------
+!     Define minimum zeta at times
+!     ----------------------------
+      minzetat_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minzetat', NF_DOUBLE, minzetat_rank, 
+     &                  minzetat_dims, minzetat_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum zeta at times
+!     ----------------------------
+      maxzetat_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxzetat', NF_DOUBLE, maxzetat_rank, 
+     &                  maxzetat_dims, maxzetat_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define minimum zeta at nodes
+!     ----------------------------
+      minzetan_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minzetan', NF_DOUBLE, minzetan_rank, 
+     &                  minzetan_dims, minzetan_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum zeta at nodes
+!     ----------------------------
+      maxzetan_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxzetan', NF_DOUBLE, maxzetan_rank, 
+     &                  maxzetan_dims, maxzetan_id)
+      CALL check_err(iret)
+
+
+
+!     ----------------------------
+!     Define minimum zeta nodes at times
+!     ----------------------------
+      minznodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minznodet', NF_INT, minznodet_rank, 
+     &                  minznodet_dims, minznodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum zeta nodes at times
+!     ----------------------------
+      maxznodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxznodet', NF_INT, maxznodet_rank, 
+     &                  maxznodet_dims, maxznodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define minimum zeta nodes at nodes
+!     ----------------------------
+      minztimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minztimen', NF_DOUBLE, minztimen_rank, 
+     &                  minztimen_dims, minztimen_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum zeta nodes at nodes
+!     ----------------------------
+      maxztimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxztimen', NF_DOUBLE, maxztimen_rank, 
+     &                  maxztimen_dims, maxztimen_id)
+      CALL check_err(iret)
+
+
+
+!     ============================
+!     Assign attributes
+!     ============================
+!     ----------------------------
+!     Define longitude attributes
+!     ----------------------------
+      if(ics.eq.2) then
+      
+      	iret = nf_put_att_text(ncid,X_id,'long_name',9,'longitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'standard_name', 9, 
+     &                      'longitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'units', 12,   VAR_DEGE)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
+      	       CALL check_err(iret)
+
+      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE, 
+     &                       1, doubleval)
+      	       CALL check_err(iret)
+
+      	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      	       CALL check_err(iret)      
+      
+!     ----------------------------
+!     Define latitude attributes
+!     ----------------------------
+      	iret = nf_put_att_text(ncid, Y_id, 'long_name', 8, 'latitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'standard_name', 8, 
+     &                       'latitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'units', 13,  VAR_DEGN)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
+      	       CALL check_err(iret)
+       
+ 
+      	iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
+     &         NF_DOUBLE, 1, doubleval)
+      	       CALL check_err(iret)
+ 
+      	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &         doubleval)
+      	       CALL check_err(iret)
+!      endif
+
+
+!      if(ics.eq.1) then
+
+       else
+
+      
+!     ------------------------------
+!     Define x-coordinate attributes
+!     ------------------------------
+      	iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
+     &       'Cartesian coordinate x')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'standard_name',12, 
+     &                      'x-coordinate')
+      	       CALL check_err(iret)
+      	if (G.LT.11.D0) then
+               iret = nf_put_att_text(ncid, X_id, 'units', 6, VAR_METS)  
+      	       CALL check_err(iret)
+        else
+      	       iret = nf_put_att_text(ncid, X_id, 'units', 4, VAR_FEET)  
+      	       CALL check_err(iret)
+        endif
+
+
+      	iret = nf_put_att_text(ncid, X_id, 'positive', 5, VAR_RG)
+      	       CALL check_err(iret)
+
+      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE,
+     &                        1, doubleval)
+      	       CALL check_err(iret)
+
+      	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      	       CALL check_err(iret)
+!     ------------------------------
+!     Define y-coordinate attributes
+!     ------------------------------     
+      	iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
+     &       'Cartesian coordinate y')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
+     &                       'y-coordinate')
+      	       CALL check_err(iret)
+      	if (G.LT.11.D0) then
+     	    iret = nf_put_att_text(ncid, Y_id, 'units', 6, VAR_METS)
+      	    CALL check_err(iret)
+      	else
+     	    iret = nf_put_att_text(ncid, Y_id, 'units', 4, VAR_FEET)
+      	    CALL check_err(iret)
+      	endif
+      	iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_UP)
+      	       CALL check_err(iret)
+ 
+      	iret = nf_put_att_double(ncid, Y_id, 'missing_values',NF_DOUBLE, 
+     &       1, doubleval)
+      	       CALL check_err(iret)
+ 
+      	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &       doubleval)
+      	       CALL check_err(iret)
+      
+      endif
+!     -------------------------------------------------------------
+!     Define max and min in time sea surface elevation attributes 
+!     -------------------------------------------------------------
+      iret = nf_put_att_text(ncid, minzetat_id, 'long_name', 58, 
+     &     'minimum station sea surface elevation for each output time')
+             CALL check_err(iret)
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, minzetat_id, 'units', 6, VAR_METS)
+         CALL check_err(iret)
+      else
+         iret = nf_put_att_text(ncid, minzetat_id, 'units', 4, VAR_FEET)
+         CALL check_err(iret)
+      endif
+      
+      iret = nf_put_att_text(ncid, maxzetat_id, 'long_name', 58, 
+     &     'maximum station sea surface elevation for each output time')
+      	     CALL check_err(iret)
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, maxzetat_id, 'units', 6, VAR_METS)
+         CALL check_err(iret)
+      else
+         iret = nf_put_att_text(ncid, maxzetat_id, 'units', 4, VAR_FEET)
+         CALL check_err(iret)
+      endif
+!     -------------------------------------------------------------
+!     Define max and min in nodes sea surface elevation attributes
+!     -------------------------------------------------------------
+      iret = nf_put_att_text(ncid, minzetan_id, 'long_name', 45, 
+     &      'minimum sea surface elevation at each station')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxzetan_id, 'long_name', 45, 
+     &       'maximum sea surface elevation at each station')
+      CALL check_err(iret)
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, minzetan_id, 'units', 6, VAR_METS)
+         CALL check_err(iret)
+         iret = nf_put_att_text(ncid, maxzetan_id, 'units', 6, VAR_METS)
+         CALL check_err(iret)
+      else
+         iret = nf_put_att_text(ncid, minzetan_id, 'units', 4, VAR_FEET)
+         CALL check_err(iret)
+         iret = nf_put_att_text(ncid, maxzetan_id, 'units', 6, VAR_FEET)
+         CALL check_err(iret)
+      endif
+
+!     -------------------------------------------------------------
+!     Define max and min in time sea surface elevation attributes 
+!     -------------------------------------------------------------
+      iret = nf_put_att_text(ncid, minznodet_id, 'long_name', 79, 
+     &       'station where minimum sea surface elevation occurs at each  
+     &output time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minznodet_id, 'units',14, VAR_NOND)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, maxznodet_id, 'long_name', 79, 
+     &       'station where maximum sea surface elevation occurs at each  
+     &output time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxznodet_id, 'units', 14, VAR_NOND)
+      CALL check_err(iret)
+!     -------------------------------------------------------------
+!     Define max and min in nodes sea surface elevation attributes
+!     -------------------------------------------------------------
+      iret = nf_put_att_text(ncid, minztimen_id, 'long_name', 62, 
+     & 'time when minimum sea surface elevation occurs at each station')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minztimen_id, 'units', 4, VAR_SECS)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, maxztimen_id, 'long_name', 62, 
+     & 'time when maximum sea surface elevation occurs at each station')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxztimen_id, 'units', 4, VAR_SECS)
+      CALL check_err(iret)
+
+!     -------------------------------------------------------------
+!     Define station names and code attributes
+!     -------------------------------------------------------------
+
+      iret = nf_put_att_text(ncid,station_id,'long_name',12,
+     & 'station name')
+      CALL check_err(iret)
+      
+!    -----------------------
+!     Define time attributes
+!    -----------------------
+      iret = nf_put_att_text(ncid,timenc_id,'long_name',10,'model time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid,timenc_id, 'standard_name', 4, 'time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'units', 23, 
+     .       'seconds since base_date')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'base_date',
+     .       (LEN(TRIM(base_date(1:INDEX(base_date,"!")-1)))), base_date)
+      CALL check_err(iret)
+
+!    --------------------------------------------
+!     Define sea surface elevation attributes
+!    --------------------------------------------
+      
+      iret = nf_put_att_text(ncid, zeta_id,'long_name',29, VAR61_LN)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, zeta_id, 'standard_name', 25, 
+     &                      VAR61_ST)
+      CALL check_err(iret)
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, zeta_id, 'units', 6, VAR_METS)
+          CALL check_err(iret)
+      else
+          iret = nf_put_att_text(ncid, zeta_id, 'units', 6, VAR_FEET)
+          CALL check_err(iret)
+      endif
+!      doubleval(1) = -99999.
+      iret = nf_put_att_DOUBLE(ncid,zeta_id,'missing_values',NF_DOUBLE,
+     &1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_DOUBLE(ncid, zeta_id, '_FillValue', NF_DOUBLE, 
+     &                      1, doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, zeta_id,'positive', 2, VAR_UP)
+      CALL check_err(iret)
+ 
+!     -----------------
+!     Global attributes
+!     -----------------
+      write (6,*)"Global attributes.."
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'model', 6, 'ADCIRC')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'version', 
+     &       LEN(TRIM(ADC_VERSION)), ADC_VERSION)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid_type', 10, 
+     &                      'Triangular')
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'description',
+     &       LEN(TRIM(rundes(1:INDEX(rundes,"!")-1))), rundes)      
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid',
+     &       LEN(TRIM(agrid)), agrid)       
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'title',
+     &       LEN(TRIM(title(1:INDEX(title,"!")-1))), title)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'institution', 
+     &       LEN(TRIM(institution(1:INDEX(institution,"!")-1))), 
+     &       institution)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'source', 
+     &       LEN(TRIM(source(1:INDEX(source,"!")-1))), source)     
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'history', 
+     &       LEN(TRIM(history(1:INDEX(history,"!")-1))),  history)    
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'references', 
+     &       LEN(TRIM(references(1:INDEX(references,"!")-1))), 
+     &       references)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'comments', 
+     &       LEN(TRIM(comments(1:INDEX(comments,"!")-1))), 
+     &       comments)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'host', 
+     &       LEN(TRIM(host(1:INDEX(host,"!")-1))),  host)    
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'convention', 
+     &       LEN(TRIM(convention(1:INDEX(convention,"!")-1))), 
+     &       convention)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'contact', 
+     &       LEN(TRIM(contact(1:INDEX(contact,"!")-1))), contact)
+      CALL check_err(iret)
+ 
+ 
+      CALL date_and_time(now_date,big_ben,zone,values)
+      WRITE(date_string,71) values(1),values(2),values(3),
+     &      values(5),values(6),values(7),   (values(4))/60
+ 71   FORMAT(I4,'-',I2.2,'-',i2.2,' ',i2,':',i2.2,':',i2.2,' '
+     &  ,i3.2,':00')
+      iret = nf_put_att_text(ncid, NF_GLOBAL,'creation_date',
+     &       len_trim(date_string),date_string)
+      CALL check_err(iret)
+ 
+!      WRITE(6,*)'BEFORE global attributes from fort.15'
+!     -------------------------------------------
+!     writing global attributes from fort.15 file 
+!     -------------------------------------------
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'fort.15', 40, 
+     &                      '==== Input File Parameters (below) ====')
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dt', NF_DOUBLE, 1, dtdp)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'irtype', NF_INT, 1, irtype)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ihot', NF_INT, 1, ihot)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ics', NF_INT, 1, ics)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolibf', NF_INT, 1, nolibf)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolifa', NF_INT, 1, nolifa)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolica', NF_INT, 1, nolica)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolicat', NF_INT, 1, 
+     &                      nolicat)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nwp', NF_INT, 1, nwp)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ncor', NF_INT, 1, ncor)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntip', NF_INT, 1, ntip)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nws', NF_INT, 1, nws)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nramp', NF_INT, 1, nramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'tau0', NF_DOUBLE, 1, 
+     &                         tau0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'statim', NF_DOUBLE, 1, 
+     &                         statim)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'reftim', NF_DOUBLE, 1, 
+     &                         reftim)
+      CALL check_err(iret)
+      intval(1) = 5
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'rnday', NF_DOUBLE, 1,
+     &                         rnday)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dramp', NF_DOUBLE, 1, 
+     &                         dramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'a00', NF_DOUBLE, 1, 
+     &                         a00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'b00', NF_DOUBLE, 1, 
+     &                         b00)
+
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'c00', NF_DOUBLE, 1, 
+     &                         c00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'h0', NF_DOUBLE, 1, 
+     &                         h0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'slam0', NF_DOUBLE, 1, 
+     &                         slam0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'sfea0', NF_DOUBLE, 1, 
+     &                         sfea0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'ffactor', NF_DOUBLE, 1, 
+     &                         ffactor)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'esl', NF_DOUBLE, 1, 
+     &                         esl)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'cori', NF_DOUBLE, 1, 
+     &                         cori)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntif', NF_INT, 1, ntif)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nbfr', NF_INT, 1, nbfr)
+      CALL check_err(iret)
+!     ======================
+!     Leave define mode
+!     ======================
+      iret = nf_enddef(ncid)
+      CALL check_err(iret)
+!     ======================
+!     Store static variables
+!     ======================
+!     -------
+!     Store X
+!     -------
+      iret = nf_put_var_double(ncid, X_id, X)
+      CALL check_err(iret)
+!     -------
+!     Store Y
+!     -------
+      iret = nf_put_var_double(ncid, Y_id, Y)
+      CALL check_err(iret)
+!     --------------------
+!     Store station name
+!     --------------------
+!       write(6,*)'Store station name'
+
+!      do i= 1, node_len
+!         write(6,'(A50)')STATNAME(i,SNAMLEN)
+!      end do
+ 
+      do i=1,node_len
+         start(1)=1
+         start(2)=i
+         count(1)= LEN(TRIM(STATNAME(i,SNAMLEN)))
+         count(2)=1
+         iret = nf_put_vara_text(ncid,station_id,start,count,
+     &   STATNAME(i,SNAMLEN) )
+         CALL check_err(iret)
+!          write(6,*)' finish', SNAMLEN,node_len
+      end do
+      
+      
+!     =====================
+!     Open old netcdf file
+!     =====================
+      ELSE
+!          WRITE (6,*)'****FIRST61 = 0 ****',FIRST61, FILENAME
+          iret = NF_OPEN(FILENAME, NF_WRITE, ncid)
+          CALL check_err(iret)   
+          FIRST61=0
+      ENDIF
+!     ----------
+!     Store time
+!     ----------
+      starti(1)=nrec
+      counti(1)=timenc_len
+      iret = nf_put_vara_DOUBLE(ncid, timenc_id, starti,counti, timenc)
+      CALL check_err(iret)
+!     ---------------------------
+!     Store zeta
+!     ---------------------------
+      count(1)=node_len
+      count(2)=timenc_len
+      start(1)=1
+      start(2)=nrec
+      iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, count, zeta)
+      CALL check_err(iret)
+!     ---------------------------
+!     Calculating zeta minimum
+!     ---------------------------
+      IF(.NOT. ALLOCATED(minzetat))ALLOCATE( minzetat(timenc_len))
+      IF(.NOT. ALLOCATED(maxzetat))ALLOCATE( maxzetat(timenc_len))
+      IF(.NOT. ALLOCATED(minzetan61))ALLOCATE( minzetan61(  node_len))
+      IF(.NOT. ALLOCATED(maxzetan61))ALLOCATE( maxzetan61(  node_len))
+
+      IF(.NOT. ALLOCATED(minznodet))ALLOCATE( minznodet(timenc_len))
+      IF(.NOT. ALLOCATED(maxznodet))ALLOCATE( maxznodet(timenc_len))
+      IF(.NOT. ALLOCATED(minztimen61))ALLOCATE( minztimen61(  node_len))
+      IF(.NOT. ALLOCATED(maxztimen61))ALLOCATE( maxztimen61(  node_len))
+
+!     ------------
+!     in each node
+!     ------------
+  	  do n=1,node_len
+ 		 if(zeta (n,1).lt.minzetan61(n) )then
+ 		   minzetan61  (n) = zeta (n,1)
+ 		   minztimen61 (n) = timenc(1)
+ 		 endif
+ 	  end do
+!     --------------
+!     for each time
+!     --------------
+      minzetat (1) = 9999.d0
+ 	  do n=1,node_len
+ 		 if(zeta (n,1).gt.-9999.d0.and.zeta(n,1).lt. minzetat (1) )then 
+            minzetat (1) = zeta (n,1)
+            minznodet(1) = n
+         endif
+ 	  end do
+
+!	  WRITE(6,*)"sea surface elevation minimum: ", minzetat(1),
+!     &           minznodet(1)
+      iret=nf_put_vara_DOUBLE(ncid, minzetat_id,(/nrec/),(/1/),minzetat)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid, minznodet_id,(/nrec/),(/1/),minznodet)
+      CALL check_err(iret)
+!     ---------------------------
+!     Calculating zeta maximum
+!     ---------------------------
+!     ------------
+!     in each node
+!     ------------
+  	  do n=1,node_len
+ 		 if(zeta (n,1).gt.maxzetan61(n) ) then
+ 		   maxzetan61  (n) = zeta (n,1)
+           maxztimen61 (n) = timenc(1)
+         endif
+ 	  end do
+!     --------------
+!     for each time
+!     --------------
+      maxzetat (1) = -9999.d0
+ 	  do n=1,node_len
+ 		 if(zeta(n,1).gt.maxzetat(1))then
+ 		    maxzetat (1) = zeta (n,1)
+ 		    maxznodet(1) = n
+ 		 endif
+ 	  end do
+
+!	  WRITE(6,*)"sea surface elevation maximum:  ",maxzetat(1),
+!     &     maxznodet(1)
+      iret=nf_put_vara_DOUBLE(ncid,maxzetat_id,(/nrec/),(/1/),maxzetat)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid,maxznodet_id,(/nrec/),(/1/),maxznodet)
+      CALL check_err(iret)
+
+!     --------------------
+!     Store station code
+!     --------------------
+!      write(6,*)'nf put var'
+
+!      do i= 1, node_len
+!         write(6,'(A7)')STATNUMB(i,SNUMLEN)
+!      end do
+ 
+!      do i=1,node_len
+!         start(1)=1
+!         start(2)=i
+!         count(1)= LEN(TRIM(STATNUMB(i,SNUMLEN)))
+!         count(2)=1
+!         iret = nf_put_vara_text(ncid,scode_id,start,count,
+!     &   STATNUMB(i,SNUMLEN) )
+!         CALL check_err(iret)
+!          write(6,*)' end nf put var', SNUMLEN,node_len
+!      end do
+
+!     ---------------------------
+!     Closing fort.X3 netCDF file
+!     ---------------------------
+      WRITE(6,*)"NREC = ", NREC," NDATA = ",NDATA
+      IF(NREC.EQ.NDATA) THEN
+         iret = nf_put_var_double(ncid, minzetan_id, minzetan61)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxzetan_id, maxzetan61)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, minztimen_id, minztimen61)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxztimen_id, maxztimen61)
+         CALL check_err(iret)
+      ENDIF
+      
+      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      WRITE(6,*) "-----------------------------------------------------"
+      
+      iret = nf_close(ncid)
+      CALL check_err(iret)
+      WRITE(6,*)'end subroutine writenc61'
+     
+      end subroutine writenc61      
+
+
+!=======================================================================
+!     Subroutine writenc62
+!     Writes a netCDF file equivalent to ADCIRC's fort.63 ascii file
+!
+!     Dimensions:
+!     time_len  : Number of Times
+!     node_len  : Number of Nodes
+!
+!     Variables :
+!     time      : Time
+!     u         : u velocity in x-direction
+!     v         : v velocity in y-direction
+!
+!     Attributes:
+!     rundes    : Run description
+!     runid     : Run ID
+!     agrid     : Grid ID
+!     irtype    : Record Type (1=1D, 2=2D, 3=3D)
+!     dtdp      : Timestep (secs)
+!
+!     Revision history:
+!
+!     Date            Programmer                  Description of change
+!     ----            ----------                  ----------------------
+!     03/30/07  Cristina Forbes, PSGS @ UNC-IMS   Wrote original code
+!=======================================================================
+      subroutine writenc62 (nout,fileunit,timenc_len,node_len,timenc,
+     &                      nt, NDATA, u,v,
+     &                      rundes, runid, agrid, irtype,
+     &                      dtdp, ihot, ics, nolibf, nolifa,
+     &                      nolica, nolicat, nwp, 
+     &                      ncor, ntip, nws, nramp, tau0,
+     &                      statim, reftim, rnday, dramp,
+     &                      a00, b00, c00, h0,
+     &                      slam0, sfea0, ffactor,esl, cori,
+     &                      ntif, nbfr, elem_len, nface_len, nm,
+     &                      x,y,depth,
+     &                      nope_len, neta_len, nbdv, 
+     &                      nbou_len, nvel_len, nbvv,
+     &                      title, institution, source, history,
+     &                      references, comments, host, convention,
+     &                      contact,
+     &                      base_date)
+
+
+!--------------------------------------------
+!     Force explicit declaration of all variables
+!--------------------------------------------
+      IMPLICIT NONE
+!     -------------------
+!     netCDF header file
+!     -------------------
+ !     include 'netcdf.inc'
+!     -------------------
+!     Error status return
+!     -------------------
+      INTEGER  iret
+!     ---------
+!     netCDF id
+!     ---------
+      INTEGER  ncid
+!     -------------
+!     Dimension ids
+!     -------------
+      INTEGER  node_dim
+      INTEGER  timenc_dim
+      INTEGER  elem_dim
+      INTEGER  nface_dim
+      INTEGER  nope_dim
+      INTEGER  neta_dim
+      INTEGER  nbou_dim
+      INTEGER  nvel_dim
+      INTEGER  slen_dim
+      INTEGER  scode_dim
+!     -----------------
+!     Dimension lengths
+!     -----------------
+      INTEGER  node_len
+      INTEGER  timenc_len
+      INTEGER  elem_len
+      INTEGER  nface_len
+      INTEGER  nope_len
+      INTEGER  neta_len
+      INTEGER  nbou_len
+      INTEGER  nvel_len
+!     ------------
+!     Variable ids
+!     ------------
+      INTEGER  timenc_id
+      INTEGER  X_id
+      INTEGER  Y_id
+      INTEGER  DEPTH_id
+      INTEGER  ELE_id
+      INTEGER  mindepth_id
+      INTEGER  maxdepth_id
+      INTEGER  nbdv_id
+      INTEGER  nbvv_id
+      INTEGER  u_id
+      INTEGER  v_id
+      INTEGER  minut_id
+      INTEGER  maxut_id
+      INTEGER  minvt_id
+      INTEGER  maxvt_id
+      INTEGER  minun_id
+      INTEGER  maxun_id
+      INTEGER  minvn_id
+      INTEGER  maxvn_id
+      
+      INTEGER  minunodet_id
+      INTEGER  maxunodet_id
+      INTEGER  minutimen_id
+      INTEGER  maxutimen_id
+      INTEGER  minvnodet_id
+      INTEGER  maxvnodet_id
+      INTEGER  minvtimen_id
+      INTEGER  maxvtimen_id
+      INTEGER  station_id
+      INTEGER  scode_id
+!     ---------------------------------------------
+!     Rank (number of dimensions) for each variable
+!     ---------------------------------------------
+      INTEGER  timenc_rank
+      INTEGER  station_rank
+      INTEGER  scode_rank
+      INTEGER  depth_rank
+      INTEGER  ele_rank
+      INTEGER  mindepth_rank
+      INTEGER  maxdepth_rank
+      INTEGER  x_rank
+      INTEGER  y_rank
+      INTEGER  nvdll_rank
+      INTEGER  nbdv_rank
+      INTEGER  nbvv_rank
+      INTEGER  u_rank
+      INTEGER  v_rank
+      INTEGER  minut_rank
+      INTEGER  maxut_rank
+      INTEGER  minvt_rank
+      INTEGER  maxvt_rank
+      INTEGER  minun_rank
+      INTEGER  maxun_rank
+      INTEGER  minvn_rank
+      INTEGER  maxvn_rank
+
+      INTEGER  minunodet_rank
+      INTEGER  maxunodet_rank
+      INTEGER  minutimen_rank
+      INTEGER  maxutimen_rank
+      
+      INTEGER  minvnodet_rank
+      INTEGER  maxvnodet_rank
+      INTEGER  minvtimen_rank
+      INTEGER  maxvtimen_rank
+
+      PARAMETER (timenc_rank = 1)
+      PARAMETER (scode_rank = 2)
+      PARAMETER (station_rank = 2)
+      PARAMETER (depth_rank = 1)
+      PARAMETER (ele_rank = 2)
+      PARAMETER (mindepth_rank = 0)
+      PARAMETER (maxdepth_rank = 0)
+      PARAMETER (x_rank = 1)
+      PARAMETER (y_rank = 1)
+      PARAMETER (nvdll_rank = 1)
+      PARAMETER (nbdv_rank = 2)
+      PARAMETER (nbvv_rank = 2)
+      PARAMETER (u_rank = 2)
+      PARAMETER (v_rank = 2)
+      PARAMETER (minut_rank = 1)
+      PARAMETER (maxut_rank = 1)
+      PARAMETER (minvt_rank = 1)
+      PARAMETER (maxvt_rank = 1)
+      PARAMETER (minun_rank = 1)
+      PARAMETER (maxun_rank = 1)
+      PARAMETER (minvn_rank = 1)
+      PARAMETER (maxvn_rank = 1)
+      
+      PARAMETER (minunodet_rank = 1)
+      PARAMETER (maxunodet_rank = 1)
+      PARAMETER (minutimen_rank = 1)
+      PARAMETER (maxutimen_rank = 1)
+
+      PARAMETER (minvnodet_rank = 1)
+      PARAMETER (maxvnodet_rank = 1)
+      PARAMETER (minvtimen_rank = 1)
+      PARAMETER (maxvtimen_rank = 1)
+!     ---------------
+!     Variable shapes
+!     ---------------
+      INTEGER  timenc_dims(timenc_rank)
+      INTEGER  station_dims  (station_rank)
+      INTEGER  x_dims(x_rank)
+      INTEGER  y_dims(y_rank)
+      INTEGER  depth_dims(depth_rank)
+      INTEGER  ele_dims(ele_rank)
+      INTEGER  nvdll_dims(nvdll_rank)
+      INTEGER  nbdv_dims(nbdv_rank)
+      INTEGER  nbvv_dims(nbvv_rank)
+      INTEGER  u_dims(u_rank)
+      INTEGER  v_dims(v_rank)
+      INTEGER  minut_dims(minut_rank)
+      INTEGER  maxut_dims(maxut_rank)
+      INTEGER  minvt_dims(minvt_rank)
+      INTEGER  maxvt_dims(maxvt_rank)
+      INTEGER  minun_dims(minun_rank)
+      INTEGER  maxun_dims(maxun_rank)
+      INTEGER  minvn_dims(minvn_rank)
+      INTEGER  maxvn_dims(maxvn_rank)
+
+      INTEGER  minunodet_dims(minunodet_rank)
+      INTEGER  maxunodet_dims(maxunodet_rank)
+      INTEGER  minutimen_dims(minutimen_rank)
+      INTEGER  maxutimen_dims(maxutimen_rank)
+
+      INTEGER  minvnodet_dims(minvnodet_rank)
+      INTEGER  maxvnodet_dims(maxvnodet_rank)
+      INTEGER  minvtimen_dims(minvtimen_rank)
+      INTEGER  maxvtimen_dims(maxvtimen_rank)
+
+!     --------------
+!     Data variables
+!     --------------
+      CHARACTER*5 FILEFORT
+      CHARACTER*10 FILENAME
+      CHARACTER*3 FILEEXT
+      INTEGER   t,ntif,nbfr,nt
+      INTEGER   irtype, ihot, ics, nolibf, nolifa, nolica, nolicat, nwp
+      INTEGER   ntip, nws, nramp,ncor
+      INTEGER   nvel, neta, nout
+      INTEGER   element (nface_len , elem_len)
+      INTEGER   nbdv (nope_len, neta_len)
+      INTEGER   nbvv (nbou_len, nvel_len)
+      INTEGER   nm (elem_len, nface_len)
+      INTEGER   fileunit
+      REAL(sz)  timenc(timenc_len)
+      REAL(sz)  x(node_len)
+      REAL(sz)  y(node_len)
+      REAL(sz)  depth(node_len)
+      REAL(sz)  u(node_len, timenc_len)
+      REAL(sz)  v(node_len, timenc_len)
+      REAL(sz), ALLOCATABLE, SAVE ::   minut(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxut(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   minvt(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxvt(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   minun62(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxun62(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   minvn62(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxvn62(:)
+
+      INTEGER , ALLOCATABLE, SAVE ::  minunodet(:)
+      INTEGER , ALLOCATABLE, SAVE ::  maxunodet(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minutimen62(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxutimen62(:)
+      
+      INTEGER , ALLOCATABLE, SAVE ::  minvnodet(:)
+      INTEGER , ALLOCATABLE, SAVE ::  maxvnodet(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minvtimen62(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxvtimen62(:)
+
+      REAL  minull
+      REAL  maxull
+      REAL  minvll
+      REAL  maxvll
+      real*8  mindepth
+      real*8  maxdepth
+      REAL*8 dtdp, statim,reftim, rnday, dramp, tau0
+      REAL*8 a00, b00, c00,h0
+      REAL(sz) slam0, sfea0, ffactor,esl, cori
+      REAL(sz) slam0deg, sfea0deg
+!      REAL*8 nele
+      CHARACTER(80) rundes, runid, agrid
+      INTEGER, SAVE  :: FIRST62 = 1 
+      INTEGER NDATA
+      INTEGER, SAVE  :: NREC = 0
+
+!     -----------------
+!     Attribute vectors
+!     -----------------
+      INTEGER  intval(1),i,j
+      REAL  realval(1)
+      INTEGER counti(1), starti(1), n
+      INTEGER count(2), start(2)
+!      DOUBLE PRECISION  doubleval(1)
+!     -----------------
+!     Attribute general
+!     -----------------
+      CHARACTER(*) :: title, institution, source, history
+      CHARACTER(*) :: references, comments, host, convention, contact
+      CHARACTER(*) :: base_date
+
+!     -----------------
+!      date_string variables for time attribute
+!     -----------------
+      character date_string*40
+      character now_date*8
+      character big_ben*10
+      character zone*5
+      integer values(8)
+
+      save node_dim,  elem_dim, nface_dim
+      save nope_dim, neta_dim, nbou_dim, nvel_dim
+      save u_id, v_id, X_id, Y_id
+      save minut_id, maxut_id, minun_id, maxun_id
+      save minvt_id, maxvt_id, minvn_id, maxvn_id
+
+      save minunodet_id, maxunodet_id, minutimen_id, maxutimen_id
+      save minvnodet_id, maxvnodet_id, minvtimen_id, maxvtimen_id
+
+      save DEPTH_id,ELE_id, mindepth_id, maxdepth_id, nbdv_id, nbvv_id
+      save timenc_dim, timenc_id
+!      save minut, maxut, minun, maxun
+!      save minvt, maxvt, minvn, maxvn
+      save station_id, scode_id
+      save mindepth, maxdepth
+
+!     ---------------------------
+!     Opening fort.62 netCDF file
+!     ---------------------------
+      WRITE(6,*) "-----------------------------------------------------"
+
+!       write(6,*) "*****************Time inside subroutine ", timenc(1)
+       NREC = NREC + 1
+!       WRITE (6,*)'========= FILEUNIT =======', FILEUNIT
+!       WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
+!       WRITE (6,*)'========= time_len, node_len =======',
+!     &  timenc_len, node_len
+     
+!       WRITE (6,*)' AGRID ************* 62 ***', AGRID
+!     --------------------------------
+!     Switch order in array for NETCDF
+!     --------------------------------
+      do i=1, elem_len
+         do j=1, nface_len
+            element(j,i) = nm (i,j)
+         end do
+      end do
+      
+!     -----------------
+!     Enter define mode
+!     -----------------
+      IF(FIRST62.EQ.1) THEN
+!         WRITE (6,*)'****FIRST62 = 1 ****',FIRST62
+         FILEFORT = 'fort.'
+         FILEEXT = '.nc'
+         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+         
+         if(nout.eq. 3) then
+            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
+         CALL check_err(iret)
+          FIRST62=0
+         endif
+!         WRITE(6,*)"ALLOCATE"         
+         ALLOCATE ( minun62 (node_len) )
+         ALLOCATE ( maxun62 (node_len) )
+         ALLOCATE ( minvn62 (node_len) )
+         ALLOCATE ( maxvn62 (node_len) )
+         
+         ALLOCATE ( minutimen62 (node_len) )
+         ALLOCATE ( maxutimen62 (node_len) )
+         ALLOCATE ( minvtimen62 (node_len) )
+         ALLOCATE ( maxvtimen62 (node_len) )
+         
+!         WRITE(6,*)"DO LOOP"         
+
+         do n=1,node_len
+            minun62 (n) =  9999.d0
+            maxun62 (n) = -9999.d0
+            minvn62 (n) =  9999.d0
+            maxvn62 (n) = -9999.d0
+
+            minutimen62 (n) = -9999.d0
+            maxutimen62 (n) = -9999.d0
+            minvtimen62 (n) = -9999.d0
+            maxvtimen62 (n) = -9999.d0
+         end do
+!     --------------------------------
+!     Convert to degress for NETCDF I/O
+!     --------------------------------
+               SLAM0DEG=SLAM0*RAD2DEG
+               SFEA0DEG=SFEA0*RAD2DEG
+!     -----------------
+!     Define dimensions
+!     -----------------
+      iret = nf_def_dim(ncid, 'station', node_len, node_dim)
+      CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'namelen', SNAMLEN, slen_dim)
+             CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'time', nf_unlimited, timenc_dim)
+      CALL check_err(iret)
+
+!     ================
+!     Define variables
+!     ================
+!     ----------------
+!     Define time
+!     ----------------
+      timenc_dims(1) = timenc_dim
+      iret = nf_def_var(ncid,'time',NF_DOUBLE, timenc_rank, timenc_dims, 
+     &                  timenc_id)
+      CALL check_err(iret)
+      
+!     -------------------
+!     Define x
+!     -------------------
+      x_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'x', NF_DOUBLE, x_rank, x_dims, x_id)
+      CALL check_err(iret)
+!     -------------------
+!     Define Y coordinate
+!     --------------------
+      Y_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'y', NF_DOUBLE, Y_rank, Y_dims, Y_id)
+      CALL check_err(iret)
+!     ---------------------
+!     Define stations name
+!     --------------------
+      station_dims(1) = slen_dim
+      station_dims(2) = node_dim
+      iret = nf_def_var(ncid, 'station_name', NF_CHAR, station_rank, 
+     1      station_dims, station_id)
+      CALL check_err(iret)
+
+!     ----------------
+!     Define u vel
+!     ----------------
+      u_dims(1) = node_dim
+      u_dims(2) = timenc_dim
+      iret = nf_def_var(ncid, 'u-vel', NF_DOUBLE, u_rank, u_dims, 
+     &                  u_id)
+      CALL check_err(iret)
+
+!     ----------------
+!     Define v vel
+!     ----------------
+      v_dims(1) = node_dim
+      v_dims(2) = timenc_dim
+      iret = nf_def_var(ncid, 'v-vel', NF_DOUBLE, v_rank, v_dims, 
+     &                  v_id)
+      CALL check_err(iret)
+
+!      WRITE(6,*)"Define MIN u/v at times"
+!     -------------------------
+!     Define minimum u at times
+!     -------------------------
+      minut_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minuvelt', NF_DOUBLE, minut_rank, 
+     &                  minut_dims, minut_id)
+      CALL check_err(iret)
+!      WRITE(6,*)"Define MAX u/v"
+!     -------------------------
+!     Define maximum u at times
+!     -------------------------
+      maxut_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxuvelt', NF_DOUBLE, maxut_rank, 
+     &                  maxut_dims, maxut_id)
+      CALL check_err(iret)
+
+!      WRITE(6,*)"Define min v"
+
+!     -------------------------
+!     Define minimum v at times
+!     -------------------------
+      minvt_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minvvelt', NF_DOUBLE, minvt_rank, 
+     &                  minvt_dims, minvt_id)
+      CALL check_err(iret)
+      
+!      WRITE(6,*)"Define max v"
+!     -------------------------
+!     Define maximum v at times
+!     -------------------------
+      maxvt_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxvvelt', NF_DOUBLE, maxvt_rank, 
+     &                  maxvt_dims, maxvt_id)
+      CALL check_err(iret)
+
+!     -------------------------
+!     Define minimum u at times
+!     -------------------------
+      minun_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minuveln', NF_DOUBLE, minun_rank, 
+     &                  minun_dims, minun_id)
+      CALL check_err(iret)
+!      WRITE(6,*)"Define MAX u/v at nodes"
+!     -------------------------
+!     Define maximum u at nodes
+!     -------------------------
+      maxun_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxuveln', NF_DOUBLE, maxun_rank, 
+     &                  maxun_dims, maxun_id)
+      CALL check_err(iret)
+!     -------------------------
+!     Define minimum v at nodes
+!     -------------------------
+      minvn_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minvveln', NF_DOUBLE, minvn_rank, 
+     &                  minvn_dims, minvn_id)
+      CALL check_err(iret)
+!     -------------------------
+!     Define maximum v at nodes
+!     -------------------------
+      maxvn_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxvveln', NF_DOUBLE, maxvn_rank, 
+     &                  maxvn_dims, maxvn_id)
+      CALL check_err(iret)
+      
+      
+!     ----------------------------
+!     Define minimum u nodes at times
+!     ----------------------------
+      minunodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minunodet', NF_INT, minunodet_rank, 
+     &                  minunodet_dims, minunodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum u nodes at times
+!     ----------------------------
+      maxunodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxunodet', NF_INT, maxunodet_rank, 
+     &                  maxunodet_dims, maxunodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define minimum u nodes at nodes
+!     ----------------------------
+      minutimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minutimen', NF_DOUBLE, minutimen_rank, 
+     &                  minutimen_dims, minutimen_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum u nodes at nodes
+!     ----------------------------
+      maxutimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxutimen', NF_DOUBLE, maxutimen_rank, 
+     &                  maxutimen_dims, maxutimen_id)
+      CALL check_err(iret)
+
+            
+!     ----------------------------
+!     Define minimum v nodes at times
+!     ----------------------------
+      minvnodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minvnodet', NF_INT, minvnodet_rank, 
+     &                  minvnodet_dims, minvnodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum v nodes at times
+!     ----------------------------
+      maxvnodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxvnodet', NF_INT, maxvnodet_rank, 
+     &                  maxvnodet_dims, maxvnodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define minimum v nodes at nodes
+!     ----------------------------
+      minvtimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minvtimen', NF_DOUBLE, minvtimen_rank, 
+     &                  minvtimen_dims, minvtimen_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum v nodes at nodes
+!     ----------------------------
+      maxvtimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxvtimen', NF_DOUBLE, maxvtimen_rank, 
+     &                  maxvtimen_dims, maxvtimen_id)
+      CALL check_err(iret)
+            
+      
+      
+!     -----------------
+!     Assign attributes
+!     -----------------
+
+      if(ics.eq.2) then
+      
+!      WRITE(6,*)"ics.eq.2"
+      iret = nf_put_att_text(ncid, X_id, 'long_name', 9, 'longitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'standard_name', 9, 
+     &                      'longitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'units', 12,  VAR_DEGE)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE,
+     &                        1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)      
+      
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 8, 'latitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 8, 
+     &                       'latitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'units', 13,  VAR_DEGN)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
+      CALL check_err(iret)
+       
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, Y_id, 'missing_values', NF_DOUBLE, 
+     &       1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &       doubleval)
+      CALL check_err(iret)
+!      endif
+
+
+!      if(ics.eq.1) then
+
+       else
+
+      
+      iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
+     &       'Cartesian coordinate x')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, 
+     &                      'x_coordinate')
+      CALL check_err(iret)
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, X_id, 'units', 6, VAR_METS)
+          CALL check_err(iret)
+      else
+         iret = nf_put_att_text(ncid, X_id, 'units', 4, VAR_FEET)
+          CALL check_err(iret)
+      endif
+      iret = nf_put_att_text(ncid, X_id, 'positive', 5, VAR_RG)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE, 
+     &                       1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+!     ------------------------------
+!     Define y-coordinate attributes
+!     ------------------------------     
+      
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
+     &       'Cartesian coordinate y')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
+     &                       'y_coordinate')
+      CALL check_err(iret)
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, Y_id, 'units', 6, VAR_METS)
+         CALL check_err(iret)
+      else
+         iret = nf_put_att_text(ncid, Y_id, 'units', 4, VAR_FEET)
+         CALL check_err(iret)
+      endif
+      iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
+      CALL check_err(iret)
+!      doubleval(1) = -99999
+      iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
+     &       NF_DOUBLE, 1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999
+      iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &       doubleval)
+      CALL check_err(iret)
+      
+      endif
+      
+!    ----------------------------------------------------
+!     minimum/maximum e/w and n/s velocities at each time
+!    ----------------------------------------------------
+
+!      WRITE(6,*)" minimum/maximum e/w and n/s at each time"
+      if (ics.eq.2) then
+      iret = nf_put_att_text(ncid, minut_id, 'long_name', 68, 
+     & 'minimum station vertically averaged e/w velocity at each output 
+     &time')
+      CALL check_err(iret)
+!      endif
+
+!      if (ics.eq.1) then
+
+       else
+
+      iret = nf_put_att_text(ncid, minut_id, 'long_name', 70, 
+     &     'minimum vertically averaged velocity in x-direction at each 
+     &output time')
+      CALL check_err(iret)
+      endif
+      
+      iret = nf_put_att_text(ncid, minut_id, 'standard_name', 26,
+     &                'minimum_station_u_velocity')
+      CALL check_err(iret)
+
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, minut_id,'units',13, VAR_MPS)
+          CALL check_err(iret)
+      else
+          iret = nf_put_att_text(ncid, minut_id,'units',11, VAR_FPS)
+          CALL check_err(iret)
+      endif
+      
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, maxut_id, 'long_name', 68, 
+     & 'maximum station vertically averaged e/w velocity at each output 
+     &time')
+          CALL check_err(iret)
+
+       else
+
+      iret = nf_put_att_text(ncid, maxut_id, 'long_name', 77, 
+     &     'maximum vertically averaged velocity in x-direction at each 
+     &ouput time')
+      CALL check_err(iret)
+      endif
+       
+      iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 26,
+     &                'maximum_station_u_velocity')
+      CALL check_err(iret)
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, maxut_id,'units',13, VAR_MPS)
+      else
+         iret = nf_put_att_text(ncid, maxut_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+      
+      if (ics.eq.2) then
+         iret = nf_put_att_text(ncid, minvt_id, 'long_name', 67, 
+     &  'minimum station vertically averaged n/s velocity at each ouput 
+     &time')
+      else
+
+      iret = nf_put_att_text(ncid, minvt_id, 'long_name', 78, 
+     &  'minimum station vertically averaged velocity in y-direction at 
+     &each ouput time')
+      endif
+     
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 26,
+     &                'minimum_station_v_velocity')
+      CALL check_err(iret)
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, minvt_id,'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, minvt_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+      
+      if (ics.eq.2) then
+         iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 67, 
+     &        'maximum station vertically averaged n/s velocity at each 
+     &ouput time')
+      else
+         iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 78, 
+     &  'maximum station vertically averaged velocity in y-direction at 
+     &each ouput time')
+      endif
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 26,
+     &                'maximum_station_v_velocity')
+      CALL check_err(iret)
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, maxvt_id,'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, maxvt_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+
+!    ----------------------------------------------------
+!     minimum/maximum e/w and n/s velocities at each node
+!    ----------------------------------------------------
+
+      if (ics.eq.2) then
+      
+          iret = nf_put_att_text(ncid, minun_id, 'long_name', 56, 
+     &    'minimum vertically averaged e/w velocity at each station')
+          CALL check_err(iret)
+
+       else
+
+          iret = nf_put_att_text(ncid, minun_id, 'long_name', 66, 
+     &     'minimum vertically averaged velocity in x-direction at each 
+     &station')
+          CALL check_err(iret)
+          
+      endif
+      
+      iret = nf_put_att_text(ncid, minun_id, 'standard_name', 26,
+     &                'minimum_station_u_velocity')
+      CALL check_err(iret)
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, minun_id,'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, minun_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+      
+      if (ics.eq.2) then
+      iret = nf_put_att_text(ncid, maxun_id, 'long_name', 56, 
+     & 'maximum vertically averaged e/w velocity at each station')
+      CALL check_err(iret)
+
+       else
+
+      iret = nf_put_att_text(ncid, maxun_id, 'long_name', 66, 
+     &     'maximum vertically averaged velocity in x-direction at each 
+     &station')
+      CALL check_err(iret)
+      endif
+       
+      iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 26,
+     &                'maximum_station_u_velocity')
+      CALL check_err(iret)
+      
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, maxun_id,'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, maxun_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+      
+      if (ics.eq.2) then
+      iret = nf_put_att_text(ncid, minvn_id, 'long_name', 56, 
+     &      'minimum vertically averaged n/s velocity at each station')
+
+      else
+
+      iret = nf_put_att_text(ncid, minvn_id, 'long_name', 66, 
+     &     'minimum vertically averaged velocity in y-direction at each 
+     &station')
+      endif
+     
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 26,
+     &                'minimum_station_v_velocity')
+      CALL check_err(iret)
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, minvn_id,'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, minvn_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+      
+      if (ics.eq.2) then
+      iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 56, 
+     &      'maximum vertically averaged n/s velocity at each station')
+      CALL check_err(iret)
+
+       else
+
+      iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 66, 
+     &     'maximum vertically averaged velocity in y-direction at each 
+     &station')
+      CALL check_err(iret)
+      endif
+
+      iret = nf_put_att_text(ncid, maxvn_id, 'standard_name', 26,
+     &                'maximum_station_v_velocity')
+      CALL check_err(iret)
+!    --------------------------
+!     determine variable units
+!    --------------------------
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, maxvn_id,'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, maxvn_id,'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+
+!    ----------------------------------------------------
+!     minimum/maximum e/w and n/s velocities at each time
+!    ----------------------------------------------------
+
+!      WRITE(6,*)"minimum/maximum e/w and n/s at each time",minunodet_id
+      
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 52, 
+     &    'station of minimum e/w velocity at each output time')
+           CALL check_err(iret)
+
+       else
+
+          iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 62, 
+     &    'station of minimum velocity in x-direction at each output 
+     &time')
+          CALL check_err(iret)
+      endif
+      
+      iret = nf_put_att_text(ncid, minunodet_id, 'standard_name', 31,
+     &                'station_of_minimum_e/w_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minunodet_id,'units',14,VAR_NOND)
+      CALL check_err(iret)
+
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 52, 
+     &    'station of maximum e/w velocity at each output time')
+          CALL check_err(iret)
+       else
+
+           iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 62, 
+     &     'station of maximum velocity in x-direction at each output 
+     &time')
+           CALL check_err(iret)
+      endif
+       
+      iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name', 31,
+     &                'station_of_maximum_e/w_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxunodet_id,'units',14, VAR_NOND)
+      CALL check_err(iret)
+      
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 52, 
+     &    'station of minimum n/s velocity at each output time')
+
+       else
+
+          iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 62, 
+     &    'station of minimum velocity in y-direction at each output 
+     &time')
+      endif
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name', 31,
+     &                'station_of_minimum_n/s_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvnodet_id,'units',14, VAR_NOND)
+      CALL check_err(iret)
+      
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 52, 
+     &    'station of maximum n/s velocity at each output time')
+ 
+       else
+
+          iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 62, 
+     &    'station of maximum velocity in y-direction at each output 
+     &time')
+      endif
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name', 31,
+     &                'station_of_maximum_n/s_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxvnodet_id,'units',14,VAR_NOND)
+      CALL check_err(iret)
+
+!    ----------------------------------------------------
+!     minimum/maximum e/w and n/s velocities at each node
+!    ----------------------------------------------------
+      
+!    ----------------------
+!     determine coordinates
+!    ----------------------
+      if (ics.eq.2) then
+         iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 44, 
+     &   'time of minimum e/w velocity at each station')
+
+      else
+
+          iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 55, 
+     &   'time of minimum velocity in x-direction at each station')
+
+      endif
+      CALL check_err(iret)
+    
+      iret = nf_put_att_text(ncid, minutimen_id, 'standard_name', 28,
+     &                'time_of_minimum_e/w_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minutimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+      
+!    ----------------------
+!     determine coordinates
+!    ----------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 44, 
+     &   'time of maximum e/w velocity at each station')
+
+       else
+
+          iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 45, 
+     &    'time of maximum velocity in x-direction at each station')
+      endif
+      CALL check_err(iret)
+       
+      iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name', 28,
+     &                'time_of_maximum_e/w_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxutimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+
+!    ----------------------
+!     determine coordinates
+!    ----------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 44, 
+     &    'time of minimum n/s velocity at each station')
+       else
+          iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 55, 
+     &    'time of minimum velocity in y-direction at each station')
+      endif
+     
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name', 28,
+     &                'time_of_minimum_n/s_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvtimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+     
+      if (ics.eq.2) then
+      iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 44, 
+     &    'time of maximum n/s velocity at each station')
+      CALL check_err(iret)
+
+       else
+
+      iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 55, 
+     &'time of maximum velocity in y-direction at each station')
+      CALL check_err(iret)
+      endif
+
+      iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name', 28,
+     &                'time_of_maximum_n/s_velocity')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxvtimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+      
+!     -------------------------------------------------------------
+!     Define station names and code attributes
+!     -------------------------------------------------------------
+      iret = nf_put_att_text(ncid,station_id,'long_name',12,
+     & 'station name')
+      CALL check_err(iret)
+
+!    -----------------------
+!     Define time attributes
+!    -----------------------
+      iret = nf_put_att_text(ncid,timenc_id,'long_name',10,'model time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'standard_name', 4,'time')
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, timenc_id, 'units', 23, VAR_TUN)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'base_date',
+     . (LEN(TRIM(base_date(1:INDEX(base_date,"!")-1)))), base_date)
+      CALL check_err(iret)
+
+!    -----------
+!     Define u velocity
+!    -----------
+!    ----------------------
+!     determine coordinates
+!    ----------------------
+
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, u_id, 'long_name', 38, 
+     &    'station vertical averaged e/w velocity')
+      else
+
+      iret = nf_put_att_text(ncid, u_id, 'long_name', 49, 
+     &       'station vertical averaged velocity in x-direction')
+      endif
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, u_id, 'standard_name', 18, 
+     &       'station_u_velocity')
+      CALL check_err(iret)
+!    ----------------------
+!     determine variable units
+!    ----------------------
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, u_id, 'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, u_id, 'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+      
+!    ----------------------
+!     determine coordinates
+!    ----------------------
+      if (ics.eq.2) then
+          iret = nf_put_att_text(ncid, u_id, 'positive', 4, VAR_EAST)
+      else
+          iret = nf_put_att_text(ncid, u_id, 'positive', 5, VAR_RG)
+      endif
+      CALL check_err(iret)
+      
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, u_id, 'missing_values', 
+     &       NF_DOUBLE, 1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, u_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+      
+!      doubleval(1) = -99999.
+      iret = nf_put_att_double(ncid, u_id, 'dry_Value', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+!    -----------
+!     Define v velocity
+!    -----------
+!    ----------------------
+!     determine coordinates
+!    ----------------------
+
+      if (ics.eq.2) then
+         iret = nf_put_att_text(ncid, v_id, 'long_name', 38, 
+     &         'station vertical averaged n/s velocity')
+
+       else
+
+          iret = nf_put_att_text(ncid, v_id, 'long_name', 49, 
+     &          'station vertical averaged velocity in y-direction')
+      endif
+      CALL check_err(iret)
+
+
+      iret = nf_put_att_text(ncid, v_id, 'standard_name', 18, 
+     &                      'station_v_velocity')
+      CALL check_err(iret)
+!    ----------------------
+!     determine variable units
+!    ----------------------
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, v_id, 'units',13, VAR_MPS)
+      else
+          iret = nf_put_att_text(ncid, v_id, 'units',11, VAR_FPS)
+      endif
+      CALL check_err(iret)
+
+!    ----------------------
+!     determine coordinates
+!    ----------------------
+      if (ics.eq.2) then
+         iret = nf_put_att_text(ncid, v_id, 'positive', 5, VAR_NORTH)
+       else
+         iret = nf_put_att_text(ncid, v_id, 'positive', 2, VAR_UP)
+      endif
+      CALL check_err(iret)
+
+!      doubleval(1) = -99999.
+      iret = nf_put_att_DOUBLE(ncid, v_id, 'missing_values', 
+     &       NF_DOUBLE, 1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_DOUBLE(ncid, v_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_DOUBLE(ncid, v_id, 'dry_Value', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+
+!     -----------------
+!     Global attributes
+!     -----------------
+
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'model', 6, 'ADCIRC')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'version', 
+     &       LEN(TRIM(ADC_VERSION)), ADC_VERSION)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid_type', 10, 
+     &                      'Triangular')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'description', 
+     &       LEN(TRIM(rundes(1:INDEX(rundes,"!")-1))), rundes)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid',
+     &       LEN(TRIM(agrid(1:INDEX(agrid,"!")-1))), 
+     &       agrid)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'title',
+     &       LEN(TRIM(title(1:INDEX(title,"!")-1))), 
+     &       title)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'institution', 
+     &       LEN(TRIM(institution(1:INDEX(institution,"!")-1))), 
+     &       institution)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'source', 
+     &       LEN(TRIM(source(1:INDEX(source,"!")-1))),
+     &       source)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'history', 
+     &       LEN(TRIM(history(1:INDEX(history,"!")-1))),
+     &       history)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'references', 
+     &       LEN(TRIM(references(1:INDEX(references,"!")-1))), 
+     &       references)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'comments', 
+     &       LEN(TRIM(comments(1:INDEX(comments,"!")-1))), 
+     &       comments)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'host', 
+     &       LEN(TRIM(host(1:INDEX(host,"!")-1))), 
+     &       host)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'convention', 
+     &       LEN(TRIM(convention(1:INDEX(convention,"!")-1))), 
+     &       convention)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'contact', 
+     &       LEN(TRIM(contact(1:INDEX(contact,"!")-1))), 
+     &       contact)
+      CALL check_err(iret)
+ 
+ 
+      CALL date_and_Time(now_date,big_ben,zone,values)
+      write(date_string,71) values(1),values(2),values(3)
+     & ,values(5),values(6),values(7),   (values(4))/60
+ 71   format(I4,'-',I2.2,'-',i2.2,' ',i2,':',i2.2,':',i2.2,' '
+     &  ,i3.2,':00')
+      iret = nf_put_att_text(ncid, NF_GLOBAL,'creation_date'
+     & ,len_trim(date_string),date_string)
+      CALL check_err(iret)
+ 
+!     -------------------------------------------
+!     writing global attributes from fort.15 file 
+!     -------------------------------------------
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'fort.15', 40, 
+     &                      '==== Input File Parameters (below) ====')
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dt', NF_DOUBLE, 1, dtdp)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'irtype', NF_INT, 1, irtype)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ihot', NF_INT, 1, ihot)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ics', NF_INT, 1, ics)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolibf', NF_INT, 1, nolibf)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolifa', NF_INT, 1, nolifa)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolica', NF_INT, 1, nolica)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolicat', NF_INT, 1, 
+     &                      nolicat)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nwp', NF_INT, 1, nwp)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ncor', NF_INT, 1, ncor)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntip', NF_INT, 1, ntip)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nws', NF_INT, 1, nws)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nramp', NF_INT, 1, nramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'tau0', NF_DOUBLE, 1, 
+     &                         tau0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'statim', NF_DOUBLE, 1, 
+     &                         statim)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'reftim', NF_DOUBLE, 1, 
+     &                         reftim)
+      CALL check_err(iret)
+      intval(1) = 5
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'rnday', NF_DOUBLE, 1,
+     &                         rnday)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dramp', NF_DOUBLE, 1, 
+     &                         dramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'a00', NF_DOUBLE, 1, 
+     &                         a00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'b00', NF_DOUBLE, 1, 
+     &                         b00)
+
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'c00', NF_DOUBLE, 1, 
+     &                         c00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'h0', NF_DOUBLE, 1, 
+     &                         h0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'slam0', NF_DOUBLE, 1, 
+     &                         slam0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'sfea0', NF_DOUBLE, 1, 
+     &                         sfea0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'ffactor', NF_DOUBLE, 1, 
+     &                         ffactor)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'esl', NF_DOUBLE, 1, 
+     &                         esl)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'cori', NF_DOUBLE, 1, 
+     &                         cori)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntif', NF_INT, 1, ntif)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nbfr', NF_INT, 1, nbfr)
+      CALL check_err(iret)
+     
+!     ======================
+!     Leave define mode
+!     ======================
+      iret = nf_enddef(ncid)
+      CALL check_err(iret)
+      
+!     ======================
+!     Store static variables
+!     ======================
+!     -------
+!     Store X
+!     -------
+      iret = nf_put_var_double(ncid, X_id, X)
+      CALL check_err(iret)
+!     -------
+!     Store Y
+!     -------
+      iret = nf_put_var_double(ncid, Y_id, Y)
+      CALL check_err(iret)
+!     --------------------
+!     Store station name
+!     --------------------
+      do i=1,node_len
+         start(1)=1
+         start(2)=i
+         count(1)= LEN(TRIM(STATNAMEV(i,SNAMLEN)))
+         count(2)=1
+         iret = nf_put_vara_text(ncid,station_id,start,count,
+     &   STATNAMEV(i,SNAMLEN) )
+         CALL check_err(iret)
+      end do
+
+!     =====================
+!     Open old netcdf file
+!     =====================
+      ELSE
+!          WRITE (6,*)'****FIRST62 = 0 ****',FIRST62
+          iret = NF_OPEN(FILENAME, NF_WRITE, ncid)
+          CALL check_err(iret)   
+          FIRST62=0
+      ENDIF
+!     ----------
+!     Store time
+!     ----------
+      starti(1)=nrec
+      counti(1)=timenc_len
+      iret = nf_put_vara_DOUBLE(ncid, timenc_id, starti,counti, timenc)
+      CALL check_err(iret)
+!     ---------------------------
+!     Store u
+!     ---------------------------
+      count(1)=node_len
+      count(2)=timenc_len
+      start(1)=1
+      start(2)=nrec
+      iret = nf_put_vara_DOUBLE(ncid, u_id, start, count, u)
+      CALL check_err(iret)
+!     ---------------------------
+!     Store v
+!     ---------------------------
+      count(1)=node_len
+      count(2)=timenc_len
+      start(1)=1
+      start(2)=nrec
+      iret = nf_put_vara_DOUBLE(ncid, v_id, start, count, v)
+      CALL check_err(iret)
+      
+!     ---------------------------
+!     Calculating u minimum in each node
+!     ---------------------------
+      IF(.NOT. ALLOCATED(minut)  )ALLOCATE( minut(timenc_len))
+      IF(.NOT. ALLOCATED(maxut)  )ALLOCATE( maxut(timenc_len))
+      IF(.NOT. ALLOCATED(minun62))ALLOCATE( minun62(node_len))
+      IF(.NOT. ALLOCATED(maxun62))ALLOCATE( maxun62(node_len))
+
+      IF(.NOT. ALLOCATED(minvt)  )ALLOCATE( minvt(timenc_len))
+      IF(.NOT. ALLOCATED(maxvt)  )ALLOCATE( maxvt(timenc_len))
+      IF(.NOT. ALLOCATED(minvn62))ALLOCATE( minvn62(node_len))
+      IF(.NOT. ALLOCATED(maxvn62))ALLOCATE( maxvn62(node_len))
+
+
+      IF(.NOT. ALLOCATED(minunodet)  )ALLOCATE( minunodet  (timenc_len))
+      IF(.NOT. ALLOCATED(maxunodet)  )ALLOCATE( maxunodet  (timenc_len))
+      IF(.NOT. ALLOCATED(minutimen62))ALLOCATE( minutimen62(  node_len))
+      IF(.NOT. ALLOCATED(maxutimen62))ALLOCATE( maxutimen62(  node_len))
+
+      IF(.NOT. ALLOCATED(minvnodet)  )ALLOCATE( minvnodet  (timenc_len))
+      IF(.NOT. ALLOCATED(maxvnodet)  )ALLOCATE( maxvnodet  (timenc_len))
+      IF(.NOT. ALLOCATED(minvtimen62))ALLOCATE( minvtimen62(  node_len))
+      IF(.NOT. ALLOCATED(maxvtimen62))ALLOCATE( maxvtimen62(  node_len))
+
+!     ------------
+!     in each node
+!     ------------
+  	  do n=1,node_len
+ 		 if(u (n, 1).lt.minun62(n) ) then
+ 		    minun62     (n) = u (n,1)
+ 		    minutimen62 (n) = timenc(1)
+ 		 endif
+ 	  end do
+
+!     --------------
+!     for each time
+!     --------------
+      minut (1) = 99999.
+ 	  do n=1,node_len
+ 		 if(u (n,1).gt.-99999.and.u(n,1).lt. minut (1) )  then
+            minut (1) = u (n,1)
+            minunodet(1) = n
+         endif
+ 	  end do
+
+      iret = nf_put_vara_DOUBLE(ncid, minut_id,(/nrec/),(/1/),minut)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid, minunodet_id,(/nrec/),(/1/),minunodet)
+      CALL check_err(iret)
+      
+!     ---------------------------
+!     Calculating u maximum
+!     ---------------------------
+  	  do n=1,node_len
+ 		 if(u (n,1).gt.maxun62(n) ) then
+ 		    maxun62     (n) = u (n,1)
+            maxutimen62 (n) = timenc(1)
+ 		 endif
+	  end do
+!     --------------
+!     for each time
+!     --------------
+      maxut (1) = -9999.
+ 	  do n=1,node_len
+ 		 if(u(n,1).gt.maxut(1))  then
+ 		    maxut (1) = u (n,1)
+ 		    maxunodet(1) = n 		    
+ 		    endif
+      end do
+      iret = nf_put_vara_DOUBLE(ncid,maxut_id,(/nrec/),(/1/),maxut)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid,maxunodet_id,(/nrec/),(/1/),maxunodet)
+      CALL check_err(iret)
+!     ---------------------------
+!     Calculating v minimum each node
+!     ---------------------------
+  	  do n=1,node_len
+ 		 if(v (n,1).lt.minvn62(n) ) then
+ 		    minvn62     (n) = v (n,1)
+		    minvtimen62 (n) = timenc(1)
+ 		 endif
+ 	  end do
+!     --------------
+!     Calculating v minimum for each time
+!     --------------
+      minvt (1) = 99999.
+ 	  do n=1,node_len
+ 		 if(v (n,1).gt.-99999.and.v(n,1).lt. minvt (1) ) then
+            minvt (1) = v (n,1)
+            minvnodet(1) = n
+          endif
+ 	  end do
+
+      iret = nf_put_vara_DOUBLE(ncid, minvt_id,(/nrec/),(/1/),minvt)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid, minvnodet_id,(/nrec/),(/1/),minvnodet)
+      CALL check_err(iret)
+!     ---------------------------
+!     Calculating v maximum
+!     ---------------------------
+!     ------------
+!     Calculating v maximum in each node
+!     ------------
+  	  do n=1,node_len
+ 		 if(v (n,1).gt.maxvn62(n) ) then
+ 		    maxvn62    (n) = v (n,1)
+ 		    maxvtimen62(n) = timenc(1)
+         endif
+ 	  end do
+!     --------------
+!     Calculating v maximum for each time
+!     --------------
+      maxvt (1) = -9999.
+ 	  do n=1,node_len
+ 		 if(v(n,1).gt.maxvt(1)) then
+ 		    maxvt (1) = v (n,1)
+ 		    maxvnodet(1) = n 		    
+ 		 endif
+      end do
+      iret = nf_put_vara_DOUBLE(ncid,maxvt_id,(/nrec/),(/1/),maxvt)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid,maxvnodet_id,(/nrec/),(/1/),maxvnodet)
+      CALL check_err(iret)
+
+
+!     ---------------------------
+!     Closing fort.X2 netCDF file
+!     ---------------------------
+!      WRITE(6,*)'NREC NDATA',NREC,NDATA
+      IF(NREC.EQ.NDATA) THEN
+         iret = nf_put_var_double(ncid, minun_id, minun62)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxun_id, maxun62)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, minvn_id, minvn62)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxvn_id, maxvn62)
+         CALL check_err(iret)
+         
+         iret = nf_put_var_double(ncid, minutimen_id, minutimen62)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxutimen_id, maxutimen62)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, minvtimen_id, minvtimen62)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxvtimen_id, maxvtimen62)
+         CALL check_err(iret)
+
+      ENDIF
+
+!     ---------------------------
+!     Closing netCDF file
+!     ---------------------------
+      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      WRITE(6,*) "-----------------------------------------------------"
+      
+      iret = nf_close(ncid)
+      CALL check_err(iret)
+      WRITE(6,*)'end subroutine writenc62'
+
+      end subroutine writenc62     
+ 
+
+
+!=======================================================================
+!     Subroutine writenc71
+!     Writes a netCDF file equivalent to ADCIRC's fort.63 ascii file
+!
+!     Dimensions:
+!     timenc_len  : Number of Times
+!     node_len  : Number of Nodes
+!
+!     Variables :
+!     time      : Time
+!     zeta      : Sea surface elevation 
+!
+!     Attributes:
+!     rundes    : Run description
+!     runid     : Run ID
+!     agrid     : Grid ID
+!     irtype    : Record Type (1=1D, 2=2D, 3=3D)
+!     dtdp      : Timestep (secs)
+!
+!     Revision history:
+!
+!     Date            Programmer                  Description of change
+!     ----            ----------                  ----------------------
+!     03/30/07  Cristina Forbes, PSGS @ UNC-IMS   Wrote original code
+!=======================================================================
+      subroutine writenc71 (nout,fileunit,timenc_len, node_len,timenc,
+     &                      zeta,nt, NDATA, rundes,runid, agrid, irtype,
+     &                      dtdp, ihot, ics, nolibf,  nolifa,
+     &                      nolica, nolicat, nwp,
+     &                      ncor, ntip, nws, nramp, tau0,
+     &                      statim, reftim, rnday, dramp,
+     &                      a00, b00, c00, h0,
+     &                      slam0, sfea0, ffactor,esl, cori,
+     &                      ntif, nbfr, elem_len, nface_len, nm,
+     &                      x,y,depth,
+     &                      nope_len, neta_len, nbdv, 
+     &                      nbou_len, nvel_len, nbvv,
+     &                      title, institution, source, history,
+     &                      references, comments, host, convention,
+     &                      contact,
+     &                      base_date)
+
+!--------------------------------------------
+!     Force explicit declaration of all variables
+!--------------------------------------------
+      IMPLICIT NONE
+!     -------------------
+!     netCDF header file
+!     -------------------
+!      include 'netcdf.inc'
+!     -------------------
+!     Error status return
+!     -------------------
+      INTEGER  iret
+!     ---------
+!     netCDF id
+!     ---------
+      INTEGER  ncid
+!     -------------
+!     Dimension ids
+!     -------------
+      INTEGER  node_dim
+      INTEGER  timenc_dim
+      INTEGER  elem_dim
+      INTEGER  nface_dim
+      INTEGER  nope_dim
+      INTEGER  neta_dim
+      INTEGER  nbou_dim
+      INTEGER  nvel_dim
+      INTEGER  slen_dim
+      INTEGER  scode_dim
+!     -----------------
+!     Dimension lengths
+!     -----------------
+      INTEGER  node_len
+      INTEGER  timenc_len
+      INTEGER  elem_len
+      INTEGER  nface_len
+      INTEGER  nope_len
+      INTEGER  neta_len
+      INTEGER  nbou_len
+      INTEGER  nvel_len
+!     ------------
+!     Variable ids
+!     ------------
+      INTEGER  timenc_id
+      INTEGER  zeta_id
+      INTEGER  minzetat_id
+      INTEGER  maxzetat_id
+      INTEGER  minzetan_id
+      INTEGER  maxzetan_id
+      INTEGER  minznodet_id
+      INTEGER  maxznodet_id
+      INTEGER  minztimen_id
+      INTEGER  maxztimen_id
+      INTEGER  station_id
+      INTEGER  scode_id
+      INTEGER  X_id
+      INTEGER  Y_id
+      INTEGER  DEPTH_id
+      INTEGER  ELE_id
+      INTEGER  mindepth_id
+      INTEGER  maxdepth_id
+      INTEGER  nbdv_id
+      INTEGER  nbvv_id
+!     ---------------------------------------------
+!     Rank (number of dimensions) for each variable
+!     ---------------------------------------------
+      INTEGER  timenc_rank
+      INTEGER  zeta_rank
+      INTEGER  station_rank
+      INTEGER  scode_rank
+      INTEGER  minzetat_rank
+      INTEGER  maxzetat_rank
+      INTEGER  minzetan_rank
+      INTEGER  maxzetan_rank
+      INTEGER  minznodet_rank
+      INTEGER  maxznodet_rank
+      INTEGER  minztimen_rank
+      INTEGER  maxztimen_rank
+      INTEGER  depth_rank
+      INTEGER  ele_rank
+      INTEGER  mindepth_rank
+      INTEGER  maxdepth_rank
+      INTEGER  x_rank
+      INTEGER  y_rank
+      INTEGER  nvdll_rank
+      INTEGER  nbdv_rank
+      INTEGER  nbvv_rank
+      PARAMETER (timenc_rank = 1)
+      PARAMETER (station_rank = 2)
+      PARAMETER (scode_rank = 2)
+      PARAMETER (zeta_rank = 2)
+      PARAMETER (minzetat_rank = 1)
+      PARAMETER (maxzetat_rank = 1)
+      PARAMETER (minzetan_rank = 1)
+      PARAMETER (maxzetan_rank = 1)
+      PARAMETER (minznodet_rank = 1)
+      PARAMETER (maxznodet_rank = 1)
+      PARAMETER (minztimen_rank = 1)
+      PARAMETER (maxztimen_rank = 1)
+      PARAMETER (depth_rank = 1)
+      PARAMETER (ele_rank = 2)
+      PARAMETER (mindepth_rank = 0)
+      PARAMETER (maxdepth_rank = 0)
+      PARAMETER (x_rank = 1)
+      PARAMETER (y_rank = 1)
+      PARAMETER (nvdll_rank = 1)
+      PARAMETER (nbdv_rank = 2)
+      PARAMETER (nbvv_rank = 2)
+!     ---------------
+!     Variable shapes
+!     ---------------
+      INTEGER  timenc_dims(timenc_rank)
+      INTEGER  zeta_dims(zeta_rank)
+      INTEGER  station_dims  (station_rank)
+      INTEGER  scode_dims    (scode_rank)
+      INTEGER  minzetat_dims(minzetat_rank)
+      INTEGER  maxzetat_dims(maxzetat_rank)
+      INTEGER  minzetan_dims(minzetan_rank)
+      INTEGER  maxzetan_dims(maxzetan_rank)
+      INTEGER  minznodet_dims(minznodet_rank)
+      INTEGER  maxznodet_dims(maxznodet_rank)
+      INTEGER  minztimen_dims(minztimen_rank)
+      INTEGER  maxztimen_dims(maxztimen_rank)
+      INTEGER  x_dims(x_rank)
+      INTEGER  y_dims(y_rank)
+      INTEGER  depth_dims(depth_rank)
+      INTEGER  ele_dims(ele_rank)
+      INTEGER  nvdll_dims(nvdll_rank)
+      INTEGER  nbdv_dims(nbdv_rank)
+      INTEGER  nbvv_dims(nbvv_rank)
+!     --------------
+!     Data variables
+!     --------------
+      CHARACTER*5 FILEFORT
+      CHARACTER*10 FILENAME
+      CHARACTER*3 FILEEXT
+      INTEGER   t,ntif,nbfr,nt
+      INTEGER   irtype, ihot, ics, nolibf, nolifa, nolica, nolicat, nwp
+      INTEGER   ntip, nws, nramp,ncor
+      INTEGER   nvel, neta, nout
+      INTEGER   element (nface_len , elem_len)
+      INTEGER   nbdv (nope_len, neta_len)
+      INTEGER   nbvv (nbou_len, nvel_len)
+      INTEGER   nm (elem_len, nface_len)
+      INTEGER   fileunit
+      REAL(sz)   timenc(timenc_len)
+      REAL(sz)  x(node_len)
+      REAL(sz)  y(node_len)
+      REAL(sz)  depth(node_len)
+      REAL(sz)  zeta (node_len, timenc_len)
+      REAL(sz), ALLOCATABLE, SAVE ::  minzetat(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxzetat(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minzetan71(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxzetan71(:)
+      INTEGER , ALLOCATABLE, SAVE ::  minznodet(:)
+      INTEGER , ALLOCATABLE, SAVE ::  maxznodet(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minztimen71(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxztimen71(:)
+      real*8    mindepth
+      real*8    maxdepth
+      REAL*8    dtdp, statim,reftim, rnday, dramp, tau0
+      REAL*8    a00, b00, c00,h0
+      REAL*8    ffactor,esl, cori
+!      REAL*8    nele
+      REAL(sz)  slam0, sfea0
+      REAL(sz)  slam0deg, sfea0deg
+      CHARACTER(80) rundes, runid, agrid
+      INTEGER, SAVE  :: FIRST71 = 1 
+      INTEGER NDATA
+      INTEGER, SAVE  :: NREC = 0
+!     -----------------
+!     Attribute vectors
+!     -----------------
+      INTEGER intval(1),i,j
+      INTEGER counti(1), starti(1), n
+      INTEGER count(2), start(2)
+      REAL    realval(1)
+!      DOUBLE PRECISION  doubleval(1)
+!     -----------------
+!     Attribute general
+!     -----------------
+      CHARACTER(*) :: title, institution, source, history
+      CHARACTER(*) :: references, comments, host, convention, contact
+      CHARACTER(*) :: base_date
+!     -----------------
+!      date_string variables for time attribute
+!     -----------------
+      character date_string*40
+      character now_date*8
+      character big_ben*10
+      character zone*5
+      integer   values(8)
+      real*8    xmin, xmax
+
+      save node_dim, elem_dim, nface_dim
+      save nope_dim, neta_dim, nbou_dim, nvel_dim
+      save zeta_id, X_id, Y_id
+      save minzetat_id, maxzetat_id, minzetan_id, maxzetan_id
+      save minznodet_id, maxznodet_id, minztimen_id, maxztimen_id
+      save DEPTH_id,ELE_id, mindepth_id, maxdepth_id, nbdv_id, nbvv_id
+      save timenc_dim, timenc_id
+      save station_id, scode_id
+      save mindepth, maxdepth
+!     ---------------------------
+!     Opening fort.63 netCDF file
+!     ---------------------------
+      WRITE(6,*) "-----------------------------------------------------"
+
+!       do i=1, 10
+!       write(6,*) ' x(i),y(i),depth(i)****',x(i),y(i)
+!       end do
+!       write(6,*) "*****************Time inside subroutine ", timenc(1)
+       NREC = NREC + 1
+!       WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
+!       WRITE (6,*)'========= timenc_len, node_len =======',
+!     &  timenc_len, node_len
+!       WRITE (6,*)'========= NREC =======', NREC, 
+!     & (zeta(node_len,1), node_len=1,3)
+!         WRITE(6,*) "BASE DATE", base_date
+!         WRITE(6,*) "ADC_VERSION", ADC_VERSION
+!         WRITE(6,*) "AGRID", AGRID
+      
+
+!     --------------------------------
+!     Switch order in array for NETCDF
+!     --------------------------------
+      do i=1, elem_len
+      do j=1, nface_len
+         element(j,i) = nm (i,j)
+      end do
+      end do
+!      do n=1,node_len
+!         write(6,*)"WRITE STATION ", 
+!     &              STATNAMEM(n,SNAMLEN)
+!     &              STATNUMB(n,SNUMLEN),STATNAME(n,SNAMLEN)
+!      end do
+!         write(6,*) "elem -- ", i, element (1,i), element(2,i),element(3,i)
+!     -----------------
+!     Enter define mode
+!     -----------------
+      IF(FIRST71.EQ.1) THEN
+         WRITE (6,*)'****FIRST71 = 1 ****',FIRST71
+         FILEFORT = 'fort.'
+         FILEEXT = '.nc'
+         WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+                  
+         IF(nout.eq. 3) THEN
+           iret = nf_create(FILENAME, NF_CLOBBER, ncid)
+           CALL check_err(iret)
+           FIRST71=0
+         ENDIF
+         
+         ALLOCATE ( minzetan71  (node_len) )
+         ALLOCATE ( maxzetan71  (node_len) )
+         ALLOCATE ( minztimen71 (node_len) )
+         ALLOCATE ( maxztimen71 (node_len) )
+         
+         do n=1,node_len
+            minzetan71  (n) =  9999.d0
+            maxzetan71  (n) = -9999.d0
+            minztimen71 (n) = -9999.d0
+            maxztimen71 (n) = -9999.d0
+         end do
+
+!     --------------------------------
+!     Convert to degress for NETCDF I/O
+!     --------------------------------
+               SLAM0DEG=SLAM0*RAD2DEG
+               SFEA0DEG=SFEA0*RAD2DEG
+
+!     =================
+!     Define dimensions
+!     =================
+      iret = nf_def_dim(ncid, 'station', node_len, node_dim)
+             CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'namelen', SNAMLEN, slen_dim)
+             CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'time', nf_unlimited, timenc_dim)
+             CALL check_err(iret)
+
+!     ================
+!     Define variables
+!     ================
+!     ----------------
+!     Define time
+!     ----------------
+
+      timenc_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'time',NF_DOUBLE,timenc_rank, timenc_dims, 
+     &                  timenc_id)
+      CALL check_err(iret)
+!      WRITE(6,*)'AFTER DEFINE TIME'
+     
+!     -------------------
+!     Define X
+!     -------------------
+      X_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'x', NF_DOUBLE, X_rank, X_dims, X_id)
+      CALL check_err(iret)
+!     -------------------
+!     Define Y coordinate
+!     --------------------
+      Y_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'y', NF_DOUBLE, Y_rank, Y_dims, Y_id)
+      CALL check_err(iret)
+!     ---------------------
+!     Define stations name
+!     --------------------
+      station_dims(1) = slen_dim
+      station_dims(2) = node_dim
+      iret = nf_def_var(ncid, 'station_name', NF_CHAR, station_rank, 
+     1      station_dims, station_id)
+      CALL check_err(iret)
+      
+!     ----------------
+!     Define zeta
+!     ----------------
+      zeta_dims(1) = node_dim
+      zeta_dims(2) = timenc_dim
+      
+      iret = nf_def_var(ncid, 'pressure', NF_DOUBLE, zeta_rank, zeta_dims, 
+     &                  ZETA_id)
+      
+      CALL check_err(iret)
+!       WRITE(6,*)'AFTER DEFINE ZETA'
+!     ----------------------------
+!     Define minimum zeta at times
+!     ----------------------------
+!      WRITE(6,*) ' BEFORE  Define minimum zeta'
+      minzetat_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minprest', NF_DOUBLE, minzetat_rank, 
+     &                  minzetat_dims, minzetat_id)
+      CALL check_err(iret)
+!      WRITE(6,*) ' AFTER  Define minimum zeta'
+!     ----------------------------
+!     Define maximum zeta at times
+!     ----------------------------
+      maxzetat_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxprest', NF_DOUBLE, maxzetat_rank, 
+     &                  maxzetat_dims, maxzetat_id)
+      CALL check_err(iret)
+
+!     ----------------------------
+!     Define minimum zeta at nodes
+!     ----------------------------
+      minzetan_dims(1) = node_dim
+       iret = nf_def_var(ncid, 'minpresn', NF_DOUBLE, minzetan_rank, 
+     &                  minzetan_dims, minzetan_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum zeta at nodes
+!     ----------------------------
+      maxzetan_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxpresn', NF_DOUBLE, maxzetan_rank, 
+     &                  maxzetan_dims, maxzetan_id)
+      CALL check_err(iret)
+      
+!     ----------------------------
+!     Define minimum zeta nodes at times
+!     ----------------------------
+      minznodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minpnodet', NF_INT, minznodet_rank, 
+     &                  minznodet_dims, minznodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum zeta nodes at times
+!     ----------------------------
+      maxznodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxpnodet', NF_INT, maxznodet_rank, 
+     &                  maxznodet_dims, maxznodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define minimum zeta nodes at nodes
+!     ----------------------------
+      minztimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minptimen', NF_DOUBLE, minztimen_rank, 
+     &                  minztimen_dims, minztimen_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum zeta nodes at nodes
+!     ----------------------------
+      maxztimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxptimen', NF_DOUBLE, maxztimen_rank, 
+     &                  maxztimen_dims, maxztimen_id)
+      CALL check_err(iret)
+
+       
+!     -----------------
+!     Assign attributes
+!     -----------------
+!      WRITE(6,*) ' BEFORE assign attributes'
+      
+!     ----------------------------
+!     Define longitude attributes
+!     ----------------------------
+!     ----------------------------
+!     setermine coordinates
+!     ----------------------------
+      if(ics.eq.2) then
+      
+      	iret = nf_put_att_text(ncid,X_id,'long_name',9,'longitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'standard_name', 9, 
+     &                      'longitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'units', 12, VAR_DEGE)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
+      	       CALL check_err(iret)
+
+      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE, 
+     &                       1, doubleval)
+      	       CALL check_err(iret)
+
+      	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      	       CALL check_err(iret)      
+      
+!     ----------------------------
+!     Define latitude attributes
+!     ----------------------------
+      	iret = nf_put_att_text(ncid, Y_id, 'long_name', 8, 'latitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'standard_name', 8, 
+     &                       'latitude')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'units', 13, VAR_DEGN)
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
+      	       CALL check_err(iret)
+       
+ 
+      	iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
+     &         NF_DOUBLE, 1, doubleval)
+      	       CALL check_err(iret)
+ 
+      	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &         doubleval)
+      	       CALL check_err(iret)
+
+       else
+
+      
+!     ------------------------------
+!     Define x-coordinate attributes
+!     ------------------------------
+      	iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
+     &       'Cartesian coordinate x')
+      	       CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'standard_name',12, 
+     &                      'x-coordinate')
+      	       CALL check_err(iret)
+        if (G.LT.11.D0) then
+      	    iret = nf_put_att_text(ncid, X_id, 'units', 6,VAR_METS)
+      	else
+      	    iret = nf_put_att_text(ncid, X_id, 'units', 6,VAR_FEET)
+      	endif
+      	CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, X_id, 'positive', 5, VAR_RG)
+      	CALL check_err(iret)
+
+      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE,
+     &                        1, doubleval)
+      	CALL check_err(iret)
+
+      	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      	CALL check_err(iret)
+!     ------------------------------
+!     Define y-coordinate attributes
+!     ------------------------------     
+      	iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
+     &       'Cartesian coordinate y')
+      	CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
+     &                       'y-coordinate')
+      	CALL check_err(iret)
+!     ----------------------
+!     Determine coordinates
+!     ---------------------    
+        if (G.LT.11.D0) then
+     	   iret = nf_put_att_text(ncid, Y_id, 'units', 6,VAR_METS)
+     	else
+     	   iret = nf_put_att_text(ncid, Y_id, 'units', 6,VAR_FEET)
+     	endif
+      	CALL check_err(iret)
+      	iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_UP)
+      	CALL check_err(iret)
+ 
+      	iret = nf_put_att_double(ncid, Y_id, 'missing_values',NF_DOUBLE, 
+     &       1, doubleval)
+      	CALL check_err(iret)
+ 
+      	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &       doubleval)
+      	       CALL check_err(iret)
+      
+      endif
+      
+!     -------------------------------------------------------------
+!     Define max and min in time sea surface pressure attributes 
+!     -------------------------------------------------------------
+      iret = nf_put_att_text(ncid, minzetat_id, 'long_name', 65, 
+     &             'minimum station atmospheric surface pressure at each 
+     &output time')
+            CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minzetat_id, 'units', 15,  'meters of
+     & water')
+            CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, maxzetat_id, 'long_name', 65, 
+     &             'maximum station atmospheric surface pressure at each 
+     &output time')
+            CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxzetat_id, 'units', 15, VAR71_UN)
+            CALL check_err(iret)
+!     -------------------------------------------------------------
+!     Define max and min in nodes sea surface pressure attributes
+!     -------------------------------------------------------------
+      iret = nf_put_att_text(ncid, minzetan_id, 'long_name', 52, 
+     &      'minimum atmospheric surface pressure at each station')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minzetan_id, 'units', 15,  VAR71_UN)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, maxzetan_id, 'long_name', 52, 
+     &      'maximum atmospheric surface pressure at each station')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxzetan_id, 'units', 15,  VAR71_UN)
+      CALL check_err(iret)
+!     -------------------------------------------------------------
+!     Define max and min in time sea surface elevation attributes 
+!     -------------------------------------------------------------
+      iret = nf_put_att_text(ncid, minznodet_id, 'long_name', 68, 
+     &  'station of minimum atmospheric surface pressure at each output
+     & time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minznodet_id, 'units',14, VAR_NOND)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, maxznodet_id, 'long_name', 68, 
+     &  'station of maximum atmospheric surface pressure at each output
+     & time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxznodet_id, 'units', 14,VAR_NOND) 
+      CALL check_err(iret)
+!     -------------------------------------------------------------
+!     Define max and min in nodes sea surface elevation attributes
+!     -------------------------------------------------------------
+      iret = nf_put_att_text(ncid, minztimen_id, 'long_name', 60, 
+     &   'time of minimum atmospheric surface pressure at each station')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minztimen_id, 'units', 4, VAR_SECS)
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, maxztimen_id, 'long_name', 60, 
+     &  'time of maximum atmospheric surface pressure at each station')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxztimen_id, 'units', 4, VAR_SECS)
+      CALL check_err(iret)
+      
+!     -------------------------------------------------------------
+!     Define station names and code attributes
+!     -------------------------------------------------------------
+
+      iret = nf_put_att_text(ncid,station_id,'long_name',12,
+     & 'station name')
+      CALL check_err(iret)
+!    -----------------------
+!     Define time attributes
+!    -----------------------
+      iret = nf_put_att_text(ncid,timenc_id,'long_name',10,'model time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid,timenc_id, 'standard_name', 4, 'time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'units', 23, VAR_TUN)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'base_date',
+     .       (LEN(TRIM(base_date(1:INDEX(base_date,"!")-1)))), base_date)
+      CALL check_err(iret)
+
+!    --------------------------------------------
+!     Define sea surface pressure attributes
+!    --------------------------------------------
+      
+      iret = nf_put_att_text(ncid, zeta_id,'long_name',36, VAR71_LN)
+     &                   
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, zeta_id, 'standard_name', 28, 
+     &                      VAR71_ST)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, zeta_id, 'units', 15, VAR71_UN)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_DOUBLE(ncid,zeta_id,'missing_values',NF_DOUBLE,
+     &1, doubleval)
+      CALL check_err(iret)
+!      doubleval(1) = -99999.
+      iret = nf_put_att_DOUBLE(ncid, zeta_id, '_FillValue', NF_DOUBLE, 
+     &                      1, doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, zeta_id,'positive', 2, VAR_UP)
+      CALL check_err(iret)
+
+!     -----------------
+!     Global attributes
+!     -----------------
+
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'model', 6, 'ADCIRC')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'version', 
+     &       LEN(TRIM(ADC_VERSION)), ADC_VERSION)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid_type', 10, 
+     &                      'Triangular')
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'description',
+     &       LEN(TRIM(rundes(1:INDEX(rundes,"!")-1))), rundes)      
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid',
+     &       LEN(TRIM(agrid)), agrid)       
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'title',
+     &       LEN(TRIM(title(1:INDEX(title,"!")-1))), title)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'institution', 
+     &       LEN(TRIM(institution(1:INDEX(institution,"!")-1))), 
+     &       institution)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'source', 
+     &       LEN(TRIM(source(1:INDEX(source,"!")-1))), source)     
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'history', 
+     &       LEN(TRIM(history(1:INDEX(history,"!")-1))),  history)    
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'references', 
+     &       LEN(TRIM(references(1:INDEX(references,"!")-1))), 
+     &       references)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'comments', 
+     &       LEN(TRIM(comments(1:INDEX(comments,"!")-1))), 
+     &       comments)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'host', 
+     &       LEN(TRIM(host(1:INDEX(host,"!")-1))),  host)    
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'convention', 
+     &       LEN(TRIM(convention(1:INDEX(convention,"!")-1))), 
+     &       convention)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'contact', 
+     &       LEN(TRIM(contact(1:INDEX(contact,"!")-1))), contact)
+      CALL check_err(iret)
+ 
+ 
+      CALL date_and_time(now_date,big_ben,zone,values)
+      WRITE(date_string,71) values(1),values(2),values(3),
+     &      values(5),values(6),values(7),   (values(4))/60
+ 71   FORMAT(I4,'-',I2.2,'-',i2.2,' ',i2,':',i2.2,':',i2.2,' '
+     &  ,i3.2,':00')
+      iret = nf_put_att_text(ncid, NF_GLOBAL,'creation_date',
+     &       len_trim(date_string),date_string)
+      CALL check_err(iret)
+ 
+!      WRITE(6,*)'BEFORE global attributes from fort.15'
+!     -------------------------------------------
+!     writing global attributes from fort.15 file 
+!     -------------------------------------------
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'fort.15', 40, 
+     &                      '==== Input File Parameters (below) ====')
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dt', NF_DOUBLE, 1, dtdp)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'irtype', NF_INT, 1, irtype)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ihot', NF_INT, 1, ihot)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ics', NF_INT, 1, ics)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolibf', NF_INT, 1, nolibf)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolifa', NF_INT, 1, nolifa)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolica', NF_INT, 1, nolica)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolicat', NF_INT, 1, 
+     &                      nolicat)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nwp', NF_INT, 1, nwp)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ncor', NF_INT, 1, ncor)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntip', NF_INT, 1, ntip)
+      CALL check_err(iret)
+      intval(1) = 0
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nws', NF_INT, 1, nws)
+      CALL check_err(iret)
+      intval(1) = 1
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nramp', NF_INT, 1, nramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'tau0', NF_DOUBLE, 1, 
+     &                         tau0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'statim', NF_DOUBLE, 1, 
+     &                         statim)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'reftim', NF_DOUBLE, 1, 
+     &                         reftim)
+      CALL check_err(iret)
+      intval(1) = 5
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'rnday', NF_DOUBLE, 1,
+     &                         rnday)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dramp', NF_DOUBLE, 1, 
+     &                         dramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'a00', NF_DOUBLE, 1, 
+     &                         a00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'b00', NF_DOUBLE, 1, 
+     &                         b00)
+
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'c00', NF_DOUBLE, 1, 
+     &                         c00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'h0', NF_DOUBLE, 1, 
+     &                         h0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'slam0', NF_DOUBLE, 1, 
+     &                         slam0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'sfea0', NF_DOUBLE, 1, 
+     &                         sfea0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'ffactor', NF_DOUBLE, 1, 
+     &                         ffactor)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'esl', NF_DOUBLE, 1, 
+     &                         esl)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'cori', NF_DOUBLE, 1, 
+     &                         cori)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntif', NF_INT, 1, ntif)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nbfr', NF_INT, 1, nbfr)
+      CALL check_err(iret)
+      
+!     ======================
+!     Leave define mode
+!     ======================
+      iret = nf_enddef(ncid)
+      CALL check_err(iret)
+!     ======================
+!     Store static variables
+!     ======================
+!     -------
+!     Store Y
+!     -------
+      iret = nf_put_var_double(ncid, Y_id, Y)
+      CALL check_err(iret)
+!     -------
+!     Store X
+!     -------
+      iret = nf_put_var_double(ncid, X_id, X)
+      CALL check_err(iret)
+
+!     --------------------
+!     Store station name
+!     --------------------
+!      write(6,*)'nf put var'
+
+!      do i= 1, node_len
+!         write(6,'(A50)')STATNAMEM(i,SNAMLEN)
+!      end do
+ 
+      do i=1,node_len
+         start(1)=1
+         start(2)=i
+         count(1)= LEN(TRIM(STATNAMEM(i,SNAMLEN)))
+         count(2)=1
+         iret = nf_put_vara_text(ncid,station_id,start,count,
+     &   STATNAMEM(i,SNAMLEN) )
+         CALL check_err(iret)
+!          write(6,*)' end nf put var ', STATNAMEM(i,SNAMLEN),node_len
+      end do
+!     =====================
+!     Open old netcdf file
+!     =====================
+      ELSE
+!          WRITE (6,*)'****FIRST71 = 0 ****',FIRST71, FILENAME
+          iret = NF_OPEN(FILENAME, NF_WRITE, ncid)
+          CALL check_err(iret)   
+          FIRST71=0
+      ENDIF
+
+!     ----------
+!     Store time
+!     ----------
+
+      starti(1)=nrec
+      counti(1)=timenc_len
+      iret = nf_put_vara_DOUBLE(ncid, timenc_id, starti,counti, timenc)
+      CALL check_err(iret)
+
+!      WRITE(6,*)'AFTER store time'
+      
+!     ---------------------------
+!     Store zeta
+!     ---------------------------
+      count(1)=node_len
+      count(2)=timenc_len
+      start(1)=1
+      start(2)=nrec
+!      WRITE(6,*)'Z--START COUNT',start(1),start(2),count(1),count(2)
+      iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, count, zeta)
+      CALL check_err(iret)
+
+!     ---------------------------
+!     Calculating zeta minimum
+!     ---------------------------
+      
+      IF(.NOT. ALLOCATED(minzetat))ALLOCATE( minzetat(timenc_len))
+      IF(.NOT. ALLOCATED(maxzetat))ALLOCATE( maxzetat(timenc_len))
+      IF(.NOT. ALLOCATED(minzetan71))ALLOCATE( minzetan71(node_len))
+      IF(.NOT. ALLOCATED(maxzetan71))ALLOCATE( maxzetan71(node_len))
+
+      IF(.NOT. ALLOCATED(minznodet))ALLOCATE( minznodet(timenc_len))
+      IF(.NOT. ALLOCATED(maxznodet))ALLOCATE( maxznodet(timenc_len))
+      IF(.NOT. ALLOCATED(minztimen71))ALLOCATE( minztimen71(  node_len))
+      IF(.NOT. ALLOCATED(maxztimen71))ALLOCATE( maxztimen71(  node_len))
+!     ------------
+!     in each node
+!     ------------
+  	  do n=1,node_len
+ 		 if(zeta (n,1).lt.minzetan71(n) ) then
+ 		    minzetan71  (n) = zeta (n,1)
+ 		    minztimen71 (n) = timenc(1)
+ 		 endif
+! 		 write(6,*)"zeta", zeta (n,1), "MIN 71 = ",minzetan71 (n)
+ 	  end do
+!     --------------
+!     for each time
+!     --------------
+      minzetat (1) = 9999.d0
+ 	  do n=1,node_len
+ 		 if(zeta (n,1).gt.-9999.d0.and.zeta(n,1).lt. minzetat (1))then 
+           minzetat (1) = zeta (n,1)
+           minznodet(1) = n
+        endif
+ 	  end do
+
+!	  WRITE(6,*) "sea surface elevation minimum - 1:  ", minzetat (1)
+      iret=nf_put_vara_DOUBLE(ncid, minzetat_id,(/nrec/),(/1/),minzetat)
+           CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid, minznodet_id,(/nrec/),(/1/),minznodet)
+           CALL check_err(iret)
+
+!     ---------------------------
+!     Calculating zeta maximum
+!     ---------------------------
+!      WRITE(6,*)'BEFORE CALCULATE ZETA MAX'
+!     ------------
+!     in each node
+!     ------------
+  	  do n=1,node_len
+ 		 if(zeta (n,1).gt.maxzetan71(n) ) then
+ 		    maxzetan71 (n) = zeta (n,1)
+            maxztimen71(n) = timenc(1)
+          endif
+ 	  end do
+!     --------------
+!     for each time
+!     --------------
+      maxzetat (1) = -9999.d0
+ 	  do n=1,node_len
+ 		 if(zeta(n,1).gt.maxzetat(1))  then
+ 		    maxzetat (1) = zeta (n,1)
+ 		    maxznodet(1) = n
+ 		 endif
+! 		 WRITE(6,*) "********* maxzetan (1) ",n, zeta(n,1),maxzetat(1)
+ 	  end do
+
+!	  WRITE(6,*) "sea surface elevation maximum - 1:  ", maxzetat (1)
+      iret=nf_put_vara_DOUBLE(ncid,maxzetat_id,(/nrec/),(/1/),maxzetat)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid,maxznodet_id,(/nrec/),(/1/),maxznodet)
+      CALL check_err(iret)
+!      WRITE(6,*)'AFTER CALCULATE ZETA MAX'
+
+!     ---------------------------
+!     Closing fort.X3 netCDF file
+!     ---------------------------
+!      WRITE(6,*)"NREC = ", NREC," NDATA = ",NDATA
+      IF(NREC.EQ.NDATA) THEN
+      
+!         do n=1,node_len
+         
+!         write(6,*)"MIN 71 = ",minzetan71 (n)
+!         write(6,*)"MAX 71 = ",maxzetan71 (n)
+!         end do
+
+      
+         iret = nf_put_var_double(ncid, minzetan_id, minzetan71)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxzetan_id, maxzetan71)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, minztimen_id, minztimen71)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxztimen_id, maxztimen71)
+         CALL check_err(iret)
+      ENDIF
+      
+      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      WRITE(6,*) "-----------------------------------------------------"
+      
+      iret = nf_close(ncid)
+      CALL check_err(iret)
+      WRITE(6,*)'end subroutine writenc71'
+     
+      end subroutine writenc71      
+
+
+!=======================================================================
+!     Subroutine writenc72
+!     Writes a netCDF file equivalent to ADCIRC's fort.63 ascii file
+!
+!     Dimensions:
+!     time_len  : Number of Times
+!     node_len  : Number of Nodes
+!
+!     Variables :
+!     time      : Time
+!     u         : u velocity in x-direction
+!     v         : v velocity in y-direction
+!
+!     Attributes:
+!     rundes    : Run description
+!     runid     : Run ID
+!     agrid     : Grid ID
+!     irtype    : Record Type (1=1D, 2=2D, 3=3D)
+!     dtdp      : Timestep (secs)
+!
+!     Revision history:
+!
+!     Date            Programmer                  Description of change
+!     ----            ----------                  ----------------------
+!     03/30/07  Cristina Forbes, PSGS @ UNC-IMS   Wrote original code
+!=======================================================================
+      subroutine writenc72 (nout,fileunit,timenc_len,node_len,timenc,
+     &                      nt, NDATA, u,v,
+     &                      rundes, runid, agrid, irtype,
+     &                      dtdp, ihot, ics, nolibf, nolifa,
+     &                      nolica, nolicat, nwp, 
+     &                      ncor, ntip, nws, nramp, tau0,
+     &                      statim, reftim, rnday, dramp,
+     &                      a00, b00, c00, h0,
+     &                      slam0, sfea0, ffactor,esl, cori,
+     &                      ntif, nbfr, elem_len, nface_len, nm,
+     &                      x,y,depth,
+     &                      nope_len, neta_len, nbdv, 
+     &                      nbou_len, nvel_len, nbvv,
+     &                      title, institution, source, history,
+     &                      references, comments, host, convention,
+     &                      contact,
+     &                      base_date)
+
+
+!--------------------------------------------
+!     Force explicit declaration of all variables
+!--------------------------------------------
+      IMPLICIT NONE
+!     -------------------
+!     netCDF header file
+!     -------------------
+ !     include 'netcdf.inc'
+!     -------------------
+!     Error status return
+!     -------------------
+      INTEGER  iret
+!     ---------
+!     netCDF id
+!     ---------
+      INTEGER  ncid
+!     -------------
+!     Dimension ids
+!     -------------
+      INTEGER  node_dim
+      INTEGER  timenc_dim
+      INTEGER  elem_dim
+      INTEGER  nface_dim
+      INTEGER  nope_dim
+      INTEGER  neta_dim
+      INTEGER  nbou_dim
+      INTEGER  nvel_dim
+      INTEGER  slen_dim
+      INTEGER  scode_dim
+!     -----------------
+!     Dimension lengths
+!     -----------------
+      INTEGER  node_len
+      INTEGER  timenc_len
+      INTEGER  elem_len
+      INTEGER  nface_len
+      INTEGER  nope_len
+      INTEGER  neta_len
+      INTEGER  nbou_len
+      INTEGER  nvel_len
+!     ------------
+!     Variable ids
+!     ------------
+      INTEGER  timenc_id
+      INTEGER  X_id
+      INTEGER  Y_id
+      INTEGER  DEPTH_id
+      INTEGER  ELE_id
+      INTEGER  mindepth_id
+      INTEGER  maxdepth_id
+      INTEGER  nbdv_id
+      INTEGER  nbvv_id
+      INTEGER  u_id
+      INTEGER  v_id
+      INTEGER  minut_id
+      INTEGER  maxut_id
+      INTEGER  minvt_id
+      INTEGER  maxvt_id
+      INTEGER  minun_id
+      INTEGER  maxun_id
+      INTEGER  minvn_id
+      INTEGER  maxvn_id
+      
+      INTEGER  minunodet_id
+      INTEGER  maxunodet_id
+      INTEGER  minutimen_id
+      INTEGER  maxutimen_id
+      INTEGER  minvnodet_id
+      INTEGER  maxvnodet_id
+      INTEGER  minvtimen_id
+      INTEGER  maxvtimen_id
+      INTEGER  station_id
+      INTEGER  scode_id
+!     ---------------------------------------------
+!     Rank (number of dimensions) for each variable
+!     ---------------------------------------------
+      INTEGER  timenc_rank
+      INTEGER  station_rank
+      INTEGER  scode_rank
+      INTEGER  depth_rank
+      INTEGER  ele_rank
+      INTEGER  mindepth_rank
+      INTEGER  maxdepth_rank
+      INTEGER  x_rank
+      INTEGER  y_rank
+      INTEGER  nvdll_rank
+      INTEGER  nbdv_rank
+      INTEGER  nbvv_rank
+      INTEGER  u_rank
+      INTEGER  v_rank
+      INTEGER  minut_rank
+      INTEGER  maxut_rank
+      INTEGER  minvt_rank
+      INTEGER  maxvt_rank
+      INTEGER  minun_rank
+      INTEGER  maxun_rank
+      INTEGER  minvn_rank
+      INTEGER  maxvn_rank
+
+      INTEGER  minunodet_rank
+      INTEGER  maxunodet_rank
+      INTEGER  minutimen_rank
+      INTEGER  maxutimen_rank
+      
+      INTEGER  minvnodet_rank
+      INTEGER  maxvnodet_rank
+      INTEGER  minvtimen_rank
+      INTEGER  maxvtimen_rank
+
+      PARAMETER (timenc_rank = 1)
+      PARAMETER (scode_rank = 2)
+      PARAMETER (station_rank = 2)
+      PARAMETER (depth_rank = 1)
+      PARAMETER (ele_rank = 2)
+      PARAMETER (mindepth_rank = 0)
+      PARAMETER (maxdepth_rank = 0)
+      PARAMETER (x_rank = 1)
+      PARAMETER (y_rank = 1)
+      PARAMETER (nvdll_rank = 1)
+      PARAMETER (nbdv_rank = 2)
+      PARAMETER (nbvv_rank = 2)
+      PARAMETER (u_rank = 2)
+      PARAMETER (v_rank = 2)
+      PARAMETER (minut_rank = 1)
+      PARAMETER (maxut_rank = 1)
+      PARAMETER (minvt_rank = 1)
+      PARAMETER (maxvt_rank = 1)
+      PARAMETER (minun_rank = 1)
+      PARAMETER (maxun_rank = 1)
+      PARAMETER (minvn_rank = 1)
+      PARAMETER (maxvn_rank = 1)
+
+      PARAMETER (minunodet_rank = 1)
+      PARAMETER (maxunodet_rank = 1)
+      PARAMETER (minutimen_rank = 1)
+      PARAMETER (maxutimen_rank = 1)
+
+      PARAMETER (minvnodet_rank = 1)
+      PARAMETER (maxvnodet_rank = 1)
+      PARAMETER (minvtimen_rank = 1)
+      PARAMETER (maxvtimen_rank = 1)
+
+!     ---------------
+!     Variable shapes
+!     ---------------
+      INTEGER  timenc_dims(timenc_rank)
+      INTEGER  station_dims  (station_rank)
+      INTEGER  x_dims(x_rank)
+      INTEGER  y_dims(y_rank)
+      INTEGER  depth_dims(depth_rank)
+      INTEGER  ele_dims(ele_rank)
+      INTEGER  nvdll_dims(nvdll_rank)
+      INTEGER  nbdv_dims(nbdv_rank)
+      INTEGER  nbvv_dims(nbvv_rank)
+      INTEGER  u_dims(u_rank)
+      INTEGER  v_dims(v_rank)
+      INTEGER  minut_dims(minut_rank)
+      INTEGER  maxut_dims(maxut_rank)
+      INTEGER  minvt_dims(minvt_rank)
+      INTEGER  maxvt_dims(maxvt_rank)
+      INTEGER  minun_dims(minun_rank)
+      INTEGER  maxun_dims(maxun_rank)
+      INTEGER  minvn_dims(minvn_rank)
+      INTEGER  maxvn_dims(maxvn_rank)
+
+      INTEGER  minunodet_dims(minunodet_rank)
+      INTEGER  maxunodet_dims(maxunodet_rank)
+      INTEGER  minutimen_dims(minutimen_rank)
+      INTEGER  maxutimen_dims(maxutimen_rank)
+
+      INTEGER  minvnodet_dims(minvnodet_rank)
+      INTEGER  maxvnodet_dims(maxvnodet_rank)
+      INTEGER  minvtimen_dims(minvtimen_rank)
+      INTEGER  maxvtimen_dims(maxvtimen_rank)
+
+!     --------------
+!     Data variables
+!     --------------
+      CHARACTER*5 FILEFORT
+      CHARACTER*10 FILENAME
+      CHARACTER*3 FILEEXT
+      INTEGER   t,ntif,nbfr,nt
+      INTEGER   irtype, ihot, ics, nolibf, nolifa, nolica, nolicat, nwp
+      INTEGER   ntip, nws, nramp,ncor
+      INTEGER   nvel, neta, nout
+      INTEGER   element (nface_len , elem_len)
+      INTEGER   nbdv (nope_len, neta_len)
+      INTEGER   nbvv (nbou_len, nvel_len)
+      INTEGER   nm (elem_len, nface_len)
+      INTEGER   fileunit
+      REAL(sz)  timenc(timenc_len)
+      REAL(sz)  x(node_len)
+      REAL(sz)  y(node_len)
+      REAL(sz)  depth(node_len)
+      REAL(sz)  u(node_len, timenc_len)
+      REAL(sz)  v(node_len, timenc_len)
+      REAL(sz), ALLOCATABLE, SAVE ::   minut(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxut(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   minvt(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxvt(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   minun72(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxun72(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   minvn72(:)
+      REAL(sz), ALLOCATABLE, SAVE ::   maxvn72(:)
+      
+      INTEGER , ALLOCATABLE, SAVE ::  minunodet(:)
+      INTEGER , ALLOCATABLE, SAVE ::  maxunodet(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minutimen72(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxutimen72(:)
+      
+      INTEGER , ALLOCATABLE, SAVE ::  minvnodet(:)
+      INTEGER , ALLOCATABLE, SAVE ::  maxvnodet(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  minvtimen72(:)
+      REAL(sz), ALLOCATABLE, SAVE ::  maxvtimen72(:)
+
+      REAL  minull
+      REAL  maxull
+      REAL  minvll
+      REAL  maxvll
+      real*8  mindepth
+      real*8  maxdepth
+      REAL*8 dtdp, statim,reftim, rnday, dramp, tau0
+      REAL*8 a00, b00, c00,h0
+      REAL(sz) slam0, sfea0, ffactor,esl, cori
+      REAL(sz) slam0deg, sfea0deg
+!      REAL*8 nele
+      CHARACTER(80) rundes, runid, agrid
+      INTEGER, SAVE  :: FIRST72 = 1 
+      INTEGER NDATA
+      INTEGER, SAVE  :: NREC = 0
+
+!     -----------------
+!     Attribute vectors
+!     -----------------
+      INTEGER intval(1),i,j
+      INTEGER counti(1), starti(1), n
+      INTEGER count(2), start(2)
+      REAL    realval(1)
+!      DOUBLE PRECISION  doubleval(1)
+!     -----------------
+!     Attribute general
+!     -----------------
+      CHARACTER(*) :: title, institution, source, history
+      CHARACTER(*) :: references, comments, host, convention, contact
+      CHARACTER(*) :: base_date
+
+!     -----------------
+!      date_string variables for time attribute
+!     -----------------
+      character date_string*40
+      character now_date*8
+      character big_ben*10
+      character zone*5
+      integer   values(8)
+
+      save node_dim,  elem_dim, nface_dim
+      save nope_dim, neta_dim, nbou_dim, nvel_dim
+      save u_id, v_id, X_id, Y_id
+      save minut_id, maxut_id, minun_id, maxun_id
+      save minvt_id, maxvt_id, minvn_id, maxvn_id
+
+      save minunodet_id, maxunodet_id, minutimen_id, maxutimen_id
+      save minvnodet_id, maxvnodet_id, minvtimen_id, maxvtimen_id
+
+      save DEPTH_id,ELE_id, mindepth_id, maxdepth_id, nbdv_id, nbvv_id
+      save timenc_dim, timenc_id
+      save station_id, scode_id
+      save mindepth, maxdepth
+
+!     ---------------------------
+!     Opening fort.64 netCDF file
+!     ---------------------------
+      WRITE(6,*) "-----------------------------------------------------"
+
+!       write(6,*) "*****************Time inside subroutine ", timenc(1)
+       NREC = NREC + 1
+!       WRITE (6,*)'========= FILEUNIT =======', FILEUNIT
+!       WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
+!       WRITE (6,*)'========= time_len, node_len =======',
+!     &  timenc_len, node_len
+     
+
+!     --------------------------------
+!     Switch order in array for NETCDF
+!     --------------------------------
+      do i=1, elem_len
+         do j=1, nface_len
+            element(j,i) = nm (i,j)
+         end do
+      end do
+      
+!     -----------------
+!     Enter define mode
+!     -----------------
+      IF(FIRST72.EQ.1) THEN
+!         WRITE (6,*)'****FIRST72 = 1 ****',FIRST72
+         FILEFORT = 'fort.'
+         FILEEXT = '.nc'
+         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+         
+         if(nout.eq. 3) then
+            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
+         CALL check_err(iret)
+          FIRST72=0
+         endif
+         
+         ALLOCATE ( minun72 (node_len) )
+         ALLOCATE ( maxun72 (node_len) )
+         ALLOCATE ( minvn72 (node_len) )
+         ALLOCATE ( maxvn72 (node_len) )
+         
+         ALLOCATE ( minutimen72 (node_len) )
+         ALLOCATE ( maxutimen72 (node_len) )
+         ALLOCATE ( minvtimen72 (node_len) )
+         ALLOCATE ( maxvtimen72 (node_len) )
+         
+         do n=1,node_len
+            minun72 (n) =  9999.d0
+            maxun72 (n) = -9999.d0
+            minvn72 (n) =  9999.d0
+            maxvn72 (n) = -9999.d0
+
+            minutimen72 (n) = -9999.d0
+            maxutimen72 (n) = -9999.d0
+            minvtimen72 (n) = -9999.d0
+            maxvtimen72 (n) = -9999.d0
+
+         end do
+!     --------------------------------
+!     Convert to degress for NETCDF I/O
+!     --------------------------------
+               SLAM0DEG=SLAM0*RAD2DEG
+               SFEA0DEG=SFEA0*RAD2DEG
+!     -----------------
+!     Define dimensions
+!     -----------------
+      iret = nf_def_dim(ncid, 'station', node_len, node_dim)
+      CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'namelen', SNAMLEN, slen_dim)
+      CALL check_err(iret)
+      iret = nf_def_dim(ncid, 'time', nf_unlimited, timenc_dim)
+      CALL check_err(iret)
+
+!     ================
+!     Define variables
+!     ================
+!     ----------------
+!     Define time
+!     ----------------
+      timenc_dims(1) = timenc_dim
+      iret = nf_def_var(ncid,'time',NF_DOUBLE, timenc_rank, timenc_dims, 
+     &                  timenc_id)
+      CALL check_err(iret)
+      
+!     -------------------
+!     Define x
+!     -------------------
+      x_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'x', NF_DOUBLE, x_rank, x_dims, x_id)
+      CALL check_err(iret)
+!     -------------------
+!     Define Y coordinate
+!     --------------------
+      Y_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'y', NF_DOUBLE, Y_rank, Y_dims, Y_id)
+      CALL check_err(iret)
+!     ---------------------
+!     Define stations name
+!     --------------------
+      station_dims(1) = slen_dim
+      station_dims(2) = node_dim
+      iret = nf_def_var(ncid, 'station_name', NF_CHAR, station_rank, 
+     1      station_dims, station_id)
+      CALL check_err(iret)
+
+!     ----------------
+!     Define u vel
+!     ----------------
+      u_dims(1) = node_dim
+      u_dims(2) = timenc_dim
+      iret = nf_def_var(ncid, 'windx', NF_DOUBLE, u_rank, u_dims, 
+     &                  u_id)
+      CALL check_err(iret)
+
+!      WRITE(6,*)"Define v"
+!     ----------------
+!     Define v vel
+!     ----------------
+      v_dims(1) = node_dim
+      v_dims(2) = timenc_dim
+      iret = nf_def_var(ncid, 'windy', NF_DOUBLE, v_rank, v_dims, 
+     &                  v_id)
+      CALL check_err(iret)
+
+!     -------------------------
+!     Define minimum u at times
+!     -------------------------
+      minut_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minuvelt', NF_DOUBLE, minut_rank, 
+     &                  minut_dims, minut_id)
+      CALL check_err(iret)
+!      WRITE(6,*)"Define MAX u/v"
+!     -------------------------
+!     Define maximum u at times
+!     -------------------------
+      maxut_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxuvelt', NF_DOUBLE, maxut_rank, 
+     &                  maxut_dims, maxut_id)
+      CALL check_err(iret)
+
+!      WRITE(6,*)"Define min v"
+
+!     -------------------------
+!     Define minimum v at times
+!     -------------------------
+      minvt_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minvvelt', NF_DOUBLE, minvt_rank, 
+     &                  minvt_dims, minvt_id)
+      CALL check_err(iret)
+      
+!      WRITE(6,*)"Define max v"
+!     -------------------------
+!     Define maximum v at times
+!     -------------------------
+      maxvt_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxvvelt', NF_DOUBLE, maxvt_rank, 
+     &                  maxvt_dims, maxvt_id)
+      CALL check_err(iret)
+
+!     -------------------------
+!     Define minimum u at nodes
+!     -------------------------
+      minun_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minuveln', NF_DOUBLE, minun_rank, 
+     &                  minun_dims, minun_id)
+      CALL check_err(iret)
+!     -------------------------
+!     Define maximum u at nodes
+!     -------------------------
+      maxun_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxuveln', NF_DOUBLE, maxun_rank, 
+     &                  maxun_dims, maxun_id)
+      CALL check_err(iret)
+
+!      WRITE(6,*)"Define min v at nodes"
+!     -------------------------
+!     Define minimum v at nodes
+!     -------------------------
+      minvn_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minvveln', NF_DOUBLE, minvn_rank, 
+     &                  minvn_dims, minvn_id)
+      CALL check_err(iret)
+!     -------------------------
+!     Define maximum v at nodes
+!     -------------------------
+      maxvn_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxvveln', NF_DOUBLE, maxvn_rank, 
+     &                  maxvn_dims, maxvn_id)
+      CALL check_err(iret)
+!      WRITE(6,*)"FINISH Define max v at nodes"  
+      
+      
+!     ----------------------------
+!     Define minimum u nodes at times
+!     ----------------------------
+      minunodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minunodet', NF_INT, minunodet_rank, 
+     &                  minunodet_dims, minunodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum u nodes at times
+!     ----------------------------
+      maxunodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxunodet', NF_INT, maxunodet_rank, 
+     &                  maxunodet_dims, maxunodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define minimum u nodes at nodes
+!     ----------------------------
+      minutimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minutimen', NF_DOUBLE, minutimen_rank, 
+     &                  minutimen_dims, minutimen_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum u nodes at nodes
+!     ----------------------------
+      maxutimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxutimen', NF_DOUBLE, maxutimen_rank, 
+     &                  maxutimen_dims, maxutimen_id)
+      CALL check_err(iret)
+
+            
+!     ----------------------------
+!     Define minimum v nodes at times
+!     ----------------------------
+      minvnodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'minvnodet', NF_INT, minvnodet_rank, 
+     &                  minvnodet_dims, minvnodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum v nodes at times
+!     ----------------------------
+      maxvnodet_dims(1) = timenc_dim
+      iret = nf_def_var(ncid, 'maxvnodet', NF_INT, maxvnodet_rank, 
+     &                  maxvnodet_dims, maxvnodet_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define minimum v nodes at nodes
+!     ----------------------------
+      minvtimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'minvtimen', NF_DOUBLE, minvtimen_rank, 
+     &                  minvtimen_dims, minvtimen_id)
+      CALL check_err(iret)
+!     ----------------------------
+!     Define maximum v nodes at nodes
+!     ----------------------------
+      maxvtimen_dims(1) = node_dim
+      iret = nf_def_var(ncid, 'maxvtimen', NF_DOUBLE, maxvtimen_rank, 
+     &                  maxvtimen_dims, maxvtimen_id)
+      CALL check_err(iret)
+      
+!     -----------------
+!     Assign attributes
+!     -----------------
+
+      if(ics.eq.2) then
+      
+      iret = nf_put_att_text(ncid, X_id, 'long_name', 9, 'longitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'standard_name', 9, 
+     &                      'longitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'units', 12,  VAR_DEGE)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE,
+     &                        1, doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)      
+      
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 8, 'latitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 8, 
+     &                       'latitude')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'units', 13,  VAR_DEGN)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, Y_id, 'missing_values', NF_DOUBLE, 
+     &       1, doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &       doubleval)
+      CALL check_err(iret)
+
+       else
+
+      
+      iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
+     &       'Cartesian coordinate x')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, 
+     &                      'x_coordinate')
+      CALL check_err(iret)
+!    ----------------------
+!     determine variable units
+!    ----------------------
+      if (G.LT.11.D0) then
+          iret = nf_put_att_text(ncid, X_id, 'units', 6, VAR_METS)
+      else
+          iret = nf_put_att_text(ncid, X_id, 'units', 6, VAR_FEET)
+      endif
+      CALL check_err(iret)
+      
+      iret = nf_put_att_text(ncid, X_id, 'positive', 5, VAR_RG)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE, 
+     &                       1, doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+!     ------------------------------
+!     Define y-coordinate attributes
+!     ------------------------------     
+      
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
+     &       'Cartesian coordinate y')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
+     &                       'y_coordinate')
+      CALL check_err(iret)
+!    ----------------------
+!     determine variable units
+!    ----------------------
+      if (G.LT.11.D0) then
+         iret = nf_put_att_text(ncid, Y_id, 'units', 6,  VAR_METS)
+      else
+         iret = nf_put_att_text(ncid, Y_id, 'units', 6,  VAR_FEET)
+      endif
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
+      CALL check_err(iret)
+
+      iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
+     &       NF_DOUBLE, 1, doubleval)
+      CALL check_err(iret)
+
+      iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+     &       doubleval)
+      CALL check_err(iret)
+      
+      endif
+!!+++++++++++++++++++++++++++++++++++++++++++++++
+    !    ----------------------------------------------------------
+!     determine variable names according to coordinates and nws
+!    ----------------------------------------------------------
+      if (ics.eq.2) then
+        if (abs(nws).eq.1.or.abs(nws).eq.2) then
+             iret = nf_put_att_text(ncid, minut_id, 'long_name', 51, 
+     &       'minimum station e/w wind stress at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 31,
+     &       'minimum_station_e/w_wind_stress')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvt_id, 'long_name', 51, 
+     &       'minimum station n/s wind stress at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 31,
+     &       'minimum_station_n/s_wind_stress')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxut_id, 'long_name', 51, 
+     &       'maximum station e/w wind stress at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 31,
+     &       'maximum_station_e/w_wind_stress')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 51, 
+     &       'maximum station n/s wind stress at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 31,
+     &       'maximum_station_n/s_wind_stress')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minun_id, 'long_name', 39, 
+     &       'minimum e/w wind stress at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minun_id, 'standard_name', 39,
+     &       'minimum_e/w_wind_stress_at_each_station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'long_name', 39, 
+     &        'maximum e/w wind stress at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 39,
+     &       'maximum_e/w_wind_stress_at_each_station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'long_name', 39, 
+     &       'minimum station n/s wind stress at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 39,
+     &       'minimum_n/s_wind_stress_at_each_station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 39, 
+     &       'maximum n/s wind stress at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id, 'standard_name', 39,
+     &       'maximum_n/s_wind_stress_at_each_station')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minunodet_id, 'long_name',54, 
+     &        'station of minimum e/w wind stress at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minunodet_id, 'standard_name',
+     &        34,'station_of_minimum_e/w_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxunodet_id, 'long_name',54, 
+     &        'station of maximum e/w wind stress at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name',
+     &        34,'station_of_maximum_e/w_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minvnodet_id, 'long_name',54,
+     &        'station of minimum n/s wind stress at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name',
+     &        34,'station_of_minimum_n/s_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name',51, 
+     &         'station of maximum n/s wind stress at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name',
+     &        34,'station_of_maximum_n/s_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 
+     &        47, 'time of minimum e/w wind stress at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minutimen_id, 'standard_name',
+     &        31,'time_of_minimum_e/w_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 
+     &        47, 'time of maximum e/w wind stress at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name',
+     &        31,'time_of_maximum_e/w_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 
+     &        47, 'time of minimum n/s wind stress at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name',
+     &        31,'time_of_minimum_n/s_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 
+     &        47, 'time of maximum n/s wind stress at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name',
+     &        31,'time_of_maximum_n/s_wind_stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, u_id, 'long_name', 23, 
+     &                       'station e/w wind stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, u_id, 'standard_name', 23, 
+     &                      'station_e/w_wind_stress')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, u_id, 'positive', 4, VAR_EAST)
+
+              iret = nf_put_att_text(ncid, v_id, 'long_name', 23, 
+     &                       'station n/s wind stress')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, v_id, 'standard_name', 23, 
+     &                      'station_n/s_wind_stress')
+             CALL check_err(iret)
+            iret = nf_put_att_text(ncid, v_id, 'positive', 5, VAR_NORTH)
+
+
+
+        else
+              iret = nf_put_att_text(ncid, minut_id, 'long_name', 53, 
+     &       'minimum station e/w wind velocity at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 53,
+     &       'minimum_station_e/w_wind_velocity_at_each_output_time')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minvt_id, 'long_name', 53, 
+     &       'minimum station n/s wind velocity at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 53,
+     &       'minimum_station_n/s_wind_velocity_at_each_output_time')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxut_id, 'long_name', 53, 
+     &       'maximum station e/w wind velocity at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 53,
+     &       'maximum_station_e/w_wind_velocity_at_each_output_time')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 53, 
+     &       'maximum station n/s wind velocity at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 53,
+     &       'maximum_station_n/s_wind_velocity_at_each_output_time')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minun_id, 'long_name', 41, 
+     &       'minimum e/w wind velocity at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minun_id, 'standard_name', 41,
+     &       'minimum_e/w_wind_velocity_at_each_station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'long_name', 41, 
+     &       'maximum e/w wind velocity at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 41,
+     &       'maximum_e/w_wind_velocity_at_each_station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'long_name', 41, 
+     &       'minimum n/s wind velocity at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 41,
+     &       'minimum_n/s_wind_velocity_at_each_station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 41, 
+     &       'maximum n/s wind velocity at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id,'standard_name', 41,
+     &       'maximum_n/s_wind_velocity_at_each_station')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, minunodet_id, 'long_name',56, 
+     &       'station of minimum e/w wind velocity at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minunodet_id, 'standard_name',
+     &        56,
+     &       'station_of_minimum_e/w_wind_velocity_at_each_output_time')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxunodet_id, 'long_name',56, 
+     &        'station of maximum e/w wind velocity at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name',
+     &        56,
+     &      'station_of_maximum_e/w_wind_velocity_at_each_output_time')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvnodet_id, 'long_name',56, 
+     &       'station of minimum n/s wind velocity at each output time')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name',
+     &       56,
+     &       'station_of_minimum_n/s_wind_velocity_at_each_output_time')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name',56, 
+     &      'station of maximum n/s wind velocity at each output time')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name',
+     &       56,
+     &       'station_of_maximum_n/s_wind_velocity_at_each_output_time')
+             CALL check_err(iret)
+
+             iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 
+     &       49,'time of minimum e/w wind velocity at each station')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minutimen_id, 'standard_name',
+     &       49,'time_of_minimum_e/w_wind_velocity_at_each_station')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 
+     &       49,'time of maximum e/w wind velocity at each station')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name',
+     &       49,'time_of_maximum_e/w_wind_velocity_at_each_station')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 
+     &       49,'time of minimum n/s wind velocity at each station')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name',
+     &       49,'time_of_minimum_n/s_wind_velocity_at_each_station')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 
+     &       49,'time of maximum n/s wind velocity at each station')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name',
+     &       49,'time_of_maximum_n/s_wind_velocity_at_each_station')
+             CALL check_err(iret)
+
+              iret = nf_put_att_text(ncid, u_id, 'long_name', 25, 
+     &                       'station e/w wind velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, u_id, 'standard_name', 25, 
+     &                      'station_e/w_wind_velocity')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, u_id, 'positive', 4, VAR_EAST)
+
+              iret = nf_put_att_text(ncid, v_id, 'long_name', 25, 
+     &                       'station n/s wind velocity')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, v_id, 'standard_name', 25, 
+     &                      'station_n/s_wind_velocity')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, v_id, 'positive', 5,VAR_NORTH)
+
+
+          endif
+       else
+         if (abs(nws).eq.1.or.abs(nws).eq.2) then
+             iret = nf_put_att_text(ncid, minut_id, 'long_name', 62, 
+     & 'minimum station wind stress in x-direction at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 62,
+     & 'minimum_station_wind_stress_in_x_direction_at_each_output_time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvt_id, 'long_name', 62, 
+     & 'minimum station wind stress in y-direction at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 62,
+     & 'minimum_station_wind_stress_in_y_direction_at_each_output_time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxut_id, 'long_name', 62, 
+     & 'maximum station wind stress in x-direction at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 62,
+     & 'maximum_station_wind_stress_in_x_direction_at_each_output_time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 62, 
+     & 'maximum station wind stress in y-direction at each output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 62,
+     & 'maximum_station_wind_stress_in_y_direction_at_each_output_time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minun_id, 'long_name', 50, 
+     &       'minimum wind stress in x-direction at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minun_id, 'standard_name', 50,
+     &       'minimum_wind_stress_in_x_direction_at_each_station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'long_name', 50, 
+     &       'maximum wind stress in x-direction at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 50,
+     &       'maximum_wind_stress_in_x_direction_at_each_station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'long_name', 50, 
+     &       'minimum wind stress in y-direction at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 50,
+     &       'minimum_wind_stress_in_y_direction_at_each_station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 50, 
+     &       'maximum wind stress in y-direction at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id, 'standard_name', 50,
+     &       'maximum_wind_stress_in_y_directionat_each_station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 65, 
+     &           'station of minimum wind stress in x-direction at each  
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minunodet_id, 'standard_name', 
+     &       65, 'station_of_minimum_wind_stress_in_x_direction_at_each_
+     &output_time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 65, 
+     &           'station of maximum wind stress in x-direction at each 
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name', 
+     &       65, 'station_of_maximum_wind_stress_in_x_direction_at_each_
+     &output_time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 62, 
+     &           'station of minimum wind stress in y-direction at each  
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name', 
+     &       62, 'station_of_minimum_wind_stress_in_y_direction_at_each_
+     &output_time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 62, 
+     &           'station of maximum wind stress in y-direction at each 
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name', 
+     &       62, 'station_of_maximum_wind_stress_in_y_direction_at_each_
+     &output_time')
+              CALL check_err(iret)
+
+            iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 58, 
+     &     'time of minimum wind stress in x-direction at each station')
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minutimen_id, 'standard_name', 
+     &       58,
+     &     'time_of_minimum_wind_stress_in_x_direction_at_each_station')
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 58, 
+     &     'time of maximum wind stress in x-direction at each station')
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name', 
+     &       58,
+     &     'time_of_maximum_wind_stress_in_x_direction_at_each_station')
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 58, 
+     &     'time of minimum wind stress in y-direction at each station')
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name', 
+     &      58,
+     &     'time_of_minimum_wind_stress_in_y_direction_at_each_station')
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 58, 
+     &     'time of maximum wind stress in y-direction at each station')
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name', 
+     &      58,
+     &     'time_of_maximum_wind_stress_in_y_direction_at_each_station')
+            CALL check_err(iret)
+
+            iret = nf_put_att_text(ncid, u_id, 'long_name', 33, 
+     &                       'station wind stress in x-direction')
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, u_id, 'standard_name', 33, 
+     &                      'station_wind_stress_in_x_direction')
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, u_id, 'positive', 5, VAR_RG)
+
+            iret = nf_put_att_text(ncid, v_id, 'long_name', 33, 
+     &                       'station wind stress in y-direction')
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, v_id, 'standard_name', 33, 
+     &                      'station_wind_stress_in_y_direction')
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, v_id, 'positive', 2, VAR_UP)
+             
+         else
+             iret = nf_put_att_text(ncid, minut_id, 'long_name', 64, 
+     &            'minimum station wind velocity in x-direction at each 
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 64,
+     &            'minimum_station_wind_velocity_in_x_direction_at_each_
+     &output_time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvt_id, 'long_name', 64, 
+     &            'minimum station wind velocity in y-direction at each 
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 64,
+     &            'minimum_station_wind_velocity_in_y_direction_at_each_
+     &output_time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxut_id, 'long_name', 64, 
+     &            'maximum station wind velocity in x-direction at each 
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 64,
+     &            'maximum_station_wind_velocity_in_x_direction_at_each_
+     &output_time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 64, 
+     &            'maximum station wind velocity in y-direction at each 
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 64,
+     &            'maximum_station_wind_velocity_in_y_direction_at_each_
+     &output_time')
+              CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, minun_id, 'long_name', 52, 
+     &       'minimum wind velocity in x-direction at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minun_id, 'standard_name', 52,
+     &       'minimum_wind_velocity_in_x_direction_at_each_station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'long_name', 52, 
+     &       'maximum wind velocity in x-direction at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 52,
+     &       'maximum_wind_velocity_in_x_direction_at_each_station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'long_name', 52, 
+     &       'minimum wind velocity in y-direction at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 52,
+     &       'minimum_wind_velocity_in_y_direction_at_each_station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 52, 
+     &       'maximum wind velocity in y-direction at each station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvn_id, 'standard_name', 52,
+     &       'maximum_wind_velocity_in_y_direction_at_each_station')
+              CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 67, 
+     &         'station of minimum wind velocity in x-direction at each 
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minunodet_id, 'standard_name', 
+     &      67,'station_of_minimum_wind_velocity_in_x_direction_at_each_
+     &output_time')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 67, 
+     &         'station of maximum wind velocity in x-direction at each 
+     &output time')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name', 
+     &      67,'station_of_maximum_wind_velocity_in_x_direction_at_each_
+     &output_time')
+              CALL check_err(iret)
+
+             iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 67, 
+     &         'station of minimum wind velocity in y-direction at each 
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name', 
+     &      67,'station_of_minimum_wind_velocity_in_y_direction_at_each_
+     &output_time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 67, 
+     &         'station of maximum wind velocity in y-direction at each 
+     &output time')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name', 
+     &      67,'station_of_maximum_wind_velocity_in_y_direction_at_each_
+     &output_time')
+              CALL check_err(iret)
+
+             iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 60, 
+     &            'time of minimum wind velocity in x-direction at each 
+     &station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minutimen_id, 'standard_name', 
+     &         60,'time_of_minimum_wind_velocity_in_x_direction_at_each_
+     &station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 60, 
+     &            'time of maximum wind velocity in x-direction at each 
+     &station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name', 
+     &         60,'time_of_maximum_wind_velocity_in_x_direction_at_each_
+     &station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 60, 
+     &            'time of minimum wind velocity in y-direction at each 
+     &station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name', 
+     &       60,  'time_of_minimum_wind_velocity_in_y_direction_at_each_
+     &station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 60, 
+     &            'time of maximum wind velocity in y-direction at each 
+     &station')
+              CALL check_err(iret)
+             iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name', 
+     &       60,  'time_of_maximum_wind_velocity_in_y_direction_at_each_
+     &station')
+              CALL check_err(iret)
+
+              iret = nf_put_att_text(ncid, u_id, 'long_name', 36, 
+     &                       'station wind velocity in x-direction')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, u_id, 'standard_name', 36, 
+     &                      'station_wind_velocity_in_x_direction')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, u_id, 'positive', 5, VAR_RG)
+
+              iret = nf_put_att_text(ncid, v_id, 'long_name', 36, 
+     &                       'station_wind velocity in y-direction')
+              CALL check_err(iret)
+              iret = nf_put_att_text(ncid, v_id, 'standard_name', 36, 
+     &                      'station_wind_velocity_in_y_direction')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, v_id, 'positive', 2, VAR_UP)
+             CALL check_err(iret)
+
+         endif
+      endif
+
+!    -------------------------
+!     determine variable units
+!    -------------------------
+      if (G.LT.11.D0) then
+         if (abs(nws).gt.2.and.abs(nws).lt.100) then
+            iret = nf_put_att_text(ncid, minut_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvt_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxut_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvt_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minun_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxun_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvn_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvn_id,'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, u_id, 'units',13, VAR_MPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, v_id, 'units',13, VAR_MPS)
+            CALL check_err(iret)
+         else
+            iret = nf_put_att_text(ncid, minut_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvt_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxut_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvt_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minun_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxun_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvn_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvn_id,'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, u_id, 'units',19, VAR_MPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, v_id, 'units',19, VAR_MPS_2)
+            CALL check_err(iret)         
+         endif
+      else
+         if (abs(nws).gt.2.and.abs(nws).lt.100) then
+            iret = nf_put_att_text(ncid, minut_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvt_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxut_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvt_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minun_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxun_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvn_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvn_id,'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, u_id, 'units',11, VAR_FPS)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, v_id, 'units',11, VAR_FPS)
+            CALL check_err(iret)
+         else
+            iret = nf_put_att_text(ncid, minut_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvt_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxut_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvt_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minun_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxun_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, minvn_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, maxvn_id,'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, u_id, 'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+            iret = nf_put_att_text(ncid, v_id, 'units',17, VAR_FPS_2)
+            CALL check_err(iret)
+         endif
+      endif
+      CALL check_err(iret)
+      
+!    -------------------------------------
+!     other variables units attributes
+!    ------------------------------------      
+
+      iret = nf_put_att_text(ncid, minunodet_id,'units',14,  VAR_NOND)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxunodet_id,'units',14,  VAR_NOND)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvnodet_id,'units',14,  VAR_NOND)
+      CALL check_err(iret)      
+      iret = nf_put_att_text(ncid, maxvnodet_id,'units',14,  VAR_NOND)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minutimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxutimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvtimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxvtimen_id,'units',4, VAR_SECS)
+      CALL check_err(iret)
+
+!    -------------------------------------
+!     u and v velocities other attributes
+!    ------------------------------------      
+
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, u_id, 'missing_values', 
+     &       NF_DOUBLE, 1, doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, u_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, u_id, 'dry_Value', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_DOUBLE(ncid, v_id, 'missing_values', 
+     &       NF_DOUBLE, 1, doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_DOUBLE(ncid, v_id, '_FillValue', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+      iret = nf_put_att_DOUBLE(ncid, v_id, 'dry_Value', NF_DOUBLE, 1, 
+     &                       doubleval)
+      CALL check_err(iret)
+    
+  
+!!+++++++++++++++++++++++++++++++++++++++++++++++
+!     -------------------------------------------------------------
+!     Define station names and code attributes
+!     -------------------------------------------------------------
+      iret = nf_put_att_text(ncid,station_id,'long_name',12,
+     & 'station name')
+      CALL check_err(iret)
+
+
+!    -----------------------
+!     Define time attributes
+!    -----------------------
+      iret = nf_put_att_text(ncid,timenc_id,'long_name',10,'model time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'standard_name', 4,'time')
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, timenc_id, 'units', 23,VAR_TUN)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, timenc_id, 'base_date',
+     . (LEN(TRIM(base_date(1:INDEX(base_date,"!")-1)))), base_date)
+      CALL check_err(iret)
+      
+!!+++++ removed u v
+
+!     -----------------
+!     Global attributes
+!     -----------------
+
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'model', 6, 'ADCIRC')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'version', 
+     &       LEN(TRIM(ADC_VERSION)), ADC_VERSION)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid_type', 10, 
+     &                      'Triangular')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'description', 
+     &       LEN(TRIM(rundes(1:INDEX(rundes,"!")-1))), rundes)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid',
+     &       LEN(TRIM(agrid)), agrid)       
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'title',
+     &       LEN(TRIM(title(1:INDEX(title,"!")-1))), 
+     &       title)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'institution', 
+     &       LEN(TRIM(institution(1:INDEX(institution,"!")-1))), 
+     &       institution)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'source', 
+     &       LEN(TRIM(source(1:INDEX(source,"!")-1))),
+     &       source)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'history', 
+     &       LEN(TRIM(history(1:INDEX(history,"!")-1))),
+     &       history)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'references', 
+     &       LEN(TRIM(references(1:INDEX(references,"!")-1))), 
+     &       references)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'comments', 
+     &       LEN(TRIM(comments(1:INDEX(comments,"!")-1))), 
+     &       comments)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'host', 
+     &       LEN(TRIM(host(1:INDEX(host,"!")-1))), 
+     &       host)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'convention', 
+     &       LEN(TRIM(convention(1:INDEX(convention,"!")-1))), 
+     &       convention)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'contact', 
+     &       LEN(TRIM(contact(1:INDEX(contact,"!")-1))), 
+     &       contact)
+      CALL check_err(iret)
+ 
+ 
+      CALL date_and_Time(now_date,big_ben,zone,values)
+      write(date_string,71) values(1),values(2),values(3)
+     & ,values(5),values(6),values(7),   (values(4))/60
+ 71   format(I4,'-',I2.2,'-',i2.2,' ',i2,':',i2.2,':',i2.2,' '
+     &  ,i3.2,':00')
+      iret = nf_put_att_text(ncid, NF_GLOBAL,'creation_date'
+     & ,len_trim(date_string),date_string)
+      CALL check_err(iret)
+ 
+!     -------------------------------------------
+!     writing global attributes from fort.15 file 
+!     -------------------------------------------
+      iret = nf_put_att_text(ncid, NF_GLOBAL, 'fort.15', 40, 
+     &                      '==== Input File Parameters (below) ====')
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dt', NF_DOUBLE, 1, dtdp)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'irtype', NF_INT, 1, irtype)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ihot', NF_INT, 1, ihot)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ics', NF_INT, 1, ics)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolibf', NF_INT, 1, nolibf)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolifa', NF_INT, 1, nolifa)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolica', NF_INT, 1, nolica)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nolicat', NF_INT, 1, 
+     &                      nolicat)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nwp', NF_INT, 1, nwp)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ncor', NF_INT, 1, ncor)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntip', NF_INT, 1, ntip)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nws', NF_INT, 1, nws)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nramp', NF_INT, 1, nramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'tau0', NF_DOUBLE, 1, 
+     &                         tau0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'statim', NF_DOUBLE, 1, 
+     &                         statim)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'reftim', NF_DOUBLE, 1, 
+     &                         reftim)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'rnday', NF_DOUBLE, 1,
+     &                         rnday)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'dramp', NF_DOUBLE, 1, 
+     &                         dramp)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'a00', NF_DOUBLE, 1, 
+     &                         a00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'b00', NF_DOUBLE, 1, 
+     &                         b00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'c00', NF_DOUBLE, 1, 
+     &                         c00)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'h0', NF_DOUBLE, 1, 
+     &                         h0)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'slam0', NF_DOUBLE, 1, 
+     &                         slam0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'sfea0', NF_DOUBLE, 1, 
+     &                         sfea0deg)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'ffactor', NF_DOUBLE, 1, 
+     &                         ffactor)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'esl', NF_DOUBLE, 1, 
+     &                         esl)
+      CALL check_err(iret)
+      iret = nf_put_att_double(ncid, NCGLOBAL, 'cori', NF_DOUBLE, 1, 
+     &                         cori)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'ntif', NF_INT, 1, ntif)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'nbfr', NF_INT, 1, nbfr)
+      CALL check_err(iret)
+     
+!     ======================
+!     Leave define mode
+!     ======================
+      iret = nf_enddef(ncid)
+      CALL check_err(iret)
+!     ======================
+!     Store static variables
+!     ======================
+!     -------
+!     Store X
+!     -------
+      iret = nf_put_var_double(ncid, X_id, X)
+      CALL check_err(iret)
+!     -------
+!     Store Y
+!     -------
+      iret = nf_put_var_double(ncid, Y_id, Y)
+      CALL check_err(iret)
+!     --------------------
+!     Store station name
+!     --------------------
+      do i=1,node_len
+         start(1)=1
+         start(2)=i
+         count(1)= LEN(TRIM(STATNAMEM(i,SNAMLEN)))
+         count(2)=1
+         iret = nf_put_vara_text(ncid,station_id,start,count,
+     &   STATNAMEM(i,SNAMLEN) )
+         CALL check_err(iret)
+      end do
+!      do i= 1, node_len
+!      write(6,*)STATNAMEM(i,SNAMLEN), LEN(TRIM(STATNAMEM(i,SNAMLEN)))
+!     &, TRIM(STATNAMEM(i,SNAMLEN))
+!      end do
+
+!     =====================
+!     Open old netcdf file
+!     =====================
+      ELSE
+!          WRITE (6,*)'****FIRST72 = 0 ****',FIRST72
+          iret = NF_OPEN(FILENAME, NF_WRITE, ncid)
+          CALL check_err(iret)   
+          FIRST72=0
+      ENDIF
+!     ----------
+!     Store time
+!     ----------
+      starti(1)=nrec
+      counti(1)=timenc_len
+      iret = nf_put_vara_DOUBLE(ncid, timenc_id, starti,counti, timenc)
+      CALL check_err(iret)
+!     ---------------------------
+!     Store u
+!     ---------------------------
+      count(1)=node_len
+      count(2)=timenc_len
+      start(1)=1
+      start(2)=nrec
+      iret = nf_put_vara_DOUBLE(ncid, u_id, start, count, u)
+      CALL check_err(iret)
+!     ---------------------------
+!     Store v
+!     ---------------------------
+      count(1)=node_len
+      count(2)=timenc_len
+      start(1)=1
+      start(2)=nrec
+      iret = nf_put_vara_DOUBLE(ncid, v_id, start, count, v)
+      CALL check_err(iret)
+      
+!     ---------------------------
+!     Calculating u minimum in each node
+!     ---------------------------
+      IF(.NOT. ALLOCATED(minut))ALLOCATE( minut(timenc_len))
+      IF(.NOT. ALLOCATED(maxut))ALLOCATE( maxut(timenc_len))
+      IF(.NOT. ALLOCATED(minun72))ALLOCATE( minun72(node_len))
+      IF(.NOT. ALLOCATED(maxun72))ALLOCATE( maxun72(node_len))
+
+      IF(.NOT. ALLOCATED(minvt))ALLOCATE( minvt(timenc_len))
+      IF(.NOT. ALLOCATED(maxvt))ALLOCATE( maxvt(timenc_len))
+      IF(.NOT. ALLOCATED(minvn72))ALLOCATE( minvn72(node_len))
+      IF(.NOT. ALLOCATED(maxvn72))ALLOCATE( maxvn72(node_len))
+
+      IF(.NOT. ALLOCATED(minunodet))ALLOCATE( minunodet(timenc_len))
+      IF(.NOT. ALLOCATED(maxunodet))ALLOCATE( maxunodet(timenc_len))
+      IF(.NOT. ALLOCATED(minutimen72))ALLOCATE( minutimen72(  node_len))
+      IF(.NOT. ALLOCATED(maxutimen72))ALLOCATE( maxutimen72(  node_len))
+
+      IF(.NOT. ALLOCATED(minvnodet))ALLOCATE( minvnodet(timenc_len))
+      IF(.NOT. ALLOCATED(maxvnodet))ALLOCATE( maxvnodet(timenc_len))
+      IF(.NOT. ALLOCATED(minvtimen72))ALLOCATE( minvtimen72(  node_len))
+      IF(.NOT. ALLOCATED(maxvtimen72))ALLOCATE( maxvtimen72(  node_len))
+
+!     ------------
+!     in each node
+!     ------------
+  	  do n=1,node_len
+ 		 if(u (n, 1).lt.minun72(n) ) then
+ 		    minun72 (n)     = u (n,1)
+ 		    minutimen72 (n) = timenc(1)
+ 		 endif
+ 	  end do
+
+!     --------------
+!     for each time
+!     --------------
+      minut (1) = 99999.
+ 	  do n=1,node_len
+ 		 if(u (n,1).gt.-99999.and.u(n,1).lt. minut (1) ) then
+           minut (1) = u (n,1)
+           minunodet(1) = n
+         endif
+ 	  end do
+
+      iret = nf_put_vara_DOUBLE(ncid, minut_id,(/nrec/),(/1/),minut)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid, minunodet_id,(/nrec/),(/1/),minunodet)
+      CALL check_err(iret)
+      
+!     ---------------------------
+!     Calculating u maximum
+!     ---------------------------
+  	  do n=1,node_len
+ 		 if(u (n,1).gt.maxun72(n) ) then
+ 		    maxun72 (n)     = u (n,1)
+            maxutimen72 (n) = timenc(1)
+ 		 endif
+	  end do
+!     --------------
+!     for each time
+!     --------------
+      maxut (1) = -9999.
+ 	  do n=1,node_len
+ 		 if(u(n,1).gt.maxut(1))  then
+ 		    maxut (1) = u (n,1)
+ 		    maxunodet(1) = n 		    
+ 		    endif
+      end do
+      iret = nf_put_vara_DOUBLE(ncid,maxut_id,(/nrec/),(/1/),maxut)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid,maxunodet_id,(/nrec/),(/1/),maxunodet)
+      CALL check_err(iret)
+!     ---------------------------
+!     Calculating v minimum each node
+!     ---------------------------
+  	  do n=1,node_len
+ 		 if(v (n,1).lt.minvn72(n) ) then
+ 		    minvn72     (n) = v (n,1)
+		    minvtimen72 (n) = timenc(1)
+ 		 endif
+ 	  end do
+!     --------------
+!     Calculating v minimum for each time
+!     --------------
+      minvt (1) = 99999.
+ 	  do n=1,node_len
+ 		 if(v (n,1).gt.-99999.and.v(n,1).lt. minvt (1) ) then
+            minvt (1) = v (n,1)
+            minvnodet(1) = n
+          endif
+ 	  end do
+
+      iret = nf_put_vara_DOUBLE(ncid, minvt_id,(/nrec/),(/1/),minvt)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid, minvnodet_id,(/nrec/),(/1/),minvnodet)
+      CALL check_err(iret)
+!     ---------------------------
+!     Calculating v maximum
+!     ---------------------------
+!     ------------
+!     Calculating v maximum in each node
+!     ------------
+  	  do n=1,node_len
+ 		 if(v (n,1).gt.maxvn72(n) ) then
+ 		   maxvn72 (n) = v (n,1)
+ 		   maxvtimen72(n) = timenc(1)
+         endif
+ 	  end do
+!     --------------
+!     Calculating v maximum for each time
+!     --------------
+      maxvt (1) = -9999.
+ 	  do n=1,node_len
+ 		 if(v(n,1).gt.maxvt(1)) then
+ 		    maxvt (1) = v (n,1)
+ 		    maxvnodet(1) = n 		    
+ 		 endif
+      end do
+      iret = nf_put_vara_DOUBLE(ncid,maxvt_id,(/nrec/),(/1/),maxvt)
+      CALL check_err(iret)
+      iret=nf_put_vara_INT(ncid,maxvnodet_id,(/nrec/),(/1/),maxvnodet)
+      CALL check_err(iret)
+!      WRITE(6,*)'AFTER CALCULATE v MAX - time'
+
+!     ---------------------------
+!     Closing fort.X2 netCDF file
+!     ---------------------------
+!      WRITE(6,*)'NREC NDATA',NREC,NDATA
+      IF(NREC.EQ.NDATA) THEN
+         iret = nf_put_var_double(ncid, minun_id, minun72)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxun_id, maxun72)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, minvn_id, minvn72)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxvn_id, maxvn72)
+         CALL check_err(iret)
+         
+         iret = nf_put_var_double(ncid, minutimen_id, minutimen72)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxutimen_id, maxutimen72)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, minvtimen_id, minvtimen72)
+         CALL check_err(iret)
+         iret = nf_put_var_double(ncid, maxvtimen_id, maxvtimen72)
+         CALL check_err(iret)
+         
+      ENDIF
+
+!     ---------------------------
+!     Closing netCDF file
+!     ---------------------------
+      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      WRITE(6,*) "-----------------------------------------------------"
+      
+      iret = nf_close(ncid)
+      CALL check_err(iret)
+      WRITE(6,*)'end subroutine writenc72'
+
+      end subroutine writenc72     
+
+      END MODULE NETCDFIO
+

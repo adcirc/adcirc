@@ -1,0 +1,3031 @@
+c******************************************************************************
+c PADCIRC VERSION 45.12 03/17/2006                                            *
+C  last changes in this file VERSION 45.12                                    *
+C                                                                             *
+C                                                                             *
+C  Note, input is read in READ_INPUT_3D located in module READ_INPUT          *
+C        initial conditions on density, temperature and/or salinity are read  *
+C        in for a cold start in subroutine COLDSTART_3D in module COLDSTART.  *
+C                                                                             *
+c******************************************************************************
+
+      SUBROUTINE VSSTUP()
+      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL_3DVS
+      IMPLICIT NONE
+      INTEGER :: NH, N
+
+C...  FOR BOTH COLD START AND HOT START, NEED TO INITIALIZE Sigma T FROM
+C...  TEMPERATURE AND SALINITY DEPENDING ON VALUE OF IDEN
+C...  
+
+      IF(ABS(IDen).GE.1) CALL CALC_SIGMAT_3D ()
+
+
+C...
+C...  COMPUTE THE DEPTH-AVERAGED Sigma T FIELD
+C...
+
+      DO NH=1,NP
+         DASigT(NH)=0.d0
+         IF(CBaroclinic) THEN
+            DO N=1,NFEN-1
+               DASigT(NH)=DASigT(NH)+(Sigma(N+1)-Sigma(N))
+     &                                   *(SigT(NH,N+1)+SigT(NH,N))/2.d0
+               ENDDO
+            DASigT(NH)=DASigT(NH)/AMB
+            ENDIF
+         ENDDO
+
+C...  
+C...  ADDITIONAL RUN SETUP
+C...  
+
+C...  COMPUTE THE INTEGRALS Inm and LVn (INDEPENDENT OF HORIZONTAL NODE)
+      
+      CALL INMInt()
+
+      CALL LVnInt()
+
+      RETURN
+      END SUBROUTINE VSSTUP
+
+ 
+
+c******************************************************************************
+c  SUBROUTINE VSSOL                                                           *
+c                                                                             *
+c  Note, the following time stepping coefficients are computed in             *
+C     SUBROUTINE READ_INPUT_3DVS and passed in GLOBAL_3DVS.                   *
+c                                                                             *
+c  IDTAlp1      = I*DelT*Alp1        - weights coriolis term in LHS matrix    *
+c  IDT1MAlp1    = I*DelT*(1.-Alp1)   - weights coriolis term in RHS forcing   *
+c  DTAlp3       = DelT*Alp3          - weights vert diff term in LHS matrix   *
+c  DT1MAlp3     = DelT*(1-Alp3)      - weights vert diff term in RHS forcing  *
+c  DTAlp2       = DelT*Alp2          - weights bot stress term in LHS matrix  *
+c  DT1MAlp2     = DelT*(1.-Alp2)     - weights bot stress term in RHS forcing *
+c                                                                             *
+c  Note, the following are some of the global variables are used in this      *
+c  subroutine and passed in GLOBAL_3DVS                                       *
+c                                                                             *
+c  q(MNP,NFEN) - 3D Complex Velocity field (GAMMA) from past time step.       *
+c  UU, VV - depth-averaged horizontal velocity                                *
+c  DAFluxX, DAFluxY - depth-averaged horizontal flux                          *
+c                                                                             *
+c  NP - number of nodes in horizontal grid                                    *
+c  NFEN - number of nodes in the vertical grid                                *
+c  BTP - total barotropic pressure (atmos press, water level, tidal potential)*
+c                 at time levels s+1/2                                        *
+c******************************************************************************
+c                                                                             *
+c   THIS  PROGRAM MAPS THE TRUE Z-COORDINATE SYSTEM INTO A DIMENSIONLESS      *
+C   VERTICAL COORDINATE FROM [b,a] (BOTTOM TO TOP).  VALUES OF a=1 AND b=-1   *
+C   ARE SET IN THE CODE.                                                      *
+c                                                                             *
+c******************************************************************************
+
+      SUBROUTINE VSSOL(IT,Time)
+      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL_3DVS
+      USE NodalAttributes, ONLY: EVM
+#ifdef CMPI
+      USE MESSENGER
+      IMPLICIT NONE
+      REAL(SZ) :: DUMV1(1),DUMV2(1)
+#else
+      IMPLICIT NONE
+#endif
+
+      INTEGER :: IT
+      INTEGER :: NEle           !local value of NetTabEle or element number
+      INTEGER :: k              !vertical node loop counter (1-bottom, NFEN-surf)
+      INTEGER :: NH             !horizontal node loop counter
+      INTEGER :: N              !neighbor node loop counter
+      INTEGER :: N1,N2,N3,NNFirst !local node numbers used to compute gradients, interpolate
+      INTEGER :: LBP            !value of LBArray_Pointer at present horizontal node
+      INTEGER :: NN             !output loop counter
+
+      REAL(SZ) :: KSlip         !equavalent linear slip coeff
+      REAL(SZ) :: WSXsNH,WSYsNH !Wind stress components at time level s at node NH
+
+      REAL(SZ) :: WSigma(MNFEN) !"sigma" vertical velocity
+      REAL(SZ) :: Wf            !weighting coefficient in adjoint correction to w
+      REAL(SZ) :: WfOHH         !Wf/(H time level s+1)^2
+      REAL(SZ) :: WZSurfBC      !surface boundary condition value of w
+      REAL(SZ) :: WZSurf        !computed value of w at surface
+      REAL(SZ) :: WZCorrection  !adjoint correction compute for w
+
+      REAL(SZ) :: Zk            !z depth of any node k in the vertical
+      REAL(SZ) :: DelSig        ! sigma(k+1)-sigma(k)
+      REAL(SZ) :: DelSigO2      !(sigma(k)-sigma(k-1))/2
+      REAL(SZ) :: SigmaMAOAMB   !(sigma(k)-A)/(a-b)
+      REAL(SZ) :: SigmaMBOAMB   !(sigma(k)-B)/(a-b)
+      REAL(SZ) :: SigAvgMAOAMB  !((sigma(k)+sigma(k-1))/2.d0 - A)/AMB
+      REAL(SZ) :: SigmaNN       !Sigma value of a neighbor node
+
+      REAL(SZ) :: VelNorm,VelTan !-QNormsp1(NH)/Hsp1 at flux boundary node
+      REAL(SZ) :: CLBP,SLBP     !local values of CSII, SIII at boundary node LBP
+      REAL(SZ) :: Auv1km1,Auv2km1 !initial real,imaginary parts of Mkm1 at flux boundary node
+      REAL(SZ) :: Auv1km1star,Auv2km1star !rotated real,imaginary parts of Mkm1 at flux boundary node
+      REAL(SZ) :: Auv1k1,Auv2k1 !initial real,imaginary parts of Mk at flux boundary node
+      REAL(SZ) :: Auv1k1star,Auv2k1star !rotated real,imaginary parts of Mk at flux boundary node
+      REAL(SZ) :: Auv1kp1,Auv2kp1 !initial real,imaginary parts of Mkp1 at flux boundary node
+      REAL(SZ) :: Auv1kp1star,Auv2kp1star !rotated real,imaginary parts of Mkp1 at flux boundary node
+
+      REAL(SZ) :: EtaN1,EtaN2,EtaN3,EtaNFirst !nodal values of IFNLFA(Eta1+Eta2)/2
+      REAL(SZ) :: hN1,hN2,hN3,hNFirst !nodal values of DP
+      REAL(SZ) :: DUDX(MNFEN),DVDY(MNFEN) !horizontal derivatives of velocity used to compute w
+      REAL(SZ) :: Un,Vn         !real,imaginary components of qn
+      REAL(SZ) :: DelU,DelV     !real, imaginary parts of q(k)-q(k-1)
+
+      REAL(SZ) :: BTPN1,BTPN2,BTPN3,BTPNFirst !nodal values of BTP
+      REAL(SZ) :: BTPDX2A,BTPDY2A !(Horiz. grads of BTP)*2*Element Area
+
+      REAL(SZ) :: BCPN1,BCPN2,BCPN3,BCPNFirst !nodal values of BCP
+      REAL(SZ) :: BCPDX2A,BCPDY2A !(Horiz. grads of BCP)*2*Element Area
+      REAL(SZ) :: SigTAvg       !avg SigT between 2 vertical nodes
+      REAL(SZ) :: HGORhoOAMB    !depth*gravity/(reference density)/(a-b)
+
+      REAL(SZ) :: DBCPDX2A  
+      REAL(SZ) :: DBCPDY2A  
+      REAL(SZ) :: RCL       
+      REAL(SZ) :: Auv1k
+      REAL(SZ) :: Auv2k
+      REAL(SZ) :: Auv1kstar
+      REAL(SZ) :: Auv2kstar
+
+      REAL(8) :: KVnm(MNFEN,3)  !integral used in vertical stress term
+      REAL(8) :: Time           !model time at time level s+1
+      REAL(8) :: DEtaDT         !time derivative of water surface elev
+      REAL(8) :: DEtaDX,DEtaDY  !horizontal derivatives of water surface elev at time level s
+      REAL(8) :: DEtaDX2A,DEtaDY2A !(DEtaDX,DEtaDY)*2*Element Area 
+      REAL(8) :: DhDX,DhDY      !horizontal derivatives of DP
+      REAL(8) :: DhDX2A,DhDY2A  !(DhDX,DhDY)*2*Element Area
+      REAL(8) :: TotalArea2     !2*Area of all elements around a node
+      REAL(8) :: TotalBCPGArea2 !2*Area of all elements around a node used to compute the BCPG
+      REAL(8) :: a1,a2,a3,b1,b2,b3 !elemental coefficients used in horizontal FE method
+
+      REAL(8) :: Hs             !Total water depth at time level s
+      REAL(8) :: HsN2           !Total water depth at time level s at local node N2
+      REAL(8) :: HsOAMB         !Hs/(a-b)
+      REAL(8) :: HsHsOAMBAMB    !(Hs/(a-b))^2
+      REAL(8) :: Hsp1           !Total water depth at time level s+1
+      REAL(8) :: Hsp1OAMB       !Hsp1/(a-b)
+      REAL(8) :: Hsp1Hsp1OAMBAMB !(Hsp1/(a-b))^2
+
+      COMPLEX(SZ) :: Fr(MNFEN)      !right side forcing vector
+      COMPLEX(SZ) :: Frstar         !rotated right side forcing vector at flux boundary node 
+      COMPLEX(SZ) :: Mkm1(MNFEN)    !1st column (k-1) in left side compact storage matrix
+      COMPLEX(SZ) :: Mk(MNFEN)      !2nd column (k) in left side compact storage matrix
+      COMPLEX(SZ) :: Mkp1(MNFEN)    !3rd column (k+1) in left side cpmpact storage matrix
+      COMPLEX(SZ) :: LAdvec(MNFEN)  !lateral advection term in momentum eqn
+      COMPLEX(SZ) :: LStress(MNFEN) !lateral stress term in momentum eqn
+      COMPLEX(SZ) :: VAdvec(MNFEN)  !vertical advection term in momentum eqn
+      COMPLEX(SZ) :: VStress(MNFEN) !vertical stress term in momentum eqn
+      COMPLEX(SZ) :: BCPG(MNFEN)    !baroclinic pressure gradient
+      COMPLEX(SZ) :: BTPG           !total barotropic pressure gradient (incl TP & water level)
+      COMPLEX(SZ) :: CCR,CCL        !coeffs used on right,left side of momentum eqn
+      COMPLEX(SZ) :: VIVel          !vertically integrated velocity
+      COMPLEX(SZ) :: DUDS           !complex vertical velocity gradient between bottom two nodes
+      COMPLEX(SZ) :: qn,qN1,qN2,qN3,qNFirst !nodal values of q
+      COMPLEX(SZ) :: UnDqDX,VnDqDY  !derivatives used in lateral advection
+      COMPLEX(SZ) :: UnDqDX2A,VnDqDY2A !UnDqDX,UnDqDY)*2*Element Area
+      COMPLEX(SZ) :: DqDXDPhiDX2A,DqDYDPhiDY2A !derivatives used in lateral stress calc.
+      COMPLEX(SZ) :: DqDSigmakm1,DqDSigmakp1 !vertical deriv. of q from k-1,k and k,k+1
+      COMPLEX(SZ) :: DqDX2A(MNFEN)  !horizontal derivatives of complex
+      COMPLEX(SZ) :: DqDY2A(MNFEN)  !velocity used in w calc
+
+C     
+C     INCREMENT THE TIMESTEP SINCE START COUNTER
+C     
+      IStart3D=IStart3D+1
+
+
+C*************************************************************************************
+C     Set up several variables that are needed for 3D run     
+
+C     
+C     Zero out surface stress and stress forcing at top for case of no wind
+C     
+      WSXsNH=0.d0
+      WSYsNH=0.d0
+
+C     
+C     If a baroclinic run, compute the 3D baroclinic pressure field
+C     The buoyancy field is defined as
+C     BCP(z)    =(gravity/rho ref)*          integral (SigT) from surface down to z
+C     BCP(sigma)=(gravity/rho ref)*(H/(a-b))*integral (SigT) from a down to sigma
+C     where 
+C     SigT = Sigma T = Rho - 1000 = density - 1000
+C     SigT0 = Sigma t value of reference density (typically = 0)
+C     Sigma = dimensionless vertical coordinate
+C     
+!      IF(CBaroclinic) THEN
+!        DO NH=1,NP             !loop over horizontal nodes
+!            Hs=DP(NH)+IFNLFA*Eta1(NH) !total depth at previous (s) timestep
+!            HGORhoOAMB=GORhoOAMB*Hs !(gravity/rho ref)*(H/(a-b))
+!            BCP(NH,NFEN)=0.d0
+!            DO k=NFEN-1,1,-1    !loop over vertical nodes, starting at top and working down
+!               SigTAvg=(SigT(NH,k+1)+SigT(NH,k))/2.d0
+!               DelSig=Sigma(k+1)-Sigma(k)
+!               BCP(NH,k)=BCP(NH,k+1)+HGORhoOAMB*(SigTAvg-SigT0)*DelSig
+!            ENDDO
+!         ENDDO
+#ifdef CMPI
+C     Update BCP on ghost nodes
+C      CALL UPDATER3D(BCP)  !!!!Don't know if this is needed at this time
+#endif
+!      ENDIF
+
+
+C*************************************************************************************
+C     Compute 3D horizontal velocities     
+C     
+C     Loop over each horizontal node to compute the horizontal velocity
+C     
+      DO NH=1,NP                !loop over horizontal nodes
+
+c     Set up some values at the node being worked on
+
+         Hs  = DP(NH)+IFNLFA*Eta1(NH) !Total depth at previous (s) timestep
+         HsOAMB=Hs/AMB
+         HsHsOAMBAMB=HsOAMB*HsOAMB
+         Hsp1= DP(NH)+IFNLFA*Eta2(NH) !Total depth at present (s+1) timestep
+         Hsp1OAMB=Hsp1/AMB
+         Hsp1Hsp1OAMBAMB=Hsp1OAMB*Hsp1OAMB
+
+         IF(NWS.NE.0) THEN      !wind stress
+            WSXsNH=WSX1(NH)
+            WSYsNH=WSY1(NH)
+         ENDIF
+
+c     If specified normal flow boundary node with no tangential slip is
+c     lateral boundary condition, set up the matrix immediately and skip
+c     to the solution
+
+         LBP=LBArray_Pointer(NH)
+         IF(LBP.GT.0) THEN
+                                !essential normal flow
+            IF((LBCodeI(LBP).GE.10).AND.(LBCodeI(LBP).LE.19)) THEN 
+               VelNorm=-QNormsp1(LBP)/Hsp1 !with essential no tan.
+               VelTan=0.D0
+               SLBP=SIII(LBP)
+               CLBP=CSII(LBP)
+               DO k=1,NFEN
+                  Mkm1(k)=(0.D0,0.D0)
+                  Mk(k)=SLBP+I*CLBP
+                  Mkp1(k)=(0.D0,0.D0)
+                  Fr(k)=VelTan+I*VelNorm
+C                  EVTot(k)=0.D0 !f77diff??
+               END DO
+               GOTO 999
+            ENDIF
+         ENDIF
+
+c     Compute the vertical eddy viscosity
+
+         CALL EDDYVIS(Hs,UU(NH),VV(NH),
+     &        WSXsNH,WSYsNH,BSX(NH),BSY(NH),
+     &        IStart3D,NH,IT)
+
+c     Compute the integral KVnm
+
+         KVnm(1,1)=0.d0
+         KVnm(1,3)=-0.5d0*(EVTot(2)+EVTot(1))/(Sigma(2)-Sigma(1))
+         KVnm(1,2)=-(KVnm(1,1)+KVnm(1,3))
+         DO k=2,NFEN-1
+            KVnm(k,1)=KVnm(k-1,3)
+         KVnm(k,3)=-0.5d0*(EVTot(k+1)+EVTot(k))/(Sigma(k+1)-Sigma(k))
+            KVnm(k,2)=-(KVnm(k,1)+KVnm(k,3))
+         ENDDO
+         KVnm(NFEN,1)=KVnm(NFEN-1,3)
+         KVnm(NFEN,3)=0.d0      
+         KVnm(NFEN,2)=-(KVnm(NFEN,1)+KVnm(NFEN,3))
+
+c     Compute time derivative of water surface position
+
+         DEtaDT=(Eta2(NH)-Eta1(NH))/DelT
+
+c     Start computing horizontal derivatives of water level, bathymetric
+c     depth and total barotropic pressure (atmos pres, water level,
+c     tidal potential) Note: TotalArea2 = 2X total elemental area
+c     surrounding a node
+
+         DEtaDX=0.d0
+         DEtaDY=0.d0
+         DhDX=0.d0
+         DhDY=0.d0
+         BTPG=(0.d0,0.d0)
+         DEtaDX2A=0.d0
+         DhDX2A=0.d0
+         DEtaDY2A=0.d0
+         DhDY2A=0.d0
+         BTPDX2A=0.d0
+         BTPDY2A=0.d0
+         TotalArea2=0.d0
+
+         N1=NH
+         EtaN1=IFNLFA*(Eta1(N1)+Eta2(N1))/2.d0
+         hN1=DP(N1)
+         BTPN1=BTP(N1)
+
+         N2=NeiTab(NH,2)        !operate on 1st neighbor
+         EtaN2=IFNLFA*(Eta1(N2)+Eta2(N2))/2.d0
+         hN2=DP(N2)
+         BTPN2=BTP(N2)
+
+         NNFirst=N2             !save these values until end
+         EtaNFirst=EtaN2
+         hNFirst=hN2
+         BTPNFirst=BTPN2
+
+         DO N=3,NNeigh(NH)      !operate on rest of neighbors
+            N3=N2               !shift previously computed values
+            hN3=hN2             !shift previously computed values
+            EtaN3=EtaN2
+            BTPN3=BTPN2
+            N2=NeiTab(NH,N)     !select new neighbor to work on
+            EtaN2=IFNLFA*(Eta1(N2)+Eta2(N2))/2.d0
+            hN2=DP(N2)
+            BTPN2=BTP(N2)
+            NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
+            IF(NEle.NE.0) THEN  !if element is active, compute velocity grads
+               TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
+               a1=X(N3)-X(N2)
+               a2=X(N1)-X(N3)
+               a3=X(N2)-X(N1)
+               b1=Y(N2)-Y(N3)
+               b2=Y(N3)-Y(N1)
+               b3=Y(N1)-Y(N2)
+               DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
+               DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
+               DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
+               DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
+               BTPDX2A=BTPDX2A+(BTPN1*b1+BTPN2*b2+BTPN3*b3)
+               BTPDY2A=BTPDY2A+(BTPN1*a1+BTPN2*a2+BTPN3*a3)
+            ENDIF
+         END DO
+
+         N3=N2                  !wrap back to beginning to get final contribution
+         hN3=hN2
+         EtaN3=EtaN2
+         BTPN3=BTPN2
+         N2=NNFirst
+         hN2=hNFirst
+         EtaN2=EtaNFirst
+         BTPN2=BTPNFirst
+         NEle=NeiTabEle(NH,NNeigh(NH)-1)
+         IF(NEle.NE.0) THEN
+            TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
+            a1=X(N3)-X(N2)
+            a2=X(N1)-X(N3)
+            a3=X(N2)-X(N1)
+            b1=Y(N2)-Y(N3)
+            b2=Y(N3)-Y(N1)
+            b3=Y(N1)-Y(N2)
+            DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
+            DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
+            DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
+            DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
+            BTPDX2A=BTPDX2A+(BTPN1*b1+BTPN2*b2+BTPN3*b3)
+            BTPDY2A=BTPDY2A+(BTPN1*a1+BTPN2*a2+BTPN3*a3)
+         ENDIF
+
+         IF(TotalArea2.NE.0.) THEN
+            DhDX=DhDX2A/TotalArea2
+            DhDY=DhDY2A/TotalArea2
+            DEtaDX=DEtaDX2A/TotalArea2
+            DEtaDY=DEtaDY2A/TotalArea2
+            BTPG=(BTPDX2A+I*BTPDY2A)/TotalArea2
+         ENDIF
+
+c     Finished computing horizontal derivatives of water level,
+c     bathymetric depth and total barotropic pressure (atmos pres, water
+c     level, tidal potential)
+
+c     Compute the "sigma" vertical velocity from the "z" vertical velocity 
+
+         DO k=1,NFEN
+            SigmaMAOAMB=(Sigma(k)-A)/AMB
+            SigmaMBOAMB=(Sigma(k)-B)/AMB
+            WSigma(k) = WZ(NH,k) - SigmaMBOAMB*DEtaDT
+     &           - REAL(q(NH,k))*(SigmaMBOAMB*DEtaDX+SigmaMAOAMB*DhDX)
+     &           - AIMAG(q(NH,k))*(SigmaMBOAMB*DEtaDY+SigmaMAOAMB*DhDY)
+         ENDDO
+
+
+c     Start computing advection and stress terms in the momentum
+c     equation at each level in the vertical
+
+         DO k=1,NFEN
+
+c     Compute the vertical advection and vertical stress terms
+
+            IF(k.EQ.1) THEN
+               DqDSigmakp1=(q(NH,k+1)-q(NH,k))/(Sigma(k+1)-Sigma(k))
+               VAdvec(k)=DqDsigmakp1*
+     &              (2.d0*WSigma(k)+WSigma(k+1))*Inm(k,3)/HsOAMB
+               VStress(k)=(q(NH,k)*KVnm(k,2)+q(NH,k+1)*KVnm(k,3))
+     &              /HsHsOAMBAMB
+            ENDIF
+            IF((k.GT.1).AND.(k.LT.NFEN)) THEN
+               DqDSigmakm1=DqDSigmakp1
+               DqDSigmakp1=(q(NH,k+1)-q(NH,k))/(Sigma(k+1)-Sigma(k))
+               VAdvec(k)=
+     &              ( DqDSigmakm1*(WSigma(k-1)+2.d0*WSigma(k))*Inm(k,1)
+     &              +DqDSigmakp1*(2.d0*WSigma(k)+WSigma(k+1))*Inm(k,3) )
+     &              /HsOAMB
+               VStress(k)=(q(NH,k-1)*KVnm(k,1)+q(NH,k)*KVnm(k,2)
+     &              +q(NH,k+1)*KVnm(k,3))/HsHsOAMBAMB
+            ENDIF
+            IF(k.EQ.NFEN) THEN
+               DqDSigmakm1=DqDSigmakp1
+               VAdvec(k)=
+     &              DqDSigmakm1*(WSigma(k-1)+2.d0*WSigma(k))*Inm(k,1)
+     &              /HsOAMB
+               VStress(k)=(q(NH,k-1)*KVnm(k,1)+q(NH,k)*KVnm(k,2))
+     &              /HsHsOAMBAMB
+            ENDIF
+            VAdvec(k)=IFNLCT*VAdvec(k)
+
+c     Compute lateral advection and lateral stress terms
+
+            UnDqDX2A=0.d0
+            VnDqDY2A=0.d0
+            DqDXDPhiDX2A=0.d0
+            DqDYDPhiDY2A=0.d0
+
+            N1=NH               !node 1 is always the central node
+            qN1=q(N1,k)       
+
+            N2=NEITAB(NH,2)     !operate on 1st neighbor
+            qN2=q(N2,k)
+
+            NNFirst=N2          !save these values until end
+            qNFirst=qN2
+
+            DO N=3,NNEIGH(NH)   !operate on rest of neighbors
+               N3=N2            !shift previously computed values
+               qN3=qN2
+               N2=NEITAB(NH,N)  !select new neighbor to work on
+               qN2=q(N2,k)
+               NEle=NeiTabEle(NH,N-2) !element # defined by nodes N1,N2,N3
+               IF(NEle.NE.0) THEN !if element exists, compute terms
+                  qn=(qN1+qN2+qN3)/3.d0
+                  Un=REAL(qn)
+                  Vn=AIMAG(qn)
+                  a1=X(N3)-X(N2)
+                  a2=X(N1)-X(N3)
+                  a3=X(N2)-X(N1)
+                  b1=Y(N2)-Y(N3)
+                  b2=Y(N3)-Y(N1)
+                  b3=Y(N1)-Y(N2)
+                  UnDqDX2A=UnDqDX2A+Un*(qN1*b1+qN2*b2+qN3*b3)
+                  VnDqDY2A=VnDqDY2A+Vn*(qN1*a1+qN2*a2+qN3*a3)
+                  DqDXDPhiDX2A=DqDXDPhiDX2A
+     &                 +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
+                  DqDYDPhiDY2A=DqDYDPhiDY2A
+     &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
+               ENDIF
+            END DO
+
+            N3=N2               !wrap back to beginning to get final contribution
+            qN3=qN2
+            N2=NNFIRST
+            qN2=qNFirst
+            NEle=NeiTabEle(NH,NNeigh(NH)-1)
+            IF(NEle.NE.0) THEN
+               qn=(qN1+qN2+qN3)/3.d0
+               Un=real(qn)
+               Vn=aimag(qn)
+               a1=X(N3)-X(N2)
+               a2=X(N1)-X(N3)
+               a3=X(N2)-X(N1)
+               b1=Y(N2)-Y(N3)
+               b2=Y(N3)-Y(N1)
+               b3=Y(N1)-Y(N2)
+               UnDqDX2A=UnDqDX2A+Un*(qN1*b1+qN2*b2+qN3*b3)
+               VnDqDY2A=VnDqDY2A+Vn*(qN1*a1+qN2*a2+qN3*a3)
+               DqDXDPhiDX2A=DqDXDPhiDX2A
+     &              +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
+               DqDYDPhiDY2A=DqDYDPhiDY2A
+     &              +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
+            ENDIF
+
+            IF(TotalArea2.EQ.0.) THEN
+               LAdvec(k)=(0.d0,0.d0)
+               LStress(k)=(0.d0,0.d0)
+            ELSE
+               LAdvec(k)=IFNLCT*(UnDqDX2A+VnDqDY2A)/TotalArea2   
+               LStress(k)=3.d0*EVM(NH)*(DqDXDPhiDX2A+DqDYDPhiDY2A)
+     &              /TotalArea2
+            ENDIF
+
+         ENDDO
+
+c     Finished computing advection and stress terms in the momentum
+c     equation at each level in the vertical
+
+c     Compute the equivalent linear slip coefficient
+
+         IF(ISlip.EQ.1) KSlip=KP
+         IF(ISlip.EQ.2) THEN
+            KSlip=KP*ABS(q(NH,1))
+            IF(KSlip.LT.1.E-8) KSlip=1.d-8
+         ENDIF
+
+c     Set up the RHS forcing vector Fr and LHS matrix in compact storage
+c     (Mkm1,Mk,Mkp1)
+
+         CCL = 1.d0+Corif(NH)*IDTAlp1
+         CCR = 1.d0-Corif(NH)*IDT1MAlp1  
+         RCL = DTAlp3/Hsp1Hsp1OAMBAMB
+
+         IF(ISlip.EQ.0) THEN    !no slip bottom boundary condition
+            Fr(1)   = (0.d0,0.d0)
+            Mkm1(1) = (0.d0,0.d0)
+            Mk(1)   = (1.d0,-1.d0) !note: -I*IV=V
+            Mkp1(1) = (0.d0,0.d0)
+         ELSE                   ! slip bottom boundary condition
+            Fr(1) = (CCR*q(NH,1)
+     &           -DelT*(LAdvec(1)  +LStress(1)  +BPG(NH,1)))*Inm(1,2)
+     &           + (CCR*q(NH,2)
+     &           -DelT*(LAdvec(2)  +LStress(2)  +BPG(NH,2)))*Inm(1,3)
+     &           - DelT*(VAdvec(1)+BTPG*LVn(1))-DT1MAlp3*VStress(1)     
+     &           - q(NH,1)*DT1MAlp2*KSlip/HsOAMB     
+            Mkm1(1) = (0.d0,0.d0)
+            Mk(1)   = CCL*Inm(1,2) + RCL*KVnm(1,2) 
+     &           + DTAlp2*KSlip/Hsp1OAMB
+            Mkp1(1) = CCL*Inm(1,3) + RCL*KVnm(1,3)
+         ENDIF
+
+         DO k=2,NFEN-1
+            Fr(k) = (CCR*q(NH,k-1)
+     &           -DelT*(LAdvec(k-1)+LStress(k-1)+BPG(NH,k-1)))*Inm(k,1)
+     &           + (CCR*q(NH,k)
+     &           -DelT*(LAdvec(k)  +LStress(k)  +BPG(NH,k)  ))*Inm(k,2)
+     &           + (CCR*q(NH,k+1)
+     &           -DelT*(LAdvec(k+1)+LStress(k+1)+BPG(NH,k+1)))*Inm(k,3)
+     &           - DelT*(VAdvec(k)+BTPG*LVn(k))-DT1MAlp3*VStress(k)
+            Mkm1(k) = CCL*Inm(k,1) + RCL*KVnm(k,1)
+            Mk(k)   = CCL*Inm(k,2) + RCL*KVnm(k,2)
+            Mkp1(k) = CCL*Inm(k,3) + RCL*KVnm(k,3)
+         END DO
+
+         Fr(NFEN) = (CCR*q(NH,k-1)
+     &        -DelT*(LAdvec(k-1)+LStress(k-1)+BPG(NH,k-1)))*Inm(k,1)
+     &        + (CCR*q(NH,k)
+     &        -DelT*(LAdvec(k)  +LStress(k)  +BPG(NH,k)  ))*Inm(k,2)
+     &        - DelT*(VAdvec(k)+BTPG*LVn(k))-DT1MAlp3*VStress(k)
+     &        + DelT*0.5d0*((WSX2(NH)+I*WSY2(NH))/Hsp1OAMB
+     &        +(WSX1(NH)+I*WSY1(NH))/HsOAMB)
+         Mkm1(NFEN) = CCL*Inm(NFEN,1) + RCL*KVnm(NFEN,1)
+         Mk(NFEN)   = CCL*Inm(NFEN,2) + RCL*KVnm(NFEN,2)
+         Mkp1(NFEN) = (0.d0,0.d0)
+
+c     Start section to modify equations depending on normal flux
+c     boundary condition
+c     0 <= LBcodeI <= 10, essential normal flux and free tangential slip
+c     this b.c. is taken care of in the code section below
+c     10 <= LBcodeI <= 19, essential normal flux and zero tangential slip
+c     this b.c. is taken care of above
+c     20 <= LBcodeI <= 29, natural normal flux and free tangential slip
+c     this b.c. requires on manipulation of momentum eqns.  Do nothing!
+
+         LBP=LBArray_Pointer(NH)
+         IF(LBP.GT.0) THEN      !flux boundary
+            IF((LBCODEI(LBP).GE. 0).AND.(LBCODEI(LBP).LE. 9)) THEN
+               SLBP=SIII(LBP)
+               CLBP=CSII(LBP)
+               VelNorm=-QNormsp1(LBP)/Hsp1                              
+
+               Mkm1(1)    =(0.d0,0.d0)
+               Auv1k      =Real(Mk(1))
+               Auv2k      =AImag(Mk(1))
+               Auv1kstar  =Auv1k*SLBP
+               Auv2kstar  =Auv1k*CLBP
+               Mk(1)      =Auv1kstar+I*Auv2kstar
+               Auv1kp1    =Real(Mkp1(1))
+               Auv2kp1    =AImag(Mkp1(1))
+               Auv1kp1star=Auv1kp1*SLBP
+               Auv2kp1star=Auv1kp1*CLBP
+               Mkp1(1)    =Auv1kp1star+I*Auv2kp1star
+               Frstar     =Real(Fr(1))*SLBP-AImag(Fr(1))*CLBP
+     &              +  (Auv2k+Auv2kp1)*VelNorm 
+     &              +I*(Auv1k+Auv1kp1)*VelNorm
+               Fr(1)      =Frstar
+               DO k=2,NFEN-1
+                  Auv1km1    =Real(Mkm1(k))
+                  Auv2km1    =AImag(Mkm1(k))
+                  Auv1km1star=Auv1km1*SLBP
+                  Auv2km1star=Auv1km1*CLBP
+                  Mkm1(k)    =Auv1km1star+I*Auv2km1star
+                  Auv1k      =Real(Mk(k))
+                  Auv2k      =AImag(Mk(k))
+                  Auv1kstar  =Auv1k*SLBP
+                  Auv2kstar  =Auv1k*CLBP
+                  Mk(k)      =Auv1kstar+I*Auv2kstar
+                  Auv1kp1    =Real(Mkp1(k))
+                  Auv2kp1    =AImag(Mkp1(k))
+                  Auv1kp1star=Auv1kp1*SLBP
+                  Auv2kp1star=Auv1kp1*CLBP
+                  Mkp1(k)    =Auv1kp1star+I*Auv2kp1star
+                  Frstar     =Real(Fr(k))*SLBP-AImag(Fr(k))*CLBP
+     &                 +  (Auv2km1+Auv2k+Auv2kp1)*VelNorm 
+     &                 +I*(Auv1km1+Auv1k+Auv1kp1)*VelNorm
+                  Fr(k)      =Frstar
+               END DO
+               Auv1km1    =Real(Mkm1(NFEN))
+               Auv2km1    =AImag(Mkm1(NFEN))
+               Auv1km1star=Auv1km1*SLBP
+               Auv2km1star=Auv1km1*CLBP
+               Mkm1(NFEN) =Auv1km1star+I*Auv2km1star
+               Auv1k      =Real(Mk(NFEN))
+               Auv2k      =AImag(Mk(NFEN))
+               Auv1kstar  =Auv1k*SLBP
+               Auv2kstar  =Auv1k*CLBP
+               Mk(NFEN)   =Auv1kstar+I*Auv2kstar
+               Mkp1(NFEN) =(0.d0,0.d0)
+               Frstar     =Real(Fr(NFEN))*SLBP-AImag(Fr(NFEN))*CLBP
+     &              +  (Auv2km1+Auv2k)*VelNorm 
+     &              +I*(Auv1km1+Auv1k)*VelNorm
+               Fr(NFEN)   =Frstar
+            ENDIF
+         ENDIF
+
+c     Finished section to modify equations depending on normal flux
+c     boundary condition
+         
+c     Decompose and solve the system
+
+ 999     CALL TRIDIAG(Mkm1,Mk,Mkp1,Fr,Gamma,NFEN)
+
+C     Changed this q value to qkp1 since we need to save q and qkp1 for 
+C     transport calculations
+C     Save the horizontal velocity and Eddy Viscosity solutions
+
+         DO k=1,NFEN
+            qkp1(NH,k) = Gamma(k)
+            EV(NH,k)=EVTot(k)
+         END DO
+
+      END DO
+
+c     Finished computing horizontal velocities
+
+
+C*************************************************************************************
+C     Update horizontal velocity solution on ghost nodes
+
+#ifdef CMPI
+      CALL UPDATEC3D(Qkp1)
+#endif
+
+
+C*************************************************************************************
+C     Compute the depth averaged velocity, depth averaged flux, bottom stress and
+C     velocity dispersion
+     
+      DO NH=1,NP                                !loop over horizontal nodes
+
+         Hsp1= DP(NH)+IFNLFA*Eta2(NH)           !Total depth at present (s+1) timestep
+         VIVel = (0.d0,0.d0)
+         DO k=1,NFEN
+            VIVel = VIVel + Qkp1(NH,k)*LVn(k)
+         END DO
+         VIVel = VIVel/amb
+         UU(NH) = REAL(VIVel)
+         VV(NH) = AIMAG(VIVel)
+
+         DAFluxX(NH)=UU(NH)*Hsp1
+         DAFluxY(NH)=VV(NH)*Hsp1
+
+         IF(ISlip.EQ.0) THEN
+            DUDS = (Qkp1(NH,2)-Qkp1(NH,1))/(Sigma(2)-Sigma(1))
+            BSX(NH) = EV(NH,1)*REAL(DUDS)
+            BSY(NH) = EV(NH,1)*AIMAG(DUDS)
+         ENDIF
+         IF(ISlip.NE.0) THEN
+            BSX(NH) = KSlip*REAL(Qkp1(NH,1))
+            BSY(NH) = KSlip*AIMAG(Qkp1(NH,1))
+         ENDIF
+
+         DUU(NH) = 0.d0
+         DUV(NH) = 0.d0
+         DVV(NH) = 0.d0
+         IF(IFNLCT.EQ.1) THEN
+            CALL VSDISP (IT,NH,Hsp1,UU(NH),VV(NH),
+     &           DUU(NH),DUV(NH),DVV(NH))
+         ENDIF
+        
+      ENDDO
+
+C*************************************************************************************
+C     Compute "z" vertical velocity     
+
+C     
+C     Loop over each horizontal node to compute the "z" version of the
+C     vertical velocity
+C     
+      DO NH=1,NP
+
+c     Set up some values at the node being worked on
+
+         Hsp1=DP(NH)+IFNLFA*Eta2(NH)
+         Hsp1OAMB=Hsp1/AMB
+
+c     Compute time derivative of water surface position
+
+         DEtaDT=(Eta2(NH)-Eta1(NH))/DelT
+
+c     Compute horizontal derivatives of water surface position,
+c     bathymetric depth and horizontal velocity Note: TotalArea2 = 2X
+c     total elemental area surrounding a node
+
+         DO k=1,NFEN
+            DqDX2A(k)=(0.d0,0.d0)
+            DqDY2A(k)=(0.d0,0.d0)
+            DUDX(k)=0.d0
+            DVDY(k)=0.d0
+         ENDDO
+         DEtaDX=0.d0
+         DEtaDY=0.d0
+         DhDX=0.d0
+         DhDY=0.d0
+         DEtaDX2A=0.d0
+         DhDX2A=0.d0
+         DEtaDY2A=0.d0
+         DhDY2A=0.d0
+         TotalArea2=0.d0
+
+         N1=NH
+         EtaN1=IFNLFA*Eta2(N1)
+         hN1=DP(N1)
+
+         N2=NeiTab(NH,2)        !operate on 1st neighbor
+         EtaN2=IFNLFA*Eta2(N2)
+         hN2=DP(N2)
+
+         NNFirst=N2             !save these values until end
+         EtaNFirst=EtaN2
+         hNFirst=hN2
+
+         DO N=3,NNeigh(NH)      !operate on rest of neighbors
+            N3=N2               !shift previously computed values
+            hN3=hN2             !shift previously computed values
+            EtaN3=EtaN2
+            N2=NeiTab(NH,N)     !select new neighbor to work on
+            EtaN2=IFNLFA*Eta2(N2)
+            hN2=DP(N2)
+            NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
+            IF(NEle.NE.0) THEN  !if element is active, compute velocity grads
+               TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
+               a1=X(N3)-X(N2)
+               a2=X(N1)-X(N3)
+               a3=X(N2)-X(N1)
+               b1=Y(N2)-Y(N3)
+               b2=Y(N3)-Y(N1)
+               b3=Y(N1)-Y(N2)
+               DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
+               DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
+               DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
+               DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
+               DO k=1,NFEN
+                  qN1=qkp1(N1,k)
+                  qN2=qkp1(N2,k)
+                  qN3=qkp1(N3,k)
+                  DqDX2A(k)=DqDX2A(k)+(qN1*b1+qN2*b2+qN3*b3)
+                  DqDY2A(k)=DqDY2A(k)+(qN1*a1+qN2*a2+qN3*a3)
+               ENDDO
+            ENDIF
+         ENDDO
+
+         N3=N2                  !wrap back to beginning to get final contribution
+         hN3=hN2
+         EtaN3=EtaN2
+         N2=NNFirst
+         hN2=hNFirst
+         EtaN2=EtaNFirst
+         NEle=NeiTabEle(NH,NNeigh(NH)-1)
+         IF(NEle.NE.0) THEN
+            TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
+            a1=X(N3)-X(N2)
+            a2=X(N1)-X(N3)
+            a3=X(N2)-X(N1)
+            b1=Y(N2)-Y(N3)
+            b2=Y(N3)-Y(N1)
+            b3=Y(N1)-Y(N2)
+            DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
+            DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
+            DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
+            DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
+            DO k=1,NFEN
+               qN1=qkp1(N1,k)
+               qN2=qkp1(N2,k)
+               qN3=qkp1(N3,k)
+               DqDX2A(k)=DqDX2A(k)+(qN1*b1+qN2*b2+qN3*b3)
+               DqDY2A(k)=DqDY2A(k)+(qN1*a1+qN2*a2+qN3*a3)
+            ENDDO
+         ENDIF
+
+         IF(TotalArea2.NE.0.) THEN
+            DhDX=DhDX2A/TotalArea2
+            DhDY=DhDY2A/TotalArea2
+            DEtaDX=DEtaDX2A/TotalArea2
+            DEtaDY=DEtaDY2A/TotalArea2
+            DO k=1,NFEN
+               DUDX(k)=REAL(DqDX2A(k))/TotalArea2
+               DVDY(k)=AIMAG(DqDY2A(k))/TotalArea2
+            ENDDO
+         ENDIF
+
+c     Evaluate the "z" vertical velocity
+
+         WZkp1(NH,1)=-REAL(qkp1(NH,1))*DhDX-AIMAG(qkp1(NH,1))*DhDY
+
+         DO k=2,NFEN
+            DelSigO2=(Sigma(k)-Sigma(k-1))/2.d0
+            SigAvgMAOAMB=((Sigma(k)+Sigma(k-1))/2.d0 - A)/AMB
+            DelU=REAL(qkp1(NH,k)-qkp1(NH,k-1))
+            DelV=AIMAG(qkp1(NH,k)-qkp1(NH,k-1))
+            WZkp1(NH,k)=WZkp1(NH,k-1)
+     &      - DelSigO2*Hsp1OAMB*(DUDX(k)+DVDY(k)+DUDX(k-1)+DVDY(k-1))
+     &           + (DEtaDX+SigAvgMAOAMB*(DhDX+DEtaDX))*DelU
+     &           + (DEtaDY+SigAvgMAOAMB*(DhDY+DEtaDY))*DelV
+         ENDDO
+
+c     Correct this using Adjoint method        
+
+         Wf=0.d0                !This value should match surface B.C. exactly
+         Hsp1= DP(NH)+IFNLFA*Eta2(NH) !Total depth at present (s+1) timestep
+         WfOHH=Wf/(Hsp1*Hsp1)
+         WZSurfBC=DEtaDT+REAL(qkp1(NH,NFEN))*DEtaDX
+     &                  +AIMAG(qkp1(NH,NFEN))*DEtaDY
+         WZSurf=WZkp1(NH,NFEN)
+
+         DO k=1,NFEN
+            WZCorrection=(WZSurfBC-WZSurf)*(WfOHH+(Sigma(k)-b)/AMB)
+     &           /(2.d0*WfOHH+1)
+            WZkp1(NH,k)=WZkp1(NH,k)+WZCorrection
+         ENDDO
+
+C     
+C     End loop over horizontal nodes to compute vertical velocity
+C     
+      ENDDO
+
+C*************************************************************************************
+C     Update vertical velocity on ghost nodes - this is necessary
+
+#ifdef CMPI
+      CALL UPDATER3D(WZkp1)
+#endif
+
+
+C*************************************************************************************
+C     For a prognostic baroclinic run, compute new density, temperature, salinity fields
+C     
+      IF(C3D_BTrans) THEN
+        IF(IDEN.EQ.1) THEN
+C           CALL 3D_SIGMAT_TRANS()
+        ELSE IF(IDEN.EQ.2) THEN 
+            CALL TRANS_3D(SAL,NLSD,NVSD,SALkp1,IDEN)
+        ELSE IF(IDEN.EQ.3) THEN 
+            CALL TRANS_3D(TEMP,NLTD,NVTD,TEMPkp1,IDEN)
+        ELSE IF(IDEN.EQ.4) THEN
+            CALL TRANS_3D(SAL,NLSD,NVSD,SALkp1,IDEN-2)
+            CALL TRANS_3D(TEMP,NLTD,NVTD,TEMPkp1,IDEN-1)
+        ENDIF
+C
+C     Update new temperature and salinity fields on ghost nodes
+C     
+#ifdef CMPI
+C      CALL UPDATER3D(SIGT) !jgf45.12
+      IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) CALL UPDATER3D(Tempkp1)
+      IF((IDEN.EQ.2).OR.(IDEN.EQ.4)) CALL UPDATER3D(Salkp1)
+#endif
+
+C     Need to update and move results from the future time levels to the 
+C     present time levels so we can advance in time and before obtaining
+C     new sigma-t values. We will update velocities later.
+        DO NH = 1,NP
+           DO k = 1,NFEN
+              IF ((IDEN.EQ.2).OR.(IDEN.EQ.-2)) THEN
+                  SAL(NH,k)=SALkp1(NH,k)
+              ELSE IF ((IDEN.EQ.3).OR.(IDEN.EQ.-3)) THEN
+                  TEMP(NH,k)=TEMPkp1(NH,k)
+              ELSE IF ((IDEN.EQ.4).OR.(IDEN.EQ.-4)) THEN
+                  SAL(NH,k)=SALkp1(NH,k)
+                  TEMP(NH,k)=TEMPkp1(NH,k)
+              END IF
+           END DO
+        END DO
+        IF(IDEN.GT.1) CALL CALC_SIGMAT_3D ()
+ 
+C     Compute Depth averaged SigmaT
+               
+        DO NH=1,NP
+	  DASigT(NH)=0.d0
+          DO k=1,NFEN-1
+            DASigT(NH)=DASigT(NH)+(Sigma(k+1)-Sigma(k))
+     &                                   *(SigT(NH,k+1)+SigT(NH,k))/2.d0
+          ENDDO
+          DASigT(NH)=DASigT(NH)/AMB
+        ENDDO
+      ENDIF
+
+C     Need to update and move results from the future time levels to the 
+C     present time levels so we can advance in time.
+      DO NH = 1,NP
+         DO k = 1,NFEN
+            q(NH,k) = qkp1(NH,k)
+            WZ(NH,k) = WZkp1(NH,k)
+         END DO
+      END DO
+
+
+C*************************************************************************************
+C     WRITE 3D MODEL OUTPUT
+
+      CALL Write_Output_3D (Time,IT)
+
+
+C*************************************************************************************
+C     RETURN TO THE 2-D MODEL TO COMPUTE H AT NEXT TIME STEP
+      
+      RETURN
+      END
+
+
+c***********************************************************************
+c                                                                      *
+C     SUBROUTINE TO SET UP THE VERTICAL FINITE ELEMENT GRID            *
+c                                                                      *
+c                           6/16/2005                                  *
+c***********************************************************************
+c     
+      SUBROUTINE FEGRIDS(IGC,H)
+      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL_3DVS, ONLY : SZ,LOCALDIR,NFEN,SIGMA,A,B,Z0B,Z0S,NSCREEN
+      IMPLICIT NONE
+      INTEGER :: IGC,N,NODE,NFEN2,IANS,NUM,I
+      REAL(SZ) :: H,DETA,SSTAR,DENOM,SIG0,SS,SB,RP,AVAL,EPS
+
+      select case(igc)
+c     
+c     igc = 0 - Read in grid from UNIT 15 in subroutine READ_INPUT_3DVS
+c     
+
+c     
+c     igc = 1 - Evenly spaced grid
+c     
+      case(1)
+         if(nfen.le.1) nfen = 2
+         deta = (a-b)/(nfen-1)
+         sigma(1) = b
+         do n=2,nfen-1
+            sigma(n) = b + deta*(n-1)
+         end do
+         nfen2 = nfen/2
+         if(2*nfen2.ne.nfen) sigma(nfen2+1) = 0.d0
+         sigma(nfen) = a
+c     
+c     igc = 2 - logarithmically grid  (after Davies 1991)
+c     
+      case(2)
+         write(screenunit,*) '   '
+         write(screenunit,*) '********** Depth = ',H,' ***********'
+         write(screenunit,*) '********** So = ',Z0B,' ***********'
+         Sb = Z0B
+c     write(screenunit,*) '********** Enter So from the keyboard ***********'
+c     write(screenunit,*) '   '
+c     read(*,*) Sb
+         if(nfen.le.1) nfen = 2
+         deta = 1.d0/(nfen-1)
+         sigma(1) = b
+         do n=2,nfen-1
+            sigma(n) = b + (a-b)*Sb/H*(((H+Sb)/Sb)**(deta*(n-1))-1.d0)
+         enddo
+         sigma(nfen) = a
+c     
+c     igc = 3 - log-linear grid  (after Davies 1991)
+c     
+      case(3)
+         write(screenunit,*) '   '
+         write(screenunit,*) '********** Depth = ',H,' ***********'
+         write(screenunit,*) '********** So = ',Z0B,' ***********'
+         write(screenunit,*) '********** S* = ',-H-Sb,' ***********'
+         Sb = Z0B
+         Sstar = -H-Sb
+         write(screenunit,*)
+     &      '******** Enter So from the keyboard *******'
+         write(screenunit,*) '   '
+         read(*,*) Sb
+         write(screenunit,*) 
+     &      '******** Enter S* from the keyboard *******'
+         write(screenunit,*) '   '
+         read(*,*) Sstar
+         if(nfen.le.1) nfen = 2
+         deta = 1.d0/(nfen-1)
+         denom = log((H+Sb)/Sb) + H/Sstar
+         sigma(1) = b
+         do n=2,nfen-1
+            sig0 = b + (a-b)*deta*(n-1)
+ 10         sigma(n)= b - (a-b)*Sstar/H*(log(1.d0+H/Sb*(sig0-b)/(a-b))
+     +           -denom*deta*(n-1))
+            if(abs(sigma(n)-sig0).ge.1.d-8)then
+               sig0 = sigma(n)
+               goto 10
+            endif
+         enddo
+         sigma(nfen) = a
+c     
+c     igc = 4 - Double logarithmic grid
+c     
+      case(4)
+         write(screenunit,*) '   '
+         write(screenunit,*) '********** Depth = ',H,' ***********'
+         write(screenunit,*) 
+     &       '********** So bottom = ',Z0B,' ***********'
+         Sb = Z0B
+         write(screenunit,*) 
+     &       '********** So surface = ',Z0S,' ***********'
+         Ss = Z0S
+c     
+c     write(screenunit,*) '******* Enter So bottom from the keyboard ********'
+c     write(screenunit,*) '   '
+c     read(*,*) Sb
+c     write(screenunit,*) '******* Enter So surface from the keyboard *******'
+c     write(screenunit,*) '   '
+c     read(*,*) Ss
+c     
+         write(screenunit,*) '   '
+         if(mod(nfen,2).eq.0) then
+            write(screenunit,*) 
+     &         '**********************************WARNING*****',
+     &         '******************************'
+            write(screenunit,*) 
+     &         '**** You have specified a double log grid with',
+     &           ' an even number of nodes. ****'
+            write(screenunit,*) 
+     &           '**** Much better results are obtained using an',
+     &           ' an odd number of nodes.  ****'
+            write(screenunit,*) 
+     &           '**** Do you want to terminate now or continue?',
+     &           '  0=Terminate/1=continue. ****'
+            write(screenunit,*) '  '
+            read(*,*) ians
+            if(ians.ne.1) stop
+            num = nfen/2
+         else
+            num=(nfen-1)/2
+            sigma(num+1)=(a+b)/2.
+         endif
+         deta = 2.d0/(nfen-1)
+         sigma(1) = b
+         sigma(nfen) = a
+         do n=2,num
+            sigma(n) 
+     &        = b + 0.5d0*(a-b)*Sb/H*(((H+Sb)/Sb)**(deta*(n-1))-1.d0)
+            sigma(nfen+1-n) = a - 0.5d0*(a-b)*Ss/H*(((H+Ss)/Ss)**
+     &           (deta*(n-1))-1.d0)
+         enddo
+c     
+c     igc = 5 - "P-grid" after Fortunato and Baptista (IJNMF submitted 12/1994)
+c     optimal p value of 0.25 may be used as default for tidal flow problems
+c     note: p = 1 - uniform, p<1 makes fine grid near bottom,p>1 makes
+c     fine grid near sfc
+c     sigma converted to range from -1 to 1 in ADCIRC        
+c     
+      case(5)
+         if(nfen.le.1) nfen = 2
+         write(screenunit,*)
+         write(screenunit,*)' Enter P value for P - grid'
+         write(screenunit,*)
+         read(*,*)rp
+         do i = 1,nfen
+            sigma(i) = -1.d0 + 2.d0
+     &          *(1.d0+((1.d0-i)/(1.d0-nfen))**(1.d0/rp) - 1.d0)
+         end do             
+c     
+c     igc = 6 - "sine grid" after Naimie,Lynch
+c     Value of A determines stretching at ends, check in unit 18
+c     sigma converted to range from -1 to 1 in ADCIRC        
+c     
+      case(6)
+         if(nfen.le.1) nfen = 2
+         write(screenunit,*)
+         write(screenunit,*)' Enter A value for sine grid'
+         write(screenunit,*)
+         read(*,*)aval
+         do i = 1,nfen
+            eps = float(i-1)/float(nfen-1)
+            sigma(i) = -1.d0 
+     &         + (2.d0/H)*(eps*H-aval*sin(2.d0*3.14159d0*eps))
+         end do             
+      case default
+         write(screenunit,4321) igc
+4321     format('The value of igc=',I2,' is not valid. There are seven',
+     &   /,'choices for specifying the vertical grid spacing in 3D.',
+     &   /,'Please specify a value for igc from 0 to 6.',
+     &   /,'**ADCIRC run terminated due to bad value for igc.**')
+         stop
+
+      end select
+
+      RETURN
+      END
+
+c******************************************************************************
+c     Subroutine to compute the eddy viscosity profile.                       *
+c                                                                             *
+c  ievc, evmin, evcon - E.V. code, E.V. minimum value and E.V. constant       *
+c                                                                             *
+c        NOTE: evcon only used for some of the E.V. formulations as           *
+c                  discussed below.                                           *
+c        NOTE: In cases where EV is specified to vary linearly over the       *
+c              lower 20% of the water column, it actually varies linearly     *
+c              with a constant slope up to the vertical FE grid node that is  *
+c              less than or equal to the 20% location.  The value is constant *
+c              as specified at all FE grid nodes above the 20% location.      *
+c              The E.V. above and below the 20% level is joined by one        *
+c              additional linearly varying segment.                           *
+c        NOTE: The E.V. is constrained to always be greater than or equal to  *
+c              EVMIN as specified in the UNIT 15 file.                        *
+c                                                                             *
+c        ievc=0-9, EV constant in time & horizontal space                     *
+c             0 - EV read in from UNIT 15 (may vary vertically) - EVCON is    *
+c                    not used                                                 *
+c             1 - EV = EVCON                                                  *
+c                                                                             *
+c        ievc=10-19 EV proportional to omega*h*h  (Lynch and Officer (1986)   *
+c                                              Lynch and Werner (1987, 1991)) *
+c             10 - EV = omega*h*h/10 over the entire water column             *
+c             11 - EV = omega*h*h/1000 at bottom                              *
+c                       varies linear over lower 20% of wc                    *
+c                     = omega*h*h/10 in upper 80% of w.c.                     *
+c            NOTE:For this EV formulation, evcon is not used and omega is     *
+c                  hardwired for a 12.42 hour tide.                           *
+c                                                                             *
+c        ievc=20-29 EV proportional to kappa U* z                             *
+c             20 - EV = 0.41U*Zo at bottom                                    *
+c                     = 0.41U*Z over entire water column                      *
+c             21 - EV = 0.41U*Zo at bottom                                    *
+c                     = 0.41U*Z in lower 20% of water col                     *
+c                     = 0.082U*h in upper 80% of water col                    *
+c            WHERE: U* is the friction velocity                               *
+c            NOTE: For this EV formulation, evcon is not used.                *
+c                                                                             *
+c        ievc=30-39, EV proportional to Uh (Davies 1990)                      *
+c             30 - EV = 0.025|U|h/9.001 over entire water column              *
+c             31 - EV = evcon|U|h over entire water column                    *
+c             32 - EV = 0.025|U|h/9.001 in upper 80% of wc                    *
+c                     = 0.000025h|U|/9.001 at bottom                          *
+c                       varies linear over lower 20% of wc                    *
+c             33 - EV = evcon|U|h in upper 80% of wc                          *
+c                     = evcon|U|h/1000. at bottom                             *
+c                       varies linear over lower 20% of wc                    *
+c            WHERE: U is depth averaged velocity                              *
+c            NOTE: For this EV formluation, evcon is used only for ievc=31,33 *
+c                                                                             *
+c        ievc=40-49, EV proportional to U*U (Davies 1990)                     *
+c             40 - EV = 2|UU|/9.001 over entire water column                  *
+c             41 - EV = evcon|UU| over entire water column                    *
+c             42 - EV = 2|UU|/9.001 in upper 80% of wc                        *
+c                     = 0.002|UU|/9.001 at bottom                             *
+c                       varies linear over lower 20% of wc                    *
+c             43 - EV = evcon|UU| in upper 80% of wc                          *
+c                     = evcon|UU|/1000. at bottom                             *
+c                       varies linear over lower 20% of wc                    *
+c            WHERE: U is depth averaged velocity                              *
+c            NOTE: For this EV formluation, evcon is used only for ievc=41,43 *
+c                                                                             *
+c        ievc=50, EV computed from Mellor-Yamada L2.5 closure                 *
+c            NOTE: For this EV formulation, evcon is not used.                *
+C                                                                             *
+C                               06/17/05                                      *
+C******************************************************************************
+C
+      SUBROUTINE EDDYVIS(H,UU,VV,WSX,WSY,BSX,BSY,
+     &     istart,NODE,IT)
+      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL_3DVS, ONLY : SZ,LOCALDIR,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
+     &     NFEN,Z0B,Z0S,A,B,AMB,NSCREEN,NWS,DELT
+      IMPLICIT NONE
+      REAL(8) :: H
+      REAL(SZ) :: UU,VV,WSX,WSY,BSX,BSY
+C     jgf46.00 explicitly declared the following variables
+      INTEGER NODE
+      INTEGER istart
+      INTEGER IT
+      INTEGER J
+      REAL(SZ) RKAPPA
+      REAL(SZ) OMEGA
+      REAL(SZ) EVBASE
+      REAL(SZ) SLOPE
+      REAL(SZ) BREAK
+      REAL(SZ) EVBEGIN
+      REAL(SZ) USTARB
+      REAL(SZ) UAVMAG
+      REAL(SZ) UAVMAGS
+
+
+
+ 350  FORMAT(//,2X,'***** INVALID INPUT IN THE PRIMARY VERTICAL INPUT',
+     &     ' FILE (UNIT 15) ****',/,'****** RUN TERMINATED ******')
+
+      RKAPPA = 0.41
+
+C...  
+C...  IEVC=0 READ IN FROM UNIT 15 in subroutine READ_INPUT_3DVS
+C...  
+
+C...  
+C...  IEVC=1 SET EV = EVCON ON THE FIRST TIME STEP
+C     .
+
+      IF((IEVC.eq.1).and.(istart.eq.1)) THEN
+         DO J=1,NFEN
+            EVTOT(J)=EVCON
+         ENDDO
+      ENDIF
+
+      IF(IEVC.eq.1) GOTO 100
+      
+C...  
+C...  OMEGA*H*H formulation FOLLOWING
+C...  LYNCH AND OFFICER (1986), LYNCH AND WERNER (1987, 1991)
+C...  
+      IF(IEVC.EQ.10) THEN
+         OMEGA=1.40525D-4
+         EVBASE=OMEGA*H*H/10.D0
+         IF(EVBASE.LT.EVMIN) EVBASE=EVMIN          
+         DO J=1,NFEN
+            EVTOT(J) = EVBASE
+         END DO
+         GOTO 100
+      ENDIF
+      IF(IEVC.EQ.11) THEN
+         OMEGA=1.40525D-4
+         EVBASE=OMEGA*H*H/10.D0
+         EVTOT(1)=EVBASE/100.D0
+         SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
+         BREAK=b+0.2D0*amb
+         EVBEGIN=EVTOT(1)-b*SLOPE
+         DO J=2,NFEN
+            IF(SIGMA(J).LE.BREAK) THEN
+               EVTOT(J)=EVBEGIN+SLOPE*SIGMA(J)
+            ELSE
+               EVTOT(J)=EVBASE
+            ENDIF
+         ENDDO
+         GOTO 100
+      ENDIF
+
+C...  
+C...  KAPPA USTAR Z FORMULATION
+C...  
+      IF(IEVC.EQ.20) THEN
+         USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
+         EVTOT(1)=RKAPPA*USTARB*Z0B
+         EVBASE=RKAPPA*USTARB*H
+         IF(EVBASE.LT.EVTOT(1)) EVBASE=EVTOT(1)
+         SLOPE=(EVBASE-EVTOT(1))/amb
+         EVBEGIN=EVTOT(1)-SLOPE*b
+         DO J=2,NFEN
+            EVTOT(J)=EVBEGIN+SLOPE*SIGMA(J) !=EVTOT(1)+SLOPE*(SIGMA(J)-b)
+         ENDDO
+         GOTO 100
+      ENDIF
+      IF(IEVC.EQ.21) THEN
+         USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
+         EVTOT(1)=RKAPPA*USTARB*Z0B
+         EVBASE=RKAPPA*USTARB*H*0.2D0
+         IF(EVBASE.LT.EVTOT(1)) EVBASE=EVTOT(1)
+         SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
+         BREAK=b+0.2D0*amb
+         EVBEGIN=EVTOT(1)-SLOPE*b
+         DO J=2,NFEN
+            IF(SIGMA(J).LE.BREAK) THEN
+               EVTOT(J)=EVBEGIN+SLOPE*SIGMA(J)
+            ELSE
+               EVTOT(J)=EVBASE
+            ENDIF
+         ENDDO
+         GOTO 100
+      ENDIF
+
+C...  
+C...  H UAVG FORMULATION FOLLOWING DAVIES (1990) + [EQ. (33)]
+C...  
+      IF(IEVC.EQ.30) THEN
+         UAVMAG=SQRT(UU*UU+VV*VV)
+         EVBASE=0.025*H*UAVMAG/9.001D0
+         DO J=1,NFEN
+            EVTOT(J) = EVBASE
+         END DO
+         GOTO 100
+      ENDIF
+      IF(IEVC.EQ.31) THEN
+         UAVMAG=SQRT(UU*UU+VV*VV)
+         EVBASE = EVCON*H*UAVMAG
+         DO J=1,NFEN
+            EVTOT(J) = EVBASE
+         END DO
+         GOTO 100
+      ENDIF
+      IF(IEVC.EQ.32) THEN
+         UAVMAG=SQRT(UU*UU+VV*VV)
+         EVBASE = 0.025*H*UAVMAG/9.001D0
+         EVTOT(1) = EVBASE/1000.D0  
+         SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
+         BREAK=b+0.2D0*amb
+         EVBEGIN=EVTOT(1)-SLOPE*b
+         DO J=2,NFEN
+            IF(SIGMA(J).LE.BREAK) THEN
+               EVTOT(J)=EVBEGIN+SLOPE*SIGMA(J)
+            ELSE
+               EVTOT(J)=EVBASE
+            ENDIF
+         ENDDO
+         GOTO 100
+      ENDIF
+      IF(IEVC.EQ.33) THEN
+         UAVMAG=SQRT(UU*UU+VV*VV)
+         EVBASE=EVCON*H*UAVMAG
+         EVTOT(1)=EVBASE/1000.D0  
+         SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
+         BREAK=b+0.2D0*amb
+         EVBEGIN=EVTOT(1)-SLOPE*b
+         DO J=2,NFEN
+            IF(SIGMA(J).LE.BREAK) THEN
+               EVTOT(J)=EVBEGIN+SLOPE*SIGMA(J)
+            ELSE
+               EVTOT(J)=EVBASE
+            ENDIF
+         ENDDO
+         GOTO 100
+      ENDIF
+
+C...  
+C...  UAVG SQUARED FORMULATION FOLLOWING DAVIES (1990) + [EQ. (34)]
+C...  
+      IF(IEVC.EQ.40) THEN
+         UAVMAGS=UU*UU+VV*VV
+         EVBASE=2.D0*UAVMAGS/9.001D0
+         DO J=1,NFEN
+            EVTOT(J) = EVBASE
+         END DO
+         GOTO 100
+      ENDIF
+      IF(IEVC.EQ.41) THEN
+         UAVMAGS=UU*UU+VV*VV
+         EVBASE=EVCON*UAVMAGS
+         DO J=1,NFEN
+            EVTOT(J) = EVBASE
+         END DO
+         GOTO 100
+      ENDIF
+      IF(IEVC.EQ.42) THEN
+         UAVMAGS=UU*UU+VV*VV
+         EVBASE=2.D0*H*UAVMAGS/9.001D0
+         EVTOT(1)=EVBASE/1000.D0  
+         SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
+         BREAK=b+0.2D0*amb
+         EVBEGIN=EVTOT(1)-SLOPE*b
+         DO J=2,NFEN
+            IF(SIGMA(J).LE.BREAK) THEN
+               EVTOT(J)=EVBEGIN+SLOPE*SIGMA(J)
+            ELSE
+               EVTOT(J)=EVBASE
+            ENDIF
+         ENDDO
+         GOTO 100
+      ENDIF
+      IF(IEVC.EQ.43) THEN
+         UAVMAGS=UU*UU+VV*VV
+         EVBASE=EVCON*UAVMAGS
+         EVTOT(1)=EVBASE/1000.D0  
+         SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
+         BREAK=b+0.2D0*amb
+         EVBEGIN=EVTOT(1)-SLOPE*b
+         DO J=2,NFEN
+            IF(SIGMA(J).LE.BREAK) THEN
+               EVTOT(J)=EVBEGIN+SLOPE*SIGMA(J)
+            ELSE
+               EVTOT(J)=EVBASE
+            ENDIF
+         ENDDO
+         GOTO 100
+      ENDIF
+
+C...  
+C...  MELLOR-YAMADA LEVEL 2.5 CLOSURE
+C...  
+      IF(IEVC.EQ.50) THEN
+         CALL TURB(NODE,H,BSX,BSY,WSX,WSY,IStart)
+         GOTO 100
+      ENDIF
+      
+C...  
+C...  ONCE EDDY VISCOSITY IS COMPUTED
+C...  
+
+
+ 100  CONTINUE
+
+C...  
+C...  CHECK SO THAT EDDY VISCOSITY NEVER GETS BELOW MINIMUM VALUE
+C...  
+      DO J=1,NFEN
+         IF(EVTOT(J).LT.EVMIN) THEN
+            EVTOT(J)=EVMIN
+         ENDIF
+      ENDDO
+
+C...  
+C...  RETURN
+C...  
+      RETURN
+      END
+
+
+C***********************************************************************
+C                                                                      *
+C   Solver for a vector U of length nfen for a tridiagonal system of   *
+C          equations with the form                                     *
+C                                                                      *
+C    **                               **   **    **   **    **         *
+C    * Bn   An                         *   *  Un  *   *  Rn  *         *
+C    *                                 *   *      *   *      *         *
+C    * Cn-1 Bn-1 An-1                  *   * Un-1 *   * Rn-1 *         *
+C    *                                 *   *      *   *      *         *
+C    *      Cn-2 Bn-2 An-2             *   * Un-2 *   * Rn-2 *         *
+C    *                                 *   *      *   *      *         *
+C    *             .......             *   * .... *   * .... *         *
+C    *                                 *   *      *   *      *         *
+C    *                  C3 B3 A3       *   *  U3  * = *  R3  *         *
+C    *                                 *   *      *   *      *         *
+C    *                     C2 B2 A2    *   *  U2  *   *  R2  *         *
+C    *                                 *   *      *   *      *         *
+C    *                        C1 B1    *   *  U1  *   *  R1  *         *
+C    **                               **   **    **   **    **         *
+C                                                                      *
+C      A, B, C, U, R are adjustable size arrays                        *
+C                                                                      *
+C      U(1 - nfen) are the complex velocities from bottom to top       *
+C                                                                      *
+C                                                                      *
+C                         R.L.  11/18/94                               *
+C***********************************************************************
+C
+      SUBROUTINE TRIDIAG(A,B,C,R,U,nfen)
+      USE GLOBAL, ONLY : SZ, ScreenUnit
+      IMPLICIT COMPLEX(SZ) (A-H,O-Z)
+      DIMENSION A(*),B(*),C(*),R(*),U(*)
+C     
+      DO 11 J=nfen-1,1,-1
+         IF(ABS(B(J+1)).EQ.0.) then
+            write(screenunit,*) 'Diagonal term in the VS matrix is zero'
+            write(screenunit,*) '*********** Fatal error *************'
+            write(1,*) 'Diagonal term in the VS matrix is zero'
+            write(1,*) '*********** Fatal error *************'
+            stop
+         endif
+         P1=C(J)/B(J+1)
+         B(J)=B(J)-A(J+1)*P1
+         R(J)=R(J)-R(J+1)*P1
+ 11   CONTINUE
+
+      IF(ABS(B(1)).EQ.0.) then
+         write(screenunit,*) 'B1 term in the VS matrix is zero'
+         write(screenunit,*) '*********** Fatal error *************'
+         write(1,*) 'B1 term in the VS matrix is zero'
+         write(1,*) '*********** Fatal error *************'
+         stop
+      endif
+
+      U(1)=R(1)/B(1)
+
+      DO 12 J=2,nfen
+ 12      U(J)=(R(J)-A(J)*U(J-1))/B(J)
+   
+      RETURN
+      END
+
+C***********************************************************************
+C                                                                      *
+C                    VSDISP.FOR - VERSION                              *
+C                                                                      *
+C  This subroutine computes the dispersion terms: Duu, Duv, Dvv        *
+C  for the FE VS method as derived in "Dispersion Terms 1/27/92"       *
+C                                                                      *
+C                                                                      *
+C                          R.L. 05/25/00                               *
+C                          R.L. 06/22/05                               *
+C***********************************************************************
+
+      Subroutine VSDISP(it,node,H,UU,VV,Duu,Duv,Dvv)
+      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL_3DVS, ONLY : Qkp1,SZ,NFEN,SIGMA,GAMMA,AMB,I,NSCREEN
+      IMPLICIT NONE
+
+      REAL(SZ) :: UU,VV,Duu,Duv,Dvv
+      REAL(8) :: delst,D1P1,Txx,Txy,Tyy,Ump,Vmp,Um,Vm,H
+C     jgf46.00 explicitly declared the following variables
+      INTEGER it
+      INTEGER node
+      INTEGER ierr
+      INTEGER j
+      INTEGER k
+      INTEGER m
+      INTEGER n
+      INTEGER mp
+      INTEGER istart
+      INTEGER il
+      INTEGER ibc
+      REAL(SZ) rkap
+      REAL(SZ) B1
+      REAL(SZ) B123
+      REAL(SZ) g2
+      REAL(SZ) g3
+      REAL(SZ) g4
+      REAL(SZ) g5
+      REAL(SZ) g6
+      REAL(SZ) E1
+c     
+c     parameters
+c     
+      ierr = 0
+c     
+c     don't waste time if entire profile is zero
+c     
+      do j=1,nfen
+         gamma(j)=Qkp1(node,j)
+      end do
+      do j=1,nfen
+         if(gamma(j).ne.(0.d0,0.d0)) goto 1
+      end do
+      Duu = 0.d0
+      Duv = 0.d0
+      Dvv = 0.d0
+      return
+
+c     
+c     Domain is split up into intervals according to sigma grid and
+c     contribution to total integral is computed on each interval.
+c     
+
+ 1    Txx = 0.d0
+      Txy = 0.d0
+      Tyy = 0.d0
+      Ump = Real(gamma(1))
+      Vmp = -Real(i*gamma(1))
+      Do 100 m=1,nfen-1
+         mp = m+1
+         Um = Ump
+         Vm = Vmp
+         Ump = Real(gamma(mp))
+         Vmp = -Real(i*gamma(mp))
+         delst = sigma(mp) - sigma(m)
+         D1P1 = delst/3.d0
+         Txx = Txx + (Um*Um + Ump*Ump + Um*Ump)*D1P1
+         Txy = Txy + ((Um*Vm + Ump*Vmp) + (Um*Vmp + Vm*Ump)/2.d0)*D1P1
+         Tyy = Tyy + (Vm*Vm + Vmp*Vmp + Vm*Vmp)*D1P1
+ 100  continue
+
+      if(Txx.lt.0.) then
+         write(screenunit,1001)
+ 1001    format(/'**** Serious Error Detected in SUBROUTINE VSDISP ***'/
+     +        '          the partial uu dispersion term < 0        '/
+     +        '        Diagnostic information written to unit 1    ')
+         write(screenunit,1101) node,it
+         write(1,1002)
+ 1002    format(/'**** Serious Error Detected in SUBROUTINE VSDISP ***'/
+     +        '          the partial uu dispersion term < 0        ')
+         write(1,1101) node,it
+         write(1,1021)
+         do m=1,NFEN            !ntotn -> NFEN
+            write(1,1022) sigMA(m), gamma(m) !sigtot -> sigMA
+         enddo
+         write(1,2101) Txx
+ 2101    format('  Par uu = ',e14.6,' It will be set to 0.')
+         Txx = 0.d0
+      endif
+
+      if(Tyy.lt.0.) then
+         write(screenunit,1003)
+ 1003    format(/'**** Serious Error Detected in SUBROUTINE VSSOL ****'/
+     +        '          the partial vv dispersion term < 0        '/
+     +        '       Diagnostic information written to unit 1    ')
+         write(screenunit,1101) node,it
+         write(1,1004)
+ 1004    format(/'**** Serious Error Detected in SUBROUTINE VSSOL ****'/
+     +        '          the partial vv dispersion term < 0        ')
+         write(1,1101) node,it
+         write(1,1021)
+         do m=1,NFEN            !ntotn -> NFEN
+            write(1,1022) sigMA(m),gamma(m) !sigtot -> sigMA
+         enddo
+         write(1,2102) Tyy
+ 2102    format('  Par vv = ',e14.6,' It will be set to 0.')
+         Tyy = 0.d0
+      endif
+
+ 1101 format(/' Error occurred at node ',I6,' time step ',I8/)
+ 1021 format(8x,'sigMA',11x,'  u ',12x,'  v ')
+ 1022 format(1x,3e16.8)
+
+      Duu = Txx*H/amb - H*UU*UU
+      Duv = Txy*H/amb - H*UU*VV
+      Dvv = Tyy*H/amb - H*VV*VV
+
+      if(Duu.lt.0.) Duu = 0.d0
+      if(Dvv.lt.0.) Dvv = 0.d0
+
+      return
+      end
+
+
+c***********************************************************************
+c     Subroutine to compute the Inm integral                           *
+c                                                                      *
+c     Note, Inm is based only on the f.e. grid and therefore is the    *
+c     same for all horizontal nodes.                                   *
+c                                                                      *
+c     11/24/01                                                         *
+c                                                                      *
+c***********************************************************************
+
+      subroutine InmINT()
+      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL_3DVS, ONLY : Sigma, NFEN, INM
+      IMPLICIT NONE
+      INTEGER k
+
+C     integral over lower element of psi(k-1)*psi(k)
+      Inm(1,1) = 0.d0
+C     integral over upper element of psi(k+1)*psi(k)
+      Inm(1,3) = (Sigma(2)-Sigma(1))/6.d0
+C     integral over both elements of psi(k)*psi(k)
+      Inm(1,2) = 2.d0*Inm(1,3) 
+
+      do k=2,NFEN-1
+C     integral over lower element of psi(k-1)*psi(k)
+         Inm(k,1) = Inm(k-1,3) 
+C     integral over upper element of psi(k+1)*psi(k)
+         Inm(k,3) = (Sigma(k+1)-Sigma(k))/6.d0
+C     integral over both elements of psi(k)*psi(k)
+         Inm(k,2) = 2.d0*(Inm(k,1)+Inm(k,3))
+      enddo
+
+C     integral over lower element of psi(k-1)*psi(k)
+      Inm(NFEN,1) = Inm(NFEN-1,3)
+C     integral over both elements of psi(k)*psi(k)  
+      Inm(NFEN,2) = 2.d0*Inm(NFEN,1)
+C     integral over upper element of psi(k+1)*psi(k)
+      Inm(NFEN,3) = 0.d0        
+         
+      return
+      end
+
+c***********************************************************************
+c      Subroutine to compute the LVn integral (used only in VS)        *
+c                                                                      *
+c                            11/14/94                                  *
+c***********************************************************************
+
+      subroutine LVnInt()
+      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL_3DVS, ONLY : Sigma, NFEN, LVN
+      IMPLICIT NONE
+      INTEGER n
+
+      LVn(1) = (sigma(2) - sigma(1))/2.d0
+
+      DO n=2,nfen-1
+         LVn(n) = (sigma(n+1) - sigma(n-1))/2.d0
+      enddo
+
+      LVn(nfen) = (sigma(nfen) - sigma(nfen-1))/2.d0
+
+      RETURN
+      END
+
+
+c***********************************************************************
+c      Subroutine to compute the KQnm integral                         *
+c                                                                      *
+c                            01/26/00                                  *
+c***********************************************************************
+
+      subroutine KQnmInt(KQnm,Kq)
+      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL_3DVS, ONLY : SZ,SIGMA,NFEN,MNFEN
+      IMPLICIT NONE
+      REAL(SZ) :: KQnm(MNFEN,3),Kq(MNFEN)
+      REAL(8) :: EM,EP
+      INTEGER n
+c     do 1st element by hand
+
+      EP=(Kq(2)+Kq(1))/(sigma(2)-sigma(1))/2.d0
+      KQnm(1,1)=0.D0
+      KQnm(1,2)=EP
+      KQnm(1,3)=-EP
+
+c     loop through interior elements
+c     NOTE: the integrals from sigma(n-1) to sigma(n) are simply integrals
+c     the integrals from sigma(n) to sigma(n+1) from previous element
+
+      DO n=2,nfen-1
+         EM=EP
+         EP=(Kq(n+1)+Kq(n))/(sigma(n+1)-sigma(n))/2.d0
+         KQnm(n,1)=-EM
+         KQnm(n,2)=EM+EP
+         KQnm(n,3)=-EP
+      ENDDO
+
+c     do last element by hand
+
+      EM=EP
+      KQnm(nfen,1)=-EM
+      KQnm(nfen,2)=EM
+      KQnm(nfen,3)=0.D0
+
+      return
+      end
+
+
+c************************************************************************
+c MY2.5 TURBULENCE MODEL PROGRAM
+c VELOCITY SOLUTION VERSION
+c
+c written by R. Luettich based on earlier subroutines by R. Grenier
+c
+c OVERVIEW
+c
+c     This code uses the quasi-equilibrium version of the Mellor-Yamada
+c     turbulence scheme (Mellor and Yamada, 1982, Blumberg and Mellor,
+c     1987 and Galperin et al., 1988) to solve transport equations for
+c     q**2 and q**2l.  The parameters q and l are used to compute the
+c     eddy viscosity according to the relation:
+c
+c             Km = Smql
+c
+c     where Km is the eddy viscosity and Sm is a stability parameter.
+c
+c     This routine is called from the EDDYVIS subroutine during the
+c     internal mode solution for ievc = 50.  There are separate DSS and
+c     VS versions of the code.
+c
+c    *** SEE SECTION TITLED "USERS GUIDE" BELOW ***
+c
+c     This routine should be linked with the 3D Code subroutines (ADCIRC
+c     + VS) after running the setup program
+c
+c PARAMETER DEFINITIONS:
+c
+c argument list:
+c
+c nh          : horizontal node counter
+c H           : total depth (includes finite amplitude)
+c it          : current time step value
+c delt        : simulation incremental time step (uses same step as
+c               internal and external modes)
+c nws         : switch for wind stress (nws=1 for wind on,
+c               nws=0 for wind off). This affects the surface
+c               boundary condition. Set in the external mode and passed in.
+c bsx,bsy     : x,y bottom stresses
+c wsx,wsy     : x,y surface stresses
+c Z0B         : bottom roughness/mixing length (see USER's notes
+c               below)
+c Z0S         : surface roughness/mixing length (see USER's notes
+c               below)
+c
+c Coeff block:
+c
+c Sq          : stability function used in definition of the eddy
+c               diffusivity of the turbulence parameters (Sq = 0.2)
+c Sm          : stability function used in definition of the eddy
+c               viscosity (see Galperin, et al. for exact form)
+c Sh          : stability function used in definition of the eddy
+c               diffusivity of the density (see Galperin, et al.
+c               for exact form)
+c B1,E1,E2,E3 : empirical constants (values given below; see Mellor and
+c               Yamada, 1982 & Blumberg et al, 1992 for discussion)
+c
+c Turbmod block:
+c
+c Q (real, imag): x,y direction dependent variables from the vertical
+c               solution
+c
+c Vgrid block, Setup Block
+c
+c parameters as defined in the internal mode subroutines
+c
+c Other calculation parameters:
+c
+c q2l         : 2xTKE times the master length scale
+c q20         : previous time step value of q2
+c l           : master length scale
+c Km          : momentum eddy viscosity
+c Kq          : turbulence eddy viscosity
+c Kh          :
+c Mqa,Mqb,Mqc : LHS matrix diagonals for the q2 and q2l solutions
+c LVq         : RHS load vector for the q2 and q2l solutions
+c q2          : solution vector returned from the tridiagonal solver
+c w           : wall function (see Blumberg at al., 1992)
+c BVflux2     : Brunt Vaislai frequency squared
+c Gh          : dimensionless density function
+c SIGT        : profile of density (sigma T)
+c
+c Flags, run control and miscellaneous parameters
+c
+c iden        : density flag (iden <> 0 density included,iden = 0 no density)
+c im          : run type flag - vs (im = 1) or dss (im = 2)
+c il          : length scale flag - il = 2 or 3 for algebraic length scale (see below),
+c               il = 1 for length scale computed from the q2l equation (see user notes below)
+c ibc         : boundary condition flag for q2 (0=constant/zero,1=no-flux)
+c               User should set ibc = 0 for nws = 1
+c
+c
+c SUBROUTINES
+c
+c turb        : main module - handles input, run control and output.
+c TRIDAG      : tridiagonal matrix solver
+c
+c
+c USER'S GUIDE
+c
+c     The user must set a number of parameter statements and flags prior
+c     to operation:
+c
+c parameter statements **Check all subroutines**
+c  MNFEN = maximum number of vertical nodes
+c  mnp = maximum number of horizontal nodes
+c
+c flags (SEE DISCUSSION ABOVE UNDER flags, run control and miscellaneous parameters)
+c
+c     The value of Z0B should be set consistent with the bottom boundary
+c     condition used in the internal mode solution.  For a no-slip BBC,
+c     choose Z0B as a physical roughness height, e.g. 0.005m.  For a
+c     slip case, set Z0B to a value consistent with the slip coefficient
+c     used via the log profile, (e.g., 1 m).  Tests suggest that when a
+c     no-slip condition is used with the VS model (for which the bottom
+c     nodes are very tightly spaced) it is best to set the time
+c     weighting parameter for the momentum diffusion term (alpha3 in
+c     input unit 15) to 1.0 to avoid instability problems. When a slip
+c     condition is used (or whenever the bottom grid spacing is about
+c     1m) a Crank-Nicholson approach (alpha3 = 0.5) is acceptable.
+c
+c     The number of vertical nodes used in the solution of the
+c     turbulence equations is the same as the number of nodes used in
+c     the solution of the dependent variable (velocity or stress) in the
+c     internal mode.  This is unlike the other forms of eddy viscosity,
+c     for which the two grids are different and the number of nodes used
+c     to define the eddy viscosity is generally less.
+c
+c     This code assumes that any density field is passed into the
+c     routine via a common block called "DENSITY3D", which includes a
+c     density profile on the internal mode solution grid at each point
+c     in the horizontal.  Any updating of this profile must be done
+c     externally and passed into this routine.  The density be passed as
+c     sigma t units, and the background density is RHOWAT0.
+c
+c     Model output is limited to printing results for a single
+c     horizontal node.  Additional coding would be required to create
+c     full output files.
+c
+c
+c REFERENCES
+c
+c     Blumberg, A.F. and G.L. Mellor, A Description of a
+c     Three-Dimensional Coastal Ocean Circulation Model, In:
+c     Three-Dimensional Coastal Ocean Models, edited by N.S. Heaps,
+c     pp. 1-16, American Geophysical Union, Washington, D.C., 1987.
+c
+c     Blumberg, A.F., B. Galperin and D.J. O'Connor, Modeling vertical
+c     structure of open channel flows, Journal of Hydraulic Engineering,
+c     118, 1119-1134., 1992.
+c
+c     Galperin, B., L.H. Kantha, S. Hassid and A. Rosati, A
+c     quasi-equilibrium turbulent energy model for geophysical flows,
+c     Journal of the Atmospheric Sciences, 45, 55-62, 1988.
+c
+c     Mellor, G.L. and T. Yamada, Development of a turbulence closure
+c     model for geophysical fluid problems, Reviews of Geophysics and
+c     Space Physics, 20, 851-875, 1982.
+c
+c************************************************************************
+      subroutine turb(nh,H,bsx,bsy,wsx,wsy,istart)
+      USE SIZES
+      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL_3DVS, EXCEPT_BSX => BSX ,EXCEPT_BSY => BSY
+      IMPLICIT NONE
+      
+      COMPLEX(SZ) :: dQdz,dQdz1,dQdz2
+      REAL(8) :: H
+
+      REAL(SZ) :: BSX,BSY,WSX,WSY
+      REAL(SZ),SAVE :: Sh,H2
+      REAL(SZ),SAVE,ALLOCATABLE :: KQnm(:,:)
+      REAL(SZ),SAVE,ALLOCATABLE :: Mqa(:),Mqb(:),Mqc(:)
+      REAL(SZ),SAVE,ALLOCATABLE :: LVq(:),Sm(:)
+      REAL(SZ),SAVE,ALLOCATABLE :: q2(:),q2prev(:)
+      REAL(SZ),SAVE,ALLOCATABLE :: q2l(:),q2lprev(:)
+      REAL(SZ),SAVE,ALLOCATABLE :: wall(:),rmlen(:),rmlen2(:)
+      REAL(SZ),SAVE,ALLOCATABLE :: BVfreq2(:),spgrad2(:)
+      REAL(SZ),SAVE,ALLOCATABLE :: Kq(:),Km(:),Kh(:)
+      REAL(SZ),SAVE,ALLOCATABLE :: prod(:),diss(:)
+C     jgf46.00 explicitly declared the following variables
+C     jgf46.12 gave them SAVE and PARAMETER properties (from jgf45.18)
+      INTEGER nh, istart, n
+      INTEGER,SAVE :: il, ibc
+      REAL(SZ), PARAMETER :: rkap = 0.41d0
+      REAL(SZ), PARAMETER :: B1 = 16.6d0 
+      REAL(SZ), PARAMETER :: g2 = 0.39327d0
+      REAL(SZ), PARAMETER :: g3 = 3.0858d0
+      REAL(SZ), PARAMETER :: g4 = 34.676d0
+      REAL(SZ), PARAMETER :: g5 = 6.1272d0
+      REAL(SZ), PARAMETER :: g6 = 0.49393d0
+      REAL(SZ), PARAMETER :: E1 = 1.8d0
+      REAL(SZ), PARAMETER :: E2 = 1.33d0
+      REAL(SZ), PARAMETER :: E3 = 0.25d0
+      REAL(SZ), PARAMETER :: q2min=1.d-8
+      REAL(SZ), SAVE :: B123, Sq, sig, rl1, rl2, HOamb, zval, HOamb2
+      REAL(SZ), SAVE :: dsig, drhodz, dudz, dvdz, dsig1, dsig2
+      REAL(SZ), SAVE :: drhodz1, drhodz2, BSlay, SSlay, db, db2, ds, ds2
+      REAL(SZ), SAVE :: qprev, qlprev, Gh, tdiss, elmax
+      REAL(SZ), SAVE :: coef1, coef2, coef3, coef4, coef5
+
+c     allocate local arrays
+      if(.not. turb_allocated) then
+         allocate(KQnm(MNFEN,3))
+         allocate(Mqa(MNFEN),Mqb(MNFEN),Mqc(MNFEN))
+         allocate(LVq(MNFEN),Sm(MNFEN))
+         allocate(q2(MNFEN),q2prev(MNFEN))
+         allocate(q2l(MNFEN),q2lprev(MNFEN))
+         allocate(wall(MNFEN),rmlen(MNFEN),rmlen2(MNFEN))
+         allocate(BVfreq2(MNFEN),spgrad2(MNFEN))
+         allocate(Kq(MNFEN),Km(MNFEN),Kh(MNFEN))
+         allocate(prod(MNFEN),diss(MNFEN))
+         turb_allocated = .true.
+      endif
+c     
+c     At time step 1, set flags and initialize variables
+c     
+      if(istart.eq.1) then
+         il = 1  ! length scale flag, =1 for length scale from q2l eqn.
+         ibc = 0 ! surface b.c. flag, =0 for specified stress, =1 for no flux
+         if((nws.eq.0).or.(nws.eq.100)) ibc=1
+
+c     set constants and other parameters
+         B123 = B1**(2.d0/3.d0)
+         Sq = 0.2d0 ! initialize the stability constant stability function
+
+c     initialize the Brunt-Vaisala freq squared = 0 if density not considered
+         if(iden.eq.0) then
+            do n=1,nfen
+               BVfreq2(n)=0.d0            
+            end do
+         endif
+c     initialization for a cold start only
+         if(ihot.eq.0) then
+            do n = 1,nfen
+               q20(nh,n) = q2min ! initialize q2 to a minimal value
+c     initilize l to a minimal value if computed from q2l equation
+               if(il.eq.1) then
+c     l(nh,n)=rkap*Z0B                        !rog way
+                  l(nh,n)=rkap*(Z0B*(a-sigma(n))-Z0S*(b-sigma(n)))/amb
+               endif
+c     set l to an exponential type length scale (davies and xing)
+               if(il.eq.2)then
+                  sig = (sigma(n)+1.d0)/amb
+                  rl1 = 1.d0/(rkap*(sig*H+Z0B)*exp(-amb*sig))
+                  rl2 = 1.d0/(rkap*(H-sig*H+Z0S))
+                  l(nh,n) = 1.d0/(rl1+rl2)
+               endif
+c     set l to a linear variation with kz over lower 15% with constant above
+               if(il.eq.3)then
+                  HOamb=H/amb
+                  zval = (sigma(n)+1.d0)*HOamb-H
+                  if(sigma(n).le.-0.7d0) l(nh,n)=rkap*(H+zval+Z0B)
+                  if(sigma(n).gt.-0.7d0) l(nh,n)=rkap*(0.15d0*H+Z0B)
+               endif
+            end do
+         endif
+c     end cold start initialization
+      endif                     !end of 1st time step section
+c     
+c     Begin calculations for each time step
+c     
+      H2 = H*H
+      HOamb=H/amb
+      HOamb2=(H/amb)*(H/amb)
+
+c     Compute the speed gradient squared, density gradient, BV freq
+c     and split out the mixing length
+
+      rmlen(1)=l(nh,1)
+      rmlen2(1)=rmlen(1)*rmlen(1)
+      dsig=sigma(2)-sigma(1)
+      if(iden.ne.0) then
+         drhodz=((SIGT(nh,2)-SIGT(nh,1))/dsig)/HOamb
+         BVfreq2(1)=-GORHO*drhodz
+      endif
+      dQdz=((Q(nh,2)-Q(nh,1))/dsig)/HOamb
+      dudz=real(dQdz)
+      dvdz=aimag(dQdz)
+      spgrad2(1)=dudz*dudz+dvdz*dvdz
+      
+      do n=2,nfen-1
+         rmlen(n)=l(nh,n)
+         rmlen2(n)=rmlen(n)*rmlen(n)
+         dsig1=sigma(n+1)-sigma(n)
+         dsig2=sigma(n)-sigma(n-1)
+         if(iden.ne.0) then
+            drhodz1=((SIGT(nh,n+1)-SIGT(nh,n))/dsig1)/HOamb
+            drhodz2=((SIGT(nh,n)-SIGT(nh,n-1))/dsig2)/HOamb
+            BVfreq2(n)=-GORHO*(drhodz1+drhodz2)/2.d0
+         endif
+         dQdz1=((Q(nh,n+1)-Q(nh,n))/dsig1)/HOamb
+         dQdz2=((Q(nh,n)-Q(nh,n-1))/dsig2)/HOamb
+         dQdz=(dQdz1+dQdz2)/2.d0
+         dudz=real(dQdz)
+         dvdz=aimag(dQdz)
+         spgrad2(n)=dudz*dudz+dvdz*dvdz
+      enddo
+
+      rmlen(nfen)=l(nh,nfen)
+      rmlen2(nfen)=rmlen(nfen)*rmlen(nfen)
+      dsig=sigma(nfen)-sigma(nfen-1)
+      if(iden.ne.0) then
+         drhodz=((SIGT(nh,nfen)-SIGT(nh,nfen-1))/dsig)/HOamb
+         BVfreq2(nfen)=-GORHO*drhodz
+      endif
+      dQdz=((Q(nh,nfen)-Q(nh,nfen-1))/dsig)/HOamb
+      dudz=real(dQdz)
+      dvdz=aimag(dQdz)
+      spgrad2(nfen)=dudz*dudz+dvdz*dvdz
+      
+c     Compute the wall function if the mixing length is determined from
+c     q2l eqn
+
+      if(il.eq.1)then
+         BSlay=Z0B
+         SSlay=Z0S
+         do n = 1,nfen
+            db=(HOamb*(sigma(n)-b)+BSlay)*rkap
+            db2=db*db
+            ds=(HOamb*(a-sigma(n))+SSlay)*rkap
+            ds2=ds*ds
+            wall(n) = 1.d0 + E2*rmlen2(n)/db2 + E3*rmlen2(n)/ds2
+         enddo
+      endif
+
+c     Compute the stability functions, eddy viscosity and partial
+c     turbulence production & dissipation terms using information from
+c     the previous time step
+
+      do n = 1,nfen
+         q2prev(n)=q20(nh,n)
+         q2lprev(n)=q2prev(n)*rmlen(n)
+         qprev=sqrt(q2prev(n))
+         qlprev=qprev*rmlen(n)
+         Gh=-BVfreq2(n)*rmlen2(n)/q2prev(n)
+         if(Gh.gt.0.0233) Gh=0.0233
+         Sm(n)=(g2-g3*Gh)/((1.d0-g4*Gh)*(1.d0-g5*Gh))
+         Sh=g6/(1.d0-g4*Gh)
+         Km(n)=Sm(n)*qlprev
+         if(Km(n).lt.EVMIN) Km(n)=EVMIN
+c     if(istart.eq.1) Km(n)=EVMIN                        !rog way
+         Kq(n)=Sq*qlprev                                   
+         if(Kq(n).lt.EVMIN) Kq(n)=EVMIN
+c     Kq(n)=Km(n)*Sq/Sm(n)                           !rog way
+         Kh(n)=Sh*qlprev
+         if(Kh(n).lt.EVMIN) Kh(n)=EVMIN
+         prod(n)=Km(n)*spgrad2(n)-Kh(n)*BVfreq2(n)
+         diss(n)=qprev/(B1*rmlen(n))
+c     diss(n)=q2prev(n)*Sm(n)/(Km(n)*B1)             !rog way
+      enddo
+
+c     Compute the q2 LHS Matrix and RHS Load Vector
+
+      call KQnmInt(KQnm,Kq)
+
+      Mqa(1) = 0.d0
+      Mqb(1) = 1.d0
+      Mqc(1) = 0.d0
+      LVq(1) = B123*sqrt(bsx*bsx+bsy*bsy)
+      
+      coef2 = delt*theta1/HOamb2
+c     coef2 = theta1/HOamb2                !rog way
+      coef4 = 2.d0*delt
+c     coef4 = 2.d0                         !rog way
+      coef5 = delt*(1.d0-theta1)/HOamb2
+c     coef5 = (1.d0-theta1)/HOamb2         !rog way
+      do n=2,nfen-1
+         tdiss = 2.d0*diss(n)
+         coef1 = 1.d0 + delt*theta2*tdiss
+c     coef1 = 1.d0/delt + theta2*tdiss       !rog way
+         Mqa(n) = Inm(n,1)*coef1+KQnm(n,1)*coef2
+c     Mqa(n) = KQnm(n,1)*coef2               !lumping
+         Mqb(n) = Inm(n,2)*coef1+KQnm(n,2)*coef2
+c     Mqb(n) = (Inm(n,1)+Inm(n,2)+Inm(n,3))*coef1+KQnm(n,2)*coef2  !lumping
+         Mqc(n) = Inm(n,3)*coef1+KQnm(n,3)*coef2
+c     Mqc(n) = KQnm(n,3)*coef2                                     !lumping
+         
+         coef3 = 1.d0 - delt*(1.d0-theta2)*tdiss
+c     coef3 = 1.d0/delt - (1.d0-theta2)*tdiss                      !rog way
+         LVq(n) = Inm(n,1)*(coef3*q2prev(n-1)+coef4*prod(n-1))
+     &        -KQnm(n,1)*coef5*q2prev(n-1)
+     &        + Inm(n,2)*(coef3*q2prev(n  )+coef4*prod(n  ))
+     &        -KQnm(n,2)*coef5*q2prev(n)
+     &        + Inm(n,3)*(coef3*q2prev(n+1)+coef4*prod(n+1))
+     &        -KQnm(n,3)*coef5*q2prev(n+1)
+c     LVq(n) =                 -KQnm(n,1)*coef5*q2prev(n-1)     !lumping
+c     &         + (Inm(n,1)+Inm(n,2)+Inm(n,3))                  !lumping
+c     &         *(coef3*q2prev(n)+coef4*prod(n))     !lumping
+c     &         -KQnm(n,2)*coef5*q2prev(n)       !lumping
+c     &         -KQnm(n,3)*coef5*q2prev(n+1)     !lumping
+
+      enddo
+
+      if(ibc.eq.0) then
+         Mqa(nfen) = 0.d0
+         Mqb(nfen) = 1.d0
+         Mqc(nfen) = 0.d0
+         LVq(nfen) = B123*sqrt(wsx*wsx+wsy*wsy)
+      endif
+
+      if(ibc.eq.1)then
+         n=nfen
+         tdiss = 2.d0*diss(n)
+         coef1 = 1.d0 + delt*theta2*tdiss
+c     coef1 = 1.d0/delt + theta2*tdiss                   !rog way    
+         Mqa(n) = Inm(n,1)*coef1+KQnm(n,1)*coef2
+c     Mqa(n) = KQnm(n,1)*coef2                           !lumping
+         Mqb(n) = Inm(n,2)*coef1+KQnm(n,2)*coef2
+c     Mqb(n) = (Inm(n,1)+Inm(n,2))*coef1+KQnm(n,2)*coef2 !lumping
+         Mqc(n) = 0.d0
+
+         coef3 = 1.d0 - delt*(1.d0-theta2)*tdiss
+c     coef3 = 1.d0/delt - (1.d0-theta2)*tdiss            !rog way
+         LVq(n) = Inm(n,1)*(coef3*q2prev(n-1)+coef4*prod(n-1))
+     &        -KQnm(n,1)*coef5*q2prev(n-1)
+     &        + Inm(n,2)*(coef3*q2prev(n  )+coef4*prod(n  ))
+     &        -KQnm(n,2)*coef5*q2prev(n)
+c     LVq(n) =    -KQnm(n,1)*coef5*q2prev(n-1)   !lumping
+c     &    + (Inm(n,1)+Inm(n,2))*(coef3*q2prev(n)+coef4*prod(n))       !lumping
+c     &         -KQnm(n,2)*coef5*q2prev(n)     !lumping
+      endif
+
+c     Solve the system for q2
+
+      CALL TRIDAG(Mqa,Mqb,Mqc,LVq,q2,nfen)
+
+c     Transfer to global array and check for zero or negative values
+c     (generally for startup)
+
+      do n = 1,nfen
+         if(q2(n).le.0.)then
+            q2(n) = q2min
+         endif
+         q20(nh,n) = q2(n)
+      enddo
+
+c     Compute length scale
+
+      if(il.eq.2)then
+         do n=1,nfen
+            sig = (sigma(n)+1.d0)/amb
+            rl1 = 1.d0/(rkap*(sig*H+Z0B)*exp(-amb*sig))
+            rl2 = 1.d0/(rkap*(H-sig*H+Z0S))
+            l(nh,n) = 1.d0/(rl1+rl2)
+         enddo
+      endif
+      
+      if(il.eq.3)then
+         do n=1,nfen
+            HOamb=H/amb
+            zval = (sigma(n)+1.d0)*HOamb-H
+            if(sigma(n).le.-0.7d0) l(nh,n)=rkap*(H+zval+Z0B)
+            if(sigma(n).gt.-0.7d0) l(nh,n)=rkap*(0.15d0*H+Z0B)
+         enddo
+      endif
+      
+      if(il.eq.1)then
+         
+c     Compute the q2l LHS Matrix and RHS Load Vector
+
+         Mqa(1) = 0.d0
+         Mqb(1) = 1.d0
+         Mqc(1) = 0.d0
+         LVq(1) = rkap*BSlay*q2(1)
+
+         coef2 = delt*theta1/HOamb2
+c     coef2 = theta1/HOamb2                                     !rog way
+         coef5 = delt*(1.d0-theta1)/HOamb2
+c     coef5 = (1.d0-theta1)/HOamb2                              !rog way
+         do n=2,nfen-1
+            tdiss = wall(n)*diss(n)
+            coef1 = 1.d0 + delt*theta2*tdiss
+c     coef1 = 1.d0/delt + theta2*tdiss                        !rog way
+            Mqa(n) = Inm(n,1)*coef1+KQnm(n,1)*coef2
+c     Mqa(n) = KQnm(n,1)*coef2                                !lumping
+            Mqb(n) = Inm(n,2)*coef1+KQnm(n,2)*coef2
+c     Mqb(n) = (Inm(n,1)+Inm(n,2)+Inm(n,3))*coef1+KQnm(n,2)*coef2   !lumping
+            Mqc(n) = Inm(n,3)*coef1+KQnm(n,3)*coef2
+c     Mqc(n) = KQnm(n,3)*coef2                                !lumping
+
+            coef3 = 1.d0 - delt*(1.d0-theta2)*tdiss
+c     coef3 = 1.d0/delt - (1.d0-theta2)*tdiss                 !rog way
+            coef4 = E1*rmlen(n)*delt
+c     coef4 = E1*rmlen(n)                                     !rog way
+            LVq(n) = Inm(n,1)*(coef3*q2lprev(n-1)+coef4*prod(n-1))
+     &           -KQnm(n,1)*coef5*q2lprev(n-1)
+     &           + Inm(n,2)*(coef3*q2lprev(n  )+coef4*prod(n  ))
+     &           -KQnm(n,2)*coef5*q2lprev(n)
+     &           + Inm(n,3)*(coef3*q2lprev(n+1)+coef4*prod(n+1))
+     &           -KQnm(n,3)*coef5*q2lprev(n+1)
+c     LVq(n) =      -KQnm(n,1)*coef5*q2lprev(n-1)  !lumping
+c     &    + (Inm(n,1)+Inm(n,2)+Inm(n,3))                           !lumping
+c     &     *(coef3*q2lprev(n)+coef4*prod(n))                       !lumping
+c     &       -KQnm(n,2)*coef5*q2lprev(n)    !lumping
+c     &     -KQnm(n,3)*coef5*q2lprev(n+1)  !lumping
+c     
+         enddo
+
+         Mqa(nfen) = 0.d0
+         Mqb(nfen) = 1.d0
+         Mqc(nfen) = 0.d0
+         LVq(nfen) = SSlay*rkap*q2(nfen)
+         
+c     Solve the system for q2l
+
+         CALL TRIDAG(Mqa,Mqb,Mqc,LVq,q2l,nfen)
+
+c     Transfer to global array and check for stability limit
+
+         l(nh,1) = q2l(1)/q2(1)
+         do n = 2,nfen-1
+            l(nh,n) = q2l(n)/q2(n)
+            if(l(nh,n).lt.0.) 
+     &           l(nh,n)=rkap*(Z0B*(a-sigma(n))-Z0S*(b-sigma(n)))/amb
+            if(l(nh,n).gt.H) l(nh,n)=H
+            if((iden.ne.0).and.(BVfreq2(n).gt.0.0)) then
+               elmax = 0.53D0*sqrt(q2(n))/sqrt(BVfreq2(n))
+               if(l(nh,n).gt.elmax) l(nh,n)=elmax
+            endif
+         end do
+         l(nh,nfen) = q2l(nfen)/q2(nfen)
+      endif
+
+c     
+c     compute eddy viscosity and store variables for output and next step
+c     
+      do n = 1,nfen
+         EVTOT(n) = Sm(n)*sqrt(q2(n))*l(nh,n)
+         if(EVTOT(n).lt.EVMIN) EVTOT(n)=EVMIN
+      end do
+
+      return
+      END
+
+
+C***********************************************************************
+C Subroutine tridag                                                    *
+C                                                                      *
+C     -----------------------------------------------------------------*
+C     |SOLVER FOR A VECTOR U OF LENGTH N FROM A SET OF LINEAR          *
+C     |EQUATIONS THAT CONTAINS A TRIDIAGONAL MATRIX                    *
+C     |THE FORM IS                                                     *
+C     |                                                                *
+C     |   * B1 C1  0 ...               *     * U1 *     * R1 *         *
+C     |  *                              *   *      *   *      *        *
+C     |  *  A2 B2 C2 ...                *   *  U2  *   *  R2  *        *
+C     |  *  ...                         * * * ...  * = * ...  *        *
+C     |  *           ... An-1 Bn-1 Cn-1 *   * Un-1 *   * Rn-1 *        *
+C     |  *                              *   *      *   *      *        *
+C     |   *                0   An  Bn  *     * Un *     * Rn *         *
+C     |                                                                *
+C     |A, B, C, U ARE ARRAYS.                                          *
+C     -----------------------------------------------------------------*
+C                                                                      *
+C    Adapted from Numerical Recipes chapter 2                          *
+C***********************************************************************
+c
+      SUBROUTINE TRIDAG(A,B,C,R,U,N)
+      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL_3DVS, ONLY : SZ
+      IMPLICIT NONE
+      INTEGER :: J, N
+
+      REAL(SZ) :: A(N),B(N),C(N),R(N),U(N)
+      REAL(SZ) :: BET,GAM(N)
+
+c     
+c     check for zero elements on diagonal
+c     
+      DO J=1,N
+         if(B(j).EQ.0.) then
+            write(screenunit,*) 'Problem in Tridag Solver.  ',
+     +           'B array value in row ',j,' = 0'
+            stop
+         endif
+      end do
+      BET = B(1)
+      U(1) = R(1)/BET
+      DO J = 2,N
+         GAM(J) = C(J-1)/BET
+         BET=B(J)-A(J)*GAM(J)
+         if (BET.EQ.0) then
+            write(screenunit,*) ' Problem in Tridag Solver.  ',
+     +           ' BET  = 0.  Solver failed.'
+            stop
+         endif
+         U(J)=(R(J)-A(J)*U(J-1))/BET
+      END DO
+      DO J = N-1,1,-1
+         U(J) = U(J) - GAM(J+1)*U(J+1)
+      END DO
+      RETURN
+      END
+
+
+C****************************************************************************************
+C   Subroutine to interpolate baroclinic pressure (BCP) to a specified sigma value      *
+C   (SigmaNN) given an initial guess of which sigma level is closest to the specified   *
+C   value.                                                                              *
+C                                                                                       *
+C                                    R.L.  5/04/01                                      *
+C                                    R.L.  5.19/03                                      *
+C                                    R.L.  5/08/05                                      *
+C****************************************************************************************
+C
+!      SUBROUTINE ZSURFBUOY(SigmaNN,BCPressNN,NN,J)
+!      USE GLOBAL, ONLY : ScreenUnit
+!      USE GLOBAL_3DVS
+!      REAL(SZ) :: BCPressNN
+!      REAL(SZ) :: SigmaNN     !Sigma value of a neighbor node
+!
+!      IF(SigmaNN.LE.1.0001*b) THEN !if into ground then skip
+!         SigBelo=-999
+!         SigAbov=-999
+!         BCPressNN=-999.
+!         GOTO 100
+!      ENDIF
+!      IF((SigmaNN.GT.1.0001*b).AND.(SigmaNN.LE.b)) THEN !at bottom then use bottom
+!         LBelo=1
+!         BCPressNN=BCP(NN,LBelo)
+!         SigBelo=b
+!         SigAbov=b
+!         GOTO 100
+!      ENDIF
+!      IF(SigmaNN.GE.a) THEN     !into air use surface
+!         LAbov=NFEN
+!         BCPressNN=BCP(NN,LAbov)
+!         SigBelo=a
+!         SigAbov=a
+!         GOTO 100
+!      ENDIF
+!
+!      LTry=J                    !start search for SIGABOV and SIGBELO
+!      SigTry=Sigma(LTry)                    
+!      IF(SigmaNN.GT.SigTry) THEN !too low
+!         SigBelo=SigTry         !SIGBELO may = SIGTRY
+!         LBelo=LTry
+!         LTry=LTry+1            !look at next level higher
+! 90      SigTry=Sigma(LTry)
+!         IF(SigmaNN.GT.SigTry) THEN !still too low
+!            SigBelo=SigTry
+!            LBelo=LTry
+!            LTry=LTry+1
+!            GOTO 90 
+!         ENDIF
+!         SigAbov=SigTry         !found upper bracketing sigma
+!         LAbov=LTry
+!         GOTO 99                !go interpolate
+!      ENDIF
+!      IF(SigmaNN.LE.SigTry) THEN !to high
+!         SigAbov=SigTry         !SIGABOV may = SIGTRY
+!         LAbov=LTry                          
+!         LTry=LTry-1            !look at next level lower
+! 91      SigTry=Sigma(LTry)
+!         IF(SigmaNN.LE.SigTry) THEN !still too high
+!            SigAbov=SigTry
+!            LAbov=LTry
+!            LTry=LTry-1
+!            GOTO 91
+!         ENDIF
+!         SigBelo=SigTry         !found lower bracketing sigma
+!         LBelo=LTry
+!      ENDIF
+!
+! 99   BCPressNN=(BCP(NN,LAbov)-BCP(NN,LBelo)) !interpolation
+!     &     *(SigmaNN-SigBelo)/(SigAbov-SigBelo) + BCP(NN,LBelo)
+!
+! 100  CONTINUE
+!
+!      RETURN
+!      END
+!
+
+C****************************************************************************************
+C   Subroutine to write out 3D Hot Start info                                           *
+C                                                                                       *
+C                                    R.L.  8/16/05                                      *
+C****************************************************************************************
+C
+      SUBROUTINE HSTART3D_OUT()
+      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL_3DVS
+      IMPLICIT NONE
+      INTEGER NH
+      INTEGER N
+C...  
+C...  WRITE HOT START OUTPUT
+C...  
+      IHOTSTP=IHOTSTP+1
+      WRITE(hss % lun,REC=IHOTSTP) IDen
+      IHOTSTP=IHOTSTP+1
+      WRITE(hss % lun,REC=IHOTSTP) N3DSD
+      IHOTSTP=IHOTSTP+1
+      WRITE(hss % lun,REC=IHOTSTP) I3DSDRec
+      IHOTSTP=IHOTSTP+1
+      WRITE(hss % lun,REC=IHOTSTP) N3DSV
+      IHOTSTP=IHOTSTP+1
+      WRITE(hss % lun,REC=IHOTSTP) I3DSVRec
+      IHOTSTP=IHOTSTP+1
+      WRITE(hss % lun,REC=IHOTSTP) N3DST
+      IHOTSTP=IHOTSTP+1
+      WRITE(hss % lun,REC=IHOTSTP) I3DSTRec
+      IHOTSTP=IHOTSTP+1
+      WRITE(hss % lun,REC=IHOTSTP) N3DGD
+      IHOTSTP=IHOTSTP+1
+      WRITE(hss % lun,REC=IHOTSTP) I3DGDRec
+      IHOTSTP=IHOTSTP+1
+      WRITE(hss % lun,REC=IHOTSTP) N3DGV
+      IHOTSTP=IHOTSTP+1
+      WRITE(hss % lun,REC=IHOTSTP) I3DGVRec
+      IHOTSTP=IHOTSTP+1
+      WRITE(hss % lun,REC=IHOTSTP) N3DGT
+      IHOTSTP=IHOTSTP+1
+      WRITE(hss % lun,REC=IHOTSTP) I3DGTRec
+
+      DO NH=1,NP
+         IHOTSTP=IHOTSTP+1
+         WRITE(hss % lun,REC=IHOTSTP) DUU(NH)
+         IHOTSTP=IHOTSTP+1
+         WRITE(hss % lun,REC=IHOTSTP) DUV(NH)
+         IHOTSTP=IHOTSTP+1
+         WRITE(hss % lun,REC=IHOTSTP) DVV(NH)
+         IHOTSTP=IHOTSTP+1
+         WRITE(hss % lun,REC=IHOTSTP) UU(NH)
+         IHOTSTP=IHOTSTP+1
+         WRITE(hss % lun,REC=IHOTSTP) VV(NH)
+         IHOTSTP=IHOTSTP+1
+         WRITE(hss % lun,REC=IHOTSTP) BSX(NH)
+         IHOTSTP=IHOTSTP+1
+         WRITE(hss % lun,REC=IHOTSTP) BSY(NH)
+      ENDDO
+
+      DO NH=1,NP
+         DO N=1,NFEN
+            IHOTSTP=IHOTSTP+1
+            WRITE(hss % lun,REC=IHOTSTP) REAL(Q(NH,N))
+            IHOTSTP=IHOTSTP+1
+            WRITE(hss % lun,REC=IHOTSTP) AIMAG(Q(NH,N))
+            IHOTSTP=IHOTSTP+1
+            WRITE(hss % lun,REC=IHOTSTP) WZ(NH,N)
+            IHOTSTP=IHOTSTP+1
+            WRITE(hss % lun,REC=IHOTSTP) q20(NH,N)
+            IHOTSTP=IHOTSTP+1
+            WRITE(hss % lun,REC=IHOTSTP) l(NH,N)
+            IF(ABS(IDEN).EQ.1) THEN
+               IHOTSTP=IHOTSTP+1
+               WRITE(hss % lun,REC=IHOTSTP) SigT(NH,N)
+            ENDIF
+            IF(ABS(IDEN).EQ.2) THEN
+               IHOTSTP=IHOTSTP+1
+               WRITE(hss % lun,REC=IHOTSTP) Sal(NH,N)
+            ENDIF
+            IF(ABS(IDEN).EQ.3) THEN
+               IHOTSTP=IHOTSTP+1
+               WRITE(hss % lun,REC=IHOTSTP) Temp(NH,N)
+            ENDIF
+            IF(ABS(IDEN).EQ.4) THEN
+               IHOTSTP=IHOTSTP+1
+               WRITE(hss % lun,REC=IHOTSTP) Sal(NH,N)
+               IHOTSTP=IHOTSTP+1
+               WRITE(hss % lun,REC=IHOTSTP) Temp(NH,N)
+            ENDIF
+         ENDDO
+      ENDDO
+
+      RETURN
+      END
+
+
+
+C****************************************************************************************
+C   Subroutine to compute 3D SigmaT fields from 3D salinity and/or temperature fields   *
+C                                                                                       *
+C                                    R.L.  6/22/05                                      *
+C                                    K.D.  2/03/06 updated                              *
+C****************************************************************************************
+C
+
+      SUBROUTINE CALC_SIGMAT_3D ()
+
+!Kendra: Added in information needed for the calculation of sigma-t.
+!        Currently, I have added only the equation of state from 
+!        Cushman-Roisin book entitled "Introduction to Geophysical 
+!        Fluid Dynamics". Later, we can update this to include more
+!        complex equations of state. 
+      USE GLOBAL_3DVS, ONLY : SAL, TEMP, SIGT, IDEN, NFEN, SZ
+      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
+      IMPLICIT NONE
+      INTEGER NH,N
+      REAL(SZ) :: T_alpha=0.00017d0, S_beta=0.00076d0
+      REAL(SZ) :: T_ref=10.0d0, S_ref=35.0d0
+      
+
+      IF(ABS(IDEN).EQ.2) THEN
+        DO NH=1,NP
+          DO N=1,NFEN
+             SIGT(NH,N) = 1028.d0*(1.d0+S_beta*(SAL(NH,N)-
+     &                    S_ref))-RHOWAT0
+          ENDDO
+        ENDDO
+      ELSEIF(ABS(IDEN).EQ.3) THEN
+        DO NH=1,NP
+          DO N=1,NFEN
+             SIGT(NH,N) = 1028.d0*(1.d0-T_alpha*(TEMP(NH,N)-
+     &                    T_ref))-RHOWAT0
+          ENDDO
+        ENDDO
+      ELSEIF(ABS(IDEN).EQ.4) THEN
+        DO NH=1,NP
+          DO N=1,NFEN
+             SIGT(NH,N) = 1028.d0*(1.d0-T_alpha*(TEMP(NH,N)-
+     &                    T_ref)+S_beta*(SAL(NH,N)-S_ref))-
+     &                    RHOWAT0 
+          ENDDO
+        ENDDO
+      ENDIF
+
+      RETURN
+      END
+
+
+
+
+C*************************************************************************************
+C  Subroutine to generate 3D Model Output                                            *
+C                                                                                    *
+C                                                                                    *
+C  Note, the FORM='FORMATTED' field in the binary open statements means that the     *
+C        record length (RECL) is specified in bytes.  If this field is omitted, the  *
+C        record length must be specified in 4 byte words.                            *
+C                                                                                    *
+C                               r.l.  8/23/2005                                      *
+C*************************************************************************************
+
+      SUBROUTINE Write_Output_3D (Time,IT)
+      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL_3DVS
+      IMPLICIT NONE
+
+      REAL(8)        Time
+      INTEGER ::     IT
+      INTEGER ::     NN, NH, NEle, N1, N2, N3, k
+      
+1100  FORMAT(1X,E16.10,1X,I10,32000(2X,E12.6))
+1104  FORMAT(9X,I6,4X,32000(E12.6,2X))
+
+C
+C.... 3D Density, Temperature, Salinity Station Output (Unit 41)
+C
+      IF(I3DSD.NE.0) THEN 
+
+C       Check to see if it is time to generate 3D station density output.
+
+        IF((IT.GT.NTO3DSDS).AND.(IT.LE.NTO3DSDF)) N3DSD=N3DSD+1
+        IF(N3DSD.EQ.NSpo3DSD) THEN                                           !if yes
+
+C         Write time header into file
+
+          IF(ABS(I3DSD).EQ.1) THEN                                          !ASCII FORMAT
+            OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41',
+     &                            ACCESS='SEQUENTIAL',POSITION='APPEND')
+            IF(IDen.EQ.1) WRITE(41,1100) Time,IT,(Sigma(k),k=1,NFEN-1)                           
+            IF(IDen.EQ.2) WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                               k=1,NFEN-1),Sigma(NFEN)            
+            IF(IDen.EQ.3) WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                               k=1,NFEN-1),Sigma(NFEN)             
+            IF(IDen.EQ.4) WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                      Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+            I3DSDRec=I3DSDRec+1
+          ELSEIF(ABS(I3DSD).EQ.2) THEN                                      !BINARY FORMAT
+            OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41',ACCESS='DIRECT',
+     &            RECL=NByte)
+            WRITE(41,REC=I3DSDRec+1) Time
+            WRITE(41,REC=I3DSDRec+2) IT
+            I3DSDRec=I3DSDRec+2
+          ENDIF
+
+C         Process each station
+
+          DO NN=1,NSta3DD
+
+C           Interpolate to station locations
+
+            NEle=NE3DD(NN)
+            N1=NM(NEle,1)
+            N2=NM(NEle,2)
+            N3=NM(NEle,3)		               
+            DO k=1,NFEN
+              SigTSta(k)=SigT(N1,k)*StaI3DD1(NN)+SigT(N2,k)*StaI3DD2(NN)
+     &                                          +SigT(N3,k)*StaI3DD3(NN)
+              IF((ABS(IDen).EQ.2).OR.(ABS(IDen).EQ.4)) SalSta(k) =
+     &            Sal(N1,k) *StaI3DD1(NN)+Sal(N2,k) *StaI3DD2(NN)
+     &           +Sal(N3,k) *StaI3DD3(NN)
+              IF((ABS(IDen).EQ.3).OR.(ABS(IDen).EQ.4)) TempSta(k)=
+     &            Temp(N1,k)*StaI3DD1(NN)+Temp(N2,k)*StaI3DD2(NN)
+     &           +Temp(N3,k)*StaI3DD3(NN)
+            END DO
+
+C           Write station output
+
+            IF(ABS(I3DSD).EQ.1) THEN                                        !ASCII FORMAT
+              IF(ABS(IDen).EQ.1) WRITE(41,1104) NN,(SigTSta(k),k=1,NFEN)  
+              IF(ABS(IDen).EQ.2) WRITE(41,1104) NN,(SigTSta(k),
+     &                                               SalSta(k),k=1,NFEN)			
+              IF(ABS(IDen).EQ.3) WRITE(41,1104) NN,(SigTSta(k),
+     &                                              TempSta(k),k=1,NFEN)
+              IF(ABS(IDen).EQ.4) WRITE(41,1104) NN,(SigTSta(k),
+     &                                    SalSta(k),TempSta(k),k=1,NFEN)	
+              I3DSDRec=I3DSDRec+1
+            ELSEIF(ABS(I3DSD).EQ.2) THEN                                    !BINARY FORMAT
+              WRITE(41,REC=I3DSDRec+1) NN
+              I3DSDRec=I3DSDRec+1
+              DO k=1,NFEN            
+                IF(ABS(IDen).EQ.1) THEN
+                  WRITE(41,REC=I3DSDRec+1) SigTSta(k)
+                  I3DSDRec=I3DSDRec+1
+                ELSEIF(ABS(IDen).EQ.2) THEN
+                  WRITE(41,REC=I3DSDRec+1) SigTSta(k)
+                  WRITE(41,REC=I3DSDRec+2) SalSta(k)
+                  I3DSDRec=I3DSDRec+2
+                ELSEIF(ABS(IDen).EQ.3) THEN
+                  WRITE(41,REC=I3DSDRec+1) SigTSta(k)
+                  WRITE(41,REC=I3DSDRec+2) TempSta(k)		
+                  I3DSDRec=I3DSDRec+2		
+                ELSEIF(ABS(IDen).EQ.4) THEN
+                  WRITE(41,REC=I3DSDRec+1) SigTSta(k)
+                  WRITE(41,REC=I3DSDRec+2) SalSta(k)
+                  WRITE(41,REC=I3DSDRec+3) TempSta(k)
+                  I3DSDRec=I3DSDRec+3
+                ENDIF
+              ENDDO
+            ENDIF
+          ENDDO
+          N3DSD=0
+          CLOSE(41)
+        ENDIF
+      ENDIF
+
+C
+C.... 3D Velocity Station Output (Unit 42)
+C
+      IF(I3DSV.NE.0) THEN
+
+C       Check to see if it is time to generate 3D station velocity output.
+
+        IF((IT.GT.NTO3DSVS).AND.(IT.LE.NTO3DSVF)) N3DSV=N3DSV+1
+        IF(N3DSV.EQ.NSpo3DSV) THEN                                          !if yes
+
+C         Write time header into file
+
+          IF(ABS(I3DSV).EQ.1) THEN                                          !ASCII FORMAT
+            OPEN(42,FILE=TRIM(LOCALDIR)//'/'//'fort.42',
+     &                            ACCESS='SEQUENTIAL',POSITION='APPEND')
+            WRITE(42,1100) Time,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &                       k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+            I3DSVRec=I3DSVRec+1
+          ELSEIF(ABS(I3DSV).EQ.2) THEN                                      !BINARY FORMAT
+            OPEN(42,FILE=TRIM(LOCALDIR)//'/'//'fort.42',ACCESS='DIRECT',
+     &            RECL=NByte)
+            WRITE(42,REC=I3DSVRec+1) Time
+            WRITE(42,REC=I3DSVRec+2) IT
+            I3DSVRec=I3DSVRec+2
+          ENDIF
+
+C         Process each station
+
+          DO NN=1,NSta3DV
+
+C           Interpolate to station locations
+
+            NEle=NE3DV(NN)
+            N1=NM(NEle,1)
+            N2=NM(NEle,2)
+            N3=NM(NEle,3)
+            DO k=1,NFEN
+              qSta(k) =q(N1,k) *StaI3DV1(NN)+q(N2,k) *StaI3DV2(NN)
+     &                                      +q(N3,k) *StaI3DV3(NN)
+              WZSta(k)=WZ(N1,k)*StaI3DV1(NN)+WZ(N2,k)*StaI3DV2(NN)
+     &                                      +WZ(N3,k)*StaI3DV3(NN)
+            END DO
+
+C           Write station output
+          
+            IF(ABS(I3DSV).EQ.1) THEN                                        !ASCII FORMAT
+              WRITE(42,1104) NN,(REAL(qSta(k)),AIMAG(qSta(k)),
+     &                                                WZSta(k),k=1,NFEN)
+              I3DSVRec=I3DSVRec+1
+            ELSEIF(ABS(I3DSV).EQ.2) THEN                                    !BINARY FORMAT
+              WRITE(42,REC=I3DSVRec+1) NN
+              I3DSVRec=I3DSVRec+1
+              DO k=1,NFEN
+                WRITE(42,REC=I3DSVRec+1) REAL(qSta(k))
+                WRITE(42,REC=I3DSVRec+2) AIMAG(qSta(k))
+                WRITE(42,REC=I3DSVRec+3) WZSta(k)
+                I3DSVRec=I3DSVRec+3
+              END DO
+            ENDIF
+          ENDDO
+          N3DSV=0
+          CLOSE(42)
+        ENDIF
+      ENDIF
+
+C
+C.... 3D Turbulence Station Output (Unit 43)
+C
+      IF(I3DST.NE.0) THEN
+
+C       Check to see if it is time to generate 3D station turbulence output.
+
+        IF((IT.GT.NTO3DSTS).AND.(IT.LE.NTO3DSTF)) N3DST=N3DST+1
+        IF(N3DST.EQ.NSpo3DST) THEN                                          !if yes
+
+C         Write time header into file
+
+          IF(ABS(I3DST).EQ.1) THEN                                          !ASCII FORMAT
+            OPEN(43,FILE=TRIM(LOCALDIR)//'/'//'fort.43',
+     &                            ACCESS='SEQUENTIAL',POSITION='APPEND')        
+            WRITE(43,1100) Time,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &                       k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+            I3DSTRec=I3DSTRec+1
+          ELSEIF(ABS(I3DST).EQ.2) THEN                                      !BINARY FORMAT
+            OPEN(43,FILE=TRIM(LOCALDIR)//'/'//'fort.43',ACCESS='DIRECT',
+     &            RECL=NByte)
+            WRITE(43,REC=I3DSTRec+1) Time
+            WRITE(43,REC=I3DSTRec+2) IT
+            I3DSTRec=I3DSTRec+2
+          ENDIF
+
+C         Process each station
+
+          DO NN=1,NSta3DT     
+
+C           Interpolate to station locations
+
+            NEle=NE3DT(NN)
+            N1=NM(NEle,1)
+            N2=NM(NEle,2)
+            N3=NM(NEle,3)
+            DO k=1,NFEN
+              q20Sta(k)=q20(N1,k)*StaI3DT1(NN)+q20(N2,k)*StaI3DT2(NN)
+     &                                        +q20(N3,k)*StaI3DT3(NN)
+              lSta(k)  =l(N1,k)  *StaI3DT1(NN)+l(N2,k)  *StaI3DT2(NN)
+     &                                        +l(N3,k)  *StaI3DT3(NN)
+              EVSta(k) =EV(N1,k) *StaI3DT1(NN)+EV(N2,k) *StaI3DT2(NN)
+     &                                        +EV(N3,k) *StaI3DT3(NN)
+            END DO
+
+C           Write station output
+
+            IF(ABS(I3DST).EQ.1) THEN                                        !ASCII FORMAT
+              WRITE(43,1104) NN,(q20Sta(k),lSta(k),EVSta(k),k=1,NFEN)
+              I3DSTRec=I3DSTRec+1
+            ELSEIF(ABS(I3DST).EQ.2) THEN                                    !BINARY FORMAT
+              WRITE(43,REC=I3DSTRec+1) NN
+              I3DSTRec=I3DSTRec+1
+              DO k=1,NFEN
+                WRITE(43,REC=I3DSTRec+1) q20Sta(k)
+                WRITE(43,REC=I3DSTRec+2) lSta(k)
+                WRITE(43,REC=I3DSTRec+3) EVSta(k)
+                I3DSTRec=I3DSTRec+3
+              END DO
+            ENDIF
+          ENDDO        
+          N3DST=0
+          CLOSE(43)
+	  ENDIF
+      ENDIF
+
+C
+C.... 3D Density, Temperature, Salinity Global Output (Unit 44)
+C
+      IF(I3DGD.NE.0) THEN
+
+C     Check to see if it is time to generate 3D global density output.
+
+        IF((IT.GT.NTO3DGDS).AND.(IT.LE.NTO3DGDF)) N3DGD=N3DGD+1
+        IF(N3DGD.EQ.NSpo3DGD) THEN                                           !if yes
+
+C         Write time header into file
+
+          IF(ABS(I3DGD).EQ.1) THEN                                          !ASCII FORMAT
+            OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44',
+     &                            ACCESS='SEQUENTIAL',POSITION='APPEND')
+            IF(IDen.EQ.1) WRITE(44,1100) Time,IT,(Sigma(k),k=1,NFEN-1)                           
+            IF(IDen.EQ.2) WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                               k=1,NFEN-1),Sigma(NFEN)            
+            IF(IDen.EQ.3) WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                               k=1,NFEN-1),Sigma(NFEN)             
+            IF(IDen.EQ.4) WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                      Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+            I3DGDRec=I3DGDRec+1
+          ELSEIF(ABS(I3DGD).EQ.2) THEN                                      !BINARY FORMAT
+            OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44',ACCESS='DIRECT',
+     &            RECL=NByte)
+            WRITE(44,REC=I3DGDRec+1) Time
+            WRITE(44,REC=I3DGDRec+2) IT
+            I3DGDRec=I3DGDRec+2
+          ENDIF
+
+C         Write out at each node
+
+          DO NH=1,NP
+
+            IF(ABS(IDen).EQ.1) THEN
+              IF(ABS(I3DGD).EQ.1) THEN
+	          WRITE(44,1104) NH,(SigT(NH,k),k=1,NFEN)                      !ASCII
+                I3DGDRec=I3DGDRec+1
+              ELSEIF(ABS(I3DGD).EQ.2) THEN                                   !BINARY
+                WRITE(44,REC=I3DGDRec+1) NH
+                I3DGDRec=I3DGDRec+1
+                DO k=1,NFEN
+                  WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
+                  I3DGDRec=I3DGDRec+1
+                ENDDO
+              ENDIF
+            ENDIF
+
+            IF(ABS(IDen).EQ.2) THEN
+              IF(ABS(I3DGD).EQ.1) THEN
+	          WRITE(44,1104) NH,(SigT(NH,k),Sal(NH,k),k=1,NFEN)            !ASCII
+                I3DGDRec=I3DGDRec+1
+              ELSEIF(ABS(I3DGD).EQ.2) THEN                                   !BINARY
+                WRITE(44,REC=I3DGDRec+1) NH
+                I3DGDRec=I3DGDRec+1
+                DO k=1,NFEN
+                  WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
+                  WRITE(44,REC=I3DGDRec+2) Sal(NH,k)
+                  I3DGDRec=I3DGDRec+2
+                END DO
+              ENDIF
+            ENDIF
+
+            IF(ABS(IDen).EQ.3) THEN
+              IF(ABS(I3DGD).EQ.1) THEN
+                WRITE(44,1104) NH,(SigT(NH,k),Temp(NH,k),k=1,NFEN)           !ASCII
+                I3DGDRec=I3DGDRec+1
+              ELSEIF(ABS(I3DGD).EQ.2) THEN                                   !BINARY
+                WRITE(44,REC=I3DGDRec+1) NH
+                I3DGDRec=I3DGDRec+1
+                DO k=1,NFEN
+                  WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
+                  WRITE(44,REC=I3DGDRec+2) Temp(NH,k)
+                  I3DGDRec=I3DGDRec+2
+                ENDDO
+              ENDIF
+            ENDIF
+
+            IF(ABS(IDen).EQ.4) THEN
+              IF(ABS(I3DGD).EQ.1) THEN
+                WRITE(44,1104) NH,(SigT(NH,k),Temp(NH,k),Sal(NH,k)
+     &                                                        ,k=1,NFEN)     !ASCII
+                I3DGDRec=I3DGDRec+1
+              ELSEIF(ABS(I3DGD).EQ.2) THEN                                   !BINARY
+                WRITE(44,REC=I3DGDRec+1) NH
+                I3DGDRec=I3DGDRec+1
+                DO k=1,NFEN
+                  WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
+                  WRITE(44,REC=I3DGDRec+2) Temp(NH,k)
+                  WRITE(44,REC=I3DGDRec+3) Sal(NH,k)
+                  I3DGDRec=I3DGDRec+3
+                ENDDO
+              ENDIF
+            ENDIF
+          ENDDO
+          N3DGD=0
+          CLOSE(44)
+        ENDIF
+      ENDIF
+
+C
+C.... 3D Velocity Global Output (Unit 45)
+C
+      IF(I3DGV.GT.0) THEN
+
+C     Check to see if it is time to generate 3D global velocity output.
+         
+         IF((IT.GT.NTO3DGVS).AND.(IT.LE.NTO3DGVF)) N3DGV=N3DGV+1
+
+         IF(N3DGV.EQ.NSpo3DGV) THEN !if yes
+
+C         Write time header into file
+
+            IF(ABS(I3DGV).EQ.1) THEN !ASCII FORMAT
+               OPEN(45,FILE=TRIM(LOCALDIR)//'/'//'fort.45',
+     &              ACCESS='SEQUENTIAL',POSITION='APPEND')
+               WRITE(45,1100) Time,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &              k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+               I3DGVRec=I3DGVRec+1
+            ELSEIF(ABS(I3DGV).EQ.2) THEN !BINARY FORMAT
+               OPEN(45,FILE=TRIM(LOCALDIR)//'/'//'fort.45',
+     &              ACCESS='DIRECT',RECL=NByte)
+               WRITE(45,REC=I3DGVRec+1) Time
+               WRITE(45,REC=I3DGVRec+2) IT
+               I3DGVRec=I3DGVRec+2
+            ENDIF
+            
+C     Write out at each node
+
+            DO NH=1,NP
+               IF(ABS(I3DGV).EQ.1) THEN
+                  WRITE(45,1104) NH,(REAL(q(NH,k)),AIMAG(q(NH,k)),
+     &                 WZ(NH,k),k=1,NFEN) !ASCII
+                  I3DGVRec=I3DGVRec+1
+               ELSEIF(ABS(I3DGV).EQ.2) THEN !BINARY
+                  WRITE(45,REC=I3DGVRec+1) NH
+                  I3DGVRec=I3DGVRec+1
+                  DO k=1,NFEN
+                     WRITE(45,REC=I3DGVRec+1) REAL(q(NH,k))
+                     WRITE(45,REC=I3DGVRec+2) AIMAG(q(NH,k))
+                     WRITE(45,REC=I3DGVRec+3) WZ(NH,k)
+                     I3DGVRec=I3DGVRec+3
+                  END DO
+               ENDIF
+            ENDDO
+            N3DGV=0
+            CLOSE(45)
+         ENDIF
+      ENDIF
+	
+C
+C.... 3D Turbulence Global Output (Unit 46)
+C
+      IF(I3DGT.GT.0) THEN
+
+C     Check to see if it is time to generate 3D global turbulence output.
+
+        IF((IT.GT.NTO3DGTS).AND.(IT.LE.NTO3DGTF)) N3DGT=N3DGT+1
+        IF(N3DGT.EQ.NSpo3DGT) THEN                                           !if yes
+
+C         Write time header into file
+
+          IF(ABS(I3DGT).EQ.1) THEN                                          !ASCII FORMAT
+            OPEN(46,FILE=TRIM(LOCALDIR)//'/'//'fort.46',
+     &                            ACCESS='SEQUENTIAL',POSITION='APPEND')        
+            WRITE(46,1100) Time,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &                       k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+            I3DGTRec=I3DGTRec+1
+          ELSEIF(ABS(I3DGT).EQ.2) THEN                                      !BINARY FORMAT
+            OPEN(46,FILE=TRIM(LOCALDIR)//'/'//'fort.46',ACCESS='DIRECT',
+     &            RECL=NByte)
+            WRITE(46,REC=I3DGTRec+1) Time
+            WRITE(46,REC=I3DGTRec+2) IT
+            I3DGTRec=I3DGTRec+2
+          ENDIF
+
+C         Write out at each node
+
+          DO NH=1,NP
+            IF(ABS(I3DGT).EQ.1) THEN
+              WRITE(46,1104) NH,(q20(NH,k),l(NH,k),EV(NH,k),k=1,NFEN)        !ASCII
+              I3DGTRec=I3DGTRec+1
+            ELSEIF(ABS(I3DGT).EQ.2) THEN                                     !BINARY
+              WRITE(46,REC=I3DGTRec+1) NH
+              I3DGTRec=I3DGTRec+1
+              DO k=1,NFEN
+                WRITE(46,REC=I3DGTRec+1) q20(NH,k)
+                WRITE(46,REC=I3DGTRec+2) l(NH,k)
+                WRITE(46,REC=I3DGTRec+3) EV(NH,k)
+                I3DGTREC=I3DGTREC+3
+              ENDDO
+            ENDIF
+          ENDDO
+          N3DGT=0
+          CLOSE(46)
+        ENDIF
+      ENDIF
+
+ 
+      RETURN
+      END

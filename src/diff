@@ -1,0 +1,2166 @@
+36,38c36,38
+< !        include '/ifs1/home/cforbes/usr/local/netcdf/include/netcdf.inc'  ! Topsail
+< !        include '/usr/local/netcdf/include/netcdf.inc'                    ! Mac
+<        include 'netcdf.inc'                                              ! Jason
+---
+> !      include '/ifs1/home/cforbes/usr/local/netcdf/include/netcdf.inc'  ! Topsail
+> !     include '/usr/local/netcdf/include/netcdf.inc'                    ! Mac
+>       include 'netcdf.inc'
+66c66
+<       REAL(SZ), ALLOCATABLE ::  timenc(:) 
+---
+>       REAL (8), ALLOCATABLE ::  timenc(:) 
+85,94d84
+< 
+<       INTEGER, ALLOCATABLE ::  nbvvnc(:,:)                              ! boundary array
+<       INTEGER, ALLOCATABLE ::  nbounc(:)                                ! boundary array
+<       INTEGER, ALLOCATABLE ::  nvellnc(:)                               ! boundary array
+<       INTEGER, ALLOCATABLE ::  nopenc(:)                                ! boundary array
+<       INTEGER, ALLOCATABLE ::  nvdllnc(:)                               ! boundary array
+<       INTEGER nvelnc
+< !     INTEGER, ALLOCATABLE ::  nopenc(:)                                ! boundary array
+< !     INTEGER, ALLOCATABLE ::  nvdllnc(:)                               ! boundary array
+<       INTEGER netanc
+96a87,91
+> !     Attribute general
+> !     -----------------
+> !      CHARACTER(80) :: title, institution, source, history, base_date
+> !      CHARACTER(80) :: references, comments, host, convention, contact
+> !     -----------------
+104a100,102
+> !      CHARACTER*6 , PARAMETER :: VAR61_UN='meters'
+> !      CHARACTER*6 , PARAMETER :: VAR61_UF='feet'
+> !      CHARACTER*2 , PARAMETER :: VAR61_PO='up'
+107a106,108
+> !      CHARACTER*6 , PARAMETER :: VAR62_UN='meters/second'
+> !      CHARACTER*4 , PARAMETER :: VAR62_UF='feet/second'
+> !      CHARACTER*2 , PARAMETER :: VAR62_PO='up'
+110a112,114
+> !      CHARACTER*6 , PARAMETER :: VAR63_UN='meters'
+> !      CHARACTER*6 , PARAMETER :: VAR63_UF='feet'
+> !      CHARACTER*2 , PARAMETER :: VAR63_PO='up'
+114a119
+> !      CHARACTER*2 , PARAMETER :: VAR71_PO='up'
+118a124
+> !      CHARACTER*2 , PARAMETER :: VAR73_PO='up'
+138a145
+> 
+174,177c181,182
+<      &                      nope_len, neta_len, nbdv, nopenc,netanc_len,
+<      &                      nvdllnc,
+<      &                      nbou_len, nvel_len, nbvv,nbounc,nvelnc_len,
+<      &                      nvellnc,ibtypenc,
+---
+>      &                      nope_len, neta_len, nbdv, 
+>      &                      nbou_len, nvel_len, nbvv,
+210,212d214
+<       INTEGER  nvelnc_dim
+<       
+<       INTEGER  netanc_dim
+224,226d225
+<       INTEGER  nvelnc_len
+<       
+<       INTEGER  netanc_len
+248,256d246
+<       
+<       INTEGER  nvdll_id
+<       INTEGER  nbounc_id
+<       INTEGER  ibtypenc_id
+<       INTEGER  nvellnc_id
+<       
+<       INTEGER  nvdllnc_id
+<       INTEGER  nopenc_id
+< 
+276,277d265
+< 
+<       INTEGER  nbounc_rank
+279,284d266
+<       INTEGER  ibtypenc_rank
+<       INTEGER  nvellnc_rank
+< 
+<       INTEGER  nvdllnc_rank
+<       INTEGER  nopenc_rank
+< 
+287d268
+<       
+304d284
+< 
+306,312d285
+<       PARAMETER (nbounc_rank = 1)
+<       PARAMETER (ibtypenc_rank = 1)
+<       PARAMETER (nvellnc_rank = 1)
+< 
+<       PARAMETER (nvdllnc_rank=1)
+<       PARAMETER (nopenc_rank=1)
+< 
+332d304
+< 
+334,340d305
+<       INTEGER  nbounc_dims(nbounc_rank)
+<       INTEGER  ibtypenc_dims(ibtypenc_rank)
+<       INTEGER  nvellnc_dims(nvellnc_rank)
+< 
+<       INTEGER  nvdllnc_dims(nvdllnc_rank)
+<       INTEGER  nopenc_dims(nopenc_rank)
+< 
+351a317
+> !      INTEGER  nvel, neta
+356,364d321
+< 
+<       INTEGER   nvellnc(nbou_len)
+<       INTEGER   nbounc (nvel_len)
+<       INTEGER   ibtype(nbou_len)
+<       INTEGER   ibtypenc(nbou_len)
+< 
+<       INTEGER   nvdllnc (nope_len)
+<       INTEGER   nopenc (neta_len)
+< 
+367c324
+<       REAL(sz)  timenc(timenc_len)
+---
+>       REAL(8)   timenc(timenc_len)
+379a337,338
+> !      REAL  minzetatll
+> !      REAL  maxzetatll
+386a346
+>       REAL*8 nele
+423,428d382
+<       
+<       save nvelnc_dim
+<       save nvdll_id, nbounc_id, ibtypenc_id, nvellnc_id
+<       save netanc_dim
+<       save nopenc_id,nvdllnc_id
+< 
+442,456d395
+< !      write (6,*)" nope_len,neta_len ================",nope_len,neta_len
+< !      do i=1, nope_len
+< !         do j=1, neta_len
+< !           write (6,*)" nbdv ================", i,j, nbdv(i,j)
+< !        end do
+< !      end do
+< !      write (6,*)" nbou_len,nvel_len ================",nbou_len,nvel_len
+< !            write (6,*)" nvelnc ================",nvelnc
+< !         do i=1, nvel_len
+< !            write (6,*)" nbounc ================",i, nbounc(i)
+< !         end do
+< !         do i=1, nbou_len
+< !            write (6,*)" nvell ===========",i, nvellnc(i),ibtypenc(i)
+< !         end do
+< !       FIRST=0
+460c399,400
+< !         WRITE (6,*)'****FIRST = 1 ****',FIRST
+---
+>       IF(FIRST.EQ.1) THEN
+>          WRITE (6,*)'****FIRST = 1 ****',FIRST
+463c403
+< !         WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+---
+>          WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+467,468c407
+<        IF(FIRST.EQ.1) THEN
+<         IF(nout.eq. 3) THEN
+---
+>          IF(nout.eq. 3) THEN
+473a413
+>          WRITE(6,*) "Start Allocating memory "
+477a418
+>          WRITE(6,*) "Finish Allocating memory "
+484a426,428
+>          WRITE(6,*) "node_len, elem_len ",node_len, elem_len
+>          WRITE(6,*) "nope_len, neta_len, nbdv",nope_len, neta_len
+>          WRITE(6,*) "nbou_len, nvel_len, nbvv",nbou_len, nvel_len
+501,502c445,446
+< !      write (6,*)'nope_len,neta_len,nbou_len,nvel_len',
+< !     &      nope_len,neta_len,nbou_len,nvel_len
+---
+>       write (6,*)'nope_len,neta_len,nbou_len,nvel_len',
+>      &      nope_len,neta_len,nbou_len,nvel_len
+528a473
+>       WRITE(6,*)'BEFORE DEFINE TIME'
+533a479
+>       WRITE(6,*)'AFTER DEFINE TIME'
+550,551c496,497
+<       ELE_dims(1) = nface_dim
+<       ELE_dims(2) = elem_dim
+---
+>       ELE_dims(1) = elem_dim
+>       ELE_dims(2) = nface_dim
+554,567c500,502
+< !     -----------------------------------------------------------------
+< !     Define elevation specified boundary forcing segments information
+< !     -----------------------------------------------------------------
+< !      if(nope_len.ne.0.and.neta_len.ne.0) then
+< !        nbdv_dims(2) = nope_dim
+< !        nbdv_dims(1) = neta_dim      
+< !        iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
+< !     &                  nbdv_id)
+< !         CALL check_err(iret)
+< 
+< !      endif
+< !     -----------------------------------------------------------------
+< !     Define elevation specified boundary forcing segments information
+< !     -----------------------------------------------------------------
+---
+> !     -------------------------------------
+> !     Define open boundary forcing segments
+> !     -------------------------------------
+569,578c504,508
+<         nvdllnc_dims(1) = nope_dim      
+<         iret = nf_def_var(ncid, 'nvdll',NF_INT, nvdllnc_rank, 
+<      &                  nvdllnc_dims, nvdllnc_id)
+<         CALL check_err(iret)
+< 
+<         nopenc_dims(1) = neta_dim      
+<         iret = nf_def_var(ncid, 'nbdv',NF_INT, nopenc_rank, nopenc_dims, 
+<      &                  nopenc_id)
+<         CALL check_err(iret)
+< 
+---
+>         nbdv_dims(2) = nope_dim
+>         nbdv_dims(1) = neta_dim      
+>         iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
+>      &                  nbdv_id)
+>          CALL check_err(iret)
+580,593c510,512
+< !     ----------------------------------------------------------
+< !     Define normal flow specified boundary segments information
+< !     ----------------------------------------------------------
+< !      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+< !        nbvv_dims(2) = nbou_dim
+< !        nbvv_dims(1) = nvel_dim      
+< !        iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
+< !     &                  nbvv_id)
+< !        CALL check_err(iret)
+< !      endif
+< 
+< !     ----------------------------------------
+< !     Define normal flow boundary information
+< !     ----------------------------------------
+---
+> !     -----------------------------
+> !     Define land boundary segments
+> !     -----------------------------
+595,608c514,517
+< 
+<         nvellnc_dims(1) = nbou_dim      
+<         iret = nf_def_var(ncid, 'nvell',NF_INT, nvellnc_rank, 
+<      &                  nvellnc_dims, nvellnc_id)
+<         CALL check_err(iret)
+<         
+<         ibtypenc_dims(1) = nbou_dim      
+<         iret = nf_def_var(ncid, 'ibtype',NF_INT, ibtypenc_rank, 
+<      &                  ibtypenc_dims, ibtypenc_id)
+<         CALL check_err(iret)
+<         
+<         nbounc_dims(1) = nvel_dim      
+<         iret = nf_def_var(ncid, 'nbvv',NF_INT, nbounc_rank, nbounc_dims, 
+<      &                  nbounc_id)
+---
+>         nbvv_dims(2) = nbou_dim
+>         nbvv_dims(1) = nvel_dim      
+>         iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
+>      &                  nbvv_id)
+610,611c519,520
+<      
+<        endif
+---
+>       endif
+> !     -----------------------------
+941a851
+> 
+947,954c857
+< !      iret = nf_put_att_text(ncid, nbdv_id, 'long_name', 53, 
+< !     &       'node numbers on elevation specified boundary segments')
+< !      CALL check_err(iret)
+< !      iret = nf_put_att_text(ncid, nbdv_id, 'units', 14, 
+< !     &                      VAR_NOND)
+< !      CALL check_err(iret)
+< 
+<       iret = nf_put_att_text(ncid, nopenc_id, 'long_name', 53, 
+---
+>       iret = nf_put_att_text(ncid, nbdv_id, 'long_name', 53, 
+957,964c860
+<       iret = nf_put_att_text(ncid, nopenc_id, 'units', 14, 
+<      &                      VAR_NOND)
+<       CALL check_err(iret)
+<       
+<       iret = nf_put_att_text(ncid, nvdllnc_id, 'long_name', 60, 
+<      &'number of nodes in each elevation specified boundary segment')
+<       CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, nvdllnc_id, 'units', 14, 
+---
+>       iret = nf_put_att_text(ncid, nbdv_id, 'units', 14, 
+970,978c866,867
+< !      iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
+< !     &       'node numbers on normal flow boundary segments')
+< !      CALL check_err(iret)
+< !      iret = nf_put_att_text(ncid, nbvv_id, 'units', 14, 
+< !     &                      VAR_NOND)
+< !      CALL check_err(iret)
+< 
+<       iret = nf_put_att_text(ncid, nbounc_id, 'long_name', 59, 
+<      & 'node numbers in each normal flow specified boundary segment')
+---
+>       iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
+>      &       'node numbers on normal flow boundary segments')
+980c869
+<       iret = nf_put_att_text(ncid, nbounc_id, 'units', 14, 
+---
+>       iret = nf_put_att_text(ncid, nbvv_id, 'units', 14, 
+983,997d871
+< 
+<       iret = nf_put_att_text(ncid, ibtypenc_id, 'long_name', 13, 
+<      &       'boundary type')
+<       CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, ibtypenc_id, 'units', 14, 
+<      &                      VAR_NOND)
+<       CALL check_err(iret)
+< 
+<       iret = nf_put_att_text(ncid, nvellnc_id, 'long_name', 62, 
+<      &'number of nodes in each normal flow specified boundary segment')
+<       CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, nvellnc_id, 'units', 14, 
+<      &                      VAR_NOND)
+<       CALL check_err(iret)
+< 
+1007c881,882
+<       iret = nf_put_att_text(ncid, timenc_id, 'units', 23,VAR_TUN)
+---
+>       iret = nf_put_att_text(ncid, timenc_id, 'units', 23, 
+>      .       'seconds since base_date')
+1010c885
+<      .      (LEN(TRIM(base_date(1:INDEX(base_date,"!")-1)))), base_date)
+---
+>      .       (LEN(TRIM(base_date(1:INDEX(base_date,"!")-1)))), base_date)
+1041a917
+>       
+1196c1072,1073
+< !     ======================
+---
+>       
+> !     -----------------
+1198c1075
+< !     ======================
+---
+> !     -----------------
+1201,1281c1078,1079
+< !     ======================
+< !     Store static variables
+< !     ======================
+< !     -------
+< !     Store X
+< !     -------
+<       iret = nf_put_var_double(ncid, X_id, X)
+<       CALL check_err(iret)
+< !     -------
+< !     Store Y
+< !     -------
+<       iret = nf_put_var_double(ncid, Y_id, Y)
+<       CALL check_err(iret)
+< !     ------------
+< !     Store depth
+< !     ------------
+<       iret = nf_put_var_double(ncid, DEPTH_id, depth)
+<       CALL check_err(iret)
+< !     --------------
+< !     Store elements
+< !     --------------
+<       count(1)=nface_len
+<       count(2)=elem_len
+<       start(1)=1
+<       start(2)=1
+<       iret=nf_put_vara_int(ncid,ele_id,start,count,element)
+<       call check_err(iret)
+< !     ------------------------------------
+< !     Store elevation boundary information
+< !     -------------------------------------
+<       iret = nf_put_var_int(ncid, nopenc_id, nopenc)
+<       CALL check_err(iret)
+<       iret = nf_put_var_int(ncid, nvdllnc_id, nvdllnc)
+<       CALL check_err(iret)
+< !     --------------------------------------
+< !     Store normal flow boundary information
+< !     --------------------------------------
+<       iret = nf_put_var_int(ncid, nbounc_id, nbounc)
+<       CALL check_err(iret)
+<       iret = nf_put_var_int(ncid, ibtypenc_id, ibtypenc)
+<       CALL check_err(iret)
+<       iret = nf_put_var_int(ncid, nvellnc_id, nvellnc)
+<       CALL check_err(iret)
+< !     --------------------
+< !     Store maximum depth
+< !     --------------------
+<       maxdepth = maxval (depth)
+<       iret = nf_put_var_double(ncid, maxdepth_id, maxdepth)
+<       CALL check_err(iret)
+< !     --------------------
+< !     Store minimum depth
+< !     --------------------
+<       mindepth = minval (depth)
+<       iret = nf_put_var_double(ncid, mindepth_id, mindepth)
+<       CALL check_err(iret)
+< !     ---------------------------------------
+< !     Store node numbers on elevation specified boundary segment
+< !     ---------------------------------------
+< !      if(nope_len.ne.0.and.neta_len.ne.0) then
+< !         iret = nf_put_var_int (ncid, nbdv_id, nbdv)
+< !      count(1)=neta_len
+< !      count(2)=nope_len
+< !      start(1)=1
+< !      start(2)=1
+< !      iret=nf_put_vara_int(ncid,nbdv_id,start,count,nbdv)
+< !         CALL check_err(iret)
+< !      endif
+< !     ---------------------------------------
+< !     Store number of nodes of land boundary
+< !     ---------------------------------------
+< !      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+< ! !        iret = nf_put_var_int (ncid, nbvv_id, nbvv)
+< !      count(1)=nvel_len
+< !      count(2)=nbou_len
+< !      start(1)=1
+< !      start(2)=1
+< !      iret=nf_put_vara_int(ncid,nbvv_id,start,count,nbvv)
+< !         CALL check_err(iret)
+< !      endif
+< 
+< !     =====================
+---
+>       
+> !     ---------------------
+1283c1081
+< !     =====================
+---
+> !     ---------------------
+1285c1083
+< !          WRITE (6,*)'****FIRST = 0 ****',FIRST, FILENAME
+---
+>           WRITE (6,*)'****FIRST = 0 ****',FIRST, FILENAME
+1290a1089
+> 
+1337a1137
+> !      WRITE(6,*)'BEFORE CALCULATE ZETA MIN in each time'
+1344a1145,1147
+> ! 		 if(zeta (n,1).gt.-9999.d0.and.zeta(n,1).lt. minzetat (1) ) 
+> !     &      minzetat (1) = zeta (n,1)
+> ! 	  end do
+1345a1149,1150
+> !	  WRITE(6,*) "sea surface elevation minimum - 1:  ", minzetat (1),
+> !     &           minznodet(1)
+1349a1155
+> !      WRITE(6,*)'AFTER CALCULATE ZETA MIN'
+1353a1160
+> !      WRITE(6,*)'BEFORE CALCULATE ZETA MAX'
+1357a1165
+> ! 		 if(zeta (n,1).gt.maxzetan(n) ) maxzetan (n) = zeta (n,1)
+1365a1174
+> !	  maxzetat (1) = maxval ( zeta (1:node_len, 1) )
+1367a1177,1178
+> ! 		 if(zeta(n,1).gt.maxzetat(1))  maxzetat (1) = zeta (n,1)
+> ! 		 WRITE(6,*) "********* maxzetan (1) ",n, zeta(n,1),maxzetat(1)
+1374,1375c1185,1186
+< !       WRITE(6,*) "sea surface elevation maximum - 1:  ", maxzetat (1),
+< !     &  maxznodet(1)
+---
+> 	  WRITE(6,*) "sea surface elevation maximum - 1:  ", maxzetat (1),
+>      &     maxznodet(1)
+1381c1192,1238
+< 
+---
+> !     -------
+> !     Store Y
+> !     -------
+>       iret = nf_put_var_double(ncid, Y_id, Y)
+>       CALL check_err(iret)
+> !     -------
+> !     Store X
+> !     -------
+>       iret = nf_put_var_double(ncid, X_id, X)
+>       CALL check_err(iret)
+> !     ------------
+> !     Store depth
+> !     ------------
+>       iret = nf_put_var_double(ncid, DEPTH_id, depth)
+>       CALL check_err(iret)
+> !     --------------
+> !     Store elements
+> !     --------------
+> !      iret = nf_put_var_int(ncid, ELE_id, element,1,3)
+>       iret = nf_put_var_int(ncid, ELE_id, element)
+>       CALL check_err(iret)
+> !     --------------------
+> !     Store maximum depth
+> !     --------------------
+>       maxdepth = maxval (depth)
+>       iret = nf_put_var_double(ncid, maxdepth_id, maxdepth)
+>       CALL check_err(iret)
+> !     --------------------
+> !     Store minimum depth
+> !     --------------------
+>       mindepth = minval (depth)
+>       iret = nf_put_var_double(ncid, mindepth_id, mindepth)
+>       CALL check_err(iret)
+> !     ---------------------------------------
+> !     Store node numbers on elevation specified boundary segment
+> !     ---------------------------------------
+>       if(nope_len.ne.0.and.neta_len.ne.0) then
+>          iret = nf_put_var_int (ncid, nbdv_id, nbdv)
+>          CALL check_err(iret)
+>       endif
+> !     ---------------------------------------
+> !     Store number of nodes of land boundary
+> !     ---------------------------------------
+>       if(nbou_len.ne.0.and.nvel_len.ne.0) then
+>          iret = nf_put_var_int (ncid, nbvv_id, nbvv)
+>          CALL check_err(iret)
+>       endif
+1385c1242
+< !      WRITE(6,*)"NREC = ", NREC," NDATA = ",NDATA
+---
+>       WRITE(6,*)"NREC = ", NREC," NDATA = ",NDATA
+1454,1457c1311,1312
+<      &                      nope_len, neta_len, nbdv,nopenc,netanc_len,
+<      &                      nvdllnc, 
+<      &                      nbou_len, nvel_len, nbvv,nbounc,nvelnc_len,
+<      &                      nvellnc,ibtypenc,
+---
+>      &                      nope_len, neta_len, nbdv, 
+>      &                      nbou_len, nvel_len, nbvv,
+1491,1492d1345
+<       INTEGER  nvelnc_dim
+<       INTEGER  netanc_dim
+1504,1505d1356
+<       INTEGER  nvelnc_len
+<       INTEGER  netanc_len
+1538,1543d1388
+<       INTEGER  nvdll_id
+<       INTEGER  nbounc_id
+<       INTEGER  ibtypenc_id
+<       INTEGER  nvellnc_id
+<       INTEGER  nvdllnc_id
+<       INTEGER  nopenc_id
+1569,1575d1413
+<       INTEGER  nbounc_rank
+< !      INTEGER  nvdll_rank
+<       INTEGER  ibtypenc_rank
+<       INTEGER  nvellnc_rank
+<       INTEGER  nvdllnc_rank
+<       INTEGER  nopenc_rank
+< 
+1593c1431
+< !      PARAMETER (nvdll_rank = 1)
+---
+>       PARAMETER (nvdll_rank = 1)
+1617,1623d1454
+<       PARAMETER (nvdll_rank = 1)
+<       PARAMETER (nbounc_rank = 1)
+<       PARAMETER (ibtypenc_rank = 1)
+<       PARAMETER (nvellnc_rank = 1)
+<       PARAMETER (nvdllnc_rank=1)
+<       PARAMETER (nopenc_rank=1)
+< 
+1632c1463
+< !      INTEGER  nvdll_dims(nvdll_rank)
+---
+>       INTEGER  nvdll_dims(nvdll_rank)
+1646,1653d1476
+<       INTEGER  nvdll_dims(nvdll_rank)
+<       INTEGER  nbounc_dims(nbounc_rank)
+<       INTEGER  ibtypenc_dims(ibtypenc_rank)
+<       INTEGER  nvellnc_dims(nvellnc_rank)
+<       INTEGER  nvdllnc_dims(nvdllnc_rank)
+<       INTEGER  nopenc_dims(nopenc_rank)
+< 
+< 
+1670,1688c1493,1503
+<       INTEGER   t,ntif,nbfr,nt
+<       INTEGER   irtype, ihot, ics, nolibf, nolifa, nolica, nolicat, nwp
+<       INTEGER   ntip, nws, nramp,ncor
+< !     INTEGER   nvel, neta
+<       INTEGER   nout
+<       INTEGER   element (nface_len , elem_len)
+<       INTEGER   nbdv (nope_len, neta_len)
+<       INTEGER   nbvv (nbou_len, nvel_len)
+<       
+<       INTEGER   nvellnc(nbou_len)
+<       INTEGER   nbounc (nvel_len)
+<       INTEGER   ibtype(nbou_len)
+<       INTEGER   ibtypenc(nbou_len)
+<       INTEGER   nvdllnc (nope_len)
+<       INTEGER   nopenc (neta_len)
+<       
+<       INTEGER   nm (elem_len, nface_len)
+<       INTEGER   fileunit
+<       REAL(sz)  timenc(timenc_len)
+---
+>       INTEGER t,ntif,nbfr,nt
+>       INTEGER irtype, ihot, ics, nolibf, nolifa, nolica, nolicat, nwp
+>       INTEGER ntip, nws, nramp,ncor
+> !      INTEGER nvel, neta
+>       INTEGER nout
+>       INTEGER element (nface_len , elem_len)
+>       INTEGER nbdv (nope_len, neta_len)
+>       INTEGER nbvv (nbou_len, nvel_len)
+>       INTEGER nm (elem_len, nface_len)
+>       INTEGER fileunit
+>       REAL(8)   timenc(timenc_len)
+1723c1538
+< !      REAL*8 nele
+---
+>       REAL*8 nele
+1763a1579,1580
+> !      save minut, maxut, minun, maxun
+> !      save minvt, maxvt, minvn, maxvn
+1766,1770d1582
+<       save nvelnc_dim
+<       save nvdll_id, nbounc_id, ibtypenc_id, nvellnc_id
+<       save netanc_dim
+<       save nopenc_id,nvdllnc_id
+< 
+1776c1588
+< !       write(6,*) "*****************Time inside subroutine ", timenc(1)
+---
+>        write(6,*) "*****************Time inside subroutine ", timenc(1)
+1778,1781c1590,1594
+< !       WRITE (6,*)'========= FILEUNIT =======', FILEUNIT
+< !       WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
+< !       WRITE (6,*)'========= time_len, node_len =======',
+< !     &  timenc_len, node_len     
+---
+>        WRITE (6,*)'========= FILEUNIT =======', FILEUNIT
+>        WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
+>        WRITE (6,*)'========= time_len, node_len =======',
+>      &  timenc_len, node_len
+>      
+1787,1789c1600,1602
+<          do j=1, nface_len
+<             element(j,i) = nm (i,j)
+<          end do
+---
+>       do j=1, nface_len
+>          element(j,i) = nm (i,j)
+>       end do
+1866a1680,1684
+> !      iret = nf_def_dim(ncid, 'time', nf_unlimited, timenc_dim)
+> !      CALL check_err(iret)
+>       
+> !      WRITE(6,*)'BEFORE UNLIMITED'
+> !      iret = nf_def_dim(ncid, 'time', time_len, time_dim)
+1869,1870c1687,1697
+<       
+< !     ================
+---
+> !      WRITE(6,*)'AFTER UNLIMITED'
+> 
+> !      WRITE (6,*) " node_len, node_dim" , node_len, node_dim
+> !      WRITE (6,*) " time_len, time_dim ", timenc_len, timenc_dim
+> !      WRITE (6,*) " elem_len, elem_dim ", elem_len, elem_dim
+> !      WRITE (6,*) " nface_len, nface_dim",nface_len, nface_dim
+> !      WRITE (6,*) " nope_len, nope_dim ", nope_len, nope_dim      
+> !      WRITE (6,*) " neta_len, neta_dim ", neta_len, neta_dim
+> !      WRITE (6,*) " nbou_len, nbou_dim ", nbou_len, nbou_dim
+> !      WRITE (6,*) " nvel_len, nvel_dim ", nvel_len, nvel_dim
+> !     ----------------
+1872c1699
+< !     ================
+---
+> !     ----------------
+1896,1897c1723,1724
+<       ELE_dims(1) = nface_dim
+<       ELE_dims(2) = elem_dim
+---
+>       ELE_dims(1) = elem_dim
+>       ELE_dims(2) = nface_dim
+1904,1913d1730
+< !      if(nope_len.ne.0.and.neta_len.ne.0) then
+< !        nbdv_dims(2) = nope_dim
+< !        nbdv_dims(1) = neta_dim      
+< !        iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
+< !     &                  nbdv_id)
+< !         CALL check_err(iret)
+< !      endif
+< !     -----------------------------------------------------------------
+< !     Define elevation specified boundary forcing segments information
+< !     -----------------------------------------------------------------
+1915,1924c1732,1736
+<         nvdllnc_dims(1) = nope_dim      
+<         iret = nf_def_var(ncid, 'nvdll',NF_INT, nvdllnc_rank, 
+<      &                  nvdllnc_dims, nvdllnc_id)
+<         CALL check_err(iret)
+< 
+<         nopenc_dims(1) = neta_dim      
+<         iret = nf_def_var(ncid, 'nbbv',NF_INT, nopenc_rank, nopenc_dims, 
+<      &                  nopenc_id)
+<         CALL check_err(iret)
+< 
+---
+>         nbdv_dims(2) = nope_dim
+>         nbdv_dims(1) = neta_dim      
+>         iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
+>      &                  nbdv_id)
+>          CALL check_err(iret)
+1926,1940c1738,1740
+< 
+< !     ----------------------------------------------------------
+< !     Define normal flow specified boundary segments information
+< !     ----------------------------------------------------------
+< !      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+< !        nbvv_dims(2) = nbou_dim
+< !        nbvv_dims(1) = nvel_dim      
+< !        iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
+< !     &                  nbvv_id)
+< !        CALL check_err(iret)
+< !      endif
+< 
+< !     ----------------------------------------------------------
+< !     Define normal flow specified boundary segments information
+< !     ----------------------------------------------------------
+---
+> !     -----------------------------
+> !     Define land boundary segments
+> !     -----------------------------
+1942,1954c1742,1745
+< 
+<         nvellnc_dims(1) = nbou_dim      
+<         iret = nf_def_var(ncid, 'nvell',NF_INT, nvellnc_rank, 
+<      &                  nvellnc_dims, nvellnc_id)
+<         CALL check_err(iret)
+<         
+<         ibtypenc_dims(1) = nbou_dim      
+<         iret = nf_def_var(ncid, 'ibtype',NF_INT, ibtypenc_rank, 
+<      &                  ibtypenc_dims, ibtypenc_id)
+<         CALL check_err(iret)
+<         nbounc_dims(1) = nvel_dim      
+<         iret = nf_def_var(ncid, 'nbvv',NF_INT, nbounc_rank, nbounc_dims, 
+<      &                  nbounc_id)
+---
+>         nbvv_dims(2) = nbou_dim
+>         nbvv_dims(1) = nvel_dim      
+>         iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
+>      &                  nbvv_id)
+1956,1958c1747
+<      
+<        endif
+< 
+---
+>       endif
+2127a1917,1925
+>       
+> !!!!!!!!
+> 
+> 
+> 
+> 
+> 
+> 
+> 
+2647,2650c2445,2448
+< !     -----------------------------------------------------------------------
+< !     Define node numbers on elevation specified boundary segments attributes
+< !     -----------------------------------------------------------------------      
+< !      WRITE(6,*)" node numbers on boundary segments"
+---
+> !    ----------------------------------
+> !     node numbers on boundary segments
+> !    ----------------------------------
+>       WRITE(6,*)" node numbers on boundary segments"
+2652,2658c2450
+< !      iret = nf_put_att_text(ncid, nbdv_id, 'long_name', 53, 
+< !     &       'node numbers on elevation specified boundary segments')
+< !      CALL check_err(iret)
+< !      iret = nf_put_att_text(ncid, nbdv_id, 'units', 14, 
+< !     &                      VAR_NOND)
+< !      CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, nopenc_id, 'long_name', 53, 
+---
+>       iret = nf_put_att_text(ncid, nbdv_id, 'long_name', 53, 
+2661c2453
+<       iret = nf_put_att_text(ncid, nopenc_id, 'units', 14, 
+---
+>       iret = nf_put_att_text(ncid, nbdv_id, 'units', 14, 
+2664,2666c2456,2457
+<       
+<       iret = nf_put_att_text(ncid, nvdllnc_id, 'long_name', 60, 
+<      &'number of nodes in each elevation specified boundary segment')
+---
+>       iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
+>      &       'node numbers on normal flow boundary segments')
+2668,2699c2459
+<       iret = nf_put_att_text(ncid, nvdllnc_id, 'units', 14, 
+<      &                      VAR_NOND)
+<       CALL check_err(iret)
+< !     ---------------------------------------------------------------
+< !     Define node numbers on normal flow boundary segments attributes
+< !     ----------------------------------------------------------------  
+< 
+< !      iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
+< !     &       'node numbers on normal flow boundary segments')
+< !      CALL check_err(iret)
+< !      iret = nf_put_att_text(ncid, nbvv_id, 'units', 14, 
+< !     &                      VAR_NOND)
+< !      CALL check_err(iret)
+< 
+<       iret = nf_put_att_text(ncid, nbounc_id, 'long_name', 59, 
+<      & 'node numbers in each normal flow specified boundary segment')
+<       CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, nbounc_id, 'units', 14, 
+<      &                      VAR_NOND)
+<       CALL check_err(iret)
+< 
+<       iret = nf_put_att_text(ncid, ibtypenc_id, 'long_name', 13, 
+<      &       'boundary type')
+<       CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, ibtypenc_id, 'units', 14, 
+<      &                      VAR_NOND)
+<       CALL check_err(iret)
+< 
+<       iret = nf_put_att_text(ncid, nvellnc_id, 'long_name', 62, 
+<      &'number of nodes in each normal flow specified boundary segment')
+<       CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, nvellnc_id, 'units', 14, 
+---
+>       iret = nf_put_att_text(ncid, nbvv_id, 'units', 14, 
+2965c2725
+< !     ======================
+---
+> !     -----------------
+2967c2727
+< !     ======================
+---
+> !     -----------------
+2970,3043d2729
+< !     ======================
+< !     Store static variables
+< !     ======================
+< !     -------
+< !     Store X
+< !     -------
+<       iret = nf_put_var_double(ncid, X_id, X)
+<       CALL check_err(iret)
+< !     -------
+< !     Store Y
+< !     -------
+<       iret = nf_put_var_double(ncid, Y_id, Y)
+<       CALL check_err(iret)
+< !     ------------
+< !     Store depth
+< !     ------------
+<       iret = nf_put_var_double(ncid, DEPTH_id, depth)
+<       CALL check_err(iret)
+< !     --------------
+< !     Store elements
+< !     --------------
+<       count(1)=nface_len
+<       count(2)=elem_len
+<       start(1)=1
+<       start(2)=1
+<       iret=nf_put_vara_int(ncid,ele_id,start,count,element)
+<       CALL check_err(iret)
+< !     ------------------------------------
+< !     Store elevation boundary information
+< !     -------------------------------------
+<       iret = nf_put_var_int(ncid, nopenc_id, nopenc)
+<       CALL check_err(iret)
+<       iret = nf_put_var_int(ncid, nvdllnc_id, nvdllnc)
+<       CALL check_err(iret)
+< !     --------------------------------------
+< !     Store normal flow boundary information
+< !     --------------------------------------
+<       iret = nf_put_var_int(ncid, nbounc_id, nbounc)
+<       CALL check_err(iret)
+<       iret = nf_put_var_int(ncid, ibtypenc_id, ibtypenc)
+<       CALL check_err(iret)
+<       iret = nf_put_var_int(ncid, nvellnc_id, nvellnc)
+<       CALL check_err(iret)      
+< !     --------------------
+< !     Store maximum depth
+< !     --------------------
+<       maxdepth = maxval (depth)
+<       iret = nf_put_var_double(ncid, maxdepth_id, maxdepth)
+<       CALL check_err(iret)
+< !     --------------------
+< !     Store minimum depth
+< !     --------------------
+<       mindepth = minval (depth)
+<       iret = nf_put_var_double(ncid, mindepth_id, mindepth)
+<       CALL check_err(iret)
+< !     ---------------------------------------
+< !     Store node numbers on elevation specified boundary segment
+< !     ---------------------------------------
+< !      if(nope_len.ne.0.and.neta_len.ne.0) then
+< !!         iret = nf_put_var_int (ncid, nbdv_id, nbdv)
+< !      count(1)=neta_len
+< !      count(2)=nope_len
+< !      start(1)=1
+< !      start(2)=1
+< !      iret=nf_put_vara_int(ncid,nbdv_id,start,count,nbdv)
+< !         CALL check_err(iret)
+< !      endif
+< !     ---------------------------------------
+< !     Store number of nodes of land boundary
+< !     ---------------------------------------
+< !      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+< !         iret = nf_put_var_int (ncid, nbvv_id, nbvv)
+< !         CALL check_err(iret)
+< !      endif
+3045c2731
+< !     =====================
+---
+> !     ---------------------
+3047c2733
+< !     =====================
+---
+> !     ---------------------
+3049c2735
+< !          WRITE (6,*)'****FIRSTV = 0 ****',FIRSTV
+---
+>           WRITE (6,*)'****FIRSTV = 0 ****',FIRSTV
+3053a2740,2741
+> 
+> 
+3056a2745
+>       WRITE(6,*)'64 -- STORING TIME'
+3058a2748,2749
+>       WRITE(6,*)'starti(1), counti(1)', starti(1), counti(1)
+>       WRITE(6,*)'ncid timenc_id', ncid, timenc_id, timenc(timenc_len)
+3060a2752
+>       
+3063a2756
+> !      WRITE(6,*)'64 -- STORING U', node_len, timenc_len
+3207a2901,2948
+> !     -------
+> !     Store Y
+> !     -------
+>       iret = nf_put_var_double(ncid, Y_id, Y)
+>       CALL check_err(iret)
+> !     -------
+> !     Store X
+> !     -------
+>       iret = nf_put_var_double(ncid, X_id, X)
+>       CALL check_err(iret)
+> !     ------------
+> !     Store depth
+> !     ------------
+>       iret = nf_put_var_double(ncid, DEPTH_id, depth)
+>       CALL check_err(iret)
+> !     --------------
+> !     Store elements
+> !     --------------
+>       iret = nf_put_var_int(ncid, ELE_id, element,1,3)
+> !      iret = nf_put_var_int(ncid, ELE_id, element)
+>       CALL check_err(iret)
+>       
+> !     --------------------
+> !     Store maximum depth
+> !     --------------------
+>       maxdepth = maxval (depth)
+>       iret = nf_put_var_double(ncid, maxdepth_id, maxdepth)
+>       CALL check_err(iret)
+> !     --------------------
+> !     Store minimum depth
+> !     --------------------
+>       mindepth = minval (depth)
+>       iret = nf_put_var_double(ncid, mindepth_id, mindepth)
+>       CALL check_err(iret)
+> !     ---------------------------------------
+> !     Store node numbers on elevation specified boundary segment
+> !     ---------------------------------------
+>       if(nope_len.ne.0.and.neta_len.ne.0) then
+>          iret = nf_put_var_int (ncid, nbdv_id, nbdv)
+>          CALL check_err(iret)
+>       endif
+> !     ---------------------------------------
+> !     Store number of nodes of land boundary
+> !     ---------------------------------------
+>       if(nbou_len.ne.0.and.nvel_len.ne.0) then
+>          iret = nf_put_var_int (ncid, nbvv_id, nbvv)
+>          CALL check_err(iret)
+>       endif
+3282,3285c3023,3024
+<      &                      nope_len, neta_len, nbdv, nopenc,netanc_len,
+<      &                      nvdllnc,
+<      &                      nbou_len, nvel_len, nbvv,nbounc,nvelnc_len,
+<      &                      nvellnc,ibtypenc,
+---
+>      &                      nope_len, neta_len, nbdv, 
+>      &                      nbou_len, nvel_len, nbvv,
+3320,3321d3058
+<       INTEGER  nvelnc_dim
+<       INTEGER  netanc_dim
+3333,3334d3069
+<       INTEGER  nvelnc_len
+<       INTEGER  netanc_len
+3358,3364d3092
+< 
+<       INTEGER  nvdll_id
+<       INTEGER  nbounc_id
+<       INTEGER  ibtypenc_id
+<       INTEGER  nvellnc_id
+<       INTEGER  nvdllnc_id
+<       INTEGER  nopenc_id
+3386,3387d3113
+< 
+<       INTEGER  nbounc_rank
+3389,3393d3114
+<       INTEGER  ibtypenc_rank
+<       INTEGER  nvellnc_rank
+<       INTEGER  nvdllnc_rank
+<       INTEGER  nopenc_rank
+<       
+3414d3134
+< 
+3416,3422d3135
+<       PARAMETER (nbounc_rank = 1)
+<       PARAMETER (ibtypenc_rank = 1)
+<       PARAMETER (nvellnc_rank = 1)
+< 
+<       PARAMETER (nvdllnc_rank=1)
+<       PARAMETER (nopenc_rank=1)
+< 
+3444d3156
+< 
+3446,3451d3157
+<       INTEGER  nbounc_dims(nbounc_rank)
+<       INTEGER  ibtypenc_dims(ibtypenc_rank)
+<       INTEGER  nvellnc_dims(nvellnc_rank)
+<       INTEGER  nvdllnc_dims(nvdllnc_rank)
+<       INTEGER  nopenc_dims(nopenc_rank)
+< 
+3467,3474d3172
+< 
+<       INTEGER   nvellnc(nbou_len)
+<       INTEGER   nbounc (nvel_len)
+<       INTEGER   ibtype(nbou_len)
+<       INTEGER   ibtypenc(nbou_len)
+<       INTEGER   nvdllnc (nope_len)
+<       INTEGER   nopenc (neta_len)
+< 
+3477c3175
+<       REAL(sz)   timenc(timenc_len)
+---
+>       REAL(8)   timenc(timenc_len)
+3499c3197
+< !      REAL*8 nele
+---
+>       REAL*8 nele
+3537,3542d3234
+< 
+<       save nvelnc_dim
+<       save nvdll_id, nbounc_id, ibtypenc_id, nvellnc_id
+<       save netanc_dim
+<       save nopenc_id,nvdllnc_id
+< 
+3547c3239,3253
+<       NREC = NREC + 1
+---
+> 
+> !       do i=1, 10
+> !       write(6,*) ' x(i),y(i),depth(i)****',x(i),y(i)
+> !       end do
+> !       write(6,*) "*****************Time inside subroutine ", timenc(1)
+>        NREC = NREC + 1
+> !       WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
+> !       WRITE (6,*)'========= timenc_len, node_len =======',
+> !     &  timenc_len, node_len
+> !       WRITE (6,*)'========= NREC =======', NREC, 
+> !     & (zeta(node_len,1), node_len=1,3)
+> !         WRITE(6,*) "BASE DATE", base_date
+> !         WRITE(6,*) "ADC_VERSION", ADC_VERSION
+> !         WRITE(6,*) "AGRID", AGRID
+>       
+3553,3555c3259,3262
+<          do j=1, nface_len
+<             element(j,i) = nm (i,j)
+<          end do
+---
+>       do j=1, nface_len
+>          element(j,i) = nm (i,j)
+>       end do
+> !         write(6,*) "elem -- ", i, element (1,i), element(2,i),element(3,i)
+3561c3268
+< !         WRITE (6,*)'****FIRST73 = 1 ****',FIRST73
+---
+>          WRITE (6,*)'****FIRST73 = 1 ****',FIRST73
+3564c3271
+< !         WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+---
+>          WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+3574c3281
+< !         WRITE (6,*)' Allocate  = minzetan'
+---
+>          WRITE (6,*)' Allocate  = minzetan'
+3580c3287
+< !         WRITE (6,*)' Initialize minzetan'
+---
+>          WRITE (6,*)' Initialize minzetan'
+3618a3326,3330
+>       
+> !      iret = nf_def_dim(ncid, 'time', nf_unlimited, timenc_dim)
+> !      CALL check_err(iret)
+> !     iret = nf_def_dim(ncid, 'namelen', SNAMLEN, slen_dim)
+> !     CALL check_err(iret)
+3648,3649c3360,3361
+<       ELE_dims(1) = nface_dim
+<       ELE_dims(2) = elem_dim
+---
+>       ELE_dims(1) = elem_dim
+>       ELE_dims(2) = nface_dim
+3652,3664c3364,3366
+< !     -----------------------------------------------------------------
+< !     Define elevation specified boundary forcing segments information
+< !     -----------------------------------------------------------------
+< !      if(nope_len.ne.0.and.neta_len.ne.0) then
+< !        nbdv_dims(2) = nope_dim
+< !        nbdv_dims(1) = neta_dim      
+< !        iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
+< !     &                  nbdv_id)
+< !         CALL check_err(iret)
+< !      endif
+< !     -----------------------------------------------------------------
+< !     Define elevation specified boundary forcing segments information
+< !     -----------------------------------------------------------------
+---
+> !     -------------------------------------
+> !     Define open boundary forcing segments
+> !     -------------------------------------
+3666,3675c3368,3372
+<         nvdllnc_dims(1) = nope_dim      
+<         iret = nf_def_var(ncid, 'nvdll',NF_INT, nvdllnc_rank, 
+<      &                  nvdllnc_dims, nvdllnc_id)
+<         CALL check_err(iret)
+< 
+<         nopenc_dims(1) = neta_dim      
+<         iret = nf_def_var(ncid, 'nbdv',NF_INT, nopenc_rank, nopenc_dims, 
+<      &                  nopenc_id)
+<         CALL check_err(iret)
+< 
+---
+>         nbdv_dims(2) = nope_dim
+>         nbdv_dims(1) = neta_dim      
+>         iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
+>      &                  nbdv_id)
+>          CALL check_err(iret)
+3677,3689c3374,3376
+< !     ----------------------------------------------------------
+< !     Define normal flow specified boundary segments information
+< !     ----------------------------------------------------------
+< !      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+< !        nbvv_dims(2) = nbou_dim
+< !        nbvv_dims(1) = nvel_dim      
+< !        iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
+< !     &                  nbvv_id)
+< !        CALL check_err(iret)
+< !      endif
+< !     ----------------------------------------------------------
+< !     Define normal flow specified boundary segments information
+< !     ----------------------------------------------------------
+---
+> !     -----------------------------
+> !     Define land boundary segments
+> !     -----------------------------
+3691,3704c3378,3381
+< 
+<         nvellnc_dims(1) = nbou_dim      
+<         iret = nf_def_var(ncid, 'nvell',NF_INT, nvellnc_rank, 
+<      &                  nvellnc_dims, nvellnc_id)
+<         CALL check_err(iret)
+<         
+<         ibtypenc_dims(1) = nbou_dim      
+<         iret = nf_def_var(ncid, 'ibtype',NF_INT, ibtypenc_rank, 
+<      &                  ibtypenc_dims, ibtypenc_id)
+<         CALL check_err(iret)
+<      
+<          nbounc_dims(1) = nvel_dim      
+<         iret = nf_def_var(ncid, 'nbvv',NF_INT, nbounc_rank, nbounc_dims, 
+<      &                  nbounc_id)
+---
+>         nbvv_dims(2) = nbou_dim
+>         nbvv_dims(1) = nvel_dim      
+>         iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
+>      &                  nbvv_id)
+4031,4037c3708
+< !      iret = nf_put_att_text(ncid, nbdv_id, 'long_name', 53, 
+< !     &       'node numbers on elevation specified boundary segments')
+< !      CALL check_err(iret)
+< !      iret = nf_put_att_text(ncid, nbdv_id, 'units', 14, 
+< !     &                      VAR_NOND)
+< !      CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, nopenc_id, 'long_name', 53, 
+---
+>       iret = nf_put_att_text(ncid, nbdv_id, 'long_name', 53, 
+4040,4070c3711
+<       iret = nf_put_att_text(ncid, nopenc_id, 'units', 14, 
+<      &                      VAR_NOND)
+<       CALL check_err(iret)
+<       
+<       iret = nf_put_att_text(ncid, nvdllnc_id, 'long_name', 60, 
+<      &'number of nodes in each elevation specified boundary segment')
+<       CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, nvdllnc_id, 'units', 14, 
+<      &                      VAR_NOND)
+<       CALL check_err(iret)
+< !     ---------------------------------------------------------------
+< !     Define node numbers on normal flow boundary segments attributes
+< !     ----------------------------------------------------------------  
+< !      iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
+< !     &       'node numbers on normal flow boundary segments')
+< !      CALL check_err(iret)
+< !      iret = nf_put_att_text(ncid, nbvv_id, 'units', 14, 
+< !     &                      VAR_NOND)
+< !      CALL check_err(iret)
+< 
+<       iret = nf_put_att_text(ncid, nbounc_id, 'long_name', 59, 
+<      & 'node numbers in each normal flow specified boundary segment')
+<       CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, nbounc_id, 'units', 14, 
+<      &                      VAR_NOND)
+<       CALL check_err(iret)
+< 
+<       iret = nf_put_att_text(ncid, ibtypenc_id, 'long_name', 13, 
+<      &       'boundary type')
+<       CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, ibtypenc_id, 'units', 14, 
+---
+>       iret = nf_put_att_text(ncid, nbdv_id, 'units', 14, 
+4073,4075c3714,3718
+< 
+<       iret = nf_put_att_text(ncid, nvellnc_id, 'long_name', 62, 
+<      &'number of nodes in each normal flow specified boundary segment')
+---
+> !     ---------------------------------------------------------------
+> !     Define node numbers on normal flow boundary segments attributes
+> !     ----------------------------------------------------------------  
+>       iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
+>      &       'node numbers on normal flow boundary segments')
+4077c3720
+<       iret = nf_put_att_text(ncid, nvellnc_id, 'units', 14, 
+---
+>       iret = nf_put_att_text(ncid, nbvv_id, 'units', 14, 
+4080d3722
+< 
+4275c3917
+< !     ======================
+---
+> !     -----------------
+4277c3919
+< !     ======================
+---
+> !     -----------------
+4280,4353d3921
+< !     ======================
+< !     Store static variables
+< !     ======================
+< !     -------
+< !     Store X
+< !     -------
+<       iret = nf_put_var_double(ncid, X_id, X)
+<       CALL check_err(iret)
+< !     -------
+< !     Store Y
+< !     -------
+<       iret = nf_put_var_double(ncid, Y_id, Y)
+<       CALL check_err(iret)
+< !     ------------
+< !     Store depth
+< !     ------------
+<       iret = nf_put_var_double(ncid, DEPTH_id, depth)
+<       CALL check_err(iret)
+< !     --------------
+< !     Store elements
+< !     --------------
+<       count(1)=nface_len
+<       count(2)=elem_len
+<       start(1)=1
+<       start(2)=1
+<       iret=nf_put_vara_int(ncid,ele_id,start,count,element)
+<       CALL check_err(iret)
+< !     ------------------------------------
+< !     Store elevation boundary information
+< !     -------------------------------------
+<       iret = nf_put_var_int(ncid, nopenc_id, nopenc)
+<       CALL check_err(iret)
+<       iret = nf_put_var_int(ncid, nvdllnc_id, nvdllnc)
+<       CALL check_err(iret)
+< !     --------------------------------------
+< !     Store normal flow boundary information
+< !     --------------------------------------
+<       iret = nf_put_var_int(ncid, nbounc_id, nbounc)
+<       CALL check_err(iret)
+<       iret = nf_put_var_int(ncid, ibtypenc_id, ibtypenc)
+<       CALL check_err(iret)
+<       iret = nf_put_var_int(ncid, nvellnc_id, nvellnc)
+<       CALL check_err(iret)
+< !     --------------------
+< !     Store maximum depth
+< !     --------------------
+<       maxdepth = maxval (depth)
+<       iret = nf_put_var_double(ncid, maxdepth_id, maxdepth)
+<       CALL check_err(iret)
+< !     --------------------
+< !     Store minimum depth
+< !     --------------------
+<       mindepth = minval (depth)
+<       iret = nf_put_var_double(ncid, mindepth_id, mindepth)
+<       CALL check_err(iret)
+< !     ---------------------------------------
+< !     Store node numbers on elevation specified boundary segment
+< !     ---------------------------------------
+<       if(nope_len.ne.0.and.neta_len.ne.0) then
+< !         iret = nf_put_var_int (ncid, nbdv_id, nbdv)
+<       count(1)=neta_len
+<       count(2)=nope_len
+<       start(1)=1
+<       start(2)=1
+<       iret=nf_put_vara_int(ncid,nbdv_id,start,count,nbdv)
+<          CALL check_err(iret)
+<       endif
+< !     ---------------------------------------
+< !     Store number of nodes of land boundary
+< !     ---------------------------------------
+< !      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+< !         iret = nf_put_var_int (ncid, nbvv_id, nbvv)
+< !         CALL check_err(iret)
+< !      endif
+4355c3923
+< !     =====================
+---
+> !     ---------------------
+4357c3925
+< !     =====================
+---
+> !     ---------------------
+4359c3927
+< !          WRITE (6,*)'****FIRST73 = 0 ****',FIRST73, FILENAME
+---
+>           WRITE (6,*)'****FIRST73 = 0 ****',FIRST73, FILENAME
+4455a4024,4070
+> !     -------
+> !     Store Y
+> !     -------
+>       iret = nf_put_var_double(ncid, Y_id, Y)
+>       CALL check_err(iret)
+> !     -------
+> !     Store X
+> !     -------
+>       iret = nf_put_var_double(ncid, X_id, X)
+>       CALL check_err(iret)
+> !     ------------
+> !     Store depth
+> !     ------------
+>       iret = nf_put_var_double(ncid, DEPTH_id, depth)
+>       CALL check_err(iret)
+> !     --------------
+> !     Store elements
+> !     --------------
+> !      iret = nf_put_var_int(ncid, ELE_id, element,1,3)
+>       iret = nf_put_var_int(ncid, ELE_id, element)
+>       CALL check_err(iret)
+> !     --------------------
+> !     Store maximum depth
+> !     --------------------
+>       maxdepth = maxval (depth)
+>       iret = nf_put_var_double(ncid, maxdepth_id, maxdepth)
+>       CALL check_err(iret)
+> !     --------------------
+> !     Store minimum depth
+> !     --------------------
+>       mindepth = minval (depth)
+>       iret = nf_put_var_double(ncid, mindepth_id, mindepth)
+>       CALL check_err(iret)
+> !     ---------------------------------------
+> !     Store node numbers on elevation specified boundary segment
+> !     ---------------------------------------
+>       if(nope_len.ne.0.and.neta_len.ne.0) then
+>          iret = nf_put_var_int (ncid, nbdv_id, nbdv)
+>          CALL check_err(iret)
+>       endif
+> !     ---------------------------------------
+> !     Store number of nodes of land boundary
+> !     ---------------------------------------
+>       if(nbou_len.ne.0.and.nvel_len.ne.0) then
+>          iret = nf_put_var_int (ncid, nbvv_id, nbvv)
+>          CALL check_err(iret)
+>       endif
+4460c4075
+< !      WRITE(6,*)"NREC = ", NREC," NDATA = ",NDATA
+---
+>       WRITE(6,*)"NREC = ", NREC," NDATA = ",NDATA
+4517,4520c4132,4133
+<      &                      nope_len, neta_len, nbdv, nopenc,netanc_len,
+<      &                      nvdllnc,
+<      &                      nbou_len, nvel_len, nbvv,nbounc,nvelnc_len,
+<      &                      nvellnc,ibtypenc,
+---
+>      &                      nope_len, neta_len, nbdv, 
+>      &                      nbou_len, nvel_len, nbvv,
+4554,4555d4166
+<       INTEGER  nvelnc_dim
+<       INTEGER  netanc_dim
+4567,4568d4177
+<       INTEGER  nvelnc_len
+<       INTEGER  netanc_len
+4601,4606d4209
+<       INTEGER  nvdll_id
+<       INTEGER  nbounc_id
+<       INTEGER  ibtypenc_id
+<       INTEGER  nvellnc_id
+<       INTEGER  nvdllnc_id
+<       INTEGER  nopenc_id
+4617,4618d4219
+< 
+<       INTEGER  nbounc_rank
+4620,4624d4220
+<       INTEGER  ibtypenc_rank
+<       INTEGER  nvellnc_rank
+<       INTEGER  nvdllnc_rank
+<       INTEGER  nopenc_rank
+< 
+4655d4250
+<       
+4657,4662d4251
+<       PARAMETER (nbounc_rank = 1)
+<       PARAMETER (ibtypenc_rank = 1)
+<       PARAMETER (nvellnc_rank = 1)
+<       PARAMETER (nvdllnc_rank=1)
+<       PARAMETER (nopenc_rank=1)
+< 
+4694d4282
+< 
+4696,4701d4283
+<       INTEGER  nbounc_dims(nbounc_rank)
+<       INTEGER  ibtypenc_dims(ibtypenc_rank)
+<       INTEGER  nvellnc_dims(nvellnc_rank)
+<       INTEGER  nvdllnc_dims(nvdllnc_rank)
+<       INTEGER  nopenc_dims(nopenc_rank)
+< 
+4734,4741d4315
+<       
+<       INTEGER   nvellnc(nbou_len)
+<       INTEGER   nbounc (nvel_len)
+<       INTEGER   ibtype(nbou_len)
+<       INTEGER   ibtypenc(nbou_len)
+<       INTEGER   nvdllnc (nope_len)
+<       INTEGER   nopenc (neta_len)
+< 
+4747c4321
+<       REAL(sz)  timenc(timenc_len)
+---
+>       REAL(8)   timenc(timenc_len)
+4782c4356
+< !      REAL*8 nele
+---
+>       REAL*8 nele
+4825,4829d4398
+<       save nvelnc_dim
+<       save nvdll_id, nbounc_id, ibtypenc_id, nvellnc_id
+<       save netanc_dim
+<       save nopenc_id,nvdllnc_id
+< 
+4834c4403,4410
+<       NREC = NREC + 1
+---
+> 
+>        write(6,*) "*****************Time inside subroutine ", timenc(1)
+>        NREC = NREC + 1
+>        WRITE (6,*)'========= FILEUNIT =======', FILEUNIT
+>        WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
+>        WRITE (6,*)'========= time_len, node_len =======',
+>      &  timenc_len, node_len
+>      
+4849c4425
+< !         WRITE (6,*)'****FIRST74 = 1 ****',FIRST74
+---
+>          WRITE (6,*)'****FIRST74 = 1 ****',FIRST74
+4885a4462,4467
+> !      IF(ICS.EQ.2) THEN
+> !             DO I=1,np
+> !                x(i)=slam(i)*RAD2DEG
+> !                y(i)=sfea(i)*RAD2DEG
+> !             END DO
+> !      ENDIF
+4911a4494,4498
+> !      iret = nf_def_dim(ncid, 'time', nf_unlimited, timenc_dim)
+> !      CALL check_err(iret)
+>       
+> !      WRITE(6,*)'BEFORE UNLIMITED'
+> !      iret = nf_def_dim(ncid, 'time', time_len, time_dim)
+4913a4501
+> !      WRITE(6,*)'AFTER UNLIMITED'
+4915c4503,4511
+< !     ================
+---
+> !      WRITE (6,*) " node_len, node_dim" , node_len, node_dim
+> !      WRITE (6,*) " time_len, time_dim ", timenc_len, timenc_dim
+> !      WRITE (6,*) " elem_len, elem_dim ", elem_len, elem_dim
+> !      WRITE (6,*) " nface_len, nface_dim",nface_len, nface_dim
+> !      WRITE (6,*) " nope_len, nope_dim ", nope_len, nope_dim      
+> !      WRITE (6,*) " neta_len, neta_dim ", neta_len, neta_dim
+> !      WRITE (6,*) " nbou_len, nbou_dim ", nbou_len, nbou_dim
+> !      WRITE (6,*) " nvel_len, nvel_dim ", nvel_len, nvel_dim
+> !     ----------------
+4917c4513
+< !     ================
+---
+> !     ----------------
+4941,4942c4537,4538
+<       ELE_dims(1) = nface_dim
+<       ELE_dims(2) = elem_dim
+---
+>       ELE_dims(1) = elem_dim
+>       ELE_dims(2) = nface_dim
+4946,4958c4542,4544
+< !     -----------------------------------------------------------------
+< !     Define elevation specified boundary forcing segments information
+< !     -----------------------------------------------------------------
+< !      if(nope_len.ne.0.and.neta_len.ne.0) then
+< !        nbdv_dims(2) = nope_dim
+< !        nbdv_dims(1) = neta_dim      
+< !        iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
+< !     &                  nbdv_id)
+< !         CALL check_err(iret)
+< !      endif
+< !     -----------------------------------------------------------------
+< !     Define elevation specified boundary forcing segments information
+< !     -----------------------------------------------------------------
+---
+> !     -------------------------------------
+> !     Define open boundary forcing segments
+> !     -------------------------------------
+4960,4969c4546,4550
+<         nvdllnc_dims(1) = nope_dim      
+<         iret = nf_def_var(ncid, 'nvdll',NF_INT, nvdllnc_rank, 
+<      &                  nvdllnc_dims, nvdllnc_id)
+<         CALL check_err(iret)
+< 
+<         nopenc_dims(1) = neta_dim      
+<         iret = nf_def_var(ncid, 'nbdv',NF_INT, nopenc_rank, nopenc_dims, 
+<      &                  nopenc_id)
+<         CALL check_err(iret)
+< 
+---
+>         nbdv_dims(2) = nope_dim
+>         nbdv_dims(1) = neta_dim      
+>         iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
+>      &                  nbdv_id)
+>          CALL check_err(iret)
+4971,4980c4552,4554
+< !     ----------------------------------------------------------
+< !     Define normal flow specified boundary segments information
+< !     ----------------------------------------------------------
+< !      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+< !        nbvv_dims(2) = nbou_dim
+< !        nbvv_dims(1) = nvel_dim      
+< !        iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
+< !     &                  nbvv_id)
+< !        CALL check_err(iret)
+< !      endif
+---
+> !     -----------------------------
+> !     Define land boundary segments
+> !     -----------------------------
+4982,4985c4556,4559
+< 
+<         nvellnc_dims(1) = nbou_dim      
+<         iret = nf_def_var(ncid, 'nvell',NF_INT, nvellnc_rank, 
+<      &                  nvellnc_dims, nvellnc_id)
+---
+>         nbvv_dims(2) = nbou_dim
+>         nbvv_dims(1) = nvel_dim      
+>         iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
+>      &                  nbvv_id)
+4987,4997c4561
+<         
+<         ibtypenc_dims(1) = nbou_dim      
+<         iret = nf_def_var(ncid, 'ibtype',NF_INT, ibtypenc_rank, 
+<      &                  ibtypenc_dims, ibtypenc_id)
+<         CALL check_err(iret)
+<         nbounc_dims(1) = nvel_dim      
+<         iret = nf_def_var(ncid, 'nbvv',NF_INT, nbounc_rank, nbounc_dims, 
+<      &                  nbounc_id)
+<         CALL check_err(iret)
+<      
+<        endif
+---
+>       endif
+5949,5977d5512
+< !     -----------------------------------------------------------------------
+< !     Define node numbers on elevation specified boundary segments attributes
+< !     -----------------------------------------------------------------------      
+< !      iret = nf_put_att_text(ncid, nbdv_id, 'long_name', 53, 
+< !     &       'node numbers on elevation specified boundary segments')
+< !      CALL check_err(iret)
+< !      iret = nf_put_att_text(ncid, nbdv_id, 'units', 14, VAR_NOND)
+< !      CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, nopenc_id, 'long_name', 53, 
+<      &       'node numbers on elevation specified boundary segments')
+<       CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, nopenc_id, 'units', 14, 
+<      &                      VAR_NOND)
+<       CALL check_err(iret)
+<       
+<       iret = nf_put_att_text(ncid, nvdllnc_id, 'long_name', 60, 
+<      &'number of nodes in each elevation specified boundary segment')
+<       CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, nvdllnc_id, 'units', 14, 
+<      &                      VAR_NOND)
+<       CALL check_err(iret)
+< !     ---------------------------------------------------------------
+< !     Define node numbers on normal flow boundary segments attributes
+< !     ----------------------------------------------------------------  
+< !      iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
+< !     &       'node numbers on normal flow boundary segments')
+< !      CALL check_err(iret)
+< !      iret = nf_put_att_text(ncid, nbvv_id, 'units', 14,  VAR_NOND)
+< !      CALL check_err(iret)
+5979,5987c5514,5518
+<       iret = nf_put_att_text(ncid, nbounc_id, 'long_name', 59, 
+<      & 'node numbers in each normal flow specified boundary segment')
+<       CALL check_err(iret)
+<       iret = nf_put_att_text(ncid, nbounc_id, 'units', 14, 
+<      &                      VAR_NOND)
+<       CALL check_err(iret)
+< 
+<       iret = nf_put_att_text(ncid, ibtypenc_id, 'long_name', 13, 
+<      &       'boundary type')
+---
+> !    ----------------------------------
+> !     node numbers on boundary segments
+> !    ----------------------------------      
+>       iret = nf_put_att_text(ncid, nbdv_id, 'long_name', 53, 
+>      &       'node numbers on elevation specified boundary segments')
+5989,5990c5520
+<       iret = nf_put_att_text(ncid, ibtypenc_id, 'units', 14, 
+<      &                      VAR_NOND)
+---
+>       iret = nf_put_att_text(ncid, nbdv_id, 'units', 14, VAR_NOND)
+5992,5994c5522,5523
+< 
+<       iret = nf_put_att_text(ncid, nvellnc_id, 'long_name', 62, 
+<      &'number of nodes in each normal flow specified boundary segment')
+---
+>       iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
+>      &       'node numbers on normal flow boundary segments')
+5996,5997c5525
+<       iret = nf_put_att_text(ncid, nvellnc_id, 'units', 14, 
+<      &                      VAR_NOND)
+---
+>       iret = nf_put_att_text(ncid, nbvv_id, 'units', 14,  VAR_NOND)
+6161c5689
+< !     ======================
+---
+> !     -----------------
+6163c5691
+< !     ======================
+---
+> !     -----------------
+6166,6234d5693
+< !     ======================
+< !     Store static variables
+< !     ======================
+< !     -------
+< !     Store X
+< !     -------
+<       iret = nf_put_var_double(ncid, X_id, X)
+<       CALL check_err(iret)
+< !     -------
+< !     Store Y
+< !     -------
+<       iret = nf_put_var_double(ncid, Y_id, Y)
+<       CALL check_err(iret)
+< !     ------------
+< !     Store depth
+< !     ------------
+<       iret = nf_put_var_double(ncid, DEPTH_id, depth)
+<       CALL check_err(iret)
+< !     --------------
+< !     Store elements
+< !     --------------
+<       count(1)=nface_len
+<       count(2)=elem_len
+<       start(1)=1
+<       start(2)=1
+<       iret=nf_put_vara_int(ncid,ele_id,start,count,element)
+<       CALL check_err(iret)
+< !     ------------------------------------
+< !     Store elevation boundary information
+< !     -------------------------------------
+<       iret = nf_put_var_int(ncid, nopenc_id, nopenc)
+<       CALL check_err(iret)
+<       iret = nf_put_var_int(ncid, nvdllnc_id, nvdllnc)
+<       CALL check_err(iret)
+< !     --------------------------------------
+< !     Store normal flow boundary information
+< !     --------------------------------------
+<       iret = nf_put_var_int(ncid, nbounc_id, nbounc)
+<       CALL check_err(iret)
+<       iret = nf_put_var_int(ncid, ibtypenc_id, ibtypenc)
+<       CALL check_err(iret)
+<       iret = nf_put_var_int(ncid, nvellnc_id, nvellnc)
+<       CALL check_err(iret)      
+< !     --------------------
+< !     Store maximum depth
+< !     --------------------
+<       maxdepth = maxval (depth)
+<       iret = nf_put_var_double(ncid, maxdepth_id, maxdepth)
+<       CALL check_err(iret)
+< !     --------------------
+< !     Store minimum depth
+< !     --------------------
+<       mindepth = minval (depth)
+<       iret = nf_put_var_double(ncid, mindepth_id, mindepth)
+<       CALL check_err(iret)
+< !     ---------------------------------------
+< !     Store node numbers on elevation specified boundary segment
+< !     ---------------------------------------
+< !      if(nope_len.ne.0.and.neta_len.ne.0) then
+< !         iret = nf_put_var_int (ncid, nbdv_id, nbdv)
+< !         CALL check_err(iret)
+< !      endif
+< !     ---------------------------------------
+< !     Store number of nodes of land boundary
+< !     ---------------------------------------
+< !      if(nbou_len.ne.0.and.nvel_len.ne.0) then
+< !         iret = nf_put_var_int (ncid, nbvv_id, nbvv)
+< !         CALL check_err(iret)
+< !      endif
+6240c5699
+< !          WRITE (6,*)'****FIRST74 = 0 ****',FIRST74
+---
+>           WRITE (6,*)'****FIRST74 = 0 ****',FIRST74
+6399c5858,5906
+< !      WRITE(6,*)'AFTER CALCULATE v MAX - time'
+---
+> !      WRITE(6,*)'AFTER CALCULATE v MAX - time'
+> !     -------
+> !     Store Y
+> !     -------
+>       iret = nf_put_var_double(ncid, Y_id, Y)
+>       CALL check_err(iret)
+> !     -------
+> !     Store X
+> !     -------
+>       iret = nf_put_var_double(ncid, X_id, X)
+>       CALL check_err(iret)
+> !     ------------
+> !     Store depth
+> !     ------------
+>       iret = nf_put_var_double(ncid, DEPTH_id, depth)
+>       CALL check_err(iret)
+> !     --------------
+> !     Store elements
+> !     --------------
+>       iret = nf_put_var_int(ncid, ELE_id, element,1,3)
+> !      iret = nf_put_var_int(ncid, ELE_id, element)
+>       CALL check_err(iret)
+>       
+> !     --------------------
+> !     Store maximum depth
+> !     --------------------
+>       maxdepth = maxval (depth)
+>       iret = nf_put_var_double(ncid, maxdepth_id, maxdepth)
+>       CALL check_err(iret)
+> !     --------------------
+> !     Store minimum depth
+> !     --------------------
+>       mindepth = minval (depth)
+>       iret = nf_put_var_double(ncid, mindepth_id, mindepth)
+>       CALL check_err(iret)
+> !     ---------------------------------------
+> !     Store node numbers on elevation specified boundary segment
+> !     ---------------------------------------
+>       if(nope_len.ne.0.and.neta_len.ne.0) then
+>          iret = nf_put_var_int (ncid, nbdv_id, nbdv)
+>          CALL check_err(iret)
+>       endif
+> !     ---------------------------------------
+> !     Store number of nodes of land boundary
+> !     ---------------------------------------
+>       if(nbou_len.ne.0.and.nvel_len.ne.0) then
+>          iret = nf_put_var_int (ncid, nbvv_id, nbvv)
+>          CALL check_err(iret)
+>       endif
+7170c6677
+< !      WRITE(6,*)'BEFORE global attributes from fort.15'
+---
+>       WRITE(6,*)'BEFORE global attributes from fort.15'
+7266c6773
+< !     ======================
+---
+> !     -----------------
+7268c6775
+< !     ======================
+---
+> !     -----------------
+7271,7305c6778
+< !     ======================
+< !     Store static variables
+< !     ======================
+< !     -------
+< !     Store X
+< !     -------
+<       iret = nf_put_var_double(ncid, X_id, X)
+<       CALL check_err(iret)
+< !     -------
+< !     Store Y
+< !     -------
+<       iret = nf_put_var_double(ncid, Y_id, Y)
+<       CALL check_err(iret)
+< !     --------------------
+< !     Store station name
+< !     --------------------
+< !       write(6,*)'Store station name'
+< 
+< !      do i= 1, node_len
+< !         write(6,'(A50)')STATNAME(i,SNAMLEN)
+< !      end do
+<  
+<       do i=1,node_len
+<          start(1)=1
+<          start(2)=i
+<          count(1)= LEN(TRIM(STATNAME(i,SNAMLEN)))
+<          count(2)=1
+<          iret = nf_put_vara_text(ncid,station_id,start,count,
+<      &   STATNAME(i,SNAMLEN) )
+<          CALL check_err(iret)
+< !          write(6,*)' finish', SNAMLEN,node_len
+<       end do
+<       
+<       
+< !     =====================
+---
+> !     ---------------------
+7307c6780
+< !     =====================
+---
+> !     ---------------------
+7309c6782
+< !          WRITE (6,*)'****FIRST61 = 0 ****',FIRST61, FILENAME
+---
+>           WRITE (6,*)'****FIRST61 = 0 ****',FIRST61, FILENAME
+7397a6871,6899
+> !     -------
+> !     Store Y
+> !     -------
+>       iret = nf_put_var_double(ncid, Y_id, Y)
+>       CALL check_err(iret)
+> !     -------
+> !     Store X
+> !     -------
+>       iret = nf_put_var_double(ncid, X_id, X)
+>       CALL check_err(iret)
+> !     --------------------
+> !     Store station name
+> !     --------------------
+>        write(6,*)'Store station name'
+> 
+>       do i= 1, node_len
+>          write(6,'(A50)')STATNAME(i,SNAMLEN)
+>       end do
+>  
+>       do i=1,node_len
+>          start(1)=1
+>          start(2)=i
+>          count(1)= LEN(TRIM(STATNAME(i,SNAMLEN)))
+>          count(2)=1
+>          iret = nf_put_vara_text(ncid,station_id,start,count,
+>      &   STATNAME(i,SNAMLEN) )
+>          CALL check_err(iret)
+>           write(6,*)' finish', SNAMLEN,node_len
+>       end do
+7678c7180
+<       REAL(sz)  timenc(timenc_len)
+---
+>       REAL(8)   timenc(timenc_len)
+7713c7215
+< !      REAL*8 nele
+---
+>       REAL*8 nele
+7771c7273
+< !       WRITE (6,*)' AGRID ************* 62 ***', AGRID
+---
+>        WRITE (6,*)' AGRID ************* 62 ***', AGRID
+7785c7287
+< !         WRITE (6,*)'****FIRST62 = 1 ****',FIRST62
+---
+>          WRITE (6,*)'****FIRST62 = 1 ****',FIRST62
+8757c8259
+< !     ======================
+---
+> !     -----------------
+8759c8261
+< !     ======================
+---
+> !     -----------------
+8763,8787d8264
+< !     ======================
+< !     Store static variables
+< !     ======================
+< !     -------
+< !     Store X
+< !     -------
+<       iret = nf_put_var_double(ncid, X_id, X)
+<       CALL check_err(iret)
+< !     -------
+< !     Store Y
+< !     -------
+<       iret = nf_put_var_double(ncid, Y_id, Y)
+<       CALL check_err(iret)
+< !     --------------------
+< !     Store station name
+< !     --------------------
+<       do i=1,node_len
+<          start(1)=1
+<          start(2)=i
+<          count(1)= LEN(TRIM(STATNAMEV(i,SNAMLEN)))
+<          count(2)=1
+<          iret = nf_put_vara_text(ncid,station_id,start,count,
+<      &   STATNAMEV(i,SNAMLEN) )
+<          CALL check_err(iret)
+<       end do
+8789c8266
+< !     =====================
+---
+> !     ---------------------
+8791c8268
+< !     =====================
+---
+> !     ---------------------
+8793c8270
+< !          WRITE (6,*)'****FIRST62 = 0 ****',FIRST62
+---
+>           WRITE (6,*)'****FIRST62 = 0 ****',FIRST62
+8797a8275,8276
+> 
+> 
+8804a8284
+>       
+8946a8427,8449
+> !     -------
+> !     Store Y
+> !     -------
+>       iret = nf_put_var_double(ncid, Y_id, Y)
+>       CALL check_err(iret)
+> !     -------
+> !     Store X
+> !     -------
+>       iret = nf_put_var_double(ncid, X_id, X)
+>       CALL check_err(iret)
+> !     --------------------
+> !     Store station name
+> !     --------------------
+> 
+>       do i=1,node_len
+>          start(1)=1
+>          start(2)=i
+>          count(1)= LEN(TRIM(STATNAMEV(i,SNAMLEN)))
+>          count(2)=1
+>          iret = nf_put_vara_text(ncid,station_id,start,count,
+>      &   STATNAMEV(i,SNAMLEN) )
+>          CALL check_err(iret)
+>       end do
+9175c8678
+<       REAL(sz)   timenc(timenc_len)
+---
+>       REAL(8)   timenc(timenc_len)
+9193c8696
+< !      REAL*8    nele
+---
+>       REAL*8    nele
+9790c9293
+< !     ======================
+---
+> !     -----------------
+9792c9295
+< !     ======================
+---
+> !     -----------------
+9795,9812d9297
+< !     ======================
+< !     Store static variables
+< !     ======================
+< !     -------
+< !     Store Y
+< !     -------
+<       iret = nf_put_var_double(ncid, Y_id, Y)
+<       CALL check_err(iret)
+< !     -------
+< !     Store X
+< !     -------
+<       iret = nf_put_var_double(ncid, X_id, X)
+<       CALL check_err(iret)
+< 
+< !     --------------------
+< !     Store station name
+< !     --------------------
+< !      write(6,*)'nf put var'
+9814,9828c9299
+< !      do i= 1, node_len
+< !         write(6,'(A50)')STATNAMEM(i,SNAMLEN)
+< !      end do
+<  
+<       do i=1,node_len
+<          start(1)=1
+<          start(2)=i
+<          count(1)= LEN(TRIM(STATNAMEM(i,SNAMLEN)))
+<          count(2)=1
+<          iret = nf_put_vara_text(ncid,station_id,start,count,
+<      &   STATNAMEM(i,SNAMLEN) )
+<          CALL check_err(iret)
+< !          write(6,*)' end nf put var ', STATNAMEM(i,SNAMLEN),node_len
+<       end do
+< !     =====================
+---
+> !     ---------------------
+9830c9301
+< !     =====================
+---
+> !     ---------------------
+9832c9303
+< !          WRITE (6,*)'****FIRST71 = 0 ****',FIRST71, FILENAME
+---
+>           WRITE (6,*)'****FIRST71 = 0 ****',FIRST71, FILENAME
+9930a9402,9416
+> !     -------
+> !     Store Y
+> !     -------
+>       iret = nf_put_var_double(ncid, Y_id, Y)
+>       CALL check_err(iret)
+> !     -------
+> !     Store X
+> !     -------
+>       iret = nf_put_var_double(ncid, X_id, X)
+>       CALL check_err(iret)
+> 
+> !     --------------------
+> !     Store station name
+> !     --------------------
+> !      write(6,*)'nf put var'
+9931a9418,9431
+>       do i= 1, node_len
+>          write(6,'(A50)')STATNAMEM(i,SNAMLEN)
+>       end do
+>  
+>       do i=1,node_len
+>          start(1)=1
+>          start(2)=i
+>          count(1)= LEN(TRIM(STATNAMEM(i,SNAMLEN)))
+>          count(2)=1
+>          iret = nf_put_vara_text(ncid,station_id,start,count,
+>      &   STATNAMEM(i,SNAMLEN) )
+>          CALL check_err(iret)
+> !          write(6,*)' end nf put var ', STATNAMEM(i,SNAMLEN),node_len
+>       end do
+9935c9435
+< !      WRITE(6,*)"NREC = ", NREC," NDATA = ",NDATA
+---
+>       WRITE(6,*)"NREC = ", NREC," NDATA = ",NDATA
+10200c9700
+<       REAL(sz)  timenc(timenc_len)
+---
+>       REAL(8)   timenc(timenc_len)
+10235c9735
+< !      REAL*8 nele
+---
+>       REAL*8 nele
+10284c9784
+< !       write(6,*) "*****************Time inside subroutine ", timenc(1)
+---
+>        write(6,*) "*****************Time inside subroutine ", timenc(1)
+10286,10289c9786,9789
+< !       WRITE (6,*)'========= FILEUNIT =======', FILEUNIT
+< !       WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
+< !       WRITE (6,*)'========= time_len, node_len =======',
+< !     &  timenc_len, node_len
+---
+>        WRITE (6,*)'========= FILEUNIT =======', FILEUNIT
+>        WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
+>        WRITE (6,*)'========= time_len, node_len =======',
+>      &  timenc_len, node_len
+10305c9805
+< !         WRITE (6,*)'****FIRST72 = 1 ****',FIRST72
+---
+>          WRITE (6,*)'****FIRST72 = 1 ****',FIRST72
+11453c10953
+< !     ======================
+---
+> !     -----------------
+11455c10955
+< !     ======================
+---
+> !     -----------------
+11458,11488c10958
+< !     ======================
+< !     Store static variables
+< !     ======================
+< !     -------
+< !     Store X
+< !     -------
+<       iret = nf_put_var_double(ncid, X_id, X)
+<       CALL check_err(iret)
+< !     -------
+< !     Store Y
+< !     -------
+<       iret = nf_put_var_double(ncid, Y_id, Y)
+<       CALL check_err(iret)
+< !     --------------------
+< !     Store station name
+< !     --------------------
+<       do i=1,node_len
+<          start(1)=1
+<          start(2)=i
+<          count(1)= LEN(TRIM(STATNAMEM(i,SNAMLEN)))
+<          count(2)=1
+<          iret = nf_put_vara_text(ncid,station_id,start,count,
+<      &   STATNAMEM(i,SNAMLEN) )
+<          CALL check_err(iret)
+<       end do
+< !      do i= 1, node_len
+< !      write(6,*)STATNAMEM(i,SNAMLEN), LEN(TRIM(STATNAMEM(i,SNAMLEN)))
+< !     &, TRIM(STATNAMEM(i,SNAMLEN))
+< !      end do
+< 
+< !     =====================
+---
+> !     ---------------------
+11490c10960
+< !     =====================
+---
+> !     ---------------------
+11492c10962
+< !          WRITE (6,*)'****FIRST72 = 0 ****',FIRST72
+---
+>           WRITE (6,*)'****FIRST72 = 0 ****',FIRST72
+11645a11116,11148
+> !     -------
+> !     Store Y
+> !     -------
+>       iret = nf_put_var_double(ncid, Y_id, Y)
+>       CALL check_err(iret)
+> !     -------
+> !     Store X
+> !     -------
+>       iret = nf_put_var_double(ncid, X_id, X)
+>       CALL check_err(iret)
+>       
+> !     --------------------
+> !     Store station name
+> !     --------------------
+> 
+> !      do i= 1, node_len
+> !         write(6,'(A50)')STATNAMEM(i,SNAMLEN)
+> !      end do
+>  
+>       do i=1,node_len
+>          start(1)=1
+>          start(2)=i
+>          count(1)= LEN(TRIM(STATNAMEM(i,SNAMLEN)))
+>          count(2)=1
+>          iret = nf_put_vara_text(ncid,station_id,start,count,
+>      &   STATNAMEM(i,SNAMLEN) )
+>          CALL check_err(iret)
+> !          write(6,*)' end nf put var ', STATNAMEM(i,SNAMLEN),node_len
+>       end do
+>       do i= 1, node_len
+>       write(6,*)STATNAMEM(i,SNAMLEN), LEN(TRIM(STATNAMEM(i,SNAMLEN)))
+>      &, TRIM(STATNAMEM(i,SNAMLEN))
+>       end do

@@ -1,0 +1,1402 @@
+C******************************************************************************
+C PADCIRC VERSION 45.12 03/17/2006                                            *
+C  last changes in this file VERSION 45.12                                    *
+C                                                                             *
+C                                                                             *
+C This module handles the model initialization for a cold start.  The primary *
+C 2D coldstart initialization is handled in SUBROUTINE COLDSTART.  The primary*
+C 3D initialization is handled in SUBROUTINE COLDSTART_3D.                    *
+C                                                                             *
+C******************************************************************************
+
+C
+      SUBROUTINE COLDSTART()
+C
+      USE GLOBAL
+      USE SIZES
+      USE HARM
+      USE WIND
+      USE GLOBAL_IO
+      USE OWIWIND,ONLY : NWS12INIT,NWS12GET    ! sb added 09/xx/2006
+      USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
+      USE NodalAttributes, ONLY : 
+     &         STARTDRY, GeoidOffset, LoadGeoidOffset,
+     &         OutputTau0 !jgf47.06
+
+      IMPLICIT NONE
+
+      INTEGER I, J 
+      INTEGER NM1, NM2, NM3
+      INTEGER NC1, NC2, NC3, NCELE
+
+      REAL(SZ) HTOT    
+      REAL(SZ) HollandTime, AsymmetricTime
+
+C
+C...  SET AT REST INITIAL CONDITION OVER WHOLE DOMAIN
+C...  IF BOTTOM IS ABOVE THE GEIOD -> DRY NODE
+C...  IF BOTTOM IS INITIALLY BELOW THE GEOID AND STARTDRY=1 -> DRY NODE
+C...
+      DO I=1,NP
+         UU1(I) =0.D0
+         VV1(I) =0.D0
+         UU2(I) =0.D0
+         VV2(I) =0.D0
+         QX1(I) =0.D0
+         QY1(I) =0.D0
+         QX2(I) =0.D0
+         QY2(I) =0.D0
+C     jgf46.01 Added the ability to include steric effects.
+         IF (LoadGeoidOffset) THEN
+            ETA2(I)=GeoidOffset(I)
+         ELSE
+            ETA2(I)=0.D0
+         ENDIF
+         NNODECODE(I)=1
+         IF(NOLIFA.EQ.2) THEN
+            HTOT=DP(I)+ETA2(I)
+            IF(HTOT.LE.H0) THEN
+               NNODECODE(I)=0
+               ETA2(I)=H0-DP(I)
+            ELSE
+               IF(STARTDRY(I).EQ.1) THEN
+                  NNODECODE(I)=0
+                  ETA2(I)=H0-DP(I) 
+               ENDIF
+            ENDIF
+         ENDIF
+         ETA1(I)=ETA2(I)
+         ETAS(I)=0.D0
+         CH1(I)=0.d0
+      END DO
+C...  
+C...  INITIALIZE DRY ELEMENT CODE                                  
+C...  
+      DO I=1,NE
+         NOFF(I)=1          
+      END DO
+C...  
+C...  INITIALIZE THE ELEVATION SPECIFIED BOUNDARY CONDITION IF IT
+C...  REQUIRES THE USE OF THE UNIT 19 FILE.
+C...  
+
+      IF((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
+         WRITE(16,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1977)
+         WRITE(16,1977)
+ 1977    FORMAT(/,1X,'ELEVATION SPECIFIED INFORMATION READ FROM UNIT ',
+     &        '19',/)
+         OPEN(19,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
+         READ(19,*) ETIMINC
+         DO J=1,NETA
+            READ(19,*) ESBIN1(J)
+         END DO
+         DO J=1,NETA
+            READ(19,*) ESBIN2(J)
+         END DO
+         ETIME1 = STATIM*86400.D0
+         ETIME2 = ETIME1 + ETIMINC
+      ENDIF
+C
+C....INITIALIZE THE NORMAL FLOW BOUNDARY CONDITION
+C
+      DO I=1,NVEL
+         QN2(I)=0.D0
+         QN1(I)=0.D0
+         QN0(I)=0.D0
+      END DO
+
+      IF((NFLUXF.EQ.1).AND.(NFFR.EQ.0)) THEN
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
+         WRITE(16,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1979)
+         WRITE(16,1979)
+ 1979    FORMAT(/,1X,'NORMAL FLOW INFORMATION READ FROM UNIT 20',/)
+         OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
+         READ(20,*) FTIMINC
+         DO J=1,NVEL
+            QNIN1(J)=0.D0
+            IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
+     &           .OR.(LBCODEI(J).EQ.22))
+     &           READ(20,*) QNIN1(J)
+         END DO
+         DO J=1,NVEL
+            QNIN2(J)=0.D0
+            IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
+     &           .OR.(LBCODEI(J).EQ.22))
+     &           READ(20,*) QNIN2(J)
+         END DO
+         QTIME1 = STATIM*86400.D0
+         QTIME2 = QTIME1 + FTIMINC
+      ENDIF
+
+C...INPUT METEOROLOGICAL INFORMATION FROM UNIT 22 OR UNIT 200 SERIES
+C....IF FLEET NUMERIC WIND DATA IS USED, FIND BEGINNING TIME IN FILE,
+C....NOTE: CAN'T DEAL WITH WIND THAT STARTS AFTER WREFTIM!!!!!!!!!!!!
+C....READ IN AND INTERPOLATE IN SPACE ONTO THE ADCIRC GRID THE
+C....TIME LEVEL 1 AND LEVEL 2 WIND FIELDS
+
+      DO I=1,NP 
+         WSX1(I)=0.D0
+         WSY1(I)=0.D0
+         PR1(I) =0.D0
+         WSX2(I)=0.D0
+         WSY2(I)=0.D0
+         PR2(I) =0.D0
+      ENDDO
+
+      IF(NWS.NE.0) THEN
+
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
+         WRITE(16,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1980)
+         WRITE(16,1980)
+ 1980    FORMAT(/,1X,'WIND (AND PRESSURE) INFORMATION READ.',/)
+      ENDIF
+
+      IF(NWS.EQ.1) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+      ENDIF
+
+      IF(ABS(NWS).EQ.2) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+      ENDIF
+
+      IF(NWS.EQ.3) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+ 2222    CALL NWS3GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,IWTIME,IWYR,WTIMED,NP,
+     &        NWLON,NWLAT,WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,
+     &        NScreen, ScreenUnit)
+         IF(IWYR.NE.IREFYR) THEN
+            IWTIMEP=IWTIME
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+            END DO
+            GOTO 2222
+         ENDIF
+         IF(WTIMED.LE.WREFTIM) THEN
+            IWTIMEP=IWTIME
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+            END DO
+            GOTO 2222
+         ENDIF
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
+     &        WRITE(ScreenUnit,*)'FOUND WIND DATA AT TIME= ',IWTIMEP
+         WRITE(16,*) 'FOUND WIND DATA AT TIME= ',IWTIMEP
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
+     &        WRITE(ScreenUnit,*)'FOUND WIND DATA AT TIME= ',IWTIME
+         WRITE(16,*) 'FOUND WIND DATA AT TIME= ',IWTIME
+         WTIME2=WTIMED-WREFTIM  !CAST INTO MODEL TIME REFERENCE
+         WTIME1=WTIME2-WTIMINC
+      ENDIF
+
+      IF(ABS(NWS).EQ.4) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         WTIME1 = STATIM*86400.D0
+         WTIME2=WTIME1+WTIMINC
+         CALL NWS4GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+         CALL NWS4GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+      ENDIF
+
+      IF(ABS(NWS).EQ.5) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+      ENDIF
+
+      IF(NWS.EQ.6) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         CALL NWS6GET(X,Y,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,NWLON,NWLAT,
+     &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
+         CALL NWS6GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
+     &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+      ENDIF
+
+C     jgf46.00 Added option to directly apply surface stress without any
+C     other correction factors.
+      IF(ABS(NWS).EQ.7) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+         READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+      ENDIF
+
+C     jgf46.02 New option to read in hurricane locations and generate 
+C     generate hurricane winds from the Holland Wind Model.
+      IF(ABS(NWS).EQ.8) THEN
+         HollandTime = STATIM*86400.D0
+         CALL HollandGet(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,
+     &     ICS,RHOWAT0,G,HollandTime,NSCREEN,ScreenUnit)
+      ENDIF       
+
+C     jgf46.16 Merged:
+!     cf & cm added nws = 9: asymmetric hurricane winds
+      IF(NWS.EQ.9) THEN
+        AsymmetricTime = STATIM*86400.D0
+        OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+       CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
+      ENDIF
+
+      IF(NWS.EQ.10) THEN
+         WTIME1=STATIM*86400.D0
+         WTIME2=WTIME1+WTIMINC
+         NWSGGWI=-1
+         CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,RHOWAT0,G,
+     &        NWLON,NWLAT,WTIMINC) !JUST COMPUTE INTERPOLATING FACTORS
+         NWSGGWI=1
+         CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,RHOWAT0,G,
+     &        NWLON,NWLAT,WTIMINC) !NOW INTERPOLATE 1st WIND FIELD
+      ENDIF
+
+      IF(NWS.EQ.11) THEN
+         WTIME1=STATIM*86400.D0
+         WTIME2=WTIME1+WTIMINC
+         NWSEGWI=0
+         IDSETFLG=0
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1197)
+         WRITE(16,1197)
+ 1197    FORMAT(/,1X,'THE E29 MET GRID INTERPOLATING FACTORS ARE ',
+     &        'BEING COMPUTED ')
+         CALL NWS11GET(NWSEGWI,IDSETFLG,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,
+     &        RHOWAT0,G)        !JUST COMPUTE INTERPOLATING FACTORS
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1198)
+         WRITE(16,1198)
+ 1198    FORMAT(1X,'FINISHED COMPUTING E29 INTERPOLATING FACTORS',/)
+         NWSEGWI=1
+         IDSETFLG=1
+         CALL NWS11GET(NWSEGWI,IDSETFLG,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,
+     &        RHOWAT0,G)        !NOW INTERPOLATE 1st WIND FIELD
+      ENDIF
+
+C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/2006
+      IF(ABS(NWS).EQ.12) THEN
+        CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+        CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+        CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+        WTIME1 = STATIM*86400.D0
+        WTIME2 = WTIME1 + WTIMINC
+      ENDIF
+
+C...INPUT RADIATION STRESS INFORMATION FROM UNIT 23
+C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
+
+      ! NRS=2 was added. 09/xx/2006 sb
+      IF(NRS.GE.1) THEN ! sb46.28sb03
+         IF(NWS.EQ.0) THEN
+            DO I=1,NP
+               WSX1(I)=0.D0
+               WSY1(I)=0.D0
+               WSX2(I)=0.D0
+               WSY2(I)=0.D0
+               PRN1(I)=0.D0     !need to be initialized
+               PRN2(I)=0.D0     !even if not used
+            ENDDO
+         ENDIF
+         RSTIME1 = STATIM*86400.D0
+         RSTIME2 = RSTIME1+RSTIMINC
+         IF(NRS.EQ.1) THEN
+           OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
+           CALL RSGET(RSNX1,RSNY1,NP)
+           CALL RSGET(RSNX2,RSNY2,NP)
+         ENDIF
+         IF(NRS.EQ.2) THEN
+           CALL RS2INIT(RSNX1,RSNY1,NP)
+           CALL RS2GET(RSNX1,RSNY1,NP)
+           CALL RS2GET(RSNX2,RSNY2,NP)
+         ENDIF
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
+         WRITE(16,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1981)
+         WRITE(16,1981)
+ 1981    FORMAT(/,1X,'RADIATION STRESS INFORMATION READ.',/)
+      ENDIF
+C...
+C...LINES TO USE TIDAL POTENTIAL FORCING
+C...
+      if (CTIP) then
+         DO I=1,NP
+            TIP2(I)=0.0
+         END DO
+      endif
+CWET...
+CWET...THE FOLLOWING LINES ARE FOR WETTING AND DRYING
+CWET...Dry any landlocked nodes by checking that they are connected to at
+CWET...least 1 functioning element.
+CWET...
+      IF(NOLIFA.EQ.2) THEN
+         DO I=1,NP
+            MJU(I)=0
+         ENDDO
+         DO I=1,NE
+            NM1=NM(I,1)
+            NM2=NM(I,2)
+            NM3=NM(I,3)
+            NC1=NNODECODE(NM1)
+            NC2=NNODECODE(NM2)
+            NC3=NNODECODE(NM3)
+            NCELE=NC1*NC2*NC3*NOFF(I)     
+            MJU(NM1)=MJU(NM1)+NCELE
+            MJU(NM2)=MJU(NM2)+NCELE
+            MJU(NM3)=MJU(NM3)+NCELE
+         ENDDO
+         DO I=1,NP
+            IF((NNODECODE(I).EQ.1).AND.(MJU(I).EQ.0)) THEN
+               NNODECODE(I)=0
+               IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9883) I
+               WRITE(16,9883) I
+            ENDIF
+         ENDDO
+      ENDIF
+
+C....INITIALIZE ELEVATION STATION SPOOL COUNTER
+C....OPEN ELEVATION STATION OUTPUT FILE
+C....WRITE OUT HEADER INFORMATION INCLUDING NTRSPE (NO. OF DATA PTS. AT EACH
+C....ELEVATION STATION), NSTAE, DT*NSPOOLE, NSPOOLE, IRTYPE
+C...
+      NSCOUE=0
+      IESTP=0
+
+ 3220 FORMAT(1X,A32,2X,A24,2X,A24)
+ 3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
+
+      IF(ABS(NOUTE).EQ.1) THEN
+         CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
+     &    NSTAE_G, NSTAE, HEADER61) 
+         IESTP=2
+      ENDIF
+      
+      IF(ABS(NOUTE).EQ.2) THEN
+         OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
+     &           ACCESS='DIRECT',RECL=NBYTE)
+         IF(NBYTE.EQ.4) THEN
+            DO I=1,8
+               WRITE(61,REC=IESTP+I) RDES4(I)
+            ENDDO
+            IESTP=IESTP+8
+            DO I=1,6
+               WRITE(61,REC=IESTP+I) RID4(I)
+            ENDDO
+            IESTP=IESTP+6
+            DO I=1,6
+               WRITE(61,REC=IESTP+I) AID4(I)
+            ENDDO
+            IESTP=IESTP+6
+            ENDIF
+         IF(NBYTE.EQ.8) THEN
+            DO I=1,4
+               WRITE(61,REC=IESTP+I) RDES8(I)
+            ENDDO
+            IESTP=IESTP+4
+            DO I=1,3
+               WRITE(61,REC=IESTP+I) RID8(I)
+            ENDDO
+            IESTP=IESTP+3
+            DO I=1,3
+               WRITE(61,REC=IESTP+I) AID8(I)
+            ENDDO
+            IESTP=IESTP+3
+            ENDIF
+         WRITE(61,REC=IESTP+1) NTRSPE
+         WRITE(61,REC=IESTP+2) NSTAE
+         WRITE(61,REC=IESTP+3) DT*NSPOOLE
+         WRITE(61,REC=IESTP+4) NSPOOLE
+         WRITE(61,REC=IESTP+5) 1
+         IESTP=IESTP+5
+         CLOSE(61)                                                      
+         ENDIF
+
+C...
+C....INITIALIZE VELOCITY STATION SPOOL COUNTER
+C....OPEN VELOCITY STATION OUTPUT FILE
+C....WRITE OUT HEADER INFORMATION INCLUDING NTRSPV (NO. OF DATA PTS. AT EACH
+C....VELOCITY STATION), NSTAV, DT*NSPOOLV, NSPOOLV, IRTYPE
+C...
+      NSCOUV=0
+      IVSTP=0
+
+      IF(ABS(NOUTV).EQ.1) THEN
+         CALL OPEN_GBL_FILE(62, TRIM(GLOBALDIR)//'/'//'fort.62',
+     $    NSTAV_G, NSTAV, HEADER62)
+         IVSTP=2
+      ENDIF
+
+      IF(ABS(NOUTV).EQ.2) THEN
+         OPEN(62,FILE=TRIM(LOCALDIR)//'/'//'fort.62',
+     &           ACCESS='DIRECT',RECL=NBYTE)
+         IF(NBYTE.EQ.4) THEN
+            DO I=1,8
+               WRITE(62,REC=IVSTP+I) RDES4(I)
+            ENDDO
+            IVSTP=IVSTP+8
+            DO I=1,6
+               WRITE(62,REC=IVSTP+I) RID4(I)
+            ENDDO
+            IVSTP=IVSTP+6
+            DO I=1,6
+               WRITE(62,REC=IVSTP+I) AID4(I)
+            ENDDO
+            IVSTP=IVSTP+6
+            ENDIF
+         IF(NBYTE.EQ.8) THEN
+            DO I=1,4
+               WRITE(62,REC=IVSTP+I) RDES8(I)
+            ENDDO
+            IVSTP=IVSTP+4
+            DO I=1,3
+               WRITE(62,REC=IVSTP+I) RID8(I)
+            ENDDO
+            IVSTP=IVSTP+3
+            DO I=1,3
+               WRITE(62,REC=IVSTP+I) AID8(I)
+            ENDDO
+            IVSTP=IVSTP+3
+            ENDIF
+         WRITE(62,REC=IVSTP+1) NTRSPV
+         WRITE(62,REC=IVSTP+2) NSTAV
+         WRITE(62,REC=IVSTP+3) DT*NSPOOLV
+         WRITE(62,REC=IVSTP+4) NSPOOLV
+         WRITE(62,REC=IVSTP+5) 2
+         IVSTP=IVSTP+5
+         CLOSE(62)      
+         ENDIF
+
+C...
+C....INITIALIZE CONCENTRATION STATION SPOOL COUNTER
+C....OPEN ELEVATION STATION OUTPUT FILE
+C....WRITE OUT HEADER INFORMATION INCLUDING NTRSPC (NO. OF DATA PTS. AT EACH
+C....CONCENTRATION STATION), NSTAC, DT*NSPOOLC, NSPOOLC, IRTYPE
+C...
+      NSCOUC=0
+      ICSTP=0
+
+      IF(ABS(NOUTC).EQ.1) THEN
+         CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81',
+     $    NSTAC_G, NSTAC, HEADER81)
+         ICSTP=2
+      ENDIF
+
+      IF(ABS(NOUTC).EQ.2) THEN
+         OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81',
+     &           ACCESS='DIRECT',RECL=NBYTE)
+         IF(NBYTE.EQ.4) THEN
+            DO I=1,8
+               WRITE(81,REC=ICSTP+I) RDES4(I)
+            ENDDO
+            ICSTP=ICSTP+8
+            DO I=1,6
+               WRITE(81,REC=ICSTP+I) RID4(I)
+            ENDDO
+            ICSTP=ICSTP+6
+            DO I=1,6
+               WRITE(81,REC=ICSTP+I) AID4(I)
+            ENDDO
+            ICSTP=ICSTP+6
+            ENDIF
+         IF(NBYTE.EQ.8) THEN
+            DO I=1,4
+               WRITE(81,REC=ICSTP+I) RDES8(I)
+            ENDDO
+            ICSTP=ICSTP+4
+            DO I=1,3
+               WRITE(81,REC=ICSTP+I) RID8(I)
+            ENDDO
+            ICSTP=ICSTP+3
+            DO I=1,3
+               WRITE(81,REC=ICSTP+I) AID8(I)
+            ENDDO
+            ICSTP=ICSTP+3
+            ENDIF
+         WRITE(81,REC=ICSTP+1) NTRSPC
+         WRITE(81,REC=ICSTP+2) NSTAC
+         WRITE(81,REC=ICSTP+3) DT*NSPOOLC
+         WRITE(81,REC=ICSTP+4) NSPOOLC
+         WRITE(81,REC=ICSTP+5) 1
+         ICSTP=ICSTP+5
+         CLOSE(81)
+         ENDIF
+
+C...
+C....INITIALIZE METEOROLOGICAL STATION SPOOL COUNTERS
+C....OPEN METEOROLOGICAL STATION OUTPUT FILES
+C....WRITE OUT HEADER INFORMATION INCLUDING NTRSPM (NO. OF DATA PTS. AT EACH
+C....METEOROLOGICAL STATION), NSTAM, DT*NSPOOLM, NSPOOLM, IRTYPE
+C...
+      NSCOUM=0
+      IPSTP=0
+      IWSTP=0
+
+      IF(ABS(NOUTM).EQ.1) THEN
+         CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71',
+     $    NSTAM_G, NSTAM, HEADER71)
+         IPSTP=2
+         CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72',
+     $     NSTAM_G, NSTAM, HEADER72)
+         IWSTP=2
+      ENDIF
+
+      IF(ABS(NOUTM).EQ.2) THEN
+         OPEN(71,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
+     &           ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(72,FILE=TRIM(LOCALDIR)//'/'//'fort.72',
+     &           ACCESS='DIRECT',RECL=NBYTE)
+         IF(NBYTE.EQ.4) THEN
+            DO I=1,8
+               WRITE(71,REC=IPSTP+I) RDES4(I)
+               WRITE(72,REC=IWSTP+I) RDES4(I)
+               ENDDO
+            IPSTP=IPSTP+8
+            IWSTP=IWSTP+8
+            DO I=1,6
+               WRITE(71,REC=IPSTP+I) RID4(I)
+               WRITE(72,REC=IWSTP+I) RID4(I)
+               ENDDO
+            IPSTP=IPSTP+6
+            IWSTP=IWSTP+6
+            DO I=1,6
+               WRITE(71,REC=IPSTP+I) AID4(I)
+               WRITE(72,REC=IWSTP+I) AID4(I)
+               ENDDO
+            IPSTP=IPSTP+6
+            IWSTP=IWSTP+6
+            ENDIF
+         IF(NBYTE.EQ.8) THEN
+            DO I=1,4
+               WRITE(71,REC=IPSTP+I) RDES8(I)
+               WRITE(72,REC=IWSTP+I) RDES8(I)
+               ENDDO
+            IPSTP=IPSTP+4
+            IWSTP=IWSTP+4
+            DO I=1,3
+               WRITE(71,REC=IPSTP+I) RID8(I)
+               WRITE(72,REC=IWSTP+I) RID8(I)
+               ENDDO
+            IPSTP=IPSTP+3
+            IWSTP=IWSTP+3
+            DO I=1,3
+               WRITE(71,REC=IPSTP+I) AID8(I)
+               WRITE(72,REC=IWSTP+I) AID8(I)
+               ENDDO
+            IPSTP=IPSTP+3
+            IWSTP=IWSTP+3
+            ENDIF
+         WRITE(71,REC=IPSTP+1) NTRSPM
+         WRITE(71,REC=IPSTP+2) NSTAM
+         WRITE(71,REC=IPSTP+3) DT*NSPOOLM
+         WRITE(71,REC=IPSTP+4) NSPOOLM
+         WRITE(71,REC=IPSTP+5) 1
+         WRITE(72,REC=IWSTP+1) NTRSPM
+         WRITE(72,REC=IWSTP+2) NSTAM
+         WRITE(72,REC=IWSTP+3) DT*NSPOOLM
+         WRITE(72,REC=IWSTP+4) NSPOOLM
+         WRITE(72,REC=IWSTP+5) 2
+         IPSTP=IPSTP+5
+         IWSTP=IWSTP+5
+         CLOSE(71)
+         CLOSE(72)
+         ENDIF
+C...
+C....INITIALIZE GLOBAL ELEVATION SPOOL COUNTER
+C....OPEN GLOBAL ELEVATION OUTPUT FILE
+C....WRITE OUT HEADER INFORMATION INCLUDING NDSETSE
+C....(NO. OF GLOBAL ELEVATION DATA SETS TO BE SPOOLED),
+C....NP, DT*NSPOOLGE, NSPOOLGE, IRTYPE
+C...
+      NSCOUGE=0
+      IGEP=0
+
+      IF((ABS(NOUTGE).EQ.1).OR.ABS(NOUTGE).EQ.4) THEN
+         CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
+     $    NP_G, NP, HEADER63)
+C
+C        jgf47.06 Tau0 output is produced on the same schedule as
+C        global elevation
+         IF (OutputTau0) THEN
+            CALL writeDomainHeader(10, 
+     &           TRIM(GLOBALDIR)//'/'//'fort.tau0',
+     $           NP_G, NP, 'Tau0      ')
+         ENDIF
+         IGEP=2
+      ENDIF
+
+      IF(ABS(NOUTGE).EQ.2) THEN
+         OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
+     &           ACCESS='DIRECT',RECL=NBYTE)
+         IF(NBYTE.EQ.4) THEN
+            DO I=1,8
+               WRITE(63,REC=IGEP+I) RDES4(I)
+               ENDDO
+            IGEP=IGEP+8
+            DO I=1,6
+               WRITE(63,REC=IGEP+I) RID4(I)
+               ENDDO
+            IGEP=IGEP+6
+            DO I=1,6
+               WRITE(63,REC=IGEP+I) AID4(I)
+               ENDDO
+            IGEP=IGEP+6
+            ENDIF
+         IF(NBYTE.EQ.8) THEN
+            DO I=1,4
+               WRITE(63,REC=IGEP+I) RDES8(I)
+               ENDDO
+            IGEP=IGEP+4
+            DO I=1,3
+               WRITE(63,REC=IGEP+I) RID8(I)
+               ENDDO
+            IGEP=IGEP+3
+            DO I=1,3
+               WRITE(63,REC=IGEP+I) AID8(I)
+               ENDDO
+            IGEP=IGEP+3
+            ENDIF
+         WRITE(63,REC=IGEP+1) NDSETSE
+         WRITE(63,REC=IGEP+2) NP
+         WRITE(63,REC=IGEP+3) DT*NSPOOLGE
+         WRITE(63,REC=IGEP+4) NSPOOLGE
+         WRITE(63,REC=IGEP+5) 1
+         IGEP=IGEP+5
+         CLOSE(63)
+         ENDIF
+C...
+C....INITIALIZE GLOBAL VELOCITY SPOOL COUNTER
+C....OPEN GLOBAL VELOCITY OUTPUT FILE
+C....WRITE OUT HEADER INFORMATION INCLUDING NDSETSV
+C....(NO. OF GLOBAL VELOCITY DATA SETS TO BE SPOOLED),
+C....NP, DT*NSPOOLGV, NSPOOLGV, IRTYPE
+C...
+      NSCOUGV=0
+      IGVP=0
+
+      IF((ABS(NOUTGV).EQ.1).OR.(ABS(NOUTGV).EQ.3)) THEN
+         CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
+     $    NP_G, NP, HEADER64)
+         IGVP=2
+         ENDIF
+
+      IF(ABS(NOUTGV).EQ.2) THEN
+         OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
+     &        ACCESS='DIRECT',RECL=NBYTE)
+         IF(NBYTE.EQ.4) THEN
+            DO I=1,8
+               WRITE(64,REC=IGVP+I) RDES4(I)
+               ENDDO
+            IGVP=IGVP+8
+            DO I=1,6
+               WRITE(64,REC=IGVP+I) RID4(I)
+               ENDDO
+            IGVP=IGVP+6
+            DO I=1,6
+               WRITE(64,REC=IGVP+I) AID4(I)
+               ENDDO
+            IGVP=IGVP+6
+            ENDIF
+         IF(NBYTE.EQ.8) THEN
+            DO I=1,4
+               WRITE(64,REC=IGVP+I) RDES8(I)
+               ENDDO
+            IGVP=IGVP+4
+            DO I=1,3
+               WRITE(64,REC=IGVP+I) RID8(I)
+               ENDDO
+            IGVP=IGVP+3
+            DO I=1,3
+               WRITE(64,REC=IGVP+I) AID8(I)
+               ENDDO
+            IGVP=IGVP+3
+            ENDIF
+         WRITE(64,REC=IGVP+1) NDSETSV
+         WRITE(64,REC=IGVP+2) NP
+         WRITE(64,REC=IGVP+3) DT*NSPOOLGV
+         WRITE(64,REC=IGVP+4) NSPOOLGV
+         WRITE(64,REC=IGVP+5) 2
+         IGVP=IGVP+5
+         CLOSE(64) 
+         ENDIF
+C...
+C....INITIALIZE GLOBAL WIND and pressure SPOOL COUNTER
+C....OPEN GLOBAL WIND and pressure OUTPUT FILEs
+C....WRITE OUT HEADER INFORMATION INCLUDING NDSETSW
+C....(NO. OF GLOBAL WIND DATA SETS TO BE SPOOLED),
+C....NP, DT*NSPOOLGW, NSPOOLGW, IRTYPE
+C...
+      NSCOUGW=0
+      IGWP=0
+      IGPP=0
+
+      IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.3)) THEN
+         CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
+     $    NP_G, NP, HEADER73)
+         IGPP=2
+         CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
+     $     NP_G, NP, HEADER74)
+         IGWP=2
+      ENDIF
+
+      IF(ABS(NOUTGW).EQ.2) THEN
+         OPEN(73,file=trim(LOCALDIR)//'/'//'fort.73',
+     &           ACCESS='DIRECT',RECL=NByte)
+         OPEN(74,FILE=TRIM(LOCALDIR)//'/'//'fort.74',
+     &           ACCESS='DIRECT',RECL=NByte)
+         IF(NBYTE.EQ.4) THEN
+            DO I=1,8
+               write(73,rec=igpp+i) rdes4(i)
+               WRITE(74,REC=IGWP+I) RDES4(I)
+               ENDDO
+            igpp=igpp+8
+            IGWP=IGWP+8
+            DO I=1,6
+               write(73,rec=igpp+i) rid4(i)
+               WRITE(74,REC=IGWP+I) RID4(I)
+               ENDDO
+            igpp=igpp+6
+            IGWP=IGWP+6
+            DO I=1,6
+               write(73,rec=igpp+i) aid4(i)
+               WRITE(74,REC=IGWP+I) AID4(I)
+               ENDDO
+            igpp=igpp+6
+            IGWP=IGWP+6
+            ENDIF
+         IF(NBYTE.EQ.8) THEN
+            DO I=1,4
+               write(73,rec=igpp+i) rdes8(i)
+               WRITE(74,REC=IGWP+I) RDES8(I)
+               ENDDO
+            igpp=igpp+4
+            IGWP=IGWP+4
+            DO I=1,3
+               write(73,rec=igpp+i) rid8(i)
+               WRITE(74,REC=IGWP+I) RID8(I)
+               ENDDO
+            igpp=igpp+3
+            IGWP=IGWP+3
+            DO I=1,3
+               write(73,rec=igpp+i) aid8(i)
+               WRITE(74,REC=IGWP+I) AID8(I)
+               ENDDO
+            igpp=igpp+3
+            IGWP=IGWP+3
+            ENDIF
+         write(73,rec=igpp+1) ndsetsw
+         write(73,rec=igpp+2) np
+         write(73,rec=igpp+3) dt*nspoolgw
+         write(73,rec=igpp+4) nspoolgw
+         write(73,rec=igpp+5) 2
+         igpp=igpp+5
+         close(73)              
+         WRITE(74,REC=IGWP+1) NDSETSW
+         WRITE(74,REC=IGWP+2) NP
+         WRITE(74,REC=IGWP+3) DT*NSPOOLGW
+         WRITE(74,REC=IGWP+4) NSPOOLGW
+         WRITE(74,REC=IGWP+5) 2
+         IGWP=IGWP+5
+         CLOSE(74)
+         ENDIF
+C...
+C....INITIALIZE GLOBAL CONCENTRATION SPOOL COUNTER
+C....OPEN GLOBAL CONCENTRATION OUTPUT FILE
+C....WRITE OUT HEADER INFORMATION INCLUDING NDSETSC
+C....(NO. OF GLOBAL CONCENTRATION DATA SETS TO BE SPOOLED),
+C....NP, DT*NSPOOLGC, NSPOOLGC, IRTYPE
+C...
+      NSCOUGC=0
+      IGCP=0
+
+      IF(ABS(NOUTGC).EQ.1) THEN
+         OPEN(83,FILE=TRIM(INPUTDIR)//'/'//'fort.83')
+         WRITE(83,3220) RUNDES,RUNID,AGRID
+         WRITE(83,3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
+         CLOSE(83)
+         IGCP=2
+         ENDIF
+
+      IF(ABS(NOUTGC).EQ.2) THEN
+         OPEN(83,FILE=TRIM(INPUTDIR)//'/'//'fort.83',
+     &           ACCESS='DIRECT',RECL=NBYTE)
+         IF(NBYTE.EQ.4) THEN
+            DO I=1,8
+               WRITE(83,REC=IGCP+I) RDES4(I)
+               ENDDO
+            IGCP=IGCP+8
+            DO I=1,6
+               WRITE(83,REC=IGCP+I) RID4(I)
+               ENDDO
+            IGCP=IGCP+6
+            DO I=1,6
+               WRITE(83,REC=IGCP+I) AID4(I)
+               ENDDO
+            IGCP=IGCP+6
+            ENDIF
+         IF(NBYTE.EQ.8) THEN
+            DO I=1,4
+               WRITE(83,REC=IGCP+I) RDES8(I)
+               ENDDO
+            IGCP=IGCP+4
+            DO I=1,3
+               WRITE(83,REC=IGCP+I) RID8(I)
+               ENDDO
+            IGCP=IGCP+3
+            DO I=1,3
+               WRITE(83,REC=IGCP+I) AID8(I)
+               ENDDO
+            IGCP=IGCP+3
+            ENDIF
+         WRITE(83,REC=IGCP+1) NDSETSC
+         WRITE(83,REC=IGCP+2) NP
+         WRITE(83,REC=IGCP+3) DT*NSPOOLGC
+         WRITE(83,REC=IGCP+4) NSPOOLGC
+         WRITE(83,REC=IGCP+5) 1
+         IGCP=IGCP+5
+         CLOSE(83)
+         ENDIF
+C...
+C....INITIALIZE HARMONIC ANALYSIS MATRICES, MEAN AND SQUARE VECTORS
+C...
+      IF (IHARIND.EQ.1) THEN
+         ICHA=0
+         CALL HACOLDS(HAFREQ)
+         IF(NHASE.EQ.1) CALL HACOLDSES(NSTAE)
+         IF(NHASV.EQ.1) CALL HACOLDSVS(NSTAV)
+         IF(NHAGE.EQ.1) CALL HACOLDSEG(NP)
+         IF(NHAGV.EQ.1) CALL HACOLDSVG(NP)
+         IF ( CHARMV) THEN
+            DO I=1,NP
+               ELAV(I)=0.D0
+               XVELAV(I)=0.D0
+               YVELAV(I)=0.D0
+               ELVA(I)=0.D0
+               XVELVA(I)=0.D0
+               YVELVA(I)=0.D0
+            ENDDO
+         ENDIF                  !  charmv
+      ENDIF
+C
+ 1112 FORMAT(/,1X,79('_'))
+ 9883 FORMAT(' !!! NODE ',I6,' DRIED (LANDLOCKING)')
+
+C...  
+C......INITIALIZE 3D SOLUTION
+C...  
+      
+C...  LINES TO RUN THE CODE IN 3D VS MODE.
+      
+      if (C3D) then
+         CALL COLDSTART_3D()
+      endif
+      
+C...LINES TO RUN THE CODE IN 3D DSS MODE
+
+c     if (C3DDSS) then
+c       CALL DSSSTUP(DT,NT)
+c     endif
+C...
+
+      RETURN
+      END
+
+
+C******************************************************************************
+C   Subroutine to initialize the 3D routines for a cold start including       *
+C   reading in an initial density field.                                      *
+C                                                                             *
+C                                                                             *
+c******************************************************************************
+
+      SUBROUTINE COLDSTART_3D()
+
+      USE GLOBAL_3DVS
+
+      IMPLICIT NONE
+
+      INTEGER :: IRType
+      INTEGER :: N                       !loop counter
+      INTEGER :: NH, IHN, IVN            !horizontal & vertical loop counters
+      INTEGER :: NHNN, NVNN              !horizontal and vertical node numbers
+      INTEGER :: NVN
+      INTEGER NVP                        ! number of horizontal nodes
+C...
+C...  Define format statements used to initialize 3D output files
+C...
+ 499  FORMAT(1X,A32,2X,A24,2X,A24)
+ 498  FORMAT(1X,I10,1X,I10,1X,E15.7,I10,1X,I10,1X,I3/)
+ 497  FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE ASCII')
+ 496  FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE BINARY')
+
+
+C...  IF A BAROCLINIC RUN, READ IN INITIAL DENSITY FIELD
+
+      IF(CBaroclinic.and.(.not.C3DVS)) THEN
+         IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
+            WRITE(16,*) "CBaroclinic is ",CBaroclinic
+            WRITE(16,*) "CB3DVS is ",C3DVS
+            WRITE(16,*)
+     &           "ERROR: 2DDI baroclinic runs not currently supported."
+         ENDIF
+         STOP
+      ENDIF
+C
+
+      IF(CBaroclinic .and. C3DVS) THEN
+         WRITE(16,424)
+ 424     FORMAT(/,5X,'INITIAL DENSITY FIELD READ IN FROM UNIT 11',/)
+         OPEN(11,FILE=TRIM(INPUTDIR)//'/'//'fort.11')
+         READ(11,*)             !skip over header line
+         READ(11,*)             !skip over header line
+         READ(11,*) NVN, NVP
+         IF(NVN.NE.NFEN) THEN
+            IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
+               WRITE(ScreenUnit,351) NVN,NFEN
+            ENDIF
+            WRITE(16,351) NVN,NFEN
+ 351        FORMAT(/,2X,'***** INVALID INPUT IN THE DENSITY INITIAL ',
+     &           'CONDITION FILE (UNIT 11) *****',
+     &           /,2X,'***** NVN = ',I4,' MUST MATCH NFEN = ',I4,
+     &           ' *****',
+     &           /,10X,'****** RUN TERMINATED ******')
+            STOP
+         ENDIF
+         DO IHN=1,NP
+            DO IVN=1,NFEN
+               IF(ABS(IDen).EQ.1) 
+     &              READ(11,*) NHNN,NVNN,SigT(NHNN,NVNN)
+               IF(ABS(IDen).EQ.2) 
+     &              READ(11,*) NHNN,NVNN,Sal(NHNN,NVNN)
+               IF(ABS(IDen).EQ.3)
+     &              READ(11,*) NHNN,NVNN,Temp(NHNN,NVNN)
+               IF(ABS(IDen).EQ.4)
+     &              READ(11,*) NHNN,NVNN,Temp(NHNN,NVNN),Sal(NHNN,NVNN)
+            ENDDO
+         ENDDO
+         CLOSE(11)
+      ENDIF
+      
+      IF (CBaroclinic) THEN 
+!     Kendra45.12: Read in the temperature boundary condition for the
+!     temperature field. Note, we will add the salinity condition
+!     later. Currently, we are adopting the sign convention that the
+!     flux into the domain is consider positive and the flux out of the
+!     domain is negative. However, remember the constitutive law changes
+!     the direction of the flux.
+         IF ((IDEN.EQ.3).OR.(IDEN.EQ.-3)) THEN
+            IF (NTF.EQ.0) THEN
+               DO IHN=1,NP
+                  qsurfkp1(IHN)=0.d0
+                  qsurf(IHN)=0.d0
+               END DO
+            ELSE IF (NTF.EQ.1) THEN
+               OPEN(111,FILE=TRIM(INPUTDIR)//'/'//'fort.111')
+               DO IHN=1,NP
+                  READ(111,*) NHNN,qsurfkp1(IHN),qsurf(IHN)
+               END DO
+               CLOSE(111)
+            END IF
+         END IF
+      END IF 
+      
+C...  ZERO OUT STUFF PASSED FROM 3D SOLUTION TO EXTERNAL MODE
+
+      DO NH=1,NP
+        DUU(NH)=0.d0
+        DUV(NH)=0.d0
+        DVV(NH)=0.d0
+        UU(NH)=0.d0
+        VV(NH)=0.d0
+        DAFluxX(NH)=0.d0
+        DAFluxY(NH)=0.d0
+        BSX(NH)=0.d0
+        BSY(NH)=0.d0
+      ENDDO
+
+C...  INITIALIZE 3D VELOCITY AND TURBULENCE SOLUTION
+!     kmd45.12 Need to initialize the new qkp1 and wzkp1 arrays 
+         
+      DO NH=1,NP
+        DO N=1,NFEN
+          Q(NH,N)=(0.d0,0.d0)
+          Qkp1(NH,N)=(0.d0,0.d0)
+          q20(NH,N)=0.d0
+          l(NH,N)=0.d0
+          wz(NH,N)=0.d0
+          wzkp1(NH,N)=0.d0
+        ENDDO
+      ENDDO
+
+C...  INITIALIZE 3D OUTPUT FILES
+
+C.... Initialize the 3D density station output file (Unit 41)
+
+      IF(IDen.EQ.1) IRType=1
+      IF((IDen.EQ.2).OR.(IDen.EQ.3)) IRType=2
+      IF(IDen.EQ.4) IRType=3
+
+      IF(ABS(I3DSD).EQ.1) THEN             !start a new ASCII file
+        WRITE(16,497) 41
+        OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41')
+        WRITE(41,499) RUNDes,RunID,AGrid
+        WRITE(41,498) NDSet3DSD,NSta3DD,DTDP*NSpo3DSD,NSpo3DSD,NFEN,
+     &                                                            IRType
+        CLOSE(41)
+        I3DSDRec=2
+      ENDIF
+
+      IF(ABS(I3DSD).EQ.2) THEN             !start a new BINARY file
+        WRITE(16,496) 41
+        OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41',ACCESS='DIRECT',
+     &       RECL=NByte)
+        I3DSDRec=0
+        IF(NByte.EQ.4) THEN
+          DO N=1,8
+            I3DSDRec=I3DSDRec+1
+            WRITE(41,REC=I3DSDRec) RDES4(N)
+          ENDDO
+          DO N=1,6
+            I3DSDREC=I3DSDREC+1
+            WRITE(41,REC=I3DSDRec) RID4(N)
+          ENDDO
+          DO N=1,6
+            I3DSDRec=I3DSDRec+1
+            WRITE(41,REC=I3DSDRec) AID4(N)
+          ENDDO
+        ENDIF
+        IF(NByte.EQ.8) THEN
+          DO N=1,4
+            I3DSDRec=I3DSDRec+1
+            WRITE(41,REC=I3DSDRec) RDES8(N)
+          ENDDO
+          DO N=1,3
+            I3DSDRec=I3DSDRec+1
+            WRITE(41,REC=I3DSDRec) RID8(N)
+          ENDDO
+          DO N=1,3
+            I3DSDRec=I3DSDRec+1
+            WRITE(41,REC=I3DSDRec) AID8(N)
+          ENDDO
+        ENDIF
+        WRITE(41,REC=I3DSDRec+1) NDSet3DSD
+        WRITE(41,REC=I3DSDRec+2) NSta3DD
+        WRITE(41,REC=I3DSDRec+3) DelT*NSpo3DSD
+        WRITE(41,REC=I3DSDRec+4) NSpo3DSD
+        WRITE(41,REC=I3DSDRec+5) NFEN   
+        WRITE(41,REC=I3DSDRec+6) IRType
+        I3DSDRec=I3DSDRec+6
+        CLOSE(41)
+      ENDIF
+
+C.... Initialize the 3D velocity station output file (Unit 42)
+
+      IRType=3
+
+      IF(ABS(I3DSV).EQ.1) THEN
+        WRITE(16,497) 42
+        OPEN(42,FILE=TRIM(LOCALDIR)//'/'//'fort.42')
+        WRITE(42,499) RUNDES,RUNID,AGRID
+        WRITE(42,498) NDSet3DSV,NSta3DV,DTDP*NSpo3DSV,NSpo3DSV,NFEN,
+     &                                                            IRType
+        CLOSE(42)
+        I3DSVRec=2
+      ENDIF
+
+      IF(ABS(I3DSV).EQ.2) THEN
+        WRITE(16,496) 42
+        OPEN(42,FILE=TRIM(LOCALDIR)//'/'//'fort.42',ACCESS='DIRECT',
+     &       RECL=NBYTE)
+        I3DSVRec=0
+        IF(NByte.EQ.4) THEN
+          DO N=1,8
+            I3DSVRec=I3DSVRec+1
+            WRITE(42,REC=I3DSVRec) RDES4(N)
+          ENDDO
+          DO N=1,6
+            I3DSVRec=I3DSVRec+1
+            WRITE(42,REC=I3DSVRec) RID4(N)
+          ENDDO
+          DO N=1,6
+            I3DSVRec=I3DSVRec+1
+            WRITE(42,REC=I3DSVRec) AID4(N)
+          ENDDO
+        ENDIF
+        IF(NByte.EQ.8) THEN
+          DO N=1,4
+            I3DSVRec=I3DSVRec+1
+            WRITE(42,REC=I3DSVRec) RDES8(N)
+          ENDDO
+          DO N=1,3
+            I3DSVRec=I3DSVRec+1
+            WRITE(42,REC=I3DSVRec) RID8(N)
+          ENDDO
+          DO N=1,3
+            I3DSVRec=I3DSVRec+1
+            WRITE(42,REC=I3DSVRec) AID8(N)
+          ENDDO
+        ENDIF
+        WRITE(42,REC=I3DSVRec+1) NDSet3DSV
+        WRITE(42,REC=I3DSVRec+2) NSta3DV
+        WRITE(42,REC=I3DSVRec+3) DTDP*NSpo3DSV
+        WRITE(42,REC=I3DSVRec+4) NSpo3DSV
+        WRITE(42,REC=I3DSVRec+5) NFEN
+        WRITE(42,REC=I3DSVRec+6) IRType
+        I3DSVRec=I3DSVRec+6
+        CLOSE(42)
+      ENDIF
+
+C.... Initialize the 3D turbulence station output file (Unit 43)
+
+      IRType=3
+
+      IF(ABS(I3DST).EQ.1) THEN
+        WRITE(16,497) 43
+        OPEN(43,FILE=TRIM(LOCALDIR)//'/'//'fort.43')
+        WRITE(43,499) RUNDES,RUNID,AGRID
+        WRITE(43,498) NDSet3DST,NSta3DT,DTDP*NSpo3DST,NSpo3DST,NFEN,
+     &                                                            IRType
+        CLOSE(43)
+        I3DSTRec=2
+      ENDIF
+
+      IF(ABS(I3DST).EQ.2) THEN
+        WRITE(16,496) 43
+        OPEN(43,FILE=TRIM(LOCALDIR)//'/'//'fort.43',ACCESS='DIRECT',
+     &       RECL=NByte)
+        I3DSTRec=0
+        IF(NByte.EQ.4) THEN
+          DO N=1,8
+            I3DSTRec=I3DSTRec+1
+            WRITE(43,REC=I3DSTRec) RDES4(N)
+          ENDDO
+          DO N=1,6
+            I3DSTRec=I3DSTRec+1
+            WRITE(43,REC=I3DSTRec) RID4(N)
+          ENDDO
+          DO N=1,6
+            I3DSTRec=I3DSTRec+1
+            WRITE(43,REC=I3DSTRec) AID4(N)
+          ENDDO
+        ENDIF
+        IF(NByte.EQ.8) THEN
+          DO N=1,4
+            I3DSTRec=I3DSTRec+1
+            WRITE(43,REC=I3DSTRec) RDES8(N)
+          ENDDO
+          DO N=1,3
+            I3DSTRec=I3DSTRec+1
+            WRITE(43,REC=I3DSTRec) RID8(N)
+          ENDDO
+          DO N=1,3
+            I3DSTRec=I3DSTRec+1
+            WRITE(43,REC=I3DSTRec) AID8(N)
+          ENDDO
+        ENDIF
+        WRITE(43,REC=I3DSTRec+1) NDSet3DST
+        WRITE(43,REC=I3DSTRec+2) NSta3DT
+        WRITE(43,REC=I3DSTRec+3) DTDP*NSpo3DST
+        WRITE(43,REC=I3DSTRec+4) NSpo3DST
+        WRITE(43,REC=I3DSTRec+5) NFEN
+        WRITE(43,REC=I3DSTRec+6) IRType
+        I3DSTRec=I3DSTRec+6
+        CLOSE(43)
+      ENDIF
+
+C.... Initialize the global 3D density output file (Unit 44)
+
+      IF(IDen.EQ.1) IRType=1
+      IF((IDen.EQ.2).OR.(IDen.EQ.3)) IRType=2
+      IF(IDen.EQ.4) IRType=3
+C     jgf46.27 Replaced IRType with IDen in header.
+      IF(ABS(I3DGD).EQ.1) THEN
+        WRITE(16,497) 44
+        OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44')
+        WRITE(44,499) RUNDES,RUNID,AGRID
+        WRITE(44,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,NFEN,IDen 
+        CLOSE(44)
+        I3DGDRec=2
+      ENDIF
+
+      IF(ABS(I3DGD).EQ.2) THEN
+        WRITE(16,496) 44
+        OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44',ACCESS='DIRECT',
+     &       RECL=NByte)
+        I3DGDRec=0
+        IF(NByte.EQ.4) THEN
+          DO N=1,8
+            I3DGDRec=I3DGDRec+1
+            WRITE(44,REC=I3DGDRec) RDES4(N)
+          ENDDO
+          DO N=1,6
+            I3DGDRec=I3DGDRec+1
+            WRITE(44,REC=I3DGDRec) RID4(N)
+          ENDDO
+          DO N=1,6
+            I3DGDRec=I3DGDRec+1
+            WRITE(44,REC=I3DGDRec) AID4(N)
+          ENDDO
+        ENDIF
+        IF(NByte.EQ.8) THEN
+          DO N=1,4
+            I3DGDRec=I3DGDRec+1
+            WRITE(44,REC=I3DGDRec) RDES8(N)
+          ENDDO
+          DO N=1,3
+            I3DGDRec=I3DGDRec+1
+            WRITE(44,REC=I3DGDRec) RID8(N)
+          ENDDO
+          DO N=1,3
+            I3DGDRec=I3DGDRec+1
+            WRITE(44,REC=I3DGDRec) AID8(N)
+          ENDDO
+        ENDIF
+        WRITE(44,REC=I3DGDRec+1) NDSet3DGD
+        WRITE(44,REC=I3DGDRec+2) NP
+        WRITE(44,REC=I3DGDRec+3) DTDP*NSpo3DGD
+        WRITE(44,REC=I3DGDRec+4) NSpo3DGD
+        WRITE(44,REC=I3DGDRec+5) NFEN
+        WRITE(44,REC=I3DGDRec+6) IDEN
+        I3DGDRec=I3DGDRec+6
+        CLOSE(44)
+      ENDIF
+      
+c.... Initialize the global 3D velocity output file (Unit 45)
+
+      IF(ABS(I3DGV).EQ.1) THEN
+        WRITE(16,497) 45
+        OPEN(45,FILE=TRIM(LOCALDIR)//'/'//'fort.45')
+        WRITE(45,499) RUNDES,RUNID,AGRID
+        WRITE(45,498) NDSet3DGV,NP,DTDP*NSpo3DGV,NSpo3DGV,NFEN,IRType
+        CLOSE(45)
+        I3DGVRec=2
+      ENDIF
+
+      IF(ABS(I3DGV).EQ.2) THEN
+        WRITE(16,496) 45
+        OPEN(45,FILE=TRIM(LOCALDIR)//'/'//'fort.45',ACCESS='DIRECT',
+     &       RECL=NBYTE)
+        I3DGVRec=0
+        IF(NByte.EQ.4) THEN
+          DO N=1,8
+            I3DGVRec=I3DGVRec+1
+            WRITE(45,REC=I3DGVRec) RDES4(N)
+          ENDDO
+          DO N=1,6
+            I3DGVRec=I3DGVRec+1
+            WRITE(45,REC=I3DGVRec) RID4(N)
+          ENDDO
+          DO N=1,6
+            I3DGVRec=I3DGVRec+1
+            WRITE(45,REC=I3DGVRec) AID4(N)
+          ENDDO
+        ENDIF
+        IF(NByte.EQ.8) THEN
+          DO N=1,4
+            I3DGVRec=I3DGVRec+1
+            WRITE(45,REC=I3DGVRec) RDES8(N)
+          ENDDO
+          DO N=1,3
+            I3DGVRec=I3DGVRec+1
+            WRITE(45,REC=I3DGVRec) RID8(N)
+          ENDDO
+          DO N=1,3
+            I3DGVRec=I3DGVRec+1
+            WRITE(45,REC=I3DGVRec) AID8(N)
+          ENDDO
+        ENDIF
+        WRITE(45,REC=I3DGVRec+1) NDSet3DGV
+        WRITE(45,REC=I3DGVRec+2) NP
+        WRITE(45,REC=I3DGVRec+3) DTDP*NSpo3DGV
+        WRITE(45,REC=I3DGVRec+4) NSpo3DGV
+        WRITE(45,REC=I3DGVRec+5) NFEN
+        WRITE(45,REC=I3DGVRec+6) IRType
+        I3DGVRec=I3DGVRec+6
+        CLOSE(45)
+      ENDIF
+
+c.... Initialize the global 3D turbulence output file (Unit 46)
+
+      IF(ABS(I3DGT).EQ.1) THEN
+        WRITE(16,497) 46
+        OPEN(46,FILE=TRIM(LOCALDIR)//'/'//'fort.46')
+        WRITE(46,499) RUNDES,RUNID,AGRID
+        WRITE(46,498) NDSet3DGT,NP,DTDP*NSpo3DGT,NSpo3DGT,NFEN,IRType
+        CLOSE(46)
+        I3DGTRec=2
+      ENDIF
+
+      IF(ABS(I3DGT).EQ.2) THEN
+        WRITE(16,496) 46
+        OPEN(46,FILE=TRIM(LOCALDIR)//'/'//'fort.46',ACCESS='DIRECT',
+     &       RECL=NByte)
+        I3DGTRec=0
+        IF(NByte.EQ.4) THEN
+          DO N=1,8
+            I3DGTRec=I3DGTRec+1
+            WRITE(46,REC=I3DGTRec) RDES4(N)
+          ENDDO
+          DO N=1,6
+            I3DGTRec=I3DGTRec+1
+            WRITE(46,REC=I3DGTRec) RID4(N)
+          ENDDO
+          DO N=1,6
+            I3DGTRec=I3DGTRec+1
+            WRITE(46,REC=I3DGTRec) AID4(N)
+          ENDDO
+        ENDIF
+        IF(NByte.EQ.8) THEN
+          DO N=1,4
+            I3DGTRec=I3DGTRec+1
+            WRITE(46,REC=I3DGTRec) RDES8(N)
+          ENDDO
+          DO N=1,3
+            I3DGTRec=I3DGTRec+1
+            WRITE(46,REC=I3DGTRec) RID8(N)
+          ENDDO
+          DO N=1,3
+            I3DGTRec=I3DGTRec+1
+            WRITE(46,REC=I3DGTRec) AID8(N)
+          ENDDO
+        ENDIF
+        WRITE(46,REC=I3DGTRec+1) NDSet3DGT
+        WRITE(46,REC=I3DGTRec+2) NP
+        WRITE(46,REC=I3DGTRec+3) DTDP*NSpo3DGT
+        WRITE(46,REC=I3DGTRec+4) NSpo3DGT
+        WRITE(46,REC=I3DGTRec+5) NFEN
+        WRITE(46,REC=I3DGTRec+6) IRType
+        I3DGTRec=I3DGTRec+6
+        CLOSE(46)
+      ENDIF
+      
+C.... Set up a few final odds and ends for a 3D run
+
+      CALL VSSTUP ()
+
+      RETURN
+	END
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
