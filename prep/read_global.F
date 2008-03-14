@@ -269,8 +269,20 @@ C
       SUBROUTINE READ15() 
       USE PRE_GLOBAL 
       USE PRESIZES, ONLY : SZ
+      USE GLOBAL, ONLY: STATNAME, STATNAMEV, STATNAMEM
       use memory_usage
       IMPLICIT NONE
+
+C    ===================================================================
+C      MCF ADDITION FOR READING AND WRITING STATION INFO IN NETCDF
+C
+      REAL, EXTERNAL              :: a2f
+      CHARACTER(132) STATLINE
+      CHARACTER(50) LVAR(3)
+C
+C    ===================================================================
+
+
 C
 C----------------------------------------------------------------------
 C     Reads the global ADCIRC Input Data File for data decomposition 
@@ -575,6 +587,8 @@ C
          SLAM(I) = X(I)
          SFEA(I) = Y(I)
       ENDDO
+      
+!      WRITE(6,*)"SLAM0,SFEA0", SLAM0,SFEA0
 C
 C--If ICS = 2 then apply CPP projection
 C
@@ -586,6 +600,8 @@ C
             SFEA(I) = R*SF1
          ENDDO
       ENDIF
+      
+
 C
       READ(15,80) TAUMSG
       IF (NOLIBF.EQ.0) THEN
@@ -743,12 +759,50 @@ C
           stop   
       ENDIF
 C
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION
+C
+!      IF(.NOT. ALLOCATED(STATNUMB))ALLOCATE(STATNUMB(NSTAE,SNUMLEN))
+      IF(.NOT. ALLOCATED(STATNAME))ALLOCATE(STATNAME(NSTAE,SNAMLEN))
+C
+C     END ADDITION BY MCF FOR NETCDF OPTION
+C     ==================================================================
+
       DO I=1,NSTAE
          READ(15,80) STAELOC(I)
          IF(ICS.EQ.1) THEN
-            READ(STAELOC(I),*) XEL(I),YEL(I)
+
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION
+C
+              IF(NOUTE.NE.3)THEN
+                 READ(STAELOC(I),*) XEL(I),YEL(I)
+              ELSE
+!               READ(15,'(A132)') STATLINE
+!               call parse(STATLINE, LVAR)
+                call parse(STAELOC(I), LVAR)
+                XEL(I)=a2f(LVAR(1))
+                YEL(I)=a2f(LVAR(2))
+                STATNAME(I,SNAMLEN)=LVAR(3)
+                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I,SNAMLEN)
+              ENDIF
+            
          ELSE
-            READ(STAELOC(I),*) SLEL(I),SFEL(I)
+              IF(NOUTE.NE.3)THEN
+
+                 READ(STAELOC(I),*) SLEL(I),SFEL(I)
+              ELSE
+!                READ(15,'(A132)') STATLINE
+!                call parse(STATLINE, LVAR)
+                 call parse(STAELOC(I), LVAR)
+                 SLEL(I)=a2f(LVAR(1))
+                 SFEL(I)=a2f(LVAR(2))
+                 STATNAME(I,SNAMLEN)=LVAR(3)
+                 WRITE(6,*)"parsed stations"
+                 WRITE(6,9911) SLEL(I),SFEL(I), STATNAME(I,SNAMLEN)
+             ENDIF
+
+            
             SL1=DEG2RAD*SLEL(I)
             SF1=DEG2RAD*SFEL(I)
 c           CALL CPP(XEL(I),YEL(I),SL1,SF1,SL0,SF0)
@@ -756,6 +810,15 @@ c           CALL CPP(XEL(I),YEL(I),SL1,SF1,SL0,SF0)
             YEL(I) = R*SF1
          ENDIF
       ENDDO
+ 9911            FORMAT(F12.3,2X,F12.3, 6X, A50)
+
+!      DO I=1,NSTAE
+!      WRITE(6,*)" XEL ===", XEL(I),YEL(I)
+!      END DO
+!      DO I=1,NSTAE
+!      WRITE(6,*)" SLEL(I),SFEL(I) ===",SLEL(I),SFEL(I)
+!      END DO
+
 C
 C--For Each Elevation Station: 
 C  Find the Global Index of the element it lies in.
@@ -779,16 +842,58 @@ C
      &             MNSTAV
         stop 
       ENDIF
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION
+C
+!      IF(.NOT. ALLOCATED(STATNUMBV))ALLOCATE(STATNUMBV(NSTAV,SNUMLEN))
+      IF(.NOT. ALLOCATED(STATNAMEV))ALLOCATE(STATNAMEV(NSTAV,SNAMLEN))
+C
+C     END ADDITION BY MCF FOR NETCDF OPTION
+C     ==================================================================
 C
       IF (ICS.EQ.1) THEN
+      
+
         DO I=1,NSTAV
            READ(15,80) STAVLOC(I)
-           READ(STAVLOC(I),*) XEV(I),YEV(I)
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION
+C
+           IF(NOUTV.NE.3) THEN
+              READ(STAVLOC(I),*) XEV(I),YEV(I)
+           ELSE
+              call parse(STAVLOC(I), LVAR)
+              XEV(I)=a2f(LVAR(1))
+              YEV(I)=a2f(LVAR(2))
+              STATNAMEV(I,SNAMLEN)=LVAR(3)
+              WRITE(6,9911) XEV(I), YEV(I), STATNAMEV(I,SNAMLEN)
+           ENDIF
+
         ENDDO
+        
       ELSE
         DO I=1,NSTAV
            READ(15,80) STAVLOC(I)
-           READ(STAVLOC(I),*) SLEV(I),SFEV(I)
+           
+           IF(NOUTV.NE.3) THEN
+           
+               READ(STAVLOC(I),*) SLEV(I),SFEV(I)
+
+           ELSE
+              call parse(STAVLOC(I), LVAR)
+              SLEV(I)=a2f(LVAR(1))
+              SFEV(I)=a2f(LVAR(2))
+              STATNAMEV(I,SNAMLEN)=LVAR(3)
+!              WRITE(6,*)"parsed stations"
+              WRITE(6,9911) SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
+              WRITE(6,*)"STATION INFO - AFTER *************",
+     &           SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
+         ENDIF
+C
+C     END ADDITION BY MCF FOR NETCDF OPTION
+C     ==================================================================
+
+           
            SL1=DEG2RAD*SLEV(I)
            SF1=DEG2RAD*SFEV(I)
 C          CALL CPP(XEV(I),YEV(I),SL1,SF1,SL0,SF0)
@@ -852,7 +957,7 @@ C
 C
          READ(15,80) STAMMSG
          READ(STAMMSG,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
-         IF (ABS(NOUTM).GT.2) THEN
+         IF (ABS(NOUTM).GT.3) THEN
             print *, "Value of NOUTM is not allowable"
             stop
          ENDIF
@@ -864,14 +969,58 @@ C
      &           MNSTAM
             stop 
          ENDIF
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION
+C
+!         IF(.NOT.ALLOCATED(STATNUMBM))ALLOCATE(STATNUMBM(NSTAM,SNUMLEN))
+         IF(.NOT.ALLOCATED(STATNAMEM))ALLOCATE(STATNAMEM(NSTAM,SNAMLEN))
+C
+C     END ADDITION BY MCF FOR NETCDF OPTION
+C     ==================================================================
 C     
          DO I=1,NSTAM
+            READ(15,80) STAMLOC(I)
+!            READ(15,'(A132)') STAMLOC(I)
+            WRITE(6,*)"STAMLOC(I) ================",I,STAMLOC(I)
             IF (ICS.EQ.1) THEN
-               READ(15,80) STAMLOC(I)
+            
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION
+C
+             IF(NOUTM.NE.3)THEN
+            
                READ(STAMLOC(I),*) XEM(I),YEM(I)
-            ELSE
-               READ(15,80) STAMLOC(I)
+             ELSE
+                call parse(STAMLOC(I), LVAR)
+                XEM(I)=a2f(LVAR(1))
+                YEM(I)=a2f(LVAR(2))
+                STATNAMEM(I,SNAMLEN)=LVAR(3)
+                WRITE(6,9911) XEM(I), YEM(I), STATNAMEM(I,SNAMLEN)
+             ENDIF
+             
+         ELSE
+
+             IF(NOUTM.NE.3)THEN
+
+!              READ(15,80) STAMLOC(I)
                READ(STAMLOC(I),*) SLEM(I),SFEM(I)
+               
+             ELSE
+             WRITE(6,*)" before parse STAMLOC(I) ================"
+
+               call parse(STAMLOC(I), LVAR)
+               SLEM(I)=a2f(LVAR(1))
+               SFEM(I)=a2f(LVAR(2))
+               STATNAMEM(I,SNAMLEN)=LVAR(3)
+               WRITE(6,9911) SLEM(I), SFEM(I), STATNAMEM(I,SNAMLEN)
+               WRITE(6,*)"STATION INFO STAMLOC",
+     &             SLEM(I),SFEM(I),STATNAMEM(I,SNAMLEN)
+!    &             SLEM(I),SFEM(I),STATNUMBM(I),STATNAMEM(I)
+             ENDIF
+C
+C     END ADDITION BY MCF FOR NETCDF OPTION
+C     ==================================================================
+
                SL1=DEG2RAD*SLEM(I)
                SF1=DEG2RAD*SFEM(I)
 c     CALL CPP(XEM(I),YEM(I),SL1,SF1,SL0,SF0)
@@ -1517,3 +1666,287 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       END SUBROUTINE CoordToEle
 C-----------------------------------------------------------------------
+
+
+
+      !=================================================================
+      !=================================================================
+      !=================================================================
+      !      =====                                            =====
+      !      =====            SUBROUTINE PARSE                =====
+      !      =====                                            =====
+      !=================================================================
+      !=================================================================
+      !=================================================================
+
+      !=================================================================
+      ! This subroutines parse station names so they can passed on to
+      ! the NetCDF I/O module of ADCIRC and be written out in the netCDF
+      ! output files.
+      !
+      ! Revision history:
+      !
+      ! Date      Programmer                       Description of change
+      ! ----      ----------                       ---------------------
+      ! 12/16/07  Cristina Forbes, PSGS @ UNC-IMS  Wrote parser
+      !                                            based on character
+      !                                            manipulation subroutines
+      !                                            developed at the
+      !                                            University of Oslo, Norway
+      !=================================================================
+      subroutine parse (line, lvar)
+      CHARACTER(*) LINE
+      CHARACTER(132) L
+      CHARACTER(50) LVAR(3)
+      INTEGER LS, L1, LEN1
+
+      LS=0
+      L=TRIM(ADJUSTL(LINE))
+      LEN1=LEN(L)
+
+!     EXTRACT STATION DATA FROM LINE
+
+      DO I=1,2
+!        DO I=1,3
+         L1=LEN(TRIM(ADJUSTL(L(1:INDEX(L," ")-1))))
+         LVAR(I)=ADJUSTL(L(LS:L1))
+         L=ADJUSTL(L(L1+1:LEN(L)))
+      END DO
+      LVAR(3)=L
+      END SUBROUTINE parse
+
+
+      FUNCTION front_trim(buf) RESULT(res)
+      IMPLICIT NONE
+      !// Arguments
+      CHARACTER(LEN=*), INTENT(IN)   :: buf
+      INTEGER                        :: res
+      !// Local variables
+      INTEGER                        :: i, lng
+      lng = LEN_TRIM(buf)
+      DO i = 1, lng
+         IF (buf(i:i) .NE. ' ') THEN
+            res = i
+            RETURN
+         END IF
+      END DO
+      END FUNCTION front_trim
+
+ 
+
+      FUNCTION a2i(buf) RESULT(res)
+      IMPLICIT NONE
+      !// Arguments
+      CHARACTER(LEN=*), INTENT(IN)   :: buf
+      INTEGER                        :: res
+      !// Local variables
+      INTEGER                        :: i, foffs, lng
+      INTEGER, EXTERNAL              :: front_trim
+      LOGICAL                        :: neg
+      neg = .FALSE.
+      lng = LEN_TRIM(buf)
+      foffs = front_trim(buf)
+      res = 0
+      DO i = foffs, lng
+         IF(buf(i:i) .EQ. '-') THEN
+            neg = .TRUE.
+           CONTINUE
+         END IF
+         IF(buf(i:i) .GE. '0' .AND. buf(i:i) .LE. '9' .AND.
+     &        buf(i:i) .NE. ' ') THEN
+            res = res * 10
+            res = res + (IACHAR(buf(i:i)) - 48)
+         END IF
+      END DO
+      IF(neg) THEN
+         res = res * -1
+      END IF
+      END FUNCTION a2i
+
+
+      FUNCTION a2f(buf) RESULT(res)
+      IMPLICIT NONE
+      !// Arguments
+      CHARACTER(LEN=*)               :: buf
+      REAL                           :: res
+      !// Local variables
+      INTEGER                        :: i,j,k,itmp, foffs, lng
+      INTEGER                        :: p, q
+      REAL                           :: rtmp
+      INTEGER, EXTERNAL              :: front_trim
+      INTEGER, EXTERNAL              :: a2i
+      LOGICAL                        :: neg
+      LOGICAL                        :: exponential
+      neg = .FALSE.
+      exponential = .FALSE.
+      lng = LEN_TRIM(buf)
+      foffs = front_trim(buf)
+      k = INDEX(buf,'.')
+      p = INDEX(buf,'e')
+      q = INDEX(buf,'E')
+      IF(p /= -1 .AND. p /= 0) THEN
+         exponential = .TRUE.
+      END IF
+      IF(q /= -1 .AND. q /= 0) THEN
+         exponential = .TRUE.
+         p = q
+      END IF
+      IF (k /= -1 .AND. k /= 0) THEN
+         !// We have a floating point number
+         itmp = 0
+         !// Get the integer part of the number
+         DO i = foffs, k - 1
+            IF(buf(i:i) .EQ. '-') THEN
+               neg = .TRUE.
+               CONTINUE
+            END IF
+            IF(buf(i:i) .GE. '0' .AND. buf(i:i) .LE. '9' .AND.
+     &           buf(i:i) .NE. ' ') THEN
+               itmp = itmp * 10
+               itmp = itmp + (IACHAR(buf(i:i)) - 48)
+            END IF
+         END DO
+         res = DBLE(itmp)
+         rtmp = 0.
+         q = 0
+         IF(.NOT. exponential) THEN
+!// We do not have an exponential number
+            DO i = LEN_TRIM(buf), k+1, -1
+               itmp = (IACHAR(buf(i:i)) - 48)
+               rtmp = rtmp + FLOAT(itmp)
+               rtmp = rtmp / 10.
+            END DO
+         ELSE
+!// We have an exponential number
+            DO i = p-1, k+1, -1
+               itmp = (IACHAR(buf(i:i)) - 48)
+               rtmp = rtmp + FLOAT(itmp)
+               rtmp = rtmp / 10.
+            END DO
+            q = a2i(buf(p+1:LEN_TRIM(buf)))
+         END IF
+         res = res + rtmp
+         IF(exponential) THEN
+            res = res * 10.**q
+         END IF
+         IF(neg) THEN
+            res = res * -1
+         END IF
+      ELSE
+         !// We have an integer
+         res = REAL(a2i(buf))
+      END IF
+      END FUNCTION a2f
+
+
+      FUNCTION a2d(buf) RESULT(res)
+      IMPLICIT NONE
+      !// Arguments
+        CHARACTER(LEN=*)               :: buf
+        DOUBLE PRECISION               :: res
+!// Local variables
+        INTEGER                        :: i,j,k,itmp, foffs, lng
+        INTEGER                        :: p, q
+        DOUBLE PRECISION               :: dtmp
+        INTEGER, EXTERNAL              :: front_trim
+        INTEGER, EXTERNAL              :: a2i
+        LOGICAL                        :: neg
+        LOGICAL                        :: exponential
+        neg = .FALSE.
+        exponential = .FALSE.
+        lng = LEN_TRIM(buf)
+        foffs = front_trim(buf)
+        k = INDEX(buf,'.')
+        p = INDEX(buf,'e')
+        q = INDEX(buf,'E')
+        IF(p /= -1 .AND. p /= 0) THEN
+        exponential = .TRUE.
+        END IF
+        IF(q /= -1 .AND. q /= 0) THEN
+        exponential = .TRUE.
+        p = q
+        END IF
+        IF (k /= -1 .AND. k /= 0) THEN
+!// We have a floating point number
+        itmp = 0
+!// Get the integer part of the number
+        DO i = foffs, k - 1
+        IF(buf(i:i) .EQ. '-') THEN
+        neg = .TRUE.
+        CONTINUE
+        END IF
+        IF(buf(i:i) .GE. '0' .AND. buf(i:i) .LE. '9' .AND.
+     &  buf(i:i) .NE. ' ') THEN
+        itmp = itmp * 10
+        itmp = itmp + (IACHAR(buf(i:i)) - 48)
+        END IF
+        END DO
+        res = DBLE(itmp)
+        dtmp = 0.
+        q = 0
+        IF(.NOT. exponential) THEN
+!// We do not have an exponential number
+        DO i = LEN_TRIM(buf), k+1, -1
+        itmp = (IACHAR(buf(i:i)) - 48)
+        dtmp = dtmp + FLOAT(itmp)
+        dtmp = dtmp / 10.
+        END DO
+        ELSE
+!// We have an exponential number
+        DO i = p-1, k+1, -1
+        itmp = (IACHAR(buf(i:i)) - 48)
+        dtmp = dtmp + FLOAT(itmp)
+        dtmp = dtmp / 10.
+        END DO
+        q = a2i(buf(p+1:LEN_TRIM(buf)))
+        END IF
+        res = res + dtmp
+        IF(exponential) THEN
+        res = res * 10.**q
+        END IF
+        IF(neg) THEN
+        res = res * -1
+        END IF
+        ELSE
+!// We have an integer
+        res = DBLE(a2i(buf))
+        END IF
+        END FUNCTION a2d
+
+        SUBROUTINE i2a(int, res)
+
+        IMPLICIT NONE
+!// Arguments
+        INTEGER, INTENT(IN)            :: int
+        CHARACTER(LEN=*), INTENT(OUT)  :: res
+!// Local variables
+        INTEGER                        :: i,j,k
+        CHARACTER(LEN=80)              :: sbuf
+        sbuf = ' '
+        res = ' '
+        i = int
+        k = 1
+        DO
+        j = MOD(i,10)
+        sbuf(k:k) = ACHAR(j+48)
+        i = i / 10
+        IF (i <= 0) THEN
+        EXIT
+        END IF
+        k = k + 1
+        END DO
+        k = LEN_TRIM(sbuf)
+        IF (k>1) THEN
+        j = k
+        i = 1
+        DO i = 1, k
+         res(i:i) = sbuf(j:j)
+         j = j - 1
+        END DO
+        ELSE
+        res(1:1) = sbuf(1:1)
+        END IF
+
+        END SUBROUTINE i2a
+
+

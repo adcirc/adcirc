@@ -1,3 +1,3 @@
       module version
-      character(80), parameter :: ADC_VERSION = "48.09"
+      character(80), parameter :: ADC_VERSION = "48.10"
       end module

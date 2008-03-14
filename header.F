@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.10     - 03/14/08 - jgf - Added cf's latest prep.F, read_global.F,
+C               global.F, and netcdfio.F to enable boundaries and station
+C               names in the metadata and to fix bugs. 
 C  v48.09     - 02/25/08 - jgf - Added cf's latest netcdfio.F and 
 C               write_output.F and synchronized arguments. Also added
 C               ibtypenc variable (and allocation). Fixed bug in makefile

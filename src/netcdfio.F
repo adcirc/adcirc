@@ -99,6 +99,7 @@ CCCCC CF
       INTEGER fileunit
       LOGICAL fileexist  
       INTEGER irtype
+      INTEGER ncmode
       
       CHARACTER*50, PARAMETER :: VAR61_LN='station sea surface elevation'
       CHARACTER*25, PARAMETER :: VAR61_ST='station_surface_elevation'
@@ -175,6 +176,7 @@ CCCCC CF
      &                      nvdllnc,
      &                      nbou_len, nvel_len, nbvv,nbounc,nvelnc_len,
      &                      nvellnc,ibtypenc,
+     &                      ncmode,
      &                      title, institution, source, history,
      &                      references, comments, host, convention,
      &                      contact,
@@ -388,6 +390,7 @@ CCCCC CF
       INTEGER, SAVE  :: FIRST = 1 
       INTEGER NDATA
       INTEGER, SAVE  :: NREC = 0
+      INTEGER ncmode
 !     -----------------
 !     Attribute vectors
 !     -----------------
@@ -411,6 +414,10 @@ CCCCC CF
       character zone*5
       integer values(8)
       real*8 xmin, xmax
+      
+!     -----------------
+!     Save variables
+!     -----------------
 
       save node_dim, elem_dim, nface_dim
       save nope_dim, neta_dim, nbou_dim, nvel_dim
@@ -429,8 +436,24 @@ CCCCC CF
 !     ---------------------------
 !     Opening fort.63 netCDF file
 !     ---------------------------
-      WRITE(6,*) "-----------------------------------------------------"
+      WRITE(6,*) "-------------------------------------------------"
       NREC = NREC + 1
+      
+      IF(FIRST.EQ.1.and.ncmode.ne.0) THEN
+         ALLOCATE ( minzetan (node_len) )
+         ALLOCATE ( maxzetan (node_len) )
+         ALLOCATE ( minztimen (node_len) )
+         ALLOCATE ( maxztimen (node_len) )
+        
+         do n=1,node_len
+            minzetan  (n) =  9999.d0
+            maxzetan  (n) = -9999.d0
+            minztimen (n) =  9999.d0
+            maxztimen (n) = -9999.d0
+         end do
+      ENDIF
+
+      IF(ncmode.eq.2) FIRST=0
 !     --------------------------------
 !     Switch order in array for NETCDF
 !     --------------------------------
@@ -439,55 +462,31 @@ CCCCC CF
             element(j,i) = nm (i,j)
          end do
       end do
-!      write (6,*)" nope_len,neta_len ================",nope_len,neta_len
-!      do i=1, nope_len
-!         do j=1, neta_len
-!           write (6,*)" nbdv ================", i,j, nbdv(i,j)
-!        end do
-!      end do
-!      write (6,*)" nbou_len,nvel_len ================",nbou_len,nvel_len
-!            write (6,*)" nvelnc ================",nvelnc
-!         do i=1, nvel_len
-!            write (6,*)" nbounc ================",i, nbounc(i)
-!         end do
-!         do i=1, nbou_len
-!            write (6,*)" nvell ===========",i, nvellnc(i),ibtypenc(i)
-!         end do
-!       FIRST=0
 !     -----------------
 !     Enter define mode
 !     -----------------
-!         WRITE (6,*)'****FIRST = 1 ****',FIRST
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
-!         WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
          WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+         
                   
        IF(FIRST.EQ.1) THEN
-        IF(nout.eq. 3) THEN
+           IF(nout.eq. 3) THEN
            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
            CALL check_err(iret)
            FIRST=0
          ENDIF
          
-         ALLOCATE ( minzetan (node_len) )
-         ALLOCATE ( maxzetan (node_len) )
-         ALLOCATE ( minztimen (node_len) )
-         ALLOCATE ( maxztimen (node_len) )
-        
-         do n=1,node_len
-            minzetan (n) = 9999.d0
-            maxzetan (n) = -9999.d0
-            minztimen (n) = -9999.d0
-            maxztimen (n) = -9999.d0
-         end do
-
 !     --------------------------------
 !     Convert to degress for NETCDF I/O
 !     --------------------------------
+               SLAM0DEG=SLAM0
+               SFEA0DEG=SFEA0
+               IF (NCMODE.EQ.1) THEN
                SLAM0DEG=SLAM0*RAD2DEG
                SFEA0DEG=SFEA0*RAD2DEG
+               ENDIF
 
 !     =================
 !     Define dimensions
@@ -554,17 +553,6 @@ CCCCC CF
 !     -----------------------------------------------------------------
 !     Define elevation specified boundary forcing segments information
 !     -----------------------------------------------------------------
-!      if(nope_len.ne.0.and.neta_len.ne.0) then
-!        nbdv_dims(2) = nope_dim
-!        nbdv_dims(1) = neta_dim      
-!        iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
-!     &                  nbdv_id)
-!         CALL check_err(iret)
-
-!      endif
-!     -----------------------------------------------------------------
-!     Define elevation specified boundary forcing segments information
-!     -----------------------------------------------------------------
       if(nope_len.ne.0.and.neta_len.ne.0) then
         nvdllnc_dims(1) = nope_dim      
         iret = nf_def_var(ncid, 'nvdll',NF_INT, nvdllnc_rank, 
@@ -577,16 +565,6 @@ CCCCC CF
         CALL check_err(iret)
 
       endif
-!     ----------------------------------------------------------
-!     Define normal flow specified boundary segments information
-!     ----------------------------------------------------------
-!      if(nbou_len.ne.0.and.nvel_len.ne.0) then
-!        nbvv_dims(2) = nbou_dim
-!        nbvv_dims(1) = nvel_dim      
-!        iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
-!     &                  nbvv_id)
-!        CALL check_err(iret)
-!      endif
 
 !     ----------------------------------------
 !     Define normal flow boundary information
@@ -639,16 +617,13 @@ CCCCC CF
      &                  ZETA_id)
       
       CALL check_err(iret)
-!       WRITE(6,*)'AFTER DEFINE ZETA'
 !     ----------------------------
 !     Define minimum zeta at times
 !     ----------------------------
-!      WRITE(6,*) ' BEFORE  Define minimum zeta'
       minzetat_dims(1) = timenc_dim
       iret = nf_def_var(ncid, 'minzetat', NF_DOUBLE, minzetat_rank, 
      &                  minzetat_dims, minzetat_id)
       CALL check_err(iret)
-!      WRITE(6,*) ' AFTER  Define minimum zeta'
 !     ----------------------------
 !     Define maximum zeta at times
 !     ----------------------------
@@ -660,7 +635,6 @@ CCCCC CF
 !     ----------------------------
 !     Define minimum zeta at nodes
 !     ----------------------------
-!      WRITE(6,*) ' BEFORE  Define minimum zeta at nodes'
       minzetan_dims(1) = node_dim
        iret = nf_def_var(ncid, 'minzetan', NF_DOUBLE, minzetan_rank, 
      &                  minzetan_dims, minzetan_id)
@@ -672,8 +646,6 @@ CCCCC CF
       iret = nf_def_var(ncid, 'maxzetan', NF_DOUBLE, maxzetan_rank, 
      &                  maxzetan_dims, maxzetan_id)
       CALL check_err(iret)
-      
-!               WRITE(6,*) "Start defining... "
 
 !     ----------------------------
 !     Define minimum zeta nodes at times
@@ -703,14 +675,10 @@ CCCCC CF
       iret = nf_def_var(ncid, 'maxztimen', NF_DOUBLE, maxztimen_rank, 
      &                  maxztimen_dims, maxztimen_id)
       CALL check_err(iret)
-
-!               WRITE(6,*) "Finish defining... "
        
 !     -----------------
 !     Assign attributes
 !     -----------------
-!      WRITE(6,*) ' BEFORE assign attributes'
-      
 !     ----------------------------
 !     Define longitude attributes
 !     ----------------------------
@@ -940,16 +908,6 @@ CCCCC CF
       iret = nf_put_att_text(ncid, maxztimen_id, 'units', 4, VAR_SECS)
       CALL check_err(iret)
       
-!      endif
-!     -----------------------------------------------------------------------
-!     Define node numbers on elevation specified boundary segments attributes
-!     -----------------------------------------------------------------------      
-!      iret = nf_put_att_text(ncid, nbdv_id, 'long_name', 53, 
-!     &       'node numbers on elevation specified boundary segments')
-!      CALL check_err(iret)
-!      iret = nf_put_att_text(ncid, nbdv_id, 'units', 14, 
-!     &                      VAR_NOND)
-!      CALL check_err(iret)
 
       iret = nf_put_att_text(ncid, nopenc_id, 'long_name', 53, 
      &       'node numbers on elevation specified boundary segments')
@@ -967,12 +925,6 @@ CCCCC CF
 !     ---------------------------------------------------------------
 !     Define node numbers on normal flow boundary segments attributes
 !     ----------------------------------------------------------------  
-!      iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
-!     &       'node numbers on normal flow boundary segments')
-!      CALL check_err(iret)
-!      iret = nf_put_att_text(ncid, nbvv_id, 'units', 14, 
-!     &                      VAR_NOND)
-!      CALL check_err(iret)
 
       iret = nf_put_att_text(ncid, nbounc_id, 'long_name', 59, 
      & 'node numbers in each normal flow specified boundary segment')
@@ -1029,11 +981,9 @@ CCCCC CF
          CALL check_err(iret)
       endif      
       
-!      doubleval(1) = -99999.
       iret = nf_put_att_DOUBLE(ncid,zeta_id,'missing_values',NF_DOUBLE,
      &1, doubleval)
       CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_DOUBLE(ncid, zeta_id, '_FillValue', NF_DOUBLE, 
      &                      1, doubleval)
       CALL check_err(iret)
@@ -1099,7 +1049,6 @@ CCCCC CF
      &       len_trim(date_string),date_string)
       CALL check_err(iret)
  
-!      WRITE(6,*)'BEFORE global attributes from fort.15'
 !     -------------------------------------------
 !     writing global attributes from fort.15 file 
 !     -------------------------------------------
@@ -1253,31 +1202,6 @@ CCCCC CF
       mindepth = minval (depth)
       iret = nf_put_var_double(ncid, mindepth_id, mindepth)
       CALL check_err(iret)
-!     ---------------------------------------
-!     Store node numbers on elevation specified boundary segment
-!     ---------------------------------------
-!      if(nope_len.ne.0.and.neta_len.ne.0) then
-!         iret = nf_put_var_int (ncid, nbdv_id, nbdv)
-!      count(1)=neta_len
-!      count(2)=nope_len
-!      start(1)=1
-!      start(2)=1
-!      iret=nf_put_vara_int(ncid,nbdv_id,start,count,nbdv)
-!         CALL check_err(iret)
-!      endif
-!     ---------------------------------------
-!     Store number of nodes of land boundary
-!     ---------------------------------------
-!      if(nbou_len.ne.0.and.nvel_len.ne.0) then
-! !        iret = nf_put_var_int (ncid, nbvv_id, nbvv)
-!      count(1)=nvel_len
-!      count(2)=nbou_len
-!      start(1)=1
-!      start(2)=1
-!      iret=nf_put_vara_int(ncid,nbvv_id,start,count,nbvv)
-!         CALL check_err(iret)
-!      endif
-
 !     =====================
 !     Open old netcdf file
 !     =====================
@@ -1288,7 +1212,19 @@ CCCCC CF
           FIRST=0
       ENDIF
 
-!      WRITE(6,*)'BEFORE store time'
+      IF(ncmode.eq.0) go to 9999
+      IF(ncmode.eq.2) THEN
+         iret=nf_inq_varid(ncid,"time"     ,timenc_id)
+         iret=nf_inq_varid(ncid,"zeta"     ,zeta_id)
+         iret=nf_inq_varid(ncid,"minzetat" ,minzetat_id)
+         iret=nf_inq_varid(ncid,"maxzetat" ,maxzetat_id)
+         iret=nf_inq_varid(ncid,"minzetan" ,minzetan_id)
+         iret=nf_inq_varid(ncid,"maxzetan" ,maxzetan_id)
+         iret=nf_inq_varid(ncid,"minznodet",minznodet_id)
+         iret=nf_inq_varid(ncid,"maxznodet",maxznodet_id)
+         iret=nf_inq_varid(ncid,"minztimen",minztimen_id)
+         iret=nf_inq_varid(ncid,"maxztimen",maxztimen_id)
+      ENDIF
 !     ----------
 !     Store time
 !     ----------
@@ -1325,7 +1261,6 @@ CCCCC CF
 !     ------------
 !     in each node
 !     ------------
-!      WRITE(6,*)'BEFORE CALCULATE ZETA MIN in each node'
   	  do n=1,node_len
  		 if(zeta (n,1).lt.minzetan(n) ) then
  		    minzetan (n) = zeta (n,1)
@@ -1397,7 +1332,7 @@ CCCCC CF
       WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       WRITE(6,*) "-----------------------------------------------------"
       
-      iret = nf_close(ncid)
+9999  iret = nf_close(ncid)
       CALL check_err(iret)
       WRITE(6,*)'end subroutine writenc63'
      
@@ -1455,6 +1390,7 @@ CCCCC CF
      &                      nvdllnc, 
      &                      nbou_len, nvel_len, nbvv,nbounc,nvelnc_len,
      &                      nvellnc,ibtypenc,
+     &                      ncmode,
      &                      title, institution, source, history,
      &                      references, comments, host, convention,
      &                      contact,
@@ -1725,6 +1661,7 @@ CCCCC CF
       INTEGER, SAVE  :: FIRSTV = 1 
       INTEGER NDATA
       INTEGER, SAVE  :: NREC = 0
+      INTEGER ncmode
 
 !     -----------------
 !     Attribute vectors
@@ -1750,6 +1687,9 @@ CCCCC CF
       character zone*5
       integer values(8)
 
+!     -------------------------
+!     Save dims, ids, variables
+!     -------------------------
       save node_dim,  elem_dim, nface_dim
       save nope_dim, neta_dim, nbou_dim, nvel_dim
       save u_id, v_id, X_id, Y_id
@@ -1775,35 +1715,8 @@ CCCCC CF
 
 !       write(6,*) "*****************Time inside subroutine ", timenc(1)
        NREC = NREC + 1
-!       WRITE (6,*)'========= FILEUNIT =======', FILEUNIT
-!       WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
-!       WRITE (6,*)'========= time_len, node_len =======',
-!     &  timenc_len, node_len     
-
-!     --------------------------------
-!     Switch order in array for NETCDF
-!     --------------------------------
-      do i=1, elem_len
-         do j=1, nface_len
-            element(j,i) = nm (i,j)
-         end do
-      end do
-      
-!     -----------------
-!     Enter define mode
-!     -----------------
-      IF(FIRSTV.EQ.1) THEN
-         WRITE (6,*)'****FIRSTV = 1 ****',FIRSTV
-         FILEFORT = 'fort.'
-         FILEEXT = '.nc'
-         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
-         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
-         
-         if(nout.eq. 3) then
-            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
-         CALL check_err(iret)
-          FIRSTV=0
-         endif
+       
+      IF(FIRSTV.EQ.1.and.ncmode.NE.0) THEN
          
          ALLOCATE ( minun (node_len) )
          ALLOCATE ( maxun (node_len) )
@@ -1820,22 +1733,48 @@ CCCCC CF
             maxun (n) = -9999.d0
             minvn (n) =  9999.d0
             maxvn (n) = -9999.d0
-            minutimen64 (n) = -9999.d0
+            minutimen64 (n) =  9999.d0
             maxutimen64 (n) = -9999.d0
-            minvtimen64 (n) = -9999.d0
+            minvtimen64 (n) =  9999.d0
             maxvtimen64 (n) = -9999.d0
          end do
+      ENDIF
+       
+      IF(ncmode.eq.2) FIRSTV=0
+
+!     --------------------------------
+!     Switch order in array for NETCDF
+!     --------------------------------
+      do i=1, elem_len
+         do j=1, nface_len
+            element(j,i) = nm (i,j)
+         end do
+      end do
+      
+!     -----------------
+!     Enter define mode
+!     -----------------
+         FILEFORT = 'fort.'
+         FILEEXT = '.nc'
+         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+         
+      IF(FIRSTV.EQ.1) THEN
+         if(nout.eq. 3) then
+            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
+            CALL check_err(iret)
+            FIRSTV=0
+         endif
+         
 !     --------------------------------
 !     Convert to degress for NETCDF I/O
 !     --------------------------------
+               SLAM0DEG=SLAM0
+               SFEA0DEG=SFEA0
+               IF (NCMODE.EQ.1) THEN
                SLAM0DEG=SLAM0*RAD2DEG
                SFEA0DEG=SFEA0*RAD2DEG
-!      IF(ICS.EQ.2) THEN
-!             DO I=1,np
-!                x(i)=slam(i)*RAD2DEG
-!                y(i)=sfea(i)*RAD2DEG
-!             END DO
-!      ENDIF
+               ENDIF
 !     -----------------
 !     Define dimensions
 !     -----------------
@@ -1845,8 +1784,6 @@ CCCCC CF
       CALL check_err(iret)
       iret = nf_def_dim(ncid, 'nface', 3, nface_dim)
       CALL check_err(iret)
-      write (6,*)'nope_len,neta_len,nbou_len,nvel_len',
-     &      nope_len,neta_len,nbou_len,nvel_len
       if(nope_len.ne.0) then
          iret = nf_def_dim(ncid, 'nope', nope_len, nope_dim)
          call check_err(iret)
@@ -1897,17 +1834,6 @@ CCCCC CF
       ELE_dims(2) = elem_dim
       iret = nf_def_var(ncid, 'element',NF_INT,ELE_rank,ELE_dims,ELE_id)
       CALL check_err(iret)
-
-!     -------------------------------------
-!     Define open boundary forcing segments
-!     -------------------------------------
-!      if(nope_len.ne.0.and.neta_len.ne.0) then
-!        nbdv_dims(2) = nope_dim
-!        nbdv_dims(1) = neta_dim      
-!        iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
-!     &                  nbdv_id)
-!         CALL check_err(iret)
-!      endif
 !     -----------------------------------------------------------------
 !     Define elevation specified boundary forcing segments information
 !     -----------------------------------------------------------------
@@ -1923,17 +1849,6 @@ CCCCC CF
         CALL check_err(iret)
 
       endif
-
-!     ----------------------------------------------------------
-!     Define normal flow specified boundary segments information
-!     ----------------------------------------------------------
-!      if(nbou_len.ne.0.and.nvel_len.ne.0) then
-!        nbvv_dims(2) = nbou_dim
-!        nbvv_dims(1) = nvel_dim      
-!        iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
-!     &                  nbvv_id)
-!        CALL check_err(iret)
-!      endif
 
 !     ----------------------------------------------------------
 !     Define normal flow specified boundary segments information
@@ -2038,7 +1953,6 @@ CCCCC CF
       iret = nf_def_var(ncid, 'minuveln', NF_DOUBLE, minun_rank, 
      &                  minun_dims, minun_id)
       CALL check_err(iret)
-!     WRITE(6,*)"Define MAX u/v at nodes"
 !     -------------------------
 !     Define maximum u at nodes
 !     -------------------------
@@ -2058,15 +1972,10 @@ CCCCC CF
 !     -------------------------
 !     Define maximum v at nodes
 !     -------------------------
-!      WRITE(6,*)"Define max v at nodes"
       maxvn_dims(1) = node_dim
       iret = nf_def_var(ncid, 'maxvveln', NF_DOUBLE, maxvn_rank, 
      &                  maxvn_dims, maxvn_id)
       CALL check_err(iret)
-!      WRITE(6,*)"FINISH Define max v at nodes"      
-
-!!!!!
-
 !     ----------------------------
 !     Define minimum u nodes at times
 !     ----------------------------
@@ -2095,7 +2004,6 @@ CCCCC CF
       iret = nf_def_var(ncid, 'maxutimen', NF_DOUBLE, maxutimen_rank, 
      &                  maxutimen_dims, maxutimen_id)
       CALL check_err(iret)
-
             
 !     ----------------------------
 !     Define minimum v nodes at times
@@ -2131,8 +2039,6 @@ CCCCC CF
 !     -----------------
 
       if(ics.eq.2) then
-      
-      WRITE(6,*)"ics.eq.2"
       iret = nf_put_att_text(ncid, X_id, 'long_name', 9, 'longitude')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, X_id, 'standard_name', 9, 
@@ -2142,11 +2048,9 @@ CCCCC CF
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
       CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE,
      &                        1, doubleval)
       CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)      
@@ -2161,11 +2065,9 @@ CCCCC CF
       iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
       CALL check_err(iret)
        
-!      doubleval(1) = -99999.
       iret = nf_put_att_double(ncid, Y_id, 'missing_values', NF_DOUBLE, 
      &       1, doubleval)
       CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &       doubleval)
       CALL check_err(iret)
@@ -2189,11 +2091,9 @@ CCCCC CF
       
       iret = nf_put_att_text(ncid, X_id, 'positive', 5,  VAR_RG)
       CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE, 
      &                       1, doubleval)
       CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -2216,11 +2116,9 @@ CCCCC CF
       endif
       iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
       CALL check_err(iret)
-!      doubleval(1) = -99999
       iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
      &       NF_DOUBLE, 1, doubleval)
       CALL check_err(iret)
-!      doubleval(1) = -99999
       iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &       doubleval)
       CALL check_err(iret)
@@ -2230,7 +2128,6 @@ CCCCC CF
 !     ------------------------------
 !     Define bathymetry attributes
 !     ------------------------------
-      WRITE(6,*)"Define bathymetry attributes"
 
       iret = nf_put_att_text(ncid, DEPTH_id,'long_name',10,'bathymetry')
       CALL check_err(iret)
@@ -2238,11 +2135,9 @@ CCCCC CF
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, DEPTH_id, 'units', 6, VAR_METS)
       CALL check_err(iret)
-!      doubleval(1) = -99999
       iret = nf_put_att_double(ncid, DEPTH_id, 'missing_values', 
      &                      NF_DOUBLE,  1, doubleval)
       CALL check_err(iret)
-!      doubleval(1) = -99999
       iret = nf_put_att_double(ncid,DEPTH_id, '_FillValue',NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -2256,7 +2151,6 @@ CCCCC CF
 !    ---------------------------
 !     minimum/maximum bathymetry
 !    ---------------------------
-!      WRITE(6,*)"Define minimum bathymetry"
 
       iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 18, 
      &                       'minimum bathymetry')
@@ -2285,10 +2179,10 @@ CCCCC CF
 !    ---------------------------------------------------
       if (ics.eq.2) then
          iret = nf_put_att_text(ncid, minut_id, 'long_name', 53, 
-     &   'minimum vertiCALLy averaged e/w velocity at each time')
+     &   'minimum vertically averaged e/w velocity at each time')
       else
           iret = nf_put_att_text(ncid, minut_id, 'long_name', 64, 
-     &'minimum vertiCALLy averaged velocity in x-direction at each time
+     &'minimum vertically averaged velocity in x-direction at each time
      &')
       endif
       CALL check_err(iret)
@@ -2311,10 +2205,11 @@ CCCCC CF
 !    ---------------------------------------------------
       if (ics.eq.2) then
           iret = nf_put_att_text(ncid, maxut_id, 'long_name', 53, 
-     &    'maximum vertical averaged e/w - velocity at each time')
+     &    'maximum vertically averaged e/w velocity at each time')
       else
-          iret = nf_put_att_text(ncid, maxut_id, 'long_name', 62, 
-     & 'maximum vertical averaged velocity in x-direction at each time')
+          iret = nf_put_att_text(ncid, maxut_id, 'long_name', 64, 
+     &     'maximum vertically averaged velocity in x-direction at each 
+     &time')
       endif
       CALL check_err(iret)
        
@@ -2336,10 +2231,10 @@ CCCCC CF
 !    ---------------------------------------------------
       if (ics.eq.2) then
           iret = nf_put_att_text(ncid, minvt_id, 'long_name', 53, 
-     &    'minimum vertiCALLy averaged n/s velocity at each time')
+     &    'minimum vertically averaged n/s velocity at each time')
       else
           iret = nf_put_att_text(ncid, minvt_id, 'long_name', 64, 
-     &'minimum vertiCALLy averaged velocity in y-direction at each time
+     &'minimum vertically averaged velocity in y-direction at each time
      &')
       endif
       CALL check_err(iret)
@@ -2361,10 +2256,10 @@ CCCCC CF
 !    ---------------------------------------------------
       if (ics.eq.2) then
           iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 53, 
-     &          'maximum vertiCALLy averaged n/s velocity at each time')
+     &          'maximum vertically averaged n/s velocity at each time')
       else
             iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 64, 
-     &'maximum vertiCALLy averaged velocity in y-direction at each time
+     &'maximum vertically averaged velocity in y-direction at each time
      &')
       endif
       CALL check_err(iret)
@@ -2390,10 +2285,10 @@ CCCCC CF
 !    ---------------------------------------------------
       if (ics.eq.2) then
          iret = nf_put_att_text(ncid, minun_id, 'long_name', 53, 
-     &    'minimum vertiCALLy averaged e/w velocity at each node')
+     &    'minimum vertically averaged e/w velocity at each node')
       else
           iret = nf_put_att_text(ncid, minun_id, 'long_name', 64, 
-     &'minimum vertiCALLy averaged velocity in x-direction at each node
+     &'minimum vertically averaged velocity in x-direction at each node
      &')
       endif
       CALL check_err(iret)      
@@ -2415,10 +2310,10 @@ CCCCC CF
 !    ---------------------------------------------------
       if (ics.eq.2) then
           iret = nf_put_att_text(ncid, maxun_id, 'long_name', 53, 
-     &    'maximum vertiCALLy averaged e/w velocity at each node')
+     &    'maximum vertically averaged e/w velocity at each node')
       else      
           iret = nf_put_att_text(ncid, maxun_id, 'long_name', 64, 
-     &'maximum vertiCALLy averaged velocity in x-direction at each node
+     &'maximum vertically averaged velocity in x-direction at each node
      &')
       endif
       CALL check_err(iret)
@@ -2441,10 +2336,10 @@ CCCCC CF
 !    ---------------------------------------------------
       if (ics.eq.2) then
           iret = nf_put_att_text(ncid, minvn_id, 'long_name', 53, 
-     &    'minimum vertiCALLy averaged n/s velocity at each node')
+     &    'minimum vertically averaged n/s velocity at each node')
       else
           iret = nf_put_att_text(ncid, minvn_id, 'long_name', 64, 
-     &'minimum vertiCALLy averaged velocity in y-direction at each node
+     &'minimum vertically averaged velocity in y-direction at each node
      &')
       endif
       CALL check_err(iret)
@@ -2466,10 +2361,10 @@ CCCCC CF
 !    ---------------------------------------------------
       if (ics.eq.2) then
           iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 53, 
-     &          'maximum vertiCALLy averaged n/s velocity at each node')
+     &          'maximum vertically averaged n/s velocity at each node')
       else      
           iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 64, 
-     &'maximum vertiCALLy averaged velocity in y-direction at each node
+     &'maximum vertically averaged velocity in y-direction at each node
      &')
       endif
       CALL check_err(iret)
@@ -2497,17 +2392,21 @@ CCCCC CF
 
       if (ics.eq.2) then
          iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 58, 
-     &   'node where minimum e/w velocity occurs at each output time ')
-      else
-          iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 59, 
-     &'node where minimum velocity in x-direction occurs at each output
-     &time')
-      endif
+     &   'node where minimum e/w velocity occurs at each output time')
       CALL check_err(iret)
-      
       iret = nf_put_att_text(ncid, minunodet_id, 'standard_name', 28,
      &                'node_of_minimum_e/w_velocity')
       CALL check_err(iret)
+      else
+          iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 69, 
+     &'node where minimum velocity in x-direction occurs at each output 
+     &time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minunodet_id, 'standard_name', 26,
+     &                'node_of_minimum_u_velocity')
+      CALL check_err(iret)
+      endif
+      
       iret = nf_put_att_text(ncid, minunodet_id,'units',14, VAR_NOND)
       CALL check_err(iret)
       
@@ -2517,16 +2416,20 @@ CCCCC CF
       if (ics.eq.2) then
          iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 58, 
      &    'node where maximum e/w velocity occurs at each output time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name', 28,
+     &                'node_of_maximum_e/w_velocity')
+      CALL check_err(iret)
       else
          iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 69, 
      &'node where maximum velocity in x-direction occurs at each output 
      &time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name', 26,
+     &                'node_of_maximum_u_velocity')
+      CALL check_err(iret)
       endif
-      CALL check_err(iret)
        
-      iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name', 28,
-     &                'node_of_maximum_e/w_velocity')
-      CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxunodet_id,'units',14,  VAR_NOND)
       CALL check_err(iret)
       
@@ -2536,15 +2439,19 @@ CCCCC CF
       if (ics.eq.2) then
          iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 58, 
      &   'node where minimum n/s velocity occurs at each output time')
-      else
-          iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 69, 
-     &'node where minimum velocity in y-direction occurs at each output 
-     &time')
-      endif
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name', 28,
      &                'node_of_minimum_n/s_velocity')
       CALL check_err(iret)
+      else
+          iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 69, 
+     &'node where minimum velocity in y-direction occurs at each output 
+     &time')
+       CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name', 26,
+     &                'node_of_minimum_v_velocity')
+      CALL check_err(iret)
+      endif
       iret = nf_put_att_text(ncid, minvnodet_id,'units',14,  VAR_NOND)
       CALL check_err(iret)
 !    --------------------------------------------------
@@ -2553,16 +2460,21 @@ CCCCC CF
       if (ics.eq.2) then
          iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 58, 
      &    'node where maximum n/s velocity occurs at each output time')
-      else
-         iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 69, 
-     &'node where maximum velocity in y-direction occurs at each output 
-     &time')
-      endif
       CALL check_err(iret)
 
       iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name', 28,
      &                'node_of_maximum_n/s_velocity')
       CALL check_err(iret)
+      else
+         iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 69, 
+     &'node where maximum velocity in y-direction occurs at each output 
+     &time')
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name', 26,
+     &                'node_of_maximum_v_velocity')
+      CALL check_err(iret)
+      endif
       iret = nf_put_att_text(ncid, maxvnodet_id,'units',14, VAR_NOND)
       CALL check_err(iret)
 !    ----------------------------------------------------
@@ -2574,6 +2486,12 @@ CCCCC CF
       if (ics.eq.2) then
          iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 50, 
      &   'time when minimum e/w velocity occurs at each node')
+      CALL check_err(iret)
+
+      
+      iret = nf_put_att_text(ncid, minutimen_id, 'standard_name', 28,
+     &                'time_of_minimum_e/w_velocity')
+      CALL check_err(iret)
       else
 
          iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 61, 
@@ -2582,8 +2500,8 @@ CCCCC CF
       CALL check_err(iret)
 
       
-      iret = nf_put_att_text(ncid, minutimen_id, 'standard_name', 28,
-     &                'time_of_minimum_e/w_velocity')
+      iret = nf_put_att_text(ncid, minutimen_id, 'standard_name', 26,
+     &                'time_of_minimum_u_velocity')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, minutimen_id,'units',4, VAR_SECS)
       CALL check_err(iret)
@@ -2594,16 +2512,21 @@ CCCCC CF
       if (ics.eq.2) then
           iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 50, 
      &    'time when maximum e/w velocity occurs at each node')
-      else
-
-          iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 61, 
-     &  'time when maximum velocity in x-direction occurs at each node')
-      endif
       CALL check_err(iret)
        
       iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name', 28,
      &                'time_of_maximum_e/w_velocity')
       CALL check_err(iret)
+      else
+
+          iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 61, 
+     &  'time when maximum velocity in x-direction occurs at each node')
+      CALL check_err(iret)
+       
+      iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name', 26,
+     &                'time_of_maximum_u_velocity')
+      CALL check_err(iret)
+      endif
       iret = nf_put_att_text(ncid, maxutimen_id,'units',4, VAR_SECS)
       CALL check_err(iret)
       
@@ -2613,15 +2536,19 @@ CCCCC CF
       if (ics.eq.2) then
          iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 50, 
      &   'time when minimum n/s velocity occurs at each node')
-      else
-
-         iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 61, 
-     &  'time when minimum velocity in y-direction occurs at each node')
-      endif
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name', 28,
      &                'time_of_minimum_n/s_velocity')
       CALL check_err(iret)
+      else
+
+         iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 61, 
+     &  'time when minimum velocity in y-direction occurs at each node')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name', 26,
+     &                'time_of_minimum_v_velocity')
+      CALL check_err(iret)
+      endif
       iret = nf_put_att_text(ncid, minvtimen_id,'units',4, VAR_SECS)
       CALL check_err(iret)
       
@@ -2631,16 +2558,21 @@ CCCCC CF
       if (ics.eq.2) then
           iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 50, 
      &      'time when maximum n/s velocity occurs at each_node')
-       else
-
-         iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 61, 
-     &  'time when maximum velocity in y-direction occurs at each node')
-      endif
       CALL check_err(iret)
 
       iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name', 28,
      &                'time_of_maximum_n/s_velocity')
       CALL check_err(iret)
+       else
+
+         iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 61, 
+     &  'time when maximum velocity in y-direction occurs at each node')
+      CALL check_err(iret)
+
+      iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name', 26,
+     &                'time_of_maximum_v_velocity')
+      CALL check_err(iret)
+      endif
       iret = nf_put_att_text(ncid, maxvtimen_id,'units',4, VAR_SECS)
       CALL check_err(iret)
 
@@ -2672,13 +2604,6 @@ CCCCC CF
 !     Define node numbers on normal flow boundary segments attributes
 !     ----------------------------------------------------------------  
 
-!      iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
-!     &       'node numbers on normal flow boundary segments')
-!      CALL check_err(iret)
-!      iret = nf_put_att_text(ncid, nbvv_id, 'units', 14, 
-!     &                      VAR_NOND)
-!      CALL check_err(iret)
-
       iret = nf_put_att_text(ncid, nbounc_id, 'long_name', 59, 
      & 'node numbers in each normal flow specified boundary segment')
       CALL check_err(iret)
@@ -2707,8 +2632,6 @@ CCCCC CF
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, timenc_id, 'standard_name', 4,'time')
       CALL check_err(iret)
-!      iret = nf_put_att_text(ncid, time_id, 'units', 7, 'seconds')
-!      CALL check_err(iret)
 
       iret = nf_put_att_text(ncid, timenc_id, 'units', 23,VAR_TUN)
       CALL check_err(iret)
@@ -2725,10 +2648,10 @@ CCCCC CF
 !    ---------------------------------------------------
       if (ics.eq.2) then
           iret = nf_put_att_text(ncid, u_id, 'long_name', 32, 
-     &                       'vertical averaged e/w - velocity')
+     &                       'vertically averaged e/w velocity')
        else
-         iret = nf_put_att_text(ncid, u_id, 'long_name', 41, 
-     &            'vertical averaged velocity in x-direction')
+         iret = nf_put_att_text(ncid, u_id, 'long_name', 43, 
+     &            'vertically averaged velocity in x-direction')
       endif
       CALL check_err(iret)
 
@@ -2753,16 +2676,13 @@ CCCCC CF
           iret = nf_put_att_text(ncid, u_id, 'positive', 5, VAR_RG)
       endif
       CALL check_err(iret)
-!       doubleval(1) = -99999.
       iret = nf_put_att_double(ncid, u_id, 'missing_values', 
      &       NF_DOUBLE, 1, doubleval)
       CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_double(ncid, u_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
       
-!      doubleval(1) = -99999.
       iret = nf_put_att_double(ncid, u_id, 'dry_Value', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -2774,10 +2694,10 @@ CCCCC CF
 !    ---------------------------------------------------
       if (ics.eq.2) then
           iret = nf_put_att_text(ncid, v_id, 'long_name', 32, 
-     &           'vertical averaged n/s - velocity')
+     &           'vertically averaged n/s velocity')
       else
-          iret = nf_put_att_text(ncid, v_id, 'long_name', 41, 
-     &           'vertical averaged velocity in y-direction')
+          iret = nf_put_att_text(ncid, v_id, 'long_name', 43, 
+     &           'vertically averaged velocity in y-direction')
       endif
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, v_id, 'standard_name', 10, 
@@ -2803,7 +2723,6 @@ CCCCC CF
       endif
       CALL check_err(iret)
 
-!      doubleval(1) = -99999.
       iret = nf_put_att_DOUBLE(ncid, v_id, 'missing_values', 
      &       NF_DOUBLE, 1, doubleval)
       CALL check_err(iret)
@@ -3022,25 +2941,6 @@ CCCCC CF
       mindepth = minval (depth)
       iret = nf_put_var_double(ncid, mindepth_id, mindepth)
       CALL check_err(iret)
-!     ---------------------------------------
-!     Store node numbers on elevation specified boundary segment
-!     ---------------------------------------
-!      if(nope_len.ne.0.and.neta_len.ne.0) then
-!!         iret = nf_put_var_int (ncid, nbdv_id, nbdv)
-!      count(1)=neta_len
-!      count(2)=nope_len
-!      start(1)=1
-!      start(2)=1
-!      iret=nf_put_vara_int(ncid,nbdv_id,start,count,nbdv)
-!         CALL check_err(iret)
-!      endif
-!     ---------------------------------------
-!     Store number of nodes of land boundary
-!     ---------------------------------------
-!      if(nbou_len.ne.0.and.nvel_len.ne.0) then
-!         iret = nf_put_var_int (ncid, nbvv_id, nbvv)
-!         CALL check_err(iret)
-!      endif
       
 !     =====================
 !     Open old netcdf file
@@ -3051,6 +2951,30 @@ CCCCC CF
           CALL check_err(iret)   
           FIRSTV=0
       ENDIF
+
+      IF(ncmode.eq.0) go to 9999
+      IF(ncmode.eq.2) THEN
+         iret=nf_inq_varid(ncid,"time",timenc_id)
+         iret=nf_inq_varid(ncid,"u-vel",u_id)
+         iret=nf_inq_varid(ncid,"v-vel",v_id)
+         iret=nf_inq_varid(ncid,"minuvelt",minut_id)
+         iret=nf_inq_varid(ncid,"maxuvelt",maxut_id)
+         iret=nf_inq_varid(ncid,"minvvelt",minvt_id)
+         iret=nf_inq_varid(ncid,"maxvvelt",maxvt_id)
+         iret=nf_inq_varid(ncid,"minuveln",minun_id)
+         iret=nf_inq_varid(ncid,"maxuveln",maxun_id)
+         iret=nf_inq_varid(ncid,"minvveln",minvn_id)
+         iret=nf_inq_varid(ncid,"maxvveln",maxvn_id)
+         iret=nf_inq_varid(ncid,"minunodet",minunodet_id)
+         iret=nf_inq_varid(ncid,"maxunodet",maxunodet_id)
+         iret=nf_inq_varid(ncid,"minvnodet",minvnodet_id)
+         iret=nf_inq_varid(ncid,"maxvnodet",maxvnodet_id)
+         iret=nf_inq_varid(ncid,"minutimen",minutimen_id)
+         iret=nf_inq_varid(ncid,"maxutimen",maxutimen_id)
+         iret=nf_inq_varid(ncid,"minvtimen",minvtimen_id)
+         iret=nf_inq_varid(ncid,"maxvtimen",maxvtimen_id)
+      ENDIF
+
 !     ----------
 !     Store time
 !     ----------
@@ -3118,12 +3042,10 @@ CCCCC CF
          endif
  	  end do
 
-!	  WRITE(6,*) "u minimum - time:  ", minut (1)
       iret = nf_put_vara_DOUBLE(ncid, minut_id,(/nrec/),(/1/),minut)
       CALL check_err(iret)
       iret=nf_put_vara_INT(ncid, minunodet_id,(/nrec/),(/1/),minunodet)
       CALL check_err(iret)
-!      WRITE(6,*)'AFTER CALCULATE U MIN'
 !     ---------------------------
 !     Calculating u maximum
 !     ---------------------------
@@ -3136,7 +3058,6 @@ CCCCC CF
 !     --------------
 !     for each time
 !     --------------
-!	  maxut (1) = maxval ( u (1:node_len, 1) )
       maxut (1) = -9999.
  	  do n=1,node_len
  		 if(u(n,1).gt.maxut(1))  then
@@ -3148,7 +3069,6 @@ CCCCC CF
       CALL check_err(iret)
       iret=nf_put_vara_INT(ncid,maxunodet_id,(/nrec/),(/1/),maxunodet)
       CALL check_err(iret)
-!      WRITE(6,*)'AFTER CALCULATE U MAX - Time', maxut(1)
 !     ---------------------------
 !     Calculating v minimum each node
 !     ---------------------------
@@ -3174,9 +3094,6 @@ CCCCC CF
       CALL check_err(iret)
       iret=nf_put_vara_INT(ncid, minvnodet_id,(/nrec/),(/1/),minvnodet)
       CALL check_err(iret)
-!      WRITE(6,*)'AFTER CALCULATE v MIN time'
-! 	  iret = nf_put_var_REAL(ncid, minv_id, minv)
-!      CALL check_err(iret)
 !     ---------------------------
 !     Calculating v maximum
 !     ---------------------------
@@ -3192,7 +3109,6 @@ CCCCC CF
 !     --------------
 !     Calculating v maximum for each time
 !     --------------
-!	  maxvt (1) = maxval ( v (1:node_len, 1) )
       maxvt (1) = -9999.
  	  do n=1,node_len
  		 if(v(n,1).gt.maxvt(1)) then
@@ -3236,13 +3152,11 @@ CCCCC CF
       WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       WRITE(6,*) "-----------------------------------------------------"
       
-      iret = nf_close(ncid)
+9999  iret = nf_close(ncid)
       CALL check_err(iret)
       WRITE(6,*)'end subroutine writenc64'
 
       end subroutine writenc64     
-      
-
 
 !=======================================================================
 !     Subroutine writenc73
@@ -3283,6 +3197,7 @@ CCCCC CF
      &                      nvdllnc,
      &                      nbou_len, nvel_len, nbvv,nbounc,nvelnc_len,
      &                      nvellnc,ibtypenc,
+     &                      ncmode,
      &                      title, institution, source, history,
      &                      references, comments, host, convention,
      &                      contact,
@@ -3487,8 +3402,6 @@ CCCCC CF
       INTEGER , ALLOCATABLE, SAVE ::  maxznodet(:)
       REAL(sz), ALLOCATABLE, SAVE ::  minztimen73(:)
       REAL(sz), ALLOCATABLE, SAVE ::  maxztimen73(:)
-!      REAL  minzetatll
-!      REAL  maxzetatll
       real*8  mindepth
       real*8  maxdepth
       REAL*8  dtdp, statim,reftim, rnday, dramp, tau0
@@ -3496,11 +3409,11 @@ CCCCC CF
       REAL(sz) slam0, sfea0
       REAL(sz) slam0deg, sfea0deg
       REAL*8 ffactor,esl, cori
-!      REAL*8 nele
       CHARACTER(80) rundes, runid, agrid
       INTEGER, SAVE  :: FIRST73 = 1 
       INTEGER NDATA
       INTEGER, SAVE  :: NREC = 0
+      INTEGER ncmode
 !     -----------------
 !     Attribute vectors
 !     -----------------
@@ -3525,6 +3438,9 @@ CCCCC CF
       integer   values(8)
       real*8    xmin, xmax
 
+!     -------------------------
+!     Save dims, ids, variables
+!     -------------------------
       save node_dim, elem_dim, nface_dim
       save nope_dim, neta_dim, nbou_dim, nvel_dim
       save zeta_id, X_id, Y_id
@@ -3545,6 +3461,24 @@ CCCCC CF
 !     ---------------------------
       WRITE(6,*) "-----------------------------------------------------"
       NREC = NREC + 1
+      
+      IF(FIRST73.EQ.1.and.ncmode.NE.0) THEN
+         
+         ALLOCATE ( minzetan    (node_len) )
+         ALLOCATE ( maxzetan    (node_len) )
+         ALLOCATE ( minztimen73 (node_len) )
+         ALLOCATE ( maxztimen73 (node_len) )
+        
+         do n=1,node_len
+            minzetan    (n) =  9999.d0
+            maxzetan    (n) = -9999.d0
+            minztimen73 (n) =  9999.d0
+            maxztimen73 (n) = -9999.d0
+         end do
+      ENDIF
+
+      IF(ncmode.eq.2) FIRST73=0
+!       WRITE(6,*)"==================73 NC========================="
 
 !     --------------------------------
 !     Switch order in array for NETCDF
@@ -3557,39 +3491,27 @@ CCCCC CF
 !     -----------------
 !     Enter define mode
 !     -----------------
-      IF(FIRST73.EQ.1) THEN
-!         WRITE (6,*)'****FIRST73 = 1 ****',FIRST73
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
-!         WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
          WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
                   
-         IF(nout.eq. 3) THEN
-           iret = nf_create(FILENAME, NF_CLOBBER, ncid)
-           CALL check_err(iret)
-           FIRST73=0
-         ENDIF
+         IF(FIRST73.EQ.1) THEN
+           IF(nout.eq. 3) THEN
+              iret = nf_create(FILENAME, NF_CLOBBER, ncid)
+              CALL check_err(iret)
+              FIRST73=0
+           ENDIF
          
-!         WRITE (6,*)' Allocate  = minzetan'
-         ALLOCATE ( minzetan    (node_len) )
-         ALLOCATE ( maxzetan    (node_len) )
-         ALLOCATE ( minztimen73 (node_len) )
-         ALLOCATE ( maxztimen73 (node_len) )
-        
-!         WRITE (6,*)' Initialize minzetan'
-         do n=1,node_len
-            minzetan    (n) =  9999.d0
-            maxzetan    (n) = -9999.d0
-            minztimen73 (n) = -9999.d0
-            maxztimen73 (n) = -9999.d0
-         end do
-
 !     --------------------------------
 !     Convert to degress for NETCDF I/O
 !     --------------------------------
+               SLAM0DEG=SLAM0
+               SFEA0DEG=SFEA0
+               IF (NCMODE.EQ.1) THEN
                SLAM0DEG=SLAM0*RAD2DEG
                SFEA0DEG=SFEA0*RAD2DEG
+               ENDIF
 
 !     =================
 !     Define dimensions
@@ -3649,16 +3571,7 @@ CCCCC CF
       ELE_dims(2) = elem_dim
       iret = nf_def_var(ncid, 'element',NF_INT,ELE_rank,ELE_dims,ELE_id)
       CALL check_err(iret)
-!     -----------------------------------------------------------------
-!     Define elevation specified boundary forcing segments information
-!     -----------------------------------------------------------------
-!      if(nope_len.ne.0.and.neta_len.ne.0) then
-!        nbdv_dims(2) = nope_dim
-!        nbdv_dims(1) = neta_dim      
-!        iret = nf_def_var(ncid, 'nbdv', NF_INT, nbdv_rank, nbdv_dims, 
-!     &                  nbdv_id)
-!         CALL check_err(iret)
-!      endif
+      
 !     -----------------------------------------------------------------
 !     Define elevation specified boundary forcing segments information
 !     -----------------------------------------------------------------
@@ -3674,16 +3587,6 @@ CCCCC CF
         CALL check_err(iret)
 
       endif
-!     ----------------------------------------------------------
-!     Define normal flow specified boundary segments information
-!     ----------------------------------------------------------
-!      if(nbou_len.ne.0.and.nvel_len.ne.0) then
-!        nbvv_dims(2) = nbou_dim
-!        nbvv_dims(1) = nvel_dim      
-!        iret = nf_def_var(ncid, 'nbvv', NF_INT, nbvv_rank, nbvv_dims, 
-!     &                  nbvv_id)
-!        CALL check_err(iret)
-!      endif
 !     ----------------------------------------------------------
 !     Define normal flow specified boundary segments information
 !     ----------------------------------------------------------
@@ -3729,15 +3632,12 @@ CCCCC CF
 !     ----------------
       zeta_dims(1) = node_dim
       zeta_dims(2) = timenc_dim     
-      iret = nf_def_var(ncid, 'pres', NF_DOUBLE, zeta_rank, zeta_dims, 
-     &                  ZETA_id)            
+      iret = nf_def_var(ncid,'pressure',NF_DOUBLE, zeta_rank, zeta_dims, 
+     &                  zeta_id)            
       CALL check_err(iret)
-
-!       WRITE(6,*)'AFTER DEFINE ZETA'
 !     ----------------------------
 !     Define minimum zeta at times
 !     ----------------------------
-!      WRITE(6,*) ' BEFORE  Define minimum zeta'
       minzetat_dims(1) = timenc_dim
 
       iret = nf_def_var(ncid, 'minprest', NF_DOUBLE, minzetat_rank, 
@@ -3751,11 +3651,11 @@ CCCCC CF
       iret = nf_def_var(ncid, 'maxprest', NF_DOUBLE, maxzetat_rank, 
      &                  maxzetat_dims, maxzetat_id)
       CALL check_err(iret)
+!      WRITE(6,*)"maxprest"
 
 !     ----------------------------
 !     Define minimum zeta at nodes
 !     ----------------------------
-!      WRITE(6,*) ' BEFORE  Define minimum zeta at nodes'
       minzetan_dims(1) = node_dim
        iret = nf_def_var(ncid, 'minpresn', NF_DOUBLE, minzetan_rank, 
      &                  minzetan_dims, minzetan_id)
@@ -3789,6 +3689,7 @@ CCCCC CF
       iret = nf_def_var(ncid, 'minptimen', NF_DOUBLE, minztimen_rank, 
      &                  minztimen_dims, minztimen_id)
       CALL check_err(iret)
+!      WRITE(6,*)"minptimen"
 !     ----------------------------
 !     Define maximum zeta nodes at nodes
 !     ----------------------------
@@ -3800,7 +3701,6 @@ CCCCC CF
 !     -----------------
 !     Assign attributes
 !     -----------------
-!      WRITE(6,*) ' BEFORE assign attributes'
       
 !     ----------------------------
 !     Define longitude attributes
@@ -3910,11 +3810,9 @@ CCCCC CF
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, DEPTH_id, 'units', 6, VAR_METS)
       CALL check_err(iret)
-!      doubleval(1) = -99999
       iret = nf_put_att_double(ncid, DEPTH_id, 'missing_values', 
      &                      NF_DOUBLE, 1, doubleval)
       CALL check_err(iret)
-!      doubleval(1) = -99999
       iret = nf_put_att_double(ncid, DEPTH_id, '_FillValue', NF_DOUBLE,
      &                        1, doubleval)
       CALL check_err(iret)
@@ -3923,8 +3821,6 @@ CCCCC CF
       iret = nf_put_att_text(ncid, ELE_id, 'long_name', 7, 'element')
       CALL check_err(iret)
       intval(1) = -1
-!      iret = nf_put_att_int(ncid, ELE_id, 'missing_values', NF_INT, 1, 
-!     &                      intval)
       iret = nf_put_att_text(ncid, ELE_id, 'units', 14, 
      &                      VAR_NOND)
       CALL check_err(iret)
@@ -4016,24 +3912,10 @@ CCCCC CF
             CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxztimen_id, 'units', 4, VAR_SECS)
             CALL check_err(iret)
-      
-!     -------------------------------------------------------------
-!     Define station names and code attributes
-!     -------------------------------------------------------------
-
-!      iret = nf_put_att_text(ncid,station_id,'long_name',12,
-!     &       'station name')
-!      CALL check_err(iret)
 
 !     -----------------------------------------------------------------------
 !     Define node numbers on elevation specified boundary segments attributes
 !     -----------------------------------------------------------------------      
-!      iret = nf_put_att_text(ncid, nbdv_id, 'long_name', 53, 
-!     &       'node numbers on elevation specified boundary segments')
-!      CALL check_err(iret)
-!      iret = nf_put_att_text(ncid, nbdv_id, 'units', 14, 
-!     &                      VAR_NOND)
-!      CALL check_err(iret)
       iret = nf_put_att_text(ncid, nopenc_id, 'long_name', 53, 
      &       'node numbers on elevation specified boundary segments')
       CALL check_err(iret)
@@ -4050,12 +3932,6 @@ CCCCC CF
 !     ---------------------------------------------------------------
 !     Define node numbers on normal flow boundary segments attributes
 !     ----------------------------------------------------------------  
-!      iret = nf_put_att_text(ncid, nbvv_id, 'long_name', 45, 
-!     &       'node numbers on normal flow boundary segments')
-!      CALL check_err(iret)
-!      iret = nf_put_att_text(ncid, nbvv_id, 'units', 14, 
-!     &                      VAR_NOND)
-!      CALL check_err(iret)
 
       iret = nf_put_att_text(ncid, nbounc_id, 'long_name', 59, 
      & 'node numbers in each normal flow specified boundary segment')
@@ -4085,8 +3961,6 @@ CCCCC CF
       CALL check_err(iret)
       iret = nf_put_att_text(ncid,timenc_id, 'standard_name', 4, 'time')
       CALL check_err(iret)
-!      iret = nf_put_att_text(ncid, timenc_id, 'units', 7, 'seconds')
-!      CALL check_err(iret)
       iret = nf_put_att_text(ncid, timenc_id, 'units', 23, 
      .       'seconds since base_date')
       CALL check_err(iret)
@@ -4106,11 +3980,9 @@ CCCCC CF
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, zeta_id, 'units', 15, VAR73_UN)
       CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_DOUBLE(ncid,zeta_id,'missing_values',NF_DOUBLE,
      &1, doubleval)
       CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_DOUBLE(ncid, zeta_id, '_FillValue', NF_DOUBLE, 
      &                      1, doubleval)
       CALL check_err(iret)
@@ -4176,7 +4048,6 @@ CCCCC CF
      &       len_trim(date_string),date_string)
       CALL check_err(iret)
  
-!      WRITE(6,*)'BEFORE global attributes from fort.15'
 !     -------------------------------------------
 !     writing global attributes from fort.15 file 
 !     -------------------------------------------
@@ -4332,38 +4203,30 @@ CCCCC CF
       mindepth = minval (depth)
       iret = nf_put_var_double(ncid, mindepth_id, mindepth)
       CALL check_err(iret)
-!     ---------------------------------------
-!     Store node numbers on elevation specified boundary segment
-!     ---------------------------------------
-      if(nope_len.ne.0.and.neta_len.ne.0) then
-!         iret = nf_put_var_int (ncid, nbdv_id, nbdv)
-      count(1)=neta_len
-      count(2)=nope_len
-      start(1)=1
-      start(2)=1
-      iret=nf_put_vara_int(ncid,nbdv_id,start,count,nbdv)
-         CALL check_err(iret)
-      endif
-!     ---------------------------------------
-!     Store number of nodes of land boundary
-!     ---------------------------------------
-!      if(nbou_len.ne.0.and.nvel_len.ne.0) then
-!         iret = nf_put_var_int (ncid, nbvv_id, nbvv)
-!         CALL check_err(iret)
-!      endif
 
 !     =====================
 !     Open old netcdf file
 !     =====================
       ELSE
-!          WRITE (6,*)'****FIRST73 = 0 ****',FIRST73, FILENAME
           iret = NF_OPEN(FILENAME, NF_WRITE, ncid)
           CALL check_err(iret)   
           FIRST73=0
       ENDIF
 
+      IF(ncmode.eq.0) go to 9999
+      IF(ncmode.eq.2) THEN
+         iret=nf_inq_varid(ncid,"time"     ,timenc_id)
+         iret=nf_inq_varid(ncid,"pressure" ,zeta_id)
+         iret=nf_inq_varid(ncid,"minprest" ,minzetat_id)
+         iret=nf_inq_varid(ncid,"maxprest" ,maxzetat_id)
+         iret=nf_inq_varid(ncid,"minpresn" ,minzetan_id)
+         iret=nf_inq_varid(ncid,"maxpresn" ,maxzetan_id)
+         iret=nf_inq_varid(ncid,"minpnodet",minznodet_id)
+         iret=nf_inq_varid(ncid,"maxpnodet",maxznodet_id)
+         iret=nf_inq_varid(ncid,"minptimen",minztimen_id)
+         iret=nf_inq_varid(ncid,"maxptimen",maxztimen_id)
+      ENDIF
 
-!      WRITE(6,*)'BEFORE store time'
 !     ----------
 !     Store time
 !     ----------
@@ -4371,7 +4234,6 @@ CCCCC CF
       counti(1)=timenc_len
       iret = nf_put_vara_DOUBLE(ncid, timenc_id, starti,counti, timenc)
       CALL check_err(iret)
-      
 !     ---------------------------
 !     Store zeta
 !     ---------------------------
@@ -4379,10 +4241,8 @@ CCCCC CF
       count(2)=timenc_len
       start(1)=1
       start(2)=nrec
-!      WRITE(6,*)'Z--START COUNT',start(1),start(2),count(1),count(2)
       iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, count, zeta)
       CALL check_err(iret)
-
 !     ---------------------------
 !     Calculating zeta minimum
 !     ---------------------------
@@ -4406,6 +4266,7 @@ CCCCC CF
  		   	minztimen73 (n) = timenc(1)
  		 endif
  	  end do
+
 !     --------------
 !     for each time
 !     --------------
@@ -4417,7 +4278,6 @@ CCCCC CF
         endif
  	  end do
 
-!	  WRITE(6,*) "sea surface elevation minimum - 1:  ", minzetat (1)
       iret=nf_put_vara_DOUBLE(ncid, minzetat_id,(/nrec/),(/1/),minzetat)
            CALL check_err(iret)
       iret=nf_put_vara_INT(ncid, minznodet_id,(/nrec/),(/1/),minznodet)
@@ -4447,17 +4307,14 @@ CCCCC CF
  		 endif
  	  end do
 
-!	  WRITE(6,*) "sea surface elevation maximum - 1:  ", maxzetat (1)
       iret=nf_put_vara_DOUBLE(ncid,maxzetat_id,(/nrec/),(/1/),maxzetat)
       CALL check_err(iret)
       iret=nf_put_vara_INT(ncid,maxznodet_id,(/nrec/),(/1/),maxznodet)
       CALL check_err(iret)
-!      WRITE(6,*)'AFTER CALCULATE ZETA MAX'
 
 !     ---------------------------
 !     Closing fort.X3 netCDF file
 !     ---------------------------
-!      WRITE(6,*)"NREC = ", NREC," NDATA = ",NDATA
       IF(NREC.EQ.NDATA) THEN
          iret = nf_put_var_double(ncid, minzetan_id, minzetan)
          CALL check_err(iret)
@@ -4472,7 +4329,7 @@ CCCCC CF
       WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       WRITE(6,*) "-----------------------------------------------------"
       
-      iret = nf_close(ncid)
+9999  iret = nf_close(ncid)
       CALL check_err(iret)
       WRITE(6,*)'end subroutine writenc73'
      
@@ -4518,6 +4375,7 @@ CCCCC CF
      &                      nvdllnc,
      &                      nbou_len, nvel_len, nbvv,nbounc,nvelnc_len,
      &                      nvellnc,ibtypenc,
+     &                      ncmode,
      &                      title, institution, source, history,
      &                      references, comments, host, convention,
      &                      contact,
@@ -4784,6 +4642,7 @@ CCCCC CF
       INTEGER, SAVE  :: FIRST74 = 1 
       INTEGER NDATA
       INTEGER, SAVE  :: NREC = 0
+      INTEGER ncmode
 
 !     -----------------
 !     Attribute vectors
@@ -4809,6 +4668,9 @@ CCCCC CF
       character zone*5
       integer   values(8)
 
+!     -------------------------
+!     Save dims, ids, variables
+!     -------------------------
       save node_dim,  elem_dim, nface_dim
       save nope_dim, neta_dim, nbou_dim, nvel_dim
       save u_id, v_id, X_id, Y_id
@@ -4832,31 +4694,7 @@ CCCCC CF
 !     ---------------------------
       WRITE(6,*) "-----------------------------------------------------"
       NREC = NREC + 1
-
-!     --------------------------------
-!     Switch order in array for NETCDF
-!     --------------------------------
-      do i=1, elem_len
-         do j=1, nface_len
-            element(j,i) = nm (i,j)
-         end do
-      end do
-      
-!     -----------------
-!     Enter define mode
-!     -----------------
-      IF(FIRST74.EQ.1) THEN
-!         WRITE (6,*)'****FIRST74 = 1 ****',FIRST74
-         FILEFORT = 'fort.'
-         FILEEXT = '.nc'
-         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
-         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
-         
-         if(nout.eq. 3) then
-            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
-         CALL check_err(iret)
-          FIRST74=0
-         endif
+      IF(FIRST74.EQ.1.and.ncmode.NE.0) THEN
          
          ALLOCATE ( minun (node_len) )
          ALLOCATE ( maxun (node_len) )
@@ -4873,16 +4711,71 @@ CCCCC CF
             maxun (n) = -9999.d0
             minvn (n) =  9999.d0
             maxvn (n) = -9999.d0
-            minutimen74 (n) = -9999.d0
+            minutimen74 (n) =  9999.d0
             maxutimen74 (n) = -9999.d0
-            minvtimen74 (n) = -9999.d0
+            minvtimen74 (n) =  9999.d0
             maxvtimen74 (n) = -9999.d0
          end do
+      ENDIF
+
+      
+      IF(ncmode.eq.2) FIRST74=0
+!       WRITE(6,*)"==================74 NC========================="
+
+!     --------------------------------
+!     Switch order in array for NETCDF
+!     --------------------------------
+      do i=1, elem_len
+         do j=1, nface_len
+            element(j,i) = nm (i,j)
+         end do
+      end do
+      
+!     -----------------
+!     Enter define mode
+!     -----------------
+!         WRITE (6,*)'****FIRST74 = 1 ****',FIRST74
+         FILEFORT = 'fort.'
+         FILEEXT = '.nc'
+         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+
+       IF(FIRST74.EQ.1) THEN
+            if(nout.eq. 3) then
+            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
+            CALL check_err(iret)
+            FIRST74=0
+            endif
+         
+!         ALLOCATE ( minun (node_len) )
+!         ALLOCATE ( maxun (node_len) )
+!         ALLOCATE ( minvn (node_len) )
+!         ALLOCATE ( maxvn (node_len) )
+         
+!         ALLOCATE ( minutimen74 (node_len) )
+!         ALLOCATE ( maxutimen74 (node_len) )
+!         ALLOCATE ( minvtimen74 (node_len) )
+!         ALLOCATE ( maxvtimen74 (node_len) )
+
+!         do n=1,node_len
+!            minun (n) =  9999.d0
+!            maxun (n) = -9999.d0
+!            minvn (n) =  9999.d0
+!            maxvn (n) = -9999.d0
+!            minutimen74 (n) = -9999.d0
+!            maxutimen74 (n) = -9999.d0
+!            minvtimen74 (n) = -9999.d0
+!            maxvtimen74 (n) = -9999.d0
+!         end do
 !     --------------------------------
 !     Convert to degress for NETCDF I/O
 !     --------------------------------
+               SLAM0DEG=SLAM0
+               SFEA0DEG=SFEA0
+               IF (NCMODE.EQ.1) THEN
                SLAM0DEG=SLAM0*RAD2DEG
                SFEA0DEG=SFEA0*RAD2DEG
+               ENDIF
 !     -----------------
 !     Define dimensions
 !     -----------------
@@ -6243,6 +6136,29 @@ CCCCC CF
           FIRST74=0
       ENDIF
 
+      IF(ncmode.eq.0) go to 9999
+      IF(ncmode.eq.2) THEN
+         iret=nf_inq_varid(ncid,"time",timenc_id)
+         iret=nf_inq_varid(ncid,"windx",u_id)
+         iret=nf_inq_varid(ncid,"windy",v_id)
+         iret=nf_inq_varid(ncid,"minwxt",minut_id)
+         iret=nf_inq_varid(ncid,"maxwxt",maxut_id)
+         iret=nf_inq_varid(ncid,"minwyt",minvt_id)
+         iret=nf_inq_varid(ncid,"maxwyt",maxvt_id)
+         iret=nf_inq_varid(ncid,"minwxn",minun_id)
+         iret=nf_inq_varid(ncid,"maxwxn",maxun_id)
+         iret=nf_inq_varid(ncid,"minwyn",minvn_id)
+         iret=nf_inq_varid(ncid,"maxwyn",maxvn_id)
+         iret=nf_inq_varid(ncid,"minwxnodet",minunodet_id)
+         iret=nf_inq_varid(ncid,"maxwxnodet",maxunodet_id)
+         iret=nf_inq_varid(ncid,"minwynodet",minvnodet_id)
+         iret=nf_inq_varid(ncid,"maxwynodet",maxvnodet_id)
+         iret=nf_inq_varid(ncid,"minwxtimen",minutimen_id)
+         iret=nf_inq_varid(ncid,"maxwxtimen",maxutimen_id)
+         iret=nf_inq_varid(ncid,"minwytimen",minvtimen_id)
+         iret=nf_inq_varid(ncid,"maxwytimen",maxvtimen_id)
+      ENDIF
+
 !     ----------
 !     Store time
 !     ----------
@@ -6429,7 +6345,7 @@ CCCCC CF
       WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       WRITE(6,*) "-----------------------------------------------------"
       
-      iret = nf_close(ncid)
+9999  iret = nf_close(ncid)
       CALL check_err(iret)
       WRITE(6,*)'end subroutine writenc74'
 
@@ -6473,6 +6389,7 @@ CCCCC CF
      &                      x,y,depth,
      &                      nope_len, neta_len, nbdv, 
      &                      nbou_len, nvel_len, nbvv,
+     &                      ncmode,
      &                      title, institution, source, history,
      &                      references, comments, host, convention,
      &                      contact,
@@ -6649,6 +6566,7 @@ CCCCC CF
       INTEGER, SAVE  :: FIRST61 = 1 
       INTEGER NDATA
       INTEGER, SAVE  :: NREC = 0
+      INTEGER ncmode
 !     -----------------
 !     Attribute vectors
 !     -----------------
@@ -6664,7 +6582,7 @@ CCCCC CF
       CHARACTER(*) :: references, comments, host, convention, contact
       CHARACTER(*) :: base_date
 !     -----------------
-!      date_string variables for time attribute
+!     date_string variables for time attribute
 !     -----------------
       character date_string*40
       character now_date*8
@@ -6673,6 +6591,9 @@ CCCCC CF
       integer values(8)
       real*8 xmin, xmax
 
+!     -------------------------
+!     Save dims, ids, variables
+!     -------------------------
       save node_dim, elem_dim, nface_dim
       save nope_dim, neta_dim, nbou_dim, nvel_dim
       save zeta_id, X_id, Y_id
@@ -6686,15 +6607,25 @@ CCCCC CF
 !     Opening fort.61 netCDF file
 !     ---------------------------
       WRITE(6,*) "-----------------------------------------------------"
-!      write(6,*) "*****************Time inside subroutine ", timenc(1)
       NREC = NREC + 1
-!      WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
-!      WRITE (6,*)'========= timenc_len, node_len =======',
-!     &  timenc_len, node_len
-!      WRITE(6,*) "BASE DATE", base_date
-!      WRITE(6,*) "ADC_VERSION", ADC_VERSION
-!      WRITE(6,*) "AGRID", AGRID
+
+      IF(FIRST61.EQ.1.and.ncmode.NE.0) THEN
+         
+         ALLOCATE ( minzetan61  (node_len) )
+         ALLOCATE ( maxzetan61  (node_len) )
+         ALLOCATE ( minztimen61 (node_len) )
+         ALLOCATE ( maxztimen61 (node_len) )
+         
+         DO n=1,node_len
+            minzetan61  (n) =  9999.d0
+            maxzetan61  (n) = -9999.d0
+            minztimen61 (n) =  9999.d0
+            maxztimen61 (n) = -9999.d0
+         END DO         
+      ENDIF
       
+      IF(ncmode.eq.2) FIRST61=0
+!       WRITE(6,*)"==================61 NC========================="
 
 !     --------------------------------
 !     Switch order in array for NETCDF
@@ -6704,60 +6635,42 @@ CCCCC CF
             element(j,i) = nm (i,j)
          end do
       end do
-!      do n=1,node_len
-!         write(6,*)"WRITE STATION ", 
-!     &              STATNAME(n,SNAMLEN)
-!     &              STATNUMB(n,SNUMLEN),STATNAME(n,SNAMLEN)
-!      end do
 !     -----------------
 !     Enter define mode
 !     -----------------
-      IF(FIRST61.EQ.1) THEN
-         WRITE (6,*)'****FIRST61 = 1 ****',FIRST61
+!         WRITE (6,*)'****FIRST61 = 1 ****',FIRST61
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
          WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
                   
+      IF(FIRST61.EQ.1) THEN
          IF(nout.eq. 3) THEN
            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
            CALL check_err(iret)
            FIRST61=0
          ENDIF
          
-         ALLOCATE ( minzetan61 (node_len) )
-         ALLOCATE ( maxzetan61 (node_len) )
-         ALLOCATE ( minztimen61 (node_len) )
-         ALLOCATE ( maxztimen61 (node_len) )
-         
-         DO n=1,node_len
-            minzetan61  (n) =  9999.d0
-            maxzetan61  (n) = -9999.d0
-            minztimen61 (n) = -9999.d0
-            maxztimen61 (n) = -9999.d0
-         END DO         
-
 !     --------------------------------
 !     Convert to degress for NETCDF I/O
 !     --------------------------------
+               SLAM0DEG=SLAM0
+               SFEA0DEG=SFEA0
+               IF (NCMODE.EQ.1) THEN
                SLAM0DEG=SLAM0*RAD2DEG
                SFEA0DEG=SFEA0*RAD2DEG
+               ENDIF
 
 !     =================
 !     Define dimensions
 !     =================
-!      WRITE(6,*)"Define dimensions"
       iret = nf_def_dim(ncid, 'station', node_len, node_dim)
              CALL check_err(iret)
       iret = nf_def_dim(ncid, 'namelen', SNAMLEN, slen_dim)
              CALL check_err(iret)
       iret = nf_def_dim(ncid, 'time', nf_unlimited, timenc_dim)
              CALL check_err(iret)
-!      WRITE(6,*)"START CODE"
-!      iret = nf_def_dim(ncid, 'codelen', SNUMLEN, scode_dim)
-!      CALL check_err(iret)
-!      WRITE(6,*)"END CODE"
 !     ================
 !     Define variables
 !     ================
@@ -6788,16 +6701,6 @@ CCCCC CF
       iret = nf_def_var(ncid, 'station_name', NF_CHAR, station_rank, 
      1      station_dims, station_id)
       CALL check_err(iret)
-!     ---------------------
-!     Define stations code
-!     --------------------
-!     WRITE(6,*)"START Define stations code"
-!      scode_dims(1) = scode_dim
-!      scode_dims(2) = node_dim
-!      iret = nf_def_var(ncid, 'station_code', NF_CHAR, scode_rank, 
-!     1      scode_dims, scode_id)
-!      CALL check_err(iret)
-!      WRITE(6,*)"END Define stations code"
       
 !     ----------------
 !     Define zeta
@@ -6838,9 +6741,6 @@ CCCCC CF
       iret = nf_def_var(ncid, 'maxzetan', NF_DOUBLE, maxzetan_rank, 
      &                  maxzetan_dims, maxzetan_id)
       CALL check_err(iret)
-
-
-
 !     ----------------------------
 !     Define minimum zeta nodes at times
 !     ----------------------------
@@ -6869,8 +6769,6 @@ CCCCC CF
       iret = nf_def_var(ncid, 'maxztimen', NF_DOUBLE, maxztimen_rank, 
      &                  maxztimen_dims, maxztimen_id)
       CALL check_err(iret)
-
-
 
 !     ============================
 !     Assign attributes
@@ -6919,13 +6817,8 @@ CCCCC CF
       	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &         doubleval)
       	       CALL check_err(iret)
-!      endif
-
-
-!      if(ics.eq.1) then
 
        else
-
       
 !     ------------------------------
 !     Define x-coordinate attributes
@@ -7032,14 +6925,14 @@ CCCCC CF
 !     Define max and min in time sea surface elevation attributes 
 !     -------------------------------------------------------------
       iret = nf_put_att_text(ncid, minznodet_id, 'long_name', 79, 
-     &       'station where minimum sea surface elevation occurs at each  
+     &       'station where minimum sea surface elevation occurs at each 
      &output time')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, minznodet_id, 'units',14, VAR_NOND)
       CALL check_err(iret)
       
       iret = nf_put_att_text(ncid, maxznodet_id, 'long_name', 79, 
-     &       'station where maximum sea surface elevation occurs at each  
+     &       'station where maximum sea surface elevation occurs at each 
      &output time')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxznodet_id, 'units', 14, VAR_NOND)
@@ -7167,7 +7060,6 @@ CCCCC CF
      &       len_trim(date_string),date_string)
       CALL check_err(iret)
  
-!      WRITE(6,*)'BEFORE global attributes from fort.15'
 !     -------------------------------------------
 !     writing global attributes from fort.15 file 
 !     -------------------------------------------
@@ -7284,11 +7176,6 @@ CCCCC CF
 !     --------------------
 !     Store station name
 !     --------------------
-!       write(6,*)'Store station name'
-
-!      do i= 1, node_len
-!         write(6,'(A50)')STATNAME(i,SNAMLEN)
-!      end do
  
       do i=1,node_len
          start(1)=1
@@ -7298,19 +7185,31 @@ CCCCC CF
          iret = nf_put_vara_text(ncid,station_id,start,count,
      &   STATNAME(i,SNAMLEN) )
          CALL check_err(iret)
-!          write(6,*)' finish', SNAMLEN,node_len
       end do
-      
       
 !     =====================
 !     Open old netcdf file
 !     =====================
       ELSE
-!          WRITE (6,*)'****FIRST61 = 0 ****',FIRST61, FILENAME
           iret = NF_OPEN(FILENAME, NF_WRITE, ncid)
           CALL check_err(iret)   
           FIRST61=0
       ENDIF
+
+      IF(ncmode.eq.0) go to 9999
+      IF(ncmode.eq.2) THEN
+         iret=nf_inq_varid(ncid,"time",timenc_id)
+         iret=nf_inq_varid(ncid,"zeta",zeta_id)
+         iret=nf_inq_varid(ncid,"minzetat",minzetat_id)
+         iret=nf_inq_varid(ncid,"maxzetat",maxzetat_id)
+         iret=nf_inq_varid(ncid,"minzetan",minzetan_id)
+         iret=nf_inq_varid(ncid,"maxzetan",maxzetan_id)
+         iret=nf_inq_varid(ncid,"minznodet",minznodet_id)
+         iret=nf_inq_varid(ncid,"maxznodet",maxznodet_id)
+         iret=nf_inq_varid(ncid,"minztimen",minztimen_id)
+         iret=nf_inq_varid(ncid,"maxztimen",maxztimen_id)
+      ENDIF
+
 !     ----------
 !     Store time
 !     ----------
@@ -7328,17 +7227,17 @@ CCCCC CF
       iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, count, zeta)
       CALL check_err(iret)
 !     ---------------------------
-!     Calculating zeta minimum
+!     Allocate min and max arrays
 !     ---------------------------
-      IF(.NOT. ALLOCATED(minzetat))ALLOCATE( minzetat(timenc_len))
-      IF(.NOT. ALLOCATED(maxzetat))ALLOCATE( maxzetat(timenc_len))
-      IF(.NOT. ALLOCATED(minzetan61))ALLOCATE( minzetan61(  node_len))
-      IF(.NOT. ALLOCATED(maxzetan61))ALLOCATE( maxzetan61(  node_len))
+      IF(.NOT. ALLOCATED(minzetat))  ALLOCATE( minzetat(timenc_len))
+      IF(.NOT. ALLOCATED(maxzetat))  ALLOCATE( maxzetat(timenc_len))
+      IF(.NOT. ALLOCATED(minzetan61))ALLOCATE( minzetan61(node_len))
+      IF(.NOT. ALLOCATED(maxzetan61))ALLOCATE( maxzetan61(node_len))
 
-      IF(.NOT. ALLOCATED(minznodet))ALLOCATE( minznodet(timenc_len))
-      IF(.NOT. ALLOCATED(maxznodet))ALLOCATE( maxznodet(timenc_len))
-      IF(.NOT. ALLOCATED(minztimen61))ALLOCATE( minztimen61(  node_len))
-      IF(.NOT. ALLOCATED(maxztimen61))ALLOCATE( maxztimen61(  node_len))
+      IF(.NOT. ALLOCATED(minznodet))  ALLOCATE( minznodet(timenc_len))
+      IF(.NOT. ALLOCATED(maxznodet))  ALLOCATE( maxznodet(timenc_len))
+      IF(.NOT. ALLOCATED(minztimen61))ALLOCATE( minztimen61(node_len))
+      IF(.NOT. ALLOCATED(maxztimen61))ALLOCATE( maxztimen61(node_len))
 
 !     ------------
 !     in each node
@@ -7360,8 +7259,6 @@ CCCCC CF
          endif
  	  end do
 
-!	  WRITE(6,*)"sea surface elevation minimum: ", minzetat(1),
-!     &           minznodet(1)
       iret=nf_put_vara_DOUBLE(ncid, minzetat_id,(/nrec/),(/1/),minzetat)
       CALL check_err(iret)
       iret=nf_put_vara_INT(ncid, minznodet_id,(/nrec/),(/1/),minznodet)
@@ -7389,37 +7286,15 @@ CCCCC CF
  		 endif
  	  end do
 
-!	  WRITE(6,*)"sea surface elevation maximum:  ",maxzetat(1),
-!     &     maxznodet(1)
       iret=nf_put_vara_DOUBLE(ncid,maxzetat_id,(/nrec/),(/1/),maxzetat)
       CALL check_err(iret)
       iret=nf_put_vara_INT(ncid,maxznodet_id,(/nrec/),(/1/),maxznodet)
       CALL check_err(iret)
 
-!     --------------------
-!     Store station code
-!     --------------------
-!      write(6,*)'nf put var'
-
-!      do i= 1, node_len
-!         write(6,'(A7)')STATNUMB(i,SNUMLEN)
-!      end do
- 
-!      do i=1,node_len
-!         start(1)=1
-!         start(2)=i
-!         count(1)= LEN(TRIM(STATNUMB(i,SNUMLEN)))
-!         count(2)=1
-!         iret = nf_put_vara_text(ncid,scode_id,start,count,
-!     &   STATNUMB(i,SNUMLEN) )
-!         CALL check_err(iret)
-!          write(6,*)' end nf put var', SNUMLEN,node_len
-!      end do
-
 !     ---------------------------
 !     Closing fort.X3 netCDF file
 !     ---------------------------
-      WRITE(6,*)"NREC = ", NREC," NDATA = ",NDATA
+!      WRITE(6,*)"NREC = ", NREC," NDATA = ",NDATA
       IF(NREC.EQ.NDATA) THEN
          iret = nf_put_var_double(ncid, minzetan_id, minzetan61)
          CALL check_err(iret)
@@ -7434,12 +7309,11 @@ CCCCC CF
       WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       WRITE(6,*) "-----------------------------------------------------"
       
-      iret = nf_close(ncid)
+9999  iret = nf_close(ncid)
       CALL check_err(iret)
       WRITE(6,*)'end subroutine writenc61'
      
       end subroutine writenc61      
-
 
 !=======================================================================
 !     Subroutine writenc62
@@ -7480,6 +7354,7 @@ CCCCC CF
      &                      x,y,depth,
      &                      nope_len, neta_len, nbdv, 
      &                      nbou_len, nvel_len, nbvv,
+     &                      ncmode,
      &                      title, institution, source, history,
      &                      references, comments, host, convention,
      &                      contact,
@@ -7710,11 +7585,11 @@ CCCCC CF
       REAL*8 a00, b00, c00,h0
       REAL(sz) slam0, sfea0, ffactor,esl, cori
       REAL(sz) slam0deg, sfea0deg
-!      REAL*8 nele
       CHARACTER(80) rundes, runid, agrid
       INTEGER, SAVE  :: FIRST62 = 1 
       INTEGER NDATA
       INTEGER, SAVE  :: NREC = 0
+      INTEGER ncmode
 
 !     -----------------
 !     Attribute vectors
@@ -7740,6 +7615,9 @@ CCCCC CF
       character zone*5
       integer values(8)
 
+!     -------------------------
+!     Save dims, ids, variables
+!     -------------------------
       save node_dim,  elem_dim, nface_dim
       save nope_dim, neta_dim, nbou_dim, nvel_dim
       save u_id, v_id, X_id, Y_id
@@ -7761,14 +7639,36 @@ CCCCC CF
 !     ---------------------------
       WRITE(6,*) "-----------------------------------------------------"
 
-!       write(6,*) "*****************Time inside subroutine ", timenc(1)
-       NREC = NREC + 1
-!       WRITE (6,*)'========= FILEUNIT =======', FILEUNIT
-!       WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
-!       WRITE (6,*)'========= time_len, node_len =======',
-!     &  timenc_len, node_len
-     
-!       WRITE (6,*)' AGRID ************* 62 ***', AGRID
+      NREC = NREC + 1
+       
+      IF(FIRST62.EQ.1.and.ncmode.NE.0) THEN
+         ALLOCATE ( minun62 (node_len) )
+         ALLOCATE ( maxun62 (node_len) )
+         ALLOCATE ( minvn62 (node_len) )
+         ALLOCATE ( maxvn62 (node_len) )
+         
+         ALLOCATE ( minutimen62 (node_len) )
+         ALLOCATE ( maxutimen62 (node_len) )
+         ALLOCATE ( minvtimen62 (node_len) )
+         ALLOCATE ( maxvtimen62 (node_len) )
+         
+         DO n=1,node_len
+            minun62 (n) =  9999.d0
+            maxun62 (n) = -9999.d0
+            minvn62 (n) =  9999.d0
+            maxvn62 (n) = -9999.d0
+
+            minutimen62 (n) =  9999.d0
+            maxutimen62 (n) = -9999.d0
+            minvtimen62 (n) =  9999.d0
+            maxvtimen62 (n) = -9999.d0
+         END DO
+       
+      ENDIF
+        
+       IF(ncmode.eq.2) FIRST62=0
+!       WRITE(6,*)"==================62 NC========================="
+
 !     --------------------------------
 !     Switch order in array for NETCDF
 !     --------------------------------
@@ -7781,47 +7681,26 @@ CCCCC CF
 !     -----------------
 !     Enter define mode
 !     -----------------
-      IF(FIRST62.EQ.1) THEN
-!         WRITE (6,*)'****FIRST62 = 1 ****',FIRST62
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
          WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
          
+      IF(FIRST62.EQ.1) THEN
          if(nout.eq. 3) then
             iret = nf_create(FILENAME, NF_CLOBBER, ncid)
          CALL check_err(iret)
           FIRST62=0
          endif
-!         WRITE(6,*)"ALLOCATE"         
-         ALLOCATE ( minun62 (node_len) )
-         ALLOCATE ( maxun62 (node_len) )
-         ALLOCATE ( minvn62 (node_len) )
-         ALLOCATE ( maxvn62 (node_len) )
-         
-         ALLOCATE ( minutimen62 (node_len) )
-         ALLOCATE ( maxutimen62 (node_len) )
-         ALLOCATE ( minvtimen62 (node_len) )
-         ALLOCATE ( maxvtimen62 (node_len) )
-         
-!         WRITE(6,*)"DO LOOP"         
-
-         do n=1,node_len
-            minun62 (n) =  9999.d0
-            maxun62 (n) = -9999.d0
-            minvn62 (n) =  9999.d0
-            maxvn62 (n) = -9999.d0
-
-            minutimen62 (n) = -9999.d0
-            maxutimen62 (n) = -9999.d0
-            minvtimen62 (n) = -9999.d0
-            maxvtimen62 (n) = -9999.d0
-         end do
 !     --------------------------------
 !     Convert to degress for NETCDF I/O
 !     --------------------------------
+               SLAM0DEG=SLAM0
+               SFEA0DEG=SFEA0
+               IF (NCMODE.EQ.1) THEN
                SLAM0DEG=SLAM0*RAD2DEG
                SFEA0DEG=SFEA0*RAD2DEG
+               ENDIF
 !     -----------------
 !     Define dimensions
 !     -----------------
@@ -7948,7 +7827,6 @@ CCCCC CF
      &                  maxvn_dims, maxvn_id)
       CALL check_err(iret)
       
-      
 !     ----------------------------
 !     Define minimum u nodes at times
 !     ----------------------------
@@ -7977,7 +7855,6 @@ CCCCC CF
       iret = nf_def_var(ncid, 'maxutimen', NF_DOUBLE, maxutimen_rank, 
      &                  maxutimen_dims, maxutimen_id)
       CALL check_err(iret)
-
             
 !     ----------------------------
 !     Define minimum v nodes at times
@@ -8007,8 +7884,6 @@ CCCCC CF
       iret = nf_def_var(ncid, 'maxvtimen', NF_DOUBLE, maxvtimen_rank, 
      &                  maxvtimen_dims, maxvtimen_id)
       CALL check_err(iret)
-            
-      
       
 !     -----------------
 !     Assign attributes
@@ -8016,7 +7891,6 @@ CCCCC CF
 
       if(ics.eq.2) then
       
-!      WRITE(6,*)"ics.eq.2"
       iret = nf_put_att_text(ncid, X_id, 'long_name', 9, 'longitude')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, X_id, 'standard_name', 9, 
@@ -8044,22 +7918,14 @@ CCCCC CF
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
       CALL check_err(iret)
-       
-!      doubleval(1) = -99999.
       iret = nf_put_att_double(ncid, Y_id, 'missing_values', NF_DOUBLE, 
      &       1, doubleval)
       CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &       doubleval)
       CALL check_err(iret)
-!      endif
-
-
-!      if(ics.eq.1) then
 
        else
-
       
       iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
      &       'Cartesian coordinate x')
@@ -8118,19 +7984,15 @@ CCCCC CF
 !     minimum/maximum e/w and n/s velocities at each time
 !    ----------------------------------------------------
 
-!      WRITE(6,*)" minimum/maximum e/w and n/s at each time"
       if (ics.eq.2) then
       iret = nf_put_att_text(ncid, minut_id, 'long_name', 68, 
      & 'minimum station vertically averaged e/w velocity at each output 
      &time')
       CALL check_err(iret)
-!      endif
 
-!      if (ics.eq.1) then
+      else
 
-       else
-
-      iret = nf_put_att_text(ncid, minut_id, 'long_name', 70, 
+      iret = nf_put_att_text(ncid, minut_id, 'long_name', 71, 
      &     'minimum vertically averaged velocity in x-direction at each 
      &output time')
       CALL check_err(iret)
@@ -8156,9 +8018,9 @@ CCCCC CF
 
        else
 
-      iret = nf_put_att_text(ncid, maxut_id, 'long_name', 77, 
+      iret = nf_put_att_text(ncid, maxut_id, 'long_name', 78, 
      &     'maximum vertically averaged velocity in x-direction at each 
-     &ouput time')
+     &output time')
       CALL check_err(iret)
       endif
        
@@ -8173,14 +8035,14 @@ CCCCC CF
       CALL check_err(iret)
       
       if (ics.eq.2) then
-         iret = nf_put_att_text(ncid, minvt_id, 'long_name', 67, 
-     &  'minimum station vertically averaged n/s velocity at each ouput 
-     &time')
+         iret = nf_put_att_text(ncid, minvt_id, 'long_name', 69, 
+     &  'minimum station vertically averaged n/s velocity at each output 
+     & time')
       else
 
-      iret = nf_put_att_text(ncid, minvt_id, 'long_name', 78, 
+      iret = nf_put_att_text(ncid, minvt_id, 'long_name', 79, 
      &  'minimum station vertically averaged velocity in y-direction at 
-     &each ouput time')
+     &each output time')
       endif
      
       CALL check_err(iret)
@@ -8196,13 +8058,13 @@ CCCCC CF
       CALL check_err(iret)
       
       if (ics.eq.2) then
-         iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 67, 
+         iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 68, 
      &        'maximum station vertically averaged n/s velocity at each 
-     &ouput time')
+     &output time')
       else
-         iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 78, 
+         iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 79, 
      &  'maximum station vertically averaged velocity in y-direction at 
-     &each ouput time')
+     &each output time')
       endif
       CALL check_err(iret)
 
@@ -8228,7 +8090,7 @@ CCCCC CF
 
        else
 
-          iret = nf_put_att_text(ncid, minun_id, 'long_name', 66, 
+          iret = nf_put_att_text(ncid, minun_id, 'long_name', 67, 
      &     'minimum vertically averaged velocity in x-direction at each 
      &station')
           CALL check_err(iret)
@@ -8252,7 +8114,7 @@ CCCCC CF
 
        else
 
-      iret = nf_put_att_text(ncid, maxun_id, 'long_name', 66, 
+      iret = nf_put_att_text(ncid, maxun_id, 'long_name', 67, 
      &     'maximum vertically averaged velocity in x-direction at each 
      &station')
       CALL check_err(iret)
@@ -8320,8 +8182,6 @@ CCCCC CF
 !    ----------------------------------------------------
 !     minimum/maximum e/w and n/s velocities at each time
 !    ----------------------------------------------------
-
-!      WRITE(6,*)"minimum/maximum e/w and n/s at each time",minunodet_id
       
       if (ics.eq.2) then
           iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 52, 
@@ -8507,11 +8367,11 @@ CCCCC CF
 
       if (ics.eq.2) then
           iret = nf_put_att_text(ncid, u_id, 'long_name', 38, 
-     &    'station vertical averaged e/w velocity')
+     &    'station vertically averaged e/w velocity')
       else
 
       iret = nf_put_att_text(ncid, u_id, 'long_name', 49, 
-     &       'station vertical averaged velocity in x-direction')
+     &       'station vertically averaged velocity in x-direction')
       endif
       CALL check_err(iret)
 
@@ -8538,16 +8398,13 @@ CCCCC CF
       endif
       CALL check_err(iret)
       
-!      doubleval(1) = -99999.
       iret = nf_put_att_double(ncid, u_id, 'missing_values', 
      &       NF_DOUBLE, 1, doubleval)
       CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_double(ncid, u_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
       
-!      doubleval(1) = -99999.
       iret = nf_put_att_double(ncid, u_id, 'dry_Value', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -8560,12 +8417,12 @@ CCCCC CF
 
       if (ics.eq.2) then
          iret = nf_put_att_text(ncid, v_id, 'long_name', 38, 
-     &         'station vertical averaged n/s velocity')
+     &         'station vertically averaged n/s velocity')
 
        else
 
           iret = nf_put_att_text(ncid, v_id, 'long_name', 49, 
-     &          'station vertical averaged velocity in y-direction')
+     &          'station vertically averaged velocity in y-direction')
       endif
       CALL check_err(iret)
 
@@ -8593,15 +8450,12 @@ CCCCC CF
       endif
       CALL check_err(iret)
 
-!      doubleval(1) = -99999.
       iret = nf_put_att_DOUBLE(ncid, v_id, 'missing_values', 
      &       NF_DOUBLE, 1, doubleval)
       CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_DOUBLE(ncid, v_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_DOUBLE(ncid, v_id, 'dry_Value', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -8795,6 +8649,30 @@ CCCCC CF
           CALL check_err(iret)   
           FIRST62=0
       ENDIF
+
+      IF(ncmode.eq.0) go to 9999
+      IF(ncmode.eq.2) THEN
+         iret=nf_inq_varid(ncid,"time",timenc_id)
+         iret=nf_inq_varid(ncid,"u-vel",u_id)
+         iret=nf_inq_varid(ncid,"v-vel",v_id)
+         iret=nf_inq_varid(ncid,"minuvelt",minut_id)
+         iret=nf_inq_varid(ncid,"maxuvelt",maxut_id)
+         iret=nf_inq_varid(ncid,"minvvelt",minvt_id)
+         iret=nf_inq_varid(ncid,"maxvvelt",maxvt_id)
+         iret=nf_inq_varid(ncid,"minuveln",minun_id)
+         iret=nf_inq_varid(ncid,"maxuveln",maxun_id)
+         iret=nf_inq_varid(ncid,"minvveln",minvn_id)
+         iret=nf_inq_varid(ncid,"maxvveln",maxvn_id)
+         iret=nf_inq_varid(ncid,"minunodet",minunodet_id)
+         iret=nf_inq_varid(ncid,"maxunodet",maxunodet_id)
+         iret=nf_inq_varid(ncid,"minvnodet",minvnodet_id)
+         iret=nf_inq_varid(ncid,"maxvnodet",maxvnodet_id)
+         iret=nf_inq_varid(ncid,"minutimen",minutimen_id)
+         iret=nf_inq_varid(ncid,"maxutimen",maxutimen_id)
+         iret=nf_inq_varid(ncid,"minvtimen",minvtimen_id)
+         iret=nf_inq_varid(ncid,"maxvtimen",maxvtimen_id)
+      ENDIF
+
 !     ----------
 !     Store time
 !     ----------
@@ -8977,13 +8855,11 @@ CCCCC CF
       WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       WRITE(6,*) "-----------------------------------------------------"
       
-      iret = nf_close(ncid)
+9999  iret = nf_close(ncid)
       CALL check_err(iret)
       WRITE(6,*)'end subroutine writenc62'
 
       end subroutine writenc62     
- 
-
 
 !=======================================================================
 !     Subroutine writenc71
@@ -9022,6 +8898,7 @@ CCCCC CF
      &                      x,y,depth,
      &                      nope_len, neta_len, nbdv, 
      &                      nbou_len, nvel_len, nbvv,
+     &                      ncmode,
      &                      title, institution, source, history,
      &                      references, comments, host, convention,
      &                      contact,
@@ -9190,13 +9067,13 @@ CCCCC CF
       REAL*8    dtdp, statim,reftim, rnday, dramp, tau0
       REAL*8    a00, b00, c00,h0
       REAL*8    ffactor,esl, cori
-!      REAL*8    nele
       REAL(sz)  slam0, sfea0
       REAL(sz)  slam0deg, sfea0deg
       CHARACTER(80) rundes, runid, agrid
       INTEGER, SAVE  :: FIRST71 = 1 
       INTEGER NDATA
       INTEGER, SAVE  :: NREC = 0
+      INTEGER ncmode
 !     -----------------
 !     Attribute vectors
 !     -----------------
@@ -9204,7 +9081,6 @@ CCCCC CF
       INTEGER counti(1), starti(1), n
       INTEGER count(2), start(2)
       REAL    realval(1)
-!      DOUBLE PRECISION  doubleval(1)
 !     -----------------
 !     Attribute general
 !     -----------------
@@ -9221,6 +9097,9 @@ CCCCC CF
       integer   values(8)
       real*8    xmin, xmax
 
+!     -------------------------
+!     Save dims, ids, variables
+!     -------------------------
       save node_dim, elem_dim, nface_dim
       save nope_dim, neta_dim, nbou_dim, nvel_dim
       save zeta_id, X_id, Y_id
@@ -9235,51 +9114,9 @@ CCCCC CF
 !     ---------------------------
       WRITE(6,*) "-----------------------------------------------------"
 
-!       do i=1, 10
-!       write(6,*) ' x(i),y(i),depth(i)****',x(i),y(i)
-!       end do
-!       write(6,*) "*****************Time inside subroutine ", timenc(1)
-       NREC = NREC + 1
-!       WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
-!       WRITE (6,*)'========= timenc_len, node_len =======',
-!     &  timenc_len, node_len
-!       WRITE (6,*)'========= NREC =======', NREC, 
-!     & (zeta(node_len,1), node_len=1,3)
-!         WRITE(6,*) "BASE DATE", base_date
-!         WRITE(6,*) "ADC_VERSION", ADC_VERSION
-!         WRITE(6,*) "AGRID", AGRID
-      
+      NREC = NREC + 1
 
-!     --------------------------------
-!     Switch order in array for NETCDF
-!     --------------------------------
-      do i=1, elem_len
-      do j=1, nface_len
-         element(j,i) = nm (i,j)
-      end do
-      end do
-!      do n=1,node_len
-!         write(6,*)"WRITE STATION ", 
-!     &              STATNAMEM(n,SNAMLEN)
-!     &              STATNUMB(n,SNUMLEN),STATNAME(n,SNAMLEN)
-!      end do
-!         write(6,*) "elem -- ", i, element (1,i), element(2,i),element(3,i)
-!     -----------------
-!     Enter define mode
-!     -----------------
-      IF(FIRST71.EQ.1) THEN
-         WRITE (6,*)'****FIRST71 = 1 ****',FIRST71
-         FILEFORT = 'fort.'
-         FILEEXT = '.nc'
-         WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
-         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
-         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
-                  
-         IF(nout.eq. 3) THEN
-           iret = nf_create(FILENAME, NF_CLOBBER, ncid)
-           CALL check_err(iret)
-           FIRST71=0
-         ENDIF
+      IF(FIRST71.EQ.1.and.ncmode.NE.0) THEN
          
          ALLOCATE ( minzetan71  (node_len) )
          ALLOCATE ( maxzetan71  (node_len) )
@@ -9289,15 +9126,47 @@ CCCCC CF
          do n=1,node_len
             minzetan71  (n) =  9999.d0
             maxzetan71  (n) = -9999.d0
-            minztimen71 (n) = -9999.d0
+            minztimen71 (n) =  9999.d0
             maxztimen71 (n) = -9999.d0
          end do
+       ENDIF
 
+       IF(ncmode.eq.2) FIRST71=0
+!       WRITE(6,*)"==================71 NC========================="
+!     --------------------------------
+!     Switch order in array for NETCDF
+!     --------------------------------
+      do i=1, elem_len
+      do j=1, nface_len
+         element(j,i) = nm (i,j)
+      end do
+      end do
+!     -----------------
+!     Enter define mode
+!     -----------------
+!         WRITE (6,*)'****FIRST71 = 1 ****',FIRST71
+         FILEFORT = 'fort.'
+         FILEEXT = '.nc'
+         WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+                  
+      IF(FIRST71.EQ.1) THEN
+         IF(nout.eq. 3) THEN
+           iret = nf_create(FILENAME, NF_CLOBBER, ncid)
+           CALL check_err(iret)
+           FIRST71=0
+         ENDIF
+         
 !     --------------------------------
 !     Convert to degress for NETCDF I/O
 !     --------------------------------
+               SLAM0DEG=SLAM0
+               SFEA0DEG=SFEA0
+               IF (NCMODE.EQ.1) THEN
                SLAM0DEG=SLAM0*RAD2DEG
                SFEA0DEG=SFEA0*RAD2DEG
+               ENDIF
 
 !     =================
 !     Define dimensions
@@ -9320,7 +9189,6 @@ CCCCC CF
       iret = nf_def_var(ncid, 'time',NF_DOUBLE,timenc_rank, timenc_dims, 
      &                  timenc_id)
       CALL check_err(iret)
-!      WRITE(6,*)'AFTER DEFINE TIME'
      
 !     -------------------
 !     Define X
@@ -9353,7 +9221,6 @@ CCCCC CF
      &                  ZETA_id)
       
       CALL check_err(iret)
-!       WRITE(6,*)'AFTER DEFINE ZETA'
 !     ----------------------------
 !     Define minimum zeta at times
 !     ----------------------------
@@ -9362,7 +9229,7 @@ CCCCC CF
       iret = nf_def_var(ncid, 'minprest', NF_DOUBLE, minzetat_rank, 
      &                  minzetat_dims, minzetat_id)
       CALL check_err(iret)
-!      WRITE(6,*) ' AFTER  Define minimum zeta'
+!      WRITE(6,*) ' 71- AFTER  Define minimum zeta'
 !     ----------------------------
 !     Define maximum zeta at times
 !     ----------------------------
@@ -9413,13 +9280,11 @@ CCCCC CF
       maxztimen_dims(1) = node_dim
       iret = nf_def_var(ncid, 'maxptimen', NF_DOUBLE, maxztimen_rank, 
      &                  maxztimen_dims, maxztimen_id)
-      CALL check_err(iret)
-
-       
+      CALL check_err(iret)       
 !     -----------------
 !     Assign attributes
 !     -----------------
-!      WRITE(6,*) ' BEFORE assign attributes'
+!      WRITE(6,*) '71 - BEFORE assign attributes'
       
 !     ----------------------------
 !     Define longitude attributes
@@ -9470,7 +9335,6 @@ CCCCC CF
       	       CALL check_err(iret)
 
        else
-
       
 !     ------------------------------
 !     Define x-coordinate attributes
@@ -9692,7 +9556,7 @@ CCCCC CF
      &       len_trim(date_string),date_string)
       CALL check_err(iret)
  
-!      WRITE(6,*)'BEFORE global attributes from fort.15'
+!      WRITE(6,*)'71 - BEFORE global attributes from fort.15'
 !     -------------------------------------------
 !     writing global attributes from fort.15 file 
 !     -------------------------------------------
@@ -9811,9 +9675,9 @@ CCCCC CF
 !     --------------------
 !      write(6,*)'nf put var'
 
-!      do i= 1, node_len
-!         write(6,'(A50)')STATNAMEM(i,SNAMLEN)
-!      end do
+!       do i= 1, node_len
+!          write(6,'(A50)')"FORT 71 ====", STATNAMEM(i,SNAMLEN)
+!       end do
  
       do i=1,node_len
          start(1)=1
@@ -9835,16 +9699,32 @@ CCCCC CF
           FIRST71=0
       ENDIF
 
+      IF(ncmode.eq.0) go to 9999
+      IF(ncmode.eq.2) THEN
+!        WRITE(6,*)"71-ncmode = 2"
+         iret=nf_inq_varid(ncid,"time"     ,timenc_id)
+         iret=nf_inq_varid(ncid,"pressure" ,zeta_id)
+         iret=nf_inq_varid(ncid,"minprest" ,minzetat_id)
+         iret=nf_inq_varid(ncid,"maxprest" ,maxzetat_id)
+         iret=nf_inq_varid(ncid,"minpresn" ,minzetan_id)
+         iret=nf_inq_varid(ncid,"maxpresn" ,maxzetan_id)
+         iret=nf_inq_varid(ncid,"minpnodet",minznodet_id)
+         iret=nf_inq_varid(ncid,"maxpnodet",maxznodet_id)
+         iret=nf_inq_varid(ncid,"minptimen",minztimen_id)
+         iret=nf_inq_varid(ncid,"maxptimen",maxztimen_id)
+      ENDIF
+
 !     ----------
 !     Store time
 !     ----------
+!         WRITE(6,*)" 71-Store time"
 
       starti(1)=nrec
       counti(1)=timenc_len
       iret = nf_put_vara_DOUBLE(ncid, timenc_id, starti,counti, timenc)
       CALL check_err(iret)
 
-!      WRITE(6,*)'AFTER store time'
+!      WRITE(6,*)'71-AFTER store time'
       
 !     ---------------------------
 !     Store zeta
@@ -9853,7 +9733,7 @@ CCCCC CF
       count(2)=timenc_len
       start(1)=1
       start(2)=nrec
-!      WRITE(6,*)'Z--START COUNT',start(1),start(2),count(1),count(2)
+!      WRITE(6,*)'71-Z--START COUNT'
       iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, count, zeta)
       CALL check_err(iret)
 
@@ -9870,6 +9750,8 @@ CCCCC CF
       IF(.NOT. ALLOCATED(maxznodet))ALLOCATE( maxznodet(timenc_len))
       IF(.NOT. ALLOCATED(minztimen71))ALLOCATE( minztimen71(  node_len))
       IF(.NOT. ALLOCATED(maxztimen71))ALLOCATE( maxztimen71(  node_len))
+!      WRITE(6,*)'71-ALLOCATED'
+
 !     ------------
 !     in each node
 !     ------------
@@ -9900,7 +9782,7 @@ CCCCC CF
 !     ---------------------------
 !     Calculating zeta maximum
 !     ---------------------------
-!      WRITE(6,*)'BEFORE CALCULATE ZETA MAX'
+!      WRITE(6,*)'71-BEFORE CALCULATE ZETA MAX'
 !     ------------
 !     in each node
 !     ------------
@@ -9927,21 +9809,13 @@ CCCCC CF
       CALL check_err(iret)
       iret=nf_put_vara_INT(ncid,maxznodet_id,(/nrec/),(/1/),maxznodet)
       CALL check_err(iret)
-!      WRITE(6,*)'AFTER CALCULATE ZETA MAX'
+!      WRITE(6,*)'71-AFTER CALCULATE ZETA MAX'
 
 !     ---------------------------
 !     Closing fort.X3 netCDF file
 !     ---------------------------
-!      WRITE(6,*)"NREC = ", NREC," NDATA = ",NDATA
+!       WRITE(6,*)"71-NREC = ", NREC," NDATA = ",NDATA
       IF(NREC.EQ.NDATA) THEN
-      
-!         do n=1,node_len
-         
-!         write(6,*)"MIN 71 = ",minzetan71 (n)
-!         write(6,*)"MAX 71 = ",maxzetan71 (n)
-!         end do
-
-      
          iret = nf_put_var_double(ncid, minzetan_id, minzetan71)
          CALL check_err(iret)
          iret = nf_put_var_double(ncid, maxzetan_id, maxzetan71)
@@ -9955,7 +9829,7 @@ CCCCC CF
       WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       WRITE(6,*) "-----------------------------------------------------"
       
-      iret = nf_close(ncid)
+9999  iret = nf_close(ncid)
       CALL check_err(iret)
       WRITE(6,*)'end subroutine writenc71'
      
@@ -10001,6 +9875,7 @@ CCCCC CF
      &                      x,y,depth,
      &                      nope_len, neta_len, nbdv, 
      &                      nbou_len, nvel_len, nbvv,
+     &                      ncmode,
      &                      title, institution, source, history,
      &                      references, comments, host, convention,
      &                      contact,
@@ -10237,6 +10112,7 @@ CCCCC CF
       INTEGER, SAVE  :: FIRST72 = 1 
       INTEGER NDATA
       INTEGER, SAVE  :: NREC = 0
+      INTEGER ncmode
 
 !     -----------------
 !     Attribute vectors
@@ -10262,6 +10138,9 @@ CCCCC CF
       character zone*5
       integer   values(8)
 
+!     -------------------------
+!     Save dims, ids, variables
+!     -------------------------
       save node_dim,  elem_dim, nface_dim
       save nope_dim, neta_dim, nbou_dim, nvel_dim
       save u_id, v_id, X_id, Y_id
@@ -10281,38 +10160,8 @@ CCCCC CF
 !     ---------------------------
       WRITE(6,*) "-----------------------------------------------------"
 
-!       write(6,*) "*****************Time inside subroutine ", timenc(1)
-       NREC = NREC + 1
-!       WRITE (6,*)'========= FILEUNIT =======', FILEUNIT
-!       WRITE (6,*)'========= NREC =======', NREC, timenc(timenc_len)
-!       WRITE (6,*)'========= time_len, node_len =======',
-!     &  timenc_len, node_len
-     
-
-!     --------------------------------
-!     Switch order in array for NETCDF
-!     --------------------------------
-      do i=1, elem_len
-         do j=1, nface_len
-            element(j,i) = nm (i,j)
-         end do
-      end do
-      
-!     -----------------
-!     Enter define mode
-!     -----------------
-      IF(FIRST72.EQ.1) THEN
-!         WRITE (6,*)'****FIRST72 = 1 ****',FIRST72
-         FILEFORT = 'fort.'
-         FILEEXT = '.nc'
-         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
-         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
-         
-         if(nout.eq. 3) then
-            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
-         CALL check_err(iret)
-          FIRST72=0
-         endif
+      NREC = NREC + 1
+         IF(FIRST72.EQ.1.and.ncmode.NE.0) THEN
          
          ALLOCATE ( minun72 (node_len) )
          ALLOCATE ( maxun72 (node_len) )
@@ -10330,17 +10179,47 @@ CCCCC CF
             minvn72 (n) =  9999.d0
             maxvn72 (n) = -9999.d0
 
-            minutimen72 (n) = -9999.d0
+            minutimen72 (n) =  9999.d0
             maxutimen72 (n) = -9999.d0
-            minvtimen72 (n) = -9999.d0
+            minvtimen72 (n) =  9999.d0
             maxvtimen72 (n) = -9999.d0
 
          end do
+      ENDIF
+
+       IF(ncmode.eq.2) FIRST72=0
+!     --------------------------------
+!     Switch order in array for NETCDF
+!     --------------------------------
+      do i=1, elem_len
+         do j=1, nface_len
+            element(j,i) = nm (i,j)
+         end do
+      end do
+      
+!     -----------------
+!     Enter define mode
+!     -----------------
+         FILEFORT = 'fort.'
+         FILEEXT = '.nc'
+         WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+         
+         IF(FIRST72.EQ.1) THEN
+         if(nout.eq. 3) then
+            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
+         CALL check_err(iret)
+          FIRST72=0
+         endif
 !     --------------------------------
 !     Convert to degress for NETCDF I/O
 !     --------------------------------
+               SLAM0DEG=SLAM0
+               SFEA0DEG=SFEA0
+               IF (NCMODE.EQ.1) THEN
                SLAM0DEG=SLAM0*RAD2DEG
                SFEA0DEG=SFEA0*RAD2DEG
+               ENDIF
 !     -----------------
 !     Define dimensions
 !     -----------------
@@ -11302,9 +11181,6 @@ CCCCC CF
       iret = nf_put_att_text(ncid, timenc_id, 'base_date',
      . (LEN(TRIM(base_date(1:INDEX(base_date,"!")-1)))), base_date)
       CALL check_err(iret)
-      
-!!+++++ removed u v
-
 !     -----------------
 !     Global attributes
 !     -----------------
@@ -11489,11 +11365,34 @@ CCCCC CF
 !     Open old netcdf file
 !     =====================
       ELSE
-!          WRITE (6,*)'****FIRST72 = 0 ****',FIRST72
           iret = NF_OPEN(FILENAME, NF_WRITE, ncid)
           CALL check_err(iret)   
           FIRST72=0
       ENDIF
+
+      IF(ncmode.eq.0) go to 9999
+      IF(ncmode.eq.2) THEN
+         iret=nf_inq_varid(ncid,"time",timenc_id)
+         iret=nf_inq_varid(ncid,"windx",u_id)
+         iret=nf_inq_varid(ncid,"windy",v_id)
+         iret=nf_inq_varid(ncid,"minuvelt",minut_id)
+         iret=nf_inq_varid(ncid,"maxuvelt",maxut_id)
+         iret=nf_inq_varid(ncid,"minvvelt",minvt_id)
+         iret=nf_inq_varid(ncid,"maxvvelt",maxvt_id)
+         iret=nf_inq_varid(ncid,"minuveln",minun_id)
+         iret=nf_inq_varid(ncid,"maxuveln",maxun_id)
+         iret=nf_inq_varid(ncid,"minvveln",minvn_id)
+         iret=nf_inq_varid(ncid,"maxvveln",maxvn_id)
+         iret=nf_inq_varid(ncid,"minunodet",minunodet_id)
+         iret=nf_inq_varid(ncid,"maxunodet",maxunodet_id)
+         iret=nf_inq_varid(ncid,"minvnodet",minvnodet_id)
+         iret=nf_inq_varid(ncid,"maxvnodet",maxvnodet_id)
+         iret=nf_inq_varid(ncid,"minutimen",minutimen_id)
+         iret=nf_inq_varid(ncid,"maxutimen",maxutimen_id)
+         iret=nf_inq_varid(ncid,"minvtimen",minvtimen_id)
+         iret=nf_inq_varid(ncid,"maxvtimen",maxvtimen_id)
+      ENDIF
+
 !     ----------
 !     Store time
 !     ----------
@@ -11523,26 +11422,25 @@ CCCCC CF
 !     ---------------------------
 !     Calculating u minimum in each node
 !     ---------------------------
-      IF(.NOT. ALLOCATED(minut))ALLOCATE( minut(timenc_len))
-      IF(.NOT. ALLOCATED(maxut))ALLOCATE( maxut(timenc_len))
-      IF(.NOT. ALLOCATED(minun72))ALLOCATE( minun72(node_len))
-      IF(.NOT. ALLOCATED(maxun72))ALLOCATE( maxun72(node_len))
+      IF(.NOT. ALLOCATED(minut))      ALLOCATE( minut(timenc_len))
+      IF(.NOT. ALLOCATED(maxut))      ALLOCATE( maxut(timenc_len))
+      IF(.NOT. ALLOCATED(minun72))    ALLOCATE( minun72(node_len))
+      IF(.NOT. ALLOCATED(maxun72))    ALLOCATE( maxun72(node_len))
 
-      IF(.NOT. ALLOCATED(minvt))ALLOCATE( minvt(timenc_len))
-      IF(.NOT. ALLOCATED(maxvt))ALLOCATE( maxvt(timenc_len))
-      IF(.NOT. ALLOCATED(minvn72))ALLOCATE( minvn72(node_len))
-      IF(.NOT. ALLOCATED(maxvn72))ALLOCATE( maxvn72(node_len))
+      IF(.NOT. ALLOCATED(minvt))      ALLOCATE( minvt(timenc_len))
+      IF(.NOT. ALLOCATED(maxvt))      ALLOCATE( maxvt(timenc_len))
+      IF(.NOT. ALLOCATED(minvn72))    ALLOCATE( minvn72(node_len))
+      IF(.NOT. ALLOCATED(maxvn72))    ALLOCATE( maxvn72(node_len))
 
-      IF(.NOT. ALLOCATED(minunodet))ALLOCATE( minunodet(timenc_len))
-      IF(.NOT. ALLOCATED(maxunodet))ALLOCATE( maxunodet(timenc_len))
-      IF(.NOT. ALLOCATED(minutimen72))ALLOCATE( minutimen72(  node_len))
-      IF(.NOT. ALLOCATED(maxutimen72))ALLOCATE( maxutimen72(  node_len))
+      IF(.NOT. ALLOCATED(minunodet))  ALLOCATE( minunodet(timenc_len))
+      IF(.NOT. ALLOCATED(maxunodet))  ALLOCATE( maxunodet(timenc_len))
+      IF(.NOT. ALLOCATED(minutimen72))ALLOCATE( minutimen72(node_len))
+      IF(.NOT. ALLOCATED(maxutimen72))ALLOCATE( maxutimen72(node_len))
 
-      IF(.NOT. ALLOCATED(minvnodet))ALLOCATE( minvnodet(timenc_len))
-      IF(.NOT. ALLOCATED(maxvnodet))ALLOCATE( maxvnodet(timenc_len))
-      IF(.NOT. ALLOCATED(minvtimen72))ALLOCATE( minvtimen72(  node_len))
-      IF(.NOT. ALLOCATED(maxvtimen72))ALLOCATE( maxvtimen72(  node_len))
-
+      IF(.NOT. ALLOCATED(minvnodet))  ALLOCATE( minvnodet(timenc_len))
+      IF(.NOT. ALLOCATED(maxvnodet))  ALLOCATE( maxvnodet(timenc_len))
+      IF(.NOT. ALLOCATED(minvtimen72))ALLOCATE( minvtimen72(node_len))
+      IF(.NOT. ALLOCATED(maxvtimen72))ALLOCATE( maxvtimen72(node_len))
 !     ------------
 !     in each node
 !     ------------
@@ -11675,11 +11573,12 @@ CCCCC CF
       WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       WRITE(6,*) "-----------------------------------------------------"
       
-      iret = nf_close(ncid)
+9999  iret = nf_close(ncid)
       CALL check_err(iret)
       WRITE(6,*)'end subroutine writenc72'
 
       end subroutine writenc72     
+
 
       END MODULE NETCDFIO
 

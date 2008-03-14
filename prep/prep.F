@@ -28,6 +28,21 @@ C     output files for the parallel run. These files are initialized
 C     in the adcprep phase because they contain fulldomain data which
 C     are not available to the subdomains during a parallel run.
 C
+C     Revision history:
+C
+C     Date      Programmer                       Description of change
+C     ----      ----------                       ---------------------
+C     03/1/08  Cristina Forbes, PSGS @ UNC-IMS  Added memory allocation, 
+C                                               added boundary vector arrays,
+C                                               corrected coordinate systems,
+C                                               corrected stations' name variables,
+C                                               removed variable initialization,
+C                                               added logic for switching I/O mode,
+C                                               added switch to subroutine calls,
+C                                               corrected subroutine arguments,
+C                                               code clean-up.
+C      =================================================================
+C
 C---------------------------------------------------------------------------
       SUBROUTINE PREPNETCDF()
 C---------------------------------------------------------------------------
@@ -38,6 +53,7 @@ C      USE SIZES
      &    DTDP, TAU0, STATIM, REFTIM, RNDAY, DRAMP, A00, B00, C00,
      &    H0, SLAM0, SFEA0, CF, ESLM, CORI, DP, NBDV, NBVV,
      &    SLEL, SFEL, ICS, NT, NTRSPE, IHOT, NOLIBF, NOLIFA,
+     &    XEV,YEV,XEM,YEM,XEL,YEL,X,Y,NELG,DT, NTIF,
      &    NOLICA, NOLICAT, NWP, NCOR, NTIP, NWS, NRAMP, NBFR,
      &    NHY, NOPE, NETA, NBOU, NVEL, RAD2DEG,
      &    NVDLL, NVELL, IBTYPE,
@@ -58,16 +74,25 @@ C      USE SIZES
      &     eta22, uu22, vv22, pr22, WNCX22, WNCY22,
      &     writenc61, writenc62, writenc63, writenc64,
      &     writenc71, writenc72, writenc73, writenc74,
-     &     nopenc, nbounc
+     &     nbvvnc,
+     &     nbounc,nvelnc,nvellnc,
+     &     nopenc,netanc,nvdllnc,
+     &     ncmode
       IMPLICIT NONE      
       integer :: nbytes = 0
       INTEGER lun
       REAL(8) time
       INTEGER num_records
       INTEGER i
+      INTEGER k,j
+      INTEGER nface
+      INTEGER, PARAMETER :: SNAMELEN = 50
 
-      time = 0.d0
+!      time = 0.d0
       timenc_len=1
+      nface=3
+      ncmode=0
+
 
       IF(.NOT. ALLOCATED(timenc)) ALLOCATE(timenc(timenc_len))
       timenc(timenc_len)=time
@@ -76,35 +101,40 @@ C      USE SIZES
          lun = 61
          num_records = NSTAE
          IF(.NOT. ALLOCATED(et00nc))
-     &      ALLOCATE(et00nc(num_records,timenc_len))
+     &            ALLOCATE(et00nc(num_records,timenc_len))
          IF(.NOT. ALLOCATED(xenc))
-     &      ALLOCATE(xenc(num_records))
+     &            ALLOCATE(xenc(num_records))
          IF(.NOT. ALLOCATED(yenc))
-     &      ALLOCATE(yenc(num_records))
-         IF (.NOT.ALLOCATED(STATNAME)) ALLOCATE(STATNAME(NSTAE,50))
-         DO I=1, num_records
-            et00nc (i,timenc_len) = 0.d0
-         END DO
-         IF(ICS.EQ.2) THEN
+     &            ALLOCATE(yenc(num_records))
+         IF (.NOT.ALLOCATED(STATNAME))
+     &            ALLOCATE(STATNAME(num_records,SNAMELEN))
+         
+        IF(ICS.EQ.2) THEN
             DO I=1, num_records
-               xenc(i)=SLEL(I)*RAD2DEG
-               yenc(i)=SFEL(I)*RAD2DEG
+               xenc(i)=SLEL(I)
+               yenc(i)=SFEL(I)
             END DO
+            ELSE
+               DO I=1,num_records
+             	  xenc(i)=XEL(I)
+                  yenc(i)=YEL(I)
+               END DO
          ENDIF
 
          CALL writenc61 (NOUTE,
      &          lun, timenc_len, num_records, timenc,
      &          et00nc, nt, NTRSPE, rundes, runid, agrid, irtype,
-     &          dtdp, ihot, ics, nolibf, nolifa,
+     &          dt, ihot, ics, nolibf, nolifa,
      &          nolica, nolicat, nwp,
      &          ncor, ntip, nws, nramp, tau0,
      &          statim,reftim, rnday, dramp,
      &          a00, b00, c00, h0,
      &          slam0, sfea0, cf,eslm, cori,
-     &          MNTIF, nbfr, MNE, nhy, nm,
+     &          NTIF, nbfr, NELG, nface,nm,
      &          xenc, yenc, dp,
      &          nope, neta, nbdv,
      &          nbou, nvel, nbvv,
+     &          ncmode,
      &          title, institution, source, history,
      &          references, comments, host, convention, contact,
      &          base_date)
@@ -115,7 +145,6 @@ C      USE SIZES
       IF (NOUTV.EQ.3) THEN  !fort.62
          lun = 62
          num_records = NSTAV
-         IF (.NOT.ALLOCATED(STATNAMEV)) ALLOCATE(STATNAMEV(NSTAV,50))
          IF(.NOT. ALLOCATED(UU00nc))
      &      ALLOCATE(UU00nc(num_records,timenc_len))
          IF(.NOT. ALLOCATED(VV00nc))
@@ -124,31 +153,35 @@ C      USE SIZES
      &      ALLOCATE(xvnc(num_records))
          IF(.NOT. ALLOCATED(yvnc))
      &      ALLOCATE(yvnc(num_records))
-         IF (.NOT.ALLOCATED(STATNAMEV)) ALLOCATE(STATNAMEV(NSTAV,50))
-         DO I=1, num_records
-            UU00nc (i,timenc_len) = 0.d0
-            VV00nc (i,timenc_len) = 0.d0
-         END DO
+         IF (.NOT.ALLOCATED(STATNAMEV))
+     &       ALLOCATE(STATNAMEV(num_records,50))
+
          IF(ICS.EQ.2) THEN
             DO I=1, num_records
-               xvnc(i)=SLEV(I)*RAD2DEG
-               yvnc(i)=SFEV(I)*RAD2DEG
+                xvnc(i)=SLEV(I)
+                yvnc(i)=SFEV(I)
             END DO
+            ELSE
+               DO I=1,num_records
+              	  xvnc(i)=XEV(I)
+                  yvnc(i)=YEV(I)
+               END DO
          ENDIF
 
          CALL writenc62 (NOUTV,
      &          lun, timenc_len, num_records, timenc,
      &          nt,NTRSPV,UU00nc,VV00nc,rundes,runid,agrid,irtype,
-     &          dtdp, ihot, ics, nolibf, nolifa,
+     &          dt, ihot, ics, nolibf, nolifa,
      &          nolica, nolicat, nwp,
      &          ncor, ntip, nws, nramp, tau0,
      &          statim,reftim, rnday, dramp,
      &          a00, b00, c00, h0,
      &          slam0, sfea0, cf,eslm, cori,
-     &          MNTIF, nbfr, MNE, nhy, nm,
+     &          NTIF, nbfr, NELG, nface,nm,
      &          xvnc, yvnc, dp,
      &          nope, neta, nbdv,
      &          nbou, nvel, nbvv,
+     &                      ncmode,
      &          title, institution, source, history,
      &          references, comments, host, convention, contact,
      &          base_date)
@@ -165,36 +198,98 @@ C      USE SIZES
      &      ALLOCATE(xnc(num_records))
          IF(.NOT. ALLOCATED(ync))
      &      ALLOCATE(ync(num_records))
-         DO I=1, num_records
-            eta22(i,timenc_len) = 0.d0
-         END DO
-         IF(ICS.EQ.2) THEN
-            DO I=1, num_records
-               xnc(i)=SLAM(I)*RAD2DEG
-               ync(i)=SFEA(I)*RAD2DEG
-            END DO
-         ENDIF
+            IF(.NOT. ALLOCATED(nbvvnc)) ALLOCATE(nbvvnc(nbou,nvel))
+            IF(.NOT. ALLOCATED(nvellnc)) ALLOCATE(nvellnc(nbou))
+            IF(.NOT. ALLOCATED(nvdllnc)) ALLOCATE(nvdllnc(nope))
+            IF(.NOT. ALLOCATED(ibtype)) ALLOCATE(ibtype(nbou))
 
-         IF (.NOT.ALLOCATED(nopenc))
-     &      ALLOCATE(nopenc(neta))
-         IF (.NOT.ALLOCATED(nbounc))
-     &      ALLOCATE(nbounc(nvel))
+               DO I=1,num_records
+             	     xnc(i)=X(i)
+                     ync(i)=Y(i)
+       	       END DO
+!
+!            elevation specified boundary forcing segments
+!
+               netanc=0
+               DO i=1,nope
+                  nvdllnc(i)=nvdll(i)
+                  netanc=netanc+nvdllnc(i)
+              END DO
+
+            IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
+               
+               k=0
+                  DO i=1,nope
+                        DO j=1,nvdllnc(i)
+                        k=k+1
+             	        nopenc(k)=nbdv(i,j)
+                     END DO
+                  END DO
+!
+!              normal flow (discharge) specified boundary segments
+!
+               nvelnc=0
+               DO i=1,nbou
+                  nvellnc(i)=nvell(i)
+                  nvelnc=nvelnc+nvellnc(i)
+                  DO j=1,nvel
+             	     nbvvnc(i,j)=nbvv(i,j)
+                 END DO
+               END DO
+
+            IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
+               
+               k=0
+                  DO i=1,nbou
+                        DO j=1,nvellnc(i)
+                        k=k+1
+             	        nbounc(k)=nbvv(i,j)
+                     END DO
+                  END DO
+
+            WRITE(633,*)"**noutge, fileunit,timenc_len, np, timenc",
+     &             noutge, fileunit,timenc_len, num_records, timenc,
+     &             "**eta22",
+     &             eta22, "** nt = ", nt, "** ndsetse = ", ndsetse,
+     &             "** rundes = ", rundes, runid, agrid,
+     &             "** irtype = ", irtype,
+     &             "** dtdp = ", dtdp,  "** ihot = ", ihot,
+     &             "** ics, nolibf, nolifa = ", ics, nolibf, nolifa,
+     &             "** nolica, nolicat, nwp = ",nolica, nolicat, nwp,
+     &             "** ncor, ntip, nws, nramp, tau0 = ", ncor, ntip,
+     &             nws, nramp, tau0,
+     &             "** statim,reftim, rnday, dramp = ",statim,
+     &             reftim, rnday, dramp,
+     &             "** a00, b00, c00, h0 = ",a00, b00, c00, h0,
+     &             "** slam0, sfea0, cf,eslm, cori = ", slam0, sfea0,
+     &             cf,eslm, cori,
+     &             "**  ntif, nbfr, ne, nhy, nm = ", ntif, nbfr,
+     &             nhy, nm,
+     &             "**  x = ", xnc, "**  y = ", ync, "**  dp = ", dp,
+     &             "nope, neta, nbdv = ", nope, neta, nbdv,
+     &             "nbou, nvel, nbvv = ", nbou, nvel, nbvvnc, 
+     &              "nbounc", nbounc,"nvellnc", nvellnc,
+     &             "ibtypenc",ibtype,"netanc",netanc,"nopenc",nopenc,
+     &             "nvdllnc",nvdllnc,
+     &             title, institution, source, history,
+     &             references, comments, host, convention, contact,
+     &             base_date
+
 
          CALL writenc63 (NOUTGE,
      &          lun, timenc_len, num_records, timenc,
      &          eta22, nt, NDSETSE, rundes, runid, agrid, irtype,
-     &          dtdp, ihot, ics, nolibf, nolifa,
+     &          dt, ihot, ics, nolibf, nolifa,
      &          nolica, nolicat, nwp,
      &          ncor, ntip, nws, nramp, tau0,
      &          statim,reftim, rnday, dramp,
      &          a00, b00, c00, h0,
      &          slam0, sfea0, cf,eslm, cori,
-     &          MNTIF, nbfr, MNE, nhy, nm,
+     &          NTIF, nbfr, NELG, nface,nm,
      &          xnc, ync, dp,
-     &          nope, neta, nbdv,
-     &          nopenc, neta, nvdll,
-     &          nbou, nvel, nbvv,
-     &          nbounc, nvel, nvell, ibtype,
+     &          nope, neta, nbdv,nopenc,netanc,
+     &          nvdllnc, nbou, nvel, nbvvnc,nbounc,nvelnc,
+     &          nvellnc,ibtype, ncmode,
      &          title, institution, source, history,
      &          references, comments, host, convention, contact,
      &          base_date)
@@ -212,37 +307,69 @@ C      USE SIZES
      &      ALLOCATE(xnc(num_records))
          IF(.NOT. ALLOCATED(ync))
      &      ALLOCATE(ync(num_records))
-         DO I=1, num_records
-            uu22(i,timenc_len) = 0.d0
-            vv22(i,timenc_len) = 0.d0
-         END DO
-         IF(ICS.EQ.2) THEN
-            DO I=1, num_records
-               xnc(i)=SLAM(I)*RAD2DEG
-               ync(i)=SFEA(I)*RAD2DEG
-            END DO
-         ENDIF
+            IF(.NOT. ALLOCATED(nbvvnc)) ALLOCATE(nbvvnc(nbou,nvel))
+            IF(.NOT. ALLOCATED(nvellnc)) ALLOCATE(nvellnc(nbou))
+            IF(.NOT. ALLOCATED(nvdllnc)) ALLOCATE(nvdllnc(nope))
+            IF(.NOT. ALLOCATED(ibtype)) ALLOCATE(ibtype(nbou))
+              
+               DO I=1,num_records
+             	  xnc(i)=X(i)
+                  ync(i)=Y(i)
+               END DO
+!
+!            elevation specified boundary forcing segments
+!
+               netanc=0
+               DO i=1,nope
+                  nvdllnc(i)=nvdll(i)
+                  netanc=netanc+nvdllnc(i)
+              END DO
 
-         IF (.NOT.ALLOCATED(nopenc))
-     &      ALLOCATE(nopenc(neta))
-         IF (.NOT.ALLOCATED(nbounc))
-     &      ALLOCATE(nbounc(nvel))
+            IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
+               
+               k=0
+                  DO i=1,nope
+                        DO j=1,nvdllnc(i)
+                        k=k+1
+             	        nopenc(k)=nbdv(i,j)
+                     END DO
+                  END DO
+!
+!              normal flow (discharge) specified boundary segments
+!
+               nvelnc=0
+               DO i=1,nbou
+                  nvellnc(i)=nvell(i)
+                  nvelnc=nvelnc+nvellnc(i)
+                  DO j=1,nvel
+             	     nbvvnc(i,j)=nbvv(i,j)
+                 END DO
+               END DO
+
+            IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
+               
+               k=0
+                  DO i=1,nbou
+                        DO j=1,nvellnc(i)
+                        k=k+1
+             	        nbounc(k)=nbvv(i,j)
+                     END DO
+                  END DO
 
          CALL writenc64(NOUTGV,
      &          lun, timenc_len, num_records, timenc,
      &          nt,NDSETSV,uu22,vv22,rundes,runid,agrid,irtype,
-     &          dtdp, ihot, ics, nolibf, nolifa,
+     &          dt, ihot, ics, nolibf, nolifa,
      &          nolica, nolicat, nwp,
      &          ncor, ntip, nws, nramp, tau0,
      &          statim,reftim, rnday, dramp,
      &          a00, b00, c00, h0,
      &          slam0, sfea0, cf,eslm, cori,
-     &          MNTIF, nbfr, MNE, nhy, nm,
+     &          NTIF, nbfr, NELG, nface,nm,
      &          xnc, ync, dp,
-     &          nope, neta, nbdv,
-     &          nopenc, neta, nvdll,
-     &          nbou, nvel, nbvv,
-     &          nbounc, nvel, nvell, ibtype,
+     &          nope, neta, nbdv,nopenc,netanc,
+     &          nvdllnc, nbou, nvel, nbvvnc,nbounc,nvelnc,
+     &          nvellnc,ibtype, ncmode,
      &          title, institution, source, history,
      &          references, comments, host, convention, contact,
      &          base_date)
@@ -252,37 +379,48 @@ C      USE SIZES
       IF (NOUTM.EQ.3) THEN  !fort.71
          lun = 71
          num_records = NSTAM
-         IF (.NOT.ALLOCATED(STATNAMEM)) ALLOCATE(STATNAMEM(NSTAM,50))
          IF(.NOT. ALLOCATED(RMP00nc))
      &      ALLOCATE(RMP00nc(num_records,timenc_len))
-         IF(.NOT. ALLOCATED(xwnc))
-     &      ALLOCATE(xwnc(num_records))
-         IF(.NOT. ALLOCATED(ywnc))
-     &      ALLOCATE(ywnc(num_records))
-         IF (.NOT.ALLOCATED(STATNAMEM)) ALLOCATE(STATNAMEM(NSTAM,50))
-         DO I=1, num_records
-            RMP00nc (i,timenc_len) = 0.d0
-         END DO
+         IF(.NOT. ALLOCATED(xpnc))
+     &      ALLOCATE(xpnc(num_records))
+         IF(.NOT. ALLOCATED(ypnc))
+     &      ALLOCATE(ypnc(num_records))
+        IF (.NOT.ALLOCATED(STATNAMEM)) 
+     &       ALLOCATE(STATNAMEM(num_records,SNAMELEN))
+         
          IF(ICS.EQ.2) THEN
             DO I=1, num_records
-               xwnc(i)=SLEM(I)*RAD2DEG
-               ywnc(i)=SFEM(I)*RAD2DEG
+                xpnc(i)=SLEM(I)
+                ypnc(i)=SFEM(I)
+                
             END DO
+            ELSE
+                DO I=1,num_records
+          	   xpnc(i)=XEM(i)                       !maybe it should be xpnc(i)
+                   ypnc(i)=YEM(i)
+               END DO
          ENDIF
+
+               DO I=1,nope
+                  DO J=1,nvel
+             	  nbvvnc(i,j)=nbvv(i,j)
+                  END DO
+               END DO
 
          CALL writenc71 (NOUTM,
      &          lun, timenc_len, num_records, timenc,
      &          RMP00nc, nt, NTRSPM, rundes, runid, agrid, irtype,
-     &          dtdp, ihot, ics, nolibf, nolifa,
+     &          dt, ihot, ics, nolibf, nolifa,
      &          nolica, nolicat, nwp,
      &          ncor, ntip, nws, nramp, tau0,
      &          statim,reftim, rnday, dramp,
      &          a00, b00, c00, h0,
      &          slam0, sfea0, cf,eslm, cori,
-     &          MNTIF, nbfr, MNE, nhy, nm,
-     &          xwnc, ywnc, dp,
+     &          NTIF, nbfr, NELG, nface,nm,
+     &          xpnc, ypnc, dp,
      &          nope, neta, nbdv,
-     &          nbou, nvel, nbvv,
+     &          nbou, nvel, nbvvnc,
+     &                      ncmode,
      &          title, institution, source, history,
      &          references, comments, host, convention, contact,
      &          base_date)
@@ -297,35 +435,45 @@ C      USE SIZES
      &      ALLOCATE(RMU00nc(num_records,timenc_len))
          IF(.NOT. ALLOCATED(RMV00nc))
      &      ALLOCATE(RMV00nc(num_records,timenc_len))
-         IF(.NOT. ALLOCATED(xvnc))
+         IF(.NOT. ALLOCATED(xwnc))
      &      ALLOCATE(xwnc(num_records))
-         IF(.NOT. ALLOCATED(yvnc))
+         IF(.NOT. ALLOCATED(ywnc))
      &      ALLOCATE(ywnc(num_records))
-         IF (.NOT.ALLOCATED(STATNAMEM)) ALLOCATE(STATNAMEM(NSTAM,50))
-         DO I=1, num_records
-            RMU00nc (i,timenc_len) = 0.d0
-            RMV00nc (i,timenc_len) = 0.d0
-         END DO
+         IF (.NOT.ALLOCATED(STATNAMEM)) 
+     &    ALLOCATE(STATNAMEM(num_records,50))
+         
          IF(ICS.EQ.2) THEN
             DO I=1, num_records
-               xwnc(i)=SLEM(I)*RAD2DEG
-               ywnc(i)=SFEM(I)*RAD2DEG
+                xwnc(i)=SLEM(I)
+                ywnc(i)=SFEM(I)
             END DO
+            ELSE
+               DO I=1,num_records
+             	  xwnc(i)=XEM(i)
+                  ywnc(i)=YEM(i)
+               END DO
          ENDIF
+
+               DO I=1,nbou
+                  DO J=1,nvel
+             	  nbvvnc(i,j)=nbvv(i,j)
+                  END DO
+               END DO
 
          CALL writenc72(NOUTM,
      &          lun, timenc_len, num_records, timenc,
      &          nt,NTRSPM,RMU00nc,RMV00nc,rundes,runid,agrid,irtype,
-     &          dtdp, ihot, ics, nolibf, nolifa,
+     &          dt, ihot, ics, nolibf, nolifa,
      &          nolica, nolicat, nwp,
      &          ncor, ntip, nws, nramp, tau0,
      &          statim,reftim, rnday, dramp,
      &          a00, b00, c00, h0,
      &          slam0, sfea0, cf,eslm, cori,
-     &          MNTIF, nbfr, MNE, nhy, nm,
+     &          NTIF, nbfr, NELG, nface,nm,
      &          xwnc, ywnc, dp,
      &          nope, neta, nbdv,
-     &          nbou, nvel, nbvv,
+     &          nbou, nvel, nbvvnc,
+     &                      ncmode,
      &          title, institution, source, history,
      &          references, comments, host, convention, contact,
      &          base_date)
@@ -342,36 +490,72 @@ C      USE SIZES
      &      ALLOCATE(xnc(num_records))
          IF(.NOT. ALLOCATED(ync))
      &      ALLOCATE(ync(num_records))
-         DO I=1, num_records
-            pr22(i,timenc_len) = 0.d0
-         END DO
-         IF(ICS.EQ.2) THEN
-            DO I=1, num_records
-               xnc(i)=SLAM(I)*RAD2DEG
-               ync(i)=SFEA(I)*RAD2DEG
-            END DO
-         ENDIF
 
-         IF (.NOT.ALLOCATED(nopenc))
-     &      ALLOCATE(nopenc(neta))
-         IF (.NOT.ALLOCATED(nbounc))
-     &      ALLOCATE(nbounc(nvel))
+            IF(.NOT. ALLOCATED(nbvvnc)) ALLOCATE(nbvvnc(nbou,nvel))
+            IF(.NOT. ALLOCATED(nvellnc)) ALLOCATE(nvellnc(nbou))
+            IF(.NOT. ALLOCATED(nvdllnc)) ALLOCATE(nvdllnc(nope))
+            IF(.NOT. ALLOCATED(ibtype)) ALLOCATE(ibtype(nbou))
+
+               DO I=1,num_records
+             	     xnc(i)=X(i)
+                     ync(i)=Y(i)
+       	       END DO
+!
+!            elevation specified boundary forcing segments
+!
+               netanc=0
+               DO i=1,nope
+                  nvdllnc(i)=nvdll(i)
+                  netanc=netanc+nvdllnc(i)
+              END DO
+
+            IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
+               
+               k=0
+                  DO i=1,nope
+                        DO j=1,nvdllnc(i)
+                        k=k+1
+             	        nopenc(k)=nbdv(i,j)
+                     END DO
+                  END DO
+!
+!              normal flow (discharge) specified boundary segments
+!
+               nvelnc=0
+               DO i=1,nbou
+                  nvellnc(i)=nvell(i)
+                  nvelnc=nvelnc+nvellnc(i)
+                  DO j=1,nvel
+             	     nbvvnc(i,j)=nbvv(i,j)
+                 END DO
+               END DO
+
+            IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
+               
+               k=0
+                  DO i=1,nbou
+                        DO j=1,nvellnc(i)
+                        k=k+1
+             	        nbounc(k)=nbvv(i,j)
+                     END DO
+                  END DO
 
          CALL writenc73 (NOUTGW,
      &          lun, timenc_len, num_records, timenc,
      &          pr22, nt, NDSETSW, rundes, runid, agrid, irtype,
-     &          dtdp, ihot, ics, nolibf, nolifa,
+     &          dt, ihot, ics, nolibf, nolifa,
      &          nolica, nolicat, nwp,
      &          ncor, ntip, nws, nramp, tau0,
      &          statim,reftim, rnday, dramp,
      &          a00, b00, c00, h0,
      &          slam0, sfea0, cf,eslm, cori,
-     &          MNTIF, nbfr, MNE, nhy, nm,
+     &          NTIF, nbfr, NELG, nface,nm,
      &          xnc, ync, dp,
-     &          nope, neta, nbdv,
-     &          nopenc, neta, nvdll,
-     &          nbou, nvel, nbvv,
-     &          nbounc, nvel, nvell, ibtype,
+     &          nope, neta, nbdv,nopenc,netanc,
+     &             nvdllnc,
+     &             nbou, nvel, nbvvnc,nbounc,nvelnc,
+     &             nvellnc,ibtype,
+     &                      ncmode,
      &          title, institution, source, history,
      &          references, comments, host, convention, contact,
      &          base_date)
@@ -389,37 +573,63 @@ C      USE SIZES
      &      ALLOCATE(xnc(num_records))
          IF(.NOT. ALLOCATED(ync))
      &      ALLOCATE(ync(num_records))
-         DO I=1, num_records
-            WNCX22(i,timenc_len) = 0.d0
-            WNCY22(i,timenc_len) = 0.d0
-         END DO
-         IF(ICS.EQ.2) THEN
-            DO I=1, num_records
-               xnc(i)=SLAM(I)*RAD2DEG
-               ync(i)=SFEA(I)*RAD2DEG
-            END DO
-         ENDIF
+               DO I=1,num_records
+             	        xnc(i)=X(i)
+                	ync(i)=Y(i)
+               END DO
+         
+               netanc=0
+               DO i=1,nope
+                  nvdllnc(i)=nvdll(i)
+                  netanc=netanc+nvdllnc(i)
+              END DO
 
-         IF (.NOT.ALLOCATED(nopenc))
-     &      ALLOCATE(nopenc(neta))
-         IF (.NOT.ALLOCATED(nbounc))
-     &      ALLOCATE(nbounc(nvel))
+            IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
+               
+               k=0
+                  DO i=1,nope
+                        DO j=1,nvdllnc(i)
+                        k=k+1
+             	        nopenc(k)=nbdv(i,j)
+                     END DO
+                  END DO
+!
+!              normal flow (discharge) specified boundary segments
+!
+               nvelnc=0
+               DO i=1,nbou
+                  nvellnc(i)=nvell(i)
+                  nvelnc=nvelnc+nvellnc(i)
+                  DO j=1,nvel
+             	     nbvvnc(i,j)=nbvv(i,j)
+                 END DO
+               END DO
+
+            IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
+               
+               k=0
+                  DO i=1,nbou
+                        DO j=1,nvellnc(i)
+                        k=k+1
+             	        nbounc(k)=nbvv(i,j)
+                     END DO
+                  END DO
+
 
          CALL writenc74(NOUTGW,
      &          lun, timenc_len, num_records, timenc,
      &          nt,NDSETSW,WNCX22,WNCY22,rundes,runid,agrid,irtype,
-     &          dtdp, ihot, ics, nolibf, nolifa,
+     &          dt, ihot, ics, nolibf, nolifa,
      &          nolica, nolicat, nwp,
      &          ncor, ntip, nws, nramp, tau0,
      &          statim,reftim, rnday, dramp,
      &          a00, b00, c00, h0,
      &          slam0, sfea0, cf,eslm, cori,
-     &          MNTIF, nbfr, MNE, nhy, nm,
+     &          NTIF, nbfr, NELG, nface,nm,
      &          xnc, ync, dp,
-     &          nope, neta, nbdv,
-     &          nopenc, neta, nvdll,
-     &          nbou, nvel, nbvv,
-     &          nbounc, nvel, nvell, ibtype,
+     &          nope, neta, nbdv,nopenc,netanc,
+     &          nvdllnc, nbou, nvel, nbvvnc,nbounc,nvelnc,
+     &          nvellnc,ibtype, ncmode,
      &          title, institution, source, history,
      &          references, comments, host, convention, contact,
      &          base_date)
