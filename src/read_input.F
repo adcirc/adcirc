@@ -6414,7 +6414,7 @@ C-----------------------------------------------------------------------
          END IF
       END DO
       IF(neg) THEN
-         res = res * -1
+         res = res * (-1)
       END IF
       END FUNCTION a2i
 
@@ -6485,7 +6485,7 @@ C-----------------------------------------------------------------------
             res = res * 10.**q
          END IF
          IF(neg) THEN
-            res = res * -1
+            res = res * (-1)
          END IF
       ELSE
          !// We have an integer
@@ -6560,7 +6560,7 @@ C-----------------------------------------------------------------------
         res = res * 10.**q
         END IF
         IF(neg) THEN
-        res = res * -1
+        res = res * (-1)
         END IF
         ELSE
 !// We have an integer

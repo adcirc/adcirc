@@ -413,7 +413,7 @@
             !==================================================
             REAL(sz) FUNCTION coriolis(lat)
                REAL(sz), INTENT(IN) :: lat
-               coriolis = two * omega * SIND(lat)
+               coriolis = two * omega * SIN(deg2rad*lat)
 !              coriolis = zero
             END FUNCTION coriolis
 
@@ -689,7 +689,7 @@
                ! Calculate distance and angle between eye of hurricane
                ! and input nodal point
                !------------------------------------------------------
-               dx = deg2rad * Rearth * (lon - cLon) * COSD(cLat)
+               dx = deg2rad * Rearth * (lon - cLon) * COS(deg2rad*cLat)
                dy = deg2rad * Rearth * (lat - cLat)
                dist = SQRT(dx*dx + dy*dy)
 
@@ -731,8 +731,8 @@
                !---------------------------------------------------
                speed = kt2ms*Vasym(dist, order,a, angle, B, Pn,Pc, cLat)
      &               * windReduction * one2ten
-               u = -speed * COSD(angle) + damp * uTrans
-               v =  speed * SIND(angle) + damp * vTrans
+               u = -speed * COS(deg2rad*angle) + damp * uTrans
+               v =  speed * SIN(deg2rad*angle) + damp * vTrans
 
                !---------------------------------------------------------
                ! Alter wind direction by adding a frictional inflow angle
@@ -753,7 +753,7 @@
 !              PRINT *, "uvp:  cLon      = ", cLon  , " degrees"
 !              PRINT *, "uvp:  dLat      = ", (lat - cLat), " degrees"
 !              PRINT *, "uvp:  dLon      = ", (lon - cLon), " degrees"
-!              PRINT *, "uvp:  cos(cLat) = ", COSD(cLat), " degrees"
+!              PRINT *, "uvp:  cos(cLat) = ", COS(deg2rad*cLat), " degrees"
 !              PRINT *, "uvp:  dx        = ", dx,     " meters"
 !              PRINT *, "uvp:  dy        = ", dy,     " meters"
 !              PRINT *, "uvp:  dist      = ", dist,   " nm"
@@ -800,7 +800,7 @@
                REAL(sz) :: dt
 
                dx = deg2rad * Rearth * (lonNew - lonOld)
-     &            * COSD(half * (latOld + latNew))
+     &            * COS(deg2rad*half * (latOld + latNew))
 
                dy = deg2rad * Rearth * (latNew - latOld)
 
@@ -844,7 +844,7 @@
                REAL(sz), INTENT(IN)  :: lat0,lon0
                REAL(sz), INTENT(OUT) :: x,y
 
-               x = deg2rad * Rearth * (lon - lon0) * COSD(lat0)
+               x = deg2rad * Rearth * (lon - lon0) * COS(deg2rad*lat0)
                y = deg2rad * Rearth * lat
             END SUBROUTINE latlon2xy
 
@@ -867,7 +867,7 @@
                REAL(sz), INTENT(OUT) :: lat ,lon
 
                lat = y / (deg2rad * Rearth)
-               lon = lon0 + x / (deg2rad * Rearth * COSD(lat0))
+               lon = lon0 + x / (deg2rad * Rearth * COS(deg2rad*lat0))
             END SUBROUTINE xy2latlon
 
             !=============================================================

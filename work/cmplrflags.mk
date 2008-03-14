@@ -32,6 +32,12 @@ ifeq ($(compiler),gnu)
   CLIBS	:= 
   LIBS		:=  
   MSGLIBS	:=  
+  $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 #
 # jgf45.12 These flags work on the UNC Topsail Cluster.
@@ -39,11 +45,11 @@ ifeq ($(compiler),intel)
   PPFC            :=  ifort	
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O2 -FI -Vaxlib -assume byterecl -extend-source
+  FFLAGS1       :=  $(INCDIRS) -O2 -FI -Vaxlib -assume byterecl -132
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
-  DA            :=  -DREAL8 -DLINUX -DCSCA 
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI 
+  DA            :=  -DREAL8 -DLINUX -DCSCA
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
   DPRE          :=  -DREAL8 -DLINUX
   IMODS         :=  -I
   CC            := gcc
@@ -52,6 +58,12 @@ ifeq ($(compiler),intel)
   CLIBS         :=
   LIBS          :=  
   MSGLIBS       :=
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 #
 # sb46.50.02 These flags work on the UT Austin Lonstar cluster.
@@ -73,6 +85,12 @@ ifeq ($(compiler),intel-lonestar)
   CLIBS         :=
   LIBS          :=  
   MSGLIBS       :=
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 #
 # Cray-XT3 using standard compilers, from vjp; added by jgf46.00
@@ -93,6 +111,12 @@ ifeq ($(compiler),cray_xt3)
   LIBS  	:=  
   MSGLIBS	:=  
   BACKEND_EXEC  := metis_be adcprep_be
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 #
 # Portland Group compiler
@@ -113,9 +137,15 @@ ifeq ($(compiler),pgi)
   CLIBS		:= 
   LIBS  	:=  
   MSGLIBS	:=  
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 endif
-
+#$(MACHINE)
 ########################################################################
 # Compiler flags for Linux operating system on 32bit x86 CPU
 #
@@ -124,8 +154,8 @@ ifeq ($(MACHINE)-$(OS),i686-linux-gnu)
 # ***NOTE*** User must select between various Linux setups
 #            by commenting/uncommenting the appropriate compiler
 #
-#compiler=gnu
-compiler=intel
+compiler=gnu
+#compiler=intel
 #compiler=pgi
 #
 # Portland Group compiler
@@ -146,6 +176,12 @@ ifeq ($(compiler),pgi)
   CLIBS         := 
   LIBS  	:=  
   MSGLIBS	:=  
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 #
 # Intel compiler
@@ -170,6 +206,38 @@ ifeq ($(compiler),intel)
   CLIBS         := 
   LIBS  	:=  
   MSGLIBS	:=  
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
+endif
+#
+# g95
+ifeq ($(compiler),gnu)
+  PPFC		:=  g95
+  FC		:=  g95
+  PFC		:=  mpif90 
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132
+  FFLAGS2	:=  $(FFLAGS1)
+  FFLAGS3	:=  $(FFLAGS1)
+  DA		:=  -DREAL8 -DLINUX -DCSCA
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DPRE		:=  -DREAL8 -DLINUX
+  IMODS 	:=  -I
+  CC		:= gcc
+  CCBE		:= $(CC)
+  CFLAGS	:= $(INCDIRS) -O2 -DLINUX
+  CLIBS	:= 
+  LIBS		:=  
+  MSGLIBS	:=  
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 endif
 
@@ -202,6 +270,12 @@ ifeq ($(arch),pc)
   CLIBS         :=
   LIBS          :=  
   MSGLIBS       :=
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 #
 # SGI Altix; Created by Brett Estrade, added by jgf45.12
@@ -221,9 +295,14 @@ ifeq ($(arch),altix)
   CFLAGS          :=  $(INCDIRS) -DLINUX -O2
   LIBS		  :=  
   MSGLIBS	  := -lmpi
-endif
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif 
-
+endif
 ########################################################################
 # IBM SP - AIX operating system on IBM RS/6000 hardware
 # Contrib. TJC Jan 2006
@@ -245,6 +324,12 @@ ifneq (,$(findstring rs6000-aix,$(MACHINE)-$(OS)))
    LDFLAGS       := -q64
    LIBS          := 
    MSGLIBS       := -lm
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 ########################################################################
 
@@ -271,6 +356,13 @@ ifneq (,$(findstring powerpc-aix,$(MACHINE)-$(OS)))
   ARFLAGS	:= -X64 rv
   LIBS          := 
   MSGLIBS       := -lm
+
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 
 ########################################################################
@@ -293,6 +385,13 @@ ifeq ($(MACHINE)-$(OS),ppc64-unknown-linux-gnu)
    LDFLAGS       := -q64 -L/bgl/BlueLight/ppcfloor/bglsys/lib -lmsglayer.rts -lrts.rts -ldevices.rts
    LIBS          := 
    MSGLIBS       := -L/bgl/BlueLight/ppcfloor/bglsys/lib -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts
+
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 ########################################################################
 
@@ -341,6 +440,13 @@ ifneq (,$(findstring sparc-solaris,$(MACHINE)-$(OS)))
   CFLAGS   	:= $(INCDIRS) 
   LIBS     	:= 
   MSGLIBS  	:= -lmpi
+
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 
 ########################################################################
@@ -363,6 +469,12 @@ ifneq (,$(findstring alphaev6-linux,$(MACHINE)-$(OS)))
   CLIBS         := 
   LIBS  	:= 
   MSGLIBS	:=  
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
  
 ########################################################################
@@ -385,6 +497,12 @@ ifneq (,$(findstring alphaev6-osf,$(MACHINE)-$(OS)))
   CLIBS		:=
   LIBS		:= 
   MSGLIBS	:= -lfmpi -lmpi -lelan
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 
 
@@ -407,6 +525,12 @@ ifneq (,$(findstring alphaev6-dec-osf5.1,$(MACHINE)-$(VENDOR)-$(OS)))
   CFLAGS        := $(INCDIRS) -O2 
   LIBS          := 
   MSGLIBS       := -lmpi -lelan
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 
 ########################################################################
@@ -430,6 +554,12 @@ ifneq (,$(findstring sv1-unicos,$(MACHINE)-$(OS)))
   MSGLIBS	:=  -lmpi 
   C_LDFLAGS     :=
   CCBE          :=  $(CC)
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 
 ########################################################################
@@ -454,6 +584,12 @@ ifneq (,$(findstring x1-unicos,$(MACHINE)-$(OS)))
   LIBS  	:= 
   MSGLIBS	:=  -lmpi 
   C_LDFLAGS     :=
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 
 ########################################################################
@@ -474,6 +610,12 @@ ifneq (,$(findstring mips-irix,$(MACHINE)-$(OS)))
   CFLAGS          :=  $(INCDIRS) -O2 -DSGI 
   LIBS		  :=
   MSGLIBS	  := -lmpi
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 ########################################################################
 
@@ -499,6 +641,12 @@ ifneq (,$(findstring powerpc-darwin,$(MACHINE)-$(OS)))
   LDFLAGS	:=  
   LIBS	        :=  -lU77
   MSGLIBS	:=  -lm
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 ########################################################################
 
@@ -523,5 +671,33 @@ ifneq (,$(findstring i386-darwin,$(MACHINE)-$(OS)))
   LDFLAGS	:=  
   LIBS	        :=  
   MSGLIBS	:=  
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
 endif
 ########################################################################
+ifneq ($(FOUND), TRUE)
+     $(warning (WARNING) None of the platforms in cmplrflags.mk match your platform. As a result, the specific compilers and flags that are appropriate for you could not be specified. Please edit the cmplrflags.mk file to include your machine and operating system. Continuing with generic selections for compilers.)
+  PPFC	        := f90
+  FC	        := f90
+  PFC	        := mpif90 
+  FFLAGS1	:=  $(INCDIRS) 
+  FFLAGS2	:=  $(FFLAGS1)  
+  FFLAGS3	:=  $(FFLAGS1) 
+  DA  	   	:=  -DREAL8 -DCSCA -DLINUX
+  DP  	   	:=  -DREAL8 -DCSCA -DLINUX -DCMPI
+  DPRE	   	:=  -DREAL8 -DLINUX
+  IMODS  	:=  -I
+  CC            :=  cc  
+  CCBE          :=  $(CC)
+  CFLAGS        :=  $(INCDIRS) -DLINUX
+  LDFLAGS	:=  
+  LIBS	        :=  
+  MSGLIBS	:=  
+endif
+ifeq ($(MULTIPLE),TRUE)
+     $(warning (WARNING) More than one match in cmplrflags.mk. This may result in the wrong compilers being selected. Please check the cmplrflags.mk file to ensure that only one set of compiler flags is specified for your platform.)
+endif

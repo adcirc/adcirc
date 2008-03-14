@@ -34,8 +34,10 @@ C----------------------------------------------------------------------
       USE NETCDFIO, ONLY :
      &     timenc, timenc_len, fileunit, irtype, 
      &     xenc, yenc, xvnc, yvnc, xpnc, ypnc, xnc, ync, xwnc, ywnc,
-     &     et00nc, UU00nc, VV00nc, RMP00nc, RMU00nc, RMV00nc,
+     &     et00nc, UU00nc, VV00nc, RMP00nc, RMU00nc, RMV00nc, nbvvnc,
      &     eta22, uu22, vv22, pr22, WNCX22, WNCY22, 
+     &     nbounc,nvelnc,nvellnc,
+     &     nopenc,netanc,nvdllnc,
      &     writenc61, writenc62, writenc63, writenc64,
      &     writenc71, writenc72, writenc73, writenc74 
        USE NodalAttributes, ONLY : 
@@ -792,7 +794,8 @@ C     args
 C     local vars
       INTEGER :: I,J,K           ! loop counter
       INTEGER :: num_records ! to save in the netcdf file
-      INTEGER, ALLOCATABLE :: ibtypenc(:)
+      INTEGER ncmode
+!      INTEGER, ALLOCATABLE :: ibtypenc(:)
 
 #ifdef NETCDF
 !            WRITE(6,*)"================================================"
@@ -800,6 +803,8 @@ C     local vars
 
 !            WRITE(6,*)"WRITE INPUT NBVV(K,I) ***** ===", NBVV
 
+      IF (MNPROC.gt.1) ncmode=2
+      IF (MNPROC.eq.1) ncmode=1
       IF (MNPROC.gt.1) num_records = descript % num_fd_records   ! parallel
       IF (MNPROC.eq.1) num_records = descript % num_records_this ! serial
       IF (MyProc.eq.0) THEN
@@ -827,7 +832,6 @@ C     ==================================================================
 C     ==================================================================
 C     START NETCDF I/O OPTION - MCF
 C
-!            WRITE(6,*)"NOUTE = 3"
             IF(.NOT. ALLOCATED(et00nc))
      &           ALLOCATE(et00nc(num_records,timenc_len))
             IF(.NOT. ALLOCATED(xenc)) 
@@ -865,12 +869,7 @@ C
                   END DO
                END DO
                
-!            do i=1, num_records
-!                write(6,*) ' xenc(i),yenc(i) ===',i, xenc(i),yenc(i)
-!            end do
-!            WRITE(634,*) title, institution, source, history,
-!     &             references, comments, host, convention, contact,
-!     &             base_date
+
             CALL writenc61 (descript % specifier, 
      &             fileunit, timenc_len, num_records, timenc,
      &             et00nc, nt, NTRSPE, rundes, runid, agrid, irtype,
@@ -884,6 +883,7 @@ C
      &             xenc, yenc, dp,
      &             nope, neta, nbdv,
      &             nbou, nvel, nbvvnc,
+     &             ncmode,
      &             title, institution, source, history,
      &             references, comments, host, convention, contact,
      &             base_date)
@@ -896,7 +896,6 @@ C
 C     ==================================================================
 C     START NETCDF I/O OPTION - MCF
 C
-!            WRITE(6,*)"NOUTV = 3 *******************************"
 C
             IF(.NOT.ALLOCATED(UU00nc))
      &          ALLOCATE(UU00nc(num_records,timenc_len))
@@ -933,13 +932,7 @@ C
                   END DO
                END DO
 
-!            do i=1, 10
-!               write(6,*) ' xvnc(i),yvnc(i) ===',i, xvnc(i),yvnc(i)
-!            end do
-!            write(6,*) ' slam0, sfea0 ****',slam0, sfea0
-!            WRITE(6,*)"call writenc62", noutgv, fileunit,timenc_len
-!            WRITE(6,*) "AGRID", AGRID
-!            WRITE(6,*) "BASE DATE BEFORE net call", base_date
+
             CALL writenc62 (descript % specifier, fileunit, 
      &             timenc_len, num_records, timenc,
      &             nt, NTRSPV, UU00nc, VV00nc,
@@ -954,9 +947,11 @@ C
      &             xvnc, yvnc, dp,
      &             nope, neta, nbdv,
      &             nbou, nvel, nbvvnc,
+     &             ncmode,
      &             title, institution, source, history,
      &             references, comments, host, convention, contact,
      &             base_date)
+
 C
 C     END NETCDF I/O OPTION - MCF
 C     ==================================================================
@@ -966,7 +961,7 @@ C
 C     ==================================================================
 C     START NETCDF I/O OPTION - MCF
 C
-!           WRITE(6,*)"NOUTGE = 3"
+
             IF(.NOT. ALLOCATED(eta22)) 
      &               ALLOCATE (eta22(num_records,timenc_len))
             IF(.NOT. ALLOCATED(xnc)) ALLOCATE(xnc(num_records))
@@ -1038,11 +1033,8 @@ C
                      END DO
                   END DO
 
-!            do i=1, 10
-!                write(6,*) ' xnc(i),ync(i) ===',i, xnc(i),ync(i)
-!            end do
-
-            WRITE(6,*)"================================================"
+!            WRITE(6,*)"================================================"
+!            WRITE(6,*)"num_records =====================",num_records
 !           WRITE(6,*)"WRITE INPUT NBVV(K,I) ===", NBVV
             WRITE(633,*)"**noutge, fileunit,timenc_len, np, timenc",
      &             noutge, fileunit,timenc_len, np, timenc,"**eta22",
@@ -1071,7 +1063,10 @@ C
      &             references, comments, host, convention, contact,
      &             base_date
 
-            CALL writenc63 (noutge, fileunit,timenc_len, np, timenc,
+!            CALL writenc63 (noutge, fileunit,timenc_len, np, timenc,
+!            WRITE(6,*)"==================63========================="
+            CALL writenc63 (noutge, fileunit,timenc_len, 
+     &             num_records, timenc,
      &             eta22, nt, ndsetse, rundes, runid, agrid, irtype,
      &             dtdp, ihot, ics, nolibf, nolifa,
      &             nolica, nolicat, nwp,
@@ -1085,6 +1080,7 @@ C
      &             nvdllnc,
      &             nbou, nvel, nbvvnc,nbounc,nvelnc,
      &             nvellnc,ibtypenc,
+     &             ncmode,
      &             title, institution, source, history,
      &             references, comments, host, convention, contact,
      &             base_date)
@@ -1202,7 +1198,6 @@ C
                      END DO
                   END DO
 
-
             CALL writenc64 (descript % specifier,
      &             fileunit, timenc_len,
      &             num_records, timenc, 
@@ -1220,6 +1215,7 @@ C
      &             nvdllnc,
      &             nbou, nvel, nbvvnc,nbounc,nvelnc,
      &             nvellnc,ibtypenc,
+     &             ncmode,
      &             title, institution, source, history,
      &             references, comments, host, convention, contact,
      &             base_date)
@@ -1232,8 +1228,6 @@ C
 C     ==================================================================
 C     START NETCDF I/O OPTION - MCF
 C
-!            WRITE(6,*)"NOUTM = 3"
-
             IF(.NOT. ALLOCATED(RMP00nc))
      &               ALLOCATE( RMP00nc (num_records, timenc_len) )
             IF(.NOT. ALLOCATED(xpnc)) ALLOCATE( xpnc(num_records) )
@@ -1246,14 +1240,12 @@ C
                ELSE IF (MNPROC.gt.1) THEN ! parallel
                   RMP00nc (i,timenc_len) = descript % array_g(I)
                ENDIF
-!               WRITE(6,*) "LOOP =  1 ", RMP00nc (i,timenc_len)
             END DO
-!            WRITE(6,*) "BEFORE ICS =2 "
+            if(ncmode.eq.1) then
             IF(ICS.EQ.2) THEN
                DO I=1,num_records
                   xpnc(i)=SLEM(I)*RAD2DEG
                   ypnc(i)=SFEM(I)*RAD2DEG
-!                  WRITE(6,*) "LOOP =  ", I, xpnc(i),ypnc(i)
                END DO
             ELSE
                 DO I=1,num_records
@@ -1261,7 +1253,7 @@ C
                    ypnc(i)=YEM(i)
                END DO
             ENDIF
-            
+            endif
                DO I=1,nope
                   DO J=1,nvel
              	  nbvvnc(i,j)=nbvv(i,j)
@@ -1281,6 +1273,7 @@ C
      &             xpnc, ypnc, dp,
      &             nope, neta, nbdv,
      &             nbou, nvel, nbvvnc,
+     &             ncmode,
      &             title, institution, source, history,
      &             references, comments, host, convention, contact,
      &             base_date)
@@ -1311,20 +1304,21 @@ C
                   RMU00nc(i,timenc_len)= descript % array_g(i)
                   RMV00nc(i,timenc_len)= descript % array2_g(i)
                ENDIF
-!               WRITE(6,*) "LOOP =  1 ", RMU00nc (i,timenc_len)
             END DO
+            
+            if (ncmode.eq.1) then
             IF(ICS.EQ.2) THEN
                DO I=1, num_records
                   xwnc(i)=SLEM(I)*RAD2DEG
                   ywnc(i)=SFEM(I)*RAD2DEG
-!                  WRITE(6,*) "LOOP =  ", I, xpnc(i),ypnc(i)
                END DO
             ELSE
                DO I=1,num_records
-             	  xwnc(i)=XEV(i)
-                  ywnc(i)=YEV(i)
+             	  xwnc(i)=XEM(i)
+                  ywnc(i)=YEM(i)
                END DO
             ENDIF
+            endif
             
                DO I=1,nbou
                   DO J=1,nvel
@@ -1332,12 +1326,6 @@ C
                   END DO
                END DO
 
-
-!            write(6,*) ' slam0, sfea0 ****',slam0, sfea0
-!            WRITE(6,*) "call writenc72", descript % specifier, 
-!     &                 fileunit,timenc_len
-!            WRITE(6,*) "AGRID", AGRID
-!            WRITE(6,*) "BASE DATE BEFORE net call", base_date
 
             CALL writenc72 (descript % specifier, 
      &             fileunit, timenc_len, num_records, timenc,
@@ -1353,6 +1341,7 @@ C
      &             xwnc, ywnc, dp,
      &             nope, neta, nbdv,
      &             nbou, nvel, nbvvnc,
+     &             ncmode,
      &             title, institution, source, history,
      &             references, comments, host, convention, contact,
      &             base_date)
@@ -1365,8 +1354,6 @@ C
 C     ==================================================================
 C     START NETCDF I/O OPTION - MCF
 C
-!               WRITE(6,*)"NOUTGW = 3"
-!
             IF(.NOT. ALLOCATED(pr22))
      &               ALLOCATE (pr22(num_records,timenc_len))
             IF(.NOT. ALLOCATED(xnc)) ALLOCATE(xnc(num_records))
@@ -1396,11 +1383,6 @@ C
                END DO
             ENDIF
             
-!               DO I=1,nbou
-!                  DO J=1,nvel
-!             	  nbvvnc(i,j)=nbvv(i,j)
-!                  END DO
-!               END DO
 !
 !            elevation specified boundary forcing segments
 !
@@ -1408,9 +1390,6 @@ C
                DO i=1,nope
                   nvdllnc(i)=nvdll(i)
                   netanc=netanc+nvdllnc(i)
-!                 DO j=1,nvel
-!             	     nbvvnc(i,j)=nbvv(i,j)
-!                 END DO
               END DO
 
             IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
@@ -1459,6 +1438,7 @@ C
      &                nvdllnc,
      &                nbou, nvel, nbvvnc,nbounc,nvelnc,
      &                nvellnc,ibtypenc,
+     &                ncmode,
      &                title, institution, source, history,
      &                references, comments, host, convention, contact,
      &                base_date)
@@ -1561,6 +1541,7 @@ C
      &                nvdllnc,
      &                nbou, nvel, nbvvnc,nbounc,nvelnc,
      &                nvellnc,ibtypenc,
+     &                ncmode,
      &                title, institution, source, history,
      &                references, comments, host, convention, contact,
      &                base_date)

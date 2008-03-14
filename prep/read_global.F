@@ -269,7 +269,9 @@ C
       SUBROUTINE READ15() 
       USE PRE_GLOBAL 
       USE PRESIZES, ONLY : SZ
+#ifdef NETCDF
       USE GLOBAL, ONLY: STATNAME, STATNAMEV, STATNAMEM
+#endif
       use memory_usage
       IMPLICIT NONE
 
@@ -758,6 +760,7 @@ C
      &              MNSTAE
           stop   
       ENDIF
+#ifdef NETCDF
 C
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
@@ -767,7 +770,7 @@ C
 C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
-
+#endif
       DO I=1,NSTAE
          READ(15,80) STAELOC(I)
          IF(ICS.EQ.1) THEN
@@ -778,6 +781,7 @@ C
               IF(NOUTE.NE.3)THEN
                  READ(STAELOC(I),*) XEL(I),YEL(I)
               ELSE
+#ifdef NETCDF
 !               READ(15,'(A132)') STATLINE
 !               call parse(STATLINE, LVAR)
                 call parse(STAELOC(I), LVAR)
@@ -785,6 +789,7 @@ C
                 YEL(I)=a2f(LVAR(2))
                 STATNAME(I,SNAMLEN)=LVAR(3)
                 WRITE(6,9911) XEL(I), YEL(I), STATNAME(I,SNAMLEN)
+#endif
               ENDIF
             
          ELSE
@@ -792,6 +797,7 @@ C
 
                  READ(STAELOC(I),*) SLEL(I),SFEL(I)
               ELSE
+#ifdef NETCDF
 !                READ(15,'(A132)') STATLINE
 !                call parse(STATLINE, LVAR)
                  call parse(STAELOC(I), LVAR)
@@ -800,6 +806,7 @@ C
                  STATNAME(I,SNAMLEN)=LVAR(3)
                  WRITE(6,*)"parsed stations"
                  WRITE(6,9911) SLEL(I),SFEL(I), STATNAME(I,SNAMLEN)
+#endif
              ENDIF
 
             
@@ -842,6 +849,7 @@ C
      &             MNSTAV
         stop 
       ENDIF
+#ifdef NETCDF
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
@@ -851,6 +859,7 @@ C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
 C
+#endif
       IF (ICS.EQ.1) THEN
       
 
@@ -862,11 +871,13 @@ C
            IF(NOUTV.NE.3) THEN
               READ(STAVLOC(I),*) XEV(I),YEV(I)
            ELSE
+#ifdef NETCDF
               call parse(STAVLOC(I), LVAR)
               XEV(I)=a2f(LVAR(1))
               YEV(I)=a2f(LVAR(2))
               STATNAMEV(I,SNAMLEN)=LVAR(3)
               WRITE(6,9911) XEV(I), YEV(I), STATNAMEV(I,SNAMLEN)
+#endif
            ENDIF
 
         ENDDO
@@ -880,6 +891,7 @@ C
                READ(STAVLOC(I),*) SLEV(I),SFEV(I)
 
            ELSE
+#ifdef NETCDF
               call parse(STAVLOC(I), LVAR)
               SLEV(I)=a2f(LVAR(1))
               SFEV(I)=a2f(LVAR(2))
@@ -888,6 +900,7 @@ C
               WRITE(6,9911) SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
               WRITE(6,*)"STATION INFO - AFTER *************",
      &           SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
+#endif
          ENDIF
 C
 C     END ADDITION BY MCF FOR NETCDF OPTION
@@ -969,6 +982,7 @@ C
      &           MNSTAM
             stop 
          ENDIF
+#ifdef NETCDF
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
@@ -978,6 +992,7 @@ C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
 C     
+#endif
          DO I=1,NSTAM
             READ(15,80) STAMLOC(I)
 !            READ(15,'(A132)') STAMLOC(I)
@@ -991,11 +1006,13 @@ C
             
                READ(STAMLOC(I),*) XEM(I),YEM(I)
              ELSE
+#ifdef NETCDF
                 call parse(STAMLOC(I), LVAR)
                 XEM(I)=a2f(LVAR(1))
                 YEM(I)=a2f(LVAR(2))
                 STATNAMEM(I,SNAMLEN)=LVAR(3)
                 WRITE(6,9911) XEM(I), YEM(I), STATNAMEM(I,SNAMLEN)
+#endif
              ENDIF
              
          ELSE
@@ -1006,6 +1023,7 @@ C
                READ(STAMLOC(I),*) SLEM(I),SFEM(I)
                
              ELSE
+#ifdef NETCDF
              WRITE(6,*)" before parse STAMLOC(I) ================"
 
                call parse(STAMLOC(I), LVAR)
@@ -1016,6 +1034,7 @@ C
                WRITE(6,*)"STATION INFO STAMLOC",
      &             SLEM(I),SFEM(I),STATNAMEM(I,SNAMLEN)
 !    &             SLEM(I),SFEM(I),STATNUMBM(I),STATNAMEM(I)
+#endif
              ENDIF
 C
 C     END ADDITION BY MCF FOR NETCDF OPTION
@@ -1660,7 +1679,7 @@ C-----------------------------------------------------------------------
          ENDIF
       ENDDO
 
- 1234 format(A30,x,I4,x,'does not lie in the grid.')
+ 1234 format(A30,1x,I4,1x,'does not lie in the grid.')
 
       RETURN
 C-----------------------------------------------------------------------
@@ -1758,8 +1777,9 @@ C-----------------------------------------------------------------------
             res = res + (IACHAR(buf(i:i)) - 48)
          END IF
       END DO
-      IF(neg) THEN
-         res = res * -1
+      IF (neg) THEN
+C         res = res * -1  !jgf48.10 g95 did not like this for some reason
+          res = -res
       END IF
       END FUNCTION a2i
 
@@ -1830,7 +1850,8 @@ C-----------------------------------------------------------------------
             res = res * 10.**q
          END IF
          IF(neg) THEN
-            res = res * -1
+C            res = res * -1  !jgf48.10 g95 did not like this for some reason
+             res = -res 
          END IF
       ELSE
          !// We have an integer
@@ -1905,7 +1926,8 @@ C-----------------------------------------------------------------------
         res = res * 10.**q
         END IF
         IF(neg) THEN
-        res = res * -1
+C        res = res * -1 !jgf48.10 g95 did not like this for some reason
+         res = -res
         END IF
         ELSE
 !// We have an integer

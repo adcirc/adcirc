@@ -1145,7 +1145,7 @@ C
 C     ... Convert Chezy to Cd, if necessary.
       IF (LoadChezy) THEN
          DO I=1,NP
-            FRIC(I)=G*(Chezy(I)**2)
+            FRIC(I)=G/(Chezy(I)**2)
          END DO
       ENDIF
 C

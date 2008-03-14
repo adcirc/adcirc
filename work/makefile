@@ -13,6 +13,8 @@ SHELL:=/bin/sh
 ########################################################################
 #  Get Canonical Machine NAME from config.guess
 #
+$(warning (INFO) Guessing the type of platform ADCIRC will run on...)
+
 NAME     := $(shell ./config.guess)
 LIST     := $(subst -, ,$(NAME))
 MACHINE  := $(word 1, $(LIST))
@@ -22,8 +24,17 @@ OS       := $(subst  $(MACHINE)-$(VENDOR)-,,$(strip $(NAME)))
 VTAG     := $(shell echo $(TAG) | sed -e 's/_/./g' -e 's/V//')
 
 PARALLEL_ADCIRC   := padcirc
-
+$(warning (INFO) Name is $(NAME), Machine is $(MACHINE), Vendor is $(VENDOR), and OS is $(OS).)
 include cmplrflags.mk
+
+ifneq ($(compiler),)
+$(warning (INFO) The compiler variable in cmplrflags.mk is set to $(compiler).)
+endif
+$(warning (INFO) The following compilers have been selected...)
+$(warning (INFO) The Fortran compiler for adcprep is set to $(PPFC).)
+$(warning (INFO) The serial Fortran compiler is set to $(FC).)
+$(warning (INFO) The parallel Fortran compiler is set to $(PFC).)
+$(warning (INFO) The C compiler is set to $(CC).)
 
 # Specify NETCDF=enable to gmake on the command line to activate netcdf i/o
 ifeq ($(NETCDF),enable)

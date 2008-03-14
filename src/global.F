@@ -414,8 +414,10 @@ C     the size and shape of the output data.
         integer,  pointer :: iarray(:)
         REAL(SZ), pointer :: array(:)  ! scalar data or 1st component of vector
         REAL(SZ), pointer :: array2(:) ! 2nd component of vector
+        REAL(SZ), pointer :: array3(:) ! 3rd component of vector
         REAL(SZ), pointer :: array_g(:)  ! full domain data scalar etc
         REAL(SZ), pointer :: array2_g(:) ! full domain 2nd vec component
+        REAL(SZ), pointer :: array3_g(:) ! full domain 3rd vec component
       end type OutputDataDescript_t
       INTEGER ITAU0P ! position in tau0 output file for variable tau0
 C
