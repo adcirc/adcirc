@@ -617,8 +617,606 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 
+C********************************************************
+C  Subroutine to generate 3D Model Output 
+C                                        
+C                          
+C  Note, the FORM='FORMATTED' field in the binary open statements 
+C  means that the record length (RECL) is specified in bytes.  
+C  If this field is omitted, the record length must be specified 
+C  in 4 byte words. 
+C                   
+C  r.l.  8/23/2005      
+C*********************************************************
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E   W R I T E  O U T  V E C 1
+C     S U B R O U T I N E   W R I T E  O U T P U T  3 D  
+C-----------------------------------------------------------------------
+C     jgf48.11 Moved from vsmy.F to write_output.F. 
+C-----------------------------------------------------------------------
+      SUBROUTINE Write_Output_3D (Time,IT)
+      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE
+      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL_3DVS, ONLY : 
+      USE GLOBAL_IO, ONLY: storeOne, storeTwo, HEADER_MAX,
+     &    open_gbl_file, write_gbl_file, 
+     &    write_gbl_file_skip_default, collectFullDomainArray,
+     &    packOne, unpackOne, packTwo, unpackTwo, pack63, pack83 
+#ifdef NETCDF
+      USE NETCDFIO, ONLY :
+     &     timenc, timenc_len, fileunit, irtype, 
+     &     xenc, yenc, xvnc, yvnc, xpnc, ypnc, xnc, ync, xwnc, ywnc,
+     &     et00nc, UU00nc, VV00nc, RMP00nc, RMU00nc, RMV00nc, nbvvnc,
+     &     eta22, uu22, vv22, pr22, WNCX22, WNCY22, 
+     &     nbounc,nvelnc,nvellnc,
+     &     nopenc,netanc,nvdllnc,
+     &     writenc41, writenc42, writenc43, writenc44,
+     &     writenc45, writenc46
+       USE NodalAttributes, ONLY : 
+     &     nolibf, nwp, tau0, cf, eslm
+#endif
+
+      IMPLICIT NONE
+
+      REAL(8)        Time
+      INTEGER ::     IT
+      INTEGER ::     NN, NH, NEle, N1, N2, N3, k
+      
+
+      IMPLICIT NONE 
+      INTEGER, intent(in) :: IT
+      REAL(8), intent(in) :: Time
+
+      INTEGER I                       !local loop counters
+      INTEGER NC1, NC2, NC3, NCEle
+      INTEGER NM1, NM2, NM3
+
+      REAL(SZ) C1, C2, C3
+      REAL(SZ) EE1, EE2, EE3
+      REAL(SZ) H2, H2N1, H2N2, H2N3
+      REAL(SZ) U11, U22, U33
+      REAL(SZ) V11, V22, V33
+
+      type(OutputDataDescript_t) :: descript
+      type(OutputDataDescript_t), SAVE :: ElevStaDescript
+      type(OutputDataDescript_t), SAVE :: VelStaDescript
+      type(OutputDataDescript_t), SAVE :: ElevDescript
+      type(OutputDataDescript_t), SAVE :: Tau0Descript
+      type(OutputDataDescript_t), SAVE :: VelDescript
+      type(OutputDataDescript_t), SAVE :: PrStaDescript
+      type(OutputDataDescript_t), SAVE :: WindVelStaDescript
+      type(OutputDataDescript_t), SAVE :: PrDescript
+      type(OutputDataDescript_t), SAVE :: WindVelDescript
+      type(OutputDataDescript_t), SAVE :: ConcStaDescript
+      type(OutputDataDescript_t), SAVE :: ConcDescript
+
+C     jgf48.03 Full domain arrays used when writing globalio output.
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ET00_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UU00_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: VV00_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETA2_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: TAU0VAR_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UU2_g(:)     
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: VV2_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMP00_g(:)     
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMU00_g(:)     
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMV00_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: Pr2_g(:)     
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNXOut_g(:)     
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNYOut_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CC00_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CH1_g(:)
+
+      LOGICAL, SAVE :: FirstCall = .true.
+      
+      IF (FirstCall) THEN
+
+         ! fort.61
+         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(ET00_g(NSTAE_G)) 
+         ENDIF
+         ElevStaDescript % specifier            = NOUTE
+         ElevStaDescript % initial_value        = 0.0
+         ElevStaDescript % num_items_per_record = 1
+         ElevStaDescript % num_fd_records       = NSTAE_G
+         ElevStaDescript % num_records_this     = NSTAE
+         ElevStaDescript % imap                 => IMAP_STAE_LG
+         ElevStaDescript % array                => ET00
+         ElevStaDescript % array_g              => ET00_g
+
+         ! fort.62
+         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(UU00_g(NSTAV_G))
+            ALLOCATE(VV00_g(NSTAV_G)) 
+         ENDIF
+         VelStaDescript % specifier            = NOUTV
+         VelStaDescript % initial_value        = 0.0
+         VelStaDescript % num_items_per_record = 2
+         VelStaDescript % num_fd_records       = NSTAV_G
+         VelStaDescript % num_records_this     = NSTAV
+         VelStaDescript % imap                 => IMAP_STAV_LG
+         VelStaDescript % array                => UU00
+         VelStaDescript % array2               => VV00
+         VelStaDescript % array_g              => UU00_g
+         VelStaDescript % array2_g             => VV00_g
+
+         ! fort.63
+         write(16,*) 'Allocating ElevDescript' !jgfdebug48.03
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(ETA2_g(NP_G))
+         ENDIF
+         ElevDescript % specifier            = NOUTGE
+         ElevDescript % initial_value        = 0.0
+         ElevDescript % num_items_per_record = 1
+         ElevDescript % num_fd_records       = NP_G
+         ElevDescript % num_records_this     = NP
+         ElevDescript % imap                 => NODES_LG
+         ElevDescript % array                => ETA2
+         ElevDescript % array_g              => ETA2_g
+
+         ! tau0
+         write(16,*) 'Allocating Tau0Descript' !jgfdebug48.03
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(TAU0VAR_g(NP_G))
+         ENDIF
+         Tau0Descript % specifier            = 1  ! hard-code to ascii text
+         Tau0Descript % initial_value        = 0.0
+         Tau0Descript % num_items_per_record = 1
+         Tau0Descript % num_fd_records       = NP_G
+         Tau0Descript % num_records_this     = NP
+         Tau0Descript % imap                 => NODES_LG
+         Tau0Descript % array                => TAU0VAR
+         Tau0Descript % array_g              => TAU0VAR_g
+
+         ! fort.64
+         write(16,*) 'Allocating VelDescript' !jgfdebug48.03
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(UU2_g(NP_G))
+            ALLOCATE(VV2_g(NP_G)) 
+         ENDIF
+         VelDescript % specifier            = NOUTGV
+         VelDescript % initial_value        = 0.0
+         VelDescript % num_items_per_record = 2
+         VelDescript % num_fd_records       = NP_G
+         VelDescript % num_records_this     = NP
+         VelDescript % imap                 => NODES_LG
+         VelDescript % array                => UU2
+         VelDescript % array2               => VV2
+         VelDescript % array_g              => UU2_g
+         VelDescript % array2_g             => VV2_g
+
+1100  FORMAT(1X,E16.10,1X,I10,32000(2X,E12.6))
+1104  FORMAT(9X,I6,4X,32000(E12.6,2X))
+
+C
+C.... 3D Density, Temperature, Salinity Station Output (Unit 41)
+C
+      IF(I3DSD.NE.0) THEN 
+
+C       Check to see if it is time to generate 3D station density output.
+
+        IF((IT.GT.NTO3DSDS).AND.(IT.LE.NTO3DSDF)) N3DSD=N3DSD+1
+        IF(N3DSD.EQ.NSpo3DSD) THEN                                           !if yes
+
+C         Write time header into file
+
+          IF(ABS(I3DSD).EQ.1) THEN                                          !ASCII FORMAT
+            OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41',
+     &                            ACCESS='SEQUENTIAL',POSITION='APPEND')
+            IF(IDen.EQ.1) WRITE(41,1100) Time,IT,(Sigma(k),k=1,NFEN-1)                           
+            IF(IDen.EQ.2) WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                               k=1,NFEN-1),Sigma(NFEN)            
+            IF(IDen.EQ.3) WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                               k=1,NFEN-1),Sigma(NFEN)             
+            IF(IDen.EQ.4) WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                      Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+            I3DSDRec=I3DSDRec+1
+          ELSEIF(ABS(I3DSD).EQ.2) THEN                                      !BINARY FORMAT
+            OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41',ACCESS='DIRECT',
+     &            RECL=NByte)
+            WRITE(41,REC=I3DSDRec+1) Time
+            WRITE(41,REC=I3DSDRec+2) IT
+            I3DSDRec=I3DSDRec+2
+          ENDIF
+
+C         Process each station
+
+          DO NN=1,NSta3DD
+
+C           Interpolate to station locations
+
+            NEle=NE3DD(NN)
+            N1=NM(NEle,1)
+            N2=NM(NEle,2)
+            N3=NM(NEle,3)		               
+            DO k=1,NFEN
+              SigTSta(k)=SigT(N1,k)*StaI3DD1(NN)+SigT(N2,k)*StaI3DD2(NN)
+     &                                          +SigT(N3,k)*StaI3DD3(NN)
+              IF((ABS(IDen).EQ.2).OR.(ABS(IDen).EQ.4)) SalSta(k) =
+     &            Sal(N1,k) *StaI3DD1(NN)+Sal(N2,k) *StaI3DD2(NN)
+     &           +Sal(N3,k) *StaI3DD3(NN)
+              IF((ABS(IDen).EQ.3).OR.(ABS(IDen).EQ.4)) TempSta(k)=
+     &            Temp(N1,k)*StaI3DD1(NN)+Temp(N2,k)*StaI3DD2(NN)
+     &           +Temp(N3,k)*StaI3DD3(NN)
+            END DO
+
+C           Write station output
+
+            IF(ABS(I3DSD).EQ.1) THEN                                        !ASCII FORMAT
+              IF(ABS(IDen).EQ.1) WRITE(41,1104) NN,(SigTSta(k),k=1,NFEN)  
+              IF(ABS(IDen).EQ.2) WRITE(41,1104) NN,(SigTSta(k),
+     &                                               SalSta(k),k=1,NFEN)			
+              IF(ABS(IDen).EQ.3) WRITE(41,1104) NN,(SigTSta(k),
+     &                                              TempSta(k),k=1,NFEN)
+              IF(ABS(IDen).EQ.4) WRITE(41,1104) NN,(SigTSta(k),
+     &                                    SalSta(k),TempSta(k),k=1,NFEN)	
+              I3DSDRec=I3DSDRec+1
+            ELSEIF(ABS(I3DSD).EQ.2) THEN                                    !BINARY FORMAT
+              WRITE(41,REC=I3DSDRec+1) NN
+              I3DSDRec=I3DSDRec+1
+              DO k=1,NFEN            
+                IF(ABS(IDen).EQ.1) THEN
+                  WRITE(41,REC=I3DSDRec+1) SigTSta(k)
+                  I3DSDRec=I3DSDRec+1
+                ELSEIF(ABS(IDen).EQ.2) THEN
+                  WRITE(41,REC=I3DSDRec+1) SigTSta(k)
+                  WRITE(41,REC=I3DSDRec+2) SalSta(k)
+                  I3DSDRec=I3DSDRec+2
+                ELSEIF(ABS(IDen).EQ.3) THEN
+                  WRITE(41,REC=I3DSDRec+1) SigTSta(k)
+                  WRITE(41,REC=I3DSDRec+2) TempSta(k)		
+                  I3DSDRec=I3DSDRec+2		
+                ELSEIF(ABS(IDen).EQ.4) THEN
+                  WRITE(41,REC=I3DSDRec+1) SigTSta(k)
+                  WRITE(41,REC=I3DSDRec+2) SalSta(k)
+                  WRITE(41,REC=I3DSDRec+3) TempSta(k)
+                  I3DSDRec=I3DSDRec+3
+                ENDIF
+              ENDDO
+            ENDIF
+          ENDDO
+          N3DSD=0
+          CLOSE(41)
+        ENDIF
+      ENDIF
+
+C
+C.... 3D Velocity Station Output (Unit 42)
+C
+      IF(I3DSV.NE.0) THEN
+
+C       Check to see if it is time to generate 3D station velocity output.
+
+        IF((IT.GT.NTO3DSVS).AND.(IT.LE.NTO3DSVF)) N3DSV=N3DSV+1
+        IF(N3DSV.EQ.NSpo3DSV) THEN                                          !if yes
+
+C         Write time header into file
+
+          IF(ABS(I3DSV).EQ.1) THEN                                          !ASCII FORMAT
+            OPEN(42,FILE=TRIM(LOCALDIR)//'/'//'fort.42',
+     &                            ACCESS='SEQUENTIAL',POSITION='APPEND')
+            WRITE(42,1100) Time,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &                       k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+            I3DSVRec=I3DSVRec+1
+          ELSEIF(ABS(I3DSV).EQ.2) THEN                                      !BINARY FORMAT
+            OPEN(42,FILE=TRIM(LOCALDIR)//'/'//'fort.42',ACCESS='DIRECT',
+     &            RECL=NByte)
+            WRITE(42,REC=I3DSVRec+1) Time
+            WRITE(42,REC=I3DSVRec+2) IT
+            I3DSVRec=I3DSVRec+2
+          ENDIF
+
+C         Process each station
+
+          DO NN=1,NSta3DV
+
+C           Interpolate to station locations
+
+            NEle=NE3DV(NN)
+            N1=NM(NEle,1)
+            N2=NM(NEle,2)
+            N3=NM(NEle,3)
+            DO k=1,NFEN
+              qSta(k) =q(N1,k) *StaI3DV1(NN)+q(N2,k) *StaI3DV2(NN)
+     &                                      +q(N3,k) *StaI3DV3(NN)
+              WZSta(k)=WZ(N1,k)*StaI3DV1(NN)+WZ(N2,k)*StaI3DV2(NN)
+     &                                      +WZ(N3,k)*StaI3DV3(NN)
+            END DO
+
+C           Write station output
+          
+            IF(ABS(I3DSV).EQ.1) THEN                                        !ASCII FORMAT
+              WRITE(42,1104) NN,(REAL(qSta(k)),AIMAG(qSta(k)),
+     &                                                WZSta(k),k=1,NFEN)
+              I3DSVRec=I3DSVRec+1
+            ELSEIF(ABS(I3DSV).EQ.2) THEN                                    !BINARY FORMAT
+              WRITE(42,REC=I3DSVRec+1) NN
+              I3DSVRec=I3DSVRec+1
+              DO k=1,NFEN
+                WRITE(42,REC=I3DSVRec+1) REAL(qSta(k))
+                WRITE(42,REC=I3DSVRec+2) AIMAG(qSta(k))
+                WRITE(42,REC=I3DSVRec+3) WZSta(k)
+                I3DSVRec=I3DSVRec+3
+              END DO
+            ENDIF
+          ENDDO
+          N3DSV=0
+          CLOSE(42)
+        ENDIF
+      ENDIF
+
+C
+C.... 3D Turbulence Station Output (Unit 43)
+C
+      IF(I3DST.NE.0) THEN
+
+C       Check to see if it is time to generate 3D station turbulence output.
+
+        IF((IT.GT.NTO3DSTS).AND.(IT.LE.NTO3DSTF)) N3DST=N3DST+1
+        IF(N3DST.EQ.NSpo3DST) THEN                                          !if yes
+
+C         Write time header into file
+
+          IF(ABS(I3DST).EQ.1) THEN                                          !ASCII FORMAT
+            OPEN(43,FILE=TRIM(LOCALDIR)//'/'//'fort.43',
+     &                            ACCESS='SEQUENTIAL',POSITION='APPEND')        
+            WRITE(43,1100) Time,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &                       k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+            I3DSTRec=I3DSTRec+1
+          ELSEIF(ABS(I3DST).EQ.2) THEN                                      !BINARY FORMAT
+            OPEN(43,FILE=TRIM(LOCALDIR)//'/'//'fort.43',ACCESS='DIRECT',
+     &            RECL=NByte)
+            WRITE(43,REC=I3DSTRec+1) Time
+            WRITE(43,REC=I3DSTRec+2) IT
+            I3DSTRec=I3DSTRec+2
+          ENDIF
+
+C         Process each station
+
+          DO NN=1,NSta3DT     
+
+C           Interpolate to station locations
+
+            NEle=NE3DT(NN)
+            N1=NM(NEle,1)
+            N2=NM(NEle,2)
+            N3=NM(NEle,3)
+            DO k=1,NFEN
+              q20Sta(k)=q20(N1,k)*StaI3DT1(NN)+q20(N2,k)*StaI3DT2(NN)
+     &                                        +q20(N3,k)*StaI3DT3(NN)
+              lSta(k)  =l(N1,k)  *StaI3DT1(NN)+l(N2,k)  *StaI3DT2(NN)
+     &                                        +l(N3,k)  *StaI3DT3(NN)
+              EVSta(k) =EV(N1,k) *StaI3DT1(NN)+EV(N2,k) *StaI3DT2(NN)
+     &                                        +EV(N3,k) *StaI3DT3(NN)
+            END DO
+
+C           Write station output
+
+            IF(ABS(I3DST).EQ.1) THEN                                        !ASCII FORMAT
+              WRITE(43,1104) NN,(q20Sta(k),lSta(k),EVSta(k),k=1,NFEN)
+              I3DSTRec=I3DSTRec+1
+            ELSEIF(ABS(I3DST).EQ.2) THEN                                    !BINARY FORMAT
+              WRITE(43,REC=I3DSTRec+1) NN
+              I3DSTRec=I3DSTRec+1
+              DO k=1,NFEN
+                WRITE(43,REC=I3DSTRec+1) q20Sta(k)
+                WRITE(43,REC=I3DSTRec+2) lSta(k)
+                WRITE(43,REC=I3DSTRec+3) EVSta(k)
+                I3DSTRec=I3DSTRec+3
+              END DO
+            ENDIF
+          ENDDO        
+          N3DST=0
+          CLOSE(43)
+	  ENDIF
+      ENDIF
+
+C
+C.... 3D Density, Temperature, Salinity Global Output (Unit 44)
+C
+      IF(I3DGD.NE.0) THEN
+
+C     Check to see if it is time to generate 3D global density output.
+
+        IF((IT.GT.NTO3DGDS).AND.(IT.LE.NTO3DGDF)) N3DGD=N3DGD+1
+        IF(N3DGD.EQ.NSpo3DGD) THEN                                           !if yes
+
+C         Write time header into file
+
+          IF(ABS(I3DGD).EQ.1) THEN                                          !ASCII FORMAT
+            OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44',
+     &                            ACCESS='SEQUENTIAL',POSITION='APPEND')
+            IF(IDen.EQ.1) WRITE(44,1100) Time,IT,(Sigma(k),k=1,NFEN-1)                           
+            IF(IDen.EQ.2) WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                               k=1,NFEN-1),Sigma(NFEN)            
+            IF(IDen.EQ.3) WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                               k=1,NFEN-1),Sigma(NFEN)             
+            IF(IDen.EQ.4) WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                      Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+            I3DGDRec=I3DGDRec+1
+          ELSEIF(ABS(I3DGD).EQ.2) THEN                                      !BINARY FORMAT
+            OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44',ACCESS='DIRECT',
+     &            RECL=NByte)
+            WRITE(44,REC=I3DGDRec+1) Time
+            WRITE(44,REC=I3DGDRec+2) IT
+            I3DGDRec=I3DGDRec+2
+          ENDIF
+
+C         Write out at each node
+
+          DO NH=1,NP
+
+            IF(ABS(IDen).EQ.1) THEN
+              IF(ABS(I3DGD).EQ.1) THEN
+	          WRITE(44,1104) NH,(SigT(NH,k),k=1,NFEN)                      !ASCII
+                I3DGDRec=I3DGDRec+1
+              ELSEIF(ABS(I3DGD).EQ.2) THEN                                   !BINARY
+                WRITE(44,REC=I3DGDRec+1) NH
+                I3DGDRec=I3DGDRec+1
+                DO k=1,NFEN
+                  WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
+                  I3DGDRec=I3DGDRec+1
+                ENDDO
+              ENDIF
+            ENDIF
+
+            IF(ABS(IDen).EQ.2) THEN
+              IF(ABS(I3DGD).EQ.1) THEN
+	          WRITE(44,1104) NH,(SigT(NH,k),Sal(NH,k),k=1,NFEN)            !ASCII
+                I3DGDRec=I3DGDRec+1
+              ELSEIF(ABS(I3DGD).EQ.2) THEN                                   !BINARY
+                WRITE(44,REC=I3DGDRec+1) NH
+                I3DGDRec=I3DGDRec+1
+                DO k=1,NFEN
+                  WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
+                  WRITE(44,REC=I3DGDRec+2) Sal(NH,k)
+                  I3DGDRec=I3DGDRec+2
+                END DO
+              ENDIF
+            ENDIF
+
+            IF(ABS(IDen).EQ.3) THEN
+              IF(ABS(I3DGD).EQ.1) THEN
+                WRITE(44,1104) NH,(SigT(NH,k),Temp(NH,k),k=1,NFEN)           !ASCII
+                I3DGDRec=I3DGDRec+1
+              ELSEIF(ABS(I3DGD).EQ.2) THEN                                   !BINARY
+                WRITE(44,REC=I3DGDRec+1) NH
+                I3DGDRec=I3DGDRec+1
+                DO k=1,NFEN
+                  WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
+                  WRITE(44,REC=I3DGDRec+2) Temp(NH,k)
+                  I3DGDRec=I3DGDRec+2
+                ENDDO
+              ENDIF
+            ENDIF
+
+            IF(ABS(IDen).EQ.4) THEN
+              IF(ABS(I3DGD).EQ.1) THEN
+                WRITE(44,1104) NH,(SigT(NH,k),Temp(NH,k),Sal(NH,k)
+     &                                                        ,k=1,NFEN)     !ASCII
+                I3DGDRec=I3DGDRec+1
+              ELSEIF(ABS(I3DGD).EQ.2) THEN                                   !BINARY
+                WRITE(44,REC=I3DGDRec+1) NH
+                I3DGDRec=I3DGDRec+1
+                DO k=1,NFEN
+                  WRITE(44,REC=I3DGDRec+1) SigT(NH,k)
+                  WRITE(44,REC=I3DGDRec+2) Temp(NH,k)
+                  WRITE(44,REC=I3DGDRec+3) Sal(NH,k)
+                  I3DGDRec=I3DGDRec+3
+                ENDDO
+              ENDIF
+            ENDIF
+          ENDDO
+          N3DGD=0
+          CLOSE(44)
+        ENDIF
+      ENDIF
+
+C
+C.... 3D Velocity Global Output (Unit 45)
+C
+      IF(I3DGV.GT.0) THEN
+
+C     Check to see if it is time to generate 3D global velocity output.
+         
+         IF((IT.GT.NTO3DGVS).AND.(IT.LE.NTO3DGVF)) N3DGV=N3DGV+1
+
+         IF(N3DGV.EQ.NSpo3DGV) THEN !if yes
+
+C         Write time header into file
+
+            IF(ABS(I3DGV).EQ.1) THEN !ASCII FORMAT
+               OPEN(45,FILE=TRIM(LOCALDIR)//'/'//'fort.45',
+     &              ACCESS='SEQUENTIAL',POSITION='APPEND')
+               WRITE(45,1100) Time,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &              k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+               I3DGVRec=I3DGVRec+1
+            ELSEIF(ABS(I3DGV).EQ.2) THEN !BINARY FORMAT
+               OPEN(45,FILE=TRIM(LOCALDIR)//'/'//'fort.45',
+     &              ACCESS='DIRECT',RECL=NByte)
+               WRITE(45,REC=I3DGVRec+1) Time
+               WRITE(45,REC=I3DGVRec+2) IT
+               I3DGVRec=I3DGVRec+2
+            ENDIF
+            
+C     Write out at each node
+
+            DO NH=1,NP
+               IF(ABS(I3DGV).EQ.1) THEN
+                  WRITE(45,1104) NH,(REAL(q(NH,k)),AIMAG(q(NH,k)),
+     &                 WZ(NH,k),k=1,NFEN) !ASCII
+                  I3DGVRec=I3DGVRec+1
+               ELSEIF(ABS(I3DGV).EQ.2) THEN !BINARY
+                  WRITE(45,REC=I3DGVRec+1) NH
+                  I3DGVRec=I3DGVRec+1
+                  DO k=1,NFEN
+                     WRITE(45,REC=I3DGVRec+1) REAL(q(NH,k))
+                     WRITE(45,REC=I3DGVRec+2) AIMAG(q(NH,k))
+                     WRITE(45,REC=I3DGVRec+3) WZ(NH,k)
+                     I3DGVRec=I3DGVRec+3
+                  END DO
+               ENDIF
+            ENDDO
+            N3DGV=0
+            CLOSE(45)
+         ENDIF
+      ENDIF
+	
+C
+C.... 3D Turbulence Global Output (Unit 46)
+C
+      IF(I3DGT.GT.0) THEN
+
+C     Check to see if it is time to generate 3D global turbulence output.
+
+        IF((IT.GT.NTO3DGTS).AND.(IT.LE.NTO3DGTF)) N3DGT=N3DGT+1
+        IF(N3DGT.EQ.NSpo3DGT) THEN                                           !if yes
+
+C         Write time header into file
+
+          IF(ABS(I3DGT).EQ.1) THEN                                          !ASCII FORMAT
+            OPEN(46,FILE=TRIM(LOCALDIR)//'/'//'fort.46',
+     &                            ACCESS='SEQUENTIAL',POSITION='APPEND')        
+            WRITE(46,1100) Time,IT,(Sigma(k),Sigma(k),Sigma(k),
+     &                       k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+            I3DGTRec=I3DGTRec+1
+          ELSEIF(ABS(I3DGT).EQ.2) THEN                                      !BINARY FORMAT
+            OPEN(46,FILE=TRIM(LOCALDIR)//'/'//'fort.46',ACCESS='DIRECT',
+     &            RECL=NByte)
+            WRITE(46,REC=I3DGTRec+1) Time
+            WRITE(46,REC=I3DGTRec+2) IT
+            I3DGTRec=I3DGTRec+2
+          ENDIF
+
+C         Write out at each node
+
+          DO NH=1,NP
+            IF(ABS(I3DGT).EQ.1) THEN
+              WRITE(46,1104) NH,(q20(NH,k),l(NH,k),EV(NH,k),k=1,NFEN)        !ASCII
+              I3DGTRec=I3DGTRec+1
+            ELSEIF(ABS(I3DGT).EQ.2) THEN                                     !BINARY
+              WRITE(46,REC=I3DGTRec+1) NH
+              I3DGTRec=I3DGTRec+1
+              DO k=1,NFEN
+                WRITE(46,REC=I3DGTRec+1) q20(NH,k)
+                WRITE(46,REC=I3DGTRec+2) l(NH,k)
+                WRITE(46,REC=I3DGTRec+3) EV(NH,k)
+                I3DGTREC=I3DGTREC+3
+              ENDDO
+            ENDIF
+          ENDDO
+          N3DGT=0
+          CLOSE(46)
+        ENDIF
+      ENDIF
+
+ 
+      RETURN
+      END
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   W R I T E  O U T  A R R A Y  
 C-----------------------------------------------------------------------
 C     jgf48.03 This subroutine was created to write out a column 
 C     vector (i.e., nodal data such as water surface elevation or 

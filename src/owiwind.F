@@ -11,16 +11,17 @@ C
       USE MESSENGER,ONLY : MSG_FINI
 #endif         
       IMPLICIT NONE
-      character(100) :: title
+      character*100 :: title
+      character :: part1*12,part2*7,part3*6
       real(SZ), dimension(:,:), allocatable :: uR,vR,pR,uB,vB,pB
       real(SZ), dimension(:), allocatable :: latR,longR,latB,longB
       real(SZ) :: Along, Alat
       real(SZ) :: ramp,rampfrac
       real(SZ) :: uu,vv,PP
       real(SZ) :: Penv
-      integer :: date1R,date2R,date1B,date2B
-      integer :: date1w,date2w
-      integer :: date1p,date2p
+      integer*8 :: date1R,date2R,date1B,date2B
+      integer*8 :: date1w,date2w
+      integer*8 :: date1p,date2p
       integer :: iLatR,iLongR,iCYMDHR,iMinR
       real(SZ)  :: dxR,dyR,swlatR,swlongR
       integer :: iLatB,iLongB,iCYMDHB,iMinB
@@ -114,14 +115,25 @@ C***********************************************************************
       OPEN(221,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.221', STATUS='OLD')
 
       ! Read begining/ending dates of pre file
-      read(221,10,err=99999) title,date1p,title,date2p
+      read(221,11,err=99999,ADVANCE="NO")part1,part2,part3
+ 11   FORMAT(a,1x,a,1x,a)
+      read(221,*)date1p,date2p
+      if (myproc == 0)then
+         write(screenunit,*)'date1 in basin pre file = ',date1p
+         write(screenunit,*)'date2 in basin pre file = ',date2p
+      endif
 
 ! Read basin win file header -------------------------------------------------
 
       OPEN(222,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.222',STATUS='OLD')
 
       ! Read begining/ending dates of win file
-      read(222,10,err=99999) title,date1w,title,date2w
+      read(222,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
+      read(222,*)date1w,date2w
+      if (myproc == 0)then
+         write(screenunit,*)'date1 in basin win file = ',date1w
+         write(screenunit,*)'date2 in basin win file = ',date2w
+      endif
 
       if(date1p.ne.date1w.or.date2p.ne.date2w) then
         if (myproc == 0) then
@@ -148,14 +160,24 @@ C***********************************************************************
       OPEN(223,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.223',STATUS='OLD')
 
       ! Read begining/ending dates of pre file
-      read(223,10,err=99999) title,date1p,title,date2p
+      read(223,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
+      read(223,*)date1p,date2p
+      if (myproc == 0)then
+         write(screenunit,*)'date1 in region pre file = ',date1p
+         write(screenunit,*)'date2 in region pre file = ',date2p
+      endif
 
 ! Read region win file header -----------------------------------------------
 
       OPEN(224,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.224',STATUS='OLD')
 
       ! Read begining/ending dates of win file
-      read(224,10,err=99999) title,date1w,title,date2w
+      read(224,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
+      read(224,*)date1w,date2w
+      if (myproc == 0)then
+         write(screenunit,*)'date1 in region win file = ',date1w
+         write(screenunit,*)'date2 in region win file = ',date2w
+      endif
 
       if(date1p.ne.date1w.or.date2p.ne.date2w) then
         if (myproc == 0) then
@@ -191,7 +213,7 @@ C***********************************************************************
       RETURN
 
 
- 10   format(a55,i10,a5,i10)
+ 10   format(a51,i12,a5,i12)
  1001 FORMAT(1X,'HEADER INFO IN UNIT222 AND UNIT221 DO NOT MATCH')
  1002 FORMAT(1X,'HEADER INFO IN UNIT224 AND UNIT223 DO NOT MATCH')
  1003 FORMAT(1X,'EXECUTION WILL BE TERMINATED')
@@ -378,7 +400,7 @@ C***********************************************************************
       
       ! Read pressure
       read(223,22,end=9999,err=99999) ((pR(i,j),i=1,iLongR),j=1,iLatR)
-
+      
       ! Read u/v components of the wind
       read(224,22,end=9999,err=99999) ((uR(i,j),i=1,iLongR),j=1,iLatR)
       read(224,22,end=9999,err=99999) ((vR(i,j),i=1,iLongR),j=1,iLatR)
@@ -451,7 +473,7 @@ c      end if
      &         w3*pR(xi+1,yi+1)+w4*pR(xi,yi+1)
           
         endif
-        
+
         ! COPY TO ARRAYS ----------------------------------------------------------
 
         if(uu.eq.-9999.9D0) then
@@ -464,10 +486,10 @@ c      end if
             vv=vv*ramp
             PP=Penv-(Penv-PP)*ramp
           endif
-          
+
           !CONVERT MILLIBARS TO M OF WATER
           PRN(i)  = 100.d0*PP/RHOWATG
-
+ 
           ! Apply wind velocity multiplier
           uu = uu * windMultiplier
           vv = vv * windMultiplier
