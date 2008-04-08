@@ -2407,7 +2407,7 @@ C.....AND THE BOUNDARY TYPE
 
       DO K=1,NBOU
          READ(14,*) NVELL(K),IBTYPE
-
+         IBTYPENC(K)=IBTYPE
 C     check that IBTYPE parameter has been set properly
 C     jgf46.21 Added IBTYPE=52.
 
@@ -3656,7 +3656,6 @@ C....INPUT COORDINATES OF ELEVATION RECORDING STATIONS THEN COMPUTE
 C....THE ELEMENT NO. THE STATION LIES IN
 
 C     jgf47.12 From cf, memory allocation for netcdf.
-      IF(.NOT. ALLOCATED(STATNUMB))ALLOCATE(STATNUMB(NSTAE,SNUMLEN))
       IF(.NOT. ALLOCATED(STATNAME))ALLOCATE(STATNAME(NSTAE,SNAMLEN))
 
       DO I=1,NSTAE
@@ -3664,7 +3663,7 @@ C     jgf47.12 From cf, memory allocation for netcdf.
         IF(ICS.EQ.1) THEN
 
 C         jgf47.12 From cf, additions for netcdf.
-CC    START ADDITION BY CF FOR NETCDF OPTION
+C    START ADDITION BY CF FOR NETCDF OPTION
 
              IF(NOUTE.NE.3)THEN
                 READ(15,*) XEL(I),YEL(I)
@@ -3674,7 +3673,7 @@ CC    START ADDITION BY CF FOR NETCDF OPTION
                 XEL(I)=a2f(LVAR(1))
                 YEL(I)=a2f(LVAR(2))
                 STATNAME(I,SNAMLEN)=LVAR(3)
-                WRITE(6,9111) XEL(I), YEL(I), STATNAME(I,SNAMLEN)
+                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I,SNAMLEN)
              ENDIF
           ELSE
 
@@ -3686,16 +3685,15 @@ CC    START ADDITION BY CF FOR NETCDF OPTION
                  SLEL(I)=a2f(LVAR(1))
                  SFEL(I)=a2f(LVAR(2))
                  STATNAME(I,SNAMLEN)=LVAR(3)
-                 WRITE(6,*)"parsed stations"
-                 WRITE(6,9111) SLEL(I),SFEL(I), STATNAME(I,SNAMLEN)
              ENDIF
 
-CC    END OF ADDITION BY CF FOR NETCDF OPTION
+C         END OF ADDITION BY CF FOR NETCDF OPTION
 
           SLEL(I)=SLEL(I)*DEG2RAD
           SFEL(I)=SFEL(I)*DEG2RAD
           CALL CPP(XEL(I),YEL(I),SLEL(I),SFEL(I),SLAM0,SFEA0)
         ENDIF
+ 9911            FORMAT(F12.3,2X,F12.3, 6X, A50)
  9111            FORMAT(F8.3,2X,F8.3, 6X, A50)
         CALL CoordinateToElement(XEL(I), YEL(I),
      &       NNE(I), I, 'ELEVATION RECORDING STATION   ')
@@ -3811,7 +3809,7 @@ C....RECORDING STATIONS
       ENDIF
       IF (NSTAV.EQ.0) MNSTAV = 1
 
-C  Allocate arrays dimensioned by MNSTAV
+C      Allocate arrays dimensioned by MNSTAV
        call alloc_main8()
 
 C....INPUT COORDINATES OF VELOCITY RECORDING STATIONS
@@ -3826,30 +3824,24 @@ C     jgf47.12 From cf, memory allocation for netcdf.
         NNV(I)=0
         IF(ICS.EQ.1) THEN
 
-C     jgf47.12 From cf,
-CC    START ADDITION BY CF FOR NETCDF OPTION
+C       jgf47.12 From cf,
+CC     START ADDITION BY CF FOR NETCDF OPTION
 
            IF(NOUTV.NE.3) THEN
               READ(15,*) XEV(I),YEV(I)
            ELSE
-!              READ(15,9111) XEV(I),YEV(I), STATNAMEV(I,SNAMLEN)
-!              READ(15,*)    XEV(I),YEV(I), STATNAMEV(I,SNAMLEN)
-!              READ(15,9111) XEV(I),YEV(I),STATNUMBV(I),STATNAMEV(I)
               READ(15,'(A132)') STATLINE
               call parse(STATLINE, LVAR)
               XEV(I)=a2f(LVAR(1))
               YEV(I)=a2f(LVAR(2))
               STATNAMEV(I,SNAMLEN)=LVAR(3)
-              WRITE(6,9111) XEV(I), YEV(I), STATNAMEV(I,SNAMLEN)
+              WRITE(6,9911) XEV(I), YEV(I), STATNAMEV(I,SNAMLEN)
            ENDIF
         ELSE
            IF(NOUTV.NE.3)THEN
               READ(15,*) SLEV(I),SFEV(I)
            ELSE
               WRITE(6,*)"STATION INFO - BEFORE ************"
-!             READ(15,*) SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
-!             READ(15,9111) SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
-!             READ(15,*) SLEV(I),SFEV(I),STATNUMBV(I),STATNAMEV(I)
               READ(15,'(A132)') STATLINE
               call parse(STATLINE, LVAR)
               SLEV(I)=a2f(LVAR(1))
@@ -4129,7 +4121,6 @@ C...  INPUT COORDINATES OF METEOROLOGICAL RECORDING STATIONS
 C...  THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
          
 C        jgf47.12 from cf, memory allocation for netcdf.         
-         IF(.NOT.ALLOCATED(STATNUMBM))ALLOCATE(STATNUMBM(NSTAM,SNUMLEN))
          IF(.NOT.ALLOCATED(STATNAMEM))ALLOCATE(STATNAMEM(NSTAM,SNAMLEN))
 
 
@@ -4143,8 +4134,6 @@ C    START ADDITION BY CF FOR NETCDF OPTION
              IF(NOUTM.NE.3)THEN
                 READ(15,*) XEM(I),YEM(I)
              ELSE
-                READ(15,9111) XEM(I),YEM(I), STATNAMEM(I, SNAMLEN)
-!               READ(15,*) XEM(I),YEM(I), STATNAMEM(I, SNAMLEN)
                 READ(15,'(A132)') STATLINE
                 call parse(STATLINE, LVAR)
                 XEM(I)=a2f(LVAR(1))
@@ -4156,18 +4145,11 @@ C    START ADDITION BY CF FOR NETCDF OPTION
              IF(NOUTM.NE.3)THEN
                READ(15,*) SLEM(I),SFEM(I)
              ELSE
-!              READ(15,9111)
-!              READ(15,*)
-!    &            SLEM(I),SFEM(I), STATNAMEM(I,SNAMLEN)
                READ(15,'(A132)') STATLINE
                call parse(STATLINE, LVAR)
                SLEM(I)=a2f(LVAR(1))
                SFEM(I)=a2f(LVAR(2))
                STATNAMEM(I,SNAMLEN)=LVAR(3)
-               WRITE(6,9111) SLEM(I), SFEM(I), STATNAMEM(I,SNAMLEN)
-               WRITE(6,*)"STATION INFO",
-     &             SLEM(I),SFEM(I),STATNAMEM(I,SNAMLEN)
-!    &             SLEM(I),SFEM(I),STATNUMBM(I),STATNAMEM(I)
              ENDIF
 
 CC    END OF ADDITION BY CF FOR NETCDF OPTION
@@ -4849,12 +4831,11 @@ C
 !    IF output is in netCDF format read global attributes for netCDF file
 !    --------------------------------------------------------------------
 
-         WRITE(6,*) "read global attributes for netCDF file"
       IF( (noutge.EQ.3) .OR. (noutgv.EQ.3) .OR. (noutv.EQ.3) 
      &       .or. (noute.EQ.3) .or. (noutm.eq.3) )THEN
-         WRITE(6,'(A80)') title
 
          READ(15,'(A80)') title
+         WRITE(6,'(A80)') title
          READ(15,'(A80)') institution
          READ(15,'(A80)') source
          READ(15,'(A80)') history

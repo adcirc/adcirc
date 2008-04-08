@@ -3,6 +3,7 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.12     -   /  /   - jgf - Merged additional changes from cf's latest.
 C  v48.11     - 03/14/08 - jgf - Added cf's latest write_output.F, corrected
 C               Chezy conversion to quadratic in nodalattr.F, added 
 C               info messages to cmplrflags.mk and makefile, corrected issues

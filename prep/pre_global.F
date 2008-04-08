@@ -229,6 +229,19 @@ C     jgf48.03 netCDF metadata
       INTEGER NDSETSW
       INTEGER NHY
 
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION I/O 2/29/06
+!     -----------------
+!     Attribute general
+!     -----------------
+!      CHARACTER(50), ALLOCATABLE  :: STATNAMEV(:,:)
+!      CHARACTER(50), ALLOCATABLE  :: STATNAME(:,:)
+!      CHARACTER(50), ALLOCATABLE  :: STATNAMEM(:,:)
+       INTEGER, PARAMETER :: SNAMLEN = 50
+C
+C     END ADDITION BY MCF FOR NETCDF OPTION
+C     ==================================================================
+
 C
 C
 C--------------------------------------------------------------------------C
