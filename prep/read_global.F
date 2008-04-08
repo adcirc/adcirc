@@ -546,7 +546,7 @@ C     cf & cm Added NWS=9: asymmetric hurricane wind model
 C     sb46.28sb01 added NWS=12: OWI format
       IF((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8).OR.
-     &         (ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)) THEN
+     &         (ABS(NWS).EQ.12)) THEN
          READ(15,80) WSMSG1
          IF(NRS.EQ.0) READ(WSMSG1,*) WTIMINC
          IF(NRS.GE.1) READ(WSMSG1,*) WTIMINC,RSTIMINC ! sb46.28sb03

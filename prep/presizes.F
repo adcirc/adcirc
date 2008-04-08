@@ -547,7 +547,7 @@ C     jgf46.16 merged:
 C     cf & cm added NWS=9: asymmetric hurricane wind model
 C     sb46.28sb01 added NWS=12: OWI format
       IF((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).eq.5)
-     &     .OR.(ABS(NWS).EQ.45).OR.NWS.EQ.8.OR.NWS.EQ.9
+     &     .OR.(ABS(NWS).EQ.45).OR.NWS.EQ.8
      &     .OR.(ABS(NWS).EQ.12)) THEN
         IF(NRS.EQ.0) READ(15,*) WTIMINC
         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
