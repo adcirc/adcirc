@@ -309,15 +309,16 @@ C
       IF (PREP_ALL.AND.(IHOT.EQ.67.OR.IHOT.EQ.68)) THEN
          print *, 'INFORMATION: Subdomain output files will be started'
          print *, '             anew rather than appended.'
-         IF (NOUTE.GT.0) NOUTE=-NOUTE
-         IF (NOUTV.GT.0) NOUTV=-NOUTV
-         IF (NOUTC.GT.0) NOUTC=-NOUTC
-         IF (NOUTM.GT.0) NOUTM=-NOUTM
-         IF (NOUTGE.GT.0) NOUTGE=-NOUTGE
-         IF (NOUTGV.GT.0) NOUTGV=-NOUTGV
-         IF (NOUTGC.GT.0) NOUTGC=-NOUTGC
-         IF (NOUTGW.GT.0) NOUTGW=-NOUTGW
-      ENDIF      
+         IF (NOUTE .GT.0.AND.ABS(NOUTE) .NE.3) NOUTE =-NOUTE
+         IF (NOUTV .GT.0.AND.ABS(NOUTV) .NE.3) NOUTV =-NOUTV
+         IF (NOUTC .GT.0.) NOUTC=-NOUTC
+         IF (NOUTM .GT.0.AND.ABS(NOUTM) .NE.3) NOUTM =-NOUTM
+         IF (NOUTGE.GT.0.AND.ABS(NOUTGE).NE.3) NOUTGE=-NOUTGE
+         IF (NOUTGV.GT.0.AND.ABS(NOUTGV).NE.3) NOUTGV=-NOUTGV
+         IF (NOUTGC.GT.0.                    ) NOUTGC=-NOUTGC
+         IF (NOUTGW.GT.0.AND.ABS(NOUTGW).NE.3) NOUTGW=-NOUTGW
+!         WRITE(6,*)'==NOUT==',NOUTE,NOUTV,NOUTM,NOUTGE,NOUTGV
+      ENDIF
 C
 C-- Decompose the ADCIRC grid into MNPROC subdomains
 C

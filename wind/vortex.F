@@ -512,7 +512,8 @@
 !              rf2 = nm2m * r * coriolis(cLat) / two
                rf2 = nm2m * r * getCoriolisForce() / two
 
-               Vh = ms2kt * (SQRT( Brho * RmaxrB * deltaP * EXP(-RmaxrB)
+               Vh = ms2kt * (SIGN(one, cLat) *
+     &                      SQRT( Brho * RmaxrB * deltaP * EXP(-RmaxrB)
      &                            + rf2*rf2 ) - rf2)
 
 !              PRINT *, "Vh:  deltaP = ", deltaP
@@ -588,28 +589,31 @@
             END FUNCTION Vasym
 
             !========================================================
-            ! Rotate a 2D vector (x,y) counter-clockwise by an angle.
+            ! Rotate a 2D vector (x,y) by an angle.
             !
             ! On input:
             !    x           x component of vector
             !    y           y component of vector
-            !    angle       angle to rotate vector (degrees CC)
+            !    angle       angle to rotate vector (degrees)
+            !    whichWay    direction of rotation:
+            !                   - = clockwise, + = counter-clockwise
             !
             ! On output:
             !    xr          x component of rotated vector
             !    yr          y component of rotated vector
             !========================================================
-            SUBROUTINE rotate(x,y, angle, xr,yr)
+            SUBROUTINE rotate(x,y, angle, whichWay, xr,yr)
                REAL(sz), INTENT(IN)  :: x
                REAL(sz), INTENT(IN)  :: y
                REAL(sz), INTENT(IN)  :: angle
+               REAL(sz), INTENT(IN)  :: whichWay
 
                REAL(sz), INTENT(OUT) :: xr
                REAL(sz), INTENT(OUT) :: yr
 
                REAL(sz) :: A, cosA, sinA
 
-               A = deg2rad * angle
+               A = SIGN(one, whichWay) * deg2rad * angle
                cosA = COS(A)
                sinA = SIN(A)
 
@@ -731,13 +735,13 @@
                !---------------------------------------------------
                speed = kt2ms*Vasym(dist, order,a, angle, B, Pn,Pc, cLat)
      &               * windReduction * one2ten
-               u = -speed * COS(deg2rad*angle) + damp * uTrans
-               v =  speed * SIN(deg2rad*angle) + damp * vTrans
+               u = (-speed * COS(deg2rad*angle) +  uTrans) * damp
+               v = ( speed * SIN(deg2rad*angle) +  vTrans) * damp
 
                !---------------------------------------------------------
                ! Alter wind direction by adding a frictional inflow angle
                !---------------------------------------------------------
-               CALL rotate(u,v, fang(dist,rmx), uf,vf)
+               CALL rotate(u,v, fang(dist,rmx), cLat, uf,vf)
                u = uf
                v = vf
 
@@ -762,6 +766,8 @@
 !              PRINT *, "uvp:  u         = ", u,      " m/s"
 !              PRINT *, "uvp:  v         = ", v,      " m/s"
 !              PRINT *, "uvp:  p         = ", p,      " Pascals"
+!              PRINT *, "uvp:  uTrans    = ", uTrans,      " Pascals"
+!              PRINT *, "uvp:  uTrans    = ", vTrans,      " Pascals"
 
             END SUBROUTINE uvp
 
@@ -1505,12 +1511,12 @@
 !              PRINT *, "func:  Vr          = ", getRadialWind()
 !              PRINT *, "func:  func        = ", Veeh - getRadialWind()
 
-               func = Vh (getWindRadius(getQuadrant()),
-     &                    x,
-     &                    getShapeParameter (),
-     &                    getAmbientPressure(),
-     &                    getCentralPressure(),
-     &                    getCenterLatitude ())
+               func = ABS(Vh (getWindRadius(getQuadrant()),
+     &                        x,
+     &                        getShapeParameter (),
+     &                        getAmbientPressure(),
+     &                        getCentralPressure(),
+     &                        getCenterLatitude ()) )
      &              - getRadialWind()
 
             END FUNCTION func

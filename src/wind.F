@@ -2286,6 +2286,7 @@ C     ----------------------------------------------------------------
       END SUBROUTINE NWS67GET
 C     ----------------------------------------------------------------
 
+
       !=================================================================
       !=================================================================
       !=================================================================
@@ -2338,6 +2339,19 @@ C     ----------------------------------------------------------------
       !                                            wind speed from Vmax.
       !    07/05/07     Jason G. Fleming           Merged into v47.04, added
       !                                            ScreenUnit
+      !    12/12/08     Cristina Forbes, UNC-IMS   Comment out debug statements
+      !    04/21/08     Cristina Forbes, UNC-IMS   Added capability to compute
+      !                                            winds in all hemispheres
+      ! Reference:
+      !
+      !     If you use this NWS=9 option capability please reference this
+      !     publication:
+      !
+      !     Mattocks, C., C. Forbes and L. Ran (2006) Design and implementation 
+      !     of a real-time storm surge and flood forecasting capability for the 
+      !     State of North Carolina. UNC-CEP Technical Report, November 30, 2006, 103 pp.
+      !
+      !     http://www.unc.edu/~cmattock/ncfs/NCFSreport.pdf
       !=================================================================
       SUBROUTINE nws9get(slam,sfea, wvnx,wvny, press, np, time, ics)
 
@@ -2373,6 +2387,7 @@ C     ----------------------------------------------------------------
          INTEGER , SAVE :: ilat2,ilon2, ispd2, icpress2, irmw2
          REAL(sz), SAVE ::  lat1, lon1,  spd1,  cpress1,  rmw1
          REAL(sz), SAVE ::  lat2, lon2,  spd2,  cpress2,  rmw2
+         REAL(sz), SAVE ::  dt, told, cLat1, cLon1
          CHARACTER(LEN=4) :: type1              ! hindcast/nowcast or forecast?
          CHARACTER(LEN=4) :: type2              ! hindcast/nowcast or forecast?
          INTEGER , SAVE :: iFcstInc1, iFcstInc2 ! hours between forecasts
@@ -2404,6 +2419,12 @@ C     ----------------------------------------------------------------
          REAL(sz) :: vTrans = zero
 
          INTEGER , PARAMETER :: node2print = 6205
+	 CHARACTER*1 ew,E,W,ns,N,S
+ 	 E='E'
+	 W='W'
+	 N='N'
+	 S='S'
+
          timeNew = time
 
 !         WRITE(*,*) 'SUBROUTINE nws9get: time', time
@@ -2437,15 +2458,28 @@ C     jgf46.16 commented out according to cf
             ! Read parsed NHC advisory in best-track format
             !----------------------------------------------
             READ(22,22, END=999) adv, iyear1,imth1,iday1,ihr1, type1,
-     &                           iFcstInc1, ilat1,ilon1, ispd1,icpress1,
-     &                           ivr1,(ir1(i),i=1,4), ipn1, dir1,speed1,
-     &                           name
+     &                           iFcstInc1, ilat1,ns,ilon1,ew, ispd1,
+     &                           icpress1, ivr1,(ir1(i),i=1,4), ipn1, 
+     &                           dir1,speed1, name
 
 10          READ(22,22, END=999) adv, iyear2,imth2,iday2,ihr2, type2,
-     &                           iFcstInc2, ilat2,ilon2, ispd2,icpress2,
-     &                           ivr2,(ir2(i),i=1,4),ipn2, dir2, speed2,
-     &                           name
+     &                           iFcstInc2, ilat2,ns,ilon2,ew, ispd2,
+     &                           icpress2,ivr2,(ir2(i),i=1,4),ipn2, 
+     &                           dir2, speed2, name
 
+!
+!         The logic for the code is set for W and N so if E or S
+!         multiply lats and lons by -1
+!
+	    IF(ew.EQ.E)THEN
+	       ilon1=(-1)*ilon1 
+	       ilon2=(-1)*ilon2
+            ENDIF
+	    IF(ns.EQ.S)THEN
+	       ilat1=(-1)*ilat1
+	       ilat2=(-1)*ilat2
+            ENDIF
+            
             !---------------------------------
             ! Search for new NHC forecast time
             !---------------------------------
@@ -2476,6 +2510,7 @@ C     jgf46.16 commented out according to cf
 
          time1 = iFcstInc1 * hour2sec + offset
          time2 = iFcstInc2 * hour2sec + offset
+         dt=time-told
 
 !          WRITE(*,*) 'SUBROUTINE nws9get:  time1,time2',
 !     &      time1,time2
@@ -2513,9 +2548,19 @@ C     jgf46.16 commented out according to cf
             ! Read parsed NHC advisory in best-track format
             !----------------------------------------------
 20          READ(22,22, END=999) adv, iyear2,imth2,iday2,ihr2, type2,
-     &                           iFcstInc2,ilat2,ilon2,ispd2,icpress2,
-     &                           ivr2,(ir2(i),i=1,4),ipn2,dir2,speed2,
-     &                           name
+     &                           iFcstInc2,ilat2, ns,ilon2, ew,ispd2,
+     &                           icpress2, ivr2,(ir2(i),i=1,4),ipn2,
+     &                           dir2,speed2, name
+!
+!         The logic for the code is set for W and N so if E or S
+!         multiply lats and lons by -1
+!
+	    IF(ew.EQ.E)THEN
+	       ilon2=(-1)*ilon2
+            ENDIF
+	    IF(ns.EQ.S)THEN
+	       ilat2=(-1)*ilat2
+            ENDIF
 
             !---------------------------------
             ! Search for new NHC forecast time
@@ -2545,11 +2590,11 @@ C     cf added if missing values set winds to zero and pressure to P0
          IF (ivr1 .EQ. missingInt .OR.
      &       (ir1(1)*ir1(2)*ir1(3)*ir1(4) .EQ. 0)) THEN
 
-            IF (firstCall .EQ. 0 .OR. MOD(time,outFreq) .EQ. 0)
-     &         WRITE(*, '("SUBROUTINE nws9get: Time = ", F8.1,
-     &                    " Missing radial velocity for asymmetric",
-     &                    " hurricane vortex calculation; continue",
-     &                    " w/next timestep ", I3)') time, firstCall
+!            IF (firstCall .EQ. 0 .OR. MOD(time,outFreq) .EQ. 0)
+!     &         WRITE(*, '("SUBROUTINE nws9get: Time = ", F8.1,
+!     &                    " Missing radial velocity for asymmetric",
+!     &                    " hurricane vortex calculation; continue",
+!     &                    " w/next timestep ", I3)') time, firstCall
 
             DO i=1,np
                press(i) = Pzero
@@ -2573,16 +2618,16 @@ C     cf added if missing values set winds to zero and pressure to P0
 !     &      time1,time2,time
 
 
-         IF (firstCall .EQ. 0 .OR. MOD(time,outFreq) .EQ. 0)
-     &      WRITE(ScreenUnit, 
-     &               '("SUBROUTINE nws9get: Time interpolation"   ,/,
-     &                 "   t1       t             t2"             ,/,
-     &                 "   +--------+-------------+"              ,/,
-     &                 "   time1 = ", F11.1                       ,/,
-     &                 "            time = ", F11.1               ,/,
-     &                 "                          time2 = ", F11.1,/,
-     &                 "   time fraction = ", F7.4)')
-     &           time1, time, time2, wtratio
+!         IF (firstCall .EQ. 0 .OR. MOD(time,outFreq) .EQ. 0)
+!     &      WRITE(ScreenUnit, 
+!     &               '("SUBROUTINE nws9get: Time interpolation"   ,/,
+!     &                 "   t1       t             t2"             ,/,
+!     &                 "   +--------+-------------+"              ,/,
+!     &                 "   time1 = ", F11.1                       ,/,
+!     &                 "            time = ", F11.1               ,/,
+!     &                 "                          time2 = ", F11.1,/,
+!     &                 "   time fraction = ", F7.4)')
+!     &           time1, time, time2, wtratio
 
          !--------------------------------------------------------------
          ! Perform time interpolation, transform variables from integers
@@ -2613,27 +2658,27 @@ C     cf added if missing values set winds to zero and pressure to P0
             END DO
          END IF
 
-         IF (firstCall.EQ.0 .OR. MOD(time,outFreq) .EQ. 0) THEN
-            WRITE(ScreenUnit,*) 'SUBROUTINE nws9get: Time interpolation'
-            WRITE(ScreenUnit,*) 
-     &          '   ===== Vmax =====', ispd1   , Vmax, ispd2
-            WRITE(ScreenUnit,*) 
-     &          '   ===== Vr   =====', ivr1    , Vr  , ivr2
-            WRITE(ScreenUnit,*) 
-     &          '   ===== Pn   =====', ipn1    , Pn  , ipn2
-            WRITE(ScreenUnit,*) 
-     &          '   ===== Pc   =====', icpress1, Pc  , icpress2
-            WRITE(ScreenUnit,*) 
-     &          '   ===== cLat =====', ilat1   , cLat, ilat2
-            WRITE(ScreenUnit,*) 
-     &          '   ===== cLon =====', ilon1   , cLon, ilon2
-         END IF
+!         IF (firstCall.EQ.0 .OR. MOD(time,outFreq) .EQ. 0) THEN
+!            WRITE(ScreenUnit,*) 'SUBROUTINE nws9get: Time interpolation'
+!            WRITE(ScreenUnit,*) 
+!     &          '   ===== Vmax =====', ispd1   , Vmax, ispd2
+!            WRITE(ScreenUnit,*) 
+!     &          '   ===== Vr   =====', ivr1    , Vr  , ivr2
+!            WRITE(ScreenUnit,*) 
+!     &          '   ===== Pn   =====', ipn1    , Pn  , ipn2
+!            WRITE(ScreenUnit,*) 
+!     &          '   ===== Pc   =====', icpress1, Pc  , icpress2
+!            WRITE(ScreenUnit,*) 
+!     &          '   ===== cLat =====', ilat1   , cLat, ilat2
+!            WRITE(ScreenUnit,*) 
+!     &          '   ===== cLon =====', ilon1   , cLon, ilon2
+!         END IF
 
-         IF (firstCall.EQ.0 .OR. MOD(time,outFreq) .EQ. 0)
-     &      WRITE(ScreenUnit,*) 
-     &                'SUBROUTINE nws9get: before = ', name, adv,
-     &                 iyear1,imth1,iday1,ihr1,iFcstInc1,
-     &                 Pn,Pc, cLat,cLon, Vmax, Vr,r
+!         IF (firstCall.EQ.0 .OR. MOD(time,outFreq) .EQ. 0)
+!     &      WRITE(ScreenUnit,*) 
+!     &                'SUBROUTINE nws9get: before = ', name, adv,
+!     &                 iyear1,imth1,iday1,ihr1,iFcstInc1,
+!     &                 Pn,Pc, cLat,cLon, Vmax, Vr,r
 
          !-------------------------------
          ! Calculate translation velocity
@@ -2643,11 +2688,22 @@ C     cf added if missing values set winds to zero and pressure to P0
             ! If this is not the first time interval (not time = 0),
             ! uvTrans is calculated at smaller time intervals.
             !-------------------------------------------------------
-            CALL uvtrans(clatOld, clonOld, cLat,cLon,
-     &                   timeOld,timeNew, uTrans,vTrans)
-            clatOld = cLat
-            clonOld = cLon
-            timeOld = time
+            IF (time .NE. time1) THEN
+                CALL uvtrans(clatOld, clonOld, cLat,cLon,
+     &                       timeOld,timeNew, uTrans,vTrans)
+                clatOld = cLat
+                clonOld = cLon
+                timeOld = time
+            ELSE
+               wtratio = (time+dt-time1) / (time2-time1)
+               cLat1 =  ilat1 * oneTenth + wtratio * (ilat2-ilat1) * oneTenth
+               cLon1 = -ilon1 * oneTenth - wtratio * (ilon2-ilon1) * oneTenth
+               CALL uvTrans(clat, clon, cLat1,cLon1,
+     &                      time1,time+dt, uTrans,vTrans)
+               clatOld = cLat
+               clonOld = cLon
+               timeOld = time
+            END IF
 
          ELSE IF (firstCall .EQ. 0) THEN
             !---------------------------------------------------
@@ -2697,8 +2753,8 @@ C     cf added if missing values set winds to zero and pressure to P0
          !---------------------------
          ! Print the hurricane vortex
          !---------------------------
-         IF (firstCall .EQ. 0 .OR. MOD(time,outFreq) .EQ. 0)
-     &      CALL printVortex()
+        IF (firstCall .EQ. 0 .OR. MOD(time,outFreq) .EQ. 0)
+     &     CALL printVortex()
 
          !-------------------------------------------------------------
          ! Calculate wind and pressure fields at model nodal points.
@@ -2711,6 +2767,9 @@ C     cf added if missing values set winds to zero and pressure to P0
          DO i=1,np
             CALL uvp(ycoor(i),xcoor(i), uTrans,vTrans,
      &               wvnx(i),wvny(i), press(i))
+!            WRITE (300,301) i, xcoor(i),ycoor(i),
+!     &                      wvnx(i),wvny(i),press(i), uTrans,vTrans
+301         FORMAT(i7, 7(1x,f12.4))
 
             !-------------------------------------------
             ! Convert atmospheric pressure (Pascals) to
@@ -2738,10 +2797,11 @@ C     cf added if missing values set winds to zero and pressure to P0
          !-----------------------------------
          ! NHC advisory best-track i/o format
          !-----------------------------------
-22       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3), 4x, i3, 3x, i3,
-     &          2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 38x, 2(i3,2x), a10)
+22      FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x, 
+     &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 38x, 2(i3,2x), a10)
 
          firstCall = 1
+         told=time
 
 !        WRITE(*,*) 'SUBROUTINE nws9get: node #',node2print,' u,v,p = ',
 !    &              wvnx(node2print),wvny(node2print), press(node2print)
@@ -2749,7 +2809,6 @@ C     cf added if missing values set winds to zero and pressure to P0
 999      RETURN
 
       END SUBROUTINE nws9get
-
 
 C***********************************************************************
 C                                                                      *

@@ -546,7 +546,7 @@ C     cf & cm Added NWS=9: asymmetric hurricane wind model
 C     sb46.28sb01 added NWS=12: OWI format
       IF((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8).OR.
-     &         (ABS(NWS).EQ.12)) THEN
+     &         (ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)) THEN
          READ(15,80) WSMSG1
          IF(NRS.EQ.0) READ(WSMSG1,*) WTIMINC
          IF(NRS.GE.1) READ(WSMSG1,*) WTIMINC,RSTIMINC ! sb46.28sb03
@@ -804,8 +804,8 @@ C
                  SLEL(I)=a2f(LVAR(1))
                  SFEL(I)=a2f(LVAR(2))
                  STATNAME(I,SNAMLEN)=LVAR(3)
-                 WRITE(6,*)"parsed stations"
-                 WRITE(6,9911) SLEL(I),SFEL(I), STATNAME(I,SNAMLEN)
+!                 WRITE(6,*)"parsed stations"
+!                 WRITE(6,9911) SLEL(I),SFEL(I), STATNAME(I,SNAMLEN)
 #endif
              ENDIF
 
@@ -897,9 +897,9 @@ C
               SFEV(I)=a2f(LVAR(2))
               STATNAMEV(I,SNAMLEN)=LVAR(3)
 !              WRITE(6,*)"parsed stations"
-              WRITE(6,9911) SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
-              WRITE(6,*)"STATION INFO - AFTER *************",
-     &           SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
+!              WRITE(6,9911) SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
+!              WRITE(6,*)"STATION INFO - AFTER *************",
+!     &           SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
 #endif
          ENDIF
 C
@@ -996,7 +996,7 @@ C
          DO I=1,NSTAM
             READ(15,80) STAMLOC(I)
 !            READ(15,'(A132)') STAMLOC(I)
-            WRITE(6,*)"STAMLOC(I) ================",I,STAMLOC(I)
+!            WRITE(6,*)"STAMLOC(I) ================",I,STAMLOC(I)
             IF (ICS.EQ.1) THEN
             
 C     ==================================================================
@@ -1024,15 +1024,14 @@ C
                
              ELSE
 #ifdef NETCDF
-             WRITE(6,*)" before parse STAMLOC(I) ================"
 
                call parse(STAMLOC(I), LVAR)
                SLEM(I)=a2f(LVAR(1))
                SFEM(I)=a2f(LVAR(2))
                STATNAMEM(I,SNAMLEN)=LVAR(3)
-               WRITE(6,9911) SLEM(I), SFEM(I), STATNAMEM(I,SNAMLEN)
-               WRITE(6,*)"STATION INFO STAMLOC",
-     &             SLEM(I),SFEM(I),STATNAMEM(I,SNAMLEN)
+!               WRITE(6,9911) SLEM(I), SFEM(I), STATNAMEM(I,SNAMLEN)
+!               WRITE(6,*)"STATION INFO STAMLOC",
+!     &             SLEM(I),SFEM(I),STATNAMEM(I,SNAMLEN)
 !    &             SLEM(I),SFEM(I),STATNUMBM(I),STATNAMEM(I)
 #endif
              ENDIF
@@ -1193,22 +1192,22 @@ C
 C     jgf48.03 Read netCDF metadata, if necessary
 C     TODO: Extend this to the other files that may be in 
 C     netCDF format, not just the fort.61 file (NOUTE).
-      IF ( ABS(NOUTE).EQ.3 ) THEN
-#ifndef NETCDF
-         print *, "NetCDF was selected but is not supported."
-         stop
-#endif
-         READ(15,80) title
-         READ(15,80) institution
-         READ(15,80) source
-         READ(15,80) history
-         READ(15,80) references
-         READ(15,80) comments
-         READ(15,80) host
-         READ(15,80) convention
-         READ(15,80) contact
-         READ(15,80) base_date
-      ENDIF
+!      IF ( ABS(NOUTE).EQ.3 ) THEN
+!#ifndef NETCDF
+!         print *, "NetCDF was selected but is not supported."
+!         stop
+!#endif
+!         READ(15,80) title
+!         READ(15,80) institution
+!         READ(15,80) source
+!         READ(15,80) history
+!         READ(15,80) references
+!         READ(15,80) comments
+!         READ(15,80) host
+!         READ(15,80) convention
+!         READ(15,80) contact
+!         READ(15,80) base_date
+!      ENDIF
 C
 C--Read in 3D data
 C
@@ -1217,6 +1216,68 @@ C
 c     ELSEIF(C3DDSS) THEN
 c       CALL READ15_3DDSS()
       ENDIF
+
+#ifdef NETCDF
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION for NETCDF I/O - 6/20/07
+C
+!     --------------------------------------------------------------------
+!     IF output is in netCDF format read global attributes for netCDF file
+!     --------------------------------------------------------------------
+
+      IF( (noutge.EQ.3) .OR. (noutgv.EQ.3) .OR. (noutv.EQ.3)
+     &       .or. (noute.EQ.3) .or. (noutm.eq.3) )THEN
+#ifndef NETCDF
+         print *, "NetCDF was selected but is not supported by your
+      &            compilation flag.
+      &
+      &            You need to compile with:
+      &
+      &  gmake NETCDF=enable NETCDFHOME=the netcdf library location"
+         stop
+#endif
+        READ(15,'(A80)') title
+!        WRITE(6,'(A80)') title
+         READ(15,'(A80)') institution
+         READ(15,'(A80)') source
+         READ(15,'(A80)') history
+         READ(15,'(A80)') references
+         READ(15,'(A80)') comments
+         READ(15,'(A80)') host
+         READ(15,'(A80)') convention
+         READ(15,'(A80)') contact
+         READ(15,'(A80)') base_date
+!        WRITE(6,'(A80)') base_date
+!        WRITE(6,*)
+!     &                title, institution, source, history,
+!     &                references, comments, host, convention, contact,
+!     &                base_date
+
+        ELSEIF(NOUTGC.eq.3.                                 ! fort.93
+     &       or.NOUTC.eq.3.                                 ! fort.91
+     &       or.NHASE.eq.3.                                 ! fort.51
+     &       or.NHASV.eq.3.                                 ! fort.52
+     &       or.NHAGE.eq.3.                                 ! fort.53
+     &       or.NHAGV.eq.3.                                 ! fort.54
+     &       or.I3DSD.eq.3.                                 ! fort.41
+     &       or.I3DSV.eq.3.                                 ! fort.42
+     &       or.I3DST.eq.3.                                 ! fort.43
+     &       or.I3DGD.eq.3.                                 ! fort.44
+     &       or.I3DGV.eq.3.                                 ! fort.45
+     &       or.I3DGT.eq.3) THEN                            ! fort.46
+
+        WRITE(6,*)
+     &  "netCDF output not available yet for the options selected"
+
+      ENDIF
+C
+C     FINISH ADDITION BY MCF FOR NETCDF OPTION for NETCDF I/O - 6/20/07
+C     ==================================================================
+C
+#endif
+
+
+
 C
 C--Close Global Run Info file 
 C

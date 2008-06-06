@@ -547,7 +547,7 @@ C     jgf46.16 merged:
 C     cf & cm added NWS=9: asymmetric hurricane wind model
 C     sb46.28sb01 added NWS=12: OWI format
       IF((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).eq.5)
-     &     .OR.(ABS(NWS).EQ.45).OR.NWS.EQ.8
+     &     .OR.(ABS(NWS).EQ.45).OR.(NWS.EQ.8).OR.(NWS.EQ.9)
      &     .OR.(ABS(NWS).EQ.12)) THEN
         IF(NRS.EQ.0) READ(15,*) WTIMINC
         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
@@ -628,7 +628,7 @@ C     sb46.28sb01 added NWS=12: OWI format
       IF(MNFFR.EQ.0) MNFFR=1
       MNSTAE=0
       READ(15,*)  IDUM                              !SKIP OVER NOUTE, TOUTSE...
-      IF (IDUM.EQ.3) useNetCDF = .true.
+      IF (ABS(IDUM).EQ.3) useNetCDF = .true.
       READ(15,*) MNSTAE                             !PROCESS MNSTAE
       DO IL=1,MNSTAE
          READ(15,*) RDUM                            !SKIP OVER STA COORDS
@@ -636,7 +636,7 @@ C     sb46.28sb01 added NWS=12: OWI format
       IF(MNSTAE.EQ.0) MNSTAE=1
       MNSTAV=0
       READ(15,*) IDUM                               !SKIP OVER NOUTV, TOUTSV...
-      IF (IDUM.EQ.3) useNetCDF = .true.
+      IF (ABS(IDUM).EQ.3) useNetCDF = .true.
       READ(15,*) MNSTAV                             !PROCESS MNSTAV
       DO IL=1,MNSTAV
          READ(15,*) RDUM                            !SKIP OVER STA COORDS
@@ -645,7 +645,7 @@ C     sb46.28sb01 added NWS=12: OWI format
       MNSTAC=0
       IF(IM.EQ.10) THEN
          READ(15,*) IDUM                            !SKIP OVER NOUTC, TOUTSC...
-         IF (IDUM.EQ.3) useNetCDF = .true.
+         IF (ABS(IDUM).EQ.3) useNetCDF = .true.
          READ(15,*) MNSTAC                          !PROCESS MNSTAC
          DO IL=1,MNSTAC
             READ(15,*) RDUM                         !SKIP OVER STA COORDS
@@ -655,7 +655,7 @@ C     sb46.28sb01 added NWS=12: OWI format
       MNSTAM=0
       IF(NWS.NE.0) THEN
         READ(15,*) IDUM                           !SKIP OVER NOUTM, TOUTSM...
-        IF (IDUM.EQ.3) useNetCDF = .true.
+        IF (ABS(IDUM).EQ.3) useNetCDF = .true.
         READ(15,*) MNSTAM                         !PROCESS MNSTAM
         DO IL=1,MNSTAM
            READ(15,*) RDUM                        !SKIP OVER STA COORDS
@@ -664,13 +664,13 @@ C     sb46.28sb01 added NWS=12: OWI format
       IF(MNSTAM.EQ.0) MNSTAM=1
 C
       READ(15,*) IDUM                            !SKIP OVER NOUTGE, TOUTSGE...
-      IF (IDUM.EQ.3) useNetCDF = .true.
+      IF (ABS(IDUM).EQ.3) useNetCDF = .true.
       READ(15,*) IDUM                            !SKIP OVER NOUTGV, TOUTSGV...
-      IF (IDUM.EQ.3) useNetCDF = .true.
+      IF (ABS(IDUM).EQ.3) useNetCDF = .true.
       IF (IM.EQ.10) READ(15,*) IDUM               !SKIP OVER NOUTGC, TOUTSGC...
-      IF ((IM.EQ.10).AND.(IDUM.EQ.3)) useNetCDF = .true.
+      IF ((IM.EQ.10).AND.(ABS(IDUM).EQ.3)) useNetCDF = .true.
       IF (NWS.NE.0) READ(15,*) IDUM               !SKIP OVER NOUTGW, TOUTSGW...
-      IF ((NWS.NE.0).AND.(IDUM.EQ.3)) useNetCDF = .true.
+      IF ((NWS.NE.0).AND.(ABS(IDUM).EQ.3)) useNetCDF = .true.
       IF ( (useNetCDF).AND.(.NOT.(NETCDF_AVAIL)) ) THEN
          WRITE(*,*) 'ERROR: NetCDF was requested, but not supported.'
          STOP

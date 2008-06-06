@@ -20,7 +20,8 @@ C-----------------------------------------------------------------------
       USE SIZES               !since GLOBAL uses SIZES, is this necessary?
       USE GLOBAL
       USE GLOBAL_IO
-      USE GLOBAL_3DVS, ONLY: C3D_PTrans
+      USE GLOBAL_3DVS, ONLY: C3D_PTrans,
+     &    I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT
       USE HARM
       USE WIND
       USE ITPACKV
@@ -3816,7 +3817,6 @@ C....INPUT COORDINATES OF VELOCITY RECORDING STATIONS
 C....THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
 
 C     jgf47.12 From cf, memory allocation for netcdf.
-      IF(.NOT. ALLOCATED(STATNUMBV))ALLOCATE(STATNUMBV(NSTAV,SNUMLEN))
       IF(.NOT. ALLOCATED(STATNAMEV))ALLOCATE(STATNAMEV(NSTAV,SNAMLEN))
 !      WRITE(6,*)"DO LOOP - BEFORE ************"
 
@@ -3841,16 +3841,11 @@ CC     START ADDITION BY CF FOR NETCDF OPTION
            IF(NOUTV.NE.3)THEN
               READ(15,*) SLEV(I),SFEV(I)
            ELSE
-              WRITE(6,*)"STATION INFO - BEFORE ************"
               READ(15,'(A132)') STATLINE
               call parse(STATLINE, LVAR)
               SLEV(I)=a2f(LVAR(1))
               SFEV(I)=a2f(LVAR(2))
               STATNAMEV(I,SNAMLEN)=LVAR(3)
-              WRITE(6,*)"parsed stations"
-              WRITE(6,9111) SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
-              WRITE(6,*)"STATION INFO - AFTER *************",
-     &           SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
          ENDIF
 
 CC    END OF ADDITION BY CF FOR NETCDF OPTION
@@ -4822,40 +4817,6 @@ C     read in and check matrix solver parameters
           ENDIF
         ENDIF
 
-C       jgf47.12 Added section for reading netcdf data from fort.15. 
-C
-#ifdef NETCDF
-! CF - Start addition for NETCDF I/O - 6/20/07
-
-!    --------------------------------------------------------------------
-!    IF output is in netCDF format read global attributes for netCDF file
-!    --------------------------------------------------------------------
-
-      IF( (noutge.EQ.3) .OR. (noutgv.EQ.3) .OR. (noutv.EQ.3) 
-     &       .or. (noute.EQ.3) .or. (noutm.eq.3) )THEN
-
-         READ(15,'(A80)') title
-         WRITE(6,'(A80)') title
-         READ(15,'(A80)') institution
-         READ(15,'(A80)') source
-         READ(15,'(A80)') history
-         READ(15,'(A80)') references
-         READ(15,'(A80)') comments
-         READ(15,'(A80)') host
-         READ(15,'(A80)') convention
-         READ(15,'(A80)') contact
-         READ(15,'(A80)') base_date
-         WRITE(6,'(A80)') base_date
-               WRITE(6,*)
-     &                title, institution, source, history,
-     &                references, comments, host, convention, contact,
-     &                base_date
-
-      ENDIF
-
-! CF - Finish addition for NETCDF I/O
-#endif
-
 C     allocate arrays needed by GWCE matrix and iterative solver
 
       call alloc_main11()
@@ -4972,6 +4933,67 @@ C
  4105 FORMAT(' *   and an iterative solver will be used            *')
  4108 FORMAT(' *****************************************************',/)
 C
+
+#ifdef NETCDF
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION for NETCDF I/O - 6/20/07
+C
+!     --------------------------------------------------------------------
+!     IF output is in netCDF format read global attributes for netCDF file
+!     --------------------------------------------------------------------
+
+      IF( (noutge.EQ.3) .OR. (noutgv.EQ.3) .OR. (noutv.EQ.3)
+     &       .or. (noute.EQ.3) .or. (noutm.eq.3) )THEN
+
+#ifndef NETCDF
+         print *, "NetCDF was selected but is not supported by the
+      &            compilation flag chosen.
+      &
+      &            Compile with:
+      &
+      &  gmake NETCDF=enable NETCDFHOME=the netcdf library location"
+         stop
+#endif
+
+         READ(15,'(A80)') title
+!        WRITE(6,'(A80)') title
+         READ(15,'(A80)') institution
+         READ(15,'(A80)') source
+         READ(15,'(A80)') history
+         READ(15,'(A80)') references
+         READ(15,'(A80)') comments
+         READ(15,'(A80)') host
+         READ(15,'(A80)') convention
+         READ(15,'(A80)') contact
+         READ(15,'(A80)') base_date
+!        WRITE(6,'(A80)') base_date
+!        WRITE(6,*)
+!     &                title, institution, source, history,
+!     &                references, comments, host, convention, contact,
+!     &                base_date
+
+        ELSEIF(NOUTGC.eq.3.                                 ! fort.93
+     &       or.NOUTC.eq.3.                                 ! fort.91
+     &       or.NHASE.eq.3.                                 ! fort.51
+     &       or.NHASV.eq.3.                                 ! fort.52
+     &       or.NHAGE.eq.3.                                 ! fort.53
+     &       or.NHAGV.eq.3.                                 ! fort.54
+     &       or.I3DSD.eq.3.                                 ! fort.41
+     &       or.I3DSV.eq.3.                                 ! fort.42
+     &       or.I3DST.eq.3.                                 ! fort.43
+     &       or.I3DGD.eq.3.                                 ! fort.44
+     &       or.I3DGV.eq.3.                                 ! fort.45
+     &       or.I3DGT.eq.3) THEN                            ! fort.46
+
+        WRITE(6,*)
+     &  "netCDF output not available yet for the options selected"
+
+      ENDIF
+C
+C     FINISH ADDITION BY MCF FOR NETCDF OPTION for NETCDF I/O - 6/20/07
+C     ==================================================================
+C
+#endif
 
 C...
 C...  CLOSE FILES FORT.14 and FORT.15                 

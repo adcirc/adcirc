@@ -97,7 +97,7 @@ C      USE SIZES
       IF(.NOT. ALLOCATED(timenc)) ALLOCATE(timenc(timenc_len))
       timenc(timenc_len)=time
 
-      IF (NOUTE.EQ.3) THEN  !fort.61
+      IF (ABS(NOUTE).EQ.3) THEN  !fort.61
          lun = 61
          num_records = NSTAE
          IF(.NOT. ALLOCATED(et00nc))
@@ -142,7 +142,7 @@ C      USE SIZES
       ENDIF !fort.61
 
 
-      IF (NOUTV.EQ.3) THEN  !fort.62
+      IF (ABS(NOUTV).EQ.3) THEN  !fort.62
          lun = 62
          num_records = NSTAV
          IF(.NOT. ALLOCATED(UU00nc))
@@ -189,7 +189,7 @@ C      USE SIZES
       ENDIF !fort.62
 
 
-      IF (NOUTGE.EQ.3) THEN  !fort.63
+      IF (ABS(NOUTGE).EQ.3) THEN  !fort.63
          lun = 63
          num_records = MNP
          IF(.NOT. ALLOCATED(eta22))
@@ -296,7 +296,7 @@ C      USE SIZES
 
       ENDIF !fort.63
 
-      IF (NOUTGV.EQ.3) THEN  !fort.64
+      IF (ABS(NOUTGV).EQ.3) THEN  !fort.64
          lun = 64
          num_records = MNP
          IF(.NOT. ALLOCATED(uu22))
@@ -376,7 +376,7 @@ C      USE SIZES
 
       ENDIF !fort.64
 
-      IF (NOUTM.EQ.3) THEN  !fort.71
+      IF (ABS(NOUTM).EQ.3) THEN  !fort.71
          lun = 71
          num_records = NSTAM
          IF(.NOT. ALLOCATED(RMP00nc))
@@ -428,7 +428,7 @@ C      USE SIZES
       ENDIF !fort.71
 
 
-      IF (NOUTM.EQ.3) THEN  !fort.72
+      IF (ABS(NOUTM).EQ.3) THEN  !fort.72
          lun = 72
          num_records = NSTAM
          IF(.NOT. ALLOCATED(RMU00nc))
@@ -481,7 +481,7 @@ C      USE SIZES
       ENDIF !fort.72
 
       
-      IF (NOUTGW.EQ.3) THEN  !fort.73
+      IF (ABS(NOUTGW).EQ.3) THEN  !fort.73
          lun = 73
          num_records = MNP
          IF(.NOT. ALLOCATED(pr22))
@@ -562,7 +562,7 @@ C      USE SIZES
 
       ENDIF !fort.73
 
-      IF (NOUTGW.EQ.3) THEN  !fort.74
+      IF (ABS(NOUTGW).EQ.3) THEN  !fort.74
          lun = 74
          num_records = MNP
          IF(.NOT. ALLOCATED(WNCX22))
@@ -1817,7 +1817,7 @@ C     cf & cm added NWS=9: asymmetric hurricane wind model
 C     sb46.28sb01 added NWS=12: OWI format
          IF ((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.45).OR.
      &        (ABS(NWS).EQ.5).OR.(ABS(NWS).EQ.6).OR.(ABS(NWS).EQ.8)
-     &        .OR.(ABS(NWS).EQ.12))THEN
+     &        .OR.(ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12))THEN
             WRITE(15,80) WSMSG1
          ENDIF
          IF (NWS.EQ.3) THEN

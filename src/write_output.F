@@ -636,7 +636,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE Write_Output_3D (Time,IT)
       USE SIZES, ONLY : SZ, INPUTDIR, NBYTE
       USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : 
+      USE GLOBAL_3DVS 
       USE GLOBAL_IO, ONLY: storeOne, storeTwo, HEADER_MAX,
      &    open_gbl_file, write_gbl_file, 
      &    write_gbl_file_skip_default, collectFullDomainArray,
@@ -648,144 +648,139 @@ C-----------------------------------------------------------------------
      &     et00nc, UU00nc, VV00nc, RMP00nc, RMU00nc, RMV00nc, nbvvnc,
      &     eta22, uu22, vv22, pr22, WNCX22, WNCY22, 
      &     nbounc,nvelnc,nvellnc,
-     &     nopenc,netanc,nvdllnc,
-     &     writenc41, writenc42, writenc43, writenc44,
-     &     writenc45, writenc46
+     &     nopenc,netanc,nvdllnc
+!     &     writenc41, writenc42, writenc43, writenc44,
+!     &     writenc45, writenc46
        USE NodalAttributes, ONLY : 
      &     nolibf, nwp, tau0, cf, eslm
 #endif
 
-      IMPLICIT NONE
 
-      REAL(8)        Time
-      INTEGER ::     IT
-      INTEGER ::     NN, NH, NEle, N1, N2, N3, k
       
 
       IMPLICIT NONE 
       INTEGER, intent(in) :: IT
       REAL(8), intent(in) :: Time
 
-      INTEGER I                       !local loop counters
       INTEGER NC1, NC2, NC3, NCEle
       INTEGER NM1, NM2, NM3
-
+      INTEGER ::     NN, NH, NEle, N1, N2, N3, k
       REAL(SZ) C1, C2, C3
       REAL(SZ) EE1, EE2, EE3
       REAL(SZ) H2, H2N1, H2N2, H2N3
       REAL(SZ) U11, U22, U33
       REAL(SZ) V11, V22, V33
 
-      type(OutputDataDescript_t) :: descript
-      type(OutputDataDescript_t), SAVE :: ElevStaDescript
-      type(OutputDataDescript_t), SAVE :: VelStaDescript
-      type(OutputDataDescript_t), SAVE :: ElevDescript
-      type(OutputDataDescript_t), SAVE :: Tau0Descript
-      type(OutputDataDescript_t), SAVE :: VelDescript
-      type(OutputDataDescript_t), SAVE :: PrStaDescript
-      type(OutputDataDescript_t), SAVE :: WindVelStaDescript
-      type(OutputDataDescript_t), SAVE :: PrDescript
-      type(OutputDataDescript_t), SAVE :: WindVelDescript
-      type(OutputDataDescript_t), SAVE :: ConcStaDescript
-      type(OutputDataDescript_t), SAVE :: ConcDescript
+!      type(OutputDataDescript_t) :: descript
+!      type(OutputDataDescript_t), SAVE :: ElevStaDescript
+!      type(OutputDataDescript_t), SAVE :: VelStaDescript
+!      type(OutputDataDescript_t), SAVE :: ElevDescript
+!      type(OutputDataDescript_t), SAVE :: Tau0Descript
+!      type(OutputDataDescript_t), SAVE :: VelDescript
+!      type(OutputDataDescript_t), SAVE :: PrStaDescript
+!      type(OutputDataDescript_t), SAVE :: WindVelStaDescript
+!      type(OutputDataDescript_t), SAVE :: PrDescript
+!      type(OutputDataDescript_t), SAVE :: WindVelDescript
+!      type(OutputDataDescript_t), SAVE :: ConcStaDescript
+!      type(OutputDataDescript_t), SAVE :: ConcDescript
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ET00_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UU00_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: VV00_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETA2_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: TAU0VAR_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UU2_g(:)     
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: VV2_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMP00_g(:)     
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMU00_g(:)     
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMV00_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: Pr2_g(:)     
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNXOut_g(:)     
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNYOut_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CC00_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CH1_g(:)
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ET00_g(:)
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UU00_g(:)
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: VV00_g(:)
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETA2_g(:)
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: TAU0VAR_g(:)
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UU2_g(:)     
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: VV2_g(:)
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMP00_g(:)     
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMU00_g(:)     
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMV00_g(:)
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: Pr2_g(:)     
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNXOut_g(:)     
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNYOut_g(:)
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CC00_g(:)
+!      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CH1_g(:)
 
-      LOGICAL, SAVE :: FirstCall = .true.
+!     LOGICAL, SAVE :: FirstCall = .true.
       
-      IF (FirstCall) THEN
+!      IF (FirstCall) THEN
 
-         ! fort.61
-         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(ET00_g(NSTAE_G)) 
-         ENDIF
-         ElevStaDescript % specifier            = NOUTE
-         ElevStaDescript % initial_value        = 0.0
-         ElevStaDescript % num_items_per_record = 1
-         ElevStaDescript % num_fd_records       = NSTAE_G
-         ElevStaDescript % num_records_this     = NSTAE
-         ElevStaDescript % imap                 => IMAP_STAE_LG
-         ElevStaDescript % array                => ET00
-         ElevStaDescript % array_g              => ET00_g
+!         ! fort.61
+!         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
+!         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+!            ALLOCATE(ET00_g(NSTAE_G)) 
+!         ENDIF
+!         ElevStaDescript % specifier            = NOUTE
+!         ElevStaDescript % initial_value        = 0.0
+!         ElevStaDescript % num_items_per_record = 1
+!         ElevStaDescript % num_fd_records       = NSTAE_G
+!         ElevStaDescript % num_records_this     = NSTAE
+!         ElevStaDescript % imap                 => IMAP_STAE_LG
+!         ElevStaDescript % array                => ET00
+!         ElevStaDescript % array_g              => ET00_g
 
          ! fort.62
-         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(UU00_g(NSTAV_G))
-            ALLOCATE(VV00_g(NSTAV_G)) 
-         ENDIF
-         VelStaDescript % specifier            = NOUTV
-         VelStaDescript % initial_value        = 0.0
-         VelStaDescript % num_items_per_record = 2
-         VelStaDescript % num_fd_records       = NSTAV_G
-         VelStaDescript % num_records_this     = NSTAV
-         VelStaDescript % imap                 => IMAP_STAV_LG
-         VelStaDescript % array                => UU00
-         VelStaDescript % array2               => VV00
-         VelStaDescript % array_g              => UU00_g
-         VelStaDescript % array2_g             => VV00_g
-
+!         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
+!         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+!            ALLOCATE(UU00_g(NSTAV_G))
+!            ALLOCATE(VV00_g(NSTAV_G)) 
+!         ENDIF
+!         VelStaDescript % specifier            = NOUTV
+!         VelStaDescript % initial_value        = 0.0
+!         VelStaDescript % num_items_per_record = 2
+!         VelStaDescript % num_fd_records       = NSTAV_G
+!         VelStaDescript % num_records_this     = NSTAV
+!         VelStaDescript % imap                 => IMAP_STAV_LG
+!         VelStaDescript % array                => UU00
+!         VelStaDescript % array2               => VV00
+!         VelStaDescript % array_g              => UU00_g
+!         VelStaDescript % array2_g             => VV00_g
+!
          ! fort.63
-         write(16,*) 'Allocating ElevDescript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(ETA2_g(NP_G))
-         ENDIF
-         ElevDescript % specifier            = NOUTGE
-         ElevDescript % initial_value        = 0.0
-         ElevDescript % num_items_per_record = 1
-         ElevDescript % num_fd_records       = NP_G
-         ElevDescript % num_records_this     = NP
-         ElevDescript % imap                 => NODES_LG
-         ElevDescript % array                => ETA2
-         ElevDescript % array_g              => ETA2_g
+!         write(16,*) 'Allocating ElevDescript' !jgfdebug48.03
+!         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+!            ALLOCATE(ETA2_g(NP_G))
+!         ENDIF
+!         ElevDescript % specifier            = NOUTGE
+!         ElevDescript % initial_value        = 0.0
+!         ElevDescript % num_items_per_record = 1
+!         ElevDescript % num_fd_records       = NP_G
+!         ElevDescript % num_records_this     = NP
+!         ElevDescript % imap                 => NODES_LG
+!         ElevDescript % array                => ETA2
+!         ElevDescript % array_g              => ETA2_g
 
          ! tau0
-         write(16,*) 'Allocating Tau0Descript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(TAU0VAR_g(NP_G))
-         ENDIF
-         Tau0Descript % specifier            = 1  ! hard-code to ascii text
-         Tau0Descript % initial_value        = 0.0
-         Tau0Descript % num_items_per_record = 1
-         Tau0Descript % num_fd_records       = NP_G
-         Tau0Descript % num_records_this     = NP
-         Tau0Descript % imap                 => NODES_LG
-         Tau0Descript % array                => TAU0VAR
-         Tau0Descript % array_g              => TAU0VAR_g
+!        write(16,*) 'Allocating Tau0Descript' !jgfdebug48.03
+!         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+!            ALLOCATE(TAU0VAR_g(NP_G))
+!         ENDIF
+!         Tau0Descript % specifier            = 1  ! hard-code to ascii text
+!         Tau0Descript % initial_value        = 0.0
+!         Tau0Descript % num_items_per_record = 1
+!         Tau0Descript % num_fd_records       = NP_G
+!         Tau0Descript % num_records_this     = NP
+!         Tau0Descript % imap                 => NODES_LG
+!         Tau0Descript % array                => TAU0VAR
+!         Tau0Descript % array_g              => TAU0VAR_g
 
          ! fort.64
-         write(16,*) 'Allocating VelDescript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(UU2_g(NP_G))
-            ALLOCATE(VV2_g(NP_G)) 
-         ENDIF
-         VelDescript % specifier            = NOUTGV
-         VelDescript % initial_value        = 0.0
-         VelDescript % num_items_per_record = 2
-         VelDescript % num_fd_records       = NP_G
-         VelDescript % num_records_this     = NP
-         VelDescript % imap                 => NODES_LG
-         VelDescript % array                => UU2
-         VelDescript % array2               => VV2
-         VelDescript % array_g              => UU2_g
-         VelDescript % array2_g             => VV2_g
-
+!         write(16,*) 'Allocating VelDescript' !jgfdebug48.03
+!         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+!            ALLOCATE(UU2_g(NP_G))
+!            ALLOCATE(VV2_g(NP_G)) 
+!         ENDIF
+!         VelDescript % specifier            = NOUTGV
+!         VelDescript % initial_value        = 0.0
+!         VelDescript % num_items_per_record = 2
+!         VelDescript % num_fd_records       = NP_G
+!         VelDescript % num_records_this     = NP
+!         VelDescript % imap                 => NODES_LG
+!         VelDescript % array                => UU2
+!         VelDescript % array2               => VV2
+!         VelDescript % array_g              => UU2_g
+!         VelDescript % array2_g             => VV2_g
+!
 1100  FORMAT(1X,E16.10,1X,I10,32000(2X,E12.6))
 1104  FORMAT(9X,I6,4X,32000(E12.6,2X))
 
@@ -2165,27 +2160,72 @@ C     write hotstart files.
 C-----------------------------------------------------------------------
       SUBROUTINE writeHotstart(Time, IT)
 
+      USE SIZES
       USE GLOBAL
       USE GLOBAL_IO, ONLY: write_gbl_file_hstart, store_real,
      &     store_integer, write_real, write_integer
 #ifdef CMPI
       USE MESSENGER
 #endif
+#ifdef NETCDF
+      USE NETCDFIO, ONLY :
+     &     timenc, timenc_len, fileunit, irtype,
+     &     xenc, yenc, xvnc, yvnc, xpnc, ypnc, xnc, ync, xwnc, ywnc,
+     &     et00nc, UU00nc, VV00nc, RMP00nc, RMU00nc, RMV00nc, nbvvnc,
+     &     eta11,eta22,uu22, vv22, pr22, WNCX22, WNCY22,
+     &     nbounc,nvelnc,nvellnc,
+     &     nopenc,netanc,nvdllnc, nodecodenc,noffnc, etadd,
+     &     writenc67
+       USE NodalAttributes, ONLY :
+     &     nolibf, nwp, tau0, cf, eslm
+
+#endif
+
       IMPLICIT NONE
       REAL(8), intent(in) :: Time
       INTEGER, intent(in) :: IT
+C
+C     START ADDITIONS FOR NETCDF by MCF
+C
+      INTEGER ncmode
+      INTEGER num_records, num_recordse ! to save in the netcdf file
+      INTEGER I,J,K
+C
+C     FINISH ADDITIONS FOR NETCDF by MCF
+C
 
       type(OutputDataDescript_t) :: descript 
       LOGICAL TEST_HOTSTART     !jgf45.07 used for testing hot start capability
       INTEGER npx, nex
+#ifdef NETCDF
+C
+C     START ADDITIONS FOR NETCDF by MCF
+C
+      IF (MNPROC.gt.1) ncmode=2
+      IF (MNPROC.eq.1) ncmode=1
 
-      TEST_HOTSTART = .FALSE.
+         timenc_len=1
+         IF(.NOT. ALLOCATED(timenc))
+     &        ALLOCATE(timenc(timenc_len))
+         timenc(timenc_len)=time
+C
+C     FINISH ADDITIONS FOR NETCDF by MCF
+C
+#endif
+
+!      TEST_HOTSTART = .FALSE.
 
       NPX = NP_G
       NEX = NE_G
+      PRINT *, "write_output: NPX - 1", NPX
+      PRINT *, "write_output: NEX - 1", NEX
+
       if (MNPROC == 1 .or. WRITE_LOCAL_HOT_START_FILES) THEN
          NPX = NP
          NEX = NE
+         PRINT *, "write_output: NPX - 2", NPX
+         PRINT *, "write_output: NEX - 2", NEX
+
       endif
 
       IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
@@ -2211,26 +2251,81 @@ C-----------------------------------------------------------------------
       descript % array                => ETA1
       CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP,
      &     store_real, write_real)
+#ifdef NETCDF
+C   Start Addition for netCDF by MCF 4/8/08
+      num_records=npx
+
+      IF(.NOT.ALLOCATED(eta11))ALLOCATE (eta11(num_records,timenc_len))
+
+            DO I=1, num_records
+                   eta11(i,timenc_len) = descript % array(i)
+!                  PRINT *,i,"  ETA11 = ", ETA11(i, timenc_len)
+            END DO
+                   PRINT *,"  ETA11 = ", ETA11(11, timenc_len)
+C   End Addition for netCDF by MCF 4/8/08
+#endif
 
         
       descript % array                => ETA2
       CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP, 
      &     store_real, write_real)
+#ifdef NETCDF
+C   Start Addition for netCDF by MCF 4/8/08
+      IF(.NOT.ALLOCATED(eta22))ALLOCATE (eta22(num_records,timenc_len))
+
+            DO I=1, num_records
+                   eta22(i,timenc_len) = descript % array(i)
+!                   PRINT *,i,"  ETA22 = ", ETA22(i, timenc_len)
+            END DO
+                   PRINT *,"  ETA22 = ", ETA22(11, timenc_len)
+C   End Addition for netCDF by MCF 4/8/08
+#endif
 
       !  vjp46.34 Added support for IBTYPE=52.  
       ! ( EtaDisc is ETA2 at ItDiscTime )
       descript % array                => EtaDisc
       CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP, 
      &     store_real, write_real)
+#ifdef NETCDF
+C   Start Addition for netCDF by MCF 4/8/08
+      IF(.NOT.ALLOCATED(etadd))ALLOCATE (etadd(num_records,timenc_len))
+
+            DO I=1, num_records
+                   etadd(i,timenc_len) = descript % array(i)
+!                   PRINT *,i,"  ETADD = ", ETADD(i, timenc_len)
+            END DO
+                   PRINT *,"  ETADD = ", ETADD(11, timenc_len)
+C   End Addition for netCDF by MCF 4/8/08
+#endif
 
       descript % array                => UU2
       CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP, 
      &     store_real, write_real)
-        
+#ifdef NETCDF
+C   Start Addition for netCDF by MCF 4/8/08
+      IF(.NOT.ALLOCATED(uu22))ALLOCATE (uu22(num_records,timenc_len))
+
+            DO I=1, num_records
+                   uu22(i,timenc_len) = descript % array(i)
+!                   PRINT *,i,"  uu22 = ", uu22(i, timenc_len)
+            END DO
+                   PRINT *,"  uu22 = ", uu22(11, timenc_len)
+C   End Addition for netCDF by MCF 4/8/08
+#endif         
       descript % array                => VV2
       CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP, 
      &     store_real, write_real)
-        
+#ifdef NETCDF
+C   Start Addition for netCDF by MCF 4/8/08
+      IF(.NOT.ALLOCATED(vv22))ALLOCATE (vv22(num_records,timenc_len))
+
+            DO I=1, num_records
+                   vv22(i,timenc_len) = descript % array(i)
+!                   PRINT *,i,"  vv22 = ", vv22(i, timenc_len)
+            END DO
+                   PRINT *,"  vv22 = ", vv22(11, timenc_len)
+C   End Addition for netCDF by MCF 4/8/08
+#endif 
       if (IM == 10) then
          descript % array              => CH1
          CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP, 
@@ -2240,6 +2335,18 @@ C-----------------------------------------------------------------------
       descript % iarray               => NODECODE
       CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP, 
      &     store_integer, write_integer)
+#ifdef NETCDF     
+C   Start Addition for netCDF by MCF 4/8/08
+      num_records=np_g
+      IF(.NOT.ALLOCATED(nodecodenc))ALLOCATE (nodecodenc(num_records))
+
+            DO I=1, num_records
+                   nodecodenc(i) = descript % iarray(i)
+!                   PRINT *,i,"  nodecodenc = ", nodecodenc(i)
+            END DO
+                   PRINT *,"  nodecodenc = ", nodecodenc(11)
+C   End Addition for netCDF by MCF 4/8/08
+#endif
         
       descript % num_records_this     =  NE
       descript % num_fd_records       =  NE_G
@@ -2247,7 +2354,18 @@ C-----------------------------------------------------------------------
       descript % iarray               => NOFF
       CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP, 
      &     store_integer, write_integer)
+#ifdef NETCDF
+C   Start Addition for netCDF by MCF 4/8/08
+      num_recordse=ne_g
+      IF(.NOT.ALLOCATED(noffnc))ALLOCATE (noffnc(num_recordse))
 
+            DO I=1, num_recordse
+                   noffnc(i) = descript % iarray(i)
+!                   PRINT *,i,"  noffnc = ", noffnc(i)
+            END DO
+                   PRINT *,"  noffnc = ", noffnc(11)
+C   End Addition for netCDF by MCF 4/8/08
+#endif
       if (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
          WRITE(hss % lun,REC=IHOTSTP+1) IESTP
          WRITE(hss % lun,REC=IHOTSTP+2) NSCOUE
@@ -2276,6 +2394,103 @@ C-----------------------------------------------------------------------
          WRITE(hss % lun,REC=IHOTSTP+3) NSCOUGW
          IHOTSTP=IHOTSTP+3
       endif
+C
+C    ADDITION OF netCDF Hostart file 67.nc and 68.nc by MCF 4/8/08
+C
+#ifdef NETCDF
+            IF(.NOT. ALLOCATED(xnc)) ALLOCATE(xnc(num_records))
+            IF(.NOT. ALLOCATED(ync)) ALLOCATE(ync(num_records))
+            IF(.NOT. ALLOCATED(nbvvnc)) ALLOCATE(nbvvnc(nbou,nvel))
+            IF(.NOT. ALLOCATED(nvellnc)) ALLOCATE(nvellnc(nbou))
+            IF(.NOT. ALLOCATED(nvdllnc)) ALLOCATE(nvdllnc(nope))
+            IF(.NOT. ALLOCATED(ibtypenc)) ALLOCATE(ibtypenc(nbou))
+
+
+            IF(ICS.EQ.2) THEN
+               DO I=1, num_records
+                  xnc(i)=slam(i)*RAD2DEG
+                  ync(i)=sfea(i)*RAD2DEG
+               END DO
+            ELSE
+               DO I=1,num_records
+                  xnc(i)=X(i)
+                  ync(i)=Y(i)
+               END DO
+            ENDIF
+
+!
+!            elevation specified boundary forcing segments
+!
+               netanc=0
+               DO i=1,nope
+                  nvdllnc(i)=nvdll(i)
+                  netanc=netanc+nvdllnc(i)
+!                 DO j=1,nvel
+!                    nbvvnc(i,j)=nbvv(i,j)
+!                 END DO
+              END DO
+
+            IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
+
+               k=0
+                  DO i=1,nope
+                        DO j=1,nvdllnc(i)
+                        k=k+1
+                        nopenc(k)=nbdv(i,j)
+                     END DO
+                  END DO
+!
+!              normal flow (discharge) specified boundary segments
+!
+               nvelnc=0
+               DO i=1,nbou
+                  nvellnc(i)=nvell(i)
+                  nvelnc=nvelnc+nvellnc(i)
+                  DO j=1,nvel
+                     nbvvnc(i,j)=nbvv(i,j)
+                 END DO
+               END DO
+
+          IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
+
+               k=0
+                  DO i=1,nbou
+                        DO j=1,nvellnc(i)
+                        k=k+1
+                        nbounc(k)=nbvv(i,j)
+                     END DO
+                  END DO
+          PRINT *, "==== write_output: IM = ", IM, IHOTSTP
+          PRINT *, "==== write_output: TIME = ", TIME, IHOTSTP
+          PRINT *, "==== write_output: IM = ", IT, IHOTSTP
+          PRINT *, "==== write_output: NPX = ", NPX, IHOTSTP
+          PRINT *, "==== write_output: NEX = ", NEX, IHOTSTP
+          call writenc67 (nhsinc,hss % lun,timenc_len,npx,timenc,
+     &                      nt, nhsinc, uu2,vv2,
+     &                      eta11, eta22, etadd, nodecodenc,noffnc,
+     &                      imhs, it,iestp,nscoue,ivstp,nscouv, icstp,
+     &                      nscouc, ipstp, iwstp, nscoum, igep, nscouge,
+     &                      igvp, nscougv, igcp, nscougc, igpp, igwp,
+     &                      nscougw,
+     &                      rundes, runid, agrid, irtype,
+     &                      dtdp, ihot, ics, nolibf, nolifa,
+     &                      nolica, nolicat, nwp,
+     &                      ncor, ntip, nws, nramp, tau0,
+     &                      statim, reftim, rnday, dramp,
+     &                      a00, b00, c00, h0,
+     &                      slam0, sfea0, cf ,eslm, cori,
+     &             ntif, nbfr, nex, nhy, nm,
+     &             xnc, ync, dp,
+     &             nope, neta, nbdv,nopenc,netanc,
+     &             nvdllnc,
+     &             nbou, nvel, nbvvnc,nbounc,nvelnc,
+     &             nvellnc,ibtypenc,
+     &             ncmode,
+     &             title, institution, source, history,
+     &             references, comments, host, convention, contact,
+     &             base_date)
+#endif
+
 !This code is not supported yet.
 #if 0
 C...

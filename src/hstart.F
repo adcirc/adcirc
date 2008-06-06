@@ -39,7 +39,22 @@ C
       USE WIND
       USE OWIWIND,ONLY : NWS12INIT,NWS12GET   ! sb46.28sb01 added 09/xx/2006
       USE RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
+C   Start Addition for netCDF by MCF 5/18/08
+#ifdef NETCDF
+      USE NETCDFIO, ONLY :
+     &     timenc, timenc_len, fileunit, irtype,
+     &     xenc, yenc, xvnc, yvnc, xpnc, ypnc, xnc, ync, xwnc, ywnc,
+     &     et00nc, UU00nc, VV00nc, RMP00nc, RMU00nc, RMV00nc, nbvvnc,
+     &     eta22, uu22, vv22, pr22, WNCX22, WNCY22,
+     &     nbounc,nvelnc,nvellnc,
+     &     nopenc,netanc,nvdllnc,
+     &     writenc61, writenc62, writenc63, writenc64,
+     &     writenc71, writenc72, writenc73, writenc74, readnc67
+#endif
+C   End Addition for netCDF by MCF 5/18/08
+
       USE NodalAttributes, ONLY : 
+     &     nolibf, nwp, tau0, cf, eslm,                       ! for netcdf
      &     LoadDirEffRLen,
      &     ApplyDirectionalWindReduction,
      &     OutputTau0 !jgf47.06
@@ -48,6 +63,9 @@ C
       INTEGER IT
       INTEGER I, J              !local loop counters
       INTEGER NCyc, NA, InputFileFmtVn
+C   Start Addition for netCDF by MCF 4/8/08
+      INTEGER ncmode
+C   End Addition for netCDF by MCF 4/8/08
 
       REAL(SZ) HollandTime
       REAL(SZ) ArgT, ArgTP, ArgSAlt
@@ -124,6 +142,75 @@ C
  1012 FORMAT('was a nonmatching version') 
  1005 FORMAT('exists but cannot be opened.')
  9973 FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
+
+C   Start Addition for netCDF by MCF 5/8/08
+C
+C   READ NETCDF HOTSTART FILE
+#ifdef NETCDF
+      PRINT *, "hstart: IHOT",IHOT
+         timenc_len=1
+         IF(.NOT. ALLOCATED(timenc))  ALLOCATE(timenc(timenc_len))
+!         timenc(timenc_len)=time
+         ncmode=1                                                       !serial version
+         call readnc67 (nhsinc,IHOT,timenc_len,np,timenc,
+     &                      nt, nhsinc, uu2,vv2,
+     &                      eta1, eta2, EtaDisc, nnodecode,noff,
+     &                      imhs, iths,iestp,nscoue,ivstp,nscouv, icstp, 
+     &                      nscouc, ipstp, iwstp, nscoum, igep, nscouge,
+     &                      igvp, nscougv, igcp, nscougc, igpp, igwp,
+     &                      nscougw,
+     &                      rundes, runid, agrid, irtype,
+     &                      dtdp, ihot, ics, nolibf, nolifa,
+     &                      nolica, nolicat, nwp,
+     &                      ncor, ntip, nws, nramp, tau0,
+     &                      statim, reftim, rnday, dramp,
+     &                      a00, b00, c00, h0,
+     &                      slam0, sfea0, cf ,eslm, cori,
+     &             ntif, nbfr, ne, nhy, nm,
+     &             xnc, ync, dp,
+     &             nope, neta, nbdv,nopenc,netanc,
+     &             nvdllnc,
+     &             nbou, nvel, nbvvnc,nbounc,nvelnc,
+     &             nvellnc,ibtypenc,
+     &             ncmode,
+     &             title, institution, source, history,
+     &             references, comments, host, convention, contact,
+     &             base_date)
+       time= timenc(timenc_len)
+                   PRINT *,"  ----------START--NETCDF--------------------"
+                   PRINT *,"  IMHS = ", IMHS
+                   PRINT *,"  TIME = ", TIME
+                   PRINT *,"  ITHS = ", ITHS
+                   PRINT *,"  ETA11 = ", ETA1(11)
+                   PRINT *,"  ETA22 = ", ETA2(11)
+                   PRINT *,"  ETADD = ", EtaDisc(11)
+                   PRINT *,"  uu22 = ", uu2(11)
+                   PRINT *,"  vv22 = ", vv2(11)
+                   PRINT *,"  nnodecode = ", nnodecode(11)
+                   PRINT *,"  noff = ", noff(11)
+                   PRINT *,"  IESTP = ",IESTP
+                   PRINT *,"  NSCOUE = ",NSCOUE
+                   PRINT *,"  IVSTP = ",IVSTP
+                   PRINT *,"  NSCOUV = ",NSCOUV
+                   PRINT *,"  ICSTP = ",ICSTP
+                   PRINT *,"  NSCOUC = ",NSCOUC
+                   PRINT *,"  IPSTP = ",IPSTP
+                   PRINT *,"  IWSTP = ",IWSTP
+                   PRINT *,"  NSCOUM = ",NSCOUM
+                   PRINT *,"  IGEP = ",IGEP
+                   PRINT *,"  NSCOUGE = ",NSCOUGE
+                   PRINT *,"  IGVP = ",IGVP
+                   PRINT *,"  NSCOUGV = ",NSCOUGV
+                   PRINT *,"  IGCP = ",IGCP
+                   PRINT *,"  NSCOUGC = ",NSCOUGC
+                   PRINT *,"  IGPP = ",IGPP
+                   PRINT *,"  IGWP = ",IGWP
+                   PRINT *,"  NSCOUGW = ",NSCOUGW
+                   PRINT *,"  ---------END-------NETCDF--------------------"
+C   End Addition for netCDF by MCF 5/8/08
+#endif
+
+
 C
 C     Now read the hot start file.
       IHOTSTP=1
@@ -1904,7 +1991,37 @@ c         WRITE(74,REC=ITEMPSTP+1) NDSETSW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
           CLOSE(74)                         ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
-
+                 PRINT *,"  ----------START--BIN--------------------"
+                   PRINT *,"  IMHS = ", IMHS
+                   PRINT *,"  TIME = ", TIME
+                   PRINT *,"  ITHS = ", ITHS
+                   PRINT *,"  ETA11 = ", ETA1(11)
+                   PRINT *,"  ETA22 = ", ETA2(11)
+                   PRINT *,"  ETADD = ", EtaDisc(11)
+                   PRINT *,"  uu22 = ", uu2(11)
+                   PRINT *,"  vv22 = ", vv2(11)
+                   PRINT *,"  nnodecode = ", nnodecode(11)
+                   PRINT *,"  noff = ", noff(11)
+                   PRINT *,"  IESTP = ",IESTP
+                   PRINT *,"  NSCOUE = ",NSCOUE
+                   PRINT *,"  IVSTP = ",IVSTP
+                   PRINT *,"  NSCOUV = ",NSCOUV
+                   PRINT *,"  ICSTP = ",ICSTP
+                   PRINT *,"  NSCOUC = ",NSCOUC
+                   PRINT *,"  IPSTP = ",IPSTP
+                   PRINT *,"  IWSTP = ",IWSTP
+                   PRINT *,"  NSCOUM = ",NSCOUM
+                   PRINT *,"  IGEP = ",IGEP
+                   PRINT *,"  NSCOUGE = ",NSCOUGE
+                   PRINT *,"  IGVP = ",IGVP
+                   PRINT *,"  NSCOUGV = ",NSCOUGV
+                   PRINT *,"  IGCP = ",IGCP
+                   PRINT *,"  NSCOUGC = ",NSCOUGC
+                   PRINT *,"  IGPP = ",IGPP
+                   PRINT *,"  IGWP = ",IGWP
+                   PRINT *,"  NSCOUGW = ",NSCOUGW
+                   PRINT *,
+     &             "  ---------END-------BIN--------------------"
 C...
 C...  HOT START INFORMATION FOR A 3D RUN
 C...
