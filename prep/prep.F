@@ -1620,6 +1620,56 @@ C
               ENDIF
             ENDIF
          ENDDO
+
+#ifdef ADCSWAN
+C
+C--------------------------------------------------------------------------
+C--jgf48.17 UnSWAN BOUNDARY NODES PROCESSING BEGINS HERE
+C--------------------------------------------------------------------------
+C
+C--Partition the UnSWAN boundary nodes between various processors
+C
+         numUnSWANBdryNodesTotalP(IPROC) = 0
+         DO K=1, numUnSWANBdrySegs
+            numUnSWANBdryNodesEachP(K) = 0
+            DO J=1, numUnSWANBdryNodesTotal
+               unswanBdryNodes_lG(J,IPROC) = 0
+               unswanBdryNodesP(K,J) = 0
+            ENDDO
+         ENDDO
+C
+C
+         ITOT = 0
+         DO K = 1,numUnSWANBdrySegs
+            DO I = 1,numUnSWANBdryNodesEach(K)
+               ITOT = ITOT + 1
+               INDEX = unswanBdryNodes(K,I)
+               DO J = 1,ITOTPROC(INDEX)
+                  ITEMP = (J-1)*2+1
+                  IPROC2 = IMAP_NOD_GL2(ITEMP,INDEX)
+                  ILNODE = IMAP_NOD_GL2(ITEMP+1,INDEX)
+                  IF (IPROC.EQ.IPROC2) THEN
+                    numUnSWANBdryNodesTotalP(IPROC)
+     &                 = numUnSWANBdryNodesTotalP(IPROC)+1
+                    numUnSWANBdryNodesEachP(K)
+     &                 = numUnSWANBdryNodesEachP(K) + 1
+                    unswanBdryNodesP(K,numUnSWANBdryNodesEachP(K)) 
+     &                 = ILNODE
+                    unswanBdryNodes_lG
+     &                 (numUnSWANBdryNodesTotalP(IPROC),IPROC) = ITOT
+                  ENDIF
+               ENDDO
+            ENDDO
+         ENDDO
+C
+         numUnSWANBdrySegsP(IPROC) = 0
+         DO K = 1,numUnSWANBdrySegs
+            IF (numUnSWANBdryNodesEachP(K).NE.0) THEN
+              numUnSWANBdrySegsP(IPROC) = numUnSWANBdrySegsP(IPROC) + 1
+            ENDIF
+         ENDDO
+#endif
+
 C
 C--------------------------------------------------------------------------
 C--BEGIN WRITING LOCAL GRID ( fort.14 ) FILE HERE        
@@ -1707,6 +1757,35 @@ C
                 ENDIF
              ENDIF
           ENDDO
+          !jgf48.17 Added support for UnSWAN boundaries in fort.14
+#ifdef ADCSWAN
+C
+C--Write UnSWAN Boundary Data
+C
+          CALL NEWINDEX(numUnSWANBdrySegsMSG,OUTMSG,
+     &                  numUnSWANBdrySegsP(IPROC))
+          WRITE(14,80) OUTMSG
+C
+          CALL NEWINDEX(numUnSWANBdryNodesTotalMSG,OUTMSG,
+     &                  numUnSWANBdryNodesTotalP(IPROC))
+          WRITE(14,80) OUTMSG
+C
+          ITOT = 0
+          DO K = 1,numUnSWANBdrySegs
+             IF (numUnSWANBdryNodesEachP(K).GT.0)THEN
+                ITOT = ITOT + 1
+                 WRITE(14,*) numUnSWANBdryNodesEachP(K),
+     &                       unswanBdryMarkers(K)
+C                CALL NEWINDEX(numSWANBdryNodesEachMSG(K),OUTMSG,
+C     &                        numSWANBdryNodesEachP(K))
+C                WRITE(14,80) OUTMSG
+                DO I = 1,numUnSWANBdryNodesEachP(K)
+                   WRITE(14,*) unswanBdryNodesP(K,I)
+                ENDDO
+             ENDIF
+          ENDDO
+#endif
+
 C
           CLOSE(14)
 C

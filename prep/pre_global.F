@@ -35,6 +35,15 @@ C                                    ! I-th Node on Land Boundary Segment K
       INTEGER,ALLOCATABLE::WEIR(:)
       INTEGER,ALLOCATABLE::WEIRD(:)
 
+      !jgf48.17 UnSWAN boundary data
+#ifdef ADCSWAN
+      ! number of nodes on each UnSWAN boundary segment
+      INTEGER, ALLOCATABLE :: numUnSWANBdryNodesEach(:)
+      INTEGER, ALLOCATABLE :: unswanBdryMarkers(:) ! UnSWAN boundary markers
+      INTEGER, ALLOCATABLE :: unswanBdryNodes(:,:) ! UnSWAN boundary node numbers, based on the segment number (1st arg) and sequential node number (2nd arg), i.e., first node on the segment, second node on the segment, etc
+#endif
+
+
 C     METIS interface section
       INTEGER,ALLOCATABLE ::  PROC(:)
 C     
@@ -63,6 +72,12 @@ C     STRING14 section
       CHARACTER(80) NOPEMSG,NETAMSG
       CHARACTER(80) NBOUMSG,NVELMSG
       CHARACTER(80),ALLOCATABLE   ::  NVELLMSG(:),NVDLLMSG(:)
+
+      !jgf48.17 support for UnSWAN boundaries in fort.14
+#ifdef ADCSWAN
+      CHARACTER(80) numUnSWANBdrySegsMSG, numUnSWANBdryNodesTotalMSG
+      CHARACTER(80),ALLOCATABLE :: numUnSWANBdryNodesEachMSG(:)
+#endif
 C
 C     PARM15  section
       INTEGER  NOUTE,NSPOOLE,NSTAE,NSTAE_MAX
@@ -277,6 +292,21 @@ C                                      ! Boundary Node I on PE
       INTEGER,ALLOCATABLE::NNSTA3DDP(:)! Number of 3D density stations on (PE)
       INTEGER,ALLOCATABLE::NNSTA3DVP(:)! Number of 3D velocity stations on (PE)
       INTEGER,ALLOCATABLE::NNSTA3DTP(:)! Number of 3D turbulence stationson(PE)
+
+C     jgf48.17 subdomain UnSWAN boundary data
+#ifdef ADCSWAN
+      ! Total number of UnSWAN boundary nodes on each subdomain
+      INTEGER,ALLOCATABLE::numUnSWANBdryNodesTotalP(:)
+      ! UnSWAN boundary nodes on each segment in each subdomain
+      INTEGER,ALLOCATABLE::numUnSWANBdryNodesEachP(:)
+      ! number of UnSWAN boundary segments on each subdomain
+      INTEGER,ALLOCATABLE::numUnSWANBdrySegsP(:)
+      ! node numbers along UnSWAN boundaries in each subdomain
+      INTEGER,ALLOCATABLE::unswanBdryNodesP(:,:)
+      ! boundary markers along UnSWAN boundaries in each subdomain
+      INTEGER,ALLOCATABLE::unswanBdryMarkersP(:)
+#endif
+
 C
 C     DIAGS section
       REAL(SZ),ALLOCATABLE ::   PROC_SV(:)
@@ -294,6 +324,13 @@ C     LOC2G section
       INTEGER,ALLOCATABLE  ::   WEIRP_LG(:,:)
       INTEGER,ALLOCATABLE  ::   WEIRDP_LG(:,:)
       INTEGER,ALLOCATABLE  ::   LBINDEX_LG(:,:)
+
+C     jgf48.17 support for UnSWAN boundaries in fort.14
+#ifdef ADCSWAN
+      ! mapping of UnSWAN boundary nodes from subdomain to full domain
+      INTEGER, ALLOCATABLE ::   unswanBdryNodes_lG(:,:)
+#endif
+
 C
 C     jgf45.11 Subdomain->Fulldomain element mappings for 3D recording stations
       INTEGER,ALLOCATABLE::IMAP_STA3DD_LG(:,:) ! density
@@ -455,6 +492,30 @@ C
       STAM_SHARE(:) = -1
       STAC_SHARE(:) = -1
 C
+C     jgf48.17 allocate memory for UnSWAN boundaries
+#ifdef ADCSWAN
+      ALLOCATE(numUnSWANBdryNodesEach(numUnSWANBdrySegs),
+     &         unswanBdryNodes(numUnSWANBdrySegs,
+     &                         numUnSWANBdryNodesTotal))
+      nbytes = nbytes + 4*(numUnSWANBdryNodesTotal+1)
+     &         * numUnSWANBdrySegs
+      ALLOCATE(unswanBdryMarkers(numUnSWANBdrySegs))
+      nbytes = nbytes + 4*(numUnSWANBdrySegs)
+      ALLOCATE ( numUnSWANBdryNodesEachMSG(numUnSWANBdrySegs) )
+      nbytes = nbytes + 80*numUnSWANBdrySegs
+      ALLOCATE (numUnSWANBdrySegsP(MNPROC))
+      ALLOCATE (numUnSWANBdryNodesTotalP(MNPROC))
+      ALLOCATE (numUnSWANBdryNodesEachP(numUnSWANBdrySegs))
+      nbytes = nbytes + 8*mnproc + 4*numUnSWANBdrySegs
+      ALLOCATE (unswanBdryNodesP(numUnSWANBdrySegs,
+     &                           numUnSWANBdryNodesTotal))
+      nbytes = nbytes + 4*numUnSWANBdrySegs*numUnSWANBdryNodesTotal
+      ALLOCATE (unswanBdryMarkersP(numUnSWANBdrySegs))
+      nbytes = nbytes + 4*numUnSWANBdrySegs
+      ALLOCATE (unswanBdryNodes_lG(numUnSWANBdryNodesTotal,MNPROC))
+      nbytes = nbytes + 4*numUnSWANBdryNodesTotal*mnproc
+#endif 
+
       call memory_alloc(nbytes)
       print *,"from alloc_main1: "
       call memory_status()

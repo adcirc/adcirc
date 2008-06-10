@@ -139,6 +139,12 @@ C     variables which describe the full domain
       INTEGER NSTA3DV! number of 3D velocity recording stations
       INTEGER NSTA3DT! number of 3D turbulence recording stations
 
+      !jgf48.17 sizes of UnSWAN boundaries in fort.14
+#ifdef ADCSWAN
+      INTEGER numUnSWANBdrySegs   ! total number of SWAN boundary segments
+      INTEGER numUnSWANBdryNodesTotal ! total num nodes in SWAN boundaries
+#endif
+
       INTEGER MNPP   ! number of max nodes of any subdomain
       INTEGER MNEP   ! number of max elements of any subdomain
 C     Model Type:
@@ -364,6 +370,12 @@ C
          IF(NNEIGH(IL).GT.MNEI) MNEI=NNEIGH(IL)
       END DO
       MNEI=MNEI+1
+      !jgf48.17 read in and process UnSWAN boundaries
+#ifdef ADCSWAN
+      READ(14,*) numUnSWANBdrySegs
+      READ(14,*) numUnSWANBdryNodesTotal
+#endif
+
 C
 C if ONLY partitioning mesh using metis or a prephot
       IF (PARTITION .or. HOT_LOCAL .or. HOT_GLOBAL) THEN   

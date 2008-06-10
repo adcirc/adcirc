@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.17     - 06/09/08 - jgf - Added code to adcprep to decompose UnSWAN
+C               boundaries and distribute the UnSWAN input file to each of the
+C               subdomain directories.
 C  v48.16     - 06/05/08 - jgf - Merged additional changes from cf's latest
 C               (from adc48_15_4).
 C  v48.11     - 03/14/08 - jgf - Added cf's latest write_output.F, corrected
