@@ -4476,7 +4476,7 @@ C---------------------------------------------------------------------------
       CHARACTER(len=7) DefaultName! default name of full domain file
       INTEGER ErrorIO             ! zero if file opened successfully
       INTEGER iproc               ! subdomain index
-      CHARACTER*14 sdFileName     ! subdomain file name
+      CHARACTER(len=60) sdFileName     ! subdomain file name
       CHARACTER(len=4) skipstring ! indicates user wants to skip this file
 
       Found = .false.
@@ -4525,6 +4525,9 @@ C     Open each of the subdomain files
          sdu(iproc) = 105 + (iproc-1)
          sdFileName(1:7) = 'PE0000/'
          sdFileName(8:14) = DefaultName
+#ifdef ADCSWAN
+         sdFileName = 'PE0000/'//FileName
+#endif
          CALL IWRITE(sdFileName, 3, 6, iproc-1)
          OPEN (UNIT=SDU(iproc), FILE=sdFileName, IOSTAT=ErrorIO)
          Success = .true.
@@ -4932,7 +4935,7 @@ C     Open full domain and all subdomain fort.26 files (UnSWAN)
          DO 
             READ(26,170,END=9999) Line
             DO IPROC = 1,NPROC
-               WRITE(SDU(IPROC),170) Line
+               WRITE(SDU(IPROC),60) trim(Line)
             ENDDO
          ENDDO
       ENDIF
