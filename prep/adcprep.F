@@ -240,6 +240,12 @@ C
       CHARACTER CMD*6     ! string to hold shell command
       CHARACTER PENUM*6   ! string to hold directory name
       CHARACTER DIRCMD*72 ! string to hold complete shell command line
+
+C     jgf48.17 If compiling for ADCSWAN, need to copy UnSWAN file
+#ifdef ADCSWAN
+      CALL PREPUNSWAN()
+#endif
+
  
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then

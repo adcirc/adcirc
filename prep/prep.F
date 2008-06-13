@@ -4897,3 +4897,59 @@ C
       RETURN
       END
 
+
+C---------------------------------------------------------------------------
+C                S U B R O U T I N E   P R E P   U N S W A N  
+C---------------------------------------------------------------------------
+C
+C     jgf48.17 This subroutine just copies the UnSWAN input file to each
+C     subdomain. Currently, it is only called if the compiler directive
+C     ADCSWAN is defined. 
+C
+C---------------------------------------------------------------------------
+      SUBROUTINE prepUnSWAN()
+C---------------------------------------------------------------------------
+      USE PRE_GLOBAL
+      use memory_usage
+      IMPLICIT NONE
+      INTEGER I,J,IPROC,IPROC2,ILNODE,INDEX,NHG,LINDEX
+      CHARACTER*170 Line ! line of data from UnSWAN file
+      INTEGER SDU(NPROC)  ! subdomain unit numbers
+      LOGICAL Success     ! .true. if all files open without error
+      LOGICAL origUseDefault ! there is no default UnSWAN input file name
+C
+C     Open full domain and all subdomain fort.26 files (UnSWAN)
+      origUseDefault = USE_DEFAULT
+      USE_DEFAULT = .false. ! abusing the global variable to act as an argument
+      CALL OpenPrepFiles(26, 'UnSWAN                        ', 
+     &     nproc, sdu, success)
+      USE_DEFAULT = origUseDefault
+
+      IF (.not.success) THEN
+         WRITE(*,*) 'WARNING: UnSWAN files not preprocessed.'
+         RETURN ! note early return
+      ELSE
+         DO 
+            READ(26,170,END=9999) Line
+            DO IPROC = 1,NPROC
+               WRITE(SDU(IPROC),170) Line
+            ENDDO
+         ENDDO
+      ENDIF
+C
+C--Close fulldomain file and all the subdomain files     
+C
+ 9999 CLOSE (26)
+      DO IPROC=1, NPROC
+         CLOSE (SDU(IPROC))
+      ENDDO
+
+      RETURN
+  60  FORMAT(A60)
+ 170  FORMAT(A170)
+ 1100 FORMAT(I8,3E13.5)
+ 1101 FORMAT(' #')
+c----------------------------------------------------------------------------
+      END SUBROUTINE prepUnSWAN
+c----------------------------------------------------------------------------
+      
