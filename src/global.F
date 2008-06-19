@@ -75,6 +75,12 @@ C     global number of elevation, velocity, and meteorological stations
       integer, save       :: FileFmtMinor = 1
       integer, save       :: FileFmtRev   = 0
 
+C     global array sizes for use in globalio
+
+      integer,allocatable,save,target :: imap_sta3Dd_lg(:)
+      integer,allocatable,save,target :: imap_sta3Dv_lg(:)
+      integer,allocatable,save,target :: imap_stat3t_lg(:)
+
 C...
 C...DECLARE ALL ARRAYS
 C...
@@ -420,6 +426,28 @@ C     the size and shape of the output data.
         REAL(SZ), pointer :: array3_g(:) ! full domain 3rd vec component
       end type OutputDataDescript_t
       INTEGER ITAU0P ! position in tau0 output file for variable tau0
+C   
+C     jgf48.12 the following data structure is used to describe
+C     the size and shape of the 3D output data. 
+      type OutputDataDescript3D_t
+        integer           :: specifier  ! output format from fort.15 (NOUTE,etc)
+        REAL(SZ)          :: initial_value 
+        ! num_items_per_record is number of "tuples", i.e.
+        ! it is equal to 1 if scalar, 2 if 2D vector, 3 if 3D vector, etc
+        integer           :: num_components
+        ! array length in the vertical
+        integer           :: num_layers
+        ! 
+        integer           :: num_fd_records
+        ! 
+        integer           :: num_records_this
+        integer,  pointer :: imap(:)   ! local-to-global mapping
+        integer,  pointer :: iarray(:)
+        ! components are indexed via (horiz node, vert node)
+        REAL(SZ), pointer :: comp1(:) ! scalar data or 1st component of vector
+        REAL(SZ), pointer :: comp2(:) ! 2nd component of vector
+        REAL(SZ), pointer :: comp3(:) ! 3rd component of vector
+      end type OutputDataDescript3D_t
 C
 C     jgf48.03 Variables shared between messenger and writer modules
       INTEGER,SAVE ::  REALTYPE, DBLETYPE

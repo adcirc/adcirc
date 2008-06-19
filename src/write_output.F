@@ -2213,6 +2213,391 @@ C     FINISH ADDITIONS FOR NETCDF by MCF
 C
 #endif
 
+      type(OutputDataDescript_t), SAVE :: Elev1Descript
+      type(OutputDataDescript_t), SAVE :: Elev2Descript 
+      type(OutputDataDescript_t), SAVE :: VelDescript
+      type(OutputDataDescript_t), SAVE :: EtaDiscDescript
+      type(OutputDataDescript_t), SAVE :: NodeCodeDescript
+      type(OutputDataDescript_t), SAVE :: NOFFDescript
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETA1_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETA2_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: EtaDisc_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UU2_g(:)     
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: VV2_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CH1_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: NodeCode_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: NOFF_g(:)
+      LOGICAL, SAVE :: FirstCall = .true.
+      
+      IF (FirstCall) THEN
+
+         write(16,*) 'Allocating Elev1Descript' 
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(ETA1_g(NP_G))
+         ENDIF
+         ElevDescript % specifier            = NHSTAR
+         ElevDescript % initial_value        = 0.0
+         ElevDescript % num_items_per_record = 1
+         ElevDescript % num_fd_records       = NP_G
+         ElevDescript % num_records_this     = NP
+         ElevDescript % imap                 => NODES_LG
+         ElevDescript % array                => ETA1
+         ElevDescript % array_g              => ETA1_g
+
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            IF (.not.ALLOCATED(ETA2_g)) THEN
+               write(16,*) 'Allocating Elev2Descript' 
+               ALLOCATE(ETA2_g(NP_G))
+            ENDIF
+         ENDIF
+         ElevDescript % specifier            = NHSTAR
+         ElevDescript % initial_value        = 0.0
+         ElevDescript % num_items_per_record = 1
+         ElevDescript % num_fd_records       = NP_G
+         ElevDescript % num_records_this     = NP
+         ElevDescript % imap                 => NODES_LG
+         ElevDescript % array                => ETA2
+         ElevDescript % array_g              => ETA2_g
+         
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            IF (.not.ALLOCATED(UU2_g)) THEN
+               write(16,*) 'Allocating VelDescript' 
+               ALLOCATE(UU2_g(NP_G))
+               ALLOCATE(VV2_g(NP_G)) 
+            ENDIF
+         ENDIF
+         VelDescript % specifier            = NOUTGV
+         VelDescript % initial_value        = 0.0
+         VelDescript % num_items_per_record = 2
+         VelDescript % num_fd_records       = NP_G
+         VelDescript % num_records_this     = NP
+         VelDescript % imap                 => NODES_LG
+         VelDescript % array                => UU2
+         VelDescript % array2               => VV2
+         VelDescript % array_g              => UU2_g
+         VelDescript % array2_g             => VV2_g
+
+         write(16,*) 'Allocating EtaDiscDescript' 
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(EtaDisc_g(NP_G))
+         ENDIF
+         ElevDescript % specifier            = NHSTAR
+         ElevDescript % initial_value        = 0.0
+         ElevDescript % num_items_per_record = 1
+         ElevDescript % num_fd_records       = NP_G
+         ElevDescript % num_records_this     = NP
+         ElevDescript % imap                 => NODES_LG
+         ElevDescript % array                => ETA1
+         ElevDescript % array_g              => ETA1_g
+         
+
+         write(16,*) 'Allocating NodeCodeDescript' 
+         write(16,*) 'Allocating NOFFDescript' 
+
+
+
+         FirstCall = .false.
+      ENDIF
+
+C...  Output elevation recording station information if noute<>0 and the
+C...  time step falls within the specified window calculate elevation
+C...  solutions at stations using interpolation
+
+      IF(NOUTE.NE.0) THEN
+         IF((IT.GT.NTCYSE).AND.(IT.LE.NTCYFE)) NSCOUE=NSCOUE+1
+         IF(NSCOUE.EQ.NSPOOLE) THEN
+            DO I=1,NSTAE
+               EE1=ETA2(NM(NNE(I),1))
+               EE2=ETA2(NM(NNE(I),2))
+               EE3=ETA2(NM(NNE(I),3))
+               NC1=NODECODE(NM(NNE(I),1))
+               NC2=NODECODE(NM(NNE(I),2))
+               NC3=NODECODE(NM(NNE(I),3))
+               NCELE=NC1*NC2*NC3*NOFF(NNE(I))
+               IF(NCELE.EQ.1) ET00(I)=EE1*STAIE1(I)+EE2*STAIE2(I)
+     &                                             +EE3*STAIE3(I)
+               IF(NCELE.EQ.0) ET00(I)=-99999.
+            END DO
+C
+C           save elevation recording station data to file
+            CALL writeOutArray(61, TIME, IT, ElevStaDescript,
+     &                         packOne, unpackOne, IESTP) 
+
+            write(16,*) 'Finished with fort.61 output routine.' !jgfdebug48.03
+            NSCOUE=0
+         ENDIF
+      ENDIF
+
+C...  OUTPUT VELOCITY RECORDING STATION TIME SERIES INFORMATION IF
+C...  NOUTV<>0 AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
+C...  CALCULATE VELOCITY SOLUTIONS AT STATIONS USING INTERPOLATION
+C...  
+      IF(NOUTV.NE.0) THEN
+         IF((IT.GT.NTCYSV).AND.(IT.LE.NTCYFV)) NSCOUV=NSCOUV+1
+         IF(NSCOUV.EQ.NSPOOLV) THEN
+            write(16,*) 'About to write fort.62 file.' !jgfdebug48.03
+            DO I=1,NSTAV
+               U11=UU2(NM(NNV(I),1))
+               U22=UU2(NM(NNV(I),2))
+               U33=UU2(NM(NNV(I),3))
+               V11=VV2(NM(NNV(I),1))
+               V22=VV2(NM(NNV(I),2))
+               V33=VV2(NM(NNV(I),3))
+               UU00(I)=U11*STAIV1(I)+U22*STAIV2(I)+U33*STAIV3(I)
+               VV00(I)=V11*STAIV1(I)+V22*STAIV2(I)+V33*STAIV3(I)
+            END DO
+C
+C           save velocity recording station data to file
+            CALL writeOutArray(62, TIME, IT, VelStaDescript,
+     &                         packTwo, unpackTwo, IVSTP) 
+
+            write(16,*) 'Finished with fort.62 output routine.' !jgfdebug48.03
+            NSCOUV=0
+         ENDIF
+      ENDIF
+
+C...  OUTPUT CONCENTRATION RECORDING STATION INFORMATION IF NOUTC<>0
+C...  AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW CALCULATE
+C...  CONCENTRATION SOLUTIONS AT STATIONS USING INTERPOLATION
+C...  
+      IF(NOUTC.NE.0) THEN
+         IF((IT.GT.NTCYSC).AND.(IT.LE.NTCYFC)) NSCOUC=NSCOUC+1
+         IF(NSCOUC.EQ.NSPOOLC) THEN
+            DO I=1,NSTAC
+               NM1=NM(NNC(I),1)
+               NM2=NM(NNC(I),2)
+               NM3=NM(NNC(I),3)
+               H2N1=DP(NM1)+IFNLFA*ETA2(NM1)
+               H2N2=DP(NM2)+IFNLFA*ETA2(NM2)
+               H2N3=DP(NM3)+IFNLFA*ETA2(NM3)
+               C1=CH1(NM1)/H2N1
+               C2=CH1(NM2)/H2N2
+               C3=CH1(NM3)/H2N3
+               NC1=NODECODE(NM1)
+               NC2=NODECODE(NM2)
+               NC3=NODECODE(NM3)
+               NCELE=NC1*NC2*NC3*NOFF(NNC(I))
+               IF(NCELE.EQ.1) CC00(I)=C1*STAIC1(I)+C2*STAIC2(I)
+     &                                            +C3*STAIC3(I)
+               IF(NCELE.EQ.0) CC00(I)=-99999.
+            END DO
+C
+C           save concentration recording station data to file
+            CALL writeOutArray(81, TIME, IT, ConcStaDescript,
+     &                         packOne, unpackOne, ICSTP)
+ 
+            write(16,*) 'Finished with fort.81 output routine.' !jgfdebug48.03
+            NSCOUC=0
+         ENDIF
+      ENDIF
+
+C...  OUTPUT METEOROLOGICAL RECORDING STATION INFORMATION IF NWS>0 AND
+C...  THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW CALCULATE
+C...  METEOROLOGICAL SOLUTIONS AT STATIONS USING INTERPOLATION
+C...  
+      IF((NWS.NE.0).AND.(NOUTM.NE.0)) THEN
+         IF((IT.GT.NTCYSM).AND.(IT.LE.NTCYFM)) NSCOUM=NSCOUM+1
+         IF(NSCOUM.EQ.NSPOOLM) THEN
+            write(16,*) 'About to write fort.71,72 files.' !jgfdebug48.03
+            DO I=1,NSTAM
+               NM1=NM(NNM(I),1)
+               NM2=NM(NNM(I),2)
+               NM3=NM(NNM(I),3)
+               U11=wvnxout(NM1)
+               U22=wvnxout(NM2)
+               U33=wvnxout(NM3)
+               V11=wvnyout(NM1)
+               V22=wvnyout(NM2)
+               V33=wvnyout(NM3)
+               P11=PR2(NM1)
+               P22=PR2(NM2)
+               P33=PR2(NM3)
+               RMU00(I)=U11*STAIM1(I)+U22*STAIM2(I)+U33*STAIM3(I)
+               RMV00(I)=V11*STAIM1(I)+V22*STAIM2(I)+V33*STAIM3(I)
+               RMP00(I)=P11*STAIM1(I)+P22*STAIM2(I)+P33*STAIM3(I)
+            END DO
+C
+C           save atmospheric pressure recording station data to file
+            CALL writeOutArray(71, TIME, IT, PrStaDescript,
+     &                         packOne, unpackOne, IPSTP) 
+C
+C           save wind velocity recording station data to file
+            CALL writeOutArray(72, TIME, IT, WindVelStaDescript,
+     &                         packTwo, unpackTwo, IWSTP) 
+            NSCOUM=0
+         ENDIF
+      ENDIF
+C...   OUTPUT GLOBAL ELEVATION DATA IF NOUTGE<>0 AND THE
+C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
+C...  
+      IF(NOUTGE.NE.0) THEN
+         IF((IT.GT.NTCYSGE).AND.(IT.LE.NTCYFGE)) NSCOUGE=NSCOUGE+1
+         IF(NSCOUGE.EQ.NSPOOLGE) THEN
+C
+C           save fulldomain elevation data to file
+            CALL writeOutArray(63, TIME, IT, ElevDescript,
+     &                         pack63, unpackOne, IGEP) 
+C
+C           jgf47.06: Write out tau0 if it is time varying and the user has 
+C           requested it with tau0 = -4 in fort.15.
+            IF (OUTPUTTAU0) THEN
+               CALL writeOutArray(90, TIME, IT, Tau0Descript,
+     &                            packOne, unpackOne, IGEP) 
+            ENDIF
+
+C          jgf47.08 Made sparse output an option (if NOUTGE=-4 or 4 in fort.15)
+           IF(ABS(NOUTGE).EQ.4) THEN
+C              jgf47.08 Create compact output 
+C              jgf48.03 TODO: Make this globalio compliant.
+#ifdef CMPI
+              IF(MNWPROC.GT.0) THEN
+                 CALL WRITE_GBL_FILE_THROUGH_WRITER
+     $              (TRIM(GLOBALDIR)//'/'//'fort.63',descript,time,it,
+     $                 writer_store63, -99999.D0)
+              ELSE
+                 CALL WRITE_GBL_63_SKIP_DRYNODE  ! sb 11/10/2006
+     $                (63, TRIM(GLOBALDIR)//'/'//'fort.63',
+     $                 descript, time,it, store63)
+              ENDIF
+#else
+              CALL WRITE_GBL_63_SKIP_DRYNODE  ! sb 11/10/2006
+     $            (63, TRIM(GLOBALDIR)//'/'//'fort.63',
+     &               descript, time,it, store63)
+#endif
+              IGEP=IGEP+1+NP
+           ENDIF
+           write(16,*) 'Finished with fort.63 output routine.' !jgfdebug48.03
+           NSCOUGE=0
+         ENDIF
+      ENDIF
+
+C...  OUTPUT GLOBAL VELOCITY DATA IF NOUTGV<>0 AND THE
+C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
+C...  
+      IF(NOUTGV.NE.0) THEN
+         IF((IT.GT.NTCYSGV).AND.(IT.LE.NTCYFGV)) NSCOUGV=NSCOUGV+1
+         IF(NSCOUGV.EQ.NSPOOLGV) THEN
+
+            CALL writeOutArray(64, TIME, IT, VelDescript,
+     &                      packTwo, unpackTwo, IGVP) 
+
+            IF (ABS(NOUTGV).EQ.4) THEN
+            ! jgf48.03 TODO: Make this globalio compliant.
+#ifdef CMPI
+                  IF(MNWPROC.GT.0) THEN
+                    CALL WRITE_GBL_FILE_THROUGH_WRITER
+     $                (TRIM(GLOBALDIR)//'/'//'fort.64',descript,time,it,
+     $                 writer_storeTwo, 0.D0)
+                  ELSE
+                    CALL WRITE_GBL_FILE_SKIP_DEFAULT ! sb 11/10/2006
+     $                   (64, TRIM(GLOBALDIR)//'/'//'fort.64',
+     $                   descript, time, it, storeTwo,0.d0)
+                  ENDIF
+#else
+                  CALL WRITE_GBL_FILE_SKIP_DEFAULT ! sb 11/10/2006
+     $                 (64, TRIM(GLOBALDIR)//'/'//'fort.64',
+     $                 descript, time, it, storeTwo,0.d0)
+#endif
+            ENDIF
+            NSCOUGV=0
+         ENDIF
+      ENDIF
+
+C...
+C...  OUTPUT GLOBAL WIND STRESS and atmospheric pressure data IF
+C.... NOUTGW<>0 AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
+C...
+      IF((NWS.NE.0).AND.(NOUTGW.NE.0)) THEN
+         IF((IT.GT.NTCYSGW).AND.(IT.LE.NTCYFGW)) NSCOUGW=NSCOUGW+1
+         IF(NSCOUGW.EQ.NSPOOLGW) THEN
+C
+C           save atmospheric pressure recording station data to file
+            CALL writeOutArray(73, TIME, IT, PrDescript,
+     &                         packOne, unpackOne, IGPP) 
+C
+C           save wind velocity recording station data to file
+            CALL writeOutArray(74, TIME, IT, WindVelDescript,
+     &                         packTwo, unpackTwo, IGWP) 
+
+C           jgf48.03 TODO: Make this globalio compliant.
+            IF (ABS(NOUTGW).EQ.4) THEN
+#ifdef CMPI
+               IF(MNWPROC.GT.0) THEN
+                 CALL WRITE_GBL_FILE_THROUGH_WRITER
+     $             (TRIM(GLOBALDIR)//'/'//'fort.73',descript,time,it,
+     $              writer_storeOne, 0.D0)
+               ELSE
+                 CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     $             (73, TRIM(GLOBALDIR)//'/'//'fort.73',
+     $              descript, time, it, storeOne,0.d0)
+               ENDIF
+#else
+               CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     $            (73, TRIM(GLOBALDIR)//'/'//'fort.73',
+     $               descript, time, it, storeOne,0.d0)
+#endif
+            ENDIF
+C           jgf48.03 TODO: Make this globalio compliant.
+            IF (ABS(NOUTGW).EQ.4) THEN
+#ifdef CMPI
+                  IF(MNWPROC.GT.0) THEN
+                    CALL WRITE_GBL_FILE_THROUGH_WRITER
+     $                   (TRIM(GLOBALDIR)//'/'//'fort.74',
+     &                   descript,time,it,
+     $                   writer_storeTwo, 0.D0)
+                  ELSE
+                    CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     $                   (74, TRIM(GLOBALDIR)//'/'//'fort.74',
+     $                   descript, time, it, storeTwo,0.d0)
+                  ENDIF
+#else
+                  CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     $              (74, TRIM(GLOBALDIR)//'/'//'fort.74',
+     $              descript, time, it, storeTwo,0.d0)
+#endif
+            ENDIF
+            NSCOUGW=0
+         ENDIF
+      ENDIF
+
+C...  OUTPUT GLOBAL CONCENTRATION DATA IF NOUTGC<>0 AND THE
+C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
+C...  
+      IF(NOUTGC.NE.0) THEN
+         IF((IT.GT.NTCYSGC).AND.(IT.LE.NTCYFGC)) NSCOUGC=NSCOUGC+1
+         IF(NSCOUGC.EQ.NSPOOLGC) THEN
+C
+C           save fulldomain concentration data to file
+C           jgf48.03 TODO: add the proper processingi (see below).
+            CALL writeOutArray(83, TIME, IT, ConcDescript,
+     &                         pack83, unpackOne, IGCP) 
+C               DO I=1,NP
+C                  H2=DP(I)+IFNLFA*ETA2(I)
+C                  C1=CH1(I)/H2
+C                  IF(NODECODE(I).EQ.1) WRITE(83,2453) I,C1
+C                  IF(NODECODE(I).EQ.0) WRITE(83,2453) I,-99999.
+C               ENDDO
+            NSCOUGC=0
+         ENDIF
+      ENDIF
+
+#ifdef CMPI
+Csb 02/09/2007
+C...  Communicate writer processors and let them write out what
+C...  they have gotton.
+      CALL FLUSH_WRITERS()
+#endif
+      
+
+
+
+      SELECT CASE (NHSTAR)
+
+      CASE(1) ! ascii
+
+
+
+
 !      TEST_HOTSTART = .FALSE.
 
       NPX = NP_G
