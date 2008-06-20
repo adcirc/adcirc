@@ -65,6 +65,7 @@ C---------------------end of data declarations--------------------------------C
       LOCALDIR  = ""
       ARGCOUNT  = IARGC()
 
+      WRITE_LOCAL_HOT_START_FILES = .FALSE.
       IF ( MNPROC.EQ.1 ) THEN
          WRITE_LOCAL_FILES = .TRUE.
          WRITE_LOCAL_HOT_START_FILES = .TRUE.

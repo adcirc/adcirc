@@ -105,6 +105,92 @@ C        or to the end of the full domain array, whichever is less
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
+      !                  S U B R O U T I N E   
+      !     C O L L E C T  F U L L  D O M A I N  I N T  A R R A Y 
+      !--------------------------------------------------------------
+      ! jgf48.17 Collects integer array data from each subdomain. 
+      !--------------------------------------------------------------
+      subroutine collectFullDomainIntArray(descript, 
+     &                                     pack_cmd, unpack_cmd)
+      implicit none
+#ifdef CMPI
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+#endif
+      type (OutputDataDescript_t) :: descript
+      external pack_cmd
+      external unpack_cmd
+#ifdef CMPI
+      ! the subroutine used to write the file
+      integer      :: ierr, status(MPI_STATUS_SIZE), request
+      integer, save:: tagbase = 6000
+      integer      :: iproc
+      integer      :: bufsize
+      integer      :: ibucket    
+      integer      :: istart     ! vector tuple to start with
+      integer      :: iend       ! vector tuple to end on
+      integer      :: tag        
+      ! number of vector tuples in the buffer
+      integer      :: num        
+      integer      :: i, j, k
+
+      bufsize = min(BUFSIZE_MAX, 
+     &    descript % num_items_per_record * descript % num_fd_records)
+C     num will be less than the number of full domain records if the 
+C     buffer is too small to hold all the records in the full domain,
+C     in this case it is the number of records passed back to proc 0
+C     on each iteration of the while loop below
+      num     = bufsize / descript % num_items_per_record
+      iend    = num
+      istart  = 1
+
+      if (tagbase == 5000) then
+         tagbase = 6000
+      else
+         tagbase = 5000
+      endif
+      ibucket = 0
+
+      do while (istart < iend)
+
+         !------------------------------------------------------------
+         ! Initialize
+         !------------------------------------------------------------
+         buf(:)  = descript % initial_value
+         ibucket = ibucket + 1
+         tag     = tagbase + mod(ibucket, 8)
+
+C        now pack the buffer 
+         write(16,*) 'About to pack globalio buffer.' !jgfdebug48.03
+         call pack_cmd(descript, istart, iend)
+C        now send data to processor 0
+         write(16,*) 'About to mpi_reduce globalio buffer.' !jgfdebug48.03
+         call mpi_reduce(buf, resultBuf, bufsize, MPI_INTEGER, MPI_SUM,
+     &                   0, COMM, ierr)
+         write(16,*) 'About to unpack globalio buffer.' !jgfdebug48.03
+
+         if (myproc == 0) then
+            call unpack_cmd(descript, istart, iend)
+         end if
+C        set new starting position to just after the
+C        current ending position in full domain array
+         istart = iend + 1
+C        set new ending position to either the current start plus the
+C        number of records that will fit in the buffer (minus 1), 
+C        or to the end of the full domain array, whichever is less
+         iend   = min(istart + num - 1, descript % num_fd_records)
+         num    = iend - istart + 1
+      end do
+#endif   ! CMPI
+
+ 1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10, 1pE20.10, 1pE20.10)
+ 1100 FORMAT(2x,1pE20.10,5X,I10)
+      !--------------------------------------------------------------
+      end subroutine collectFullDomainIntArray
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
       ! S U B R O U T I N E   P A C K  O N E
       !--------------------------------------------------------------
       !  jgf48.03 Subroutine to store a single array of real numbers
@@ -130,6 +216,34 @@ C        or to the end of the full domain array, whichever is less
       return
       !--------------------------------------------------------------
       end subroutine packOne
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   P A C K  O N E  I N T
+      !--------------------------------------------------------------
+      !  jgf48.17 Subroutine to store a single array of integers
+      !  to a buffer 
+      !--------------------------------------------------------------
+      subroutine packOneInt(descript, istart, iend)
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, j, istart, iend, iglobal
+      integer :: ioffset
+
+#ifdef CMPI
+      ioffset = istart - 1
+      do i = 1, descript % num_records_this
+        iglobal = descript % imap(i)
+        if (istart <= iglobal .and. iglobal <= iend) then
+          buf(iglobal-ioffset) = descript % iarray(i)
+        end if
+      end do
+#endif
+
+      return
+      !--------------------------------------------------------------
+      end subroutine packOneInt
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
@@ -220,6 +334,30 @@ C        or to the end of the full domain array, whichever is less
       return
       !--------------------------------------------------------------
       end subroutine unpackOne
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   U N P A C K  O N E  I N T
+      !--------------------------------------------------------------
+      !  Subroutine to retrieve a single array of integers
+      !  from a buffer 
+      !--------------------------------------------------------------
+      subroutine unpackOneInt(descript, istart, iend)
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, j, istart, iend, iglobal
+      integer :: ioffset
+
+       j = 1
+       do i = istart, iend
+          write(16,*) i, j !jgfdebug48.03
+          descript % iarray_g(i) = resultBuf(j)
+          j = j + 1
+      end do
+      return
+      !--------------------------------------------------------------
+      end subroutine unpackOneInt
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------

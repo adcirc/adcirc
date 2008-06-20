@@ -2162,8 +2162,9 @@ C-----------------------------------------------------------------------
 
       USE SIZES
       USE GLOBAL
-      USE GLOBAL_IO, ONLY: write_gbl_file_hstart, store_real,
-     &     store_integer, write_real, write_integer
+      USE GLOBAL_IO, ONLY: packOne, unpackOne, packOneInt, unpackOneInt,
+     &    packTwo, unpackTwo, HEADER_MAX,
+     &    collectFullDomainArray, collectFullDomainIntArray
 #ifdef CMPI
       USE MESSENGER
 #endif
@@ -2216,6 +2217,7 @@ C
       type(OutputDataDescript_t), SAVE :: Elev1Descript
       type(OutputDataDescript_t), SAVE :: Elev2Descript 
       type(OutputDataDescript_t), SAVE :: VelDescript
+      type(OutputDataDescript_t), SAVE :: CH1Descript  
       type(OutputDataDescript_t), SAVE :: EtaDiscDescript
       type(OutputDataDescript_t), SAVE :: NodeCodeDescript
       type(OutputDataDescript_t), SAVE :: NOFFDescript
@@ -2225,8 +2227,8 @@ C
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UU2_g(:)     
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: VV2_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CH1_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: NodeCode_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: NOFF_g(:)
+      INTEGER, SAVE, ALLOCATABLE, TARGET :: NodeCode_g(:)
+      INTEGER, SAVE, ALLOCATABLE, TARGET :: NOFF_g(:)
       LOGICAL, SAVE :: FirstCall = .true.
       
       IF (FirstCall) THEN
@@ -2277,6 +2279,21 @@ C
          VelDescript % array_g              => UU2_g
          VelDescript % array2_g             => VV2_g
 
+         IF (IM.eq.10) THEN
+            write(16,*) 'Allocating CH1Descript' 
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               ALLOCATE(EtaDisc_g(NP_G))
+            ENDIF
+            CH1Descript % specifier            = NHSTAR
+            CH1Descript % initial_value        = 0.0
+            CH1Descript % num_items_per_record = 1
+            CH1Descript % num_fd_records       = NP_G
+            CH1Descript % num_records_this     = NP
+            CH1Descript % imap                 => NODES_LG
+            CH1Descript % array                => CH1
+            CH1Descript % array_g              => CH1_g
+         ENDIF        
+ 
          write(16,*) 'Allocating EtaDiscDescript' 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(EtaDisc_g(NP_G))
@@ -2295,344 +2312,62 @@ C
             ALLOCATE(NodeCode_g(NP_G))
          ENDIF
          NodeCodeDescript % specifier            = NHSTAR
-         NodeCodeDescript % initial_value        = 0.0
+         NodeCodeDescript % initial_value        = 0
          NodeCodeDescript % num_items_per_record = 1
          NodeCodeDescript % num_fd_records       = NP_G
          NodeCodeDescript % num_records_this     = NP
          NodeCodeDescript % imap                 => NODES_LG
-         NodeCodeDescript % array                => EtaDisc
-         NodeCodeDescript % array_g              => EtaDisc_g
+         NodeCodeDescript % iarray               => NODECODE
+         NodeCodeDescript % iarray_g             => NODECODE_g
 
          write(16,*) 'Allocating NOFFDescript' 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(EtaDisc_g(NP_G))
+            ALLOCATE(NOFF_g(NP_G))
          ENDIF
-         EtaDiscDescript % specifier            = NHSTAR
-         EtaDiscDescript % initial_value        = 0.0
-         EtaDiscDescript % num_items_per_record = 1
-         EtaDiscDescript % num_fd_records       = NP_G
-         EtaDiscDescript % num_records_this     = NP
-         EtaDiscDescript % imap                 => NODES_LG
-         EtaDiscDescript % array                => EtaDisc
-         EtaDiscDescript % array_g              => EtaDisc_g
-
+         NOFFDescript % specifier            = NHSTAR
+         NOFFDescript % initial_value        = 0
+         NOFFDescript % num_items_per_record = 1
+         NOFFDescript % num_fd_records       = NE
+         NOFFDescript % num_records_this     = NE_G
+         NOFFDescript % imap                 => IMAP_EL_LG
+         NOFFDescript % iarray               => NOFF
+         NOFFDescript % iarray_g             => NOFF_g
 
          FirstCall = .false.
       ENDIF
 
-C...  Output elevation recording station information if noute<>0 and the
-C...  time step falls within the specified window calculate elevation
-C...  solutions at stations using interpolation
-
-      IF(NOUTE.NE.0) THEN
-         IF((IT.GT.NTCYSE).AND.(IT.LE.NTCYFE)) NSCOUE=NSCOUE+1
-         IF(NSCOUE.EQ.NSPOOLE) THEN
-            DO I=1,NSTAE
-               EE1=ETA2(NM(NNE(I),1))
-               EE2=ETA2(NM(NNE(I),2))
-               EE3=ETA2(NM(NNE(I),3))
-               NC1=NODECODE(NM(NNE(I),1))
-               NC2=NODECODE(NM(NNE(I),2))
-               NC3=NODECODE(NM(NNE(I),3))
-               NCELE=NC1*NC2*NC3*NOFF(NNE(I))
-               IF(NCELE.EQ.1) ET00(I)=EE1*STAIE1(I)+EE2*STAIE2(I)
-     &                                             +EE3*STAIE3(I)
-               IF(NCELE.EQ.0) ET00(I)=-99999.
-            END DO
-C
-C           save elevation recording station data to file
-            CALL writeOutArray(61, TIME, IT, ElevStaDescript,
-     &                         packOne, unpackOne, IESTP) 
-
-            write(16,*) 'Finished with fort.61 output routine.' !jgfdebug48.03
-            NSCOUE=0
-         ENDIF
-      ENDIF
-
-C...  OUTPUT VELOCITY RECORDING STATION TIME SERIES INFORMATION IF
-C...  NOUTV<>0 AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
-C...  CALCULATE VELOCITY SOLUTIONS AT STATIONS USING INTERPOLATION
-C...  
-      IF(NOUTV.NE.0) THEN
-         IF((IT.GT.NTCYSV).AND.(IT.LE.NTCYFV)) NSCOUV=NSCOUV+1
-         IF(NSCOUV.EQ.NSPOOLV) THEN
-            write(16,*) 'About to write fort.62 file.' !jgfdebug48.03
-            DO I=1,NSTAV
-               U11=UU2(NM(NNV(I),1))
-               U22=UU2(NM(NNV(I),2))
-               U33=UU2(NM(NNV(I),3))
-               V11=VV2(NM(NNV(I),1))
-               V22=VV2(NM(NNV(I),2))
-               V33=VV2(NM(NNV(I),3))
-               UU00(I)=U11*STAIV1(I)+U22*STAIV2(I)+U33*STAIV3(I)
-               VV00(I)=V11*STAIV1(I)+V22*STAIV2(I)+V33*STAIV3(I)
-            END DO
-C
-C           save velocity recording station data to file
-            CALL writeOutArray(62, TIME, IT, VelStaDescript,
-     &                         packTwo, unpackTwo, IVSTP) 
-
-            write(16,*) 'Finished with fort.62 output routine.' !jgfdebug48.03
-            NSCOUV=0
-         ENDIF
-      ENDIF
-
-C...  OUTPUT CONCENTRATION RECORDING STATION INFORMATION IF NOUTC<>0
-C...  AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW CALCULATE
-C...  CONCENTRATION SOLUTIONS AT STATIONS USING INTERPOLATION
-C...  
-      IF(NOUTC.NE.0) THEN
-         IF((IT.GT.NTCYSC).AND.(IT.LE.NTCYFC)) NSCOUC=NSCOUC+1
-         IF(NSCOUC.EQ.NSPOOLC) THEN
-            DO I=1,NSTAC
-               NM1=NM(NNC(I),1)
-               NM2=NM(NNC(I),2)
-               NM3=NM(NNC(I),3)
-               H2N1=DP(NM1)+IFNLFA*ETA2(NM1)
-               H2N2=DP(NM2)+IFNLFA*ETA2(NM2)
-               H2N3=DP(NM3)+IFNLFA*ETA2(NM3)
-               C1=CH1(NM1)/H2N1
-               C2=CH1(NM2)/H2N2
-               C3=CH1(NM3)/H2N3
-               NC1=NODECODE(NM1)
-               NC2=NODECODE(NM2)
-               NC3=NODECODE(NM3)
-               NCELE=NC1*NC2*NC3*NOFF(NNC(I))
-               IF(NCELE.EQ.1) CC00(I)=C1*STAIC1(I)+C2*STAIC2(I)
-     &                                            +C3*STAIC3(I)
-               IF(NCELE.EQ.0) CC00(I)=-99999.
-            END DO
-C
-C           save concentration recording station data to file
-            CALL writeOutArray(81, TIME, IT, ConcStaDescript,
-     &                         packOne, unpackOne, ICSTP)
- 
-            write(16,*) 'Finished with fort.81 output routine.' !jgfdebug48.03
-            NSCOUC=0
-         ENDIF
-      ENDIF
-
-C...  OUTPUT METEOROLOGICAL RECORDING STATION INFORMATION IF NWS>0 AND
-C...  THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW CALCULATE
-C...  METEOROLOGICAL SOLUTIONS AT STATIONS USING INTERPOLATION
-C...  
-      IF((NWS.NE.0).AND.(NOUTM.NE.0)) THEN
-         IF((IT.GT.NTCYSM).AND.(IT.LE.NTCYFM)) NSCOUM=NSCOUM+1
-         IF(NSCOUM.EQ.NSPOOLM) THEN
-            write(16,*) 'About to write fort.71,72 files.' !jgfdebug48.03
-            DO I=1,NSTAM
-               NM1=NM(NNM(I),1)
-               NM2=NM(NNM(I),2)
-               NM3=NM(NNM(I),3)
-               U11=wvnxout(NM1)
-               U22=wvnxout(NM2)
-               U33=wvnxout(NM3)
-               V11=wvnyout(NM1)
-               V22=wvnyout(NM2)
-               V33=wvnyout(NM3)
-               P11=PR2(NM1)
-               P22=PR2(NM2)
-               P33=PR2(NM3)
-               RMU00(I)=U11*STAIM1(I)+U22*STAIM2(I)+U33*STAIM3(I)
-               RMV00(I)=V11*STAIM1(I)+V22*STAIM2(I)+V33*STAIM3(I)
-               RMP00(I)=P11*STAIM1(I)+P22*STAIM2(I)+P33*STAIM3(I)
-            END DO
-C
-C           save atmospheric pressure recording station data to file
-            CALL writeOutArray(71, TIME, IT, PrStaDescript,
-     &                         packOne, unpackOne, IPSTP) 
-C
-C           save wind velocity recording station data to file
-            CALL writeOutArray(72, TIME, IT, WindVelStaDescript,
-     &                         packTwo, unpackTwo, IWSTP) 
-            NSCOUM=0
-         ENDIF
-      ENDIF
-C...   OUTPUT GLOBAL ELEVATION DATA IF NOUTGE<>0 AND THE
-C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
-C...  
-      IF(NOUTGE.NE.0) THEN
-         IF((IT.GT.NTCYSGE).AND.(IT.LE.NTCYFGE)) NSCOUGE=NSCOUGE+1
-         IF(NSCOUGE.EQ.NSPOOLGE) THEN
-C
-C           save fulldomain elevation data to file
-            CALL writeOutArray(63, TIME, IT, ElevDescript,
-     &                         pack63, unpackOne, IGEP) 
-C
-C           jgf47.06: Write out tau0 if it is time varying and the user has 
-C           requested it with tau0 = -4 in fort.15.
-            IF (OUTPUTTAU0) THEN
-               CALL writeOutArray(90, TIME, IT, Tau0Descript,
-     &                            packOne, unpackOne, IGEP) 
-            ENDIF
-
-C          jgf47.08 Made sparse output an option (if NOUTGE=-4 or 4 in fort.15)
-           IF(ABS(NOUTGE).EQ.4) THEN
-C              jgf47.08 Create compact output 
-C              jgf48.03 TODO: Make this globalio compliant.
+C     collect up the data from subdomains if running in parallel
 #ifdef CMPI
-              IF(MNWPROC.GT.0) THEN
-                 CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $              (TRIM(GLOBALDIR)//'/'//'fort.63',descript,time,it,
-     $                 writer_store63, -99999.D0)
-              ELSE
-                 CALL WRITE_GBL_63_SKIP_DRYNODE  ! sb 11/10/2006
-     $                (63, TRIM(GLOBALDIR)//'/'//'fort.63',
-     $                 descript, time,it, store63)
-              ENDIF
-#else
-              CALL WRITE_GBL_63_SKIP_DRYNODE  ! sb 11/10/2006
-     $            (63, TRIM(GLOBALDIR)//'/'//'fort.63',
-     &               descript, time,it, store63)
-#endif
-              IGEP=IGEP+1+NP
-           ENDIF
-           write(16,*) 'Finished with fort.63 output routine.' !jgfdebug48.03
-           NSCOUGE=0
+         write(16,*) 
+     &    'About to collectFullDomainArrays for hotstart file.'
+         CALL collectFullDomainArray(Elev1Descript, packOne, unpackOne)
+         CALL collectFullDomainArray(Elev2Descript, packOne, unpackOne)
+         CALL collectFullDomainArray(VelDescript, packTwo, unpackTwo)
+         IF (IM.eq.10) THEN
+            CALL collectFullDomainArray(CH1Descript, packOne, unpackOne)
          ENDIF
-      ENDIF
-
-C...  OUTPUT GLOBAL VELOCITY DATA IF NOUTGV<>0 AND THE
-C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
-C...  
-      IF(NOUTGV.NE.0) THEN
-         IF((IT.GT.NTCYSGV).AND.(IT.LE.NTCYFGV)) NSCOUGV=NSCOUGV+1
-         IF(NSCOUGV.EQ.NSPOOLGV) THEN
-
-            CALL writeOutArray(64, TIME, IT, VelDescript,
-     &                      packTwo, unpackTwo, IGVP) 
-
-            IF (ABS(NOUTGV).EQ.4) THEN
-            ! jgf48.03 TODO: Make this globalio compliant.
-#ifdef CMPI
-                  IF(MNWPROC.GT.0) THEN
-                    CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                (TRIM(GLOBALDIR)//'/'//'fort.64',descript,time,it,
-     $                 writer_storeTwo, 0.D0)
-                  ELSE
-                    CALL WRITE_GBL_FILE_SKIP_DEFAULT ! sb 11/10/2006
-     $                   (64, TRIM(GLOBALDIR)//'/'//'fort.64',
-     $                   descript, time, it, storeTwo,0.d0)
-                  ENDIF
-#else
-                  CALL WRITE_GBL_FILE_SKIP_DEFAULT ! sb 11/10/2006
-     $                 (64, TRIM(GLOBALDIR)//'/'//'fort.64',
-     $                 descript, time, it, storeTwo,0.d0)
+         CALL collectFullDomainArray(EtaDiscDescript, 
+     &             packOne, unpackOne)
+         CALL collectFullDomainIntArray(NodeCodeDescript, 
+     &             packOneInt, unpackOneInt)
+         CALL collectFullDomainIntArray(NOFFDescript, 
+     &             packOneInt, unpackOneInt)
 #endif
-            ENDIF
-            NSCOUGV=0
-         ENDIF
-      ENDIF
-
-C...
-C...  OUTPUT GLOBAL WIND STRESS and atmospheric pressure data IF
-C.... NOUTGW<>0 AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
-C...
-      IF((NWS.NE.0).AND.(NOUTGW.NE.0)) THEN
-         IF((IT.GT.NTCYSGW).AND.(IT.LE.NTCYFGW)) NSCOUGW=NSCOUGW+1
-         IF(NSCOUGW.EQ.NSPOOLGW) THEN
-C
-C           save atmospheric pressure recording station data to file
-            CALL writeOutArray(73, TIME, IT, PrDescript,
-     &                         packOne, unpackOne, IGPP) 
-C
-C           save wind velocity recording station data to file
-            CALL writeOutArray(74, TIME, IT, WindVelDescript,
-     &                         packTwo, unpackTwo, IGWP) 
-
-C           jgf48.03 TODO: Make this globalio compliant.
-            IF (ABS(NOUTGW).EQ.4) THEN
-#ifdef CMPI
-               IF(MNWPROC.GT.0) THEN
-                 CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $             (TRIM(GLOBALDIR)//'/'//'fort.73',descript,time,it,
-     $              writer_storeOne, 0.D0)
-               ELSE
-                 CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     $             (73, TRIM(GLOBALDIR)//'/'//'fort.73',
-     $              descript, time, it, storeOne,0.d0)
-               ENDIF
-#else
-               CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     $            (73, TRIM(GLOBALDIR)//'/'//'fort.73',
-     $               descript, time, it, storeOne,0.d0)
-#endif
-            ENDIF
-C           jgf48.03 TODO: Make this globalio compliant.
-            IF (ABS(NOUTGW).EQ.4) THEN
-#ifdef CMPI
-                  IF(MNWPROC.GT.0) THEN
-                    CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                   (TRIM(GLOBALDIR)//'/'//'fort.74',
-     &                   descript,time,it,
-     $                   writer_storeTwo, 0.D0)
-                  ELSE
-                    CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     $                   (74, TRIM(GLOBALDIR)//'/'//'fort.74',
-     $                   descript, time, it, storeTwo,0.d0)
-                  ENDIF
-#else
-                  CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     $              (74, TRIM(GLOBALDIR)//'/'//'fort.74',
-     $              descript, time, it, storeTwo,0.d0)
-#endif
-            ENDIF
-            NSCOUGW=0
-         ENDIF
-      ENDIF
-
-C...  OUTPUT GLOBAL CONCENTRATION DATA IF NOUTGC<>0 AND THE
-C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
-C...  
-      IF(NOUTGC.NE.0) THEN
-         IF((IT.GT.NTCYSGC).AND.(IT.LE.NTCYFGC)) NSCOUGC=NSCOUGC+1
-         IF(NSCOUGC.EQ.NSPOOLGC) THEN
-C
-C           save fulldomain concentration data to file
-C           jgf48.03 TODO: add the proper processingi (see below).
-            CALL writeOutArray(83, TIME, IT, ConcDescript,
-     &                         pack83, unpackOne, IGCP) 
-C               DO I=1,NP
-C                  H2=DP(I)+IFNLFA*ETA2(I)
-C                  C1=CH1(I)/H2
-C                  IF(NODECODE(I).EQ.1) WRITE(83,2453) I,C1
-C                  IF(NODECODE(I).EQ.0) WRITE(83,2453) I,-99999.
-C               ENDDO
-            NSCOUGC=0
-         ENDIF
-      ENDIF
-
-#ifdef CMPI
-Csb 02/09/2007
-C...  Communicate writer processors and let them write out what
-C...  they have gotton.
-      CALL FLUSH_WRITERS()
-#endif
-      
-
-
-
       SELECT CASE (NHSTAR)
 
-      CASE(1) ! ascii
+      CASE(1) ! nonportable binary (1 for backwards compatibility)
 
+         NPX = NP_G
+         NEX = NE_G
+         PRINT *, "write_output: NPX - 1", NPX
+         PRINT *, "write_output: NEX - 1", NEX
 
-
-
-!      TEST_HOTSTART = .FALSE.
-
-      NPX = NP_G
-      NEX = NE_G
-      PRINT *, "write_output: NPX - 1", NPX
-      PRINT *, "write_output: NEX - 1", NEX
-
-      if (MNPROC == 1 .or. WRITE_LOCAL_HOT_START_FILES) THEN
-         NPX = NP
-         NEX = NE
-         PRINT *, "write_output: NPX - 2", NPX
-         PRINT *, "write_output: NEX - 2", NEX
-
-      endif
+         if (MNPROC == 1 .or. WRITE_LOCAL_HOT_START_FILES) THEN
+            NPX = NP
+            NEX = NE
+            PRINT *, "write_output: NPX - 2", NPX
+            PRINT *, "write_output: NEX - 2", NEX
+         endif
 
       IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
           OPEN(hss % lun ,FILE=TRIM(HOTSTARTDIR)//'/'//hss % filename,
@@ -2647,132 +2382,79 @@ C...  they have gotton.
           WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
           WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
           WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
-      ENDIF
-
-      descript % initial_value        =  0.0
-      descript % num_items_per_record =  1
-      descript % num_fd_records       =  NP_G
-      descript % num_records_this     =  NP
-      descript % imap                 => nodes_lg
-      descript % array                => ETA1
-      CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP,
-     &     store_real, write_real)
-#ifdef NETCDF
-C   Start Addition for netCDF by MCF 4/8/08
-      num_records=npx
-
-      IF(.NOT.ALLOCATED(eta11))ALLOCATE (eta11(num_records,timenc_len))
-
-            DO I=1, num_records
-                   eta11(i,timenc_len) = descript % array(i)
-!                  PRINT *,i,"  ETA11 = ", ETA11(i, timenc_len)
-            END DO
-                   PRINT *,"  ETA11 = ", ETA11(11, timenc_len)
-C   End Addition for netCDF by MCF 4/8/08
+      
+#ifdef CMPI
+          DO I=1, NP_G
+             WRITE(hss % lun,REC=IHOTSTP) Elev1Descript % array_g(I)
+             IHOTSTP=IHOTSTP+1
+          ENDDO
+          DO I=1, NP_G
+             WRITE(hss % lun,REC=IHOTSTP) Elev2Descript % array_g(I)
+             IHOTSTP=IHOTSTP+1
+          ENDDO
+          DO I=1, NP_G
+             WRITE(hss % lun,REC=IHOTSTP) EtaDiscDescript % array_g(I)
+             IHOTSTP=IHOTSTP+1
+          ENDDO
+          DO I=1, NP_G
+             WRITE(hss % lun,REC=IHOTSTP) VelDescript % array_g(I)
+             IHOTSTP=IHOTSTP+1
+          ENDDO
+          DO I=1, NP_G
+             WRITE(hss % lun,REC=IHOTSTP) VelDescript % array2_g(I)
+             IHOTSTP=IHOTSTP+1
+          ENDDO
+          IF (IM.eq.10) THEN
+             DO I=1, NP_G
+                WRITE(hss % lun,REC=IHOTSTP) CH1Descript % array_g(I)
+                IHOTSTP=IHOTSTP+1
+             ENDDO
+          ENDIF
+          DO I=1, NP_G
+             WRITE(hss % lun,REC=IHOTSTP) NodeCodeDescript % iarray_g(I)
+             IHOTSTP=IHOTSTP+1
+          ENDDO
+          DO I=1, NE_G
+             WRITE(hss % lun,REC=IHOTSTP) NOFFDescript % iarray_g(I)
+             IHOTSTP=IHOTSTP+1
+          ENDDO
+#else
+          DO I=1, NP_G
+             WRITE(hss % lun,REC=IHOTSTP) ETA1(I)
+             IHOTSTP=IHOTSTP+1
+          ENDDO
+          DO I=1, NP_G
+             WRITE(hss % lun,REC=IHOTSTP) ETA2(I)
+             IHOTSTP=IHOTSTP+1
+          ENDDO
+          DO I=1, NP_G
+             WRITE(hss % lun,REC=IHOTSTP) EtaDisc(I)
+             IHOTSTP=IHOTSTP+1
+          ENDDO
+          DO I=1, NP_G
+             WRITE(hss % lun,REC=IHOTSTP) UU2(I)
+             IHOTSTP=IHOTSTP+1
+          ENDDO
+          DO I=1, NP_G
+             WRITE(hss % lun,REC=IHOTSTP) VV2(I)
+             IHOTSTP=IHOTSTP+1
+          ENDDO
+          IF (IM.eq.10) THEN
+             DO I=1, NP_G
+                WRITE(hss % lun,REC=IHOTSTP) CH1(I)
+                IHOTSTP=IHOTSTP+1
+             ENDDO
+          ENDIF
+          DO I=1, NP_G
+             WRITE(hss % lun,REC=IHOTSTP) NodeCode(I)
+             IHOTSTP=IHOTSTP+1
+          ENDDO
+          DO I=1, NE_G
+             WRITE(hss % lun,REC=IHOTSTP) NOFF(I)
+             IHOTSTP=IHOTSTP+1
+          ENDDO
 #endif
 
-        
-      descript % array                => ETA2
-      CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP, 
-     &     store_real, write_real)
-#ifdef NETCDF
-C   Start Addition for netCDF by MCF 4/8/08
-      IF(.NOT.ALLOCATED(eta22))ALLOCATE (eta22(num_records,timenc_len))
-
-            DO I=1, num_records
-                   eta22(i,timenc_len) = descript % array(i)
-!                   PRINT *,i,"  ETA22 = ", ETA22(i, timenc_len)
-            END DO
-                   PRINT *,"  ETA22 = ", ETA22(11, timenc_len)
-C   End Addition for netCDF by MCF 4/8/08
-#endif
-
-      !  vjp46.34 Added support for IBTYPE=52.  
-      ! ( EtaDisc is ETA2 at ItDiscTime )
-      descript % array                => EtaDisc
-      CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP, 
-     &     store_real, write_real)
-#ifdef NETCDF
-C   Start Addition for netCDF by MCF 4/8/08
-      IF(.NOT.ALLOCATED(etadd))ALLOCATE (etadd(num_records,timenc_len))
-
-            DO I=1, num_records
-                   etadd(i,timenc_len) = descript % array(i)
-!                   PRINT *,i,"  ETADD = ", ETADD(i, timenc_len)
-            END DO
-                   PRINT *,"  ETADD = ", ETADD(11, timenc_len)
-C   End Addition for netCDF by MCF 4/8/08
-#endif
-
-      descript % array                => UU2
-      CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP, 
-     &     store_real, write_real)
-#ifdef NETCDF
-C   Start Addition for netCDF by MCF 4/8/08
-      IF(.NOT.ALLOCATED(uu22))ALLOCATE (uu22(num_records,timenc_len))
-
-            DO I=1, num_records
-                   uu22(i,timenc_len) = descript % array(i)
-!                   PRINT *,i,"  uu22 = ", uu22(i, timenc_len)
-            END DO
-                   PRINT *,"  uu22 = ", uu22(11, timenc_len)
-C   End Addition for netCDF by MCF 4/8/08
-#endif         
-      descript % array                => VV2
-      CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP, 
-     &     store_real, write_real)
-#ifdef NETCDF
-C   Start Addition for netCDF by MCF 4/8/08
-      IF(.NOT.ALLOCATED(vv22))ALLOCATE (vv22(num_records,timenc_len))
-
-            DO I=1, num_records
-                   vv22(i,timenc_len) = descript % array(i)
-!                   PRINT *,i,"  vv22 = ", vv22(i, timenc_len)
-            END DO
-                   PRINT *,"  vv22 = ", vv22(11, timenc_len)
-C   End Addition for netCDF by MCF 4/8/08
-#endif 
-      if (IM == 10) then
-         descript % array              => CH1
-         CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP, 
-     &   store_real, write_real)
-      endif
-
-      descript % iarray               => NODECODE
-      CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP, 
-     &     store_integer, write_integer)
-#ifdef NETCDF     
-C   Start Addition for netCDF by MCF 4/8/08
-      num_records=np_g
-      IF(.NOT.ALLOCATED(nodecodenc))ALLOCATE (nodecodenc(num_records))
-
-            DO I=1, num_records
-                   nodecodenc(i) = descript % iarray(i)
-!                   PRINT *,i,"  nodecodenc = ", nodecodenc(i)
-            END DO
-                   PRINT *,"  nodecodenc = ", nodecodenc(11)
-C   End Addition for netCDF by MCF 4/8/08
-#endif
-        
-      descript % num_records_this     =  NE
-      descript % num_fd_records       =  NE_G
-      descript % imap                 => imap_el_lg
-      descript % iarray               => NOFF
-      CALL WRITE_GBL_FILE_HSTART(hss % lun, descript, IHOTSTP, 
-     &     store_integer, write_integer)
-#ifdef NETCDF
-C   Start Addition for netCDF by MCF 4/8/08
-      num_recordse=ne_g
-      IF(.NOT.ALLOCATED(noffnc))ALLOCATE (noffnc(num_recordse))
-
-            DO I=1, num_recordse
-                   noffnc(i) = descript % iarray(i)
-!                   PRINT *,i,"  noffnc = ", noffnc(i)
-            END DO
-                   PRINT *,"  noffnc = ", noffnc(11)
-C   End Addition for netCDF by MCF 4/8/08
-#endif
-      if (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
          WRITE(hss % lun,REC=IHOTSTP+1) IESTP
          WRITE(hss % lun,REC=IHOTSTP+2) NSCOUE
          IHOTSTP=IHOTSTP+2
@@ -2800,6 +2482,146 @@ C   End Addition for netCDF by MCF 4/8/08
          WRITE(hss % lun,REC=IHOTSTP+3) NSCOUGW
          IHOTSTP=IHOTSTP+3
       endif
+
+!This code is not supported yet.
+#if 0
+C...
+C...  ADD IN 3D STUFF IF APPROPRIATE
+C...
+      IF (C3D) THEN
+         CALL HSTART3D_OUT()
+      ENDIF
+C...  
+C...  IF APPROPRIATE ADD HARMONIC ANALYSIS INFORMATION TO HOT START FILE
+C...  
+      IF((IHARIND.EQ.1).AND.(IT.GT.ITHAS)) THEN
+         WRITE(hss % lun,REC=IHOTSTP+1) ICHA
+         IHOTSTP = IHOTSTP + 1
+         CALL HAHOUT(NP,NSTAE,NSTAV,NHASE,NHASV,NHAGE,NHAGV,
+     &      hss % lun,IHOTSTP)
+C         
+         IF(NHASE.EQ.1) CALL HAHOUTES(NSTAE,hss % lun,IHOTSTP)
+         IF(NHASV.EQ.1) CALL HAHOUTVS(NSTAV,hss % lun,IHOTSTP)
+         IF(NHAGE.EQ.1) CALL HAHOUTEG(NP,hss % lun,IHOTSTP)
+         IF(NHAGV.EQ.1) CALL HAHOUTVG(NP,hss % lun,IHOTSTP)
+      ENDIF
+        
+      if( CHARMV) then
+         IF((IHARIND.EQ.1).AND.(IT.GT.ITMV)) THEN
+            IHOTSTP=IHOTSTP+1
+            WRITE(hss % lun,REC=IHOTSTP) NTSTEPS
+            IF(NHAGE.EQ.1) THEN
+               DO I=1,NP
+                  WRITE(hss % lun,REC=IHOTSTP+1) ELAV(I)
+                  WRITE(hss % lun,REC=IHOTSTP+2) ELVA(I)
+                  IHOTSTP=IHOTSTP+2
+               END DO
+            ENDIF
+            IF(NHAGV.EQ.1) THEN
+              DO I=1,NP
+                WRITE(hss % lun,REC=IHOTSTP+1) XVELAV(I)
+                WRITE(hss % lun,REC=IHOTSTP+2) YVELAV(I)
+                WRITE(hss % lun,REC=IHOTSTP+3) XVELVA(I)
+                WRITE(hss % lun,REC=IHOTSTP+4) YVELVA(I)
+                IHOTSTP=IHOTSTP+4
+              END DO
+            ENDIF
+          ENDIF
+      endif                   !  charmv
+        
+#endif
+        
+      CASE(2) ! ascii?
+         write(16,*) 'ASCII Hotstart file not implemented yet.'
+
+      CASE(3) ! netcdf 
+         write(16,*) 'NetCDF Hotstart undergoing testing.'
+
+#ifdef NETCDF
+C   Start Addition for netCDF by MCF 4/8/08
+      num_records=npx
+
+      IF(.NOT.ALLOCATED(eta11))ALLOCATE (eta11(num_records,timenc_len))
+
+            DO I=1, num_records
+                   eta11(i,timenc_len) = descript % array(i)
+!                  PRINT *,i,"  ETA11 = ", ETA11(i, timenc_len)
+            END DO
+                   PRINT *,"  ETA11 = ", ETA11(11, timenc_len)
+C   End Addition for netCDF by MCF 4/8/08
+#endif
+
+#ifdef NETCDF
+C   Start Addition for netCDF by MCF 4/8/08
+      IF(.NOT.ALLOCATED(eta22))ALLOCATE (eta22(num_records,timenc_len))
+
+            DO I=1, num_records
+                   eta22(i,timenc_len) = descript % array(i)
+!                   PRINT *,i,"  ETA22 = ", ETA22(i, timenc_len)
+            END DO
+                   PRINT *,"  ETA22 = ", ETA22(11, timenc_len)
+C   End Addition for netCDF by MCF 4/8/08
+#endif
+
+#ifdef NETCDF
+C   Start Addition for netCDF by MCF 4/8/08
+      IF(.NOT.ALLOCATED(etadd))ALLOCATE (etadd(num_records,timenc_len))
+
+            DO I=1, num_records
+                   etadd(i,timenc_len) = descript % array(i)
+!                   PRINT *,i,"  ETADD = ", ETADD(i, timenc_len)
+            END DO
+                   PRINT *,"  ETADD = ", ETADD(11, timenc_len)
+C   End Addition for netCDF by MCF 4/8/08
+#endif
+
+#ifdef NETCDF
+C   Start Addition for netCDF by MCF 4/8/08
+      IF(.NOT.ALLOCATED(uu22))ALLOCATE (uu22(num_records,timenc_len))
+
+            DO I=1, num_records
+                   uu22(i,timenc_len) = descript % array(i)
+!                   PRINT *,i,"  uu22 = ", uu22(i, timenc_len)
+            END DO
+                   PRINT *,"  uu22 = ", uu22(11, timenc_len)
+C   End Addition for netCDF by MCF 4/8/08
+#endif         
+#ifdef NETCDF
+C   Start Addition for netCDF by MCF 4/8/08
+      IF(.NOT.ALLOCATED(vv22))ALLOCATE (vv22(num_records,timenc_len))
+
+            DO I=1, num_records
+                   vv22(i,timenc_len) = descript % array(i)
+!                   PRINT *,i,"  vv22 = ", vv22(i, timenc_len)
+            END DO
+                   PRINT *,"  vv22 = ", vv22(11, timenc_len)
+C   End Addition for netCDF by MCF 4/8/08
+#endif 
+#ifdef NETCDF     
+C   Start Addition for netCDF by MCF 4/8/08
+      num_records=np_g
+      IF(.NOT.ALLOCATED(nodecodenc))ALLOCATE (nodecodenc(num_records))
+
+            DO I=1, num_records
+                   nodecodenc(i) = descript % iarray(i)
+!                   PRINT *,i,"  nodecodenc = ", nodecodenc(i)
+            END DO
+                   PRINT *,"  nodecodenc = ", nodecodenc(11)
+C   End Addition for netCDF by MCF 4/8/08
+#endif
+        
+#ifdef NETCDF
+C   Start Addition for netCDF by MCF 4/8/08
+      num_recordse=ne_g
+      IF(.NOT.ALLOCATED(noffnc))ALLOCATE (noffnc(num_recordse))
+
+            DO I=1, num_recordse
+                   noffnc(i) = descript % iarray(i)
+!                   PRINT *,i,"  noffnc = ", noffnc(i)
+            END DO
+                   PRINT *,"  noffnc = ", noffnc(11)
+C   End Addition for netCDF by MCF 4/8/08
+#endif
 C
 C    ADDITION OF netCDF Hostart file 67.nc and 68.nc by MCF 4/8/08
 C
@@ -2897,54 +2719,13 @@ C
      &             base_date)
 #endif
 
-!This code is not supported yet.
-#if 0
-C...
-C...  ADD IN 3D STUFF IF APPROPRIATE
-C...
-      IF (C3D) THEN
-         CALL HSTART3D_OUT()
-      ENDIF
-C...  
-C...  IF APPROPRIATE ADD HARMONIC ANALYSIS INFORMATION TO HOT START FILE
-C...  
-      IF((IHARIND.EQ.1).AND.(IT.GT.ITHAS)) THEN
-         WRITE(hss % lun,REC=IHOTSTP+1) ICHA
-         IHOTSTP = IHOTSTP + 1
-         CALL HAHOUT(NP,NSTAE,NSTAV,NHASE,NHASV,NHAGE,NHAGV,
-     &      hss % lun,IHOTSTP)
-C         
-         IF(NHASE.EQ.1) CALL HAHOUTES(NSTAE,hss % lun,IHOTSTP)
-         IF(NHASV.EQ.1) CALL HAHOUTVS(NSTAV,hss % lun,IHOTSTP)
-         IF(NHAGE.EQ.1) CALL HAHOUTEG(NP,hss % lun,IHOTSTP)
-         IF(NHAGV.EQ.1) CALL HAHOUTVG(NP,hss % lun,IHOTSTP)
-      ENDIF
-        
-      if( CHARMV) then
-         IF((IHARIND.EQ.1).AND.(IT.GT.ITMV)) THEN
-            IHOTSTP=IHOTSTP+1
-            WRITE(hss % lun,REC=IHOTSTP) NTSTEPS
-            IF(NHAGE.EQ.1) THEN
-               DO I=1,NP
-                  WRITE(hss % lun,REC=IHOTSTP+1) ELAV(I)
-                  WRITE(hss % lun,REC=IHOTSTP+2) ELVA(I)
-                  IHOTSTP=IHOTSTP+2
-               END DO
-            ENDIF
-            IF(NHAGV.EQ.1) THEN
-              DO I=1,NP
-                WRITE(hss % lun,REC=IHOTSTP+1) XVELAV(I)
-                WRITE(hss % lun,REC=IHOTSTP+2) YVELAV(I)
-                WRITE(hss % lun,REC=IHOTSTP+3) XVELVA(I)
-                WRITE(hss % lun,REC=IHOTSTP+4) YVELVA(I)
-                IHOTSTP=IHOTSTP+4
-              END DO
-            ENDIF
-          ENDIF
-      endif                   !  charmv
-        
-#endif
-        
+      CASE DEFAULT
+         write(ScreenUnit,*) 'The value of NHSTAR=',NHSTAR
+         write(ScreenUnit,*) 'is not supported.'
+         write(ScreenUnit,*) 'Hotstart file not written.'
+
+      END SELECT
+
 C...    
 C...    CLOSE THE HOT START OUTPUT FILE
 C...    
@@ -2956,6 +2737,7 @@ C...
       WRITE(16,24541) hss % lun,IT,TIME
 24541 FORMAT(1X,'HOT START OUTPUT WRITTEN TO UNIT ',I2,
      &    ' AT TIME STEP = ',I9,' TIME = ',E15.8)
+      TEST_HOTSTART = .FALSE.
       IF(hss % lun.EQ.67) THEN
 C        jgf45.07 added option to stop ADCIRC after writing hot start file. 
          IF (NHSTAR.EQ.67) THEN

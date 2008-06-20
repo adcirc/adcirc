@@ -421,6 +421,7 @@ C     the size and shape of the output data.
         REAL(SZ), pointer :: array(:)  ! scalar data or 1st component of vector
         REAL(SZ), pointer :: array2(:) ! 2nd component of vector
         REAL(SZ), pointer :: array3(:) ! 3rd component of vector
+        INTEGER, pointer  :: iarray_g(:) ! full domain integer
         REAL(SZ), pointer :: array_g(:)  ! full domain data scalar etc
         REAL(SZ), pointer :: array2_g(:) ! full domain 2nd vec component
         REAL(SZ), pointer :: array3_g(:) ! full domain 3rd vec component
