@@ -2235,14 +2235,14 @@ C
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(ETA1_g(NP_G))
          ENDIF
-         ElevDescript % specifier            = NHSTAR
-         ElevDescript % initial_value        = 0.0
-         ElevDescript % num_items_per_record = 1
-         ElevDescript % num_fd_records       = NP_G
-         ElevDescript % num_records_this     = NP
-         ElevDescript % imap                 => NODES_LG
-         ElevDescript % array                => ETA1
-         ElevDescript % array_g              => ETA1_g
+         Elev1Descript % specifier            = NHSTAR
+         Elev1Descript % initial_value        = 0.0
+         Elev1Descript % num_items_per_record = 1
+         Elev1Descript % num_fd_records       = NP_G
+         Elev1Descript % num_records_this     = NP
+         Elev1Descript % imap                 => NODES_LG
+         Elev1Descript % array                => ETA1
+         Elev1Descript % array_g              => ETA1_g
 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             IF (.not.ALLOCATED(ETA2_g)) THEN
@@ -2250,14 +2250,14 @@ C
                ALLOCATE(ETA2_g(NP_G))
             ENDIF
          ENDIF
-         ElevDescript % specifier            = NHSTAR
-         ElevDescript % initial_value        = 0.0
-         ElevDescript % num_items_per_record = 1
-         ElevDescript % num_fd_records       = NP_G
-         ElevDescript % num_records_this     = NP
-         ElevDescript % imap                 => NODES_LG
-         ElevDescript % array                => ETA2
-         ElevDescript % array_g              => ETA2_g
+         Elev2Descript % specifier            = NHSTAR
+         Elev2Descript % initial_value        = 0.0
+         Elev2Descript % num_items_per_record = 1
+         Elev2Descript % num_fd_records       = NP_G
+         Elev2Descript % num_records_this     = NP
+         Elev2Descript % imap                 => NODES_LG
+         Elev2Descript % array                => ETA2
+         Elev2Descript % array_g              => ETA2_g
          
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             IF (.not.ALLOCATED(UU2_g)) THEN
@@ -2266,7 +2266,7 @@ C
                ALLOCATE(VV2_g(NP_G)) 
             ENDIF
          ENDIF
-         VelDescript % specifier            = NOUTGV
+         VelDescript % specifier            = NHSTAR
          VelDescript % initial_value        = 0.0
          VelDescript % num_items_per_record = 2
          VelDescript % num_fd_records       = NP_G
@@ -2281,19 +2281,40 @@ C
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(EtaDisc_g(NP_G))
          ENDIF
-         ElevDescript % specifier            = NHSTAR
-         ElevDescript % initial_value        = 0.0
-         ElevDescript % num_items_per_record = 1
-         ElevDescript % num_fd_records       = NP_G
-         ElevDescript % num_records_this     = NP
-         ElevDescript % imap                 => NODES_LG
-         ElevDescript % array                => ETA1
-         ElevDescript % array_g              => ETA1_g
+         EtaDiscDescript % specifier            = NHSTAR
+         EtaDiscDescript % initial_value        = 0.0
+         EtaDiscDescript % num_items_per_record = 1
+         EtaDiscDescript % num_fd_records       = NP_G
+         EtaDiscDescript % num_records_this     = NP
+         EtaDiscDescript % imap                 => NODES_LG
+         EtaDiscDescript % array                => EtaDisc
+         EtaDiscDescript % array_g              => EtaDisc_g
          
-
          write(16,*) 'Allocating NodeCodeDescript' 
-         write(16,*) 'Allocating NOFFDescript' 
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(NodeCode_g(NP_G))
+         ENDIF
+         NodeCodeDescript % specifier            = NHSTAR
+         NodeCodeDescript % initial_value        = 0.0
+         NodeCodeDescript % num_items_per_record = 1
+         NodeCodeDescript % num_fd_records       = NP_G
+         NodeCodeDescript % num_records_this     = NP
+         NodeCodeDescript % imap                 => NODES_LG
+         NodeCodeDescript % array                => EtaDisc
+         NodeCodeDescript % array_g              => EtaDisc_g
 
+         write(16,*) 'Allocating NOFFDescript' 
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(EtaDisc_g(NP_G))
+         ENDIF
+         EtaDiscDescript % specifier            = NHSTAR
+         EtaDiscDescript % initial_value        = 0.0
+         EtaDiscDescript % num_items_per_record = 1
+         EtaDiscDescript % num_fd_records       = NP_G
+         EtaDiscDescript % num_records_this     = NP
+         EtaDiscDescript % imap                 => NODES_LG
+         EtaDiscDescript % array                => EtaDisc
+         EtaDiscDescript % array_g              => EtaDisc_g
 
 
          FirstCall = .false.
