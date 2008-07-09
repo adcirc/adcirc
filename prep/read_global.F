@@ -1162,8 +1162,9 @@ C     jgf45.07 added undocumented option to allow ADCIRC to stop after writing
 C     hot start file. This is used to test hot starting capabilities.
       READ(15,80) HSTARMSG
       READ(HSTARMSG,*) NHSTAR,NHSINC
+      PRINT *, " NHSTAR,NHSINC ", NHSTAR,NHSINC
       IF ((NHSTAR.NE.0).AND.(NHSTAR.NE.1).AND.(NHSTAR.NE.67)
-     &     .AND.(NHSTAR.NE.68)) THEN 
+     &     .AND.(NHSTAR.NE.68).AND.(NHSTAR.NE.3)) THEN 
         print *, "NHSTAR does not have an allowable value"
         IF (NFOVER.EQ.1) THEN
           print *, "Program will override and reset NHSTAR=0 "
@@ -1172,6 +1173,7 @@ C     hot start file. This is used to test hot starting capabilities.
           stop
         ENDIF
       ENDIF
+      PRINT *, " NHSTAR,NHSINC ", NHSTAR,NHSINC
 C
 C--Read Solver Data
 C

@@ -61,32 +61,39 @@ C      USE SIZES
      &    NSTAM, NOUTM, SLEM, SFEM, NTRSPM, 
      &    NOUTGE, SLAM, SFEA, NDSETSE,
      &    NOUTGV, NDSETSV,
-     &    NOUTGW, NDSETSW,
+     &    NOUTGW, NDSETSW, nhstar,nhsinc,
      &    title, institution,
      &    source, history, references, comments, host, convention,
      &    contact, base_date
-      USE GLOBAL, ONLY: STATNAME, STATNAMEV, STATNAMEM
+      USE GLOBAL, ONLY: STATNAME, STATNAMEV, STATNAMEM,
+     &                  imhs, iestp,nscoue,ivstp,nscouv, icstp,
+     &                  nscouc, ipstp, iwstp, nscoum, igep, nscouge,
+     &                  igvp, nscougv, igcp, nscougc, igpp, igwp,
+     &                  nscougw
       use memory_usage
       USE NETCDFIO, ONLY :
      &     timenc, timenc_len, fileunit, irtype,
      &     xenc, yenc, xvnc, yvnc, xpnc, ypnc, xnc, ync, xwnc, ywnc,
      &     et00nc, UU00nc, VV00nc, RMP00nc, RMU00nc, RMV00nc,
      &     eta22, uu22, vv22, pr22, WNCX22, WNCY22,
+     &     eta11,etadd, nodecodenc, noffnc, uu2, vv2,
      &     writenc61, writenc62, writenc63, writenc64,
      &     writenc71, writenc72, writenc73, writenc74,
+     &     writenc67,
      &     nbvvnc,
      &     nbounc,nvelnc,nvellnc,
      &     nopenc,netanc,nvdllnc,
      &     ncmode
+     
       IMPLICIT NONE      
-      integer :: nbytes = 0
+      INTEGER :: nbytes = 0
       INTEGER lun
       REAL(8) time
-      INTEGER num_records
-      INTEGER i
-      INTEGER k,j
+      INTEGER num_records,num_recordse, it
+      INTEGER i, k,j
       INTEGER nface
       INTEGER, PARAMETER :: SNAMELEN = 50
+      LOGICAL FOUND
 
 !      time = 0.d0
       timenc_len=1
@@ -635,6 +642,152 @@ C      USE SIZES
      &          base_date)
 
       ENDIF !fort.74
+      
+      PRINT *, "NHSTAR BEFORE ************** = ", NHSTAR
+      
+      IF (ABS(NHSTAR).EQ.3) THEN  !fort.67 or fort.68
+      
+      PRINT *, "NHSTAR AFTER ************** = ", NHSTAR
+      
+!         if(IHOT.eq.0.or.IHOT.eq.-68)lun=67
+!         if(IHOT.eq.-67)lun=68
+!        num_records=np_g
+!        num_recordse = NE_G
+         num_records = MNP
+         num_recordse = MNE
+        IF(.NOT.ALLOCATED(eta11))ALLOCATE(eta11(num_records,timenc_len))
+        IF(.NOT.ALLOCATED(eta22))ALLOCATE(eta22(num_records,timenc_len))
+        IF(.NOT.ALLOCATED(etadd))ALLOCATE(etadd(num_records,timenc_len))
+        IF(.NOT.ALLOCATED(uu22))ALLOCATE(uu22(num_records,timenc_len))
+        IF(.NOT.ALLOCATED(vv22))ALLOCATE(vv22(num_records,timenc_len))
+        IF(.NOT.ALLOCATED(nodecodenc))ALLOCATE(nodecodenc(num_records))
+        IF(.NOT.ALLOCATED(noffnc))ALLOCATE (noffnc(num_recordse))
+      
+        IF(.NOT. ALLOCATED(xnc)) ALLOCATE(xnc(num_records))
+        IF(.NOT. ALLOCATED(ync)) ALLOCATE(ync(num_records))
+        IF(.NOT. ALLOCATED(nbvvnc)) ALLOCATE(nbvvnc(nbou,nvel))
+        IF(.NOT. ALLOCATED(nvellnc)) ALLOCATE(nvellnc(nbou))
+        IF(.NOT. ALLOCATED(nvdllnc)) ALLOCATE(nvdllnc(nope))
+        IF(.NOT. ALLOCATED(ibtype)) ALLOCATE(ibtype(nbou))
+
+               DO I=1,num_records
+             	     xnc(i)=X(i)
+                     ync(i)=Y(i)
+       	       END DO
+!
+!            elevation specified boundary forcing segments
+!
+               netanc=0
+               DO i=1,nope
+                  nvdllnc(i)=nvdll(i)
+                  netanc=netanc+nvdllnc(i)
+              END DO
+
+            IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
+               
+               k=0
+                  DO i=1,nope
+                        DO j=1,nvdllnc(i)
+                        k=k+1
+             	        nopenc(k)=nbdv(i,j)
+                     END DO
+                  END DO
+!
+!              normal flow (discharge) specified boundary segments
+!
+               nvelnc=0
+               DO i=1,nbou
+                  nvellnc(i)=nvell(i)
+                  nvelnc=nvelnc+nvellnc(i)
+                  DO j=1,nvel
+             	     nbvvnc(i,j)=nbvv(i,j)
+                 END DO
+               END DO
+
+            IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
+               
+               k=0
+                  DO i=1,nbou
+                        DO j=1,nvellnc(i)
+                        k=k+1
+             	        nbounc(k)=nbvv(i,j)
+                     END DO
+                  END DO
+                  
+!          PRINT *, "==== write_output: IM = ", IM, IHOTSTP
+!          PRINT *, "==== write_output: TIME = ", TIME, IHOTSTP
+!          PRINT *, "==== write_output: IM = ", IT, IHOTSTP
+!          PRINT *, "==== write_output: NPX = ", MNP, IHOTSTP
+!          PRINT *, "==== write_output: NEX = ", MNE, IHOTSTP
+
+
+          lun=67
+          
+C         Determine if netcdf file exists
+          INQUIRE(FILE="fort.67.nc",EXIST=FOUND)
+          
+          IF ( .NOT. FOUND ) THEN
+          PRINT *, "LUN = ", LUN
+          
+          call writenc67 (nhsinc,abs(lun),timenc_len,num_records,timenc,
+     &                    nt, nhsinc, uu2,vv2,
+     &                    eta11, eta22, etadd, nodecodenc,noffnc,
+     &                    imhs, it,iestp,nscoue,ivstp,nscouv, icstp,
+     &                    nscouc, ipstp, iwstp, nscoum, igep, nscouge,
+     &                    igvp, nscougv, igcp, nscougc, igpp, igwp,
+     &                    nscougw,
+     &                    rundes, runid, agrid, irtype,
+     &                    dtdp, ihot, ics, nolibf, nolifa,
+     &                    nolica, nolicat, nwp,
+     &                    ncor, ntip, nws, nramp, tau0,
+     &                    statim, reftim, rnday, dramp,
+     &                    a00, b00, c00, h0,
+     &                    slam0, sfea0, cf ,eslm, cori,
+     &                    ntif, nbfr, NELG, nface, nm,
+     &                    xnc, ync, dp,
+     &                    nope, neta, nbdv,nopenc,netanc, nvdllnc,
+     &                    nbou, nvel, nbvvnc,nbounc,nvelnc,
+     &                    nvellnc,ibtype, ncmode,
+     &                    title, institution, source, history,
+     &                    references, comments, host, convention, 
+     &                    contact, base_date)
+                  
+          ENDIF
+          
+          
+          INQUIRE(FILE="fort.68.nc",EXIST=FOUND)
+          
+          IF ( .NOT. FOUND ) THEN
+          
+          lun=68
+          PRINT *, "LUN = ", LUN
+        
+          call writenc67 (nhsinc,abs(lun),timenc_len,num_records,timenc,
+     &                    nt, nhsinc, uu2,vv2,
+     &                    eta11, eta22, etadd, nodecodenc,noffnc,
+     &                    imhs, it,iestp,nscoue,ivstp,nscouv, icstp,
+     &                    nscouc, ipstp, iwstp, nscoum, igep, nscouge,
+     &                    igvp, nscougv, igcp, nscougc, igpp, igwp,
+     &                    nscougw,
+     &                    rundes, runid, agrid, irtype,
+     &                    dtdp, ihot, ics, nolibf, nolifa,
+     &                    nolica, nolicat, nwp,
+     &                    ncor, ntip, nws, nramp, tau0,
+     &                    statim, reftim, rnday, dramp,
+     &                    a00, b00, c00, h0,
+     &                    slam0, sfea0, cf ,eslm, cori,
+     &                    ntif, nbfr, NELG, nface, nm,
+     &                    xnc, ync, dp,
+     &                    nope, neta, nbdv,nopenc,netanc, nvdllnc,
+     &                    nbou, nvel, nbvvnc,nbounc,nvelnc,
+     &                    nvellnc,ibtype, ncmode,
+     &                    title, institution, source, history,
+     &                    references, comments, host, convention, 
+     &                    contact, base_date)
+     
+                  ENDIF
+                  
+                  ENDIF
 
       call memory_status()
       RETURN
@@ -3052,6 +3205,20 @@ C  and writes local hot start files of the same format.                     C
 C                                                                           C
 C---------------------------------------------------------------------------C
 C
+      USE NETCDFIO, ONLY :
+     &     timenc, timenc_len, fileunit, irtype,
+     &     xenc, yenc, xvnc, yvnc, xpnc, ypnc, xnc, ync, xwnc, ywnc,
+     &     et00nc, UU00nc, VV00nc, RMP00nc, RMU00nc, RMV00nc,
+     &     eta22, uu22, vv22, pr22, WNCX22, WNCY22,
+     &     eta11,etadd, nodecodenc, noffnc,
+     &     writenc61, writenc62, writenc63, writenc64,
+     &     writenc71, writenc72, writenc73, writenc74,
+     &     writenc67, readnc67,
+     &     nbvvnc,
+     &     nbounc,nvelnc,nvellnc,
+     &     nopenc,netanc,nvdllnc,
+     &     ncmode
+
       IMPLICIT NONE
       integer :: nbytes = 0
       LOGICAL FOUND
@@ -3104,6 +3271,13 @@ C
       IF(IHOT.EQ.67) FNAME='fort.67'
       IF(IHOT.EQ.68) FNAME='fort.68'
 
+C     START ADDITION FOR NETCDF - MCF - 6/27/08  
+
+      IF(IHOT.EQ.-67) FNAME='fort.67.nc'
+      IF(IHOT.EQ.-68) FNAME='fort.68.nc'
+
+C     END ADDITION FOR NETCDF - MCF - 6/27/08  
+
       INQUIRE(FILE=FNAME,EXIST=FOUND)
       IF (FOUND) THEN
          WRITE(*,1011) FNAME
@@ -3112,6 +3286,13 @@ C
          WRITE(*,1010) FNAME
          STOP
       ENDIF
+
+
+C     START ADDITION FOR NETCDF - MCF - 6/27/08  
+
+C     If hotstart files are binary files then:
+
+      IF(IHOT.EQ.67.or.IHOT.EQ.68) THEN
 
 C--   Read in info from global hot start files
 
@@ -3362,6 +3543,92 @@ ckmd end of additions
 
 
       ENDIF
+      
+      
+      ELSEIF(IHOT.EQ.-67.or.IHOT.EQ.-68) THEN
+
+C   Start Addition for netCDF by MCF 6/27/08
+C
+C   READ NETCDF HOTSTART FILE
+#ifdef NETCDF
+      PRINT *, "hstart: IHOT",IHOT
+      IF (IHOT.EQ.-67.OR.IHOT.EQ.-68)THEN
+         timenc_len=1
+         IF(.NOT. ALLOCATED(timenc))  ALLOCATE(timenc(timenc_len))
+!         timenc(timenc_len)=time
+         timenc(timenc_len)=TIMEHSF
+         ncmode=1                                                       !serial version
+
+         call readnc67 (nhsinc,ABS(IHOT),timenc_len,mnp,timenc,
+     &                  nt, nhsinc, uu2,vv2,
+     &                  eta1, eta2, EtaDisc, nodecode,noff,
+     &                  IMHSF, ITHSF,iestp,nscoue,ivstp,nscouv, icstp, 
+     &                  nscouc, ipstp, iwstp, nscoum, igep, nscouge,
+     &                  igvp, nscougv, igcp, nscougc, igpp, igwp,
+     &                  nscougw,
+     &                  rundes, runid, agrid, irtype,
+     &                  dtdp, ihot, ics, nolibf, nolifa,
+     &                  nolica, nolicat, nwp, 
+     &                  ncor, ntip, nws, nramp, tau0,
+     &                  statim, reftim, rnday, dramp,
+     &                  a00, b00, c00, h0,
+     &                  slam0, sfea0, cf ,eslm, cori,
+     &                  ntif, nbfr, mne, nhy, nm,
+     &                  xnc, ync, dp,
+     &                  nope, neta, nbdv,nopenc,netanc,
+     &                  nvdllnc,
+     &                  nbou, nvel, nbvvnc,nbounc,nvelnc,
+     &                  nvellnc,ibtype,
+     &                  ncmode,
+     &                  title, institution, source, history,
+     &                  references, comments, host, convention, contact,
+     &                  base_date)
+!       time= timenc(timenc_len)
+                   PRINT *,"  ----------START--NETCDF--------------------"
+                   PRINT *,"  IMHSF = ", IMHSF
+                   PRINT *,"  TIMEHSF = ", TIMEHSF
+                   PRINT *,"  ITHSF = ", ITHSF
+                   PRINT *,"  ETA11 = ", ETA1(11)
+                   PRINT *,"  ETA22 = ", ETA2(11)
+                   PRINT *,"  ETADD = ", EtaDisc(11)
+                   PRINT *,"  uu22 = ", uu2(11)
+                   PRINT *,"  vv22 = ", vv2(11)
+                   PRINT *,"  nnodecode = ", nodecode(11)
+                   PRINT *,"  noff = ", noff(11)
+                   PRINT *,"  IESTP = ",IESTP
+                   PRINT *,"  NSCOUE = ",NSCOUE
+                   PRINT *,"  IVSTP = ",IVSTP
+                   PRINT *,"  NSCOUV = ",NSCOUV
+                   PRINT *,"  ICSTP = ",ICSTP
+                   PRINT *,"  NSCOUC = ",NSCOUC
+                   PRINT *,"  IPSTP = ",IPSTP
+                   PRINT *,"  IWSTP = ",IWSTP
+                   PRINT *,"  NSCOUM = ",NSCOUM
+                   PRINT *,"  IGEP = ",IGEP
+                   PRINT *,"  NSCOUGE = ",NSCOUGE
+                   PRINT *,"  IGVP = ",IGVP
+                   PRINT *,"  NSCOUGV = ",NSCOUGV
+                   PRINT *,"  IGCP = ",IGCP
+                   PRINT *,"  NSCOUGC = ",NSCOUGC
+                   PRINT *,"  IGPP = ",IGPP
+                   PRINT *,"  IGWP = ",IGWP
+                   PRINT *,"  NSCOUGW = ",NSCOUGW
+                   PRINT *,"  ---------END-------NETCDF--------------------"
+      ENDIF     
+
+
+#endif
+
+      
+      ELSE
+ 
+        PRINT *,"The hotstart files are neither binary nor netCDF files"
+
+      ENDIF             
+C   End Addition for netCDF by MCF 6/27/08
+      
+      
+      
 C     jgf48.03 harmonic analysis not supported yet
 #if 0
 C
@@ -3720,7 +3987,7 @@ c         ENDIF
 C
 C--Close Global file and all the Local Files     
 C
-      CLOSE (IHOT)
+      IF(IHOT.EQ.67.OR.IHOT.EQ.68)CLOSE (IHOT)
       DO IPROC=1, NPROC
          CLOSE (LOC(IPROC))
       ENDDO

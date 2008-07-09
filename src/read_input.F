@@ -48,11 +48,14 @@ C-----------------------------------------------------------------------
       REAL(SZ) TOUTFM, TOUTSGC, TOUTSGE, TOUTSGV, TOUTSGW, TOUTSM
       CHARACTER CDUM80
 
+C    ===================================================================
 C      MCF ADDITION FOR READING AND WRITING STATION INFO IN NETCDF
 C
       REAL, EXTERNAL              :: a2f
       CHARACTER(132) STATLINE
       CHARACTER(50) LVAR(3)
+C
+C    ===================================================================
 C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
 C     Module. 
@@ -277,15 +280,23 @@ C...
 C...  READ AND PROCESS IHOT - HOT START OPTION
 C...  
       READ(15,*) IHOT
-      IF (IHOT < 0) THEN
-        hss % lun      = 67
-        hss % filename = 'fort.67'
-      ELSE IF ((IHOT == 0).OR.(IHOT == 68)) then
+      
+!      COMMENTED SINCE NEGATIVE IHOT IS USED FOR NETCDF I/O  --- MCF 6/10/08
+!      IF (IHOT < 0) THEN
+!        hss % lun      = 67
+!        hss % filename = 'fort.67'
+!      ELSE IF ((IHOT == 0).OR.(IHOT == 68)) then
+
+      IF ((IHOT == 0).OR.(IHOT == 68)) then
         hss % lun      = 67
         hss % filename = 'fort.67'
       ELSE IF (IHOT == 67) then
         hss % lun      = 68
         hss % filename = 'fort.68'
+      ELSE IF (IHOT == -67) then
+        hss % lun      = 68
+      ELSE IF (IHOT == -68) then
+        hss % lun      = 67
       ENDIF
 
       IF(IHOT.NE.0) THEN
@@ -3657,15 +3668,22 @@ C....INPUT COORDINATES OF ELEVATION RECORDING STATIONS THEN COMPUTE
 C....THE ELEMENT NO. THE STATION LIES IN
 
 C     jgf47.12 From cf, memory allocation for netcdf.
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION
+C
       IF(.NOT. ALLOCATED(STATNAME))ALLOCATE(STATNAME(NSTAE,SNAMLEN))
+C
+C     END ADDITION BY MCF FOR NETCDF OPTION
+C     ==================================================================
 
       DO I=1,NSTAE
         NNE(I)=0
         IF(ICS.EQ.1) THEN
 
-C         jgf47.12 From cf, additions for netcdf.
-C    START ADDITION BY CF FOR NETCDF OPTION
-
+C     jgf47.12 From cf, additions for netcdf.
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION
+C
              IF(NOUTE.NE.3)THEN
                 READ(15,*) XEL(I),YEL(I)
               ELSE
@@ -3687,8 +3705,9 @@ C    START ADDITION BY CF FOR NETCDF OPTION
                  SFEL(I)=a2f(LVAR(2))
                  STATNAME(I,SNAMLEN)=LVAR(3)
              ENDIF
-
-C         END OF ADDITION BY CF FOR NETCDF OPTION
+C              
+C     END OF ADDITION BY MCF FOR NETCDF OPTION
+C     ==================================================================
 
           SLEL(I)=SLEL(I)*DEG2RAD
           SFEL(I)=SFEL(I)*DEG2RAD
@@ -3817,16 +3836,22 @@ C....INPUT COORDINATES OF VELOCITY RECORDING STATIONS
 C....THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
 
 C     jgf47.12 From cf, memory allocation for netcdf.
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION
+C
       IF(.NOT. ALLOCATED(STATNAMEV))ALLOCATE(STATNAMEV(NSTAV,SNAMLEN))
-!      WRITE(6,*)"DO LOOP - BEFORE ************"
+C
+C     END ADDITION BY MCF FOR NETCDF OPTION
+C     ==================================================================
 
       DO I=1,NSTAV
         NNV(I)=0
         IF(ICS.EQ.1) THEN
 
-C       jgf47.12 From cf,
-CC     START ADDITION BY CF FOR NETCDF OPTION
-
+C     jgf47.12 From cf,
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION
+C
            IF(NOUTV.NE.3) THEN
               READ(15,*) XEV(I),YEV(I)
            ELSE
@@ -3847,9 +3872,10 @@ CC     START ADDITION BY CF FOR NETCDF OPTION
               SFEV(I)=a2f(LVAR(2))
               STATNAMEV(I,SNAMLEN)=LVAR(3)
          ENDIF
-
-CC    END OF ADDITION BY CF FOR NETCDF OPTION
-
+C
+C     END ADDITION BY MCF FOR NETCDF OPTION
+C     ==================================================================
+C
           SLEV(I)=SLEV(I)*DEG2RAD
           SFEV(I)=SFEV(I)*DEG2RAD
           CALL CPP(XEV(I),YEV(I),SLEV(I),SFEV(I),SLAM0,SFEA0)
@@ -4115,17 +4141,23 @@ C  Allocate arrays dimensioned by MNSTAM
 C...  INPUT COORDINATES OF METEOROLOGICAL RECORDING STATIONS
 C...  THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
          
-C        jgf47.12 from cf, memory allocation for netcdf.         
+C        jgf47.12 from cf, memory allocation for netcdf.       
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION
+C
          IF(.NOT.ALLOCATED(STATNAMEM))ALLOCATE(STATNAMEM(NSTAM,SNAMLEN))
-
-
+C
+C     END ADDITION BY MCF FOR NETCDF OPTION
+C     ==================================================================
+C
          DO I=1,NSTAM
             NNM(I)=0
             IF(ICS.EQ.1) THEN
 
 C           jgf47.12 from cf,
-C    START ADDITION BY CF FOR NETCDF OPTION
-
+C     ==================================================================
+C     START ADDITION BY MCF FOR NETCDF OPTION
+C
              IF(NOUTM.NE.3)THEN
                 READ(15,*) XEM(I),YEM(I)
              ELSE
@@ -4134,7 +4166,7 @@ C    START ADDITION BY CF FOR NETCDF OPTION
                 XEM(I)=a2f(LVAR(1))
                 YEM(I)=a2f(LVAR(2))
                 STATNAMEM(I,SNAMLEN)=LVAR(3)
-                WRITE(6,9111) XEM(I), YEM(I), STATNAMEM(I,SNAMLEN)
+!               WRITE(6,9911) XEM(I), YEM(I), STATNAMEM(I,SNAMLEN)
              ENDIF
           ELSE
              IF(NOUTM.NE.3)THEN
@@ -4146,8 +4178,10 @@ C    START ADDITION BY CF FOR NETCDF OPTION
                SFEM(I)=a2f(LVAR(2))
                STATNAMEM(I,SNAMLEN)=LVAR(3)
              ENDIF
-
-CC    END OF ADDITION BY CF FOR NETCDF OPTION
+C
+C     END ADDITION BY MCF FOR NETCDF OPTION
+C     ==================================================================
+C
                SLEM(I)=SLEM(I)*DEG2RAD
                SFEM(I)=SFEM(I)*DEG2RAD
                CALL CPP(XEM(I),YEM(I),SLEM(I),SFEM(I),SLAM0,SFEA0)
@@ -4726,7 +4760,7 @@ C     This option will be used in testing ADCIRC's hot start capabilities.
       READ(15,*) NHSTAR,NHSINC
       WRITE(16,99655)
 99655 FORMAT(////,1X,'HOT START OUTPUT INFORMATION OUTPUT : ')
-      IF((NHSTAR.NE.0).AND.(NHSTAR.NE.1).AND.
+      IF((NHSTAR.NE.0).AND.(NHSTAR.NE.1).AND.(NHSTAR.NE.3).AND.
      &     (NHSTAR.NE.67).AND.(NHSTAR.NE.68) ) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99665)
          WRITE(16,99665)
@@ -4779,7 +4813,17 @@ C     This option will be used in testing ADCIRC's hot start capabilities.
          WRITE(16,34626) NHSTAR
 34626    FORMAT(/,5X,'ADCIRC will stop after writing to unit ',I2)
       ENDIF
-      if (IHOT   <  0) NHSTAR = 0
+!
+!      COMMENTED THIS OUT AND ADDED OPTION FOR NETCDF HOTSTART FILES BELOW - MCF 6/11/08 
+!      if (IHOT   <  0) NHSTAR = 0
+
+!      PRINT *,"read_input.F: ---------- NHSTAR,NHSINC ", NHSTAR,NHSINC
+
+       if (IHOT. LT.0.AND.(IHOT.NE.-67.AND.IHOT.NE.-68)) NHSTAR = 0
+       
+!      PRINT *,"read_input.F: ---------- NHSTAR,NHSINC ", NHSTAR,NHSINC
+!
+!
       if (NHSINC <= 0) NHSINC = 1  ! rtm 46.xx NHSINC must have a
                                    ! reasonable value even when not
                                    ! generating hot start files.
@@ -4943,7 +4987,7 @@ C
 !     --------------------------------------------------------------------
 
       IF( (noutge.EQ.3) .OR. (noutgv.EQ.3) .OR. (noutv.EQ.3)
-     &       .or. (noute.EQ.3) .or. (noutm.eq.3) )THEN
+     &       .or. (noute.EQ.3) .or. (noutm.eq.3) .or. NHSTAR.eq.3 )THEN
 
 #ifndef NETCDF
          print *, "NetCDF was selected but is not supported by the
@@ -6571,8 +6615,6 @@ C-----------------------------------------------------------------------
         END IF
         END FUNCTION a2d
 
-
-
         SUBROUTINE i2a(int, res)
 
         IMPLICIT NONE
@@ -6608,6 +6650,4 @@ C-----------------------------------------------------------------------
         END IF
 
         END SUBROUTINE i2a
-
-
 

@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.18     - 07/09/08 - mcf - Added code to adcprep and adcirc to 
+C               initialize and write netCDF hotstart files.
 C  v48.17     - 06/09/08 - jgf - Added code to adcprep to decompose UnSWAN
 C               boundaries and distribute the UnSWAN input file to each of the
 C               subdomain directories.

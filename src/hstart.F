@@ -52,7 +52,6 @@ C   Start Addition for netCDF by MCF 5/18/08
      &     writenc71, writenc72, writenc73, writenc74, readnc67
 #endif
 C   End Addition for netCDF by MCF 5/18/08
-
       USE NodalAttributes, ONLY : 
      &     nolibf, nwp, tau0, cf, eslm,                       ! for netcdf
      &     LoadDirEffRLen,
@@ -105,6 +104,16 @@ C     Determine if the hot start file exists.
       IF (IHOT.eq.68) THEN
          INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.68',EXIST=FileFound)
       ENDIF
+
+      IF(IHOT.EQ.-67)THEN 
+        PRINT *, "OPEN NETCDF HOTSTART FILE: fort.67.nc"
+        INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.67.nc',EXIST=FileFound)
+      ELSEIF(IHOT.EQ.-68) THEN
+        PRINT *, "OPEN NETCDF HOTSTART FILE: fort.68.nc"
+        INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.68.nc',EXIST=FileFound)
+      ENDIF
+
+
       IF (.not.FileFound) THEN
          WRITE(16,1001)         ! hot start file  
          WRITE(16,1011)         ! was not found.
@@ -148,34 +157,36 @@ C
 C   READ NETCDF HOTSTART FILE
 #ifdef NETCDF
       PRINT *, "hstart: IHOT",IHOT
+      IF (IHOT.EQ.-67.OR.IHOT.EQ.-68)THEN
          timenc_len=1
          IF(.NOT. ALLOCATED(timenc))  ALLOCATE(timenc(timenc_len))
 !         timenc(timenc_len)=time
          ncmode=1                                                       !serial version
-         call readnc67 (nhsinc,IHOT,timenc_len,np,timenc,
-     &                      nt, nhsinc, uu2,vv2,
-     &                      eta1, eta2, EtaDisc, nnodecode,noff,
-     &                      imhs, iths,iestp,nscoue,ivstp,nscouv, icstp, 
-     &                      nscouc, ipstp, iwstp, nscoum, igep, nscouge,
-     &                      igvp, nscougv, igcp, nscougc, igpp, igwp,
-     &                      nscougw,
-     &                      rundes, runid, agrid, irtype,
-     &                      dtdp, ihot, ics, nolibf, nolifa,
-     &                      nolica, nolicat, nwp,
-     &                      ncor, ntip, nws, nramp, tau0,
-     &                      statim, reftim, rnday, dramp,
-     &                      a00, b00, c00, h0,
-     &                      slam0, sfea0, cf ,eslm, cori,
-     &             ntif, nbfr, ne, nhy, nm,
-     &             xnc, ync, dp,
-     &             nope, neta, nbdv,nopenc,netanc,
-     &             nvdllnc,
-     &             nbou, nvel, nbvvnc,nbounc,nvelnc,
-     &             nvellnc,ibtypenc,
-     &             ncmode,
-     &             title, institution, source, history,
-     &             references, comments, host, convention, contact,
-     &             base_date)
+
+         call readnc67 (nhsinc,ABS(IHOT),timenc_len,np,timenc,
+     &                  nt, nhsinc, uu2,vv2,
+     &                  eta1, eta2, EtaDisc, nnodecode,noff,
+     &                  imhs, iths,iestp,nscoue,ivstp,nscouv, icstp, 
+     &                  nscouc, ipstp, iwstp, nscoum, igep, nscouge,
+     &                  igvp, nscougv, igcp, nscougc, igpp, igwp,
+     &                  nscougw,
+     &                  rundes, runid, agrid, irtype,
+     &                  dtdp, ihot, ics, nolibf, nolifa,
+     &                  nolica, nolicat, nwp, 
+     &                  ncor, ntip, nws, nramp, tau0,
+     &                  statim, reftim, rnday, dramp,
+     &                  a00, b00, c00, h0,
+     &                  slam0, sfea0, cf ,eslm, cori,
+     &                  ntif, nbfr, ne, nhy, nm,
+     &                  xnc, ync, dp,
+     &                  nope, neta, nbdv,nopenc,netanc,
+     &                  nvdllnc,
+     &                  nbou, nvel, nbvvnc,nbounc,nvelnc,
+     &                  nvellnc,ibtypenc,
+     &                  ncmode,
+     &                  title, institution, source, history,
+     &                  references, comments, host, convention, contact,
+     &                  base_date)
        time= timenc(timenc_len)
                    PRINT *,"  ----------START--NETCDF--------------------"
                    PRINT *,"  IMHS = ", IMHS
@@ -207,12 +218,16 @@ C   READ NETCDF HOTSTART FILE
                    PRINT *,"  IGWP = ",IGWP
                    PRINT *,"  NSCOUGW = ",NSCOUGW
                    PRINT *,"  ---------END-------NETCDF--------------------"
+      ENDIF     
+
 C   End Addition for netCDF by MCF 5/8/08
 #endif
 
 
 C
 C     Now read the hot start file.
+
+      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
       IHOTSTP=1
       READ(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
 
@@ -270,6 +285,8 @@ C     jgf46.34 Added support for IBTYPE=52.
          READ(IHOT,REC=IHOTSTP+1) NOFF(I)    
          IHOTSTP=IHOTSTP+1    
       END DO
+
+      ENDIF
 
       DO I=1, NP
          ETAS(I)=ETA2(I)-ETA1(I)
@@ -1326,6 +1343,12 @@ C...
 C....IF RESTARTING THE ELEVATION STATION OUTPUT FILE, GO TO THE PROPER PLACE
 C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
+
+      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
+
+!       PRINT *, "START READING HOT START FILE - BINARY IESTP,NSCOUE "
+
+
       READ(IHOT,REC=IHOTSTP+1) IESTP
       READ(IHOT,REC=IHOTSTP+2) NSCOUE
       IHOTSTP=IHOTSTP+2
@@ -1333,6 +1356,10 @@ C...
  1040 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN ELEVATION ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER = ',I6)
+     
+      ENDIF 
+     
+    
       IF(NOUTE.LT.0) THEN
         IESTP=0
         NSCOUE=0
@@ -1399,6 +1426,12 @@ c       WRITE(61,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE W
 C...
 C....GO TO THE PROPER PLACE IN THE VELOCITY STATION OUTPUT FILE
 C...
+
+      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
+
+!       PRINT *, "START READING HOT START FILE - BINARY IVSTP,NSCOUV "
+
+
       READ(IHOT,REC=IHOTSTP+1) IVSTP
       READ(IHOT,REC=IHOTSTP+2) NSCOUV
       IHOTSTP=IHOTSTP+2
@@ -1406,6 +1439,10 @@ C...
  1042 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN VELOCITY ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER =',I6)
+     
+     
+      ENDIF
+     
       IF(NOUTV.LT.0) THEN
         IVSTP=0
         NSCOUV=0
@@ -1472,6 +1509,12 @@ c       WRITE(62,REC=ITEMPSTP+1) NTRSPV   ! ALLOW ADDITIONAL OUTPUT DATA TO BE W
 C...
 C....GO TO THE PROPER PLACE IN THE CONCENTRATION STATION OUTPUT FILE
 C...
+
+      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
+
+!       PRINT *, "START READING HOT START FILE - BINARY ICSTP,NSCOUC "
+
+
       READ(IHOT,REC=IHOTSTP+1) ICSTP
       READ(IHOT,REC=IHOTSTP+2) NSCOUC
       IHOTSTP=IHOTSTP+2
@@ -1479,6 +1522,10 @@ C...
  1044 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN CONCENTRATION ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER = ',I6)
+     
+     
+      ENDIF
+      
       IF(NOUTC.LT.0) THEN
         ICSTP=0
         NSCOUC=0
@@ -1546,6 +1593,11 @@ c       WRITE(81,REC=ITEMPSTP+1) NTRSPC   ! ALLOW ADDITIONAL OUTPUT DATA TO BE W
 C...
 C....GO TO THE PROPER PLACE IN THE METEOROLOGICAL STATION OUTPUT FILE
 C...
+
+      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
+
+!      PRINT *,"START READING HOT START FILE - BINARY IWSTP,IPSTP,NSCOUM"
+
       READ(IHOT,REC=IHOTSTP+1) IPSTP
       READ(IHOT,REC=IHOTSTP+2) IWSTP
       READ(IHOT,REC=IHOTSTP+3) NSCOUM
@@ -1556,6 +1608,9 @@ C...
      &        /,1X,I6,' LINES OR RECORDS WRITTIN IN THE PRES STATION',
      &                ' FILE BY THE TMIE OF THE HOT START',
      &           /,8X,'SPOOL COUNTER = ',I6)
+     
+      ENDIF
+     
       IF(NOUTM.LT.0) THEN
         IPSTP=0
         IWSTP=0
@@ -1651,6 +1706,12 @@ c         WRITE(72,REC=ITMEPSTP+1) NTRSPM
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL ELEVATION OUTPUT FILE
 C...
+
+      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
+
+!      PRINT *,"START READING HOT START FILE - BINARY IGEP,NSCOUGE"
+
+
         READ(IHOT,REC=IHOTSTP+1) IGEP
         READ(IHOT,REC=IHOTSTP+2) NSCOUGE
         IHOTSTP=IHOTSTP+2
@@ -1658,6 +1719,9 @@ C...
  1046   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'ELEVATION FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I6)
+     
+        ENDIF
+     
         IF(NOUTGE.LT.0) THEN
           IGEP=0
           NSCOUGE=0
@@ -1732,6 +1796,13 @@ c         WRITE(63,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL VELOCITY OUTPUT FILE
 C...
+
+        IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
+
+!        PRINT *,"START READING HOT START FILE - BINARY IGVP,NSCOUGV"
+
+
+
         READ(IHOT,REC=IHOTSTP+1) IGVP
         READ(IHOT,REC=IHOTSTP+2) NSCOUGV
         IHOTSTP=IHOTSTP+2
@@ -1739,6 +1810,10 @@ C...
  1048   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'VELOCITY FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I6)
+     
+     
+        ENDIF
+     
         IF(NOUTGV.LT.0) THEN
           IGVP=0
           NSCOUGV=0
@@ -1805,6 +1880,11 @@ c         WRITE(64,REC=ITEMPSTP+1) NDSETSV  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL CONCENTRATION OUTPUT FILE
 C...
+
+        IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
+
+!        PRINT *,"START READING HOT START FILE - BINARY IGCP,NSCOUGC"
+
         READ(IHOT,REC=IHOTSTP+1) IGCP
         READ(IHOT,REC=IHOTSTP+2) NSCOUGC
         IHOTSTP=IHOTSTP+2
@@ -1812,6 +1892,9 @@ C...
  1053   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                'CONCENTRATION FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I6)
+     
+        ENDIF
+     
         IF(NOUTGC.LT.0) THEN
           IGCP=0
           NSCOUGC=0
@@ -1889,6 +1972,9 @@ c         WRITE(83,REC=ITEMPSTP+1) NDSETSC  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL METEOROLOGICAL OUTPUT FILES
 C...
+      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
+!        PRINT *,"START READING HOT START FILE- BINARY IGWP,IGPP,NSCOUGW"
+
         READ(IHOT,REC=IHOTSTP+1) IGPP
         READ(IHOT,REC=IHOTSTP+2) IGWP
         READ(IHOT,REC=IHOTSTP+3) NSCOUGW
@@ -1899,6 +1985,9 @@ C...
      &          /,1X,I6,'LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'PRESSURE FILE BY THE TIME OF THE HOT START',   
      &          /,8X,'SPOOL COUNTER =',I6)
+     
+      ENDIF
+     
         IF(NOUTGW.LT.0) THEN
           IGPP=0
           IGWP=0
@@ -1991,7 +2080,7 @@ c         WRITE(74,REC=ITEMPSTP+1) NDSETSW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
           CLOSE(74)                         ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
-                 PRINT *,"  ----------START--BIN--------------------"
+                 PRINT *,"  ----------START--PARAMETERS---------------"
                    PRINT *,"  IMHS = ", IMHS
                    PRINT *,"  TIME = ", TIME
                    PRINT *,"  ITHS = ", ITHS
@@ -2021,7 +2110,7 @@ c         WRITE(74,REC=ITEMPSTP+1) NDSETSW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
                    PRINT *,"  IGWP = ",IGWP
                    PRINT *,"  NSCOUGW = ",NSCOUGW
                    PRINT *,
-     &             "  ---------END-------BIN--------------------"
+     &             "  ---------END-------PARAMETERS--------------------"
 C...
 C...  HOT START INFORMATION FOR A 3D RUN
 C...
@@ -2063,6 +2152,11 @@ C...
 C........IF HARMONIC ANALYSIS HAS ALREADY BEGUN, READ IN HOT START
 C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
 C...
+!        PRINT *,"START READING HOT START FILE- HARMONIC"
+
+      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
+!        PRINT *,"START READING HOT START FILE- BINARY ICHA"
+
         IF(ITHS.GT.ITHAS) THEN
           IHOTSTP=IHOTSTP+1
           READ(IHOT,REC=IHOTSTP) ICHA
@@ -2076,7 +2170,13 @@ C...
           IF(NHAGV.EQ.1) CALL HAHOTSVG(NP,IHOTSTP,IHOT)
         ENDIF
 
+      ENDIF  
+
 C..Read in Means and Squares
+!        PRINT *,"START READING HOT START FILE - MEANS"
+
+      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
+!        PRINT *,"START READING HOT START FILE- BINARY ELAV"
 
         IF(CHARMV) THEN
           IF((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN
@@ -2102,6 +2202,8 @@ C..Read in Means and Squares
         ENDIF   !  charmv
       ENDIF    !HARIND
 
+      ENDIF
+
 C     jgf46.02 Added the following block of code from ral for Katrina.
 CRAL_add_42.06g           read RBC information in HS file
 C        DO I=1,NVEL
@@ -2110,8 +2212,9 @@ C          READ(IHOT,REC=IHOTSTP) Elev_Disc(I)
 C          END DO
 CRAL_add_42.06g
 
-
-      CLOSE(IHOT)
+      IF(IHOT.EQ.67.OR.IHOT.EQ.68)THEN
+         CLOSE(IHOT)
+      ENDIF
 C
  1112 FORMAT(/,1X,79('_'))
  1197 FORMAT(/,1X,'THE E29 MET GRID INTERPOLATING FACTORS ARE ',

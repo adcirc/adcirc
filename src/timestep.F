@@ -1954,7 +1954,11 @@ C.... WORKSTATIONS AND THE 64 BIT CRAY.  THIS IS BECAUSE THE HARMONIC
 C.... ANALYSIS IS DONE IN DOUBLE PRECISION (64 BITS) ON WORKSTATIONS.
 C...
       ITEST=(IT/NHSINC)*NHSINC  
+      
+      PRINT *, " ITEST **********", ITEST
+      
       if ((NHSTAR > 0 .and. ITEST == IT) .or. (-IHOT == IT)) then
+          PRINT *, " writeHotstart **********"
          CALL writeHotstart(Time, IT)
       ENDIF
 

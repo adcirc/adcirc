@@ -2198,21 +2198,6 @@ C
       type(OutputDataDescript_t) :: descript 
       LOGICAL TEST_HOTSTART     !jgf45.07 used for testing hot start capability
       INTEGER npx, nex
-#ifdef NETCDF
-C
-C     START ADDITIONS FOR NETCDF by MCF
-C
-      IF (MNPROC.gt.1) ncmode=2
-      IF (MNPROC.eq.1) ncmode=1
-
-         timenc_len=1
-         IF(.NOT. ALLOCATED(timenc))
-     &        ALLOCATE(timenc(timenc_len))
-         timenc(timenc_len)=time
-C
-C     FINISH ADDITIONS FOR NETCDF by MCF
-C
-#endif
 
       type(OutputDataDescript_t), SAVE :: Elev1Descript
       type(OutputDataDescript_t), SAVE :: Elev2Descript 
@@ -2231,7 +2216,15 @@ C
       INTEGER, SAVE, ALLOCATABLE, TARGET :: NOFF_g(:)
       LOGICAL, SAVE :: FirstCall = .true.
       
-      IF (FirstCall) THEN
+      PRINT *, "**************WRITE HOTSTART ************************"
+      PRINT *, "NHSTAR = ", NHSTAR
+      PRINT *, "FirstCall = ", FirstCall
+       PRINT *, "NP_G = ", NP_G
+      PRINT *, "NP_G = ", NP_G
+     PRINT *, "NP_G = ", NP_G
+      PRINT *, "NE_G = ", NE_G
+    IF (FirstCall) THEN
+      PRINT *, "FirstCall = ", FirstCall
 
          write(16,*) 'Allocating Elev1Descript' 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
@@ -2327,8 +2320,8 @@ C
          NOFFDescript % specifier            = NHSTAR
          NOFFDescript % initial_value        = 0
          NOFFDescript % num_items_per_record = 1
-         NOFFDescript % num_fd_records       = NE
-         NOFFDescript % num_records_this     = NE_G
+         NOFFDescript % num_fd_records       = NE_G
+         NOFFDescript % num_records_this     = NE
          NOFFDescript % imap                 => IMAP_EL_LG
          NOFFDescript % iarray               => NOFF
          NOFFDescript % iarray_g             => NOFF_g
@@ -2338,20 +2331,28 @@ C
 
 C     collect up the data from subdomains if running in parallel
 #ifdef CMPI
+         PRINT *,"START collectFullDomainArray"
          write(16,*) 
      &    'About to collectFullDomainArrays for hotstart file.'
+         PRINT *,"collectFullDomainArray Elev1Descript"
          CALL collectFullDomainArray(Elev1Descript, packOne, unpackOne)
+         PRINT *,"collectFullDomainArray Elev2Descript"
          CALL collectFullDomainArray(Elev2Descript, packOne, unpackOne)
+         PRINT *,"collectFullDomainArray VelDescript"
          CALL collectFullDomainArray(VelDescript, packTwo, unpackTwo)
          IF (IM.eq.10) THEN
             CALL collectFullDomainArray(CH1Descript, packOne, unpackOne)
          ENDIF
+         PRINT *,"collectFullDomainArray EtaDiscDescript"
          CALL collectFullDomainArray(EtaDiscDescript, 
      &             packOne, unpackOne)
+         PRINT *,"collectFullDomainArray NodeCodeDescript"
          CALL collectFullDomainIntArray(NodeCodeDescript, 
      &             packOneInt, unpackOneInt)
+         PRINT *,"collectFullDomainArray NOFFDescript"
          CALL collectFullDomainIntArray(NOFFDescript, 
      &             packOneInt, unpackOneInt)
+         PRINT *,"FINISH collectFullDomainArray"
 #endif
       SELECT CASE (NHSTAR)
 
@@ -2539,13 +2540,47 @@ C
 
 #ifdef NETCDF
 C   Start Addition for netCDF by MCF 4/8/08
-      num_records=npx
+!      num_records=npx
+
+!#ifdef NETCDF
+C
+C     START ADDITIONS FOR NETCDF by MCF
+C
+      IF (MNPROC.gt.1) ncmode=2
+      IF (MNPROC.eq.1) ncmode=1
+         NPX = NP_G
+         NEX = NE_G
+
+      PRINT *, "ncmode = ", ncmode
+      
+         timenc_len=1
+         IF(.NOT. ALLOCATED(timenc)) ALLOCATE(timenc(timenc_len))
+         timenc(timenc_len)=time
+      PRINT *, "time = ", time
+C
+C     FINISH ADDITIONS FOR NETCDF by MCF
+C
+!#endif
+!      IF (MNPROC.gt.1) num_records = descript % num_fd_records   ! parallel
+!      IF (MNPROC.eq.1) num_records = descript % num_records_this ! serial
+       IF (MNPROC.gt.1) num_records = NP_G   ! parallel
+       IF (MNPROC.eq.1) num_records = NP ! serial
+
+      PRINT *, "num_records = ", num_records
 
       IF(.NOT.ALLOCATED(eta11))ALLOCATE (eta11(num_records,timenc_len))
 
+!      PRINT *, " Start Do Loop "
             DO I=1, num_records
-                   eta11(i,timenc_len) = descript % array(i)
-!                  PRINT *,i,"  ETA11 = ", ETA11(i, timenc_len)
+             IF (MNPROC.gt.1) THEN                                     ! parallel
+!                   eta11(i,timenc_len) = descript % array_g(i)
+                   eta11(i,timenc_len) = Elev1Descript % array_g(i)
+!                   PRINT *,i,"  Parallel ETA11 = ", ETA11(i, timenc_len)
+               ELSE IF (MNPROC.eq.1) THEN                               ! serial
+                   eta11(i,timenc_len) = Elev1Descript % array(i)
+!                   eta11(i,timenc_len) = descript % array(i)
+!                   PRINT *,i,"  Serial ETA11 = ", ETA11(i, timenc_len)
+               ENDIF
             END DO
                    PRINT *,"  ETA11 = ", ETA11(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
@@ -2556,8 +2591,12 @@ C   Start Addition for netCDF by MCF 4/8/08
       IF(.NOT.ALLOCATED(eta22))ALLOCATE (eta22(num_records,timenc_len))
 
             DO I=1, num_records
-                   eta22(i,timenc_len) = descript % array(i)
+              IF (MNPROC.gt.1) THEN                                     ! parallel
+                   eta22(i,timenc_len) = Elev2Descript % array_g(i)
+              ELSE IF (MNPROC.eq.1) THEN                                ! serial
+                   eta22(i,timenc_len) = Elev2Descript % array(i)
 !                   PRINT *,i,"  ETA22 = ", ETA22(i, timenc_len)
+              ENDIF
             END DO
                    PRINT *,"  ETA22 = ", ETA22(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
@@ -2568,8 +2607,12 @@ C   Start Addition for netCDF by MCF 4/8/08
       IF(.NOT.ALLOCATED(etadd))ALLOCATE (etadd(num_records,timenc_len))
 
             DO I=1, num_records
-                   etadd(i,timenc_len) = descript % array(i)
+              IF (MNPROC.gt.1) THEN                                     ! parallel
+                   etadd(i,timenc_len) = EtaDiscDescript % array_g(i)
+              ELSE IF (MNPROC.eq.1) THEN                                ! serial
+                   etadd(i,timenc_len) = EtaDiscDescript % array(i)
 !                   PRINT *,i,"  ETADD = ", ETADD(i, timenc_len)
+              ENDIF
             END DO
                    PRINT *,"  ETADD = ", ETADD(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
@@ -2580,8 +2623,12 @@ C   Start Addition for netCDF by MCF 4/8/08
       IF(.NOT.ALLOCATED(uu22))ALLOCATE (uu22(num_records,timenc_len))
 
             DO I=1, num_records
-                   uu22(i,timenc_len) = descript % array(i)
+              IF (MNPROC.gt.1) THEN                                     ! parallel
+                   uu22(i,timenc_len) = VelDescript % array_g(i)
+              ELSE IF (MNPROC.eq.1) THEN                                ! serial
+                   uu22(i,timenc_len) = VelDescript % array(i)
 !                   PRINT *,i,"  uu22 = ", uu22(i, timenc_len)
+              ENDIF
             END DO
                    PRINT *,"  uu22 = ", uu22(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
@@ -2591,8 +2638,12 @@ C   Start Addition for netCDF by MCF 4/8/08
       IF(.NOT.ALLOCATED(vv22))ALLOCATE (vv22(num_records,timenc_len))
 
             DO I=1, num_records
-                   vv22(i,timenc_len) = descript % array(i)
+               IF (MNPROC.gt.1) THEN                                     ! parallel
+                  vv22(i,timenc_len) = VelDescript % array2_g(i)
+              ELSE IF (MNPROC.eq.1) THEN                                ! serial
+                  vv22(i,timenc_len) = VelDescript % array2(i)
 !                   PRINT *,i,"  vv22 = ", vv22(i, timenc_len)
+              ENDIF
             END DO
                    PRINT *,"  vv22 = ", vv22(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
@@ -2603,8 +2654,12 @@ C   Start Addition for netCDF by MCF 4/8/08
       IF(.NOT.ALLOCATED(nodecodenc))ALLOCATE (nodecodenc(num_records))
 
             DO I=1, num_records
-                   nodecodenc(i) = descript % iarray(i)
+               IF (MNPROC.gt.1) THEN                                     ! parallel
+                   nodecodenc(i) = NodeCodeDescript % iarray_g(i)
+              ELSE IF (MNPROC.eq.1) THEN                                ! serial
+                   nodecodenc(i) = NodeCodeDescript % iarray(i)
 !                   PRINT *,i,"  nodecodenc = ", nodecodenc(i)
+              ENDIF
             END DO
                    PRINT *,"  nodecodenc = ", nodecodenc(11)
 C   End Addition for netCDF by MCF 4/8/08
@@ -2612,12 +2667,21 @@ C   End Addition for netCDF by MCF 4/8/08
         
 #ifdef NETCDF
 C   Start Addition for netCDF by MCF 4/8/08
-      num_recordse=ne_g
+!      num_recordse=ne_g
+!      IF(.NOT.ALLOCATED(noffnc))ALLOCATE (noffnc(num_recordse))
+
+       IF (MNPROC.gt.1) num_recordse = NE_G   ! parallel
+       IF (MNPROC.eq.1) num_recordse = NE ! serial
+
       IF(.NOT.ALLOCATED(noffnc))ALLOCATE (noffnc(num_recordse))
 
             DO I=1, num_recordse
-                   noffnc(i) = descript % iarray(i)
+              IF (MNPROC.gt.1) THEN                                     ! parallel
+                    noffnc(i) = NOFFDescript % iarray_g(i)
+              ELSE IF (MNPROC.eq.1) THEN                                ! serial
+                    noffnc(i) = NOFFDescript % iarray(i)
 !                   PRINT *,i,"  noffnc = ", noffnc(i)
+              ENDIF
             END DO
                    PRINT *,"  noffnc = ", noffnc(11)
 C   End Addition for netCDF by MCF 4/8/08
@@ -2693,7 +2757,7 @@ C
           PRINT *, "==== write_output: IM = ", IT, IHOTSTP
           PRINT *, "==== write_output: NPX = ", NPX, IHOTSTP
           PRINT *, "==== write_output: NEX = ", NEX, IHOTSTP
-          call writenc67 (nhsinc,hss % lun,timenc_len,npx,timenc,
+          call writenc67 (nhsinc,abs(hss % lun),timenc_len,npx,timenc,
      &                      nt, nhsinc, uu2,vv2,
      &                      eta11, eta22, etadd, nodecodenc,noffnc,
      &                      imhs, it,iestp,nscoue,ivstp,nscouv, icstp,
