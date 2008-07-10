@@ -2219,11 +2219,11 @@ C
       PRINT *, "**************WRITE HOTSTART ************************"
       PRINT *, "NHSTAR = ", NHSTAR
       PRINT *, "FirstCall = ", FirstCall
-       PRINT *, "NP_G = ", NP_G
       PRINT *, "NP_G = ", NP_G
-     PRINT *, "NP_G = ", NP_G
+      PRINT *, "NP_G = ", NP_G
+      PRINT *, "NP_G = ", NP_G
       PRINT *, "NE_G = ", NE_G
-    IF (FirstCall) THEN
+      IF (FirstCall) THEN
       PRINT *, "FirstCall = ", FirstCall
 
          write(16,*) 'Allocating Elev1Descript' 
