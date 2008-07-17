@@ -76,13 +76,13 @@ C     on each iteration of the while loop below
          tag     = tagbase + mod(ibucket, 8)
 
 C        now pack the buffer 
-         write(16,*) 'About to pack globalio buffer.' !jgfdebug48.03
+         !write(16,*) 'About to pack globalio buffer.' !jgfdebug48.03
          call pack_cmd(descript, istart, iend)
 C        now send data to processor 0
-         write(16,*) 'About to mpi_reduce globalio buffer.' !jgfdebug48.03
+         !write(16,*) 'About to mpi_reduce globalio buffer.' !jgfdebug48.03
          call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
      &                   0, COMM, ierr)
-         write(16,*) 'About to unpack globalio buffer.' !jgfdebug48.03
+         !write(16,*) 'About to unpack globalio buffer.' !jgfdebug48.03
 
          if (myproc == 0) then
             call unpack_cmd(descript, istart, iend)
@@ -144,7 +144,7 @@ C     on each iteration of the while loop below
       num     = bufsize / descript % num_items_per_record
       iend    = num
       istart  = 1
-
+      WRITE(16,*) 'istart is ',istart,' iend is ',iend !jgfdebug 48.18
       if (tagbase == 5000) then
          tagbase = 6000
       else
@@ -157,20 +157,20 @@ C     on each iteration of the while loop below
          !------------------------------------------------------------
          ! Initialize
          !------------------------------------------------------------
-         buf(:)  = descript % initial_value
+         integerBuffer(:)  = descript % int_initial_value
          ibucket = ibucket + 1
          tag     = tagbase + mod(ibucket, 8)
 
 C        now pack the buffer 
-         write(16,*) 'About to pack globalio buffer.' !jgfdebug48.03
+         write(16,*) 'About to pack globalioint buffer.' !jgfdebug48.03
          call pack_cmd(descript, istart, iend)
 C        now send data to processor 0
-         write(16,*) 'About to mpi_reduce globalio buffer.' !jgfdebug48.03
-         call mpi_reduce(buf, resultBuf, bufsize, MPI_INTEGER, MPI_SUM,
-     &                   0, COMM, ierr)
-         write(16,*) 'About to unpack globalio buffer.' !jgfdebug48.03
+         write(16,*) 'About to mpi_reduce globalioint buffer.' !jgfdebug48.03
+         call mpi_reduce(integerBuffer, integerResultBuffer, bufsize, 
+     &                 MPI_INTEGER, MPI_SUM, 0, COMM, ierr)
 
          if (myproc == 0) then
+            write(16,*) 'About to unpack globalioint buffer.' !jgfdebug48.03
             call unpack_cmd(descript, istart, iend)
          end if
 C        set new starting position to just after the
@@ -236,7 +236,7 @@ C        or to the end of the full domain array, whichever is less
       do i = 1, descript % num_records_this
         iglobal = descript % imap(i)
         if (istart <= iglobal .and. iglobal <= iend) then
-          buf(iglobal-ioffset) = descript % iarray(i)
+          integerBuffer(iglobal-ioffset) = descript % iarray(i)
         end if
       end do
 #endif
@@ -349,10 +349,11 @@ C        or to the end of the full domain array, whichever is less
       integer :: i, j, istart, iend, iglobal
       integer :: ioffset
 
+       WRITE(16,*) "Unpacking int array." !jgfdebug48.18
        j = 1
        do i = istart, iend
-          write(16,*) i, j !jgfdebug48.03
-          descript % iarray_g(i) = resultBuf(j)
+          write(16,*) i, j, integerResultBuffer(j) !jgfdebug48.18
+          descript % iarray_g(i) = integerResultBuffer(j)
           j = j + 1
       end do
       return

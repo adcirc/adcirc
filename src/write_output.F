@@ -2305,7 +2305,7 @@ C
             ALLOCATE(NodeCode_g(NP_G))
          ENDIF
          NodeCodeDescript % specifier            = NHSTAR
-         NodeCodeDescript % initial_value        = 0
+         NodeCodeDescript % int_initial_value        = 0
          NodeCodeDescript % num_items_per_record = 1
          NodeCodeDescript % num_fd_records       = NP_G
          NodeCodeDescript % num_records_this     = NP
@@ -2318,7 +2318,7 @@ C
             ALLOCATE(NOFF_g(NP_G))
          ENDIF
          NOFFDescript % specifier            = NHSTAR
-         NOFFDescript % initial_value        = 0
+         NOFFDescript % int_initial_value        = 0
          NOFFDescript % num_items_per_record = 1
          NOFFDescript % num_fd_records       = NE_G
          NOFFDescript % num_records_this     = NE
@@ -2331,28 +2331,28 @@ C
 
 C     collect up the data from subdomains if running in parallel
 #ifdef CMPI
-         PRINT *,"START collectFullDomainArray"
-         write(16,*) 
+         WRITE(16,*) "START collectFullDomainArray"
+         WRITE(16,*) 
      &    'About to collectFullDomainArrays for hotstart file.'
-         PRINT *,"collectFullDomainArray Elev1Descript"
+         WRITE(16,*) "collectFullDomainArray Elev1Descript"
          CALL collectFullDomainArray(Elev1Descript, packOne, unpackOne)
-         PRINT *,"collectFullDomainArray Elev2Descript"
+         WRITE(16,*) "collectFullDomainArray Elev2Descript"
          CALL collectFullDomainArray(Elev2Descript, packOne, unpackOne)
-         PRINT *,"collectFullDomainArray VelDescript"
+         WRITE(16,*) "collectFullDomainArray VelDescript"
          CALL collectFullDomainArray(VelDescript, packTwo, unpackTwo)
          IF (IM.eq.10) THEN
             CALL collectFullDomainArray(CH1Descript, packOne, unpackOne)
          ENDIF
-         PRINT *,"collectFullDomainArray EtaDiscDescript"
+         WRITE(16,*) "collectFullDomainArray EtaDiscDescript"
          CALL collectFullDomainArray(EtaDiscDescript, 
      &             packOne, unpackOne)
-         PRINT *,"collectFullDomainArray NodeCodeDescript"
+         WRITE(16,*) "collectFullDomainIntArray NodeCodeDescript"
          CALL collectFullDomainIntArray(NodeCodeDescript, 
      &             packOneInt, unpackOneInt)
-         PRINT *,"collectFullDomainArray NOFFDescript"
+         WRITE(16,*) "collectFullDomainIntArray NOFFDescript"
          CALL collectFullDomainIntArray(NOFFDescript, 
      &             packOneInt, unpackOneInt)
-         PRINT *,"FINISH collectFullDomainArray"
+         WRITE(16,*) "FINISH collectFullDomainArray"
 #endif
       SELECT CASE (NHSTAR)
 
@@ -2374,14 +2374,22 @@ C     collect up the data from subdomains if running in parallel
           OPEN(hss % lun ,FILE=TRIM(HOTSTARTDIR)//'/'//hss % filename,
      $      ACCESS='DIRECT',RECL=8)
           IHOTSTP=1
+          print *, FileFmtVersion
           WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion 
           IHOTSTP = IHOTSTP + 1
+          print *, IM
           WRITE(hss % lun,REC=IHOTSTP) IM   ; IHOTSTP = IHOTSTP + 1
+          print *, TIME
           WRITE(hss % lun,REC=IHOTSTP) TIME ; IHOTSTP = IHOTSTP + 1
+          print *, IT
           WRITE(hss % lun,REC=IHOTSTP) IT   ; IHOTSTP = IHOTSTP + 1
+          print *, NPX
           WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
+          print *, NEX
           WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
+          print *, NPX
           WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
+          print *, NEX
           WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
       
 #ifdef CMPI

@@ -402,12 +402,15 @@ C     globalio and writer modules
       integer, parameter :: BUFSIZE_MAX = 131072
       real(sz), save :: buf(BUFSIZE_MAX)
       real(sz), save :: resultBuf(BUFSIZE_MAX)
+      integer, save :: integerBuffer(BUFSIZE_MAX)
+      integer, save :: integerResultBuffer(BUFSIZE_MAX)
 C   
 C     jgf48.03 the following data structure is used to describe
 C     the size and shape of the output data. 
       type OutputDataDescript_t
         integer           :: specifier  ! output format from fort.15 (NOUTE,etc)
         REAL(SZ)          :: initial_value 
+        integer           :: int_initial_value
         ! num_items_per_record is number of "tuples", i.e.
         ! it is equal to 1 if scalar, 2 if 2D vector, 3 if 3D vector, etc
         integer           :: num_items_per_record
