@@ -55,7 +55,7 @@ ifeq ($(BUILDTYPE),adcprep)
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
   VPATH :=  ../prep:..:../src:../wind 
   ifeq ($(NETCDF),enable)
-    LIBS  := -L odir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf
+    LIBS  := -L odir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff
   else
     LIBS  :=  -L odir_metis -lmetis
   endif
@@ -68,7 +68,7 @@ ifeq ($(BUILDTYPE),adcprep_be)
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
   VPATH :=  ../prep:../src:.. 
   ifeq ($(NETCDF),enable)
-    LIBS  := -L odir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf
+    LIBS  := -L odir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff
   else
     LIBS  := -L odir_metis_be -lmetis_be
   endif
@@ -81,7 +81,7 @@ ifeq ($(BUILDTYPE),adcirc)
   FFLAGS:= $(FFLAGS2) $(DA) $(IMODS) $(O_DIR)
   VPATH:=  ../src:../wind:..:../prep
   ifeq ($(NETCDF),enable)
-    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff
   endif
   MSG_MOBJ:= $(O_DIR)globalio.o
 endif
@@ -92,7 +92,7 @@ ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
   VPATH :=  ../src:../wind:..:../prep 
   ifeq ($(NETCDF),enable)
-    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff
   endif
   MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o 
 endif
@@ -173,7 +173,7 @@ ifeq ($(BUILDTYPE),init)
   O_DIR:=odir14/
   FFLAGS:= $(FFLAGS2) $(DPRE) $(IMODS) $(O_DIR)
   VPATH :=  ../util:../src:..
-  LIBS  := -L$(NETCDFHOME)/lib -lnetcdf
+  LIBS  := -L$(NETCDFHOME)/lib -lnetcdf -lnetcdff
 endif
 #
 $(O_DIR):

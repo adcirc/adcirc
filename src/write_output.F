@@ -2216,16 +2216,10 @@ C
       INTEGER, SAVE, ALLOCATABLE, TARGET :: NOFF_g(:)
       LOGICAL, SAVE :: FirstCall = .true.
       
-      PRINT *, "**************WRITE HOTSTART ************************"
-      PRINT *, "NHSTAR = ", NHSTAR
-      PRINT *, "FirstCall = ", FirstCall
-      PRINT *, "NP_G = ", NP_G
-      PRINT *, "NP_G = ", NP_G
-      PRINT *, "NP_G = ", NP_G
-      PRINT *, "NE_G = ", NE_G
+      WRITE(16,*) "***********WRITE HOTSTART*********************"
+      WRITE(16,*) "NHSTAR = ", NHSTAR
+      WRITE(16,*) "FirstCall = ", FirstCall
       IF (FirstCall) THEN
-      PRINT *, "FirstCall = ", FirstCall
-
          write(16,*) 'Allocating Elev1Descript' 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(ETA1_g(NP_G))
@@ -2315,7 +2309,7 @@ C
 
          write(16,*) 'Allocating NOFFDescript' 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(NOFF_g(NP_G))
+            ALLOCATE(NOFF_g(NE_G))
          ENDIF
          NOFFDescript % specifier            = NHSTAR
          NOFFDescript % int_initial_value        = 0

@@ -3205,6 +3205,7 @@ C  and writes local hot start files of the same format.                     C
 C                                                                           C
 C---------------------------------------------------------------------------C
 C
+#ifdef NETCDF
       USE NETCDFIO, ONLY :
      &     timenc, timenc_len, fileunit, irtype,
      &     xenc, yenc, xvnc, yvnc, xpnc, ypnc, xnc, ync, xwnc, ywnc,
@@ -3218,7 +3219,7 @@ C
      &     nbounc,nvelnc,nvellnc,
      &     nopenc,netanc,nvdllnc,
      &     ncmode
-
+#endif
       IMPLICIT NONE
       integer :: nbytes = 0
       LOGICAL FOUND
