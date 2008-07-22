@@ -2347,6 +2347,13 @@ C     collect up the data from subdomains if running in parallel
          CALL collectFullDomainIntArray(NOFFDescript, 
      &             packOneInt, unpackOneInt)
          WRITE(16,*) "FINISH collectFullDomainArray"
+         IF ( (MyProc.eq.0) ) THEN
+           DO I=1, NP_G
+!             PRINT *,"before case 1 ",I, Elev1Descript % array_g(I)
+             PRINT *,"before case 1 ",I, Elev1Descript % array_g(I)
+          ENDDO
+         ENDIF
+
 #endif
       SELECT CASE (NHSTAR)
 
@@ -2574,7 +2581,7 @@ C
 
 !      PRINT *, " Start Do Loop "
             DO I=1, num_records
-             IF (MNPROC.gt.1) THEN                                     ! parallel
+             IF (MNPROC.gt.1.and.MyProc.eq.0) THEN                                     ! parallel
 !                   eta11(i,timenc_len) = descript % array_g(i)
                    eta11(i,timenc_len) = Elev1Descript % array_g(i)
 !                   PRINT *,i,"  Parallel ETA11 = ", ETA11(i, timenc_len)
@@ -2584,7 +2591,7 @@ C
 !                   PRINT *,i,"  Serial ETA11 = ", ETA11(i, timenc_len)
                ENDIF
             END DO
-                   PRINT *,"  ETA11 = ", ETA11(11, timenc_len)
+            IF ( (MyProc.eq.0) ) PRINT *,"  ETA11 = ", ETA11(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
 #endif
 
@@ -2593,14 +2600,14 @@ C   Start Addition for netCDF by MCF 4/8/08
       IF(.NOT.ALLOCATED(eta22))ALLOCATE (eta22(num_records,timenc_len))
 
             DO I=1, num_records
-              IF (MNPROC.gt.1) THEN                                     ! parallel
+              IF (MNPROC.gt.1.and.MyProc.eq.0) THEN                                     ! parallel
                    eta22(i,timenc_len) = Elev2Descript % array_g(i)
               ELSE IF (MNPROC.eq.1) THEN                                ! serial
                    eta22(i,timenc_len) = Elev2Descript % array(i)
 !                   PRINT *,i,"  ETA22 = ", ETA22(i, timenc_len)
               ENDIF
             END DO
-                   PRINT *,"  ETA22 = ", ETA22(11, timenc_len)
+        IF ( (MyProc.eq.0) ) PRINT *,"  ETA22 = ", ETA22(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
 #endif
 
@@ -2609,14 +2616,14 @@ C   Start Addition for netCDF by MCF 4/8/08
       IF(.NOT.ALLOCATED(etadd))ALLOCATE (etadd(num_records,timenc_len))
 
             DO I=1, num_records
-              IF (MNPROC.gt.1) THEN                                     ! parallel
+              IF (MNPROC.gt.1.and.MyProc.eq.0) THEN                                     ! parallel
                    etadd(i,timenc_len) = EtaDiscDescript % array_g(i)
               ELSE IF (MNPROC.eq.1) THEN                                ! serial
                    etadd(i,timenc_len) = EtaDiscDescript % array(i)
 !                   PRINT *,i,"  ETADD = ", ETADD(i, timenc_len)
               ENDIF
             END DO
-                   PRINT *,"  ETADD = ", ETADD(11, timenc_len)
+        IF ( (MyProc.eq.0) ) PRINT *,"  ETADD = ", ETADD(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
 #endif
 
@@ -2625,14 +2632,14 @@ C   Start Addition for netCDF by MCF 4/8/08
       IF(.NOT.ALLOCATED(uu22))ALLOCATE (uu22(num_records,timenc_len))
 
             DO I=1, num_records
-              IF (MNPROC.gt.1) THEN                                     ! parallel
+              IF (MNPROC.gt.1.and.MyProc.eq.0) THEN                                     ! parallel
                    uu22(i,timenc_len) = VelDescript % array_g(i)
               ELSE IF (MNPROC.eq.1) THEN                                ! serial
                    uu22(i,timenc_len) = VelDescript % array(i)
 !                   PRINT *,i,"  uu22 = ", uu22(i, timenc_len)
               ENDIF
             END DO
-                   PRINT *,"  uu22 = ", uu22(11, timenc_len)
+        IF ( (MyProc.eq.0) ) PRINT *,"  uu22 = ", uu22(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
 #endif         
 #ifdef NETCDF
@@ -2640,14 +2647,14 @@ C   Start Addition for netCDF by MCF 4/8/08
       IF(.NOT.ALLOCATED(vv22))ALLOCATE (vv22(num_records,timenc_len))
 
             DO I=1, num_records
-               IF (MNPROC.gt.1) THEN                                     ! parallel
+               IF (MNPROC.gt.1.and.MyProc.eq.0) THEN                                     ! parallel
                   vv22(i,timenc_len) = VelDescript % array2_g(i)
               ELSE IF (MNPROC.eq.1) THEN                                ! serial
                   vv22(i,timenc_len) = VelDescript % array2(i)
 !                   PRINT *,i,"  vv22 = ", vv22(i, timenc_len)
               ENDIF
             END DO
-                   PRINT *,"  vv22 = ", vv22(11, timenc_len)
+        IF ( (MyProc.eq.0) ) PRINT *,"  vv22 = ", vv22(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
 #endif 
 #ifdef NETCDF     
@@ -2656,14 +2663,14 @@ C   Start Addition for netCDF by MCF 4/8/08
       IF(.NOT.ALLOCATED(nodecodenc))ALLOCATE (nodecodenc(num_records))
 
             DO I=1, num_records
-               IF (MNPROC.gt.1) THEN                                     ! parallel
+               IF (MNPROC.gt.1.and.MyProc.eq.0 ) THEN                                     ! parallel
                    nodecodenc(i) = NodeCodeDescript % iarray_g(i)
               ELSE IF (MNPROC.eq.1) THEN                                ! serial
                    nodecodenc(i) = NodeCodeDescript % iarray(i)
 !                   PRINT *,i,"  nodecodenc = ", nodecodenc(i)
               ENDIF
             END DO
-                   PRINT *,"  nodecodenc = ", nodecodenc(11)
+        IF ( (MyProc.eq.0) ) PRINT *,"  nodecodenc = ", nodecodenc(11)
 C   End Addition for netCDF by MCF 4/8/08
 #endif
         
@@ -2678,14 +2685,14 @@ C   Start Addition for netCDF by MCF 4/8/08
       IF(.NOT.ALLOCATED(noffnc))ALLOCATE (noffnc(num_recordse))
 
             DO I=1, num_recordse
-              IF (MNPROC.gt.1) THEN                                     ! parallel
+              IF (MNPROC.gt.1.and.MyProc.eq.0) THEN                                     ! parallel
                     noffnc(i) = NOFFDescript % iarray_g(i)
               ELSE IF (MNPROC.eq.1) THEN                                ! serial
                     noffnc(i) = NOFFDescript % iarray(i)
 !                   PRINT *,i,"  noffnc = ", noffnc(i)
               ENDIF
             END DO
-                   PRINT *,"  noffnc = ", noffnc(11)
+        IF ( (MyProc.eq.0) ) PRINT *,"  noffnc = ", noffnc(11)
 C   End Addition for netCDF by MCF 4/8/08
 #endif
 C
