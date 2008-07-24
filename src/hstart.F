@@ -90,6 +90,15 @@ C     jgf46.14 Check for file existence before attempting to open.
       INTEGER NP_G_IN, NE_G_IN  ! Global and
       INTEGER NP_A_IN, NE_A_IN  ! active number nodes, elements.
 
+
+C
+C     ASSIGN value to NCMODE according to the number of processors for NETCDF - MCF
+C
+#ifdef NETCDF
+      IF (MNPROC.gt.1) ncmode=2
+      IF (MNPROC.eq.1) ncmode=1
+#endif
+
 C...  
 C......READ IN 2DDI HOT START INITIAL CONDITION OVER WHOLE DOMAIN
 C......THIS FILE ALWAYS HAS A RECL=8 BECAUSE IT IS ASSUMED THAT THE HARMONIC
@@ -105,6 +114,8 @@ C     Determine if the hot start file exists.
          INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.68',EXIST=FileFound)
       ENDIF
 
+#ifdef NETCDF
+      if (ncmode.eq.1.or.MNPROC.EQ.1) THEN
       IF(IHOT.EQ.-67)THEN 
         PRINT *, "OPEN NETCDF HOTSTART FILE: fort.67.nc"
 !        INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.67.nc',EXIST=FileFound)
@@ -114,7 +125,8 @@ C     Determine if the hot start file exists.
 !        INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.68.nc',EXIST=FileFound)
         INQUIRE(FILE='fort.68.nc',EXIST=FileFound)
       ENDIF
-
+      ENDIF
+#endif
 
       IF (.not.FileFound) THEN
          WRITE(16,1001)         ! hot start file  
@@ -159,8 +171,6 @@ C
 C   READ NETCDF HOTSTART FILE IF SERIAL VERSION IS BEING USED
 
 #ifdef NETCDF
-      IF (MNPROC.gt.1) ncmode=2
-      IF (MNPROC.eq.1) ncmode=1
       
       PRINT *, "hstart: IHOT",IHOT
       PRINT *, "hstart: ncmode",ncmode
