@@ -107,10 +107,12 @@ C     Determine if the hot start file exists.
 
       IF(IHOT.EQ.-67)THEN 
         PRINT *, "OPEN NETCDF HOTSTART FILE: fort.67.nc"
-        INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.67.nc',EXIST=FileFound)
+!        INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.67.nc',EXIST=FileFound)
+        INQUIRE(FILE='fort.67.nc',EXIST=FileFound)
       ELSEIF(IHOT.EQ.-68) THEN
         PRINT *, "OPEN NETCDF HOTSTART FILE: fort.68.nc"
-        INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.68.nc',EXIST=FileFound)
+!        INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.68.nc',EXIST=FileFound)
+        INQUIRE(FILE='fort.68.nc',EXIST=FileFound)
       ENDIF
 
 
@@ -154,10 +156,18 @@ C
 
 C   Start Addition for netCDF by MCF 5/8/08
 C
-C   READ NETCDF HOTSTART FILE
+C   READ NETCDF HOTSTART FILE IF SERIAL VERSION IS BEING USED
+
 #ifdef NETCDF
+      IF (MNPROC.gt.1) ncmode=2
+      IF (MNPROC.eq.1) ncmode=1
+      
       PRINT *, "hstart: IHOT",IHOT
-      IF (IHOT.EQ.-67.OR.IHOT.EQ.-68)THEN
+      PRINT *, "hstart: ncmode",ncmode
+      
+      IF(ncmode.eq.1) THEN                                              !serial
+      
+      IF (IHOT.EQ.-67.OR.IHOT.EQ.-68)THEN                               !start reading netCDF hot start file
          timenc_len=1
          IF(.NOT. ALLOCATED(timenc))  ALLOCATE(timenc(timenc_len))
 !         timenc(timenc_len)=time
@@ -218,6 +228,8 @@ C   READ NETCDF HOTSTART FILE
                    PRINT *,"  IGWP = ",IGWP
                    PRINT *,"  NSCOUGW = ",NSCOUGW
                    PRINT *,"  ---------END-------NETCDF--------------------"
+      ENDIF                                                             ! finish reading netCDF hot start file
+      
       ENDIF     
 
 C   End Addition for netCDF by MCF 5/8/08
@@ -227,7 +239,8 @@ C   End Addition for netCDF by MCF 5/8/08
 C
 C     Now read the hot start file.
 
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
+      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN                                 ! start reading binary hot start file
+      
       IHOTSTP=1
       READ(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
 
@@ -286,7 +299,7 @@ C     jgf46.34 Added support for IBTYPE=52.
          IHOTSTP=IHOTSTP+1    
       END DO
 
-      ENDIF
+      ENDIF                                                             ! finish reading binary hot start file
 
       DO I=1, NP
          ETAS(I)=ETA2(I)-ETA1(I)

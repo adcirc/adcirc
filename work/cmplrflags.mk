@@ -658,7 +658,8 @@ ifneq (,$(findstring i386-darwin,$(MACHINE)-$(OS)))
   PPFC	        := ifort
   FC	        := ifort
   PFC	        := mpif77 
-  FFLAGS1	:=  $(INCDIRS) -nowarn -O3 -fixed -132 -DIBM -I .
+  FFLAGS1       :=  $(INCDIRS) -nowarn -O3 -fixed -132 -DLINUX -I .
+# FFLAGS1	:=  $(INCDIRS) -nowarn -O3 -fixed -132 -DIBM -I .
   FFLAGS2	:=  $(INCDIRS) -nowarn -O3 -fixed -132 -I . 
   FFLAGS3	:=  $(INCDIRS) -nowarn -O3 -fixed -132 -I .
   DA  	   	:=  -DREAL8 -DCSCA -DLINUX

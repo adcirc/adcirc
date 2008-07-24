@@ -1228,7 +1228,7 @@ C
 !     --------------------------------------------------------------------
 
       IF( (noutge.EQ.3) .OR. (noutgv.EQ.3) .OR. (noutv.EQ.3)
-     &       .or. (noute.EQ.3) .or. (noutm.eq.3) )THEN
+     &       .or. (noute.EQ.3) .or. (noutm.eq.3) . or. NHSTAR.EQ.3 )THEN
 #ifndef NETCDF
          print *, "NetCDF was selected but is not supported by your
       &            compilation flag.

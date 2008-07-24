@@ -12722,11 +12722,11 @@
 !      do i=1, node_len
 !            PRINT *, "i ",i, " nodecodenc(i) = ", nodecodenc(i)
 !      end do
-            PRINT *, " nodecodenc(11) = ", nodecodenc(11)
+!            PRINT *, " nodecodenc(11) = ", nodecodenc(11)
 !      do i=1, elem_len
 !            PRINT *, "i ",i, " noffnc(i) = ", noffnc(i)
 !      end do
-            PRINT *, " noffnc(11) = ", noffnc(i)
+!            PRINT *, " noffnc(11) = ", noffnc(i)
 
 !      IF(FIRST67.EQ.1.and.ncmode.NE.0) THEN
          

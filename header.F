@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.20     - 07/22/08 - mcf - Added code in the preprocessor to initialize
+C               netCDF hotstart files.
 C  v48.19     - 07/22/08 - mcf - Added code to assign the globalized
 C               hotstart variables to netCDF variables only in processor 0.
 C  v48.18     - 07/09/08 - mcf - Added code to adcprep and adcirc to 

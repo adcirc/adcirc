@@ -218,6 +218,7 @@ C
      &  IK,IBN,NDISC,NBBN,NFLUXB,NFLUXI,NFLUXF,NIBP,IBTYPE,IBN1,IM,NWP,
      &  NCOR,NTIP,NWS,NRAMP,IREFYR,NTIF,IL1,Il2,NHARF,NHAINC,IDUM2,
      &  ITITER,ILUMP
+     &  , NHSTAR                                                        !for netCDF
       INTEGER IGC  ! 3DVS vertical grid code
       INTEGER NFEN ! 3DVS number of nodes in the vertical grid
       INTEGER NRS
@@ -705,7 +706,9 @@ C
 C
       READ(15,*) THAS,THAF,NHAINC,FMV               !READ THAS,...FMV
       READ(15,*) IDUM,IDUM,IDUM,IDUM                !SKIP OVER NHASE,NHASV,...
-      READ(15,*) IDUM,IDUM                          !SKIP OVER NHSTAR,NHSINC
+      READ(15,*) NHSTAR,IDUM                          !SKIP OVER NHSTAR,NHSINC
+      PRINT *, "NHSTAR = ", NHSTAR                    
+      IF (ABS(NHSTAR).EQ.3) useNetCDF = .true.                          !for netCDF
 C
 C...THIS SECTION TO LUMP THE GWCE MATRIX
 Cvjp 11/30/99 made lumping a compile time option

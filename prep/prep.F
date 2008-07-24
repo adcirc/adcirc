@@ -2283,7 +2283,8 @@ C        TODO: Extend this to other file types that are netCDF-enabled
          IF ( (ABS(NOUTE).EQ.3) .OR. (ABS(NOUTV).EQ.3) .OR.
      &        (ABS(NOUTC).EQ.3) .OR. (ABS(NOUTM).EQ.3) .OR.
      &        (ABS(NOUTGE).EQ.3) .OR. (ABS(NOUTGV).EQ.3) .OR.
-     &        (ABS(NOUTGC).EQ.3) .OR. (ABS(NOUTGW).EQ.3) ) THEN
+     &        (ABS(NOUTGC).EQ.3) .OR. (ABS(NOUTGW).EQ.3). OR.
+     &        (ABS(NHSTAR).EQ.3))THEN                                   ! for netCDF hotstart option
             WRITE(15,80) title
             WRITE(15,80) institution
             WRITE(15,80) source

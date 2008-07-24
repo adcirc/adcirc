@@ -2392,6 +2392,34 @@ C     collect up the data from subdomains if running in parallel
           WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
           print *, NEX
           WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
+          
+          PRINT *,"========================before bin=================="
+                    PRINT *, "==== write_output: IM = ", IM
+          PRINT *, "==== write_output: TIME = ", TIME
+          PRINT *, "==== write_output: IM = ", IT
+          PRINT *, "==== write_output: NPX = ", NPX
+          PRINT *, "==== write_output: NEX = ", NEX
+          PRINT *, "==== write_output: IESTP = ", IESTP
+          PRINT *, "==== write_output: NSCOUE = ", NSCOUE
+          PRINT *, "==== write_output: IVSTP = ", IVSTP
+          PRINT *, "==== write_output: NSCOUV = ", NSCOUV
+          PRINT *, "==== write_output: ICSTP = ", ICSTP
+          PRINT *, "==== write_output: NSCOUC = ", NSCOUC
+          PRINT *, "==== write_output: IPSTP = ", IPSTP
+
+          PRINT *, "==== write_output: IWSTP = ", IWSTP
+          PRINT *, "==== write_output: NSCOUM = ", NSCOUM
+          PRINT *, "==== write_output: IGEP = ", IGEP
+          PRINT *, "==== write_output: NSCOUGE = ", NSCOUGE
+          PRINT *, "==== write_output: IGVP = ", IGVP
+
+          PRINT *, "==== write_output: NSCOUGV = ", NSCOUGV
+          PRINT *, "==== write_output: IGCP = ", IGCP
+          PRINT *, "==== write_output: NSCOUGC = ", NSCOUGC
+          PRINT *, "==== write_output: IGPP = ", IGPP
+          PRINT *, "==== write_output: IGWP = ", IGWP
+          PRINT *, "==== write_output: NSCOUGW = ", NSCOUGW
+          PRINT *,"========================before bin=================="
       
 #ifdef CMPI
           DO I=1, NP_G
@@ -2491,7 +2519,39 @@ C     collect up the data from subdomains if running in parallel
          WRITE(hss % lun,REC=IHOTSTP+2) IGWP
          WRITE(hss % lun,REC=IHOTSTP+3) NSCOUGW
          IHOTSTP=IHOTSTP+3
-      endif
+         
+         
+         
+       
+          PRINT *,"========================before bin=================="
+          PRINT *, "==== write_output: IM = ", IM
+          PRINT *, "==== write_output: TIME = ", TIME
+          PRINT *, "==== write_output: IM = ", IT
+          PRINT *, "==== write_output: NPX = ", NPX
+          PRINT *, "==== write_output: NEX = ", NEX
+          PRINT *, "==== write_output: IESTP = ", IESTP
+          PRINT *, "==== write_output: NSCOUE = ", NSCOUE
+          PRINT *, "==== write_output: IVSTP = ", IVSTP
+          PRINT *, "==== write_output: NSCOUV = ", NSCOUV
+          PRINT *, "==== write_output: ICSTP = ", ICSTP
+          PRINT *, "==== write_output: NSCOUC = ", NSCOUC
+          PRINT *, "==== write_output: IPSTP = ", IPSTP
+
+          PRINT *, "==== write_output: IWSTP = ", IWSTP
+          PRINT *, "==== write_output: NSCOUM = ", NSCOUM
+          PRINT *, "==== write_output: IGEP = ", IGEP
+          PRINT *, "==== write_output: NSCOUGE = ", NSCOUGE
+          PRINT *, "==== write_output: IGVP = ", IGVP
+
+          PRINT *, "==== write_output: NSCOUGV = ", NSCOUGV
+          PRINT *, "==== write_output: IGCP = ", IGCP
+          PRINT *, "==== write_output: NSCOUGC = ", NSCOUGC
+          PRINT *, "==== write_output: IGPP = ", IGPP
+          PRINT *, "==== write_output: IGWP = ", IGWP
+          PRINT *, "==== write_output: NSCOUGW = ", NSCOUGW
+          PRINT *,"========================after bin==================="
+          
+       ENDIF
 
 !This code is not supported yet.
 #if 0
@@ -2685,7 +2745,7 @@ C   Start Addition for netCDF by MCF 4/8/08
       IF(.NOT.ALLOCATED(noffnc))ALLOCATE (noffnc(num_recordse))
 
             DO I=1, num_recordse
-              IF (MNPROC.gt.1.and.MyProc.eq.0) THEN                                     ! parallel
+              IF (MNPROC.gt.1.and.MyProc.eq.0) THEN                     ! parallel
                     noffnc(i) = NOFFDescript % iarray_g(i)
               ELSE IF (MNPROC.eq.1) THEN                                ! serial
                     noffnc(i) = NOFFDescript % iarray(i)
@@ -2699,6 +2759,7 @@ C
 C    ADDITION OF netCDF Hostart file 67.nc and 68.nc by MCF 4/8/08
 C
 #ifdef NETCDF
+        IF (ncmode.eq.1) THEN                                           ! serial
             IF(.NOT. ALLOCATED(xnc)) ALLOCATE(xnc(num_records))
             IF(.NOT. ALLOCATED(ync)) ALLOCATE(ync(num_records))
             IF(.NOT. ALLOCATED(nbvvnc)) ALLOCATE(nbvvnc(nbou,nvel))
@@ -2761,35 +2822,64 @@ C
                         nbounc(k)=nbvv(i,j)
                      END DO
                   END DO
-          PRINT *, "==== write_output: IM = ", IM, IHOTSTP
-          PRINT *, "==== write_output: TIME = ", TIME, IHOTSTP
-          PRINT *, "==== write_output: IM = ", IT, IHOTSTP
-          PRINT *, "==== write_output: NPX = ", NPX, IHOTSTP
-          PRINT *, "==== write_output: NEX = ", NEX, IHOTSTP
+
+          ENDIF                                                         ! end serial
+       IF (ncmode.eq.1. or. MYPROC == 0) THEN
+       
+          PRINT *,"========================net===================="
+          PRINT *, "==== write_output: IM = ", IM
+          PRINT *, "==== write_output: TIME = ", TIME
+          PRINT *, "==== write_output: IM = ", IT
+          PRINT *, "==== write_output: NPX = ", NPX
+          PRINT *, "==== write_output: NEX = ", NEX
+          PRINT *, "==== write_output: IESTP = ", IESTP
+          PRINT *, "==== write_output: NSCOUE = ", NSCOUE
+          PRINT *, "==== write_output: IVSTP = ", IVSTP
+          PRINT *, "==== write_output: NSCOUV = ", NSCOUV
+          PRINT *, "==== write_output: ICSTP = ", ICSTP
+          PRINT *, "==== write_output: NSCOUC = ", NSCOUC
+          PRINT *, "==== write_output: IPSTP = ", IPSTP
+
+          PRINT *, "==== write_output: IWSTP = ", IWSTP
+          PRINT *, "==== write_output: NSCOUM = ", NSCOUM
+          PRINT *, "==== write_output: IGEP = ", IGEP
+          PRINT *, "==== write_output: NSCOUGE = ", NSCOUGE
+          PRINT *, "==== write_output: IGVP = ", IGVP
+
+          PRINT *, "==== write_output: NSCOUGV = ", NSCOUGV
+          PRINT *, "==== write_output: IGCP = ", IGCP
+          PRINT *, "==== write_output: NSCOUGC = ", NSCOUGC
+          PRINT *, "==== write_output: IGPP = ", IGPP
+          PRINT *, "==== write_output: IGWP = ", IGWP
+          PRINT *, "==== write_output: NSCOUGW = ", NSCOUGW
+          PRINT *,"========================net===================="
+          
+       ENDIF
+       
           call writenc67 (nhsinc,abs(hss % lun),timenc_len,npx,timenc,
-     &                      nt, nhsinc, uu2,vv2,
-     &                      eta11, eta22, etadd, nodecodenc,noffnc,
-     &                      imhs, it,iestp,nscoue,ivstp,nscouv, icstp,
-     &                      nscouc, ipstp, iwstp, nscoum, igep, nscouge,
-     &                      igvp, nscougv, igcp, nscougc, igpp, igwp,
-     &                      nscougw,
-     &                      rundes, runid, agrid, irtype,
-     &                      dtdp, ihot, ics, nolibf, nolifa,
-     &                      nolica, nolicat, nwp,
-     &                      ncor, ntip, nws, nramp, tau0,
-     &                      statim, reftim, rnday, dramp,
-     &                      a00, b00, c00, h0,
-     &                      slam0, sfea0, cf ,eslm, cori,
-     &             ntif, nbfr, nex, nhy, nm,
-     &             xnc, ync, dp,
-     &             nope, neta, nbdv,nopenc,netanc,
-     &             nvdllnc,
-     &             nbou, nvel, nbvvnc,nbounc,nvelnc,
-     &             nvellnc,ibtypenc,
-     &             ncmode,
-     &             title, institution, source, history,
-     &             references, comments, host, convention, contact,
-     &             base_date)
+     &                    nt, nhsinc, uu2,vv2,
+     &                    eta11, eta22, etadd, nodecodenc,noffnc,
+     &                    imhs, it,iestp,nscoue,ivstp,nscouv, icstp,
+     &                    nscouc, ipstp, iwstp, nscoum, igep, nscouge,
+     &                    igvp, nscougv, igcp, nscougc, igpp, igwp,
+     &                    nscougw,
+     &                    rundes, runid, agrid, irtype,
+     &                    dtdp, ihot, ics, nolibf, nolifa,
+     &                    nolica, nolicat, nwp,
+     &                    ncor, ntip, nws, nramp, tau0,
+     &                    statim, reftim, rnday, dramp,
+     &                    a00, b00, c00, h0,
+     &                    slam0, sfea0, cf ,eslm, cori,
+     &                    ntif, nbfr, nex, nhy, nm,
+     &                    xnc, ync, dp,
+     &                    nope, neta, nbdv,nopenc,netanc,
+     &                    nvdllnc,
+     &                    nbou, nvel, nbvvnc,nbounc,nvelnc,
+     &                    nvellnc,ibtypenc,
+     &                    ncmode,
+     &                    title, institution, source, history,
+     &                    references, comments, host, convention, 
+     &                    contact, base_date)
 #endif
 
       CASE DEFAULT
@@ -2802,7 +2892,9 @@ C
 C...    
 C...    CLOSE THE HOT START OUTPUT FILE
 C...    
+      IF(NHSTAR.EQ.1) THEN                                              ! added by mcf 7/14/08
       if (myproc == 0 .or. WRITE_LOCAL_HOT_START_FILES) CLOSE(hss % lun)
+      ENDIF                                                             ! end NHSTAR=1 
         
       IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
          WRITE(ScreenUnit,24541) hss % lun,IT,TIME
@@ -2819,7 +2911,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
             TEST_HOTSTART = .TRUE.
          ENDIF
          hss % lun      = 68
-         hss % filename = 'fort.68'
+         IF(NHSTAR.EQ.1) hss % filename = 'fort.68'                     ! added by mcf 7/14/08
       ELSE
          IF (NHSTAR.EQ.68) THEN
             WRITE(ScreenUnit,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
@@ -2827,8 +2919,9 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
             TEST_HOTSTART = .TRUE.
          ENDIF
          hss % lun=67
-         hss % filename = 'fort.67'
+         IF(NHSTAR.EQ.1) hss % filename = 'fort.67'                     ! added by mcf 7/14/08
       ENDIF
+!      PRINT *, "****TEST_HOTSTART CALL MSG_FINI ******* ", TEST_HOTSTART
       IF (TEST_HOTSTART) THEN
 #ifdef CMPI
           CALL MSG_FINI()
