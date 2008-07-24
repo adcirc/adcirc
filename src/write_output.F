@@ -2281,8 +2281,8 @@ C
             CH1Descript % array_g              => CH1_g
          ENDIF        
  
-         write(16,*) 'Allocating EtaDiscDescript' 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            write(16,*) 'Allocating EtaDiscDescript' 
             ALLOCATE(EtaDisc_g(NP_G))
          ENDIF
          EtaDiscDescript % specifier            = NHSTAR
@@ -2294,8 +2294,8 @@ C
          EtaDiscDescript % array                => EtaDisc
          EtaDiscDescript % array_g              => EtaDisc_g
          
-         write(16,*) 'Allocating NodeCodeDescript' 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            write(16,*) 'Allocating NodeCodeDescript' 
             ALLOCATE(NodeCode_g(NP_G))
          ENDIF
          NodeCodeDescript % specifier            = NHSTAR
@@ -2307,8 +2307,8 @@ C
          NodeCodeDescript % iarray               => NODECODE
          NodeCodeDescript % iarray_g             => NODECODE_g
 
-         write(16,*) 'Allocating NOFFDescript' 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            write(16,*) 'Allocating NOFFDescript' 
             ALLOCATE(NOFF_g(NE_G))
          ENDIF
          NOFFDescript % specifier            = NHSTAR
@@ -2457,23 +2457,33 @@ C     collect up the data from subdomains if running in parallel
              IHOTSTP=IHOTSTP+1
           ENDDO
 #else
+          WRITE(16,*) '=================ETA1:===================='
           DO I=1, NP_G
+             WRITE(16,*) I, ETA1(I)
              WRITE(hss % lun,REC=IHOTSTP) ETA1(I)
              IHOTSTP=IHOTSTP+1
           ENDDO
+          WRITE(16,*) '=================ETA2:===================='
           DO I=1, NP_G
+             WRITE(16,*) I, ETA2(I)
              WRITE(hss % lun,REC=IHOTSTP) ETA2(I)
              IHOTSTP=IHOTSTP+1
           ENDDO
+          WRITE(16,*) '=================ETADisc:===================='
           DO I=1, NP_G
+             WRITE(16,*) I, ETADisc(I)
              WRITE(hss % lun,REC=IHOTSTP) EtaDisc(I)
              IHOTSTP=IHOTSTP+1
           ENDDO
+          WRITE(16,*) '=================UU2:===================='
           DO I=1, NP_G
+             WRITE(16,*) I, UU2(I)
              WRITE(hss % lun,REC=IHOTSTP) UU2(I)
              IHOTSTP=IHOTSTP+1
           ENDDO
+          WRITE(16,*) '=================VV2:===================='
           DO I=1, NP_G
+             WRITE(16,*) I, VV2(I) 
              WRITE(hss % lun,REC=IHOTSTP) VV2(I)
              IHOTSTP=IHOTSTP+1
           ENDDO
@@ -2483,45 +2493,45 @@ C     collect up the data from subdomains if running in parallel
                 IHOTSTP=IHOTSTP+1
              ENDDO
           ENDIF
+          WRITE(16,*) '=================NodeCode:===================='
           DO I=1, NP_G
+             WRITE(16,*) I, NodeCode(I)
              WRITE(hss % lun,REC=IHOTSTP) NodeCode(I)
              IHOTSTP=IHOTSTP+1
           ENDDO
+          WRITE(16,*) '=================NOFF:===================='
           DO I=1, NE_G
+             WRITE(16,*) I, NOFF(I)
              WRITE(hss % lun,REC=IHOTSTP) NOFF(I)
              IHOTSTP=IHOTSTP+1
           ENDDO
 #endif
 
-         WRITE(hss % lun,REC=IHOTSTP+1) IESTP
-         WRITE(hss % lun,REC=IHOTSTP+2) NSCOUE
-         IHOTSTP=IHOTSTP+2
-         WRITE(hss % lun,REC=IHOTSTP+1) IVSTP
-         WRITE(hss % lun,REC=IHOTSTP+2) NSCOUV
-         IHOTSTP=IHOTSTP+2
-         WRITE(hss % lun,REC=IHOTSTP+1) ICSTP
-         WRITE(hss % lun,REC=IHOTSTP+2) NSCOUC
-         IHOTSTP=IHOTSTP+2
-         WRITE(hss % lun,REC=IHOTSTP+1) IPSTP
-         WRITE(hss % lun,REC=IHOTSTP+2) IWSTP
-         WRITE(hss % lun,REC=IHOTSTP+3) NSCOUM
-         IHOTSTP=IHOTSTP+3
-         WRITE(hss % lun,REC=IHOTSTP+1) IGEP
-         WRITE(hss % lun,REC=IHOTSTP+2) NSCOUGE
-         IHOTSTP=IHOTSTP+2
-         WRITE(hss % lun,REC=IHOTSTP+1) IGVP
-         WRITE(hss % lun,REC=IHOTSTP+2) NSCOUGV
-         IHOTSTP=IHOTSTP+2
-         WRITE(hss % lun,REC=IHOTSTP+1) IGCP
-         WRITE(hss % lun,REC=IHOTSTP+2) NSCOUGC
-         IHOTSTP=IHOTSTP+2
-         WRITE(hss % lun,REC=IHOTSTP+1) IGPP
-         WRITE(hss % lun,REC=IHOTSTP+2) IGWP
-         WRITE(hss % lun,REC=IHOTSTP+3) NSCOUGW
-         IHOTSTP=IHOTSTP+3
-         
-         
-         
+         WRITE(hss % lun,REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
+         WRITE(hss % lun,REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
+
+         WRITE(hss % lun,REC=IHOTSTP) IVSTP   ; IHOTSTP = IHOTSTP + 1
+         WRITE(hss % lun,REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
+
+         WRITE(hss % lun,REC=IHOTSTP) ICSTP   ; IHOTSTP = IHOTSTP + 1
+         WRITE(hss % lun,REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
+
+         WRITE(hss % lun,REC=IHOTSTP) IPSTP   ; IHOTSTP = IHOTSTP + 1
+         WRITE(hss % lun,REC=IHOTSTP) IWSTP   ; IHOTSTP = IHOTSTP + 1
+         WRITE(hss % lun,REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
+
+         WRITE(hss % lun,REC=IHOTSTP) IGEP    ; IHOTSTP = IHOTSTP + 1
+         WRITE(hss % lun,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+
+         WRITE(hss % lun,REC=IHOTSTP) IGVP    ; IHOTSTP = IHOTSTP + 1
+         WRITE(hss % lun,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+
+         WRITE(hss % lun,REC=IHOTSTP) IGCP    ; IHOTSTP = IHOTSTP + 1
+         WRITE(hss % lun,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+
+         WRITE(hss % lun,REC=IHOTSTP) IGPP    ; IHOTSTP = IHOTSTP + 1
+         WRITE(hss % lun,REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
+         WRITE(hss % lun,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
        
           PRINT *,"========================before bin=================="
           PRINT *, "==== write_output: IM = ", IM
