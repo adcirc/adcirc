@@ -94,10 +94,8 @@ C     jgf46.14 Check for file existence before attempting to open.
 C
 C     ASSIGN value to NCMODE according to the number of processors for NETCDF - MCF
 C
-#ifdef NETCDF
       IF (MNPROC.gt.1) ncmode=2
       IF (MNPROC.eq.1) ncmode=1
-#endif
 
 C...  
 C......READ IN 2DDI HOT START INITIAL CONDITION OVER WHOLE DOMAIN
@@ -107,10 +105,13 @@ C...
 
 C     Determine if the hot start file exists.
       FileFound=.False.
-      IF (IHOT.eq.67) THEN
+      PRINT *,"IHOT = ", IHOT, " ncmode = ",ncmode
+      IF (IHOT.eq.67.OR.
+     & ( (abs(IHOT).eq.67.or.abs(IHOT).eq.68).and.ncmode.eq.2)) THEN
          INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.67',EXIST=FileFound)
       ENDIF
-      IF (IHOT.eq.68) THEN
+      IF (IHOT.eq.68.OR.
+     & ( (abs(IHOT).eq.67.or.abs(IHOT).eq.68).and.ncmode.eq.2)) THEN
          INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.68',EXIST=FileFound)
       ENDIF
 
