@@ -2588,22 +2588,26 @@ C
         
       if( CHARMV) then
          IF((IHARIND.EQ.1).AND.(IT.GT.ITMV)) THEN
-            IHOTSTP=IHOTSTP+1
             WRITE(hss % lun,REC=IHOTSTP) NTSTEPS
+            IHOTSTP=IHOTSTP+1
             IF(NHAGE.EQ.1) THEN
                DO I=1,NP
-                  WRITE(hss % lun,REC=IHOTSTP+1) ELAV(I)
-                  WRITE(hss % lun,REC=IHOTSTP+2) ELVA(I)
-                  IHOTSTP=IHOTSTP+2
+                  WRITE(hss % lun,REC=IHOTSTP) ELAV(I)
+                  IHOTSTP = IHOTSTP + 1
+                  WRITE(hss % lun,REC=IHOTSTP) ELVA(I)
+                  IHOTSTP = IHOTSTP + 1
                END DO
             ENDIF
             IF(NHAGV.EQ.1) THEN
               DO I=1,NP
-                WRITE(hss % lun,REC=IHOTSTP+1) XVELAV(I)
-                WRITE(hss % lun,REC=IHOTSTP+2) YVELAV(I)
-                WRITE(hss % lun,REC=IHOTSTP+3) XVELVA(I)
-                WRITE(hss % lun,REC=IHOTSTP+4) YVELVA(I)
-                IHOTSTP=IHOTSTP+4
+                WRITE(hss % lun,REC=IHOTSTP) XVELAV(I)
+                IHOTSTP=IHOTSTP+1
+                WRITE(hss % lun,REC=IHOTSTP) YVELAV(I)
+                IHOTSTP=IHOTSTP+1
+                WRITE(hss % lun,REC=IHOTSTP) XVELVA(I)
+                IHOTSTP=IHOTSTP+1
+                WRITE(hss % lun,REC=IHOTSTP) YVELVA(I)
+                IHOTSTP=IHOTSTP+1
               END DO
             ENDIF
           ENDIF

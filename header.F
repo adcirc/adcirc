@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.23     - 07/25/07 - jgf - Fixed hotstart file incrementation in 
+C               write_output.F, prep.F, hstart.F and harm.F. Updated hot2asc.F
+C               utility with fixed file incrementation. Restored machdep.F.
+C               Updated cmplrflags.mk for apple darwin (removed -DIBM).
 C  v48.22     - 07/24/07 - jgf - Fixed hotstart file incrementation in 
 C               write_output.F and hstart.F.
 C  v48.21     - 07/24/08 - mcf - Added code in the hstart.F file to only read

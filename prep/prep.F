@@ -3400,72 +3400,62 @@ ckmd end of additions
       print *, "continuing to read global hotstart file"
 
       DO I=1,MNP
-         IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) ETA1(I)
+         READ(IHOT,REC=IHOTSTP) ETA1(I) ; IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) ETA2(I)
+         READ(IHOT,REC=IHOTSTP) ETA2(I) ; IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) EtaDisc(I)
+         READ(IHOT,REC=IHOTSTP) EtaDisc(I) ; IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) UU2(I)
+         READ(IHOT,REC=IHOTSTP) UU2(I) ; IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         IHOTSTP = IHOTSTP + 1
-         READ(IHOT,REC=IHOTSTP) VV2(I)
+         READ(IHOT,REC=IHOTSTP) VV2(I) ; IHOTSTP = IHOTSTP + 1
       END DO
       IF(IM.EQ.10) THEN
         DO I=1,MNP
-           IHOTSTP=IHOTSTP+1
-           READ(IHOT,REC=IHOTSTP) CH1(I)
+           READ(IHOT,REC=IHOTSTP) CH1(I) ; IHOTSTP = IHOTSTP + 1
         END DO
       ENDIF
       DO I=1,MNP
-         IHOTSTP=IHOTSTP+1
-         READ(IHOT,REC=IHOTSTP) NODECODE(I)
+         READ(IHOT,REC=IHOTSTP) NODECODE(I) ; IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNE
-         IHOTSTP=IHOTSTP+1                                    
-         READ(IHOT,REC=IHOTSTP) NOFF(I)                     
+         READ(IHOT,REC=IHOTSTP) NOFF(I)  ; IHOTSTP = IHOTSTP + 1                    
       END DO
 
-      READ(IHOT,REC=IHOTSTP+1) IESTP
-      READ(IHOT,REC=IHOTSTP+2) NSCOUE
-      IHOTSTP=IHOTSTP+2
-      READ(IHOT,REC=IHOTSTP+1) IVSTP
-      READ(IHOT,REC=IHOTSTP+2) NSCOUV
-      IHOTSTP=IHOTSTP+2
-      READ(IHOT,REC=IHOTSTP+1) ICSTP
-      READ(IHOT,REC=IHOTSTP+2) NSCOUC
-      IHOTSTP=IHOTSTP+2
-      READ(IHOT,REC=IHOTSTP+1) IPSTP
-      READ(IHOT,REC=IHOTSTP+2) IWSTP
-      READ(IHOT,REC=IHOTSTP+3) NSCOUM
-      IHOTSTP=IHOTSTP+3
-      READ(IHOT,REC=IHOTSTP+1) IGEP
-      READ(IHOT,REC=IHOTSTP+2) NSCOUGE
-      IHOTSTP=IHOTSTP+2
-      READ(IHOT,REC=IHOTSTP+1) IGVP
-      READ(IHOT,REC=IHOTSTP+2) NSCOUGV
-      IHOTSTP=IHOTSTP+2
-      READ(IHOT,REC=IHOTSTP+1) IGCP
-      READ(IHOT,REC=IHOTSTP+2) NSCOUGC
-      IHOTSTP=IHOTSTP+2
-      READ(IHOT,REC=IHOTSTP+1) IGPP
-      READ(IHOT,REC=IHOTSTP+2) IGWP
-      READ(IHOT,REC=IHOTSTP+3) NSCOUGW
-      IHOTSTP=IHOTSTP+3
+      READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
+
+      READ(IHOT,REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT,REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
+
+      READ(IHOT,REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT,REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
+
+      READ(IHOT,REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT,REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT,REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
+
+      READ(IHOT,REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+
+      READ(IHOT,REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+
+      READ(IHOT,REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+
+      READ(IHOT,REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
+      READ(IHOT,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
 C
 Ckmd Added information for 3D hotstart     
 C     jgf46.02 Read in 3D hotstart data if appropriate
       IF (C3D) THEN
 C     Start reading in the data
-        IHOTSTP=IHOTSTP+1
         READ(IHOT,REC=IHOTSTP) IDEN
         IHOTSTP=IHOTSTP+1
         READ(IHOT,REC=IHOTSTP) N3DSD
@@ -3491,9 +3481,9 @@ C     Start reading in the data
         READ(IHOT,REC=IHOTSTP) N3DGT
         IHOTSTP=IHOTSTP+1
         READ(IHOT,REC=IHOTSTP) I3DGTRec
+        IHOTSTP=IHOTSTP+1
 
         DO NH=1,MNP
-          IHOTSTP=IHOTSTP+1
           READ(IHOT,REC=IHOTSTP) DUU(NH)
           IHOTSTP=IHOTSTP+1
           READ(IHOT,REC=IHOTSTP) DUV(NH)
@@ -3507,11 +3497,11 @@ C     Start reading in the data
           READ(IHOT,REC=IHOTSTP) BSX(NH)
           IHOTSTP=IHOTSTP+1
           READ(IHOT,REC=IHOTSTP) BSY(NH)
+          IHOTSTP=IHOTSTP+1
         ENDDO
 
         DO NH=1,MNP
           DO N=1,NFEN
-            IHOTSTP=IHOTSTP+1
             READ(IHOT,REC=IHOTSTP) RealQ(NH,N)
             IHOTSTP=IHOTSTP+1
             READ(IHOT,REC=IHOTSTP) ImagQ(NH,N)
@@ -3521,23 +3511,24 @@ C     Start reading in the data
             READ(IHOT,REC=IHOTSTP) q20(NH,N)
             IHOTSTP=IHOTSTP+1
             READ(IHOT,REC=IHOTSTP) q20l(NH,N)
+            IHOTSTP=IHOTSTP+1
             IF(ABS(IDen).EQ.1) THEN
-              IHOTSTP=IHOTSTP+1
               READ(IHOT,REC=IHOTSTP) SigT(NH,N)
+              IHOTSTP=IHOTSTP+1
             ENDIF
             IF(ABS(IDen).EQ.2) THEN
-              IHOTSTP=IHOTSTP+1
               READ(IHOT,REC=IHOTSTP) Sal(NH,N)
+              IHOTSTP=IHOTSTP+1
             ENDIF
             IF(ABS(IDen).EQ.3) THEN
-              IHOTSTP=IHOTSTP+1
               READ(IHOT,REC=IHOTSTP) Temp(NH,N)
+              IHOTSTP=IHOTSTP+1
             ENDIF
             IF(ABS(IDen).EQ.4) THEN
-              IHOTSTP=IHOTSTP+1
               READ(IHOT,REC=IHOTSTP) Sal(NH,N)
               IHOTSTP=IHOTSTP+1
               READ(IHOT,REC=IHOTSTP) Temp(NH,N)
+              IHOTSTP=IHOTSTP+1
             ENDIF
           ENDDO
         ENDDO
@@ -3586,7 +3577,7 @@ C   READ NETCDF HOTSTART FILE
      &                  references, comments, host, convention, contact,
      &                  base_date)
 !       time= timenc(timenc_len)
-                   PRINT *,"  ----------START--NETCDF--------------------"
+                   PRINT *,"  ----------START--NETCDF-----------------"
                    PRINT *,"  IMHSF = ", IMHSF
                    PRINT *,"  TIMEHSF = ", TIMEHSF
                    PRINT *,"  ITHSF = ", ITHSF
@@ -3615,7 +3606,7 @@ C   READ NETCDF HOTSTART FILE
                    PRINT *,"  IGPP = ",IGPP
                    PRINT *,"  IGWP = ",IGWP
                    PRINT *,"  NSCOUGW = ",NSCOUGW
-                   PRINT *,"  ---------END-------NETCDF--------------------"
+                   PRINT *,"  ---------END-------NETCDF---------------"
       ENDIF     
 
 
@@ -3652,52 +3643,48 @@ C.......IF HARMONIC ANALYSIS HAS ALREADY BEGUN, READ IN HOT START
 C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
 
          IF(ITHSF.GT.ITHAS) THEN
-            IHOTSTP=IHOTSTP+1
             READ(IHOT,REC=IHOTSTP) ICHA
+            IHOTSTP=IHOTSTP+1
          ENDIF
 
          IF(ITHSF.GE.IHABEG) THEN
-            READ(IHOT,REC=IHOTSTP+1) INZ
-            READ(IHOT,REC=IHOTSTP+2) INF
-            READ(IHOT,REC=IHOTSTP+3) IMM
-            READ(IHOT,REC=IHOTSTP+4) INP
-            READ(IHOT,REC=IHOTSTP+5) INSTAE
-            READ(IHOT,REC=IHOTSTP+6) INSTAV
-            READ(IHOT,REC=IHOTSTP+7) IISTAE
-            READ(IHOT,REC=IHOTSTP+8) IISTAV
-            READ(IHOT,REC=IHOTSTP+9) IIGLOE
-            READ(IHOT,REC=IHOTSTP+10) IIGLOV
-            READ(IHOT,REC=IHOTSTP+11) IICALL
-            READ(IHOT,REC=IHOTSTP+12) INFREQ
-            IHOTSTP = IHOTSTP+12
+            READ(IHOT,REC=IHOTSTP) INZ ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT,REC=IHOTSTP) INF ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT,REC=IHOTSTP) IMM ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT,REC=IHOTSTP) INP ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT,REC=IHOTSTP) INSTAE ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT,REC=IHOTSTP) INSTAV ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT,REC=IHOTSTP) IISTAE ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT,REC=IHOTSTP) IISTAV ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT,REC=IHOTSTP) IIGLOE ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT,REC=IHOTSTP) IIGLOV ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT,REC=IHOTSTP) IICALL ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT,REC=IHOTSTP) INFREQ ; IHOTSTP = IHOTSTP + 1
             
             DO I=1,INFREQ+INF
-               READ(IHOT,REC=IHOTSTP+1) FNAM8(1)
-               READ(IHOT,REC=IHOTSTP+2) FNAM8(2)
-               IHOTSTP = IHOTSTP + 2
+               READ(IHOT,REC=IHOTSTP) FNAM8(1) ; IHOTSTP = IHOTSTP + 1
+               READ(IHOT,REC=IHOTSTP) FNAM8(2) ; IHOTSTP = IHOTSTP + 1
+
                INAMEFR(I) = FNAME1
-               READ(IHOT,REC=IHOTSTP+1) IFREQ(I)
-               READ(IHOT,REC=IHOTSTP+2) IFF(I)
-               READ(IHOT,REC=IHOTSTP+3) IFACE(I)
-               IHOTSTP = IHOTSTP + 3
+               READ(IHOT,REC=IHOTSTP) IFREQ(I) ; IHOTSTP = IHOTSTP + 1
+               READ(IHOT,REC=IHOTSTP) IFF(I) ; IHOTSTP = IHOTSTP + 1
+               READ(IHOT,REC=IHOTSTP) IFACE(I) ; IHOTSTP = IHOTSTP + 1
             ENDDO
             
-            READ(IHOT,REC=IHOTSTP+1) TIMEUD
-            READ(IHOT,REC=IHOTSTP+2) ITUD
-            IHOTSTP = IHOTSTP + 2
+            READ(IHOT,REC=IHOTSTP) TIMEUD ; IHOTSTP = IHOTSTP + 1
+            READ(IHOT,REC=IHOTSTP) ITUD ; IHOTSTP = IHOTSTP + 1
             
             DO I=1,IMM
                DO J=1,IMM
-                  IHOTSTP = IHOTSTP + 1
-                  READ(IHOT,REC=IHOTSTP) HA(I,J)
+                  READ(IHOT,REC=IHOTSTP) HA(I,J) ; IHOTSTP = IHOTSTP + 1
                ENDDO
             ENDDO
             
             IF(NHASE.EQ.1) THEN
                DO J=1,INSTAE
                   DO I=1,IMM
-                     IHOTSTP=IHOTSTP+1
                      READ(IHOT,REC=IHOTSTP) STAELV(I,J)
+                     IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDDO
             ENDIF
@@ -3705,9 +3692,10 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHASV.EQ.1) THEN
                DO J=1,INSTAV
                   DO I=1,IMM
-                     READ(IHOT,REC=IHOTSTP+1) STAULV(I,J)
-                     READ(IHOT,REC=IHOTSTP+2) STAVLV(I,J)
-                     IHOTSTP = IHOTSTP + 2
+                     READ(IHOT,REC=IHOTSTP) STAULV(I,J) 
+                     IHOTSTP = IHOTSTP + 1
+                     READ(IHOT,REC=IHOTSTP) STAVLV(I,J) 
+                     IHOTSTP = IHOTSTP + 1
                   ENDDO
                ENDDO
             ENDIF
@@ -3715,8 +3703,8 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHAGE.EQ.1) THEN
                DO J=1,INP
                   DO I=1,IMM
-                     IHOTSTP=IHOTSTP+1
                      READ(IHOT,REC=IHOTSTP) GLOELV(I,J)
+                     IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDDO
             ENDIF
@@ -3724,9 +3712,10 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHAGV.EQ.1) THEN
                DO J=1,INP
                   DO I=1,IMM
-                     READ(IHOT,REC=IHOTSTP+1) GLOULV(I,J)
-                     READ(IHOT,REC=IHOTSTP+2) GLOVLV(I,J)
-                     IHOTSTP = IHOTSTP + 2
+                     READ(IHOT,REC=IHOTSTP) GLOULV(I,J)
+                     IHOTSTP = IHOTSTP + 1
+                     READ(IHOT,REC=IHOTSTP) GLOVLV(I,J)
+                     IHOTSTP = IHOTSTP + 1
                   ENDDO
                ENDDO
             ENDIF
@@ -3735,22 +3724,26 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
          
          IF((FMV.GT.0.).AND.(INFREQ.GT.0).AND.(IM.EQ.0)) THEN !include means and variances
             IF(ITHSF.GT.ITMV) THEN
-               IHOTSTP=IHOTSTP+1
                READ(IHOT,REC=IHOTSTP) NTSTEPS
+               IHOTSTP=IHOTSTP+1
                IF(NHAGE.EQ.1) THEN
                   DO I=1,INP
-                     READ(IHOT,REC=IHOTSTP+1) ELAV(I)
-                     READ(IHOT,REC=IHOTSTP+2) ELVA(I)
-                     IHOTSTP=IHOTSTP+2
+                     READ(IHOT,REC=IHOTSTP) ELAV(I)
+                     IHOTSTP=IHOTSTP+1
+                     READ(IHOT,REC=IHOTSTP) ELVA(I)
+                     IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDIF
                IF(NHAGV.EQ.1) THEN
                   DO I=1,INP
-                     READ(IHOT,REC=IHOTSTP+1) XVELAV(I)
-                     READ(IHOT,REC=IHOTSTP+2) YVELAV(I)
-                     READ(IHOT,REC=IHOTSTP+3) XVELVA(I)
-                     READ(IHOT,REC=IHOTSTP+4) YVELVA(I)
-                     IHOTSTP=IHOTSTP+4
+                     READ(IHOT,REC=IHOTSTP) XVELAV(I)
+                     IHOTSTP=IHOTSTP+1
+                     READ(IHOT,REC=IHOTSTP) YVELAV(I)
+                     IHOTSTP=IHOTSTP+1
+                     READ(IHOT,REC=IHOTSTP) XVELVA(I)
+                     IHOTSTP=IHOTSTP+1
+                     READ(IHOT,REC=IHOTSTP) YVELVA(I)
+                     IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDIF
             ENDIF
@@ -3784,86 +3777,84 @@ C
 
          DO I=1, NNODP(IPROC)
             INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            IHOTSTP=IHOTSTP+1
             WRITE(LOC(IPROC),REC=IHOTSTP) ETA1(INDEX)
+            IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
             INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            IHOTSTP=IHOTSTP+1
             WRITE(LOC(IPROC),REC=IHOTSTP) ETA2(INDEX)
+            IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
             INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            IHOTSTP=IHOTSTP+1
             WRITE(LOC(IPROC),REC=IHOTSTP) EtaDisc(INDEX)
+            IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
             INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            IHOTSTP=IHOTSTP+1
             WRITE(LOC(IPROC),REC=IHOTSTP) UU2(INDEX)
+            IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
             INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            IHOTSTP=IHOTSTP+1
             WRITE(LOC(IPROC),REC=IHOTSTP) VV2(INDEX)
+            IHOTSTP=IHOTSTP+1
          END DO
 
          IF(IM.EQ.10) THEN
             DO I=1, NNODP(IPROC)
                INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-               IHOTSTP=IHOTSTP+1
                WRITE(LOC(IPROC),REC=IHOTSTP) CH1(INDEX)
+               IHOTSTP=IHOTSTP+1
             END DO
          ENDIF
 
          DO I=1, NNODP(IPROC)
             INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            IHOTSTP=IHOTSTP+1
             WRITE(LOC(IPROC),REC=IHOTSTP) NODECODE(INDEX)
+            IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1,NELP(IPROC)
             INDEX=ABS(IMAP_EL_LG(I,IPROC))
-            IHOTSTP=IHOTSTP+1                                    
             WRITE(LOC(IPROC),REC=IHOTSTP) NOFF(INDEX)
+            IHOTSTP=IHOTSTP+1                                    
          END DO
          
-         WRITE(LOC(IPROC),REC=IHOTSTP+1) IESTP
-         WRITE(LOC(IPROC),REC=IHOTSTP+2) NSCOUE
-         IHOTSTP=IHOTSTP+2
-         WRITE(LOC(IPROC),REC=IHOTSTP+1) IVSTP
-         WRITE(LOC(IPROC),REC=IHOTSTP+2) NSCOUV
-         IHOTSTP=IHOTSTP+2
-         WRITE(LOC(IPROC),REC=IHOTSTP+1) ICSTP
-         WRITE(LOC(IPROC),REC=IHOTSTP+2) NSCOUC
-         IHOTSTP=IHOTSTP+2
-         WRITE(LOC(IPROC),REC=IHOTSTP+1) IPSTP
-         WRITE(LOC(IPROC),REC=IHOTSTP+2) IWSTP
-         WRITE(LOC(IPROC),REC=IHOTSTP+3) NSCOUM
-         IHOTSTP=IHOTSTP+3
-         WRITE(LOC(IPROC),REC=IHOTSTP+1) IGEP
-         WRITE(LOC(IPROC),REC=IHOTSTP+2) NSCOUGE
-         IHOTSTP=IHOTSTP+2
-         WRITE(LOC(IPROC),REC=IHOTSTP+1) IGVP
-         WRITE(LOC(IPROC),REC=IHOTSTP+2) NSCOUGV
-         IHOTSTP=IHOTSTP+2
-         WRITE(LOC(IPROC),REC=IHOTSTP+1) IGCP
-         WRITE(LOC(IPROC),REC=IHOTSTP+2) NSCOUGC
-         IHOTSTP=IHOTSTP+2
-         WRITE(LOC(IPROC),REC=IHOTSTP+1) IGPP
-         WRITE(LOC(IPROC),REC=IHOTSTP+2) IGWP
-         WRITE(LOC(IPROC),REC=IHOTSTP+3) NSCOUGW
-         IHOTSTP=IHOTSTP+3
+         WRITE(LOC(IPROC),REC=IHOTSTP) IESTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
+
+         WRITE(LOC(IPROC),REC=IHOTSTP) IVSTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
+
+         WRITE(LOC(IPROC),REC=IHOTSTP) ICSTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
+
+         WRITE(LOC(IPROC),REC=IHOTSTP) IPSTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC(IPROC),REC=IHOTSTP) IWSTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
+
+         WRITE(LOC(IPROC),REC=IHOTSTP) IGEP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUGE  ; IHOTSTP = IHOTSTP + 1
+
+         WRITE(LOC(IPROC),REC=IHOTSTP) IGVP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUGV  ; IHOTSTP = IHOTSTP + 1
+
+         WRITE(LOC(IPROC),REC=IHOTSTP) IGCP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUGC  ; IHOTSTP = IHOTSTP + 1
+
+         WRITE(LOC(IPROC),REC=IHOTSTP) IGPP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC(IPROC),REC=IHOTSTP) IGWP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUGW  ; IHOTSTP = IHOTSTP + 1
 
 Ckmd Added information for 3D hotstart
 C     jgf46.02 Write out 3D hotstart data if appropriate
          IF (C3D) THEN
 C     Start writing out the 3D hotstart information
-            IHOTSTP=IHOTSTP+1
             WRITE(LOC(IPROC),REC=IHOTSTP) IDEN
             IHOTSTP=IHOTSTP+1
             WRITE(LOC(IPROC),REC=IHOTSTP) N3DSD
@@ -3889,10 +3880,10 @@ C     Start writing out the 3D hotstart information
             WRITE(LOC(IPROC),REC=IHOTSTP) N3DGT
             IHOTSTP=IHOTSTP+1
             WRITE(LOC(IPROC),REC=IHOTSTP) I3DGTRec
+            IHOTSTP=IHOTSTP+1
 
             DO I=1,NNODP(IPROC)
                INDEX=IMAP_NOD_LG(I,IPROC)
-               IHOTSTP=IHOTSTP+1
                WRITE(LOC(IPROC),REC=IHOTSTP) DUU(INDEX)
                IHOTSTP=IHOTSTP+1
                WRITE(LOC(IPROC),REC=IHOTSTP) DUV(INDEX)
@@ -3906,12 +3897,12 @@ C     Start writing out the 3D hotstart information
                WRITE(LOC(IPROC),REC=IHOTSTP) BSX(INDEX)
                IHOTSTP=IHOTSTP+1
                WRITE(LOC(IPROC),REC=IHOTSTP) BSY(INDEX)
+               IHOTSTP=IHOTSTP+1
              ENDDO
 
              DO I=1,NNODP(IPROC)
                INDEX=IMAP_NOD_LG(I,IPROC)
                DO N=1,NFEN
-                 IHOTSTP=IHOTSTP+1
                  WRITE(LOC(IPROC),REC=IHOTSTP) RealQ(INDEX,N)
                  IHOTSTP=IHOTSTP+1
                  WRITE(LOC(IPROC),REC=IHOTSTP) ImagQ(INDEX,N)
@@ -3938,6 +3929,7 @@ C     Start writing out the 3D hotstart information
                    WRITE(LOC(IPROC),REC=IHOTSTP) Sal(INDEX,N)
                    IHOTSTP=IHOTSTP+1
                    WRITE(LOC(IPROC),REC=IHOTSTP) Temp(INDEX,N)
+                   IHOTSTP=IHOTSTP+1
                  ENDIF
                ENDDO
              ENDDO
@@ -4177,88 +4169,87 @@ C
 
          DO I=1, NNODP(IPROC)
             INDEX = IMAP_NOD_LG(I,IPROC)
-            IHOTSTP=IHOTSTP+1
             READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
+            IHOTSTP=IHOTSTP+1
             IF (INDEX > 0) ETA1(INDEX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDEX = IMAP_NOD_LG(I,IPROC)
-            IHOTSTP=IHOTSTP+1
             READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
+            IHOTSTP=IHOTSTP+1
             IF (INDEX > 0) ETA2(INDEX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDEX = IMAP_NOD_LG(I,IPROC)
-            IHOTSTP=IHOTSTP+1
             READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
+            IHOTSTP=IHOTSTP+1
             IF (INDEX > 0) EtaDisc(INDEX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDEX = IMAP_NOD_LG(I,IPROC)
-            IHOTSTP=IHOTSTP+1
             READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
+            IHOTSTP=IHOTSTP+1
             IF (INDEX > 0) UU2(INDEX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDEX = IMAP_NOD_LG(I,IPROC)
-            IHOTSTP=IHOTSTP+1
             READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
+            IHOTSTP=IHOTSTP+1
             IF (INDEX > 0) VV2(INDEX) = RVALUE
          END DO
 
          IF(IM.EQ.10) THEN
             DO I=1, NNODP(IPROC)
                INDEX = IMAP_NOD_LG(I,IPROC)
-               IHOTSTP=IHOTSTP+1
                READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
+               IHOTSTP=IHOTSTP+1
                IF (INDEX > 0) CH1(INDEX) = RVALUE
             END DO
          ENDIF
 
          DO I=1, NNODP(IPROC)
             INDEX = IMAP_NOD_LG(I,IPROC)
-            IHOTSTP=IHOTSTP+1
             READ(LOC(IPROC),REC=IHOTSTP) IVALUE           
+            IHOTSTP=IHOTSTP+1
             IF (INDEX > 0) NODECODE(INDEX) = IVALUE
          END DO
 
          DO I=1,NELP(IPROC)
             INDEX = IMAP_EL_LG(I,IPROC)
-            IHOTSTP=IHOTSTP+1
             READ(LOC(IPROC),REC=IHOTSTP) IVALUE           
+            IHOTSTP=IHOTSTP+1
             IF (INDEX > 0) NOFF(INDEX) = IVALUE
          END DO
          
-         READ(LOC(IPROC),REC=IHOTSTP+1) IESTP
-         READ(LOC(IPROC),REC=IHOTSTP+2) NSCOUE
-         IHOTSTP=IHOTSTP+2
-         READ(LOC(IPROC),REC=IHOTSTP+1) IVSTP
-         READ(LOC(IPROC),REC=IHOTSTP+2) NSCOUV
-         IHOTSTP=IHOTSTP+2
-         READ(LOC(IPROC),REC=IHOTSTP+1) ICSTP
-         READ(LOC(IPROC),REC=IHOTSTP+2) NSCOUC
-         IHOTSTP=IHOTSTP+2
-         READ(LOC(IPROC),REC=IHOTSTP+1) IPSTP
-         READ(LOC(IPROC),REC=IHOTSTP+2) IWSTP
-         READ(LOC(IPROC),REC=IHOTSTP+3) NSCOUM
-         IHOTSTP=IHOTSTP+3
-         READ(LOC(IPROC),REC=IHOTSTP+1) IGEP
-         READ(LOC(IPROC),REC=IHOTSTP+2) NSCOUGE
-         IHOTSTP=IHOTSTP+2
-         READ(LOC(IPROC),REC=IHOTSTP+1) IGVP
-         READ(LOC(IPROC),REC=IHOTSTP+2) NSCOUGV
-         IHOTSTP=IHOTSTP+2
-         READ(LOC(IPROC),REC=IHOTSTP+1) IGCP
-         READ(LOC(IPROC),REC=IHOTSTP+2) NSCOUGC
-         IHOTSTP=IHOTSTP+2
-         READ(LOC(IPROC),REC=IHOTSTP+1) IGPP
-         READ(LOC(IPROC),REC=IHOTSTP+2) IGWP
-         READ(LOC(IPROC),REC=IHOTSTP+3) NSCOUGW
-         IHOTSTP=IHOTSTP+3
+         READ(LOC(IPROC),REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC(IPROC),REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
+
+         READ(LOC(IPROC),REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC(IPROC),REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
+
+         READ(LOC(IPROC),REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC(IPROC),REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
+
+         READ(LOC(IPROC),REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC(IPROC),REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC(IPROC),REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
+
+         READ(LOC(IPROC),REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC(IPROC),REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+
+         READ(LOC(IPROC),REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC(IPROC),REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+
+         READ(LOC(IPROC),REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC(IPROC),REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+
+         READ(LOC(IPROC),REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC(IPROC),REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC(IPROC),REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
 #if HA
 C
 C     jgf46.02 Write out 3D hotstart data if appropriate
@@ -4327,66 +4318,65 @@ C-----------------------------------------------------------------------
       WRITE(IHOT,REC=IHOTSTP) MNE          ; IHOTSTP = IHOTSTP + 1
 
       DO I=1,MNP
-         IHOTSTP = IHOTSTP + 1
          WRITE(IHOT,REC=IHOTSTP) ETA1(I)
+         IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         IHOTSTP = IHOTSTP + 1
          WRITE(IHOT,REC=IHOTSTP) ETA2(I)
+         IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         IHOTSTP = IHOTSTP + 1
          WRITE(IHOT,REC=IHOTSTP) EtaDisc(I)
+         IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         IHOTSTP = IHOTSTP + 1
          WRITE(IHOT,REC=IHOTSTP) UU2(I)
+         IHOTSTP = IHOTSTP + 1
       END DO
       DO I=1,MNP
-         IHOTSTP = IHOTSTP + 1
          WRITE(IHOT,REC=IHOTSTP) VV2(I)
+         IHOTSTP = IHOTSTP + 1
       END DO
       IF(IM.EQ.10) THEN
         DO I=1,MNP
-           IHOTSTP=IHOTSTP+1
            WRITE(IHOT,REC=IHOTSTP) CH1(I)
+           IHOTSTP=IHOTSTP+1
         END DO
       ENDIF
       DO I=1,MNP
-         IHOTSTP=IHOTSTP+1
          WRITE(IHOT,REC=IHOTSTP) NODECODE(I)
+         IHOTSTP=IHOTSTP+1
       END DO
       DO I=1,MNE
-         IHOTSTP=IHOTSTP+1                                    
          WRITE(IHOT,REC=IHOTSTP) NOFF(I)                     
+         IHOTSTP=IHOTSTP+1                                    
       END DO
 
-      WRITE(IHOT,REC=IHOTSTP+1) IESTP
-      WRITE(IHOT,REC=IHOTSTP+2) NSCOUE
-      IHOTSTP=IHOTSTP+2
-      WRITE(IHOT,REC=IHOTSTP+1) IVSTP
-      WRITE(IHOT,REC=IHOTSTP+2) NSCOUV
-      IHOTSTP=IHOTSTP+2
-      WRITE(IHOT,REC=IHOTSTP+1) ICSTP
-      WRITE(IHOT,REC=IHOTSTP+2) NSCOUC
-      IHOTSTP=IHOTSTP+2
-      WRITE(IHOT,REC=IHOTSTP+1) IPSTP
-      WRITE(IHOT,REC=IHOTSTP+2) IWSTP
-      WRITE(IHOT,REC=IHOTSTP+3) NSCOUM
-      IHOTSTP=IHOTSTP+3
-      WRITE(IHOT,REC=IHOTSTP+1) IGEP
-      WRITE(IHOT,REC=IHOTSTP+2) NSCOUGE
-      IHOTSTP=IHOTSTP+2
-      WRITE(IHOT,REC=IHOTSTP+1) IGVP
-      WRITE(IHOT,REC=IHOTSTP+2) NSCOUGV
-      IHOTSTP=IHOTSTP+2
-      WRITE(IHOT,REC=IHOTSTP+1) IGCP
-      WRITE(IHOT,REC=IHOTSTP+2) NSCOUGC
-      IHOTSTP=IHOTSTP+2
-      WRITE(IHOT,REC=IHOTSTP+1) IGPP
-      WRITE(IHOT,REC=IHOTSTP+2) IGWP
-      WRITE(IHOT,REC=IHOTSTP+3) NSCOUGW
-      IHOTSTP=IHOTSTP+3
+      WRITE(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
+
+      WRITE(IHOT,REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT,REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
+
+      WRITE(IHOT,REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT,REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
+
+      WRITE(IHOT,REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT,REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT,REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
+
+      WRITE(IHOT,REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+
+      WRITE(IHOT,REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+
+      WRITE(IHOT,REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+
+      WRITE(IHOT,REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
+      WRITE(IHOT,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
 C
      
        ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet 
@@ -4414,52 +4404,48 @@ C.......IF HARMONIC ANALYSIS HAS ALREADY BEGUN, READ IN HOT START
 C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
 
          IF(ITHSF.GT.ITHAS) THEN
-            IHOTSTP=IHOTSTP+1
             WRITE(IHOT,REC=IHOTSTP) ICHA
+            IHOTSTP=IHOTSTP+1
          ENDIF
 
          IF(ITHSF.GE.IHABEG) THEN
-            WRITE(IHOT,REC=IHOTSTP+1) INZ
-            WRITE(IHOT,REC=IHOTSTP+2) INF
-            WRITE(IHOT,REC=IHOTSTP+3) IMM
-            WRITE(IHOT,REC=IHOTSTP+4) INP
-            WRITE(IHOT,REC=IHOTSTP+5) INSTAE
-            WRITE(IHOT,REC=IHOTSTP+6) INSTAV
-            WRITE(IHOT,REC=IHOTSTP+7) IISTAE
-            WRITE(IHOT,REC=IHOTSTP+8) IISTAV
-            WRITE(IHOT,REC=IHOTSTP+9) IIGLOE
-            WRITE(IHOT,REC=IHOTSTP+10) IIGLOV
-            WRITE(IHOT,REC=IHOTSTP+11) IICALL
-            WRITE(IHOT,REC=IHOTSTP+12) INFREQ
-            IHOTSTP = IHOTSTP+12
+            WRITE(IHOT,REC=IHOTSTP) INZ ; IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT,REC=IHOTSTP) INF ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT,REC=IHOTSTP) IMM ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT,REC=IHOTSTP) INP ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT,REC=IHOTSTP) INSTAE ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT,REC=IHOTSTP) INSTAV ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT,REC=IHOTSTP) IISTAE ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT,REC=IHOTSTP) IISTAV ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT,REC=IHOTSTP) IIGLOE ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT,REC=IHOTSTP) IIGLOV ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT,REC=IHOTSTP) IICALL ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT,REC=IHOTSTP) INFREQ ;  IHOTSTP = IHOTSTP + 1
             
             DO I=1,INFREQ+INF
-               WRITE(IHOT,REC=IHOTSTP+1) FNAM8(1)
-               WRITE(IHOT,REC=IHOTSTP+2) FNAM8(2)
-               IHOTSTP = IHOTSTP + 2
+               WRITE(IHOT,REC=IHOTSTP) FNAM8(1) ;  IHOTSTP = IHOTSTP + 1
+               WRITE(IHOT,REC=IHOTSTP) FNAM8(2) ;  IHOTSTP = IHOTSTP + 1
                INAMEFR(I) = FNAME1
-               WRITE(IHOT,REC=IHOTSTP+1) IFREQ(I)
-               WRITE(IHOT,REC=IHOTSTP+2) IFF(I)
-               WRITE(IHOT,REC=IHOTSTP+3) IFACE(I)
-               IHOTSTP = IHOTSTP + 3
+               WRITE(IHOT,REC=IHOTSTP) IFREQ(I) ;  IHOTSTP = IHOTSTP + 1
+               WRITE(IHOT,REC=IHOTSTP) IFF(I) ;  IHOTSTP = IHOTSTP + 1
+               WRITE(IHOT,REC=IHOTSTP) IFACE(I) ;  IHOTSTP = IHOTSTP + 1
             ENDDO
             
-            WRITE(IHOT,REC=IHOTSTP+1) TIMEUD
-            WRITE(IHOT,REC=IHOTSTP+2) ITUD
-            IHOTSTP = IHOTSTP + 2
+            WRITE(IHOT,REC=IHOTSTP) TIMEUD ;  IHOTSTP = IHOTSTP + 1
+            WRITE(IHOT,REC=IHOTSTP) ITUD ;  IHOTSTP = IHOTSTP + 1
             
             DO I=1,IMM
                DO J=1,IMM
-                  IHOTSTP = IHOTSTP + 1
                   WRITE(IHOT,REC=IHOTSTP) HA(I,J)
+                  IHOTSTP = IHOTSTP + 1
                ENDDO
             ENDDO
             
             IF(NHASE.EQ.1) THEN
                DO J=1,INSTAE
                   DO I=1,IMM
-                     IHOTSTP=IHOTSTP+1
                      WRITE(IHOT,REC=IHOTSTP) STAELV(I,J)
+                     IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDDO
             ENDIF
@@ -4467,9 +4453,10 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHASV.EQ.1) THEN
                DO J=1,INSTAV
                   DO I=1,IMM
-                     WRITE(IHOT,REC=IHOTSTP+1) STAULV(I,J)
-                     WRITE(IHOT,REC=IHOTSTP+2) STAVLV(I,J)
-                     IHOTSTP = IHOTSTP + 2
+                     WRITE(IHOT,REC=IHOTSTP) STAULV(I,J)
+                     IHOTSTP=IHOTSTP+1                    
+                     WRITE(IHOT,REC=IHOTSTP) STAVLV(I,J)
+                     IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDDO
             ENDIF
@@ -4477,8 +4464,8 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHAGE.EQ.1) THEN
                DO J=1,INP
                   DO I=1,IMM
-                     IHOTSTP=IHOTSTP+1
                      WRITE(IHOT,REC=IHOTSTP) GLOELV(I,J)
+                     IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDDO
             ENDIF
@@ -4486,9 +4473,10 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             IF(NHAGV.EQ.1) THEN
                DO J=1,INP
                   DO I=1,IMM
-                     WRITE(IHOT,REC=IHOTSTP+1) GLOULV(I,J)
-                     WRITE(IHOT,REC=IHOTSTP+2) GLOVLV(I,J)
-                     IHOTSTP = IHOTSTP + 2
+                     WRITE(IHOT,REC=IHOTSTP) GLOULV(I,J)
+                     IHOTSTP = IHOTSTP + 1
+                     WRITE(IHOT,REC=IHOTSTP) GLOVLV(I,J)
+                     IHOTSTP = IHOTSTP + 1
                   ENDDO
                ENDDO
             ENDIF
@@ -4497,22 +4485,26 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
          
          IF((FMV.GT.0.).AND.(INFREQ.GT.0).AND.(IM.EQ.0)) THEN !include means and variances
             IF(ITHSF.GT.ITMV) THEN
-               IHOTSTP=IHOTSTP+1
                WRITE(IHOT,REC=IHOTSTP) NTSTEPS
+               IHOTSTP=IHOTSTP+1
                IF(NHAGE.EQ.1) THEN
                   DO I=1,INP
-                     WRITE(IHOT,REC=IHOTSTP+1) ELAV(I)
-                     WRITE(IHOT,REC=IHOTSTP+2) ELVA(I)
-                     IHOTSTP=IHOTSTP+2
+                     WRITE(IHOT,REC=IHOTSTP) ELAV(I)
+                     IHOTSTP=IHOTSTP+1
+                     WRITE(IHOT,REC=IHOTSTP) ELVA(I)
+                     IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDIF
                IF(NHAGV.EQ.1) THEN
                   DO I=1,INP
-                     WRITE(IHOT,REC=IHOTSTP+1) XVELAV(I)
-                     WRITE(IHOT,REC=IHOTSTP+2) YVELAV(I)
-                     WRITE(IHOT,REC=IHOTSTP+3) XVELVA(I)
-                     WRITE(IHOT,REC=IHOTSTP+4) YVELVA(I)
-                     IHOTSTP=IHOTSTP+4
+                     WRITE(IHOT,REC=IHOTSTP) XVELAV(I)
+                     IHOTSTP=IHOTSTP+1
+                     WRITE(IHOT,REC=IHOTSTP) YVELAV(I)
+                     IHOTSTP=IHOTSTP+1
+                     WRITE(IHOT,REC=IHOTSTP) XVELVA(I)
+                     IHOTSTP=IHOTSTP+1
+                     WRITE(IHOT,REC=IHOTSTP) YVELVA(I)
+                     IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDIF
             ENDIF

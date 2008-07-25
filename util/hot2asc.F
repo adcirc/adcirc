@@ -11,9 +11,12 @@
 
       
       character(8) :: vars(NVARS) =
-     $  (/ "IESTP   ", "NSCOUE  ", "IVSTP   ", "NSCOUV  ", "ICSTP   ", "NSCOUC  ",
-     $     "IPSTP   ", "IWSTP   ", "NSCOUM  ", "IGEP    ", "NSCOUGE ", "IGVP    ",
-     $     "NSCOUGV ", "IGCP    ", "NSCOUGC ", "IGPP    ", "IGWP    ", "NSCOUGW " /)
+     &  (/ "IESTP   ", "NSCOUE  ", "IVSTP   ", "NSCOUV  ", "ICSTP   ", 
+     &     "NSCOUC  ",
+     &     "IPSTP   ", "IWSTP   ", "NSCOUM  ", "IGEP    ", "NSCOUGE ", 
+     &     "IGVP    ",
+     &     "NSCOUGV ", "IGCP    ", "NSCOUGC ", "IGPP    ", "IGWP    ", 
+     &     "NSCOUGW " /)
 
 
       if (iargc() < 1) then
@@ -96,8 +99,8 @@
       write(out, 1000) trim(varname)
 
       do i = 1, size
-        irec = irec + 1
-        read(in, rec=irec) x
+        !irec = irec + 1
+        read(in, rec=irec) x ; irec = irec + 1
         write(out, 1010) trim(varname), i, x
       end do
 
@@ -116,8 +119,8 @@
       write(out, 1000) trim(varname)
 
       do i = 1, size
-        irec = irec + 1
-        read(in, rec=irec) x
+        !irec = irec + 1
+        read(in, rec=irec) x ; irec = irec + 1
         write(out, 1010) trim(varname), i, x
       end do
 

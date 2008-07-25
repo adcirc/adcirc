@@ -1256,8 +1256,8 @@ c***** Read in RHS Matrix
 c
       do i=1,mm
          do j=1,mm
-            IHOTSTP = IHOTSTP + 1
             READ(IHOT,REC=IHOTSTP) HA(I,J)
+            IHOTSTP = IHOTSTP + 1
          end do
       end do
 
@@ -1420,8 +1420,8 @@ c***** Read in Global Elevation LHS load vector
 c
       do n=1,np
          do i=1,mm
-            IHOTSTP=IHOTSTP+1
             READ(IHOT,REC=IHOTSTP) GLOELV(I,N)
+            IHOTSTP=IHOTSTP+1
          end do
       end do
 C
@@ -1444,8 +1444,8 @@ c***** Read in Station Elevation LHS load vector
 c
       do n=1,NSTAE
          do i=1,mm
-            IHOTSTP=IHOTSTP+1
             READ(IHOT,REC=IHOTSTP) STAELV(I,N)
+            IHOTSTP=IHOTSTP+1
          end do
       end do
 C
@@ -1559,8 +1559,8 @@ c***** Write Out LHS Matrix
 c
       do i=1,mm
          do j=1,mm
-            IHOTSTP = IHOTSTP + 1
             WRITE(IOUNIT,REC=IHOTSTP) HA(I,J)
+            IHOTSTP = IHOTSTP + 1
          END DO
       END DO
 
@@ -1583,8 +1583,8 @@ c***** Write Out Global Elevation RHS load vector
 c
       do n=1,np
          do i=1,mm
-            IHOTSTP=IHOTSTP+1
             WRITE(IOUNIT,REC=IHOTSTP) GLOELV(I,N)
+            IHOTSTP=IHOTSTP+1
          end do
       end do
       
@@ -1606,8 +1606,8 @@ c***** Write Out Station Elevation RHS load vector
 c
       do n=1,NSTAE
          do i=1,mm
-            IHOTSTP=IHOTSTP+1
             WRITE(IOUNIT,REC=IHOTSTP) STAELV(I,N)
+            IHOTSTP=IHOTSTP+1
          end do
       end do
 
@@ -1629,10 +1629,10 @@ c***** Write Out Global Velocity RHS load vector
 c
       do n=1,np
          do i=1,mm
-            IHOTSTP=IHOTSTP+1
             WRITE(IOUNIT,REC=IHOTSTP) GLOULV(I,N)
             IHOTSTP=IHOTSTP+1
             WRITE(IOUNIT,REC=IHOTSTP) GLOVLV(I,N)
+            IHOTSTP=IHOTSTP+1
          end do
       end do
       
@@ -1654,10 +1654,10 @@ c***** Write Out Station Velocity LHS load vector
 c
       do N=1,NSTAV
          do i=1,mm
-            IHOTSTP=IHOTSTP+1
             WRITE(IOUNIT,REC=IHOTSTP) STAULV(I,N)
             IHOTSTP=IHOTSTP+1
             WRITE(IOUNIT,REC=IHOTSTP) STAVLV(I,N)
+            IHOTSTP=IHOTSTP+1
          end do
       end do
 
