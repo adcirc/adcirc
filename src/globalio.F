@@ -532,7 +532,7 @@ C     on each iteration of the while loop below
          j = 1
          if (myproc == 0) then
             do i = istart, iend
-               write(16,*) i, j, k !jgfdebug48.03
+!               write(16,*) i, j, k !jgfdebug48.03                      ! commented out by mcf : k has not been defined
                write(lun, 1000) i, (resultBuf(k), k = j, j +
      &                          descript % num_items_per_record - 1)
                j = j + descript % num_items_per_record

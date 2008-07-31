@@ -102,7 +102,7 @@ C      USE SIZES
 
 
       IF(.NOT. ALLOCATED(timenc)) ALLOCATE(timenc(timenc_len))
-      timenc(timenc_len)=time
+!      timenc(timenc_len)=time
 
       IF (ABS(NOUTE).EQ.3) THEN  !fort.61
          lun = 61
@@ -655,6 +655,8 @@ C      USE SIZES
 !        num_recordse = NE_G
          num_records = MNP
          num_recordse = MNE
+!        InputFileFmtVn=001001000
+
         IF(.NOT.ALLOCATED(eta11))ALLOCATE(eta11(num_records,timenc_len))
         IF(.NOT.ALLOCATED(eta22))ALLOCATE(eta22(num_records,timenc_len))
         IF(.NOT.ALLOCATED(etadd))ALLOCATE(etadd(num_records,timenc_len))
@@ -663,13 +665,22 @@ C      USE SIZES
         IF(.NOT.ALLOCATED(nodecodenc))ALLOCATE(nodecodenc(num_records))
         IF(.NOT.ALLOCATED(noffnc))ALLOCATE (noffnc(num_recordse))
       
+!             IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
+!           IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
         IF(.NOT. ALLOCATED(xnc)) ALLOCATE(xnc(num_records))
         IF(.NOT. ALLOCATED(ync)) ALLOCATE(ync(num_records))
+        
         IF(.NOT. ALLOCATED(nbvvnc)) ALLOCATE(nbvvnc(nbou,nvel))
+        IF(.NOT. ALLOCATED(NBDV)) ALLOCATE(NBDV(NOPE,NETA))
         IF(.NOT. ALLOCATED(nvellnc)) ALLOCATE(nvellnc(nbou))
         IF(.NOT. ALLOCATED(nvdllnc)) ALLOCATE(nvdllnc(nope))
         IF(.NOT. ALLOCATED(ibtype)) ALLOCATE(ibtype(nbou))
 
+        PRINT *,"nope = ", nope
+        PRINT *,"neta = ", neta
+        netanc=neta
+        PRINT *,"netanc = ", netanc
+       
                DO I=1,num_records
              	     xnc(i)=X(i)
                      ync(i)=Y(i)
@@ -679,17 +690,26 @@ C      USE SIZES
 !
                netanc=0
                DO i=1,nope
+        PRINT *,"nvdllnc b ",i, nvdllnc(i)
                   nvdllnc(i)=nvdll(i)
                   netanc=netanc+nvdllnc(i)
+        PRINT *,"nvdllnc a",i, nvdllnc(i)
               END DO
+        PRINT *,"netanc = ", netanc
 
             IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
+        PRINT *,"allocate nopenc = "
+        PRINT *,"allocate nope = ", nope
                
                k=0
                   DO i=1,nope
+        PRINT *,"nope ",i, nope
+        PRINT *,"nvdllnc(i) ",i, nvdllnc(i)
                         DO j=1,nvdllnc(i)
                         k=k+1
+        PRINT *,"nopenc b",k, nopenc(k)
              	        nopenc(k)=nbdv(i,j)
+        PRINT *,"nopenc a",k, nopenc(k)
                      END DO
                   END DO
 !
@@ -713,6 +733,8 @@ C      USE SIZES
              	        nbounc(k)=nbvv(i,j)
                      END DO
                   END DO
+        PRINT *,"nvelnc = ", nvelnc
+        PRINT *,"netanc = ", netanc
                   
 !          PRINT *, "==== write_output: IM = ", IM, IHOTSTP
 !          PRINT *, "==== write_output: TIME = ", TIME, IHOTSTP
@@ -730,7 +752,7 @@ C         Determine if netcdf file exists
           PRINT *, "LUN = ", LUN
           
           call writenc67 (nhsinc,abs(lun),timenc_len,num_records,timenc,
-     &                    nt, nhsinc, uu2,vv2,
+     &                    nt, nhsinc, uu22,vv22,
      &                    eta11, eta22, etadd, nodecodenc,noffnc,
      &                    imhs, it,iestp,nscoue,ivstp,nscouv, icstp,
      &                    nscouc, ipstp, iwstp, nscoum, igep, nscouge,
@@ -763,7 +785,7 @@ C         Determine if netcdf file exists
           PRINT *, "LUN = ", LUN
         
           call writenc67 (nhsinc,abs(lun),timenc_len,num_records,timenc,
-     &                    nt, nhsinc, uu2,vv2,
+     &                    nt, nhsinc, uu22,vv22,
      &                    eta11, eta22, etadd, nodecodenc,noffnc,
      &                    imhs, it,iestp,nscoue,ivstp,nscouv, icstp,
      &                    nscouc, ipstp, iwstp, nscoum, igep, nscouge,
@@ -3215,8 +3237,8 @@ C
      &     eta11,etadd, nodecodenc, noffnc,
      &     writenc61, writenc62, writenc63, writenc64,
      &     writenc71, writenc72, writenc73, writenc74,
-     &     writenc67, readnc67,
-     &     nbvvnc,
+     &     writenc67, readnc67, nodecodenc,noffnc,
+     &     nbvvnc,ibtypenc,
      &     nbounc,nvelnc,nvellnc,
      &     nopenc,netanc,nvdllnc,
      &     ncmode
@@ -3263,6 +3285,20 @@ ckmd end of additions
       REAL(SZ),ALLOCATABLE ::  GLOULV(:,:),GLOVLV(:,:)
       REAL(SZ),ALLOCATABLE ::  STAELV(:,:)
       REAL(SZ),ALLOCATABLE ::  STAULV(:,:),STAVLV(:,:)
+      REAL(SZ) TIME
+
+C
+C     ALLOCATE ARRAYS FOR NETCDF - MCF 
+C
+      REAL(SZ),ALLOCATABLE :: zeta1 (:,:)  
+      REAL(SZ),ALLOCATABLE :: zeta2 (:,:)  
+      REAL(SZ),ALLOCATABLE :: zetadisc (:,:) 
+      REAL(SZ) DUMMY
+      INTEGER IDUMMY
+!      REAL(SZ),ALLOCATABLE :: uu22 (:,:) 
+!      REAL(SZ),ALLOCATABLE :: vv22 (:,:) 
+!      INTEGER, ALLOCATABLE :: nodecodenc (:) 
+!      INTEGER, ALLOCATABLE :: noffnc (:) 
 
 C
 C--   Open Appropriate Hot Start File based on the value of IHOT from
@@ -3283,7 +3319,8 @@ C     END ADDITION FOR NETCDF - MCF - 6/27/08
       INQUIRE(FILE=FNAME,EXIST=FOUND)
       IF (FOUND) THEN
          WRITE(*,1011) FNAME
-         OPEN(IHOT,FILE=FNAME,ACCESS='DIRECT',RECL=8)
+         IF(IHOT.EQ.67.OR.IHOT.EQ.68)
+     &      OPEN(IHOT,FILE=FNAME,ACCESS='DIRECT',RECL=8)
       ELSE
          WRITE(*,1010) FNAME
          STOP
@@ -3546,15 +3583,67 @@ C   READ NETCDF HOTSTART FILE
 #ifdef NETCDF
       PRINT *, "hstart: IHOT",IHOT
       IF (IHOT.EQ.-67.OR.IHOT.EQ.-68)THEN
+      READ(14,*)AGRID
+      READ(14,*)MNE,MNP
+            DO I = 1,MNP
+              READ(14,*)
+      ENDDO
+       DO I = 1,MNE
+          READ(14,*)
+       ENDDO
+      PRINT *, "prep: MNE,MNP",MNE,MNP
+      READ(14,*) NOPE
+!      WRITE(6,*) NOPE
+      READ(14,*) NETA
+!      WRITE(6,*) NETA
+      PRINT *, "prep: NOPE,NETA",NOPE,NETA
+      
+      DO J=1,NOPE
+         READ(14,*) IDUMMY
+         DO I=1,IDUMMY
+            READ(14,*)
+         ENDDO
+      ENDDO
+      READ(14,*) NBOU
+      READ(14,*) NVEL
+      PRINT *, "prep: NBOU,NVEL",NBOU,NVEL
+
+      
          timenc_len=1
-         IF(.NOT. ALLOCATED(timenc))  ALLOCATE(timenc(timenc_len))
 !         timenc(timenc_len)=time
-         timenc(timenc_len)=TIMEHSF
-         ncmode=1                                                       !serial version
+!         timenc(timenc_len)=TIMEHSF
+         ncmode=0                                                      !serial version
+         
+         FileFmtMajor = 1
+         FileFmtMinor = 1
+         FileFmtRev   = 0
+         InputFileFmtVn = VERSION_NUMBER(FileFmtMajor, 
+     &                                FileFmtMinor,
+     &                                FileFmtRev)
+         
+         IF(.NOT. ALLOCATED(timenc))  ALLOCATE(timenc(timenc_len))
+       IF(.NOT. ALLOCATED(zeta1 ))   ALLOCATE( zeta1(mnp, timenc_len))
+       IF(.NOT. ALLOCATED(zeta2 ))   ALLOCATE( zeta2(mnp, timenc_len))
+       IF(.NOT. ALLOCATED(zEtaDisc ))ALLOCATE(zEtaDisc(mnp, timenc_len))
+       IF(.NOT. ALLOCATED(uu22 ))    ALLOCATE(uu22(mnp, timenc_len))
+       IF(.NOT. ALLOCATED(vv22 ))    ALLOCATE(vv22(mnp, timenc_len))
+       IF(.NOT. ALLOCATED(nodecodenc))ALLOCATE(nodecodenc(mnp))
+       IF(.NOT. ALLOCATED(noffnc ))  ALLOCATE(noffnc (mne))
+       IF(.NOT. ALLOCATED(nm ))  ALLOCATE(nm (mne,3))
+       IF(.NOT. ALLOCATED(xnc))  ALLOCATE(xnc (mnp))
+       IF(.NOT. ALLOCATED(ync))  ALLOCATE(ync (mnp))
+       IF(.NOT. ALLOCATED(dp))  ALLOCATE(dp (mnp))
+        IF(.NOT. ALLOCATED(NBDV)) ALLOCATE(NBDV(NOPE,NETA))
+            IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
+            IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
+            IF(.NOT. ALLOCATED(nbvvnc)) ALLOCATE(nbvvnc(nbou,nvel))
+            IF(.NOT. ALLOCATED(nvellnc)) ALLOCATE(nvellnc(nbou))
+            IF(.NOT. ALLOCATED(nvdllnc)) ALLOCATE(nvdllnc(nope))
+            IF(.NOT. ALLOCATED(ibtypenc)) ALLOCATE(ibtypenc(nbou))
 
          call readnc67 (nhsinc,ABS(IHOT),timenc_len,mnp,timenc,
-     &                  nt, nhsinc, uu2,vv2,
-     &                  eta1, eta2, EtaDisc, nodecode,noff,
+     &                  nt, nhsinc, uu22,vv22,
+     &                  zeta1, zeta2, zEtaDisc, nodecodenc,noffnc,
      &                  IMHSF, ITHSF,iestp,nscoue,ivstp,nscouv, icstp, 
      &                  nscouc, ipstp, iwstp, nscoum, igep, nscouge,
      &                  igvp, nscougv, igcp, nscougc, igpp, igwp,
@@ -3571,15 +3660,54 @@ C   READ NETCDF HOTSTART FILE
      &                  nope, neta, nbdv,nopenc,netanc,
      &                  nvdllnc,
      &                  nbou, nvel, nbvvnc,nbounc,nvelnc,
-     &                  nvellnc,ibtype,
+     &                  nvellnc,ibtypenc,
      &                  ncmode,
      &                  title, institution, source, history,
      &                  references, comments, host, convention, contact,
      &                  base_date)
 !       time= timenc(timenc_len)
+
+      ALLOCATE ( ETA1(MNP),ETA2(MNP),EtaDisc(MNP),UU2(MNP),
+     &           VV2(MNP),NODECODE(MNP),CH1(MNP) )
+      ALLOCATE ( NOFF(MNE) )
+
+       PRINT *,"======== Print NC variables ================"
+             DO I=1,MNP
+                eta1 (I)=zeta1(I, 1)
+                PRINT *, "ETA1(I) = ",I, ETA1(I)
+             END DO
+             DO I=1,MNP
+                eta2 (I)=zeta2(I, 1)
+                PRINT *, "ETA2(I) = ",I, ETA2(I)
+             END DO
+             DO I=1,MNP
+                EtaDisc (I)=zEtaDisc(I, 1)
+                PRINT *, "EtaDisc(I) = ",I, EtaDisc(I)
+             END DO
+             DO I=1,MNP
+                UU2 (I)=UU22(I, 1)
+                PRINT *, "UU2(I) = ",I, UU2(I)
+             END DO
+             DO I=1,MNP
+                VV2 (I)=VV22(I, 1)
+                 PRINT *, "VV22(I) = ",I, VV2(I)
+            END DO
+             DO I=1,MNP
+                nodecode (I)=nodecodenc(I)
+                  PRINT *, "nodecodenc(I) = ",I, nodecode(I)
+            END DO
+             DO I=1,MNE
+                noff (I)=noffnc(I)
+                  PRINT *, "noff(I) = ",I, noff(I)
+             END DO
+             TIMEHSF=timenc(timenc_len)
+!             NNODP=MNP
+!             NELP=MNE
+             
                    PRINT *,"  ----------START--NETCDF-----------------"
                    PRINT *,"  IMHSF = ", IMHSF
                    PRINT *,"  TIMEHSF = ", TIMEHSF
+                   PRINT *,"  TIME = ", timenc(timenc_len)
                    PRINT *,"  ITHSF = ", ITHSF
                    PRINT *,"  ETA11 = ", ETA1(11)
                    PRINT *,"  ETA22 = ", ETA2(11)
@@ -3623,6 +3751,7 @@ C   End Addition for netCDF by MCF 6/27/08
       
       
 C     jgf48.03 harmonic analysis not supported yet
+       IF(IHOT.GT.0) THEN
 #if 0
 C
 C....DETERMINE HARMONIC ANALYSIS PARAMETERS
@@ -3750,10 +3879,50 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
          ENDIF    ! charmv
       ENDIF     ! HARIND
 #endif
-
+               ENDIF
 C
 C--Open All Local Hot Start files 
 C
+
+                   PRINT *,"  ----------START-LOC-NETCDF---------------"
+                   PRINT *,"  IMHSF = ", IMHSF
+                   PRINT *,"  TIMEHSF = ", TIMEHSF
+!                   PRINT *,"  TIME = ", time
+                   PRINT *,"  ITHSF = ", ITHSF
+                   PRINT *,"  ETA11 = ", ETA1(11)
+                   PRINT *,"  ETA22 = ", ETA2(11)
+                   PRINT *,"  ETADD = ", EtaDisc(11)
+                   PRINT *,"  uu22 = ", uu2(11)
+                   PRINT *,"  vv22 = ", vv2(11)
+                   PRINT *,"  nodecode = ", nodecode(11)
+                   PRINT *,"  noff = ", noff(11)
+                   PRINT *,"  IESTP = ",IESTP
+                   PRINT *,"  NSCOUE = ",NSCOUE
+                   PRINT *,"  IVSTP = ",IVSTP
+                   PRINT *,"  NSCOUV = ",NSCOUV
+                   PRINT *,"  ICSTP = ",ICSTP
+                   PRINT *,"  NSCOUC = ",NSCOUC
+                   PRINT *,"  IPSTP = ",IPSTP
+                   PRINT *,"  IWSTP = ",IWSTP
+                   PRINT *,"  NSCOUM = ",NSCOUM
+                   PRINT *,"  IGEP = ",IGEP
+                   PRINT *,"  NSCOUGE = ",NSCOUGE
+                   PRINT *,"  IGVP = ",IGVP
+                   PRINT *,"  NSCOUGV = ",NSCOUGV
+                   PRINT *,"  IGCP = ",IGCP
+                   PRINT *,"  NSCOUGC = ",NSCOUGC
+                   PRINT *,"  IGPP = ",IGPP
+                   PRINT *,"  IGWP = ",IGWP
+                   PRINT *,"  NSCOUGW = ",NSCOUGW
+                   DO I=1,MNP
+                     PRINT *, "ETA1(I) = ",I, ETA1(I)
+                   END DO
+
+                   PRINT *,"  ---------END----LOC---NETCDF------------"
+
+
+
+
       ALLOCATE ( LOC(NPROC) )
       DO IPROC = 1,NPROC
          LOC(IPROC) = 105 + (IPROC-1)
@@ -3981,39 +4150,57 @@ c         ENDIF
 C
 C--Close Global file and all the Local Files     
 C
+            PRINT *, "BEFORE CLOSE GLOBAL = ", IHOT
+
       IF(IHOT.EQ.67.OR.IHOT.EQ.68)CLOSE (IHOT)
+            PRINT *, "BEFORE CLOSE LOCAL = ", IHOT
       DO IPROC=1, NPROC
          CLOSE (LOC(IPROC))
       ENDDO
+            PRINT *, "AFTER CLOSE LOCAL = ", IHOT
 C
-      DEALLOCATE ( LOC )
+      IF(ALLOCATED(LOC)) DEALLOCATE ( LOC )
       nbytes = 4*nproc
       call memory_dealloc(nbytes)
-      DEALLOCATE ( ETA1, ETA2, EtaDisc, UU2, VV2, NODECODE, CH1 )
+      IF(ALLOCATED( ETA1 ))DEALLOCATE ( ETA1  )
+      IF(ALLOCATED( ETA2 ))DEALLOCATE ( ETA2  )
+      IF(ALLOCATED( EtaDisc ))DEALLOCATE ( EtaDisc )
+      IF(ALLOCATED( UU2 ))DEALLOCATE ( UU2 )
+      IF(ALLOCATED( VV2 ))DEALLOCATE ( VV2 )
+      IF(ALLOCATED( NODECODE ))DEALLOCATE ( NODECODE )
+      IF(ALLOCATED( CH1 ))DEALLOCATE ( CH1 )
       nbytes = 7*mnp*8  
       call memory_dealloc(nbytes)
-      DEALLOCATE ( NOFF )
+      IF(ALLOCATED(NOFF))DEALLOCATE ( NOFF )
       nbytes = 6*mne  
       call memory_dealloc(nbytes)
-      DEALLOCATE ( DUU, DUV, DVV )
+      IF(ALLOCATED( DUU ))DEALLOCATE ( DUU  )
+      IF(ALLOCATED( DUV ))DEALLOCATE ( DUV  )
+      IF(ALLOCATED( DVV ))DEALLOCATE ( DVV )
       nbytes = 3*mnp*8
       call memory_dealloc(nbytes)
-      DEALLOCATE ( UU, VV )
+      IF(ALLOCATED( UU )) DEALLOCATE ( UU )
+      IF(ALLOCATED( VV )) DEALLOCATE ( VV )
       nbytes = 2*mnp*8
       call memory_dealloc(nbytes)
-      DEALLOCATE ( BSX, BSY )
+      IF(ALLOCATED  ( BSX )) DEALLOCATE ( BSX )
+      IF(ALLOCATED  ( BSY )) DEALLOCATE ( BSY )
       nbytes = 2*mnp*8
       call memory_dealloc(nbytes)
-      DEALLOCATE ( WZ, q20 )
+      IF(ALLOCATED  ( WZ )) DEALLOCATE ( WZ )
+      IF(ALLOCATED  ( q20 )) DEALLOCATE (q20 )
       nbytes = (mnp*nfen*8) + (mnp*nfen*8)
       call memory_dealloc(nbytes)
-      DEALLOCATE ( RealQ, ImagQ)
+      IF(ALLOCATED  ( RealQ ))  DEALLOCATE ( RealQ)
+      IF(ALLOCATED  ( ImagQ ))  DEALLOCATE ( ImagQ)
       nbytes = (mnp*nfen*8) + (mnp*nfen*8)
       call memory_dealloc(nbytes)
-      DEALLOCATE ( q20l, SigT )
+      IF(ALLOCATED  ( q20l )) DEALLOCATE ( q20l )
+      IF(ALLOCATED  ( SigT )) DEALLOCATE ( SigT )
       nbytes = (mnp*nfen*8) + (mnp*nfen*8)
       call memory_dealloc(nbytes)
-      DEALLOCATE ( Sal, Temp )
+      IF(ALLOCATED ( Sal)) DEALLOCATE ( Sal  )
+      IF(ALLOCATED ( Temp )) DEALLOCATE (  Temp )
       nbytes = (mnp*nfen*8) + (mnp*nfen*8)
       call memory_dealloc(nbytes)
       call memory_status()

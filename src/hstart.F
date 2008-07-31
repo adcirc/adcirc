@@ -46,8 +46,9 @@ C   Start Addition for netCDF by MCF 5/18/08
      &     xenc, yenc, xvnc, yvnc, xpnc, ypnc, xnc, ync, xwnc, ywnc,
      &     et00nc, UU00nc, VV00nc, RMP00nc, RMU00nc, RMV00nc, nbvvnc,
      &     eta22, uu22, vv22, pr22, WNCX22, WNCY22,
+     &     eta11,etadd, nodecodenc, noffnc, uu2, vv2,
      &     nbounc,nvelnc,nvellnc,
-     &     nopenc,netanc,nvdllnc,
+     &     nopenc,netanc,nvdllnc,ibtypenc,
      &     writenc61, writenc62, writenc63, writenc64,
      &     writenc71, writenc72, writenc73, writenc74, readnc67
 #endif
@@ -105,23 +106,29 @@ C...
 
 C     Determine if the hot start file exists.
       FileFound=.False.
-      PRINT *,"IHOT = ", IHOT, " ncmode = ",ncmode
+      IF(myproc.eq.0) PRINT *,"IHOT = ", IHOT, " ncmode = ",ncmode
       IF (IHOT.eq.67.OR.
-     & ( (abs(IHOT).eq.67.or.abs(IHOT).eq.68).and.ncmode.eq.2)) THEN
+     & (IHOT.eq.-67.and.ncmode.eq.2) ) THEN
+      IF(myproc.eq.0) PRINT *,"1- IHOT = ", IHOT, " ncmode = ",ncmode
          INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.67',EXIST=FileFound)
       ENDIF
       IF (IHOT.eq.68.OR.
-     & ( (abs(IHOT).eq.67.or.abs(IHOT).eq.68).and.ncmode.eq.2)) THEN
+     & ( IHOT.eq.-68.and.ncmode.eq.2) ) THEN
+      IF(myproc.eq.0) PRINT *,"2- IHOT = ", IHOT, " ncmode = ",ncmode
          INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.68',EXIST=FileFound)
       ENDIF
 
 #ifdef NETCDF
       if (ncmode.eq.1.or.MNPROC.EQ.1) THEN
+      IF(myproc.eq.0) PRINT *,"serial netcdf ",ncmode
+      IF(myproc.eq.0) PRINT *,"3- IHOT = ", IHOT, " ncmode = ",ncmode
       IF(IHOT.EQ.-67)THEN 
+      IF(myproc.eq.0) PRINT *,"4- IHOT = ", IHOT, " ncmode = ",ncmode
         PRINT *, "OPEN NETCDF HOTSTART FILE: fort.67.nc"
 !        INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.67.nc',EXIST=FileFound)
         INQUIRE(FILE='fort.67.nc',EXIST=FileFound)
       ELSEIF(IHOT.EQ.-68) THEN
+      IF(myproc.eq.0) PRINT *,"5- IHOT = ", IHOT, " ncmode = ",ncmode
         PRINT *, "OPEN NETCDF HOTSTART FILE: fort.68.nc"
 !        INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.68.nc',EXIST=FileFound)
         INQUIRE(FILE='fort.68.nc',EXIST=FileFound)
@@ -142,13 +149,29 @@ C     Determine if the hot start file exists.
       ENDIF
 C
 C     Now open the hot start (unit 67 or 68) file.
+
+      IF (IHOT.EQ.67.OR.IHOT.EQ.68. or.
+     &    (ncmode.eq.2.and.
+     &    ( IHOT.EQ.-67.or. IHOT.EQ.-68 ) ) )THEN                                 ! start reading binary hot start file
+
       WRITE(16,240) 
  240  FORMAT(/,9X,'Hot start file was found.',
      &     ' Opening file.') 
-      IF(IHOT.EQ.67) OPEN(67,FILE=TRIM(INPUTDIR)//'/'//'fort.67',
+!      IF(IHOT.EQ.67) OPEN(67,FILE=TRIM(INPUTDIR)//'/'//'fort.67',
+!     &     ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
+!      IF(IHOT.EQ.68) OPEN(68,FILE=TRIM(INPUTDIR)//'/'//'fort.68',
+!     &     ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
+
+
+      IF(IHOT.EQ.67.or.(ncmode.eq.2.and.IHOT.EQ.-67) ) THEN 
+           OPEN(67,FILE=TRIM(INPUTDIR)//'/'//'fort.67',
      &     ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
-      IF(IHOT.EQ.68) OPEN(68,FILE=TRIM(INPUTDIR)//'/'//'fort.68',
+      
+      ELSEIF(IHOT.EQ.68.or.(ncmode.eq.2.and.IHOT.EQ.-68) ) THEN
+           OPEN(68,FILE=TRIM(INPUTDIR)//'/'//'fort.68',
      &     ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
+      ENDIF
+
       IF (ErrorIO.GT.0) THEN 
          WRITE(16,1001)         ! hot start file
          WRITE(16,1005)         ! exists but can't be opened
@@ -159,6 +182,8 @@ C     Now open the hot start (unit 67 or 68) file.
             WRITE(ScreenUnit,9973) 
          ENDIF
          STOP                   ! We're toast.
+      ENDIF
+      
       ENDIF
 C
  1001 FORMAT('ERROR: The hot start file')
@@ -175,8 +200,21 @@ C   READ NETCDF HOTSTART FILE IF SERIAL VERSION IS BEING USED
       
       PRINT *, "hstart: IHOT",IHOT
       PRINT *, "hstart: ncmode",ncmode
-      
+                PRINT *, "MNP = ",MNP
+                PRINT *, "NP = ",NP
+                PRINT *, "MNE = ",MNE
+                PRINT *, "NE = ",NE
+                PRINT *," NBOU = ",NBOU
+                PRINT *," NOPE = ",NOPE
+                PRINT *," NVEL = ",NVEL
+                PRINT *," NETA = ",NETA
+       netanc=neta
+       nvelnc=nvel
+                PRINT *," netanc = ",netanc
+                PRINT *," nvelnc = ",nvelnc
+                
       IF(ncmode.eq.1) THEN                                              !serial
+      
       
       IF (IHOT.EQ.-67.OR.IHOT.EQ.-68)THEN                               !start reading netCDF hot start file
          timenc_len=1
@@ -184,9 +222,29 @@ C   READ NETCDF HOTSTART FILE IF SERIAL VERSION IS BEING USED
 !         timenc(timenc_len)=time
          ncmode=1                                                       !serial version
 
+        IF(.NOT.ALLOCATED(eta11))ALLOCATE(eta11(np,timenc_len))
+        IF(.NOT.ALLOCATED(eta22))ALLOCATE(eta22(np,timenc_len))
+        IF(.NOT.ALLOCATED(etadd))ALLOCATE(etadd(np,timenc_len))
+        IF(.NOT.ALLOCATED(uu22))ALLOCATE(uu22(np,timenc_len))
+        IF(.NOT.ALLOCATED(vv22))ALLOCATE(vv22(np,timenc_len))
+        IF(.NOT.ALLOCATED(nodecodenc))ALLOCATE(nodecodenc(np))
+        IF(.NOT.ALLOCATED(noffnc))ALLOCATE (noffnc(ne))
+        IF(.NOT. ALLOCATED(xnc)) ALLOCATE(xnc(np))
+        IF(.NOT. ALLOCATED(ync)) ALLOCATE(ync(np))
+        
+        IF(.NOT. ALLOCATED(nbvvnc)) ALLOCATE(nbvvnc(nbou,nvel))
+        IF(.NOT. ALLOCATED(NBDV)) ALLOCATE(NBDV(NOPE,NETA))
+        IF(.NOT. ALLOCATED(nvellnc)) ALLOCATE(nvellnc(nbou))
+        IF(.NOT. ALLOCATED(nvdllnc)) ALLOCATE(nvdllnc(nope))
+        IF(.NOT. ALLOCATED(ibtypenc)) ALLOCATE(ibtypenc(nbou))
+            IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
+            IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
+
+
+
          call readnc67 (nhsinc,ABS(IHOT),timenc_len,np,timenc,
-     &                  nt, nhsinc, uu2,vv2,
-     &                  eta1, eta2, EtaDisc, nnodecode,noff,
+     &                  nt, nhsinc, uu22,vv22,
+     &                  eta11, eta22, EtaDd, nodecodenc,noffnc,
      &                  imhs, iths,iestp,nscoue,ivstp,nscouv, icstp, 
      &                  nscouc, ipstp, iwstp, nscoum, igep, nscouge,
      &                  igvp, nscougv, igcp, nscougc, igpp, igwp,
@@ -209,16 +267,51 @@ C   READ NETCDF HOTSTART FILE IF SERIAL VERSION IS BEING USED
      &                  references, comments, host, convention, contact,
      &                  base_date)
        time= timenc(timenc_len)
-                   PRINT *,"  ----------START--NETCDF--------------------"
+
+             DO I=1,MNP
+                eta1 (I)=eta11(I, 1)
+                PRINT *, "ETA1(I) = ",I, ETA1(I)
+             END DO
+             DO I=1,MNP
+                eta2 (I)=eta22(I, 1)
+                PRINT *, "ETA2(I) = ",I, ETA2(I)
+             END DO
+             DO I=1,MNP
+                EtaDisc (I)=etadd(I, 1)
+                PRINT *, "EtaDisc(I) = ",I, EtaDisc(I)
+             END DO
+             DO I=1,MNP
+                UU2 (I)=UU22(I, 1)
+                PRINT *, "UU2(I) = ",I, UU2(I)
+             END DO
+             DO I=1,MNP
+                VV2 (I)=VV22(I, 1)
+                PRINT *, "VV22(I) = ",I, VV2(I)
+            END DO
+             DO I=1,MNP
+                nnodecode (I)=nodecodenc(I)
+                PRINT *, "nodecodenc(I) = ",I, nnodecode(I)
+            END DO
+             DO I=1,MNE
+                noff (I)=noffnc(I)
+                PRINT *, "noff(I) = ",I, noff(I)
+             END DO
+             TIME=timenc(timenc_len)
+             NP_G_IN = mnp
+             NE_G_IN = mne
+             NP_A_IN = mnp
+             NE_A_IN = mne
+                   PRINT *,"  ----------START--NETCDF after read ------"
                    PRINT *,"  IMHS = ", IMHS
                    PRINT *,"  TIME = ", TIME
+                   PRINT *,"  TIME = ", timenc
                    PRINT *,"  ITHS = ", ITHS
                    PRINT *,"  ETA11 = ", ETA1(11)
                    PRINT *,"  ETA22 = ", ETA2(11)
                    PRINT *,"  ETADD = ", EtaDisc(11)
                    PRINT *,"  uu22 = ", uu2(11)
                    PRINT *,"  vv22 = ", vv2(11)
-                   PRINT *,"  nnodecode = ", nnodecode(11)
+                   PRINT *,"  nodecode = ", nodecode(11)
                    PRINT *,"  noff = ", noff(11)
                    PRINT *,"  IESTP = ",IESTP
                    PRINT *,"  NSCOUE = ",NSCOUE
@@ -250,8 +343,13 @@ C   End Addition for netCDF by MCF 5/8/08
 C
 C     Now read the hot start file.
 
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN                                 ! start reading binary hot start file
-      
+      IF (IHOT.EQ.67.OR.IHOT.EQ.68. or.
+     &    (ncmode.eq.2.and.
+     &    ( IHOT.EQ.-67.or. IHOT.EQ.-68 ) ) )THEN                                 ! start reading binary hot start file
+     
+       IHOT=ABS(IHOT)
+
+       IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"bin ncmode = ",ncmode
       IHOTSTP=1
       READ(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
 
@@ -2088,16 +2186,17 @@ c         WRITE(74,REC=ITEMPSTP+1) NDSETSW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
           CLOSE(74)                         ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
-                 PRINT *,"  ----------START--PARAMETERS---------------"
+       IF (ncmode.eq.1. or. MYPROC.eq. 0) THEN
+                 PRINT *,"  ----------START--PARAMETERS-after 74------"
                    PRINT *,"  IMHS = ", IMHS
                    PRINT *,"  TIME = ", TIME
                    PRINT *,"  ITHS = ", ITHS
-                   PRINT *,"  ETA11 = ", ETA1(11)
-                   PRINT *,"  ETA22 = ", ETA2(11)
+                   PRINT *,"  ETA1 = ", ETA1(11)
+                   PRINT *,"  ETA2 = ", ETA2(11)
                    PRINT *,"  ETADD = ", EtaDisc(11)
-                   PRINT *,"  uu22 = ", uu2(11)
-                   PRINT *,"  vv22 = ", vv2(11)
-                   PRINT *,"  nnodecode = ", nnodecode(11)
+                   PRINT *,"  uu2 = ", uu2(11)
+                   PRINT *,"  vv2 = ", vv2(11)
+                   PRINT *,"  nodecode = ", nodecode(11)
                    PRINT *,"  noff = ", noff(11)
                    PRINT *,"  IESTP = ",IESTP
                    PRINT *,"  NSCOUE = ",NSCOUE
@@ -2119,6 +2218,8 @@ c         WRITE(74,REC=ITEMPSTP+1) NDSETSW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
                    PRINT *,"  NSCOUGW = ",NSCOUGW
                    PRINT *,
      &             "  ---------END-------PARAMETERS--------------------"
+     
+      ENDIF
 C...
 C...  HOT START INFORMATION FOR A 3D RUN
 C...
@@ -2217,6 +2318,7 @@ C          END DO
 CRAL_add_42.06g
 
       IF(IHOT.EQ.67.OR.IHOT.EQ.68)THEN
+         IF(Myproc.eq.0) PRINT *, "IHOT == ",IHOT
          CLOSE(IHOT)
       ENDIF
 C

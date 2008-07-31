@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.25     - 07/30/08 - mcf - Correct memory/compiling/running issues
+C               with arrays in the binary and netCDF hotstart capability
 C  v48.24     - 07/25/08 - mcf - Added code in the hstart.F file to check if 
 C               hotstart binary file exists in subdomains for netcdf hotstart 
 C               input file option when running the parallel version.

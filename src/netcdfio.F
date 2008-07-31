@@ -14565,11 +14565,14 @@
 !     --------------------------------
 !     Switch order in array for NETCDF
 !     --------------------------------
-      do i=1, elem_len
+       if(ncmode.ne.0) then
+
+       do i=1, elem_len
          do j=1, nface_len
             element(j,i) = nm (i,j)
          end do
-      end do
+       end do
+       endif 
       
 !     -----------------
 !     Enter define mode
@@ -14578,6 +14581,8 @@
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
          WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+
+         PRINT *,"netcdfio: ncmode = ",ncmode," IHOT= ",IHOT
          
 !       IF((FIRST67.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
 !     &    (FIRST67.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
@@ -14590,6 +14595,7 @@
      &     (FIRST68.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
      &     nout.EQ.-3)))THEN
 
+         PRINT *,"netcdfio: inside first if"
 
 
            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
@@ -15741,15 +15747,18 @@
          iret = NF_ENDDEF (ncid)
          CALL check_err(iret)
        ENDIF
+       PRINT *,"netcdfio: end mod"
 
-      IF(ncmode.eq.0) go to 9999
-      IF((FIRST67.EQ.1.and.
-     & ((ncmode.ne.0.and.IHOT.NE.0).or.(ncmode.eq.2.and.IHOT.eq.0).or.
-     &  (ncmode.eq.2.and.IHOT.ne.0.and.nout.eq.-3))).OR.
-     & (FIRST68.EQ.1.and.
-     & ((ncmode.ne.0.and.IHOT.NE.0).or.(ncmode.eq.2.and.IHOT.eq.0).or.
-     &  (ncmode.eq.2.and.IHOT.ne.0.and.nout.eq.-3)))
-     &  )THEN
+!      IF(ncmode.eq.0) go to 9999
+!      IF((FIRST67.EQ.1.and.
+!     & ((ncmode.ne.0.and.IHOT.NE.0).or.(ncmode.eq.2.and.IHOT.eq.0).or.
+!     &  (ncmode.eq.2.and.IHOT.ne.0.and.nout.eq.-3))).OR.
+!     & (FIRST68.EQ.1.and.
+!     & ((ncmode.ne.0.and.IHOT.NE.0).or.(ncmode.eq.2.and.IHOT.eq.0).or.
+!     &  (ncmode.eq.2.and.IHOT.ne.0.and.nout.eq.-3)))
+!     &  )THEN
+      IF( (ncmode.ne.2.and.IHOT.NE.0))THEN
+
               WRITE(6,*) "FIRST67.EQ.1. ncmode.ne.0"
               WRITE(6,*) "FIRST68.EQ.1. ncmode.ne.0"
 
@@ -15809,6 +15818,9 @@
       start(2)=nrec
       iret = nf_get_vara_DOUBLE(ncid, zeta1_id, start, count, zeta1)
       CALL check_err(iret)
+      DO i=1, node_len
+         WRITE(6,*) "netcdfio: zeta1",i, zeta1(i,1)
+      END DO
 !     ---------------------------
 !     Store zeta2
 !     ---------------------------
@@ -15819,6 +15831,9 @@
       start(2)=nrec
       iret = nf_get_vara_DOUBLE(ncid, zeta2_id, start, count, zeta2)
       CALL check_err(iret)
+      DO i=1, node_len
+         WRITE(6,*) "netcdfio: zeta2",i, zeta2(i,1)
+      END DO
 !     ---------------------------
 !     Store zetad
 !     ---------------------------
@@ -15855,12 +15870,35 @@
       WRITE(6,*) "Store nodecodenc"
       iret = nf_get_var_int(ncid, nodecodenc_id, nodecodenc)
       CALL check_err(iret)
+!!      WRITE(6,*) "Store nodecodenc"
+!!      start(1)=1
+!!      count(1)=node_len
+!!      iret = nf_get_vara_int(ncid, nodecodenc_id, start, count, 
+!!     &                       nodecodenc)
+!!      CALL check_err(iret)
+      DO i=1, node_len
+           WRITE(6,*) "netcdfio: nodecodenc",i, nodecodenc(i)
+      END DO
 !     ---------------
 !     Store noff
 !     ---------------
-      WRITE(6,*) "Store noffnc"
-      iret = nf_get_var_int(ncid, noffnc_id, noffnc)
-      CALL check_err(iret)
+       WRITE(6,*) "Store noffnc"
+       iret = nf_get_var_int(ncid, noffnc_id, noffnc)
+       CALL check_err(iret)
+       WRITE(6,*) "finish getting noffnc"
+!!      WRITE(6,*) "Store noffnc"
+!!      WRITE(6,*) "elem_len = ",elem_len
+!!      WRITE(6,*) "noffnc_id = ",noffnc_id
+!!      start(1)=1
+!!      count(1)=2
+!      count(1)=elem_len
+
+!!      iret = nf_get_vara_int(ncid, noffnc_id, start, count, noffnc)
+!!      CALL check_err(iret)
+      
+      DO i=1, elem_len
+         WRITE(6,*)  "netcdfio: noff",i, noffnc(i)
+      END DO
 !     ------------------------
 !     Store hotstart variables
 !     ------------------------
@@ -15889,6 +15927,7 @@
       CALL check_err(iret)
                WRITE(6,*) "Store igep"
       iret = nf_get_var_int(ncid, igep_id, igep)
+               WRITE(6,*) "IGEP = ", IGEP
       CALL check_err(iret)
       iret = nf_get_var_int(ncid, nscouge_id, nscouge)
       CALL check_err(iret)

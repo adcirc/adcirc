@@ -2665,7 +2665,8 @@ C
 !                   PRINT *,i,"  Serial ETA11 = ", ETA11(i, timenc_len)
                ENDIF
             END DO
-            IF ( (MyProc.eq.0) ) PRINT *,"  ETA11 = ", ETA11(11, timenc_len)
+            IF ( MNPROC.eq.1.or.(MNPROC.gt.1.and.MyProc.eq.0) ) 
+     &           PRINT *,"  ETA11 = ", ETA11(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
 #endif
 
@@ -2773,13 +2774,19 @@ C
 C    ADDITION OF netCDF Hostart file 67.nc and 68.nc by MCF 4/8/08
 C
 #ifdef NETCDF
-        IF (ncmode.eq.1) THEN                                           ! serial
+        IF ( (MyProc.eq.0) ) PRINT *,"  write output ncmode = ", ncmode
             IF(.NOT. ALLOCATED(xnc)) ALLOCATE(xnc(num_records))
             IF(.NOT. ALLOCATED(ync)) ALLOCATE(ync(num_records))
             IF(.NOT. ALLOCATED(nbvvnc)) ALLOCATE(nbvvnc(nbou,nvel))
             IF(.NOT. ALLOCATED(nvellnc)) ALLOCATE(nvellnc(nbou))
             IF(.NOT. ALLOCATED(nvdllnc)) ALLOCATE(nvdllnc(nope))
             IF(.NOT. ALLOCATED(ibtypenc)) ALLOCATE(ibtypenc(nbou))
+         if (ncmode.eq.2) then
+            IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
+            IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
+         endif
+        IF (ncmode.eq.1) THEN                                           ! serial
+        IF ( (MyProc.eq.0) ) PRINT *,"  arrays allocated = "
 
 
             IF(ICS.EQ.2) THEN
@@ -2797,6 +2804,7 @@ C
 !
 !            elevation specified boundary forcing segments
 !
+        IF ((MyProc.eq.0))PRINT *," write output: elevation specified "
                netanc=0
                DO i=1,nope
                   nvdllnc(i)=nvdll(i)
@@ -2806,7 +2814,8 @@ C
 !                 END DO
               END DO
 
-            IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
+             IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
+      IF ( (MyProc.eq.0) ) PRINT *," write output: nopenc "
 
                k=0
                   DO i=1,nope
@@ -2818,6 +2827,7 @@ C
 !
 !              normal flow (discharge) specified boundary segments
 !
+        IF ((MyProc.eq.0))PRINT *," write output: normal flow  "
                nvelnc=0
                DO i=1,nbou
                   nvellnc(i)=nvell(i)
@@ -2827,7 +2837,9 @@ C
                  END DO
                END DO
 
-          IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
+        IF ((MyProc.eq.0))PRINT *," write output: nbounc  "
+        
+            IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
 
                k=0
                   DO i=1,nbou
@@ -2871,7 +2883,7 @@ C
        ENDIF
        
           call writenc67 (nhsinc,abs(hss % lun),timenc_len,npx,timenc,
-     &                    nt, nhsinc, uu2,vv2,
+     &                    nt, nhsinc, uu22,vv22,
      &                    eta11, eta22, etadd, nodecodenc,noffnc,
      &                    imhs, it,iestp,nscoue,ivstp,nscouv, icstp,
      &                    nscouc, ipstp, iwstp, nscoum, igep, nscouge,
