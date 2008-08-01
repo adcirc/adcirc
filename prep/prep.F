@@ -647,7 +647,24 @@ C      USE SIZES
       
       IF (ABS(NHSTAR).EQ.3) THEN  !fort.67 or fort.68
       
+      PRINT *, "======================================================="
+      PRINT *, "********** PREPING HOTSTART  ************** = "
       PRINT *, "NHSTAR AFTER ************** = ", NHSTAR
+      
+!     PRINT *, "================================ DTMSG = ",DTMSG
+!      PRINT *, "================================ DT = ",DT
+!      PRINT *, "================================ DP = ",DP
+!      PRINT *, "================================ DTDP = ",DTDP
+!      PRINT *, "================================ statim = ",statim
+!      PRINT *, "================================ reftim = ",reftim
+!      PRINT *, "================================ statim = ",statim
+!      PRINT *, "================================ rnday = ",rnday
+!      PRINT *, "================================ slam0 = ",slam0
+!      PRINT *, "================================ sfea0 = ",sfea0
+!      PRINT *, "================================ rnday = ",rnday
+!      PRINT *, "================================ eslm = ",eslm
+!      PRINT *, "================================ cori = ",cori
+!      PRINT *, "================================ ntif = ",ntif
       
 !         if(IHOT.eq.0.or.IHOT.eq.-68)lun=67
 !         if(IHOT.eq.-67)lun=68
@@ -750,7 +767,7 @@ C         Determine if netcdf file exists
           
           IF ( .NOT. FOUND ) THEN
           PRINT *, "LUN = ", LUN
-          
+        
           call writenc67 (nhsinc,abs(lun),timenc_len,num_records,timenc,
      &                    nt, nhsinc, uu22,vv22,
      &                    eta11, eta22, etadd, nodecodenc,noffnc,
@@ -759,7 +776,7 @@ C         Determine if netcdf file exists
      &                    igvp, nscougv, igcp, nscougc, igpp, igwp,
      &                    nscougw,
      &                    rundes, runid, agrid, irtype,
-     &                    dtdp, ihot, ics, nolibf, nolifa,
+     &                    dt, ihot, ics, nolibf, nolifa,
      &                    nolica, nolicat, nwp,
      &                    ncor, ntip, nws, nramp, tau0,
      &                    statim, reftim, rnday, dramp,
@@ -792,7 +809,7 @@ C         Determine if netcdf file exists
      &                    igvp, nscougv, igcp, nscougc, igpp, igwp,
      &                    nscougw,
      &                    rundes, runid, agrid, irtype,
-     &                    dtdp, ihot, ics, nolibf, nolifa,
+     &                    dt, ihot, ics, nolibf, nolifa,
      &                    nolica, nolicat, nwp,
      &                    ncor, ntip, nws, nramp, tau0,
      &                    statim, reftim, rnday, dramp,

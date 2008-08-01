@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.27     - 07/30/08 - mcf - corrected dt when writing initializing netCDF
+C               hotstart files in prep.F
 C  v48.26     - 07/30/08 - mcf - corrected noff range value when writing netCDF
 C               hotstart files (range 0 to 1)
 C  v48.25     - 07/30/08 - mcf - corrected memory/compiling/running issues
