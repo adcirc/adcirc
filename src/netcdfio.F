@@ -15868,37 +15868,37 @@
 !     Store nodecode
 !     ---------------
       WRITE(6,*) "Store nodecodenc"
-      iret = nf_get_var_int(ncid, nodecodenc_id, nodecodenc)
-      CALL check_err(iret)
+!!      iret = nf_get_var_int(ncid, nodecodenc_id, nodecodenc)
+ !!     CALL check_err(iret)
 !!      WRITE(6,*) "Store nodecodenc"
-!!      start(1)=1
-!!      count(1)=node_len
-!!      iret = nf_get_vara_int(ncid, nodecodenc_id, start, count, 
-!!     &                       nodecodenc)
-!!      CALL check_err(iret)
-      DO i=1, node_len
-           WRITE(6,*) "netcdfio: nodecodenc",i, nodecodenc(i)
-      END DO
+      start(1)=1
+      count(1)=node_len
+      iret = nf_get_vara_int(ncid, nodecodenc_id, start, count, 
+     &                       nodecodenc)
+      CALL check_err(iret)
+!      DO i=1, node_len
+!      IF(myproc.eq.0) WRITE(6,*) "netcdfio: nodecodenc",i, nodecodenc(i)
+!      END DO
 !     ---------------
 !     Store noff
 !     ---------------
        WRITE(6,*) "Store noffnc"
-       iret = nf_get_var_int(ncid, noffnc_id, noffnc)
-       CALL check_err(iret)
-       WRITE(6,*) "finish getting noffnc"
+!!       iret = nf_get_var_int(ncid, noffnc_id, noffnc)
+!!       CALL check_err(iret)
+!!       WRITE(6,*) "finish getting noffnc"
 !!      WRITE(6,*) "Store noffnc"
 !!      WRITE(6,*) "elem_len = ",elem_len
 !!      WRITE(6,*) "noffnc_id = ",noffnc_id
-!!      start(1)=1
-!!      count(1)=2
-!      count(1)=elem_len
+      start(1)=1
+      count(1)=2
+      count(1)=elem_len
 
-!!      iret = nf_get_vara_int(ncid, noffnc_id, start, count, noffnc)
-!!      CALL check_err(iret)
+      iret = nf_get_vara_int(ncid, noffnc_id, start, count, noffnc)
+      CALL check_err(iret)
       
-      DO i=1, elem_len
-         WRITE(6,*)  "netcdfio: noff",i, noffnc(i)
-      END DO
+!      DO i=1, elem_len
+!      IF(myproc.eq.0) WRITE(6,*)  "netcdfio: noff",i, noffnc(i)
+!      END DO
 !     ------------------------
 !     Store hotstart variables
 !     ------------------------

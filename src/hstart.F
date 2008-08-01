@@ -120,7 +120,7 @@ C     Determine if the hot start file exists.
 
 #ifdef NETCDF
       if (ncmode.eq.1.or.MNPROC.EQ.1) THEN
-      IF(myproc.eq.0) PRINT *,"serial netcdf ",ncmode
+      IF(myproc.eq.0) PRINT *,"======serial netcdf========",ncmode
       IF(myproc.eq.0) PRINT *,"3- IHOT = ", IHOT, " ncmode = ",ncmode
       IF(IHOT.EQ.-67)THEN 
       IF(myproc.eq.0) PRINT *,"4- IHOT = ", IHOT, " ncmode = ",ncmode
@@ -198,6 +198,7 @@ C   READ NETCDF HOTSTART FILE IF SERIAL VERSION IS BEING USED
 
 #ifdef NETCDF
       
+      IF(ncmode.eq.1.and.(IHOT.EQ.-67.or.IHOT.eq.-68)) THEN                                              !serial
       PRINT *, "hstart: IHOT",IHOT
       PRINT *, "hstart: ncmode",ncmode
                 PRINT *, "MNP = ",MNP
@@ -212,7 +213,7 @@ C   READ NETCDF HOTSTART FILE IF SERIAL VERSION IS BEING USED
        nvelnc=nvel
                 PRINT *," netanc = ",netanc
                 PRINT *," nvelnc = ",nvelnc
-                
+       ENDIF         
       IF(ncmode.eq.1) THEN                                              !serial
       
       
@@ -372,6 +373,15 @@ C     Now read the hot start file.
       READ(IHOT,REC=IHOTSTP) NE_G_IN      ; IHOTSTP = IHOTSTP + 1
       READ(IHOT,REC=IHOTSTP) NP_A_IN      ; IHOTSTP = IHOTSTP + 1
       READ(IHOT,REC=IHOTSTP) NE_A_IN      ; IHOTSTP = IHOTSTP + 1
+      
+      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"IMHS = ",IMHS
+      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"TIME = ",TIME
+      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"ITHS = ",ITHS
+      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"NP_G_IN = ",NP_G_IN
+      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"NE_G_IN = ",NE_G_IN
+      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"NP_A_IN = ",NP_A_IN
+      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"NE_A_IN = ",NE_A_IN
+      
       DO I=1, NP
          READ(IHOT,REC=IHOTSTP) ETA1(I)   ; IHOTSTP = IHOTSTP + 1
       END DO
@@ -401,6 +411,10 @@ C     jgf46.34 Added support for IBTYPE=52.
       END DO
 
       ENDIF                                                             ! finish reading binary hot start file
+      if(myproc.eq.0) THEN
+                   PRINT *,"  ETA1(1) = ", ETA1(1)
+                   PRINT *,"  ETA2(1) = ", ETA2(1)
+      ENDIF
 
       DO I=1, NP
          ETAS(I)=ETA2(I)-ETA1(I)
@@ -2196,7 +2210,7 @@ c         WRITE(74,REC=ITEMPSTP+1) NDSETSW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
                    PRINT *,"  ETADD = ", EtaDisc(11)
                    PRINT *,"  uu2 = ", uu2(11)
                    PRINT *,"  vv2 = ", vv2(11)
-                   PRINT *,"  nodecode = ", nodecode(11)
+                   PRINT *,"  nodecode = ", nnodecode(11)
                    PRINT *,"  noff = ", noff(11)
                    PRINT *,"  IESTP = ",IESTP
                    PRINT *,"  NSCOUE = ",NSCOUE
