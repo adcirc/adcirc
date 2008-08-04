@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.28     - 08/01/08 - mcf - included File Format Version parameters
+C               in netCDF hotstart files and changed FileFmtMinor to 2 to account
+C               for the removal of an extra empty record in hotstart files
 C  v48.27     - 07/30/08 - mcf - corrected dt when writing initializing netCDF
 C               hotstart files in prep.F
 C  v48.26     - 07/30/08 - mcf - corrected noff range value when writing netCDF

@@ -12361,6 +12361,7 @@
      &                      nbou_len, nvel_len, nbvv,nbounc,nvelnc_len,
      &                      nvellnc,ibtypenc,
      &                      ncmode,
+     &                      FileFmtMajor, FileFmtMinor, FileFmtRev,
      &                      title, institution, source, history,
      &                      references, comments, host, convention,
      &                      contact,
@@ -12639,6 +12640,7 @@
       INTEGER IGPP
       INTEGER IGWP
       INTEGER NSCOUGW
+      INTEGER FileFmtMajor, FileFmtMinor, FileFmtRev
 
       
 
@@ -13785,6 +13787,18 @@
       iret = nf_put_att_int(ncid, NCGLOBAL, 'ntif', NF_INT, 1, ntif)
       CALL check_err(iret)
       iret = nf_put_att_int(ncid, NCGLOBAL, 'nbfr', NF_INT, 1, nbfr)
+      CALL check_err(iret)
+!
+!      Write Hostart File Format Version parameters
+!
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'FileFmtMajor', NF_INT, 1, 
+     &                      FileFmtMajor)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'FileFmtMinor', NF_INT, 1, 
+     &                      FileFmtMinor)
+      CALL check_err(iret)
+      iret = nf_put_att_int(ncid, NCGLOBAL, 'FileFmtRev', NF_INT, 1, 
+     &                      FileFmtRev)
       CALL check_err(iret)
      
 !     ======================

@@ -61,7 +61,9 @@ C      USE SIZES
      &    NSTAM, NOUTM, SLEM, SFEM, NTRSPM, 
      &    NOUTGE, SLAM, SFEA, NDSETSE,
      &    NOUTGV, NDSETSV,
-     &    NOUTGW, NDSETSW, nhstar,nhsinc,
+     &    NOUTGW, NDSETSW, 
+     &    FileFmtMajor, FileFmtMinor, FileFmtRev,
+     &    nhstar,nhsinc,
      &    title, institution,
      &    source, history, references, comments, host, convention,
      &    contact, base_date
@@ -93,12 +95,17 @@ C      USE SIZES
       INTEGER i, k,j
       INTEGER nface
       INTEGER, PARAMETER :: SNAMELEN = 50
+!      INTEGER FileFmtMajor, FileFmtMinor, FileFmtRev
+
       LOGICAL FOUND
 
 !      time = 0.d0
       timenc_len=1
       nface=3
       ncmode=0
+!         FileFmtMajor = 1
+!         FileFmtMinor = 1
+!         FileFmtRev   = 0
 
 
       IF(.NOT. ALLOCATED(timenc)) ALLOCATE(timenc(timenc_len))
@@ -648,10 +655,10 @@ C      USE SIZES
       IF (ABS(NHSTAR).EQ.3) THEN  !fort.67 or fort.68
       
       PRINT *, "======================================================="
-      PRINT *, "********** PREPING HOTSTART  ************** = "
+      PRINT *, "******** PREPING NETCDF HOTSTART FILEs ************* = "
       PRINT *, "NHSTAR AFTER ************** = ", NHSTAR
       
-!     PRINT *, "================================ DTMSG = ",DTMSG
+!      PRINT *, "================================ DTMSG = ",DTMSG
 !      PRINT *, "================================ DT = ",DT
 !      PRINT *, "================================ DP = ",DP
 !      PRINT *, "================================ DTDP = ",DTDP
@@ -693,10 +700,10 @@ C      USE SIZES
         IF(.NOT. ALLOCATED(nvdllnc)) ALLOCATE(nvdllnc(nope))
         IF(.NOT. ALLOCATED(ibtype)) ALLOCATE(ibtype(nbou))
 
-        PRINT *,"nope = ", nope
-        PRINT *,"neta = ", neta
+!        PRINT *,"nope = ", nope
+!        PRINT *,"neta = ", neta
         netanc=neta
-        PRINT *,"netanc = ", netanc
+!        PRINT *,"netanc = ", netanc
        
                DO I=1,num_records
              	     xnc(i)=X(i)
@@ -707,26 +714,26 @@ C      USE SIZES
 !
                netanc=0
                DO i=1,nope
-        PRINT *,"nvdllnc b ",i, nvdllnc(i)
+!        PRINT *,"nvdllnc b ",i, nvdllnc(i)
                   nvdllnc(i)=nvdll(i)
                   netanc=netanc+nvdllnc(i)
-        PRINT *,"nvdllnc a",i, nvdllnc(i)
+!        PRINT *,"nvdllnc a",i, nvdllnc(i)
               END DO
-        PRINT *,"netanc = ", netanc
+!        PRINT *,"netanc = ", netanc
 
             IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
-        PRINT *,"allocate nopenc = "
-        PRINT *,"allocate nope = ", nope
+!        PRINT *,"allocate nopenc = "
+!        PRINT *,"allocate nope = ", nope
                
                k=0
                   DO i=1,nope
-        PRINT *,"nope ",i, nope
-        PRINT *,"nvdllnc(i) ",i, nvdllnc(i)
+!        PRINT *,"nope ",i, nope
+!        PRINT *,"nvdllnc(i) ",i, nvdllnc(i)
                         DO j=1,nvdllnc(i)
                         k=k+1
-        PRINT *,"nopenc b",k, nopenc(k)
+!        PRINT *,"nopenc b",k, nopenc(k)
              	        nopenc(k)=nbdv(i,j)
-        PRINT *,"nopenc a",k, nopenc(k)
+!        PRINT *,"nopenc a",k, nopenc(k)
                      END DO
                   END DO
 !
@@ -787,6 +794,7 @@ C         Determine if netcdf file exists
      &                    nope, neta, nbdv,nopenc,netanc, nvdllnc,
      &                    nbou, nvel, nbvvnc,nbounc,nvelnc,
      &                    nvellnc,ibtype, ncmode,
+     &                    FileFmtMajor, FileFmtMinor, FileFmtRev,
      &                    title, institution, source, history,
      &                    references, comments, host, convention, 
      &                    contact, base_date)
@@ -820,6 +828,7 @@ C         Determine if netcdf file exists
      &                    nope, neta, nbdv,nopenc,netanc, nvdllnc,
      &                    nbou, nvel, nbvvnc,nbounc,nvelnc,
      &                    nvellnc,ibtype, ncmode,
+     &                    FileFmtMajor, FileFmtMinor, FileFmtRev,
      &                    title, institution, source, history,
      &                    references, comments, host, convention, 
      &                    contact, base_date)
@@ -3632,7 +3641,7 @@ C   READ NETCDF HOTSTART FILE
          ncmode=0                                                      !serial version
          
          FileFmtMajor = 1
-         FileFmtMinor = 1
+         FileFmtMinor = 2
          FileFmtRev   = 0
          InputFileFmtVn = VERSION_NUMBER(FileFmtMajor, 
      &                                FileFmtMinor,

@@ -72,7 +72,7 @@ C     global number of elevation, velocity, and meteorological stations
       integer, save       :: COMM        ! MPI communicator.
       integer, save       :: FileFmtVersion      ! File format version.
       integer, save       :: FileFmtMajor = 1
-      integer, save       :: FileFmtMinor = 1
+      integer, save       :: FileFmtMinor = 2
       integer, save       :: FileFmtRev   = 0
 
 C     global array sizes for use in globalio

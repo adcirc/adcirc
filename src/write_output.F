@@ -2762,7 +2762,7 @@ C   Start Addition for netCDF by MCF 4/8/08
             DO I=1, num_recordse
               IF (MNPROC.gt.1.and.MyProc.eq.0) THEN                     ! parallel
                     noffnc(i) = NOFFDescript % iarray_g(i)
-                    noffnc(i)=min(noffnc(i),1)
+                    noffnc(i)=min(noffnc(i),1)                          ! noff ranges from 0 to 1
               ELSE IF (MNPROC.eq.1) THEN                                ! serial
                     noffnc(i) = NOFFDescript % iarray(i)
 !                   PRINT *,i,"  noffnc = ", noffnc(i)
@@ -2854,6 +2854,9 @@ C
        IF (ncmode.eq.1. or. MYPROC == 0) THEN
        
           PRINT *,"========================net===================="
+          PRINT *,"FileFmtMajor, FileFmtMinor, FileFmtRev",
+     &             FileFmtMajor, FileFmtMinor, FileFmtRev
+!          PRINT *,"FileFmtVersion = ",FileFmtVersion
           PRINT *, "==== write_output: IM = ", IM
           PRINT *, "==== write_output: TIME = ", TIME
           PRINT *, "==== write_output: IM = ", IT
@@ -2904,6 +2907,7 @@ C
      &                    nbou, nvel, nbvvnc,nbounc,nvelnc,
      &                    nvellnc,ibtypenc,
      &                    ncmode,
+     &                    FileFmtMajor, FileFmtMinor, FileFmtRev,
      &                    title, institution, source, history,
      &                    references, comments, host, convention, 
      &                    contact, base_date)

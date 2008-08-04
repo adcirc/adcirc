@@ -352,7 +352,7 @@ C     MSGTAB section
 
       integer, save       :: FileFmtVersion      ! File format version.
       integer, save       :: FileFmtMajor = 1
-      integer, save       :: FileFmtMinor = 1
+      integer, save       :: FileFmtMinor = 2
       integer, save       :: FileFmtRev   = 0
  
 C-------------------end of data declarations------------------------C
