@@ -71,6 +71,7 @@ C...
      &       Deg2Rad, Rad2Deg,
      &       Day2Sec, Sec2Day
 
+      SAVE
 
 C...DECLARE 3D GLOBAL ARRAYS
 

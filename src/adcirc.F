@@ -69,29 +69,56 @@ C                             summer 2002                                     *
 C                                                                             *
 C******************************************************************************
  
-C
-      PROGRAM PADCIRC
+
+C******************************************************************************
+C******************************************************************************
+      MODULE ADCIRC_Mod
+C******************************************************************************
+C******************************************************************************
 C
       USE GLOBAL
       USE GLOBAL_3DVS, ONLY : GORho, GORhoOAMB, AMB
       USE HARM
       USE VERSION
-
 #ifdef CMPI
       USE MESSENGER
       USE WRITER, ONLY: WRITER_MAIN, WRITER_INIT
 #endif
-
       IMPLICIT NONE
+      PUBLIC
+
+      INTEGER, SAVE :: ITIME_BGN, ITIME_END
+
+
+      CONTAINS
+
+ 
+C******************************************************************************
+C*    ADCIRC initialize routine
+C******************************************************************************
+      SUBROUTINE ADCIRC_Init(COMM, ROOTD)
+C
+      INTEGER, OPTIONAL :: COMM
+      CHARACTER(*), OPTIONAL :: ROOTD
+C
       INTEGER IE, I, J, N    ! local loop counter
       INTEGER NM1, NM2, NM3  ! local node numbers
       INTEGER NCELE          ! local node code indicator
-
       REAL(8) AreaEle
- 
+C
+      IF (PRESENT(ROOTD)) THEN
+        ROOTDIR = TRIM(ROOTD)
+      ELSE
+        ROOTDIR = '.'
+      ENDIF
+C
 #ifdef CMPI
       CALL GET_NUMWRITERS()  ! Get number of writer processors from command line arguments
-      CALL MSG_INIT()        ! Init MPI and get MPI-rank of this cpu
+      IF (PRESENT(COMM)) THEN
+        CALL MSG_INIT(COMM)  ! Init MPI and get MPI-rank of this cpu
+      ELSE
+        CALL MSG_INIT()      ! Init MPI and get MPI-rank of this cpu
+      ENDIF
       ! <ezpp-begin>
       FileFmtVersion = VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
       ! File Fmt Version  must match Major and Minor numbers.
@@ -154,6 +181,10 @@ C...
          CALL HOTSTART()
       ENDIF
 
+C...Default beginning and ending time steps
+
+      ITIME_BGN = ITHS+1
+      ITIME_END = NT
 
 C...Determine the number of active elements (MJU), the total number of 
 C...elements (NODELE) and the total area of elements (TotalArea) attached to each node
@@ -229,9 +260,6 @@ C...
       HABSMIN=0.8d0*H0  
       HOFF=1.2d0*H0    
 
-C...
-C...************************* BEGIN TIME STEPPING *************************
-C...  
       WRITE(16,1112)
       WRITE(16,17931)
       IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
@@ -240,17 +268,45 @@ C...
 17931 FORMAT(//,1X,'LIMITED RUNTIME INFORMATION SECTION ',//)
       
       NCChange=1 !jgf45.06 set flag to set up GWCE LHS on 1st iteration
-
-      DO 100 ITIME=ITHS+1,NT
 C
+ 1999 format(1X, a," ADCIRC Version: ",a)
+C
+      RETURN
+      END SUBROUTINE ADCIRC_Init
+
+
+C******************************************************************************
+C*    ADCIRC run routine
+C******************************************************************************
+      SUBROUTINE ADCIRC_Run(NTIME_STP)
+C
+      INTEGER, OPTIONAL :: NTIME_STP
+C
+      IF (PRESENT(NTIME_STP)) THEN
+        ITIME_END = ITIME_BGN+NTIME_STP-1
+      ENDIF 
+C
+      DO 100 ITIME=ITIME_BGN,ITIME_END
         CALL TIMESTEP(ITIME)
-C
  100    CONTINUE
+C
+      IF (PRESENT(NTIME_STP)) THEN
+        ITIME_BGN = ITIME_END+1
+      ENDIF 
+C
+      RETURN
+      END SUBROUTINE ADCIRC_Run
 
-C...
-C...****************** TIME STEPPING LOOP ENDS HERE ********************
-C...
 
+C******************************************************************************
+C*    ADCIRC finalize routine
+C******************************************************************************
+      SUBROUTINE ADCIRC_Final(NO_MPI_FINALIZE)
+C
+      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+C
+      INTEGER :: I
+C
 C...
 C...*************** SOLVE THE HARMONIC ANALYSIS PROBLEM ****************
 C...
@@ -274,7 +330,7 @@ C...Accumulate mean and variance at each node.
             OPEN(55,FILE=TRIM(LOCALDIR)//'/'//'fort.55')
             WRITE(55,*) NP
             ENDIF
-          endif
+          ENDIF
 
 C......Fill out and decompose the LHS harmonic analaysis matrix
 
@@ -294,14 +350,29 @@ C
         ENDIF
 
 #ifdef CMPI
-      CALL MSG_FINI()
+      IF (PRESENT(NO_MPI_FINALIZE)) THEN
+        CALL MSG_FINI(NO_MPI_FINALIZE)
+      ELSE
+        CALL MSG_FINI()
+      ENDIF
 #endif
 C
-C
-      STOP
- 1999 format(1X, a," ADCIRC Version: ",a)
-      END
+      RETURN
+      END SUBROUTINE ADCIRC_Final
 
+
+C******************************************************************************
+C******************************************************************************
+      END MODULE ADCIRC_Mod
+C******************************************************************************
+C******************************************************************************
+
+
+C******************************************************************************
+C******************************************************************************
+C*    SUPPORTING SUBROUTINES (not contained in the module)
+C******************************************************************************
+C******************************************************************************
 
 C******************************************************************************
 C                                                                             *
@@ -585,3 +656,6 @@ C******************************************************************************
       PHI=YYCP/R
       RETURN
       END
+
+C******************************************************************************
+C******************************************************************************

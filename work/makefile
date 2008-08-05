@@ -81,7 +81,7 @@ ifeq ($(BUILDTYPE),adcirc)
   FFLAGS:= $(FFLAGS2) $(DA) $(IMODS) $(O_DIR)
   VPATH:=  ../src:../wind:..:../prep
   ifeq ($(NETCDF),enable)
-    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf 
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf
   endif
   MSG_MOBJ:= $(O_DIR)globalio.o
 endif
@@ -92,9 +92,9 @@ ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
   VPATH :=  ../src:../wind:..:../prep 
   ifeq ($(NETCDF),enable)
-    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf 
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf
   endif
-  MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o 
+  MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o
 endif
 #                                      p15
 ifeq ($(BUILDTYPE),p15)
@@ -312,50 +312,50 @@ else
 
 ifeq ($(NETCDF),enable)
    adcprep ::  $(NC_MOBJ) $(METIS_OBJ) $(PREP_OBJ) 
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o  $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 else
    adcprep ::  $(METIS_OBJ) $(PREP_OBJ) 
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o  $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 endif
    adcprep_be ::  $(METIS_OBJ) $(PREP_OBJ) 
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o  $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    adcpost ::  $(POST_OBJ)
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o $(LIBS) $(LDFLAGS)
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
 ifeq ($(NETCDF),enable)
-   adcirc ::  $(NC_MOBJ) $(ADC_OBJ)
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o  $(LIBS)
+   adcirc ::  $(NC_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 else
-   adcirc ::  $(ADC_OBJ) 
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o  $(LIBS)
+   adcirc ::  $(ADC_OBJ) $(O_DIR)driver.o
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 endif
-   $(PARALLEL_ADCIRC) ::  $(NA_MOBJ) $(MSG_MOBJ) $(ADC_OBJ)  
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o  $(LIBS) $(MSGLIBS)
+   $(PARALLEL_ADCIRC) ::  $(NA_MOBJ) $(MSG_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
 
    p15     ::  $(P15_OBJ) 
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
    owi22   ::  $(OWI_OBJ) 
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
    build13 ::  $(B13_OBJ) 
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
    build12 ::  $(B12_OBJ) 
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
    buildstwave23 ::  $(B23_OBJ) 
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
    hot2asc ::  $(H2A_OBJ) 
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
    inflate ::  $(INF_OBJ) 
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
    hstime ::  $(HST_OBJ)
-	$(CF) $(FFLAGS) -o $@  $(O_DIR)*.o
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
 endif
 
@@ -471,6 +471,8 @@ $(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(SOLV_MO
 else
 $(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ)
 endif
+$(O_DIR)driver.o      : driver.F $(O_DIR)adcirc.o
+
 # wind file generation
 
 $(O_DIR)p15.o         : p15.F

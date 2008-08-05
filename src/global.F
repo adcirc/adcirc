@@ -10,6 +10,8 @@ C******************************************************************************
 C 
       MODULE GLOBAL
       USE SIZES
+      IMPLICIT NONE
+      SAVE
 C...
 C...SET GLOBAL PARAMETER CONSTANTS
 C...
@@ -65,21 +67,21 @@ C
 
       type(HOTSTART_t):: hss
 
-      INTEGER,SAVE        :: NP_G, NE_G  ! global number of nodes, elements
+      INTEGER             :: NP_G, NE_G  ! global number of nodes, elements
 C     global number of elevation, velocity, and meteorological stations
-      INTEGER, SAVE       :: NSTAE_G, NSTAV_G, NSTAM_G
-      INTEGER, SAVE       :: NSTAC_G     ! number of concentration stations
-      integer, save       :: COMM        ! MPI communicator.
-      integer, save       :: FileFmtVersion      ! File format version.
-      integer, save       :: FileFmtMajor = 1
-      integer, save       :: FileFmtMinor = 2
-      integer, save       :: FileFmtRev   = 0
+      INTEGER             :: NSTAE_G, NSTAV_G, NSTAM_G
+      INTEGER             :: NSTAC_G     ! number of concentration stations
+      INTEGER             :: COMM        ! MPI communicator.
+      INTEGER             :: FileFmtVersion      ! File format version.
+      INTEGER             :: FileFmtMajor = 1
+      INTEGER             :: FileFmtMinor = 2
+      INTEGER             :: FileFmtRev   = 0
 
 C     global array sizes for use in globalio
 
-      integer,allocatable,save,target :: imap_sta3Dd_lg(:)
-      integer,allocatable,save,target :: imap_sta3Dv_lg(:)
-      integer,allocatable,save,target :: imap_stat3t_lg(:)
+      integer,allocatable,target :: imap_sta3Dd_lg(:)
+      integer,allocatable,target :: imap_sta3Dv_lg(:)
+      integer,allocatable,target :: imap_stat3t_lg(:)
 
 C...
 C...DECLARE ALL ARRAYS
@@ -390,20 +392,20 @@ C...
 C     jgf48.03 Arrays for mapping subdomain nodes and elements to full
 C     domain ... used in globalio module but allocated and populated
 C     in messenger module
-      integer,allocatable,save,target :: nodes_lg(:) 
-      integer,allocatable,save,target :: imap_el_lg(:)
-      integer,allocatable,save,target :: imap_stae_lg(:)
-      integer,allocatable,save,target :: imap_stav_lg(:)
-      integer,allocatable,save,target :: imap_stam_lg(:)
-      integer,allocatable,save,target :: imap_stac_lg(:)
-      integer, save            :: float_type
+      integer,allocatable,target :: nodes_lg(:) 
+      integer,allocatable,target :: imap_el_lg(:)
+      integer,allocatable,target :: imap_stae_lg(:)
+      integer,allocatable,target :: imap_stav_lg(:)
+      integer,allocatable,target :: imap_stam_lg(:)
+      integer,allocatable,target :: imap_stac_lg(:)
+      integer                    :: float_type
 C     jgf48.03 Variable, arrays, and datastructure that are used by both 
 C     globalio and writer modules
       integer, parameter :: BUFSIZE_MAX = 131072
-      real(sz), save :: buf(BUFSIZE_MAX)
-      real(sz), save :: resultBuf(BUFSIZE_MAX)
-      integer, save :: integerBuffer(BUFSIZE_MAX)
-      integer, save :: integerResultBuffer(BUFSIZE_MAX)
+      real(sz) :: buf(BUFSIZE_MAX)
+      real(sz) :: resultBuf(BUFSIZE_MAX)
+      integer :: integerBuffer(BUFSIZE_MAX)
+      integer :: integerResultBuffer(BUFSIZE_MAX)
 C   
 C     jgf48.03 the following data structure is used to describe
 C     the size and shape of the output data. 
@@ -454,15 +456,15 @@ C     the size and shape of the 3D output data.
       end type OutputDataDescript3D_t
 C
 C     jgf48.03 Variables shared between messenger and writer modules
-      INTEGER,SAVE ::  REALTYPE, DBLETYPE
+      INTEGER ::  REALTYPE, DBLETYPE
       ! COMMUNICATORS FOR GLOBAL FILE WRITING
-      INTEGER,SAVE, ALLOCATABLE ::  COMM_WRITER(:)
+      INTEGER, ALLOCATABLE ::  COMM_WRITER(:)
       ! = 0 if this is a compute proc; > 0 if this is a writer node
-      INTEGER,SAVE :: WRITER_ID
+      INTEGER :: WRITER_ID
       ! Following signals are used in messenger.F and writer.F
-      INTEGER,SAVE :: SIG_VAL   = 1
-      INTEGER,SAVE :: SIG_WRITE = 100
-      INTEGER,SAVE :: SIG_TERM  = 999
+      INTEGER :: SIG_VAL   = 1
+      INTEGER :: SIG_WRITE = 100
+      INTEGER :: SIG_TERM  = 999
 C     End of variables shared between messenger and writer modules
 C
 

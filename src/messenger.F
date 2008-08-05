@@ -9,11 +9,10 @@ C
      &    COMM_WRITER, WRITER_ID, SIG_VAL, SIG_WRITE, SIG_TERM,
      &    FLOAT_TYPE, REALTYPE, DBLETYPE
 #ifdef HAVE_MPI_MOD
-      use mpi  
-      IMPLICIT NONE
-#else
-      IMPLICIT NONE
+      USE MPI  
 #endif
+      IMPLICIT NONE
+      SAVE
 
  
 C--------------------------------------------------------------------------
@@ -25,12 +24,13 @@ C--------------------------------------------------------------------------
  
 C  Message-Passing Array space
  
-      INTEGER,SAVE ::  NEIGHPROC, RDIM, IERR
-      INTEGER,SAVE ::  TAG = 100
-      INTEGER,SAVE ::  COMM_COMP                           ! COMMUNICATOR FOR COMPUTATION
-      INTEGER,SAVE ::  GROUP_WORLD, GROUP_COMP
-      INTEGER,SAVE, ALLOCATABLE ::  GROUP_WRITER(:)        ! GROUPS FOR GLOBAL FILE WRITING
-      LOGICAL,SAVE, ALLOCATABLE :: RESNODE(:)
+      INTEGER ::  MPI_COMM_ADCIRC                     ! Local communicator
+      INTEGER ::  NEIGHPROC, RDIM, IERR
+      INTEGER ::  TAG = 100
+      INTEGER ::  COMM_COMP                           ! COMMUNICATOR FOR COMPUTATION
+      INTEGER ::  GROUP_WORLD, GROUP_COMP
+      INTEGER, ALLOCATABLE ::  GROUP_WRITER(:)        ! GROUPS FOR GLOBAL FILE WRITING
+      LOGICAL, ALLOCATABLE :: RESNODE(:)
 
       INTEGER, ALLOCATABLE :: IPROC(:), NNODELOC(:), NNODSEND(:), 
      &    NNODRECV(:), IBELONGTO(:),ISENDLOC(:,:), IRECVLOC(:,:), 
@@ -51,7 +51,7 @@ C  Message-Passing Array space
 C---------------------end of data declarations--------------------------------C
 
 
-      SUBROUTINE MSG_INIT ()
+      SUBROUTINE MSG_INIT (MPI_COMM)
 C--------------------------------------------------------------------------
 C  Routine performs following steps:
 C   (1)  define mpi data types to be used
@@ -67,6 +67,7 @@ C--------------------------------------------------------------------------
       include 'mpif.h'
 #endif
 
+      INTEGER, OPTIONAL :: MPI_COMM
       INTEGER :: I
       INTEGER, ALLOCATABLE :: RANKS(:)
       INTEGER :: SENDBUF, RECVBUF
@@ -81,9 +82,18 @@ C--------------------------------------------------------------------------
       float_type = REALTYPE                    ! used in globalio
 #endif
 
-      CALL MPI_INIT(IERR)                               ! Initialize MPI
-      CALL MPI_COMM_SIZE (MPI_COMM_WORLD,MNALLPROC,IERR)   ! Get number of procs
-      CALL MPI_COMM_RANK (MPI_COMM_WORLD,MYPROC,IERR)   ! Get MPI rank
+      IF (PRESENT(MPI_COMM)) THEN
+C.......Duplicate communicator passed from outside
+        CALL MPI_COMM_DUP (MPI_COMM,MPI_COMM_ADCIRC,IERR)
+      ELSE
+C.......Initialize MPI
+        CALL MPI_INIT (IERR)
+C.......Duplicate communicator
+        CALL MPI_COMM_DUP (MPI_COMM_WORLD,MPI_COMM_ADCIRC,IERR)
+      ENDIF
+
+      CALL MPI_COMM_SIZE (MPI_COMM_ADCIRC,MNALLPROC,IERR)   ! Get number of procs
+      CALL MPI_COMM_RANK (MPI_COMM_ADCIRC,MYPROC,IERR)   ! Get MPI rank
       
       MNPROC = MNALLPROC - MNWPROC             ! MNALLPROC = MNPROC + MNWPROC
 
@@ -94,9 +104,9 @@ C...  Create a communicator for computation
         RANKS(I) = I-1
       ENDDO
 
-      CALL MPI_COMM_GROUP(MPI_COMM_WORLD,GROUP_WORLD,IERR)
+      CALL MPI_COMM_GROUP(MPI_COMM_ADCIRC,GROUP_WORLD,IERR)
       CALL MPI_GROUP_INCL(GROUP_WORLD,MNPROC,RANKS,GROUP_COMP,IERR)
-      CALL MPI_COMM_CREATE(MPI_COMM_WORLD,GROUP_COMP,COMM_COMP,IERR)
+      CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_COMP,COMM_COMP,IERR)
 
       WRITER_ID = 0
 
@@ -110,7 +120,7 @@ C...  Create communicators for global file writings
 
           CALL MPI_GROUP_INCL(GROUP_WORLD,MNPROC+1,RANKS,
      &                        GROUP_WRITER(I),IERR)
-          CALL MPI_COMM_CREATE(MPI_COMM_WORLD,GROUP_WRITER(I),
+          CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_WRITER(I),
      &                         COMM_WRITER(I),IERR)
 
           IF(MYPROC == MNPROC - 1 + I) THEN
@@ -128,11 +138,12 @@ C...  Create communicators for global file writings
       END SUBROUTINE MSG_INIT
 
 
-      SUBROUTINE MSG_FINI ()
+      SUBROUTINE MSG_FINI (NO_MPI_FINALIZE)
       IMPLICIT NONE
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
+      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
       INTEGER I
 C--------------------------------------------------------------------------
 C  Delete MPI resources and Shutdown MPI library.
@@ -149,9 +160,18 @@ C--------------------------------------------------------------------------
         ENDIF
       ENDIF
 
-      CALL MPI_FINALIZE(IERR)
-      IF (MYPROC.EQ.0)  
-     &  print *, "MPI terminated with Status = ",IERR      
+      IF (PRESENT(NO_MPI_FINALIZE)) THEN
+        IF (.NOT.NO_MPI_FINALIZE) THEN
+          CALL MPI_FINALIZE(IERR)
+          IF (MYPROC.EQ.0)  
+     &    PRINT *, "MPI terminated with Status = ",IERR      
+        ENDIF
+      ELSE
+        CALL MPI_FINALIZE(IERR)
+        IF (MYPROC.EQ.0)  
+     &  PRINT *, "MPI terminated with Status = ",IERR      
+      ENDIF
+
       RETURN
       END SUBROUTINE MSG_FINI
 
