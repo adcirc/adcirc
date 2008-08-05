@@ -55,9 +55,9 @@ ifeq ($(BUILDTYPE),adcprep)
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
   VPATH :=  ../prep:..:../src:../wind 
   ifeq ($(NETCDF),enable)
-    LIBS  := -L odir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf
+    LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf
   else
-    LIBS  :=  -L odir_metis -lmetis
+    LIBS  := -Lodir_metis -lmetis
   endif
   PMSG_OBJ:=
 endif
@@ -68,9 +68,9 @@ ifeq ($(BUILDTYPE),adcprep_be)
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
   VPATH :=  ../prep:../src:.. 
   ifeq ($(NETCDF),enable)
-    LIBS  := -L odir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf 
+    LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf 
   else
-    LIBS  := -L odir_metis_be -lmetis_be
+    LIBS  := -Lodir_metis_be -lmetis_be
   endif
   PMSG_OBJ:=
 endif
