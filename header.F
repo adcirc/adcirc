@@ -3,6 +3,7 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.29     - 08/07/08 - mcf - modified starting character counter in parser 
 C  v48.28     - 08/01/08 - mcf - included File Format Version parameters
 C               in netCDF hotstart files and changed FileFmtMinor to 2 to account
 C               for the removal of an extra empty record in hotstart files

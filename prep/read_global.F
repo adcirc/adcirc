@@ -1782,7 +1782,7 @@ C-----------------------------------------------------------------------
       CHARACTER(50) LVAR(3)
       INTEGER LS, L1, LEN1
 
-      LS=0
+      LS=1
       L=TRIM(ADJUSTL(LINE))
       LEN1=LEN(L)
 

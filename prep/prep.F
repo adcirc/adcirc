@@ -3640,12 +3640,12 @@ C   READ NETCDF HOTSTART FILE
 !         timenc(timenc_len)=TIMEHSF
          ncmode=0                                                      !serial version
          
-         FileFmtMajor = 1
-         FileFmtMinor = 2
-         FileFmtRev   = 0
-         InputFileFmtVn = VERSION_NUMBER(FileFmtMajor, 
-     &                                FileFmtMinor,
-     &                                FileFmtRev)
+!         FileFmtMajor = 1
+!         FileFmtMinor = 2
+!         FileFmtRev   = 0
+          InputFileFmtVn = VERSION_NUMBER(FileFmtMajor, 
+     &                                    FileFmtMinor,
+     &                                    FileFmtRev)
          
          IF(.NOT. ALLOCATED(timenc))  ALLOCATE(timenc(timenc_len))
        IF(.NOT. ALLOCATED(zeta1 ))   ALLOCATE( zeta1(mnp, timenc_len))

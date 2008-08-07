@@ -1956,10 +1956,10 @@ C...
      
       ITEST=(IT/NHSINC)*NHSINC  
       
-      PRINT *, " ITEST **********", ITEST
+!      PRINT *, " ITEST **********", ITEST
       
       if ((NHSTAR > 0 .and. ITEST == IT) .or. (-IHOT == IT)) then
-          PRINT *, " writeHotstart **********"
+!          PRINT *, " writeHotstart **********"
          CALL writeHotstart(Time, IT)
       ENDIF
 

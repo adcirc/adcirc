@@ -3133,8 +3133,8 @@ C...........WRITE OUT BOUNDARY CONDITION ARRAY INFORMATION
 
                WRITE(16,1857) JGW,JME,ME2GW(JME),NBV(JGW),LBCODEI(JGW),
      &              THETA,CSII(JGW),SIII(JGW),BNDLEN2O3(JGW)
- 1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I6,3X,I4,9X,F8.2,2X,E16.8,1X,
-     &              E16.8,2X,E16.8)
+ 1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I6,3X,I4,8X,E12.4,2X,E16.8,
+     &              1X,E16.8,2X,E16.8)
 
 C...........CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS
                IF((IBTYPE.EQ.3).OR.(IBTYPE.EQ.13)
@@ -6402,7 +6402,7 @@ C-----------------------------------------------------------------------
       CHARACTER(50) LVAR(3)
       INTEGER LS, L1, LEN1
 
-      LS=0
+      LS=1
       L=TRIM(ADJUSTL(LINE))
       LEN1=LEN(L)
 
