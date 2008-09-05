@@ -332,7 +332,7 @@ C   READ NETCDF HOTSTART FILE IF SERIAL VERSION IS BEING USED
                    PRINT *,"  IGPP = ",IGPP
                    PRINT *,"  IGWP = ",IGWP
                    PRINT *,"  NSCOUGW = ",NSCOUGW
-                   PRINT *,"  ---------END-------NETCDF--------------------"
+             PRINT *,"  ---------END-------NETCDF--------------------"
       ENDIF                                                             ! finish reading netCDF hot start file
       
       ENDIF     
@@ -346,15 +346,15 @@ C     Now read the hot start file.
 
       IF (IHOT.EQ.67.OR.IHOT.EQ.68. or.
      &    (ncmode.eq.2.and.
-     &    ( IHOT.EQ.-67.or. IHOT.EQ.-68 ) ) )THEN                                 ! start reading binary hot start file
-     
+     &    ( IHOT.EQ.-67.or. IHOT.EQ.-68 ) ) )THEN        ! start reading binary hot start file
+
        IHOT=ABS(IHOT)
 
-       IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"bin ncmode = ",ncmode
+      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"bin ncmode = ",ncmode
       IHOTSTP=1
       READ(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
 
-      if (.not. CMP_VERSION_NUMBERS(InputFileFmtVn, FileFmtVersion)) then
+      if (.not.CMP_VERSION_NUMBERS(InputFileFmtVn,FileFmtVersion))then
         WRITE(16, 1001)
         write(16, 1012)
         write(16, 9973)

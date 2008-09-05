@@ -86,6 +86,11 @@ C     global array sizes for use in globalio
 C...
 C...DECLARE ALL ARRAYS
 C...
+
+c..RJW merged 09/02/2008 Casey 071219: Added the following variable declaration for 3D mass balance.
+C             RESELEM is the number of processors on which each element appears.
+      INTEGER, ALLOCATABLE :: RESELEM(:)
+c.
 #ifdef CMPI
       INTEGER, ALLOCATABLE ::   IDUMY(:)
       REAL(SZ),ALLOCATABLE ::   DUMY1(:),DUMY2(:)

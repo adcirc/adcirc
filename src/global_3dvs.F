@@ -75,6 +75,9 @@ C...
 
 C...DECLARE 3D GLOBAL ARRAYS
 
+c.RJW merged 9/02/2008 Casey 071219: Added the following variable for cumulative mass balance.
+      REAL(SZ) :: MASSCUM
+
 C     Gamma(NFEN): horizontal velocity solution in the complex form u +
 C     iv for a specific node
       COMPLEX(SZ),ALLOCATABLE  :: Gamma(:)

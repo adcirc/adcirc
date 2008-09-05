@@ -85,7 +85,9 @@ c                                                                             *
 c******************************************************************************
 
       SUBROUTINE VSSOL(IT,Time)
-      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL, ONLY : ScreenUnit,
+c.RJW merged 08282008 Casey 071219: Added the following variable declarations from GLOBAL.
+     &      NODELE, NODECODE, NOFF, H0
       USE GLOBAL_3DVS
       USE NodalAttributes, ONLY: EVM
 #ifdef CMPI
@@ -95,6 +97,11 @@ c******************************************************************************
 #else
       IMPLICIT NONE
 #endif
+
+c.RJW merged 08282008 Casey 071219: Added the following local variable declarations.
+      INTEGER :: NCELE
+      INTEGER :: TEMPNCELE
+      INTEGER :: TEMPSTOP
 
       INTEGER :: IT
       INTEGER :: NEle           !local value of NetTabEle or element number
@@ -259,6 +266,42 @@ c     Set up some values at the node being worked on
             WSYsNH=WSY1(NH)
          ENDIF
 
+c.RJW merged 08282008 Casey 071219: Solve for TEMPNCELE, which is the sum of the NCELE values
+C     for the elements attached to the current horizontal node.  Note that,
+C     for some reason, the k neighbor elements are not contained in the first
+C     k registers of NEITABELE.  (For instance, if a node is connected to four
+C     elements, those element numbers might be contained in registers
+C     1, 2, 4, and 5.)  So we have to be cute about pulling element numbers
+C     from NEITABELE.
+C
+         TEMPNCELE = 0
+         TEMPSTOP = 0
+         DO K=1,NODELE(NH)
+            IF(NEITABELE(NH,K).EQ.0)THEN
+               TEMPSTOP = TEMPSTOP + 1
+            ENDIF
+            TEMPNCELE = TEMPNCELE +
+     &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),1))*
+     &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),2))*
+     &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),3))*
+     &         NOFF(NEITABELE(NH,K+TEMPSTOP))
+         ENDDO
+
+Casey 071219: If TEMPNCELE is zero, then the current horizontal node is
+C     not attached to any active elements.  Thus, the horizontal velocities
+C     must be zero, and we can set up the matrix immediately and skip to the
+C     tri-diagonal solver.
+C
+         IF(TEMPNCELE.EQ.0)THEN
+            DO K=1,NFEN
+               MKM1(K) = (0.D0,0.D0)
+               MK(K)   = (1.D0,-1.D0)
+               MKP1(K) = (0.D0,0.D0)
+               FR(K)   = (0.D0,0.D0)
+            ENDDO
+            GOTO 999
+         ENDIF
+c.....
 c     If specified normal flow boundary node with no tangential slip is
 c     lateral boundary condition, set up the matrix immediately and skip
 c     to the solution
@@ -349,7 +392,10 @@ c     surrounding a node
             hN2=DP(N2)
             BTPN2=BTP(N2)
             NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
-            IF(NEle.NE.0) THEN  !if element is active, compute velocity grads
+c.RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
+            NCELE = NODECODE(NH)*NODECODE(N2)*
+     &              NODECODE(N3)*NOFF(NELE)
+            IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN  !if element is active, compute velocity grads
                TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
                a1=X(N3)-X(N2)
                a2=X(N1)-X(N3)
@@ -375,7 +421,10 @@ c     surrounding a node
          EtaN2=EtaNFirst
          BTPN2=BTPNFirst
          NEle=NeiTabEle(NH,NNeigh(NH)-1)
-         IF(NEle.NE.0) THEN
+c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
+         NCELE = NODECODE(NH)*NODECODE(N2)*
+     &           NODECODE(N3)*NOFF(NELE)
+         IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN  !if element is active, compute velocity grads
             TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
             a1=X(N3)-X(N2)
             a2=X(N1)-X(N3)
@@ -470,7 +519,10 @@ c     Compute lateral advection and lateral stress terms
                N2=NEITAB(NH,N)  !select new neighbor to work on
                qN2=q(N2,k)
                NEle=NeiTabEle(NH,N-2) !element # defined by nodes N1,N2,N3
-               IF(NEle.NE.0) THEN !if element exists, compute terms
+c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
+               NCELE = NODECODE(NH)*NODECODE(N2)*
+     &                 NODECODE(N3)*NOFF(NELE)
+               IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN !if element exists, compute terms
                   qn=(qN1+qN2+qN3)/3.d0
                   Un=REAL(qn)
                   Vn=AIMAG(qn)
@@ -494,7 +546,10 @@ c     Compute lateral advection and lateral stress terms
             N2=NNFIRST
             qN2=qNFirst
             NEle=NeiTabEle(NH,NNeigh(NH)-1)
-            IF(NEle.NE.0) THEN
+c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
+            NCELE = NODECODE(NH)*NODECODE(N2)*
+     &              NODECODE(N3)*NOFF(NELE)
+            IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN !if element exists, compute terms
                qn=(qN1+qN2+qN3)/3.d0
                Un=real(qn)
                Vn=aimag(qn)
@@ -530,7 +585,41 @@ c     Compute the equivalent linear slip coefficient
 
          IF(ISlip.EQ.1) KSlip=KP
          IF(ISlip.EQ.2) THEN
-            KSlip=KP*ABS(q(NH,1))
+
+c.RJW merged 08282008 b ut not implemented yet08282008 Casey 071219: Let's get funky.  Comment out the following line:
+           KSlip=KP*ABS(q(NH,1))
+C
+C     and add the following attemp to base the drag coefficient on the actual
+C     physics of the boundary layer.
+C
+c            IF(
+c     &          ABS( ((SIGMA(2)-B)/(A-B))
+c     &                *(DP(NH)+IFNLFA*ETA2(NH)) )
+c     &          .LE. 0.1D0 )THEN
+c
+c                KSlip = 1.D+4
+c
+c            ELSEIF(
+c     &          ABS( ((SIGMA(2)-B)/(A-B))
+c     &                *(DP(NH)+IFNLFA*ETA2(NH)) )
+c     &          .LT. 1.D0 )THEN
+c
+c                KSlip = (1.D0 / ( (1.D0/0.41D0) *
+c     &                  LOG( ABS( ((SIGMA(2)-B)/(A-B))
+c     &                     *(DP(NH)+IFNLFA*ETA2(NH)) )
+c     &                  / (0.1D0) ) ) )**2.D0
+c     &                * ABS(Q(NH,1))
+c
+c            ELSE
+c
+c                KSlip = (1.D0 / ( (1.D0/0.41D0) *
+c     &                  LOG( 1.D0
+c     &                  / (0.1D0) ) ) )**2.D0
+c     &                * ABS(Q(NH,1))
+c
+c            ENDIF
+c
+            IF(KSlip.GT.1.D-1) KSlip=1.D-1
             IF(KSlip.LT.1.E-8) KSlip=1.d-8
          ENDIF
 
@@ -729,6 +818,29 @@ C     vertical velocity
 C     
       DO NH=1,NP
 
+c. RJW merged 08282008 Casey 071219: Solve for TEMPNCELE, same as above.
+C
+         TEMPNCELE = 0
+         TEMPSTOP = 0
+         DO K=1,NODELE(NH)
+            IF(NEITABELE(NH,K).EQ.0)THEN
+               TEMPSTOP = TEMPSTOP + 1
+            ENDIF
+            TEMPNCELE = TEMPNCELE +
+     &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),1))*
+     &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),2))*
+     &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),3))*
+     &         NOFF(NEITABELE(NH,K+TEMPSTOP))
+         ENDDO
+
+         IF(TEMPNCELE.EQ.NODELE(NH))THEN
+            TEMPNCELE = 1
+         ELSEIF(TEMPNCELE.EQ.0)THEN
+            TEMPNCELE = 0
+         ELSE
+            TEMPNCELE = 1
+         ENDIF
+
 c     Set up some values at the node being worked on
 
          Hsp1=DP(NH)+IFNLFA*Eta2(NH)
@@ -778,7 +890,10 @@ c     total elemental area surrounding a node
             EtaN2=IFNLFA*Eta2(N2)
             hN2=DP(N2)
             NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
-            IF(NEle.NE.0) THEN  !if element is active, compute velocity grads
+c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of this IF statement.
+            NCELE = NODECODE(NH)*NODECODE(N2)*
+     &              NODECODE(N3)*NOFF(NELE)
+            IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN  !if element is active, compute velocity grads
                TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
                a1=X(N3)-X(N2)
                a2=X(N1)-X(N3)
@@ -807,7 +922,10 @@ c     total elemental area surrounding a node
          hN2=hNFirst
          EtaN2=EtaNFirst
          NEle=NeiTabEle(NH,NNeigh(NH)-1)
-         IF(NEle.NE.0) THEN
+c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of this IF statement.
+         NCELE = NODECODE(NH)*NODECODE(N2)*
+     &           NODECODE(N3)*NOFF(NELE)
+         IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN  !if element is active, compute velocity grads
             TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
             a1=X(N3)-X(N2)
             a2=X(N1)-X(N3)
@@ -841,6 +959,11 @@ c     total elemental area surrounding a node
 
 c     Evaluate the "z" vertical velocity
 
+c. RJW merged 08282008 Casey 071219: Added an IF statement so that the vertical velocities are only computed
+C     and corrected at nodes that are connected to at least one active element.
+C
+         IF(TEMPNCELE.NE.0)THEN
+c.
          WZkp1(NH,1)=-REAL(qkp1(NH,1))*DhDX-AIMAG(qkp1(NH,1))*DhDY
 
          DO k=2,NFEN
@@ -869,6 +992,15 @@ c     Correct this using Adjoint method
             WZkp1(NH,k)=WZkp1(NH,k)+WZCorrection
          ENDDO
 
+c.RJW merged 08282008 Casey 071219: Added an ELSEIF statement to zero out the vertical velocities at nodes
+C     that are not connected to any active elements.
+C
+         ELSEIF(TEMPNCELE.EQ.0)THEN
+            DO K=1,NFEN
+               WZkp1(NH,K) = (0.D0,0.D0)
+            ENDDO
+         ENDIF
+c.
 C     
 C     End loop over horizontal nodes to compute vertical velocity
 C     

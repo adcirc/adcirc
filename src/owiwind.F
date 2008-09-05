@@ -78,7 +78,8 @@ C***********************************************************************
       
 ! Read meta info -------------------------------------------------
 
-      OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD',ACTION='READ')
+      OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD',
+     & ACTION='READ')
 
       ! Read the number of sets of .pre and .win files.
       ! If numSets = 1 then ADCIRC requires UNIT 221 and 222.
@@ -506,11 +507,12 @@ c      end if
 9999  continue
 
       if (myproc == 0) then
-      WRITE(screenunit,*) ''
-      WRITE(screenunit,*) ' !!!!!FATAL ERROR!!!!!'
-      WRITE(screenunit,*) ' EITHER OF UNIT221,222,223,224 COULD NOT BE READ'
-      WRITE(screenunit,*) ' EXECUTION WILL BE TERMINATED'
-      WRITE(screenunit,*) ''
+      WRITE(screenunit,*)''
+      WRITE(screenunit,*)' !!!!!FATAL ERROR!!!!!'
+      WRITE(screenunit,*)'EITHER OF UNIT221,222,223,224
+     & COULD NOT BE READ'
+      WRITE(screenunit,*)' EXECUTION WILL BE TERMINATED'
+      WRITE(screenunit,*)''
       endif
 
       WRITE(16,*) ''

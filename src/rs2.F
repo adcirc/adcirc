@@ -675,7 +675,8 @@ C***********************************************************************
       !open .rad files if necessary
       do s=1,ns
         rfids(s) = 230 + s
-        open(rfids(s),file=TRIM(GBLINPUTDIR)//'/'//trim(radfiles(s)),status='old')
+        open(rfids(s),file=TRIM(GBLINPUTDIR)//'/'//trim(radfiles(s)),
+     & status='old')
         if(fullplanes(s).eq.1) then
           read (rfids(s),*) ni, nj, dxinc, dyinc
         else
@@ -1009,7 +1010,7 @@ C***********************************************************************
         if(cntsnaps.le.nbs(s)) then
           if(abs(nscreen) >= 1) then
             if(myproc.eq.0) then
-              write(screenunit,*) 'INSERTING A BLANK RS SNAP, REGION = ',s,
+         write(screenunit,*) 'INSERTING A BLANK RS SNAP, REGION = ',s,
      &                   ', COUNT = ',cntsnaps
             endif
             write(16,*) 'INSERTING A BLANK RS SNAP, REGION = ',s,
@@ -1054,7 +1055,7 @@ C***********************************************************************
             goto 100
           else
             if (myproc.eq.0) then
-              write(screenunit,'(A)') " spectrum_id = "//trim(spectrum_id(1))
+        write(screenunit,'(A)') " spectrum_id = "//trim(spectrum_id(1))
               write(screenunit,'(A19,I6,A9,I6)') 
      &         " RS SNAP, REGION = ",s, " COUNT = ", cntsnaps
             endif
@@ -1112,10 +1113,10 @@ C--------------------------------------------------------------------------
           endif
 
           !interpolation
-          rsx= rscnf(1,n,s)*rsx1 + rscnf(2,n,s)*rsx2 + rscnf(3,n,s)*rsx3
-          rsy= rscnf(1,n,s)*rsy1 + rscnf(2,n,s)*rsy2 + rscnf(3,n,s)*rsy3
+        rsx= rscnf(1,n,s)*rsx1 + rscnf(2,n,s)*rsx2 + rscnf(3,n,s)*rsx3
+        rsy= rscnf(1,n,s)*rsy1 + rscnf(2,n,s)*rsy2 + rscnf(3,n,s)*rsy3
 
-          if((rsnx(n)*rsnx(n) + rsny(n)*rsny(n)).lt.(rsx*rsx + rsy*rsy)) then
+       if((rsnx(n)*rsnx(n)+rsny(n)*rsny(n)).lt.(rsx*rsx+rsy*rsy))then
             !need to rotate
             angle_st = (azimuths(s)*pi)/180.d0
             rsnx(n) = cos(angle_st)*rsx-sin(angle_st)*rsy

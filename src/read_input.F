@@ -3012,7 +3012,7 @@ C...  (type 40)
                   ENDDO
                   
                   IF(AEMIN.GT.1.0E-5) THEN
-                     if (NSCREEN.ne.0.and.myproc.eq.0)WRITE(ScreenUnit,9770) NBVI
+          if (NSCREEN.ne.0.and.myproc.eq.0)WRITE(ScreenUnit,9770) NBVI
                      WRITE(16,9770) NBVI
  9770                FORMAT(///,1X,'!!!!!!!!!!  ERROR !!!!!!!!!',//,
      &                1X,'Zero Normal Velocity Gradient Boundary Node ',
@@ -4913,7 +4913,7 @@ C - allocate arrays dealing with wind forcing
       endif
 
 C     write table of ADCIRC parameter sizes
-      WRITE(16,4010) MNPROC,MNWPROC,MNE,MNP,MNei,MNOPE,MNETA,MNBOU,MNVEL,
+      WRITE(16,4010)MNPROC,MNWPROC,MNE,MNP,MNei,MNOPE,MNETA,MNBOU,MNVEL,
      & MNTIF,MNBFR,MNSTAE,MNSTAV,MNSTAC,MNSTAM,NWLAT,NWLON,MNHARF,MNFFR
       IF(NWS.EQ.0) WRITE(16,4011)
       IF(NWS.EQ.1) WRITE(16,4012)
@@ -5045,6 +5045,12 @@ C...
       CLOSE(14)
       CLOSE(15)
 C...  
+c.RJW merged 09/02/2008 Casey 071219: Added the following subroutine call to compute the RESELEM array.
+C             The subroutine is located at the begining of the file 'massbal.F.'
+#ifdef CMPI
+      CALL COMPUTE_RESELEM
+#endif
+c.
       RETURN 
       END
 

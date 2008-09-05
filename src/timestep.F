@@ -104,12 +104,21 @@ C.....sb46.28sb03 added 09/xx/2006
      &     ManningsN, LoadManningsN, !sb46.28sb02
      &     BFCdLLimit !sb46.28sb02/jgf47.04 lower limit of Cd for bot. friction
 
+c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
+      USE GLOBAL_3DVS, ONLY:
+     &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA
+
 #ifdef CMPI
       USE MESSENGER
 #endif
 
       IMPLICIT NONE 
- 
+
+c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
+      CHARACTER(6) :: TEMPDIRNAME
+      COMPLEX :: DUDS
+      REAL(SZ) :: KSLIP
+
       INTEGER IE, I, J, K                  !local loop counters
       INTEGER IT
       INTEGER NM1, NM2, NM3, NM123
@@ -1379,27 +1388,96 @@ CWET...
      &                    +(X(NM3)-X(NM123))**2.D0)         
                      DELETA=ETA2(NM123)-ETA2(NM3)
                      H1=ETA2(NM123)+DP(NM123)
+c. RJW merged from Casey 071219: Added the following logic for 3D friction.
+                     IF(C2DDI)THEN
 Csb46.28sb02
-C<<                  Convert Manning's N to Cd, if necessary.
-                     IF (LoadManningsN) THEN
-                       FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                   /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
-     &                                            **(1.d0/3.d0) )
-                       IF(FRIC(NM123).LT.BFCdLLimit) THEN
-                         FRIC(NM123) = BFCdLLimit
-                       ENDIF
-                     ENDIF
+C<<                     Convert Manning's N to Cd, if necessary.
+                        IF (LoadManningsN) THEN
+                          FRIC(NM123)=g*ManningsN(NM123)**2.d0
+     &                      /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                                               **(1.d0/3.d0) )
+                          IF(FRIC(NM123).LT.BFCdLLimit) THEN
+                            FRIC(NM123) = BFCdLLimit
+                          ENDIF
+                        ENDIF
 C>>
-                     TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                 (IFNLBF+IFHYBF*
-     &                 (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
+                        TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
+     &                    (IFNLBF+IFHYBF*
+     &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
+                     ELSEIF(C3D)THEN
+                        TKWET=SQRT(BSX1(NM123)*BSX1(NM123)
+     &                    +BSY1(NM123)*BSY1(NM123))
+     &                    *(IFLINBF+(VELMIN/H1)*(IFNLBF+IFHYBF*
+     &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
+                     ENDIF
+
                      IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
                      VEL=G*(DELETA/DELDIST)/TKWET
                      IF(VEL.GT.VELMIN) THEN
                         NNODECODE(NM3)=1
-                        TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-     &                     (IFNLBF+IFHYBF*(1.D0+(HBREAK/H1)**FTHETA)**
-     &                     (FGAMMA/FTHETA)))
+c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the correct friction.
+                        IF(C2DDI)THEN
+                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+     &                        (IFNLBF+IFHYBF*
+     &                        (1.D0+(HBREAK/H1)**FTHETA)**
+     &                        (FGAMMA/FTHETA)))
+                        ELSEIF(C3D)THEN
+                           IF(ISLIP.EQ.0)THEN
+                              DUDS=(Q(NM123,2)-Q(NM123,1))
+     &                           /(SIGMA(2)-SIGMA(1))
+                              BSX1(NM123)=EVTOT(1)*REAL(DUDS)*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                              BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                           ENDIF
+                           IF(ISLIP.NE.0)THEN
+                              IF(ISLIP.EQ.1)THEN
+                                 KSLIP=KP
+                              ENDIF
+                              IF(ISLIP.EQ.2)THEN
+                                 IF(
+     &                               ABS( ((SIGMA(2)-B)/(A-B))
+     &                                     *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                               .LE. 0.1D0 )THEN
+                                     KSLIP = 1.D+4
+                                 ELSEIF(
+     &                               ABS( ((SIGMA(2)-B)/(A-B))
+     &                                     *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                               .LT. 1.D0 )THEN
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                                       LOG( ABS(
+     &                                       ((SIGMA(2)-B)/(A-B))
+     &                                       *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                                       / (0.1D0) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                 ELSE
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                                       LOG( 1.D0
+     &                                       / (0.1D0) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                 ENDIF
+                                 IF(KSLIP.GT.1.D-1) KSLIP=1.D-1
+                                 IF(KSLIP.LT.1.D-8) KSLIP=1.D-8
+                              ENDIF
+                              BSX1(NM123)=KSLIP*REAL(Q(NM123,1))*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                              BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                           ENDIF
+                        ENDIF
                      ENDIF
                   ENDIF  
                ELSEIF((NODECODE(NM2).EQ.1).AND.(NODECODE(NM3).EQ.1)) 
@@ -1411,27 +1489,96 @@ C>>
      &                    +(X(NM1)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM1)
                      H1=ETA2(NM123)+DP(NM123)
+c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction.
+                     IF(C2DDI)THEN
 Csb46.28sb02
-C<<                  Convert Manning's N to Cd, if necessary.
-                     IF (LoadManningsN) THEN
-                       FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                   /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
-     &                                            **(1.d0/3.d0) )
-                       IF(FRIC(NM123).LT.BFCdLLimit) THEN
-                         FRIC(NM123) = BFCdLLimit
-                       ENDIF
-                     ENDIF
+C<<                     Convert Manning's N to Cd, if necessary.
+                        IF (LoadManningsN) THEN
+                          FRIC(NM123)=g*ManningsN(NM123)**2.d0
+     &                      /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                                               **(1.d0/3.d0) )
+                          IF(FRIC(NM123).LT.BFCdLLimit) THEN
+                            FRIC(NM123) = BFCdLLimit
+                          ENDIF
+                        ENDIF
 C>>
-                     TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                 (IFNLBF+IFHYBF*
-     &                 (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
+                        TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
+     &                    (IFNLBF+IFHYBF*
+     &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
+                     ELSEIF(C3D)THEN
+                        TKWET=SQRT(BSX1(NM123)*BSX1(NM123)
+     &                    +BSY1(NM123)*BSY1(NM123))
+     &                    *(IFLINBF+(VELMIN/H1)*(IFNLBF+IFHYBF*
+     &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
+                     ENDIF
+
                      IF(TKWET.LT.0.0001d0) TKWET=0.0001d0          
                      VEL=G*(DELETA/DELDIST)/TKWET
                      IF(VEL.GT.VELMIN) THEN
                         NNODECODE(NM1)=1
-                        TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-     &                       (IFNLBF+IFHYBF*(1.D0+(HBREAK/H1)**FTHETA)**
-     &                       (FGAMMA/FTHETA)))
+c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
+                        IF(C2DDI)THEN
+                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+     &                        (IFNLBF+IFHYBF*
+     &                        (1.D0+(HBREAK/H1)**FTHETA)**
+     &                        (FGAMMA/FTHETA)))
+                        ELSEIF(C3D)THEN
+                           IF(ISLIP.EQ.0)THEN
+                              DUDS=(Q(NM123,2)-Q(NM123,1))
+     &                           /(SIGMA(2)-SIGMA(1))
+                              BSX1(NM123)=EVTOT(1)*REAL(DUDS)*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                              BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                           ENDIF
+                           IF(ISLIP.NE.0)THEN
+                              IF(ISLIP.EQ.1)THEN
+                                 KSLIP=KP
+                              ENDIF
+                              IF(ISLIP.EQ.2)THEN
+                                 IF(
+     &                               ABS( ((SIGMA(2)-B)/(A-B))
+     &                                     *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                               .LE. 0.1D0 )THEN
+                                     KSLIP = 1.D+4
+                                 ELSEIF(
+     &                               ABS( ((SIGMA(2)-B)/(A-B))
+     &                                     *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                               .LT. 1.D0 )THEN
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                                       LOG( ABS(
+     &                                       ((SIGMA(2)-B)/(A-B))
+     &                                       *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                                       / (0.1D0) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                 ELSE
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                                       LOG( 1.D0
+     &                                       / (0.1D0) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                 ENDIF
+                                 IF(KSLIP.GT.1.D-1) KSLIP=1.D-1
+                                 IF(KSLIP.LT.1.D-8) KSLIP=1.D-8
+                              ENDIF
+                              BSX1(NM123)=KSLIP*REAL(Q(NM123,1))*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                              BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                           ENDIF
+                        ENDIF
                      ENDIF
                   ENDIF 
                ELSEIF((NODECODE(NM3).EQ.1).AND.(NODECODE(NM1).EQ.1)) 
@@ -1443,27 +1590,96 @@ C>>
      &                     +(X(NM2)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM2)
                      H1=ETA2(NM123)+DP(NM123)
+c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction.
+                     IF(C2DDI)THEN
 Csb46.28sb02
-C<<                  Convert Manning's N to Cd, if necessary.
-                     IF (LoadManningsN) THEN
-                       FRIC(NM123)=g*ManningsN(NM123)**2.d0
-     &                   /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
-     &                                            **(1.d0/3.d0) )
-                       IF(FRIC(NM123).LT.BFCdLLimit) THEN
-                         FRIC(NM123) = BFCdLLimit
-                       ENDIF
-                     ENDIF
+C<<                     Convert Manning's N to Cd, if necessary.
+                        IF (LoadManningsN) THEN
+                          FRIC(NM123)=g*ManningsN(NM123)**2.d0
+     &                      /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                                               **(1.d0/3.d0) )
+                          IF(FRIC(NM123).LT.BFCdLLimit) THEN
+                            FRIC(NM123) = BFCdLLimit
+                          ENDIF
+                        ENDIF
 C>>
-                     TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
-     &                 (IFNLBF+IFHYBF*
-     &                 (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
+                        TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
+     &                    (IFNLBF+IFHYBF*
+     &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
+                     ELSEIF(C3D)THEN
+                        TKWET=SQRT(BSX1(NM123)*BSX1(NM123)
+     &                    +BSY1(NM123)*BSY1(NM123))
+     &                    *(IFLINBF+(VELMIN/H1)*(IFNLBF+IFHYBF*
+     &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
+                     ENDIF
+
                      IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
                      VEL=G*(DELETA/DELDIST)/TKWET
                      IF(VEL.GT.VELMIN) THEN
                         NNODECODE(NM2)=1
-                        TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
-     &                       (IFNLBF+IFHYBF*(1.D0+(HBREAK/H1)**FTHETA)**
-     &                       (FGAMMA/FTHETA)))
+c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the correct friction.
+                        IF(C2DDI)THEN
+                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+     &                        (IFNLBF+IFHYBF*
+     &                        (1.D0+(HBREAK/H1)**FTHETA)**
+     &                        (FGAMMA/FTHETA)))
+                        ELSEIF(C3D)THEN
+                           IF(ISLIP.EQ.0)THEN
+                              DUDS=(Q(NM123,2)-Q(NM123,1))
+     &                           /(SIGMA(2)-SIGMA(1))
+                              BSX1(NM123)=EVTOT(1)*REAL(DUDS)*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                              BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                           ENDIF
+                           IF(ISLIP.NE.0)THEN
+                              IF(ISLIP.EQ.1)THEN
+                                 KSLIP=KP
+                              ENDIF
+                              IF(ISLIP.EQ.2)THEN
+                                 IF(
+     &                               ABS( ((SIGMA(2)-B)/(A-B))
+     &                                     *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                               .LE. 0.1D0 )THEN
+                                     KSLIP = 1.D+4
+                                 ELSEIF(
+     &                               ABS( ((SIGMA(2)-B)/(A-B))
+     &                                     *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                               .LT. 1.D0 )THEN
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                                       LOG( ABS(
+     &                                       ((SIGMA(2)-B)/(A-B))
+     &                                       *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                                       / (0.1D0) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                 ELSE
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                                       LOG( 1.D0
+     &                                       / (0.1D0) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                 ENDIF
+                                 IF(KSLIP.GT.1.D-1) KSLIP=1.D-1
+                                 IF(KSLIP.LT.1.D-8) KSLIP=1.D-8
+                              ENDIF
+                              BSX1(NM123)=KSLIP*REAL(Q(NM123,1))*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                              BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                           ENDIF
+                        ENDIF
                      ENDIF
                   ENDIF  
                ENDIF
@@ -1770,7 +1986,38 @@ CWET...
 CWET...END WET/DRY SECTION - PART 6
 CWET...
       ENDIF                     !  This is started in Part 1 of CWET
-
+c.....
+c. RJW merged 08/26/2008 Casey 071219: Added these output lines for wet/dry visualization.
+      IF(NOUTGE.NE.0)THEN
+         IF((IT.GT.NTCYSGE).AND.(IT.LE.NTCYFGE))THEN
+            IF(NSCOUGE.EQ.(NSPOOLGE-1))THEN
+               CLOSE(123)
+#ifdef CMPI
+               WRITE(TEMPDIRNAME,'(A2,I4.4)') 'PE',MYPROC
+               OPEN(123,FILE=TEMPDIRNAME//'/'//'fort.123',
+     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
+#else
+               OPEN(123,FILE='fort.123',
+     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
+#endif
+               DO I=1,NP
+                  WRITE(123,*) NODECODE(I)
+               ENDDO
+               CLOSE(124)
+#ifdef CMPI
+               OPEN(124,FILE=TEMPDIRNAME//'/'//'fort.124',
+     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
+#else
+               OPEN(124,FILE='fort.124',
+     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
+#endif
+               DO IE=1,NE
+                  WRITE(124,*) NOFF(IE)
+               ENDDO
+            ENDIF
+         ENDIF
+      ENDIF
+c.end rjw merge vis....
 C...  
 C...  2DDI Momentum Equation Solution
 C...  
@@ -2095,6 +2342,12 @@ C     the screen.
 C...  
 C...  ****************** TIME STEPPING LOOP ENDS HERE ********************
 C...  
+
+c. RJW merged 08/26/2008 Casey 071219: Added the folowing call to the mass balance subroutine.
+      IF(C3DVS)THEN
+         CALL MASSBAL3D(IT)
+      ENDIF
+
       RETURN
       END
 

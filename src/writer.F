@@ -148,7 +148,7 @@ C...    Send some parameters associated to this file
         endif
 
         filenamebuf = ""
-        filenamebuf(1:len_trim(filename)) = filename(1:len_trim(filename))
+        filenamebuf(1:len_trim(filename))=filename(1:len_trim(filename))
 
         CALL MPI_SEND(filenamebuf,256,MPI_CHARACTER,MNPROC,TAG,
      &       WCOMM,IERR)
