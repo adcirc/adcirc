@@ -680,7 +680,8 @@ C...
       NSCOUGV=0
       IGVP=0
 
-      IF((ABS(NOUTGV).EQ.1).OR.(ABS(NOUTGV).EQ.3)) THEN
+!     IF((ABS(NOUTGV).EQ.1).OR.(ABS(NOUTGV).EQ.3)) THEN
+      IF((ABS(NOUTGV).EQ.1)) THEN
          CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
      $    NP_G, NP, HEADER64)
          IGVP=2
@@ -736,7 +737,8 @@ C...
       IGWP=0
       IGPP=0
 
-      IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.3)) THEN
+!     IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.3)) THEN
+      IF((ABS(NOUTGW).EQ.1)) THEN
          CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
      $    NP_G, NP, HEADER73)
          IGPP=2

@@ -10,6 +10,7 @@ C******************************************************************************
 C 
       MODULE GLOBAL
       USE SIZES
+      USE VERSION
       IMPLICIT NONE
       SAVE
 C...
@@ -73,9 +74,9 @@ C     global number of elevation, velocity, and meteorological stations
       INTEGER             :: NSTAC_G     ! number of concentration stations
       INTEGER             :: COMM        ! MPI communicator.
       INTEGER             :: FileFmtVersion      ! File format version.
-      INTEGER             :: FileFmtMajor = 1
-      INTEGER             :: FileFmtMinor = 2
-      INTEGER             :: FileFmtRev   = 0
+!      INTEGER             :: FileFmtMajor = 1
+!      INTEGER             :: FileFmtMinor = 2
+!      INTEGER             :: FileFmtRev   = 0
 
 C     global array sizes for use in globalio
 
@@ -392,6 +393,13 @@ C...
       INTEGER, PARAMETER :: SNAMLEN = 50
       CHARACTER(7),  ALLOCATABLE  :: STATNUMBM(:,:)
       CHARACTER(50), ALLOCATABLE  :: STATNAMEM(:,:)
+      
+      INTEGER NCIESTP, NCIPSTP,NCIVSTP,NCIWSTP
+      INTEGER NCIGEP,NCIGPP, NCIGVP,NCIGWP
+      INTEGER NCCOUE,NCCOUM,NCCOUV,NCCOUW
+      INTEGER NCCOUGE,NCCOUGW,NCCOUGV
+     
+      
 ! CF Finish addition for NETCDF I/O
 
 C     jgf48.03 Arrays for mapping subdomain nodes and elements to full

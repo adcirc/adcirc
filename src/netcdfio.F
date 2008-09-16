@@ -67,8 +67,8 @@
 !     --------------
       REAL(SZ), ALLOCATABLE ::  timenc(:) 
       REAL(SZ), ALLOCATABLE ::  eta22(:,:)                              ! global surface elevation
-      REAL(SZ), ALLOCATABLE ::  eta11(:,:)                                ! boundary array
-      REAL(SZ), ALLOCATABLE ::  etadd(:,:)                                ! boundary array
+      REAL(SZ), ALLOCATABLE ::  eta11(:,:)                              ! boundary array
+      REAL(SZ), ALLOCATABLE ::  etadd(:,:)                              ! boundary array
       REAL(SZ), ALLOCATABLE ::  uu22(:,:), vv22(:,:)                    ! global surface speed
       REAL(SZ), ALLOCATABLE ::  xnc(:), ync(:)                          ! coordinates
       REAL(SZ), ALLOCATABLE ::  xenc(:), yenc(:)                        ! coordinates station velocities
@@ -106,21 +106,21 @@
       INTEGER irtype
       INTEGER ncmode
       
-      CHARACTER*50, PARAMETER :: VAR61_LN='station sea surface elevation'
-      CHARACTER*25, PARAMETER :: VAR61_ST='station_surface_elevation'
+      CHARACTER*35, PARAMETER :: VAR61_LN='water surface elevation above geoid'
+      CHARACTER*23, PARAMETER :: VAR61_ST='water_surface_elevation'
 
       CHARACTER*29, PARAMETER :: VAR62_LN='station velocity'
       CHARACTER*25, PARAMETER :: VAR62_ST='station_velocity'
 
-      CHARACTER*21, PARAMETER :: VAR63_LN='sea surface elevation'
-      CHARACTER*17, PARAMETER :: VAR63_ST='surface_elevation'
+      CHARACTER*35, PARAMETER :: VAR63_LN='water surface elevation above geoid'
+      CHARACTER*23, PARAMETER :: VAR63_ST='water_surface_elevation'
 
-      CHARACTER*36, PARAMETER :: VAR71_LN='station atmospheric surface pressure'
-      CHARACTER*28, PARAMETER :: VAR71_ST='station_atmospheric_pressure'
+      CHARACTER*33, PARAMETER :: VAR71_LN='station air pressure at sea level'
+      CHARACTER*25, PARAMETER :: VAR71_ST='air_pressure_at_sea_level'
       CHARACTER*15, PARAMETER :: VAR71_UN='meters of water'
 
-      CHARACTER*28, PARAMETER :: VAR73_LN='atmospheric surface pressure'
-      CHARACTER*20, PARAMETER :: VAR73_ST='atmospheric_pressure'
+      CHARACTER*25, PARAMETER :: VAR73_LN='air pressure at sea level'
+      CHARACTER*25, PARAMETER :: VAR73_ST='air_pressure_at_sea_level'
       CHARACTER*15, PARAMETER :: VAR73_UN='meters of water'
       
       CHARACTER*14 , PARAMETER :: VAR_NOND='nondimensional'
@@ -140,6 +140,20 @@
       CHARACTER*12 , PARAMETER :: VAR_DEGE='degrees_east'
       CHARACTER*13 , PARAMETER :: VAR_DEGN='degrees_north'
 
+      CHARACTER*19 , PARAMETER :: VAR_L_D='distance from geoid'
+      CHARACTER*19 , PARAMETER :: VAR_S_D='depth'
+      CHARACTER*52 , PARAMETER :: VAR_L_MIN_D='minimum distance from geoid to water surface in grid'
+      CHARACTER*52 , PARAMETER :: VAR_L_MAX_D='maximum distance from geoid to water surface in grid'
+      CHARACTER*13 , PARAMETER :: VAR_S_MIN_D='minimum_depth'
+      CHARACTER*13 , PARAMETER :: VAR_S_MAX_D='maximum_depth'
+
+      CHARACTER*22 , PARAMETER :: VAR_L_X='Cartesian coordinate x'
+      CHARACTER*12 , PARAMETER :: VAR_S_X='x_coordinate'
+      CHARACTER*22 , PARAMETER :: VAR_L_Y='Cartesian coordinate y'
+      CHARACTER*12 , PARAMETER :: VAR_S_Y='y_coordinate'
+     
+      
+      
          CONTAINS
 
 !=======================================================================
@@ -157,7 +171,7 @@
 !
 !     Variables :
 !     time      : time
-!     zeta      : Sea surface elevation 
+!     zeta      : water surface elevation 
 !     x         : x-coordinate or longitude
 !     y         : y-coordinate or latitude
 !     element   : elements in grid
@@ -166,17 +180,17 @@
 !     nvell     : number of nodes in normal flow specified boundary segment
 !     nbvv      : node numbers on normal flow boundary segment
 !     ibtype    : boundary type
-!     depth     : depth in each node
-!     mindepth  : minimum depth in grid
-!     maxdepth  : maximum depth in grid
-!     minzetat  : minimum sea surface elevation for each output time
-!     maxzetat  : maximum sea surface elevation for each output time
-!     minzetan  : minimum sea surface elevation at each node
-!     maxzetan  : maximum sea surface elevation at each node
-!     minznodet : node of minimum sea surface elevation at each output time
-!     maxznodet : node of maximum sea surface elevation at each output time
-!     minztimen : time of minimum sea surface elevation at each node
-!     maxztimen : time of maximum sea surface elevation at each node
+!     depth     : distance from geoid
+!     mindepth  : minimum distance from geoid to water surface in grid
+!     maxdepth  : maximum distance from geoid to water surface in grid
+!     minzetat  : minimum water surface elevation for each output time
+!     maxzetat  : maximum water surface elevation for each output time
+!     minzetan  : minimum water surface elevation at each node
+!     maxzetan  : maximum water surface elevation at each node
+!     minznodet : node of minimum water surface elevation at each output time
+!     maxznodet : node of maximum water surface elevation at each output time
+!     minztimen : time of minimum water surface elevation at each node
+!     maxztimen : time of maximum water surface elevation at each node
 !
 !     Attributes:
 !     model             : ADCIRC
@@ -480,10 +494,8 @@
       save netanc_dim
       save nopenc_id,nvdllnc_id
 
-!     ---------------------------
-!     Opening fort.63 netCDF file
-!     ---------------------------
-      WRITE(6,*) "-------------------------------------------------"
+       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     . PRINT *, "NCIGEP === ", NCIGEP/node_len
       
       IF(FIRST.EQ.1.and.ncmode.ne.0) THEN
          ALLOCATE ( minzetan (node_len) )
@@ -512,11 +524,27 @@
 !     -----------------
 !     Enter define mode
 !     -----------------
+!     ---------------------------
+!     Opening fort.63 netCDF file
+!     ---------------------------
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "-------------------------------------------------"
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
-         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
                   
+!         IF(MYPROC.EQ.0) PRINT *, 
+!     &   "FIRST.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR."
+!     &   "(FIRST.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.nout.EQ.-3"
+         IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))THEN 
+            PRINT *, "FIRST = ",FIRST
+            PRINT *, "IHOT = ",IHOT
+            PRINT *, "NCMODE = ",NCMODE
+            PRINT *, "nout = ",nout
+         ENDIF
+         
        IF((FIRST.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &    (FIRST.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
      &     nout.EQ.-3))THEN
@@ -738,9 +766,6 @@
       	       CALL check_err(iret)
       	iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
       	       CALL check_err(iret)
-      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE, 
-     &                       1, doubleval)
-      	       CALL check_err(iret)
       	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       	       CALL check_err(iret)      
@@ -758,9 +783,6 @@
       	iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
       	       CALL check_err(iret)
        
-      	iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      	       CALL check_err(iret)
       	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &      doubleval)
       	       CALL check_err(iret)
@@ -770,12 +792,10 @@
 !     ------------------------------
 !     Define x-coordinate attributes
 !     ------------------------------
-      	iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
-     &       'Cartesian coordinate x')
-      	       CALL check_err(iret)
-      	iret = nf_put_att_text(ncid, X_id, 'standard_name',12, 
-     &                      'x-coordinate')
-      	       CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'long_name', 22, VAR_L_X)
+       CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, VAR_S_X)
+       CALL check_err(iret)
       	       
 !    -------------------------
 !     determine variable units
@@ -790,21 +810,17 @@
         
       	iret = nf_put_att_text(ncid, X_id, 'positive', 5,  VAR_RG)
       	CALL check_err(iret)
-      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE,
-     &                        1, doubleval)
-      	CALL check_err(iret)
       	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       	CALL check_err(iret)
 !     ------------------------------
 !     Define y-coordinate attributes
 !     ------------------------------     
-      	iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
-     &                        'Cartesian coordinate y')
-      	CALL check_err(iret)
-      	iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
-     &                       'y-coordinate')
-      	CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, VAR_L_Y)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, VAR_S_Y)
+      CALL check_err(iret)
+
       	if (G.LT.11.D0) then       
      	  iret = nf_put_att_text(ncid, Y_id, 'units', 6,  VAR_METS)
       	  CALL check_err(iret)
@@ -815,31 +831,24 @@
       	
       	iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
       	CALL check_err(iret)
-      	iret = nf_put_att_double(ncid, Y_id, 'missing_values',NF_DOUBLE, 
-     &                           1, doubleval)
-      	CALL check_err(iret)
       	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &                           doubleval)
       	CALL check_err(iret)
       
       endif
 !     ------------------------------
-!     Define bathymetry attributes
+!     Define depth attributes
 !     ------------------------------
-      iret = nf_put_att_text(ncid, DEPTH_id,'long_name',10,'bathymetry')
-      CALL check_err(iret)
-      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,'depth')
-      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'long_name', 19, VAR_L_D)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,VAR_S_D)
       iret = nf_put_att_text(ncid, DEPTH_id, 'units', 6, VAR_METS)
-      CALL check_err(iret)
-      iret = nf_put_att_double(ncid, DEPTH_id, 'missing_values', 
-     &                      NF_DOUBLE, 1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_double(ncid, DEPTH_id, '_FillValue', NF_DOUBLE,
      &                        1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, DEPTH_id, 'positive', 4, VAR_DW)
       CALL check_err(iret)
+      
       iret = nf_put_att_text(ncid, ELE_id, 'long_name', 7, 'element')
       CALL check_err(iret)
       intval(1) = -1
@@ -848,36 +857,39 @@
       CALL check_err(iret)
       
 !     ------------------------------------
-!     Define minimum bathymetry attributes
+!     Define minimum depth attributes
 !     ------------------------------------
-      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 18, 
-     &                       'minimum bathymetry')
+      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 52, 
+     &      VAR_L_MIN_D)
       CALL check_err(iret)
 
       iret = nf_put_att_text(ncid, mindepth_id, 'standard_name', 13,
-     &                'minimum_depth')
+     &      VAR_S_MIN_D)
       CALL check_err(iret)
 
       iret = nf_put_att_text(ncid, mindepth_id, 'units', 6, VAR_METS)
       CALL check_err(iret)
       
 !     ------------------------------------
-!     Define maximum bathymetry attributes
+!     Define maximum depth attributes
 !     ------------------------------------
-      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 18, 
-     &                       'maximum bathymetry')
+      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 52, 
+     &      VAR_L_MAX_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxdepth_id, 'standard_name', 13,
-     &                'maximum_depth')
+     &      VAR_S_MAX_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxdepth_id, 'units', 6, VAR_METS)
       CALL check_err(iret)
       
 !     -----------------------------------------------
-!     Define minimum sea surface elevation attributes
+!     Define minimum water surface elevation attributes
 !     -----------------------------------------------
-      iret = nf_put_att_text(ncid, minzetat_id, 'long_name', 50, 
-     &      'minimum sea surface elevation for each output time')
+      iret = nf_put_att_text(ncid, minzetat_id, 'long_name', 52, 
+     &      'minimum water surface elevation for each output time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minzetat_id, 'standard_name', 40, 
+     &      'minimum_temporal_water_surface_elevation')
       CALL check_err(iret)
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, minzetat_id, 'units', 6, VAR_METS)
@@ -887,8 +899,11 @@
          CALL check_err(iret)
       endif
       
-      iret = nf_put_att_text(ncid, maxzetat_id, 'long_name', 50, 
-     &       'maximum sea surface elevation for each output time')
+      iret = nf_put_att_text(ncid, maxzetat_id, 'long_name', 52, 
+     &       'maximum water surface elevation for each output time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxzetat_id, 'standard_name', 52, 
+     &       'maximum_temporal_water_surface_elevation')
       CALL check_err(iret)
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, maxzetat_id, 'units', 6, VAR_METS)
@@ -898,10 +913,13 @@
          CALL check_err(iret)
       endif
 !     -----------------------------------------------
-!     Define maximum sea surface elevation attributes
+!     Define maximum water surface elevation attributes
 !     -----------------------------------------------
-      iret = nf_put_att_text(ncid, minzetan_id, 'long_name', 42, 
-     &      'minimum sea surface elevation at each node')
+      iret = nf_put_att_text(ncid, minzetan_id, 'long_name', 44, 
+     &      'minimum water surface elevation at each node')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minzetan_id, 'standard_name', 38, 
+     &      'minimum_nodal_water_surface_elevation')
       CALL check_err(iret)
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, minzetan_id, 'units', 6, VAR_METS)
@@ -910,8 +928,11 @@
          iret = nf_put_att_text(ncid, minzetan_id, 'units', 4, VAR_FEET)
          CALL check_err(iret)
       endif      
-      iret = nf_put_att_text(ncid, maxzetan_id, 'long_name', 42, 
-     &       'maximum sea surface elevation at each node')
+      iret = nf_put_att_text(ncid, maxzetan_id, 'long_name', 44, 
+     &       'maximum water surface elevation at each node')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxzetan_id, 'standard_name', 44, 
+     &       'maximum_nodal_water_surface_elevation')
       CALL check_err(iret)
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, maxzetan_id, 'units', 6, VAR_METS)
@@ -921,32 +942,44 @@
          CALL check_err(iret)
       endif      
 !     -------------------------------------------------------------
-!     Define max and min in time sea surface elevation attributes 
+!     Define max and min in time water surface elevation attributes 
 !     -------------------------------------------------------------
-      iret = nf_put_att_text(ncid, minznodet_id, 'long_name', 57, 
-     &    'node of minimum sea surface elevation at each output time')
+      iret = nf_put_att_text(ncid, minznodet_id, 'long_name', 59, 
+     &    'node of minimum water surface elevation at each output time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minznodet_id, 'standard_name', 49, 
+     &    'nnode_of_minimum_temporal_water_surface_elevation')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, minznodet_id, 'units',14, 
      &                      VAR_NOND)
       CALL check_err(iret)
       
-      iret = nf_put_att_text(ncid, maxznodet_id, 'long_name', 57, 
-     &    'node of maximum sea surface elevation at each output time')
+      iret = nf_put_att_text(ncid, maxznodet_id, 'long_name', 59, 
+     &    'node of maximum water surface elevation at each output time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxznodet_id, 'standard_name', 49, 
+     &    'node_of_maximum_temporal_water_surface_elevation')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxznodet_id, 'units', 14, 
      &                      VAR_NOND)
       CALL check_err(iret)
-!     -------------------------------------------------------------
-!     Define max and min in nodes sea surface elevation attributes
-!     -------------------------------------------------------------
-      iret = nf_put_att_text(ncid, minztimen_id, 'long_name', 50, 
-     &     'time of minimum sea surface elevation at each node')
+!     --------------------------------------------------------------
+!     Define max and min in nodes water surface elevation attributes
+!     --------------------------------------------------------------
+      iret = nf_put_att_text(ncid, minztimen_id, 'long_name', 52, 
+     &     'time of minimum water surface elevation at each node')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minztimen_id, 'standard_name', 45, 
+     &     'time_of_minimum_nodal_water_surface_elevation')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, minztimen_id, 'units', 4, VAR_SECS)
       CALL check_err(iret)
       
-      iret = nf_put_att_text(ncid, maxztimen_id, 'long_name', 50, 
-     &     'time of maximum sea surface elevation at each node')
+      iret = nf_put_att_text(ncid, maxztimen_id, 'long_name', 52, 
+     &     'time of maximum water surface elevation at each node')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxztimen_id, 'standard_name', 45, 
+     &     'time_of_maximum_nodal_water_surface_elevation')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxztimen_id, 'units', 4, VAR_SECS)
       CALL check_err(iret)
@@ -1006,13 +1039,13 @@
       CALL check_err(iret)
 
 !    --------------------------------------------
-!     Define sea surface elevation attributes
+!     Define water surface elevation attributes
 !    --------------------------------------------
       
-      iret = nf_put_att_text(ncid, zeta_id,'long_name',21, VAR63_LN)
+      iret = nf_put_att_text(ncid, zeta_id,'long_name',35, VAR63_LN)
      &                   
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, zeta_id, 'standard_name', 17, 
+      iret = nf_put_att_text(ncid, zeta_id, 'standard_name', 23, 
      &                      VAR63_ST)
       CALL check_err(iret)
       
@@ -1024,9 +1057,6 @@
          CALL check_err(iret)
       endif      
       
-      iret = nf_put_att_DOUBLE(ncid,zeta_id,'missing_values',NF_DOUBLE,
-     &1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_DOUBLE(ncid, zeta_id, '_FillValue', NF_DOUBLE, 
      &                      1, doubleval)
       CALL check_err(iret)
@@ -1324,6 +1354,7 @@
          iret=nf_inq_varid(ncid,"maxznodet",maxznodet_id)
          iret=nf_inq_varid(ncid,"minztimen",minztimen_id)
          iret=nf_inq_varid(ncid,"maxztimen",maxztimen_id)
+         NREC = 0
       ENDIF
       IF(IHOT.NE.0.AND.FIRST.EQ.1.and.ncmode.ne.0.and.nout.eq.3)THEN
          iret = nf_get_var_double(ncid, minzetan_id, minzetan)
@@ -1337,7 +1368,15 @@
       ENDIF
       
       FIRST=0
+!      IF(MYPROC.EQ.0)PRINT *,"N: bef NREC ", NREC," NCIGEP = ",NCIGEP
+      IF(IHOT.NE.0.AND.nout.eq.3.and.ncmode.eq.2) NREC = NCIGEP/node_len
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .PRINT *,"N: nout = ", NOUT
+!      IF(MYPROC.EQ.0)PRINT *,"N: NREC = ", NREC
+!      IF(IHOT.NE.0.AND.nout.eq.-3.AND.FIRST.EQ.1) NREC = 0
+!      IF(MYPROC.EQ.0)PRINT *,"N: aft NREC ", NREC," NCIGEP = ",NCIGEP
       NREC = NREC + 1
+!      IF(MYPROC.EQ.0)PRINT *,"N: start NREC ", NREC
       
 !     ----------------------------------------
 !     Allocating memory for min and max arrays
@@ -1360,7 +1399,8 @@
       counti(1)=timenc_len
       iret = nf_put_vara_DOUBLE(ncid, timenc_id, starti,counti, timenc)
       CALL check_err(iret)
-!     WRITE(6,*)"store time "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .     WRITE(6,*)"store time "
 
 !     ---------------------------
 !     Store zeta
@@ -1369,6 +1409,8 @@
       count(2)=timenc_len
       start(1)=1
       start(2)=nrec
+        IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .PRINT *, "NC: zeta ", NREC, zeta(1,1)
       iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, count, zeta)
       CALL check_err(iret)
 
@@ -1436,12 +1478,15 @@
          CALL check_err(iret)
       ENDIF
       
-      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
-      WRITE(6,*) "-----------------------------------------------------"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "-----------------------------------------------------"
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
-      WRITE(6,*)'end subroutine writenc63'
+       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*)'end subroutine writenc63'
      
       end subroutine writenc63
 !=======================================================================
@@ -1480,9 +1525,9 @@
 !     nvell     : number of nodes in normal flow specified boundary segment
 !     nbvv      : node numbers on normal flow boundary segment
 !     ibtype    : boundary type
-!     depth     : depth in each node
-!     mindepth  : minimum depth in grid
-!     maxdepth  : maximum depth in grid
+!     depth     : distance from geoid in each node
+!     mindepth  : minimum distance from geoid to water surface in grid
+!     maxdepth  : maximum distance from geoid to water surface in grid
 !     minuvelt  : minimum vertically averaged u at each time
 !     maxuvelt  : maximum vertically averaged u at each time
 !     minvvelt  : minimum vertically averaged v at each time
@@ -1857,7 +1902,8 @@
 !     ---------------------------
 !     Opening fort.64 netCDF file
 !     ---------------------------
-      WRITE(6,*) "-----------------------------------------------------"
+       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "-----------------------------------------------------"
        
       IF(FIRSTV.EQ.1.and.ncmode.NE.0) THEN
          
@@ -1898,7 +1944,8 @@
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
-         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
          
        IF((FIRSTV.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &    (FIRSTV.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
@@ -2051,7 +2098,8 @@
      &                  v_id)
       CALL check_err(iret)
 
-!      WRITE(6,*)"Define MIN u/v at times"
+!       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+!     .      WRITE(6,*)"Define MIN u/v at times"
 !     -------------------------
 !     Define minimum u at times
 !     -------------------------
@@ -2184,38 +2232,29 @@
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE,
-     &                        1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)      
       
       iret = nf_put_att_text(ncid, Y_id, 'long_name', 8, 'latitude')
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 8, 
-     &                       'latitude')
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 8, 'latitude') 
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, Y_id, 'units', 13, VAR_DEGN)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
       CALL check_err(iret)
        
-      iret = nf_put_att_double(ncid, Y_id, 'missing_values', NF_DOUBLE, 
-     &       1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &       doubleval)
       CALL check_err(iret)
 
       else
       
-      iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
-     &       'Cartesian coordinate x')
-      CALL check_err(iret)
-      iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, 
-     &                      'x_coordinate')
-      CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'long_name', 22, VAR_L_X)
+       CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, VAR_S_X)
+       CALL check_err(iret)
       
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, X_id, 'units', 6,  VAR_METS)
@@ -2227,9 +2266,6 @@
       
       iret = nf_put_att_text(ncid, X_id, 'positive', 5,  VAR_RG)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE, 
-     &                       1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -2237,12 +2273,11 @@
 !     Define y-coordinate attributes
 !     ------------------------------     
       
-      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
-     &       'Cartesian coordinate y')
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, VAR_L_Y)
+       CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, VAR_S_Y)
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
-     &                       'y_coordinate')
-      CALL check_err(iret)
+
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, Y_id, 'units', 6, VAR_METS)
          CALL check_err(iret)
@@ -2252,9 +2287,6 @@
       endif
       iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &       doubleval)
       CALL check_err(iret)
@@ -2262,17 +2294,13 @@
       endif
 
 !     ------------------------------
-!     Define bathymetry attributes
+!     Define depth attributes
 !     ------------------------------
 
-      iret = nf_put_att_text(ncid, DEPTH_id,'long_name',10,'bathymetry')
-      CALL check_err(iret)
-      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,'depth')
+      iret = nf_put_att_text(ncid, DEPTH_id, 'long_name', 19, VAR_L_D)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,VAR_S_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, DEPTH_id, 'units', 6, VAR_METS)
-      CALL check_err(iret)
-      iret = nf_put_att_double(ncid, DEPTH_id, 'missing_values', 
-     &                      NF_DOUBLE,  1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_double(ncid,DEPTH_id, '_FillValue',NF_DOUBLE, 1, 
      &                       doubleval)
@@ -2285,23 +2313,23 @@
       intval(1) = -1
       
 !    ---------------------------
-!     minimum/maximum bathymetry
+!     minimum/maximum depth
 !    ---------------------------
 
-      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 18, 
-     &                       'minimum bathymetry')
+      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 52, 
+     &      VAR_L_MIN_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, mindepth_id, 'standard_name', 13,
-     &                'minimum_depth')
+     &      VAR_S_MIN_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, mindepth_id, 'units', 6, VAR_METS)
       CALL check_err(iret)
       
-      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 18, 
-     &                       'maximum bathymetry')
+      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 52, 
+     &      VAR_L_MAX_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxdepth_id, 'standard_name', 13,
-     &           'maximum_depth')
+     &       VAR_S_MAX_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxdepth_id, 'units', 6, VAR_METS)
       CALL check_err(iret)
@@ -2314,18 +2342,22 @@
 !     determine variable names according to coordinates
 !    ---------------------------------------------------
       if (ics.eq.2) then
-         iret = nf_put_att_text(ncid, minut_id, 'long_name', 53, 
-     &   'minimum vertically averaged e/w velocity at each time')
+         iret = nf_put_att_text(ncid, minut_id, 'long_name', 66, 
+     &   'minimum water column vertically averaged e/w velocity at each 
+     &time')
+      iret = nf_put_att_text(ncid, minut_id, 'standard_name', 40,
+     &                'minimum_temporal eastward_water_velocity')
+      CALL check_err(iret)
       else
-          iret = nf_put_att_text(ncid, minut_id, 'long_name', 64, 
-     &'minimum vertically averaged velocity in x-direction at each time
-     &')
+          iret = nf_put_att_text(ncid, minut_id, 'long_name', 77, 
+     &'minimum water column vertically averaged velocity in x-direction 
+     &at each time')
+      iret = nf_put_att_text(ncid, minut_id, 'standard_name', 33,
+     &                'minimum_temporal_x_water_velocity')
+      CALL check_err(iret)
       endif
       CALL check_err(iret)
       
-      iret = nf_put_att_text(ncid, minut_id, 'standard_name', 18,
-     &                'minimum_u_velocity')
-      CALL check_err(iret)
 !    -------------------------
 !     determine variable units
 !    -------------------------
@@ -2340,18 +2372,23 @@
 !     determine variable names according to coordinates
 !    ---------------------------------------------------
       if (ics.eq.2) then
-          iret = nf_put_att_text(ncid, maxut_id, 'long_name', 53, 
-     &    'maximum vertically averaged e/w velocity at each time')
-      else
-          iret = nf_put_att_text(ncid, maxut_id, 'long_name', 64, 
-     &     'maximum vertically averaged velocity in x-direction at each 
+          iret = nf_put_att_text(ncid, maxut_id, 'long_name', 66, 
+     &   'maximum water column vertically averaged e/w velocity at each 
      &time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 40,
+     &                'maximum_temporal eastward_water_velocity')
+      CALL check_err(iret)
+      else
+          iret = nf_put_att_text(ncid, maxut_id, 'long_name', 77, 
+     &'maximum water column vertically averaged velocity in x-direction 
+     &at each time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 33,
+     &                'maximum_temporal_x_water_velocity')
+      CALL check_err(iret)
       endif
-      CALL check_err(iret)
        
-      iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 18,
-     &                'maximum_u_velocity')
-      CALL check_err(iret)
 !    -------------------------
 !     determine variable units
 !    -------------------------
@@ -2366,17 +2403,22 @@
 !     determine variable names according to coordinates
 !    ---------------------------------------------------
       if (ics.eq.2) then
-          iret = nf_put_att_text(ncid, minvt_id, 'long_name', 53, 
-     &    'minimum vertically averaged n/s velocity at each time')
+          iret = nf_put_att_text(ncid, minvt_id, 'long_name', 66, 
+     &   'minimum water column vertically averaged n/s velocity at each 
+     &time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 41,
+     &                'minimum_temporal_northward_water_velocity')
+      CALL check_err(iret)
       else
-          iret = nf_put_att_text(ncid, minvt_id, 'long_name', 64, 
-     &'minimum vertically averaged velocity in y-direction at each time
-     &')
+          iret = nf_put_att_text(ncid, minvt_id, 'long_name', 77, 
+     &'minimum water column vertically averaged velocity in y-direction 
+     &at each time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 33,
+     &                'minimum_temporal y_water_velocity')
+      CALL check_err(iret)
       endif
-      CALL check_err(iret)
-      iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 18,
-     &                'minimum_v_velocity')
-      CALL check_err(iret)
 !    -------------------------
 !     determine variable units
 !    -------------------------
@@ -2391,18 +2433,23 @@
 !     determine variable names according to coordinates
 !    ---------------------------------------------------
       if (ics.eq.2) then
-          iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 53, 
-     &          'maximum vertically averaged n/s velocity at each time')
+          iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 66, 
+     &   'maximum water column vertically averaged n/s velocity at each 
+     &time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 41,
+     &                'maximum_temporal_northward_water_velocity')
+      CALL check_err(iret)
       else
-            iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 64, 
-     &'maximum vertically averaged velocity in y-direction at each time
-     &')
+            iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 77, 
+     &'maximum water column vertically averaged velocity in y-direction 
+     &at each time ')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 33,
+     &                'maximum_temporal y_water_velocity')
+      CALL check_err(iret)
       endif
-      CALL check_err(iret)
-
-      iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 18,
-     &                'maximum_v_velocity')
-      CALL check_err(iret)
+ 
 !    -------------------------
 !     determine variable units
 !    -------------------------
@@ -2804,9 +2851,6 @@
           iret = nf_put_att_text(ncid, u_id, 'positive', 5, VAR_RG)
       endif
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, u_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, u_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -2851,10 +2895,6 @@
       endif
       CALL check_err(iret)
 
-      iret = nf_put_att_DOUBLE(ncid, v_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_DOUBLE(ncid, v_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -3179,6 +3219,8 @@
       ENDIF
       
       FIRSTV=0
+!      IF(IHOT.NE.0) NREC = NCIGVP/node_len
+      IF(IHOT.NE.0.AND.nout.eq.3.and.ncmode.eq.2) NREC = NCIGVP/node_len
       NREC = NREC + 1
 !     ----------
 !     Store time
@@ -3364,12 +3406,15 @@
 !     ---------------------------
 !     Closing netCDF file
 !     ---------------------------
-      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
-      WRITE(6,*) "-----------------------------------------------------"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "-----------------------------------------------------"
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
-      WRITE(6,*)'end subroutine writenc64'
+            IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*)'end subroutine writenc64'
 
       end subroutine writenc64     
 
@@ -3388,7 +3433,7 @@
 !
 !     Variables :
 !     time      : time
-!     zeta      : pressure 
+!     zeta      : air pressure at sea level 
 !     x         : x-coordinate or longitude
 !     y         : y-coordinate or latitude
 !     element   : elements in grid
@@ -3398,8 +3443,8 @@
 !     nbvv      : node numbers on normal flow boundary segment
 !     ibtype    : boundary type
 !     depth     : depth in each node
-!     mindepth  : minimum depth in grid
-!     maxdepth  : maximum depth in grid
+!     mindepth  : minimum distance from geoid to water surface in grid
+!     maxdepth  : maximum distance from geoid to water surface in grid
 !     minprest  : minimum pressure for each output time
 !     maxprest  : maximum pressure for each output time
 !     minpresn  : minimum pressure at each node
@@ -3718,7 +3763,8 @@
 !     ---------------------------
 !     Opening fort.63 netCDF file
 !     ---------------------------
-      WRITE(6,*) "-----------------------------------------------------"
+       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0) )
+     .WRITE(6,*) "-----------------------------------------------------"
 !      NREC = NREC + 1
       
       IF(FIRST73.EQ.1.and.ncmode.NE.0) THEN
@@ -3750,7 +3796,8 @@
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
-         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+         IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
                   
        IF((FIRST73.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &    (FIRST73.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
@@ -3968,9 +4015,6 @@
       	iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
       	       CALL check_err(iret)
 
-      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE, 
-     &                       1, doubleval)
-      	       CALL check_err(iret)
 
       	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
@@ -3989,10 +4033,6 @@
       	       CALL check_err(iret)
        
  
-      	iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      	       CALL check_err(iret)
- 
       	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &      doubleval)
       	       CALL check_err(iret)
@@ -4001,12 +4041,11 @@
 !     ------------------------------
 !     Define x-coordinate attributes
 !     ------------------------------
-      iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
-     &                      'Cartesian coordinate x')
-      CALL check_err(iret)
-      iret = nf_put_att_text(ncid, X_id, 'standard_name',12, 
-     &                       'x-coordinate')
-      CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'long_name', 22, VAR_L_X)
+       CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, VAR_S_X)
+       CALL check_err(iret)
+
       if (G.LT.11.D0) then
           iret = nf_put_att_text(ncid, X_id, 'units', 6,  VAR_METS)
       	  CALL check_err(iret)
@@ -4017,22 +4056,17 @@
       iret = nf_put_att_text(ncid, X_id, 'positive', 5,  VAR_RG)
       CALL check_err(iret)
 
-      iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE,
-     &                         1, doubleval)
-      CALL check_err(iret)
-
       iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                        doubleval)
       CALL check_err(iret)
 !     ------------------------------
 !     Define y-coordinate attributes
 !     ------------------------------     
-      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
-     &                        'Cartesian coordinate y')
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, VAR_L_Y)
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
-     &                       'y-coordinate')
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, VAR_S_Y)
       CALL check_err(iret)
+
       if (G.LT.11.D0) then
 	  iret = nf_put_att_text(ncid, Y_id, 'units', 6, VAR_METS)
       else
@@ -4041,26 +4075,17 @@
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
       CALL check_err(iret)
- 
-      iret = nf_put_att_double(ncid, Y_id, 'missing_values',NF_DOUBLE, 
-     &                         1, doubleval)
-      	CALL check_err(iret)
- 
+  
       	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &         doubleval)
       	CALL check_err(iret)      
       endif
 !     ------------------------------
-!     Define bathymetry attributes
+!     Define depth attributes
 !     ------------------------------
-      iret = nf_put_att_text(ncid, DEPTH_id,'long_name',10,'bathymetry')
-      CALL check_err(iret)
-      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,'depth')
-      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'long_name', 19, VAR_L_D)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,VAR_S_D)
       iret = nf_put_att_text(ncid, DEPTH_id, 'units', 6, VAR_METS)
-      CALL check_err(iret)
-      iret = nf_put_att_double(ncid, DEPTH_id, 'missing_values', 
-     &                      NF_DOUBLE, 1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_double(ncid, DEPTH_id, '_FillValue', NF_DOUBLE,
      &                        1, doubleval)
@@ -4075,27 +4100,27 @@
       CALL check_err(iret)
       
 !     ------------------------------------
-!     Define minimum bathymetry attributes
+!     Define minimum depth attributes
 !     ------------------------------------
-      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 18, 
-     &                       'minimum bathymetry')
+      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 52, 
+     &      VAR_L_MIN_D)
       CALL check_err(iret)
 
       iret = nf_put_att_text(ncid, mindepth_id, 'standard_name', 13,
-     &                'minimum_epth')
+     &      VAR_S_MIN_D)
       CALL check_err(iret)
 
       iret = nf_put_att_text(ncid, mindepth_id, 'units', 6, VAR_METS)
       CALL check_err(iret)
       
 !     ------------------------------------
-!     Define maximum bathymetry attributes
+!     Define maximum depth attributes
 !     ------------------------------------
-      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 18, 
-     &                       'maximum bathymetry')
+      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 52, 
+     &      VAR_L_MAX_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxdepth_id, 'standard_name', 13,
-     &                'maximum_depth')
+     &      VAR_S_MAX_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxdepth_id, 'units', 6, VAR_METS)
       CALL check_err(iret)
@@ -4132,7 +4157,7 @@
       CALL check_err(iret)
 
 !     -------------------------------------------------------------
-!     Define max and min in time sea surface elevation attributes 
+!     Define max and min in time sea surface pressure attributes 
 !     -------------------------------------------------------------
       iret = nf_put_att_text(ncid, minznodet_id, 'long_name', 64, 
      &     'node of minimum atmospheric surface pressure at each output
@@ -4148,7 +4173,7 @@
       iret = nf_put_att_text(ncid, maxznodet_id, 'units', 14, VAR_NOND)
              CALL check_err(iret)
 !     -------------------------------------------------------------
-!     Define max and min in nodes sea surface elevation attributes
+!     Define max and min in nodes sea surface pressure attributes
 !     -------------------------------------------------------------
       iret = nf_put_att_text(ncid, minztimen_id, 'long_name', 57, 
      &     'time of minimum atmospheric surface pressure at each node')
@@ -4221,16 +4246,13 @@
 !     Define sea surface pressure attributes
 !    --------------------------------------------
 
-      iret = nf_put_att_text(ncid, zeta_id,'long_name',21, VAR73_LN)
+      iret = nf_put_att_text(ncid, zeta_id,'long_name',25, VAR73_LN)
      &                   
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, zeta_id, 'standard_name', 17, 
+      iret = nf_put_att_text(ncid, zeta_id, 'standard_name', 25, 
      &                      VAR73_ST)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, zeta_id, 'units', 15, VAR73_UN)
-      CALL check_err(iret)
-      iret = nf_put_att_DOUBLE(ncid,zeta_id,'missing_values',NF_DOUBLE,
-     &1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_DOUBLE(ncid, zeta_id, '_FillValue', NF_DOUBLE, 
      &                      1, doubleval)
@@ -4545,6 +4567,7 @@
       ENDIF
       
       FIRST73=0
+      IF(IHOT.NE.0.AND.nout.eq.3.and.ncmode.eq.2) NREC = NCIGPP/node_len
       NREC = NREC + 1
       
 !     ----------
@@ -4642,12 +4665,15 @@
          CALL check_err(iret)
       ENDIF
       
-      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
-      WRITE(6,*) "-----------------------------------------------------"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))
+     .WRITE(6,*) "-----------------------------------------------------"
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
-      WRITE(6,*)'end subroutine writenc73'
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*)'end subroutine writenc73'
      
       end subroutine writenc73
 !=======================================================================
@@ -5057,7 +5083,8 @@
 !     ---------------------------
 !     Opening fort.74 netCDF file
 !     ---------------------------
-      WRITE(6,*) "-----------------------------------------------------"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))
+     .WRITE(6,*) "-----------------------------------------------------"
       IF(FIRST74.EQ.1.and.ncmode.NE.0) THEN
          
          ALLOCATE ( minun (node_len) )
@@ -5096,7 +5123,8 @@
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
-         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
 
        IF((FIRST74.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &    (FIRST74.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
@@ -5375,9 +5403,6 @@
        CALL check_err(iret)
        iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
        CALL check_err(iret)
-       iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE,
-     &                          1, doubleval)
-       CALL check_err(iret)
        iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                          doubleval)
        CALL check_err(iret)      
@@ -5392,20 +5417,15 @@
        iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
        CALL check_err(iret)
        
-       iret = nf_put_att_double(ncid, Y_id, 'missing_values', NF_DOUBLE, 
-     &       1, doubleval)
-       CALL check_err(iret)
        iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &       doubleval)
        CALL check_err(iret)
 
       else
       
-       iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
-     &       'Cartesian coordinate x')
+       iret = nf_put_att_text(ncid, X_id, 'long_name', 22, VAR_L_X)
        CALL check_err(iret)
-       iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, 
-     &                      'x_coordinate')
+       iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, VAR_S_X)
        CALL check_err(iret)
 !    -------------------------
 !     determine variable units
@@ -5419,9 +5439,6 @@
 
       iret = nf_put_att_text(ncid, X_id, 'positive', 5, VAR_RG)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE, 
-     &                       1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -5429,11 +5446,9 @@
 !     Define y-coordinate attributes
 !     ------------------------------     
       
-      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
-     &       'Cartesian coordinate y')
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, VAR_L_Y)
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
-     &                       'y_coordinate')
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, VAR_S_Y)
       CALL check_err(iret)
 !    -------------------------
 !     determine variable units
@@ -5446,9 +5461,6 @@
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &       doubleval)
       CALL check_err(iret)
@@ -5456,17 +5468,12 @@
       endif
 
 !     ------------------------------
-!     Define bathymetry attributes
+!     Define depth attributes
 !     ------------------------------
 
-      iret = nf_put_att_text(ncid, DEPTH_id,'long_name',10,'bathymetry')
-      CALL check_err(iret)
-      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,'depth')
-      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'long_name', 19, VAR_L_D)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,VAR_S_D)
       iret = nf_put_att_text(ncid, DEPTH_id, 'units', 6, VAR_METS)
-      CALL check_err(iret)
-      iret = nf_put_att_double(ncid, DEPTH_id, 'missing_values', 
-     &                      NF_DOUBLE,  1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_double(ncid,DEPTH_id, '_FillValue',NF_DOUBLE, 1, 
      &                       doubleval)
@@ -5478,22 +5485,22 @@
       iret = nf_put_att_text(ncid, ELE_id, 'units', 14,  VAR_NOND)
       intval(1) = -1
 !    ---------------------------
-!     minimum/maximum bathymetry
+!     minimum/maximum depth
 !    ---------------------------
-      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 18, 
-     &                       'minimum bathymetry')
+      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 52, 
+     &       VAR_L_MIN_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, mindepth_id, 'standard_name', 13,
-     &                'minimum_depth')
+     &       VAR_S_MIN_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, mindepth_id, 'units', 6, VAR_METS)
       CALL check_err(iret)
       
-      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 18, 
-     &                       'maximum bathymetry')
+      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 52, 
+     &       VAR_L_MAX_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxdepth_id, 'standard_name', 13,
-     &           'maximum_depth')
+     &       VAR_S_MAX_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxdepth_id, 'units', 6, VAR_METS)
       CALL check_err(iret)
@@ -5506,112 +5513,127 @@
              iret = nf_put_att_text(ncid, minut_id, 'long_name', 36, 
      &       'minimum e/w wind stress at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 23,
-     &       'minimum_e/w_wind_stress')
+             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 45,
+     &       'minimum_temporal_eastward_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, minvt_id, 'long_name', 36, 
      &       'minimum n/s wind stress at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 23,
-     &       'minimum_n/s_wind_stress')
+             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 46,
+     &       'minimum_temporal_northward_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxut_id, 'long_name', 36, 
      &       'maximum e/w wind stress at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 23,
-     &       'maximum_e/w_wind_stress')
+             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 45,
+     &       'maximum_temporal_eastward_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 36, 
      &       'maximum n/s wind stress at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 23,
-     &       'maximum_n/s_wind_stress')
+             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 46,
+     &       'maximum_temporal_northward_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, minun_id, 'long_name', 36, 
      &       'minimum e/w wind stress at each node')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, minun_id, 'standard_name', 23,
-     &       'minimum_e/w_wind_stress')
+             iret = nf_put_att_text(ncid, minun_id, 'standard_name', 42,
+     &       'minimum_nodal_eastward_surface_wind_stres')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxun_id, 'long_name', 36, 
      &        'maximum e/w wind stress at each node')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 23,
-     &       'maximum_e/w_wind_stress')
+             iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 42,
+     &       'maximum_nodal_eastward_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, minvn_id, 'long_name', 36, 
      &       'minimum n/s wind stress at each node')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 23,
-     &       'minimum_n/s_wind_stress')
+             iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 43,
+     &       'minimum_nodal_northward_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 36, 
      &       'maximum n/s wind stress at each node')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, maxvn_id, 'standard_name', 23,
-     &       'maximum_n/s_wind_stress')
+             iret = nf_put_att_text(ncid, maxvn_id, 'standard_name', 43,
+     &       'maximum_nodal_northward_surface_wind_stress')
               CALL check_err(iret)
-              iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 
-     &        51, 'node of minimum e/w wind stress at each output time')
-              CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 
+     &       51, 'node of minimum e/w wind stress at each output time')
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, minunodet_id, 'standard_name',
-     &        31,'node_of_minimum_e/w_wind_stress')
-              CALL check_err(iret)
-              iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 
-     &        51, 'node of maximum e/w wind stress at each output time')
-              CALL check_err(iret)
+     &       53,'node_of_minimum_temporal_eastward_surface_wind_stress')
+             CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 
+     &       51, 'node of maximum e/w wind stress at each output time')
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name',
-     &        31,'node_of_maximum_e/w_wind_stress')
-              CALL check_err(iret)
-              iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 
-     &        51, 'node of minimum n/s wind stress at each output time')
-              CALL check_err(iret)
+     &       53,'node_of_maximum_temporal_eastward_surface_wind_stress')
+             CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 
+     &       51, 'node of minimum n/s wind stress at each output time')
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name',
-     &        31,'node_of_minimum_n/s_wind_stress')
+     &      54,'node_of_minimum_temporal_northward_surface_wind_stress')
               CALL check_err(iret)
+              
               iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 
      &        51, 'node of maximum n/s wind stress at each output time')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name',
-     &        31,'node_of_maximum_n/s_wind_stress')
-              CALL check_err(iret)
-              iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 
-     &        44, 'time of minimum e/w wind stress at each node')
-              CALL check_err(iret)
+     &      54,'node_of_maximum_temporal_northward_surface_wind_stress')
+             CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 
+     &       44, 'time of minimum e/w wind stress at each node')
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, minutimen_id, 'standard_name',
-     &        31,'time_of_minimum_e/w_wind_stress')
-              CALL check_err(iret)
-              iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 
-     &        44, 'time of maximum e/w wind stress at each node')
-              CALL check_err(iret)
+     &       50,'time_of_minimum_nodal_eastward_surface_wind_stress')
+             CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 
+     &       44, 'time of maximum e/w wind stress at each node')
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name',
-     &        31,'time_of_maximum_e/w_wind_stress')
-              CALL check_err(iret)
-              iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 
-     &        44, 'time of minimum n/s wind stress at each node')
-              CALL check_err(iret)
+     &       50,'time_of_maximum_nodal_eastward_surface_wind_stress')
+             CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 
+     &       44, 'time of minimum n/s wind stress at each node')
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name',
-     &        31,'time_of_minimum_n/s_wind_stress')
-              CALL check_err(iret)
-              iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 
-     &        44, 'time of maximum n/s wind stress at each node')
-              CALL check_err(iret)
+     &       51,'time_of_minimum_nodal northward_surface_wind_stress')
+             CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 
+     &       44, 'time of maximum n/s wind stress at each node')
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name',
-     &        31,'time_of_maximum_n/s_wind_stress')
-              CALL check_err(iret)
+     &       51,'time_of_maximum_nodal northward_surface_wind_stres')
+             CALL check_err(iret)
+             
               iret = nf_put_att_text(ncid, u_id, 'long_name', 15, 
      &                       'e/w wind stress')
               CALL check_err(iret)
-              iret = nf_put_att_text(ncid, u_id, 'standard_name', 15, 
-     &                      'e/w_wind_stress')
+              iret = nf_put_att_text(ncid, u_id, 'standard_name', 28, 
+     &                      'eastward_surface_wind_stress')
              CALL check_err(iret)
              iret = nf_put_att_text(ncid, u_id, 'positive', 4, VAR_EAST)
 
               iret = nf_put_att_text(ncid, v_id, 'long_name', 15, 
      &                       'n/s wind stress')
               CALL check_err(iret)
-              iret = nf_put_att_text(ncid, v_id, 'standard_name', 15, 
-     &                      'n/s_wind_stress')
+              iret = nf_put_att_text(ncid, v_id, 'standard_name', 29, 
+     &                      'northward_surface_wind_stress')
              CALL check_err(iret)
             iret = nf_put_att_text(ncid, v_id, 'positive', 5, VAR_NORTH)
 
@@ -5621,116 +5643,130 @@
               iret = nf_put_att_text(ncid, minut_id, 'long_name', 38, 
      &       'minimum e/w wind velocity at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 25,
-     &       'minimum_e/w_wind_velocity')
+             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 30,
+     &       'minimum_temporal_eastward_wind')
               CALL check_err(iret)
+              
               iret = nf_put_att_text(ncid, minvt_id, 'long_name', 38, 
      &       'minimum n/s wind velocity at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 25,
-     &       'minimum_n/s_wind_velocity')
+             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 31,
+     &       'minimum_temporal_northward_wind')
               CALL check_err(iret)
+              
               iret = nf_put_att_text(ncid, maxut_id, 'long_name', 38, 
      &       'maximum e/w wind velocity at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 25,
-     &       'maximum_e/w_wind_velocity')
+             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 30,
+     &       'maximum_temporal_eastward_wind')
               CALL check_err(iret)
+              
               iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 38, 
      &       'maximum n/s wind velocity at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 25,
-     &       'maximum_n/s_wind_velocity')
+             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 31,
+     &       'maximum_temporal_northward_wind')
               CALL check_err(iret)
+              
               iret = nf_put_att_text(ncid, minun_id, 'long_name', 38, 
      &       'minimum e/w wind velocity at each node')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, minun_id, 'standard_name', 25,
-     &       'minimum_e/w_wind_velocity')
+             iret = nf_put_att_text(ncid, minun_id, 'standard_name', 27,
+     &       'minimum_nodal_eastward_wind')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxun_id, 'long_name', 38, 
      &       'maximum e/w wind velocity at each node')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 25,
-     &       'maximum_e/w_wind_velocity')
+             iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 27,
+     &       'maximum_nodal_eastward_wind')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, minvn_id, 'long_name', 38, 
      &       'minimum n/s wind velocity at each node')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 25,
-     &       'minimum_n/s_wind_velocity')
+             iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 28,
+     &       'minimum_nodal northward_wind')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 38, 
      &       'maximum n/s wind velocity at each node')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, maxvn_id,'standard_name', 25,
-     &       'maximum_n/s_wind_velocity')
+             iret = nf_put_att_text(ncid, maxvn_id,'standard_name', 28,
+     &       'maximum_nodal_northward_wind')
               CALL check_err(iret)
-              iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 
+              
+             iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 
      &       53,'node of minimum e/w wind velocity at each output time')
-              CALL check_err(iret)
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, minunodet_id, 'standard_name',
-     &        33,'node_of_minimum_e/w_wind_velocity')
-              CALL check_err(iret)
-              iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 
+     &       38,'node_of_minimum_temporal_eastward_wind')
+             CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 
      &       53,'node of maximum e/w wind velocity at each output time')
-              CALL check_err(iret)
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name',
-     &        33,'node_of_maximum_e/w_wind_velocity')
-              CALL check_err(iret)
-              iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 
+     &       38,'node_of_maximum_temporal_eastward_wind')
+             CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 
      &       53,'node of minimum n/s wind velocity at each output time')
-              CALL check_err(iret)
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name',
-     &        33,'node_of_minimum_n/s_wind_velocity')
-              CALL check_err(iret)
-              iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 
+     &       38,'node_of_minimum_temporal_northward_wind')
+             CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 
      &       53,'node of maximum n/s wind velocity at each output time')
-              CALL check_err(iret)
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name',
-     &        33,'node_of_maximum_n/s_wind_velocity')
-              CALL check_err(iret)
+     &       38,'node_of_maximum_temporal_northward_wind')
+             CALL check_err(iret)
 
-              iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 
+             iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 
      &       46,'time of minimum e/w wind velocity at each node')
-              CALL check_err(iret)
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, minutimen_id, 'standard_name',
-     &        33,'time_of_minimum_e/w_wind_velocity')
-              CALL check_err(iret)
-              iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 
+     &       35,'time_of_minimum_nodal_eastward_wind')
+             CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 
      &       46,'time of maximum e/w wind velocity at each node')
-              CALL check_err(iret)
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name',
-     &        33,'time_of_maximum_e/w_wind_velocity')
-              CALL check_err(iret)
-              iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 
+     &       35,'time_of_maximum_nodal_eastward_wind')
+             CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 
      &       46,'time of minimum n/s wind velocity at each node')
-              CALL check_err(iret)
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name',
-     &        33,'time_of_minimum_n/s_wind_velocity')
-              CALL check_err(iret)
-              iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 
+     &       36,'time_of_minimum_nodal_northward_wind')
+             CALL check_err(iret)
+              
+             iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 
      &       46,'time of maximum n/s wind velocity at each node')
-              CALL check_err(iret)
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name',
-     &        33,'time_of_maximum_n/s_wind_velocity')
-              CALL check_err(iret)
+     &       36,'time_of_maximum_nodal_northward_wind')
+             CALL check_err(iret)
 
-              iret = nf_put_att_text(ncid, u_id, 'long_name', 17, 
-     &                       'e/w wind velocity')
-              CALL check_err(iret)
-              iret = nf_put_att_text(ncid, u_id, 'standard_name', 17, 
-     &                      'e/w_wind_velocity')
+             iret = nf_put_att_text(ncid, u_id, 'long_name', 17, 
+     &       'e/w wind velocity')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, u_id, 'standard_name', 13, 
+     &       'eastward_wind')
              CALL check_err(iret)
              iret = nf_put_att_text(ncid, u_id, 'positive', 4, VAR_EAST)
 
-              iret = nf_put_att_text(ncid, v_id, 'long_name', 17, 
-     &                       'n/s wind velocity')
-              CALL check_err(iret)
-              iret = nf_put_att_text(ncid, v_id, 'standard_name', 17, 
-     &                      'n/s_wind_velocity')
+             iret = nf_put_att_text(ncid, v_id, 'long_name', 17, 
+     &       'n/s wind velocity')
              CALL check_err(iret)
-            iret = nf_put_att_text(ncid, v_id, 'positive', 5, VAR_NORTH)
+             iret = nf_put_att_text(ncid, v_id, 'standard_name', 14, 
+     &       'northward_wind')
+             CALL check_err(iret)
+             iret = nf_put_att_text(ncid, v_id, 'positive', 5, VAR_NORTH)
 
 
           endif
@@ -5739,119 +5775,131 @@
              iret = nf_put_att_text(ncid, minut_id, 'long_name', 47, 
      &       'minimum wind stress in x-direction at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 35,
-     &       'minimum_wind_stress_in_x_direction')
+             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 38,
+     &       'minimum_temporal_x_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, minvt_id, 'long_name', 47, 
      &       'minimum wind stress in y-direction at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 35,
-     &       'minimum_wind_stress_in_y_direction')
+             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 38,
+     &       'minimum_temporal_y_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxut_id, 'long_name', 47, 
      &       'maximum wind stress in x-direction at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 35,
-     &       'maximum_wind_stress_in_x_direction')
+             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 38,
+     &       'maximum_temporal_x_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 47, 
      &       'maximum wind stress in y-direction at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 35,
-     &       'maximum_wind_stress_in_y_direction')
+             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 38,
+     &       'maximum_temporal_y_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, minun_id, 'long_name', 47, 
      &       'minimum wind stress in x-direction at each node')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, minun_id, 'standard_name', 35,
-     &       'minimum_wind_stress_in_x_direction')
+     &       'minimum_nodal_x_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxun_id, 'long_name', 47, 
      &       'maximum wind stress in x-direction at each node')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 35,
-     &       'maximum_wind_stress_in_x_direction')
+     &       'maximum_nodal_x_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, minvn_id, 'long_name', 47, 
      &       'minimum wind stress in y-direction at each node')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 35,
-     &       'minimum_wind_stress_in_y_direction')
+     &       'minimum_nodal_y_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 47, 
      &       'maximum wind stress in y-direction at each node')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxvn_id, 'standard_name', 35,
-     &       'maximum_wind_stress_in_y_direction')
+     &       'maximum_nodal_y_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 62, 
      &       'node of minimum wind stress in x-direction at each output 
      &time')
-              CALL check_err(iret)
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, minunodet_id, 'standard_name', 
-     &       43,'node_of_minimum_wind_stress_in_x_direction')
-              CALL check_err(iret)
+     &       46,'node_of_minimum_temporal_x_surface_wind_stress')
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 62, 
      &       'node of maximum wind stress in x-direction at each output 
      &time')
-              CALL check_err(iret)
+             CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name', 
-     &       43,'node_of_maximum_wind_stress_in_x_direction')
-              CALL check_err(iret)
+     &       46,'node_of_maximum_temporal_x_surface_wind_stress')
+             CALL check_err(iret)
 
              iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 62, 
      &       'node of minimum wind stress in y-direction at each output 
      &time')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name', 
-     &       43,'node_of_minimum_wind_stress_in_y_direction')
+     &       46,'node_of_minimum_temporal_y_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 62, 
      &       'node of maximum wind stress in y-direction at each output 
      &time')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name', 
-     &       43,'node_of_maximum_wind_stress_in_y_direction')
+     &       46,'node_of_maximum_temporal_y_surface_wind_stress')
               CALL check_err(iret)
 
              iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 55, 
      &       'time of minimum wind stress in x-direction at each node')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, minutimen_id, 'standard_name', 
-     &       43,'time_of_minimum_wind_stress_in_x_direction')
+     &       43,'time_of_minimum_nodal_x_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 55, 
      &       'time of maximum wind stress in x-direction at each node')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name', 
-     &       43,'time_of_maximum_wind_stress_in_x_direction')
+     &       43,'time_of_maximum_nodal_x_surface_wind_stress')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 55, 
      &       'time of minimum wind stress in y-direction at each node')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name', 
-     &       43,'time_of_minimum_wind_stress_in_y_direction')
+     &       43,'time_of_minimum_nodal_y_surface_wind_stress')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 55, 
      &       'time of maximum wind stress in y-direction at each node')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name', 
-     &       43,'time_of_maximum_wind_stress_in_y_direction')
+     &       43,'time_of_maximum_nodal_y_surface_wind_stress')
               CALL check_err(iret)
 
               iret = nf_put_att_text(ncid, u_id, 'long_name', 26, 
      &                       'wind stress in x-direction')
               CALL check_err(iret)
-              iret = nf_put_att_text(ncid, u_id, 'standard_name', 26, 
-     &                      'wind_stress_in_x_direction')
+              iret = nf_put_att_text(ncid, u_id, 'standard_name', 21, 
+     &                      'x_surface_wind_stress')
              CALL check_err(iret)
+             
              iret = nf_put_att_text(ncid, u_id, 'positive', 5, VAR_RG)
 
               iret = nf_put_att_text(ncid, v_id, 'long_name', 26, 
      &                       'wind stress in y-direction')
               CALL check_err(iret)
-              iret = nf_put_att_text(ncid, v_id, 'standard_name', 26, 
-     &                      'wind_stress_in_y_direction')
+              iret = nf_put_att_text(ncid, v_id, 'standard_name', 21, 
+     &                      'y_surface_wind_stress')
              CALL check_err(iret)
              iret = nf_put_att_text(ncid, v_id, 'positive', 2, VAR_UP)
 
@@ -5861,64 +5909,73 @@
              iret = nf_put_att_text(ncid, minut_id, 'long_name', 49, 
      &       'minimum wind velocity in x-direction at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 36,
-     &       'minimum_wind_velocity_in_x_direction')
+             iret = nf_put_att_text(ncid, minut_id, 'standard_name', 23,
+     &       'minimum_temporal_x_wind')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, minvt_id, 'long_name', 49, 
      &       'minimum wind velocity in y-direction at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 36,
-     &       'minimum_wind_velocity_in_y_direction')
+             iret = nf_put_att_text(ncid, minvt_id, 'standard_name', 23,
+     &       'minimum_temporal_y_wind')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxut_id, 'long_name', 49, 
      &       'maximum wind velocity in x-direction at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 36,
-     &       'maximum_wind_velocity_in_x_direction')
+             iret = nf_put_att_text(ncid, maxut_id, 'standard_name', 23,
+     &       'maximum_temporal_x_wind')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxvt_id, 'long_name', 49, 
      &       'maximum wind velocity in y-direction at each time')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 36,
-     &       'maximum_wind_velocity_in_y_direction')
+             iret = nf_put_att_text(ncid, maxvt_id, 'standard_name', 23,
+     &       'maximum_temporal_y_wind')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, minun_id, 'long_name', 49, 
      &       'minimum wind velocity in x-direction at each node')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, minun_id, 'standard_name', 36,
-     &       'minimum_wind_velocity_in_x_direction')
+             iret = nf_put_att_text(ncid, minun_id, 'standard_name', 20,
+     &       'minimum_nodal_x_wind')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxun_id, 'long_name', 49, 
      &       'maximum wind velocity in x-direction at each node')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 36,
-     &       'maximum_wind_velocity_in_x_direction')
+             iret = nf_put_att_text(ncid, maxun_id, 'standard_name', 20,
+     &       'maximum_nodal_x_wind')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, minvn_id, 'long_name', 49, 
      &       'minimum wind velocity in y-direction at each node')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 36,
-     &       'minimum_wind_velocity_in_y_direction')
+             iret = nf_put_att_text(ncid, minvn_id, 'standard_name', 20,
+     &       'minimum_nodal_y_wind')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxvn_id, 'long_name', 49, 
      &       'maximum wind velocity in y-direction at each node')
               CALL check_err(iret)
-             iret = nf_put_att_text(ncid, maxvn_id, 'standard_name', 36,
-     &       'maximum_wind_velocity_in_y_direction')
+             iret = nf_put_att_text(ncid, maxvn_id, 'standard_name', 20,
+     &       'maximum_nodal_y_wind')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, minunodet_id, 'long_name', 64, 
      &            'node of minimum wind velocity in x-direction at each 
      &output time')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, minunodet_id, 'standard_name', 
-     &       54,'node_of_minimum_wind_velocity_in_x_direction')
+     &       31,'node_of_minimum_temporal_x_wind')
               CALL check_err(iret)
+              
              iret = nf_put_att_text(ncid, maxunodet_id, 'long_name', 64, 
      &            'node of maximum wind velocity in x-direction at each 
      &output time')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxunodet_id, 'standard_name', 
-     &       54,'node_of_maximum_wind_velocity_in_x_direction')
+     &       31,'node_of_maximum_temporal_x_wind')
               CALL check_err(iret)
 
              iret = nf_put_att_text(ncid, minvnodet_id, 'long_name', 64, 
@@ -5926,14 +5983,14 @@
      &output time')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, minvnodet_id, 'standard_name', 
-     &       54,'node_of_minimum_wind_velocity_in_y_direction')
+     &       31,'node_of_minimum_temporal_y_wind')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxvnodet_id, 'long_name', 64, 
      &            'node of maximum wind velocity in y-direction at each 
      &output time')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxvnodet_id, 'standard_name', 
-     &       54,'node_of_maximum_wind_velocity_in_y_direction')
+     &       31,'node_of_maximum_temporal_y_wind')
               CALL check_err(iret)
 
              iret = nf_put_att_text(ncid, minutimen_id, 'long_name', 57, 
@@ -5941,14 +5998,14 @@
      &node')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, minutimen_id, 'standard_name', 
-     &       54,'time_of_minimum_wind_velocity_in_x_direction')
+     &       28,'time_of_minimum_nodal_x_wind')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxutimen_id, 'long_name', 57, 
      &            'time of maximum wind velocity in x-direction at each 
      &node')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxutimen_id, 'standard_name', 
-     &       54,'time_of_maximum_wind_velocity_in_x_direction')
+     &       28,'time_of_maximum_nodal_x_wind')
               CALL check_err(iret)
 
              iret = nf_put_att_text(ncid, minvtimen_id, 'long_name', 57, 
@@ -5956,21 +6013,21 @@
      &node')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, minvtimen_id, 'standard_name', 
-     &       54,'time_of_minimum_wind_velocity_in_y_direction')
+     &       28,'time_of_minimum_nodal_y_wind')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxvtimen_id, 'long_name', 57, 
      &            'time of maximum wind velocity in y-direction at each 
      &node')
               CALL check_err(iret)
              iret = nf_put_att_text(ncid, maxvtimen_id, 'standard_name', 
-     &       54,'time_of_maximum_wind_velocity_in_y_direction')
+     &       28,'time_of_maximum_nodal_y_wind')
               CALL check_err(iret)
 
               iret = nf_put_att_text(ncid, u_id, 'long_name', 28, 
      &                       'wind velocity in x-direction')
               CALL check_err(iret)
               iret = nf_put_att_text(ncid, u_id, 'standard_name', 28, 
-     &                      'wind_velocity_in_x_direction')
+     &                      'x_wind')
              CALL check_err(iret)
              iret = nf_put_att_text(ncid, u_id, 'positive', 5, VAR_RG)
 
@@ -5978,7 +6035,7 @@
      &                       'wind velocity in y-direction')
               CALL check_err(iret)
               iret = nf_put_att_text(ncid, v_id, 'standard_name', 28, 
-     &                      'wind_velocity_in_y_direction')
+     &                      'y_wind')
              CALL check_err(iret)
              iret = nf_put_att_text(ncid, v_id, 'positive', 2, VAR_UP)
              CALL check_err(iret)
@@ -6105,18 +6162,11 @@
 !     u and v velocities other attributes
 !    ------------------------------------      
 
-      CALL check_err(iret)
-      iret = nf_put_att_double(ncid, u_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, u_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
       iret = nf_put_att_double(ncid, u_id, 'dry_Value', NF_DOUBLE, 1, 
      &                       doubleval)
-      CALL check_err(iret)
-      iret = nf_put_att_DOUBLE(ncid, v_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_DOUBLE(ncid, v_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
@@ -6497,6 +6547,7 @@
       ENDIF
       
       FIRST74=0
+      IF(IHOT.NE.0.AND.nout.eq.3.and.ncmode.eq.2) NREC = NCIGWP/node_len
       NREC = NREC + 1
 
 !     ----------
@@ -6678,12 +6729,15 @@
 !     ---------------------------
 !     Closing netCDF file
 !     ---------------------------
-      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
-      WRITE(6,*) "-----------------------------------------------------"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "-----------------------------------------------------"
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
-      WRITE(6,*)'end subroutine writenc74'
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0) ) 
+     .WRITE(6,*)'end subroutine writenc74'
 
       end subroutine writenc74
       
@@ -6700,17 +6754,17 @@
 !     Variables :
 !     time      : time
 !     station_name : station's name
-!     zeta      : Sea surface elevation 
+!     zeta      : water surface elevation 
 !     x         : x-coordinate or longitude
 !     y         : y-coordinate or latitude
-!     minzetat  : minimum sea surface elevation for each output time
-!     maxzetat  : maximum sea surface elevation for each output time
-!     minzetan  : minimum sea surface elevation at each station
-!     maxzetan  : maximum sea surface elevation at each station
-!     minznodet : node of minimum sea surface elevation at each output time
-!     maxznodet : node of maximum sea surface elevation at each output time
-!     minztimen : time of minimum sea surface elevation at each station
-!     maxztimen : time of maximum sea surface elevation at each station
+!     minzetat  : minimum water surface elevation for each output time
+!     maxzetat  : maximum water surface elevation for each output time
+!     minzetan  : minimum water surface elevation at each station
+!     maxzetan  : maximum water surface elevation at each station
+!     minznodet : node of minimum water surface elevation at each output time
+!     maxznodet : node of maximum water surface elevation at each output time
+!     minztimen : time of minimum water surface elevation at each station
+!     maxztimen : time of maximum water surface elevation at each station
 !
 !     Attributes:
 !     model             : ADCIRC
@@ -6973,7 +7027,8 @@
 !     ---------------------------
 !     Opening fort.61 netCDF file
 !     ---------------------------
-      WRITE(6,*) "-----------------------------------------------------"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "-----------------------------------------------------"
 
       IF(FIRST61.EQ.1.and.ncmode.NE.0) THEN
          
@@ -7005,7 +7060,8 @@
          FILEEXT = '.nc'
 !        WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
-         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
                   
        IF((FIRST61.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &    (FIRST61.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
@@ -7150,10 +7206,6 @@
       	iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
       	       CALL check_err(iret)
 
-      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE, 
-     &                       1, doubleval)
-      	       CALL check_err(iret)
-
       	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       	       CALL check_err(iret)      
@@ -7171,12 +7223,7 @@
       	iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
       	       CALL check_err(iret)
        
- 
-      	iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
-     &         NF_DOUBLE, 1, doubleval)
-      	       CALL check_err(iret)
- 
-      	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
+       	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &         doubleval)
       	       CALL check_err(iret)
 
@@ -7185,12 +7232,11 @@
 !     ------------------------------
 !     Define x-coordinate attributes
 !     ------------------------------
-      	iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
-     &       'Cartesian coordinate x')
-      	       CALL check_err(iret)
-      	iret = nf_put_att_text(ncid, X_id, 'standard_name',12, 
-     &                      'x-coordinate')
-      	       CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'long_name', 22, VAR_L_X)
+       CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, VAR_S_X)
+       CALL check_err(iret)
+
       	if (G.LT.11.D0) then
                iret = nf_put_att_text(ncid, X_id, 'units', 6, VAR_METS)  
       	       CALL check_err(iret)
@@ -7203,22 +7249,17 @@
       	iret = nf_put_att_text(ncid, X_id, 'positive', 5, VAR_RG)
       	       CALL check_err(iret)
 
-      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE,
-     &                        1, doubleval)
-      	       CALL check_err(iret)
-
       	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       	       CALL check_err(iret)
 !     ------------------------------
 !     Define y-coordinate attributes
 !     ------------------------------     
-      	iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
-     &       'Cartesian coordinate y')
-      	       CALL check_err(iret)
-      	iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
-     &                       'y-coordinate')
-      	       CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, VAR_L_Y)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, VAR_S_Y)
+      CALL check_err(iret)
+
       	if (G.LT.11.D0) then
      	    iret = nf_put_att_text(ncid, Y_id, 'units', 6, VAR_METS)
       	    CALL check_err(iret)
@@ -7229,21 +7270,20 @@
       	iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_UP)
       	       CALL check_err(iret)
  
-      	iret = nf_put_att_double(ncid, Y_id, 'missing_values',NF_DOUBLE, 
-     &       1, doubleval)
-      	       CALL check_err(iret)
- 
       	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
-     &       doubleval)
+     &         doubleval)
       	       CALL check_err(iret)
       
       endif
 !     -------------------------------------------------------------
-!     Define max and min in time sea surface elevation attributes 
+!     Define max and min in time water surface elevation attributes 
 !     -------------------------------------------------------------
-      iret = nf_put_att_text(ncid, minzetat_id, 'long_name', 58, 
-     &     'minimum station sea surface elevation for each output time')
-             CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minzetat_id, 'long_name', 60, 
+     &   'minimum station water surface elevation for each output time')
+          CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minzetat_id, 'standard_name', 40, 
+     &   'minimum_temporal_water_surface_elevation')
+          CALL check_err(iret)
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, minzetat_id, 'units', 6, VAR_METS)
          CALL check_err(iret)
@@ -7252,8 +7292,11 @@
          CALL check_err(iret)
       endif
       
-      iret = nf_put_att_text(ncid, maxzetat_id, 'long_name', 58, 
-     &     'maximum station sea surface elevation for each output time')
+      iret = nf_put_att_text(ncid, maxzetat_id, 'long_name', 60, 
+     &     'maximum station water surface elevation for each output time')
+      	     CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxzetat_id, 'standard_name', 40, 
+     &     'maximum_temporal_water_surface_elevation')
       	     CALL check_err(iret)
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, maxzetat_id, 'units', 6, VAR_METS)
@@ -7262,14 +7305,20 @@
          iret = nf_put_att_text(ncid, maxzetat_id, 'units', 4, VAR_FEET)
          CALL check_err(iret)
       endif
-!     -------------------------------------------------------------
-!     Define max and min in nodes sea surface elevation attributes
-!     -------------------------------------------------------------
-      iret = nf_put_att_text(ncid, minzetan_id, 'long_name', 45, 
-     &      'minimum sea surface elevation at each station')
+!     --------------------------------------------------------------
+!     Define max and min in nodes water surface elevation attributes
+!     --------------------------------------------------------------
+      iret = nf_put_att_text(ncid, minzetan_id, 'long_name', 47, 
+     &      'minimum water surface elevation at each station')
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, maxzetan_id, 'long_name', 45, 
-     &       'maximum sea surface elevation at each station')
+      iret = nf_put_att_text(ncid, minzetan_id, 'standard_name', 37, 
+     &      'minimum_nodal_water_surface_elevation')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxzetan_id, 'long_name', 47, 
+     &       'maximum water surface elevation at each station')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxzetan_id, 'standard_name', 37, 
+     &       'maximum_nodal_water_surface_elevation')
       CALL check_err(iret)
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, minzetan_id, 'units', 6, VAR_METS)
@@ -7284,32 +7333,42 @@
       endif
 
 !     -------------------------------------------------------------
-!     Define max and min in time sea surface elevation attributes 
+!     Define max and min in time water surface elevation attributes 
 !     -------------------------------------------------------------
-      iret = nf_put_att_text(ncid, minznodet_id, 'long_name', 79, 
-     &       'station where minimum sea surface elevation occurs at each 
-     &output time')
+      iret = nf_put_att_text(ncid, minznodet_id, 'long_name', 62, 
+     &'station of minimum water surface elevation at each output time') 
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minznodet_id, 'standard_name', 52, 
+     & 'station_of_minimum_temporal_water_surface_elevation')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, minznodet_id, 'units',14, VAR_NOND)
       CALL check_err(iret)
       
-      iret = nf_put_att_text(ncid, maxznodet_id, 'long_name', 79, 
-     &       'station where maximum sea surface elevation occurs at each 
-     &output time')
+      iret = nf_put_att_text(ncid, maxznodet_id, 'long_name', 62, 
+     &'station of maximum water surface elevation at each output time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxznodet_id, 'standard_name', 52, 
+     & 'station_of_maximum_temporal_water_surface_elevation')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxznodet_id, 'units', 14, VAR_NOND)
       CALL check_err(iret)
 !     -------------------------------------------------------------
-!     Define max and min in nodes sea surface elevation attributes
+!     Define max and min in nodes water surface elevation attributes
 !     -------------------------------------------------------------
-      iret = nf_put_att_text(ncid, minztimen_id, 'long_name', 62, 
-     & 'time when minimum sea surface elevation occurs at each station')
+      iret = nf_put_att_text(ncid, minztimen_id, 'long_name', 55, 
+     & 'time of minimum water surface elevation at each station')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, minztimen_id, 'standard_name', 47, 
+     & 'time_of_minimum_station_water_surface_elevation')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, minztimen_id, 'units', 4, VAR_SECS)
       CALL check_err(iret)
       
-      iret = nf_put_att_text(ncid, maxztimen_id, 'long_name', 62, 
-     & 'time when maximum sea surface elevation occurs at each station')
+      iret = nf_put_att_text(ncid, maxztimen_id, 'long_name', 55, 
+     & 'time of maximum water surface elevation at each station')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, maxztimen_id, 'standard_name', 47, 
+     & 'time_of_maximum_station_water_surface_elevation')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxztimen_id, 'units', 4, VAR_SECS)
       CALL check_err(iret)
@@ -7337,12 +7396,12 @@
       CALL check_err(iret)
 
 !    --------------------------------------------
-!     Define sea surface elevation attributes
+!     Define water surface elevation attributes
 !    --------------------------------------------
       
-      iret = nf_put_att_text(ncid, zeta_id,'long_name',29, VAR61_LN)
+      iret = nf_put_att_text(ncid, zeta_id,'long_name',35, VAR61_LN)
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, zeta_id, 'standard_name', 25, 
+      iret = nf_put_att_text(ncid, zeta_id, 'standard_name', 23, 
      &                      VAR61_ST)
       CALL check_err(iret)
       if (G.LT.11.D0) then
@@ -7352,9 +7411,6 @@
           iret = nf_put_att_text(ncid, zeta_id, 'units', 6, VAR_FEET)
           CALL check_err(iret)
       endif
-      iret = nf_put_att_DOUBLE(ncid,zeta_id,'missing_values',NF_DOUBLE,
-     &1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_DOUBLE(ncid, zeta_id, '_FillValue', NF_DOUBLE, 
      &                      1, doubleval)
       CALL check_err(iret)
@@ -7636,6 +7692,7 @@
       ENDIF
       
       FIRST61=0
+      IF(IHOT.NE.0.AND.nout.eq.3.and.ncmode.eq.2)NREC = NCIESTP/node_len
       NREC = NREC + 1
 
 !     ----------
@@ -7730,12 +7787,15 @@
          CALL check_err(iret)
       ENDIF
       
-      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
-      WRITE(6,*) "-----------------------------------------------------"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "-----------------------------------------------------"
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
-      WRITE(6,*)'end subroutine writenc61'
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*)'end subroutine writenc61'
      
       end subroutine writenc61      
 
@@ -8098,7 +8158,8 @@
 !     ---------------------------
 !     Opening fort.62 netCDF file
 !     ---------------------------
-      WRITE(6,*) "-----------------------------------------------------"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "-----------------------------------------------------"
 
        
       IF(FIRST62.EQ.1.and.ncmode.NE.0) THEN
@@ -8141,7 +8202,8 @@
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
-         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
          
        IF((FIRST62.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &    (FIRST62.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
@@ -8352,9 +8414,6 @@
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE,
-     &                        1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)      
@@ -8368,21 +8427,17 @@
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, Y_id, 'missing_values', NF_DOUBLE, 
-     &       1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &       doubleval)
       CALL check_err(iret)
 
        else
       
-      iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
-     &       'Cartesian coordinate x')
-      CALL check_err(iret)
-      iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, 
-     &                      'x_coordinate')
-      CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'long_name', 22, VAR_L_X)
+       CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, VAR_S_X)
+       CALL check_err(iret)
+
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, X_id, 'units', 6, VAR_METS)
           CALL check_err(iret)
@@ -8392,9 +8447,6 @@
       endif
       iret = nf_put_att_text(ncid, X_id, 'positive', 5, VAR_RG)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE, 
-     &                       1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -8402,11 +8454,9 @@
 !     Define y-coordinate attributes
 !     ------------------------------     
       
-      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
-     &       'Cartesian coordinate y')
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, VAR_L_Y)
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
-     &                       'y_coordinate')
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, VAR_S_Y)
       CALL check_err(iret)
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, Y_id, 'units', 6, VAR_METS)
@@ -8417,10 +8467,6 @@
       endif
       iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      CALL check_err(iret)
-!      doubleval(1) = -99999
       iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &       doubleval)
       CALL check_err(iret)
@@ -8845,9 +8891,6 @@
       endif
       CALL check_err(iret)
       
-      iret = nf_put_att_double(ncid, u_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, u_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -8897,9 +8940,6 @@
       endif
       CALL check_err(iret)
 
-      iret = nf_put_att_DOUBLE(ncid, v_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_DOUBLE(ncid, v_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -9220,6 +9260,7 @@
       ENDIF
       
       FIRST62=0
+      IF(IHOT.NE.0.AND.nout.eq.3.and.ncmode.eq.2) NREC = NCIVSTP/node_len
       NREC = NREC + 1
       
 !     ----------
@@ -9372,12 +9413,15 @@
 !     ---------------------------
 !     Closing netCDF file
 !     ---------------------------
-      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
-      WRITE(6,*) "-----------------------------------------------------"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "-----------------------------------------------------"
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
-      WRITE(6,*)'end subroutine writenc62'
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*)'end subroutine writenc62'
 
       end subroutine writenc62     
 
@@ -9402,8 +9446,8 @@
 !     nbvv      : node numbers on normal flow boundary segment
 !     ibtype    : boundary type
 !     depth     : depth in each node
-!     mindepth  : minimum depth in grid
-!     maxdepth  : maximum depth in grid
+!     mindepth  : minimum distance from geoid to water surface in grid
+!     maxdepth  : maximum distance from geoid to water surface in grid
 !     minprest  : minimum pressure for each output time
 !     maxprest  : maximum pressure for each output time
 !     minpresn  : minimum pressure at each station
@@ -9671,7 +9715,8 @@
 !     ---------------------------
 !     Opening fort.63 netCDF file
 !     ---------------------------
-      WRITE(6,*) "-----------------------------------------------------"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "-----------------------------------------------------"
 
 !      NREC = NREC + 1
 
@@ -9705,7 +9750,8 @@
          FILEEXT = '.nc'
 !        WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
-         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
                   
        IF((FIRST71.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &    (FIRST71.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
@@ -9857,9 +9903,6 @@
       	iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
       	       CALL check_err(iret)
 
-      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE, 
-     &                       1, doubleval)
-      	       CALL check_err(iret)
 
       	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
@@ -9879,10 +9922,6 @@
       	       CALL check_err(iret)
        
  
-      	iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
-     &         NF_DOUBLE, 1, doubleval)
-      	       CALL check_err(iret)
- 
       	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &         doubleval)
       	       CALL check_err(iret)
@@ -9892,12 +9931,11 @@
 !     ------------------------------
 !     Define x-coordinate attributes
 !     ------------------------------
-      	iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
-     &       'Cartesian coordinate x')
-      	       CALL check_err(iret)
-      	iret = nf_put_att_text(ncid, X_id, 'standard_name',12, 
-     &                      'x-coordinate')
-      	       CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'long_name', 22, VAR_L_X)
+       CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, VAR_S_X)
+       CALL check_err(iret)
+
         if (G.LT.11.D0) then
       	    iret = nf_put_att_text(ncid, X_id, 'units', 6,VAR_METS)
       	else
@@ -9907,9 +9945,6 @@
       	iret = nf_put_att_text(ncid, X_id, 'positive', 5, VAR_RG)
       	CALL check_err(iret)
 
-      	iret = nf_put_att_double(ncid, X_id, 'missing_values',NF_DOUBLE,
-     &                        1, doubleval)
-      	CALL check_err(iret)
 
       	iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
@@ -9917,12 +9952,10 @@
 !     ------------------------------
 !     Define y-coordinate attributes
 !     ------------------------------     
-      	iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
-     &       'Cartesian coordinate y')
-      	CALL check_err(iret)
-      	iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
-     &                       'y-coordinate')
-      	CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, VAR_L_Y)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, VAR_S_Y)
+      CALL check_err(iret)
 !     ----------------------
 !     Determine coordinates
 !     ---------------------    
@@ -9933,10 +9966,6 @@
      	endif
       	CALL check_err(iret)
       	iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_UP)
-      	CALL check_err(iret)
- 
-      	iret = nf_put_att_double(ncid, Y_id, 'missing_values',NF_DOUBLE, 
-     &       1, doubleval)
       	CALL check_err(iret)
  
       	iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
@@ -9977,7 +10006,7 @@
       iret = nf_put_att_text(ncid, maxzetan_id, 'units', 15,  VAR71_UN)
       CALL check_err(iret)
 !     -------------------------------------------------------------
-!     Define max and min in time sea surface elevation attributes 
+!     Define max and min in time sea surface pressure attributes 
 !     -------------------------------------------------------------
       iret = nf_put_att_text(ncid, minznodet_id, 'long_name', 68, 
      &  'station of minimum atmospheric surface pressure at each output
@@ -9993,7 +10022,7 @@
       iret = nf_put_att_text(ncid, maxznodet_id, 'units', 14,VAR_NOND) 
       CALL check_err(iret)
 !     -------------------------------------------------------------
-!     Define max and min in nodes sea surface elevation attributes
+!     Define max and min in nodes sea surface pressure attributes
 !     -------------------------------------------------------------
       iret = nf_put_att_text(ncid, minztimen_id, 'long_name', 60, 
      &   'time of minimum atmospheric surface pressure at each station')
@@ -10031,19 +10060,14 @@
 !     Define sea surface pressure attributes
 !    --------------------------------------------
       
-      iret = nf_put_att_text(ncid, zeta_id,'long_name',36, VAR71_LN)
+      iret = nf_put_att_text(ncid, zeta_id,'long_name',33, VAR71_LN)
      &                   
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, zeta_id, 'standard_name', 28, 
+      iret = nf_put_att_text(ncid, zeta_id, 'standard_name', 25, 
      &                      VAR71_ST)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, zeta_id, 'units', 15, VAR71_UN)
       CALL check_err(iret)
-!      doubleval(1) = -99999.
-      iret = nf_put_att_DOUBLE(ncid,zeta_id,'missing_values',NF_DOUBLE,
-     &1, doubleval)
-      CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_DOUBLE(ncid, zeta_id, '_FillValue', NF_DOUBLE, 
      &                      1, doubleval)
       CALL check_err(iret)
@@ -10325,6 +10349,7 @@
       ENDIF
       
       FIRST71=0
+      IF(IHOT.NE.0.AND.nout.eq.3.and.ncmode.eq.2)NREC = NCIPSTP/node_len
       NREC = NREC + 1
       
 !     ----------
@@ -10421,12 +10446,15 @@
          CALL check_err(iret)
       ENDIF
       
-      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
-      WRITE(6,*) "-----------------------------------------------------"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "-----------------------------------------------------"
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
-      WRITE(6,*)'end subroutine writenc71'
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*)'end subroutine writenc71'
      
       end subroutine writenc71      
 
@@ -10790,7 +10818,8 @@
 !     ---------------------------
 !     Opening fort.64 netCDF file
 !     ---------------------------
-      WRITE(6,*) "-----------------------------------------------------"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "-----------------------------------------------------"
 
          IF(FIRST72.EQ.1.and.ncmode.NE.0) THEN
          
@@ -10833,7 +10862,8 @@
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
-         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
          
        IF((FIRST72.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &    (FIRST72.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
@@ -11045,9 +11075,6 @@
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE,
-     &                        1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)      
@@ -11061,9 +11088,6 @@
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, Y_id, 'missing_values', NF_DOUBLE, 
-     &       1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &       doubleval)
       CALL check_err(iret)
@@ -11071,12 +11095,10 @@
        else
 
       
-      iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
-     &       'Cartesian coordinate x')
-      CALL check_err(iret)
-      iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, 
-     &                      'x_coordinate')
-      CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'long_name', 22, VAR_L_X)
+       CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, VAR_S_X)
+       CALL check_err(iret)
 !    ----------------------
 !     determine variable units
 !    ----------------------
@@ -11089,9 +11111,6 @@
       
       iret = nf_put_att_text(ncid, X_id, 'positive', 5, VAR_RG)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE, 
-     &                       1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -11099,11 +11118,9 @@
 !     Define y-coordinate attributes
 !     ------------------------------     
       
-      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
-     &       'Cartesian coordinate y')
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, VAR_L_Y)
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
-     &                       'y_coordinate')
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, VAR_S_Y)
       CALL check_err(iret)
 !    ----------------------
 !     determine variable units
@@ -11115,10 +11132,6 @@
       endif
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
-      CALL check_err(iret)
-
-      iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
       CALL check_err(iret)
 
       iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
@@ -11760,18 +11773,11 @@
 !     u and v velocities other attributes
 !    ------------------------------------      
 
-      CALL check_err(iret)
-      iret = nf_put_att_double(ncid, u_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, u_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
       iret = nf_put_att_double(ncid, u_id, 'dry_Value', NF_DOUBLE, 1, 
      &                       doubleval)
-      CALL check_err(iret)
-      iret = nf_put_att_DOUBLE(ncid, v_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_DOUBLE(ncid, v_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
@@ -12087,6 +12093,7 @@
       ENDIF
       
       FIRST72=0
+      IF(IHOT.NE.0.AND.nout.eq.3.and.ncmode.eq.2)NREC = NCIWSTP/node_len
       NREC = NREC + 1
       
 !     ----------
@@ -12260,12 +12267,15 @@
 !     ---------------------------
 !     Closing netCDF file
 !     ---------------------------
-      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
-      WRITE(6,*) "-----------------------------------------------------"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*) "-----------------------------------------------------"
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
-      WRITE(6,*)'end subroutine writenc72'
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6,*)'end subroutine writenc72'
 
       end subroutine writenc72     
 
@@ -12295,8 +12305,8 @@
 !     nbvv      : node numbers on normal flow boundary segment
 !     ibtype    : boundary type
 !     depth     : depth in each node
-!     mindepth  : minimum depth in grid
-!     maxdepth  : maximum depth in grid
+!     mindepth  : minimum distance from geoid to water surface in grid
+!     maxdepth  : maximum distance from geoid to water surface in grid
 !     minuvelt  : minimum vertically averaged u at each time
 !     maxuvelt  : maximum vertically averaged u at each time
 !     minvvelt  : minimum vertically averaged v at each time
@@ -12596,19 +12606,19 @@
       INTEGER   nm (elem_len, nface_len)
       INTEGER   fileunit
       REAL*8    timenc(timenc_len)
-      REAL(sz)  x(node_len)
-      REAL(sz)  y(node_len)
-      REAL(sz)  depth(node_len)
-      REAL(sz)  u(node_len, timenc_len)
-      REAL(sz)  v(node_len, timenc_len)
-      REAL(sz)  zeta1 (node_len, timenc_len)
-      REAL(sz)  zeta2 (node_len, timenc_len)
-      REAL(sz)  zetad (node_len, timenc_len)
+      REAL*8    x(node_len)
+      REAL*8    y(node_len)
+      REAL*8    depth(node_len)
+      REAL*8    u(node_len, timenc_len)
+      REAL*8    v(node_len, timenc_len)
+      REAL*8    zeta1 (node_len, timenc_len)
+      REAL*8    zeta2 (node_len, timenc_len)
+      REAL*8    zetad (node_len, timenc_len)
       INTEGER   nodecodenc(node_len)
       INTEGER   noffnc(elem_len)
 
-      real*8  mindepth
-      real*8  maxdepth
+      REAL*8  mindepth
+      REAL*8  maxdepth
       REAL*8 dtdp, statim,reftim, rnday, dramp, tau0
       REAL*8 a00, b00, c00,h0
       REAL(sz) slam0, sfea0, ffactor,esl, cori
@@ -12717,22 +12727,37 @@
 !     ---------------------------
 !     Opening fort.67 netCDF file
 !     ---------------------------
-      WRITE(6,*) "-----------------------------------------------------"
-           PRINT *, " *********  node_len = ", node_len
-           PRINT *, " *********  elem_len = ", elem_len
+      WRITE(6,*) "nio: MYPROC ncmode = ", MYPROC, ncmode
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+      WRITE(6,'(A)') 
+     ."-----------------------------------------------------"
+!           PRINT *, " *********  node_len = ", node_len
+!           PRINT *, " *********  elem_len = ", elem_len
        
+!            IF(ncmode.ne. 2. or . (ncmode.eq.2).and. MYPROC.EQ.0) THEN
 !      do i=1, node_len
-!            PRINT *, "i ",i, " nodecodenc(i) = ", nodecodenc(i)
-!      end do
+      do i=1, 5
+             WRITE(6,*) i, "nio:1 z1 z2 = ", zeta1(i,1),zeta2(i,1)
+      end do
+      do i=1, 5
+             WRITE(6,*) i, "nio:1 u = ", u(i,1)
+      end do
+      do i=1, 5
+             WRITE(6,*) i, "nio:1 v = ", v(i,1)
+      end do
 !            PRINT *, " nodecodenc(11) = ", nodecodenc(11)
 !      do i=1, elem_len
-!            PRINT *, "i ",i, " noffnc(i) = ", noffnc(i)
-!      end do
+      do i=1, 5
+             WRITE(6,*) i, "nio:1 nodecode = ", nodecodenc(i)
+      end do
+      do i=1, 5
+            WRITE(6,*) i, "nio:1 noff = ", noffnc(i)
+      end do
 !            PRINT *, " noffnc(11) = ", noffnc(i)
 
 !      IF(FIRST67.EQ.1.and.ncmode.NE.0) THEN
          
-!      ENDIF
+       ENDIF
        
 !     --------------------------------
 !     Switch order in array for NETCDF
@@ -12749,27 +12774,38 @@
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
-         WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
-         
+         IF(ncmode.ne.2.OR.(myproc.eq.0.and.ncmode.eq.2))then
+             WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+         ENDIF
 !       IF((FIRST67.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
 !     &    (FIRST67.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
 !     &     nout.EQ.-3))THEN
 
+!       WRITE(6, *)"FIRST67 = ",FIRST67
+!       WRITE(6, *)"FIRST68 = ",FIRST68
+       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .        WRITE(6, *)"IHOT = ",IHOT
+       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6, *)"NCMODE = ",NCMODE
+!       WRITE(6, *)"abs(nout) = ",abs(nout)
+
        IF( ((FIRST67.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &     (FIRST68.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2)).OR.
      &    ((FIRST67.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
-     &     nout.EQ.-3).OR.
+     &     abs(nout).EQ.3).OR.
      &     (FIRST68.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
-     &     nout.EQ.-3)))THEN
+     &     abs(nout).EQ.3)))THEN
 
-
+!       WRITE(6, *)"Opening hot start file"
+       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .WRITE(6, *)"creating new netCDF file "
 
            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
            CALL check_err(iret)
            IF(FILEUNIT.EQ.67)FIRST67=0
            IF(FILEUNIT.EQ.68)FIRST68=0
-           WRITE(6,*) "FIRST67 ",FIRST67
-           WRITE(6,*) "FIRST68 ",FIRST68
+!           WRITE(6,*) "FIRST67 ",FIRST67
+!           WRITE(6,*) "FIRST68 ",FIRST68
          
 !     --------------------------------
 !     Convert to degress for NETCDF I/O
@@ -12783,7 +12819,8 @@
 !     -----------------
 !     Define dimensions
 !     -----------------
-         WRITE(6,*) "Define dimensions "
+       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .         WRITE(6,*) "Define dimensions "
       iret = nf_def_dim(ncid, 'node', node_len, node_dim)
       CALL check_err(iret)
       iret = nf_def_dim(ncid, 'nele', elem_len, elem_dim)
@@ -12813,7 +12850,7 @@
 !     ================
 !     Define variables
 !     ================
-         WRITE(6,*) "Define variables "
+!         WRITE(6,*) "Define variables "
 !     ----------------
 !     Define time
 !     ----------------
@@ -12878,7 +12915,7 @@
      
        endif
 
-         WRITE(6,*) "Define depth "
+!         WRITE(6,*) "Define depth "
 !     -------------------
 !     Define Z coordinate
 !     --------------------
@@ -12932,7 +12969,7 @@
       CALL check_err(iret)
 
 
-         WRITE(6,*) "Define vel "
+!         WRITE(6,*) "Define vel "
 !     ----------------
 !     Define u vel
 !     ----------------
@@ -12953,18 +12990,18 @@
 
 !      WRITE(6,*)"Define MIN u/v at times"
 
-         WRITE(6,*) "hotstart parameters "
+!         WRITE(6,*) "hotstart parameters "
 !     --------------------
 !     Define hotstart parameters
 !     --------------------
       iret = nf_def_var(ncid, 'nodecode', NF_INT, nodecodenc_rank, 
      &                  node_dim, nodecodenc_id)
       CALL check_err(iret)
-         WRITE(6,*) "noff: "
+!         WRITE(6,*) "noff: "
       iret = nf_def_var(ncid, 'noff', NF_INT, noffnc_rank, elem_dim, 
      &                  noffnc_id)
       CALL check_err(iret)
-         WRITE(6,*) "imhs: "
+!         WRITE(6,*) "imhs: "
       iret = nf_def_var(ncid, 'imhs', NF_INT, imhs_rank, 0, 
      &                  imhs_id)
       CALL check_err(iret)
@@ -12978,7 +13015,7 @@
      &                  nscoue_id)
       CALL check_err(iret)
 
-         WRITE(6,*) "ivstp: "
+!         WRITE(6,*) "ivstp: "
       iret = nf_def_var(ncid, 'ivstp', NF_INT, ivstp_rank, 0, 
      &                  ivstp_id)
       CALL check_err(iret)
@@ -13017,7 +13054,7 @@
       iret = nf_def_var(ncid, 'igcp', NF_INT, igcp_rank, 0, 
      &                  igcp_id)
       CALL check_err(iret)
-         WRITE(6,*) "nscougc: "
+!         WRITE(6,*) "nscougc: "
 
       iret = nf_def_var(ncid, 'nscougc', NF_INT, nscougc_rank, 0, 
      &                  nscougc_id)
@@ -13034,7 +13071,7 @@
 !     -----------------
 !     Assign attributes
 !     -----------------
-         WRITE(6,*) "Assign attributes: "
+!         WRITE(6,*) "Assign attributes: "
 
       if(ics.eq.2) then
       iret = nf_put_att_text(ncid, X_id, 'long_name', 9, 'longitude')
@@ -13045,9 +13082,6 @@
       iret = nf_put_att_text(ncid, X_id, 'units', 12, VAR_DEGE)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
-      CALL check_err(iret)
-      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE,
-     &                        1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
@@ -13063,21 +13097,16 @@
       iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
       CALL check_err(iret)
        
-      iret = nf_put_att_double(ncid, Y_id, 'missing_values', NF_DOUBLE, 
-     &       1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &       doubleval)
       CALL check_err(iret)
 
       else
       
-      iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
-     &       'Cartesian coordinate x')
-      CALL check_err(iret)
-      iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, 
-     &                      'x_coordinate')
-      CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'long_name', 22, VAR_L_X)
+       CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, VAR_S_X)
+       CALL check_err(iret)
       
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, X_id, 'units', 6,  VAR_METS)
@@ -13089,9 +13118,6 @@
       
       iret = nf_put_att_text(ncid, X_id, 'positive', 5,  VAR_RG)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE, 
-     &                       1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -13099,12 +13125,11 @@
 !     Define y-coordinate attributes
 !     ------------------------------     
       
-      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
-     &       'Cartesian coordinate y')
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, VAR_L_Y)
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
-     &                       'y_coordinate')
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, VAR_S_Y)
       CALL check_err(iret)
+
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, Y_id, 'units', 6, VAR_METS)
          CALL check_err(iret)
@@ -13114,9 +13139,6 @@
       endif
       iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &       doubleval)
       CALL check_err(iret)
@@ -13124,17 +13146,12 @@
       endif
 
 !     ------------------------------
-!     Define bathymetry attributes
+!     Define depth attributes
 !     ------------------------------
 
-      iret = nf_put_att_text(ncid, DEPTH_id,'long_name',10,'bathymetry')
-      CALL check_err(iret)
-      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,'depth')
-      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'long_name', 19, VAR_L_D)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,VAR_S_D)
       iret = nf_put_att_text(ncid, DEPTH_id, 'units', 6, VAR_METS)
-      CALL check_err(iret)
-      iret = nf_put_att_double(ncid, DEPTH_id, 'missing_values', 
-     &                      NF_DOUBLE,  1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_double(ncid,DEPTH_id, '_FillValue',NF_DOUBLE, 1, 
      &                       doubleval)
@@ -13147,23 +13164,23 @@
       intval(1) = -1
       
 !    ---------------------------
-!     minimum/maximum bathymetry
+!     minimum/maximum depth
 !    ---------------------------
 
-      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 18, 
-     &                       'minimum bathymetry')
+      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 52, 
+     &       VAR_L_MIN_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, mindepth_id, 'standard_name', 13,
-     &                'minimum_depth')
+     &       VAR_S_MIN_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, mindepth_id, 'units', 6, VAR_METS)
       CALL check_err(iret)
       
-      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 18, 
-     &                       'maximum bathymetry')
+      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 52, 
+     &       VAR_L_MAX_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxdepth_id, 'standard_name', 13,
-     &           'maximum_depth')
+     &       VAR_S_MAX_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxdepth_id, 'units', 6, VAR_METS)
       CALL check_err(iret)
@@ -13171,7 +13188,7 @@
 !    ---------------------------
 !     Hotstart variables
 !    ---------------------------
-         WRITE(6,*) "Assign nodecodenc_id: "
+!         WRITE(6,*) "Assign nodecodenc_id: "
 
 
        iret = nf_put_att_text(ncid, nodecodenc_id, 'long_name', 82, 
@@ -13181,7 +13198,7 @@
       iret = nf_put_att_text(ncid, nodecodenc_id, 'standard_name', 18,
      &                'wet_dry_indicator')
       CALL check_err(iret)
-         WRITE(6,*) "Assign noffnc_id: "
+!         WRITE(6,*) "Assign noffnc_id: "
       iret = nf_put_att_text(ncid, noffnc_id, 'long_name', 34, 
      &                       'Element based wetting/drying flag')
       CALL check_err(iret)
@@ -13189,9 +13206,7 @@
      &                'element_wetting/drying_flag')
       CALL check_err(iret)
 
- 
- 
-         WRITE(6,*) "Assign imhs_id: "
+!         WRITE(6,*) "Assign imhs_id: "
 
       iret = nf_put_att_text(ncid, imhs_id, 'long_name', 18, 
      &                       'model type')
@@ -13265,7 +13280,7 @@
      &           'time_step_counter_for_next_entry_conc_rec_stations')
       CALL check_err(iret)
 
-         WRITE(6,*) "Assign ipstp_id: "
+!         WRITE(6,*) "Assign ipstp_id: "
 
       iret = nf_put_att_text(ncid, ipstp_id, 'long_name', 192, 
      &                       'line number (for ASCII output) or record
@@ -13278,7 +13293,7 @@
      &       'record_number_of_last_entry_of_atm_press_at_rec_stations')
       CALL check_err(iret)
      
-         WRITE(6,*) "Assign iwstp_id: "
+!         WRITE(6,*) "Assign iwstp_id: "
       iret = nf_put_att_text(ncid, iwstp_id, 'long_name', 190, 
      &                       'line number (for ASCII output) or record
      & number (for binary output) of the most recent entry in the Wind 
@@ -13298,7 +13313,7 @@
      &stations output files')
       CALL check_err(iret)
 
-         WRITE(6,*) "Assign nscoum_id: "
+!         WRITE(6,*) "Assign nscoum_id: "
       iret = nf_put_att_text(ncid, nscoum_id, 'standard_name', 60,
      &   'time_step_counter_of_atm_press_and_wind_vel_at_rec_stations')
       CALL check_err(iret)
@@ -13313,7 +13328,7 @@
      &       'record_number_of_last_entry_of_elev_at_model_nodes')
       CALL check_err(iret)
 
-         WRITE(6,*) "Assign nscouge_id: "
+!         WRITE(6,*) "Assign nscouge_id: "
       iret = nf_put_att_text(ncid, nscouge_id, 'long_name', 139, 
      &                       'time step counter to determine when the
      & next entry will be written to the  Elevation time series at All 
@@ -13335,7 +13350,7 @@
      &       'record_number_of_last_entry_of_vel_at_model_nodes')
       CALL check_err(iret)
 
-         WRITE(6,*) "Assign nscougv_id: "
+!         WRITE(6,*) "Assign nscougv_id: "
       iret = nf_put_att_text(ncid, nscougv_id, 'long_name', 153, 
      &                       'time step counter to determine when the 
      &next entry will be written to the Depth-averaged velocity time 
@@ -13357,7 +13372,7 @@
      &       'record_number_of_last_entry_of_conc_at_model_nodes')
       CALL check_err(iret)
 
-         WRITE(6,*) "Assign nscougc_id: "
+!         WRITE(6,*) "Assign nscougc_id: "
       iret = nf_put_att_text(ncid, nscougc_id, 'long_name', 150, 
      &                       'time step counter to determine when the 
      &next entry will be written to the scalar Concentration time 
@@ -13374,8 +13389,8 @@
      &atmospheric pressure time series at All Nodes in the Model 
      &Grid output file')
       CALL check_err(iret)
-
-         WRITE(6,*) "Assign igpp_id: "
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
+     .WRITE(6,*) "Assign igpp_id: "
       iret = nf_put_att_text(ncid, igpp_id, 'standard_name', 61,
      &       'record_number_of_last_entry_of_atm_press_at_model_nodes')
       CALL check_err(iret)
@@ -13391,7 +13406,7 @@
      &       'record_number_of_last_entry_of_wind_vel_at_model_nodes')
       CALL check_err(iret)
 
-         WRITE(6,*) "Assign nscougw_id: "
+!         WRITE(6,*) "Assign nscougw_id: "
       iret = nf_put_att_text(ncid, nscougw_id, 'long_name', 222, 
      &                       'time step counter to determine when the 
      &next entry will be written to the atmospheric pressure time series 
@@ -13462,7 +13477,7 @@
 !    -----------
 !     Define u velocity
 !    -----------
-         WRITE(6,*) "Define u velocity: "
+!         WRITE(6,*) "Define u velocity: "
 
 !    --------------------------------------------------
 !     determine variable name according to coordinates
@@ -13496,9 +13511,6 @@
       else
           iret = nf_put_att_text(ncid, u_id, 'positive', 5, VAR_RG)
       endif
-      CALL check_err(iret)
-      iret = nf_put_att_double(ncid, u_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_double(ncid, u_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
@@ -13544,10 +13556,6 @@
       endif
       CALL check_err(iret)
 
-      iret = nf_put_att_DOUBLE(ncid, v_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_DOUBLE(ncid, v_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -13557,15 +13565,14 @@
       CALL check_err(iret)
 
 !    --------------------------------------------
-!     Define sea surface elevation attributes
+!     Define water surface elevation attributes
 !    --------------------------------------------
       
-      iret = nf_put_att_text(ncid, zeta1_id,'long_name',44, 
-     &'surface elevation at the previous time step')
-                        
+      iret = nf_put_att_text(ncid, zeta1_id,'long_name',45, 
+     &      'water surface elevation at previous time step')
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, zeta1_id, 'standard_name', 44, 
-     &         'surface_elevation_at_previous_time step')
+      iret = nf_put_att_text(ncid, zeta1_id, 'standard_name', 45, 
+     &      'water_surface_elevation_at_previous_time step')
       CALL check_err(iret)
       
       if (G.LT.11.D0) then
@@ -13576,24 +13583,21 @@
          CALL check_err(iret)
       endif      
       
-      iret = nf_put_att_DOUBLE(ncid,zeta1_id,'missing_values',NF_DOUBLE,
-     &1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_DOUBLE(ncid, zeta1_id, '_FillValue', NF_DOUBLE, 
      &                      1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, zeta1_id,'positive', 2, VAR_UP)
       CALL check_err(iret)
 !    --------------------------------------------
-!     Define sea surface elevation attributes
+!     Define water surface elevation attributes
 !    --------------------------------------------
       
-      iret = nf_put_att_text(ncid, zeta2_id,'long_name',43, 
-     & 'surface elevation at the current time step')
+      iret = nf_put_att_text(ncid, zeta2_id,'long_name',44, 
+     &      'water surface elevation at current time step')
                        
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, zeta2_id, 'standard_name', 43, 
-     &         'surface_elevation_at_the_current_time_step')
+      iret = nf_put_att_text(ncid, zeta2_id, 'standard_name', 44, 
+     &      'water_surface_elevation_at_current_time_step')
       CALL check_err(iret)
       
       if (G.LT.11.D0) then
@@ -13604,23 +13608,20 @@
          CALL check_err(iret)
       endif      
       
-      iret = nf_put_att_DOUBLE(ncid,zeta2_id,'missing_values',NF_DOUBLE,
-     &1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_DOUBLE(ncid, zeta2_id, '_FillValue', NF_DOUBLE, 
      &                      1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, zeta2_id,'positive', 2, VAR_UP)
       CALL check_err(iret)
 !    --------------------------------------------
-!     Define sea surface elevation attributes
+!     Define water surface elevation attributes
 !    --------------------------------------------
 
-      iret = nf_put_att_text(ncid, zetad_id,'long_name',37,       
-     &    'elevation at flux specified boundary')
+      iret = nf_put_att_text(ncid, zetad_id,'long_name',42,       
+     &      'water elevation at flux specified boundary')
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, zetad_id, 'standard_name', 37, 
-     &                      'elevation_at_flux_specified_boundary')
+      iret = nf_put_att_text(ncid, zetad_id, 'standard_name', 42, 
+     &      'water_elevation_at_flux_specified_boundary')
       CALL check_err(iret)
       
       if (G.LT.11.D0) then
@@ -13631,9 +13632,6 @@
          CALL check_err(iret)
       endif      
       
-      iret = nf_put_att_DOUBLE(ncid,zetad_id,'missing_values',NF_DOUBLE,
-     &1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_DOUBLE(ncid, zetad_id, '_FillValue', NF_DOUBLE, 
      &                      1, doubleval)
       CALL check_err(iret)
@@ -13642,7 +13640,7 @@
 !     -----------------
 !     Global attributes
 !     -----------------
-         WRITE(6,*) "Global attributes: "
+!         WRITE(6,*) "Global attributes: "
 
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'model', 6, 'ADCIRC')
       CALL check_err(iret)
@@ -13849,7 +13847,7 @@
       CALL check_err(iret)
       iret = nf_put_var_int(ncid, nvellnc_id, nvellnc)
       CALL check_err(iret)      
-         WRITE(6,*) "Store maximum depth: "
+!         WRITE(6,*) "Store maximum depth: "
 !     --------------------
 !     Store maximum depth
 !     --------------------
@@ -13867,6 +13865,8 @@
 !     Open old netcdf file
 !     =====================
       ELSE
+         IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .   WRITE(6, *)"opening old netCDF file = "
           iret = NF_OPEN(FILENAME, NF_WRITE, ncid)
           CALL check_err(iret)   
 !     ------------------
@@ -13883,6 +13883,8 @@
 !      IF(IHOT.NE.0.AND.FIRST67.EQ.1) THEN
        IF((IHOT.NE.0.AND.FIRST67.EQ.1).OR.
      &    (IHOT.NE.0.AND.FIRST68.EQ.1)) THEN
+         IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .   WRITE(6, *)"Update Global Attributes "
          iret = NF_REDEF (ncid)
          CALL check_err(iret)
          iret = nf_put_att_int(ncid, NCGLOBAL, 'ihot', NF_INT, 1, ihot)
@@ -13934,8 +13936,12 @@
      & ((ncmode.ne.0.and.IHOT.NE.0).or.(ncmode.eq.2.and.IHOT.eq.0).or.
      &  (ncmode.eq.2.and.IHOT.ne.0.and.nout.eq.-3)))
      &  )THEN
-              WRITE(6,*) "FIRST67.EQ.1. ncmode.ne.0"
-              WRITE(6,*) "FIRST68.EQ.1. ncmode.ne.0"
+!              WRITE(6,*) "FIRST67.EQ.1. ncmode.ne.0"
+!              WRITE(6,*) "FIRST68.EQ.1. ncmode.ne.0"
+
+!         IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+!     .   WRITE(6, *)"Inquire about variables "
+         WRITE(6, *)"Inquire about variables "
 
          iret=nf_inq_varid(ncid,"time",timenc_id)
          iret=nf_inq_varid(ncid,"zeta1",zeta1_id)
@@ -13975,6 +13981,8 @@
       IF(FILEUNIT.EQ.68)FIRST68=0
 !      NREC = NREC + 1
       NREC = 1
+         IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
+     .   WRITE(6, *)"Storing variables "
 !     ----------
 !     Store time
 !     ----------
@@ -13985,69 +13993,186 @@
 !     ---------------------------
 !     Store zeta1
 !     ---------------------------
-              WRITE(6,*) "Store zeta1"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+         WRITE(6,*) "NREC = ", NREC
+         WRITE(6,*) "node_len = ", node_len,"timenc_len =",timenc_len
+      
+         DO I=1,5
+            WRITE(6,*) "Store zeta1", zeta1(i,1)
+         END DO
+            WRITE(6,*) "Store zeta1 node_len ", zeta1(node_len,1)
+      ENDIF
       count(1)=node_len
       count(2)=timenc_len
       start(1)=1
       start(2)=nrec
       iret = nf_put_vara_DOUBLE(ncid, zeta1_id, start, count, zeta1)
+!      iret = nf_put_vara_DOUBLE(ncid, zeta1_id, zeta1)
       CALL check_err(iret)
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+         WRITE(6,*) "node_len = ", node_len,"timenc_len =",timenc_len
+      
+         DO I=1,5
+            WRITE(6,*) "Store zeta1 2", zeta1(i,1)
+         END DO
+            WRITE(6,*) "Store zeta1 node_len 2 ", zeta1(node_len,1)
+      ENDIF
 !     ---------------------------
 !     Store zeta2
 !     ---------------------------
-              WRITE(6,*) "Store zeta2"
+!              WRITE(6,*) "Store zeta2"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+         WRITE(6,*) "node_len = ", node_len,"timenc_len =",timenc_len
+      
+         DO I=1,5
+            WRITE(6,*) "Store zeta2", zeta2(i,1)
+         END DO
+            WRITE(6,*) "Store zeta2 node_len", zeta2(node_len,1)
+      ENDIF
       count(1)=node_len
       count(2)=timenc_len
       start(1)=1
       start(2)=nrec
       iret = nf_put_vara_DOUBLE(ncid, zeta2_id, start, count, zeta2)
+!      iret = nf_put_vara_DOUBLE(ncid, zeta2_id, zeta2)
       CALL check_err(iret)
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+         WRITE(6,*) "node_len = ", node_len,"timenc_len =",timenc_len
+      
+         DO I=1,5
+            WRITE(6,*) "Store zeta2 -2 ", zeta2(i,1)
+         END DO
+            WRITE(6,*) "Store zeta2 node_len - 2", zeta2(node_len,1)
+      ENDIF
 !     ---------------------------
 !     Store zetad
 !     ---------------------------
-              WRITE(6,*) "Store zetad"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+         WRITE(6,*) "node_len = ", node_len,"timenc_len =",timenc_len
+      
+         DO I=1,5
+            WRITE(6,*) "Store zetad", zetad(i,1)
+         END DO
+      ENDIF
       count(1)=node_len
       count(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, zetad_id, start, count, zetad)
+       iret = nf_put_vara_DOUBLE(ncid, zetad_id, start, count, zetad)
+!      iret = nf_put_vara_DOUBLE(ncid, zetad_id, zetad)
       CALL check_err(iret)
 
 !     ---------------------------
 !     Store u
 !     ---------------------------
-              WRITE(6,*) "Store u"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+         WRITE(6,*) "node_len = ", node_len,"nrec =",nrec
+      
+         DO I=1,5
+            WRITE(6,*) "Store u ", u(i,1)
+         END DO
+            WRITE(6,*) "Store u  node_len ", u(node_len,1)
+      ENDIF
       count(1)=node_len
       count(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, u_id, start, count, u)
+       iret = nf_put_vara_DOUBLE(ncid, u_id, start, count, u)
+!      iret = nf_put_vara_DOUBLE(ncid, u_id, u)
       CALL check_err(iret)
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+         WRITE(6,*) "node_len = ", node_len,"nrec =",nrec
+      
+         DO I=1,5
+            WRITE(6,*) "Store u -2 ", u(i,1)
+         END DO
+      ENDIF
+            WRITE(6,*) "Store u -2 node_len ", u(node_len,1)
 !     ---------------------------
 !     Store v
 !     ---------------------------
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+         WRITE(6,*) "node_len = ", node_len,"nrec =",nrec
+         WRITE(6,*) "timenc_len = ", timenc_len
+      
+         DO I=1,5
+            WRITE(6,*) "Store v ", v(i,1)
+         END DO
+            WRITE(6,*) "Store v node_len", v(node_len,1)
+      ENDIF
       count(1)=node_len
       count(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, v_id, start, count, v)
+       iret = nf_put_vara_DOUBLE(ncid, v_id, start, count, v)
+!      iret = nf_put_vara_DOUBLE(ncid, v_id, v)
       CALL check_err(iret)
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+         WRITE(6,*) "node_len = ", node_len,"nrec =",nrec
+      
+         DO I=1,5
+            WRITE(6,*) "Store v - 2", v(i,1)
+         END DO
+           WRITE(6,*) "Store v - 2 node_len", v(2,1)
+      ENDIF
 !     ---------------
 !     Store nodecode
 !     ---------------
-      WRITE(6,*) "Store nodecodenc"
+!      WRITE(6,*) "Store nodecodenc"
+
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+         WRITE(6,*) "node_len = ", node_len
+         WRITE(6,*) "nodecodenc_id = ", nodecodenc_id
+         DO I=1,5
+            WRITE(6,*) "Store nodecodenc", nodecodenc(i)
+         END DO
+            WRITE(6,*) "Store nodecodenc", nodecodenc(node_len)
+      ENDIF
+
+!      starti(1)=1
+!      counti(1)=node_len
+!      iret =nf_put_vara_int(ncid,nodecodenc_id,starti,counti,nodecodenc)
       iret = nf_put_var_int(ncid, nodecodenc_id, nodecodenc)
+
       CALL check_err(iret)
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+         WRITE(6,*) "node_len = ", node_len
+         DO I=1,5
+            WRITE(6,*) "Store nodecodenc -2 ", nodecodenc(i)
+         END DO
+            WRITE(6,*) "Store nodecodenc -2 ", nodecodenc(node_len)
+      ENDIF
 !     ---------------
 !     Store noff
 !     ---------------
-      WRITE(6,*) "Store noffnc"
+!      WRITE(6,*) "Store noffnc"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+         WRITE(6,*) "elem_len = ", elem_len
+         WRITE(6,*) "noffnc_id = ", noffnc_id
+      
+         DO I=1,5
+            WRITE(6,*) "Store noffnc", noffnc(i)
+         END DO
+            WRITE(6,*) "Store noffnc", noffnc(elem_len)
+      ENDIF
+!      starti(1)=1
+!      counti(1)=elem_len
+!      iret =nf_put_vara_int(ncid,noffnc_id,starti,counti,noffnc)
       iret = nf_put_var_int(ncid, noffnc_id, noffnc)
       CALL check_err(iret)
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+         WRITE(6,*) "elem_len = ", elem_len
+      
+         DO I=1,5
+            WRITE(6,*) "Store noffnc - 2", noffnc(i)
+         END DO
+            WRITE(6,*) "Store noffnc - 2", noffnc(elem_len)
+      ENDIF
 !     ------------------------
 !     Store hotstart variables
 !     ------------------------
-               WRITE(6,*) "Store hotstart variables"
+      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))
+     .   WRITE(6,*) "Store hotstart variables"
       iret = nf_put_var_int(ncid, imhs_id, imhs)
       CALL check_err(iret)
       iret = nf_put_var_int(ncid, iths_id, iths)
@@ -14070,7 +14195,7 @@
       CALL check_err(iret)
       iret = nf_put_var_int(ncid, nscoum_id, nscoum)
       CALL check_err(iret)
-               WRITE(6,*) "Store igep"
+!               WRITE(6,*) "=================Store igep", igep
       iret = nf_put_var_int(ncid, igep_id, igep)
       CALL check_err(iret)
       iret = nf_put_var_int(ncid, nscouge_id, nscouge)
@@ -14106,12 +14231,15 @@
 !     ---------------------------
 !     Closing netCDF file
 !     ---------------------------
-      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
-      WRITE(6,*) "-----------------------------------------------------"
-      
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
+      IF(ncmode.ne.2.OR.(myproc.eq.0.and.ncmode.eq.2))then
+      WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
+      WRITE(6,*) "-----------------------------------------------------"
       WRITE(6,*)'end subroutine writenc67'
+      endif
+!      IF(ncmode.ne.2.OR.(myproc.eq.0.and.ncmode.eq.2))
+!     &   WRITE(6,*)'end subroutine writenc67'
 
       end subroutine writenc67     
 
@@ -14141,8 +14269,8 @@
 !     nbvv      : node numbers on normal flow boundary segment
 !     ibtype    : boundary type
 !     depth     : depth in each node
-!     mindepth  : minimum depth in grid
-!     maxdepth  : maximum depth in grid
+!     mindepth  : minimum distance from geoid to water surface in grid
+!     maxdepth  : maximum distance from geoid to water surface in grid
 !     minuvelt  : minimum vertically averaged u at each time
 !     maxuvelt  : maximum vertically averaged u at each time
 !     minvvelt  : minimum vertically averaged v at each time
@@ -14485,8 +14613,16 @@
       INTEGER IGPP
       INTEGER IGWP
       INTEGER NSCOUGW
-
-      
+!
+!     Variables for error checks
+!
+      INTEGER FileFmtMajorFile
+      INTEGER FileFmtMinorFile
+      INTEGER FileFmtRevFile     
+      INTEGER nid
+      INTEGER nlen
+      INTEGER neid
+      INTEGER nelen
 
 !     -----------------
 !     Attribute vectors
@@ -14562,8 +14698,8 @@
 !     Opening fort.67 netCDF file
 !     ---------------------------
       WRITE(6,*) "-----------------------------------------------------"
-           PRINT *, " *********  node_len = ", node_len
-           PRINT *, " *********  elem_len = ", elem_len
+!           PRINT *, " *********  node_len = ", node_len
+!           PRINT *, " *********  elem_len = ", elem_len
        
 !      do i=1, node_len
 !            PRINT *, "i ",i, " nodecodenc(i) = ", nodecodenc(i)
@@ -14596,7 +14732,7 @@
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
          WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
 
-         PRINT *,"netcdfio: ncmode = ",ncmode," IHOT= ",IHOT
+!         PRINT *,"netcdfio: ncmode = ",ncmode," IHOT= ",IHOT
          
 !       IF((FIRST67.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
 !     &    (FIRST67.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
@@ -14609,15 +14745,15 @@
      &     (FIRST68.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
      &     nout.EQ.-3)))THEN
 
-         PRINT *,"netcdfio: inside first if"
+!         PRINT *,"netcdfio: inside first if"
 
 
            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
            CALL check_err(iret)
            IF(FILEUNIT.EQ.67)FIRST67=0
            IF(FILEUNIT.EQ.68)FIRST68=0
-           WRITE(6,*) "FIRST67 ",FIRST67
-           WRITE(6,*) "FIRST68 ",FIRST68
+!           WRITE(6,*) "FIRST67 ",FIRST67
+!           WRITE(6,*) "FIRST68 ",FIRST68
          
 !     --------------------------------
 !     Convert to degress for NETCDF I/O
@@ -14631,7 +14767,7 @@
 !     -----------------
 !     Define dimensions
 !     -----------------
-         WRITE(6,*) "Define dimensions "
+!         WRITE(6,*) "Define dimensions "
       iret = nf_def_dim(ncid, 'node', node_len, node_dim)
       CALL check_err(iret)
       iret = nf_def_dim(ncid, 'nele', elem_len, elem_dim)
@@ -14661,7 +14797,7 @@
 !     ================
 !     Define variables
 !     ================
-         WRITE(6,*) "Define variables "
+!         WRITE(6,*) "Define variables "
 !     ----------------
 !     Define time
 !     ----------------
@@ -14726,7 +14862,7 @@
      
        endif
 
-         WRITE(6,*) "Define depth "
+!         WRITE(6,*) "Define depth "
 !     -------------------
 !     Define Z coordinate
 !     --------------------
@@ -14780,7 +14916,7 @@
       CALL check_err(iret)
 
 
-         WRITE(6,*) "Define vel "
+!         WRITE(6,*) "Define vel "
 !     ----------------
 !     Define u vel
 !     ----------------
@@ -14801,18 +14937,18 @@
 
 !      WRITE(6,*)"Define MIN u/v at times"
 
-         WRITE(6,*) "hotstart parameters "
+!         WRITE(6,*) "hotstart parameters "
 !     --------------------
 !     Define hotstart parameters
 !     --------------------
       iret = nf_def_var(ncid, 'nodecode', NF_INT, nodecodenc_rank, 
      &                  node_dim, nodecodenc_id)
       CALL check_err(iret)
-         WRITE(6,*) "noff: "
+!         WRITE(6,*) "noff: "
       iret = nf_def_var(ncid, 'noff', NF_INT, noffnc_rank, elem_dim, 
      &                  noffnc_id)
       CALL check_err(iret)
-         WRITE(6,*) "imhs: "
+!         WRITE(6,*) "imhs: "
       iret = nf_def_var(ncid, 'imhs', NF_INT, imhs_rank, 0, 
      &                  imhs_id)
       CALL check_err(iret)
@@ -14826,7 +14962,7 @@
      &                  nscoue_id)
       CALL check_err(iret)
 
-         WRITE(6,*) "ivstp: "
+!         WRITE(6,*) "ivstp: "
       iret = nf_def_var(ncid, 'ivstp', NF_INT, ivstp_rank, 0, 
      &                  ivstp_id)
       CALL check_err(iret)
@@ -14865,7 +15001,7 @@
       iret = nf_def_var(ncid, 'igcp', NF_INT, igcp_rank, 0, 
      &                  igcp_id)
       CALL check_err(iret)
-         WRITE(6,*) "nscougc: "
+!         WRITE(6,*) "nscougc: "
 
       iret = nf_def_var(ncid, 'nscougc', NF_INT, nscougc_rank, 0, 
      &                  nscougc_id)
@@ -14882,7 +15018,7 @@
 !     -----------------
 !     Assign attributes
 !     -----------------
-         WRITE(6,*) "Assign attributes: "
+!         WRITE(6,*) "Assign attributes: "
 
       if(ics.eq.2) then
       iret = nf_put_att_text(ncid, X_id, 'long_name', 9, 'longitude')
@@ -14893,9 +15029,6 @@
       iret = nf_put_att_text(ncid, X_id, 'units', 12, VAR_DEGE)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, X_id, 'positive', 4, VAR_EAST)
-      CALL check_err(iret)
-      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE,
-     &                        1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
@@ -14911,21 +15044,16 @@
       iret = nf_put_att_text(ncid, Y_id, 'positive', 5, VAR_NORTH)
       CALL check_err(iret)
        
-      iret = nf_put_att_double(ncid, Y_id, 'missing_values', NF_DOUBLE, 
-     &       1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &       doubleval)
       CALL check_err(iret)
 
       else
       
-      iret = nf_put_att_text(ncid, X_id, 'long_name', 22, 
-     &       'Cartesian coordinate x')
-      CALL check_err(iret)
-      iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, 
-     &                      'x_coordinate')
-      CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'long_name', 22, VAR_L_X)
+       CALL check_err(iret)
+       iret = nf_put_att_text(ncid, X_id, 'standard_name', 12, VAR_S_X)
+       CALL check_err(iret)
       
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, X_id, 'units', 6,  VAR_METS)
@@ -14937,9 +15065,6 @@
       
       iret = nf_put_att_text(ncid, X_id, 'positive', 5,  VAR_RG)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, X_id, 'missing_values', NF_DOUBLE, 
-     &                       1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, X_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -14947,11 +15072,9 @@
 !     Define y-coordinate attributes
 !     ------------------------------     
       
-      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, 
-     &       'Cartesian coordinate y')
+      iret = nf_put_att_text(ncid, Y_id, 'long_name', 22, VAR_L_Y)
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, 
-     &                       'y_coordinate')
+      iret = nf_put_att_text(ncid, Y_id, 'standard_name', 12, VAR_S_Y)
       CALL check_err(iret)
       if (G.LT.11.D0) then
          iret = nf_put_att_text(ncid, Y_id, 'units', 6, VAR_METS)
@@ -14962,9 +15085,6 @@
       endif
       iret = nf_put_att_text(ncid, Y_id, 'positive', 2, VAR_UP)
       CALL check_err(iret)
-      iret = nf_put_att_double(ncid, Y_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_double(ncid, Y_id, '_FillValue', NF_DOUBLE, 1, 
      &       doubleval)
       CALL check_err(iret)
@@ -14972,17 +15092,12 @@
       endif
 
 !     ------------------------------
-!     Define bathymetry attributes
+!     Define depth attributes
 !     ------------------------------
 
-      iret = nf_put_att_text(ncid, DEPTH_id,'long_name',10,'bathymetry')
-      CALL check_err(iret)
-      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,'depth')
-      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'long_name', 19, VAR_L_D)
+      iret = nf_put_att_text(ncid, DEPTH_id, 'standard_name', 5,VAR_S_D)
       iret = nf_put_att_text(ncid, DEPTH_id, 'units', 6, VAR_METS)
-      CALL check_err(iret)
-      iret = nf_put_att_double(ncid, DEPTH_id, 'missing_values', 
-     &                      NF_DOUBLE,  1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_double(ncid,DEPTH_id, '_FillValue',NF_DOUBLE, 1, 
      &                       doubleval)
@@ -14995,23 +15110,23 @@
       intval(1) = -1
       
 !    ---------------------------
-!     minimum/maximum bathymetry
+!     minimum/maximum depth
 !    ---------------------------
 
-      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 18, 
-     &                       'minimum bathymetry')
+      iret = nf_put_att_text(ncid, mindepth_id, 'long_name', 52, 
+     &       VAR_L_MIN_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, mindepth_id, 'standard_name', 13,
-     &                'minimum_depth')
+     &       VAR_S_MIN_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, mindepth_id, 'units', 6, VAR_METS)
       CALL check_err(iret)
       
-      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 18, 
-     &                       'maximum bathymetry')
+      iret = nf_put_att_text(ncid, maxdepth_id, 'long_name', 52, 
+     &       VAR_L_MAX_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxdepth_id, 'standard_name', 13,
-     &           'maximum_depth')
+     &       VAR_S_MAX_D)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, maxdepth_id, 'units', 6, VAR_METS)
       CALL check_err(iret)
@@ -15019,7 +15134,7 @@
 !    ---------------------------
 !     Hotstart variables
 !    ---------------------------
-         WRITE(6,*) "Assign nodecodenc_id: "
+!         WRITE(6,*) "Assign nodecodenc_id: "
 
 
        iret = nf_put_att_text(ncid, nodecodenc_id, 'long_name', 82, 
@@ -15029,7 +15144,7 @@
       iret = nf_put_att_text(ncid, nodecodenc_id, 'standard_name', 18,
      &                'wet_dry_indicator')
       CALL check_err(iret)
-         WRITE(6,*) "Assign noffnc_id: "
+!         WRITE(6,*) "Assign noffnc_id: "
       iret = nf_put_att_text(ncid, noffnc_id, 'long_name', 34, 
      &                       'Element based wetting/drying flag')
       CALL check_err(iret)
@@ -15037,9 +15152,7 @@
      &                'element_wetting/drying_flag')
       CALL check_err(iret)
 
- 
- 
-         WRITE(6,*) "Assign imhs_id: "
+!         WRITE(6,*) "Assign imhs_id: "
 
       iret = nf_put_att_text(ncid, imhs_id, 'long_name', 18, 
      &                       'model type')
@@ -15113,7 +15226,7 @@
      &           'time_step_counter_for_next_entry_conc_rec_stations')
       CALL check_err(iret)
 
-         WRITE(6,*) "Assign ipstp_id: "
+!         WRITE(6,*) "Assign ipstp_id: "
 
       iret = nf_put_att_text(ncid, ipstp_id, 'long_name', 192, 
      &                       'line number (for ASCII output) or record
@@ -15126,7 +15239,7 @@
      &       'record_number_of_last_entry_of_atm_press_at_rec_stations')
       CALL check_err(iret)
      
-         WRITE(6,*) "Assign iwstp_id: "
+!         WRITE(6,*) "Assign iwstp_id: "
       iret = nf_put_att_text(ncid, iwstp_id, 'long_name', 190, 
      &                       'line number (for ASCII output) or record
      & number (for binary output) of the most recent entry in the Wind 
@@ -15146,7 +15259,7 @@
      &stations output files')
       CALL check_err(iret)
 
-         WRITE(6,*) "Assign nscoum_id: "
+!         WRITE(6,*) "Assign nscoum_id: "
       iret = nf_put_att_text(ncid, nscoum_id, 'standard_name', 60,
      &   'time_step_counter_of_atm_press_and_wind_vel_at_rec_stations')
       CALL check_err(iret)
@@ -15161,7 +15274,7 @@
      &       'record_number_of_last_entry_of_elev_at_model_nodes')
       CALL check_err(iret)
 
-         WRITE(6,*) "Assign nscouge_id: "
+!         WRITE(6,*) "Assign nscouge_id: "
       iret = nf_put_att_text(ncid, nscouge_id, 'long_name', 139, 
      &                       'time step counter to determine when the
      & next entry will be written to the  Elevation time series at All 
@@ -15183,7 +15296,7 @@
      &       'record_number_of_last_entry_of_vel_at_model_nodes')
       CALL check_err(iret)
 
-         WRITE(6,*) "Assign nscougv_id: "
+!         WRITE(6,*) "Assign nscougv_id: "
       iret = nf_put_att_text(ncid, nscougv_id, 'long_name', 153, 
      &                       'time step counter to determine when the 
      &next entry will be written to the Depth-averaged velocity time 
@@ -15205,7 +15318,7 @@
      &       'record_number_of_last_entry_of_conc_at_model_nodes')
       CALL check_err(iret)
 
-         WRITE(6,*) "Assign nscougc_id: "
+!         WRITE(6,*) "Assign nscougc_id: "
       iret = nf_put_att_text(ncid, nscougc_id, 'long_name', 150, 
      &                       'time step counter to determine when the 
      &next entry will be written to the scalar Concentration time 
@@ -15223,7 +15336,7 @@
      &Grid output file')
       CALL check_err(iret)
 
-         WRITE(6,*) "Assign igpp_id: "
+!         WRITE(6,*) "Assign igpp_id: "
       iret = nf_put_att_text(ncid, igpp_id, 'standard_name', 61,
      &       'record_number_of_last_entry_of_atm_press_at_model_nodes')
       CALL check_err(iret)
@@ -15239,7 +15352,7 @@
      &       'record_number_of_last_entry_of_wind_vel_at_model_nodes')
       CALL check_err(iret)
 
-         WRITE(6,*) "Assign nscougw_id: "
+!         WRITE(6,*) "Assign nscougw_id: "
       iret = nf_put_att_text(ncid, nscougw_id, 'long_name', 222, 
      &                       'time step counter to determine when the 
      &next entry will be written to the atmospheric pressure time series 
@@ -15310,7 +15423,7 @@
 !    -----------
 !     Define u velocity
 !    -----------
-         WRITE(6,*) "Define u velocity: "
+!         WRITE(6,*) "Define u velocity: "
 
 !    --------------------------------------------------
 !     determine variable name according to coordinates
@@ -15344,9 +15457,6 @@
       else
           iret = nf_put_att_text(ncid, u_id, 'positive', 5, VAR_RG)
       endif
-      CALL check_err(iret)
-      iret = nf_put_att_double(ncid, u_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_double(ncid, u_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
@@ -15392,10 +15502,6 @@
       endif
       CALL check_err(iret)
 
-      iret = nf_put_att_DOUBLE(ncid, v_id, 'missing_values', 
-     &       NF_DOUBLE, 1, doubleval)
-      CALL check_err(iret)
-!      doubleval(1) = -99999.
       iret = nf_put_att_DOUBLE(ncid, v_id, '_FillValue', NF_DOUBLE, 1, 
      &                       doubleval)
       CALL check_err(iret)
@@ -15405,15 +15511,15 @@
       CALL check_err(iret)
 
 !    --------------------------------------------
-!     Define sea surface elevation attributes
+!     Define water surface elevation attributes
 !    --------------------------------------------
       
-      iret = nf_put_att_text(ncid, zeta1_id,'long_name',44, 
-     &'surface elevation at the previous time step')
+      iret = nf_put_att_text(ncid, zeta1_id,'long_name',49, 
+     &       'water surface elevation at previous time step')
                         
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, zeta1_id, 'standard_name', 44, 
-     &         'surface_elevation_at_previous_time step')
+      iret = nf_put_att_text(ncid, zeta1_id, 'standard_name', 49, 
+     &       'water_surface_elevation_at_previous_time step')
       CALL check_err(iret)
       
       if (G.LT.11.D0) then
@@ -15424,24 +15530,21 @@
          CALL check_err(iret)
       endif      
       
-      iret = nf_put_att_DOUBLE(ncid,zeta1_id,'missing_values',NF_DOUBLE,
-     &1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_DOUBLE(ncid, zeta1_id, '_FillValue', NF_DOUBLE, 
      &                      1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, zeta1_id,'positive', 2, VAR_UP)
       CALL check_err(iret)
 !    --------------------------------------------
-!     Define sea surface elevation attributes
+!     Define water surface elevation attributes
 !    --------------------------------------------
       
-      iret = nf_put_att_text(ncid, zeta2_id,'long_name',43, 
-     & 'surface elevation at the current time step')
+      iret = nf_put_att_text(ncid, zeta2_id,'long_name',44, 
+     & 'water surface elevation at current time step')
                        
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, zeta2_id, 'standard_name', 43, 
-     &         'surface_elevation_at_the_current_time_step')
+      iret = nf_put_att_text(ncid, zeta2_id, 'standard_name', 44, 
+     &         'water_surface_elevation_at_current_time_step')
       CALL check_err(iret)
       
       if (G.LT.11.D0) then
@@ -15452,23 +15555,20 @@
          CALL check_err(iret)
       endif      
       
-      iret = nf_put_att_DOUBLE(ncid,zeta2_id,'missing_values',NF_DOUBLE,
-     &1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_DOUBLE(ncid, zeta2_id, '_FillValue', NF_DOUBLE, 
      &                      1, doubleval)
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, zeta2_id,'positive', 2, VAR_UP)
       CALL check_err(iret)
 !    --------------------------------------------
-!     Define sea surface elevation attributes
+!     Define water surface elevation attributes
 !    --------------------------------------------
 
-      iret = nf_put_att_text(ncid, zetad_id,'long_name',37,       
-     &    'elevation at flux specified boundary')
+      iret = nf_put_att_text(ncid, zetad_id,'long_name',42,       
+     &    'water elevation at flux specified boundary')
       CALL check_err(iret)
-      iret = nf_put_att_text(ncid, zetad_id, 'standard_name', 37, 
-     &                      'elevation_at_flux_specified_boundary')
+      iret = nf_put_att_text(ncid, zetad_id, 'standard_name', 42, 
+     &       'water_elevation_at_flux_specified_boundary')
       CALL check_err(iret)
       
       if (G.LT.11.D0) then
@@ -15479,9 +15579,6 @@
          CALL check_err(iret)
       endif      
       
-      iret = nf_put_att_DOUBLE(ncid,zetad_id,'missing_values',NF_DOUBLE,
-     &1, doubleval)
-      CALL check_err(iret)
       iret = nf_put_att_DOUBLE(ncid, zetad_id, '_FillValue', NF_DOUBLE, 
      &                      1, doubleval)
       CALL check_err(iret)
@@ -15490,7 +15587,7 @@
 !     -----------------
 !     Global attributes
 !     -----------------
-         WRITE(6,*) "Global attributes: "
+!         WRITE(6,*) "Global attributes: "
 
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'model', 6, 'ADCIRC')
       CALL check_err(iret)
@@ -15761,7 +15858,7 @@
          iret = NF_ENDDEF (ncid)
          CALL check_err(iret)
        ENDIF
-       PRINT *,"netcdfio: end mod"
+!       PRINT *,"netcdfio: end mod"
 
 !      IF(ncmode.eq.0) go to 9999
 !      IF((FIRST67.EQ.1.and.
@@ -15773,8 +15870,8 @@
 !     &  )THEN
       IF( (ncmode.ne.2.and.IHOT.NE.0))THEN
 
-              WRITE(6,*) "FIRST67.EQ.1. ncmode.ne.0"
-              WRITE(6,*) "FIRST68.EQ.1. ncmode.ne.0"
+!              WRITE(6,*) "FIRST67.EQ.1. ncmode.ne.0"
+!              WRITE(6,*) "FIRST68.EQ.1. ncmode.ne.0"
 
          iret=nf_inq_varid(ncid,"time",timenc_id)
          iret=nf_inq_varid(ncid,"zeta1",zeta1_id)
@@ -15804,6 +15901,72 @@
          iret=nf_inq_varid(ncid,"igpp",igpp_id)
          iret=nf_inq_varid(ncid,"igwp",igwp_id)
          iret=nf_inq_varid(ncid,"nscougw",nscougw_id)
+!     ---------------------------------------------
+!      Check Hostart File grid parameters
+!     ---------------------------------------------
+      
+          iret=nf_inq_dimid(ncid,"node",nid)
+          CALL check_err(iret)   
+          iret=nf_inq_dimlen(ncid,nid,nlen)
+          CALL check_err(iret)   
+          iret=nf_inq_dimid(ncid,"nele",neid)
+          CALL check_err(iret)   
+          iret=nf_inq_dimlen(ncid,neid,nelen)
+          CALL check_err(iret)   
+       IF(nlen.NE.node_len.OR.nelen.NE.elem_len) THEN
+         WRITE(6,887)node_len,elem_len,nlen,nelen
+887      FORMAT("===================================================",/,
+     &   "The grid input file you are reading is not",/, 
+     &   "consistent with the grid in the hotstart file.",/,
+     &   "Your grid file has the following parameters:",/,/,
+     &   "Number of nodes    = ",I10,/,
+     &   "Number of elements = ",I10,/,/,
+     &   "The hotstart file has the following parameters",/, 
+     &   "Number of nodes    = ",I10,/,
+     &   "Number of elements = ",I10,/,/,
+     &    "         ******* ADCIRC will stop! *******",/,
+     &    "====================================================")
+         STOP
+      ENDIF
+
+!     ---------------------------------------------
+!     Check Hostart File Format Version parameters
+!     ---------------------------------------------
+
+      iret = nf_get_att_int(ncid, NCGLOBAL, 'FileFmtMajor',  
+     &                      FileFmtMajorFile)
+      CALL check_err(iret)
+      iret = nf_get_att_int(ncid, NCGLOBAL, 'FileFmtMinor',  
+     &                      FileFmtMinorFile)
+      CALL check_err(iret)
+      iret = nf_get_att_int(ncid, NCGLOBAL, 'FileFmtRev', 
+     &                      FileFmtRevFile)
+      CALL check_err(iret)
+      
+      
+      IF(FileFmtMajorFile.NE.FileFmtMajor.OR.
+     &   FileFmtMinorFile.NE.FileFmtMinor.OR.
+     &   FileFmtRevFile.NE.FileFmtRev)THEN
+         WRITE(6,888)FileFmtMajorFile,FileFmtMinorFile,FileFmtRevFile,
+     & FileFmtMajor,FileFmtMinor,FileFmtRev
+888      FORMAT("===================================================",/,
+     &   "The input hotstart file you are reading is not",/, 
+     &    "consistent with the version of the model you are running.",/,
+     &    "Your file has the following file format parameters:",/,/,
+     &    "FileFmtMajorFile = ",I3,/,
+     &    "FileFmtMinorFile = ",I3,/,
+     &    "FileFmtRevFile   = ",I3,/,/,
+     &    "The current version of ADCIRC needs a hotstart file",/, 
+     &    "with the following file format parameters:",/,/,
+     &    "FileFmtMajor = ",I3,/,
+     &    "FileFmtMinor = ",I3,/,
+     &    "FileFmtRev   = ",I3,/,/,
+     &    "         ******* ADCIRC will stop! *******",/,
+     &    "====================================================")
+         STOP
+      ENDIF
+      
+        
       ENDIF
 !      IF(IHOT.NE.0.AND.FIRST67.EQ.1.and.ncmode.ne.0.and.nout.eq.3)THEN
 !         iret = nf_get_var_double(ncid, minun_id, minun)
@@ -15821,24 +15984,23 @@
       counti(1)=timenc_len
       iret = nf_get_vara_DOUBLE(ncid, timenc_id, starti,counti, timenc)
       CALL check_err(iret)
-      PRINT *," NETCDFIO: TIMENC ", timenc(timenc_len)
+!      PRINT *," NETCDFIO: TIMENC ", timenc(timenc_len)
 !     ---------------------------
 !     Store zeta1
 !     ---------------------------
-              WRITE(6,*) "Store zeta1"
+!              WRITE(6,*) "Store zeta1"
       count(1)=node_len
       count(2)=timenc_len
       start(1)=1
       start(2)=nrec
       iret = nf_get_vara_DOUBLE(ncid, zeta1_id, start, count, zeta1)
       CALL check_err(iret)
-      DO i=1, node_len
-         WRITE(6,*) "netcdfio: zeta1",i, zeta1(i,1)
-      END DO
+!      DO i=1, node_len
+!         WRITE(6,*) "netcdfio: zeta1",i, zeta1(i,1)
+!      END DO
 !     ---------------------------
 !     Store zeta2
 !     ---------------------------
-              WRITE(6,*) "Store zeta2"
       count(1)=node_len
       count(2)=timenc_len
       start(1)=1
@@ -15846,12 +16008,11 @@
       iret = nf_get_vara_DOUBLE(ncid, zeta2_id, start, count, zeta2)
       CALL check_err(iret)
       DO i=1, node_len
-         WRITE(6,*) "netcdfio: zeta2",i, zeta2(i,1)
+!         WRITE(6,*) "netcdfio: zeta2",i, zeta2(i,1)
       END DO
 !     ---------------------------
 !     Store zetad
 !     ---------------------------
-              WRITE(6,*) "Store zetad"
       count(1)=node_len
       count(2)=timenc_len
       start(1)=1
@@ -15862,7 +16023,6 @@
 !     ---------------------------
 !     Store u
 !     ---------------------------
-              WRITE(6,*) "Store u"
       count(1)=node_len
       count(2)=timenc_len
       start(1)=1
@@ -15881,8 +16041,7 @@
 !     ---------------
 !     Store nodecode
 !     ---------------
-      WRITE(6,*) "Store nodecodenc"
-!!      iret = nf_get_var_int(ncid, nodecodenc_id, nodecodenc)
+ !!      iret = nf_get_var_int(ncid, nodecodenc_id, nodecodenc)
  !!     CALL check_err(iret)
 !!      WRITE(6,*) "Store nodecodenc"
       start(1)=1
@@ -15896,7 +16055,6 @@
 !     ---------------
 !     Store noff
 !     ---------------
-       WRITE(6,*) "Store noffnc"
 !!       iret = nf_get_var_int(ncid, noffnc_id, noffnc)
 !!       CALL check_err(iret)
 !!       WRITE(6,*) "finish getting noffnc"
@@ -15904,7 +16062,6 @@
 !!      WRITE(6,*) "elem_len = ",elem_len
 !!      WRITE(6,*) "noffnc_id = ",noffnc_id
       start(1)=1
-      count(1)=2
       count(1)=elem_len
 
       iret = nf_get_vara_int(ncid, noffnc_id, start, count, noffnc)
@@ -15916,13 +16073,15 @@
 !     ------------------------
 !     Store hotstart variables
 !     ------------------------
-               WRITE(6,*) "Store hotstart variables"
       iret = nf_get_var_int(ncid, imhs_id, imhs)
       CALL check_err(iret)
+!      PRINT *,"NETCDFIO imhs = ", imhs
       iret = nf_get_var_int(ncid, iths_id, iths)
       CALL check_err(iret)
+!      PRINT *,"NETCDFIO iths = ", iths
       iret = nf_get_var_int(ncid, iestp_id, iestp)
       CALL check_err(iret)
+!      PRINT *,"NETCDFIO IESTP = ", iestp
       iret = nf_get_var_int(ncid, nscoue_id, nscoue)
       CALL check_err(iret)
       iret = nf_get_var_int(ncid, ivstp_id, ivstp)
@@ -15939,10 +16098,9 @@
       CALL check_err(iret)
       iret = nf_get_var_int(ncid, nscoum_id, nscoum)
       CALL check_err(iret)
-               WRITE(6,*) "Store igep"
       iret = nf_get_var_int(ncid, igep_id, igep)
-               WRITE(6,*) "IGEP = ", IGEP
       CALL check_err(iret)
+!      PRINT *,"NETCDFIO igep = ", igep
       iret = nf_get_var_int(ncid, nscouge_id, nscouge)
       CALL check_err(iret)
       iret = nf_get_var_int(ncid, igvp_id, igvp)
@@ -15976,12 +16134,15 @@
 !     ---------------------------
 !     Closing netCDF file
 !     ---------------------------
+      IF(ncmode.ne.2.OR.(myproc.eq.0.and.ncmode.eq.2))then
       WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       WRITE(6,*) "-----------------------------------------------------"
+      endif
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
-      WRITE(6,*)'end subroutine readnc67'
+      IF(ncmode.ne.2.OR.(myproc.eq.0.and.ncmode.eq.2))
+     &   WRITE(6,*)'end subroutine readnc67'
 
       end subroutine readnc67     
 

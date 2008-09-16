@@ -7,6 +7,7 @@
 
       module global_io
       use SIZES
+      use VERSION
       use GLOBAL
 C      use GLOBAL, ONLY: NP, NODES_LG, IMAP_EL_LG,
 C     &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,

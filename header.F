@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.31     - 09/16/08 - mcf - added hotstart file format identifiers in 
+C               from version.F, modified netCDF metadata, added time counters 
+C               and record numbers for hotstart files, fixed netCDF hotstart 
+C               flow for preprocessor, adcirc and padcirc.
 C  v48.30     - 08/29/08 - rjw - merged CD's mods for 3D wetting and Drying
 C  v48.29     - 08/07/08 - mcf - modified starting character counter in parser 
 C  v48.28     - 08/01/08 - mcf - included File Format Version parameters

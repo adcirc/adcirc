@@ -11,6 +11,7 @@ C----------------------------------------------------------------------------
 
       MODULE PRE_GLOBAL
       USE PRESIZES
+!      USE VERSION
       IMPLICIT NONE
 
 C     Land Boundary Nodes and Segment Definitions:
@@ -351,9 +352,9 @@ C     MSGTAB section
       INTEGER,ALLOCATABLE  ::   ISEND_TOT(:,:),ISEND(:)
 
       integer, save       :: FileFmtVersion      ! File format version.
-      integer, save       :: FileFmtMajor = 1
-      integer, save       :: FileFmtMinor = 2
-      integer, save       :: FileFmtRev   = 0
+!      integer, save       :: FileFmtMajor = 1
+!      integer, save       :: FileFmtMinor = 2
+!      integer, save       :: FileFmtRev   = 0
  
 C-------------------end of data declarations------------------------C
 

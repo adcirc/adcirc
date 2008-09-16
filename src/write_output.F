@@ -266,7 +266,10 @@ C...  time step falls within the specified window calculate elevation
 C...  solutions at stations using interpolation
 
       IF(NOUTE.NE.0) THEN
-         IF((IT.GT.NTCYSE).AND.(IT.LE.NTCYFE)) NSCOUE=NSCOUE+1
+         IF((IT.GT.NTCYSE).AND.(IT.LE.NTCYFE)) THEN
+             NSCOUE=NSCOUE+1
+             NCCOUE=NSCOUE
+         ENDIF
          IF(NSCOUE.EQ.NSPOOLE) THEN
             DO I=1,NSTAE
                EE1=ETA2(NM(NNE(I),1))
@@ -287,6 +290,7 @@ C           save elevation recording station data to file
 
             write(16,*) 'Finished with fort.61 output routine.' !jgfdebug48.03
             NSCOUE=0
+            NCCOUE=NSCOUE
          ENDIF
       ENDIF
 
@@ -295,7 +299,10 @@ C...  NOUTV<>0 AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
 C...  CALCULATE VELOCITY SOLUTIONS AT STATIONS USING INTERPOLATION
 C...  
       IF(NOUTV.NE.0) THEN
-         IF((IT.GT.NTCYSV).AND.(IT.LE.NTCYFV)) NSCOUV=NSCOUV+1
+         IF((IT.GT.NTCYSV).AND.(IT.LE.NTCYFV)) THEN
+             NSCOUV=NSCOUV+1
+             NCCOUV=NSCOUV
+         ENDIF
          IF(NSCOUV.EQ.NSPOOLV) THEN
             write(16,*) 'About to write fort.62 file.' !jgfdebug48.03
             DO I=1,NSTAV
@@ -315,6 +322,7 @@ C           save velocity recording station data to file
 
             write(16,*) 'Finished with fort.62 output routine.' !jgfdebug48.03
             NSCOUV=0
+            NCCOUV=NSCOUV
          ENDIF
       ENDIF
 
@@ -358,7 +366,10 @@ C...  THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW CALCULATE
 C...  METEOROLOGICAL SOLUTIONS AT STATIONS USING INTERPOLATION
 C...  
       IF((NWS.NE.0).AND.(NOUTM.NE.0)) THEN
-         IF((IT.GT.NTCYSM).AND.(IT.LE.NTCYFM)) NSCOUM=NSCOUM+1
+         IF((IT.GT.NTCYSM).AND.(IT.LE.NTCYFM)) THEN
+            NSCOUM=NSCOUM+1
+            NCCOUM=NSCOUM
+         ENDIF
          IF(NSCOUM.EQ.NSPOOLM) THEN
             write(16,*) 'About to write fort.71,72 files.' !jgfdebug48.03
             DO I=1,NSTAM
@@ -387,14 +398,23 @@ C           save wind velocity recording station data to file
             CALL writeOutArray(72, TIME, IT, WindVelStaDescript,
      &                         packTwo, unpackTwo, IWSTP) 
             NSCOUM=0
+            NCCOUM=NSCOUM
          ENDIF
       ENDIF
 C...   OUTPUT GLOBAL ELEVATION DATA IF NOUTGE<>0 AND THE
 C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
 C...  
       IF(NOUTGE.NE.0) THEN
-         IF((IT.GT.NTCYSGE).AND.(IT.LE.NTCYFGE)) NSCOUGE=NSCOUGE+1
+!         IF(MYPROC.EQ.0) PRINT *, "W: NSCOUGE = ", NSCOUGE
+!         IF(MYPROC.EQ.0) PRINT *, "W: NSPOOLGE = ", NSPOOLGE
+!         IF(MYPROC.EQ.0) PRINT *, "W: NTCYSGE = ", NTCYSGE
+!         IF(MYPROC.EQ.0) PRINT *, "W: NTCYFGE = ", NTCYFGE
+         IF((IT.GT.NTCYSGE).AND.(IT.LE.NTCYFGE)) THEN
+            NSCOUGE=NSCOUGE+1
+            NCCOUGE=NSCOUGE
+         ENDIF
          IF(NSCOUGE.EQ.NSPOOLGE) THEN
+!         IF(MYPROC.EQ.0) PRINT *, "W: B-write ", NSCOUGE
 C
 C           save fulldomain elevation data to file
             CALL writeOutArray(63, TIME, IT, ElevDescript,
@@ -430,6 +450,8 @@ C              jgf48.03 TODO: Make this globalio compliant.
            ENDIF
            write(16,*) 'Finished with fort.63 output routine.' !jgfdebug48.03
            NSCOUGE=0
+           NCCOUGE=NSCOUGE
+!         IF(MYPROC.EQ.0) PRINT *, "W: B-write after ", NSCOUGE
          ENDIF
       ENDIF
 
@@ -437,7 +459,10 @@ C...  OUTPUT GLOBAL VELOCITY DATA IF NOUTGV<>0 AND THE
 C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
 C...  
       IF(NOUTGV.NE.0) THEN
-         IF((IT.GT.NTCYSGV).AND.(IT.LE.NTCYFGV)) NSCOUGV=NSCOUGV+1
+         IF((IT.GT.NTCYSGV).AND.(IT.LE.NTCYFGV)) THEN
+            NSCOUGV=NSCOUGV+1
+            NCCOUGV=NSCOUGV
+         ENDIF
          IF(NSCOUGV.EQ.NSPOOLGV) THEN
 
             CALL writeOutArray(64, TIME, IT, VelDescript,
@@ -462,6 +487,7 @@ C...
 #endif
             ENDIF
             NSCOUGV=0
+            NCCOUGV=NSCOUGV
          ENDIF
       ENDIF
 
@@ -470,7 +496,10 @@ C...  OUTPUT GLOBAL WIND STRESS and atmospheric pressure data IF
 C.... NOUTGW<>0 AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
 C...
       IF((NWS.NE.0).AND.(NOUTGW.NE.0)) THEN
-         IF((IT.GT.NTCYSGW).AND.(IT.LE.NTCYFGW)) NSCOUGW=NSCOUGW+1
+         IF((IT.GT.NTCYSGW).AND.(IT.LE.NTCYFGW)) THEN
+             NSCOUGW=NSCOUGW+1
+             NCCOUGW=NSCOUGW
+         ENDIF
          IF(NSCOUGW.EQ.NSPOOLGW) THEN
 C
 C           save atmospheric pressure recording station data to file
@@ -519,6 +548,7 @@ C           jgf48.03 TODO: Make this globalio compliant.
 #endif
             ENDIF
             NSCOUGW=0
+            NCCOUGW=NSCOUGW
          ENDIF
       ENDIF
 
@@ -1337,7 +1367,9 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
 
       CASE(3) !netcdf (portable)
 #ifdef NETCDF
+!       IF(MYPROC.EQ.0) PRINT *,"W: BEFORE WRITING OUT ARRAY "
          CALL writeOutArrayNetCDF(lun, time, it, descript)
+!       IF(MYPROC.EQ.0) PRINT *,"W: AFTER WRITING OUT ARRAY "
 #else
          WRITE(ScreenUnit,*) 'ERROR: NetCDF is not available.'
          WRITE(16,*) 'ERROR: NetCDF is not available.'
@@ -1443,6 +1475,8 @@ C
 !               WRITE(6,*) "LOOP =  1 ", et00nc (i,timenc_len)
             END DO
 !            WRITE(6,*) "BEFORE ICS =2 "
+            
+            if (ncmode.eq.1) then
             IF(ICS.EQ.2) THEN
                DO I=1, num_records
                    xenc(i)=SLEL(I)*RAD2DEG
@@ -1451,8 +1485,12 @@ C
                END DO
             ELSE
                DO I=1,num_records
+                  IF(MYPROC.EQ.0)PRINT *,"wo: num_records xel", 
+     .             xel(I),num_records
              	  xenc(i)=XEL(I)
                   yenc(i)=YEL(I)
+                  IF(MYPROC.EQ.0)PRINT *,"wa: num_records xel", 
+     .             xel(I),num_records, xenc(i), yenc(i)
                END DO
             ENDIF
 
@@ -1461,7 +1499,7 @@ C
              	  nbvvnc(i,j)=nbvv(i,j)
                   END DO
                END DO
-               
+            endif   
 
             CALL writenc61 (descript % specifier, 
      &             fileunit, timenc_len, num_records, timenc,
@@ -1480,6 +1518,8 @@ C
      &             title, institution, source, history,
      &             references, comments, host, convention, contact,
      &             base_date)
+     
+             NCIESTP=NCIESTP+num_records
 C
 C     END NETCDF I/O OPTION - MCF
 C     ==================================================================
@@ -1507,6 +1547,7 @@ C
                   VV00nc(i,timenc_len)= descript % array2(i)
                ENDIF
             END DO
+            if (ncmode.eq.1) then
             IF(ICS.EQ.2) THEN
                DO I=1, num_records
                   xvnc(i)=SLEV(I)*RAD2DEG
@@ -1524,7 +1565,7 @@ C
              	  nbvvnc(i,j)=nbvv(i,j)
                   END DO
                END DO
-
+           endif
 
             CALL writenc62 (descript % specifier, fileunit, 
      &             timenc_len, num_records, timenc,
@@ -1544,6 +1585,7 @@ C
      &             title, institution, source, history,
      &             references, comments, host, convention, contact,
      &             base_date)
+            NCIVSTP=NCIVSTP+num_records
 
 C
 C     END NETCDF I/O OPTION - MCF
@@ -1572,6 +1614,7 @@ C
                ENDIF
             END DO
 
+            if (ncmode.eq.1) then
             IF(ICS.EQ.2) THEN
                DO I=1,num_records
                      xnc(i)=slam(i)*RAD2DEG
@@ -1583,6 +1626,7 @@ C
                      ync(i)=Y(i)
        	       END DO
             ENDIF
+             endif
 !
 !            elevation specified boundary forcing segments
 !
@@ -1625,39 +1669,40 @@ C
              	        nbounc(k)=nbvv(i,j)
                      END DO
                   END DO
-
+             
 !            WRITE(6,*)"================================================"
 !            WRITE(6,*)"num_records =====================",num_records
 !           WRITE(6,*)"WRITE INPUT NBVV(K,I) ===", NBVV
-            WRITE(633,*)"**noutge, fileunit,timenc_len, np, timenc",
-     &             noutge, fileunit,timenc_len, np, timenc,"**eta22",
-     &             eta22, "** nt = ", nt, "** ndsetse = ", ndsetse,
-     &             "** rundes = ", rundes, runid, agrid,
-     &             "** irtype = ", irtype,
-     &             "** dtdp = ", dtdp,  "** ihot = ", ihot,
-     &             "** ics, nolibf, nolifa = ", ics, nolibf, nolifa,
-     &             "** nolica, nolicat, nwp = ",nolica, nolicat, nwp,
-     &             "** ncor, ntip, nws, nramp, tau0 = ", ncor, ntip,
-     &             nws, nramp, tau0,
-     &             "** statim,reftim, rnday, dramp = ",statim,
-     &             reftim, rnday, dramp,
-     &             "** a00, b00, c00, h0 = ",a00, b00, c00, h0,
-     &             "** slam0, sfea0, cf,eslm, cori = ", slam0, sfea0,
-     &             cf,eslm, cori,
-     &             "**  ntif, nbfr, ne, nhy, nm = ", ntif, nbfr, ne,
-     &             nhy, nm,
-     &             "**  x = ", xnc, "**  y = ", ync, "**  dp = ", dp,
-     &             "nope, neta, nbdv = ", nope, neta, nbdv,
-     &             "nbou, nvel, nbvv = ", nbou, nvel, nbvvnc, 
-     &              "nbounc", nbounc,"nvellnc", nvellnc,
-     &             "ibtypenc",ibtypenc,"netanc",netanc,"nopenc",nopenc,
-     &             "nvdllnc",nvdllnc,
-     &             title, institution, source, history,
-     &             references, comments, host, convention, contact,
-     &             base_date
+!            WRITE(633,*)"**noutge, fileunit,timenc_len, np, timenc",
+!     &             noutge, fileunit,timenc_len, np, timenc,"**eta22",
+!     &             eta22, "** nt = ", nt, "** ndsetse = ", ndsetse,
+!     &             "** rundes = ", rundes, runid, agrid,
+!     &             "** irtype = ", irtype,
+!     &             "** dtdp = ", dtdp,  "** ihot = ", ihot,
+!     &             "** ics, nolibf, nolifa = ", ics, nolibf, nolifa,
+!     &             "** nolica, nolicat, nwp = ",nolica, nolicat, nwp,
+!     &             "** ncor, ntip, nws, nramp, tau0 = ", ncor, ntip,
+!     &             nws, nramp, tau0,
+!     &             "** statim,reftim, rnday, dramp = ",statim,
+!     &             reftim, rnday, dramp,
+!     &             "** a00, b00, c00, h0 = ",a00, b00, c00, h0,
+!     &             "** slam0, sfea0, cf,eslm, cori = ", slam0, sfea0,
+!     &             cf,eslm, cori,
+!     &             "**  ntif, nbfr, ne, nhy, nm = ", ntif, nbfr, ne,
+!     &             nhy, nm,
+!     &             "**  x = ", xnc, "**  y = ", ync, "**  dp = ", dp,
+!     &             "nope, neta, nbdv = ", nope, neta, nbdv,
+!     &             "nbou, nvel, nbvv = ", nbou, nvel, nbvvnc, 
+!     &              "nbounc", nbounc,"nvellnc", nvellnc,
+!     &             "ibtypenc",ibtypenc,"netanc",netanc,"nopenc",nopenc,
+!     &             "nvdllnc",nvdllnc,
+!     &             title, institution, source, history,
+!     &             references, comments, host, convention, contact,
+!     &             base_date
 
 !            CALL writenc63 (noutge, fileunit,timenc_len, np, timenc,
 !            WRITE(6,*)"==================63========================="
+!             NCIGEP=NCIGEP+num_records
             CALL writenc63 (noutge, fileunit,timenc_len, 
      &             num_records, timenc,
      &             eta22, nt, ndsetse, rundes, runid, agrid, irtype,
@@ -1677,30 +1722,34 @@ C
      &             title, institution, source, history,
      &             references, comments, host, convention, contact,
      &             base_date)
+             NCIGEP=NCIGEP+num_records
+!             WRITE(634,*)"**noutge, fileunit,timenc_len, np, timenc",
+!     &             noutge, fileunit,timenc_len, np, timenc,"**eta22",
+!     &             eta22, "** nt = ", nt, "** ndsetse = ", ndsetse,
+!     &             "** rundes = ", rundes, runid, agrid,
+!     &             "** irtype = ", irtype,
+!     &             "** dtdp = ", dtdp,  "** ihot = ", ihot,
+!     &             "** ics, nolibf, nolifa = ", ics, nolibf, nolifa,
+!     &             "** nolica, nolicat, nwp = ",nolica, nolicat, nwp,
+!     &             "** ncor, ntip, nws, nramp, tau0 = ", ncor, ntip,
+!     &             nws, nramp, tau0,
+!     &             "** statim,reftim, rnday, dramp = ",statim,
+!     &             reftim, rnday, dramp,
+!     &             "** a00, b00, c00, h0 = ",a00, b00, c00, h0,
+!     &             "** slam0, sfea0, cf,eslm, cori = ", slam0, sfea0,
+!     &             cf,eslm, cori,
+!     &             "**  ntif, nbfr, ne, nhy, nm = ", ntif, nbfr, ne,
+!     &             nhy, nm,
+!     &             "**  x = ", xnc, "**  y = ", ync, "**  dp = ", dp,
+!     &             "nope, neta, nbdv = ", nope, neta, nbdv,
+!     &             "nbou, nvel, nbvv = ", nbou, nvel, nbvv,
+!     &             title, institution, source, history,
+!     &             references, comments, host, convention, contact,
+!     &             base_date
 
-             WRITE(634,*)"**noutge, fileunit,timenc_len, np, timenc",
-     &             noutge, fileunit,timenc_len, np, timenc,"**eta22",
-     &             eta22, "** nt = ", nt, "** ndsetse = ", ndsetse,
-     &             "** rundes = ", rundes, runid, agrid,
-     &             "** irtype = ", irtype,
-     &             "** dtdp = ", dtdp,  "** ihot = ", ihot,
-     &             "** ics, nolibf, nolifa = ", ics, nolibf, nolifa,
-     &             "** nolica, nolicat, nwp = ",nolica, nolicat, nwp,
-     &             "** ncor, ntip, nws, nramp, tau0 = ", ncor, ntip,
-     &             nws, nramp, tau0,
-     &             "** statim,reftim, rnday, dramp = ",statim,
-     &             reftim, rnday, dramp,
-     &             "** a00, b00, c00, h0 = ",a00, b00, c00, h0,
-     &             "** slam0, sfea0, cf,eslm, cori = ", slam0, sfea0,
-     &             cf,eslm, cori,
-     &             "**  ntif, nbfr, ne, nhy, nm = ", ntif, nbfr, ne,
-     &             nhy, nm,
-     &             "**  x = ", xnc, "**  y = ", ync, "**  dp = ", dp,
-     &             "nope, neta, nbdv = ", nope, neta, nbdv,
-     &             "nbou, nvel, nbvv = ", nbou, nvel, nbvv,
-     &             title, institution, source, history,
-     &             references, comments, host, convention, contact,
-     &             base_date
+!             IF((myproc.eq.0.and.ncmode.eq.2).or.ncmode.eq.1)
+!     &       WRITE(6,*)"NCCOUGE = ",NCCOUGE," NCIGEP = ",NCIGEP
+
 C
 C     END NETCDF I/O OPTION - MCF
 C     ==================================================================
@@ -1731,6 +1780,7 @@ C
                 ENDIF
             END DO
 
+            if (ncmode.eq.1) then
             IF(ICS.EQ.2) THEN
                DO I=1, num_records
                   xnc(i)=slam(i)*RAD2DEG
@@ -1743,7 +1793,8 @@ C
                END DO
             ENDIF
             
-!               DO I=1,nbou
+           endif
+ !               DO I=1,nbou
 !                  DO J=1,nvel
 !             	  nbvvnc(i,j)=nbvv(i,j)
 !                  END DO
@@ -1760,6 +1811,7 @@ C
 !                 END DO
               END DO
 
+            
             IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
                
                k=0
@@ -1790,7 +1842,7 @@ C
              	        nbounc(k)=nbvv(i,j)
                      END DO
                   END DO
-
+                  
             CALL writenc64 (descript % specifier,
      &             fileunit, timenc_len,
      &             num_records, timenc, 
@@ -1812,6 +1864,9 @@ C
      &             title, institution, source, history,
      &             references, comments, host, convention, contact,
      &             base_date)
+
+             NCIGVP=NCIGVP+num_records
+
 C
 C     END NETCDF I/O OPTION - MCF
 C     ==================================================================
@@ -1846,13 +1901,14 @@ C
                    ypnc(i)=YEM(i)
                END DO
             ENDIF
-            endif
+!            endif
                DO I=1,nope
                   DO J=1,nvel
              	  nbvvnc(i,j)=nbvv(i,j)
                   END DO
                END DO
-
+               
+            endif 
             CALL writenc71 (descript % specifier, 
      &             fileunit, timenc_len, num_records, timenc,
      &             RMP00nc, nt,NTRSPM, rundes, runid, agrid, irtype,
@@ -1870,6 +1926,8 @@ C
      &             title, institution, source, history,
      &             references, comments, host, convention, contact,
      &             base_date)
+
+             NCIPSTP=NCIPSTP+num_records
 C
 C     END NETCDF I/O OPTION - MCF
 C     ==================================================================
@@ -1911,7 +1969,7 @@ C
                   ywnc(i)=YEM(i)
                END DO
             ENDIF
-            endif
+!            endif
             
                DO I=1,nbou
                   DO J=1,nvel
@@ -1919,7 +1977,8 @@ C
                   END DO
                END DO
 
-
+            endif
+            
             CALL writenc72 (descript % specifier, 
      &             fileunit, timenc_len, num_records, timenc,
      &             nt, NTRSPM, RMU00nc, RMV00nc,
@@ -1938,6 +1997,10 @@ C
      &             title, institution, source, history,
      &             references, comments, host, convention, contact,
      &             base_date)
+
+             NCIWSTP=NCIWSTP+num_records
+
+
 C
 C     END NETCDF I/O OPTION - MCF
 C     ==================================================================
@@ -1964,6 +2027,8 @@ C
                ENDIF
             END DO
                
+            if (ncmode.eq.1) then
+
             IF(ICS.EQ.2) THEN
                DO I=1, num_records
                         xnc(i)=slam(i)*RAD2DEG
@@ -1976,6 +2041,7 @@ C
                END DO
             ENDIF
             
+           endif
 !
 !            elevation specified boundary forcing segments
 !
@@ -2015,7 +2081,7 @@ C
              	        nbounc(k)=nbvv(i,j)
                      END DO
                   END DO
-
+             
                CALL writenc73 (descript % specifier, 
      &                fileunit, timenc_len, num_records, timenc,
      &                pr22, nt, NDSETSW, rundes, runid, agrid, irtype,
@@ -2035,6 +2101,9 @@ C
      &                title, institution, source, history,
      &                references, comments, host, convention, contact,
      &                base_date)
+
+             NCIGPP=NCIGPP+num_records
+
 C
 C     END NETCDF I/O OPTION - MCF
 C     ==================================================================
@@ -2063,6 +2132,7 @@ C
                    ENDIF
                END DO
                
+            if (ncmode.eq.1) then
                IF(ICS.EQ.2) THEN
                   DO I=1, num_records
                      xnc(i)=slam(i)*RAD2DEG
@@ -2075,6 +2145,7 @@ C
                   END DO
                ENDIF
 
+            endif
 !
 !            elevation specified boundary forcing segments
 !
@@ -2138,6 +2209,7 @@ C
      &                title, institution, source, history,
      &                references, comments, host, convention, contact,
      &                base_date)
+             NCIGWP=NCIGWP+num_records
 C
 C     END NETCDF I/O OPTION - MCF
 C     ==================================================================
@@ -2350,7 +2422,7 @@ C     collect up the data from subdomains if running in parallel
          IF ( (MyProc.eq.0) ) THEN
            DO I=1, NP_G
 !             PRINT *,"before case 1 ",I, Elev1Descript % array_g(I)
-             PRINT *,"before case 1 ",I, Elev1Descript % array_g(I)
+!             PRINT *,"before case 1 ",I, Elev1Descript % array_g(I)
           ENDDO
          ENDIF
 
@@ -2361,14 +2433,14 @@ C     collect up the data from subdomains if running in parallel
 
          NPX = NP_G
          NEX = NE_G
-         PRINT *, "write_output: NPX - 1", NPX
-         PRINT *, "write_output: NEX - 1", NEX
+!         PRINT *, "write_output: NPX - 1", NPX
+!         PRINT *, "write_output: NEX - 1", NEX
 
          if (MNPROC == 1 .or. WRITE_LOCAL_HOT_START_FILES) THEN
             NPX = NP
             NEX = NE
-            PRINT *, "write_output: NPX - 2", NPX
-            PRINT *, "write_output: NEX - 2", NEX
+!            PRINT *, "write_output: NPX - 2", NPX
+!            PRINT *, "write_output: NEX - 2", NEX
          endif
 
       IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
@@ -2378,48 +2450,48 @@ C     collect up the data from subdomains if running in parallel
           print *, FileFmtVersion
           WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion 
           IHOTSTP = IHOTSTP + 1
-          print *, IM
+!          print *, IM
           WRITE(hss % lun,REC=IHOTSTP) IM   ; IHOTSTP = IHOTSTP + 1
-          print *, TIME
+!          print *, TIME
           WRITE(hss % lun,REC=IHOTSTP) TIME ; IHOTSTP = IHOTSTP + 1
-          print *, IT
+!          print *, IT
           WRITE(hss % lun,REC=IHOTSTP) IT   ; IHOTSTP = IHOTSTP + 1
-          print *, NPX
+!          print *, NPX
           WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
-          print *, NEX
+!          print *, NEX
           WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
-          print *, NPX
+!          print *, NPX
           WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
-          print *, NEX
+!          print *, NEX
           WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
           
-          PRINT *,"========================before bin=================="
-                    PRINT *, "==== write_output: IM = ", IM
-          PRINT *, "==== write_output: TIME = ", TIME
-          PRINT *, "==== write_output: IM = ", IT
-          PRINT *, "==== write_output: NPX = ", NPX
-          PRINT *, "==== write_output: NEX = ", NEX
-          PRINT *, "==== write_output: IESTP = ", IESTP
-          PRINT *, "==== write_output: NSCOUE = ", NSCOUE
-          PRINT *, "==== write_output: IVSTP = ", IVSTP
-          PRINT *, "==== write_output: NSCOUV = ", NSCOUV
-          PRINT *, "==== write_output: ICSTP = ", ICSTP
-          PRINT *, "==== write_output: NSCOUC = ", NSCOUC
-          PRINT *, "==== write_output: IPSTP = ", IPSTP
-
-          PRINT *, "==== write_output: IWSTP = ", IWSTP
-          PRINT *, "==== write_output: NSCOUM = ", NSCOUM
-          PRINT *, "==== write_output: IGEP = ", IGEP
-          PRINT *, "==== write_output: NSCOUGE = ", NSCOUGE
-          PRINT *, "==== write_output: IGVP = ", IGVP
-
-          PRINT *, "==== write_output: NSCOUGV = ", NSCOUGV
-          PRINT *, "==== write_output: IGCP = ", IGCP
-          PRINT *, "==== write_output: NSCOUGC = ", NSCOUGC
-          PRINT *, "==== write_output: IGPP = ", IGPP
-          PRINT *, "==== write_output: IGWP = ", IGWP
-          PRINT *, "==== write_output: NSCOUGW = ", NSCOUGW
-          PRINT *,"========================before bin=================="
+!          PRINT *,"========================before bin=================="
+!          PRINT *, "==== write_output: IM = ", IM
+!          PRINT *, "==== write_output: TIME = ", TIME
+!          PRINT *, "==== write_output: IM = ", IT
+!          PRINT *, "==== write_output: NPX = ", NPX
+!          PRINT *, "==== write_output: NEX = ", NEX
+!          PRINT *, "==== write_output: IESTP = ", IESTP
+!          PRINT *, "==== write_output: NSCOUE = ", NSCOUE
+!          PRINT *, "==== write_output: IVSTP = ", IVSTP
+!          PRINT *, "==== write_output: NSCOUV = ", NSCOUV
+!          PRINT *, "==== write_output: ICSTP = ", ICSTP
+!          PRINT *, "==== write_output: NSCOUC = ", NSCOUC
+!          PRINT *, "==== write_output: IPSTP = ", IPSTP
+!
+!          PRINT *, "==== write_output: IWSTP = ", IWSTP
+!          PRINT *, "==== write_output: NSCOUM = ", NSCOUM
+!          PRINT *, "==== write_output: IGEP = ", IGEP
+!          PRINT *, "==== write_output: NSCOUGE = ", NSCOUGE
+!          PRINT *, "==== write_output: IGVP = ", IGVP
+!
+!          PRINT *, "==== write_output: NSCOUGV = ", NSCOUGV
+!          PRINT *, "==== write_output: IGCP = ", IGCP
+!          PRINT *, "==== write_output: NSCOUGC = ", NSCOUGC
+!          PRINT *, "==== write_output: IGPP = ", IGPP
+!          PRINT *, "==== write_output: IGWP = ", IGWP
+!          PRINT *, "==== write_output: NSCOUGW = ", NSCOUGW
+!          PRINT *,"========================before bin=================="
       
 #ifdef CMPI
           DO I=1, NP_G
@@ -2533,33 +2605,33 @@ C     collect up the data from subdomains if running in parallel
          WRITE(hss % lun,REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
          WRITE(hss % lun,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
        
-          PRINT *,"========================before bin=================="
-          PRINT *, "==== write_output: IM = ", IM
-          PRINT *, "==== write_output: TIME = ", TIME
-          PRINT *, "==== write_output: IM = ", IT
-          PRINT *, "==== write_output: NPX = ", NPX
-          PRINT *, "==== write_output: NEX = ", NEX
-          PRINT *, "==== write_output: IESTP = ", IESTP
-          PRINT *, "==== write_output: NSCOUE = ", NSCOUE
-          PRINT *, "==== write_output: IVSTP = ", IVSTP
-          PRINT *, "==== write_output: NSCOUV = ", NSCOUV
-          PRINT *, "==== write_output: ICSTP = ", ICSTP
-          PRINT *, "==== write_output: NSCOUC = ", NSCOUC
-          PRINT *, "==== write_output: IPSTP = ", IPSTP
+!          PRINT *,"========================before bin=================="
+!          PRINT *, "==== write_output: IM = ", IM
+!          PRINT *, "==== write_output: TIME = ", TIME
+!          PRINT *, "==== write_output: IM = ", IT
+!          PRINT *, "==== write_output: NPX = ", NPX
+!          PRINT *, "==== write_output: NEX = ", NEX
+!          PRINT *, "==== write_output: IESTP = ", IESTP
+!          PRINT *, "==== write_output: NSCOUE = ", NSCOUE
+!          PRINT *, "==== write_output: IVSTP = ", IVSTP
+!          PRINT *, "==== write_output: NSCOUV = ", NSCOUV
+!          PRINT *, "==== write_output: ICSTP = ", ICSTP
+!          PRINT *, "==== write_output: NSCOUC = ", NSCOUC
+!          PRINT *, "==== write_output: IPSTP = ", IPSTP
+!
+!          PRINT *, "==== write_output: IWSTP = ", IWSTP
+!          PRINT *, "==== write_output: NSCOUM = ", NSCOUM
+!          PRINT *, "==== write_output: IGEP = ", IGEP
+!          PRINT *, "==== write_output: NSCOUGE = ", NSCOUGE
+!          PRINT *, "==== write_output: IGVP = ", IGVP
 
-          PRINT *, "==== write_output: IWSTP = ", IWSTP
-          PRINT *, "==== write_output: NSCOUM = ", NSCOUM
-          PRINT *, "==== write_output: IGEP = ", IGEP
-          PRINT *, "==== write_output: NSCOUGE = ", NSCOUGE
-          PRINT *, "==== write_output: IGVP = ", IGVP
-
-          PRINT *, "==== write_output: NSCOUGV = ", NSCOUGV
-          PRINT *, "==== write_output: IGCP = ", IGCP
-          PRINT *, "==== write_output: NSCOUGC = ", NSCOUGC
-          PRINT *, "==== write_output: IGPP = ", IGPP
-          PRINT *, "==== write_output: IGWP = ", IGWP
-          PRINT *, "==== write_output: NSCOUGW = ", NSCOUGW
-          PRINT *,"========================after bin==================="
+!          PRINT *, "==== write_output: NSCOUGV = ", NSCOUGV
+!          PRINT *, "==== write_output: IGCP = ", IGCP
+!          PRINT *, "==== write_output: NSCOUGC = ", NSCOUGC
+!          PRINT *, "==== write_output: IGPP = ", IGPP
+!          PRINT *, "==== write_output: IGWP = ", IGWP
+!          PRINT *, "==== write_output: NSCOUGW = ", NSCOUGW
+!          PRINT *,"========================after bin==================="
           
        ENDIF
 
@@ -2622,24 +2694,25 @@ C
          write(16,*) 'NetCDF Hotstart undergoing testing.'
 
 #ifdef NETCDF
-C   Start Addition for netCDF by MCF 4/8/08
-!      num_records=npx
+C
+C     START ADDITIONS FOR NETCDF by MCF 4/8/08
+C
 
-!#ifdef NETCDF
-C
-C     START ADDITIONS FOR NETCDF by MCF
-C
       IF (MNPROC.gt.1) ncmode=2
       IF (MNPROC.eq.1) ncmode=1
+      
+      IF (ncmode.eq.1.or. (ncmode.eq.2. and.MYPROC.eq. 0)) THEN
+      
          NPX = NP_G
          NEX = NE_G
 
-      PRINT *, "ncmode = ", ncmode
+!        PRINT *, "ncmode = ", ncmode
+
       
          timenc_len=1
          IF(.NOT. ALLOCATED(timenc)) ALLOCATE(timenc(timenc_len))
          timenc(timenc_len)=time
-      PRINT *, "time = ", time
+!        PRINT *, "time = ", time
 C
 C     FINISH ADDITIONS FOR NETCDF by MCF
 C
@@ -2649,7 +2722,7 @@ C
        IF (MNPROC.gt.1) num_records = NP_G   ! parallel
        IF (MNPROC.eq.1) num_records = NP ! serial
 
-      PRINT *, "num_records = ", num_records
+!      PRINT *, "num_records = ", num_records
 
       IF(.NOT.ALLOCATED(eta11))ALLOCATE (eta11(num_records,timenc_len))
 
@@ -2665,8 +2738,8 @@ C
 !                   PRINT *,i,"  Serial ETA11 = ", ETA11(i, timenc_len)
                ENDIF
             END DO
-            IF ( MNPROC.eq.1.or.(MNPROC.gt.1.and.MyProc.eq.0) ) 
-     &           PRINT *,"  ETA11 = ", ETA11(11, timenc_len)
+!            IF ( MNPROC.eq.1.or.(MNPROC.gt.1.and.MyProc.eq.0) ) 
+!     &           PRINT *,"  ETA11 = ", ETA11(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
 #endif
 
@@ -2682,7 +2755,7 @@ C   Start Addition for netCDF by MCF 4/8/08
 !                   PRINT *,i,"  ETA22 = ", ETA22(i, timenc_len)
               ENDIF
             END DO
-        IF ( (MyProc.eq.0) ) PRINT *,"  ETA22 = ", ETA22(11, timenc_len)
+!        IF ( (MyProc.eq.0) ) PRINT *,"  ETA22 = ", ETA22(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
 #endif
 
@@ -2698,7 +2771,7 @@ C   Start Addition for netCDF by MCF 4/8/08
 !                   PRINT *,i,"  ETADD = ", ETADD(i, timenc_len)
               ENDIF
             END DO
-        IF ( (MyProc.eq.0) ) PRINT *,"  ETADD = ", ETADD(11, timenc_len)
+!        IF ( (MyProc.eq.0) ) PRINT *,"  ETADD = ", ETADD(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
 #endif
 
@@ -2714,7 +2787,7 @@ C   Start Addition for netCDF by MCF 4/8/08
 !                   PRINT *,i,"  uu22 = ", uu22(i, timenc_len)
               ENDIF
             END DO
-        IF ( (MyProc.eq.0) ) PRINT *,"  uu22 = ", uu22(11, timenc_len)
+!        IF ( (MyProc.eq.0) ) PRINT *,"  uu22 = ", uu22(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
 #endif         
 #ifdef NETCDF
@@ -2729,23 +2802,24 @@ C   Start Addition for netCDF by MCF 4/8/08
 !                   PRINT *,i,"  vv22 = ", vv22(i, timenc_len)
               ENDIF
             END DO
-        IF ( (MyProc.eq.0) ) PRINT *,"  vv22 = ", vv22(11, timenc_len)
+!        IF ( (MyProc.eq.0) ) PRINT *,"  vv22 = ", vv22(11, timenc_len)
 C   End Addition for netCDF by MCF 4/8/08
 #endif 
 #ifdef NETCDF     
 C   Start Addition for netCDF by MCF 4/8/08
       num_records=np_g
       IF(.NOT.ALLOCATED(nodecodenc))ALLOCATE (nodecodenc(num_records))
-
+!      IF (MNPROC.gt.1.and.MyProc.eq.0 )PRINT *,'num_records',num_records
             DO I=1, num_records
                IF (MNPROC.gt.1.and.MyProc.eq.0 ) THEN                                     ! parallel
-                   nodecodenc(i) = NodeCodeDescript % iarray_g(i)
+                   nodecodenc(i) = NodeCodeDescript % iarray_g(i)     
+!                      PRINT *,i,"  nodecodenc = ", nodecodenc(i)
               ELSE IF (MNPROC.eq.1) THEN                                ! serial
                    nodecodenc(i) = NodeCodeDescript % iarray(i)
 !                   PRINT *,i,"  nodecodenc = ", nodecodenc(i)
               ENDIF
             END DO
-        IF ( (MyProc.eq.0) ) PRINT *,"  nodecodenc = ", nodecodenc(11)
+!        IF ( (MyProc.eq.0) ) PRINT *,"  nodecodenc = ", nodecodenc(11)
 C   End Addition for netCDF by MCF 4/8/08
 #endif
         
@@ -2758,36 +2832,39 @@ C   Start Addition for netCDF by MCF 4/8/08
        IF (MNPROC.eq.1) num_recordse = NE ! serial
 
       IF(.NOT.ALLOCATED(noffnc))ALLOCATE (noffnc(num_recordse))
+!      IF (MNPROC.gt.1.and.MyProc.eq.0 )
+!     . PRINT *,'wo: num_recordse',num_recordse
 
             DO I=1, num_recordse
               IF (MNPROC.gt.1.and.MyProc.eq.0) THEN                     ! parallel
                     noffnc(i) = NOFFDescript % iarray_g(i)
                     noffnc(i)=min(noffnc(i),1)                          ! noff ranges from 0 to 1
+!                    PRINT *,i,"  noffnc = ", noffnc(i)
               ELSE IF (MNPROC.eq.1) THEN                                ! serial
                     noffnc(i) = NOFFDescript % iarray(i)
-!                   PRINT *,i,"  noffnc = ", noffnc(i)
               ENDIF
             END DO
-        IF ( (MyProc.eq.0) ) PRINT *,"  noffnc = ", noffnc(11)
+!        IF ( (MyProc.eq.0) ) PRINT *,"  noffnc = ", noffnc(11)
 C   End Addition for netCDF by MCF 4/8/08
 #endif
 C
 C    ADDITION OF netCDF Hostart file 67.nc and 68.nc by MCF 4/8/08
 C
 #ifdef NETCDF
-        IF ( (MyProc.eq.0) ) PRINT *,"  write output ncmode = ", ncmode
+!        IF ( (MyProc.eq.0) ) PRINT *,"  write output ncmode = ", ncmode
             IF(.NOT. ALLOCATED(xnc)) ALLOCATE(xnc(num_records))
             IF(.NOT. ALLOCATED(ync)) ALLOCATE(ync(num_records))
             IF(.NOT. ALLOCATED(nbvvnc)) ALLOCATE(nbvvnc(nbou,nvel))
             IF(.NOT. ALLOCATED(nvellnc)) ALLOCATE(nvellnc(nbou))
             IF(.NOT. ALLOCATED(nvdllnc)) ALLOCATE(nvdllnc(nope))
             IF(.NOT. ALLOCATED(ibtypenc)) ALLOCATE(ibtypenc(nbou))
-         if (ncmode.eq.2) then
-            IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
-            IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
-         endif
+!         if (ncmode.eq.2) then
+!            if(myproc.eq.0) PRINT *,"wo: allocate nopenc"
+!            IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
+!            IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
+!         endif
         IF (ncmode.eq.1) THEN                                           ! serial
-        IF ( (MyProc.eq.0) ) PRINT *,"  arrays allocated = "
+!        IF ( (MyProc.eq.0) ) PRINT *,"  arrays allocated = "
 
 
             IF(ICS.EQ.2) THEN
@@ -2802,10 +2879,11 @@ C
                END DO
             ENDIF
 
+          ENDIF                                                         ! end serial
 !
 !            elevation specified boundary forcing segments
 !
-        IF ((MyProc.eq.0))PRINT *," write output: elevation specified "
+!        IF ((MyProc.eq.0))PRINT *," write output: elevation specified "
                netanc=0
                DO i=1,nope
                   nvdllnc(i)=nvdll(i)
@@ -2816,7 +2894,7 @@ C
               END DO
 
              IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
-      IF ( (MyProc.eq.0) ) PRINT *," write output: nopenc "
+!      IF ( (MyProc.eq.0) ) PRINT *," write output: nopenc "
 
                k=0
                   DO i=1,nope
@@ -2828,7 +2906,7 @@ C
 !
 !              normal flow (discharge) specified boundary segments
 !
-        IF ((MyProc.eq.0))PRINT *," write output: normal flow  "
+!        IF ((MyProc.eq.0))PRINT *," write output: normal flow  "
                nvelnc=0
                DO i=1,nbou
                   nvellnc(i)=nvell(i)
@@ -2838,7 +2916,7 @@ C
                  END DO
                END DO
 
-        IF ((MyProc.eq.0))PRINT *," write output: nbounc  "
+!        IF ((MyProc.eq.0))PRINT *," write output: nbounc  "
         
             IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
 
@@ -2850,49 +2928,96 @@ C
                      END DO
                   END DO
 
-          ENDIF                                                         ! end serial
-       IF (ncmode.eq.1. or. MYPROC == 0) THEN
-       
-          PRINT *,"========================net===================="
-          PRINT *,"FileFmtMajor, FileFmtMinor, FileFmtRev",
-     &             FileFmtMajor, FileFmtMinor, FileFmtRev
+!       IF (ncmode.eq.1. or. MYPROC == 0) THEN
+!       
+!          PRINT *,"========================net===================="
+!          PRINT *,"FileFmtMajor, FileFmtMinor, FileFmtRev",
+!     &             FileFmtMajor, FileFmtMinor, FileFmtRev
 !          PRINT *,"FileFmtVersion = ",FileFmtVersion
-          PRINT *, "==== write_output: IM = ", IM
-          PRINT *, "==== write_output: TIME = ", TIME
-          PRINT *, "==== write_output: IM = ", IT
-          PRINT *, "==== write_output: NPX = ", NPX
-          PRINT *, "==== write_output: NEX = ", NEX
-          PRINT *, "==== write_output: IESTP = ", IESTP
-          PRINT *, "==== write_output: NSCOUE = ", NSCOUE
-          PRINT *, "==== write_output: IVSTP = ", IVSTP
-          PRINT *, "==== write_output: NSCOUV = ", NSCOUV
-          PRINT *, "==== write_output: ICSTP = ", ICSTP
-          PRINT *, "==== write_output: NSCOUC = ", NSCOUC
-          PRINT *, "==== write_output: IPSTP = ", IPSTP
+!          PRINT *, "==== write_output: IM = ", IM
+!          PRINT *, "==== write_output: TIME = ", TIME
+!          PRINT *, "==== write_output: IM = ", IT
+!          PRINT *, "==== write_output: NPX = ", NPX
+!          PRINT *, "==== write_output: NEX = ", NEX
+!          PRINT *, "==== write_output: IESTP = ", IESTP
+!          PRINT *, "==== write_output: NSCOUE = ", NSCOUE
+!          PRINT *, "==== write_output: IVSTP = ", IVSTP
+!          PRINT *, "==== write_output: NSCOUV = ", NSCOUV
+!          PRINT *, "==== write_output: ICSTP = ", ICSTP
+!          PRINT *, "==== write_output: NSCOUC = ", NSCOUC
+!          PRINT *, "==== write_output: IPSTP = ", IPSTP
+!
+!          PRINT *, "==== write_output: IWSTP = ", IWSTP
+!          PRINT *, "==== write_output: NSCOUM = ", NSCOUM
+!          PRINT *, "==== write_output: IGEP = ", IGEP
+!          PRINT *, "==== write_output: NSCOUGE = ", NSCOUGE
+!          PRINT *, "==== write_output: IGVP = ", IGVP
+!
+!          PRINT *, "==== write_output: NSCOUGV = ", NSCOUGV
+!          PRINT *, "==== write_output: IGCP = ", IGCP
+!          PRINT *, "==== write_output: NSCOUGC = ", NSCOUGC
+!          PRINT *, "==== write_output: IGPP = ", IGPP
+!          PRINT *, "==== write_output: IGWP = ", IGWP
+!          PRINT *, "==== write_output: NSCOUGW = ", NSCOUGW
+!          PRINT *,"========================net===================="
+!          
+!       ENDIF
 
-          PRINT *, "==== write_output: IWSTP = ", IWSTP
-          PRINT *, "==== write_output: NSCOUM = ", NSCOUM
-          PRINT *, "==== write_output: IGEP = ", IGEP
-          PRINT *, "==== write_output: NSCOUGE = ", NSCOUGE
-          PRINT *, "==== write_output: IGVP = ", IGVP
+!     &                    iestp,nscoue,ivstp,nscouv, icstp,
+!     &                    nscouc, ipstp, iwstp, nscoum, 
+!     &                    igep, nscouge, igvp, nscougv, 
+!     &                    igcp, nscougc, igpp, igwp,
+!     &                    nscougw,
 
-          PRINT *, "==== write_output: NSCOUGV = ", NSCOUGV
-          PRINT *, "==== write_output: IGCP = ", IGCP
-          PRINT *, "==== write_output: NSCOUGC = ", NSCOUGC
-          PRINT *, "==== write_output: IGPP = ", IGPP
-          PRINT *, "==== write_output: IGWP = ", IGWP
-          PRINT *, "==== write_output: NSCOUGW = ", NSCOUGW
-          PRINT *,"========================net===================="
-          
-       ENDIF
-       
-          call writenc67 (nhsinc,abs(hss % lun),timenc_len,npx,timenc,
+!      Note that: igcp,nscougc,nscouc,icstp are not yet supported in netCDF
+!      IF((myproc.eq.0.and.ncmode.eq.2).or.ncmode.eq.1) THEN
+!         WRITE(6,*)"wo: - BEF 67 NPX = ",NPX," NEX = ",NEX
+!         do i=1, 10
+!             PRINT *, i, "wo: z1 z2 = ", eta11(i,1),eta22(i,1)
+!         end do
+!         do i=1, 10
+!             PRINT *, i, "wo: uu22 = ", uu22(i,1)
+!         end do
+!         do i=1, 10
+!             PRINT *, i, "wo: vv22 = ", vv22(i,1)
+!         end do
+!         do i=1, 10
+!             PRINT *, i, "wo: nodecodenc = ", nodecodenc(i)
+!         end do
+!         do i=1, 10
+!            PRINT *, i, " wo: noffnc = ", noffnc(i)
+!         end do
+!      ENDIF
+!      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+!         WRITE(678,*)"nt = ",nt
+!         DO I=1,npx
+!            WRITE(678,*) "Store zeta1 ", i, eta11(i,1)
+!         END DO
+!         DO I=1,npx
+!            WRITE(678,*) "Store zeta2 ", i, eta22(i,1)
+!         END DO
+!         DO I=1,npx
+!            WRITE(678,*) "Store u ",i, uu22(i,1)
+!         END DO
+!         DO I=1,npx
+!            WRITE(678,*) "Store v ",i, vv22(i,1)
+!         END DO
+!         DO I=1,npx
+!            WRITE(678,*) "Store nodecodenc ", i, nodecodenc(i)
+!         END DO
+!         DO I=1,nex
+!            WRITE(678,*) "Store noffnc ", i, noffnc(i)
+!         END DO
+!      ENDIF
+          call writenc67 (nhstar,abs(hss % lun),timenc_len,npx,timenc,
      &                    nt, nhsinc, uu22,vv22,
      &                    eta11, eta22, etadd, nodecodenc,noffnc,
-     &                    imhs, it,iestp,nscoue,ivstp,nscouv, icstp,
-     &                    nscouc, ipstp, iwstp, nscoum, igep, nscouge,
-     &                    igvp, nscougv, igcp, nscougc, igpp, igwp,
-     &                    nscougw,
+     &                    imhs, it,
+     &                    nciestp,nccoue,ncivstp,nccouv, icstp,
+     &                    nscouc, ncipstp, nciwstp, nccoum, 
+     &                    ncigep, nccouge, ncigvp, nccougv, 
+     &                    igcp, nscougc, ncigpp, ncigwp,
+     &                    nccougw,
      &                    rundes, runid, agrid, irtype,
      &                    dtdp, ihot, ics, nolibf, nolifa,
      &                    nolica, nolicat, nwp,
@@ -2911,6 +3036,51 @@ C
      &                    title, institution, source, history,
      &                    references, comments, host, convention, 
      &                    contact, base_date)
+
+
+!      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
+!         WRITE(677,*)"nt = ",nt
+!         DO I=1,npx
+!            WRITE(677,*) "Store zeta1 ", i, eta11(i,1)
+!         END DO
+!         DO I=1,npx
+!            WRITE(677,*) "Store zeta2 ", i, eta22(i,1)
+!         END DO
+!         DO I=1,npx
+!            WRITE(677,*) "Store u ",i, uu22(i,1)
+!         END DO
+!         DO I=1,npx
+!            WRITE(677,*) "Store v ",i, vv22(i,1)
+!         END DO
+!         DO I=1,npx
+!            WRITE(677,*) "Store nodecodenc ", i, nodecodenc(i)
+!         END DO
+!         DO I=1,nex
+!            WRITE(677,*) "Store noffnc ", i, noffnc(i)
+!         END DO
+!      ENDIF
+
+!      IF((myproc.eq.0.and.ncmode.eq.2).or.ncmode.eq.1) THEN
+!         WRITE(6,*)"wo: - AFTER 67 NPX = ",NPX," NEX = ",NEX
+!         do i=1, 5
+!            PRINT *, i, "wo: z1 z2 = ", eta11(i,1),eta22(i,1)
+!         end do
+!         do i=1, 5
+!            PRINT *, i, "wo: uu22 = ", uu22(i,1)
+!         end do
+!         do i=1, 5
+!            PRINT *, i, "wo: vv22 = ", vv22(i,1)
+!         end do
+!         do i=1, 5
+!            PRINT *, i, "wo: nodecodenc = ", nodecodenc(i)
+!         end do
+!         do i=1, 5
+!            PRINT *, i, " wo: noffnc = ", noffnc(i)
+!         end do
+!      ENDIF
+
+       ENDIF
+
 #endif
 
       CASE DEFAULT
