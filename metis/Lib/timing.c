@@ -12,7 +12,7 @@
  *
  */
 
-#include <metis.h>
+#include "metis.h"
 #include <sys/time.h>
 #include <time.h>
 

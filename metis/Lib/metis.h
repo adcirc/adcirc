@@ -29,9 +29,9 @@
 #include <dmalloc.h>
 #endif
 
-#include <defs.h>
-#include <struct.h>
-#include <macros.h>
-#include <rename.h>
-#include <proto.h>
+#include "defs.h"
+#include "struct.h"
+#include "macros.h"
+#include "rename.h"
+#include "proto.h"
 

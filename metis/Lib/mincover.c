@@ -11,7 +11,7 @@
  * $Id: mincover.c,v 1.1.1.1 2003/01/23 17:21:06 estrade Exp $
  */
 
-#include <metis.h>
+#include "metis.h"
 
 /*************************************************************************
 * Constants used by mincover algorithm

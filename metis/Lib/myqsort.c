@@ -12,7 +12,7 @@
  * $Id: myqsort.c,v 1.1.1.1 2003/01/23 17:21:06 estrade Exp $
  */
 
-#include <metis.h>			/* only for type declarations */
+#include "metis.h"			/* only for type declarations */
 
 #define		THRESH		1	/* threshold for insertion */
 #define		MTHRESH		6	/* threshold for median */

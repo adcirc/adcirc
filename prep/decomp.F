@@ -129,18 +129,33 @@ C        then make it and its dual a local Weir-node pair
       IF (NWEIR.GT.0) THEN
         DO I=1, NPROC
            ITOT = 0
-           DO J = 1,NNODP(I)
-              CALL SEARCH(WEIR,NWEIR,IMAP_NOD_LG(J,I),INDEX)
-              IF (INDEX.NE.0) THEN
-                ITOT = ITOT+1
-                ITVECT(ITOT) = INDEX
-              ENDIF
-              CALL SEARCH(WEIRD,NWEIR,IMAP_NOD_LG(J,I),INDEX2)
-              IF (INDEX2.NE.0) THEN
-                ITOT = ITOT+1
-                ITVECT(ITOT) = INDEX2
+!
+! Seizo 2008.07.14
+        DO J = 1, NWEIR
+           INDEX = WEIR(J)
+           INDEX2= WEIRD(J)
+           DO K = 1, NNODP(I)
+              N1 = IMAP_NOD_LG(K,I)
+              IF( (N1 == INDEX) .or. (N1 == INDEX2) ) THEN
+                  ITOT = ITOT + 1
+                  ITVECT(ITOT) = J
+                  EXIT
               ENDIF
            ENDDO
+        ENDDO
+!
+!Seizo 2008.07.14          DO J = 1,NNODP(I)
+!Seizo 2008.07.14             CALL SEARCH(WEIR,NWEIR,IMAP_NOD_LG(J,I),INDEX)
+!Seizo 2008.07.14             IF (INDEX.NE.0) THEN
+!Seizo 2008.07.14               ITOT = ITOT+1
+!Seizo 2008.07.14               ITVECT(ITOT) = INDEX
+!Seizo 2008.07.14             ENDIF
+!Seizo 2008.07.14             CALL SEARCH(WEIRD,NWEIR,IMAP_NOD_LG(J,I),INDEX2)
+!Seizo 2008.07.14             IF (INDEX2.NE.0) THEN
+!Seizo 2008.07.14               ITOT = ITOT+1
+!Seizo 2008.07.14               ITVECT(ITOT) = INDEX2
+!Seizo 2008.07.14             ENDIF
+!Seizo 2008.07.14          ENDDO
            NWEIRP(I) = 0
            ITEMP = ITOT
            IF (ITOT.GT.VTMAX) stop 'step4 decomp'
@@ -500,18 +515,32 @@ C  Rule: if a global Weir node is assigned ( as resident or ghost node )
 C        then make it and its dual a local Weir-node pair
       IF (NWEIR.GT.0) THEN
         ITOT = 0
-        DO J = 1,NODES    
-           CALL SEARCH(WEIR,NWEIR,NODE_LG(J),INDEX)
-           IF (INDEX.NE.0) THEN
-             ITOT = ITOT+1
-             ITVECT(ITOT) = INDEX
-           ENDIF
-           CALL SEARCH(WEIRD,NWEIR,NODE_LG(J),INDEX2)
-           IF (INDEX2.NE.0) THEN
-             ITOT = ITOT+1
-             ITVECT(ITOT) = INDEX2
-           ENDIF
+! Seizo 2008.07.14
+        DO J = 1, NWEIR
+           INDEX = WEIR(J)
+           INDEX2= WEIRD(J)
+           DO K = 1, NODES
+              N1 = NODE_LG(K)
+              IF( (N1 == INDEX) .or. (N1 == INDEX2) ) THEN
+                  ITOT = ITOT + 1
+                  ITVECT(ITOT) = J
+                  EXIT
+              ENDIF
+           ENDDO
         ENDDO
+           
+!Seizo 2008.07.14       DO J = 1,NODES    
+!Seizo 2008.07.14          CALL SEARCH(WEIR,NWEIR,NODE_LG(J),INDEX)
+!Seizo 2008.07.14          IF (INDEX.NE.0) THEN
+!Seizo 2008.07.14            ITOT = ITOT+1
+!Seizo 2008.07.14            ITVECT(ITOT) = INDEX
+!Seizo 2008.07.14          ENDIF
+!Seizo 2008.07.14          CALL SEARCH(WEIRD,NWEIR,NODE_LG(J),INDEX2)
+!Seizo 2008.07.14          IF (INDEX2.NE.0) THEN
+!Seizo 2008.07.14            ITOT = ITOT+1
+!Seizo 2008.07.14            ITVECT(ITOT) = INDEX2
+!Seizo 2008.07.14          ENDIF
+!Seizo 2008.07.14       ENDDO
         NLWEIR  = 0
         ITEMP = ITOT
         IF (ITOT.GT.VTMAX) stop 'step4 decomp'

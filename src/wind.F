@@ -2142,7 +2142,7 @@ C     END Code executed on every call to this subroutine
 C     ----------------------------------------------------------
  10   format(8x,i4,i2,i2,i2,6x,a4,7x,i3,4x,i3,3x,i3,2x,i4,52x,i3)
  12   format(8x,i4,i2,i2,i2,6x,a4,2x,i3,2x,i3,4x,i3,3x,i3,2x,i4,52x,i3)
- 14   format(8x,i4,i2,i2,i2,6x,a4,2x,i3,2x,i3,4x,i3,3x,i3,2x,i4,47x,i3,
+ 14   format(8x,i4,i2,i2,i2,6x,a4,2x,i3,1x,i4,3x,i4,3x,i3,2x,i4,47x,i3,
      &     2x,i3)
  1000 FORMAT('ERROR: The Storm Hindcast/Forecast Input File (unit 22)')
  1021 FORMAT('contains invalid TECH identifier: ',A4,' on PROC=',I4)

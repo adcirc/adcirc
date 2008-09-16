@@ -3,6 +3,12 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.32     - 09/16/08 - jgf - Merged fix from C.Mattocks to include 
+C               directives in metis, e.g., <metis.h> to "metis.h".
+C               Fixed HollandGet so that lat is read in as four digits, thus 
+C               allowing storm locations west of 99.9W lon; integrated Seizo 
+C               fixes to decomp.F (mpi communication table) and in timestep.F
+C               (wet/dry checks along internal barriers). 
 C  v48.31     - 09/16/08 - mcf - added hotstart file format identifiers in 
 C               from version.F, modified netCDF metadata, added time counters 
 C               and record numbers for hotstart files, fixed netCDF hotstart 
@@ -10,7 +16,7 @@ C               flow for preprocessor, adcirc and padcirc.
 C  v48.30     - 08/29/08 - rjw - merged CD's mods for 3D wetting and Drying
 C  v48.29     - 08/07/08 - mcf - modified starting character counter in parser 
 C  v48.28     - 08/01/08 - mcf - included File Format Version parameters
-C               in netCDF hotstart files and changed FileFmtMinor to 2 to account
+C              in netCDF hotstart files and changed FileFmtMinor to 2 to account
 C               for the removal of an extra empty record in hotstart files
 C  v48.27     - 07/30/08 - mcf - corrected dt when writing initializing netCDF
 C               hotstart files in prep.F

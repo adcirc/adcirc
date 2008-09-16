@@ -12,7 +12,7 @@
  * $Id: compress.c,v 1.1.1.1 2003/01/23 17:21:05 estrade Exp $
  */
 
-#include <metis.h>
+#include "metis.h"
 
 /*************************************************************************
 * This function compresses a graph by merging identical vertices
