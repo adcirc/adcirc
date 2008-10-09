@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.33     -   /  /   - jgf - Added a check for negative central pressure
+C               deficit in Symmetric Holland code (NWS=8). Also fixed a bug
+C               introduced in the merge of Seizo's fix to internal barrier
+C               boundary handling in v48.32.
 C  v48.32     - 09/16/08 - jgf - Merged fix from C.Mattocks to include 
 C               directives in metis, e.g., <metis.h> to "metis.h".
 C               Fixed HollandGet so that lat is read in as four digits, thus 

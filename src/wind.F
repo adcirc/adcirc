@@ -1751,6 +1751,7 @@ C     ----------------------------------------------------------------
       REAL(SZ) :: TM, cpress, lon, lat, spd
       REAL(SZ) :: ts        ! storm translation speed, m/s
       REAL(SZ) :: WindMultiplier         ! for storm 2 in LPFS ensemble
+      REAL(SZ) :: centralPressureDeficit ! difference btw ambient and cpress
 C
       REAL(8), PARAMETER :: Ambient_Pressure=101300.d0      ! Pascals!!
       REAL(8), PARAMETER :: Coriolis=7.287588493541447D-05  ! 1/sec
@@ -1775,6 +1776,14 @@ C     Get data for this time step.
       CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,tvx,tvy,time,
      &     nscreen,screenunit)
 C
+C     Calculate and limit central pressure deficit; some track files
+C     (e.g., Charley 2004) may have a central pressure greater than the
+C     ambient pressure that this subroutine assumes
+      centralPressureDeficit = Ambient_pressure - cpress
+      IF ( centralPressureDeficit .lt. 100.d0 ) THEN
+         centralPressureDeficit = 100.d0
+      ENDIF
+C
 C     jgf46.29 Subtract the translational speed of the storm from the
 C     observed max wind speed to avoid distortion in the Holland curve
 C     fit. The translational speed will be added back later.
@@ -1788,7 +1797,7 @@ C     boundary layer (which is what the Holland curve fit requires).
 C
 C     Calculate Holland parameters and limit the result to its appropriate
 C     range.
-      B = Rho_Air*e*(spd**2.d0)/(Ambient_Pressure-cpress)
+      B = Rho_Air*e*(spd**2.d0)/(centralPressureDeficit)
       IF (B.lt.1.0d0) B=1.0d0
       IF (B.gt.2.5d0) B=2.5d0
 C
@@ -1816,7 +1825,7 @@ C     Calculate wind velocity and pressure at each node.
          RAD(I)=SQRT(DX(I)*DX(I)+DY(I)*DY(I))*100.d0*1000.d0 ! into meters!!
 C         PRESS(I)=(cpress+(Ambient_Pressure-cpress)*EXP(-A/RAD(I)**B))
 C    &        / (RHOWAT0*G) ! jgf46.32jgf4 commented out
-         PRESS(I)=(cpress+(Ambient_Pressure-cpress)*
+         PRESS(I)=(cpress+(centralPressureDeficit)*
      &        EXP(-(RMW*1000.d0/RAD(I))**B)) / (RHOWAT0*G)
 C         V_r(I) = sqrt(
 C     &        A*B*(Ambient_Pressure-cpress)*EXP(-A/RAD(I)**B)

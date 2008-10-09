@@ -1020,41 +1020,37 @@ C
          DO I=1,NP
             NIBNODECODE(I)=0
          END DO
-     IF(NFLUXIB.EQ.1) THEN
-         DO I=1,NP
-            NIBNODECODE(I)=0
-         END DO
-         I = 0                                                         !                            !Seizo 05/06/2008
-         NBOU_LOOP_K: DO K = 1, NBOU                                   !                            !Seizo 05/06/2008
-            IE = 1                                                     !                            !Seizo 05/06/2008
-            IF ( (LBCODEI(I+1)==4) .OR. (LBCODEI(I+1)==24)             !                            !Seizo 05/06/2008
-     &      .OR. (LBCODEI(I+1)==5) .OR. (LBCODEI(I+1)==25) ) then      !                            !Seizo 05/06/2008
-               IE = 2                                                  !                            !Seizo 05/06/2008
-            ENDIF                                                      !                            !Seizo 05/06/2008
-            IF( IE /= 2 ) then                                         !                            !Seizo 05/06/2008
-               I = I + NVELL(K)                                        !                            !Seizo 05/06/2008
-            ELSE                                                       !                            !Seizo 05/06/2008
-            NVELL_LOOP_J: DO J = 1, NVELL(K) * IE                      !                            !Seizo 05/06/2008
-               I = I + 1                                               !                            !Seizo 05/06/2008
+         I = 0                          !Seizo 05/06/2008
+         NBOU_LOOP_K: DO K = 1, NBOU    !Seizo 05/06/2008
+            IE = 1                      !Seizo 05/06/2008
+            IF ( (LBCODEI(I+1)==4) .OR. (LBCODEI(I+1)==24)        !Seizo 05/06/2008
+     &      .OR. (LBCODEI(I+1)==5) .OR. (LBCODEI(I+1)==25) ) then !Seizo 05/06/2008
+               IE = 2                   !Seizo 05/06/2008
+            ENDIF                       !Seizo 05/06/2008
+            IF( IE /= 2 ) then          !Seizo 05/06/2008
+               I = I + NVELL(K)         !Seizo 05/06/2008
+            ELSE                        !Seizo 05/06/2008
+            NVELL_LOOP_J: DO J = 1, NVELL(K) * IE   !Seizo 05/06/2008
+               I = I + 1                            !Seizo 05/06/2008
                NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
                NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
 #if 1
                NNBB1WN = 0      ! COUNT NUMBER OF WET NEIGHBORS sb46.28.sb05.05 11/01/2006
                NNBB2WN = 0      ! COUNT NUMBER OF WET NEIGHBORS sb46.28.sb05.05 11/01/2006
-               IF( (J==1).OR.(J==NVELL(K)+1) ) THEN                    !                            !Seizo 05/06/2008
+               IF( (J==1).OR.(J==NVELL(K)+1) ) THEN !Seizo 05/06/2008
                             NNBB1WN = NNBB1WN + NODECODE(NBV(I+1))     ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
                             NNBB2WN = NNBB2WN + NODECODE(IBCONN(I+1))  ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
-               ELSE                                                    !                            !Seizo 05/06/2008
+               ELSE                                 !Seizo 05/06/2008
                     IF( (J==NVELL(K)).OR.(J==NVELL(K)*IE) ) THEN       !                            !Seizo 05/06/2008
                             NNBB1WN = NNBB1WN + NODECODE(NBV(I-1))     ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
                             NNBB2WN = NNBB2WN + NODECODE(IBCONN(I-1))  ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
-                    ELSE                                               !                            !Seizo 05/06/2008
+                    ELSE                            !Seizo 05/06/2008
                             NNBB1WN = NNBB1WN + NODECODE(NBV(I-1))     ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
                             NNBB1WN = NNBB1WN + NODECODE(NBV(I+1))     ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
                             NNBB2WN = NNBB2WN + NODECODE(IBCONN(I+1))  ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
                             NNBB2WN = NNBB2WN + NODECODE(IBCONN(I-1))  ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
-                    ENDIF                                              !                            !Seizo 05/06/2008
-               ENDIF                                                   !                            !Seizo 05/06/2008
+                    ENDIF                           !Seizo 05/06/2008
+               ENDIF                                !Seizo 05/06/2008
 #endif
                IF(IBSTART.EQ.0)THEN
                   RBARWL1AVG(I)=ETA2(NNBB1)-BARINHT(I)
