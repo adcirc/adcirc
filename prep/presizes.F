@@ -532,7 +532,7 @@ C
       READ(15,*) NRAMP                              !SKIP OVER NRAMP
       READ(15,*) GRAVITY                            !SKIP OVER GRAVITY
       READ(15,*) TAU0                               !SKIP OVER TAU0
-      IF ( (TAU0.EQ.-3.d0).OR.(TAU0.EQ.-4.d0) ) THEN
+      IF ( (TAU0.LE.-5.d0).AND.(TAU0.GT.-6.d0) ) THEN
          READ(15,*) RDUM, RDUM                      !SKIP OVER TAU0 MIN AND MAX
       ENDIF 
       READ(15,*) DT                                 !SKIP OVER DT

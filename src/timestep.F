@@ -3257,7 +3257,8 @@ C
       USE ITPACKV
       USE NodalAttributes, ONLY : 
      &     LoadGeoidOffset, GeoidOffset, EVM, 
-     &     TAU0VAR, TimeVaryingTau0, CalculateTimeVaryingTau0
+     &     TAU0VAR, HighResTimeVaryingTau0, FullDomainTimeVaryingTau0,
+     &     CalculateTimeVaryingTau0
 #ifdef CMPI
       USE MESSENGER
 #endif
@@ -3341,7 +3342,9 @@ C.....Set up the LHS matrix (for the iterative matrix solver)
          ENDDO
 C
 C        jgf47.08 Moved time-varying tau0 subroutine to nodalattr.F
-         IF(C2DDI.AND.(TimeVaryingTau0))THEN
+         IF(C2DDI.AND.
+     &       ((FullDomainTimeVaryingTau0.or.HighResTimeVaryingTau0)))
+     &   THEN
             CALL CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
          ENDIF
 

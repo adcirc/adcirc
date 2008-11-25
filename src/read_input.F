@@ -1356,7 +1356,7 @@ C
 C     jgf47.11 Added a line to the fort.15 file to read in the min
 C     and max tau0 values, if the user has chosen to use the time
 C     varying tau0.
-      IF ( (Tau0.eq.-3.d0).or.(Tau0.eq.-4.d0) ) THEN
+      IF ( (Tau0.le.-5.d0).and.(Tau0.gt.-6.d0) ) THEN
         READ(15,*) Tau0FullDomainMin, Tau0FullDomainMax
       ENDIF
 C...  

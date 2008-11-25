@@ -2102,7 +2102,7 @@ C     jgfdebug46.02 Added check for NWS=45 to write NWS=5
          WRITE(15,80) GMSG
          WRITE(15,80) TAU0MSG
 C        jgf47.11 Added writing of limits for time varying tau0
-         IF ( (TAU0.eq.-3.d0).OR.(TAU0.eq.-4.d0) ) THEN
+         IF ( (TAU0.le.-5.d0).AND.(TAU0.gt.-6.d0) ) THEN
              WRITE(15,80) TAU0LIMMSG
          ENDIF
          WRITE(15,80) DTMSG

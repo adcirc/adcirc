@@ -3,10 +3,13 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
-C  v48.33     -   /  /   - jgf - Added a check for negative central pressure
+C  v48.33     - 11/25/08 - jgf - Added a check for negative central pressure
 C               deficit in Symmetric Holland code (NWS=8). Also fixed a bug
 C               introduced in the merge of Seizo's fix to internal barrier
-C               boundary handling in v48.32.
+C               boundary handling in v48.32. Reimplemented tau0base
+C               formulation  when TAU0=-3.0, moved fulldomain time
+C               varying TAU0 option to TAU0=-5.0 ... if tau0 output is
+C               desired, the corresponding options are -3.1 or -5.1.
 C  v48.32     - 09/16/08 - jgf - Merged fix from C.Mattocks to include 
 C               directives in metis, e.g., <metis.h> to "metis.h".
 C               Fixed HollandGet so that lat is read in as four digits, thus 

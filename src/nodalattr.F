@@ -179,11 +179,12 @@ C     Nodal attributes.
       REAL(SZ), ALLOCATABLE, TARGET :: TAU0VAR(:)! primitive equation weighting
 
 C     jjw&sb46.39.sb01: Base (original) primitive equation weighting. 
-C     Tau0Var may be optimized later based on Tau0Base and other info if 
-C     Tau0 value in Unit 15 is -3 or -4.
+C     Tau0Var may be optimized later based on Tau0Base 
       REAL(SZ), ALLOCATABLE :: TAU0BASE(:) 
 C     jgf47.06: Added variables to trigger calculations and output of tau0
-      LOGICAL :: TimeVaryingTau0 ! .true. if Tau0 == -3 or -4 in fort.15  
+C     jgf48.32: Added "FullDomain" or "High Res Areas Only" distinction
+      LOGICAL :: HighResTimeVaryingTau0    ! .true. if Tau0 == -3.x fort.15
+      LOGICAL :: FullDomainTimeVaryingTau0 ! .true. if Tau0 == -5.x in fort.15  
       LOGICAL :: OutputTau0      ! .true. if Tau0 == -4 in fort.15
       REAL(SZ), ALLOCATABLE :: Tau0Temp(:) ! used in time varying tau0
 
@@ -275,7 +276,8 @@ C
          Tau0DefVal = 0.0
       END DO
 C
-      TimeVaryingTau0     = .False.
+      HighResTimeVaryingTau0     = .False.
+      FullDomainTimeVaryingTau0  = .False.
       OutputTau0          = .False.
 C
       HBREAK=1.d0
@@ -816,6 +818,11 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: ScreenUnit ! i/o for debug info to screen
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
+      INTEGER Tau0Dig1  ! determines the tau0 scheme
+      INTEGER Tau0Dig2  ! determines whether tau0 is being output
+ 
+      Tau0Dig1 = Tau0   ! jgf47.30 truncate the fractional part
+      Tau0Dig2 = ( Tau0 - Tau0Dig1 ) * 10
 C
 C     ERROR CHECK: If a nodal attributes file is being used, check to
 C     see that the number of nodes in the nodal attribute file is the
@@ -844,6 +851,23 @@ C     from the nodal attributes file, NOLIBF must be 1.
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
          STOP                   ! We're toast.
       ENDIF
+
+C
+C     ERROR CHECK: If Tau0=-3.x in fort.15, then tau0 MUST be loaded
+C     from nodal attributes file.
+      IF ( (Tau0Dig1.eq.-3).and.(.not.LoadTau0) ) THEN
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9700) Tau0
+         WRITE(16,9700)
+ 9700    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
+     &        //,1X,'Spatially and temporally varying tau0 was '
+     &        /,1X,'specified in the fort.15 file with Tau0=',E4.2,
+     &        /,1X,'but the base value was not specified in the '
+     &        /,1X,'nodal attributes file (unit 13). Please ',
+     &        /,1X,'load the base value using',
+     &        /,1X,'primitive_weighting_in_continuity_equation.',
+     &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED!!!!!!',//)
+         STOP                   ! We're toast.
+      ENDIF
 C     
 C     I N I T    S T A R T D R Y
       IF (.not.LoadStartDry) THEN
@@ -857,7 +881,7 @@ C     I N I T    S T A R T D R Y
 C
 C     I N I T     T A U 0
       IF (NWP.eq.0) THEN
-         ALLOCATE(TAU0VAR(NP))
+         ALLOCATE(TAU0VAR(NP),TAU0BASE(NP))
          ALLOCATE(Tau0MinMax(NP,Tau0MinMaxNoOfVals))
       ENDIF
 C
@@ -886,7 +910,8 @@ C           based on depth
  62            FORMAT(/,5X,'IF DEPTH > 200           Tau0 = 0.005',    
      &              /,5X,'IF 200   > DEPTH > 1     Tau0 = 1/DEPTH  ',    
      &              /,5X,'IF 1     > DEPTH         Tau0 = 1.0 ')
-            ELSE
+            ENDIF
+            IF (.not.( (Tau0Dig1.eq.-3) .or. (Tau0Dig1.eq.-5) ) ) THEN
                WRITE(16,6) ! spatially vary tau0 according to hard coded scheme
                WRITE(16,61) ! description of scheme
  61            FORMAT(/,5X,' IF DEPTH GE 10           -> TAU0 = 0.005',    
@@ -914,11 +939,22 @@ C     according to one of the hard-coded tau0 schemes.
 C
 C     jgf47.06 Activate time varying tau0 and output tau0 if these options
 C     were selected.
+
+C     jgf48.32 Use Joannes' scheme for steady Tau0 in deep water and
+C     other coarsely gridded areas, and time varying Tau0 in high 
+C     resolution areas.
+      IF ( Tau0Dig1.eq.-3 ) THEN
+         HighResTimeVaryingTau0 = .True.
+         DO I=1, NP
+            Tau0Base(I) = Tau0Var(I)
+         ENDDO
+      ENDIF
 C
 C     jgf47.11 Also allow the min and max tau0 to be set from the fort.15,
 C     bypassing the use of the fort.13 file for this purpose.
-      IF ( (Tau0.eq.-3.d0).or.(Tau0.eq.-4.d0) ) THEN
-         TimeVaryingTau0 = .True.
+C     jgf48.32 Changed to emphasize full domain time varying tau0
+      IF ( Tau0Dig1.eq.-5 ) THEN
+         FullDomainTimeVaryingTau0 = .True.
          IF ( .not.LoadTau0MinMax ) THEN
             DO I=1, NP
                Tau0MinMax(I,1) = Tau0FullDomainMin
@@ -926,16 +962,18 @@ C     bypassing the use of the fort.13 file for this purpose.
             ENDDO
          ENDIF 
       ENDIF
-
-      IF ( Tau0.eq.-4.d0 ) THEN
-         OutputTau0 = .True. 
+C
+C     jgf48.32: Output of tau0 is now activated by having a 0.1 fraction
+C     for tau0
+      IF ( Tau0Dig2.eq.1 ) THEN
+         OutputTau0 = .True.
       ENDIF
 C
 C     jjw&sb46.38.sb01 If tau0 is loaded from nodal attributes file and 
 C     Tau0 is -3, time-varing tau0 optimizer will be applied in timestep.F
-      IF (TimeVaryingTau0) THEN
+      IF (HighResTimeVaryingTau0 .or. FullDomainTimeVaryingTau0) THEN
          ALLOCATE(Tau0Temp(NP))
-         WRITE(16,8)
+         WRITE(16,8) ! jgf48.32.TODO: This logging should be consolidated.
       ENDIF
  8    FORMAT(/,5X,'A SPATIALLY TEMPORALLY VARIABLE OPTIMIZED '
      &     ,/,5X,' WEIGHTING COEFFICIENT (Tau0) WILL BE USED '
@@ -1066,20 +1104,29 @@ C     ----------------------------------------------------------------
 
 Casey 050711 : Made changes for averaged variable Tau0.
 cjjw46.39.sb01 :  "high/low LIMITED" variable G.
-      DO i = 1, NP
-         Tau0Temp(i)=Tau0MinMax(i,1)+1.5*TK(i)
-         IF (Tau0Temp(i).lt.Tau0MinMax(i,1)) THEN
-            Tau0Temp(i)=Tau0MinMax(i,1)
-         ENDIF
-         IF(Tau0Temp(i).gt.Tau0MinMax(i,2)) THEN
-            Tau0Temp(i)=Tau0MinMax(i,2) 
-         ENDIF
-Cjjw 060918 : added low limit for values outside of SL
-C              jgf47.07 Commented out jjw's 2nd floor
-C         IF(TAU0BASE(I).LT.0.025)THEN
-C             TAU0VARTEMP(I)=TAU0BASE(I)
-C         ENDIF
-      ENDDO
+!jgf47.30: Distinction between fulldomain and hi res only
+      IF ( FullDomainTimeVaryingTau0 ) THEN
+         DO i = 1, NP
+            Tau0Temp(i)=Tau0MinMax(i,1)+1.5*TK(i)
+            IF (Tau0Temp(i).lt.Tau0MinMax(i,1)) THEN
+               Tau0Temp(i)=Tau0MinMax(i,1)
+            ENDIF
+            IF(Tau0Temp(i).gt.Tau0MinMax(i,2)) THEN
+               Tau0Temp(i)=Tau0MinMax(i,2)
+            ENDIF
+         ENDDO
+      ENDIF
+      IF ( HighResTimeVaryingTau0 ) THEN
+         DO i = 1, NP
+            IF(Tau0Base(i).lt.0.025) THEN
+               Tau0Temp(I)=Tau0Base(i) ! not time varying
+            ELSE
+               Tau0Temp(i)=Tau0Base(i)+1.5*TK(i) ! time varying
+               IF (Tau0Temp(i).gt.0.2) Tau0Temp(i)=0.2 ! ceiling
+            ENDIF
+         ENDDO
+      ENDIF
+      ! smoothing
       DO I=1,NP
          CaseySum = 0.0
          DO J=1,NNeigh(I)
