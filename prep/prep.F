@@ -5081,7 +5081,7 @@ C---------------------------------------------------------------------------
       CHARACTER(len=7) DefaultName! default name of full domain file
       INTEGER ErrorIO             ! zero if file opened successfully
       INTEGER iproc               ! subdomain index
-      CHARACTER(len=60) sdFileName     ! subdomain file name
+      CHARACTER(len=14) sdFileName     ! subdomain file name
       CHARACTER(len=4) skipstring ! indicates user wants to skip this file
 
       Found = .false.

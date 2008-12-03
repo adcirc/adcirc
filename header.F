@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.35     - 12/03/08 - jgf - Fixed a bug in adcprep that was causing 
+C               unprintable characters to appear in the names of
+C               subdomain fort.22 files on the IBM p5 platform.
 C  v48.34     - 12/02/08 - jgf - Fixed a bug in adcprep to look for
 C               tau0min and tau0max values in fort.15 if tau0 is less
 C               than -5.0 AND greater than -6.0. 
