@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v48.36     - 12/03/08 - jgf - Fixed a bug in PREP22 of adcprep,
+C               combined CASE(3,6) into CASE(8,9) b/c the approach of
+C               using the shell to copy files in CASE(3,6) had been
+C               commented out.
 C  v48.35     - 12/03/08 - jgf - Fixed a bug in adcprep that was causing 
 C               unprintable characters to appear in the names of
 C               subdomain fort.22 files on the IBM p5 platform.

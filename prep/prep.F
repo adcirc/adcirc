@@ -3026,52 +3026,6 @@ C     (3)  Write Local Wind Stress record in same format
             ENDDO
          ENDDO
 C
-C     ---------
-      CASE(3,6)
-C     ---------
-C     NWS=3 ( Naval Fleet Numeric Format ) or NWS=+-6 (generic)
-C     (1) Make a copy for each PE using the UNIX Sytem cp command
-C     Note: ISHELL is a wrapper defined in the file mach_dep.f
-C
-Cvjp--Close the Global and all Local files before the file copies
-C
-         write(*,*) "This option is not supported"
-         stop "not supported"
-
-#if 0
-         CLOSE(22)
-         DO IPROC=1, NPROC
-            CLOSE (SDU(IPROC))
-         ENDDO
-C
-C     If the default name is not used, must ask the user for the full
-C     domain file name again, since the subroutine OpenPrepFiles handled
-C     everything internally.
-         IF(USE_DEFAULT) THEN
-            FNAME='fort.22'
-            INQUIRE(FILE=FNAME,EXIST=FOUND)
-            IF(FOUND) GOTO 32
-            WRITE(*,1010) FNAME
-         ENDIF
- 31      WRITE(*,*) 
-     &        'Enter the name of the Global Wind Stress file again:'
-         READ(*,60) FNAME
-         INQUIRE(FILE=FNAME,EXIST=FOUND)
-         IF(FOUND) GOTO 32
-         WRITE(*,1010) FNAME
-         GOTO 31
- 32      WRITE(*,1011) FNAME
-C     
-         DO IPROC = 1,NPROC
-            CMD1(1:63) = 'cp '//FNAME          
-            CMD2(1:7) = ' PE0000'
-            CALL IWRITE(CMD2,4,7,IPROC-1)
-            CMD(1:70) = CMD1//CMD2
-!            CALL ISHELL(CMD)
-         ENDDO
-         GO TO 99  
-#endif
-C
 C     -------     
       CASE(4)
 C     -------
@@ -3131,9 +3085,14 @@ C
          ENDDO
 C     
 C     ---------     
-      CASE(8,9)
+      CASE(3,6,8,9)
 C     ---------
 C     jgf46.16 Added NWS=9, asymmetric hurricane wind model
+C
+C     jgf48.35 Moved NWS=3 and NWS=6 into this case, since it seems to 
+C     work better than calling the shell to copy the files. Although
+C     this approach seems to leave a lot of trailing spaces on each
+C     fort.22 line, at least on the IBM platform.
 C
 C     Holland Wind Model (8) or asymetric hurricane wind model (9)
 C
