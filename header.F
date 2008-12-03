@@ -3,7 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
-C  v48.34     - test
+C  v48.34     - 12/02/08 - jgf - Fixed a bug in adcprep to look for
+C               tau0min and tau0max values in fort.15 if tau0 is less
+C               than -5.0 AND greater than -6.0. 
 C  v48.33     - 11/25/08 - jgf - Added a check for negative central pressure
 C               deficit in Symmetric Holland code (NWS=8). Also fixed a bug
 C               introduced in the merge of Seizo's fix to internal barrier

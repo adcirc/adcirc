@@ -507,7 +507,7 @@ C     jgf47.11 Allow the limits of time varying tau0 to be read in from
 C     the fort.15 file
       READ(15,80) TAU0MSG
       READ(TAU0MSG,*) TAU0
-      IF ( (TAU0.LE.-5.d0).OR.(TAU0.GT.-6.d0) ) THEN
+      IF ( (TAU0.LE.-5.d0).AND.(TAU0.GT.-6.d0) ) THEN
          READ(15,80) TAU0LIMMSG
          READ(TAU0LIMMSG,*) Tau0FullDomainMin, Tau0FullDomainMax
       ENDIF
