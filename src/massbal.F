@@ -158,7 +158,9 @@
       IMPLICIT NONE
 
 #ifdef CMPI
+#ifndef HAVE_MPI_MOD
       INCLUDE 'mpif.h'
+#endif
 #endif
 
       INTRINSIC             :: ABS            ! Returns the absolute value of a number. 
