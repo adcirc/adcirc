@@ -6,7 +6,10 @@
      &  NE,
      &  NM,
      &  RESELEM,
-     &  X,Y
+     &  PI,DEG2RAD,
+     &  X,Y,SLAM0,SFEA0
+
+C    &  SLAM,SFEA
 
       USE SIZES, ONLY:
      &  MYPROC, SZ
@@ -26,44 +29,58 @@
       INTEGER               :: JunkI
       INTEGER               :: NumNodesGlobal
 
-      REAL(SZ), ALLOCATABLE :: GlobalX(:)
-      REAL(SZ), ALLOCATABLE :: GlobalY(:)
-      REAL(SZ)              :: Tol = 0.0001D0      
+      REAL(SZ), ALLOCATABLE :: GlobalX(:),GL_X(:)
+      REAL(SZ), ALLOCATABLE :: GlobalY(:),GL_Y(:)
+      REAL(SZ)              :: Tol = 0.001d0      
 
       OPEN(14,FILE='fort.14')
       READ(14,'(A)') JunkC
       READ(14,*) JunkI, NumNodesGlobal
-      ALLOCATE(GlobalX(1:NumNodesGlobal))
-      ALLOCATE(GlobalY(1:NumNodesGlobal))
+      ALLOCATE(GlobalX(1:NumNodesGlobal),GL_X(1:NumNodesGlobal))
+      ALLOCATE(GlobalY(1:NumNodesGlobal),GL_Y(1:NumNodesGlobal))
       DO I=1,NumNodesGlobal
          READ(14,*) JunkI, GlobalX(I), GlobalY(I)
+C.RJW    need to convert global node lat and lon into CPP projected units for comparison
+C...     with local node location x and y values
+            GlobalX(I)=DEG2RAD*GlobalX(I)
+            GlobalY(I)=DEG2RAD*GlobalY(I)
+
+         CALL CPP(GL_X(I),GL_Y(I),GlobalX(I),GlobalY(I),SLAM0,SFEA0)
       ENDDO
       CLOSE(14)
+       
 
       OPEN(80,FILE='partmesh.txt')
       ALLOCATE(Connectivity(1:NumNodesGlobal))
       DO I=1,NumNodesGlobal
          READ(80,*) Connectivity(I)
-         Connectivity(I) = Connectivity(I) - 1
+         Connectivity(I) = Connectivity(I) - 1  ! processors start with 000
       ENDDO
       CLOSE(80)
-
+        
       ALLOCATE(RESELEM(1:NE))
       DO I=1,NE
+C...RJW initialize variable
+         GlobalNode1=-999
+         GlobalNode2=-999
+         GlobalNode3=-999    
+
          DO J=1,NumNodesGlobal
-            IF((ABS(GlobalX(J)-X(NM(I,1))).LT.Tol).AND.
-     &         (ABS(GlobalY(J)-Y(NM(I,1))).LT.Tol))THEN
+
+            IF((ABS(GL_X(J)-X(NM(I,1))).LT.Tol).AND.
+     &         (ABS(GL_Y(J)-Y(NM(I,1))).LT.Tol))THEN
                 GlobalNode1 = J
             ENDIF
-            IF((ABS(GlobalX(J)-X(NM(I,2))).LT.Tol).AND.
-     &         (ABS(GlobalY(J)-Y(NM(I,2))).LT.Tol))THEN
+            IF((ABS(GL_X(J)-X(NM(I,2))).LT.Tol).AND.
+     &         (ABS(GL_Y(J)-Y(NM(I,2))).LT.Tol))THEN
                 GlobalNode2 = J
             ENDIF
-            IF((ABS(GlobalX(J)-X(NM(I,3))).LT.Tol).AND.
-     &         (ABS(GlobalY(J)-Y(NM(I,3))).LT.Tol))THEN
+            IF((ABS(GL_X(J)-X(NM(I,3))).LT.Tol).AND.
+     &         (ABS(GL_Y(J)-Y(NM(I,3))).LT.Tol))THEN
                 GlobalNode3 = J
             ENDIF
          ENDDO
+
          IF((Connectivity(GlobalNode1).EQ.MYPROC).AND.
      &      (Connectivity(GlobalNode2).EQ.MYPROC).AND.
      &      (Connectivity(GlobalNode3).EQ.MYPROC))THEN
@@ -120,8 +137,8 @@
       ENDDO
 
       DEALLOCATE(Connectivity)
-      DEALLOCATE(GlobalX)
-      DEALLOCATE(GlobalY)
+      DEALLOCATE(GlobalX,GL_X)
+      DEALLOCATE(GlobalY,GL_Y)
 
       RETURN
       END SUBROUTINE

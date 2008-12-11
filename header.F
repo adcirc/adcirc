@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.41     - 12/11/08 - rjw - fix massbal.F COMPUTE_RESELEM subroutine
+C               In order to compare the global to local locations 
+C               Global x and y need to be in converted units not in Lat and Lon
+C               use subroutine CPP to make conversion
 C  v48.40     - 12/11/08 - rjw - fix version number in version.F
 C  v48.39     - 12/11/08 - rjw - applied bug fixes in cstart.F and hstart.F 
 C               format statement, changed default il value to 2 in vsmy.F
