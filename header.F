@@ -2,6 +2,7 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.40     - 12/11/08 - rjw - fix version number in version.F
 C  v48.39     - 12/11/08 - rjw - applied bug fixes in cstart.F and hstart.F 
 C               format statement, changed default il value to 2 in vsmy.F
 C  v48.38     - 12/10/08 - jgf - Added #ifdef HAVE_MPI_MOD around mpif.h 
