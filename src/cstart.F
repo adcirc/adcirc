@@ -933,7 +933,8 @@ C...
 C...  Define format statements used to initialize 3D output files
 C...
  499  FORMAT(1X,A32,2X,A24,2X,A24)
- 498  FORMAT(1X,I10,1X,I10,1X,E15.7,I10,1X,I10,1X,I3/)
+C..RJW bug fix in 498 (kendra found this)
+ 498  FORMAT(1X,I10,1X,I10,1X,E15.7,I10,1X,I10,1X,I3)
  497  FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE ASCII')
  496  FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE BINARY')
 

@@ -2107,8 +2107,10 @@ c
 c     At time step 1, set flags and initialize variables
 c     
       if(istart.eq.1) then
-         il = 1  ! length scale flag, =1 for length scale from q2l eqn.
-         ibc = 0 ! surface b.c. flag, =0 for specified stress, =1 for no flux
+C.. RJW added as per Kendra reccomendation to algebraically compute length scale
+         il = 2  ! length scale flag, =  2 for length scale from algebraic eq. (see below)
+c         il = 1  ! length scale flag, = 1 for length scale from q2l eqn.
+         ibc = 0 ! surface b.c. flag, = 0 for specified stress, =1 for no flux
          if((nws.eq.0).or.(nws.eq.100)) ibc=1
 
 c     set constants and other parameters
