@@ -172,21 +172,33 @@ C     The following variables are inputs from the unit 15 model param. file
       REAL(SZ) BFCdLLimit ! lower limit of quadratic bottom friction
       REAL(SZ) Tau0FullDomainMin ! lower limit of tau0 if time varying
       REAL(SZ) Tau0FullDomainMax ! upper limit of tau0 if time varying
+C     jgf48.42 Used to control the back-loaded time averaged tau0
+      REAL(SZ), PARAMETER :: AlphaTau0 = 0.25d0 
 C
 C     Nodal attributes.
       REAL(SZ), ALLOCATABLE :: STARTDRY(:) ! 1=nodes below geoid initially dry
       REAL(SZ), ALLOCATABLE :: FRIC(:)     ! bottom friction coefficient
       REAL(SZ), ALLOCATABLE, TARGET :: TAU0VAR(:)! primitive equation weighting
-
-C     jjw&sb46.39.sb01: Base (original) primitive equation weighting. 
-C     Tau0Var may be optimized later based on Tau0Base 
-      REAL(SZ), ALLOCATABLE :: TAU0BASE(:) 
-C     jgf47.06: Added variables to trigger calculations and output of tau0
-C     jgf48.32: Added "FullDomain" or "High Res Areas Only" distinction
-      LOGICAL :: HighResTimeVaryingTau0    ! .true. if Tau0 == -3.x fort.15
-      LOGICAL :: FullDomainTimeVaryingTau0 ! .true. if Tau0 == -5.x in fort.15  
-      LOGICAL :: OutputTau0      ! .true. if Tau0 == -4 in fort.15
       REAL(SZ), ALLOCATABLE :: Tau0Temp(:) ! used in time varying tau0
+C     jjw&sb46.39.sb01: Base (original) primitive equation weighting. 
+C     Tau0Var may be optimized later based on Tau0Base
+      REAL(SZ), ALLOCATABLE :: TAU0BASE(:) 
+C     jgf47.33 Used for front-loaded time averaged tau0
+      REAL(SZ), ALLOCATABLE :: LastTau0(:)
+C     jgf48.42 Used for back-loading the time averaged tau0
+      REAL(SZ), ALLOCATABLE :: Tau0TMinus1(:)
+      REAL(SZ), ALLOCATABLE :: Tau0TMinus2(:)
+      REAL(SZ), ALLOCATABLE :: Tau0TMinus3(:)
+
+C     jgf47.06: Added variables to trigger calculations and output of tau0
+C     jgf47.30: Added "FullDomain" or "High Res Areas Only" distinction
+C     jgf47.31: Added time averaging to time varying tau0
+C     jgf48.42: Added backloaded time averaged tau0
+      LOGICAL :: HighResTimeVaryingTau0    ! .true. if Tau0 == -3.x in fort.15
+      LOGICAL :: FullDomainTimeVaryingTau0 ! .true. if Tau0 == -5.x in fort.15  
+      LOGICAL :: OutputTau0      ! .true. if Tau0Dig2 == -1 in fort.15
+      LOGICAL :: TimeAveragedTau0 ! .true. if Tau0 == -6.x in fort.15
+      LOGICAL :: BackLoadedTimeAveragedTau0 ! .true. if Tau0 == -7.x
 
       REAL(SZ), ALLOCATABLE :: z0land(:,:) ! directional wind speed red. fac.
       REAL(SZ), ALLOCATABLE :: vcanopy(:)  ! canopy coefficient
@@ -278,7 +290,9 @@ C
 C
       HighResTimeVaryingTau0     = .False.
       FullDomainTimeVaryingTau0  = .False.
-      OutputTau0          = .False.
+      OutputTau0                 = .False.
+      TimeAveragedTau0           = .False.
+      BackLoadedTimeAveragedTau0 = .False.
 C
       HBREAK=1.d0
       FTHETA=1.d0
@@ -820,10 +834,16 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
       INTEGER Tau0Dig1  ! determines the tau0 scheme
       INTEGER Tau0Dig2  ! determines whether tau0 is being output
- 
-      Tau0Dig1 = Tau0   ! jgf47.30 truncate the fractional part
-      Tau0Dig2 = ( Tau0 - Tau0Dig1 ) * 10
-C
+
+      IF (Tau0.lt.0) THEN
+         Tau0Dig1 = INT(Tau0)   ! jgf47.30 truncate the fractional part
+         !jgf47.34 round away from zero by subtracting 0.5d0 
+         Tau0Dig2 = INT( (Tau0 - REAL(Tau0Dig1))*10.0d0 - 0.5d0)
+      ELSE
+         Tau0Dig1 = 0
+         Tau0Dig2 = 0
+      ENDIF
+
 C     ERROR CHECK: If a nodal attributes file is being used, check to
 C     see that the number of nodes in the nodal attribute file is the
 C     same as the number of nodes in the grid file.
@@ -851,11 +871,11 @@ C     from the nodal attributes file, NOLIBF must be 1.
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
          STOP                   ! We're toast.
       ENDIF
-
 C
-C     ERROR CHECK: If Tau0=-3.x in fort.15, then tau0 MUST be loaded
+C     ERROR CHECK: If Tau0=-3.x or -6.x in fort.15, then tau0 MUST be loaded
 C     from nodal attributes file.
-      IF ( (Tau0Dig1.eq.-3).and.(.not.LoadTau0) ) THEN
+      IF ( ((Tau0Dig1.eq.-3).or.(Tau0Dig1.eq.-6))
+     &          .and.(.not.LoadTau0) ) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9700) Tau0
          WRITE(16,9700)
  9700    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
@@ -865,7 +885,7 @@ C     from nodal attributes file.
      &        /,1X,'nodal attributes file (unit 13). Please ',
      &        /,1X,'load the base value using',
      &        /,1X,'primitive_weighting_in_continuity_equation.',
-     &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED!!!!!!',//)
+     &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
          STOP                   ! We're toast.
       ENDIF
 C     
@@ -903,7 +923,7 @@ C           based on depth
             DO I=1,NP
                Tau0Var(I)=Tau0NodalValue(Tau0,DP(I))
             ENDDO
-            
+            ! jgf47.30.TODO: This logging needs to be cleaned up.  
             IF(Tau0.eq.-2) THEN
                WRITE(16,6) ! spatially vary tau0 according to hard coded scheme
                WRITE(16,62) ! description of scheme
@@ -940,10 +960,11 @@ C
 C     jgf47.06 Activate time varying tau0 and output tau0 if these options
 C     were selected.
 
-C     jgf48.32 Use Joannes' scheme for steady Tau0 in deep water and
+C     jgf47.30 Use Joannes' scheme for steady Tau0 in deep water and
 C     other coarsely gridded areas, and time varying Tau0 in high 
 C     resolution areas.
-      IF ( Tau0Dig1.eq.-3 ) THEN
+      IF ( (Tau0Dig1.eq.-3).or.(Tau0Dig1.eq.-6) 
+     &      .or. (Tau0Dig1.eq.-7) ) THEN
          HighResTimeVaryingTau0 = .True.
          DO I=1, NP
             Tau0Base(I) = Tau0Var(I)
@@ -952,7 +973,7 @@ C     resolution areas.
 C
 C     jgf47.11 Also allow the min and max tau0 to be set from the fort.15,
 C     bypassing the use of the fort.13 file for this purpose.
-C     jgf48.32 Changed to emphasize full domain time varying tau0
+C     jgf47.30 Changed to emphasize full domain time varying tau0
       IF ( Tau0Dig1.eq.-5 ) THEN
          FullDomainTimeVaryingTau0 = .True.
          IF ( .not.LoadTau0MinMax ) THEN
@@ -963,22 +984,43 @@ C     jgf48.32 Changed to emphasize full domain time varying tau0
          ENDIF 
       ENDIF
 C
-C     jgf48.32: Output of tau0 is now activated by having a 0.1 fraction
+C     jgf47.30: Output of tau0 is now activated by having a 0.1 fraction
 C     for tau0
-      IF ( Tau0Dig2.eq.1 ) THEN
-         OutputTau0 = .True.
+      IF ( Tau0Dig2.eq.-1 ) THEN
+         OutputTau0 = .True. 
       ENDIF
 C
 C     jjw&sb46.38.sb01 If tau0 is loaded from nodal attributes file and 
 C     Tau0 is -3, time-varing tau0 optimizer will be applied in timestep.F
       IF (HighResTimeVaryingTau0 .or. FullDomainTimeVaryingTau0) THEN
          ALLOCATE(Tau0Temp(NP))
-         WRITE(16,8) ! jgf48.32.TODO: This logging should be consolidated.
+         WRITE(16,8) ! jgf47.30.TODO: This logging should be consolidated.
       ENDIF
  8    FORMAT(/,5X,'A SPATIALLY TEMPORALLY VARIABLE OPTIMIZED '
      &     ,/,5X,' WEIGHTING COEFFICIENT (Tau0) WILL BE USED '
      &     ,/,5X,' IN THE GENERALIZED WAVE CONTINUITY EQUATION.',/)
-
+C
+C     jgf47.33 Enable time averaging of tau0 if requested. 
+      IF (Tau0Dig1.eq.-6) THEN
+         TimeAveragedTau0 = .true.
+         ALLOCATE(LastTau0(NP))
+         DO I=1, NP
+            LastTau0(I) = Tau0Base(I)
+         ENDDO
+      ENDIF
+C
+C     jgf48.42 Enable back loaded time averaging of tau0 if requested. 
+      IF (Tau0Dig1.eq.-7) THEN
+         BackLoadedTimeAveragedTau0 = .true.
+         ALLOCATE(Tau0TMinus1(NP))
+         ALLOCATE(Tau0TMinus2(NP))
+         ALLOCATE(Tau0TMinus3(NP))
+         DO I=1, NP
+            Tau0TMinus1(I) = Tau0Base(I)
+            Tau0TMinus2(I) = Tau0Base(I)
+            Tau0TMinus3(I) = Tau0Base(I)
+         ENDDO
+      ENDIF
 C
 C     I N I T   B O T T O M   F R I C T I O N
       IF(NOLIBF.EQ.0) THEN
@@ -1104,7 +1146,7 @@ C     ----------------------------------------------------------------
 
 Casey 050711 : Made changes for averaged variable Tau0.
 cjjw46.39.sb01 :  "high/low LIMITED" variable G.
-!jgf47.30: Distinction between fulldomain and hi res only
+      !jgf47.30: Distinction between fulldomain and hi res only
       IF ( FullDomainTimeVaryingTau0 ) THEN
          DO i = 1, NP
             Tau0Temp(i)=Tau0MinMax(i,1)+1.5*TK(i)
@@ -1112,7 +1154,7 @@ cjjw46.39.sb01 :  "high/low LIMITED" variable G.
                Tau0Temp(i)=Tau0MinMax(i,1)
             ENDIF
             IF(Tau0Temp(i).gt.Tau0MinMax(i,2)) THEN
-               Tau0Temp(i)=Tau0MinMax(i,2)
+               Tau0Temp(i)=Tau0MinMax(i,2) 
             ENDIF
          ENDDO
       ENDIF
@@ -1127,13 +1169,34 @@ cjjw46.39.sb01 :  "high/low LIMITED" variable G.
          ENDDO
       ENDIF
       ! smoothing
-      DO I=1,NP
+      DO I=1, NP
          CaseySum = 0.0
          DO J=1,NNeigh(I)
             CaseySum = CaseySum + Tau0Temp(NeiTab(I,J))
          ENDDO
          TAU0VAR(I) = CaseySum / NNeigh(I)
       ENDDO
+C
+C     jgf47.33 Perform time averaging of tau0 if requested.
+      IF (TimeAveragedTau0) THEN
+         DO I=1, NP
+            TAU0VAR(I) = 0.5d0*TAU0VAR(I) + 0.5d0*LastTau0(I)
+            LastTau0(I) = TAU0VAR(I)
+         ENDDO
+      ENDIF
+C
+C     jgf48.42 Perform backloaded time averaging of tau0 if requested.
+      IF (BackLoadedTimeAveragedTau0) THEN
+         DO I=1, NP
+            TAU0VAR(I) = AlphaTau0*TAU0VAR(I) 
+     &                 + (1.d0-AlphaTau0)*AlphaTau0*Tau0TMinus1(I)
+     &                 + (1.d0-AlphaTau0)**2*AlphaTau0*Tau0TMinus2(I)
+     &                 + (1.d0-AlphaTau0)**3*AlphaTau0*Tau0TMinus3(I)
+            Tau0TMinus3(I) = Tau0TMinus2(I)
+            Tau0TMinus2(I) = Tau0TMinus1(I)
+            Tau0TMinus1(I) = TAU0VAR(I)
+         ENDDO
+      ENDIF
 C     ----------------------------------------------------------------
       END SUBROUTINE CalculateTimeVaryingTau0
 C     ----------------------------------------------------------------

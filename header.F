@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.42     - 01/28/09 - jgf - Added two new time averaging options for tau0
+C               ... activated by tau0=-6.x or 7.x in fort.15.
 C  v48.41     - 12/11/08 - rjw - fix massbal.F COMPUTE_RESELEM subroutine
 C               In order to compare the global to local locations 
 C               Global x and y need to be in converted units not in Lat and Lon

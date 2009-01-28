@@ -77,8 +77,8 @@
       call idsply(in,out,irec,"NOFF",ne)
       
       do i = 1, NVARS
-        irec = irec + 1
         read(in, rec = irec) kk
+        irec = irec + 1
         write(out, '(a,''='',i10)') vars(i), kk
       end do
 
