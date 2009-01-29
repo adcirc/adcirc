@@ -6,8 +6,13 @@
      &  NE,
      &  NM,
      &  RESELEM,
+<<<<<<< .mine
+     &  PI,DEG2RAD,
+     &  X,Y,SLAM0,SFEA0,ICS
+=======
      &  PI,DEG2RAD,
      &  X,Y,SLAM0,SFEA0
+>>>>>>> .r110
 
 C    &  SLAM,SFEA
 
@@ -29,9 +34,15 @@ C    &  SLAM,SFEA
       INTEGER               :: JunkI
       INTEGER               :: NumNodesGlobal
 
+<<<<<<< .mine
+      REAL(SZ), ALLOCATABLE :: GlobalX(:),GL_X(:)
+      REAL(SZ), ALLOCATABLE :: GlobalY(:),GL_Y(:)
+      REAL(SZ)              :: Tol = 0.00001d0      
+=======
       REAL(SZ), ALLOCATABLE :: GlobalX(:),GL_X(:)
       REAL(SZ), ALLOCATABLE :: GlobalY(:),GL_Y(:)
       REAL(SZ)              :: Tol = 0.001d0      
+>>>>>>> .r110
 
       OPEN(14,FILE='fort.14')
       READ(14,'(A)') JunkC
@@ -40,12 +51,32 @@ C    &  SLAM,SFEA
       ALLOCATE(GlobalY(1:NumNodesGlobal),GL_Y(1:NumNodesGlobal))
       DO I=1,NumNodesGlobal
          READ(14,*) JunkI, GlobalX(I), GlobalY(I)
+<<<<<<< .mine
+   
+C.RJW    need to convert global node lat and lon into CPP projected units for comparison
+C...     with local node location x and y values if ICS =2 
+        IF (ICS .eq. 1 ) then
+
+           GL_X(I) = GlobalX(I)
+           GL_Y(I) = GlobalY(I)
+          
+        ELSE  !(ICS=2)
+
+            GlobalX(I)=DEG2RAD*GlobalX(I)
+            GlobalY(I)=DEG2RAD*GlobalY(I)
+
+         CALL CPP(GL_X(I),GL_Y(I),GlobalX(I),GlobalY(I),SLAM0,SFEA0)
+
+        ENDIF
+
+=======
 C.RJW    need to convert global node lat and lon into CPP projected units for comparison
 C...     with local node location x and y values
             GlobalX(I)=DEG2RAD*GlobalX(I)
             GlobalY(I)=DEG2RAD*GlobalY(I)
 
          CALL CPP(GL_X(I),GL_Y(I),GlobalX(I),GlobalY(I),SLAM0,SFEA0)
+>>>>>>> .r110
       ENDDO
       CLOSE(14)
        
@@ -79,6 +110,7 @@ C...RJW initialize variable
      &         (ABS(GL_Y(J)-Y(NM(I,3))).LT.Tol))THEN
                 GlobalNode3 = J
             ENDIF
+
          ENDDO
 
          IF((Connectivity(GlobalNode1).EQ.MYPROC).AND.
@@ -134,6 +166,7 @@ C...RJW initialize variable
              RESELEM(I) = 0
              PRINT*, "Yikes!"
          ENDIF
+C           PRINT*, "RESELEM = ", RESELEM(I)
       ENDDO
 
       DEALLOCATE(Connectivity)
@@ -142,10 +175,6 @@ C...RJW initialize variable
 
       RETURN
       END SUBROUTINE
-
-
-
-
 
       SUBROUTINE MASSBAL3D(IT)
 

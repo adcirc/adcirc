@@ -78,71 +78,47 @@ C...DECLARE 3D GLOBAL ARRAYS
 c.RJW merged 9/02/2008 Casey 071219: Added the following variable for cumulative mass balance.
       REAL(SZ) :: MASSCUM
 
-C     Gamma(NFEN): horizontal velocity solution in the complex form u +
-C     iv for a specific node
-      COMPLEX(SZ),ALLOCATABLE  :: Gamma(:)
-C     Q(MNP,NFEN): horizontal velocity solution in the complex form u +
-C     iv for all nodes
-      COMPLEX(SZ),ALLOCATABLE  :: Q(:,:)     
-C     Sigma(NFEN): stretched vertical coordinate levels (-1 to 1)
-      REAL(SZ),ALLOCATABLE :: SIGMA(:)   
-C     EVTot(NFEN): vertical eddy viscosity values at a node
-      REAL(SZ),ALLOCATABLE ::	EVTot(:) 
-C     INM(NFEN,3): Integral used in vertical FE assembly
-      REAL(SZ),ALLOCATABLE :: INM(:,:)
-C     LVN(NFEN): Integral used in vertical FE assembly
-      REAL(SZ),ALLOCATABLE ::	LVN(:)
-C     WZ(MNP,NFEN): "z" vertical velocity, all nodes
-      REAL(SZ),ALLOCATABLE :: WZ(:,:)   
-C     SIGT(MNP,NFEN): sigma T, all nodes
-      REAL(SZ),ALLOCATABLE :: SIGT(:,:)
-C     TEMP(MNP,NFEN): temperature, all nodes
-      REAL(SZ),ALLOCATABLE :: Temp(:,:)  
-C     Sal(MNP,NFEN): salinity, all nodes
-      REAL(SZ),ALLOCATABLE :: Sal(:,:)  
-C     BCP(MNP,NFEN): baroclinic pressure, integrated down from surface,
-C     all nodes
-      REAL(SZ),ALLOCATABLE :: BCP(:,:)
-C     Q20(MNP,NFEN): Turbulent Kinetic Energy computed by Mellor-Yamada
-C     L2.5 closure, all nodes
-      REAL(SZ),ALLOCATABLE :: Q20(:,:)
-C     L(MNP,NFEN): turbulent length scale computed by Mellor-Yamada L2.5
-C     closure, all nodes
-      REAL(SZ),ALLOCATABLE :: L(:,:)
-C     EV(MNP,NFEN): Vertical eddy viscosity, all nodes
-      REAL(SZ),ALLOCATABLE :: EV(:,:) 
+      COMPLEX(SZ),ALLOCATABLE  :: Gamma(:)   !  Gamma(NFEN): horizontal velocity solution in the complex form u+iv for a specific node
+      COMPLEX(SZ),ALLOCATABLE  :: Q(:,:)     !  Q(MNP,NFEN): horizontal velocity solution in the complex form u+iv for all nodes
+      REAL(SZ),ALLOCATABLE :: SIGMA(:)       !  Sigma(NFEN): stretched vertical coordinate levels (-1 to 1) 
+      REAL(SZ),ALLOCATABLE :: EVTot(:)       !  EVTot(NFEN): vertical eddy viscosity values at a node 
+      REAL(SZ),ALLOCATABLE :: INM(:,:)       !  INM(NFEN,3): Integral used in vertical FE assembly
+      REAL(SZ),ALLOCATABLE :: LVN(:)         !  LVN(NFEN): Integral used in vertical FE assembly
+      REAL(SZ),ALLOCATABLE :: WZ(:,:)        !  WZ(MNP,NFEN): "z" vertical velocity, all nodes
+      REAL(SZ),ALLOCATABLE :: SIGT(:,:)      !  SIGT(MNP,NFEN): sigma T, all nodes   
+      REAL(SZ),ALLOCATABLE :: Temp(:,:)      !  TEMP(MNP,NFEN): temperature, all nodes
+      REAL(SZ),ALLOCATABLE :: Sal(:,:)       !  Sal(MNP,NFEN): salinity, all nodes
+      REAL(SZ),ALLOCATABLE :: BCP(:,:)       !  BCP(MNP,NFEN): baroclinic pressure, integrated down from surface,all nodes
+      REAL(SZ),ALLOCATABLE :: Q20(:,:)       !  Q20(MNP,NFEN): Turbulent Kinetic Energy computed by Mellor-Yamada L2.5 closure, all nodes
+      REAL(SZ),ALLOCATABLE :: L(:,:)         !  L(MNP,NFEN): turbulent length scale computed by Mellor-Yamada L2.5 closure, all nodes
+      REAL(SZ),ALLOCATABLE :: EV(:,:)        !  EV(MNP,NFEN): Vertical eddy viscosity, all nodes  
 
 C     kmd45.12 Added in variables for transport 
 
-C     Gammatrans(NFEN): horizontal transport soln for a specific node
-      REAL(SZ),ALLOCATABLE :: Gammatrans(:)
-C     Tempkp1(MNP,NFEN): temperature of all nodes at future time level
-      REAL(SZ),ALLOCATABLE :: Tempkp1(:,:)  
-C     Salkp1(MNP,NFEN): salinity of all nodes at future time level 
-      REAL(SZ),ALLOCATABLE :: Salkp1(:,:)
+      REAL(SZ),ALLOCATABLE :: Gammatrans(:)  !  Gammatrans(NFEN): horizontal transport soln for a specific node
+      REAL(SZ),ALLOCATABLE :: Tempkp1(:,:)   !  Tempkp1(MNP,NFEN): temperature of all nodes at future time level  
+      REAL(SZ),ALLOCATABLE :: Salkp1(:,:)    !  Salkp1(MNP,NFEN): salinity of all nodes at future time level
      
 C     kmd45.12 Added in these variables for the top boundary conditions
 C     associated with the temperature field
+
       REAL(SZ), ALLOCATABLE :: qsurfkp1(:), qsurf(:)
 
 C     kmd45.12 Added in the variables for saving 3D velocities for two
 C     time levels
 
-C     Qkp1(MNP,NFEN): horizontal velocity in the complex form u + iv for
-C     all nodes at the future time level
-      COMPLEX(SZ),ALLOCATABLE  :: Qkp1(:,:)
-C     WZkp1(MNP,NFEN): "z" vertical velocity at all nodes for the future
-C     time level
-      REAL(SZ),ALLOCATABLE :: WZkp1(:,:)
+      COMPLEX(SZ),ALLOCATABLE  :: Qkp1(:,:) !  Qkp1(MNP,NFEN): horiz vel in the complex form u+iv for all nodes at the future time level
+      REAL(SZ),ALLOCATABLE :: WZkp1(:,:)    !  WZkp1(MNP,NFEN): "z" vertical velocity at all nodes for the future time level
 
 !     kmd45.12 added in for baroclinic changes
+
       COMPLEX(SZ), ALLOCATABLE :: BPG(:,:)      
 
 
 C...  DECLARE 3D GLOBAL SCALARS
 
-      REAL(SZ) :: GORho                !=G/RhoWat0
-      REAL(SZ) :: GORhoOAMB            !=GORho/AMB
+      REAL(SZ) :: GORho                ! = G/RhoWat0
+      REAL(SZ) :: GORhoOAMB            ! = GORho/AMB
       REAL(SZ) :: KP                   !3D bottom friction coefficient
       REAL(SZ) :: EVMin, EVCon         !minimum vertical eddy viscosity and vertical eddy viscosity constant
       REAL(SZ) :: Z0S, Z0B             !surface and bottom roughnesses

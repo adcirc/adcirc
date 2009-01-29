@@ -97,7 +97,8 @@ C        or to the end of the full domain array, whichever is less
          iend   = min(istart + num - 1, descript % num_fd_records)
          num    = iend - istart + 1
       end do
-#endif   ! CMPI
+#endif   
+C! CMPI
 
  1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10, 1pE20.10, 1pE20.10)
  1100 FORMAT(2x,1pE20.10,5X,I10)
@@ -183,7 +184,8 @@ C        or to the end of the full domain array, whichever is less
          iend   = min(istart + num - 1, descript % num_fd_records)
          num    = iend - istart + 1
       end do
-#endif   ! CMPI
+#endif   
+C! CMPI
 
  1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10, 1pE20.10, 1pE20.10)
  1100 FORMAT(2x,1pE20.10,5X,I10)
@@ -552,7 +554,8 @@ C        or to the end of the full domain array, whichever is less
       if (myproc == 0) then
          close(lun)
       endif
-#endif   ! CMPI
+#endif   
+C! CMPI
 
  1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10, 1pE20.10, 1pE20.10)
  1100 FORMAT(2x,1pE20.10,5X,I10)
@@ -610,7 +613,8 @@ C        or to the end of the full domain array, whichever is less
         stop 'FATAL ERROR: descript%num_records_this.ne.np'
       endif
 
-#ifndef CMPI !-----IF CMPI IS NOT DEFINED -----
+#ifndef CMPI
+C     !-----IF CMPI IS NOT DEFINED -----
       open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
       write(lun, 1100) time, it
 
@@ -618,7 +622,8 @@ C        or to the end of the full domain array, whichever is less
       close(lun)
       return
 
-#else        !-----IF CMPI IS DEFINED -----
+#else
+C    !-----IF CMPI IS DEFINED -----
 
       if (WRITE_LOCAL_FILES) then
         open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
@@ -693,7 +698,8 @@ C        or to the end of the full domain array, whichever is less
       if (myproc == 0) then
         close(lun)
       endif
-#endif   ! CMPI
+#endif   
+C! CMPI
 
  1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10, 1pE20.10, 1pE20.10)
  1100 FORMAT(2x,1pE20.10,5X,I10)
@@ -751,7 +757,8 @@ C        or to the end of the full domain array, whichever is less
         stop 'FATAL ERROR: descript%num_records_this.ne.np'
       endif
 
-#ifndef CMPI !-----IF CMPI IS NOT DEFINED -----
+#ifndef CMPI 
+C    !-----IF CMPI IS NOT DEFINED -----
       open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
       write(lun, 1100) time, it
 
@@ -759,7 +766,8 @@ C        or to the end of the full domain array, whichever is less
       close(lun)
       return
 
-#else        !-----IF CMPI IS DEFINED -----
+#else   
+C     !-----IF CMPI IS DEFINED -----
 
       if (WRITE_LOCAL_FILES) then
         open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
@@ -844,7 +852,8 @@ C        or to the end of the full domain array, whichever is less
       if (myproc == 0) then
         close(lun)
       endif
-#endif   ! CMPI
+#endif   
+C! CMPI
 
  1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10, 1pE20.10, 1pE20.10)
  1100 FORMAT(2x,1pE20.10,5X,I10)
@@ -924,6 +933,7 @@ C        or to the end of the full domain array, whichever is less
         num    = iend - istart + 1
       end do
 #endif
+
       !--------------------------------------------------------------
       end subroutine write_gbl_file_hstart
       !--------------------------------------------------------------

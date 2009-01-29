@@ -586,41 +586,44 @@ c     Compute the equivalent linear slip coefficient
          IF(ISlip.EQ.1) KSlip=KP
          IF(ISlip.EQ.2) THEN
 
-c.RJW merged 08282008 b ut not implemented yet08282008 Casey 071219: Let's get funky.  Comment out the following line:
-           KSlip=KP*ABS(q(NH,1))
-C
+c.RJW merged 08282008 Casey 071219: Let's get funky.  
+c.RJW enable this modification
+C changed zo bottom roughness length from 0.1 to 0.01 and blewup
+c. 0.05 however worked dramatically changing the results
+C    Comment out the following:
+C           KSlip=KP*ABS(q(NH,1))
 C     and add the following attemp to base the drag coefficient on the actual
 C     physics of the boundary layer.
 C
-c            IF(
-c     &          ABS( ((SIGMA(2)-B)/(A-B))
-c     &                *(DP(NH)+IFNLFA*ETA2(NH)) )
-c     &          .LE. 0.1D0 )THEN
-c
-c                KSlip = 1.D+4
-c
-c            ELSEIF(
-c     &          ABS( ((SIGMA(2)-B)/(A-B))
-c     &                *(DP(NH)+IFNLFA*ETA2(NH)) )
-c     &          .LT. 1.D0 )THEN
-c
-c                KSlip = (1.D0 / ( (1.D0/0.41D0) *
-c     &                  LOG( ABS( ((SIGMA(2)-B)/(A-B))
-c     &                     *(DP(NH)+IFNLFA*ETA2(NH)) )
-c     &                  / (0.1D0) ) ) )**2.D0
-c     &                * ABS(Q(NH,1))
-c
-c            ELSE
-c
-c                KSlip = (1.D0 / ( (1.D0/0.41D0) *
-c     &                  LOG( 1.D0
-c     &                  / (0.1D0) ) ) )**2.D0
-c     &                * ABS(Q(NH,1))
-c
-c            ENDIF
-c
-            IF(KSlip.GT.1.D-1) KSlip=1.D-1
-            IF(KSlip.LT.1.E-8) KSlip=1.d-8
+            IF(
+     &          ABS( ((SIGMA(2)-B)/(A-B))
+     &                *(DP(NH)+IFNLFA*ETA2(NH)) )
+     &          .LE. 0.1D0 )THEN
+
+                KSlip = 1.D+4
+
+            ELSEIF(
+     &          ABS( ((SIGMA(2)-B)/(A-B))
+     &                *(DP(NH)+IFNLFA*ETA2(NH)) )
+     &          .LT. 1.D0 )THEN
+
+                KSlip = (1.D0 / ( (1.D0/0.41D0) *
+     &                  LOG( ABS( ((SIGMA(2)-B)/(A-B))
+     &                     *(DP(NH)+IFNLFA*ETA2(NH)) )
+     &                  / (0.1D0) ) ) )**2.D0
+     &                * ABS(Q(NH,1))
+
+            ELSE
+
+                KSlip = (1.D0 / ( (1.D0/0.41D0) *
+     &                  LOG( 1.D0
+     &                  / (0.1D0) ) ) )**2.D0
+     &                * ABS(Q(NH,1))
+
+            ENDIF
+
+             IF(KSlip.GT.1.D-1) KSlip=1.D-1
+             IF(KSlip.LT.1.E-8) KSlip=1.E-8
          ENDIF
 
 c     Set up the RHS forcing vector Fr and LHS matrix in compact storage
@@ -2106,12 +2109,15 @@ c     allocate local arrays
 c     
 c     At time step 1, set flags and initialize variables
 c     
-      if(istart.eq.1) then
 C.. RJW added as per Kendra reccomendation to algebraically compute length scale
-         il = 2  ! length scale flag, =  2 for length scale from algebraic eq. (see below)
+C.  RJW moved up and outside of if statement
 c         il = 1  ! length scale flag, = 1 for length scale from q2l eqn.
-         ibc = 0 ! surface b.c. flag, = 0 for specified stress, =1 for no flux
-         if((nws.eq.0).or.(nws.eq.100)) ibc=1
+         il = 2  ! length scale flag, = 2 for length scale from algebraic eq. (see below)
+c         il = 3  ! length scale flag, = 3 for length scale from algebraic eq. (see below)
+
+      if(istart.eq.1) then
+         ibc = 0 ! surface b.c. flag, = 0 for specified stress, = 1 for no flux
+         if((nws.eq.0).or.(nws.eq.100)) ibc =1 
 
 c     set constants and other parameters
          B123 = B1**(2.d0/3.d0)
@@ -2153,6 +2159,22 @@ c     end cold start initialization
 c     
 c     Begin calculations for each time step
 c     
+C.RJW..modify in future
+C identify if node was dry last timestep but is now wet
+C the initialized value of L can be recomputed to a more meaningful 
+C value before used to compute q2
+C as of now problem is fixed by initializing L to a nonzero value
+c      if (L(nh,1) .eq. 0.001d0 ) Then
+c            do n = 1,nfen
+c               if(il.eq.2)then
+c                  sig = (sigma(n)+1.d0)/amb
+c                  rl1 = 1.d0/(rkap*(sig*H+Z0B)*exp(-amb*sig))
+c                  rl2 = 1.d0/(rkap*(H-sig*H+Z0S))
+c                  l(nh,n) = 1.d0/(rl1+rl2)
+c               endif
+c            end do
+c       Endif
+
       H2 = H*H
       HOamb=H/amb
       HOamb2=(H/amb)*(H/amb)
@@ -2336,6 +2358,9 @@ c     Compute length scale
             rl1 = 1.d0/(rkap*(sig*H+Z0B)*exp(-amb*sig))
             rl2 = 1.d0/(rkap*(H-sig*H+Z0S))
             l(nh,n) = 1.d0/(rl1+rl2)
+
+            if(l(nh,n).lt.0.001) l(nh,n)=0.001
+            if(l(nh,n).gt.H) l(nh,n)=H
          enddo
       endif
       

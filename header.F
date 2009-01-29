@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.43     - 01/29/09 - rjw - modified fixes to massbal.F (check for 
+C               ICS status) and vsmy.F (initialized turbulent length scale to
+C               lmin= 0.001 in cstart.F (COLDSTART_3D)) and reformatted 
+C               declaration statements in global_3dvs.F. 
 C  v48.42     - 01/28/09 - jgf - Added two new time averaging options for tau0
 C               ... activated by tau0=-6.x or 7.x in fort.15.
 C  v48.41     - 12/11/08 - rjw - fix massbal.F COMPUTE_RESELEM subroutine
