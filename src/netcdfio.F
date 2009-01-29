@@ -500,8 +500,10 @@
       save netanc_dim
       save nopenc_id,nvdllnc_id
 
+#ifdef NETCDF_DEBUG
        IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      . PRINT *, "NCIGEP === ", NCIGEP/node_len
+#endif
       
       IF(FIRST.EQ.1.and.ncmode.ne.0) THEN
          ALLOCATE ( minzetan (node_len) )
@@ -533,24 +535,29 @@
 !     ---------------------------
 !     Opening fort.63 netCDF file
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6,*) "-------------------------------------------------"
+#endif 
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+#endif 
                   
 !         IF(MYPROC.EQ.0) PRINT *, 
 !     &   "FIRST.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR."
 !     &   "(FIRST.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.nout.EQ.-3"
+#ifdef NETCDF_DEBUG
          IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))THEN 
             PRINT *, "FIRST = ",FIRST
             PRINT *, "IHOT = ",IHOT
             PRINT *, "NCMODE = ",NCMODE
             PRINT *, "nout = ",nout
          ENDIF
-         
+#endif 
        IF((FIRST.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &    (FIRST.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
      &     nout.EQ.-3))THEN
@@ -1376,8 +1383,10 @@
       FIRST=0
 !      IF(MYPROC.EQ.0)PRINT *,"N: bef NREC ", NREC," NCIGEP = ",NCIGEP
       IF(IHOT.NE.0.AND.nout.eq.3.and.ncmode.eq.2) NREC = NCIGEP/node_len
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .PRINT *,"N: nout = ", NOUT
+#endif
 !      IF(MYPROC.EQ.0)PRINT *,"N: NREC = ", NREC
 !      IF(IHOT.NE.0.AND.nout.eq.-3.AND.FIRST.EQ.1) NREC = 0
 !      IF(MYPROC.EQ.0)PRINT *,"N: aft NREC ", NREC," NCIGEP = ",NCIGEP
@@ -1405,8 +1414,10 @@
       counti(1)=timenc_len
       iret = nf_put_vara_DOUBLE(ncid, timenc_id, starti,counti, timenc)
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .     WRITE(6,*)"store time "
+#endif
 
 !     ---------------------------
 !     Store zeta
@@ -1415,8 +1426,10 @@
       count(2)=timenc_len
       start(1)=1
       start(2)=nrec
+#ifdef NETCDF_DEBUG
         IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .PRINT *, "NC: zeta ", NREC, zeta(1,1)
+#endif
       iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, count, zeta)
       CALL check_err(iret)
 
@@ -1484,15 +1497,19 @@
          CALL check_err(iret)
       ENDIF
       
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .WRITE(6,*) "-----------------------------------------------------"
+#endif
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
        IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .WRITE(6,*)'end subroutine writenc63'
+#endif
      
       end subroutine writenc63
 !=======================================================================
@@ -1908,9 +1925,10 @@
 !     ---------------------------
 !     Opening fort.64 netCDF file
 !     ---------------------------
+#ifdef NETCDF_DEBUG
        IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .WRITE(6,*) "-----------------------------------------------------"
-       
+#endif       
       IF(FIRSTV.EQ.1.and.ncmode.NE.0) THEN
          
          ALLOCATE ( minun (node_len) )
@@ -1950,9 +1968,10 @@
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
-         
+#endif         
        IF((FIRSTV.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &    (FIRSTV.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
      &     nout.EQ.-3))THEN
@@ -3433,15 +3452,19 @@
 !     ---------------------------
 !     Closing netCDF file
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .WRITE(6,*) "-----------------------------------------------------"
+#endif
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
             IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .WRITE(6,*)'end subroutine writenc64'
+#endif
 
       end subroutine writenc64     
 
@@ -3788,10 +3811,12 @@
       save nopenc_id,nvdllnc_id
 
 !     ---------------------------
-!     Opening fort.63 netCDF file
+!     Opening fort.73 netCDF file
 !     ---------------------------
+#ifdef NETCDF_DEBUG
        IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0) )
      .WRITE(6,*) "-----------------------------------------------------"
+#endif
 !      NREC = NREC + 1
       
       IF(FIRST73.EQ.1.and.ncmode.NE.0) THEN
@@ -6784,16 +6809,18 @@
 !     ---------------------------
 !     Closing netCDF file
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .WRITE(6,*) "-----------------------------------------------------"
-      
+#endif      
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0) ) 
      .WRITE(6,*)'end subroutine writenc74'
-
+#endif
       end subroutine writenc74
       
       
@@ -7082,9 +7109,10 @@
 !     ---------------------------
 !     Opening fort.61 netCDF file
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .WRITE(6,*) "-----------------------------------------------------"
-
+#endif
       IF(FIRST61.EQ.1.and.ncmode.NE.0) THEN
          
          ALLOCATE ( minzetan61  (node_len) )
@@ -7115,8 +7143,10 @@
          FILEEXT = '.nc'
 !        WRITE(6,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+#endif
                   
        IF((FIRST61.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &    (FIRST61.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
@@ -7844,15 +7874,19 @@
          CALL check_err(iret)
       ENDIF
       
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6,*) "-----------------------------------------------------"
+#endif
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6,*)'end subroutine writenc61'
+#endif
      
       end subroutine writenc61      
 
@@ -8215,9 +8249,10 @@
 !     ---------------------------
 !     Opening fort.62 netCDF file
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6,*) "-----------------------------------------------------"
-
+#endif
        
       IF(FIRST62.EQ.1.and.ncmode.NE.0) THEN
          ALLOCATE ( minun62 (node_len) )
@@ -8259,8 +8294,10 @@
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+#endif
          
        IF((FIRST62.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &    (FIRST62.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
@@ -9546,15 +9583,19 @@
 !     ---------------------------
 !     Closing netCDF file
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6,*) "-----------------------------------------------------"
+#endif
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6,*)'end subroutine writenc62'
+#endif
 
       end subroutine writenc62     
 
@@ -9848,9 +9889,10 @@
 !     ---------------------------
 !     Opening fort.63 netCDF file
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6,*) "-----------------------------------------------------"
-
+#endif
 !      NREC = NREC + 1
 
       IF(FIRST71.EQ.1.and.ncmode.NE.0) THEN
@@ -10978,9 +11020,10 @@
 !     ---------------------------
 !     Opening fort.64 netCDF file
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6,*) "-----------------------------------------------------"
-
+#endif
          IF(FIRST72.EQ.1.and.ncmode.NE.0) THEN
          
          ALLOCATE ( minun72 (node_len) )
@@ -11022,8 +11065,10 @@
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+#endif
          
        IF((FIRST72.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &    (FIRST72.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
@@ -12411,10 +12456,12 @@
 !     ---------------------------
 !     Closing netCDF file
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6,*) "-----------------------------------------------------"
+#endif
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
@@ -12871,6 +12918,7 @@
 !     ---------------------------
 !     Opening fort.67 netCDF file
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       WRITE(6,*) "nio: MYPROC ncmode = ", MYPROC, ncmode
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
       WRITE(6,'(A)') 
@@ -12902,6 +12950,7 @@
 !      IF(FIRST67.EQ.1.and.ncmode.NE.0) THEN
          
        ENDIF
+#endif
        
 !     --------------------------------
 !     Switch order in array for NETCDF
@@ -12918,20 +12967,24 @@
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+#ifdef NETCDF_DEBUG
          IF(ncmode.ne.2.OR.(myproc.eq.0.and.ncmode.eq.2))then
              WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
          ENDIF
+#endif
 !       IF((FIRST67.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
 !     &    (FIRST67.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
 !     &     nout.EQ.-3))THEN
 
 !       WRITE(6, *)"FIRST67 = ",FIRST67
 !       WRITE(6, *)"FIRST68 = ",FIRST68
+#ifdef NETCDF_DEBUG
        IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .        WRITE(6, *)"IHOT = ",IHOT
        IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6, *)"NCMODE = ",NCMODE
 !       WRITE(6, *)"abs(nout) = ",abs(nout)
+#endif
 
        IF( ((FIRST67.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
      &     (FIRST68.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2)).OR.
@@ -12940,9 +12993,11 @@
      &     (FIRST68.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
      &     abs(nout).EQ.3)))THEN
 
+#ifdef NETCDF_DEBUG
 !       WRITE(6, *)"Opening hot start file"
        IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .WRITE(6, *)"creating new netCDF file "
+#endif
 
            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
            CALL check_err(iret)
@@ -12963,8 +13018,10 @@
 !     -----------------
 !     Define dimensions
 !     -----------------
+#ifdef NETCDF_DEBUG
        IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .         WRITE(6,*) "Define dimensions "
+#endif
       iret = nf_def_dim(ncid, 'node', node_len, node_dim)
       CALL check_err(iret)
       iret = nf_def_dim(ncid, 'nele', elem_len, elem_dim)
@@ -13533,8 +13590,7 @@
      &atmospheric pressure time series at All Nodes in the Model 
      &Grid output file')
       CALL check_err(iret)
-      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
-     .WRITE(6,*) "Assign igpp_id: "
+
       iret = nf_put_att_text(ncid, igpp_id, 'standard_name', 61,
      &       'record_number_of_last_entry_of_atm_press_at_model_nodes')
       CALL check_err(iret)
@@ -14009,8 +14065,10 @@
 !     Open old netcdf file
 !     =====================
       ELSE
+#ifdef NETCDF_DEBUG
          IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .   WRITE(6, *)"opening old netCDF file = "
+#endif
           iret = NF_OPEN(FILENAME, NF_WRITE, ncid)
           CALL check_err(iret)   
 !     ------------------
@@ -14027,8 +14085,10 @@
 !      IF(IHOT.NE.0.AND.FIRST67.EQ.1) THEN
        IF((IHOT.NE.0.AND.FIRST67.EQ.1).OR.
      &    (IHOT.NE.0.AND.FIRST68.EQ.1)) THEN
+#ifdef NETCDF_DEBUG
          IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .   WRITE(6, *)"Update Global Attributes "
+#endif
          iret = NF_REDEF (ncid)
          CALL check_err(iret)
          iret = nf_put_att_int(ncid, NCGLOBAL, 'ihot', NF_INT, 1, ihot)
@@ -14085,7 +14145,7 @@
 
 !         IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
 !     .   WRITE(6, *)"Inquire about variables "
-         WRITE(6, *)"Inquire about variables "
+!         WRITE(6, *)"Inquire about variables "
 
          iret=nf_inq_varid(ncid,"time",timenc_id)
          iret=nf_inq_varid(ncid,"zeta1",zeta1_id)
@@ -14125,8 +14185,10 @@
       IF(FILEUNIT.EQ.68)FIRST68=0
 !      NREC = NREC + 1
       NREC = 1
+#ifdef NETCDF_DEBUG
          IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))  
      .   WRITE(6, *)"Storing variables "
+#endif
 !     ----------
 !     Store time
 !     ----------
@@ -14137,6 +14199,7 @@
 !     ---------------------------
 !     Store zeta1
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
          WRITE(6,*) "NREC = ", NREC
          WRITE(6,*) "node_len = ", node_len,"timenc_len =",timenc_len
@@ -14146,6 +14209,7 @@
          END DO
             WRITE(6,*) "Store zeta1 node_len ", zeta1(node_len,1)
       ENDIF
+#endif
       count(1)=node_len
       count(2)=timenc_len
       start(1)=1
@@ -14153,6 +14217,7 @@
       iret = nf_put_vara_DOUBLE(ncid, zeta1_id, start, count, zeta1)
 !      iret = nf_put_vara_DOUBLE(ncid, zeta1_id, zeta1)
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
          WRITE(6,*) "node_len = ", node_len,"timenc_len =",timenc_len
       
@@ -14161,10 +14226,12 @@
          END DO
             WRITE(6,*) "Store zeta1 node_len 2 ", zeta1(node_len,1)
       ENDIF
+#endif
 !     ---------------------------
 !     Store zeta2
 !     ---------------------------
 !              WRITE(6,*) "Store zeta2"
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
          WRITE(6,*) "node_len = ", node_len,"timenc_len =",timenc_len
       
@@ -14173,6 +14240,7 @@
          END DO
             WRITE(6,*) "Store zeta2 node_len", zeta2(node_len,1)
       ENDIF
+#endif
       count(1)=node_len
       count(2)=timenc_len
       start(1)=1
@@ -14180,6 +14248,7 @@
       iret = nf_put_vara_DOUBLE(ncid, zeta2_id, start, count, zeta2)
 !      iret = nf_put_vara_DOUBLE(ncid, zeta2_id, zeta2)
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
          WRITE(6,*) "node_len = ", node_len,"timenc_len =",timenc_len
       
@@ -14188,9 +14257,11 @@
          END DO
             WRITE(6,*) "Store zeta2 node_len - 2", zeta2(node_len,1)
       ENDIF
+#endif
 !     ---------------------------
 !     Store zetad
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
          WRITE(6,*) "node_len = ", node_len,"timenc_len =",timenc_len
       
@@ -14198,6 +14269,7 @@
             WRITE(6,*) "Store zetad", zetad(i,1)
          END DO
       ENDIF
+#endif
       count(1)=node_len
       count(2)=timenc_len
       start(1)=1
@@ -14209,6 +14281,7 @@
 !     ---------------------------
 !     Store u
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
          WRITE(6,*) "node_len = ", node_len,"nrec =",nrec
       
@@ -14217,6 +14290,7 @@
          END DO
             WRITE(6,*) "Store u  node_len ", u(node_len,1)
       ENDIF
+#endif
       count(1)=node_len
       count(2)=timenc_len
       start(1)=1
@@ -14224,17 +14298,20 @@
        iret = nf_put_vara_DOUBLE(ncid, u_id, start, count, u)
 !      iret = nf_put_vara_DOUBLE(ncid, u_id, u)
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
          WRITE(6,*) "node_len = ", node_len,"nrec =",nrec
       
          DO I=1,5
             WRITE(6,*) "Store u -2 ", u(i,1)
          END DO
-      ENDIF
             WRITE(6,*) "Store u -2 node_len ", u(node_len,1)
+      ENDIF
+#endif
 !     ---------------------------
 !     Store v
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
          WRITE(6,*) "node_len = ", node_len,"nrec =",nrec
          WRITE(6,*) "timenc_len = ", timenc_len
@@ -14244,6 +14321,7 @@
          END DO
             WRITE(6,*) "Store v node_len", v(node_len,1)
       ENDIF
+#endif
       count(1)=node_len
       count(2)=timenc_len
       start(1)=1
@@ -14251,6 +14329,7 @@
        iret = nf_put_vara_DOUBLE(ncid, v_id, start, count, v)
 !      iret = nf_put_vara_DOUBLE(ncid, v_id, v)
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
          WRITE(6,*) "node_len = ", node_len,"nrec =",nrec
       
@@ -14259,11 +14338,13 @@
          END DO
            WRITE(6,*) "Store v - 2 node_len", v(2,1)
       ENDIF
+#endif
 !     ---------------
 !     Store nodecode
 !     ---------------
 !      WRITE(6,*) "Store nodecodenc"
 
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
          WRITE(6,*) "node_len = ", node_len
          WRITE(6,*) "nodecodenc_id = ", nodecodenc_id
@@ -14272,6 +14353,7 @@
          END DO
             WRITE(6,*) "Store nodecodenc", nodecodenc(node_len)
       ENDIF
+#endif
 
 !      starti(1)=1
 !      counti(1)=node_len
@@ -14279,6 +14361,7 @@
       iret = nf_put_var_int(ncid, nodecodenc_id, nodecodenc)
 
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
          WRITE(6,*) "node_len = ", node_len
          DO I=1,5
@@ -14286,10 +14369,12 @@
          END DO
             WRITE(6,*) "Store nodecodenc -2 ", nodecodenc(node_len)
       ENDIF
+#endif
 !     ---------------
 !     Store noff
 !     ---------------
 !      WRITE(6,*) "Store noffnc"
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
          WRITE(6,*) "elem_len = ", elem_len
          WRITE(6,*) "noffnc_id = ", noffnc_id
@@ -14299,11 +14384,13 @@
          END DO
             WRITE(6,*) "Store noffnc", noffnc(elem_len)
       ENDIF
+#endif
 !      starti(1)=1
 !      counti(1)=elem_len
 !      iret =nf_put_vara_int(ncid,noffnc_id,starti,counti,noffnc)
       iret = nf_put_var_int(ncid, noffnc_id, noffnc)
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
          WRITE(6,*) "elem_len = ", elem_len
       
@@ -14312,11 +14399,14 @@
          END DO
             WRITE(6,*) "Store noffnc - 2", noffnc(elem_len)
       ENDIF
+#endif
 !     ------------------------
 !     Store hotstart variables
 !     ------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0))
      .   WRITE(6,*) "Store hotstart variables"
+#endif
       iret = nf_put_var_int(ncid, imhs_id, imhs)
       CALL check_err(iret)
       iret = nf_put_var_int(ncid, iths_id, iths)
@@ -14377,11 +14467,13 @@
 !     ---------------------------
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne.2.OR.(myproc.eq.0.and.ncmode.eq.2))then
       WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       WRITE(6,*) "-----------------------------------------------------"
       WRITE(6,*)'end subroutine writenc67'
       endif
+#endif
 !      IF(ncmode.ne.2.OR.(myproc.eq.0.and.ncmode.eq.2))
 !     &   WRITE(6,*)'end subroutine writenc67'
 
@@ -14841,20 +14933,6 @@
 !     ---------------------------
 !     Opening fort.67 netCDF file
 !     ---------------------------
-      WRITE(6,*) "-----------------------------------------------------"
-!           PRINT *, " *********  node_len = ", node_len
-!           PRINT *, " *********  elem_len = ", elem_len
-       
-!      do i=1, node_len
-!            PRINT *, "i ",i, " nodecodenc(i) = ", nodecodenc(i)
-!      end do
-!      do i=1, elem_len
-!            PRINT *, "i ",i, " noffnc(i) = ", noffnc(i)
-!      end do
-
-!      IF(FIRST67.EQ.1.and.ncmode.NE.0) THEN
-         
-!      ENDIF
        
 !     --------------------------------
 !     Switch order in array for NETCDF
@@ -14874,9 +14952,10 @@
          FILEFORT = 'fort.'
          FILEEXT = '.nc'
          WRITE(FILENAME,'(A5,I2,A3)')FILEFORT,FILEUNIT,FILEEXT
+#ifdef NETCDF_DEBUG
          WRITE(6,*) "Opening ",FILENAME,  " netCDF file ... "
+#endif
 
-!         PRINT *,"netcdfio: ncmode = ",ncmode," IHOT= ",IHOT
          
 !       IF((FIRST67.EQ.1.AND.IHOT.EQ.0.AND.NCMODE.NE.2).OR.
 !     &    (FIRST67.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
@@ -14888,9 +14967,6 @@
      &     nout.EQ.-3).OR.
      &     (FIRST68.EQ.1.AND.IHOT.NE.0.AND.NCMODE.NE.2.AND.
      &     nout.EQ.-3)))THEN
-
-!         PRINT *,"netcdfio: inside first if"
-
 
            iret = nf_create(FILENAME, NF_CLOBBER, ncid)
            CALL check_err(iret)
@@ -14911,7 +14987,6 @@
 !     -----------------
 !     Define dimensions
 !     -----------------
-!         WRITE(6,*) "Define dimensions "
       iret = nf_def_dim(ncid, 'node', node_len, node_dim)
       CALL check_err(iret)
       iret = nf_def_dim(ncid, 'nele', elem_len, elem_dim)
@@ -16278,15 +16353,19 @@
 !     ---------------------------
 !     Closing netCDF file
 !     ---------------------------
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne.2.OR.(myproc.eq.0.and.ncmode.eq.2))then
       WRITE(6,*) "Closing ", FILENAME, " netCDF file ... "
       WRITE(6,*) "-----------------------------------------------------"
       endif
+#endif
       
 9999  iret = nf_close(ncid)
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
       IF(ncmode.ne.2.OR.(myproc.eq.0.and.ncmode.eq.2))
      &   WRITE(6,*)'end subroutine readnc67'
+#endif
 
       end subroutine readnc67     
 

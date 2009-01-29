@@ -119,11 +119,6 @@ C
       ELSE
         CALL MSG_INIT()      ! Init MPI and get MPI-rank of this cpu
       ENDIF
-      ! <ezpp-begin>
-      FileFmtVersion = 
-     & VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
-      ! File Fmt Version  must match Major and Minor numbers.
-      if (MYPROC == 0) print 1999, "PARALLEL", ADC_VERSION
 
 C...  Special instructions for writer processors
       IF(MYPROC >= MNPROC) THEN
@@ -146,13 +141,14 @@ C...    writer processors will not execute the rest in this source file (adcirc.
       MNWPROC = 0            ! Init number of writer procs for serial
       MNALLPROC = 1          ! Init number of all procs for serial
       MYPROC = 0             ! Init task id for serial
-      FileFmtVersion = 
-     &VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
-      ! File Fmt Version  must match Major and Minor numbers.
-      print 1999, "",ADC_VERSION
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
 #endif         
+
+      ! File Fmt Version  must match Major and Minor numbers.
+      FileFmtVersion = 
+     &VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
+      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,'(a)')"ADCIRC Version is "//ADC_VERSION
 
 
 #ifdef CMACHSUN

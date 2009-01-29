@@ -3692,7 +3692,6 @@ C
                 XEL(I)=a2f(LVAR(1))
                 YEL(I)=a2f(LVAR(2))
                 STATNAME(I,SNAMLEN)=LVAR(3)
-                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I,SNAMLEN)
              ENDIF
           ELSE
 
@@ -3860,7 +3859,6 @@ C
               XEV(I)=a2f(LVAR(1))
               YEV(I)=a2f(LVAR(2))
               STATNAMEV(I,SNAMLEN)=LVAR(3)
-              WRITE(6,9911) XEV(I), YEV(I), STATNAMEV(I,SNAMLEN)
            ENDIF
         ELSE
            IF(NOUTV.NE.3)THEN
@@ -4166,7 +4164,6 @@ C
                 XEM(I)=a2f(LVAR(1))
                 YEM(I)=a2f(LVAR(2))
                 STATNAMEM(I,SNAMLEN)=LVAR(3)
-!               WRITE(6,9911) XEM(I), YEM(I), STATNAMEM(I,SNAMLEN)
              ENDIF
           ELSE
              IF(NOUTM.NE.3)THEN
@@ -5000,7 +4997,7 @@ C
 #endif
 
          READ(15,'(A80)') title
-!        WRITE(6,'(A80)') title
+!         WRITE(6,'(A80)') title
          READ(15,'(A80)') institution
          READ(15,'(A80)') source
          READ(15,'(A80)') history

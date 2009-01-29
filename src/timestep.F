@@ -2008,35 +2008,36 @@ CWET...
       ENDIF                     !  This is started in Part 1 of CWET
 c.....
 c. RJW merged 08/26/2008 Casey 071219: Added these output lines for wet/dry visualization.
-      IF(NOUTGE.NE.0)THEN
-         IF((IT.GT.NTCYSGE).AND.(IT.LE.NTCYFGE))THEN
-            IF(NSCOUGE.EQ.(NSPOOLGE-1))THEN
-               CLOSE(123)
-#ifdef CMPI
-               WRITE(TEMPDIRNAME,'(A2,I4.4)') 'PE',MYPROC
-               OPEN(123,FILE=TEMPDIRNAME//'/'//'fort.123',
-     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
-#else
-               OPEN(123,FILE='fort.123',
-     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
-#endif
-               DO I=1,NP
-                  WRITE(123,*) NODECODE(I)
-               ENDDO
-               CLOSE(124)
-#ifdef CMPI
-               OPEN(124,FILE=TEMPDIRNAME//'/'//'fort.124',
-     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
-#else
-               OPEN(124,FILE='fort.124',
-     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
-#endif
-               DO IE=1,NE
-                  WRITE(124,*) NOFF(IE)
-               ENDDO
-            ENDIF
-         ENDIF
-      ENDIF
+!      IF(NOUTGE.NE.0)THEN
+!         IF((IT.GT.NTCYSGE).AND.(IT.LE.NTCYFGE))THEN
+!            IF(NSCOUGE.EQ.(NSPOOLGE-1))THEN
+!               CLOSE(123)
+!#ifdef CMPI
+!               WRITE(TEMPDIRNAME,'(A2,I4.4)') 'PE',MYPROC
+!               OPEN(123,FILE=TEMPDIRNAME//'/'//'fort.123',
+!     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
+!#else
+!               OPEN(123,FILE='fort.123',
+!     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
+!#endif
+!               DO I=1,NP
+!                  WRITE(123,*) NODECODE(I)
+!               ENDDO
+!               CLOSE(124)
+!#ifdef CMPI
+!               OPEN(124,FILE=TEMPDIRNAME//'/'//'fort.124',
+!     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
+!#else
+!               OPEN(124,FILE='fort.124',
+!     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
+!#endif
+!               DO IE=1,NE
+!                  WRITE(124,*) NOFF(IE)
+!               ENDDO
+!            ENDIF
+!         ENDIF
+!      ENDIF
+
 c.end rjw merge vis....
 C...  
 C...  2DDI Momentum Equation Solution

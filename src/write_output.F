@@ -1485,12 +1485,12 @@ C
                END DO
             ELSE
                DO I=1,num_records
-                  IF(MYPROC.EQ.0)PRINT *,"wo: num_records xel", 
-     .             xel(I),num_records
+!                  IF(MYPROC.EQ.0)PRINT *,"wo: num_records xel", 
+!     .             xel(I),num_records
              	  xenc(i)=XEL(I)
                   yenc(i)=YEL(I)
-                  IF(MYPROC.EQ.0)PRINT *,"wa: num_records xel", 
-     .             xel(I),num_records, xenc(i), yenc(i)
+!                  IF(MYPROC.EQ.0)PRINT *,"wa: num_records xel", 
+!     .             xel(I),num_records, xenc(i), yenc(i)
                END DO
             ENDIF
 
@@ -2447,7 +2447,7 @@ C     collect up the data from subdomains if running in parallel
           OPEN(hss % lun ,FILE=TRIM(HOTSTARTDIR)//'/'//hss % filename,
      $      ACCESS='DIRECT',RECL=8)
           IHOTSTP=1
-          print *, FileFmtVersion
+!          print *, FileFmtVersion
           WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion 
           IHOTSTP = IHOTSTP + 1
 !          print *, IM
