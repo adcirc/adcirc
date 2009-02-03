@@ -1367,7 +1367,7 @@
          iret=nf_inq_varid(ncid,"maxznodet",maxznodet_id)
          iret=nf_inq_varid(ncid,"minztimen",minztimen_id)
          iret=nf_inq_varid(ncid,"maxztimen",maxztimen_id)
-         NREC = 0
+!        NREC = 0
       ENDIF
       IF(IHOT.NE.0.AND.FIRST.EQ.1.and.ncmode.ne.0.and.nout.eq.3)THEN
          iret = nf_get_var_double(ncid, minzetan_id, minzetan)
@@ -1383,6 +1383,7 @@
       FIRST=0
 !      IF(MYPROC.EQ.0)PRINT *,"N: bef NREC ", NREC," NCIGEP = ",NCIGEP
       IF(IHOT.NE.0.AND.nout.eq.3.and.ncmode.eq.2) NREC = NCIGEP/node_len
+      NREC = NREC + 1
 #ifdef NETCDF_DEBUG
       IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .PRINT *,"N: nout = ", NOUT
@@ -1390,22 +1391,7 @@
 !      IF(MYPROC.EQ.0)PRINT *,"N: NREC = ", NREC
 !      IF(IHOT.NE.0.AND.nout.eq.-3.AND.FIRST.EQ.1) NREC = 0
 !      IF(MYPROC.EQ.0)PRINT *,"N: aft NREC ", NREC," NCIGEP = ",NCIGEP
-      NREC = NREC + 1
 !      IF(MYPROC.EQ.0)PRINT *,"N: start NREC ", NREC
-      
-!     ----------------------------------------
-!     Allocating memory for min and max arrays
-!     ----------------------------------------
-      
-      IF(.NOT. ALLOCATED(minzetat ))ALLOCATE( minzetat(timenc_len))
-      IF(.NOT. ALLOCATED(maxzetat ))ALLOCATE( maxzetat(timenc_len))
-      IF(.NOT. ALLOCATED(minzetan ))ALLOCATE( minzetan(node_len))
-      IF(.NOT. ALLOCATED(maxzetan ))ALLOCATE( maxzetan(node_len))
-
-      IF(.NOT. ALLOCATED(minznodet))ALLOCATE( minznodet(timenc_len))
-      IF(.NOT. ALLOCATED(maxznodet))ALLOCATE( maxznodet(timenc_len))
-      IF(.NOT. ALLOCATED(minztimen))ALLOCATE( minztimen(  node_len))
-      IF(.NOT. ALLOCATED(maxztimen))ALLOCATE( maxztimen(  node_len))
       
 !     ----------
 !     Store time
@@ -1432,6 +1418,20 @@
 #endif
       iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, count, zeta)
       CALL check_err(iret)
+      
+!     ----------------------------------------
+!     Allocating memory for min and max arrays
+!     ----------------------------------------
+      
+      IF(.NOT. ALLOCATED(minzetat ))ALLOCATE( minzetat(timenc_len))
+      IF(.NOT. ALLOCATED(maxzetat ))ALLOCATE( maxzetat(timenc_len))
+      IF(.NOT. ALLOCATED(minzetan ))ALLOCATE( minzetan(node_len))
+      IF(.NOT. ALLOCATED(maxzetan ))ALLOCATE( maxzetan(node_len))
+
+      IF(.NOT. ALLOCATED(minznodet))ALLOCATE( minznodet(timenc_len))
+      IF(.NOT. ALLOCATED(maxznodet))ALLOCATE( maxznodet(timenc_len))
+      IF(.NOT. ALLOCATED(minztimen))ALLOCATE( minztimen(  node_len))
+      IF(.NOT. ALLOCATED(maxztimen))ALLOCATE( maxztimen(  node_len))
 
 !     -------------------------------------
 !     Calculating zeta minimum in each node

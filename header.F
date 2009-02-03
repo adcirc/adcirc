@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.44     - 02/02/09 - mcf - fixed time unlimited index and time variable  
+C               in the fort.63.nc output file for hotstart cases in netcdfio 
+C               module
 C  v48.43     - 01/29/09 - rjw - modified fixes to massbal.F (check for 
 C               ICS status) and vsmy.F (initialized turbulent length scale to
 C               lmin= 0.001 in cstart.F (COLDSTART_3D)) and reformatted 
