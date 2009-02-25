@@ -91,9 +91,7 @@ C---------------------end of data declarations--------------------------------C
 
 C.....Default root working directory
 
-      if (INPUTDIR == "") then
-        ROOTDIR = '.'
-      else
+      if (len_trim(INPUTDIR) /= 0) then
         ROOTDIR = INPUTDIR
       endif
 
@@ -120,9 +118,7 @@ C.....Default root working directory
       WRITE(INPUTDIR,'(A)') TRIM(ROOTDIR)
 #endif
 
-      if (GLOBALDIR == "") then
-        ROOTDIR = '.'
-      else
+      if (len_trim(GLOBALDIR) /= 0) then
         ROOTDIR = GLOBALDIR
       endif
 

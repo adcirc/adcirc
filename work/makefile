@@ -1,4 +1,5 @@
 SHELL:=/bin/sh
+SRCDIR?=..
 #
 #  Makefile to Build PADCIRC and its pre-processor 
 #  University of Texas's parallel version of the Hydrodynamics
@@ -53,7 +54,7 @@ ifeq ($(BUILDTYPE),adcprep)
   CF:= $(PPFC)
   O_DIR:=odir1/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
-  VPATH :=  ../prep:..:../src:../wind 
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind 
   ifeq ($(NETCDF),enable)
     LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf
   else
@@ -66,7 +67,7 @@ ifeq ($(BUILDTYPE),adcprep_be)
   CF:= $(FC)
   O_DIR:=odir2/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
-  VPATH :=  ../prep:../src:.. 
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/src:$(SRCDIR) 
   ifeq ($(NETCDF),enable)
     LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf 
   else
@@ -79,7 +80,7 @@ ifeq ($(BUILDTYPE),adcirc)
   CF:= $(FC)
   O_DIR:=odir3/
   FFLAGS:= $(FFLAGS2) $(DA) $(IMODS) $(O_DIR)
-  VPATH:=  ../src:../wind:..:../prep
+  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf
   endif
@@ -90,7 +91,7 @@ ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
   CF:= $(PFC)
   O_DIR:=odir4/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
-  VPATH :=  ../src:../wind:..:../prep 
+  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep 
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf
   endif
@@ -101,7 +102,7 @@ ifeq ($(BUILDTYPE),p15)
   CF:= $(PPFC)
   O_DIR:=odir5/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
-  VPATH :=  ../wind
+  VPATH :=  $(SRCDIR)/wind
   MSG_MOBJ:=
 endif
 #                                      owi22
@@ -109,7 +110,7 @@ ifeq ($(BUILDTYPE),owi22)
   CF:= $(PPFC)
   O_DIR:=odir6/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
-  VPATH :=  ../wind
+  VPATH :=  $(SRCDIR)/wind
   MSG_MOBJ:=
 endif
 #                                      build13
@@ -117,7 +118,7 @@ ifeq ($(BUILDTYPE),build13)
   CF:= $(PPFC)
   O_DIR:=odir7/
    FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
-  VPATH :=  ../util
+  VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
 endif
 #                                      build12
@@ -125,7 +126,7 @@ ifeq ($(BUILDTYPE),build12)
   CF:= $(PPFC)
   O_DIR:=odir8/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
-  VPATH :=  ../util
+  VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
 endif
 #
@@ -133,7 +134,7 @@ ifeq ($(BUILDTYPE),buildstwave23)
   CF:= $(PPFC)
   O_DIR:=odir9/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
-  VPATH :=  ../util
+  VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
 endif
 #                                      hot2asc      
@@ -141,7 +142,7 @@ ifeq ($(BUILDTYPE),hot2asc)
   CF:= $(PPFC)
   O_DIR:=odir10/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(LIBS)
-  VPATH :=  ../util
+  VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
 endif
 #                                      inflate
@@ -149,7 +150,7 @@ ifeq ($(BUILDTYPE),inflate)
   CF:= $(PPFC)
   O_DIR:=odir11/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(LIBS)
-  VPATH :=  ../util
+  VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
 endif
 #                                      hstime
@@ -157,7 +158,7 @@ ifeq ($(BUILDTYPE),hstime)
   CF:= $(PPFC)
   O_DIR:=odir12/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
-  VPATH :=  ../util
+  VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
 endif
 #                                      adcpost (for 3D and harmonic)
@@ -165,14 +166,14 @@ ifeq ($(BUILDTYPE),adcpost)
   CF:= $(PPFC)
   O_DIR:=odir13/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
-  VPATH :=  ../prep 
+  VPATH :=  $(SRCDIR)/prep 
 endif
 #                                      init
 ifeq ($(BUILDTYPE),init)
   CF:= $(FC)
   O_DIR:=odir14/
   FFLAGS:= $(FFLAGS2) $(DPRE) $(IMODS) $(O_DIR)
-  VPATH :=  ../util:../src:..
+  VPATH :=  $(SRCDIR)/util:$(SRCDIR)/src:$(SRCDIR)
   LIBS  := -L$(NETCDFHOME)/lib -lnetcdf 
 endif
 #
@@ -263,9 +264,9 @@ ifeq ($(MAKELEVEL),0)
    odir_metis_be:
 	mkdir $@
    metis: odir_metis
-	$(MAKE) -C ../metis/Lib/ CC="$(CC)" CFLAGS="$(CFLAGS)" O_DIR="../../work/odir_metis/" LIBMETIS="../../work/odir_metis/libmetis.a" ARFLAGS="$(ARFLAGS)"
+	$(MAKE) -C $(SRCDIR)/metis/Lib/ CC="$(CC)" CFLAGS="$(CFLAGS)" O_DIR="$(CURDIR)/odir_metis/" LIBMETIS="$(CURDIR)/odir_metis/libmetis.a" ARFLAGS="$(ARFLAGS)"
    metis_be: odir_metis_be
-	$(MAKE) -C ../metis/Lib/ CC="$(CCBE)" CFLAGS="$(CFLAGS)" O_DIR="../../work/odir_metis_be/" LIBMETIS="../../work/odir_metis_be/libmetis_be.a" ARFLAGS="$(ARFLAGS)"
+	$(MAKE) -C $(SRCDIR)/metis/Lib/ CC="$(CCBE)" CFLAGS="$(CFLAGS)" O_DIR="$(CURDIR)/odir_metis_be/" LIBMETIS="$(CURDIR)/odir_metis_be/libmetis_be.a" ARFLAGS="$(ARFLAGS)"
    adcprep: metis
 	$(MAKE) BUILDTYPE=adcprep  $@            
    adcprep_be: metis_be

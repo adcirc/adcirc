@@ -1,4 +1,5 @@
-INCDIRS := -I . -I ../prep
+# SRCDIR is set in makefile or on the compile line
+INCDIRS := -I . -I $(SRCDIR)/prep
 
 ########################################################################
 # Compiler flags for Linux operating system on 64bit x86 CPU
@@ -9,17 +10,17 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #            by commenting/uncommenting the appropriate compiler
 #
 #compiler=gnu
-compiler=intel
+#compiler=intel
 #compiler=intel-lonestar
 #compiler=cray_xt3
-#compiler=pgi
+compiler=pgi
 #
 # 
 ifeq ($(compiler),gnu)
   PPFC		:=  g95
   FC		:=  g95
-  PFC		:=  mpif90 -config=g95
-  FFLAGS1	:=  $(INCDIRS) -O2 -march=k8 -m64 -mcmodel=medium -fstatic
+  PFC		:=  mpif90
+  FFLAGS1	:=  $(INCDIRS) -O3 -mcmodel=medium -fstatic
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
@@ -28,7 +29,7 @@ ifeq ($(compiler),gnu)
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
-  CFLAGS	:= $(INCDIRS) -O2 -march=k8 -m64 -mcmodel=medium -DLINUX
+  CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX
   CLIBS	:= 
   LIBS		:=  
   MSGLIBS	:=  
@@ -100,7 +101,7 @@ ifeq ($(compiler),cray_xt3)
   PFC	        :=  ftn
   CC		:=  pgcc
   CCBE		:=  cc
-  FFLAGS1	:=  $(INCDIRS) -tp k8-64 -fastsse -Mextend
+  FFLAGS1	:=  $(INCDIRS) -fastsse -Mextend
   FFLAGS2	:=  $(FFLAGS1) 
   FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics 
   DA  	        :=  -DREAL8 -DLINUX -DCSCA 
@@ -124,7 +125,7 @@ ifeq ($(compiler),pgi)
   PPFC		:=  pgf90
   FC		:=  pgf90
   PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -tp k8-64 -mcmodel=medium -Mextend
+  FFLAGS1	:=  $(INCDIRS) -fastsse -mcmodel=medium -Mextend
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
@@ -133,7 +134,7 @@ ifeq ($(compiler),pgi)
   IMODS		:=  -I
   CC		:= gcc
   CCBE          := $(CC)
-  CFLAGS	:= $(INCDIRS) -O2 -march=k8 -m64 -mcmodel=medium -DLINUX
+  CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX
   CLIBS		:= 
   LIBS  	:=  
   MSGLIBS	:=  
