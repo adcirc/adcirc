@@ -183,12 +183,8 @@ C     Nodal attributes.
 C     jjw&sb46.39.sb01: Base (original) primitive equation weighting. 
 C     Tau0Var may be optimized later based on Tau0Base
       REAL(SZ), ALLOCATABLE :: TAU0BASE(:) 
-C     jgf47.33 Used for front-loaded time averaged tau0
+C     jgf47.33 Used for time averaged tau0
       REAL(SZ), ALLOCATABLE :: LastTau0(:)
-C     jgf48.42 Used for back-loading the time averaged tau0
-      REAL(SZ), ALLOCATABLE :: Tau0TMinus1(:)
-      REAL(SZ), ALLOCATABLE :: Tau0TMinus2(:)
-      REAL(SZ), ALLOCATABLE :: Tau0TMinus3(:)
 
 C     jgf47.06: Added variables to trigger calculations and output of tau0
 C     jgf47.30: Added "FullDomain" or "High Res Areas Only" distinction
@@ -1003,22 +999,19 @@ C
 C     jgf47.33 Enable time averaging of tau0 if requested. 
       IF (Tau0Dig1.eq.-6) THEN
          TimeAveragedTau0 = .true.
-         ALLOCATE(LastTau0(NP))
-         DO I=1, NP
-            LastTau0(I) = Tau0Base(I)
-         ENDDO
       ENDIF
 C
 C     jgf48.42 Enable back loaded time averaging of tau0 if requested. 
       IF (Tau0Dig1.eq.-7) THEN
          BackLoadedTimeAveragedTau0 = .true.
-         ALLOCATE(Tau0TMinus1(NP))
-         ALLOCATE(Tau0TMinus2(NP))
-         ALLOCATE(Tau0TMinus3(NP))
+      ENDIF
+C
+C     jgf48.46 Allocate array to hold previous value tau0 for use in
+C     time averaging, if necessary.
+      IF ( TimeAveragedTau0 .or. BackLoadedTimeAveragedTau0 ) THEN
+         ALLOCATE(LastTau0(NP))
          DO I=1, NP
-            Tau0TMinus1(I) = Tau0Base(I)
-            Tau0TMinus2(I) = Tau0Base(I)
-            Tau0TMinus3(I) = Tau0Base(I)
+            LastTau0(I) = Tau0Base(I)
          ENDDO
       ENDIF
 C
@@ -1189,12 +1182,8 @@ C     jgf48.42 Perform backloaded time averaging of tau0 if requested.
       IF (BackLoadedTimeAveragedTau0) THEN
          DO I=1, NP
             TAU0VAR(I) = AlphaTau0*TAU0VAR(I) 
-     &                 + (1.d0-AlphaTau0)*AlphaTau0*Tau0TMinus1(I)
-     &                 + (1.d0-AlphaTau0)**2*AlphaTau0*Tau0TMinus2(I)
-     &                 + (1.d0-AlphaTau0)**3*Tau0TMinus3(I)
-            Tau0TMinus3(I) = Tau0TMinus2(I)
-            Tau0TMinus2(I) = Tau0TMinus1(I)
-            Tau0TMinus1(I) = TAU0VAR(I)
+     &                 + (1.d0-AlphaTau0)*LastTau0(I)
+            LastTau0(I) = TAU0VAR(I)
          ENDDO
       ENDIF
 C     ----------------------------------------------------------------
