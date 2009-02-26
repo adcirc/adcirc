@@ -1191,7 +1191,7 @@ C     jgf48.42 Perform backloaded time averaging of tau0 if requested.
             TAU0VAR(I) = AlphaTau0*TAU0VAR(I) 
      &                 + (1.d0-AlphaTau0)*AlphaTau0*Tau0TMinus1(I)
      &                 + (1.d0-AlphaTau0)**2*AlphaTau0*Tau0TMinus2(I)
-     &                 + (1.d0-AlphaTau0)**3*AlphaTau0*Tau0TMinus3(I)
+     &                 + (1.d0-AlphaTau0)**3*Tau0TMinus3(I)
             Tau0TMinus3(I) = Tau0TMinus2(I)
             Tau0TMinus2(I) = Tau0TMinus1(I)
             Tau0TMinus1(I) = TAU0VAR(I)

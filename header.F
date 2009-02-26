@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.45     - 02/26/09 - jgf - Fixed backloaded tau0 formula by
+C               removing an extra alpha factor from tau0(t-3) term.
 C  v48.44     - 02/02/09 - mcf - fixed time unlimited index and time variable  
 C               in the fort.63.nc output file for hotstart cases in netcdfio 
 C               module
