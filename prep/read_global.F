@@ -1345,10 +1345,10 @@ C... READ IN THE TYPE OF BOTTOM BOUNDARY CONDITION AND THE SLIP COEFFICIENTS
 
       READ(15,80) SLIPMSG
       READ(SLIPMSG,*) ISLIP,KP
-      IF((ISLIP.LT.0).OR.(ISLIP.GT.2)) THEN
+      IF((ISLIP.LT.0).OR.(ISLIP.GT.3)) THEN
          WRITE(6,350)
          WRITE(6,360)
- 360     FORMAT(/,2X,'    THE SLIP CODE MUST = 0,1,OR 2.')
+ 360     FORMAT(/,2X,'    THE SLIP CODE MUST = 0,1,2,OR 3.')
          STOP
       ENDIF
 
@@ -1385,6 +1385,7 @@ C... SPECIFY TYPE OF EDDY VISCOSITY PROFILE
       IF((IEVC.NE.0 ).and.(IEVC.NE.1 ).and.
      &   (IEVC.NE.10).and.(IEVC.NE.11).and.
      &   (IEVC.NE.20).and.(IEVC.NE.21).and.
+     &   (IEVC.NE.22).and.(IEVC.NE.23).and.
      &   (IEVC.NE.30).and.(IEVC.NE.31).and.(IEVC.NE.32).and.
      &   (IEVC.NE.33).and.
      &   (IEVC.NE.40).and.(IEVC.NE.41).and.(IEVC.NE.42).and.
@@ -1392,8 +1393,8 @@ C... SPECIFY TYPE OF EDDY VISCOSITY PROFILE
      &   (IEVC.NE.50)) THEN
          WRITE(*,350)
          WRITE(*,411)
- 411     FORMAT(/,2X,'    IEVC MUST BE 0,1,10,11,20,21,30,31,32,33,40,',
-     &               '41,42,43,50')
+ 411     FORMAT(/,2X,'    IEVC MUST BE 0,1,10,11,20,21,22,23,',
+     &              '30,31,32,33,40,41,42,43,50')
          STOP
       ENDIF
       IF(IEVC.EQ.50) THEN

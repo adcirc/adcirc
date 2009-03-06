@@ -2,6 +2,19 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.47      -03/06/09 - rjw - Made significant modifications to vsmy.F and 
+C               corresponding changes in src/cstart.F, src/read_input.F, and 
+C               prep/read_global.F.  Changes all to add additional features 
+C               and improvements to 3D EV calculations.  
+C               Modifications have been made to turbulent length scale for 
+C               the M-Y2.5, and the reference water level is now at current
+C               time step. 
+C               The variable KP now has a new meaning for ISLIP=2: 
+C               For ISlip = 1, KP is equivalent linear slip coefficient
+C               For ISlip = 2, KP is minimum equivalent linear slip coefficient
+C               Now for ISlip = 2, the Bottom drag is computed using the log 
+C               profile and bottom roughness in drag equation is the same 
+C               Z0B input in the fort.15 file. 
 C  v48.46     - 02/26/09 - jgf - Corrected backloaded tau0 averaging
 C               formula: now just one time level.
 C  v48.45     - 02/26/09 - jgf - Fixed backloaded tau0 formula by

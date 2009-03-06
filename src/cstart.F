@@ -1033,7 +1033,7 @@ C...  INITIALIZE 3D VELOCITY AND TURBULENCE SOLUTION
           q20(NH,N)=0.d0
 C.RJW bug fix cannot initialize L to zero, must initialize to lmin or non-zero
 C.value, so when elements wet, the first turb length scale is nonzero
-          l(NH,N)=0.001d0
+          l(NH,N)=-9999d0
           wz(NH,N)=0.d0
           wzkp1(NH,N)=0.d0
         ENDDO

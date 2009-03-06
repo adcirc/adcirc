@@ -326,8 +326,11 @@ C                  EVTot(k)=0.D0 !f77diff??
          ENDIF
 
 c     Compute the vertical eddy viscosity
-
-         CALL EDDYVIS(Hs,UU(NH),VV(NH),
+C... RJW changed Hs to Hsp1 
+C Hs is the previous time step (if node is recently wet then this is no good
+C Hsp1 is current time step, if node is newly wet then we now have agreement 
+C and Hsp1 has a value that can be used
+         CALL EDDYVIS(Hsp1,UU(NH),VV(NH),
      &        WSXsNH,WSYsNH,BSX(NH),BSY(NH),
      &        IStart3D,NH,IT)
 
@@ -582,48 +585,52 @@ c     Finished computing advection and stress terms in the momentum
 c     equation at each level in the vertical
 
 c     Compute the equivalent linear slip coefficient
-
+C RJW 02252009 changed KP for ISlip =2 
+C     For ISlip = 1, KP is the equivalent linear slip coefficient
+C     For ISlip = 2, KP is the minimum equivalent linear slip coefficient
+     
          IF(ISlip.EQ.1) KSlip=KP
          IF(ISlip.EQ.2) THEN
 
 c.RJW merged 08282008 Casey 071219: Let's get funky.  
 c.RJW enable this modification
-C changed zo bottom roughness length from 0.1 to 0.01 and blewup
-c. 0.05 however worked dramatically changing the results
 C    Comment out the following:
 C           KSlip=KP*ABS(q(NH,1))
 C     and add the following attemp to base the drag coefficient on the actual
 C     physics of the boundary layer.
 C
+C.RJW.02042009.. for log layer lets use the bottom roughness Z0B as set in the fort.15 file
+C to do this we nedd to define a minimmum depth for this calculation
+C ---
+
             IF(
-     &          ABS( ((SIGMA(2)-B)/(A-B))
-     &                *(DP(NH)+IFNLFA*ETA2(NH)) )
-     &          .LE. 0.1D0 )THEN
-
-                KSlip = 1.D+4
-
-            ELSEIF(
-     &          ABS( ((SIGMA(2)-B)/(A-B))
+     &          ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
      &                *(DP(NH)+IFNLFA*ETA2(NH)) )
      &          .LT. 1.D0 )THEN
 
                 KSlip = (1.D0 / ( (1.D0/0.41D0) *
-     &                  LOG( ABS( ((SIGMA(2)-B)/(A-B))
-     &                     *(DP(NH)+IFNLFA*ETA2(NH)) )
-     &                  / (0.1D0) ) ) )**2.D0
-     &                * ABS(Q(NH,1))
+     &                  LOG( ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
+     &                     *( DP(NH)+IFNLFA*ETA2(NH) ) + Z0B )
+     &                  / (Z0B) ) ) )**2.D0
+     &                * ABS(Q(NH,2))
 
             ELSE
 
                 KSlip = (1.D0 / ( (1.D0/0.41D0) *
-     &                  LOG( 1.D0
-     &                  / (0.1D0) ) ) )**2.D0
+     &                  LOG( (1.D0+Z0B)
+     &                  / (Z0B) ) ) )**2.D0
      &                * ABS(Q(NH,1))
 
             ENDIF
 
-             IF(KSlip.GT.1.D-1) KSlip=1.D-1
-             IF(KSlip.LT.1.E-8) KSlip=1.E-8
+             IF(KSlip.GT.0.1d0) KSlip=0.1d0
+             IF(KSlip.LT.KP) KSlip=KP
+         ENDIF
+         IF(ISlip.EQ.3) THEN
+             KSlip=KP*ABS(Q(NH,1))
+
+            IF(KSlip.GT.0.1d0) KSlip=0.1d0
+            IF(KSlip.LT.1.E-4) KSlip=1.E-4
          ENDIF
 
 c     Set up the RHS forcing vector Fr and LHS matrix in compact storage
@@ -1361,6 +1368,7 @@ C     jgf46.00 explicitly declared the following variables
       REAL(SZ) BREAK
       REAL(SZ) EVBEGIN
       REAL(SZ) USTARB
+      REAL(SZ) USTARS
       REAL(SZ) UAVMAG
       REAL(SZ) UAVMAGS
 
@@ -1446,6 +1454,33 @@ C...
             ELSE
                EVTOT(J)=EVBASE
             ENDIF
+         ENDDO
+         GOTO 100
+      ENDIF
+      IF(IEVC.EQ.22) THEN
+         USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
+         USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
+         EVTOT(1)=RKAPPA*0.5*(USTARB+USTARS)*Z0B
+         EVBASE=RKAPPA*0.5*(USTARB+USTARS)*H*0.2D0
+         IF(EVBASE.LT.EVTOT(1)) EVBASE=EVTOT(1)
+         SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
+         BREAK=b+0.2D0*amb
+         EVBEGIN=EVTOT(1)-SLOPE*b
+         DO J=2,NFEN
+            IF(SIGMA(J).LE.BREAK) THEN
+               EVTOT(J)=EVBEGIN+SLOPE*SIGMA(J)
+            ELSE
+               EVTOT(J)=EVBASE
+            ENDIF
+         ENDDO
+         GOTO 100
+      ENDIF
+      IF(IEVC.EQ.23) THEN
+          USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
+          USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
+          EVTOT(1)=0.1*0.5*(USTARB+USTARS)*H
+         DO J=2,NFEN
+           EVTOT(J)=0.1*0.5*(USTARB+USTARS)*H
          ENDDO
          GOTO 100
       ENDIF
@@ -1923,7 +1958,7 @@ c
 c argument list:
 c
 c nh          : horizontal node counter
-c H           : total depth (includes finite amplitude)
+c H           : total depth at current time step (includes finite amplitude)
 c it          : current time step value
 c delt        : simulation incremental time step (uses same step as
 c               internal and external modes)
@@ -2059,7 +2094,7 @@ c************************************************************************
       IMPLICIT NONE
       
       COMPLEX(SZ) :: dQdz,dQdz1,dQdz2
-      REAL(8) :: H
+      REAL(8) :: H,H_crit
 
       REAL(SZ) :: BSX,BSY,WSX,WSY
       REAL(SZ),SAVE :: Sh,H2
@@ -2111,8 +2146,8 @@ c     At time step 1, set flags and initialize variables
 c     
 C.. RJW added as per Kendra reccomendation to algebraically compute length scale
 C.  RJW moved up and outside of if statement
-c         il = 1  ! length scale flag, = 1 for length scale from q2l eqn.
-         il = 2  ! length scale flag, = 2 for length scale from algebraic eq. (see below)
+         il = 1  ! length scale flag, = 1 for length scale from q2l eqn.
+c         il = 2  ! length scale flag, = 2 for length scale from algebraic eq. (see below)
 c         il = 3  ! length scale flag, = 3 for length scale from algebraic eq. (see below)
 
       if(istart.eq.1) then
@@ -2164,16 +2199,20 @@ C identify if node was dry last timestep but is now wet
 C the initialized value of L can be recomputed to a more meaningful 
 C value before used to compute q2
 C as of now problem is fixed by initializing L to a nonzero value
-c      if (L(nh,1) .eq. 0.001d0 ) Then
-c            do n = 1,nfen
-c               if(il.eq.2)then
+C ACTUALLY if the node WAS dry and now IS wet, 
+C then L=H
+C
+      if (L(nh,1) .eq. -9999d0 ) Then
+            do n = 1,nfen
+               l(nh,n) = H    
+c         if(il.eq.2)then
 c                  sig = (sigma(n)+1.d0)/amb
 c                  rl1 = 1.d0/(rkap*(sig*H+Z0B)*exp(-amb*sig))
 c                  rl2 = 1.d0/(rkap*(H-sig*H+Z0S))
 c                  l(nh,n) = 1.d0/(rl1+rl2)
 c               endif
-c            end do
-c       Endif
+            end do
+       Endif
 
       H2 = H*H
       HOamb=H/amb
@@ -2397,7 +2436,7 @@ c     Mqb(n) = (Inm(n,1)+Inm(n,2)+Inm(n,3))*coef1+KQnm(n,2)*coef2   !lumping
             Mqc(n) = Inm(n,3)*coef1+KQnm(n,3)*coef2
 c     Mqc(n) = KQnm(n,3)*coef2                                !lumping
 
-            coef3 = 1.d0 - delt*(1.d0-theta2)*tdiss
+          coef3 = 1.d0 - delt*(1.d0-theta2)*tdiss
 c     coef3 = 1.d0/delt - (1.d0-theta2)*tdiss                 !rog way
             coef4 = E1*rmlen(n)*delt
 c     coef4 = E1*rmlen(n)                                     !rog way
@@ -2438,6 +2477,31 @@ c     Transfer to global array and check for stability limit
             endif
          end do
          l(nh,nfen) = q2l(nfen)/q2(nfen)
+
+C RJW 02252009 ...
+c Now we do a little bookeeping, to be sure things stay in 
+c reasonable bounds.
+c 1) set a lower limit on the turbulent length scale of 10 cm
+c 2)in shallow water we want to modify the calculation of l
+c set Hlimit = 1.0 and l_2 = H
+c If the total water depth is less than 1.0 meter
+c then we want to set the turbulent length scale to
+c equal the water depth
+        H_crit = 1.0
+
+        do n = 1, nfen
+
+          if (l(nh,n) .lt. 0.10 ) l(nh,n) = 0.10
+  
+          if ( H .le. H_crit ) then
+
+           l(nh,n) = H/H_crit*l(nh,n) + (1-H/H_crit)*H
+
+          endif
+
+        enddo
+c...
+
       endif
 
 c     
