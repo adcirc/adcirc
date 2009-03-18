@@ -72,10 +72,19 @@ C      GeoidOffset           "sea_surface_height_above_geoid"
 C      EVM        "average_horizontal_eddy_viscosity_in_sea_water_wrt_depth"
 C      EVC        "average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth"
 C      Tao0MinMax "min_and_max_primitive_weighting_in_continuity_equation"
+C      datumCorrection       "subtract_from_depth_to_equal_mean_sea_level"
 C
 C-----------------------------------------------------------------------
       MODULE NodalAttributes
       USE SIZES
+C
+C     jgf48.47 Set up directory from which to read nodal attributes. 
+C     This will be either fulldomain input dir (if fulldomain nodal
+C     attr are being read in for decomposition) or it will be the 
+C     subdomain/serial input dir if nodal attr are being written 
+C     (after decomp) or read in for execution.
+      CHARACTER(2048), POINTER :: DIR
+      CHARACTER(len=80) header   ! string where alphanumeric file id is stored
 C
 C     The following flags are .true. if the corresponding data are
 C     required for the run, according to the unit 15 control file
@@ -91,6 +100,7 @@ C     required for the run, according to the unit 15 control file
       LOGICAL LoadEVM
       LOGICAL LoadEVC
       LOGICAL LoadTau0MinMax 
+      LOGICAL LoadDatumCorrection
 C
 C     The following flags are .true. if there are data with the
 C     corresponding label in the unit 13 file.
@@ -106,6 +116,7 @@ C     corresponding label in the unit 13 file.
       LOGICAL FoundEVM
       LOGICAL FoundEVC
       LOGICAL FoundTau0MinMax
+      LOGICAL FoundDatumCorrection
 C
 C     These variables hold the strings which describe the attribute's
 C     units. These data are loaded from the file, but not used as of
@@ -122,6 +133,7 @@ C     v46.00.
       CHARACTER(len=80) EVMUnits 
       CHARACTER(len=80) EVCUnits
       CHARACTER(len=80) Tau0MinMaxUnits     
+      CHARACTER(len=80) DatumCorrectionUnits
 C
 C     These variables hold the number of values per node for each
 C     attribute.
@@ -137,6 +149,7 @@ C     attribute.
       INTEGER EVMNoOfVals
       INTEGER EVCNoOfVals
       INTEGER Tau0MinMaxNoOfVals
+      INTEGER DatumCorrectionNoOfVals
 C
 C     These variables hold the default values for each attribute.
       REAL(SZ) Tau0DefVal
@@ -151,12 +164,14 @@ C     These variables hold the default values for each attribute.
       REAL(SZ) EVMDefVal
       REAL(SZ) EVCDefVal
       REAL(SZ) Tau0MinMaxDefVal(2)
+      REAL(SZ) DatumCorrectionDefVal
 C
       INTEGER NumOfNodes    ! number of nodes listed in unit 13 file, cf. NP
       INTEGER NAttr         ! number of nodal attributes in the unit 13 file
 C
 C     The following variables are inputs from the unit 15 model param. file
       INTEGER NWP     ! number of nodal attributes to read from file
+      CHARACTER(len=80), ALLOCATABLE :: ActiveNodalAttr(:) ! from fort.15
       INTEGER NoLiBF  ! nonlinear bottom friction indicator 
       REAL(SZ) Tau0   ! primitive continuity eqn. weight
       REAL(SZ) Tau    ! linear friction coefficient (1/sec)
@@ -206,6 +221,11 @@ C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(SZ), ALLOCATABLE :: EVM(:)
       REAL(SZ), ALLOCATABLE :: EVC(:)
       REAL(SZ), ALLOCATABLE :: Tau0MinMax(:,:)  ! (node,i); i=1(min), i=2(max) 
+      REAL(SZ), ALLOCATABLE :: DatumCorrection(:)
+C
+C     jgf48.44 The following are used in domain decomposition.
+      INTEGER, ALLOCATABLE :: NonDefaultNodes(:) ! nondefault s.d. nodes
+      INTEGER :: nonDefaultCount  ! number of non default nodes in s.d.
 C
       INTEGER i        ! node loop counter
       INTEGER j        ! attribute values loop counter
@@ -226,6 +246,8 @@ C     ----------------------------------------------------------------
       SUBROUTINE InitNAModule()
       IMPLICIT NONE
 C
+      DIR => INPUTDIR
+C
       LoadTau0           = .False.
       LoadStartDry       = .False. 
       LoadDirEffRLen     = .False.
@@ -238,6 +260,7 @@ C
       LoadEVM            = .False.
       LoadEVC            = .False.
       LoadTau0MinMax     = .False.
+      LoadDatumCorrection= .False.
 C
       FoundTau0           = .False.
       FoundStartDry       = .False.
@@ -251,6 +274,7 @@ C
       FoundEVM            = .False.
       FoundEVC            = .False.
       FoundTau0MinMax     = .False.
+      FoundDatumCorrection= .False.
 C      
       Tau0NoOfVals          = 1
       StartDryNoOfVals      = 1
@@ -264,6 +288,7 @@ C
       EVMNoOfVals           = 1
       EVCNoOfVals           = 1
       Tau0MinMaxNoOfVals    = 2
+      DatumCorrectionNoOfVals=1
 C
       Tau0DefVal             = 0.0
       StartDryDefVal         = 0.0
@@ -283,12 +308,13 @@ C
       DO j=1, Tau0MinMaxNoOfVals
          Tau0DefVal = 0.0
       END DO
+      DatumCorrectionDefVal = 0.0
 C
       HighResTimeVaryingTau0     = .False.
       FullDomainTimeVaryingTau0  = .False.
       OutputTau0                 = .False.
       TimeAveragedTau0           = .False.
-      BackLoadedTimeAveragedTau0 = .False.
+      BackLoadedTimeAveragedTau0= .False.
 C
       HBREAK=1.d0
       FTHETA=1.d0
@@ -302,6 +328,320 @@ C     ----------------------------------------------------------------
       END SUBROUTINE InitNAModule
 C     ----------------------------------------------------------------
 
+
+C     ----------------------------------------------------------------
+C     S U B R O U T I N E    D E C O M P O S E   N O D A L  A T T R
+C     ----------------------------------------------------------------
+C
+C     jgf48.44 Subroutine to read the full domain nodal attributes 
+C     file (unit 13) and write the nodal attributes file for the local
+C     subdomain. This subroutine is only called during parallel
+C     execution.
+C
+C     ----------------------------------------------------------------
+      SUBROUTINE DecomposeNodalAttr(NODES_LG, NP, NScreen, ScreenUnit,
+     &     MyProc, NAbOut)
+      IMPLICIT NONE
+      INTEGER, intent(in) :: NODES_LG(:) !node map from subdomain to fulldomain
+      INTEGER, intent(in) :: NP ! number of nodes in the grid file 
+      INTEGER, intent(in) :: NScreen ! nonzero for debug info to screen
+      INTEGER, intent(in) :: ScreenUnit ! i/o for debug info to screen
+      INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
+      INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
+      INTEGER ErrorIO  ! zero if file opened successfully
+C
+C     Read in fulldomain nodal attributes file.
+      DIR => GBLINPUTDIR
+      CALL ReadNodalAttr(NScreen, ScreenUnit, MyProc, NAbOut)
+C
+C     Write out subdomain nodal attributes file.
+      DIR => INPUTDIR
+      OPEN(UNIT=13, FILE=TRIM(DIR)//'/'//'fort.13', 
+     &     IOSTAT=ErrorIO)
+C
+      IF ( ErrorIO .GT. 0 ) THEN 
+         WRITE(16,1001)         ! Nodal attribute file
+         WRITE(16,1005)         ! exists but can't be opened
+         WRITE(16,9973)         ! execution terminated
+         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
+            WRITE(ScreenUnit,1001) 
+            WRITE(ScreenUnit,1005)
+            WRITE(ScreenUnit,9973) 
+         ENDIF
+         STOP                   ! We're toast.
+      ENDIF
+C
+C     Transcribe header information into subdomain unit 13 file
+      WRITE(13,'(A80)') header
+      WRITE(13,*) NP   ! this is the number of nodes in the subdomain
+      WRITE(13,*) NWP  ! (inactive nodal attr are not decomposed)
+C
+C     Transcribe active attribute names from full domain file to subdomain
+C     in the header part of the file.
+      IF (LoadTau0) THEN
+         WRITE(13,*) 'primitive_weighting_in_continuity_equation'
+         WRITE(13,*) Tau0Units   
+         WRITE(13,*) Tau0NoOfVals
+         WRITE(13,*) Tau0DefVal
+      ENDIF
+      IF (LoadStartDry) THEN
+         WRITE(13,*) 'surface_submergence_state'
+         WRITE(13,*) StartDryUnits      
+         WRITE(13,*) StartDryNoOfVals
+         WRITE(13,*) StartDryDefVal            
+      ENDIF
+      IF (LoadQuadraticFric) THEN
+         WRITE(13,*) 'quadratic_friction_coefficient_at_sea_floor'
+         WRITE(13,*) QuadraticFricUnits 
+         WRITE(13,*) QuadraticFricNoOfVals
+         WRITE(13,*) QuadraticFricDefVal
+      ENDIF
+      IF (LoadDirEffRLen) THEN
+        WRITE(13,*) 'surface_directional_effective_roughness_length' 
+        WRITE(13,*) DirEffRLenUnits  
+        WRITE(13,*) DirEffRLenNoOfVals
+        WRITE(13,*) 
+     &      (DirEffRLenDefVal(j),j=1,DirEffRLenNoOfVals)    
+      ENDIF
+      IF (LoadCanopyCoef) THEN
+         WRITE(13,*) 'surface_canopy_coefficient' 
+         WRITE(13,*) CanopyCoefUnits  
+         WRITE(13,*) CanopyCoefNoOfVals
+         WRITE(13,*) CanopyCoefDefVal 
+      ENDIF
+      IF (LoadBridgePilings) THEN
+         WRITE(13,*) 'bridge_pilings_friction_parameters' 
+         WRITE(13,*) BridgePilingsUnits  
+         WRITE(13,*) BridgePilingsNoOfVals
+         WRITE(13,*)  
+     &       (BridgePilingsDefVal(j),j=1,BridgePilingsNoOfVals)  
+      ENDIF
+      IF (LoadManningsN) THEN
+         WRITE(13,*) 'mannings_n_at_sea_floor'
+         WRITE(13,*) ManningsNUnits 
+         WRITE(13,*) ManningsNNoOfVals
+         WRITE(13,*) ManningsNDefVal 
+      ENDIF
+      IF (LoadGeoidOffset) THEN
+         WRITE(13,*) 'sea_surface_height_above_geoid'
+         WRITE(13,*) GeoidOffsetUnits     
+         WRITE(13,*) GeoidOffsetNoOfVals
+         WRITE(13,*) GeoidOffsetDefVal
+      ENDIF
+      IF (LoadChezy) THEN
+         WRITE(13,*) 'chezy_friction_coefficient_at_sea_floor'
+         WRITE(13,*) ChezyUnits     
+         WRITE(13,*) ChezyNoOfVals
+         WRITE(13,*) ChezyDefVal          
+      ENDIF
+      IF (LoadEVM) THEN
+         WRITE(13,*)
+     &       'average_horizontal_eddy_viscosity_in_sea_water_wrt_depth'
+         WRITE(13,*) EVMUnits     
+         WRITE(13,*) EVMNoOfVals
+         WRITE(13,*) EVMDefVal
+      ENDIF
+      IF (LoadEVC) THEN
+         WRITE(13,*) 
+     &     'average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth'
+         WRITE(13,*) EVCUnits     
+         WRITE(13,*) EVCNoOfVals
+         WRITE(13,*) EVCDefVal
+      ENDIF
+      IF (LoadTau0MinMax) THEN
+         WRITE(13,*) 
+     &     'min_and_max_primitive_weighting_in_continuity_equation'
+         WRITE(13,*) Tau0MinMaxUnits   
+         WRITE(13,*) Tau0MinMaxNoOfVals
+         WRITE(13,*) (Tau0MinMaxDefVal(j),j=1,Tau0MinMaxNoOfVals)
+      ENDIF
+      IF (LoadDatumCorrection) THEN
+         WRITE(13,*) 
+     &     'subtract_from_depth_to_equal_mean_sea_level'
+         WRITE(13,*) DatumCorrectionUnits     
+         WRITE(13,*) DatumCorrectionNoOfVals
+         WRITE(13,*) DatumCorrectionDefVal
+      ENDIF
+C
+C     jgf48.44 Now that the header is written, write out the values of the 
+C     nodal attributes at each node.
+      ALLOCATE(NonDefaultNodes(NP))
+C
+      IF (LoadTau0) THEN
+         WRITE(13,*) 'primitive_weighting_in_continuity_equation'
+         CALL SubDomainNonDefault(TAU0VAR,Tau0DefVal,NP,NODES_LG) 
+      ENDIF
+      IF (LoadStartDry) THEN
+         WRITE(13,*) 'surface_submergence_state'
+         CALL SubDomainNonDefault(STARTDRY,StartDryDefVal,NP,NODES_LG) 
+      ENDIF
+      IF (LoadQuadraticFric) THEN
+         WRITE(13,*) 'quadratic_friction_coefficient_at_sea_floor'
+         CALL SubDomainNonDefault(FRIC,QuadraticFricDefVal,NP,NODES_LG) 
+      ENDIF
+      IF (LoadDirEffRLen) THEN
+         WRITE(13,*) 'surface_directional_effective_roughness_length' 
+         CALL SubDomainNonDefault2D(z0land, DirEffRLenNoOfVals, 
+     &         DirEffRLenDefVal,NP, NODES_LG)
+      ENDIF
+      IF (LoadCanopyCoef) THEN
+         WRITE(13,*) 'surface_canopy_coefficient' 
+         CALL SubDomainNonDefault(vcanopy,CanopyCoefDefVal,NP,NODES_LG) 
+      ENDIF
+      IF (LoadBridgePilings) THEN
+         WRITE(13,*) 'bridge_pilings_friction_parameters' 
+         CALL SubDomainNonDefault2D(BridgePilings,
+     &         BridgePilingsNoOfVals,BridgePilingsDefVal,NP,NODES_LG)
+      ENDIF
+      IF (LoadManningsN) THEN
+         WRITE(13,*) 'mannings_n_at_sea_floor'
+         CALL SubDomainNonDefault(ManningsN,ManningsNDefVal,NP,NODES_LG)
+      ENDIF
+      IF (LoadGeoidOffset) THEN
+         WRITE(13,*) 'sea_surface_height_above_geoid'
+         CALL SubDomainNonDefault(GeoidOffset,GeoidOffsetDefVal,
+     &                            NP,NODES_LG) 
+      ENDIF
+      IF (LoadChezy) THEN
+         WRITE(13,*) 'chezy_friction_coefficient_at_sea_floor'
+         CALL SubDomainNonDefault(Chezy,ChezyDefVal,NP,NODES_LG) 
+      ENDIF
+      IF (LoadEVM) THEN
+         WRITE(13,*)
+     &   'average_horizontal_eddy_viscosity_in_sea_water_wrt_depth'
+         CALL SubDomainNonDefault(EVM,EVMDefVal,NP,NODES_LG) 
+      ENDIF
+      IF (LoadEVC) THEN
+         WRITE(13,*) 
+     &   'average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth'
+         CALL SubDomainNonDefault(EVC,EVCDefVal,NP,NODES_LG) 
+      ENDIF
+      IF (LoadTau0MinMax) THEN
+         WRITE(13,*) 
+     &     'min_and_max_primitive_weighting_in_continuity_equation'
+         CALL SubDomainNonDefault2D(Tau0MinMax,Tau0MinMaxNoOfVals,
+     &         Tau0MinMaxDefVal,NP,NODES_LG)
+      ENDIF
+      IF (LoadDatumCorrection) THEN
+         WRITE(13,*) 
+     &   'subtract_from_depth_to_equal_mean_sea_level'
+         CALL SubDomainNonDefault(DatumCorrection,
+     &                            DatumCorrectionDefVal,NP,NODES_LG) 
+      ENDIF
+C
+      CLOSE(13)
+C
+C     Deallocate the memory that held our fulldomain data. It will be 
+C     reallocated to hold the subdomain data later in the initialization
+C     process.
+      DEALLOCATE(TAU0VAR,TAU0BASE) ! jjw&sb46.39sb01
+      DEALLOCATE(STARTDRY) 
+      DEALLOCATE(FRIC)
+      DEALLOCATE(z0land)
+      DEALLOCATE(vcanopy)
+      DEALLOCATE(BridgePilings)
+      DEALLOCATE(GeoidOffset)
+      DEALLOCATE(Chezy)
+      DEALLOCATE(ManningsN)
+      DEALLOCATE(EVM)
+      DEALLOCATE(EVC)
+      DEALLOCATE(Tau0MinMax)
+      DEALLOCATE(DatumCorrection)
+      DEALLOCATE(NonDefaultNodes)
+
+ 1001 FORMAT('ERROR: The Nodal Attributes File (unit 13)')
+ 1005 FORMAT('exists but cannot be opened.')
+ 9973 FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
+      RETURN
+C     ----------------------------------------------------------------
+      END SUBROUTINE DecomposeNodalAttr
+C     ----------------------------------------------------------------
+
+C     ----------------------------------------------------------------
+C     S U B R O U T I N E   S U B D O M A I N  N O N  D E F A U L T 
+C     ----------------------------------------------------------------
+C
+C     jgf48.44 Subroutine to determine the number of non default values in
+C     each subdomain for a given nodal attribute. Used in domain 
+C     decomposition for nodal attributes.
+C       
+C     ----------------------------------------------------------------
+      SUBROUTINE SubDomainNonDefault(RealArray, DefaultValue,
+     &                  NP, NODES_LG)
+      IMPLICIT NONE
+      REAL(SZ), intent(in):: RealArray(:)  ! f.d. nodal attribute array       
+      REAL(SZ), intent(in):: DefaultValue  ! default value of the attribute
+      INTEGER, intent(in) :: NP             ! number of nodes in the subdomain
+      INTEGER, intent(in) :: NODES_LG(:)! node map from subdomain to fulldomain
+      INTEGER :: I                          ! node loop counter
+C
+      nonDefaultCount = 0
+      DO I=1, NP
+         IF ( RealArray(ABS(NODES_LG(I))) .ne. DefaultValue ) THEN
+            nonDefaultCount = nonDefaultCount + 1
+            NonDefaultNodes(nonDefaultCount) = I
+         ENDIF
+      ENDDO
+      WRITE(13,'(I10)') nonDefaultCount
+      DO i=1, nonDefaultCount
+         WRITE(13,1100) i, RealArray(ABS(NODES_LG(NonDefaultNodes(i))))
+      ENDDO
+C
+ 1011 FORMAT('RealArray(',I10,')=',E16.8)
+ 1100 FORMAT(I10,32000(2X,E16.8))
+      RETURN         
+C     ----------------------------------------------------------------
+      END SUBROUTINE SubDomainNonDefault
+C     ----------------------------------------------------------------
+
+C     ----------------------------------------------------------------
+C     S U B R O U T I N E  
+C     S U B D O M A I N  N O N  D E F A U L T  2 D
+C     ----------------------------------------------------------------
+C
+C     jgf48.44 Subroutine to determine the number of non default values in
+C     each subdomain for a given (mult-component) nodal attribute.
+C     Used in domain decomposition for nodal attributes.
+C       
+C     ----------------------------------------------------------------
+      SUBROUTINE SubDomainNonDefault2D(RealArray, NumCol, DefaultValue,
+     &                  NP, NODES_LG)
+      IMPLICIT NONE
+      REAL(SZ), intent(in):: RealArray(:,:)  ! f.d. nodal attribute array       
+      INTEGER, intent(in) :: NumCol        ! numberl of values at node
+      REAL(SZ), intent(in):: DefaultValue(:)  ! default value of the attribute
+      INTEGER, intent(in) :: NP             ! number of nodes in the subdomain
+      INTEGER, intent(in) :: NODES_LG(:)! node map from subdomain to fulldomain
+      INTEGER :: I                          ! node loop counter
+      INTEGER :: J                          ! column counter at node
+      LOGICAL :: nonDefaultFound            ! .true. if one column different
+C
+      nonDefaultCount = 0
+      DO I=1, NP
+         nonDefaultFound = .false.
+         DO J=1, NumCol         
+            IF ( RealArray(ABS(NODES_LG(I)),J) 
+     &           .ne. DefaultValue(J) ) THEN
+               nonDefaultFound = .true.
+               exit
+            ENDIF
+         ENDDO
+         IF ( nonDefaultFound ) THEN
+            nonDefaultCount = nonDefaultCount + 1
+            NonDefaultNodes(nonDefaultCount) = I
+         ENDIF
+      ENDDO
+      WRITE(13,'(I10)') nonDefaultCount
+      DO i=1, nonDefaultCount
+         WRITE(13,1100) i, 
+     &     (RealArray(ABS(NODES_LG(NonDefaultNodes(i))),j),j=1,NumCol)
+      ENDDO
+
+ 1100 FORMAT(I10,32000(2X,E16.8))
+      RETURN         
+C     ----------------------------------------------------------------
+      END SUBROUTINE SubDomainNonDefault2D
+C     ----------------------------------------------------------------
 
 C     ----------------------------------------------------------------
 C     S U B R O U T I N E     R E A D  N O D A L  A T T R
@@ -320,7 +660,6 @@ C
       LOGICAL NAFound  ! .true. if Nodal Attributes File (fort.13) exists
       INTEGER ErrorIO  ! zero if file opened successfully
       CHARACTER(len=80) AttrName ! string where the attribute name is stored
-      CHARACTER(len=80) header   ! string where alphanumeric file id is stored
       INTEGER NumNodesNotDefault ! number of individual nodes to specify
       LOGICAL SkipDataSet ! .true. if a data set in unit 13 is not needed
       CHARACTER(len=80) Skipped ! data in unit 13 we do not need
@@ -362,7 +701,7 @@ C     Otherwise, get on with it.
      &     /,9X,'Must read Nodal Attributes File (unit 13).')
 C
 C     Determine if the Nodal Attributes File exists.
-      INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.13',EXIST=NAFound)
+      INQUIRE(FILE=TRIM(DIR)//'/'//'fort.13',EXIST=NAFound)
 C
       IF (.not.NAFound) THEN
          WRITE(16,1001)         ! Nodal Attributes file 
@@ -373,17 +712,23 @@ C
             WRITE(ScreenUnit,1011)       
             WRITE(ScreenUnit,9973)      ! execution terminated
          ENDIF
+      ENDIF
+C
+      IF (.not.NAFound) THEN
+         WRITE(16,9973)         ! execution terminated
+         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
+            WRITE(ScreenUnit,9973)      ! execution terminated
+         ENDIF
          STOP
       ENDIF
 C
-C     Read the unit 15 control file to determine what data must be
-C     loaded from nodal attributes file.
+C     Read the nodal attributes from unit 15 control file to 
+C     determine what data must be loaded from nodal attributes file.
       WRITE(16,235) NWP
  235  FORMAT(/,9X,'Need to load ',I2,' nodal attribute(s):')
       DO k=1,NWP
-         READ(15,*) AttrName
-         WRITE(16,'(14X,A80)') AttrName
-         SELECT CASE (AttrName)
+         WRITE(16,'(14X,A80)') ActiveNodalAttr(k)
+         SELECT CASE (ActiveNodalAttr(k))
          CASE("primitive_weighting_in_continuity_equation")
             LoadTau0 = .True.
          CASE("surface_submergence_state")
@@ -411,6 +756,9 @@ C     loaded from nodal attributes file.
          CASE
      &   ("min_and_max_primitive_weighting_in_continuity_equation")
             LoadTau0MinMax = .True.
+         CASE
+     &   ("subtract_from_depth_to_equal_mean_sea_level")
+            LoadDatumCorrection = .True.
          CASE DEFAULT     
             WRITE(16,1000)          ! unit 15 Model Parameter file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -425,7 +773,7 @@ C     Now open the nodal attributes (unit 13) file.
       WRITE(16,240) 
  240  FORMAT(/,9X,'Nodal Attributes File (unit 13) was found.',
      &     ' Opening file.') 
-      OPEN(UNIT=13, FILE=TRIM(INPUTDIR)//'/'//'fort.13', 
+      OPEN(UNIT=13, FILE=TRIM(DIR)//'/'//'fort.13', 
      &     IOSTAT=ErrorIO)
       IF ( ErrorIO .GT. 0 ) THEN 
          WRITE(16,1001)         ! Nodal attribute file
@@ -516,6 +864,12 @@ C     Read each attribute name, units, number of values, and default value
             READ(13,'(A80)') Tau0MinMaxUnits   
             READ(13,*) Tau0MinMaxNoOfVals
             READ(13,*) (Tau0MinMaxDefVal(j),j=1,Tau0MinMaxNoOfVals)
+         CASE
+     &   ("subtract_from_depth_to_equal_mean_sea_level")
+            FoundDatumCorrection = .True.
+            READ(13,'(A80)') DatumCorrectionUnits   
+            READ(13,*) DatumCorrectionNoOfVals
+            READ(13,*) DatumCorrectionDefVal
          CASE DEFAULT     
             WRITE(16,1001)          ! Nodal Attributes file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -547,6 +901,7 @@ C     that are not in the nodal attributes file.
      &   ((LoadChezy).and.(.not.FoundChezy)).or.
      &   ((LoadEVM).and.(.not.FoundEVM)).or.
      &   ((LoadEVC).and.(.not.FoundEVC)).or.
+     &   ((LoadDatumCorrection).and.(.not.FoundDatumCorrection)).or.
      &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax))) THEN
          WRITE(16,1111)
  1111    FORMAT('ERROR: Nodal Attributes file (unit 13) does '
@@ -573,6 +928,7 @@ C     Allocate memory to hold our data.
       ALLOCATE(EVM(NumOfNodes))
       ALLOCATE(EVC(NumOfNodes))
       ALLOCATE(Tau0MinMax(NumOfNodes,Tau0MinMaxNoOfVals))
+      ALLOCATE(DatumCorrection(NumOfNodes))
 C
 C     Now read each of the attributes required by the model parameter
 C     (unit 15) file and skip past the others.
@@ -675,6 +1031,14 @@ C     (unit 15) file and skip past the others.
             ELSE
                SkipDataSet = .True.
             ENDIF 
+         CASE
+     &   ("subtract_from_depth_to_equal_mean_sea_level")
+            IF (LoadDatumCorrection) THEN
+               CALL LoadAttrVec(DatumCorrection, DatumCorrectionDefVal, 
+     &               NumNodesNotDefault, NScreen, MyProc, NAbOut)
+            ELSE
+               SkipDataSet = .True.
+            ENDIF
          CASE DEFAULT
             SkipDataSet = .True.
             WRITE(16,1001)      ! Nodal Attributes file
@@ -694,6 +1058,8 @@ C     (unit 15) file and skip past the others.
             WRITE(16,'(/,9X,A18,A80)') 'Finished loading ', AttrName
          ENDIF
       END DO
+ 
+      CLOSE(13)
 C
  1000 FORMAT('ERROR: The Model Parameter File (unit 15)')
  1001 FORMAT('ERROR: The Nodal Attributes File (unit 13)')

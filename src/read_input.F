@@ -29,7 +29,7 @@ C-----------------------------------------------------------------------
 !     jgf46.00
       USE NodalAttributes, ONLY : 
      &     NoLiBF, NWP, Tau0, HBreak, FTheta, FGamma, Tau, CF,
-     &     InitNAModule, ReadNodalAttr, InitNodalAttr, ESLM, ESLC,
+     &     ActiveNodalAttr, ESLM, ESLC,
      &     Tau0FullDomainMin, Tau0FullDomainMax
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
@@ -56,10 +56,6 @@ C
       CHARACTER(50) LVAR(3)
 C
 C    ===================================================================
-C
-C     jgf46.00 Zero out all the variables in the Nodal Attributes
-C     Module. 
-      CALL InitNAModule() 
 C...
 C...OPEN STATEMENT FOR UNIT 14 AND 15 INPUT FILES
 C...  
@@ -854,7 +850,12 @@ C     tau0, bottom friction, directional wind speed reduction factor,
 C     startdry, etc. The full initialization and error checking of these
 C     data must wait until the grid has been read in from unit 14.
       READ(15,*) NWP
-      CALL ReadNodalAttr(NScreen, ScreenUnit, MyProc, NAbOut)
+      IF (NWP.gt.0) THEN
+         ALLOCATE(ActiveNodalAttr(NWP))
+         DO I=1, NWP
+            READ(15,*) ActiveNodalAttr(I)
+         ENDDO
+      ENDIF
 C...
 C...  READ AND PROCESS NCOR - SPATIALLY VARYING CORIOLIS PARAMETER
 C...
@@ -1349,8 +1350,7 @@ C
 C     jgf46.00 Added user specified spatially varying tau0 scheme using
 C     the Nodal Attributes File (unit 13) and removed three tier tau0
 C     scheme. Since Tau0 is a nodal attribute, it is initialized later
-C     in this subroutine using a CALL to the InitNodalAttr subroutine in
-C     the NodalAttributes module.
+C     using a CALL to the InitNodalAttr subroutine.
       READ(15,*) Tau0
 C
 C     jgf47.11 Added a line to the fort.15 file to read in the min
@@ -1712,16 +1712,6 @@ C...
          END DO
       ENDIF
 
-C...  
-C...  IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
-C...  DEPTHS ARE > OR = TO H0.
-C...  
-      IF((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
-         DO I=1,NP
-            IF(DP(I).LT.H0) DP(I)=H0
-         END DO
-      ENDIF
-
 C...
 C...  Read and process the global connectivity table from unit 14
 C...
@@ -2065,9 +2055,6 @@ C     initialized in the call to InitNodalAttr.
         ENDIF
       ENDIF
 C
-C     jgf46.00 Initialize nodal attributes, now that grid has been read
-C     in from unit 14 file.
-      CALL InitNodalAttr(DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut)
 C...
 C...  READ CORIOLIS INFORMATION AND COMPUTE THE CORIOLIS VECTOR
 C...  OUTPUT RESULTING CORIOLIS INFORMATION
@@ -3135,7 +3122,6 @@ C...........WRITE OUT BOUNDARY CONDITION ARRAY INFORMATION
      &              THETA,CSII(JGW),SIII(JGW),BNDLEN2O3(JGW)
  1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I6,3X,I4,8X,E12.4,2X,E16.8,
      &              1X,E16.8,2X,E16.8)
-
 C...........CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS
                IF((IBTYPE.EQ.3).OR.(IBTYPE.EQ.13)
      &          .OR.(IBTYPE.EQ.23)) THEN
@@ -5041,13 +5027,7 @@ C...  CLOSE FILES FORT.14 and FORT.15
 C...
       CLOSE(14)
       CLOSE(15)
-C...  
-c.RJW merged 09/02/2008 Casey 071219: Added the following subroutine call to compute the RESELEM array.
-C             The subroutine is located at the begining of the file 'massbal.F.'
-#ifdef CMPI
-      CALL COMPUTE_RESELEM
-#endif
-c.
+
       RETURN 
       END
 
@@ -5080,14 +5060,11 @@ C...  Declaration and definition of local variables used in this subroutine
       REAL(8)  :: X4,Y4
       REAL(8)  :: X1,X2,X3,Y1,Y2,Y3           !Used for computing interpolating factors for station output
       REAL(8)  :: A1,A2,A3,AA,AE,AEMin        !Used for computing interpolating factors for station output
-      REAL(SZ) :: HH1                         !domain averaged depth used for some vertical FE grids
       REAL(SZ) :: Alp1,Alp2,Alp3              !time stepping coefficients
 
       INTEGER  :: NT                          !Total number of time steps in model run
       INTEGER  :: N1,N2,N3,KMin               !Used for computing interpolating factors for station output
       INTEGER  :: N,K,NN                      !loop counters
-      INTEGER  :: NH                          !horizontal node loop counter
-      INTEGER  :: IGC                         !vertical grid code
 
 C     
 C...  General invalid entry format statement used throughout
@@ -5230,28 +5207,6 @@ c     IGC = 0 - Read in grid from UNIT 15
           STOP
         ENDIF
       ENDIF
-
-c     IGC <> 0 - Set up grid in subroutine FEGRIDS
-
-      IF(IGC.NE.0) THEN
-         HH1=0.d0
-         DO NH=1,NP
-            HH1=HH1+DP(NH)
-         ENDDO 
-         HH1=HH1/NP                        !domain averaged depth
-         CALL FEGRIDS(IGC,HH1)
-      ENDIF
-
-c     write out the vertical grid in fort.16 file
-
-      WRITE(16,1000)
- 1000 FORMAT(//,5X,'Vertical Grid Information')
-      WRITE(16,1001) 
- 1001 FORMAT(/,5X,'V. Node #',5X,'V. Position',/)
-      DO N = 1,NFEN
-         WRITE(16,*) N,Sigma(N)
-      ENDDO 
-
 
 C...  SPECIFY TYPE OF EDDY VISCOSITY PROFILE
 
@@ -6293,7 +6248,7 @@ C-----------------------------------------------------------------------
       ENDDO
       IF (.not. ElementFound ) THEN
          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-            WRITE(ScreenUnit,593) StationNumber
+            WRITE(ScreenUnit,593) Description, StationNumber
          ENDIF
          WRITE(16,593) Description, StationNumber
          IF(NFOVER.EQ.1) THEN

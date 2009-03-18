@@ -5,8 +5,7 @@ C                                                                      *
 C***********************************************************************
 C
        MODULE WIND
-       USE SIZES, ONLY : SZ, LOCALDIR
-       USE GLOBAL, ONLY : ScreenUnit
+       USE SIZES, ONLY : SZ, MNP, INPUTDIR, GBLINPUTDIR, LOCALDIR
 #ifdef CMPI
       use messenger, only : msg_fini
 #endif
@@ -72,6 +71,201 @@ C
       RETURN
 C     ----------------------------------------------------------------
       END FUNCTION WindDrag
+C     ----------------------------------------------------------------
+
+
+C     ----------------------------------------------------------------
+C      S U B R O U T I N E   D E C O M P O S E  M E T
+C     ----------------------------------------------------------------
+C     jgf48.47 Subroutine plucked from ADCPREP to decompose the 
+C     meteorological input data into subdomains. This is only called
+C     during parallel execution.
+C     ----------------------------------------------------------------
+      SUBROUTINE DecomposeMet(NWS, NODES_LG, NP, NP_G, G, NScreen,
+     &    ScreenUnit, MyProc, NAbOut)
+      IMPLICIT NONE
+      INTEGER, intent(in) :: NWS ! type of met input file
+      INTEGER, intent(in) :: NODES_LG(:) ! sub-to-fulldomain mapping
+      INTEGER, intent(in) :: NP ! number of nodes in this subdomain
+      INTEGER, intent(in) :: NP_G ! number of nodes in the fulldomain
+      REAL(SZ), intent(in) :: G ! gravitational constant
+      INTEGER, intent(in) :: NScreen ! whether to print output to screen
+      INTEGER, intent(in) :: ScreenUnit ! unit to send screen output to
+      INTEGER, intent(in) :: MyProc ! processor num for this subdomain
+      INTEGER, intent(in) :: NAbOut ! whether to abbreviate logging
+
+      LOGICAL FOUND,DONE
+      INTEGER ErrorIO  ! nonzero if there was an error opening a file
+      INTEGER I,J,NHG
+      CHARACTER*80 PBLJAGF
+      LOGICAL Success     ! .true. if all files open without error
+      INTEGER,ALLOCATABLE  :: NG(:)
+      REAL(SZ),ALLOCATABLE :: WVNXG(:),WVNYG(:),PRG(:)
+      REAL(SZ),ALLOCATABLE :: WVNXL(:),WVNYL(:),PRL(:)
+      REAL(SZ) U,V,PR
+      REAL(SZ) RHOWAT
+      CHARACTER*170 Line ! line of data from file
+C
+C     Determine if full domain file exists
+      INQUIRE(FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',EXIST=FOUND)
+C
+C     If it does exist, open it
+      IF ( FOUND ) THEN
+         WRITE(16,1011) TRIM(GBLINPUTDIR)//'/'//'fort.22' !found
+         OPEN(UNIT=22, FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22', 
+     &        IOSTAT=ErrorIO)
+         Success = .true.
+         IF ( ErrorIO .GT. 0 ) THEN
+            WRITE(16,*) "ERROR: Full domain file exists but"
+            WRITE(16,*) "cannot be opened."
+            Success = .false.
+            RETURN ! early return
+         ENDIF
+      ELSE
+         IF (MyProc.eq.0) WRITE(ScreenUnit,*) 
+     &     'WARNING: Cannot prep fort.22; fulldomain file not found.'
+         WRITE(16,*)  
+     &     'WARNING: Cannot prep fort.22; fulldomain file not found.'
+         RETURN ! early return
+      ENDIF
+C
+C     Open subdomain met file.
+      OPEN(UNIT=222, FILE=TRIM(INPUTDIR)//'/'//'fort.22',
+     &     IOSTAT=ErrorIO)
+C
+      IF ( ErrorIO .GT. 0 ) THEN
+         WRITE(16,1001)         ! file
+         WRITE(16,1005)         ! exists but can't be opened
+         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
+            WRITE(ScreenUnit,1001)
+            WRITE(ScreenUnit,1005)
+         ENDIF
+         RETURN ! early return
+      ENDIF
+C
+C     Allocate local work arrays
+C
+      ALLOCATE ( NG(NP_G) ) ! integer array for node numbers
+      ALLOCATE ( WVNXG(NP_G),WVNYG(NP_G),PRG(NP_G) ) ! fulldomain met
+      ALLOCATE ( WVNXL(NP),WVNYL(NP),PRL(NP) )       ! subdomain met
+C
+C--Branch to Appropriate Code
+C
+      SELECT CASE(ABS(NWS))
+C     -------------
+      CASE(1,2,5,7)
+C     -------------
+C
+C        MAIN LOOP FOR NWS = 1, +-2,+-5,+-7
+C        (1)  Read a record from Global Wind Stress File
+C        (2)  Use Decomp arrarys to Localize record to a subdomain
+C        (3)  Write Local Wind Stress record in same format 
+         DO                     ! loop forever (or until file ends)
+           READ(22,*,END=9999)
+     &         (NG(I),WVNXG(I),WVNYG(I),PRG(I),I=1,NP_G)
+           DO I=1, NP
+              WVNXL(I) = WVNXG(ABS(NODES_LG(I)))
+              WVNYL(I) = WVNYG(ABS(NODES_LG(I)))
+              PRL(I) = PRG(ABS(NODES_LG(I)))
+           ENDDO
+           DO I=1, NP
+              WRITE(222,1100)  I,WVNXL(I),WVNYL(I),PRL(I)
+           ENDDO
+         ENDDO
+        
+C     -------     
+      CASE(4)
+C     -------
+C        MAIN LOOP FOR NWS = +- 4  ( PBL Format )
+C        (1)  Read a record from Global Wind Stress File
+C        (2)  Use Decomp arrarys to Localize record to a subdomain
+C        (3)  Write out in PBL Format on subdomain
+         DO I=1, NP_G
+            WVNXG(I)=-99999.d0 ! this means "no data at this node"
+         END DO
+         DO
+            READ(22,'(A80)',END=9999) PBLJAGF
+            ! the '#' symbol separates time periods in the input file
+            IF(PBLJAGF(2:2).EQ.'#') THEN
+               WRITE(222,1101)
+               WRITE(222,1100) 1,0.0,0.0,0.0 !victor didn't like this line 27/11/03
+               DO I=1, NP
+                  IF ( WVNXG(ABS(NODES_LG(I))).ne.-99999.d0 ) THEN
+                     WRITE(222,1100) I, WVNXG(ABS(NODES_LG(I))),
+     &                  WVNYG(ABS(NODES_LG(I))),PRG(ABS(NODES_LG(I)))
+                     ! set this back to "no data" for the next go 'round
+                     WVNXG(I)=-99999.d0
+                  ELSE
+                     ! there was no data in the fulldomain met file that
+                     ! corresponded to this subdomain node, so write nothing
+                  ENDIF
+               ENDDO
+            ELSE
+               READ(PBLJAGF,*,END=9999) NHG,U,V,PR
+               NG(NHG)=NHG 
+               WVNXG(NHG)=U
+               WVNYG(NHG)=V
+               PRG(NHG)=PR
+            ENDIF
+         END DO
+C
+C     --------     
+      CASE(45)
+C     --------
+C        jgf46.02 Convert NWS=4 winds to NWS=5 winds to imitate the
+C        Katrina (IPET) version of the code.
+C
+         DO
+            RHOWAT=1000.0d0
+            CALL NWS4GET(WVNXG,WVNYG,PRG,NP_G,RHOWAT,G)
+C     
+            DO I=1, NP
+               WRITE(222,1100) I, WVNXG(ABS(NODES_LG(I))),
+     &                  WVNYG(ABS(NODES_LG(I))),PRG(ABS(NODES_LG(I)))
+            ENDDO
+C--   If reached EOF in NWS4GET last time go close files and return
+C     
+            IF (DONE) GOTO 9999
+         ENDDO
+C     
+C     ---------     
+      CASE(3,6,8,9)
+C     ---------
+C        jgf46.16 Added NWS=9, asymmetric hurricane wind model
+C
+C        jgf48.35 Moved NWS=3 and NWS=6 into this case, since it seems to 
+C        work better than calling the shell to copy the files.
+         DO
+            READ(22,170,END=9999) Line
+            WRITE(222,170) Line
+         ENDDO
+C
+C     ------------
+      CASE DEFAULT
+C     ------------
+         print *, "NWS=",NWS," has incorrect value in DecomposeMet"
+         RETURN
+
+      END SELECT
+C
+C--Close fulldomain and subdomain meteorological files.     
+C
+ 9999 CLOSE(22)
+      CLOSE(222)
+
+      DEALLOCATE ( NG,  WVNXG, WVNYG, PRG )
+      DEALLOCATE ( WVNXL, WVNYL, PRL )
+      RETURN
+  60  FORMAT(A60)
+ 170  FORMAT(A170)
+ 1001 FORMAT(' ERROR: The meteorological file (unit 22)')
+ 1005 FORMAT('exists but cannot be opened.')
+ 1010 FORMAT(' File ',A60,/,' WAS NOT FOUND!  Try again',/)
+ 1011 FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
+ 1100 FORMAT(I8,3E13.5)
+ 1101 FORMAT(' #')
+C     ----------------------------------------------------------------
+      END SUBROUTINE DecomposeMet
 C     ----------------------------------------------------------------
 
 
@@ -589,7 +783,7 @@ C***********************************************************************
 
       SUBROUTINE NWS10GET(NWSGGWI,FLON,FLAT,ULL,VLL,PLL,NP,RHOWAT0,G,
      &     LONB,LATB,WTIMINC)
-      USE SIZES
+      USE GLOBAL, ONLY: ScreenUnit, MyProc
       IMPLICIT NONE
       INTEGER, SAVE :: FIRSTCALL = 0
       INTEGER N,NP,NWSGGWI,LONB,LATB,I,J,JJ,IEXT,IDIG1,IDIG2,
@@ -977,7 +1171,7 @@ C***********************************************************************
 
       SUBROUTINE NWS11GET(NWSEGWI,IDSETFLG,FLON,FLAT,ULL,VLL,PLL,NP,
      &     RHOWAT0,G)
-      USE SIZES
+      USE GLOBAL, ONLY: ScreenUnit, MyProc
       IMPLICIT NONE
       INTEGER,SAVE  ::  ICALL = 0
       INTEGER NWSEGWI,IDSETFLG,NP,I,IEXT,IDIG1,IDIG2,IDIG3,KERR,N

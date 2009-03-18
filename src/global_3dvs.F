@@ -130,6 +130,9 @@ C...  DECLARE 3D GLOBAL SCALARS
       REAL(SZ), PARAMETER ::  AMB=A-B
 
       INTEGER  :: NFEN                 !Number of nodes in the vertical
+      INTEGER  :: IGC                  !type of vertical grid spacing
+      REAL(SZ) :: HH1                  !domain averaged depth used
+                                       !for some vertical FE grids
       INTEGER  :: ISLIP                !bottom slip coefficient flag (0=no slip, 1=linear, 2=quadratic)
       INTEGER  :: IEVC                 !eddy viscosity flag determine type of EV used
       INTEGER  :: IStart3D = 0         !=0 when code starts up, incremented each time VSSOL is called, used to initialize EV

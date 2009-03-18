@@ -93,7 +93,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       IF (FirstCall) THEN
 
          ! fort.61
-         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(ET00_g(NSTAE_G)) 
          ENDIF
@@ -107,7 +107,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          ElevStaDescript % array_g              => ET00_g
 
          ! fort.62
-         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(UU00_g(NSTAV_G))
             ALLOCATE(VV00_g(NSTAV_G)) 
@@ -124,7 +124,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          VelStaDescript % array2_g             => VV00_g
 
          ! fort.63
-         write(16,*) 'Allocating ElevDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating ElevDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(ETA2_g(NP_G))
          ENDIF
@@ -138,7 +138,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          ElevDescript % array_g              => ETA2_g
 
          ! tau0
-         write(16,*) 'Allocating Tau0Descript' !jgfdebug48.03
+C         write(16,*) 'Allocating Tau0Descript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(TAU0VAR_g(NP_G))
          ENDIF
@@ -152,7 +152,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          Tau0Descript % array_g              => TAU0VAR_g
 
          ! fort.64
-         write(16,*) 'Allocating VelDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating VelDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(UU2_g(NP_G))
             ALLOCATE(VV2_g(NP_G)) 
@@ -169,7 +169,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          VelDescript % array2_g             => VV2_g
 
          ! fort.71
-         write(16,*) 'Allocating PrStaDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating PrStaDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(RMP00_g(NSTAM_G))
          ENDIF
@@ -183,7 +183,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          PrStaDescript % array_g              => RMP00_g
      
          ! fort.72
-         write(16,*) 'Allocating WindVelStaDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating WindVelStaDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(RMU00_g(NSTAM_G))
             ALLOCATE(RMV00_g(NSTAM_G))
@@ -200,7 +200,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          WindVelStaDescript % array2_g             => RMV00_g
 
          ! fort.73
-         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(Pr2_g(NP_G))
          ENDIF
@@ -214,7 +214,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          PrDescript % array_g              => Pr2_g
 
          ! fort.74
-         write(16,*) 'Allocating WindVelDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating WindVelDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(WVNXOut_g(NP_G))
             ALLOCATE(WVNYOut_g(NP_G)) 
@@ -231,7 +231,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          WindVelDescript % array2_g             => WVNYOut_g
 
          ! fort.81
-         write(16,*) 'Allocating ConcStaDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating ConcStaDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(CC00_g(NP_G))
          ENDIF
@@ -245,7 +245,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          ConcStaDescript % array_g              => CC00_g        
 
          ! fort.83
-         write(16,*) 'Allocating ConcDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating ConcDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(CH1_g(NP_G))
          ENDIF
@@ -287,8 +287,9 @@ C
 C           save elevation recording station data to file
             CALL writeOutArray(61, TIME, IT, ElevStaDescript,
      &                         packOne, unpackOne, IESTP) 
-
+#ifdef DEBUG_GLOBALIO
             write(16,*) 'Finished with fort.61 output routine.' !jgfdebug48.03
+#endif
             NSCOUE=0
             NCCOUE=NSCOUE
          ENDIF
@@ -304,7 +305,9 @@ C...
              NCCOUV=NSCOUV
          ENDIF
          IF(NSCOUV.EQ.NSPOOLV) THEN
+#ifdef DEBUG_GLOBALIO
             write(16,*) 'About to write fort.62 file.' !jgfdebug48.03
+#endif
             DO I=1,NSTAV
                U11=UU2(NM(NNV(I),1))
                U22=UU2(NM(NNV(I),2))
@@ -320,7 +323,9 @@ C           save velocity recording station data to file
             CALL writeOutArray(62, TIME, IT, VelStaDescript,
      &                         packTwo, unpackTwo, IVSTP) 
 
+#ifdef DEBUG_GLOBALIO
             write(16,*) 'Finished with fort.62 output routine.' !jgfdebug48.03
+#endif
             NSCOUV=0
             NCCOUV=NSCOUV
          ENDIF
@@ -355,8 +360,9 @@ C
 C           save concentration recording station data to file
             CALL writeOutArray(81, TIME, IT, ConcStaDescript,
      &                         packOne, unpackOne, ICSTP)
- 
+#ifdef DEBUG_GLOBALIO 
             write(16,*) 'Finished with fort.81 output routine.' !jgfdebug48.03
+#endif
             NSCOUC=0
          ENDIF
       ENDIF
@@ -371,7 +377,9 @@ C...
             NCCOUM=NSCOUM
          ENDIF
          IF(NSCOUM.EQ.NSPOOLM) THEN
+#ifdef DEBUG_GLOBALIO
             write(16,*) 'About to write fort.71,72 files.' !jgfdebug48.03
+#endif
             DO I=1,NSTAM
                NM1=NM(NNM(I),1)
                NM2=NM(NNM(I),2)
@@ -448,7 +456,9 @@ C              jgf48.03 TODO: Make this globalio compliant.
 #endif
               IGEP=IGEP+1+NP
            ENDIF
+#ifdef DEBUG_GLOBALIO
            write(16,*) 'Finished with fort.63 output routine.' !jgfdebug48.03
+#endif
            NSCOUGE=0
            NCCOUGE=NSCOUGE
 !         IF(MYPROC.EQ.0) PRINT *, "W: B-write after ", NSCOUGE
@@ -1272,7 +1282,9 @@ C     initialize output file name
 
 C     collect up the data from subdomains if running in parallel
       IF ( MNPROC.gt.1 ) THEN
+#ifdef DEBUG_GLOBALIO
          write(16,*) 'About to collectFullDomainArray' !jgfdebug48.03
+#endif
          CALL collectFullDomainArray(descript, pack_cmd, unpack_cmd)
       ENDIF
 
@@ -1280,26 +1292,33 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
       SELECT CASE (ABS(descript % specifier))
  
       CASE(1) !ascii text
-
+#ifdef DEBUG_GLOBALIO
          write(16,*) 'About to open globalio text file.' !jgfdebug48.03
+#endif
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//fn,
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
             WRITE(lun,2120) time,IT
             IF (descript % num_items_per_record .eq. 1) THEN
                DO I=1, descript % num_fd_records
+#ifdef DEBUG_GLOBALIO
                   WRITE(16,*) I ! jgfdebug48.03
+#endif
                   WRITE(lun,2453) I, descript % array_g(I)
                ENDDO
             ENDIF
             IF (descript % num_items_per_record .eq. 2) THEN
                DO I=1, descript % num_fd_records
+#ifdef DEBUG_GLOBALIO
                   WRITE(16,*) I ! jgfdebug48.03
+#endif
                   WRITE(lun,2454) I, descript % array_g(I),
      &                               descript % array2_g(I)  
                ENDDO
             ENDIF
+#ifdef DEBUG_GLOBALIO
             WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
+#endif
             CLOSE(lun)
          ENDIF
 
@@ -2287,12 +2306,13 @@ C
       INTEGER, SAVE, ALLOCATABLE, TARGET :: NodeCode_g(:)
       INTEGER, SAVE, ALLOCATABLE, TARGET :: NOFF_g(:)
       LOGICAL, SAVE :: FirstCall = .true.
-      
+#ifdef DEBUG_GLOBALIO      
       WRITE(16,*) "***********WRITE HOTSTART*********************"
       WRITE(16,*) "NHSTAR = ", NHSTAR
       WRITE(16,*) "FirstCall = ", FirstCall
+#endif
       IF (FirstCall) THEN
-         write(16,*) 'Allocating Elev1Descript' 
+C         write(16,*) 'Allocating Elev1Descript' 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(ETA1_g(NP_G))
          ENDIF
@@ -2307,7 +2327,7 @@ C
 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             IF (.not.ALLOCATED(ETA2_g)) THEN
-               write(16,*) 'Allocating Elev2Descript' 
+C               write(16,*) 'Allocating Elev2Descript' 
                ALLOCATE(ETA2_g(NP_G))
             ENDIF
          ENDIF
@@ -2322,7 +2342,7 @@ C
          
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             IF (.not.ALLOCATED(UU2_g)) THEN
-               write(16,*) 'Allocating VelDescript' 
+C               write(16,*) 'Allocating VelDescript' 
                ALLOCATE(UU2_g(NP_G))
                ALLOCATE(VV2_g(NP_G)) 
             ENDIF
@@ -2339,7 +2359,7 @@ C
          VelDescript % array2_g             => VV2_g
 
          IF (IM.eq.10) THEN
-            write(16,*) 'Allocating CH1Descript' 
+C            write(16,*) 'Allocating CH1Descript' 
             IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
                ALLOCATE(EtaDisc_g(NP_G))
             ENDIF
@@ -2354,7 +2374,7 @@ C
          ENDIF        
  
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            write(16,*) 'Allocating EtaDiscDescript' 
+C            write(16,*) 'Allocating EtaDiscDescript' 
             ALLOCATE(EtaDisc_g(NP_G))
          ENDIF
          EtaDiscDescript % specifier            = NHSTAR
@@ -2367,7 +2387,7 @@ C
          EtaDiscDescript % array_g              => EtaDisc_g
          
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            write(16,*) 'Allocating NodeCodeDescript' 
+C            write(16,*) 'Allocating NodeCodeDescript' 
             ALLOCATE(NodeCode_g(NP_G))
          ENDIF
          NodeCodeDescript % specifier            = NHSTAR
@@ -2380,7 +2400,7 @@ C
          NodeCodeDescript % iarray_g             => NODECODE_g
 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            write(16,*) 'Allocating NOFFDescript' 
+C            write(16,*) 'Allocating NOFFDescript' 
             ALLOCATE(NOFF_g(NE_G))
          ENDIF
          NOFFDescript % specifier            = NHSTAR
@@ -2397,34 +2417,34 @@ C
 
 C     collect up the data from subdomains if running in parallel
 #ifdef CMPI
-         WRITE(16,*) "START collectFullDomainArray"
-         WRITE(16,*) 
-     &    'About to collectFullDomainArrays for hotstart file.'
-         WRITE(16,*) "collectFullDomainArray Elev1Descript"
+C         WRITE(16,*) "START collectFullDomainArray"
+C         WRITE(16,*) 
+C     &    'About to collectFullDomainArrays for hotstart file.'
+C         WRITE(16,*) "collectFullDomainArray Elev1Descript"
          CALL collectFullDomainArray(Elev1Descript, packOne, unpackOne)
-         WRITE(16,*) "collectFullDomainArray Elev2Descript"
+C         WRITE(16,*) "collectFullDomainArray Elev2Descript"
          CALL collectFullDomainArray(Elev2Descript, packOne, unpackOne)
-         WRITE(16,*) "collectFullDomainArray VelDescript"
+C         WRITE(16,*) "collectFullDomainArray VelDescript"
          CALL collectFullDomainArray(VelDescript, packTwo, unpackTwo)
          IF (IM.eq.10) THEN
             CALL collectFullDomainArray(CH1Descript, packOne, unpackOne)
          ENDIF
-         WRITE(16,*) "collectFullDomainArray EtaDiscDescript"
+C         WRITE(16,*) "collectFullDomainArray EtaDiscDescript"
          CALL collectFullDomainArray(EtaDiscDescript, 
      &             packOne, unpackOne)
-         WRITE(16,*) "collectFullDomainIntArray NodeCodeDescript"
+C         WRITE(16,*) "collectFullDomainIntArray NodeCodeDescript"
          CALL collectFullDomainIntArray(NodeCodeDescript, 
      &             packOneInt, unpackOneInt)
-         WRITE(16,*) "collectFullDomainIntArray NOFFDescript"
+C         WRITE(16,*) "collectFullDomainIntArray NOFFDescript"
          CALL collectFullDomainIntArray(NOFFDescript, 
      &             packOneInt, unpackOneInt)
-         WRITE(16,*) "FINISH collectFullDomainArray"
-         IF ( (MyProc.eq.0) ) THEN
-           DO I=1, NP_G
+C         WRITE(16,*) "FINISH collectFullDomainArray"
+C         IF ( (MyProc.eq.0) ) THEN
+C           DO I=1, NP_G
 !             PRINT *,"before case 1 ",I, Elev1Descript % array_g(I)
 !             PRINT *,"before case 1 ",I, Elev1Descript % array_g(I)
-          ENDDO
-         ENDIF
+C          ENDDO
+C         ENDIF
 
 #endif
       SELECT CASE (NHSTAR)
@@ -2529,33 +2549,33 @@ C     collect up the data from subdomains if running in parallel
              IHOTSTP=IHOTSTP+1
           ENDDO
 #else
-          WRITE(16,*) '=================ETA1:===================='
+C          WRITE(16,*) '=================ETA1:===================='
           DO I=1, NP_G
-             WRITE(16,*) I, ETA1(I)
+C             WRITE(16,*) I, ETA1(I)
              WRITE(hss % lun,REC=IHOTSTP) ETA1(I)
              IHOTSTP=IHOTSTP+1
           ENDDO
-          WRITE(16,*) '=================ETA2:===================='
+C          WRITE(16,*) '=================ETA2:===================='
           DO I=1, NP_G
-             WRITE(16,*) I, ETA2(I)
+C             WRITE(16,*) I, ETA2(I)
              WRITE(hss % lun,REC=IHOTSTP) ETA2(I)
              IHOTSTP=IHOTSTP+1
           ENDDO
-          WRITE(16,*) '=================ETADisc:===================='
+C          WRITE(16,*) '=================ETADisc:===================='
           DO I=1, NP_G
-             WRITE(16,*) I, ETADisc(I)
+C             WRITE(16,*) I, ETADisc(I)
              WRITE(hss % lun,REC=IHOTSTP) EtaDisc(I)
              IHOTSTP=IHOTSTP+1
           ENDDO
-          WRITE(16,*) '=================UU2:===================='
+C          WRITE(16,*) '=================UU2:===================='
           DO I=1, NP_G
-             WRITE(16,*) I, UU2(I)
+C             WRITE(16,*) I, UU2(I)
              WRITE(hss % lun,REC=IHOTSTP) UU2(I)
              IHOTSTP=IHOTSTP+1
           ENDDO
-          WRITE(16,*) '=================VV2:===================='
+C          WRITE(16,*) '=================VV2:===================='
           DO I=1, NP_G
-             WRITE(16,*) I, VV2(I) 
+C             WRITE(16,*) I, VV2(I) 
              WRITE(hss % lun,REC=IHOTSTP) VV2(I)
              IHOTSTP=IHOTSTP+1
           ENDDO
@@ -2565,15 +2585,15 @@ C     collect up the data from subdomains if running in parallel
                 IHOTSTP=IHOTSTP+1
              ENDDO
           ENDIF
-          WRITE(16,*) '=================NodeCode:===================='
+C          WRITE(16,*) '=================NodeCode:===================='
           DO I=1, NP_G
-             WRITE(16,*) I, NodeCode(I)
+C             WRITE(16,*) I, NodeCode(I)
              WRITE(hss % lun,REC=IHOTSTP) NodeCode(I)
              IHOTSTP=IHOTSTP+1
           ENDDO
-          WRITE(16,*) '=================NOFF:===================='
+C          WRITE(16,*) '=================NOFF:===================='
           DO I=1, NE_G
-             WRITE(16,*) I, NOFF(I)
+C             WRITE(16,*) I, NOFF(I)
              WRITE(hss % lun,REC=IHOTSTP) NOFF(I)
              IHOTSTP=IHOTSTP+1
           ENDDO

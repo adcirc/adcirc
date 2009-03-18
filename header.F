@@ -2,6 +2,16 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.48      -03/18/09 - jgf - Changed prep.F so that input files are
+C               decomposed 256 at a time (configurable). This avoids the 
+C               limit on the max number of open files imposed by some
+C               platforms. Also introduced experimental integrated
+C               prep13 and prep22 (not compiled in by default, and not 
+C               with any guarantee that it works). Created new nodal
+C               attribute (subtract_from_depth_to_equal_mean_sea_level), 
+C               which required the rearrangement of initialization, 
+C               particularly in adcirc.F, because many initialization 
+C               routines use depth.
 C  v48.47      -03/06/09 - rjw - Made significant modifications to vsmy.F and 
 C               corresponding changes in src/cstart.F, src/read_input.F, and 
 C               prep/read_global.F.  Changes all to add additional features 

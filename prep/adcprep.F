@@ -387,13 +387,14 @@ C
 C
 C     Write a subdomain nodal attributes file (fort.13) for each PE
 C
+#ifndef INTEGPREP13
       if (NWP.gt.0) then
         write(*,'(/)')
         write(*,*) 'Writing subdomain Nodal Attributes (unit 13)'
         write(*,*) 'file for each PE.'
         CALL PREP13()
       endif
-
+#endif
 C
 C-- If required write a Local fort.19 file for each PE
 C
@@ -416,6 +417,7 @@ C
 C
 C-- If required write a Local Wind Stress file for each PE
 C
+#ifndef INTEGPREP22
       IF (PREP_ALL) THEN
 C     sb46.28sb01 NWS=12 doesn't need fort.22 decomposition
          IF (NWS.NE.0.AND.ABS(NWS).NE.12)  THEN
@@ -435,6 +437,7 @@ c              CALL PREP200()
             ENDIF
          ENDIF
       ENDIF
+#endif
 C
 C-- If required write a Local Wave Stress file for each PE
 C

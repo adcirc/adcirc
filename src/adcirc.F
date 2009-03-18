@@ -98,10 +98,17 @@ C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
 C
+      USE NodalAttributes, ONLY : NWP, InitNAModule, ReadNodalAttr,
+     &   InitNodalAttr, DecomposeNodalAttr, LoadDatumCorrection,
+     &   DatumCorrection
+      USE WIND, ONLY: DecomposeMet
+      USE GLOBAL_3DVS, ONLY: IGC, HH1, NFEN, Sigma
+      IMPLICIT NONE
+C
       INTEGER, OPTIONAL :: COMM
       CHARACTER(*), OPTIONAL :: ROOTD
 C
-      INTEGER IE, I, J, N    ! local loop counter
+      INTEGER IE, I, J, K, N, IPRBI, NPRBI    ! local loop counter
       INTEGER NM1, NM2, NM3  ! local node numbers
       INTEGER NCELE          ! local node code indicator
       REAL(8) AreaEle
@@ -144,24 +151,266 @@ C...    writer processors will not execute the rest in this source file (adcirc.
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
 #endif         
-
-      ! File Fmt Version  must match Major and Minor numbers.
-      FileFmtVersion = 
-     &VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
-      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,'(a)')"ADCIRC Version is "//ADC_VERSION
-
-
+C     -----------------------------------------------------------
+C     A R C H I T E C T U R E   D E P E N D E N T
+C     -----------------------------------------------------------
 #ifdef CMACHSUN
       CALL ABRUPT_UNDERFLOW() ! Abrupt underflow for Sun computers
 #endif
+C     -----------------------------------------------------------
+
+C     -----------------------------------------------------------
+C     N O D A L   A T T R I B U T E S
+C     -----------------------------------------------------------
+C     jgf46.00 Zero out all the variables in the Nodal Attributes
+C     Module. 
+      CALL InitNAModule()
+C     jgf48.44 Decompose, Read, and Set up nodal attribute values
+C     ... this is experimental and is not compiled in by default.
+#ifdef CMPI
+C      jgf48.47 We now have an experimental "integrated" prep13
+C      subroutine activated by adding the -DINTEGPREP13 compiler
+C      flag.
+#ifdef INTEGPREP13
+      IF (NWP.ne.0) THEN
+         CALL DecomposeNodalAttr(NODES_LG, NP, NScreen, ScreenUnit, 
+     &    MyProc, NAbOut)
+      ENDIF
+#endif
+#endif 
+      CALL ReadNodalAttr(NScreen, ScreenUnit, MyProc, NAbOut)
+C     jgf46.00 Initialize nodal attributes, now that grid has been
+C     read in from unit 14 file.
+      CALL InitNodalAttr(DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut)
+C     -----------------------------------------------------------
+
+C     -----------------------------------------------------------
+C     M E T E O R O L O G Y 
+C     -----------------------------------------------------------
+C     jgf48.47 This is just optional windfile decomposition, but could
+C     be expanded to other met init tasks in the future if needed.
+#ifdef CMPI
+C     jgf48.47 We now have an experimental "integrated" prep22
+C     subroutine activated by adding the -DINTEGPREP22 compiler
+C     flag.
+#ifdef INTEGPREP22
+      IF (NWS.ne.0) THEN
+         CALL DecomposeMet(NWS, NODES_LG, NP, NP_G, G, NScreen, 
+     &      ScreenUnit, MyProc, NAbOut)
+      ENDIF
+#endif
+#endif
+C     -----------------------------------------------------------
 
 
-C...Compute the reciprocal of the number of nodes in the entire domain 
-
+C     -----------------------------------------------------------
+C      M E S H 
+C     -----------------------------------------------------------
+C     jgf48.44 Apply datum correction to go from the mesh depth to
+C     mean sea level.
+      IF (LoadDatumCorrection) THEN
+         DO I=1,NP
+            DP(I)=DP(I)-DatumCorrection(I)
+         END DO
+      ENDIF
+C     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+C     DEPTHS ARE > OR = TO H0.
+      IF((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
+         DO I=1,NP
+            IF(DP(I).LT.H0) DP(I)=H0
+         END DO
+      ENDIF
+C     RJW merged 09/02/2008 Casey 071219: Added the following subroutine
+C     call to compute the RESELEM array. The subroutine is located at the 
+C     beginning of the file 'massbal.F.'
+C     jgf48.44 Moved this call to ADCIRC_Init. It uses DP(I) in 
+C     computations, and DP(I) may have been modified by the
+C     DatumCorrection nodal attribute, initialized above.
+C 
+#ifdef CMPI
+      CALL COMPUTE_RESELEM
+#endif
+C
+C     Compute the reciprocal of the number of nodes in the entire domain 
 #ifdef CMPI
       CALL ALLNODES(NP_GLOBAL)
       RNP_GLOBAL = 1.0D0/NP_GLOBAL      
 #endif
+C     jgf48.44 Duplicated this here b/c it checks heights against DP(I)
+C     which may have been modified by the DatumCorrection nodal attribute.
+C     Once we are convinced that this error checking routine is working
+C     correctly, we can remove it from read_input.F
+      JGW=0
+      DO K=1,NBOU
+         IF((IBTYPENC(K).NE. 3).AND.(IBTYPENC(K).NE.13).AND.
+     &      (IBTYPENC(K).NE.23).AND.(IBTYPENC(K).NE. 4).AND.
+     &      (IBTYPENC(K).NE.24).AND.(IBTYPENC(K).NE. 5).AND.
+     &      (IBTYPENC(K).NE.25)) THEN
+            NPRBI=1
+         ENDIF
+         IF((IBTYPENC(K).EQ.3).OR.(IBTYPENC(K).EQ.13).OR.
+     &       (IBTYPENC(K).EQ.23)) THEN
+           NPRBI=1
+         ENDIF
+         IF((IBTYPENC(K).EQ.4).OR.(IBTYPENC(K).EQ.24)) THEN
+           NPRBI=2
+         ENDIF
+         IF((IBTYPE.EQ.5).OR.(IBTYPE.EQ.25)) THEN
+            NPRBI=2
+         ENDIF
+         DO IPRBI=1,NPRBI
+            DO I=1,NVELL(K)
+               JGW=JGW+1
+C...........CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS
+               IF((IBTYPENC(K).EQ.3).OR.(IBTYPENC(K).EQ.13)
+     &          .OR.(IBTYPENC(K).EQ.23)) THEN
+                  IF(BARLANHT(JGW).LT.-DP(NBV(JGW))) THEN
+                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+                        WRITE(ScreenUnit,8367)
+     &                    JGW,NBV(JGW),BARLANHT(JGW),DP(NBV(JGW))
+                        ENDIF
+                     WRITE(16,8367) JGW,NBV(JGW),BARLANHT(JGW),
+     &                DP(NBV(JGW))
+ 8367            FORMAT(////,1X,'!!!!!!!!!!  FATAL INPUT ERROR   !!!'
+     &           ,'!!!!!!!!!',//,
+     &           1X,'AT BOUNDARY NODE NO.',I6,' (GLOBAL NODE NO.',
+     &           I6, ' AND OF EXTERNAL BARRIER TYPE) ',/,
+     &           2X,'THE EXTERNAL BARRIER HEIGHT = ',E12.5,
+     &           2X,'IS EXCEEDED BY THE DEPTH SPECIFIED AT ',/,2X
+     &           ,'THE ASSOCIATED GLOBAL NODE = ',E12.5,/,2X,
+     &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
+     &           ' AND DEPTHS')
+                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+                        WRITE(ScreenUnit,9973)
+                     ENDIF
+                     WRITE(16,9973)
+#ifdef CMPI
+                     call msg_fini()
+#endif
+                     STOP
+                  ENDIF
+               ENDIF
+C...........CHECK INTERNAL BARRIER HEIGHTS AGAINST DEPTHS
+               IF((IBTYPENC(K).EQ.4).OR.(IBTYPENC(K).EQ.24)) THEN
+                  IF(BARINHT(JGW).LT.-DP(NBV(JGW))) THEN
+                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+                        WRITE(ScreenUnit,8368)
+     &                    JGW,NBV(JGW),BARINHT(JGW),DP(NBV(JGW))
+                     ENDIF
+                     WRITE(16,8368) JGW,NBV(JGW),BARINHT(JGW),
+     &                    DP(NBV(JGW))
+ 8368            FORMAT(////,1X,'!!!!!!!!!!  FATAL INPUT ERROR   !!!'
+     &           ,'!!!!!!!!!',//,
+     &           1X,'AT BOUNDARY NODE NO.',I6,' (GLOBAL NODE NO. ',
+     &           I6,' AND OF INTERNAL BARRIER TYPE) ',/,
+     &           2X,'THE INTERNAL BARRIER HEIGHT = ',E12.5,
+     &           2X,'IS EXCEEDED BY THE DEPTH SPECIFIED AT ',/,2X
+     &           ,'THE ASSOCIATED GLOBAL NODE = ',E12.5,/,2X,
+     &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
+     &           ' AND DEPTHS')
+                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+                        WRITE(ScreenUnit,9973)
+                     ENDIF
+                     WRITE(16,9973)
+                     STOP
+                  ENDIF
+               ENDIF
+C...........CHECK INTERNAL BARRIER WITH PIPES BARRIER HEIGHTS AGAINST
+CDEPTHS
+               IF((IBTYPENC(K).EQ.5).OR.(IBTYPENC(K).EQ.25)) THEN
+                  IF(BARINHT(JGW).LT.-DP(NBV(JGW))) THEN
+                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+                        WRITE(ScreenUnit,8370)
+     &                    JGW,NBV(JGW),BARINHT(JGW),DP(NBV(JGW))
+                     ENDIF
+                     WRITE(16,8370) JGW,NBV(JGW),BARINHT(JGW),
+     &                    DP(NBV(JGW))
+ 8370            FORMAT(////,1X,'!!!!!!!!!!  FATAL INPUT ERROR   !!!'
+     &           ,'!!!!!!!!!',//,
+     &           1X,'AT BOUNDARY NODE NO.',I6,' (GLOBAL NODE NO. ',
+     &           I6,' AND OF INTERNAL BARRIER TYPE) ',/,
+     &           2X,'THE INTERNAL BARRIER HEIGHT = ',E12.5,
+     &           2X,'IS EXCEEDED BY THE DEPTH SPECIFIED AT ',/,2X
+     &           ,'THE ASSOCIATED GLOBAL NODE = ',E12.5,/,2X,
+     &           'USER MUST SPECIFY CONSISTENT BARRIER HEIGHTS',
+     &           ' AND DEPTHS')
+                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+                        WRITE(ScreenUnit,9973)
+                     ENDIF
+                     WRITE(16,9973)
+#ifdef CMPI
+                     call msg_fini()
+#endif
+                     STOP
+                  ENDIF
+               ENDIF
+C...  CHECK INTERNAL BARRIER WITH PIPES PIPE HEIGHTS AGAINST DEPTHS
+               IF((IBTYPENC(K).EQ.5).OR.(IBTYPENC(K).EQ.25)) THEN
+                  IF(PIPEHT(JGW).LT.-DP(NBV(JGW))) THEN
+                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+                        WRITE(ScreenUnit,8372)
+     &                    JGW,NBV(JGW),BARINHT(JGW),DP(NBV(JGW))
+                     ENDIF
+                     WRITE(16,8372) JGW,NBV(JGW),BARINHT(JGW),
+     &                    DP(NBV(JGW))
+ 8372            FORMAT(////,1X,'!!!!!!!!!!  FATAL INPUT ERROR   !!!'
+     &           ,'!!!!!!!!!',//,
+     &           1X,'AT BOUNDARY NODE NO.',I6,' (GLOBAL NODE NO. ',
+     &           I6,' AND OF INTERNAL BARRIER TYPE) ',/,
+     &           2X,'THE BARRIER PIPE HEIGHT = ',E12.5,
+     &           2X,'IS EXCEEDED BY THE DEPTH SPECIFIED AT ',/,2X
+     &           ,'THE ASSOCIATED GLOBAL NODE = ',E12.5,/,2X,
+     &           'USER MUST SPECIFY CONSISTENT PIPE HEIGHTS',
+     &           ' AND DEPTHS')
+                     IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+                        WRITE(ScreenUnit,9973)
+                     ENDIF
+                     WRITE(16,9973)
+#ifdef CMPI
+                     call msg_fini()
+#endif
+                     STOP
+                  ENDIF
+               ENDIF
+            ENDDO
+         ENDDO
+      ENDDO
+
+C     jgf48.44 Vertical grid setup moved to ADCIRC_Init b/c it depends 
+C     on DP(I) which may have been modified by the DatumCorrection 
+C     nodal attribute.
+C
+C    IGC <> 0 - Set up grid in subroutine FEGRIDS
+      IF (C3D) THEN
+         IF(IGC.NE.0) THEN
+            HH1=0.d0
+            DO I=1,NP
+               HH1=HH1+DP(I)
+            ENDDO
+            HH1=HH1/NP                        !domain averaged depth
+            CALL FEGRIDS(IGC,HH1)
+         ENDIF
+c        write out the vertical grid in fort.16 file
+         WRITE(16,1000)
+ 1000    FORMAT(//,5X,'Vertical Grid Information')
+         WRITE(16,1001)
+ 1001    FORMAT(/,5X,'V. Node #',5X,'V. Position',/)
+         DO N = 1,NFEN
+            WRITE(16,*) N,Sigma(N)
+         ENDDO
+      ENDIF
+C     -----------------------------------------------------------
+
+C     -----------------------------------------------------------
+C                   I N P U T / O U T P U T
+C            B O U N D A R Y   C O N D I T I O N S
+C                       F O R C I N G
+C     -----------------------------------------------------------
+      ! File Fmt Version  must match Major and Minor numbers.
+      FileFmtVersion = 
+     &VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
+      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
+     &     WRITE(ScreenUnit,'(a)')"ADCIRC Version is "//ADC_VERSION
 
 C     jgf45.08 put this here so it can be used in hot start
       IF(NOLIFA.EQ.0) THEN
@@ -170,22 +419,19 @@ C     jgf45.08 put this here so it can be used in hot start
          IFNLFA=1
       ENDIF
 
-C...
-C...******************** PROGRAM SETUP SECTION ************************
-C...
       IF (IHOT.EQ.0) THEN
          CALL COLDSTART()
       ELSE
          CALL HOTSTART()
       ENDIF
-
-C...Default beginning and ending time steps
-
-      ITIME_BGN = ITHS+1
-      ITIME_END = NT
-
-C...Determine the number of active elements (MJU), the total number of 
-C...elements (NODELE) and the total area of elements (TotalArea) attached to each node
+C
+C     Determine the number of active elements (MJU), the total number of 
+C     elements (NODELE) and the total area of elements (TotalArea) attached 
+C     to each node
+C     jgf48.44 This is a mesh initialization operation, but is dependent
+C     on some initialization steps performed in COLDSTART() or
+C     HOTSTART(), so must be placed after it (rather than in the mesh
+C     initialization section).
 
       DO I=1,NP
          MJU(I)=0
@@ -215,12 +461,18 @@ C...elements (NODELE) and the total area of elements (TotalArea) attached to eac
          IF(MJU(I).EQ.0) MJU(I)=1
       END DO
 
+C     -----------------------------------------------------------
 
-C...
-C...************* SET FLAGS AND COEFFICIENTS USED IN TIME STEPPING ***********
-C...
 
-C...Set flags for nonlinear terms
+C     -----------------------------------------------------------
+C        T I M E   S T E P P I N G
+C     -----------------------------------------------------------
+C     Default beginning and ending time steps
+
+      ITIME_BGN = ITHS+1
+      ITIME_END = NT
+
+C     Set flags for nonlinear terms
 
       IF(NOLICA.EQ.0) THEN
          IFNLCT=0
@@ -236,7 +488,7 @@ C...Set flags for nonlinear terms
       IFWIND=1
       IF(IM.EQ.1) IFWIND=0
 
-C...Compute several constant coefficients
+C     Compute several constant coefficients
 
       GA00=G*A00
       GC00=G*C00
@@ -252,26 +504,32 @@ C...Compute several constant coefficients
       GORho=G/RhoWat0
       GORhoOAMB=GORho/AMB
 
-C...
-C.....Compute necesary wet/dry coefficients 
-C...
+      NCChange=1 !jgf45.06 set flag to set up GWCE LHS on 1st iteration
+C     -----------------------------------------------------------
+
+
+C     -----------------------------------------------------------
+C     W E T T I N G  A N D   D R Y I N G
+C     -----------------------------------------------------------
       HABSMIN=0.8d0*H0  
       HOFF=1.2d0*H0    
+C     -----------------------------------------------------------
 
+
+C     end of ADCIRC initialization 
       WRITE(16,1112)
       WRITE(16,17931)
       IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
       IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,17931)
  1112 FORMAT(/,1X,79('_'))
 17931 FORMAT(//,1X,'LIMITED RUNTIME INFORMATION SECTION ',//)
-      
-      NCChange=1 !jgf45.06 set flag to set up GWCE LHS on 1st iteration
-C
  1999 format(1X, a," ADCIRC Version: ",a)
+ 9973 FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
 C
       RETURN
+C     -----------------------------------------------------------
       END SUBROUTINE ADCIRC_Init
-
+C     -----------------------------------------------------------
 
 C******************************************************************************
 C*    ADCIRC run routine

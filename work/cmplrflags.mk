@@ -9,11 +9,11 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 # ***NOTE*** User must select between various Linux setups
 #            by commenting/uncommenting the appropriate compiler
 #
-#compiler=gnu
+compiler=gnu
 #compiler=intel
 #compiler=intel-lonestar
 #compiler=cray_xt3
-compiler=pgi
+#compiler=pgi
 #
 # 
 ifeq ($(compiler),gnu)
@@ -220,7 +220,8 @@ ifeq ($(compiler),gnu)
   PPFC		:=  g95
   FC		:=  g95
   PFC		:=  mpif90 
-  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132
+#  FFLAGS1	:=  $(INCDIRS) -g -Wall -ffixed-line-length-132 -fbounds-check -ftrace=full -DINTEGPREP13 -DINTEGPREP22
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132 
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
