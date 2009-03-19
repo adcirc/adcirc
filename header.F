@@ -3,6 +3,7 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C                                                                             *
 C  mod history                                                                *
+C  v48.49      -03/19/09 - jgf - Fixed prep.F format statement 81.
 C  v48.48      -03/18/09 - jgf - Changed prep.F so that input files are
 C               decomposed 256 at a time (configurable). This avoids the 
 C               limit on the max number of open files imposed by some
