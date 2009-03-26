@@ -1326,6 +1326,13 @@ C
 C     jgf48.47 Rewritten to only open a smaller number of subdomains
 C     at a time (256 by default)
 C
+C     jgf48.50 Fixed bug (remove ALLOCATABLE from vars that don't need
+C     it). Also adding following documentation:
+C
+C     BY DEFAULT, ONLY 256 SUBDOMAINS WILL BE PREPPED AT A TIME TO AVOID
+C     OPENING TOO MANY FILES ON CERTAIN PLATFORMS. THIS NUMBER CAN BE
+C     CONTROLLED BY THE PARAMETER MAXOPENFILES. 
+C
 C---------------------------------------------------------------------------
       SUBROUTINE PREP13()
 C---------------------------------------------------------------------------
@@ -1343,12 +1350,12 @@ C
       INTEGER NumOfNodes     ! must match the no. of nodes in grid (unit 14)
       INTEGER NAttr          ! number of nodal attributes in the file
       INTEGER NumNotDefault  ! number of nodes specified in the file
-      CHARACTER(len=80) header       ! header comments in unit 13 files
-      CHARACTER(len=80), ALLOCATABLE :: AttrName ! label for attribute
-      CHARACTER(len=80), ALLOCATABLE :: Units ! label for physical units
-      CHARACTER(len=80) Skipped      ! data we want to skip over
-      REAL(SZ) DefaultVal(12)   ! default value of attribute
-      INTEGER, ALLOCATABLE:: NoOfVals ! at each node for an attribute
+      CHARACTER(len=80) header   ! header comments in unit 13 files
+      CHARACTER(len=80) AttrName ! label for attribute
+      CHARACTER(len=80) Units    ! label for physical units
+      CHARACTER(len=80) Skipped  ! data we want to skip over
+      REAL(SZ) DefaultVal(12) ! default value of attribute
+      INTEGER NoOfVals       ! at each node for an attribute
       INTEGER Mode           !=0 to count, =1 to write
       LOGICAL success        ! .true. if all files opened successfully 
       INTEGER, ALLOCATABLE :: SDNumND(:,:)  ! subdomain # of nodes not default

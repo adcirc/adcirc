@@ -3,6 +3,11 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C                                                                             *
 C  mod history                                                                *
+C  v48.50      -03/26/09 - jgf - Fixed PREP13 to remove ALLOCATABLE
+C               for vars that did not need it. Added documentation to 
+C               point out that only 256 subdomains are prepped at a
+C               time, and that maxOpenFiles was the parameter that
+C               controlled this number.
 C  v48.49      -03/19/09 - jgf - Fixed prep.F format statement 81.
 C  v48.48      -03/18/09 - jgf - Changed prep.F so that input files are
 C               decomposed 256 at a time (configurable). This avoids the 
