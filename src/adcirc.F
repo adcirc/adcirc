@@ -536,6 +536,12 @@ C*    ADCIRC run routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Run(NTIME_STP)
 C
+#ifdef CSWAN
+Casey 090302: We need the following value.
+      USE Couple2Swan, ONLY: CouplingInterval,
+     &                       PADCSWAN_RUN
+#endif
+C
       INTEGER, OPTIONAL :: NTIME_STP
 C
       IF (PRESENT(NTIME_STP)) THEN
@@ -544,6 +550,15 @@ C
 C
       DO 100 ITIME=ITIME_BGN,ITIME_END
         CALL TIMESTEP(ITIME)
+C
+#ifdef CSWAN
+Casey 090302: If it is time, then call the following subroutine
+C             to then call the SWAN time-stepping routine.
+        IF(MOD(ITIME,CouplingInterval).EQ.0)THEN
+          CALL PADCSWAN_RUN(ITIME)
+        ENDIF
+#endif
+C
  100    CONTINUE
 C
       IF (PRESENT(NTIME_STP)) THEN

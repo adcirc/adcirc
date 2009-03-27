@@ -144,7 +144,8 @@ C...RJW initialize variable
              RESELEM(I) = 3
          ELSE
              RESELEM(I) = 0
-             PRINT*, "Yikes!"
+Casey 090304: Perhaps this error message is not helpful.
+C            PRINT*, "Yikes!"
          ENDIF
 C           PRINT*, "RESELEM = ", RESELEM(I)
       ENDDO
@@ -220,11 +221,11 @@ C           PRINT*, "RESELEM = ", RESELEM(I)
           MASSCUM = 0.D0
       ENDIF
 
-C asey: Begin loop over horizontal elements.
+Casey: Begin loop over horizontal elements.
 
       DO HE=1,NE
 
-C asey: Each horizontal element is actually a stack of (NFEN-1) vertical elements,
+Casey: Each horizontal element is actually a stack of (NFEN-1) vertical elements,
 C      and we have to compute mass balance in each one of them.  Begin loop over
 C      vertical elements.
 
@@ -232,7 +233,7 @@ C      vertical elements.
 
             FLUX = 0.D0
 
-C asey: Each vertical element has five faces: top, bottom, and three sides.
+Casey: Each vertical element has five faces: top, bottom, and three sides.
 C      Let's compute the flux across each of the sides first.  Loop over
 C      the three vertical faces of each element. 
 
@@ -247,7 +248,7 @@ C      the three vertical faces of each element.
                     HN2 = 1
                 ENDIF
 
-C asey: Compute the average velocity on this face.
+Casey: Compute the average velocity on this face.
 
                 AVGVEL(1) = ( 0.25D0 * (  REAL(Q(NM(HE,HN1),VN1))   
      &                                 +  REAL(Q(NM(HE,HN2),VN1))   
@@ -262,7 +263,7 @@ C asey: Compute the average velocity on this face.
      &                                 +      WZ(NM(HE,HN1),VN2)    
      &                                 +      WZ(NM(HE,HN2),VN2)  ) )
 
-C asey: Compute the locations of the vertical nodes in the z-direction.
+Casey: Compute the locations of the vertical nodes in the z-direction.
 
                 ZVN1 = DP(NM(HE,HN1)) + ( ( B - SIGMA(VN1) )/( A - B ) )
      &               * ( DP(NM(HE,HN1)) + IFNLFA * ETA2(NM(HE,HN1)) )
@@ -273,7 +274,7 @@ C asey: Compute the locations of the vertical nodes in the z-direction.
                 ZVN4 = DP(NM(HE,HN1)) + ( ( B - SIGMA(VN2) )/( A - B ) )
      &               * ( DP(NM(HE,HN1)) + IFNLFA * ETA2(NM(HE,HN1)) )
 
-C asey: Compute the outward normal vector on this face.
+Casey: Compute the outward normal vector on this face.
 
                 CALL CROSSPRODUCT(    X(NM(HE,HN2)) - X(NM(HE,HN1))  ,  
      &                                Y(NM(HE,HN2)) - Y(NM(HE,HN1))  ,  
@@ -283,7 +284,7 @@ C asey: Compute the outward normal vector on this face.
      &                             -( ZVN4          - ZVN1          ),
      &                                NORM                           )  
 
-C asey: Compute the area of this face.
+Casey: Compute the area of this face.
 
                 FACEAREA = TRIANGLEAREA3D(
      &                        X(NM(HE,HN1)),Y(NM(HE,HN1)),ZVN1,
@@ -305,11 +306,11 @@ Casey: Compute the flux.
      &                      / REAL(RESELEM(HE))
 #endif
 
-C asey: End loop over vertical faces.
+Casey: End loop over vertical faces.
 
             END DO
 
-C asey: Now let's loop over the top and bottom faces. 
+Casey: Now let's loop over the top and bottom faces. 
 
             DO FACE=1,2
  
@@ -323,7 +324,7 @@ C asey: Now let's loop over the top and bottom faces.
                 HN2 = 2 
                 HN3 = 3
 
-C asey: Compute the average velocity on this face.
+Casey: Compute the average velocity on this face.
 
                 AVGVEL(1) = ( ( 1.D0 / 3.D0 ) *            
      &                        (  REAL(Q(NM(HE,HN1),VN1))   
@@ -338,7 +339,7 @@ C asey: Compute the average velocity on this face.
      &                        +      WZ(NM(HE,HN2),VN1)    
      &                        +      WZ(NM(HE,HN3),VN1)  ) )
 
-C asey: Compute the locations of the vertical nodes in the z-direction.
+Casey: Compute the locations of the vertical nodes in the z-direction.
 
                 ZVN1 = DP(NM(HE,HN1)) + ( ( B - SIGMA(VN1) )/( A - B ) )
      &               * ( DP(NM(HE,HN1)) + IFNLFA * ETA2(NM(HE,HN1)) )
@@ -347,7 +348,7 @@ C asey: Compute the locations of the vertical nodes in the z-direction.
                 ZVN3 = DP(NM(HE,HN3)) + ( ( B - SIGMA(VN1) )/( A - B ) )
      &               * ( DP(NM(HE,HN3)) + IFNLFA * ETA2(NM(HE,HN3)) )
 
-C asey: Compute the outward normal vector on this face.  If the current face
+Casey: Compute the outward normal vector on this face.  If the current face
 C      is the bottom of the elemental prism, then the normal vector must
 C      point down; if the current face is the top, then the normal vector
 C      must point up.
@@ -370,7 +371,7 @@ C      must point up.
      &                                  NORM                        )  
                 ENDIF
 
-C asey: Compute the area of this face.  Here, we get to use the formula
+Casey: Compute the area of this face.  Here, we get to use the formula
 C      for the area of a triangle in three dimensions.
 
                 FACEAREA = TRIANGLEAREA3D(
@@ -378,7 +379,7 @@ C      for the area of a triangle in three dimensions.
      &                     X(NM(HE,HN2)),Y(NM(HE,HN2)),ZVN2,
      &                     X(NM(HE,HN3)),Y(NM(HE,HN3)),ZVN3)
 
-C asey: Compute the flux.
+Casey: Compute the flux.
 
                 FLUX = FLUX + FACEAREA *  
      &                      ( AVGVEL(1) * NORM(1)   
@@ -389,11 +390,11 @@ C asey: Compute the flux.
      &                      / REAL(RESELEM(HE))
 #endif
 
-C asey: End loop over the top and bottom faces.
+Casey: End loop over the top and bottom faces.
 
             END DO
 
-C asey 070716: Normalize the flux on each element to the deviation from the
+Casey 070716: Normalize the flux on each element to the deviation from the
 C             still water volume in that element.
 
             AVGETA = (1.D0/3.D0)*(ETA2(NM(HE,1))+
@@ -406,11 +407,11 @@ C             still water volume in that element.
 
             FLUXTOT = FLUXTOT + ABS( FLUX ) 
 
-C asey: End loop over vertical elements.
+Casey: End loop over vertical elements.
 
         END DO
 
-C asey: End loop over horizontal elements.
+Casey: End loop over horizontal elements.
 
       END DO
 
@@ -459,7 +460,7 @@ C asey: End loop over horizontal elements.
 
 
 
-C asey: The following function calculates the area of a three-dimensional triangle
+Casey: The following function calculates the area of a three-dimensional triangle
 C      given the coordinates of the three vertices.
 
       FUNCTION TRIANGLEAREA3D(X1,Y1,Z1,X2,Y2,Z2,X3,Y3,Z3)
@@ -473,7 +474,7 @@ C      given the coordinates of the three vertices.
       REAL(8), INTENT(IN)  :: Y1, Y2, Y3
       REAL(8), INTENT(IN)  :: Z1, Z2, Z3
 
-C asey: We get to use the formula for the area of a triangle in three dimensions.
+Casey: We get to use the formula for the area of a triangle in three dimensions.
 
       TRIANGLEAREA3D =  ABS( 0.5D0 * SQRT(                         
      &                    ( ( Y2 * Z3                     

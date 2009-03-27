@@ -37,11 +37,12 @@ C                                    ! I-th Node on Land Boundary Segment K
       INTEGER,ALLOCATABLE::WEIRD(:)
 
       !jgf48.17 UnSWAN boundary data
+Casey 090304: This section is no longer necessary.
 #ifdef ADCSWAN
-      ! number of nodes on each UnSWAN boundary segment
-      INTEGER, ALLOCATABLE :: numUnSWANBdryNodesEach(:)
-      INTEGER, ALLOCATABLE :: unswanBdryMarkers(:) ! UnSWAN boundary markers
-      INTEGER, ALLOCATABLE :: unswanBdryNodes(:,:) ! UnSWAN boundary node numbers, based on the segment number (1st arg) and sequential node number (2nd arg), i.e., first node on the segment, second node on the segment, etc
+C     ! number of nodes on each UnSWAN boundary segment
+C     INTEGER, ALLOCATABLE :: numUnSWANBdryNodesEach(:)
+C     INTEGER, ALLOCATABLE :: unswanBdryMarkers(:) ! UnSWAN boundary markers
+C     INTEGER, ALLOCATABLE :: unswanBdryNodes(:,:) ! UnSWAN boundary node numbers, based on the segment number (1st arg) and sequential node number (2nd arg), i.e., first node on the segment, second node on the segment, etc
 #endif
 
 
@@ -75,9 +76,10 @@ C     STRING14 section
       CHARACTER(80),ALLOCATABLE   ::  NVELLMSG(:),NVDLLMSG(:)
 
       !jgf48.17 support for UnSWAN boundaries in fort.14
+Casey 090304: This section is no longer necessary.
 #ifdef ADCSWAN
-      CHARACTER(80) numUnSWANBdrySegsMSG, numUnSWANBdryNodesTotalMSG
-      CHARACTER(80),ALLOCATABLE :: numUnSWANBdryNodesEachMSG(:)
+C     CHARACTER(80) numUnSWANBdrySegsMSG, numUnSWANBdryNodesTotalMSG
+C     CHARACTER(80),ALLOCATABLE :: numUnSWANBdryNodesEachMSG(:)
 #endif
 C
 C     PARM15  section
@@ -295,17 +297,18 @@ C                                      ! Boundary Node I on PE
       INTEGER,ALLOCATABLE::NNSTA3DTP(:)! Number of 3D turbulence stationson(PE)
 
 C     jgf48.17 subdomain UnSWAN boundary data
+Casey 090304: This section is no longer necessary.
 #ifdef ADCSWAN
-      ! Total number of UnSWAN boundary nodes on each subdomain
-      INTEGER,ALLOCATABLE::numUnSWANBdryNodesTotalP(:)
-      ! UnSWAN boundary nodes on each segment in each subdomain
-      INTEGER,ALLOCATABLE::numUnSWANBdryNodesEachP(:)
-      ! number of UnSWAN boundary segments on each subdomain
-      INTEGER,ALLOCATABLE::numUnSWANBdrySegsP(:)
-      ! node numbers along UnSWAN boundaries in each subdomain
-      INTEGER,ALLOCATABLE::unswanBdryNodesP(:,:)
-      ! boundary markers along UnSWAN boundaries in each subdomain
-      INTEGER,ALLOCATABLE::unswanBdryMarkersP(:)
+C     ! Total number of UnSWAN boundary nodes on each subdomain
+C     INTEGER,ALLOCATABLE::numUnSWANBdryNodesTotalP(:)
+C     ! UnSWAN boundary nodes on each segment in each subdomain
+C     INTEGER,ALLOCATABLE::numUnSWANBdryNodesEachP(:)
+C     ! number of UnSWAN boundary segments on each subdomain
+C     INTEGER,ALLOCATABLE::numUnSWANBdrySegsP(:)
+C     ! node numbers along UnSWAN boundaries in each subdomain
+C     INTEGER,ALLOCATABLE::unswanBdryNodesP(:,:)
+C     ! boundary markers along UnSWAN boundaries in each subdomain
+C     INTEGER,ALLOCATABLE::unswanBdryMarkersP(:)
 #endif
 
 C
@@ -327,9 +330,10 @@ C     LOC2G section
       INTEGER,ALLOCATABLE  ::   LBINDEX_LG(:,:)
 
 C     jgf48.17 support for UnSWAN boundaries in fort.14
+Casey 090304: This section is no longer necessary.
 #ifdef ADCSWAN
-      ! mapping of UnSWAN boundary nodes from subdomain to full domain
-      INTEGER, ALLOCATABLE ::   unswanBdryNodes_lG(:,:)
+C     ! mapping of UnSWAN boundary nodes from subdomain to full domain
+C     INTEGER, ALLOCATABLE ::   unswanBdryNodes_lG(:,:)
 #endif
 
 C
@@ -494,27 +498,28 @@ C
       STAC_SHARE(:) = -1
 C
 C     jgf48.17 allocate memory for UnSWAN boundaries
+Casey 090304: This section is no longer necessary.
 #ifdef ADCSWAN
-      ALLOCATE(numUnSWANBdryNodesEach(numUnSWANBdrySegs),
-     &         unswanBdryNodes(numUnSWANBdrySegs,
-     &                         numUnSWANBdryNodesTotal))
-      nbytes = nbytes + 4*(numUnSWANBdryNodesTotal+1)
-     &         * numUnSWANBdrySegs
-      ALLOCATE(unswanBdryMarkers(numUnSWANBdrySegs))
-      nbytes = nbytes + 4*(numUnSWANBdrySegs)
-      ALLOCATE ( numUnSWANBdryNodesEachMSG(numUnSWANBdrySegs) )
-      nbytes = nbytes + 80*numUnSWANBdrySegs
-      ALLOCATE (numUnSWANBdrySegsP(MNPROC))
-      ALLOCATE (numUnSWANBdryNodesTotalP(MNPROC))
-      ALLOCATE (numUnSWANBdryNodesEachP(numUnSWANBdrySegs))
-      nbytes = nbytes + 8*mnproc + 4*numUnSWANBdrySegs
-      ALLOCATE (unswanBdryNodesP(numUnSWANBdrySegs,
-     &                           numUnSWANBdryNodesTotal))
-      nbytes = nbytes + 4*numUnSWANBdrySegs*numUnSWANBdryNodesTotal
-      ALLOCATE (unswanBdryMarkersP(numUnSWANBdrySegs))
-      nbytes = nbytes + 4*numUnSWANBdrySegs
-      ALLOCATE (unswanBdryNodes_lG(numUnSWANBdryNodesTotal,MNPROC))
-      nbytes = nbytes + 4*numUnSWANBdryNodesTotal*mnproc
+C     ALLOCATE(numUnSWANBdryNodesEach(numUnSWANBdrySegs),
+C    &         unswanBdryNodes(numUnSWANBdrySegs,
+C    &                         numUnSWANBdryNodesTotal))
+C     nbytes = nbytes + 4*(numUnSWANBdryNodesTotal+1)
+C    &         * numUnSWANBdrySegs
+C     ALLOCATE(unswanBdryMarkers(numUnSWANBdrySegs))
+C     nbytes = nbytes + 4*(numUnSWANBdrySegs)
+C     ALLOCATE ( numUnSWANBdryNodesEachMSG(numUnSWANBdrySegs) )
+C     nbytes = nbytes + 80*numUnSWANBdrySegs
+C     ALLOCATE (numUnSWANBdrySegsP(MNPROC))
+C     ALLOCATE (numUnSWANBdryNodesTotalP(MNPROC))
+C     ALLOCATE (numUnSWANBdryNodesEachP(numUnSWANBdrySegs))
+C     nbytes = nbytes + 8*mnproc + 4*numUnSWANBdrySegs
+C     ALLOCATE (unswanBdryNodesP(numUnSWANBdrySegs,
+C    &                           numUnSWANBdryNodesTotal))
+C     nbytes = nbytes + 4*numUnSWANBdrySegs*numUnSWANBdryNodesTotal
+C     ALLOCATE (unswanBdryMarkersP(numUnSWANBdrySegs))
+C     nbytes = nbytes + 4*numUnSWANBdrySegs
+C     ALLOCATE (unswanBdryNodes_lG(numUnSWANBdryNodesTotal,MNPROC))
+C     nbytes = nbytes + 4*numUnSWANBdryNodesTotal*mnproc
 #endif 
 
       call memory_alloc(nbytes)

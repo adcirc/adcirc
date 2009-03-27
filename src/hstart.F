@@ -1393,8 +1393,8 @@ C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
              WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
              WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
              PR2(I) = RampMete2*PRN1(I)
-             WVNXOUT(I)=RampMete*WINDX
-             WVNYOUT(I)=RampMete*WINDY
+             WVNXOUT(I)=RampMete2*WINDX
+             WVNYOUT(I)=RampMete2*WINDY
           END DO
        ENDIF
 
@@ -1933,14 +1933,16 @@ C...
           IGEP=IGEP+5
           CLOSE(63)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
-        IF((NOUTGE.EQ.-1)) THEN
+Casey 090310: Added the possibility for NOUTGE.EQ.-4.
+        IF((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4)) THEN
            CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
      $         NP_G, NP, HEADER63)
 C
 C        jgf47.06 Tau0 output is produced on the same schedule as
 C        global elevation
+Casey 090310: Corrected the unit number.
            IF (OUTPUTTAU0) THEN
-               CALL writeDomainHeader(10,
+               CALL writeDomainHeader(90,
      &              TRIM(GLOBALDIR)//'/'//'fort.tau0',
      $               NP_G, NP, 'Tau0      ')
            ENDIF
@@ -2028,7 +2030,7 @@ C...
           IGVP=IGVP+5
           CLOSE(64)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
-        IF((NOUTGV.EQ.-1).OR.(NOUTGE.EQ.-4)) THEN
+        IF((NOUTGV.EQ.-1).OR.(NOUTGV.EQ.-4)) THEN
           CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
      $      NP_G, NP, HEADER64)
           IGVP=2
@@ -2158,6 +2160,9 @@ C...
         IF(NOUTGW.LT.0) THEN
           IGPP=0
           IGWP=0
+#ifdef CSWAN
+          IGRadS=0
+#endif
           NSCOUGW=0
           IF((NTCYSGW.LT.ITHS).AND.(NSPOOLGW.GT.0)) THEN
             NTCYSGW=NTCYSGW+((ITHS-NTCYSGW)/NSPOOLGW)*NSPOOLGW
@@ -2173,45 +2178,85 @@ C...
      &          access='DIRECT',recl=nbyte)
           OPEN(74,FILE=TRIM(LOCALDIR)//'/'//'fort.74',
      &          ACCESS='DIRECT',RECL=NBYTE)
+#ifdef CSWAN
+          OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+#endif
           IF(NBYTE.EQ.4) THEN
             DO I=1,8
               write(73,rec=igpp+i) rdes4(i)
               WRITE(74,REC=IGWP+I) RDES4(I)
+#ifdef CSWAN
+              WRITE(164,REC=IGRadS+I) RDES4(I)
+#endif
               ENDDO
             igpp=igpp+8
             IGWP=IGWP+8
+#ifdef CSWAN
+            IGRadS=IGRadS+8
+#endif
             DO I=1,6
               write(73,rec=igpp+i) rid4(i)
               WRITE(74,REC=IGWP+I) RID4(I)
+#ifdef CSWAN
+              WRITE(164,REC=IGRadS+I) RID4(I)
+#endif
               ENDDO
             igpp=igpp+6
             IGWP=IGWP+6
+#ifdef CSWAN
+            IGRadS=IGRadS+6
+#endif
             DO I=1,6
               write(73,rec=igpp+i) aid4(i)
               WRITE(74,REC=IGWP+I) AID4(I)
+#ifdef CSWAN
+              WRITE(164,REC=IGRadS+I) AID4(I)
+#endif
               ENDDO
             igpp=igpp+6
             IGWP=IGWP+6
+#ifdef CSWAN
+            IGRadS=IGRadS+6
+#endif
             ENDIF
           IF(NBYTE.EQ.8) THEN
             DO I=1,4
               write(73,rec=igpp+i) rdes8(i)
               WRITE(74,REC=IGWP+I) RDES8(I)
+#ifdef CSWAN
+              WRITE(164,REC=IGRadS+I) RDES8(I)
+#endif
               ENDDO
             igpp=igpp+4
             IGWP=IGWP+4
+#ifdef CSWAN
+            IGRadS=IGRadS+4
+#endif
             DO I=1,3
               write(73,rec=igpp+i) rid8(i)
               WRITE(74,REC=IGWP+I) RID8(I)
+#ifdef CSWAN
+              WRITE(164,REC=IGRadS+I) RID8(I)
+#endif
               ENDDO
             igpp=igpp+3
             IGWP=IGWP+3
+#ifdef CSWAN
+            IGRadS=IGRadS+3
+#endif
             DO I=1,3
               write(73,rec=igpp+i) aid8(i)
               WRITE(74,REC=IGWP+I) AID8(I)
+#ifdef CSWAN
+              WRITE(164,REC=IGRadS+I) AID8(I)
+#endif
               ENDDO
             igpp=igpp+3
             IGWP=IGWP+3
+#ifdef CSWAN
+            IGRadS=IGRadS+3
+#endif
             ENDIF
           WRITE(73,rec=igpp+1) ndsetsw
           WRITE(73,rec=igpp+2) np
@@ -2227,14 +2272,29 @@ C...
           WRITE(74,REC=IGWP+5) 2
           IGWP=IGWP+5
           CLOSE(74)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+#ifdef CSWAN
+          WRITE(164,REC=IGRadS+1) NDSETSW
+          WRITE(164,REC=IGRadS+2) NP
+          WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
+          WRITE(164,REC=IGRadS+4) NSPOOLGW
+          WRITE(164,REC=IGRadS+5) 2
+          IGRadS=IGRadS+5
+          CLOSE(164)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+#endif
         ENDIF
-        IF((NOUTGW.EQ.-1)) THEN
+Casey 090310: Added the possibility for NOUTGW.EQ.-4.
+        IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
           CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
      $      NP_G, NP, HEADER73)
           IGPP=2
           CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
      $      NP_G, NP, HEADER74)
           IGWP=2
+#ifdef CSWAN
+          CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
+     $      NP_G, NP, HEADER74)
+          IGRadS=2
+#endif
         ENDIF
         IF(NOUTGW.EQ.2) THEN
           open(73,file=TRIM(LOCALDIR)//'/'//'fort.73',

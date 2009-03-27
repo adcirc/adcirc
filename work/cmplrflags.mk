@@ -9,11 +9,12 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 # ***NOTE*** User must select between various Linux setups
 #            by commenting/uncommenting the appropriate compiler
 #
-compiler=gnu
+#compiler=gnu
 #compiler=intel
 #compiler=intel-lonestar
 #compiler=cray_xt3
 #compiler=pgi
+compiler=pgi-ranger
 #
 # 
 ifeq ($(compiler),gnu)
@@ -138,6 +139,32 @@ ifeq ($(compiler),pgi)
   CLIBS		:= 
   LIBS  	:=  
   MSGLIBS	:=  
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
+endif
+#
+# Portland Group compiler on TU Ranger (AMD Opteron 8356, Barcelona Core)  Seizo
+ifeq ($(compiler),pgi-ranger)
+  PPFC          :=  pgf95
+  FC            :=  pgf95
+  PFC           :=  mpif90
+  FFLAGS1       :=  $(INCDIRS) -fast -tp barcelona-64 -Mextend
+  FFLAGS2       :=  $(FFLAGS1)
+  FFLAGS3       :=  $(FFLAGS1)
+  DA            :=  -DREAL8 -DLINUX -DCSCA
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
+  IMODS         :=  -I
+  CC            := gcc
+  CCBE          := $(CC)
+  CFLAGS        := $(INCDIRS)  -DLINUX
+  CLIBS         :=
+  LIBS          :=
+  MSGLIBS       :=
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
      FOUND := TRUE

@@ -112,6 +112,16 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       USE MESSENGER
 #endif
 
+#ifdef CSWAN
+Casey 090302: We need these values from other places.
+      USE Couple2Swan, ONLY: ComputeWaveDrivenForces,
+     &                       CouplingInterval,
+     &                       InterpoWeight,
+     &                       SWAN_WX2,
+     &                       SWAN_WY2
+      USE OWIWIND,     ONLY: WindMultiplier
+#endif
+
       IMPLICIT NONE 
 
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
@@ -310,6 +320,11 @@ C     No wind, radiation stress or atmospheric pressure forcings are used.
       IF(NWS.EQ.1) THEN
          DO I=1,NP
             READ(22,*) NHG,WSX2(I),WSY2(I),PR2(I) !read in
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            SWAN_WX2(I,2) = WSX2(I)
+            SWAN_WY2(I,2) = WSY2(I)
+#endif
             WSX2(I)=RampMete*WSX2(I) ! apply ramp function
             WSY2(I)=RampMete*WSY2(I)
             PR2(I)=RampMete*PR2(I)
@@ -342,6 +357,11 @@ C     pressure information with the model time step.
             PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             wvnxout(i)=WSX2(i) !for met recording sta. output
             wvnyout(i)=WSY2(i)             
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            SWAN_WX2(I,2) = WindX
+            SWAN_WY2(I,2) = WindY
+#endif
          END DO
       ENDIF
 
@@ -378,6 +398,11 @@ C     jgf46.00 Add directional wind reduction.
             WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            SWAN_WX2(I,2) = WindX
+            SWAN_WY2(I,2) = WindY
+#endif
          END DO
       ENDIF
 
@@ -415,6 +440,11 @@ C     jgf46.00 Add directional wind reduction.
             PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            SWAN_WX2(I,2) = WindX
+            SWAN_WY2(I,2) = WindY
+#endif
          END DO
       ENDIF
 
@@ -451,6 +481,11 @@ C     jgf46.00 Add directional wind reduction.
             PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            SWAN_WX2(I,2) = WindX
+            SWAN_WY2(I,2) = WindY
+#endif
          END DO
       ENDIF
 
@@ -492,6 +527,11 @@ C     jgf46.00 Add directional wind reduction.
             PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            SWAN_WX2(I,2) = WindX
+            SWAN_WY2(I,2) = WindY
+#endif
          END DO
       ENDIF
 
@@ -522,6 +562,11 @@ C     model time step.
             PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             wvnxout(i)=WSX2(i) !for met recording sta. output
             wvnyout(i)=WSY2(i)             
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            SWAN_WX2(I,2) = WindX
+            SWAN_WY2(I,2) = WindY
+#endif
          END DO
       ENDIF
 
@@ -547,6 +592,11 @@ C     generate hurricane winds from the Holland Wind Model.
             PR2(I)=RampMete*PRN2(I)
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            SWAN_WX2(I,2) = WindX
+            SWAN_WY2(I,2) = WindY
+#endif
          ENDDO
       ENDIF       
 
@@ -571,6 +621,11 @@ C     jgf46.16 Merged:
             PR2(I)=RampMete*PRN2(I)
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            SWAN_WX2(I,2) = WindX
+            SWAN_WY2(I,2) = WindY
+#endif
          END DO
       ENDIF
 
@@ -612,6 +667,11 @@ C     jgf46.00 Add directional wind reduction.
             PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            SWAN_WX2(I,2) = WindX
+            SWAN_WY2(I,2) = WindY
+#endif
          END DO
       ENDIF
 
@@ -658,6 +718,11 @@ C     jgf46.00 Add directional wind reduction.
             PR2(I) = RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            SWAN_WX2(I,2) = WindX
+            SWAN_WY2(I,2) = WindY
+#endif
          END DO
       ENDIF
 
@@ -690,6 +755,11 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
             PR2(I) = RampMete*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I))) 
             WVNXOUT(I)=RampMete*WINDX
             WVNYOUT(I)=RampMete*WINDY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            SWAN_WX2(I,2) = WindX/WindMultiplier
+            SWAN_WY2(I,2) = WindY/WindMultiplier
+#endif
           END DO
         ENDIF
 
@@ -715,6 +785,13 @@ C...  NRS=2 was added.  sb46.28sb03 09/xx/2006
             IF(NRS.EQ.2) THEN
               CALL RS2GET(RSNX2,RSNY2,NP)
             ENDIF
+#ifdef CSWAN
+Casey 090302: Added for coupling to SWAN.
+            IF(NRS.EQ.3) THEN
+              InterpoWeight = 1.0
+              CALL ComputeWaveDrivenForces
+            ENDIF
+#endif
          ENDIF
          RStRatio=(TIME-RSTIME1)/RSTIMINC
          DO I=1,NP
@@ -722,6 +799,11 @@ C...  NRS=2 was added.  sb46.28sb03 09/xx/2006
             RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
             WSX2(I) = WSX2(I) + RSX
             WSY2(I) = WSY2(I) + RSY
+#ifdef CSWAN
+Casey 090302: Added these lines for output to the rads.64 file.
+            RSNXOUT(I) = RSX
+            RSNYOUT(I) = RSY
+#endif
          END DO
       ENDIF
 

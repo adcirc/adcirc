@@ -988,7 +988,12 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
      &   (NWS.NE.200)  .AND.(NWS.NE.201)     .AND.(NWS.NE.202)     .AND.
      &   (NWS.NE.203)  .AND.(ABS(NWS).NE.204).AND.(ABS(NWS).NE.205).AND.
      &   (NWS.NE.206)  .AND.(NWS.NE.210)     .AND.(NWS.NE.211)     .AND.
-     &   (ABS(NWS).NE.212)) THEN
+     &   (ABS(NWS).NE.212) .AND.
+Casey 090302: Added the following cases for coupling to SWAN.
+     &   (NWS.NE.300)  .AND.(NWS.NE.301)     .AND.(NWS.NE.302)     .AND.
+     &   (NWS.NE.303)  .AND.(ABS(NWS).NE.304).AND.(ABS(NWS).NE.305).AND.
+     &   (NWS.NE.306)  .AND.(NWS.NE.310)     .AND.(NWS.NE.311)     .AND.
+     &   (ABS(NWS).NE.312)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'NWS =',NWS
@@ -1019,6 +1024,13 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
          NRS=2
          NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
       ENDIF
+#ifdef CSWAN
+Casey 090302: Added the option for coupling directly to SWAN.
+      IF(ABS(NWS/100).EQ.3) THEN
+         NRS=3
+         NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
+      ENDIF
+#endif
       IF(NWS.EQ.0) THEN
          WRITE(16,237) NWS
  237     FORMAT(/,5X,'NWS = ',I2,/,9X,
@@ -1281,6 +1293,14 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
      &    /,9X,'OF THE COLD START.  FOR A HOT START, THE UNIT 23 FILE ',
      &    /,9X,'BEGINS AT THE TIME OF THE HOT START.')
       ENDIF
+#ifdef CSWAN
+Casey 090302: Added the following lines.
+      IF(NRS.EQ.3) THEN
+         WRITE(16,2393) NRS
+ 2393    FORMAT(/,5X,'NRS = ',I2,
+     &    /,9X,'WAVES WILL BE COUPLED TO SWAN!')
+      ENDIF
+#endif
       
 C...  
 C...  READ AND PROCESS NRAMP - WHETHER A RAMP FUNCTION WILL BE USED
@@ -1456,7 +1476,9 @@ C     wind multiplier to final wind speeds from Holland model.
       IF(ABS(NWS).EQ.8) THEN
          IF(NRS.EQ.0) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj
-         ELSEIF (NRS.EQ.1) THEN
+Casey 090302: Added possibility for SWAN coupling.
+C        ELSEIF (NRS.EQ.1) THEN
+         ELSEIF (NRS.EQ.1 .OR. NRS.EQ.3) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
      &           RSTIMINC
             WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
@@ -4205,7 +4227,9 @@ C...  TIMES TOUTSGE AND TOUTFGE; IF ABS(NOUTGE)=2, OUTPUT WILL BE BINARY
 
 C...  CHECK INPUT PARAMETER NOUTGE
 
-      IF(ABS(NOUTGE).GT.3) THEN
+Casey 090302: Changed this line to allow for ABS(NOUTGE).EQ.4.
+C     IF(ABS(NOUTGE).GT.3) THEN
+      IF(ABS(NOUTGE).GT.3 .AND. ABS(NOUTGE).NE.4) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3302)
          WRITE(16,3302)
  3302    FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
@@ -4459,7 +4483,9 @@ C...  BE BINARY
 
 C...  CHECK INPUT PARAMETER NOUTGW
 
-         IF(ABS(NOUTGW).GT.3) THEN
+Casey 090302: Changed for ABS(NOUTGW).EQ.4.
+C        IF(ABS(NOUTGW).GT.3) THEN
+         IF(ABS(NOUTGW).GT.3 .AND. ABS(NOUTGW).NE.4) THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3452)
             WRITE(16,3452)
  3452       FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!',
@@ -5027,7 +5053,17 @@ C...  CLOSE FILES FORT.14 and FORT.15
 C...
       CLOSE(14)
       CLOSE(15)
-
+C...  
+c.RJW merged 09/02/2008 Casey 071219: Added the following subroutine call to compute the RESELEM array.
+C             The subroutine is located at the begining of the file 'massbal.F.'
+Casey 090304: We only need the RESELEM array for 3-D mass balance.
+C             Add an IF statement to prevent it from being called otherwise.
+#ifdef CMPI
+      IF(C3DVS)THEN
+        CALL COMPUTE_RESELEM
+      ENDIF
+#endif
+c.
       RETURN 
       END
 

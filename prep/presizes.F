@@ -140,9 +140,10 @@ C     variables which describe the full domain
       INTEGER NSTA3DT! number of 3D turbulence recording stations
 
       !jgf48.17 sizes of UnSWAN boundaries in fort.14
+Casey 090304: This section is no longer necessary.
 #ifdef ADCSWAN
-      INTEGER numUnSWANBdrySegs   ! total number of SWAN boundary segments
-      INTEGER numUnSWANBdryNodesTotal ! total num nodes in SWAN boundaries
+C     INTEGER numUnSWANBdrySegs   ! total number of SWAN boundary segments
+C     INTEGER numUnSWANBdryNodesTotal ! total num nodes in SWAN boundaries
 #endif
 
       INTEGER MNPP   ! number of max nodes of any subdomain
@@ -372,9 +373,10 @@ C
       END DO
       MNEI=MNEI+1
       !jgf48.17 read in and process UnSWAN boundaries
+Casey 090304: This section is no longer necessary.
 #ifdef ADCSWAN
-      READ(14,*) numUnSWANBdrySegs
-      READ(14,*) numUnSWANBdryNodesTotal
+C     READ(14,*) numUnSWANBdrySegs
+C     READ(14,*) numUnSWANBdryNodesTotal
 #endif
 
 C
@@ -551,6 +553,11 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
       IF(ABS(NWS/100).EQ.2) THEN
          NRS=2
          NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
+      ENDIF
+Casey 090302: Added NWS=3xx for coupling to SWAN.
+      IF(ABS(NWS/100).EQ.3) THEN
+         NRS=3
+         NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
       ENDIF
       IF((NWS.EQ.0).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03
       IF((NWS.EQ.1).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03

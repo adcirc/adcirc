@@ -112,6 +112,10 @@ c.
 #ifndef NWVMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
 #endif
+#ifdef CSWAN
+Casey 090302: Added the following arrays for output of radiation stresses.
+      REAL(SZ),ALLOCATABLE, TARGET :: RSNXOUT(:), RSNYOUT(:)
+#endif
       REAL(SZ),ALLOCATABLE, TARGET ::  CC00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  EtaDisc(:) ! vjp 9/2006 added for hotstart file
       REAL(SZ),ALLOCATABLE, TARGET ::   CH1(:)
@@ -331,6 +335,10 @@ C...
       INTEGER  NCChange !jgf45.06 flag indicating wetting / drying has occurred
       INTEGER  NDSETSE, NDSETSV, NDSETSW, NEle, NHAGE, NHAGV
       INTEGER  NHAINC, NHASE, NHASV, NHSINC, NHSTAR
+#ifdef CSWAN
+Casey 090302: Added a variable for output of radiation stresses.
+      INTEGER  IGRadS
+#endif
 
       INTEGER  NNBB, NNBB1, NNBB2
       INTEGER  NNBB1R, NNBB1L, NNBB2R, NNBB2L ! sb46.28.sb05.05 11/01/2006
@@ -785,6 +793,10 @@ C
       ALLOCATE ( WVNX2(MNP),WVNY2(MNP),PRN2(MNP) )
       ALLOCATE ( RSNX1(MNP),RSNY1(MNP),RSNX2(MNP),RSNY2(MNP) )
       ALLOCATE ( WVNXOUT(MNP),WVNYOUT(MNP) )
+#ifdef CSWAN
+Casey 090302: Added the next line for output of radiation stresses.
+      ALLOCATE ( RSNXOUT(MNP),RSNYOUT(MNP) )
+#endif
 
 #ifndef NPRMAX
       ALLOCATE ( PrMin(MNP) ) ! v46.50 sb 11/11/2006

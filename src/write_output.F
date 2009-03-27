@@ -70,6 +70,10 @@ C----------------------------------------------------------------------
       type(OutputDataDescript_t), SAVE :: WindVelDescript
       type(OutputDataDescript_t), SAVE :: ConcStaDescript
       type(OutputDataDescript_t), SAVE :: ConcDescript
+#ifdef CSWAN
+Casey 090302: Added this type for output of radiation stresses.
+      type(OutputDataDescript_t), SAVE :: RSDescript
+#endif
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ET00_g(:)
@@ -87,6 +91,11 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNYOut_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CC00_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CH1_g(:)
+#ifdef CSWAN
+Casey 090302: Added these arrays for output of radiation stresses.
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNXOUT_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNYOUT_g(:)
+#endif
 
       LOGICAL, SAVE :: FirstCall = .true.
       
@@ -230,6 +239,26 @@ C         write(16,*) 'Allocating WindVelDescript' !jgfdebug48.03
          WindVelDescript % array2               => WVNYOut
          WindVelDescript % array2_g             => WVNYOut_g
 
+#ifdef CSWAN
+Casey 090302: Copied these lines for the rads.64 file.
+         ! rads.64
+         write(16,*) 'Allocating RSDescript' !jgfdebug48.03
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(RSNXOUT_g(NP_G))
+            ALLOCATE(RSNYOUT_g(NP_G)) 
+         ENDIF
+         RSDescript % specifier            = NOUTGW
+         RSDescript % initial_value        = 0.0
+         RSDescript % num_items_per_record = 2
+         RSDescript % num_fd_records       = NP_G
+         RSDescript % num_records_this     = NP
+         RSDescript % imap                 => NODES_LG
+         RSDescript % array                => RSNXOUT 
+         RSDescript % array_g              => RSNXOUT_g
+         RSDescript % array2               => RSNYOUT
+         RSDescript % array2_g             => RSNYOUT_g
+#endif
+
          ! fort.81
 C         write(16,*) 'Allocating ConcStaDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
@@ -285,8 +314,10 @@ C...  solutions at stations using interpolation
             END DO
 C
 C           save elevation recording station data to file
+Casey 090302: Added file name.
             CALL writeOutArray(61, TIME, IT, ElevStaDescript,
-     &                         packOne, unpackOne, IESTP) 
+     &                         packOne, unpackOne, IESTP,
+     &                         'fort.61        ') 
 #ifdef DEBUG_GLOBALIO
             write(16,*) 'Finished with fort.61 output routine.' !jgfdebug48.03
 #endif
@@ -320,8 +351,10 @@ C...
             END DO
 C
 C           save velocity recording station data to file
+Casey 090302: Added file name.
             CALL writeOutArray(62, TIME, IT, VelStaDescript,
-     &                         packTwo, unpackTwo, IVSTP) 
+     &                         packTwo, unpackTwo, IVSTP,
+     &                         'fort.62        ') 
 
 #ifdef DEBUG_GLOBALIO
             write(16,*) 'Finished with fort.62 output routine.' !jgfdebug48.03
@@ -358,8 +391,10 @@ C...
             END DO
 C
 C           save concentration recording station data to file
+Casey 090302: Added file name.
             CALL writeOutArray(81, TIME, IT, ConcStaDescript,
-     &                         packOne, unpackOne, ICSTP)
+     &                         packOne, unpackOne, ICSTP,
+     &                         'fort.81        ')
 #ifdef DEBUG_GLOBALIO 
             write(16,*) 'Finished with fort.81 output routine.' !jgfdebug48.03
 #endif
@@ -399,12 +434,16 @@ C...
             END DO
 C
 C           save atmospheric pressure recording station data to file
+Casey 090302: Added file name.
             CALL writeOutArray(71, TIME, IT, PrStaDescript,
-     &                         packOne, unpackOne, IPSTP) 
+     &                         packOne, unpackOne, IPSTP,
+     &                         'fort.71        ') 
 C
 C           save wind velocity recording station data to file
+Casey 090302: Added file name.
             CALL writeOutArray(72, TIME, IT, WindVelStaDescript,
-     &                         packTwo, unpackTwo, IWSTP) 
+     &                         packTwo, unpackTwo, IWSTP,
+     &                         'fort.72        ') 
             NSCOUM=0
             NCCOUM=NSCOUM
          ENDIF
@@ -424,35 +463,42 @@ C...
          IF(NSCOUGE.EQ.NSPOOLGE) THEN
 !         IF(MYPROC.EQ.0) PRINT *, "W: B-write ", NSCOUGE
 C
+Casey 090302: Added outer IF statement.
+            IF(ABS(NOUTGE).EQ.1.OR.ABS(NOUTGE).EQ.2)THEN
 C           save fulldomain elevation data to file
+Casey 090302: Added file name.
             CALL writeOutArray(63, TIME, IT, ElevDescript,
-     &                         pack63, unpackOne, IGEP) 
+     &                         pack63, unpackOne, IGEP,
+     &                         'fort.63        ') 
 C
 C           jgf47.06: Write out tau0 if it is time varying and the user has 
 C           requested it with tau0 = -4 in fort.15.
             IF (OUTPUTTAU0) THEN
+Casey 090302: Added file name.
                CALL writeOutArray(90, TIME, IT, Tau0Descript,
-     &                            packOne, unpackOne, IGEP) 
+     &                            packOne, unpackOne, IGEP,
+     &                            'fort.90        ') 
             ENDIF
 
 C          jgf47.08 Made sparse output an option (if NOUTGE=-4 or 4 in fort.15)
-           IF(ABS(NOUTGE).EQ.4) THEN
+           ELSEIF(ABS(NOUTGE).EQ.4) THEN
 C              jgf47.08 Create compact output 
 C              jgf48.03 TODO: Make this globalio compliant.
 #ifdef CMPI
+Casey 090302: Changed descript to ElevDescript
               IF(MNWPROC.GT.0) THEN
                  CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $              (TRIM(GLOBALDIR)//'/'//'fort.63',descript,time,it,
+     $              (TRIM(GLOBALDIR)//'/'//'fort.63',ElevDescript,time,it,
      $                 writer_store63, -99999.D0)
               ELSE
                  CALL WRITE_GBL_63_SKIP_DRYNODE  ! sb 11/10/2006
      $                (63, TRIM(GLOBALDIR)//'/'//'fort.63',
-     $                 descript, time,it, store63)
+     $                 ElevDescript, time,it, store63)
               ENDIF
 #else
               CALL WRITE_GBL_63_SKIP_DRYNODE  ! sb 11/10/2006
      $            (63, TRIM(GLOBALDIR)//'/'//'fort.63',
-     &               descript, time,it, store63)
+     &               ElevDescript, time,it, store63)
 #endif
               IGEP=IGEP+1+NP
            ENDIF
@@ -474,26 +520,30 @@ C...
             NCCOUGV=NSCOUGV
          ENDIF
          IF(NSCOUGV.EQ.NSPOOLGV) THEN
-
+Casey 090302: Added outer IF statement.
+            IF(ABS(NOUTGV).EQ.1.OR.ABS(NOUTGV).EQ.2)THEN
+Casey 090302: Added file name.
             CALL writeOutArray(64, TIME, IT, VelDescript,
-     &                      packTwo, unpackTwo, IGVP) 
+     &                      packTwo, unpackTwo, IGVP,
+     &                      'fort.64        ') 
 
-            IF (ABS(NOUTGV).EQ.4) THEN
+            ELSEIF (ABS(NOUTGV).EQ.4) THEN
             ! jgf48.03 TODO: Make this globalio compliant.
 #ifdef CMPI
+Casey 090302: Changed descript to VelDescript.
                   IF(MNWPROC.GT.0) THEN
                     CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                (TRIM(GLOBALDIR)//'/'//'fort.64',descript,time,it,
+     $                (TRIM(GLOBALDIR)//'/'//'fort.64',VelDescript,time,it,
      $                 writer_storeTwo, 0.D0)
                   ELSE
                     CALL WRITE_GBL_FILE_SKIP_DEFAULT ! sb 11/10/2006
      $                   (64, TRIM(GLOBALDIR)//'/'//'fort.64',
-     $                   descript, time, it, storeTwo,0.d0)
+     $                   VelDescript, time, it, storeTwo,0.d0)
                   ENDIF
 #else
                   CALL WRITE_GBL_FILE_SKIP_DEFAULT ! sb 11/10/2006
      $                 (64, TRIM(GLOBALDIR)//'/'//'fort.64',
-     $                 descript, time, it, storeTwo,0.d0)
+     $                 VelDescript, time, it, storeTwo,0.d0)
 #endif
             ENDIF
             NSCOUGV=0
@@ -511,50 +561,82 @@ C...
              NCCOUGW=NSCOUGW
          ENDIF
          IF(NSCOUGW.EQ.NSPOOLGW) THEN
+Casey 090302: Added outer IF statement.
+            IF(ABS(NOUTGW).EQ.1.OR.ABS(NOUTGW).EQ.2)THEN
 C
 C           save atmospheric pressure recording station data to file
+Casey 090302: Added file name.
             CALL writeOutArray(73, TIME, IT, PrDescript,
-     &                         packOne, unpackOne, IGPP) 
+     &                         packOne, unpackOne, IGPP,
+     &                         'fort.73        ') 
 C
 C           save wind velocity recording station data to file
+Casey 090302: Added file name.
             CALL writeOutArray(74, TIME, IT, WindVelDescript,
-     &                         packTwo, unpackTwo, IGWP) 
-
+     &                         packTwo, unpackTwo, IGWP,
+     &                         'fort.74        ') 
+#ifdef CSWAN
+Casey 090302: Added these lines for output of radiation stresses.
+            CALL writeOutArray(164,TIME, IT, RSDescript,
+     &                         packTwo, unpackTwo, IGRadS,
+     &                         'rads.64        ')
+#endif
 C           jgf48.03 TODO: Make this globalio compliant.
-            IF (ABS(NOUTGW).EQ.4) THEN
+            ELSEIF (ABS(NOUTGW).EQ.4) THEN
 #ifdef CMPI
+Casey 090302: Changed descript to PrDescript.
                IF(MNWPROC.GT.0) THEN
                  CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $             (TRIM(GLOBALDIR)//'/'//'fort.73',descript,time,it,
+     $             (TRIM(GLOBALDIR)//'/'//'fort.73',PrDescript,time,it,
      $              writer_storeOne, 0.D0)
                ELSE
                  CALL WRITE_GBL_FILE_SKIP_DEFAULT
      $             (73, TRIM(GLOBALDIR)//'/'//'fort.73',
-     $              descript, time, it, storeOne,0.d0)
+     $              PrDescript, time, it, storeOne,0.d0)
                ENDIF
 #else
                CALL WRITE_GBL_FILE_SKIP_DEFAULT
      $            (73, TRIM(GLOBALDIR)//'/'//'fort.73',
-     $               descript, time, it, storeOne,0.d0)
+     $               PrDescript, time, it, storeOne,0.d0)
 #endif
-            ENDIF
+C           ENDIF
 C           jgf48.03 TODO: Make this globalio compliant.
-            IF (ABS(NOUTGW).EQ.4) THEN
+C           IF (ABS(NOUTGW).EQ.4) THEN
 #ifdef CMPI
+Casey 090302: Changed descript to WindVelDescript.
                   IF(MNWPROC.GT.0) THEN
                     CALL WRITE_GBL_FILE_THROUGH_WRITER
      $                   (TRIM(GLOBALDIR)//'/'//'fort.74',
-     &                   descript,time,it,
+     &                   WindVelDescript,time,it,
      $                   writer_storeTwo, 0.D0)
                   ELSE
                     CALL WRITE_GBL_FILE_SKIP_DEFAULT
      $                   (74, TRIM(GLOBALDIR)//'/'//'fort.74',
-     $                   descript, time, it, storeTwo,0.d0)
+     $                   WindVelDescript, time, it, storeTwo,0.d0)
                   ENDIF
 #else
                   CALL WRITE_GBL_FILE_SKIP_DEFAULT
      $              (74, TRIM(GLOBALDIR)//'/'//'fort.74',
-     $              descript, time, it, storeTwo,0.d0)
+     $              WindVelDescript, time, it, storeTwo,0.d0)
+#endif
+#ifdef CSWAN
+Casey 090302: Added these lines for output of radiation stresses.
+#ifdef CMPI
+                  IF(MNWPROC.GT.0) THEN
+                    CALL WRITE_GBL_FILE_THROUGH_WRITER
+     &                   (TRIM(GLOBALDIR)//'/'//'rads.64',
+     &                   RSDescript,time,it,
+     &                   writer_storeTwo, 0.D0)
+                  ELSE
+                    CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     &                   (164, TRIM(GLOBALDIR)//'/'//'rads.64',
+     &                   RSDescript, time, it, storeTwo, 0.D0)
+                  ENDIF
+#else
+                  CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     &                 (164, TRIM(GLOBALDIR)//'/'//'rads.64',
+     &                 RSDescript, time, it, storeTwo, 0.D0)
+#endif
 #endif
             ENDIF
             NSCOUGW=0
@@ -571,8 +653,10 @@ C...
 C
 C           save fulldomain concentration data to file
 C           jgf48.03 TODO: add the proper processingi (see below).
+Casey 090302: Added file name.
             CALL writeOutArray(83, TIME, IT, ConcDescript,
-     &                         pack83, unpackOne, IGCP) 
+     &                         pack83, unpackOne, IGCP,
+     &                         'fort.83        ') 
 C               DO I=1,NP
 C                  H2=DP(I)+IFNLFA*ETA2(I)
 C                  C1=CH1(I)/H2
@@ -1257,8 +1341,9 @@ C     jgf48.03 This subroutine was created to write out a column
 C     vector (i.e., nodal data such as water surface elevation or 
 C     pressure) to a file.
 C-----------------------------------------------------------------------
+Casey 090302: Added the filename as the last argument.
       SUBROUTINE writeOutArray(lun, time, it, descript, pack_cmd,
-     &                         unpack_cmd, filepos)
+     &                         unpack_cmd, filepos, fn)
 
       USE SIZES
       USE GLOBAL
@@ -1273,12 +1358,15 @@ C     args
       EXTERNAL :: unpack_cmd ! subroutine used to unpack data on proc 0
       INTEGER, intent(inout) :: filepos  ! current position in the output file
 C     local vars
-      CHARACTER(7) :: fn     ! outfile name (valid for lun between 10 and 99)
+Casey 090302: Increase the length of the file name.
+C     CHARACTER(7) :: fn     ! outfile name (valid for lun between 10 and 99)
+      CHARACTER(15):: fn     ! outfile name (valid for lun between 10 and 99)
       INTEGER :: I           ! loop counter
 
 C     initialize output file name
-      fn(1:5) = 'fort.'
-      WRITE(fn(6:7),2) lun
+Casey 090302: The file name is now passed as an input argument.
+C     fn(1:5) = 'fort.'
+C     WRITE(fn(6:7),2) lun
 
 C     collect up the data from subdomains if running in parallel
       IF ( MNPROC.gt.1 ) THEN

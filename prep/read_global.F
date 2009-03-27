@@ -448,6 +448,11 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
          NRS=2
          NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
       ENDIF
+Casey 090302: Added NWS=3xx for coupling to SWAN.
+      IF(ABS(NWS/100).EQ.3) THEN
+        NRS=3
+        NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
+      ENDIF
 C     jgfdebug46.02 added NWS=45
 C     jgf46.02 Added NWS=8.
 C     jgf46.16 merged:
@@ -1089,7 +1094,9 @@ C
       IF (NWS.NE.0) THEN
         READ(15,80) OUTGWMSG
         READ(OUTGWMSG,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
-        IF (ABS(NOUTGW).GT.3) THEN
+Casey 090302: Changed the following line for ABS(NOUTGW).EQ.4
+C       IF (ABS(NOUTGW).GT.3) THEN
+        IF (ABS(NOUTGW).GT.3 .AND. ABS(NOUTGW).NE.4) THEN
           print *, "NOUTGW does not have an allowable value"
           stop
         ENDIF

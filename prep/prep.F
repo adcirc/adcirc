@@ -1882,6 +1882,7 @@ C
             ENDIF
          ENDDO
 
+Casey 090304: This section is no longer necessary.
 #ifdef ADCSWAN
 C
 C--------------------------------------------------------------------------
@@ -1890,45 +1891,45 @@ C--------------------------------------------------------------------------
 C
 C--Partition the UnSWAN boundary nodes between various processors
 C
-         numUnSWANBdryNodesTotalP(IPROC) = 0
-         DO K=1, numUnSWANBdrySegs
-            numUnSWANBdryNodesEachP(K) = 0
-            DO J=1, numUnSWANBdryNodesTotal
-               unswanBdryNodes_lG(J,IPROC) = 0
-               unswanBdryNodesP(K,J) = 0
-            ENDDO
-         ENDDO
+C        numUnSWANBdryNodesTotalP(IPROC) = 0
+C        DO K=1, numUnSWANBdrySegs
+C           numUnSWANBdryNodesEachP(K) = 0
+C           DO J=1, numUnSWANBdryNodesTotal
+C              unswanBdryNodes_lG(J,IPROC) = 0
+C              unswanBdryNodesP(K,J) = 0
+C           ENDDO
+C        ENDDO
 C
 C
-         ITOT = 0
-         DO K = 1,numUnSWANBdrySegs
-            DO I = 1,numUnSWANBdryNodesEach(K)
-               ITOT = ITOT + 1
-               INDEX = unswanBdryNodes(K,I)
-               DO J = 1,ITOTPROC(INDEX)
-                  ITEMP = (J-1)*2+1
-                  IPROC2 = IMAP_NOD_GL2(ITEMP,INDEX)
-                  ILNODE = IMAP_NOD_GL2(ITEMP+1,INDEX)
-                  IF (IPROC.EQ.IPROC2) THEN
-                    numUnSWANBdryNodesTotalP(IPROC)
-     &                 = numUnSWANBdryNodesTotalP(IPROC)+1
-                    numUnSWANBdryNodesEachP(K)
-     &                 = numUnSWANBdryNodesEachP(K) + 1
-                    unswanBdryNodesP(K,numUnSWANBdryNodesEachP(K)) 
-     &                 = ILNODE
-                    unswanBdryNodes_lG
-     &                 (numUnSWANBdryNodesTotalP(IPROC),IPROC) = ITOT
-                  ENDIF
-               ENDDO
-            ENDDO
-         ENDDO
+C        ITOT = 0
+C        DO K = 1,numUnSWANBdrySegs
+C           DO I = 1,numUnSWANBdryNodesEach(K)
+C              ITOT = ITOT + 1
+C              INDEX = unswanBdryNodes(K,I)
+C              DO J = 1,ITOTPROC(INDEX)
+C                 ITEMP = (J-1)*2+1
+C                 IPROC2 = IMAP_NOD_GL2(ITEMP,INDEX)
+C                 ILNODE = IMAP_NOD_GL2(ITEMP+1,INDEX)
+C                 IF (IPROC.EQ.IPROC2) THEN
+C                   numUnSWANBdryNodesTotalP(IPROC)
+C    &                 = numUnSWANBdryNodesTotalP(IPROC)+1
+C                   numUnSWANBdryNodesEachP(K)
+C    &                 = numUnSWANBdryNodesEachP(K) + 1
+C                   unswanBdryNodesP(K,numUnSWANBdryNodesEachP(K)) 
+C    &                 = ILNODE
+C                   unswanBdryNodes_lG
+C    &                 (numUnSWANBdryNodesTotalP(IPROC),IPROC) = ITOT
+C                 ENDIF
+C              ENDDO
+C           ENDDO
+C        ENDDO
 C
-         numUnSWANBdrySegsP(IPROC) = 0
-         DO K = 1,numUnSWANBdrySegs
-            IF (numUnSWANBdryNodesEachP(K).NE.0) THEN
-              numUnSWANBdrySegsP(IPROC) = numUnSWANBdrySegsP(IPROC) + 1
-            ENDIF
-         ENDDO
+C        numUnSWANBdrySegsP(IPROC) = 0
+C        DO K = 1,numUnSWANBdrySegs
+C           IF (numUnSWANBdryNodesEachP(K).NE.0) THEN
+C             numUnSWANBdrySegsP(IPROC) = numUnSWANBdrySegsP(IPROC) + 1
+C           ENDIF
+C        ENDDO
 #endif
 
 C
@@ -1972,7 +1973,16 @@ C
           DO K = 1,NOPE
              IF (NVDLLP(K).GT.0)THEN
                 ITOT = ITOT + 1
+Casey 090304: Added the following section.  If we are coupling to SWAN,
+C             then we also want to give the global number of each
+C             boundary segment.
+#ifndef ADCSWAN
                 CALL NEWINDEX(NVDLLMSG(K),OUTMSG,NVDLLP(K))
+#else
+                NUMS(1) = NVDLLP(K)
+                NUMS(2) = K
+                CALL INSERT(NVDLLMSG(K),OUTMSG,NUMS,2)
+#endif
                 WRITE(14,80) OUTMSG
                 DO I = 1,NVDLLP(K)
                    WRITE(14,*) NBDVP(K,I)
@@ -1993,7 +2003,15 @@ C
                 ITYPE = IBTYPEP(K,IPROC)
                 NUMS(1) = NVELLP(K)
                 NUMS(2) = ITYPE
+Casey 090304: Added the following section.  If we are coupling to SWAN,
+C             then we also want to give the global number of each
+C             boundary segment.
+#ifndef ADCSWAN
                 CALL INSERT(NVELLMSG(K),OUTMSG,NUMS,2)
+#else
+                NUMS(3) = NOPE + K
+                CALL INSERT(NVELLMSG(K),OUTMSG,NUMS,3)
+#endif
                 WRITE(14,80) OUTMSG
 C
                 IF ((ITYPE.NE.3).AND.(ITYPE.NE.13).AND.
@@ -2019,32 +2037,33 @@ C
              ENDIF
           ENDDO
           !jgf48.17 Added support for UnSWAN boundaries in fort.14
+Casey 090304: This section is no longer necessary.
 #ifdef ADCSWAN
 C
 C--Write UnSWAN Boundary Data
 C
-          CALL NEWINDEX(numUnSWANBdrySegsMSG,OUTMSG,
-     &                  numUnSWANBdrySegsP(IPROC))
-          WRITE(14,80) OUTMSG
+C         CALL NEWINDEX(numUnSWANBdrySegsMSG,OUTMSG,
+C    &                  numUnSWANBdrySegsP(IPROC))
+C         WRITE(14,80) OUTMSG
 C
-          CALL NEWINDEX(numUnSWANBdryNodesTotalMSG,OUTMSG,
-     &                  numUnSWANBdryNodesTotalP(IPROC))
-          WRITE(14,80) OUTMSG
+C         CALL NEWINDEX(numUnSWANBdryNodesTotalMSG,OUTMSG,
+C    &                  numUnSWANBdryNodesTotalP(IPROC))
+C         WRITE(14,80) OUTMSG
 C
-          ITOT = 0
-          DO K = 1,numUnSWANBdrySegs
-             IF (numUnSWANBdryNodesEachP(K).GT.0)THEN
-                ITOT = ITOT + 1
-                 WRITE(14,*) numUnSWANBdryNodesEachP(K),
-     &                       unswanBdryMarkers(K)
+C         ITOT = 0
+C         DO K = 1,numUnSWANBdrySegs
+C            IF (numUnSWANBdryNodesEachP(K).GT.0)THEN
+C               ITOT = ITOT + 1
+C                WRITE(14,*) numUnSWANBdryNodesEachP(K),
+C    &                       unswanBdryMarkers(K)
 C                CALL NEWINDEX(numSWANBdryNodesEachMSG(K),OUTMSG,
 C     &                        numSWANBdryNodesEachP(K))
 C                WRITE(14,80) OUTMSG
-                DO I = 1,numUnSWANBdryNodesEachP(K)
-                   WRITE(14,*) unswanBdryNodesP(K,I)
-                ENDDO
-             ENDIF
-          ENDDO
+C               DO I = 1,numUnSWANBdryNodesEachP(K)
+C                  WRITE(14,*) unswanBdryNodesP(K,I)
+C               ENDDO
+C            ENDIF
+C         ENDDO
 #endif
 
 C
@@ -3418,7 +3437,9 @@ C--   Read in info from global hot start files
         write(*, 1001)
         write(*, 1012)
         write(*, 9973)
-        stop
+Casey 090309: This doesn't work correctly, for some reason.  Is FileFmtVersion
+C             ever set to anything?
+C       stop
       endif
 
       READ(IHOT,REC=IHOTSTP) IMHSF        ; IHOTSTP = IHOTSTP + 1
@@ -5554,10 +5575,13 @@ C     Open full domain and all subdomain fort.26 files (UnSWAN)
          WRITE(*,*) 'WARNING: UnSWAN files not preprocessed.'
          RETURN ! note early return
       ELSE
+Casey 090305: Changed the formatting throughout this next section.
          DO 
-            READ(26,170,END=9999) Line
+C           READ(26,170,END=9999) Line
+            READ(26,'(A)',END=9999) Line
             DO IPROC = 1,NPROC
-               WRITE(SDU(IPROC),60) trim(Line)
+C              WRITE(SDU(IPROC),60) trim(Line)
+               WRITE(SDU(IPROC),'(A)') trim(Line)
             ENDDO
          ENDDO
       ENDIF
@@ -5570,7 +5594,7 @@ C
       ENDDO
 
       RETURN
-  60  FORMAT(A60)
+  60  FORMAT(A170)
  170  FORMAT(A170)
  1100 FORMAT(I8,3E13.5)
  1101 FORMAT(' #')
