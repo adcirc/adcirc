@@ -49,8 +49,9 @@ C----------------------------------------------------------------------
       REAL(8), intent(in) :: Time
 
       INTEGER I                       !local loop counters
-      INTEGER NC1, NC2, NC3, NCEle
       INTEGER NM1, NM2, NM3
+      INTEGER NC1, NC2, NC3
+      INTEGER NCELE
 
       REAL(SZ) C1, C2, C3
       REAL(SZ) EE1, EE2, EE3
@@ -319,7 +320,6 @@ Casey 090302: Added file name.
      &                         packOne, unpackOne, IESTP,
      &                         'fort.61        ') 
 #ifdef DEBUG_GLOBALIO
-            write(16,*) 'Finished with fort.61 output routine.' !jgfdebug48.03
 #endif
             NSCOUE=0
             NCCOUE=NSCOUE
@@ -396,7 +396,6 @@ Casey 090302: Added file name.
      &                         packOne, unpackOne, ICSTP,
      &                         'fort.81        ')
 #ifdef DEBUG_GLOBALIO 
-            write(16,*) 'Finished with fort.81 output routine.' !jgfdebug48.03
 #endif
             NSCOUC=0
          ENDIF
@@ -1381,7 +1380,6 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
  
       CASE(1) !ascii text
 #ifdef DEBUG_GLOBALIO
-         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
 #endif
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//fn,
@@ -2341,8 +2339,9 @@ C-----------------------------------------------------------------------
 
       USE SIZES
       USE GLOBAL
+      USE HARM
       USE GLOBAL_IO, ONLY: packOne, unpackOne, packOneInt, unpackOneInt,
-     &    packTwo, unpackTwo, HEADER_MAX,
+     &    packTwo, unpackTwo, packMbyNP, unpackMbyNP, HEADER_MAX,
      &    collectFullDomainArray, collectFullDomainIntArray
 #ifdef CMPI
       USE MESSENGER
@@ -2377,7 +2376,15 @@ C
       type(OutputDataDescript_t) :: descript 
       LOGICAL TEST_HOTSTART     !jgf45.07 used for testing hot start capability
       INTEGER npx, nex
-
+      INTEGER NSTAEX  ! num of elev stations in either fulldomain or subdomain  
+      INTEGER NSTAVX  ! num of vel stations in either fulldomain or subdomain 
+C
+C     harmonic analysis vars
+      CHARACTER*16 FNAME
+      CHARACTER*8 FNAM8(2)
+      EQUIVALENCE (FNAM8(1),FNAME)
+      INTEGER N ! number of stations
+C
       type(OutputDataDescript_t), SAVE :: Elev1Descript
       type(OutputDataDescript_t), SAVE :: Elev2Descript 
       type(OutputDataDescript_t), SAVE :: VelDescript
@@ -2393,6 +2400,32 @@ C
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CH1_g(:)
       INTEGER, SAVE, ALLOCATABLE, TARGET :: NodeCode_g(:)
       INTEGER, SAVE, ALLOCATABLE, TARGET :: NOFF_g(:)
+C
+      type(OutputDataDescript_t), SAVE :: HarmElevFDLVDescript
+      type(OutputDataDescript_t), SAVE :: HarmElevSLVDescript
+      type(OutputDataDescript_t), SAVE :: HarmUVelFDLVDescript
+      type(OutputDataDescript_t), SAVE :: HarmVVelFDLVDescript
+      type(OutputDataDescript_t), SAVE :: HarmUVelSLVDescript
+      type(OutputDataDescript_t), SAVE :: HarmVVelSLVDescript
+      type(OutputDataDescript_t), SAVE :: ELAVDescript
+      type(OutputDataDescript_t), SAVE :: ELVADescript
+      type(OutputDataDescript_t), SAVE :: XVELAVDescript
+      type(OutputDataDescript_t), SAVE :: YVELAVDescript
+      type(OutputDataDescript_t), SAVE :: XVELVADescript
+      type(OutputDataDescript_t), SAVE :: YVELVADescript
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: GLOELV_g(:,:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: STAELV_g(:,:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: GLOULV_g(:,:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: GLOVLV_g(:,:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: STAULV_g(:,:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: STAVLV_g(:,:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ELAV_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ELVA_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: XVELAV_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: YVELAV_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: XVELVA_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: YVELVA_g(:)
+C
       LOGICAL, SAVE :: FirstCall = .true.
 #ifdef DEBUG_GLOBALIO      
       WRITE(16,*) "***********WRITE HOTSTART*********************"
@@ -2401,7 +2434,168 @@ C
 #endif
       IF (FirstCall) THEN
 C         write(16,*) 'Allocating Elev1Descript' 
+         IF (IHARIND.eq.1) THEN
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               write(16,*) 'Allocating HarmElevFDLVDescript' 
+               ALLOCATE(GLOELV_g(2*MNHARF,NP_G))
+            ENDIF
+            HarmElevFDLVDescript % specifier            = NHSTAR
+            HarmElevFDLVDescript % initial_value        = 0.0
+            HarmElevFDLVDescript % num_items_per_record = mm
+            HarmElevFDLVDescript % num_fd_records       = NP_G
+            HarmElevFDLVDescript % num_records_this     = NP
+            HarmElevFDLVDescript % imap                 => NODES_LG
+            HarmElevFDLVDescript % array2D              => GLOELV
+            HarmElevFDLVDescript % array2D_g            => GLOELV_g
+
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               write(16,*) 'Allocating HarmElevSLVDescript' 
+               ALLOCATE(STAELV_g(2*MNHARF,NSTAE_G))
+            ENDIF
+            HarmElevSLVDescript % specifier            = NHSTAR
+            HarmElevSLVDescript % initial_value        = 0.0
+            HarmElevSLVDescript % num_items_per_record = mm
+            HarmElevSLVDescript % num_fd_records       = NSTAE_G
+            HarmElevSLVDescript % num_records_this     = NSTAE
+            HarmElevSLVDescript % imap                 => IMAP_STAE_LG
+            HarmElevSLVDescript % array2D              => STAELV
+            HarmElevSLVDescript % array2D_g            => STAELV_g
+
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               write(16,*) 'Allocating HarmUVelFDLVDescript' 
+               ALLOCATE(GLOULV_g(2*MNHARF,NP_G))
+            ENDIF
+            HarmUVelFDLVDescript % specifier            = NHSTAR
+            HarmUVelFDLVDescript % initial_value        = 0.0
+            HarmUVelFDLVDescript % num_items_per_record = mm
+            HarmUVelFDLVDescript % num_fd_records       = NP_G
+            HarmUVelFDLVDescript % num_records_this     = NP
+            HarmUVelFDLVDescript % imap                 => NODES_LG
+            HarmUVelFDLVDescript % array2D              => GLOULV
+            HarmUVelFDLVDescript % array2D_g            => GLOULV_g
+
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               write(16,*) 'Allocating HarmVVelFDLVDescript' 
+               ALLOCATE(GLOVLV_g(2*MNHARF,NP_G))
+            ENDIF
+            HarmVVelFDLVDescript % specifier            = NHSTAR
+            HarmVVelFDLVDescript % initial_value        = 0.0
+            HarmVVelFDLVDescript % num_items_per_record = mm
+            HarmVVelFDLVDescript % num_fd_records       = NP_G
+            HarmVVelFDLVDescript % num_records_this     = NP
+            HarmVVelFDLVDescript % imap                 => NODES_LG
+            HarmVVelFDLVDescript % array2D              => GLOVLV
+            HarmVVelFDLVDescript % array2D_g            => GLOVLV_g
+
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               write(16,*) 'Allocating HarmUVelSLVDescript' 
+               ALLOCATE(STAULV_g(2*MNHARF,NSTAV_G))
+            ENDIF
+            HarmUvelSLVDescript % specifier            = NHSTAR
+            HarmUVelSLVDescript % initial_value        = 0.0
+            HarmUVelSLVDescript % num_items_per_record = mm
+            HarmUVelSLVDescript % num_fd_records       = NSTAV_G
+            HarmUVelSLVDescript % num_records_this     = NSTAV
+            HarmUVelSLVDescript % imap                 => IMAP_STAV_LG
+            HarmUVelSLVDescript % array2D              => STAULV
+            HarmUVelSLVDescript % array2D_g            => STAULV_g
+
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               write(16,*) 'Allocating HarmVVelSLVDescript' 
+               ALLOCATE(STAVLV_g(2*MNHARF,NSTAV_G))
+            ENDIF
+            HarmVVelSLVDescript % specifier            = NHSTAR
+            HarmVVelSLVDescript % initial_value        = 0.0
+            HarmVVelSLVDescript % num_items_per_record = mm
+            HarmVVelSLVDescript % num_fd_records       = NSTAV_G
+            HarmVVelSLVDescript % num_records_this     = NSTAV
+            HarmVVelSLVDescript % imap                 => IMAP_STAV_LG
+            HarmVVelSLVDescript % array2D              => STAVLV
+            HarmVVelSLVDescript % array2D_g            => STAVLV_g
+         ENDIF
+C
+         IF (CHARMV) THEN       
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               write(16,*) 'Allocating ELAVDescript' 
+               ALLOCATE(ELAV_g(NP_G))
+            ENDIF
+            ELAVDescript % specifier            = NHSTAR
+            ELAVDescript % initial_value        = 0.0
+            ELAVDescript % num_items_per_record = 1
+            ELAVDescript % num_fd_records       = NP_G
+            ELAVDescript % num_records_this     = NP
+            ELAVDescript % imap                 => NODES_LG
+            ELAVDescript % array                => ELAV
+            ELAVDescript % array_g              => ELAV_g
+
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               write(16,*) 'Allocating ELVADescript' 
+               ALLOCATE(ELVA_g(NP_G))
+            ENDIF
+            ELVADescript % specifier            = NHSTAR
+            ELVADescript % initial_value        = 0.0
+            ELVADescript % num_items_per_record = 1
+            ELVADescript % num_fd_records       = NP_G
+            ELVADescript % num_records_this     = NP
+            ELVADescript % imap                 => NODES_LG
+            ELVADescript % array                => ELVA
+            ELVADescript % array_g              => ELVA_g
+
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               write(16,*) 'Allocating XVELAVDescript' 
+               ALLOCATE(XVELAV_g(NP_G))
+            ENDIF
+            XVELAVDescript % specifier            = NHSTAR
+            XVELAVDescript % initial_value        = 0.0
+            XVELAVDescript % num_items_per_record = 1
+            XVELAVDescript % num_fd_records       = NP_G
+            XVELAVDescript % num_records_this     = NP
+            XVELAVDescript % imap                 => NODES_LG
+            XVELAVDescript % array                => XVELAV
+            XVELAVDescript % array_g              => XVELAV_g
+
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               write(16,*) 'Allocating YVELAVDescript' 
+               ALLOCATE(YVELAV_g(NP_G))
+            ENDIF
+            YVELAVDescript % specifier            = NHSTAR
+            YVELAVDescript % initial_value        = 0.0
+            YVELAVDescript % num_items_per_record = 1
+            YVELAVDescript % num_fd_records       = NP_G
+            YVELAVDescript % num_records_this     = NP
+            YVELAVDescript % imap                 => NODES_LG
+            YVELAVDescript % array                => YVELAV
+            YVELAVDescript % array_g              => YVELAV_g
+
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               write(16,*) 'Allocating XVELVADescript' 
+               ALLOCATE(XVELVA_g(NP_G))
+            ENDIF
+            XVELVADescript % specifier            = NHSTAR
+            XVELVADescript % initial_value        = 0.0
+            XVELVADescript % num_items_per_record = 1
+            XVELVADescript % num_fd_records       = NP_G
+            XVELVADescript % num_records_this     = NP
+            XVELVADescript % imap                 => NODES_LG
+            XVELVADescript % array                => XVELVA
+            XVELVADescript % array_g              => XVELVA_g
+
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               write(16,*) 'Allocating YVELVADescript' 
+               ALLOCATE(YVELVA_g(NP_G))
+            ENDIF
+            YVELVADescript % specifier            = NHSTAR
+            YVELVADescript % initial_value        = 0.0
+            YVELVADescript % num_items_per_record = 1
+            YVELVADescript % num_fd_records       = NP_G
+            YVELVADescript % num_records_this     = NP
+            YVELVADescript % imap                 => NODES_LG
+            YVELVADescript % array                => YVELVA
+            YVELVADescript % array_g              => YVELVA_g
+         ENDIF
+
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            write(16,*) 'Allocating Elev1Descript' 
             ALLOCATE(ETA1_g(NP_G))
          ENDIF
          Elev1Descript % specifier            = NHSTAR
@@ -2504,7 +2698,7 @@ C            write(16,*) 'Allocating NOFFDescript'
       ENDIF
 
 C     collect up the data from subdomains if running in parallel
-#ifdef CMPI
+      IF ( MNPROC.gt.1 ) THEN
 C         WRITE(16,*) "START collectFullDomainArray"
 C         WRITE(16,*) 
 C     &    'About to collectFullDomainArrays for hotstart file.'
@@ -2519,7 +2713,7 @@ C         WRITE(16,*) "collectFullDomainArray VelDescript"
          ENDIF
 C         WRITE(16,*) "collectFullDomainArray EtaDiscDescript"
          CALL collectFullDomainArray(EtaDiscDescript, 
-     &             packOne, unpackOne)
+     &                 packOne, unpackOne)
 C         WRITE(16,*) "collectFullDomainIntArray NodeCodeDescript"
          CALL collectFullDomainIntArray(NodeCodeDescript, 
      &             packOneInt, unpackOneInt)
@@ -2529,16 +2723,62 @@ C         WRITE(16,*) "collectFullDomainIntArray NOFFDescript"
 C         WRITE(16,*) "FINISH collectFullDomainArray"
 C         IF ( (MyProc.eq.0) ) THEN
 C           DO I=1, NP_G
+C
+         IF (IHARIND.eq.1) THEN 
+            WRITE(16,*) "collectFullDomainArray HarmElevFDLVDescript"
+            CALL collectFullDomainArray(HarmElevFDLVDescript, 
+     &             packMbyNP, unpackMbyNP)
+            WRITE(16,*) "collectFullDomainArray HarmElevSLVDescript"
+            CALL collectFullDomainArray(HarmElevSLVDescript, 
+     &             packMbyNP, unpackMbyNP)
+            WRITE(16,*) "collectFullDomainArray HarmUVelFDLVDescript"
+            CALL collectFullDomainArray(HarmUVelFDLVDescript, 
+     &             packMbyNP, unpackMbyNP)
+            WRITE(16,*) "collectFullDomainArray HarmVVelFDLVDescript"
+            CALL collectFullDomainArray(HarmVVelFDLVDescript, 
+     &             packMbyNP, unpackMbyNP)
+            WRITE(16,*) "collectFullDomainArray HarmUVelSLVDescript"
+            CALL collectFullDomainArray(HarmUVelSLVDescript, 
+     &             packMbyNP, unpackMbyNP)
+            WRITE(16,*) "collectFullDomainArray HarmVVelSLVDescript"
+            CALL collectFullDomainArray(HarmElevSLVDescript, 
+     &             packMbyNP, unpackMbyNP)
+         ENDIF
+
+         IF (CHARMV) THEN 
+            WRITE(16,*) "collectFullDomainArray ELAVDescript"
+            CALL collectFullDomainArray(ELAVDescript, 
+     &             packOne, unpackOne)
+            WRITE(16,*) "collectFullDomainArray ELVADescript"
+            CALL collectFullDomainArray(ELVADescript, 
+     &             packOne, unpackOne)
+            WRITE(16,*) "collectFullDomainArray XVELAVDescript"
+            CALL collectFullDomainArray(XVELAVDescript, 
+     &             packOne, unpackOne)
+            WRITE(16,*) "collectFullDomainArray YVELAVDescript"
+            CALL collectFullDomainArray(YVELAVDescript, 
+     &             packOne, unpackOne)
+            WRITE(16,*) "collectFullDomainArray XVELVADescript"
+            CALL collectFullDomainArray(XVELVADescript, 
+     &             packOne, unpackOne)
+            WRITE(16,*) "collectFullDomainArray YVELVADescript"
+            CALL collectFullDomainArray(YVELVADescript, 
+     &             packOne, unpackOne)
+         ENDIF
+         WRITE(16,*) "FINISH collectFullDomainArray"
+!         IF ( (MyProc.eq.0) ) THEN
+!            DO I=1, NP_G
 !             PRINT *,"before case 1 ",I, Elev1Descript % array_g(I)
 !             PRINT *,"before case 1 ",I, Elev1Descript % array_g(I)
 C          ENDDO
 C         ENDIF
 
-#endif
+      ENDIF
+
       SELECT CASE (NHSTAR)
 
       CASE(1) ! nonportable binary (1 for backwards compatibility)
-
+ 
          NPX = NP_G
          NEX = NE_G
 !         PRINT *, "write_output: NPX - 1", NPX
@@ -2686,33 +2926,35 @@ C             WRITE(16,*) I, NOFF(I)
              IHOTSTP=IHOTSTP+1
           ENDDO
 #endif
+         ENDIF
 
-         WRITE(hss % lun,REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
+         if ((MyProc.eq.0).or.WRITE_LOCAL_HOT_START_FILES) then
+            WRITE(hss % lun,REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(hss % lun,REC=IHOTSTP) IVSTP   ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IVSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(hss % lun,REC=IHOTSTP) ICSTP   ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) ICSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(hss % lun,REC=IHOTSTP) IPSTP   ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) IWSTP   ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IPSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IWSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(hss % lun,REC=IHOTSTP) IGEP    ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IGEP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(hss % lun,REC=IHOTSTP) IGVP    ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IGVP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(hss % lun,REC=IHOTSTP) IGCP    ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IGCP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(hss % lun,REC=IHOTSTP) IGPP    ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
-       
+            WRITE(hss % lun,REC=IHOTSTP) IGPP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
+         endif       
 !          PRINT *,"========================before bin=================="
 !          PRINT *, "==== write_output: IM = ", IM
 !          PRINT *, "==== write_output: TIME = ", TIME
@@ -2741,7 +2983,6 @@ C             WRITE(16,*) I, NOFF(I)
 !          PRINT *, "==== write_output: NSCOUGW = ", NSCOUGW
 !          PRINT *,"========================after bin==================="
           
-       ENDIF
 
 !This code is not supported yet.
 #if 0
@@ -2751,22 +2992,170 @@ C...
       IF (C3D) THEN
          CALL HSTART3D_OUT()
       ENDIF
+#endif
 C...  
 C...  IF APPROPRIATE ADD HARMONIC ANALYSIS INFORMATION TO HOT START FILE
 C...  
       IF((IHARIND.EQ.1).AND.(IT.GT.ITHAS)) THEN
-         WRITE(hss % lun,REC=IHOTSTP+1) ICHA
-         IHOTSTP = IHOTSTP + 1
-         CALL HAHOUT(NP,NSTAE,NSTAV,NHASE,NHASV,NHAGE,NHAGV,
-     &      hss % lun,IHOTSTP)
-C         
-         IF(NHASE.EQ.1) CALL HAHOUTES(NSTAE,hss % lun,IHOTSTP)
-         IF(NHASV.EQ.1) CALL HAHOUTVS(NSTAV,hss % lun,IHOTSTP)
-         IF(NHAGE.EQ.1) CALL HAHOUTEG(NP,hss % lun,IHOTSTP)
-         IF(NHAGV.EQ.1) CALL HAHOUTVG(NP,hss % lun,IHOTSTP)
+
+         IF ((MNPROC.eq.1).or.WRITE_LOCAL_HOT_START_FILES) THEN
+            NSTAEX = NSTAE
+            NSTAVX = NSTAV
+         ELSE
+            NSTAEX = NSTAE_G
+            NSTAVX = NSTAV_G
+         ENDIF
+        
+         IF ((MyPROC.eq.0).or.WRITE_LOCAL_HOT_START_FILES) THEN
+            WRITE(hss % lun,REC=IHOTSTP+1) ICHA
+            IHOTSTP = IHOTSTP + 1
+C         CALL HAHOUT(NP,NSTAE,NSTAV,NHASE,NHASV,NHAGE,NHAGV,
+C     &      hss % lun,IHOTSTP)
+            WRITE(hss % lun,REC=IHOTSTP+1) NZ
+            WRITE(hss % lun,REC=IHOTSTP+2) NF
+            WRITE(hss % lun,REC=IHOTSTP+3) MM
+            WRITE(hss % lun,REC=IHOTSTP+4) NPX
+            WRITE(hss % lun,REC=IHOTSTP+5) NSTAEX
+            WRITE(hss % lun,REC=IHOTSTP+6) NSTAVX
+            WRITE(hss % lun,REC=IHOTSTP+7) NHASE
+            WRITE(hss % lun,REC=IHOTSTP+8) NHASV
+            WRITE(hss % lun,REC=IHOTSTP+9) NHAGE
+            WRITE(hss % lun,REC=IHOTSTP+10) NHAGV
+            WRITE(hss % lun,REC=IHOTSTP+11) ICALL
+            WRITE(hss % lun,REC=IHOTSTP+12) NFREQ
+            IHOTSTP = IHOTSTP+12
+
+            do i=1,nfreq+nf
+               FNAME=NAMEFR(I)
+               WRITE(hss % lun,REC=IHOTSTP+1) FNAM8(1)
+               WRITE(hss % lun,REC=IHOTSTP+2) FNAM8(2)
+               IHOTSTP=IHOTSTP+2
+               WRITE(hss % lun,REC=IHOTSTP+1) hafreq(i)
+               WRITE(hss % lun,REC=IHOTSTP+2) HAFF(i)
+               WRITE(hss % lun,REC=IHOTSTP+3) HAFACE(i)
+               IHOTSTP=IHOTSTP+3
+            end do
+c
+c***** Write Out time of most recent H.A. update
+c
+            WRITE(hss % lun,REC=IHOTSTP+1) TIMEUD
+            WRITE(hss % lun,REC=IHOTSTP+2) ITUD
+         !jgf48.38 this must increment 3 rather than 2 as you might
+         ! expect, because itud is a 4 byte integer, and when the 
+         ! write statement steps forward by "1" record, it is really
+         ! only stepping forward by 4 bytes, so we need to step 
+         ! forward another record before writing again
+            IHOTSTP=IHOTSTP+3 
+c
+c***** Write Out LHS Matrix
+c
+            do i=1,mm
+               do j=1,mm
+                  WRITE(hss % lun,REC=IHOTSTP) HA(I,J)
+                  IHOTSTP = IHOTSTP + 1
+               END DO
+            END DO
+
+C
+c***** Write Out Station Elevation RHS load vector
+c
+C           IF(NHASE.EQ.1) CALL HAHOUTES(NSTAE,hss % lun,IHOTSTP)
+            IF(NHASE.EQ.1) THEN
+               do n=1,NSTAE
+                  do i=1,mm
+                     WRITE(hss % lun,REC=IHOTSTP) STAELV(I,N)
+                     IHOTSTP=IHOTSTP+1
+                  end do
+               end do
+            ENDIF
+
+#ifndef CMPI            
+C         IF(NHASV.EQ.1) CALL HAHOUTVS(NSTAV,hss % lun,IHOTSTP)
+            IF(NHASV.EQ.1) THEN
+               do N=1,NSTAV
+                  do i=1,mm
+                     WRITE(hss % lun,REC=IHOTSTP) STAULV(I,N)
+                     IHOTSTP=IHOTSTP+1
+                     WRITE(hss % lun,REC=IHOTSTP) STAVLV(I,N)
+                     IHOTSTP=IHOTSTP+1
+                  end do
+               end do
+            ENDIF
+                  
+C         IF(NHAGE.EQ.1) CALL HAHOUTEG(NP,hss % lun,IHOTSTP)
+            IF(NHAGE.EQ.1) THEN
+               do n=1,np
+                  do i=1,mm
+                     WRITE(hss % lun,REC=IHOTSTP) GLOELV(I,N)
+                     IHOTSTP=IHOTSTP+1
+                  end do
+               end do
+            ENDIF
+
+C         IF(NHAGV.EQ.1) CALL HAHOUTVG(NP,hss % lun,IHOTSTP)
+            IF(NHAGV.EQ.1) THEN
+               do n=1,np
+                  do i=1,mm
+                     WRITE(hss % lun,REC=IHOTSTP) GLOULV(I,N)
+                     IHOTSTP=IHOTSTP+1
+                     WRITE(hss % lun,REC=IHOTSTP) GLOVLV(I,N)
+                     IHOTSTP=IHOTSTP+1
+                  end do
+               end do
+            ENDIF 
+#else
+            IF(NHASE.EQ.1) THEN
+               do n=1,NSTAE_G
+                  do i=1,mm
+                     WRITE(hss % lun,REC=IHOTSTP) 
+     &                            HarmElevSLVDescript % array2D_g(i,n)
+                     IHOTSTP=IHOTSTP+1
+                  end do
+               end do
+            ENDIF
+
+            IF(NHASV.EQ.1) THEN
+               do N=1,NSTAV_G
+                  do i=1,mm
+                     WRITE(hss % lun,REC=IHOTSTP) 
+     &                           HarmUVelSLVDescript % array2D_g(i,n)
+                     IHOTSTP=IHOTSTP+1
+                     WRITE(hss % lun,REC=IHOTSTP) 
+     &                           HarmVVelSLVDescript % array2D_g(i,n)
+                     IHOTSTP=IHOTSTP+1
+                  end do
+               end do
+            ENDIF
+                  
+            IF(NHAGE.EQ.1) THEN
+               do n=1,np_g
+                  do i=1,mm
+                     WRITE(hss % lun,REC=IHOTSTP)
+     &                            HarmElevFDLVDescript % array2D_g(i,n)
+                     IHOTSTP=IHOTSTP+1
+                  end do
+               end do
+            ENDIF
+
+            IF(NHAGV.EQ.1) THEN
+               do n=1,np_g
+                  do i=1,mm
+                     WRITE(hss % lun,REC=IHOTSTP) 
+     &                           HarmUVelFDLVDescript % array2D_g(i,n)
+                     IHOTSTP=IHOTSTP+1
+                     WRITE(hss % lun,REC=IHOTSTP) 
+     &                           HarmVVelFDLVDescript % array2D_g(i,n)
+                     IHOTSTP=IHOTSTP+1
+                  end do
+               end do
+            ENDIF 
+#endif
+         ENDIF
+
       ENDIF
         
-      if( CHARMV) then
+      if (CHARMV.and.
+     &      ((MNPROC.eq.1).or.WRITE_LOCAL_HOT_START_FILES)) then
          IF((IHARIND.EQ.1).AND.(IT.GT.ITMV)) THEN
             WRITE(hss % lun,REC=IHOTSTP) NTSTEPS
             IHOTSTP=IHOTSTP+1
@@ -2793,7 +3182,32 @@ C
           ENDIF
       endif                   !  charmv
         
-#endif
+      if (CHARMV.and.(MNPROC.gt.1).and.(MYPROC.eq.0)) then
+         IF((IHARIND.EQ.1).AND.(IT.GT.ITMV)) THEN
+            WRITE(hss % lun,REC=IHOTSTP) NTSTEPS
+            IHOTSTP=IHOTSTP+1
+            IF(NHAGE.EQ.1) THEN
+               DO I=1,NP_G
+                  WRITE(hss % lun,REC=IHOTSTP) ELAV(I)
+                  IHOTSTP = IHOTSTP + 1
+                  WRITE(hss % lun,REC=IHOTSTP) ELVA(I)
+                  IHOTSTP = IHOTSTP + 1
+               END DO
+            ENDIF
+            IF(NHAGV.EQ.1) THEN
+              DO I=1,NP
+                WRITE(hss % lun,REC=IHOTSTP) XVELAV(I)
+                IHOTSTP=IHOTSTP+1
+                WRITE(hss % lun,REC=IHOTSTP) YVELAV(I)
+                IHOTSTP=IHOTSTP+1
+                WRITE(hss % lun,REC=IHOTSTP) XVELVA(I)
+                IHOTSTP=IHOTSTP+1
+                WRITE(hss % lun,REC=IHOTSTP) YVELVA(I)
+                IHOTSTP=IHOTSTP+1
+              END DO
+            ENDIF
+          ENDIF
+      endif                   !  charmv
         
       CASE(2) ! ascii?
          write(16,*) 'ASCII Hotstart file not implemented yet.'

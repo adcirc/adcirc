@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C                                                                             *
 C  mod history                                                                *
+C  v58.52      -04/03/09 - jgf - Merged changes for writing harmonic
+C               analysis data to full domain hotstart files in parallel 
+C               (globalio). 
+C  v48.51      -03/27/09 - Casey - Merged SWAN coupling infrastructure.
 C  v48.50      -03/26/09 - jgf - Fixed PREP13 to remove ALLOCATABLE
 C               for vars that did not need it. Added documentation to 
 C               point out that only 256 subdomains are prepped at a

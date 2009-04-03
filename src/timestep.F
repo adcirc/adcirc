@@ -2090,6 +2090,7 @@ CWET...
       ENDIF                     !  This is started in Part 1 of CWET
 c.....
 c. RJW merged 08/26/2008 Casey 071219: Added these output lines for wet/dry visualization.
+!#ifdef DEBUG_WETDRY 
 !      IF(NOUTGE.NE.0)THEN
 !         IF((IT.GT.NTCYSGE).AND.(IT.LE.NTCYFGE))THEN
 !            IF(NSCOUGE.EQ.(NSPOOLGE-1))THEN
@@ -2119,6 +2120,7 @@ c. RJW merged 08/26/2008 Casey 071219: Added these output lines for wet/dry visu
 !            ENDIF
 !         ENDIF
 !      ENDIF
+!#endif
 
 c.end rjw merge vis....
 C...  

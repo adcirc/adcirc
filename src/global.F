@@ -162,8 +162,9 @@ Casey 090302: Added the following arrays for output of radiation stresses.
       REAL(8), ALLOCATABLE ::   EMO(:,:),EFA(:,:)
       REAL(8), ALLOCATABLE ::   XEL(:),YEL(:),SLEL(:),SFEL(:)
       REAL(8) ,ALLOCATABLE ::   AREAS(:), TotalArea(:)
-      REAL(SZ),ALLOCATABLE ::   XVELAV(:),YVELAV(:),XVELVA(:),YVELVA(:)
-      REAL(SZ),ALLOCATABLE ::   ELAV(:),ELVA(:)
+      REAL(SZ),ALLOCATABLE,TARGET :: XVELAV(:),YVELAV(:)
+      REAL(SZ),ALLOCATABLE,TARGET :: XVELVA(:),YVELVA(:)
+      REAL(SZ),ALLOCATABLE,TARGET :: ELAV(:),ELVA(:)
       REAL(SZ),ALLOCATABLE ::   AUV11(:),AUV12(:),AUV13(:),AUV14(:)
       REAL(SZ),ALLOCATABLE ::   DUU1(:),DUV1(:),DVV1(:),BSX1(:),BSY1(:)
       REAL(SZ),ALLOCATABLE ::   TIP1(:),TIP2(:)
@@ -447,10 +448,12 @@ C     the size and shape of the output data.
         REAL(SZ), pointer :: array(:)  ! scalar data or 1st component of vector
         REAL(SZ), pointer :: array2(:) ! 2nd component of vector
         REAL(SZ), pointer :: array3(:) ! 3rd component of vector
+        REAL(SZ), pointer :: array2D(:,:) ! subdomain matrix
         INTEGER, pointer  :: iarray_g(:) ! full domain integer
         REAL(SZ), pointer :: array_g(:)  ! full domain data scalar etc
         REAL(SZ), pointer :: array2_g(:) ! full domain 2nd vec component
         REAL(SZ), pointer :: array3_g(:) ! full domain 3rd vec component
+        REAL(SZ), pointer :: array2D_g(:,:) ! fulldomain matrix
       end type OutputDataDescript_t
       INTEGER ITAU0P ! position in tau0 output file for variable tau0
 C   

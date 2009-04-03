@@ -257,7 +257,7 @@ ifeq ($(compiler),gnu)
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
-  CFLAGS	:= $(INCDIRS) -O2 -DLINUX
+  CFLAGS	:= $(INCDIRS) -g -DLINUX
   CLIBS	:= 
   LIBS		:=  
   MSGLIBS	:=  
