@@ -228,7 +228,9 @@ C     computations, and DP(I) may have been modified by the
 C     DatumCorrection nodal attribute, initialized above.
 C 
 #ifdef CMPI
-      CALL COMPUTE_RESELEM
+      IF(C3DVS)THEN
+        CALL COMPUTE_RESELEM
+      ENDIF
 #endif
 C
 C     Compute the reciprocal of the number of nodes in the entire domain 

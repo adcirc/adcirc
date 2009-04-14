@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C                                                                             *
 C  mod history                                                                *
+C  v48.54      -04/14/09 - jgf - Removed erroneous call to
+C               COMPUTE_RESELEM from read_input.F.
 C  v48.53      -04/14/09 - jgf - Fixed array out-of-bounds in IF
 C               statement in Holland (NWS8) subroutine. Also fixed
 C               single precision constants in nodal attributes.

@@ -5054,16 +5054,6 @@ C...
       CLOSE(14)
       CLOSE(15)
 C...  
-c.RJW merged 09/02/2008 Casey 071219: Added the following subroutine call to compute the RESELEM array.
-C             The subroutine is located at the begining of the file 'massbal.F.'
-Casey 090304: We only need the RESELEM array for 3-D mass balance.
-C             Add an IF statement to prevent it from being called otherwise.
-#ifdef CMPI
-      IF(C3DVS)THEN
-        CALL COMPUTE_RESELEM
-      ENDIF
-#endif
-c.
       RETURN 
       END
 
