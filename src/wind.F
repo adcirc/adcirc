@@ -2165,10 +2165,13 @@ C           ------------
 C           ------------
 C     Check to see if this is a repeated line. If so, go directly to the
 C     next line without any processing.
-               IF (i.gt.1.and.
-     &              iYear(i).eq.iYear(i-1).and.iMth(i).eq.iMth(i-1).and.
-     &              iDay(i).eq.iDay(i-1).and.iHr(i).eq.iHr(i-1)) THEN
-                  CYCLE
+               IF (i.gt.1) THEN
+                  IF  (iYear(i).eq.iYear(i-1).and.
+     &              iMth(i).eq.iMth(i-1).and.
+     &              iDay(i).eq.iDay(i-1).and.
+     &              iHr(i).eq.iHr(i-1)) THEN
+                    CYCLE
+                  ENDIF
                ENDIF
 C
 C     Save the central pressure, radius of last closed isobar, and

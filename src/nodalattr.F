@@ -1469,15 +1469,15 @@ C     ----------------------------------------------------------------
 C
       IF (Scheme.eq.-2.d0) THEN 
 C     Smoothly varying tau0 with depth.
-         IF(Depth.GE.200.) Tau0NodalValue=0.005
-         IF((Depth.LT.200.).AND.(Depth.GE.1.)) THEN
-            Tau0NodalValue=1./Depth
+         IF(Depth.GE.200.d0) Tau0NodalValue=0.005d0
+         IF((Depth.LT.200.d0).AND.(Depth.GE.1.d0)) THEN
+            Tau0NodalValue=1.d0/Depth
          ENDIF
-         IF(Depth.LT.1.) Tau0NodalValue=1.0
+         IF(Depth.LT.1.) Tau0NodalValue=1.0d0
       ELSE
 C     Abrupt variation in tau0 with depth.           
-         IF(Depth.LE.10.) Tau0NodalValue=0.020d0    
-         IF(Depth.GT.10.) Tau0NodalValue=0.005d0
+         IF(Depth.LE.10.d0) Tau0NodalValue=0.020d0    
+         IF(Depth.GT.10.d0) Tau0NodalValue=0.005d0
       ENDIF         
 C     ----------------------------------------------------------------
       END FUNCTION Tau0NodalValue
@@ -1508,7 +1508,7 @@ cjjw46.39.sb01 :  "high/low LIMITED" variable G.
       !jgf47.30: Distinction between fulldomain and hi res only
       IF ( FullDomainTimeVaryingTau0 ) THEN
          DO i = 1, NP
-            Tau0Temp(i)=Tau0MinMax(i,1)+1.5*TK(i)
+            Tau0Temp(i)=Tau0MinMax(i,1)+1.5d0*TK(i)
             IF (Tau0Temp(i).lt.Tau0MinMax(i,1)) THEN
                Tau0Temp(i)=Tau0MinMax(i,1)
             ENDIF
@@ -1519,17 +1519,17 @@ cjjw46.39.sb01 :  "high/low LIMITED" variable G.
       ENDIF
       IF ( HighResTimeVaryingTau0 ) THEN
          DO i = 1, NP
-            IF(Tau0Base(i).lt.0.025) THEN
+            IF(Tau0Base(i).lt.0.025d0) THEN
                Tau0Temp(I)=Tau0Base(i) ! not time varying
             ELSE
-               Tau0Temp(i)=Tau0Base(i)+1.5*TK(i) ! time varying
-               IF (Tau0Temp(i).gt.0.2) Tau0Temp(i)=0.2 ! ceiling
+               Tau0Temp(i)=Tau0Base(i)+1.5d0*TK(i) ! time varying
+               IF (Tau0Temp(i).gt.0.2d0) Tau0Temp(i)=0.2d0 ! ceiling
             ENDIF
          ENDDO
       ENDIF
       ! smoothing
       DO I=1, NP
-         CaseySum = 0.0
+         CaseySum = 0.0d0
          DO J=1,NNeigh(I)
             CaseySum = CaseySum + Tau0Temp(NeiTab(I,J))
          ENDDO
@@ -1610,7 +1610,7 @@ C
 C     ... Convert Chezy to Cd, if necessary.
       IF (LoadChezy) THEN
          DO I=1,NP
-            FRIC(I)=G/(Chezy(I)**2)
+            FRIC(I)=G/(Chezy(I)**2.0d0)
          END DO
       ENDIF
 C
@@ -1636,7 +1636,7 @@ C     pilings, if required.
             BALPHA = BridgePilings(I,2) 
             BDELX = BridgePilings(I,3) 
             FricBP=(H1/BDELX)*BK*(BK+5.d0*Fr*Fr-0.6d0)
-     &           *(BALPHA+15.d0*BALPHA**4)
+     &           *(BALPHA+15.d0*BALPHA**4.d0)
             TK(I)=TK(I)+FricBP*UV1/H1
          END DO
       ENDIF
@@ -1685,49 +1685,49 @@ C     compute marine roughness coefficient based on Garratt's formula
       z0m=(0.018d0/G)*WindDragCo*WindMag**2.d0
 C
 C     compute direction  that the wind is coming from
-      if((WindX.eq.0).and.(WindY.eq.0))then
+      if((WindX.eq.0.d0).and.(WindY.eq.0.d0))then
          angle=0.d0
       else
          angle=atan2(WindY,WindX)
       endif
-      angle=360.*angle/(2*3.141592654d0)
+      angle=360.d0*angle/(2.d0*3.141592654d0)
       idir=0
-      if((angle.gt.-15.).and.(angle.le.15))  idir=1
-      if((angle.gt.15.).and.(angle.le.45))   idir=2
-      if((angle.gt.45.).and.(angle.le.75))   idir=3
-      if((angle.gt.75.).and.(angle.le.105))  idir=4
-      if((angle.gt.105.).and.(angle.le.135)) idir=5
-      if((angle.gt.135.).and.(angle.le.165)) idir=6
-      if((angle.gt.165.).and.(angle.le.180)) idir=7
-      if((angle.gt.-45.).and.(angle.le.-15)) idir=12
-      if((angle.gt.-75.).and.(angle.le.-45)) idir=11
-      if((angle.gt.-105.).and.(angle.le.-75)) idir=10
-      if((angle.gt.-135.).and.(angle.le.-105)) idir=9
-      if((angle.gt.-165.).and.(angle.le.-135)) idir=8
-      if((angle.ge.-180.).and.(angle.le.-165)) idir=7
+      if((angle.gt.-15.d0).and.(angle.le.15.d0))  idir=1
+      if((angle.gt.15.d0).and.(angle.le.45.d0))   idir=2
+      if((angle.gt.45.d0).and.(angle.le.75.d0))   idir=3
+      if((angle.gt.75.d0).and.(angle.le.105.d0))  idir=4
+      if((angle.gt.105.d0).and.(angle.le.135.d0)) idir=5
+      if((angle.gt.135.d0).and.(angle.le.165.d0)) idir=6
+      if((angle.gt.165.d0).and.(angle.le.180.d0)) idir=7
+      if((angle.gt.-45.d0).and.(angle.le.-15.d0)) idir=12
+      if((angle.gt.-75.d0).and.(angle.le.-45.d0)) idir=11
+      if((angle.gt.-105.d0).and.(angle.le.-75.d0)) idir=10
+      if((angle.gt.-135.d0).and.(angle.le.-105.d0)) idir=9
+      if((angle.gt.-165.d0).and.(angle.le.-135.d0)) idir=8
+      if((angle.ge.-180.d0).and.(angle.le.-165.d0)) idir=7
 C
 C     define land roughness from usace values
       z0l=z0land(NodeNumber,idir)
 C
 C     reset z0l depending on situation                       
-      if(z0l.le.0.006) then    
+      if(z0l.le.0.006d0) then    
 c     coe set their value to a marine value -> reset to correct marine value
          z0l=z0m    
       else 
 c     coe set their value to a land value -> proceed with checking this value
          TotalDepth = BathymetricDepth + Elevation
-         if( (TotalDepth.gt.2*CutOffDepth).and.
-     &        (BathymetricDepth.lt.20)) then
+         if( (TotalDepth.gt.(2.d0*CutOffDepth)).and.
+     &        (BathymetricDepth.lt.20.d0)) then
 c     compute adjusted z0l to account for overland flooding - do this only 
 c     in the case where the water column is greater than twice h0 and 
 c     you are not in a river (I assume that rivers are deeper than 20m 
 c     and have z0l>0.006) 
-            z0l=z0l-TotalDepth/30. ! correction for overland flooding
+            z0l=z0l-TotalDepth/30.d0 ! correction for overland flooding
          endif 
       endif  
 C
 c     compute land wind reduction factor
-      if(z0l.gt.0.0001) then
+      if(z0l.gt.0.0001d0) then
          fr=(z0m/z0l)**0.0706d0
       else
          fr=1.000d0

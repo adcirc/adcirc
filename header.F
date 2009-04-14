@@ -3,7 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C                                                                             *
 C  mod history                                                                *
-C  v58.52      -04/03/09 - jgf - Merged changes for writing harmonic
+C  v48.53      -04/14/09 - jgf - Fixed array out-of-bounds in IF
+C               statement in Holland (NWS8) subroutine. Also fixed
+C               single precision constants in nodal attributes.
+C  v48.52      -04/03/09 - jgf - Merged changes for writing harmonic
 C               analysis data to full domain hotstart files in parallel 
 C               (globalio). 
 C  v48.51      -03/27/09 - Casey - Merged SWAN coupling infrastructure.
