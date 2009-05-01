@@ -89,11 +89,8 @@ C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
       USE PRE_GLOBAL 
-!      USE VERSION
+      USE VERSION
       use memory_usage
-      integer, save       :: FileFmtMajor
-      integer, save       :: FileFmtMinor
-      integer, save       :: FileFmtRev     
 C
       CHARACTER JOB*80 ! user input for menu selection
 

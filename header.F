@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4601   - 05/01/09 - jgf - Fixed improperly located check for
+C               netcdfio support in presizes.F; removed FileFmt etc from USE
+C               PRE_GLOBAL in prep.F (now uses VERSION instead). Merged
+C               prep.F from v48.48 (trunk r161) b/c it has fastprep13.
 C  v48.46     - 02/26/09 - jgf - Corrected backloaded tau0 averaging
 C               formula: now just one time level.
 C  v48.45     - 02/26/09 - jgf - Fixed backloaded tau0 formula by

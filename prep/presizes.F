@@ -684,10 +684,6 @@ C
       IF ((IM.EQ.10).AND.(ABS(IDUM).EQ.3)) useNetCDF = .true.
       IF (NWS.NE.0) READ(15,*) IDUM               !SKIP OVER NOUTGW, TOUTSGW...
       IF ((NWS.NE.0).AND.(ABS(IDUM).EQ.3)) useNetCDF = .true.
-      IF ( (useNetCDF).AND.(.NOT.(NETCDF_AVAIL)) ) THEN
-         WRITE(*,*) 'ERROR: NetCDF was requested, but not supported.'
-         STOP
-      ENDIF   
 
       MNHARF = 0
       READ(15,*) NHARF                           !PROCESS MNHARF
@@ -709,6 +705,11 @@ C
       READ(15,*) NHSTAR,IDUM                          !SKIP OVER NHSTAR,NHSINC
       PRINT *, "NHSTAR = ", NHSTAR                    
       IF (ABS(NHSTAR).EQ.3) useNetCDF = .true.                          !for netCDF
+
+      IF ( (useNetCDF).AND.(.NOT.(NETCDF_AVAIL)) ) THEN
+         WRITE(*,*) 'ERROR: NetCDF was requested, but not supported.'
+         STOP
+      ENDIF   
 C
 C...THIS SECTION TO LUMP THE GWCE MATRIX
 Cvjp 11/30/99 made lumping a compile time option
