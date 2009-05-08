@@ -2307,7 +2307,7 @@ C     ----------------------------------------------------------------
       !=================================================================
 
       !=================================================================
-      ! This subroutine takes an NHC advisory parsed with readnhc.F and
+      ! This subroutine takes a wind file in best track format and
       ! creates an asymmetric hurricane vortex, returning a wind field
       ! (wvnx,wvny) and atmospheric pressure-induced water surface
       ! elevation (press) on-the-fly for each model time step.
@@ -2353,8 +2353,12 @@ C     ----------------------------------------------------------------
       !                                            winds in all hemispheres
       ! Reference:
       !
-      !     If you use this NWS=9 option capability please reference this
-      !     publication:
+      !     If you use this NWS=9 option capability please reference one of 
+      !     the following publications:
+      !
+      !     Mattocks, C. and C. Forbes (2008): A real-time, event-triggered 
+      !     storm surge forecasting system for the State of North Carolina, 
+      !     Ocean Modelling, 25, pp. 95-119, 10.1016/j.ocemod.2008.06.008
       !
       !     Mattocks, C., C. Forbes and L. Ran (2006) Design and implementation 
       !     of a real-time storm surge and flood forecasting capability for the 
@@ -2364,6 +2368,7 @@ C     ----------------------------------------------------------------
       !=================================================================
       SUBROUTINE nws9get(slam,sfea, wvnx,wvny, press, np, time, ics)
 
+         USE SIZES, ONLY : MyProc,mnproc
          !-------------------------------------------------------------
          ! Import custom precision types for cross-platform portability
          !-------------------------------------------------------------
@@ -2428,11 +2433,11 @@ C     ----------------------------------------------------------------
          REAL(sz) :: vTrans = zero
 
          INTEGER , PARAMETER :: node2print = 6205
-	 CHARACTER*1 ew,E,W,ns,N,S
- 	 E='E'
-	 W='W'
-	 N='N'
-	 S='S'
+         CHARACTER*1 ew,E,W,ns,N,S
+         E='E'
+         W='W'
+         N='N'
+         S='S'
 
          timeNew = time
 
@@ -2480,13 +2485,13 @@ C     jgf46.16 commented out according to cf
 !         The logic for the code is set for W and N so if E or S
 !         multiply lats and lons by -1
 !
-	    IF(ew.EQ.E)THEN
-	       ilon1=(-1)*ilon1 
-	       ilon2=(-1)*ilon2
+            IF(ew.EQ.E)THEN
+               ilon1=(-1)*ilon1 
+               ilon2=(-1)*ilon2
             ENDIF
-	    IF(ns.EQ.S)THEN
-	       ilat1=(-1)*ilat1
-	       ilat2=(-1)*ilat2
+            IF(ns.EQ.S)THEN
+               ilat1=(-1)*ilat1
+               ilat2=(-1)*ilat2
             ENDIF
             
             !---------------------------------
@@ -2564,11 +2569,11 @@ C     jgf46.16 commented out according to cf
 !         The logic for the code is set for W and N so if E or S
 !         multiply lats and lons by -1
 !
-	    IF(ew.EQ.E)THEN
-	       ilon2=(-1)*ilon2
+            IF(ew.EQ.E)THEN
+               ilon2=(-1)*ilon2
             ENDIF
-	    IF(ns.EQ.S)THEN
-	       ilat2=(-1)*ilat2
+            IF(ns.EQ.S)THEN
+               ilat2=(-1)*ilat2
             ENDIF
 
             !---------------------------------

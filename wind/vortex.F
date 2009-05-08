@@ -735,8 +735,8 @@
                !---------------------------------------------------
                speed = kt2ms*Vasym(dist, order,a, angle, B, Pn,Pc, cLat)
      &               * windReduction * one2ten
-               u = (-speed * COS(deg2rad*angle) +  uTrans) * damp
-               v = ( speed * SIN(deg2rad*angle) +  vTrans) * damp
+               u = -speed * COS(deg2rad*angle) + uTrans * damp
+               v =  speed * SIN(deg2rad*angle) + vTrans * damp
 
                !---------------------------------------------------------
                ! Alter wind direction by adding a frictional inflow angle

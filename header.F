@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4602   - 05/08/09 - jgf - Changed air density for symmetric and 
+C               asymmetric vortex models (NWS=8 and 9) to 1.15 kg/m^3,
+C               for Holland B calculation as well as conversion to wind
+C               stress. Changed asymmetric far field wind damping so
+C               that only the translation velocity is damped.
 C  v48.4601   - 05/01/09 - jgf - Fixed improperly located check for
 C               netcdfio support in presizes.F; removed FileFmt etc from USE
 C               PRE_GLOBAL in prep.F (now uses VERSION instead). Merged

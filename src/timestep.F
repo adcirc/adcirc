@@ -542,8 +542,8 @@ C     generate hurricane winds from the Holland Wind Model.
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
                WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
             ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+            WSX2(I) = RampMete*0.00115d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*0.00115d0*WDragCo*WindY*WindMag
             PR2(I)=RampMete*PRN2(I)
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
@@ -566,8 +566,8 @@ C     jgf46.16 Merged:
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
                WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
             ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+            WSX2(I) = RampMete*0.00115d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*0.00115d0*WDragCo*WindY*WindMag
             PR2(I)=RampMete*PRN2(I)
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY

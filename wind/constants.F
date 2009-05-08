@@ -126,9 +126,10 @@
          !---------------
          ! Density of air
          !---------------
-!        REAL (KIND = dp), PARAMETER :: RhoAir = 1.15_dp   ! Holland
+         ! jgf48.4601 uncommented the following line
+         REAL (KIND = dp), PARAMETER :: RhoAir = 1.15_dp   ! Holland
 !        REAL (KIND = dp), PARAMETER :: RhoAir = 1.168_dp  ! T=25    C, P=1000 mb
-         REAL (KIND = dp), PARAMETER :: RhoAir = 1.1774_dp ! T=79.79 F, P=1013 mb
+!jgf48.4601         REAL (KIND = dp), PARAMETER :: RhoAir = 1.1774_dp ! T=79.79 F, P=1013 mb
 
          !----------------------------------------------------------
          ! Factor for reducing wind speed from top of PBL to surface
@@ -287,9 +288,10 @@
          !---------------
          ! Density of air
          !---------------
-!        REAL (KIND = sp), PARAMETER :: RhoAir = 1.15_sp   ! Holland
+         !jgf48.4601 Uncommented the following line.
+         REAL (KIND = sp), PARAMETER :: RhoAir = 1.15_sp   ! Holland
 !        REAL (KIND = sp), PARAMETER :: RhoAir = 1.168_sp  ! T=25    C, P=1000 mb
-         REAL (KIND = sp), PARAMETER :: RhoAir = 1.1774_sp ! T=79.79 F, P=1013 mb
+!jgf48.4601 commented out         REAL (KIND = sp), PARAMETER :: RhoAir = 1.1774_sp ! T=79.79 F, P=1013 mb
 
          !----------------------------------------------------------
          ! Factor for reducing wind speed from top of PBL to surface
