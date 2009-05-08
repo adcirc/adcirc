@@ -2,6 +2,7 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4604   - 05/08/09 - jgf - Fixed typo in version.F
 C  v48.4603  -  05/08/09 - rjw-  updated the distance calculation formula 
 C               in Holland Model (NWS=8) to more accuarately calculate 
 C               distance along a shpere, and modified the coriolis formula
