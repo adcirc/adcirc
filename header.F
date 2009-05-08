@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4603  -  05/08/09 - rjw-  updated the distance calculation formula 
+C               in Holland Model (NWS=8) to more accuarately calculate 
+C               distance along a shpere, and modified the coriolis formula
+C               to compute a spatially varying coriolis term also for the 
+C               Symmetric Holland model (NWS=8)
 C  v48.4602   - 05/08/09 - jgf - Changed air density for symmetric and 
 C               asymmetric vortex models (NWS=8 and 9) to 1.15 kg/m^3,
 C               for Holland B calculation as well as conversion to wind
