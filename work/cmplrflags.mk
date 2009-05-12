@@ -10,10 +10,10 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #            by commenting/uncommenting the appropriate compiler
 #
 #compiler=gnu
-#compiler=intel
+compiler=intel
 #compiler=intel-lonestar
 #compiler=cray_xt3
-compiler=pgi
+#compiler=pgi
 #
 # 
 ifeq ($(compiler),gnu)

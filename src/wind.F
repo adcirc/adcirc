@@ -2826,8 +2826,13 @@ C     cf added if missing values set winds to zero and pressure to P0
          ! adding the translational velocity in subroutine uvp.
          !-------------------------------------------------------------
          DO i=1,np
+! RJW added to pass Vmax into uvp subroutine
             CALL uvp(ycoor(i),xcoor(i), uTrans,vTrans,
-     &               wvnx(i),wvny(i), press(i))
+     &               wvnx(i),wvny(i), press(i),
+     &               ((Vmax - SQRT(uTrans*uTrans + vTrans*vTrans))
+     &                 /windReduction ) )
+!            CALL uvp(ycoor(i),xcoor(i), uTrans,vTrans,
+!     &               wvnx(i),wvny(i), press(i))
 !            WRITE (300,301) i, xcoor(i),ycoor(i),
 !     &                      wvnx(i),wvny(i),press(i), uTrans,vTrans
 301         FORMAT(i7, 7(1x,f12.4))

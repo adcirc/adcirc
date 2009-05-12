@@ -669,11 +669,12 @@
             ! Note:
             !    Subroutine directly accesses global class instance variables
             !=================================================================
-            SUBROUTINE uvp(lat,lon, uTrans,vTrans, u,v, p)
+            SUBROUTINE uvp(lat,lon, uTrans,vTrans, u,v, p,Vmax)
                REAL(sz), INTENT(IN)  :: lat
                REAL(sz), INTENT(IN)  :: lon
                REAL(sz), INTENT(IN)  :: uTrans
                REAL(sz), INTENT(IN)  :: vTrans
+               REAL(sz), INTENT(IN)  :: Vmax
 
                REAL(sz), INTENT(OUT) :: u
                REAL(sz), INTENT(OUT) :: v
@@ -700,10 +701,14 @@
                !----------------------------------------
                ! Handle special case at eye of hurricane
                !----------------------------------------
+               ! in eye velocity is zero not translational velocity
+               !----------------------------------------
                IF (dist < one) THEN
-                  u = uTrans
-                  v = vTrans
-                  p = Pc * oneHundred
+!                  u = uTrans
+!                  v = vTrans
+                  u = zero
+                  v = zero
+                  p = Pc * mb2pa
                   RETURN
                END IF
 
@@ -719,8 +724,8 @@
                !-------------------------------------------------------
                rmx = Rmw(order,a,angle)
 !              damp = COS(-pi2*MAX(MIN((dist/rmx)-dampRadii,one),zero))
-               damp = COS(-pi2*MAX(MIN(((dist/rmx)-dampRadii)
-     &                                  /dampLength,one), zero))
+!              damp = COS(-pi2*MAX(MIN(((dist/rmx)-dampRadii)
+!    &                                  /dampLength,one), zero))
 !              damp = one
 
                !---------------------------------------------------
@@ -735,6 +740,9 @@
                !---------------------------------------------------
                speed = kt2ms*Vasym(dist, order,a, angle, B, Pn,Pc, cLat)
      &               * windReduction * one2ten
+ 
+               damp = ABS(speed/Vmax)
+
                u = -speed * COS(deg2rad*angle) + uTrans * damp
                v =  speed * SIN(deg2rad*angle) + vTrans * damp
 
