@@ -2,7 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
-C  v48.4605   - 05/12/09 - jgf - modify asymmetric code to use damping of 
+C  v48.4606   - 05/13/09 - rjw - modify makefile to compile adcprep using 
+C               version.F
+C  v48.4605   - 05/12/09 - rjw - modify asymmetric code to use damping of 
 C               translational velocity based on ratio of V:Vmax (pass Vmax 
 C               from wind.F into vortex.F subroutine uvp), and set (in vortex.F) 
 C               velocities at center of vortex (dist < 1m) to zero.

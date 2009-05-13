@@ -407,9 +407,9 @@ cvstag:
 
 #  adcprep modules
 
+$(O_DIR)version.o     :  version.F
 $(O_DIR)presize.o     :  presize.F
-$(O_DIR)pre_global.o  :  pre_global.F  $(PREP_MOBJ)
-
+$(O_DIR)pre_global.o  :  pre_global.F  $(PREP_MOBJ) $(O_DIR)version.o
 #  adcprep
 
 $(O_DIR)adcprep.o     :  adcprep.F  $(PGLO_MOBJ) $(PMSG_OBJ)
