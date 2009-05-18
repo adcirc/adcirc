@@ -244,20 +244,20 @@ C     jgf48.03 netCDF metadata
       INTEGER NTRSPE, NTRSPV, NTRSPM, NDSETSE, NDSETSV, NDSETSM
       INTEGER NDSETSW
       INTEGER NHY
-
+#ifdef NETCDF
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION I/O 2/29/06
 !     -----------------
 !     Attribute general
 !     -----------------
-!      CHARACTER(50), ALLOCATABLE  :: STATNAMEV(:,:)
-!      CHARACTER(50), ALLOCATABLE  :: STATNAME(:,:)
-!      CHARACTER(50), ALLOCATABLE  :: STATNAMEM(:,:)
-       INTEGER, PARAMETER :: SNAMLEN = 50
+      CHARACTER(50), ALLOCATABLE  :: STATNAMEV(:,:)
+      CHARACTER(50), ALLOCATABLE  :: STATNAME(:,:)
+      CHARACTER(50), ALLOCATABLE  :: STATNAMEM(:,:)
+      INTEGER, PARAMETER :: SNAMLEN = 50
 C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
-
+#endif
 C
 C
 C--------------------------------------------------------------------------C

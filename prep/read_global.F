@@ -269,9 +269,6 @@ C
       SUBROUTINE READ15() 
       USE PRE_GLOBAL 
       USE PRESIZES, ONLY : SZ
-#ifdef NETCDF
-      USE GLOBAL, ONLY: STATNAME, STATNAMEV, STATNAMEM
-#endif
       use memory_usage
       IMPLICIT NONE
 
