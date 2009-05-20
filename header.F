@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4608   - 05/19/09 - mcf - Implemented an old bug fix: units conversion
+C               in asymmetric wind code (NWS=9)
 C  v48.4607   - 05/18/09 - jgf - Fixes to get adcprep and adcirc to compile
 C               and link with netCDF on Jade (Cray-XT4) at ERDC.
 C  v48.4606   - 05/13/09 - rjw - modify makefile to compile adcprep using 

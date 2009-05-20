@@ -2398,6 +2398,10 @@ C     ----------------------------------------------------------------
       !    12/12/08     Cristina Forbes, UNC-IMS   Comment out debug statements
       !    04/21/08     Cristina Forbes, UNC-IMS   Added capability to compute
       !                                            winds in all hemispheres
+      !    05/12/09     Robert Weaver, UNC-IMS     Modified damping of translational 
+      !                                            velocity based on ratio of V/Vmax
+      !    05/19/09     Cristina Forbes, UNC-IMS   Implemented old bug fix: units conversion 
+      !                                            
       ! Reference:
       !
       !     If you use this NWS=9 option capability please reference one of 
@@ -2806,16 +2810,17 @@ C     cf added if missing values set winds to zero and pressure to P0
          ! scale (Vmax - Vt) and Vr up to the top of the surface,
          ! where the cylcostrophic wind balance is valid.
          !-------------------------------------------------------
+! MCF implemented old bug fix: units conversion 5/19/09
          CALL newVortex(name, adv, iyear1,imth1,iday1,ihr1, iFcstInc1,
      &                  Pn,Pc, cLat,cLon,
-     &                  ( (Vmax - SQRT(uTrans*uTrans + vTrans*vTrans))
+     &                  ( (Vmax -  ms2kt*SQRT(uTrans*uTrans + vTrans*vTrans))
      &                    /windReduction), (Vr/windReduction), r)
 
          !---------------------------
          ! Print the hurricane vortex
          !---------------------------
-        IF (firstCall .EQ. 0 .OR. MOD(time,outFreq) .EQ. 0)
-     &     CALL printVortex()
+!        IF (firstCall .EQ. 0 .OR. MOD(time,outFreq) .EQ. 0)
+!     &     CALL printVortex()
 
          !-------------------------------------------------------------
          ! Calculate wind and pressure fields at model nodal points.
@@ -2827,9 +2832,10 @@ C     cf added if missing values set winds to zero and pressure to P0
          !-------------------------------------------------------------
          DO i=1,np
 ! RJW added to pass Vmax into uvp subroutine
+! MCF implemented old bug fix: units conversion 5/19/09
             CALL uvp(ycoor(i),xcoor(i), uTrans,vTrans,
      &               wvnx(i),wvny(i), press(i),
-     &               ((Vmax - SQRT(uTrans*uTrans + vTrans*vTrans))
+     &               ((Vmax -  ms2kt*SQRT(uTrans*uTrans + vTrans*vTrans))
      &                 /windReduction ) )
 !            CALL uvp(ycoor(i),xcoor(i), uTrans,vTrans,
 !     &               wvnx(i),wvny(i), press(i))
