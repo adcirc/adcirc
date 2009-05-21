@@ -2706,13 +2706,18 @@ C
          NPX = NP_G
          NEX = NE_G
 
-!        PRINT *, "ncmode = ", ncmode
-
+#ifdef NETCDF_DEBUG
+        IF ( (MyProc.eq.0) )PRINT *, "ncmode = ", ncmode
+        IF ( (MyProc.eq.0) )PRINT *, "NP_G = ", NP_G,"NE_G = ", NE_G
+#endif 
       
          timenc_len=1
          IF(.NOT. ALLOCATED(timenc)) ALLOCATE(timenc(timenc_len))
          timenc(timenc_len)=time
-!        PRINT *, "time = ", time
+
+#ifdef NETCDF_DEBUG
+        IF ( (MyProc.eq.0) )PRINT *, "time = ", time
+#endif 
 C
 C     FINISH ADDITIONS FOR NETCDF by MCF
 C
@@ -2722,7 +2727,9 @@ C
        IF (MNPROC.gt.1) num_records = NP_G   ! parallel
        IF (MNPROC.eq.1) num_records = NP ! serial
 
-!      PRINT *, "num_records = ", num_records
+#ifdef NETCDF_DEBUG
+      IF ( (MyProc.eq.0) )PRINT *, "num_records = ", num_records
+#endif 
 
       IF(.NOT.ALLOCATED(eta11))ALLOCATE (eta11(num_records,timenc_len))
 
@@ -2738,8 +2745,14 @@ C
 !                   PRINT *,i,"  Serial ETA11 = ", ETA11(i, timenc_len)
                ENDIF
             END DO
-!            IF ( MNPROC.eq.1.or.(MNPROC.gt.1.and.MyProc.eq.0) ) 
-!     &           PRINT *,"  ETA11 = ", ETA11(11, timenc_len)
+#ifdef NETCDF_DEBUG
+            IF ( MNPROC.eq.1.or.(MNPROC.gt.1.and.MyProc.eq.0) ) 
+     &           PRINT *,"  ETA11 = ", ETA11(11, timenc_len)
+#endif 
+#ifdef NETCDF_DEBUG
+            IF ( MyProc.eq.0 ) 
+     &           PRINT *,"  ETA11 = ", ETA11(11, timenc_len)
+#endif 
 C   End Addition for netCDF by MCF 4/8/08
 #endif
 
@@ -2755,7 +2768,9 @@ C   Start Addition for netCDF by MCF 4/8/08
 !                   PRINT *,i,"  ETA22 = ", ETA22(i, timenc_len)
               ENDIF
             END DO
-!        IF ( (MyProc.eq.0) ) PRINT *,"  ETA22 = ", ETA22(11, timenc_len)
+#ifdef NETCDF_DEBUG
+        IF ( (MyProc.eq.0) ) PRINT *,"  ETA22 = ", ETA22(11, timenc_len)
+#endif 
 C   End Addition for netCDF by MCF 4/8/08
 #endif
 
@@ -2771,7 +2786,10 @@ C   Start Addition for netCDF by MCF 4/8/08
 !                   PRINT *,i,"  ETADD = ", ETADD(i, timenc_len)
               ENDIF
             END DO
-!        IF ( (MyProc.eq.0) ) PRINT *,"  ETADD = ", ETADD(11, timenc_len)
+#ifdef NETCDF_DEBUG
+        IF ( (MyProc.eq.0) ) PRINT *,"  ETADD = ", ETADD(11, timenc_len)
+#endif 
+
 C   End Addition for netCDF by MCF 4/8/08
 #endif
 
@@ -2787,7 +2805,10 @@ C   Start Addition for netCDF by MCF 4/8/08
 !                   PRINT *,i,"  uu22 = ", uu22(i, timenc_len)
               ENDIF
             END DO
-!        IF ( (MyProc.eq.0) ) PRINT *,"  uu22 = ", uu22(11, timenc_len)
+#ifdef NETCDF_DEBUG
+        IF ( (MyProc.eq.0) ) PRINT *,"  uu22 = ", uu22(11, timenc_len)
+#endif         
+
 C   End Addition for netCDF by MCF 4/8/08
 #endif         
 #ifdef NETCDF
@@ -2802,7 +2823,9 @@ C   Start Addition for netCDF by MCF 4/8/08
 !                   PRINT *,i,"  vv22 = ", vv22(i, timenc_len)
               ENDIF
             END DO
-!        IF ( (MyProc.eq.0) ) PRINT *,"  vv22 = ", vv22(11, timenc_len)
+#ifdef NETCDF_DEBUG
+        IF ( (MyProc.eq.0) ) PRINT *,"  vv22 = ", vv22(11, timenc_len)
+#endif         
 C   End Addition for netCDF by MCF 4/8/08
 #endif 
 #ifdef NETCDF     
@@ -2819,7 +2842,9 @@ C   Start Addition for netCDF by MCF 4/8/08
 !                   PRINT *,i,"  nodecodenc = ", nodecodenc(i)
               ENDIF
             END DO
-!        IF ( (MyProc.eq.0) ) PRINT *,"  nodecodenc = ", nodecodenc(11)
+#ifdef NETCDF_DEBUG
+        IF ( (MyProc.eq.0) ) PRINT *,"  nodecodenc = ", nodecodenc(11)
+#endif         
 C   End Addition for netCDF by MCF 4/8/08
 #endif
         
@@ -2844,7 +2869,9 @@ C   Start Addition for netCDF by MCF 4/8/08
                     noffnc(i) = NOFFDescript % iarray(i)
               ENDIF
             END DO
-!        IF ( (MyProc.eq.0) ) PRINT *,"  noffnc = ", noffnc(11)
+#ifdef NETCDF_DEBUG
+        IF ( (MyProc.eq.0) ) PRINT *,"  noffnc = ", noffnc(11)
+#endif         
 C   End Addition for netCDF by MCF 4/8/08
 #endif
 C
@@ -2858,13 +2885,13 @@ C
             IF(.NOT. ALLOCATED(nvellnc)) ALLOCATE(nvellnc(nbou))
             IF(.NOT. ALLOCATED(nvdllnc)) ALLOCATE(nvdllnc(nope))
             IF(.NOT. ALLOCATED(ibtypenc)) ALLOCATE(ibtypenc(nbou))
-!         if (ncmode.eq.2) then
-!            if(myproc.eq.0) PRINT *,"wo: allocate nopenc"
+         if (ncmode.eq.2) then
+            if(myproc.eq.0) PRINT *,"wo: allocate nopenc"
 !            IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
 !            IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
-!         endif
+         endif
         IF (ncmode.eq.1) THEN                                           ! serial
-!        IF ( (MyProc.eq.0) ) PRINT *,"  arrays allocated = "
+        IF ( (MyProc.eq.0) ) PRINT *,"  arrays allocated = "
 
 
             IF(ICS.EQ.2) THEN
@@ -2883,7 +2910,7 @@ C
 !
 !            elevation specified boundary forcing segments
 !
-!        IF ((MyProc.eq.0))PRINT *," write output: elevation specified "
+        IF ((MyProc.eq.0))PRINT *," write output: elevation specified "
                netanc=0
                DO i=1,nope
                   nvdllnc(i)=nvdll(i)
@@ -2894,7 +2921,9 @@ C
               END DO
 
              IF(.NOT. ALLOCATED(nopenc)) ALLOCATE(nopenc(netanc))
-!      IF ( (MyProc.eq.0) ) PRINT *," write output: nopenc "
+#ifdef NETCDF_DEBUG
+      IF ( (MyProc.eq.0) ) PRINT *," write output: nopenc "
+#endif         
 
                k=0
                   DO i=1,nope
@@ -2906,7 +2935,10 @@ C
 !
 !              normal flow (discharge) specified boundary segments
 !
-!        IF ((MyProc.eq.0))PRINT *," write output: normal flow  "
+#ifdef NETCDF_DEBUG
+        IF ((MyProc.eq.0))PRINT *," write output: normal flow  "
+#endif         
+
                nvelnc=0
                DO i=1,nbou
                   nvellnc(i)=nvell(i)
@@ -2916,8 +2948,10 @@ C
                  END DO
                END DO
 
-!        IF ((MyProc.eq.0))PRINT *," write output: nbounc  "
-        
+#ifdef NETCDF_DEBUG
+        IF ((MyProc.eq.0))PRINT *," write output: nbounc  "
+#endif         
+       
             IF(.NOT. ALLOCATED(nbounc)) ALLOCATE(nbounc(nvelnc))
 
                k=0
@@ -3009,6 +3043,8 @@ C
 !            WRITE(678,*) "Store noffnc ", i, noffnc(i)
 !         END DO
 !      ENDIF
+
+       IF ( (MyProc.eq.0) ) PRINT *," call writenc67 "
           call writenc67 (nhstar,abs(hss % lun),timenc_len,npx,timenc,
      &                    nt, nhsinc, uu22,vv22,
      &                    eta11, eta22, etadd, nodecodenc,noffnc,
@@ -3037,6 +3073,7 @@ C
      &                    references, comments, host, convention, 
      &                    contact, base_date)
 
+       IF ( (MyProc.eq.0) ) PRINT *," finish call writenc67 "
 
 !      IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) THEN 
 !         WRITE(677,*)"nt = ",nt

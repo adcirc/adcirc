@@ -693,12 +693,12 @@ ifneq (,$(findstring i386-darwin,$(MACHINE)-$(OS)))
   PPFC	        := ifort
   FC	        := ifort
   PFC	        := mpif77 
-  FFLAGS1       :=  $(INCDIRS) -nowarn -O3    -fixed -132 -DLINUX -I .
+  FFLAGS1       :=  $(INCDIRS) -nowarn -O3    -fixed -132 -check all -traceback -DLINUX -DNETCDF_DEBUG -I .
 # FFLAGS1	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -DIBM -I .
   FFLAGS2	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -I . 
   FFLAGS3	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -I .
   DA  	   	:=  -DREAL8 -DCSCA -DLINUX  
-  DP  	   	:=  -DREAL8 -DCSCA -DLINUX -DCMPI  
+  DP  	   	:=  -DREAL8 -DCSCA -DLINUX -DCMPI -DNETCDF_DEBUG 
   DPRE	   	:=  -DREAL8 -DLINUX  
   IMODS  	:=  -I
   CC            :=  gcc  

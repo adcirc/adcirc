@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4609   - 05/21/09 - mcf - Fixed seg-fault when writing netcdf hotstart 
+C               files, incorporated fix in the define portion of netcdfio 
+C               for grids with no specified boundary forcing segments or nodes
 C  v48.4608   - 05/19/09 - mcf - Implemented an old bug fix: units conversion
 C               in asymmetric wind code (NWS=9)
 C  v48.4607   - 05/18/09 - jgf - Fixes to get adcprep and adcirc to compile
