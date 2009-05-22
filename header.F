@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4610   - 05/22/09 - jgf - Changed air density back to 0.001293 in 
+C               stress calc for NWS8 and NWS9 in timestep.F.
 C  v48.4609   - 05/21/09 - mcf - Fixed seg-fault when writing netcdf hotstart 
 C               files, incorporated fix in the define portion of netcdfio 
 C               for grids with no specified boundary forcing segments or nodes
