@@ -2401,6 +2401,10 @@ C     ----------------------------------------------------------------
       !    05/12/09     Robert Weaver, UNC-IMS     Modified damping of translational 
       !                                            velocity based on ratio of V/Vmax
       !    05/19/09     Cristina Forbes, UNC-IMS   Implemented old bug fix: units conversion 
+      !    05/22/09     Cristina Forbes, UNC-IMS   Reverted damping of translational
+      !                                            velocity back to the original formulation
+      !                                            developed by Craig Mattocks
+      !                                            
       !                                            
       ! Reference:
       !
@@ -2833,12 +2837,12 @@ C     cf added if missing values set winds to zero and pressure to P0
          DO i=1,np
 ! RJW added to pass Vmax into uvp subroutine
 ! MCF implemented old bug fix: units conversion 5/19/09
-            CALL uvp(ycoor(i),xcoor(i), uTrans,vTrans,
-     &               wvnx(i),wvny(i), press(i),
-     &               ((Vmax -  ms2kt*SQRT(uTrans*uTrans + vTrans*vTrans))
-     &                 /windReduction ) )
 !            CALL uvp(ycoor(i),xcoor(i), uTrans,vTrans,
-!     &               wvnx(i),wvny(i), press(i))
+!     &               wvnx(i),wvny(i), press(i),
+!     &               ((Vmax -  ms2kt*SQRT(uTrans*uTrans + vTrans*vTrans))
+!     &                 /windReduction ) )
+            CALL uvp(ycoor(i),xcoor(i), uTrans,vTrans,
+     &               wvnx(i),wvny(i), press(i))
 !            WRITE (300,301) i, xcoor(i),ycoor(i),
 !     &                      wvnx(i),wvny(i),press(i), uTrans,vTrans
 301         FORMAT(i7, 7(1x,f12.4))

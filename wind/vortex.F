@@ -27,6 +27,12 @@
       !    09/12/06    Craig  Mattocks, UNC-CEP   Subtracted translational
       !                                           wind speed from Vmax in
       !                                           nws9get.
+      !    05/12/09    Robert Weaver, UNC-IMS     Modified damping of translational 
+      !                                            velocity based on ratio of V/Vmax
+      !    05/19/09    Cristina Forbes, UNC-IMS   Implemented old bug fix: units conversion 
+      !    05/22/09    Cristina Forbes, UNC-IMS   Reverted damping of translational
+      !                                            velocity back to the original formulation
+      !                                            developed by Craig Mattocks
       !=================================================================
       MODULE vortex
 
@@ -669,12 +675,16 @@
             ! Note:
             !    Subroutine directly accesses global class instance variables
             !=================================================================
-            SUBROUTINE uvp(lat,lon, uTrans,vTrans, u,v, p,Vmax)
+            SUBROUTINE uvp(lat,lon, uTrans,vTrans, u,v, p)
+! RJW
+!           SUBROUTINE uvp(lat,lon, uTrans,vTrans, u,v, p,Vmax)
                REAL(sz), INTENT(IN)  :: lat
                REAL(sz), INTENT(IN)  :: lon
                REAL(sz), INTENT(IN)  :: uTrans
                REAL(sz), INTENT(IN)  :: vTrans
-               REAL(sz), INTENT(IN)  :: Vmax
+
+! RJW
+!              REAL(sz), INTENT(IN)  :: Vmax
 
                REAL(sz), INTENT(OUT) :: u
                REAL(sz), INTENT(OUT) :: v
@@ -704,10 +714,12 @@
                ! in eye velocity is zero not translational velocity
                !----------------------------------------
                IF (dist < one) THEN
-!                  u = uTrans
-!                  v = vTrans
-                  u = zero
-                  v = zero
+                  u = uTrans
+                  v = vTrans
+! RJW                  
+!                 u = zero
+!                 v = zero
+
                   p = Pc * mb2pa
                   RETURN
                END IF
@@ -724,8 +736,8 @@
                !-------------------------------------------------------
                rmx = Rmw(order,a,angle)
 !              damp = COS(-pi2*MAX(MIN((dist/rmx)-dampRadii,one),zero))
-!              damp = COS(-pi2*MAX(MIN(((dist/rmx)-dampRadii)
-!    &                                  /dampLength,one), zero))
+               damp = COS(-pi2*MAX(MIN(((dist/rmx)-dampRadii)
+     &                                  /dampLength,one), zero))
 !              damp = one
 
                !---------------------------------------------------
@@ -741,7 +753,8 @@
                speed = kt2ms*Vasym(dist, order,a, angle, B, Pn,Pc, cLat)
      &               * windReduction * one2ten
  
-               damp = ABS(speed/Vmax)
+! RJW
+!              damp = ABS(speed/Vmax)                                   ! similar to the NWS=8 implementation
 
                u = -speed * COS(deg2rad*angle) + uTrans * damp
                v =  speed * SIN(deg2rad*angle) + vTrans * damp
