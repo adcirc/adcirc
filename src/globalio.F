@@ -146,7 +146,7 @@ C     on each iteration of the while loop below
       num     = bufsize / descript % num_items_per_record
       iend    = num
       istart  = 1
-      WRITE(16,*) 'istart is ',istart,' iend is ',iend !jgfdebug 48.18
+C      WRITE(16,*) 'istart is ',istart,' iend is ',iend !jgfdebug 48.18
       if (tagbase == 5000) then
          tagbase = 6000
       else
@@ -164,15 +164,15 @@ C     on each iteration of the while loop below
          tag     = tagbase + mod(ibucket, 8)
 
 C        now pack the buffer 
-         write(16,*) 'About to pack globalioint buffer.' !jgfdebug48.03
+C         write(16,*) 'About to pack globalioint buffer.' !jgfdebug48.03
          call pack_cmd(descript, istart, iend)
 C        now send data to processor 0
-         write(16,*) 'About to mpi_reduce globalioint buffer.' !jgfdebug48.03
+C         write(16,*) 'About to mpi_reduce globalioint buffer.' !jgfdebug48.03
          call mpi_reduce(integerBuffer, integerResultBuffer, bufsize, 
      &                 MPI_INTEGER, MPI_SUM, 0, COMM, ierr)
 
          if (myproc == 0) then
-            write(16,*) 'About to unpack globalioint buffer.' !jgfdebug48.03
+C            write(16,*) 'About to unpack globalioint buffer.' !jgfdebug48.03
             call unpack_cmd(descript, istart, iend)
          end if
 C        set new starting position to just after the
@@ -330,7 +330,7 @@ C! CMPI
 
        j = 1
        do i = istart, iend
-          write(16,*) i, j !jgfdebug48.03
+C          write(16,*) i, j !jgfdebug48.03
           descript % array_g(i) = resultBuf(j)
           j = j + 1
       end do
@@ -352,10 +352,10 @@ C! CMPI
       integer :: i, j, istart, iend, iglobal
       integer :: ioffset
 
-       WRITE(16,*) "Unpacking int array." !jgfdebug48.18
+C       WRITE(16,*) "Unpacking int array." !jgfdebug48.18
        j = 1
        do i = istart, iend
-          write(16,*) i, j, integerResultBuffer(j) !jgfdebug48.18
+C          write(16,*) i, j, integerResultBuffer(j) !jgfdebug48.18
           descript % iarray_g(i) = integerResultBuffer(j)
           j = j + 1
       end do
@@ -406,7 +406,7 @@ C! CMPI
 
       j = 1
       do i = istart, iend
-         write(16,*) i, j !jgfdebug48.03
+C         write(16,*) i, j !jgfdebug48.03
          descript % array_g(i) = resultBuf(j)
          descript % array2_g(i) = resultBuf(j+1)
          j = j + 2
@@ -486,7 +486,7 @@ C! CMPI
       integer      :: num        
       integer      :: i, j, k
 
-      write(16,*) 'About to open file.' !jgfdebug48.03
+C      write(16,*) 'About to open file.' !jgfdebug48.03
       if (myproc == 0 .or. WRITE_LOCAL_FILES) then
          open(lun, file=filename, access='SEQUENTIAL',
      &        position='APPEND')
@@ -526,12 +526,12 @@ C     on each iteration of the while loop below
          ibucket = ibucket + 1
          tag     = tagbase + mod(ibucket, 8)
          
-         write(16,*) 'About to call write_cmd.' !jgfdebug48.03
+C         write(16,*) 'About to call write_cmd.' !jgfdebug48.03
          call write_cmd(lun, descript, istart, iend)
-         write(16,*) 'About to call mpi_reduce.' !jgfdebug48.03 
+C         write(16,*) 'About to call mpi_reduce.' !jgfdebug48.03 
          call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
      &                   0, COMM, ierr)
-         write(16,*) 'Completed call to mpi_reduce.' !jgfdebug48.03
+C         write(16,*) 'Completed call to mpi_reduce.' !jgfdebug48.03
          j = 1
          if (myproc == 0) then
             do i = istart, iend

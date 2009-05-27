@@ -93,7 +93,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       IF (FirstCall) THEN
 
          ! fort.61
-         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(ET00_g(NSTAE_G)) 
          ENDIF
@@ -107,7 +107,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          ElevStaDescript % array_g              => ET00_g
 
          ! fort.62
-         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(UU00_g(NSTAV_G))
             ALLOCATE(VV00_g(NSTAV_G)) 
@@ -124,7 +124,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          VelStaDescript % array2_g             => VV00_g
 
          ! fort.63
-         write(16,*) 'Allocating ElevDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating ElevDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(ETA2_g(NP_G))
          ENDIF
@@ -138,7 +138,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          ElevDescript % array_g              => ETA2_g
 
          ! tau0
-         write(16,*) 'Allocating Tau0Descript' !jgfdebug48.03
+C         write(16,*) 'Allocating Tau0Descript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(TAU0VAR_g(NP_G))
          ENDIF
@@ -152,7 +152,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          Tau0Descript % array_g              => TAU0VAR_g
 
          ! fort.64
-         write(16,*) 'Allocating VelDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating VelDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(UU2_g(NP_G))
             ALLOCATE(VV2_g(NP_G)) 
@@ -169,7 +169,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          VelDescript % array2_g             => VV2_g
 
          ! fort.71
-         write(16,*) 'Allocating PrStaDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating PrStaDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(RMP00_g(NSTAM_G))
          ENDIF
@@ -183,7 +183,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          PrStaDescript % array_g              => RMP00_g
      
          ! fort.72
-         write(16,*) 'Allocating WindVelStaDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating WindVelStaDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(RMU00_g(NSTAM_G))
             ALLOCATE(RMV00_g(NSTAM_G))
@@ -200,7 +200,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          WindVelStaDescript % array2_g             => RMV00_g
 
          ! fort.73
-         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(Pr2_g(NP_G))
          ENDIF
@@ -214,7 +214,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          PrDescript % array_g              => Pr2_g
 
          ! fort.74
-         write(16,*) 'Allocating WindVelDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating WindVelDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(WVNXOut_g(NP_G))
             ALLOCATE(WVNYOut_g(NP_G)) 
@@ -231,7 +231,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          WindVelDescript % array2_g             => WVNYOut_g
 
          ! fort.81
-         write(16,*) 'Allocating ConcStaDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating ConcStaDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(CC00_g(NP_G))
          ENDIF
@@ -245,7 +245,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
          ConcStaDescript % array_g              => CC00_g        
 
          ! fort.83
-         write(16,*) 'Allocating ConcDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating ConcDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(CH1_g(NP_G))
          ENDIF
@@ -288,7 +288,7 @@ C           save elevation recording station data to file
             CALL writeOutArray(61, TIME, IT, ElevStaDescript,
      &                         packOne, unpackOne, IESTP) 
 
-            write(16,*) 'Finished with fort.61 output routine.' !jgfdebug48.03
+C            write(16,*) 'Finished with fort.61 output routine.' !jgfdebug48.03
             NSCOUE=0
             NCCOUE=NSCOUE
          ENDIF
@@ -304,7 +304,7 @@ C...
              NCCOUV=NSCOUV
          ENDIF
          IF(NSCOUV.EQ.NSPOOLV) THEN
-            write(16,*) 'About to write fort.62 file.' !jgfdebug48.03
+C            write(16,*) 'About to write fort.62 file.' !jgfdebug48.03
             DO I=1,NSTAV
                U11=UU2(NM(NNV(I),1))
                U22=UU2(NM(NNV(I),2))
@@ -320,7 +320,7 @@ C           save velocity recording station data to file
             CALL writeOutArray(62, TIME, IT, VelStaDescript,
      &                         packTwo, unpackTwo, IVSTP) 
 
-            write(16,*) 'Finished with fort.62 output routine.' !jgfdebug48.03
+C            write(16,*) 'Finished with fort.62 output routine.' !jgfdebug48.03
             NSCOUV=0
             NCCOUV=NSCOUV
          ENDIF
@@ -356,7 +356,7 @@ C           save concentration recording station data to file
             CALL writeOutArray(81, TIME, IT, ConcStaDescript,
      &                         packOne, unpackOne, ICSTP)
  
-            write(16,*) 'Finished with fort.81 output routine.' !jgfdebug48.03
+C            write(16,*) 'Finished with fort.81 output routine.' !jgfdebug48.03
             NSCOUC=0
          ENDIF
       ENDIF
@@ -371,7 +371,7 @@ C...
             NCCOUM=NSCOUM
          ENDIF
          IF(NSCOUM.EQ.NSPOOLM) THEN
-            write(16,*) 'About to write fort.71,72 files.' !jgfdebug48.03
+C            write(16,*) 'About to write fort.71,72 files.' !jgfdebug48.03
             DO I=1,NSTAM
                NM1=NM(NNM(I),1)
                NM2=NM(NNM(I),2)
@@ -448,7 +448,7 @@ C              jgf48.03 TODO: Make this globalio compliant.
 #endif
               IGEP=IGEP+1+NP
            ENDIF
-           write(16,*) 'Finished with fort.63 output routine.' !jgfdebug48.03
+C           write(16,*) 'Finished with fort.63 output routine.' !jgfdebug48.03
            NSCOUGE=0
            NCCOUGE=NSCOUGE
 !         IF(MYPROC.EQ.0) PRINT *, "W: B-write after ", NSCOUGE
@@ -1272,7 +1272,7 @@ C     initialize output file name
 
 C     collect up the data from subdomains if running in parallel
       IF ( MNPROC.gt.1 ) THEN
-         write(16,*) 'About to collectFullDomainArray' !jgfdebug48.03
+C         write(16,*) 'About to collectFullDomainArray' !jgfdebug48.03
          CALL collectFullDomainArray(descript, pack_cmd, unpack_cmd)
       ENDIF
 
@@ -1281,25 +1281,25 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
  
       CASE(1) !ascii text
 
-         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
+C         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//fn,
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
             WRITE(lun,2120) time,IT
             IF (descript % num_items_per_record .eq. 1) THEN
                DO I=1, descript % num_fd_records
-                  WRITE(16,*) I ! jgfdebug48.03
+C                  WRITE(16,*) I ! jgfdebug48.03
                   WRITE(lun,2453) I, descript % array_g(I)
                ENDDO
             ENDIF
             IF (descript % num_items_per_record .eq. 2) THEN
                DO I=1, descript % num_fd_records
-                  WRITE(16,*) I ! jgfdebug48.03
+C                  WRITE(16,*) I ! jgfdebug48.03
                   WRITE(lun,2454) I, descript % array_g(I),
      &                               descript % array2_g(I)  
                ENDDO
             ENDIF
-            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
+C            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
             CLOSE(lun)
          ENDIF
 

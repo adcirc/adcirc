@@ -2,7 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
-C  v48.4612   - 05/26/09 - rjw - Fix bug in postprocess for 3D 
+C  v48.4613   - 05/27/09 - jgf - Commented out debug lines in
+C               write_output.F and globalio.F that were filling up
+C               fort.16.
+C  v48.4612   - 05/26/09 - rjw - Fix format statement in postprocess for 3D. 
 C  v48.4611   - 05/22/09 - mcf - Reverted damping of translational velocity
 C               back to the original formulation
 C  v48.4610   - 05/22/09 - jgf - Changed air density back to 0.001293 in 
