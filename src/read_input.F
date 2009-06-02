@@ -5044,9 +5044,10 @@ C...
 C...  
 c.RJW merged 09/02/2008 Casey 071219: Added the following subroutine call to compute the RESELEM array.
 C             The subroutine is located at the begining of the file 'massbal.F.'
-#ifdef CMPI
-      CALL COMPUTE_RESELEM
-#endif
+C commented out until can fix for 3D only
+C#ifdef CMPI
+C      CALL COMPUTE_RESELEM
+C#endif
 c.
       RETURN 
       END

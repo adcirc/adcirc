@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4615    -06/02/09 - rjw - Removed erroneous call to
+C               COMPUTE_RESELEM from read_input.F.
 C  v48.4614   - 05/27/09 - mcf - Fixed implementation of Rick Luettich
 C               V/Vmax tapering formulation (as in NWS=8) 
 C               for future experimentation - not activated
