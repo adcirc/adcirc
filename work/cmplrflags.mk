@@ -9,8 +9,8 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 # ***NOTE*** User must select between various Linux setups
 #            by commenting/uncommenting the appropriate compiler
 #
-compiler=gnu
-#compiler=intel
+#compiler=gnu
+compiler=intel
 #compiler=intel-lonestar
 #compiler=cray_xt3
 #compiler=cray_xt4

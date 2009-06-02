@@ -28,11 +28,14 @@
       !                                           wind speed from Vmax in
       !                                           nws9get.
       !    05/12/09    Robert Weaver, UNC-IMS     Modified damping of translational 
-      !                                            velocity based on ratio of V/Vmax
+      !                                           velocity based on ratio of V/Vmax
       !    05/19/09    Cristina Forbes, UNC-IMS   Implemented old bug fix: units conversion 
       !    05/22/09    Cristina Forbes, UNC-IMS   Reverted damping of translational
-      !                                            velocity back to the original formulation
-      !                                            developed by Craig Mattocks
+      !                                           velocity back to the original formulation
+      !                                           developed by Craig Mattocks
+      !    05/26/09    Cristina Forbes, UNC-IMS   Fixed implementation of Rick Luettich 
+      !                                           V/Vmax tapering formulation (as in NWS=8) 
+      !                                           for future experimentation - not activated
       !=================================================================
       MODULE vortex
 
@@ -678,6 +681,9 @@
             SUBROUTINE uvp(lat,lon, uTrans,vTrans, u,v, p)
 ! RJW
 !           SUBROUTINE uvp(lat,lon, uTrans,vTrans, u,v, p,Vmax)
+! MCF 5/26/09
+!           SUBROUTINE uvp(lat,lon, uTrans,vTrans, u,v, p,Vmaxp)
+
                REAL(sz), INTENT(IN)  :: lat
                REAL(sz), INTENT(IN)  :: lon
                REAL(sz), INTENT(IN)  :: uTrans
@@ -685,6 +691,8 @@
 
 ! RJW
 !              REAL(sz), INTENT(IN)  :: Vmax
+! MCF 5/26/09
+!              REAL(sz), INTENT(IN)  :: Vmaxp
 
                REAL(sz), INTENT(OUT) :: u
                REAL(sz), INTENT(OUT) :: v
@@ -755,6 +763,8 @@
  
 ! RJW
 !              damp = ABS(speed/Vmax)                                   ! similar to the NWS=8 implementation
+! MCF 5/26/09
+!              damp = ABS(Vasym(dist, order,a, angle, B, Pn,Pc, cLat)/(Vmaxp))
 
                u = -speed * COS(deg2rad*angle) + uTrans * damp
                v =  speed * SIN(deg2rad*angle) + vTrans * damp

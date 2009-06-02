@@ -2404,7 +2404,9 @@ C     ----------------------------------------------------------------
       !    05/22/09     Cristina Forbes, UNC-IMS   Reverted damping of translational
       !                                            velocity back to the original formulation
       !                                            developed by Craig Mattocks
-      !                                            
+      !    05/26/09    Cristina Forbes, UNC-IMS    Fixed implementation of Rick Luettich 
+      !                                            V/Vmax tapering formulation (as in NWS=8) 
+      !                                            for future experimentation - not activated
       !                                            
       ! Reference:
       !

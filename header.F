@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4614   - 05/27/09 - mcf - Fixed implementation of Rick Luettich
+C               V/Vmax tapering formulation (as in NWS=8) 
+C               for future experimentation - not activated
 C  v48.4613   - 05/27/09 - jgf - Commented out debug lines in
 C               write_output.F and globalio.F that were filling up
 C               fort.16.
