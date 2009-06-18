@@ -2123,14 +2123,16 @@ C     &  cos(lat*DEG2RAD)*cos(YCOOR(i)*DEG2RAD)*sin(DX(I)/2)**2) ) )
 
 C     Calculate storm translation velocities based on change in position,
 
-            TVX(i)=(re*(2.0d0*ASIN(sqrt(cos(LAT(I)*DEG2RAD)
+            TVX(i)=SIGN( (re*(2.0d0*ASIN(sqrt(cos(LAT(I)*DEG2RAD)
      & * cos(LAT(I-1)*DEG2RAD)
      & * sin((LON(I)*DEG2RAD-LON(I-1)*DEG2RAD)/2.0d0)**2.0d0) ) ) )
      &              /(CastTime(i)-CastTime(i-1))
-
-            TVY(i)=(re*(2.0d0*ASIN(sqrt(
+     & ,(Lon(i)-Lon(i-1))  )  ! get correct sign
+c
+            TVY(i)=SIGN( (re*(2.0d0*ASIN(sqrt(
      &  sin( (LAT(I)*DEG2RAD-LAT(I-1)*DEG2RAD)/2.0d0)**2.0d0))) )
      &              /(CastTime(i)-CastTime(i-1))
+     & ,(Lat(i)-Lat(i-1))  )  ! get correct sign
 
 
 C            TVX(i)=(Lon(i)-Lon(i-1))*100.d0*1000.d0
