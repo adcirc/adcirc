@@ -1948,11 +1948,16 @@ C     ----------------------------------------------------------------
       REAL(SZ) :: centralPressureDeficit ! difference btw ambient and cpress
 C
       REAL(8), PARAMETER :: Ambient_Pressure=101300.d0      ! Pascals!!
-      REAL(8), PARAMETER :: Coriolis=7.287588493541447D-05  ! 1/sec
       REAL(8), PARAMETER :: Rho_Air = 1.15d0                ! kg/m/m/m
       REAL(8), PARAMETER :: e=2.718281828459045d0
       REAL(8), PARAMETER :: SamplingTimeAdj=0.88d0 ! from 1 min to 10 min winds
       LOGICAL, SAVE :: FIRSTCALL = .True.
+      REAL(8) :: pi,omega, coriolis
+      REAL(8), PARAMETER :: re=6378206.4d0
+
+        pi = 4.0 * atan(1.0)
+        omega=2.0d0*pi / 86164.2
+
 C
       IF (FIRSTCALL) THEN
          FIRSTCALL = .False.
@@ -2013,10 +2018,16 @@ C     multiplied by 1.2.
 C
 C     Calculate wind velocity and pressure at each node.
       DO I=1,NP
-         DX(I)=XCOOR(I)-lon
-         DY(I)=YCOOR(I)-lat
-         THETA(I)=ATAN2(DY(I),DX(I))
-         RAD(I)=SQRT(DX(I)*DX(I)+DY(I)*DY(I))*100.d0*1000.d0 ! into meters!!
+          DX(I)=(XCOOR(I)-lon)*DEG2RAD
+          DY(I)=(YCOOR(I)-lat)*DEG2RAD
+       THETA(I)=ATAN2(DY(I),DX(I))
+C   RJW v48.45
+C     compute the distances based on haversine formula for distance along a sphere
+         Rad(i)=re*(2.0d0*ASIN(sqrt(sin(DY(I)/2.0d0)**2.0d0+
+     & cos(lat*DEG2RAD)*cos(YCOOR(i)*DEG2RAD)*sin(DX(I)/2.0d0)**2.0d0)))
+C compute coriolis
+         coriolis = 2.0d0 * omega * sin(YCOOR(I)*DEG2RAD)
+
 C         PRESS(I)=(cpress+(Ambient_Pressure-cpress)*EXP(-A/RAD(I)**B))
 C    &        / (RHOWAT0*G) ! jgf46.32jgf4 commented out
          PRESS(I)=(cpress+(centralPressureDeficit)*
@@ -2115,6 +2126,11 @@ C
       INTEGER,SAVE :: i  ! Current array counter for fort.22 file
       INTEGER,SAVE :: nl ! Number of lines in the fort.22 file
       INTEGER,SAVE :: pl ! populated length of Holland Data array
+      REAL(8), PARAMETER :: re=6378206.4d0
+      REAL(8) :: pi
+
+        pi = 4.0 * atan(1.0)
+
 C     ------------------------------------------------------
 C     BEGIN Code executed upon first call to this subroutine
 C     ------------------------------------------------------
@@ -2283,10 +2299,23 @@ C
 C     Calculate storm translation velocities based on change in position, then
 C     convert degrees/time to m/s
          DO i=2, pl
-            TVX(i)=(Lon(i)-Lon(i-1))*100.d0*1000.d0
+C     use the formula haversine formula for distances along a sphere.
+C         dist(i)=re*(2*ASIN(sqrt(sin(DY(I)/2)**2+
+C     &  cos(lat*DEG2RAD)*cos(YCOOR(i)*DEG2RAD)*sin(DX(I)/2)**2) ) )
+
+C     Calculate storm translation velocities based on change in position,
+            TVX(i)=SIGN( (re*(2.0d0*ASIN(sqrt(cos(LAT(I)*DEG2RAD)
+     & * cos(LAT(I-1)*DEG2RAD)
+     & * sin((LON(I)*DEG2RAD-LON(I-1)*DEG2RAD)/2.0d0)**2.0d0) ) ) )
      &              /(CastTime(i)-CastTime(i-1))
-            TVY(i)=(Lat(i)-Lat(i-1))*100.d0*1000.d0
+     & ,(Lon(i)-Lon(i-1))  )  ! get correct sign
+c
+            TVY(i)=SIGN( (re*(2.0d0*ASIN(sqrt(
+     &  sin( (LAT(I)*DEG2RAD-LAT(I-1)*DEG2RAD)/2.0d0)**2.0d0))) )
      &              /(CastTime(i)-CastTime(i-1))
+     & ,(Lat(i)-Lat(i-1))  )  ! get correct sign
+
+
          ENDDO
          TVX(1)=TVX(2)
          TVY(1)=TVY(2)

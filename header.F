@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C                                                                             *
 C  mod history                                                                *
+C  v48.56      -06/18/09 - rjw - Modified the NWS=8 Holland wind to fix
+C               bug in translational velocity to account for direction. 
 C  v48.55      -05/18/09 - cjm - Added an else statement to set an initial 
 C               value of 0 for numSkipSnaps in owiwind.F.
 C  v48.54      -04/14/09 - jgf - Removed erroneous call to
