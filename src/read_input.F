@@ -6293,7 +6293,7 @@ C-----------------------------------------------------------------------
       ENDDO
       IF (.not. ElementFound ) THEN
          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-            WRITE(ScreenUnit,593) StationNumber
+            WRITE(ScreenUnit,593) Description, StationNumber
          ENDIF
          WRITE(16,593) Description, StationNumber
          IF(NFOVER.EQ.1) THEN

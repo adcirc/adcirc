@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4617    -06/19/09 - jgf - Made numeric constants in NWS8 double
+C               precision; in NWS9 sub added initialization of told and
+C               changed time.eq.time2 to time.gt.time2.
 C  v48.4616    -06/18/09 - rjw - Modified the NWS=8 Holland wind to fix
 C               bug in translational velocity to account for direction.
 C  v48.4615    -06/02/09 - rjw - Removed erroneous call to

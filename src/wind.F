@@ -1764,10 +1764,10 @@ C      REAL(8), PARAMETER :: Coriolis=7.287588493541447D-05  ! 1/sec
 
       LOGICAL, SAVE :: FIRSTCALL = .True.
 C
-              pi = 4.0 * atan(1.0)
-        mperdeg  = re * pi / 180.0
-         DEG2RAD = pi / 180.0
-           omega = 2.0d0*pi / 86164.2
+      pi = 4.0d0 * atan(1.0d0)
+      mperdeg  = re * pi / 180.0d0
+      DEG2RAD = pi / 180.0d0
+      omega = 2.0d0*pi / 86164.2d0
 C
       IF (FIRSTCALL) THEN
          FIRSTCALL = .False.
@@ -1947,9 +1947,9 @@ C
       REAL(8) :: pi
       REAL(8) :: mperdeg,DEG2RAD
 
-        pi = 4.0 * atan(1.0)
-        mperdeg  = re * pi / 180.0
-        DEG2RAD = pi / 180.0
+      pi = 4.0d0 * atan(1.0d0)
+      mperdeg  = re * pi / 180.0d0
+      DEG2RAD = pi / 180.0d0
 
 C     ------------------------------------------------------
 C     BEGIN Code executed upon first call to this subroutine
@@ -2409,6 +2409,10 @@ C     ----------------------------------------------------------------
       !    05/26/09    Cristina Forbes, UNC-IMS    Fixed implementation of Rick Luettich 
       !                                            V/Vmax tapering formulation (as in NWS=8) 
       !                                            for future experimentation - not activated
+      !    06/19/09    Jason Fleming, UNC-IMS      Initialized told,
+      !                                            changed comparison of
+      !                                            time and time2 to
+      !                                            .ge.
       !                                            
       ! Reference:
       !
@@ -2519,6 +2523,7 @@ C     jgf46.16 commented out according to cf
                ycoor(i) = sfea(i) * rad2deg
             END DO
             offset=time
+            told=0.0d0
 !         WRITE(*,*) 'SUBROUTINE nws9get: offset', offset
          END IF
 
@@ -2592,7 +2597,7 @@ C     jgf46.16 commented out according to cf
          ! If model reaches a new NHC forecast time,
          ! then save old values and advance forward.
          !------------------------------------------
-         IF (time .EQ. time2) THEN
+         IF (time .GE. time2) THEN
 
             iyear1    = iyear2
             imth1     = imth2
@@ -2650,7 +2655,7 @@ C     jgf46.16 commented out according to cf
 !     &      time1,time2',
 !     &      time1,time2
 
-         END IF   ! (time2 .EQ. time)
+         END IF   ! (time2 .GE. time)
 
          !--------------------------------------------------------
          ! If radial velocity (and 4 wind radii) is missing in NHC
