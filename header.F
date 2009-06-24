@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C                                                                             *
 C  mod history                                                                *
+C  v48.57      - 06/24/09 - tcm - initialized variable in itpack prior to it 
+C                          being used ( variable q1 in subroutine itjcg )
+C                          prevents conflicts across platforms
 C  v48.56      -06/18/09 - rjw - Modified the NWS=8 Holland wind to fix
 C               bug in translational velocity to account for direction. 
 C  v48.55      -05/18/09 - cjm - Added an else statement to set an initial 
