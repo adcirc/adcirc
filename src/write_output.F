@@ -6,6 +6,9 @@ C files. It was created to consolidate all the output routines that
 C were located in other parts of the code, to make it easier to incorporate
 C them into globalio, and to make it easier to add new output modes or 
 C formats in the future.
+C
+C tcm48.4618 Fixed Bug in writing out global elevation values that are
+C dry.
 C----------------------------------------------------------------------
 
 
@@ -105,6 +108,9 @@ C         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
          ElevStaDescript % imap                 => IMAP_STAE_LG
          ElevStaDescript % array                => ET00
          ElevStaDescript % array_g              => ET00_g
+         ElevStaDescript % ConsiderWetDry       = .TRUE.
+         ElevStaDescript % alternate_value      = -99999.0
+         ElevStaDescript % field_name           = 'ElevSta'
 
          ! fort.62
 C         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
@@ -122,6 +128,9 @@ C         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
          VelStaDescript % array2               => VV00
          VelStaDescript % array_g              => UU00_g
          VelStaDescript % array2_g             => VV00_g
+         VelStaDescript % ConsiderWetDry       = .FALSE.
+         VelStaDescript % alternate_value      = 0.0
+         VelStaDescript % field_name           = 'VelSta'
 
          ! fort.63
 C         write(16,*) 'Allocating ElevDescript' !jgfdebug48.03
@@ -136,6 +145,9 @@ C         write(16,*) 'Allocating ElevDescript' !jgfdebug48.03
          ElevDescript % imap                 => NODES_LG
          ElevDescript % array                => ETA2
          ElevDescript % array_g              => ETA2_g
+         ElevDescript % ConsiderWetDry       = .TRUE.
+         ElevDescript % alternate_value      = -99999.0
+         ElevDescript % field_name           = 'Elev'
 
          ! tau0
 C         write(16,*) 'Allocating Tau0Descript' !jgfdebug48.03
@@ -150,6 +162,9 @@ C         write(16,*) 'Allocating Tau0Descript' !jgfdebug48.03
          Tau0Descript % imap                 => NODES_LG
          Tau0Descript % array                => TAU0VAR
          Tau0Descript % array_g              => TAU0VAR_g
+         Tau0Descript % ConsiderWetDry       = .FALSE.
+         Tau0Descript % alternate_value      = 0.0
+         Tau0Descript % field_name           = 'Tau0'
 
          ! fort.64
 C         write(16,*) 'Allocating VelDescript' !jgfdebug48.03
@@ -167,6 +182,9 @@ C         write(16,*) 'Allocating VelDescript' !jgfdebug48.03
          VelDescript % array2               => VV2
          VelDescript % array_g              => UU2_g
          VelDescript % array2_g             => VV2_g
+         VelDescript % ConsiderWetDry       = .FALSE.
+         VelDescript % alternate_value      = 0.0
+         VelDescript % field_name           = 'Vel'
 
          ! fort.71
 C         write(16,*) 'Allocating PrStaDescript' !jgfdebug48.03
@@ -181,6 +199,9 @@ C         write(16,*) 'Allocating PrStaDescript' !jgfdebug48.03
          PrStaDescript % imap                 => IMAP_STAM_LG
          PrStaDescript % array                => RMP00
          PrStaDescript % array_g              => RMP00_g
+         PrStaDescript % ConsiderWetDry       = .FALSE.
+         PrStaDescript % alternate_value      = 0.0
+         PrStaDescript % field_name           = 'PrSta'
      
          ! fort.72
 C         write(16,*) 'Allocating WindVelStaDescript' !jgfdebug48.03
@@ -198,6 +219,9 @@ C         write(16,*) 'Allocating WindVelStaDescript' !jgfdebug48.03
          WindVelStaDescript % array_g              => RMU00_g
          WindVelStaDescript % array2               => RMV00
          WindVelStaDescript % array2_g             => RMV00_g
+         WindVelStaDescript % ConsiderWetDry       = .FALSE.
+         WindVelStaDescript % alternate_value      = 0.0
+         WindVelStaDescript % field_name           = 'WindVelSta'
 
          ! fort.73
 C         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
@@ -212,6 +236,9 @@ C         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
          PrDescript % imap                 => NODES_LG
          PrDescript % array                => Pr2
          PrDescript % array_g              => Pr2_g
+         PrDescript % ConsiderWetDry       = .FALSE.
+         PrDescript % alternate_value      = 0.0
+         PrDescript % field_name           = 'Pr'
 
          ! fort.74
 C         write(16,*) 'Allocating WindVelDescript' !jgfdebug48.03
@@ -229,6 +256,9 @@ C         write(16,*) 'Allocating WindVelDescript' !jgfdebug48.03
          WindVelDescript % array_g              => WVNXOut_g
          WindVelDescript % array2               => WVNYOut
          WindVelDescript % array2_g             => WVNYOut_g
+         WindVelDescript % ConsiderWetDry       = .FALSE.
+         WindVelDescript % alternate_value      = 0.0
+         WindVelDescript % field_name           = 'WindVel'
 
          ! fort.81
 C         write(16,*) 'Allocating ConcStaDescript' !jgfdebug48.03
@@ -242,7 +272,10 @@ C         write(16,*) 'Allocating ConcStaDescript' !jgfdebug48.03
          ConcStaDescript % num_records_this     = NSTAC
          ConcStaDescript % imap                 => IMAP_STAC_LG
          ConcStaDescript % array                => CC00
-         ConcStaDescript % array_g              => CC00_g        
+         ConcStaDescript % array_g              => CC00_g
+         ConcStaDescript % ConsiderWetDry       = .FALSE.
+         ConcStaDescript % alternate_value      = 0.0
+         ConcStaDescript % field_name           = 'ConcSta'
 
          ! fort.83
 C         write(16,*) 'Allocating ConcDescript' !jgfdebug48.03
@@ -256,7 +289,10 @@ C         write(16,*) 'Allocating ConcDescript' !jgfdebug48.03
          ConcDescript % num_records_this     = NP
          ConcDescript % imap                 => NODES_LG
          ConcDescript % array                => CH1
-         ConcDescript % array_g              => CH1_g        
+         ConcDescript % array_g              => CH1_g
+         ConcDescript % ConsiderWetDry       = .FALSE.
+         ConcDescript % alternate_value      = 0.0
+         ConcDescript % field_name           = 'Conc'
 
          FirstCall = .false.
       ENDIF
@@ -349,7 +385,7 @@ C...
                NCELE=NC1*NC2*NC3*NOFF(NNC(I))
                IF(NCELE.EQ.1) CC00(I)=C1*STAIC1(I)+C2*STAIC2(I)
      &                                            +C3*STAIC3(I)
-               IF(NCELE.EQ.0) CC00(I)=-99999.
+               IF(NCELE.EQ.0) CC00(I)=-99999.0
             END DO
 C
 C           save concentration recording station data to file
@@ -1307,10 +1343,22 @@ C            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
             OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//fn,
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
             WRITE(lun,2120) time,IT
-            IF (descript % num_items_per_record .eq. 1) THEN           
-               DO I=1, descript % num_records_this
-                  WRITE(lun,2453) I, descript % array(I)
-               END DO
+            IF (descript % num_items_per_record .eq. 1) THEN
+!......TCM - v48.4618 -- Fixed dry node output for serial run case
+               IF ((trim(descript % field_name) .eq. 'Elev').and.
+     &             (descript % ConsiderWetDry .EQV. .TRUE.)) THEN
+                  DO I=1, descript % num_records_this
+                     if(NODECODE(I).EQ.1) THEN
+                        WRITE(lun,2453) I, descript % array(I)
+                     ELSE
+                        WRITE(lun,2453) I, descript % alternate_value  !-99999.0 for dry nodes
+                     ENDIF
+                  END DO
+               ELSE
+                  DO I=1, descript % num_records_this
+                     WRITE(lun,2453) I, descript % array(I)
+                  END DO
+               ENDIF
             ENDIF
             IF (descript % num_items_per_record .eq. 2) THEN 
                DO I=1, descript % num_records_this
@@ -1351,14 +1399,31 @@ C            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
             WRITE(lun,REC=filepos+2) IT
             filepos = filepos + 2
             IF ( descript % num_items_per_record .eq. 1 ) THEN
-               DO I=1, descript % num_records_this
-                  WRITE(lun,REC=filepos+I) descript % array(I)
-               END DO
+
+               IF ((trim(descript % field_name) .eq. 'Elev').and.
+     &             (descript % ConsiderWetDry .EQV. .TRUE.)) THEN
+
+                  DO I=1, descript % num_records_this
+                     if(NODECODE(I).EQ.1) THEN
+                        WRITE(lun,REC=filepos+I) descript % array(I)
+                     ELSE
+                        WRITE(lun,REC=filepos+I) descript % alternate_value  !-99999.0 for dry nodes
+                     ENDIF
+                  END DO
+
+               ELSE
+
+                  DO I=1, descript % num_records_this
+                     WRITE(lun,REC=filepos+I) descript % array(I)
+                  END DO
+
+               ENDIF
+
             ENDIF
             IF ( descript % num_items_per_record .eq. 2 ) THEN
                DO I=1, descript % num_records_this
-                  WRITE(lun,REC=filepos+2*I-1) descript % array_g(I)
-                  WRITE(lun,REC=filepos+2*I)   descript % array2_g(I)
+                  WRITE(lun,REC=filepos+2*I-1) descript % array(I)        !tcmv48.4618 -- changed from array_g to array
+                  WRITE(lun,REC=filepos+2*I)   descript % array2(I)       !tcmv48.4618 -- changed from array2_g to array2
                END DO
             ENDIF
             CLOSE(lun)

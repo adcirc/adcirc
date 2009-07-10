@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4618    -07/10/09 - tcm - Fixed bug in writing out global elevation
+C               values using -99999.0 that exists in serial version
+C               Also added 3 fields to the OutputDataDescript_t type
 C  v48.4617    -06/19/09 - jgf - Made numeric constants in NWS8 double
 C               precision; in NWS9 sub added initialization of told and
 C               changed time.eq.time2 to time.gt.time2.
