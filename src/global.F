@@ -431,10 +431,14 @@ C     globalio and writer modules
 C   
 C     jgf48.03 the following data structure is used to describe
 C     the size and shape of the output data. 
+C     TCM48.58 Added ConsiderWetDry, alternate_value and field_name elements to the structure
       type OutputDataDescript_t
+        character(20)     :: field_name !Name of the field associated with the data structure
         integer           :: specifier  ! output format from fort.15 (NOUTE,etc)
         REAL(SZ)          :: initial_value 
         integer           :: int_initial_value
+        logical           :: ConsiderWetDry ! Flag for considering nodes wet/dry status
+        real(sz)          :: alternate_value  ! Value that can be used as an alternate value
         ! num_items_per_record is number of "tuples", i.e.
         ! it is equal to 1 if scalar, 2 if 2D vector, 3 if 3D vector, etc
         integer           :: num_items_per_record

@@ -9,15 +9,16 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 # ***NOTE*** User must select between various Linux setups
 #            by commenting/uncommenting the appropriate compiler
 #
-#compiler=gnu
+compiler=gnu
+#compiler=g95
 #compiler=intel
 #compiler=intel-lonestar
 #compiler=cray_xt3
 #compiler=pgi
-compiler=pgi-ranger
+#compiler=pgi-ranger
 #
 # 
-ifeq ($(compiler),gnu)
+ifeq ($(compiler),g95)
   PPFC		:=  g95
   FC		:=  g95
   PFC		:=  mpif90
@@ -42,6 +43,31 @@ ifeq ($(compiler),gnu)
   endif
 endif
 #
+# Added compiler flags for gfortran and gcc on 64-bit Linux machine
+ifeq ($(compiler),gnu)
+  PPFC		:=  gfortran
+  FC		:=  gfortran
+  PFC		:=  mpif90
+  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-132 -march=k8 -m64
+  FFLAGS2	:=  $(FFLAGS1)
+  FFLAGS3	:=  $(FFLAGS1)
+  DA		:=  -DREAL8 -DLINUX -DCSCA
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DPRE		:=  -DREAL8 -DLINUX
+  IMODS 	:=  -I
+  CC		:= gcc
+  CCBE		:= $(CC)
+  CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX -march=k8 -m64
+  CLIBS	:= 
+  LIBS		:=  
+  MSGLIBS	:=  
+  $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
+endif
 # jgf45.12 These flags work on the UNC Topsail Cluster.
 ifeq ($(compiler),intel)
   PPFC            :=  ifort	

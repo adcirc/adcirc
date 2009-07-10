@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C                                                                             *
 C  mod history                                                                *
+C  v48.58    -07/10/09 - tcm - Fixed bug in writing out global elevation
+C               values using -99999.0 that exists in serial version
+C               Also added 3 fields to the OutputDataDescript_t type
 C  v48.57      - 06/24/09 - tcm - initialized variable in itpack prior to it 
 C                          being used ( variable q1 in subroutine itjcg )
 C                          prevents conflicts across platforms
