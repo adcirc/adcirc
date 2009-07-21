@@ -21,7 +21,7 @@ C     including hotstart and harmonic analysis.
 C
 C----------------------------------------------------------------------
       SUBROUTINE WRITE_OUTPUT_2D (IT,Time)
-      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE
+      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC
       USE GLOBAL
       USE GLOBAL_IO, ONLY: storeOne, storeTwo, store63, HEADER_MAX,
      &    open_gbl_file, write_gbl_file, write_gbl_63_skip_drynode,
@@ -700,7 +700,7 @@ C-----------------------------------------------------------------------
 C     jgf48.11 Moved from vsmy.F to write_output.F. 
 C-----------------------------------------------------------------------
       SUBROUTINE Write_Output_3D (Time,IT)
-      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE
+      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC
       USE GLOBAL, ONLY : ScreenUnit
       USE GLOBAL_3DVS 
       USE GLOBAL_IO, ONLY: storeOne, storeTwo, HEADER_MAX,

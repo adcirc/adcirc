@@ -4858,19 +4858,22 @@ C     read in and check matrix solver parameters
           ENDIF
         ENDIF
 
-C     allocate arrays needed by GWCE matrix and iterative solver
+C     jgf48.4619: Accommodate Seizo's changes for explicit solve
+      IF (ILump.eq.0) THEN ! default, fully consistent LHS
+C        allocate arrays needed by GWCE matrix and iterative solver
+         call alloc_main11()
+C        initialize parameter arrays needed by iterative solver
+         CALL DFAULT(IPARM,RPARM)
+         IPARM(1)=ITMAX
+         IPARM(2)=ISLDIA
+         OPEN(33,FILE=TRIM(LOCALDIR)//'/'//'fort.33')
+         IPARM(4)=33
+         RPARM(1)=CONVCR
+         NW = 4*NP + 4*ITMAX
+      ELSE ! lumped LHS
+         call alloc_main11_lumped()
+      ENDIF
 
-      call alloc_main11()
-
-C     initialize parameter arrays needed by iterative solver
-
-      CALL DFAULT(IPARM,RPARM)
-      IPARM(1)=ITMAX
-      IPARM(2)=ISLDIA
-      OPEN(33,FILE=TRIM(LOCALDIR)//'/'//'fort.33')
-      IPARM(4)=33
-      RPARM(1)=CONVCR
-      NW = 4*NP + 4*ITMAX
 C...
 C...  Read input for 3D run
 C...

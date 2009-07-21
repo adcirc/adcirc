@@ -2000,7 +2000,16 @@ CWET... of the subdomains, to prevent them from getting out of sync
 CWET... with their MPI calls as some reset the GWCE and others do not.
 CWET...
 #ifdef CMPI
-         call WetDrySum(NCCHANGE)
+         !jgf48.4619 implementing Seizo's changes for Lumped, fully 
+         ! explicit operation. In that case, the GWCE LHS matrix is 
+         ! recalculated on each individual subdomain that has wetted
+         ! or dried, without recourse to MPI, eliminating the need
+         ! for the call to the subroutine WetDrySum.
+         IF ( ILump.eq.0 ) THEN
+            call WetDrySum(NCCHANGE)
+         ELSE
+            NCCHANGE=NCCHANGE ! jgf48.4619 do nothing
+         ENDIF
 #endif
 CWET...
 CWET...END WET/DRY SECTION - PART 6
@@ -3313,7 +3322,7 @@ C
       REAL(8) Time, TimeH
 
       REAL(SZ) HH1 !jgf46.02 Added for Katrina.
-
+      REAL(SZ) RDIAG ! jgf48.4619 Seizo parameter for fully explicit mode
 Casey 050711 : Added for averaged variable Tau0.
 C      REAL(SZ) :: CaseySum
 C      REAL(SZ), ALLOCATABLE :: TAU0VARTEMP(:)
@@ -3336,11 +3345,17 @@ c        WRITE(16,3806)
  3806    FORMAT(/,1X,'RE-SETTING GWCE SYSTEM MATRIX',/)
 
 C.....Set up the LHS matrix (for the iterative matrix solver)
-         DO I=1,NP
-            DO J=1,NeiMax
-               Coef(I,J)=0.0d0
+         IF ( ILump.eq.0 ) THEN ! default, fully consistent case
+            DO I=1,NP
+               DO J=1,NeiMax
+                  Coef(I,J)=0.0d0
+               ENDDO
             ENDDO
-         ENDDO
+         ELSE ! jgf48.4619: ILump.eq.1, only need the diagonals (Seizo)
+            DO I=1,NP
+               Coefd(I)=0.0d0    ! Only Diagnal
+            ENDDO
+         ENDIF
 C
 C        jgf47.08 Moved time-varying tau0 subroutine to nodalattr.F
          IF(C2DDI.AND.
@@ -3348,122 +3363,176 @@ C        jgf47.08 Moved time-varying tau0 subroutine to nodalattr.F
      &   THEN
             CALL CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
          ENDIF
+         
+         !jgf48.4619: Added Seizo's handling of Lumping vs non-Lumping
+         IF ( ILump.eq.0 ) THEN ! default case: fully consistent LHS
+            DO IE=1,NE
+               NMI1=NM(IE,1)
+               NMI2=NM(IE,2)
+               NMI3=NM(IE,3)
+               NMJ1=NMI1
+               NMJ2=NMI2
+               NMJ3=NMI3
+               NC1=NodeCode(NMI1)
+               NC2=NodeCode(NMI2)
+               NC3=NodeCode(NMI3)
+               NCEle=NC1*NC2*NC3*NOFF(IE)
 
-         DO IE=1,NE
-            NMI1=NM(IE,1)
-            NMI2=NM(IE,2)
-            NMI3=NM(IE,3)
-            NMJ1=NMI1
-            NMJ2=NMI2
-            NMJ3=NMI3
-            NC1=NodeCode(NMI1)
-            NC2=NodeCode(NMI2)
-            NC3=NodeCode(NMI3)
-            NCEle=NC1*NC2*NC3*NOFF(IE)
+               SFacAvg=(SFac(NMI1)+SFac(NMI2)+SFac(NMI3))/3.d0
 
-            SFacAvg=(SFac(NMI1)+SFac(NMI2)+SFac(NMI3))/3.d0
+               FDX1 = (Y(NMI2)-Y(NMI3))*SFacAvg         !b1 = 2*Area*dphi1/dx
+               FDX2 = (Y(NMI3)-Y(NMI1))*SFacAvg         !b2 = 2*Area*dphi2/dx
+               FDX3 = (Y(NMI1)-Y(NMI2))*SFacAvg         !b3 = 2*Area*dphi3/dx
+               FDY1 = X(NMI3)-X(NMI2)                   !a1 = 2*Area*dphi1/dy
+               FDY2 = X(NMI1)-X(NMI3)                   !a2 = 2*Area*dphi2/dy
+               FDY3 = X(NMI2)-X(NMI1)                   !a3 = 2*Area*dphi3/dy
 
-            FDX1 = (Y(NMI2)-Y(NMI3))*SFacAvg         !b1 = 2*Area*dphi1/dx
-            FDX2 = (Y(NMI3)-Y(NMI1))*SFacAvg         !b2 = 2*Area*dphi2/dx
-            FDX3 = (Y(NMI1)-Y(NMI2))*SFacAvg         !b3 = 2*Area*dphi3/dx
-            FDY1 = X(NMI3)-X(NMI2)                   !a1 = 2*Area*dphi1/dy
-            FDY2 = X(NMI1)-X(NMI3)                   !a2 = 2*Area*dphi2/dy
-            FDY3 = X(NMI2)-X(NMI1)                   !a3 = 2*Area*dphi3/dy
+               AreaIE2=Areas(IE)
+               AreaIE =AreaIE2/2.0d0
+               AreaIE4=AreaIE2*2.0d0
 
-            AreaIE2=Areas(IE)
-            AreaIE =AreaIE2/2.0d0
-            AreaIE4=AreaIE2*2.0d0
+               DPAvg=(DP(NMI1)+DP(NMI2)+DP(NMI3))/3.d0
+               GA00DPAvgOAreaIE4=G*A00*DPAvg/AreaIE4
+               Tau0Avg=(Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
+               MsFacLOnDiag =OnDiag *AreaIE*(1.d0/DT+Tau0Avg/2.d0)/DT/12.d0
+               MsFacLOffDiag=OffDiag*AreaIE*(1.d0/DT+Tau0Avg/2.d0)/DT/12.d0
 
-            DPAvg=(DP(NMI1)+DP(NMI2)+DP(NMI3))/3.d0
-            GA00DPAvgOAreaIE4=G*A00*DPAvg/AreaIE4
-            Tau0Avg=(Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
-            MsFacLOnDiag =OnDiag *AreaIE*(1.d0/DT+Tau0Avg/2.d0)/DT/12.d0
-            MsFacLOffDiag=OffDiag*AreaIE*(1.d0/DT+Tau0Avg/2.d0)/DT/12.d0
+               DO JN=2,NEIMAX
+                  IF(NeiTab(NMI1,JN).EQ.NMJ2) J12=JN
+                  IF(NeiTab(NMI1,JN).EQ.NMJ3) J13=JN
+                  IF(NeiTab(NMI2,JN).EQ.NMJ1) J21=JN
+                  IF(NeiTab(NMI2,JN).EQ.NMJ3) J23=JN
+                  IF(NeiTab(NMI3,JN).EQ.NMJ1) J31=JN
+                  IF(NeiTab(NMI3,JN).EQ.NMJ2) J32=JN
+               END DO
 
-            DO JN=2,NEIMAX
-               IF(NeiTab(NMI1,JN).EQ.NMJ2) J12=JN
-               IF(NeiTab(NMI1,JN).EQ.NMJ3) J13=JN
-               IF(NeiTab(NMI2,JN).EQ.NMJ1) J21=JN
-               IF(NeiTab(NMI2,JN).EQ.NMJ3) J23=JN
-               IF(NeiTab(NMI3,JN).EQ.NMJ1) J31=JN
-               IF(NeiTab(NMI3,JN).EQ.NMJ2) J32=JN
-            END DO
+               Coef(NMI1,1)  =Coef(NMI1,1)   + (MsFacLOnDiag
+     &                   +GA00DPAvgOAreaIE4*(FDX1*FDX1+FDY1*FDY1))*NCELE
+               Coef(NMI1,J12)=Coef(NMI1,J12) + (MsFacLOffDiag
+     &                   +GA00DPAvgOAreaIE4*(FDX1*FDX2+FDY1*FDY2))*NCELE
+               Coef(NMI1,J13)=Coef(NMI1,J13) + (MsFacLOffDiag
+     &                   +GA00DPAvgOAreaIE4*(FDX1*FDX3+FDY1*FDY3))*NCELE
+               Coef(NMI2,J21)=Coef(NMI2,J21) + (MsFacLOffDiag
+     &                   +GA00DPAvgOAreaIE4*(FDX2*FDX1+FDY2*FDY1))*NCELE
+               Coef(NMI2,1)  =Coef(NMI2,1)   + (MsFacLOnDiag
+     &                   +GA00DPAvgOAreaIE4*(FDX2*FDX2+FDY2*FDY2))*NCELE
+               Coef(NMI2,J23)=Coef(NMI2,J23) + (MsFacLOffDiag
+     &                   +GA00DPAvgOAreaIE4*(FDX2*FDX3+FDY2*FDY3))*NCELE
+               Coef(NMI3,J31)=Coef(NMI3,J31) + (MsFacLOffDiag
+     &                   +GA00DPAvgOAreaIE4*(FDX3*FDX1+FDY3*FDY1))*NCELE
+               Coef(NMI3,J32)=Coef(NMI3,J32) + (MsFacLOffDiag
+     &                   +GA00DPAvgOAreaIE4*(FDX3*FDX2+FDY3*FDY2))*NCELE
+               Coef(NMI3,1)  =Coef(NMI3,1)   + (MsFacLOnDiag
+     &                   +GA00DPAvgOAreaIE4*(FDX3*FDX3+FDY3*FDY3))*NCELE
 
-            Coef(NMI1,1)  =Coef(NMI1,1)   + (MsFacLOnDiag
-     &                +GA00DPAvgOAreaIE4*(FDX1*FDX1+FDY1*FDY1))*NCELE
-            Coef(NMI1,J12)=Coef(NMI1,J12) + (MsFacLOffDiag
-     &                +GA00DPAvgOAreaIE4*(FDX1*FDX2+FDY1*FDY2))*NCELE
-            Coef(NMI1,J13)=Coef(NMI1,J13) + (MsFacLOffDiag
-     &       	      +GA00DPAvgOAreaIE4*(FDX1*FDX3+FDY1*FDY3))*NCELE
-            Coef(NMI2,J21)=Coef(NMI2,J21) + (MsFacLOffDiag
-     &                +GA00DPAvgOAreaIE4*(FDX2*FDX1+FDY2*FDY1))*NCELE
-            Coef(NMI2,1)  =Coef(NMI2,1)   + (MsFacLOnDiag
-     &                +GA00DPAvgOAreaIE4*(FDX2*FDX2+FDY2*FDY2))*NCELE
-            Coef(NMI2,J23)=Coef(NMI2,J23) + (MsFacLOffDiag
-     &                +GA00DPAvgOAreaIE4*(FDX2*FDX3+FDY2*FDY3))*NCELE
-            Coef(NMI3,J31)=Coef(NMI3,J31) + (MsFacLOffDiag
-     &                +GA00DPAvgOAreaIE4*(FDX3*FDX1+FDY3*FDY1))*NCELE
-            Coef(NMI3,J32)=Coef(NMI3,J32) + (MsFacLOffDiag
-     &                +GA00DPAvgOAreaIE4*(FDX3*FDX2+FDY3*FDY2))*NCELE
-            Coef(NMI3,1)  =Coef(NMI3,1)   + (MsFacLOnDiag
-     &                +GA00DPAvgOAreaIE4*(FDX3*FDX3+FDY3*FDY3))*NCELE
+            ENDDO
+         ELSE
+            !jgf48.4619: Add Seizo's construction of Lumped LHS matrix
+            DO IE=1,NE ! Make LHS Lumped Matrix
+               NMI1=NM(IE,1)
+               NMI2=NM(IE,2)
+               NMI3=NM(IE,3)
+               NMJ1=NMI1
+               NMJ2=NMI2
+               NMJ3=NMI3
+               NC1=NodeCode(NMI1)
+               NC2=NodeCode(NMI2)
+               NC3=NodeCode(NMI3)
+               NCEle=NC1*NC2*NC3*NOFF(IE)
 
-         ENDDO
+               SFacAvg=(SFac(NMI1)+SFac(NMI2)+SFac(NMI3))/3.d0
+
+               AreaIE2=Areas(IE)
+               AreaIE =AreaIE2/2.0d0
+
+               Tau0Avg=(Tau0Var(NMI1)+Tau0Var(NMI2)+Tau0Var(NMI3))/3.d0
+               MsFacLOnDiag =OnDiag *AreaIE*(1.d0/DT+Tau0Avg/2.d0)/DT/12.d0
+
+               Coefd(NMI1)  =Coefd(NMI1)   + (MsFacLOnDiag)*NCELE
+               Coefd(NMI2)  =Coefd(NMI2)   + (MsFacLOnDiag)*NCELE
+               Coefd(NMI3)  =Coefd(NMI3)   + (MsFacLOnDiag)*NCELE
+            ENDDO          
+         ENDIF
 
 C...  Modify the matrix "COEF" by imposing the elevation specified
 C...  boundary conditions while maintaining the symmetry of the system
 
+         IF (ILump.eq.0) THEN    
 #ifdef CMPI
-         EP = PSDOT(NP,Coef(1,1),Coef(1,1))
-         EP = SQRT(RNP_GLOBAL*EP)
+            EP = PSDOT(NP,Coef(1,1),Coef(1,1))
+            EP = SQRT(RNP_GLOBAL*EP)
 #else 
-         EP=0.0D0
-         DO I=1,NP
-            EP=EP+Coef(I,1)*Coef(I,1)
-         ENDDO
-         EP=SQRT(EP/NP)
-#endif
-
-c...  for each elevation specified boundary node, zero all off diagonal
-c...  terms on the row and set diagnoal term to EP
-
-         DO I=1,NETA
-            Coef(NBD(I),1)=EP
-            DO J=2,NNEIGH(NBD(I))
-               Coef(NBD(I),J)=0.0d0
+            EP=0.0D0
+            DO I=1,NP
+               EP=EP+Coef(I,1)*Coef(I,1)
             ENDDO
-         ENDDO
-
-c...  for each elevation specified boundary node, zero all off diagonal
-c...  terms on the column but save these to be multiplied by the
-c...  boundary value and subtracted from the RHS
-
-         DO I=1,NETA
-            DO J=2,NNeigh(NBD(I))
-               DO IJ=2,NNeigh(NeiTab(NBD(I),J))
-                  IF(NBD(I).EQ.NeiTab(NeiTab(NBD(I),J),IJ)) THEN
-                     OBCCoef(I,J-1)=Coef(NeiTab(NBD(I),J),IJ)
-                     Coef(NeiTab(NBD(I),J),IJ)=0.0d0
-                  ENDIF
+            EP=SQRT(EP/NP)
+#endif
+c...        for each elevation specified boundary node, zero all off diagonal
+c...        terms on the row and set diagnoal term to EP
+            DO I=1,NETA
+               Coef(NBD(I),1)=EP
+               DO J=2,NNEIGH(NBD(I))
+                  Coef(NBD(I),J)=0.0d0
                ENDDO
             ENDDO
-         ENDDO
-C.....Check that all the diagonal elements in "COEF" are > 0.
-         DIE = .FALSE.
-         DO I=1,NP
-            IF(COEF(I,1).EQ.0.d0) COEF(I,1)=EP
-            IF(COEF(I,1).LT.0.d0) THEN
-               IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
-     &           WRITE(ScreenUnit,1019) I,COEF(I,1)
-               WRITE(16,1019) I,COEF(I,1)
- 1019          FORMAT(/,1X,'!!!!!!!!  ERROR  !!!!!!!',
-     &           /,1X,'THE DIAGONAL TERM IN THE EQUATION FOR NODE ',I10,
-     &             '= ',E15.6,' AND IS <= 0',/)
-               DIE = .TRUE.
-            ENDIF
-         ENDDO
-         if (DIE) stop
+c...        for each elevation specified boundary node, zero all off diagonal
+c...        terms on the column but save these to be multiplied by the
+c...        boundary value and subtracted from the RHS
+            DO I=1,NETA
+               DO J=2,NNeigh(NBD(I))
+                  DO IJ=2,NNeigh(NeiTab(NBD(I),J))
+                     IF(NBD(I).EQ.NeiTab(NeiTab(NBD(I),J),IJ)) THEN
+                        OBCCoef(I,J-1)=Coef(NeiTab(NBD(I),J),IJ)
+                        Coef(NeiTab(NBD(I),J),IJ)=0.0d0
+                     ENDIF
+                  ENDDO
+               ENDDO
+            ENDDO
+C.....      Check that all the diagonal elements in "COEF" are > 0.
+            DIE = .FALSE.
+            DO I=1,NP
+               IF(COEF(I,1).EQ.0.d0) COEF(I,1)=EP
+               IF(COEF(I,1).LT.0.d0) THEN
+                  IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
+     &              WRITE(ScreenUnit,1019) I,COEF(I,1)
+                  WRITE(16,1019) I,COEF(I,1)
+                  DIE = .TRUE.
+               ENDIF
+            ENDDO
+            IF (DIE) STOP
 
+         ELSE  ! jgf48.4619: include Seizo's changes for lumped LHS
+
+            ! Seizo: Explicit scheme can solve localy. (the efect is small?)
+            EP=0.0D0
+            DO I=1,NP
+               EP=EP+Coefd(I)*Coefd(I)
+            ENDDO
+            EP=SQRT(EP/NP)
+
+            ! set diagonal term to EP
+            DO I=1,NETA
+               Coefd(NBD(I))=EP
+            ENDDO
+
+C.....      Check that all the diagonal elements in "COEFD" are > 0.
+            DIE = .FALSE.
+            DO I=1,NP
+               IF(COEFD(I).EQ.0.d0) COEFD(I)=EP
+               IF(COEFD(I).LT.0.d0) THEN
+                  IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
+     &              WRITE(ScreenUnit,1019) I,COEFD(I)
+                  WRITE(16,1019) I,COEFD(I)
+ 1019             FORMAT(/,1X,'!!!!!!!!  ERROR  !!!!!!!',
+     &              /,1X,'THE DIAGONAL TERM IN THE EQUATION FOR NODE ',I10,
+     &                '= ',E15.6,' AND IS <= 0',/)
+                  DIE = .TRUE.
+               ENDIF
+            ENDDO
+            IF (DIE) STOP
+         ENDIF
+        
       ENDIF                     !End of GWCE matrix setup
 
 
@@ -3503,7 +3572,7 @@ C...  Initialize variables to zero if these forcings are not used
       ENDIF
 
       IF(CBaroclinic) THEN
-	ELSE
+      ELSE
         BCXAvg=0.d0
         BCYAvg=0.d0
       ENDIF
@@ -3761,8 +3830,10 @@ C...     Set nodal values for each element
 
 C...     Compute part of several spatial gradients for use below
 
-         E0XGrad2A=E0N1*FDX1+E0N2*FDX2+E0N3*FDX3        !2*Area*deta0/dx
-         E0YGrad2A=E0N1*FDY1+E0N2*FDY2+E0N3*FDY3        !2*Area*deta0/dy
+         IF (ILump.eq.0) THEN
+            E0XGrad2A=E0N1*FDX1+E0N2*FDX2+E0N3*FDX3        !2*Area*deta0/dx
+            E0YGrad2A=E0N1*FDY1+E0N2*FDY2+E0N3*FDY3        !2*Area*deta0/dy
+         ENDIF
          E1XGrad2A=E1N1*FDX1+E1N2*FDX2+E1N3*FDX3        !2*Area*deta1/dx
          E1YGrad2A=E1N1*FDY1+E1N2*FDY2+E1N3*FDY3        !2*Area*deta1/dy
          Tau0XGrad2A=T0N1*FDX1+T0N2*FDX2+T0N3*FDX3      !2*Area*dTau0/dx
@@ -4160,16 +4231,23 @@ C...  SCALE THE DIAGONAL ELEMENT FOR THE ELEVATION SPECIFIED BOUNDARY
 C...  NODES AND THEREFORE MUST ALSO BE USED TO SCALE THE RHS OF THE
 C...  EQUATIONS
 C...  
-      DO I=1,NETA
-         NBDI=NBD(I)
-         ETAS(NBDI)=ETA2(NBDI)-ETA1(NBDI)
-         GWCE_LV(NBDI)=ETAS(NBDI)*NODECODE(NBDI)*EP
-         DO J=2,NNEIGH(NBDI)
-            GWCE_LV(NEITAB(NBDI,J))=GWCE_LV(NEITAB(NBDI,J))
-     &           -ETAS(NBDI)*OBCCOEF(I,J-1)
+      IF ( ILump.eq.0 ) THEN ! default, fully consistent GWCE LHS
+         DO I=1,NETA
+            NBDI=NBD(I)
+            ETAS(NBDI)=ETA2(NBDI)-ETA1(NBDI)
+            GWCE_LV(NBDI)=ETAS(NBDI)*NODECODE(NBDI)*EP
+            DO J=2,NNEIGH(NBDI)
+               GWCE_LV(NEITAB(NBDI,J))=GWCE_LV(NEITAB(NBDI,J))
+     &              -ETAS(NBDI)*OBCCOEF(I,J-1)
+            END DO
          END DO
-      END DO
-
+      ELSE                   ! ILump.eq.1, lumped GWCE
+         DO I=1,NETA
+            NBDI=NBD(I)
+            ETAS(NBDI)=ETA2(NBDI)-ETA1(NBDI)
+            GWCE_LV(NBDI)=ETAS(NBDI)*NODECODE(NBDI)*COEFD(NBDI)
+         END DO
+      ENDIF
 C...  
 C...  SOLVE GWCE FOR ELEVATION AT NEW TIME LEVEL
 C...  
@@ -4178,19 +4256,37 @@ C...  UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
 
 #ifdef CMPI
 C...UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
-      CALL UPDATER(GWCE_LV,COEF(1,1),DUMY1,2)
+      IF (ILump.eq.0) THEN ! default, fully consistent LHS
+         CALL UPDATER(GWCE_LV,COEF(1,1),DUMY1,2)
+      ELSE  ! lumped LHS
+         CALL UPDATER(GWCE_LV,COEFD,DUMY1,2)
+      ENDIF 
 #endif
-
+      IF (ILump.eq.0) THEN ! default, fully consistent LHS
 C...  JCG ITERATIVE MATRIX SOLVER
-      IPARM(1)=ITMAX
-      CALL JCG(NP,MNP,MNEI,NEITAB,COEF,GWCE_LV,ETAS,
-     &     IWKSP,NW,WKSP,IPARM,RPARM,IER)
+         IPARM(1)=ITMAX
+         CALL JCG(NP,MNP,MNEI,NEITAB,COEF,GWCE_LV,ETAS,
+     &        IWKSP,NW,WKSP,IPARM,RPARM,IER)
 
-      NUMITR=IPARM(1)
-      DO I=1,NP
-         ETA2(I)=NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
-      END DO
-     
+         NUMITR=IPARM(1)
+         DO I=1,NP
+            ETA2(I)=NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
+         END DO
+      ELSE ! lumped LHS
+         DO I = 1, NP
+            IF (COEFD(I).eq.0.0d0) THEN
+               RDIAG = 0.0d0
+            ELSE
+               RDIAG = 1.0d0 / COEFD(I)
+            ENDIF
+            ETAS(I) = GWCE_LV(I) * RDIAG
+         ENDDO
+         NUMITR=0
+         DO I=1,NP
+            ETA2(I)=NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
+         END DO
+      ENDIF
+
 C     UPDATE ELEVATIONS
 
 #ifdef CMPI

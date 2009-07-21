@@ -1176,14 +1176,16 @@ C--Read Solver Data
 C
       READ(15,80) SOLVMSG
       READ(SOLVMSG,*) ITITER,ISLDIA,CONVCR,ITMAX
-      IF (ITITER.NE.1) THEN
-         print *, "Invalid Solver was selected"
-         print *, "JCG is the only solver supported for a parallel run"
+      IF ((ITITER.NE.1).AND.(ITITER.NE.-1)) THEN
+         print *, "WARNING: An invalid solver was selected, ITITER=",
+     &            ITITER
+         print *, "The JCG iterative solver (ITITER=1) and the explicit"
+         print *, "direct solve (ITITER=-1) are the only valid choices."
          IF (NFOVER.EQ.1) THEN
-           print *, "Program will continue and use JCG"
+           print *, "WARNING: ADCIRC will continue, using JCG."
            ITITER = 1
          ELSE
-           print *, "ITITER must be set to 1"
+           print *, "ERROR: ITITER must be set to 1 or -1."
            stop
          ENDIF
       ENDIF

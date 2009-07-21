@@ -165,6 +165,7 @@ c.
       REAL(SZ),ALLOCATABLE ::   TIP1(:),TIP2(:)
       REAL(SZ),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
       REAL(SZ),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
+      REAL(SZ),ALLOCATABLE ::   COEFD(:) !jgf48.4619 from Seizo (Lumped GWCE)
       REAL(SZ),ALLOCATABLE ::   WKSP(:),RPARM(:)
       REAL(SZ),ALLOCATABLE ::   ABD(:,:),ZX(:)
       REAL(SZ),ALLOCATABLE ::   LSXX(:),LSXY(:),LSYX(:),LSYY(:)
@@ -764,6 +765,17 @@ C
 C...
 C...Allocate space for arrays needed by GWCE matrix and iterative solver   
 C...
+
+      SUBROUTINE ALLOC_MAIN11_LUMPED()
+      IMPLICIT NONE
+C     jgf48.4619: Array used in lumped GWCE (from Seizo)
+      ALLOCATE( COEFD(MNP) ) 
+      RETURN
+      END SUBROUTINE
+
+
+
+
       SUBROUTINE ALLOC_MAIN11()
       IMPLICIT NONE
 
