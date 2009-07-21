@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4620   - 07/21/09 - jgf - Modified makefile so that aswip executable
+C               may be built with 'make aswip'.
 C  v48.4619   - 07/21/09 - jgf - Fixed inclusion of MNMPROC in write_output.F;
 C               merged lumped/explicit mode from Seizo Tanaka; rjw
 C               merged aswip.F to generate metadata for asymmetric
