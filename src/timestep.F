@@ -693,8 +693,37 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
           END DO
         ENDIF
 
+C     RJW ffpl Merged:
+!     rjw added nws = 19: asymmetric hurricane winds
+      AsymmetricTime = TIME
+      IF(NWS.EQ.19) THEN
+         CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
+         DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            ENDIF
+            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+            PR2(I)=RampMete*PRN2(I)
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+         END DO
+      ENDIF
+
+
 C
 C--------------------END MET FORCING---------------------------------------
+
+
+       GOTO 9999
+
 
 C...  UPDATE THE WAVE RADIATION STRESS AND READ IN NEW VALUES FROM
 C.... UNIT 23.  APPLY Ramp FUNCTION.  ADD RADIATION STRESS TO WIND
@@ -2118,7 +2147,7 @@ C...
 C...
 C...  End of 2D Scalar Transport Solution
 C...
-
+9999    continue
 C...
 C...  Collect maximum values of variables   v46.50 sb 11/11/2006
 C...

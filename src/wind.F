@@ -2895,6 +2895,584 @@ C     cf added if missing values set winds to zero and pressure to P0
 
       END SUBROUTINE nws9get
 
+
+
+      !=================================================================
+      !=================================================================
+      !=================================================================
+      !      =====                                           =====
+      !      =====            SUBROUTINE NWS19GET            =====
+      !      =====                                           =====
+      !=================================================================
+      !=================================================================
+      !=================================================================
+
+      !=================================================================
+      ! This subroutine takes a wind file in best track format
+      ! that has been preprocessed by the ASWIP program and
+      ! filled out forecast increments from the intended start of the simulation
+      ! creates an asymmetric hurricane vortex, returning a wind field
+      ! (wvnx,wvny) and atmospheric pressure-induced water surface
+      ! elevation (press) on-the-fly for each model time step.
+      !
+      ! On input:
+      !    slam     Longitude at model nodal points (radians)
+      !    sfea     Latitude  at model nodal points (radians)
+      !    np       Number of nodal points in model grid
+      !    time     Model time (seconds)
+      !    ics      Coordinate system selection parameter
+      !                ics = 1: cartesian coordinates
+      !                ics = 2: spherical coordinates
+      !                Note: Subroutine valid only for ics = 2
+      !
+      ! On output:
+      !    wvnx     x component of wind velocity at nodal points (m/s)
+      !    wvny     y component of wind velocity at nodal points (m/s)
+      !    press    Atmospheric pressure-induced water surface
+      !             elevation at nodal points (m)
+      !
+      ! Revision history:
+      !    Date         Programmer                 Description of change
+      !    ----         ----------                 ---------------------
+      !    06/19/06     Cristina Forbes, UNC-CEP   Wrote original code
+      !    07/09/06     Craig  Mattocks, UNC-CEP   Code clean up
+      !    07/20/06     Jason G. Fleming UNC-IMS   Add into v46.16
+      !    07/20/06     Cristina Forbes  (wrote)   v46.16: comment out debug
+      !                 Jason G. Fleming (merged)  msg, check for all 4 radii
+      !    08/15/06     Cristina Forbes, UNC-CEP   if missing values or radii
+      !                                            = 0 -> set winds = 0  and
+      !                                            press = P0, comment out
+      !                                            fort.300 output
+      !    08/25/06     Cristina Forbes, UNC-CEP   Implemented hotstart
+      !                                            capability
+      !    08/25/06     Craig  Mattocks, UNC-CEP   Applied wind reduction:
+      !                                            top of SFC layer --> SFC
+      !    09/12/06     Craig  Mattocks, UNC-CEP   Subtracted translational
+      !                                            wind speed from Vmax.
+      !    07/05/07     Jason G. Fleming           Merged into v47.04, added
+      !                                            ScreenUnit
+      !    12/12/08     Cristina Forbes, UNC-IMS   Comment out debug statements
+      !    04/21/08     Cristina Forbes, UNC-IMS   Added capability to compute
+      !                                            winds in all hemispheres
+      !    05/12/09     Robert Weaver, UNC-IMS     Modified damping of translational
+      !                                            velocity based on ratio of V/Vmax
+      !    05/19/09     Cristina Forbes, UNC-IMS   Implemented old bug fix: units conversion
+      !    05/22/09     Cristina Forbes, UNC-IMS   Reverted damping of translational
+      !                                            velocity back to the original formulation
+      !                                            developed by Craig Mattocks
+      !    05/26/09    Cristina Forbes, UNC-IMS    Fixed implementation of Rick Luettich
+      !                                            V/Vmax tapering formulation (as in NWS=8)
+      !                                            for future experimentation - not activated
+      !    7/8/09      Robert Weaver               rewrite to accept new input file w/ rmax
+      !                                            and Holland B
+      !    7/21/09     Robert Weaver               Modify to let user choose which isotach to use
+      !                                            when submitting Rmax
+      !                                            NWS=19
+      !
+      !
+      !
+      ! Reference:
+      !
+      !     This NWS=19 option is based on the work of
+      !     the following publications:
+      !
+      !     Mattocks, C. and C. Forbes (2008): A real-time, event-triggered
+      !     storm surge forecasting system for the State of North Carolina,
+      !     Ocean Modelling, 25, pp. 95-119, 10.1016/j.ocemod.2008.06.008
+      !
+      !     Mattocks, C., C. Forbes and L. Ran (2006) Design and implementation
+      !     of a real-time storm surge and flood forecasting capability for the
+      !     State of North Carolina. UNC-CEP Technical Report, November 30, 2006, 103 pp.
+      !
+      !     http://www.unc.edu/~cmattock/ncfs/NCFSreport.pdf
+      !=================================================================
+      SUBROUTINE NWS19GET(slam,sfea, wvnx,wvny, press, np, time, ics)
+
+         USE SIZES, ONLY : MyProc,mnproc
+         !-------------------------------------------------------------
+         ! Import custom precision types for cross-platform portability
+         !-------------------------------------------------------------
+         USE precision
+
+         !------------------------
+         ! Import global constants
+         !------------------------
+         USE constants
+
+         !-----------------------------------------
+         ! Import asymmetric hurricane vortex class
+         !-----------------------------------------
+         USE vortex
+
+         !--------------------------------------------
+         ! Force explicit declaration of all variables
+         !--------------------------------------------
+         IMPLICIT NONE
+
+         INTEGER  :: np, ics
+         INTEGER  :: ient,itpc
+         INTEGER  :: i, nwi
+         INTEGER  :: num_entry,num_cycle
+         REAL(sz) :: time, time1, wtratio
+         REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
+         REAL( 8) :: slam(np),sfea(np)
+         REAL( 8) :: wvnx(np),wvny(np), press(np)
+
+         REAL,DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
+         INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon,atcfRMW
+         INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ilat1,ilon1,atcfRMW1
+         INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd,icpress
+         INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd1,icpress1
+         INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: iyear,imth,iday,ihr
+         INTEGER,DIMENSION(:),ALLOCATABLE,SAVE ::iyear1,imth1,iday1,ihr1
+         REAL(sz), SAVE ::  lat1, lon1,  spd1,  cpress1,  rmw1
+         REAL(sz), SAVE ::  dt, told, cLat1, cLon1
+         CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE, SAVE:: type! hindcast/nowcast or forecast?
+         CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE, SAVE:: type1 !hindcast/nowcast or forecast?
+         INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::iFcstInc1, iFcstInc ! hours between forecasts
+         INTEGER , SAVE :: firstCall = 0
+         LOGICAL , SAVE :: firstTime = .TRUE.
+         REAL(sz),DIMENSION(:),ALLOCATABLE,SAVE :: HollB,HollB1
+         INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: advr,advr1
+         REAL(sz), SAVE :: Vmax
+         REAL(sz), SAVE :: Vr
+         REAL(sz), SAVE, DIMENSION(4) :: r
+         REAL(sz), SAVE :: Pn
+         REAL(sz), SAVE :: Pc
+         REAL(sz), SAVE :: cLat
+         REAL(sz), SAVE :: cLon
+         REAL(sz), SAVE :: cHollB
+         REAL(sz) , DIMENSION(4), SAVE :: crmaxw
+         REAL(sz), SAVE :: offset
+!-------------------------------
+         INTEGER,SAVE :: icyc
+!------------------------------
+         INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: cycle_num
+         INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: isotachs_per_cycle
+         INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: isotachs_per_cycle1
+         INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: ipn,ipn1,cycle_num1
+
+         REAL(sz) , DIMENSION(:,:), ALLOCATABLE,SAVE :: rmaxw,rmaxw1
+         REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::CycleTime,CycleTime1
+         REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::uTrans1,uTrans
+         REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::vTrans1,vTrans
+         INTEGER , DIMENSION(:,:), ALLOCATABLE,SAVE::quadflag,quadflag1
+         INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: ivr, dir,speed
+         REAL(sz), SAVE :: dx,dy
+
+         INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ivr1, dir1, speed1
+         INTEGER , DIMENSION(:,:),ALLOCATABLE, SAVE :: ir,ir1
+         CHARACTER(LEN = 10),DIMENSION(:),ALLOCATABLE,SAVE::name,name1
+         REAL(sz),SAVE :: timeOld,timeNew
+         CHARACTER*1 ew,E,W,ns,N,S
+         E='E'
+         W='W'
+         N='N'
+         S='S'
+
+         timeNew = time
+
+!         WRITE(*,*) 'SUBROUTINE nws19get: time', time
+
+         !----------------------------------------
+         ! Read (lon,lat) at nodal points and
+         ! transform them from radians --> degrees
+         !----------------------------------------
+         IF (firstTime) THEN
+            firstTime = .FALSE.
+            ALLOCATE (xcoor(np), ycoor(np))
+
+            DO i=1,np
+               xcoor(i) = slam(i) * rad2deg
+               ycoor(i) = sfea(i) * rad2deg
+            END DO
+            offset=time
+         END IF   ! end of first Time data allocations and such
+
+         !---------------
+         ! Initialization
+         ! it's the first time the routine is called so read
+         ! in all variables and set the desired radii and
+         ! such
+         !---------------
+         IF (firstCall .EQ. 0) THEN  ! first time the routine is called
+
+        OPEN(22,file="fort.22",status="old")
+            i=0
+         DO      ! determin ethe number of entries in the file
+            READ(22,*,END=991)
+            i=i+1
+         ENDDO
+991    continue
+           num_entry=i
+        close(22)
+
+         OPEN(22,file="fort.22",status="old")
+
+              i=num_entry
+         !---------------
+         ! Allocate some variables
+         !---------------
+
+         allocate(advr1(i),iyear1(i),imth1(i),iday1(i),ihr1(i),type1(i))
+         allocate(advr(i),iyear(i),imth(i),iday(i),ihr(i),type(i))
+         allocate(iFcstInc1(i),ilat1(i),ilon1(i), ispd1(i))
+         allocate(iFcstInc(i) ,ilat(i) ,ilon(i) , ispd(i))
+         allocate(lat(i),lon(i))
+         allocate(icpress1(i), ivr1(i),ir1(i,4), rmaxw1(i,4), ipn1(i))
+         allocate(icpress(i) , ivr(i) ,ir(i,4) , rmaxw(i,4) , ipn(i))
+         allocate(dir1(i),speed1(i),cycle_num1(i))
+         allocate(dir(i) ,speed(i) ,cycle_num(i))
+         allocate(isotachs_per_cycle1(i),CycleTime1(i))
+         allocate(isotachs_per_cycle(i) ,CycleTime(i))
+         allocate(quadflag1(i,4),name1(i))
+         allocate(quadflag(i,4) ,name(i))
+         allocate(uTrans1(i), vTrans1(i),HollB1(i),atcfRMW1(i) )
+         allocate(uTrans(i) , vTrans(i) ,HollB(i) ,atcfRMW(i) )
+
+            !----------------------------------------------
+            ! Read parsed NHC advisory in modified best-track format
+            !----------------------------------------------
+
+26      FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
+     &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
+     &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
+     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4)
+
+Cold 26      FORMAT(2x, i3, 2x, i4, 3i2, 2x, a4, 2(2x,i3),a1, 2x, i3,a1, 2x,
+C     &         i3,2x, i4, 2x, i3, 2x, 4(i4,2x), i4, 2x, i3,
+C     &         2x, 2(i3,2x), a10, 2x, i4, 2x, i4,
+C     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4)
+
+
+
+          open(224,file='fort.224',status='unknown')
+
+            !------------------------
+            ! READ IN ALL DATA FOR EVERY CYCLE
+            !------------------------
+            ient=1
+
+        READ(22,26) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
+     &      ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
+     &      ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
+     &      (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
+     &      dir1(ient),speed1(ient), name1(ient),
+     &      cycle_num1(ient),isotachs_per_cycle1(ient),
+     &     (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
+
+                  icyc=1
+
+                  isotachs_per_cycle(icyc) = isotachs_per_cycle1(ient)
+                  advr(icyc)  =  advr1(ient)
+                  iyear(icyc) =  iyear1(ient)
+                  imth(icyc)  =  imth1(ient)
+                  iday(icyc)  =  iday1(ient)
+                  ihr(icyc)   =  ihr1(ient)
+                  type(icyc)  =  type1(ient)
+                  iFcstInc(icyc)= iFcstInc1(ient)
+                  ilat(icyc)  =  ilat1(ient)
+                  ilon(icyc)  =  ilon1(ient)
+                  ispd(icyc)  =  ispd1(ient)
+                  icpress(icyc) =  icpress1(ient)
+                  ivr(icyc)   =  ivr1(ient)
+                  ipn(icyc)   =  ipn1(ient)
+                  atcfRMW(icyc) = atcfRMW1(ient)
+                  dir(icyc)   =  dir1(ient)
+                  speed(icyc) =  speed1(ient)
+                  name(icyc)  =  name1(ient)
+                  cycle_num(icyc) = cycle_num1(ient)
+                  HollB(icyc) = HollB1(ient)
+
+              CycleTime(icyc) =  iFcstInc1(ient) * hour2sec + offset
+            !------------------------
+            ! MODIFY THE INPUTS FOR ALL CYCLES
+            ! As indicated in original NWS=9 Code
+            ! written by Craig
+            !------------------------
+!         The logic for the code is set for W and N so if E or S
+!         multiply lats and lons by -1
+!
+            IF(ew.EQ.E)THEN
+               ilon(icyc)=(-1)*ilon(icyc)
+            ENDIF
+            IF(ns.EQ.S)THEN
+               ilat(icyc)=(-1)*ilat(icyc)
+            ENDIF
+               lon(icyc)=ilon(icyc) * oneTenth
+               lat(icyc)=ilat(icyc) * oneTenth
+            !------------------------`
+            ! PICK OUT THE CYCLE DATA THAT THE USER WANTS TO USE
+            !------------------------
+
+         do i=1,4  ! loop quads
+           if (quadflag1(ient,i)==1) then
+              rmaxw(icyc,i) = rmaxw1(ient,i)
+              quadflag(icyc,i) = quadflag1(ient,i)
+           endif
+         enddo
+! ---------------------------------------------------------------------------
+      DO ient=2,num_entry  ! LOOP through entris (lines) in input file
+
+        READ(22,26) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
+     &      ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
+     &      ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
+     &      (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
+     &      dir1(ient),speed1(ient), name1(ient),
+     &      cycle_num1(ient),isotachs_per_cycle1(ient),
+     &     (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
+
+                if( cycle_num1(ient) == cycle_num1(ient-1)) then
+                 else
+          IF ( iFcstInc1(ient) == 0 .AND. iFcstInc(icyc) == 0) then
+
+                    icyc = icyc
+
+          ELSE
+                     icyc=icyc+1
+          ENDIF
+               isotachs_per_cycle(icyc) = isotachs_per_cycle1(ient)
+
+                  advr(icyc)  =  advr1(ient)
+                  iyear(icyc) =  iyear1(ient)
+                  imth(icyc)  =  imth1(ient)
+                  iday(icyc)  =  iday1(ient)
+                  ihr(icyc)   =  ihr1(ient)
+                  type(icyc)  =  type1(ient)
+                  iFcstInc(icyc)= iFcstInc1(ient)
+                  ilat(icyc)  =  ilat1(ient)
+                  ilon(icyc)  =  ilon1(ient)
+                  ispd(icyc)  =  ispd1(ient)
+                  icpress(icyc) =  icpress1(ient)
+                  ivr(icyc)   =  ivr1(ient)
+                  ipn(icyc)   =  ipn1(ient)
+                  atcfRMW(icyc) = atcfRMW1(ient)
+                  dir(icyc)   =  dir1(ient)
+                  speed(icyc) =  speed1(ient)
+                  name(icyc)  =  name1(ient)
+                  cycle_num(icyc) = cycle_num1(ient)
+                  HollB(icyc) = HollB1(ient)
+
+               CycleTime(icyc) =  iFcstInc(icyc) * hour2sec + offset
+            !------------------------
+            ! MODIFY THE INPUTS FOR ALL CYCLES
+            ! As indicated in original NWS=9 Code
+            ! written by Craig
+            !------------------------
+!         The logic for the code is set for W and N so if E or S
+!         multiply lats and lons by -1
+!
+            IF(ew.EQ.E)THEN
+               ilon(icyc)=(-1)*ilon(icyc)
+            ENDIF
+            IF(ns.EQ.S)THEN
+               ilat(icyc)=(-1)*ilat(icyc)
+            ENDIF
+               lon(icyc) = (-1.0d0) * ilon(icyc) * oneTenth
+               lat(icyc) = ilat(icyc) * oneTenth
+
+                endif
+            !------------------------`
+            ! PICK OUT THE CYCLE DATA THAT THE USER WANTS TO USE
+            !------------------------
+          do i=1,4 ! loop through quads
+              if (quadflag1(ient,i)==1) then
+                rmaxw(icyc,i) = rmaxw1(ient,i)
+                quadflag(icyc,i) = quadflag1(ient,i)
+              endif
+          enddo ! loop through quads
+
+        ENDDO ! loop through entries (lines ) in input file
+               write(*,*) icyc
+
+         !-------------------------------
+         ! ALL DATA READ IN AND VARIABLES SET
+         !-------------------------------
+
+           num_cycle=icyc ! cycle_num(num_entry)
+
+         !-------------------------------
+         ! Calculate translation velocity
+         !-------------------------------
+
+       DO icyc = 1,num_cycle
+         IF (icyc .lt. num_cycle ) then
+C     use the formula haversine formula for distances along a sphere.
+C         dist(i)=Rearth*(2*ASIN(sqrt(sin(DY(I)/2)**2+
+C     &  cos(lat*DEG2RAD)*cos(YCOOR(i)*DEG2RAD)*sin(DX(I)/2)**2) ) )
+
+C           if (icyc==1 ) then
+      !----------------------------------------------------------
+        dx = SIGN( (Rearth*(2.0d0*ASIN(sqrt(cos(LAT(icyc+1)*DEG2RAD)
+     & * cos(LAT(icyc)*DEG2RAD)
+     & * sin((LON(icyc+1)*DEG2RAD-LON(icyc)*DEG2RAD)/2.0d0)**2.0d0))))
+     & ,(Lon(icyc+1)-Lon(icyc))  )  ! get correct sign
+
+       dy = SIGN( (Rearth*(2.0d0*ASIN(sqrt(
+     &  sin( (LAT(icyc+1)*DEG2RAD-LAT(icyc)*DEG2RAD)/2.0d0)**2.0d0))) )
+     & ,(Lat(icyc+1)-Lat(icyc))  )  ! get correct sign
+
+               dt = (CycleTime(icyc+1) - CycleTime(icyc))
+               if(dt == 0.0d0) dt=6.0d0* hour2sec
+C      !----------------------------------------------------------
+C C         else
+C        dx = SIGN( (Rearth*(2.0d0*ASIN(sqrt(cos(LAT(icyc+1)*DEG2RAD)
+C     & * cos(LAT(icyc-1)*DEG2RAD)
+C     & * sin((LON(icyc+1)*DEG2RAD-LON(icyc-1)*DEG2RAD)/2.0d0)**2.0d0))))
+C     & ,(Lon(icyc+1)-Lon(icyc-1))  )  ! get correct sign
+C
+C       dy = SIGN( (Rearth*(2.0d0*ASIN(sqrt(
+C     &  sin( (LAT(icyc+1)*DEG2RAD-LAT(icyc-1)*DEG2RAD)/2.0d0)**2.0d0))))
+C     & ,(Lat(icyc+1)-Lat(icyc-1))  )  ! get correct sign
+C
+C               dt = (CycleTime(icyc+1) - CycleTime(icyc-1))
+C               if(dt == 0.0d0) dt=12.0d0* hour2sec
+C      !----------------------------------------------------------
+C          endif
+      !----------------------------------------------------------
+
+         ELSE  ! icyc = num_cycle
+
+        dx = SIGN( (Rearth*(2.0d0*ASIN(sqrt(cos(LAT(icyc)*DEG2RAD)
+     & * cos(LAT(icyc-1)*DEG2RAD)
+     & * sin((LON(icyc)*DEG2RAD-LON(icyc-1)*DEG2RAD)/2.0d0)**2.0d0))))
+     & ,(Lon(icyc)-Lon(icyc-1))  )  ! get correct sign
+
+       dy = SIGN( (Rearth*(2.0d0*ASIN(sqrt(
+     &  sin( (LAT(icyc)*DEG2RAD-LAT(icyc-1)*DEG2RAD)/2.0d0)**2.0d0))))
+     & ,(Lat(icyc)-Lat(icyc-1))  )  ! get correct sign
+
+               dt = (CycleTime(icyc) - CycleTime(icyc-1))
+               if(dt == 0.0d0) dt=6.0d0* hour2sec
+        ENDIF
+
+               uTrans(icyc) = dx/dt
+               vTrans(icyc) = dy/dt
+
+      ENDDO ! num_cycle
+
+      icyc=1
+         END IF   ! (firstCall .EQ. 0)
+21     format(i4,7f13.2)
+
+
+C     If time exceeds the next hindcast/nowcast/forecast time, increment the
+C     array counter.
+      IF (Time.ge.CycleTime(icyc)) THEN
+         icyc=icyc+1
+      ENDIF
+
+        dt=time-told
+         !-------------------------------------
+         ! Interpolate NHC forecast interval in
+         ! time to obtain values at model time.
+         !-------------------------------------
+      if (icyc .lt.  2 ) then
+        wtratio = 0.0
+        Vmax  =  one*(ispd(icyc))
+        Pn    =  one*(ipn(icyc) )
+        Pc    =  one*(icpress(icyc))
+        cLat  =  lat(icyc)
+        cLon  =  lon(icyc)
+        cHollB   =  HollB(icyc)
+       do i=1,4
+        crmaxw(i)=rmaxw(icyc,i)
+       enddo
+      else
+
+      wtratio=(time-CycleTime(icyc-1))/
+     &                  (CycleTime(icyc)-CycleTime(icyc-1))
+         !--------------------------------------------------------------
+         ! Perform time interpolation, transform variables from integers
+         ! to real numbers for hurricane vortex calcualtions.
+         !--------------------------------------------------------------
+        Vmax  =  one*(ispd(icyc-1) +
+     &                         wtratio * (ispd(icyc)-ispd(icyc-1)))
+        Pn    =  one*(ipn(icyc-1)  +
+     &                         wtratio * (ipn(icyc)-ipn(icyc-1)))
+        Pc    =  one*(icpress(icyc-1) +
+     &                         wtratio*(icpress(icyc)-icpress(icyc-1)))
+        cLat   =  lat(icyc-1)  +
+     &                         wtratio * (lat(icyc)-lat(icyc-1))
+        cLon  =  lon(icyc-1)  +
+     &                         wtratio * (lon(icyc)-lon(icyc-1))
+        cHollB   =  HollB(icyc-1) +
+     &                         wtratio * (HollB(icyc)-HollB(icyc-1))
+       do i=1,4
+        crmaxw(i)=rmaxw(icyc-1,i) +
+     &                          wtratio*(rmaxw(icyc,i)-rmaxw(icyc-1,i))
+       enddo
+
+        endif
+
+        Vr = one * cycle_num(icyc-1)
+
+         !-------------------------------
+         ! Create a new asymmetric hurricane vortex.
+         !
+         ! Note: Subtract translational speed from Vmax, then
+         ! scale (Vmax - Vt) and Vr up to the top of the surface,
+         ! where the cylcostrophic wind balance is valid.
+         !-------------------------------------------------------
+        CALL newVortex_rmax_b_IN(
+     &   name(icyc-1),advr(icyc-1),iyear(icyc-1),imth(icyc-1),
+     &   iday(icyc-1),ihr(icyc-1),iFcstInc(icyc-1),
+     &   Pn,Pc,cLat,cLon,
+     & (((Vmax)-ms2kt*
+     &  SQRT(uTrans(icyc-1)*uTrans(icyc-1)+
+     &       vTrans(icyc-1)*vTrans(icyc-1)))/
+     &       windReduction),
+     &   crmaxw,cHollB)
+         !---------------------------
+         ! Print the hurricane vortex
+         !---------------------------
+28     FORMAT(2x, i3, 2x, i4, 3i2.2, 2x, a4, 2x,i3,
+     &            2x,f8.2,a1,2x,f8.2,a1, 2x,
+     &         f8.2,2x, f8.2, 2x, i3, 2x, f8.2, 2x, i3,
+     &         2x,f10.2,2x ,i3,2x, a10, 2x,f10.2,2x, i3, 2x, i1,
+     &         2x, 4(i1,1x),2x, 4(f6.1,2x), 2x, f8.4)
+
+       WRITE(224,28) advr(icyc-1), iyear(icyc-1),imth(icyc-1),
+     &      iday(icyc-1),
+     &      ihr(icyc-1), type(icyc-1),iFcstInc(icyc-1), Clat,ns,
+     &      Clon,ew, Vmax, Pc, ivr(icyc-1),
+     &       Pn, atcfRMW(icyc-1),
+     &      time,speed(icyc-1), name(icyc-1),
+     & CycleTime(icyc-1),cycle_num(icyc-1),isotachs_per_cycle1(icyc-1),
+     &     (quadflag(icyc-1,i),i=1,4),(crmaxw(i),i=1,4),cHollB
+
+          CALL printVortex()
+
+         !-------------------------------------------------------------
+         ! Calculate wind and pressure fields at model nodal points.
+         !
+         ! Note: the asymmetric vortex wind speed is reduced from the
+         ! top of the surface layer to the surface, then converted from
+         ! a 1-minute (max sustained) to a 10-minute average prior to
+         ! adding the translational velocity in subroutine uvp.
+         !-------------------------------------------------------------
+         DO i=1,np
+            CALL uvp(ycoor(i),xcoor(i), uTrans(icyc),vTrans(icyc),
+     &               wvnx(i),wvny(i), press(i)) !,
+            !-------------------------------------------
+            ! Convert atmospheric pressure (Pascals) to
+            ! atmospheric pressure-induced water surface
+            ! elevation (meters).
+            !-------------------------------------------
+            press(i) = press(i) / RhoWatG
+
+         END DO
+         !-----------------------------------
+         ! NHC advisory best-track i/o format
+         !-----------------------------------
+         firstCall = 1
+         told=time
+          write(224,*) firstCall, told
+
+999      RETURN
+
+      END SUBROUTINE NWS19GET
+
 C***********************************************************************
 C                                                                      *
 C   End of subroutines to read wind and pressure fields                * 
