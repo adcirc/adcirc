@@ -173,7 +173,7 @@ C
      &                       count_newcycle(icyc+1)-count_newcycle(icyc)
           DO ient =  count_newcycle(icyc), count_newcycle(icyc+1)-1
               
-           write(*,*) icyc, ient
+c           write(*,*) icyc, ient
         if (icyc==1 ) then
             clatOld =  ilat(count_newcycle(icyc+1)-1) * oneTenth
             clatNew =  ilat(count_newcycle(icyc+1)) * oneTenth
@@ -357,8 +357,8 @@ C         GO TO 3333
                       quadflag(ient,3)=1
                       quadflag(ient,4)=1
                       ir1(1) = (ir1(4))
-                     write(*,*) "NO NON ZERO QUAD RADII"
-                     write(*,*) "USE RMW from ATCF"
+C                     write(*,*) "NO NON ZERO QUAD RADII"
+C                     write(*,*) "USE RMW from ATCF"
                        do i=1,4
                         ir1(i) = atcfRMW(ient)
                        enddo
@@ -409,7 +409,7 @@ C         GO TO 3333
                       quadflag(ient,2)=1
                       quadflag(ient,3)=1
                       quadflag(ient,4)=1
-                  write(*,*) " all 4 nonzero radii ! "
+C                  write(*,*) " all 4 nonzero radii ! "
 
            endif
 C3333    continue
@@ -439,9 +439,9 @@ C3333    continue
          !---------------------------
 
                   HollB(ient)=HollB1
-                   write(*,'(f10.4)')HollB(ient) 
+C                   write(*,'(f10.4)')HollB(ient) 
                   rmaxw(ient,:)=rmaxw1(:)
-                   write(*,'(f10.4)') rmaxw(ient,:)
+C                   write(*,'(f10.4)') rmaxw(ient,:)
 C    reset rmax to zero if there was a zero radius to the isotach for all isotachs
 C    EXCEPT the 34 kt isotach.  in that case leave the radius that has been substituted.
 
