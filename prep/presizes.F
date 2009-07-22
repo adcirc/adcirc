@@ -558,10 +558,11 @@ C     jgf46.02 added NWS=8
 C     jgfdebug46.02 added NWS=45 
 C     jgf46.16 merged:
 C     cf & cm added NWS=9: asymmetric hurricane wind model
+C     rjw added NWS=19: asymmetric hurricane wind model v2.0
 C     sb46.28sb01 added NWS=12: OWI format
       IF((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).eq.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(NWS.EQ.8).OR.(NWS.EQ.9)
-     &     .OR.(ABS(NWS).EQ.12)) THEN
+     &     .OR.(ABS(NWS).EQ.12).OR. (NWS.EQ.19)) THEN
         IF(NRS.EQ.0) READ(15,*) WTIMINC
         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
         MNWP=MNP
@@ -800,6 +801,7 @@ C
       IF(NWS.EQ.11) WRITE(*,3020)
 C     sb46.28sb01 added NWS=12: OWI format
       IF(ABS(NWS).EQ.12) WRITE(*,3023)
+      IF(ABS(NWS).EQ.19) WRITE(*,3219)
       IF((NHARF.EQ.0).OR.(FMV.EQ.0.)) WRITE(*,3021)
       IF((NHARF.GE.1).AND.(FMV.NE.0.)) WRITE(*,3022)
       IF(ILUMP.EQ.0) WRITE(*,3031)
@@ -839,6 +841,8 @@ C
  3016 FORMAT(' *   Also, NWS=+-5 meteorological forcing is used,   *')
  3017 FORMAT(' *   Also, NWS=+-6 meteorological forcing is used,   *') 
  3217 FORMAT(' *   Also, NWS=+-8 Holland wind forcing is used,     *') 
+ 3219 FORMAT(' *   Also, NWS=+-19 Asymmetric Holland wind v2.0     *',/,
+     &       ' *                 forcing is used,                  *') 
  3018 FORMAT(' *   Also, ABS(NWS)>=100 wave stress forcing is used,*')
  3019 FORMAT(' *   Also, AVN wind & pressure forcing will be used, *')
  3020 FORMAT(' *   Also, ETA wind & pressure forcing will be used, *')

@@ -2153,10 +2153,12 @@ C     jgfdebug46.02 Added check for NWS=45.
 C     jgf46.02 Added NWS=8.
 C     jgf46.16 Merged:
 C     cf & cm added NWS=9: asymmetric hurricane wind model
+C     rjw added NWS=19: asymmetric hurricane wind model v2.0
 C     sb46.28sb01 added NWS=12: OWI format
          IF ((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.45).OR.
      &        (ABS(NWS).EQ.5).OR.(ABS(NWS).EQ.6).OR.(ABS(NWS).EQ.8)
-     &        .OR.(ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12))THEN
+     &        .OR.(ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)
+     &         .OR.(ABS(NWS).EQ.19))THEN
             WRITE(15,80) WSMSG1
          ENDIF
          IF (NWS.EQ.3) THEN
@@ -3009,6 +3011,7 @@ C---------------------------------------------------------------------------
 C      CHARACTER FNAME*60,LOCFN*14,CMD1*63,CMD2*7,CMD*70,INLINE*80
       CHARACTER FNAME*60,CMD1*63,CMD2*7,CMD*70
       CHARACTER*170 Line ! line of data from NWS=8 (Holland) file
+      CHARACTER*270 Line19 ! line of data from NWS=19 (AsymmHollandv2.0) file
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error
       INTEGER,ALLOCATABLE  :: NG(:)
@@ -3166,6 +3169,32 @@ C     Fortran.
             ENDDO
          ENDDO
 C
+C        ---------     
+         CASE(19)
+C        ---------
+C     RJW Added NWS=19, asymmetric hurricane wind model v2.0
+C
+C     Asymetric hurricane wind model v2.0 (19)
+C
+C         Need a new case because the line needs to be longer (270)
+C     Hurricane track data are in a small file that describes the
+C     hurricane characteristics and provides parameters for the wind
+C     model. The actual wind velocity at each node will be calculated at
+C     run time from these characteristics and parameters by ADCIRC
+C     internally, the wind model. Therefore, each subdomain can use the
+C     exact same information, and we can just rewrite the file into each
+C     subdirectory. We will read it in and write it out to each
+C     subdirectory rather than cp or ln it, because I (jgf) happen to
+C     prefer to avoid calls to the platform-dependent shell from
+C     Fortran.
+         DO
+            READ(22,270,END=9999) Line19
+            DO IPROC = STARTPROC,ENDPROC
+               WRITE(SDU(IPROC),270) Line19
+            ENDDO
+         ENDDO
+C
+C
 C        ------------
          CASE DEFAULT
 C        ------------
@@ -3193,6 +3222,7 @@ C
       RETURN
   60  FORMAT(A60)
  170  FORMAT(A170)
+ 270  FORMAT(A270)
  1010 FORMAT(' File ',A60,/,' WAS NOT FOUND!  Try again',/)
  1011 FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
  1100 FORMAT(I8,3E13.5)

@@ -454,7 +454,7 @@ C     sb46.28sb01 added NWS=12: OWI format
      &       (NWS.NE.3).AND.(ABS(NWS).NE.4) .AND.(ABS(NWS).NE.5).AND.
      &       (ABS(NWS).NE.45).AND.(ABS(NWS).NE.6).AND.
      &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.9).AND.
-     &       (ABS(NWS).NE.12))  THEN
+     &       (ABS(NWS).NE.12) .AND. (ABS(NWS).NE.19))  THEN
            print *, "Value for NWS not supported by parallel code"
            stop
         ENDIF
@@ -540,10 +540,12 @@ C     jgfdebug46.02 Added NWS=45
 C     jgf46.02 Added NWS=8
 C     jgf46.16 Merged:
 C     cf & cm Added NWS=9: asymmetric hurricane wind model
+C     rjw Added NWS=19: asymmetric hurricane wind model v2.0
 C     sb46.28sb01 added NWS=12: OWI format
       IF((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8).OR.
-     &         (ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)) THEN
+     &         (ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)
+     &     .OR.(ABS(NWS).EQ.19)) THEN
          READ(15,80) WSMSG1
          IF(NRS.EQ.0) READ(WSMSG1,*) WTIMINC
          IF(NRS.GE.1) READ(WSMSG1,*) WTIMINC,RSTIMINC ! sb46.28sb03

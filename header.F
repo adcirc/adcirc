@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4621   - 07/22/09 - rjw - Added NWS=19 Asymmetric Holland v2.0 
+C               to prep/ files
 C  v48.4620   - 07/21/09 - jgf - Modified makefile so that aswip executable
 C               may be built with 'make aswip'.
 C  v48.4619   - 07/21/09 - jgf - Fixed inclusion of MNMPROC in write_output.F;
