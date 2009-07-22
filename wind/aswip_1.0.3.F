@@ -5,11 +5,7 @@ C                                                                      *
 C***********************************************************************
 C
        PROGRAM COMPUTE_RMAX_B
-C       PROGRAM WIND
-C       USE SIZES, ONLY : SZ, LOCALDIR
-C       USE GLOBAL, ONLY : ScreenUnit
 
-         !USE SIZES, ONLY : MyProc,mnproc
          !-------------------------------------------------------------
          ! Import custom precision types for cross-platform portability
          !-------------------------------------------------------------
@@ -108,6 +104,10 @@ C       USE GLOBAL, ONLY : ScreenUnit
          W='W'
          N='N'
          S='S'
+        !------------
+        ! open output file
+        !------------
+         OPEN(222,file="NWS_19_fort.22",status="unknown")
 
          OPEN(22,file="fort.22",status="old")
             i=0
@@ -123,7 +123,6 @@ C       USE GLOBAL, ONLY : ScreenUnit
               i=num_entry 
          allocate(advr(i),iyear(i),imth(i),iday(i),ihr(i),type(i))
          allocate(iFcstInc(i),ilat(i),ilon(i), ispd(i))
-!         allocate(iFcstInc(i),ilat(i),ns(i),ilon(i),ew(i), ispd(i))
          allocate(icpress(i), ivr(i),ir(i,4), rmaxw(i,4), ipn(i))
          allocate(dir(i),speed(i),count_newcycle(i),cycle_num(i))
          allocate(isotachs_per_cycle(i))
@@ -137,12 +136,6 @@ C       USE GLOBAL, ONLY : ScreenUnit
      &      (ir(ient,i),i=1,4), ipn(ient),atcfRMW(ient),
      &      dir(ient),speed(ient), name(ient)
 
-C           WRITE(*,22) advr(ient), iyear(ient),imth(ient),iday(ient),
-C    &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
-C    &      ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
-C    &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
-C    &      dir(ient),speed(ient), name(ient)
-
           num_cycles = 1
           count_newcycle(1) = 1
           cycle_num(ient)=count_newcycle(1)
@@ -154,19 +147,12 @@ C    &      dir(ient),speed(ient), name(ient)
      &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
      &      dir(ient),speed(ient), name(ient)
 
-C           WRITE(*,22) advr(ient), iyear(ient),imth(ient),iday(ient),
-C    &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
-C    &      ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
-C    &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
-C    &      dir(ient),speed(ient), name(ient)
   
             if ( (iday(ient).eq.iday(ient-1)).AND.
      &                     (ihr(ient).eq.ihr(ient-1))) then
                 if ( iFcstInc(ient) .ne. iFcstInc(ient-1)) then
                 num_cycles = num_cycles + 1
                 count_newcycle(num_cycles)=ient
-                else
-C                 write(*,*) "same cycle, new isotach", ivr(ient)
                 endif
             else
                 num_cycles = num_cycles + 1
@@ -217,20 +203,11 @@ C                 write(*,*) "same cycle, new isotach", ivr(ient)
                dt = (time2 - time1)
                if(dt == 0.0d0) dt=12.0d0* hour2sec
          endif
-C          write(*,112) clatOld, clatNew, clonOld, clonNew
-C          write(*,113) time1, time2
-C          write(*,114) dx,dy,dt
-112    format(4f16.2)           
-113    format(2f16.2)           
-114    format(3f16.2)           
                uTrans(ient) = dx/dt
                vTrans(ient) = dy/dt
-C          write(*,115) uTrans(ient), vTrans(ient)
-115    format(2f16.2)           
           ENDDO
 
         ELSE  ! icyc = num_cycles
-C          write(*,*) icyc, ient
         isotachs_per_cycle(icyc) =
      &            num_entry - count_newcycle(icyc) + 1
             
@@ -248,26 +225,16 @@ C          write(*,*) icyc, ient
                dy = deg2rad * Rearth * (clatNew - clatOld)
                dt = (time2 - time1)
                if(dt == 0.0d0) dt=6.0d0* hour2sec
-c           write(*,112) clatOld, clatNew, clonOld, clonNew
-c           write(*,113)time1, time2
-c           write(*,114) dx,dy,dt
                uTrans(ient) = dx/dt
                vTrans(ient) = dy/dt
-c               write(*,115) uTrans(ient), vTrans(ient)
             ENDDO ! ient
           ENDIF  ! icyc = num_cycles
           ENDDO ! numcycles
 
-C         write(*,*) num_cycles, num_entry
-C         write(*,*) count_newcycle
-C        WRITE(*,*)" ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "
           DO ient=1,num_entry
-C             write(*,*) ient, cycle_num(ient),atcfRMW(ient)
           ENDDO
             DO  icyc = 1,num_cycles
-C           write(*,*) isotachs_per_cycle(icyc)
             ENDDO
-C        WRITE(*,*)" ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "
 
          !-----------------------------------------
          !  Now using the calculated translational velocities 
@@ -318,7 +285,6 @@ C        WRITE(*,*)" ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "
            ! transform variables from integers
            ! to real numbers for hurricane vortex calcualtions.
            !--------------------------------------------------------------
-           !--------------------------------------------------------------
           Vmax =  one * ( ispd1  )
           Pn   =  one * ( ipn1   )
           Pc   =  one * ( icpress1  )
@@ -328,7 +294,6 @@ C        WRITE(*,*)" ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ "
       !---------------------------------------------
       !  need to get some logic incase Vr is  zero
       !  if so we will also be setting ir(:) to Rmax 
-      !  
       !---------------------------------------------
           if ( ivr1 == 0 ) ivr1 = Vmax
 
@@ -455,7 +420,6 @@ C3333    continue
             END DO
             DO i=1,4
                rmaxw1(i) = atcfRMW(ient)
-C               write(*,'(2f10.4)') rmaxw1(i) , r(i)
             END DO
                 HollB1=one
          !-------------------------------------------------------
@@ -468,29 +432,11 @@ C               write(*,'(2f10.4)') rmaxw1(i) , r(i)
        CALL newVortex_rmax_b_OUT(
      &   name(ient/2),adv,iyear1,imth1,iday1,ihr1,iFcstInc1,
      &   Pn,Pc,cLat,cLon,((Vmax-ms2kt*
-     &   SQRT(uTrans1*uTrans1+vTrans1*vTrans1))/windReduction), 
+     &   SQRT(uTrans1*uTrans1+vTrans1*vTrans1))/windReduction),
      &   (Vr/windReduction),r,rmaxw1,HollB1)
-
-C           WRITE(ScreenUnit,*) 
-C    &          '   ===== Vmax =====', ispd1   , Vmax
-C           WRITE(ScreenUnit,*) 
-C    &          '   ===== Vmax inp =====',
-C    &  Vmax-ms2kt*SQRT(uTrans1*uTrans1+vTrans1*vTrans1)/windReduction
-C           WRITE(ScreenUnit,*) 
-C    &          '   ===== Vr   =====', ivr1    , Vr 
-C           WRITE(ScreenUnit,*) 
-C    &          '   ===== Pn   =====', ipn1    , Pn 
-C           WRITE(ScreenUnit,*) 
-C    &          '   ===== Pc   =====', icpress1, Pc 
-C           WRITE(ScreenUnit,*) 
-C    &          '   ===== cLat =====', ilat1   , cLat
-C           WRITE(ScreenUnit,*) 
-C    &          '   ===== cLon =====', ilon1   , cLon
-
          !---------------------------
          ! Print the hurricane vortex
          !---------------------------
-C         CALL printVortex(rmaxw1,HollB1)
 
                   HollB(ient)=HollB1
                    write(*,'(f10.4)')HollB(ient) 
@@ -617,7 +563,6 @@ C!-------------------------------------------------------------------
      &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
      &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4)
 
-            write(*,*) "name = ",name
             WRITE(222,26) advr(ient), iyear(ient),imth(ient),iday(ient),
      &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
      &      ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
@@ -626,25 +571,9 @@ C!-------------------------------------------------------------------
      &      cycle_num(ient),isotachs_per_cycle(cycle_num(ient)),
      &     (quadflag(ient,i),i=1,4),(rmaxw(ient,i),i=1,4),HollB(ient)
 
-28      FORMAT(2x, i3, 2x, i4, 3i2.2, 2(2x,i3), 2x, i3, 2x,
-     &         i3,2x, i4, 2x, i3, 2x, 4(i4,2x), i4, 2x, i3,
-     &          2x, 2(i3,2x),2x, i4, 3x, 4(f6.1,2x), 2x, f8.4)
-
-           WRITE(223,28) advr(ient), iyear(ient),imth(ient),iday(ient),
-     &      ihr(ient), iFcstInc(ient), ilat(ient),
-     &      ilon(ient), ispd(ient), icpress(ient), ivr(ient),
-     &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
-     &      dir(ient),speed(ient), cycle_num(ient),
-     &      (rmaxw(ient,i),i=1,4),HollB(ient)
-
-
-24      FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x, 
-     &         i3,2x, i4, 5x, i4, 7x, 4(f6.1,2x), 
-     &         i4, 2x, f8.4, 8x, i3, 18x, 2(i3,2x), a10)
-
          ENDDO
+
           close(222)
-          close(223)
  
 
 
