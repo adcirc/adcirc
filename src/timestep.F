@@ -722,7 +722,7 @@ C
 C--------------------END MET FORCING---------------------------------------
 
 
-       GOTO 9999
+
 
 
 C...  UPDATE THE WAVE RADIATION STRESS AND READ IN NEW VALUES FROM
@@ -2147,7 +2147,6 @@ C...
 C...
 C...  End of 2D Scalar Transport Solution
 C...
-9999    continue
 C...
 C...  Collect maximum values of variables   v46.50 sb 11/11/2006
 C...
