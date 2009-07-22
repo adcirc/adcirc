@@ -1250,6 +1250,36 @@ C     generate hurricane winds from the Holland Wind Model.
             WVNYOUT(I)=RampMete2*WindY
          ENDDO
       ENDIF
+
+!     rjw added nws = 19: asymmetric hurricane winds v2.0
+
+      IF(ABS(NWS).EQ.19) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+             CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TIME, ICS)
+!         IF(NWS.EQ.9) THEN
+!             CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TIME, ICS)
+!         ENDIF
+!         IF(NWS.EQ.-9) THEN
+!             CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TIME, ICS)
+!         ENDIF
+         DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
+            PR2(I) = RampMete2*PRN2(I)
+            WVNXOUT(I)=RampMete2*WindX
+            WVNYOUT(I)=RampMete2*WindY
+         ENDDO
+      ENDIF
 C
 C     Wind velocity (10 m) and atmospheric pressure are read in from a
 C     sequence of National Weather Service (NWS) Aviation (AVN) model
