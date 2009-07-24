@@ -43,11 +43,11 @@ C
          INTEGER , SAVE :: iyear1, imth1, iday1, ihr1
          INTEGER , SAVE :: iyear2, imth2, iday2, ihr2
          INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon
+         REAL(sz),DIMENSION(:),ALLOCATABLE,SAVE::rlat,rlon,CycleTime
          INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ispd,icpress,atcfRMW
          INTEGER , SAVE :: ilat1,ilon1, ispd1, icpress1!, irmw1
-         INTEGER , SAVE :: ilat2,ilon2, ispd2, icpress2!, irmw2
+         REAL(sz), SAVE :: rlat1,rlon1
          REAL(sz), SAVE ::  lat1, lon1,  spd1,  cpress1!,  rmw1
-         REAL(sz), SAVE ::  lat2, lon2,  spd2,  cpress2!,  rmw2
          REAL(sz), SAVE ::  dt, cLat1, cLon1
          CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE:: type! hindcast/nowcast or forecast?
          CHARACTER(LEN=4) :: type1              ! hindcast/nowcast or forecast?
@@ -123,9 +123,10 @@ C
               i=num_entry 
          allocate(advr(i),iyear(i),imth(i),iday(i),ihr(i),type(i))
          allocate(iFcstInc(i),ilat(i),ilon(i), ispd(i))
+         allocate(rlat(i),rlon(i))
          allocate(icpress(i), ivr(i),ir(i,4), rmaxw(i,4), ipn(i))
          allocate(dir(i),speed(i),count_newcycle(i),cycle_num(i))
-         allocate(isotachs_per_cycle(i))
+         allocate(isotachs_per_cycle(i),CycleTime(i))
          allocate(quadflag(i,4),name(i))
          allocate(uTrans(i), vTrans(i),HollB(i),atcfRMW(i) )
       
@@ -139,6 +140,20 @@ C
           num_cycles = 1
           count_newcycle(1) = 1
           cycle_num(ient)=count_newcycle(1)
+
+!         The logic for the code is set for W and N so if E or S
+!         multiply lats and lons by -1
+            IF(ew.EQ.E)THEN
+               ilon(ient)=(-1)*ilon(ient)
+            ENDIF
+            IF(ns.EQ.S)THEN
+               ilat(ient)=(-1)*ilat(ient)
+            ENDIF
+               rlon(ient) = (-1.0d0) * ilon(ient) * oneTenth
+               rlat(ient) = ilat(ient) * oneTenth
+
+           CycleTime(ient) =  iFcstInc(ient) * hour2sec
+
          DO ient=2,num_entry
 
             READ(22,22) advr(ient), iyear(ient),imth(ient),iday(ient),
@@ -147,7 +162,26 @@ C
      &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
      &      dir(ient),speed(ient), name(ient)
 
+
+!         The logic for the code is set for W and N so if E or S
+!         multiply lats and lons by -1
+            IF(ew.EQ.E)THEN
+               ilon(ient)=(-1)*ilon(ient)
+            ENDIF
+            IF(ns.EQ.S)THEN
+               ilat(ient)=(-1)*ilat(ient)
+            ENDIF
+               rlon(ient) = (-1.0d0) * ilon(ient) * oneTenth
+               rlat(ient) = ilat(ient) * oneTenth
+
   
+           if (atcfRMW(ient) .eq. 0.0 .AND. atcfRMW(ient-1) .ne. 0.0 )
+     &                                    atcfRMW(ient)=atcfRMW(ient-1)
+         if (ipn(ient) == 0 )then
+             ipn(ient)=ipn(ient-1)
+          endif
+
+
             if ( (iday(ient).eq.iday(ient-1)).AND.
      &                     (ihr(ient).eq.ihr(ient-1))) then
                 if ( iFcstInc(ient) .ne. iFcstInc(ient-1)) then
@@ -160,6 +194,7 @@ C
              endif
               cycle_num(ient)=num_cycles
              
+           CycleTime(ient) =  iFcstInc(ient) * hour2sec
 
        ENDDO
 
@@ -175,58 +210,69 @@ C
               
 c           write(*,*) icyc, ient
         if (icyc==1 ) then
-            clatOld =  ilat(count_newcycle(icyc+1)-1) * oneTenth
-            clatNew =  ilat(count_newcycle(icyc+1)) * oneTenth
-            clonOld = -ilon(count_newcycle(icyc+1)-1) * oneTenth
-            clonNew = -ilon(count_newcycle(icyc+1)) * oneTenth
+      !----------------------------------------------------------
+        dx = SIGN( (Rearth*(2.0d0*
+     & ASIN(sqrt(cos(rLAT(count_newcycle(icyc+1))*DEG2RAD)
+     & * cos(rLAT(count_newcycle(icyc))*DEG2RAD)
+     & * sin((rLON(count_newcycle(icyc+1))*DEG2RAD
+     & - rLON(count_newcycle(icyc))*DEG2RAD)/2.0d0)**2.0d0))))
+     & ,(rLon(count_newcycle(icyc+1))-rLon(count_newcycle(icyc)))  )  ! get correct sign
 
-            time1 =  iFcstInc(count_newcycle(icyc+1)-1) * hour2sec
-            time2 =  iFcstInc(count_newcycle(icyc+1)) * hour2sec
+       dy = SIGN( (Rearth*(2.0d0*
+     & ASIN(sqrt(sin((rLAT(count_newcycle(icyc+1))*DEG2RAD
+     & -rLAT(count_newcycle(icyc))*DEG2RAD)/2.0d0)**2.0d0))) )
+     & ,(rLat(count_newcycle(icyc+1))-rLat(count_newcycle(icyc)))  )  ! get correct sign
 
-               dx = deg2rad * Rearth * (clonNew - clonOld)
-     &            * COS(deg2rad*half * (clatOld + clatNew))
-               dy = deg2rad * Rearth * (clatNew - clatOld)
-               dt = (time2 - time1)
+       dt = (CycleTime(count_newcycle(icyc+1)) -
+     &                             CycleTime(count_newcycle(icyc)))
                if(dt == 0.0d0) dt=6.0d0* hour2sec
+      !----------------------------------------------------------
          else
-            clatOld =  ilat(count_newcycle(icyc)-1) * oneTenth
-            clatNew =  ilat(count_newcycle(icyc+1)) * oneTenth
-            clonOld = -ilon(count_newcycle(icyc)-1) * oneTenth
-            clonNew = -ilon(count_newcycle(icyc+1)) * oneTenth
+        dx = SIGN( (Rearth*(2.0d0*
+     & ASIN(sqrt(cos(rLAT(count_newcycle(icyc))*DEG2RAD)
+     & * cos(rLAT(count_newcycle(icyc-1))*DEG2RAD)
+     & * sin((rLON(count_newcycle(icyc))*DEG2RAD
+     & - rLON(count_newcycle(icyc-1))*DEG2RAD)/2.0d0)**2.0d0))))
+     & ,(rLon(count_newcycle(icyc))-rLon(count_newcycle(icyc-1)))  )  ! get correct sign
 
-            time1 =  iFcstInc(count_newcycle(icyc)-1) * hour2sec
-            time2 =  iFcstInc(count_newcycle(icyc+1)) * hour2sec
+       dy = SIGN( (Rearth*(2.0d0*
+     & ASIN(sqrt(sin((rLAT(count_newcycle(icyc))*DEG2RAD
+     & -rLAT(count_newcycle(icyc-1))*DEG2RAD)/2.0d0)**2.0d0))) )
+     & ,(rLat(count_newcycle(icyc))-rLat(count_newcycle(icyc-1)))  )  ! get correct sign
 
-               dx = deg2rad * Rearth * (clonNew - clonOld)
-     &            * COS(deg2rad*half * (clatOld + clatNew))
-               dy = deg2rad * Rearth * (clatNew - clatOld)
-               dt = (time2 - time1)
-               if(dt == 0.0d0) dt=12.0d0* hour2sec
-         endif
+       dt = (CycleTime(count_newcycle(icyc)) -
+     &                             CycleTime(count_newcycle(icyc-1)))
+               if(dt == 0.0d0) dt=6.0d0* hour2sec
+
+       endif
                uTrans(ient) = dx/dt
                vTrans(ient) = dy/dt
-          ENDDO
+          ENDDO ! ient
 
         ELSE  ! icyc = num_cycles
         isotachs_per_cycle(icyc) =
      &            num_entry - count_newcycle(icyc) + 1
             
            DO ient = count_newcycle(icyc), num_entry
-            clatOld =  ilat(count_newcycle(icyc)-1) * oneTenth
-            clatNew =  ilat(count_newcycle(icyc)) * oneTenth
-            clonOld = -ilon(count_newcycle(icyc)-1) * oneTenth
-            clonNew = -ilon(count_newcycle(icyc)) * oneTenth
+        dx = SIGN( (Rearth*(2.0d0*
+     & ASIN(sqrt(cos(rLAT(count_newcycle(icyc))*DEG2RAD)
+     & * cos(rLAT(count_newcycle(icyc-1))*DEG2RAD)
+     & * sin((rLON(count_newcycle(icyc))*DEG2RAD
+     & - rLON(count_newcycle(icyc-1))*DEG2RAD)/2.0d0)**2.0d0))))
+     & ,(rLon(count_newcycle(icyc))-rLon(count_newcycle(icyc-1)))  )  ! get correct sign
 
-            time1 =  iFcstInc(count_newcycle(icyc)-1) * hour2sec
-            time2 =  iFcstInc(count_newcycle(icyc)) * hour2sec
+       dy = SIGN( (Rearth*(2.0d0*
+     & ASIN(sqrt(sin((rLAT(count_newcycle(icyc))*DEG2RAD
+     & -rLAT(count_newcycle(icyc-1))*DEG2RAD)/2.0d0)**2.0d0))) )
+     & ,(rLat(count_newcycle(icyc))-rLat(count_newcycle(icyc-1)))  )  ! get correct sign
 
-               dx = deg2rad * Rearth * (clonNew - clonOld)
-     &            * COS(deg2rad*half * (clatOld + clatNew))
-               dy = deg2rad * Rearth * (clatNew - clatOld)
-               dt = (time2 - time1)
+       dt = (CycleTime(count_newcycle(icyc)) -
+     &                             CycleTime(count_newcycle(icyc-1)))
                if(dt == 0.0d0) dt=6.0d0* hour2sec
+
                uTrans(ient) = dx/dt
                vTrans(ient) = dy/dt
+
             ENDDO ! ient
           ENDIF  ! icyc = num_cycles
           ENDDO ! numcycles
@@ -243,12 +289,6 @@ c           write(*,*) icyc, ient
          !----------------------------------------------
             
          DO ient=1,num_entry
-      !
-      !  need to get some logic incase Vr is  zero
-      !
-         if (ipn(ient) == 0 )then
-             ipn(ient)=ipn(ient-1)
-          endif
 
             adv    = advr(ient)
             iyear1 = iyear(ient)
@@ -257,8 +297,8 @@ c           write(*,*) icyc, ient
             ihr1   = ihr(ient)
             type1  = type(ient)
             iFcstInc1 = iFcstInc(ient)
-            ilat1  = ilat(ient)
-            ilon1  = ilon(ient)
+            rlat1  = rlat(ient)
+            rlon1  = rlon(ient)
             ispd1  = ispd(ient)
             icpress1 = icpress(ient)
             ivr1   = ivr(ient)
@@ -268,19 +308,6 @@ c           write(*,*) icyc, ient
             speed1 = speed(ient)
             uTrans1 =uTrans(ient)
             vTrans1 =vTrans(ient)
-! 
-!         The logic for the code is set for W and N so if E or S
-!         multiply lats and lons by -1
-!
-            IF(ew.EQ.E)THEN
-               ilon1=(-1)*ilon1 
-               ilon2=(-1)*ilon2
-            ENDIF
-            IF(ns.EQ.S)THEN
-               ilat1=(-1)*ilat1
-               ilat2=(-1)*ilat2
-            ENDIF
- 
            !--------------------------------------------------------------
            ! transform variables from integers
            ! to real numbers for hurricane vortex calcualtions.
@@ -288,8 +315,8 @@ c           write(*,*) icyc, ient
           Vmax =  one * ( ispd1  )
           Pn   =  one * ( ipn1   )
           Pc   =  one * ( icpress1  )
-          cLat =  ilat1 * oneTenth 
-          cLon = -ilon1 * oneTenth 
+          cLat = rlat1 
+          cLon = rlon1  
 
       !---------------------------------------------
       !  need to get some logic incase Vr is  zero
@@ -356,12 +383,12 @@ C         GO TO 3333
                       quadflag(ient,2)=1
                       quadflag(ient,3)=1
                       quadflag(ient,4)=1
-                      ir1(1) = (ir1(4))
 C                     write(*,*) "NO NON ZERO QUAD RADII"
 C                     write(*,*) "USE RMW from ATCF"
-                       do i=1,4
+                       Vr=Vmax 
+                      do i=1,4
                         ir1(i) = atcfRMW(ient)
-                       enddo
+                      enddo
               endif
           
           elseif (ir1(2) .eq. 0 ) then       !rad1 != 0,rad2 = 0
@@ -418,9 +445,9 @@ C3333    continue
             DO i=1,4
                r(i) = one * ir1(i)
             END DO
-            DO i=1,4
-               rmaxw1(i) = atcfRMW(ient)
-            END DO
+c            DO i=1,4
+c               rmaxw1(i) = atcfRMW(ient)
+c            END DO
                 HollB1=one
          !-------------------------------------------------------
          ! Create a new asymmetric hurricane vortex.
@@ -491,7 +518,7 @@ C       !-------------------------------------
         !------------------------------------
         ! SET METHOD HERE!
         !------------------------------------
-           method = 1
+           method = 2
 
           
          ient = 0
@@ -501,12 +528,12 @@ C       !-------------------------------------
           IF ( isotachs_per_cycle(icyc) .gt. 1) then
             DO i = 1,4  ! quadrants
                DO itpc=1,isotachs_per_cycle(icyc)-1 ! isotachs
-                    quadflag((ient-(itpc-1)),i) = 0
+                    quadflag((ient-(itpc-1)),i) = 0 ! set all other isotach flags to zero
                ENDDO
             ENDDO
-          ELSE
+          ELSE ! only one isotach per cycle it is the 34 kt
             DO i = 1,4  ! quadrants
-               quadflag((ient),i) = 1
+               quadflag((ient),i) = 1 
             enddo
           ENDIF  ! isotachs per cycle > 1
 
@@ -540,15 +567,36 @@ C       !-------------------------------------
             DO i = 1,4  ! quadrants
                quadflag((ient),i) = 1
             enddo          
+
+! 34 kt isotach is zero in all quadrants, AND there is no RMW here to fill in 
+        DO i = 1,4  ! quadrants
+         IF (quadflag((ient),i) == 1 .AND. rmaxw(ient,i) == 0.0) then 
+             DO itpc=1,isotachs_per_cycle(icyc-1)
+                if ( quadflag((ient-itpc),i) == 1 ) then 
+                     rmaxw(ient,i) = rmaxw(ient-itpc,i)
+                endif
+             ENDDO
+          ENDIF
+       enddo
+
           ENDIF  ! isotachs per cycle > 1
        ELSE ! method type if statement 
        write(*,*)"not a recognized method for setting rmax in quadrants"
        ENDIF ! method type if statement
        ENDDO    ! num_cycles        
 C!-------------------------------------------------------------------
-          !------------------------
-          ! WRITE OUTPUT
-          !------------------------
+C
+
+         !-----------------------------------
+         ! Now write logic to fill in Forecast entries with no radii
+         ! we want to persist the last flagged values for RMW
+         !-----------------------------------
+   
+          
+
+         !------------------------
+         ! WRITE OUTPUT
+         !------------------------
      
         DO ient=1,num_entry
          !-----------------------------------
@@ -561,7 +609,12 @@ C!-------------------------------------------------------------------
 26      FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
      &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
      &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
-     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4)
+     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4,2(2x,f10.4))
+
+C28      FORMAT(1x, i3, 2x, i4, 3i2, 2x, a4, 2(2x,i3),a1, 2x, i3,a1, 2x,
+C     &         i3,2x, i4, 2x, i3, 2x, 4(i4,1x), i4, 2x, i3,
+C     &          2x, 2(i3,1x), a10, 2x, i4, 2x, i4,
+C     &         2x, 4(i1,1x),2x, 4(f6.1,1x), 2x, f8.4,2(2x,f10.4))
 
             WRITE(222,26) advr(ient), iyear(ient),imth(ient),iday(ient),
      &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
@@ -569,7 +622,17 @@ C!-------------------------------------------------------------------
      &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
      &      dir(ient),speed(ient), name(ient), 
      &      cycle_num(ient),isotachs_per_cycle(cycle_num(ient)),
-     &     (quadflag(ient,i),i=1,4),(rmaxw(ient,i),i=1,4),HollB(ient)
+     &     (quadflag(ient,i),i=1,4),(rmaxw(ient,i),i=1,4),HollB(ient),
+     &      uTrans(ient),vTrans(ient)
+
+C            WRITE(223,28) advr(ient), iyear(ient),imth(ient),iday(ient),
+C     &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
+C     &      ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
+C     &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
+C     &      dir(ient),speed(ient), name(ient), 
+C     &      cycle_num(ient),isotachs_per_cycle(cycle_num(ient)),
+C     &     (quadflag(ient,i),i=1,4),(rmaxw(ient,i),i=1,4),HollB(ient),
+C     &      uTrans(ient),vTrans(ient)
 
          ENDDO
 

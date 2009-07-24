@@ -3137,7 +3137,7 @@ C     cf added if missing values set winds to zero and pressure to P0
 26      FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
      &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
      &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
-     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4)
+     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4,2(2x,f10.4))
 
 Cold 26      FORMAT(2x, i3, 2x, i4, 3i2, 2x, a4, 2(2x,i3),a1, 2x, i3,a1, 2x,
 C     &         i3,2x, i4, 2x, i3, 2x, 4(i4,2x), i4, 2x, i3,
@@ -3146,7 +3146,7 @@ C     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4)
 
 
 
-          open(224,file='fort.224',status='unknown')
+C          open(224,file='fort.224',status='unknown')
 
             !------------------------
             ! READ IN ALL DATA FOR EVERY CYCLE
@@ -3154,12 +3154,14 @@ C     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4)
             ient=1
 
         READ(22,26) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
-     &      ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
-     &      ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
-     &      (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
-     &      dir1(ient),speed1(ient), name1(ient),
-     &      cycle_num1(ient),isotachs_per_cycle1(ient),
-     &     (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
+     &    ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
+     &    ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
+     &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
+     &    dir1(ient),speed1(ient), name1(ient),
+     &    cycle_num1(ient),isotachs_per_cycle1(ient),
+     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
+     &    uTrans1(ient),vTrans1(ient)
+
 
                   icyc=1
 
@@ -3183,7 +3185,8 @@ C     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4)
                   name(icyc)  =  name1(ient)
                   cycle_num(icyc) = cycle_num1(ient)
                   HollB(icyc) = HollB1(ient)
-
+                  uTrans(icyc) = uTrans1(ient)
+                  vTrans(icyc) = vTrans1(ient)
               CycleTime(icyc) =  iFcstInc1(ient) * hour2sec + offset
             !------------------------
             ! MODIFY THE INPUTS FOR ALL CYCLES
@@ -3201,6 +3204,9 @@ C     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4)
             ENDIF
                lon(icyc)=ilon(icyc) * oneTenth
                lat(icyc)=ilat(icyc) * oneTenth
+
+                  uTrans(icyc) = uTrans(icyc)*kt2ms
+                  vTrans(icyc) = vTrans(icyc)*kt2ms
             !------------------------`
             ! PICK OUT THE CYCLE DATA THAT THE USER WANTS TO USE
             !------------------------
@@ -3215,12 +3221,13 @@ C     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4)
       DO ient=2,num_entry  ! LOOP through entris (lines) in input file
 
         READ(22,26) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
-     &      ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
-     &      ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
-     &      (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
-     &      dir1(ient),speed1(ient), name1(ient),
-     &      cycle_num1(ient),isotachs_per_cycle1(ient),
-     &     (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
+     &    ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
+     &    ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
+     &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
+     &    dir1(ient),speed1(ient), name1(ient),
+     &    cycle_num1(ient),isotachs_per_cycle1(ient),
+     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
+     &    uTrans1(ient),vTrans1(ient)
 
                 if( cycle_num1(ient) == cycle_num1(ient-1)) then
                  else
@@ -3252,6 +3259,8 @@ C     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4)
                   name(icyc)  =  name1(ient)
                   cycle_num(icyc) = cycle_num1(ient)
                   HollB(icyc) = HollB1(ient)
+                  uTrans(icyc) = uTrans1(ient)
+                  vTrans(icyc) = vTrans1(ient)
 
                CycleTime(icyc) =  iFcstInc(icyc) * hour2sec + offset
             !------------------------
@@ -3270,6 +3279,8 @@ C     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4)
             ENDIF
                lon(icyc) = (-1.0d0) * ilon(icyc) * oneTenth
                lat(icyc) = ilat(icyc) * oneTenth
+                  uTrans(icyc) = uTrans(icyc)*kt2ms
+                  vTrans(icyc) = vTrans(icyc)*kt2ms
 
                 endif
             !------------------------`
@@ -3295,66 +3306,57 @@ C     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4)
          ! Calculate translation velocity
          !-------------------------------
 
-       DO icyc = 1,num_cycle
-         IF (icyc .lt. num_cycle ) then
+C       DO icyc = 1,num_cycle
 C     use the formula haversine formula for distances along a sphere.
 C         dist(i)=Rearth*(2*ASIN(sqrt(sin(DY(I)/2)**2+
 C     &  cos(lat*DEG2RAD)*cos(YCOOR(i)*DEG2RAD)*sin(DX(I)/2)**2) ) )
 
-C           if (icyc==1 ) then
-      !----------------------------------------------------------
-        dx = SIGN( (Rearth*(2.0d0*ASIN(sqrt(cos(LAT(icyc+1)*DEG2RAD)
-     & * cos(LAT(icyc)*DEG2RAD)
-     & * sin((LON(icyc+1)*DEG2RAD-LON(icyc)*DEG2RAD)/2.0d0)**2.0d0))))
-     & ,(Lon(icyc+1)-Lon(icyc))  )  ! get correct sign
-
-       dy = SIGN( (Rearth*(2.0d0*ASIN(sqrt(
-     &  sin( (LAT(icyc+1)*DEG2RAD-LAT(icyc)*DEG2RAD)/2.0d0)**2.0d0))) )
-     & ,(Lat(icyc+1)-Lat(icyc))  )  ! get correct sign
-
-               dt = (CycleTime(icyc+1) - CycleTime(icyc))
-               if(dt == 0.0d0) dt=6.0d0* hour2sec
+C           IF (icyc==1 ) THEN
 C      !----------------------------------------------------------
-C C         else
 C        dx = SIGN( (Rearth*(2.0d0*ASIN(sqrt(cos(LAT(icyc+1)*DEG2RAD)
-C     & * cos(LAT(icyc-1)*DEG2RAD)
-C     & * sin((LON(icyc+1)*DEG2RAD-LON(icyc-1)*DEG2RAD)/2.0d0)**2.0d0))))
-C     & ,(Lon(icyc+1)-Lon(icyc-1))  )  ! get correct sign
+C     & * cos(LAT(icyc)*DEG2RAD)
+C     & * sin((LON(icyc+1)*DEG2RAD-LON(icyc)*DEG2RAD)/2.0d0)**2.0d0))))
+C     & ,(Lon(icyc+1)-Lon(icyc))  )  ! get correct sign
 C
 C       dy = SIGN( (Rearth*(2.0d0*ASIN(sqrt(
-C     &  sin( (LAT(icyc+1)*DEG2RAD-LAT(icyc-1)*DEG2RAD)/2.0d0)**2.0d0))))
-C     & ,(Lat(icyc+1)-Lat(icyc-1))  )  ! get correct sign
+C     &  sin( (LAT(icyc+1)*DEG2RAD-LAT(icyc)*DEG2RAD)/2.0d0)**2.0d0))) )
+C     & ,(Lat(icyc+1)-Lat(icyc))  )  ! get correct sign
 C
-C               dt = (CycleTime(icyc+1) - CycleTime(icyc-1))
-C               if(dt == 0.0d0) dt=12.0d0* hour2sec
+C               dt = (CycleTime(icyc+1) - CycleTime(icyc))
+C               if(dt == 0.0d0) dt=6.0d0* hour2sec
 C      !----------------------------------------------------------
-C          endif
-      !----------------------------------------------------------
-
-         ELSE  ! icyc = num_cycle
-
-        dx = SIGN( (Rearth*(2.0d0*ASIN(sqrt(cos(LAT(icyc)*DEG2RAD)
-     & * cos(LAT(icyc-1)*DEG2RAD)
-     & * sin((LON(icyc)*DEG2RAD-LON(icyc-1)*DEG2RAD)/2.0d0)**2.0d0))))
-     & ,(Lon(icyc)-Lon(icyc-1))  )  ! get correct sign
-
-       dy = SIGN( (Rearth*(2.0d0*ASIN(sqrt(
-     &  sin( (LAT(icyc)*DEG2RAD-LAT(icyc-1)*DEG2RAD)/2.0d0)**2.0d0))))
-     & ,(Lat(icyc)-Lat(icyc-1))  )  ! get correct sign
-
-               dt = (CycleTime(icyc) - CycleTime(icyc-1))
-               if(dt == 0.0d0) dt=6.0d0* hour2sec
-        ENDIF
-
-               uTrans(icyc) = dx/dt
-               vTrans(icyc) = dy/dt
-
-      ENDDO ! num_cycle
+C
+C         ELSE  ! icyc = 1
+C
+C        dx = SIGN( (Rearth*(2.0d0*ASIN(sqrt(cos(LAT(icyc)*DEG2RAD)
+C     & * cos(LAT(icyc-1)*DEG2RAD)
+C     & * sin((LON(icyc)*DEG2RAD-LON(icyc-1)*DEG2RAD)/2.0d0)**2.0d0))))
+C     & ,(Lon(icyc)-Lon(icyc-1))  )  ! get correct sign
+C
+C       dy = SIGN( (Rearth*(2.0d0*ASIN(sqrt(
+C     &  sin( (LAT(icyc)*DEG2RAD-LAT(icyc-1)*DEG2RAD)/2.0d0)**2.0d0))))
+C     & ,(Lat(icyc)-Lat(icyc-1))  )  ! get correct sign
+C
+C               dt = (CycleTime(icyc) - CycleTime(icyc-1))
+C               if(dt == 0.0d0) dt=6.0d0* hour2sec
+C      !----------------------------------------------------------
+C          ENDIF
+C      !----------------------------------------------------------
+C
+C               uTrans(icyc) = dx/dt
+CC               vTrans(icyc) = dy/dt
+C
+C      ENDDO ! num_cycle
 
       icyc=1
          END IF   ! (firstCall .EQ. 0)
-21     format(i4,7f13.2)
 
+
+        !--------------------------------------
+        !
+        ! This part of code executes each time step 
+        !
+        !--------------------------------------
 
 C     If time exceeds the next hindcast/nowcast/forecast time, increment the
 C     array counter.
@@ -3362,7 +3364,7 @@ C     array counter.
          icyc=icyc+1
       ENDIF
 
-        dt=time-told
+C        dt=time-told
          !-------------------------------------
          ! Interpolate NHC forecast interval in
          ! time to obtain values at model time.
@@ -3426,22 +3428,22 @@ C     array counter.
          !---------------------------
          ! Print the hurricane vortex
          !---------------------------
-28     FORMAT(2x, i3, 2x, i4, 3i2.2, 2x, a4, 2x,i3,
-     &            2x,f8.2,a1,2x,f8.2,a1, 2x,
-     &         f8.2,2x, f8.2, 2x, i3, 2x, f8.2, 2x, i3,
-     &         2x,f10.2,2x ,i3,2x, a10, 2x,f10.2,2x, i3, 2x, i1,
-     &         2x, 4(i1,1x),2x, 4(f6.1,2x), 2x, f8.4)
+C28     FORMAT(2x, i3, 2x, i4, 3i2.2, 2x, a4, 2x,i3,
+C     &            2x,f8.2,a1,2x,f8.2,a1, 2x,
+C     &         f8.2,2x, f8.2, 2x, i3, 2x, f8.2, 2x, i3,
+C     &         2x,f10.2,2x ,i3,2x, a10, 2x,f10.2,2x, i3, 2x, i1,
+C     &         2x, 4(i1,1x),2x, 4(f6.1,2x), 2x, f8.4)
+C
+C       WRITE(224,28) advr(icyc-1), iyear(icyc-1),imth(icyc-1),
+C     &      iday(icyc-1),
+C     &      ihr(icyc-1), type(icyc-1),iFcstInc(icyc-1), Clat,ns,
+C     &      Clon,ew, Vmax, Pc, ivr(icyc-1),
+C     &       Pn, atcfRMW(icyc-1),
+C     &      time,speed(icyc-1), name(icyc-1),
+C     & CycleTime(icyc-1),cycle_num(icyc-1),isotachs_per_cycle1(icyc-1),
+C     &     (quadflag(icyc-1,i),i=1,4),(crmaxw(i),i=1,4),cHollB
 
-       WRITE(224,28) advr(icyc-1), iyear(icyc-1),imth(icyc-1),
-     &      iday(icyc-1),
-     &      ihr(icyc-1), type(icyc-1),iFcstInc(icyc-1), Clat,ns,
-     &      Clon,ew, Vmax, Pc, ivr(icyc-1),
-     &       Pn, atcfRMW(icyc-1),
-     &      time,speed(icyc-1), name(icyc-1),
-     & CycleTime(icyc-1),cycle_num(icyc-1),isotachs_per_cycle1(icyc-1),
-     &     (quadflag(icyc-1,i),i=1,4),(crmaxw(i),i=1,4),cHollB
-
-          CALL printVortex()
+C          CALL printVortex()
 
          !-------------------------------------------------------------
          ! Calculate wind and pressure fields at model nodal points.
