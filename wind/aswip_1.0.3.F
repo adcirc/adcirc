@@ -517,7 +517,7 @@ C       !-------------------------------------
         !------------------------------------
         ! SET METHOD HERE!
         !------------------------------------
-           method = 2
+           method = 1
 
           
          ient = 0
@@ -534,6 +534,16 @@ C       !-------------------------------------
             DO i = 1,4  ! quadrants
                quadflag((ient),i) = 1 
             enddo
+
+! 34 kt isotach is zero in all quadrants, AND there is no RMW here to fill in 
+        DO i = 1,4  ! quadrants
+         IF (quadflag((ient),i) == 1 .AND. rmaxw(ient,i) == 0.0) then 
+             DO itpc=1,isotachs_per_cycle(icyc-1)
+                if ( quadflag((ient-itpc),i) == 1 ) then 
+                     rmaxw(ient,i) = rmaxw(ient-itpc,i)
+                endif
+             ENDDO
+          ENDIF
           ENDIF  ! isotachs per cycle > 1
 
        ELSEIF (method == 2) then
@@ -576,7 +586,7 @@ C       !-------------------------------------
                 endif
              ENDDO
           ENDIF
-       enddo
+       ENDDO
 
           ENDIF  ! isotachs per cycle > 1
        ELSE ! method type if statement 
@@ -610,10 +620,10 @@ C
      &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
      &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4,2(2x,f10.4))
 
-C28      FORMAT(1x, i3, 2x, i4, 3i2, 2x, a4, 2(2x,i3),a1, 2x, i3,a1, 2x,
-C     &         i3,2x, i4, 2x, i3, 2x, 4(i4,1x), i4, 2x, i3,
-C     &          2x, 2(i3,1x), a10, 2x, i4, 2x, i4,
-C     &         2x, 4(i1,1x),2x, 4(f6.1,1x), 2x, f8.4,2(2x,f10.4))
+28      FORMAT(1x, i3, 2x, i4, 3i2, 2x, a4, 2(2x,i3),a1, 2x, i3,a1, 2x,
+     &         i3,2x, i4, 2x, i3, 2x, 4(i4,1x), i4, 2x, i3,
+     &          2x, 2(i3,1x), a10, 2x, i4, 2x, i4,
+     &         2x, 4(i1,1x),2x, 4(f6.1,1x), 2x, f8.4,2(2x,f10.4))
 
             WRITE(222,26) advr(ient), iyear(ient),imth(ient),iday(ient),
      &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
@@ -624,14 +634,14 @@ C     &         2x, 4(i1,1x),2x, 4(f6.1,1x), 2x, f8.4,2(2x,f10.4))
      &     (quadflag(ient,i),i=1,4),(rmaxw(ient,i),i=1,4),HollB(ient),
      &      uTrans(ient),vTrans(ient)
 
-C            WRITE(223,28) advr(ient), iyear(ient),imth(ient),iday(ient),
-C     &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
-C     &      ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
-C     &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
-C     &      dir(ient),speed(ient), name(ient), 
-C     &      cycle_num(ient),isotachs_per_cycle(cycle_num(ient)),
-C     &     (quadflag(ient,i),i=1,4),(rmaxw(ient,i),i=1,4),HollB(ient),
-C     &      uTrans(ient),vTrans(ient)
+            WRITE(223,28) advr(ient), iyear(ient),imth(ient),iday(ient),
+     &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
+     &      ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
+     &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
+     &      dir(ient),speed(ient), name(ient), 
+     &      cycle_num(ient),isotachs_per_cycle(cycle_num(ient)),
+     &     (quadflag(ient,i),i=1,4),(rmaxw(ient,i),i=1,4),HollB(ient),
+     &      uTrans(ient),vTrans(ient)
 
          ENDDO
 
