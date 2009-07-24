@@ -544,8 +544,9 @@ C       !-------------------------------------
                 endif
              ENDDO
           ENDIF
-          ENDIF  ! isotachs per cycle > 1
+        ENDDO
 
+          ENDIF  ! isotachs per cycle > 1
        ELSEIF (method == 2) then
              ient = ient+isotachs_per_cycle(icyc)
             !-----------------------
