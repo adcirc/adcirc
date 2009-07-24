@@ -245,8 +245,8 @@ c           write(*,*) icyc, ient
                if(dt == 0.0d0) dt=6.0d0* hour2sec
 
        endif
-               uTrans(ient) = dx/dt
-               vTrans(ient) = dy/dt
+               uTrans(ient) = dx/dt * ms2kt ! now in kts
+               vTrans(ient) = dy/dt * ms2kt ! now in kts
           ENDDO ! ient
 
         ELSE  ! icyc = num_cycles
@@ -270,8 +270,8 @@ c           write(*,*) icyc, ient
      &                             CycleTime(count_newcycle(icyc-1)))
                if(dt == 0.0d0) dt=6.0d0* hour2sec
 
-               uTrans(ient) = dx/dt
-               vTrans(ient) = dy/dt
+               uTrans(ient) = dx/dt  * ms2kt ! now in kts
+               vTrans(ient) = dy/dt  * ms2kt ! now in kts
 
             ENDDO ! ient
           ENDIF  ! icyc = num_cycles
@@ -458,9 +458,8 @@ c            END DO
          !-------------------------------------------------------
        CALL newVortex_rmax_b_OUT(
      &   name(ient/2),adv,iyear1,imth1,iday1,ihr1,iFcstInc1,
-     &   Pn,Pc,cLat,cLon,((Vmax-ms2kt*
-     &   SQRT(uTrans1*uTrans1+vTrans1*vTrans1))/windReduction),
-     &   (Vr/windReduction),r,rmaxw1,HollB1)
+     &   Pn,Pc,cLat,cLon,((Vmax-SQRT(uTrans1*uTrans1+vTrans1*vTrans1))
+     &   /windReduction),(Vr/windReduction),r,rmaxw1,HollB1)
          !---------------------------
          ! Print the hurricane vortex
          !---------------------------

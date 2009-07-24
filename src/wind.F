@@ -3205,8 +3205,8 @@ C          open(224,file='fort.224',status='unknown')
                lon(icyc)=ilon(icyc) * oneTenth
                lat(icyc)=ilat(icyc) * oneTenth
 
-                  uTrans(icyc) = uTrans(icyc)*kt2ms
-                  vTrans(icyc) = vTrans(icyc)*kt2ms
+                  uTrans(icyc) = uTrans(icyc)
+                  vTrans(icyc) = vTrans(icyc)
             !------------------------`
             ! PICK OUT THE CYCLE DATA THAT THE USER WANTS TO USE
             !------------------------
@@ -3279,8 +3279,8 @@ C          open(224,file='fort.224',status='unknown')
             ENDIF
                lon(icyc) = (-1.0d0) * ilon(icyc) * oneTenth
                lat(icyc) = ilat(icyc) * oneTenth
-                  uTrans(icyc) = uTrans(icyc)*kt2ms
-                  vTrans(icyc) = vTrans(icyc)*kt2ms
+                  uTrans(icyc) = uTrans(icyc)
+                  vTrans(icyc) = vTrans(icyc)
 
                 endif
             !------------------------`
@@ -3420,10 +3420,9 @@ C        dt=time-told
      &   name(icyc-1),advr(icyc-1),iyear(icyc-1),imth(icyc-1),
      &   iday(icyc-1),ihr(icyc-1),iFcstInc(icyc-1),
      &   Pn,Pc,cLat,cLon,
-     & (((Vmax)-ms2kt*
-     &  SQRT(uTrans(icyc-1)*uTrans(icyc-1)+
-     &       vTrans(icyc-1)*vTrans(icyc-1)))/
-     &       windReduction),
+     & (((Vmax)- SQRT(uTrans(icyc-1)*uTrans(icyc-1)+
+     &                vTrans(icyc-1)*vTrans(icyc-1)))/
+     &                windReduction),
      &   crmaxw,cHollB)
          !---------------------------
          ! Print the hurricane vortex
@@ -3454,8 +3453,9 @@ C          CALL printVortex()
          ! adding the translational velocity in subroutine uvp.
          !-------------------------------------------------------------
          DO i=1,np
-            CALL uvp(ycoor(i),xcoor(i), uTrans(icyc),vTrans(icyc),
-     &               wvnx(i),wvny(i), press(i)) !,
+            CALL uvp(ycoor(i),xcoor(i), 
+     &           uTrans(icyc)*kt2ms,vTrans(icyc)*kt2ms,
+     &           wvnx(i),wvny(i), press(i)) !
             !-------------------------------------------
             ! Convert atmospheric pressure (Pascals) to
             ! atmospheric pressure-induced water surface

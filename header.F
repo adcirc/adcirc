@@ -2,6 +2,7 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4625   - 07/22/09 - rjw - fixed bugs in NWS19 code in wind.F and aswip.F
 C  v48.4624   - 07/22/09 - rjw - fixed bugs in NWS19 code in wind.F and aswip.F
 C  v48.4623   - 07/22/09 - rjw - fixed confusing lines and file names in 
 C               ASymmetric WInd Preprocessing (ASWIP) program 
