@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4627   - 07/27/09 - jgf - Created METONLY logical variable: if only
+C               met output is requested, ADCIRC will skip solution of the
+C               GWCE and the momentum equations. 
 C  v48.4626   - 07/27/09 - jgf - fixed bug in presizes.F if fort.15 file is
 C               not found. 
 C  v48.4625   - 07/22/09 - rjw - fixed bugs in NWS19 code in wind.F and aswip.F

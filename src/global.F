@@ -301,6 +301,12 @@ C     jgf45.07 The definitions of many of these are in timestep.F
       LOGICAL :: CME_AreaInt_Corr    = .FALSE.
       LOGICAL :: CTIP                = .FALSE.
       LOGICAL :: CHARMV              = .FALSE.
+  
+C     jgf48.4627 When only meteorological output is requested, skip past
+C     the GWCE and Momentum equations, so that ADCIRC runs faster and
+C     only calculates the requested quantities.
+      LOGICAL :: METONLY             = .FALSE.
+
 C...
 C...EXPLICITLY DECLARE ADDITIONAL VARIABLES
 C...

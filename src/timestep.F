@@ -754,6 +754,12 @@ C...  NRS=2 was added.  sb46.28sb03 09/xx/2006
          END DO
       ENDIF
 
+C     jgf48.4627 Skip past GWCE and momentum calculations if only
+C     meteorological output was requested.
+      IF (METONLY) THEN 
+         goto 9999
+      ENDIF
+
 C...  
 C...  Tidal Potential Forcing
 C...  Note, the Earth tide potential reduction factor, ETRF(J) has been
@@ -2170,6 +2176,10 @@ C...
             rsnmax(i) = sqrt(rsnx2(i)*rsnx2(i)+rsny2(i)*rsny2(i))
          endif
       enddo
+C      
+C     jgf48.4627 Jump to here if METONLY is .TRUE., i.e., if only 
+C     meteorological output is requested.
+9999  CONTINUE  
 C...
 C...  WRITE OUTPUT
 C...

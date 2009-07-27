@@ -32,6 +32,11 @@ C
       REAL(SZ) HTOT    
       REAL(SZ) HollandTime, AsymmetricTime
 
+      LOGICAL metOutputOn
+      LOGICAL nonMetOutputOff
+ 
+      metOutputOn = .FALSE.
+      nonMetOutputOff = .FALSE.
 C
 C...  SET AT REST INITIAL CONDITION OVER WHOLE DOMAIN
 C...  IF BOTTOM IS ABOVE THE GEIOD -> DRY NODE
@@ -147,6 +152,21 @@ C....TIME LEVEL 1 AND LEVEL 2 WIND FIELDS
       ENDDO
 
       IF(NWS.NE.0) THEN
+
+C        jgf48.4627 If user only requests meteorological output, then 
+C        set a flag that turns off the calculation of the GWCE and
+C        momentum equations
+         IF ( (NOUTE.EQ.0) .AND. (NOUTV.EQ.0) .AND. (NOUTC.EQ.0) .AND.
+     &        (NOUTGE.EQ.0) .AND. (NOUTGV.EQ.0) .AND. (NOUTGC.EQ.0 ) )
+     &       THEN
+            nonMetOutputOff = .TRUE.
+         ENDIF      
+         IF ( (NOUTM.NE.0) .OR. (NOUTGW.NE.0) ) THEN
+            metOutputOn = .TRUE.
+         ENDIF
+         IF ( metOutputOn .AND. nonMetOutputOff ) THEN
+            METONLY = .TRUE.
+         ENDIF         
 
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
          WRITE(16,1112)
