@@ -398,7 +398,7 @@ C
         IF(FOUND) THEN
            GOTO 132
         ELSE
-           print *, GRID, " not found"
+           print *, RUNINFO, " not found"
            STOP   
         ENDIF
       ELSE
