@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4628   - 07/27/09 - jgf - Extended METONLY capability to cases where
+C               3D or harmonic output is requested, as well as the case where
+C               execution begins as a hotstart.
 C  v48.4627   - 07/27/09 - jgf - Created METONLY logical variable: if only
 C               met output is requested, ADCIRC will skip solution of the
 C               GWCE and the momentum equations. 

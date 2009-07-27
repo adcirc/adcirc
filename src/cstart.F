@@ -13,6 +13,7 @@ C
       SUBROUTINE COLDSTART()
 C
       USE GLOBAL
+      USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE SIZES
       USE HARM
       USE WIND
@@ -32,8 +33,10 @@ C
       REAL(SZ) HTOT    
       REAL(SZ) HollandTime, AsymmetricTime
 
-      LOGICAL metOutputOn
-      LOGICAL nonMetOutputOff
+C     jgf48.4628 Add capability to turn off solution if only met output
+C     was requested. 
+      LOGICAL metOutputOn     ! .true. if met output was requested 
+      LOGICAL nonMetOutputOff ! .true. no other output was requested
  
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
@@ -152,12 +155,15 @@ C....TIME LEVEL 1 AND LEVEL 2 WIND FIELDS
       ENDDO
 
       IF(NWS.NE.0) THEN
-
 C        jgf48.4627 If user only requests meteorological output, then 
 C        set a flag that turns off the calculation of the GWCE and
 C        momentum equations
-         IF ( (NOUTE.EQ.0) .AND. (NOUTV.EQ.0) .AND. (NOUTC.EQ.0) .AND.
-     &        (NOUTGE.EQ.0) .AND. (NOUTGV.EQ.0) .AND. (NOUTGC.EQ.0 ) )
+         IF ((NOUTE.EQ.0) .AND. (NOUTV.EQ.0) .AND. (NOUTC.EQ.0) .AND.
+     &       (NOUTGE.EQ.0) .AND. (NOUTGV.EQ.0) .AND. (NOUTGC.EQ.0 ).AND.
+     &       (I3DSD.EQ.0) .AND. (I3DSV.EQ.0) .AND. (I3DST.EQ.0) .AND.
+     &       (I3DGD.EQ.0) .AND. (I3DGV.EQ.0) .AND. (I3DGT.EQ.0) .AND.
+     &       (NHASE.EQ.0) .AND. (NHASV.EQ.0) .AND. 
+     &       (NHAGE.EQ.0) .AND. (NHAGV.EQ.0) )
      &       THEN
             nonMetOutputOff = .TRUE.
          ENDIF      
@@ -165,7 +171,17 @@ C        momentum equations
             metOutputOn = .TRUE.
          ENDIF
          IF ( metOutputOn .AND. nonMetOutputOff ) THEN
-            METONLY = .TRUE.
+            IF ((NSCREEN.NE.0).AND.MYPROC.EQ.0) THEN
+               WRITE(ScreenUnit,*)
+     &      'INFO: Only meterological output was requested. ADCIRC'
+               WRITE(ScreenUnit,*)
+     &      'will not solve the GWCE or momentum equations.'
+             ENDIF
+             WRITE(16,*)
+     &      'INFO: Only meterological output was requested. ADCIRC'
+             WRITE(16,*)
+     &      'will not solve the GWCE or momentum equations.'
+            METONLY = .TRUE. ! set flag 
          ENDIF         
 
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)

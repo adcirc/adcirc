@@ -34,6 +34,7 @@ C**************************************************************************
 C     
       USE GLOBAL
       USE GLOBAL_IO
+      USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE SIZES
       USE HARM
       USE WIND
@@ -92,6 +93,13 @@ C     jgf46.14 Check for file existence before attempting to open.
       INTEGER NP_A_IN, NE_A_IN  ! active number nodes, elements.
       INTEGER IHOTNC            ! variable to keep -67 and -68 in parallel
 
+C     jgf48.4628 Add capability to turn off solution if only met output
+C     was requested.
+      LOGICAL metOutputOn     ! .true. if met output was requested
+      LOGICAL nonMetOutputOff ! .true. no other output was requested
+
+      metOutputOn = .FALSE.
+      nonMetOutputOff = .FALSE.
 
 C
 C     ASSIGN value to NCMODE according to the number of processors for NETCDF - MCF
@@ -478,6 +486,36 @@ Cjgf46.02 comm.out for Katrina    RAMP1=TANH((2.D0*(ITHS-1)*DTDP/86400.D0)/DRAMP
 Cjgf46.02 comm.out for Katrina    RAMP2=TANH((2.D0*ITHS*DTDP/86400.D0)/DRAMP)
 Cjgf46.02 comm.out for Katrina  ENDIF
 
+C     jgf48.4627 If user only requests meteorological output, then 
+C     set a flag that turns off the calculation of the GWCE and
+C     momentum equations
+      IF (NWS.NE.0) THEN
+         IF ((NOUTE.EQ.0) .AND. (NOUTV.EQ.0) .AND. (NOUTC.EQ.0) .AND.
+     &       (NOUTGE.EQ.0) .AND. (NOUTGV.EQ.0) .AND. (NOUTGC.EQ.0 ).AND.
+     &       (I3DSD.EQ.0) .AND. (I3DSV.EQ.0) .AND. (I3DST.EQ.0) .AND.
+     &       (I3DGD.EQ.0) .AND. (I3DGV.EQ.0) .AND. (I3DGT.EQ.0) .AND.
+     &       (NHASE.EQ.0) .AND. (NHASV.EQ.0) .AND.
+     &       (NHAGE.EQ.0) .AND. (NHAGV.EQ.0) )
+     &       THEN
+            nonMetOutputOff = .TRUE.
+         ENDIF
+         IF ( (NOUTM.NE.0) .OR. (NOUTGW.NE.0) ) THEN
+            metOutputOn = .TRUE.
+         ENDIF
+         IF ( metOutputOn .AND. nonMetOutputOff ) THEN
+            IF ((NSCREEN.NE.0).AND.MYPROC.EQ.0) THEN
+               WRITE(ScreenUnit,*)
+     &      'INFO: Only meterological output was requested. ADCIRC'
+               WRITE(ScreenUnit,*)
+     &      'will not solve the GWCE or momentum equations.'
+             ENDIF
+             WRITE(16,*)
+     &      'INFO: Only meterological output was requested. ADCIRC'
+             WRITE(16,*)
+     &      'will not solve the GWCE or momentum equations.'
+             METONLY = .TRUE. ! set flag
+         ENDIF
+      ENDIF
 C     
 C.... SET POSITIONS IN BOUNDARY CONDITION, WIND AND OUTPUT FILES
 C     
