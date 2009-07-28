@@ -1788,7 +1788,7 @@ C
 C     Calculate and limit central pressure deficit; some track files
 C     (e.g., Charley 2004) may have a central pressure greater than the
 C     ambient pressure that this subroutine assumes
-      centralPressureDeficit = Ambient_pressure - cpress
+      centralPressureDeficit = Ambient_Pressure - cpress
       IF ( centralPressureDeficit .lt. 100.d0 ) THEN
          centralPressureDeficit = 100.d0
       ENDIF
@@ -3012,7 +3012,7 @@ C     cf added if missing values set winds to zero and pressure to P0
          INTEGER  :: np, ics
          INTEGER  :: ient,itpc
          INTEGER  :: i, nwi
-         INTEGER  :: num_entry,num_cycle
+         INTEGER  :: num_entry
          REAL(sz) :: time, time1, wtratio
          REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
          REAL( 8) :: slam(np),sfea(np)
@@ -3137,7 +3137,7 @@ C     cf added if missing values set winds to zero and pressure to P0
 26      FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
      &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
      &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
-     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4,2(2x,f10.4))
+     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4) !,2(2x,f10.4))
 
 Cold 26      FORMAT(2x, i3, 2x, i4, 3i2, 2x, a4, 2(2x,i3),a1, 2x, i3,a1, 2x,
 C     &         i3,2x, i4, 2x, i3, 2x, 4(i4,2x), i4, 2x, i3,
@@ -3159,8 +3159,8 @@ C          open(224,file='fort.224',status='unknown')
      &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
      &    dir1(ient),speed1(ient), name1(ient),
      &    cycle_num1(ient),isotachs_per_cycle1(ient),
-     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
-     &    uTrans1(ient),vTrans1(ient)
+     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
+
 
 
                   icyc=1
@@ -3180,13 +3180,15 @@ C          open(224,file='fort.224',status='unknown')
                   ivr(icyc)   =  ivr1(ient)
                   ipn(icyc)   =  ipn1(ient)
                   atcfRMW(icyc) = atcfRMW1(ient)
-                  dir(icyc)   =  dir1(ient)
-                  speed(icyc) =  speed1(ient)
+              !    dir(icyc)   =  dir1(ient)
+              !    speed(icyc) =  speed1(ient)
                   name(icyc)  =  name1(ient)
                   cycle_num(icyc) = cycle_num1(ient)
                   HollB(icyc) = HollB1(ient)
-                  uTrans(icyc) = uTrans1(ient)
-                  vTrans(icyc) = vTrans1(ient)
+        
+                  uTrans(icyc) = sin(dir1(ient)/rad2deg)*speed1(ient)
+                  vTrans(icyc) = cos(dir1(ient)/rad2deg)*speed1(ient)
+
               CycleTime(icyc) =  iFcstInc1(ient) * hour2sec + offset
             !------------------------
             ! MODIFY THE INPUTS FOR ALL CYCLES
@@ -3205,9 +3207,7 @@ C          open(224,file='fort.224',status='unknown')
                lon(icyc)=ilon(icyc) * oneTenth
                lat(icyc)=ilat(icyc) * oneTenth
 
-                  uTrans(icyc) = uTrans(icyc)
-                  vTrans(icyc) = vTrans(icyc)
-            !------------------------`
+            !------------------------
             ! PICK OUT THE CYCLE DATA THAT THE USER WANTS TO USE
             !------------------------
 
@@ -3226,8 +3226,8 @@ C          open(224,file='fort.224',status='unknown')
      &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
      &    dir1(ient),speed1(ient), name1(ient),
      &    cycle_num1(ient),isotachs_per_cycle1(ient),
-     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
-     &    uTrans1(ient),vTrans1(ient)
+     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
+
 
                 if( cycle_num1(ient) == cycle_num1(ient-1)) then
                  else
@@ -3254,13 +3254,15 @@ C          open(224,file='fort.224',status='unknown')
                   ivr(icyc)   =  ivr1(ient)
                   ipn(icyc)   =  ipn1(ient)
                   atcfRMW(icyc) = atcfRMW1(ient)
-                  dir(icyc)   =  dir1(ient)
-                  speed(icyc) =  speed1(ient)
+               !   dir(icyc)   =  dir1(ient)
+               !   speed(icyc) =  speed1(ient)
                   name(icyc)  =  name1(ient)
                   cycle_num(icyc) = cycle_num1(ient)
                   HollB(icyc) = HollB1(ient)
-                  uTrans(icyc) = uTrans1(ient)
-                  vTrans(icyc) = vTrans1(ient)
+
+                  uTrans(icyc) = sin(dir1(ient)/rad2deg)*speed1(ient)
+                  vTrans(icyc) = cos(dir1(ient)/rad2deg)*speed1(ient)
+
 
                CycleTime(icyc) =  iFcstInc(icyc) * hour2sec + offset
             !------------------------
@@ -3279,11 +3281,9 @@ C          open(224,file='fort.224',status='unknown')
             ENDIF
                lon(icyc) = (-1.0d0) * ilon(icyc) * oneTenth
                lat(icyc) = ilat(icyc) * oneTenth
-                  uTrans(icyc) = uTrans(icyc)
-                  vTrans(icyc) = vTrans(icyc)
 
                 endif
-            !------------------------`
+            !------------------------
             ! PICK OUT THE CYCLE DATA THAT THE USER WANTS TO USE
             !------------------------
           do i=1,4 ! loop through quads
@@ -3300,57 +3300,8 @@ C          open(224,file='fort.224',status='unknown')
          ! ALL DATA READ IN AND VARIABLES SET
          !-------------------------------
 
-           num_cycle=icyc ! cycle_num(num_entry)
-
-         !-------------------------------
-         ! Calculate translation velocity
-         !-------------------------------
-
-C       DO icyc = 1,num_cycle
-C     use the formula haversine formula for distances along a sphere.
-C         dist(i)=Rearth*(2*ASIN(sqrt(sin(DY(I)/2)**2+
-C     &  cos(lat*DEG2RAD)*cos(YCOOR(i)*DEG2RAD)*sin(DX(I)/2)**2) ) )
-
-C           IF (icyc==1 ) THEN
-C      !----------------------------------------------------------
-C        dx = SIGN( (Rearth*(2.0d0*ASIN(sqrt(cos(LAT(icyc+1)*DEG2RAD)
-C     & * cos(LAT(icyc)*DEG2RAD)
-C     & * sin((LON(icyc+1)*DEG2RAD-LON(icyc)*DEG2RAD)/2.0d0)**2.0d0))))
-C     & ,(Lon(icyc+1)-Lon(icyc))  )  ! get correct sign
-C
-C       dy = SIGN( (Rearth*(2.0d0*ASIN(sqrt(
-C     &  sin( (LAT(icyc+1)*DEG2RAD-LAT(icyc)*DEG2RAD)/2.0d0)**2.0d0))) )
-C     & ,(Lat(icyc+1)-Lat(icyc))  )  ! get correct sign
-C
-C               dt = (CycleTime(icyc+1) - CycleTime(icyc))
-C               if(dt == 0.0d0) dt=6.0d0* hour2sec
-C      !----------------------------------------------------------
-C
-C         ELSE  ! icyc = 1
-C
-C        dx = SIGN( (Rearth*(2.0d0*ASIN(sqrt(cos(LAT(icyc)*DEG2RAD)
-C     & * cos(LAT(icyc-1)*DEG2RAD)
-C     & * sin((LON(icyc)*DEG2RAD-LON(icyc-1)*DEG2RAD)/2.0d0)**2.0d0))))
-C     & ,(Lon(icyc)-Lon(icyc-1))  )  ! get correct sign
-C
-C       dy = SIGN( (Rearth*(2.0d0*ASIN(sqrt(
-C     &  sin( (LAT(icyc)*DEG2RAD-LAT(icyc-1)*DEG2RAD)/2.0d0)**2.0d0))))
-C     & ,(Lat(icyc)-Lat(icyc-1))  )  ! get correct sign
-C
-C               dt = (CycleTime(icyc) - CycleTime(icyc-1))
-C               if(dt == 0.0d0) dt=6.0d0* hour2sec
-C      !----------------------------------------------------------
-C          ENDIF
-C      !----------------------------------------------------------
-C
-C               uTrans(icyc) = dx/dt
-CC               vTrans(icyc) = dy/dt
-C
-C      ENDDO ! num_cycle
-
       icyc=1
          END IF   ! (firstCall .EQ. 0)
-
 
         !--------------------------------------
         !
@@ -3469,7 +3420,7 @@ C          CALL printVortex()
          !-----------------------------------
          firstCall = 1
          told=time
-          write(224,*) firstCall, told
+
 
 999      RETURN
 

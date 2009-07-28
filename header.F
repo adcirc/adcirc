@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4629   - 07/28/09 - rjw - Added storm speed(kts) and direction(degrees)
+C               information to aswip.F output fort.22 file
+C               and the translation velocities (U and V) are now computed from
+C               the speed and direction that is read in from
+C               the new fort.22 file into NWS19 code
 C  v48.4628   - 07/27/09 - jgf - Extended METONLY capability to cases where
 C               3D or harmonic output is requested, as well as the case where
 C               execution begins as a hotstart.

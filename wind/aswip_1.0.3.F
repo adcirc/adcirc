@@ -41,7 +41,6 @@ C
 
          INTEGER,DIMENSION(:),ALLOCATABLE,SAVE :: iyear, imth, iday, ihr
          INTEGER , SAVE :: iyear1, imth1, iday1, ihr1
-         INTEGER , SAVE :: iyear2, imth2, iday2, ihr2
          INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon
          REAL(sz),DIMENSION(:),ALLOCATABLE,SAVE::rlat,rlon,CycleTime
          INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ispd,icpress,atcfRMW
@@ -51,7 +50,6 @@ C
          REAL(sz), SAVE ::  dt, cLat1, cLon1
          CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE:: type! hindcast/nowcast or forecast?
          CHARACTER(LEN=4) :: type1              ! hindcast/nowcast or forecast?
-         CHARACTER(LEN=4) :: type2              ! hindcast/nowcast or forecast?
          INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::iFcstInc ! hours between forecasts
          INTEGER,SAVE::iFcstInc1, iFcstInc2 ! hours between forecasts
          INTEGER , SAVE :: firstCall = 0
@@ -73,17 +71,16 @@ C
 
          INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: ivr, dir, speed
          INTEGER , SAVE :: ivr1, dir1, speed1
-         INTEGER , SAVE :: ivr2, dir2, speed2
          INTEGER , DIMENSION(:,:), ALLOCATABLE,SAVE :: ir
          INTEGER , DIMENSION(:,:), ALLOCATABLE,SAVE :: quadflag
-         INTEGER , DIMENSION(4), SAVE :: ir1,ir2
+         INTEGER , DIMENSION(4), SAVE :: ir1
          REAL(sz) , DIMENSION(:,:), ALLOCATABLE,SAVE :: rmaxw
          REAL(sz) , DIMENSION(4), SAVE :: rmaxw1
          INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: count_newcycle
          INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: cycle_num
          INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: isotachs_per_cycle
          INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: ipn
-         INTEGER , SAVE :: ipn1,ipn2
+         INTEGER , SAVE :: ipn1
          CHARACTER (LEN = 10),DIMENSION(:),ALLOCATABLE, SAVE :: name
          REAL(sz), PARAMETER :: outFreq = thirtySixHundred
 !        REAL(sz), PARAMETER :: outFreq = one
@@ -94,6 +91,8 @@ C
          REAL(sz) :: uTrans1 = zero
          REAL(sz) :: vTrans1 = zero
          REAL(sz) ,DIMENSION(:),ALLOCATABLE, SAVE :: uTrans, vTrans
+         REAL(sz) ,DIMENSION(:),ALLOCATABLE, SAVE :: uTrans2, vTrans2
+         REAL(sz) ,DIMENSION(:),ALLOCATABLE, SAVE :: h_speed, h_dir
 
          INTEGER , PARAMETER :: node2print = 6205
          CHARACTER*1 ew,E,W,ns,N,S
@@ -129,6 +128,8 @@ C
          allocate(isotachs_per_cycle(i),CycleTime(i))
          allocate(quadflag(i,4),name(i))
          allocate(uTrans(i), vTrans(i),HollB(i),atcfRMW(i) )
+         allocate(uTrans2(i), vTrans2(i)) !,HollB(i),atcfRMW(i) )
+         allocate(h_speed(i), h_dir(i) )
       
           ient=1
             READ(22,22) advr(ient), iyear(ient),imth(ient),iday(ient),
@@ -198,7 +199,6 @@ C
 
        ENDDO
 
-
          !-------------------------------
          ! Calculate translation velocity
          !-------------------------------
@@ -208,7 +208,6 @@ C
      &                       count_newcycle(icyc+1)-count_newcycle(icyc)
           DO ient =  count_newcycle(icyc), count_newcycle(icyc+1)-1
               
-c           write(*,*) icyc, ient
         if (icyc==1 ) then
       !----------------------------------------------------------
         dx = SIGN( (Rearth*(2.0d0*
@@ -216,12 +215,14 @@ c           write(*,*) icyc, ient
      & * cos(rLAT(count_newcycle(icyc))*DEG2RAD)
      & * sin((rLON(count_newcycle(icyc+1))*DEG2RAD
      & - rLON(count_newcycle(icyc))*DEG2RAD)/2.0d0)**2.0d0))))
-     & ,(rLon(count_newcycle(icyc+1))-rLon(count_newcycle(icyc)))  )  ! get correct sign
+     & ,(rLon(count_newcycle(icyc+1))-rLon(count_newcycle(icyc)))  )  
+      ! get correct sign
 
        dy = SIGN( (Rearth*(2.0d0*
      & ASIN(sqrt(sin((rLAT(count_newcycle(icyc+1))*DEG2RAD
      & -rLAT(count_newcycle(icyc))*DEG2RAD)/2.0d0)**2.0d0))) )
-     & ,(rLat(count_newcycle(icyc+1))-rLat(count_newcycle(icyc)))  )  ! get correct sign
+     & ,(rLat(count_newcycle(icyc+1))-rLat(count_newcycle(icyc)))  ) 
+      ! get correct sign
 
        dt = (CycleTime(count_newcycle(icyc+1)) -
      &                             CycleTime(count_newcycle(icyc)))
@@ -233,12 +234,14 @@ c           write(*,*) icyc, ient
      & * cos(rLAT(count_newcycle(icyc-1))*DEG2RAD)
      & * sin((rLON(count_newcycle(icyc))*DEG2RAD
      & - rLON(count_newcycle(icyc-1))*DEG2RAD)/2.0d0)**2.0d0))))
-     & ,(rLon(count_newcycle(icyc))-rLon(count_newcycle(icyc-1)))  )  ! get correct sign
+     & ,(rLon(count_newcycle(icyc))-rLon(count_newcycle(icyc-1)))  )  
+       ! get correct sign
 
        dy = SIGN( (Rearth*(2.0d0*
      & ASIN(sqrt(sin((rLAT(count_newcycle(icyc))*DEG2RAD
      & -rLAT(count_newcycle(icyc-1))*DEG2RAD)/2.0d0)**2.0d0))) )
-     & ,(rLat(count_newcycle(icyc))-rLat(count_newcycle(icyc-1)))  )  ! get correct sign
+     & ,(rLat(count_newcycle(icyc))-rLat(count_newcycle(icyc-1)))  )  
+      ! get correct sign
 
        dt = (CycleTime(count_newcycle(icyc)) -
      &                             CycleTime(count_newcycle(icyc-1)))
@@ -254,17 +257,19 @@ c           write(*,*) icyc, ient
      &            num_entry - count_newcycle(icyc) + 1
             
            DO ient = count_newcycle(icyc), num_entry
+       ! get correct sign
         dx = SIGN( (Rearth*(2.0d0*
      & ASIN(sqrt(cos(rLAT(count_newcycle(icyc))*DEG2RAD)
      & * cos(rLAT(count_newcycle(icyc-1))*DEG2RAD)
      & * sin((rLON(count_newcycle(icyc))*DEG2RAD
      & - rLON(count_newcycle(icyc-1))*DEG2RAD)/2.0d0)**2.0d0))))
-     & ,(rLon(count_newcycle(icyc))-rLon(count_newcycle(icyc-1)))  )  ! get correct sign
+     & ,(rLon(count_newcycle(icyc))-rLon(count_newcycle(icyc-1)))  )
 
+       ! get correct sign
        dy = SIGN( (Rearth*(2.0d0*
      & ASIN(sqrt(sin((rLAT(count_newcycle(icyc))*DEG2RAD
      & -rLAT(count_newcycle(icyc-1))*DEG2RAD)/2.0d0)**2.0d0))) )
-     & ,(rLat(count_newcycle(icyc))-rLat(count_newcycle(icyc-1)))  )  ! get correct sign
+     & ,(rLat(count_newcycle(icyc))-rLat(count_newcycle(icyc-1)))  )  
 
        dt = (CycleTime(count_newcycle(icyc)) -
      &                             CycleTime(count_newcycle(icyc-1)))
@@ -277,10 +282,36 @@ c           write(*,*) icyc, ient
           ENDIF  ! icyc = num_cycles
           ENDDO ! numcycles
 
+         !-------------------------------------------   
+         ! convert Utrans and Vtrans to speed and direction  
+         ! direction is in compass coordinates 0 == North
+         ! increasing clockwise
+         !-------------------------------------------   
+
           DO ient=1,num_entry
+
+           h_speed(ient) = SQRT(uTrans(ient) * uTrans(ient)+ 
+     &                          vTrans(ient) * vTrans(ient))           ! in kts
+           h_dir(ient)= asin(abs(uTrans(ient))/h_speed(ient))*rad2deg  ! in deg
+                  if ( uTrans(ient) .gt. 0.0d0 ) then
+                      ! I or IV quadrant
+                       if( vTrans(ient) .lt. 0.0d0 ) then
+                         !  IV quadrant
+                        h_dir(ient)=180.0d0 - h_dir(ient) 
+                      endif
+                  else !uTrans  < 0
+                      ! II or III quadrant
+                      if( vTrans(ient) .gt. 0.0d0 ) then
+                         ! II  quadrant
+                        h_dir(ient)=-h_dir(ient)
+                      else
+                          h_dir(ient)=h_dir(ient)-180.0d0
+                      endif
+                  endif
+            if (h_dir(ient) .lt. 0.0d0 ) then 
+             h_dir(ient)=h_dir(ient) + 360.0d0
+            endif
           ENDDO
-            DO  icyc = 1,num_cycles
-            ENDDO
 
          !-----------------------------------------
          !  Now using the calculated translational velocities 
@@ -325,8 +356,6 @@ c           write(*,*) icyc, ient
           if ( ivr1 == 0 ) ivr1 = Vmax
 
           Vr = one* ivr1
-
-C         GO TO 3333
          
       !-------------------------------------------------------
       !  need to get some logic incase any of radii are zero
@@ -337,48 +366,59 @@ C         GO TO 3333
       !  isotach we will have ADCIRC use in calculating the 
       !  Asymmetric Holland wind
       !-------------------------------------------------------
-          if (ir1(1) .eq. 0 ) then                !rad1 = 0
+          if (ir1(1) .eq. 0 ) then    
+                  !rad1 = 0
              quadflag(ient,1)=0 
-      ! comput a radius from nonzero entries
-              if (ir1(2) .ne. 0 ) then            !rad1 = 0,rad2 != 0
+                  ! compute radius from nonzero entries
+              if (ir1(2) .ne. 0 ) then 
+                  !rad1 = 0,rad2 != 0
                 quadflag(ient,2)=1 
-                    if (ir1(3) .ne. 0 ) then      !rad1 = 0,rad2 != 0,rad3 != 0
+                    if (ir1(3) .ne. 0 ) then
+                  !rad1 = 0,rad2 != 0,rad3 != 0
                      quadflag(ient,3)=1 
                         ir1(1) = 0.5 * (ir1(2)+ir1(3))
-                    elseif (ir1(4) .ne. 0 ) then  !rad1 = 0,rad2 != 0,rad3 = 0,rad4 != 0
+                    elseif (ir1(4) .ne. 0 ) then  
+                  !rad1 = 0,rad2 != 0,rad3 = 0,rad4 != 0
                      quadflag(ient,3)=0 
                      quadflag(ient,4)=1 
                         ir1(1) = 0.5 * (ir1(2)+ir1(4))
                         ir1(3) = 0.5 * (ir1(2)+ir1(4))
-                    else                          !rad1 = 0,rad2 != 0,rad3 = 0,rad4 = 0
+                    else          
+                  !rad1 = 0,rad2 != 0,rad3 = 0,rad4 = 0
                      quadflag(ient,3)=0 
                      quadflag(ient,4)=0 
                         ir1(1) = (ir1(2))
                         ir1(3) = (ir1(2))
                         ir1(4) = (ir1(2))
                     endif                      
-              elseif (ir1(3) .ne. 0 ) then    !rad1 = 0,rad2 = 0,rad3 != 0 
+              elseif (ir1(3) .ne. 0 ) then
+                  !rad1 = 0,rad2 = 0,rad3 != 0 
                   quadflag(ient,2)=0
                   quadflag(ient,3)=1
-                    if (ir1(4) .ne. 0 ) then  !rad1 = 0,rad2 = 0,rad3 != 0,rad4 != 0
+                    if (ir1(4) .ne. 0 ) then  
+                  !rad1 = 0,rad2 = 0,rad3 != 0,rad4 != 0
                       quadflag(ient,4)=1
                        ir1(1) = 0.5 * (ir1(3)+ir1(4))  
                        ir1(2) = 0.5 * (ir1(3)+ir1(4))
-                    else                      !rad1 = 0,rad2 = 0,rad3 != 0,rad4 = 0
+                    else   
+                  !rad1 = 0,rad2 = 0,rad3 != 0,rad4 = 0
                       quadflag(ient,4)=0
                         ir1(1) = (ir1(3))
                         ir1(2) = (ir1(3))
                         ir1(4) = (ir1(3))
                     endif     
-              elseif (ir1(4) .ne. 0 ) then     !rad1 = 0,rad2 = 0,rad3 = 0,rad4 != 0
+              elseif (ir1(4) .ne. 0 ) then 
+                  !rad1 = 0,rad2 = 0,rad3 = 0,rad4 != 0
                       quadflag(ient,2)=0
                       quadflag(ient,3)=0
                       quadflag(ient,4)=1
                       ir1(1) = (ir1(4))
                       ir1(2) = (ir1(4))
                       ir1(3) = (ir1(4))
-              else                             !rad1 = 0,rad2 = 0,rad3 = 0,rad4 = 0
-              ! will only happen if no isotachs are reported in that caseuse RMW and Vmax
+              else     
+                  !rad1 = 0,rad2 = 0,rad3 = 0,rad4 = 0
+                  ! will happen if no isotachs are reported 
+                  ! in that case use RMW and Vmax
                       quadflag(ient,1)=1
                       quadflag(ient,2)=1
                       quadflag(ient,3)=1
@@ -391,18 +431,22 @@ C                     write(*,*) "USE RMW from ATCF"
                       enddo
               endif
           
-          elseif (ir1(2) .eq. 0 ) then       !rad1 != 0,rad2 = 0
+          elseif (ir1(2) .eq. 0 ) then  
+                !rad1 != 0,rad2 = 0
                       quadflag(ient,1)=1
                       quadflag(ient,2)=0
-               if (ir1(3) .ne. 0 ) then      !rad1 != 0,rad2 = 0,rad3 != 0
+               if (ir1(3) .ne. 0 ) then
+                !rad1 != 0,rad2 = 0,rad3 != 0
                       quadflag(ient,3)=1
                      ir1(2) =  0.5 * (ir1(1)+ir1(3))
-               elseif( ir1(4) .ne. 0 ) then  !rad1 != 0,rad2 = 0,rad3 = 0 ,rad4 != 0
+               elseif( ir1(4) .ne. 0 ) then
+                !rad1 != 0,rad2 = 0,rad3 = 0 ,rad4 != 0
                       quadflag(ient,3)=0
                       quadflag(ient,4)=1
                       ir1(2) =  0.5 * (ir1(1)+ir1(4))
                       ir1(3) =  0.5 * (ir1(1)+ir1(4))
-               else                          !rad1 != 0,rad2 = 0,rad3 = 0 ,rad4 = 0
+               else        
+                !rad1 != 0,rad2 = 0,rad3 = 0 ,rad4 = 0
                       quadflag(ient,3)=0
                       quadflag(ient,4)=0
                       ir1(2) = (ir1(1))
@@ -410,20 +454,24 @@ C                     write(*,*) "USE RMW from ATCF"
                       ir1(4) = (ir1(1))
                endif
 
-          elseif (ir1(3) .eq. 0 ) then       !rad1 != 0,rad2 != 0,rad3 = 0
+          elseif (ir1(3) .eq. 0 ) then 
+                !rad1 != 0,rad2 != 0,rad3 = 0
                       quadflag(ient,1)=1
                       quadflag(ient,2)=1
                       quadflag(ient,3)=0
-              if (ir1(4) .ne. 0 ) then       !rad1 != 0,rad2 != 0,rad3 = 0 ,rad4 != 0
+              if (ir1(4) .ne. 0 ) then  
+                !rad1 != 0,rad2 != 0,rad3 = 0 ,rad4 != 0
                       quadflag(ient,4)=1
                     ir1(3) =  0.5 * (ir1(2)+ir1(4))
-              else                           !rad1 != 0,rad2 != 0,rad3 = 0 ,rad4 = 0
+              else        
+                !rad1 != 0,rad2 != 0,rad3 = 0 ,rad4 = 0
                       quadflag(ient,4)=0
                     ir1(3) =  0.5 * (ir1(1)+ir1(2))
                     ir1(4) =  0.5 * (ir1(1)+ir1(2))
               endif                  
 
-           elseif (ir1(4) .eq. 0 ) then      !rad1 != 0,rad2 != 0,rad3 = !0 ,rad4 = 0
+           elseif (ir1(4) .eq. 0 ) then   
+                !rad1 != 0,rad2 != 0,rad3 != 0 ,rad4 = 0
                       quadflag(ient,1)=1
                       quadflag(ient,2)=1
                       quadflag(ient,3)=1
@@ -431,7 +479,7 @@ C                     write(*,*) "USE RMW from ATCF"
                     ir1(4) =  0.5 * (ir1(2)+ir1(3))
 
            else 
-                     
+                !rad1 != 0,rad2 != 0,rad3 != 0 ,rad4 != 0
                       quadflag(ient,1)=1
                       quadflag(ient,2)=1
                       quadflag(ient,3)=1
@@ -439,15 +487,10 @@ C                     write(*,*) "USE RMW from ATCF"
 C                  write(*,*) " all 4 nonzero radii ! "
 
            endif
-C3333    continue
-              
  
             DO i=1,4
                r(i) = one * ir1(i)
             END DO
-c            DO i=1,4
-c               rmaxw1(i) = atcfRMW(ient)
-c            END DO
                 HollB1=one
          !-------------------------------------------------------
          ! Create a new asymmetric hurricane vortex.
@@ -460,14 +503,10 @@ c            END DO
      &   name(ient/2),adv,iyear1,imth1,iday1,ihr1,iFcstInc1,
      &   Pn,Pc,cLat,cLon,((Vmax-SQRT(uTrans1*uTrans1+vTrans1*vTrans1))
      &   /windReduction),(Vr/windReduction),r,rmaxw1,HollB1)
-         !---------------------------
-         ! Print the hurricane vortex
-         !---------------------------
 
                   HollB(ient)=HollB1
-C                   write(*,'(f10.4)')HollB(ient) 
                   rmaxw(ient,:)=rmaxw1(:)
-C                   write(*,'(f10.4)') rmaxw(ient,:)
+
 C    reset rmax to zero if there was a zero radius to the isotach for all isotachs
 C    EXCEPT the 34 kt isotach.  in that case leave the radius that has been substituted.
 
@@ -479,8 +518,6 @@ C    EXCEPT the 34 kt isotach.  in that case leave the radius that has been subs
             END DO
 
           ENDDO ! num_entry (main do loop)
-
-
 
 C       !-------------------------------------
         ! Now indicate which isotach quadrant radius 
@@ -512,13 +549,11 @@ C       !-------------------------------------
         !  isotach Rmax that exists
         ! 
         !------------------------------------
-       
       
         !------------------------------------
         ! SET METHOD HERE!
         !------------------------------------
            method = 1
-
           
          ient = 0
        DO icyc = 1,num_cycles
@@ -535,6 +570,10 @@ C       !-------------------------------------
                quadflag((ient),i) = 1 
             enddo
 
+         !-----------------------------------
+         ! Now write logic to fill in Forecast entries with no radii
+         ! we want to persist the last flagged values for RMW
+         !-----------------------------------
 ! 34 kt isotach is zero in all quadrants, AND there is no RMW here to fill in 
         DO i = 1,4  ! quadrants
          IF (quadflag((ient),i) == 1 .AND. rmaxw(ient,i) == 0.0) then 
@@ -558,12 +597,10 @@ C       !-------------------------------------
 
                DO itpc=1,isotachs_per_cycle(icyc) ! isotachs
  
-                if ( quadflag((ient-(itpc-1)),i) == 1 ) then ! the highest vel isotach has a value here so zero out the others
-
+                if ( quadflag((ient-(itpc-1)),i) == 1 ) then 
+      ! the highest vel isotach has a value here so zero out the others
                      DO itpc2=itpc,isotachs_per_cycle(icyc)-1
-
                     quadflag((ient-itpc2),i) = 0
-
                      ENDDO
                  GOTO 9992
                  
@@ -578,6 +615,10 @@ C       !-------------------------------------
                quadflag((ient),i) = 1
             enddo          
 
+         !-----------------------------------
+         ! Now write logic to fill in Forecast entries with no radii
+         ! we want to persist the last flagged values for RMW
+         !-----------------------------------
 ! 34 kt isotach is zero in all quadrants, AND there is no RMW here to fill in 
         DO i = 1,4  ! quadrants
          IF (quadflag((ient),i) == 1 .AND. rmaxw(ient,i) == 0.0) then 
@@ -595,14 +636,6 @@ C       !-------------------------------------
        ENDIF ! method type if statement
        ENDDO    ! num_cycles        
 C!-------------------------------------------------------------------
-C
-
-         !-----------------------------------
-         ! Now write logic to fill in Forecast entries with no radii
-         ! we want to persist the last flagged values for RMW
-         !-----------------------------------
-   
-          
 
          !------------------------
          ! WRITE OUTPUT
@@ -615,40 +648,42 @@ C
 22      FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
      &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
      &          27x, 2(i3,2x), a10)
-
+         !-----------------------------------
+         ! NHC advisory best-track i/o format
+         ! WITH nws=19 ADDED DATA
+         !-----------------------------------
 26      FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
      &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
      &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
-     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4,2(2x,f10.4))
+     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4)!,2(2x,f10.4))
 
-28      FORMAT(1x, i3, 2x, i4, 3i2, 2x, a4, 2(2x,i3),a1, 2x, i3,a1, 2x,
-     &         i3,2x, i4, 2x, i3, 2x, 4(i4,1x), i4, 2x, i3,
-     &          2x, 2(i3,1x), a10, 2x, i4, 2x, i4,
-     &         2x, 4(i1,1x),2x, 4(f6.1,1x), 2x, f8.4,2(2x,f10.4))
+c28      FORMAT(1x, i3, 2x, i4, 3i2, 2x, a4, 2(2x,i3),a1, 2x, i3,a1, 2x,
+c     &         i3,2x, i4, 2x, i3, 2x, 4(i4,1x), i4, 2x, i3,
+c     &          2x, 2(f7.2,1x), a10, 2x, i4, 2x, i4,
+c     &         2x, 4(i1,1x),2x, 4(f6.1,1x), 2x, f8.4,4(2x,f10.4))
 
             WRITE(222,26) advr(ient), iyear(ient),imth(ient),iday(ient),
      &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
      &      ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
      &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
-     &      dir(ient),speed(ient), name(ient), 
+     &      nint(h_dir(ient)),nint(h_speed(ient)), name(ient), 
      &      cycle_num(ient),isotachs_per_cycle(cycle_num(ient)),
-     &     (quadflag(ient,i),i=1,4),(rmaxw(ient,i),i=1,4),HollB(ient),
-     &      uTrans(ient),vTrans(ient)
+     &     (quadflag(ient,i),i=1,4),(rmaxw(ient,i),i=1,4),HollB(ient)
+c     &      uTrans(ient),vTrans(ient)
 
-            WRITE(223,28) advr(ient), iyear(ient),imth(ient),iday(ient),
-     &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
-     &      ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
-     &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
-     &      dir(ient),speed(ient), name(ient), 
-     &      cycle_num(ient),isotachs_per_cycle(cycle_num(ient)),
-     &     (quadflag(ient,i),i=1,4),(rmaxw(ient,i),i=1,4),HollB(ient),
-     &      uTrans(ient),vTrans(ient)
+c             uTrans2(ient) = sin(h_dir(ient)/rad2deg)*h_speed(ient)
+c             vTrans2(ient) = cos(h_dir(ient)/rad2deg)*h_speed(ient)
+c            WRITE(223,28) advr(ient), iyear(ient),imth(ient),iday(ient),
+c     &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
+c     &      ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
+c     &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
+c     &      h_dir(ient),h_speed(ient), name(ient), 
+c     &      cycle_num(ient),isotachs_per_cycle(cycle_num(ient)),
+c     &     (quadflag(ient,i),i=1,4),(rmaxw(ient,i),i=1,4),HollB(ient),
+c     &      uTrans(ient),vTrans(ient),uTrans2(ient),vTrans2(ient)
 
          ENDDO
 
           close(222)
- 
-
 
       END PROGRAM
-
