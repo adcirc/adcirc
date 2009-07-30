@@ -154,6 +154,10 @@ C
                rlat(ient) = ilat(ient) * oneTenth
 
            CycleTime(ient) =  iFcstInc(ient) * hour2sec
+         !------------
+         ! Set ipn to background pressure of 1013
+         !------------
+            ipn(ient)=1013
 
          DO ient=2,num_entry
 
@@ -178,9 +182,13 @@ C
   
            if (atcfRMW(ient) .eq. 0.0 .AND. atcfRMW(ient-1) .ne. 0.0 )
      &                                    atcfRMW(ient)=atcfRMW(ient-1)
-         if (ipn(ient) == 0 )then
-             ipn(ient)=ipn(ient-1)
-          endif
+         !------------
+         ! Set ipn to background pressure of 1013
+         !---------===
+            ipn(ient)=1013
+c        if (ipn(ient) == 0 )then
+c            ipn(ient)=ipn(ient-1)
+c         endif
 
 
             if ( (iday(ient).eq.iday(ient-1)).AND.
