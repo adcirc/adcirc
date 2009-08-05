@@ -3132,7 +3132,12 @@ C     cf added if missing values set winds to zero and pressure to P0
 
             !----------------------------------------------
             ! Read parsed NHC advisory in modified best-track format
-            !----------------------------------------------
+            !---------------------------------------------
+c26jason FORMAT("AL,",1x,i2.2,",",i5,3i2.2,",",3x,",",1x,a4,",",
+cbad  &         i4,",",i4,a1,",",i5,a1,",",i4,",",i5,",",3x,",",i4,",",
+c     &         " NEQ,",5(i5,","),5x,",",i4,",",5(4x,","),2(i4,","),1x,  (26 not 27spaces over)
+c     &         a10,",",1x,",",i3,",",i5,",",1x, 4(i1,",",1x),2x,
+c     &         4(f6.1,",",1x), 2x, f8.4)!,2(2x,f10.4))
 
 26      FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
      &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
@@ -3160,6 +3165,14 @@ C          open(224,file='fort.224',status='unknown')
      &    dir1(ient),speed1(ient), name1(ient),
      &    cycle_num1(ient),isotachs_per_cycle1(ient),
      &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
+
+c        WRITE(223,26) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
+c     &    ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
+c     &    ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
+c     &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
+c     &    dir1(ient),speed1(ient), name1(ient),
+c     &    cycle_num1(ient),isotachs_per_cycle1(ient),
+c     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
 
 
 
@@ -3228,6 +3241,13 @@ C          open(224,file='fort.224',status='unknown')
      &    cycle_num1(ient),isotachs_per_cycle1(ient),
      &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
 
+c        WRITE(223,26) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
+c     &    ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
+c     &    ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
+c     &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
+c     &    dir1(ient),speed1(ient), name1(ient),
+c     &    cycle_num1(ient),isotachs_per_cycle1(ient),
+c     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
 
                 if( cycle_num1(ient) == cycle_num1(ient-1)) then
                  else
@@ -3378,20 +3398,20 @@ C        dt=time-told
          !---------------------------
          ! Print the hurricane vortex
          !---------------------------
-C28     FORMAT(2x, i3, 2x, i4, 3i2.2, 2x, a4, 2x,i3,
-C     &            2x,f8.2,a1,2x,f8.2,a1, 2x,
-C     &         f8.2,2x, f8.2, 2x, i3, 2x, f8.2, 2x, i3,
-C     &         2x,f10.2,2x ,i3,2x, a10, 2x,f10.2,2x, i3, 2x, i1,
-C     &         2x, 4(i1,1x),2x, 4(f6.1,2x), 2x, f8.4)
-C
-C       WRITE(224,28) advr(icyc-1), iyear(icyc-1),imth(icyc-1),
-C     &      iday(icyc-1),
-C     &      ihr(icyc-1), type(icyc-1),iFcstInc(icyc-1), Clat,ns,
-C     &      Clon,ew, Vmax, Pc, ivr(icyc-1),
-C     &       Pn, atcfRMW(icyc-1),
-C     &      time,speed(icyc-1), name(icyc-1),
-C     & CycleTime(icyc-1),cycle_num(icyc-1),isotachs_per_cycle1(icyc-1),
-C     &     (quadflag(icyc-1,i),i=1,4),(crmaxw(i),i=1,4),cHollB
+c28     FORMAT(2x, i3, 2x, i4, 3i2.2, 2x, a4, 2x,i3,
+c     &            2x,f8.2,a1,2x,f8.2,a1, 2x,
+c     &         f8.2,2x, f8.2, 2x, i3, 2x, f8.2, 2x, i3,
+c     &         2x,f10.2,2x ,i3,2x, a10, 2x,f10.2,2x, i3, 2x, i1,
+c     &         2x, 4(i1,1x),2x, 4(f6.1,2x), 2x, f8.4)
+c
+c       WRITE(224,28) advr(icyc-1), iyear(icyc-1),imth(icyc-1),
+c     &      iday(icyc-1),
+c     &      ihr(icyc-1), type(icyc-1),iFcstInc(icyc-1), Clat,ns,
+c     &      Clon,ew, Vmax, Pc, ivr(icyc-1),
+c     &       Pn, atcfRMW(icyc-1),
+c     &      time,speed(icyc-1), name(icyc-1),
+c     & CycleTime(icyc-1),cycle_num(icyc-1),isotachs_per_cycle1(icyc-1),
+c     &     (quadflag(icyc-1,i),i=1,4),(crmaxw(i),i=1,4),cHollB
 
 C          CALL printVortex()
 

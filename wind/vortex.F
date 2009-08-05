@@ -912,7 +912,6 @@ C               CALL setWindRadii (r)
                REAL(sz) :: uf
                REAL(sz) :: vf
                REAL(sz) :: damp
-
                !------------------------------------------------------
                ! Calculate distance and angle between eye of hurricane
                ! and input nodal point

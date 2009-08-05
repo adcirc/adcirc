@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4632   - 08/05/09 - rjw - Fixed formatting error in ASWIP output 
+C               to make it compatible with wind.F and should still be
+C               compatible with utilities that parse ATCF output.
 C  v48.4631   - 07/30/09 - rjw - Modified aswip set background pressure to 
 C               hardwired value of 1013
 C  v48.4630   - 07/28/09 - jgf - Modified aswip output to include commas
