@@ -300,6 +300,11 @@ c         endif
 
            h_speed(ient) = SQRT(uTrans(ient) * uTrans(ient)+ 
      &                          vTrans(ient) * vTrans(ient))           ! in kts
+
+
+          IF (h_speed(ient) == 0 ) then
+                   h_dir(ient) = 0 
+          ELSE 
            h_dir(ient)= asin(abs(uTrans(ient))/h_speed(ient))*rad2deg  ! in deg
                   if ( uTrans(ient) .gt. 0.0d0 ) then
                       ! I or IV quadrant
@@ -319,6 +324,7 @@ c         endif
             if (h_dir(ient) .lt. 0.0d0 ) then 
              h_dir(ient)=h_dir(ient) + 360.0d0
             endif
+           ENDIF ! hspeed == 0
           ENDDO
 
          !-----------------------------------------
