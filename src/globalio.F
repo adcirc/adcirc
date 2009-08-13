@@ -1516,7 +1516,7 @@ C! CMPI
       subroutine writeDomainHeader(lun, filename, numNodes_g, 
      &            numNodes, typeStr)
       use global_3dvs, only:
-     &   ndset3dgv, nspo3dgv, nspo3dgv, nfen,
+     &   ndset3dgv, nspo3dgv, nfen,
      &   ndset3dgt, nspo3dgt, 
      &   ndset3dgd, nspo3dgd
       implicit none

@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C                                                                             *
 C  mod history                                                                *
+C  v48.59   - 08/13/09 - tcm - Fixed bug in globalio where multiple variables
+C               where repeated in use module line.
 C  v48.58    -07/10/09 - tcm - Fixed bug in writing out global elevation
 C               values using -99999.0 that exists in serial version
 C               Also added 3 fields to the OutputDataDescript_t type
