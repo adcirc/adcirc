@@ -1393,9 +1393,9 @@ C! CMPI
       !--------------------------------------------------------------
       subroutine writeStationHeader(lun, numSta, typeStr)
       use global_3dvs, only: 
-     &     ndset3dsv, nspo3dsv, nspo3dsv, nfen,
-     &     ndset3dst, nspo3dst, nspo3dst,
-     &     ndset3dsd, nspo3dsd, nspo3dsd
+     &     ndset3dsv, nspo3dsv, nfen,
+     &     ndset3dst, nspo3dst,
+     &     ndset3dsd, nspo3dsd
       implicit none
       integer lun               ! logical unit number to write to
       integer numSta            ! number of stations to write
