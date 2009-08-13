@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4634   - 08/13/09 - tcm - Fixed bug in globalio where multiple variables
+C               where repeated in use module line.
 C  v48.4633   - 08/05/09 - rjw - Fixed Bug in translation direction in ASWIP output 
 C  v48.4632   - 08/05/09 - rjw - Fixed formatting error in ASWIP output 
 C               to make it compatible with wind.F and should still be
