@@ -1835,8 +1835,10 @@ C     compute the neighbor table and redo NNeigh array
       WRITE(16,1196)
  1196 FORMAT(/,1X,'THE NEIGHBOR TABLE IS BEING COMPUTED ',/)
  
+C...TCM -- v48.60 -- 20090814 -- Added screenunit to call to neighb
+C...         Bug reported by Mary Cialone
       CALL NEIGHB(NE,NP,NM,NNeigh,NeiTab,NeiTabEle,NeiMin,NeiMax,
-     &     X,Y,NScreen)
+     &     X,Y,NScreen,ScreenUnit)
 
       IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
      &     WRITE(ScreenUnit,1195) NEIMIN,NEIMAX,NEIMAX
