@@ -3217,7 +3217,7 @@ c     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
             IF(ns.EQ.S)THEN
                ilat(icyc)=(-1)*ilat(icyc)
             ENDIF
-               lon(icyc)=ilon(icyc) * oneTenth
+               lon(icyc) = (-1.0d0) * ilon(icyc) * oneTenth
                lat(icyc)=ilat(icyc) * oneTenth
 
             !------------------------
@@ -3335,23 +3335,10 @@ C     array counter.
          icyc=icyc+1
       ENDIF
 
-C        dt=time-told
          !-------------------------------------
          ! Interpolate NHC forecast interval in
          ! time to obtain values at model time.
          !-------------------------------------
-      if (icyc .lt.  2 ) then
-        wtratio = 0.0
-        Vmax  =  one*(ispd(icyc))
-        Pn    =  one*(ipn(icyc) )
-        Pc    =  one*(icpress(icyc))
-        cLat  =  lat(icyc)
-        cLon  =  lon(icyc)
-        cHollB   =  HollB(icyc)
-       do i=1,4
-        crmaxw(i)=rmaxw(icyc,i)
-       enddo
-      else
 
       wtratio=(time-CycleTime(icyc-1))/
      &                  (CycleTime(icyc)-CycleTime(icyc-1))
@@ -3376,7 +3363,6 @@ C        dt=time-told
      &                          wtratio*(rmaxw(icyc,i)-rmaxw(icyc-1,i))
        enddo
 
-        endif
 
         Vr = one * cycle_num(icyc-1)
 
@@ -3403,7 +3389,7 @@ c     &            2x,f8.2,a1,2x,f8.2,a1, 2x,
 c     &         f8.2,2x, f8.2, 2x, i3, 2x, f8.2, 2x, i3,
 c     &         2x,f10.2,2x ,i3,2x, a10, 2x,f10.2,2x, i3, 2x, i1,
 c     &         2x, 4(i1,1x),2x, 4(f6.1,2x), 2x, f8.4)
-c
+
 c       WRITE(224,28) advr(icyc-1), iyear(icyc-1),imth(icyc-1),
 c     &      iday(icyc-1),
 c     &      ihr(icyc-1), type(icyc-1),iFcstInc(icyc-1), Clat,ns,

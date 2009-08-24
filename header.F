@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4636   - 08/24/09 - rjw - Fixed Bug in NWS 19 code (first lon not 
+C               properly converted)
 C  v48.4635   - 08/14/09 - tcm - Fixed bug in call to neighb within read_input
 C               updated the adcirc makefiles for a pc
 C  v48.4634   - 08/13/09 - tcm - Fixed bug in globalio where multiple variables
