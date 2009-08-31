@@ -514,7 +514,7 @@ C                  write(*,*) " all 4 nonzero radii ! "
          ! where the cylcostrophic wind balance is valid.
          !-------------------------------------------------------
        CALL newVortex_rmax_b_OUT(
-     &   name(ient/2),adv,iyear1,imth1,iday1,ihr1,iFcstInc1,
+     &   name(ient),adv,iyear1,imth1,iday1,ihr1,iFcstInc1,
      &   Pn,Pc,cLat,cLon,((Vmax-SQRT(uTrans1*uTrans1+vTrans1*vTrans1))
      &   /windReduction),(Vr/windReduction),r,rmaxw1,HollB1)
 

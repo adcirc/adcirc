@@ -2,6 +2,7 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4637   - 08/31/09 - rjw - Fixed out of bounds array in aswip 
 C  v48.4636   - 08/24/09 - rjw - Fixed Bug in NWS 19 code (first lon not 
 C               properly converted)
 C  v48.4635   - 08/14/09 - tcm - Fixed bug in call to neighb within read_input
