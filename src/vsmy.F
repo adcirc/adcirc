@@ -1,4 +1,4 @@
-c******************************************************************************
+
 c PADCIRC VERSION 45.12 03/17/2006                                            *
 C  last changes in this file VERSION 45.12                                    *
 C                                                                             *
@@ -32,10 +32,10 @@ C...
             DO N=1,NFEN-1
                DASigT(NH)=DASigT(NH)+(Sigma(N+1)-Sigma(N))
      &                                   *(SigT(NH,N+1)+SigT(NH,N))/2.d0
-               ENDDO
+             ENDDO
             DASigT(NH)=DASigT(NH)/AMB
-            ENDIF
-         ENDDO
+          ENDIF
+       ENDDO
 
 C...  
 C...  ADDITIONAL RUN SETUP
@@ -227,22 +227,22 @@ C     SigT = Sigma T = Rho - 1000 = density - 1000
 C     SigT0 = Sigma t value of reference density (typically = 0)
 C     Sigma = dimensionless vertical coordinate
 C     
-!      IF(CBaroclinic) THEN
-!        DO NH=1,NP             !loop over horizontal nodes
-!            Hs=DP(NH)+IFNLFA*Eta1(NH) !total depth at previous (s) timestep
-!            HGORhoOAMB=GORhoOAMB*Hs !(gravity/rho ref)*(H/(a-b))
-!            BCP(NH,NFEN)=0.d0
-!            DO k=NFEN-1,1,-1    !loop over vertical nodes, starting at top and working down
-!               SigTAvg=(SigT(NH,k+1)+SigT(NH,k))/2.d0
-!               DelSig=Sigma(k+1)-Sigma(k)
-!               BCP(NH,k)=BCP(NH,k+1)+HGORhoOAMB*(SigTAvg-SigT0)*DelSig
-!            ENDDO
-!         ENDDO
+C!      IF(CBaroclinic) THEN
+C!        DO NH=1,NP             !loop over horizontal nodes
+C!            Hs=DP(NH)+IFNLFA*Eta1(NH) !total depth at previous (s) timestep
+C!            HGORhoOAMB=GORhoOAMB*Hs !(gravity/rho ref)*(H/(a-b))
+C!            BCP(NH,NFEN)=0.d0
+C!            DO k=NFEN-1,1,-1    !loop over vertical nodes, starting at top and working down
+C!               SigTAvg=(SigT(NH,k+1)+SigT(NH,k))/2.d0
+C!               DelSig=Sigma(k+1)-Sigma(k)
+C!               BCP(NH,k)=BCP(NH,k+1)+HGORhoOAMB*(SigTAvg-SigT0)*DelSig
+C!            ENDDO
+C!         ENDDO
 #ifdef CMPI
 C     Update BCP on ghost nodes
 C      CALL UPDATER3D(BCP)  !!!!Don't know if this is needed at this time
 #endif
-!      ENDIF
+C!      ENDIF
 
 
 C*************************************************************************************
@@ -320,7 +320,7 @@ c     to the solution
                   Mkp1(k)=(0.D0,0.D0)
                   Fr(k)=VelTan+I*VelNorm
 C                  EVTot(k)=0.D0 !f77diff??
-               END DO
+               ENDDO
                GOTO 999
             ENDIF
          ENDIF
@@ -396,9 +396,12 @@ c     surrounding a node
             BTPN2=BTP(N2)
             NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
 c.RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
+c.RJW 06092009  modified to elimiate zero index NOFF
+            IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
             NCELE = NODECODE(NH)*NODECODE(N2)*
      &              NODECODE(N3)*NOFF(NELE)
-            IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+            IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+
                TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
                a1=X(N3)-X(N2)
                a2=X(N1)-X(N3)
@@ -413,7 +416,8 @@ c.RJW merged 08282008 Casey 071219: Added the computation of NCELE and the secon
                BTPDX2A=BTPDX2A+(BTPN1*b1+BTPN2*b2+BTPN3*b3)
                BTPDY2A=BTPDY2A+(BTPN1*a1+BTPN2*a2+BTPN3*a3)
             ENDIF
-         END DO
+            ENDIF
+         ENDDO
 
          N3=N2                  !wrap back to beginning to get final contribution
          hN3=hN2
@@ -425,9 +429,12 @@ c.RJW merged 08282008 Casey 071219: Added the computation of NCELE and the secon
          BTPN2=BTPNFirst
          NEle=NeiTabEle(NH,NNeigh(NH)-1)
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
-         NCELE = NODECODE(NH)*NODECODE(N2)*
-     &           NODECODE(N3)*NOFF(NELE)
-         IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+c.RJW 06092009  modified to elimiate zero index NOFF
+            IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
+            NCELE = NODECODE(NH)*NODECODE(N2)*
+     &              NODECODE(N3)*NOFF(NELE)
+            IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+
             TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
             a1=X(N3)-X(N2)
             a2=X(N1)-X(N3)
@@ -441,6 +448,7 @@ c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the seco
             DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
             BTPDX2A=BTPDX2A+(BTPN1*b1+BTPN2*b2+BTPN3*b3)
             BTPDY2A=BTPDY2A+(BTPN1*a1+BTPN2*a2+BTPN3*a3)
+         ENDIF
          ENDIF
 
          IF(TotalArea2.NE.0.) THEN
@@ -523,9 +531,12 @@ c     Compute lateral advection and lateral stress terms
                qN2=q(N2,k)
                NEle=NeiTabEle(NH,N-2) !element # defined by nodes N1,N2,N3
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
-               NCELE = NODECODE(NH)*NODECODE(N2)*
-     &                 NODECODE(N3)*NOFF(NELE)
-               IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN !if element exists, compute terms
+c.RJW 06092009  modified to elimiate zero index NOFF
+            IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
+            NCELE = NODECODE(NH)*NODECODE(N2)*
+     &              NODECODE(N3)*NOFF(NELE)
+            IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+
                   qn=(qN1+qN2+qN3)/3.d0
                   Un=REAL(qn)
                   Vn=AIMAG(qn)
@@ -542,7 +553,8 @@ c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the seco
                   DqDYDPhiDY2A=DqDYDPhiDY2A
      &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
                ENDIF
-            END DO
+               ENDIF
+            ENDDO
 
             N3=N2               !wrap back to beginning to get final contribution
             qN3=qN2
@@ -550,9 +562,13 @@ c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the seco
             qN2=qNFirst
             NEle=NeiTabEle(NH,NNeigh(NH)-1)
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
+c.RJW 06092009  modified to elimiate zero index NOFF
+        IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
             NCELE = NODECODE(NH)*NODECODE(N2)*
      &              NODECODE(N3)*NOFF(NELE)
-            IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN !if element exists, compute terms
+            IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+
+C            IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN !if element exists, compute terms
                qn=(qN1+qN2+qN3)/3.d0
                Un=real(qn)
                Vn=aimag(qn)
@@ -568,6 +584,7 @@ c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the seco
      &              +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
                DqDYDPhiDY2A=DqDYDPhiDY2A
      &              +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
+            ENDIF
             ENDIF
 
             IF(TotalArea2.EQ.0.) THEN
@@ -669,8 +686,10 @@ c     (Mkm1,Mk,Mkp1)
             Mkm1(k) = CCL*Inm(k,1) + RCL*KVnm(k,1)
             Mk(k)   = CCL*Inm(k,2) + RCL*KVnm(k,2)
             Mkp1(k) = CCL*Inm(k,3) + RCL*KVnm(k,3)
-         END DO
-
+         ENDDO
+C RJW 09/01/2009 RJW k no longer defined
+C            try to fix this by setting k=NFEN
+         k=NFEN
          Fr(NFEN) = (CCR*q(NH,k-1)
      &        -DelT*(LAdvec(k-1)+LStress(k-1)+BPG(NH,k-1)))*Inm(k,1)
      &        + (CCR*q(NH,k)
@@ -733,7 +752,7 @@ c     this b.c. requires on manipulation of momentum eqns.  Do nothing!
      &                 +  (Auv2km1+Auv2k+Auv2kp1)*VelNorm 
      &                 +I*(Auv1km1+Auv1k+Auv1kp1)*VelNorm
                   Fr(k)      =Frstar
-               END DO
+               ENDDO
                Auv1km1    =Real(Mkm1(NFEN))
                Auv2km1    =AImag(Mkm1(NFEN))
                Auv1km1star=Auv1km1*SLBP
@@ -766,9 +785,9 @@ C     Save the horizontal velocity and Eddy Viscosity solutions
          DO k=1,NFEN
             qkp1(NH,k) = Gamma(k)
             EV(NH,k)=EVTot(k)
-         END DO
+         ENDDO
 
-      END DO
+      ENDDO
 
 c     Finished computing horizontal velocities
 
@@ -1067,7 +1086,7 @@ C     new sigma-t values. We will update velocities later.
 C     Compute Depth averaged SigmaT
                
         DO NH=1,NP
-	  DASigT(NH)=0.d0
+         DASigT(NH)=0.d0
           DO k=1,NFEN-1
             DASigT(NH)=DASigT(NH)+(Sigma(k+1)-Sigma(k))
      &                                   *(SigT(NH,k+1)+SigT(NH,k))/2.d0
@@ -2087,7 +2106,7 @@ c     model for geophysical fluid problems, Reviews of Geophysics and
 c     Space Physics, 20, 851-875, 1982.
 c
 c************************************************************************
-      subroutine turb(nh,H,bsx,bsy,wsx,wsy,istart)
+      subroutine turb(nh,H,bsx_loc,bsy_loc,wsx,wsy,istart)
       USE SIZES
       USE GLOBAL, ONLY : ScreenUnit
       USE GLOBAL_3DVS, EXCEPT_BSX => BSX ,EXCEPT_BSY => BSY
@@ -2096,7 +2115,7 @@ c************************************************************************
       COMPLEX(SZ) :: dQdz,dQdz1,dQdz2
       REAL(8) :: H,H_crit
 
-      REAL(SZ) :: BSX,BSY,WSX,WSY
+      REAL(SZ) :: bsx_loc,bsy_loc,WSX,WSY
       REAL(SZ),SAVE :: Sh,H2
       REAL(SZ),SAVE,ALLOCATABLE :: KQnm(:,:)
       REAL(SZ),SAVE,ALLOCATABLE :: Mqa(:),Mqb(:),Mqc(:)
@@ -2311,7 +2330,7 @@ c     Compute the q2 LHS Matrix and RHS Load Vector
       Mqa(1) = 0.d0
       Mqb(1) = 1.d0
       Mqc(1) = 0.d0
-      LVq(1) = B123*sqrt(bsx*bsx+bsy*bsy)
+      LVq(1) = B123*sqrt(bsx_loc*bsx_loc+bsy_loc*bsy_loc)
       
       coef2 = delt*theta1/HOamb2
 c     coef2 = theta1/HOamb2                !rog way
