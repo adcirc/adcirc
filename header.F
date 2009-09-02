@@ -2,6 +2,12 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4638   - 09/02/09 - tcm - Fixed a bug in writing hot start values for
+C               NOFF which could have the wrong values after globalizing
+C               because there are no rules for which processor owns an
+C               element and Noff is an elemental value. The way around is to
+C               take the minimum of (Noff, 1) as NOFF is supposed to be
+C               either 0 or 1.
 C  v48.4637   - 08/31/09 - rjw - Fixed out of bounds array in aswip 
 C  v48.4636   - 08/24/09 - rjw - Fixed Bug in NWS 19 code (first lon not 
 C               properly converted)

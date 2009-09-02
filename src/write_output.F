@@ -2483,13 +2483,22 @@ C     collect up the data from subdomains if running in parallel
          WRITE(16,*) "collectFullDomainIntArray NOFFDescript"
          CALL collectFullDomainIntArray(NOFFDescript, 
      &             packOneInt, unpackOneInt)
+!         TCM v48.4638 20090902 -- NOFF could have the wrong
+!         values after globalizing because there are no rules for which
+!         processor owns an element and Noff is an elemental value
+!         The way around is to take the minimum of (Noff, 1) as 
+!         NOFF is supposed to be either 0 or 1.
+         WHERE (NOFFDescript % iarray_g(:).gt.1) 
+            NOFFDescript % iarray_g(:) = 1
+         END WHERE
+
          WRITE(16,*) "FINISH collectFullDomainArray"
-         IF ( (MyProc.eq.0) ) THEN
-           DO I=1, NP_G
+!         IF ( (MyProc.eq.0) ) THEN
+!           DO I=1, NP_G
 !             PRINT *,"before case 1 ",I, Elev1Descript % array_g(I)
 !             PRINT *,"before case 1 ",I, Elev1Descript % array_g(I)
-          ENDDO
-         ENDIF
+!          ENDDO
+!         ENDIF
 
 #endif
       SELECT CASE (NHSTAR)
