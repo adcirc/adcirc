@@ -26,7 +26,8 @@ C----------------------------------------------------------------------
       USE GLOBAL_IO, ONLY: storeOne, storeTwo, store63, HEADER_MAX,
      &    open_gbl_file, write_gbl_file, write_gbl_63_skip_drynode,
      &    write_gbl_file_skip_default, collectFullDomainArray,
-     &    packOne, unpackOne, packTwo, unpackTwo, pack63, pack83 
+     &    packOne, unpackOne, packTwo, unpackTwo, pack63, pack83,
+     &    open_minmax_file
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var
 #ifdef CMPI
       USE WRITER, ONLY : WRITE_GBL_FILE_THROUGH_WRITER, 
@@ -60,7 +61,7 @@ C----------------------------------------------------------------------
       REAL(SZ) H2, H2N1, H2N2, H2N3
       REAL(SZ) U11, U22, U33
       REAL(SZ) V11, V22, V33
-
+     
       type(OutputDataDescript_t) :: descript
       type(OutputDataDescript_t), SAVE :: ElevStaDescript
       type(OutputDataDescript_t), SAVE :: VelStaDescript
@@ -73,6 +74,11 @@ C----------------------------------------------------------------------
       type(OutputDataDescript_t), SAVE :: WindVelDescript
       type(OutputDataDescript_t), SAVE :: ConcStaDescript
       type(OutputDataDescript_t), SAVE :: ConcDescript
+      type(OutputDataDescript_t), SAVE :: EtaMaxDescript
+      type(OutputDataDescript_t), SAVE :: UMaxDescript
+      type(OutputDataDescript_t), SAVE :: WVMaxDescript
+      type(OutputDataDescript_t), SAVE :: PrMinDescript
+      type(OutputDataDescript_t), SAVE :: RSMaxDescript
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ET00_g(:)
@@ -90,6 +96,11 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNYOut_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CC00_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CH1_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETAMAX_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UMAX_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: PRMIN_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNOUTMAX_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNMAX_g(:)
 
       LOGICAL, SAVE :: FirstCall = .true.
       
@@ -294,6 +305,96 @@ C         write(16,*) 'Allocating ConcDescript' !jgfdebug48.03
          ConcDescript % alternate_value      = 0.0
          ConcDescript % field_name           = 'Conc'
 
+C        maxele.63
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(ETAMAX_g(NP_G)) 
+         ENDIF
+         EtaMaxDescript % specifier            = 1
+         EtaMaxDescript % initial_value        = 0.0
+         EtaMaxDescript % num_items_per_record = 1
+         EtaMaxDescript % num_fd_records       = NP_G
+         EtaMaxDescript % num_records_this     = NP
+         EtaMaxDescript % imap                 => NODES_LG
+         EtaMaxDescript % array                => ETAMAX
+         EtaMaxDescript % array_g              => ETAMAX_G
+         EtaMaxDescript % hotstart             => HOT_ETAMAX
+         EtaMaxDescript % hotstart_g           => HOT_ETAMAX_G
+         EtaMaxDescript % ConsiderWetDry       = .FALSE.
+         EtaMaxDescript % alternate_value      = 0.0
+         EtaMaxDescript % field_name           = 'EtaMax'
+         EtaMaxDescript % file_name            = 'maxele.63'
+C        maxvel.63
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(UMAX_g(NP_G)) 
+         ENDIF
+         UMaxDescript % specifier              = 1 
+         UMaxDescript % initial_value          = 0.0
+         UMaxDescript % num_items_per_record   = 1
+         UMaxDescript % num_fd_records         = NP_G
+         UMaxDescript % num_records_this       = NP
+         UMaxDescript % imap                   => NODES_LG
+         UMaxDescript % array                  => UMAX
+         UMaxDescript % array_g                => UMAX_G
+         UMaxDescript % hotstart               => HOT_UMAX
+         UMaxDescript % hotstart_g             => HOT_UMAX_G
+         UMaxDescript % ConsiderWetDry         = .FALSE.
+         UMaxDescript % alternate_value        = 0.0
+         UMaxDescript % field_name             = 'UMax'
+         UMaxDescript % file_name              = 'maxvel.63'
+C        prmin.63
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(PRMIN_g(NP_G)) 
+         ENDIF
+         PrMinDescript % specifier             = 1 
+         PrMinDescript % initial_value         = 0.0
+         PrMinDescript % num_items_per_record  = 1
+         PrMinDescript % num_fd_records        = NP_G 
+         PrMinDescript % num_records_this      = NP
+         PrMinDescript % imap                  => NODES_LG
+         PrMinDescript % array                 => PRMIN
+         PrMinDescript % array_g               => PRMIN_G
+         PrMinDescript % hotstart              => HOT_PRMIN
+         PrMinDescript % hotstart_g            => HOT_PRMIN_G
+         PrMinDescript % ConsiderWetDry        = .FALSE.
+         PrMinDescript % alternate_value       = 0.0
+         PrMinDescript % field_name            = 'PrMin'
+         PrMinDescript % file_name             = 'minpr.63'
+C        maxwvel.63
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(WVNOUTMAX_g(NP_G)) 
+         ENDIF
+         WVMaxDescript % specifier             = 1 
+         WVMaxDescript % initial_value         = 0.0
+         WVMaxDescript % num_items_per_record  = 1
+         WVMaxDescript % num_fd_records        = NP_G
+         WVMaxDescript % num_records_this      = NP
+         WVMaxDescript % imap                  => NODES_LG
+         WVMaxDescript % array                 => WVNOUTMAX
+         WVMaxDescript % array_g               => WVNOUTMAX_G
+         WVMaxDescript % hotstart              => HOT_WVNOUTMAX
+         WVMaxDescript % hotstart_g            => HOT_WVNOUTMAX_G
+         WVMaxDescript % ConsiderWetDry        = .FALSE.
+         WVMaxDescript % alternate_value       = 0.0
+         WVMaxDescript % field_name            = 'WVMax'
+         WVMaxDescript % file_name             = 'maxwvel.63'
+C        maxrs.63
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(RSNMAX_g(NP_G)) 
+         ENDIF
+         RSMaxDescript % specifier             = 1 
+         RSMaxDescript % initial_value         = 0.0
+         RSMaxDescript % num_items_per_record  = 1
+         RSMaxDescript % num_fd_records        = NP_G
+         RSMaxDescript % num_records_this      = NP
+         RSMaxDescript % imap                  => NODES_LG
+         RSMaxDescript % array                 => RSNMAX
+         RSMaxDescript % array_g               => RSNMAX_G
+         RSMaxDescript % hotstart              => HOT_RSNMAX
+         RSMaxDescript % hotstart_g            => HOT_RSNMAX_G
+         RSMaxDescript % ConsiderWetDry        = .FALSE.
+         RSMaxDescript % alternate_value       = 0.0
+         RSMaxDescript % field_name            = 'RSMax'
+         RSMaxDescript % file_name             = 'maxrs.63'
          FirstCall = .false.
       ENDIF
 
@@ -620,58 +721,43 @@ C...  they have gotton.
 Csb 11/11/2006
 C...   OUTPUT MAXIMUM/MINIMUM GLOBAL DATA AT THE LAST TIME STEP.
 C...  
-
+C     jgf48.4636 Updated to newer data structure, so that we can 
+C     compare with values from hot start, so that mins and maxes
+C     can be preserved across hot starts.
       IF(IT.EQ.NT) THEN
-         CALL OPEN_GBL_FILE(963, TRIM(GLOBALDIR)//'/'//'maxele.63',
-     $        NP_G, NP, HEADER_MAX)
-         descript % initial_value        = 0.0
-         descript % num_items_per_record = 1
-         descript % num_fd_records       = NP_G
-         descript % num_records_this     = NP
-         descript % imap                 => NODES_LG
-         descript % array                => ETAMAX
-         CALL WRITE_GBL_FILE(963, TRIM(GLOBALDIR)//'/'//'maxele.63',
-     $        descript, time, it, storeOne)
-         CALL OPEN_GBL_FILE(963, TRIM(GLOBALDIR)//'/'//'maxvel.63',
-     $        NP_G, NP, HEADER_MAX)
-         descript % initial_value        = 0.0
-         descript % num_items_per_record = 1
-         descript % num_fd_records       = NP_G
-         descript % num_records_this     = NP
-         descript % imap                 => NODES_LG
-         descript % array                => UMAX
-         CALL WRITE_GBL_FILE(963, TRIM(GLOBALDIR)//'/'//'maxvel.63',
-     $        descript, time, it, storeOne)
-         CALL OPEN_GBL_FILE(963, TRIM(GLOBALDIR)//'/'//'minpr.63',
-     $        NP_G, NP, HEADER_MAX)
-         descript % initial_value        = 0.0
-         descript % num_items_per_record = 1
-         descript % num_fd_records       = NP_G
-         descript % num_records_this     = NP
-         descript % imap                 => NODES_LG
-         descript % array                => PRMIN
-         CALL WRITE_GBL_FILE(963, TRIM(GLOBALDIR)//'/'//'minpr.63',
-     $        descript, time, it, storeOne)
-         CALL OPEN_GBL_FILE(963, TRIM(GLOBALDIR)//'/'//'maxwvel.63',
-     $        NP_G, NP, HEADER_MAX)
-         descript % initial_value        = 0.0
-         descript % num_items_per_record = 1
-         descript % num_fd_records       = NP_G
-         descript % num_records_this     = NP
-         descript % imap                 => NODES_LG
-         descript % array                => WVNOUTMAX
-         CALL WRITE_GBL_FILE(963, TRIM(GLOBALDIR)//'/'//'maxwvel.63',
-     $        descript, time, it, storeOne)
-         CALL OPEN_GBL_FILE(963, TRIM(GLOBALDIR)//'/'//'maxrs.63',
-     $        NP_G, NP, HEADER_MAX)
-         descript % initial_value        = 0.0
-         descript % num_items_per_record = 1
-         descript % num_fd_records       = NP_G
-         descript % num_records_this     = NP
-         descript % imap                 => NODES_LG
-         descript % array                => RSNMAX
-         CALL WRITE_GBL_FILE(963, TRIM(GLOBALDIR)//'/'//'maxrs.63',
-     $        descript, time, it, storeOne)
+         CALL OPEN_MINMAX_FILE(963, TRIM(GLOBALDIR)//'/'//'maxele.63',
+     &           NP_G, NP, HEADER_MAX)
+         CALL OPEN_MINMAX_FILE(963, TRIM(GLOBALDIR)//'/'//'maxvel.63',
+     &           NP_G, NP, HEADER_MAX)
+         CALL OPEN_MINMAX_FILE(963, TRIM(GLOBALDIR)//'/'//'minpr.63',
+     &           NP_G, NP, HEADER_MAX)
+         CALL OPEN_MINMAX_FILE(963, TRIM(GLOBALDIR)//'/'//'maxwvel.63',
+     &           NP_G, NP, HEADER_MAX)
+         CALL OPEN_MINMAX_FILE(963, TRIM(GLOBALDIR)//'/'//'maxrs.63',
+     &           NP_G, NP, HEADER_MAX)
+         IF (IHOT.EQ.0) THEN
+            CALL writeOutArrayMinMax(963, TIME, IT, EtaMaxDescript,
+     &           packOne, unpackOne,'cld') 
+            CALL writeOutArrayMinMax(963, TIME, IT, UMaxDescript,
+     &           packOne, unpackOne, 'cld') 
+            CALL writeOutArrayMinMax(963, TIME, IT, PrMinDescript,
+     &           packOne, unpackOne, 'cld') 
+            CALL writeOutArrayMinMax(963, TIME, IT, WVMaxDescript,
+     &           packOne, unpackOne, 'cld') 
+            CALL writeOutArrayMinMax(963, TIME, IT, RSMaxDescript,
+     &           packOne, unpackOne, 'cld') 
+         ELSE
+            CALL writeOutArrayMinMax(963, TIME, IT, EtaMaxDescript,
+     &           packOne, unpackOne,'max') 
+            CALL writeOutArrayMinMax(963, TIME, IT, UMaxDescript,
+     &           packOne, unpackOne, 'max') 
+            CALL writeOutArrayMinMax(963, TIME, IT, PrMinDescript,
+     &           packOne, unpackOne, 'min') 
+            CALL writeOutArrayMinMax(963, TIME, IT, WVMaxDescript,
+     &           packOne, unpackOne, 'max') 
+            CALL writeOutArrayMinMax(963, TIME, IT, RSMaxDescript,
+     &           packOne, unpackOne, 'max') 
+         ENDIF
       ENDIF
 
       RETURN
@@ -1450,6 +1536,107 @@ C            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
  2454 FORMAT(2X,I8,2(2X,E15.8))
 C-----------------------------------------------------------------------
        END SUBROUTINE writeOutArray
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   W R I T E  O U T  A R R A Y  M I N  M A X 
+C-----------------------------------------------------------------------
+C     jgf48.4636 This subroutine was created to write out a column 
+C     vector (i.e., nodal data such as water surface elevation or 
+C     pressure) to a file, for quantities whose min or max values
+C     have been stored over the course of the run.
+C-----------------------------------------------------------------------
+      SUBROUTINE writeOutArrayMinMax(lun, time, it, descript, pack_cmd,
+     &                         unpack_cmd, cmp)
+
+      USE SIZES
+      USE GLOBAL
+      USE GLOBAL_IO, ONLY : collectFullDomainArray
+      IMPLICIT NONE
+C     args
+      INTEGER, intent(in) :: lun ! logical unit number of file to write to
+      REAL(8), intent(in) :: time ! seconds since cold start
+      INTEGER, intent(in) :: it   ! number of time steps since cold start
+      type(OutputDataDescript_t), intent(in) :: descript !describes output data
+      EXTERNAL :: pack_cmd   ! subroutine used to pack data on subdomain
+      EXTERNAL :: unpack_cmd ! subroutine used to unpack data on proc 0
+      CHARACTER(len=3), intent(in) :: cmp ! comparison to make vs hotstart val ('min' or 'max')
+      INTEGER :: I           ! loop counter
+
+C     collect up the data from subdomains if running in parallel
+      IF ( MNPROC.gt.1 ) THEN
+         CALL collectFullDomainArray(descript, pack_cmd, unpack_cmd)
+      ENDIF
+
+C     write data in ascii text only (other output formats are not supported)
+      SELECT CASE (ABS(descript % specifier))
+ 
+      CASE(1) !ascii text
+
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            OPEN(lun,
+     &           FILE=TRIM(GLOBALDIR)//'/'//TRIM(descript%file_name),
+     &           ACCESS='SEQUENTIAL',POSITION='APPEND')
+            WRITE(lun,2120) time,IT
+            SELECT CASE (cmp)
+               CASE('cld') ! "cold"
+                  DO I=1, descript % num_fd_records
+                     WRITE(lun,2453) I, descript % array_g(I)
+                  ENDDO
+               CASE('min')   
+                  DO I=1, descript % num_fd_records
+                     WRITE(lun,2453) I, MIN(descript % array_g(I),
+     &                   descript % hotstart_g(I))
+                  ENDDO
+               CASE('max')
+                  DO I=1, descript % num_fd_records
+                     WRITE(lun,2453) I, MAX(descript % array_g(I),
+     &                   descript % hotstart_g(I))
+                  ENDDO
+               CASE DEFAULT
+                  WRITE(ScreenUnit,*)
+     &               "ERROR: Invalid Min/Max comparison: '",
+     &               cmp,"'; must use 'min', 'max', or 'cld'. ",
+     &               descript % file_name," not written."
+             END SELECT
+             CLOSE(lun)
+         ENDIF
+
+         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES)) THEN
+            OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//TRIM(descript%file_name),
+     &           ACCESS='SEQUENTIAL',POSITION='APPEND')
+            WRITE(lun,2120) time,IT
+            SELECT CASE (cmp)
+               CASE('cld')
+                  DO I=1, descript % num_records_this
+                     WRITE(lun,2453) I, descript % array(I)
+                  ENDDO
+               CASE('min')
+                  DO I=1, descript % num_records_this
+                     WRITE(lun,2453) I, MIN(descript % array(I),
+     &                   descript % hotstart(I))
+                  ENDDO
+               CASE('max')
+                  DO I=1, descript % num_records_this
+                     WRITE(lun,2453) I, MAX(descript % array(I),
+     &                   descript % hotstart(I))
+                  ENDDO
+               CASE DEFAULT
+                  WRITE(16,*) "ERROR: Invalid Min/Max comparison: '",
+     &               cmp,"'; must use 'min','max', or 'cld'. ",
+     &               descript % file_name," not written."
+             END SELECT
+         ENDIF
+      CASE DEFAULT
+         WRITE(ScreenUnit,*) 'ERROR: Invalid output specifier.' 
+      END SELECT
+
+ 2    FORMAT(I2)
+ 2120 FORMAT(2X,E20.10,5X,I10)
+ 2453 FORMAT(2x, i8, 2x, E20.10, E20.10, E20.10, E20.10) 
+ 2454 FORMAT(2X,I8,2(2X,E15.8))
+C-----------------------------------------------------------------------
+       END SUBROUTINE writeOutArrayMinMax
 C-----------------------------------------------------------------------
 
 

@@ -2050,11 +2050,23 @@ C     of the year.
      &                 ( FcstInc(i) - FcstInc(i-1) )
                ENDIF
 C
-C     Set the central pressure and the radius to max wind to whatever
-C     the nowcast values were.
-               iCPress(i)=iNowcastCPress
-               iRMW(i)=iNowcastRMW
-               iRRP(i)=iNowcastRRP
+C     jgf48.4637 If the forecast values of central pressure or RMW are 
+C     zero (and they will be if unless the user has filled them in, because
+C     the NHC does not forecast these parameters), exit with a fatal error.
+               IF ( (iCPress(i).eq.0).or.(iRMW(i).eq.0) ) THEN
+                  WRITE(16,1000)   ! unit 22 Holland Storm File
+                  WRITE(16,1121)   ! cpress and/or Rmax were zero
+                  WRITE(16,1131)   ! must both be non zero
+                  IF (NScreen.ne.0.and.MyProc.eq.0) THEN
+                     WRITE(ScreenUnit,1000) ! unit 22 Holland Storm File
+                     WRITE(ScreenUnit,1021) CastType(i) ! cpress, Rmax were 0
+                     WRITE(ScreenUnit,1131) ! describe valid input
+                  ENDIF
+#ifdef CMPI 
+                  CALL MSG_FINI()              
+#endif
+                  STOP
+               ENDIF
 C
             CASE DEFAULT        ! unrecognized
                WRITE(16,1000)   ! unit 22 Holland Storm File
@@ -2207,6 +2219,9 @@ C     ----------------------------------------------------------
  1025 FORMAT('contains invalid TECH identifier: ',A4)
  1031 FORMAT('Valid TECH input is BEST (hindcast) or OFCL (forecast).')
  1041 FORMAT('Check the 5th column of the fort.22 file.')
+
+ 1121 FORMAT('contains invalid data for central pressure or Rmax.')
+ 1131 FORMAT('These values must both be nonzero.')
 C
       RETURN
 C     ----------------------------------------------------------------

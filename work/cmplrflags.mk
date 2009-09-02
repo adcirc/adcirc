@@ -11,10 +11,10 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #
 #compiler=gnu
 #compiler=g95
-compiler=intel
+#compiler=intel
 #compiler=intel-lonestar
 #compiler=cray_xt3
-#compiler=cray_xt4
+compiler=cray_xt4
 #compiler=pgi
 #
 #
@@ -156,7 +156,9 @@ ifeq ($(compiler),cray_xt4)
   PFC	        :=  ftn
   CC		:=  pgcc
   CCBE		:=  cc
-  FFLAGS1	:=  $(INCDIRS) -fastsse -Mextend
+#  FFLAGS1	:=  $(INCDIRS) -fastsse -Mextend
+  FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback
+# -Mbounds -Mchkptr
   FFLAGS2	:=  $(FFLAGS1) 
   FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics 
   DA  	        :=  -DREAL8 -DLINUX -DCSCA 

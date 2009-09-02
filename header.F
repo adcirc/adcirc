@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4639   - 09/02/09 - jgf - Added feature that will read in min/max 
+C               files on a hotstart to preserve the full record of min and
+C               max values; set NWS8 to choke if Rmax or Cp are set to zero
+C               on any line of fort.22, including OFCL ("forecast"). 
 C  v48.4638   - 09/02/09 - tcm - Fixed a bug in writing hot start values for
 C               NOFF which could have the wrong values after globalizing
 C               because there are no rules for which processor owns an

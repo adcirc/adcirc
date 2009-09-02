@@ -99,18 +99,26 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  ETA1(:), ETA2(:), UU2(:), VV2(:)
 #ifndef NELMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX(:) ! v46.50 sb 11/11/2006
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX(:) 
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX_G(:) 
 #endif
 #ifndef NUVMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  UMAX(:) ! v46.50 sb 11/11/2006
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX(:) 
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX_G(:) 
 #endif
       REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:), WVNXOut(:), WVNYOut(:)
 #ifndef NPRMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin(:) 
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin_G(:) 
 #endif
 #ifndef NWVMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax(:) 
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax_G(:) 
 #endif
       REAL(SZ),ALLOCATABLE, TARGET ::  CC00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  EtaDisc(:) ! vjp 9/2006 added for hotstart file
@@ -153,6 +161,8 @@ c.
       REAL(SZ),ALLOCATABLE ::   RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
 #ifndef NRSMAX
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:) 
 #endif
       REAL(SZ),ALLOCATABLE ::   TK(:)
       REAL(8), ALLOCATABLE ::   EMO(:,:),EFA(:,:)
@@ -431,6 +441,7 @@ C     jgf48.03 the following data structure is used to describe
 C     the size and shape of the output data. 
 C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements to the structure
       type OutputDataDescript_t
+        CHARACTER(12)     :: file_name ! name of output file
         character(20)     :: field_name !Name of the field associated with the data structure
         integer           :: specifier  ! output format from fort.15 (NOUTE,etc)
         REAL(SZ)          :: initial_value 
@@ -454,6 +465,8 @@ C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements t
         REAL(SZ), pointer :: array_g(:)  ! full domain data scalar etc
         REAL(SZ), pointer :: array2_g(:) ! full domain 2nd vec component
         REAL(SZ), pointer :: array3_g(:) ! full domain 3rd vec component
+        REAL(SZ), pointer :: hotstart(:) ! from hotstart (used by min max)
+        REAL(SZ), pointer :: hotstart_g(:) ! from hotstart (used by min max)
       end type OutputDataDescript_t
       INTEGER ITAU0P ! position in tau0 output file for variable tau0
 C   

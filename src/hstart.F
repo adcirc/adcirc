@@ -92,11 +92,19 @@ C     jgf46.14 Check for file existence before attempting to open.
       INTEGER NP_G_IN, NE_G_IN  ! Global and
       INTEGER NP_A_IN, NE_A_IN  ! active number nodes, elements.
       INTEGER IHOTNC            ! variable to keep -67 and -68 in parallel
-
+C
 C     jgf48.4628 Add capability to turn off solution if only met output
 C     was requested.
       LOGICAL metOutputOn     ! .true. if met output was requested
       LOGICAL nonMetOutputOff ! .true. no other output was requested
+C
+C     jgf48.4636 Add capability to read min/max files upon hotstart, 
+C     if they are available
+      CHARACTER(len=12) minMaxFN ! name of the min or max file to read in
+      INTEGER node               ! node number of the min/max data
+      CHARACTER(len=80) skipline ! dummy variable for min/max header data
+      INTEGER numLinesInMinMaxFile ! count the lines to report to log file
+      LOGICAL tooFewMinMaxLines  ! true if couldn't read enough lines from file
 
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
@@ -2437,15 +2445,46 @@ C..Read in Means and Squares
       ENDIF    !HARIND
 
       ENDIF
-
-C     jgf46.02 Added the following block of code from ral for Katrina.
-CRAL_add_42.06g           read RBC information in HS file
-C        DO I=1,NVEL
-C          IHOTSTP=IHOTSTP+1
-C          READ(IHOT,REC=IHOTSTP) Elev_Disc(I)
-C          END DO
-CRAL_add_42.06g
-
+C
+C     jgf48.4635 If the maxele.63 (etc) files are present, we need to
+C     load them up, to preserve high water marks across hotstarts. 
+C     If they are not present, thats okay too.  
+      if ((MNPROC.gt.1).and.(MyProc.eq.0)) then
+         ALLOCATE(HOT_ETAMAX_G(NP_G))
+         HOT_ETAMAX_G(:) = -99999.d0  ! initialize the value
+         CALL readMinMax('maxele.63',HOT_ETAMAX_G)
+         ALLOCATE(HOT_UMAX_G(NP_G))
+         HOT_UMAX_G(:) = 0.d0  ! initialize the value
+         CALL readMinMax('maxvel.63',HOT_UMAX_G)
+         ALLOCATE(HOT_WVNOUTMAX_G(NP_G))
+         HOT_WVNOUTMAX_G(:) = 0.d0  ! initialize the value
+         CALL readMinMax('maxwvel.63',HOT_WVNOUTMAX_G)
+         ALLOCATE(HOT_PrMin_G(NP_G))
+         HOT_PrMin_G(:) = 99999.d0  ! initialize the value
+         CALL readMinMax('minpr.63',HOT_PrMin_G)
+         ALLOCATE(HOT_RSNMAX_G(NP_G))
+         HOT_RSNMAX_G(:) = 0.d0  ! initialize the value
+         CALL readMinMax('maxrs.63',HOT_RSNMAX_G)
+      else 
+         if ( (MNPROC.eq.1).or.(WRITE_LOCAL_FILES) ) then  
+            ALLOCATE(HOT_ETAMAX(NP))
+            HOT_ETAMAX(:) = -99999.d0    ! initialize the value
+            CALL readMinMax('maxele.63',HOT_ETAMAX)
+            ALLOCATE(HOT_UMAX(NP))
+            HOT_UMAX(:) = 0.d0  ! initialize the value
+            CALL readMinMax('maxvel.63',HOT_UMAX)
+            ALLOCATE(HOT_WVNOUTMAX(NP))
+            HOT_WVNOUTMAX(:) = 0.d0  ! initialize the value
+            CALL readMinMax('maxwvel.63',HOT_WVNOUTMAX)
+            ALLOCATE(HOT_PrMin(NP))
+            HOT_PrMin(:) = 99999.d0  ! initialize the value
+            CALL readMinMax('minpr.63',HOT_PrMin)
+            ALLOCATE(HOT_RSNMAX(NP))
+            HOT_RSNMAX(:) = 0.d0  ! initialize the value
+            CALL readMinMax('maxrs.63',HOT_RSNMAX)
+         endif
+      endif
+C
       IF(IHOT.EQ.67.OR.IHOT.EQ.68)THEN
 !         IF(Myproc.eq.0) PRINT *, "IHOT == ",IHOT
          CLOSE(IHOT)
@@ -2460,7 +2499,6 @@ C
 C
       RETURN
       END
-
 
 C******************************************************************************
 C   Subroutine to initialize the 3D routines for a hot start including        *
@@ -3017,4 +3055,4 @@ C.... Set up a few final odds and ends for a 3D run
       CALL VSSTUP ()
         
       RETURN
-      END
+      END SUBROUTINE HOTSTART_3D

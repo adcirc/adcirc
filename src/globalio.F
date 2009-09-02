@@ -444,6 +444,34 @@ C         write(16,*) i, j !jgfdebug48.03
       end subroutine open_gbl_file
       !--------------------------------------------------------------
 
+      !--------------------------------------------------------------   
+      !    S U B R O U T I N E   O P E N _ M I N M A X _ F I L E 
+      !--------------------------------------------------------------
+      ! Open Global File: opens the file, replacing the existing file,
+      !                   executes the write_header routine and closes
+      !                   the file.
+      !--------------------------------------------------------------
+      subroutine open_minmax_file(lun, filename, size_g, size,
+     &                          write_header)
+      implicit none
+
+      external write_header ! subroutine used to actually write the header
+      integer      :: lun, size, size_g, szz
+      character(*) :: filename
+
+      szz = size_g
+      if (mnproc == 1 .or. WRITE_LOCAL_FILES) szz = size
+
+      if (myproc == 0 .or. WRITE_LOCAL_FILES) then
+        open(lun, file=filename, status='REPLACE')
+        call write_header(lun,szz)
+        close(lun)
+      end if
+      return
+      !--------------------------------------------------------------
+      end subroutine open_minmax_file
+      !--------------------------------------------------------------
+
 
       !--------------------------------------------------------------
       !     S U B R O U T I N E   W R I T E _ G B L _ F I L E
@@ -1538,6 +1566,91 @@ C     close the file
       !--------------------------------------------------------------
       end subroutine writeDomainHeader
       !--------------------------------------------------------------
+
+C----------------------------------------------------------------------
+C       S U B R O U T I N E   R E A D  M I N  M A X 
+C----------------------------------------------------------------------
+C
+C     jgf48.4636 Subroutine to read in continuous min and max files,
+C     if they are present. 
+C
+C----------------------------------------------------------------------
+      SUBROUTINE readMinMax(minMaxFN,array)
+      USE SIZES , ONLY : SZ, MNPROC, GLOBALDIR
+      USE GLOBAL , ONLY : NSCREEN, ScreenUnit, MyProc
+      IMPLICIT NONE
+      CHARACTER(*) :: minMaxFN ! name of min/max file to read
+      REAL(SZ), dimension(:), target :: array ! min/max array
+      INTEGER node               ! node number of the min/max data
+      CHARACTER(len=80) skipline ! dummy variable for min/max header data
+      INTEGER numLinesInMinMaxFile ! count the lines to report to log file
+      LOGICAL tooFewMinMaxLines  ! true if couldn't read enough lines from file
+      LOGICAL FileFound  ! true if the file exists
+      INTEGER ErrorIO      ! zero if file opened successfully
+      INTEGER I
+C
+      FileFound=.False.
+      INQUIRE(FILE=TRIM(GLOBALDIR)//'/'//trim(minMaxFN),
+     &   EXIST=FileFound)
+
+      IF (.not.FileFound) THEN
+         WRITE(16,2331) trim(minMaxFN)  ! INFO: min/max file  
+         WRITE(16,1011)           ! was not found.
+         WRITE(16,3333) trim(minMaxFN)  ! WARNING: values not preserved
+         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
+            WRITE(ScreenUnit,2331) trim(minMaxFN)
+            WRITE(ScreenUnit,1011)
+            WRITE(ScreenUnit,3333) trim(minMaxFN)! WARNING: values not preserved
+         ENDIF
+         RETURN  ! early return
+      ENDIF
+C
+C     Now open the file and use the contents to initialize the 
+C     min or max array.
+      WRITE(16,440) minMaxFN
+ 440  FORMAT(/,9X,'Min/max file ', (A),' was found. Opening file.')
+      OPEN(963,FILE=TRIM(GLOBALDIR)//'/'//trim(minMaxFN),
+     &   STATUS='OLD',ACCESS='SEQUENTIAL',IOSTAT=ErrorIO)
+      IF (ErrorIO.GT.0) THEN
+         WRITE(16,3001) trim(minMaxFN) ! ERROR: min/max file
+         WRITE(16,1005)         ! exists but can't be opened
+         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
+            WRITE(ScreenUnit,3001) trim(minMaxFN)
+            WRITE(ScreenUnit,1005)
+         ENDIF
+         RETURN  ! early return
+      ENDIF
+C 
+C     The file exists and is open, so read the data.
+      numLinesInMinMaxFile = 0
+      READ(963,*,END=3990) skipline   ! 1st header line
+      READ(963,*,END=3990) skipline   ! 2nd header line
+      READ(963,*,END=3990) skipline   ! TIME and IT line
+      DO I=1, size(array)
+         READ(963,*,END=3990) node, array(node)
+         numLinesInMinMaxFile = numLinesInMinMaxFile + 1
+      ENDDO
+ 3990 CONTINUE ! jump to here when end of file is reached
+      WRITE(16,450) numLinesInMinMaxFile, trim(minMaxFN)
+      IF (numLinesInMinMaxFile.lt.size(array)) THEN
+         WRITE(16,*) "ERROR: Not enough data in ",trim(minMaxFN),"."
+      ENDIF
+ 450  FORMAT(/,'Finished reading ',(I),' lines from the ',
+     &   (A),' file.')
+      CLOSE(963)
+      RETURN
+ 1011 FORMAT('was not found.')
+ 1005 FORMAT('exists but cannot be opened.')
+ 2331 FORMAT('INFO: The full domain min/max file ', (A))
+ 3001 FORMAT('ERROR: The full domain min/max file ', (A))
+ 3333 FORMAT('WARNING: Values from ',(A),
+     &       ' will not reflect the solution prior to this hotstart.')
+C-----------------------------------------------------------------------
+      END SUBROUTINE readMinMax
+C-----------------------------------------------------------------------
+
+
+
 
       !--------------------------------------------------------------
       end module global_io
