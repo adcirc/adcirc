@@ -2788,6 +2788,16 @@ C         WRITE(16,*) "collectFullDomainIntArray NodeCodeDescript"
 C         WRITE(16,*) "collectFullDomainIntArray NOFFDescript"
          CALL collectFullDomainIntArray(NOFFDescript, 
      &             packOneInt, unpackOneInt)
+!         TCM v48.62 20090902 -- NOFF could have the wrong
+!         values after globalizing because there are no rules for which
+!         processor owns an element and Noff is an elemental value
+!         The way around is to take the minimum of (Noff, 1) as 
+!         NOFF is supposed to be either 0 or 1.
+         WHERE (NOFFDescript % iarray_g(:).gt.1) 
+            NOFFDescript % iarray_g(:) = 1
+         END WHERE
+
+
 C         WRITE(16,*) "FINISH collectFullDomainArray"
 C         IF ( (MyProc.eq.0) ) THEN
 C           DO I=1, NP_G

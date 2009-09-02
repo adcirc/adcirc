@@ -3,6 +3,11 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C                                                                             *
 C  mod history                                                                *
+C  v48.62   - 09/02/09 - tcm - Fixed bug in writing hstart value for NOFF 
+C             which could have the wrong values after globalizing because
+C             there are no rules for which processor owns an element and
+C             Noff is an elemental value. The way around is to take the
+C             minimum of (Noff, 1) as NOFF is supposed to be either 0 or 1.
 C  v48.61   - 09/01/09 - rjw - Fixed bug vsmy.F 
 C  v48.60   - 08/14/09 - tcm - Fixed bug in call to neighb within read_input
 C               updated the adcirc makefiles for a pc
