@@ -190,7 +190,7 @@ C
 c        if (ipn(ient) == 0 )then
 c            ipn(ient)=ipn(ient-1)
 c         endif
-         if (icpress(ient) == 0  ) icpress(ient) = cpress(ient-1)
+         if (icpress(ient) == 0  ) icpress(ient) = icpress(ient-1)
 
 
             if ( (iday(ient).eq.iday(ient-1)).AND.
