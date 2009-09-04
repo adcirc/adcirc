@@ -141,7 +141,7 @@ C
           num_cycles = 1
           count_newcycle(1) = 1
           cycle_num(ient)=count_newcycle(1)
-
+           
 !         The logic for the code is set for W and N so if E or S
 !         multiply lats and lons by -1
             IF(ew.EQ.E)THEN
@@ -158,6 +158,7 @@ C
          ! Set ipn to background pressure of 1013
          !------------
             ipn(ient)=1013
+            if (icpress(ient) == 0  ) icpress(ient) = ipn(ient)
 
          DO ient=2,num_entry
 
@@ -189,6 +190,7 @@ C
 c        if (ipn(ient) == 0 )then
 c            ipn(ient)=ipn(ient-1)
 c         endif
+         if (icpress(ient) == 0  ) icpress(ient) = cpress(ient-1)
 
 
             if ( (iday(ient).eq.iday(ient-1)).AND.

@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4640   - 09/04/09 - rjw - Changed aswip to persist Cent.press if a 
+C               zero valued for the central pressure is given
 C  v48.4639   - 09/02/09 - jgf - Added feature that will read in min/max 
 C               files on a hotstart to preserve the full record of min and
 C               max values; set NWS8 to choke if Rmax or Cp are set to zero
