@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4641   - 09/09/09 - jgf - Fixed a potential issue in globalio.F where
+C               the fortran intrinsic function 'size' was used as a variable
+C               name in several older subroutines; replaced these instances
+C               with the variable name 'size_this'.
 C  v48.4640   - 09/04/09 - rjw - Changed aswip to persist Cent.press if a 
 C               zero valued for the central pressure is given
 C  v48.4639   - 09/02/09 - jgf - Added feature that will read in min/max 

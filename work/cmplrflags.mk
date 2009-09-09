@@ -156,9 +156,8 @@ ifeq ($(compiler),cray_xt4)
   PFC	        :=  ftn
   CC		:=  pgcc
   CCBE		:=  cc
-#  FFLAGS1	:=  $(INCDIRS) -fastsse -Mextend
-  FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback
-# -Mbounds -Mchkptr
+  FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse
+#  FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback
   FFLAGS2	:=  $(FFLAGS1) 
   FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics 
   DA  	        :=  -DREAL8 -DLINUX -DCSCA 
