@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4642   - 09/18/09 - jgf - Changed syntax for correcting NOFF in
+C               write_output.F, since g95 choked on the original syntax. 
+C               Also fixed several bugs related to writing output
+C               (particularly hotstart output) to subdomain files during
+C               parallel execution.
 C  v48.4641   - 09/09/09 - jgf - Fixed a potential issue in globalio.F where
 C               the fortran intrinsic function 'size' was used as a variable
 C               name in several older subroutines; replaced these instances

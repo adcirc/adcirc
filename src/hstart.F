@@ -2449,7 +2449,8 @@ C
 C     jgf48.4635 If the maxele.63 (etc) files are present, we need to
 C     load them up, to preserve high water marks across hotstarts. 
 C     If they are not present, thats okay too.  
-      if ((MNPROC.gt.1).and.(MyProc.eq.0)) then
+      if ((MNPROC.gt.1).and.(MyProc.eq.0)
+     &     .and.(.not.WRITE_LOCAL_FILES)) then
          ALLOCATE(HOT_ETAMAX_G(NP_G))
          HOT_ETAMAX_G(:) = -99999.d0  ! initialize the value
          CALL readMinMax('maxele.63',HOT_ETAMAX_G)
@@ -2465,24 +2466,23 @@ C     If they are not present, thats okay too.
          ALLOCATE(HOT_RSNMAX_G(NP_G))
          HOT_RSNMAX_G(:) = 0.d0  ! initialize the value
          CALL readMinMax('maxrs.63',HOT_RSNMAX_G)
-      else 
-         if ( (MNPROC.eq.1).or.(WRITE_LOCAL_FILES) ) then  
-            ALLOCATE(HOT_ETAMAX(NP))
-            HOT_ETAMAX(:) = -99999.d0    ! initialize the value
-            CALL readMinMax('maxele.63',HOT_ETAMAX)
-            ALLOCATE(HOT_UMAX(NP))
-            HOT_UMAX(:) = 0.d0  ! initialize the value
-            CALL readMinMax('maxvel.63',HOT_UMAX)
-            ALLOCATE(HOT_WVNOUTMAX(NP))
-            HOT_WVNOUTMAX(:) = 0.d0  ! initialize the value
-            CALL readMinMax('maxwvel.63',HOT_WVNOUTMAX)
-            ALLOCATE(HOT_PrMin(NP))
-            HOT_PrMin(:) = 99999.d0  ! initialize the value
-            CALL readMinMax('minpr.63',HOT_PrMin)
-            ALLOCATE(HOT_RSNMAX(NP))
-            HOT_RSNMAX(:) = 0.d0  ! initialize the value
-            CALL readMinMax('maxrs.63',HOT_RSNMAX)
-         endif
+      endif
+      if ( (MNPROC.eq.1).or.(WRITE_LOCAL_FILES) ) then  
+         ALLOCATE(HOT_ETAMAX(NP))
+         HOT_ETAMAX(:) = -99999.d0    ! initialize the value
+         CALL readMinMax('maxele.63',HOT_ETAMAX)
+         ALLOCATE(HOT_UMAX(NP))
+         HOT_UMAX(:) = 0.d0  ! initialize the value
+         CALL readMinMax('maxvel.63',HOT_UMAX)
+         ALLOCATE(HOT_WVNOUTMAX(NP))
+         HOT_WVNOUTMAX(:) = 0.d0  ! initialize the value
+         CALL readMinMax('maxwvel.63',HOT_WVNOUTMAX)
+         ALLOCATE(HOT_PrMin(NP))
+         HOT_PrMin(:) = 99999.d0  ! initialize the value
+         CALL readMinMax('minpr.63',HOT_PrMin)
+         ALLOCATE(HOT_RSNMAX(NP))
+         HOT_RSNMAX(:) = 0.d0  ! initialize the value
+         CALL readMinMax('maxrs.63',HOT_RSNMAX)
       endif
 C
       IF(IHOT.EQ.67.OR.IHOT.EQ.68)THEN

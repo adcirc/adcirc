@@ -1393,7 +1393,7 @@ C     initialize output file name
       WRITE(fn(6:7),2) lun
 
 C     collect up the data from subdomains if running in parallel
-      IF ( MNPROC.gt.1 ) THEN
+      IF ((MNPROC.gt.1).and.(.not.WRITE_LOCAL_FILES)) THEN
 C         write(16,*) 'About to collectFullDomainArray' !jgfdebug48.03
          CALL collectFullDomainArray(descript, pack_cmd, unpack_cmd)
       ENDIF
@@ -1404,7 +1404,8 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
       CASE(1) !ascii text
 
 C         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
+     &        .and.(.not.WRITE_LOCAL_FILES)) THEN
             OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//fn,
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
             WRITE(lun,2120) time,IT
@@ -1458,7 +1459,8 @@ C            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
 
       CASE(2) !binary (nonportable)
 
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
+     &         .and.(.not.WRITE_LOCAL_FILES)) THEN
             OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//fn,
      &           ACCESS='DIRECT',RECL=NBYTE)
             WRITE(lun,REC=filepos+1) time
@@ -1485,31 +1487,28 @@ C            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
             WRITE(lun,REC=filepos+2) IT
             filepos = filepos + 2
             IF ( descript % num_items_per_record .eq. 1 ) THEN
-
                IF ((trim(descript % field_name) .eq. 'Elev').and.
      &             (descript % ConsiderWetDry .EQV. .TRUE.)) THEN
-
                   DO I=1, descript % num_records_this
                      if(NODECODE(I).EQ.1) THEN
                         WRITE(lun,REC=filepos+I) descript % array(I)
                      ELSE
-                        WRITE(lun,REC=filepos+I) descript % alternate_value  !-99999.0 for dry nodes
+                        WRITE(lun,REC=filepos+I)
+     &                    descript % alternate_value !-99999.0 for dry nodes
                      ENDIF
                   END DO
-
                ELSE
-
                   DO I=1, descript % num_records_this
                      WRITE(lun,REC=filepos+I) descript % array(I)
                   END DO
-
                ENDIF
-
             ENDIF
             IF ( descript % num_items_per_record .eq. 2 ) THEN
                DO I=1, descript % num_records_this
-                  WRITE(lun,REC=filepos+2*I-1) descript % array(I)        !tcmv48.4618 -- changed from array_g to array
-                  WRITE(lun,REC=filepos+2*I)   descript % array2(I)       !tcmv48.4618 -- changed from array2_g to array2
+                  !tcmv48.4618 -- changed from array_g to array
+                  WRITE(lun,REC=filepos+2*I-1) descript % array(I)
+                  !tcmv48.4618 -- changed from array2_g to array2
+                  WRITE(lun,REC=filepos+2*I)   descript % array2(I)   
                END DO
             ENDIF
             CLOSE(lun)
@@ -1564,7 +1563,7 @@ C     args
       INTEGER :: I           ! loop counter
 
 C     collect up the data from subdomains if running in parallel
-      IF ( MNPROC.gt.1 ) THEN
+      IF ((MNPROC.gt.1).and.(.not.WRITE_LOCAL_FILES)) THEN
          CALL collectFullDomainArray(descript, pack_cmd, unpack_cmd)
       ENDIF
 
@@ -1573,7 +1572,8 @@ C     write data in ascii text only (other output formats are not supported)
  
       CASE(1) !ascii text
 
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         IF ((MNPROC.gt.1).and.(MyProc.eq.0).and.
+     &        (.not.WRITE_LOCAL_FILES)) THEN
             OPEN(lun,
      &           FILE=TRIM(GLOBALDIR)//'/'//TRIM(descript%file_name),
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
@@ -2649,25 +2649,26 @@ C
 
 C     collect up the data from subdomains if running in parallel
 #ifdef CMPI
-         WRITE(16,*) "START collectFullDomainArray"
-         WRITE(16,*) 
-     &    'About to collectFullDomainArrays for hotstart file.'
-         WRITE(16,*) "collectFullDomainArray Elev1Descript"
+      IF (.not.WRITE_LOCAL_HOT_START_FILES) THEN
+C         WRITE(16,*) "START collectFullDomainArray"
+C         WRITE(16,*) 
+C     &    'About to collectFullDomainArrays for hotstart file.'
+C         WRITE(16,*) "collectFullDomainArray Elev1Descript"
          CALL collectFullDomainArray(Elev1Descript, packOne, unpackOne)
-         WRITE(16,*) "collectFullDomainArray Elev2Descript"
+C         WRITE(16,*) "collectFullDomainArray Elev2Descript"
          CALL collectFullDomainArray(Elev2Descript, packOne, unpackOne)
-         WRITE(16,*) "collectFullDomainArray VelDescript"
+C         WRITE(16,*) "collectFullDomainArray VelDescript"
          CALL collectFullDomainArray(VelDescript, packTwo, unpackTwo)
          IF (IM.eq.10) THEN
             CALL collectFullDomainArray(CH1Descript, packOne, unpackOne)
          ENDIF
-         WRITE(16,*) "collectFullDomainArray EtaDiscDescript"
+C         WRITE(16,*) "collectFullDomainArray EtaDiscDescript"
          CALL collectFullDomainArray(EtaDiscDescript, 
      &             packOne, unpackOne)
-         WRITE(16,*) "collectFullDomainIntArray NodeCodeDescript"
+C         WRITE(16,*) "collectFullDomainIntArray NodeCodeDescript"
          CALL collectFullDomainIntArray(NodeCodeDescript, 
      &             packOneInt, unpackOneInt)
-         WRITE(16,*) "collectFullDomainIntArray NOFFDescript"
+C         WRITE(16,*) "collectFullDomainIntArray NOFFDescript"
          CALL collectFullDomainIntArray(NOFFDescript, 
      &             packOneInt, unpackOneInt)
 !         TCM v48.4638 20090902 -- NOFF could have the wrong
@@ -2675,10 +2676,12 @@ C     collect up the data from subdomains if running in parallel
 !         processor owns an element and Noff is an elemental value
 !         The way around is to take the minimum of (Noff, 1) as 
 !         NOFF is supposed to be either 0 or 1.
-         WHERE (NOFFDescript % iarray_g(:).gt.1) 
-            NOFFDescript % iarray_g(:) = 1
-         END WHERE
-
+!
+!        jgf48.4642 Modified syntax to operate directly on NOFF array
+!        instead of the pointer to the NOFF array (i.e.
+!        NOFFDescript%iarray) b/c g95 choked on the original syntax.
+         WHERE (NOFF.gt.1) NOFF = 1
+!
          WRITE(16,*) "FINISH collectFullDomainArray"
 !         IF ( (MyProc.eq.0) ) THEN
 !           DO I=1, NP_G
@@ -2686,7 +2689,7 @@ C     collect up the data from subdomains if running in parallel
 !             PRINT *,"before case 1 ",I, Elev1Descript % array_g(I)
 !          ENDDO
 !         ENDIF
-
+      ENDIF
 #endif
       SELECT CASE (NHSTAR)
 
@@ -2704,28 +2707,28 @@ C     collect up the data from subdomains if running in parallel
 !            PRINT *, "write_output: NEX - 2", NEX
          endif
 
-      IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
-          OPEN(hss % lun ,FILE=TRIM(HOTSTARTDIR)//'/'//hss % filename,
+         IF ((MYPROC.eq.0).or.(WRITE_LOCAL_HOT_START_FILES)) THEN 
+            OPEN(hss % lun ,FILE=TRIM(HOTSTARTDIR)//'/'//hss % filename,
      $      ACCESS='DIRECT',RECL=8)
-          IHOTSTP=1
-!          print *, FileFmtVersion
-          WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion 
-          IHOTSTP = IHOTSTP + 1
-!          print *, IM
-          WRITE(hss % lun,REC=IHOTSTP) IM   ; IHOTSTP = IHOTSTP + 1
-!          print *, TIME
-          WRITE(hss % lun,REC=IHOTSTP) TIME ; IHOTSTP = IHOTSTP + 1
-!          print *, IT
-          WRITE(hss % lun,REC=IHOTSTP) IT   ; IHOTSTP = IHOTSTP + 1
-!          print *, NPX
-          WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
-!          print *, NEX
-          WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
-!          print *, NPX
-          WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
-!          print *, NEX
-          WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
-          
+            IHOTSTP=1
+!           print *, FileFmtVersion
+            WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion 
+            IHOTSTP = IHOTSTP + 1
+!           print *, IM
+            WRITE(hss % lun,REC=IHOTSTP) IM   ; IHOTSTP = IHOTSTP + 1
+!           print *, TIME
+            WRITE(hss % lun,REC=IHOTSTP) TIME ; IHOTSTP = IHOTSTP + 1
+!           print *, IT
+            WRITE(hss % lun,REC=IHOTSTP) IT   ; IHOTSTP = IHOTSTP + 1
+!           print *, NPX
+            WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
+!           print *, NEX
+            WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
+!           print *, NPX
+            WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
+!           print *, NEX
+            WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
+         ENDIF
 !          PRINT *,"========================before bin=================="
 !          PRINT *, "==== write_output: IM = ", IM
 !          PRINT *, "==== write_output: TIME = ", TIME
@@ -2753,119 +2756,121 @@ C     collect up the data from subdomains if running in parallel
 !          PRINT *, "==== write_output: IGWP = ", IGWP
 !          PRINT *, "==== write_output: NSCOUGW = ", NSCOUGW
 !          PRINT *,"========================before bin=================="
-      
-#ifdef CMPI
-          DO I=1, NP_G
-             WRITE(hss % lun,REC=IHOTSTP) Elev1Descript % array_g(I)
-             IHOTSTP=IHOTSTP+1
-          ENDDO
-          DO I=1, NP_G
-             WRITE(hss % lun,REC=IHOTSTP) Elev2Descript % array_g(I)
-             IHOTSTP=IHOTSTP+1
-          ENDDO
-          DO I=1, NP_G
-             WRITE(hss % lun,REC=IHOTSTP) EtaDiscDescript % array_g(I)
-             IHOTSTP=IHOTSTP+1
-          ENDDO
-          DO I=1, NP_G
-             WRITE(hss % lun,REC=IHOTSTP) VelDescript % array_g(I)
-             IHOTSTP=IHOTSTP+1
-          ENDDO
-          DO I=1, NP_G
-             WRITE(hss % lun,REC=IHOTSTP) VelDescript % array2_g(I)
-             IHOTSTP=IHOTSTP+1
-          ENDDO
-          IF (IM.eq.10) THEN
-             DO I=1, NP_G
-                WRITE(hss % lun,REC=IHOTSTP) CH1Descript % array_g(I)
-                IHOTSTP=IHOTSTP+1
-             ENDDO
-          ENDIF
-          DO I=1, NP_G
-             WRITE(hss % lun,REC=IHOTSTP) NodeCodeDescript % iarray_g(I)
-             IHOTSTP=IHOTSTP+1
-          ENDDO
-          DO I=1, NE_G
-             WRITE(hss % lun,REC=IHOTSTP) NOFFDescript % iarray_g(I)
-             IHOTSTP=IHOTSTP+1
-          ENDDO
-#else
-          WRITE(16,*) '=================ETA1:===================='
-          DO I=1, NP_G
-             WRITE(16,*) I, ETA1(I)
-             WRITE(hss % lun,REC=IHOTSTP) ETA1(I)
-             IHOTSTP=IHOTSTP+1
-          ENDDO
-          WRITE(16,*) '=================ETA2:===================='
-          DO I=1, NP_G
-             WRITE(16,*) I, ETA2(I)
-             WRITE(hss % lun,REC=IHOTSTP) ETA2(I)
-             IHOTSTP=IHOTSTP+1
-          ENDDO
-          WRITE(16,*) '=================ETADisc:===================='
-          DO I=1, NP_G
-             WRITE(16,*) I, ETADisc(I)
-             WRITE(hss % lun,REC=IHOTSTP) EtaDisc(I)
-             IHOTSTP=IHOTSTP+1
-          ENDDO
-          WRITE(16,*) '=================UU2:===================='
-          DO I=1, NP_G
-             WRITE(16,*) I, UU2(I)
-             WRITE(hss % lun,REC=IHOTSTP) UU2(I)
-             IHOTSTP=IHOTSTP+1
-          ENDDO
-          WRITE(16,*) '=================VV2:===================='
-          DO I=1, NP_G
-             WRITE(16,*) I, VV2(I) 
-             WRITE(hss % lun,REC=IHOTSTP) VV2(I)
-             IHOTSTP=IHOTSTP+1
-          ENDDO
-          IF (IM.eq.10) THEN
-             DO I=1, NP_G
-                WRITE(hss % lun,REC=IHOTSTP) CH1(I)
-                IHOTSTP=IHOTSTP+1
-             ENDDO
-          ENDIF
-          WRITE(16,*) '=================NodeCode:===================='
-          DO I=1, NP_G
-             WRITE(16,*) I, NodeCode(I)
-             WRITE(hss % lun,REC=IHOTSTP) NodeCode(I)
-             IHOTSTP=IHOTSTP+1
-          ENDDO
-          WRITE(16,*) '=================NOFF:===================='
-          DO I=1, NE_G
-             WRITE(16,*) I, NOFF(I)
-             WRITE(hss % lun,REC=IHOTSTP) NOFF(I)
-             IHOTSTP=IHOTSTP+1
-          ENDDO
-#endif
+         IF ((MNPROC.gt.1).and.(MYPROC.eq.0).and.
+     &         (.not.WRITE_LOCAL_HOT_START_FILES)) THEN 
+            DO I=1, Elev1Descript % num_fd_records
+               WRITE(hss % lun,REC=IHOTSTP) Elev1Descript % array_g(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+            DO I=1, Elev2Descript % num_fd_records
+               WRITE(hss % lun,REC=IHOTSTP) Elev2Descript % array_g(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+            DO I=1, EtaDiscDescript % num_fd_records
+               WRITE(hss % lun,REC=IHOTSTP) EtaDiscDescript % array_g(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+            DO I=1, VelDescript % num_fd_records
+               WRITE(hss % lun,REC=IHOTSTP) VelDescript % array_g(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+            DO I=1, VelDescript % num_fd_records
+               WRITE(hss % lun,REC=IHOTSTP) VelDescript % array2_g(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+            IF (IM.eq.10) THEN
+               DO I=1, CH1Descript % num_fd_records
+                  WRITE(hss % lun,REC=IHOTSTP) CH1Descript % array_g(I)
+                  IHOTSTP=IHOTSTP+1
+               ENDDO
+            ENDIF
+            DO I=1, NodeCodeDescript % num_fd_records
+              WRITE(hss % lun,REC=IHOTSTP)NodeCodeDescript % iarray_g(I)
+              IHOTSTP=IHOTSTP+1
+            ENDDO
+            DO I=1, NOFFDescript % num_fd_records
+               WRITE(hss % lun,REC=IHOTSTP) NOFFDescript % iarray_g(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+         ENDIF
+         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_HOT_START_FILES)) THEN
+C           WRITE(16,*) '=================ETA1:===================='
+            DO I=1, Elev1Descript % num_records_this
+C              WRITE(16,*) I, ETA1(I)
+               WRITE(hss % lun,REC=IHOTSTP) Elev1Descript % array(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+C           WRITE(16,*) '=================ETA2:===================='
+            DO I=1, Elev2Descript % num_records_this
+C              WRITE(16,*) I, ETA2(I)
+               WRITE(hss % lun,REC=IHOTSTP) Elev2Descript % array(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+C           WRITE(16,*) '=================ETADisc:===================='
+            DO I=1, EtaDiscDescript % num_records_this
+C              WRITE(16,*) I, ETADisc(I)
+               WRITE(hss % lun,REC=IHOTSTP) EtaDiscDescript % array(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+C           WRITE(16,*) '=================UU2:===================='
+            DO I=1, VelDescript % num_records_this
+C              WRITE(16,*) I, UU2(I)
+               WRITE(hss % lun,REC=IHOTSTP) VelDescript % array(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+C           WRITE(16,*) '=================VV2:===================='
+            DO I=1, VelDescript % num_records_this
+C              WRITE(16,*) I, VV2(I) 
+               WRITE(hss % lun,REC=IHOTSTP) VelDescript % array2(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+            IF (IM.eq.10) THEN
+               DO I=1, CH1Descript % num_records_this
+                  WRITE(hss % lun,REC=IHOTSTP) CH1Descript % array(I)
+                  IHOTSTP=IHOTSTP+1
+               ENDDO
+            ENDIF
+C           WRITE(16,*) '=================NodeCode:===================='
+            DO I=1, NodeCodeDescript % num_records_this
+!              WRITE(16,*) I, NodeCode(I)
+               WRITE(hss % lun,REC=IHOTSTP) NodeCodeDescript % iarray(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+C           WRITE(16,*) '=================NOFF:===================='
+            DO I=1, NOFFDescript % num_records_this
+C              WRITE(16,*) I, NOFF(I)
+               WRITE(hss % lun,REC=IHOTSTP) NOFFDescript % iarray(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+         ENDIF
+C
+         IF ((MYPROC.eq.0).or.(WRITE_LOCAL_HOT_START_FILES)) THEN 
+            WRITE(hss % lun,REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(hss % lun,REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IVSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(hss % lun,REC=IHOTSTP) IVSTP   ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) ICSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(hss % lun,REC=IHOTSTP) ICSTP   ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IPSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IWSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(hss % lun,REC=IHOTSTP) IPSTP   ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) IWSTP   ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IGEP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(hss % lun,REC=IHOTSTP) IGEP    ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IGVP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(hss % lun,REC=IHOTSTP) IGVP    ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IGCP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(hss % lun,REC=IHOTSTP) IGCP    ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
-
-         WRITE(hss % lun,REC=IHOTSTP) IGPP    ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
-         WRITE(hss % lun,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
-       
+            WRITE(hss % lun,REC=IHOTSTP) IGPP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
+         ENDIF
 !          PRINT *,"========================before bin=================="
 !          PRINT *, "==== write_output: IM = ", IM
 !          PRINT *, "==== write_output: TIME = ", TIME
@@ -2894,16 +2899,15 @@ C     collect up the data from subdomains if running in parallel
 !          PRINT *, "==== write_output: NSCOUGW = ", NSCOUGW
 !          PRINT *,"========================after bin==================="
           
-       ENDIF
 
 !This code is not supported yet.
 #if 0
 C...
 C...  ADD IN 3D STUFF IF APPROPRIATE
 C...
-      IF (C3D) THEN
-         CALL HSTART3D_OUT()
-      ENDIF
+         IF (C3D) THEN
+            CALL HSTART3D_OUT()
+         ENDIF
 C...  
 C...  IF APPROPRIATE ADD HARMONIC ANALYSIS INFORMATION TO HOT START FILE
 C...  
