@@ -420,9 +420,9 @@ Casey: End loop over horizontal elements.
       FLUXTOT = ABS(FLUXTOT*DT)
 
       CALL MPI_REDUCE(FLUXTOT, FLUXCUM, 1, MPI_DOUBLE_PRECISION, 
-     &                MPI_SUM, 0, MPI_COMM_WORLD, IERR)
+     &                MPI_SUM, 0, COMM_COMP, IERR)
       CALL MPI_REDUCE(FLUXTOT, FLUXMIN, 1, MPI_DOUBLE_PRECISION, 
-     &                MPI_MIN, 0, MPI_COMM_WORLD, IERR)
+     &                MPI_MIN, 0, COMM_COMP, IERR)
 
       IF(MYPROC.EQ.0)THEN
 
