@@ -2452,7 +2452,7 @@ C...
 
 c. RJW merged 08/26/2008 Casey 071219: Added the folowing call to the mass balance subroutine.
       IF(C3DVS)THEN
-         CALL MASSBAL3D(IT)
+!        CALL MASSBAL3D(IT)
       ENDIF
 
       RETURN
