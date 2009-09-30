@@ -56,9 +56,9 @@ ifeq ($(BUILDTYPE),adcprep)
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
   VPATH :=  $(SRCDIR)/prep:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind 
   ifeq ($(NETCDF),enable)
-    LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf
+    LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   else
-    LIBS  := -Lodir_metis -lmetis
+    LIBS  := -Lodir_metis -lmetis $(FLIBS)
   endif
   PMSG_OBJ:=
 endif
@@ -67,11 +67,11 @@ ifeq ($(BUILDTYPE),adcprep_be)
   CF:= $(FC)
   O_DIR:=odir2/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/src:$(SRCDIR) 
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/src:$(SRCDIR):$(SRCDIR)/wind 
   ifeq ($(NETCDF),enable)
-    LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf 
+    LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS) 
   else
-    LIBS  := -Lodir_metis_be -lmetis_be
+    LIBS  := -Lodir_metis_be -lmetis_be $(FLIBS)
   endif
   PMSG_OBJ:=
 endif
@@ -82,7 +82,7 @@ ifeq ($(BUILDTYPE),adcirc)
   FFLAGS:= $(FFLAGS2) $(DA) $(IMODS) $(O_DIR)
   VPATH:=  $(SRCDIR)/src:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
   ifeq ($(NETCDF),enable)
-    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   endif
   MSG_MOBJ:= $(O_DIR)globalio.o
 endif
@@ -93,7 +93,7 @@ ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
   VPATH :=  $(SRCDIR)/src:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep 
   ifeq ($(NETCDF),enable)
-    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   endif
   MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o
 endif
@@ -174,7 +174,15 @@ ifeq ($(BUILDTYPE),init)
   O_DIR:=odir14/
   FFLAGS:= $(FFLAGS2) $(DPRE) $(IMODS) $(O_DIR)
   VPATH :=  $(SRCDIR)/util:$(SRCDIR)/src:$(SRCDIR)
-  LIBS  := -L$(NETCDFHOME)/lib -lnetcdf 
+  LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
+endif
+#                                      aswip
+ifeq ($(BUILDTYPE),aswip)
+  CF:= $(PPFC)
+  O_DIR:=odir3/
+  FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
+  VPATH :=  $(SRCDIR)/wind
+  MSG_MOBJ:=
 endif
 #
 $(O_DIR):
@@ -230,6 +238,7 @@ H2A_SRC    =  hot2asc.F
 INF_SRC    =  inflate.F
 HST_SRC    =  hstime.F
 INI_SRC    =  init.F
+ASW_SRC    =  aswip_1.0.3.F
 
 METIS_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(METIS_SRC) )
 PREP_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PREP_SRC) ) $(O_DIR)mkdir.o
@@ -243,6 +252,7 @@ B23_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(B23_SRC) )
 H2A_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(H2A_SRC) )
 INF_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(INF_SRC) )
 HST_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(HST_SRC) )
+ASW_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(ASW_SRC) )
 
 ######################## compilation rules ###############################
 
@@ -254,7 +264,7 @@ $(O_DIR)%.o  : %.F
 
 ########################## Executable Targets ############################
 
-.PHONY: all metis metis_be adcprep adcprep_be adcpost adcirc $(PARALLEL_ADCIRC)  p15 owi22 build13 build12 buildstwave23 hot2asc inflate hstime 
+.PHONY: all metis metis_be adcprep adcprep_be adcpost adcirc $(PARALLEL_ADCIRC)  p15 owi22 build13 build12 buildstwave23 hot2asc inflate hstime aswip
 
 all :  metis adcprep $(BACKEND_EXEC) adcpost adcirc $(PARALLEL_ADCIRC)
 
@@ -295,6 +305,8 @@ ifeq ($(MAKELEVEL),0)
 	$(MAKE) BUILDTYPE=hstime $@
    init:
 	$(MAKE) BUILDTYPE=init $@
+   aswip:
+	$(MAKE) BUILDTYPE=aswip $@
 else
    adcprep::  $(O_DIR)
    adcprep_be::  $(O_DIR)
@@ -310,6 +322,7 @@ else
    inflate:: $(O_DIR)
    hstime::   $(O_DIR)
    init::   $(O_DIR)
+   aswip::  $(O_DIR)
 
 ifeq ($(NETCDF),enable)
    adcprep ::  $(NC_MOBJ) $(METIS_OBJ) $(PREP_OBJ) 
@@ -357,6 +370,9 @@ endif
 
    hstime ::  $(HST_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
+
+   aswip ::  $(ASW_OBJ)
+	$(CF) $(FFLAGS) -o $@ $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ)
 
 endif
 
@@ -407,9 +423,9 @@ cvstag:
 
 #  adcprep modules
 
+$(O_DIR)version.o     :  version.F
 $(O_DIR)presize.o     :  presize.F
-$(O_DIR)pre_global.o  :  pre_global.F  $(PREP_MOBJ)
-
+$(O_DIR)pre_global.o  :  pre_global.F  $(PREP_MOBJ) $(O_DIR)version.o
 #  adcprep
 
 $(O_DIR)adcprep.o     :  adcprep.F  $(PGLO_MOBJ) $(PMSG_OBJ)
@@ -442,6 +458,7 @@ $(O_DIR)precision.o   :  precision.F
 $(O_DIR)constants.o   :  constants.F $(PREC_MOBJ)
 $(O_DIR)lsq.o         :  lsq.F $(PREC_MOBJ)
 $(O_DIR)vortex.o      :  vortex.F $(PREC_MOBJ) $(CONS_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ)
+$(O_DIR)aswip.o      :  aswip_1.0.3.F $(PREC_MOBJ) $(CONS_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(VORT_MOBJ)
 
 #  adcirc & $(PARALLEL_ADCIRC) modules
 

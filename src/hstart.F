@@ -34,6 +34,7 @@ C**************************************************************************
 C     
       USE GLOBAL
       USE GLOBAL_IO
+      USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE SIZES
       USE HARM
       USE WIND
@@ -91,7 +92,22 @@ C     jgf46.14 Check for file existence before attempting to open.
       INTEGER NP_G_IN, NE_G_IN  ! Global and
       INTEGER NP_A_IN, NE_A_IN  ! active number nodes, elements.
       INTEGER IHOTNC            ! variable to keep -67 and -68 in parallel
+C
+C     jgf48.4628 Add capability to turn off solution if only met output
+C     was requested.
+      LOGICAL metOutputOn     ! .true. if met output was requested
+      LOGICAL nonMetOutputOff ! .true. no other output was requested
+C
+C     jgf48.4636 Add capability to read min/max files upon hotstart, 
+C     if they are available
+      CHARACTER(len=12) minMaxFN ! name of the min or max file to read in
+      INTEGER node               ! node number of the min/max data
+      CHARACTER(len=80) skipline ! dummy variable for min/max header data
+      INTEGER numLinesInMinMaxFile ! count the lines to report to log file
+      LOGICAL tooFewMinMaxLines  ! true if couldn't read enough lines from file
 
+      metOutputOn = .FALSE.
+      nonMetOutputOff = .FALSE.
 
 C
 C     ASSIGN value to NCMODE according to the number of processors for NETCDF - MCF
@@ -478,6 +494,36 @@ Cjgf46.02 comm.out for Katrina    RAMP1=TANH((2.D0*(ITHS-1)*DTDP/86400.D0)/DRAMP
 Cjgf46.02 comm.out for Katrina    RAMP2=TANH((2.D0*ITHS*DTDP/86400.D0)/DRAMP)
 Cjgf46.02 comm.out for Katrina  ENDIF
 
+C     jgf48.4627 If user only requests meteorological output, then 
+C     set a flag that turns off the calculation of the GWCE and
+C     momentum equations
+      IF (NWS.NE.0) THEN
+         IF ((NOUTE.EQ.0) .AND. (NOUTV.EQ.0) .AND. (NOUTC.EQ.0) .AND.
+     &       (NOUTGE.EQ.0) .AND. (NOUTGV.EQ.0) .AND. (NOUTGC.EQ.0 ).AND.
+     &       (I3DSD.EQ.0) .AND. (I3DSV.EQ.0) .AND. (I3DST.EQ.0) .AND.
+     &       (I3DGD.EQ.0) .AND. (I3DGV.EQ.0) .AND. (I3DGT.EQ.0) .AND.
+     &       (NHASE.EQ.0) .AND. (NHASV.EQ.0) .AND.
+     &       (NHAGE.EQ.0) .AND. (NHAGV.EQ.0) )
+     &       THEN
+            nonMetOutputOff = .TRUE.
+         ENDIF
+         IF ( (NOUTM.NE.0) .OR. (NOUTGW.NE.0) ) THEN
+            metOutputOn = .TRUE.
+         ENDIF
+         IF ( metOutputOn .AND. nonMetOutputOff ) THEN
+            IF ((NSCREEN.NE.0).AND.MYPROC.EQ.0) THEN
+               WRITE(ScreenUnit,*)
+     &      'INFO: Only meterological output was requested. ADCIRC'
+               WRITE(ScreenUnit,*)
+     &      'will not solve the GWCE or momentum equations.'
+             ENDIF
+             WRITE(16,*)
+     &      'INFO: Only meterological output was requested. ADCIRC'
+             WRITE(16,*)
+     &      'will not solve the GWCE or momentum equations.'
+             METONLY = .TRUE. ! set flag
+         ENDIF
+      ENDIF
 C     
 C.... SET POSITIONS IN BOUNDARY CONDITION, WIND AND OUTPUT FILES
 C     
@@ -1226,6 +1272,36 @@ C     generate hurricane winds from the Holland Wind Model.
       IF(ABS(NWS).EQ.9) THEN
          OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
              CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TIME, ICS)
+!         IF(NWS.EQ.9) THEN
+!             CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TIME, ICS)
+!         ENDIF
+!         IF(NWS.EQ.-9) THEN
+!             CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TIME, ICS)
+!         ENDIF
+         DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
+            PR2(I) = RampMete2*PRN2(I)
+            WVNXOUT(I)=RampMete2*WindX
+            WVNYOUT(I)=RampMete2*WindY
+         ENDDO
+      ENDIF
+
+!     rjw added nws = 19: asymmetric hurricane winds v2.0
+
+      IF(ABS(NWS).EQ.19) THEN
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+             CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TIME, ICS)
 !         IF(NWS.EQ.9) THEN
 !             CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TIME, ICS)
 !         ENDIF
@@ -2369,15 +2445,46 @@ C..Read in Means and Squares
       ENDIF    !HARIND
 
       ENDIF
-
-C     jgf46.02 Added the following block of code from ral for Katrina.
-CRAL_add_42.06g           read RBC information in HS file
-C        DO I=1,NVEL
-C          IHOTSTP=IHOTSTP+1
-C          READ(IHOT,REC=IHOTSTP) Elev_Disc(I)
-C          END DO
-CRAL_add_42.06g
-
+C
+C     jgf48.4635 If the maxele.63 (etc) files are present, we need to
+C     load them up, to preserve high water marks across hotstarts. 
+C     If they are not present, thats okay too.  
+      if ((MNPROC.gt.1).and.(MyProc.eq.0)
+     &     .and.(.not.WRITE_LOCAL_FILES)) then
+         ALLOCATE(HOT_ETAMAX_G(NP_G))
+         HOT_ETAMAX_G(:) = -99999.d0  ! initialize the value
+         CALL readMinMax('maxele.63',HOT_ETAMAX_G)
+         ALLOCATE(HOT_UMAX_G(NP_G))
+         HOT_UMAX_G(:) = 0.d0  ! initialize the value
+         CALL readMinMax('maxvel.63',HOT_UMAX_G)
+         ALLOCATE(HOT_WVNOUTMAX_G(NP_G))
+         HOT_WVNOUTMAX_G(:) = 0.d0  ! initialize the value
+         CALL readMinMax('maxwvel.63',HOT_WVNOUTMAX_G)
+         ALLOCATE(HOT_PrMin_G(NP_G))
+         HOT_PrMin_G(:) = 99999.d0  ! initialize the value
+         CALL readMinMax('minpr.63',HOT_PrMin_G)
+         ALLOCATE(HOT_RSNMAX_G(NP_G))
+         HOT_RSNMAX_G(:) = 0.d0  ! initialize the value
+         CALL readMinMax('maxrs.63',HOT_RSNMAX_G)
+      endif
+      if ( (MNPROC.eq.1).or.(WRITE_LOCAL_FILES) ) then  
+         ALLOCATE(HOT_ETAMAX(NP))
+         HOT_ETAMAX(:) = -99999.d0    ! initialize the value
+         CALL readMinMax('maxele.63',HOT_ETAMAX)
+         ALLOCATE(HOT_UMAX(NP))
+         HOT_UMAX(:) = 0.d0  ! initialize the value
+         CALL readMinMax('maxvel.63',HOT_UMAX)
+         ALLOCATE(HOT_WVNOUTMAX(NP))
+         HOT_WVNOUTMAX(:) = 0.d0  ! initialize the value
+         CALL readMinMax('maxwvel.63',HOT_WVNOUTMAX)
+         ALLOCATE(HOT_PrMin(NP))
+         HOT_PrMin(:) = 99999.d0  ! initialize the value
+         CALL readMinMax('minpr.63',HOT_PrMin)
+         ALLOCATE(HOT_RSNMAX(NP))
+         HOT_RSNMAX(:) = 0.d0  ! initialize the value
+         CALL readMinMax('maxrs.63',HOT_RSNMAX)
+      endif
+C
       IF(IHOT.EQ.67.OR.IHOT.EQ.68)THEN
 !         IF(Myproc.eq.0) PRINT *, "IHOT == ",IHOT
          CLOSE(IHOT)
@@ -2392,7 +2499,6 @@ C
 C
       RETURN
       END
-
 
 C******************************************************************************
 C   Subroutine to initialize the 3D routines for a hot start including        *
@@ -2949,4 +3055,4 @@ C.... Set up a few final odds and ends for a 3D run
       CALL VSSTUP ()
         
       RETURN
-      END
+      END SUBROUTINE HOTSTART_3D

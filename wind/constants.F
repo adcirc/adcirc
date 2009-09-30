@@ -67,7 +67,8 @@
          REAL (KIND = dp), PARAMETER :: oneHundredth     =     .01_dp
          REAL (KIND = dp), PARAMETER :: onePointTwo      =    1.2_dp
          REAL (KIND = dp), PARAMETER :: twoPointFive     =    2.5_dp
-         REAL (KIND = dp), PARAMETER :: threePointFive     =  3.5_dp
+         REAL (KIND = dp), PARAMETER :: threePointFive   =    3.5_dp
+         REAL (KIND = dp), PARAMETER :: twenty           =   20._dp
          REAL (KIND = dp), PARAMETER :: twentyFour       =   24._dp
          REAL (KIND = dp), PARAMETER :: twentyFive       =   25._dp
          REAL (KIND = dp), PARAMETER :: seventyFive      =   75._dp
@@ -126,9 +127,10 @@
          !---------------
          ! Density of air
          !---------------
-!        REAL (KIND = dp), PARAMETER :: RhoAir = 1.15_dp   ! Holland
+         ! jgf48.4601 uncommented the following line
+         REAL (KIND = dp), PARAMETER :: RhoAir = 1.15_dp   ! Holland
 !        REAL (KIND = dp), PARAMETER :: RhoAir = 1.168_dp  ! T=25    C, P=1000 mb
-         REAL (KIND = dp), PARAMETER :: RhoAir = 1.1774_dp ! T=79.79 F, P=1013 mb
+!jgf48.4601         REAL (KIND = dp), PARAMETER :: RhoAir = 1.1774_dp ! T=79.79 F, P=1013 mb
 
          !----------------------------------------------------------
          ! Factor for reducing wind speed from top of PBL to surface
@@ -157,8 +159,8 @@
          !---------------------------------------------------
          ! Cosine damping distance for translational velocity
          !---------------------------------------------------
-         REAL (KIND = dp), PARAMETER :: dampRadii  = five
-         REAL (KIND = dp), PARAMETER :: dampLength = ten
+         REAL (KIND = dp), PARAMETER :: dampRadii  = twenty
+         REAL (KIND = dp), PARAMETER :: dampLength = twenty
 
          !-------------------------
          ! Nominal density of water
@@ -228,7 +230,8 @@
          REAL (KIND = sp), PARAMETER :: oneHundredth     =     .01_sp
          REAL (KIND = sp), PARAMETER :: onePointTwo      =    1.2_sp
          REAL (KIND = sp), PARAMETER :: twoPointFive     =    2.5_sp
-         REAL (KIND = sp), PARAMETER :: threePointFive     =  3.5_sp
+         REAL (KIND = sp), PARAMETER :: threePointFive   =    3.5_sp
+         REAL (KIND = sp), PARAMETER :: twenty           =   20._sp
          REAL (KIND = sp), PARAMETER :: twentyFour       =   24._sp
          REAL (KIND = sp), PARAMETER :: twentyFive       =   25._sp
          REAL (KIND = sp), PARAMETER :: seventyFive      =   75._sp
@@ -287,9 +290,10 @@
          !---------------
          ! Density of air
          !---------------
-!        REAL (KIND = sp), PARAMETER :: RhoAir = 1.15_sp   ! Holland
+         !jgf48.4601 Uncommented the following line.
+         REAL (KIND = sp), PARAMETER :: RhoAir = 1.15_sp   ! Holland
 !        REAL (KIND = sp), PARAMETER :: RhoAir = 1.168_sp  ! T=25    C, P=1000 mb
-         REAL (KIND = sp), PARAMETER :: RhoAir = 1.1774_sp ! T=79.79 F, P=1013 mb
+!jgf48.4601 commented out         REAL (KIND = sp), PARAMETER :: RhoAir = 1.1774_sp ! T=79.79 F, P=1013 mb
 
          !----------------------------------------------------------
          ! Factor for reducing wind speed from top of PBL to surface
@@ -318,8 +322,8 @@
          !---------------------------------------------------
          ! Cosine damping distance for translational velocity
          !---------------------------------------------------
-         REAL (KIND = sp), PARAMETER :: dampRadii  = five
-         REAL (KIND = sp), PARAMETER :: dampLength = ten
+         REAL (KIND = sp), PARAMETER :: dampRadii  = twenty
+         REAL (KIND = sp), PARAMETER :: dampLength = twenty
 
          !-------------------------
          ! Nominal density of water

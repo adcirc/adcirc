@@ -972,6 +972,7 @@ C     jgf46.00 Added NWS=7 (direct surface stress).
 C     jgf46.03 Added NWS=8 (Holland wind model)
 C     jgf46.16 Merged: 
 C     cf & cm  Added NWS=9 (asymmetric hurricane winds)
+C     rjw      Added NWS=19(asymmetric hurricane winds v2.0)
 C     sb46.28sb01 Added NWS=12 (OWI format) 09/xx/2006
 C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
       READ(15,*) NWS
@@ -979,7 +980,7 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
      &   (NWS.NE.3)    .AND.(ABS(NWS).NE.4)  .AND.(ABS(NWS).NE.5)  .AND.
      &   (NWS.NE.6)    .AND.(NWS.NE.7)       .AND.(NWS.NE.8)       .AND.
      &   (NWS.NE.9)    .AND.(NWS.NE.10)      .AND.(NWS.NE.11)      .AND.
-     &   (ABS(NWS).NE.12)                                          .AND.
+     &   (ABS(NWS).NE.12) .AND.   (NWS.NE.19)                      .AND.
      &   (NWS.NE.100)  .AND.(NWS.NE.101)     .AND.(NWS.NE.102)     .AND.
      &   (NWS.NE.103)  .AND.(ABS(NWS).NE.104).AND.(ABS(NWS).NE.105).AND.
      &   (NWS.NE.106)  .AND.(NWS.NE.110)     .AND.(NWS.NE.111)     .AND.
@@ -1249,6 +1250,29 @@ C.....sb46_28sb01 added for NWS=-12,12 09/xx/2006
      &    /,9X,'WIND SPEEDS ARE CONVERTED TO STRESS USING THE GARRET ',
      &         'DRAG LAW.')
       ENDIF
+C     rjw added nws = 19: asymmetric hurricane winds v2.0
+      IF(NWS.EQ.19) THEN
+         WRITE(16,2400) NWS
+ 2400    FORMAT(/,5X,'NWS = ',I2,
+     &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
+     &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
+     &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
+     &    /,9X,'WHICH IS CREATED FROM TEH ATCF FILE USING THE ASWIP PROGRAM',
+     &    /,9X,'THE UNIT 22 FILE BEGINS AT TIME=STATIM.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.')
+      ENDIF
+      IF(NWS.EQ.-19) THEN
+         WRITE(16,2401) NWS
+ 2401    FORMAT(/,5X,'NWS = ',I2,
+     &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
+     &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
+     &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
+     &    /,9X,'WHICH IS CREATED FROM TEH ATCF FILE USING THE ASWIP PROGRAM',
+     &    /,9X,'THE UNIT 22 FILE BEGINS AT THE TIME OF THE HOT START',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.')
+      ENDIF
       IF(NRS.EQ.0) THEN
          WRITE(16,2390) NRS
  2390    FORMAT(/,5X,'NRS = ',I2,
@@ -1490,6 +1514,21 @@ C     sb46.28sb01 Added NWS=12 (OWI format)
       IF(ABS(NWS).EQ.12) THEN
          IF(NRS.EQ.0) READ(15,*) WTIMINC
          IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+      ENDIF
+C     rjw added nws = 19: asymmetric hurricane winds
+      IF(ABS(NWS).EQ.19) THEN
+         IF(NRS.EQ.0) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj
+         ELSEIF (NRS.EQ.1) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &           RSTIMINC
+C LETS not use this now but have the option to i nthe future
+c            WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
+c 6112       FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
+c     &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
+         ENDIF
+c         CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
+c     &        WindRefTime, MyProc, NScreen, ScreenUnit)
       ENDIF
 
       IF(NWS.NE.0) WRITE(16,1117) WTIMINC
@@ -1822,9 +1861,11 @@ C     compute the neighbor table and redo NNeigh array
       IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1196)
       WRITE(16,1196)
  1196 FORMAT(/,1X,'THE NEIGHBOR TABLE IS BEING COMPUTED ',/)
- 
+
+C...TCM -- v48.4635 -- 20090814 -- Added screenunit to call to neighb
+C...         Bug reported by Mary Cialone
       CALL NEIGHB(NE,NP,NM,NNeigh,NeiTab,NeiTabEle,NeiMin,NeiMax,
-     &     X,Y,NScreen)
+     &     X,Y,NScreen,ScreenUnit)
 
       IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
      &     WRITE(ScreenUnit,1195) NEIMIN,NEIMAX,NEIMAX
@@ -4858,19 +4899,22 @@ C     read in and check matrix solver parameters
           ENDIF
         ENDIF
 
-C     allocate arrays needed by GWCE matrix and iterative solver
+C     jgf48.4619: Accommodate Seizo's changes for explicit solve
+      IF (ILump.eq.0) THEN ! default, fully consistent LHS
+C        allocate arrays needed by GWCE matrix and iterative solver
+         call alloc_main11()
+C        initialize parameter arrays needed by iterative solver
+         CALL DFAULT(IPARM,RPARM)
+         IPARM(1)=ITMAX
+         IPARM(2)=ISLDIA
+         OPEN(33,FILE=TRIM(LOCALDIR)//'/'//'fort.33')
+         IPARM(4)=33
+         RPARM(1)=CONVCR
+         NW = 4*NP + 4*ITMAX
+      ELSE ! lumped LHS
+         call alloc_main11_lumped()
+      ENDIF
 
-      call alloc_main11()
-
-C     initialize parameter arrays needed by iterative solver
-
-      CALL DFAULT(IPARM,RPARM)
-      IPARM(1)=ITMAX
-      IPARM(2)=ISLDIA
-      OPEN(33,FILE=TRIM(LOCALDIR)//'/'//'fort.33')
-      IPARM(4)=33
-      RPARM(1)=CONVCR
-      NW = 4*NP + 4*ITMAX
 C...
 C...  Read input for 3D run
 C...
@@ -4924,6 +4968,8 @@ C     write table of ADCIRC parameter sizes
       IF(NWS.EQ.10) WRITE(16,4016)
       IF(NWS.EQ.11) WRITE(16,4017)
       IF(ABS(NWS).EQ.12) WRITE(16,4032) ! sb46.28sb01 Added NWS=12 (OWI format)
+      IF(NWS.EQ.19) WRITE(16,4018)      !rjw added nws = 19
+      IF(NWS.EQ.19) WRITE(16,4019)      !rjw added nws = 19
       IF((NFREQ.EQ.0).OR.(FMV.EQ.0.)) WRITE(16,4021)
       IF((NFREQ.GE.1).AND.(FMV.NE.0.)) WRITE(16,4022)
       IF(ILUMP.EQ.0) WRITE(16,4031)
@@ -5044,9 +5090,10 @@ C...
 C...  
 c.RJW merged 09/02/2008 Casey 071219: Added the following subroutine call to compute the RESELEM array.
 C             The subroutine is located at the begining of the file 'massbal.F.'
-#ifdef CMPI
-      CALL COMPUTE_RESELEM
-#endif
+C commented out until can fix for 3D only
+C#ifdef CMPI
+C      CALL COMPUTE_RESELEM
+C#endif
 c.
       RETURN 
       END
@@ -6292,7 +6339,7 @@ C-----------------------------------------------------------------------
       ENDDO
       IF (.not. ElementFound ) THEN
          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-            WRITE(ScreenUnit,593) StationNumber
+            WRITE(ScreenUnit,593) Description, StationNumber
          ENDIF
          WRITE(16,593) Description, StationNumber
          IF(NFOVER.EQ.1) THEN

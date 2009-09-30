@@ -27,6 +27,29 @@
       !    09/12/06    Craig  Mattocks, UNC-CEP   Subtracted translational
       !                                           wind speed from Vmax in
       !                                           nws9get.
+      !    05/12/09    Robert Weaver, UNC-IMS     Modified damping of translational 
+      !                                           velocity based on ratio of V/Vmax
+      !    05/19/09    Cristina Forbes, UNC-IMS   Implemented old bug fix: units conversion 
+      !    05/22/09    Cristina Forbes, UNC-IMS   Reverted damping of translational
+      !                                           velocity back to the original formulation
+      !                                           developed by Craig Mattocks
+      !    05/26/09    Cristina Forbes, UNC-IMS   Fixed implementation of Rick Luettich 
+      !                                           V/Vmax tapering formulation (as in NWS=8) 
+      !                                           for future experimentation - not activated
+      !    06/2009      Robert Weaver, UNC-IMS    changed the gradient wind formula to 
+      !                                           use Vmax instead of pressure difference
+      !                                           to enable easier manipulation of storm 
+      !                                           characteristics
+      !    07/2009      Robert Weaver, UNC-IMS    using modules from this code, 
+      !                                           wrote a preprocessor to compute Rmax and B
+      !                                           prior to running adcirc, and write out an
+      !                                           input file like the ATCF file with these
+      !                                           variables to make it easier to manipulate
+      !                                           the storm parameters.  Changed this code
+      !                                           to read in that input file and use the values
+      !                                           found there 
+      !                                           
+      !
       !=================================================================
       MODULE vortex
 
@@ -53,7 +76,8 @@
          !-----------------------
          ! Set access permissions
          !-----------------------
-         PRIVATE :: calcShape, calcRmax, poly,fitPoly, spline,fitSpline,
+       PRIVATE :: calcShape, calcRmax, calcRmax_givenRmax,
+     &              poly,fitPoly, spline,fitSpline,
      &              setStormName       , setAdvisory        ,
      &              setDate            ,
      &              setAmbientPressure , setCentralPressure ,
@@ -66,9 +90,10 @@
      &              setQuadrant        , setRegressionCoefficient,
      &              setFitMethod
 
-         PUBLIC  :: newVortex, transVortex, moveVortex, printVortex,
+        PUBLIC :: newVortex, newVortex_rmax_b_IN, newVortex_rmax_b_OUT,
+     &              transVortex, moveVortex, printVortex,
      &              coriolis, Ph, Pasym, Rmw, Vh, Vasym, uvp, uvtrans,
-     &              latlon2xy, xy2latlon,
+     &              latlon2xy, xy2latlon, Vmaxw ,
      &              getStormName        , getAdvisory        ,
      &              printDate           ,
      &              getYear, getMonth   , getDay, getHour    ,
@@ -113,6 +138,8 @@
      &                                                        315._dp,
      &                                                        360._dp
      &                                                      /)
+
+         REAL(sz), DIMENSION(nPoints) :: Vmax_wind   ! maximum wind speed (knots)
 
          REAL(sz), DIMENSION(nPoints) :: Rmax    ! Radius of maximum winds
                                                  ! (nautical miles)
@@ -181,9 +208,10 @@
             !
             ! On output:
             !    A new vortex is created with essential parameters calculated.
+            !  Return Rmax in the 4 quadrants and the Holland B parameter
             !=================================================================
             SUBROUTINE newVortex(name, adv, yyyy,mm,dd,hh,hf,
-     &                           Pn,Pc, cLat,cLon, Vmax,Vr, r)
+     &                      Pn,Pc, cLat,cLon, Vmax,Vr, r)
                CHARACTER(LEN=*), INTENT(IN) :: name
                INTEGER , INTENT(IN) :: adv
                INTEGER , INTENT(IN) :: yyyy
@@ -218,8 +246,151 @@
 !              CALL setFitMethod(POLY_FIT)
                CALL setFitMethod(SPLINE_FIT)
                CALL calcRmax()
+
+ 
             END SUBROUTINE newVortex
 
+
+            !=================================================================
+            ! Create a new Vortex object.
+            !
+            ! On input:
+            !    name         Name of storm
+            !    adv          NHC advisory or storm number
+            !    yyyy         Year  of advisory  (4 digits)
+            !    mm           Month of advisory  (2 digits)
+            !    dd           Day   of advisory  (2 digits)
+            !    hh           Hour  of advisory  (2 digits)
+            !    hf           Forecast increment (2 digits)
+            !    Pn           Ambient surface pressure (mb)
+            !    Pc           Surface pressure at center of storm (mb)
+            !    cLat         Latitude  of storm center (degrees north)
+            !    cLon         Longitude of storm center (degrees east )
+            !    Vmax         Max sustained wind velocity in storm (knots)
+            !    Vr           Velocity at wind radii (knots)
+            !    rmaxw        precomputed Radius to Max Winds in the 4
+            !                 quadrants (nautical Miiles)
+            !    HollB        precomputed Holland B shape parameter 
+            !
+            ! On output:
+            !    A new vortex is created with essential parameters calculated.
+            !=================================================================
+            SUBROUTINE newVortex_rmax_b_IN(name, adv, yyyy,mm,dd,hh,hf,
+     &                      Pn,Pc, cLat,cLon, Vmax,rmaxw, HollB)
+               CHARACTER(LEN=*), INTENT(IN) :: name
+               INTEGER , INTENT(IN) :: adv
+               INTEGER , INTENT(IN) :: yyyy
+               INTEGER , INTENT(IN) :: mm
+               INTEGER , INTENT(IN) :: dd
+               INTEGER , INTENT(IN) :: hh
+               INTEGER , INTENT(IN) :: hf
+               REAL(sz), INTENT(IN) :: Pn
+               REAL(sz), INTENT(IN) :: Pc
+               REAL(sz), INTENT(IN) :: cLat
+               REAL(sz), INTENT(IN) :: cLon
+               REAL(sz), INTENT(IN) :: Vmax
+!               REAL(sz), INTENT(IN) :: Vr
+!               REAL(sz), INTENT(IN), DIMENSION(nQuads) :: r
+               REAL(sz), INTENT(IN) :: HollB
+               REAL(sz), INTENT(IN),DIMENSION(nQuads) :: rmaxw
+
+               CALL setStormName(name)
+               CALL setAdvisory(adv)
+               CALL setDate(yyyy, mm, dd, hh, hf)
+
+               CALL setAmbientPressure(Pn)
+               CALL setCentralPressure(Pc)
+
+               CALL setCenterLatitude (cLat)
+               CALL setCenterLongitude(cLon)
+
+               CALL setMaxWinds  (Vmax)
+C               CALL setRadialWind(Vr)
+C               CALL setWindRadii (r)
+
+               CALL setCoriolisForce(coriolis(cLat))
+               CALL setShapeParameter(HollB)
+!              CALL setFitMethod(POLY_FIT)
+               CALL setFitMethod(SPLINE_FIT)
+               CALL calcRmax_givenRmax(rmaxw)
+
+            END SUBROUTINE newVortex_rmax_b_IN
+                                                                
+            !=================================================================
+            ! Create a new Vortex object.
+            !
+            ! On input:
+            !    name         Name of storm
+            !    adv          NHC advisory or storm number
+            !    yyyy         Year  of advisory  (4 digits)
+            !    mm           Month of advisory  (2 digits)
+            !    dd           Day   of advisory  (2 digits)
+            !    hh           Hour  of advisory  (2 digits)
+            !    hf           Forecast increment (2 digits)
+            !    Pn           Ambient surface pressure (mb)
+            !    Pc           Surface pressure at center of storm (mb)
+            !    cLat         Latitude  of storm center (degrees north)
+            !    cLon         Longitude of storm center (degrees east )
+            !    Vmax         Max sustained wind velocity in storm (knots)
+            !    Vr           Velocity at wind radii (knots)
+            !    r            Wind radii - the distance winds of velocity Vr
+            !                 extend outward from center of storm
+            !                 (nautical miles)
+            !
+            ! On output:
+            !    A new vortex is created with essential parameters calculated.
+            !  Return Rmax in the 4 quadrants and the Holland B parameter
+            !   rmaxw        Radus to Max winds in the 4 quadrants 
+            !   HollB        Holland B shape parameter
+            !=================================================================
+            SUBROUTINE newVortex_rmax_b_OUT(name, adv, yyyy,mm,dd,hh,hf,
+     &                      Pn,Pc, cLat,cLon, Vmax,Vr, r,rmaxw,HollB)
+               CHARACTER(LEN=*), INTENT(IN) :: name
+               INTEGER  :: i
+               INTEGER , INTENT(IN) :: adv
+               INTEGER , INTENT(IN) :: yyyy
+               INTEGER , INTENT(IN) :: mm
+               INTEGER , INTENT(IN) :: dd
+               INTEGER , INTENT(IN) :: hh
+               INTEGER , INTENT(IN) :: hf
+               REAL(sz), INTENT(IN) :: Pn
+               REAL(sz), INTENT(IN) :: Pc
+               REAL(sz), INTENT(IN) :: cLat
+               REAL(sz), INTENT(IN) :: cLon
+               REAL(sz), INTENT(IN) :: Vmax
+               REAL(sz), INTENT(IN) :: Vr
+               REAL(sz), INTENT(IN), DIMENSION(nQuads) :: r
+               REAL(sz), INTENT(OUT) :: HollB
+               REAL(sz), DIMENSION(nQuads) :: rmaxw
+
+               CALL setStormName(name)
+               CALL setAdvisory(adv)
+               CALL setDate(yyyy, mm, dd, hh, hf)
+
+               CALL setAmbientPressure(Pn)
+               CALL setCentralPressure(Pc)
+
+               CALL setCenterLatitude (cLat)
+               CALL setCenterLongitude(cLon)
+
+               CALL setMaxWinds  (Vmax)
+               CALL setRadialWind(Vr)
+               CALL setWindRadii (r)
+
+               CALL setCoriolisForce(coriolis(cLat))
+               CALL setShapeParameter(calcShape(Pn, Pc, Vmax))
+!              CALL setFitMethod(POLY_FIT)
+               CALL setFitMethod(SPLINE_FIT)
+               CALL calcRmax()
+
+              do i=1,nQuads
+               rmaxw(i) = getRadiusMaxWinds(i+1)
+               enddo
+               HollB=getShapeParameter()
+
+
+            END SUBROUTINE newVortex_rmax_b_OUT
+                                                                
             !=================================================================
             ! Move a Vortex object by changing the location of its center and
             ! any of its intrinsic parameters (except its name).
@@ -322,8 +493,8 @@
                WRITE(*, '("   Central pressure = ", F7.2, " mb")')
      &              getCentralPressure()
 
-               WRITE(*,'("   Eye location = (",F6.2," N, ",F7.2," E)")')
-     &              getCenterLatitude(), getCenterLongitude()
+!               WRITE(*,'("   Eye location = (",F6.2," N, ",F7.2," E)")')
+!     &              getCenterLatitude(), getCenterLongitude()
 
                WRITE(*,'("   Max winds at surface          = ", I3,
      &                   " knots")')
@@ -337,9 +508,9 @@
      &                    /, (6X,I3," nm"))')
      &              NINT(getRadialWind()), NINT(getWindRadii())
 
-               WRITE(*, '("   Coriolis force at ",F6.2," N = ", 1PG10.3,
-     &                    " 1/sec")')
-     &              getCenterLatitude(), getCoriolisForce()
+!               WRITE(*, '("   Coriolis force at ",F6.2," N = ", 1PG10.3,
+!     &                    " 1/sec")')
+!     &              getCenterLatitude(), getCoriolisForce()
 
                WRITE(*, '("   Exponential shape parameter B = ", F7.3)')
      &              getShapeParameter()
@@ -347,26 +518,29 @@
                WRITE(*, '("   Theta   Rmax")')
                WRITE(*, '("   -----   ----")')
                DO n = 1, nPoints
-                  WRITE(*, '(4X, I3, 3X, F7.3, " nm")')
+                   WRITE(111, '(4X, I3, 3X, F7.3, 3X, I4, 3X, F7.3)')
+     &                NINT( getAzimuthalAngle(n)), getRadiusMaxWinds(n),
+     &                 NINT(getMaxWinds()),getShapeParameter()
+                   WRITE(*, '(4X, I3, 3X, F7.3, " nm")')
      &                 NINT(getAzimuthalAngle(n)), getRadiusMaxWinds(n)
                END DO
 
-               IF (fitMethod == POLY_FIT) THEN
-                  WRITE(*, '(3X, "Polynomial curve fit of Rmax vs. ",
-     &                           "azimuthal angle:")')
-                  WRITE(*, '(6X, "Rmax = ", 1PG10.3, /,
-     &                       6X, "     + ", 1PG10.3, " * theta"  , /,
-     &                       6X, "     + ", 1PG10.3, " * theta^2", /,
-     &                       6X, "     + ", 1PG10.3, " * theta^3", /,
-     &                       6X, "     + ", 1PG10.3, " * theta^4")')
-     &                 getPolyCoefficients()
-                  WRITE(*, '(6X, "Regression coefficient R^2 = ",
-     &                            1PG11.4)')
-     &                 getRegressionCoefficient()
-               ELSE
-                  WRITE(*, '(3X, "Spline fit of Rmax vs. ",
-     &                           "azimuthal angle")')
-               END IF
+!               IF (fitMethod == POLY_FIT) THEN
+!                  WRITE(*, '(3X, "Polynomial curve fit of Rmax vs. ",
+!     &                           "azimuthal angle:")')
+!                  WRITE(*, '(6X, "Rmax = ", 1PG10.3, /,
+!     &                       6X, "     + ", 1PG10.3, " * theta"  , /,
+!     &                       6X, "     + ", 1PG10.3, " * theta^2", /,
+!     &                       6X, "     + ", 1PG10.3, " * theta^3", /,
+!     &                       6X, "     + ", 1PG10.3, " * theta^4")')
+!     &                 getPolyCoefficients()
+!                  WRITE(*, '(6X, "Regression coefficient R^2 = ",
+!     &                            1PG11.4)')
+!     &                 getRegressionCoefficient()
+!               ELSE
+!                  WRITE(*, '(3X, "Spline fit of Rmax vs. ",
+!     &                           "azimuthal angle")')
+!               END IF
 
             END SUBROUTINE printVortex
 
@@ -438,10 +612,8 @@
                REAL(sz), INTENT(IN) :: Rmax
                REAL(sz), INTENT(IN) :: r
                REAL(sz), INTENT(IN) :: B
-
                Ph = Pc + (Pn - Pc) * EXP(-(Rmax/r)**B)
             END FUNCTION Ph
-
             !=================================================================
             ! Calculate surface pressure using an asymmetric hurricane wind
             ! model, where the radius of maximum winds (Rmax) is a polynomial
@@ -469,7 +641,6 @@
                REAL(sz), INTENT(IN) :: theta
                REAL(sz), INTENT(IN) :: r
                REAL(sz), INTENT(IN) :: B
-
                Pasym = Ph(Pc, Pn, Rmw(order,a,theta), r, B)
             END FUNCTION Pasym
 
@@ -479,6 +650,8 @@
             !    Vh = SQRT( B/RhoAir * (Rmax/r)**B * (Pn-Pc)*exp[-(Rmax/r)**B]
             !              + (r*coriolis/2)**2 ) - r*coriolis/2
             !
+            !    Vh = SQRT( Vmax**2 * (Rmax/r)**B * exp[1 -(Rmax/r)**B]
+            !              + (r*coriolis/2)**2 ) - r*coriolis/2
             ! On input:
             !    r            Distance from center of storm (NM)
             !    Rmax         Radius of maximum winds (NM)
@@ -486,6 +659,7 @@
             !    Pn           Ambient surface pressure (mb)
             !    Pc           Surface pressure at center of storm (mb)
             !    cLat         Latitude of storm center (degrees north)
+            !    Vmax         Maximum wind velocity
             !
             ! On output:
             !    Vh           Radial wind speed (knots)
@@ -493,9 +667,11 @@
             ! Note:
             !    Computation is performed in mks, then converted back to knots.
             !==================================================================
-            REAL(sz) FUNCTION Vh(r, Rmax, B, Pn, Pc, cLat)
+!            REAL(sz) FUNCTION Vh(r, Rmax, B, Pn, Pc, cLat)
+            REAL(sz) FUNCTION Vh(r, Rmax, B, Pn, Pc, cLat, Vmax)
                REAL(sz), INTENT(IN) :: r
                REAL(sz), INTENT(IN) :: Rmax
+               REAL(sz), INTENT(IN) :: Vmax
                REAL(sz), INTENT(IN) :: B
                REAL(sz), INTENT(IN) :: Pn
                REAL(sz), INTENT(IN) :: Pc
@@ -505,15 +681,19 @@
                REAL(sz) :: Brho      ! B / density of air
                REAL(sz) :: RmaxrB    ! (Rmax/r)**B
                REAL(sz) :: rf2       ! r*f/2
+               REAL(sz) :: Vmax_ms       ! get Vmax into m/s (it is passed in in knots)
 
+               Vmax_ms=Vmax*kt2ms  ! get Vmax into m/s (it is passed in in knots)
                deltaP = (Pn - Pc) * mb2pa
                Brho = B / RhoAir
                RmaxrB = (Rmax/r)**B
 !              rf2 = nm2m * r * coriolis(cLat) / two
                rf2 = nm2m * r * getCoriolisForce() / two
-
+!               Vh = ms2kt * (SIGN(one, cLat) *
+!     &                      SQRT( Brho * RmaxrB * deltaP * EXP(-RmaxrB)
+!     &                            + rf2*rf2 ) - rf2)
                Vh = ms2kt * (SIGN(one, cLat) *
-     &                      SQRT( Brho * RmaxrB * deltaP * EXP(-RmaxrB)
+     &                      SQRT( Vmax_ms*Vmax_ms * RmaxrB  * EXP(1 - RmaxrB)
      &                            + rf2*rf2 ) - rf2)
 
 !              PRINT *, "Vh:  deltaP = ", deltaP
@@ -522,6 +702,7 @@
 !              PRINT *, "Vh:  rf2    = ", rf2
 !              PRINT *, "Vh:  Vh     = ", Vh
             END FUNCTION Vh
+
 
             !=================================================================
             ! Given a polynomial curve fit of Rmax as a function of azimuthal
@@ -534,6 +715,7 @@
             !
             ! On output:
             !    Rmw          Radius of maximum winds (meters) from curve fit
+            !                      I DO NOT BELIEVE IT IS IN METERS rjw
             !=================================================================
             REAL(sz) FUNCTION Rmw(order, a, angle)
                INTEGER , INTENT(IN) :: order
@@ -548,7 +730,36 @@
                END IF
 
                IF (Rmw <= zero) Rmw = oneHundredth
+
             END FUNCTION Rmw
+
+            !=================================================================
+            ! Given a polynomial curve fit of Vmax as a function of azimuthal
+            ! angle (theta), calculate the Maximum wind velocity.
+            !
+            ! On input:
+            !    order        Order of polynomial for Vmax vs. angle curve fit
+            !    a            Coefficients of the Vmax(theta) polynomial
+            !    angle        Azimuthal angle (degrees)
+            !
+            ! On output:
+            !    Vmaxw         maximum winds speed (meters/sec) from curve fit
+            !=================================================================
+            REAL(sz) FUNCTION Vmaxw(order, a, angle)
+               INTEGER , INTENT(IN) :: order
+               REAL(sz), INTENT(IN), DIMENSION(order+1) :: a
+               REAL(sz), INTENT(IN) :: angle
+
+               IF (fitMethod == POLY_FIT) THEN
+                  Vmaxw = poly(order+1, a, angle)
+               ELSE
+            Vmaxw = spline(nPoints, REAL(theta),REAL(Vmax_wind), d2ydx2,
+     &                         REAL(angle))
+               END IF
+
+               IF (Vmaxw <= zero) Vmaxw = oneHundredth
+
+            END FUNCTION Vmaxw
 
             !=================================================================
             ! Calculate radial wind speed using an asymmetric hurricane wind
@@ -568,6 +779,7 @@
             !    Pn           Ambient surface pressure (mb)
             !    Pc           Surface pressure at center of storm (mb)
             !    cLat         Latitude of storm center (degrees north)
+            !    Vmax         Maximum velocity (knots)
             !
             ! On output:
             !    Vasym        Radial wind speed (knots)
@@ -575,7 +787,7 @@
             ! Note:
             !    Computation is performed in mks, then converted back to knots
             !=================================================================
-            REAL(sz) FUNCTION Vasym(r, order, a, theta, B, Pn, Pc, cLat)
+            REAL(sz) FUNCTION Vasym(r, order, a, theta, B, Pn, Pc, cLat,Vmax)
                REAL(sz), INTENT(IN) :: r
                INTEGER , INTENT(IN) :: order
                REAL(sz), INTENT(IN), DIMENSION(order+1) :: a
@@ -584,8 +796,10 @@
                REAL(sz), INTENT(IN) :: Pn
                REAL(sz), INTENT(IN) :: Pc
                REAL(sz), INTENT(IN) :: cLat
+               REAL(sz), INTENT(IN) :: Vmax
 
-               Vasym = Vh(r, Rmw(order,a,theta), B, Pn, Pc, cLat)
+               Vasym = Vh(r, Rmw(order,a,theta), B, Pn, Pc, cLat,Vmax)
+
             END FUNCTION Vasym
 
             !========================================================
@@ -669,11 +883,21 @@
             ! Note:
             !    Subroutine directly accesses global class instance variables
             !=================================================================
-            SUBROUTINE uvp(lat,lon, uTrans,vTrans, u,v, p)
+            SUBROUTINE uvp(lat,lon, uTrans,vTrans, u,v, p)! ,rmx,speed)
+! RJW
+!           SUBROUTINE uvp(lat,lon, uTrans,vTrans, u,v, p,Vmax)
+! MCF 5/26/09
+!           SUBROUTINE uvp(lat,lon, uTrans,vTrans, u,v, p,Vmaxp)
+
                REAL(sz), INTENT(IN)  :: lat
                REAL(sz), INTENT(IN)  :: lon
                REAL(sz), INTENT(IN)  :: uTrans
                REAL(sz), INTENT(IN)  :: vTrans
+
+! RJW
+!              REAL(sz), INTENT(IN)  :: Vmax
+! MCF 5/26/09
+!              REAL(sz), INTENT(IN)  :: Vmaxp
 
                REAL(sz), INTENT(OUT) :: u
                REAL(sz), INTENT(OUT) :: v
@@ -688,7 +912,6 @@
                REAL(sz) :: uf
                REAL(sz) :: vf
                REAL(sz) :: damp
-
                !------------------------------------------------------
                ! Calculate distance and angle between eye of hurricane
                ! and input nodal point
@@ -700,10 +923,16 @@
                !----------------------------------------
                ! Handle special case at eye of hurricane
                !----------------------------------------
+               ! in eye velocity is zero not translational velocity
+               !----------------------------------------
                IF (dist < one) THEN
                   u = uTrans
                   v = vTrans
-                  p = Pc * oneHundred
+! RJW                  
+!                 u = zero
+!                 v = zero
+
+                  p = Pc * mb2pa
                   RETURN
                END IF
 
@@ -717,7 +946,7 @@
                !    damp = 1 --> 0 as r = dampRadii --> dampRadii + 1
                !    damp = 0 when r > dampRadii + 1
                !-------------------------------------------------------
-               rmx = Rmw(order,a,angle)
+               rmx =  Rmw(order,a,angle)
 !              damp = COS(-pi2*MAX(MIN((dist/rmx)-dampRadii,one),zero))
                damp = COS(-pi2*MAX(MIN(((dist/rmx)-dampRadii)
      &                                  /dampLength,one), zero))
@@ -733,10 +962,17 @@
                ! averages to 10-minute averages for the storm surge
                ! model.
                !---------------------------------------------------
-               speed = kt2ms*Vasym(dist, order,a, angle, B, Pn,Pc, cLat)
-     &               * windReduction * one2ten
-               u = (-speed * COS(deg2rad*angle) +  uTrans) * damp
-               v = ( speed * SIN(deg2rad*angle) +  vTrans) * damp
+        speed = kt2ms
+     &       * Vasym(dist, order,a, angle, B, Pn,Pc, cLat,getMaxWinds())
+     &       * windReduction * one2ten
+ 
+! RJW
+!              damp = ABS(speed/Vmax)                                   ! similar to the NWS=8 implementation
+! MCF 5/26/09
+!              damp = ABS(Vasym(dist, order,a, angle, B, Pn,Pc, cLat)/(Vmaxp))
+
+               u = -speed * COS(deg2rad*angle) + uTrans * damp
+               v =  speed * SIN(deg2rad*angle) + vTrans * damp
 
                !---------------------------------------------------------
                ! Alter wind direction by adding a frictional inflow angle
@@ -1504,11 +1740,13 @@
 !    &                    getShapeParameter (),
 !    &                    getAmbientPressure(),
 !    &                    getCentralPressure(),
-!    &                    getCenterLatitude ())
+!    &                    getCenterLatitude (),
+!     &                   getMaxWinds() )
 !              PRINT *, "----------------------------------------"
 !              PRINT *, "func:  x           = ", x
 !              PRINT *, "func   Vh          = ", Veeh
 !              PRINT *, "func:  Vr          = ", getRadialWind()
+!              PRINT *, "func:  Vmax        = ", getMaxWinds()
 !              PRINT *, "func:  func        = ", Veeh - getRadialWind()
 
                func = ABS(Vh (getWindRadius(getQuadrant()),
@@ -1516,7 +1754,8 @@
      &                        getShapeParameter (),
      &                        getAmbientPressure(),
      &                        getCentralPressure(),
-     &                        getCenterLatitude ()) )
+     &                        getCenterLatitude (),
+     &                        getMaxWinds() ) )
      &              - getRadialWind()
 
             END FUNCTION func
@@ -1589,8 +1828,9 @@
                   END IF
 
                   CALL setRadiusMaxWinds(n+1, root)
-               END DO
 
+
+               END DO
                !--------------------------------------------------------
                ! Generate 2 additional (theta,Rmax) points for curve-fit
                !--------------------------------------------------------
@@ -1598,6 +1838,9 @@
      &              (getRadiusMaxWinds(2) + getRadiusMaxWinds(nQuads+1))
                CALL setRadiusMaxWinds(         1, root)
                CALL setRadiusMaxWinds(nQuads + 2, root)
+c                DO n = 1, nQuads
+c          Write(*,*) "Rmax in Quatrandt", n, " = ", getRadiusMaxWinds(n)
+c                enddo
 
                IF (fitMethod == POLY_FIT) THEN
                   !--------------------------------------------------
@@ -1616,13 +1859,79 @@
 
             END SUBROUTINE calcRmax
 
+
+            !===============================================================
+            ! RJW 07 - 2009 
+            ! Calculate the coefficients that fit the given 
+            ! radius of maximum winds for all storm quadrants.
+            !
+            ! On input:
+            !   Rmax in all 4 quadrants plus 2 extra values to tie down circular periodicity
+            !
+            ! On output:
+            !    Rmax    radius of maximum winds (nm) in all quadrants, plus
+            !            2 extra values to tie down circular periodicity
+            !===============================================================
+            SUBROUTINE calcRmax_givenRmax(rmaxw)
+!              REAL(sz), EXTERNAL  :: func
+               REAL(sz)            :: root        ! Radius of maximum winds
+C               REAL(sz), PARAMETER :: innerRadius = one
+C               REAL(sz), PARAMETER :: outerRadius = oneHundred
+C               REAL(sz), PARAMETER :: accuracy    = .0001_dp
+C               REAL(sz), PARAMETER :: zoom        = oneHundredth
+C               INTEGER , PARAMETER :: itmax = 3
+C               REAL(sz)            :: r1,r2, r3,r4, dr
+               INTEGER             :: n, iter
+               REAL(sz), INTENT(IN),DIMENSION(nQuads) :: rmaxw
+
+              !-----------------------------
+              ! Loop over quadrants of storm
+              !-----------------------------
+               DO n = 1, nQuads
+                  !---------------------------------------------
+                  ! Find Rmax using Brent root-finding algorithm
+                  ! where func(Rmax) = Vh-Vr = 0
+                  !---------------------------------------------
+                  CALL setQuadrant(n)
+
+                  CALL setRadiusMaxWinds(n+1, rmaxw(n))
+
+               END DO
+               !--------------------------------------------------------
+               ! Generate 2 additional (theta,Rmax) points for curve-fit
+               !--------------------------------------------------------
+               root = half *
+     &              (getRadiusMaxWinds(2) + getRadiusMaxWinds(nQuads+1))
+               CALL setRadiusMaxWinds(         1, root)
+               CALL setRadiusMaxWinds(nQuads + 2, root)
+c                DO n = 1, nQuads+2
+c             Write(*,*) "Rmax in Quatrandt", n, " = ", getRadiusMaxWinds(n)
+c                enddo
+
+               IF (fitMethod == POLY_FIT) THEN
+                  !--------------------------------------------------
+                  ! Fit a polynomial to the (theta,Rmax) data points.
+                  ! Polynomial coefficients are stored in array 'a'.
+                  !--------------------------------------------------
+                  CALL fitPoly(nPoints,nPoints,theta,Rmax,order,order,a)
+               ELSE
+                  !----------------------------------------------------
+                  ! Fit a cubic spline to the (theta,Rmax) data points.
+                  ! 2nd derivatives are stored in array 'd2ydx2'.
+                  !----------------------------------------------------
+                  CALL fitSpline(nPoints, REAL(theta),REAL(Rmax),
+     &                            0.,0., 3, work, d2ydx2)
+               END IF
+
+            END SUBROUTINE calcRmax_givenRmax
+
             !==================================================
             ! Print an error message, then terminate execution.
             !==================================================
             SUBROUTINE killJob(message)
-            	 CHARACTER(LEN = *), INTENT(IN) :: message
-            	 WRITE (*,'(a)') message
-            	 STOP "Program terminated by SUBROUTINE killJob"
+             CHARACTER(LEN = *), INTENT(IN) :: message
+              WRITE (*,'(a)') message
+               STOP "Program terminated by SUBROUTINE killJob"
             END SUBROUTINE killJob
 
             !===========================
@@ -1674,6 +1983,7 @@
             SUBROUTINE setMaxWinds(v)
                REAL(sz), INTENT(IN) :: v
                Vmax = v
+C              write(*,*) 'Vmax in vortex = ', Vmax
             END SUBROUTINE setMaxWinds
 
             SUBROUTINE setShapeParameter(s)

@@ -99,18 +99,26 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  ETA1(:), ETA2(:), UU2(:), VV2(:)
 #ifndef NELMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX(:) ! v46.50 sb 11/11/2006
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX(:) 
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX_G(:) 
 #endif
 #ifndef NUVMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  UMAX(:) ! v46.50 sb 11/11/2006
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX(:) 
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX_G(:) 
 #endif
       REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:), WVNXOut(:), WVNYOut(:)
 #ifndef NPRMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin(:) 
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin_G(:) 
 #endif
 #ifndef NWVMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax(:) 
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax_G(:) 
 #endif
       REAL(SZ),ALLOCATABLE, TARGET ::  CC00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  EtaDisc(:) ! vjp 9/2006 added for hotstart file
@@ -153,6 +161,8 @@ c.
       REAL(SZ),ALLOCATABLE ::   RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
 #ifndef NRSMAX
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:) 
 #endif
       REAL(SZ),ALLOCATABLE ::   TK(:)
       REAL(8), ALLOCATABLE ::   EMO(:,:),EFA(:,:)
@@ -165,6 +175,7 @@ c.
       REAL(SZ),ALLOCATABLE ::   TIP1(:),TIP2(:)
       REAL(SZ),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
       REAL(SZ),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
+      REAL(SZ),ALLOCATABLE ::   COEFD(:) !jgf48.4619 from Seizo (Lumped GWCE)
       REAL(SZ),ALLOCATABLE ::   WKSP(:),RPARM(:)
       REAL(SZ),ALLOCATABLE ::   ABD(:,:),ZX(:)
       REAL(SZ),ALLOCATABLE ::   LSXX(:),LSXY(:),LSYX(:),LSYY(:)
@@ -300,6 +311,12 @@ C     jgf45.07 The definitions of many of these are in timestep.F
       LOGICAL :: CME_AreaInt_Corr    = .FALSE.
       LOGICAL :: CTIP                = .FALSE.
       LOGICAL :: CHARMV              = .FALSE.
+  
+C     jgf48.4627 When only meteorological output is requested, skip past
+C     the GWCE and Momentum equations, so that ADCIRC runs faster and
+C     only calculates the requested quantities.
+      LOGICAL :: METONLY             = .FALSE.
+
 C...
 C...EXPLICITLY DECLARE ADDITIONAL VARIABLES
 C...
@@ -422,10 +439,15 @@ C     globalio and writer modules
 C   
 C     jgf48.03 the following data structure is used to describe
 C     the size and shape of the output data. 
+C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements to the structure
       type OutputDataDescript_t
+        CHARACTER(12)     :: file_name ! name of output file
+        character(20)     :: field_name !Name of the field associated with the data structure
         integer           :: specifier  ! output format from fort.15 (NOUTE,etc)
         REAL(SZ)          :: initial_value 
         integer           :: int_initial_value
+        logical           :: ConsiderWetDry ! Flag for considering nodes wet/dry status
+        real(sz)          :: alternate_value  ! Value that can be used as an alternate value
         ! num_items_per_record is number of "tuples", i.e.
         ! it is equal to 1 if scalar, 2 if 2D vector, 3 if 3D vector, etc
         integer           :: num_items_per_record
@@ -443,6 +465,8 @@ C     the size and shape of the output data.
         REAL(SZ), pointer :: array_g(:)  ! full domain data scalar etc
         REAL(SZ), pointer :: array2_g(:) ! full domain 2nd vec component
         REAL(SZ), pointer :: array3_g(:) ! full domain 3rd vec component
+        REAL(SZ), pointer :: hotstart(:) ! from hotstart (used by min max)
+        REAL(SZ), pointer :: hotstart_g(:) ! from hotstart (used by min max)
       end type OutputDataDescript_t
       INTEGER ITAU0P ! position in tau0 output file for variable tau0
 C   
@@ -760,6 +784,17 @@ C
 C...
 C...Allocate space for arrays needed by GWCE matrix and iterative solver   
 C...
+
+      SUBROUTINE ALLOC_MAIN11_LUMPED()
+      IMPLICIT NONE
+C     jgf48.4619: Array used in lumped GWCE (from Seizo)
+      ALLOCATE( COEFD(MNP) ) 
+      RETURN
+      END SUBROUTINE
+
+
+
+
       SUBROUTINE ALLOC_MAIN11()
       IMPLICIT NONE
 

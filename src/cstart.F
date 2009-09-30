@@ -13,6 +13,7 @@ C
       SUBROUTINE COLDSTART()
 C
       USE GLOBAL
+      USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
       USE SIZES
       USE HARM
       USE WIND
@@ -32,6 +33,13 @@ C
       REAL(SZ) HTOT    
       REAL(SZ) HollandTime, AsymmetricTime
 
+C     jgf48.4628 Add capability to turn off solution if only met output
+C     was requested. 
+      LOGICAL metOutputOn     ! .true. if met output was requested 
+      LOGICAL nonMetOutputOff ! .true. no other output was requested
+ 
+      metOutputOn = .FALSE.
+      nonMetOutputOff = .FALSE.
 C
 C...  SET AT REST INITIAL CONDITION OVER WHOLE DOMAIN
 C...  IF BOTTOM IS ABOVE THE GEIOD -> DRY NODE
@@ -147,6 +155,34 @@ C....TIME LEVEL 1 AND LEVEL 2 WIND FIELDS
       ENDDO
 
       IF(NWS.NE.0) THEN
+C        jgf48.4627 If user only requests meteorological output, then 
+C        set a flag that turns off the calculation of the GWCE and
+C        momentum equations
+         IF ((NOUTE.EQ.0) .AND. (NOUTV.EQ.0) .AND. (NOUTC.EQ.0) .AND.
+     &       (NOUTGE.EQ.0) .AND. (NOUTGV.EQ.0) .AND. (NOUTGC.EQ.0 ).AND.
+     &       (I3DSD.EQ.0) .AND. (I3DSV.EQ.0) .AND. (I3DST.EQ.0) .AND.
+     &       (I3DGD.EQ.0) .AND. (I3DGV.EQ.0) .AND. (I3DGT.EQ.0) .AND.
+     &       (NHASE.EQ.0) .AND. (NHASV.EQ.0) .AND. 
+     &       (NHAGE.EQ.0) .AND. (NHAGV.EQ.0) )
+     &       THEN
+            nonMetOutputOff = .TRUE.
+         ENDIF      
+         IF ( (NOUTM.NE.0) .OR. (NOUTGW.NE.0) ) THEN
+            metOutputOn = .TRUE.
+         ENDIF
+         IF ( metOutputOn .AND. nonMetOutputOff ) THEN
+            IF ((NSCREEN.NE.0).AND.MYPROC.EQ.0) THEN
+               WRITE(ScreenUnit,*)
+     &      'INFO: Only meterological output was requested. ADCIRC'
+               WRITE(ScreenUnit,*)
+     &      'will not solve the GWCE or momentum equations.'
+             ENDIF
+             WRITE(16,*)
+     &      'INFO: Only meterological output was requested. ADCIRC'
+             WRITE(16,*)
+     &      'will not solve the GWCE or momentum equations.'
+            METONLY = .TRUE. ! set flag 
+         ENDIF         
 
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
          WRITE(16,1112)
@@ -248,6 +284,14 @@ C     jgf46.16 Merged:
         AsymmetricTime = STATIM*86400.D0
         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
        CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
+      ENDIF
+
+C     RJW Merged:
+!    rjw added nws = 19: asymmetric hurricane winds v2.0
+      IF(NWS.EQ.19) THEN
+        AsymmetricTime = STATIM*86400.D0
+        OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+       CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
       ENDIF
 
       IF(NWS.EQ.10) THEN

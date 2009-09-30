@@ -63,7 +63,6 @@ C      USE SIZES
      &    NOUTGE, SLAM, SFEA, NDSETSE,
      &    NOUTGV, NDSETSV,
      &    NOUTGW, NDSETSW, 
-     &    FileFmtMajor, FileFmtMinor, FileFmtRev,
      &    nhstar,nhsinc,
      &    title, institution,
      &    source, history, references, comments, host, convention,
@@ -898,7 +897,7 @@ C---------------------------------------------------------------------------
       LOGICAL success        ! .true. if all files opened successfully 
 
       CALL OpenPrepFiles(10, 'initial concentration         ', 
-     &     nproc, sdu, success)
+     &     1, nproc, sdu, success)
 
       IF (.not.success) THEN
          WRITE(*,*) 'WARNING: Unit 10 files not preprocessed.'
@@ -1028,7 +1027,7 @@ C---------------------------------------------------------------------------
       LOGICAL success        ! .true. if all files opened successfully 
 
       CALL OpenPrepFiles(11, 'initial density forcing       ', 
-     &     nproc, sdu, success)
+     &     1, nproc, sdu, success)
 
       IF (.not.success) THEN
          WRITE(*,*) 'WARNING: Unit 11 files not preprocessed.'
@@ -1323,115 +1322,151 @@ C
 C     jgf46.00 This subroutine will break up the full domain nodal
 C     attributes file into subdomains.
 C
+C     jgf48.47 Rewritten to only open a smaller number of subdomains
+C     at a time (256 by default)
+C
+C     jgf48.50 Fixed bug (remove ALLOCATABLE from vars that don't need
+C     it). Also adding following documentation:
+C
+C     BY DEFAULT, ONLY 256 SUBDOMAINS WILL BE PREPPED AT A TIME TO AVOID
+C     OPENING TOO MANY FILES ON CERTAIN PLATFORMS. THIS NUMBER CAN BE
+C     CONTROLLED BY THE PARAMETER MAXOPENFILES. 
+C
 C---------------------------------------------------------------------------
       SUBROUTINE PREP13()
 C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
+C
       integer :: nbytes = 0
       INTEGER i              ! node loop counter
       INTEGER k              ! attribute loop counter
+      INTEGER l              ! line loop counter
       INTEGER m              ! attribute default value counter
       INTEGER iproc          ! subdomain loop counter
-      INTEGER sdu            ! subdomain unit number for unit 13 files
+      INTEGER sdu(nproc)     ! subdomain unit number for unit 13 files
       INTEGER NumOfNodes     ! must match the no. of nodes in grid (unit 14)
       INTEGER NAttr          ! number of nodal attributes in the file
       INTEGER NumNotDefault  ! number of nodes specified in the file
-      CHARACTER(len=80) header       ! header comments in unit 13 files
-      CHARACTER(len=80), ALLOCATABLE :: AttrName(:)  ! label for attribute
-      CHARACTER(len=80), ALLOCATABLE :: Units(:) ! label for physical units
-      REAL(SZ), ALLOCATABLE :: DefaultVal(:,:)   ! default value of attribute
-      INTEGER, ALLOCATABLE:: NoOfVals(:) ! at each node for an attribute
+      CHARACTER(len=80) header   ! header comments in unit 13 files
+      CHARACTER(len=80) AttrName ! label for attribute
+      CHARACTER(len=80) Units    ! label for physical units
+      CHARACTER(len=80) Skipped  ! data we want to skip over
+      REAL(SZ) DefaultVal(12) ! default value of attribute
+      INTEGER NoOfVals       ! at each node for an attribute
       INTEGER Mode           !=0 to count, =1 to write
       LOGICAL success        ! .true. if all files opened successfully 
       INTEGER, ALLOCATABLE :: SDNumND(:,:)  ! subdomain # of nodes not default
+C     jgf48.47 Do the decomposition for a max of 256 subdomains at a
+C     time ... some platforms/compilers limit the number of files that 
+C     can be open at any one time.
+      INTEGER, PARAMETER :: maxOpenFiles = 256 
+      INTEGER startProc  
+      INTEGER endProc 
+      INTEGER deltaProc
 C
-C     Open subdomain fort.13 files.
-      CALL OpenFullDomainFile(13, 'nodal attributes              ', 
-     &     success)
+C     Perform decomposition over range of subdomains.
+      startProc = 1
+      DO WHILE ( startProc .lt. nproc )
+         deltaProc = nproc - startProc
+         IF ( deltaProc .gt. maxOpenFiles ) deltaProc = maxOpenFiles
+         endProc = startProc + deltaProc
 C
-      IF (.not.success) THEN
-         WRITE(*,*) 'WARNING: Unit 13 files not preprocessed.'
-         RETURN ! note early return
-      ENDIF
+C        Open full domain and subdomain fort.13 files.
+         CALL OpenPrepFiles(13, 'nodal attributes              ', 
+     &       startProc, endProc, sdu, success)
 C
-C     Read header information from full domain unit 13 file
-      READ(13,'(A80)') header
-      READ(13,*) NumOfNodes     ! number of nodes according to unit 13
-      READ(13,*) NAttr          ! number of attributes in the unit 13 file
-      ALLOCATE(AttrName(NAttr),Units(NAttr))
-      ALLOCATE(NoOfVals(NAttr),DefaultVal(NAttr,12))
-      DO k=1, NAttr
-         READ(13,*) AttrName(k) 
-         READ(13,*) Units(k)
-         READ(13,*) NoOfVals(k)
-         READ(13,*) (DefaultVal(k,m),m=1,NoOfVals(k))
-      END DO
+         IF (.not.success) THEN
+            WRITE(*,*) 'WARNING: Unit 13 files not preprocessed.'
+            RETURN ! note early return
+         ENDIF
 C
-C     Check to make sure that the number of nodes in the nodal
-C     attributes file is the same as in the grid file (unit 14).
-      IF (NumOfNodes.NE.NNODG) THEN
-         WRITE(6,9900)
- 9900    FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
+C        Read header information from full domain unit 13 file
+         READ(13,'(A80)') header
+         READ(13,*) NumOfNodes     ! number of nodes according to unit 13
+         READ(13,*) NAttr          ! number of attributes in the unit 13 file
+C
+C        Check to make sure that the number of nodes in the nodal
+C        attributes file is the same as in the grid file (unit 14).
+         IF (NumOfNodes.NE.NNODG) THEN
+            WRITE(6,9900)
+ 9900       FORMAT(////,1X,'!!!!!!!!!!  FATAL ERROR  !!!!!!!!!',
      &        //,1X,'The number of nodes in the grid file (unit 14) and'
      &        /,1X,'the nodal attributes file (unit 13) must match.',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-         STOP                   ! We're toast.
-      ENDIF
+            STOP                   ! We're toast.
+         ENDIF
 C
-C     Allocate and initialize the matrix for the number of Non Default
-C     nodes in each SubDomain for each nodal attribute
-      ALLOCATE(SDNumND(nproc,NAttr))
-      nbytes = 8*nproc*nattr
-      call memory_alloc(nbytes)
-      DO iproc=1,nproc
+C        Transcribe header information into subdomain unit 13 files
+         DO iproc = startProc, endProc
+            WRITE(sdu(iproc),'(A80)') header
+            WRITE(sdu(iproc),*) NNODP(iproc) 
+            WRITE(sdu(iproc),*) NAttr
+         ENDDO
+C
+C        Transcribe attribute names from full domain file to subdomains.
          DO k=1, NAttr
-            SDNumND(iproc,k)=0
+            READ(13,'(A80)') AttrName
+            READ(13,'(A80)') Units
+            READ(13,*) NoOfVals
+            READ(13,*) (DefaultVal(m),m=1,NoOfVals)
+            DO iproc=startProc, endProc
+               WRITE(sdu(IPROC),'(A80)') AttrName
+               WRITE(sdu(IPROC),'(A80)') Units
+               WRITE(sdu(IPROC),*) NoOfVals
+               WRITE(sdu(IPROC),'(12(1x,e16.9))') 
+     &          (DefaultVal(m),m=1,NoOfVals)
+            END DO
          END DO
+C
+C        Allocate and initialize the matrix for the number of Non Default
+C        nodes in each SubDomain for each nodal attribute
+         ALLOCATE(SDNumND(nproc,NAttr))
+         nbytes = 8*nproc*nattr
+         call memory_alloc(nbytes)
+         DO iproc=startProc,endProc
+            DO k=1, NAttr
+               SDNumND(iproc,k)=0
+            END DO
+         END DO
+C        We need to figure out how many nodes go into each subdomain
+C        for each attribute.
+         CALL processNodalAttr(NAttr, 0, sdu, SDNumND,
+     &      startProc, endProc)
+C
+C     Now rewind and advance to the beginning of the data again
+         REWIND(13)
+         DO l=1, 3
+            READ(13,*) skipped    ! skip header, NumOfNodes, NAttr
+         END DO
+         DO k=1, NAttr
+            DO l=1, 4
+               READ(13,*) skipped ! skip AttrName,Units,NoOfVals,Default 
+            END DO
+         END DO
+C
+C        Now read each of the nodal attributes and transcribe them to the 
+C        appropriate subdomain.
+         CALL processNodalAttr(NAttr, 1, sdu, SDNumND,
+     &      startProc, endProc)
+         DEALLOCATE(SDNumND)
+         nbytes = 8*nproc*nattr
+         call memory_dealloc(nbytes)
+C
+C        Close full domain and subdomain files
+         CLOSE (13)
+         DO iproc=startProc, endProc
+            CLOSE(sdu(iproc))
+         ENDDO 
+         startProc = endProc + 1
       END DO
-C     We need to figure out how many nodes go into each subdomain
-C     for each attribute.
-      CALL ProcessNodalAttr(NAttr, 0, 0, SDNumND)
 C
-C     Create subdomain files
-      DO iproc=1, nproc          
-          CALL OpenSubDomainFile(13, iproc, sdu, Success) 
-          IF (.not.success) THEN
-             WRITE(*,*) 'WARNING: Unit 13 files not preprocessed.'
-             RETURN ! note early return
-          ENDIF
-C
-C     Transcribe header information into subdomain unit 13 file
-          WRITE(sdu,'(A80)') header
-          WRITE(sdu,*) NNODP(iproc) !substitute no. of nodes in subdomain
-          WRITE(sdu,*) NAttr
-C
-C     Transcribe attribute names from full domain file to subdomain.
-          DO k=1, NAttr
-              WRITE(sdu,'(A80)') AttrName(k)
-              WRITE(sdu,'(A80)') Units(k)
-              WRITE(sdu,*) NoOfVals(k)
-              WRITE(sdu,'(12(1x,e16.9))') 
-     &             (DefaultVal(k,m),m=1,NoOfVals(k))
-          END DO
-C         Now read each of the nodal attributes and transcribe them to the 
-C         appropriate subdomain.
-          CALL ProcessNodalAttr(NAttr, sdu, iproc, SDNumND)
-          CLOSE(sdu)
-      END DO
-      DEALLOCATE(SDNumND)
-      nbytes = 8*nproc*nattr
-      call memory_dealloc(nbytes)
-
       if (allocated(NodalAttributes)) then  
          DEALLOCATE(NodalAttributes)
          nbytes = 4*nwp
          call memory_dealloc(nbytes)
       endif
-C
-C     Close full domain file
-      CLOSE (13)
 C
       call memory_status()
       RETURN
@@ -1453,20 +1488,18 @@ C     must each have the number of non-default values at the top, and
 C     this information cannot be known until we have processed the
 C     entire fulldomain file. 
 C     
-C     An alternative would be to use temporary files, but that approach
-C     would require many open files for large grids processed on many
-C     CPUs, and some platforms are limited to a small number of
-C     simultaneously open files.
-C
 C     ----------------------------------------------------------------
-      SUBROUTINE ProcessNodalAttr(NAttr, sdu, iprocTarget, SDNumND)
+      SUBROUTINE ProcessNodalAttr(NAttr, mode, sdu, SDNumND,
+     &   startProc, endProc)
       USE PRE_GLOBAL
       IMPLICIT NONE
 C
       INTEGER,intent(in) :: NAttr  ! number of attributes in the file
-      INTEGER,intent(in) :: sdu    !i/o unit number array, 0=count only
-      INTEGER,intent(in) :: iprocTarget !processor to write data for  
+      INTEGER,intent(in) :: Mode   !=0 to count and return, =1 to write
+      INTEGER,intent(in),dimension(nproc) :: sdu !i/o unit number array 
       INTEGER,intent(inout),dimension(nproc,NAttr) :: SDNumND
+      INTEGER,intent(in) :: startProc 
+      INTEGER,intent(in) :: endProc
       INTEGER NumNotDefault      ! number of nodes specified in the file
       INTEGER NumCol             ! number of values per node for an attr
       INTEGER NodeNum            ! full domain node number
@@ -1474,7 +1507,6 @@ C
       INTEGER i                  ! node loop counter
       INTEGER j                  ! column loop counter
       INTEGER k                  ! attribute loop counter
-      INTEGER l                  ! line loop counter
       INTEGER m                  ! mapping loop counter
       INTEGER iproc              ! subdomain loop counter
       INTEGER iproc2             ! mapped subdomain
@@ -1484,8 +1516,10 @@ C
 C
       DO k=1, NAttr
          READ(13,*) AttrName
-         IF (sdu.ne.0) THEN
-            WRITE(sdu,'(A80)') AttrName
+         IF (Mode.eq.1) THEN
+            DO iproc=startProc,endProc
+               WRITE(sdu(iproc),'(A80)') AttrName
+            END DO
          ENDIF
          SELECT CASE (AttrName)
          CASE("primitive_weighting_in_continuity_equation")
@@ -1515,9 +1549,12 @@ C
          CASE 
      &   ("min_and_max_primitive_weighting_in_continuity_equation")
             NumCol=2
+         CASE
+     &   ("subtract_from_depth_to_equal_mean_sea_level") 
+            NumCol=1
          CASE DEFAULT
             NumCol=1
-            IF (sdu.eq.0) THEN
+            IF (Mode.eq.0) THEN
                WRITE(6,1001)    ! Nodal Attributes file
                WRITE(6,1021) AttrName ! contains invalid name
             ELSE
@@ -1526,44 +1563,46 @@ C
          END SELECT
          ALLOCATE(AttrData(NumCol))
          READ(13,*) NumNotDefault
-         IF (sdu.eq.0) THEN
-            DO i=1, NumNotDefault
-                READ(13,*) NodeNum, (AttrData(j),j=1,NumCol)
-                DO m=1, ITOTPROC(NodeNum) 
-                   iproc2 = IMAP_NOD_GL2(2*(m-1)+1,NodeNum)
-                   DO iproc=1, NPROC
-                      IF (iproc.EQ.iproc2) THEN ! f.d. node maps to this s.d. 
-                          SDNumND(iproc,k)=SDNumND(iproc,k)+1
-                     ENDIF
-                  END DO
-                END DO
-             END DO
-         ELSE
-            WRITE(sdu,*) SDNumND(iprocTarget,k)
-            DO i=1, NumNotDefault
-                READ(13,*) NodeNum, (AttrData(j),j=1,NumCol)
-                DO m=1, ITOTPROC(NodeNum) 
-                   iproc2 = IMAP_NOD_GL2(2*(m-1)+1,NodeNum)
-                   IF (iprocTarget.EQ.iproc2) THEN  
-                      SDNode = IMAP_NOD_GL2(2*(m-1)+2,NodeNum)
-                      WRITE(sdu,1100) SDNode, 
-     &                   (AttrData(j),j=1,NumCol)
-                  ENDIF
-                END DO    
+         IF (Mode.eq.1) THEN
+            DO iproc=startProc,endProc
+               WRITE(sdu(iproc),*) SDNumND(iproc,k)
             END DO
          ENDIF
-         DEALLOCATE(AttrData)
-      END DO
-C
-C     Now rewind and advance to the beginning of the data again
-      REWIND(13)
-      DO l=1, 3
-         READ(13,*) skipped    ! skip header, NumOfNodes, NAttr
-      END DO
-      DO k=1, NAttr            
-         DO l=1, 4
-            READ(13,*) skipped ! skip AttrName,Units,NoOfVals,DefaultVal 
+         DO i=1, NumNotDefault
+            READ(13,*) NodeNum, (AttrData(j),j=1,NumCol)
+            IF (ITOTPROC(NodeNum).eq.1) THEN
+               iproc = IMAP_NOD_GL(1,NodeNum)
+               IF ( (iproc.lt.startProc) .or. (iproc.gt.endProc) ) THEN
+                  CYCLE ! skip it if it does not map to our range of procs 
+               ENDIF
+               IF (Mode.eq.0) SDNumND(iproc,k) = SDNumND(iproc,k)+1
+               IF (Mode.eq.1) THEN
+                  SDNode = IMAP_NOD_GL(2,NodeNum)
+                  WRITE(sdu(iproc),1100) SDNode,(AttrData(j),j=1,NumCol)
+               ENDIF
+            ELSE
+               DO m=1, ITOTPROC(NodeNum)
+                  iproc2 = IMAP_NOD_GL2(2*(m-1)+1,NodeNum)
+                  DO iproc=startProc, endProc
+                     IF (iproc.EQ.iproc2) THEN !f.d. node maps to this s.d. 
+                        IF (Mode.eq.0) THEN
+                           SDNumND(iproc,k)=SDNumND(iproc,k)+1
+                        ENDIF
+                        IF (Mode.eq.1) THEN
+                           SDNode = IMAP_NOD_GL2(2*(m-1)+2,NodeNum)
+                           WRITE(sdu(iproc),1100) SDNode,
+     &                          (AttrData(j),j=1,NumCol)
+                        ENDIF
+                     ENDIF
+                  END DO
+               END DO
+            END IF
          END DO
+         DEALLOCATE(AttrData)
+         IF (Mode.eq.1) THEN
+            WRITE(6,'(A25,A80)') '     Finished processing ', AttrName
+            WRITE(6,*) 'for processor range ',startProc,' to ',endProc
+         ENDIF
       END DO
 C
 C
@@ -1576,7 +1615,6 @@ C
 C     ----------------------------------------------------------------
       END SUBROUTINE ProcessNodalAttr
 C     ----------------------------------------------------------------
-
 
 
       SUBROUTINE PREP14()
@@ -2027,7 +2065,7 @@ C
       ENDDO
 C
   80  FORMAT(A80)
-  81  FORMAT(I8,E13.6,2X,E13.6)
+  81  FORMAT(I8,2X,E13.6,2X,E13.6)
   82  FORMAT(I8,2X,I8,2X,E13.6,2X,E13.6,2X,E13.6)
   90  FORMAT(1X,A6,5I8)
 C
@@ -2115,10 +2153,12 @@ C     jgfdebug46.02 Added check for NWS=45.
 C     jgf46.02 Added NWS=8.
 C     jgf46.16 Merged:
 C     cf & cm added NWS=9: asymmetric hurricane wind model
+C     rjw added NWS=19: asymmetric hurricane wind model v2.0
 C     sb46.28sb01 added NWS=12: OWI format
          IF ((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.45).OR.
      &        (ABS(NWS).EQ.5).OR.(ABS(NWS).EQ.6).OR.(ABS(NWS).EQ.8)
-     &        .OR.(ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12))THEN
+     &        .OR.(ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)
+     &         .OR.(ABS(NWS).EQ.19))THEN
             WRITE(15,80) WSMSG1
          ENDIF
          IF (NWS.EQ.3) THEN
@@ -2804,7 +2844,7 @@ C  Global Aperiodic Elevation Boundary Conditions file
 C
 C     Open full domain and subdomain fort.19 files
       CALL OpenPrepFiles(19, 'aperiodic elevation boundary  ', 
-     &     nproc, SDU, Success)
+     &     1, nproc, SDU, Success)
       IF (.not.Success) THEN
          WRITE(*,*) 'WARNING: Unit 19 files not preprocessed.'
          RETURN ! note early return
@@ -2885,7 +2925,7 @@ C---------------------------------------------------------------------------
 
 C     Open full domain and subdomain fort.20 files
       CALL OpenPrepFiles(20, 'aperiodic flux boundary       ', 
-     &     nproc, SDU, Success)
+     &     1, nproc, SDU, Success)
       IF (.not.Success) THEN
          WRITE(*,*) 'WARNING: Unit 20 files not preprocessed.'
          RETURN ! note early return
@@ -2971,6 +3011,7 @@ C---------------------------------------------------------------------------
 C      CHARACTER FNAME*60,LOCFN*14,CMD1*63,CMD2*7,CMD*70,INLINE*80
       CHARACTER FNAME*60,CMD1*63,CMD2*7,CMD*70
       CHARACTER*170 Line ! line of data from NWS=8 (Holland) file
+      CHARACTER*270 Line19 ! line of data from NWS=19 (AsymmHollandv2.0) file
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error
       INTEGER,ALLOCATABLE  :: NG(:)
@@ -2978,6 +3019,13 @@ C      CHARACTER FNAME*60,LOCFN*14,CMD1*63,CMD2*7,CMD*70,INLINE*80
       REAL(SZ),ALLOCATABLE :: WVNXL(:),WVNYL(:),PRL(:)
       REAL(SZ) U,V,PR
       REAL(SZ) RHOWAT     !jgfdebug46.02  
+C     jgf48.47 Do the decomposition for a max of 256 subdomains at a
+C     time ... some platforms/compilers limit the number of files that 
+C     can be open at any one time.
+      INTEGER, PARAMETER :: maxOpenFiles = 256 
+      INTEGER startProc  
+      INTEGER endProc 
+      INTEGER deltaProc
 C
 C     Allocate local work arrays
 C
@@ -2991,55 +3039,63 @@ C
       nbytes = 24*mnwp
       call memory_alloc(nbytes)
 C
-C     Open full domain and all subdomain fort.22 files
-      CALL OpenPrepFiles(22, 'wind information              ', 
-     &     nproc, sdu, success)
+C     Perform decomposition over a range of subdomains.
+      startProc = 1
+      DO WHILE ( startProc .lt. nproc )
+         deltaProc = nproc - startProc
+         IF ( deltaProc .gt. maxOpenFiles ) deltaProc = maxOpenFiles
+         endProc = startProc + deltaProc
 
-      IF (.not.success) THEN
-         WRITE(*,*) 'WARNING: Unit 22 files not preprocessed.'
-         RETURN ! note early return
-      ENDIF
+C        Open full domain and all subdomain fort.22 files
+         CALL OpenPrepFiles(22, 'wind information              ', 
+     &      startProc, endProc, sdu, success)
+
+         IF (.not.success) THEN
+           WRITE(*,*) 'WARNING: Unit 22 files not preprocessed.'
+           RETURN ! note early return
+         ENDIF
 C
 C--Branch to Appropriate Code
 C
-      SELECT CASE(ABS(NWS))
-C     -------------
-      CASE(1,2,5,7)
-C     -------------
+         SELECT CASE(ABS(NWS))
+C        -------------
+         CASE(1,2,5,7)
+C        -------------
+C
 C     MAIN LOOP FOR NWS = 1, +-2,+-5,+-7
 C     (1)  Read a record from Global Wind Stress File
 C     (2)  Use Decomp arrarys to Localize record to a subdomain
 C     (3)  Write Local Wind Stress record in same format 
-         DO                     ! loop forever (or until file ends)
-            READ(22,*,END=9999)  
+           DO                     ! loop forever (or until file ends)
+              READ(22,*,END=9999)  
      &           (NG(I),WVNXG(I),WVNYG(I),PRG(I),I=1,NNODG)
-            DO IPROC = 1,NPROC
-               DO I=1, NNODP(IPROC)
-                  INDEX = IMAP_NOD_LG(I,IPROC)
-                  WVNXL(I) = WVNXG(INDEX)
-                  WVNYL(I) = WVNYG(INDEX)
-                  PRL(I) = PRG(INDEX)
-               ENDDO
-               DO I=1, NNODP(IPROC)
-                  WRITE(SDU(IPROC),1100)  I,WVNXL(I),WVNYL(I),PRL(I)
-               ENDDO
-            ENDDO
-         ENDDO
+              DO IPROC = STARTPROC, ENDPROC
+                 DO I=1, NNODP(IPROC)
+                    INDEX = IMAP_NOD_LG(I,IPROC)
+                    WVNXL(I) = WVNXG(INDEX)
+                    WVNYL(I) = WVNYG(INDEX)
+                    PRL(I) = PRG(INDEX)
+                 ENDDO
+                 DO I=1, NNODP(IPROC)
+                    WRITE(SDU(IPROC),1100)  I,WVNXL(I),WVNYL(I),PRL(I)
+                 ENDDO
+              ENDDO
+           ENDDO
 C
-C     -------     
-      CASE(4)
-C     -------
-C     MAIN LOOP FOR NWS = +- 4  ( PBL Format )
-C     (1)  Read a record from Global Wind Stress File
-C     (2)  Use Decomp arrarys to Localize record to a subdomain
-C     (3)  Write out in PBL Format on subdomain
+C        -------     
+         CASE(4)
+C        -------
+C        MAIN LOOP FOR NWS = +- 4  ( PBL Format )
+C        (1)  Read a record from Global Wind Stress File
+C        (2)  Use Decomp arrarys to Localize record to a subdomain
+C        (3)  Write out in PBL Format on subdomain
 C
 C--Read a wind field record from the global input file
 C
          DO
             READ(22,'(A80)',END=9999) PBLJAGF
             IF(PBLJAGF(2:2).EQ.'#') THEN
-               DO IPROC = 1,NPROC
+               DO IPROC =  STARTPROC,ENDPROC
                   WRITE(SDU(IPROC),1101)
                   WRITE(SDU(IPROC),1100) 1,0.0,0.0,0.0 !victor didn't like this line 27/11/03
                ENDDO
@@ -3056,11 +3112,11 @@ C              READ(PBLJAGF,'(I8,3E13.5)',END=9999) NHG,U,V,PR
             ENDIF
          END DO
 C
-C     --------     
-      CASE(45)
-C     --------
-C     jgf46.02 Convert NWS=4 winds to NWS=5 winds to imitate the Katrina
-C     (IPET) version of the code.
+C        --------     
+         CASE(45)
+C        --------
+C        jgf46.02 Convert NWS=4 winds to NWS=5 winds to imitate the Katrina
+C        (IPET) version of the code.
 C
 C-- Read a wind field record from the global input file
 C
@@ -3068,7 +3124,7 @@ C
             RHOWAT=1000.0d0
             CALL NWS4GET(WVNXG,WVNYG,PRG,G,RHOWAT,NNODG,DONE)
 C     
-            DO IPROC = 1,NPROC
+            DO IPROC = STARTPROC,ENDPROC
                DO I=1, NNODP(IPROC)
                   INDEX = IMAP_NOD_LG(I,IPROC)
                   WVNXL(I) = WVNXG(INDEX)
@@ -3084,9 +3140,9 @@ C
             IF (DONE) GOTO 9999
          ENDDO
 C     
-C     ---------     
-      CASE(3,6,8,9)
-C     ---------
+C        ---------     
+         CASE(3,6,8,9)
+C        ---------
 C     jgf46.16 Added NWS=9, asymmetric hurricane wind model
 C
 C     jgf48.35 Moved NWS=3 and NWS=6 into this case, since it seems to 
@@ -3108,27 +3164,56 @@ C     prefer to avoid calls to the platform-dependent shell from
 C     Fortran.
          DO 
             READ(22,170,END=9999) Line
-            DO IPROC = 1,NPROC
+            DO IPROC = STARTPROC,ENDPROC
                WRITE(SDU(IPROC),170) Line
             ENDDO
          ENDDO
 C
-C     ------------
-      CASE DEFAULT
-C     ------------
+C        ---------     
+         CASE(19)
+C        ---------
+C     RJW Added NWS=19, asymmetric hurricane wind model v2.0
+C
+C     Asymetric hurricane wind model v2.0 (19)
+C
+C         Need a new case because the line needs to be longer (270)
+C     Hurricane track data are in a small file that describes the
+C     hurricane characteristics and provides parameters for the wind
+C     model. The actual wind velocity at each node will be calculated at
+C     run time from these characteristics and parameters by ADCIRC
+C     internally, the wind model. Therefore, each subdomain can use the
+C     exact same information, and we can just rewrite the file into each
+C     subdirectory. We will read it in and write it out to each
+C     subdirectory rather than cp or ln it, because I (jgf) happen to
+C     prefer to avoid calls to the platform-dependent shell from
+C     Fortran.
+         DO
+            READ(22,270,END=9999) Line19
+            DO IPROC = STARTPROC,ENDPROC
+               WRITE(SDU(IPROC),270) Line19
+            ENDDO
+         ENDDO
+C
+C
+C        ------------
+         CASE DEFAULT
+C        ------------
          print *, "NWS=",NWS," has incorrect value in PREP22"
          RETURN
 
-      END SELECT
+         END SELECT
+
 C
 C--Close Global file and all the Local Files     
 C
- 9999 CLOSE (22)
-      DO IPROC=1, NPROC
-         CLOSE (SDU(IPROC))
+ 9999    CLOSE (22)
+         DO IPROC=STARTPROC, ENDPROC
+            CLOSE (SDU(IPROC))
+         ENDDO
+         startProc=endProc+1
       ENDDO
+      
 
- 99   CONTINUE
       DEALLOCATE ( NG,  WVNXG, WVNYG, PRG )
       DEALLOCATE ( WVNXL, WVNYL, PRL )
       nbytes = 52*mnwp
@@ -3137,6 +3222,7 @@ C
       RETURN
   60  FORMAT(A60)
  170  FORMAT(A170)
+ 270  FORMAT(A270)
  1010 FORMAT(' File ',A60,/,' WAS NOT FOUND!  Try again',/)
  1011 FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
  1100 FORMAT(I8,3E13.5)
@@ -3172,7 +3258,7 @@ C--Open Global Wave Stress File ( UNIT 23 )
 C 
 C     Open full domain and subdomain fort.23 files
       CALL OpenPrepFiles(23, 'wave stress                   ',
-     &     nproc, SDU, Success)
+     &     1, nproc, SDU, Success)
       IF (.not.Success) THEN
          WRITE(*,*) 'WARNING: Unit 23 files not preprocessed.'
          RETURN ! note early return
@@ -3221,6 +3307,7 @@ C
       END
 
       SUBROUTINE HOTLOCALIZE()
+      USE VERSION
       USE PRE_GLOBAL 
       use presizes; use memory_usage
 C
@@ -3311,9 +3398,6 @@ C
       INTEGER LUN
       INTEGER NHS
      
-      integer, save       :: FileFmtMajor
-      integer, save       :: FileFmtMinor
-      integer, save       :: FileFmtRev     
 !      REAL(SZ),ALLOCATABLE :: uu22 (:,:) 
 !      REAL(SZ),ALLOCATABLE :: vv22 (:,:) 
 !      INTEGER, ALLOCATABLE :: nodecodenc (:) 
@@ -5021,19 +5105,20 @@ C           S U B R O U T I N E   O P E N  P R E P  F I L E S
 C---------------------------------------------------------------------------
 C
 C     jgf45.12 This subroutine will open the full domain file and each
-C     of the subdomain files. It assumes that all unit numbers are
-C     between 10 and 99.
+C     of the subdomain files in the range of subdomains provided in the
+C     arguments. It assumes that all unit numbers are between 10 and 99.
 C
 C---------------------------------------------------------------------------
       SUBROUTINE OpenPrepFiles(UnitNumber, Description,
-     &     NumSD, SDU, Success) 
+     &     startProc, endProc, SDU, Success) 
 C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       IMPLICIT NONE
       INTEGER, intent(in) :: UnitNumber     ! i/o unit number to open 
       CHARACTER(len=30), intent(in) :: Description ! description of file
-      INTEGER, intent(in) :: NumSD          ! number of subdomains
-      INTEGER, intent(out), dimension(NumSD):: SDU ! Subdomain unit numbers
+      INTEGER, intent(in) :: startProc        ! subdomains to start with
+      INTEGER, intent(in) :: endProc          ! subdomain to end on
+      INTEGER, intent(out), dimension(nproc) :: SDU ! Subdomain unit numbers
       LOGICAL, intent(out):: Success     ! .true. if files opened w/o errors
       LOGICAL Found               !.true. if the full domain file exists
       CHARACTER(len=80) FileName   ! name of full domain file
@@ -5085,7 +5170,7 @@ C
       If (.not.Success) RETURN ! failed to open full domain file
 C
 C     Open each of the subdomain files
-      DO iproc = 1, NumSD
+      DO iproc = startProc, endProc
          sdu(iproc) = 105 + (iproc-1)
          sdFileName(1:7) = 'PE0000/'
          sdFileName(8:14) = DefaultName
@@ -5489,7 +5574,7 @@ C     Open full domain and all subdomain fort.26 files (UnSWAN)
       origUseDefault = USE_DEFAULT
       USE_DEFAULT = .false. ! abusing the global variable to act as an argument
       CALL OpenPrepFiles(26, 'UnSWAN                        ', 
-     &     nproc, sdu, success)
+     &     1, nproc, sdu, success)
       USE_DEFAULT = origUseDefault
 
       IF (.not.success) THEN

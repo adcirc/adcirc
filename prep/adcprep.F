@@ -38,6 +38,7 @@ C   Add routine relocalize       ( V. Parr 09/2006 )
 C   Add prep13 ONLY command      ( V. Parr 09/2006 )
 C   Add prep15 ONLY command      ( V. Parr 10/2006 )
 C   Add prephot ONLY command     ( V. Parr 10/2006 )
+C   Added NWS=19 asymmetric holland v2.0 ( R. Weaver 07/2009) 
 C
 C----------------------------------------------------------------------------
 C
@@ -89,11 +90,8 @@ C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
       USE PRE_GLOBAL 
-!      USE VERSION
+      USE VERSION
       use memory_usage
-      integer, save       :: FileFmtMajor
-      integer, save       :: FileFmtMinor
-      integer, save       :: FileFmtRev     
 C
       CHARACTER JOB*80 ! user input for menu selection
 
@@ -425,10 +423,11 @@ C     jgfdebug46.02 Added NWS=45
 C     jgf46.02 Added NWS=8
 C     jgf46.16 Merged: 
 C     cf & cm added NWS=9: asymmetric hurricane wind model
+C     rjw added NWS=9: asymmetric hurricane wind model v2.0
             IF((NWS.EQ.1).OR.(ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.    
      &           (NWS.EQ.3).OR.(ABS(NWS).EQ.5).OR.(NWS .EQ.6).OR.
-     &           (NWS.EQ.7).OR.(ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8).
-     &           OR.(ABS(NWS).EQ.9)) THEN
+     &           (NWS.EQ.7).OR.(ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8)
+     &           .OR.(ABS(NWS).EQ.9) .OR.(ABS(NWS).EQ.19)) THEN
                CALL PREP22()
 c           ELSEIF (NWS.EQ.10.OR.NWS.EQ.11) THEN
 c              CALL PREP200()

@@ -2,6 +2,120 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v49.00     - 09/29/09 - jgf - Incremented version number to v49.00 to
+C               kick off the development of the next version of ADCIRC.
+C  v48.4642   - 09/18/09 - jgf - Changed syntax for correcting NOFF in
+C               write_output.F, since g95 choked on the original syntax. 
+C               Also fixed several bugs related to writing output
+C               (particularly hotstart output) to subdomain files during
+C               parallel execution.
+C  v48.4641   - 09/09/09 - jgf - Fixed a potential issue in globalio.F where
+C               the fortran intrinsic function 'size' was used as a variable
+C               name in several older subroutines; replaced these instances
+C               with the variable name 'size_this'.
+C  v48.4640   - 09/04/09 - rjw - Changed aswip to persist Cent.press if a 
+C               zero valued for the central pressure is given
+C  v48.4639   - 09/02/09 - jgf - Added feature that will read in min/max 
+C               files on a hotstart to preserve the full record of min and
+C               max values; set NWS8 to choke if Rmax or Cp are set to zero
+C               on any line of fort.22, including OFCL ("forecast"). 
+C  v48.4638   - 09/02/09 - tcm - Fixed a bug in writing hot start values for
+C               NOFF which could have the wrong values after globalizing
+C               because there are no rules for which processor owns an
+C               element and Noff is an elemental value. The way around is to
+C               take the minimum of (Noff, 1) as NOFF is supposed to be
+C               either 0 or 1.
+C  v48.4637   - 08/31/09 - rjw - Fixed out of bounds array in aswip 
+C  v48.4636   - 08/24/09 - rjw - Fixed Bug in NWS 19 code (first lon not 
+C               properly converted)
+C  v48.4635   - 08/14/09 - tcm - Fixed bug in call to neighb within read_input
+C               updated the adcirc makefiles for a pc
+C  v48.4634   - 08/13/09 - tcm - Fixed bug in globalio where multiple variables
+C               where repeated in use module line.
+C  v48.4633   - 08/05/09 - rjw - Fixed Bug in translation direction in ASWIP output 
+C  v48.4632   - 08/05/09 - rjw - Fixed formatting error in ASWIP output 
+C               to make it compatible with wind.F and should still be
+C               compatible with utilities that parse ATCF output.
+C  v48.4631   - 07/30/09 - rjw - Modified aswip set background pressure to 
+C               hardwired value of 1013
+C  v48.4630   - 07/28/09 - jgf - Modified aswip output to include commas
+C               to make it compatible with utilities that parse ATCF output.
+C  v48.4629   - 07/28/09 - rjw - Added storm speed(kts) and direction(degrees)
+C               information to aswip.F output fort.22 file
+C               and the translation velocities (U and V) are now computed from
+C               the speed and direction that is read in from
+C               the new fort.22 file into NWS19 code
+C  v48.4628   - 07/27/09 - jgf - Extended METONLY capability to cases where
+C               3D or harmonic output is requested, as well as the case where
+C               execution begins as a hotstart.
+C  v48.4627   - 07/27/09 - jgf - Created METONLY logical variable: if only
+C               met output is requested, ADCIRC will skip solution of the
+C               GWCE and the momentum equations. 
+C  v48.4626   - 07/27/09 - jgf - fixed bug in presizes.F if fort.15 file is
+C               not found. 
+C  v48.4625   - 07/22/09 - rjw - fixed bugs in NWS19 code in wind.F and aswip.F
+C  v48.4624   - 07/22/09 - rjw - fixed bugs in NWS19 code in wind.F and aswip.F
+C  v48.4623   - 07/22/09 - rjw - fixed confusing lines and file names in 
+C               ASymmetric WInd Preprocessing (ASWIP) program 
+C  v48.4622   - 07/22/09 - rjw - Added NWS=19 Asymmetric Holland v2.0 
+C               to src/ files
+C  v48.4621   - 07/22/09 - rjw - Added NWS=19 Asymmetric Holland v2.0 
+C               to prep/ files
+C  v48.4620   - 07/21/09 - jgf - Modified makefile so that aswip executable
+C               may be built with 'make aswip'.
+C  v48.4619   - 07/21/09 - jgf - Fixed inclusion of MNMPROC in write_output.F;
+C               merged lumped/explicit mode from Seizo Tanaka; rjw
+C               merged aswip.F to generate metadata for asymmetric
+C               vortex model.
+C  v48.4618    -07/10/09 - tcm - Fixed bug in writing out global elevation
+C               values using -99999.0 that exists in serial version
+C               Also added 3 fields to the OutputDataDescript_t type
+C  v48.4617    -06/19/09 - jgf - Made numeric constants in NWS8 double
+C               precision; in NWS9 sub added initialization of told and
+C               changed time.eq.time2 to time.gt.time2.
+C  v48.4616    -06/18/09 - rjw - Modified the NWS=8 Holland wind to fix
+C               bug in translational velocity to account for direction.
+C  v48.4615    -06/02/09 - rjw - Removed erroneous call to
+C               COMPUTE_RESELEM from read_input.F.
+C  v48.4614   - 05/27/09 - mcf - Fixed implementation of Rick Luettich
+C               V/Vmax tapering formulation (as in NWS=8) 
+C               for future experimentation - not activated
+C  v48.4613   - 05/27/09 - jgf - Commented out debug lines in
+C               write_output.F and globalio.F that were filling up
+C               fort.16.
+C  v48.4612   - 05/26/09 - rjw - Fix format statement in postprocess for 3D. 
+C  v48.4611   - 05/22/09 - mcf - Reverted damping of translational velocity
+C               back to the original formulation
+C  v48.4610   - 05/22/09 - jgf - Changed air density back to 0.001293 in 
+C               stress calc for NWS8 and NWS9 in timestep.F.
+C  v48.4609   - 05/21/09 - mcf - Fixed seg-fault when writing netcdf hotstart 
+C               files, incorporated fix in the define portion of netcdfio 
+C               for grids with no specified boundary forcing segments or nodes
+C  v48.4608   - 05/19/09 - mcf - Implemented an old bug fix: units conversion
+C               in asymmetric wind code (NWS=9)
+C  v48.4607   - 05/18/09 - jgf - Fixes to get adcprep and adcirc to compile
+C               and link with netCDF on Jade (Cray-XT4) at ERDC.
+C  v48.4606   - 05/13/09 - rjw - modify makefile to compile adcprep using 
+C               version.F
+C  v48.4605   - 05/12/09 - rjw - modify asymmetric code to use damping of 
+C               translational velocity based on ratio of V:Vmax (pass Vmax 
+C               from wind.F into vortex.F subroutine uvp), and set (in vortex.F) 
+C               velocities at center of vortex (dist < 1m) to zero.
+C  v48.4604   - 05/08/09 - jgf - Fixed typo in version.F
+C  v48.4603  -  05/08/09 - rjw-  updated the distance calculation formula 
+C               in Holland Model (NWS=8) to more accuarately calculate 
+C               distance along a shpere, and modified the coriolis formula
+C               to compute a spatially varying coriolis term also for the 
+C               Symmetric Holland model (NWS=8)
+C  v48.4602   - 05/08/09 - jgf - Changed air density for symmetric and 
+C               asymmetric vortex models (NWS=8 and 9) to 1.15 kg/m^3,
+C               for Holland B calculation as well as conversion to wind
+C               stress. Changed asymmetric far field wind damping so
+C               that only the translation velocity is damped.
+C  v48.4601   - 05/01/09 - jgf - Fixed improperly located check for
+C               netcdfio support in presizes.F; removed FileFmt etc from USE
+C               PRE_GLOBAL in prep.F (now uses VERSION instead). Merged
+C               prep.F from v48.48 (trunk r161) b/c it has fastprep13.
 C  v48.46     - 02/26/09 - jgf - Corrected backloaded tau0 averaging
 C               formula: now just one time level.
 C  v48.45     - 02/26/09 - jgf - Fixed backloaded tau0 formula by

@@ -10,17 +10,45 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #            by commenting/uncommenting the appropriate compiler
 #
 #compiler=gnu
+#compiler=g95
 #compiler=intel
 #compiler=intel-lonestar
 #compiler=cray_xt3
-compiler=pgi
+compiler=cray_xt4
+#compiler=pgi
 #
-# 
+#
+# Compiler Flags for gfortran and gcc
 ifeq ($(compiler),gnu)
+  PPFC		:=  gfortran
+  FC		:=  gfortran
+  PFC		:=  mpif90
+  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-132 -march=k8 -m64
+  FFLAGS2	:=  $(FFLAGS1)
+  FFLAGS3	:=  $(FFLAGS1)
+  DA		:=  -DREAL8 -DLINUX -DCSCA
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DPRE		:=  -DREAL8 -DLINUX
+  IMODS 	:=  -I
+  CC		:= gcc
+  CCBE		:= $(CC)
+  CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX -march=k8 -m64
+  CLIBS	:= 
+  LIBS		:=  
+  MSGLIBS	:=  
+  $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
+endif
+# 
+ifeq ($(compiler),g95)
   PPFC		:=  g95
   FC		:=  g95
   PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O3 -mcmodel=medium -fstatic
+  FFLAGS1	:=  $(INCDIRS) -O3 -mcmodel=medium -fstatic -ffixed-line-length-132
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
@@ -31,7 +59,7 @@ ifeq ($(compiler),gnu)
   CCBE		:= $(CC)
   CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX
   CLIBS	:= 
-  LIBS		:=  
+  FLIBS		:=  
   MSGLIBS	:=  
   $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -47,6 +75,7 @@ ifeq ($(compiler),intel)
   FC            :=  ifort
   PFC           :=  mpif90
   FFLAGS1       :=  $(INCDIRS) -O2 -FI  -Vaxlib -assume byterecl -132
+#jgfdebug  FFLAGS1       :=  $(INCDIRS) -g -traceback -FI  -Vaxlib -assume byterecl -132
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA 
@@ -57,7 +86,7 @@ ifeq ($(compiler),intel)
   CCBE		:= $(CC)
   CFLAGS        := $(INCDIRS) -O2 -march=k8 -m64 -mcmodel=medium -DLINUX
   CLIBS         :=
-  LIBS          :=  
+  FLIBS          :=  
   MSGLIBS       :=
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -84,7 +113,7 @@ ifeq ($(compiler),intel-lonestar)
   CCBE		:= $(CC)
   CFLAGS        := $(INCDIRS) -O3 -xT
   CLIBS         :=
-  LIBS          :=  
+  FLIBS          :=  
   MSGLIBS       :=
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -109,7 +138,41 @@ ifeq ($(compiler),cray_xt3)
   DPRE	        :=  -DREAL8 -DLINUX
   CFLAGS	:=  -c89 $(INCDIRS) -DLINUX
   IMODS		:=  -module 
-  LIBS  	:=  
+  FLIBS  	:=  
+  MSGLIBS	:=  
+  BACKEND_EXEC  := metis_be adcprep_be
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
+endif
+#
+# Cray-XT4 (e.g. Jade@ERDC) using standard compilers, added by jgf48.4607
+ifeq ($(compiler),cray_xt4)
+  PPFC	        :=  pgf90
+  FC	        :=  ftn
+  PFC	        :=  ftn
+  CC		:=  pgcc
+  CCBE		:=  cc
+  FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse
+#  FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback
+  FFLAGS2	:=  $(FFLAGS1) 
+  FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics 
+  DA  	        :=  -DREAL8 -DLINUX -DCSCA 
+  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA  
+  DPRE	        :=  -DREAL8 -DLINUX
+  CFLAGS	:=  -c89 $(INCDIRS) -DLINUX
+  IMODS		:=  -module 
+  FLIBS  	:=  
+# When compiling with netCDF support, the HDF5 libraries must also
+# be linked in, so the user must specify HDF5HOME on the command line.
+# jgf20090518: on Jade, NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.0
+# jgf20090518: on Jade, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.2/lib
+  ifeq ($(NETCDF),enable)
+     FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
+  endif   
   MSGLIBS	:=  
   BACKEND_EXEC  := metis_be adcprep_be
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
@@ -136,7 +199,7 @@ ifeq ($(compiler),pgi)
   CCBE          := $(CC)
   CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX
   CLIBS		:= 
-  LIBS  	:=  
+  FLIBS  	:=  
   MSGLIBS	:=  
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -175,7 +238,7 @@ ifeq ($(compiler),pgi)
   CCBE          := $(CC)	
   CFLAGS       := $(INCDIRS) -O2 -DLINUX
   CLIBS         := 
-  LIBS  	:=  
+  FLIBS  	:=  
   MSGLIBS	:=  
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -205,7 +268,7 @@ ifeq ($(compiler),intel)
   CCBE          := $(CC)	
   CFLAGS        := $(INCDIRS) $(OPTLVL) -DLINUX
   CLIBS         := 
-  LIBS  	:=  
+  FLIBS  	:=  
   MSGLIBS	:=  
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -231,7 +294,7 @@ ifeq ($(compiler),gnu)
   CCBE		:= $(CC)
   CFLAGS	:= $(INCDIRS) -O2 -DLINUX
   CLIBS	:= 
-  LIBS		:=  
+  FLIBS		:=  
   MSGLIBS	:=  
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -269,7 +332,7 @@ ifeq ($(arch),pc)
   CCBE          :=  $(CC)
   CFLAGS        :=  $(INCDIRS) -DLINUX -O2
   CLIBS         :=
-  LIBS          :=  
+  FLIBS          :=  
   MSGLIBS       :=
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -294,7 +357,7 @@ ifeq ($(arch),altix)
   CC              :=  gcc   
   CCBE            :=  $(CC)
   CFLAGS          :=  $(INCDIRS) -DLINUX -O2
-  LIBS		  :=  
+  FLIBS		  :=  
   MSGLIBS	  := -lmpi
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -323,7 +386,7 @@ ifneq (,$(findstring rs6000-aix,$(MACHINE)-$(OS)))
    CCBE          :=  $(CC)
    CFLAGS        := -q64 -I. -O2 -DIBM
    LDFLAGS       := -q64
-   LIBS          := 
+   FLIBS          := 
    MSGLIBS       := -lm
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -355,7 +418,7 @@ ifneq (,$(findstring powerpc-aix,$(MACHINE)-$(OS)))
   IMODS         := -I
   CFLAGS        := $(INCDIRS) -O2 -DIBM
   ARFLAGS	:= -X64 rv
-  LIBS          := 
+  FLIBS          := 
   MSGLIBS       := -lm
 
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
@@ -384,7 +447,7 @@ ifeq ($(MACHINE)-$(OS),ppc64-unknown-linux-gnu)
    CCBE          :=  $(CC)
    CFLAGS        := -I. -I../Lib -O5
    LDFLAGS       := -q64 -L/bgl/BlueLight/ppcfloor/bglsys/lib -lmsglayer.rts -lrts.rts -ldevices.rts
-   LIBS          := 
+   FLIBS          := 
    MSGLIBS       := -L/bgl/BlueLight/ppcfloor/bglsys/lib -lmpich.rts -lmsglayer.rts -lrts.rts -ldevices.rts
 
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
@@ -439,7 +502,7 @@ ifneq (,$(findstring sparc-solaris,$(MACHINE)-$(OS)))
   CC       	:= tmcc 
   CCBE          :=  $(CC)
   CFLAGS   	:= $(INCDIRS) 
-  LIBS     	:= 
+  FLIBS     	:= 
   MSGLIBS  	:= -lmpi
 
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
@@ -468,7 +531,7 @@ ifneq (,$(findstring alphaev6-linux,$(MACHINE)-$(OS)))
   CCBE          :=  $(CC)
   CFLAGS        := $(INCDIRS) -O2 -DLINUX 
   CLIBS         := 
-  LIBS  	:= 
+  FLIBS  	:= 
   MSGLIBS	:=  
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -496,7 +559,7 @@ ifneq (,$(findstring alphaev6-osf,$(MACHINE)-$(OS)))
   CCBE          :=  $(CC)
   CFLAGS	:= $(INCDIRS) -DLINUX -O2
   CLIBS		:=
-  LIBS		:= 
+  FLIBS		:= 
   MSGLIBS	:= -lfmpi -lmpi -lelan
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -524,7 +587,7 @@ ifneq (,$(findstring alphaev6-dec-osf5.1,$(MACHINE)-$(VENDOR)-$(OS)))
   CC            := cc
   CCBE          :=  $(CC)
   CFLAGS        := $(INCDIRS) -O2 
-  LIBS          := 
+  FLIBS          := 
   MSGLIBS       := -lmpi -lelan
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -551,7 +614,7 @@ ifneq (,$(findstring sv1-unicos,$(MACHINE)-$(OS)))
   DPRE	        :=  -DREAL8 -DCRAY 
   IMODS		:=  -p 
   CFLAGS	:=  $(INCDIRS) -I ../Lib -O2 -DCRAY 
-  LIBS  	:= 
+  FLIBS  	:= 
   MSGLIBS	:=  -lmpi 
   C_LDFLAGS     :=
   CCBE          :=  $(CC)
@@ -582,7 +645,7 @@ ifneq (,$(findstring x1-unicos,$(MACHINE)-$(OS)))
   CC            :=  cc
   CCBE          :=  $(CC)
   CFLAGS	:=  $(INCDIRS) -I ../Lib -O2 -DCRAYX1 -UCRAY 
-  LIBS  	:= 
+  FLIBS  	:= 
   MSGLIBS	:=  -lmpi 
   C_LDFLAGS     :=
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
@@ -609,7 +672,7 @@ ifneq (,$(findstring mips-irix,$(MACHINE)-$(OS)))
   CC              :=  cc   
   CCBE            :=  $(CC)
   CFLAGS          :=  $(INCDIRS) -O2 -DSGI 
-  LIBS		  :=
+  FLIBS		  :=
   MSGLIBS	  := -lmpi
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -640,7 +703,7 @@ ifneq (,$(findstring powerpc-darwin,$(MACHINE)-$(OS)))
   CCBE          :=  $(CC)
   CFLAGS        :=  $(INCDIRS) -m64 -mpowerpc64 -O2 -DLINUX
   LDFLAGS	:=  
-  LIBS	        :=  -lU77
+  FLIBS	        :=  -lU77
   MSGLIBS	:=  -lm
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -659,19 +722,19 @@ ifneq (,$(findstring i386-darwin,$(MACHINE)-$(OS)))
   PPFC	        := ifort
   FC	        := ifort
   PFC	        := mpif77 
-  FFLAGS1       :=  $(INCDIRS) -nowarn -O3    -fixed -132 -DLINUX -I .
+  FFLAGS1       :=  $(INCDIRS) -nowarn -O3    -fixed -132 -check all -traceback -DLINUX -DNETCDF_DEBUG -I .
 # FFLAGS1	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -DIBM -I .
   FFLAGS2	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -I . 
   FFLAGS3	:=  $(INCDIRS) -nowarn -O3    -fixed -132 -I .
   DA  	   	:=  -DREAL8 -DCSCA -DLINUX  
-  DP  	   	:=  -DREAL8 -DCSCA -DLINUX -DCMPI  
+  DP  	   	:=  -DREAL8 -DCSCA -DLINUX -DCMPI -DNETCDF_DEBUG 
   DPRE	   	:=  -DREAL8 -DLINUX  
   IMODS  	:=  -I
   CC            :=  gcc  
   CCBE          :=  $(CC)
   CFLAGS        :=  $(INCDIRS) -O3 -DLINUX
   LDFLAGS	:=  
-  LIBS	        :=  
+  FLIBS	        :=  
   MSGLIBS	:=  
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -697,7 +760,7 @@ ifneq ($(FOUND), TRUE)
   CCBE          :=  $(CC)
   CFLAGS        :=  $(INCDIRS) -DLINUX
   LDFLAGS	:=  
-  LIBS	        :=  
+  FLIBS	        :=  
   MSGLIBS	:=  
 endif
 ifeq ($(MULTIPLE),TRUE)

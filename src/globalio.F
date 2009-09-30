@@ -146,7 +146,7 @@ C     on each iteration of the while loop below
       num     = bufsize / descript % num_items_per_record
       iend    = num
       istart  = 1
-      WRITE(16,*) 'istart is ',istart,' iend is ',iend !jgfdebug 48.18
+C      WRITE(16,*) 'istart is ',istart,' iend is ',iend !jgfdebug 48.18
       if (tagbase == 5000) then
          tagbase = 6000
       else
@@ -164,15 +164,15 @@ C     on each iteration of the while loop below
          tag     = tagbase + mod(ibucket, 8)
 
 C        now pack the buffer 
-         write(16,*) 'About to pack globalioint buffer.' !jgfdebug48.03
+C         write(16,*) 'About to pack globalioint buffer.' !jgfdebug48.03
          call pack_cmd(descript, istart, iend)
 C        now send data to processor 0
-         write(16,*) 'About to mpi_reduce globalioint buffer.' !jgfdebug48.03
+C         write(16,*) 'About to mpi_reduce globalioint buffer.' !jgfdebug48.03
          call mpi_reduce(integerBuffer, integerResultBuffer, bufsize, 
      &                 MPI_INTEGER, MPI_SUM, 0, COMM, ierr)
 
          if (myproc == 0) then
-            write(16,*) 'About to unpack globalioint buffer.' !jgfdebug48.03
+C            write(16,*) 'About to unpack globalioint buffer.' !jgfdebug48.03
             call unpack_cmd(descript, istart, iend)
          end if
 C        set new starting position to just after the
@@ -330,7 +330,7 @@ C! CMPI
 
        j = 1
        do i = istart, iend
-          write(16,*) i, j !jgfdebug48.03
+C          write(16,*) i, j !jgfdebug48.03
           descript % array_g(i) = resultBuf(j)
           j = j + 1
       end do
@@ -352,10 +352,10 @@ C! CMPI
       integer :: i, j, istart, iend, iglobal
       integer :: ioffset
 
-       WRITE(16,*) "Unpacking int array." !jgfdebug48.18
+C       WRITE(16,*) "Unpacking int array." !jgfdebug48.18
        j = 1
        do i = istart, iend
-          write(16,*) i, j, integerResultBuffer(j) !jgfdebug48.18
+C          write(16,*) i, j, integerResultBuffer(j) !jgfdebug48.18
           descript % iarray_g(i) = integerResultBuffer(j)
           j = j + 1
       end do
@@ -406,7 +406,7 @@ C! CMPI
 
       j = 1
       do i = istart, iend
-         write(16,*) i, j !jgfdebug48.03
+C         write(16,*) i, j !jgfdebug48.03
          descript % array_g(i) = resultBuf(j)
          descript % array2_g(i) = resultBuf(j+1)
          j = j + 2
@@ -423,16 +423,16 @@ C! CMPI
       ! Open Global File: opens the file, opens the write_header
       !                   routine and closes the file
       !--------------------------------------------------------------
-      subroutine open_gbl_file(lun, filename, size_g, size,
+      subroutine open_gbl_file(lun, filename, size_g, size_this,
      &                          write_header)
       implicit none
 
       external write_header ! subroutine used to actually write the header
-      integer      :: lun, size, size_g, szz
+      integer      :: lun, size_this, size_g, szz
       character(*) :: filename
 
       szz = size_g
-      if (mnproc == 1 .or. WRITE_LOCAL_FILES) szz = size
+      if (mnproc == 1 .or. WRITE_LOCAL_FILES) szz = size_this
 
       if (myproc == 0 .or. WRITE_LOCAL_FILES) then
         open(lun, file=filename, status='UNKNOWN')
@@ -442,6 +442,34 @@ C! CMPI
       return
       !--------------------------------------------------------------
       end subroutine open_gbl_file
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------   
+      !    S U B R O U T I N E   O P E N _ M I N M A X _ F I L E 
+      !--------------------------------------------------------------
+      ! Open Global File: opens the file, replacing the existing file,
+      !                   executes the write_header routine and closes
+      !                   the file.
+      !--------------------------------------------------------------
+      subroutine open_minmax_file(lun, filename, size_g, size_this,
+     &                          write_header)
+      implicit none
+
+      external write_header ! subroutine used to actually write the header
+      integer      :: lun, size_this, size_g, szz
+      character(*) :: filename
+
+      szz = size_g
+      if (mnproc == 1 .or. WRITE_LOCAL_FILES) szz = size_this
+
+      if (myproc == 0 .or. WRITE_LOCAL_FILES) then
+        open(lun, file=filename, status='REPLACE')
+        call write_header(lun,szz)
+        close(lun)
+      end if
+      return
+      !--------------------------------------------------------------
+      end subroutine open_minmax_file
       !--------------------------------------------------------------
 
 
@@ -486,7 +514,7 @@ C! CMPI
       integer      :: num        
       integer      :: i, j, k
 
-      write(16,*) 'About to open file.' !jgfdebug48.03
+C      write(16,*) 'About to open file.' !jgfdebug48.03
       if (myproc == 0 .or. WRITE_LOCAL_FILES) then
          open(lun, file=filename, access='SEQUENTIAL',
      &        position='APPEND')
@@ -526,12 +554,12 @@ C     on each iteration of the while loop below
          ibucket = ibucket + 1
          tag     = tagbase + mod(ibucket, 8)
          
-         write(16,*) 'About to call write_cmd.' !jgfdebug48.03
+C         write(16,*) 'About to call write_cmd.' !jgfdebug48.03
          call write_cmd(lun, descript, istart, iend)
-         write(16,*) 'About to call mpi_reduce.' !jgfdebug48.03 
+C         write(16,*) 'About to call mpi_reduce.' !jgfdebug48.03 
          call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
      &                   0, COMM, ierr)
-         write(16,*) 'Completed call to mpi_reduce.' !jgfdebug48.03
+C         write(16,*) 'Completed call to mpi_reduce.' !jgfdebug48.03
          j = 1
          if (myproc == 0) then
             do i = istart, iend
@@ -1188,12 +1216,12 @@ C! CMPI
       !--------------------------------------------------------------
       ! Elevation for Elevation Recording station: fort.61
       !--------------------------------------------------------------
-      subroutine header61(lun, size)
+      subroutine header61(lun, size_this)
       implicit none
-      integer :: lun, size
+      integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspe, size, dtdp*nspoole, nspoole, 1, 
+      write(lun, 1010) ntrspe, size_this, dtdp*nspoole, nspoole, 1, 
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1208,12 +1236,12 @@ C! CMPI
       !--------------------------------------------------------------
       ! Velocity for Velocity Recording station: fort.62
       !--------------------------------------------------------------
-      subroutine header62(lun, size)
+      subroutine header62(lun, size_this)
       implicit none
-      integer :: lun, size
+      integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspv, size, dtdp*nspoolv, nspoolv, 2,
+      write(lun, 1010) ntrspv, size_this, dtdp*nspoolv, nspoolv, 2,
      &     FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1228,12 +1256,12 @@ C! CMPI
       !--------------------------------------------------------------
       ! Elevation for all nodes: fort.63
       !--------------------------------------------------------------
-      subroutine header63(lun, size)
+      subroutine header63(lun, size_this)
       implicit none
-      integer :: lun, size
+      integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetse, size, dtdp*nspoolge, nspoolge, 1,
+      write(lun, 1010) ndsetse, size_this, dtdp*nspoolge, nspoolge, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1248,12 +1276,12 @@ C! CMPI
       !--------------------------------------------------------------
       ! Maximum elevation for all nodes: fort.63
       !--------------------------------------------------------------
-      subroutine header_max(lun, size)
+      subroutine header_max(lun, size_this)
       implicit none
-      integer :: lun, size
+      integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) 1, size, 1.d0, 1, 1, FileFmtVersion
+      write(lun, 1010) 1, size_this, 1.d0, 1, 1, FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
@@ -1267,12 +1295,12 @@ C! CMPI
       !--------------------------------------------------------------
       ! Velocity for all nodes: fort.64
       !--------------------------------------------------------------
-      subroutine header64(lun, size)
+      subroutine header64(lun, size_this)
       implicit none
-      integer :: lun, size
+      integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetsv, size, dtdp*nspoolgv, nspoolgv, 2, 
+      write(lun, 1010) ndsetsv, size_this, dtdp*nspoolgv, nspoolgv, 2, 
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1287,12 +1315,12 @@ C! CMPI
       !--------------------------------------------------------------
       ! Pressure for Meteorological Recording station: fort.71
       !--------------------------------------------------------------
-      subroutine header71(lun, size)
+      subroutine header71(lun, size_this)
       implicit none
-      integer :: lun, size
+      integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspm, size, dtdp*nspoolm, nspoolm, 1, 
+      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1, 
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1307,12 +1335,12 @@ C! CMPI
       !--------------------------------------------------------------
       ! Wind Velocity for Meteorological Recording stations : fort.72
       !--------------------------------------------------------------
-      subroutine header72(lun, size)
+      subroutine header72(lun, size_this)
       implicit none
-      integer :: lun, size
+      integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspm, size, dtdp*nspoolm, nspoolm, 2,
+      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 2,
      &                  FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1327,12 +1355,12 @@ C! CMPI
       !--------------------------------------------------------------
       ! Atmospheric Pressure for all nodes: fort.73
       !--------------------------------------------------------------
-      subroutine header73(lun, size)
+      subroutine header73(lun, size_this)
       implicit none
-      integer :: lun, size
+      integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetsw, size, dtdp*nspoolgw, nspoolgw, 1,
+      write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1347,12 +1375,12 @@ C! CMPI
       !--------------------------------------------------------------
       ! Wind Stress for all nodes: fort.74
       !--------------------------------------------------------------
-      subroutine header74(lun, size)
+      subroutine header74(lun, size_this)
       implicit none
-      integer :: lun, size
+      integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetsw, size, dtdp*nspoolgw, nspoolgw, 2, 
+      write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 2, 
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1367,12 +1395,12 @@ C! CMPI
       !--------------------------------------------------------------
       ! Concentration Recording station: fort.81
       !--------------------------------------------------------------
-      subroutine header81(lun, size)
+      subroutine header81(lun, size_this)
       implicit none
-      integer :: lun, size
+      integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspc, size, dtdp*nspoolc, nspoolc, 1,
+      write(lun, 1010) ntrspc, size_this, dtdp*nspoolc, nspoolc, 1,
      &                  FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1393,9 +1421,9 @@ C! CMPI
       !--------------------------------------------------------------
       subroutine writeStationHeader(lun, numSta, typeStr)
       use global_3dvs, only: 
-     &     ndset3dsv, nspo3dsv, nspo3dsv, nfen,
-     &     ndset3dst, nspo3dst, nspo3dst,
-     &     ndset3dsd, nspo3dsd, nspo3dsd
+     &     ndset3dsv, nspo3dsv, nfen,
+     &     ndset3dst, nspo3dst,
+     &     ndset3dsd, nspo3dsd
       implicit none
       integer lun               ! logical unit number to write to
       integer numSta            ! number of stations to write
@@ -1460,9 +1488,9 @@ C! CMPI
       subroutine writeDomainHeader(lun, filename, numNodes_g, 
      &            numNodes, typeStr)
       use global_3dvs, only:
-     &   ndset3dgv, nspo3dgv, nspo3dgv, nfen,
-     &   ndset3dgt, nspo3dgt, nspo3dgt,
-     &   ndset3dgd, nspo3dgd, nspo3dgd
+     &   ndset3dgv, nspo3dgv, nfen,
+     &   ndset3dgt, nspo3dgt,
+     &   ndset3dgd, nspo3dgd
       implicit none
       integer lun               ! logical unit number to write to
       character(*) filename     ! name of file to create
@@ -1538,6 +1566,91 @@ C     close the file
       !--------------------------------------------------------------
       end subroutine writeDomainHeader
       !--------------------------------------------------------------
+
+C----------------------------------------------------------------------
+C       S U B R O U T I N E   R E A D  M I N  M A X 
+C----------------------------------------------------------------------
+C
+C     jgf48.4636 Subroutine to read in continuous min and max files,
+C     if they are present. 
+C
+C----------------------------------------------------------------------
+      SUBROUTINE readMinMax(minMaxFN,array)
+      USE SIZES , ONLY : SZ, MNPROC, GLOBALDIR
+      USE GLOBAL , ONLY : NSCREEN, ScreenUnit, MyProc
+      IMPLICIT NONE
+      CHARACTER(*) :: minMaxFN ! name of min/max file to read
+      REAL(SZ), dimension(:), target :: array ! min/max array
+      INTEGER node               ! node number of the min/max data
+      CHARACTER(len=80) skipline ! dummy variable for min/max header data
+      INTEGER numLinesInMinMaxFile ! count the lines to report to log file
+      LOGICAL tooFewMinMaxLines  ! true if couldn't read enough lines from file
+      LOGICAL FileFound  ! true if the file exists
+      INTEGER ErrorIO      ! zero if file opened successfully
+      INTEGER I
+C
+      FileFound=.False.
+      INQUIRE(FILE=TRIM(GLOBALDIR)//'/'//trim(minMaxFN),
+     &   EXIST=FileFound)
+
+      IF (.not.FileFound) THEN
+         WRITE(16,2331) trim(minMaxFN)  ! INFO: min/max file  
+         WRITE(16,1011)           ! was not found.
+         WRITE(16,3333) trim(minMaxFN)  ! WARNING: values not preserved
+         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
+            WRITE(ScreenUnit,2331) trim(minMaxFN)
+            WRITE(ScreenUnit,1011)
+            WRITE(ScreenUnit,3333) trim(minMaxFN)! WARNING: values not preserved
+         ENDIF
+         RETURN  ! early return
+      ENDIF
+C
+C     Now open the file and use the contents to initialize the 
+C     min or max array.
+      WRITE(16,440) minMaxFN
+ 440  FORMAT(/,9X,'Min/max file ', (A),' was found. Opening file.')
+      OPEN(963,FILE=TRIM(GLOBALDIR)//'/'//trim(minMaxFN),
+     &   STATUS='OLD',ACCESS='SEQUENTIAL',IOSTAT=ErrorIO)
+      IF (ErrorIO.GT.0) THEN
+         WRITE(16,3001) trim(minMaxFN) ! ERROR: min/max file
+         WRITE(16,1005)         ! exists but can't be opened
+         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
+            WRITE(ScreenUnit,3001) trim(minMaxFN)
+            WRITE(ScreenUnit,1005)
+         ENDIF
+         RETURN  ! early return
+      ENDIF
+C 
+C     The file exists and is open, so read the data.
+      numLinesInMinMaxFile = 0
+      READ(963,*,END=3990) skipline   ! 1st header line
+      READ(963,*,END=3990) skipline   ! 2nd header line
+      READ(963,*,END=3990) skipline   ! TIME and IT line
+      DO I=1, size(array)
+         READ(963,*,END=3990) node, array(node)
+         numLinesInMinMaxFile = numLinesInMinMaxFile + 1
+      ENDDO
+ 3990 CONTINUE ! jump to here when end of file is reached
+      WRITE(16,450) numLinesInMinMaxFile, trim(minMaxFN)
+      IF (numLinesInMinMaxFile.lt.size(array)) THEN
+         WRITE(16,*) "ERROR: Not enough data in ",trim(minMaxFN),"."
+      ENDIF
+ 450  FORMAT(/,'Finished reading ',(I8),' lines from the ',
+     &   (A12),' file.')
+      CLOSE(963)
+      RETURN
+ 1011 FORMAT('was not found.')
+ 1005 FORMAT('exists but cannot be opened.')
+ 2331 FORMAT('INFO: The full domain min/max file ', (A12))
+ 3001 FORMAT('ERROR: The full domain min/max file ', (A12))
+ 3333 FORMAT('WARNING: Values from ',(A12),
+     &       ' will not reflect the solution prior to this hotstart.')
+C-----------------------------------------------------------------------
+      END SUBROUTINE readMinMax
+C-----------------------------------------------------------------------
+
+
+
 
       !--------------------------------------------------------------
       end module global_io
