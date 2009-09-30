@@ -448,11 +448,6 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
          NRS=2
          NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
       ENDIF
-Casey 090302: Added NWS=3xx for coupling to SWAN.
-      IF(ABS(NWS/100).EQ.3) THEN
-        NRS=3
-        NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
-      ENDIF
 C     jgfdebug46.02 added NWS=45
 C     jgf46.02 Added NWS=8.
 C     jgf46.16 merged:
@@ -1094,9 +1089,7 @@ C
       IF (NWS.NE.0) THEN
         READ(15,80) OUTGWMSG
         READ(OUTGWMSG,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
-Casey 090302: Changed the following line for ABS(NOUTGW).EQ.4
-C       IF (ABS(NOUTGW).GT.3) THEN
-        IF (ABS(NOUTGW).GT.3 .AND. ABS(NOUTGW).NE.4) THEN
+        IF (ABS(NOUTGW).GT.3) THEN
           print *, "NOUTGW does not have an allowable value"
           stop
         ENDIF
@@ -1352,10 +1345,10 @@ C... READ IN THE TYPE OF BOTTOM BOUNDARY CONDITION AND THE SLIP COEFFICIENTS
 
       READ(15,80) SLIPMSG
       READ(SLIPMSG,*) ISLIP,KP
-      IF((ISLIP.LT.0).OR.(ISLIP.GT.3)) THEN
+      IF((ISLIP.LT.0).OR.(ISLIP.GT.2)) THEN
          WRITE(6,350)
          WRITE(6,360)
- 360     FORMAT(/,2X,'    THE SLIP CODE MUST = 0,1,2,OR 3.')
+ 360     FORMAT(/,2X,'    THE SLIP CODE MUST = 0,1,OR 2.')
          STOP
       ENDIF
 
@@ -1392,7 +1385,6 @@ C... SPECIFY TYPE OF EDDY VISCOSITY PROFILE
       IF((IEVC.NE.0 ).and.(IEVC.NE.1 ).and.
      &   (IEVC.NE.10).and.(IEVC.NE.11).and.
      &   (IEVC.NE.20).and.(IEVC.NE.21).and.
-     &   (IEVC.NE.22).and.(IEVC.NE.23).and.
      &   (IEVC.NE.30).and.(IEVC.NE.31).and.(IEVC.NE.32).and.
      &   (IEVC.NE.33).and.
      &   (IEVC.NE.40).and.(IEVC.NE.41).and.(IEVC.NE.42).and.
@@ -1400,8 +1392,8 @@ C... SPECIFY TYPE OF EDDY VISCOSITY PROFILE
      &   (IEVC.NE.50)) THEN
          WRITE(*,350)
          WRITE(*,411)
- 411     FORMAT(/,2X,'    IEVC MUST BE 0,1,10,11,20,21,22,23,',
-     &              '30,31,32,33,40,41,42,43,50')
+ 411     FORMAT(/,2X,'    IEVC MUST BE 0,1,10,11,20,21,30,31,32,33,40,',
+     &               '41,42,43,50')
          STOP
       ENDIF
       IF(IEVC.EQ.50) THEN

@@ -3,9 +3,6 @@ C PADCIRC VERSION 45.12 03/17/2006                                            *
 C  last changes in this file VERSION 41.09                                    *
 C                                                                             *
 C  mod history                                                                *
-C  v48.57     - 06/24/09 - tcm - initialized variable in itpack prior to it   *
-C                          being used ( variable q1 in subroutine itjcg )     *
-C                          prevents conflicts across platforms                *
 C  v43.03     - 05/20/03 - rl - from 43.02 - parallel wind stuff (m.brown)    *
 C                                          output buffer flush (m.cobb)       *
 C                                          3D fixes (k.dresback)              *
@@ -504,8 +501,6 @@ c
 c ... compute new estimate for cme if adapt = .true.
 c
       save
-      data q1 /.false./   !TCM48.57 06/24/2009 added
-
 
       if (adapt) call chgcon (itmax,tri,gamold,rhoold,1)
 c

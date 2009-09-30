@@ -27,8 +27,6 @@ VTAG     := $(shell echo $(TAG) | sed -e 's/_/./g' -e 's/V//')
 PARALLEL_ADCIRC   := padcirc
 $(warning (INFO) Name is $(NAME), Machine is $(MACHINE), Vendor is $(VENDOR), and OS is $(OS).)
 include cmplrflags.mk
-#Casey 090302: Added this include statement.
-include ../swan/macros.inc
 
 ifneq ($(compiler),)
 $(warning (INFO) The compiler variable in cmplrflags.mk is set to $(compiler).)
@@ -87,29 +85,6 @@ ifeq ($(BUILDTYPE),adcirc)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf
   endif
   MSG_MOBJ:= $(O_DIR)globalio.o
-endif
-#Casey 090302: Added the following lines.
-#                                      adcswan
-ifeq ($(BUILDTYPE),adcswan)
-  CF     := $(FC)
-  O_DIR  := odir33/
-  FFLAGS := $(FFLAGS2) -DCSWAN $(DA) $(IMODS) $(O_DIR)
-  VPATH  := $(SRCDIR)/src:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
-  ifeq ($(NETCDF),enable)
-    LIBS := -L$(NETCDFHOME)/lib -lnetcdf
-  endif
-  MSG_MOBJ := $(O_DIR)globalio.o
-endif
-#                                      padcswan
-ifeq ($(BUILDTYPE),padcswan)
-  CF:= $(PFC)
-  O_DIR:=odir44/
-  FFLAGS:= $(FFLAGS3) -DCSWAN $(DP) $(IMODS) $(O_DIR)
-  VPATH  := $(SRCDIR)/src:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
-  ifeq ($(NETCDF),enable)
-    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf
-  endif
-  MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o
 endif
 #                                      $(PARALLEL_ADCIRC)   
 ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
@@ -222,8 +197,6 @@ SOLV_MSRC  =  itpackv.F
 NA_MSRC    =  nodalattr.F
 NC_MSRC    =  netcdfio.F
 GIO_MSRC   =  globalio.F
-#Casey 090302: Added the following line.
-COUP_MSRC  =  couple2swan.F
 
 PREP_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PREP_MSRC) )
 POST_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(POST_MSRC) )
@@ -240,8 +213,6 @@ WIND_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WIND_MSRC)  )
 NA_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NA_MSRC)  )
 NC_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NC_MSRC)  )
 GIO_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(GIO_MSRC)  ) 
-#Casey 090302: Added the following line.
-COUP_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(COUP_MSRC)  )
 
 ############################# Source & Object Files ######################
 #meb 04/20/2004 - added machdep.F onto POST_SRC
@@ -273,48 +244,12 @@ H2A_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(H2A_SRC) )
 INF_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(INF_SRC) )
 HST_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(HST_SRC) )
 
-#################### SWAN Source & Object Files #########################
-# Casey 090302: Added this section for adcswan.
-
-SWAN_MSRC  = swmod1.f swmod2.f m_constants.f90 m_fileio.f90 \
-serv_xnl4v5.f90 mod_xnl4v5.f90 \
-SwanGriddata.f90 SwanGridobjects.f90 SwanCompdata.f90 \
-couple2adcirc.f90
-
-SWAN_MOBJ := $(patsubst %.f,   $(O_DIR)%.o, $(SWAN_MSRC)  )
-SWAN_MOBJ := $(patsubst %.f90, $(O_DIR)%.o, $(SWAN_MOBJ)  )
-
-SWAN_SRC   = swanmain.f swanpre1.f swanpre2.f swancom1.f swancom2.f swancom3.f swancom4.f \
-swancom5.f swanout1.f swanout2.f swanser.f swanparll.f SwanReadGrid.f90 \
-SwanReadADCGrid.f90 SwanReadTriangleGrid.f90 SwanReadEasymeshGrid.f90 \
-SwanInitCompGrid.f90 SwanCheckGrid.f90 SwanCreateEdges.f90 SwanGridTopology.f90 SwanGridVert.f90 \
-SwanGridCell.f90 SwanGridFace.f90 SwanPrintGridInfo.f90 SwanFindPoint.f90 \
-SwanPointinMesh.f90 SwanBpntlist.f90 SwanPrepComp.f90 SwanVertlist.f90 SwanCompUnstruc.f90 \
-SwanDispParm.f90 SwanPropvelX.f90 SwanSweepSel.f90 SwanPropvelS.f90 \
-SwanTranspAc.f90 SwanTranspX.f90 SwanGSECorr.f90 SwanInterpolatePoint.f90 \
-SwanInterpolateAc.f90 SwanInterpolateOutput.f90 SwanConvAccur.f90 SwanConvStopc.f90 \
-SwanFindObstacles.f90 SwanCrossObstacle.f90 \
-SwanComputeForce.f90 SwanIntgratSpc.f90 SwanReadfort18.f90 \
-SwanSumOverNodes.f90 SwanMinOverNodes.f90 SwanMaxOverNodes.f90 \
-ocpids.f ocpcre.f ocpmix.f
-
-SWAN_OBJ:= $(patsubst %.f,   $(O_DIR)%.o, $(SWAN_SRC) )
-SWAN_OBJ:= $(patsubst %.f90, $(O_DIR)%.o, $(SWAN_OBJ) )
-
 ######################## compilation rules ###############################
 
 $(O_DIR)%.o  : %.c
 	$(COMPILE.c) $< -o $@
 $(O_DIR)%.o  : %.F
 	$(CF) -c $(FFLAGS) -o $@  $<
-	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
-
-# Casey 080106: Added the following rules for adcswan.
-$(O_DIR)%.o  : %.f
-	$(CF) -c $(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER) -module $(O_DIR) -o $@  $<
-	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
-$(O_DIR)%.o  : %.f90
-	$(CF) -c $(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER) -module $(O_DIR) -o $@  $<
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 
 ########################## Executable Targets ############################
@@ -340,13 +275,6 @@ ifeq ($(MAKELEVEL),0)
 	$(MAKE) BUILDTYPE=adcpost $@
    adcirc:
 	$(MAKE) BUILDTYPE=adcirc CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
-#Casey 090302: Added the following lines.
-   adcswan:
-	@perl ../swan/switch.pl -unix -f95 -impi -adcirc ../swan/*.ftn ../swan/*.ftn90
-	$(MAKE) BUILDTYPE=adcswan CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
-   padcswan:
-	@perl ../swan/switch.pl -unix -f95 -pun -adcirc ../swan/*.ftn ../swan/*.ftn90
-	$(MAKE) BUILDTYPE=padcswan CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
    $(PARALLEL_ADCIRC):
 	$(MAKE) BUILDTYPE=$(PARALLEL_ADCIRC) CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@ 
    p15:
@@ -403,22 +331,6 @@ else
    adcirc ::  $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 endif
-
-#Casey 080106: Added the following lines.
-   adcswan :: $(O_DIR)
-ifeq ($(NETCDF),enable)
-   adcswan ::  $(NC_MOBJ) $(SWAN_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
-	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
-	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
-else
-   adcswan :: $(SWAN_MOBJ)  $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
-	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
-	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
-endif
-   padcswan :: $(O_DIR)
-   padcswan ::  $(NA_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
-	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
-
    $(PARALLEL_ADCIRC) ::  $(NA_MOBJ) $(MSG_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
 
@@ -546,8 +458,6 @@ $(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ)
 $(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ)
 $(O_DIR)itpackv.o     :  itpackv.F    $(ADC_MOBJ)
 $(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
-#Casey 090302: Added the next line.
-$(O_DIR)couple2swan.o :  couple2swan.F
 
 #  adcirc & $(PARALLEL_ADCIRC)
 
@@ -559,9 +469,9 @@ $(O_DIR)timestep.o    : timestep.F
 $(O_DIR)write_output.o: write_output.F  
 $(O_DIR)massbal.o     : massbal.F
 ifeq ($(NETCDF),enable)
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(NC_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ)
 else
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ)
 endif
 $(O_DIR)driver.o      : driver.F $(O_DIR)adcirc.o
 
@@ -598,68 +508,4 @@ $(O_DIR)hstime.o     : hstime.F
 
 $(O_DIR)init.o       : init.F $(ADC_MOBJ) $(NC_MOBJ)
 
-# Casey 090302: Added the following lines for SWAN.
-$(O_DIR)swmod1.o                : swmod1.f
-$(O_DIR)swmod2.o                : swmod2.f
-$(O_DIR)m_constants.o           : m_constants.f90
-$(O_DIR)m_fileio.o              : m_fileio.f90
-$(O_DIR)serv_xnl4v5.o           : serv_xnl4v5.f90
-$(O_DIR)mod_xnl4v5.0            : mod_xnl4v5.f90
-$(O_DIR)couple2adcirc.o         : couple2adcirc.f90
-$(O_DIR)SwanGriddata.o          : SwanGriddata.f90
-$(O_DIR)SwanGridobjects.o       : SwanGridobjects.f90
-$(O_DIR)SwanCompdata.o          : SwanCompdata.f90
-$(O_DIR)swanmain.o              : swanmain.f
-$(O_DIR)swanpre1.o              : swanpre1.f
-$(O_DIR)swanpre2.o              : swanpre2.f
-$(O_DIR)swancom1.o              : swancom1.f
-$(O_DIR)swancom2.o              : swancom2.f
-$(O_DIR)swancom3.o              : swancom3.f
-$(O_DIR)swancom4.o              : swancom4.f
-$(O_DIR)swancom5.o              : swancom5.f
-$(O_DIR)swanout1.o              : swanout1.f
-$(O_DIR)swanout2.o              : swanout2.f
-$(O_DIR)swanser.o               : swanser.f
-$(O_DIR)swanparll.o             : swanparll.f
-$(O_DIR)SwanReadGrid.o          : SwanReadGrid.f90
-$(O_DIR)SwanReadADCGrid.o       : SwanReadADCGrid.f90
-$(O_DIR)SwanReadTriangleGrid.o  : SwanReadTriangleGrid.f90
-$(O_DIR)SwanReadEasymeshGrid.o  : SwanReadEasymeshGrid.f90
-$(O_DIR)SwanInitCompGrid.o      : SwanInitCompGrid.f90
-$(O_DIR)SwanCheckGrid.o         : SwanCheckGrid.f90
-$(O_DIR)SwanCreateEdges.o       : SwanCreateEdges.f90
-$(O_DIR)SwanGridTopology.o      : SwanGridTopology.f90
-$(O_DIR)SwanGridVert.o          : SwanGridVert.f90
-$(O_DIR)SwanGridCell.o          : SwanGridCell.f90
-$(O_DIR)SwanGridFace.o          : SwanGridFace.f90
-$(O_DIR)SwanPrintGridInfo.o     : SwanPrintGridInfo.f90
-$(O_DIR)SwanFindPoint.o         : SwanFindPoint.f90
-$(O_DIR)SwanPointinMesh.o       : SwanPointinMesh.f90
-$(O_DIR)SwanBpntlist.o          : SwanBpntlist.f90
-$(O_DIR)SwanPrepComp.o          : SwanPrepComp.f90
-$(O_DIR)SwanVertlist.o          : SwanVertlist.f90
-$(O_DIR)SwanCompUnstruc.o       : SwanCompUnstruc.f90
-$(O_DIR)SwanDispParm.o          : SwanDispParm.f90
-$(O_DIR)SwanPropvelX.o          : SwanPropvelX.f90
-$(O_DIR)SwanSweepSel.o          : SwanSweepSel.f90
-$(O_DIR)SwanPropvelS.o          : SwanPropvelS.f90
-$(O_DIR)SwanTranspAc.o          : SwanTranspAc.f90
-$(O_DIR)SwanTranspX.o           : SwanTranspX.f90
-$(O_DIR)SwanGSECorr.o           : SwanGSECorr.f90
-$(O_DIR)SwanInterpolatePoint.o  : SwanInterpolatePoint.f90
-$(O_DIR)SwanInterpolateAc.o     : SwanInterpolateAc.f90
-$(O_DIR)SwanInterpolateOutput.o : SwanInterpolateOutput.f90
-$(O_DIR)SwanConvAccur.o         : SwanConvAccur.f90
-$(O_DIR)SwanConvStopc.o         : SwanConvStopc.f90
-$(O_DIR)SwanFindObstacles.o     : SwanFindObstacles.f90
-$(O_DIR)SwanCrossObstacle.o     : SwanCrossObstacle.f90
-$(O_DIR)SwanComputeForce.o      : SwanComputeForce.f90
-$(O_DIR)SwanIntgratSpc.o        : SwanIntgratSpc.f90
-$(O_DIR)SwanReadfort18.o        : SwanReadfort18.f90
-$(O_DIR)SwanSumOverNodes.o      : SwanSumOverNodes.f90
-$(O_DIR)SwanMinOverNodes.o      : SwanMinOverNodes.f90
-$(O_DIR)SwanMaxOverNodes.o      : SwanMaxOverNodes.f90
-$(O_DIR)ocpids.o                : ocpids.f
-$(O_DIR)ocpcre.o                : ocpcre.f
-$(O_DIR)ocpmix.o                : ocpmix.f
 

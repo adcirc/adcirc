@@ -29,7 +29,7 @@ C-----------------------------------------------------------------------
 !     jgf46.00
       USE NodalAttributes, ONLY : 
      &     NoLiBF, NWP, Tau0, HBreak, FTheta, FGamma, Tau, CF,
-     &     ActiveNodalAttr, ESLM, ESLC,
+     &     InitNAModule, ReadNodalAttr, InitNodalAttr, ESLM, ESLC,
      &     Tau0FullDomainMin, Tau0FullDomainMax
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
@@ -56,6 +56,10 @@ C
       CHARACTER(50) LVAR(3)
 C
 C    ===================================================================
+C
+C     jgf46.00 Zero out all the variables in the Nodal Attributes
+C     Module. 
+      CALL InitNAModule() 
 C...
 C...OPEN STATEMENT FOR UNIT 14 AND 15 INPUT FILES
 C...  
@@ -850,12 +854,7 @@ C     tau0, bottom friction, directional wind speed reduction factor,
 C     startdry, etc. The full initialization and error checking of these
 C     data must wait until the grid has been read in from unit 14.
       READ(15,*) NWP
-      IF (NWP.gt.0) THEN
-         ALLOCATE(ActiveNodalAttr(NWP))
-         DO I=1, NWP
-            READ(15,*) ActiveNodalAttr(I)
-         ENDDO
-      ENDIF
+      CALL ReadNodalAttr(NScreen, ScreenUnit, MyProc, NAbOut)
 C...
 C...  READ AND PROCESS NCOR - SPATIALLY VARYING CORIOLIS PARAMETER
 C...
@@ -988,12 +987,7 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
      &   (NWS.NE.200)  .AND.(NWS.NE.201)     .AND.(NWS.NE.202)     .AND.
      &   (NWS.NE.203)  .AND.(ABS(NWS).NE.204).AND.(ABS(NWS).NE.205).AND.
      &   (NWS.NE.206)  .AND.(NWS.NE.210)     .AND.(NWS.NE.211)     .AND.
-     &   (ABS(NWS).NE.212) .AND.
-Casey 090302: Added the following cases for coupling to SWAN.
-     &   (NWS.NE.300)  .AND.(NWS.NE.301)     .AND.(NWS.NE.302)     .AND.
-     &   (NWS.NE.303)  .AND.(ABS(NWS).NE.304).AND.(ABS(NWS).NE.305).AND.
-     &   (NWS.NE.306)  .AND.(NWS.NE.310)     .AND.(NWS.NE.311)     .AND.
-     &   (ABS(NWS).NE.312)) THEN
+     &   (ABS(NWS).NE.212)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'NWS =',NWS
@@ -1024,13 +1018,6 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
          NRS=2
          NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
       ENDIF
-#ifdef CSWAN
-Casey 090302: Added the option for coupling directly to SWAN.
-      IF(ABS(NWS/100).EQ.3) THEN
-         NRS=3
-         NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
-      ENDIF
-#endif
       IF(NWS.EQ.0) THEN
          WRITE(16,237) NWS
  237     FORMAT(/,5X,'NWS = ',I2,/,9X,
@@ -1293,14 +1280,6 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
      &    /,9X,'OF THE COLD START.  FOR A HOT START, THE UNIT 23 FILE ',
      &    /,9X,'BEGINS AT THE TIME OF THE HOT START.')
       ENDIF
-#ifdef CSWAN
-Casey 090302: Added the following lines.
-      IF(NRS.EQ.3) THEN
-         WRITE(16,2393) NRS
- 2393    FORMAT(/,5X,'NRS = ',I2,
-     &    /,9X,'WAVES WILL BE COUPLED TO SWAN!')
-      ENDIF
-#endif
       
 C...  
 C...  READ AND PROCESS NRAMP - WHETHER A RAMP FUNCTION WILL BE USED
@@ -1370,7 +1349,8 @@ C
 C     jgf46.00 Added user specified spatially varying tau0 scheme using
 C     the Nodal Attributes File (unit 13) and removed three tier tau0
 C     scheme. Since Tau0 is a nodal attribute, it is initialized later
-C     using a CALL to the InitNodalAttr subroutine.
+C     in this subroutine using a CALL to the InitNodalAttr subroutine in
+C     the NodalAttributes module.
       READ(15,*) Tau0
 C
 C     jgf47.11 Added a line to the fort.15 file to read in the min
@@ -1476,9 +1456,7 @@ C     wind multiplier to final wind speeds from Holland model.
       IF(ABS(NWS).EQ.8) THEN
          IF(NRS.EQ.0) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj
-Casey 090302: Added possibility for SWAN coupling.
-C        ELSEIF (NRS.EQ.1) THEN
-         ELSEIF (NRS.EQ.1 .OR. NRS.EQ.3) THEN
+         ELSEIF (NRS.EQ.1) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
      &           RSTIMINC
             WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
@@ -1734,6 +1712,16 @@ C...
          END DO
       ENDIF
 
+C...  
+C...  IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+C...  DEPTHS ARE > OR = TO H0.
+C...  
+      IF((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
+         DO I=1,NP
+            IF(DP(I).LT.H0) DP(I)=H0
+         END DO
+      ENDIF
+
 C...
 C...  Read and process the global connectivity table from unit 14
 C...
@@ -1835,10 +1823,8 @@ C     compute the neighbor table and redo NNeigh array
       WRITE(16,1196)
  1196 FORMAT(/,1X,'THE NEIGHBOR TABLE IS BEING COMPUTED ',/)
  
-C...TCM -- v48.60 -- 20090814 -- Added screenunit to call to neighb
-C...         Bug reported by Mary Cialone
       CALL NEIGHB(NE,NP,NM,NNeigh,NeiTab,NeiTabEle,NeiMin,NeiMax,
-     &     X,Y,NScreen,ScreenUnit)
+     &     X,Y,NScreen)
 
       IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
      &     WRITE(ScreenUnit,1195) NEIMIN,NEIMAX,NEIMAX
@@ -2079,6 +2065,9 @@ C     initialized in the call to InitNodalAttr.
         ENDIF
       ENDIF
 C
+C     jgf46.00 Initialize nodal attributes, now that grid has been read
+C     in from unit 14 file.
+      CALL InitNodalAttr(DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut)
 C...
 C...  READ CORIOLIS INFORMATION AND COMPUTE THE CORIOLIS VECTOR
 C...  OUTPUT RESULTING CORIOLIS INFORMATION
@@ -3146,6 +3135,7 @@ C...........WRITE OUT BOUNDARY CONDITION ARRAY INFORMATION
      &              THETA,CSII(JGW),SIII(JGW),BNDLEN2O3(JGW)
  1857          FORMAT(1X,I6,1X,I6,1X,I6,3X,I6,3X,I4,8X,E12.4,2X,E16.8,
      &              1X,E16.8,2X,E16.8)
+
 C...........CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS
                IF((IBTYPE.EQ.3).OR.(IBTYPE.EQ.13)
      &          .OR.(IBTYPE.EQ.23)) THEN
@@ -4229,9 +4219,7 @@ C...  TIMES TOUTSGE AND TOUTFGE; IF ABS(NOUTGE)=2, OUTPUT WILL BE BINARY
 
 C...  CHECK INPUT PARAMETER NOUTGE
 
-Casey 090302: Changed this line to allow for ABS(NOUTGE).EQ.4.
-C     IF(ABS(NOUTGE).GT.3) THEN
-      IF(ABS(NOUTGE).GT.3 .AND. ABS(NOUTGE).NE.4) THEN
+      IF(ABS(NOUTGE).GT.3) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3302)
          WRITE(16,3302)
  3302    FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
@@ -4485,9 +4473,7 @@ C...  BE BINARY
 
 C...  CHECK INPUT PARAMETER NOUTGW
 
-Casey 090302: Changed for ABS(NOUTGW).EQ.4.
-C        IF(ABS(NOUTGW).GT.3) THEN
-         IF(ABS(NOUTGW).GT.3 .AND. ABS(NOUTGW).NE.4) THEN
+         IF(ABS(NOUTGW).GT.3) THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3452)
             WRITE(16,3452)
  3452       FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!',
@@ -5056,6 +5042,12 @@ C...
       CLOSE(14)
       CLOSE(15)
 C...  
+c.RJW merged 09/02/2008 Casey 071219: Added the following subroutine call to compute the RESELEM array.
+C             The subroutine is located at the begining of the file 'massbal.F.'
+#ifdef CMPI
+      CALL COMPUTE_RESELEM
+#endif
+c.
       RETURN 
       END
 
@@ -5088,11 +5080,14 @@ C...  Declaration and definition of local variables used in this subroutine
       REAL(8)  :: X4,Y4
       REAL(8)  :: X1,X2,X3,Y1,Y2,Y3           !Used for computing interpolating factors for station output
       REAL(8)  :: A1,A2,A3,AA,AE,AEMin        !Used for computing interpolating factors for station output
+      REAL(SZ) :: HH1                         !domain averaged depth used for some vertical FE grids
       REAL(SZ) :: Alp1,Alp2,Alp3              !time stepping coefficients
 
       INTEGER  :: NT                          !Total number of time steps in model run
       INTEGER  :: N1,N2,N3,KMin               !Used for computing interpolating factors for station output
       INTEGER  :: N,K,NN                      !loop counters
+      INTEGER  :: NH                          !horizontal node loop counter
+      INTEGER  :: IGC                         !vertical grid code
 
 C     
 C...  General invalid entry format statement used throughout
@@ -5130,14 +5125,14 @@ C...  READ IN THE TYPE OF BOTTOM BOUNDARY CONDITION AND THE SLIP COEFFICIENTS
       READ(15,*) ISlip,KP
       WRITE(16,355) ISlip,KP
  355  FORMAT(/,5X,'ISlip = ',I3,' KP = ',E10.5)
-      IF((ISlip.LT.0).OR.(ISlip.GT.3)) THEN
+      IF((ISlip.LT.0).OR.(ISlip.GT.2)) THEN
         IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
           WRITE(ScreenUnit,350)
           WRITE(ScreenUnit,360)
         ENDIF
         WRITE(16,350)
         WRITE(16,360)
- 360    FORMAT(/,2X,'    The Bottom Slip Code Must = 0,1,2,OR 3')
+ 360    FORMAT(/,2X,'    The Bottom Slip Code Must = 0,1,OR 2')
 #ifdef CMPI
         call msg_fini()
 #endif
@@ -5236,6 +5231,28 @@ c     IGC = 0 - Read in grid from UNIT 15
         ENDIF
       ENDIF
 
+c     IGC <> 0 - Set up grid in subroutine FEGRIDS
+
+      IF(IGC.NE.0) THEN
+         HH1=0.d0
+         DO NH=1,NP
+            HH1=HH1+DP(NH)
+         ENDDO 
+         HH1=HH1/NP                        !domain averaged depth
+         CALL FEGRIDS(IGC,HH1)
+      ENDIF
+
+c     write out the vertical grid in fort.16 file
+
+      WRITE(16,1000)
+ 1000 FORMAT(//,5X,'Vertical Grid Information')
+      WRITE(16,1001) 
+ 1001 FORMAT(/,5X,'V. Node #',5X,'V. Position',/)
+      DO N = 1,NFEN
+         WRITE(16,*) N,Sigma(N)
+      ENDDO 
+
+
 C...  SPECIFY TYPE OF EDDY VISCOSITY PROFILE
 
       READ(15,*) IEVC,EVMin,EVCon
@@ -5244,7 +5261,6 @@ C...  SPECIFY TYPE OF EDDY VISCOSITY PROFILE
       IF((IEVC.NE.0 ).and.(IEVC.NE.1 ).and.
      &   (IEVC.NE.10).and.(IEVC.NE.11).and.
      &   (IEVC.NE.20).and.(IEVC.NE.21).and.
-     &   (IEVC.NE.22).and.(IEVC.NE.23).and.
      &   (IEVC.NE.30).and.(IEVC.NE.31).and.(IEVC.NE.32).and.
      &   (IEVC.NE.33).and.
      &   (IEVC.NE.40).and.(IEVC.NE.41).and.(IEVC.NE.42).and.
@@ -5256,8 +5272,8 @@ C...  SPECIFY TYPE OF EDDY VISCOSITY PROFILE
         ENDIF
         WRITE(16,350)
         WRITE(16,411)
- 411    FORMAT(/,2X,'    IEVC MUST BE 0,1,10,11,20,21,22,23,',
-     &        '30,31,32,33,40,41,42,43,50')
+ 411    FORMAT(/,2X,'    IEVC MUST BE 0,1,10,11,20,21,30,31,32,33,40,',
+     &        '41,42,43,50')
         STOP
       ENDIF
       IF(IEVC.EQ.50) READ(15,*) Theta1,Theta2
@@ -6276,7 +6292,7 @@ C-----------------------------------------------------------------------
       ENDDO
       IF (.not. ElementFound ) THEN
          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-            WRITE(ScreenUnit,593) Description, StationNumber
+            WRITE(ScreenUnit,593) StationNumber
          ENDIF
          WRITE(16,593) Description, StationNumber
          IF(NFOVER.EQ.1) THEN

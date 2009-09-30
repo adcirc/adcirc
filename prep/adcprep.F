@@ -246,9 +246,8 @@ C
       CHARACTER DIRCMD*72 ! string to hold complete shell command line
 
 C     jgf48.17 If compiling for ADCSWAN, need to copy UnSWAN file
-Casey 090304: Moved this call to later, after the PE directories have been made.
 #ifdef ADCSWAN
-C     CALL PREPUNSWAN()
+      CALL PREPUNSWAN()
 #endif
 
  
@@ -363,12 +362,6 @@ C
       print *, "Writing Local UNIT 15 (Run Info) File for each PE"
       CALL PREP15()
 C
-C     jgf48.17 If compiling for ADCSWAN, need to copy UnSWAN file
-Casey 090304: Moved this call from earlier in this file.
-#ifdef ADCSWAN
-      CALL PREPUNSWAN()
-#endif
-C
 C-- Write Message-Passing File for each PE
 C
       print *, "Writing Message-Passing Info Files for each PE"
@@ -394,14 +387,13 @@ C
 C
 C     Write a subdomain nodal attributes file (fort.13) for each PE
 C
-#ifndef INTEGPREP13
       if (NWP.gt.0) then
         write(*,'(/)')
         write(*,*) 'Writing subdomain Nodal Attributes (unit 13)'
         write(*,*) 'file for each PE.'
         CALL PREP13()
       endif
-#endif
+
 C
 C-- If required write a Local fort.19 file for each PE
 C
@@ -424,7 +416,6 @@ C
 C
 C-- If required write a Local Wind Stress file for each PE
 C
-#ifndef INTEGPREP22
       IF (PREP_ALL) THEN
 C     sb46.28sb01 NWS=12 doesn't need fort.22 decomposition
          IF (NWS.NE.0.AND.ABS(NWS).NE.12)  THEN
@@ -444,7 +435,6 @@ c              CALL PREP200()
             ENDIF
          ENDIF
       ENDIF
-#endif
 C
 C-- If required write a Local Wave Stress file for each PE
 C
@@ -590,11 +580,8 @@ c-- Create Tempoarary String TEMP1 containing NUMS
 c
       IF (N.EQ.1) THEN
         WRITE(TEMP1(1:80),'(I8)') NUMS(1)
-Casey 090304: Changed this section to allow N=3.
-      ELSEIF (N.EQ.2) THEN
-        WRITE(TEMP1(1:80),'(2I8)') NUMS(1),NUMS(2)
       ELSE
-        WRITE(TEMP1(1:80),'(3I8)') NUMS(1),NUMS(2),NUMS(3)
+        WRITE(TEMP1(1:80),'(2I8)') NUMS(1),NUMS(2)
       ENDIF
 c
 c-- Find length of TEMP1 string

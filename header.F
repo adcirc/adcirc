@@ -1,66 +1,7 @@
 C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
-C                                                                             *
 C  mod history                                                                *
-C  v48.62   - 09/02/09 - tcm - Fixed bug in writing hstart value for NOFF 
-C             which could have the wrong values after globalizing because
-C             there are no rules for which processor owns an element and
-C             Noff is an elemental value. The way around is to take the
-C             minimum of (Noff, 1) as NOFF is supposed to be either 0 or 1.
-C  v48.61   - 09/01/09 - rjw - Fixed bug vsmy.F 
-C  v48.60   - 08/14/09 - tcm - Fixed bug in call to neighb within read_input
-C               updated the adcirc makefiles for a pc
-C  v48.59   - 08/13/09 - tcm - Fixed bug in globalio where multiple variables
-C               where repeated in use module line.
-C  v48.58    -07/10/09 - tcm - Fixed bug in writing out global elevation
-C               values using -99999.0 that exists in serial version
-C               Also added 3 fields to the OutputDataDescript_t type
-C  v48.57      - 06/24/09 - tcm - initialized variable in itpack prior to it 
-C                          being used ( variable q1 in subroutine itjcg )
-C                          prevents conflicts across platforms
-C  v48.56      -06/18/09 - rjw - Modified the NWS=8 Holland wind to fix
-C               bug in translational velocity to account for direction. 
-C  v48.55      -05/18/09 - cjm - Added an else statement to set an initial 
-C               value of 0 for numSkipSnaps in owiwind.F.
-C  v48.54      -04/14/09 - jgf - Removed erroneous call to
-C               COMPUTE_RESELEM from read_input.F.
-C  v48.53      -04/14/09 - jgf - Fixed array out-of-bounds in IF
-C               statement in Holland (NWS8) subroutine. Also fixed
-C               single precision constants in nodal attributes.
-C  v48.52      -04/03/09 - jgf - Merged changes for writing harmonic
-C               analysis data to full domain hotstart files in parallel 
-C               (globalio). 
-C  v48.51      -03/27/09 - Casey - Merged SWAN coupling infrastructure.
-C  v48.50      -03/26/09 - jgf - Fixed PREP13 to remove ALLOCATABLE
-C               for vars that did not need it. Added documentation to 
-C               point out that only 256 subdomains are prepped at a
-C               time, and that maxOpenFiles was the parameter that
-C               controlled this number.
-C  v48.49      -03/19/09 - jgf - Fixed prep.F format statement 81.
-C  v48.48      -03/18/09 - jgf - Changed prep.F so that input files are
-C               decomposed 256 at a time (configurable). This avoids the 
-C               limit on the max number of open files imposed by some
-C               platforms. Also introduced experimental integrated
-C               prep13 and prep22 (not compiled in by default, and not 
-C               with any guarantee that it works). Created new nodal
-C               attribute (subtract_from_depth_to_equal_mean_sea_level), 
-C               which required the rearrangement of initialization, 
-C               particularly in adcirc.F, because many initialization 
-C               routines use depth.
-C  v48.47      -03/06/09 - rjw - Made significant modifications to vsmy.F and 
-C               corresponding changes in src/cstart.F, src/read_input.F, and 
-C               prep/read_global.F.  Changes all to add additional features 
-C               and improvements to 3D EV calculations.  
-C               Modifications have been made to turbulent length scale for 
-C               the M-Y2.5, and the reference water level is now at current
-C               time step. 
-C               The variable KP now has a new meaning for ISLIP=2: 
-C               For ISlip = 1, KP is equivalent linear slip coefficient
-C               For ISlip = 2, KP is minimum equivalent linear slip coefficient
-C               Now for ISlip = 2, the Bottom drag is computed using the log 
-C               profile and bottom roughness in drag equation is the same 
-C               Z0B input in the fort.15 file. 
 C  v48.46     - 02/26/09 - jgf - Corrected backloaded tau0 averaging
 C               formula: now just one time level.
 C  v48.45     - 02/26/09 - jgf - Fixed backloaded tau0 formula by
