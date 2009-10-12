@@ -2412,9 +2412,12 @@ C...  ****************** TIME STEPPING LOOP ENDS HERE ********************
 C...  
 
 c. RJW merged 08/26/2008 Casey 071219: Added the folowing call to the mass balance subroutine.
-      IF(C3DVS)THEN
-         CALL MASSBAL3D(IT)
-      ENDIF
+c  RJW commented this out until future debugging performed
+c  MASSBAL3d is a tool for 3D version testing and does not contribute to the 
+c  solution.
+c      IF(C3DVS)THEN
+c         CALL MASSBAL3D(IT)
+c      ENDIF
 
       RETURN
       END

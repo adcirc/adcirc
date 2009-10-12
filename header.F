@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v48.4643   - 10/12/09 - RJW - commented out call to MassBal3D
+C               until future debugging performed MASSBAL3d is a tool for 
+C               3D version testing and does not contribute to the solution.
 C  v48.4642   - 09/18/09 - jgf - Changed syntax for correcting NOFF in
 C               write_output.F, since g95 choked on the original syntax. 
 C               Also fixed several bugs related to writing output
