@@ -25,6 +25,9 @@
       !                                            seg-fault &  define portion
       !                                            for grids with no specified
       !                                            boundary forcing segments or nodes
+      ! 10/20/09 Chris Massey @ USACE-ERDC-CHL     changed reserved word "count" to 
+      ! v49.01                                     kount to avoid conflicts.
+      ! 
       !=================================================================
       MODULE NETCDFIO
 
@@ -462,7 +465,7 @@
 !     -----------------
       INTEGER intval(1),i,j
       INTEGER counti(1), starti(1), n
-      INTEGER count(2), start(2)
+      INTEGER kount(2), start(2)
       REAL    realval(1)
 !     -----------------
 !     Attribute general
@@ -1450,11 +1453,11 @@
 !     --------------
 !     Store elements
 !     --------------
-      count(1)=nface_len
-      count(2)=elem_len
+      kount(1)=nface_len
+      kount(2)=elem_len
       start(1)=1
       start(2)=1
-      iret=nf_put_vara_int(ncid,ele_id,start,count,element)
+      iret=nf_put_vara_int(ncid,ele_id,start,kount,element)
       call check_err(iret)
 !     ------------------------------------
 !     Store elevation boundary information
@@ -1659,15 +1662,15 @@
 !     ---------------------------
 !     Store zeta
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
 #ifdef NETCDF_DEBUG
         IF(ncmode.ne. 2. or . (ncmode.eq.2.and. MYPROC.EQ.0)) 
      .PRINT *, "NC: zeta ", NREC, zeta(1,1)
 #endif
-      iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, count, zeta)
+      iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, kount, zeta)
       CALL check_err(iret)
       
 !     ----------------------------------------
@@ -2144,7 +2147,7 @@
 !     -----------------
       INTEGER intval(1),i,j
       INTEGER counti(1), starti(1), n
-      INTEGER count(2), start(2)
+      INTEGER kount(2), start(2)
       REAL    realval(1)
 !     -----------------
 !     Attribute general
@@ -3391,11 +3394,11 @@
 !     --------------
 !     Store elements
 !     --------------
-      count(1)=nface_len
-      count(2)=elem_len
+      kount(1)=nface_len
+      kount(2)=elem_len
       start(1)=1
       start(2)=1
-      iret=nf_put_vara_int(ncid,ele_id,start,count,element)
+      iret=nf_put_vara_int(ncid,ele_id,start,kount,element)
       CALL check_err(iret)
 !     ------------------------------------
 !     Store elevation boundary information
@@ -3553,20 +3556,20 @@
 !     ---------------------------
 !     Store u
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, u_id, start, count, u)
+      iret = nf_put_vara_DOUBLE(ncid, u_id, start, kount, u)
       CALL check_err(iret)
 !     ---------------------------
 !     Store v
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, v_id, start, count, v)
+      iret = nf_put_vara_DOUBLE(ncid, v_id, start, kount, v)
       CALL check_err(iret)
       
 !     ----------------------------------------
@@ -4041,7 +4044,7 @@
 !     -----------------
       INTEGER intval(1),i,j
       INTEGER counti(1), starti(1), n
-      INTEGER count(2), start(2)
+      INTEGER kount(2), start(2)
       REAL    realval(1)
 !      DOUBLE PRECISION  doubleval(1)
 !     -----------------
@@ -4798,11 +4801,11 @@
 !     --------------
 !     Store elements
 !     --------------
-      count(1)=nface_len
-      count(2)=elem_len
+      kount(1)=nface_len
+      kount(2)=elem_len
       start(1)=1
       start(2)=1
-      iret=nf_put_vara_int(ncid,ele_id,start,count,element)
+      iret=nf_put_vara_int(ncid,ele_id,start,kount,element)
       CALL check_err(iret)
 !     ------------------------------------
 !     Store elevation boundary information
@@ -4943,11 +4946,11 @@
 !     ---------------------------
 !     Store zeta
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, count, zeta)
+      iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, kount, zeta)
       CALL check_err(iret)
 !     ----------------------------------------
 !     Allocating memory for min and max arrays
@@ -5398,7 +5401,7 @@
 !     -----------------
       INTEGER intval(1),i,j
       INTEGER counti(1), starti(1), n
-      INTEGER count(2), start(2)
+      INTEGER kount(2), start(2)
       REAL    realval(1)
 !     -----------------
 !     Attribute general
@@ -6769,11 +6772,11 @@
 !     --------------
 !     Store elements
 !     --------------
-      count(1)=nface_len
-      count(2)=elem_len
+      kount(1)=nface_len
+      kount(2)=elem_len
       start(1)=1
       start(2)=1
-      iret=nf_put_vara_int(ncid,ele_id,start,count,element)
+      iret=nf_put_vara_int(ncid,ele_id,start,kount,element)
       CALL check_err(iret)
 !     ------------------------------------
 !     Store elevation boundary information
@@ -6932,20 +6935,20 @@
 !     ---------------------------
 !     Store u
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, u_id, start, count, u)
+      iret = nf_put_vara_DOUBLE(ncid, u_id, start, kount, u)
       CALL check_err(iret)
 !     ---------------------------
 !     Store v
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, v_id, start, count, v)
+      iret = nf_put_vara_DOUBLE(ncid, v_id, start, kount, v)
       CALL check_err(iret)
       
 !     ----------------------------------------
@@ -7360,7 +7363,7 @@
 !     -----------------
       INTEGER  intval(1),i,j
       INTEGER  counti(1), starti(1), n
-      INTEGER  count(2), start(2)
+      INTEGER  kount(2), start(2)
       REAL     realval(1)
 !      DOUBLE PRECISION  doubleval(1)
 !     -----------------
@@ -7976,9 +7979,9 @@
       do i=1,node_len
          start(1)=1
          start(2)=i
-         count(1)= LEN(TRIM(STATNAME(i,SNAMLEN)))
-         count(2)=1
-         iret = nf_put_vara_text(ncid,station_id,start,count,
+         kount(1)= LEN(TRIM(STATNAME(i,SNAMLEN)))
+         kount(2)=1
+         iret = nf_put_vara_text(ncid,station_id,start,kount,
      &   STATNAME(i,SNAMLEN) )
          CALL check_err(iret)
       end do
@@ -8083,11 +8086,11 @@
 !     ---------------------------
 !     Store zeta
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, count, zeta)
+      iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, kount, zeta)
       CALL check_err(iret)
 !     ----------------------------------------
 !     Allocating memory for min and max arrays
@@ -8496,7 +8499,7 @@
       INTEGER  intval(1),i,j
       REAL  realval(1)
       INTEGER counti(1), starti(1), n
-      INTEGER count(2), start(2)
+      INTEGER kount(2), start(2)
 !      DOUBLE PRECISION  doubleval(1)
 !     -----------------
 !     Attribute general
@@ -9584,9 +9587,9 @@
       do i=1,node_len
          start(1)=1
          start(2)=i
-         count(1)= LEN(TRIM(STATNAMEV(i,SNAMLEN)))
-         count(2)=1
-         iret = nf_put_vara_text(ncid,station_id,start,count,
+         kount(1)= LEN(TRIM(STATNAMEV(i,SNAMLEN)))
+         kount(2)=1
+         iret = nf_put_vara_text(ncid,station_id,start,kount,
      &   STATNAMEV(i,SNAMLEN) )
          CALL check_err(iret)
       end do
@@ -9734,20 +9737,20 @@
 !     ---------------------------
 !     Store u
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, u_id, start, count, u)
+      iret = nf_put_vara_DOUBLE(ncid, u_id, start, kount, u)
       CALL check_err(iret)
 !     ---------------------------
 !     Store v
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, v_id, start, count, v)
+      iret = nf_put_vara_DOUBLE(ncid, v_id, start, kount, v)
       CALL check_err(iret)
 
 !     ------------------------------------
@@ -10141,7 +10144,7 @@
 !     -----------------
       INTEGER intval(1),i,j
       INTEGER counti(1), starti(1), n
-      INTEGER count(2), start(2)
+      INTEGER kount(2), start(2)
       REAL    realval(1)
 !     -----------------
 !     Attribute general
@@ -10749,9 +10752,9 @@
       do i=1,node_len
          start(1)=1
          start(2)=i
-         count(1)= LEN(TRIM(STATNAMEM(i,SNAMLEN)))
-         count(2)=1
-         iret = nf_put_vara_text(ncid,station_id,start,count,
+         kount(1)= LEN(TRIM(STATNAMEM(i,SNAMLEN)))
+         kount(2)=1
+         iret = nf_put_vara_text(ncid,station_id,start,kount,
      &   STATNAMEM(i,SNAMLEN) )
          CALL check_err(iret)
       end do
@@ -10856,11 +10859,11 @@
 !     ---------------------------
 !     Store zeta
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, count, zeta)
+      iret = nf_put_vara_DOUBLE(ncid, zeta_id, start, kount, zeta)
       CALL check_err(iret)
 !     ----------------------------------------
 !     Allocating memory for min and max arrays
@@ -11267,7 +11270,7 @@
 !     -----------------
       INTEGER intval(1),i,j
       INTEGER counti(1), starti(1), n
-      INTEGER count(2), start(2)
+      INTEGER kount(2), start(2)
       REAL    realval(1)
 !     -----------------
 !     Attribute general
@@ -12461,9 +12464,9 @@
       do i=1,node_len
          start(1)=1
          start(2)=i
-         count(1)= LEN(TRIM(STATNAMEM(i,SNAMLEN)))
-         count(2)=1
-         iret = nf_put_vara_text(ncid,station_id,start,count,
+         kount(1)= LEN(TRIM(STATNAMEM(i,SNAMLEN)))
+         kount(2)=1
+         iret = nf_put_vara_text(ncid,station_id,start,kount,
      &   STATNAMEM(i,SNAMLEN) )
          CALL check_err(iret)
       end do
@@ -12586,20 +12589,20 @@
 !     ---------------------------
 !     Store u
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, u_id, start, count, u)
+      iret = nf_put_vara_DOUBLE(ncid, u_id, start, kount, u)
       CALL check_err(iret)
 !     ---------------------------
 !     Store v
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, v_id, start, count, v)
+      iret = nf_put_vara_DOUBLE(ncid, v_id, start, kount, v)
       CALL check_err(iret)
       
 !     ----------------------------------------
@@ -13141,7 +13144,7 @@
 !     -----------------
       INTEGER intval(1),i,j
       INTEGER counti(1), starti(1), n
-      INTEGER count(2), start(2)
+      INTEGER kount(2), start(2)
       REAL    realval(1)
 !     -----------------
 !     Attribute general
@@ -14349,11 +14352,11 @@ C         ENDIF
 !     --------------
 !     Store elements
 !     --------------
-      count(1)=nface_len
-      count(2)=elem_len
+      kount(1)=nface_len
+      kount(2)=elem_len
       start(1)=1
       start(2)=1
-      iret=nf_put_vara_int(ncid,ele_id,start,count,element)
+      iret=nf_put_vara_int(ncid,ele_id,start,kount,element)
       CALL check_err(iret)
 !     ------------------------------------
 !     Store elevation boundary information
@@ -14542,11 +14545,11 @@ C         ENDIF
             WRITE(6,*) "Store zeta1 node_len ", zeta1(node_len,1)
       ENDIF
 #endif
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, zeta1_id, start, count, zeta1)
+      iret = nf_put_vara_DOUBLE(ncid, zeta1_id, start, kount, zeta1)
 !      iret = nf_put_vara_DOUBLE(ncid, zeta1_id, zeta1)
       CALL check_err(iret)
 #ifdef NETCDF_DEBUG
@@ -14573,11 +14576,11 @@ C         ENDIF
             WRITE(6,*) "Store zeta2 node_len", zeta2(node_len,1)
       ENDIF
 #endif
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_put_vara_DOUBLE(ncid, zeta2_id, start, count, zeta2)
+      iret = nf_put_vara_DOUBLE(ncid, zeta2_id, start, kount, zeta2)
 !      iret = nf_put_vara_DOUBLE(ncid, zeta2_id, zeta2)
       CALL check_err(iret)
 #ifdef NETCDF_DEBUG
@@ -14602,11 +14605,11 @@ C         ENDIF
          END DO
       ENDIF
 #endif
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-       iret = nf_put_vara_DOUBLE(ncid, zetad_id, start, count, zetad)
+       iret = nf_put_vara_DOUBLE(ncid, zetad_id, start, kount, zetad)
 !      iret = nf_put_vara_DOUBLE(ncid, zetad_id, zetad)
       CALL check_err(iret)
 
@@ -14623,11 +14626,11 @@ C         ENDIF
             WRITE(6,*) "Store u  node_len ", u(node_len,1)
       ENDIF
 #endif
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-       iret = nf_put_vara_DOUBLE(ncid, u_id, start, count, u)
+       iret = nf_put_vara_DOUBLE(ncid, u_id, start, kount, u)
 !      iret = nf_put_vara_DOUBLE(ncid, u_id, u)
       CALL check_err(iret)
 #ifdef NETCDF_DEBUG
@@ -14654,11 +14657,11 @@ C         ENDIF
             WRITE(6,*) "Store v node_len", v(node_len,1)
       ENDIF
 #endif
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-       iret = nf_put_vara_DOUBLE(ncid, v_id, start, count, v)
+       iret = nf_put_vara_DOUBLE(ncid, v_id, start, kount, v)
 !      iret = nf_put_vara_DOUBLE(ncid, v_id, v)
       CALL check_err(iret)
 #ifdef NETCDF_DEBUG
@@ -15197,7 +15200,7 @@ C         ENDIF
 !     -----------------
       INTEGER intval(1),i,j
       INTEGER counti(1), starti(1), n
-      INTEGER count(2), start(2)
+      INTEGER kount(2), start(2)
       REAL    realval(1)
 !     -----------------
 !     Attribute general
@@ -16311,11 +16314,11 @@ C         ENDIF
 !     --------------
 !     Store elements
 !     --------------
-      count(1)=nface_len
-      count(2)=elem_len
+      kount(1)=nface_len
+      kount(2)=elem_len
       start(1)=1
       start(2)=1
-      iret=nf_put_vara_int(ncid,ele_id,start,count,element)
+      iret=nf_put_vara_int(ncid,ele_id,start,kount,element)
       CALL check_err(iret)
 !     ------------------------------------
 !     Store elevation boundary information
@@ -16548,11 +16551,11 @@ C         ENDIF
 !     Store zeta1
 !     ---------------------------
 !              WRITE(6,*) "Store zeta1"
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_get_vara_DOUBLE(ncid, zeta1_id, start, count, zeta1)
+      iret = nf_get_vara_DOUBLE(ncid, zeta1_id, start, kount, zeta1)
       CALL check_err(iret)
 !      DO i=1, node_len
 !         WRITE(6,*) "netcdfio: zeta1",i, zeta1(i,1)
@@ -16560,11 +16563,11 @@ C         ENDIF
 !     ---------------------------
 !     Store zeta2
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_get_vara_DOUBLE(ncid, zeta2_id, start, count, zeta2)
+      iret = nf_get_vara_DOUBLE(ncid, zeta2_id, start, kount, zeta2)
       CALL check_err(iret)
       DO i=1, node_len
 !         WRITE(6,*) "netcdfio: zeta2",i, zeta2(i,1)
@@ -16572,30 +16575,30 @@ C         ENDIF
 !     ---------------------------
 !     Store zetad
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_get_vara_DOUBLE(ncid, zetad_id, start, count, zetad)
+      iret = nf_get_vara_DOUBLE(ncid, zetad_id, start, kount, zetad)
       CALL check_err(iret)
 
 !     ---------------------------
 !     Store u
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_get_vara_DOUBLE(ncid, u_id, start, count, u)
+      iret = nf_get_vara_DOUBLE(ncid, u_id, start, kount, u)
       CALL check_err(iret)
 !     ---------------------------
 !     Store v
 !     ---------------------------
-      count(1)=node_len
-      count(2)=timenc_len
+      kount(1)=node_len
+      kount(2)=timenc_len
       start(1)=1
       start(2)=nrec
-      iret = nf_get_vara_DOUBLE(ncid, v_id, start, count, v)
+      iret = nf_get_vara_DOUBLE(ncid, v_id, start, kount, v)
       CALL check_err(iret)
 !     ---------------
 !     Store nodecode
@@ -16604,8 +16607,8 @@ C         ENDIF
  !!     CALL check_err(iret)
 !!      WRITE(6,*) "Store nodecodenc"
       start(1)=1
-      count(1)=node_len
-      iret = nf_get_vara_int(ncid, nodecodenc_id, start, count, 
+      kount(1)=node_len
+      iret = nf_get_vara_int(ncid, nodecodenc_id, start, kount, 
      &                       nodecodenc)
       CALL check_err(iret)
 !      DO i=1, node_len
@@ -16621,9 +16624,9 @@ C         ENDIF
 !!      WRITE(6,*) "elem_len = ",elem_len
 !!      WRITE(6,*) "noffnc_id = ",noffnc_id
       start(1)=1
-      count(1)=elem_len
+      kount(1)=elem_len
 
-      iret = nf_get_vara_int(ncid, noffnc_id, start, count, noffnc)
+      iret = nf_get_vara_int(ncid, noffnc_id, start, kount, noffnc)
       CALL check_err(iret)
       
 !      DO i=1, elem_len

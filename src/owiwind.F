@@ -104,6 +104,9 @@ C***********************************************************************
       if(numBlankSnaps.LT.0) then
         numSkipSnaps = ABS(numBlankSnaps)
         numBlankSnaps = 0
+!     v49.01 TCM 20091028 Added else to initialize numSkipSnaps to be 0 
+      else
+        numSkipSnaps = 0
       endif
 
       ! Read a wind velocity multiplier

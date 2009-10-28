@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v49.01     - 10/28/09 - TCM - Added else to initialize numSkipSnaps to
+C                be 0 in owiwind.F (This fix did not get carried over with
+C                the remerge from fastfloodplain to V49.)  Also changed
+C                reserved word count to kount in netcdfio.F to avoid
+C                conflicts.
 C  v49.00     - 09/29/09 - jgf - Incremented version number to v49.00 to
 C               kick off the development of the next version of ADCIRC.
 C  v48.4642   - 09/18/09 - jgf - Changed syntax for correcting NOFF in
