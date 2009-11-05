@@ -906,6 +906,7 @@ C     pressure information with the model time step.
          OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
+         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
          READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          DO IT=1,ITHS
             TIMEIT=IT*DTDP + STATIM*86400.D0
@@ -1021,6 +1022,7 @@ C     from wind velocity.
          OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
+         CALL NWS4GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  !TCM v49.02 Added read for rec. 1
          CALL NWS4GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
          DO IT=1,ITHS
             TIMEIT=IT*DTDP + STATIM*86400.D0
@@ -1086,6 +1088,7 @@ C     is used to compute wind stress from wind velocity.
          OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
          WTIME2 = WTIME1 + WTIMINC
+         READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
          READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          DO IT=1,ITHS
             TIMEIT=IT*DTDP + STATIM*86400.D0
@@ -1200,8 +1203,8 @@ C
       IF(NWS.EQ.7) THEN
          OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          WTIME1 = STATIM*86400.D0
-         CALL NWS7GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
-     &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
+         CALL NWS7GET(X,Y,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,NWLON,NWLAT,
+     &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)  !TCMv49.02 Changed (WVNX2,WVNY2,PRN2) to (WVNX1,WVNY1,PRN1)
          CALL NWS7GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
      &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
          WTIME1=TIME
@@ -1414,7 +1417,8 @@ C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
       IF(NWS.EQ.12) THEN
           WTIME1 = STATIM*86400.D0
           WTIME2 = WTIME1 + WTIMINC
-          CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+          CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  ! This just initializes some variables and might set WVNX1,etc... if skipping ahead.
+          CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  !TCM v49.02 Added read for rec. 1
           CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
           DO IT=1,ITHS
              TIMEIT=IT*DTDP + STATIM*86400.D0

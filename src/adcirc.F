@@ -175,6 +175,7 @@ C...******************** PROGRAM SETUP SECTION ************************
 C...
       IF (IHOT.EQ.0) THEN
          CALL COLDSTART()
+         ITHS = 0  !TCM20091029 v49.02 Initialized to zero for coldstarts
       ELSE
          CALL HOTSTART()
       ENDIF
@@ -182,7 +183,7 @@ C...
 C...Default beginning and ending time steps
 
       ITIME_BGN = ITHS+1
-      ITIME_END = NT
+      ITIME_END = NT  !NT is set in read_input.F
 
 C...Determine the number of active elements (MJU), the total number of 
 C...elements (NODELE) and the total area of elements (TotalArea) attached to each node

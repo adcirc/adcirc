@@ -19,9 +19,9 @@ C
       real(SZ) :: ramp,rampfrac
       real(SZ) :: uu,vv,PP
       real(SZ) :: Penv
-      integer*8 :: date1R,date2R,date1B,date2B
-      integer*8 :: date1w,date2w
-      integer*8 :: date1p,date2p
+      integer(8) :: date1R,date2R,date1B,date2B
+      integer(8) :: date1w,date2w
+      integer(8) :: date1p,date2p
       integer :: iLatR,iLongR,iCYMDHR,iMinR
       real(SZ)  :: dxR,dyR,swlatR,swlongR
       integer :: iLatB,iLongB,iCYMDHB,iMinB
@@ -253,7 +253,7 @@ C***********************************************************************
 
 ! Read basin data  ---------------------------------------------------------
 
-      ! Increment counter
+      ! Increment counter (cntSnaps initialized to zero in nws12init)
       cntSnaps = cntSnaps+1
       
       ! Put a blank snap for the first 'numBlankSnaps' snaps
@@ -267,7 +267,7 @@ C***********************************************************************
           if(MYPROC.EQ.0) then
             WRITE(screenunit,16) cntSnaps
           endif
-          WRITE(16,15) cntSnaps
+          WRITE(16,16) cntSnaps   !TCM v49.02 (Changed format number from 15 to 16)
         ENDIF
         return
       endif
@@ -512,8 +512,8 @@ c      end if
       if (myproc == 0) then
       WRITE(screenunit,*)''
       WRITE(screenunit,*)' !!!!!FATAL ERROR!!!!!'
-      WRITE(screenunit,*)'EITHER OF UNIT221,222,223,224
-     & COULD NOT BE READ'
+      WRITE(screenunit,*)'EITHER OF UNIT221,222,223,224',
+     & ' COULD NOT BE READ'
       WRITE(screenunit,*)' EXECUTION WILL BE TERMINATED'
       WRITE(screenunit,*)''
       endif

@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  V49.02     - 10/29/09 - tcm - Fixed bugs in hstart.F related to reading in
+C                wind records for NWS = +2,+4,+5,+7,+12.  This bug caused the
+C                wind records to be behind by one record when hot starting.
+C                Added an initialization for ITHS = 0 in adcirc.F for cold
+C                start cases. Fixed format statement in owiwind.F.
 C  v49.01     - 10/28/09 - TCM - Added else to initialize numSkipSnaps to
 C                be 0 in owiwind.F (This fix did not get carried over with
 C                the remerge from fastfloodplain to V49.)  Also changed
