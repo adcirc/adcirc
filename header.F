@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  V49.03     - 11/10/09 - tcm - Adding a couplers directory where coupler
+C                routines and modules can be added to allow for coupling
+C                ADCIRC to other models.  Populated with an empty directory
+C                to coupling with the wave model STWAVE.
 C  V49.02     - 10/29/09 - tcm - Fixed bugs in hstart.F related to reading in
 C                wind records for NWS = +2,+4,+5,+7,+12.  This bug caused the
 C                wind records to be behind by one record when hot starting.
