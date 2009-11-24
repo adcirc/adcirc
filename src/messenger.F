@@ -42,7 +42,7 @@ C  Message-Passing Array space
       INTEGER, ALLOCATABLE :: STAT_R1(:,:), STAT_R2(:,:), STAT_R3(:,:)
       INTEGER, ALLOCATABLE :: REQ_R3D(:), STAT_R3D(:,:)
       INTEGER, ALLOCATABLE :: REQ_C3D(:), STAT_C3D(:,:)
-      INTEGER, ALLOCATABLE :: INDEX(:)
+      INTEGER, ALLOCATABLE :: INDX(:)
       REAL(SZ),ALLOCATABLE :: SENDBUF(:,:), RECVBUF(:,:)
  
 
@@ -293,7 +293,7 @@ C-------------------------------------------------------------------------------
       READ(18,3015) NEIGHPROC
 
       RDIM = 2*NEIGHPROC
-      ALLOCATE( INDEX(RDIM) )
+      ALLOCATE( INDX(RDIM) )
       ALLOCATE( IPROC(NEIGHPROC),NNODRECV(NEIGHPROC) )
       ALLOCATE( IRECVLOC(MNP,NEIGHPROC) )
  
@@ -401,14 +401,14 @@ C--------------------------------------------------------------------------
         TOT = 0
         DO WHILE (TOT.LT.RDIM)
            DO N=1, RDIM
-              INDEX(N) = 0
+              INDX(N) = 0
            ENDDO
-           CALL MPI_WAITSOME( RDIM,REQ_I1,NFINI,INDEX,STAT_I1,IERR )
+           CALL MPI_WAITSOME( RDIM,REQ_I1,NFINI,INDX,STAT_I1,IERR )
            TOT = TOT + NFINI
            DO N=1, NFINI
-              IF (INDEX(N).GT.0.AND.INDEX(N).LE.RDIM)  THEN
-                IF (INDEX(N).LE.NEIGHPROC) THEN
-                  J = INDEX(N)
+              IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
+                IF (INDX(N).LE.NEIGHPROC) THEN
+                  J = INDX(N)
                   NCOUNT = 0
                   DO I=1,NNODRECV(J)
                      NCOUNT = NCOUNT+1
@@ -422,14 +422,14 @@ C--------------------------------------------------------------------------
         TOT = 0
         DO WHILE (TOT.LT.RDIM)
            DO N=1, RDIM
-              INDEX(N) = 0
+              INDX(N) = 0
            ENDDO
-           CALL MPI_WAITSOME( RDIM,REQ_I2,NFINI,INDEX,STAT_I2,IERR )
+           CALL MPI_WAITSOME( RDIM,REQ_I2,NFINI,INDX,STAT_I2,IERR )
            TOT = TOT + NFINI
            DO N=1, NFINI
-              IF (INDEX(N).GT.0.AND.INDEX(N).LE.RDIM)  THEN
-                IF (INDEX(N).LE.NEIGHPROC) THEN
-                  J = INDEX(N)
+              IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
+                IF (INDX(N).LE.NEIGHPROC) THEN
+                  J = INDX(N)
                   NCOUNT = 0
                   DO I=1,NNODRECV(J)
                      NCOUNT = NCOUNT+1
@@ -509,14 +509,14 @@ C--------------------------------------------------------------------------
         TOT = 0
         DO WHILE (TOT.LT.RDIM)
            DO N=1, RDIM
-              INDEX(N) = 0
+              INDX(N) = 0
            ENDDO
-           CALL MPI_WAITSOME( RDIM,REQ_R1,NFINI,INDEX,STAT_R1,IERR )
+           CALL MPI_WAITSOME( RDIM,REQ_R1,NFINI,INDX,STAT_R1,IERR )
            TOT = TOT + NFINI
            DO N=1, NFINI
-              IF (INDEX(N).GT.0.AND.INDEX(N).LE.RDIM)  THEN
-                IF (INDEX(N).LE.NEIGHPROC) THEN
-                  J = INDEX(N)
+              IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
+                IF (INDX(N).LE.NEIGHPROC) THEN
+                  J = INDX(N)
                   NCOUNT = 0
                   DO I=1,NNODRECV(J)
                      NCOUNT = NCOUNT+1
@@ -531,14 +531,14 @@ C--------------------------------------------------------------------------
         TOT = 0
         DO WHILE (TOT.LT.RDIM)
            DO N=1, RDIM
-              INDEX(N) = 0
+              INDX(N) = 0
            ENDDO
-           CALL MPI_WAITSOME( RDIM,REQ_R2,NFINI,INDEX,STAT_R2,IERR )
+           CALL MPI_WAITSOME( RDIM,REQ_R2,NFINI,INDX,STAT_R2,IERR )
            TOT = TOT + NFINI
            DO N=1, NFINI
-              IF (INDEX(N).GT.0.AND.INDEX(N).LE.RDIM)  THEN
-                IF (INDEX(N).LE.NEIGHPROC) THEN
-                  J = INDEX(N)
+              IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
+                IF (INDX(N).LE.NEIGHPROC) THEN
+                  J = INDX(N)
                   NCOUNT = 0
                   DO I=1,NNODRECV(J)
                      NCOUNT = NCOUNT+1
@@ -557,15 +557,15 @@ C--------------------------------------------------------------------------
         TOT = 0
         DO WHILE (TOT.LT.RDIM)
            DO N=1, RDIM
-              INDEX(N) = 0
+              INDX(N) = 0
            ENDDO
-           CALL MPI_WAITSOME( RDIM,REQ_R3,NFINI,INDEX,STAT_R3,IERR )
+           CALL MPI_WAITSOME( RDIM,REQ_R3,NFINI,INDX,STAT_R3,IERR )
            TOT = TOT + NFINI
-cdebug     print *, myproc, tot,nfini,index(1),index(2)
+cdebug     print *, myproc, tot,nfini,INDX(1),INDX(2)
            DO N=1, NFINI
-              IF (INDEX(N).GT.0.AND.INDEX(N).LE.RDIM)  THEN
-                IF (INDEX(N).LE.NEIGHPROC) THEN
-                  J = INDEX(N)
+              IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
+                IF (INDX(N).LE.NEIGHPROC) THEN
+                  J = INDX(N)
                   NCOUNT = 0
                   DO I=1,NNODRECV(J)
                      NCOUNT = NCOUNT+1
@@ -625,14 +625,14 @@ C--------------------------------------------------------------------------
       TOT = 0
       DO WHILE (TOT.LT.RDIM)
          DO N=1, RDIM
-            INDEX(N) = 0
+            INDX(N) = 0
          ENDDO
-         CALL MPI_WAITSOME( RDIM,REQ_R3D,NFINI,INDEX,STAT_R3D,IERR )
+         CALL MPI_WAITSOME( RDIM,REQ_R3D,NFINI,INDX,STAT_R3D,IERR )
          TOT = TOT + NFINI
          DO N=1, NFINI
-            IF (INDEX(N).GT.0.AND.INDEX(N).LE.RDIM)  THEN
-              IF (INDEX(N).LE.NEIGHPROC) THEN
-                J = INDEX(N)
+            IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
+              IF (INDX(N).LE.NEIGHPROC) THEN
+                J = INDX(N)
                 NCOUNT = 0
                 DO I=1,NNODRECV(J)
                    DO K=1,MNFEN
@@ -690,14 +690,14 @@ C     &        REALTYPE,IPROC(J), TAG, COMM, REQ_C3D(J+NEIGHPROC),IERR)
       TOT = 0
       DO WHILE (TOT.LT.RDIM)
          DO N=1, RDIM
-            INDEX(N) = 0
+            INDX(N) = 0
          ENDDO
-         CALL MPI_WAITSOME( RDIM,REQ_C3D,NFINI,INDEX,STAT_C3D,IERR )
+         CALL MPI_WAITSOME( RDIM,REQ_C3D,NFINI,INDX,STAT_C3D,IERR )
          TOT = TOT + NFINI
          DO N=1, NFINI
-            IF (INDEX(N).GT.0.AND.INDEX(N).LE.RDIM)  THEN
-              IF (INDEX(N).LE.NEIGHPROC) THEN
-                J = INDEX(N)
+            IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
+              IF (INDX(N).LE.NEIGHPROC) THEN
+                J = INDX(N)
                 NCOUNT = 0
                 DO I=1,NNODRECV(J)
                    DO K=1,MNFEN
@@ -723,7 +723,7 @@ C
       integer n, i
       real(8) lsum,gsum
       real(sz) sx(*),sy(*)
-      integer count !jgf46.00 added
+      integer kount !jgf46.00 added
 C------------------------------------------------------------------------------
 C  Parallel version of SDOT for ITPACKV module
 C------------------------------------------------------------------------------
@@ -738,8 +738,8 @@ C------------------------------------------------------------------------------
          endif
       enddo
  
-      count = 1                              
-      call MPI_ALLREDUCE( lsum, gsum, count, DBLETYPE,
+      kount = 1                              
+      call MPI_ALLREDUCE( lsum, gsum, kount, DBLETYPE,
      &     MPI_SUM, COMM, ierr)
  
       return
@@ -754,7 +754,7 @@ C------------------------------------------------------------------------------
       real(8) lsum(2),gsum(2)
       real(sz) sd(*),sdt(*)
       real(sz) dot3rray(*)
-      integer count             !jgf46.00 added
+      integer kount             !jgf46.00 added
 C------------------------------------------------------------------------------
 C  Parallel version of 2-SDOTs for ITPACKV module
 C  jbr  6/17/00
@@ -775,8 +775,8 @@ C------------------------------------------------------------------------------
          if (RESNODE(i)) lsum(2) = lsum(2)  + sd(i)*sdt(i)
       enddo
       
-      count=2 
-      call MPI_ALLREDUCE( lsum, gsum, count, DBLETYPE,
+      kount=2 
+      call MPI_ALLREDUCE( lsum, gsum, kount, DBLETYPE,
      &     MPI_SUM, COMM, ierr)
  
       dot3rray(1) = gsum(1)
@@ -793,7 +793,7 @@ C------------------------------------------------------------------------------
       real(8) lsum(3),gsum(3)
       real(sz) sd(*),sdt(*),su(*)
       real(sz) dot3rray(*)
-      integer count             ! jgf46.00 added
+      integer kount             ! jgf46.00 added
 C------------------------------------------------------------------------------
 C  Parallel version of 3-SDOTs for ITPACKV module
 C  jbr  6/17/00
@@ -818,8 +818,8 @@ C------------------------------------------------------------------------------
          if (RESNODE(i)) lsum(3) = lsum(3)  + su(i)*su(i)
       enddo
  
-      count=3 
-      call MPI_ALLREDUCE( lsum, gsum, count, DBLETYPE,
+      kount=3 
+      call MPI_ALLREDUCE( lsum, gsum, kount, DBLETYPE,
      &     MPI_SUM, COMM, ierr)
  
       dot3rray(1) = gsum(1)
@@ -835,7 +835,7 @@ C------------------------------------------------------------------------------
 #endif
       INTEGER I   
       INTEGER LNODES,TOTNODES
-      INTEGER COUNT !jgf46.00 added
+      INTEGER kount !jgf46.00 added
 C------------------------------------------------------------------------------
 C  Compute Number of nodes in entire domain.   
 C------------------------------------------------------------------------------
@@ -845,8 +845,8 @@ C------------------------------------------------------------------------------
          IF (RESNODE(I)) LNODES = LNODES + 1
       ENDDO
  
-      COUNT=1  
-      CALL MPI_ALLREDUCE(LNODES,TOTNODES,COUNT,MPI_INTEGER,MPI_SUM,
+      kount=1  
+      CALL MPI_ALLREDUCE(LNODES,TOTNODES,kount,MPI_INTEGER,MPI_SUM,
      &                   COMM,IERR)
       END SUBROUTINE ALLNODES
 
@@ -872,11 +872,11 @@ C
 #endif
       INTEGER NCCHANGE    !input flag,=1 if this subdomain has wetted or dried
       INTEGER SumNCChange !sum total of all flags from all subdomains
-      INTEGER count       !jgf46.00 to avoid compiler bug on certain platforms
+      INTEGER kount       !jgf46.00 to avoid compiler bug on certain platforms
 
       SumNCChange = 0
-      count=1
-      call MPI_ALLREDUCE( NCCHANGE, SumNCChange, count, MPI_INTEGER,
+      kount=1
+      call MPI_ALLREDUCE( NCCHANGE, SumNCChange, kount, MPI_INTEGER,
      &     MPI_SUM, COMM, ierr)
       NCCHANGE = SumNCChange!resets GWCE for all subdomains if any s.d. resets
       RETURN
@@ -899,11 +899,11 @@ C
 #endif
       INTEGER WarnElevExceeded !=1 if this subdomain has exceeded warning elev
       INTEGER SumWarnElevExceeded !sum total of all flags from all subdomains
-      INTEGER count       ! to avoid compiler bug on certain platforms
+      INTEGER kount       ! to avoid compiler bug on certain platforms
 
       SumWarnElevExceeded = 0
-      count=1
-      call MPI_ALLREDUCE( WarnElevExceeded, SumWarnElevExceeded, count,
+      kount=1
+      call MPI_ALLREDUCE( WarnElevExceeded, SumWarnElevExceeded, kount,
      &     MPI_INTEGER, MPI_SUM, COMM, ierr)
       WarnElevExceeded = SumWarnElevExceeded
       END SUBROUTINE WarnElevSum

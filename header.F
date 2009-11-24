@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v49.05     - 11/24/09 - tcm - Renamed reserved words (count became kount,
+C                  index became indx, int became in2t and sum became summ).
+C                  Index in particular was being used as a user defined integer
+C                  and the intrinsic function in the same routine.  
 C  v49.04     - 11/24/09 - tcm - Fixed a bug with type NWS=3 and NWS=6 winds
 C                in prep.F by removing them from the adcprep process and 
 C                instead of accessing local copies of the global wind file,

@@ -504,8 +504,8 @@ c
 
 
 
-      SUBROUTINE NEWINDEX ( ISTRING, OSTRING, INDEX )
-      INTEGER I,I1,I2,I3,I4,INDEX
+      SUBROUTINE NEWINDEX ( ISTRING, OSTRING, INDX )
+      INTEGER I,I1,I2,I3,I4,INDX
       CHARACTER  ISTRING*(*),OSTRING*(*),TARGET
       CHARACTER TEMP1*80, TEMP2*100
 c
@@ -538,7 +538,7 @@ c
 c
 c-- Create a temporary string containing new index
 c
-      WRITE(TEMP1(1:80),'(I8)') INDEX
+      WRITE(TEMP1(1:80),'(I8)') INDX
 c
 c-- Find first non-blank character of String
 c

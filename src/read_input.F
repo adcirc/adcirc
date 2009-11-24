@@ -6665,18 +6665,18 @@ C-----------------------------------------------------------------------
         END IF
         END FUNCTION a2d
 
-        SUBROUTINE i2a(int, res)
+        SUBROUTINE i2a(in2t, res)
 
         IMPLICIT NONE
 !// Arguments
-        INTEGER, INTENT(IN)            :: int
+        INTEGER, INTENT(IN)            :: in2t
         CHARACTER(LEN=*), INTENT(OUT)  :: res
 !// Local variables
         INTEGER                        :: i,j,k
         CHARACTER(LEN=80)              :: sbuf
         sbuf = ' '
         res = ' '
-        i = int
+        i = in2t
         k = 1
         DO
         j = MOD(i,10)

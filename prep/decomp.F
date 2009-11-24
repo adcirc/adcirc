@@ -30,7 +30,7 @@ C
       INTEGER ITOT,IEL,IELG,ILNODE,ILNODE2,IPROC,IPROC2
       INTEGER IG1,IG2,IG3,IL1,IL2,IL3,PE1,PE2,PE3
       INTEGER I1,DISC,BBN,IBP,NCOUNT
-      INTEGER INDEX,INDEX2, KK
+      INTEGER INDX,INDX2, KK
       INTEGER,ALLOCATABLE :: ITVECT(:)
       CHARACTER PE*6,GLOBAL*6
 C
@@ -132,11 +132,11 @@ C        then make it and its dual a local Weir-node pair
 !
 ! Seizo 2008.07.14
         DO J = 1, NWEIR
-           INDEX = WEIR(J)
-           INDEX2= WEIRD(J)
+           INDX = WEIR(J)
+           INDX2= WEIRD(J)
            DO K = 1, NNODP(I)
               N1 = IMAP_NOD_LG(K,I)
-              IF( (N1 == INDEX) .or. (N1 == INDEX2) ) THEN
+              IF( (N1 == INDX) .or. (N1 == INDX2) ) THEN
                   ITOT = ITOT + 1
                   ITVECT(ITOT) = J
                   EXIT
@@ -145,15 +145,15 @@ C        then make it and its dual a local Weir-node pair
         ENDDO
 !
 !Seizo 2008.07.14          DO J = 1,NNODP(I)
-!Seizo 2008.07.14             CALL SEARCH(WEIR,NWEIR,IMAP_NOD_LG(J,I),INDEX)
-!Seizo 2008.07.14             IF (INDEX.NE.0) THEN
+!Seizo 2008.07.14             CALL SEARCH(WEIR,NWEIR,IMAP_NOD_LG(J,I),INDX)
+!Seizo 2008.07.14             IF (INDX.NE.0) THEN
 !Seizo 2008.07.14               ITOT = ITOT+1
-!Seizo 2008.07.14               ITVECT(ITOT) = INDEX
+!Seizo 2008.07.14               ITVECT(ITOT) = INDX
 !Seizo 2008.07.14             ENDIF
-!Seizo 2008.07.14             CALL SEARCH(WEIRD,NWEIR,IMAP_NOD_LG(J,I),INDEX2)
-!Seizo 2008.07.14             IF (INDEX2.NE.0) THEN
+!Seizo 2008.07.14             CALL SEARCH(WEIRD,NWEIR,IMAP_NOD_LG(J,I),INDX2)
+!Seizo 2008.07.14             IF (INDX2.NE.0) THEN
 !Seizo 2008.07.14               ITOT = ITOT+1
-!Seizo 2008.07.14               ITVECT(ITOT) = INDEX2
+!Seizo 2008.07.14               ITVECT(ITOT) = INDX2
 !Seizo 2008.07.14             ENDIF
 !Seizo 2008.07.14          ENDDO
            NWEIRP(I) = 0
@@ -162,15 +162,15 @@ C        then make it and its dual a local Weir-node pair
            IF (ITEMP.GT.1) THEN
              CALL SORT(ITEMP,ITVECT)
              ITOT=1
-             INDEX = ITVECT(1)
-             WEIRP_LG(ITOT,I)  = WEIR(INDEX)       
-             WEIRDP_LG(ITOT,I) = WEIRD(INDEX)
+             INDX = ITVECT(1)
+             WEIRP_LG(ITOT,I)  = WEIR(INDX)       
+             WEIRDP_LG(ITOT,I) = WEIRD(INDX)
              DO J = 2,ITEMP
-                IF (ITVECT(J).NE.INDEX) THEN
-                  INDEX = ITVECT(J)
+                IF (ITVECT(J).NE.INDX) THEN
+                  INDX = ITVECT(J)
                   ITOT = ITOT+1
-                  WEIRP_LG(ITOT,I)  = WEIR(INDEX)
-                  WEIRDP_LG(ITOT,I) = WEIRD(INDEX)
+                  WEIRP_LG(ITOT,I)  = WEIR(INDX)
+                  WEIRDP_LG(ITOT,I) = WEIRD(INDX)
                 ENDIF
              ENDDO
              NWEIRP(I) = ITOT
@@ -206,11 +206,11 @@ c          print *, "PE = ",I-1
               PE1 = IMAP_NOD_GL(1,N1)   ! Is any vertex a resident node?
               PE2 = IMAP_NOD_GL(1,N2)
               PE3 = IMAP_NOD_GL(1,N3)   ! belong to a Weir-node pair ?
-              CALL SEARCH3(WEIRP_LG(1,I),NWEIRP(I),N1,N2,N3,INDEX)
-              CALL SEARCH3(WEIRDP_LG(1,I),NWEIRP(I),N1,N2,N3,INDEX2)
+              CALL SEARCH3(WEIRP_LG(1,I),NWEIRP(I),N1,N2,N3,INDX)
+              CALL SEARCH3(WEIRDP_LG(1,I),NWEIRP(I),N1,N2,N3,INDX2)
               IF ((PE1.EQ.I).OR.(PE2.EQ.I).OR.(PE3.EQ.I)
-     &          .OR.(INDEX.NE.0).OR.(INDEX2.NE.0)) THEN
-c                print *, K, PE1,PE2,PE3,INDEX,INDEX2
+     &          .OR.(INDX.NE.0).OR.(INDX2.NE.0)) THEN
+c                print *, K, PE1,PE2,PE3,INDX,INDX2
                 NELP(I) = NELP(I) + 1
                 KK = K
                 if (EL_SHARE(NELP(I)) > -1) KK = -K
@@ -314,8 +314,8 @@ C
          NUM_COMM_PE(I) = 0
          ITEMP = 0
          DO J = 1,NNODP(I)
-            INDEX = IMAP_NOD_LG(J,I)
-            IPR = IMAP_NOD_GL(1,INDEX)
+            INDX = IMAP_NOD_LG(J,I)
+            IPR = IMAP_NOD_GL(1,INDX)
             IF (IPR.NE.I)THEN
               ITEMP = ITEMP + 1
               ITVECT(ITEMP) = IPR
@@ -349,16 +349,16 @@ C  It works for both resident and ghost nodes
       ENDDO
       DO I = 1,NPROC
          DO J = 1,NNODP(I)
-            INDEX = IMAP_NOD_LG(J,I)
-            ITOTPROC(INDEX) = ITOTPROC(INDEX) + 1
-            IF (ITOTPROC(INDEX).GT.MNPROC)THEN
+            INDX = IMAP_NOD_LG(J,I)
+            ITOTPROC(INDX) = ITOTPROC(INDX) + 1
+            IF (ITOTPROC(INDX).GT.MNPROC)THEN
               WRITE(6,*)'Some nodes belong to more processors',
      $                  ' than MNPROC'
               STOP 
             ENDIF
-            ITEMP = (ITOTPROC(INDEX)-1)*2 + 1
-            IMAP_NOD_GL2(ITEMP,INDEX) = I
-            IMAP_NOD_GL2(ITEMP+1,INDEX) = J
+            ITEMP = (ITOTPROC(INDX)-1)*2 + 1
+            IMAP_NOD_GL2(ITEMP,INDX) = I
+            IMAP_NOD_GL2(ITEMP+1,INDX) = J
          ENDDO
       ENDDO
 c     print *, "Global Nodes assigned to more than one PE"
@@ -402,7 +402,7 @@ C
       INTEGER I,J,K,L,ITEMP
       INTEGER ITOT,IEL,IELG,ILNODE,ILNODE2,IPROC
       INTEGER IG1,IG2,IG3,IL1,IL2,IL3,PE1,PE2,PE3
-      INTEGER INDEX,INDEX2
+      INTEGER INDX,INDX2
       INTEGER RESNODE,NODES,NELEM,ONELEM,NLWEIR
 C
       INTEGER,ALLOCATABLE :: ITVECT(:)
@@ -517,11 +517,11 @@ C        then make it and its dual a local Weir-node pair
         ITOT = 0
 ! Seizo 2008.07.14
         DO J = 1, NWEIR
-           INDEX = WEIR(J)
-           INDEX2= WEIRD(J)
+           INDX = WEIR(J)
+           INDX2= WEIRD(J)
            DO K = 1, NODES
               N1 = NODE_LG(K)
-              IF( (N1 == INDEX) .or. (N1 == INDEX2) ) THEN
+              IF( (N1 == INDX) .or. (N1 == INDX2) ) THEN
                   ITOT = ITOT + 1
                   ITVECT(ITOT) = J
                   EXIT
@@ -530,15 +530,15 @@ C        then make it and its dual a local Weir-node pair
         ENDDO
            
 !Seizo 2008.07.14       DO J = 1,NODES    
-!Seizo 2008.07.14          CALL SEARCH(WEIR,NWEIR,NODE_LG(J),INDEX)
-!Seizo 2008.07.14          IF (INDEX.NE.0) THEN
+!Seizo 2008.07.14          CALL SEARCH(WEIR,NWEIR,NODE_LG(J),INDX)
+!Seizo 2008.07.14          IF (INDX.NE.0) THEN
 !Seizo 2008.07.14            ITOT = ITOT+1
-!Seizo 2008.07.14            ITVECT(ITOT) = INDEX
+!Seizo 2008.07.14            ITVECT(ITOT) = INDX
 !Seizo 2008.07.14          ENDIF
-!Seizo 2008.07.14          CALL SEARCH(WEIRD,NWEIR,NODE_LG(J),INDEX2)
-!Seizo 2008.07.14          IF (INDEX2.NE.0) THEN
+!Seizo 2008.07.14          CALL SEARCH(WEIRD,NWEIR,NODE_LG(J),INDX2)
+!Seizo 2008.07.14          IF (INDX2.NE.0) THEN
 !Seizo 2008.07.14            ITOT = ITOT+1
-!Seizo 2008.07.14            ITVECT(ITOT) = INDEX2
+!Seizo 2008.07.14            ITVECT(ITOT) = INDX2
 !Seizo 2008.07.14          ENDIF
 !Seizo 2008.07.14       ENDDO
         NLWEIR  = 0
@@ -547,15 +547,15 @@ C        then make it and its dual a local Weir-node pair
         IF (ITEMP.GT.1) THEN
           CALL SORT(ITEMP,ITVECT)
           ITOT=1
-          INDEX = ITVECT(1)
-          LWEIR_LG(ITOT)  = WEIR(INDEX)       
-          LWEIRD_LG(ITOT) = WEIRD(INDEX)
+          INDX = ITVECT(1)
+          LWEIR_LG(ITOT)  = WEIR(INDX)       
+          LWEIRD_LG(ITOT) = WEIRD(INDX)
           DO J = 2,ITEMP
-             IF (ITVECT(J).NE.INDEX) THEN
-               INDEX = ITVECT(J)
+             IF (ITVECT(J).NE.INDX) THEN
+               INDX = ITVECT(J)
                ITOT = ITOT+1
-               LWEIR_LG(ITOT)  = WEIR(INDEX)
-               LWEIRD_LG(ITOT) = WEIRD(INDEX)
+               LWEIR_LG(ITOT)  = WEIR(INDX)
+               LWEIRD_LG(ITOT) = WEIRD(INDX)
              ENDIF
           ENDDO
           NLWEIR = ITOT
@@ -587,10 +587,10 @@ C         has the dual Weir node of a resident or ghost node
            PE1 = NODE_GL1(N1)   ! Is any vertex a resident node?
            PE2 = NODE_GL1(N2)
            PE3 = NODE_GL1(N3)   ! belong to a Weir-node pair ?
-           CALL SEARCH3(LWEIR_LG(1),NLWEIR,N1,N2,N3,INDEX)
-           CALL SEARCH3(LWEIRD_LG(1),NLWEIR,N1,N2,N3,INDEX2)
+           CALL SEARCH3(LWEIR_LG(1),NLWEIR,N1,N2,N3,INDX)
+           CALL SEARCH3(LWEIRD_LG(1),NLWEIR,N1,N2,N3,INDX2)
            IF ((PE1.EQ.IPROC).OR.(PE2.EQ.IPROC).OR.(PE3.EQ.IPROC)
-     &          .OR.(INDEX.NE.0).OR.(INDEX2.NE.0)) THEN
+     &          .OR.(INDX.NE.0).OR.(INDX2.NE.0)) THEN
              NELEM = NELEM + 1
              ELEM_LG(NELEM) = K
            ENDIF
@@ -722,28 +722,28 @@ C--Then set the output and return.
          RETURN
          END
 
-      SUBROUTINE SEARCH3(MAP,LEN,N1,N2,N3,INDEX)
-      INTEGER MAP(*),LEN,N1,N2,N3,INDEX,IP
+      SUBROUTINE SEARCH3(MAP,LENG,N1,N2,N3,INDX)
+      INTEGER MAP(*),LENG,N1,N2,N3,INDX,IP
 cvjp  rewritten 5/3/99
-      INDEX = 0
-      DO I=1,LEN
+      INDX = 0
+      DO I=1,LENG
          IP = MAP(I)
          IF (IP.EQ.N1.OR.IP.EQ.N2.OR.IP.EQ.N3) THEN
-           INDEX = I
+           INDX = I
            GOTO 99
          ENDIF
       ENDDO
  99   RETURN
       END
 
-      SUBROUTINE SEARCH(MAP,N,TARGET,INDEX)
-      INTEGER MAP(*),N,TARGET,INDEX,I
+      SUBROUTINE SEARCH(MAP,N,TARGET,INDX)
+      INTEGER MAP(*),N,TARGET,INDX,I
 C
-      INDEX = 0
+      INDX = 0
       IF (N.EQ.0) GOTO 99
       DO I=1,N
          IF (MAP(I).EQ.TARGET) THEN
-            INDEX = I
+            INDX = I
             GOTO 99
          ENDIF
       ENDDO

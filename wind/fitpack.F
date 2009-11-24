@@ -335,16 +335,16 @@
          del1 = t-x(im1)
          del2 = x(i)-t
          dels = x(i)-x(im1)
-         sum = (y(i)*del1+y(im1)*del2)/dels
+         summ = (y(i)*del1+y(im1)*del2)/dels
          IF (sigmap /= 0.) GO TO 1
-         curv2 = sum-del1*del2*(yp(i)*(del1+dels)+yp(im1)*
+         curv2 = summ-del1*del2*(yp(i)*(del1+dels)+yp(im1)*
      &           (del2+dels))/(6.*dels)
          RETURN
 1        sigdel = sigmap*dels
          CALL snhcsh (ss,dummy,sigdel,-1)
          CALL snhcsh (s1,dummy,sigmap*del1,-1)
          CALL snhcsh (s2,dummy,sigmap*del2,-1)
-         curv2 = sum+(yp(i)*del1*(s1-ss)+yp(im1)*del2*(s2-ss))/
+         curv2 = summ+(yp(i)*del1*(s1-ss)+yp(im1)*del2*(s2-ss))/
      &           (sigdel*sigmap*(1.+ss))
          RETURN
       END FUNCTION curv2
@@ -412,9 +412,9 @@
          del1 = t-x(im1)
          del2 = x(i)-t
          dels = x(i)-x(im1)
-         sum = (y(i)-y(im1))/dels
+         summ = (y(i)-y(im1))/dels
          IF (sigmap /= 0.) GO TO 1
-         curvd = sum+(yp(i)*(2.*del1*del1-del2*(del1+dels))-
+         curvd = summ+(yp(i)*(2.*del1*del1-del2*(del1+dels))-
      &                yp(im1)*(2.*del2*del2-del1*(del2+dels)))
      &                /(6.*dels)
          RETURN
@@ -422,7 +422,7 @@
          CALL snhcsh (ss,dummy,sigdel,-1)
          CALL snhcsh (dummy,c1,sigmap*del1,1)
          CALL snhcsh (dummy,c2,sigmap*del2,1)
-         curvd = sum+(yp(i)*(c1-ss)-yp(im1)*(c2-ss))/
+         curvd = summ+(yp(i)*(c1-ss)-yp(im1)*(c2-ss))/
      &               (sigdel*sigmap*(1.+ss))
          RETURN
       END FUNCTION curvd
@@ -507,23 +507,23 @@
          !
          ! integrate from xxl to x(il)
          !
-         sum = 0.
+         summ = 0.
          IF (xxl == x(il)) GO TO 3
          del1 = xxl-x(ilm1)
          del2 = x(il)-xxl
          dels = x(il)-x(ilm1)
          t1 = (del1+dels)*del2/(2.*dels)
          t2 = del2*del2/(2.*dels)
-         sum = t1*y(il)+t2*y(ilm1)
+         summ = t1*y(il)+t2*y(ilm1)
          IF (sigma == 0.) GO TO 2
          CALL snhcsh (dummy,c1,sigmap*del1,2)
          CALL snhcsh (dummy,c2,sigmap*del2,2)
          CALL snhcsh (ss,cs,sigmap*dels,3)
-         sum = sum+((dels*dels*(cs-ss/2.)-del1*del1*(c1-ss/2.))
+         summ = summ+((dels*dels*(cs-ss/2.)-del1*del1*(c1-ss/2.))
      &              *yp(il)+del2*del2*(c2-ss/2.)*yp(ilm1))/
      &              (sigmap*sigmap*dels*(1.+ss))
          GO TO 3
-2        sum = sum-t1*t1*dels*yp(il)/6.
+2        summ = summ-t1*t1*dels*yp(il)/6.
      &            -t2*(del1*(del2+dels)+dels*dels)*yp(ilm1)/12.
          !
          ! integrate over interior intervals
@@ -532,13 +532,13 @@
          ilp1 = il+1
          DO i = ilp1,ium1
             dels = x(i)-x(i-1)
-            sum = sum+(y(i)+y(i-1))*dels/2.
+            summ = summ+(y(i)+y(i-1))*dels/2.
             IF (sigma == 0.) GO TO 4
             CALL snhcsh (ss,cs,sigmap*dels,3)
-            sum = sum+(yp(i)+yp(i-1))*dels*(cs-ss/2.)/
+            summ = summ+(yp(i)+yp(i-1))*dels*(cs-ss/2.)/
      &                (sigmap*sigmap*(1.+ss))
             CYCLE
-4           sum = sum-(yp(i)+yp(i-1))*dels*dels*dels/24.
+4           summ = summ-(yp(i)+yp(i-1))*dels*dels*dels/24.
          END DO
          !
          ! integrate from x(iu-1) to xxu
@@ -549,16 +549,16 @@
          dels = x(iu)-x(ium1)
          t1 = del1*del1/(2.*dels)
          t2 = (del2+dels)*del1/(2.*dels)
-         sum = sum+t1*y(iu)+t2*y(ium1)
+         summ = summ+t1*y(iu)+t2*y(ium1)
          IF (sigma == 0.) GO TO 7
          CALL snhcsh (dummy,c1,sigmap*del1,2)
          CALL snhcsh (dummy,c2,sigmap*del2,2)
          CALL snhcsh (ss,cs,sigmap*dels,3)
-         sum = sum+(yp(iu)*del1*del1*(c1-ss/2.)+yp(ium1)*
+         summ = summ+(yp(iu)*del1*del1*(c1-ss/2.)+yp(ium1)*
      &             (dels*dels*(cs-ss/2.)-del2*del2*(c2-ss/2.)))
      &            /(sigmap*sigmap*dels*(1.+ss))
          GO TO 10
-7        sum = sum-t1*(del2*(del1+dels)+dels*dels)*yp(iu)/12.
+7        summ = summ-t1*(del2*(del1+dels)+dels*dels)*yp(iu)/12.
      &            -t2*t2*dels*yp(ium1)/6.
          GO TO 10
          !
@@ -572,27 +572,27 @@
          deli = xxu-xxl
          t1 = (delu1+dell1)*deli/(2.*dels)
          t2 = (delu2+dell2)*deli/(2.*dels)
-         sum = t1*y(iu)+t2*y(ium1)
+         summ = t1*y(iu)+t2*y(ium1)
          IF (sigma == 0.) GO TO 9
          CALL snhcsh (dummy,cu1,sigmap*delu1,2)
          CALL snhcsh (dummy,cu2,sigmap*delu2,2)
          CALL snhcsh (dummy,cl1,sigmap*dell1,2)
          CALL snhcsh (dummy,cl2,sigmap*dell2,2)
          CALL snhcsh (ss,dummy,sigmap*dels,-1)
-         sum = sum+(yp(iu)*(delu1*delu1*(cu1-ss/2.)
+         summ = summ+(yp(iu)*(delu1*delu1*(cu1-ss/2.)
      &                     -dell1*dell1*(cl1-ss/2.))
      &           +yp(ium1)*(dell2*dell2*(cl2-ss/2.)
      &                     -delu2*delu2*(cu2-ss/2.)))/
      &             (sigmap*sigmap*dels*(1.+ss))
          GO TO 10
-9        sum = sum-t1*(delu2*(dels+delu1)+dell2*(dels+dell1))*
+9        summ = summ-t1*(delu2*(dels+delu1)+dell2*(dels+dell1))*
      &                   yp(iu)/12.
      &            -t2*(dell1*(dels+dell2)+delu1*(dels+delu2))*
      &                   yp(ium1)/12.
          !
          ! correct sign and return
          !
-10       curvi = ssign*sum
+10       curvi = ssign*summ
          RETURN
       END FUNCTION curvi
 
@@ -938,16 +938,16 @@
 1        i = 1
          del2 = x(1)+p-tp
          dels = p-(x(n)-x(1))
-2        sum = (y(i)*del1+y(im1)*del2)/dels
+2        summ = (y(i)*del1+y(im1)*del2)/dels
          IF (sigmap /= 0.) GO TO 3
-         curvp2 = sum-del1*del2*(yp(i)*(del1+dels)+yp(im1)*
+         curvp2 = summ-del1*del2*(yp(i)*(del1+dels)+yp(im1)*
      &            (del2+dels))/(6.*dels)
          RETURN
 3        sigdel = sigmap*dels
          CALL snhcsh (ss,dummy,sigdel,-1)
          CALL snhcsh (s1,dummy,sigmap*del1,-1)
          CALL snhcsh (s2,dummy,sigmap*del2,-1)
-         curvp2 = sum+(yp(i)*del1*(s1-ss)+yp(im1)*del2*(s2-ss))/
+         curvp2 = summ+(yp(i)*del1*(s1-ss)+yp(im1)*del2*(s2-ss))/
      &                (sigdel*sigmap*(1.+ss))
          RETURN
       END FUNCTION curvp2
@@ -2836,11 +2836,11 @@
          ! test for straight line fit
          !
          con = sumy/sumd
-         sum = 0.
+         summ = 0.
          DO i = 1,n
-            sum = sum+((y(i)-con)/d(i))**2
+            summ = summ+((y(i)-con)/d(i))**2
          END DO
-         IF (sum <= su) GO TO 23
+         IF (summ <= su) GO TO 23
          GO TO 8
          !
          ! form h matrix - d constant
@@ -2866,11 +2866,11 @@
          ! test for straight line fit
          !
          con = sumy/FLOAT(n)
-         sum = 0.
+         summ = 0.
          DO i = 1,n
-            sum = sum+(y(i)-con)**2
+            summ = summ+(y(i)-con)**2
          END DO
-         IF (sum <= su) GO TO 23
+         IF (summ <= su) GO TO 23
          !
          ! top of iteration
          ! cholesky factorization of q*t+h into r
@@ -2977,7 +2977,7 @@
      &              -rsd2(i+2)*ysp(i+2)-rnm1(i)*yspnm1
      &              -rn(i)*yspn
          END DO
-14       sum = 0.
+14       summ = 0.
          delyi1 = (ysp(1)-ysp(n))/(x(1)+p-x(n))
          IF (isw == 1) GO TO 16
          !
@@ -2987,7 +2987,7 @@
          DO i = 1,nm1
             delyi = (ysp(i+1)-ysp(i))/(x(i+1)-x(i))
             v(i) = (delyi-delyi1)*d(i)*d(i)
-            sum = sum+v(i)*(delyi-delyi1)
+            summ = summ+v(i)*(delyi-delyi1)
             delyi1 = delyi
          END DO
          delyi = (ysp(1)-ysp(n))/(x(1)+p-x(n))
@@ -3000,16 +3000,16 @@
 16       DO i = 1,nm1
             delyi = (ysp(i+1)-ysp(i))/(x(i+1)-x(i))
             v(i) = delyi-delyi1
-            sum = sum+v(i)*(delyi-delyi1)
+            summ = summ+v(i)*(delyi-delyi1)
             delyi1 = delyi
          END DO
          delyi = (ysp(1)-ysp(n))/(x(1)+p-x(n))
          v(n) = delyi-delyi1
-18       sum = sum+v(n)*(delyi-delyi1)
+18       summ = summ+v(n)*(delyi-delyi1)
          !
          ! test for convergence
          !
-         IF (sum <= su .AND. sum >= sl .AND. q > 0.) GO TO 21
+         IF (summ <= su .AND. summ >= sl .AND. q > 0.) GO TO 21
          !
          ! calculation of newton correction
          !
@@ -3045,8 +3045,8 @@
          !
          ! update q - newton step
          !
-         step = (sum-SQRT(sum*sl))/h
-         IF (sl /= 0.) step = step*SQRT(sum/sl)
+         step = (summ-SQRT(summ*sl))/h
+         IF (sl /= 0.) step = step*SQRT(summ/sl)
          q = q+step
          GO TO 8
          !
@@ -3312,7 +3312,7 @@
             ysp(i) = rd(i)*ysp(i)-rsd1(i+1)*ysp(i+1)
      &                    -rsd2(i+2)*ysp(i+2)
          END DO
-8        sum = 0.
+8        summ = 0.
          delyi1 = 0.
          IF (isw == 1) GO TO 10
          !
@@ -3322,7 +3322,7 @@
          DO i = 1,nm1
             delyi = (ysp(i+1)-ysp(i))/(x(i+1)-x(i))
             v(i) = (delyi-delyi1)*d(i)*d(i)
-            sum = sum+v(i)*(delyi-delyi1)
+            summ = summ+v(i)*(delyi-delyi1)
             delyi1 = delyi
          END DO
          v(n) = -delyi1*d(n)*d(n)
@@ -3334,15 +3334,15 @@
 10       DO i = 1,nm1
             delyi = (ysp(i+1)-ysp(i))/(x(i+1)-x(i))
             v(i) = delyi-delyi1
-            sum = sum+v(i)*(delyi-delyi1)
+            summ = summ+v(i)*(delyi-delyi1)
             delyi1 = delyi
          END DO
          v(n) = -delyi1
-12       sum = sum-v(n)*delyi1
+12       summ = summ-v(n)*delyi1
          !
          ! test for convergence
          !
-         IF (sum <= su) GO TO 14
+         IF (summ <= su) GO TO 14
          !
          ! calculation of newton correction
          !
@@ -3363,8 +3363,8 @@
          !
          ! update p - newton step
          !
-         step = (sum-SQRT(sum*sl))/h
-         IF (sl /= 0.) step = step*SQRT(sum/sl)
+         step = (summ-SQRT(summ*sl))/h
+         IF (sl /= 0.) step = step*SQRT(summ/sl)
          p = p+step
          GO TO 5
          !

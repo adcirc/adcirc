@@ -1157,7 +1157,7 @@ C---------------------------------------------------------------------------
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
-      INTEGER I, J, IPROC, INDEX, ITEMP, idumy
+      INTEGER I, J, IPROC, INDX, ITEMP, idumy
       CHARACTER(14) LOCFN
       CHARACTER(80) skipped
       INTEGER,ALLOCATABLE :: LUNP(:)
@@ -1277,8 +1277,8 @@ C  This section for prep15
       ENDDO
       DO IPROC = 1,NPROC
          DO I = 1,NNODP(IPROC)
-            INDEX = IMAP_NOD_LG(I,IPROC)
-            ITOTPROC(INDEX) = ITOTPROC(INDEX) + 1
+            INDX = IMAP_NOD_LG(I,IPROC)
+            ITOTPROC(INDX) = ITOTPROC(INDX) + 1
          ENDDO
       ENDDO
       MNEI = 0    
@@ -1299,11 +1299,11 @@ C  This section for prep15
       ENDDO
       DO IPROC = 1,NPROC
          DO J = 1,NNODP(IPROC)
-            INDEX = IMAP_NOD_LG(J,IPROC)
-            ITOTPROC(INDEX) = ITOTPROC(INDEX) + 1
-            ITEMP = (ITOTPROC(INDEX)-1)*2 + 1
-            IMAP_NOD_GL2(ITEMP,INDEX) = IPROC
-            IMAP_NOD_GL2(ITEMP+1,INDEX) = J
+            INDX = IMAP_NOD_LG(J,IPROC)
+            ITOTPROC(INDX) = ITOTPROC(INDX) + 1
+            ITEMP = (ITOTPROC(INDX)-1)*2 + 1
+            IMAP_NOD_GL2(ITEMP,INDX) = IPROC
+            IMAP_NOD_GL2(ITEMP+1,INDX) = J
          ENDDO
       ENDDO
 
@@ -1634,7 +1634,7 @@ C
       IMPLICIT NONE
       INTEGER I,I1,J,K,L,ETYPE,ITEMP,ITEMP2,ILNODE,ILNODE2,ILNODE3
       INTEGER JD,JG,JP,IPROC,IPROC2,IPROC3,DISC,BBN,IBP
-      INTEGER INDEX,INDEX2,ITOT,ITYPE,NUMS(10)
+      INTEGER INDX,INDEX2,ITOT,ITYPE,NUMS(10)
       CHARACTER LOCFN*14,PE*6
       CHARACTER*80 OUTMSG
 C
@@ -1671,11 +1671,11 @@ C
          DO K = 1,NOPE
             DO I = 1,NVDLL(K)
                ITOT = ITOT + 1
-               INDEX = NBDV(K,I)
-               DO J = 1,ITOTPROC(INDEX)
+               INDX = NBDV(K,I)
+               DO J = 1,ITOTPROC(INDX)
                   ITEMP = (J-1)*2+1
-                  IPROC2 = IMAP_NOD_GL2(ITEMP,INDEX)
-                  ILNODE = IMAP_NOD_GL2(ITEMP+1,INDEX)
+                  IPROC2 = IMAP_NOD_GL2(ITEMP,INDX)
+                  ILNODE = IMAP_NOD_GL2(ITEMP+1,INDX)
                   IF (IPROC.EQ.IPROC2) THEN
                     NETAP(IPROC) = NETAP(IPROC)+1
                     NVDLLP(K) = NVDLLP(K) + 1
@@ -1715,12 +1715,12 @@ C  mod to allow that each of Weir-node pair might be ghosts nodes
 C
          IF ((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
            DO I = 1,NVELL(K)
-              INDEX = NBVV(K,I)
+              INDX = NBVV(K,I)
               INDEX2 = IBCONNR(K,I)
-              DO J = 1,ITOTPROC(INDEX)
+              DO J = 1,ITOTPROC(INDX)
                  ITEMP = (J-1)*2 + 1
-                 IPROC2  =  IMAP_NOD_GL2(ITEMP,INDEX)
-                 ILNODE2 =  IMAP_NOD_GL2(ITEMP+1,INDEX)
+                 IPROC2  =  IMAP_NOD_GL2(ITEMP,INDX)
+                 ILNODE2 =  IMAP_NOD_GL2(ITEMP+1,INDX)
                  IF (IPROC.EQ.IPROC2) THEN
                    DO JD = 1, ITOTPROC(INDEX2)
                       ITEMP2 = (JD-1)*2 + 1
@@ -1743,11 +1743,11 @@ C
          ELSE
 C
            DO I = 1,NVELL(K)
-              INDEX = NBVV(K,I)
-              DO J = 1,ITOTPROC(INDEX)
+              INDX = NBVV(K,I)
+              DO J = 1,ITOTPROC(INDX)
                  ITEMP = (J-1)*2 + 1
-                 IPROC2 =  IMAP_NOD_GL2(ITEMP,INDEX)
-                 ILNODE =  IMAP_NOD_GL2(ITEMP+1,INDEX)
+                 IPROC2 =  IMAP_NOD_GL2(ITEMP,INDX)
+                 ILNODE =  IMAP_NOD_GL2(ITEMP+1,INDX)
                  IF (IPROC.EQ.IPROC2) THEN 
                    NVELP(IPROC) = NVELP(IPROC) + 1
                    NVELLP(K) = NVELLP(K) + 1
@@ -1903,11 +1903,11 @@ C
          DO K = 1,numUnSWANBdrySegs
             DO I = 1,numUnSWANBdryNodesEach(K)
                ITOT = ITOT + 1
-               INDEX = unswanBdryNodes(K,I)
-               DO J = 1,ITOTPROC(INDEX)
+               INDX = unswanBdryNodes(K,I)
+               DO J = 1,ITOTPROC(INDX)
                   ITEMP = (J-1)*2+1
-                  IPROC2 = IMAP_NOD_GL2(ITEMP,INDEX)
-                  ILNODE = IMAP_NOD_GL2(ITEMP+1,INDEX)
+                  IPROC2 = IMAP_NOD_GL2(ITEMP,INDX)
+                  ILNODE = IMAP_NOD_GL2(ITEMP+1,INDX)
                   IF (IPROC.EQ.IPROC2) THEN
                     numUnSWANBdryNodesTotalP(IPROC)
      &                 = numUnSWANBdryNodesTotalP(IPROC)+1
@@ -1947,8 +1947,8 @@ cjgf45.06    WRITE(14,80) OUTMSG
           WRITE(14,43) NELP(IPROC),NNODP(IPROC) !jgf45.06
 C
           DO J = 1,NNODP(IPROC)
-             INDEX = IMAP_NOD_LG(J,IPROC)
-             WRITE(14,44) J,X(INDEX),Y(INDEX),DP(INDEX)
+             INDX = IMAP_NOD_LG(J,IPROC)
+             WRITE(14,44) J,X(INDX),Y(INDX),DP(INDX)
           ENDDO
 c
           DO J = 1,NELP(IPROC)
@@ -2004,15 +2004,15 @@ C
                 ELSEIF ((ITYPE.EQ.3).OR.(ITYPE.EQ.13).OR.
      &                  (ITYPE.EQ.23)) THEN 
                   DO I = 1,NVELLP(K)
-                     INDEX = LBINDEX_LG(K,I)
-                     WRITE(14,81) NBVVP(K,I),BAR1(K,INDEX),BAR2(K,INDEX)
+                     INDX = LBINDEX_LG(K,I)
+                     WRITE(14,81) NBVVP(K,I),BAR1(K,INDX),BAR2(K,INDX)
                   ENDDO
 C
                 ELSEIF ((ITYPE.EQ.4).OR.(ITYPE.EQ.24)) THEN
                   DO I = 1,NVELLP(K)
-                     INDEX = LBINDEX_LG(K,I)
+                     INDX = LBINDEX_LG(K,I)
                      WRITE(14,82) NBVVP(K,I),IBCONNRP(K,I),
-     &                        BAR1(K,INDEX),BAR2(K,INDEX),BAR3(K,INDEX)
+     &                        BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX)
                   ENDDO
                 ENDIF
              ENDIF
@@ -2092,7 +2092,7 @@ C
       IMPLICIT NONE
       integer :: nbytes = 0
       INTEGER I,J,K,L,JG,JP,KK
-      INTEGER INDEX,ITOT,ILNODE,IPROC,IPROC2,ITYPE,NUMS(10)
+      INTEGER INDX,ITOT,ILNODE,IPROC,IPROC2,ITYPE,NUMS(10)
       CHARACTER LOCFN*14,PE*6
       CHARACTER*80 OUTMSG
 C
@@ -2200,9 +2200,9 @@ C
 C
             NFLBNP = 0
             DO I=1, NFLBN
-               INDEX = FLBN(I)
-               DO J=1, ITOTPROC(INDEX)
-                  IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDEX)
+               INDX = FLBN(I)
+               DO J=1, ITOTPROC(INDX)
+                  IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDX)
                   IF (IPROC.EQ.IPROC2) THEN
                      NFLBNP = NFLBNP + 1
                      FLBNXP(NFLBNP) = FLBNX(I)
@@ -2236,8 +2236,8 @@ C
          NSTAEP(IPROC) = 0
          DO K = 1,NSTAE
             DO J=1,NELP(IPROC)
-               INDEX = abs(IMAP_EL_LG(J,IPROC))
-               IF (INDEX.EQ.NNSEG(K)) THEN
+               INDX = abs(IMAP_EL_LG(J,IPROC))
+               IF (INDX.EQ.NNSEG(K)) THEN
                   NSTAEP(IPROC) = NSTAEP(IPROC) + 1
                   KK = K
                   if (STAE_SHARE(K) > -1) KK = -K
@@ -2252,8 +2252,8 @@ C
          WRITE(15,80) OUTMSG       
 C     
          DO K=1,NSTAEP(IPROC)
-            INDEX = abs(IMAP_STAE_LG(K,IPROC))
-            WRITE(15,80) STAELOC(INDEX)
+            INDX = abs(IMAP_STAE_LG(K,IPROC))
+            WRITE(15,80) STAELOC(INDX)
          ENDDO             
 C
 C--Write Local Velocity Station Info:
@@ -2264,8 +2264,8 @@ C
          NSTAVP(IPROC) = 0
          DO K = 1,NSTAV
             DO J=1,NELP(IPROC)
-               INDEX = abs(IMAP_EL_LG(J,IPROC))
-               IF (INDEX.EQ.NNSVG(K)) THEN
+               INDX = abs(IMAP_EL_LG(J,IPROC))
+               IF (INDX.EQ.NNSVG(K)) THEN
                   NSTAVP(IPROC) = NSTAVP(IPROC) + 1
                   KK = K
                   if (STAV_SHARE(K) > -1) KK = -K
@@ -2280,8 +2280,8 @@ C
          WRITE(15,80) OUTMSG       
 C
          DO K=1,NSTAVP(IPROC)
-            INDEX = abs(IMAP_STAV_LG(K,IPROC))
-            WRITE(15,80) STAVLOC(INDEX)
+            INDX = abs(IMAP_STAV_LG(K,IPROC))
+            WRITE(15,80) STAVLOC(INDX)
          ENDDO
 C
 C--If IM=10 Write Concentration Station Info:
@@ -2295,8 +2295,8 @@ C     WRITE(15,80) STACMSG   !jgf45.07 we may have changed NOUTC in adcprep
 C
             DO K = 1,NSTAC
                DO J=1,NELP(IPROC)
-                  INDEX = abs(IMAP_EL_LG(J,IPROC))
-                  IF (INDEX.EQ.NNSCG(K)) THEN
+                  INDX = abs(IMAP_EL_LG(J,IPROC))
+                  IF (INDX.EQ.NNSCG(K)) THEN
                      NSTACP(IPROC) = NSTACP(IPROC) + 1
                      KK = K
                      if (STAC_SHARE(K) > -1) KK = -K
@@ -2311,8 +2311,8 @@ C
             WRITE(15,80) OUTMSG       
 C     
             DO K=1,NSTACP(IPROC)
-               INDEX = abs(IMAP_STAC_LG(K,IPROC))
-               WRITE(15,80) STACLOC(INDEX)
+               INDX = abs(IMAP_STAC_LG(K,IPROC))
+               WRITE(15,80) STACLOC(INDX)
             ENDDO
 C     
          ENDIF
@@ -2325,8 +2325,8 @@ C
             WRITE(15,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
             DO K = 1,NSTAM
                DO J=1,NELP(IPROC)
-                  INDEX = abs(IMAP_EL_LG(J,IPROC))
-                  IF (INDEX.EQ.NNSMG(K)) THEN
+                  INDX = abs(IMAP_EL_LG(J,IPROC))
+                  IF (INDX.EQ.NNSMG(K)) THEN
                      NSTAMP(IPROC) = NSTAMP(IPROC) + 1
                      KK = K
                      if (STAM_SHARE(K) > -1) KK = -K
@@ -2341,8 +2341,8 @@ C
             WRITE(15,80) OUTMSG       
 C
             DO K=1,NSTAMP(IPROC)
-               INDEX = abs(IMAP_STAM_LG(K,IPROC))
-               WRITE(15,80) STAMLOC(INDEX)
+               INDX = abs(IMAP_STAM_LG(K,IPROC))
+               WRITE(15,80) STAMLOC(INDX)
             ENDDO             
          ENDIF
 
@@ -2615,7 +2615,7 @@ C
       integer :: nbytes = 0
       INTEGER N1, N2, N3, KMIN
       INTEGER I,J,K,L,ITEMP,IPR,IPR1
-      INTEGER INDEX,ITOT,IEL,IELG,ILNODE,IPROC,ITYPE
+      INTEGER INDX,ITOT,IEL,IELG,ILNODE,IPROC,ITYPE
       INTEGER,ALLOCATABLE :: RES_NODE(:)
       CHARACTER LOCFN*14,PE*6
 C
@@ -2640,8 +2640,8 @@ C--Write the Global indexes of all local elements in local element order
 
          WRITE(18,3000) NELG, MNEP, NELP(I)  ! number of Global elements
          DO J = 1,NELP(I)
-            INDEX = IMAP_EL_LG(J,I)
-            WRITE(18,'(I8)') INDEX        ! Global index of local element
+            INDX = IMAP_EL_LG(J,I)
+            WRITE(18,'(I8)') INDX        ! Global index of local element
          ENDDO
 
 C--Write the Global indexes of all local nodes in local node order
@@ -2651,14 +2651,14 @@ C  if a ghost node
          WRITE(18,3001) NNODG, MNPP, NNODP(I)   ! number of Global nodes
          ITOT = 0
          DO J = 1,NNODP(I)
-            INDEX = IMAP_NOD_LG(J,I)
-            IPR = IMAP_NOD_GL(1,INDEX)
+            INDX = IMAP_NOD_LG(J,I)
+            IPR = IMAP_NOD_GL(1,INDX)
             IF (IPR.EQ.I)THEN
                ITOT = ITOT + 1
                RES_NODE(ITOT) = J
-               WRITE(18,'(I8)') INDEX        ! Global index of resident node
+               WRITE(18,'(I8)') INDX        ! Global index of resident node
             ELSE
-               WRITE(18,'(I8)') -1*INDEX     ! Global index of ghost node
+               WRITE(18,'(I8)') -1*INDX     ! Global index of ghost node
             ENDIF
          ENDDO
          IF (ITOT.NE.NOD_RES_TOT(I)) STOP 'ERROR IN # OF RES. NODES'
@@ -2671,8 +2671,8 @@ C--Write global and local total number of elevation boundary nodes
 C--vjp This info is used only for relocalizing fort.15
          WRITE(18,3003) NETA, NETA_MAX, NETAP(I) ! number of global elevation b.c. nodes
          DO J = 1,NETAP(I)
-            INDEX = OBNODE_LG(J,I)
-            WRITE(18,'(I8)') INDEX           ! Global open boundary node index
+            INDX = OBNODE_LG(J,I)
+            WRITE(18,'(I8)') INDX           ! Global open boundary node index
          ENDDO
 
 C--Write the Global indexes of all Elevation Stations in local node order
@@ -2681,8 +2681,8 @@ C  if a ghost node
 
          WRITE(18,3004) NSTAE, NSTAE_MAX, NSTAEP(I) ! number of Global Elevation Stations
          DO J = 1,NSTAEP(I)
-            INDEX = IMAP_STAE_LG(J,I)
-            WRITE(18,'(I8)') INDEX           ! Global station number
+            INDX = IMAP_STAE_LG(J,I)
+            WRITE(18,'(I8)') INDX           ! Global station number
          ENDDO
 
 C--Write the Global indexes of all Velocity Stations in local node order
@@ -2691,8 +2691,8 @@ C  if a ghost node
 
          WRITE(18,3005) NSTAV, NSTAV_MAX, NSTAVP(I) ! number of Global Velocity Stations
          DO J = 1,NSTAVP(I)
-            INDEX = IMAP_STAV_LG(J,I)
-            WRITE(18,'(I8)') INDEX           ! Global station number
+            INDX = IMAP_STAV_LG(J,I)
+            WRITE(18,'(I8)') INDX           ! Global station number
          ENDDO
 
 C--Write the Global indexes of all Elevation Stations in local node order
@@ -2701,8 +2701,8 @@ C  if a ghost node
 
          WRITE(18,3006) NSTAM, NSTAM_MAX, NSTAMP(I) ! number of Global Meteorlogical Stations
          DO J = 1,NSTAMP(I)
-            INDEX = IMAP_STAM_LG(J,I)
-            WRITE(18,'(I8)') INDEX           ! Global station number
+            INDX = IMAP_STAM_LG(J,I)
+            WRITE(18,'(I8)') INDX           ! Global station number
          ENDDO
 
 C--Write the Global indexes of all Concentration Stations in local node order
@@ -2711,8 +2711,8 @@ C  if a ghost node
 
          WRITE(18,3007) NSTAC, NSTAC_MAX, NSTACP(I) ! number of Global Concentration Stations
          DO J = 1,NSTACP(I)
-            INDEX = IMAP_STAC_LG(J,I)
-            WRITE(18,'(I8)') INDEX           ! Global station number
+            INDX = IMAP_STAC_LG(J,I)
+            WRITE(18,'(I8)') INDX           ! Global station number
          ENDDO
 
 C---------------------------------------------------------------------------------
@@ -2734,12 +2734,12 @@ C
             IPR = COMM_PE_NUM(J,I)
             IRECV_TOT(J,I) = 0
             DO K = 1,NNODP(I)
-               INDEX = IMAP_NOD_LG(K,I)
-               IF (IMAP_NOD_GL(1,INDEX).EQ.IPR) THEN
+               INDX = IMAP_NOD_LG(K,I)
+               IF (IMAP_NOD_GL(1,INDX).EQ.IPR) THEN
                   IRECV_TOT(J,I) = IRECV_TOT(J,I) + 1
                   IRECV(IRECV_TOT(J,I)) = K
 c uncomment next line and comment preceding line for debugging
-c                 IRECV(IRECV_TOT(J,I)) = INDEX
+c                 IRECV(IRECV_TOT(J,I)) = INDX
                ENDIF
             ENDDO
             WRITE(18,3030) (IPR-1), IRECV_TOT(J,I)
@@ -2752,12 +2752,12 @@ C
             IPR = COMM_PE_NUM(J,I)
             ISEND_TOT(J,I) = 0
             DO K = 1,NNODP(IPR)
-               INDEX = IMAP_NOD_LG(K,IPR)
-               IF (IMAP_NOD_GL(1,INDEX).EQ.I) THEN
+               INDX = IMAP_NOD_LG(K,IPR)
+               IF (IMAP_NOD_GL(1,INDX).EQ.I) THEN
                   ISEND_TOT(J,I) = ISEND_TOT(J,I) + 1
-                  ISEND(ISEND_TOT(J,I)) = IMAP_NOD_GL(2,INDEX)
+                  ISEND(ISEND_TOT(J,I)) = IMAP_NOD_GL(2,INDX)
 c uncomment next line and comment preceding line for debugging
-c                 ISEND(ISEND_TOT(J,I)) = INDEX
+c                 ISEND(ISEND_TOT(J,I)) = INDX
                ENDIF
             ENDDO
             WRITE(18,3040)  IPR-1, ISEND_TOT(J,I)
@@ -2919,7 +2919,7 @@ C---------------------------------------------------------------------------
       REAL(SZ)  FLUX_VAL
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error
-      INTEGER INDEX ! full domain node number for a flow boundary node
+      INTEGER INDX ! full domain node number for a flow boundary node
       INTEGER J     ! counter for subdomains that corrsp. to a single f.d. node
       INTEGER IPROC2! PE of a subdomain that matches a single full domain node
 
@@ -2945,9 +2945,9 @@ C     boundary between subdomains (ghost nodes).
 C
  33   DO I=1, EXIST_FLUX            ! loop through full domain flow nodes
          READ(20,*,END=40) FLUX_VAL ! get a flo val for this f.d. flow node
-         INDEX = FLUX14_ARY(I)      ! get full domain flow node number 
-         DO J=1, ITOTPROC(INDEX)    ! loop over subdomains for 1 f.d. node
-            IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDEX) ! find next subdomain
+         INDX = FLUX14_ARY(I)      ! get full domain flow node number 
+         DO J=1, ITOTPROC(INDX)    ! loop over subdomains for 1 f.d. node
+            IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDX) ! find next subdomain
             DO IPROC=1, NPROC
                IF (IPROC.EQ.IPROC2) THEN ! full domain node maps to this s.d. 
                   WRITE(SDU(IPROC),50) FLUX_VAL
@@ -3009,7 +3009,7 @@ C---------------------------------------------------------------------------
       IMPLICIT NONE
       integer :: nbytes = 0
       LOGICAL FOUND,DONE
-      INTEGER I,J,IPROC,IPROC2,ILNODE,INDEX,NHG,LINDEX
+      INTEGER I,J,IPROC,IPROC2,ILNODE,INDX,NHG,LINDEX
       CHARACTER*80 PBLJAGF
 C      CHARACTER FNAME*60,LOCFN*14,CMD1*63,CMD2*7,CMD*70,INLINE*80
       CHARACTER FNAME*60,CMD1*63,CMD2*7,CMD*70
@@ -3074,10 +3074,10 @@ C     (3)  Write Local Wind Stress record in same format
      &           (NG(I),WVNXG(I),WVNYG(I),PRG(I),I=1,NNODG)
               DO IPROC = STARTPROC, ENDPROC
                  DO I=1, NNODP(IPROC)
-                    INDEX = IMAP_NOD_LG(I,IPROC)
-                    WVNXL(I) = WVNXG(INDEX)
-                    WVNYL(I) = WVNYG(INDEX)
-                    PRL(I) = PRG(INDEX)
+                    INDX = IMAP_NOD_LG(I,IPROC)
+                    WVNXL(I) = WVNXG(INDX)
+                    WVNYL(I) = WVNYG(INDX)
+                    PRL(I) = PRG(INDX)
                  ENDDO
                  DO I=1, NNODP(IPROC)
                     WRITE(SDU(IPROC),1100)  I,WVNXL(I),WVNYL(I),PRL(I)
@@ -3129,10 +3129,10 @@ C
 C     
             DO IPROC = STARTPROC,ENDPROC
                DO I=1, NNODP(IPROC)
-                  INDEX = IMAP_NOD_LG(I,IPROC)
-                  WVNXL(I) = WVNXG(INDEX)
-                  WVNYL(I) = WVNYG(INDEX)
-                  PRL(I) = PRG(INDEX)
+                  INDX = IMAP_NOD_LG(I,IPROC)
+                  WVNXL(I) = WVNXG(INDX)
+                  WVNYL(I) = WVNYG(INDX)
+                  PRL(I) = PRG(INDX)
                ENDDO
                DO I=1, NNODP(IPROC)
                   WRITE(SDU(IPROC),1100)  I,WVNXL(I),WVNYL(I),PRL(I)
@@ -3352,7 +3352,7 @@ C
       IMPLICIT NONE
       integer :: nbytes = 0
       LOGICAL FOUND
-      INTEGER I,J,IPROC,INDEX,IHOTSTP, not_active
+      INTEGER I,J,IPROC,INDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF, NH, N
       INTEGER IESTP,NSCOUE,IVSTP,NSCOUV,ICSTP,NSCOUC,IPSTP,IWSTP,NSCOUM,
      &        IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW
@@ -4151,52 +4151,52 @@ C
          WRITE(LOC(IPROC),REC=IHOTSTP) NELP(IPROC)    ; IHOTSTP = IHOTSTP + 1
 
          DO I=1, NNODP(IPROC)
-            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),REC=IHOTSTP) ETA1(INDEX)
+            INDX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC(IPROC),REC=IHOTSTP) ETA1(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
-            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),REC=IHOTSTP) ETA2(INDEX)
+            INDX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC(IPROC),REC=IHOTSTP) ETA2(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
-            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),REC=IHOTSTP) EtaDisc(INDEX)
+            INDX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC(IPROC),REC=IHOTSTP) EtaDisc(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
-            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),REC=IHOTSTP) UU2(INDEX)
+            INDX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC(IPROC),REC=IHOTSTP) UU2(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
-            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),REC=IHOTSTP) VV2(INDEX)
+            INDX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC(IPROC),REC=IHOTSTP) VV2(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          IF(IM.EQ.10) THEN
             DO I=1, NNODP(IPROC)
-               INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOC(IPROC),REC=IHOTSTP) CH1(INDEX)
+               INDX = ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOC(IPROC),REC=IHOTSTP) CH1(INDX)
                IHOTSTP=IHOTSTP+1
             END DO
          ENDIF
 
          DO I=1, NNODP(IPROC)
-            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),REC=IHOTSTP) NODECODE(INDEX)
+            INDX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC(IPROC),REC=IHOTSTP) NODECODE(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1,NELP(IPROC)
-            INDEX=ABS(IMAP_EL_LG(I,IPROC))
-            WRITE(LOC(IPROC),REC=IHOTSTP) NOFF(INDEX)
+            INDX=ABS(IMAP_EL_LG(I,IPROC))
+            WRITE(LOC(IPROC),REC=IHOTSTP) NOFF(INDX)
             IHOTSTP=IHOTSTP+1                                    
          END DO
          
@@ -4258,52 +4258,52 @@ C     Start writing out the 3D hotstart information
             IHOTSTP=IHOTSTP+1
 
             DO I=1,NNODP(IPROC)
-               INDEX=IMAP_NOD_LG(I,IPROC)
-               WRITE(LOC(IPROC),REC=IHOTSTP) DUU(INDEX)
+               INDX=IMAP_NOD_LG(I,IPROC)
+               WRITE(LOC(IPROC),REC=IHOTSTP) DUU(INDX)
                IHOTSTP=IHOTSTP+1
-               WRITE(LOC(IPROC),REC=IHOTSTP) DUV(INDEX)
+               WRITE(LOC(IPROC),REC=IHOTSTP) DUV(INDX)
                IHOTSTP=IHOTSTP+1
-               WRITE(LOC(IPROC),REC=IHOTSTP) DVV(INDEX)
+               WRITE(LOC(IPROC),REC=IHOTSTP) DVV(INDX)
                IHOTSTP=IHOTSTP+1
-               WRITE(LOC(IPROC),REC=IHOTSTP) UU(INDEX)
+               WRITE(LOC(IPROC),REC=IHOTSTP) UU(INDX)
                IHOTSTP=IHOTSTP+1
-               WRITE(LOC(IPROC),REC=IHOTSTP) VV(INDEX)
+               WRITE(LOC(IPROC),REC=IHOTSTP) VV(INDX)
                IHOTSTP=IHOTSTP+1
-               WRITE(LOC(IPROC),REC=IHOTSTP) BSX(INDEX)
+               WRITE(LOC(IPROC),REC=IHOTSTP) BSX(INDX)
                IHOTSTP=IHOTSTP+1
-               WRITE(LOC(IPROC),REC=IHOTSTP) BSY(INDEX)
+               WRITE(LOC(IPROC),REC=IHOTSTP) BSY(INDX)
                IHOTSTP=IHOTSTP+1
              ENDDO
 
              DO I=1,NNODP(IPROC)
-               INDEX=IMAP_NOD_LG(I,IPROC)
+               INDX=IMAP_NOD_LG(I,IPROC)
                DO N=1,NFEN
-                 WRITE(LOC(IPROC),REC=IHOTSTP) RealQ(INDEX,N)
+                 WRITE(LOC(IPROC),REC=IHOTSTP) RealQ(INDX,N)
                  IHOTSTP=IHOTSTP+1
-                 WRITE(LOC(IPROC),REC=IHOTSTP) ImagQ(INDEX,N)
+                 WRITE(LOC(IPROC),REC=IHOTSTP) ImagQ(INDX,N)
                  IHOTSTP=IHOTSTP+1
-                 WRITE(LOC(IPROC),REC=IHOTSTP) WZ(INDEX,N)
+                 WRITE(LOC(IPROC),REC=IHOTSTP) WZ(INDX,N)
                  IHOTSTP=IHOTSTP+1
-                 WRITE(LOC(IPROC),REC=IHOTSTP) q20(INDEX,N)
+                 WRITE(LOC(IPROC),REC=IHOTSTP) q20(INDX,N)
                  IHOTSTP=IHOTSTP+1
-                 WRITE(LOC(IPROC),REC=IHOTSTP) q20l(INDEX,N)
+                 WRITE(LOC(IPROC),REC=IHOTSTP) q20l(INDX,N)
                  IF(ABS(IDen).EQ.1) THEN
                    IHOTSTP=IHOTSTP+1
-                   WRITE(LOC(IPROC),REC=IHOTSTP) SigT(INDEX,N)
+                   WRITE(LOC(IPROC),REC=IHOTSTP) SigT(INDX,N)
                  ENDIF
                  IF(ABS(IDen).EQ.2) THEN
                    IHOTSTP=IHOTSTP+1
-                   WRITE(LOC(IPROC),REC=IHOTSTP) Sal(INDEX,N)
+                   WRITE(LOC(IPROC),REC=IHOTSTP) Sal(INDX,N)
                  ENDIF
                  IF(ABS(IDen).EQ.3) THEN
                    IHOTSTP=IHOTSTP+1
-                   WRITE(LOC(IPROC),REC=IHOTSTP) Temp(INDEX,N)
+                   WRITE(LOC(IPROC),REC=IHOTSTP) Temp(INDX,N)
                  ENDIF
                  IF(ABS(IDen).EQ.4) THEN
                    IHOTSTP=IHOTSTP+1
-                   WRITE(LOC(IPROC),REC=IHOTSTP) Sal(INDEX,N)
+                   WRITE(LOC(IPROC),REC=IHOTSTP) Sal(INDX,N)
                    IHOTSTP=IHOTSTP+1
-                   WRITE(LOC(IPROC),REC=IHOTSTP) Temp(INDEX,N)
+                   WRITE(LOC(IPROC),REC=IHOTSTP) Temp(INDX,N)
                    IHOTSTP=IHOTSTP+1
                  ENDIF
                ENDDO
@@ -4332,19 +4332,19 @@ c           IHOTSTP=IHOTSTP+1
 c           WRITE(LOC(IPROC),REC=IHOTSTP) NTSTEPS
 c           IF(NHAGE.EQ.1) THEN
 c             DO I=1, NNODP(IPROC)
-c               INDEX = IMAP_NOD_LG(I,IPROC)
+c               INDX = IMAP_NOD_LG(I,IPROC)
 c               DO I=1,MNP
-c                 WRITE(LOC(IPROC),REC=IHOTSTP+1) ELAV(INDEX)
-c                 WRITE(LOC(IPROC),REC=IHOTSTP+2) ELVA(INDEX)
+c                 WRITE(LOC(IPROC),REC=IHOTSTP+1) ELAV(INDX)
+c                 WRITE(LOC(IPROC),REC=IHOTSTP+2) ELVA(INDX)
 c                 IHOTSTP=IHOTSTP+2
 c                 END DO
 c             ENDIF
 c           IF(NHAGV.EQ.1) THEN
 c             DO I=1,NNODP(IPROC)
-c               WRITE(LOC(IPROC),REC=IHOTSTP+1) XVELAV(INDEX)
-c               WRITE(LOC(IPROC),REC=IHOTSTP+2) YVELAV(INDEX)
-c               WRITE(LOC(IPROC),REC=IHOTSTP+3) XVELVA(INDEX)
-c               WRITE(LOC(IPROC),REC=IHOTSTP+4) YVELVA(INDEX)
+c               WRITE(LOC(IPROC),REC=IHOTSTP+1) XVELAV(INDX)
+c               WRITE(LOC(IPROC),REC=IHOTSTP+2) YVELAV(INDX)
+c               WRITE(LOC(IPROC),REC=IHOTSTP+3) XVELVA(INDX)
+c               WRITE(LOC(IPROC),REC=IHOTSTP+4) YVELVA(INDX)
 c               IHOTSTP=IHOTSTP+4
 c               END DO
 c             ENDIF
@@ -4438,7 +4438,7 @@ C
       IMPLICIT NONE
       integer :: nbytes = 0
       LOGICAL FOUND
-      INTEGER I,J,IPROC,INDEX,IHOTSTP, not_active
+      INTEGER I,J,IPROC,INDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF,IVALUE,IDUMY, NH, N
       INTEGER IESTP,NSCOUE,IVSTP,NSCOUV,ICSTP,NSCOUC,IPSTP,IWSTP,NSCOUM,
      &        IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW
@@ -4561,61 +4561,61 @@ C
          READ(LOC(IPROC),REC=IHOTSTP) IDUMY          ; IHOTSTP = IHOTSTP + 1
 
          DO I=1, NNODP(IPROC)
-            INDEX = IMAP_NOD_LG(I,IPROC)
+            INDX = IMAP_NOD_LG(I,IPROC)
             READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
             IHOTSTP=IHOTSTP+1
-            IF (INDEX > 0) ETA1(INDEX) = RVALUE
+            IF (INDX > 0) ETA1(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
-            INDEX = IMAP_NOD_LG(I,IPROC)
+            INDX = IMAP_NOD_LG(I,IPROC)
             READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
             IHOTSTP=IHOTSTP+1
-            IF (INDEX > 0) ETA2(INDEX) = RVALUE
+            IF (INDX > 0) ETA2(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
-            INDEX = IMAP_NOD_LG(I,IPROC)
+            INDX = IMAP_NOD_LG(I,IPROC)
             READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
             IHOTSTP=IHOTSTP+1
-            IF (INDEX > 0) EtaDisc(INDEX) = RVALUE
+            IF (INDX > 0) EtaDisc(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
-            INDEX = IMAP_NOD_LG(I,IPROC)
+            INDX = IMAP_NOD_LG(I,IPROC)
             READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
             IHOTSTP=IHOTSTP+1
-            IF (INDEX > 0) UU2(INDEX) = RVALUE
+            IF (INDX > 0) UU2(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
-            INDEX = IMAP_NOD_LG(I,IPROC)
+            INDX = IMAP_NOD_LG(I,IPROC)
             READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
             IHOTSTP=IHOTSTP+1
-            IF (INDEX > 0) VV2(INDEX) = RVALUE
+            IF (INDX > 0) VV2(INDX) = RVALUE
          END DO
 
          IF(IM.EQ.10) THEN
             DO I=1, NNODP(IPROC)
-               INDEX = IMAP_NOD_LG(I,IPROC)
+               INDX = IMAP_NOD_LG(I,IPROC)
                READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
                IHOTSTP=IHOTSTP+1
-               IF (INDEX > 0) CH1(INDEX) = RVALUE
+               IF (INDX > 0) CH1(INDX) = RVALUE
             END DO
          ENDIF
 
          DO I=1, NNODP(IPROC)
-            INDEX = IMAP_NOD_LG(I,IPROC)
+            INDX = IMAP_NOD_LG(I,IPROC)
             READ(LOC(IPROC),REC=IHOTSTP) IVALUE           
             IHOTSTP=IHOTSTP+1
-            IF (INDEX > 0) NODECODE(INDEX) = IVALUE
+            IF (INDX > 0) NODECODE(INDX) = IVALUE
          END DO
 
          DO I=1,NELP(IPROC)
-            INDEX = IMAP_EL_LG(I,IPROC)
+            INDX = IMAP_EL_LG(I,IPROC)
             READ(LOC(IPROC),REC=IHOTSTP) IVALUE           
             IHOTSTP=IHOTSTP+1
-            IF (INDEX > 0) NOFF(INDEX) = IVALUE
+            IF (INDX > 0) NOFF(INDX) = IVALUE
          END DO
          
          READ(LOC(IPROC),REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
@@ -4670,19 +4670,19 @@ c           IHOTSTP=IHOTSTP+1
 c           READ(LOC(IPROC),REC=IHOTSTP) NTSTEPS
 c           IF(NHAGE.EQ.1) THEN
 c             DO I=1, NNODP(IPROC)
-c               INDEX = IMAP_NOD_LG(I,IPROC)
+c               INDX = IMAP_NOD_LG(I,IPROC)
 c               DO I=1,MNP
-c                 READ(LOC(IPROC),REC=IHOTSTP+1) ELAV(INDEX)
-c                 READ(LOC(IPROC),REC=IHOTSTP+2) ELVA(INDEX)
+c                 READ(LOC(IPROC),REC=IHOTSTP+1) ELAV(INDX)
+c                 READ(LOC(IPROC),REC=IHOTSTP+2) ELVA(INDX)
 c                 IHOTSTP=IHOTSTP+2
 c                 END DO
 c             ENDIF
 c           IF(NHAGV.EQ.1) THEN
 c             DO I=1,NNODP(IPROC)
-c               READ(LOC(IPROC),REC=IHOTSTP+1) XVELAV(INDEX)
-c               READ(LOC(IPROC),REC=IHOTSTP+2) YVELAV(INDEX)
-c               READ(LOC(IPROC),REC=IHOTSTP+3) XVELVA(INDEX)
-c               READ(LOC(IPROC),REC=IHOTSTP+4) YVELVA(INDEX)
+c               READ(LOC(IPROC),REC=IHOTSTP+1) XVELAV(INDX)
+c               READ(LOC(IPROC),REC=IHOTSTP+2) YVELAV(INDX)
+c               READ(LOC(IPROC),REC=IHOTSTP+3) XVELVA(INDX)
+c               READ(LOC(IPROC),REC=IHOTSTP+4) YVELVA(INDX)
 c               IHOTSTP=IHOTSTP+4
 c               END DO
 c             ENDIF
@@ -5570,7 +5570,7 @@ C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
-      INTEGER I,J,IPROC,IPROC2,ILNODE,INDEX,NHG,LINDEX
+      INTEGER I,J,IPROC,IPROC2,ILNODE,INDX,NHG,LINDEX
       CHARACTER*170 Line ! line of data from UnSWAN file
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error

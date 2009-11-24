@@ -291,7 +291,7 @@ C---------------------------------------------------------------------
 C
       integer :: nbytes = 0
       REAL(SZ) RSTIMINC
-      INTEGER N1, N2, N3, KMIN, JG, INDEX
+      INTEGER N1, N2, N3, KMIN, JG, INDX
       INTEGER I,J,K,L
       INTEGER IG1,IG2,IG3,IL1,IL2,IL3
       REAL(8) X1, X2, X3, X4, Y1, Y2, Y3, Y4, A1, A2, A3
@@ -722,8 +722,8 @@ C
             JG = 1
             DO K = 1,NBOU
                DO I=1, NVELL(K)
-                  INDEX = NBVV(K,I)
-                  NBV(JG) = INDEX
+                  INDX = NBVV(K,I)
+                  NBV(JG) = INDX
                   JG = JG + 1
                ENDDO
             ENDDO
@@ -1999,18 +1999,18 @@ C        res = res * -1 !jgf48.10 g95 did not like this for some reason
         END IF
         END FUNCTION a2d
 
-        SUBROUTINE i2a(int, res)
+        SUBROUTINE i2a(IN2T, res)
 
         IMPLICIT NONE
 !// Arguments
-        INTEGER, INTENT(IN)            :: int
+        INTEGER, INTENT(IN)            :: IN2T
         CHARACTER(LEN=*), INTENT(OUT)  :: res
 !// Local variables
         INTEGER                        :: i,j,k
         CHARACTER(LEN=80)              :: sbuf
         sbuf = ' '
         res = ' '
-        i = int
+        i = IN2T
         k = 1
         DO
         j = MOD(i,10)
