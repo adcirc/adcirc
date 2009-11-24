@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v49.04     - 11/24/09 - tcm - Fixed a bug with type NWS=3 and NWS=6 winds
+C                in prep.F by removing them from the adcprep process and 
+C                instead of accessing local copies of the global wind file,
+C                ADCIRC/PADCIRC now access the global wind file directly which
+C                must now be in the global input directory.
 C  V49.03     - 11/10/09 - tcm - Adding a couplers directory where coupler
 C                routines and modules can be added to allow for coupling
 C                ADCIRC to other models.  Populated with an empty directory

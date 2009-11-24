@@ -949,7 +949,10 @@ C     space onto the ADCIRC grid and in time to synchronize the wind and
 C     pressure information with the model time step. Garratt's formula
 C     is used to compute wind stress from the wind velocity.
       IF(NWS.EQ.3) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
+C....                           to correspond with having only a global wind file.
+!         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
  2223    CALL NWS3GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,IWTIME,IWYR,WTIMED,NP,
      &        NWLON,NWLAT,WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,
      &        NScreen,ScreenUnit)
@@ -1160,7 +1163,10 @@ C     synchronize the wind and pressure information with the model time
 C     step. Garratt's formula is used to compute wind stress from the
 C     wind velocity.
       IF(NWS.EQ.6) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
+C....                           to correspond with having only a global wind file.
+!         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
 C     The following 3 lines are a hardwire to allow a non standard met
 C     file to be read in at time zero in a hot start.  They should be
 C     eliminated or commented out for normal operation

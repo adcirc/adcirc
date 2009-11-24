@@ -2981,8 +2981,8 @@ C                S U B R O U T I N E   P R E P 2 2
 C---------------------------------------------------------------------------
 C
 C                     (  Serial Version  2/28/98  )                         C 
-C  This routine reads a global external meteorology file when NWS=1,+-2,3,  C
-C  +-4,+-5,+-6.  In each case it wites a local meteorology file of the same C
+C  This routine reads a global external meteorology file when NWS=1,+-2,    C
+C  +-4,+-5.  In each case it wites a local meteorology file of the same     C
 C  format for each subdomain using the domain decomposition of the ADCIRC   C
 C  grid created by the routine DECOMP.                                      C
 C                                                                           C
@@ -2997,6 +2997,9 @@ C     code.
 C
 C     jgf46.02 Added NWS=8 to copy the wind files for the Holland model 
 C     into the subdomains.
+C
+C     tcm_v49.04 Removed NWS=3 and NWS=6 to correspond with the use of a
+C      global file rather than local.
 C
 C---------------------------------------------------------------------------
       SUBROUTINE PREP22()
@@ -3141,14 +3144,17 @@ C
          ENDDO
 C     
 C        ---------     
-         CASE(3,6,8,9)
+         CASE(8,9)
 C        ---------
 C     jgf46.16 Added NWS=9, asymmetric hurricane wind model
 C
-C     jgf48.35 Moved NWS=3 and NWS=6 into this case, since it seems to 
-C     work better than calling the shell to copy the files. Although
-C     this approach seems to leave a lot of trailing spaces on each
-C     fort.22 line, at least on the IBM platform.
+C     tcm_49.04 20091124 Removed NWS=3 and NWS=6 because some fort.22
+C       files had line lenghts longer than 170 characters which caused
+C       the decomposed (copied) fort.22 files to be corrupt.  Instead
+C       of using decomposed (copied) fort.22 files for each PE, we
+C       now use a global fort.22 file for NWS = 3 and NWS = 6.  In the
+C       past for those NWS types, the fort.22 files were just copied
+C       into each PE.
 C
 C     Holland Wind Model (8) or asymetric hurricane wind model (9)
 C

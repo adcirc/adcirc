@@ -204,7 +204,11 @@ C        momentum equations
       ENDIF
 
       IF(NWS.EQ.3) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
+C....                           to correspond with having only a global wind file.
+!         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+
  2222    CALL NWS3GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,IWTIME,IWYR,WTIMED,NP,
      &        NWLON,NWLAT,WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,
      &        NScreen, ScreenUnit)
@@ -251,7 +255,10 @@ C        momentum equations
       ENDIF
 
       IF(NWS.EQ.6) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+C....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
+C....                           to correspond with having only a global wind file.
+!         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
          CALL NWS6GET(X,Y,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,NWLON,NWLAT,
      &        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
          CALL NWS6GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
