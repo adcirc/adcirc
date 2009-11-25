@@ -1829,22 +1829,16 @@ C
 C     Calculate wind velocity and pressure at each node.
       DO I=1,NP
 
-C         DX(I)=XCOOR(I)-lon
-C         DY(I)=YCOOR(I)-lat
-
-        DX(I)=(XCOOR(I)-lon)*DEG2RAD
-        DY(I)=(YCOOR(I)-lat)*DEG2RAD
-
-         THETA(I)=ATAN2(DY(I),DX(I))
+          DX(I)=(XCOOR(I)-lon)*DEG2RAD
+          DY(I)=(YCOOR(I)-lat)*DEG2RAD
+       THETA(I)=ATAN2(DY(I),DX(I))
 C   RJW v48.45
 C     compute the distances based on haversine formula for distance along a sphere
          Rad(i)=re*(2.0d0*ASIN(sqrt(sin(DY(I)/2.0d0)**2.0d0+
      & cos(lat*DEG2RAD)*cos(YCOOR(i)*DEG2RAD)*sin(DX(I)/2.0d0)**2.0d0)))
-C calculate the coriolis at YCOOR
+C compute coriolis
          coriolis = 2.0d0 * omega * sin(YCOOR(I)*DEG2RAD)
 
-C        RAD(I)=SQRT(DX(I)*DX(I)+DY(I)*DY(I))*100.d0*1000.d0 ! into meters!!
-C
 C         PRESS(I)=(cpress+(Ambient_Pressure-cpress)*EXP(-A/RAD(I)**B))
 C    &        / (RHOWAT0*G) ! jgf46.32jgf4 commented out
          PRESS(I)=(cpress+(centralPressureDeficit)*
@@ -2146,11 +2140,6 @@ c
      &              /(CastTime(i)-CastTime(i-1))
      & ,(Lat(i)-Lat(i-1))  )  ! get correct sign
 
-
-C            TVX(i)=(Lon(i)-Lon(i-1))*100.d0*1000.d0
-C     &              /(CastTime(i)-CastTime(i-1))
-C            TVY(i)=(Lat(i)-Lat(i-1))*100.d0*1000.d0
-C     &              /(CastTime(i)-CastTime(i-1))
          ENDDO
          TVX(1)=TVX(2)
          TVY(1)=TVY(2)

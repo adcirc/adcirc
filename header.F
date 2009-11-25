@@ -2,10 +2,25 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v49.06     - 11/25/09 - rjw - merged 3D_rjw branch into trunk 
+C             - 10/30/09 - rjw - modifed turbulent lenght scale for newly wet
+C               nodes and fixed bug in post processing fort.43 files and 
+C               commented out call to massbal3D  
+C             - 10/06/09 - rjw - Created a branch for 3D changes and merged 
+C               previous changes back into this branch to be debugged and 
+C               then remerged into the trunk
+C               r285 | rweaver | 2009-09-01 12:31:04 -0400 (Tue, 01 Sep 2009) 
+C               modified vsmy.F and fixed bug in vsmy.F
+C               r208 | rweaver | 2009-06-18 16:53:47 -0400 (Thu, 18 Jun 2009) 
+C               fix bug in Holland wind NWS=8 computation of translational velocity
+C               r178 | rweaver | 2009-04-15 11:09:31 -0400 (Wed, 15 Apr 2009) 
+C               fixed format statements in post.f
+C               r136 | rweaver | 2009-03-06 10:47:47 -0500 (Fri, 06 Mar 2009) 
+C               Commit changes in src and prep to 3D turbulent calculations 
 C  v49.05     - 11/24/09 - tcm - Renamed reserved words (count became kount,
 C                  index became indx, int became in2t and sum became summ).
 C                  Index in particular was being used as a user defined integer
-C                  and the intrinsic function in the same routine.  
+C                  and the intrinsic function in the same routine. 
 C  v49.04     - 11/24/09 - tcm - Fixed a bug with type NWS=3 and NWS=6 winds
 C                in prep.F by removing them from the adcprep process and 
 C                instead of accessing local copies of the global wind file,

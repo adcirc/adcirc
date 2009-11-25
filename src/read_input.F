@@ -5172,14 +5172,14 @@ C...  READ IN THE TYPE OF BOTTOM BOUNDARY CONDITION AND THE SLIP COEFFICIENTS
       READ(15,*) ISlip,KP
       WRITE(16,355) ISlip,KP
  355  FORMAT(/,5X,'ISlip = ',I3,' KP = ',E10.5)
-      IF((ISlip.LT.0).OR.(ISlip.GT.2)) THEN
+      IF((ISlip.LT.0).OR.(ISlip.GT.3)) THEN
         IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
           WRITE(ScreenUnit,350)
           WRITE(ScreenUnit,360)
         ENDIF
         WRITE(16,350)
         WRITE(16,360)
- 360    FORMAT(/,2X,'    The Bottom Slip Code Must = 0,1,OR 2')
+ 360    FORMAT(/,2X,'    The Bottom Slip Code Must = 0,1,2,OR 3')
 #ifdef CMPI
         call msg_fini()
 #endif
@@ -5308,6 +5308,7 @@ C...  SPECIFY TYPE OF EDDY VISCOSITY PROFILE
       IF((IEVC.NE.0 ).and.(IEVC.NE.1 ).and.
      &   (IEVC.NE.10).and.(IEVC.NE.11).and.
      &   (IEVC.NE.20).and.(IEVC.NE.21).and.
+     &   (IEVC.NE.22).and.(IEVC.NE.23).and.
      &   (IEVC.NE.30).and.(IEVC.NE.31).and.(IEVC.NE.32).and.
      &   (IEVC.NE.33).and.
      &   (IEVC.NE.40).and.(IEVC.NE.41).and.(IEVC.NE.42).and.
@@ -5319,8 +5320,8 @@ C...  SPECIFY TYPE OF EDDY VISCOSITY PROFILE
         ENDIF
         WRITE(16,350)
         WRITE(16,411)
- 411    FORMAT(/,2X,'    IEVC MUST BE 0,1,10,11,20,21,30,31,32,33,40,',
-     &        '41,42,43,50')
+ 411    FORMAT(/,2X,'    IEVC MUST BE 0,1,10,11,20,21,22,23,',
+     &        '30,31,32,33,40,41,42,43,50')
         STOP
       ENDIF
       IF(IEVC.EQ.50) READ(15,*) Theta1,Theta2

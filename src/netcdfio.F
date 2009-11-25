@@ -44,9 +44,9 @@
 !     -------------------
 !     netCDF header file
 !     -------------------
-!     include '/ifs1/home/cforbes/usr/local/netcdf/include/netcdf.inc'  ! Topsail
+     include '/ifs1/home/cforbes/usr/local/netcdf/include/netcdf.inc'  ! Topsail
 !     include '/usr/local/netcdf/include/netcdf.inc'                    ! Mac
-      include 'netcdf.inc'                                              ! Jason
+!      include 'netcdf.inc'                                              ! Jason
 !     -------------
 !     Dimension ids
 !     -------------

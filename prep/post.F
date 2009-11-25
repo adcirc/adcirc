@@ -3484,11 +3484,11 @@ C        because stations that land in ghost elements will appear in
 C        multiple subdomains, and we have to go through and map them 
 C        all into the full domain, allowing duplicates to overwrite 
 C        each other (with identical values) in the full domain array.
-         WRITE(42,1100) TIMEOUT,IT,
+         WRITE(43,1100) TIMEOUT,IT,
      &      (SIGMA(N),SIGMA(N),SIGMA(N),N=1,NFEN-1),
      &      SIGMA(NFEN),SIGMA(NFEN)
          DO I=1,NSTA3DT
-            WRITE(42,1104) I,((FDVar(I,M,L),M=1,NVar),L=1,NFEN)
+            WRITE(43,1104) I,((FDVar(I,M,L),M=1,NVar),L=1,NFEN)
          ENDDO
 C     
       ENDDO

@@ -1,4 +1,4 @@
-c******************************************************************************
+
 c PADCIRC VERSION 45.12 03/17/2006                                            *
 C  last changes in this file VERSION 45.12                                    *
 C                                                                             *
@@ -32,10 +32,10 @@ C...
             DO N=1,NFEN-1
                DASigT(NH)=DASigT(NH)+(Sigma(N+1)-Sigma(N))
      &                                   *(SigT(NH,N+1)+SigT(NH,N))/2.d0
-               ENDDO
+             ENDDO
             DASigT(NH)=DASigT(NH)/AMB
-            ENDIF
-         ENDDO
+          ENDIF
+       ENDDO
 
 C...  
 C...  ADDITIONAL RUN SETUP
@@ -227,22 +227,22 @@ C     SigT = Sigma T = Rho - 1000 = density - 1000
 C     SigT0 = Sigma t value of reference density (typically = 0)
 C     Sigma = dimensionless vertical coordinate
 C     
-!      IF(CBaroclinic) THEN
-!        DO NH=1,NP             !loop over horizontal nodes
-!            Hs=DP(NH)+IFNLFA*Eta1(NH) !total depth at previous (s) timestep
-!            HGORhoOAMB=GORhoOAMB*Hs !(gravity/rho ref)*(H/(a-b))
-!            BCP(NH,NFEN)=0.d0
-!            DO k=NFEN-1,1,-1    !loop over vertical nodes, starting at top and working down
-!               SigTAvg=(SigT(NH,k+1)+SigT(NH,k))/2.d0
-!               DelSig=Sigma(k+1)-Sigma(k)
-!               BCP(NH,k)=BCP(NH,k+1)+HGORhoOAMB*(SigTAvg-SigT0)*DelSig
-!            ENDDO
-!         ENDDO
+C!      IF(CBaroclinic) THEN
+C!        DO NH=1,NP             !loop over horizontal nodes
+C!            Hs=DP(NH)+IFNLFA*Eta1(NH) !total depth at previous (s) timestep
+C!            HGORhoOAMB=GORhoOAMB*Hs !(gravity/rho ref)*(H/(a-b))
+C!            BCP(NH,NFEN)=0.d0
+C!            DO k=NFEN-1,1,-1    !loop over vertical nodes, starting at top and working down
+C!               SigTAvg=(SigT(NH,k+1)+SigT(NH,k))/2.d0
+C!               DelSig=Sigma(k+1)-Sigma(k)
+C!               BCP(NH,k)=BCP(NH,k+1)+HGORhoOAMB*(SigTAvg-SigT0)*DelSig
+C!            ENDDO
+C!         ENDDO
 #ifdef CMPI
 C     Update BCP on ghost nodes
 C      CALL UPDATER3D(BCP)  !!!!Don't know if this is needed at this time
 #endif
-!      ENDIF
+C!      ENDIF
 
 
 C*************************************************************************************
@@ -320,14 +320,17 @@ c     to the solution
                   Mkp1(k)=(0.D0,0.D0)
                   Fr(k)=VelTan+I*VelNorm
 C                  EVTot(k)=0.D0 !f77diff??
-               END DO
+               ENDDO
                GOTO 999
             ENDIF
          ENDIF
 
 c     Compute the vertical eddy viscosity
-
-         CALL EDDYVIS(Hs,UU(NH),VV(NH),
+C... RJW changed Hs to Hsp1 
+C Hs is the previous time step (if node is recently wet then this is no good
+C Hsp1 is current time step, if node is newly wet then we now have agreement 
+C and Hsp1 has a value that can be used
+         CALL EDDYVIS(Hsp1,UU(NH),VV(NH),
      &        WSXsNH,WSYsNH,BSX(NH),BSY(NH),
      &        IStart3D,NH,IT)
 
@@ -393,9 +396,12 @@ c     surrounding a node
             BTPN2=BTP(N2)
             NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
 c.RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
+c.RJW 06092009  modified to elimiate zero index NOFF
+            IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
             NCELE = NODECODE(NH)*NODECODE(N2)*
      &              NODECODE(N3)*NOFF(NELE)
-            IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+            IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+
                TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
                a1=X(N3)-X(N2)
                a2=X(N1)-X(N3)
@@ -410,7 +416,8 @@ c.RJW merged 08282008 Casey 071219: Added the computation of NCELE and the secon
                BTPDX2A=BTPDX2A+(BTPN1*b1+BTPN2*b2+BTPN3*b3)
                BTPDY2A=BTPDY2A+(BTPN1*a1+BTPN2*a2+BTPN3*a3)
             ENDIF
-         END DO
+            ENDIF
+         ENDDO
 
          N3=N2                  !wrap back to beginning to get final contribution
          hN3=hN2
@@ -422,9 +429,12 @@ c.RJW merged 08282008 Casey 071219: Added the computation of NCELE and the secon
          BTPN2=BTPNFirst
          NEle=NeiTabEle(NH,NNeigh(NH)-1)
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
-         NCELE = NODECODE(NH)*NODECODE(N2)*
-     &           NODECODE(N3)*NOFF(NELE)
-         IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+c.RJW 06092009  modified to elimiate zero index NOFF
+            IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
+            NCELE = NODECODE(NH)*NODECODE(N2)*
+     &              NODECODE(N3)*NOFF(NELE)
+            IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+
             TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
             a1=X(N3)-X(N2)
             a2=X(N1)-X(N3)
@@ -438,6 +448,7 @@ c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the seco
             DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
             BTPDX2A=BTPDX2A+(BTPN1*b1+BTPN2*b2+BTPN3*b3)
             BTPDY2A=BTPDY2A+(BTPN1*a1+BTPN2*a2+BTPN3*a3)
+         ENDIF
          ENDIF
 
          IF(TotalArea2.NE.0.) THEN
@@ -520,9 +531,12 @@ c     Compute lateral advection and lateral stress terms
                qN2=q(N2,k)
                NEle=NeiTabEle(NH,N-2) !element # defined by nodes N1,N2,N3
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
-               NCELE = NODECODE(NH)*NODECODE(N2)*
-     &                 NODECODE(N3)*NOFF(NELE)
-               IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN !if element exists, compute terms
+c.RJW 06092009  modified to elimiate zero index NOFF
+            IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
+            NCELE = NODECODE(NH)*NODECODE(N2)*
+     &              NODECODE(N3)*NOFF(NELE)
+            IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+
                   qn=(qN1+qN2+qN3)/3.d0
                   Un=REAL(qn)
                   Vn=AIMAG(qn)
@@ -539,7 +553,8 @@ c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the seco
                   DqDYDPhiDY2A=DqDYDPhiDY2A
      &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
                ENDIF
-            END DO
+               ENDIF
+            ENDDO
 
             N3=N2               !wrap back to beginning to get final contribution
             qN3=qN2
@@ -547,9 +562,13 @@ c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the seco
             qN2=qNFirst
             NEle=NeiTabEle(NH,NNeigh(NH)-1)
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
+c.RJW 06092009  modified to elimiate zero index NOFF
+        IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
             NCELE = NODECODE(NH)*NODECODE(N2)*
      &              NODECODE(N3)*NOFF(NELE)
-            IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN !if element exists, compute terms
+            IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+
+C            IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN !if element exists, compute terms
                qn=(qN1+qN2+qN3)/3.d0
                Un=real(qn)
                Vn=aimag(qn)
@@ -565,6 +584,7 @@ c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the seco
      &              +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
                DqDYDPhiDY2A=DqDYDPhiDY2A
      &              +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
+            ENDIF
             ENDIF
 
             IF(TotalArea2.EQ.0.) THEN
@@ -582,48 +602,52 @@ c     Finished computing advection and stress terms in the momentum
 c     equation at each level in the vertical
 
 c     Compute the equivalent linear slip coefficient
-
+C RJW 02252009 changed KP for ISlip =2 
+C     For ISlip = 1, KP is the equivalent linear slip coefficient
+C     For ISlip = 2, KP is the minimum equivalent linear slip coefficient
+     
          IF(ISlip.EQ.1) KSlip=KP
          IF(ISlip.EQ.2) THEN
 
 c.RJW merged 08282008 Casey 071219: Let's get funky.  
 c.RJW enable this modification
-C changed zo bottom roughness length from 0.1 to 0.01 and blewup
-c. 0.05 however worked dramatically changing the results
 C    Comment out the following:
 C           KSlip=KP*ABS(q(NH,1))
-C     and add the following attemp to base the drag coefficient on the actual
+C     and add the following to base the drag coefficient on the actual
 C     physics of the boundary layer.
 C
+C.RJW.02042009.. for log layer lets use the bottom roughness Z0B as set in the fort.15 file
+C to do this we nedd to define a minimmum depth for this calculation
+C ---
+
             IF(
-     &          ABS( ((SIGMA(2)-B)/(A-B))
-     &                *(DP(NH)+IFNLFA*ETA2(NH)) )
-     &          .LE. 0.1D0 )THEN
-
-                KSlip = 1.D+4
-
-            ELSEIF(
-     &          ABS( ((SIGMA(2)-B)/(A-B))
+     &          ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
      &                *(DP(NH)+IFNLFA*ETA2(NH)) )
      &          .LT. 1.D0 )THEN
 
                 KSlip = (1.D0 / ( (1.D0/0.41D0) *
-     &                  LOG( ABS( ((SIGMA(2)-B)/(A-B))
-     &                     *(DP(NH)+IFNLFA*ETA2(NH)) )
-     &                  / (0.1D0) ) ) )**2.D0
-     &                * ABS(Q(NH,1))
+     &                  LOG( ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
+     &                     *( DP(NH)+IFNLFA*ETA2(NH) ) + Z0B )
+     &                  / (Z0B) ) ) )**2.D0
+     &                * ABS(Q(NH,2))
 
             ELSE
 
                 KSlip = (1.D0 / ( (1.D0/0.41D0) *
-     &                  LOG( 1.D0
-     &                  / (0.1D0) ) ) )**2.D0
+     &                  LOG( (1.D0+Z0B)
+     &                  / (Z0B) ) ) )**2.D0
      &                * ABS(Q(NH,1))
 
             ENDIF
 
-             IF(KSlip.GT.1.D-1) KSlip=1.D-1
-             IF(KSlip.LT.1.E-8) KSlip=1.E-8
+             IF(KSlip.GT.0.1d0) KSlip=0.1d0
+             IF(KSlip.LT.KP) KSlip=KP
+         ENDIF
+         IF(ISlip.EQ.3) THEN
+             KSlip=KP*ABS(Q(NH,1))
+
+            IF(KSlip.GT.0.1d0) KSlip=0.1d0
+            IF(KSlip.LT.1.E-4) KSlip=1.E-4
          ENDIF
 
 c     Set up the RHS forcing vector Fr and LHS matrix in compact storage
@@ -662,8 +686,10 @@ c     (Mkm1,Mk,Mkp1)
             Mkm1(k) = CCL*Inm(k,1) + RCL*KVnm(k,1)
             Mk(k)   = CCL*Inm(k,2) + RCL*KVnm(k,2)
             Mkp1(k) = CCL*Inm(k,3) + RCL*KVnm(k,3)
-         END DO
-
+         ENDDO
+C RJW 09/01/2009 RJW k no longer defined
+C            try to fix this by setting k=NFEN
+         k=NFEN
          Fr(NFEN) = (CCR*q(NH,k-1)
      &        -DelT*(LAdvec(k-1)+LStress(k-1)+BPG(NH,k-1)))*Inm(k,1)
      &        + (CCR*q(NH,k)
@@ -726,7 +752,7 @@ c     this b.c. requires on manipulation of momentum eqns.  Do nothing!
      &                 +  (Auv2km1+Auv2k+Auv2kp1)*VelNorm 
      &                 +I*(Auv1km1+Auv1k+Auv1kp1)*VelNorm
                   Fr(k)      =Frstar
-               END DO
+               ENDDO
                Auv1km1    =Real(Mkm1(NFEN))
                Auv2km1    =AImag(Mkm1(NFEN))
                Auv1km1star=Auv1km1*SLBP
@@ -759,9 +785,9 @@ C     Save the horizontal velocity and Eddy Viscosity solutions
          DO k=1,NFEN
             qkp1(NH,k) = Gamma(k)
             EV(NH,k)=EVTot(k)
-         END DO
+         ENDDO
 
-      END DO
+      ENDDO
 
 c     Finished computing horizontal velocities
 
@@ -1060,7 +1086,7 @@ C     new sigma-t values. We will update velocities later.
 C     Compute Depth averaged SigmaT
                
         DO NH=1,NP
-	  DASigT(NH)=0.d0
+         DASigT(NH)=0.d0
           DO k=1,NFEN-1
             DASigT(NH)=DASigT(NH)+(Sigma(k+1)-Sigma(k))
      &                                   *(SigT(NH,k+1)+SigT(NH,k))/2.d0
@@ -1361,6 +1387,7 @@ C     jgf46.00 explicitly declared the following variables
       REAL(SZ) BREAK
       REAL(SZ) EVBEGIN
       REAL(SZ) USTARB
+      REAL(SZ) USTARS
       REAL(SZ) UAVMAG
       REAL(SZ) UAVMAGS
 
@@ -1446,6 +1473,33 @@ C...
             ELSE
                EVTOT(J)=EVBASE
             ENDIF
+         ENDDO
+         GOTO 100
+      ENDIF
+      IF(IEVC.EQ.22) THEN
+         USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
+         USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
+         EVTOT(1)=RKAPPA*0.5*(USTARB+USTARS)*Z0B
+         EVBASE=RKAPPA*0.5*(USTARB+USTARS)*H*0.2D0
+         IF(EVBASE.LT.EVTOT(1)) EVBASE=EVTOT(1)
+         SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
+         BREAK=b+0.2D0*amb
+         EVBEGIN=EVTOT(1)-SLOPE*b
+         DO J=2,NFEN
+            IF(SIGMA(J).LE.BREAK) THEN
+               EVTOT(J)=EVBEGIN+SLOPE*SIGMA(J)
+            ELSE
+               EVTOT(J)=EVBASE
+            ENDIF
+         ENDDO
+         GOTO 100
+      ENDIF
+      IF(IEVC.EQ.23) THEN
+          USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
+          USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
+          EVTOT(1)=0.1*0.5*(USTARB+USTARS)*H
+         DO J=2,NFEN
+           EVTOT(J)=0.1*0.5*(USTARB+USTARS)*H
          ENDDO
          GOTO 100
       ENDIF
@@ -1923,7 +1977,7 @@ c
 c argument list:
 c
 c nh          : horizontal node counter
-c H           : total depth (includes finite amplitude)
+c H           : total depth at current time step (includes finite amplitude)
 c it          : current time step value
 c delt        : simulation incremental time step (uses same step as
 c               internal and external modes)
@@ -2052,16 +2106,16 @@ c     model for geophysical fluid problems, Reviews of Geophysics and
 c     Space Physics, 20, 851-875, 1982.
 c
 c************************************************************************
-      subroutine turb(nh,H,bsx,bsy,wsx,wsy,istart)
+      subroutine turb(nh,H,bsx_loc,bsy_loc,wsx,wsy,istart)
       USE SIZES
       USE GLOBAL, ONLY : ScreenUnit
       USE GLOBAL_3DVS, EXCEPT_BSX => BSX ,EXCEPT_BSY => BSY
       IMPLICIT NONE
       
       COMPLEX(SZ) :: dQdz,dQdz1,dQdz2
-      REAL(8) :: H
+      REAL(8) :: H,H_crit
 
-      REAL(SZ) :: BSX,BSY,WSX,WSY
+      REAL(SZ) :: bsx_loc,bsy_loc,WSX,WSY
       REAL(SZ),SAVE :: Sh,H2
       REAL(SZ),SAVE,ALLOCATABLE :: KQnm(:,:)
       REAL(SZ),SAVE,ALLOCATABLE :: Mqa(:),Mqb(:),Mqc(:)
@@ -2111,8 +2165,8 @@ c     At time step 1, set flags and initialize variables
 c     
 C.. RJW added as per Kendra reccomendation to algebraically compute length scale
 C.  RJW moved up and outside of if statement
-c         il = 1  ! length scale flag, = 1 for length scale from q2l eqn.
-         il = 2  ! length scale flag, = 2 for length scale from algebraic eq. (see below)
+         il = 1  ! length scale flag, = 1 for length scale from q2l eqn.
+c         il = 2  ! length scale flag, = 2 for length scale from algebraic eq. (see below)
 c         il = 3  ! length scale flag, = 3 for length scale from algebraic eq. (see below)
 
       if(istart.eq.1) then
@@ -2159,21 +2213,40 @@ c     end cold start initialization
 c     
 c     Begin calculations for each time step
 c     
-C.RJW..modify in future
+C.RJW..
 C identify if node was dry last timestep but is now wet
 C the initialized value of L can be recomputed to a more meaningful 
 C value before used to compute q2
 C as of now problem is fixed by initializing L to a nonzero value
-c      if (L(nh,1) .eq. 0.001d0 ) Then
-c            do n = 1,nfen
-c               if(il.eq.2)then
+C use same formula as above
+C
+      if (L(nh,1) .eq. -9999d0 ) Then
+C we know that the node was previously wet, so
+C lets reinitialize the parameters that were initialized when
+C istart = 1, for these nodes
+        B123 = B1**(2.d0/3.d0)
+        Sq = 0.2d0 ! initialize the stability constant stability function
+         do n = 1,nfen
+               l(nh,n) = rkap*(Z0B*(a-sigma(n))-Z0S*(b-sigma(n)))/amb 
+c now initialize the Brunt-Vaisala freq squared = 0 if density not considered
+         if(iden.eq.0) then
+               BVfreq2(n)=0.d0
+         endif
+         enddo
+       endif     
+C now check q20 it may also be zero
+      if (q20(nh,1) .eq. -9999d0 ) Then
+            do n = 1,nfen
+               q20(nh,n) = q2min
+            end do
+       Endif
+
+c         if(il.eq.2)then
 c                  sig = (sigma(n)+1.d0)/amb
 c                  rl1 = 1.d0/(rkap*(sig*H+Z0B)*exp(-amb*sig))
 c                  rl2 = 1.d0/(rkap*(H-sig*H+Z0S))
 c                  l(nh,n) = 1.d0/(rl1+rl2)
 c               endif
-c            end do
-c       Endif
 
       H2 = H*H
       HOamb=H/amb
@@ -2272,7 +2345,7 @@ c     Compute the q2 LHS Matrix and RHS Load Vector
       Mqa(1) = 0.d0
       Mqb(1) = 1.d0
       Mqc(1) = 0.d0
-      LVq(1) = B123*sqrt(bsx*bsx+bsy*bsy)
+      LVq(1) = B123*sqrt(bsx_loc*bsx_loc+bsy_loc*bsy_loc)
       
       coef2 = delt*theta1/HOamb2
 c     coef2 = theta1/HOamb2                !rog way
@@ -2397,7 +2470,7 @@ c     Mqb(n) = (Inm(n,1)+Inm(n,2)+Inm(n,3))*coef1+KQnm(n,2)*coef2   !lumping
             Mqc(n) = Inm(n,3)*coef1+KQnm(n,3)*coef2
 c     Mqc(n) = KQnm(n,3)*coef2                                !lumping
 
-            coef3 = 1.d0 - delt*(1.d0-theta2)*tdiss
+          coef3 = 1.d0 - delt*(1.d0-theta2)*tdiss
 c     coef3 = 1.d0/delt - (1.d0-theta2)*tdiss                 !rog way
             coef4 = E1*rmlen(n)*delt
 c     coef4 = E1*rmlen(n)                                     !rog way
@@ -2438,6 +2511,31 @@ c     Transfer to global array and check for stability limit
             endif
          end do
          l(nh,nfen) = q2l(nfen)/q2(nfen)
+
+C RJW 02252009 ...
+c Now we do a little bookeeping, to be sure things stay in 
+c reasonable bounds.
+c 1) set a lower limit on the turbulent length scale of 10 cm
+c 2)in shallow water we want to modify the calculation of l
+c set Hlimit = 1.0 and l_2 = H
+c If the total water depth is less than 1.0 meter
+c then we want to set the turbulent length scale to
+c equal the water depth
+        H_crit = 1.0
+
+        do n = 1, nfen
+
+          if (l(nh,n) .lt. 0.10 ) l(nh,n) = 0.10
+  
+          if ( H .le. H_crit ) then
+
+           l(nh,n) = H/H_crit*l(nh,n) + (1-H/H_crit)*H
+
+          endif
+
+        enddo
+c...
+
       endif
 
 c     

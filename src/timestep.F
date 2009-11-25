@@ -1469,9 +1469,11 @@ C>>
                      IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
                      VEL=G*(DELETA/DELDIST)/TKWET
                      IF(VEL.GT.VELMIN) THEN
+C    ....         third node met criteria and is also wet
                         NNODECODE(NM3)=1
 c. RJW merged 08/26/20008 Casey 071219: Added the following logic to obtain the correct friction.
                         IF(C2DDI)THEN
+c                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
                            TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
@@ -2412,9 +2414,9 @@ C...  ****************** TIME STEPPING LOOP ENDS HERE ********************
 C...  
 
 c. RJW merged 08/26/2008 Casey 071219: Added the folowing call to the mass balance subroutine.
-      IF(C3DVS)THEN
-         CALL MASSBAL3D(IT)
-      ENDIF
+C      IF(C3DVS)THEN
+C         CALL MASSBAL3D(IT)
+C      ENDIF
 
       RETURN
       END
