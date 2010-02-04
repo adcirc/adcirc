@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v49.07     - 02/04/10 - jgf - Added entry for Cray-XT5 to
+C               cmplrflags.mk.
 C  v49.06     - 11/25/09 - rjw - merged 3D_rjw branch into trunk 
 C             - 10/30/09 - rjw - modifed turbulent lenght scale for newly wet
 C               nodes and fixed bug in post processing fort.43 files and 
