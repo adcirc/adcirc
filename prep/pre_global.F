@@ -155,6 +155,19 @@ C     PARM15-3DVS section
       REAL(SZ),ALLOCATABLE :: EVTot(:) !(NFEN) Vertical eddy viscosity 
       INTEGER IGC                      ! vertical grid code in fort.15
 
+C   kmd48.33bc variables for 3D baroclinic and hot start
+      REAL(SZ) :: RBCTIMEINC, SBCTIMEINC, TBCTIMEINC    ! flag for bcs on baroclinic
+      REAL(SZ) :: BCSTATIM, SBCSTATIM, TBCSTATIM       ! flag for bcs on baroclinic
+      REAL(SZ) :: TTBCSTATIM, TTBCTIMEINC       ! flag for bcs on baroclinic
+      INTEGER N3DSD, I3DSDRec, N3DSV, I3DSVRec, N3DST, I3DSTRec
+      INTEGER N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec
+      REAL(SZ),ALLOCATABLE :: DUU(:),DUV(:),DVV(:)
+      REAL(SZ),ALLOCATABLE :: UU(:),VV(:)
+      REAL(SZ),ALLOCATABLE :: BSX(:),BSY(:)
+      REAL(SZ),ALLOCATABLE :: WZ(:,:), q20(:,:), l(:,:)
+      REAL(SZ),ALLOCATABLE :: SigT(:,:), Sal(:,:), Temp(:,:)
+      REAL(SZ),ALLOCATABLE :: RealQ(:,:), ImagQ(:,:)
+
 C     jgf45.12 Terms added for the transport parameters
 C     diffusion coefficients for the salinity field
       REAL(SZ) :: NLSD, NVSD
@@ -165,13 +178,17 @@ c     transport equation
       REAL(SZ) :: Alp4          
 C     Flag for the top boundary condition for the temperature field in
 C     the transport equation
-      INTEGER :: NTF
+!      INTEGER :: NTF ! kmd48.33bc took out with new evaluation of boundary condition
 C
 C     STRING15-3DVS section
       CHARACTER(80) :: IDENMSG,SLIPMSG,Z0MSG,ALPMSG,FEMSG
       CHARACTER(80) :: EVCMSG,THETAMSG
       CHARACTER(80) :: DSDMSG,DSVMSG,DSTMSG,DGDMSG,DGVMSG,DGTMSG
       CHARACTER(80) :: NSTA3DDMSG,NSTA3DVMSG,NSTA3DTMSG
+
+C  kmd48.33bc variables for boundary conditions
+      CHARACTER(80) :: RESBCFLAGMSG, BCTIMEMSG, BCSTATMSG, TBCTIMEMSG
+      CHARACTER(80) :: SPONGEDISTMSG, EqnstateMSG
 C
 C     ELESTAT section
       REAL(SZ) TOUTSE,TOUTFE,TOUTSGE,TOUTFGE

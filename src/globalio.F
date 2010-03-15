@@ -113,7 +113,7 @@ C! CMPI
       ! jgf48.17 Collects integer array data from each subdomain. 
       !--------------------------------------------------------------
       subroutine collectFullDomainIntArray(descript, 
-     &                                     pack_cmd, unpack_cmd)
+     &                                    pack_cmd, unpack_cmd,variable)
       implicit none
 #ifdef CMPI
 #ifndef HAVE_MPI_MOD
@@ -123,6 +123,7 @@ C! CMPI
       type (OutputDataDescript_t) :: descript
       external pack_cmd
       external unpack_cmd
+      integer :: variable
 #ifdef CMPI
       ! the subroutine used to write the file
       integer      :: ierr, status(MPI_STATUS_SIZE), request
@@ -168,8 +169,14 @@ C         write(16,*) 'About to pack globalioint buffer.' !jgfdebug48.03
          call pack_cmd(descript, istart, iend)
 C        now send data to processor 0
 C         write(16,*) 'About to mpi_reduce globalioint buffer.' !jgfdebug48.03
-         call mpi_reduce(integerBuffer, integerResultBuffer, bufsize, 
+ckmd48.33bc - changed this to eliminate problems with NOFF=2.
+         IF (variable.EQ.1) THEN 
+           call mpi_reduce(integerBuffer, integerResultBuffer, bufsize, 
      &                 MPI_INTEGER, MPI_SUM, 0, COMM, ierr)
+         ELSE IF (variable.eq.2) THEN 
+           call mpi_reduce(integerBuffer, integerResultBuffer, bufsize, 
+     &                 MPI_INTEGER, MPI_MAX, 0, COMM, ierr)
+         END IF 
 
          if (myproc == 0) then
 C            write(16,*) 'About to unpack globalioint buffer.' !jgfdebug48.03
@@ -1549,6 +1556,9 @@ C     Open the file
           stop
       case("Tau0")
           write(lun, 1010) ndsetse, nodes, dtdp*nspoolge,
+     &                 nspoolge, 1, FileFmtVersion
+      case("sponge")
+          write(lun, 1010) 1, nodes, dtdp*nspoolge,
      &                 nspoolge, 1, FileFmtVersion
       case default
           write(ScreenUnit,*) 

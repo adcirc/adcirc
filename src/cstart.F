@@ -668,9 +668,16 @@ C...
       NSCOUGE=0
       IGEP=0
 
-      IF((ABS(NOUTGE).EQ.1).OR.ABS(NOUTGE).EQ.4) THEN
+      IF((ABS(NOUTGE).EQ.1).OR.(ABS(NOUTGE).EQ.4)) THEN
          CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
      $    NP_G, NP, HEADER63)
+
+C   kmd48.33 add the ability to output the sponge layer
+          IF (OUTPUTSPONGE) THEN 
+           CALL writeDomainHeader(92, 
+     &          TRIM(GLOBALDIR)//'/'//'fort.92',
+     $           NP_G, NP, 'sponge     ')
+          END IF 
 C
 C        jgf47.06 Tau0 output is produced on the same schedule as
 C        global elevation
@@ -731,8 +738,8 @@ C...
       NSCOUGV=0
       IGVP=0
 
-!     IF((ABS(NOUTGV).EQ.1).OR.(ABS(NOUTGV).EQ.3)) THEN
-      IF((ABS(NOUTGV).EQ.1)) THEN
+      IF((ABS(NOUTGV).EQ.1).OR.(ABS(NOUTGV).EQ.4)) THEN
+!kmd - changed for -4 option      IF((ABS(NOUTGV).EQ.1)) THEN
          CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
      $    NP_G, NP, HEADER64)
          IGVP=2
@@ -788,8 +795,8 @@ C...
       IGWP=0
       IGPP=0
 
-!     IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.3)) THEN
-      IF((ABS(NOUTGW).EQ.1)) THEN
+      IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.4)) THEN
+!kmd - changed for -4 option      IF((ABS(NOUTGW).EQ.1)) THEN
          CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
      $    NP_G, NP, HEADER73)
          IGPP=2
@@ -971,6 +978,14 @@ c******************************************************************************
       SUBROUTINE COLDSTART_3D()
 
       USE GLOBAL_3DVS
+      USE GLOBAL, ONLY : BCFLAG_TEMP, RES_BC_FLAG, BCFLAG_LNM,
+     &                   RBCTIME1, BCSTATIM, RBCTIME2,
+     &                   RBCTIMEINC, NBD, SBCTIME1,
+     &                   SBCTIME2, SBCSTATIM, TTBCTIME1,
+     &                   TTBCTIME2, TBCSTATIM, SBCTIMEINC,
+     &                   TBCTIMEINC, TTBCTIMEINC, TTBCSTATIM,
+     &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2,
+     &                   LNM_BC, LNM_BC1, LNM_BC2
 
       IMPLICIT NONE
 
@@ -980,6 +995,14 @@ c******************************************************************************
       INTEGER :: NHNN, NVNN              !horizontal and vertical node numbers
       INTEGER :: NVN
       INTEGER NVP                        ! number of horizontal nodes
+
+ckmd  additional variable for baroclinic boundary conditions
+      CHARACTER(80) :: CDUM80
+      INTEGER :: NumofBCNodes
+      INTEGER :: NOD, J, NumofNodes, K
+      INTEGER :: INDEX
+      REAL(SZ), ALLOCATABLE :: TMP(:,:)
+
 C...
 C...  Define format statements used to initialize 3D output files
 C...
@@ -1060,6 +1083,130 @@ C
          END IF
       END IF 
       
+ckmd  Read in boundary condition information from files if
+C...  we are using the transport portion of the code (IDEN.GE.1)
+C...  and baroclinic.
+
+      IF ((CBAROCLINIC).AND.(IDEN.GE.1)) THEN
+         IF (ABS(RES_BC_FLAG).GE.1) THEN
+           IF (BCFLAG_LNM.EQ.1) THEN
+             OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
+             RBCTIME1=BCSTATIM*86400.d0
+             RBCTIME2=RBCTIME1+RBCTIMEINC
+             READ(35,'(A)') CDUM80
+             DO NumofBCNodes=1,NETA
+                READ(35,*) NOD,LNM_BC1(NumofBCNodes)
+             END DO
+             READ(35,'(A)') CDUM80
+             DO NumofBCNodes=1,NETA
+                READ(35,*) NOD,LNM_BC2(NumofBCNodes)
+             END DO
+           ELSE IF (BCFLAG_LNM.EQ.2) THEN
+             ! to be added later but currently information
+             ! is taken in two ways from the HYCOM results
+           ELSE IF (BCFLAG_LNM.EQ.3) THEN
+             DO NumofBCNodes=1,NETA
+                INDEX=NBD(NumofBCNodes)
+                LNM_BC1(NumofBCNodes)=ETA2(INDEX)
+                LNM_BC2(NumofBCNodes)=LNM_BC1(NumofBCNodes)
+             END DO
+           END IF
+         END IF
+         IF ((ABS(RES_BC_FLAG).EQ.2).OR.(ABS(RES_BC_FLAG).EQ.4)) THEN
+           OPEN(36,FILE=TRIM(INPUTDIR)//'/'//'fort.36')
+           SBCTIME1=SBCSTATIM*86400.D0
+           SBCTIME2=SBCTIME1+SBCTIMEINC
+           READ(36,'(A)') CDUM80
+           DO NumofBCNodes=1,NETA
+              READ(36,*) NOD,(RESSAL1(NumofBCNodes,J),J=1,NFEN)
+           END DO
+           READ(36,'(A)') CDUM80
+           DO NumofBCNodes=1,NETA
+              READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+           END DO
+         END IF
+         IF ((ABS(RES_BC_FLAG).EQ.3).OR.
+     &            (ABS(RES_BC_FLAG).EQ.4)) THEN
+           OPEN(37,FILE=TRIM(INPUTDIR)//'/'//'fort.37')
+           TBCTIME1=TBCSTATIM*86400.D0
+           TBCTIME2=TBCTIME1+TBCTIMEINC
+           READ(37,'(A)') CDUM80
+           DO NumofBCNodes=1,NETA
+              READ(37,*) NOD,(RESTEMP1(NumofBCNodes,J),J=1,NFEN)
+           END DO
+           READ(37,'(A)') CDUM80
+           DO NumofBCNodes=1,NETA
+              READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+           END DO
+           IF (BCFLAG_TEMP.EQ.1) THEN ! read in file with multiple values but no calcs
+              OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+              TTBCTIME1=TTBCSTATIM*86400.D0
+              TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+              DO NumofNodes=1,NP
+                 READ(38,*) NOD, q_heat1(Numofnodes)
+              END DO
+              DO NumofNodes=1,NP
+                 READ(38,*) NOD, q_heat2(NumofNodes)
+              END DO
+           ELSE IF (BCFLAG_TEMP.EQ.2) THEN ! read in from file with 6 components
+              ALLOCATE (TMP(NP,6))
+              OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+              TTBCTIME1=TTBCSTATIM*86400.D0
+              TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+              READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+              DO NumofNodes=1,NP
+                 q_heat1(NumofNodes)=-TMP(NumofNodes,1)-
+     &              TMP(NumofNodes,2)+TMP(NumofNodes,3)-
+     &              TMP(NumofNodes,5)+TMP(NumofNodes,4)-
+     &              TMP(NumofNodes,6)
+              END DO
+              READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+              DO NumofNodes=1,NP
+                 q_heat2(NumofNodes)=-TMP(NumofNodes,1)-
+     &              TMP(NumofNodes,2)+TMP(NumofNodes,3)-
+     &              TMP(NumofNodes,5)+TMP(NumofNodes,4)-
+     &              TMP(NumofNodes,6)
+              END DO
+              DEALLOCATE(TMP)
+           ELSE IF (BCFLAG_TEMP.EQ.3) THEN ! read in from file with 4 components
+              ALLOCATE (TMP(NP,4))
+              OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+              TTBCTIME1=TTBCSTATIM*86400.D0
+              TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+              READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+              DO NumofNodes=1,NP
+                 q_heat1(NumofNodes)=TMP(NumofNodes,4)+
+     &              TMP(NumofNodes,3)-TMP(NumofNodes,1)+
+     &              TMP(NumofNodes,2)
+              END DO
+              READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+              DO NumofNodes=1,NP
+                 q_heat2(NumofNodes)=TMP(NumofNodes,4)+
+     &              TMP(NumofNodes,3)-TMP(NumofNodes,1)+
+     &              TMP(NumofNodes,2)
+              END DO
+              DEALLOCATE(TMP)
+           END IF ! end if for heat flux file
+         END IF ! end if for temperature boundary and heat flux
+      ELSE IF ((CBAROCLINIC).AND.(IDEN.LE.-1)) THEN
+         IF (RES_BC_FLAG.LT.0) THEN
+          IF (BCFLAG_LNM.EQ.1) THEN
+            OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
+            READ(35,'(A)') CDUM80
+            DO NumofBCNodes=1,NETA
+                READ(35,*) NOD,LNM_BC(NumofBCNodes)
+            END DO
+          ELSE IF (BCFLAG_LNM.EQ.2) THEN
+            ! add later
+          ELSE IF (BCFLAG_LNM.EQ.3) THEN
+            DO NumofBCNodes=1,NETA
+               INDEX=NBD(NumofBCNodes)
+               LNM_BC(NumofBCNodes)=ETA2(INDEX)
+            END DO
+          END IF
+         END IF
+      END IF
+
 C...  ZERO OUT STUFF PASSED FROM 3D SOLUTION TO EXTERNAL MODE
 
       DO NH=1,NP
@@ -1272,12 +1419,22 @@ C.... Initialize the global 3D density output file (Unit 44)
       IF((IDen.EQ.2).OR.(IDen.EQ.3)) IRType=2
       IF(IDen.EQ.4) IRType=3
 C     jgf46.27 Replaced IRType with IDen in header.
+!kmd48.33bc - add in infomration for file containing the
+!            top temperature boundary condition information
       IF(ABS(I3DGD).EQ.1) THEN
         WRITE(16,497) 44
         OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44')
         WRITE(44,499) RUNDES,RUNID,AGRID
         WRITE(44,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,NFEN,IDen 
         CLOSE(44)
+        IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
+          IF (BCFLAG_TEMP.NE.0) THEN
+              OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
+              WRITE(47,499) RUNDES,RUNID,AGRID
+              WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+              CLOSE(47)
+          END IF
+        END IF
         I3DGDRec=2
       ENDIF
 

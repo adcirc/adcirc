@@ -69,7 +69,8 @@ C...
      &       DTDP,                         !DTDP = timestep declared as real(8)
      &       SLAM0, SFEA0,                 !center point of CPP spherical projection
      &       Deg2Rad, Rad2Deg,
-     &       Day2Sec, Sec2Day
+     &       Day2Sec, Sec2Day,
+     &       NETA                          ! number of ocean boundary
 
       SAVE
 
@@ -114,6 +115,19 @@ C     time levels
 
       COMPLEX(SZ), ALLOCATABLE :: BPG(:,:)      
 
+C     kmd48.33bc - added these variables for the vertical diffusion terms in the transport equation
+C              Note: terms used when vertical eddy viscosity is defined from Mellor-Yamada
+      REAL(SZ),ALLOCATABLE :: NTVTot(:)     !  NTVTot(NFEN): vertical diffusion values for transport
+      REAL(SZ),ALLOCATABLE :: DV(:,:)       !  DV(MNP,NFEN): Vertical diffusion, all nodes
+
+C     kmd48.33bc - added these variables for boundary condtions
+      REAL(SZ),ALLOCATABLE :: RESSAL(:,:)    !  RESSAL(NETA,NFEN): Vertical salinity boundary condition used in transport 
+      REAL(SZ),ALLOCATABLE :: RESSAL1(:,:)   !  RESSAL1(NETA,NFEN): Vertical salinity boundary condition used in transport 
+      REAL(SZ),ALLOCATABLE :: RESSAL2(:,:)   !  RESSAL2(NETA,NFEN): Vertical salinity boundary condition used in transport 
+      REAL(SZ),ALLOCATABLE :: RESTEMP(:,:)   !  RESTEMP(NETA,NFEN): Vertical temperature boundary condition used in transport 
+      REAL(SZ),ALLOCATABLE :: RESTEMP1(:,:)  !  RESTEMP1(NETA,NFEN): Vertical temperature boundary condition used in transport 
+      REAL(SZ),ALLOCATABLE :: RESTEMP2(:,:)  !  RESTEMP2(NETA,NFEN): Vertical temperature boundary condition used in transport 
+
 
 C...  DECLARE 3D GLOBAL SCALARS
 
@@ -144,6 +158,9 @@ C...Terms added for the transport parameters !kmd45.11 transport
       REAL(SZ) :: Alp4                 !time weighting coefficient for the vertical diffusion term in the transport equation
       INTEGER :: NTF                  !Flag for the top boundary condition for the temperature field in the transport equation
       REAL(SZ) :: DTALP4, DT1MALP4     !DelT*alpha4, DelT*(1-alpha4)
+
+C   kmd48.33bc - added term for baroclinic 
+      INTEGER :: EQNSTATE ! determine equation of state to be used
 
 C...Declare and initialize logical variables
 
@@ -189,7 +206,8 @@ C...3D Velocity station output variables
       REAL(8),ALLOCATABLE :: StaI3DV2(:)   !interpolating factor used to compute output at 3D velocity station N
       REAL(8),ALLOCATABLE :: StaI3DV3(:)   !interpolating factor used to compute output at 3D velocity station N
       REAL(SZ),ALLOCATABLE :: WZSta(:)     !vertical velocity station output - not a global variable but easier to allocate here
-      COMPLEX,ALLOCATABLE :: qSta(:)       !3D velocity station output - not a global variable but easier to allocate here
+      !jgf48.50 Declare COMPLEX as size SZ
+      COMPLEX(SZ),ALLOCATABLE :: qSta(:)       !3D velocity station output - not a global variable but easier to allocate here
 
 C...3D Turbulence station output variables
 
@@ -264,6 +282,11 @@ C
       ALLOCATE( SALkp1(MNP,NFEN), TEMPkp1(MNP,NFEN) )
       ALLOCATE( qsurfkp1(MNP), qsurf(MNP) )
       ALLOCATE( BPG(MNP,NFEN) )
+C   kmd48.33bc - allocate arrays
+      ALLOCATE( NTVTot(NFEN), DV(MNP,NFEN) )
+      ALLOCATE( RESSAL(NETA,NFEN), RESSAL1(NETA,NFEN) )
+      ALLOCATE( RESSAL2(NETA,NFEN), RESTEMP(NETA,NFEN) )
+      ALLOCATE( RESTEMP1(NETA,NFEN), RESTEMP2(NETA,NFEN) )
       RETURN
       END SUBROUTINE ALLOC_3DVS
 

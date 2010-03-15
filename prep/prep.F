@@ -1342,7 +1342,7 @@ C
       integer :: nbytes = 0
       INTEGER i              ! node loop counter
       INTEGER k              ! attribute loop counter
-      INTEGER l              ! line loop counter
+      INTEGER ll             ! line loop counter
       INTEGER m              ! attribute default value counter
       INTEGER iproc          ! subdomain loop counter
       INTEGER sdu(nproc)     ! subdomain unit number for unit 13 files
@@ -1437,11 +1437,11 @@ C        for each attribute.
 C
 C     Now rewind and advance to the beginning of the data again
          REWIND(13)
-         DO l=1, 3
+         DO ll=1, 3
             READ(13,*) skipped    ! skip header, NumOfNodes, NAttr
          END DO
          DO k=1, NAttr
-            DO l=1, 4
+            DO ll=1, 4
                READ(13,*) skipped ! skip AttrName,Units,NoOfVals,Default 
             END DO
          END DO
@@ -1632,7 +1632,7 @@ C                                                                           C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
-      INTEGER I,I1,J,K,L,ETYPE,ITEMP,ITEMP2,ILNODE,ILNODE2,ILNODE3
+      INTEGER I,I1,J,K,M,ETYPE,ITEMP,ITEMP2,ILNODE,ILNODE2,ILNODE3
       INTEGER JD,JG,JP,IPROC,IPROC2,IPROC3,DISC,BBN,IBP
       INTEGER INDX,INDEX2,ITOT,ITYPE,NUMS(10)
       CHARACTER LOCFN*14,PE*6
@@ -2091,7 +2091,7 @@ C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
       integer :: nbytes = 0
-      INTEGER I,J,K,L,JG,JP,KK
+      INTEGER I,J,K,M,JG,JP,KK
       INTEGER INDX,ITOT,ILNODE,IPROC,IPROC2,ITYPE,NUMS(10)
       CHARACTER LOCFN*14,PE*6
       CHARACTER*80 OUTMSG
@@ -2499,7 +2499,8 @@ C     elements to corresponding elements in subdomains. Write out
 C     subdomain station locations to fort.15 file.
 C     -------------------------------------------------------------
       WRITE(15,*) I3DSD,TO3DSDS,TO3DSDF,NSPO3DSD
-      IF(I3DSD.GT.0) THEN
+C   kmd48.33bc changed
+      IF(I3DSD.NE.0) THEN
          NNSTA3DDP(IPROC) = 0
          DO FDStation = 1, NSTA3DD
             DO SDEle = 1, NELP(IPROC)
@@ -2524,7 +2525,8 @@ C     elements to corresponding elements in subdomains. Write out
 C     velocity subdomain station locations to fort.15 file.
 C     -------------------------------------------------------------
       WRITE(15,*) I3DSV,TO3DSVS,TO3DSVF,NSPO3DSV
-      IF(I3DSV.GT.0) THEN
+C   kmd48.33bc changed
+      IF(I3DSV.NE.0) THEN
          NNSTA3DVP(IPROC) = 0
          DO FDStation = 1, NSTA3DV
             DO SDEle = 1, NELP(IPROC)
@@ -2549,7 +2551,8 @@ C     elements to corresponding elements in subdomains. Write out
 C     turbulence subdomain station locations to fort.15 file.
 C     -------------------------------------------------------------
       WRITE(15,*) I3DST,TO3DSTS,TO3DSTF,NSPO3DST
-      IF(I3DST.GT.0) THEN
+C   kmd48.33bc changed
+      IF(I3DST.NE.0) THEN
          NNSTA3DTP(IPROC) = 0
          DO FDStation = 1, NSTA3DT
             DO SDEle = 1, NELP(IPROC)
@@ -2572,6 +2575,24 @@ C     -------------------------------------------------------------
       WRITE(15,80) DGDMSG
       WRITE(15,80) DGVMSG
       WRITE(15,80) DGTMSG
+
+C    kmd48.33bc add 3D boundary condition information
+      IF (CBAROCLINIC) THEN
+        WRITE(15,80) RESBCFLAGMSG
+        IF (RES_BC_FLAG.NE.0) THEN
+          WRITE(15,80) BCTIMEMSG
+          WRITE(15,80) BCSTATMSG
+          IF (BCFLAG_TEMP.NE.0) THEN
+             WRITE(15,80) TBCTIMEMSG
+          END IF
+        END IF
+      END IF
+
+      IF (CBAROCLINIC) THEN
+        WRITE(15,80) SPONGEDISTMSG
+        WRITE(15,80) EqnstateMSG
+      END IF
+
 C
 C     jgf45.12: Write out the parameters for the transport equation, if
 C     necessary.
@@ -2581,10 +2602,11 @@ C     Lateral and vertical diffusion coefficients.
          WRITE(15,*) NLTD, NVTD
 C     Time stepping coefficient for the transport equation terms.
          WRITE(15,*) ALP4
+C   kmd48.33 took out as it is no longer needed with new heat flux boundary conditions
 C     Temperature boundary condition file type, if necessary
-         IF ( IDEN .eq. 3 .or. IDEN .eq. 4 ) THEN
-            WRITE(15,*) NTF
-         ENDIF
+!         IF ( IDEN .eq. 3 .or. IDEN .eq. 4 ) THEN
+!            WRITE(15,*) NTF
+!         ENDIF
       ENDIF
 
       RETURN
@@ -2614,7 +2636,7 @@ C
       IMPLICIT NONE
       integer :: nbytes = 0
       INTEGER N1, N2, N3, KMIN
-      INTEGER I,J,K,L,ITEMP,IPR,IPR1
+      INTEGER I,J,K,M,ITEMP,IPR,IPR1
       INTEGER INDX,ITOT,IEL,IELG,ILNODE,IPROC,ITYPE
       INTEGER,ALLOCATABLE :: RES_NODE(:)
       CHARACTER LOCFN*14,PE*6
@@ -3312,6 +3334,788 @@ C
  99   RETURN
       END
 
+C   kmd48.33bc add in prep subroutines for 3D boundary condition files
+      SUBROUTINE PREP35()
+      USE PRE_GLOBAL
+      use memory_usage
+C
+C---------------------------------------------------------------------------C
+C                                                                           C
+C  This routine writes a Local "Residual Boundary Condtions Baroclinic"     C
+C  (fort.35) file for each subdomain using the domain decomposition of     C
+C  the ADCIRC grid created by the routine DECOMP.                           C
+C                                                                           C
+C                   Added by Kendra Dresback (Aug. 18, 2007)                C
+C---------------------------------------------------------------------------C
+C
+      IMPLICIT NONE
+      INTEGER :: nbytes = 0
+      INTEGER I,J,IPROC
+      INTEGER SDU(NPROC) ! subdomain unit numbers
+      LOGICAL Success    ! .true. if files opened without errors
+      CHARACTER*40  ETIMINC,RESBCBINP,GRIDINC
+      CHARACTER*40,ALLOCATABLE :: RESBCBIN(:)
+
+C
+C--Enter, Locate, Open, and Read the ADCIRC UNIT 35
+C  Global Level of No Motion Boundary Conditions file for baroclinic
+C
+C     Open full domain and subdomain fort.35 files
+      Print *, "Made it to prepping the files"
+      CALL OpenPrepFiles(35, 'level of no motion boundary  ',
+     &     1, nproc, SDU, Success)
+      Print *, "Made it out of prepping the files"
+      IF (.not.Success) THEN
+         WRITE(*,*) 'WARNING: Unit 35 files not preprocessed.'
+         RETURN ! note early return
+      ENDIF
+C
+C--Allocate local arrays
+C
+      ALLOCATE ( RESBCBIN(MNETA) )
+      nbytes = 8*mneta
+      call memory_alloc(nbytes)
+C
+C--While ( NOT EOF ) Read NETA BCs from Global File
+C
+      PRINT *, "Made it to the reading in of the 35 file"
+      DO  ! loop until end of file
+      READ(35,40,END=9999) ETIMINC
+      DO IPROC = 1,NPROC
+         WRITE(SDU(IPROC),40)  ETIMINC
+      ENDDO
+      DO I=1, NETA
+         READ(35,40,END=9999)  RESBCBIN(I)
+      ENDDO
+C
+      DO IPROC= 1,NPROC
+         DO I=1, NETAP(IPROC)
+            RESBCBINP = RESBCBIN(OBNODE_LG(I,IPROC))
+            WRITE(SDU(IPROC),40) RESBCBINP
+         ENDDO
+      ENDDO
+      END DO
+C
+C
+C--Close Global file and all the Local Files
+C
+ 9999 CLOSE (35)
+      DO IPROC=1, NPROC
+         CLOSE (SDU(IPROC))
+      ENDDO
+
+      deallocate(resbcbin)
+      nbytes = 8*mneta
+      call memory_dealloc(nbytes)
+      call memory_status()
+C
+  40  FORMAT(A40)
+C
+      RETURN
+      END
+
+      SUBROUTINE PREP36()
+      USE PRE_GLOBAL
+      use memory_usage
+C
+C---------------------------------------------------------------------------C
+C                                                                           C
+C  This routine writes a Local "Salinity Boundary Conditions Values"        C
+C  (fort.36) file for each subdomain using the domain decomposition of      C
+C  the ADCIRC grid created by the routine DECOMP.                           C
+C                                                                           C
+C                Added by Kendra Dresback (January 15, 2008)                C
+C---------------------------------------------------------------------------C
+C
+      IMPLICIT NONE
+      integer :: nbytes = 0
+      INTEGER I,J,IPROC
+      INTEGER SDU(NPROC) ! subdomain unit numbers
+      LOGICAL Success    ! .true. if files opened without errors
+      CHARACTER*40  ETIMINC,GRIDINC
+      INTEGER :: NODP, M
+      INTEGER,ALLOCATABLE :: NOD(:)
+      REAL(SZ),ALLOCATABLE :: SalBC(:,:)
+      REAL(SZ),ALLOCATABLE :: RESBCBINP(:)
+
+
+C
+C--Enter, Locate, Open, and Read the ADCIRC UNIT 36
+C  Global Salinity Boundary Conditions file for baroclinic
+C
+C     Open full domain and subdomain fort.36 files
+      CALL OpenPrepFiles(36, 'salinity boundary  ',
+     &     1, nproc, SDU, Success)
+      IF (.not.Success) THEN
+         WRITE(*,*) 'WARNING: Unit 36 files not preprocessed.'
+         RETURN ! note early return
+      ENDIF
+C
+C--Allocate local arrays
+C
+      ALLOCATE ( NOD(MNETA) )
+      ALLOCATE ( RESBCBINP(NFEN) )
+      ALLOCATE ( SalBC(MNETA,NFEN) )
+      nbytes = 8*mneta
+      call memory_alloc(nbytes)
+C
+C--While ( NOT EOF ) Read NETA BCs from Global File
+C
+      DO  ! loop until end of file
+      READ(36,40,END=9999) ETIMINC
+      DO IPROC = 1,NPROC
+         WRITE(SDU(IPROC),40)  ETIMINC
+      ENDDO
+
+      DO I=1, NETA
+         READ(36,*,END=9999)  NOD(I), (SalBC(I,M),M=1,NFEN)
+      ENDDO
+C
+      DO IPROC= 1,NPROC
+         DO I=1, NETAP(IPROC)
+            NODP = NOD(OBNODE_LG(I,IPROC))
+            DO M=1,NFEN
+              RESBCBINP(M) = SalBC(OBNODE_LG(I,IPROC),M)
+            END DO
+              WRITE(SDU(IPROC),80) NODP, (RESBCBINP(M),M=1,NFEN)
+         ENDDO
+      ENDDO
+      END DO
+C
+C
+C--Close Global file and all the Local Files
+C
+ 9999 CLOSE (36)
+      DO IPROC=1, NPROC
+         CLOSE (SDU(IPROC))
+      ENDDO
+C
+      deallocate(salbc)
+      nbytes = 8*mneta
+      call memory_dealloc(nbytes)
+      call memory_status()
+  40  FORMAT(A40)
+  80  FORMAT(1X,I6,1X,32000(F11.7,2X))
+C
+      RETURN
+      END
+
+      SUBROUTINE PREP37()
+      USE PRE_GLOBAL
+      use memory_usage
+C
+C---------------------------------------------------------------------------C
+C                                                                           C
+C  This routine writes a Local "Temperature Boundary Conditions Values"     C
+C  (fort.37) file for each subdomain using the domain decomposition of      C
+C  the ADCIRC grid created by the routine DECOMP.                           C
+C                                                                           C
+C                Added by Kendra Dresback (January 15, 2008)                C
+C---------------------------------------------------------------------------C
+C
+      IMPLICIT NONE
+      integer :: nbytes = 0
+      INTEGER I,J,IPROC
+      INTEGER SDU(NPROC) ! subdomain unit numbers
+      LOGICAL Success    ! .true. if files opened without errors
+      CHARACTER*40  ETIMINC
+      INTEGER :: NODP, M
+      INTEGER,ALLOCATABLE :: NOD(:)
+      REAL(SZ),ALLOCATABLE :: TempBC(:,:)
+      REAL(SZ),ALLOCATABLE :: RESBCBINP(:)
+
+C
+C--Enter, Locate, Open, and Read the ADCIRC UNIT 37
+C  Global Temperature Boundary Conditions file for baroclinic
+C
+C     Open full domain and subdomain fort.37 files
+      CALL OpenPrepFiles(37, 'temperature boundary  ',
+     &     1, nproc, SDU, Success)
+      IF (.not.Success) THEN
+         WRITE(*,*) 'WARNING: Unit 37 files not preprocessed.'
+         RETURN ! note early return
+      ENDIF
+C
+C--Allocate local arrays
+C
+      ALLOCATE ( NOD(MNETA) )
+      ALLOCATE ( RESBCBINP(NFEN) )
+      ALLOCATE ( TempBC(MNETA,NFEN) )
+      nbytes = 8*mneta
+      call memory_alloc(nbytes)
+C
+C
+C--While ( NOT EOF ) Read NETA BCs from Global File
+C
+      DO  ! loop around until the end of the file
+      READ(37,40,END=9999) ETIMINC
+      DO IPROC = 1,NPROC
+         WRITE(SDU(IPROC),40)  ETIMINC
+      ENDDO
+
+      DO I=1, NETA
+         READ(37,*,END=9999)  NOD(I), (TempBC(I,M),M=1,NFEN)
+      ENDDO
+C
+      DO IPROC= 1,NPROC
+         DO I=1, NETAP(IPROC)
+            NODP = NOD(OBNODE_LG(I,IPROC))
+            DO M=1,NFEN
+              RESBCBINP(M) = TempBC(OBNODE_LG(I,IPROC),M)
+            END DO
+              WRITE(SDU(IPROC),80) NODP, (RESBCBINP(M),M=1,NFEN)
+         ENDDO
+      ENDDO
+      END DO
+C
+C
+C--Close Global file and all the Local Files
+C
+ 9999 CLOSE (37)
+      DO IPROC=1, NPROC
+         CLOSE (SDU(IPROC))
+      ENDDO
+C
+      deallocate(TempBC)
+      nbytes = 8*mneta
+      call memory_dealloc(nbytes)
+      call memory_status()
+  40  FORMAT(A40)
+  80  FORMAT(1X,I6,1X,32000(F11.7,2X))
+C
+      RETURN
+      END
+
+      SUBROUTINE PREP38()
+      USE PRE_GLOBAL
+      use memory_usage
+C
+C---------------------------------------------------------------------------C
+C                                                                           C
+C  This routine writes a Local "Temperature Boundary Conditions Values      C
+C  for the surface" (fort.38) file for each subdomain using the domain     C
+C  decomposition of the ADCIRC grid created by the routine DECOMP.          C
+C                                                                           C
+C                Added by Kendra Dresback (October 15, 2008)                C
+C---------------------------------------------------------------------------C
+C
+      IMPLICIT NONE
+      integer :: nbytes = 0
+      INTEGER I,J,IPROC
+      INTEGER SDU(NPROC) ! subdomain unit numbers
+      LOGICAL Success    ! .true. if files opened without errors
+      CHARACTER*40  ETIMINC,GRIDINC
+      INTEGER :: NODP, M, NFLUX
+      INTEGER,ALLOCATABLE :: NOD(:)
+      REAL(SZ),ALLOCATABLE :: TopTempBC(:,:)
+      REAL(SZ),ALLOCATABLE :: RESBCBINP(:,:)
+
+
+C
+C--Enter, Locate, Open, and Read the ADCIRC UNIT 38
+C  Global Salinity Boundary Conditions file for baroclinic
+C
+C     Open full domain and subdomain fort.38 files
+      CALL OpenPrepFiles(38, 'top temperature boundary  ',
+     &     1, nproc, SDU, Success)
+      IF (.not.Success) THEN
+         WRITE(*,*) 'WARNING: Unit 38 files not preprocessed.'
+         RETURN ! note early return
+      ENDIF
+C
+C  Determine how many values are in the top temperature boundary
+C  condition
+ 
+      IF (BCFLAG_TEMP.EQ.1) THEN
+         NFLUX = 1
+      ELSE IF (BCFLAG_TEMP.EQ.2) THEN
+         NFLUX = 6
+      ELSE IF (BCFLAG_TEMP.EQ.3) THEN
+         NFLUX = 4
+      END IF
+
+      MNP=nnodg
+C
+C--Allocate local arrays
+C
+      ALLOCATE ( NOD(MNP) )
+      ALLOCATE ( RESBCBINP(MNP,NFLUX) )
+      ALLOCATE ( TopTempBC(MNP,NFLUX) )
+      nbytes = 24*mnp
+      call memory_alloc(nbytes)
+C
+C--While ( NOT EOF ) Read NETA BCs from Global File
+C
+      DO  ! loop until end of file
+
+       READ(38,*,END=9999)  (NOD(I),(TopTempBC(I,M),M=1,NFLUX),I=1,NNODG)
+C
+      DO IPROC= 1,NPROC
+         DO I=1, NNODP(IPROC)
+            NODP = IMAP_NOD_LG(I,IPROC)
+            DO M=1,NFLUX
+              RESBCBINP(I,M) = TopTempBC(NODP,M)
+            END DO
+              WRITE(SDU(IPROC),80) I, (RESBCBINP(I,M),M=1,NFLUX)
+         ENDDO
+      ENDDO
+      END DO
+C
+C
+C--Close Global file and all the Local Files
+C
+ 9999 CLOSE (38)
+      DO IPROC=1, NPROC
+         CLOSE (SDU(IPROC))
+      ENDDO
+C
+      deallocate(toptempbc)
+      nbytes = 24*mnp
+      call memory_dealloc(nbytes)
+      call memory_status()
+  40  FORMAT(A40)
+  80  FORMAT(1X,I8,1X,32(F12.6,2X))
+C
+      RETURN
+      END
+
+C   kmd48.33bc add information for initial condition file
+      SUBROUTINE HOTINITCOND()
+      USE PRE_GLOBAL
+      use presizes; use memory_usage
+C
+C---------------------------------------------------------------------------C
+C                     written 10/11/01 by RL                                C
+C             started mods for harmonic analysis and 3D RL 5/22/03          C
+C         jgf Updated for v45.06 09/07/2005 not incl. harmonic or 3D        C
+C         kmd Updated for v48.33 07/07/2008 to bring in initial conditions  C
+C                                                                           C
+C  This routine reads the global initial condition file (fort.17)           C
+C  and writes local hot start files of the same format.                     C
+C                                                                           C
+C---------------------------------------------------------------------------C
+C
+      IMPLICIT NONE
+      integer :: nbytes = 0
+      LOGICAL FOUND
+      INTEGER I,J,IPROC,INDEX,IHOTSTP, not_active
+      INTEGER IMHSF,ITHSF
+      INTEGER IESTP,NSCOUE,IVSTP,NSCOUV,ICSTP,NSCOUC,IPSTP,IWSTP,NSCOUM,
+     &        IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW
+      CHARACTER FNAME*60,LOCFN*14
+      CHARACTER*16 FNAME1
+      CHARACTER*8 FNAM8(2)
+      EQUIVALENCE (FNAM8(1),FNAME1)
+
+      INTEGER,ALLOCATABLE  :: LOC(:),NODECODE(:),NOFF(:), domA(:)
+      REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:),
+     &    UU2(:),VV2(:),CH1(:)
+      REAL(8) TIMEHSF
+      integer :: InputFileFmtVn, NP_G_IN, NE_G_IN, NP_A_IN, NE_A_IN
+      CHARACTER*60 FileFmtVn
+
+#if 0
+      ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet
+      INTEGER INZ,INF,IMM,INP,INSTAE,INSTAV,IISTAE,IISTAV,IIGLOE,IIGLOV,
+     &                                       IICALL,INFREQ,ITUD,NTSTEPS
+      INTEGER IHARIND,ITHAS,ITHAF,ITMV,IHABEG,ICHA
+      CHARACTER*10,ALLOCATABLE     ::  INAMEFR(:)
+      REAL(8)  TIMEUD
+      REAL(SZ),ALLOCATABLE ::  HA(:,:)
+      REAL(SZ),ALLOCATABLE ::  ELAV(:),ELVA(:),XVELAV(:),XVELVA(:),
+     &                                         YVELAV(:),YVELVA(:)
+      REAL(SZ),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
+      REAL(SZ),ALLOCATABLE ::  GLOELV(:,:)
+      REAL(SZ),ALLOCATABLE ::  GLOULV(:,:),GLOVLV(:,:)
+      REAL(SZ),ALLOCATABLE ::  STAELV(:,:)
+      REAL(SZ),ALLOCATABLE ::  STAULV(:,:),STAVLV(:,:)
+#endif
+C
+C--   Open the Initial Condition Start File based on the value of IHOT from
+C--   the fort.15 file
+C
+      write(*,*) "enter IHOT: "
+      read(*,*) IHOT
+      IF(IHOT.EQ.17) FNAME='fort.17'
+      INQUIRE(FILE=FNAME,EXIST=FOUND)
+      IF (FOUND) THEN
+         WRITE(*,1011) FNAME
+         OPEN(IHOT,FILE=FNAME)
+      ELSE
+         WRITE(*,1010) FNAME
+         STOP
+      ENDIF
+
+C--   Read in info from global initial condition file
+
+      READ(IHOT,*) FileFmtVn
+
+      READ(IHOT,*) IMHSF
+      READ(IHOT,*) TIMEHSF
+      READ(IHOT,*) ITHSF
+      READ(IHOT,*) NP_G_IN
+      READ(IHOT,*) NE_G_IN
+      READ(IHOT,*) NP_A_IN
+      READ(IHOT,*) NE_A_IN
+      if (nnodg == np_g_in) then
+        MNP = nnodg
+      else
+        print *, "number global nodes does not match hotstart file"
+        write(*,'(A,I8)') "expected value   = ", nnodg
+        write(*,'(A,I8)') "hotstart value = ", np_g_in
+        stop
+      endif
+      if (nelg ==  ne_g_in) then
+        MNE = nelg
+      else
+        print *, "number global elements does not match hotstart file"
+        write(*,'(A,I8)') "expected value   = ", nelg
+        write(*,'(A,I8)') "hotstart value = ", ne_g_in
+        stop
+      endif
+C
+C Allocate local work arrays
+C
+      MNP = nnodg
+      MNE = nelg
+      nbytes = 4*nproc
+      call memory_alloc(nbytes)
+      ALLOCATE ( ETA1(MNP),ETA2(MNP),EtaDisc(MNP),UU2(MNP),
+     &           VV2(MNP),NODECODE(MNP),CH1(MNP) )
+      nbytes = 7*mnp
+      call memory_alloc(nbytes)
+      ALLOCATE ( NOFF(MNE) )
+      nbytes = 4*mne
+      call memory_alloc(nbytes)
+
+#if 0
+      ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet
+      ALLOCATE ( HA(2*MNHARF,2*MNHARF) )
+      nbytes = 32*mnharf
+      call memory_alloc(nbytes)
+      ALLOCATE ( GLOELV(2*MNHARF,MNP) )
+      nbytes = 16*mnharf*mnp
+      call memory_alloc(nbytes)
+      ALLOCATE ( GLOULV(2*MNHARF,MNP),GLOVLV(2*MNHARF,MNP) )
+      nbytes = 32*mnharf*mnp
+      call memory_alloc(nbytes)
+      ALLOCATE ( STAELV(2*MNHARF,MNSTAE) )
+      nbytes = 16*mnharf*mnstae
+      call memory_alloc(nbytes)
+      ALLOCATE ( STAULV(2*MNHARF,MNSTAV),STAVLV(2*MNHARF,MNSTAV) )
+      nbytes = 16*mnharf*mnstav
+      call memory_alloc(nbytes)
+      ALLOCATE ( ELAV(MNP),ELVA(MNP) )
+      nbytes = 16*mnp
+      call memory_alloc(nbytes)
+      ALLOCATE ( XVELAV(MNP),XVELVA(MNP),YVELAV(MNP),YVELVA(MNP) )
+      nbytes = 32*mnp
+      call memory_alloc(nbytes)
+      ALLOCATE ( IFREQ(MNHARF),IFF(MNHARF),IFACE(MNHARF) )
+      nbytes = 12*mnharf
+      call memory_alloc(nbytes)
+      ALLOCATE ( INAMEFR(MNHARF) )
+      nbytes = 4*mnharf
+      call memory_alloc(nbytes)
+#endif
+!  Continue reading global initial condition file
+      print *, "continuing to read global initial condition file"
+      write(*,*) "enter number of layers: "
+      read(*,*) NFEN
+
+      DO I=1,MNP
+         READ(IHOT,*) ETA1(I)
+      END DO
+      DO I=1,MNP
+         READ(IHOT,*) ETA2(I)
+      END DO
+      DO I=1,MNP
+         READ(IHOT,*) UU2(I)
+      END DO
+      DO I=1,MNP
+         READ(IHOT,*) VV2(I)
+      END DO
+      IF(IM.EQ.10) THEN
+        DO I=1,MNP
+           IHOTSTP=IHOTSTP+1
+           READ(IHOT,REC=IHOTSTP) CH1(I)
+        END DO
+      ENDIF
+      DO I=1,MNP
+         READ(IHOT,*) NODECODE(I)
+      END DO
+      DO I=1,MNE
+         READ(IHOT,*) NOFF(I)
+      END DO
+
+       ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet
+C     jgf46.02 Read in 3D hotstart data if appropriate
+      IF (IMHSF.GT.10) THEN
+         CALL ReadInitCond3D(IHOT)
+      ENDIF
+#if 0
+C
+C.....DETERMINE HARMONIC ANALYSIS PARAMETERS
+
+      IHARIND=NHARFR*(NHASE+NHASV+NHAGE+NHAGV)
+      IF(IHARIND.GT.0) IHARIND=1
+
+C.....IF HARMONIC ANALYSIS IS INCLUDED IN THE RUN, PROCESS HOT START INFORMATION FOR
+C.....IN PROGRESS HARMONIC ANALYSIS
+
+      IF(IHARIND.EQ.1) THEN
+         ITHAS=INT((THAS-STATIM)*(86400.D0/DT) + 0.5d0)
+         ITHAF=INT((THAF-STATIM)*(86400.D0/DT) + 0.5d0)
+         ITMV = ITHAF - (ITHAF-ITHAS)*FMV
+         IHABEG=ITHAS+NHAINC
+
+C.......IF HARMONIC ANALYSIS HAS ALREADY BEGUN, READ IN HOT START
+C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
+
+         IF(ITHSF.GT.ITHAS) THEN
+            IHOTSTP=IHOTSTP+1
+            READ(IHOT,REC=IHOTSTP) ICHA
+         ENDIF
+
+         IF(ITHSF.GE.IHABEG) THEN
+            READ(IHOT,REC=IHOTSTP+1) INZ
+            READ(IHOT,REC=IHOTSTP+2) INF
+            READ(IHOT,REC=IHOTSTP+3) IMM
+            READ(IHOT,REC=IHOTSTP+4) INP
+            READ(IHOT,REC=IHOTSTP+5) INSTAE
+            READ(IHOT,REC=IHOTSTP+6) INSTAV
+            READ(IHOT,REC=IHOTSTP+7) IISTAE
+            READ(IHOT,REC=IHOTSTP+8) IISTAV
+            READ(IHOT,REC=IHOTSTP+9) IIGLOE
+            READ(IHOT,REC=IHOTSTP+10) IIGLOV
+            READ(IHOT,REC=IHOTSTP+11) IICALL
+            READ(IHOT,REC=IHOTSTP+12) INFREQ
+            IHOTSTP = IHOTSTP+12
+
+            DO I=1,INFREQ+INF
+               READ(IHOT,REC=IHOTSTP+1) FNAM8(1)
+               READ(IHOT,REC=IHOTSTP+2) FNAM8(2)
+               IHOTSTP = IHOTSTP + 2
+               INAMEFR(I) = FNAME1
+               READ(IHOT,REC=IHOTSTP+1) IFREQ(I)
+               READ(IHOT,REC=IHOTSTP+2) IFF(I)
+               READ(IHOT,REC=IHOTSTP+3) IFACE(I)
+               IHOTSTP = IHOTSTP + 3
+            ENDDO
+
+            READ(IHOT,REC=IHOTSTP+1) TIMEUD
+            READ(IHOT,REC=IHOTSTP+2) ITUD
+            IHOTSTP = IHOTSTP + 2
+
+            DO I=1,IMM
+               DO J=1,IMM
+                  IHOTSTP = IHOTSTP + 1
+                  READ(IHOT,REC=IHOTSTP) HA(I,J)
+               ENDDO
+            ENDDO
+
+            IF(NHASE.EQ.1) THEN
+               DO J=1,INSTAE
+                  DO I=1,IMM
+                     IHOTSTP=IHOTSTP+1
+                     READ(IHOT,REC=IHOTSTP) STAELV(I,J)
+                  ENDDO
+               ENDDO
+            ENDIF
+
+            IF(NHASV.EQ.1) THEN
+               DO J=1,INSTAV
+                  DO I=1,IMM
+                     READ(IHOT,REC=IHOTSTP+1) STAULV(I,J)
+                     READ(IHOT,REC=IHOTSTP+2) STAVLV(I,J)
+                     IHOTSTP = IHOTSTP + 2
+                  ENDDO
+               ENDDO
+            ENDIF
+
+            IF(NHAGE.EQ.1) THEN
+               DO J=1,INP
+                  DO I=1,IMM
+                     IHOTSTP=IHOTSTP+1
+                     READ(IHOT,REC=IHOTSTP) GLOELV(I,J)
+                  ENDDO
+               ENDDO
+            ENDIF
+
+            IF(NHAGV.EQ.1) THEN
+               DO J=1,INP
+                  DO I=1,IMM
+                     READ(IHOT,REC=IHOTSTP+1) GLOULV(I,J)
+                     READ(IHOT,REC=IHOTSTP+2) GLOVLV(I,J)
+                     IHOTSTP = IHOTSTP + 2
+                  ENDDO
+               ENDDO
+            ENDIF
+
+         ENDIF
+
+         IF((FMV.GT.0.).AND.(INFREQ.GT.0).AND.(IM.EQ.0)) THEN !include means and variances
+            IF(ITHSF.GT.ITMV) THEN
+               IHOTSTP=IHOTSTP+1
+               READ(IHOT,REC=IHOTSTP) NTSTEPS
+               IF(NHAGE.EQ.1) THEN
+                  DO I=1,INP
+                     READ(IHOT,REC=IHOTSTP+1) ELAV(I)
+                     READ(IHOT,REC=IHOTSTP+2) ELVA(I)
+                     IHOTSTP=IHOTSTP+2
+                  ENDDO
+               ENDIF
+               IF(NHAGV.EQ.1) THEN
+                  DO I=1,INP
+                     READ(IHOT,REC=IHOTSTP+1) XVELAV(I)
+                     READ(IHOT,REC=IHOTSTP+2) YVELAV(I)
+                     READ(IHOT,REC=IHOTSTP+3) XVELVA(I)
+                     READ(IHOT,REC=IHOTSTP+4) YVELVA(I)
+                     IHOTSTP=IHOTSTP+4
+                  ENDDO
+               ENDIF
+            ENDIF
+         ENDIF    ! charmv
+      ENDIF     ! HARIND
+#endif
+
+C
+C--Open All Local Hot Start files
+C
+      ALLOCATE ( LOC(NPROC) )
+      DO IPROC = 1,NPROC
+         LOC(IPROC) = 105 + (IPROC-1)
+         LOCFN(1:14) = 'PE0000/'//FNAME(1:7)
+         CALL IWRITE(LOCFN,3,6,IPROC-1)
+         OPEN (LOC(IPROC),FILE=LOCFN)
+      ENDDO
+C
+C--Write out info to local hot start files
+C
+      DO IPROC = 1,NPROC
+         WRITE(LOC(IPROC),*) FileFmtVn
+         WRITE(LOC(IPROC),*) IMHSF
+         WRITE(LOC(IPROC),*) TIMEHSF
+         WRITE(LOC(IPROC),*) ITHSF
+         WRITE(LOC(IPROC),*) NNODP(IPROC)
+         WRITE(LOC(IPROC),*) NELP(IPROC)
+         WRITE(LOC(IPROC),*) NNODP(IPROC)
+         WRITE(LOC(IPROC),*) NELP(IPROC)
+
+         DO I=1, NNODP(IPROC)
+            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC(IPROC),*) ETA1(INDEX)
+         END DO
+
+         DO I=1, NNODP(IPROC)
+            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC(IPROC),*) ETA2(INDEX)
+         END DO
+
+         DO I=1, NNODP(IPROC)
+            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC(IPROC),*) UU2(INDEX)
+         END DO
+
+         DO I=1, NNODP(IPROC)
+            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC(IPROC),*) VV2(INDEX)
+         END DO
+
+         IF(IM.EQ.10) THEN
+            DO I=1, NNODP(IPROC)
+               INDEX = ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOC(IPROC),*) CH1(INDEX)
+            END DO
+         ENDIF
+
+         DO I=1, NNODP(IPROC)
+            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC(IPROC),*) NODECODE(INDEX)
+         END DO
+
+         DO I=1,NELP(IPROC)
+            INDEX=ABS(IMAP_EL_LG(I,IPROC))
+            WRITE(LOC(IPROC),*) NOFF(INDEX)
+         END DO
+
+C
+C     jgf46.02 Write out 3D hotstart data if appropriate
+         IF (IMHSF.GT.10) THEN
+            CALL WriteInitCond3D(LOC(IPROC),IPROC)
+         ENDIF
+#if 0
+C
+C....IF APPROPRIATE, WRITE OUT HOT START INFORMATION FOR IN PROGRESS HARMONIC ANALYSIS
+
+c       IF((IHARIND.EQ.1).AND.(ITHSF.GT.ITHAS)) THEN
+c         WRITE(LOC(IPROC),REC=IHOTSTP+1) ICHA
+c         IHOTSTP = IHOTSTP + 1
+c         CALL HAHOUT(NP,NSTAE,NSTAV,NHASE,NHASV,NHAGE,NHAGV,
+c    &                LOC(IPROC),IHOTSTP)
+c
+c         IF(NHASE.EQ.1) CALL HAHOUTES(NSTAE,LOC(IPROC),IHOTSTP)
+c         IF(NHASV.EQ.1) CALL HAHOUTVS(NSTAV,LOC(IPROC),IHOTSTP)
+c         IF(NHAGE.EQ.1) CALL HAHOUTEG(MNP,LOC(IPROC),IHOTSTP)
+c         IF(NHAGV.EQ.1) CALL HAHOUTVG(MNP,LOC(IPROC),IHOTSTP)
+c         ENDIF
+c
+c       if(CHARMV) then
+c         IF((IHARIND.EQ.1).AND.(ITHSF.GT.ITMV)) THEN
+c           IHOTSTP=IHOTSTP+1
+c           WRITE(LOC(IPROC),REC=IHOTSTP) NTSTEPS
+c           IF(NHAGE.EQ.1) THEN
+c             DO I=1, NNODP(IPROC)
+c               INDEX = IMAP_NOD_LG(I,IPROC)
+c               DO I=1,MNP
+c                 WRITE(LOC(IPROC),REC=IHOTSTP+1) ELAV(INDEX)
+c                 WRITE(LOC(IPROC),REC=IHOTSTP+2) ELVA(INDEX)
+c                 IHOTSTP=IHOTSTP+2
+c                 END DO
+c             ENDIF
+c           IF(NHAGV.EQ.1) THEN
+c             DO I=1,NNODP(IPROC)
+c               WRITE(LOC(IPROC),REC=IHOTSTP+1) XVELAV(INDEX)
+c               WRITE(LOC(IPROC),REC=IHOTSTP+2) YVELAV(INDEX)
+c               WRITE(LOC(IPROC),REC=IHOTSTP+3) XVELVA(INDEX)
+c               WRITE(LOC(IPROC),REC=IHOTSTP+4) YVELVA(INDEX)
+c               IHOTSTP=IHOTSTP+4
+c               END DO
+c             ENDIF
+c           ENDIF
+c         ENDIF  
+#endif
+
+      ENDDO
+C
+C--Close Global file and all the Local Files
+C
+      CLOSE (IHOT)
+      DO IPROC=1, NPROC
+         CLOSE (LOC(IPROC))
+      ENDDO
+C
+      DEALLOCATE ( LOC )
+      nbytes = 4*nproc
+      call memory_dealloc(nbytes)
+      DEALLOCATE ( ETA1, ETA2, EtaDisc, UU2, VV2, NODECODE, CH1 )
+      nbytes = 7*mnp
+      call memory_dealloc(nbytes)
+      DEALLOCATE ( NOFF )
+      nbytes = 6*mne
+      call memory_dealloc(nbytes)
+      call memory_status()
+C
+      RETURN
+ 1001 FORMAT('ERROR: The hot start file')
+ 1010 FORMAT(' File ',A60,/,' WAS NOT FOUND!  ADCPrep Terminated!!!',/)
+ 1011 FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
+ 1012 FORMAT('was a nonmatching version')
+ 1005 FORMAT('exists but cannot be opened.')
+ 9973 FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
+      END SUBROUTINE HOTINITCOND
+
+
       SUBROUTINE HOTLOCALIZE()
       USE VERSION
       USE PRE_GLOBAL 
@@ -3321,6 +4125,7 @@ C---------------------------------------------------------------------------C
 C                     written 10/11/01 by RL                                C
 C             started mods for harmonic analysis and 3D RL 5/22/03          C
 C         jgf Updated for v45.06 09/07/2005 not incl. harmonic or 3D        C
+C         kmd48.33bc updated with 3D information                            C  
 C                                                                           C
 C  This routine reads the global hot start file (either fort.67 or fort.68) C
 C  and writes local hot start files of the same format.                     C
@@ -3356,8 +4161,8 @@ C
       INTEGER IMHSF,ITHSF, NH, N
       INTEGER IESTP,NSCOUE,IVSTP,NSCOUV,ICSTP,NSCOUC,IPSTP,IWSTP,NSCOUM,
      &        IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW
-      INTEGER N3DSD, I3DSDRec, N3DSV, I3DSVRec, N3DST, I3DSTRec
-      INTEGER N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec
+      !INTEGER N3DSD, I3DSDRec, N3DSV, I3DSVRec, N3DST, I3DSTRec !kmd48.33bc defined in global
+      !INTEGER N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec
       CHARACTER FNAME*60,LOCFN*14
       CHARACTER*16 FNAME1
       CHARACTER*8 FNAM8(2)
@@ -3368,15 +4173,6 @@ C
      &    UU2(:),VV2(:),CH1(:)
       REAL(8) TIMEHSF
       integer :: InputFileFmtVn, NP_G_IN, NE_G_IN, NP_A_IN, NE_A_IN
-
-ckmd Added information for 3D hotstart
-      REAL(SZ),ALLOCATABLE :: DUU(:),DUV(:),DVV(:)
-      REAL(SZ),ALLOCATABLE :: UU(:),VV(:)
-      REAL(SZ),ALLOCATABLE :: BSX(:),BSY(:)
-      REAL(SZ),ALLOCATABLE :: WZ(:,:), q20(:,:), q20l(:,:)
-      REAL(SZ),ALLOCATABLE :: SigT(:,:), Sal(:,:), Temp(:,:)
-      REAL(SZ),ALLOCATABLE :: RealQ(:,:), ImagQ(:,:)
-ckmd end of additions
 
       INTEGER INZ,INF,IMM,INP,INSTAE,INSTAV,IISTAE,IISTAV,IIGLOE,IIGLOV,
      &                                       IICALL,INFREQ,ITUD,NTSTEPS
@@ -3451,7 +4247,7 @@ C--   Read in info from global hot start files
         write(*, 1001)
         write(*, 1012)
         write(*, 9973)
-        stop
+        !stop
       endif
 
       READ(IHOT,REC=IHOTSTP) IMHSF        ; IHOTSTP = IHOTSTP + 1
@@ -3463,6 +4259,7 @@ C--   Read in info from global hot start files
       READ(IHOT,REC=IHOTSTP) NE_A_IN      ; IHOTSTP = IHOTSTP + 1
       if (nnodg == np_g_in) then
         MNP = nnodg
+        print *, "MNP = ", MNP
       else
         print *, "number global nodes does not match hotstart file"
         write(*,'(A,I8)') "expected value   = ", nnodg
@@ -3477,6 +4274,7 @@ C--   Read in info from global hot start files
         write(*,'(A,I8)') "hotstart value = ", ne_g_in
         stop 
       endif
+      PRINT *, "IMHSF ", IMHSF 
 C
 C Allocate local work arrays
 C
@@ -3518,30 +4316,6 @@ C
       nbytes = 4*mnharf
       call memory_alloc(nbytes)
 
-ckmd Added information for 3D hotstart
-      ALLOCATE ( DUU(MNP),DUV(MNP),DVV(MNP))
-      nbytes = 3*mnp*8
-      call memory_alloc(nbytes)
-      ALLOCATE ( UU(MNP),VV(MNP))
-      nbytes = 2*mnp*8
-      call memory_alloc(nbytes)
-      ALLOCATE ( BSX(MNP),BSY(MNP))
-      nbytes = 2*mnp*8
-      call memory_alloc(nbytes)
-      ALLOCATE ( WZ(MNP,NFEN), q20(MNP,NFEN))
-      nbytes = (mnp*nfen*8) + (mnp*nfen*8)
-      call memory_alloc(nbytes)
-      ALLOCATE ( RealQ(MNP,NFEN), ImagQ(MNP,NFEN))
-      nbytes = (mnp*nfen*8) + (mnp*nfen*8)
-      call memory_alloc(nbytes)
-      ALLOCATE ( q20l(MNP,NFEN), SigT(MNP,NFEN))
-      nbytes = (mnp*nfen*8) + (mnp*nfen*8)
-      call memory_alloc(nbytes)
-      ALLOCATE ( Sal(MNP,NFEN), Temp(MNP,NFEN))
-      nbytes = (mnp*nfen*8) + (mnp*nfen*8)
-      call memory_alloc(nbytes)
-ckmd end of additions
-
 !  Continue reading global hot start file
       print *, "continuing to read global hotstart file"
 
@@ -3560,7 +4334,7 @@ ckmd end of additions
       DO I=1,MNP
          READ(IHOT,REC=IHOTSTP) VV2(I) ; IHOTSTP = IHOTSTP + 1
       END DO
-      IF(IM.EQ.10) THEN
+      IF(IMHSF.EQ.10) THEN
         DO I=1,MNP
            READ(IHOT,REC=IHOTSTP) CH1(I) ; IHOTSTP = IHOTSTP + 1
         END DO
@@ -3568,6 +4342,7 @@ ckmd end of additions
       DO I=1,MNP
          READ(IHOT,REC=IHOTSTP) NODECODE(I) ; IHOTSTP = IHOTSTP + 1
       END DO
+
       DO I=1,MNE
          READ(IHOT,REC=IHOTSTP) NOFF(I)  ; IHOTSTP = IHOTSTP + 1                    
       END DO
@@ -3597,92 +4372,15 @@ ckmd end of additions
       READ(IHOT,REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
       READ(IHOT,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
       READ(IHOT,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
-C
-Ckmd Added information for 3D hotstart     
-C     jgf46.02 Read in 3D hotstart data if appropriate
-      IF (C3D) THEN
-C     Start reading in the data
-        READ(IHOT,REC=IHOTSTP) IDEN
-        IHOTSTP=IHOTSTP+1
-        READ(IHOT,REC=IHOTSTP) N3DSD
-        IHOTSTP=IHOTSTP+1
-        READ(IHOT,REC=IHOTSTP) I3DSDRec
-        IHOTSTP=IHOTSTP+1
-        READ(IHOT,REC=IHOTSTP) N3DSV
-        IHOTSTP=IHOTSTP+1
-        READ(IHOT,REC=IHOTSTP) I3DSVRec
-        IHOTSTP=IHOTSTP+1
-        READ(IHOT,REC=IHOTSTP) N3DST
-        IHOTSTP=IHOTSTP+1
-        READ(IHOT,REC=IHOTSTP) I3DSTRec
-        IHOTSTP=IHOTSTP+1
-        READ(IHOT,REC=IHOTSTP) N3DGD
-        IHOTSTP=IHOTSTP+1
-        READ(IHOT,REC=IHOTSTP) I3DGDRec
-        IHOTSTP=IHOTSTP+1
-        READ(IHOT,REC=IHOTSTP) N3DGV
-        IHOTSTP=IHOTSTP+1
-        READ(IHOT,REC=IHOTSTP) I3DGVRec
-        IHOTSTP=IHOTSTP+1
-        READ(IHOT,REC=IHOTSTP) N3DGT
-        IHOTSTP=IHOTSTP+1
-        READ(IHOT,REC=IHOTSTP) I3DGTRec
-        IHOTSTP=IHOTSTP+1
-
-        DO NH=1,MNP
-          READ(IHOT,REC=IHOTSTP) DUU(NH)
-          IHOTSTP=IHOTSTP+1
-          READ(IHOT,REC=IHOTSTP) DUV(NH)
-          IHOTSTP=IHOTSTP+1
-          READ(IHOT,REC=IHOTSTP) DVV(NH)
-          IHOTSTP=IHOTSTP+1
-          READ(IHOT,REC=IHOTSTP) UU(NH)
-          IHOTSTP=IHOTSTP+1
-          READ(IHOT,REC=IHOTSTP) VV(NH)
-          IHOTSTP=IHOTSTP+1
-          READ(IHOT,REC=IHOTSTP) BSX(NH)
-          IHOTSTP=IHOTSTP+1
-          READ(IHOT,REC=IHOTSTP) BSY(NH)
-          IHOTSTP=IHOTSTP+1
-        ENDDO
-
-        DO NH=1,MNP
-          DO N=1,NFEN
-            READ(IHOT,REC=IHOTSTP) RealQ(NH,N)
-            IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) ImagQ(NH,N)
-            IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) WZ(NH,N)
-            IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) q20(NH,N)
-            IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) q20l(NH,N)
-            IHOTSTP=IHOTSTP+1
-            IF(ABS(IDen).EQ.1) THEN
-              READ(IHOT,REC=IHOTSTP) SigT(NH,N)
-              IHOTSTP=IHOTSTP+1
-            ENDIF
-            IF(ABS(IDen).EQ.2) THEN
-              READ(IHOT,REC=IHOTSTP) Sal(NH,N)
-              IHOTSTP=IHOTSTP+1
-            ENDIF
-            IF(ABS(IDen).EQ.3) THEN
-              READ(IHOT,REC=IHOTSTP) Temp(NH,N)
-              IHOTSTP=IHOTSTP+1
-            ENDIF
-            IF(ABS(IDen).EQ.4) THEN
-              READ(IHOT,REC=IHOTSTP) Sal(NH,N)
-              IHOTSTP=IHOTSTP+1
-              READ(IHOT,REC=IHOTSTP) Temp(NH,N)
-              IHOTSTP=IHOTSTP+1
-            ENDIF
-          ENDDO
-        ENDDO
-ckmd end of additions
 
 
+
+C kmd48.33 moved 3D hot start information to subroutine
+C          and took out other lines
+      IF (IMHSF.GT.10) THEN 
+        CALL ReadHotStart3D(IHOT,IHOTSTP)
       ENDIF
-      
+
       
       ELSEIF(IHOT.EQ.-67.or.IHOT.EQ.-68) THEN
 
@@ -4160,6 +4858,12 @@ C
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
             WRITE(LOC(IPROC),REC=IHOTSTP) ETA2(INDX)
             IHOTSTP=IHOTSTP+1
+
+
+
+
+
+
          END DO
 
          DO I=1, NNODP(IPROC)
@@ -4226,90 +4930,11 @@ C
          WRITE(LOC(IPROC),REC=IHOTSTP) IGWP  ; IHOTSTP = IHOTSTP + 1
          WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUGW  ; IHOTSTP = IHOTSTP + 1
 
-Ckmd Added information for 3D hotstart
-C     jgf46.02 Write out 3D hotstart data if appropriate
-         IF (C3D) THEN
-C     Start writing out the 3D hotstart information
-            WRITE(LOC(IPROC),REC=IHOTSTP) IDEN
-            IHOTSTP=IHOTSTP+1
-            WRITE(LOC(IPROC),REC=IHOTSTP) N3DSD
-            IHOTSTP=IHOTSTP+1
-            WRITE(LOC(IPROC),REC=IHOTSTP) I3DSDRec
-            IHOTSTP=IHOTSTP+1
-            WRITE(LOC(IPROC),REC=IHOTSTP) N3DSV
-            IHOTSTP=IHOTSTP+1
-            WRITE(LOC(IPROC),REC=IHOTSTP) I3DSVRec
-            IHOTSTP=IHOTSTP+1
-            WRITE(LOC(IPROC),REC=IHOTSTP) N3DST
-            IHOTSTP=IHOTSTP+1
-            WRITE(LOC(IPROC),REC=IHOTSTP) I3DSTRec
-            IHOTSTP=IHOTSTP+1
-            WRITE(LOC(IPROC),REC=IHOTSTP) N3DGD
-            IHOTSTP=IHOTSTP+1
-            WRITE(LOC(IPROC),REC=IHOTSTP) I3DGDRec
-            IHOTSTP=IHOTSTP+1
-            WRITE(LOC(IPROC),REC=IHOTSTP) N3DGV
-            IHOTSTP=IHOTSTP+1
-            WRITE(LOC(IPROC),REC=IHOTSTP) I3DGVRec
-            IHOTSTP=IHOTSTP+1
-            WRITE(LOC(IPROC),REC=IHOTSTP) N3DGT
-            IHOTSTP=IHOTSTP+1
-            WRITE(LOC(IPROC),REC=IHOTSTP) I3DGTRec
-            IHOTSTP=IHOTSTP+1
-
-            DO I=1,NNODP(IPROC)
-               INDX=IMAP_NOD_LG(I,IPROC)
-               WRITE(LOC(IPROC),REC=IHOTSTP) DUU(INDX)
-               IHOTSTP=IHOTSTP+1
-               WRITE(LOC(IPROC),REC=IHOTSTP) DUV(INDX)
-               IHOTSTP=IHOTSTP+1
-               WRITE(LOC(IPROC),REC=IHOTSTP) DVV(INDX)
-               IHOTSTP=IHOTSTP+1
-               WRITE(LOC(IPROC),REC=IHOTSTP) UU(INDX)
-               IHOTSTP=IHOTSTP+1
-               WRITE(LOC(IPROC),REC=IHOTSTP) VV(INDX)
-               IHOTSTP=IHOTSTP+1
-               WRITE(LOC(IPROC),REC=IHOTSTP) BSX(INDX)
-               IHOTSTP=IHOTSTP+1
-               WRITE(LOC(IPROC),REC=IHOTSTP) BSY(INDX)
-               IHOTSTP=IHOTSTP+1
-             ENDDO
-
-             DO I=1,NNODP(IPROC)
-               INDX=IMAP_NOD_LG(I,IPROC)
-               DO N=1,NFEN
-                 WRITE(LOC(IPROC),REC=IHOTSTP) RealQ(INDX,N)
-                 IHOTSTP=IHOTSTP+1
-                 WRITE(LOC(IPROC),REC=IHOTSTP) ImagQ(INDX,N)
-                 IHOTSTP=IHOTSTP+1
-                 WRITE(LOC(IPROC),REC=IHOTSTP) WZ(INDX,N)
-                 IHOTSTP=IHOTSTP+1
-                 WRITE(LOC(IPROC),REC=IHOTSTP) q20(INDX,N)
-                 IHOTSTP=IHOTSTP+1
-                 WRITE(LOC(IPROC),REC=IHOTSTP) q20l(INDX,N)
-                 IF(ABS(IDen).EQ.1) THEN
-                   IHOTSTP=IHOTSTP+1
-                   WRITE(LOC(IPROC),REC=IHOTSTP) SigT(INDX,N)
-                 ENDIF
-                 IF(ABS(IDen).EQ.2) THEN
-                   IHOTSTP=IHOTSTP+1
-                   WRITE(LOC(IPROC),REC=IHOTSTP) Sal(INDX,N)
-                 ENDIF
-                 IF(ABS(IDen).EQ.3) THEN
-                   IHOTSTP=IHOTSTP+1
-                   WRITE(LOC(IPROC),REC=IHOTSTP) Temp(INDX,N)
-                 ENDIF
-                 IF(ABS(IDen).EQ.4) THEN
-                   IHOTSTP=IHOTSTP+1
-                   WRITE(LOC(IPROC),REC=IHOTSTP) Sal(INDX,N)
-                   IHOTSTP=IHOTSTP+1
-                   WRITE(LOC(IPROC),REC=IHOTSTP) Temp(INDX,N)
-                   IHOTSTP=IHOTSTP+1
-                 ENDIF
-               ENDDO
-             ENDDO
-ckmd end of additions
+C  kmd48.33bc moved 3D hot start information to subroutine
+         IF (IMHSF.GT.10) THEN
+            CALL WriteHotStart3D(LOC(IPROC),IHOTSTP,IPROC)
          ENDIF
+
 #if 0
 C 
 C....IF APPROPRIATE, WRITE OUT HOT START INFORMATION FOR IN PROGRESS HARMONIC ANALYSIS
@@ -4401,7 +5026,7 @@ C
       IF(ALLOCATED  ( ImagQ ))  DEALLOCATE ( ImagQ)
       nbytes = (mnp*nfen*8) + (mnp*nfen*8)
       call memory_dealloc(nbytes)
-      IF(ALLOCATED  ( q20l )) DEALLOCATE ( q20l )
+      IF(ALLOCATED  ( l )) DEALLOCATE ( l )
       IF(ALLOCATED  ( SigT )) DEALLOCATE ( SigT )
       nbytes = (mnp*nfen*8) + (mnp*nfen*8)
       call memory_dealloc(nbytes)
@@ -4429,6 +5054,7 @@ C---------------------------------------------------------------------------C
 C                     written 10/11/01 by RL                                C
 C             started mods for harmonic analysis and 3D RL 5/22/03          C
 C         jgf Updated for v45.06 09/07/2005 not incl. harmonic or 3D        C
+C         kmd48.33bc updated with 3D hot start                              C
 C                                                                           C
 C  This routine reads the global hot start file (either fort.67 or fort.68) C
 C  and writes local hot start files of the same format.                     C
@@ -4643,12 +5269,13 @@ C
          READ(LOC(IPROC),REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
          READ(LOC(IPROC),REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
          READ(LOC(IPROC),REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
-#if HA
 C
-C     jgf46.02 Write out 3D hotstart data if appropriate
+C   kmd48.33bc add information for 3D hot start 
+C     jgf46.02 read in 3D hotstart data if appropriate
          IF (C3D) THEN
-            CALL WriteHotStart3D(LOC(IPROC),IHOTSTP)
+            CALL ReadHotStart3DGlobal(LOC(IPROC),IHOTSTP,IPROC)
          ENDIF
+#if HA
 C 
 C....IF APPROPRIATE, WRITE OUT HOT START INFORMATION FOR IN PROGRESS HARMONIC ANALYSIS
 
@@ -4773,12 +5400,13 @@ C-----------------------------------------------------------------------
 C
      
        ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet 
-#if 0
-C     jgf46.02 Read in 3D hotstart data if appropriate
+C   kmd48.33bc add information for 3D hot start
+C     jgf46.02 Write in 3D hotstart data if appropriate
       IF (C3D) THEN
-         CALL ReadHotStart3D(IHOT,IHOTSTP)
+         CALL WriteHotStart3DGlobal(IHOT,IHOTSTP,IPROC)
       ENDIF
 C
+#if 0
 C.....DETERMINE HARMONIC ANALYSIS PARAMETERS
 
       IHARIND=NHARFR*(NHASE+NHASV+NHAGE+NHAGV)
@@ -4949,12 +5577,150 @@ C     ----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, intent(in) :: UnitNumber ! i/o unit of full domain file
       INTEGER, intent(inout) :: FilePosition ! position in binary file
+      INTEGER IHOTSTP,NH,K
 C
+C     Start reading in the data
+
+!kmd Added information for 3D hotstart
+      ALLOCATE ( DUU(MNP),DUV(MNP),DVV(MNP))
+      ALLOCATE ( UU(MNP),VV(MNP))
+      ALLOCATE ( BSX(MNP),BSY(MNP))
+!kmd end of additions
+
+        IHOT=UnitNumber
+        IHOTSTP=FilePosition
+
+        PRINT*, "How many layers need to be evaluated:"
+        READ *, NFEN
+
+        PRINT *, "made it to 3D portion of code"
+        PRINT *, "MNP = ", MNP
+        PRINT *, "NFEN = ", NFEN
+        PRINT *, "IHOTSTP = ", IHOTSTP
+
+!kmd Added information for 3D hotstart
+      ALLOCATE ( WZ(MNP,NFEN), q20(MNP,NFEN))
+      ALLOCATE ( RealQ(MNP,NFEN), ImagQ(MNP,NFEN))
+      ALLOCATE ( l(MNP,NFEN), SigT(MNP,NFEN))
+      ALLOCATE ( Sal(MNP,NFEN), Temp(MNP,NFEN))
+!kmd end of additions
+
+        READ(IHOT,REC=IHOTSTP) IDEN  ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) N3DSD ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) I3DSDRec ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) N3DSV ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) I3DSVRec ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) N3DST ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) I3DSTRec ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) N3DGD ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) I3DGDRec ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) N3DGV ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) I3DGVRec ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) N3DGT ;  IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) I3DGTRec ;  IHOTSTP = IHOTSTP + 1
+
+        DO NH=1,MNP
+          READ(IHOT,REC=IHOTSTP) DUU(NH)
+          IHOTSTP=IHOTSTP+1
+        END DO
+        DO NH=1,MNP
+          READ(IHOT,REC=IHOTSTP) DUV(NH)
+          IHOTSTP=IHOTSTP+1
+        END DO
+        DO NH=1,MNP
+          READ(IHOT,REC=IHOTSTP) DVV(NH)
+          IHOTSTP=IHOTSTP+1
+        END DO
+        DO NH=1,MNP
+          READ(IHOT,REC=IHOTSTP) UU(NH)
+          IHOTSTP=IHOTSTP+1
+        END DO
+        DO NH=1,MNP
+          READ(IHOT,REC=IHOTSTP) VV(NH)
+          IHOTSTP=IHOTSTP+1
+        END DO
+        DO NH=1,MNP
+          READ(IHOT,REC=IHOTSTP) BSX(NH)
+          IHOTSTP=IHOTSTP+1
+        END DO
+        DO NH=1,MNP
+          READ(IHOT,REC=IHOTSTP) BSY(NH)
+          IHOTSTP=IHOTSTP+1
+        ENDDO
+
+        DO K=1,NFEN
+          DO NH=1,MNP
+            READ(IHOT,REC=IHOTSTP) RealQ(NH,K)
+            IHOTSTP=IHOTSTP+1
+          END DO
+        END DO
+        DO K=1,NFEN
+          DO NH=1,MNP
+            READ(IHOT,REC=IHOTSTP) ImagQ(NH,K)
+            IHOTSTP=IHOTSTP+1
+          END DO
+        END DO
+        DO K=1,NFEN
+          DO NH=1,MNP
+            READ(IHOT,REC=IHOTSTP) WZ(NH,K)
+            IHOTSTP=IHOTSTP+1
+          END DO
+        END DO
+        DO K=1,NFEN
+          DO NH=1,MNP
+            READ(IHOT,REC=IHOTSTP) q20(NH,K)
+            IHOTSTP=IHOTSTP+1
+          END DO
+        END DO
+        DO K=1,NFEN
+          DO NH=1,MNP
+            READ(IHOT,REC=IHOTSTP) l(NH,K)
+            IHOTSTP=IHOTSTP+1
+          END DO
+        END DO
+        IF (ABS(IDEN).EQ.1) THEN
+          DO K=1,NFEN
+            DO NH=1,MNP
+              READ(IHOT,REC=IHOTSTP) SigT(NH,K)
+              IHOTSTP=IHOTSTP+1
+            END DO
+          END DO
+        END IF
+        IF(ABS(IDen).EQ.2) THEN
+          DO K=1,NFEN
+            DO NH=1,MNP
+              READ(IHOT,REC=IHOTSTP) Sal(NH,K)
+              IHOTSTP=IHOTSTP+1
+            END DO
+          END DO
+        ENDIF
+        IF(ABS(IDen).EQ.3) THEN
+          DO K=1,NFEN
+            DO NH=1,MNP
+              READ(IHOT,REC=IHOTSTP) Temp(NH,K)
+              IHOTSTP=IHOTSTP+1
+            END DO
+          END DO
+        ENDIF
+        IF(ABS(IDen).EQ.4) THEN
+          DO K=1,NFEN
+            DO NH=1,MNP
+              READ(IHOT,REC=IHOTSTP) Sal(NH,K)
+              IHOTSTP=IHOTSTP+1
+            END DO
+          END DO
+          DO K=1,NFEN
+            DO NH=1,MNP
+              READ(IHOT,REC=IHOTSTP) Temp(NH,K)
+              IHOTSTP=IHOTSTP+1
+            ENDDO
+          ENDDO
+        END IF
+
       RETURN
 C     ----------------------------------------------------------------------
       END SUBROUTINE ReadHotStart3D
 C     ----------------------------------------------------------------------
-
 
 
 C     ----------------------------------------------------------------------
@@ -4965,18 +5731,723 @@ C     jgf46.02 This subroutine supports PREP67_68. It writes out the 3D
 C     section of the full domain hot start file.
 C
 C     ----------------------------------------------------------------------
-      SUBROUTINE WriteHotStart3D(UnitNumber,FilePosition)
+      SUBROUTINE WriteHotStart3D(UnitNumber,FilePosition,IPROC)
 C     ----------------------------------------------------------------------
       USE PRE_GLOBAL 
       IMPLICIT NONE
       INTEGER, intent(in) :: UnitNumber ! i/o unit of subdomain file
       INTEGER, intent(inout) :: FilePosition ! position in binary file
-C
+      INTEGER IHOTSTP, LOCHSF, I, N, INDEX
+      INTEGER, intent(in) :: IPROC
+
+C     Start writing out the 3D hotstart information
+
+            LOCHSF=UnitNumber
+            IHOTSTP=FilePosition
+
+            WRITE(LOCHSF,REC=IHOTSTP) IDEN ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) N3DSD ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) I3DSDRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) N3DSV ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) I3DSVRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) N3DST ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) I3DSTRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) N3DGD ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) I3DGDRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) N3DGV ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) I3DGVRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) N3DGT ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) I3DGTRec ; IHOTSTP = IHOTSTP + 1
+
+            DO I=1,NNODP(IPROC)
+               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) DUU(INDEX)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO I=1,NNODP(IPROC)
+               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) DUV(INDEX)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO I=1,NNODP(IPROC)
+               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) DVV(INDEX)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO I=1,NNODP(IPROC)
+               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) UU(INDEX)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO I=1,NNODP(IPROC)
+               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) VV(INDEX)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO I=1,NNODP(IPROC)
+               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) BSX(INDEX)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO I=1,NNODP(IPROC)
+               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) BSY(INDEX)
+               IHOTSTP=IHOTSTP+1
+             ENDDO
+
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) RealQ(INDEX,N)
+                IHOTSTP=IHOTSTP+1
+              END DO
+            END DO
+
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) ImagQ(INDEX,N)
+                IHOTSTP=IHOTSTP+1
+              END DO
+            END DO
+
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) WZ(INDEX,N)
+                IHOTSTP=IHOTSTP+1
+              END DO
+            END DO
+
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) q20(INDEX,N)
+                IHOTSTP=IHOTSTP+1
+              END DO
+            END DO
+
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) l(INDEX,N)
+                IHOTSTP=IHOTSTP+1
+              END DO
+            END DO
+
+            IF (ABS(IDEN).EQ.1) THEN
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) SigT(INDEX,N)
+                  IHOTSTP=IHOTSTP+1
+                END DO
+              END DO
+            ENDIF
+            IF(ABS(IDen).EQ.2) THEN
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Sal(INDEX,N)
+                  IHOTSTP=IHOTSTP+1
+                END DO
+              END DO
+            ENDIF
+            IF(ABS(IDen).EQ.3) THEN
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Temp(INDEX,N)
+                  IHOTSTP=IHOTSTP+1
+                END DO
+              END DO
+            ENDIF
+            IF(ABS(IDen).EQ.4) THEN
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Sal(INDEX,N)
+                  IHOTSTP=IHOTSTP+1
+                END DO
+              END DO
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Temp(INDEX,N)
+                  IHOTSTP=IHOTSTP+1
+                END DO
+              END DO
+            END IF
+
       RETURN
 C     ----------------------------------------------------------------------
       END SUBROUTINE WriteHotStart3D
 C     ----------------------------------------------------------------------
 
+C   kmd48.33bc add in 3D global hot start files
+C     ----------------------------------------------------------------------
+C          S U B R O U T I N E   R E A D  H O T  S T A R T  3 D  G L O B A L
+C     ----------------------------------------------------------------------
+C
+C     This subroutine supports PREP67_68. It reads in the 3D
+C     section of the full domain hot start file.
+C
+C     ----------------------------------------------------------------------
+      SUBROUTINE ReadHotStart3DGlobal(UnitNumber,FilePosition,ProcessNo)
+C     ----------------------------------------------------------------------
+      USE PRE_GLOBAL
+      IMPLICIT NONE
+      INTEGER, intent(in) :: UnitNumber ! i/o unit of full domain file
+      INTEGER, intent(inout) :: FilePosition ! position in binary file
+      INTEGER, intent(in) :: ProcessNo ! i/o unit of full domain file
+      INTEGER IHOTSTP,NH,K,I,IPROC
+      INTEGER INDEX
+      REAL(8) RVALUE
+C
+C     Start reading in the data
+
+!kmd Added information for 3D hotstart
+      ALLOCATE ( DUU(MNP),DUV(MNP),DVV(MNP))
+      ALLOCATE ( UU(MNP),VV(MNP))
+      ALLOCATE ( BSX(MNP),BSY(MNP))
+!kmd end of additions
+
+        IHOT=UnitNumber
+        IHOTSTP=FilePosition
+        IPROC=ProcessNo
+
+        PRINT*, "How many layers need to be evaluated:"
+        READ *, NFEN
+   
+        PRINT *, "Made it to the 3d portion of this"
+        PRINT *, "NFEN = ", NFEN
+
+!kmd Added information for 3D hotstart
+      ALLOCATE ( WZ(MNP,NFEN), q20(MNP,NFEN))
+      ALLOCATE ( RealQ(MNP,NFEN), ImagQ(MNP,NFEN))
+      ALLOCATE ( l(MNP,NFEN), SigT(MNP,NFEN))
+      ALLOCATE ( Sal(MNP,NFEN), Temp(MNP,NFEN))
+!kmd end of additions
+
+        READ(IHOT,REC=IHOTSTP) IDEN ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) N3DSD ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) I3DSDRec ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) N3DSV ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) I3DSVRec ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) N3DST ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) I3DSTRec ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) N3DGD ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) I3DGDRec ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) N3DGV ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) I3DGVRec ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) N3DGT ; IHOTSTP = IHOTSTP + 1
+        READ(IHOT,REC=IHOTSTP) I3DGTRec ; IHOTSTP = IHOTSTP + 1
+
+        DO I=1,NNODP(IPROC)
+          INDEX=IMAP_NOD_LG(I,IPROC)
+          READ(IHOT,REC=IHOTSTP) RVALUE
+          IF (INDEX.GT.0) DUU(INDEX) = RVALUE
+          IHOTSTP=IHOTSTP+1
+        END DO
+        DO I=1,NNODP(IPROC)
+          INDEX=IMAP_NOD_LG(I,IPROC)
+          READ(IHOT,REC=IHOTSTP) RVALUE
+          IF (INDEX.GT.0) DUV(INDEX) = RVALUE
+          IHOTSTP=IHOTSTP+1
+        END DO
+        DO I=1,NNODP(IPROC)
+          INDEX=IMAP_NOD_LG(I,IPROC)
+          READ(IHOT,REC=IHOTSTP) RVALUE
+          IF (INDEX.GT.0) DVV(INDEX) = RVALUE
+          IHOTSTP=IHOTSTP+1
+        END DO
+        DO I=1,NNODP(IPROC)
+          INDEX=IMAP_NOD_LG(I,IPROC)
+          READ(IHOT,REC=IHOTSTP) RVALUE
+          IF (INDEX.GT.0) UU(INDEX) = RVALUE
+          IHOTSTP=IHOTSTP+1
+        END DO
+        DO I=1,NNODP(IPROC)
+          INDEX=IMAP_NOD_LG(I,IPROC)
+          READ(IHOT,REC=IHOTSTP) RVALUE
+          IF (INDEX.GT.0) VV(INDEX) = RVALUE
+          IHOTSTP=IHOTSTP+1
+        END DO
+        DO I=1,NNODP(IPROC)
+          INDEX=IMAP_NOD_LG(I,IPROC)
+          READ(IHOT,REC=IHOTSTP) RVALUE
+          IF (INDEX.GT.0) BSX(INDEX) = RVALUE
+          IHOTSTP=IHOTSTP+1
+        END DO
+        DO I=1,NNODP(IPROC)
+          INDEX=IMAP_NOD_LG(I,IPROC)
+          READ(IHOT,REC=IHOTSTP) RVALUE
+          IF (INDEX.GT.0) BSY(INDEX) = RVALUE
+          IHOTSTP=IHOTSTP+1
+        END DO
+
+        DO K=1,NFEN
+          DO I=1,NNODP(IPROC)
+            INDEX=IMAP_NOD_LG(I,IPROC)
+            READ(IHOT,REC=IHOTSTP) RVALUE
+            IF (INDEX.GT.0) REALQ(INDEX,K) = RVALUE
+            IHOTSTP=IHOTSTP+1
+          END DO
+        END DO
+        DO K=1,NFEN
+          DO I=1,NNODP(IPROC)
+            INDEX=IMAP_NOD_LG(I,IPROC)
+            READ(IHOT,REC=IHOTSTP) RVALUE
+            IF (INDEX.GT.0) ImagQ(INDEX,K) = RVALUE
+            IHOTSTP=IHOTSTP+1
+          END DO
+        END DO
+        DO K=1,NFEN
+          DO I=1,NNODP(IPROC)
+            INDEX=IMAP_NOD_LG(I,IPROC)
+            READ(IHOT,REC=IHOTSTP) RVALUE
+            IF (INDEX.GT.0) WZ(INDEX,K) = RVALUE
+            IHOTSTP=IHOTSTP+1
+          END DO
+        END DO
+        DO K=1,NFEN
+          DO I=1,NNODP(IPROC)
+            INDEX=IMAP_NOD_LG(I,IPROC)
+            READ(IHOT,REC=IHOTSTP) RVALUE
+            IF (INDEX.GT.0) q20(INDEX,K) = RVALUE
+            IHOTSTP=IHOTSTP+1
+          END DO
+        END DO
+        DO K=1,NFEN
+          DO I=1,NNODP(IPROC)
+            INDEX=IMAP_NOD_LG(I,IPROC)
+            READ(IHOT,REC=IHOTSTP) RVALUE
+            IF (INDEX.GT.0) l(INDEX,K) = RVALUE
+            IHOTSTP=IHOTSTP+1
+          END DO
+        END DO
+        IF (ABS(IDEN).EQ.1) THEN
+          DO K=1,NFEN
+            DO I=1,NNODP(IPROC)
+              INDEX=IMAP_NOD_LG(I,IPROC)
+              READ(IHOT,REC=IHOTSTP) RVALUE
+              IF (INDEX.GT.0) SigT(INDEX,K) = RVALUE
+              IHOTSTP=IHOTSTP+1
+            END DO
+          END DO
+        END IF
+        IF(ABS(IDen).EQ.2) THEN
+          DO K=1,NFEN
+            DO I=1,NNODP(IPROC)
+              INDEX=IMAP_NOD_LG(I,IPROC)
+              READ(IHOT,REC=IHOTSTP) RVALUE
+              IF (INDEX.GT.0) Sal(INDEX,K) = RVALUE
+              IHOTSTP=IHOTSTP+1
+            END DO
+          END DO
+        ENDIF
+        IF(ABS(IDen).EQ.3) THEN
+          DO K=1,NFEN
+            DO I=1,NNODP(IPROC)
+              INDEX=IMAP_NOD_LG(I,IPROC)
+              READ(IHOT,REC=IHOTSTP) RVALUE
+              IF (INDEX.GT.0) Temp(INDEX,K) = RVALUE
+              IHOTSTP=IHOTSTP+1
+            END DO
+          END DO
+        ENDIF
+        IF(ABS(IDen).EQ.4) THEN
+          DO K=1,NFEN
+            DO I=1,NNODP(IPROC)
+              INDEX=IMAP_NOD_LG(I,IPROC)
+              READ(IHOT,REC=IHOTSTP) RVALUE
+              IF (INDEX.GT.0) Sal(INDEX,K) = RVALUE
+              IHOTSTP=IHOTSTP+1
+            END DO
+          END DO
+          DO K=1,NFEN
+            DO I=1,NNODP(IPROC)
+              INDEX=IMAP_NOD_LG(I,IPROC)
+              READ(IHOT,REC=IHOTSTP) RVALUE
+              IF (INDEX.GT.0) TEMP(INDEX,K) = RVALUE
+              IHOTSTP=IHOTSTP+1
+            END DO
+          ENDDO
+        END IF
+
+      RETURN
+C     ----------------------------------------------------------------------
+      END SUBROUTINE ReadHotStart3DGlobal
+C     ----------------------------------------------------------------------
+
+C   kmd48.33bc added for global 3D hot start
+C     ----------------------------------------------------------------------
+C       S U B R O U T I N E   W R I T E   H O T  S T A R T  3 D  G L O B A L
+C     ----------------------------------------------------------------------
+C
+C     This subroutine supports PREP67_68. It writes out the 3D
+C     section of the full domain hot start file.
+C
+C     ----------------------------------------------------------------------
+      SUBROUTINE WriteHotStart3DGlobal(UnitNumber,FilePosition,IPROC)
+C     ----------------------------------------------------------------------
+      USE PRE_GLOBAL
+      IMPLICIT NONE
+      INTEGER, intent(in) :: UnitNumber ! i/o unit of subdomain file
+      INTEGER, intent(inout) :: FilePosition ! position in binary file
+      INTEGER, intent(in) :: IPROC
+      INTEGER IHOTSTP, LOCHSF, I, N, INDEX
+
+C     Start writing out the 3D hotstart information
+
+            LOCHSF=UnitNumber
+            IHOTSTP=FilePosition
+
+            WRITE(LOCHSF,REC=IHOTSTP) IDEN ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) N3DSD ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) I3DSDRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) N3DSV ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) I3DSVRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) N3DST ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) I3DSTRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) N3DGD ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) I3DGDRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) N3DGV ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) I3DGVRec ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) N3DGT ; IHOTSTP = IHOTSTP + 1
+            WRITE(LOCHSF,REC=IHOTSTP) I3DGTRec ; IHOTSTP = IHOTSTP + 1
+
+            DO I=1,MNP
+               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) DUU(INDEX)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO I=1,NNODP(IPROC)
+               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) DUV(INDEX)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO I=1,NNODP(IPROC)
+               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) DVV(INDEX)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO I=1,NNODP(IPROC)
+               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) UU(INDEX)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO I=1,NNODP(IPROC)
+               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) VV(INDEX)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO I=1,NNODP(IPROC)
+               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) BSX(INDEX)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO I=1,NNODP(IPROC)
+               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) BSY(INDEX)
+               IHOTSTP=IHOTSTP+1
+             ENDDO
+
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) RealQ(INDEX,N)
+                IHOTSTP=IHOTSTP+1
+              END DO
+            END DO
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) ImagQ(INDEX,N)
+                IHOTSTP=IHOTSTP+1
+              END DO
+            END DO
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) WZ(INDEX,N)
+                IHOTSTP=IHOTSTP+1
+              END DO
+            END DO
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) q20(INDEX,N)
+                IHOTSTP=IHOTSTP+1
+              END DO
+            END DO
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) l(INDEX,N)
+                IHOTSTP=IHOTSTP+1
+              END DO
+            END DO
+            IF (ABS(IDEN).EQ.1) THEN
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) SigT(INDEX,N)
+                  IHOTSTP=IHOTSTP+1
+                END DO
+              END DO
+            ENDIF
+            IF(ABS(IDen).EQ.2) THEN
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Sal(INDEX,N)
+                  IHOTSTP=IHOTSTP+1
+                END DO
+              END DO
+            ENDIF
+            IF(ABS(IDen).EQ.3) THEN
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Temp(INDEX,N)
+                  IHOTSTP=IHOTSTP+1
+                END DO
+              END DO
+            ENDIF
+            IF(ABS(IDen).EQ.4) THEN
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Sal(INDEX,N)
+                  IHOTSTP=IHOTSTP+1
+                END DO
+              END DO
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Temp(INDEX,N)
+                  IHOTSTP=IHOTSTP+1
+                END DO
+              END DO
+            END IF
+
+C
+      RETURN
+C     ----------------------------------------------------------------------
+      END SUBROUTINE WriteHotStart3DGLOBAL
+C     ----------------------------------------------------------------------
+
+C   kmd48.33bc add read information for the initial condition file
+C     ----------------------------------------------------------------------
+C          S U B R O U T I N E     R E A D  I N I T C O N D  3 D
+C     ----------------------------------------------------------------------
+C
+C     kmd47.22 reads in the 3D information from an initial condition
+C     file
+C
+C     ----------------------------------------------------------------------
+      SUBROUTINE ReadInitCond3D(UnitNumber)
+C     ----------------------------------------------------------------------
+      USE PRE_GLOBAL
+      IMPLICIT NONE
+      INTEGER, intent(in) :: UnitNumber ! i/o unit of full domain file
+      INTEGER NH,K
+C
+C     Start reading in the data
+
+!kmd Added information for 3D hotstart
+      ALLOCATE ( DUU(MNP),DUV(MNP),DVV(MNP))
+      ALLOCATE ( UU(MNP),VV(MNP))
+      ALLOCATE ( BSX(MNP),BSY(MNP))
+      ALLOCATE ( WZ(MNP,NFEN), q20(MNP,NFEN))
+      ALLOCATE ( RealQ(MNP,NFEN), ImagQ(MNP,NFEN))
+      ALLOCATE ( l(MNP,NFEN), SigT(MNP,NFEN))
+      ALLOCATE ( Sal(MNP,NFEN), Temp(MNP,NFEN))
+!kmd end of additions
+
+        IHOT=UnitNumber
+
+        READ(IHOT,*) IDEN
+
+        DO NH=1,MNP
+          READ(IHOT,*) BSX(NH)
+        END DO
+
+        DO NH=1,MNP
+          READ(IHOT,*) BSY(NH)
+        END DO
+
+        DO K=1,NFEN
+          DO NH=1,MNP
+            READ(IHOT,*) RealQ(NH,K)
+          END DO
+        END DO
+        DO K=1,NFEN
+          DO NH=1,MNP
+            READ(IHOT,*) ImagQ(NH,K)
+          END DO
+        END DO
+        DO K=1,NFEN
+          DO NH=1,MNP
+            READ(IHOT,*) WZ(NH,K)
+          END DO
+        END DO
+        DO K=1,NFEN
+          DO NH=1,MNP
+            READ(IHOT,*) q20(NH,K)
+          END DO
+        END DO
+        DO K=1,NFEN
+          DO NH=1,MNP
+            READ(IHOT,*) l(NH,K)
+          END DO
+        END DO
+        IF (ABS(IDEN).EQ.1) THEN
+          DO K=1,NFEN
+            DO NH=1,MNP
+              READ(IHOT,*) SigT(NH,K)
+            END DO
+          END DO
+        END IF
+        IF(ABS(IDen).EQ.2) THEN
+          DO K=1,NFEN
+            DO NH=1,MNP
+              READ(IHOT,*) Sal(NH,K)
+            END DO
+          END DO
+        ENDIF
+        IF(ABS(IDen).EQ.3) THEN
+          DO K=1,NFEN
+            DO NH=1,MNP
+              READ(IHOT,*) Temp(NH,K)
+            END DO
+          END DO
+        ENDIF
+        IF(ABS(IDen).EQ.4) THEN
+          DO K=1,NFEN
+            DO NH=1,MNP
+              READ(IHOT,*) Sal(NH,K)
+            END DO
+          END DO
+          DO K=1,NFEN
+            DO NH=1,MNP
+              READ(IHOT,*) Temp(NH,K)
+            ENDDO
+          ENDDO
+        END IF
+      RETURN
+
+C     ----------------------------------------------------------------------
+      END SUBROUTINE ReadInitCond3D
+C     ----------------------------------------------------------------------
+
+
+C     ----------------------------------------------------------------------
+C          S U B R O U T I N E     W R I T E   I N I T C O N D  3 D
+C     ----------------------------------------------------------------------
+C
+C     kmd47.22 This subroutine writes out the 3D section of the
+C     full domain initial condtion file.
+C
+C     ----------------------------------------------------------------------
+      SUBROUTINE WriteInitCond3D(UnitNumber,IPROC)
+C     ----------------------------------------------------------------------
+      USE PRE_GLOBAL
+      IMPLICIT NONE
+      INTEGER, intent(in) :: UnitNumber ! i/o unit of subdomain file
+      INTEGER LOCHSF, I, N, INDEX
+      INTEGER, intent(in) :: IPROC
+
+C     Start writing out the 3D initial condition information
+
+            LOCHSF=UnitNumber
+
+            WRITE(LOCHSF,*) IDEN
+
+            DO I=1,NNODP(IPROC)
+              INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+              WRITE(LOCHSF,*) BSX(INDEX)
+            END DO
+
+            DO I=1,NNODP(IPROC)
+              INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+              WRITE(LOCHSF,*) BSY(INDEX)
+            END DO
+
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,*) RealQ(INDEX,N)
+              END DO
+            END DO
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,*) ImagQ(INDEX,N)
+              END DO
+            END DO
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,*) WZ(INDEX,N)
+              END DO
+            END DO
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,*) q20(INDEX,N)
+              END DO
+            END DO
+            DO N=1,NFEN
+              DO I=1,NNODP(IPROC)
+                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,*) l(INDEX,N)
+              END DO
+            END DO
+            IF (ABS(IDEN).EQ.1) THEN
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,*) SigT(INDEX,N)
+                END DO
+              END DO
+            ENDIF
+            IF(ABS(IDen).EQ.2) THEN
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,*) Sal(INDEX,N)
+                END DO
+              END DO
+            ENDIF
+            IF(ABS(IDen).EQ.3) THEN
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,*) Temp(INDEX,N)
+                END DO
+              END DO
+            ENDIF
+            IF(ABS(IDen).EQ.4) THEN
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,*) Sal(INDEX,N)
+                END DO
+              END DO
+              DO N=1,NFEN
+                DO I=1,NNODP(IPROC)
+                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,*) Temp(INDEX,N)
+                END DO
+              END DO
+            END IF
+C
+      RETURN
+C     ----------------------------------------------------------------------
+      END SUBROUTINE WriteInitCond3D
+C     ----------------------------------------------------------------------
 
 
 C---------------------------------------------------------------------------
@@ -5141,6 +6612,7 @@ C---------------------------------------------------------------------------
 
       DefaultName(1:5) = 'fort.'
       WRITE(DefaultName(6:7),2) UnitNumber
+
 C
 C     Determine the name of the file; if found, open it
  31   IF (USE_DEFAULT) THEN     
@@ -5152,6 +6624,8 @@ C     Determine the name of the file; if found, open it
          READ(*,'(A)') FileName
          FileName = trim(FILENAME)
       ENDIF
+
+
 C
 C     Determine if full domain file exists
       INQUIRE(FILE=FileName,EXIST=FOUND)
@@ -5499,7 +6973,7 @@ C     jgf45.11 Write mappings for 3D density stations.
 C     -------------------------------------------------------------
       WRITE(80,81) I3DSD, TO3DSDS, TO3DSDF, NSPO3DSD, NSTA3DD,
      &       '   ! I3DSD, TO3DSDS, TO3DSDF, NSPO3DSD, NSTA3DD'
-      IF(I3DSD.GT.0) THEN
+      IF(I3DSD.NE.0) THEN
          DO I = 1, NPROC
             WRITE(80,*) I, NNSTA3DDP(I)
             DO K = 1, NNSTA3DDP(I)
@@ -5512,7 +6986,7 @@ C     jgf45.11 Write mappings for 3D velocity stations.
 C     -------------------------------------------------------------
       WRITE(80,81) I3DSV, TO3DSVS, TO3DSVF, NSPO3DSV, NSTA3DV,
      &       '   ! I3DSV, TO3DSVS, TO3DSVF, NSPO3DSV, NSTA3DV'
-      IF(I3DSV.GT.0) THEN
+      IF(I3DSV.NE.0) THEN
          DO I = 1, NPROC
             WRITE(80,*) I, NNSTA3DVP(I)
             DO K = 1, NNSTA3DVP(I)
@@ -5525,7 +6999,7 @@ C     jgf45.11 Write mappings for 3D turbulence stations.
 C     -------------------------------------------------------------
       WRITE(80,81) I3DST, TO3DSTS, TO3DSTF, NSPO3DST, NSTA3DT,
      &       '   ! I3DST, TO3DSST, TO3DFST, NSPO3DST, NSTA3DT'
-      IF(I3DST.GT.0) THEN
+      IF(I3DST.NE.0) THEN
          DO I = 1, NPROC
             WRITE(80,*) I, NNSTA3DTP(I)
             DO K = 1, NNSTA3DTP(I)

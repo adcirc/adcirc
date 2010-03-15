@@ -2,6 +2,23 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v49.08     -  03/08/10 - kmd - merged 3D_kmd branch into trunk
+C             -  02/22/10 - kmd - modified the station output for the 
+C                3D density file (fort.41) and updated the 2D compact 
+C                output for fort.63, fort.64, fort.73 and fort.74
+C             -  01/19/10 - kmd - updates to code for the spherical 
+C                factors in 3D and some of the output for 3D 
+C               r368  |  kdresback  |  2009-12-22 
+C                created a branch for 3D baroclinic changes in this 
+C                version of the code (v49) - merged my 3D_baroclinic
+C                branch with v49.06 that contained updates by rjw.
+C               r332  |  kdresback  |  2009-10-22
+C                updates to the messenger.F file for bug
+C               r323  |  kdresback  |  2009-10-13
+C                created initial branch for baroclinic code using v48
+C                of the code. This branch contains major updates 
+C                to the transport.F, vsmy.F, hstart.F and introduces
+C                a new subroutine for initial conditions (init_cond.F).
 C  v49.07     - 02/04/10 - jgf - Added entry for Cray-XT5 to
 C               cmplrflags.mk.
 C  v49.06     - 11/25/09 - rjw - merged 3D_rjw branch into trunk 

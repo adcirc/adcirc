@@ -294,7 +294,12 @@ C
       FTHETA=1.d0
       FGAMMA=1.d0
 C
-      ESLM=0.0
+C   kmd48.33bc this resets the ESLM to 0 and if using constant eddy 
+C              viscosity it eliminates what the user specified in 
+C              the input file. The InitNAModule originally come before
+C              the read_input call but now it appears after the read_input
+C              call.
+!      ESLM=0.0
       ESLC=0.0
 C
       RETURN

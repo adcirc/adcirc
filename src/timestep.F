@@ -104,10 +104,12 @@ C.....sb46.28sb03 added 09/xx/2006
      &     ManningsN, LoadManningsN, !sb46.28sb02
      &     BFCdLLimit !sb46.28sb02/jgf47.04 lower limit of Cd for bot. friction
 
-c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
-      USE GLOBAL_3DVS, ONLY:
-     &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA
 
+c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
+Cjgfdebug      USE GLOBAL_3DVS, ONLY:
+Cjgfdebug     &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA
+      USE GLOBAL_3DVS, ONLY:
+     &     A, B, EVTOT, ISLIP, KP, Q, SIGMA
 #ifdef CMPI
       USE MESSENGER
 #endif
@@ -116,7 +118,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
 
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
       CHARACTER(6) :: TEMPDIRNAME
-      COMPLEX :: DUDS
+      COMPLEX(SZ) :: DUDS !jgf48.50 declare size SZ instead of plain COMPLEX
       REAL(SZ) :: KSLIP
 
       INTEGER IE, I, J, K                  !local loop counters
@@ -160,23 +162,59 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       INTEGER WarnElevExceeded
       REAL(SZ) HollandTime, AsymmetricTime !for parametric hurricane models
 
+C   kmd48.33bc - added in the heat flux variables
+      CHARACTER(80) :: CDUM80
+      INTEGER :: NumofBCNode
+      REAL(SZ), SAVE :: StaTimHS, RefTimHS
+      REAL(SZ), PARAMETER :: RHOAIR=1.225
+      INTEGER :: NOD
+      REAL(SZ), ALLOCATABLE :: TMP(:,:)
+      REAL(SZ) :: CD, CDQ, QWIND
+
+
+C    kmd48.33bc - changed for timestep changes in the hot start files
 C     jgf46.21 Combined flux/radiation b.c. for rivers
 #ifdef IBM
-      FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP,KIND(0.0D0))
+      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
+        FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS,KIND(0.0D0))
+      ELSE
+        FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP,KIND(0.0D0))
+      END IF
 #else
-      FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP)
+      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
+        FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS)
+      ELSE
+        FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP)
+      END IF
 #endif
 
 C...  COMPUTE MASTER TIME WHICH IS REFERENCED TO THE BEGINNING TIME OF
 C...  THE MODEL RUN
 C...  
       Time=IT*DTDP + StaTim*86400.D0
+C    kmd48.33bc - added for the changes in the timestep in the hot start files
+      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
+         IF ((ITHS+1).EQ.IT) THEN
+           StaTimHS=((IT-1)*DTDPHS)/86400.D0
+           RefTimHS=((IT-1)*DTDP)/86400.D0
+         END IF
+         Time=IT*DTDP + (StaTimHS - RefTimHS)*86400.D0
+      END IF
       
 C...  HARMONIC CALCULATIONS ARE MADE FOR TIME WHICH INCLUDES THE REFTIM
 C...  TO ALLOW FOR THE POSSIBILITY THAT THE EQUILIBRIUM ARGUMENTS MAY
 C...  BE FOR A TIME OTHER THAN THE MODEL STARTING TIME.
 C...  
       TimeH=IT*DTDP + (StaTim - RefTim)*86400.D0
+!kmd - added this for the cases where the timestep changes from hot start timestep
+      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
+         IF ((ITHS+1).EQ.IT) THEN
+           StaTimHS=((IT-1)*DTDPHS)/86400.D0
+           StaTim=((IT-1)*DTDP)/86400.D0
+         END IF
+         TimeH=IT*DTDP + ((StaTimHS - StaTim) - RefTim)*86400.D0
+      END IF
+
 
 C...  SHIFT THE FLUX PER UNIT WIDTH, DEPTH AVERAGED VELOCITIES, BOTTOM STRESS,
 C...  WIND STRESS, SURFACE PRESSURE AND TIDAL POTENTIALS TO PREVIOUS TIME STEP.
@@ -272,6 +310,17 @@ C     jgf46.21 Modify to match behavior of 46.02
          RampWRad=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampWRad)
 
       END SELECT
+
+C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
+      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
+         Ramp=TANH((2.D0*Time/86400.D0)/DRamp)
+         RampExtFlux=TANH((2.D0*Time/86400.D0)/DRampExtFlux)
+         RampIntFlux=TANH((2.D0*Time/86400.D0)/DRampIntFlux)
+         RampElev=TANH((2.D0*Time/86400.D0)/DRampElev)
+         RampTip=TANH((2.D0*Time/86400.D0)/DRampTip)
+         RampMete=TANH((2.D0*Time/86400.D0)/DRampMete)
+         RampWRad=TANH((2.D0*Time/86400.D0)/DRampWRad)
+      END IF
 
 C     jgf46.21 If there is an external flux (i.e. river) boundary, turn
 C     off all forcings except the river flux forcing for the duration of
@@ -718,6 +767,14 @@ C     RJW ffpl Merged:
       ENDIF
 
 
+C    kmd48.33bc - added in information for the sponge layer
+       IF ((C3D).AND.(RES_BC_FLAG.GT.0).AND.(NWS.NE.0)) THEN
+         DO I=1,NP
+            WSX2(I)=sponge(I)*WSX2(I)
+            WSY2(I)=sponge(I)*WSY2(I)
+         END DO
+       END IF
+
 C
 C--------------------END MET FORCING---------------------------------------
 
@@ -759,6 +816,30 @@ C     meteorological output was requested.
       IF (METONLY) THEN 
          goto 9999
       ENDIF
+
+C   kmd48.33 - added in information for the elevation boundary conditions
+C              used in prognostic runs. The diagnostic information is read 
+C              in once and used during the simulation. Note that there is 
+C              no ramp utilized for this boundary condition. 
+      IF((C3D).AND.(RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
+         IF (ABS(RES_BC_FLAG).GE.1) THEN
+            IF(TIME.GT.RBCTIME2) THEN
+               RBCTIME1=RBCTIME2
+               RBCTIME2=RBCTIME2+RBCTIMEINC
+               READ(35,'(A)') CDUM80
+               DO I=1,NETA
+                 LNM_BC1(I)=LNM_BC2(I)
+                 READ(35,*) NOD,LNM_BC2(I)
+               END DO
+            END IF
+            RBCRATIO=(TIME-RBCTIME1)/RBCTIMEINC
+            DO NumofBCNode=1,NETA
+                  LNM_BC(NumofBCNode)=LNM_BC1(NumofBCNode)+
+     &            RBCRATIO*(LNM_BC2(NumofBCNode)-
+     &            LNM_BC1(NumofBCNode))
+            END DO
+         END IF
+      END IF
 
 C...  
 C...  Tidal Potential Forcing
@@ -2445,7 +2526,7 @@ C
 
       INTEGER IE, JN, IJ, I, J                           !local loop counters
       INTEGER IT
-      INTEGER	NM1, NM2, NM3, NMI1, NMI2, NMI3, NMJ1, NMJ2, NMJ3
+      INTEGER NM1, NM2, NM3, NMI1, NMI2, NMI3, NMJ1, NMJ2, NMJ3
       INTEGER NC1, NC2, NC3, NCEle, NCI, NCJ
       INTEGER NCyc
       INTEGER NBDI
@@ -3166,6 +3247,15 @@ C     jgf46.02 Added the ability to include geoid offset on the boundary.
             ETA2(NBD(I))=ETA2(NBD(I))+GeoidOffset(NBD(I))
          END DO
       ENDIF
+
+C   kmd48.33bc add information for the levels of no motion boundary conditions
+C              these are considered the steric adjustments. 
+      IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic))  THEN
+         DO I=1,NETA
+           NBDI=NBD(I)
+           ETA2(NBDI) = ETA2(NBDI) + LNM_BC(I)
+         END DO
+      END IF
 
 C
 C...  IMPOSE NORMAL FLOW, RADIATION OR GRADIENT BOUNDARY CONDITIONS
@@ -4168,6 +4258,15 @@ C      DO I=1,NETA
 C         ETA2(NBD(I))=ETA2(NBD(I))
 C     &       + RampMete*(101300.d0/(RHOWAT0*G)) - PR2(NBD(I))
 C      END DO
+
+C   kmd48.33bc add information for the levels of no motion boundary conditions
+C              these are considered the steric adjustments. 
+      IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic))  THEN
+         DO I=1,NETA
+           NBDI=NBD(I)
+           ETA2(NBDI) = ETA2(NBDI) + LNM_BC(I)
+         END DO
+      END IF
 
 C...  IMPOSE NORMAL FLOW, RADIATION OR GRADIENT BOUNDARY CONDITIONS
 C...  ALONG FLOW BOUNDARY TO LOAD VECTOR GWCE_LV(I)
@@ -8117,7 +8216,8 @@ c******************************************************************************
 Casey: Added the following variable declarations from GLOBAL.
 C
       USE GLOBAL, ONLY: IFNLFA, IFNLCT, NODELE, NM,
-     &      NEITABELE, NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH
+     &      NEITABELE, NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
+     &      SFAC
 
       USE GLOBAL_3DVS
 #ifdef CMPI
@@ -8154,6 +8254,8 @@ C
       REAL(SZ) :: SigAvgMAOAMB  !((sigma(k)+sigma(k-1))/2.d0 - A)/AMB
       REAL(SZ) :: SigmaNN       !Sigma value of a neighbor node
       REAL(SZ) :: HsN2          !Depth value of a neighbor node
+
+      REAL(SZ) :: SFacAvg       ! kmd48.33bc add in spherical factors
 
       REAL(SZ) :: BCPN1,BCPN2,BCPN3,BCPNFirst !nodal values of BCP
       REAL(SZ) :: BCPDX2A,BCPDY2A !(Horiz. grads of BCP)*2*Element Area
@@ -8272,12 +8374,14 @@ C
                   IF((BCPN2.NE.-999.).AND.(BCPN3.NE.-999.)
      &                 .AND.(NEle.NE.0).AND.(NCELE.NE.0)) THEN !if all 3 nodes are active, compute bu
                      TotalBCPGArea2=TotalBCPGArea2+Areas(NEle)
+C    kmd48.33bc add in spherical factors
+                     SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
                      a1=X(N3)-X(N2)
                      a2=X(N1)-X(N3)
                      a3=X(N2)-X(N1)
-                     b1=Y(N2)-Y(N3)
-                     b2=Y(N3)-Y(N1)
-                     b3=Y(N1)-Y(N2)
+                     b1=(Y(N2)-Y(N3))*SFacAvg
+                     b2=(Y(N3)-Y(N1))*SFacAvg
+                     b3=(Y(N1)-Y(N2))*SFacAvg
                      DBCPDX2A=DBCPDX2A+(BCPN1*b1+BCPN2*b2+BCPN3*b3)
                      DBCPDY2A=DBCPDY2A+(BCPN1*a1+BCPN2*a2+BCPN3*a3)
                   ENDIF
@@ -8296,27 +8400,38 @@ C
                IF((BCPN2.NE.-999.).AND.(BCPN3.NE.-999.)
      &              .AND.(NEle.NE.0).AND.(NCELE.NE.0)) THEN
                   TotalBCPGArea2=TotalBCPGArea2+Areas(NEle)
+C    kmd48.33bc add in spherical factors
+                  SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
                   a1=X(N3)-X(N2)
                   a2=X(N1)-X(N3)
                   a3=X(N2)-X(N1)
-                  b1=Y(N2)-Y(N3)
-                  b2=Y(N3)-Y(N1)
-                  b3=Y(N1)-Y(N2)
+                  b1=(Y(N2)-Y(N3))*SFacAvg
+                  b2=(Y(N3)-Y(N1))*SFacAvg
+                  b3=(Y(N1)-Y(N2))*SFacAvg
                   DBCPDX2A=DBCPDX2A+(BCPN1*b1+BCPN2*b2+BCPN3*b3)
                   DBCPDY2A=DBCPDY2A+(BCPN1*a1+BCPN2*a2+BCPN3*a3)
                ENDIF
 
+C    kmd48.33bc changed the BPG calculation for bottom boundary issues
                IF(TotalBCPGArea2.EQ.0.) THEN 
-                  IF (k.eq.NFEN) THEN !kd46.01
+!                  IF (k.eq.NFEN) THEN !kd46.01
                      BCPG(k)=(0.d0,0.d0)
-                  ELSE
-                     BCPG(k)=BCPG(k+1)
-                  END IF 
+!                  ELSE
+!                     BCPG(k)=BCPG(k+1)
+!                  END IF 
                ELSE
                   BCPG(k)=(DBCPDX2A+I*DBCPDY2A)/TotalBCPGArea2
                ENDIF
 
             ENDDO
+
+C    kmd48.33bc added this to BPG
+            DO k=NFEN,1,-1
+               IF ((BCPG(k).EQ.(0.d0,0.d0)).AND.(k.NE.NFEN)) THEN
+                   BCPG(k)=BCPG(k+1)
+               END IF
+            END DO
+
 
             DO k=1,NFEN
                BPG(NH,k) = BCPG(k) 
@@ -8387,7 +8502,6 @@ C     jgf46.00 Explicitly declared the following variables
       REAL(SZ) SigBelo
       REAL(SZ) SigAbov
       REAL(SZ) SigTry
-      REAL(SZ) BPressNN
 
       IF(SigmaNN.LE.1.0001*b) THEN !if into ground then skip
          SigBelo=-999
@@ -8450,8 +8564,8 @@ C     jgf46.00 Explicitly declared the following variables
       IF(IDiag.EQ.2) THEN
          WRITE(2,*) '******** ZSURFBUOY **********'
          WRITE(2,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
-     &        '      BPressNN'
-         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,BPressNN
+     &        '      BCPressNN'
+         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 

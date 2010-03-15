@@ -171,7 +171,8 @@ c.
       REAL(SZ),ALLOCATABLE ::   XVELAV(:),YVELAV(:),XVELVA(:),YVELVA(:)
       REAL(SZ),ALLOCATABLE ::   ELAV(:),ELVA(:)
       REAL(SZ),ALLOCATABLE ::   AUV11(:),AUV12(:),AUV13(:),AUV14(:)
-      REAL(SZ),ALLOCATABLE ::   DUU1(:),DUV1(:),DVV1(:),BSX1(:),BSY1(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::   DUU1(:),DUV1(:),DVV1(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::   BSX1(:),BSY1(:)
       REAL(SZ),ALLOCATABLE ::   TIP1(:),TIP2(:)
       REAL(SZ),ALLOCATABLE ::   SALTAMP(:,:),SALTPHA(:,:)
       REAL(SZ),ALLOCATABLE ::   OBCCOEF(:,:),COEF(:,:)
@@ -179,6 +180,11 @@ c.
       REAL(SZ),ALLOCATABLE ::   WKSP(:),RPARM(:)
       REAL(SZ),ALLOCATABLE ::   ABD(:,:),ZX(:)
       REAL(SZ),ALLOCATABLE ::   LSXX(:),LSXY(:),LSYX(:),LSYY(:)
+
+C    kmd48.33bc - added variables for the levels of no motion and top temperature boundary condition
+      REAL(SZ),ALLOCATABLE ::   LNM_BC1(:), LNM_BC2(:), LNM_BC(:) ! level of no motion
+      REAL(SZ),ALLOCATABLE ::   q_heat1(:), q_heat2(:), HFLUX(:)  ! top temperature
+      REAL(SZ),ALLOCATABLE, TARGET :: Sponge(:)  ! sponge information for boundary conditions
 
       INTEGER,ALLOCATABLE, TARGET ::    NOFF(:), NODECODE(:)
       INTEGER,ALLOCATABLE ::    ME2GW(:)
@@ -262,6 +268,8 @@ C...
       REAL(8),ALLOCATABLE :: PER(:),PERT(:),FPER(:)
       REAL(8),ALLOCATABLE :: FREQ(:),FF(:),FACE(:)
       REAL(8),ALLOCATABLE :: SLAM(:),SFEA(:),X(:),Y(:)
+C    kmd48.33 - variable added
+      REAL(8) DTDPHS  ! time step for hot start
 
       CHARACTER(80)             :: RUNDES, RUNID, AGRID, AGRID2, AFRIC
       CHARACTER(4)              :: RDES4(20),RID4(20),AID4(20)
@@ -311,6 +319,8 @@ C     jgf45.07 The definitions of many of these are in timestep.F
       LOGICAL :: CME_AreaInt_Corr    = .FALSE.
       LOGICAL :: CTIP                = .FALSE.
       LOGICAL :: CHARMV              = .FALSE.
+C    kmd48.33bc  - logical statement for hot start using different time step
+      LOGICAL :: CHOTHS              = .FALSE.
   
 C     jgf48.4627 When only meteorological output is requested, skip past
 C     the GWCE and Momentum equations, so that ADCIRC runs faster and
@@ -362,6 +372,21 @@ C...
       INTEGER  NTCYSGV, NTCYSGW, NTCYSM
       INTEGER  NTRSPC, NTRSPM, NUMITR, NW, NWET, NWSEGWI, NWSGGWI
       INTEGER  NP_GLOBAL
+
+C    kmd48.33bc - added variables for 3D boundary conditions
+      INTEGER  RES_BC_FLAG  ! boundary condition flag for salinity and temperature
+      INTEGER  BCFLAG_LNM   ! boundary condition flag for levels of no motion
+      INTEGER  BCFLAG_TEMP  ! boundary condition flag for heat flux (top temperature)
+      REAL(SZ) RBCTIMEINC, RBCTIME1, RBCTIME2  ! time information for level of no motion
+      REAL(SZ) SBCTIMEINC, SBCTIME1, SBCTIME2  ! time information for salinity 
+      REAL(SZ) TBCTIMEINC, TBCTIME1, TBCTIME2  ! time information for temperature
+      REAL(SZ) TTBCTIMEINC, TTBCTIME1, TTBCTIME2  ! time information for heat flux (top temperature)
+      REAL(SZ) BCSTATIM, RBCRATIO
+      REAL(SZ) SBCSTATIM, SBCRATIO
+      REAL(SZ) TBCSTATIM, TBCRATIO
+      REAL(SZ) TTBCSTATIM, TTBCRATIO
+      REAL(SZ) SPONGEDIST  ! distance information for the sponge layer
+      LOGICAL :: OUTPUTSPONGE  =  .FALSE.
 
       REAL(SZ) ADVECX, ADVECY, AGIRD, ARG
       REAL(SZ) ARG1, ARG2, ARGJ, ARGJ1, ARGJ2
@@ -553,6 +578,10 @@ ckmd	 Added in parameters for the pc algorithm
       ALLOCATE ( QX0(MNP), QY0(MNP), ETAS0(MNP))
       ALLOCATE ( TK0(MNP), TK2(MNP))
 
+C    kmd48.33bc - arrays for baroclinic
+      ALLOCATE (q_heat1(MNP), q_heat2(MNP), HFLUX(MNP) )
+      ALLOCATE (sponge(MNP) )
+
 #ifdef CMPI
       ALLOCATE ( IDUMY(1), DUMY1(1), DUMY2(1) )
 #endif
@@ -612,6 +641,11 @@ C
       ALLOCATE ( NBDV(MNOPE,MNETA))
       ALLOCATE ( NVDLL(MNOPE),NBD(MNETA))
       ALLOCATE ( EMO(MNBFR,MNETA),EFA(MNBFR,MNETA))
+C    kmd48.33bc - arrays for boundary conditions
+      IF (CBAROCLINIC) THEN
+         ALLOCATE ( LNM_BC1(MNETA), LNM_BC2(MNETA) )
+         ALLOCATE ( LNM_BC(MNETA) )
+      END IF 
 C      
       RETURN
       END SUBROUTINE

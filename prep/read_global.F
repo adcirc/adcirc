@@ -292,7 +292,7 @@ C
       integer :: nbytes = 0
       REAL(SZ) RSTIMINC
       INTEGER N1, N2, N3, KMIN, JG, INDX
-      INTEGER I,J,K,L
+      INTEGER I,J,K,M
       INTEGER IG1,IG2,IG3,IL1,IL2,IL3
       REAL(8) X1, X2, X3, X4, Y1, Y2, Y3, Y4, A1, A2, A3
       REAL(8) AE, AEMIN, AREASK, AA
@@ -679,7 +679,8 @@ C     jgf46.21 Added support for IBTYPE=52.
       NFLUXF = 0
       DO K=1, NBOU
          IF ((IBTYPE(K).EQ.2).OR.(IBTYPE(K).EQ.12)
-     &        .OR.(IBTYPE(K).EQ.22).OR.(IBTYPE(K).EQ.52)) THEN
+     &        .OR.(IBTYPE(K).EQ.22).OR.(IBTYPE(K).EQ.32)
+     &        .OR.(IBTYPE(K).EQ.52)) THEN
             NFLUXF = 1
          ENDIF
       ENDDO
@@ -1088,7 +1089,7 @@ C
       IF (NWS.NE.0) THEN
         READ(15,80) OUTGWMSG
         READ(OUTGWMSG,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
-        IF (ABS(NOUTGW).GT.3) THEN
+        IF (ABS(NOUTGW).GT.4) THEN
           print *, "NOUTGW does not have an allowable value"
           stop
         ENDIF
@@ -1214,6 +1215,7 @@ C     netCDF format, not just the fort.61 file (NOUTE).
 C
 C--Read in 3D data
 C
+      print *, " made it to the end of the 2D read of fort.15"
       IF(C3DVS) THEN
         CALL READ15_3DVS()
 c     ELSEIF(C3DDSS) THEN
@@ -1305,7 +1307,7 @@ C
       IMPLICIT NONE
       integer :: nbytes = 0
       REAL(8) SL0,SL1,SF0,SF1
-      INTEGER I,J,K,L,N                                        ! loop counters
+      INTEGER I,J,K,M,N                                        ! loop counters
       
       REAL(8) :: STATIME
       REAL(8), PARAMETER :: day2sec=24.d0*3600.d0
@@ -1419,13 +1421,14 @@ C     jgf45.11 switched from node numbers to coordinates
       READ(DSDMSG,*) I3DSD,TO3DSDS,TO3DSDF,NSPO3DSD
       READ(15,80) NSTA3DDMSG
       READ(NSTA3DDMSG,*) NSTA3DD
-      IF((I3DSD.LT.0).OR.(I3DSD.GT.2)) THEN
+C  kmd48.33bc changed to -2 and I3DSD not equal to 0
+      IF((I3DSD.LT.-2).OR.(I3DSD.GT.2)) THEN
          WRITE(*,350)
          WRITE(*,511)
- 511     FORMAT(/,2X,'    I3DSD MUST BE 0,1 OR 2')
+ 511     FORMAT(/,2X,'    I3DSD MUST BE -2,-1,0,1 OR 2')
          STOP
       ENDIF
-      IF(I3DSD.GT.0) THEN
+      IF(I3DSD.NE.0) THEN
          ALLOCATE(NNSTA3DDP(MNPROC))
          nbytes = 4*mnproc
          call memory_alloc(nbytes)
@@ -1476,13 +1479,14 @@ C     jgf45.11 switched from node numbers to coordinates
       READ(DSVMSG,*) I3DSV,TO3DSVS,TO3DSVF,NSPO3DSV
       READ(15,80) NSTA3DVMSG
       READ(NSTA3DVMSG,*) NSTA3DV
-      IF((I3DSV.LT.0).OR.(I3DSV.GT.2)) THEN
+C  kmd48.33 changed to -2
+      IF((I3DSV.LT.-2).OR.(I3DSV.GT.2)) THEN
          WRITE(*,350)
          WRITE(*,512)
- 512     FORMAT(/,2X,'    I3DSV MUST BE 0,1 OR 2')
+ 512     FORMAT(/,2X,'    I3DSV MUST BE -2,-1,0,1 OR 2')
          STOP
       ENDIF
-      IF(I3DSV.GT.0) THEN
+      IF(I3DSV.NE.0) THEN
          ALLOCATE(NNSTA3DVP(MNPROC))
          nbytes = 4*mnproc  
          call memory_alloc(nbytes)
@@ -1532,13 +1536,14 @@ C     jgf45.11 switched from node numbers to coordinates
       READ(DSTMSG,*) I3DST,TO3DSTS,TO3DSTF,NSPO3DST
       READ(15,80) NSTA3DTMSG
       READ(NSTA3DTMSG,*) NSTA3DT
-      IF((I3DST.LT.0).OR.(I3DST.GT.2)) THEN
+C  kmd48.33 changed to -2
+      IF((I3DST.LT.-2).OR.(I3DST.GT.2)) THEN
          WRITE(*,350)
          WRITE(*,513)
- 513     FORMAT(/,2X,'    I3DST MUST BE 0,1 OR 2')
+ 513     FORMAT(/,2X,'    I3DST MUST BE -2,-1,0,1 OR 2')
          STOP
       ENDIF
-      IF(I3DST.GT.0) THEN
+      IF(I3DST.NE.0) THEN
          ALLOCATE(NNSTA3DTP(MNPROC))
          nbytes = 4*mnproc 
          call memory_alloc(nbytes)
@@ -1585,10 +1590,11 @@ C....  GLOBAL 3D DENSITY, TEMPERATURE, SALINITY OUTPUT
 
       READ(15,80) DGDMSG
       READ(DGDMSG,*) I3DGD,TO3DGDS,TO3DGDF,NSPO3DGD
-      IF((I3DGD.LT.0).OR.(I3DGD.GT.2)) THEN
+C   kmd48.33bc changed to -2
+      IF((I3DGD.LT.-2).OR.(I3DGD.GT.2)) THEN
          WRITE(*,350)
          WRITE(*,514)
- 514     FORMAT(/,2X,'    I3DGD MUST BE 0,1 OR 2')
+ 514     FORMAT(/,2X,'    I3DGD MUST BE -2,-1,0,1 OR 2')
          STOP
       ENDIF
 
@@ -1596,10 +1602,11 @@ C....  GLOBAL 3D VELOCITY OUTPUT
 
       READ(15,80) DGVMSG
       READ(DGVMSG,*) I3DGV,TO3DGVS,TO3DGVF,NSPO3DGV
-      IF((I3DGV.LT.0).OR.(I3DGV.GT.2)) THEN
+C   kmd48.33bc changed to -2
+      IF((I3DGV.LT.-2).OR.(I3DGV.GT.2)) THEN
          WRITE(*,350)
          WRITE(*,515)
- 515     FORMAT(/,2X,'    I3DGV MUST BE 0,1 OR 2')
+ 515     FORMAT(/,2X,'    I3DGV MUST BE -2,-1,0,1 OR 2')
          STOP
       ENDIF
 
@@ -1607,12 +1614,51 @@ C....  GLOBAL 3D TURBULENCE OUTPUT
 
       READ(15,80) DGTMSG
       READ(DGTMSG,*) I3DGT,TO3DGTS,TO3DGTF,NSPO3DGT
-      IF((I3DGT.LT.0).OR.(I3DGT.GT.2)) THEN
+C   kmd48.33bc changed to -2
+      IF((I3DGT.LT.-2).OR.(I3DGT.GT.2)) THEN
          WRITE(*,350)
          WRITE(16,516)
- 516     FORMAT(/,2X,'    I3DGT MUST BE 0,1 OR 2')
+ 516     FORMAT(/,2X,'    I3DGT MUST BE -2,-1,0,1 OR 2')
          STOP
       ENDIF
+
+C   kmd48.33bc add in information for 3D boundary condition
+      IF (CBAROCLINIC) THEN
+        READ(15,80) RESBCFLAGMSG
+        READ(RESBCFLAGMSG,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
+        IF (RES_BC_FLAG.NE.0) THEN
+           READ(15,80) BCTIMEMSG
+           READ(15,80) BCSTATMSG
+           IF (BCFLAG_TEMP.NE.0) THEN
+              READ(15,80) TBCTIMEMSG
+           END IF
+        END IF
+        IF ((RES_BC_FLAG.LT.0).OR.(RES_BC_FLAG.EQ.1))  THEN
+           READ(BCTIMEMSG,*) RBCTIMEINC
+           READ(BCSTATMSG,*) BCSTATIM
+        ELSE IF (RES_BC_FLAG.EQ.2) THEN
+           READ(BCTIMEMSG,*) RBCTIMEINC, SBCTIMEINC
+           READ(BCSTATMSG,*) BCSTATIM, SBCSTATIM
+        ELSE IF (RES_BC_FLAG.EQ.3) THEN
+           READ(BCTIMEMSG,*) RBCTIMEINC, TBCTIMEINC
+           READ(BCSTATMSG,*) BCSTATIM, TBCSTATIM
+           IF (BCFLAG_TEMP.NE.0) THEN
+              READ(TBCTIMEMSG,*) TTBCTIMEINC, TTBCSTATIM
+           END IF
+        ELSE IF (RES_BC_FLAG.EQ.4) THEN
+           READ(BCTIMEMSG,*) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
+           READ(BCSTATMSG,*) BCSTATIM, SBCSTATIM, TBCSTATIM
+           IF (BCFLAG_TEMP.NE.0) THEN
+              READ(TBCTIMEMSG,*) TTBCTIMEINC, TTBCSTATIM
+           END IF
+        END IF
+      END IF
+
+      IF (CBAROCLINIC) THEN
+        READ(15,80) SPONGEDISTMSG
+        READ(15,80) EqnstateMSG
+      END IF
+
 C
 C     jgf45.12: Read in the parameters for the transport equation, if
 C     necessary.
@@ -1624,10 +1670,10 @@ C     Lateral and vertical diffusion coefficients.
 C     Time stepping coefficient for the transport equation terms.
          READ(15,*) ALP4
 C     Temperature boundary condition file type, if necessary
-         if ( IDEN .eq. 3 .or. IDEN .eq. 4 ) then
-            READ(15,*) NTF
+!         if ( IDEN .eq. 3 .or. IDEN .eq. 4 ) then
+!            READ(15,*) NTF
+!         endif
          endif
-      endif
 
       call memory_status()
       RETURN
@@ -1692,7 +1738,7 @@ C-----------------------------------------------------------------------
       INTEGER, intent(out), dimension(NumOfStations):: FDEle   ! FullDomain
       CHARACTER(len=30), intent(in) :: Desc                    ! description
 
-      INTEGER I,J,K,L,N                                        ! loop counters
+      INTEGER I,J,K,M,N                                        ! loop counters
       INTEGER N1, N2, N3, KMIN
       REAL(8) X1, X2, X3, X4, Y1, Y2, Y3, Y4, A1, A2, A3       ! geometry
       REAL(8) AE, AEMIN, AREASK, AA                            ! area

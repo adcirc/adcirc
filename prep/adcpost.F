@@ -255,6 +255,10 @@ C
             IF (I3DGD.NE.0) THEN
                print *, "Post-Processing Unit 44"
                CALL POST44()
+               IF ((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN 
+                  print *, "Post-Processing Unit 47"
+                  CALL POST47()
+               END IF 
             ENDIF
          endif
 C     

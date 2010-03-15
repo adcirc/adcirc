@@ -169,13 +169,15 @@ C     jgf45.08 put this here so it can be used in hot start
       ELSE
          IFNLFA=1
       ENDIF
-
+C     kmd 48.33bc - include a new initial condition file for baroclinic
 C...
 C...******************** PROGRAM SETUP SECTION ************************
 C...
       IF (IHOT.EQ.0) THEN
          CALL COLDSTART()
          ITHS = 0  !TCM20091029 v49.02 Initialized to zero for coldstarts
+      ELSE IF (IHOT.EQ.17) THEN 
+         CALL INIT_COND()
       ELSE
          CALL HOTSTART()
       ENDIF

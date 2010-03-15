@@ -9,8 +9,9 @@ C        in for a cold start in subroutine COLDSTART_3D in module COLDSTART.  *
 C                                                                             *
 c******************************************************************************
 
+
       SUBROUTINE VSSTUP()
-      USE GLOBAL, ONLY : ScreenUnit
+C      USE GLOBAL, ONLY : ScreenUnit !jgfdebug
       USE GLOBAL_3DVS
       IMPLICIT NONE
       INTEGER :: NH, N
@@ -85,15 +86,23 @@ c                                                                             *
 c******************************************************************************
 
       SUBROUTINE VSSOL(IT,Time)
-      USE GLOBAL, ONLY : ScreenUnit,
+Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit,
+C   kmd48.33bc added variable declarations for baroclinic boundary conditions
 c.RJW merged 08282008 Casey 071219: Added the following variable declarations from GLOBAL.
-     &      NODELE, NODECODE, NOFF, H0
+      USE GLOBAL, ONLY : NODELE, NODECODE, NOFF,
+     &                   NETA, NBD, RES_BC_FLAG,
+     &                   SBCTIME1, SBCTIME2, TBCTIME1,
+     &                   TBCTIME2, SBCTIMEINC, TBCTIMEINC,
+     &                   SBCRATIO, TBCRATIO, sponge, 
+     &                   BCFLAG_TEMP, SFAC
+Cjgfdebug     &      , H0
+
       USE GLOBAL_3DVS
       USE NodalAttributes, ONLY: EVM
 #ifdef CMPI
       USE MESSENGER
       IMPLICIT NONE
-      REAL(SZ) :: DUMV1(1),DUMV2(1)
+Cjgfdebug      REAL(SZ) :: DUMV1(1),DUMV2(1)
 #else
       IMPLICIT NONE
 #endif
@@ -110,7 +119,7 @@ c.RJW merged 08282008 Casey 071219: Added the following local variable declarati
       INTEGER :: N              !neighbor node loop counter
       INTEGER :: N1,N2,N3,NNFirst !local node numbers used to compute gradients, interpolate
       INTEGER :: LBP            !value of LBArray_Pointer at present horizontal node
-      INTEGER :: NN             !output loop counter
+Cjgfdebug      INTEGER :: NN             !output loop counter
 
       REAL(SZ) :: KSlip         !equavalent linear slip coeff
       REAL(SZ) :: WSXsNH,WSYsNH !Wind stress components at time level s at node NH
@@ -122,20 +131,22 @@ c.RJW merged 08282008 Casey 071219: Added the following local variable declarati
       REAL(SZ) :: WZSurf        !computed value of w at surface
       REAL(SZ) :: WZCorrection  !adjoint correction compute for w
 
-      REAL(SZ) :: Zk            !z depth of any node k in the vertical
-      REAL(SZ) :: DelSig        ! sigma(k+1)-sigma(k)
+C   kmd48.33bc add in spherical factors
+      REAL(SZ) :: SFacAvg
+Cjgfdebug      REAL(SZ) :: Zk            !z depth of any node k in the vertical
+Cjgfdebug      REAL(SZ) :: DelSig        ! sigma(k+1)-sigma(k)
       REAL(SZ) :: DelSigO2      !(sigma(k)-sigma(k-1))/2
       REAL(SZ) :: SigmaMAOAMB   !(sigma(k)-A)/(a-b)
       REAL(SZ) :: SigmaMBOAMB   !(sigma(k)-B)/(a-b)
       REAL(SZ) :: SigAvgMAOAMB  !((sigma(k)+sigma(k-1))/2.d0 - A)/AMB
-      REAL(SZ) :: SigmaNN       !Sigma value of a neighbor node
+Cjgfdebug      REAL(SZ) :: SigmaNN       !Sigma value of a neighbor node
 
       REAL(SZ) :: VelNorm,VelTan !-QNormsp1(NH)/Hsp1 at flux boundary node
       REAL(SZ) :: CLBP,SLBP     !local values of CSII, SIII at boundary node LBP
       REAL(SZ) :: Auv1km1,Auv2km1 !initial real,imaginary parts of Mkm1 at flux boundary node
       REAL(SZ) :: Auv1km1star,Auv2km1star !rotated real,imaginary parts of Mkm1 at flux boundary node
-      REAL(SZ) :: Auv1k1,Auv2k1 !initial real,imaginary parts of Mk at flux boundary node
-      REAL(SZ) :: Auv1k1star,Auv2k1star !rotated real,imaginary parts of Mk at flux boundary node
+Cjgfdebug      REAL(SZ) :: Auv1k1,Auv2k1 !initial real,imaginary parts of Mk at flux boundary node
+Cjgfdebug      REAL(SZ) :: Auv1k1star,Auv2k1star !rotated real,imaginary parts of Mk at flux boundary node
       REAL(SZ) :: Auv1kp1,Auv2kp1 !initial real,imaginary parts of Mkp1 at flux boundary node
       REAL(SZ) :: Auv1kp1star,Auv2kp1star !rotated real,imaginary parts of Mkp1 at flux boundary node
 
@@ -148,13 +159,13 @@ c.RJW merged 08282008 Casey 071219: Added the following local variable declarati
       REAL(SZ) :: BTPN1,BTPN2,BTPN3,BTPNFirst !nodal values of BTP
       REAL(SZ) :: BTPDX2A,BTPDY2A !(Horiz. grads of BTP)*2*Element Area
 
-      REAL(SZ) :: BCPN1,BCPN2,BCPN3,BCPNFirst !nodal values of BCP
-      REAL(SZ) :: BCPDX2A,BCPDY2A !(Horiz. grads of BCP)*2*Element Area
-      REAL(SZ) :: SigTAvg       !avg SigT between 2 vertical nodes
-      REAL(SZ) :: HGORhoOAMB    !depth*gravity/(reference density)/(a-b)
+Cjgfdebug      REAL(SZ) :: BCPN1,BCPN2,BCPN3,BCPNFirst !nodal values of BCP
+Cjgfdebug      REAL(SZ) :: BCPDX2A,BCPDY2A !(Horiz. grads of BCP)*2*Element Area
+Cjgfdebug      REAL(SZ) :: SigTAvg       !avg SigT between 2 vertical nodes
+Cjgfdebug      REAL(SZ) :: HGORhoOAMB    !depth*gravity/(reference density)/(a-b)
 
-      REAL(SZ) :: DBCPDX2A  
-      REAL(SZ) :: DBCPDY2A  
+Cjgfdebug      REAL(SZ) :: DBCPDX2A  
+Cjgfdebug      REAL(SZ) :: DBCPDY2A  
       REAL(SZ) :: RCL       
       REAL(SZ) :: Auv1k
       REAL(SZ) :: Auv2k
@@ -169,11 +180,11 @@ c.RJW merged 08282008 Casey 071219: Added the following local variable declarati
       REAL(8) :: DhDX,DhDY      !horizontal derivatives of DP
       REAL(8) :: DhDX2A,DhDY2A  !(DhDX,DhDY)*2*Element Area
       REAL(8) :: TotalArea2     !2*Area of all elements around a node
-      REAL(8) :: TotalBCPGArea2 !2*Area of all elements around a node used to compute the BCPG
+Cjgfdebug      REAL(8) :: TotalBCPGArea2 !2*Area of all elements around a node used to compute the BCPG
       REAL(8) :: a1,a2,a3,b1,b2,b3 !elemental coefficients used in horizontal FE method
 
       REAL(8) :: Hs             !Total water depth at time level s
-      REAL(8) :: HsN2           !Total water depth at time level s at local node N2
+Cjgfdebug      REAL(8) :: HsN2           !Total water depth at time level s at local node N2
       REAL(8) :: HsOAMB         !Hs/(a-b)
       REAL(8) :: HsHsOAMBAMB    !(Hs/(a-b))^2
       REAL(8) :: Hsp1           !Total water depth at time level s+1
@@ -189,18 +200,23 @@ c.RJW merged 08282008 Casey 071219: Added the following local variable declarati
       COMPLEX(SZ) :: LStress(MNFEN) !lateral stress term in momentum eqn
       COMPLEX(SZ) :: VAdvec(MNFEN)  !vertical advection term in momentum eqn
       COMPLEX(SZ) :: VStress(MNFEN) !vertical stress term in momentum eqn
-      COMPLEX(SZ) :: BCPG(MNFEN)    !baroclinic pressure gradient
+Cjgfdebug      COMPLEX(SZ) :: BCPG(MNFEN)    !baroclinic pressure gradient
       COMPLEX(SZ) :: BTPG           !total barotropic pressure gradient (incl TP & water level)
       COMPLEX(SZ) :: CCR,CCL        !coeffs used on right,left side of momentum eqn
       COMPLEX(SZ) :: VIVel          !vertically integrated velocity
       COMPLEX(SZ) :: DUDS           !complex vertical velocity gradient between bottom two nodes
       COMPLEX(SZ) :: qn,qN1,qN2,qN3,qNFirst !nodal values of q
-      COMPLEX(SZ) :: UnDqDX,VnDqDY  !derivatives used in lateral advection
+Cjgfdebug      COMPLEX(SZ) :: UnDqDX,VnDqDY  !derivatives used in lateral advection
       COMPLEX(SZ) :: UnDqDX2A,VnDqDY2A !UnDqDX,UnDqDY)*2*Element Area
       COMPLEX(SZ) :: DqDXDPhiDX2A,DqDYDPhiDY2A !derivatives used in lateral stress calc.
       COMPLEX(SZ) :: DqDSigmakm1,DqDSigmakp1 !vertical deriv. of q from k-1,k and k,k+1
       COMPLEX(SZ) :: DqDX2A(MNFEN)  !horizontal derivatives of complex
       COMPLEX(SZ) :: DqDY2A(MNFEN)  !velocity used in w calc
+
+C   kmd48.33bc added the following variables for boundary conditions
+      INTEGER :: J, NumofBCNode
+      INTEGER :: NOD
+      CHARACTER(80) :: CDUM80
 
 C     
 C     INCREMENT THE TIMESTEP SINCE START COUNTER
@@ -208,7 +224,7 @@ C
       IStart3D=IStart3D+1
 
 
-C*************************************************************************************
+C***************************************************************************
 C     Set up several variables that are needed for 3D run     
 
 C     
@@ -245,7 +261,7 @@ C      CALL UPDATER3D(BCP)  !!!!Don't know if this is needed at this time
 C!      ENDIF
 
 
-C*************************************************************************************
+C***************************************************************************
 C     Compute 3D horizontal velocities     
 C     
 C     Loop over each horizontal node to compute the horizontal velocity
@@ -396,6 +412,12 @@ c     surrounding a node
             BTPN2=BTP(N2)
             NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
 c.RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
+            !jgf48.50 If NEle is zero, the NOFF check would be out of 
+            ! bounds, making it look like NOFF is always zero (depending
+            ! on how the compiler handles array out-of-bounds)
+            IF (NEle.eq.0) THEN
+               CYCLE
+            ENDIF
 c.RJW 06092009  modified to elimiate zero index NOFF
             IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
             NCELE = NODECODE(NH)*NODECODE(N2)*
@@ -403,12 +425,14 @@ c.RJW 06092009  modified to elimiate zero index NOFF
             IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
 
                TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
+C    kmd48.33bc added in spherical factors for 3D 
+               SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
                a1=X(N3)-X(N2)
                a2=X(N1)-X(N3)
                a3=X(N2)-X(N1)
-               b1=Y(N2)-Y(N3)
-               b2=Y(N3)-Y(N1)
-               b3=Y(N1)-Y(N2)
+               b1=(Y(N2)-Y(N3))*SFacAvg
+               b2=(Y(N3)-Y(N1))*SFacAvg
+               b3=(Y(N1)-Y(N2))*SFacAvg
                DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
                DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
                DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
@@ -429,26 +453,27 @@ c.RJW 06092009  modified to elimiate zero index NOFF
          BTPN2=BTPNFirst
          NEle=NeiTabEle(NH,NNeigh(NH)-1)
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
-c.RJW 06092009  modified to elimiate zero index NOFF
-            IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
+         !jgf48.50 Avoid array out of bounds
+          IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
             NCELE = NODECODE(NH)*NODECODE(N2)*
      &              NODECODE(N3)*NOFF(NELE)
             IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
-
-            TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
-            a1=X(N3)-X(N2)
-            a2=X(N1)-X(N3)
-            a3=X(N2)-X(N1)
-            b1=Y(N2)-Y(N3)
-            b2=Y(N3)-Y(N1)
-            b3=Y(N1)-Y(N2)
-            DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
-            DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
-            DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
-            DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
-            BTPDX2A=BTPDX2A+(BTPN1*b1+BTPN2*b2+BTPN3*b3)
-            BTPDY2A=BTPDY2A+(BTPN1*a1+BTPN2*a2+BTPN3*a3)
-         ENDIF
+               TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
+C    kmd48.33bc added in spherical factors for 3D 
+               SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+               a1=X(N3)-X(N2)
+               a2=X(N1)-X(N3)
+               a3=X(N2)-X(N1)
+               b1=(Y(N2)-Y(N3))*SFacAvg
+               b2=(Y(N3)-Y(N1))*SFacAvg
+               b3=(Y(N1)-Y(N2))*SFacAvg
+               DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
+               DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
+               DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
+               DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
+               BTPDX2A=BTPDX2A+(BTPN1*b1+BTPN2*b2+BTPN3*b3)
+               BTPDY2A=BTPDY2A+(BTPN1*a1+BTPN2*a2+BTPN3*a3)
+           ENDIF
          ENDIF
 
          IF(TotalArea2.NE.0.) THEN
@@ -506,7 +531,7 @@ c     Compute the vertical advection and vertical stress terms
                VStress(k)=(q(NH,k-1)*KVnm(k,1)+q(NH,k)*KVnm(k,2))
      &              /HsHsOAMBAMB
             ENDIF
-            VAdvec(k)=IFNLCT*VAdvec(k)
+            VAdvec(k)=sponge(NH)*IFNLCT*VAdvec(k)
 
 c     Compute lateral advection and lateral stress terms
 
@@ -531,21 +556,25 @@ c     Compute lateral advection and lateral stress terms
                qN2=q(N2,k)
                NEle=NeiTabEle(NH,N-2) !element # defined by nodes N1,N2,N3
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
-c.RJW 06092009  modified to elimiate zero index NOFF
-            IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
-            NCELE = NODECODE(NH)*NODECODE(N2)*
-     &              NODECODE(N3)*NOFF(NELE)
-            IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
-
+               !jgf48.50 Avoid array out of bounds
+               IF (NEle.eq.0) THEN
+                  CYCLE
+               ENDIF
+               IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
+               NCELE = NODECODE(NH)*NODECODE(N2)*
+     &                 NODECODE(N3)*NOFF(NELE)
+               IF (NCELE.NE.0) THEN !if element exists, compute terms
+C    kmd48.33bc added in spherical factors for 3D 
+                  SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
                   qn=(qN1+qN2+qN3)/3.d0
                   Un=REAL(qn)
                   Vn=AIMAG(qn)
                   a1=X(N3)-X(N2)
                   a2=X(N1)-X(N3)
                   a3=X(N2)-X(N1)
-                  b1=Y(N2)-Y(N3)
-                  b2=Y(N3)-Y(N1)
-                  b3=Y(N1)-Y(N2)
+                  b1=(Y(N2)-Y(N3))*SFacAvg
+                  b2=(Y(N3)-Y(N1))*SFacAvg
+                  b3=(Y(N1)-Y(N2))*SFacAvg
                   UnDqDX2A=UnDqDX2A+Un*(qN1*b1+qN2*b2+qN3*b3)
                   VnDqDY2A=VnDqDY2A+Vn*(qN1*a1+qN2*a2+qN3*a3)
                   DqDXDPhiDX2A=DqDXDPhiDX2A
@@ -567,31 +596,31 @@ c.RJW 06092009  modified to elimiate zero index NOFF
             NCELE = NODECODE(NH)*NODECODE(N2)*
      &              NODECODE(N3)*NOFF(NELE)
             IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
-
-C            IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN !if element exists, compute terms
-               qn=(qN1+qN2+qN3)/3.d0
-               Un=real(qn)
-               Vn=aimag(qn)
-               a1=X(N3)-X(N2)
-               a2=X(N1)-X(N3)
-               a3=X(N2)-X(N1)
-               b1=Y(N2)-Y(N3)
-               b2=Y(N3)-Y(N1)
-               b3=Y(N1)-Y(N2)
-               UnDqDX2A=UnDqDX2A+Un*(qN1*b1+qN2*b2+qN3*b3)
-               VnDqDY2A=VnDqDY2A+Vn*(qN1*a1+qN2*a2+qN3*a3)
-               DqDXDPhiDX2A=DqDXDPhiDX2A
-     &              +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
-               DqDYDPhiDY2A=DqDYDPhiDY2A
-     &              +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
-            ENDIF
+C    kmd48.33bc added in spherical factors for 3D 
+                  SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+                  qn=(qN1+qN2+qN3)/3.d0
+                  Un=real(qn)
+                  Vn=aimag(qn)
+                  a1=X(N3)-X(N2)
+                  a2=X(N1)-X(N3)
+                  a3=X(N2)-X(N1)
+                  b1=(Y(N2)-Y(N3))*SFacAvg
+                  b2=(Y(N3)-Y(N1))*SFacAvg
+                  b3=(Y(N1)-Y(N2))*SFacAvg
+                  UnDqDX2A=UnDqDX2A+Un*(qN1*b1+qN2*b2+qN3*b3)
+                  VnDqDY2A=VnDqDY2A+Vn*(qN1*a1+qN2*a2+qN3*a3)
+                  DqDXDPhiDX2A=DqDXDPhiDX2A
+     &                 +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
+                  DqDYDPhiDY2A=DqDYDPhiDY2A
+     &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
+               ENDIF
             ENDIF
 
             IF(TotalArea2.EQ.0.) THEN
                LAdvec(k)=(0.d0,0.d0)
                LStress(k)=(0.d0,0.d0)
             ELSE
-               LAdvec(k)=IFNLCT*(UnDqDX2A+VnDqDY2A)/TotalArea2   
+               LAdvec(k)=sponge(NH)*IFNLCT*(UnDqDX2A+VnDqDY2A)/TotalArea2   
                LStress(k)=3.d0*EVM(NH)*(DqDXDPhiDX2A+DqDYDPhiDY2A)
      &              /TotalArea2
             ENDIF
@@ -781,18 +810,20 @@ c     Decompose and solve the system
 C     Changed this q value to qkp1 since we need to save q and qkp1 for 
 C     transport calculations
 C     Save the horizontal velocity and Eddy Viscosity solutions
+C   kmd48.33bc added the vertical diffusion term for the transport equation
 
          DO k=1,NFEN
             qkp1(NH,k) = Gamma(k)
             EV(NH,k)=EVTot(k)
-         ENDDO
+            DV(NH,k)=NTVTot(k)
+         END DO
 
       ENDDO
 
 c     Finished computing horizontal velocities
 
 
-C*************************************************************************************
+C****************************************************************************
 C     Update horizontal velocity solution on ghost nodes
 
 #ifdef CMPI
@@ -800,7 +831,7 @@ C     Update horizontal velocity solution on ghost nodes
 #endif
 
 
-C*************************************************************************************
+C****************************************************************************
 C     Compute the depth averaged velocity, depth averaged flux, bottom stress and
 C     velocity dispersion
      
@@ -838,7 +869,7 @@ C     velocity dispersion
         
       ENDDO
 
-C*************************************************************************************
+C***************************************************************************
 C     Compute "z" vertical velocity     
 
 C     
@@ -920,16 +951,22 @@ c     total elemental area surrounding a node
             hN2=DP(N2)
             NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of this IF statement.
+            !jgf48.50 Avoid array out of bounds
+            IF (NEle.eq.0) THEN
+               CYCLE
+            ENDIF
             NCELE = NODECODE(NH)*NODECODE(N2)*
      &              NODECODE(N3)*NOFF(NELE)
-            IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+            IF(NCELE.NE.0) THEN  !if element is active, compute velocity grads
                TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
+C    kmd48.33bc added in spherical factors for 3D 
+               SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
                a1=X(N3)-X(N2)
                a2=X(N1)-X(N3)
                a3=X(N2)-X(N1)
-               b1=Y(N2)-Y(N3)
-               b2=Y(N3)-Y(N1)
-               b3=Y(N1)-Y(N2)
+               b1=(Y(N2)-Y(N3))*SFacAvg
+               b2=(Y(N3)-Y(N1))*SFacAvg
+               b3=(Y(N1)-Y(N2))*SFacAvg
                DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
                DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
                DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
@@ -952,27 +989,32 @@ c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the seco
          EtaN2=EtaNFirst
          NEle=NeiTabEle(NH,NNeigh(NH)-1)
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of this IF statement.
-         NCELE = NODECODE(NH)*NODECODE(N2)*
+         !jgf48.50 Avoid array out-of-bounds
+         IF (NEle.ne.0 ) THEN
+            NCELE = NODECODE(NH)*NODECODE(N2)*
      &           NODECODE(N3)*NOFF(NELE)
-         IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN  !if element is active, compute velocity grads
-            TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
-            a1=X(N3)-X(N2)
-            a2=X(N1)-X(N3)
-            a3=X(N2)-X(N1)
-            b1=Y(N2)-Y(N3)
-            b2=Y(N3)-Y(N1)
-            b3=Y(N1)-Y(N2)
-            DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
-            DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
-            DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
-            DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
-            DO k=1,NFEN
-               qN1=qkp1(N1,k)
-               qN2=qkp1(N2,k)
-               qN3=qkp1(N3,k)
-               DqDX2A(k)=DqDX2A(k)+(qN1*b1+qN2*b2+qN3*b3)
-               DqDY2A(k)=DqDY2A(k)+(qN1*a1+qN2*a2+qN3*a3)
-            ENDDO
+            IF (NCELE.NE.0) THEN  !if element is active, compute velocity grads
+               TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
+C    kmd48.33bc added in spherical factors for 3D 
+               SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+               a1=X(N3)-X(N2)
+               a2=X(N1)-X(N3)
+               a3=X(N2)-X(N1)
+               b1=(Y(N2)-Y(N3))*SFacAvg
+               b2=(Y(N3)-Y(N1))*SFacAvg
+               b3=(Y(N1)-Y(N2))*SFacAvg
+               DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
+               DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
+               DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
+               DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
+               DO k=1,NFEN
+                  qN1=qkp1(N1,k)
+                  qN2=qkp1(N2,k)
+                  qN3=qkp1(N3,k)
+                  DqDX2A(k)=DqDX2A(k)+(qN1*b1+qN2*b2+qN3*b3)
+                  DqDY2A(k)=DqDY2A(k)+(qN1*a1+qN2*a2+qN3*a3)
+               ENDDO
+            ENDIF
          ENDIF
 
          IF(TotalArea2.NE.0.) THEN
@@ -1035,7 +1077,7 @@ C     End loop over horizontal nodes to compute vertical velocity
 C     
       ENDDO
 
-C*************************************************************************************
+C***************************************************************************
 C     Update vertical velocity on ghost nodes - this is necessary
 
 #ifdef CMPI
@@ -1043,19 +1085,70 @@ C     Update vertical velocity on ghost nodes - this is necessary
 #endif
 
 
-C*************************************************************************************
+C**************************************************************************
 C     For a prognostic baroclinic run, compute new density, temperature, salinity fields
 C     
+c   kmd48.33bc need to update the boundary condition information for both 
+C              salinity and temperature in prognostic runs. The boundary
+C              conditions are read in similar to the aperiodic elevation
+C              boundary conditions
+      IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GT.0)) THEN
+         IF ((ABS(RES_BC_FLAG).EQ.2).OR.(ABS(RES_BC_FLAG).EQ.4)) THEN
+            IF(TIME.GT.SBCTIME2) THEN
+               SBCTIME1=SBCTIME2
+               SBCTIME2=SBCTIME1+SBCTIMEINC
+               READ(36,'(A)') CDUM80
+               DO NumofBCNode=1,NETA
+                 DO J=1,NFEN
+                   RESSAL1(NumofBCNode,J)=RESSAL2(NumofBCNode,J)
+                 END DO
+                 READ(36,*) NOD,(RESSAL2(NumofBCNode,J),J=1,NFEN)
+               END DO
+            END IF
+            SBCRATIO=(TIME-SBCTIME1)/SBCTIMEINC
+            DO NumofBCNode=1,NETA
+               DO J=1,NFEN
+                  RESSAL(NumofBCNode,J)=RESSAL1(NumofBCNode,J)+
+     &            SBCRATIO*(RESSAL2(NumofBCNode,J)-
+     &            RESSAL1(NumofBCNode,J))
+               END DO
+            END DO
+         END IF
+         IF ((ABS(RES_BC_FLAG).EQ.3).OR.
+     &           (ABS(RES_BC_FLAG).EQ.4)) THEN
+            IF(TIME.GT.TBCTIME2) THEN
+               TBCTIME1=TBCTIME2
+               TBCTIME2=TBCTIME1+TBCTIMEINC
+               READ(37,'(A)') CDUM80
+               DO NumofBCNode=1,NETA
+                 DO J=1,NFEN
+                   RESTEMP1(NumofBCNode,J)=RESTEMP2(NumofBCNode,J)
+                 END DO
+                 READ(37,*) NOD,(RESTEMP2(NumofBCNode,J),J=1,NFEN)
+               END DO
+            END IF
+            TBCRATIO=(TIME-TBCTIME1)/TBCTIMEINC
+            DO NumofBCNode=1,NETA
+               DO J=1,NFEN
+                  RESTEMP(NumofBCNode,J)=RESTEMP1(NumofBCNode,J)+
+     &            TBCRATIO*(RESTEMP2(NumofBCNode,J)-
+     &            RESTEMP1(NumofBCNode,J))
+               END DO
+            END DO
+         END IF
+      END IF
+
+C   Start computing the new density, temperature and salinity values
       IF(C3D_BTrans) THEN
         IF(IDEN.EQ.1) THEN
 C           CALL 3D_SIGMAT_TRANS()
         ELSE IF(IDEN.EQ.2) THEN 
-            CALL TRANS_3D(SAL,NLSD,NVSD,SALkp1,IDEN)
+            CALL TRANS_3D(SAL,NLSD,NVSD,SALkp1,IDEN,TIME)
         ELSE IF(IDEN.EQ.3) THEN 
-            CALL TRANS_3D(TEMP,NLTD,NVTD,TEMPkp1,IDEN)
+            CALL TRANS_3D(TEMP,NLTD,NVTD,TEMPkp1,IDEN,TIME)
         ELSE IF(IDEN.EQ.4) THEN
-            CALL TRANS_3D(SAL,NLSD,NVSD,SALkp1,IDEN-2)
-            CALL TRANS_3D(TEMP,NLTD,NVTD,TEMPkp1,IDEN-1)
+            CALL TRANS_3D(SAL,NLSD,NVSD,SALkp1,IDEN-2,TIME)
+            CALL TRANS_3D(TEMP,NLTD,NVTD,TEMPkp1,IDEN-1,TIME)
         ENDIF
 C
 C     Update new temperature and salinity fields on ghost nodes
@@ -1105,13 +1198,13 @@ C     present time levels so we can advance in time.
       END DO
 
 
-C*************************************************************************************
+C***************************************************************************
 C     WRITE 3D MODEL OUTPUT
 
       CALL Write_Output_3D (Time,IT) !jgf48_11 moved to write_output.F
 
 
-C*************************************************************************************
+C***************************************************************************
 C     RETURN TO THE 2-D MODEL TO COMPUTE H AT NEXT TIME STEP
       
       RETURN
@@ -1127,9 +1220,11 @@ c***********************************************************************
 c     
       SUBROUTINE FEGRIDS(IGC,H)
       USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : SZ,LOCALDIR,NFEN,SIGMA,A,B,Z0B,Z0S,NSCREEN
+Cjgfdebug USE GLOBAL_3DVS, ONLY : SZ,LOCALDIR,NFEN,SIGMA,A,B,Z0B,Z0S,NSCREEN
+      USE GLOBAL_3DVS, ONLY : SZ,NFEN,SIGMA,A,B,Z0B,Z0S
       IMPLICIT NONE
-      INTEGER :: IGC,N,NODE,NFEN2,IANS,NUM,I
+Cjgfdebug INTEGER :: IGC,N,NODE,NFEN2,IANS,NUM,I
+      INTEGER :: IGC,N,NFEN2,IANS,NUM,I
       REAL(SZ) :: H,DETA,SSTAR,DENOM,SIG0,SS,SB,RP,AVAL,EPS
 
       select case(igc)
@@ -1368,13 +1463,17 @@ C                               06/17/05                                      *
 C******************************************************************************
 C
       SUBROUTINE EDDYVIS(H,UU,VV,WSX,WSY,BSX,BSY,
+
      &     istart,NODE,IT)
-      USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : SZ,LOCALDIR,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
-     &     NFEN,Z0B,Z0S,A,B,AMB,NSCREEN,NWS,DELT
+Cjgfdebug USE GLOBAL, ONLY : ScreenUnit
+Cjgfdebug  USE GLOBAL_3DVS, ONLY : SZ,LOCALDIR,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
+Cjgfdebug     &     NFEN,Z0B,Z0S,A,B,AMB,NSCREEN,NWS,DELT
+      USE GLOBAL_3DVS, ONLY : SZ,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
+     &     NFEN,Z0B,A,B,AMB
       IMPLICIT NONE
       REAL(8) :: H
       REAL(SZ) :: UU,VV,WSX,WSY,BSX,BSY
+
 C     jgf46.00 explicitly declared the following variables
       INTEGER NODE
       INTEGER istart
@@ -1391,10 +1490,8 @@ C     jgf46.00 explicitly declared the following variables
       REAL(SZ) UAVMAG
       REAL(SZ) UAVMAGS
 
-
-
- 350  FORMAT(//,2X,'***** INVALID INPUT IN THE PRIMARY VERTICAL INPUT',
-     &     ' FILE (UNIT 15) ****',/,'****** RUN TERMINATED ******')
+Cjgfdebug 350  FORMAT(//,2X,'***** INVALID INPUT IN THE PRIMARY VERTICAL INPUT',
+Cjgfdebug     &     ' FILE (UNIT 15) ****',/,'****** RUN TERMINATED ******')
 
       RKAPPA = 0.41
 
@@ -1449,6 +1546,7 @@ C...  KAPPA USTAR Z FORMULATION
 C...  
       IF(IEVC.EQ.20) THEN
          USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
+
          EVTOT(1)=RKAPPA*USTARB*Z0B
          EVBASE=RKAPPA*USTARB*H
          IF(EVBASE.LT.EVTOT(1)) EVBASE=EVTOT(1)
@@ -1461,6 +1559,7 @@ C...
       ENDIF
       IF(IEVC.EQ.21) THEN
          USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
+
          EVTOT(1)=RKAPPA*USTARB*Z0B
          EVBASE=RKAPPA*USTARB*H*0.2D0
          IF(EVBASE.LT.EVTOT(1)) EVBASE=EVTOT(1)
@@ -1478,6 +1577,7 @@ C...
       ENDIF
       IF(IEVC.EQ.22) THEN
          USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
+
          USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
          EVTOT(1)=RKAPPA*0.5*(USTARB+USTARS)*Z0B
          EVBASE=RKAPPA*0.5*(USTARB+USTARS)*H*0.2D0
@@ -1496,6 +1596,7 @@ C...
       ENDIF
       IF(IEVC.EQ.23) THEN
           USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
+
           USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
           EVTOT(1)=0.1*0.5*(USTARB+USTARS)*H
          DO J=2,NFEN
@@ -1613,6 +1714,7 @@ C...  MELLOR-YAMADA LEVEL 2.5 CLOSURE
 C...  
       IF(IEVC.EQ.50) THEN
          CALL TURB(NODE,H,BSX,BSY,WSX,WSY,IStart)
+
          GOTO 100
       ENDIF
       
@@ -1668,10 +1770,14 @@ C                                                                      *
 C                         R.L.  11/18/94                               *
 C***********************************************************************
 C
+C  kmd48.33bc changed to use Implicit None
       SUBROUTINE TRIDIAG(A,B,C,R,U,nfen)
       USE GLOBAL, ONLY : SZ, ScreenUnit
-      IMPLICIT COMPLEX(SZ) (A-H,O-Z)
-      DIMENSION A(*),B(*),C(*),R(*),U(*)
+      IMPLICIT NONE
+      INTEGER :: J,nfen
+
+      COMPLEX(SZ) :: A(nfen), B(nfen), C(nfen), R(nfen), U(nfen)
+      COMPLEX(SZ) :: P1
 C     
       DO 11 J=nfen-1,1,-1
          IF(ABS(B(J+1)).EQ.0.) then
@@ -1716,7 +1822,8 @@ C***********************************************************************
 
       Subroutine VSDISP(it,node,H,UU,VV,Duu,Duv,Dvv)
       USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : Qkp1,SZ,NFEN,SIGMA,GAMMA,AMB,I,NSCREEN
+Cjgfdebug      USE GLOBAL_3DVS, ONLY : Qkp1,SZ,NFEN,SIGMA,GAMMA,AMB,I,NSCREEN
+      USE GLOBAL_3DVS, ONLY : Qkp1,SZ,NFEN,SIGMA,GAMMA,AMB,I
       IMPLICIT NONE
 
       REAL(SZ) :: UU,VV,Duu,Duv,Dvv
@@ -1724,28 +1831,28 @@ C***********************************************************************
 C     jgf46.00 explicitly declared the following variables
       INTEGER it
       INTEGER node
-      INTEGER ierr
+Cjgfdebug      INTEGER ierr
       INTEGER j
-      INTEGER k
+Cjgfdebug      INTEGER k
       INTEGER m
-      INTEGER n
+Cjgfdebug      INTEGER n
       INTEGER mp
-      INTEGER istart
-      INTEGER il
-      INTEGER ibc
-      REAL(SZ) rkap
-      REAL(SZ) B1
-      REAL(SZ) B123
-      REAL(SZ) g2
-      REAL(SZ) g3
-      REAL(SZ) g4
-      REAL(SZ) g5
-      REAL(SZ) g6
-      REAL(SZ) E1
+Cjgfdebug      INTEGER istart
+Cjgfdebug      INTEGER il
+Cjgfdebug      INTEGER ibc
+Cjgfdebug      REAL(SZ) rkap
+Cjgfdebug      REAL(SZ) B1
+Cjgfdebug      REAL(SZ) B123
+Cjgfdebug      REAL(SZ) g2
+Cjgfdebug      REAL(SZ) g3
+Cjgfdebug      REAL(SZ) g4
+Cjgfdebug      REAL(SZ) g5
+Cjgfdebug      REAL(SZ) g6
+Cjgfdebug      REAL(SZ) E1
 c     
 c     parameters
 c     
-      ierr = 0
+Cjgfdebug      ierr = 0
 c     
 c     don't waste time if entire profile is zero
 c     
@@ -1847,7 +1954,7 @@ c                                                                      *
 c***********************************************************************
 
       subroutine InmINT()
-      USE GLOBAL, ONLY : ScreenUnit
+Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
       USE GLOBAL_3DVS, ONLY : Sigma, NFEN, INM
       IMPLICIT NONE
       INTEGER k
@@ -1885,7 +1992,7 @@ c                            11/14/94                                  *
 c***********************************************************************
 
       subroutine LVnInt()
-      USE GLOBAL, ONLY : ScreenUnit
+Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
       USE GLOBAL_3DVS, ONLY : Sigma, NFEN, LVN
       IMPLICIT NONE
       INTEGER n
@@ -1909,7 +2016,7 @@ c                            01/26/00                                  *
 c***********************************************************************
 
       subroutine KQnmInt(KQnm,Kq)
-      USE GLOBAL, ONLY : ScreenUnit
+Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
       USE GLOBAL_3DVS, ONLY : SZ,SIGMA,NFEN,MNFEN
       IMPLICIT NONE
       REAL(SZ) :: KQnm(MNFEN,3),Kq(MNFEN)
@@ -2108,15 +2215,18 @@ c
 c************************************************************************
       subroutine turb(nh,H,bsx_loc,bsy_loc,wsx,wsy,istart)
       USE SIZES
-      USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, EXCEPT_BSX => BSX ,EXCEPT_BSY => BSY
+Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
+Cjgfdebug      USE GLOBAL_3DVS, EXCEPT_BSX => BSX ,EXCEPT_BSY => BSY
+      USE GLOBAL_3DVS
       IMPLICIT NONE
       
       COMPLEX(SZ) :: dQdz,dQdz1,dQdz2
       REAL(8) :: H,H_crit
 
       REAL(SZ) :: bsx_loc,bsy_loc,WSX,WSY
-      REAL(SZ),SAVE :: Sh,H2
+Cjgfdebug      REAL(SZ),SAVE :: Sh,H2
+C  kmd48.33bc need to change Sh to an array for transport
+      REAL(SZ),SAVE,ALLOCATABLE :: Sh(:)
       REAL(SZ),SAVE,ALLOCATABLE :: KQnm(:,:)
       REAL(SZ),SAVE,ALLOCATABLE :: Mqa(:),Mqb(:),Mqc(:)
       REAL(SZ),SAVE,ALLOCATABLE :: LVq(:),Sm(:)
@@ -2158,6 +2268,7 @@ c     allocate local arrays
          allocate(BVfreq2(MNFEN),spgrad2(MNFEN))
          allocate(Kq(MNFEN),Km(MNFEN),Kh(MNFEN))
          allocate(prod(MNFEN),diss(MNFEN))
+         allocate(Sh(MNFEN))  ! kmd48.33bc added Sh as an array
          turb_allocated = .true.
       endif
 c     
@@ -2248,7 +2359,7 @@ c                  rl2 = 1.d0/(rkap*(H-sig*H+Z0S))
 c                  l(nh,n) = 1.d0/(rl1+rl2)
 c               endif
 
-      H2 = H*H
+Cjgfdebug      H2 = H*H
       HOamb=H/amb
       HOamb2=(H/amb)*(H/amb)
 
@@ -2324,14 +2435,14 @@ c     the previous time step
          Gh=-BVfreq2(n)*rmlen2(n)/q2prev(n)
          if(Gh.gt.0.0233) Gh=0.0233
          Sm(n)=(g2-g3*Gh)/((1.d0-g4*Gh)*(1.d0-g5*Gh))
-         Sh=g6/(1.d0-g4*Gh)
+         Sh(n)=g6/(1.d0-g4*Gh) ! kmd48.33bc changed Sh to an array
          Km(n)=Sm(n)*qlprev
          if(Km(n).lt.EVMIN) Km(n)=EVMIN
 c     if(istart.eq.1) Km(n)=EVMIN                        !rog way
          Kq(n)=Sq*qlprev                                   
          if(Kq(n).lt.EVMIN) Kq(n)=EVMIN
 c     Kq(n)=Km(n)*Sq/Sm(n)                           !rog way
-         Kh(n)=Sh*qlprev
+         Kh(n)=Sh(n)*qlprev ! kmd48.33bc changed Sh to an array
          if(Kh(n).lt.EVMIN) Kh(n)=EVMIN
          prod(n)=Km(n)*spgrad2(n)-Kh(n)*BVfreq2(n)
          diss(n)=qprev/(B1*rmlen(n))
@@ -2541,9 +2652,14 @@ c...
 c     
 c     compute eddy viscosity and store variables for output and next step
 c     
+C   kmd48.33bc need to add the vertical diffusion term for transport
+C              the lower limit will be the same as that for the eddy 
+C              viscosity
       do n = 1,nfen
          EVTOT(n) = Sm(n)*sqrt(q2(n))*l(nh,n)
+         NTVTOT(n) = Sh(n)*sqrt(q2(n))*l(nh,n)
          if(EVTOT(n).lt.EVMIN) EVTOT(n)=EVMIN
+         if(NTVTOT(n).lt.EVMIN) NTVTOT(n)=EVMIN
       end do
 
       return
@@ -2688,109 +2804,614 @@ C
 !      END
 !
 
-C****************************************************************************************
-C   Subroutine to write out 3D Hot Start info                                           *
-C                                                                                       *
-C                                    R.L.  8/16/05                                      *
-C****************************************************************************************
+C***************************************************************************
+C   Subroutine to write out 3D Hot Start info 
+C                                            
+C                                    R.L.  8/16/05  
+C***************************************************************************
 C
+C  kmd48.33bc changed to follow the global IO format
       SUBROUTINE HSTART3D_OUT()
-      USE GLOBAL, ONLY : ScreenUnit
+Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
+      USE SIZES
+      USE GLOBAL
       USE GLOBAL_3DVS
+      USE GLOBAL_IO
+#ifdef CMPI
+!      USE WRITER
+      USE MESSENGER
+#endif
+
       IMPLICIT NONE
       INTEGER NH
-      INTEGER N
+      INTEGER N,M
+      REAL(SZ),ALLOCATABLE,TARGET :: RESULTS(:)
+      REAL(SZ),SAVE,ALLOCATABLE,TARGET :: DUU_g(:)
+      REAL(SZ),SAVE,ALLOCATABLE,TARGET :: DUV_g(:)
+      REAL(SZ),SAVE,ALLOCATABLE,TARGET :: DVV_g(:)
+      REAL(SZ),SAVE,ALLOCATABLE,TARGET :: UU_g(:)
+      REAL(SZ),SAVE,ALLOCATABLE,TARGET :: VV_g(:)
+      REAL(SZ),SAVE,ALLOCATABLE,TARGET :: BSX_g(:)
+      REAL(SZ),SAVE,ALLOCATABLE,TARGET :: BSY_g(:)
+      REAL(SZ),ALLOCATABLE,TARGET :: Results_g(:)
+
+      type(OutputDataDescript_t),SAVE :: Duudescript
+      type(OutputDataDescript_t),SAVE :: Duvdescript
+      type(OutputDataDescript_t),SAVE :: Dvvdescript
+      type(OutputDataDescript_t),SAVE :: Uudescript
+      type(OutputDataDescript_t),SAVE :: Vvdescript
+      type(OutputDataDescript_t),SAVE :: Bsxdescript
+      type(OutputDataDescript_t),SAVE :: Bsydescript
+      type(OutputDataDescript_t),SAVE :: resultsdescript
+
+      LOGICAL, SAVE :: FirstCall3D = .true.
 C...  
 C...  WRITE HOT START OUTPUT
 C...  
-      IHOTSTP=IHOTSTP+1
-      WRITE(hss % lun,REC=IHOTSTP) IDen
-      IHOTSTP=IHOTSTP+1
-      WRITE(hss % lun,REC=IHOTSTP) N3DSD
-      IHOTSTP=IHOTSTP+1
-      WRITE(hss % lun,REC=IHOTSTP) I3DSDRec
-      IHOTSTP=IHOTSTP+1
-      WRITE(hss % lun,REC=IHOTSTP) N3DSV
-      IHOTSTP=IHOTSTP+1
-      WRITE(hss % lun,REC=IHOTSTP) I3DSVRec
-      IHOTSTP=IHOTSTP+1
-      WRITE(hss % lun,REC=IHOTSTP) N3DST
-      IHOTSTP=IHOTSTP+1
-      WRITE(hss % lun,REC=IHOTSTP) I3DSTRec
-      IHOTSTP=IHOTSTP+1
-      WRITE(hss % lun,REC=IHOTSTP) N3DGD
-      IHOTSTP=IHOTSTP+1
-      WRITE(hss % lun,REC=IHOTSTP) I3DGDRec
-      IHOTSTP=IHOTSTP+1
-      WRITE(hss % lun,REC=IHOTSTP) N3DGV
-      IHOTSTP=IHOTSTP+1
-      WRITE(hss % lun,REC=IHOTSTP) I3DGVRec
-      IHOTSTP=IHOTSTP+1
-      WRITE(hss % lun,REC=IHOTSTP) N3DGT
-      IHOTSTP=IHOTSTP+1
-      WRITE(hss % lun,REC=IHOTSTP) I3DGTRec
+      IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN
+        WRITE(hss % lun,REC=IHOTSTP) IDen  ;  IHOTSTP = IHOTSTP + 1
 
-      DO NH=1,NP
-         IHOTSTP=IHOTSTP+1
-         WRITE(hss % lun,REC=IHOTSTP) DUU(NH)
-         IHOTSTP=IHOTSTP+1
-         WRITE(hss % lun,REC=IHOTSTP) DUV(NH)
-         IHOTSTP=IHOTSTP+1
-         WRITE(hss % lun,REC=IHOTSTP) DVV(NH)
-         IHOTSTP=IHOTSTP+1
-         WRITE(hss % lun,REC=IHOTSTP) UU(NH)
-         IHOTSTP=IHOTSTP+1
-         WRITE(hss % lun,REC=IHOTSTP) VV(NH)
-         IHOTSTP=IHOTSTP+1
-         WRITE(hss % lun,REC=IHOTSTP) BSX(NH)
-         IHOTSTP=IHOTSTP+1
-         WRITE(hss % lun,REC=IHOTSTP) BSY(NH)
-      ENDDO
+        WRITE(hss % lun,REC=IHOTSTP) N3DSD  ;  IHOTSTP = IHOTSTP + 1
+        WRITE(hss % lun,REC=IHOTSTP) I3DSDRec  ;  IHOTSTP = IHOTSTP + 1
 
-      DO NH=1,NP
+        WRITE(hss % lun,REC=IHOTSTP) N3DSV  ;  IHOTSTP = IHOTSTP + 1
+        WRITE(hss % lun,REC=IHOTSTP) I3DSVRec  ;  IHOTSTP = IHOTSTP + 1
+
+        WRITE(hss % lun,REC=IHOTSTP) N3DST  ;  IHOTSTP = IHOTSTP + 1
+        WRITE(hss % lun,REC=IHOTSTP) I3DSTRec  ;  IHOTSTP = IHOTSTP + 1
+
+        WRITE(hss % lun,REC=IHOTSTP) N3DGD  ;  IHOTSTP = IHOTSTP + 1
+        WRITE(hss % lun,REC=IHOTSTP) I3DGDRec  ;  IHOTSTP = IHOTSTP + 1
+
+        WRITE(hss % lun,REC=IHOTSTP) N3DGV  ;  IHOTSTP = IHOTSTP + 1
+        WRITE(hss % lun,REC=IHOTSTP) I3DGVRec  ;  IHOTSTP = IHOTSTP + 1
+
+        WRITE(hss % lun,REC=IHOTSTP) N3DGT  ;  IHOTSTP = IHOTSTP + 1
+        WRITE(hss % lun,REC=IHOTSTP) I3DGTRec  ;  IHOTSTP = IHOTSTP + 1
+      END IF 
+
+C   kmd48.33bc write out results in global IO format
+      IF (FirstCall3D) THEN 
+        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN 
+           Allocate(DUU_g(NP_G))
+        END IF 
+        Duudescript % specifier            =  NHSTAR 
+        Duudescript % initial_value        =  0.0
+        Duudescript % num_items_per_record =  1
+        Duudescript % num_fd_records       =  NP_G
+        Duudescript % num_records_this     =  NP
+        Duudescript % imap                 => nodes_lg
+        Duudescript % array                => DUU1
+        Duudescript % array_g              => DUU_g
+
+        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN 
+           Allocate(DUV_g(NP_G))
+        END IF 
+        Duvdescript % specifier            =  NHSTAR 
+        Duvdescript % initial_value        =  0.0
+        Duvdescript % num_items_per_record =  1
+        Duvdescript % num_fd_records       =  NP_G
+        Duvdescript % num_records_this     =  NP
+        Duvdescript % imap                 => nodes_lg
+        Duvdescript % array                => DUV1
+        Duvdescript % array_g              => DUV_g
+
+        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN 
+           Allocate(DVV_g(NP_G))
+        END IF 
+        Dvvdescript % specifier            =  NHSTAR 
+        Dvvdescript % initial_value        =  0.0
+        Dvvdescript % num_items_per_record =  1
+        Dvvdescript % num_fd_records       =  NP_G
+        Dvvdescript % num_records_this     =  NP
+        Dvvdescript % imap                 => nodes_lg
+        Dvvdescript % array                => DVV1
+        Dvvdescript % array_g              => DVV_g
+
+        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN 
+           Allocate(UU_g(NP_G))
+        END IF 
+        Uudescript % specifier            =  NHSTAR 
+        Uudescript % initial_value        =  0.0
+        Uudescript % num_items_per_record =  1
+        Uudescript % num_fd_records       =  NP_G
+        Uudescript % num_records_this     =  NP
+        Uudescript % imap                 => nodes_lg
+        Uudescript % array                => UU2
+        Uudescript % array_g              => UU_g
+
+        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN 
+           Allocate(VV_g(NP_G))
+        END IF 
+        Vvdescript % specifier            =  NHSTAR 
+        Vvdescript % initial_value        =  0.0
+        Vvdescript % num_items_per_record =  1
+        Vvdescript % num_fd_records       =  NP_G
+        Vvdescript % num_records_this     =  NP
+        Vvdescript % imap                 => nodes_lg
+        Vvdescript % array                => VV2
+        Vvdescript % array_g              => VV_g
+
+        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN 
+           Allocate(BSX_g(NP_G))
+        END IF 
+        Bsxdescript % specifier            =  NHSTAR 
+        Bsxdescript % initial_value        =  0.0
+        Bsxdescript % num_items_per_record =  1
+        Bsxdescript % num_fd_records       =  NP_G
+        Bsxdescript % num_records_this     =  NP
+        Bsxdescript % imap                 => nodes_lg
+        Bsxdescript % array                => BSX1 
+        Bsxdescript % array_g              => BSX_g
+
+        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN 
+           Allocate(BSY_g(NP_G))
+        END IF 
+        Bsydescript % specifier            =  NHSTAR 
+        Bsydescript % initial_value        =  0.0
+        Bsydescript % num_items_per_record =  1
+        Bsydescript % num_fd_records       =  NP_G
+        Bsydescript % num_records_this     =  NP
+        Bsydescript % imap                 => nodes_lg
+        Bsydescript % array                => BSY1 
+        Bsydescript % array_g              => BSY_g
+
+        FirstCall3d = .false.
+      END IF 
+
+#ifdef CMPI
+        CALL collectFullDomainArray(Duudescript,packOne,unpackOne)
+        CALL collectFullDomainArray(Duvdescript,packOne,unpackOne)
+        CALL collectFullDomainArray(Dvvdescript,packOne,unpackOne)
+        CALL collectFullDomainArray(Uudescript,packOne,unpackOne)
+        CALL collectFullDomainArray(Vvdescript,packOne,unpackOne)
+        CALL collectFullDomainArray(Bsxdescript,packOne,unpackOne)
+        CALL collectFullDomainArray(Bsydescript,packOne,unpackOne)
+#endif
+
+        SELECT CASE (NHSTAR)
+
+        CASE(1)
+
+        
+      IF(MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
+#ifdef CMPI
+        DO M=1, NP_G
+           WRITE(hss % lun, REC=IHOTSTP) Duudescript % array_g(M)
+           IHOTSTP = IHOTSTP + 1
+        END DO 
+        DO M=1, NP_G
+           WRITE(hss % lun, REC=IHOTSTP) Duvdescript % array_g(M)
+           IHOTSTP = IHOTSTP + 1
+        END DO 
+        DO M=1, NP_G
+           WRITE(hss % lun, REC=IHOTSTP) Dvvdescript % array_g(M)
+           IHOTSTP = IHOTSTP + 1
+        END DO 
+        DO M=1, NP_G
+           WRITE(hss % lun, REC=IHOTSTP) Uudescript % array_g(M)
+           IHOTSTP = IHOTSTP + 1
+        END DO 
+        DO M=1, NP_G
+           WRITE(hss % lun, REC=IHOTSTP) Vvdescript % array_g(M)
+           IHOTSTP = IHOTSTP + 1
+        END DO 
+        DO M=1, NP_G
+           WRITE(hss % lun, REC=IHOTSTP) Bsxdescript % array_g(M)
+           IHOTSTP = IHOTSTP + 1
+        END DO 
+        DO M=1, NP_G
+           WRITE(hss % lun, REC=IHOTSTP) Bsydescript % array_g(M)
+           IHOTSTP = IHOTSTP + 1
+        END DO 
+#else
+        DO M=1, NP_G
+           WRITE(hss % lun, REC=IHOTSTP) DUU(M)
+           IHOTSTP = IHOTSTP + 1
+        END DO 
+        DO M=1, NP_G
+           WRITE(hss % lun, REC=IHOTSTP) DUV(M)
+           IHOTSTP = IHOTSTP + 1
+        END DO 
+        DO M=1, NP_G
+           WRITE(hss % lun, REC=IHOTSTP) DVV(M)
+           IHOTSTP = IHOTSTP + 1
+        END DO 
+        DO M=1, NP_G
+           WRITE(hss % lun, REC=IHOTSTP) UU(M)
+           IHOTSTP = IHOTSTP + 1
+        END DO 
+        DO M=1, NP_G
+           WRITE(hss % lun, REC=IHOTSTP) VV(M)
+           IHOTSTP = IHOTSTP + 1
+        END DO 
+        DO M=1, NP_G
+           WRITE(hss % lun, REC=IHOTSTP) BSX(M)
+           IHOTSTP = IHOTSTP + 1
+        END DO 
+        DO M=1, NP_G
+           WRITE(hss % lun, REC=IHOTSTP) BSY(M)
+           IHOTSTP = IHOTSTP + 1
+        END DO 
+#endif
+      END IF 
+
+C  kmd48.33bc break up 3D arrays to fit with global IO
+       ALLOCATE (RESULTS(NP))
+       ALLOCATE (RESULTS_g(NP_G))
+       DO N=1,NFEN
+          DO NH=1,NP
+             RESULTS(NH) = REAL(Q(NH,N))
+          END DO
+          resultsdescript % specifier            =  NHSTAR 
+          resultsdescript % initial_value        =  0.0
+          resultsdescript % num_items_per_record =  1
+          resultsdescript % num_fd_records       =  NP_G
+          resultsdescript % num_records_this     =  NP
+          resultsdescript % imap                 => nodes_lg
+          resultsdescript % array                => results 
+          resultsdescript % array_g              => results_g
+#ifdef CMPI
+          CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
+#endif
+          IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
+#ifdef CMPI
+          DO M=1, NP_G
+             WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
+             IHOTSTP = IHOTSTP + 1
+          END DO 
+#else
+          DO M=1, NP_G
+             WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
+             IHOTSTP = IHOTSTP + 1
+          END DO 
+#endif
+          ENDIF 
+       END DO
+
+       DO N=1,NFEN
+          DO NH=1,NP
+             RESULTS(NH) = AIMAG(Q(NH,N))
+          END DO
+          resultsdescript % specifier            =  NHSTAR 
+          resultsdescript % initial_value        =  0.0
+          resultsdescript % num_items_per_record =  1
+          resultsdescript % num_fd_records       =  NP_G
+          resultsdescript % num_records_this     =  NP
+          resultsdescript % imap                 => nodes_lg
+          resultsdescript % array                => results 
+          resultsdescript % array_g              => results_g
+#ifdef CMPI
+          CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
+#endif
+          IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
+#ifdef CMPI
+          DO M=1, NP_G
+             WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
+             IHOTSTP = IHOTSTP + 1
+          END DO 
+#else
+          DO M=1, NP_G
+             WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
+             IHOTSTP = IHOTSTP + 1
+          END DO 
+#endif
+          END IF 
+       END DO
+
+       DO N=1,NFEN
+          DO NH=1,NP
+             RESULTS(NH) = WZ(NH,N)
+          END DO
+          resultsdescript % specifier            =  NHSTAR 
+          resultsdescript % initial_value        =  0.0
+          resultsdescript % num_items_per_record =  1
+          resultsdescript % num_fd_records       =  NP_G
+          resultsdescript % num_records_this     =  NP
+          resultsdescript % imap                 => nodes_lg
+          resultsdescript % array                => results 
+          resultsdescript % array_g              => results_g
+#ifdef CMPI
+          CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
+#endif
+          IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
+#ifdef CMPI
+          DO M=1, NP_G
+             WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
+             IHOTSTP = IHOTSTP + 1
+          END DO 
+#else
+          DO M=1, NP_G
+             WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
+             IHOTSTP = IHOTSTP + 1
+          END DO 
+#endif
+          END IF 
+       END DO
+
+       DO N=1,NFEN
+          DO NH=1,NP
+             RESULTS(NH) = q20(NH,N)
+          END DO
+          resultsdescript % specifier            =  NHSTAR 
+          resultsdescript % initial_value        =  0.0
+          resultsdescript % num_items_per_record =  1
+          resultsdescript % num_fd_records       =  NP_G
+          resultsdescript % num_records_this     =  NP
+          resultsdescript % imap                 => nodes_lg
+          resultsdescript % array                => results 
+          resultsdescript % array_g              => results_g
+#ifdef CMPI
+          CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
+#endif
+          IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
+#ifdef CMPI
+          DO M=1, NP_G
+             WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
+             IHOTSTP = IHOTSTP + 1
+          END DO 
+#else
+          DO M=1, NP_G
+             WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
+             IHOTSTP = IHOTSTP + 1
+          END DO 
+#endif
+          END IF 
+       END DO
+
+       DO N=1,NFEN
+          DO NH=1,NP
+             RESULTS(NH) = l(NH,N)
+          END DO
+          resultsdescript % specifier            =  NHSTAR 
+          resultsdescript % initial_value        =  0.0
+          resultsdescript % num_items_per_record =  1
+          resultsdescript % num_fd_records       =  NP_G
+          resultsdescript % num_records_this     =  NP
+          resultsdescript % imap                 => nodes_lg
+          resultsdescript % array                => results 
+          resultsdescript % array_g              => results_g
+#ifdef CMPI
+          CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
+#endif
+          IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
+#ifdef CMPI
+          DO M=1, NP_G
+             WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
+             IHOTSTP = IHOTSTP + 1
+          END DO 
+#else
+          DO M=1, NP_G
+             WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
+             IHOTSTP = IHOTSTP + 1
+          END DO 
+#endif
+          END IF 
+       END DO
+
+       IF (ABS(IDEN).EQ.1) THEN
          DO N=1,NFEN
-            IHOTSTP=IHOTSTP+1
-            WRITE(hss % lun,REC=IHOTSTP) REAL(Q(NH,N))
-            IHOTSTP=IHOTSTP+1
-            WRITE(hss % lun,REC=IHOTSTP) AIMAG(Q(NH,N))
-            IHOTSTP=IHOTSTP+1
-            WRITE(hss % lun,REC=IHOTSTP) WZ(NH,N)
-            IHOTSTP=IHOTSTP+1
-            WRITE(hss % lun,REC=IHOTSTP) q20(NH,N)
-            IHOTSTP=IHOTSTP+1
-            WRITE(hss % lun,REC=IHOTSTP) l(NH,N)
-            IF(ABS(IDEN).EQ.1) THEN
-               IHOTSTP=IHOTSTP+1
-               WRITE(hss % lun,REC=IHOTSTP) SigT(NH,N)
-            ENDIF
-            IF(ABS(IDEN).EQ.2) THEN
-               IHOTSTP=IHOTSTP+1
-               WRITE(hss % lun,REC=IHOTSTP) Sal(NH,N)
-            ENDIF
-            IF(ABS(IDEN).EQ.3) THEN
-               IHOTSTP=IHOTSTP+1
-               WRITE(hss % lun,REC=IHOTSTP) Temp(NH,N)
-            ENDIF
-            IF(ABS(IDEN).EQ.4) THEN
-               IHOTSTP=IHOTSTP+1
-               WRITE(hss % lun,REC=IHOTSTP) Sal(NH,N)
-               IHOTSTP=IHOTSTP+1
-               WRITE(hss % lun,REC=IHOTSTP) Temp(NH,N)
-            ENDIF
-         ENDDO
-      ENDDO
+            DO NH=1,NP
+               RESULTS(NH) = SIGT(NH,N)
+            END DO
+            resultsdescript % specifier            =  NHSTAR 
+            resultsdescript % initial_value        =  0.0
+            resultsdescript % num_items_per_record =  1
+            resultsdescript % num_fd_records       =  NP_G
+            resultsdescript % num_records_this     =  NP
+            resultsdescript % imap                 => nodes_lg
+            resultsdescript % array                => results 
+            resultsdescript % array_g              => results_g
+#ifdef CMPI
+            CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
+#endif
+          IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
+#ifdef CMPI
+            DO M=1, NP_G
+               WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
+               IHOTSTP = IHOTSTP + 1
+            END DO 
+#else
+            DO M=1, NP_G
+               WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
+               IHOTSTP = IHOTSTP + 1
+            END DO 
+#endif
+            END IF 
+         END DO
+       END IF
+
+       IF (ABS(IDEN).EQ.2) THEN
+         DO N=1,NFEN
+            DO NH=1,NP
+               RESULTS(NH) = SAL(NH,N)
+            END DO
+            resultsdescript % specifier            =  NHSTAR 
+            resultsdescript % initial_value        =  0.0
+            resultsdescript % num_items_per_record =  1
+            resultsdescript % num_fd_records       =  NP_G
+            resultsdescript % num_records_this     =  NP
+            resultsdescript % imap                 => nodes_lg
+            resultsdescript % array                => results 
+            resultsdescript % array_g              => results_g
+#ifdef CMPI
+            CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
+#endif
+            IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
+#ifdef CMPI
+            DO M=1, NP_G
+               WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
+               IHOTSTP = IHOTSTP + 1
+            END DO 
+#else
+            DO M=1, NP_G
+               WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
+               IHOTSTP = IHOTSTP + 1
+            END DO 
+#endif
+            END IF 
+         END DO
+       END IF
+
+       IF (ABS(IDEN).EQ.3) THEN
+         DO N=1,NFEN
+            DO NH=1,NP
+               RESULTS(NH) = TEMP(NH,N)
+            END DO
+            resultsdescript % specifier            =  NHSTAR 
+            resultsdescript % initial_value        =  0.0
+            resultsdescript % num_items_per_record =  1
+            resultsdescript % num_fd_records       =  NP_G
+            resultsdescript % num_records_this     =  NP
+            resultsdescript % imap                 => nodes_lg
+            resultsdescript % array                => results 
+            resultsdescript % array_g              => results_g
+#ifdef CMPI
+            CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
+#endif
+            IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
+#ifdef CMPI
+
+            DO M=1, NP_G
+               WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
+               IHOTSTP = IHOTSTP + 1
+            END DO 
+#else
+            DO M=1, NP_G
+               WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
+               IHOTSTP = IHOTSTP + 1
+            END DO 
+#endif
+            END IF 
+         END DO
+       END IF
+
+       IF (ABS(IDEN).EQ.4) THEN
+         DO N=1,NFEN
+            DO NH=1,NP
+               RESULTS(NH) = SAL(NH,N)
+            END DO
+            resultsdescript % specifier            =  NHSTAR 
+            resultsdescript % initial_value        =  0.0
+            resultsdescript % num_items_per_record =  1
+            resultsdescript % num_fd_records       =  NP_G
+            resultsdescript % num_records_this     =  NP
+            resultsdescript % imap                 => nodes_lg
+            resultsdescript % array                => results 
+            resultsdescript % array_g              => results_g
+#ifdef CMPI
+            CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
+#endif
+            IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
+#ifdef CMPI
+            DO M=1, NP_G
+               WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
+               IHOTSTP = IHOTSTP + 1
+            END DO 
+#else
+            DO M=1, NP_G
+               WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
+               IHOTSTP = IHOTSTP + 1
+            END DO 
+#endif
+            END IF 
+         END DO
+         DO N=1,NFEN
+            DO NH=1,NP
+               RESULTS(NH) = TEMP(NH,N)
+            END DO
+            resultsdescript % specifier            =  NHSTAR 
+            resultsdescript % initial_value        =  0.0
+            resultsdescript % num_items_per_record =  1
+            resultsdescript % num_fd_records       =  NP_G
+            resultsdescript % num_records_this     =  NP
+            resultsdescript % imap                 => nodes_lg
+            resultsdescript % array                => results 
+            resultsdescript % array_g              => results_g
+#ifdef CMPI
+            CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
+#endif
+            IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
+#ifdef CMPI
+            DO M=1, NP_G
+               WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
+               IHOTSTP = IHOTSTP + 1
+            END DO 
+#else
+            DO M=1, NP_G
+               WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
+               IHOTSTP = IHOTSTP + 1
+            END DO 
+#endif
+            END IF
+         END DO
+       END IF
+       DEALLOCATE(RESULTS)
+       DEALLOCATE(RESULTS_g)
+      END SELECT
 
       RETURN
       END
 
+!      DO NH=1,NP
+!         IHOTSTP=IHOTSTP+1
+!         WRITE(hss % lun,REC=IHOTSTP) DUU(NH)
+!         IHOTSTP=IHOTSTP+1
+!         WRITE(hss % lun,REC=IHOTSTP) DUV(NH)
+!         IHOTSTP=IHOTSTP+1
+!         WRITE(hss % lun,REC=IHOTSTP) DVV(NH)
+!         IHOTSTP=IHOTSTP+1
+!         WRITE(hss % lun,REC=IHOTSTP) UU(NH)
+!         IHOTSTP=IHOTSTP+1
+!         WRITE(hss % lun,REC=IHOTSTP) VV(NH)
+!         IHOTSTP=IHOTSTP+1
+!         WRITE(hss % lun,REC=IHOTSTP) BSX(NH)
+!         IHOTSTP=IHOTSTP+1
+!         WRITE(hss % lun,REC=IHOTSTP) BSY(NH)
+!      ENDDO
+!
+!      DO NH=1,NP
+!         DO N=1,NFEN
+!            IHOTSTP=IHOTSTP+1
+!            WRITE(hss % lun,REC=IHOTSTP) REAL(Q(NH,N))
+!            IHOTSTP=IHOTSTP+1
+!            WRITE(hss % lun,REC=IHOTSTP) AIMAG(Q(NH,N))
+!            IHOTSTP=IHOTSTP+1
+!            WRITE(hss % lun,REC=IHOTSTP) WZ(NH,N)
+!            IHOTSTP=IHOTSTP+1
+!            WRITE(hss % lun,REC=IHOTSTP) q20(NH,N)
+!            IHOTSTP=IHOTSTP+1
+!            WRITE(hss % lun,REC=IHOTSTP) l(NH,N)
+!            IF(ABS(IDEN).EQ.1) THEN
+!               IHOTSTP=IHOTSTP+1
+!               WRITE(hss % lun,REC=IHOTSTP) SigT(NH,N)
+!            ENDIF
+!            IF(ABS(IDEN).EQ.2) THEN
+!               IHOTSTP=IHOTSTP+1
+!               WRITE(hss % lun,REC=IHOTSTP) Sal(NH,N)
+!            ENDIF
+!            IF(ABS(IDEN).EQ.3) THEN
+!               IHOTSTP=IHOTSTP+1
+!               WRITE(hss % lun,REC=IHOTSTP) Temp(NH,N)
+!            ENDIF
+!            IF(ABS(IDEN).EQ.4) THEN
+!               IHOTSTP=IHOTSTP+1
+!               WRITE(hss % lun,REC=IHOTSTP) Sal(NH,N)
+!               IHOTSTP=IHOTSTP+1
+!               WRITE(hss % lun,REC=IHOTSTP) Temp(NH,N)
+!            ENDIF
+!         ENDDO
+!      ENDDO
 
 
-C****************************************************************************************
-C   Subroutine to compute 3D SigmaT fields from 3D salinity and/or temperature fields   *
-C                                                                                       *
-C                                    R.L.  6/22/05                                      *
-C                                    K.D.  2/03/06 updated                              *
-C****************************************************************************************
+
+C****************************************************************************
+C   Subroutine to compute 3D SigmaT fields from 3D salinity 
+C   and/or temperature fields   
+C                              
+C                                    R.L.  6/22/05  
+C                                    K.D.  2/03/06 updated 
+C*****************************************************************************
 C
 
       SUBROUTINE CALC_SIGMAT_3D ()
@@ -2800,29 +3421,96 @@ C
 !        Cushman-Roisin book entitled "Introduction to Geophysical 
 !        Fluid Dynamics". Later, we can update this to include more
 !        complex equations of state. 
-      USE GLOBAL_3DVS, ONLY : SAL, TEMP, SIGT, IDEN, NFEN, SZ
-      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
+C   kmd48.33bc need to add variables for new equation of state
+      USE GLOBAL_3DVS, ONLY : SAL, TEMP, SIGT, IDEN, NFEN, SZ,
+     &                        SIGMA, EQNSTATE, A, B
+Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
+      USE GLOBAL, ONLY : NP,RHOWAT0, DP, ETA2, IFNLFA, G
       IMPLICIT NONE
       INTEGER NH,N
       REAL(SZ) :: T_alpha=0.00017d0, S_beta=0.00076d0
-      REAL(SZ) :: T_ref=10.0d0, S_ref=35.0d0
-      
+!      REAL(SZ) :: T_ref=10.0d0, S_ref=35.0d0
+      REAL(SZ) :: T_ref, S_ref ! changed to new values
+!Kendra: Parameters for the 2nd equation of state
+      REAL(SZ), PARAMETER :: Q1 = 196637339.d0
+      REAL(SZ), PARAMETER :: Q2 = 196668.928d0
+      REAL(SZ), PARAMETER :: a1 = 1446045.44d0
+      REAL(SZ), PARAMETER :: a2 = -10769.1980d0
+      REAL(SZ), PARAMETER :: a3 = 85.2955498d0
+      REAL(SZ), PARAMETER :: b1 = 579854.265d0
+      REAL(SZ), PARAMETER :: b2 = -1477.31528d0
+      REAL(SZ), PARAMETER :: b3 = 419.489109d0
+      REAL(SZ), PARAMETER :: c1 = 2001.22349d0
+      REAL(SZ), PARAMETER :: c2 = 0.0213851025d0
+      REAL(SZ), PARAMETER :: c3 = 0.968784141d0
+      REAL(SZ), PARAMETER :: c4 = -0.00654785602d0
+      REAL(SZ), PARAMETER :: c5 = -0.00000250468726d0
+      REAL(SZ), PARAMETER :: c6 = 0.0000000628902345d0
+      REAL(SZ), PARAMETER :: c7 = 0.00000000282414763d0
+      REAL(SZ), PARAMETER :: d1 = 1433.02205d0
+      REAL(SZ), PARAMETER :: d2 = -9.09231525d0
+      REAL(SZ), PARAMETER :: d3 = 0.0791654429d0
+      REAL(SZ), PARAMETER :: d4 = 0.0000398630534d0
+      REAL(SZ), PARAMETER :: e1 = 417.831720d0
+      REAL(SZ), PARAMETER :: e2 = -1.87581316d0
+      REAL(SZ), PARAMETER :: e3 = -0.0000387902837d0
+      REAL(SZ), PARAMETER :: f1 = 1.00765828d0
+      REAL(SZ), PARAMETER :: f2 = 0.000312912597d0
+      REAL(SZ), PARAMETER :: T_max=40.d0, T_min=0.d0
+      REAL(SZ), PARAMETER :: S_max=42.d0, S_min=0.d0
+!Kendra: Variables for the 2nd equation of state
+      REAL(SZ) :: P1, P2
+      REAL(SZ) :: p(NP), RHO(NP,NFEN)
+      REAL(SZ) :: R_ref
+      REAL(SZ) :: Hs, HsOAMB, Zk
+      REAL(SZ) :: Z(NP,NFEN)
+!Kendra: Parameters for the 3rd equation of state
+      REAL(SZ), PARAMETER :: c00=999.842594d0, c11=0.06793952d0
+      REAL(SZ), PARAMETER :: c12=-0.00909529d0, c13=0.0001001685d0
+      REAL(SZ), PARAMETER :: c14=-0.000001120083d0, c15=0.000000006536332d0
+      REAL(SZ), PARAMETER :: c21=0.824493d0, c22=-0.0040899d0
+      REAL(SZ), PARAMETER :: c23=0.000076438d0, c24=0.00000082467d0
+      REAL(SZ), PARAMETER :: c25=0.0000000053875d0, c31=-0.00572466d0
+      REAL(SZ), PARAMETER :: c32=0.00010227d0, c33=-0.0000016546d0
+      REAL(SZ), PARAMETER :: c41=0.00048314d0
+      REAL(SZ), PARAMETER :: d00=190925.6d0, d11=2098.925d0
+      REAL(SZ), PARAMETER :: d12=-30.41638d0, d13=-0.01852732d0
+      REAL(SZ), PARAMETER :: d14=-0.0001361629d0, d21=1044.077d0
+      REAL(SZ), PARAMETER :: d22=-65.00517d0, d23=1.553190d0
+      REAL(SZ), PARAMETER :: d24=0.002326469d0, d31=-55.87545d0
+      REAL(SZ), PARAMETER :: d32=7.390729d0, d33=-0.1909078d0
+      REAL(SZ), PARAMETER :: d41=-4.721788d0, d42=-0.1028859d0
+      REAL(SZ), PARAMETER :: d43=0.002512549d0, d44=0.000005939910d0
+      REAL(SZ), PARAMETER :: d51=0.1571896d0, d52=0.002598241d0
+      REAL(SZ), PARAMETER :: d53=0.00007267926d0, d61=-0.02042967d0
+      REAL(SZ), PARAMETER :: d71=0.0001045941d0, d72=-0.000000005782165d0
+      REAL(SZ), PARAMETER :: d73=0.000001296821d0, d81=-0.000002595994d0
+      REAL(SZ), PARAMETER :: d82=-0.00000001248266d0, d83=-0.00000003508914d0
+!Kendra: Variables for the 3rd equation of state
+      REAL(SZ) :: Kappa
 
-      IF(ABS(IDEN).EQ.2) THEN
+
+      
+!Kendra: Equation of state from Cushman-Roisin book entitled "Introduction to
+!        Geophysical Fluid Dynamics".
+      IF (Eqnstate.EQ.1) THEN
+       T_ref=10.d0
+       S_ref=35.d0
+       IF(ABS(IDEN).EQ.2) THEN
         DO NH=1,NP
           DO N=1,NFEN
              SIGT(NH,N) = 1028.d0*(1.d0+S_beta*(SAL(NH,N)-
      &                    S_ref))-RHOWAT0
           ENDDO
         ENDDO
-      ELSEIF(ABS(IDEN).EQ.3) THEN
+       ELSEIF(ABS(IDEN).EQ.3) THEN
         DO NH=1,NP
           DO N=1,NFEN
              SIGT(NH,N) = 1028.d0*(1.d0-T_alpha*(TEMP(NH,N)-
      &                    T_ref))-RHOWAT0
           ENDDO
         ENDDO
-      ELSEIF(ABS(IDEN).EQ.4) THEN
+       ELSEIF(ABS(IDEN).EQ.4) THEN
         DO NH=1,NP
           DO N=1,NFEN
              SIGT(NH,N) = 1028.d0*(1.d0-T_alpha*(TEMP(NH,N)-
@@ -2830,7 +3518,155 @@ C
      &                    RHOWAT0 
           ENDDO
         ENDDO
-      ENDIF
+       ENDIF
+      ELSE IF (Eqnstate.EQ.2) THEN
+        T_ref=10.d0
+        S_ref=32.d0
+C  kmd48.33bc Equation of state from McDougall et al. (2003) - only used
+C        with both salinity and temperature. This is one of the equation
+C        of states used in QUODDY
+        IF (ABS(IDEN).EQ.4) THEN
+! Look at the values for Temperature and Salinity to see if still
+! inside the range of the equation of state
+           DO NH=1,NP
+            DO N=1,NFEN
+               IF (TEMP(NH,N).LT.T_min) THEN
+                   TEMP(NH,N) = T_min
+               END IF
+               IF (TEMP(NH,N).GT.T_max) THEN
+                   TEMP(NH,N) = T_max
+               END IF
+               IF (SAL(NH,N).LT.S_min) THEN
+                   SAL(NH,N) = S_min
+               END IF
+               IF (SAL(NH,N).GT.S_max) THEN
+                   SAL(NH,N) = S_max
+               END IF
+            END DO
+           END DO
+! First, determine the reference density
+           P1 = Q1 + (a1 + (a2 + a3*T_ref)*T_ref)*
+     &               T_ref + (b1 + b2*T_ref +
+     &               b3*S_ref)*S_ref
+           P2 = Q2 + (d1 + (d2 + (d3 + d4*T_ref)*
+     &               T_ref)*T_ref)*T_ref +
+     &               (e1 + (f1 + f2*T_ref*T_ref)*
+     &               SQRT(S_ref) + (e2 + e3*T_ref*
+     &               T_ref)*T_ref)*S_ref
+           R_ref = P1/P2
+! Second, determine the depths of the layers
+           DO NH=1,NP
+            Hs = DP(NH) + IFNLFA*ETA2(NH)
+            HsOAMB = Hs/(A-B)
+            DO N=1, NFEN
+              Zk = HsOAMB * (Sigma(n)-B)-DP(NH)
+              Z(NH,N) = Zk
+            END DO
+           END DO
+! Third, calculate the new density
+           DO NH=1,NP
+            DO N=NFEN,1,-1
+              IF (N.EQ.NFEN) THEN
+                p(NH) = 0.d0
+                P1 = Q1 + (a1 + (a2 + a3*TEMP(NH,N))*TEMP(NH,N))*
+     &               TEMP(NH,N) + (b1 + b2*TEMP(NH,N) +
+     &               b3*SAL(NH,N))*SAL(NH,N)
+                P2 = Q2 + (d1 + (d2 + (d3 + d4*TEMP(NH,N))*
+     &               TEMP(NH,N))*TEMP(NH,N))*TEMP(NH,N) +
+     &               (e1 + (f1 + f2*TEMP(NH,N)*TEMP(NH,N))*
+     &               SQRT(SAL(NH,N)) + (e2 + e3*TEMP(NH,N)*
+     &               TEMP(NH,N))*TEMP(NH,N))*SAL(NH,N)
+                RHO(NH,N) = P1/P2
+              ELSE IF (N.NE.NFEN) THEN
+                p(NH) = p(NH) + g*RHO(NH,N+1)*(Z(NH,N+1)-
+     &                  Z(NH,N))*0.0001d0
+                P1 = Q1 + (a1 + (a2 + a3*TEMP(NH,N))*TEMP(NH,N))*
+     &               TEMP(NH,N) + (b1 + b2*TEMP(NH,N) +
+     &               b3*SAL(NH,N))*SAL(NH,N) + (c1 + c2*
+     &               TEMP(NH,N)*TEMP(NH,N) + c3*SAL(NH,N) +
+     &               (c4 + ((c5+c6*TEMP(NH,N))*TEMP(NH,N) +
+     &               c7*p(NH))*TEMP(NH,N))*p(NH))*p(NH)
+                P2 = Q2 + (d1 + (d2 + (d3 + d4*TEMP(NH,N))*
+     &               TEMP(NH,N))*TEMP(NH,N))*TEMP(NH,N) +
+     &               (e1 + (f1 + f2*TEMP(NH,N)*TEMP(NH,N))*
+     &               SQRT(SAL(NH,N)) + (e2 + e3*TEMP(NH,N)*
+     &               TEMP(NH,N))*TEMP(NH,N))*SAL(NH,N)
+                RHO(NH,N) = P1/(P2 + p(NH))
+              END IF
+            END DO
+! Fourth, calculate the new values of sigma-t for calculation
+! of the baroclinic pressure gradient terms.
+            DO N=1,NFEN
+              SIGT(NH,N) = RHO(NH,N)-RHOWAT0
+            END DO
+           END DO
+        END IF
+      ELSE IF(Eqnstate.EQ.3) THEN
+        T_ref=10.d0
+        S_ref=32.d0
+C  kmd48.33bc Equation of state from UNESCO (1980) and Haidvogel and Beckman (1999) - only used
+C        with both salinity and temperature.
+        IF (ABS(IDEN).EQ.4) THEN
+! Look at the values for Temperature and Salinity to see if still
+! inside the range of the equation of state
+           DO NH=1,NP
+            DO N=1,NFEN
+               IF (TEMP(NH,N).LT.T_min) THEN
+                   TEMP(NH,N) = T_min
+               END IF
+               IF (TEMP(NH,N).GT.T_max) THEN
+                   TEMP(NH,N) = T_max
+               END IF
+               IF (SAL(NH,N).LT.S_min) THEN
+                   SAL(NH,N) = S_min
+               END IF
+               IF (SAL(NH,N).GT.S_max) THEN
+                   SAL(NH,N) = S_max
+               END IF
+            END DO
+           END DO
+! Kendra: the initial step is to define the density for the surface
+           DO NH=1,NP
+              N=NFEN
+              RHO(NH,N) = c00 + (c11 + (c12 +(c13 +(c14 + c15*
+     &         TEMP(NH,N))*TEMP(NH,N))*TEMP(NH,N))*TEMP(NH,N))*
+     &         TEMP(NH,N) + (c21 + (c22 + (c23 + (c24 + c25*
+     &         TEMP(NH,N))*TEMP(NH,N))*TEMP(NH,N))*TEMP(NH,N))*
+     &         SAL(NH,N) + (c31 + (c32 + c33*TEMP(NH,N))*
+     &         TEMP(NH,N))*SAL(NH,N)*SQRT(SAL(NH,N)) +
+     &         c41*SAL(NH,N)*SAL(NH,N)
+           END DO
+! Second, determine the depths of the layers
+           DO NH=1,NP
+            Hs = DP(NH) + IFNLFA*ETA2(NH)
+            HsOAMB = Hs/(A-B)
+            DO N=1, NFEN
+              Zk = HsOAMB * (Sigma(n)-B)-DP(NH)
+              Z(NH,N) = Zk
+            END DO
+           END DO
+! Third, calculate the new density
+           DO NH=1,NP
+            DO N=NFEN-1,1,-1
+              Kappa = d00 + (d11 + (d12 + (d13 + d14*TEMP(NH,N))*
+     &          TEMP(NH,N))*TEMP(NH,N))*TEMP(NH,N) + (d21 +
+     &          (d22 + (d23 + d24*TEMP(NH,N))*TEMP(NH,N))*TEMP(NH,N))*
+     &          SAL(NH,N) + (d31 + (d32 + d33*TEMP(NH,N))*TEMP(NH,N))*
+     &          SAL(NH,N)*SQRT(SAL(NH,N)) + (d41 + (d42 + (d43 + d44*
+     &          TEMP(NH,N))*TEMP(NH,N))*TEMP(NH,N))*Z(NH,N) + (d51 +
+     &          (d52 + d53*TEMP(NH,N))*TEMP(NH,N))*Z(NH,N)*SAL(NH,N) +
+     &          d61*Z(NH,N)*SAL(NH,N)*SQRT(SAL(NH,N)) + (d71 + (d72 +
+     &          d73*TEMP(NH,N))*TEMP(NH,N))*Z(NH,N)*Z(NH,N) + (d81 +
+     &          (d82 + d83*TEMP(NH,N))*TEMP(NH,N))*SAL(NH,N)*Z(NH,N)*
+     &          Z(NH,N)
+              RHO(NH,N) = RHO(NH,NFEN)/(1.d0+(Z(NH,N)/Kappa))
+            END DO
+            DO N=1,NFEN
+              SIGT(NH,N) = RHO(NH,N)-RHOWAT0
+            END DO
+           END DO
+        END IF
+      END IF
 
       RETURN
       END

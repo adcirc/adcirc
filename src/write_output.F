@@ -55,6 +55,7 @@ C----------------------------------------------------------------------
       INTEGER I                       !local loop counters
       INTEGER NC1, NC2, NC3, NCEle
       INTEGER NM1, NM2, NM3
+      INTEGER,SAVE :: countsponge=1
 
       REAL(SZ) C1, C2, C3
       REAL(SZ) EE1, EE2, EE3
@@ -79,6 +80,7 @@ C----------------------------------------------------------------------
       type(OutputDataDescript_t), SAVE :: WVMaxDescript
       type(OutputDataDescript_t), SAVE :: PrMinDescript
       type(OutputDataDescript_t), SAVE :: RSMaxDescript
+      type(OutputDataDescript_t), SAVE :: SpongeDescript
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ET00_g(:)
@@ -101,6 +103,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: PRMIN_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNOUTMAX_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNMAX_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: sponge_g(:)
 
       LOGICAL, SAVE :: FirstCall = .true.
       
@@ -176,6 +179,19 @@ C         write(16,*) 'Allocating Tau0Descript' !jgfdebug48.03
          Tau0Descript % ConsiderWetDry       = .FALSE.
          Tau0Descript % alternate_value      = 0.0
          Tau0Descript % field_name           = 'Tau0'
+
+         ! sponge layer 
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(sponge_g(NP_G))
+         ENDIF
+         SpongeDescript % specifier            = 1  ! hard-code to ascii text
+         SpongeDescript % initial_value        = 0.0
+         SpongeDescript % num_items_per_record = 1
+         SpongeDescript % num_fd_records       = NP_G
+         SpongeDescript % num_records_this     = NP
+         SpongeDescript % imap                 => NODES_LG
+         SpongeDescript % array                => sponge 
+         SpongeDescript % array_g              => sponge_g
 
          ! fort.64
 C         write(16,*) 'Allocating VelDescript' !jgfdebug48.03
@@ -563,16 +579,26 @@ C           requested it with tau0 = -4 in fort.15.
                CALL writeOutArray(90, TIME, IT, Tau0Descript,
      &                            packOne, unpackOne, IGEP) 
             ENDIF
+C
+C           kmd48.33bc: Write out sponge layer so user can see which nodes 
+C           are included in the sponge layer. Note only outputs if spongedist
+C           given in fort.15 is not equal to zero. 
+            IF ((OUTPUTSPONGE).AND.(countsponge.eq.1)) THEN
+               CALL writeOutArray(92, TIME, IT, SpongeDescript,
+     &                            packOne, unpackOne, IGEP) 
+               countsponge=countsponge + 1 ! only need to output once as it does not change with time
+            ENDIF
 
 C          jgf47.08 Made sparse output an option (if NOUTGE=-4 or 4 in fort.15)
            IF(ABS(NOUTGE).EQ.4) THEN
 C              jgf47.08 Create compact output 
 C              jgf48.03 TODO: Make this globalio compliant.
+C              kmd - updated
 #ifdef CMPI
               IF(MNWPROC.GT.0) THEN
-                 CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $              (TRIM(GLOBALDIR)//'/'//'fort.63',descript,time,it,
-     $                 writer_store63, -99999.D0)
+                 CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     $               (63, TRIM(GLOBALDIR)//'/'//'fort.63',
+     $                ElevDescript, time, it, store63, -99999.D0)
               ELSE
                  CALL WRITE_GBL_63_SKIP_DRYNODE  ! sb 11/10/2006
      $                (63, TRIM(GLOBALDIR)//'/'//'fort.63',
@@ -607,11 +633,12 @@ C...
 
             IF (ABS(NOUTGV).EQ.4) THEN
             ! jgf48.03 TODO: Make this globalio compliant.
+            ! kmd - updated
 #ifdef CMPI
                   IF(MNWPROC.GT.0) THEN
-                    CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                (TRIM(GLOBALDIR)//'/'//'fort.64',descript,time,it,
-     $                 writer_storeTwo, 0.D0)
+                    CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     $                   (64, TRIM(GLOBALDIR)//'/'//'fort.64',
+     $                   VelDescript, time, it, storeTwo, 0.d0)
                   ELSE
                     CALL WRITE_GBL_FILE_SKIP_DEFAULT ! sb 11/10/2006
      $                   (64, TRIM(GLOBALDIR)//'/'//'fort.64',
@@ -651,9 +678,10 @@ C           jgf48.03 TODO: Make this globalio compliant.
             IF (ABS(NOUTGW).EQ.4) THEN
 #ifdef CMPI
                IF(MNWPROC.GT.0) THEN
-                 CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $             (TRIM(GLOBALDIR)//'/'//'fort.73',descript,time,it,
-     $              writer_storeOne, 0.D0)
+                 CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     $             (73, TRIM(GLOBALDIR)//'/'//'fort.73',
+     $              PrDescript,time,it,
+     $              storeOne, 0.D0)
                ELSE
                  CALL WRITE_GBL_FILE_SKIP_DEFAULT
      $             (73, TRIM(GLOBALDIR)//'/'//'fort.73',
@@ -669,10 +697,10 @@ C           jgf48.03 TODO: Make this globalio compliant.
             IF (ABS(NOUTGW).EQ.4) THEN
 #ifdef CMPI
                   IF(MNWPROC.GT.0) THEN
-                    CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                   (TRIM(GLOBALDIR)//'/'//'fort.74',
-     &                   descript,time,it,
-     $                   writer_storeTwo, 0.D0)
+                    CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     $                   (74, TRIM(GLOBALDIR)//'/'//'fort.74',
+     &                   WindVelDescript,time,it,
+     $                   storeTwo, 0.D0)
                   ELSE
                     CALL WRITE_GBL_FILE_SKIP_DEFAULT
      $                   (74, TRIM(GLOBALDIR)//'/'//'fort.74',
@@ -735,7 +763,7 @@ C     can be preserved across hot starts.
      &           NP_G, NP, HEADER_MAX)
          CALL OPEN_MINMAX_FILE(963, TRIM(GLOBALDIR)//'/'//'maxrs.63',
      &           NP_G, NP, HEADER_MAX)
-         IF (IHOT.EQ.0) THEN
+         IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
             CALL writeOutArrayMinMax(963, TIME, IT, EtaMaxDescript,
      &           packOne, unpackOne,'cld') 
             CALL writeOutArrayMinMax(963, TIME, IT, UMaxDescript,
@@ -787,7 +815,7 @@ C     jgf48.11 Moved from vsmy.F to write_output.F.
 C-----------------------------------------------------------------------
       SUBROUTINE Write_Output_3D (Time,IT)
       USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC
-      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL, ONLY : ScreenUnit, BCFLAG_TEMP
       USE GLOBAL_3DVS 
       USE GLOBAL_IO, ONLY: storeOne, storeTwo, HEADER_MAX,
      &    open_gbl_file, write_gbl_file, 
@@ -933,8 +961,10 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
 !         VelDescript % array_g              => UU2_g
 !         VelDescript % array2_g             => VV2_g
 !
+1099  FORMAT(2X,1pE20.10,5X,I10)
 1100  FORMAT(1X,E16.10,1X,I10,32000(2X,E12.6))
 1104  FORMAT(9X,I6,4X,32000(E12.6,2X))
+1105  FORMAT(2X,I8,2X,1pE20.10)
 
 C
 C.... 3D Density, Temperature, Salinity Station Output (Unit 41)
@@ -951,12 +981,12 @@ C         Write time header into file
           IF(ABS(I3DSD).EQ.1) THEN                                          !ASCII FORMAT
             OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41',
      &                            ACCESS='SEQUENTIAL',POSITION='APPEND')
-            IF(IDen.EQ.1) WRITE(41,1100) Time,IT,(Sigma(k),k=1,NFEN-1)                           
-            IF(IDen.EQ.2) WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
+            IF(ABS(IDen).EQ.1) WRITE(41,1100) Time,IT,(Sigma(k),k=1,NFEN-1)                           
+            IF(ABS(IDen).EQ.2) WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
      &                               k=1,NFEN-1),Sigma(NFEN)            
-            IF(IDen.EQ.3) WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
+            IF(ABS(IDen).EQ.3) WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
      &                               k=1,NFEN-1),Sigma(NFEN)             
-            IF(IDen.EQ.4) WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
+            IF(ABS(IDen).EQ.4) WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
      &                      Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
             I3DSDRec=I3DSDRec+1
           ELSEIF(ABS(I3DSD).EQ.2) THEN                                      !BINARY FORMAT
@@ -1170,17 +1200,26 @@ C     Check to see if it is time to generate 3D global density output.
         IF(N3DGD.EQ.NSpo3DGD) THEN                                           !if yes
 
 C         Write time header into file
+!kmd48.33bc - add in the information for outputting the top temperature
+!             boundary condition.
 
           IF(ABS(I3DGD).EQ.1) THEN                                          !ASCII FORMAT
             OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44',
      &                            ACCESS='SEQUENTIAL',POSITION='APPEND')
-            IF(IDen.EQ.1) WRITE(44,1100) Time,IT,(Sigma(k),k=1,NFEN-1)                           
-            IF(IDen.EQ.2) WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
+            IF(ABS(IDen).EQ.1) WRITE(44,1100) Time,IT,(Sigma(k),k=1,NFEN-1)                           
+            IF(ABS(IDen).EQ.2) WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
      &                               k=1,NFEN-1),Sigma(NFEN)            
-            IF(IDen.EQ.3) WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
+            IF(ABS(IDen).EQ.3) WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
      &                               k=1,NFEN-1),Sigma(NFEN)             
-            IF(IDen.EQ.4) WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
+            IF(ABS(IDen).EQ.4) WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
      &                      Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+            IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN  
+              IF(BCFLAG_TEMP.NE.0) THEN  
+                 OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47',
+     &                        ACCESS='SEQUENTIAL',POSITION='APPEND')
+                 WRITE(47,1099) Time,IT
+              END IF 
+            END IF 
             I3DGDRec=I3DGDRec+1
           ELSEIF(ABS(I3DGD).EQ.2) THEN                                      !BINARY FORMAT
             OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44',ACCESS='DIRECT',
@@ -1227,6 +1266,9 @@ C         Write out at each node
               IF(ABS(I3DGD).EQ.1) THEN
                 WRITE(44,1104) NH,(SigT(NH,k),Temp(NH,k),k=1,NFEN)           !ASCII
                 I3DGDRec=I3DGDRec+1
+                IF (BCFLAG_TEMP.NE.0) THEN 
+                  WRITE(47,1105) NH, qsurfkp1(NH) 
+                END IF 
               ELSEIF(ABS(I3DGD).EQ.2) THEN                                   !BINARY
                 WRITE(44,REC=I3DGDRec+1) NH
                 I3DGDRec=I3DGDRec+1
@@ -1242,6 +1284,9 @@ C         Write out at each node
               IF(ABS(I3DGD).EQ.1) THEN
                 WRITE(44,1104) NH,(SigT(NH,k),Temp(NH,k),Sal(NH,k)
      &                                                        ,k=1,NFEN)     !ASCII
+                IF (BCFLAG_TEMP.NE.0) THEN 
+                  WRITE(47,1105) NH, qsurfkp1(NH) 
+                END IF 
                 I3DGDRec=I3DGDRec+1
               ELSEIF(ABS(I3DGD).EQ.2) THEN                                   !BINARY
                 WRITE(44,REC=I3DGDRec+1) NH
@@ -1257,13 +1302,17 @@ C         Write out at each node
           ENDDO
           N3DGD=0
           CLOSE(44)
+          IF ((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
+             IF (BCFLAG_TEMP.NE.0) CLOSE(47)
+          END IF
         ENDIF
       ENDIF
 
 C
 C.... 3D Velocity Global Output (Unit 45)
 C
-      IF(I3DGV.GT.0) THEN
+C kmd48.33bc changed to NE from GT
+      IF(I3DGV.NE.0) THEN
 
 C     Check to see if it is time to generate 3D global velocity output.
          
@@ -1313,7 +1362,8 @@ C     Write out at each node
 C
 C.... 3D Turbulence Global Output (Unit 46)
 C
-      IF(I3DGT.GT.0) THEN
+C kmd48.33bc changed to NE from GT
+      IF(I3DGT.NE.0) THEN
 
 C     Check to see if it is time to generate 3D global turbulence output.
 
@@ -2593,7 +2643,7 @@ C
          IF (IM.eq.10) THEN
             write(16,*) 'Allocating CH1Descript' 
             IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(EtaDisc_g(NP_G))
+               ALLOCATE(CH1_g(NP_G))
             ENDIF
             CH1Descript % specifier            = NHSTAR
             CH1Descript % initial_value        = 0.0
@@ -2648,6 +2698,7 @@ C
       ENDIF
 
 C     collect up the data from subdomains if running in parallel
+ckmd48.33bc - changed the NOFF and NodeCode calls
 #ifdef CMPI
       IF (.not.WRITE_LOCAL_HOT_START_FILES) THEN
 C         WRITE(16,*) "START collectFullDomainArray"
@@ -2667,10 +2718,10 @@ C         WRITE(16,*) "collectFullDomainArray EtaDiscDescript"
      &             packOne, unpackOne)
 C         WRITE(16,*) "collectFullDomainIntArray NodeCodeDescript"
          CALL collectFullDomainIntArray(NodeCodeDescript, 
-     &             packOneInt, unpackOneInt)
+     &             packOneInt, unpackOneInt,1)
 C         WRITE(16,*) "collectFullDomainIntArray NOFFDescript"
          CALL collectFullDomainIntArray(NOFFDescript, 
-     &             packOneInt, unpackOneInt)
+     &             packOneInt, unpackOneInt,2)
 !         TCM v48.4638 20090902 -- NOFF could have the wrong
 !         values after globalizing because there are no rules for which
 !         processor owns an element and Noff is an elemental value
@@ -2691,6 +2742,7 @@ C         WRITE(16,*) "collectFullDomainIntArray NOFFDescript"
 !         ENDIF
       ENDIF
 #endif
+
       SELECT CASE (NHSTAR)
 
       CASE(1) ! nonportable binary (1 for backwards compatibility)
@@ -2847,7 +2899,6 @@ C
          IF ((MYPROC.eq.0).or.(WRITE_LOCAL_HOT_START_FILES)) THEN 
             WRITE(hss % lun,REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
-
             WRITE(hss % lun,REC=IHOTSTP) IVSTP   ; IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
 
@@ -2900,14 +2951,14 @@ C
 !          PRINT *,"========================after bin==================="
           
 
-!This code is not supported yet.
-#if 0
 C...
 C...  ADD IN 3D STUFF IF APPROPRIATE
 C...
          IF (C3D) THEN
             CALL HSTART3D_OUT()
          ENDIF
+!This code is not supported yet.
+#if 0
 C...  
 C...  IF APPROPRIATE ADD HARMONIC ANALYSIS INFORMATION TO HOT START FILE
 C...  

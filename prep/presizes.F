@@ -139,6 +139,9 @@ C     variables which describe the full domain
       INTEGER NSTA3DV! number of 3D velocity recording stations
       INTEGER NSTA3DT! number of 3D turbulence recording stations
 
+! kmd48.33bc - added these variables for boundary conditions
+      INTEGER RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
+
       !jgf48.17 sizes of UnSWAN boundaries in fort.14
 #ifdef ADCSWAN
       INTEGER numUnSWANBdrySegs   ! total number of SWAN boundary segments
@@ -330,7 +333,7 @@ C     jgf46.21 Added support for IBTYPE=52.
       DO IL=1,MNBOU
          READ(14,*) NBN,IBTYPE
          IF((IBTYPE.EQ.2).OR.(IBTYPE.EQ.12).OR.(IBTYPE.EQ.22).OR.
-     &        (IBTYPE.EQ.52)) THEN
+     &        (IBTYPE.EQ.32).OR.(IBTYPE.EQ.52)) THEN
             NFLUXF=1
             NDISC=NDISC+NBN
          ENDIF
@@ -715,6 +718,7 @@ C
 C...THIS SECTION TO LUMP THE GWCE MATRIX
 Cvjp 11/30/99 made lumping a compile time option
 
+      PRINT *, "Made it to LUMP definition"
 #ifdef LUMP
        CLUMP = .TRUE.
        ILUMP=1
@@ -729,6 +733,7 @@ Cvjp 11/30/99 made lumping a compile time option
 C
 C--Read in 3D info
 C
+      PRINT *, "Made it to 3D information"
       IF(C3DVS) THEN  !3DVS
 c     jgf45.10 removed IDIAG
          READ(15,*) IDUM                               !Skip IDEN
@@ -752,21 +757,21 @@ C     jgf45.12 add code to handle user specified vertical eddy viscosity.
          IF(IEVC.EQ.50) READ(15,*) RDUM,RDUM           !Skip THETA1,THETA2
          READ(15,*) I3DSD,RDUM,RDUM,IDUM               !Process I3DSD
          READ(15,*) NSTA3DD                            !Process NSTA3DD
-         IF(I3DSD.GT.0) THEN
+         IF(I3DSD.NE.0) THEN
             DO I=1,NSTA3DD
                READ(15,*) RDUM,RDUM !Skip density stations
             END DO
          ENDIF
          READ(15,*) I3DSV,RDUM,RDUM,IDUM               !Process I3DSV
          READ(15,*) NSTA3DV                            !Process NSTA3DV
-         IF (I3DSV.GT.0) THEN 
+         IF (I3DSV.NE.0) THEN 
             DO I=1,NSTA3DV
                READ(15,*) RDUM,RDUM !Skip velocity stations
             END DO
          ENDIF
          READ(15,*) I3DST,RDUM,RDUM,IDUM !Process I3DST
          READ(15,*) NSTA3DT                            !Process NSTA3DT
-         IF (I3DST.GT.0) THEN 
+         IF (I3DST.NE.0) THEN 
             DO I=1,NSTA3DT
                READ(15,*) RDUM,RDUM !Skip turbulence stations
             ENDDO
@@ -774,6 +779,34 @@ C     jgf45.12 add code to handle user specified vertical eddy viscosity.
          READ(15,*) IDUM,RDUM,RDUM,IDUM !Skip 3D global density output
          READ(15,*) IDUM,RDUM,RDUM,IDUM                !Skip 3D global velocity output
          READ(15,*) IDUM,RDUM,RDUM,IDUM                !Skip 3D global turbulence output
+
+!kmd48.33bc - added this information for the boundary conditions
+         PRINT *, "Made it to baroclinic boundary information"
+         IF (CBAROCLINIC) THEN
+           READ(15,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP    !Process RES_BC_FLAG
+           IF ((RES_BC_FLAG.LT.0).OR.(RES_BC_FLAG.EQ.1)) THEN
+              READ(15,*) RDUM
+              READ(15,*) RDUM
+           ELSE IF ((RES_BC_FLAG.EQ.2).OR.(RES_BC_FLAG.EQ.3)) THEN
+              READ(15,*) RDUM,RDUM
+              READ(15,*) RDUM,RDUM
+              IF (BCFLAG_TEMP.NE.0) THEN
+                 READ(15,*) RDUM, RDUM
+              END IF
+           ELSE IF (RES_BC_FLAG.EQ.4) THEN
+              READ(15,*) RDUM,RDUM,RDUM
+              READ(15,*) RDUM,RDUM,RDUM
+              IF (BCFLAG_TEMP.NE.0) THEN
+                 READ(15,*) RDUM, RDUM
+              END IF
+           END IF
+         END IF
+
+         PRINT *, "Made it to sponge information"
+         IF (CBAROCLINIC) THEN
+            READ(15,*) RDUM
+         END IF
+
 
 c     ELSEIF(C3DDSS) THEN  !3DDSS
 c

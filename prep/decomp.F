@@ -26,7 +26,7 @@ C                                                                           C
 C---------------------------------------------------------------------------C
 C
       INTEGER N1, N2, N3, KMIN, VTMAX
-      INTEGER I,J,JD,JG,JP,K,L,ITEMP,ITEMP2,IPR,IPR1,ICNT
+      INTEGER I,J,JD,JG,JP,K,M,ITEMP,ITEMP2,IPR,IPR1,ICNT
       INTEGER ITOT,IEL,IELG,ILNODE,ILNODE2,IPROC,IPROC2
       INTEGER IG1,IG2,IG3,IL1,IL2,IL3,PE1,PE2,PE3
       INTEGER I1,DISC,BBN,IBP,NCOUNT
@@ -87,9 +87,9 @@ C
          ITOT = 0
          DO J = 1,NELP(I)
             IEL = IMAP_EL_LG(J,I)
-            DO L=1, 3
+            DO M=1, 3
                ITOT = ITOT + 1
-               ITVECT(ITOT) = NNEG(L,IEL)
+               ITVECT(ITOT) = NNEG(M,IEL)
             ENDDO
          ENDDO
          ITEMP = ITOT     
@@ -235,9 +235,9 @@ C
          ITOT = 0
          DO J = 1,NELP(I)
             IEL = abs(IMAP_EL_LG(J,I))
-            DO L=1, 3
+            DO M=1, 3
                ITOT = ITOT + 1
-               ITVECT(ITOT) = NNEG(L,IEL)
+               ITVECT(ITOT) = NNEG(M,IEL)
             ENDDO
          ENDDO
          ITEMP = ITOT     
@@ -278,26 +278,26 @@ C
          ENDDO
          DO J = 1,NELP(I)
             IELG = abs(IMAP_EL_LG(J,I))
-            DO L = 1,3
-               IG1 = NNEG(L,IELG)
+            DO M = 1,3
+               IG1 = NNEG(M,IELG)
                CALL LOCATE(ITVECT,ITEMP,IG1,K)
                IF (K.LE.0) THEN
                  IF (IMAP_NOD_LG(K+1,I).EQ.IG1) THEN
-                   NNEP(L,J,I) = K+1
+                   NNEP(M,J,I) = K+1
                  ELSE
                    STOP 'ERROR IN IMAP_NOD_LG'
                  ENDIF
                ELSEIF (K.GE.NNODP(I))THEN
                  IF (IMAP_NOD_LG(K,I).EQ.IG1) THEN
-                   NNEP(L,J,I) = K
+                   NNEP(M,J,I) = K
                  ELSE
                    STOP 'ERROR IN IMAP_NOD_LG'
                  ENDIF
                ELSE
                  IF (IMAP_NOD_LG(K,I).EQ.IG1) THEN
-                   NNEP(L,J,I) = K
+                   NNEP(M,J,I) = K
                  ELSEIF (IMAP_NOD_LG(K+1,I).EQ.IG1) THEN
-                   NNEP(L,J,I) = K+1
+                   NNEP(M,J,I) = K+1
                  ELSE 
                    STOP 'ERROR IN IMAP_NOD_LG'
                  ENDIF
@@ -399,7 +399,7 @@ C                                                                           C
 C---------------------------------------------------------------------------C
 C
       INTEGER N1,N2,N3,VTMAX
-      INTEGER I,J,K,L,ITEMP
+      INTEGER I,J,K,M,ITEMP
       INTEGER ITOT,IEL,IELG,ILNODE,ILNODE2,IPROC
       INTEGER IG1,IG2,IG3,IL1,IL2,IL3,PE1,PE2,PE3
       INTEGER INDX,INDX2
@@ -483,9 +483,9 @@ C
       ITOT = 0
       DO J = 1,NELEM  
          IEL = ELEM_LG(J)
-         DO L=1, 3
+         DO M=1, 3
             ITOT = ITOT + 1
-            ITVECT(ITOT) = NNEG(L,IEL)
+            ITVECT(ITOT) = NNEG(M,IEL)
          ENDDO
       ENDDO
       ITEMP = ITOT     
@@ -605,9 +605,9 @@ C
       ITOT = 0
       DO J = 1,NELEM   
          IEL = ELEM_LG(J)
-         DO L=1, 3
+         DO M=1, 3
             ITOT = ITOT + 1
-            ITVECT(ITOT) = NNEG(L,IEL)
+            ITVECT(ITOT) = NNEG(M,IEL)
          ENDDO
       ENDDO
       ITEMP = ITOT     

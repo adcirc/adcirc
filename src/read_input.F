@@ -287,7 +287,8 @@ C...
 !        hss % filename = 'fort.67'
 !      ELSE IF ((IHOT == 0).OR.(IHOT == 68)) then
 
-      IF ((IHOT == 0).OR.(IHOT == 68)) then
+C!     kmd48.33bc - added in the hot start option for the fort.17
+      IF ((IHOT == 0).OR.(IHOT == 17).OR.(IHOT == 68)) then
         hss % lun      = 67
         hss % filename = 'fort.67'
       ELSE IF (IHOT == 67) then
@@ -4260,7 +4261,7 @@ C...  TIMES TOUTSGE AND TOUTFGE; IF ABS(NOUTGE)=2, OUTPUT WILL BE BINARY
 
 C...  CHECK INPUT PARAMETER NOUTGE
 
-      IF(ABS(NOUTGE).GT.3) THEN
+      IF(ABS(NOUTGE).GT.4) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3302)
          WRITE(16,3302)
  3302    FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
@@ -4514,7 +4515,7 @@ C...  BE BINARY
 
 C...  CHECK INPUT PARAMETER NOUTGW
 
-         IF(ABS(NOUTGW).GT.3) THEN
+         IF(ABS(NOUTGW).GT.4) THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3452)
             WRITE(16,3452)
  3452       FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!',
@@ -4577,7 +4578,7 @@ C...  WRITE NOUTGW,TOUTSGW,TOUTFGW,NTCYSGW,NTCYFGW,NSPOOLGW TO UNIT 16
  3455      FORMAT(/,5X,'UNIT 74 FORMAT WILL BE ASCII')
            IF(ABS(NOUTGW).EQ.2) WRITE(16,3456)
  3456      FORMAT(/,5X,'UNIT 74 FORMAT WILL BE BINARY')
-           IF(ABS(NOUTGW).EQ.3) WRITE(16,3457)
+           IF(ABS(NOUTGW).EQ.4) WRITE(16,3457)
  3457      FORMAT(/,5X,'UNIT 74 FORMAT WILL BE SPARSE ASCII')
         ENDIF
 
@@ -5109,6 +5110,14 @@ c******************************************************************************
 
       SUBROUTINE READ_INPUT_3D(StaTime,NT)
       USE SIZES
+C    kmd48.33bc - added the variables from Global
+      USE GLOBAL, ONLY: NETA, RES_BC_FLAG, BCSTATIM, RBCTIME1,
+     &                  RBCTIME2, SBCTIME1, SBCTIME2, TBCTIME1,
+     &                  TBCTIME2,RBCTIMEINC, SBCTIMEINC,
+     &                  TBCTIMEINC, SBCSTATIM, TBCSTATIM, 
+     &                  BCFLAG_LNM, BCFLAG_TEMP, TTBCSTATIM,
+     &                  TTBCTIMEINC, SPONGEDIST, NBD, Sponge,
+     &                  OUTPUTSPONGE
       USE GLOBAL_3DVS
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
@@ -5132,9 +5141,17 @@ C...  Declaration and definition of local variables used in this subroutine
 
       INTEGER  :: NT                          !Total number of time steps in model run
       INTEGER  :: N1,N2,N3,KMin               !Used for computing interpolating factors for station output
-      INTEGER  :: N,K,NN                      !loop counters
+      INTEGER  :: N,K,NN,J                      !loop counters
       INTEGER  :: NH                          !horizontal node loop counter
       INTEGER  :: IGC                         !vertical grid code
+
+C    kmd48.33bc - additional variables for sponge layers
+      REAL(SZ) :: Xloc1, Xloc2, Yloc1, Yloc2, Xloc, Yloc
+      REAL(SZ) :: distloc, distpoint, slope1, slope2, xpoint
+      REAL(SZ) :: ypoint, xpart, ypart
+      REAL(SZ),ALLOCATABLE :: compdist(:)
+      INTEGER :: BCnode, counter
+      INTEGER, ALLOCATABLE :: nodedist(:)
 
 C     
 C...  General invalid entry format statement used throughout
@@ -5828,7 +5845,7 @@ C.....  Write turbulence station output information to UNIT 16
      &              ' to the simulation Start Time.',
      &         /,9X,'Output will stop ',F9.3,' days = ',I9,' timesteps',
      &              ' relative to the simulation Start Time.',
-     &         /,9X,'Data will be written to file fort.42 every ',I7,
+     &         /,9X,'Data will be written to file fort.43 every ',I7,
      &              ' time steps at total of ',I7,' times.')
       ENDIF
  
@@ -5996,7 +6013,7 @@ C.....  Write global 3D Density output information to UNIT 16
      &              ' to the simulation Start Time.',
      &         /,9X,'Output will stop',F9.3,' days = ',I9,' timesteps',
      &              ' relative to the simulation Start Time.',
-     &         /,9X,'Data will be written to file fort.42 every ',I7,
+     &         /,9X,'Data will be written to file fort.44 every ',I7,
      &              ' time steps at total of ',I7,' times.')
  
         WRITE(16,*) ' '
@@ -6111,7 +6128,7 @@ C.....  Write global velocity output information to UNIT 16
      &              ' to the simulation Start Time.',
      &         /,9X,'Output will stop ',F9.3,' days = ',I9,' timesteps',
      &              ' relative to the simulation Start Time.',
-     &         /,9X,'Data will be written to file fort.42 every ',I7,
+     &         /,9X,'Data will be written to file fort.45 every ',I7,
      &              ' time steps at total of ',I7,' times.')
 
         WRITE(16,*) ' '
@@ -6232,11 +6249,194 @@ C.....  Write global turbulence output information to UNIT 16
      &              ' to the simulation Start Time.',
      &         /,9X,'Output will stop ',F9.3,' days = ',I9,' timesteps',
      &              ' relative to the simulation Start Time.',
-     &         /,9X,'Data will be written to file fort.42 every ',I7,
+     &         /,9X,'Data will be written to file fort.46 every ',I7,
      &              ' time steps at total of ',I7,' times.')
 
         WRITE(16,*) ' '
       ENDIF
+
+C    kmd48.33bc - added in the information of the 3D boundary conditions
+C                 these boundary conditions are the level of no motion, 
+C                 salinity and temperature forcings.
+
+      IF (CBAROCLINIC) THEN
+        READ(15,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP !bc flags for elevation and temperature
+        WRITE(16,429) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
+ 429  FORMAT(/,5x,'RES_BC_FLAG = ',I3,5X,'BCFLAG_LNM = ',I3,5X,'BCFLAG_TEMP = ',I3)
+       IF ((RES_BC_FLAG.LT.0)) THEN  ! Diagnostic
+         IF (ABS(RES_BC_FLAG).GE.1) THEN ! only have one set of values to read
+             READ(15,*) RBCTIMEINC
+             READ(15,*) BCSTATIM
+             WRITE(16,430) RBCTIMEINC
+         END IF
+       ELSE IF ((RES_BC_FLAG.GT.0)) THEN
+         IF (ABS(RES_BC_FLAG).EQ.1) THEN ! only read in the elevation changes
+             READ(15,*) RBCTIMEINC
+             READ(15,*) BCSTATIM
+             WRITE(16,430) RBCTIMEINC
+ 430         FORMAT(/,5X,'Read in elevation boundary conditions
+     &                every', E8.2 ,'seconds')
+         ELSE IF ((ABS(RES_BC_FLAG).EQ.2)) THEN
+             READ(15,*) RBCTIMEINC, SBCTIMEINC
+             READ(15,*) BCSTATIM, SBCSTATIM
+             WRITE(16,431) RBCTIMEINC, SBCTIMEINC
+ 431         FORMAT(/,5X,'Read in elevation boundary conditions
+     &                every', E8.2 ,'seconds and salinity
+     &                boundary conditions every', E8.2,
+     &                'seconds')
+         ELSE IF ((ABS(RES_BC_FLAG).EQ.3)) THEN
+             READ(15,*) RBCTIMEINC, TBCTIMEINC
+             READ(15,*) BCSTATIM, TBCSTATIM
+             WRITE(16,432) RBCTIMEINC, TBCTIMEINC
+ 432         FORMAT(/,5X,'Read in elevation boundary conditions
+     &                every', E8.2 ,'seconds and temperature
+     &                boundary conditions every', E8.2,
+     &                'seconds')
+             IF (BCFLAG_TEMP.NE.0) THEN
+                 READ(15,*) TTBCTIMEINC, TTBCSTATIM
+                 WRITE(16,434) TTBCTIMEINC
+ 434             FORMAT(/,5X,'Read in the top temperature
+     &                   boundary condition every', E8.2 ,'
+     &                   seconds.')
+             END IF
+         ELSE IF ((ABS(RES_BC_FLAG).EQ.4)) THEN
+             READ(15,*) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
+             READ(15,*) BCSTATIM, SBCSTATIM, TBCSTATIM
+             WRITE(16,433) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
+ 433         FORMAT(/,5X,'Read in elevation boundary conditions
+     &                every', E8.2 ,'seconds and salinity
+     &                boundary conditions every', E8.2,
+     &                'seconds and temperature boundary conditions
+     &                every', E8.2, 'seconds')
+             IF (BCFLAG_TEMP.NE.0) THEN
+                 READ(15,*) TTBCTIMEINC, TTBCSTATIM
+                 WRITE(16,434) TTBCTIMEINC
+             END IF
+         ELSE
+             WRITE(16,350)
+             WRITE(16,*) 'RES_BC_FLAG = ',RES_BC_FLAG
+             WRITE(16,9722)
+ 9722    FORMAT(/,1X,'Your selection of RES_BC_FLAG (a UNIT 15 input ',
+     &        'parameter) is not an allowable value')
+             STOP
+         END IF
+       END IF
+      END IF
+
+C    kmd48.33bc - added distance information for the sponge layer. 
+C                 Note that this is only used in the wind and advective terms
+
+      IF (CBAROCLINIC) THEN
+        READ(15,*) SPONGEDIST
+        WRITE(16,435) SPONGEDIST
+ 435    FORMAT(/,5x,'SPONGEDIST = ',E8.2)
+        IF (SPONGEDIST.GE.0.d0) THEN 
+           OUTPUTSPONGE=.TRUE.
+        END IF 
+      END IF
+
+      IF ((CBAROCLINIC).AND.(IDEN.NE.0)) THEN
+         ALLOCATE (compdist(2),nodedist(2))
+         DO J=1,NP
+            counter=0
+            DO K=1,2
+              compdist(K)=0.d0
+              nodedist(K)=0
+            END DO
+            DO N=1,NETA
+              Xloc1=X(J)
+              Yloc1=Y(J)
+              BCnode=NBD(N)
+              Xloc2=X(BCnode)
+              Yloc2=Y(BCnode)
+              Xloc=(Xloc2-Xloc1)
+              Yloc=(Yloc2-Yloc1)
+              Distloc=SQRT((Xloc*Xloc)+(Yloc*Yloc))
+              IF (Distloc.GT.(2.d0*spongedist)) THEN
+                CYCLE  ! don't need to store any information
+              ELSE IF (Distloc.LE.(2.d0*spongedist)) THEN
+                counter=counter+1
+                IF (counter.LE.2) THEN
+                   compdist(counter)=distloc
+                   nodedist(counter)=NBD(N)
+                ELSE
+                 IF (distloc.LT.compdist(1)) THEN
+                  compdist(1)=Distloc ! replace with new distance
+                  nodedist(1)=NBD(N)
+                  CYCLE
+                 END IF
+                 IF (distloc.LT.compdist(2)) THEN
+                  compdist(2)=Distloc ! replace with new distance
+                  nodedist(2)=NBD(N)
+                  CYCLE
+                 END IF
+                END IF
+              END IF
+            END DO
+            IF ((nodedist(1).EQ.J).OR.(nodedist(2).EQ.J)) THEN
+               sponge(J)=0.d0   ! sponge layer will start with these nodes
+            ELSE IF (counter.LT.2) THEN
+               sponge(J)=1.d0   !  no sponge layer needed on these nodes
+            ELSE
+               IF (X(nodedist(1)).EQ.X(nodedist(2))) THEN
+                  distpoint=ABS(X(J)-X(nodedist(1)))
+               ELSE IF (Y(nodedist(1)).EQ.Y(nodedist(2))) THEN
+                  distpoint=ABS(Y(J)-Y(nodedist(1)))
+               ELSE
+                  slope1=((Y(nodedist(2))-Y(nodedist(1)))/
+     &                   (X(nodedist(2))-X(nodedist(1))))
+                  slope2=-1/slope1
+                  xpoint=((slope1*X(nodedist(1)))-(slope2*X(J))+
+     &                   Y(J)-Y(nodedist(1)))/((slope1-slope2))
+                  ypoint=slope1*(X(J)-X(nodedist(1)))+Y(nodedist(1))
+                  xpart=(X(J)-xpoint)
+                  ypart=(Y(J)-ypoint)
+                  distpoint=SQRT((xpart*xpart)+(ypart*ypart))
+               END IF
+               IF (distpoint.GT.spongedist) THEN
+                  sponge(J)=1.d0
+               ELSE IF (distpoint.LE.spongedist) THEN
+                  sponge(J)=distpoint/spongedist
+               END IF
+            END IF
+         END DO
+         DEALLOCATE(nodedist)
+         DEALLOCATE(compdist)
+      ELSE
+         DO J=1,NP
+           sponge(J)=1.d0
+         END DO
+      END IF 
+!kmd - end of additions
+  
+!Kendra: Add in information for equation of state
+      IF (CBAROCLINIC) THEN 
+         READ(15,*) Eqnstate
+         IF ((Eqnstate.EQ.2).OR.(Eqnstate.EQ.3)) THEN 
+            IF (ABS(IDEN).NE.4) THEN 
+              WRITE(16,424) 
+ 424          FORMAT(/,1X,'Your selection of Eqnstate is not allowed with 
+     &               your choice of IDEN')
+            END IF 
+         END IF 
+         IF (Eqnstate.eq.1) THEN 
+           WRITE(16,418) 
+ 418       FORMAT(/,5X,'Equation of state uses the simple equation from Mellor') 
+         ELSE IF (Eqnstate.eq.2) THEN 
+           WRITE(16,419)
+ 419       FORMAT(/,5X,'Equation of state uses the equation from McDougall et al(2003)') 
+         ELSE IF (Eqnstate.eq.3) THEN 
+           WRITE(16,420)
+ 420       FORMAT(/,5X,'Equation of state uses the equation from UNESCO(1980)') 
+         ELSE 
+           WRITE(16,422) 
+ 422       FORMAT(/,1X,'Your selection of Eqnstate (a UNIT 15 input ',
+     &        'parameter) is not an allowable value')
+           STOP
+         END IF 
+      END IF 
+
+
 
 !     Kendra45.12: Read in the new input values for the transport equation
 C     jgf45.12: Made READs conditional on value of C3D_BTrans.
@@ -6256,7 +6456,7 @@ C...  READ IN NLSD, NLTD, NVTD & NVSD: Lateral and vertical diffusion
          WRITE(16,417) NLTD, NVTD
  417     FORMAT(/,5X,'Temperature Lateral Diffusion Coefficient = ',
      &        E8.2,'Temperature Vertical Diffusion Coefficient = ',E8.2)
-         
+
 !     Kendra45.12: Read in the time stepping coefficient associated with the
 !     transport equation terms.
          READ(15,*) ALP4
@@ -6266,13 +6466,15 @@ C...  READ IN NLSD, NLTD, NVTD & NVSD: Lateral and vertical diffusion
          DTAlp4 = DelT*Alp4
          DT1MAlp4 = DelT*(1-Alp4)
 
+C   kmd48.33bc - remove this boundary condition information due to the 
+C                new information being used.
 !     Kendra45.12: Read in the temperature boundary condition file type
-c     jgf45.12: Made READ conditional on dynamic temperature forcing.
-         if ( IDEN .eq. 3 .or. IDEN .eq. 4 ) then
-            READ(15,*) NTF
-            WRITE(16,444) NTF
- 444        FORMAT(/,5X,'Temperature flux conditions are ', I7)
-         endif
+!c     jgf45.12: Made READ conditional on dynamic temperature forcing.
+!         if ( IDEN .eq. 3 .or. IDEN .eq. 4 ) then
+!            READ(15,*) NTF
+!            WRITE(16,444) NTF
+! 444        FORMAT(/,5X,'Temperature flux conditions are ', I7)
+!         endif
 
       endif
       

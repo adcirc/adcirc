@@ -44,7 +44,6 @@ C  Message-Passing Array space
       INTEGER, ALLOCATABLE :: REQ_C3D(:), STAT_C3D(:,:)
       INTEGER, ALLOCATABLE :: INDX(:)
       REAL(SZ),ALLOCATABLE :: SENDBUF(:,:), RECVBUF(:,:)
- 
 
       CONTAINS
 
@@ -701,8 +700,14 @@ C     &        REALTYPE,IPROC(J), TAG, COMM, REQ_C3D(J+NEIGHPROC),IERR)
                 NCOUNT = 0
                 DO I=1,NNODRECV(J)
                    DO K=1,MNFEN
-                      VEC(IRECVLOC(I,J),K) = 
-     &                   CMPLX(RECVBUF(NCOUNT+1,J),RECVBUF(NCOUNT+2,J))
+                      !jgf48.50 Make sure CMPLX returns the right KIND
+#ifdef REAL4
+                      VEC(IRECVLOC(I,J),K) = CMPLX(RECVBUF(NCOUNT+1,J),
+     &                           RECVBUF(NCOUNT+2,J),4)
+#else
+                      VEC(IRECVLOC(I,J),K) = CMPLX(RECVBUF(NCOUNT+1,J),
+     &                           RECVBUF(NCOUNT+2,J),8)
+#endif
                       NCOUNT = NCOUNT+2
                    ENDDO
                 ENDDO

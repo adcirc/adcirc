@@ -299,14 +299,18 @@ C
       ELSE
         print *, 'Opening file partmesh.txt'
         OPEN(990,FILE='partmesh.txt')
+        print *, 'made it this part and MNP = ', MNP
         DO I=1, MNP
            READ(990,*) PROC(I)
+           print *," PROC for ",I," = ", PROC(I)
         ENDDO
         CLOSE(990)           
+        print *, 'closed file'
       ENDIF
 C
 C-- Read the Global Input File ( Unit 15 )
 C
+      print *, 'start reading in fort.15'
       CALL READ15()
       print *, 'Global Input file read successfully.'
 C
@@ -327,6 +331,16 @@ C
          IF (NOUTGC.GT.0.                    ) NOUTGC=-NOUTGC
          IF (NOUTGW.GT.0.AND.ABS(NOUTGW).NE.3) NOUTGW=-NOUTGW
 !         WRITE(6,*)'==NOUT==',NOUTE,NOUTV,NOUTM,NOUTGE,NOUTGV
+C   kmd48.33bc add information for 3D
+         IF (C3DVS) THEN
+            IF (I3DSD.GT.0) I3DSD=-I3DSD
+            IF (I3DSV.GT.0) I3DSV=-I3DSV
+            IF (I3DST.GT.0) I3DST=-I3DST
+            IF (I3DGD.GT.0) I3DGD=-I3DGD
+            IF (I3DGV.GT.0) I3DGV=-I3DGV
+            IF (I3DGT.GT.0) I3DGT=-I3DGT
+      ENDIF
+
       ENDIF
 C
 C-- Decompose the ADCIRC grid into MNPROC subdomains
@@ -377,12 +391,25 @@ C
 C
 C     Write a subdomain initial density file ( fort.11 ) for each PE
 C
+C   kmd48.33bc changed the if statement to include IHOT parameter
       IF (PREP_ALL) THEN
-         IF (CBaroclinic) THEN
+         IF ((CBaroclinic).AND.(IHOT.EQ.0)) THEN
             PRINT *, "Writing subdomain UNIT 11 file for each PE."
             CALL PREP11()
          ENDIF
       ENDIF
+
+C   kmd48.33bc added writing of subdomain initial condition file
+C
+C     Write a subdomain initial condtion file (fort.17) for each PE
+C
+      IF (PREP_ALL) THEN
+         IF ((CBaroclinic).AND.(IHOT.EQ.17)) THEN
+            PRINT *, "Writing subdomain UNIT 17 file for each PE."
+            CALL HOTINITCOND()
+         ENDIF
+      ENDIF
+
 C
 C     Write a subdomain nodal attributes file (fort.13) for each PE
 C
@@ -445,6 +472,39 @@ C
       IF (PREP_ALL) THEN
          IF(NRS.EQ.1) CALL PREP23()
       ENDIF
+
+C  kmd48.33bc add information for 3D baroclinic simulations
+      IF (PREP_ALL) THEN
+        IF (CBAROCLINIC) THEN
+           IF ((RES_BC_FLAG.GE.1).OR.(RES_BC_FLAG.LE.-1)) THEN
+             IF (BCFLAG_LNM.EQ.1) THEN
+               print *, "Ready to Write Local UNIT 35 File for each PE"
+               CALL PREP35()
+             END IF
+           END IF
+           IF (RES_BC_FLAG.EQ.2) THEN
+             print *, "Ready to Write Local UNIT 36 File for each PE"
+             CALL PREP36()
+           ELSE IF (RES_BC_FLAG.EQ.3) THEN
+             print *, "Ready to Write Local UNIT 37 File for each PE"
+             CALL PREP37()
+             IF (BCFLAG_TEMP.NE.0) THEN
+               print *, "Ready to Write Local UNIT 38 File for each PE"
+               CALL PREP38()
+             END IF
+           ELSE IF (RES_BC_FLAG.EQ.4) THEN
+             print *, "Ready to Write Local UNIT 36 File for each PE"
+             CALL PREP36()
+             print *, "Ready to Write Local UNIT 37 File for each PE"
+             CALL PREP37()
+             IF (BCFLAG_TEMP.NE.0) THEN
+               print *, "Ready to Write Local UNIT 38 File for each PE"
+               CALL PREP38()
+             END IF
+           END IF
+        END IF
+      END IF
+
 C
 C-- Save domain-decomposition information for post-processor
 C     

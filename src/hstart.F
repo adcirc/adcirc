@@ -34,7 +34,9 @@ C**************************************************************************
 C     
       USE GLOBAL
       USE GLOBAL_IO
-      USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
+      USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT, qsurf
+
+
       USE SIZES
       USE HARM
       USE WIND
@@ -67,6 +69,9 @@ C   End Addition for netCDF by MCF 5/18/08
 C   Start Addition for netCDF by MCF 4/8/08
       INTEGER ncmode
 C   End Addition for netCDF by MCF 4/8/08
+
+C   kmd48.33bc - add variable for timestep change 
+      INTEGER NTHS  
 
       REAL(SZ) HollandTime
       REAL(SZ) ArgT, ArgTP, ArgSAlt
@@ -106,6 +111,13 @@ C     if they are available
       INTEGER numLinesInMinMaxFile ! count the lines to report to log file
       LOGICAL tooFewMinMaxLines  ! true if couldn't read enough lines from file
 
+C   kmd48.33bc - add variables for heat flux 
+      INTEGER :: NOD
+      REAL(SZ),ALLOCATABLE :: TMP(:,:)
+      REAL(SZ) :: CD, CDQ, QWIND
+      CHARACTER(80) :: CDUM80
+      REAL(SZ), PARAMETER :: RHOAIR=1.225d0
+      REAL(SZ) :: RNDAYHS
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
 
@@ -402,6 +414,26 @@ C     Now read the hot start file.
       READ(IHOT,REC=IHOTSTP) IMHS         ; IHOTSTP = IHOTSTP + 1
       READ(IHOT,REC=IHOTSTP) TIME         ; IHOTSTP = IHOTSTP + 1
       READ(IHOT,REC=IHOTSTP) ITHS         ; IHOTSTP = IHOTSTP + 1
+
+C   kmd48.33bc - implemented a varying Dt for 3D baroclinic
+      IF((IDEN.GE.1).AND.(C3D).AND.(CBAROCLINIC)) THEN 
+         CHOTHS=.TRUE.
+      END IF 
+      IF (CHOTHS) THEN 
+         DTDPHS=TIME/ITHS  ! Set up time step information for hotstart file. 
+         IF (DTDPHS.NE.DTDP) THEN
+            RNDAYHS=TIME/86400.d0
+            NTHS=INT((RNDAY-RNDAYHS)*(86400.d0/DTDP)+0.5d0)
+            NT=ITHS+NTHS
+            Write(16,*) "The number of time steps has been reset
+     &             due to a change in the timestep interval"
+            WRITE(16,*) "It has been changed to ", NT
+         END IF 
+      ELSE 
+        DTDPHS=DTDP
+      END IF 
+
+
       READ(IHOT,REC=IHOTSTP) NP_G_IN      ; IHOTSTP = IHOTSTP + 1
       READ(IHOT,REC=IHOTSTP) NE_G_IN      ; IHOTSTP = IHOTSTP + 1
       READ(IHOT,REC=IHOTSTP) NP_A_IN      ; IHOTSTP = IHOTSTP + 1
@@ -417,9 +449,27 @@ C     Now read the hot start file.
       
       DO I=1, NP
          READ(IHOT,REC=IHOTSTP) ETA1(I)   ; IHOTSTP = IHOTSTP + 1
+
+
+
+
+
+
+
+
+
       END DO
       DO I=1, NP
          READ(IHOT,REC=IHOTSTP) ETA2(I)   ; IHOTSTP = IHOTSTP + 1
+
+
+
+
+
+
+
+
+
       END DO
 C     jgf46.34 Added support for IBTYPE=52.
       DO I=1, NP
@@ -448,6 +498,11 @@ C     jgf46.34 Added support for IBTYPE=52.
 !                   PRINT *,"  ETA1(1) = ", ETA1(1)
 !                   PRINT *,"  ETA2(1) = ", ETA2(1)
 !      ENDIF
+      IF (DTDP.NE.DTDPHS) THEN
+         DO I=1,NP
+            ETA1(I)=ETA2(I) + DTDP*((ETA1(I)-ETA2(I))/DTDPHS)
+         END DO 
+      END IF 
 
       DO I=1, NP
          ETAS(I)=ETA2(I)-ETA1(I)
@@ -459,6 +514,9 @@ C     jgf46.34 Added support for IBTYPE=52.
 C     jgf46.08 Fine grained ramp functions
 C     jgf46.21 Split flux into internal and external, added support
 C     for IBTYPE=52.
+!Kendra: Changed these to DTDPHS because if timestep is changed then
+!       the value of DTDP will not match with the ITHS.  
+!       
       IF (NRamp.eq.0) THEN
          RampExtFlux1=1.0d0
          RampExtFlux2=1.0d0
@@ -468,18 +526,18 @@ C     for IBTYPE=52.
          RampMete2=1.0d0
          RampWRad2=1.0d0
       ELSE
-         RampExtFlux1=TANH((2.D0*(ITHS-1)*DTDP/86400.D0)/DRampExtFlux)
-         RampExtFlux2=TANH((2.D0*(ITHS)*DTDP/86400.D0)/DRampExtFlux)
-         RampIntFlux1=TANH((2.D0*(ITHS-1)*DTDP/86400.D0)/DRampIntFlux)
-         RampIntFlux2=TANH((2.D0*(ITHS)*DTDP/86400.D0)/DRampIntFlux)
-         RampTip2=TANH((2.D0*(ITHS)*DTDP/86400.D0)/DRampTip)
-         RampMete2=TANH((2.D0*(ITHS)*DTDP/86400.D0)/DRampMete)
-         RampWRad2=TANH((2.D0*(ITHS)*DTDP/86400.D0)/DRampWRad)
+         RampExtFlux1=TANH((2.D0*(ITHS-1)*DTDPHS/86400.D0)/DRampExtFlux)
+         RampExtFlux2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampExtFlux)
+         RampIntFlux1=TANH((2.D0*(ITHS-1)*DTDPHS/86400.D0)/DRampIntFlux)
+         RampIntFlux2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampIntFlux)
+         RampTip2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampTip)
+         RampMete2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampMete)
+         RampWRad2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampWRad)
       ENDIF
 #ifdef IBM
-      FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP,KIND(0.0D0))
+      FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS,KIND(0.0D0))
 #else
-      FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP)
+      FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS)
 #endif
       IF(ITHS.LT.(FluxSettlingIT+10)) THEN
          RampIntFlux1=0.0d0
@@ -563,7 +621,7 @@ C.... BOUNDARY CONDITION FILE IF IT IS REQURIED.
             READ(19,*) ESBIN2(J)
          END DO
          DO IT=1,ITHS-1
-            TIMEIT=IT*DTDP + STATIM*86400.D0
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
             IF(TIMEIT.GT.ETIME2) THEN
                ETIME1=ETIME2
                ETIME2=ETIME1+ETIMINC
@@ -610,7 +668,7 @@ C......FILE IF IT IS REQUIRED
      &           READ(20,*) QNIN2(J)
          END DO
          DO IT=1,ITHS-1
-            TIMEIT=IT*DTDP + STATIM*86400.D0
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
             IF(TIMEIT.GT.QTIME2) THEN
                QTIME1=QTIME2
                QTIME2=QTIME2+FTIMINC
@@ -657,7 +715,7 @@ C......RESTART THE PERIODIC NORMAL FLOW BOUNDARY CONDITION
                NCYC=INT(TIME/FPER(J))
 #endif
             ENDIF
-            ARGJ1=FAMIG(J)*(TIME-DTDP-NCYC*FPER(J))+FFACE(J)
+            ARGJ1=FAMIG(J)*(TIME-DTDPHS-NCYC*FPER(J))+FFACE(J) ! kmd48.33bc - changed from DTDP to DTDPHS
             ARGJ2=FAMIG(J)*(TIME-NCYC*FPER(J))+FFACE(J)
             RFF1=FFF(J)*RampExtFlux1
             RFF2=FFF(J)*RampExtFlux2
@@ -909,7 +967,7 @@ C     pressure information with the model time step.
          READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
          READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          DO IT=1,ITHS
-            TIMEIT=IT*DTDP + STATIM*86400.D0
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
             IF(TIMEIT.GT.WTIME2) THEN
                WTIME1=WTIME2
                WTIME2=WTIME2+WTIMINC
@@ -981,7 +1039,7 @@ C....                           to correspond with having only a global wind fil
          WTIME2=WTIMED-WREFTIM  !CAST INTO MODEL TIME REFERENCE
          WTIME1=WTIME2-WTIMINC
          DO IT=1,ITHS
-            TIMEIT=IT*DTDP + STATIM*86400.D0
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
             IF(TIMEIT.GT.WTIME2) THEN
                WTIME1=WTIME2
                WTIME2=WTIME2+WTIMINC
@@ -1028,7 +1086,7 @@ C     from wind velocity.
          CALL NWS4GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  !TCM v49.02 Added read for rec. 1
          CALL NWS4GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
          DO IT=1,ITHS
-            TIMEIT=IT*DTDP + STATIM*86400.D0
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
             IF(TIMEIT.GT.WTIME2) THEN
                WTIME1=WTIME2
                WTIME2=WTIME2+WTIMINC
@@ -1094,7 +1152,7 @@ C     is used to compute wind stress from wind velocity.
          READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
          READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
          DO IT=1,ITHS
-            TIMEIT=IT*DTDP + STATIM*86400.D0
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
             IF(TIMEIT.GT.WTIME2) THEN
                WTIME1=WTIME2
                WTIME2=WTIME2+WTIMINC
@@ -1427,7 +1485,7 @@ C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
           CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  !TCM v49.02 Added read for rec. 1
           CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
           DO IT=1,ITHS
-             TIMEIT=IT*DTDP + STATIM*86400.D0
+             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
              IF(TIMEIT.GT.WTIME2) THEN
                 WTIME1=WTIME2
                 WTIME2=WTIME2+WTIMINC
@@ -1596,7 +1654,8 @@ C...
         IESTP=0
         NSCOUE=0
         IF((NTCYSE.LT.ITHS).AND.(NSPOOLE.GT.0)) THEN
-          NTCYSE=NTCYSE+((ITHS-NTCYSE)/NSPOOLE)*NSPOOLE
+          NTCYSE=NTCYSE+((REAL(ITHS)-REAL(NTCYSE))/
+     &           REAL(NSPOOLE))*REAL(NSPOOLE)
           IF(NTCYSE.LT.ITHS) NTCYSE=NTCYSE+NSPOOLE
           IF(NSPOOLE.NE.0) NTRSPE=(NTCYFE-NTCYSE)/NSPOOLE
         ENDIF
@@ -1680,7 +1739,8 @@ C...
         IVSTP=0
         NSCOUV=0
         IF((NTCYSV.LT.ITHS).AND.(NSPOOLV.GT.0)) THEN
-          NTCYSV=NTCYSV+((ITHS-NTCYSV)/NSPOOLV)*NSPOOLV
+          NTCYSV=NTCYSV+((REAL(ITHS)-REAL(NTCYSV))/
+     &           REAL(NSPOOLV))*REAL(NSPOOLV)
           IF(NTCYSV.LT.ITHS) NTCYSV=NTCYSV+NSPOOLV
           NTRSPV=(NTCYFV-NTCYSV)/NSPOOLV
         ENDIF
@@ -1759,7 +1819,8 @@ C...
         ICSTP=0
         NSCOUC=0
         IF((NTCYSC.LT.ITHS).AND.(NSPOOLC.GT.0)) THEN
-          NTCYSC=NTCYSC+((ITHS-NTCYSC)/NSPOOLC)*NSPOOLC
+          NTCYSC=NTCYSC+((REAL(ITHS)-REAL(NTCYSC))/
+     &           REAL(NSPOOLC))*REAL(NSPOOLC)
           IF(NTCYSC.LT.ITHS) NTCYSC=NTCYSC+NSPOOLC
           NTRSPC=(NTCYFC-NTCYSC)/NSPOOLC
         ENDIF
@@ -1849,7 +1910,8 @@ C...
         IWSTP=0
         NSCOUM=0
         IF((NTCYSM.LT.ITHS).AND.(NSPOOLM.GT.0)) THEN
-          NTCYSM=NTCYSM+((ITHS-NTCYSM)/NSPOOLM)*NSPOOLM
+          NTCYSM=NTCYSM+((REAL(ITHS)-REAL(NTCYSM))/
+     &           REAL(NSPOOLM))*REAL(NSPOOLM)
           IF(NTCYSM.LT.ITHS) NTCYSM=NTCYSM+NSPOOLM
           NTRSPM=(NTCYFM-NTCYSM)/NSPOOLM
         ENDIF
@@ -1972,9 +2034,16 @@ C...
           IGEP=0
           NSCOUGE=0
           IF((NTCYSGE.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
-            NTCYSGE=NTCYSGE+((ITHS-NTCYSGE)/NSPOOLGE)*NSPOOLGE
+            NTCYSGE=NTCYSGE+((REAL(ITHS)-REAL(NTCYSGE))/
+     &              REAL(NSPOOLGE))*REAL(NSPOOLGE)
             IF(NTCYSGE.LT.ITHS) NTCYSGE=NTCYSGE+NSPOOLGE
-            NDSETSE=(NTCYFGE-NTCYSGE)/NSPOOLGE
+C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
+            IF(DTDP.NE.DTDPHS) THEN 
+              NDSETSE=((NTCYFGE*DTDP)-(NTCYSGE*DTDPHS))/
+     &                (NSPOOLGE*DTDP)
+            ELSE
+              NDSETSE=(NTCYFGE-NTCYSGE)/NSPOOLGE
+            END IF 
             ENDIF
           WRITE(16,1047)
  1047     FORMAT(//,' A NEW GLOBAL ELEVATION FILE WILL BE STARTED')
@@ -2019,7 +2088,7 @@ C...
           IGEP=IGEP+5
           CLOSE(63)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
-        IF((NOUTGE.EQ.-1)) THEN
+        IF((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4)) THEN
            CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
      $         NP_G, NP, HEADER63)
 C
@@ -2030,6 +2099,14 @@ C        global elevation
      &              TRIM(GLOBALDIR)//'/'//'fort.tau0',
      $               NP_G, NP, 'Tau0      ')
            ENDIF
+
+C kmd48.33bc - information for writing out the sponge layer
+           IF(OUTPUTSPONGE) THEN 
+              CALL writeDomainHeader(92,
+     &             TRIM(GLOBALDIR)//'/'//'fort.92',
+     $             NP_G, NP, 'sponge      ')
+           END IF 
+
            IGEP=2
         ENDIF
         IF(NOUTGE.EQ.2) THEN
@@ -2067,9 +2144,16 @@ C...
           IGVP=0
           NSCOUGV=0
           IF((NTCYSGV.LT.ITHS).AND.(NSPOOLGV.GT.0)) THEN
-            NTCYSGV=NTCYSGV+((ITHS-NTCYSGV)/NSPOOLGV)*NSPOOLGV
+            NTCYSGV=NTCYSGV+((REAL(ITHS)-REAL(NTCYSGV))/
+     &              REAL(NSPOOLGV))*REAL(NSPOOLGV)
             IF(NTCYSGV.LT.ITHS) NTCYSGV=NTCYSGV+NSPOOLGV
-            NDSETSV=(NTCYFGV-NTCYSGV)/NSPOOLGV
+C  kmd48.33bc - change the NDSETSV for the change in the DTDP
+            IF(DTDP.NE.DTDPHS) THEN 
+              NDSETSV=((NTCYFGV*DTDP)-(NTCYSGV*DTDPHS))/
+     &                (NSPOOLGV*DTDP)
+            ELSE 
+              NDSETSV=(NTCYFGV-NTCYSGV)/NSPOOLGV
+            END IF 
             ENDIF
           WRITE(16,1049)
  1049     FORMAT(//,' A NEW GLOBAL VELOCITY FILE WILL BE STARTED')
@@ -2114,7 +2198,7 @@ C...
           IGVP=IGVP+5
           CLOSE(64)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
-        IF((NOUTGV.EQ.-1).OR.(NOUTGE.EQ.-4)) THEN
+        IF((NOUTGV.EQ.-1).OR.(NOUTGV.EQ.-4)) THEN
           CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
      $      NP_G, NP, HEADER64)
           IGVP=2
@@ -2147,9 +2231,16 @@ C...
           IGCP=0
           NSCOUGC=0
           IF((NTCYSGC.LT.ITHS).AND.(NSPOOLGC.GT.0)) THEN
-            NTCYSGC=NTCYSGC+((ITHS-NTCYSGC)/NSPOOLGC)*NSPOOLGC
+            NTCYSGC=NTCYSGC+((REAL(ITHS)-REAL(NTCYSGC))/
+     &              REAL(NSPOOLGC))*REAL(NSPOOLGC)
             IF(NTCYSGC.LT.ITHS) NTCYSGC=NTCYSGC+NSPOOLGC
-            NDSETSC=(NTCYFGC-NTCYSGC)/NSPOOLGC
+C  kmd48.33bc - change the NDSETSC for the change in the DTDP
+            IF(DTDP.NE.DTDPHS) THEN 
+              NDSETSC=((NTCYFGC*DTDP)-(NTCYSGC*DTDPHS))/
+     &                (NSPOOLGC*DTDP)
+            ELSE 
+              NDSETSC=(NTCYFGC-NTCYSGC)/NSPOOLGC
+            END IF 
             ENDIF
           WRITE(16,1054)
  1054     FORMAT(//,' A NEW GLOBAL CONCENTRATION FILE WILL BE STARTED')
@@ -2246,9 +2337,16 @@ C...
           IGWP=0
           NSCOUGW=0
           IF((NTCYSGW.LT.ITHS).AND.(NSPOOLGW.GT.0)) THEN
-            NTCYSGW=NTCYSGW+((ITHS-NTCYSGW)/NSPOOLGW)*NSPOOLGW
+            NTCYSGW=NTCYSGW+((REAL(ITHS)-REAL(NTCYSGW))/
+     &              REAL(NSPOOLGW))*REAL(NSPOOLGW)
             IF(NTCYSGW.LT.ITHS) NTCYSGW=NTCYSGW+NSPOOLGW
-            NDSETSW=(NTCYFGW-NTCYSGW)/NSPOOLGW
+C  kmd48.33bc - change the NDSETSC for the change in the DTDP
+            IF(DTDP.NE.DTDPHS) THEN 
+              NDSETSW=((NTCYFGW*DTDP)-(NTCYSGW*DTDPHS))/
+     &                (NSPOOLGW*DTDP)
+            ELSE 
+              NDSETSW=(NTCYFGW-NTCYSGW)/NSPOOLGW
+            END IF 
           ENDIF
           WRITE(16,1056)
  1056     FORMAT(//,' NEW GLOBAL WIND & pressure FILEs WILL BE STARTED')
@@ -2314,7 +2412,7 @@ C...
           IGWP=IGWP+5
           CLOSE(74)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
-        IF((NOUTGW.EQ.-1)) THEN
+        IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
           CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
      $      NP_G, NP, HEADER73)
           IGPP=2
@@ -2371,8 +2469,9 @@ C...
 C...  HOT START INFORMATION FOR A 3D RUN
 C...
 
+C  kmd48.33bc - added time and time step to be passed to the hotstart file
       IF(C3D) THEN
-        CALL HOTSTART_3D()
+        CALL HOTSTART_3D(TIME,ITHS)
       ENDIF
 
 
@@ -2518,16 +2617,42 @@ C                                                                             *
 C                                                                             *
 c******************************************************************************
 
-      SUBROUTINE HOTSTART_3D()
+      SUBROUTINE HOTSTART_3D(TIME,ITHS)
 
       USE GLOBAL_3DVS
+
+C   kmd48.33bc - variable information needed from the global.F file
+      USE GLOBAL, ONLY : RES_BC_FLAG, RBCTIME1, RBCTIME2,
+     &                   RBCTIMEINC, SBCTIME1, SBCTIME2,
+     &                   SBCTIMEINC, TBCTIME1, TBCTIME2,
+     &                   TBCTIMEINC, BCSTATIM, RBCRATIO,
+     &                   LNM_BC1, LNM_BC2, TIMEIT, STATIM,
+     &                   SBCSTATIM, TBCSTATIM, SBCRATIO,
+     &                   TBCRATIO, DTDPHS, LNM_BC,
+     &                   BCFLAG_LNM, BCFLAG_TEMP, TTBCTIME1,
+     &                   TTBCTIME2, TTBCSTATIM, TTBCTIMEINC,
+     &                   q_heat1, q_heat2, HFLUX, TTBCRATIO,
+     &                   NBD
 
       IMPLICIT NONE
 
       INTEGER :: IRType                  !number of fields in output file
       INTEGER :: NH, N                   !horizontal & vertical loop counters
-      REAL(SZ) :: RealPartOfQ     
+!      REAL(SZ) :: RealPartOfQ     
       REAL(SZ) :: ImaginaryPartOfQ
+
+C  kmd48.33bc - new variables
+      INTEGER :: NumofBCNodes, J, NOD, IT
+      INTEGER, INTENT(IN) :: ITHS
+      REAL(SZ), INTENT(IN) :: TIME
+      INTEGER :: IDenHS
+      CHARACTER(80) :: CDUM80
+      REAL(SZ),ALLOCATABLE :: RealQ_Tmp(:,:)
+      INTEGER :: INDEX
+      INTEGER :: NumofNodes, K
+      REAL(SZ),ALLOCATABLE :: TMP(:,:)
+
+      REAL(SZ) :: tempp, temp1, temp2
 
 C...
 C...  Define format statements used to initialize 3D output files
@@ -2538,10 +2663,12 @@ C.. RJW bug fix in format 498 (kendra found this)
  497  FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE ASCII')
  496  FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE BINARY')
 
+C  kmd48.33bc - allocate realQ_tmp
+      ALLOCATE(RealQ_Tmp(NP,NFEN) )
 C...
 C...  Read in 3D portion of hotstart file
 C...
-      READ(IHOT,REC=IHOTSTP) IDen
+      READ(IHOT,REC=IHOTSTP) IDenHS
       IHOTSTP=IHOTSTP+1
       READ(IHOT,REC=IHOTSTP) N3DSD           !3D station density output time counter
       IHOTSTP=IHOTSTP+1
@@ -2568,58 +2695,424 @@ C...
       READ(IHOT,REC=IHOTSTP) I3DGTRec
       IHOTSTP=IHOTSTP+1
 
+C  kmd48.33bc - need to determine if IDEN parameter in hotstart is different than IDEN from
+C               fort.15 file. If so, determine which one should be used in the simulation. 
+      IF(MYPROC.EQ.0) THEN 
+        PRINT *, "IDEN = ", IDEN
+        PRINT *, "IDENHS = ", IDENHS
+      END IF 
+      IF(IDenHS.NE.IDEN) THEN 
+        IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GE.1)) THEN 
+            ! IDEN value from fort.15 should be used 
+        ELSE IF ((CBAROCLINIC).AND.(RES_BC_FLAG.LE.0)) THEN 
+            IDEN=IDenHS
+        END IF 
+      END IF 
+
+C  kmd48.33bc - changed to the format used with the global IO
       DO NH=1,NP
         READ(IHOT,REC=IHOTSTP) DUU(NH)
         IHOTSTP=IHOTSTP+1
+      END DO 
+      DO NH=1,NP
         READ(IHOT,REC=IHOTSTP) DUV(NH)
         IHOTSTP=IHOTSTP+1
+      END DO 
+      DO NH=1,NP
         READ(IHOT,REC=IHOTSTP) DVV(NH)
         IHOTSTP=IHOTSTP+1
+      END DO 
+      DO NH=1,NP
         READ(IHOT,REC=IHOTSTP) UU(NH)
         IHOTSTP=IHOTSTP+1
+      END DO 
+      DO NH=1,NP
         READ(IHOT,REC=IHOTSTP) VV(NH)
         IHOTSTP=IHOTSTP+1
+      END DO 
+      DO NH=1,NP
         READ(IHOT,REC=IHOTSTP) BSX(NH)
         IHOTSTP=IHOTSTP+1
+         IF((MYPROC.EQ.23).AND.(NH.EQ.15784)) THEN
+             PRINT *, "BSX(346561) = ", BSX(15784)
+         END IF 
+      END DO 
+      DO NH=1,NP
         READ(IHOT,REC=IHOTSTP) BSY(NH)
         IHOTSTP=IHOTSTP+1
+         IF((MYPROC.EQ.23).AND.(NH.EQ.15784)) THEN
+             PRINT *, "BSY(346561) = ", BSY(15784)
+         END IF 
       ENDDO
 
-      DO NH=1,NP
-        DO N=1,NFEN
-          READ(IHOT,REC=IHOTSTP) RealPartOfQ
+C  kmd48.33bc - changed to format used in global IO, layer output
+      DO N=1,NFEN
+        DO NH=1,NP
+          READ(IHOT,REC=IHOTSTP) RealQ_Tmp(NH,N)
           IHOTSTP=IHOTSTP+1
+         IF((MYPROC.EQ.23).AND.(NH.EQ.15785)) THEN
+             PRINT *, "RealQ_Tmp(346562,1) = ", RealQ_Tmp(15785,1)
+         END IF 
+        END DO 
+      END DO 
+      DO N=1,NFEN
+        DO NH=1,NP
           READ(IHOT,REC=IHOTSTP) ImaginaryPartOfQ
           IHOTSTP=IHOTSTP+1
-          Q(NH,N) = RealPartOfQ + I*ImaginaryPartOfQ 
+          Q(NH,N) = RealQ_Tmp(NH,N) + I*ImaginaryPartOfQ 
+        END DO 
+      END DO 
+      DO N=1,NFEN
+        DO NH=1,NP
           READ(IHOT,REC=IHOTSTP) WZ(NH,N)
           IHOTSTP=IHOTSTP+1
+        END DO 
+      END DO 
+      DO N=1,NFEN
+        DO NH=1,NP
           READ(IHOT,REC=IHOTSTP) q20(NH,N)
           IHOTSTP=IHOTSTP+1
+        END DO 
+      END DO 
+      DO N=1,NFEN
+        DO NH=1,NP
           READ(IHOT,REC=IHOTSTP) l(NH,N)
           IHOTSTP=IHOTSTP+1
-          IF(ABS(IDen).EQ.1) THEN
+        END DO 
+      END DO 
+
+      IF(ABS(IDen).EQ.1) THEN 
+        DO N=1,NFEN
+          DO NH=1,NP
             READ(IHOT,REC=IHOTSTP) SigT(NH,N)
             IHOTSTP=IHOTSTP+1           
-          ENDIF
-          IF(ABS(IDen).EQ.2) THEN
+          END DO
+        END DO 
+      ENDIF
+      IF(ABS(IDen).EQ.2) THEN 
+        DO N=1,NFEN
+          DO NH=1,NP
             READ(IHOT,REC=IHOTSTP) Sal(NH,N)
             IHOTSTP=IHOTSTP+1           
-          ENDIF
-          IF(ABS(IDen).EQ.3) THEN
+          END DO
+        END DO 
+      ENDIF
+      IF(ABS(IDen).EQ.3) THEN 
+        DO N=1,NFEN
+          DO NH=1,NP
             READ(IHOT,REC=IHOTSTP) Temp(NH,N)
             IHOTSTP=IHOTSTP+1
-          ENDIF
-          IF(ABS(IDen).EQ.4) THEN
+          END DO
+        END DO 
+      ENDIF
+      IF(ABS(IDen).EQ.4) THEN 
+        DO N=1,NFEN
+          DO NH=1,NP
             READ(IHOT,REC=IHOTSTP) Sal(NH,N)
             IHOTSTP=IHOTSTP+1
+         IF((MYPROC.EQ.23).AND.(NH.EQ.15785)) THEN
+             PRINT *, "Sal(346562,1) = ", Sal(15785,1)
+         END IF 
+          END DO 
+        END DO 
+        DO N=1,NFEN
+          DO NH=1,NP
             READ(IHOT,REC=IHOTSTP) Temp(NH,N)
             IHOTSTP=IHOTSTP+1
-          ENDIF
+         IF((MYPROC.EQ.23).AND.(NH.EQ.15785)) THEN
+             PRINT *, "Temp(346562,1) = ", Temp(15785,1)
+         END IF 
+          ENDDO
         ENDDO
-      ENDDO
+      END IF 
 
-C.... Initialize the station 3D density output file 
+      DEALLOCATE(RealQ_Tmp)
+
+C  kmd48.33bc - restart boundary condtions for baroclinic simulations
+      IF (MYPROC.EQ.0) THEN 
+        PRINT *, "RES_BC_FLAG = ", RES_BC_FLAG
+        PRINT *, "BCFLAG_LNM = ", BCFLAG_LNM
+      END IF 
+      IF((RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
+         IF (ABS(RES_BC_FLAG).GE.1) THEN
+            IF (BCFLAG_LNM.EQ.1) THEN
+              OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
+              RBCTIME1=BCSTATIM*86400.d0
+              RBCTIME2=RBCTIME1+RBCTIMEINC
+              READ(35,'(A)') CDUM80
+              DO NumofBCNodes=1,NETA
+                 READ(35,*) NOD,LNM_BC1(NumofBCNodes)
+              END DO
+              READ(35,'(A)') CDUM80
+              DO NumofBCNodes=1,NETA
+                 READ(35,*) NOD,LNM_BC2(NumofBCNodes)
+              END DO
+              DO IT=1,ITHS
+                 TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                 IF(TIMEIT.GT.RBCTIME2) THEN
+                    RBCTIME1=RBCTIME2
+                    RBCTIME2=RBCTIME1+RBCTIMEINC
+                    READ(35,'(A)') CDUM80
+                    DO NumofBCNodes=1,NETA
+                       LNM_BC1(NumofBCNodes)=LNM_BC2(NumofBCNodes)
+                       READ(35,*) NOD,LNM_BC2(NumofBCNodes)
+                    END DO
+                 END IF
+              END DO
+              IF(TIME.GT.RBCTIME2) THEN
+                 RBCTIME1=RBCTIME2
+                 RBCTIME2=RBCTIME2+RBCTIMEINC
+                 READ(35,'(A)') CDUM80
+                 DO NumofBCNodes=1,NETA
+                   LNM_BC1(NumofBCNodes)=LNM_BC2(NumofBCNodes)
+                   READ(35,*) NOD,LNM_BC2(NumofBCNodes)
+                 END DO
+              END IF
+              RBCRATIO=(TIMEIT-RBCTIME1)/RBCTIMEINC
+            ELSE IF (BCFLAG_LNM.EQ.2) THEN
+              ! to be added later but currently information
+              ! is taken in two ways from the HYCOM results
+            ELSE IF (BCFLAG_LNM.EQ.3) THEN
+              DO NumofBCNodes=1,NETA
+                 INDEX=NBD(NumofBCNodes)
+                 LNM_BC1(NumofBCNodes)=ETA2(INDEX)
+                 LNM_BC2(NumofBCNodes)=LNM_BC1(NumofBCNodes)
+              END DO
+            END IF
+         END IF
+         IF ((ABS(RES_BC_FLAG).EQ.2).OR.(ABS(RES_BC_FLAG).EQ.4)) THEN
+            OPEN(36,FILE=TRIM(INPUTDIR)//'/'//'fort.36')
+            SBCTIME1=SBCSTATIM*86400.D0
+            SBCTIME2=SBCTIME1+SBCTIMEINC
+            READ(36,'(A)') CDUM80
+            DO NumofBCNodes=1,NETA
+               READ(36,*) NOD,(RESSAL1(NumofBCNodes,J),J=1,NFEN)
+            END DO
+            READ(36,'(A)') CDUM80
+            DO NumofBCNodes=1,NETA
+               READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+            END DO
+            DO IT=1,ITHS
+               TIMEIT=IT*DTDPHS + STATIM*86400.D0
+               IF(TIMEIT.GT.SBCTIME2) THEN
+                  SBCTIME1=SBCTIME2
+                  SBCTIME2=SBCTIME1+SBCTIMEINC
+                  READ(36,'(A)') CDUM80
+                  DO NumofBCNodes=1,NETA
+                     DO J=1,NFEN
+                       RESSAL1(NumofBCNodes,J)=RESSAL2(NumofBCNodes,J)
+                     END DO
+                     READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+                  END DO
+               END IF
+            END DO
+            IF(TIME.GT.SBCTIME2) THEN
+               SBCTIME1=SBCTIME2
+               SBCTIME2=SBCTIME2+SBCTIMEINC
+               READ(36,'(A)') CDUM80
+               DO NumofBCNodes=1,NETA
+                 DO J=1,NFEN
+                   RESSAL1(NumofBCNodes,J)=RESSAL2(NumofBCNodes,J)
+                 END DO
+                 READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+               END DO
+            END IF
+            SBCRATIO=(TIMEIT-SBCTIME1)/SBCTIMEINC
+         END IF
+         IF ((ABS(RES_BC_FLAG).EQ.3).OR.
+     &            (ABS(RES_BC_FLAG).EQ.4)) THEN
+            OPEN(37,FILE=TRIM(INPUTDIR)//'/'//'fort.37')
+            TBCTIME1=TBCSTATIM*86400.D0
+            TBCTIME2=TBCTIME1+TBCTIMEINC
+            READ(37,'(A)') CDUM80
+            DO NumofBCNodes=1,NETA
+               READ(37,*) NOD,(RESTEMP1(NumofBCNodes,J),J=1,NFEN)
+            END DO
+            READ(37,'(A)') CDUM80
+            DO NumofBCNodes=1,NETA
+               READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+            END DO
+            DO IT=1,ITHS
+               TIMEIT=IT*DTDPHS + STATIM*86400.D0
+               IF(TIMEIT.GT.TBCTIME2) THEN
+                  TBCTIME1=TBCTIME2
+                  TBCTIME2=TBCTIME1+TBCTIMEINC
+                  READ(37,'(A)') CDUM80
+                  DO NumofBCNodes=1,NETA
+                     DO J=1,NFEN
+                       RESTEMP1(NumofBCNodes,J)=RESTEMP2(NumofBCNodes,J)
+                     END DO
+                     READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+                  END DO
+               END IF
+            END DO
+            IF(TIME.GT.TBCTIME2) THEN
+               TBCTIME1=TBCTIME2
+               TBCTIME2=TBCTIME2+TBCTIMEINC
+               READ(37,'(A)') CDUM80
+               DO NumofBCNodes=1,NETA
+                 DO J=1,NFEN
+                   RESTEMP1(NumofBCNodes,J)=RESTEMP2(NumofBCNodes,J)
+                 END DO
+                 READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+               END DO
+            END IF
+            TBCRATIO=(TIMEIT-TBCTIME1)/TBCTIMEINC
+            IF (BCFLAG_TEMP.EQ.1) THEN ! read in file with multiple values but no calcs
+               OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+               TTBCTIME1=TTBCSTATIM*86400.D0
+               TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+               DO NumofNodes=1,NP
+                  READ(38,*) NOD, q_heat1(Numofnodes)
+               END DO
+               DO NumofNodes=1,NP
+                  READ(38,*) NOD, q_heat2(NumofNodes)
+               END DO
+               DO IT=1,ITHS
+                  TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                  IF(TIMEIT.GT.TTBCTIME2) THEN
+                     TTBCTIME1=TTBCTIME2
+                     TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+                     DO NumofNodes=1,NH
+                       q_heat1(NumofNodes)=q_heat2(NumofNodes)
+                       READ(38,*) NOD, q_heat2(NumofNodes)
+                     END DO
+                  END IF
+               END DO
+               TTBCRATIO=(TIMEIT-TTBCTIME1)/TTBCTIMEINC
+               DO NumofNodes=1,NP
+                  HFLUX(NumofNodes) = q_heat1(NumofNodes)+TTBCRATIO*
+     &                (q_heat2(NumofNodes)-q_heat1(NumofNodes))
+                  qsurf(NumofNodes)=-HFLUX(NumofNodes)
+                  qsurfkp1(NumofNodes)=-HFLUX(NumofNodes)
+               END DO
+            ELSE IF (BCFLAG_TEMP.EQ.2) THEN ! read in from file with 6 components
+               ALLOCATE (TMP(NP,6))
+               OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+               TTBCTIME1=TTBCSTATIM*86400.D0
+               TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+               READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+               DO NumofNodes=1,NP
+                  q_heat1(NumofNodes)=-TMP(NumofNodes,1)-
+     &               TMP(NumofNodes,2)+TMP(NumofNodes,3)-
+     &               TMP(NumofNodes,5)+TMP(NumofNodes,4)-
+     &               TMP(NumofNodes,6)
+               END DO
+               READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+               DO NumofNodes=1,NP
+                  q_heat2(NumofNodes)=-TMP(NumofNodes,1)-
+     &               TMP(NumofNodes,2)+TMP(NumofNodes,3)-
+     &               TMP(NumofNodes,5)+TMP(NumofNodes,4)-
+     &               TMP(NumofNodes,6)
+               END DO
+               DO IT=1,ITHS
+                  TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                  IF(TIMEIT.GT.TTBCTIME2) THEN
+                     TTBCTIME1=TTBCTIME2
+                     TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+                     DO NumofNodes=1,NP
+                        q_heat1(NumofNodes)=q_heat2(NumofNodes)
+                     END DO
+                     READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+                     DO NumofNodes=1,NP
+                        q_heat2(NumofNodes)=-TMP(NumofNodes,1)-
+     &                     TMP(NumofNodes,2)+TMP(NumofNodes,3)-
+     &                     TMP(NumofNodes,5)+TMP(NumofNodes,4)-
+     &                     TMP(NumofNodes,6)
+                     END DO
+                  END IF
+               END DO
+               TTBCRATIO=(TIMEIT-TTBCTIME1)/TTBCTIMEINC
+               DO NumofNodes=1,NP
+                  HFLUX(NumofNodes) = q_heat1(NumofNodes)+TTBCRATIO*
+     &                (q_heat2(NumofNodes)-q_heat1(NumofNodes))
+                  qsurf(NumofNodes)=-HFLUX(NumofNodes)
+                  qsurfkp1(NumofNodes)=-HFLUX(NumofNodes)
+               END DO
+               DEALLOCATE(TMP)
+            ELSE IF (BCFLAG_TEMP.EQ.3) THEN ! read in from file with 4 components
+               ALLOCATE (TMP(NP,4))
+               OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+               TTBCTIME1=TTBCSTATIM*86400.D0
+               TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+               READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+               DO NumofNodes=1,NP
+                  q_heat1(NumofNodes)=TMP(NumofNodes,4)+
+     &               TMP(NumofNodes,3)-TMP(NumofNodes,1)+
+     &               TMP(NumofNodes,2)
+               END DO
+               READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+               DO NumofNodes=1,NP
+                  q_heat2(NumofNodes)=TMP(NumofNodes,4)+
+     &               TMP(NumofNodes,3)-TMP(NumofNodes,1)+
+     &               TMP(NumofNodes,2)
+               END DO
+               DO IT=1,ITHS
+                  TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                  IF(TIMEIT.GT.TTBCTIME2) THEN
+                     TTBCTIME1=TTBCTIME2
+                     TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+                     DO NumofNodes=1,NP
+                        q_heat1(NumofNodes)=q_heat2(NumofNodes)
+                     END DO
+                     READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+                     DO NumofNodes=1,NP
+                        q_heat2(NumofNodes)=TMP(NumofNodes,4)+
+     &                     TMP(NumofNodes,3)-TMP(NumofNodes,1)+
+     &                     TMP(NumofNodes,2)
+                     END DO
+                  END IF
+               END DO
+               TTBCRATIO=(TIMEIT-TTBCTIME1)/TTBCTIMEINC
+               DO NumofNodes=1,NP
+                  HFLUX(NumofNodes) = q_heat1(NumofNodes)+TTBCRATIO*
+     &                (q_heat2(NumofNodes)-q_heat1(NumofNodes))
+                  qsurf(NumofNodes)=-HFLUX(NumofNodes)
+                  qsurfkp1(NumofNodes)=-HFLUX(NumofNodes)
+               END DO
+               DEALLOCATE(TMP)
+            END IF ! end if for heat flux file
+         END IF ! end if for temperature boundary and heat flux
+      ELSE IF ((RES_BC_FLAG.LT.0).AND.(CBAROCLINIC)) THEN
+         IF (BCFLAG_LNM.EQ.1) THEN 
+            OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
+            READ(35,'(A)') CDUM80
+            DO NumofBCNodes=1,NETA
+                READ(35,*) NOD,LNM_BC(NumofBCNodes)
+            END DO
+         ELSE IF (BCFLAG_LNM.EQ.2) THEN 
+            ! add later
+         ELSE IF (BCFLAG_LNM.EQ.3) THEN 
+            DO NumofBCNodes=1,NETA
+               INDEX=NBD(NumofBCNodes)
+               LNM_BC(NumofBCNodes)=ETA2(INDEX)
+         !IF((MYPROC.EQ.23).AND.(INDEX.EQ.15785)) THEN
+         !    PRINT *, "ETA2(346562) = ", ETA2(15785)
+         !END IF 
+            END DO
+         END IF
+      END IF 
+
+C.... Initialize the station 3D density output file
+!kmd48.33bc - added in the information in front of all 
+!             the other output files for resetting the 
+!             information. 
+      IF (I3DSD.LT.0) THEN 
+        N3DSD=0
+        I3DSDRec=0 
+        IF ((NTO3DSDS.LT.ITHS).AND.(NSpo3DSD.GT.0)) THEN 
+           NTO3DSDS=NTO3DSDS+((REAL(ITHS)-REAL(NTO3DSDS))/
+     &              REAL(NSpo3DSD))*REAL(NSpo3DSD)
+           IF (NTO3DSDS.LT.ITHS) NTO3DSDS=NTO3DSDS+NSpo3DSD
+           IF (DTDP.NE.DTDPHS) THEN
+              NDSet3DSD=((NTO3DSDF*DTDP)-(NTO3DSDS*DTDPHS))/
+     &                  (NSpo3DSD*DTDP)
+           ELSE 
+              NDSet3DSD=(NTO3DSDF-NTO3DSDS)/NSpo3DSD
+           END IF
+        END IF 
+      END IF 
+            
 
       IF(IDen.EQ.1) IRType=1
       IF((IDen.EQ.2).OR.(IDen.EQ.3)) IRType=2
@@ -2696,6 +3189,24 @@ C.... Initialize the station 3D density output file
       ENDIF
 
 C.... Initialize the 3D velocity station output file (Unit 42)
+!kmd48.33bc - added in the information in front of all 
+!             the other output files for resetting the 
+!             information. 
+      IF (I3DSV.LT.0) THEN 
+        N3DSV=0
+        I3DSVRec=0 
+        IF ((NTO3DSVS.LT.ITHS).AND.(NSpo3DSV.GT.0)) THEN 
+           NTO3DSVS=NTO3DSVS+((REAL(ITHS)-REAL(NTO3DSVS))/
+     &              REAL(NSpo3DSV))*REAL(NSpo3DSV)
+           IF (NTO3DSVS.LT.ITHS) NTO3DSVS=NTO3DSVS+NSpo3DSV
+           IF (DTDP.NE.DTDPHS) THEN
+              NDSet3DSV=((NTO3DSVF*DTDP)-(NTO3DSVS*DTDPHS))/
+     &                  (NSpo3DSV*DTDP)
+           ELSE 
+              NDSet3DSV=(NTO3DSVF-NTO3DSVS)/NSpo3DSV
+           END IF
+        END IF 
+      END IF 
 
       IRType=3
 
@@ -2770,8 +3281,32 @@ C.... Initialize the 3D velocity station output file (Unit 42)
       ENDIF
 
 C.... Initialize the 3D turbulence station output file (Unit 43)
+!kmd48.33bc - added in the information in front of all 
+!             the other output files for resetting the 
+!             information. 
+      IF (I3DST.LT.0) THEN 
+        N3DST=0
+        I3DSTRec=0 
+        IF ((NTO3DSTS.LT.ITHS).AND.(NSpo3DST.GT.0)) THEN 
+           NTO3DSTS=NTO3DSTS+((REAL(ITHS)-REAL(NTO3DSTS))/
+     &              REAL(NSpo3DST))*REAL(NSpo3DST)
+           IF (NTO3DSTS.LT.ITHS) NTO3DSTS=NTO3DSTS+NSpo3DST
+           IF (DTDP.NE.DTDPHS) THEN
+              NDSet3DST=((NTO3DSTF*DTDP)-(NTO3DSTS*DTDPHS))/
+     &                  (NSpo3DST*DTDP)
+           ELSE 
+              NDSet3DST=(NTO3DSTF-NTO3DSTS)/NSpo3DST
+           END IF
+        END IF 
+      END IF 
 
       IRType=3
+
+C  kmd48.33bc - changed NDSet3DST to use DTDPHS
+      IF (DTDP.NE.DTDPHS) THEN
+         NDSet3DST=((NTO3DSTF*DTDP)-(NTO3DSTS*DTDPHS))/
+     &              (NSpo3DST*DTDP)
+      END IF
 
       IF(I3DST.EQ.-1) THEN             !start a new ASCII file
         WRITE(16,497) 43
@@ -2845,16 +3380,43 @@ C.... Initialize the 3D turbulence station output file (Unit 43)
 
 C.... Initialize the global 3D density output file (Unit 44)
 
+C  kmd48.33bc - change NDSet3DGD to use DTDPHS
+      IF(I3DGD.LT.0) THEN
+         N3DGD=0
+         I3DGDRec=0
+         IF((NTO3DGDS.LT.ITHS).AND.(NSpo3DGD.GT.0)) THEN
+           NTO3DGDS=NTO3DGDS+((REAL(ITHS)-REAL(NTO3DGDS))/
+     &               REAL(NSpo3DGD))*REAL(NSpo3DGD)
+           IF(NTO3DGDS.LT.ITHS) NTO3DGDS=NTO3DGDS+NSpo3DGD
+           IF (DTDP.NE.DTDPHS) THEN
+             NDSet3DGD=((NTO3DGDF*DTDP)-(NTO3DGDS*DTDPHS))/
+     &                  (NSpo3DGD*DTDP)
+           ELSE
+             NDSet3DGD=(NTO3DGDF-NTO3DGDS)/NSpo3DGD
+           ENDIF
+         END IF
+      END IF
+
       IF(IDen.EQ.1) IRType=1
       IF((IDen.EQ.2).OR.(IDen.EQ.3)) IRType=2
       IF(IDen.EQ.4) IRType=3
 C     jgf46.27 Replaced IRType with IDen
+!kmd48.33bc - added in the information to make a file with all the
+!             top temperature boundary condition information in
       IF(I3DGD.EQ.-1) THEN         !start a new ASCII file
         WRITE(16,497) 44
         OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44')
         WRITE(44,499) RUNDES,RUNID,AGRID
         WRITE(44,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,NFEN,IDen
         CLOSE(44)
+        IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
+          IF (BCFLAG_TEMP.NE.0) THEN
+            OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
+            WRITE(47,499) RUNDES,RUNID,AGRID
+            WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+            CLOSE(47)
+          END IF
+        END IF
         I3DGDRec=2
       ENDIF
 
@@ -2913,12 +3475,30 @@ C     jgf46.27 Replaced IRType with IDen
 
       IF(I3DGD.EQ.2) THEN          !find spot in existing BINARY file
         WRITE(16,496) 44
-        OPEN(44,FILE=TRIM(INPUTDIR)//'/'//'fort.41',ACCESS='DIRECT',
+        OPEN(44,FILE=TRIM(INPUTDIR)//'/'//'fort.44',ACCESS='DIRECT',
      &       RECL=NByte)
         CLOSE(44)
       ENDIF
       
 c.... Initialize the global 3D velocity output file (Unit 45)
+
+C  kmd48.33bc - changed NDSet3DGV to use DTDPHS and added REALs to 
+C              calculation of the start time due to timestep change
+      IF(I3DGV.LT.0) THEN
+        N3DGV=0
+        I3DGVRec=0
+        IF((NTO3DGVS.LT.ITHS).AND.(NSpo3DGV.GT.0)) THEN
+          NTO3DGVS=NTO3DGVS+((REAL(ITHS)-REAL(NTO3DGVS))/
+     &             REAL(NSpo3DGV))*REAL(NSpo3DGV)
+          IF(NTO3DGVS.LT.ITHS) NTO3DGVS=NTO3DGVS+NSpo3DGV
+          IF (DTDP.NE.DTDPHS) THEN
+            NDSet3DGV=((NTO3DGVF*DTDP)-(NTO3DGVS*DTDPHS))/
+     &                 (NSpo3DGV*DTDP)
+          ELSE
+            NDSet3DGV=(NTO3DGVF-NTO3DGVS)/NSpo3DGV
+          END IF
+        ENDIF
+      ENDIF
 
       IF(I3DGV.EQ.-1) THEN         !start a new ASCII file
         WRITE(16,497) 45
@@ -2990,6 +3570,23 @@ c.... Initialize the global 3D velocity output file (Unit 45)
       ENDIF
 
 c.... Initialize the global 3D turbulence output file (Unit 46)
+
+C  kmd48.33bc - changed NDSet3DGT to use DTDPHS
+      IF(I3DGT.LT.0) THEN
+        N3DGT=0
+        I3DGTRec=0
+        IF((NTO3DGTS.LT.ITHS).AND.(NSpo3DGT.GT.0)) THEN
+          NTO3DGTS=NTO3DGTS+((REAL(ITHS)-REAL(NTO3DGTS))/
+     &             REAL(NSpo3DGT))*REAL(NSpo3DGT)
+          IF(NTO3DGTS.LT.ITHS) NTO3DGTS=NTO3DGTS+NSpo3DGT
+          IF (DTDP.NE.DTDPHS) THEN
+            NDSet3DGT=((NTO3DGTF*DTDP)-(NTO3DGTS*DTDPHS))/
+     &                 (NSpo3DGT*DTDP)
+          ELSE
+            NDSet3DGT=(NTO3DGTF-NTO3DGTS)/NSpo3DGT
+          END IF
+        ENDIF
+      ENDIF
 
       IF(I3DGT.EQ.-1) THEN         !start a new ASCII file
         WRITE(16,497) 46
