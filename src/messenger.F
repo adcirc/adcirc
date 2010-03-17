@@ -209,7 +209,8 @@ C--------------------------------------------------------------------------
       end if
 
 C Read Global number of elements and Local-to_Global element map ( used by module global_io )
-      READ(18,3015) NE_G
+Casey 100209: Changed from FMT=3015.
+      READ(18,'(8X,3I12)') NE_G
       ALLOCATE ( IMAP_EL_LG(MNE) )
       DO I=1,MNE
          READ(18,*) IMAP_EL_LG(I)
@@ -959,6 +960,60 @@ C
       CALL MPI_BCAST(array, n, realtype,0,comm,ierr)
       RETURN
       END SUBROUTINE MSG_RBCAST
+
+Casey 090327: Implement Seizo's buffering of radiation stress broadcasts.
+!=====Seizo Dividing Messenger
+      SUBROUTINE MSG_RBCASTD( array, in, jn, kn)
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+      INTEGER, INTENT(IN) :: in, jn, kn
+      REAL(sz), INTENT(INOUT) :: array(in,jn,kn)
+      INTEGER i, j, k, icount, ntimes, nlast
+      REAL(sz), ALLOCATABLE :: buffer(:)
+      INTEGER, ALLOCATABLE :: nbox(:)
+      INTEGER, Parameter :: limit_buff=1000000
+      allocate( buffer(in*jn*kn) )
+!
+      ntimes = in*jn*kn / limit_buff
+      nlast = in*jn*kn - limit_buff * ntimes
+      allocate( nbox(ntimes+1) )
+      do i = 1, ntimes
+         nbox(i) = limit_buff
+      enddo
+      if( nlast /= 0 ) then
+        ntimes = ntimes + 1
+        nbox(ntimes) = nlast
+      endif
+!
+      icount = 0
+      do i = 1, in
+         do j = 1, jn
+            do k = 1, kn
+               icount = icount + 1
+               buffer(icount) =  array(i,j,k)
+            enddo
+         enddo
+      enddo
+C
+      do i = 1, ntimes
+         icount = limit_buff*(i-1) + 1
+         CALL MPI_BCAST(buffer(icount), nbox(i), realtype,0,comm,ierr)
+      enddo
+c
+      icount = 0
+      do i = 1, in
+         do j = 1, jn
+            do k = 1, kn
+               icount = icount + 1
+               array(i,j,k) = buffer(icount)
+            enddo
+         enddo
+      enddo
+      deallocate( buffer, nbox )
+      RETURN
+      END SUBROUTINE MSG_RBCASTD
+!=============================================================================
 
       END MODULE MESSENGER
 

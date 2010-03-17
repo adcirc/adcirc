@@ -2,6 +2,66 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C
+C  v49.10   - 03/17/10 - jgf - r424 -Changed WindDragLimit back to 0.0035
+C             from 0.0020 in preparation for merge back to trunk.
+C             r419 | cdietrich | 2010-03-09
+C             Fixing an error in the passing of Manning's n values as Madsen
+C             roughness lengths to SWAN.
+C             r417 | cdietrich | 2010-03-02
+C             Changes to adcpost to allow for meshes with 10M+ elements.
+C             r415 | cdietrich | 2010-02-16
+C             Added wave_refraction_in_swan as a nodal attribute in the
+C             fort.13 file, so wave refraction can be enabled on a
+C             vertex-by-vertex basis.
+C             r412 | cdietrich | 2010-02-10
+C             One last change for meshes with 10M+ elements.
+C             r411 | cdietrich | 2010-02-09
+C             Changing formatted writing and reading of element numbers
+C             inside the fort.18 file from I8 to I12 to allow for meshes
+C             with 10M+ elements.
+C             r410 | cdietrich | 2010-02-08
+C             Small change to SWAN to allow for hot-starting of the coupled
+C             model.
+C             r408 | cdietrich | 2010-02-04
+C             Fixing bug with the output of the radiation stress gradients
+C             to the rads.64 file.
+C             r407 | cdietrich | 2010-02-02
+C             Fixing bug related to writing of last record in SWAN output
+C             files.  Needed to flush the writer cores from within the
+C             SwanOutput routine.
+C             r403 | cdietrich | 2010-01-27
+C             Turning off wave refraction for further testing.
+C             r391 | cdietrich | 2010-01-20
+C             Implement coupling of bottom friction from ADCIRC to SWAN.
+C             Our Manning's n values are used to compute a physical
+C             roughness length, which is passed to SWAN and used with its
+C             Madsen formulation.  Now bottom friction in SWAN varies 
+C             spatially and is tied to the same roughness information used
+C             by ADCIRC.
+C             r390 | cdietrich | 2010-01-20
+C             Small change to wave-modified friction in ADCIRC.
+C             r389 | cdietrich | 2010-01-20
+C             Lowering the cap on the wind drag coefficient from 0.0035
+C             to 0.002, to be in line with results from Mark Powell.
+C             r388 | cdietrich | 2010-01-20
+C             Updating SWAN and ADCIRC compiler flags for the ERDC Diamond
+C             machine.
+C             r379 | cdietrich | 2010-01-11
+C             Updating SWAN compiler flags for the ERDC Sapphire machine.
+C             r373 | cdietrich | 2010-01-06
+C             Removed SWAN's check for skinny elements.
+C             r366 | cdietrich | 2009-12-16
+C             Committing changes related to the wave-modified friction.  
+C             Now the Manning n inside ADCIRC is increased in regions with
+C             heavy wave breaking in SWAN.  The wave-modified friction is
+C             activated with an extra CSWANFRIC compiler flag.
+C             r328 | cdietrich | 2009-10-19
+C             Committing SWAN half of coupling changes to repository.
+C             r327 | cdietrich | 2009-10-19
+C             Committing ADCIRC half of coupling changes to repository.
+C             r322 | cdietrich | 2009-10-13
+C             Creating new branch for coupling to the unstructured SWAN.
 C  v49.09     -  03/17/10 - jgf - Removed stray cr from line endings in 
 C                makefile.
 C  v49.08     -  03/08/10 - kmd - merged 3D_kmd branch into trunk

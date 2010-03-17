@@ -114,7 +114,47 @@ Cjgfdebug     &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA
       USE MESSENGER
 #endif
 
+#ifdef CSWAN
+Casey 090302: We need these values from other places.
+      USE OWIWIND,     ONLY: WindMultiplier
+      USE Couple2Swan, ONLY: ComputeWaveDrivenForces,
+     &                       CouplingInterval,
+     &                       COUPWIND,
+     &                       InterpoWeight,
+     &                       SWAN_WX2,
+     &                       SWAN_WY2
+Casey 100205: Add a variable for writing of SWAN hot-start files.
+     &                      ,WriteSwanHotStart
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+     &                      ,ComputeModifiedWaveFriction,
+     &                       ComputeWaveFrictionProperties,
+     &                       TKXX,
+     &                       TKXY,
+     &                       TKYY,
+     &                       WAVE_A,
+     &                       WAVE_A1,
+     &                       WAVE_A2,
+     &                       WAVE_H,
+     &                       WAVE_H1,
+     &                       WAVE_H2,
+     &                       WAVE_T,
+     &                       WAVE_T1,
+     &                       WAVE_T2
+#endif
+#endif
+
+
       IMPLICIT NONE 
+
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+      REAL(SZ) :: WAVA
+      REAL(SZ) :: WAVH
+      REAL(SZ) :: WAVT
+#endif
+#endif
 
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
       CHARACTER(6) :: TEMPDIRNAME
@@ -354,6 +394,7 @@ C
 C...  UPDATE THE WIND STRESS AND SURFACE PRESSURE AND READ IN NEW VALUES
 C...  FROM UNIT 22.  APPLY Ramp FUNCTION.
 C
+Casey 091217: Lower the wind drag limit from 0.0035 to 0.0020.
       WindDragLimit = 0.0035
 C     No wind, radiation stress or atmospheric pressure forcings are used.
       IF(NWS.EQ.1) THEN
@@ -427,6 +468,13 @@ C     jgf46.00 Add directional wind reduction.
             WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            IF(COUPWIND)THEN
+               SWAN_WX2(I,2) = WindX
+               SWAN_WY2(I,2) = WindY
+            ENDIF
+#endif
          END DO
       ENDIF
 
@@ -464,6 +512,13 @@ C     jgf46.00 Add directional wind reduction.
             PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            IF(COUPWIND)THEN
+               SWAN_WX2(I,2) = WindX
+               SWAN_WY2(I,2) = WindY
+            ENDIF
+#endif
          END DO
       ENDIF
 
@@ -500,6 +555,13 @@ C     jgf46.00 Add directional wind reduction.
             PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            IF(COUPWIND)THEN
+               SWAN_WX2(I,2) = WindX
+               SWAN_WY2(I,2) = WindY
+            ENDIF
+#endif
          END DO
       ENDIF
 
@@ -541,6 +603,13 @@ C     jgf46.00 Add directional wind reduction.
             PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            IF(COUPWIND)THEN
+               SWAN_WX2(I,2) = WindX
+               SWAN_WY2(I,2) = WindY
+            ENDIF
+#endif
          END DO
       ENDIF
 
@@ -596,6 +665,13 @@ C     generate hurricane winds from the Holland Wind Model.
             PR2(I)=RampMete*PRN2(I)
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            IF(COUPWIND)THEN
+               SWAN_WX2(I,2) = WindX
+               SWAN_WY2(I,2) = WindY
+            ENDIF
+#endif
          ENDDO
       ENDIF       
 
@@ -620,6 +696,13 @@ C     jgf46.16 Merged:
             PR2(I)=RampMete*PRN2(I)
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            IF(COUPWIND)THEN
+               SWAN_WX2(I,2) = WindX
+               SWAN_WY2(I,2) = WindY
+            ENDIF
+#endif
          END DO
       ENDIF
 
@@ -661,6 +744,13 @@ C     jgf46.00 Add directional wind reduction.
             PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            IF(COUPWIND)THEN
+               SWAN_WX2(I,2) = WindX
+               SWAN_WY2(I,2) = WindY
+            ENDIF
+#endif
          END DO
       ENDIF
 
@@ -707,6 +797,13 @@ C     jgf46.00 Add directional wind reduction.
             PR2(I) = RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            IF(COUPWIND)THEN
+               SWAN_WX2(I,2) = WindX
+               SWAN_WY2(I,2) = WindY
+            ENDIF
+#endif
          END DO
       ENDIF
 
@@ -739,6 +836,13 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
             PR2(I) = RampMete*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I))) 
             WVNXOUT(I)=RampMete*WINDX
             WVNYOUT(I)=RampMete*WINDY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            IF(COUPWIND)THEN
+               SWAN_WX2(I,2) = WindX/WindMultiplier
+               SWAN_WY2(I,2) = WindY/WindMultiplier
+            ENDIF
+#endif
           END DO
         ENDIF
 
@@ -763,6 +867,13 @@ C     RJW ffpl Merged:
             PR2(I)=RampMete*PRN2(I)
             WVNXOUT(I)=RampMete*WindX
             WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+            IF(COUPWIND)THEN
+               SWAN_WX2(I,2) = WindX
+               SWAN_WY2(I,2) = WindY
+            ENDIF
+#endif
          END DO
       ENDIF
 
@@ -801,6 +912,45 @@ C...  NRS=2 was added.  sb46.28sb03 09/xx/2006
             IF(NRS.EQ.2) THEN
               CALL RS2GET(RSNX2,RSNY2,NP)
             ENDIF
+#ifdef CSWAN
+Casey 090302: Added for coupling to SWAN.
+            IF(NRS.EQ.3) THEN
+              InterpoWeight = 1.0
+              CALL ComputeWaveDrivenForces
+Casey 090707: We want to extrapolate forward in time.  Load the latest (current) forces
+C             into RSNX1/RSNY1, and then load the future forces into RSNX2/RSNY2.
+              DO I=1,NP
+                RSX = RSNX1(I)
+                RSY = RSNY1(I)
+                RSNX1(I) = RSNX2(I)
+                RSNY1(I) = RSNY2(I)
+                RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX)
+                RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
+              ENDDO
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.  Compute the wave properties
+C             for height, period, angle and dissipation.  Then extrapolate forward
+C             in time using the same logic as above.
+              DO I=1,NP
+                WAVE_A1(I) = WAVE_A2(I)
+                WAVE_H1(I) = WAVE_H2(I)
+                WAVE_T1(I) = WAVE_T2(I)
+              ENDDO
+              CALL ComputeWaveFrictionProperties
+              DO I=1,NP
+                WAVA = WAVE_A1(I)
+                WAVH = WAVE_H1(I)
+                WAVT = WAVE_T1(I)
+                WAVE_A1(I) = WAVE_A2(I)
+                WAVE_H1(I) = WAVE_H2(I)
+                WAVE_T1(I) = WAVE_T2(I)
+                WAVE_A2(I) = WAVE_A2(I) + (WAVE_A2(I)-WAVA)
+                WAVE_H2(I) = WAVE_H2(I) + (WAVE_H2(I)-WAVH)
+                WAVE_T2(I) = WAVE_T2(I) + (WAVE_T2(I)-WAVT)
+              ENDDO
+#endif
+            ENDIF
+#endif
          ENDIF
          RStRatio=(TIME-RSTIME1)/RSTIMINC
          DO I=1,NP
@@ -808,7 +958,24 @@ C...  NRS=2 was added.  sb46.28sb03 09/xx/2006
             RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
             WSX2(I) = WSX2(I) + RSX
             WSY2(I) = WSY2(I) + RSY
-         END DO
+#ifdef CSWAN
+Casey 090302: Added these lines for output to the rads.64 file.
+            RSNXOUT(I) = RSX
+            RSNYOUT(I) = RSY
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+            WAVE_A(I) = WAVE_A1(I) + RSTRATIO*(WAVE_A2(I)-WAVE_A1(I))
+            WAVE_H(I) = WAVE_H1(I) + RSTRATIO*(WAVE_H2(I)-WAVE_H1(I))
+            WAVE_T(I) = WAVE_T1(I) + RSTRATIO*(WAVE_T2(I)-WAVE_T1(I))
+#endif
+#endif
+         ENDDO
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+         CALL ComputeModifiedWaveFriction(TK)
+#endif
+#endif
       ENDIF
 
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
@@ -1559,6 +1726,14 @@ c                           TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+                           TKXX(NM123) = TK(NM123)
+                           TKYY(NM123) = TK(NM123)
+                           TKXY(NM123) = 0.D0
+#endif
+#endif
                         ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -1660,6 +1835,14 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+                           TKXX(NM123) = TK(NM123)
+                           TKYY(NM123) = TK(NM123)
+                           TKXY(NM123) = 0.D0
+#endif
+#endif
                         ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -1761,6 +1944,14 @@ c. RJW merged 08/26/2008 Casey 071219: Added the following logic to obtain the c
      &                        (IFNLBF+IFHYBF*
      &                        (1.D0+(HBREAK/H1)**FTHETA)**
      &                        (FGAMMA/FTHETA)))
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+                           TKXX(NM123) = TK(NM123)
+                           TKYY(NM123) = TK(NM123)
+                           TKXY(NM123) = 0.D0
+#endif
+#endif
                         ELSEIF(C3D)THEN
                            IF(ISLIP.EQ.0)THEN
                               DUDS=(Q(NM123,2)-Q(NM123,1))
@@ -2359,6 +2550,12 @@ C...
       if ((NHSTAR > 0 .and. ITEST == IT) .or. (-IHOT == IT)) then
 !     IF(myproc.eq.0) PRINT *, " writeHotstart **********"
          CALL writeHotstart(Time, IT)
+#ifdef CSWAN
+Casey 100205: Enable writing of SWAN hot-start file.  We need to wait
+C             and do this after the next SWAN time step, so that
+C             everything is up-to-date.
+         WriteSwanHotStart = .TRUE.
+#endif
       ENDIF
 
 
@@ -2520,6 +2717,14 @@ C
      &     Tau0Var, LoadGeoidOffset, GeoidOffset, EVM
 #ifdef CMPI
       USE MESSENGER
+#endif
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+      USE Couple2Swan, ONLY: TKXX,
+     &                       TKXY,
+     &                       TKYY
+#endif
 #endif
 
       IMPLICIT NONE 
@@ -2843,6 +3048,17 @@ C2DDI.Compute bottom friction
             BSYN2=TK(NM2)*QY1N2
             BSXN3=TK(NM3)*QX1N3
             BSYN3=TK(NM3)*QY1N3
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+            BSXN1 = TKXX(NM1)*QX1N1 + TKXY(NM1)*QY1N1
+            BSYN1 = TKXY(NM1)*QX1N1 + TKYY(NM1)*QY1N1
+            BSXN2 = TKXX(NM2)*QX1N2 + TKXY(NM2)*QY1N2
+            BSYN2 = TKXY(NM2)*QX1N2 + TKYY(NM2)*QY1N2
+            BSXN3 = TKXX(NM3)*QX1N3 + TKXY(NM3)*QY1N3
+            BSYN3 = TKXY(NM3)*QX1N3 + TKYY(NM3)*QY1N3
+#endif
+#endif
          endif      
 
 C3D...For the 3D version of the code
@@ -3402,6 +3618,14 @@ C
 #ifdef CMPI
       USE MESSENGER
 #endif
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+      USE Couple2Swan, ONLY: TKXX,
+     &                       TKXY,
+     &                       TKYY
+#endif
+#endif
 
       IMPLICIT NONE 
 
@@ -3491,6 +3715,14 @@ C        jgf47.08 Moved time-varying tau0 subroutine to nodalattr.F
          IF(C2DDI.AND.
      &       ((FullDomainTimeVaryingTau0.or.HighResTimeVaryingTau0)))
      &   THEN
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091022: Adopt Ethan's/Joannes's modified friction.
+            DO I=1,NP
+               TK(I)=0.25D0*(TKXX(I)+2.D0*TKXY(I)+TKYY(I))
+            ENDDO
+#endif
+#endif
             CALL CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
          ENDIF
          
@@ -3935,6 +4167,17 @@ C...     Set nodal values for each element
             BSYN2=TK(NM2)*QY1N2
             BSXN3=TK(NM3)*QX1N3
             BSYN3=TK(NM3)*QY1N3
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+            BSXN1 = TKXX(NM1)*QX1N1 + TKXY(NM1)*QY1N1
+            BSYN1 = TKXY(NM1)*QX1N1 + TKYY(NM1)*QY1N1
+            BSXN2 = TKXX(NM2)*QX1N2 + TKXY(NM2)*QY1N2
+            BSYN2 = TKXY(NM2)*QX1N2 + TKYY(NM2)*QY1N2
+            BSXN3 = TKXX(NM3)*QX1N3 + TKXY(NM3)*QY1N3
+            BSYN3 = TKXY(NM3)*QX1N3 + TKYY(NM3)*QY1N3
+#endif
+#endif
          ENDIF      
          IF (C3D) THEN                         !3D bottom friction
             BSXN1=BSX1(NM1)
@@ -4455,6 +4698,14 @@ C
       USE GLOBAL
       USE WIND
       USE NodalAttributes, ONLY: EVM
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+      USE Couple2Swan, ONLY: TKXX,
+     &                       TKXY,
+     &                       TKYY
+#endif
+#endif
 
       IMPLICIT NONE 
  
@@ -4496,6 +4747,19 @@ C
       REAL(8) DYY11,DYY12,DYY13,DYY21,DYY22,DYY23,DYY31,DYY32,DYY33
       REAL(8) DXY11,DXY12,DXY13,DXY21,DXY22,DXY23,DXY31,DXY32,DXY33
 
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+      REAL(SZ) :: AUVXX(NP)
+      REAL(SZ) :: AUVXY(NP)
+      REAL(SZ) :: AUVYX(NP)
+      REAL(SZ) :: AUVYY(NP)
+      REAL(SZ) :: VCOEFXX
+      REAL(SZ) :: VCOEFXY
+      REAL(SZ) :: VCOEFYX
+      REAL(SZ) :: VCOEFYY
+#endif
+#endif
 
 C...
 C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
@@ -4776,18 +5040,50 @@ C...  OF THE BOUNDARY CONDITION
          ENDIF
          VCoef1=DTO2*TK(I)
          VCoef2=DTO2*CORIF(I)
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+         VCOEFXX = DTO2*TKXX(I)
+         VCOEFYY = DTO2*TKYY(I)
+         VCOEFXY = DTO2*(TKXY(I)-CORIF(I))
+         VCOEFYX = DTO2*(TKXY(I)+CORIF(I))
+#endif
+#endif
          IF(CBaroclinic) THEN
             VIDBCPDX=DT*VIDBCPDXOH(I)
             VIDBCPDY=DT*VIDBCPDYOH(I)
          ENDIF
                
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*UU1(I)-VCOEFXY*VV1(I)-VIDBCPDX)
+         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*VV1(I)-VCOEFYX*UU1(I)-VIDBCPDX)
+#else
          MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
      &                                     +VCoef2*VV1(I)-VIDBCPDX)
          MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
      &                                     -VCoef2*UU1(I)-VIDBCPDY)
+#endif
+#else
+         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
+     &                                     +VCoef2*VV1(I)-VIDBCPDX)
+         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
+     &                                     -VCoef2*UU1(I)-VIDBCPDY)
+#endif
 
          AUV11(I)=1.D0+VCoef1*NCI
          AUV12(I)=-VCoef2*NCI
+
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+         AUVXX(I) = 1.D0 + VCOEFXX*NCI
+         AUVYY(I) = 1.D0 + VCOEFYY*NCI
+         AUVXY(I) = VCOEFXY*NCI
+         AUVYX(I) = VCOEFXY*NCI
+#endif
+#endif
          END DO
 
 C...  Modify the momentum equations to impose velocity boundary
@@ -4805,12 +5101,33 @@ C      Specified essential normal flow and free tangential slip
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN 
             VELNORM=-QN2(I)/H2 
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
+     &                     -CSII(I)*MOM_LV_Y(NBDI)
+     &                     -VELNORM*AUVXY(NBDI))*NCI !Tangential Eqn RHS
+            MOM_LV_Y(NBDI)=VELNORM*AUVXX(NBDI)*NCI !Normal Eqn RHS
+            AUVXX(NBDI) = AUVXX(NBDI)*SIII(I) - AUVYX(NBDI)*CSII(I)
+            AUVXY(NBDI) = AUVXY(NBDI)*SIII(I) - AUVYY(NBDI)*CSII(I)
+            AUVYX(NBDI) = CSII(I)
+            AUVYY(NBDI) = SIII(I)
+#else
             MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
      &                     -CSII(I)*MOM_LV_Y(NBDI)
      &                     -VELNORM*AUV12(NBDI))*NCI !Tangential Eqn RHS
             MOM_LV_Y(NBDI)=VELNORM*AUV11(NBDI)*NCI !Normal Eqn RHS
             AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
             AUV11(NBDI)=SIII(I)*AUV11(NBDI)
+#endif
+#else
+            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
+     &                     -CSII(I)*MOM_LV_Y(NBDI)
+     &                     -VELNORM*AUV12(NBDI))*NCI !Tangential Eqn RHS
+            MOM_LV_Y(NBDI)=VELNORM*AUV11(NBDI)*NCI !Normal Eqn RHS
+            AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
+            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
+#endif
             ENDIF
 
 C     Specified essential normal flow and no tangential slip
@@ -4822,6 +5139,15 @@ C     Specified essential normal flow and no tangential slip
             MOM_LV_Y(NBDI)=VELNORM*NCI !Normal Eqn RHS
             AUV11(NBDI)=SIII(I)
             AUV12(NBDI)=-CSII(I)
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+            AUVXX(NBDI) = SIII(I)
+            AUVXY(NBDI) = - CSII(I)
+            AUVYX(NBDI) = CSII(I)
+            AUVYY(NBDI) = SIII(I)
+#endif
+#endif
             ENDIF
 
 C     Zero normal velocity gradient using a Galerkin approximation to
@@ -4885,6 +5211,13 @@ C     velocities at the previous time step.
                MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
                MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
                ENDIF
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+            AUVXX(NBDI)=1.D0
+            AUVXY(NBDI)=0.D0
+#endif
+#endif
             ENDIF
 
          ENDDO
@@ -4904,6 +5237,16 @@ C.....interface nodes.
          DDU=AUV11(I)*AUV22-AUV12(I)*AUV21
          UU2(I)=(MOM_LV_X(I)*AUV22-MOM_LV_Y(I)*AUV12(I))/DDU
          VV2(I)=(MOM_LV_Y(I)*AUV11(I)-MOM_LV_X(I)*AUV21)/DDU
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+         AUVYY(I) = AUVXX(I)
+         AUVYX(I) = - AUVXY(I)
+         DDU = AUVXX(I)*AUVYY(I)-AUVXY(I)*AUVYX(I)
+         UU2(I) = (MOM_LV_X(I)*AUVYY(I)-MOM_LV_Y(I)*AUVXY(I))/DDU
+         VV2(I) = (MOM_LV_Y(I)*AUVXX(I)-MOM_LV_X(I)*AUVYX(I))/DDU
+#endif
+#endif
 cjjw
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           UU2(I)=0.D0    !no slip and normal flux
@@ -4977,6 +5320,14 @@ C
       USE GLOBAL
       USE WIND
       USE NodalAttributes, ONLY: EVM
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+      USE Couple2Swan, ONLY: TKXX,
+     &                       TKXY,
+     &                       TKYY
+#endif
+#endif
 
       IMPLICIT NONE 
  
@@ -5017,6 +5368,20 @@ C
 
       REAL(8) AreaIE, AreaIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
+
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+      REAL(SZ) :: AUVXX(NP)
+      REAL(SZ) :: AUVXY(NP)
+      REAL(SZ) :: AUVYX(NP)
+      REAL(SZ) :: AUVYY(NP)
+      REAL(SZ) :: VCOEFXX
+      REAL(SZ) :: VCOEFXY
+      REAL(SZ) :: VCOEFYX
+      REAL(SZ) :: VCOEFYY
+#endif
+#endif
 
 C...
 C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
@@ -5384,19 +5749,51 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
          ENDIF
          VCoef1=DTO2*TK(I)                     !TK = Kslip/H
          VCoef2=DTO2*CORIF(I)
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+         VCOEFXX = DTO2*TKXX(I)
+         VCOEFYY = DTO2*TKYY(I)
+         VCOEFXY = DTO2*(TKXY(I)-CORIF(I))
+         VCOEFYX = DTO2*(TKXY(I)+CORIF(I))
+#endif
+#endif
          IF(CBaroclinic) THEN
             VIDBCPDX=DT*VIDBCPDXOH(I)
             VIDBCPDY=DT*VIDBCPDYOH(I)
          ENDIF
-               
+
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*UU1(I)-VCOEFXY*VV1(I)-VIDBCPDX)
+         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*VV1(I)-VCOEFYX*UU1(I)-VIDBCPDX)
+#else
          MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
      &                                     +VCoef2*VV1(I)-VIDBCPDX)
          MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
      &                                     -VCoef2*UU1(I)-VIDBCPDY)
-
+#endif
+#else
+         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
+     &                                     +VCoef2*VV1(I)-VIDBCPDX)
+         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
+     &                                     -VCoef2*UU1(I)-VIDBCPDY)
+#endif
+               
          AUV11(I)=1.D0+VCoef1*NCI
          AUV12(I)=-VCoef2*NCI
-         
+
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+         AUVXX(I) = 1.D0 + VCOEFXX*NCI
+         AUVYY(I) = 1.D0 + VCOEFYY*NCI
+         AUVXY(I) = VCOEFXY*NCI
+         AUVYX(I) = VCOEFXY*NCI
+#endif
+#endif
+ 
          END DO
 
 C...  Modify the momentum equations to impose velocity boundary
@@ -5413,13 +5810,34 @@ C...  AUV12=-AUV21)
 C      Specified essential normal flow and free tangential slip
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN 
-            VelNorm=-QN2(I)/H2 
+            VelNorm=-QN2(I)/H2
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
+     &                     -CSII(I)*MOM_LV_Y(NBDI)
+     &                     -VelNorm*AUVXY(NBDI))*NCI !Tangential Eqn RHS
+            MOM_LV_Y(NBDI)=VelNorm*AUVXX(NBDI)*NCI   !Normal Eqn RHS
+            AUVXX(NBDI) = AUVXX(NBDI)*SIII(I) - AUVXY(NBDI)*CSII(I)
+            AUVXY(NBDI) = AUVXY(NBDI)*SIII(I) - AUVYY(NBDI)*CSII(I)
+            AUVYX(NBDI) = CSII(I)
+            AUVYY(NBDI) = SIII(I)
+#else
             MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
      &                     -CSII(I)*MOM_LV_Y(NBDI)
      &                     -VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
             MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*NCI   !Normal Eqn RHS
             AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
             AUV11(NBDI)=SIII(I)*AUV11(NBDI)
+#endif
+#else
+            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
+     &                     -CSII(I)*MOM_LV_Y(NBDI)
+     &                     -VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
+            MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*NCI   !Normal Eqn RHS
+            AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
+            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
+#endif
             ENDIF
 
 C     Specified essential normal flow and no tangential slip
@@ -5431,6 +5849,15 @@ C     Specified essential normal flow and no tangential slip
             MOM_LV_Y(NBDI)=VelNorm*NCI !Normal Eqn RHS
             AUV11(NBDI)=SIII(I)
             AUV12(NBDI)=-CSII(I)
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+            AUVXX(NBDI) = SIII(I)
+            AUVXY(NBDI) = - CSII(I)
+            AUVYX(NBDI) = CSII(I)
+            AUVYY(NBDI) = SIII(I)
+#endif
+#endif
             ENDIF
 
 C     Zero normal velocity gradient using a Galerkin approximation to
@@ -5494,6 +5921,13 @@ C     velocities at the previous time step.
                MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
                MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
                ENDIF
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+            AUVXX(NBDI)=1.D0
+            AUVXY(NBDI)=0.D0
+#endif
+#endif
             ENDIF
 
          ENDDO
@@ -5512,7 +5946,16 @@ C.....interface nodes.
          DDU=AUV11(I)*AUV22-AUV12(I)*AUV21
          UU2(I)=(MOM_LV_X(I)*AUV22-MOM_LV_Y(I)*AUV12(I))/DDU
          VV2(I)=(MOM_LV_Y(I)*AUV11(I)-MOM_LV_X(I)*AUV21)/DDU
-
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+         AUVYY(I)= AUVXX(I)
+         AUVYX(I)= - AUVXY(I)
+         DDU = AUVXX(I)*AUVYY(I)-AUVXY(I)*AUVYX(I)
+         UU2(I)=(MOM_LV_X(I)*AUVYY(I)-MOM_LV_Y(I)*AUVXY(I))/DDU
+         VV2(I)=(MOM_LV_Y(I)*AUVXX(I)-MOM_LV_X(I)*AUVYX(I))/DDU
+#endif
+#endif
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           UBAR2(I)=0.D0    !no slip and normal flux
 c           VBAR2(I)=0.D0    !on wet/dry interface nodes
@@ -5582,6 +6025,14 @@ C
       USE GLOBAL
       USE WIND
       USE NodalAttributes, ONLY: EVM
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+      USE Couple2Swan, ONLY: TKXX,
+     &                       TKXY,
+     &                       TKYY
+#endif
+#endif
       IMPLICIT NONE 
  
       INTEGER IE, I, J, N                           !local loop counters
@@ -5621,6 +6072,20 @@ C
 
       REAL(8) AREAIE, AREAIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
+
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+      REAL(SZ) :: AUVXX(NP)
+      REAL(SZ) :: AUVXY(NP)
+      REAL(SZ) :: AUVYX(NP)
+      REAL(SZ) :: AUVYY(NP)
+      REAL(SZ) :: VCOEFXX
+      REAL(SZ) :: VCOEFXY
+      REAL(SZ) :: VCOEFYX
+      REAL(SZ) :: VCOEFYY
+#endif
+#endif
 
 C...
 C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
@@ -6023,16 +6488,49 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
          ENDIF
          VCoef1=DTO2*TK(I)
          VCoef2=DTO2*CORIF(I)
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+         VCOEFXX = DTO2*TKXX(I)
+         VCOEFYY = DTO2*TKYY(I)
+         VCOEFXY = DTO2*(TKXY(I)-CORIF(I))
+         VCOEFYX = DTO2*(TKXY(I)+CORIF(I))
+#endif
+#endif
          VIDBCPDX=DT*VIDBCPDXOH(I)*H2
          VIDBCPDY=DT*VIDBCPDYOH(I)*H2
-         
+
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*QX1(I)-VCOEFXY*QY1(I)-VIDBCPDX)
+         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*QY1(I)-VCOEFYX*QX1(I)-VIDBCPDX)
+#else
          MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*QX1(I)
      &        +VCoef2*QY1(I)-VIDBCPDX)
          MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*QY1(I)
      &        -VCoef2*QX1(I)-VIDBCPDY)
+#endif
+#else
+         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*QX1(I)
+     &        +VCoef2*QY1(I)-VIDBCPDX)
+         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*QY1(I)
+     &        -VCoef2*QX1(I)-VIDBCPDY)
+#endif
          
          AUV11(I)=1.D0+VCoef1*NCI
          AUV12(I)=-VCoef2*NCI
+
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+         AUVXX(I) = 1.D0 + VCOEFXX*NCI
+         AUVYY(I) = 1.D0 + VCOEFYY*NCI
+         AUVXY(I) = VCOEFXY*NCI
+         AUVYX(I) = VCOEFXY*NCI
+#endif
+#endif
+
       END DO
 
 C...  Modify the momentum equations to impose velocity boundary
@@ -6048,12 +6546,33 @@ C...  AUV12=-AUV21)
 C      Specified essential normal flow and free tangential slip
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN 
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
+     &                     -CSII(I)*MOM_LV_Y(NBDI)
+     &                     +QN2(I)*AUVXY(NBDI))*NCI          !Tangential Eqn RHS
+            MOM_LV_Y(NBDI)=-QN2(I)*AUVXX(NBDI)*NCI           !Normal Eqn RHS
+            AUVXX(NBDI) = AUVXX(NBDI)*SIII(I) - AUVYX(NBDI)*CSII(I)
+            AUVXY(NBDI) = AUVXY(NBDI)*SIII(I) - AUVYY(NBDI)*CSII(I)
+            AUVYX(NBDI) = CSII(I)
+            AUVYY(NBDI) = SIII(I)
+#else
             MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
      &                     -CSII(I)*MOM_LV_Y(NBDI)
      &                     +QN2(I)*AUV12(NBDI))*NCI          !Tangential Eqn RHS
             MOM_LV_Y(NBDI)=-QN2(I)*AUV11(NBDI)*NCI           !Normal Eqn RHS
             AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
             AUV11(NBDI)=SIII(I)*AUV11(NBDI)
+#endif
+#else
+            MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
+     &                     -CSII(I)*MOM_LV_Y(NBDI)
+     &                     +QN2(I)*AUV12(NBDI))*NCI          !Tangential Eqn RHS
+            MOM_LV_Y(NBDI)=-QN2(I)*AUV11(NBDI)*NCI           !Normal Eqn RHS
+            AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
+            AUV11(NBDI)=SIII(I)*AUV11(NBDI)
+#endif
             ENDIF
 
 C     Specified essential normal flow and no tangential slip
@@ -6064,6 +6583,15 @@ C     Specified essential normal flow and no tangential slip
             MOM_LV_Y(NBDI)=-QN2(I)*NCI                       !Normal Eqn RHS
             AUV11(NBDI)=SIII(I)
             AUV12(NBDI)=-CSII(I)
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+            AUVXX(NBDI) = SIII(I)
+            AUVXY(NBDI) = - CSII(I)
+            AUVYX(NBDI) = CSII(I)
+            AUVYY(NBDI) = SIII(I)
+#endif
+#endif
             ENDIF
 
 C     Zero normal flux gradient using a Galerkin approximation to
@@ -6127,7 +6655,13 @@ C     fluxes at the previous time step.
                MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
                MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
                ENDIF
-
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+            AUVXX(NBDI)=1.d0
+            AUVXY(NBDI)=0.d0
+#endif
+#endif
             ENDIF
 
          ENDDO
@@ -6147,7 +6681,16 @@ C.....interface nodes.
          DDU=AUV11(I)*AUV22-AUV12(I)*AUV21
          QX2(I)=(MOM_LV_X(I)*AUV22-MOM_LV_Y(I)*AUV12(I))/DDU
          QY2(I)=(MOM_LV_Y(I)*AUV11(I)-MOM_LV_X(I)*AUV21)/DDU
-
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+         AUVYY(I)= AUVXX(I)
+         AUVYX(I)= - AUVXY(I)
+         DDU=AUVXX(I)*AUVYY(I)-AUVXY(I)*AUVYX(I)
+         QX2(I)=(MOM_LV_X(I)*AUVYY(I)-MOM_LV_Y(I)*AUVXY(I))/DDU
+         QY2(I)=(MOM_LV_Y(I)*AUVXX(I)-MOM_LV_X(I)*AUVYX(I))/DDU
+#endif
+#endif
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           QX2(I)=0.D0    !no slip and normal flux
 c           QY2(I)=0.D0    !on wet/dry interface nodes

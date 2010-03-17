@@ -76,9 +76,10 @@ C
 C 
 C  Allocate all global variables
       CALL ALLOC_MAIN1()
+Casey 100301: Changed I8 to I12.
       DO I = 1,NPROC
          READ(80,*) J, NNODP(I), NOD_RES_TOT(I) 
-         READ(80,1130) (IMAP_NOD_LG(K,I),K=1,NNODP(I))
+         READ(80,'(9I12)') (IMAP_NOD_LG(K,I),K=1,NNODP(I))
       ENDDO
 C
       READ(80,80) DUMMY
@@ -89,9 +90,10 @@ C
 C
 C     jgf45.07 Add subdomain->fulldomain element mapping for NOFF processing
 C     IMAP_EL_LG(I,PE) = Global Element Number of Local Element I on PE
+Casey 100301: Changed I8 to I12.
       DO I = 1,NPROC
          READ(80,*) J, NELP(I)
-         READ(80,1130) (IMAP_EL_LG(K,I),K=1,NELP(I))
+         READ(80,'(9I12)') (IMAP_EL_LG(K,I),K=1,NELP(I))
       ENDDO
 
       READ(80,*) NOUTE,TOUTSE,TOUTFE,NSPOOLE 

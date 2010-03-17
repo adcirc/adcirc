@@ -298,6 +298,9 @@ C
       REAL(8) AE, AEMIN, AREASK, AA
       REAL(8) SL0,SL1,SF0,SF1
       INTEGER NBV(MNVEL)
+Casey 090825: Added dummy variables.
+      INTEGER IDUM
+      REAL(8) RDUM
 C
 C--The Run Info file was opened in SIZEUP, performed a rewind, and is ready here
 C
@@ -445,6 +448,11 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
          NRS=2
          NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
       ENDIF
+Casey 090302: Added NWS=3xx for coupling to SWAN.
+      IF(ABS(NWS/100).EQ.3) THEN
+        NRS=3
+        NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
+      ENDIF
 C     jgfdebug46.02 added NWS=45
 C     jgf46.02 Added NWS=8.
 C     jgf46.16 merged:
@@ -548,7 +556,16 @@ C     sb46.28sb01 added NWS=12: OWI format
      &     .OR.(ABS(NWS).EQ.19)) THEN
          READ(15,80) WSMSG1
          IF(NRS.EQ.0) READ(WSMSG1,*) WTIMINC
-         IF(NRS.GE.1) READ(WSMSG1,*) WTIMINC,RSTIMINC ! sb46.28sb03
+Casey 090825: Fix for NRS = 3.
+C        IF(NRS.GE.1) READ(WSMSG1,*) WTIMINC,RSTIMINC ! sb46.28sb03
+         IF((NRS.EQ.1).OR.(NRS.EQ.2)) READ(WSMSG1,*) WTIMINC,RSTIMINC ! sb46.28sb03
+         IF(NRS.EQ.3)THEN
+            IF(ABS(NWS).EQ.8)THEN
+               READ(WSMSG1,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,RSTIMINC
+            ELSE
+               READ(WSMSG1,*) WTIMINC,RSTIMINC
+            ENDIF
+         ENDIF
       ENDIF
 C
       IF(ABS(NWS).EQ.6) THEN
@@ -1089,7 +1106,8 @@ C
       IF (NWS.NE.0) THEN
         READ(15,80) OUTGWMSG
         READ(OUTGWMSG,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
-        IF (ABS(NOUTGW).GT.4) THEN
+Casey 090302: Changed the following line for ABS(NOUTGW).EQ.4
+        IF (ABS(NOUTGW).GT.3 .AND. ABS(NOUTGW).NE.4) THEN
           print *, "NOUTGW does not have an allowable value"
           stop
         ENDIF

@@ -17,6 +17,8 @@ compiler=intel
 #compiler=cray_xt4
 #compiler=cray_xt5
 #compiler=pgi
+#compiler=pgi-ranger
+#compiler=diamond
 #
 #
 # Compiler Flags for gfortran and gcc
@@ -240,6 +242,58 @@ ifeq ($(compiler),pgi)
   ifneq ($(FOUND),TRUE)
      FOUND := TRUE
   else 
+     MULTIPLE := TRUE
+  endif
+endif
+#
+# Portland Group compiler on TU Ranger (AMD Opteron 8356, Barcelona Core)  Seizo
+ifeq ($(compiler),pgi-ranger)
+  PPFC          :=  pgf95
+  FC            :=  pgf95
+  PFC           :=  mpif90
+  FFLAGS1       :=  $(INCDIRS) -fast -tp barcelona-64 -Mextend
+  FFLAGS2       :=  $(FFLAGS1)
+  FFLAGS3       :=  $(FFLAGS1)
+  DA            :=  -DREAL8 -DLINUX -DCSCA
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
+  IMODS         :=  -I
+  CC            := gcc
+  CCBE          := $(CC)
+  CFLAGS        := $(INCDIRS)  -DLINUX
+  CLIBS         :=
+  LIBS          :=
+  MSGLIBS       :=
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
+     MULTIPLE := TRUE
+  endif
+endif
+#
+# ERDC Diamond
+ifeq ($(compiler),diamond)
+  PPFC          :=  ifort
+  FC            :=  ifort
+  PFC           :=  ifort
+  FFLAGS1       :=  $(INCDIRS) -O3 -xT -132
+  FFLAGS2       :=  $(FFLAGS1)
+  FFLAGS3       :=  $(FFLAGS1)
+  DA            :=  -DREAL8 -DLINUX -DCSCA
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
+  IMODS         :=  -I
+  CC            := icc
+  CCBE          := $(CC)
+  CFLAGS        := $(INCDIRS) -O3 -xT
+  CLIBS         :=
+  LIBS          :=
+  MSGLIBS       := -lmpi
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
      MULTIPLE := TRUE
   endif
 endif

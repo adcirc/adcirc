@@ -171,8 +171,8 @@ C...  Compute the buffer size and others
         call store_cmd(descript, istart, iend)
 
 #ifdef WRITER_DEBUG
-C        PRINT *, 'PROC ', MYPROC, ' IS SENDING FOR ',
-C     &       TRIM(filename)
+        PRINT *, 'PROC ', MYPROC, ' IS SENDING FOR ',
+     &       TRIM(filename)
 #endif
 
 C...    The following mpi_reduce sends array values to rank MNPROC,
@@ -441,7 +441,9 @@ C...    rank MNPROC of writer communicators is always a writer proc.
       
       NEED_FLUSH = .FALSE.
 
-      WCOMMID = 0
+Casey 100125: Per Seizo's suggestion, comment out this line to allow
+C             the cycling of writer cores.
+C     WCOMMID = 0
 
       RETURN
       END SUBROUTINE FLUSH_WRITERS

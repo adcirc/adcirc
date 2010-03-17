@@ -940,6 +940,7 @@ C------------------------MET FORCING---------------------------------------
 C
 C......RESTART WIND AND PRESSURE INFORMATION
 C
+Casey 091217: Lower the wind drag limit from 0.0035 to 0.0020.
       WindDragLimit = 0.0035
 C     No wind, radiation stress or atmospheric pressure forcings are used.
       IF(NWS.EQ.1) THEN
@@ -2088,6 +2089,8 @@ C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
           IGEP=IGEP+5
           CLOSE(63)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
+
+Casey 090310: Added the possibility for NOUTGE = -4.
         IF((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4)) THEN
            CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
      $         NP_G, NP, HEADER63)
@@ -2095,7 +2098,8 @@ C
 C        jgf47.06 Tau0 output is produced on the same schedule as
 C        global elevation
            IF (OUTPUTTAU0) THEN
-               CALL writeDomainHeader(10,
+Casey 090310: Corrected the unit number from 10 to 90.
+               CALL writeDomainHeader(90,
      &              TRIM(GLOBALDIR)//'/'//'fort.tau0',
      $               NP_G, NP, 'Tau0      ')
            ENDIF
@@ -2412,6 +2416,8 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
           IGWP=IGWP+5
           CLOSE(74)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
+
+Casey 090310: Added the possibility for NOUTGW = -4.
         IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
           CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
      $      NP_G, NP, HEADER73)
@@ -2420,6 +2426,58 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
      $      NP_G, NP, HEADER74)
           IGWP=2
         ENDIF
+
+#ifdef CSWAN
+Casey 090310: Added the output of radiation stress gradients.
+        IF(NOUTGW.LT.0)THEN
+          IGRadS=0
+        ENDIF
+        IF(NOUTGW.EQ.-2)THEN
+          OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+          IF(NBYTE.EQ.4) THEN
+            DO I=1,8
+              WRITE(164,REC=IGRadS+I) RDES4(I)
+              ENDDO
+            IGRadS=IGRadS+8
+            DO I=1,6
+              WRITE(164,REC=IGRadS+I) RID4(I)
+              ENDDO
+            IGRadS=IGRadS+6
+            DO I=1,6
+              WRITE(164,REC=IGRadS+I) AID4(I)
+              ENDDO
+            IGRadS=IGRadS+6
+            ENDIF
+          IF(NBYTE.EQ.8) THEN
+            DO I=1,4
+              WRITE(164,REC=IGRadS+I) RDES8(I)
+              ENDDO
+            IGRadS=IGRadS+4
+            DO I=1,3
+              WRITE(164,REC=IGRadS+I) RID8(I)
+              ENDDO
+            IGRadS=IGRadS+3
+            DO I=1,3
+              WRITE(164,REC=IGRadS+I) AID8(I)
+              ENDDO
+            IGRadS=IGRadS+3
+            ENDIF
+          WRITE(164,REC=IGRadS+1) NDSETSW
+          WRITE(164,REC=IGRadS+2) NP
+          WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
+          WRITE(164,REC=IGRadS+4) NSPOOLGW
+          WRITE(164,REC=IGRadS+5) 2
+          IGRadS=IGRadS+5
+          CLOSE(164)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+        ENDIF
+        IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
+          CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
+     $      NP_G, NP, HEADER74)
+          IGRadS=2
+        ENDIF
+#endif
+
         IF(NOUTGW.EQ.2) THEN
           open(73,file=TRIM(LOCALDIR)//'/'//'fort.73',
      &          access='DIRECT',recl=nbyte)

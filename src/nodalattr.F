@@ -76,6 +76,19 @@ C
 C-----------------------------------------------------------------------
       MODULE NodalAttributes
       USE SIZES
+
+Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
+C             I've placed these changes outside the #ifdef CSWAN flags
+C             because we want to be able to use the same fort.13 files
+C             for both ADCIRC and SWAN+ADCIRC runs.  This way, the new
+C             nodal attribute will be processed but only applied when
+C             ADCIRC is coupled to SWAN.
+      LOGICAL              :: LoadSwanWaveRefrac
+      LOGICAL              :: FoundSwanWaveRefrac
+      CHARACTER(LEN=80)    :: SwanWaveRefracUnits
+      INTEGER              :: SwanWaveRefracNoOfVals
+      REAL(SZ)             :: SwanWaveRefracDefVal
+      REAL(SZ),ALLOCATABLE :: SwanWaveRefrac(:)
 C
 C     The following flags are .true. if the corresponding data are
 C     required for the run, according to the unit 15 control file
@@ -225,6 +238,12 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE InitNAModule()
       IMPLICIT NONE
+C
+Casey 100210: Make changes compact.
+      LoadSwanWaveRefrac     = .FALSE.
+      FoundSwanWaveRefrac    = .FALSE.
+      SwanWaveRefracNoOfVals = 1
+      SwanWaveRefracDefVal   = 0.D0
 C
       LoadTau0           = .False.
       LoadStartDry       = .False. 
@@ -416,6 +435,9 @@ C     loaded from nodal attributes file.
          CASE
      &   ("min_and_max_primitive_weighting_in_continuity_equation")
             LoadTau0MinMax = .True.
+Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
+         CASE("wave_refraction_in_swan")
+            LoadSwanWaveRefrac = .TRUE.
          CASE DEFAULT     
             WRITE(16,1000)          ! unit 15 Model Parameter file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -521,6 +543,12 @@ C     Read each attribute name, units, number of values, and default value
             READ(13,'(A80)') Tau0MinMaxUnits   
             READ(13,*) Tau0MinMaxNoOfVals
             READ(13,*) (Tau0MinMaxDefVal(j),j=1,Tau0MinMaxNoOfVals)
+Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
+         CASE("wave_refraction_in_swan")
+            FoundSwanWaveRefrac = .TRUE.
+            READ(13,'(A80)') SwanWaveRefracUnits
+            READ(13,*) SwanWaveRefracNoOfVals
+            READ(13,*) SwanWaveRefracDefVal
          CASE DEFAULT     
             WRITE(16,1001)          ! Nodal Attributes file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -552,6 +580,8 @@ C     that are not in the nodal attributes file.
      &   ((LoadChezy).and.(.not.FoundChezy)).or.
      &   ((LoadEVM).and.(.not.FoundEVM)).or.
      &   ((LoadEVC).and.(.not.FoundEVC)).or.
+Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
+     &   ((LoadSwanWaveRefrac).and.(.not.FoundSwanWaveRefrac)).or.
      &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax))) THEN
          WRITE(16,1111)
  1111    FORMAT('ERROR: Nodal Attributes file (unit 13) does '
@@ -578,6 +608,8 @@ C     Allocate memory to hold our data.
       ALLOCATE(EVM(NumOfNodes))
       ALLOCATE(EVC(NumOfNodes))
       ALLOCATE(Tau0MinMax(NumOfNodes,Tau0MinMaxNoOfVals))
+Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
+      ALLOCATE(SwanWaveRefrac(NumOfNodes))
 C
 C     Now read each of the attributes required by the model parameter
 C     (unit 15) file and skip past the others.
@@ -679,7 +711,15 @@ C     (unit 15) file and skip past the others.
      &              NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .True.
-            ENDIF 
+            ENDIF
+Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
+         CASE("wave_refraction_in_swan")
+            IF (LoadSwanWaveRefrac) THEN
+               CALL LoadAttrVec(SwanWaveRefrac, SwanWaveRefracDefVal,
+     &              NumNodesNotDefault, NScreen, MyProc, NAbOut)
+            ELSE
+               SkipDataSet = .TRUE.
+            ENDIF
          CASE DEFAULT
             SkipDataSet = .True.
             WRITE(16,1001)      ! Nodal Attributes file

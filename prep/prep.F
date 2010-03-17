@@ -1204,7 +1204,8 @@ C
       print *, "from relocalize: reading local-to-global element maps"
       DO IPROC = 1,NPROC
          READ(LUNP(IPROC),'(A)') skipped    !  read past fileFmt header
-         READ(LUNP(IPROC),'(8X,3I8)') NELG, MNEP, NELP(IPROC)
+Casey 100208: Changed I8 to I12.
+         READ(LUNP(IPROC),'(8X,3I12)') NELG, MNEP, NELP(IPROC)
       ENDDO
 !      print *, "nelg = ", nelg
 
@@ -1216,7 +1217,8 @@ C
 
       DO IPROC = 1,NPROC
       DO I=1, NELP(IPROC)
-         READ(LUNP(IPROC),'(I8)') idumy                 
+Casey 100208: Changed I8 to I12.
+         READ(LUNP(IPROC),'(I12)') idumy                 
          IMAP_EL_LG(I,IPROC) = abs(idumy)
       ENDDO
       ENDDO
@@ -1552,6 +1554,9 @@ C
          CASE
      &   ("subtract_from_depth_to_equal_mean_sea_level") 
             NumCol=1
+Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
+         CASE("wave_refraction_in_swan")
+            NumCol=1
          CASE DEFAULT
             NumCol=1
             IF (Mode.eq.0) THEN
@@ -1880,56 +1885,6 @@ C
               ENDIF
             ENDIF
          ENDDO
-
-#ifdef ADCSWAN
-C
-C--------------------------------------------------------------------------
-C--jgf48.17 UnSWAN BOUNDARY NODES PROCESSING BEGINS HERE
-C--------------------------------------------------------------------------
-C
-C--Partition the UnSWAN boundary nodes between various processors
-C
-         numUnSWANBdryNodesTotalP(IPROC) = 0
-         DO K=1, numUnSWANBdrySegs
-            numUnSWANBdryNodesEachP(K) = 0
-            DO J=1, numUnSWANBdryNodesTotal
-               unswanBdryNodes_lG(J,IPROC) = 0
-               unswanBdryNodesP(K,J) = 0
-            ENDDO
-         ENDDO
-C
-C
-         ITOT = 0
-         DO K = 1,numUnSWANBdrySegs
-            DO I = 1,numUnSWANBdryNodesEach(K)
-               ITOT = ITOT + 1
-               INDX = unswanBdryNodes(K,I)
-               DO J = 1,ITOTPROC(INDX)
-                  ITEMP = (J-1)*2+1
-                  IPROC2 = IMAP_NOD_GL2(ITEMP,INDX)
-                  ILNODE = IMAP_NOD_GL2(ITEMP+1,INDX)
-                  IF (IPROC.EQ.IPROC2) THEN
-                    numUnSWANBdryNodesTotalP(IPROC)
-     &                 = numUnSWANBdryNodesTotalP(IPROC)+1
-                    numUnSWANBdryNodesEachP(K)
-     &                 = numUnSWANBdryNodesEachP(K) + 1
-                    unswanBdryNodesP(K,numUnSWANBdryNodesEachP(K)) 
-     &                 = ILNODE
-                    unswanBdryNodes_lG
-     &                 (numUnSWANBdryNodesTotalP(IPROC),IPROC) = ITOT
-                  ENDIF
-               ENDDO
-            ENDDO
-         ENDDO
-C
-         numUnSWANBdrySegsP(IPROC) = 0
-         DO K = 1,numUnSWANBdrySegs
-            IF (numUnSWANBdryNodesEachP(K).NE.0) THEN
-              numUnSWANBdrySegsP(IPROC) = numUnSWANBdrySegsP(IPROC) + 1
-            ENDIF
-         ENDDO
-#endif
-
 C
 C--------------------------------------------------------------------------
 C--BEGIN WRITING LOCAL GRID ( fort.14 ) FILE HERE        
@@ -1971,7 +1926,16 @@ C
           DO K = 1,NOPE
              IF (NVDLLP(K).GT.0)THEN
                 ITOT = ITOT + 1
+Casey 090304: Added the following section.  If we are coupling to SWAN,
+C             then we also want to give the global number of each
+C             boundary segment.
+#ifndef ADCSWAN
                 CALL NEWINDEX(NVDLLMSG(K),OUTMSG,NVDLLP(K))
+#else
+                NUMS(1) = NVDLLP(K)
+                NUMS(2) = K
+                CALL INSERT(NVDLLMSG(K),OUTMSG,NUMS,2)
+#endif
                 WRITE(14,80) OUTMSG
                 DO I = 1,NVDLLP(K)
                    WRITE(14,*) NBDVP(K,I)
@@ -1992,7 +1956,15 @@ C
                 ITYPE = IBTYPEP(K,IPROC)
                 NUMS(1) = NVELLP(K)
                 NUMS(2) = ITYPE
+Casey 090304: Added the following section.  If we are coupling to SWAN,
+C             then we also want to give the global number of each
+C             boundary segment.
+#ifndef ADCSWAN
                 CALL INSERT(NVELLMSG(K),OUTMSG,NUMS,2)
+#else
+                NUMS(3) = NOPE + K
+                CALL INSERT(NVELLMSG(K),OUTMSG,NUMS,3)
+#endif
                 WRITE(14,80) OUTMSG
 C
                 IF ((ITYPE.NE.3).AND.(ITYPE.NE.13).AND.
@@ -2019,31 +1991,32 @@ C
           ENDDO
           !jgf48.17 Added support for UnSWAN boundaries in fort.14
 #ifdef ADCSWAN
+Casey 090304: This section is no longer necessary.
 C
 C--Write UnSWAN Boundary Data
 C
-          CALL NEWINDEX(numUnSWANBdrySegsMSG,OUTMSG,
-     &                  numUnSWANBdrySegsP(IPROC))
-          WRITE(14,80) OUTMSG
+C         CALL NEWINDEX(numUnSWANBdrySegsMSG,OUTMSG,
+C    &                  numUnSWANBdrySegsP(IPROC))
+C         WRITE(14,80) OUTMSG
 C
-          CALL NEWINDEX(numUnSWANBdryNodesTotalMSG,OUTMSG,
-     &                  numUnSWANBdryNodesTotalP(IPROC))
-          WRITE(14,80) OUTMSG
+C         CALL NEWINDEX(numUnSWANBdryNodesTotalMSG,OUTMSG,
+C    &                  numUnSWANBdryNodesTotalP(IPROC))
+C         WRITE(14,80) OUTMSG
 C
-          ITOT = 0
-          DO K = 1,numUnSWANBdrySegs
-             IF (numUnSWANBdryNodesEachP(K).GT.0)THEN
-                ITOT = ITOT + 1
-                 WRITE(14,*) numUnSWANBdryNodesEachP(K),
-     &                       unswanBdryMarkers(K)
+C         ITOT = 0
+C         DO K = 1,numUnSWANBdrySegs
+C            IF (numUnSWANBdryNodesEachP(K).GT.0)THEN
+C               ITOT = ITOT + 1
+C                WRITE(14,*) numUnSWANBdryNodesEachP(K),
+C    &                       unswanBdryMarkers(K)
 C                CALL NEWINDEX(numSWANBdryNodesEachMSG(K),OUTMSG,
 C     &                        numSWANBdryNodesEachP(K))
 C                WRITE(14,80) OUTMSG
-                DO I = 1,numUnSWANBdryNodesEachP(K)
-                   WRITE(14,*) unswanBdryNodesP(K,I)
-                ENDDO
-             ENDIF
-          ENDDO
+C               DO I = 1,numUnSWANBdryNodesEachP(K)
+C                  WRITE(14,*) unswanBdryNodesP(K,I)
+C               ENDDO
+C            ENDIF
+C         ENDDO
 #endif
 
 C
@@ -2660,10 +2633,11 @@ C
 !vjp 9/17/06
 C--Write the Global indexes of all local elements in local element order
 
+Casey 100209: Changed I8 to I12.
          WRITE(18,3000) NELG, MNEP, NELP(I)  ! number of Global elements
          DO J = 1,NELP(I)
             INDX = IMAP_EL_LG(J,I)
-            WRITE(18,'(I8)') INDX        ! Global index of local element
+            WRITE(18,'(I12)') INDX        ! Global index of local element
          ENDDO
 
 C--Write the Global indexes of all local nodes in local node order
@@ -2819,7 +2793,8 @@ C
 C
   92  FORMAT(1X,A6,2X,I7,2X,F8.2)
 1130  FORMAT(8X,9I8)
-3000  FORMAT('NELG    ',3I8)
+Casey 100209: Changed I8 to I12 through this section.
+3000  FORMAT('NELG    ',3I12)
 3001  FORMAT('NNODG   ',3I8)
 3002  FORMAT('NFLUXF  ',I8)
 3003  FORMAT('NETA    ',3I8)
@@ -6885,10 +6860,11 @@ C
       WRITE(80,'(I8,24x,A)') MNHARF,'! MNHARF'
       WRITE(80,'(2I8,16x,A)') MNWLAT,MNWLON,'! NWLON, NWLAT'
 C
+Casey 100301: Changed I8 to I12.
       DO I = 1,NPROC
          WRITE(80,'(3I8,A33)') I-1, NNODP(I), NOD_RES_TOT(I), 
      &        '  ! PE, NNODP(PE), NOD_RES_TOT(PE)'
-         WRITE(80,1130) (IMAP_NOD_LG(K,I),K=1,NNODP(I))
+         WRITE(80,'(9I12)') (IMAP_NOD_LG(K,I),K=1,NNODP(I))
       ENDDO
 C
       WRITE(80,*) "GLOBAL   PE     LOCAL   ( Global-to-Local Nodes )"
@@ -6898,9 +6874,10 @@ C
 C
 C     jgf45.07 Add subdomain->fulldomain mapping to handle NOFF processing
 C     IMAP_EL_LG(I,PE) = Global Element Number of Local Element I on PE
+Casey 100301: Changed I8 to I12.
       DO I = 1,NPROC
          WRITE(80,'(2I8,A33)') I-1, NELP(I), '  ! PE, NELP(PE)'
-         WRITE(80,1130) (IMAP_EL_LG(K,I),K=1,NELP(I))
+         WRITE(80,'(9I12)') (IMAP_EL_LG(K,I),K=1,NELP(I))
       ENDDO
 C
       WRITE(80,'(I8,2E15.8,I8,A32)') NOUTE,TOUTSE,TOUTFE,NSPOOLE, 
@@ -7061,10 +7038,13 @@ C     Open full domain and all subdomain fort.26 files (UnSWAN)
          WRITE(*,*) 'WARNING: UnSWAN files not preprocessed.'
          RETURN ! note early return
       ELSE
+Casey 090304: Changed the formatting through the next section.
          DO 
-            READ(26,170,END=9999) Line
+C           READ(26,170,END=9999) Line
+            READ(26,'(A)',END=9999) Line
             DO IPROC = 1,NPROC
-               WRITE(SDU(IPROC),60) trim(Line)
+C              WRITE(SDU(IPROC),60) trim(Line)
+               WRITE(SDU(IPROC),'(A)') trim(Line)
             ENDDO
          ENDDO
       ENDIF

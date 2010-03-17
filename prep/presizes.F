@@ -144,8 +144,9 @@ C     variables which describe the full domain
 
       !jgf48.17 sizes of UnSWAN boundaries in fort.14
 #ifdef ADCSWAN
-      INTEGER numUnSWANBdrySegs   ! total number of SWAN boundary segments
-      INTEGER numUnSWANBdryNodesTotal ! total num nodes in SWAN boundaries
+Casey 090304: This section is no longer necessary.
+C     INTEGER numUnSWANBdrySegs   ! total number of SWAN boundary segments
+C     INTEGER numUnSWANBdryNodesTotal ! total num nodes in SWAN boundaries
 #endif
 
       INTEGER MNPP   ! number of max nodes of any subdomain
@@ -376,8 +377,9 @@ C
       MNEI=MNEI+1
       !jgf48.17 read in and process UnSWAN boundaries
 #ifdef ADCSWAN
-      READ(14,*) numUnSWANBdrySegs
-      READ(14,*) numUnSWANBdryNodesTotal
+Casey 090304: This section is no longer necessary.
+C     READ(14,*) numUnSWANBdrySegs
+C     READ(14,*) numUnSWANBdryNodesTotal
 #endif
 
 C
@@ -555,6 +557,11 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
          NRS=2
          NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
       ENDIF
+Casey 090302: Added NWS=3xx for coupling to SWAN.
+      IF(ABS(NWS/100).EQ.3) THEN
+         NRS=3
+         NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
+      ENDIF
       IF((NWS.EQ.0).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03
       IF((NWS.EQ.1).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03
 C     jgf46.02 added NWS=8
@@ -567,7 +574,16 @@ C     sb46.28sb01 added NWS=12: OWI format
      &     .OR.(ABS(NWS).EQ.45).OR.(NWS.EQ.8).OR.(NWS.EQ.9)
      &     .OR.(ABS(NWS).EQ.12).OR. (NWS.EQ.19)) THEN
         IF(NRS.EQ.0) READ(15,*) WTIMINC
-        IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+Casey 090825: Fix for NRS = 3.
+C       IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+        IF((NRS.EQ.1).OR.(NRS.EQ.2)) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+        IF(NRS.EQ.3)THEN
+           IF(ABS(NWS).EQ.8)THEN
+              READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,RSTIMINC
+           ELSE
+              READ(15,*) WTIMINC,RSTIMINC
+           ENDIF
+        ENDIF
         MNWP=MNP
       ENDIF
 

@@ -65,6 +65,9 @@ C---------------------end of data declarations--------------------------------C
       LOCALDIR  = ""
       ARGCOUNT  = IARGC()
 
+Casey 090527: Debug.
+      ROOTDIR = "."
+
       WRITE_LOCAL_HOT_START_FILES = .FALSE.
       IF ( MNPROC.EQ.1 ) THEN
          WRITE_LOCAL_FILES = .TRUE.

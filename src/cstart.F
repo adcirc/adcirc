@@ -368,6 +368,21 @@ C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
            CALL RS2GET(RSNX1,RSNY1,NP)
            CALL RS2GET(RSNX2,RSNY2,NP)
          ENDIF
+#ifdef CSWAN
+Casey 090302: Added this call to initialize the radiation stress gradients.
+         IF(NRS.EQ.3) THEN
+           IF(.NOT.ALLOCATED(RSNX1)) ALLOCATE(RSNX1(1:NP))
+           IF(.NOT.ALLOCATED(RSNX2)) ALLOCATE(RSNX2(1:NP))
+           IF(.NOT.ALLOCATED(RSNY1)) ALLOCATE(RSNY1(1:NP))
+           IF(.NOT.ALLOCATED(RSNY2)) ALLOCATE(RSNY2(1:NP))
+           DO I=1,NP
+             RSNX1(I) = 0.D0
+             RSNX2(I) = 0.D0
+             RSNY1(I) = 0.D0
+             RSNY2(I) = 0.D0
+           ENDDO
+         ENDIF
+#endif
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
          WRITE(16,1112)
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1981)
@@ -682,7 +697,8 @@ C
 C        jgf47.06 Tau0 output is produced on the same schedule as
 C        global elevation
          IF (OutputTau0) THEN
-            CALL writeDomainHeader(10, 
+Casey 090302: Corrected the unit number from 10 to 90.
+            CALL writeDomainHeader(90, 
      &           TRIM(GLOBALDIR)//'/'//'fort.tau0',
      $           NP_G, NP, 'Tau0      ')
          ENDIF
@@ -738,8 +754,9 @@ C...
       NSCOUGV=0
       IGVP=0
 
-      IF((ABS(NOUTGV).EQ.1).OR.(ABS(NOUTGV).EQ.4)) THEN
 !kmd - changed for -4 option      IF((ABS(NOUTGV).EQ.1)) THEN
+!Casey 090828: Added the possibility of NOUTGV = +/- 4.
+      IF((ABS(NOUTGV).EQ.1).OR.(ABS(NOUTGV).EQ.4)) THEN
          CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
      $    NP_G, NP, HEADER64)
          IGVP=2
@@ -795,8 +812,9 @@ C...
       IGWP=0
       IGPP=0
 
-      IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.4)) THEN
+!Casey 090302: Added the possibility of NOUTGW = +/- 4.
 !kmd - changed for -4 option      IF((ABS(NOUTGW).EQ.1)) THEN
+      IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.4)) THEN
          CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
      $    NP_G, NP, HEADER73)
          IGPP=2
@@ -865,6 +883,54 @@ C...
          IGWP=IGWP+5
          CLOSE(74)
          ENDIF
+#ifdef CSWAN
+Casey 090302: Added the output of radiation stress gradients.
+      IGRadS=0
+      IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.4)) THEN
+         CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
+     $     NP_G, NP, HEADER74)
+         IGRadS=2
+      ENDIF
+      IF(ABS(NOUTGW).EQ.2) THEN
+         OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
+     &           ACCESS='DIRECT',RECL=NByte)
+         IF(NBYTE.EQ.4) THEN
+            DO I=1,8
+               WRITE(164,REC=IGRadS+I) RDES4(I)
+               ENDDO
+            IGRadS=IGRadS+8
+            DO I=1,6
+               WRITE(164,REC=IGRadS+I) RID4(I)
+               ENDDO
+            IGRadS=IGRadS+6
+            DO I=1,6
+               WRITE(164,REC=IGRadS+I) AID4(I)
+               ENDDO
+            IGRadS=IGRadS+6
+            ENDIF
+         IF(NBYTE.EQ.8) THEN
+            DO I=1,4
+               WRITE(164,REC=IGRadS+I) RDES8(I)
+               ENDDO
+            IGRadS=IGRadS+4
+            DO I=1,3
+               WRITE(164,REC=IGRadS+I) RID8(I)
+               ENDDO
+            IGRadS=IGRadS+3
+            DO I=1,3
+               WRITE(164,REC=IGRadS+I) AID8(I)
+               ENDDO
+            IGRadS=IGRadS+3
+            ENDIF
+         WRITE(164,REC=IGRadS+1) NDSETSW
+         WRITE(164,REC=IGRadS+2) NP
+         WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
+         WRITE(164,REC=IGRadS+4) NSPOOLGW
+         WRITE(164,REC=IGRadS+5) 2
+         IGRadS=IGRadS+5
+         CLOSE(164)
+         ENDIF
+#endif
 C...
 C....INITIALIZE GLOBAL CONCENTRATION SPOOL COUNTER
 C....OPEN GLOBAL CONCENTRATION OUTPUT FILE

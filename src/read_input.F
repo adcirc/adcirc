@@ -34,6 +34,10 @@ C-----------------------------------------------------------------------
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
+#ifdef CSWAN
+Casey 100205: Enable hot-start file generation by SWAN.
+      USE Couple2Swan, ONLY: SwanHotStartUnit
+#endif
       IMPLICIT NONE
       INTEGER I, J, K, N, ICK, IPRBI                 !local loop counters
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
@@ -299,6 +303,11 @@ C!     kmd48.33bc - added in the hot start option for the fort.17
       ELSE IF (IHOT == -68) then
         hss % lun      = 67
       ENDIF
+
+#ifdef CSWAN
+Casey 100205: Enable hot-start file generation by SWAN.
+      SwanHotStartUnit = hss%lun
+#endif
 
       IF(IHOT.NE.0) THEN
          WRITE(16,9733) IHOT
@@ -989,7 +998,12 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
      &   (NWS.NE.200)  .AND.(NWS.NE.201)     .AND.(NWS.NE.202)     .AND.
      &   (NWS.NE.203)  .AND.(ABS(NWS).NE.204).AND.(ABS(NWS).NE.205).AND.
      &   (NWS.NE.206)  .AND.(NWS.NE.210)     .AND.(NWS.NE.211)     .AND.
-     &   (ABS(NWS).NE.212)) THEN
+     &   (ABS(NWS).NE.212) .AND.
+Casey 090720: Added the following cases for coupling to unstructured SWAN.
+     &   (ABS(NWS).NE.300).AND.(ABS(NWS).NE.303).AND.(ABS(NWS).NE.304).AND.
+     &   (ABS(NWS).NE.305).AND.(ABS(NWS).NE.306).AND.(ABS(NWS).NE.308).AND.
+     &   (ABS(NWS).NE.309).AND.(ABS(NWS).NE.310).AND.(ABS(NWS).NE.311).AND.
+     &   (ABS(NWS).NE.312)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'NWS =',NWS
@@ -1020,6 +1034,13 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
          NRS=2
          NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
       ENDIF
+#ifdef CSWAN
+Casey 090302: Added the option for coupling directly to SWAN.
+      IF(ABS(NWS/100).EQ.3) THEN
+         NRS=3
+         NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
+      ENDIF
+#endif
       IF(NWS.EQ.0) THEN
          WRITE(16,237) NWS
  237     FORMAT(/,5X,'NWS = ',I2,/,9X,
@@ -1305,7 +1326,15 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
      &    /,9X,'OF THE COLD START.  FOR A HOT START, THE UNIT 23 FILE ',
      &    /,9X,'BEGINS AT THE TIME OF THE HOT START.')
       ENDIF
-      
+#ifdef CSWAN
+Casey 090302: Added the following lines.
+      IF(NRS.EQ.3) THEN
+         WRITE(16,2393) NRS
+ 2393    FORMAT(/,5X,'NRS = ',I2,
+     &    /,9X,'WAVES WILL BE COUPLED TO SWAN!')
+      ENDIF
+#endif
+ 
 C...  
 C...  READ AND PROCESS NRAMP - WHETHER A RAMP FUNCTION WILL BE USED
 C...  
@@ -1481,7 +1510,8 @@ C     wind multiplier to final wind speeds from Holland model.
       IF(ABS(NWS).EQ.8) THEN
          IF(NRS.EQ.0) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj
-         ELSEIF (NRS.EQ.1) THEN
+Casey 090302: Added possibility for SWAN coupling.
+         ELSEIF (NRS.EQ.1 .OR. NRS.EQ.3) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
      &           RSTIMINC
             WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
@@ -4261,7 +4291,8 @@ C...  TIMES TOUTSGE AND TOUTFGE; IF ABS(NOUTGE)=2, OUTPUT WILL BE BINARY
 
 C...  CHECK INPUT PARAMETER NOUTGE
 
-      IF(ABS(NOUTGE).GT.4) THEN
+Casey 090302: Changed this line to allow for NOUTGE = +/- 4.
+      IF(ABS(NOUTGE).GT.3 .AND. ABS(NOUTGE).NE.4) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3302)
          WRITE(16,3302)
  3302    FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
@@ -4515,7 +4546,8 @@ C...  BE BINARY
 
 C...  CHECK INPUT PARAMETER NOUTGW
 
-         IF(ABS(NOUTGW).GT.4) THEN
+Casey 090302: Changed to allow NOUTGW = +/- 4.
+         IF(ABS(NOUTGW).GT.3 .AND. ABS(NOUTGW).NE.4) THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3452)
             WRITE(16,3452)
  3452       FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!',

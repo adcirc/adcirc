@@ -245,8 +245,9 @@ C
       CHARACTER DIRCMD*72 ! string to hold complete shell command line
 
 C     jgf48.17 If compiling for ADCSWAN, need to copy UnSWAN file
+Casey 090304: Moved this call to later, after the PE directories have been made.
 #ifdef ADCSWAN
-      CALL PREPUNSWAN()
+C     CALL PREPUNSWAN()
 #endif
 
  
@@ -374,6 +375,12 @@ C-- Write a Local Input file ( fort.15 ) for each PE
 C
       print *, "Writing Local UNIT 15 (Run Info) File for each PE"
       CALL PREP15()
+C
+C     jgf48.17 If compiling for ADCSWAN, need to copy UnSWAN file
+Casey 090304: Moved this call from earlier in this file.
+#ifdef ADCSWAN
+      CALL PREPUNSWAN()
+#endif
 C
 C-- Write Message-Passing File for each PE
 C
@@ -644,8 +651,11 @@ c-- Create Tempoarary String TEMP1 containing NUMS
 c
       IF (N.EQ.1) THEN
         WRITE(TEMP1(1:80),'(I8)') NUMS(1)
-      ELSE
+Casey 090304: Changed this section to allow N = 3.
+      ELSEIF (N.EQ.2) THEN
         WRITE(TEMP1(1:80),'(2I8)') NUMS(1),NUMS(2)
+      ELSE
+        WRITE(TEMP1(1:80),'(3I8)') NUMS(1),NUMS(2),NUMS(3)
       ENDIF
 c
 c-- Find length of TEMP1 string

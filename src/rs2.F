@@ -961,8 +961,9 @@ C***********************************************************************
 
       subroutine rs2get_type2(rsnx,rsny,np)
       use sizes
-#ifdef CMPI     
-      use messenger, only: msg_fini, msg_ibcast, msg_cbcast, msg_rbcast
+#ifdef CMPI
+Casey 090327: Implement Seizo's changes for buffering the radiation stress gradients.     
+      use messenger, only: msg_fini, msg_ibcast, msg_cbcast, msg_rbcastd
 #ifdef HAVE_MPI_MOD
       use mpi
       implicit none
@@ -1075,7 +1076,8 @@ C***********************************************************************
         endif
         call msg_ibcast(ios,1)
         if(ios(1) == 0) then        
-          call msg_rbcast(rsxy,2*ni*nj)
+Casey 090327: Implement Seizo's changes for buffering the radiation stress gradients.
+          call msg_rbcastd(rsxy,2,ni,nj)
         else
           goto 9999      !  read error because of missing snap data
         endif
