@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v49.09     -  03/17/10 - jgf - Removed stray cr from line endings in 
+C                makefile.
 C  v49.08     -  03/08/10 - kmd - merged 3D_kmd branch into trunk
 C             -  02/22/10 - kmd - modified the station output for the 
 C                3D density file (fort.41) and updated the 2D compact 
