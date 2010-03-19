@@ -357,10 +357,10 @@ ifeq ($(MAKELEVEL),0)
 #Casey 090302: Added the following lines for coupling to unstructured SWAN.
    adcswan:
 	@perl ../swan/switch.pl -unix -f95 -impi -adcirc ../swan/*.ftn ../swan/*.ftn90
-        $(MAKE) BUILDTYPE=adcswan CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
+	$(MAKE) BUILDTYPE=adcswan CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
    padcswan:
 	@perl ../swan/switch.pl -unix -f95 -pun -adcirc ../swan/*.ftn ../swan/*.ftn90
-        $(MAKE) BUILDTYPE=padcswan CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
+	$(MAKE) BUILDTYPE=padcswan CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
    p15:
 	$(MAKE) BUILDTYPE=p15 $@ 
    owi22:
