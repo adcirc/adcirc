@@ -525,3 +525,11 @@
 
       END MODULE Couple2Adcirc
 
+!Casey 100323: Address the situation where the compiler might need the mpif.h file.
+!PUN!/impi
+!PUN!/impi      MODULE MPI
+!PUN!/impi      INCLUDE 'mpif.h'
+!PUN!/impi      END MODULE MPI
+
+
+
