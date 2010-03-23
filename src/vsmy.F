@@ -658,7 +658,7 @@ C ---
      &                  LOG( ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
      &                     *( DP(NH)+IFNLFA*ETA2(NH) ) + Z0B )
      &                  / (Z0B) ) ) )**2.D0
-     &                * ABS(Q(NH,2))
+     &                * ABS(Q(NH,1))
 
             ELSE
 
@@ -676,7 +676,7 @@ C ---
              KSlip=KP*ABS(Q(NH,1))
 
             IF(KSlip.GT.0.1d0) KSlip=0.1d0
-            IF(KSlip.LT.1.E-4) KSlip=1.E-4
+            IF(KSlip.LT.0.0d0) KSlip=0.0d0
          ENDIF
 
 c     Set up the RHS forcing vector Fr and LHS matrix in compact storage
@@ -716,7 +716,7 @@ c     (Mkm1,Mk,Mkp1)
             Mk(k)   = CCL*Inm(k,2) + RCL*KVnm(k,2)
             Mkp1(k) = CCL*Inm(k,3) + RCL*KVnm(k,3)
          ENDDO
-C RJW 09/01/2009 RJW k no longer defined
+C RJW 09/01/2009 RJW k = NFEN-1 
 C            try to fix this by setting k=NFEN
          k=NFEN
          Fr(NFEN) = (CCR*q(NH,k-1)
