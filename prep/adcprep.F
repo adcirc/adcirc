@@ -300,7 +300,7 @@ C
       ELSE
         print *, 'Opening file partmesh.txt'
         OPEN(990,FILE='partmesh.txt')
-        print *, 'made it this part and MNP = ', MNP
+C        print *, 'made it this part and MNP = ', MNP
         DO I=1, MNP
            READ(990,*) PROC(I)
 C           print *," PROC for ",I," = ", PROC(I)

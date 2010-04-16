@@ -1233,7 +1233,7 @@ C     netCDF format, not just the fort.61 file (NOUTE).
 C
 C--Read in 3D data
 C
-      print *, " made it to the end of the 2D read of fort.15"
+C      print *, " made it to the end of the 2D read of fort.15"
       IF(C3DVS) THEN
         CALL READ15_3DVS()
 c     ELSEIF(C3DDSS) THEN

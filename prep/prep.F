@@ -5568,7 +5568,7 @@ C     Start reading in the data
         PRINT*, "How many layers need to be evaluated:"
         READ *, NFEN
 
-        PRINT *, "made it to 3D portion of code"
+C        PRINT *, "made it to 3D portion of code"
         PRINT *, "MNP = ", MNP
         PRINT *, "NFEN = ", NFEN
         PRINT *, "IHOTSTP = ", IHOTSTP
