@@ -3,6 +3,7 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.12   - 04/16/10 - jgf - Commented out debugging statement in adcprep.F.
 C  v49.11   - 03/23/10 - rjw - r431 -Changed KSlip formula in vsmy.F to use
 C             q(n,1) for bottom velocity assuming that it occurs at height
 C             delta z off the bed, where delta z is thickness of bottom 

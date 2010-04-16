@@ -303,7 +303,7 @@ C
         print *, 'made it this part and MNP = ', MNP
         DO I=1, MNP
            READ(990,*) PROC(I)
-           print *," PROC for ",I," = ", PROC(I)
+C           print *," PROC for ",I," = ", PROC(I)
         ENDDO
         CLOSE(990)           
         print *, 'closed file'
