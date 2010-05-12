@@ -701,7 +701,7 @@ Casey 090302: Changed descript to VelDescript.
      $                 VelDescript, time, it, storeTwo,0.d0)
 #endif
             ENDIF
-            NCCOUGV=0  ! kmd49 - added this back into the code
+            NSCOUGV=0  ! kmd49 - added this back into the code
             NCCOUGV=NSCOUGV
          ENDIF
       ENDIF
