@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.14   - 06/04/10 - tcm Fixed a bug in write_output.F related to 
+C               globalizing NOFF (an elemental quantity) for parallel jobs 
+C               which caused hotstart runs to behave different than coldstart.
+C               This bug was first worked on in v48.4638 and v48.4642.
 C  v49.13   - 04/16/10 - jgf - Commented out debugging statements in adcprep.F,
 C             prep.F, and read_global.F.
 C  v49.12   - 04/16/10 - jgf - Commented out debugging statement in adcprep.F.

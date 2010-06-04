@@ -2818,7 +2818,14 @@ C         WRITE(16,*) "collectFullDomainIntArray NOFFDescript"
 !        jgf48.4642 Modified syntax to operate directly on NOFF array
 !        instead of the pointer to the NOFF array (i.e.
 !        NOFFDescript%iarray) b/c g95 choked on the original syntax.
-         WHERE (NOFF.gt.1) NOFF = 1
+!         WHERE (NOFF.gt.1) NOFF = 1
+
+!         TCM49.14 20100604 -- Neither of the previous fixes for NOFF
+!             worked.  The correct way is to fix NOFF_G
+!             the Global list which is owned only by MyProc = 0
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            WHERE (NOFF_G.gt.1) NOFF_G = 1
+         endif
 !
          WRITE(16,*) "FINISH collectFullDomainArray"
 !         IF ( (MyProc.eq.0) ) THEN
