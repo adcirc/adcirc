@@ -1193,22 +1193,37 @@ C! CMPI
 
 
       if (WRITE_LOCAL_FILES) then
-        do i = 1, np
-          if (nodecode(i) == 1) write(63, 1000) i, eta2(i)
-          if (nodecode(i) == 0) write(63, 1000) i, -99999.0
-        end do
+        if (descript % ConsiderWetDry.eqv..true.) then
+           do i = 1, np
+             if (nodecode(i) == 1) write(lun, 1000) i, descript % array(i)  !eta2(i)
+             if (nodecode(i) == 0) write(lun, 1000) i, descript % alternate_value
+           end do
+        else
+           do i = 1,np
+              write(lun , 1000) i, descript % array(i)
+           end do
+        endif
         return
       end if
 
 #ifdef CMPI
       ioffset = istart - 1
-      do i = 1, np
-        iglobal = descript % imap(i)
-        if (istart <= iglobal .and. iglobal <= iend) then
-          if (nodecode(i) == 1) buf(iglobal - ioffset ) = eta2(i)
-          if (nodecode(i) == 0) buf(iglobal - ioffset ) = -99999.0
-        end if
-      end do
+      if (descript % ConsiderWetDry.eqv..true.) then
+         do i = 1, np
+            iglobal = descript % imap(i)
+            if (istart <= iglobal .and. iglobal <= iend) then
+               if (nodecode(i) == 1) buf(iglobal - ioffset ) = descript % array(i)  !eta2(i)
+               if (nodecode(i) == 0) buf(iglobal - ioffset ) = descript % alternate_value
+           end if
+         end do
+      else
+         do i = 1, np
+            iglobal = descript % imap(i)
+            if (istart <= iglobal .and. iglobal <= iend) then
+               buf(iglobal - ioffset ) = descript % array(i)
+           end if
+         end do
+      endif
 #endif
 
       return

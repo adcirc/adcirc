@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.15   - 06/16/10 - tcm Expanded the functionality of store63 and fixed
+C                a bug in that same routine.  store63 could now be used in
+C                place of storeOne.
 C  v49.14   - 06/04/10 - tcm Fixed a bug in write_output.F related to 
 C               globalizing NOFF (an elemental quantity) for parallel jobs 
 C               which caused hotstart runs to behave different than coldstart.
