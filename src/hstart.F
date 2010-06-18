@@ -83,6 +83,8 @@ C   kmd48.33bc - add variable for timestep change
       REAL(SZ) WTRatio, WindX, WindY, WindMag, WDragCo
       REAL(SZ) WindDragLimit    !jgf46.01 Cap on max wind drag coefficient
       REAL(8) Time
+      REAL(SZ) PRDIFF,PRBCKGRND_MH2O     ! tcm v49.16 20100617 added
+
 C     jgf46.08 Fine grained ramp functions
       REAL(SZ) RampExtFlux1   ! Ramp for external flux b.c.s @ITHS-1
       REAL(SZ) RampExtFlux2   ! Ramp for external flux b.c.s @ITHS
@@ -940,6 +942,10 @@ C------------------------MET FORCING---------------------------------------
 C
 C......RESTART WIND AND PRESSURE INFORMATION
 C
+C.... tcm v49.16 20100617
+C.... convert background pressure from millibars to meters of water
+      PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
+
 Casey 091217: Lower the wind drag limit from 0.0035 to 0.0020.
       WindDragLimit = 0.0035
 C     No wind, radiation stress or atmospheric pressure forcings are used.
@@ -953,7 +959,10 @@ C     No wind, radiation stress or atmospheric pressure forcings are used.
          DO I=1,NP
             WSX2(I)=RampMete2*WSX2(I)
             WSY2(I)=RampMete2*WSY2(I)
-            PR2(I)=RampMete2*PR2(I)
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PR2(I)
+            PRDIFF = RampMete2*(PR2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
          END DO
       ENDIF
       
@@ -986,7 +995,11 @@ C     pressure information with the model time step.
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
             WSX2(I) = RampMete2*WINDX
             WSY2(I) = RampMete2*WINDY
-            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
          END DO
       ENDIF
 
@@ -999,7 +1012,10 @@ C     pressure information with the model time step.
          DO I=1,NP
             WSX2(I) = RampMete2*WVNX1(I)
             WSY2(I) = RampMete2*WVNY1(I)
-            PR2(I) = RampMete2*PRN1(I)
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN1(I)
+            PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
          END DO
       ENDIF
 
@@ -1114,7 +1130,11 @@ C     jgf46.01 Add directional wind reduction.
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
          END DO
       ENDIF
 
@@ -1138,7 +1158,10 @@ C     jgf46.01 Add directional wind reduction.
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete2*PRN1(I)
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN1(I)
+            PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
          END DO
       ENDIF
 
@@ -1180,7 +1203,11 @@ C     jgf46.01 Add directional wind reduction.
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I))) 
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF 
 C     jjw-42.06j wrote, jgf46.00 added following two lines:
             WVNXOUT(I)=RampMete2*WINDX
             WVNYOUT(I)=RampMete2*WINDY
@@ -1208,9 +1235,12 @@ C     jgf46.01 Add directional wind reduction.
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete2*PRN1(I)
-            WVNXOUT(I)=RampMete*WINDX !jgf46.00 added 
-            WVNYOUT(I)=RampMete*WINDY !jgf46.00 added
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN1(I)
+            PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WINDX !jgf46.00 added  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+            WVNYOUT(I)=RampMete2*WINDY !jgf46.00 added  ! tcm 20100618 v49.16 changed RampMete to RampMete2
          END DO
       ENDIF
 
@@ -1254,7 +1284,11 @@ C     jgf46.00 Add directional wind reduction.
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
          END DO
       ENDIF
 
@@ -1280,7 +1314,11 @@ C
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WSX2(I) = RampMete2*WindX !apply ramp
             WSY2(I) = RampMete2*WindY
-            PR2(I)=RampMete2*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
             wvnxout(i)=WSX2(i) !for met recording sta. output
             wvnyout(i)=WSY2(i)             
          END DO
@@ -1303,7 +1341,11 @@ C     directional land surface stresses?
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WSX2(I) = RampMete2*WindX !apply ramp
             WSY2(I) = RampMete2*WindY
-            PR2(I)=RampMete2*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
             wvnxout(i)=WSX2(i) !for met recording sta. output
             wvnyout(i)=WSY2(i)             
          END DO
@@ -1329,7 +1371,10 @@ C     generate hurricane winds from the Holland Wind Model.
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
-            PR2(I) = RampMete2*PRN2(I)
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN2(I)
+            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
             WVNXOUT(I)=RampMete2*WindX
             WVNYOUT(I)=RampMete2*WindY
          ENDDO
@@ -1359,7 +1404,10 @@ C     generate hurricane winds from the Holland Wind Model.
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
-            PR2(I) = RampMete2*PRN2(I)
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN2(I)
+            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
             WVNXOUT(I)=RampMete2*WindX
             WVNYOUT(I)=RampMete2*WindY
          ENDDO
@@ -1389,7 +1437,10 @@ C     generate hurricane winds from the Holland Wind Model.
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
-            PR2(I) = RampMete2*PRN2(I)
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN2(I)
+            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
             WVNXOUT(I)=RampMete2*WindX
             WVNYOUT(I)=RampMete2*WindY
          ENDDO
@@ -1428,7 +1479,11 @@ C     jgf46.00 Add directional wind reduction.
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
          END DO
       ENDIF
 
@@ -1474,7 +1529,11 @@ C     jgf46.00 Add directional wind reduction.
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
          END DO
       ENDIF
 
@@ -1512,7 +1571,11 @@ C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
              ENDIF
              WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
              WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-             PR2(I) = RampMete2*PRN1(I)
+C  tcm v49.16 20100617
+!            PR2(I) = RampMete2*PRN1(I)
+             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+             PR2(I) = PRBCKGRND_MH2O + PRDIFF
              WVNXOUT(I)=RampMete2*WINDX
              WVNYOUT(I)=RampMete2*WINDY
           END DO
@@ -1537,9 +1600,12 @@ C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
              ENDIF
              WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
              WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
-             PR2(I) = RampMete2*PRN1(I)
-             WVNXOUT(I)=RampMete*WINDX
-             WVNYOUT(I)=RampMete*WINDY
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN1(I)
+             PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+             PR2(I) = PRBCKGRND_MH2O + PRDIFF
+             WVNXOUT(I)=RampMete2*WINDX  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+             WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
           END DO
        ENDIF
 

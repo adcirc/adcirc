@@ -32,6 +32,7 @@ C
 
       REAL(SZ) HTOT    
       REAL(SZ) HollandTime, AsymmetricTime
+      REAL(SZ) :: PRBCKGRND_MH2O  !tcm v49.16 20100617
 
 C     jgf48.4628 Add capability to turn off solution if only met output
 C     was requested. 
@@ -40,6 +41,11 @@ C     was requested.
  
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
+
+C.... tcm v49.16 20100617
+C.... convert background pressure from millibars to meters of water
+      PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
+
 C
 C...  SET AT REST INITIAL CONDITION OVER WHOLE DOMAIN
 C...  IF BOTTOM IS ABOVE THE GEIOD -> DRY NODE
@@ -148,10 +154,12 @@ C....TIME LEVEL 1 AND LEVEL 2 WIND FIELDS
       DO I=1,NP 
          WSX1(I)=0.D0
          WSY1(I)=0.D0
-         PR1(I) =0.D0
+!        PR1(I)=0.D0   !tcm v49.16 20100617 
+         PR1(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
          WSX2(I)=0.D0
          WSY2(I)=0.D0
-         PR2(I) =0.D0
+!        PR2(I)=0.D0   !tcm v49.16 20100617 
+         PR2(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
       ENDDO
 
       IF(NWS.NE.0) THEN

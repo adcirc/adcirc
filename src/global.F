@@ -23,6 +23,9 @@ C.....nominal density of water RHOWAT0
 C.....Sigma T value of reference density
       REAL(SZ), PARAMETER ::  SigT0=RHOWAT0-1000.D0 
 
+C.....Background Atmospheric Pressure in mb
+      REAL(SZ), PARAMETER :: PRBCKGRND = 1013.0d0   !tcm 20100617 v49.16 Added
+
 C.....PI and degrees to radians conversions
       REAL(8), PARAMETER  ::  PI=3.141592653589793D0
       REAL(8), PARAMETER  ::  DEG2RAD = PI/180.D0

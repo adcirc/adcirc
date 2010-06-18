@@ -3,6 +3,15 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.16   - 06/18/2010 - tcm -- Implemented pressure ramping differently,
+C                 as per Rick Luettich's suggestion:
+C                 We now set a background pressure at 1013 mb, then compute
+C                 the difference between the applied pressure and the
+C                 background pressure.  Then apply the meterological ramp to
+C                 that difference and add it back to the background pressure.
+C                 Fixed a couple of typos in hstart.F where RampMete was 
+C                 used instead of RampMete2. This fix, also fixes the problem
+C                 with the prmin for cold-started runs.
 C  v49.15   - 06/16/10 - tcm Expanded the functionality of store63 and fixed
 C                a bug in that same routine.  store63 could now be used in
 C                place of storeOne.
