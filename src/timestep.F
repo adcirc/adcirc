@@ -194,7 +194,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) VIDBCPDYOHN1,VIDBCPDYOHN2,VIDBCPDYOHN3,VIDBCPDYOHAvgArea
       REAL(SZ) WindDragLimit    !jgf46.01 Cap on max wind drag coefficient
       REAL(SZ) DPMIN      ! sb v46.28.sb05.06 11/01/2006
-      REAL(SZ) PRDIFF,PRBCKGRND_MH2O     ! tcm v48.4640 20100617 added
+      REAL(SZ) PRDIFF,PRBCKGRND_MH2O     ! tcm v49.16 20100617 added
 
       REAL(8) AreaIE2,AreaEle
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
@@ -212,7 +212,7 @@ C   kmd48.33bc - added in the heat flux variables
       REAL(SZ), ALLOCATABLE :: TMP(:,:)
       REAL(SZ) :: CD, CDQ, QWIND
 
-C.... tcm v48.4640 20100617 added
+C.... tcm v49.16 20100617 added
 C.... convert background pressure from millibars to meters of water
       PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
 
@@ -296,8 +296,8 @@ C...  Wind (& wave radiation stress if used)
             WSY1(I)=WSY2(I)
             WSY2(I)=0.D0
             PR1(I)=PR2(I)
-!            PR2(I)=0.D0   !tcm v48.4640 20100617 
-            PR2(I) = PRBCKGRND_MH2O  !tcm v48.4640 20100617 added
+!            PR2(I)=0.D0   !tcm v49.16 20100617 
+            PR2(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
             ENDIF
 
 C     TIP..Tidal potential forcing
@@ -399,7 +399,7 @@ C
 C...  UPDATE THE WIND STRESS AND SURFACE PRESSURE AND READ IN NEW VALUES
 C...  FROM UNIT 22.  APPLY Ramp FUNCTION.
 C
-C  tcm v48.4640 20100617 -- Changed pressure ramping so that we apply the ramp
+C  tcm v49.16 20100617 -- Changed pressure ramping so that we apply the ramp
 C     to the difference between the background pressure and the forced pressure,
 C     then add that ramped difference back to the background pressure
 
@@ -411,7 +411,7 @@ C     No wind, radiation stress or atmospheric pressure forcings are used.
             READ(22,*) NHG,WSX2(I),WSY2(I),PR2(I) !read in
             WSX2(I)=RampMete*WSX2(I) ! apply ramp function
             WSY2(I)=RampMete*WSY2(I)
-C  tcm v48.4640 20100617
+C  tcm v49.16 20100617
 !            PR2(I)=RampMete*PR2(I)
             PRDIFF = RampMete*(PR2(I)-PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
@@ -441,7 +441,7 @@ C     pressure information with the model time step.
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WSX2(I) = RampMete*WindX !apply ramp
             WSY2(I) = RampMete*WindY
-C  tcm v48.4640 20100617
+C  tcm v49.16 20100617
 !            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
@@ -525,7 +525,7 @@ C     jgf46.00 Add directional wind reduction.
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v48.4640 20100617
+C  tcm v49.16 20100617
 !            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                           -PRBCKGRND_MH2O)
@@ -572,7 +572,7 @@ C     jgf46.00 Add directional wind reduction.
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v48.4640 20100617
+C  tcm v49.16 20100617
 !            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                           -PRBCKGRND_MH2O)
@@ -624,7 +624,7 @@ C     jgf46.00 Add directional wind reduction.
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v48.4640 20100617
+C  tcm v49.16 20100617
 !            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                           -PRBCKGRND_MH2O)
@@ -665,7 +665,7 @@ C     model time step.
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WSX2(I) = RampMete*WindX !apply ramp
             WSY2(I) = RampMete*WindY
-C  tcm v48.4640 20100617
+C  tcm v49.16 20100617
 !            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                           -PRBCKGRND_MH2O)
@@ -694,7 +694,7 @@ C     generate hurricane winds from the Holland Wind Model.
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v48.4640 20100617
+C  tcm v49.16 20100617
 !            PR2(I)=RampMete*PRN2(I)
             PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
@@ -728,7 +728,7 @@ C     jgf46.16 Merged:
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v48.4640 20100617
+C  tcm v49.16 20100617
 !            PR2(I)=RampMete*PRN2(I)
             PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
@@ -779,7 +779,7 @@ C     jgf46.00 Add directional wind reduction.
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v48.4640 20100617
+C  tcm v49.16 20100617
 !            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
@@ -836,7 +836,7 @@ C     jgf46.00 Add directional wind reduction.
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v48.4640 20100617
+C  tcm v49.16 20100617
 !            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
@@ -879,7 +879,7 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
-C  tcm v48.4640 20100617
+C  tcm v49.16 20100617
 !            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
@@ -914,7 +914,7 @@ C     RJW ffpl Merged:
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v48.4640 20100617
+C  tcm v49.16 20100617
 !            PR2(I)=RampMete*PRN2(I)
             PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
