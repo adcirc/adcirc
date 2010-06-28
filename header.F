@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.17   - 06/28/2010 - jgf - Fixed a bug in hotlocalize where IM values of
+C             greater than 10 triggered loading of 3D hotstart info. 
 C  v49.16   - 06/18/2010 - tcm -- Implemented pressure ramping differently,
 C                 as per Rick Luettich's suggestion:
 C                 We now set a background pressure at 1013 mb, then compute

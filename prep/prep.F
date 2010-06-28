@@ -4352,7 +4352,10 @@ C
 
 C kmd48.33 moved 3D hot start information to subroutine
 C          and took out other lines
-      IF (IMHSF.GT.10) THEN 
+C jgf49.17 refined check of IMHSF so that it picks up only
+C     IM values that indicate 3D (and so we can use six integer IM values).
+      IF ((IMHSF.EQ.1).OR.(IMHSF.EQ.11).OR.
+     &    (IMHSF.EQ.21).OR.(IMHSF.EQ.31)) THEN 
         CALL ReadHotStart3D(IHOT,IHOTSTP)
       ENDIF
 
