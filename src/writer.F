@@ -22,7 +22,7 @@ C
  
 C  variables
 
-      INTEGER, PARAMETER :: NUM_BUF_MAX = 4
+      INTEGER, PARAMETER :: NUM_BUF_MAX = 7      !st3 100708: Increase for SWAN OUTPUT
       INTEGER  :: NNOD_GLOBAL(NUM_BUF_MAX)
       INTEGER  :: NUM_ITEMS_PER_RECORD(NUM_BUF_MAX)
       INTEGER  :: ITS(NUM_BUF_MAX)
@@ -35,6 +35,10 @@ C  variables
       REAL(SZ), SAVE, POINTER :: RESGBUF(:,:)
       REAL(SZ), ALLOCATABLE, TARGET :: RESGBUF1(:,:),RESGBUF2(:,:)
       REAL(SZ), ALLOCATABLE, TARGET :: RESGBUF3(:,:),RESGBUF4(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: RESGBUF5(:,:),RESGBUF6(:,:) !st3 100708: Increase for SWAN OUTPUT
+      REAL(SZ), ALLOCATABLE, TARGET :: RESGBUF7(:,:)               !st3 100708: Increase for SWAN OUTPUT
+!
+      INTEGER, ALLOCATABLE :: NWLOADED(:)   !st3 100708: Round Robin Chamber
 
       CONTAINS
 
@@ -45,6 +49,8 @@ C---------------------end of data declarations--------------------------------C
 
       WCOMMID = 0
       NEED_FLUSH = .FALSE.
+      ALLOCATE ( NWLOADED(1:MNWPROC) )   !st3 100708: Allocate Round Robin Chamber
+      NWLOADED(1:MNWPROC) = 0            !st3 100708: Zeroc    Round Robin Chamber
       
       RETURN
       END SUBROUTINE WRITER_INIT
@@ -277,6 +283,7 @@ C...
       real(sz)     :: rebuf(2)
       integer      :: wcomm
       INTEGER      :: STAT(MPI_STATUS_SIZE)
+      character(len=8) :: cdigit              !st3 100708: split file
 
 C...  BUFID determines the buffer to store values in.
       BUFID = BUFID + 1
@@ -315,6 +322,10 @@ C...  Receive some parameters necessary to write a file
 #ifdef WRITER_DEBUG
       print *, 'RECEIVED FILENAME = ',TRIM(filenamebuf)
 #endif
+      if( isplit /= 0 ) then                                   !st3 100708: split file
+        write(cdigit,'(i8.8)') NINT(TIMES(BUFID))              !st3 split files are named
+        filenamebuf = trim(adjustl(filenamebuf)) //'.'//cdigit !st3 by integer part of
+      endif                                                    !st3 simulation time 
       WFILENAMES(BUFID) = ""
       WFILENAMES(BUFID)(1:LEN_TRIM(filenamebuf))
      &     = filenamebuf(1:LEN_TRIM(filenamebuf))
@@ -407,8 +418,41 @@ C...    rank MNPROC of writer communicators is always a writer proc.
         ENDIF
         RESGBUF => RESGBUF4
 
+!st3 100708: Increase for SWAN OUTPUT
+#ifdef CSWAN
+      ELSE IF(ID_BUF.EQ.5) THEN
+        IF(.NOT.ALLOCATED(RESGBUF5)) THEN
+          IF(DO_ALLOCATION) THEN
+            ALLOCATE(RESGBUF5(2,NNOD_GLOBAL(ID_BUF)))
+          ELSE
+            GOTO 999
+          ENDIF
+        ENDIF
+        RESGBUF => RESGBUF5
+
+      ELSE IF(ID_BUF.EQ.6) THEN
+        IF(.NOT.ALLOCATED(RESGBUF6)) THEN
+          IF(DO_ALLOCATION) THEN
+            ALLOCATE(RESGBUF6(2,NNOD_GLOBAL(ID_BUF)))
+          ELSE
+            GOTO 999
+          ENDIF
+        ENDIF
+        RESGBUF => RESGBUF6
+
+      ELSE IF(ID_BUF.EQ.7) THEN
+        IF(.NOT.ALLOCATED(RESGBUF7)) THEN
+          IF(DO_ALLOCATION) THEN
+            ALLOCATE(RESGBUF7(2,NNOD_GLOBAL(ID_BUF)))
+          ELSE
+            GOTO 999
+          ENDIF
+        ENDIF
+        RESGBUF => RESGBUF7
+#endif
+
       ELSE
-        STOP 'ID_BUF MUST BE 1-4.'
+        STOP 'ID_BUF MUST BE 1-7.'
 
       ENDIF
 
@@ -429,12 +473,20 @@ C...    rank MNPROC of writer communicators is always a writer proc.
 
       IF(.NOT.NEED_FLUSH) RETURN
 
+!st3 100708: If split option is off, load the blank cartridge to all chamber.
+      IF( ISPLIT == 0 ) THEN 
+         NWLOADED(1:MNWPROC) = 1
+      ENDIF
       IF(MYPROC.eq.0) THEN
         DO I=1,MNWPROC
-          WRITE(ScreenUnit,*) 'PROC ',MYPROC,
-     &         ' IS SENDING SIG_WRITE TO WRITER ',I
-          CALL MPI_SEND(SIG_WRITE,1,MPI_INTEGER,MNPROC,
-     &         TAG,COMM_WRITER(I),IERR)
+!st3 100708: Flash only loaded chamber
+          IF( NWLOADED(I) == 1 ) then    !st3 NWLOADED()=0:unloaded, 1:loaded
+            WRITE(ScreenUnit,*) 'PROC ',MYPROC,
+     &           ' IS SENDING SIG_WRITE TO WRITER ',I
+            CALL MPI_SEND(SIG_WRITE,1,MPI_INTEGER,MNPROC,
+     &           TAG,COMM_WRITER(I),IERR)
+          ENDIF
+          NWLOADED(I) = 0
         ENDDO
 
       ENDIF
@@ -483,8 +535,14 @@ C...    Retrieve a RESGBUF corresponding to BUFID
         CALL WRITER_SET_RESGBUF(IBUF, .FALSE.)
 
 C...    Open file
+        if(isplit == 0 ) then             !Not Split               !st3  split file 100708
         OPEN(FID, FILE=WFILENAMES(IBUF), ACCESS='SEQUENTIAL',
      &       POSITION='APPEND')
+        else                              !Split                   !st3  split file 100708
+          OPEN(FID, FILE=WFILENAMES(IBUF), STATUS='REPLACE',       !st3  split file 100708
+     &         ACTION='WRITE')                                     !st3  split file 100708
+        endif
+
         
 C...    Count non-default values
         nNonDefVal = 0
@@ -567,6 +625,7 @@ C...    Close file
       WCOMMID = WCOMMID + 1
       NEXT_WCOMMID = MOD(WCOMMID - 1,MNWPROC) + 1
       NEXT_WCOMM = COMM_WRITER(NEXT_WCOMMID)
+      NWLOADED(NEXT_WCOMMID) = 1                    !st3 100708: Load the bullet to Round Robin Chamber
 
       END SUBROUTINE WRITER_GET_NEXT_WRITER_COMM
 

@@ -30,6 +30,7 @@ C
      &  MNTIF,MNBFR,MNFFR,MNSTAE,MNSTAV,MNSTAC,MNSTAM,MNHARF
       INTEGER :: MNPROC         ! Number of compute processors
       INTEGER :: MNWPROC        ! Number of writer processors
+      INTEGER :: ISPLIT         ! ON(1)/OFF(0) parameter of splitting output for writer !st3 100708:
       INTEGER :: MNALLPROC      ! Number of all processors (= MNPROC + MNWPROC)
 C
 C     Dimension of vertical FE mesh (To interface 2D & 3D)
@@ -150,6 +151,7 @@ C.....Default root working directory
       ARGCOUNT  = IARGC()
 
       MNWPROC = 0
+      isplit = 0 !st3 100708:split file
 
       if (ARGCOUNT > 0) then
         i = 0
@@ -157,6 +159,9 @@ C.....Default root working directory
           i = i + 1
           call getarg(i, CMDLINEARG)
           if (cmdlinearg(1:2) == "-W") then
+            if( cmdlinearg(1:3) == "-Ws" ) then  !st3 100708: split file
+               isplit = 1                        !st3 100708: split file
+            endif                                !st3 100708: split file
             i = i + 1
             call getarg(i,cmdlinearg)
             read(cmdlinearg,*) MNWPROC

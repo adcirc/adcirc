@@ -759,9 +759,11 @@ Casey 091216: If we get a junk number, then use the default value.
      &                        MYC
 #ifdef CMPI
       USE WRITER,       ONLY: FLUSH_WRITERS,
+     &                        NUM_BUF_MAX,  !st3 100708: check writer buffer
      &                        WRITE_GBL_FILE_THROUGH_WRITER,
      &                        Writer_StoreOne,
      &                        Writer_StoreTwo
+      USE MESSENGER,   ONLY : MSG_FINI      !st3 100708: check writer buffer
 #endif
 
       IMPLICIT NONE
@@ -787,6 +789,7 @@ Casey 091216: If we get a junk number, then use the default value.
       INTEGER                       :: SWAN_BKC
       INTEGER,SAVE                  :: SWAN_MTC
       INTEGER                       :: UnitNumber
+      INTEGER                       :: IFileCounter   !st3 100708:
 
       LOGICAL                       :: CROSS(4,NP)
 
@@ -997,6 +1000,7 @@ Casey 091216: If we get a junk number, then use the default value.
      &            SWAN_WK, SWAN_CG, SPCDIR, SWAN_NE, SWAN_NED,
      &            KGRPNT, DEPXY, CROSS)
 
+      IFileCounter = 0        !st3 100708: counter of file number
       DO IW=1,NumSwanOutput
          IF((IW.EQ.5).OR.(IW.EQ.6).OR.(IW.EQ.7))THEN
             CYCLE
@@ -1055,6 +1059,13 @@ Casey 091216: If we get a junk number, then use the default value.
                      ELSEIF(ABS(NOUTGW).EQ.4)THEN
 #ifdef CMPI
                         IF(MNWPROC.GT.0) THEN
+                           IFileCounter = IFileCounter + 1               !st3 100708: writer buffer check
+                           IF( IFileCounter > MNWPROC*NUM_BUF_MAX ) THEN !st3 100708: writer buffer check
+                             WRITE(6,*) ' ***** WRITER BUFFER ERROR ***' !st3 100708: writer buffer check
+                             WRITE(6,*) '     You need more Writer Core' !st3 100708: writer buffer check
+                             CALL MSG_FINI()
+                             STOP
+                           ENDIF
                            CALL WRITE_GBL_FILE_THROUGH_WRITER
      &                        (TRIM(GLOBALDIR)//'/'//TRIM(FileName(IW)),SwanDescript,
      &                         DT*ITIME,ITIME,
