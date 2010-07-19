@@ -30,6 +30,7 @@ C
      &  MNTIF,MNBFR,MNFFR,MNSTAE,MNSTAV,MNSTAC,MNSTAM,MNHARF
       INTEGER :: MNPROC         ! Number of compute processors
       INTEGER :: MNWPROC        ! Number of writer processors
+      INTEGER :: MNWPROH        ! Number of Hwriter processors !st3 100711
       INTEGER :: ISPLIT         ! ON(1)/OFF(0) parameter of splitting output for writer !st3 100708:
       INTEGER :: MNALLPROC      ! Number of all processors (= MNPROC + MNWPROC)
 C
@@ -165,6 +166,20 @@ C.....Default root working directory
             i = i + 1
             call getarg(i,cmdlinearg)
             read(cmdlinearg,*) MNWPROC
+          endif
+        end do
+      end if
+!
+      MNWPROH = 0  !st3 100711 for hsfile
+      if (ARGCOUNT > 0) then
+        i = 0
+        do while (i < ARGCOUNT)
+          i = i + 1
+          call getarg(i, CMDLINEARG)
+          if (cmdlinearg(1:2) == "-H") then
+            i = i + 1
+            call getarg(i,cmdlinearg)
+            read(cmdlinearg,*) MNWPROH
           endif
         end do
       end if

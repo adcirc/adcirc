@@ -6,7 +6,7 @@ C
       USE SIZES
       USE GLOBAL, ONLY: C3D, COMM, NODES_LG, IMAP_EL_LG,
      &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,
-     &    COMM_WRITER, WRITER_ID, SIG_VAL, SIG_WRITE, SIG_TERM,
+     &    COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID, SIG_VAL, SIG_WRITE, SIG_TERM,
      &    FLOAT_TYPE, REALTYPE, DBLETYPE
 #ifdef HAVE_MPI_MOD
       USE MPI  
@@ -30,6 +30,8 @@ C  Message-Passing Array space
       INTEGER ::  COMM_COMP                           ! COMMUNICATOR FOR COMPUTATION
       INTEGER ::  GROUP_WORLD, GROUP_COMP
       INTEGER, ALLOCATABLE ::  GROUP_WRITER(:)        ! GROUPS FOR GLOBAL FILE WRITING
+      INTEGER, ALLOCATABLE ::  GROUP_WRITEH(:)        ! GROUPS FOR HOTSTART FILE WRITING !st3 100711
+      INTEGER, ALLOCATABLE ::  GROUP_HSLEEP(:)        ! GROUPS FOR HOTSTART FILE WRITING !st3 100711
       LOGICAL, ALLOCATABLE :: RESNODE(:)
 
       INTEGER, ALLOCATABLE :: IPROC(:), NNODELOC(:), NNODSEND(:), 
@@ -70,6 +72,8 @@ C--------------------------------------------------------------------------
       INTEGER :: I
       INTEGER, ALLOCATABLE :: RANKS(:)
       INTEGER :: SENDBUF, RECVBUF
+      INTEGER :: IRANK_SLEEP(2)        !st3 100711  for hsfile
+
 
 #ifdef  REAL4
       REALTYPE = MPI_REAL
@@ -95,6 +99,8 @@ C.......Duplicate communicator
       CALL MPI_COMM_RANK (MPI_COMM_ADCIRC,MYPROC,IERR)   ! Get MPI rank
       
       MNPROC = MNALLPROC - MNWPROC             ! MNALLPROC = MNPROC + MNWPROC
+     &                   - MNWPROH             !             + MNWPROH  !st3 100711 for hsfile
+
 
       ALLOCATE(RANKS(MNPROC+1))
 
@@ -128,6 +134,37 @@ C...  Create communicators for global file writings
         ENDDO
 
       ENDIF
+!st3 for hsfile 05.14.2010
+#ifdef NETCDF
+      MNWPROH = 0
+#endif
+#ifndef CMPI
+      MNWPROH = 0
+#endif
+      IF(MNWPROH > 0) THEN
+        IRANK_SLEEP(1) = 0
+        ALLOCATE(GROUP_WRITEH(MNWPROH),COMM_WRITEH(MNWPROH))
+        ALLOCATE(GROUP_HSLEEP(MNWPROH),COMM_HSLEEP(MNWPROH))
+        DO I=1,MNWPROH
+          RANKS(MNPROC+1) = MNPROC + MNWPROC - 1 + I
+
+          CALL MPI_GROUP_INCL(GROUP_WORLD,MNPROC+1,RANKS,
+     &                        GROUP_WRITEH(I),IERR)
+          CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_WRITEH(I),
+     &                         COMM_WRITEH(I),IERR)
+
+          IRANK_SLEEP(2) = MNPROC + MNWPROC - 1 + I
+          CALL MPI_GROUP_INCL(GROUP_WORLD,2,IRANK_SLEEP,
+     &                        GROUP_HSLEEP(I),IERR)
+          CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_HSLEEP(I),
+     &                         COMM_HSLEEP(I),IERR)
+
+          IF(MYPROC == MNPROC + MNWPROC - 1 + I) THEN
+            WRITER_ID = I
+          ENDIF
+        ENDDO
+      ENDIF
+
 
       DEALLOCATE(RANKS)
 
@@ -155,6 +192,18 @@ C--------------------------------------------------------------------------
      &           I
             CALL MPI_SEND(SIG_TERM,1,MPI_INTEGER,MNPROC,
      &           TAG,COMM_WRITER(I),IERR)
+          ENDDO
+        ENDIF
+      ENDIF
+
+      IF(MNWPROH > 0) THEN             !st3 100711 for hsfile
+        IF(MYPROC.eq.0) THEN
+          DO I=1,MNWPROH
+            WRITE(16,*)'PROC ',MYPROC,' IS SENDING SIG_TERM TO HSWRITER',
+     &           I
+            CALL MPI_BARRIER(COMM_HSLEEP(I),IERR)
+            CALL MPI_SEND(SIG_TERM,1,MPI_INTEGER,MNPROC,
+     &           TAG,COMM_WRITEH(I),IERR)
           ENDDO
         ENDIF
       ENDIF

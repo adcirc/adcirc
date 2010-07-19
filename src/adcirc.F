@@ -83,6 +83,7 @@ C
 #ifdef CMPI
       USE MESSENGER
       USE WRITER, ONLY: WRITER_MAIN, WRITER_INIT
+      USE HSWRITER, ONLY: HSWRITER_MAIN, HSWRITER_INIT !st3 for hstart
 #endif
       IMPLICIT NONE
       PUBLIC
@@ -127,11 +128,17 @@ C...    and will be terminated before they exit this subroutine.  For this reaso
 C...    The "STOP" statement in the next line to "CALL WRITER_MAIN()" will NOT
 C...    have any effect, but it is placed there to make it apparent that
 C...    writer processors will not execute the rest in this source file (adcirc.F).
-        CALL WRITER_MAIN()
-        STOP
+        IF( MYPROC < MNPROC+MNWPROC ) THEN   !st3
+          CALL WRITER_MAIN()
+          STOP
+        ELSE
+          CALL HSWRITER_MAIN()   !st3 for hstart
+          STOP
+        ENDIF
       ENDIF
 
       CALL WRITER_INIT()     ! Initialize WRITER module
+      CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
       CALL MSG_TABLE()       ! Read Message-Passing Tables

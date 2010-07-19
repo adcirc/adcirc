@@ -630,4 +630,592 @@ C...    Close file
       END SUBROUTINE WRITER_GET_NEXT_WRITER_COMM
 
       END MODULE WRITER
+!
+!
+!
+!
+!!
+C_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+C MODULE HSWRITER  !st3
+C  This module is for writer processors for hotstart files based on S.Bunya's
+C_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+C 
+      MODULE HSWRITER
+        USE SIZES
+        USE GLOBAL
+        USE MESSENGER, ONLY: TAG, COMM_WRITEH, COMM_HSLEEP, WRITER_ID,
+     &       SIG_WRITE, SIG_TERM, MSG_FINI
+#ifdef HAVE_MPI_MOD
+        use mpi  
+#endif
+      IMPLICIT NONE
+      INTEGER :: WCOMMID, WCOMM
+      CONTAINS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!?
 
+      SUBROUTINE HSWRITER_INIT ()
+        WCOMMID = 0
+      END SUBROUTINE HSWRITER_INIT
+!
+      SUBROUTINE HSWRITER_MAIN ()
+        USE GLOBAL,ONLY : ScreenUnit
+        IMPLICIT NONE
+        include 'mpif.h'
+        INTEGER :: SIG,IERR
+        INTEGER :: STAT(MPI_STATUS_SIZE)
+!
+        WCOMMID=WRITER_ID
+        WCOMM=COMM_WRITEH(WCOMMID)
+C...  Main loop
+      DO WHILE(.TRUE.)
+        CALL MPI_BARRIER(COMM_HSLEEP(WRITER_ID),IERR) !st3
+        CALL MPI_RECV(SIG, 1, MPI_INTEGER, 0, TAG,
+     &       COMM_WRITEH(WRITER_ID),STAT,IERR)
+
+        IF(SIG == SIG_WRITE) THEN
+          WRITE(ScreenUnit,*) 'HSWRITER PROC W',WRITER_ID
+          CALL writeHotstart_through_HSwriter(0.0d0, 0)
+        ELSE IF(SIG == SIG_TERM) THEN
+          WRITE(ScreenUnit,*) 'HSWRITER PROC T',WRITER_ID
+          EXIT
+        ENDIF
+      ENDDO
+
+      CALL MSG_FINI()
+      STOP
+
+      END SUBROUTINE HSWRITER_MAIN
+C 
+C-----------------------------------------------------------------------
+C     SUBROUTINE BASED ON "WRITEHOTSTART"
+C-----------------------------------------------------------------------
+C     This subroutine was copied from write_output.F writeHotstart
+C       and fitted to writer core algorithm  !st3 05.15.2010
+C
+C      ******* THIS SUBROUTINE DOES NOT DEAL WITH NETCDF
+C-----------------------------------------------------------------------
+      SUBROUTINE writeHotstart_through_HSwriter(Time, IT)
+
+      USE SIZES
+      USE GLOBAL
+      USE GLOBAL_IO, ONLY: packOne, unpackOne, packOneInt, unpackOneInt,
+     &    packTwo, unpackTwo, HEADER_MAX
+!     &    collectFullDomainArray, collectFullDomainIntArray
+      USE MESSENGER
+!
+      IMPLICIT NONE  
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+      INTEGER :: STAT(MPI_STATUS_SIZE)
+      integer :: i
+
+
+      REAL(8), intent(in) :: Time
+      INTEGER, intent(in) :: IT
+!
+      double precision :: ttime, dpack(1)  !st3
+      integer          :: iit,   ipack(25)  !st3
+      character(len=2048) ::     cjunk1  !st3
+      character(len=10) ::       cjunk2  !st3
+!
+      type(OutputDataDescript_t) :: descript 
+      INTEGER npx, nex
+
+      type(OutputDataDescript_t), SAVE :: Elev1Descript
+      type(OutputDataDescript_t), SAVE :: Elev2Descript 
+      type(OutputDataDescript_t), SAVE :: VelDescript
+      type(OutputDataDescript_t), SAVE :: CH1Descript  
+      type(OutputDataDescript_t), SAVE :: EtaDiscDescript
+      type(OutputDataDescript_t), SAVE :: NodeCodeDescript
+      type(OutputDataDescript_t), SAVE :: NOFFDescript
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETA1_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETA2_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: EtaDisc_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UU2_g(:)     
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: VV2_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CH1_g(:)
+      INTEGER,  SAVE, ALLOCATABLE, TARGET :: NodeCode_g(:)
+      INTEGER,  SAVE, ALLOCATABLE, TARGET :: NOFF_g(:)
+      LOGICAL,  SAVE :: FirstCall = .true.
+!
+      if( myproc <= MNPROC-1 ) then
+        CALL GET_NEXT_HSWRITER_COMM(WCOMM)
+      endif
+!
+      iit = 0 
+      ttime=0.0d0
+!
+      if( myproc==0 ) then
+        CALL MPI_BARRIER(COMM_HSLEEP(WCOMMID),IERR) !st3
+        CALL MPI_SEND(SIG_WRITE,1,MPI_INTEGER,MNPROC,TAG,WCOMM,IERR)
+        ipack( 1) = IT
+        ipack( 2) = NHSTAR
+        ipack( 3) = IM
+        ipack( 4) = NP_G
+        ipack( 5) = NE_G
+        ipack( 6) = hss%lun
+        ipack( 7) = FileFmtVersion
+        ipack( 8) = IESTP
+        ipack( 9) = NSCOUE
+        ipack(10) = IVSTP
+        ipack(11) = NSCOUV
+        ipack(12) = ICSTP
+        ipack(13) = NSCOUC
+        ipack(14) = IPSTP
+        ipack(15) = IWSTP
+        ipack(16) = NSCOUM
+        ipack(17) = IGEP
+        ipack(18) = NSCOUGE
+        ipack(19) = IGVP
+        ipack(20) = NSCOUGV
+        ipack(21) = IGCP
+        ipack(22) = NSCOUGC
+        ipack(23) = IGPP
+        ipack(24) = IGWP
+        ipack(25) = NSCOUGW
+
+        dpack(1) = Time
+        cjunk1 = trim(adjustl(HOTSTARTDIR))
+        cjunk2 = trim(adjustl(hss%filename))
+        
+        CALL MPI_SEND(ipack,25,MPI_INTEGER,MNPROC,TAG,WCOMM,IERR)
+        CALL MPI_SEND(dpack,1,MPI_DOUBLE_PRECISION,MNPROC,TAG,WCOMM,IERR)
+        CALL MPI_SEND(WRITE_LOCAL_HOT_START_FILES,1,MPI_LOGICAL,
+     &                MNPROC,TAG,WCOMM,IERR)
+        CALL MPI_SEND(cjunk1,2048,MPI_CHARACTER,MNPROC,TAG,WCOMM,IERR)
+        CALL MPI_SEND(cjunk2,  10,MPI_CHARACTER,MNPROC,TAG,WCOMM,IERR)
+      endif
+      if( WRITER_ID /= 0 ) then
+        CALL MPI_RECV(ipack,25,MPI_INTEGER,0,TAG,WCOMM,STAT,IERR)
+        CALL MPI_RECV(dpack,1,MPI_DOUBLE_PRECISION,0,TAG,WCOMM,STAT,IERR)
+        CALL MPI_RECV(WRITE_LOCAL_HOT_START_FILES,1,MPI_LOGICAL,
+     &                0, TAG,WCOMM,STAT,IERR)
+        CALL MPI_RECV(cjunk1,2048,MPI_CHARACTER,0,TAG,WCOMM,STAT,IERR)
+        CALL MPI_RECV(cjunk2,  10,MPI_CHARACTER,0,TAG,WCOMM,STAT,IERR)
+        iit            = ipack( 1)
+        NHSTAR         = ipack( 2)
+        IM             = ipack( 3)
+        NP_G           = ipack( 4)
+        NE_G           = ipack( 5)
+        hss%lun        = ipack( 6)
+        FileFmtVersion = ipack( 7)
+        IESTP          = ipack( 8)
+        NSCOUE         = ipack( 9)
+        IVSTP          = ipack(10)
+        NSCOUV         = ipack(11)
+        ICSTP          = ipack(12)
+        NSCOUC         = ipack(13)
+        IPSTP          = ipack(14)
+        IWSTP          = ipack(15)
+        NSCOUM         = ipack(16)
+        IGEP           = ipack(17)
+        NSCOUGE        = ipack(18)
+        IGVP           = ipack(19)
+        NSCOUGV        = ipack(20)
+        IGCP           = ipack(21)
+        NSCOUGC        = ipack(22)
+        IGPP           = ipack(23)
+        IGWP           = ipack(24)
+        NSCOUGW        = ipack(25)
+        ttime  = dpack(1)
+        HOTSTARTDIR =trim(adjustl(cjunk1))
+        hss%filename=trim(adjustl(cjunk2))
+        NP = 0
+        NE = 0
+      endif
+      CALL MPI_BARRIER(WCOMM,IERR) !st3
+
+      IF (WRITE_LOCAL_HOT_START_FILES) THEN
+         write(6,*) 'HSWriter can not treat Local HOT START FILES'
+         STOP
+      ENDIF
+!
+      WRITE(16,*) "***********WRITE HOTSTART*********************"
+      WRITE(16,*) "NHSTAR = ", NHSTAR
+      WRITE(16,*) "FirstCall = ", FirstCall
+      IF (FirstCall) THEN
+         write(16,*) 'Allocating Elev1Descript' 
+         IF ( WRITER_ID /= 0  ) THEN
+            IF (.not.ALLOCATED(ETA1_g)) THEN
+              ALLOCATE(ETA1_g(NP_G))
+            ENDIF
+         ENDIF
+         Elev1Descript % specifier            = NHSTAR
+         Elev1Descript % initial_value        = 0.0
+         Elev1Descript % num_items_per_record = 1
+         Elev1Descript % num_fd_records       = NP_G
+         Elev1Descript % num_records_this     = NP
+         Elev1Descript % imap                 => NODES_LG
+         Elev1Descript % array                => ETA1
+         Elev1Descript % array_g              => ETA1_g
+
+         IF ( WRITER_ID /= 0 ) THEN
+            IF (.not.ALLOCATED(ETA2_g)) THEN
+               write(16,*) 'Allocating Elev2Descript' 
+               ALLOCATE(ETA2_g(NP_G))
+            ENDIF
+         ENDIF
+         Elev2Descript % specifier            = NHSTAR
+         Elev2Descript % initial_value        = 0.0
+         Elev2Descript % num_items_per_record = 1
+         Elev2Descript % num_fd_records       = NP_G
+         Elev2Descript % num_records_this     = NP
+         Elev2Descript % imap                 => NODES_LG
+         Elev2Descript % array                => ETA2
+         Elev2Descript % array_g              => ETA2_g
+         
+         IF ( WRITER_ID /= 0 ) THEN
+            IF (.not.ALLOCATED(UU2_g)) THEN
+               write(16,*) 'Allocating VelDescript' 
+               ALLOCATE(UU2_g(NP_G))
+               ALLOCATE(VV2_g(NP_G)) 
+            ENDIF
+         ENDIF
+         VelDescript % specifier            = NHSTAR
+         VelDescript % initial_value        = 0.0
+         VelDescript % num_items_per_record = 2
+         VelDescript % num_fd_records       = NP_G
+         VelDescript % num_records_this     = NP
+         VelDescript % imap                 => NODES_LG
+         VelDescript % array                => UU2
+         VelDescript % array2               => VV2
+         VelDescript % array_g              => UU2_g
+         VelDescript % array2_g             => VV2_g
+
+         IF (IM.eq.10) THEN
+            write(16,*) 'Allocating CH1Descript' 
+            IF ( WRITER_ID /= 0 ) THEN
+               ALLOCATE(EtaDisc_g(NP_G))
+            ENDIF
+            CH1Descript % specifier            = NHSTAR
+            CH1Descript % initial_value        = 0.0
+            CH1Descript % num_items_per_record = 1
+            CH1Descript % num_fd_records       = NP_G
+            CH1Descript % num_records_this     = NP
+            CH1Descript % imap                 => NODES_LG
+            CH1Descript % array                => CH1
+            CH1Descript % array_g              => CH1_g
+         ENDIF        
+ 
+         IF ( WRITER_ID /= 0 ) THEN
+            write(16,*) 'Allocating EtaDiscDescript' 
+            ALLOCATE(EtaDisc_g(NP_G))
+         ENDIF
+         EtaDiscDescript % specifier            = NHSTAR
+         EtaDiscDescript % initial_value        = 0.0
+         EtaDiscDescript % num_items_per_record = 1
+         EtaDiscDescript % num_fd_records       = NP_G
+         EtaDiscDescript % num_records_this     = NP
+         EtaDiscDescript % imap                 => NODES_LG
+         EtaDiscDescript % array                => EtaDisc
+         EtaDiscDescript % array_g              => EtaDisc_g
+         
+         IF ( WRITER_ID /= 0 ) THEN
+            write(16,*) 'Allocating NodeCodeDescript' 
+            ALLOCATE(NodeCode_g(NP_G))
+         ENDIF
+         NodeCodeDescript % specifier            = NHSTAR
+         NodeCodeDescript % int_initial_value        = 0
+         NodeCodeDescript % num_items_per_record = 1
+         NodeCodeDescript % num_fd_records       = NP_G
+         NodeCodeDescript % num_records_this     = NP
+         NodeCodeDescript % imap                 => NODES_LG
+         NodeCodeDescript % iarray               => NODECODE
+         NodeCodeDescript % iarray_g             => NODECODE_g
+
+         IF ( WRITER_ID /= 0 ) THEN
+            write(16,*) 'Allocating NOFFDescript' 
+            ALLOCATE(NOFF_g(NE_G))
+         ENDIF
+         NOFFDescript % specifier            = NHSTAR
+         NOFFDescript % int_initial_value        = 0
+         NOFFDescript % num_items_per_record = 1
+         NOFFDescript % num_fd_records       = NE_G
+         NOFFDescript % num_records_this     = NE
+         NOFFDescript % imap                 => IMAP_EL_LG
+         NOFFDescript % iarray               => NOFF
+         NOFFDescript % iarray_g             => NOFF_g
+
+         FirstCall = .false.
+      ENDIF
+
+C     collect up the data from subdomains if running in parallel
+         CALL collectFullDomainArrayw(Elev1Descript, packOne, unpackOne)
+         CALL collectFullDomainArrayw(Elev2Descript, packOne, unpackOne)
+         CALL collectFullDomainArrayw(VelDescript, packTwo, unpackTwo)
+         IF (IM.eq.10) THEN
+            CALL collectFullDomainArrayw(CH1Descript, packOne, unpackOne)
+         ENDIF
+         CALL collectFullDomainArrayw(EtaDiscDescript, packOne, unpackOne)
+         CALL collectFullDomainIntArrayw(NodeCodeDescript, packOneInt, unpackOneInt)
+         CALL collectFullDomainIntArrayw(NOFFDescript, packOneInt, unpackOneInt)
+         WHERE (NOFF.gt.1) NOFF = 1
+!
+         WRITE(16,*) "FINISH collectFullDomainArray"
+      SELECT CASE (NHSTAR)
+      CASE(1) ! nonportable binary (1 for backwards compatibility)
+         NPX = NP_G
+         NEX = NE_G
+         IF ((WRITER_ID /= 0)) THEN 
+            OPEN(hss % lun ,FILE=TRIM(adjustl(HOTSTARTDIR))//'/'//trim(adjustl(hss%filename)),
+     $      ACCESS='DIRECT',RECL=8)
+            IHOTSTP=1
+            WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion 
+            IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IM   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) ttime; IHOTSTP = IHOTSTP + 1 !st3
+            WRITE(hss % lun,REC=IHOTSTP) iit  ; IHOTSTP = IHOTSTP + 1 !st3
+            WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
+         ENDIF
+         IF ( WRITER_ID /= 0 ) THEN 
+            DO I=1, Elev1Descript % num_fd_records
+               WRITE(hss % lun,REC=IHOTSTP) Elev1Descript % array_g(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+            DO I=1, Elev2Descript % num_fd_records
+               WRITE(hss % lun,REC=IHOTSTP) Elev2Descript % array_g(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+            DO I=1, EtaDiscDescript % num_fd_records
+               WRITE(hss % lun,REC=IHOTSTP) EtaDiscDescript % array_g(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+            DO I=1, VelDescript % num_fd_records
+               WRITE(hss % lun,REC=IHOTSTP) VelDescript % array_g(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+            DO I=1, VelDescript % num_fd_records
+               WRITE(hss % lun,REC=IHOTSTP) VelDescript % array2_g(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+            IF (IM.eq.10) THEN
+               DO I=1, CH1Descript % num_fd_records
+                  WRITE(hss % lun,REC=IHOTSTP) CH1Descript % array_g(I)
+                  IHOTSTP=IHOTSTP+1
+               ENDDO
+            ENDIF
+            DO I=1, NodeCodeDescript % num_fd_records
+              WRITE(hss % lun,REC=IHOTSTP)NodeCodeDescript % iarray_g(I)
+              IHOTSTP=IHOTSTP+1
+            ENDDO
+            DO I=1, NOFFDescript % num_fd_records
+               WRITE(hss % lun,REC=IHOTSTP) NOFFDescript % iarray_g(I)
+               IHOTSTP=IHOTSTP+1
+            ENDDO
+         ENDIF
+C
+         IF (WRITER_ID /= 0) THEN 
+            WRITE(hss % lun,REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
+
+            WRITE(hss % lun,REC=IHOTSTP) IVSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
+
+            WRITE(hss % lun,REC=IHOTSTP) ICSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
+
+            WRITE(hss % lun,REC=IHOTSTP) IPSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IWSTP   ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
+
+            WRITE(hss % lun,REC=IHOTSTP) IGEP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+
+            WRITE(hss % lun,REC=IHOTSTP) IGVP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+
+            WRITE(hss % lun,REC=IHOTSTP) IGCP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+
+            WRITE(hss % lun,REC=IHOTSTP) IGPP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
+         ENDIF
+      CASE(2) ! ascii?
+         write(16,*) 'ASCII Hotstart file not implemented yet.'
+
+      CASE(3) ! netcdf 
+         write(16,*) 'NetCDF Hotstart undergoing testing.'
+
+      CASE DEFAULT
+         write(ScreenUnit,*) 'The value of NHSTAR=',NHSTAR
+         write(ScreenUnit,*) 'is not supported.'
+         write(ScreenUnit,*) 'Hotstart file not written.'
+      END SELECT
+C...    
+C...    CLOSE THE HOT START OUTPUT FILE
+C...    
+      IF(NHSTAR.EQ.1) THEN                                              ! added by mcf 7/14/08
+      if (WRITER_ID /= 0) CLOSE(hss % lun)
+      ENDIF                                                             ! end NHSTAR=1 
+        
+      IF(NSCREEN.NE.0.AND. WRITER_ID /= 0 ) THEN
+         WRITE(ScreenUnit,24541) hss % lun, WRITER_ID, IT,TIME
+      ELSE 
+         WRITE(16,24541) hss % lun,WRITER_ID,IT,TIME
+      ENDIF
+24541 FORMAT(1X,'HOT START OUTPUT WRITTEN TO UNIT ',I2,'  HSWriter:',i2
+     &    ' AT TIME STEP = ',I9,' TIME = ',E15.8)
+      IF(hss % lun.EQ.67) THEN
+C        jgf45.07 added option to stop ADCIRC after writing hot start file. 
+         IF (NHSTAR.EQ.67) THEN
+            WRITE(ScreenUnit,*) 'NHSTAR.EQ.67; ADCIRC stopping.'
+            WRITE(16,*) 'NHSTAR.EQ.67; ADCIRC stopping.'
+         ENDIF
+         hss % lun      = 68
+         IF(NHSTAR.EQ.1) hss % filename = 'fort.68'                     ! added by mcf 7/14/08
+      ELSE
+         IF (NHSTAR.EQ.68) THEN
+            WRITE(ScreenUnit,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
+            WRITE(16,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
+         ENDIF
+         hss % lun=67
+         IF(NHSTAR.EQ.1) hss % filename = 'fort.67'                     ! added by mcf 7/14/08
+      ENDIF
+      END SUBROUTINE writeHotstart_through_HSwriter
+!
+      SUBROUTINE GET_NEXT_HSWRITER_COMM(NEXT_WCOMM)
+      include 'mpif.h'
+      INTEGER,intent(inout) :: NEXT_WCOMM
+      INTEGER :: NEXT_WCOMMID
+
+        IF(WCOMMID >= MNWPROH) THEN
+          WCOMMID = 0
+        ENDIF
+
+        WCOMMID = WCOMMID + 1
+        NEXT_WCOMMID = MOD(WCOMMID - 1,MNWPROH) + 1
+        NEXT_WCOMM = COMM_WRITEH(NEXT_WCOMMID)
+
+      END SUBROUTINE GET_NEXT_HSWRITER_COMM
+!
+!     !--------------------------------------------------------------
+      subroutine collectFullDomainArrayw(descript, pack_cmd, unpack_cmd)
+!     !--------------------------------------------------------------
+      implicit none
+#ifdef CMPI
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+#endif
+      type (OutputDataDescript_t) :: descript
+      external pack_cmd
+      external unpack_cmd
+#ifdef CMPI
+!     ! the subroutine used to write the file
+      integer      :: ierr, status(MPI_STATUS_SIZE), request
+      integer, save:: tagbase = 6000
+      integer      :: iproc
+      integer      :: bufsize
+      integer      :: ibucket
+      integer      :: istart     ! vector tuple to start with
+      integer      :: iend       ! vector tuple to end on
+      integer      :: tag
+!     ! number of vector tuples in the buffer
+      integer      :: num
+      integer      :: i, j, k
+
+      bufsize = min(BUFSIZE_MAX,
+     &    descript % num_items_per_record * descript % num_fd_records)
+      num     = bufsize / descript % num_items_per_record
+      iend    = num
+      istart  = 1
+
+      if (tagbase == 5000) then
+         tagbase = 6000
+      else
+         tagbase = 5000
+      endif
+      ibucket = 0
+
+      do while (istart < iend)
+
+!        !------------------------------------------------------------
+!        ! Initialize
+!        !------------------------------------------------------------
+         buf(:)  = descript % initial_value
+         ibucket = ibucket + 1
+         tag     = tagbase + mod(ibucket, 8)
+
+         call pack_cmd(descript, istart, iend)
+         call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
+     &                   MNPROC, WCOMM, ierr)
+
+         if (WRITER_ID /= 0) then
+            call unpack_cmd(descript, istart, iend)
+         end if
+         istart = iend + 1
+         iend   = min(istart + num - 1, descript % num_fd_records)
+         num    = iend - istart + 1
+      end do
+#endif   
+!     !--------------------------------------------------------------
+      end subroutine collectFullDomainArrayw
+!     !--------------------------------------------------------------
+!
+!     !--------------------------------------------------------------
+      subroutine collectFullDomainIntArrayw(descript,
+     &                                     pack_cmd, unpack_cmd)
+!     !--------------------------------------------------------------
+      implicit none
+#ifdef CMPI
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+#endif
+      type (OutputDataDescript_t) :: descript
+      external pack_cmd
+      external unpack_cmd
+#ifdef CMPI
+!     ! the subroutine used to write the file
+      integer      :: ierr, status(MPI_STATUS_SIZE), request
+      integer, save:: tagbase = 6000
+      integer      :: iproc
+      integer      :: bufsize
+      integer      :: ibucket
+      integer      :: istart     ! vector tuple to start with
+      integer      :: iend       ! vector tuple to end on
+      integer      :: tag
+!     ! number of vector tuples in the buffer
+      integer      :: num
+      integer      :: i, j, k
+
+      bufsize = min(BUFSIZE_MAX,
+     &    descript % num_items_per_record * descript % num_fd_records)
+      num     = bufsize / descript % num_items_per_record
+      iend    = num
+      istart  = 1
+      if (tagbase == 5000) then
+         tagbase = 6000
+      else
+         tagbase = 5000
+      endif
+      ibucket = 0
+
+      do while (istart < iend)
+!      ! Initialize
+         integerBuffer(:)  = descript % int_initial_value
+         ibucket = ibucket + 1
+         tag     = tagbase + mod(ibucket, 8)
+
+         call pack_cmd(descript, istart, iend)
+         call mpi_reduce(integerBuffer, integerResultBuffer, bufsize,
+     &                 MPI_INTEGER, MPI_SUM, MNPROC, WCOMM, ierr)
+
+         if (WRITER_ID /= 0) then
+            call unpack_cmd(descript, istart, iend)
+         end if
+         istart = iend + 1
+         iend   = min(istart + num - 1, descript % num_fd_records)
+         num    = iend - istart + 1
+      end do
+#endif   
+C! CMPI
+!     !--------------------------------------------------------------
+      end subroutine collectFullDomainIntArrayw
+!     !--------------------------------------------------------------
+!
+      END MODULE HSWRITER

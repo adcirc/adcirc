@@ -112,6 +112,8 @@ Cjgfdebug     &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA
      &     A, B, EVTOT, ISLIP, KP, Q, SIGMA
 #ifdef CMPI
       USE MESSENGER
+      USE HSWRITER, ONLY: writeHotstart_through_HSwriter  !st3 100711 for hsfile
+
 #endif
 
 #ifdef CSWAN
@@ -2601,8 +2603,19 @@ C...
 !     IF(myproc.eq.0) PRINT *, " ITEST **********", ITEST
       
       if ((NHSTAR > 0 .and. ITEST == IT) .or. (-IHOT == IT)) then
+        if( (MNWPROH > 0) ) then   !Writer for HSfile
+          if( (.not.C3D) ) then                     !Writer for HSfile
+#ifdef CMPI
+          CALL writeHotstart_through_hswriter(Time,IT)  !st3 hsfile
+#endif
+          else
+            write(6,*) 'HS writer does not support C3D'
+          endif
+        else
 !     IF(myproc.eq.0) PRINT *, " writeHotstart **********"
          CALL writeHotstart(Time, IT)
+        endif
+
 #ifdef CSWAN
 Casey 100205: Enable writing of SWAN hot-start file.  We need to wait
 C             and do this after the next SWAN time step, so that

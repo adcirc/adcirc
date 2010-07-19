@@ -559,7 +559,8 @@ $(O_DIR)sizes.o       :  sizes.F
 $(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o
 $(O_DIR)nodalattr.o   :  nodalattr.F  $(ADC_MOBJ)
 $(O_DIR)messenger.o   :  messenger.F  $(ADC_MOBJ) 
-$(O_DIR)writer.o      :  writer.F  $(O_DIR)messenger.o
+#!st3 100711: Added globalio.o to writer.F for HSWRITER MODULE
+$(O_DIR)writer.o      :  writer.F  $(O_DIR)messenger.o $(O_DIR)globalio.o
 $(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ)
 $(O_DIR)harm.o        :  harm.F
 $(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(FITP_MOBJ)

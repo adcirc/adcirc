@@ -532,6 +532,9 @@ C     jgf48.03 Variables shared between messenger and writer modules
       INTEGER ::  REALTYPE, DBLETYPE
       ! COMMUNICATORS FOR GLOBAL FILE WRITING
       INTEGER, ALLOCATABLE ::  COMM_WRITER(:)
+      ! COMMUNICATORS FOR HOTSTART FILE WRITING !st3
+      INTEGER, ALLOCATABLE ::  COMM_WRITEH(:), COMM_HSLEEP(:)
+
       ! = 0 if this is a compute proc; > 0 if this is a writer node
       INTEGER :: WRITER_ID
       ! Following signals are used in messenger.F and writer.F
