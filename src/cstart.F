@@ -23,6 +23,9 @@ C
       USE NodalAttributes, ONLY : 
      &         STARTDRY, GeoidOffset, LoadGeoidOffset,
      &         OutputTau0 !jgf47.06
+#ifdef NETCDF
+      USE NETCDFIO, ONLY : setNetCDFMode
+#endif
 
       IMPLICIT NONE
 
@@ -41,7 +44,22 @@ C     was requested.
  
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
-
+      useNetCDF = .FALSE.
+C
+      IF (  (ABS(NOUTE).EQ.3).OR.(ABS(NOUTV).EQ.3).OR.
+     &      (ABS(NOUTM).EQ.3).OR.(ABS(NOUTC).EQ.3).OR.
+     &       (ABS(NOUTGE).EQ.3).OR.(ABS(NOUTV).EQ.3).OR.
+     &       (ABS(NOUTGC).EQ.3).OR.(ABS(NOUTGW).EQ.3).OR.
+     &       (NHSTAR.LT.0) ) THEN
+         useNetCDF = .TRUE.
+      ENDIF
+C
+C     ASSIGN value to NCMODE according to the number of processors
+C     for NETCDF - MCF
+#ifdef NETCDF
+      CALL setNetCDFMode(MNPROC)
+#endif
+C
 C.... tcm v49.16 20100617
 C.... convert background pressure from millibars to meters of water
       PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)

@@ -56,7 +56,8 @@ C---------------------end of data declarations--------------------------------C
       CONTAINS
 
 
-      SUBROUTINE MAKE_DIRNAME
+      SUBROUTINE MAKE_DIRNAME()
+      IMPLICIT NONE
       INTEGER :: LNAME, IARGC, ARGCOUNT, I, iprefix
       CHARACTER(2048) :: CMDLINEARG 
       CHARACTER(8)    :: PREFIX(2) = (/ '/PE0000 ', '/DOM0000' /)
@@ -66,32 +67,59 @@ C---------------------end of data declarations--------------------------------C
       GLOBALDIR = ""
       LOCALDIR  = ""
       ARGCOUNT  = IARGC()
+      WRITE_LOCAL_HOT_START_FILES = .FALSE.
+      WRITE_LOCAL_FILES = .FALSE.
 
 Casey 090527: Debug.
       ROOTDIR = "."
 
-      WRITE_LOCAL_HOT_START_FILES = .FALSE.
       IF ( MNPROC.EQ.1 ) THEN
          WRITE_LOCAL_FILES = .TRUE.
          WRITE_LOCAL_HOT_START_FILES = .TRUE.
       ENDIF
-
+  
       if (ARGCOUNT > 0) then
-        i = 0
-        do while (i < ARGCOUNT)
-          i = i + 1
-          call getarg(i, CMDLINEARG)
-          if (cmdlinearg(1:2) == "-I") then
+         write(*,*) "DEBUG: ",myProc,
+     &       ": Processing command line options."
+         i = 0
+         do while (i < ARGCOUNT)
             i = i + 1
-            call getarg(i,INPUTDIR)
-          else if (cmdlinearg(1:2) == "-O") then
-            i = i + 1
-            call getarg(i,GLOBALDIR)
-          else if (cmdlinearg(1:2) == "-L") then
-            WRITE_LOCAL_FILES = .TRUE.
-            WRITE_LOCAL_HOT_START_FILES = .TRUE.
-          endif
-        end do
+            call getarg(i, CMDLINEARG)
+            select case(cmdlinearg(1:2))
+            case("-I")
+               i = i + 1
+               call getarg(i,INPUTDIR)
+               if (myProc.eq.0) then
+                  write(*,*) "INFO: Processing '-I ",trim(INPUTDIR),"'."
+               endif
+            case("-O")
+               i = i + 1
+               call getarg(i,GLOBALDIR)
+               if (myProc.eq.0) then
+                 write(*,*) "INFO: Processing '-O ",trim(GLOBALDIR),"'."
+               endif
+            case("-L")
+               WRITE_LOCAL_FILES = .TRUE.
+               WRITE_LOCAL_HOT_START_FILES = .TRUE.
+               if (myProc.eq.0) then
+                  write(*,*) "INFO: Processing '-L'."
+               endif
+            case("-S")
+               WRITE_LOCAL_HOT_START_FILES = .TRUE.
+               if (myProc.eq.0) then
+                  write(*,*) "INFO: Processing '-S'."
+               endif
+            case("-W")
+               i = i + 1
+               ! this is the number of writer processors, and will
+               ! be parsed in a later call to GET_NUMWRITERS
+            case default
+               if (myProc.eq.0) then
+                  write(*,*) "WARNING: The command line option '",
+     &             cmdlinearg(1:2),"' is not valid and will be ignored."
+               endif
+            end select
+         end do
       end if
 
 C.....Default root working directory
@@ -103,19 +131,35 @@ C.....Default root working directory
       GBLINPUTDIR = ROOTDIR
 #ifdef CMPI
       iprefix = 0
+      if (myProc.eq.0) then
+         write(*,*) "INFO: Searching for ADCIRC subdomain directories:"
+      endif
       do i = 1, 2
-        INQUIRE(file=TRIM(ROOTDIR)//TRIM(PREFIX(i))//'/'//'fort.14',
-     &    exist=fileFound)
-        if (fileFound) then
-          iprefix = i
-          exit
-        end if
-      end do
-      if (.not. fileFound) then
-        print *, "Failed to find prefix directory"
-        call msg_abort()
-      end if
+         if (myProc.eq.0) then
+            write(*,*) "INFO: Looking for '",trim(ROOTDIR),
+     &         trim(PREFIX(i)),"/fort.14' ..."
+         endif
+         INQUIRE(file=TRIM(ROOTDIR)//TRIM(PREFIX(i))//'/'//'fort.14',
+     &      exist=fileFound)
+         if (fileFound.eqv..TRUE.) then
+            if (myProc.eq.0) then
+               write(*,*) "INFO: File '",trim(ROOTDIR),
+     &            trim(PREFIX(i)),"/fort.14' was found!"
+               write(*,*) "INFO: The search for the subdomain ",
+     &            "directory was completed successfully."
+            endif
+            iprefix = i
+            exit
+         else
+            write(*,*) "ERROR: Processor ",myProc,": File '",
+     &         trim(ROOTDIR),trim(PREFIX(i)),
+     &         "/fort.14' was not found."
 
+            print *, "ERROR: ADCIRC stopping."
+            call msg_abort()
+         end if
+      end do
+C
       WRITE(INPUTDIR,'(2A)') TRIM(ROOTDIR),PREFIX(iprefix)
       LNAME = LEN_TRIM(INPUTDIR)
       WRITE(INPUTDIR(LNAME-3:LNAME),'(I4.4)') MYPROC
@@ -140,17 +184,32 @@ C.....Default root working directory
 #endif
       if (WRITE_LOCAL_FILES) GLOBALDIR = LOCALDIR
       HOTSTARTDIR = LOCALDIR
-
-      
+C
+C     jgf49.17.01 Summarize and log results.
+      if (myProc.eq.0) then
+         write(*,*) "INFO: The ROOTDIR is  '",trim(ROOTDIR),"'."
+         write(*,*) "INFO: The INPUTDIR is '",trim(INPUTDIR),"'."
+         write(*,*) "INFO: The GBLINPUTDIR is '",trim(GBLINPUTDIR),"'."
+         write(*,*) "INFO: The GLOBALDIR is '",trim(GLOBALDIR),"'."
+         write(*,*) "INFO: The LOCALDIR is '",trim(LOCALDIR),"'."
+         write(*,*) "INFO: The HOTSTARTDIR is '",trim(HOTSTARTDIR),"'."
+         if ((WRITE_LOCAL_FILES.eqv..TRUE.).AND.(MNPROC.GT.1)) then
+            write(*,*) "INFO: ADCIRC will write subdomain output files."
+         endif
+         if ((WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)
+     &                            .AND.(MNPROC.GT.1)) then
+            write(*,*) 
+     &         "INFO: ADCIRC will write subdomain hotstart files."
+         endif 
+      endif
       RETURN
       END SUBROUTINE MAKE_DIRNAME
 
       SUBROUTINE GET_NUMWRITERS
+      IMPLICIT NONE
       INTEGER :: IARGC, ARGCOUNT, I
       CHARACTER(2048) :: CMDLINEARG 
-      
       ARGCOUNT  = IARGC()
-
       MNWPROC = 0
       isplit = 0 !st3 100708:split file
 

@@ -526,7 +526,7 @@ CC -- Finish Addition by CF
       IF (useNetCDF) THEN
          write(*,*) "Its time to initialize the netCDF output."
          ! call netCDF module
-         CALL PREPNETCDF()
+         !CALL PREPNETCDF()
       ENDIF
 
 9999  CONTINUE

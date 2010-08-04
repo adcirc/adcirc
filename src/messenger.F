@@ -46,7 +46,8 @@ C  Message-Passing Array space
       INTEGER, ALLOCATABLE :: REQ_C3D(:), STAT_C3D(:,:)
       INTEGER, ALLOCATABLE :: INDX(:)
       REAL(SZ),ALLOCATABLE :: SENDBUF(:,:), RECVBUF(:,:)
-
+C
+C
       CONTAINS
 
 C---------------------end of data declarations--------------------------------C
@@ -233,6 +234,7 @@ C--------------------------------------------------------------------------
       INTEGER :: IDPROC, NLOCAL, I, J, jdumy_loc
       INTEGER :: jdumy,jdumy_G,jdumy_max, inputFileFmtVn
       CHARACTER(10) :: BlkName
+      LOGICAL FileFound
 C
 C--------------------------------------------------------------------------
 C  Routine preforms following steps:
@@ -248,8 +250,18 @@ C   (8) Read Message-Passing Send List
 C  vjp  10/13/2006
 C--------------------------------------------------------------------------
  
-      OPEN(18,FILE=TRIM(INPUTDIR)//'/'//'fort.18')
-
+      FileFound = .FALSE.
+      INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.18',EXIST=FileFound)
+      IF (FileFound.eqv..FALSE.) THEN
+         WRITE(*,*) "ERROR: ",myProc,": The file ",
+     &      TRIM(INPUTDIR)//'/'//'fort.18 was not found.'
+         WRITE(*,9973)      ! execution terminated
+         CALL MSG_FINI()
+         STOP
+      ENDIF
+C
+      OPEN(18,FILE=TRIM(INPUTDIR)//'/'//'fort.18',STATUS='OLD')
+C
       READ(18,3020) BlkName, inputFileFmtVn
       if (Trim(BlkName) /= 'FileFmt' .and.
      $  .not. CMP_VERSION_NUMBERS(FileFmtVersion, inputFileFmtVn)) then
@@ -365,6 +377,7 @@ C-------------------------------------------------------------------------------
 3010  FORMAT(8X,2I8)
 3015  FORMAT(8X,3I8)
 3020  format(a8,I8)
+9973  FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
       END SUBROUTINE MSG_TABLE
  
 

@@ -3,24 +3,74 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.21   - jgf - Merged the subdomainhotstart branch into the trunk, 
+C             which included a massive reorganization of the netcdf module
+C             for greater flexibility. The subdomainhotstart branch included
+C             the following changes:
+C  v49.17.04  08/04/2010 - jgf - Fourth set of changes for netcdf. 
+C  v49.17.03  07/29/2010 - jgf - Third set of changes for netcdf.
+C  v49.17.03  07/27/2010 - jgf - Second set of changes for netcdf.
+C  v49.17.02  07/23/2010 - jgf - First set of changes for working through 
+C             netcdf issues. 
+C  v49.17.01  07/14/2010 - jgf - Added an extra command line option -S to 
+C             write subdomain hotstart files during a run where fulldomain
+C             hotstart files are specified.
+------------------------------------------------------------------------
+C   r491 | stanaka | 2010-07-19 11:18:31 -0400 (Mon, 19 Jul 2010) | 1 line
+C             Changed paths:
+C             M /adcirc/trunk/src/adcirc.F
+C             M /adcirc/trunk/src/global.F
+C             M /adcirc/trunk/src/messenger.F
+C             M /adcirc/trunk/src/sizes.F
+C             M /adcirc/trunk/src/timestep.F
+C             M /adcirc/trunk/src/writer.F
+C             M /adcirc/trunk/work/makefile
+C
+C             Introduced writer core approach for Hot Start file outputting.
+C             This function works with '-H' option, for example
+C             './padcirc -H 2'. We should use this option with less than two
+C             hotstart writers, because we have only two hotstart files
+C             (fort.67,68). Also, this option does not support NetCDF file
+C             format.
+C             (jgf: let's call this v49.20).
+C ------------------------------------------------------------------------
+C   r488 | stanaka | 2010-07-09 12:44:19 -0400 (Fri, 09 Jul 2010) | 1 line
+C             Changed paths:
+C             M /adcirc/trunk/src/couple2swan.F
+C             M /adcirc/trunk/src/sizes.F
+C             M /adcirc/trunk/src/writer.F
+C
+C             Modified the writer cores algorithm to round robin outputting,
+C             and adding spliting output file option. For safety outputting,
+C             this round robin outputting works only with spliting option. If
+C             you want to use the writer cores with this option, you should use
+C             '-Ws' option instead of original writer cores option '-W'.
+C             (jgf: let's call this v49.19). 
+C ------------------------------------------------------------------------
+C   r487 | ndill | 2010-07-07 11:10:40 -0400 (Wed, 07 Jul 2010) | 1 line
+C             Changed paths:
+C             M /adcirc/trunk/wind/aswip_1.0.3.F
+C             fixed format for reading in atcf when abs(longitude) > 100
+C             (jgf: let's call this v49.18). 
+C ------------------------------------------------------------------------
 C  v49.17   - 06/28/2010 - jgf - Fixed a bug in hotlocalize where IM values of
 C             greater than 10 triggered loading of 3D hotstart info. 
 C  v49.16   - 06/18/2010 - tcm -- Implemented pressure ramping differently,
-C                 as per Rick Luettich's suggestion:
-C                 We now set a background pressure at 1013 mb, then compute
-C                 the difference between the applied pressure and the
-C                 background pressure.  Then apply the meterological ramp to
-C                 that difference and add it back to the background pressure.
-C                 Fixed a couple of typos in hstart.F where RampMete was 
-C                 used instead of RampMete2. This fix, also fixes the problem
-C                 with the prmin for cold-started runs.
+C             as per Rick Luettich's suggestion:
+C             We now set a background pressure at 1013 mb, then compute
+C             the difference between the applied pressure and the
+C             background pressure.  Then apply the meterological ramp to
+C             that difference and add it back to the background pressure.
+C             Fixed a couple of typos in hstart.F where RampMete was 
+C             used instead of RampMete2. This fix, also fixes the problem
+C             with the prmin for cold-started runs.
 C  v49.15   - 06/16/10 - tcm Expanded the functionality of store63 and fixed
-C                a bug in that same routine.  store63 could now be used in
-C                place of storeOne.
+C             a bug in that same routine.  store63 could now be used in
+C             place of storeOne.
 C  v49.14   - 06/04/10 - tcm Fixed a bug in write_output.F related to 
-C               globalizing NOFF (an elemental quantity) for parallel jobs 
-C               which caused hotstart runs to behave different than coldstart.
-C               This bug was first worked on in v48.4638 and v48.4642.
+C             globalizing NOFF (an elemental quantity) for parallel jobs 
+C             which caused hotstart runs to behave different than coldstart.
+C             This bug was first worked on in v48.4638 and v48.4642.
 C  v49.13   - 04/16/10 - jgf - Commented out debugging statements in adcprep.F,
 C             prep.F, and read_global.F.
 C  v49.12   - 04/16/10 - jgf - Commented out debugging statement in adcprep.F.

@@ -153,11 +153,19 @@ Casey 090302: Added the following arrays for output of radiation stress gradient
       REAL(SZ),ALLOCATABLE ::   ENIN1(:),ENIN2(:)
       REAL(SZ),ALLOCATABLE ::   CSI(:),SII(:)
       REAL(SZ),ALLOCATABLE ::   STAIE1(:),STAIE2(:),STAIE3(:)
-      REAL(8), ALLOCATABLE ::   XEV(:),YEV(:),SLEV(:),SFEV(:)
+      REAL(8), ALLOCATABLE, TARGET :: XEV(:) ! x coords of current vel stations
+      REAL(8), ALLOCATABLE, TARGET :: YEV(:) ! y coords of current vel stations
+      REAL(8), ALLOCATABLE, TARGET :: SLEV(:)! longitudes of current vel sta
+      REAL(8), ALLOCATABLE, TARGET :: SFEV(:)! latitudes of current vel sta
+
       REAL(SZ),ALLOCATABLE ::   STAIV1(:),STAIV2(:),STAIV3(:)
       REAL(8), ALLOCATABLE ::   XEC(:),YEC(:),SLEC(:),SFEC(:)
       REAL(SZ),ALLOCATABLE ::   STAIC1(:),STAIC2(:),STAIC3(:)
-      REAL(8), ALLOCATABLE ::   XEM(:),YEM(:),SLEM(:),SFEM(:)
+      REAL(8), ALLOCATABLE, TARGET :: XEM(:) ! x coords of met stations
+      REAL(8), ALLOCATABLE, TARGET :: YEM(:) ! y coords of met stations
+      REAL(8), ALLOCATABLE, TARGET :: SLEM(:) ! longitudes of met stations
+      REAL(8), ALLOCATABLE, TARGET :: SFEM(:) ! latitudes of met stations
+
       REAL(SZ),ALLOCATABLE ::   STAIM1(:),STAIM2(:),STAIM3(:)
       REAL(SZ),ALLOCATABLE ::   TRANS_LV_B(:),TRANS_LV_A(:)
       REAL(SZ),ALLOCATABLE ::   SOURSIN(:)
@@ -171,10 +179,13 @@ Casey 090302: Added the following arrays for output of radiation stress gradient
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax(:) 
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:) 
 #endif
-      REAL(SZ),ALLOCATABLE ::   TK(:)
-      REAL(8), ALLOCATABLE ::   EMO(:,:),EFA(:,:)
-      REAL(8), ALLOCATABLE ::   XEL(:),YEL(:),SLEL(:),SFEL(:)
-      REAL(8) ,ALLOCATABLE ::   AREAS(:), TotalArea(:)
+      REAL(SZ),ALLOCATABLE :: TK(:)
+      REAL(8),ALLOCATABLE :: EMO(:,:),EFA(:,:)
+      REAL(8),ALLOCATABLE,TARGET :: XEL(:)  ! x-coords of elevation stations
+      REAL(8),ALLOCATABLE,TARGET :: YEL(:)  ! y-coords of elevation stations
+      REAL(8),ALLOCATABLE,TARGET :: SLEL(:) ! latitudes of elevation stations
+      REAL(8),ALLOCATABLE,TARGET :: SFEL(:) ! longitudes of elevation stations
+      REAL(8),ALLOCATABLE ::   AREAS(:), TotalArea(:)
       REAL(SZ),ALLOCATABLE ::   XVELAV(:),YVELAV(:),XVELVA(:),YVELVA(:)
       REAL(SZ),ALLOCATABLE ::   ELAV(:),ELVA(:)
       REAL(SZ),ALLOCATABLE ::   AUV11(:),AUV12(:),AUV13(:),AUV14(:)
@@ -436,22 +447,30 @@ C    kmd48.33bc - added variables for 3D boundary conditions
 !     -----------------
 !     Attribute general
 !     -----------------
-      CHARACTER(80) :: title, institution, source, history, base_date
-      CHARACTER(80) :: references, comments, host, convention, contact
-      CHARACTER(7),  ALLOCATABLE  :: STATNUMB(:,:)
-      CHARACTER(50), ALLOCATABLE  :: STATNAME(:,:)
-      CHARACTER(7),  ALLOCATABLE  :: STATNUMBV(:,:)
-      CHARACTER(50), ALLOCATABLE  :: STATNAMEV(:,:)
+      CHARACTER(80) :: title       ! description of the dataset
+      CHARACTER(80) :: institution ! where the original data was produced
+      CHARACTER(80) :: source      ! method of production of the original data
+      CHARACTER(80) :: history     ! provides an audit trail for modifications to the original data 
+      CHARACTER(80) :: base_date 
+      CHARACTER(80) :: comments    ! miscellaneous information about the data
+      CHARACTER(80) :: host
+      CHARACTER(80) :: convention
+      CHARACTER(80) :: contact     ! user's institution/ e-mail address
+      CHARACTER(80) :: references  ! published/web-based references that describe the data
+      CHARACTER(7),  ALLOCATABLE :: STATNUMB(:,:)
+      CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAME(:,:)
+      CHARACTER(7),  ALLOCATABLE :: STATNUMBV(:,:)
+      CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEV(:,:)
       INTEGER, PARAMETER :: SNUMLEN = 7
       INTEGER, PARAMETER :: SNAMLEN = 50
       CHARACTER(7),  ALLOCATABLE  :: STATNUMBM(:,:)
-      CHARACTER(50), ALLOCATABLE  :: STATNAMEM(:,:)
+      CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEM(:,:)
       
       INTEGER NCIESTP, NCIPSTP,NCIVSTP,NCIWSTP
       INTEGER NCIGEP,NCIGPP, NCIGVP,NCIGWP
       INTEGER NCCOUE,NCCOUM,NCCOUV,NCCOUW
       INTEGER NCCOUGE,NCCOUGW,NCCOUGV
-     
+      LOGICAL useNetCDF ! .true. if NetCDF will be used in the run 
       
 ! CF Finish addition for NETCDF I/O
 
@@ -484,6 +503,8 @@ C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements t
         integer           :: int_initial_value
         logical           :: ConsiderWetDry ! Flag for considering nodes wet/dry status
         real(sz)          :: alternate_value  ! Value that can be used as an alternate value
+        REAL(SZ), pointer :: x_coord(:) ! x-coord or longitude (station or mesh)
+        REAL(SZ), pointer :: y_coord(:) ! y-coord or lat (station or mesh)
         ! num_items_per_record is number of "tuples", i.e.
         ! it is equal to 1 if scalar, 2 if 2D vector, 3 if 3D vector, etc
         integer           :: num_items_per_record
@@ -547,6 +568,7 @@ C
 C-------------------end of data declarations----------------------------------C
 
       CONTAINS
+
 C...
 C...Allocate space for Arrays dimensioned by MNE and MNP
 C...

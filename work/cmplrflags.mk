@@ -11,13 +11,13 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #
 #compiler=gnu
 #compiler=g95
-compiler=intel
+#compiler=intel
 #compiler=intel-lonestar
 #compiler=cray_xt3
 #compiler=cray_xt4
 #compiler=cray_xt5
 #compiler=pgi
-#compiler=pgi-ranger
+compiler=pgi-ranger
 #compiler=diamond
 #
 #
@@ -252,11 +252,12 @@ ifeq ($(compiler),pgi-ranger)
   FC            :=  pgf95
   PFC           :=  mpif90
   FFLAGS1       :=  $(INCDIRS) -fast -tp barcelona-64 -Mextend
+#  FFLAGS1       :=  $(INCDIRS) -Minform,inform -Mextend -g -O0 -DNETCDF_DEBUG -Mbounds -Mchkfpstk -Mchkptr -Mchkstk
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
   DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
+  DPRE          :=  -DREAL8 -DLINUX
   IMODS         :=  -I
   CC            := gcc
   CCBE          := $(CC)
@@ -372,7 +373,8 @@ ifeq ($(compiler),gnu)
   PPFC		:=  g95
   FC		:=  g95
   PFC		:=  mpif90 
-  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132
+#  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132
+  FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -DNETCDF_DEBUG
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA

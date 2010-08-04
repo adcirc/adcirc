@@ -300,6 +300,7 @@ C
         ITIME_END = ITIME_BGN+NTIME_STP-1
       ENDIF 
 C
+      WRITE(16,*) "DEBUG: Begin timestepping."
       DO 100 ITIME=ITIME_BGN,ITIME_END
         CALL TIMESTEP(ITIME)
 C

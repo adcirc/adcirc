@@ -61,18 +61,46 @@ C
 C
 C    ===================================================================
 C
+      LOGICAL fileFound
+C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
 C     Module. 
       CALL InitNAModule() 
+C
 C...
 C...OPEN STATEMENT FOR UNIT 14 AND 15 INPUT FILES
 C...  
-      OPEN(14,FILE=TRIM(INPUTDIR)//'/'//'fort.14')
-      OPEN(15,FILE=TRIM(INPUTDIR)//'/'//'fort.15')
+      fileFound = .false.
+      INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.14',EXIST=FileFound)
+      IF (FileFound.eqv..FALSE.) THEN
+         WRITE(*,*) "ERROR: ",myProc,": The file ",
+     &      TRIM(INPUTDIR)//'/'//'fort.14 was not found.'
+         WRITE(*,9973)      ! execution terminated
+#ifdef CMPI
+         CALL MSG_FINI()
+#endif
+         STOP
+      ENDIF
+      WRITE(*,*) "DEBUG: ",myProc,": Opening fort.14 file."
+      OPEN(14,FILE=TRIM(INPUTDIR)//'/'//'fort.14',STATUS='OLD')
+C
+      INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.15',EXIST=FileFound)
+      IF (FileFound.eqv..FALSE.) THEN
+         WRITE(*,*) "ERROR: ",myProc,": The file ",
+     &      TRIM(INPUTDIR)//'/'//'fort.15 was not found.'
+         WRITE(*,9973)      ! execution terminated
+#ifdef CMPI
+         CALL MSG_FINI()
+#endif
+         STOP
+      ENDIF
+      WRITE(*,*) "DEBUG: ",myProc,": Opening fort.15 file."
+      OPEN(15,FILE=TRIM(INPUTDIR)//'/'//'fort.15',STATUS='OLD')
 C...
 C...OPEN STATEMENT FOR UNIT 16 OUTPUT FILE
 C...
-      OPEN(16,FILE=TRIM(LOCALDIR)//'/'//'fort.16')
+      WRITE(*,*) "DEBUG: ",myProc,": Opening fort.16 file."
+      OPEN(16,FILE=TRIM(LOCALDIR)//'/'//'fort.16',STATUS='REPLACE')
 C
 C...GENERAL PURPOSE FORMAT STATEMENTS
 C...  
@@ -263,12 +291,13 @@ C
  3561    FORMAT(5X,'NSCREEN = ',I6,
      &        /,9X,'SCREEN OUTPUT WILL BE PROVIDED TO UNIT 6',
      &        /,9X,'EVERY NSCREEN TIME STEPS.',/)
-      ELSEIF(NSCREEN.LT.0.AND.MYPROC.EQ.0) THEN
+      ELSEIF((NSCREEN.LT.0).AND.(MYPROC.EQ.0)) THEN
          ScreenUnit=999
          WRITE(16,3562) NSCREEN
  3562    FORMAT(/,5X,'NSCREEN = ',I6,
      &        /,9X,'SCREEN OUTPUT WILL BE PROVIDED TO adcirc.log',/)
-         OPEN(ScreenUnit,FILE=TRIM(GLOBALDIR)//'/'//'adcirc.log')
+         OPEN(ScreenUnit,FILE=TRIM(GLOBALDIR)//'/'//'adcirc.log',
+     &        STATUS='REPLACE')
       ELSE
          WRITE(16,3563) NSCREEN
  3563    FORMAT(/,5X,'NSCREEN = ',I6,
@@ -4940,7 +4969,7 @@ C        initialize parameter arrays needed by iterative solver
          CALL DFAULT(IPARM,RPARM)
          IPARM(1)=ITMAX
          IPARM(2)=ISLDIA
-         OPEN(33,FILE=TRIM(LOCALDIR)//'/'//'fort.33')
+         OPEN(33,FILE=TRIM(LOCALDIR)//'/'//'fort.33',STATUS='REPLACE')
          IPARM(4)=33
          RPARM(1)=CONVCR
          NW = 4*NP + 4*ITMAX
