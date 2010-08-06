@@ -79,8 +79,8 @@ Casey 090527: Debug.
       ENDIF
   
       if (ARGCOUNT > 0) then
-         write(*,*) "DEBUG: ",myProc,
-     &       ": Processing command line options."
+C         write(*,*) "DEBUG: ",myProc,
+C     &       ": Processing command line options."
          i = 0
          do while (i < ARGCOUNT)
             i = i + 1
@@ -113,6 +113,7 @@ Casey 090527: Debug.
                i = i + 1
                ! this is the number of writer processors, and will
                ! be parsed in a later call to GET_NUMWRITERS
+               !  ... could also be -Ws for round-robin writers
             case default
                if (myProc.eq.0) then
                   write(*,*) "WARNING: The command line option '",

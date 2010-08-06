@@ -81,7 +81,7 @@ C...
 #endif
          STOP
       ENDIF
-      WRITE(*,*) "DEBUG: ",myProc,": Opening fort.14 file."
+C      WRITE(*,*) "DEBUG: ",myProc,": Opening fort.14 file."
       OPEN(14,FILE=TRIM(INPUTDIR)//'/'//'fort.14',STATUS='OLD')
 C
       INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.15',EXIST=FileFound)
@@ -94,12 +94,12 @@ C
 #endif
          STOP
       ENDIF
-      WRITE(*,*) "DEBUG: ",myProc,": Opening fort.15 file."
+C      WRITE(*,*) "DEBUG: ",myProc,": Opening fort.15 file."
       OPEN(15,FILE=TRIM(INPUTDIR)//'/'//'fort.15',STATUS='OLD')
 C...
 C...OPEN STATEMENT FOR UNIT 16 OUTPUT FILE
 C...
-      WRITE(*,*) "DEBUG: ",myProc,": Opening fort.16 file."
+C      WRITE(*,*) "DEBUG: ",myProc,": Opening fort.16 file."
       OPEN(16,FILE=TRIM(LOCALDIR)//'/'//'fort.16',STATUS='REPLACE')
 C
 C...GENERAL PURPOSE FORMAT STATEMENTS

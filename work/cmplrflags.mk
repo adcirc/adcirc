@@ -14,10 +14,10 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=intel
 #compiler=intel-lonestar
 #compiler=cray_xt3
-#compiler=cray_xt4
+compiler=cray_xt4
 #compiler=cray_xt5
 #compiler=pgi
-compiler=pgi-ranger
+#compiler=pgi-ranger
 #compiler=diamond
 #
 #
