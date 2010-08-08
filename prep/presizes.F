@@ -734,7 +734,7 @@ C
 C...THIS SECTION TO LUMP THE GWCE MATRIX
 Cvjp 11/30/99 made lumping a compile time option
 
-      PRINT *, "Made it to LUMP definition"
+C      PRINT *, "Made it to LUMP definition"
 #ifdef LUMP
        CLUMP = .TRUE.
        ILUMP=1
@@ -749,7 +749,7 @@ Cvjp 11/30/99 made lumping a compile time option
 C
 C--Read in 3D info
 C
-      PRINT *, "Made it to 3D information"
+C      PRINT *, "Made it to 3D information"
       IF(C3DVS) THEN  !3DVS
 c     jgf45.10 removed IDIAG
          READ(15,*) IDUM                               !Skip IDEN
@@ -797,7 +797,7 @@ C     jgf45.12 add code to handle user specified vertical eddy viscosity.
          READ(15,*) IDUM,RDUM,RDUM,IDUM                !Skip 3D global turbulence output
 
 !kmd48.33bc - added this information for the boundary conditions
-         PRINT *, "Made it to baroclinic boundary information"
+C         PRINT *, "Made it to baroclinic boundary information"
          IF (CBAROCLINIC) THEN
            READ(15,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP    !Process RES_BC_FLAG
            IF ((RES_BC_FLAG.LT.0).OR.(RES_BC_FLAG.EQ.1)) THEN
@@ -818,7 +818,7 @@ C     jgf45.12 add code to handle user specified vertical eddy viscosity.
            END IF
          END IF
 
-         PRINT *, "Made it to sponge information"
+C         PRINT *, "Made it to sponge information"
          IF (CBAROCLINIC) THEN
             READ(15,*) RDUM
          END IF

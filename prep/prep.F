@@ -2490,10 +2490,10 @@ C--Enter, Locate, Open, and Read the ADCIRC UNIT 35
 C  Global Level of No Motion Boundary Conditions file for baroclinic
 C
 C     Open full domain and subdomain fort.35 files
-      Print *, "Made it to prepping the files"
+C      Print *, "Made it to prepping the files"
       CALL OpenPrepFiles(35, 'level of no motion boundary  ',
      &     1, nproc, SDU, Success)
-      Print *, "Made it out of prepping the files"
+C      Print *, "Made it out of prepping the files"
       IF (.not.Success) THEN
          WRITE(*,*) 'WARNING: Unit 35 files not preprocessed.'
          RETURN ! note early return
@@ -2507,7 +2507,7 @@ C
 C
 C--While ( NOT EOF ) Read NETA BCs from Global File
 C
-      PRINT *, "Made it to the reading in of the 35 file"
+C      PRINT *, "Made it to the reading in of the 35 file"
       DO  ! loop until end of file
       READ(35,40,END=9999) ETIMINC
       DO IPROC = 1,NPROC
@@ -4767,7 +4767,7 @@ C     Start reading in the data
         PRINT*, "How many layers need to be evaluated:"
         READ *, NFEN
    
-        PRINT *, "Made it to the 3d portion of this"
+C        PRINT *, "Made it to the 3d portion of this"
         PRINT *, "NFEN = ", NFEN
 
 !kmd Added information for 3D hotstart

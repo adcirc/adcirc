@@ -3,7 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
-C  v49.22     08/06/2010 - jgf - Commented out DEBUG statements in sizes.F
+C  v49.23   - 08/06/2010 - jgf - Fixes to reorganized NetCDF module. 
+C             Files now initialize properly, but there are still issues with
+C             writing actual data.
+C  v49.22   - 08/06/2010 - jgf - Commented out DEBUG statements in sizes.F
 C             (related to command line option processing) and read_input.F
 C             (related to opening files fort.14, fort.15, and fort.16).
 C  v49.21   - jgf - Merged the subdomainhotstart branch into the trunk, 

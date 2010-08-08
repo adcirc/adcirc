@@ -374,7 +374,7 @@ ifeq ($(compiler),gnu)
   FC		:=  g95
   PFC		:=  mpif90 
 #  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132
-  FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -DNETCDF_DEBUG
+  FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DNETCDF_DEBUG
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA

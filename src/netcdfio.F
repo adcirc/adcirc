@@ -182,43 +182,44 @@ C
          LOGICAL fileFound  ! .true. if the netCDF file is present
       END Type fileData
  
+      TYPE, PRIVATE :: timeData
+         INTEGER :: timenc_len = 1  ! number of time slices to write
+         INTEGER :: timenc_dim_id
+         INTEGER :: timenc_rank = 1
+         INTEGER :: timenc_id
+         INTEGER :: timenc_dims(1)
+         REAL(8), ALLOCATABLE :: timenc(:)
+      END TYPE timeData 
+
       TYPE, PRIVATE :: stationData
          PRIVATE
-         INTEGER lun               ! ADCIRC's logical unit number
          INTEGER ncid              ! the id of its netcdf file
          INTEGER num_stations      ! total number of stations 
+         INTEGER :: num_sta_dim_id
          INTEGER, ALLOCATABLE :: name_lengths(:) ! lengths of station names 
          CHARACTER(50), POINTER :: statnames(:,:)
+         INTEGER :: slen_dim_id
+         INTEGER :: scode_dim_id
+         INTEGER :: station_rank = 2
+         INTEGER :: station_id
+         INTEGER :: scode_rank = 2
+         INTEGER :: station_dims(2)
+         INTEGER :: scode_dims(2)
          REAL(SZ), ALLOCATABLE :: station_data(:,:) ! for scalar data 
          REAL(SZ), ALLOCATABLE :: u_station_data(:,:) ! for vector component 1
          REAL(SZ), ALLOCATABLE :: v_station_data(:,:) ! for vector component 2 
          REAL(SZ), ALLOCATABLE :: sta_x(:) ! x coordinate or longitude
          REAL(SZ), ALLOCATABLE :: sta_y(:) ! y coordinate or latitude  
-         INTEGER :: timenc_len       ! number of time records  
-         INTEGER :: timenc_dim_id
-         INTEGER :: time_dim_id
-         INTEGER :: timenc_rank = 1
-         INTEGER :: timenc_id
-         REAL(8), ALLOCATABLE :: timenc(:)
-         INTEGER :: slen_dim_id
-         INTEGER :: scode_dim_id
-         INTEGER :: num_sta_dim_id
-         INTEGER :: station_rank = 2
-         INTEGER :: station_id
-         INTEGER :: scode_rank = 2
-         INTEGER :: zeta_id
-         INTEGER :: zeta_rank = 2
-         INTEGER :: u_id
-         INTEGER :: u_rank = 2
-         INTEGER :: v_id
-         INTEGER :: v_rank = 2
-         INTEGER :: timenc_dims(1)
-         INTEGER :: station_dims(2)
-         INTEGER :: scode_dims(2)
-         INTEGER :: zeta_dims(2)
-         INTEGER :: u_dims(2)
-         INTEGER :: v_dims(2)
-
+         INTEGER :: station_data_id
+         INTEGER :: station_data_rank = 2
+         INTEGER :: u_station_data_id
+         INTEGER :: u_station_data_rank = 2
+         INTEGER :: v_station_data_id
+         INTEGER :: v_station_data_rank = 2
+         INTEGER :: station_data_dims(2)
+         INTEGER :: u_station_data_dims(2)
+         INTEGER :: v_station_data_dims(2)
+         type(timeData) :: myTime
          type(fileData) :: myFile
       END TYPE stationData
 
@@ -229,30 +230,21 @@ C
 
       TYPE, PRIVATE :: nodalData
          PRIVATE
-         INTEGER lun               ! ADCIRC's logical unit number
          INTEGER ncid              ! the id of its netcdf file
-         INTEGER num_nodes         ! total number of stations 
-         INTEGER num_nodes_dim_id
          REAL(SZ) :: initial_value ! array will be initialized to this
          REAL(SZ), ALLOCATABLE :: nodal_data(:,:)   ! for scalar data 
          REAL(SZ), ALLOCATABLE :: u_nodal_data(:,:) ! for 1st vector component
          REAL(SZ), ALLOCATABLE :: v_nodal_data(:,:) ! for 2nd vector component
-         INTEGER :: timenc_len       ! number of time records  
-         INTEGER :: timenc_dim_id
-         INTEGER :: time_dim_id
-         INTEGER :: timenc_rank = 1
-         INTEGER :: timenc_id
-         REAL(8), ALLOCATABLE :: timenc(:)
-         INTEGER :: zeta_id
-         INTEGER :: zeta_rank = 2
-         INTEGER :: u_id
-         INTEGER :: u_rank = 2
-         INTEGER :: v_id
-         INTEGER :: v_rank = 2
-         INTEGER :: timenc_dims(1)
-         INTEGER :: zeta_dims(2)
-         INTEGER :: u_dims(2)
-         INTEGER :: v_dims(2)
+         INTEGER :: nodal_data_id
+         INTEGER :: nodal_data_rank = 2
+         INTEGER :: u_nodal_data_id
+         INTEGER :: u_nodal_data_rank = 2
+         INTEGER :: v_nodal_data_id
+         INTEGER :: v_nodal_data_rank = 2
+         INTEGER :: nodal_data_dims(2)
+         INTEGER :: u_nodal_data_dims(2)
+         INTEGER :: v_nodal_data_dims(2)
+         type(timeData) :: myTime
          type(fileData) :: myFile
          type(meshStructure) :: myMesh
       END TYPE nodalData
@@ -266,7 +258,6 @@ C
          INTEGER lun               ! ADCIRC's logical unit number
          INTEGER ncid              ! the id of its netcdf file
          INTEGER num_nodes         ! total number of stations 
-         INTEGER num_nodes_dim_id
          INTEGER num_elems         ! total number of stations 
          INTEGER num_elems_dim_id
          INTEGER u_id
@@ -337,16 +328,11 @@ C
          REAL(SZ), ALLOCATABLE :: zetad(:,:)  
          INTEGER, ALLOCATABLE :: nodecodenc(:,:)  
          INTEGER, ALLOCATABLE :: noffnc(:,:)  
-         INTEGER :: timenc_len       ! number of time records  
-         INTEGER :: timenc_dim_id
-         INTEGER :: timenc_rank = 1
-         INTEGER :: timenc_id
-         REAL(8), ALLOCATABLE :: timenc(:)
-         INTEGER :: timenc_dims(1)
-         type(fileData) :: myFile
          INTEGER :: FileFmtMajorFile
          INTEGER :: FileFmtMinorFile
          INTEGER :: FileFmtRevFile
+         type(fileData) :: myFile
+         type(timeData) :: myTime
          type(meshStructure) :: myMesh
       END TYPE hotstartData   
 C
@@ -392,6 +378,9 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, intent(in) :: lun
       TYPE(OutputDataDescript_t) :: descript
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering allocNetCDFArrays ",lun
+#endif
 C 
       ! don't allocate or initialize anything if this output type is not
       ! using netcdf
@@ -458,22 +447,33 @@ C
       character zone*5
       integer values(8)
 C
-      sta % lun = lun
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering initStation ",lun
+#endif
       sta % num_stations = descript % num_fd_records
-      
+      ALLOCATE(sta%myTime%timenc(sta%myTime%timenc_len))
+C      
+C     Memory allocation for the station type, according to the number
+C     of stations and time
       select case(descript%num_items_per_record)
 
          case(1)
-            ALLOCATE(sta%station_data(sta%num_stations, sta%timenc_len))
+            ALLOCATE(sta%station_data(sta%num_stations,
+     &              sta%myTime%timenc_len))
             DO n=1, sta%num_stations
-               sta%station_data(n,sta%timenc_len) = descript%initial_value
+               sta%station_data(n,sta%myTime%timenc_len) 
+     &             = descript%initial_value
             END DO
          case(2)
-            ALLOCATE(sta%u_station_data(sta%num_stations, sta%timenc_len))
-            ALLOCATE(sta%v_station_data(sta%num_stations, sta%timenc_len))
+            ALLOCATE(sta%u_station_data(sta%num_stations,
+     &                                  sta%myTime%timenc_len))
+            ALLOCATE(sta%v_station_data(sta%num_stations,
+     &                                  sta%myTime%timenc_len))
             DO n=1, sta % num_stations
-               sta%u_station_data(n,sta%timenc_len) = descript%initial_value
-               sta%v_station_data(n,sta%timenc_len) = descript%initial_value
+               sta%u_station_data(n,sta%myTime%timenc_len) 
+     &              = descript%initial_value
+               sta%v_station_data(n,sta%myTime%timenc_len) 
+     &              = descript%initial_value
             END DO
          case default
             WRITE(6,*) "ERROR: The station has ",
@@ -484,10 +484,10 @@ C
 C
 C     Set coordinates of each station, converting to degrees if we 
 C     are in spherical coordinates. 
-      ALLOCATE(sta%sta_x(sta % num_stations))
-      ALLOCATE(sta%sta_y(sta % num_stations))
+      ALLOCATE(sta%sta_x(sta%num_stations))
+      ALLOCATE(sta%sta_y(sta%num_stations))
       IF(ICS.EQ.2) THEN
-         DO I=1, sta % num_stations
+         DO I=1, sta%num_stations
             sta%sta_x(i)=descript%x_coord(i) * RAD2DEG
             sta%sta_y(i)=descript%y_coord(i) * RAD2DEG
          END DO
@@ -499,40 +499,13 @@ C     are in spherical coordinates.
       ENDIF
 C
 C     Initialize netCDF output file, creating a new one if necessary.
-      sta%myFile%record_counter = 0
-      sta%myFile%createFile = .false.
-      sta%myFile%fileFound = .false.
-      sta%myFile%FILEFORT = 'fort.'
-      sta%myFile%FILEEXT = '.nc'
-      WRITE(sta%myFile%FILENAME,'(A5,I2,A3)') 
-     &      sta%myFile%FILEFORT, lun, sta%myFile%FILEEXT
-C
-C     jgf49.17.02: Simplified the criteria for creating a new netCDF
-C     file: coldstart, overwrite upon hotstart, or output
-C     that does not already exist.
-      INQUIRE(FILE=sta%myFile%FILENAME,EXIST=sta%myFile%fileFound)
-      IF ((IHOT.EQ.0).OR.(descript%specifier.lt.0).OR.
-     &   (sta%myFile%fileFound.eqv..false.)) THEN
-         sta%myFile%createFile = .true.
-      ENDIF
+      CALL createNetCDFOutputFile(sta%ncid, sta%myFile, lun, sta%myTime,
+     &                            descript)
 C     
-C     RETURN if we don't need to create a file.
+C     RETURN if we didn't need to create a file.
       IF (sta%myFile%createFile.eqv..false.) THEN
          RETURN
       ENDIF     
-
-      iret = nf_create(sta%myFile%FILENAME, NF_CLOBBER, sta%ncid)
-      CALL check_err(iret)
-C
-      CALL putMetaData(sta%ncid)
-C       
-!     Define time
-      iret = nf_def_dim(sta%ncid, 'time',nf_unlimited,sta%timenc_dim_id)
-      CALL check_err(iret)
-      sta%timenc_dims(1) = sta%timenc_dim_id
-      iret = nf_def_var(sta%ncid, 'time', NF_DOUBLE, sta%timenc_rank,
-     &       sta%timenc_dims, sta%timenc_id)
-      CALL check_err(iret)
       iret = nf_def_dim(sta%ncid, 'station',
      &       sta%num_stations, sta%num_sta_dim_id)
       CALL check_err(iret)
@@ -555,248 +528,263 @@ C     as well as the units system (english or si according to the value of g).
 
          CASE(61) !       F O R T . 6 1
    
-            sta%zeta_dims(1) = sta%num_sta_dim_id
-            sta%zeta_dims(2) = sta%timenc_dim_id
+            sta%station_data_dims(1) = sta%num_sta_dim_id
+            sta%station_data_dims(2) = sta%myTime%timenc_dim_id
             iret = nf_def_var(sta%ncid, 'zeta', NF_DOUBLE,
-     &             sta%zeta_rank, sta%zeta_dims, sta%zeta_id)
+     &             sta%station_data_rank, sta%station_data_dims,
+     &             sta%station_data_id)
             CALL check_err(iret)
 !           Define water surface elevation attributes
-            iret = nf_put_att_text(sta%ncid, sta%zeta_id,
+            iret = nf_put_att_text(sta%ncid, sta%station_data_id,
      &             'long_name',35, VAR61_LN)
             CALL check_err(iret)
-            iret = nf_put_att_text(sta%ncid, sta%zeta_id,
+            iret = nf_put_att_text(sta%ncid, sta%station_data_id,
      &             'standard_name', 23, VAR61_ST)
             CALL check_err(iret)
-            CALL putUnitsAttribute(sta%ncid, sta%zeta_id, VAR_METS, VAR_FEET)
-            iret = nf_put_att_DOUBLE(sta%ncid, sta%zeta_id, '_FillValue',
-     &             NF_DOUBLE, 1, doubleval)
+            CALL putUnitsAttribute(sta%ncid, sta%station_data_id,
+     &           VAR_METS, VAR_FEET)
+            iret = nf_put_att_DOUBLE(sta%ncid, sta%station_data_id,
+     &              '_FillValue', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
-            iret = nf_put_att_text(sta%ncid, sta%zeta_id,'positive', 2, VAR_UP)
+            iret = nf_put_att_text(sta%ncid, sta%station_data_id,
+     &             'positive', 2, VAR_UP)
             CALL check_err(iret)
             sta%statnames => STATNAME
  
          CASE(62) !       F O R T . 6 2 
  
-            sta%u_dims(1) = sta%num_sta_dim_id
-            sta%u_dims(2) = sta%timenc_dim_id
+            sta%u_station_data_dims(1) = sta%num_sta_dim_id
+            sta%u_station_data_dims(2) = sta%myTime%timenc_dim_id
             iret = nf_def_var(sta%ncid, 'u-vel', NF_DOUBLE, 
-     &             sta%u_rank, sta%u_dims, sta%u_id)
+     &             sta%u_station_data_rank, sta%u_station_data_dims,
+     &             sta%u_station_data_id)
             CALL check_err(iret)
-            sta%v_dims(1) = sta%num_sta_dim_id
-            sta%v_dims(2) = sta%timenc_dim_id
+            sta%v_station_data_dims(1) = sta%num_sta_dim_id
+            sta%v_station_data_dims(2) = sta%myTime%timenc_dim_id
             iret = nf_def_var(sta%ncid, 'v-vel', NF_DOUBLE,
-     &             sta%v_rank, sta%v_dims, sta%v_id)
+     &             sta%v_station_data_rank, sta%v_station_data_dims,
+     &             sta%v_station_data_id)
             CALL check_err(iret)
             if (ics.eq.2) then
                ! u
-               iret = nf_put_att_text(sta%ncid, sta%u_id, 'long_name', 59, 
+               iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
+     &         'long_name', 59, 
      &    'station water column vertically averaged east/west velocity')
                CALL check_err(iret)
 
-               iret = nf_put_att_text(sta%ncid, sta%u_id,
+               iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                   'standard_name', 46, 
      &       'station_eastward_water_velocity_depth_averaged')
                CALL check_err(iret)
-               iret = nf_put_att_text(sta%ncid, sta%u_id, 'positive',
-     &                4, VAR_EAST)
+               iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
+     &                'positive', 4, VAR_EAST)
                CALL check_err(iret)
                ! v
-               iret = nf_put_att_text(sta%ncid,sta%v_id, 'long_name', 61, 
+               iret = nf_put_att_text(sta%ncid,sta%v_station_data_id,
+     &         'long_name', 61, 
      &'station water column vertically averaged north/south velocity')
                CALL check_err(iret)
-               iret = nf_put_att_text(sta%ncid,sta%v_id, 'standard_name', 47, 
+               iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
+     &         'standard_name', 47, 
      &         'station_northward_water_velocity_depth_averaged')
                CALL check_err(iret)
-               iret = nf_put_att_text(sta%ncid, sta%v_id,
+               iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &         'positive', 5, VAR_NORTH)
                CALL check_err(iret)
             else
                ! u
-               iret = nf_put_att_text(sta%ncid, sta%u_id,
+               iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &               'long_name', 64, 
      &            'station water column vertically averaged velocity in 
      &x-direction')
                CALL check_err(iret)
 
-               iret = nf_put_att_text(sta%ncid, sta%u_id,
+               iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                   'standard_name', 39, 
      &       'station_x_water_velocity_depth_averaged')
                CALL check_err(iret)
-               iret = nf_put_att_text(sta%ncid,sta%u_id,
+               iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                'positive', 5, VAR_RG)
                CALL check_err(iret)
                ! v
-               iret = nf_put_att_text(sta%ncid, sta%v_id,
+               iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &                'long_name', 64, 
      &            'station water column vertically averaged velocity in 
      &y-direction')
                CALL check_err(iret)
-               iret = nf_put_att_text(sta%ncid, sta%v_id,
+               iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &         'standard_name', 39, 
      &         'station_y_water_velocity_depth_averaged')
                CALL check_err(iret)
-               iret = nf_put_att_text(sta%ncid, sta%v_id, 'positive',
-     &         49, VAR_UPV)
+               iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
+     &         'positive', 49, VAR_UPV)
                CALL check_err(iret)
             endif
 
-            CALL putUnitsAttribute(sta%ncid, sta%u_id,VAR_MPS, VAR_FPS)
-            iret = nf_put_att_double(sta%ncid, sta%u_id,
+            CALL putUnitsAttribute(sta%ncid, sta%u_station_data_id, 
+     &      VAR_MPS, VAR_FPS)
+            iret = nf_put_att_double(sta%ncid, sta%u_station_data_id,
      &             '_FillValue', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
-            iret = nf_put_att_double(sta%ncid, sta%u_id,
+            iret = nf_put_att_double(sta%ncid, sta%u_station_data_id,
      &             'dry_Value', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
-            CALL putUnitsAttribute(sta%ncid, sta%v_id,VAR_MPS,VAR_FPS)
-            iret = nf_put_att_DOUBLE(sta%ncid, sta%v_id,
-     &      '_FillValue', NF_DOUBLE, 1, 
-     &                       doubleval)
+            CALL putUnitsAttribute(sta%ncid, sta%v_station_data_id,
+     &      VAR_MPS,VAR_FPS)
+            iret = nf_put_att_DOUBLE(sta%ncid, sta%v_station_data_id,
+     &      '_FillValue', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
-            iret = nf_put_att_DOUBLE(sta%ncid, sta%v_id,
+            iret = nf_put_att_DOUBLE(sta%ncid, sta%v_station_data_id,
      &      'dry_Value', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
             sta%statnames => STATNAMEV
 
          CASE(71) !         F  O R T . 7 1 
 
-            sta%zeta_dims(1) = sta%num_sta_dim_id
-            sta%zeta_dims(2) = sta%timenc_dim_id
+            sta%station_data_dims(1) = sta%num_sta_dim_id
+            sta%station_data_dims(2) = sta%myTime%timenc_dim_id
       
             iret = nf_def_var(sta%ncid, 'pressure', NF_DOUBLE,
-     &      sta%zeta_rank, sta%zeta_dims, sta%zeta_id)
+     &      sta%station_data_rank, sta%station_data_dims, sta%station_data_id)
             CALL check_err(iret)
-            iret = nf_put_att_text(sta%ncid, sta%zeta_id,
+            iret = nf_put_att_text(sta%ncid, sta%station_data_id,
      &      'long_name',33, VAR71_LN)
             CALL check_err(iret)
-            iret = nf_put_att_text(sta%ncid, sta%zeta_id,
+            iret = nf_put_att_text(sta%ncid, sta%station_data_id,
      &      'standard_name', 25, VAR71_ST)
             CALL check_err(iret)
-            iret = nf_put_att_text(sta%ncid, sta%zeta_id,
+            iret = nf_put_att_text(sta%ncid, sta%station_data_id,
      &      'units', 15, VAR71_UN)
             CALL check_err(iret)
-            iret = nf_put_att_DOUBLE(sta%ncid, sta%zeta_id,
+            iret = nf_put_att_DOUBLE(sta%ncid, sta%station_data_id,
      &      '_FillValue', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
-            iret = nf_put_att_text(sta%ncid, sta%zeta_id,
+            iret = nf_put_att_text(sta%ncid, sta%station_data_id,
      &      'positive', 2, VAR_UP)
             CALL check_err(iret)
             sta%statnames => STATNAMEV
           
          CASE(72)  !      F O R T . 7 2 
       
-            sta%u_dims(1) = sta%num_sta_dim_id
-            sta%u_dims(2) = sta%timenc_dim_id
+            sta%u_station_data_dims(1) = sta%num_sta_dim_id
+            sta%u_station_data_dims(2) = sta%myTime%timenc_dim_id
             iret = nf_def_var(sta%ncid, 'windx', NF_DOUBLE,
-     &      sta%u_rank, sta%u_dims, sta%u_id)
+     &      sta%u_station_data_rank, sta%u_station_data_dims,
+     &      sta%u_station_data_id)
             CALL check_err(iret)
-            sta%v_dims(1) = sta%num_sta_dim_id
-            sta%v_dims(2) = sta%timenc_dim_id
+            sta%v_station_data_dims(1) = sta%num_sta_dim_id
+            sta%v_station_data_dims(2) = sta%myTime%timenc_dim_id
             iret = nf_def_var(sta%ncid, 'windy', NF_DOUBLE,
-     &      sta%v_rank, sta%v_dims, sta%v_id)
+     &      sta%v_station_data_rank, sta%v_station_data_dims, 
+     &      sta%v_station_data_id)
             CALL check_err(iret)
 C
             if (ics.eq.2) then
                select case(abs(nws)) 
                   case(1,2)
-                     iret = nf_put_att_text(sta%ncid, sta%u_id,
+                     iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                      'long_name', 23, 'station e/w wind stress')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid,sta%u_id,
+                     iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                      'standard_name', 36,
      &                      'station_eastward_surface_wind_stress')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%u_id,
+                     iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                      'positive', 4, VAR_EAST)
-                     iret = nf_put_att_text(sta%ncid, sta%v_id,
+                     iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &                      'long_name', 23, 'station n/s wind stress')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%v_id,
+                     iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &                     'standard_name', 37, 
      &                     'station_northward_surface_wind_stress')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%v_id,
+                     iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &                      'positive', 5, VAR_NORTH)
                      CALL check_err(iret)
                   case default       
-                     iret = nf_put_att_text(sta%ncid, sta%u_id,
+                     iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                      'long_name', 25,'station e/w wind velocity')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%u_id,
+                     iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                      'standard_name', 21, 
      &                      'station_eastward_wind')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%u_id,
+                     iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                      'positive', 4, VAR_EAST)
-                     iret = nf_put_att_text(sta%ncid, sta%v_id,
+                     iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &                      'long_name', 25, 
      &                      'station n/s wind velocity')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%v_id,
+                     iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &                      'standard_name',22,'station_northward_wind')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%v_id,
+                     iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &                      'positive', 5,VAR_NORTH)
                end select
             else
                select case(abs(nws))
                   case(1,2)
-                     iret = nf_put_att_text(sta%ncid, sta%u_id,
+                     iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                      'long_name', 33, 
      &                      'station wind stress in x-direction')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%u_id,
+                     iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                      'standard_name', 29, 
      &                      'station_x_surface_wind_stress')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%u_id,
+                     iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                      'positive', 5, VAR_RG)
-                     iret = nf_put_att_text(sta%ncid, sta%v_id,
+                     iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &                      'long_name', 33, 
      &                      'station wind stress in y-direction')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%v_id,
+                     iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &                      'standard_name', 29, 
      &                      'station_y_surface_wind_stress')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%v_id,
+                     iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &                     'positive', 59, VAR_UPWS)
                   case default 
-                     iret = nf_put_att_text(sta%ncid, sta%u_id,
+                     iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                       'long_name', 36, 
      &                       'station wind velocity in x-direction')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%u_id,
+                     iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                      'standard_name', 36, 'station_x_wind')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%u_id,
+                     iret = nf_put_att_text(sta%ncid, sta%u_station_data_id,
      &                      'positive', 5, VAR_RG)
-                     iret = nf_put_att_text(sta%ncid, sta%v_id,
+                     iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &                      'long_name', 36, 
      &                      'station wind velocity in y-direction')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%v_id,
+                     iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &                      'standard_name', 36, 
      &                      'station_y_wind')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(sta%ncid, sta%v_id,
+                     iret = nf_put_att_text(sta%ncid, sta%v_station_data_id,
      &                      'positive', 61, VAR_UPW)
                      CALL check_err(iret)
                end select
             endif
 
             if (abs(nws).gt.2.and.abs(nws).lt.100) then
-               call putUnitsAttribute(sta%ncid, sta%u_id, VAR_MPS, VAR_FPS)
-               call putUnitsAttribute(sta%ncid, sta%v_id, VAR_MPS, VAR_FPS)
+               call putUnitsAttribute(sta%ncid, sta%u_station_data_id,
+     &              VAR_MPS, VAR_FPS)
+               call putUnitsAttribute(sta%ncid, sta%v_station_data_id,
+     &              VAR_MPS, VAR_FPS)
             else
-               call putUnitsAttribute(sta%ncid, sta%u_id, VAR_MPS_2, VAR_FPS_2)
-               call putUnitsAttribute(sta%ncid, sta%u_id, VAR_MPS_2, VAR_FPS_2)
+               call putUnitsAttribute(sta%ncid, sta%u_station_data_id,
+     &              VAR_MPS_2, VAR_FPS_2)
+               call putUnitsAttribute(sta%ncid, sta%u_station_data_id,
+     &              VAR_MPS_2, VAR_FPS_2)
             endif
 
-            iret = nf_put_att_double(sta%ncid, sta%u_id, '_FillValue',
-     &             NF_DOUBLE, 1, doubleval)
+            iret = nf_put_att_double(sta%ncid, sta%u_station_data_id,
+     &             '_FillValue', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
-            iret = nf_put_att_DOUBLE(sta%ncid, sta%v_id, '_FillValue',
-     &             NF_DOUBLE, 1, doubleval)
+            iret = nf_put_att_DOUBLE(sta%ncid, sta%v_station_data_id,
+     &             '_FillValue', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
             sta%statnames => STATNAMEM
     
@@ -813,16 +801,16 @@ C
       CALL check_err(iret)
 !
 !     Define time attributes
-      iret = nf_put_att_text(sta%ncid,sta%timenc_id,
+      iret = nf_put_att_text(sta%ncid, sta%myTime%timenc_id,
      &       'long_name',10,'model time')
       CALL check_err(iret)
-      iret = nf_put_att_text(sta%ncid,sta%timenc_id,
+      iret = nf_put_att_text(sta%ncid,sta%myTime%timenc_id,
      &       'standard_name', 4, 'time')
       CALL check_err(iret)
-      iret = nf_put_att_text(sta%ncid, sta%timenc_id, 'units', 23, 
+      iret = nf_put_att_text(sta%ncid, sta%myTime%timenc_id, 'units', 23, 
      .       'seconds since base_date')
       CALL check_err(iret)
-      iret = nf_put_att_text(sta%ncid, sta%timenc_id, 'base_date',
+      iret = nf_put_att_text(sta%ncid, sta%myTime%timenc_id, 'base_date',
      .       (LEN(TRIM(base_date(1:INDEX(base_date,"!")-1)))), base_date)
       CALL check_err(iret)
 
@@ -864,7 +852,7 @@ C     jgf49.17.02 Sets up netCDF variables and allocates memory for
 C     full domain data.
 C-----------------------------------------------------------------------
       SUBROUTINE initNodalData(dat, lun, descript)
-      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, NWS
+      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, NWS, NE_G
       IMPLICIT NONE
 C
       type(nodalData), intent(inout) :: dat
@@ -874,16 +862,45 @@ C
       INTEGER n    ! node counter
       INTEGER iret ! success or failure of netcdf call
 C 
-      dat % lun = lun
-      dat % num_nodes = descript % num_fd_records
-      dat % initial_value = descript % initial_value
-      ALLOCATE(dat % nodal_data(dat % num_nodes, dat % timenc_len))
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering initNodalData ",lun
+#endif
+      dat%myMesh%num_nodes = descript % num_fd_records
+      dat%myMesh%num_elems = NE_G
+      ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
+      IF (descript%num_items_per_record.eq.1) THEN
+         ALLOCATE(dat % nodal_data(dat%myMesh%num_nodes,
+     &       dat%myTime%timenc_len))
+C        initialization
+         DO n=1, dat%myMesh%num_nodes
+            dat%nodal_data(n,dat%myTime%timenc_len)
+     &         = descript%initial_value
+         END DO
+      ENDIF
+C      
+      IF (descript%num_items_per_record.eq.2) THEN
+         ALLOCATE(dat%u_nodal_data(dat%myMesh%num_nodes,
+     &       dat%myTime%timenc_len))
+         ALLOCATE(dat%v_nodal_data(dat%myMesh%num_nodes,
+     &       dat%myTime%timenc_len))
+C        initialization
+         DO n=1, dat%myMesh%num_nodes
+            dat%u_nodal_data(n,dat%myTime%timenc_len) 
+     &         = descript%initial_value
+            dat%v_nodal_data(n,dat%myTime%timenc_len) 
+     &         = descript%initial_value
+         END DO
+      ENDIF
 C
-C     initialization
-      DO n=1, dat % num_nodes
-         dat % nodal_data(n,dat%timenc_len) = descript % initial_value
-      END DO
 C
+C     Initialize netCDF output file, creating a new one if necessary.
+      CALL createNetCDFOutputFile(dat%ncid, dat%myFile, lun, dat%myTime,
+     &                            descript)
+C     
+C     RETURN if we didn't need to create a file.
+      IF (dat%myFile%createFile.eqv..false.) THEN
+         RETURN
+      ENDIF     
       CALL initNetCDFCoord(dat%myMesh)
       CALL defineMeshVariables(dat%ncid, dat%myMesh)
 
@@ -891,221 +908,343 @@ C
 
          CASE(63)
 
-            dat%zeta_dims(1) = dat%num_nodes_dim_id
-            dat%zeta_dims(2) = dat%timenc_dim_id
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
             iret = nf_def_var(dat%ncid, 'zeta', NF_DOUBLE,
-     &             dat%zeta_rank, dat%zeta_dims, dat%zeta_id)
+     &             dat%nodal_data_rank, dat%nodal_data_dims,
+     &             dat%nodal_data_id)
             CALL check_err(iret)     
-            iret = nf_put_att_text(dat%ncid, dat%zeta_id,
+            iret = nf_put_att_text(dat%ncid, dat%nodal_data_id,
      &            'long_name',35, VAR63_LN)
             CALL check_err(iret)
-            iret = nf_put_att_text(dat%ncid, dat%zeta_id,
+            iret = nf_put_att_text(dat%ncid, dat%nodal_data_id,
      &             'standard_name', 23, VAR63_ST)
             CALL check_err(iret)
-            CALL putUnitsAttribute(dat%ncid, dat%zeta_id,
+            CALL putUnitsAttribute(dat%ncid, dat%nodal_data_id,
      &           VAR_METS, VAR_FEET)  
-            iret = nf_put_att_DOUBLE(dat%ncid, dat%zeta_id,
+            iret = nf_put_att_DOUBLE(dat%ncid, dat%nodal_data_id,
      &             '_FillValue', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
-            iret = nf_put_att_text(dat%ncid, dat%zeta_id,
+            iret = nf_put_att_text(dat%ncid, dat%nodal_data_id,
      &             'positive', 2, VAR_UP)
             CALL check_err(iret)
 
          CASE(64)
 
-            dat%u_dims(1) = dat%num_nodes_dim_id
-            dat%u_dims(2) = dat%timenc_dim_id
+            dat%u_nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%u_nodal_data_dims(2) = dat%myTime%timenc_dim_id
             iret = nf_def_var(dat%ncid, 'u-vel', NF_DOUBLE,
-     &             dat%u_rank, dat%u_dims, dat%u_id)
+     &             dat%u_nodal_data_rank, dat%u_nodal_data_dims,
+     &             dat%u_nodal_data_id)
             CALL check_err(iret)
 
-            dat%v_dims(1) = dat%num_nodes_dim_id
-            dat%v_dims(2) = dat%timenc_dim_id
+            dat%v_nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%v_nodal_data_dims(2) = dat%myTime%timenc_dim_id
             iret = nf_def_var(dat%ncid, 'v-vel', NF_DOUBLE,
-     &             dat%v_rank, dat%v_dims, dat%v_id)
+     &             dat%v_nodal_data_rank, dat%v_nodal_data_dims,
+     &             dat%v_nodal_data_id)
             CALL check_err(iret)
             if (ics.eq.2) then
-               iret = nf_put_att_text(dat%ncid, dat%u_id, 'long_name', 51, 
+               iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                'long_name', 51, 
      &   'water column vertically averaged east/west velocity')
                CALL check_err(iret)
-               iret = nf_put_att_text(dat%ncid, dat%u_id,
+               iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
      &                'standard_name', 38, 
      &                'eastward_water_velocity_depth_averaged')
                CALL check_err(iret)
-               iret = nf_put_att_text(dat%ncid, dat%u_id, 'positive', 4, VAR_EAST)
+               iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                'positive', 4, VAR_EAST)
                CALL check_err(iret)
-               iret = nf_put_att_text(dat%ncid, dat%v_id, 'long_name', 53, 
+               iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                'long_name', 53, 
      &    'water column vertically averaged north/south velocity')
                CALL check_err(iret)
-               iret = nf_put_att_text(dat%ncid, dat%v_id,'standard_name', 39, 
+               iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &               'standard_name', 39, 
      &                      'northward_water_velocity_depth_averaged')
                CALL check_err(iret)
-               iret = nf_put_att_text(dat%ncid, dat%v_id, 'positive', 5, VAR_NORTH)
+               iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                'positive', 5, VAR_NORTH)
                CALL check_err(iret)
             else
-               iret = nf_put_att_text(dat%ncid, dat%u_id, 'long_name', 56, 
+               iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                'long_name', 56, 
      &  'water column vertically averaged velocity in x-direction')
                CALL check_err(iret)
-               iret = nf_put_att_text(dat%ncid, dat%u_id,'standard_name', 31, 
+               iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id, 
+     &               'standard_name', 31, 
      &               'x_water_velocity_depth_averaged')
                CALL check_err(iret)
-               iret = nf_put_att_text(dat%ncid, dat%u_id, 'positive', 5, VAR_RG)
+               iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                'positive', 5, VAR_RG)
                CALL check_err(iret)
-               iret = nf_put_att_text(dat%ncid, dat%v_id, 'long_name', 56, 
+               iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                'long_name', 56, 
      &       'water column vertically averaged velocity in y-direction')
                CALL check_err(iret)
-               iret = nf_put_att_text(dat%ncid, dat%v_id,'standard_name', 31, 
-     &                      'y_water_velocity_depth_averaged')
+               iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id, 
+     &               'standard_name', 31, 
+     &               'y_water_velocity_depth_averaged')
                CALL check_err(iret)
-               iret = nf_put_att_text(dat%ncid, dat%v_id, 'positive', 49, VAR_UPV)
+               iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                'positive', 49, VAR_UPV)
                CALL check_err(iret)
             endif
-            CALL putUnitsAttribute(dat%ncid, dat%u_id, VAR_MPS, VAR_FPS)
-            CALL putUnitsAttribute(dat%ncid, dat%v_id, VAR_MPS, VAR_FPS)
-            iret = nf_put_att_double(dat%ncid, dat%u_id, '_FillValue',
-     &             NF_DOUBLE, 1, doubleval)
+            CALL putUnitsAttribute(dat%ncid, dat%u_nodal_data_id,
+     &           VAR_MPS, VAR_FPS)
+            CALL putUnitsAttribute(dat%ncid, dat%v_nodal_data_id,
+     &           VAR_MPS, VAR_FPS)
+            iret = nf_put_att_double(dat%ncid, dat%u_nodal_data_id,
+     &           '_FillValue', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
       
-            iret = nf_put_att_double(dat%ncid, dat%u_id, 'dry_Value',
-     &             NF_DOUBLE, 1, doubleval)
+            iret = nf_put_att_double(dat%ncid, dat%u_nodal_data_id,
+     &           'dry_Value', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
-            iret = nf_put_att_double(dat%ncid, dat%v_id, '_FillValue',
-     &             NF_DOUBLE, 1, doubleval)
+            iret = nf_put_att_double(dat%ncid, dat%v_nodal_data_id,
+     &           '_FillValue', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
       
-            iret = nf_put_att_double(dat%ncid, dat%v_id, 'dry_Value',
-     &             NF_DOUBLE, 1, doubleval)
+            iret = nf_put_att_double(dat%ncid, dat%v_nodal_data_id,
+     &            'dry_Value', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
 
          CASE(73)
 
-            dat%zeta_dims(1) = dat%num_nodes_dim_id
-            dat%zeta_dims(2) = dat%timenc_dim_id     
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id     
             iret = nf_def_var(dat%ncid,'pressure',NF_DOUBLE,
-     &              dat%zeta_rank, dat%zeta_dims, dat%zeta_id) 
+     &              dat%nodal_data_rank, dat%nodal_data_dims,
+     &              dat%nodal_data_id) 
             CALL check_err(iret)
 !           Define sea surface pressure attributes
-            iret = nf_put_att_text(dat%ncid, dat%zeta_id,
+            iret = nf_put_att_text(dat%ncid, dat%nodal_data_id,
      &             'long_name',25, VAR73_LN)
             CALL check_err(iret)
-            iret = nf_put_att_text(dat%ncid, dat%zeta_id,
+            iret = nf_put_att_text(dat%ncid, dat%nodal_data_id,
      &             'standard_name', 33, VAR73_ST)
             CALL check_err(iret)
-            iret = nf_put_att_text(dat%ncid, dat%zeta_id, 'units', 15, VAR73_UN)
+            iret = nf_put_att_text(dat%ncid, dat%nodal_data_id, 'units',
+     &             15, VAR73_UN)
             CALL check_err(iret)
-            iret = nf_put_att_DOUBLE(dat%ncid, dat%zeta_id,
+            iret = nf_put_att_DOUBLE(dat%ncid, dat%nodal_data_id,
      &            '_FillValue', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
-            iret = nf_put_att_text(dat%ncid, dat%zeta_id,'positive', 2, VAR_UP)
+            iret = nf_put_att_text(dat%ncid, dat%nodal_data_id, 
+     &             'positive', 2, VAR_UP)
             CALL check_err(iret)
 
          CASE(74)
 
-            dat%u_dims(1) = dat%num_nodes_dim_id
-            dat%u_dims(2) = dat%timenc_dim_id
+            dat%u_nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%u_nodal_data_dims(2) = dat%myTime%timenc_dim_id
             iret = nf_def_var(dat%ncid, 'windx', NF_DOUBLE,
-     &             dat%u_rank, dat%u_dims, dat%u_id)
+     &             dat%u_nodal_data_rank, dat%u_nodal_data_dims,
+     &             dat%u_nodal_data_id)
             CALL check_err(iret)
-            dat%v_dims(1) = dat%num_nodes_dim_id
-            dat%v_dims(2) = dat%timenc_dim_id
+            dat%v_nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%v_nodal_data_dims(2) = dat%myTime%timenc_dim_id
             iret = nf_def_var(dat%ncid, 'windy', NF_DOUBLE,
-     &             dat%v_rank, dat%v_dims, dat%v_id)
+     &             dat%v_nodal_data_rank, dat%v_nodal_data_dims,
+     &             dat%v_nodal_data_id)
             CALL check_err(iret)
             if (ics.eq.2) then
                select case(abs(nws))
                   case(1,2)
-                     iret = nf_put_att_text(dat%ncid, dat%u_id, 'long_name', 15, 
+                     iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                      'long_name', 15, 
      &                       'e/w wind stress')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(dat%ncid, dat%u_id, 'standard_name', 28, 
+                     iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                      'standard_name', 28, 
      &                      'eastward_surface_wind_stress')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(dat%ncid, dat%u_id, 'positive', 4, VAR_EAST)
-                     iret = nf_put_att_text(dat%ncid, dat%v_id, 'long_name', 15, 
+                     iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                      'positive', 4, VAR_EAST)
+                     iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                       'long_name', 15, 
      &                       'n/s wind stress')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(dat%ncid, dat%v_id, 'standard_name', 29, 
+                     iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                      'standard_name', 29, 
      &                      'northward_surface_wind_stress')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(dat%ncid, dat%v_id, 'positive', 5, VAR_NORTH)
+                     iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                      'positive', 5, VAR_NORTH)
                      CALL check_err(iret)
 
                   case default
-                     iret = nf_put_att_text(dat%ncid, dat%u_id, 'long_name', 17, 
+                     iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &               'long_name', 17, 
      &              'e/w wind velocity')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(dat%ncid, dat%u_id, 'standard_name', 13, 
+                     iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                      'standard_name', 13, 
      &                      'eastward_wind')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(dat%ncid, dat%u_id, 'positive', 4, VAR_EAST)
-                     iret = nf_put_att_text(dat%ncid, dat%v_id, 'long_name', 17, 
+                     iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                     'positive', 4, VAR_EAST)
+                     iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                     'long_name', 17, 
      &       'n/s wind velocity')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(dat%ncid, dat%v_id, 'standard_name', 14, 
+                     iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                       'standard_name', 14, 
      &       'northward_wind')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(dat%ncid, dat%v_id, 'positive', 5, VAR_NORTH)
+                     iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                      'positive', 5, VAR_NORTH)
                end select
             else
                select case(abs(nws))
                   case(1,2)
-                     iret = nf_put_att_text(dat%ncid, dat%u_id, 'long_name', 26, 
+                     iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                       'long_name', 26, 
      &                       'wind stress in x-direction')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(dat%ncid, dat%u_id, 'standard_name', 21, 
+                     iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                      'standard_name', 21, 
      &                      'x_surface_wind_stress')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(dat%ncid, dat%u_id, 'positive', 5, VAR_RG)
+                     iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                      'positive', 5, VAR_RG)
                      CALL check_err(iret)                   
-                     iret = nf_put_att_text(dat%ncid, dat%v_id, 'long_name', 26, 
+                     iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                       'long_name', 26, 
      &                       'wind stress in y-direction')
-              CALL check_err(iret)
-              iret = nf_put_att_text(dat%ncid, dat%v_id, 'standard_name', 21, 
-     &                      'y_surface_wind_stress')
-             CALL check_err(iret)
-             iret = nf_put_att_text(dat%ncid, dat%v_id, 'positive', 59, VAR_UPWS)
-                  case default
-                     iret = nf_put_att_text(dat%ncid, dat%u_id, 'long_name', 28, 
-     &                       'wind velocity in x-direction')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(dat%ncid, dat%u_id, 'standard_name', 28, 
+                     iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                       'standard_name', 21, 
+     &                       'y_surface_wind_stress')
+                     CALL check_err(iret)
+                     iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                     'positive', 59, VAR_UPWS)
+                  case default
+                     iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                      'long_name', 28,
+     &                      'wind velocity in x-direction')
+                     CALL check_err(iret)
+                     iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                      'standard_name', 28, 
      &                      'x_wind')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(dat%ncid, dat%u_id, 'positive', 5, VAR_RG)
+                     iret = nf_put_att_text(dat%ncid, dat%u_nodal_data_id,
+     &                     'positive', 5, VAR_RG)
 
-                     iret = nf_put_att_text(dat%ncid, dat%v_id, 'long_name', 28, 
+                     iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                       'long_name', 28, 
      &                       'wind velocity in y-direction')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(dat%ncid, dat%v_id, 'standard_name', 28, 
+                     iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                      'standard_name', 28, 
      &                      'y_wind')
                      CALL check_err(iret)
-                     iret = nf_put_att_text(dat%ncid, dat%v_id, 'positive', 61, VAR_UPW)
+                     iret = nf_put_att_text(dat%ncid, dat%v_nodal_data_id,
+     &                      'positive', 61, VAR_UPW)
                      CALL check_err(iret)
                end select
             endif
 
             select case(abs(nws))
                case(1,2)
-                  call putUnitsAttribute(dat%ncid, dat%u_id, VAR_MPS_2, VAR_FPS_2)
-                  call putUnitsAttribute(dat%ncid, dat%v_id, VAR_MPS_2, VAR_FPS_2)
+                  call putUnitsAttribute(dat%ncid, dat%u_nodal_data_id,
+     &                 VAR_MPS_2, VAR_FPS_2)
+                  call putUnitsAttribute(dat%ncid, dat%v_nodal_data_id,
+     &                 VAR_MPS_2, VAR_FPS_2)
                case default
-                  call putUnitsAttribute(dat%ncid, dat%u_id, VAR_MPS, VAR_FPS)
-                  call putUnitsAttribute(dat%ncid, dat%v_id, VAR_MPS, VAR_FPS)
+                  call putUnitsAttribute(dat%ncid, dat%u_nodal_data_id,
+     &                 VAR_MPS, VAR_FPS)
+                  call putUnitsAttribute(dat%ncid, dat%v_nodal_data_id,
+     &                 VAR_MPS, VAR_FPS)
             end select
-            iret = nf_put_att_double(dat%ncid, dat%u_id, '_FillValue', NF_DOUBLE, 1, 
-     &                       doubleval)
+            iret = nf_put_att_double(dat%ncid, dat%u_nodal_data_id,
+     &             '_FillValue', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
-            iret = nf_put_att_DOUBLE(dat%ncid, dat%v_id, '_FillValue', NF_DOUBLE, 1, 
-     &                       doubleval)
-      CALL check_err(iret)
+            iret = nf_put_att_DOUBLE(dat%ncid, dat%v_nodal_data_id,
+     &             '_FillValue', NF_DOUBLE, 1, doubleval)
+            CALL check_err(iret)
          CASE DEFAULT
 
       END SELECT
-
-
+C
+C     define metadata and selected fort.15 parameters in netcdf file
+      CALL defineMetaData(dat%ncid)
+C
+C     Leave define mode
+      iret = nf_enddef(dat%ncid)
+      CALL check_err(iret)
+C
+C     write mesh to netcdf file
+      CALL putMeshVariables(dat%ncid,dat%myMesh)
+C
+C     now close the initialized netcdf file
+      iret = nf_close(dat%ncid)
+      CALL check_err(iret)
 C-----------------------------------------------------------------------
       END SUBROUTINE initNodalData
 C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E  C R E A T E  N E T C D F  O U T P U T  F I L E 
+C-----------------------------------------------------------------------
+C     jgf49.22 Creates a new netcdf output file if needed. 
+C-----------------------------------------------------------------------
+      SUBROUTINE createNetCDFOutputFile(ncid, myFile, lun, myTime,
+     &                                  descript)
+      USE GLOBAL, ONLY : OutputDataDescript_t, IHOT
+      IMPLICIT NONE
+      INTEGER ncid
+      TYPE(fileData) :: myFile
+      INTEGER :: lun
+      TYPE(timeData) :: myTime
+      TYPE(OutputDataDescript_t) :: descript
+C
+      INTEGER iret
+C
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering createNetCDFOutputFile ",lun
+#endif
+      myFile%createFile = .false.
+      myFile%fileFound = .false.
+      myFile%FILEFORT = 'fort.'
+      myFile%FILEEXT = '.nc'
+      WRITE(myFile%FILENAME,'(A5,I2,A3)') 
+     &      myFile%FILEFORT, lun, myFile%FILEEXT
+C
+C     jgf49.17.02: Simplified the criteria for creating a new netCDF
+C     file: coldstart, overwrite upon hotstart, or output
+C     that does not already exist.
+      INQUIRE(FILE=myFile%FILENAME,EXIST=myFile%fileFound)
+      IF ((IHOT.EQ.0).OR.(descript%specifier.lt.0).OR.
+     &   (myFile%fileFound.eqv..false.)) THEN
+          myFile%createFile = .true.
+          myFile%record_counter = 0
+      ENDIF
+C     
+C     RETURN if we don't need to create a file.
+      IF (myFile%createFile.eqv..false.) THEN
+         RETURN
+      ENDIF     
+C
+      iret = nf_create(myFile%FILENAME, NF_CLOBBER, ncid)
+      CALL check_err(iret)
+C
+C       
+!     Define time
+      iret = nf_def_dim(ncid, 'time', nf_unlimited,
+     &       myTime%timenc_dim_id)
+      CALL check_err(iret)
+      myTime%timenc_dims(1) = myTime%timenc_dim_id
+      iret = nf_def_var(ncid, 'time', NF_DOUBLE, myTime%timenc_rank,
+     &       myTime%timenc_dims, myTime%timenc_id)
+      CALL check_err(iret)
+
+C-----------------------------------------------------------------------
+      END SUBROUTINE createNetCDFOutputFile
+C-----------------------------------------------------------------------
+
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   I N I T   N E T C D F   C O O R D  
 C-----------------------------------------------------------------------
@@ -1119,14 +1258,15 @@ C-----------------------------------------------------------------------
       INTEGER :: i, j, k  ! array indices
       REAL(8) SLAM0DEG, SFEA0DEG
 C
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering initNetCDFCoord."
+#endif
       ALLOCATE(myMesh%nbvvnc(nbou,nvel))
       ALLOCATE(myMesh%xnc(NP_G))
       ALLOCATE(myMesh%ync(NP_G))
-      ALLOCATE(myMesh%nvellnc(nbou))
       ALLOCATE(myMesh%nvdllnc(nope))
       ALLOCATE(myMesh%ibtypenc(nbou))
-      ALLOCATE(myMesh%nbounc(myMesh%nvelnc))
-      ALLOCATE(myMesh%nopenc(myMesh%netanc))
+      ALLOCATE(myMesh%nvellnc(nbou))
       ALLOCATE(myMesh%element(myMesh%nface_len,myMesh%num_elems))
       ALLOCATE(myMesh%nm(myMesh%num_elems,myMesh%nface_len))
 
@@ -1146,13 +1286,14 @@ C
          END DO
       END DO
 !
-!        elevation specified boundary forcing segments
+!     elevation specified boundary forcing segments
       myMesh%netanc=0
       DO i=1,nope
          myMesh%nvdllnc(i)=nvdll(i)
          myMesh%netanc=myMesh%netanc+myMesh%nvdllnc(i)
       END DO
 C
+      ALLOCATE(myMesh%nopenc(myMesh%netanc))
       k=0
       DO i=1,nope
          DO j=1,myMesh%nvdllnc(i)
@@ -1161,13 +1302,14 @@ C
          END DO
       END DO
 !
-!        normal flow (discharge) specified boundary segments
+!     normal flow (discharge) specified boundary segments
       myMesh%nvelnc=0
       DO i=1,nbou
          myMesh%nvellnc(i)=nvell(i)
          myMesh%nvelnc=myMesh%nvelnc+myMesh%nvellnc(i)
       END DO
 C
+      ALLOCATE(myMesh%nbounc(myMesh%nvelnc))
       k=0
       DO i=1,nbou
          DO j=1,myMesh%nvellnc(i)
@@ -1200,6 +1342,10 @@ C     args
       type(OutputDataDescript_t), intent(in) :: descript !describes output data
 C     local vars
       INTEGER :: I,J,K           ! loop counter
+C
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering writeOutArrayNetCDF."
+#endif
 C
       SELECT CASE(lun)
 C    
@@ -1249,7 +1395,11 @@ C
       INTEGER iret  ! success or failure of netcdf call
       INTEGER recid ! netcdf id of the record counter information
 C
-      sta%timenc(sta%timenc_len)=time
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering writeStation."
+#endif
+C
+      sta%myTime%timenc(sta%myTime%timenc_len)=time
       iret = NF_OPEN(sta%myFile%FILENAME, NF_WRITE, sta%ncid)
       CALL check_err(iret)   
 !   
@@ -1264,41 +1414,27 @@ C
       IF (ncmode.eq.0) go to 9999 ! i.e., if called by adcprep?
 
       kount(1)=sta%num_stations
-      kount(2)=sta%timenc_len
+      kount(2)=sta%myTime%timenc_len
       start(1)=1
       start(2)=sta%myFile%record_counter
 
       SELECT CASE(lun)
 
       CASE(61)
-         iret=nf_inq_varid(sta%ncid, "zeta", sta%zeta_id)
-         CALL check_err(iret)
-         iret = nf_put_vara_DOUBLE(sta%ncid, sta%zeta_id, start, kount,
-     &          sta%station_data)
+         iret=nf_inq_varid(sta%ncid, "zeta", sta%station_data_id)
          CALL check_err(iret)
       CASE(62)
-         iret=nf_inq_varid(sta%ncid, "u-vel", sta%u_id)
-         iret=nf_inq_varid(sta%ncid, "v-vel", sta%v_id)
-         iret = nf_put_vara_DOUBLE(sta%ncid, sta%u_id, start, kount,
-     &          sta%u_station_data)
+         iret=nf_inq_varid(sta%ncid, "u-vel", sta%u_station_data_id)
          CALL check_err(iret)
-         iret = nf_put_vara_DOUBLE(sta%ncid, sta%v_id, start, kount,
-     &          sta%v_station_data)
+         iret=nf_inq_varid(sta%ncid, "v-vel", sta%v_station_data_id)
          CALL check_err(iret)
       CASE(71)
-         iret=nf_inq_varid(sta%ncid, "pressure", sta%zeta_id)
-         CALL check_err(iret)
-         iret = nf_put_vara_DOUBLE(sta%ncid, sta%zeta_id, start, kount,
-     &          sta%station_data)
+         iret=nf_inq_varid(sta%ncid, "pressure", sta%station_data_id)
          CALL check_err(iret)
       CASE(72)  
-           iret=nf_inq_varid(sta%ncid,"windx",sta%u_id)
-           iret=nf_inq_varid(sta%ncid,"windy",sta%v_id)
-           iret = nf_put_vara_DOUBLE(sta%ncid, sta%u_id, start, kount,
-     &            sta%u_station_data)
+           iret=nf_inq_varid(sta%ncid,"windx",sta%u_station_data_id)
            CALL check_err(iret)
-           iret = nf_put_vara_DOUBLE(sta%ncid, sta%v_id, start, kount,
-     &            sta%v_station_data)
+           iret=nf_inq_varid(sta%ncid,"windy",sta%v_station_data_id)
            CALL check_err(iret)
 
       CASE DEFAULT
@@ -1306,13 +1442,27 @@ C
      &                "available in NetCDF."
           
       END SELECT
+
+      IF (descript%num_items_per_record.eq.1) THEN
+         iret = nf_put_vara_DOUBLE(sta%ncid, sta%station_data_id,
+     &          start, kount, sta%station_data)
+         CALL check_err(iret)
+      ENDIF
+      IF (descript%num_items_per_record.eq.2) THEN
+         iret = nf_put_vara_DOUBLE(sta%ncid, sta%u_station_data_id,
+     &          start, kount, sta%u_station_data)
+         CALL check_err(iret)
+         iret = nf_put_vara_DOUBLE(sta%ncid, sta%v_station_data_id,
+     &          start, kount, sta%v_station_data)
+         CALL check_err(iret)
+      ENDIF
 !    
 !     Store time
-      iret=nf_inq_varid(sta%ncid, "time", sta%timenc_id)
+      iret=nf_inq_varid(sta%ncid, "time", sta%myTime%timenc_id)
       starti(1)=sta%myFile%record_counter
-      counti(1)=sta%timenc_len
-      iret = nf_put_vara_DOUBLE(sta%ncid, sta%timenc_id, starti,counti,
-     &       sta%timenc)
+      counti(1)=sta%myTime%timenc_len
+      iret = nf_put_vara_DOUBLE(sta%ncid, sta%myTime%timenc_id,
+     &       starti, counti, sta%myTime%timenc)
       CALL check_err(iret)
 !
 !     Close netCDF file
@@ -1343,7 +1493,11 @@ C
       INTEGER iret ! success or failure of the netcdf call
       INTEGER recid ! netcdf id of the record counter info
 C
-      dat%timenc(dat%timenc_len)=time
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering writeNodalData."
+#endif
+C
+      dat%myTime%timenc(dat%myTime%timenc_len)=time
       iret = NF_OPEN(dat%myFile%FILENAME, NF_WRITE, dat%ncid)
       CALL check_err(iret)   
 !   
@@ -1354,55 +1508,55 @@ C
       CALL check_err(iret)   
 !
 !     Update Global Attributes
-      CALL updateMetaData(dat%ncid)
-      IF (ncmode.eq.0) go to 9999
+C      CALL updateMetaData(dat%ncid)
+C      IF (ncmode.eq.0) go to 9999
 
-      kount(1)=dat%num_nodes
-      kount(2)=dat%timenc_len
+      kount(1)=dat%myMesh%num_nodes
+      kount(2)=dat%myTime%timenc_len
       start(1)=1
       start(2)=dat%myFile%record_counter
 
       SELECT CASE(lun)
 
       CASE(63)
-         iret=nf_inq_varid(dat%ncid,"zeta",dat%zeta_id)
-         iret = nf_put_vara_DOUBLE(dat%ncid, dat%zeta_id, start, kount,
-     &          dat%nodal_data)
+         iret=nf_inq_varid(dat%ncid,"zeta",dat%nodal_data_id)
          CALL check_err(iret)
       CASE(64)
-         iret=nf_inq_varid(dat%ncid, "u-vel", dat%u_id)
-         iret=nf_inq_varid(dat%ncid, "v-vel", dat%v_id)
-         iret=nf_put_vara_DOUBLE(dat%ncid, dat%u_id, start, kount,
-     &        dat%u_nodal_data)
+         iret=nf_inq_varid(dat%ncid, "u-vel", dat%u_nodal_data_id)
          CALL check_err(iret)
-         iret = nf_put_vara_DOUBLE(dat%ncid, dat%v_id, start, kount,
-     &          dat%v_nodal_data)
+         iret=nf_inq_varid(dat%ncid, "v-vel", dat%v_nodal_data_id)
          CALL check_err(iret)
       CASE(73)
-         iret=nf_inq_varid(dat%ncid, "pressure", dat%zeta_id)
-         CALL check_err(iret)
-         iret=nf_put_vara_DOUBLE(dat%ncid, dat%zeta_id, start, kount,
-     &        dat%nodal_data)
+         iret=nf_inq_varid(dat%ncid, "pressure", dat%nodal_data_id)
          CALL check_err(iret)
       CASE(74)
-         iret=nf_inq_varid(dat%ncid,"windx",dat%u_id)
-         iret=nf_inq_varid(dat%ncid,"windy",dat%v_id)
-         iret=nf_put_vara_DOUBLE(dat%ncid, dat%u_id, start, kount,
-     &        dat%u_nodal_data)
+         iret=nf_inq_varid(dat%ncid,"windx",dat%u_nodal_data_id)
          CALL check_err(iret)
-         iret = nf_put_vara_DOUBLE(dat%ncid, dat%v_id, start, kount,
-     &          dat%v_nodal_data)
+         iret=nf_inq_varid(dat%ncid,"windy",dat%v_nodal_data_id)
          CALL check_err(iret)
       CASE DEFAULT
  
       END SELECT
-!    
+      IF (descript%num_items_per_record.eq.1) THEN
+         iret = nf_put_vara_DOUBLE(dat%ncid, dat%nodal_data_id, start,
+     &          kount, dat%nodal_data)
+         CALL check_err(iret)
+      ENDIF
+      IF (descript%num_items_per_record.eq.2) THEN
+         iret=nf_put_vara_DOUBLE(dat%ncid, dat%u_nodal_data_id, start,
+     &        kount, dat%u_nodal_data)
+         CALL check_err(iret)
+         iret = nf_put_vara_DOUBLE(dat%ncid, dat%v_nodal_data_id, start,
+     &          kount, dat%v_nodal_data)
+         CALL check_err(iret)
+      ENDIF
+!     
 !     Store time
-      iret=nf_inq_varid(dat%ncid,"time",dat%timenc_id)
+      iret=nf_inq_varid(dat%ncid,"time",dat%myTime%timenc_id)
       starti(1)=dat%myFile%record_counter
-      counti(1)=dat%timenc_len
-      iret = nf_put_vara_DOUBLE(dat%ncid, dat%timenc_id, starti,counti,
-     &       dat%timenc)
+      counti(1)=dat%myTime%timenc_len
+      iret = nf_put_vara_DOUBLE(dat%ncid, dat%myTime%timenc_id,
+     &       starti,counti, dat%myTime%timenc)
       CALL check_err(iret)
 !
 !     Close netCDF file
@@ -1428,39 +1582,39 @@ C
 C
       INTEGER iret ! success or failure of the netcdf call     
 C
-      hs%zeta1_dims(1) = hs%num_nodes_dim_id
-      hs%zeta1_dims(2) = hs%timenc_dim_id
+      hs%zeta1_dims(1) = hs%myMesh%num_nodes_dim_id
+      hs%zeta1_dims(2) = hs%myTime%timenc_dim_id
       iret = nf_def_var(hs%ncid, 'zeta1',NF_DOUBLE,
      &       hs%zeta1_rank, hs%zeta1_dims, hs%zeta1_id)
       CALL check_err(iret)
 
-      hs%zeta2_dims(1) = hs%num_nodes_dim_id
-      hs%zeta2_dims(2) = hs%timenc_dim_id
+      hs%zeta2_dims(1) = hs%myMesh%num_nodes_dim_id
+      hs%zeta2_dims(2) = hs%myTime%timenc_dim_id
       iret = nf_def_var(hs%ncid, 'zeta2',NF_DOUBLE,
      &       hs%zeta2_rank, hs%zeta2_dims, hs%zeta2_id)
       CALL check_err(iret)
 
-      hs%zetad_dims(1) = hs%num_nodes_dim_id
-      hs%zetad_dims(2) = hs%timenc_dim_id
+      hs%zetad_dims(1) = hs%myMesh%num_nodes_dim_id
+      hs%zetad_dims(2) = hs%myTime%timenc_dim_id
       iret = nf_def_var(hs%ncid, 'zeta1',NF_DOUBLE,
      &       hs%zetad_rank, hs%zetad_dims, hs%zetad_id)
       CALL check_err(iret)
 
-      hs%u_dims(1) = hs%num_nodes_dim_id
-      hs%u_dims(2) = hs%timenc_dim_id
+      hs%u_dims(1) = hs%myMesh%num_nodes_dim_id
+      hs%u_dims(2) = hs%myTime%timenc_dim_id
       iret = nf_def_var(hs%ncid, 'u-vel', NF_DOUBLE, hs%u_rank, hs%u_dims, 
      &                  hs%u_id)
       CALL check_err(iret)
 
-      hs%v_dims(1) = hs%num_nodes_dim_id
-      hs%v_dims(2) = hs%timenc_dim_id
+      hs%v_dims(1) = hs%myMesh%num_nodes_dim_id
+      hs%v_dims(2) = hs%myTime%timenc_dim_id
       iret = nf_def_var(hs%ncid, 'v-vel', NF_DOUBLE, hs%v_rank, hs%v_dims, 
      &                  hs%v_id)
       CALL check_err(iret)
 !
 !     Define hotstart parameters
       iret = nf_def_var(hs%ncid, 'nodecode', NF_INT, hs%nodecodenc_rank, 
-     &                  hs%num_nodes_dim_id, hs%nodecodenc_id)
+     &                  hs%myMesh%num_nodes_dim_id, hs%nodecodenc_id)
       CALL check_err(iret)
       iret = nf_def_var(hs%ncid, 'noff', NF_INT, hs%noffnc_rank, 
      &                 hs%num_elems_dim_id, hs%noffnc_id)
@@ -1942,7 +2096,7 @@ C
       INTEGER kount(2), start(2)
       INTEGER iret ! success or failure of the netcdf call
 C
-      hs%timenc(hs%timenc_len)=time
+      hs%myTime%timenc(hs%myTime%timenc_len)=time
       iret=nf_inq_varid(hs%ncid,"zeta1",hs%zeta1_id)
       iret=nf_inq_varid(hs%ncid,"zeta2",hs%zeta2_id)
       iret=nf_inq_varid(hs%ncid,"zetad",hs%zetad_id)
@@ -1972,7 +2126,7 @@ C
       iret=nf_inq_varid(hs%ncid,"nscougw",hs%nscougw_id)
 
       kount(1)=hs%num_nodes
-      kount(2)=hs%timenc_len
+      kount(2)=hs%myTime%timenc_len
       start(1)=1
       start(2)=hs%myFile%record_counter
 
@@ -2055,9 +2209,9 @@ C
       INTEGER kount(2), start(2)
       INTEGER iret ! success or failure of the netcdf call
 C
-      iret=nf_inq_dimid(hs%ncid, "node", hs%num_nodes_dim_id)
+      iret=nf_inq_dimid(hs%ncid, "node", hs%myMesh%num_nodes_dim_id)
       CALL check_err(iret)   
-      iret=nf_inq_dimlen(hs%ncid, hs%num_nodes_dim_id, hs%num_nodes)
+      iret=nf_inq_dimlen(hs%ncid, hs%myMesh%num_nodes_dim_id, hs%num_nodes)
       CALL check_err(iret)   
       iret=nf_inq_dimid(hs%ncid, "nele", hs%num_elems_dim_id)
       CALL check_err(iret)   
@@ -2113,15 +2267,15 @@ C      ENDIF
         
       hs%myFile%record_counter = 1
       kount(1)=hs%num_nodes
-      kount(2)=hs%timenc_len
+      kount(2)=hs%myTime%timenc_len
       start(1)=1
       start(2)=hs%myFile%record_counter
 !   
 !     Store time
       starti(1)=hs%myFile%record_counter
-      counti(1)=hs%timenc_len
-      iret = nf_get_vara_DOUBLE(hs%ncid, hs%timenc_id, starti,counti,
-     &       hs%timenc)
+      counti(1)=hs%myTime%timenc_len
+      iret = nf_get_vara_DOUBLE(hs%ncid, hs%myTime%timenc_id, starti,counti,
+     &       hs%myTime%timenc)
       CALL check_err(iret)
       iret = nf_get_vara_DOUBLE(hs%ncid, hs%zeta1_id, start, kount, hs%zeta1)
       CALL check_err(iret)
@@ -2194,7 +2348,7 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Defines data that are common to all netCDF files.
 C-----------------------------------------------------------------------
       subroutine defineMeshVariables(ncid, myMesh)
-      USE GLOBAL, ONLY : RAD2DEG, SLAM0, SFEA0
+      USE GLOBAL, ONLY : RAD2DEG, SLAM0, SFEA0, ICS
       USE SIZES, ONLY : SZ
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
       USE VERSION
@@ -2216,6 +2370,9 @@ C-----------------------------------------------------------------------
       character zone*5
       integer values(8)
 C
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering defineMeshVariables."
+#endif
 !     Switch order in array for NETCDF
       do i=1, myMesh%num_elems
          do j=1, myMesh%nface_len
@@ -2309,30 +2466,6 @@ C
       iret = nf_def_var(ncid, 'depth',NF_DOUBLE, myMesh%DEPTH_rank, 
      &       myMesh%DEPTH_dims, myMesh%DEPTH_id)
       CALL check_err(iret)
-C-----------------------------------------------------------------------
-      END SUBROUTINE defineMeshVariables
-C-----------------------------------------------------------------------
-
-
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E   P U T   M E S H   V A R I A B L E S 
-C-----------------------------------------------------------------------
-C     jgf49.17.02 Writes data that are common to all netCDF files
-C     to the specified file.
-C-----------------------------------------------------------------------
-      subroutine putMeshVariables(ncid, myMesh)
-      USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : ICS, X, Y, DP
-      USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
-      USE VERSION
-      IMPLICIT NONE
-      INTEGER, intent(in) :: ncid
-      type(meshStructure), intent(inout) :: myMesh 
-      INTEGER iret   ! Error status return
-C
-      INTEGER counti(1), starti(1), n
-      INTEGER kount(2), start(2)
-      REAL    realval(1)
 C
 !     Define longitude attributes
       if(ics.eq.2) then  ! this indicates spherical coordinates
@@ -2440,6 +2573,34 @@ C
       iret = nf_put_att_text(ncid, myMesh%nvellnc_id, 'units', 14, 
      &                      VAR_NOND)
       CALL check_err(iret)
+C-----------------------------------------------------------------------
+      END SUBROUTINE defineMeshVariables
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   P U T   M E S H   V A R I A B L E S 
+C-----------------------------------------------------------------------
+C     jgf49.17.02 Writes data that are common to all netCDF files
+C     to the specified file.
+C-----------------------------------------------------------------------
+      subroutine putMeshVariables(ncid, myMesh)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : ICS, X, Y, DP
+      USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
+      USE VERSION
+      IMPLICIT NONE
+      INTEGER, intent(in) :: ncid
+      type(meshStructure), intent(inout) :: myMesh 
+      INTEGER iret   ! Error status return
+C
+      INTEGER counti(1), starti(1), n
+      INTEGER kount(2), start(2)
+      REAL    realval(1)
+C
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering putMeshVariables."
+#endif
 !
 !     Store X
       iret = nf_put_var_double(ncid, myMesh%X_id, X)
@@ -2484,12 +2645,12 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E   P U T   M E T A D A T A 
+C     S U B R O U T I N E   D E F I N E   M E T A D A T A 
 C-----------------------------------------------------------------------
 C     jgf49.17.02 Writes data that are common to all netCDF files
 C     to the specified file.
 C-----------------------------------------------------------------------
-      subroutine putMetaData(ncid)
+      subroutine defineMetaData(ncid)
       USE VERSION
       USE GLOBAL, ONLY : RUNDES, AGRID, title, institution, source,
      &                   history, references, comments, host,
@@ -2511,6 +2672,9 @@ C
       character big_ben*10
       character zone*5
       integer values(8)
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering putMetaData."
+#endif
 !     -----------------
 !     Global attributes
 !     -----------------
@@ -2649,7 +2813,7 @@ C
       CALL check_err(iret)
 
 C-----------------------------------------------------------------------
-      END SUBROUTINE putMetaData 
+      END SUBROUTINE defineMetaData 
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
@@ -2673,7 +2837,11 @@ C
       character big_ben*10
       character zone*5
       integer values(8)
-
+C
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering updateMetaData."
+#endif
+C
       iret = NF_REDEF (ncid)
       CALL check_err(iret)
       iret = nf_put_att_int(ncid, NCGLOBAL, 'ihot', NF_INT, 1, ihot)
@@ -2722,7 +2890,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E   P U T   U N I T   A T T R I B U T E S
+C     S U B R O U T I N E   P U T   U N I T S   A T T R I B U T E 
 C-----------------------------------------------------------------------
 C     jgf49.17.02 Puts the right units label based on whether ADCIRC was
 C     run with English units or SI units. 
@@ -2736,6 +2904,10 @@ C-----------------------------------------------------------------------
       CHARACTER(*) metric
       CHARACTER(*) english
 C        
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering putUnitsAttribute."
+#endif
+C
       if (G.LT.11.D0) then
           iret = nf_put_att_text(ncid, var_id, 'units',
      &           len_trim(metric), trim(metric))
@@ -2764,13 +2936,26 @@ C-----------------------------------------------------------------------
 #endif
       IMPLICIT NONE 
       INTEGER, intent(in) :: iret
+#ifdef NETCDF_DEBUG
+      REAL, ALLOCATABLE :: dummy(:)
+#endif
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering check_err."
+#endif
       if (iret .ne. NF_NOERR) then
-         write(ScreenUnit,*) "ERROR: NetCDF: ",nf_strerror(iret)
+         write(ScreenUnit,*) "ERROR: ",nf_strerror(iret)
          write(ScreenUnit,*) "ERROR: ADCIRC execution terminated."
-         write(16,*) "ERROR: NetCDF: ",nf_strerror(iret)
+         write(16,*) "ERROR: ",nf_strerror(iret)
          write(16,*) "ERROR: ADCIRC execution terminated."
 #ifdef CMPI
          call msg_fini()
+#endif
+#ifdef NETCDF_DEBUG
+         ! intentionally create a segmentation fault so that we can get
+         ! a stack trace to determine the line number of the netcdf call
+         ! that went bad ... this assumes that the code was compiled with 
+         ! debugging symbols, bounds checking, and stack trace turned on. 
+         dummy(1) = 99.9d0
 #endif
          stop
       endif
