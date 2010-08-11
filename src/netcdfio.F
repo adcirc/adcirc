@@ -1220,7 +1220,7 @@ C     that does not already exist.
       IF ((IHOT.EQ.0).OR.(descript%specifier.lt.0).OR.
      &   (myFile%fileFound.eqv..false.)) THEN
           myFile%createFile = .true.
-          myFile%record_counter = 0
+          myFile%record_counter = 1
       ENDIF
 C     
 C     RETURN if we don't need to create a file.
@@ -1479,7 +1479,8 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Writes data to a full domain file.
 C-----------------------------------------------------------------------
       SUBROUTINE writeNodalData(dat, lun, descript, time)
-      USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t
+      USE SIZES, ONLY : MNPROC
+      USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t, NODECODE
       IMPLICIT NONE
 C
       type(nodalData), intent(inout) :: dat
@@ -1492,30 +1493,38 @@ C
       INTEGER kount(2), start(2)
       INTEGER iret ! success or failure of the netcdf call
       INTEGER recid ! netcdf id of the record counter info
+      INTEGER num_values ! number of values in the array
 C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Entering writeNodalData."
 #endif
 C
-      dat%myTime%timenc(dat%myTime%timenc_len)=time
       iret = NF_OPEN(dat%myFile%FILENAME, NF_WRITE, dat%ncid)
       CALL check_err(iret)   
 !   
 !     Inquire variables
       iret=nf_inq_unlimdim(dat%ncid,recid)
       CALL check_err(iret)   
+C
+      write(*,*) "dat%myFile%record_counter = ",dat%myFile%record_counter
       iret=nf_inq_dimlen(dat%ncid,recid,dat%myFile%record_counter)
       CALL check_err(iret)   
+C
+C     Increment the record counter so that we can store data at the
+C     next location in the netcdf file
+      dat%myFile%record_counter = dat%myFile%record_counter + 1       
+!     
+!     Store time
+      iret=nf_inq_varid(dat%ncid,"time",dat%myTime%timenc_id)
+      starti(1)=dat%myFile%record_counter
+      counti(1)=dat%myTime%timenc_len
+      dat%myTime%timenc(dat%myTime%timenc_len)=time
+      iret = nf_put_vara_DOUBLE(dat%ncid, dat%myTime%timenc_id,
+     &       starti,counti, dat%myTime%timenc)
+      CALL check_err(iret)
 !
 !     Update Global Attributes
 C      CALL updateMetaData(dat%ncid)
-C      IF (ncmode.eq.0) go to 9999
-
-      kount(1)=dat%myMesh%num_nodes
-      kount(2)=dat%myTime%timenc_len
-      start(1)=1
-      start(2)=dat%myFile%record_counter
-
       SELECT CASE(lun)
 
       CASE(63)
@@ -1537,27 +1546,67 @@ C      IF (ncmode.eq.0) go to 9999
       CASE DEFAULT
  
       END SELECT
-      IF (descript%num_items_per_record.eq.1) THEN
-         iret = nf_put_vara_DOUBLE(dat%ncid, dat%nodal_data_id, start,
-     &          kount, dat%nodal_data)
-         CALL check_err(iret)
+
+C      write(*,*) "dat%myMesh%num_nodes = ", dat%myMesh%num_nodes
+C      write(*,*) "dat%myTime%timenc_len = ", dat%myTime%timenc_len
+C      write(*,*) "dat%myFile%record_counter = ",dat%myFile%record_counter
+C
+C     Set up the netcdf data extents
+      kount(2)=dat%myTime%timenc_len
+      start(1)=1
+      start(2)=dat%myFile%record_counter
+C     
+C     Set up the array values that need to be written
+      IF (MNPROC.eq.1) THEN
+         kount(1)=descript%num_records_this
+         IF ( descript%ConsiderWetDry.eqv..TRUE.) THEN
+            SELECT CASE(descript%num_items_per_record) 
+            CASE(1)
+               WHERE (NODECODE.EQ.0) 
+                  dat%nodal_data(:,kount(2)) = descript%alternate_value
+               ELSEWHERE 
+                  dat%nodal_data(:,kount(2)) = descript%array
+               END WHERE
+            CASE(2)
+               WHERE (NODECODE.EQ.0) 
+                  dat%u_nodal_data(:,kount(2))=descript%alternate_value
+                  dat%v_nodal_data(:,kount(2))=descript%alternate_value
+               ELSEWHERE 
+                  dat%u_nodal_data(:,kount(2))=descript%array
+                  dat%v_nodal_data(:,kount(2))=descript%array
+               END WHERE
+            CASE DEFAULT
+               WRITE(*,*) "ADCIRC's NetCDF cannot write ",
+     &         descript%num_items_per_record, " dimensional arrays."
+            END SELECT
+         ELSE 
+            dat%nodal_data(:,kount(2)) = descript%array 
+         ENDIF
+      ELSE
+         ! the globalio routine deals with inserting alternate values for 
+         ! dry nodes, so we don't need to worry about it here (ie, in parallel)
+         kount(1)=descript%num_fd_records
+         dat%u_nodal_data(:,kount(2)) = descript%array_g
+         dat%v_nodal_data(:,kount(2)) = descript%array2_g
       ENDIF
-      IF (descript%num_items_per_record.eq.2) THEN
+C            
+C     Write the values
+      SELECT CASE(descript%num_items_per_record)
+      CASE(1)
+         iret = nf_put_vara_DOUBLE(dat%ncid, dat%nodal_data_id, start,
+     &       kount, dat%nodal_data)
+         CALL check_err(iret)
+      CASE(2)
          iret=nf_put_vara_DOUBLE(dat%ncid, dat%u_nodal_data_id, start,
      &        kount, dat%u_nodal_data)
          CALL check_err(iret)
          iret = nf_put_vara_DOUBLE(dat%ncid, dat%v_nodal_data_id, start,
      &          kount, dat%v_nodal_data)
          CALL check_err(iret)
-      ENDIF
-!     
-!     Store time
-      iret=nf_inq_varid(dat%ncid,"time",dat%myTime%timenc_id)
-      starti(1)=dat%myFile%record_counter
-      counti(1)=dat%myTime%timenc_len
-      iret = nf_put_vara_DOUBLE(dat%ncid, dat%myTime%timenc_id,
-     &       starti,counti, dat%myTime%timenc)
-      CALL check_err(iret)
+      CASE DEFAULT
+         WRITE(*,*) "ADCIRC's NetCDF cannot write ",
+     &   descript%num_items_per_record, " dimensional arrays."
+      END SELECT
 !
 !     Close netCDF file
 9999  iret = nf_close(dat%ncid)

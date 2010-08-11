@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.24   - 08/10/2010 - jgf - Fixed issues with the construction of arrays
+C             for writing in netcdf files. Data in the reorganized module were
+C             not being copied correctly from ADCIRC arrays to netcdf arrays. 
 C  v49.23   - 08/06/2010 - jgf - Fixes to reorganized NetCDF module. 
 C             Files now initialize properly, but there are still issues with
 C             writing actual data.
@@ -21,7 +24,7 @@ C             netcdf issues.
 C  v49.17.01  07/14/2010 - jgf - Added an extra command line option -S to 
 C             write subdomain hotstart files during a run where fulldomain
 C             hotstart files are specified.
-------------------------------------------------------------------------
+C------------------------------------------------------------------------
 C   r491 | stanaka | 2010-07-19 11:18:31 -0400 (Mon, 19 Jul 2010) | 1 line
 C             Changed paths:
 C             M /adcirc/trunk/src/adcirc.F
