@@ -202,7 +202,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       REAL(8) FDX1O2A, FDX2O2A, FDX3O2A, FDY1O2A, FDY2O2A, FDY3O2A
       REAL(8) Time, TimeH
-      INTEGER WarnElevExceeded
+      INTEGER WarnElevExceeded, ErrorElevExceeded
       REAL(SZ) HollandTime, AsymmetricTime !for parametric hurricane models
 
 C   kmd48.33bc - added in the heat flux variables
@@ -2698,6 +2698,7 @@ C     the screen.
             CALL WriteWarnElev(Time, IT)
          ENDIF
 #endif
+         ErrorElevExceeded = 0                ! Clint's Zombie Slyaer
          IF(ELMAX.GT.ErrorElev) THEN
             WRITE(ScreenUnit,1995) 
      &           IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,
@@ -2711,11 +2712,13 @@ C     the screen.
      &           2X,'ON MYPROC = ',I4,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev,',
      &           ' ADCIRC stopping. **')
-#ifndef DEBUG_WARN_ELEV
-            CALL MSG_FINI()
-#endif
-            STOP
+         ErrorElevExceeded = 1                ! Clint's Zombie Slyaer
          ENDIF
+         call WarnElevSum(ErrorElevExceeded)  ! Clint's Zombie Slayer 2010.08.07
+         IF( ErrorElevExceeded /= 0 ) THEN    !  Finalize MPI Environment,
+           CALL MSG_FINI()                    !  if there are Error Elvation nodes.
+           STOP                               !
+         ENDIF                                !st3
 #else 
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             WRITE(ScreenUnit,1992) 
