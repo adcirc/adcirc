@@ -205,11 +205,17 @@ C
          INTEGER :: scode_rank = 2
          INTEGER :: station_dims(2)
          INTEGER :: scode_dims(2)
+         INTEGER :: x_id          ! station x-coordinate or longitude
+         INTEGER :: y_id          ! station y-coordinate or latitude
+         INTEGER :: x_dims(1)
+         INTEGER :: y_dims(1)
+         INTEGER :: x_rank = 1
+         INTEGER :: y_rank = 1 
          REAL(SZ), ALLOCATABLE :: station_data(:,:) ! for scalar data 
          REAL(SZ), ALLOCATABLE :: u_station_data(:,:) ! for vector component 1
          REAL(SZ), ALLOCATABLE :: v_station_data(:,:) ! for vector component 2 
-         REAL(SZ), ALLOCATABLE :: sta_x(:) ! x coordinate or longitude
-         REAL(SZ), ALLOCATABLE :: sta_y(:) ! y coordinate or latitude  
+         REAL(SZ), ALLOCATABLE :: x(:) ! x coordinate or longitude
+         REAL(SZ), ALLOCATABLE :: y(:) ! y coordinate or latitude  
          INTEGER :: station_data_id
          INTEGER :: station_data_rank = 2
          INTEGER :: u_station_data_id
@@ -484,19 +490,19 @@ C     of stations and time
 C
 C     Set coordinates of each station, converting to degrees if we 
 C     are in spherical coordinates. 
-      ALLOCATE(sta%sta_x(sta%num_stations))
-      ALLOCATE(sta%sta_y(sta%num_stations))
+      ALLOCATE(sta%x(sta%num_stations))
+      ALLOCATE(sta%y(sta%num_stations))
       IF(ICS.EQ.2) THEN
-         DO I=1, sta%num_stations
-            sta%sta_x(i)=descript%x_coord(i) * RAD2DEG
-            sta%sta_y(i)=descript%y_coord(i) * RAD2DEG
-         END DO
+         sta%x = descript%x_coord * RAD2DEG
+         sta%y = descript%y_coord * RAD2DEG
       ELSE
-         DO I=1,sta%num_stations
-            sta%sta_x(i)=descript%x_coord(i)
-            sta%sta_y(i)=descript%y_coord(i)
-         END DO
+         sta%x = descript%x_coord
+         sta%y = descript%y_coord
       ENDIF
+C     DEBUG
+      DO i=1,sta%num_stations
+         write(*,*) "sta%x(",i,")=",sta%x(i)," sta%y(",i,")=",sta%y(i)
+      END DO
 C
 C     Initialize netCDF output file, creating a new one if necessary.
       CALL createNetCDFOutputFile(sta%ncid, sta%myFile, lun, sta%myTime,
@@ -506,6 +512,8 @@ C     RETURN if we didn't need to create a file.
       IF (sta%myFile%createFile.eqv..false.) THEN
          RETURN
       ENDIF     
+C 
+C     Create station dimension and station name dimension
       iret = nf_def_dim(sta%ncid, 'station',
      &       sta%num_stations, sta%num_sta_dim_id)
       CALL check_err(iret)
@@ -518,6 +526,18 @@ C     RETURN if we didn't need to create a file.
       iret = nf_def_var(sta%ncid, 'station_name', NF_CHAR, sta%station_rank, 
      &   sta%station_dims, sta%station_id)
       CALL check_err(iret)
+C
+C     Define station locations
+      sta%x_dims(1) = sta%num_sta_dim_id
+      iret = nf_def_var(sta%ncid, 'x', NF_DOUBLE, sta%x_rank,
+     &       sta%x_dims, sta%x_id)
+      sta%y_dims(1) = sta%num_sta_dim_id
+      iret = nf_def_var(sta%ncid, 'y', NF_DOUBLE, sta%y_rank,
+     &       sta%y_dims, sta%y_id)
+C
+C     Set coordinates as representing either latitude or longitude, 
+C     or Cartesian x and y, depending on the value of ICS.
+      CALL defineCoordinateAttributes(sta%ncid, sta%x_id, sta%y_id)
 C     
 C     Fill in labels and populate variables as appropriate for the
 C     different types of data in the station files. The labels and 
@@ -825,6 +845,9 @@ C
       iret = nf_put_att_text(sta%ncid, NF_GLOBAL,'modification_date',
      &       len_trim(date_string),date_string)
       CALL check_err(iret)
+C
+C     define metadata and selected fort.15 parameters in netcdf file
+      CALL defineMetaData(sta%ncid)
 !
 !     Leave define mode
       iret = nf_enddef(sta%ncid)
@@ -840,6 +863,16 @@ C
      &   sta%statnames(i,SNAMLEN) )
          CALL check_err(iret)
       end do
+C
+C     Store station locations
+      iret = nf_put_var_double(sta%ncid, sta%x_id, sta%x)
+      CALL check_err(iret)
+      iret = nf_put_var_double(sta%ncid, sta%y_id, sta%y)
+      CALL check_err(iret)
+C
+C     now close the initialized netcdf file
+      iret = nf_close(sta%ncid)
+      CALL check_err(iret)
 C-----------------------------------------------------------------------
       END SUBROUTINE initStation
 C-----------------------------------------------------------------------
@@ -868,17 +901,17 @@ C
       dat%myMesh%num_nodes = descript % num_fd_records
       dat%myMesh%num_elems = NE_G
       ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
-      IF (descript%num_items_per_record.eq.1) THEN
-         ALLOCATE(dat % nodal_data(dat%myMesh%num_nodes,
+     
+      SELECT CASE(descript%num_items_per_record)
+      CASE(1)
+         ALLOCATE(dat%nodal_data(dat%myMesh%num_nodes,
      &       dat%myTime%timenc_len))
 C        initialization
          DO n=1, dat%myMesh%num_nodes
             dat%nodal_data(n,dat%myTime%timenc_len)
      &         = descript%initial_value
          END DO
-      ENDIF
-C      
-      IF (descript%num_items_per_record.eq.2) THEN
+      CASE(2)
          ALLOCATE(dat%u_nodal_data(dat%myMesh%num_nodes,
      &       dat%myTime%timenc_len))
          ALLOCATE(dat%v_nodal_data(dat%myMesh%num_nodes,
@@ -890,8 +923,10 @@ C        initialization
             dat%v_nodal_data(n,dat%myTime%timenc_len) 
      &         = descript%initial_value
          END DO
-      ENDIF
-C
+      CASE DEFAULT
+         WRITE(*,*) "ADCIRC's NetCDF cannot write ",
+     &     descript%num_items_per_record, " dimensional arrays."
+      END SELECT
 C
 C     Initialize netCDF output file, creating a new one if necessary.
       CALL createNetCDFOutputFile(dat%ncid, dat%myFile, lun, dat%myTime,
@@ -1398,26 +1433,32 @@ C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Entering writeStation."
 #endif
-C
-      sta%myTime%timenc(sta%myTime%timenc_len)=time
       iret = NF_OPEN(sta%myFile%FILENAME, NF_WRITE, sta%ncid)
       CALL check_err(iret)   
 !   
 !     Inquire variables
       iret=nf_inq_unlimdim(sta%ncid,recid)
       CALL check_err(iret)   
+      write(*,*) "sta%myFile%record_counter = ",sta%myFile%record_counter
       iret=nf_inq_dimlen(sta%ncid,recid,sta%myFile%record_counter)
       CALL check_err(iret)   
-!
+C
+C     Increment the record counter so that we can store data at the
+C     next location in the netcdf file
+      sta%myFile%record_counter = sta%myFile%record_counter + 1       
+!    
+!     Store time
+      iret=nf_inq_varid(sta%ncid, "time", sta%myTime%timenc_id)
+      starti(1)=sta%myFile%record_counter
+      counti(1)=sta%myTime%timenc_len
+      sta%myTime%timenc(sta%myTime%timenc_len)=time
+      iret = nf_put_vara_DOUBLE(sta%ncid, sta%myTime%timenc_id,
+     &       starti, counti, sta%myTime%timenc)
+      CALL check_err(iret)
+C
 !     Update Global Attributes
-      CALL updateMetaData(sta%ncid)
-      IF (ncmode.eq.0) go to 9999 ! i.e., if called by adcprep?
-
-      kount(1)=sta%num_stations
-      kount(2)=sta%myTime%timenc_len
-      start(1)=1
-      start(2)=sta%myFile%record_counter
-
+C      CALL updateMetaData(sta%ncid)
+C      IF (ncmode.eq.0) go to 9999 ! i.e., if called by adcprep?
       SELECT CASE(lun)
 
       CASE(61)
@@ -1443,27 +1484,33 @@ C
           
       END SELECT
 
-      IF (descript%num_items_per_record.eq.1) THEN
+C
+C     Set up the netcdf data extents
+      kount(1)=sta%num_stations
+      kount(2)=sta%myTime%timenc_len
+      start(1)=1
+      start(2)=sta%myFile%record_counter
+C
+
+      SELECT CASE(descript%num_items_per_record) 
+      CASE(1)
+         sta%station_data(:,kount(2)) = descript%array 
          iret = nf_put_vara_DOUBLE(sta%ncid, sta%station_data_id,
      &          start, kount, sta%station_data)
          CALL check_err(iret)
-      ENDIF
-      IF (descript%num_items_per_record.eq.2) THEN
+      CASE(2)
+         sta%u_station_data(:,kount(2)) = descript%array
+         sta%v_station_data(:,kount(2)) = descript%array2 
          iret = nf_put_vara_DOUBLE(sta%ncid, sta%u_station_data_id,
      &          start, kount, sta%u_station_data)
          CALL check_err(iret)
          iret = nf_put_vara_DOUBLE(sta%ncid, sta%v_station_data_id,
      &          start, kount, sta%v_station_data)
          CALL check_err(iret)
-      ENDIF
-!    
-!     Store time
-      iret=nf_inq_varid(sta%ncid, "time", sta%myTime%timenc_id)
-      starti(1)=sta%myFile%record_counter
-      counti(1)=sta%myTime%timenc_len
-      iret = nf_put_vara_DOUBLE(sta%ncid, sta%myTime%timenc_id,
-     &       starti, counti, sta%myTime%timenc)
-      CALL check_err(iret)
+      CASE DEFAULT
+         WRITE(*,*) "ADCIRC's NetCDF cannot write ",
+     &         descript%num_items_per_record, " dimensional arrays."
+      END SELECT
 !
 !     Close netCDF file
 9999  iret = nf_close(sta%ncid)
@@ -1557,7 +1604,7 @@ C     Set up the netcdf data extents
       start(2)=dat%myFile%record_counter
 C     
 C     Set up the array values that need to be written
-      IF (MNPROC.eq.1) THEN
+      IF (MNPROC.eq.1) THEN ! SERIAL
          kount(1)=descript%num_records_this
          IF ( descript%ConsiderWetDry.eqv..TRUE.) THEN
             SELECT CASE(descript%num_items_per_record) 
@@ -1580,14 +1627,31 @@ C     Set up the array values that need to be written
      &         descript%num_items_per_record, " dimensional arrays."
             END SELECT
          ELSE 
-            dat%nodal_data(:,kount(2)) = descript%array 
+            SELECT CASE(descript%num_items_per_record) 
+            CASE(1)
+               dat%nodal_data(:,kount(2)) = descript%array 
+            CASE(2)
+               dat%u_nodal_data(:,kount(2)) = descript%array
+               dat%v_nodal_data(:,kount(2)) = descript%array2 
+            CASE DEFAULT
+               WRITE(*,*) "ADCIRC's NetCDF cannot write ",
+     &         descript%num_items_per_record, " dimensional arrays."
+            END SELECT
          ENDIF
-      ELSE
+      ELSE                  ! PARALLEL
          ! the globalio routine deals with inserting alternate values for 
          ! dry nodes, so we don't need to worry about it here (ie, in parallel)
          kount(1)=descript%num_fd_records
-         dat%u_nodal_data(:,kount(2)) = descript%array_g
-         dat%v_nodal_data(:,kount(2)) = descript%array2_g
+         SELECT CASE(descript%num_items_per_record) 
+         CASE(1)
+            dat%nodal_data(:,kount(2)) = descript%array_g
+         CASE(2)
+            dat%u_nodal_data(:,kount(2)) = descript%array_g
+            dat%v_nodal_data(:,kount(2)) = descript%array2_g
+         CASE DEFAULT
+            WRITE(*,*) "ADCIRC's NetCDF cannot write ",
+     &      descript%num_items_per_record, " dimensional arrays."
+         END SELECT
       ENDIF
 C            
 C     Write the values
@@ -2397,7 +2461,7 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Defines data that are common to all netCDF files.
 C-----------------------------------------------------------------------
       subroutine defineMeshVariables(ncid, myMesh)
-      USE GLOBAL, ONLY : RAD2DEG, SLAM0, SFEA0, ICS
+      USE GLOBAL, ONLY : RAD2DEG, SLAM0, SFEA0
       USE SIZES, ONLY : SZ
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
       USE VERSION
@@ -2516,65 +2580,9 @@ C
      &       myMesh%DEPTH_dims, myMesh%DEPTH_id)
       CALL check_err(iret)
 C
-!     Define longitude attributes
-      if(ics.eq.2) then  ! this indicates spherical coordinates
-      
-         iret = nf_put_att_text(ncid, myMesh%X_id, 
-     &      'long_name',9,'longitude')
-         CALL check_err(iret)
-         iret = nf_put_att_text(ncid, myMesh%X_id,'standard_name', 9,
-     &       'longitude')
-         CALL check_err(iret)
-         iret = nf_put_att_text(ncid, myMesh%X_id,
-     &       'units', 12, VAR_DEGE)
-         CALL check_err(iret)
-         iret = nf_put_att_text(ncid, myMesh%X_id,
-     &       'positive', 4, VAR_EAST)
-         CALL check_err(iret)
-!     Define latitude attributes
-         iret = nf_put_att_text(ncid, myMesh%Y_id,
-     &      'long_name', 8, 'latitude')
-         CALL check_err(iret)
-         iret = nf_put_att_text(ncid, myMesh%Y_id,
-     &      'standard_name', 8, 'latitude')
-         CALL check_err(iret)
-         iret = nf_put_att_text(ncid, myMesh%Y_id,
-     &      'units', 13, VAR_DEGN)
-         CALL check_err(iret)
-         iret = nf_put_att_text(ncid, myMesh%Y_id,
-     &      'positive', 5, VAR_NORTH)
-         CALL check_err(iret)
-      else   ! must be using Cartesian (x,y) coordinates
-      
-!     Define x-coordinate attributes
-!     ------------------------------
-         iret = nf_put_att_text(ncid, myMesh%X_id,
-     &      'long_name', 22, VAR_L_X)
-         CALL check_err(iret)
-         iret = nf_put_att_text(ncid, myMesh%X_id, 'standard_name',
-     &                          12, VAR_S_X)
-         CALL check_err(iret)
-!    -------------------------
-!     determine variable units
-!    -------------------------
-         CALL putUnitsAttribute(ncid, myMesh%Y_id, VAR_METS, VAR_FEET)
-
-         iret = nf_put_att_text(ncid, myMesh%X_id, 'positive', 5,  VAR_RG)
-         CALL check_err(iret)
-!     ------------------------------
-!     Define y-coordinate attributes
-!     ------------------------------     
-         iret = nf_put_att_text(ncid, myMesh%Y_id, 'long_name', 22, VAR_L_Y)
-         CALL check_err(iret)
-         iret = nf_put_att_text(ncid, myMesh%Y_id, 'standard_name', 
-     &                          12, VAR_S_Y)
-         CALL check_err(iret)
-          
-         CALL putUnitsAttribute(ncid, myMesh%Y_id, VAR_METS, VAR_FEET)
-
-         iret = nf_put_att_text(ncid, myMesh%Y_id, 'positive', 34, VAR_UPY)
-         CALL check_err(iret)
-      endif
+C     Set coordinates as representing latitude or longitude, depending on
+C     the value of ICS
+      CALL defineCoordinateAttributes(ncid, myMesh%X_id, myMesh%Y_id)
 !     ------------------------------
 !     Define depth attributes
 !     ------------------------------
@@ -2626,6 +2634,70 @@ C-----------------------------------------------------------------------
       END SUBROUTINE defineMeshVariables
 C-----------------------------------------------------------------------
 
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E  
+C        D E F I N E  C O O R D I N A T E  A T T R I B U T E S 
+C-----------------------------------------------------------------------
+C     jgf49.21 Defines coordinate attributes to identify coordinates as
+C     either x and y in Cartesian length (feet or meters) or latitude
+C     and longitude depending on the value of ICS.
+C-----------------------------------------------------------------------
+      subroutine defineCoordinateAttributes(ncid, xid, yid)
+      USE GLOBAL, ONLY : ICS
+      IMPLICIT NONE
+      INTEGER ncid
+      INTEGER xid
+      INTEGER yid
+      INTEGER iret
+C
+      if(ics.eq.2) then  ! this indicates spherical coordinates
+      
+C        Define longitude attributes
+         iret = nf_put_att_text(ncid, xid, 'long_name',9,'longitude')
+         CALL check_err(iret)
+         iret = nf_put_att_text(ncid, xid,'standard_name', 9,
+     &       'longitude')
+         CALL check_err(iret)
+         iret = nf_put_att_text(ncid, xid,'units', 12, VAR_DEGE)
+         CALL check_err(iret)
+         iret = nf_put_att_text(ncid, xid, 'positive', 4, VAR_EAST)
+         CALL check_err(iret)
+!        Define latitude attributes
+         iret = nf_put_att_text(ncid, yid, 'long_name', 8, 'latitude')
+         CALL check_err(iret)
+         iret = nf_put_att_text(ncid, yid,
+     &      'standard_name', 8, 'latitude')
+         CALL check_err(iret)
+         iret = nf_put_att_text(ncid, yid, 'units', 13, VAR_DEGN)
+         CALL check_err(iret)
+         iret = nf_put_att_text(ncid, yid, 'positive', 5, VAR_NORTH)
+         CALL check_err(iret)
+      else   ! must be using Cartesian (x,y) coordinates
+!        Define x-coordinate attributes
+         iret = nf_put_att_text(ncid, xid, 'long_name', 22, VAR_L_X)
+         CALL check_err(iret)
+         iret = nf_put_att_text(ncid, xid, 'standard_name',
+     &                          12, VAR_S_X)
+         CALL check_err(iret)
+!        determine variable units
+         CALL putUnitsAttribute(ncid, xid, VAR_METS, VAR_FEET)
+         iret = nf_put_att_text(ncid, xid, 'positive', 5,  VAR_RG)
+         CALL check_err(iret)
+!        Define y-coordinate attributes
+         iret = nf_put_att_text(ncid, yid, 'long_name', 22, VAR_L_Y)
+         CALL check_err(iret)
+         iret = nf_put_att_text(ncid, yid, 'standard_name', 
+     &                          12, VAR_S_Y)
+         CALL check_err(iret)
+         CALL putUnitsAttribute(ncid, yid, VAR_METS, VAR_FEET)
+         iret = nf_put_att_text(ncid, yid, 'positive', 34, VAR_UPY)
+         CALL check_err(iret)
+      endif
+
+C-----------------------------------------------------------------------
+      END SUBROUTINE defineCoordinateAttributes
+C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   P U T   M E S H   V A R I A B L E S 
@@ -2722,7 +2794,7 @@ C
       character zone*5
       integer values(8)
 #ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering putMetaData."
+      write(*,*) "DEBUG: Entering defineMetaData."
 #endif
 !     -----------------
 !     Global attributes

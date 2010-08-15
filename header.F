@@ -3,6 +3,16 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.26   - 08/15/2010 - jgf - Fixes to netcdf so it is now capable of 
+C             writing all data to the eight main output files in serial.
+C ------------------------------------------------------------------------
+C   r501 | stanaka | 2010-08-11 10:20:22 -0400 (Wed, 11 Aug 2010) | 1 line
+C             Changed paths:
+C             M /adcirc/trunk/src/timestep.F
+C             Implemented Clint's zombie killing process for the error
+C             elevation node. If there is a error elevation node, MSG_FINI is
+C             called to finalize MPI environment.
+C             (jgf: let's call this v49.25.)
 C  v49.24   - 08/10/2010 - jgf - Fixed issues with the construction of arrays
 C             for writing in netcdf files. Data in the reorganized module were
 C             not being copied correctly from ADCIRC arrays to netcdf arrays. 
