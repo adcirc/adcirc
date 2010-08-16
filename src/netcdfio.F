@@ -197,7 +197,7 @@ C
          INTEGER num_stations      ! total number of stations 
          INTEGER :: num_sta_dim_id
          INTEGER, ALLOCATABLE :: name_lengths(:) ! lengths of station names 
-         CHARACTER(50), POINTER :: statnames(:,:)
+         CHARACTER(50), POINTER :: statnames(:)
          INTEGER :: slen_dim_id
          INTEGER :: scode_dim_id
          INTEGER :: station_rank = 2
@@ -499,10 +499,6 @@ C     are in spherical coordinates.
          sta%x = descript%x_coord
          sta%y = descript%y_coord
       ENDIF
-C     DEBUG
-      DO i=1,sta%num_stations
-         write(*,*) "sta%x(",i,")=",sta%x(i)," sta%y(",i,")=",sta%y(i)
-      END DO
 C
 C     Initialize netCDF output file, creating a new one if necessary.
       CALL createNetCDFOutputFile(sta%ncid, sta%myFile, lun, sta%myTime,
@@ -569,7 +565,7 @@ C     as well as the units system (english or si according to the value of g).
             iret = nf_put_att_text(sta%ncid, sta%station_data_id,
      &             'positive', 2, VAR_UP)
             CALL check_err(iret)
-            sta%statnames => STATNAME
+            sta%statnames => STATNAME 
  
          CASE(62) !       F O R T . 6 2 
  
@@ -682,7 +678,7 @@ C     as well as the units system (english or si according to the value of g).
             iret = nf_put_att_text(sta%ncid, sta%station_data_id,
      &      'positive', 2, VAR_UP)
             CALL check_err(iret)
-            sta%statnames => STATNAMEV
+            sta%statnames => STATNAMEM 
           
          CASE(72)  !      F O R T . 7 2 
       
@@ -806,7 +802,7 @@ C
             iret = nf_put_att_DOUBLE(sta%ncid, sta%v_station_data_id,
      &             '_FillValue', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
-            sta%statnames => STATNAMEM
+            sta%statnames => STATNAMEM !jgfdebug
     
          CASE DEFAULT
             WRITE(*,*) "ERROR: The unit number ",lun," cannot be ",
@@ -857,10 +853,10 @@ C     define metadata and selected fort.15 parameters in netcdf file
       do i=1,sta%num_stations
          start(1)=1
          start(2)=i
-         kount(1)= LEN(TRIM(sta%statnames(i,SNAMLEN)))
+         kount(1)= LEN(TRIM(sta%statnames(i)))
          kount(2)=1
          iret = nf_put_vara_text(sta%ncid,sta%station_id,start,kount,
-     &   sta%statnames(i,SNAMLEN) )
+     &   sta%statnames(i) )
          CALL check_err(iret)
       end do
 C
@@ -1287,7 +1283,7 @@ C     jgf49.17.02 Initializes NetCDF coordinates.
 C-----------------------------------------------------------------------
       SUBROUTINE initNetCDFCoord(myMesh)
       USE GLOBAL, ONLY : RAD2DEG, NBOU, NVEL, NOPE, NP_G, SLAM0, SFEA0,
-     &                   NBVV, NVDLL, NBDV, NVELL
+     &                   NBVV, NVDLL, NBDV, NVELL, X, Y, SLAM, SFEA, ICS
       IMPLICIT NONE
       type(meshStructure), intent(inout) :: myMesh
       INTEGER :: i, j, k  ! array indices
@@ -1304,7 +1300,15 @@ C
       ALLOCATE(myMesh%nvellnc(nbou))
       ALLOCATE(myMesh%element(myMesh%nface_len,myMesh%num_elems))
       ALLOCATE(myMesh%nm(myMesh%num_elems,myMesh%nface_len))
-
+C
+C     Store nodal coordinates
+      if (ics.eq.1) then
+         myMesh%xnc = X
+         myMesh%ync = Y
+      else
+         myMesh%xnc = SLAM * RAD2DEG
+         myMesh%ync = SFEA * RAD2DEG
+      endif
 !     --------------------------------
 !     Convert to degress for NETCDF I/O
 !     --------------------------------
@@ -1591,12 +1595,9 @@ C      CALL updateMetaData(dat%ncid)
          iret=nf_inq_varid(dat%ncid,"windy",dat%v_nodal_data_id)
          CALL check_err(iret)
       CASE DEFAULT
- 
+         WRITE(*,*) "ERROR: NetCDF output is not available for the ",
+     &         "ADCIRC unit number ",lun,"."
       END SELECT
-
-C      write(*,*) "dat%myMesh%num_nodes = ", dat%myMesh%num_nodes
-C      write(*,*) "dat%myTime%timenc_len = ", dat%myTime%timenc_len
-C      write(*,*) "dat%myFile%record_counter = ",dat%myFile%record_counter
 C
 C     Set up the netcdf data extents
       kount(2)=dat%myTime%timenc_len
@@ -1634,7 +1635,7 @@ C     Set up the array values that need to be written
                dat%u_nodal_data(:,kount(2)) = descript%array
                dat%v_nodal_data(:,kount(2)) = descript%array2 
             CASE DEFAULT
-               WRITE(*,*) "ADCIRC's NetCDF cannot write ",
+               WRITE(*,*) "ERROR: ADCIRC's NetCDF cannot write ",
      &         descript%num_items_per_record, " dimensional arrays."
             END SELECT
          ENDIF
@@ -1649,7 +1650,7 @@ C     Set up the array values that need to be written
             dat%u_nodal_data(:,kount(2)) = descript%array_g
             dat%v_nodal_data(:,kount(2)) = descript%array2_g
          CASE DEFAULT
-            WRITE(*,*) "ADCIRC's NetCDF cannot write ",
+            WRITE(*,*) "ERROR: ADCIRC's NetCDF cannot write ",
      &      descript%num_items_per_record, " dimensional arrays."
          END SELECT
       ENDIF
@@ -2707,7 +2708,7 @@ C     to the specified file.
 C-----------------------------------------------------------------------
       subroutine putMeshVariables(ncid, myMesh)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : ICS, X, Y, DP
+      USE GLOBAL, ONLY : DP
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
       USE VERSION
       IMPLICIT NONE
@@ -2722,13 +2723,13 @@ C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Entering putMeshVariables."
 #endif
-!
-!     Store X
-      iret = nf_put_var_double(ncid, myMesh%X_id, X)
+C
+C     Store nodal coordinates
+      iret = nf_put_var_double(ncid, myMesh%X_id, myMesh%xnc)
       CALL check_err(iret)
-!     Store Y
-      iret = nf_put_var_double(ncid, myMesh%Y_id, Y)
+      iret = nf_put_var_double(ncid, myMesh%Y_id, myMesh%ync)
       CALL check_err(iret)
+C
 !     Store depth
       iret = nf_put_var_double(ncid, myMesh%DEPTH_id, DP)
       CALL check_err(iret)

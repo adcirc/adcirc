@@ -458,13 +458,14 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       CHARACTER(80) :: contact     ! user's institution/ e-mail address
       CHARACTER(80) :: references  ! published/web-based references that describe the data
       CHARACTER(7),  ALLOCATABLE :: STATNUMB(:,:)
-      CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAME(:,:)
+      CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAME(:)
       CHARACTER(7),  ALLOCATABLE :: STATNUMBV(:,:)
-      CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEV(:,:)
+      CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEV(:)
       INTEGER, PARAMETER :: SNUMLEN = 7
       INTEGER, PARAMETER :: SNAMLEN = 50
       CHARACTER(7),  ALLOCATABLE  :: STATNUMBM(:,:)
-      CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEM(:,:)
+      CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEM(:)
+      CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEC(:)
       
       INTEGER NCIESTP, NCIPSTP,NCIVSTP,NCIWSTP
       INTEGER NCIGEP,NCIGPP, NCIGVP,NCIGWP

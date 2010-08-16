@@ -51,16 +51,6 @@ Casey 100205: Enable hot-start file generation by SWAN.
       REAL(SZ) TOUTFGC, TOUTFGE, TOUTFGV, TOUTFGW
       REAL(SZ) TOUTFM, TOUTSGC, TOUTSGE, TOUTSGV, TOUTSGW, TOUTSM
       CHARACTER CDUM80
-
-C    ===================================================================
-C      MCF ADDITION FOR READING AND WRITING STATION INFO IN NETCDF
-C
-      REAL, EXTERNAL              :: a2f
-      CHARACTER(132) STATLINE
-      CHARACTER(50) LVAR(3)
-C
-C    ===================================================================
-C
       LOGICAL fileFound
 C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
@@ -3767,72 +3757,11 @@ C  Allocate arrays dimensioned by MNSTAE
 
 C....INPUT COORDINATES OF ELEVATION RECORDING STATIONS THEN COMPUTE
 C....THE ELEMENT NO. THE STATION LIES IN
-
-C     jgf47.12 From cf, memory allocation for netcdf.
-C     ==================================================================
-C     START ADDITION BY MCF FOR NETCDF OPTION
-C
-      IF(.NOT. ALLOCATED(STATNAME))ALLOCATE(STATNAME(NSTAE,SNAMLEN))
-C
-C     END ADDITION BY MCF FOR NETCDF OPTION
-C     ==================================================================
-
-      DO I=1,NSTAE
-        NNE(I)=0
-        IF(ICS.EQ.1) THEN
-
-C     jgf47.12 From cf, additions for netcdf.
-C     ==================================================================
-C     START ADDITION BY MCF FOR NETCDF OPTION
-C
-             IF(NOUTE.NE.3)THEN
-                READ(15,*) XEL(I),YEL(I)
-              ELSE
-                READ(15,'(A132)') STATLINE
-                call parse(STATLINE, LVAR)
-                XEL(I)=a2f(LVAR(1))
-                YEL(I)=a2f(LVAR(2))
-                STATNAME(I,SNAMLEN)=LVAR(3)
-             ENDIF
-          ELSE
-
-             IF(NOUTE.NE.3)THEN
-                 READ(15,*) SLEL(I),SFEL(I)
-             ELSE
-                 READ(15,'(A132)') STATLINE
-                 call parse(STATLINE, LVAR)
-                 SLEL(I)=a2f(LVAR(1))
-                 SFEL(I)=a2f(LVAR(2))
-                 STATNAME(I,SNAMLEN)=LVAR(3)
-             ENDIF
-C              
-C     END OF ADDITION BY MCF FOR NETCDF OPTION
-C     ==================================================================
-
-          SLEL(I)=SLEL(I)*DEG2RAD
-          SFEL(I)=SFEL(I)*DEG2RAD
-          CALL CPP(XEL(I),YEL(I),SLEL(I),SFEL(I),SLAM0,SFEA0)
-        ENDIF
+      ALLOCATE(STATNAME(NSTAE))
+      CALL readStations(STATNAME, NSTAE, NNE, XEL, YEL, SLEL, SFEL,
+     &                  STAIE1, STAIE2, STAIE3)
  9911            FORMAT(F12.3,2X,F12.3, 6X, A50)
  9111            FORMAT(F8.3,2X,F8.3, 6X, A50)
-        CALL CoordinateToElement(XEL(I), YEL(I),
-     &       NNE(I), I, 'ELEVATION RECORDING STATION   ')
-
-        IF(ICS.EQ.1) THEN
-          WRITE(16,1880) I,NNE(I),XEL(I),YEL(I)
-1880      FORMAT(8X,I3,6X,I7,2(2X,F14.2))
-          ELSE
-          WRITE(16,1883) I,NNE(I),SLEL(I)*RAD2DEG,
-     &                   SFEL(I)*RAD2DEG,XEL(I),YEL(I)
-1883      FORMAT(6X,I3,4X,I7,2(2X,F13.8),2X,2(1X,F13.2))
-          ENDIF
-
-C....PRE-COMPUTE INFORMATION REQUIRED TO INTERPOLATE AT ELEV. RECORDING STATIONS
-          CALL ComputeInterpolatingFactors(XEL(I), YEL(I), NNE(I),
-     &         STAIE1(I), STAIE2(I), STAIE3(I))
-
-        END DO
-
 C...
 C...INPUT INFORMATION FOR VELOCITY RECORDING STATIONS
 C...
@@ -3934,68 +3863,9 @@ C      Allocate arrays dimensioned by MNSTAV
 
 C....INPUT COORDINATES OF VELOCITY RECORDING STATIONS
 C....THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
-
-C     jgf47.12 From cf, memory allocation for netcdf.
-C     ==================================================================
-C     START ADDITION BY MCF FOR NETCDF OPTION
-C
-      IF(.NOT. ALLOCATED(STATNAMEV))ALLOCATE(STATNAMEV(NSTAV,SNAMLEN))
-C
-C     END ADDITION BY MCF FOR NETCDF OPTION
-C     ==================================================================
-
-      DO I=1,NSTAV
-        NNV(I)=0
-        IF(ICS.EQ.1) THEN
-
-C     jgf47.12 From cf,
-C     ==================================================================
-C     START ADDITION BY MCF FOR NETCDF OPTION
-C
-           IF(NOUTV.NE.3) THEN
-              READ(15,*) XEV(I),YEV(I)
-           ELSE
-              READ(15,'(A132)') STATLINE
-              call parse(STATLINE, LVAR)
-              XEV(I)=a2f(LVAR(1))
-              YEV(I)=a2f(LVAR(2))
-              STATNAMEV(I,SNAMLEN)=LVAR(3)
-           ENDIF
-        ELSE
-           IF(NOUTV.NE.3)THEN
-              READ(15,*) SLEV(I),SFEV(I)
-           ELSE
-              READ(15,'(A132)') STATLINE
-              call parse(STATLINE, LVAR)
-              SLEV(I)=a2f(LVAR(1))
-              SFEV(I)=a2f(LVAR(2))
-              STATNAMEV(I,SNAMLEN)=LVAR(3)
-         ENDIF
-C
-C     END ADDITION BY MCF FOR NETCDF OPTION
-C     ==================================================================
-C
-          SLEV(I)=SLEV(I)*DEG2RAD
-          SFEV(I)=SFEV(I)*DEG2RAD
-          CALL CPP(XEV(I),YEV(I),SLEV(I),SFEV(I),SLAM0,SFEA0)
-          ENDIF
-
-          CALL CoordinateToElement(XEV(I), YEV(I),
-     &         NNV(I), I, 'VELOCITY RECORDING STATION    ')
-
-          IF(ICS.EQ.1) THEN
-             WRITE(16,1880) I,NNV(I),XEV(I),YEV(I)
-          ELSE
-             WRITE(16,1883) I,NNV(I),SLEV(I)*RAD2DEG,SFEV(I)*RAD2DEG,
-     &            XEV(I),YEV(I)
-          ENDIF
-
-C....PRE-COMPUTE INFORMATION REQUIRED TO INTERPOLATE AT VEL. RECORDING STATIONS
-          CALL ComputeInterpolatingFactors(XEV(I), YEV(I), NNV(I),
-     &         STAIV1(I), STAIV2(I), STAIV3(I))
-
-      END DO
-
+      ALLOCATE(STATNAMEV(NSTAV))
+      CALL readStations(STATNAMEV, NSTAV, NNV, XEV, YEV, SLEV, SFEV,
+     &                  STAIV1, STAIV2, STAIV3)
 C...
 C...  IF TRANSPORT IS INCLUDED IN THE RUN, INPUT INFORMATION FOR CONCENTRATION
 C...  RECORDING STATIONS
@@ -4103,34 +3973,9 @@ C  Allocate arrays dimensioned by MNSTAC
 
 C...  INPUT COORDINATES OF CONCENTRATION RECORDING STATIONS
 C...  THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
-
-         DO I=1,NSTAC
-            NNC(I)=0
-            IF(ICS.EQ.1) THEN
-               READ(15,*) XEC(I),YEC(I)
-            ELSE
-               READ(15,*) SLEC(I),SFEC(I)
-               SLEC(I)=SLEC(I)*DEG2RAD
-               SFEC(I)=SFEC(I)*DEG2RAD
-               CALL CPP(XEC(I),YEC(I),SLEC(I),SFEC(I),SLAM0,SFEA0)
-            ENDIF
-
-            CALL CoordinateToElement(XEC(I), YEC(I),
-     &         NNC(I), I, 'CONCENTRATION REC. STATION    ')
-
-            IF(ICS.EQ.1) THEN
-               WRITE(16,1880) I,NNC(I),XEC(I),YEC(I)
-            ELSE
-               WRITE(16,1883) I,NNC(I),SLEC(I)*RAD2DEG,
-     &              SFEC(I)*RAD2DEG,XEC(I),YEC(I)
-            ENDIF
-
-C...  PRE-COMPUTE INFORMATION REQUIRED TO INTERPOLATE AT CONCENTRATION
-C...  RECORDING STATIONS
-            CALL ComputeInterpolatingFactors(XEC(I), YEC(I), NNC(I),
-     &           STAIC1(I), STAIC2(I), STAIC3(I))
-            
-         END DO
+      ALLOCATE(STATNAMEC(NSTAC))
+      CALL readStations(STATNAMEC, NSTAC, NNC, XEC, YEC, SLEC, SFEC,
+     &                  STAIC1, STAIC2, STAIC3)
       ENDIF
       IF (NSTAC.EQ.0) MNSTAC = 1
 C...  
@@ -4239,69 +4084,9 @@ C  Allocate arrays dimensioned by MNSTAM
 
 C...  INPUT COORDINATES OF METEOROLOGICAL RECORDING STATIONS
 C...  THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
-         
-C        jgf47.12 from cf, memory allocation for netcdf.       
-C     ==================================================================
-C     START ADDITION BY MCF FOR NETCDF OPTION
-C
-         IF(.NOT.ALLOCATED(STATNAMEM))ALLOCATE(STATNAMEM(NSTAM,SNAMLEN))
-C
-C     END ADDITION BY MCF FOR NETCDF OPTION
-C     ==================================================================
-C
-         DO I=1,NSTAM
-            NNM(I)=0
-            IF(ICS.EQ.1) THEN
-
-C           jgf47.12 from cf,
-C     ==================================================================
-C     START ADDITION BY MCF FOR NETCDF OPTION
-C
-             IF(NOUTM.NE.3)THEN
-                READ(15,*) XEM(I),YEM(I)
-             ELSE
-                READ(15,'(A132)') STATLINE
-                call parse(STATLINE, LVAR)
-                XEM(I)=a2f(LVAR(1))
-                YEM(I)=a2f(LVAR(2))
-                STATNAMEM(I,SNAMLEN)=LVAR(3)
-             ENDIF
-          ELSE
-             IF(NOUTM.NE.3)THEN
-               READ(15,*) SLEM(I),SFEM(I)
-             ELSE
-               READ(15,'(A132)') STATLINE
-               call parse(STATLINE, LVAR)
-               SLEM(I)=a2f(LVAR(1))
-               SFEM(I)=a2f(LVAR(2))
-               STATNAMEM(I,SNAMLEN)=LVAR(3)
-             ENDIF
-C
-C     END ADDITION BY MCF FOR NETCDF OPTION
-C     ==================================================================
-C
-               SLEM(I)=SLEM(I)*DEG2RAD
-               SFEM(I)=SFEM(I)*DEG2RAD
-               CALL CPP(XEM(I),YEM(I),SLEM(I),SFEM(I),SLAM0,SFEA0)
-            ENDIF
-
-          CALL CoordinateToElement(XEM(I), YEM(I),
-     &         NNM(I), I, 'METEOROLOGICAL REC. STATION   ')
-
-            IF(ICS.EQ.1) THEN
-               WRITE(16,1880) I,NNM(I),XEM(I),YEM(I)
-            ELSE
-               WRITE(16,1883) I,NNM(I),SLEM(I)*RAD2DEG,
-     &              SFEM(I)*RAD2DEG,XEM(I),YEM(I)
-            ENDIF
-
-C...  PRE-COMPUTE INFORMATION REQUIRED TO INTERPOLATE AT METEOROLOGICAL
-C...  RECORDING STATIONS
-
-            CALL ComputeInterpolatingFactors(XEM(I), YEM(I), NNM(I),
-     &           STAIM1(I), STAIM2(I), STAIM3(I))
-
-         END DO
+         ALLOCATE(STATNAMEM(NSTAM))
+         CALL readStations(STATNAMEM, NSTAM, NNM, XEM, YEM, SLEM, SFEM,
+     &                     STAIM1, STAIM2, STAIM3)
       ENDIF
       IF (NSTAM.EQ.0) MNSTAM = 1
 
@@ -5091,8 +4876,9 @@ C
 !     IF output is in netCDF format read global attributes for netCDF file
 !     --------------------------------------------------------------------
 
-      IF( (noutge.EQ.3) .OR. (noutgv.EQ.3) .OR. (noutv.EQ.3)
-     &       .or. (noute.EQ.3) .or. (noutm.eq.3) .or. NHSTAR.eq.3 )THEN
+      IF( (abs(noutge).EQ.3) .OR. (abs(noutgv).EQ.3) .OR.
+     &    (abs(noutv).EQ.3) .or. (abs(noute).EQ.3) .OR.
+     &    (abs(noutm).eq.3) .or. abs(NHSTAR).eq.3 )    THEN
 
 #ifndef NETCDF
          print *, "NetCDF was selected but is not supported by the
@@ -6542,6 +6328,68 @@ C                new information being used.
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE READ_INPUT_3D
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   R E A D   S T A T I O N S 
+C-----------------------------------------------------------------------
+C     jgf45.12 Subroutine to read in station names and coordinates, 
+C     determine the element that the station falls in, and compute
+C     interpolating factors.
+C-----------------------------------------------------------------------
+      SUBROUTINE readStations(names, num_stations, nnv, xcoord, ycoord,
+     &                        lat, lon, sta1, sta2, sta3)  
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, SLAM0, SFEA0, ICS
+      IMPLICIT NONE
+      CHARACTER(50) :: names(num_stations)
+      INTEGER num_stations
+      INTEGER, dimension(num_stations) :: nnv
+      REAL(SZ), dimension(num_stations) :: xcoord
+      REAL(SZ), dimension(num_stations) :: ycoord
+      REAL(SZ), dimension(num_stations) :: lat
+      REAL(SZ), dimension(num_stations) :: lon
+      REAL(SZ), dimension(num_stations) :: sta1
+      REAL(SZ), dimension(num_stations) :: sta2    
+      REAL(SZ), dimension(num_stations) :: sta3
+      INTEGER I
+      REAL, EXTERNAL              :: a2f
+      CHARACTER(132) STATLINE
+      CHARACTER(50) LVAR(3)
+C
+      DO I=1,num_stations
+         NNV(I)=0
+         READ(15,'(A132)') STATLINE
+         call parse(STATLINE, LVAR)
+         names(I)=LVAR(3)
+         IF(ICS.EQ.1) THEN
+            xcoord(I)=a2f(LVAR(1))
+            ycoord(I)=a2f(LVAR(2))
+         ELSE
+            lat(I)=a2f(LVAR(1))*DEG2RAD
+            lon(I)=a2f(LVAR(2))*DEG2RAD
+            CALL CPP(xcoord(I),ycoord(I),lat(I),lon(I),SLAM0,SFEA0)
+         ENDIF
+C
+         CALL CoordinateToElement(xcoord(I), ycoord(I),
+     &         NNV(I), I, 'VELOCITY RECORDING STATION    ')
+
+          IF(ICS.EQ.1) THEN
+             WRITE(16,1880) I,NNV(I),xcoord(I),xcoord(I)
+          ELSE
+             WRITE(16,1883) I,NNV(I),lat(I)*RAD2DEG,lon(I)*RAD2DEG,
+     &            xcoord(I),ycoord(I)
+          ENDIF
+
+C....PRE-COMPUTE INFORMATION REQUIRED TO INTERPOLATE AT VEL. RECORDING STATIONS
+          CALL ComputeInterpolatingFactors(xcoord(I), ycoord(I), NNV(I),
+     &         sta1(I), sta2(I), sta3(I))
+
+      END DO
+1880  FORMAT(8X,I3,6X,I7,2(2X,F14.2))
+1883  FORMAT(6X,I3,4X,I7,2(2X,F13.8),2X,2(1X,F13.2))
+C-----------------------------------------------------------------------
+      END SUBROUTINE readStations
 C-----------------------------------------------------------------------
 
 

@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.27   - 08/15/2010 - jgf - Fixes to storage of meta data, lat/lon
+C             coordinates for stations and mesh nodes, and station names in
+C             netcdf. 
 C  v49.26   - 08/15/2010 - jgf - Fixes to netcdf so it is now capable of 
 C             writing all data to the eight main output files in serial.
 C ------------------------------------------------------------------------
