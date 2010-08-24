@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.28   - 08/24/2010 - jgf - Declared variables in netcdf module as 
+C             private if the underlying type declaration was private.
 C  v49.27   - 08/15/2010 - jgf - Fixes to storage of meta data, lat/lon
 C             coordinates for stations and mesh nodes, and station names in
 C             netcdf. 

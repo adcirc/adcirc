@@ -27,6 +27,10 @@
       !                                            boundary forcing segments or nodes
       ! 10/20/09 Chris Massey @ USACE-ERDC-CHL     changed reserved word "count" to 
       ! v49.01                                     kount to avoid conflicts.
+      ! 07-08/10 Jason Fleming                     complete reorganization
+      !                                            for greater modularity, 
+      !                                            flexibility, extensibility,
+      !                                            and maintainability
       ! 
       !=================================================================
       MODULE NETCDFIO
@@ -192,7 +196,6 @@ C
       END TYPE timeData 
 
       TYPE, PRIVATE :: stationData
-         PRIVATE
          INTEGER ncid              ! the id of its netcdf file
          INTEGER num_stations      ! total number of stations 
          INTEGER :: num_sta_dim_id
@@ -229,13 +232,12 @@ C
          type(fileData) :: myFile
       END TYPE stationData
 
-      type(stationData), save :: elevSta ! for elevation stations (fort.61)
-      type(stationData), save :: prSta   ! for pressure stations (fort.71)      
-      type(stationData), save :: velSta  ! for velocity stations (fort.62)
-      type(stationData), save :: wVelSta ! for wind velocity stations (fort.72)
+      type(stationData), private, save :: elevSta ! elev stations (fort.61)
+      type(stationData), private, save :: prSta   ! pressure stations (fort.71)
+      type(stationData), private, save :: velSta  ! velocity stations (fort.62)
+      type(stationData), private, save :: wVelSta ! wind vel stations (fort.72)
 
       TYPE, PRIVATE :: nodalData
-         PRIVATE
          INTEGER ncid              ! the id of its netcdf file
          REAL(SZ) :: initial_value ! array will be initialized to this
          REAL(SZ), ALLOCATABLE :: nodal_data(:,:)   ! for scalar data 
@@ -255,10 +257,10 @@ C
          type(meshStructure) :: myMesh
       END TYPE nodalData
 
-      type(nodalData), save :: elev       ! for fort.63
-      type(nodalData), save :: pr         ! for fort.73
-      type(nodalData), save :: currentVel ! for fort.64
-      type(nodalData), save :: windVel    ! for fort.74
+      type(nodalData), private, save :: elev       ! for fort.63
+      type(nodalData), private, save :: pr         ! for fort.73
+      type(nodalData), private, save :: currentVel ! for fort.64
+      type(nodalData), private, save :: windVel    ! for fort.74
 
       TYPE, PRIVATE :: hotstartData
          INTEGER lun               ! ADCIRC's logical unit number
@@ -342,7 +344,7 @@ C
          type(meshStructure) :: myMesh
       END TYPE hotstartData   
 C
-      type(hotstartData), save :: hs  ! for fort.67 or fort.68
+      type(hotstartData), private, save :: hs  ! for fort.67 or fort.68
 C
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
