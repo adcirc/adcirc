@@ -252,7 +252,7 @@ ifeq ($(compiler),pgi-ranger)
   FC            :=  pgf95
   PFC           :=  mpif90
   FFLAGS1       :=  $(INCDIRS) -fast -tp barcelona-64 -Mextend
-#  FFLAGS1       :=  $(INCDIRS) -Minform,inform -Mextend -g -O0 -DNETCDF_DEBUG -Mbounds -Mchkfpstk -Mchkptr -Mchkstk
+#  FFLAGS1       :=  $(INCDIRS) -Minform,inform -Mextend -g -O0 -DNETCDF_DEBUG -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DNETCDF_DEBUG
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA

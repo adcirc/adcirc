@@ -4882,12 +4882,12 @@ C
 
 #ifndef NETCDF
          print *, "NetCDF was selected but is not supported by the
-      &            compilation flag chosen.
-      &
-      &            Compile with:
-      &
-      &  gmake NETCDF=enable NETCDFHOME=the netcdf library location"
-         stop
+     &            compilation flag chosen.
+     &
+     &            Compile with:
+     &
+     &  gmake NETCDF=enable NETCDFHOME=the netcdf library location"
+        stop
 #endif
 
          READ(15,'(A80)') title
@@ -6560,10 +6560,14 @@ C-----------------------------------------------------------------------
       !                                            University of Oslo, Norway
       !=================================================================
       subroutine parse (line, lvar)
+      IMPLICIT NONE
       CHARACTER(132) LINE,L
       CHARACTER(50) LVAR(3)
-      INTEGER LS, L1, LEN1
-
+      INTEGER LS, L1, LEN1, I
+      INTEGER NAMSTART  ! position of beginning of station name   
+      INTEGER NAMEND    ! position of end of station name
+      INTEGER BANGEND   ! location of terminating "!", if any
+C
       LS=1
       L=TRIM(ADJUSTL(LINE))
       LEN1=LEN(L)
@@ -6576,11 +6580,30 @@ C-----------------------------------------------------------------------
          LVAR(I)=ADJUSTL(L(LS:L1))
          L=ADJUSTL(L(L1+1:LEN(L)))
       END DO
-      LVAR(3)=L
+C
+C     Find start of station name, ignoring leading "!" if it is there
+      NAMSTART=1
+      IF ( L(1:1).EQ."!" ) THEN
+         NAMSTART=2
+      ENDIF
+C
+C     Find end of station name, ignoring the first occurrence of an
+C     embedded "!" as well as any characters to the right of that, since
+C     they are assumed to be a comment.
+      NAMEND=LEN(L)
+      BANGEND=INDEX(L(NAMSTART:NAMEND),"!")
+      IF ( BANGEND.NE.0 ) THEN
+         NAMEND = BANGEND + (NAMSTART-2) 
+      ENDIF
+      LVAR(3)=ADJUSTL(L(NAMSTART:NAMEND)) !jgf49.29: trim leading "!" and spaces
+      !=================================================================
       END SUBROUTINE parse
+      !=================================================================
 
 
+      !=================================================================
       FUNCTION front_trim(buf) RESULT(res)
+      !=================================================================
       IMPLICIT NONE
       !// Arguments
       CHARACTER(LEN=*), INTENT(IN)   :: buf
@@ -6594,11 +6617,14 @@ C-----------------------------------------------------------------------
             RETURN
          END IF
       END DO
+      !=================================================================
       END FUNCTION front_trim
-
+      !=================================================================
  
 
+      !=================================================================
       FUNCTION a2i(buf) RESULT(res)
+      !=================================================================
       IMPLICIT NONE
       !// Arguments
       CHARACTER(LEN=*), INTENT(IN)   :: buf
@@ -6625,10 +6651,13 @@ C-----------------------------------------------------------------------
       IF(neg) THEN
          res = res * (-1)
       END IF
+      !=================================================================
       END FUNCTION a2i
+      !=================================================================
 
-
+      !=================================================================
       FUNCTION a2f(buf) RESULT(res)
+      !=================================================================
       IMPLICIT NONE
       !// Arguments
       CHARACTER(LEN=*)               :: buf
@@ -6700,10 +6729,13 @@ C-----------------------------------------------------------------------
          !// We have an integer
          res = REAL(a2i(buf))
       END IF
+      !=================================================================
       END FUNCTION a2f
+      !=================================================================
 
-
+      !=================================================================
       FUNCTION a2d(buf) RESULT(res)
+      !=================================================================
       IMPLICIT NONE
       !// Arguments
         CHARACTER(LEN=*)               :: buf
@@ -6775,10 +6807,14 @@ C-----------------------------------------------------------------------
 !// We have an integer
         res = DBLE(a2i(buf))
         END IF
+      !=================================================================
         END FUNCTION a2d
+      !=================================================================
 
+
+      !=================================================================
         SUBROUTINE i2a(in2t, res)
-
+      !=================================================================
         IMPLICIT NONE
 !// Arguments
         INTEGER, INTENT(IN)            :: in2t
@@ -6810,6 +6846,6 @@ C-----------------------------------------------------------------------
         ELSE
         res(1:1) = sbuf(1:1)
         END IF
-
+      !=================================================================
         END SUBROUTINE i2a
-
+      !=================================================================

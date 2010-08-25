@@ -352,30 +352,6 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
-
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E   S E T   N E T C D F   M O D E  
-C-----------------------------------------------------------------------
-C     jgf49.17.02 Allocates memory for NetCDF operations.
-C-----------------------------------------------------------------------
-      SUBROUTINE setNetCDFMode(mnproc)
-      IMPLICIT NONE
-      INTEGER, intent(in) :: mnproc
-C
-      ncmode = 1     ! reasonable default
-      IF (mnproc.eq.0) THEN
-         ncmode = 0  ! for adcprep?
-      ENDIF
-      IF (mnproc.eq.1) THEN
-         ncmode = 1  ! for serial
-      ENDIF
-      IF (mnproc.gt.1) THEN
-         ncmode = 2  ! for parallel
-      ENDIF          
-C-----------------------------------------------------------------------
-      END SUBROUTINE setNetCDFMode
-C-----------------------------------------------------------------------
-
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   A L L O C   N E T C D F   A R R A Y S  
 C-----------------------------------------------------------------------
@@ -387,7 +363,7 @@ C-----------------------------------------------------------------------
       INTEGER, intent(in) :: lun
       TYPE(OutputDataDescript_t) :: descript
 #ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering allocNetCDFArrays ",lun
+      write(*,*) "DEBUG: Entering allocNetCDFArrays."
 #endif
 C 
       ! don't allocate or initialize anything if this output type is not
@@ -423,6 +399,9 @@ C
 
       END SELECT    
 C
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from allocNetCDFArrays."
+#endif
 C-----------------------------------------------------------------------
       END SUBROUTINE allocNetCDFArrays
 C-----------------------------------------------------------------------
@@ -456,7 +435,7 @@ C
       integer values(8)
 C
 #ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering initStation ",lun
+      write(*,*) "DEBUG: Entering initStation."
 #endif
       sta % num_stations = descript % num_fd_records
       ALLOCATE(sta%myTime%timenc(sta%myTime%timenc_len))
@@ -828,8 +807,9 @@ C
       iret = nf_put_att_text(sta%ncid, sta%myTime%timenc_id, 'units', 23, 
      .       'seconds since base_date')
       CALL check_err(iret)
-      iret = nf_put_att_text(sta%ncid, sta%myTime%timenc_id, 'base_date',
-     .       (LEN(TRIM(base_date(1:INDEX(base_date,"!")-1)))), base_date)
+      iret = nf_put_att_text(sta%ncid, sta%myTime%timenc_id,
+     &       'base_date', metalength(adjustl(base_date)),
+     &        adjustl(base_date))
       CALL check_err(iret)
 
       CALL date_and_time(now_date,big_ben,zone,values)
@@ -871,6 +851,9 @@ C
 C     now close the initialized netcdf file
       iret = nf_close(sta%ncid)
       CALL check_err(iret)
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from initStation."
+#endif
 C-----------------------------------------------------------------------
       END SUBROUTINE initStation
 C-----------------------------------------------------------------------
@@ -894,7 +877,7 @@ C
       INTEGER iret ! success or failure of netcdf call
 C 
 #ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering initNodalData ",lun
+      write(*,*) "DEBUG: Entering initNodalData."
 #endif
       dat%myMesh%num_nodes = descript % num_fd_records
       dat%myMesh%num_elems = NE_G
@@ -1214,6 +1197,10 @@ C
 C     now close the initialized netcdf file
       iret = nf_close(dat%ncid)
       CALL check_err(iret)
+
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from initNodalData."
+#endif
 C-----------------------------------------------------------------------
       END SUBROUTINE initNodalData
 C-----------------------------------------------------------------------
@@ -1237,7 +1224,7 @@ C
       INTEGER iret
 C
 #ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering createNetCDFOutputFile ",lun
+      write(*,*) "DEBUG: Entering createNetCDFOutputFile."
 #endif
       myFile%createFile = .false.
       myFile%fileFound = .false.
@@ -1274,6 +1261,9 @@ C
      &       myTime%timenc_dims, myTime%timenc_id)
       CALL check_err(iret)
 
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from createNetCDFOutputFile."
+#endif
 C-----------------------------------------------------------------------
       END SUBROUTINE createNetCDFOutputFile
 C-----------------------------------------------------------------------
@@ -1359,6 +1349,10 @@ C
          END DO
       END DO
 C
+
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from initNetCDFCoord."
+#endif
 C-----------------------------------------------------------------------
       END SUBROUTINE initNetCDFCoord
 C-----------------------------------------------------------------------
@@ -1412,6 +1406,10 @@ C
              WRITE(ScreenUnit,*) 'ERROR: No netCDF for this filetype.' 
       END SELECT
 C
+
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from writeOutArrayNetCDF."
+#endif
 C-----------------------------------------------------------------------
       END SUBROUTINE writeOutArrayNetCDF
 C-----------------------------------------------------------------------
@@ -1521,6 +1519,10 @@ C
 !     Close netCDF file
 9999  iret = nf_close(sta%ncid)
       CALL check_err(iret)
+
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from writeStation."
+#endif
 C-----------------------------------------------------------------------
       end subroutine writeStation
 C-----------------------------------------------------------------------     
@@ -1678,6 +1680,10 @@ C     Write the values
 !     Close netCDF file
 9999  iret = nf_close(dat%ncid)
       CALL check_err(iret)
+
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from writeNodalData."
+#endif
 C-----------------------------------------------------------------------
       end subroutine writeNodalData
 C-----------------------------------------------------------------------     
@@ -1697,6 +1703,10 @@ C
       type(OutputDataDescript_t), intent(in) :: descript
 C
       INTEGER iret ! success or failure of the netcdf call     
+C
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering initHotstart."
+#endif
 C
       hs%zeta1_dims(1) = hs%myMesh%num_nodes_dim_id
       hs%zeta1_dims(2) = hs%myTime%timenc_dim_id
@@ -2189,6 +2199,9 @@ C
       iret = nf_put_att_text(hs%ncid, hs%zetad_id,'positive', 2, VAR_UP)
       CALL check_err(iret)
 
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from initHotstart."
+#endif
 C-----------------------------------------------------------------------
       END SUBROUTINE initHotstart
 C-----------------------------------------------------------------------
@@ -2211,6 +2224,10 @@ C
       INTEGER counti(1), starti(1), n
       INTEGER kount(2), start(2)
       INTEGER iret ! success or failure of the netcdf call
+
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering writeHotstart."
+#endif
 C
       hs%myTime%timenc(hs%myTime%timenc_len)=time
       iret=nf_inq_varid(hs%ncid,"zeta1",hs%zeta1_id)
@@ -2301,6 +2318,10 @@ C
       CALL check_err(iret)
       iret = nf_put_var_int(hs%ncid, hs%nscougw_id, nscougw)
       CALL check_err(iret)
+
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from writeHotstart."
+#endif
 C-----------------------------------------------------------------------
       END SUBROUTINE writeHotstart
 C-----------------------------------------------------------------------
@@ -2324,6 +2345,10 @@ C
       INTEGER counti(1), starti(1), n
       INTEGER kount(2), start(2)
       INTEGER iret ! success or failure of the netcdf call
+C
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering readHotstart."
+#endif
 C
       iret=nf_inq_dimid(hs%ncid, "node", hs%myMesh%num_nodes_dim_id)
       CALL check_err(iret)   
@@ -2454,6 +2479,10 @@ C      ENDIF
       CALL check_err(iret)
       iret = nf_get_var_int(hs%ncid, hs%nscougw_id, nscougw)
       CALL check_err(iret)
+
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from readHotstart."
+#endif
 C-----------------------------------------------------------------------
       END SUBROUTINE readHotstart
 C-----------------------------------------------------------------------
@@ -2633,6 +2662,10 @@ C     the value of ICS
       iret = nf_put_att_text(ncid, myMesh%nvellnc_id, 'units', 14, 
      &                      VAR_NOND)
       CALL check_err(iret)
+
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from defineMeshVariables."
+#endif
 C-----------------------------------------------------------------------
       END SUBROUTINE defineMeshVariables
 C-----------------------------------------------------------------------
@@ -2653,6 +2686,10 @@ C-----------------------------------------------------------------------
       INTEGER xid
       INTEGER yid
       INTEGER iret
+C
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering defineCoordinateAttributes."
+#endif
 C
       if(ics.eq.2) then  ! this indicates spherical coordinates
       
@@ -2698,6 +2735,9 @@ C        Define longitude attributes
          CALL check_err(iret)
       endif
 
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from defineCoordinateAttributes."
+#endif
 C-----------------------------------------------------------------------
       END SUBROUTINE defineCoordinateAttributes
 C-----------------------------------------------------------------------
@@ -2764,6 +2804,10 @@ C
          iret = nf_put_var_int(ncid, myMesh%nvellnc_id, myMesh%nvellnc)
          CALL check_err(iret)
       endif
+
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from putMeshVariables."
+#endif
 C-----------------------------------------------------------------------
       END SUBROUTINE putMeshVariables 
 C-----------------------------------------------------------------------
@@ -2810,41 +2854,37 @@ C
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid_type', 10, 
      &                      'Triangular')
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'description',
-     &       LEN(TRIM(rundes(1:INDEX(rundes,"!")-1))), rundes)      
+     &       metalength(adjustl(rundes)), adjustl(rundes))      
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid',
-     &       LEN(TRIM(agrid)), agrid)       
+     &       metalength(adjustl(agrid)), adjustl(agrid))       
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'title',
-     &       LEN(TRIM(title(1:INDEX(title,"!")-1))), title)
+     &       metalength(adjustl(title)), adjustl(title))
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'institution', 
-     &       LEN(TRIM(institution(1:INDEX(institution,"!")-1))), 
-     &       institution)
+     &       metalength(adjustl(institution)), adjustl(institution))
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'source', 
-     &       LEN(TRIM(source(1:INDEX(source,"!")-1))), source)     
+     &       metalength(adjustl(source)), adjustl(source))     
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'history', 
-     &       LEN(TRIM(history(1:INDEX(history,"!")-1))),  history)    
+     &       metalength(adjustl(history)), adjustl(history))    
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'references', 
-     &       LEN(TRIM(references(1:INDEX(references,"!")-1))), 
-     &       references)
+     &       metalength(adjustl(references)), adjustl(references))
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'comments', 
-     &       LEN(TRIM(comments(1:INDEX(comments,"!")-1))), 
-     &       comments)
+     &       metalength(adjustl(comments)), adjustl(comments))
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'host', 
-     &       LEN(TRIM(host(1:INDEX(host,"!")-1))),  host)    
+     &       metalength(adjustl(host)), adjustl(host))    
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'convention', 
-     &       LEN(TRIM(convention(1:INDEX(convention,"!")-1))), 
-     &       convention)
+     &       metalength(adjustl(convention)), adjustl(convention))
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'contact', 
-     &       LEN(TRIM(contact(1:INDEX(contact,"!")-1))), contact)
+     &       metalength(adjustl(contact)), adjustl(contact))
       CALL check_err(iret)
       CALL date_and_time(now_date,big_ben,zone,values)
       WRITE(date_string,71) values(1),values(2),values(3),
@@ -2936,8 +2976,34 @@ C
       iret = nf_put_att_int(ncid, NCGLOBAL, 'nbfr', NF_INT, 1, nbfr)
       CALL check_err(iret)
 
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from defineMetaData."
+#endif
 C-----------------------------------------------------------------------
       END SUBROUTINE defineMetaData 
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     F U N C T I O N     G E T   M E T A   L E N G T H 
+C-----------------------------------------------------------------------
+C     jgf49.29 Gets the length of the metadata line, depending on the
+C     presence of a "!" in the line; if a "!" is present, it is used to
+C     terminate the metadata ... if not, then the whole line is used (up
+C     to 80 characters, or as declared in global.F).
+C-----------------------------------------------------------------------
+      function metalength(string)
+      integer :: metalength
+      character(*), intent(in) :: string
+      metalength = index(string,"!") ! use the "!" as terminator if present
+      if (metalength.eq.0) then
+         ! there is no embedded "!" in the metadata line -- use the full line
+         metalength = len_trim(string)
+      else
+         ! trim space between end of metadata and embedded "!"
+         metalength = len_trim(string(1:metalength-1))
+      endif 
+C-----------------------------------------------------------------------
+      end function metalength 
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
@@ -3009,6 +3075,10 @@ C
       CALL check_err(iret)
       iret = NF_ENDDEF (ncid)
       CALL check_err(iret)
+
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from updateMetaData."
+#endif
 C-----------------------------------------------------------------------
       END SUBROUTINE updateMetaData 
 C-----------------------------------------------------------------------
@@ -3040,6 +3110,10 @@ C
      &           len_trim(english), trim(english)) 
       endif
       CALL check_err(iret)
+
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from putUnitsAttribute."
+#endif
 C
 C-----------------------------------------------------------------------
       end subroutine putUnitsAttribute
@@ -3083,8 +3157,42 @@ C-----------------------------------------------------------------------
 #endif
          stop
       endif
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from check_err."
+#endif
 C-----------------------------------------------------------------------
       end subroutine check_err
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   S E T   N E T C D F   M O D E  
+C-----------------------------------------------------------------------
+C     jgf49.17.02 Allocates memory for NetCDF operations.
+C-----------------------------------------------------------------------
+      SUBROUTINE setNetCDFMode(mnproc)
+      IMPLICIT NONE
+      INTEGER, intent(in) :: mnproc
+C
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering setNetCDFMode."
+#endif
+C
+      ncmode = 1     ! reasonable default
+      IF (mnproc.eq.0) THEN
+         ncmode = 0  ! for adcprep?
+      ENDIF
+      IF (mnproc.eq.1) THEN
+         ncmode = 1  ! for serial
+      ENDIF
+      IF (mnproc.gt.1) THEN
+         ncmode = 2  ! for parallel
+      ENDIF          
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from setNetCDFMode."
+#endif
+C-----------------------------------------------------------------------
+      END SUBROUTINE setNetCDFMode
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------

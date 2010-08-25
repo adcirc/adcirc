@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.29   - 08/25/2010 - jgf - Cleaned up parsing of metadata and station
+C             names such that the netcdf module no longer assumes that a "!"
+C             is present on each line, but is able to use it as a metadata
+C             terminator if it is present. 
 C  v49.28   - 08/24/2010 - jgf - Declared variables in netcdf module as 
 C             private if the underlying type declaration was private.
 C  v49.27   - 08/15/2010 - jgf - Fixes to storage of meta data, lat/lon
