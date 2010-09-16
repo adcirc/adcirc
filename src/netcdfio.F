@@ -171,7 +171,7 @@ C
          INTEGER, ALLOCATABLE ::  nodecodenc(:) ! boundary array
          INTEGER, ALLOCATABLE ::  noffnc(:)     ! boundary array
          INTEGER, ALLOCATABLE ::  ibtypenc(:)     ! boundary array
-         INTEGER, ALLOCATABLE ::  nm(:,:) 
+         INTEGER, ALLOCATABLE ::  nmnc(:,:) 
          INTEGER, ALLOCATABLE ::  element(:,:)
          INTEGER nvelnc
          INTEGER netanc
@@ -866,7 +866,7 @@ C     jgf49.17.02 Sets up netCDF variables and allocates memory for
 C     full domain data.
 C-----------------------------------------------------------------------
       SUBROUTINE initNodalData(dat, lun, descript)
-      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, NWS, NE_G
+      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, NWS, NE_G,base_date
       IMPLICIT NONE
 C
       type(nodalData), intent(inout) :: dat
@@ -881,6 +881,7 @@ C
 #endif
       dat%myMesh%num_nodes = descript % num_fd_records
       dat%myMesh%num_elems = NE_G
+      dat%myMesh%nface_len = 3
       ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
      
       SELECT CASE(descript%num_items_per_record)
@@ -1039,7 +1040,7 @@ C     RETURN if we didn't need to create a file.
      &             'long_name',25, VAR73_LN)
             CALL check_err(iret)
             iret = nf_put_att_text(dat%ncid, dat%nodal_data_id,
-     &             'standard_name', 33, VAR73_ST)
+     &             'standard_name', 25, VAR73_ST)
             CALL check_err(iret)
             iret = nf_put_att_text(dat%ncid, dat%nodal_data_id, 'units',
      &             15, VAR73_UN)
@@ -1183,6 +1184,25 @@ C     RETURN if we didn't need to create a file.
          CASE DEFAULT
 
       END SELECT
+
+C
+C  RJW added 9/13/2010
+C to include time atributes in global data files
+C    Define time attributes
+      iret = nf_put_att_text(dat%ncid, dat%myTime%timenc_id,
+     &       'long_name',10,'model time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(dat%ncid,dat%myTime%timenc_id,
+     &       'standard_name', 4, 'time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(dat%ncid, dat%myTime%timenc_id, 'units', 23, 
+     .       'seconds since base_date')
+      CALL check_err(iret)
+      iret = nf_put_att_text(dat%ncid, dat%myTime%timenc_id,
+     &       'base_date', metalength(adjustl(base_date)),
+     &        adjustl(base_date))
+      CALL check_err(iret)
+
 C
 C     define metadata and selected fort.15 parameters in netcdf file
       CALL defineMetaData(dat%ncid)
@@ -1291,7 +1311,7 @@ C
       ALLOCATE(myMesh%ibtypenc(nbou))
       ALLOCATE(myMesh%nvellnc(nbou))
       ALLOCATE(myMesh%element(myMesh%nface_len,myMesh%num_elems))
-      ALLOCATE(myMesh%nm(myMesh%num_elems,myMesh%nface_len))
+      ALLOCATE(myMesh%nmnc(myMesh%num_elems,myMesh%nface_len))
 C
 C     Store nodal coordinates
       if (ics.eq.1) then
@@ -2493,7 +2513,7 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Defines data that are common to all netCDF files.
 C-----------------------------------------------------------------------
       subroutine defineMeshVariables(ncid, myMesh)
-      USE GLOBAL, ONLY : RAD2DEG, SLAM0, SFEA0
+      USE GLOBAL, ONLY : RAD2DEG, SLAM0, SFEA0, NM
       USE SIZES, ONLY : SZ
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
       USE VERSION
@@ -2518,12 +2538,19 @@ C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Entering defineMeshVariables."
 #endif
+      myMesh%nmnc=NM
 !     Switch order in array for NETCDF
+       write(*,*)  myMesh%num_elems
+       write(*,*)  myMesh%nface_len
       do i=1, myMesh%num_elems
          do j=1, myMesh%nface_len
-            myMesh%element(j,i) = myMesh%nm(i,j)
+            myMesh%element(j,i) = myMesh%nmnc(i,j)
          end do
       end do
+!       write(99,*) myMesh%nmnc
+!       write(98,*) NM
+!       write(97,*) myMesh%element
+!      stop
 !
 !     Convert to degress for NETCDF I/O
       SLAM0DEG=SLAM0
@@ -2593,7 +2620,8 @@ C
       if((myMesh%nbou_len.ne.0).and.(myMesh%nvel_len.ne.0)) then
          myMesh%nvellnc_dims(1) = myMesh%nbou_dim_id      
          iret = nf_def_var(ncid, 'nvell',NF_INT, myMesh%nvellnc_rank, 
-     &                  myMesh%nvellnc_dims, myMesh%nvellnc_id)
+     &          myMesh%nvellnc_dims, myMesh%nvellnc_id)
+         write(999,*) " myMesh%nvellnc_id= ", myMesh%nvellnc_id
          CALL check_err(iret)
          myMesh%ibtypenc_dims(1) = myMesh%nbou_dim_id      
          iret = nf_def_var(ncid, 'ibtype',NF_INT, myMesh%ibtypenc_rank, 
@@ -2656,6 +2684,8 @@ C     the value of ICS
       iret = nf_put_att_text(ncid, myMesh%ibtypenc_id, 'units', 14, 
      &                      VAR_NOND)
       CALL check_err(iret)
+         write(999,*) " myMesh%nvellnc_id= ", myMesh%nvellnc_id
+         write(999,*) "NF_global id=", NF_GLOBAL
       iret = nf_put_att_text(ncid, myMesh%nvellnc_id, 'long_name', 62, 
      &'number of nodes in each normal flow specified boundary segment')
       CALL check_err(iret)
@@ -2801,6 +2831,7 @@ C
          CALL check_err(iret)
       endif
       if(myMesh%nbou_len.ne.0) then
+         write(999,*) " myMesh%nbou_len= ", myMesh%nbou_len
          iret = nf_put_var_int(ncid, myMesh%nvellnc_id, myMesh%nvellnc)
          CALL check_err(iret)
       endif
