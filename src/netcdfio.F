@@ -2621,7 +2621,7 @@ C
          myMesh%nvellnc_dims(1) = myMesh%nbou_dim_id      
          iret = nf_def_var(ncid, 'nvell',NF_INT, myMesh%nvellnc_rank, 
      &          myMesh%nvellnc_dims, myMesh%nvellnc_id)
-         write(999,*) " myMesh%nvellnc_id= ", myMesh%nvellnc_id
+!         write(999,*) " myMesh%nvellnc_id= ", myMesh%nvellnc_id
          CALL check_err(iret)
          myMesh%ibtypenc_dims(1) = myMesh%nbou_dim_id      
          iret = nf_def_var(ncid, 'ibtype',NF_INT, myMesh%ibtypenc_rank, 
@@ -2684,8 +2684,8 @@ C     the value of ICS
       iret = nf_put_att_text(ncid, myMesh%ibtypenc_id, 'units', 14, 
      &                      VAR_NOND)
       CALL check_err(iret)
-         write(999,*) " myMesh%nvellnc_id= ", myMesh%nvellnc_id
-         write(999,*) "NF_global id=", NF_GLOBAL
+!         write(999,*) " myMesh%nvellnc_id= ", myMesh%nvellnc_id
+!         write(999,*) "NF_global id=", NF_GLOBAL
       iret = nf_put_att_text(ncid, myMesh%nvellnc_id, 'long_name', 62, 
      &'number of nodes in each normal flow specified boundary segment')
       CALL check_err(iret)
@@ -2831,7 +2831,7 @@ C
          CALL check_err(iret)
       endif
       if(myMesh%nbou_len.ne.0) then
-         write(999,*) " myMesh%nbou_len= ", myMesh%nbou_len
+!         write(999,*) " myMesh%nbou_len= ", myMesh%nbou_len
          iret = nf_put_var_int(ncid, myMesh%nvellnc_id, myMesh%nvellnc)
          CALL check_err(iret)
       endif
