@@ -3,6 +3,13 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.30   - 09/16/2010 - jgf - Working on aswip: added capability to set
+C             the Rmax to a constant or to a percentage of the calculated
+C             value based on isotach data (if any) via command line options; 
+C             added capability to set method of selecting quadrant Rmax 
+C             via command line option; removed persistence of average Rmax
+C             from hindcast into the forecast; corrected issue where
+C             isotach speed can sometimes be zero in source data. 
 C  v49.29   - 08/25/2010 - jgf - Cleaned up parsing of metadata and station
 C             names such that the netcdf module no longer assumes that a "!"
 C             is present on each line, but is able to use it as a metadata
