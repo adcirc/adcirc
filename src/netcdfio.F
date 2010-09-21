@@ -2621,7 +2621,6 @@ C
          myMesh%nvellnc_dims(1) = myMesh%nbou_dim_id      
          iret = nf_def_var(ncid, 'nvell',NF_INT, myMesh%nvellnc_rank, 
      &          myMesh%nvellnc_dims, myMesh%nvellnc_id)
-!         write(999,*) " myMesh%nvellnc_id= ", myMesh%nvellnc_id
          CALL check_err(iret)
          myMesh%ibtypenc_dims(1) = myMesh%nbou_dim_id      
          iret = nf_def_var(ncid, 'ibtype',NF_INT, myMesh%ibtypenc_rank, 
@@ -2660,17 +2659,22 @@ C     the value of ICS
 !     ---------------------------------------------------------------
 !     Define node numbers on normal flow boundary segments attributes
 !     ----------------------------------------------------------------  
+        if (myMesh%nopenc_id .ne. 0) then
       iret = nf_put_att_text(ncid, myMesh%nopenc_id, 'long_name', 57, 
      &      'node numbers on all elevation specified boundary segments')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, myMesh%nopenc_id, 'units', 14, 
      &                      VAR_NOND)
       CALL check_err(iret)
+        endif
+        if (myMesh%nvdllnc_id .ne. 0) then
       iret = nf_put_att_text(ncid, myMesh%nvdllnc_id, 'long_name', 60, 
      &'number of nodes in each elevation specified boundary segment')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, myMesh%nvdllnc_id, 'units', 14, 
      &                      VAR_NOND)
+        endif
+        if (myMesh%nbounc_id .ne. 0) then
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, myMesh%nbounc_id, 'long_name', 58, 
      & 'node numbers in all normal flow specified boundary segment')
@@ -2678,21 +2682,23 @@ C     the value of ICS
       iret = nf_put_att_text(ncid, myMesh%nbounc_id, 'units', 14, 
      &                      VAR_NOND)
       CALL check_err(iret)
+        endif
+        if (myMesh%ibtypenc_id .ne. 0) then
       iret = nf_put_att_text(ncid, myMesh%ibtypenc_id, 'long_name', 13, 
      &       'boundary type')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, myMesh%ibtypenc_id, 'units', 14, 
      &                      VAR_NOND)
       CALL check_err(iret)
-!         write(999,*) " myMesh%nvellnc_id= ", myMesh%nvellnc_id
-!         write(999,*) "NF_global id=", NF_GLOBAL
+        endif
+        if (myMesh%nvellnc_id .ne. 0) then
       iret = nf_put_att_text(ncid, myMesh%nvellnc_id, 'long_name', 62, 
      &'number of nodes in each normal flow specified boundary segment')
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, myMesh%nvellnc_id, 'units', 14, 
      &                      VAR_NOND)
       CALL check_err(iret)
-
+       endif
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Returning from defineMeshVariables."
 #endif
@@ -2831,7 +2837,6 @@ C
          CALL check_err(iret)
       endif
       if(myMesh%nbou_len.ne.0) then
-!         write(999,*) " myMesh%nbou_len= ", myMesh%nbou_len
          iret = nf_put_var_int(ncid, myMesh%nvellnc_id, myMesh%nvellnc)
          CALL check_err(iret)
       endif
