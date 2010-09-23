@@ -2829,14 +2829,12 @@ C
       LOGICAL FOUND
       INTEGER I,J,IPROC,INDEX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF
-      INTEGER IESTP,NSCOUE,IVSTP,NSCOUV,ICSTP,NSCOUC,IPSTP,IWSTP,NSCOUM,
-     &        IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW
       CHARACTER FNAME*60,LOCFN*14
       CHARACTER*16 FNAME1
       CHARACTER*8 FNAM8(2)
       EQUIVALENCE (FNAM8(1),FNAME1)
 
-      INTEGER,ALLOCATABLE  :: LOC(:),NODECODE(:),NOFF(:), domA(:)
+      INTEGER,ALLOCATABLE  :: LOC(:),NOFF(:), domA(:)
       REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:),
      &    UU2(:),VV2(:),CH1(:)
       REAL(8) TIMEHSF
@@ -3266,8 +3264,6 @@ C
       LOGICAL FOUND
       INTEGER I,J,IPROC,INDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF, NH, N
-      INTEGER IESTP,NSCOUE,IVSTP,NSCOUV,ICSTP,NSCOUC,IPSTP,IWSTP,NSCOUM,
-     &        IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW
       !INTEGER N3DSD, I3DSDRec, N3DSV, I3DSVRec, N3DST, I3DSTRec !kmd48.33bc defined in global
       !INTEGER N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec
       CHARACTER FNAME*60,LOCFN*14
@@ -3275,7 +3271,7 @@ C
       CHARACTER*8 FNAM8(2)
       EQUIVALENCE (FNAM8(1),FNAME1)
 
-      INTEGER,ALLOCATABLE  :: LOC(:),NODECODE(:),NOFF(:), domA(:)
+      INTEGER,ALLOCATABLE  :: LOC(:),NOFF(:), domA(:)
       REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:), 
      &    UU2(:),VV2(:),CH1(:)
       REAL(8) TIMEHSF
@@ -3914,14 +3910,12 @@ C
       LOGICAL FOUND
       INTEGER I,J,IPROC,INDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF,IVALUE,IDUMY, NH, N
-      INTEGER IESTP,NSCOUE,IVSTP,NSCOUV,ICSTP,NSCOUC,IPSTP,IWSTP,NSCOUM,
-     &        IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW
       CHARACTER FNAME*60,LOCFN*14
       CHARACTER*16 FNAME1
       CHARACTER*8 FNAM8(2)
       EQUIVALENCE (FNAM8(1),FNAME1)
 
-      INTEGER,ALLOCATABLE  :: LOC(:),NODECODE(:),NOFF(:), domA(:)
+      INTEGER,ALLOCATABLE  :: LOC(:),NOFF(:), domA(:)
       REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:), 
      &    UU2(:),VV2(:),CH1(:)
       REAL(8) TIMEHSF, RVALUE
@@ -5938,3 +5932,201 @@ c----------------------------------------------------------------------------
       END SUBROUTINE prepUnSWAN
 c----------------------------------------------------------------------------
       
+C---------------------------------------------------------------------------
+C                S U B R O U T I N E   P R E P   N E T C D F  
+C---------------------------------------------------------------------------
+C
+C     jgf49.31 This subroutine will initialize the fulldomain netcdf
+C     output files for the parallel run. These files are initialized 
+C     in the adcprep phase because they contain fulldomain data which
+C     are not available to the subdomains during a parallel run.
+C
+C---------------------------------------------------------------------------
+      SUBROUTINE prepNetCDF()
+#ifdef NETCDF
+      USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP
+      USE VERSION
+      USE PRE_GLOBAL, ONLY: NSTAE, NOUTE, RUNDES, RUNID, AGRID,
+     &    DTDP, TAU0, STATIM, REFTIM, RNDAY, DRAMP, A00, B00, C00,
+     &    H0, SLAM0, SFEA0, CF, ESLM, CORI, DP, NBDV, NBVV,
+     &    SLEL, SFEL, ICS, NT, NTRSPE, IHOT, NOLIBF, NOLIFA, IM,
+     &    XEV,YEV,XEM,YEM,XEL,YEL,X,Y,NELG,DT, NTIF, NODECODE,
+     &    NOLICA, NOLICAT, NWP, NCOR, NTIP, NWS, NRAMP, NBFR,
+     &    NHY, NOPE, NETA, NBOU, NVEL, RAD2DEG, G,
+     &    NVDLL, NVELL, IBTYPE, STATNAME, STATNAMEV, STATNAMEM,
+     &    NSTAV, NOUTV, SLEV, SFEV, NTRSPV,
+     &    NSTAM, NOUTM, SLEM, SFEM, NTRSPM,
+     &    NOUTGE, SLAM, SFEA, NDSETSE,
+     &    NOUTGV, NDSETSV,
+     &    NOUTGW, NDSETSW,
+     &    IESTP,NSCOUE,IVSTP,NSCOUV,ICSTP,NSCOUC,IPSTP,IWSTP,NSCOUM,
+     &    IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW,
+     &    nhstar,nhsinc,
+     &    title, institution,
+     &    source, history, references, comments, host, convention,
+     &    contact, base_date
+      USE NETCDFIO, ONLY : setADCIRCParameters, allocNetCDFArrays
+      USE GLOBAL, ONLY : OutputDataDescript_t
+C
+      IMPLICIT NONE
+      INTEGER :: myProc = 0
+      INTEGER :: screenUnit = 6
+C
+C     The initialization of the output data descriptors for each ADCIRC
+C     output file had to be cut and pasted from write_output.F. At some
+C     point in the future, adcprep will be part of adcirc, making this 
+C     unfortunate cut-and-paste duplication unnecessary.
+      type(OutputDataDescript_t), SAVE :: ElevStaDescript    ! fort.61
+      type(OutputDataDescript_t), SAVE :: VelStaDescript     ! fort.62
+      type(OutputDataDescript_t), SAVE :: ElevDescript       ! fort.63
+      type(OutputDataDescript_t), SAVE :: VelDescript        ! fort.64
+      type(OutputDataDescript_t), SAVE :: PrStaDescript      ! fort.71
+      type(OutputDataDescript_t), SAVE :: WindVelStaDescript ! fort.72
+      type(OutputDataDescript_t), SAVE :: PrDescript         ! fort.73
+      type(OutputDataDescript_t), SAVE :: WindVelDescript    ! fort.74
+C
+C     fort.61
+      ElevStaDescript % specifier            = NOUTE
+      ElevStaDescript % initial_value        = 0.0
+      ElevStaDescript % num_items_per_record = 1
+      ElevStaDescript % num_fd_records       = NSTAE
+      ElevStaDescript % num_records_this     = NSTAE
+      ElevStaDescript % ConsiderWetDry       = .TRUE.
+      ElevStaDescript % alternate_value      = -99999.0
+      ElevStaDescript % field_name           = 'ElevSta'
+      IF (ICS.eq.2) THEN
+         ElevStaDescript % x_coord           => SLEL
+         ElevStaDescript % y_coord           => SFEL
+      ELSE
+         ElevStaDescript % x_coord           => XEL
+         ElevStaDescript % y_coord           => YEL
+      ENDIF
+C
+C     fort.62
+      VelStaDescript % specifier            = NOUTV
+      VelStaDescript % initial_value        = 0.0
+      VelStaDescript % num_items_per_record = 2
+      VelStaDescript % num_fd_records       = NSTAV
+      VelStaDescript % num_records_this     = NSTAV
+      VelStaDescript % ConsiderWetDry       = .FALSE.
+      VelStaDescript % alternate_value      = 0.0
+      VelStaDescript % field_name           = 'VelSta'
+      IF (ICS.eq.2) THEN
+         VelStaDescript % x_coord           => SLEV
+         VelStaDescript % y_coord           => SFEV
+      ELSE
+         VelStaDescript % x_coord           => XEV
+         VelStaDescript % y_coord           => YEV
+      ENDIF
+C
+C     fort.63
+      ElevDescript % specifier            = NOUTGE
+      ElevDescript % initial_value        = 0.0
+      ElevDescript % num_items_per_record = 1
+      ElevDescript % num_fd_records       = MNP
+      ElevDescript % num_records_this     = MNP
+      ElevDescript % ConsiderWetDry       = .TRUE.
+      ElevDescript % alternate_value      = -99999.0
+      ElevDescript % field_name           = 'Elev'
+C
+C     fort.64
+      VelDescript % specifier            = NOUTGV
+      VelDescript % initial_value        = 0.0
+      VelDescript % num_items_per_record = 2
+      VelDescript % num_fd_records       = MNP
+      VelDescript % num_records_this     = MNP
+      VelDescript % ConsiderWetDry       = .FALSE.
+      VelDescript % alternate_value      = 0.0
+      VelDescript % field_name           = 'Vel'
+C
+C     fort.71
+      PrStaDescript % specifier            = NOUTM
+      PrStaDescript % initial_value        = 0.0
+      PrStaDescript % num_items_per_record = 1
+      PrStaDescript % num_fd_records       = NSTAM
+      PrStaDescript % num_records_this     = NSTAM
+      PrStaDescript % ConsiderWetDry       = .FALSE.
+      PrStaDescript % alternate_value      = 0.0
+      PrStaDescript % field_name           = 'PrSta'
+      IF (ICS.eq.2) THEN
+         PrStaDescript % x_coord           => SLEM
+         PrStaDescript % y_coord           => SFEM
+      ELSE
+         PrStaDescript % x_coord           => XEM
+         PrStaDescript % y_coord           => YEM
+      ENDIF
+C
+C     fort.72
+      WindVelStaDescript % specifier            = NOUTM
+      WindVelStaDescript % initial_value        = 0.0
+      WindVelStaDescript % num_items_per_record = 2
+      WindVelStaDescript % num_fd_records       = NSTAM
+      WindVelStaDescript % num_records_this     = NSTAM
+      WindVelStaDescript % ConsiderWetDry       = .FALSE.
+      WindVelStaDescript % alternate_value      = 0.0
+      WindVelStaDescript % field_name           = 'WindVelSta'
+      IF (ICS.eq.2) THEN
+         WindVelStaDescript % x_coord           => SLEM
+         WindVelStaDescript % y_coord           => SFEM
+      ELSE
+         WindVelStaDescript % x_coord           => XEM
+         WindVelStaDescript % y_coord           => YEM
+      ENDIF
+C
+C     fort.73
+      PrDescript % specifier            = NOUTGW
+      PrDescript % initial_value        = 0.0
+      PrDescript % num_items_per_record = 1
+      PrDescript % num_fd_records       = MNP
+      PrDescript % num_records_this     = MNP
+      PrDescript % ConsiderWetDry       = .FALSE.
+      PrDescript % alternate_value      = 0.0
+      PrDescript % field_name           = 'Pr'
+C
+C     fort.74
+      WindVelDescript % specifier            = NOUTGW
+      WindVelDescript % initial_value        = 0.0
+      WindVelDescript % num_items_per_record = 2
+      WindVelDescript % num_fd_records       = MNP
+      WindVelDescript % num_records_this     = MNP
+      WindVelDescript % ConsiderWetDry       = .FALSE.
+      WindVelDescript % alternate_value      = 0.0
+      WindVelDescript % field_name           = 'WindVel'
+C
+C     Need to populate the global and nodal attributes modules with
+C     these parameters, since the netcdfio module relies on those
+C     modules, rather than the pre_global module. Some day, adcprep
+C     will be integrated with ADCIRC and this subroutine call will 
+C     not be needed.     
+      IF (.not.ALLOCATED(NODECODE)) THEN
+         ALLOCATE(NODECODE(MNP))
+      ENDIF
+C
+      CALL setADCIRCParameters(
+     &   base_date, STATNAME, STATNAMEV, STATNAMEM, MNE, NBOU,
+     &   NVEL, NOPE, MNP, SLAM0, SFEA0, NBVV, NVDLL, NBDV, NVELL, X, Y,
+     &   SLAM, SFEA, NODECODE, G, FileFmtRev,
+     &   FileFmtMinor, FileFmtMajor, im, iestp, nscoue, ivstp, nscouv,
+     &   icstp, nscouc, ipstp, iwstp, nscoum, igep, nscouge, igvp,
+     &   nscougv, igcp, nscougc, igpp, igwp, nscougw, NM,
+     &   DP, RUNDES, AGRID, title, institution, source, history,
+     &   references, comments, host, convention, contact, dtdp, ihot,
+     &   ics, nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
+     &   reftim, rnday, dramp, a00, b00, c00, h0, cori, ntif, nbfr,
+     &   myProc, screenUnit, nolibf, nwp, tau0, cf, eslm,
+     &   nstae, nstav, nstam, neta)      
+C
+C     Create NetCDF output files for those output files where NetCDF
+C     was specified. 
+      CALL allocNetCDFArrays(61,ElevStaDescript)
+      CALL allocNetCDFArrays(62,VelStaDescript)
+      CALL allocNetCDFArrays(63,ElevDescript)
+      CALL allocNetCDFArrays(64,VelDescript)
+      CALL allocNetCDFArrays(71,PrStaDescript)
+      CALL allocNetCDFArrays(72,WindVelStaDescript)
+      CALL allocNetCDFArrays(73,PrDescript)
+      CALL allocNetCDFArrays(74,WindVelDescript)
+#endif
+c----------------------------------------------------------------------------
+      END SUBROUTINE prepNetCDF
+c----------------------------------------------------------------------------

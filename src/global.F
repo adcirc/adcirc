@@ -719,13 +719,6 @@ C
       ALLOCATE ( QNIN1(MNVEL),QNIN2(MNVEL))
       ALLOCATE ( NBVV(MNBOU,0:MNVEL))
       ALLOCATE ( NVELL(MNBOU))
-
-CCC START ADDITION BY MCF FOR NETCDFIO
-
-      ALLOCATE ( IBTYPENC(MNBOU))
-
-CCC FINISH ADDITION BY MCF FOR NETCDFIO
-
 C      
 C     jgf46.21 Added support for IBTYPE=52.
       ALLOCATE ( ElevDisc(MNVEL))
@@ -948,7 +941,330 @@ C
 
       return
       end function
-      
 
+      !=================================================================
+      !=================================================================
+      !=================================================================
+      !      =====                                            =====
+      !      =====            SUBROUTINE PARSE                =====
+      !      =====                                            =====
+      !=================================================================
+      !=================================================================
+      !=================================================================
 
+      !=================================================================
+      ! This subroutines parse station names so they can passed on to
+      ! the NetCDF I/O module of ADCIRC and be written out in the netCDF
+      ! output files.
+      !
+      ! Revision history:
+      !
+      ! Date      Programmer                       Description of change
+      ! ----      ----------                       ---------------------
+      ! 12/16/07  Cristina Forbes, PSGS @ UNC-IMS  Wrote parser
+      !                                            based on character
+      !                                            manipulation subroutines
+      !                                            developed at the
+      !                                            University of Oslo, Norway
+      !=================================================================
+      subroutine parse (line, lvar)
+      IMPLICIT NONE
+      CHARACTER(132) LINE,L
+      CHARACTER(50) LVAR(3)
+      INTEGER LS, L1, LEN1, I
+      INTEGER NAMSTART  ! position of beginning of station name   
+      INTEGER NAMEND    ! position of end of station name
+      INTEGER BANGEND   ! location of terminating "!", if any
+C
+      LS=1
+      L=TRIM(ADJUSTL(LINE))
+      LEN1=LEN(L)
+
+!     EXTRACT STATION DATA FROM LINE
+
+      DO I=1,2
+!        DO I=1,3
+         L1=LEN(TRIM(ADJUSTL(L(1:INDEX(L," ")-1))))
+         LVAR(I)=ADJUSTL(L(LS:L1))
+         L=ADJUSTL(L(L1+1:LEN(L)))
+      END DO
+C
+C     Find start of station name, ignoring leading "!" if it is there
+      NAMSTART=1
+      IF ( L(1:1).EQ."!" ) THEN
+         NAMSTART=2
+      ENDIF
+C
+C     Find end of station name, ignoring the first occurrence of an
+C     embedded "!" as well as any characters to the right of that, since
+C     they are assumed to be a comment.
+      NAMEND=LEN(L)
+      BANGEND=INDEX(L(NAMSTART:NAMEND),"!")
+      IF ( BANGEND.NE.0 ) THEN
+         NAMEND = BANGEND + (NAMSTART-2)
+      ENDIF
+      LVAR(3)=ADJUSTL(L(NAMSTART:NAMEND)) !jgf49.29: trim leading "!" and spaces
+      !=================================================================
+      END SUBROUTINE parse
+      !=================================================================
+
+      !=================================================================
+        SUBROUTINE i2a(in2t, res)
+C     jgf49.31 Subroutine to convert an integer number to a string. Moved
+C     here from read_input.F to make it more generally available in different
+C     modules.
+      !=================================================================
+        IMPLICIT NONE
+!// Arguments
+        INTEGER, INTENT(IN)            :: in2t
+        CHARACTER(LEN=*), INTENT(OUT)  :: res
+!// Local variables
+        INTEGER                        :: i,j,k
+        CHARACTER(LEN=80)              :: sbuf
+        sbuf = ' '
+        res = ' '
+        i = in2t
+        k = 1
+        DO
+        j = MOD(i,10)
+        sbuf(k:k) = ACHAR(j+48)
+        i = i / 10
+        IF (i <= 0) THEN
+        EXIT
+        END IF
+        k = k + 1
+        END DO
+        k = LEN_TRIM(sbuf)
+        IF (k>1) THEN
+        j = k
+        i = 1
+        DO i = 1, k
+         res(i:i) = sbuf(j:j)
+         j = j - 1
+        END DO
+        ELSE
+        res(1:1) = sbuf(1:1)
+        END IF
+      !=================================================================
+        END SUBROUTINE i2a
+      !=================================================================
+C
+      !=================================================================
+      FUNCTION front_trim(buf) RESULT(res)
+C     jgf49.31 Subroutine to return the index of the first non-space 
+C     character of a string.
+      !=================================================================
+      IMPLICIT NONE
+      !// Arguments
+      CHARACTER(LEN=*), INTENT(IN)   :: buf
+      INTEGER                        :: res
+      !// Local variables
+      INTEGER                        :: i, lng
+      lng = LEN_TRIM(buf)
+      DO i = 1, lng
+         IF (buf(i:i) .NE. ' ') THEN
+            res = i
+            RETURN
+         END IF
+      END DO
+      !=================================================================
+      END FUNCTION front_trim
+      !=================================================================
+C
+      !=================================================================
+      FUNCTION a2d(buf) RESULT(res)
+C     jgf49.31 Subroutine to convert a double precision real number to
+C     a string. Moved here from read_input.F to make it more generally
+C     available to different parts of ADCIRC.
+      !=================================================================
+      IMPLICIT NONE
+      !// Arguments
+        CHARACTER(LEN=*)               :: buf
+        DOUBLE PRECISION               :: res
+!// Local variables
+        INTEGER                        :: i,j,k,itmp, foffs, lng
+        INTEGER                        :: p, q
+        DOUBLE PRECISION               :: dtmp
+        LOGICAL                        :: neg
+        LOGICAL                        :: exponential
+        neg = .FALSE.
+        exponential = .FALSE.
+        lng = LEN_TRIM(buf)
+        foffs = front_trim(buf)
+        k = INDEX(buf,'.')
+        p = INDEX(buf,'e')
+        q = INDEX(buf,'E')
+        IF(p /= -1 .AND. p /= 0) THEN
+        exponential = .TRUE.
+        END IF
+        IF(q /= -1 .AND. q /= 0) THEN
+        exponential = .TRUE.
+        p = q
+        END IF
+        IF (k /= -1 .AND. k /= 0) THEN
+!// We have a floating point number
+        itmp = 0
+!// Get the integer part of the number
+        DO i = foffs, k - 1
+        IF(buf(i:i) .EQ. '-') THEN
+        neg = .TRUE.
+        CONTINUE
+        END IF
+        IF(buf(i:i) .GE. '0' .AND. buf(i:i) .LE. '9' .AND.
+     &  buf(i:i) .NE. ' ') THEN
+        itmp = itmp * 10
+        itmp = itmp + (IACHAR(buf(i:i)) - 48)
+        END IF
+        END DO
+        res = DBLE(itmp)
+        dtmp = 0.
+        q = 0
+        IF(.NOT. exponential) THEN
+!// We do not have an exponential number
+        DO i = LEN_TRIM(buf), k+1, -1
+        itmp = (IACHAR(buf(i:i)) - 48)
+        dtmp = dtmp + FLOAT(itmp)
+        dtmp = dtmp / 10.
+        END DO
+        ELSE
+!// We have an exponential number
+        DO i = p-1, k+1, -1
+        itmp = (IACHAR(buf(i:i)) - 48)
+        dtmp = dtmp + FLOAT(itmp)
+        dtmp = dtmp / 10.
+        END DO
+        q = a2i(buf(p+1:LEN_TRIM(buf)))
+        END IF
+        res = res + dtmp
+        IF(exponential) THEN
+        res = res * 10.**q
+        END IF
+        IF(neg) THEN
+        res = res * (-1)
+        END IF
+        ELSE
+!// We have an integer
+        res = DBLE(a2i(buf))
+        END IF
+      !=================================================================
+        END FUNCTION a2d
+      !=================================================================
+C
+      !=================================================================
+      FUNCTION a2f(buf) RESULT(res)
+C     jgf49.31 Subroutine to convert a single precision real number to
+C     a string. Moved here from read_input.F to make it more generally
+C     available to different parts of ADCIRC.
+      !=================================================================
+      IMPLICIT NONE
+      !// Arguments
+      CHARACTER(LEN=*)               :: buf
+      REAL                           :: res
+      !// Local variables
+      INTEGER                        :: i,j,k,itmp, foffs, lng
+      INTEGER                        :: p, q
+      REAL                           :: rtmp
+      LOGICAL                        :: neg
+      LOGICAL                        :: exponential
+      neg = .FALSE.
+      exponential = .FALSE.
+      lng = LEN_TRIM(buf)
+      foffs = front_trim(buf)
+      k = INDEX(buf,'.')
+      p = INDEX(buf,'e')
+      q = INDEX(buf,'E')
+      IF(p /= -1 .AND. p /= 0) THEN
+         exponential = .TRUE.
+      END IF
+      IF(q /= -1 .AND. q /= 0) THEN
+         exponential = .TRUE.
+         p = q
+      END IF
+      IF (k /= -1 .AND. k /= 0) THEN
+         !// We have a floating point number
+         itmp = 0
+         !// Get the integer part of the number
+         DO i = foffs, k - 1
+            IF(buf(i:i) .EQ. '-') THEN
+               neg = .TRUE.
+               CONTINUE
+            END IF
+            IF(buf(i:i) .GE. '0' .AND. buf(i:i) .LE. '9' .AND.
+     &           buf(i:i) .NE. ' ') THEN
+               itmp = itmp * 10
+               itmp = itmp + (IACHAR(buf(i:i)) - 48)
+            END IF
+         END DO
+         res = DBLE(itmp)
+         rtmp = 0.
+         q = 0
+         IF(.NOT. exponential) THEN
+!// We do not have an exponential number
+            DO i = LEN_TRIM(buf), k+1, -1
+               itmp = (IACHAR(buf(i:i)) - 48)
+               rtmp = rtmp + FLOAT(itmp)
+               rtmp = rtmp / 10.
+            END DO
+         ELSE
+!// We have an exponential number
+            DO i = p-1, k+1, -1
+               itmp = (IACHAR(buf(i:i)) - 48)
+               rtmp = rtmp + FLOAT(itmp)
+               rtmp = rtmp / 10.
+            END DO
+            q = a2i(buf(p+1:LEN_TRIM(buf)))
+         END IF
+         res = res + rtmp
+         IF(exponential) THEN
+            res = res * 10.**q
+         END IF
+         IF(neg) THEN
+            res = res * (-1)
+         END IF
+      ELSE
+         !// We have an integer
+         res = REAL(a2i(buf))
+      END IF
+      !=================================================================
+      END FUNCTION a2f
+      !=================================================================
+C
+      !=================================================================
+      FUNCTION a2i(buf) RESULT(res)
+C     jgf49.31 Subroutine to convert a string to an integer.
+C     Moved here from read_input.F to make it more generally
+C     available to different parts of ADCIRC.
+      !=================================================================
+      IMPLICIT NONE
+      !// Arguments
+      CHARACTER(LEN=*), INTENT(IN)   :: buf
+      INTEGER                        :: res
+      !// Local variables
+      INTEGER                        :: i, foffs, lng
+      LOGICAL                        :: neg
+      neg = .FALSE.
+      lng = LEN_TRIM(buf)
+      foffs = front_trim(buf)
+      res = 0
+      DO i = foffs, lng
+         IF(buf(i:i) .EQ. '-') THEN
+            neg = .TRUE.
+           CONTINUE
+         END IF
+         IF(buf(i:i) .GE. '0' .AND. buf(i:i) .LE. '9' .AND.
+     &        buf(i:i) .NE. ' ') THEN
+            res = res * 10
+            res = res + (IACHAR(buf(i:i)) - 48)
+         END IF
+      END DO
+      IF(neg) THEN
+         res = res * (-1)
+      END IF
+      !=================================================================
+      END FUNCTION a2i
+      !=================================================================
+C     ------------------------------------------------------------------
+C     ------------------------------------------------------------------
       END MODULE GLOBAL
+C     ------------------------------------------------------------------
+C     ------------------------------------------------------------------

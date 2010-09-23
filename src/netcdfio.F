@@ -369,6 +369,9 @@ C
       ! don't allocate or initialize anything if this output type is not
       ! using netcdf
       IF (ABS(descript % specifier).ne.3) THEN
+#ifdef NETCDF_DEBUG
+         write(*,*) "DEBUG: Returning from allocNetCDFArrays."
+#endif
          RETURN  
       ENDIF
 C
@@ -438,6 +441,9 @@ C
       write(*,*) "DEBUG: Entering initStation."
 #endif
       sta % num_stations = descript % num_fd_records
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: There are ",sta%num_stations," stations."
+#endif
       ALLOCATE(sta%myTime%timenc(sta%myTime%timenc_len))
 C      
 C     Memory allocation for the station type, according to the number
@@ -469,6 +475,15 @@ C     of stations and time
 
       end select
 C
+C     Initialize netCDF output file, creating a new one if necessary.
+      CALL createNetCDFOutputFile(sta%ncid, sta%myFile, lun, sta%myTime,
+     &                            descript)
+C     
+C     RETURN if we didn't need to create a file.
+      IF (sta%myFile%createFile.eqv..false.) THEN
+         RETURN
+      ENDIF     
+C
 C     Set coordinates of each station, converting to degrees if we 
 C     are in spherical coordinates. 
       ALLOCATE(sta%x(sta%num_stations))
@@ -480,15 +495,6 @@ C     are in spherical coordinates.
          sta%x = descript%x_coord
          sta%y = descript%y_coord
       ENDIF
-C
-C     Initialize netCDF output file, creating a new one if necessary.
-      CALL createNetCDFOutputFile(sta%ncid, sta%myFile, lun, sta%myTime,
-     &                            descript)
-C     
-C     RETURN if we didn't need to create a file.
-      IF (sta%myFile%createFile.eqv..false.) THEN
-         RETURN
-      ENDIF     
 C 
 C     Create station dimension and station name dimension
       iret = nf_def_dim(sta%ncid, 'station',
@@ -1233,7 +1239,10 @@ C     jgf49.22 Creates a new netcdf output file if needed.
 C-----------------------------------------------------------------------
       SUBROUTINE createNetCDFOutputFile(ncid, myFile, lun, myTime,
      &                                  descript)
-      USE GLOBAL, ONLY : OutputDataDescript_t, IHOT
+      USE GLOBAL, ONLY : OutputDataDescript_t, IHOT, screenUnit
+#ifdef CMPI
+      USE MESSENGER, ONLY : MSG_FINI
+#endif
       IMPLICIT NONE
       INTEGER ncid
       TYPE(fileData) :: myFile
@@ -1259,12 +1268,33 @@ C     that does not already exist.
       INQUIRE(FILE=myFile%FILENAME,EXIST=myFile%fileFound)
       IF ((IHOT.EQ.0).OR.(descript%specifier.lt.0).OR.
      &   (myFile%fileFound.eqv..false.)) THEN
-          myFile%createFile = .true.
-          myFile%record_counter = 1
+#ifdef CMPI
+         ! jgf49.31 when this subroutine is called by ADCIRC running in 
+         ! parallel, it should never create a new file, since that
+         ! is the job of adcprep ... the file cannot be created 
+         ! here as a last resort since none of the processors have
+         ! access to the full domain mesh and control files, whose
+         ! data must also be stored in the netcdf output file
+         IF (myFile%fileFound.eqv..false.) THEN 
+            write(screenUnit,*) 
+     &        "ERROR: The NetCDF output file '",myFile%FILENAME,
+     &        "' was not found. It should have been created by adcprep."
+            write(screenUnit,*) "ERROR: ADCIRC execution terminated."
+            CALL msg_fini()
+            STOP
+         ENDIF
+#else
+         ! these lines are executed by serial adcirc and adcprep
+         myFile%createFile = .true.
+         myFile%record_counter = 1
+#endif
       ENDIF
 C     
 C     RETURN if we don't need to create a file.
       IF (myFile%createFile.eqv..false.) THEN
+#ifdef NETCDF_DEBUG
+         write(*,*) "DEBUG: Returning from createNetCDFOutputFile."
+#endif
          RETURN
       ENDIF     
 C
@@ -1385,9 +1415,7 @@ C     jgf48.03 This subroutine was created from cf's code in timestep.F to
 C     write output files in NetCDF format.
 C-----------------------------------------------------------------------
       SUBROUTINE writeOutArrayNetCDF(lun, time, it, descript)
-      USE SIZES
-      USE GLOBAL
-      USE NodalAttributes, ONLY :  nolibf, nwp, tau0, cf, eslm
+      USE GLOBAL, ONLY : OutputDataDescript_t, ScreenUnit
 C
       IMPLICIT NONE
 C     args
@@ -1395,8 +1423,6 @@ C     args
       REAL(8), intent(in) :: time ! seconds since cold start
       INTEGER, intent(in) :: it   ! number of time steps since cold start
       type(OutputDataDescript_t), intent(in) :: descript !describes output data
-C     local vars
-      INTEGER :: I,J,K           ! loop counter
 C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Entering writeOutArrayNetCDF."
@@ -1440,6 +1466,7 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Writes data to station file.
 C-----------------------------------------------------------------------
       SUBROUTINE writeStation(sta, lun, descript, time)
+      USE SIZES, ONLY : MNPROC
       USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t
       IMPLICIT NONE
 C
@@ -1518,13 +1545,22 @@ C
 
       SELECT CASE(descript%num_items_per_record) 
       CASE(1)
-         sta%station_data(:,kount(2)) = descript%array 
+         IF (MNPROC.eq.1) THEN
+            sta%station_data(:,kount(2)) = descript%array 
+         ELSE
+            sta%station_data(:,kount(2)) = descript%array_g
+         ENDIF
          iret = nf_put_vara_DOUBLE(sta%ncid, sta%station_data_id,
      &          start, kount, sta%station_data)
          CALL check_err(iret)
       CASE(2)
-         sta%u_station_data(:,kount(2)) = descript%array
-         sta%v_station_data(:,kount(2)) = descript%array2 
+         IF (MNPROC.eq.1) THEN
+            sta%u_station_data(:,kount(2)) = descript%array
+            sta%v_station_data(:,kount(2)) = descript%array2 
+         ELSE
+            sta%u_station_data(:,kount(2)) = descript%array_g
+            sta%v_station_data(:,kount(2)) = descript%array2_g
+         ENDIF
          iret = nf_put_vara_DOUBLE(sta%ncid, sta%u_station_data_id,
      &          start, kount, sta%u_station_data)
          CALL check_err(iret)
@@ -3229,6 +3265,254 @@ C
 #endif
 C-----------------------------------------------------------------------
       END SUBROUTINE setNetCDFMode
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   S E T   A D C I R C   P A R A M E T E R S      
+C-----------------------------------------------------------------------
+C     jgf49.31 Called by adcprep to populate the global.F data normally
+C     collected by read_input.F in adcirc. This is somewhat 
+C     convoluted, since the data are collected by adcprep in read14()
+C     and read15() and used to populate in pre_global.F, and then we
+C     call this subroutine in the netcdf module to populate the global
+C     and nodalattributes modules with the same data. 
+C
+C     This twisted logic is the result of the unfortunate overlap between the 
+C     pre_global and global modules, among other things. Once adcprep
+C     becomes integrated into adcirc, this silly subroutine will no longer 
+C     be needed. At the very least, adcprep should be made to populate
+C     global, not pre_global with these data, in other words, both
+C     adcirc and adcprep should use the global module. 
+C-----------------------------------------------------------------------
+      SUBROUTINE setADCIRCParameters(
+     &   base_date_p, STATNAME_p, STATNAMEV_p, STATNAMEM_p, NE_G_p, 
+     &   NBOU_p, NVEL_p, NOPE_p, NP_G_p, SLAM0_p, SFEA0_p, NBVV_p,
+     &   NVDLL_p, NBDV_p, NVELL_p, X_p, Y_p, SLAM_p, SFEA_p,
+     &   NODECODE_p, G_p, FileFmtRev_p, FileFmtMinor_p,
+     &   FileFmtMajor_p, im_p, iestp_p, nscoue_p, ivstp_p, nscouv_p,
+     &   icstp_p, nscouc_p, ipstp_p, iwstp_p, nscoum_p, igep_p,
+     &   nscouge_p, igvp_p, nscougv_p, igcp_p, nscougc_p, igpp_p,
+     &   igwp_p, nscougw_p, NM_p, DP_p, RUNDES_p, AGRID_p, title_p,
+     &   institution_p, source_p, history_p, references_p, comments_p,
+     &   host_p, convention_p, contact_p, dtdp_p, ihot_p, ics_p,
+     &   nolifa_p, nolica_p, nolicat_p, ncor_p, ntip_p, nws_p, nramp_p,
+     &   statim_p, reftim_p, rnday_p, dramp_p, a00_p, b00_p, c00_p,
+     &   h0_p, cori_p, ntif_p, nbfr_p, myProc_p, screenUnit_p, nolibf_p,
+     &   nwp_p, tau0_p, cf_p, eslm_p, nstae_p, nstav_p, nstam_p, neta_p)
+      USE GLOBAL, ONLY : 
+     &   base_date, STATNAME, STATNAMEV, STATNAMEM, NE_G, NBOU,
+     &   NVEL, NOPE, NP_G, SLAM0, SFEA0, NBVV, NVDLL, NBDV, NVELL, X, Y,
+     &   SLAM, SFEA, SNAMLEN, RAD2DEG, NODECODE, G, FileFmtRev,
+     &   FileFmtMinor, FileFmtMajor, im, iestp, nscoue, ivstp, nscouv,
+     &   icstp, nscouc, ipstp, iwstp, nscoum, igep, nscouge, igvp,
+     &   nscougv, igcp, nscougc, igpp, igwp, nscougw, NM,
+     &   DP, RUNDES, AGRID, title, institution, source, history,
+     &   references, comments, host, convention, contact, dtdp, ihot,
+     &   ics, nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
+     &   reftim, rnday, dramp, a00, b00, c00, h0, cori, ntif, nbfr,
+     &   myProc, screenUnit, neta
+      USE NodalAttributes, ONLY : nolibf, nwp, tau0, cf, eslm
+      IMPLICIT NONE
+C
+C     Declare the argument variables coming in from adcprep.
+      CHARACTER(80), intent(in) :: base_date_p
+      CHARACTER(50), intent(in) :: STATNAME_p(:)
+      CHARACTER(50), intent(in) :: STATNAMEV_p(:)
+      CHARACTER(50), intent(in) :: STATNAMEM_p(:)
+      INTEGER, intent(in) :: NE_G_p 
+      INTEGER, intent(in) :: NBOU_p
+      INTEGER, intent(in) :: NVEL_p
+      INTEGER, intent(in) :: NOPE_p
+      INTEGER, intent(in) :: NP_G_p
+      REAL(8), intent(in) :: SLAM0_p 
+      REAL(8), intent(in) :: SFEA0_p
+      INTEGER, intent(in) :: NBVV_p(:,:)
+      INTEGER, intent(in) :: NVDLL_p(:)
+      INTEGER, intent(in) :: NBDV_p(:,:)
+      INTEGER, intent(in) :: NVELL_p(:)
+      REAL(8), intent(in) :: X_p(:) 
+      REAL(8), intent(in) :: Y_p(:) 
+      REAL(8), intent(in) :: SLAM_p(:)
+      REAL(8), intent(in) :: SFEA_p(:)
+      INTEGER, intent(in) :: NODECODE_p(:)
+      REAL(SZ), intent(in) :: G_p
+      INTEGER, intent(in) :: FileFmtRev_p
+      INTEGER, intent(in) :: FileFmtMinor_p 
+      INTEGER, intent(in) :: FileFmtMajor_p
+      INTEGER, intent(in) :: im_p
+      INTEGER, intent(in) :: iestp_p
+      INTEGER, intent(in) :: nscoue_p
+      INTEGER, intent(in) :: ivstp_p
+      INTEGER, intent(in) :: nscouv_p
+      INTEGER, intent(in) :: icstp_p
+      INTEGER, intent(in) :: nscouc_p
+      INTEGER, intent(in) :: ipstp_p
+      INTEGER, intent(in) :: iwstp_p
+      INTEGER, intent(in) :: nscoum_p
+      INTEGER, intent(in) :: igep_p
+      INTEGER, intent(in) :: nscouge_p
+      INTEGER, intent(in) :: igvp_p
+      INTEGER, intent(in) :: nscougv_p
+      INTEGER, intent(in) :: igcp_p
+      INTEGER, intent(in) :: nscougc_p
+      INTEGER, intent(in) :: igpp_p 
+      INTEGER, intent(in) :: igwp_p
+      INTEGER, intent(in) :: nscougw_p
+      INTEGER, intent(in) :: NM_p(:,:)
+      REAL(SZ), intent(in) :: DP_p(:)
+      CHARACTER(80), intent(in) :: RUNDES_p
+      CHARACTER(80), intent(in) :: AGRID_p
+      CHARACTER(80), intent(in) :: title_p 
+      CHARACTER(80), intent(in) :: institution_p
+      CHARACTER(80), intent(in) :: source_p
+      CHARACTER(80), intent(in) :: history_p
+      CHARACTER(80), intent(in) :: references_p
+      CHARACTER(80), intent(in) :: comments_p 
+      CHARACTER(80), intent(in) :: host_p
+      CHARACTER(80), intent(in) :: convention_p
+      CHARACTER(80), intent(in) :: contact_p
+      REAL(8), intent(in) :: dtdp_p
+      INTEGER, intent(in) :: ihot_p
+      INTEGER, intent(in) :: ics_p 
+      INTEGER, intent(in) :: nolifa_p
+      INTEGER, intent(in) :: nolica_p
+      INTEGER, intent(in) :: nolicat_p
+      INTEGER, intent(in) :: ncor_p
+      INTEGER, intent(in) :: ntip_p
+      INTEGER, intent(in) :: nws_p
+      INTEGER, intent(in) :: nramp_p 
+      REAL(8), intent(in) :: statim_p
+      REAL(8), intent(in) :: reftim_p
+      REAL(SZ), intent(in) :: rnday_p
+      REAL(SZ), intent(in) :: dramp_p
+      REAL(SZ), intent(in) :: a00_p
+      REAL(SZ), intent(in) :: b00_p
+      REAL(SZ), intent(in) :: c00_p 
+      REAL(SZ), intent(in) :: h0_p
+      REAL(SZ), intent(in) :: cori_p
+      INTEGER, intent(in) :: ntif_p
+      INTEGER, intent(in) :: nbfr_p
+      INTEGER, intent(in) :: myProc_p
+      INTEGER, intent(in) :: screenUnit_p 
+      INTEGER, intent(in) :: nolibf_p
+      INTEGER, intent(in) :: nwp_p
+      REAL(SZ), intent(in) :: tau0_p
+      REAL(SZ), intent(in) :: cf_p
+      REAL(SZ), intent(in) :: eslm_p
+      INTEGER, intent(in) :: nstae_p
+      INTEGER, intent(in) :: nstav_p
+      INTEGER, intent(in) :: nstam_p
+      INTEGER, intent(in) :: neta_p
+C
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering setADCIRCParameters."
+#endif
+C
+      base_date = base_date_p
+      ALLOCATE(STATNAME(NSTAE_p))
+      ALLOCATE(STATNAMEV(NSTAV_p))
+      ALLOCATE(STATNAMEM(NSTAM_p))
+      STATNAME = STATNAME_p
+      STATNAMEV = STATNAMEV_p
+      STATNAMEM = STATNAMEM_p
+      NE_G = NE_G_p 
+      NBOU = NBOU_p
+      NVEL = NVEL_p
+      NOPE = NOPE_p
+      NP_G = NP_G_p
+      SLAM0 = SLAM0_p 
+      SFEA0 = SFEA0_p
+      ALLOCATE(NBVV(NBOU_p,NVEL_p))
+      NBVV = NBVV_p
+      ALLOCATE(NVDLL(NOPE_p))
+      NVDLL = NVDLL_p
+      ALLOCATE(NBDV(NOPE_p,NETA_p))
+      NBDV = NBDV_p
+      ALLOCATE(NVELL(NOPE_p))
+      NVELL = NVELL_p
+      ALLOCATE(X(NP_G_p))
+      X = X_p
+      ALLOCATE(Y(NP_G_p)) 
+      Y = Y_p 
+      ALLOCATE(SLAM(NP_G_p))
+      SLAM = SLAM_p 
+      ALLOCATE(SFEA(NP_G_p))
+      SFEA = SFEA_p 
+      ALLOCATE(NODECODE(NP_G_p))
+      NODECODE = NODECODE_p    
+      G = G_p
+      FileFmtRev = FileFmtRev_p
+      FileFmtMinor = FileFmtMinor_p  
+      FileFmtMajor = FileFmtMajor_p
+      im = im_p
+      iestp = iestp_p
+      nscoue = nscoue_p
+      ivstp = ivstp_p
+      nscouv = nscouv_p
+      icstp = icstp_p
+      nscouc = nscouc_p
+      ipstp = ipstp_p
+      iwstp = iwstp_p
+      nscoum = nscoum_p
+      igep = igep_p
+      nscouge = nscouge_p
+      igvp = igvp_p
+      nscougv = nscougv_p
+      igcp = igcp_p
+      nscougc = nscougc_p
+      igpp = igpp_p 
+      igwp = igwp_p
+      nscougw = nscougw_p
+      ALLOCATE(NM(NE_G_p,3))
+      NM = NM_p 
+      ALLOCATE(DP(NP_G_p))
+      DP = DP_p
+      RUNDES = RUNDES_p
+      AGRID = AGRID_p
+      title = title_p 
+      institution = institution_p
+      source = source_p
+      history = history_p
+      references = references_p
+      comments = comments_p 
+      host = host_p
+      convention = convention_p
+      contact = contact_p
+      dtdp = dtdp_p
+      ihot = ihot_p
+      ics = ics_p 
+      nolifa = nolifa_p
+      nolica = nolica_p
+      nolicat = nolicat_p
+      ncor = ncor_p
+      ntip = ntip_p
+      nws = nws_p
+      nramp = nramp_p 
+      statim = statim_p
+      reftim = reftim_p
+      rnday = rnday_p
+      dramp = dramp_p
+      a00 = a00_p
+      b00 = b00_p
+      c00 =  c00_p 
+      h0 = h0_p
+      cori = cori_p
+      ntif = ntif_p
+      nbfr = nbfr_p
+      myProc = myProc_p
+      screenUnit = screenUnit_p 
+      nolibf = nolibf_p
+      nwp = nwp_p
+      tau0 = tau0_p
+      cf = cf_p
+      eslm = eslm_p
+      neta = neta_p
+
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from setADCIRCParameters."
+#endif
+C-----------------------------------------------------------------------
+      END SUBROUTINE setADCIRCParameters
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------

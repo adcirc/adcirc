@@ -783,7 +783,7 @@ C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
 !      IF(.NOT. ALLOCATED(STATNUMB))ALLOCATE(STATNUMB(NSTAE,SNUMLEN))
-      IF(.NOT. ALLOCATED(STATNAME))ALLOCATE(STATNAME(NSTAE,SNAMLEN))
+      IF(.NOT. ALLOCATED(STATNAME))ALLOCATE(STATNAME(NSTAE))
 C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
@@ -804,8 +804,8 @@ C
                 call parse(STAELOC(I), LVAR)
                 XEL(I)=a2f(LVAR(1))
                 YEL(I)=a2f(LVAR(2))
-                STATNAME(I,SNAMLEN)=LVAR(3)
-                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I,SNAMLEN)
+                STATNAME(I)=LVAR(3)
+                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
 #endif
               ENDIF
             
@@ -820,7 +820,7 @@ C
                  call parse(STAELOC(I), LVAR)
                  SLEL(I)=a2f(LVAR(1))
                  SFEL(I)=a2f(LVAR(2))
-                 STATNAME(I,SNAMLEN)=LVAR(3)
+                 STATNAME(I)=LVAR(3)
 !                 WRITE(6,*)"parsed stations"
 !                 WRITE(6,9911) SLEL(I),SFEL(I), STATNAME(I,SNAMLEN)
 #endif
@@ -871,7 +871,7 @@ C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
 !      IF(.NOT. ALLOCATED(STATNUMBV))ALLOCATE(STATNUMBV(NSTAV,SNUMLEN))
-      IF(.NOT. ALLOCATED(STATNAMEV))ALLOCATE(STATNAMEV(NSTAV,SNAMLEN))
+      IF(.NOT. ALLOCATED(STATNAMEV))ALLOCATE(STATNAMEV(NSTAV))
 C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
@@ -892,8 +892,8 @@ C
               call parse(STAVLOC(I), LVAR)
               XEV(I)=a2f(LVAR(1))
               YEV(I)=a2f(LVAR(2))
-              STATNAMEV(I,SNAMLEN)=LVAR(3)
-              WRITE(6,9911) XEV(I), YEV(I), STATNAMEV(I,SNAMLEN)
+              STATNAMEV(I)=LVAR(3)
+              WRITE(6,9911) XEV(I), YEV(I), STATNAMEV(I)
 #endif
            ENDIF
 
@@ -912,7 +912,7 @@ C
               call parse(STAVLOC(I), LVAR)
               SLEV(I)=a2f(LVAR(1))
               SFEV(I)=a2f(LVAR(2))
-              STATNAMEV(I,SNAMLEN)=LVAR(3)
+              STATNAMEV(I)=LVAR(3)
 !              WRITE(6,*)"parsed stations"
 !              WRITE(6,9911) SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
 !              WRITE(6,*)"STATION INFO - AFTER *************",
@@ -1004,7 +1004,7 @@ C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
 !         IF(.NOT.ALLOCATED(STATNUMBM))ALLOCATE(STATNUMBM(NSTAM,SNUMLEN))
-         IF(.NOT.ALLOCATED(STATNAMEM))ALLOCATE(STATNAMEM(NSTAM,SNAMLEN))
+         IF(.NOT.ALLOCATED(STATNAMEM))ALLOCATE(STATNAMEM(NSTAM))
 C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
@@ -1027,8 +1027,8 @@ C
                 call parse(STAMLOC(I), LVAR)
                 XEM(I)=a2f(LVAR(1))
                 YEM(I)=a2f(LVAR(2))
-                STATNAMEM(I,SNAMLEN)=LVAR(3)
-                WRITE(6,9911) XEM(I), YEM(I), STATNAMEM(I,SNAMLEN)
+                STATNAMEM(I)=LVAR(3)
+                WRITE(6,9911) XEM(I), YEM(I), STATNAMEM(I)
 #endif
              ENDIF
              
@@ -1045,7 +1045,7 @@ C
                call parse(STAMLOC(I), LVAR)
                SLEM(I)=a2f(LVAR(1))
                SFEM(I)=a2f(LVAR(2))
-               STATNAMEM(I,SNAMLEN)=LVAR(3)
+               STATNAMEM(I)=LVAR(3)
 !               WRITE(6,9911) SLEM(I), SFEM(I), STATNAMEM(I,SNAMLEN)
 !               WRITE(6,*)"STATION INFO STAMLOC",
 !     &             SLEM(I),SFEM(I),STATNAMEM(I,SNAMLEN)

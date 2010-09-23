@@ -36,16 +36,6 @@ C                                    ! I-th Node on Land Boundary Segment K
       INTEGER,ALLOCATABLE::WEIR(:)
       INTEGER,ALLOCATABLE::WEIRD(:)
 
-      !jgf48.17 UnSWAN boundary data
-#ifdef ADCSWAN
-Casey 090304: This section is no longer necessary.
-C     ! number of nodes on each UnSWAN boundary segment
-C     INTEGER, ALLOCATABLE :: numUnSWANBdryNodesEach(:)
-C     INTEGER, ALLOCATABLE :: unswanBdryMarkers(:) ! UnSWAN boundary markers
-C     INTEGER, ALLOCATABLE :: unswanBdryNodes(:,:) ! UnSWAN boundary node numbers, based on the segment number (1st arg) and sequential node number (2nd arg), i.e., first node on the segment, second node on the segment, etc
-#endif
-
-
 C     METIS interface section
       INTEGER,ALLOCATABLE ::  PROC(:)
 C     
@@ -102,7 +92,6 @@ C     PARM15  section
       INTEGER  IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN
       INTEGER  NWLAT,NWLON,NFLUXF
       INTEGER,ALLOCATABLE ::   NNSEG(:),NNSVG(:),NNSCG(:),NNSMG(:)
-   
 C
 C     jgf46.00 Nodal attributes section.
       CHARACTER(len=80), ALLOCATABLE :: NodalAttributes(:) ! labels
@@ -169,6 +158,9 @@ C   kmd48.33bc variables for 3D baroclinic and hot start
       REAL(SZ),ALLOCATABLE :: WZ(:,:), q20(:,:), l(:,:)
       REAL(SZ),ALLOCATABLE :: SigT(:,:), Sal(:,:), Temp(:,:)
       REAL(SZ),ALLOCATABLE :: RealQ(:,:), ImagQ(:,:)
+      INTEGER,ALLOCATABLE :: NODECODE(:)
+      INTEGER IESTP,NSCOUE,IVSTP,NSCOUV,ICSTP,NSCOUC,IPSTP,IWSTP,NSCOUM,
+     &        IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW
 
 C     jgf45.12 Terms added for the transport parameters
 C     diffusion coefficients for the salinity field
@@ -194,19 +186,19 @@ C  kmd48.33bc variables for boundary conditions
 C
 C     ELESTAT section
       REAL(SZ) TOUTSE,TOUTFE,TOUTSGE,TOUTFGE
-      REAL(8),ALLOCATABLE :: XEL(:),YEL(:),SLEL(:),SFEL(:)
+      REAL(8),ALLOCATABLE, TARGET :: XEL(:),YEL(:),SLEL(:),SFEL(:)
 C
 C     VELSTAT section
       REAL(SZ) TOUTSGV,TOUTFGV,TOUTSV,TOUTFV
-      REAL(8),ALLOCATABLE :: XEV(:),YEV(:),SLEV(:),SFEV(:)
+      REAL(8),ALLOCATABLE, TARGET :: XEV(:),YEV(:),SLEV(:),SFEV(:)
 C
 C     CONSTAT section
       REAL(SZ) TOUTSC,TOUTFC,TOUTSGC,TOUTFGC
-      REAL(8),ALLOCATABLE :: XEC(:),YEC(:),SLEC(:),SFEC(:)
+      REAL(8),ALLOCATABLE, TARGET :: XEC(:),YEC(:),SLEC(:),SFEC(:)
 C
 C     METSTAT section
       REAL(SZ) TOUTSM,TOUTFM,TOUTSGM,TOUTFGM
-      REAL(8),ALLOCATABLE ::  XEM(:),YEM(:),SLEM(:),SFEM(:)
+      REAL(8),ALLOCATABLE, TARGET ::  XEM(:),YEM(:),SLEM(:),SFEM(:)
       REAL(SZ) TOUTSGW,TOUTFGW
 C
 C     INPUT15 section
@@ -269,9 +261,9 @@ C     START ADDITION BY MCF FOR NETCDF OPTION I/O 2/29/06
 !     -----------------
 !     Attribute general
 !     -----------------
-      CHARACTER(50), ALLOCATABLE  :: STATNAMEV(:,:)
-      CHARACTER(50), ALLOCATABLE  :: STATNAME(:,:)
-      CHARACTER(50), ALLOCATABLE  :: STATNAMEM(:,:)
+      CHARACTER(50), ALLOCATABLE :: STATNAMEV(:)
+      CHARACTER(50), ALLOCATABLE :: STATNAME(:)
+      CHARACTER(50), ALLOCATABLE :: STATNAMEM(:)
       INTEGER, PARAMETER :: SNAMLEN = 50
 C
 C     END ADDITION BY MCF FOR NETCDF OPTION

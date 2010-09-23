@@ -3,6 +3,20 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.31   - 09/23/2010 - jgf - Changes for writing netcdf in parallel:
+C             added if/then to use array_g etc instead of array when writing
+C             station data in parallel run; added a subroutine that is called
+C             by adcprep to populate global variables so that they may be
+C             written into the new initialized netcdf output file; moved
+C             fort.15 parsing subroutines to global.F so that they can be
+C             called from different places; fixed miscellaneous bug in NWS19
+C             in read_input.F by reading RSTIMINC when NRS.GE.1 instead of
+C             just NRS.eq.1; fixed memory allocation for station names
+C             in prep/read_global.F; moved the hotstart-relevant variables
+C             from local declarations in prep.F to declarations in 
+C             pre_global.F; created new subroutine in prep.F to initialize
+C             netcdf output files for parallel runs where they will be
+C             required.
 C  v49.30   - 09/16/2010 - jgf - Working on aswip: added capability to set
 C             the Rmax to a constant or to a percentage of the calculated
 C             value based on isotach data (if any) via command line options; 

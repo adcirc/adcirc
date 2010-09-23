@@ -524,9 +524,9 @@ CC -- Finish Addition by CF
 
       !jgf48.07 Initialize netCDF output files
       IF (useNetCDF) THEN
-         write(*,*) "Its time to initialize the netCDF output."
+         write(*,*) "INFO: Initializing the netCDF output file(s)."
          ! call netCDF module
-         !CALL PREPNETCDF()
+         CALL PREPNETCDF()
       ENDIF
 
 9999  CONTINUE

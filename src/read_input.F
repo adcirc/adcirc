@@ -1569,7 +1569,7 @@ C     rjw added nws = 19: asymmetric hurricane winds
       IF(ABS(NWS).EQ.19) THEN
          IF(NRS.EQ.0) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj
-         ELSEIF (NRS.EQ.1) THEN
+         ELSEIF (NRS.GE.1) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
      &           RSTIMINC
 C LETS not use this now but have the option to i nthe future
@@ -2510,7 +2510,7 @@ C.....AND THE BOUNDARY TYPE
 
       DO K=1,NBOU
          READ(14,*) NVELL(K),IBTYPE
-         IBTYPENC(K)=IBTYPE
+         ! IBTYPENC(K)=IBTYPE !jgfdebug
 C     check that IBTYPE parameter has been set properly
 C     jgf46.21 Added IBTYPE=52.
 
@@ -3473,80 +3473,80 @@ C.....READ FORCING INFORMATION FROM UNIT 15 FILE
 C.....INPUT FROM THE NUMBER OF FREQUENCIES PRESENT IN NORMAL FLOW FORCING
 C......DATA.  IF THIS = 0, NORMAL FLOW DATA IS READ IN FROM THE FORT.20 FILE.
 
-        READ(15,*) NFFR
-        MNFFR = NFFR
-        IF (NFFR.EQ.0) MNFFR = 1
+         READ(15,*) NFFR
+         MNFFR = NFFR
+         IF (NFFR.EQ.0) MNFFR = 1
 
 C.....Allocate space for periodic normal flow boundary conditions
-        call alloc_main6()
+         call alloc_main6()
 C
-        DO I=1,NVELME
-          J=ME2GW(I)
-          QNAM(1,J)=0.
-          QNPH(1,J)=0.
-          END DO
+         DO I=1,NVELME
+            J=ME2GW(I)
+            QNAM(1,J)=0.
+            QNPH(1,J)=0.
+         END DO
 
 C.....READ IN AND WRITE OUT INFO ON SPECIFIED NORMAL FLOW BOUNDARIES
 
-        WRITE(16,1112)
-        WRITE(16,2200)
- 2200   FORMAT(//,1X,'NORMAL FLOW BOUNDARY FORCING INFORMATION ',//)
-        IF(NFFR.EQ.0) THEN
-          WRITE(16,2201)
- 2201     FORMAT(/,5X,'NORMAL FLOW VALUES WILL BE READ FROM UNIT 20 ',
-     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE FLOW DATA ',
-     &    /,9X,'WITH THE MODEL TIME STEP.')
-          ENDIF
-        IF(NFFR.NE.0) THEN
-          WRITE(16,2202) NFFR
- 2202     FORMAT(/,5X,'NUMBER OF PERIODIC NORMAL FLOW CONSTITUENTS =',
+         WRITE(16,1112)
+         WRITE(16,2200)
+ 2200    FORMAT(//,1X,'NORMAL FLOW BOUNDARY FORCING INFORMATION ',//)
+         IF(NFFR.EQ.0) THEN
+            WRITE(16,2201)
+ 2201       FORMAT(/,5X,'NORMAL FLOW VALUES WILL BE READ FROM UNIT 20 ',
+     &      /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE FLOW DATA ',
+     &      /,9X,'WITH THE MODEL TIME STEP.')
+         ENDIF
+         IF(NFFR.NE.0) THEN
+            WRITE(16,2202) NFFR
+ 2202       FORMAT(/,5X,'NUMBER OF PERIODIC NORMAL FLOW CONSTITUENTS =',
      &                                                               I5)
-          WRITE(16,2203)
- 2203     FORMAT(/,7X,'CONSTITUENT #',4X,'FREQUENCY',4X,'NODAL FACTOR',
+            WRITE(16,2203)
+ 2203       FORMAT(/,7X,'CONSTITUENT #',4X,'FREQUENCY',4X,'NODAL FACTOR',
      &         3X,'EQU.ARG (DEG)',2X,'CONSTITUENT',/)
-          DO I=1,NFFR
-            READ(15,'(A5)') FBOUNTAG(I)
-            READ(15,*) FAMIG(I),FFF(I),FFACE(I)
-            WRITE(16,2204) I,FAMIG(I),FFF(I),FFACE(I),FBOUNTAG(I)
- 2204       FORMAT(12X,I2,6X,F16.12,2X,F10.7,2X,F10.3,10X,A5)
-            FFACE(I)=FFACE(I)*DEG2RAD
-            IF(FAMIG(I).EQ.0.) THEN
-              FPER(I)=0.
-              ELSE
-              FPER(I)=2.D0*PI/FAMIG(I)
-              ENDIF
+            DO I=1,NFFR
+               READ(15,'(A5)') FBOUNTAG(I)
+               READ(15,*) FAMIG(I),FFF(I),FFACE(I)
+               WRITE(16,2204) I,FAMIG(I),FFF(I),FFACE(I),FBOUNTAG(I)
+ 2204          FORMAT(12X,I2,6X,F16.12,2X,F10.7,2X,F10.3,10X,A5)
+               FFACE(I)=FFACE(I)*DEG2RAD
+               IF(FAMIG(I).EQ.0.) THEN
+                  FPER(I)=0.
+               ELSE
+                  FPER(I)=2.D0*PI/FAMIG(I)
+               ENDIF
             END DO
 
 C.......INPUT PERIODIC NORMAL FLOW FORCING CONDITIONS ON DESIGNATED FLOW BOUNDARIES
 C........FOR EACH OF THE FORCING FREQUENCIES FROM UNIT 15 AND OUTPUT TO UNIT 16
 
-          DO I=1,NFFR
-            WRITE(16,2206) I,FBOUNTAG(I)
- 2206       FORMAT(////,5X,'PERIODIC NORMAL FLOW CONSTITUENT ',
+            DO I=1,NFFR
+               WRITE(16,2206) I,FBOUNTAG(I)
+ 2206          FORMAT(////,5X,'PERIODIC NORMAL FLOW CONSTITUENT ',
      &                     'NUMBER',I4,1X,'DESIGNATED : ',A5)
-            READ(15,'(A10)') ALPHA
-            WRITE(16,31) ALPHA
-            WRITE(16,30)
-            DO J=1,NVEL
-               IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12).OR.
-     &              (LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.52)) THEN
-                  READ(15,*) QNAM(I,J),QNPH(I,J)
-                WRITE(16,2205) NBV(J),QNAM(I,J),QNPH(I,J)
- 2205           FORMAT(10X,I8,4X,F14.5,4X,F12.3)
-                QNPH(I,J)=QNPH(I,J)*DEG2RAD
-                ENDIF
-              IF(LBCODEI(J).EQ.32) THEN
-                READ(15,*) QNAM(I,J),QNPH(I,J),ENAM(I,J),ENPH(I,J)
-                WRITE(16,2207) NBV(J),QNAM(I,J),QNPH(I,J),ENAM(I,J),
-     &                         ENPH(I,J)
- 2207           FORMAT(10X,I8,4X,F14.5,4X,F12.3,4X,F14.5,4X,F12.3)
-                QNPH(I,J)=QNPH(I,J)*DEG2RAD
-                ENPH(I,J)=ENPH(I,J)*DEG2RAD
-                ENDIF
-              END DO
+               READ(15,'(A10)') ALPHA
+               WRITE(16,31) ALPHA
+               WRITE(16,30)
+               DO J=1,NVEL
+                  IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12).OR.
+     &                 (LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.52)) THEN
+                     READ(15,*) QNAM(I,J),QNPH(I,J)
+                     WRITE(16,2205) NBV(J),QNAM(I,J),QNPH(I,J)
+ 2205                FORMAT(10X,I8,4X,F14.5,4X,F12.3)
+                     QNPH(I,J)=QNPH(I,J)*DEG2RAD
+                  ENDIF
+                  IF(LBCODEI(J).EQ.32) THEN
+                     READ(15,*) QNAM(I,J),QNPH(I,J),ENAM(I,J),ENPH(I,J)
+                     WRITE(16,2207) NBV(J),QNAM(I,J),QNPH(I,J),
+     &                  ENAM(I,J),ENPH(I,J)
+ 2207                FORMAT(10X,I8,4X,F14.5,4X,F12.3,4X,F14.5,4X,F12.3)
+                     QNPH(I,J)=QNPH(I,J)*DEG2RAD
+                     ENPH(I,J)=ENPH(I,J)*DEG2RAD
+                  ENDIF
+               END DO
             END DO
-          ENDIF
-        ENDIF
+         ENDIF
+      ENDIF
 
 C...IF ANY EXTERNAL BARRIER BOUNDARIES WERE SPECIFIED, (NFLUXB=1)
 C.....WRITE OUT EXTERNAL BARRIER BOUNDARY INFORMATION TO UNIT 16 FILE
@@ -6109,7 +6109,8 @@ C                 salinity and temperature forcings.
       IF (CBAROCLINIC) THEN
         READ(15,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP !bc flags for elevation and temperature
         WRITE(16,429) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
- 429  FORMAT(/,5x,'RES_BC_FLAG = ',I3,5X,'BCFLAG_LNM = ',I3,5X,'BCFLAG_TEMP = ',I3)
+ 429  FORMAT(/,5x,'RES_BC_FLAG = ',I3,5X,'BCFLAG_LNM = ',I3,5X,
+     &    'BCFLAG_TEMP = ',I3)
        IF ((RES_BC_FLAG.LT.0)) THEN  ! Diagnostic
          IF (ABS(RES_BC_FLAG).GE.1) THEN ! only have one set of values to read
              READ(15,*) RBCTIMEINC
@@ -6330,6 +6331,7 @@ C-----------------------------------------------------------------------
       END SUBROUTINE READ_INPUT_3D
 C-----------------------------------------------------------------------
 
+
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   R E A D   S T A T I O N S 
 C-----------------------------------------------------------------------
@@ -6340,7 +6342,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE readStations(names, num_stations, nnv, xcoord, ycoord,
      &                        lat, lon, sta1, sta2, sta3)  
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, SLAM0, SFEA0, ICS
+      USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, SLAM0, SFEA0, ICS, parse,
+     &   a2f
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
       INTEGER num_stations
@@ -6353,7 +6356,6 @@ C-----------------------------------------------------------------------
       REAL(SZ), dimension(num_stations) :: sta2    
       REAL(SZ), dimension(num_stations) :: sta3
       INTEGER I
-      REAL, EXTERNAL              :: a2f
       CHARACTER(132) STATLINE
       CHARACTER(50) LVAR(3)
 C
@@ -6391,7 +6393,6 @@ C....PRE-COMPUTE INFORMATION REQUIRED TO INTERPOLATE AT VEL. RECORDING STATIONS
 C-----------------------------------------------------------------------
       END SUBROUTINE readStations
 C-----------------------------------------------------------------------
-
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   C O O R D I N A T E  T O  E L E M E N T 
@@ -6449,6 +6450,7 @@ C-----------------------------------------------------------------------
             OutputElement=Element
          ENDIF
       ENDDO
+
       IF (.not. ElementFound ) THEN
          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
             WRITE(ScreenUnit,593) Description, StationNumber
@@ -6493,8 +6495,6 @@ C-----------------------------------------------------------------------
       END SUBROUTINE CoordinateToElement
 C-----------------------------------------------------------------------
 
-
-
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   
 C     C O M P U T E  I N T E R P O L A T I N G  F A C T O R S 
@@ -6511,8 +6511,8 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
       REAL(8), intent(in) :: InputXCoordinate                  ! cartesian
       REAL(8), intent(in) :: InputYCoordinate                  ! cartesian
-      INTEGER, intent(in) :: InputElement                    
-      REAL(8), intent(out):: Factor1, Factor2, Factor3         
+      INTEGER, intent(in) :: InputElement
+      REAL(8), intent(out):: Factor1, Factor2, Factor3
 
       REAL(8) X1, X2, X3, X4, Y1, Y2, Y3, Y4                   ! geometry
 
@@ -6528,324 +6528,9 @@ C-----------------------------------------------------------------------
       Factor1=((X4-X3)*(Y2-Y3)+(X2-X3)*(Y3-Y4))/Areas(InputElement)
       Factor2=((X4-X1)*(Y3-Y1)-(Y4-Y1)*(X3-X1))/Areas(InputElement)
       Factor3=(-(X4-X1)*(Y2-Y1)+(Y4-Y1)*(X2-X1))/Areas(InputElement)
-      
+
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE ComputeInterpolatingFactors
 C-----------------------------------------------------------------------
 
-      !=================================================================
-      !=================================================================
-      !=================================================================
-      !      =====                                            =====
-      !      =====            SUBROUTINE PARSE                =====
-      !      =====                                            =====
-      !=================================================================
-      !=================================================================
-      !=================================================================
-
-      !=================================================================
-      ! This subroutines parse station names so they can passed on to
-      ! the NetCDF I/O module of ADCIRC and be written out in the netCDF
-      ! output files.
-      !
-      ! Revision history:
-      !
-      ! Date      Programmer                       Description of change
-      ! ----      ----------                       ---------------------
-      ! 12/16/07  Cristina Forbes, PSGS @ UNC-IMS  Wrote parser
-      !                                            based on character
-      !                                            manipulation subroutines
-      !                                            developed at the
-      !                                            University of Oslo, Norway
-      !=================================================================
-      subroutine parse (line, lvar)
-      IMPLICIT NONE
-      CHARACTER(132) LINE,L
-      CHARACTER(50) LVAR(3)
-      INTEGER LS, L1, LEN1, I
-      INTEGER NAMSTART  ! position of beginning of station name   
-      INTEGER NAMEND    ! position of end of station name
-      INTEGER BANGEND   ! location of terminating "!", if any
-C
-      LS=1
-      L=TRIM(ADJUSTL(LINE))
-      LEN1=LEN(L)
-
-!     EXTRACT STATION DATA FROM LINE
-
-      DO I=1,2
-!        DO I=1,3
-         L1=LEN(TRIM(ADJUSTL(L(1:INDEX(L," ")-1))))
-         LVAR(I)=ADJUSTL(L(LS:L1))
-         L=ADJUSTL(L(L1+1:LEN(L)))
-      END DO
-C
-C     Find start of station name, ignoring leading "!" if it is there
-      NAMSTART=1
-      IF ( L(1:1).EQ."!" ) THEN
-         NAMSTART=2
-      ENDIF
-C
-C     Find end of station name, ignoring the first occurrence of an
-C     embedded "!" as well as any characters to the right of that, since
-C     they are assumed to be a comment.
-      NAMEND=LEN(L)
-      BANGEND=INDEX(L(NAMSTART:NAMEND),"!")
-      IF ( BANGEND.NE.0 ) THEN
-         NAMEND = BANGEND + (NAMSTART-2) 
-      ENDIF
-      LVAR(3)=ADJUSTL(L(NAMSTART:NAMEND)) !jgf49.29: trim leading "!" and spaces
-      !=================================================================
-      END SUBROUTINE parse
-      !=================================================================
-
-
-      !=================================================================
-      FUNCTION front_trim(buf) RESULT(res)
-      !=================================================================
-      IMPLICIT NONE
-      !// Arguments
-      CHARACTER(LEN=*), INTENT(IN)   :: buf
-      INTEGER                        :: res
-      !// Local variables
-      INTEGER                        :: i, lng
-      lng = LEN_TRIM(buf)
-      DO i = 1, lng
-         IF (buf(i:i) .NE. ' ') THEN
-            res = i
-            RETURN
-         END IF
-      END DO
-      !=================================================================
-      END FUNCTION front_trim
-      !=================================================================
- 
-
-      !=================================================================
-      FUNCTION a2i(buf) RESULT(res)
-      !=================================================================
-      IMPLICIT NONE
-      !// Arguments
-      CHARACTER(LEN=*), INTENT(IN)   :: buf
-      INTEGER                        :: res
-      !// Local variables
-      INTEGER                        :: i, foffs, lng
-      INTEGER, EXTERNAL              :: front_trim
-      LOGICAL                        :: neg
-      neg = .FALSE.
-      lng = LEN_TRIM(buf)
-      foffs = front_trim(buf)
-      res = 0
-      DO i = foffs, lng
-         IF(buf(i:i) .EQ. '-') THEN
-            neg = .TRUE.
-           CONTINUE
-         END IF
-         IF(buf(i:i) .GE. '0' .AND. buf(i:i) .LE. '9' .AND.
-     &        buf(i:i) .NE. ' ') THEN
-            res = res * 10
-            res = res + (IACHAR(buf(i:i)) - 48)
-         END IF
-      END DO
-      IF(neg) THEN
-         res = res * (-1)
-      END IF
-      !=================================================================
-      END FUNCTION a2i
-      !=================================================================
-
-      !=================================================================
-      FUNCTION a2f(buf) RESULT(res)
-      !=================================================================
-      IMPLICIT NONE
-      !// Arguments
-      CHARACTER(LEN=*)               :: buf
-      REAL                           :: res
-      !// Local variables
-      INTEGER                        :: i,j,k,itmp, foffs, lng
-      INTEGER                        :: p, q
-      REAL                           :: rtmp
-      INTEGER, EXTERNAL              :: front_trim
-      INTEGER, EXTERNAL              :: a2i
-      LOGICAL                        :: neg
-      LOGICAL                        :: exponential
-      neg = .FALSE.
-      exponential = .FALSE.
-      lng = LEN_TRIM(buf)
-      foffs = front_trim(buf)
-      k = INDEX(buf,'.')
-      p = INDEX(buf,'e')
-      q = INDEX(buf,'E')
-      IF(p /= -1 .AND. p /= 0) THEN
-         exponential = .TRUE.
-      END IF
-      IF(q /= -1 .AND. q /= 0) THEN
-         exponential = .TRUE.
-         p = q
-      END IF
-      IF (k /= -1 .AND. k /= 0) THEN
-         !// We have a floating point number
-         itmp = 0
-         !// Get the integer part of the number
-         DO i = foffs, k - 1
-            IF(buf(i:i) .EQ. '-') THEN
-               neg = .TRUE.
-               CONTINUE
-            END IF
-            IF(buf(i:i) .GE. '0' .AND. buf(i:i) .LE. '9' .AND.
-     &           buf(i:i) .NE. ' ') THEN
-               itmp = itmp * 10
-               itmp = itmp + (IACHAR(buf(i:i)) - 48)
-            END IF
-         END DO
-         res = DBLE(itmp)
-         rtmp = 0.
-         q = 0
-         IF(.NOT. exponential) THEN
-!// We do not have an exponential number
-            DO i = LEN_TRIM(buf), k+1, -1
-               itmp = (IACHAR(buf(i:i)) - 48)
-               rtmp = rtmp + FLOAT(itmp)
-               rtmp = rtmp / 10.
-            END DO
-         ELSE
-!// We have an exponential number
-            DO i = p-1, k+1, -1
-               itmp = (IACHAR(buf(i:i)) - 48)
-               rtmp = rtmp + FLOAT(itmp)
-               rtmp = rtmp / 10.
-            END DO
-            q = a2i(buf(p+1:LEN_TRIM(buf)))
-         END IF
-         res = res + rtmp
-         IF(exponential) THEN
-            res = res * 10.**q
-         END IF
-         IF(neg) THEN
-            res = res * (-1)
-         END IF
-      ELSE
-         !// We have an integer
-         res = REAL(a2i(buf))
-      END IF
-      !=================================================================
-      END FUNCTION a2f
-      !=================================================================
-
-      !=================================================================
-      FUNCTION a2d(buf) RESULT(res)
-      !=================================================================
-      IMPLICIT NONE
-      !// Arguments
-        CHARACTER(LEN=*)               :: buf
-        DOUBLE PRECISION               :: res
-!// Local variables
-        INTEGER                        :: i,j,k,itmp, foffs, lng
-        INTEGER                        :: p, q
-        DOUBLE PRECISION               :: dtmp
-        INTEGER, EXTERNAL              :: front_trim
-        INTEGER, EXTERNAL              :: a2i
-        LOGICAL                        :: neg
-        LOGICAL                        :: exponential
-        neg = .FALSE.
-        exponential = .FALSE.
-        lng = LEN_TRIM(buf)
-        foffs = front_trim(buf)
-        k = INDEX(buf,'.')
-        p = INDEX(buf,'e')
-        q = INDEX(buf,'E')
-        IF(p /= -1 .AND. p /= 0) THEN
-        exponential = .TRUE.
-        END IF
-        IF(q /= -1 .AND. q /= 0) THEN
-        exponential = .TRUE.
-        p = q
-        END IF
-        IF (k /= -1 .AND. k /= 0) THEN
-!// We have a floating point number
-        itmp = 0
-!// Get the integer part of the number
-        DO i = foffs, k - 1
-        IF(buf(i:i) .EQ. '-') THEN
-        neg = .TRUE.
-        CONTINUE
-        END IF
-        IF(buf(i:i) .GE. '0' .AND. buf(i:i) .LE. '9' .AND.
-     &  buf(i:i) .NE. ' ') THEN
-        itmp = itmp * 10
-        itmp = itmp + (IACHAR(buf(i:i)) - 48)
-        END IF
-        END DO
-        res = DBLE(itmp)
-        dtmp = 0.
-        q = 0
-        IF(.NOT. exponential) THEN
-!// We do not have an exponential number
-        DO i = LEN_TRIM(buf), k+1, -1
-        itmp = (IACHAR(buf(i:i)) - 48)
-        dtmp = dtmp + FLOAT(itmp)
-        dtmp = dtmp / 10.
-        END DO
-        ELSE
-!// We have an exponential number
-        DO i = p-1, k+1, -1
-        itmp = (IACHAR(buf(i:i)) - 48)
-        dtmp = dtmp + FLOAT(itmp)
-        dtmp = dtmp / 10.
-        END DO
-        q = a2i(buf(p+1:LEN_TRIM(buf)))
-        END IF
-        res = res + dtmp
-        IF(exponential) THEN
-        res = res * 10.**q
-        END IF
-        IF(neg) THEN
-        res = res * (-1)
-        END IF
-        ELSE
-!// We have an integer
-        res = DBLE(a2i(buf))
-        END IF
-      !=================================================================
-        END FUNCTION a2d
-      !=================================================================
-
-
-      !=================================================================
-        SUBROUTINE i2a(in2t, res)
-      !=================================================================
-        IMPLICIT NONE
-!// Arguments
-        INTEGER, INTENT(IN)            :: in2t
-        CHARACTER(LEN=*), INTENT(OUT)  :: res
-!// Local variables
-        INTEGER                        :: i,j,k
-        CHARACTER(LEN=80)              :: sbuf
-        sbuf = ' '
-        res = ' '
-        i = in2t
-        k = 1
-        DO
-        j = MOD(i,10)
-        sbuf(k:k) = ACHAR(j+48)
-        i = i / 10
-        IF (i <= 0) THEN
-        EXIT
-        END IF
-        k = k + 1
-        END DO
-        k = LEN_TRIM(sbuf)
-        IF (k>1) THEN
-        j = k
-        i = 1
-        DO i = 1, k
-         res(i:i) = sbuf(j:j)
-         j = j - 1
-        END DO
-        ELSE
-        res(1:1) = sbuf(1:1)
-        END IF
-      !=================================================================
-        END SUBROUTINE i2a
-      !=================================================================
