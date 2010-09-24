@@ -5948,11 +5948,11 @@ C---------------------------------------------------------------------------
       USE VERSION
       USE PRE_GLOBAL, ONLY: NSTAE, NOUTE, RUNDES, RUNID, AGRID,
      &    DTDP, TAU0, STATIM, REFTIM, RNDAY, DRAMP, A00, B00, C00,
-     &    H0, SLAM0, SFEA0, CF, ESLM, CORI, DP, NBDV, NBVV,
+     &    H0, SL0, SF0, CF, ESLM, CORI, DP, NBDV, NBVV,
      &    SLEL, SFEL, ICS, NT, NTRSPE, IHOT, NOLIBF, NOLIFA, IM,
      &    XEV,YEV,XEM,YEM,XEL,YEL,X,Y,NELG,DT, NTIF, NODECODE,
      &    NOLICA, NOLICAT, NWP, NCOR, NTIP, NWS, NRAMP, NBFR,
-     &    NHY, NOPE, NETA, NBOU, NVEL, RAD2DEG, G,
+     &    NHY, NOPE, NETA, NBOU, NVEL, RAD2DEG, G, SL1, SF1,
      &    NVDLL, NVELL, IBTYPE, STATNAME, STATNAMEV, STATNAMEM,
      &    NSTAV, NOUTV, SLEV, SFEV, NTRSPV,
      &    NSTAM, NOUTM, SLEM, SFEM, NTRSPM,
@@ -6104,8 +6104,8 @@ C     not be needed.
 C
       CALL setADCIRCParameters(
      &   base_date, STATNAME, STATNAMEV, STATNAMEM, MNE, NBOU,
-     &   NVEL, NOPE, MNP, SLAM0, SFEA0, NBVV, NVDLL, NBDV, NVELL, X, Y,
-     &   SLAM, SFEA, NODECODE, G, FileFmtRev,
+     &   NVEL, NOPE, MNP, SL0, SF0, NBVV, NVDLL, NBDV, NVELL, X, Y,
+     &   SL1, SF1, NODECODE, G, FileFmtRev,
      &   FileFmtMinor, FileFmtMajor, im, iestp, nscoue, ivstp, nscouv,
      &   icstp, nscouc, ipstp, iwstp, nscoum, igep, nscouge, igvp,
      &   nscougv, igcp, nscougc, igpp, igwp, nscougw, NM,

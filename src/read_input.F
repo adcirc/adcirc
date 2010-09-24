@@ -2384,6 +2384,8 @@ C...
       JNMM=0
       DO K=1,NOPE
         READ(14,*) NVDLL(K)
+        IBTYPEE(K) = 0 ! jgf49.32 for some reason this is not read in,
+                       ! even though it is in the documentation
         WRITE(16,281) K,NVDLL(K)
  281    FORMAT(//,5X,'TOTAL NUMBER OF NODES ON ELEVATION SPECIFIED ',
      &               'BOUNDARY SEGMENT ',2X,I2,2X,'=',1X,I5,/)
@@ -2509,20 +2511,24 @@ C.....AND THE BOUNDARY TYPE
       NVELEXT=0
 
       DO K=1,NBOU
-         READ(14,*) NVELL(K),IBTYPE
+         READ(14,*) NVELL(K),IBTYPE(K)
          ! IBTYPENC(K)=IBTYPE !jgfdebug
 C     check that IBTYPE parameter has been set properly
 C     jgf46.21 Added IBTYPE=52.
 
-         IF((IBTYPE.NE.0).AND.(IBTYPE.NE.10).AND.(IBTYPE.NE.20)
-     &        .AND.(IBTYPE.NE.1).AND.(IBTYPE.NE.11).AND.(IBTYPE.NE.21)
-     &        .AND.(IBTYPE.NE.2).AND.(IBTYPE.NE.12).AND.(IBTYPE.NE.22)
-     &        .AND.(IBTYPE.NE.52)
-     &        .AND.(IBTYPE.NE.3).AND.(IBTYPE.NE.13).AND.(IBTYPE.NE.23)
-     &        .AND.(IBTYPE.NE.4).AND.(IBTYPE.NE.24)
-     &        .AND.(IBTYPE.NE.5).AND.(IBTYPE.NE.25)
-     &        .AND.(IBType.NE.30).AND.(IBType.NE.32)
-     &        .AND.(IBType.NE.40).AND.(IBType.NE.41)               )THEN
+         IF((IBTYPE(K).NE.0).AND.(IBTYPE(K).NE.10).AND.
+     &       (IBTYPE(K).NE.20)
+     &      .AND.(IBTYPE(K).NE.1).AND.(IBTYPE(K).NE.11).AND.
+     &      (IBTYPE(K).NE.21)
+     &      .AND.(IBTYPE(K).NE.2).AND.(IBTYPE(K).NE.12).AND.
+     &      (IBTYPE(K).NE.22)
+     &      .AND.(IBTYPE(K).NE.52)
+     &      .AND.(IBTYPE(K).NE.3).AND.(IBTYPE(K).NE.13).AND.
+     &      (IBTYPE(K).NE.23)
+     &      .AND.(IBTYPE(K).NE.4).AND.(IBTYPE(K).NE.24)
+     &      .AND.(IBTYPE(K).NE.5).AND.(IBTYPE(K).NE.25)
+     &      .AND.(IBType(K).NE.30).AND.(IBType(K).NE.32)
+     &      .AND.(IBType(K).NE.40).AND.(IBType(K).NE.41) )THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9985) K
             WRITE(16,9985) K
  9985       FORMAT(////,1X,'!!!!!!!!!! WARNING - FATAL ERROR !!!!!!!!!',
@@ -2537,7 +2543,7 @@ C     jgf46.21 Added IBTYPE=52.
 
 C     write out flow boundary information to unit 16
 
-         IF((IBTYPE.EQ.4).OR.(IBTYPE.EQ.24)) THEN
+         IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
             WRITE(16,28) K,NVELL(K),K,2*NVELL(K)
  28         FORMAT(///,5X,'TOTAL NUMBER OF PAIRS FOR FLOW BOUNDARY',
      &           ' SEGMENT',2X,I2,2X,'=',2X,I5,
@@ -2551,26 +2557,26 @@ C     write out flow boundary information to unit 16
 
 C     continue processing flow boundary information
 
-         IF(IBTYPE.EQ.0) THEN
+         IF(IBTYPE(K).EQ.0) THEN
             WRITE(16,2340)
  2340       FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &           7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &           7X,'AND FREE TANGENTIAL SLIP',/)
          ENDIF
-         IF(IBTYPE.EQ.1) THEN
+         IF(IBTYPE(K).EQ.1) THEN
             WRITE(16,2341)
  2341       FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
      &           7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &           7X,'AND FREE TANGENTIAL SLIP',/)
          ENDIF
-         IF(IBTYPE.EQ.2) THEN
+         IF(IBTYPE(K).EQ.2) THEN
             NFLUXF=1
             WRITE(16,2342)
  2342       FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &           7X,'SPECIFIED NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &           7X,'AND FREE TANGENTIAL SLIP',/)
          ENDIF
-         IF(IBTYPE.EQ.3) THEN
+         IF(IBTYPE(K).EQ.3) THEN
            NFLUXB=1
            WRITE(16,2344)
  2344      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
@@ -2580,7 +2586,7 @@ C     continue processing flow boundary information
      &               ' OVERTOPPED',/,
      &            7X,'AND FREE TANGENTIAL SLIP',/)
            ENDIF
-         IF(IBTYPE.EQ.4) THEN
+         IF(IBTYPE(K).EQ.4) THEN
            NFLUXIB=1
            WRITE(16,2345)
  2345      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
@@ -2595,7 +2601,7 @@ C     continue processing flow boundary information
      &               'T AND THE APPROPRIATE BARRIER FLOW FORMULA',/,
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
            ENDIF
-         IF(IBTYPE.EQ.5) THEN
+         IF(IBTYPE(K).EQ.5) THEN
            NFLUXIB=1
            NFLUXIBP=1
            WRITE(16,2347)
@@ -2618,26 +2624,26 @@ C     continue processing flow boundary information
      &          /,7X,' AND THE APPROPRIATE PIPE FLOW FORMULA',/,
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
            ENDIF
-         IF(IBTYPE.EQ.10) THEN
+         IF(IBTYPE(K).EQ.10) THEN
            WRITE(16,2350)
  2350      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
            ENDIF
-         IF(IBTYPE.EQ.11) THEN
+         IF(IBTYPE(K).EQ.11) THEN
            WRITE(16,2351)
  2351      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
            ENDIF
-         IF(IBTYPE.EQ.12) THEN
+         IF(IBTYPE(K).EQ.12) THEN
            NFLUXF=1
            WRITE(16,2352)
  2352      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'SPECIFIED NORMAL FLOW AS AN ESSENTIAL B.C.',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
            ENDIF
-         IF(IBTYPE.EQ.13) THEN
+         IF(IBTYPE(K).EQ.13) THEN
            NFLUXB=1
            WRITE(16,2353)
  2353      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
@@ -2647,26 +2653,26 @@ C     continue processing flow boundary information
      &               ' OVERTOPPED',/,
      &            7X,'AND NO TANGENTIAL SLIP',/)
            ENDIF
-         IF(IBTYPE.EQ.20) THEN
+         IF(IBTYPE(K).EQ.20) THEN
            WRITE(16,2354)
  2354      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS A NATURAL B.C.',/,
      &            7X,'AND FREE TANGENTIAL SLIP',/)
            ENDIF
-         IF(IBTYPE.EQ.21) THEN
+         IF(IBTYPE(K).EQ.21) THEN
            WRITE(16,2355)
  2355      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BOUNDARY WITH:',/,
      &            7X,'NO NORMAL FLOW AS A NATURAL B.C.',/,
      &            7X,'AND FREE TANGENTIAL SLIP',/)
            ENDIF
-         IF(IBTYPE.EQ.22) THEN
+         IF(IBTYPE(K).EQ.22) THEN
            NFLUXF=1
            WRITE(16,2356)
  2356      FORMAT(5X,'THIS SEGMENT IS A EXTERNAL BOUNDARY WITH:',/,
      &            7X,'SPECIFIED NORMAL FLOW AS A NATURAL B.C.',/,
      &            7X,'AND FREE TANGENTIAL SLIP',/)
            ENDIF
-         IF(IBTYPE.EQ.23) THEN
+         IF(IBTYPE(K).EQ.23) THEN
            NFLUXB=1
            WRITE(16,2357)
  2357      FORMAT(5X,'THIS SEGMENT IS AN EXTERNAL BOUNDARY WITH:',/,
@@ -2677,7 +2683,7 @@ C     continue processing flow boundary information
      &            7X,' IMPLEMENTED AS A NATURAL BOUNDARY CONDITION',
      &            7X,'FREE TANGENTIAL SLIP IS ALSO ALLOWED',/)
            ENDIF
-         IF(IBTYPE.EQ.24) THEN
+         IF(IBTYPE(K).EQ.24) THEN
            NFLUXIB=1
            WRITE(16,2358)
  2358      FORMAT(5X,'THIS SEGMENT IS AN INTERNAL BARRIER BOUNDARY:',/,
@@ -2692,7 +2698,7 @@ C     continue processing flow boundary information
      &               'T AND THE APPROPRIATE BARRIER FLOW FORMULA',/,
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
            ENDIF
-         IF(IBTYPE.EQ.25) THEN
+         IF(IBTYPE(K).EQ.25) THEN
            NFLUXIB=1
            NFLUXIBP=1
            WRITE(16,2359)
@@ -2715,7 +2721,7 @@ C     continue processing flow boundary information
      &          /,7X,'AND THE APPROPRIATE PIPE FLOW FORMULA',/,
      &            7X,'FREE TANGENTIAL SLIP IS ALLOWED',/)
            ENDIF
-         IF(IBType.EQ.30) THEN
+         IF(IBType(K).EQ.30) THEN
            NFluxRBC=1
            WRITE(16,2360) 
  2360      FORMAT(5X,'This segment is an outward radiating boundary:',/,
@@ -2728,7 +2734,7 @@ C     continue processing flow boundary information
      &            7X,'are used to compute the velocity field the same ',
      &               'as for a nonboundary node.',/)
            ENDIF
-         IF(IBType.EQ.32) THEN
+         IF(IBType(K).EQ.32) THEN
            NFluxRBC=1
            NFluxF=1
            WRITE(16,2356)
@@ -2744,7 +2750,7 @@ C     continue processing flow boundary information
      &            7X,'velocity field the same as for a nonboundary ',
      &               'node',/)
            ENDIF
-         IF(IBType.EQ.40) THEN
+         IF(IBType(K).EQ.40) THEN
            NFluxGBC=1
            WRITE(16,2370)
  2370      FORMAT(5X,'This segment is a zero normal velocity gradient ', 
@@ -2765,7 +2771,7 @@ C     continue processing flow boundary information
      &            7X,'The velocity at the fictitious point is ',
      &               'determined by interpolation.',/)
            ENDIF
-         IF(IBType.EQ.41) THEN
+         IF(IBType(K).EQ.41) THEN
            NFluxGBC=1
            WRITE(16,2371)
  2371      FORMAT(5X,'This segment is a zero normal velocity gradient ', 
@@ -2776,7 +2782,7 @@ C     continue processing flow boundary information
      &            7X,'gradient normal to the boundary equal to zero ',
      &               'in the Galerkin sense.',/)
         ENDIF
-        IF(IBTYPE.EQ.52) THEN
+        IF(IBTYPE(K).EQ.52) THEN
            NFLUXF=1
            IBTYPE52=.TRUE.
            WRITE(16,6532)
@@ -2796,9 +2802,10 @@ C     continue processing flow boundary information
 C...  For NON BARRIER type boundaries, read the node numbers for the Kth
 C...  boundary segment
 
-         IF((IBTYPE.NE. 3).AND.(IBTYPE.NE.13).AND.(IBTYPE.NE.23).AND.
-     &      (IBTYPE.NE. 4).AND.(IBTYPE.NE.24).AND.
-     &      (IBTYPE.NE. 5).AND.(IBTYPE.NE.25)) THEN
+         IF((IBTYPE(K).NE. 3).AND.(IBTYPE(K).NE.13).AND.
+     &      (IBTYPE(K).NE.23).AND.
+     &      (IBTYPE(K).NE. 4).AND.(IBTYPE(K).NE.24).AND.
+     &      (IBTYPE(K).NE. 5).AND.(IBTYPE(K).NE.25)) THEN
            DO I=1,NVELL(K)
              READ(14,*) NBVV(K,I)
              END DO
@@ -2811,7 +2818,8 @@ C...  barrier elevation above the Geoid and the coefficient of free
 C...  surface super-critical flow for the nodes in the Kth boundary
 C...  segment.
 
-         IF((IBTYPE.EQ.3).OR.(IBTYPE.EQ.13).OR.(IBTYPE.EQ.23)) THEN
+         IF((IBTYPE(K).EQ.3).OR.(IBTYPE(K).EQ.13).OR.
+     &         (IBTYPE(K).EQ.23)) THEN
            DO I=1,NVELL(K)
              READ(14,*) NBVV(K,I),BARLANHTR(I),BARLANCFSPR(I)
              END DO
@@ -2824,7 +2832,7 @@ C...  paired node number, the barrier elevation above the Geoid and the
 C...  coefficients of supercritical and subcritical flow for the nodes
 C...  in the Kth boundary segment.
 
-         IF((IBTYPE.EQ.4).OR.(IBTYPE.EQ.24)) THEN
+         IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
             DO I=1,NVELL(K)
                READ(14,*) NBVV(K,I),IBCONNR(I),BARINHTR(I),BARINCFSBR(I)
      &              ,BARINCFSPR(I)
@@ -2840,7 +2848,7 @@ C...  subcritical flow, the cross barrier pipe height, the cross barrier
 C...  pipe coefficient and the cross barrier pipe diameter for the nodes
 C...  in the Kth boundary segment.
 
-         IF((IBTYPE.EQ.5).OR.(IBTYPE.EQ.25)) THEN
+         IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
             DO I=1,NVELL(K)
          READ(14,*) NBVV(K,I),IBCONNR(I),BARINHTR(I),BARINCFSBR(I),
      &             BARINCFSPR(I),PIPEHTR(I),PIPECOEFR(I),
@@ -2891,7 +2899,7 @@ C...  IS ALSO RESET
 
 C...  WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES
 
-            IF((IBTYPE.EQ.4).OR.(IBTYPE.EQ.24)) THEN
+            IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
                IF(IPRBI.EQ.1) THEN
                   WRITE(16,1842)
  1842          FORMAT(/,5X,'FRONT FACE OF INTERNAL BARRIER BOUNDARY',/)
@@ -2904,7 +2912,7 @@ C...  WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES
 C...  WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES WITH
 C...  CROSS BARRIER PIPES
 
-            IF((IBTYPE.EQ.5).OR.(IBTYPE.EQ.25)) THEN
+            IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
                IF(IPRBI.EQ.1) THEN
                   WRITE(16,1844)
  1844             FORMAT(/,5X,'FRONT FACE OF INTERNAL BARRIER BOUNDARY',
@@ -2925,7 +2933,8 @@ C...  WRITE OUT GENERAL HEADER FOR BOUNDARY INFORMATION
 C...  COMPLETE THE BOUNDARY ARRAY FOR THE Kth FLOW BOUNDARY SEGMENT
 
             NBVV(K,0)=NBVV(K,1) !UNCLOSED EXTERNAL
-            IF((IBTYPE.EQ.1).OR.(IBTYPE.EQ.11).OR.(IBTYPE.EQ.21)) THEN
+            IF((IBTYPE(K).EQ.1).OR.(IBTYPE(K).EQ.11).OR.
+     &            (IBTYPE(K).EQ.21)) THEN
                IF(NBVV(K,NVELL(K)).NE.NBVV(K,1)) THEN !CLOSE AN UNCLOSED INTERNAL
                   NVELL(K)=NVELL(K)+1
                   NBVV(K,NVELL(K))=NBVV(K,1)
@@ -2963,12 +2972,15 @@ C...  0.66667*LENGTH OF EACH BOUNDARY SEGMENT.  NOTE, THE LENGTH OF THE
 C...  LAST BOUNDARY SEGMENT ON EACH BOUNDARY SHOULD BE ZERO
 C     jgf46.21 Added IBTYPE=52.
                JGW=JGW+1
-               IF((IBTYPE.EQ.0).OR.(IBTYPE.EQ.10).OR.(IBTYPE.EQ.20).OR.
-     &             (IBTYPE.EQ.2).OR.(IBTYPE.EQ.12).OR.(IBTYPE.EQ.22).OR.
-     &             (IBTYPE.EQ.52).OR.
-     &             (IBTYPE.EQ.3).OR.(IBTYPE.EQ.13).OR.(IBTYPE.EQ.23).OR.
-     &             (IBType.EQ.30).OR.(IBType.EQ.32).OR.
-     &             (IBType.EQ.40).OR.(IBType.EQ.41)) THEN
+               IF((IBTYPE(K).EQ.0).OR.(IBTYPE(K).EQ.10).OR.
+     &           (IBTYPE(K).EQ.20).OR.
+     &             (IBTYPE(K).EQ.2).OR.(IBTYPE(K).EQ.12).OR.
+     &             (IBTYPE(K).EQ.22).OR.
+     &             (IBTYPE(K).EQ.52).OR.
+     &             (IBTYPE(K).EQ.3).OR.(IBTYPE(K).EQ.13).OR.
+     &             (IBTYPE(K).EQ.23).OR.
+     &             (IBType(K).EQ.30).OR.(IBType(K).EQ.32).OR.
+     &             (IBType(K).EQ.40).OR.(IBType(K).EQ.41)) THEN
                   NVELEXT=NVELEXT+1
                ENDIF
                NBV(JGW)=NBVV(K,I)
@@ -3042,13 +3054,13 @@ C...  VALUE IF THE BOUNDARY IS CLOSED
 C...  CHECK WHETHER ANGLE IS LESS THAN MINIMUM ANGLE, IF SO CHANGE THE
 C...  BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES
 
-               LBCODEI(JGW)=IBTYPE
+               LBCODEI(JGW)=IBTYPE(K)
                IF((COSTHETA.GT.COSTSET).AND.(CROSS.GT.0.0)) THEN
-                  IF(IBTYPE.EQ.0) LBCODEI(JGW)=10
-                  IF(IBTYPE.EQ.1) LBCODEI(JGW)=11
-                  IF(IBTYPE.EQ.2) LBCODEI(JGW)=12
-                  IF(IBTYPE.EQ.3) LBCODEI(JGW)=13
-                  IF((IBTYPE.GE.0).AND.(IBTYPE.LE.3)) THEN
+                  IF(IBTYPE(K).EQ.0) LBCODEI(JGW)=10
+                  IF(IBTYPE(K).EQ.1) LBCODEI(JGW)=11
+                  IF(IBTYPE(K).EQ.2) LBCODEI(JGW)=12
+                  IF(IBTYPE(K).EQ.3) LBCODEI(JGW)=13
+                  IF((IBTYPE(K).GE.0).AND.(IBTYPE(K).LE.3)) THEN
                      WRITE(16,1856) NBVV(K,I),THETA
  1856                FORMAT(2X,I7,4X,'THE INNER ANGLE = ',F8.2,1X,
      &                    'TANGENTIAL SLIP WILL BE ZEROED')
@@ -3069,7 +3081,7 @@ C...  Compute the location of and the element containing the fictitious
 C...  node used for a zero normal velocity gradient boundary condition
 C...  (type 40)
 
-               IF(IBType.EQ.40) Then
+               IF(IBType(K).EQ.40) Then
                   ZNGFicNodeDist=0.d0
                   DO N=2,NNeigh(NBVI)
                   ZNGFicNodeDistTemp=SQRT((X(NeiTab(NBVI,N))-X(NBVI))**2
@@ -3194,14 +3206,14 @@ C...
                ENDIF
 
 C...........LOAD EXTERNAL BARRIER BOUNDARY INFORMATION INTO THE CORRECT VECTORS
-               IF((IBTYPE.EQ.3).OR.(IBTYPE.EQ.13)
-     &          .OR.(IBTYPE.EQ.23)) THEN
+               IF((IBTYPE(K).EQ.3).OR.(IBTYPE(K).EQ.13)
+     &          .OR.(IBTYPE(K).EQ.23)) THEN
                   BARLANHT(JGW)=BARLANHTR(I)
                   BARLANCFSP(JGW)=BARLANCFSPR(I)
                ENDIF
 
 C...........LOAD INTERNAL BARRIER BOUNDARY INFORMATION INTO THE CORRECT VECTORS
-               IF((IBTYPE.EQ.4).OR.(IBTYPE.EQ.24)) THEN
+               IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
                   IBCONN(JGW)=IBCONNR(I)
                   BARINHT(JGW)=BARINHTR(I)
                   BARINCFSB(JGW)=BARINCFSBR(I)
@@ -3210,7 +3222,7 @@ C...........LOAD INTERNAL BARRIER BOUNDARY INFORMATION INTO THE CORRECT VECTORS
                
 C...........LOAD INTERNAL BARRIER WITH PIPES BOUNDARY INFORMATION INTO 
 C............THE CORRECT VECTORS
-               IF((IBTYPE.EQ.5).OR.(IBTYPE.EQ.25)) THEN
+               IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
                   IBCONN(JGW)=IBCONNR(I)
                   BARINHT(JGW)=BARINHTR(I)
                   BARINCFSB(JGW)=BARINCFSBR(I)
@@ -3228,8 +3240,8 @@ C...........WRITE OUT BOUNDARY CONDITION ARRAY INFORMATION
      &              1X,E16.8,2X,E16.8)
 
 C...........CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS
-               IF((IBTYPE.EQ.3).OR.(IBTYPE.EQ.13)
-     &          .OR.(IBTYPE.EQ.23)) THEN
+               IF((IBTYPE(K).EQ.3).OR.(IBTYPE(K).EQ.13)
+     &          .OR.(IBTYPE(K).EQ.23)) THEN
                   IF(BARLANHT(JGW).LT.-DP(NBV(JGW))) THEN
                      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
                         WRITE(ScreenUnit,8367) 
@@ -3257,7 +3269,7 @@ C...........CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS
                   ENDIF
                ENDIF
 C...........CHECK INTERNAL BARRIER HEIGHTS AGAINST DEPTHS
-               IF((IBTYPE.EQ.4).OR.(IBTYPE.EQ.24)) THEN
+               IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
                   IF(BARINHT(JGW).LT.-DP(NBV(JGW))) THEN
                      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
                         WRITE(ScreenUnit,8368) 
@@ -3283,7 +3295,7 @@ C...........CHECK INTERNAL BARRIER HEIGHTS AGAINST DEPTHS
                ENDIF
                         
 C...........CHECK INTERNAL BARRIER WITH PIPES BARRIER HEIGHTS AGAINST DEPTHS
-               IF((IBTYPE.EQ.5).OR.(IBTYPE.EQ.25)) THEN
+               IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
                   IF(BARINHT(JGW).LT.-DP(NBV(JGW))) THEN
                      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
                         WRITE(ScreenUnit,8370) 
@@ -3311,7 +3323,7 @@ C...........CHECK INTERNAL BARRIER WITH PIPES BARRIER HEIGHTS AGAINST DEPTHS
                   ENDIF
                ENDIF
 C...  CHECK INTERNAL BARRIER WITH PIPES PIPE HEIGHTS AGAINST DEPTHS
-               IF((IBTYPE.EQ.5).OR.(IBTYPE.EQ.25)) THEN
+               IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
                   IF(PIPEHT(JGW).LT.-DP(NBV(JGW))) THEN
                      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
                         WRITE(ScreenUnit,8372) 
@@ -3342,8 +3354,9 @@ C...  CHECK INTERNAL BARRIER WITH PIPES PIPE HEIGHTS AGAINST DEPTHS
 C...  CHECK FOR OVERLAPPING OF AN INTERNAL BARRIER BOUNDARY WITH
 C...  ANY EXTERNAL BARRIER BOUNDARY. IF THIS DOES OCCUR, TAKE
 C...  APPROPRIATE ACTION
-               IF((IBTYPE.EQ.4).OR.(IBTYPE.EQ.24).OR.(IBTYPE.EQ.5)
-     &              .OR.(IBTYPE.EQ.25)) THEN
+               IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24).OR.
+     &              (IBTYPE(K).EQ.5)
+     &              .OR.(IBTYPE(K).EQ.25)) THEN
                   DO ICK=1,NVELEXT
 C...  CHECK IF OVERLAP EXISTS
                      IF(NBV(ICK).EQ.NBV(JGW)) THEN
@@ -3375,8 +3388,8 @@ C...  CHECK FOR ILLEGAL OVERLAPS
                         ENDIF
 C...  CHECK FOR OVERLAPS WHICH REQUIRE ADJUSTMENTS OF BOUNDARY
 C...  CODE ON THE EXTERNAL BOUNDARY
-                        IF(((IBTYPE.EQ.4).AND.(LBCODEI(ICK).EQ.0))
-     &                       .OR.((IBTYPE.EQ.5)
+                        IF(((IBTYPE(K).EQ.4).AND.(LBCODEI(ICK).EQ.0))
+     &                       .OR.((IBTYPE(K).EQ.5)
      &                       .AND.(LBCODEI(ICK).EQ.0))) THEN
                            WRITE(16,8568) JGW,ICK,ICK
  8568                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
@@ -3390,8 +3403,8 @@ C...  CODE ON THE EXTERNAL BOUNDARY
      &               '(NATURAL NO NORMAL FLOW WITH SLIP BOUNDARY) ')
                            LBCODEI(ICK)=20
                         ENDIF
-                        IF(((IBTYPE.EQ.4).AND.(LBCODEI(ICK).EQ.10)) 
-     &                       .OR.((IBTYPE.EQ.5)
+                        IF(((IBTYPE(K).EQ.4).AND.(LBCODEI(ICK).EQ.10)) 
+     &                       .OR.((IBTYPE(K).EQ.5)
      &                       .AND.(LBCODEI(ICK).EQ.10))) THEN
                            WRITE(16,8569) JGW,ICK,ICK
  8569                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
@@ -3405,8 +3418,8 @@ C...  CODE ON THE EXTERNAL BOUNDARY
      &               '(NATURAL NO NORMAL FLOW WITH SLIP BOUNDARY) ')
                            LBCODEI(ICK)=20
                         ENDIF
-                        IF(((IBTYPE.EQ.24).AND.(LBCODEI(ICK).EQ.10))  
-     &                       .OR.((IBTYPE.EQ.25)
+                        IF(((IBTYPE(K).EQ.24).AND.(LBCODEI(ICK).EQ.10))  
+     &                       .OR.((IBTYPE(K).EQ.25)
      &                       .AND.(LBCODEI(ICK).EQ.10))) THEN
                            WRITE(16,8570) JGW,ICK,ICK
  8570                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',

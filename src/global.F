@@ -225,12 +225,8 @@ C    kmd48.33bc - added variables for the levels of no motion and top temperatur
       INTEGER,ALLOCATABLE ::    NBDV(:,:)
       INTEGER,ALLOCATABLE ::    NVELL(:)
       INTEGER,ALLOCATABLE ::    NBVV(:,:)
-C
-CCC START ADDITION BY MCF FOR NETCDFIO
-C
-      INTEGER,ALLOCATABLE ::    IBTYPENC(:)
-C      
-CCC FINISH ADDITION BY MCF FOR NETCDFIO
+      INTEGER,ALLOCATABLE ::    IBTYPE(:)  !jgf49.32 now ibtype is an array
+      INTEGER,ALLOCATABLE ::    IBTYPEE(:) !jgf49.32 added ibtypee
 C
 C.....for buoyancy forcing
       REAL(SZ),ALLOCATABLE ::   DASigT(:), DASalt(:), DATemp(:)
@@ -348,7 +344,7 @@ C     only calculates the requested quantities.
 C...
 C...EXPLICITLY DECLARE ADDITIONAL VARIABLES
 C...
-      INTEGER  NODEDRYMIN,NODEWETMIN,IBTYPE
+      INTEGER  NODEDRYMIN,NODEWETMIN
       INTEGER  IM,JGW,JKI,JME
       INTEGER  JNMM,KMIN,N1,N2,N3,NABOUT
       INTEGER  NBFR,NBOU,NBVI,NBVJ,NCOR,NE,NE2,NP2
@@ -676,7 +672,7 @@ C...
 C    
       ALLOCATE ( ESBIN1(MNETA),ESBIN2(MNETA))
       ALLOCATE ( NBDV(MNOPE,MNETA))
-      ALLOCATE ( NVDLL(MNOPE),NBD(MNETA))
+      ALLOCATE ( NVDLL(MNOPE),NBD(MNETA), IBTYPEE(MNOPE))
       ALLOCATE ( EMO(MNBFR,MNETA),EFA(MNBFR,MNETA))
 C    kmd48.33bc - arrays for boundary conditions
       IF (CBAROCLINIC) THEN
@@ -718,7 +714,7 @@ C
       ALLOCATE ( RPIPEWL1AVG(MNVEL),RPIPEWL2AVG(MNVEL))
       ALLOCATE ( QNIN1(MNVEL),QNIN2(MNVEL))
       ALLOCATE ( NBVV(MNBOU,0:MNVEL))
-      ALLOCATE ( NVELL(MNBOU))
+      ALLOCATE ( NVELL(MNBOU), IBTYPE(MNBOU))
 C      
 C     jgf46.21 Added support for IBTYPE=52.
       ALLOCATE ( ElevDisc(MNVEL))

@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.32   - 09/23/2010 - jgf - Fixes for netcdf: SLAM0 and SFEA0 
+C             as well as mesh boundaries. Now works in serial. Parallel
+C             should also work, but testing is required to confirm.
 C  v49.31   - 09/23/2010 - jgf - Changes for writing netcdf in parallel:
 C             added if/then to use array_g etc instead of array when writing
 C             station data in parallel run; added a subroutine that is called

@@ -295,8 +295,8 @@ C
       INTEGER I,J,K,M
       INTEGER IG1,IG2,IG3,IL1,IL2,IL3
       REAL(8) X1, X2, X3, X4, Y1, Y2, Y3, Y4, A1, A2, A3
+      REAL(8) SL1Sta,SF1Sta
       REAL(8) AE, AEMIN, AREASK, AA
-      REAL(8) SL0,SL1,SF0,SF1
       INTEGER NBV(MNVEL)
 Casey 090825: Added dummy variables.
       INTEGER IDUM
@@ -612,10 +612,10 @@ C--If ICS = 2 then apply CPP projection
 C
       IF (ICS.EQ.2) THEN
          DO I = 1,NNODG
-            SL1 = DEG2RAD*SLAM(I)
-            SF1 = DEG2RAD*SFEA(I)
-            SLAM(I) = R*(SL1-SL0)*COS(SF0)
-            SFEA(I) = R*SF1
+            SL1(I) = DEG2RAD*SLAM(I)
+            SF1(I) = DEG2RAD*SFEA(I)
+            SLAM(I) = R*(SL1(I)-SL0)*COS(SF0)
+            SFEA(I) = R*SF1(I)
          ENDDO
       ENDIF
       
@@ -827,11 +827,11 @@ C
              ENDIF
 
             
-            SL1=DEG2RAD*SLEL(I)
-            SF1=DEG2RAD*SFEL(I)
+            SL1Sta=DEG2RAD*SLEL(I)
+            SF1Sta=DEG2RAD*SFEL(I)
 c           CALL CPP(XEL(I),YEL(I),SL1,SF1,SL0,SF0)
-            XEL(I) = R*(SL1-SL0)*COS(SF0)
-            YEL(I) = R*SF1
+            XEL(I) = R*(SL1Sta-SL0)*COS(SF0)
+            YEL(I) = R*SF1Sta
          ENDIF
       ENDDO
  9911            FORMAT(F12.3,2X,F12.3, 6X, A50)
@@ -924,11 +924,11 @@ C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
 
            
-           SL1=DEG2RAD*SLEV(I)
-           SF1=DEG2RAD*SFEV(I)
+           SL1Sta=DEG2RAD*SLEV(I)
+           SF1Sta=DEG2RAD*SFEV(I)
 C          CALL CPP(XEV(I),YEV(I),SL1,SF1,SL0,SF0)
-           XEV(I) = R*(SL1-SL0)*COS(SF0)
-           YEV(I) = R*SF1
+           XEV(I) = R*(SL1Sta-SL0)*COS(SF0)
+           YEV(I) = R*SF1Sta
         ENDDO
       ENDIF
 C
@@ -964,11 +964,11 @@ C
            ELSE
              READ(15,80) STACLOC(I)
              READ(STACLOC(I),*) SLEC(I),SFEC(I)
-             SL1=DEG2RAD*SLEC(I)
-             SF1=DEG2RAD*SFEC(I)
+             SL1Sta=DEG2RAD*SLEC(I)
+             SF1Sta=DEG2RAD*SFEC(I)
 c            CALL CPP(XEC(I),YEC(I),SL1,SF1,SL0,SF0)
-             XEC(I) = R*(SL1-SL0)*COS(SF0)
-             YEC(I) = R*SF1
+             XEC(I) = R*(SL1Sta-SL0)*COS(SF0)
+             YEC(I) = R*SF1Sta
            ENDIF
         ENDDO
 C
@@ -1056,11 +1056,11 @@ C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
 
-               SL1=DEG2RAD*SLEM(I)
-               SF1=DEG2RAD*SFEM(I)
+               SL1Sta=DEG2RAD*SLEM(I)
+               SF1Sta=DEG2RAD*SFEM(I)
 c     CALL CPP(XEM(I),YEM(I),SL1,SF1,SL0,SF0)
-               XEM(I) = R*(SL1-SL0)*COS(SF0)
-               YEM(I) = R*SF1
+               XEM(I) = R*(SL1Sta-SL0)*COS(SF0)
+               YEM(I) = R*SF1Sta
             ENDIF
          ENDDO
         
@@ -1324,7 +1324,7 @@ C---------------------------------------------------------------------
 C
       IMPLICIT NONE
       integer :: nbytes = 0
-      REAL(8) SL0,SL1,SF0,SF1
+      REAL(8) SL1Sta,SF1Sta
       INTEGER I,J,K,M,N                                        ! loop counters
       
       REAL(8) :: STATIME
@@ -1471,10 +1471,10 @@ C  kmd48.33bc changed to -2 and I3DSD not equal to 0
             DO I=1,NSTA3DD
                READ(15,80) STA3DDLOC(I)
                READ(STA3DDLOC(I),*) SL3DD(I),SF3DD(I)
-               SL1=DEG2RAD*SL3DD(I)
-               SF1=DEG2RAD*SF3DD(I)
-               X3DD(I) = R*(SL1-SL0)*COS(SF0)
-               Y3DD(I) = R*SF1
+               SL1Sta=DEG2RAD*SL3DD(I)
+               SF1Sta=DEG2RAD*SF3DD(I)
+               X3DD(I) = R*(SL1Sta-SL0)*COS(SF0)
+               Y3DD(I) = R*SF1Sta
             ENDDO
          ENDIF
 
@@ -1529,10 +1529,10 @@ C  kmd48.33 changed to -2
             DO I=1,NSTA3DV
                READ(15,80) STA3DVLOC(I)
                READ(STA3DVLOC(I),*) SL3DV(I),SF3DV(I)
-               SL1=DEG2RAD*SL3DV(I)
-               SF1=DEG2RAD*SF3DV(I)
-               X3DV(I) = R*(SL1-SL0)*COS(SF0)
-               Y3DV(I) = R*SF1
+               SL1Sta=DEG2RAD*SL3DV(I)
+               SF1Sta=DEG2RAD*SF3DV(I)
+               X3DV(I) = R*(SL1Sta-SL0)*COS(SF0)
+               Y3DV(I) = R*SF1Sta
             ENDDO
          ENDIF
 
@@ -1586,10 +1586,10 @@ C  kmd48.33 changed to -2
             DO I=1,NSTA3DT
                READ(15,80) STA3DTLOC(I)
                READ(STA3DTLOC(I),*) SL3DT(I),SF3DT(I)
-               SL1=DEG2RAD*SL3DT(I)
-               SF1=DEG2RAD*SF3DT(I)
-               X3DT(I) = R*(SL1-SL0)*COS(SF0)
-               Y3DT(I) = R*SF1
+               SL1Sta=DEG2RAD*SL3DT(I)
+               SF1Sta=DEG2RAD*SF3DT(I)
+               X3DT(I) = R*(SL1Sta-SL0)*COS(SF0)
+               Y3DT(I) = R*SF1Sta
             ENDDO
          ENDIF
 

@@ -42,6 +42,8 @@ C
 C     GRID14 section
       REAL(8)  ,ALLOCATABLE ::    X(:),Y(:),SLAM(:),SFEA(:)
       REAL(SZ) ,ALLOCATABLE ::   DP(:)
+      REAL(8) SL0,SF0            ! center of cpp projection, in radians
+      REAL(8), ALLOCATABLE :: SL1(:),SF1(:) ! nodal coordinates, in radians   
 C
 C     BARRIER14 section
       REAL(SZ) ,ALLOCATABLE ::  BAR1(:,:),BAR2(:,:),BAR3(:,:)
@@ -402,6 +404,8 @@ C
       nbytes = nbytes + 4*mnp
       ALLOCATE ( X(MNP),Y(MNP),DP(MNP),SLAM(MNP),SFEA(MNP) )
       nbytes = nbytes + 40*mnp
+      ALLOCATE ( SL1(MNP),SF1(MNP)) 
+      nbytes = nbytes + 16*mnp
       ALLOCATE ( NNEG(3,MNE) )
       nbytes = nbytes + 12*mne
       ALLOCATE ( NVDLL(MNOPE),NBDV(MNOPE,MNETA) )
