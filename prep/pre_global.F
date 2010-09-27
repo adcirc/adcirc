@@ -28,8 +28,9 @@ C     PARM14 section
                                      ! Nodes of Segment K
       INTEGER,ALLOCATABLE::NBVV(:,:) ! NBVV(K,I) Global Node Number of 
 C                                    ! I-th Node on Land Boundary Segment K
-      INTEGER,ALLOCATABLE::IBTYPE(:) ! IBTYPE(K) Type of Global Land Boundary 
-                                     ! Segment K 
+      INTEGER,ALLOCATABLE::IBTYPE(:) ! Type of discharge boundary segment K 
+
+      INTEGER,ALLOCATABLE::IBTYPEE(:) ! Type of elevation boundary segment K 
       INTEGER,ALLOCATABLE::IBCONNR(:,:)
       INTEGER,ALLOCATABLE::LBCODE(:) ! LBCODE(I) Boundary Type of Land Boundary
                                      ! Node I
@@ -113,8 +114,9 @@ C
       CHARACTER(80)  OUTGEMSG,OUTGVMSG,OUTGCMSG,OUTGWMSG
       CHARACTER(80)  HARFRMSG,HARPARMSG,OUTHARMSG,HSTARMSG
       CHARACTER(80)  SOLVMSG,WSMSG1,WSMSG2
-      CHARACTER*80,ALLOCATABLE :: STAELOC(:),STAVLOC(:),STACLOC(:)
-      CHARACTER*80,ALLOCATABLE :: STAMLOC(:),HAFNAM(:),HAFREMSG(:)
+      CHARACTER(132),ALLOCATABLE :: STAELOC(:),STAVLOC(:),STACLOC(:)
+      CHARACTER(132),ALLOCATABLE :: STAMLOC(:)
+      CHARACTER*80,ALLOCATABLE :: HAFNAM(:),HAFREMSG(:)
       CHARACTER*80,ALLOCATABLE :: TIPOTAG(:),BOUNTAG(:),FBOUNTAG(:)
       CHARACTER*80,ALLOCATABLE :: ALPHA1(:),ALPHA2(:),FREQMSG(:),
      &  QNMSG(:,:)
@@ -298,6 +300,8 @@ C                                      ! Boundary Nodes on PE
 C                                      ! Node on Land Boundary Segment K on PE
       INTEGER,ALLOCATABLE::IBTYPEP(:,:)! IBTYPEP(K,PE) Type Land Boundary 
 C                                      ! Segment K on PE (0=mainland,1=island)
+      INTEGER,ALLOCATABLE::IBTYPEEP(:,:)! IBTYPEEP(K,PE) Type Elev Boundary 
+C                                      ! Segment K on PE 
       INTEGER,ALLOCATABLE::LBCODEP(:,:)! LBCODEP(I,PE) Boundary Type of Land 
 C                                      ! Boundary Node I on PE
       INTEGER,ALLOCATABLE::NFLUXFP(:)
@@ -408,8 +412,8 @@ C
       nbytes = nbytes + 16*mnp
       ALLOCATE ( NNEG(3,MNE) )
       nbytes = nbytes + 12*mne
-      ALLOCATE ( NVDLL(MNOPE),NBDV(MNOPE,MNETA) )
-      nbytes = nbytes + 4*(mneta+1)*mnope
+      ALLOCATE ( NVDLL(MNOPE),NBDV(MNOPE,MNETA),IBTYPEE(MNOPE) )
+      nbytes = nbytes + 4*(mneta+1)*mnope + 4*mnope
       ALLOCATE ( NVELL(MNBOU),NBVV(MNBOU,0:MNVEL),IBTYPE(MNBOU) )
       nbytes = nbytes + 4*mnbou + 4*(mnvel+2)*mnbou
       ALLOCATE ( IBCONNR(MNBOU,MNVEL),LBCODE(MNVEL) )
@@ -463,8 +467,9 @@ C
       ALLOCATE ( NSTAEP(MNPROC),NSTAVP(MNPROC),NSTACP(MNPROC) )
       ALLOCATE ( NSTAMP(MNPROC) )
       nbytes = nbytes + 32*mnproc
-      ALLOCATE ( NOPEP(MNPROC),NETAP(MNPROC),NVDLLP(MNOPE) )
-      nbytes = nbytes + 8*mnproc + 4*mnope
+      ALLOCATE ( NOPEP(MNPROC),NETAP(MNPROC),NVDLLP(MNOPE),
+     &           IBTYPEEP(MNOPE,MNPROC))
+      nbytes = nbytes + 8*mnproc + 4*mnope + 4*mnope*mnproc
       ALLOCATE ( NBDVP(MNOPE,MNETA) )
       nbytes = nbytes + 4*mnope*mneta
       ALLOCATE ( NBOUP(MNPROC),NVELP(MNPROC),NVELLP(MNBOU) )

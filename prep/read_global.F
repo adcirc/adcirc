@@ -103,8 +103,9 @@ C...Read Number of Nodes on Open Boundary Segment
 C...and Segment Nodes Numbers
 C...
       J=0
+      IBTYPEE(:) = 0 !jgf49.32 initialize all elements of the array to zero
       DO K=1,NOPE
-         READ(14,80) NVDLLMSG(K)
+         READ(14,80) NVDLLMSG(K) !jgf49.32: TODO: IBTYPEE should be read here
          NUMLINES=NUMLINES+1
          READ(NVDLLMSG(K),*) NVDLL(K)
          DO I=1,NVDLL(K)
@@ -268,6 +269,7 @@ C
 
       SUBROUTINE READ15() 
       USE PRE_GLOBAL 
+      USE GLOBAL, ONLY : parse, a2f
       USE PRESIZES, ONLY : SZ
       use memory_usage
       IMPLICIT NONE
@@ -275,7 +277,7 @@ C
 C    ===================================================================
 C      MCF ADDITION FOR READING AND WRITING STATION INFO IN NETCDF
 C
-      REAL, EXTERNAL              :: a2f
+C      REAL, EXTERNAL              :: a2f
       CHARACTER(132) STATLINE
       CHARACTER(50) LVAR(3)
 C
@@ -789,7 +791,7 @@ C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
 #endif
       DO I=1,NSTAE
-         READ(15,80) STAELOC(I)
+         READ(15,'(A132)') STAELOC(I)
          IF(ICS.EQ.1) THEN
 
 C     ==================================================================
@@ -881,7 +883,7 @@ C
       
 
         DO I=1,NSTAV
-           READ(15,80) STAVLOC(I)
+           READ(15,'(A132)') STAVLOC(I)
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
@@ -901,7 +903,7 @@ C
         
       ELSE
         DO I=1,NSTAV
-           READ(15,80) STAVLOC(I)
+           READ(15,'(A132)') STAVLOC(I)
            
            IF(NOUTV.NE.3) THEN
            
@@ -959,10 +961,10 @@ C
 C
         DO I=1,NSTAC
            IF (ICS.EQ.1) THEN
-             READ(15,80) STACLOC(I)
+             READ(15,'(A132)') STACLOC(I)
              READ(STACLOC(I),*) XEC(I),YEC(I)
            ELSE
-             READ(15,80) STACLOC(I)
+             READ(15,'(A132)') STACLOC(I)
              READ(STACLOC(I),*) SLEC(I),SFEC(I)
              SL1Sta=DEG2RAD*SLEC(I)
              SF1Sta=DEG2RAD*SFEC(I)
@@ -1011,7 +1013,7 @@ C     ==================================================================
 C     
 #endif
          DO I=1,NSTAM
-            READ(15,80) STAMLOC(I)
+            READ(15,'(A132)') STAMLOC(I)
 !            READ(15,'(A132)') STAMLOC(I)
 !            WRITE(6,*)"STAMLOC(I) ================",I,STAMLOC(I)
             IF (ICS.EQ.1) THEN
@@ -1815,289 +1817,5 @@ C-----------------------------------------------------------------------
       END SUBROUTINE CoordToEle
 C-----------------------------------------------------------------------
 
-
-
-      !=================================================================
-      !=================================================================
-      !=================================================================
-      !      =====                                            =====
-      !      =====            SUBROUTINE PARSE                =====
-      !      =====                                            =====
-      !=================================================================
-      !=================================================================
-      !=================================================================
-
-      !=================================================================
-      ! This subroutines parse station names so they can passed on to
-      ! the NetCDF I/O module of ADCIRC and be written out in the netCDF
-      ! output files.
-      !
-      ! Revision history:
-      !
-      ! Date      Programmer                       Description of change
-      ! ----      ----------                       ---------------------
-      ! 12/16/07  Cristina Forbes, PSGS @ UNC-IMS  Wrote parser
-      !                                            based on character
-      !                                            manipulation subroutines
-      !                                            developed at the
-      !                                            University of Oslo, Norway
-      !=================================================================
-      subroutine parse (line, lvar)
-      CHARACTER(*) LINE
-      CHARACTER(132) L
-      CHARACTER(50) LVAR(3)
-      INTEGER LS, L1, LEN1
-
-      LS=1
-      L=TRIM(ADJUSTL(LINE))
-      LEN1=LEN(L)
-
-!     EXTRACT STATION DATA FROM LINE
-
-      DO I=1,2
-!        DO I=1,3
-         L1=LEN(TRIM(ADJUSTL(L(1:INDEX(L," ")-1))))
-         LVAR(I)=ADJUSTL(L(LS:L1))
-         L=ADJUSTL(L(L1+1:LEN(L)))
-      END DO
-      LVAR(3)=L
-      END SUBROUTINE parse
-
-
-      FUNCTION front_trim(buf) RESULT(res)
-      IMPLICIT NONE
-      !// Arguments
-      CHARACTER(LEN=*), INTENT(IN)   :: buf
-      INTEGER                        :: res
-      !// Local variables
-      INTEGER                        :: i, lng
-      lng = LEN_TRIM(buf)
-      DO i = 1, lng
-         IF (buf(i:i) .NE. ' ') THEN
-            res = i
-            RETURN
-         END IF
-      END DO
-      END FUNCTION front_trim
-
- 
-
-      FUNCTION a2i(buf) RESULT(res)
-      IMPLICIT NONE
-      !// Arguments
-      CHARACTER(LEN=*), INTENT(IN)   :: buf
-      INTEGER                        :: res
-      !// Local variables
-      INTEGER                        :: i, foffs, lng
-      INTEGER, EXTERNAL              :: front_trim
-      LOGICAL                        :: neg
-      neg = .FALSE.
-      lng = LEN_TRIM(buf)
-      foffs = front_trim(buf)
-      res = 0
-      DO i = foffs, lng
-         IF(buf(i:i) .EQ. '-') THEN
-            neg = .TRUE.
-           CONTINUE
-         END IF
-         IF(buf(i:i) .GE. '0' .AND. buf(i:i) .LE. '9' .AND.
-     &        buf(i:i) .NE. ' ') THEN
-            res = res * 10
-            res = res + (IACHAR(buf(i:i)) - 48)
-         END IF
-      END DO
-      IF (neg) THEN
-C         res = res * -1  !jgf48.10 g95 did not like this for some reason
-          res = -res
-      END IF
-      END FUNCTION a2i
-
-
-      FUNCTION a2f(buf) RESULT(res)
-      IMPLICIT NONE
-      !// Arguments
-      CHARACTER(LEN=*)               :: buf
-      REAL                           :: res
-      !// Local variables
-      INTEGER                        :: i,j,k,itmp, foffs, lng
-      INTEGER                        :: p, q
-      REAL                           :: rtmp
-      INTEGER, EXTERNAL              :: front_trim
-      INTEGER, EXTERNAL              :: a2i
-      LOGICAL                        :: neg
-      LOGICAL                        :: exponential
-      neg = .FALSE.
-      exponential = .FALSE.
-      lng = LEN_TRIM(buf)
-      foffs = front_trim(buf)
-      k = INDEX(buf,'.')
-      p = INDEX(buf,'e')
-      q = INDEX(buf,'E')
-      IF(p /= -1 .AND. p /= 0) THEN
-         exponential = .TRUE.
-      END IF
-      IF(q /= -1 .AND. q /= 0) THEN
-         exponential = .TRUE.
-         p = q
-      END IF
-      IF (k /= -1 .AND. k /= 0) THEN
-         !// We have a floating point number
-         itmp = 0
-         !// Get the integer part of the number
-         DO i = foffs, k - 1
-            IF(buf(i:i) .EQ. '-') THEN
-               neg = .TRUE.
-               CONTINUE
-            END IF
-            IF(buf(i:i) .GE. '0' .AND. buf(i:i) .LE. '9' .AND.
-     &           buf(i:i) .NE. ' ') THEN
-               itmp = itmp * 10
-               itmp = itmp + (IACHAR(buf(i:i)) - 48)
-            END IF
-         END DO
-         res = DBLE(itmp)
-         rtmp = 0.
-         q = 0
-         IF(.NOT. exponential) THEN
-!// We do not have an exponential number
-            DO i = LEN_TRIM(buf), k+1, -1
-               itmp = (IACHAR(buf(i:i)) - 48)
-               rtmp = rtmp + FLOAT(itmp)
-               rtmp = rtmp / 10.
-            END DO
-         ELSE
-!// We have an exponential number
-            DO i = p-1, k+1, -1
-               itmp = (IACHAR(buf(i:i)) - 48)
-               rtmp = rtmp + FLOAT(itmp)
-               rtmp = rtmp / 10.
-            END DO
-            q = a2i(buf(p+1:LEN_TRIM(buf)))
-         END IF
-         res = res + rtmp
-         IF(exponential) THEN
-            res = res * 10.**q
-         END IF
-         IF(neg) THEN
-C            res = res * -1  !jgf48.10 g95 did not like this for some reason
-             res = -res 
-         END IF
-      ELSE
-         !// We have an integer
-         res = REAL(a2i(buf))
-      END IF
-      END FUNCTION a2f
-
-
-      FUNCTION a2d(buf) RESULT(res)
-      IMPLICIT NONE
-      !// Arguments
-        CHARACTER(LEN=*)               :: buf
-        DOUBLE PRECISION               :: res
-!// Local variables
-        INTEGER                        :: i,j,k,itmp, foffs, lng
-        INTEGER                        :: p, q
-        DOUBLE PRECISION               :: dtmp
-        INTEGER, EXTERNAL              :: front_trim
-        INTEGER, EXTERNAL              :: a2i
-        LOGICAL                        :: neg
-        LOGICAL                        :: exponential
-        neg = .FALSE.
-        exponential = .FALSE.
-        lng = LEN_TRIM(buf)
-        foffs = front_trim(buf)
-        k = INDEX(buf,'.')
-        p = INDEX(buf,'e')
-        q = INDEX(buf,'E')
-        IF(p /= -1 .AND. p /= 0) THEN
-        exponential = .TRUE.
-        END IF
-        IF(q /= -1 .AND. q /= 0) THEN
-        exponential = .TRUE.
-        p = q
-        END IF
-        IF (k /= -1 .AND. k /= 0) THEN
-!// We have a floating point number
-        itmp = 0
-!// Get the integer part of the number
-        DO i = foffs, k - 1
-        IF(buf(i:i) .EQ. '-') THEN
-        neg = .TRUE.
-        CONTINUE
-        END IF
-        IF(buf(i:i) .GE. '0' .AND. buf(i:i) .LE. '9' .AND.
-     &  buf(i:i) .NE. ' ') THEN
-        itmp = itmp * 10
-        itmp = itmp + (IACHAR(buf(i:i)) - 48)
-        END IF
-        END DO
-        res = DBLE(itmp)
-        dtmp = 0.
-        q = 0
-        IF(.NOT. exponential) THEN
-!// We do not have an exponential number
-        DO i = LEN_TRIM(buf), k+1, -1
-        itmp = (IACHAR(buf(i:i)) - 48)
-        dtmp = dtmp + FLOAT(itmp)
-        dtmp = dtmp / 10.
-        END DO
-        ELSE
-!// We have an exponential number
-        DO i = p-1, k+1, -1
-        itmp = (IACHAR(buf(i:i)) - 48)
-        dtmp = dtmp + FLOAT(itmp)
-        dtmp = dtmp / 10.
-        END DO
-        q = a2i(buf(p+1:LEN_TRIM(buf)))
-        END IF
-        res = res + dtmp
-        IF(exponential) THEN
-        res = res * 10.**q
-        END IF
-        IF(neg) THEN
-C        res = res * -1 !jgf48.10 g95 did not like this for some reason
-         res = -res
-        END IF
-        ELSE
-!// We have an integer
-        res = DBLE(a2i(buf))
-        END IF
-        END FUNCTION a2d
-
-        SUBROUTINE i2a(IN2T, res)
-
-        IMPLICIT NONE
-!// Arguments
-        INTEGER, INTENT(IN)            :: IN2T
-        CHARACTER(LEN=*), INTENT(OUT)  :: res
-!// Local variables
-        INTEGER                        :: i,j,k
-        CHARACTER(LEN=80)              :: sbuf
-        sbuf = ' '
-        res = ' '
-        i = IN2T
-        k = 1
-        DO
-        j = MOD(i,10)
-        sbuf(k:k) = ACHAR(j+48)
-        i = i / 10
-        IF (i <= 0) THEN
-        EXIT
-        END IF
-        k = k + 1
-        END DO
-        k = LEN_TRIM(sbuf)
-        IF (k>1) THEN
-        j = k
-        i = 1
-        DO i = 1, k
-         res(i:i) = sbuf(j:j)
-         j = j - 1
-        END DO
-        ELSE
-        res(1:1) = sbuf(1:1)
-        END IF
-
-        END SUBROUTINE i2a
 
 

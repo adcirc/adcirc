@@ -3,6 +3,12 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.33   - 09/27/2010 - jgf - Fixes for netcdf: boundary data now written
+C             correctly by adcprep now; read_global.F now uses the parse()
+C             and a2f() subroutines from global.F instead of repeating them
+C             in read_global.F ... this allows adcprep to pick up the fixes
+C             that were made in global.F for parsing station names and also cuts
+C             down on the incidence of cut-and-pasted code in ADCIRC.
 C  v49.32   - 09/23/2010 - jgf - Fixes for netcdf: SLAM0 and SFEA0 
 C             as well as mesh boundaries. Now works in serial. Parallel
 C             should also work, but testing is required to confirm.

@@ -962,6 +962,10 @@ C
       !                                            manipulation subroutines
       !                                            developed at the
       !                                            University of Oslo, Norway
+      ! v49.29    Jason Fleming  Fixes to avoid placing leading exclamation
+      !                          points in the station names, and to make use
+      !                          of trailing exclamation points as station name
+      !                          terminators or comment separators.
       !=================================================================
       subroutine parse (line, lvar)
       IMPLICIT NONE

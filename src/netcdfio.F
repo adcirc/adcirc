@@ -2690,8 +2690,8 @@ C        NOPE
      &                     VAR_NOND)
          CALL check_err(iret)
 C        NETA
-         att_text = "total number of elevation specified & 
-     &                boundary nodes"
+         att_text = "total number of elevation specified  
+     &boundary nodes"
          iret = nf_put_att_text(ncid, myMesh%netanc_id, 'long_name',
      &          len_trim(att_text), trim(att_text)) 
          CALL check_err(iret)
@@ -2699,8 +2699,8 @@ C        NETA
      &                     VAR_NOND)
          CALL check_err(iret)
 C        NVDLL
-         att_text = "number of nodes in each elevation specified &
-     &              boundary segment"
+         att_text = "number of nodes in each elevation specified 
+     &boundary segment"
          iret = nf_put_att_text(ncid, myMesh%nvdllnc_id, 'long_name',
      &          len_trim(att_text), trim(att_text))
          CALL check_err(iret)
@@ -2716,8 +2716,8 @@ C        IBTYPEE
      &                      VAR_NOND)
          CALL check_err(iret)
 C        NBDV
-         att_text = "node numbers on each elevation specified boundary &
-     &               segment"
+         att_text = "node numbers on each elevation specified boundary 
+     &segment"
          iret = nf_put_att_text(ncid, myMesh%nbdvnc_id, 'long_name',
      &          len_trim(att_text), trim(att_text))
          CALL check_err(iret)
@@ -2727,8 +2727,8 @@ C        NBDV
       endif
       if (myMesh%nbounc.ne.0) then
 C        NBOU
-         att_text = "number of normal flow (discharge) specified &
-     &              boundary segments"
+         att_text = "number of normal flow (discharge) specified 
+     &boundary segments"
          iret = nf_put_att_text(ncid, myMesh%nbounc_id, 'long_name',
      &          len_trim(att_text), trim(att_text))
          CALL check_err(iret)
@@ -2736,9 +2736,9 @@ C        NBOU
      &                      VAR_NOND)
          CALL check_err(iret)
 C        NVEL
-         att_text = "total number of normal flow specified boundary   &
-     &              nodes including both the front and back nodes on &
-     &              internal barrier boundaries"
+         att_text = "total number of normal flow specified boundary 
+     &nodes including both the front and back nodes on internal barrier
+     & boundaries"
          iret = nf_put_att_text(ncid, myMesh%nvelnc_id, 'long_name',
      &          len_trim(att_text), trim(att_text))
          CALL check_err(iret)
@@ -3332,7 +3332,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE setADCIRCParameters(
      &   base_date_p, STATNAME_p, STATNAMEV_p, STATNAMEM_p, NE_G_p, 
      &   NBOU_p, NVEL_p, NOPE_p, NP_G_p, SLAM0_p, SFEA0_p, NBVV_p,
-     &   NVDLL_p, NBDV_p, NVELL_p, X_p, Y_p, SLAM_p, SFEA_p,
+     &   NVDLL_p, NBDV_p, NVELL_p, X_p, Y_p,
+     &   IBTYPE_p, IBTYPEE_p, SLAM_p, SFEA_p,
      &   NODECODE_p, G_p, FileFmtRev_p, FileFmtMinor_p,
      &   FileFmtMajor_p, im_p, iestp_p, nscoue_p, ivstp_p, nscouv_p,
      &   icstp_p, nscouc_p, ipstp_p, iwstp_p, nscoum_p, igep_p,
@@ -3347,6 +3348,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL, ONLY : 
      &   base_date, STATNAME, STATNAMEV, STATNAMEM, NE_G, NBOU,
      &   NVEL, NOPE, NP_G, SLAM0, SFEA0, NBVV, NVDLL, NBDV, NVELL, X, Y,
+     &   IBTYPE, IBTYPEE,
      &   SLAM, SFEA, SNAMLEN, RAD2DEG, NODECODE, G, FileFmtRev,
      &   FileFmtMinor, FileFmtMajor, im, iestp, nscoue, ivstp, nscouv,
      &   icstp, nscouc, ipstp, iwstp, nscoum, igep, nscouge, igvp,
@@ -3377,6 +3379,8 @@ C     Declare the argument variables coming in from adcprep.
       INTEGER, intent(in) :: NVELL_p(:)
       REAL(8), intent(in) :: X_p(:) 
       REAL(8), intent(in) :: Y_p(:) 
+      INTEGER, intent(in) :: IBTYPE_p(:)
+      INTEGER, intent(in) :: IBTYPEE_p(:)     
       REAL(8), intent(in) :: SLAM_p(:)
       REAL(8), intent(in) :: SFEA_p(:)
       INTEGER, intent(in) :: NODECODE_p(:)
@@ -3467,7 +3471,7 @@ C
       NP_G = NP_G_p
       SLAM0 = SLAM0_p 
       SFEA0 = SFEA0_p
-      ALLOCATE(NBVV(NBOU_p,NVEL_p))
+      ALLOCATE(NBVV(NBOU_p,0:NVEL_p))
       NBVV = NBVV_p
       ALLOCATE(NVDLL(NOPE_p))
       NVDLL = NVDLL_p
@@ -3479,6 +3483,10 @@ C
       X = X_p
       ALLOCATE(Y(NP_G_p)) 
       Y = Y_p 
+      ALLOCATE(IBTYPEE(NOPE_p))
+      IBTYPEE = IBTYPEE_p
+      ALLOCATE(IBTYPE(NBOU_p)) 
+      IBTYPE = IBTYPE_p 
       ALLOCATE(SLAM(NP_G_p))
       SLAM = SLAM_p 
       ALLOCATE(SFEA(NP_G_p))
@@ -3552,7 +3560,7 @@ C
       cf = cf_p
       eslm = eslm_p
       neta = neta_p
-
+C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Returning from setADCIRCParameters."
 #endif
