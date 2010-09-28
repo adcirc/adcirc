@@ -2029,7 +2029,7 @@ C         WRITE(16,*) "FINISH collectFullDomainArray"
 
       SELECT CASE (NHSTAR)
 
-      CASE(1) ! nonportable binary (1 for backwards compatibility)
+      CASE(1,67,68) ! 1=nonportable binary
 
          NPX = NP_G
          NEX = NE_G

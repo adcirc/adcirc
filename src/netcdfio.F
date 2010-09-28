@@ -39,9 +39,7 @@
       include 'netcdf.inc'
 C
       DOUBLE PRECISION, PARAMETER ::  doubleval(1)=-99999.d0
-
-      INTEGER ncmode !jgf: 0 for adcprep, 1 for serial and 2 for parallel?
-      
+C
       CHARACTER*35, PARAMETER ::
      &    VAR61_LN='water surface elevation above geoid'
       CHARACTER*23, PARAMETER :: VAR61_ST='water_surface_elevation'
@@ -483,8 +481,12 @@ C     Initialize netCDF output file, creating a new one if necessary.
       CALL createNetCDFOutputFile(sta%ncid, sta%myFile, lun, sta%myTime,
      &                            descript)
 C     
-C     RETURN if we didn't need to create a file.
+C     if we didn't need to create a file, update metadata and return
       IF (sta%myFile%createFile.eqv..false.) THEN
+         CALL updateMetaData(sta%ncid,sta%myFile)
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from initStation."
+#endif
          RETURN
       ENDIF     
 C
@@ -924,17 +926,22 @@ C     Initialize netCDF output file, creating a new one if necessary.
       CALL createNetCDFOutputFile(dat%ncid, dat%myFile, lun, dat%myTime,
      &                            descript)
 C     
-C     RETURN if we didn't need to create a file.
+C     if we didn't need to create a file, update metadata and return
       IF (dat%myFile%createFile.eqv..false.) THEN
+         CALL updateMetaData(dat%ncid,dat%myFile)
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from initNodalData."
+#endif
          RETURN
       ENDIF     
+C
       CALL initNetCDFCoord(dat%myMesh)
       CALL defineMeshVariables(dat%ncid, dat%myMesh)
-
+c
       SELECT CASE(lun)
-
+C
          CASE(63)
-
+C
             dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
             dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
             iret = nf_def_var(dat%ncid, 'zeta', NF_DOUBLE,
@@ -1465,7 +1472,7 @@ C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Entering writeStation."
 #endif
-      iret = NF_OPEN(sta%myFile%FILENAME, NF_WRITE, sta%ncid)
+      iret = nf_open(sta%myFile%FILENAME, NF_WRITE, sta%ncid)
       CALL check_err(iret)   
 !   
 !     Inquire variables
@@ -1488,9 +1495,6 @@ C     next location in the netcdf file
      &       starti, counti, sta%myTime%timenc)
       CALL check_err(iret)
 C
-!     Update Global Attributes
-C      CALL updateMetaData(sta%ncid)
-C      IF (ncmode.eq.0) go to 9999 ! i.e., if called by adcprep?
       SELECT CASE(lun)
 
       CASE(61)
@@ -1591,7 +1595,7 @@ C
       write(*,*) "DEBUG: Entering writeNodalData."
 #endif
 C
-      iret = NF_OPEN(dat%myFile%FILENAME, NF_WRITE, dat%ncid)
+      iret = nf_open(dat%myFile%FILENAME, NF_WRITE, dat%ncid)
       CALL check_err(iret)   
 !   
 !     Inquire variables
@@ -1614,9 +1618,7 @@ C     next location in the netcdf file
       iret = nf_put_vara_DOUBLE(dat%ncid, dat%myTime%timenc_id,
      &       starti,counti, dat%myTime%timenc)
       CALL check_err(iret)
-!
-!     Update Global Attributes
-C      CALL updateMetaData(dat%ncid)
+C
       SELECT CASE(lun)
 
       CASE(63)
@@ -3129,13 +3131,14 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Updates data that are common to all netCDF files
 C     in the specified file.
 C-----------------------------------------------------------------------
-      subroutine updateMetaData(ncid)
+      subroutine updateMetaData(ncid,myFile)
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : ihot, nramp, rnday, dramp, a00, b00, c00, h0
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
       USE VERSION
       IMPLICIT NONE
       INTEGER, intent(in) :: ncid 
+      type(fileData), intent(inout) :: myFile 
 C
       INTEGER iret   ! Error status return
 !     date_string variables for time attribute
@@ -3148,6 +3151,9 @@ C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Entering updateMetaData."
 #endif
+C     Open existing NetCDF file
+      iret = nf_open(myFile%FILENAME, NF_WRITE, ncid)
+      CALL check_err(iret)   
 C
       iret = NF_REDEF (ncid)
       CALL check_err(iret)
@@ -3192,7 +3198,9 @@ C
       CALL check_err(iret)
       iret = NF_ENDDEF (ncid)
       CALL check_err(iret)
-
+C     now close the updated netcdf file
+      iret = nf_close(ncid)
+      CALL check_err(iret)
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Returning from updateMetaData."
 #endif
@@ -3279,37 +3287,6 @@ C-----------------------------------------------------------------------
 #endif
 C-----------------------------------------------------------------------
       end subroutine check_err
-C-----------------------------------------------------------------------
-
-
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E   S E T   N E T C D F   M O D E  
-C-----------------------------------------------------------------------
-C     jgf49.17.02 Allocates memory for NetCDF operations.
-C-----------------------------------------------------------------------
-      SUBROUTINE setNetCDFMode(mnproc)
-      IMPLICIT NONE
-      INTEGER, intent(in) :: mnproc
-C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering setNetCDFMode."
-#endif
-C
-      ncmode = 1     ! reasonable default
-      IF (mnproc.eq.0) THEN
-         ncmode = 0  ! for adcprep?
-      ENDIF
-      IF (mnproc.eq.1) THEN
-         ncmode = 1  ! for serial
-      ENDIF
-      IF (mnproc.gt.1) THEN
-         ncmode = 2  ! for parallel
-      ENDIF          
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from setNetCDFMode."
-#endif
-C-----------------------------------------------------------------------
-      END SUBROUTINE setNetCDFMode
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------

@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.34   - 09/28/2010 - jgf - Fixes for netcdf: added call to update meta
+C             data when hotstarting; eliminated ncmode variable, the 
+C             subroutine that sets it, and all references to it throughout
+C             adcirc and adcprep.
 C  v49.33   - 09/27/2010 - jgf - Fixes for netcdf: boundary data now written
 C             correctly by adcprep now; read_global.F now uses the parse()
 C             and a2f() subroutines from global.F instead of repeating them

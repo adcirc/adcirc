@@ -45,7 +45,7 @@ C
 C   Start Addition for netCDF by MCF 5/18/08
 #ifdef NETCDF
       USE NETCDFIO, ONLY :
-     &     ncmode, setNetCDFMode, readHotstart
+     &     readHotstart
 #endif
 C   End Addition for netCDF by MCF 5/18/08
       USE NodalAttributes, ONLY : 
@@ -122,12 +122,6 @@ C
      &       (NHSTAR.LT.0) .OR. (IHOT.LT.0) ) THEN
          useNetCDF = .TRUE.
       ENDIF
-C
-C     ASSIGN value to NCMODE according to the number of processors
-C     for NETCDF - MCF
-#ifdef NETCDF
-      CALL setNetCDFMode(MNPROC)
-#endif
 C...  
 C......READ IN 2DDI HOT START INITIAL CONDITION OVER WHOLE DOMAIN
 C......THIS FILE ALWAYS HAS A RECL=8 BECAUSE IT IS ASSUMED THAT THE HARMONIC
@@ -138,8 +132,7 @@ C     Determine if the hot start file exists.
       FileFound=.False.
 !      IF(myproc.eq.0) PRINT *,"IHOT = ", IHOT, " ncmode = ",ncmode
 #ifdef NETCDF
-      IF (IHOT.eq.67.OR.
-     & (IHOT.eq.-67.and.ncmode.eq.2) ) THEN
+      IF ((IHOT.eq.67).OR.(IHOT.eq.-67)) THEN
 #else
       IF (IHOT.eq.67) THEN
 #endif     
@@ -147,8 +140,7 @@ C     Determine if the hot start file exists.
          INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.67',EXIST=FileFound)
       ENDIF
 #ifdef NETCDF
-      IF (IHOT.eq.68.OR.
-     & ( IHOT.eq.-68.and.ncmode.eq.2) ) THEN
+      IF ((IHOT.eq.68).OR.(IHOT.eq.-68)) THEN
 #else
       IF (IHOT.eq.68) THEN
 #endif
@@ -157,7 +149,7 @@ C     Determine if the hot start file exists.
       ENDIF
 
 #ifdef NETCDF
-      if (ncmode.eq.1.or.MNPROC.EQ.1) THEN
+      if (MNPROC.EQ.1) THEN
 !      IF(myproc.eq.0) PRINT *,"======serial netcdf========",ncmode
 !      IF(myproc.eq.0) PRINT *,"3- IHOT = ", IHOT, " ncmode = ",ncmode
          IF(IHOT.EQ.-67)THEN 
@@ -190,9 +182,8 @@ C     Determine if the hot start file exists.
 C
 C     Now open the hot start (unit 67 or 68) file.
 #ifdef NETCDF
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68. or.
-     &    (ncmode.eq.2.and.
-     &    ( IHOT.EQ.-67.or. IHOT.EQ.-68 ) ) )THEN 
+      IF (IHOT.EQ.67.OR.IHOT.EQ.68. or.   
+     &     IHOT.EQ.-67.or. IHOT.EQ.-68 ) THEN 
 #else
       IF (IHOT.EQ.67.OR.IHOT.EQ.68) THEN 
 #endif
@@ -208,11 +199,11 @@ C        start reading binary hot start file
 !     &     ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
 
 #ifdef NETCDF
-         IF(IHOT.EQ.67.or.(ncmode.eq.2.and.IHOT.EQ.-67) ) THEN 
+         IF(IHOT.EQ.67.or.(IHOT.EQ.-67) ) THEN 
               OPEN(67,FILE=TRIM(INPUTDIR)//'/'//'fort.67',
      &        ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
       
-         ELSEIF(IHOT.EQ.68.or.(ncmode.eq.2.and.IHOT.EQ.-68) ) THEN
+         ELSEIF(IHOT.EQ.68.or.(IHOT.EQ.-68) ) THEN
               OPEN(68,FILE=TRIM(INPUTDIR)//'/'//'fort.68',
      &        ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
          ENDIF
@@ -254,7 +245,7 @@ C
 C   READ NETCDF HOTSTART FILE IF SERIAL VERSION IS BEING USED
 
 #ifdef NETCDF
-      IF(ncmode.eq.1) THEN                     ! serial
+      IF(MNPROC.eq.1) THEN                     ! serial
          IF (IHOT.EQ.-67.OR.IHOT.EQ.-68) THEN  ! start reading netCDF hot start file
             call readHotstart(ABS(IHOT))
             DO I=1,MNP
@@ -286,7 +277,7 @@ C     Now read the hot start file.
        IF(( IHOT.EQ.-67.or. IHOT.EQ.-68 )) IHOTNC=IHOT
              ! start reading binary hot start file
       IF (IHOT.EQ.67.OR.IHOT.EQ.68. or.
-     &    (ncmode.eq.2.and.
+     &    (MNPROC.gt.1.and.
      &    ( IHOT.EQ.-67.or. IHOT.EQ.-68 ) ) )THEN  
 #else
       IF (IHOT.EQ.67.OR.IHOT.EQ.68) THEN
@@ -1582,7 +1573,7 @@ C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
 #ifdef NETCDF
       IF (IHOT.EQ.67.OR.IHOT.EQ.68. OR.
-     &    (ncmode.eq.2. and. (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
+     &    ((IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
 #else
       IF (IHOT.EQ.67.OR.IHOT.EQ.68) THEN
 #endif
@@ -1596,7 +1587,7 @@ C...
      
       ENDIF 
 #ifdef NETCDF      
-      IF (ncmode.ne.0. and. (IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
+      IF ((IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
          NCIESTP=IESTP
          NCCOUE=NSCOUE
       ENDIF
@@ -1670,7 +1661,7 @@ C....GO TO THE PROPER PLACE IN THE VELOCITY STATION OUTPUT FILE
 C...
 #ifdef NETCDF
       IF (IHOT.EQ.67.OR.IHOT.EQ.68.OR.
-     &    (ncmode.eq.2. and. (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
+     &    ((IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
 #else
       IF (IHOT.EQ.67.OR.IHOT.EQ.68.)THEN
 #endif
@@ -1684,7 +1675,7 @@ C...
      
       ENDIF
 #ifdef NETCDF     
-      IF (ncmode.ne.0. and. (IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
+      IF ((IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
          NCIVSTP=IVSTP
          NCCOUV=NSCOUV
       ENDIF
@@ -1758,7 +1749,7 @@ C....GO TO THE PROPER PLACE IN THE CONCENTRATION STATION OUTPUT FILE
 C...
 #ifdef NETCDF
       IF (IHOT.EQ.67.OR.IHOT.EQ.68. OR.
-     &    (ncmode.eq.2. and. (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
+     &    ( (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
 #else
       IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
 #endif
@@ -1843,7 +1834,7 @@ C....GO TO THE PROPER PLACE IN THE METEOROLOGICAL STATION OUTPUT FILE
 C...
 #ifdef NETCDF
       IF (IHOT.EQ.67.OR.IHOT.EQ.68.OR.
-     &    (ncmode.eq.2. and. (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
+     &    ( (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
 #else
       IF (IHOT.EQ.67.OR.IHOT.EQ.68) THEN
 #endif
@@ -1860,7 +1851,7 @@ C...
      
       ENDIF
 #ifdef NETCDF
-      IF (ncmode.ne.0. and. (IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
+      IF ( (IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
          NCIWSTP=IWSTP
          NCIPSTP=IPSTP
          NCCOUM=NSCOUM
@@ -1965,7 +1956,7 @@ C....GO TO THE PROPER PLACE IN THE GLOBAL ELEVATION OUTPUT FILE
 C...
 #ifdef NETCDF
       IF (IHOT.EQ.67.OR.IHOT.EQ.68. OR.
-     &    (ncmode.eq.2. and. (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
+     &    ( (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
 #else
       IF (IHOT.EQ.67.OR.IHOT.EQ.68) THEN
 #endif
@@ -1988,7 +1979,7 @@ C...
 
        ENDIF
 #ifdef NETCDF
-      IF (ncmode.ne.0. and. (IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
+      IF ( (IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
          NCIGEP=IGEP
          NCCOUGE=NSCOUGE
 !         IF (MYPROC.EQ.0) PRINT *,"N-HS: NCIGEP == ", NCIGEP
@@ -2090,7 +2081,7 @@ C....GO TO THE PROPER PLACE IN THE GLOBAL VELOCITY OUTPUT FILE
 C...
 #ifdef NETCDF
         IF (IHOT.EQ.67.OR.IHOT.EQ.68. OR.
-     &    (ncmode.eq.2. and. (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
+     &    ( (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
 #else
         IF (IHOT.EQ.67.OR.IHOT.EQ.68) THEN
 #endif
@@ -2109,7 +2100,7 @@ C...
      
         ENDIF
 #ifdef NETCDF
-      IF (ncmode.ne.0. and. (IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
+      IF ( (IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
          NCIGVP=IGVP
          NCCOUGV=NSCOUGV
       ENDIF
@@ -2287,7 +2278,7 @@ C....GO TO THE PROPER PLACE IN THE GLOBAL METEOROLOGICAL OUTPUT FILES
 C...
 #ifdef NETCDF
       IF (IHOT.EQ.67.OR.IHOT.EQ.68. OR.
-     &    (ncmode.eq.2. and. (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
+     &    ( (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
 #else
       IF (IHOT.EQ.67.OR.IHOT.EQ.68) THEN
 #endif
@@ -2307,7 +2298,7 @@ C...
      
       ENDIF
 #ifdef NETCDF
-      IF (ncmode.ne.0. and. (IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
+      IF ( (IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
          NCIGWP=IGWP
          NCIGPP=IGPP
          NCCOUGW=NSCOUGW
