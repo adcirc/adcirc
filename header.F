@@ -3,6 +3,16 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.36   - 10/04/2010 - rjw - 1) Modifications to 3D turbulence: addition of 
+C             enhanced surface mixed layer.  Variety of chioces hardcoded in
+C             vsmy.f.  Surface roughness in fort.15 is now the minimum
+C             surface roughness.  2) Modifications to 3D wetting and drying
+C             in timestep.f, modified wetting velocity formulation.  
+C             3) Added ability to run 3D in GWCE explicit mode.  GWCE is 
+C             solved outside 3D routine, IM type 611122 enables all of the 
+C             same GWCE explicit settings as 111122 except indicates to run 
+C             3D instead of 2D.  To implement also change GWCE time weighting 
+C             factors to 0.0 1.0 0.0 and change solver flag to 0.
 C  v49.35   - 10/04/2010 - jgf - Fixes for netcdf: Fixed dimensioning of 
 C             NVELL during adcprep (was causing segfault on ec95d.grd among
 C             others); streamlined netcdf module by removing redundant

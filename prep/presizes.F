@@ -489,6 +489,9 @@ c        C3DDSS = .TRUE.
       CASE DEFAULT
          IF ((IM.GE.111111).AND.(IM.LE.534322)) THEN 
             C2DDI = .TRUE.                              
+         ELSEIF ((IM.GE.611111).AND.(IM.LE.634322)) THEN
+           C3D  = .TRUE.
+           C3DVS  = .TRUE.
          ELSE
             print *, "model type not supported"
             stop

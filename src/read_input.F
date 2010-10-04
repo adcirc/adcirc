@@ -458,7 +458,7 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
 c     - - - - - - - - - - - - - - - - - - - - - - - -
 c     f i n e   g r a i n e d   o p t i o n s ( i m )
 c     - - - - - - - - - - - - - - - - - - - - - - - -
-      ELSEIF ((IM.GE.111111).AND.(IM.LE.534322)) THEN
+      ELSEIF ((IM.GE.111111).AND.(IM.LE.634322)) THEN
          IMDig1 = IM/100000
          IMDig2 = (IM - 100000*IMDig1)/10000
          IMDig3 = (IM - 100000*IMDig1 - 10000*IMDig2)/1000
@@ -492,6 +492,16 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
             CGWCE_LS_2PartSV  = .TRUE.
             WRITE(16,*) '        2 Part, velocity based lateral ',
      &           'symmetric stress in GWCE'
+         ELSEIF(IMDig1.EQ.6) THEN
+            CGWCE_LS_KGQ       = .TRUE.
+            C3D           = .TRUE.
+            C3DVS         = .TRUE.
+            ILump=0
+          WRITE(16,*) '    ADCIRC is configured for a Barotropic 3D ',
+     &        'run using: New GWCE and velocity based ',
+     &        'Momentum Eqs.'
+           WRITE(16,*) '        Kolar-Gray, flux based lateral ',
+     &           'stress in GWCE'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
          IF(IMDig2.EQ.1) THEN

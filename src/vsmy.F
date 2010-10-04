@@ -633,50 +633,42 @@ c     equation at each level in the vertical
 c     Compute the equivalent linear slip coefficient
 C RJW 02252009 changed KP for ISlip =2 
 C     For ISlip = 1, KP is the equivalent linear slip coefficient
-C     For ISlip = 2, KP is the minimum equivalent linear slip coefficient
-     
+C     For ISlip = 2, KP is the minimum equivalent quadratic slip coefficient
          IF(ISlip.EQ.1) KSlip=KP
          IF(ISlip.EQ.2) THEN
-
 c.RJW merged 08282008 Casey 071219: Let's get funky.  
 c.RJW enable this modification
 C    Comment out the following:
 C           KSlip=KP*ABS(q(NH,1))
 C     and add the following to base the drag coefficient on the actual
 C     physics of the boundary layer.
-C
 C.RJW.02042009.. for log layer lets use the bottom roughness Z0B as set in the fort.15 file
 C to do this we nedd to define a minimmum depth for this calculation
 C ---
-
             IF(
      &          ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
      &                *(DP(NH)+IFNLFA*ETA2(NH)) )
-     &          .LT. 1.D0 )THEN
-
+     &      .LT. 1.D0 )THEN
                 KSlip = (1.D0 / ( (1.D0/0.41D0) *
      &                  LOG( ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
      &                     *( DP(NH)+IFNLFA*ETA2(NH) ) + Z0B )
      &                  / (Z0B) ) ) )**2.D0
      &                * ABS(Q(NH,1))
-
             ELSE
-
                 KSlip = (1.D0 / ( (1.D0/0.41D0) *
      &                  LOG( (1.D0+Z0B)
      &                  / (Z0B) ) ) )**2.D0
      &                * ABS(Q(NH,1))
-
             ENDIF
-
-             IF(KSlip.GT.0.1d0) KSlip=0.1d0
-             IF(KSlip.LT.KP) KSlip=KP
+              IF(KSlip.GT.0.1d0) KSlip=0.1d0
+              IF(KSlip.LT.0.0d0) KSlip=0.0d0
+C              IF(KSlip.LT.KP) KSlip=KP
          ENDIF
          IF(ISlip.EQ.3) THEN
              KSlip=KP*ABS(Q(NH,1))
+              IF(KSlip.GT.0.1d0) KSlip=0.1d0
+              IF(KSlip.LT.0.0d0) KSlip=0.0d0
 
-            IF(KSlip.GT.0.1d0) KSlip=0.1d0
-            IF(KSlip.LT.0.0d0) KSlip=0.0d0
          ENDIF
 
 c     Set up the RHS forcing vector Fr and LHS matrix in compact storage
@@ -718,7 +710,7 @@ c     (Mkm1,Mk,Mkp1)
          ENDDO
 C RJW 09/01/2009 RJW k = NFEN-1 
 C            try to fix this by setting k=NFEN
-         k=NFEN
+C         k=NFEN
          Fr(NFEN) = (CCR*q(NH,k-1)
      &        -DelT*(LAdvec(k-1)+LStress(k-1)+BPG(NH,k-1)))*Inm(k,1)
      &        + (CCR*q(NH,k)
@@ -2097,6 +2089,8 @@ c Z0B         : bottom roughness/mixing length (see USER's notes
 c               below)
 c Z0S         : surface roughness/mixing length (see USER's notes
 c               below)
+c Z0Sw        : surface roughness/mixing length (see USER's notes
+c               below) if Z0S is greater than or equal to water depth
 c
 c Coeff block:
 c
@@ -2224,6 +2218,8 @@ Cjgfdebug      USE GLOBAL_3DVS, EXCEPT_BSX => BSX ,EXCEPT_BSY => BSY
       REAL(8) :: H,H_crit
 
       REAL(SZ) :: bsx_loc,bsy_loc,WSX,WSY
+      REAL(SZ) :: Z0Sw
+      REAL(SZ),SAVE :: H2
 Cjgfdebug      REAL(SZ),SAVE :: Sh,H2
 C  kmd48.33bc need to change Sh to an array for transport
       REAL(SZ),SAVE,ALLOCATABLE :: Sh(:)
@@ -2256,6 +2252,9 @@ C     jgf46.12 gave them SAVE and PARAMETER properties (from jgf45.18)
       REAL(SZ), SAVE :: drhodz1, drhodz2, BSlay, SSlay, db, db2, ds, ds2
       REAL(SZ), SAVE :: qprev, qlprev, Gh, tdiss, elmax
       REAL(SZ), SAVE :: coef1, coef2, coef3, coef4, coef5
+      REAL(SZ) :: USTARS
+
+      USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
 
 c     allocate local arrays
       if(.not. turb_allocated) then
@@ -2271,6 +2270,23 @@ c     allocate local arrays
          allocate(Sh(MNFEN))  ! kmd48.33bc added Sh as an array
          turb_allocated = .true.
       endif
+
+          Z0Sw=Z0S
+C  RJW taken from Jones monismith 2008 
+C modify suyrface roughness length to account for wave breaking
+C         Z0Sw = 1400.0d0*USTARS*USTARS/g   ! ( Bye (1988)  , Craig and Banner (1994))
+C          Z0Sw = 14000.0d0*USTARS*USTARS/g  ! (Stipps et al. 2005 extended to wave breaking)
+          Z0Sw = 200000.0d0*USTARS*USTARS/g  ! ( O(10^5)  Stacy et al. (1999) for wave ages > 25)
+C         Z0Sw = 1.3*Wave Height            ! (sig wave height) (Jones and Monosmith (2007) k-omega)  
+C         Z0Sw = (0.25-1.0)*Wave Height     ! (sig wave height) (Burchard (2001) k-epsilon ) 
+
+       if (Z0Sw .gt. H-Z0B) then
+          Z0Sw = H-Z0B ! bound Z0S to water depth
+       else
+         Z0Sw=Z0Sw
+       endif
+       if (Z0Sw .lt. Z0S ) Z0Sw = Z0S
+
 c     
 c     At time step 1, set flags and initialize variables
 c     
@@ -2281,7 +2297,8 @@ c         il = 2  ! length scale flag, = 2 for length scale from algebraic eq. (
 c         il = 3  ! length scale flag, = 3 for length scale from algebraic eq. (see below)
 
       if(istart.eq.1) then
-         ibc = 0 ! surface b.c. flag, = 0 for specified stress, = 1 for no flux
+        ! ibc = 0 ! surface b.c. flag, = 0 for specified stress, = 1 for no flux
+         ibc = 1 ! surface b.c. flag, = 0 for specified stress, = 1 for no flux
          if((nws.eq.0).or.(nws.eq.100)) ibc =1 
 
 c     set constants and other parameters
@@ -2301,13 +2318,13 @@ c     initialization for a cold start only
 c     initilize l to a minimal value if computed from q2l equation
                if(il.eq.1) then
 c     l(nh,n)=rkap*Z0B                        !rog way
-                  l(nh,n)=rkap*(Z0B*(a-sigma(n))-Z0S*(b-sigma(n)))/amb
+                  l(nh,n)=rkap*(Z0B*(a-sigma(n))-Z0Sw*(b-sigma(n)))/amb
                endif
 c     set l to an exponential type length scale (davies and xing)
                if(il.eq.2)then
                   sig = (sigma(n)+1.d0)/amb
                   rl1 = 1.d0/(rkap*(sig*H+Z0B)*exp(-amb*sig))
-                  rl2 = 1.d0/(rkap*(H-sig*H+Z0S))
+                  rl2 = 1.d0/(rkap*(H-sig*H+Z0Sw))
                   l(nh,n) = 1.d0/(rl1+rl2)
                endif
 c     set l to a linear variation with kz over lower 15% with constant above
@@ -2338,7 +2355,7 @@ C istart = 1, for these nodes
         B123 = B1**(2.d0/3.d0)
         Sq = 0.2d0 ! initialize the stability constant stability function
          do n = 1,nfen
-               l(nh,n) = rkap*(Z0B*(a-sigma(n))-Z0S*(b-sigma(n)))/amb 
+               l(nh,n) = rkap*(Z0B*(a-sigma(n))-Z0Sw*(b-sigma(n)))/amb 
 c now initialize the Brunt-Vaisala freq squared = 0 if density not considered
          if(iden.eq.0) then
                BVfreq2(n)=0.d0
@@ -2355,7 +2372,7 @@ C now check q20 it may also be zero
 c         if(il.eq.2)then
 c                  sig = (sigma(n)+1.d0)/amb
 c                  rl1 = 1.d0/(rkap*(sig*H+Z0B)*exp(-amb*sig))
-c                  rl2 = 1.d0/(rkap*(H-sig*H+Z0S))
+c                  rl2 = 1.d0/(rkap*(H-sig*H+Z0Sw))
 c                  l(nh,n) = 1.d0/(rl1+rl2)
 c               endif
 
@@ -2413,7 +2430,7 @@ c     q2l eqn
 
       if(il.eq.1)then
          BSlay=Z0B
-         SSlay=Z0S
+         SSlay=Z0Sw
          do n = 1,nfen
             db=(HOamb*(sigma(n)-b)+BSlay)*rkap
             db2=db*db
@@ -2426,6 +2443,10 @@ c     q2l eqn
 c     Compute the stability functions, eddy viscosity and partial
 c     turbulence production & dissipation terms using information from
 c     the previous time step
+C RJW rweaver add wave production of TKE 
+C alpha * USTARS*USTARS*USTARS, USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
+C and alpha = 60 - 250 
+ 
 
       do n = 1,nfen
          q2prev(n)=q20(nh,n)
@@ -2447,6 +2468,10 @@ c     Kq(n)=Km(n)*Sq/Sm(n)                           !rog way
          prod(n)=Km(n)*spgrad2(n)-Kh(n)*BVfreq2(n)
          diss(n)=qprev/(B1*rmlen(n))
 c     diss(n)=q2prev(n)*Sm(n)/(Km(n)*B1)             !rog way
+CRJW ADDTOTEST
+           if (n .eq. nfen) then
+             prod(n)=prod(n)+(150.0*USTARS*USTARS*USTARS)
+           endif
       enddo
 
 c     Compute the q2 LHS Matrix and RHS Load Vector
@@ -2540,7 +2565,7 @@ c     Compute length scale
          do n=1,nfen
             sig = (sigma(n)+1.d0)/amb
             rl1 = 1.d0/(rkap*(sig*H+Z0B)*exp(-amb*sig))
-            rl2 = 1.d0/(rkap*(H-sig*H+Z0S))
+            rl2 = 1.d0/(rkap*(H-sig*H+Z0Sw))
             l(nh,n) = 1.d0/(rl1+rl2)
 
             if(l(nh,n).lt.0.001) l(nh,n)=0.001
@@ -2614,7 +2639,7 @@ c     Transfer to global array and check for stability limit
          do n = 2,nfen-1
             l(nh,n) = q2l(n)/q2(n)
             if(l(nh,n).lt.0.) 
-     &           l(nh,n)=rkap*(Z0B*(a-sigma(n))-Z0S*(b-sigma(n)))/amb
+     &           l(nh,n)=rkap*(Z0B*(a-sigma(n))-Z0Sw*(b-sigma(n)))/amb
             if(l(nh,n).gt.H) l(nh,n)=H
             if((iden.ne.0).and.(BVfreq2(n).gt.0.0)) then
                elmax = 0.53D0*sqrt(q2(n))/sqrt(BVfreq2(n))
