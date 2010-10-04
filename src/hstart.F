@@ -34,9 +34,9 @@ C**************************************************************************
 C     
       USE GLOBAL
       USE GLOBAL_IO
-      USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT, qsurf
-
-
+      USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT,
+     &    qsurf
+C
       USE SIZES
       USE HARM
       USE WIND
@@ -44,8 +44,7 @@ C
       USE RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
 C   Start Addition for netCDF by MCF 5/18/08
 #ifdef NETCDF
-      USE NETCDFIO, ONLY :
-     &     readHotstart
+      USE NETCDFIO, ONLY : readNetCDFHotstart
 #endif
 C   End Addition for netCDF by MCF 5/18/08
       USE NodalAttributes, ONLY : 
@@ -247,7 +246,7 @@ C   READ NETCDF HOTSTART FILE IF SERIAL VERSION IS BEING USED
 #ifdef NETCDF
       IF(MNPROC.eq.1) THEN                     ! serial
          IF (IHOT.EQ.-67.OR.IHOT.EQ.-68) THEN  ! start reading netCDF hot start file
-            call readHotstart(ABS(IHOT))
+            call readNetCDFHotstart(ABS(IHOT))
             DO I=1,MNP
 C               populate adcirc arrays from the netcdf file
 C               eta1 (I)=eta11(I, 1)

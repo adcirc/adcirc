@@ -3,6 +3,14 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.35   - 10/04/2010 - jgf - Fixes for netcdf: Fixed dimensioning of 
+C             NVELL during adcprep (was causing segfault on ec95d.grd among
+C             others); streamlined netcdf module by removing redundant
+C             dimensioning and ids for multidimensional nodal and station
+C             data; fixed error handling and added graceful exit when 
+C             netcdf file from adcprep is not present when padcirc starts;
+C             added and significantly rearranged code for writing netcdf
+C             hotstart files. 
 C  v49.34   - 09/28/2010 - jgf - Fixes for netcdf: added call to update meta
 C             data when hotstarting; eliminated ncmode variable, the 
 C             subroutine that sets it, and all references to it throughout

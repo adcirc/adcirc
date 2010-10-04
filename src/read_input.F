@@ -4658,8 +4658,55 @@ C     This option will be used in testing ADCIRC's hot start capabilities.
       READ(15,*) NHSTAR,NHSINC
       WRITE(16,99655)
 99655 FORMAT(////,1X,'HOT START OUTPUT INFORMATION OUTPUT : ')
-      IF((NHSTAR.NE.0).AND.(NHSTAR.NE.1).AND.(NHSTAR.NE.3).AND.
-     &     (NHSTAR.NE.67).AND.(NHSTAR.NE.68) ) THEN
+C
+      SELECT CASE(NHSTAR)
+
+      CASE(0) 
+         WRITE(16,34646)
+34646    FORMAT(///,5X,'NO HOT START OUTPUT WILL BE GENERATED')
+
+      CASE(1,2,3,67,68,267,268,367,368) ! the allowable nonzero NHSTAR values
+#ifndef NETCDF
+         IF ((NHSTAR.EQ.3).OR.(NHSTAR.EQ.367).OR.(NHSTAR.EQ.368)) THEN
+            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+               WRITE(ScreenUnit,99660) NHSTAR
+            ENDIF
+            WRITE(16,99660) NHSTAR
+99660       FORMAT('ERROR: This version of ADCIRC does not have ',
+     &      'NetCDF enabled, but NHSTAR was set to ',I3,'. Execution ',
+     &      'teminated.')
+#ifdef CMPI
+            CALL msg_fini()
+#endif
+            STOP
+         ENDIF
+#endif 
+         IF(NHSINC.EQ.0) THEN
+            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99666)
+            WRITE(16,99666)
+99666       FORMAT(////,1X,'!!!!!!!!!! WARNING - FATAL ERROR !!!!!!!!!',
+     &        //,1X,'YOU HAVE SELECTED A HOT START INTERVAL OF ',
+     &        'ZERO LENGTH.',
+     &        /,1X,'NHSTAR = 1 AND NHSINC = 0 ARE INCOMPATIBLE ',
+     &        'UNIT 15 INPUT PARAMETERS',
+     &        /,1X,'PLEASE CHECK YOUR INPUT',
+     &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
+#ifdef CMPI
+            call msg_fini()
+#endif
+            STOP
+         ENDIF
+         WRITE(16,34636) NHSINC
+34636    FORMAT(/,5X,'HOT START OUTPUT WILL BE WRITTEN TO UNIT',
+     &        ' 67 OR 68 EVERY ',I5,' TIME STEPS')
+         IF((NHSTAR.EQ.67).OR.(NHSTAR.EQ.68).OR.(NHSTAR.EQ.67).OR.
+     &      (NHSTAR.EQ.267).OR.(NHSTAR.EQ.268).OR.
+     &      (NHSTAR.EQ.367).OR.(NHSTAR.EQ.368) ) THEN
+            WRITE(16,34626) NHSTAR
+34626       FORMAT(/,5X,'ADCIRC will stop after writing to unit ',I2)
+         ENDIF
+C
+      CASE DEFAULT  ! not an allowable NHSTAR value
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99665)
          WRITE(16,99665)
 99665    FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
@@ -4682,46 +4729,7 @@ C     This option will be used in testing ADCIRC's hot start capabilities.
 #endif
             STOP
          ENDIF
-      ENDIF
-      IF((NHSTAR.GT.0).AND.(NHSINC.EQ.0)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99666)
-         WRITE(16,99666)
-99666    FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
-     &        //,1X,'YOU HAVE SELECTED A HOT START INTERVAL OF ',
-     &        'ZERO LENGTH.',
-     &        /,1X,'NHSTAR = 1 AND NHSINC = 0 ARE INCOMPATIBLE ',
-     &        'UNIT 15 INPUT PARAMETERS',
-     &        /,1X,'PLEASE CHECK YOUR INPUT',
-     &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-#ifdef CMPI
-            call msg_fini()
-#endif
-         STOP
-      ENDIF
-      IF(NHSTAR.EQ.0) THEN
-         WRITE(16,34646)
-34646    FORMAT(///,5X,'NO HOT START OUTPUT WILL BE GENERATED')
-      ENDIF
-      IF(NHSTAR.GT.0) THEN
-         WRITE(16,34636) NHSINC
-34636    FORMAT(/,5X,'HOT START OUTPUT WILL BE WRITTEN TO UNIT',
-     &        ' 67 OR 68 EVERY ',I5,' TIME STEPS')
-      ENDIF
-      IF(NHSTAR.EQ.67 .OR. NHSTAR.EQ.68 ) THEN
-         WRITE(16,34626) NHSTAR
-34626    FORMAT(/,5X,'ADCIRC will stop after writing to unit ',I2)
-      ENDIF
-!
-!      COMMENTED THIS OUT AND ADDED OPTION FOR NETCDF HOTSTART FILES BELOW - MCF 6/11/08 
-!      if (IHOT   <  0) NHSTAR = 0
-
-!      PRINT *,"read_input.F: ---------- NHSTAR,NHSINC ", NHSTAR,NHSINC
-
-       if (IHOT. LT.0.AND.(IHOT.NE.-67.AND.IHOT.NE.-68)) NHSTAR = 0
-       
-!      PRINT *,"read_input.F: ---------- NHSTAR,NHSINC ", NHSTAR,NHSINC
-!
-!
+      END SELECT
       if (NHSINC <= 0) NHSINC = 1  ! rtm 46.xx NHSINC must have a
                                    ! reasonable value even when not
                                    ! generating hot start files.

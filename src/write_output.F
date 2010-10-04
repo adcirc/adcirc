@@ -33,6 +33,7 @@ C----------------------------------------------------------------------
       USE WRITER, ONLY : WRITE_GBL_FILE_THROUGH_WRITER, 
      $     FLUSH_WRITERS, WRITER_STOREONE, 
      $     WRITER_STORETWO, WRITER_STORE63, WRITER_INIT
+      USE MESSENGER, ONLY : msg_fini, msg_lbcast
 #endif
 #ifdef NETCDF
       USE NETCDFIO, ONLY : allocNetCDFArrays
@@ -103,7 +104,7 @@ Casey 090302: Added these arrays for output of radiation stress gradients.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNXOut_g(:)     
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNYOut_g(:)
 #endif
-
+      LOGICAL, dimension(8) :: error
       LOGICAL, SAVE :: FirstCall = .true.
       
       IF (FirstCall) THEN
@@ -460,16 +461,26 @@ C        maxrs.63
          RSMaxDescript % file_name             = 'maxrs.63'
 C
 #ifdef NETCDF
+         error = .false.
          IF ((useNetCDF.eqv..true.).and.(myProc.eq.0)) THEN
-            CALL allocNetCDFArrays(61,ElevStaDescript)
-            CALL allocNetCDFArrays(62,VelStaDescript)
-            CALL allocNetCDFArrays(63,ElevDescript)
-            CALL allocNetCDFArrays(64,VelDescript)
-            CALL allocNetCDFArrays(71,PrStaDescript)
-            CALL allocNetCDFArrays(72,WindVelStaDescript)
-            CALL allocNetCDFArrays(73,PrDescript)
-            CALL allocNetCDFArrays(74,WindVelDescript)
+            CALL allocNetCDFArrays(61,ElevStaDescript, error(1))
+            CALL allocNetCDFArrays(62,VelStaDescript, error(2))
+            CALL allocNetCDFArrays(63,ElevDescript, error(3))
+            CALL allocNetCDFArrays(64,VelDescript, error(4))
+            CALL allocNetCDFArrays(71,PrStaDescript, error(5))
+            CALL allocNetCDFArrays(72,WindVelStaDescript, error(6))
+            CALL allocNetCDFArrays(73,PrDescript, error(7))
+            CALL allocNetCDFArrays(74,WindVelDescript, error(8))
          ENDIF
+#ifdef CMPI
+         CALL msg_lbcast(error,8)
+         DO i=1,8
+            IF (error(i).eqv..true.) THEN
+               CALL msg_fini()
+               STOP
+            ENDIF
+         ENDDO
+#endif
 #endif
 C
          FirstCall = .false.
@@ -1825,26 +1836,16 @@ C-----------------------------------------------------------------------
       USE MESSENGER
 #endif
 #ifdef NETCDF
-       USE NETCDFIO, ONLY : initHotstart, allocNetCDFArrays, 
-     &                      writeOutArrayNetCDF
-
+       USE NETCDFIO, ONLY : initNetCDFHotstart, 
+     &                      writeNetCDFHotstart
        USE NodalAttributes, ONLY :
      &     nolibf, nwp, tau0, cf, eslm
-
 #endif
 
       IMPLICIT NONE
       REAL(8), intent(in) :: Time
       INTEGER, intent(in) :: IT
-C
-C     START ADDITIONS FOR NETCDF by MCF
-C
-      INTEGER num_records, num_recordse ! to save in the netcdf file
       INTEGER I,J,K
-C
-C     FINISH ADDITIONS FOR NETCDF by MCF
-C
-
       type(OutputDataDescript_t) :: descript 
       LOGICAL TEST_HOTSTART     !jgf45.07 used for testing hot start capability
       INTEGER npx, nex
@@ -1864,12 +1865,14 @@ C
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CH1_g(:)
       INTEGER, SAVE, ALLOCATABLE, TARGET :: NodeCode_g(:)
       INTEGER, SAVE, ALLOCATABLE, TARGET :: NOFF_g(:)
+      LOGICAL error
 C
       LOGICAL, SAVE :: FirstCall = .true.
+      error = .false.
       
-      WRITE(16,*) "***********WRITE HOTSTART*********************"
-      WRITE(16,*) "NHSTAR = ", NHSTAR
-      WRITE(16,*) "FirstCall = ", FirstCall
+      WRITE(screenUnit,*) "INFO: *********WRITE HOTSTART**************"
+      WRITE(screenUnit,*) "INFO: NHSTAR = ", NHSTAR
+      WRITE(screenUnit,*) "INFO: FirstCall = ", FirstCall
       IF (FirstCall) THEN
          write(16,*) 'Allocating Elev1Descript' 
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
@@ -1970,7 +1973,14 @@ C
          NOFFDescript % imap                 => IMAP_EL_LG
          NOFFDescript % iarray               => NOFF
          NOFFDescript % iarray_g             => NOFF_g
-
+C
+#ifdef NETCDF
+         CALL initNetCDFHotstart(hss%lun, Elev1Descript,
+     &       Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
+     &       NodeCodeDescript, NOFFDescript, error)
+C        jgf49.35 TODO: Allocate arrays to write harmonic analysis data
+C        jgf49.35 TODO: Allocate arrays to write 3D data
+#endif
          FirstCall = .false.
       ENDIF
 
@@ -1978,27 +1988,18 @@ C     collect up the data from subdomains if running in parallel
 ckmd48.33bc - changed the NOFF and NodeCode calls
 #ifdef CMPI
       IF (WRITE_LOCAL_HOT_START_FILES.eqv..FALSE.) THEN
-C         WRITE(16,*) "START collectFullDomainArray"
-C         WRITE(16,*) 
-C     &    'About to collectFullDomainArrays for hotstart file.'
-C         WRITE(16,*) "collectFullDomainArray Elev1Descript"
          CALL collectFullDomainArray(Elev1Descript, packOne, unpackOne)
-C         WRITE(16,*) "collectFullDomainArray Elev2Descript"
          CALL collectFullDomainArray(Elev2Descript, packOne, unpackOne)
-C         WRITE(16,*) "collectFullDomainArray VelDescript"
          CALL collectFullDomainArray(VelDescript, packTwo, unpackTwo)
          IF (IM.eq.10) THEN
             CALL collectFullDomainArray(CH1Descript, packOne, unpackOne)
          ENDIF
-C         WRITE(16,*) "collectFullDomainArray EtaDiscDescript"
          CALL collectFullDomainArray(EtaDiscDescript, 
      &             packOne, unpackOne)
-C         WRITE(16,*) "collectFullDomainIntArray NodeCodeDescript"
          CALL collectFullDomainIntArray(NodeCodeDescript, 
-     &             packOneInt, unpackOneInt,1)
-C         WRITE(16,*) "collectFullDomainIntArray NOFFDescript"
+     &             packOneInt, unpackOneInt, 1)
          CALL collectFullDomainIntArray(NOFFDescript, 
-     &             packOneInt, unpackOneInt,2)
+     &             packOneInt, unpackOneInt, 2)
 !         TCM v48.4638 20090902 -- NOFF could have the wrong
 !         values after globalizing because there are no rules for which
 !         processor owns an element and Noff is an elemental value
@@ -2016,91 +2017,39 @@ C         WRITE(16,*) "collectFullDomainIntArray NOFFDescript"
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             WHERE (NOFF_G.gt.1) NOFF_G = 1
          endif
-!
-C         WRITE(16,*) "FINISH collectFullDomainArray"
-!         IF ( (MyProc.eq.0) ) THEN
-!           DO I=1, NP_G
-!             PRINT *,"before case 1 ",I, Elev1Descript % array_g(I)
-!             PRINT *,"before case 1 ",I, Elev1Descript % array_g(I)
-!          ENDDO
-!         ENDIF
       ENDIF
 #endif
-
+C
       SELECT CASE (NHSTAR)
-
+C
       CASE(1,67,68) ! 1=nonportable binary
-
+C        jgf49.35 Values of 67 and 68 are used for testing and cause the
+C        program to exit immediately after writing the hotstart file.
          NPX = NP_G
          NEX = NE_G
-!         PRINT *, "write_output: NPX - 1", NPX
-!         PRINT *, "write_output: NEX - 1", NEX
-
-         if (MNPROC == 1 .or. 
+         if ((MNPROC.eq.1) .or. 
      &      (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN
             NPX = NP
             NEX = NE
-!            PRINT *, "write_output: NPX - 2", NPX
-!            PRINT *, "write_output: NEX - 2", NEX
          endif
-C         write(16,*) "MNPROC is ",MNPROC !jgfdebug
-C         write(16,*) "WRITE_LOCAL_HOT_START_FILES is ",
-C     &      WRITE_LOCAL_HOT_START_FILES !jgfdebug
          IF ((MYPROC.eq.0).or.
      &         (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN 
-C            write(16,*) "writing beginning of hs file" ! jgfdebug
 
             OPEN(hss % lun ,FILE=TRIM(HOTSTARTDIR)//'/'//hss % filename,
      $      ACCESS='DIRECT',STATUS='REPLACE',RECL=8)
             IHOTSTP=1
-!           print *, FileFmtVersion
             WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion 
             IHOTSTP = IHOTSTP + 1
-!           print *, IM
             WRITE(hss % lun,REC=IHOTSTP) IM   ; IHOTSTP = IHOTSTP + 1
-!           print *, TIME
             WRITE(hss % lun,REC=IHOTSTP) TIME ; IHOTSTP = IHOTSTP + 1
-!           print *, IT
             WRITE(hss % lun,REC=IHOTSTP) IT   ; IHOTSTP = IHOTSTP + 1
-!           print *, NPX
             WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
-!           print *, NEX
             WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
-!           print *, NPX
             WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
-!           print *, NEX
             WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
          ENDIF
-!          PRINT *,"========================before bin=================="
-!          PRINT *, "==== write_output: IM = ", IM
-!          PRINT *, "==== write_output: TIME = ", TIME
-!          PRINT *, "==== write_output: IM = ", IT
-!          PRINT *, "==== write_output: NPX = ", NPX
-!          PRINT *, "==== write_output: NEX = ", NEX
-!          PRINT *, "==== write_output: IESTP = ", IESTP
-!          PRINT *, "==== write_output: NSCOUE = ", NSCOUE
-!          PRINT *, "==== write_output: IVSTP = ", IVSTP
-!          PRINT *, "==== write_output: NSCOUV = ", NSCOUV
-!          PRINT *, "==== write_output: ICSTP = ", ICSTP
-!          PRINT *, "==== write_output: NSCOUC = ", NSCOUC
-!          PRINT *, "==== write_output: IPSTP = ", IPSTP
-!
-!          PRINT *, "==== write_output: IWSTP = ", IWSTP
-!          PRINT *, "==== write_output: NSCOUM = ", NSCOUM
-!          PRINT *, "==== write_output: IGEP = ", IGEP
-!          PRINT *, "==== write_output: NSCOUGE = ", NSCOUGE
-!          PRINT *, "==== write_output: IGVP = ", IGVP
-!
-!          PRINT *, "==== write_output: NSCOUGV = ", NSCOUGV
-!          PRINT *, "==== write_output: IGCP = ", IGCP
-!          PRINT *, "==== write_output: NSCOUGC = ", NSCOUGC
-!          PRINT *, "==== write_output: IGPP = ", IGPP
-!          PRINT *, "==== write_output: IGWP = ", IGWP
-!          PRINT *, "==== write_output: NSCOUGW = ", NSCOUGW
-!          PRINT *,"========================before bin=================="
          IF ((MNPROC.gt.1).and.(MYPROC.eq.0).and.
      &         (WRITE_LOCAL_HOT_START_FILES.eqv..FALSE.)) THEN 
-            write(16,*) "writing fd hotstart file" !jgfdebug
             DO I=1, Elev1Descript % num_fd_records
                WRITE(hss % lun,REC=IHOTSTP) Elev1Descript % array_g(I)
                IHOTSTP=IHOTSTP+1
@@ -2138,34 +2087,23 @@ C            write(16,*) "writing beginning of hs file" ! jgfdebug
          ENDIF
          IF ((MNPROC.eq.1).or.
      &      (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN
-C           write(16,*) "writing sd hotstart file" ! jgfdebug
-C           WRITE(16,*) '=================ETA1:===================='
             DO I=1, Elev1Descript % num_records_this
-C              WRITE(16,*) I, ETA1(I)
                WRITE(hss % lun,REC=IHOTSTP) Elev1Descript % array(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
-C           WRITE(16,*) '=================ETA2:===================='
             DO I=1, Elev2Descript % num_records_this
-C              WRITE(16,*) I, ETA2(I)
                WRITE(hss % lun,REC=IHOTSTP) Elev2Descript % array(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
-C           WRITE(16,*) '=================ETADisc:===================='
             DO I=1, EtaDiscDescript % num_records_this
-C              WRITE(16,*) I, ETADisc(I)
                WRITE(hss % lun,REC=IHOTSTP) EtaDiscDescript % array(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
-C           WRITE(16,*) '=================UU2:===================='
             DO I=1, VelDescript % num_records_this
-C              WRITE(16,*) I, UU2(I)
                WRITE(hss % lun,REC=IHOTSTP) VelDescript % array(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
-C           WRITE(16,*) '=================VV2:===================='
            DO I=1, VelDescript % num_records_this
-C              WRITE(16,*) I, VV2(I) 
                WRITE(hss % lun,REC=IHOTSTP) VelDescript % array2(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
@@ -2175,15 +2113,11 @@ C              WRITE(16,*) I, VV2(I)
                   IHOTSTP=IHOTSTP+1
                ENDDO
             ENDIF
-C           WRITE(16,*) '=================NodeCode:===================='
             DO I=1, NodeCodeDescript % num_records_this
-C              WRITE(16,*) I, NodeCode(I)
                WRITE(hss % lun,REC=IHOTSTP) NodeCodeDescript % iarray(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
-C           WRITE(16,*) '=================NOFF:===================='
             DO I=1, NOFFDescript % num_records_this
-C              WRITE(16,*) I, NOFF(I)
                WRITE(hss % lun,REC=IHOTSTP) NOFFDescript % iarray(I)
                IHOTSTP=IHOTSTP+1
             ENDDO
@@ -2216,40 +2150,10 @@ C
             WRITE(hss % lun,REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
          ENDIF
-!          PRINT *,"========================before bin=================="
-!          PRINT *, "==== write_output: IM = ", IM
-!          PRINT *, "==== write_output: TIME = ", TIME
-!          PRINT *, "==== write_output: IM = ", IT
-!          PRINT *, "==== write_output: NPX = ", NPX
-!          PRINT *, "==== write_output: NEX = ", NEX
-!          PRINT *, "==== write_output: IESTP = ", IESTP
-!          PRINT *, "==== write_output: NSCOUE = ", NSCOUE
-!          PRINT *, "==== write_output: IVSTP = ", IVSTP
-!          PRINT *, "==== write_output: NSCOUV = ", NSCOUV
-!          PRINT *, "==== write_output: ICSTP = ", ICSTP
-!          PRINT *, "==== write_output: NSCOUC = ", NSCOUC
-!          PRINT *, "==== write_output: IPSTP = ", IPSTP
-!
-!          PRINT *, "==== write_output: IWSTP = ", IWSTP
-!          PRINT *, "==== write_output: NSCOUM = ", NSCOUM
-!          PRINT *, "==== write_output: IGEP = ", IGEP
-!          PRINT *, "==== write_output: NSCOUGE = ", NSCOUGE
-!          PRINT *, "==== write_output: IGVP = ", IGVP
-
-!          PRINT *, "==== write_output: NSCOUGV = ", NSCOUGV
-!          PRINT *, "==== write_output: IGCP = ", IGCP
-!          PRINT *, "==== write_output: NSCOUGC = ", NSCOUGC
-!          PRINT *, "==== write_output: IGPP = ", IGPP
-!          PRINT *, "==== write_output: IGWP = ", IGWP
-!          PRINT *, "==== write_output: NSCOUGW = ", NSCOUGW
-!          PRINT *,"========================after bin==================="
-          
-
 C...
 C...  ADD IN 3D STUFF IF APPROPRIATE
 C...
          IF (C3D) THEN
-C            write(16,*) "Writing 3D hotstart information." ! jgfdebug
             CALL HSTART3D_OUT()
          ENDIF
 !This code is not supported yet.
@@ -2297,67 +2201,154 @@ C
       endif                   !  charmv
         
 #endif
+         IF ((MYPROC.eq.0).or.
+     &         (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN 
+            CLOSE(hss%lun)
+         ENDIF
         
-      CASE(2) ! ascii?
-         write(16,*) 'ASCII Hotstart file not implemented yet.'
-
+      CASE(2,267,268) ! ascii hotstart file, only used for debugging 
+C 
+C        jgf49.35 write both subdomain and fulldomain hotstart files,
+C        just to have them, since this is just for debugging purposes 
+C        (i.e., to check the values written to hotstart files in other
+C        formats) anyway.
+         OPEN(hss%lun,FILE=TRIM(INPUTDIR)//'/'//hss % filename,
+     &      STATUS='REPLACE')
+         WRITE(hss%lun,*) "FileFmtVersion = ",FileFmtVersion
+         WRITE(hss%lun,*) "IM = ",IM
+         WRITE(hss%lun,*) "TIME = ",TIME
+         WRITE(hss%lun,*) "IT = ",IT
+         WRITE(hss%lun,*) "NP = ",NP
+         WRITE(hss%lun,*) "NE = ",NE
+         WRITE(hss%lun,*) "Elev1:"         
+         DO I=1, Elev1Descript % num_records_this
+            WRITE(hss%lun,*) i," ",Elev1Descript % array(I)
+         ENDDO
+         WRITE(hss%lun,*) "Elev2:"
+         DO I=1, Elev2Descript % num_records_this
+            WRITE(hss%lun,*) i," ",Elev2Descript % array(I)
+         ENDDO
+         WRITE(hss%lun,*) "EtaDisc:"
+         DO I=1, EtaDiscDescript % num_records_this
+            WRITE(hss%lun,*) i," ",EtaDiscDescript % array(I)
+         ENDDO
+         WRITE(hss%lun,*) "VelU:"
+         DO I=1, VelDescript % num_records_this
+            WRITE(hss%lun,*) i," ",VelDescript % array(I)
+         ENDDO
+         WRITE(hss%lun,*) "VelV:"
+         DO I=1, VelDescript % num_records_this
+            WRITE(hss%lun,*) i," ",VelDescript % array2(I)
+         ENDDO
+         IF (IM.eq.10) THEN
+            WRITE(hss%lun,*) "CH1:"
+            DO I=1, CH1Descript % num_records_this
+               WRITE(hss%lun,*) i," ",CH1Descript % array(I)
+            ENDDO
+         ENDIF
+         WRITE(hss%lun,*) "NodeCode:"
+         DO I=1, NodeCodeDescript % num_records_this
+            WRITE(hss%lun,*) i," ",NodeCodeDescript % iarray(I)
+         ENDDO
+         WRITE(hss%lun,*) "NOFF:"
+         DO I=1, NOFFDescript % num_records_this
+            WRITE(hss%lun,*) i," ",NOFFDescript % iarray(I)
+         ENDDO
+         WRITE(hss%lun,*) "IESTP = ",IESTP
+         WRITE(hss%lun,*) "NSCOUE = ",NSCOUE
+         WRITE(hss%lun,*) "IVSTP = ",IVSTP
+         WRITE(hss%lun,*) "NSCOUV = ",NSCOUV
+         WRITE(hss%lun,*) "ICSTP = ",ICSTP
+         WRITE(hss%lun,*) "NSCOUC = ",NSCOUC
+         WRITE(hss%lun,*) "IPSTP = ",IPSTP
+         WRITE(hss%lun,*) "IWSTP = ",IWSTP
+         WRITE(hss%lun,*) "NSCOUM = ",NSCOUM
+         WRITE(hss%lun,*) "IGEP = ",IGEP
+         WRITE(hss%lun,*) "NSCOUGE = ",NSCOUGE
+         WRITE(hss%lun,*) "IGVP = ",IGVP
+         WRITE(hss%lun,*) "NSCOUGV = ",NSCOUGV
+         WRITE(hss%lun,*) "IGCP = ",IGCP
+         WRITE(hss%lun,*) "NSCOUGC = ",NSCOUGC
+         WRITE(hss%lun,*) "IGPP = ",IGPP
+         WRITE(hss%lun,*) "IGWP = ",IGWP
+         WRITE(hss%lun,*) "NSCOUGW = ",NSCOUGW
+         CLOSE(hss%lun)
+C
+C
+         IF ((MNPROC.gt.1).and.(MYPROC.eq.0)) THEN
+            OPEN(hss%lun,FILE=TRIM(GBLINPUTDIR)//'/'//hss % filename,
+     &         STATUS='REPLACE')
+            WRITE(hss%lun,*) "FileFmtVersion = ",FileFmtVersion
+            WRITE(hss%lun,*) "IM = ",IM
+            WRITE(hss%lun,*) "TIME = ",TIME
+            WRITE(hss%lun,*) "IT = ",IT
+            WRITE(hss%lun,*) "NP = ",NP_G
+            WRITE(hss%lun,*) "NE = ",NE_G
+            WRITE(hss%lun,*) "Elev1:"         
+            DO I=1, Elev1Descript % num_fd_records
+               WRITE(hss%lun,*) i," ",Elev1Descript % array_g(I)
+            ENDDO
+            WRITE(hss%lun,*) "Elev2:"
+            DO I=1, Elev2Descript % num_fd_records
+               WRITE(hss%lun,*) i," ",Elev2Descript % array_g(I)
+            ENDDO
+            WRITE(hss%lun,*) "EtaDisc:"
+            DO I=1, EtaDiscDescript % num_fd_records
+               WRITE(hss%lun,*) i," ",EtaDiscDescript % array_g(I)
+            ENDDO
+            WRITE(hss%lun,*) "VelU:"
+            DO I=1, VelDescript % num_fd_records
+               WRITE(hss%lun,*) i," ",VelDescript % array_g(I)
+            ENDDO
+            WRITE(hss%lun,*) "VelV:"
+            DO I=1, VelDescript % num_fd_records
+               WRITE(hss%lun,*) i," ",VelDescript % array2_g(I)
+            ENDDO
+            IF (IM.eq.10) THEN
+               WRITE(hss%lun,*) "CH1:"
+               DO I=1, CH1Descript % num_fd_records
+                  WRITE(hss%lun,*) i," ",CH1Descript % array_g(I)
+               ENDDO
+            ENDIF
+            WRITE(hss%lun,*) "NodeCode:"
+            DO I=1, NodeCodeDescript % num_fd_records
+               WRITE(hss%lun,*) i," ",NodeCodeDescript % iarray_g(I)
+            ENDDO
+            WRITE(hss%lun,*) "NOFF:"
+            DO I=1, NOFFDescript % num_fd_records
+               WRITE(hss%lun,*) i," ",NOFFDescript % iarray_g(I)
+            ENDDO
+            WRITE(hss%lun,*) "IESTP = ",IESTP
+            WRITE(hss%lun,*) "NSCOUE = ",NSCOUE
+            WRITE(hss%lun,*) "IVSTP = ",IVSTP
+            WRITE(hss%lun,*) "NSCOUV = ",NSCOUV
+            WRITE(hss%lun,*) "ICSTP = ",ICSTP
+            WRITE(hss%lun,*) "NSCOUC = ",NSCOUC
+            WRITE(hss%lun,*) "IPSTP = ",IPSTP
+            WRITE(hss%lun,*) "IWSTP = ",IWSTP
+            WRITE(hss%lun,*) "NSCOUM = ",NSCOUM
+            WRITE(hss%lun,*) "IGEP = ",IGEP
+            WRITE(hss%lun,*) "NSCOUGE = ",NSCOUGE
+            WRITE(hss%lun,*) "IGVP = ",IGVP
+            WRITE(hss%lun,*) "NSCOUGV = ",NSCOUGV
+            WRITE(hss%lun,*) "IGCP = ",IGCP
+            WRITE(hss%lun,*) "NSCOUGC = ",NSCOUGC
+            WRITE(hss%lun,*) "IGPP = ",IGPP
+            WRITE(hss%lun,*) "IGWP = ",IGWP
+            WRITE(hss%lun,*) "NSCOUGW = ",NSCOUGW
+            CLOSE(hss%lun)
+         ENDIF
+C
+C        TODO: 3D data in ascii 
+C        TODO: harmonic analysis data in ascii
+C
       CASE(3) ! netcdf 
-         write(16,*) 'NetCDF Hotstart undergoing testing.'
+         write(screenUnit,*) 'NetCDF Hotstart undergoing testing.'
 
 #ifdef NETCDF
-      CALL allocNetCDFArrays(hss%lun, Elev1Descript)
-      CALL initHotstart(hss%lun, Elev1Descript)
-      DO I=1, num_records
-         IF (MNPROC.gt.1.and.MyProc.eq.0) THEN       ! parallel
-C            eta11(i,timenc_len) = Elev1Descript % array_g(i)
-         ELSE IF (MNPROC.eq.1) THEN                               ! serial
-C            eta11(i,timenc_len) = Elev1Descript % array(i)
-         ENDIF
-      END DO
-      DO I=1, num_records
-         IF (MNPROC.gt.1.and.MyProc.eq.0) THEN      ! parallel
-C            eta22(i,timenc_len) = Elev2Descript % array_g(i)
-         ELSE IF (MNPROC.eq.1) THEN                                ! serial
-C            eta22(i,timenc_len) = Elev2Descript % array(i)
-         ENDIF
-      END DO
-      DO I=1, num_records
-         IF (MNPROC.gt.1.and.MyProc.eq.0) THEN              ! parallel
-C            etadd(i,timenc_len) = EtaDiscDescript % array_g(i)
-         ELSE IF (MNPROC.eq.1) THEN                                ! serial
-C            etadd(i,timenc_len) = EtaDiscDescript % array(i)
-         ENDIF
-      END DO
-      DO I=1, num_records
-         IF (MNPROC.gt.1.and.MyProc.eq.0) THEN            ! parallel
-C            uu22(i,timenc_len) = VelDescript % array_g(i)
-         ELSE IF (MNPROC.eq.1) THEN                                ! serial
-C            uu22(i,timenc_len) = VelDescript % array(i)
-         ENDIF
-      END DO
-      DO I=1, num_records
-         IF (MNPROC.gt.1.and.MyProc.eq.0) THEN                ! parallel
-C            vv22(i,timenc_len) = VelDescript % array2_g(i)
-         ELSE IF (MNPROC.eq.1) THEN                                ! serial
-C            vv22(i,timenc_len) = VelDescript % array2(i)
-         ENDIF
-      END DO
-      DO I=1, num_records
-         IF (MNPROC.gt.1.and.MyProc.eq.0 ) THEN                  ! parallel
-C            nodecodenc(i) = NodeCodeDescript % iarray_g(i)     
-         ELSE IF (MNPROC.eq.1) THEN                                ! serial
-C            nodecodenc(i) = NodeCodeDescript % iarray(i)
-         ENDIF
-      END DO
-      DO I=1, num_recordse
-         IF (MNPROC.gt.1.and.MyProc.eq.0) THEN                     ! parallel
-C            noffnc(i) = NOFFDescript % iarray_g(i)
-C            noffnc(i)=min(noffnc(i),1)            ! noff ranges from 0 to 1
-         ELSE IF (MNPROC.eq.1) THEN                                ! serial
-C            noffnc(i) = NOFFDescript % iarray(i)
-         ENDIF
-      END DO
-      CALL writeOutArrayNetCDF(hss%lun, time, it, Elev1Descript)
+C     jgf49.35: TODO: Update this subroutine call with the full complement
+C     of i/o descriptors
+      CALL writeNetCDFHotstart(hss%lun, Elev1Descript, time)
 #endif
 
       CASE DEFAULT
@@ -2367,12 +2358,6 @@ C            noffnc(i) = NOFFDescript % iarray(i)
 
       END SELECT
 
-C...    
-C...    CLOSE THE HOT START OUTPUT FILE
-C...    
-      IF(NHSTAR.EQ.1) THEN                                              ! added by mcf 7/14/08
-      if (myproc == 0 .or. WRITE_LOCAL_HOT_START_FILES) CLOSE(hss % lun)
-      ENDIF                                                             ! end NHSTAR=1 
         
       IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
          WRITE(ScreenUnit,24541) hss % lun,IT,TIME
@@ -2383,23 +2368,26 @@ C...
       TEST_HOTSTART = .FALSE.
       IF(hss % lun.EQ.67) THEN
 C        jgf45.07 added option to stop ADCIRC after writing hot start file. 
-         IF (NHSTAR.EQ.67) THEN
+         IF ((NHSTAR.EQ.67).OR.(NHSTAR.EQ.267).OR.(NHSTAR.EQ.367)) THEN
             WRITE(ScreenUnit,*) 'NHSTAR.EQ.67; ADCIRC stopping.'
             WRITE(16,*) 'NHSTAR.EQ.67; ADCIRC stopping.'
             TEST_HOTSTART = .TRUE.
          ENDIF
          hss % lun      = 68
-         IF(NHSTAR.EQ.1) hss % filename = 'fort.68'                     ! added by mcf 7/14/08
+         IF((NHSTAR.EQ.1).OR.(NHSTAR.EQ.2)) THEN
+            hss % filename = 'fort.68' 
+         ENDIF
       ELSE
-         IF (NHSTAR.EQ.68) THEN
+         IF ((NHSTAR.EQ.68).OR.(NHSTAR.EQ.268).OR.(NHSTAR.EQ.368)) THEN
             WRITE(ScreenUnit,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
             WRITE(16,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
             TEST_HOTSTART = .TRUE.
          ENDIF
          hss % lun=67
-         IF(NHSTAR.EQ.1) hss % filename = 'fort.67'                     ! added by mcf 7/14/08
+         IF((NHSTAR.EQ.1).OR.(NHSTAR.EQ.2)) THEN
+            hss % filename = 'fort.67'
+         ENDIF
       ENDIF
-!      PRINT *, "****TEST_HOTSTART CALL MSG_FINI ******* ", TEST_HOTSTART
       IF (TEST_HOTSTART) THEN
 #ifdef CMPI
           CALL MSG_FINI()

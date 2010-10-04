@@ -5971,6 +5971,7 @@ C
       IMPLICIT NONE
       INTEGER :: myProc = 0
       INTEGER :: screenUnit = 6
+      LOGICAL error
 C
 C     The initialization of the output data descriptors for each ADCIRC
 C     output file had to be cut and pasted from write_output.F. At some
@@ -6118,14 +6119,15 @@ C
 C
 C     Create NetCDF output files for those output files where NetCDF
 C     was specified. 
-      CALL allocNetCDFArrays(61,ElevStaDescript)
-      CALL allocNetCDFArrays(62,VelStaDescript)
-      CALL allocNetCDFArrays(63,ElevDescript)
-      CALL allocNetCDFArrays(64,VelDescript)
-      CALL allocNetCDFArrays(71,PrStaDescript)
-      CALL allocNetCDFArrays(72,WindVelStaDescript)
-      CALL allocNetCDFArrays(73,PrDescript)
-      CALL allocNetCDFArrays(74,WindVelDescript)
+      error = .false.
+      CALL allocNetCDFArrays(61,ElevStaDescript, error)
+      CALL allocNetCDFArrays(62,VelStaDescript, error)
+      CALL allocNetCDFArrays(63,ElevDescript, error)
+      CALL allocNetCDFArrays(64,VelDescript, error)
+      CALL allocNetCDFArrays(71,PrStaDescript, error)
+      CALL allocNetCDFArrays(72,WindVelStaDescript, error)
+      CALL allocNetCDFArrays(73,PrDescript, error)
+      CALL allocNetCDFArrays(74,WindVelDescript, error)
 #endif
 c----------------------------------------------------------------------------
       END SUBROUTINE prepNetCDF

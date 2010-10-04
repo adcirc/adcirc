@@ -210,15 +210,15 @@ C--------------------------------------------------------------------------
       ENDIF
 
       IF (PRESENT(NO_MPI_FINALIZE)) THEN
-        IF (.NOT.NO_MPI_FINALIZE) THEN
-          CALL MPI_FINALIZE(IERR)
-          IF (MYPROC.EQ.0)  
-     &    PRINT *, "MPI terminated with Status = ",IERR      
-        ENDIF
+         IF (.NOT.NO_MPI_FINALIZE) THEN
+            CALL MPI_FINALIZE(IERR)
+            IF (MYPROC.EQ.0)  
+     &      PRINT *, "MPI terminated with Status = ",IERR      
+         ENDIF
       ELSE
-        CALL MPI_FINALIZE(IERR)
-        IF (MYPROC.EQ.0)  
-     &  PRINT *, "MPI terminated with Status = ",IERR      
+         CALL MPI_FINALIZE(IERR)
+         IF (MYPROC.EQ.0)  
+     &   PRINT *, "MPI terminated with Status = ",IERR      
       ENDIF
 
       RETURN
@@ -954,13 +954,10 @@ C
 C------------------------------------------------------------------------------
 C               S U B R O U T I N E   W A R N  E L E V  S U M 
 C------------------------------------------------------------------------------
-C
 C     jgf46.11 If the warning elevation was exceeded in one subdomain,
 C     that information is propagated to the other subdomains so that the
 C     velocities can be dumped to a file for debugging.
-C     
 C------------------------------------------------------------------------------
-C
       SUBROUTINE WarnElevSum( WarnElevExceeded )
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
@@ -974,8 +971,9 @@ C
       call MPI_ALLREDUCE( WarnElevExceeded, SumWarnElevExceeded, kount,
      &     MPI_INTEGER, MPI_SUM, COMM, ierr)
       WarnElevExceeded = SumWarnElevExceeded
+C------------------------------------------------------------------------------
       END SUBROUTINE WarnElevSum
-
+C------------------------------------------------------------------------------
 
       SUBROUTINE MSG_IBCAST( array, n)
 #ifndef HAVE_MPI_MOD
@@ -990,6 +988,17 @@ C
       CALL MPI_BCAST(array, n, mpi_integer,0,comm,ierr)
       RETURN
       END SUBROUTINE MSG_IBCAST
+
+
+      SUBROUTINE MSG_LBCAST(array, n)
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+      INTEGER :: n
+      LOGICAL :: array(:)
+      CALL MPI_BCAST(array, n, mpi_logical, 0, comm, ierr)
+      RETURN
+      END SUBROUTINE MSG_LBCAST
 
 
       SUBROUTINE MSG_CBCAST( msg, n)
@@ -1075,6 +1084,15 @@ c
       deallocate( buffer, nbox )
       RETURN
       END SUBROUTINE MSG_RBCASTD
+
+      subroutine MSG_BARRIER()
+C      use messenger
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+      integer myerr
+      call mpi_barrier(comm,myerr)
+      end subroutine MSG_BARRIER
 !=============================================================================
 
       END MODULE MESSENGER
@@ -1088,11 +1106,3 @@ C      use messenger
       call mpi_abort(comm,myerrcode,myerr)
       end subroutine MSG_ABORT
 
-      subroutine MSG_BARRIER()
-C      use messenger
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
-      integer myerr
-      call mpi_barrier(comm,myerr)
-      end subroutine MSG_BARRIER
