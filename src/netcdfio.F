@@ -245,7 +245,6 @@ C
          REAL(SZ), ALLOCATABLE :: v_nodal_data(:,:) ! for 2nd vector component
          INTEGER :: nodal_data_id
          INTEGER :: nodal_data_rank = 2
-         INTEGER :: nodal_int_id
          INTEGER :: u_nodal_data_id
          INTEGER :: v_nodal_data_id
          INTEGER :: nodal_data_dims(2)
@@ -1735,7 +1734,7 @@ C     NodeCode
      &       hs%myTime%timenc_len))
       hs%nodecodenc%nodal_int = NodeCodeDescript%int_initial_value
 C     NOFF 
-      ALLOCATE(hs%noffnc%nodal_int(hs%myMesh%num_nodes,
+      ALLOCATE(hs%noffnc%nodal_int(hs%myMesh%num_elems,
      &       hs%myTime%timenc_len))
       hs%noffnc%nodal_int = NOFFDescript%int_initial_value
 C
@@ -1948,7 +1947,7 @@ C     N O F F
 !
 !     Define hotstart parameters
       CALL check_err(iret)
-      iret = nf_def_var(hs%ncid, 'im', NF_INT, 0, 1, varid)
+      iret = nf_def_var(hs%ncid, 'imhs', NF_INT, 0, 1, varid)
       CALL check_err(iret)
       iret = nf_put_att_text(hs%ncid, varid, 'long_name', 18, 
      &                       'model type')
@@ -1957,7 +1956,7 @@ C     N O F F
      &                'model_type')
       CALL check_err(iret)
 C
-      iret = nf_def_var(hs%ncid, 'it', NF_INT, 0, 1, varid)
+      iret = nf_def_var(hs%ncid, 'iths', NF_INT, 0, 1, varid)
       CALL check_err(iret)
       iret = nf_put_att_text(hs%ncid, varid, 'long_name', 59, 
      &       'model time step number since the beginning
@@ -2205,12 +2204,24 @@ C     S U B R O U T I N E    W R I T E   N E T C D F   H O T S T A R T
 C-----------------------------------------------------------------------
 C     jgf49.17.02 Writes data to hotstart file.
 C-----------------------------------------------------------------------
-      SUBROUTINE writeNetCDFHotstart(lun, descript, time)
-      USE GLOBAL
+      SUBROUTINE writeNetCDFHotstart(lun, Elev1Descript,
+     &        Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
+     &        NodeCodeDescript, NOFFDescript, time)
+      USE GLOBAL, ONLY : OutputDataDescript_t, MNPROC, 
+     &                   imhs, iths, iestp, nscoue, ivstp,
+     &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
+     &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
+     &                   igpp, igwp, nscougw
       IMPLICIT NONE
 C
-      INTEGER, intent(inout) :: lun
-      type(OutputDataDescript_t), intent(in) :: descript
+      INTEGER, intent(in) :: lun
+      type(OutputDataDescript_t), intent(in) :: Elev1Descript
+      type(OutputDataDescript_t), intent(in) :: Elev2Descript
+      type(OutputDataDescript_t), intent(in) :: VelDescript
+      type(OutputDataDescript_t), intent(in) :: CH1Descript
+      type(OutputDataDescript_t), intent(in) :: EtaDiscDescript
+      type(OutputDataDescript_t), intent(in) :: NodeCodeDescript
+      type(OutputDataDescript_t), intent(in) :: NOFFDescript
       REAL(8), intent(in) :: time
 C
       INTEGER i,j
@@ -2218,11 +2229,11 @@ C
       INTEGER kount(2), start(2)
       INTEGER iret ! success or failure of the netcdf call
       INTEGER recid    
+      INTEGER varid
 C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Entering writeNetCDFHotstart."
 #endif
-#if 0
 C
       iret = nf_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)   
@@ -2230,14 +2241,13 @@ C
 !     Inquire variables
       iret=nf_inq_unlimdim(hs%ncid,recid)
       CALL check_err(iret)   
+      iret=nf_inq_dimlen(hs%ncid,recid,hs%myFile%record_counter)
+      CALL check_err(iret)   
 C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: hs%myFile%record_counter = ",
      &            hs%myFile%record_counter
 #endif
-C
-      iret=nf_inq_dimlen(hs%ncid,recid,hs%myFile%record_counter)
-      CALL check_err(iret)   
 C
 C     Increment the record counter so that we can store data at the
 C     next location in the netcdf file
@@ -2256,116 +2266,155 @@ C
       kount(2)=hs%myTime%timenc_len
       start(1)=1
       start(2)=hs%myFile%record_counter
-C
       hs%myTime%timenc(hs%myTime%timenc_len)=time
+C
+C     Get the NetCDF IDs of the relevant variables from the file
       iret=nf_inq_varid(hs%ncid,"zeta1",hs%zeta1%nodal_data_id)
-      hs%zeta1%nodal_data(:,kount(2)) = Elev1Descript%array 
+      CALL check_err(iret)
+      iret=nf_inq_varid(hs%ncid,"zeta2",hs%zeta2%nodal_data_id)
+      CALL check_err(iret)
+      iret=nf_inq_varid(hs%ncid,"zetad",hs%zetad%nodal_data_id)
+      CALL check_err(iret)
+      iret=nf_inq_varid(hs%ncid,"u-vel",hs%vel%u_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf_inq_varid(hs%ncid,"v-vel",hs%vel%v_nodal_data_id)
+      CALL check_err(iret)
+      iret=nf_inq_varid(hs%ncid,"nodecode",hs%nodecodenc%nodal_data_id)
+      CALL check_err(iret)
+      iret=nf_inq_varid(hs%ncid,"noff",hs%noffnc%nodal_data_id)
+      CALL check_err(iret)
+C
+C     Place the nodal data into the netcdf arrays
+      IF (MNPROC.eq.1) THEN
+         hs%zeta1%nodal_data(:,kount(2)) = Elev1Descript%array 
+         hs%zeta2%nodal_data(:,kount(2)) = Elev2Descript%array 
+         hs%zetad%nodal_data(:,kount(2)) = EtaDiscDescript%array 
+         hs%vel%u_nodal_data(:,kount(2)) = VelDescript%array 
+         hs%vel%v_nodal_data(:,kount(2)) = VelDescript%array2 
+         hs%nodecodenc%nodal_data(:,kount(2)) = NodeCodeDescript%iarray 
+         hs%noffnc%nodal_data(:,kount(2)) = NOFFDescript%iarray 
+      ELSE
+         hs%zeta1%nodal_data(:,kount(2)) = Elev1Descript%array_g 
+         hs%zeta2%nodal_data(:,kount(2)) = Elev2Descript%array_g 
+         hs%zetad%nodal_data(:,kount(2)) = EtaDiscDescript%array_g 
+         hs%vel%u_nodal_data(:,kount(2)) = VelDescript%array_g
+         hs%vel%v_nodal_data(:,kount(2)) = VelDescript%array2_g
+         hs%nodecodenc%nodal_data(:,kount(2)) =
+     &                                  NodeCodeDescript%iarray_g 
+         hs%noffnc%nodal_data(:,kount(2)) = NOFFDescript%iarray_g 
+      ENDIF
+C
+C     Write the nodal data to the netcdf file 
       iret = nf_put_vara_DOUBLE(hs%ncid, hs%zeta1%nodal_data_id, start,
      &       kount, hs%zeta1%nodal_data)
       CALL check_err(iret)
-C 
-      iret=nf_inq_varid(hs%ncid,"zeta2",hs%zeta2%nodal_data_id)
-      iret=nf_inq_varid(hs%ncid,"zetad",hs%zetad%nodal_data_id)
-      iret=nf_inq_varid(hs%ncid,"u-vel",hs%vel%u_nodal_data_id)
-      iret=nf_inq_varid(hs%ncid,"v-vel",hs%vel%v_nodal_data_id)
-      iret=nf_inq_varid(hs%ncid,"nodecode",hs%nodecodenc%nodal_data_id)
-      iret=nf_inq_varid(hs%ncid,"noff",hs%noffnc%nodal_data_id)
-      iret=nf_inq_varid(hs%ncid,"imhs",hs%im_id)
-
-      iret=nf_inq_varid(hs%ncid,"iths",hs%iths_id)
-
-      iret=nf_inq_varid(hs%ncid,"iestp",hs%iestp_id)
-
-      iret=nf_inq_varid(hs%ncid,"nscoue",hs%nscoue_id)
-
-      iret=nf_inq_varid(hs%ncid,"ivstp",hs%ivstp_id)
-
-      iret=nf_inq_varid(hs%ncid,"nscouv",hs%nscouv_id)
-
-      iret=nf_inq_varid(hs%ncid,"icstp",hs%icstp_id)
-
-      iret=nf_inq_varid(hs%ncid,"nscouc",hs%nscouc_id)
-
-      iret=nf_inq_varid(hs%ncid,"ipstp",hs%ipstp_id)
-
-      iret=nf_inq_varid(hs%ncid,"iwstp",hs%iwstp_id)
-
-      iret=nf_inq_varid(hs%ncid,"nscoum",hs%nscoum_id)
-
-      iret=nf_inq_varid(hs%ncid,"igep",hs%igep_id)
-
-      iret=nf_inq_varid(hs%ncid,"nscouge",hs%nscouge_id)
-
-      iret=nf_inq_varid(hs%ncid,"igvp",hs%igvp_id)
-
-      iret=nf_inq_varid(hs%ncid,"nscougv",hs%nscougv_id)
-
-      iret=nf_inq_varid(hs%ncid,"igcp",hs%igcp_id)
-
-      iret=nf_inq_varid(hs%ncid,"nscougc",hs%nscougc_id)
-
-      iret=nf_inq_varid(hs%ncid,"igpp",hs%igpp_id)
-
-      iret=nf_inq_varid(hs%ncid,"igwp",hs%igwp_id)
-
-      iret=nf_inq_varid(hs%ncid,"nscougw",hs%nscougw_id)
-
-
-
-
-      iret = nf_put_vara_DOUBLE(hs%ncid, hs%zeta2_id, start, kount, hs%zeta2)
+      iret = nf_put_vara_DOUBLE(hs%ncid, hs%zeta2%nodal_data_id, start,
+     &       kount, hs%zeta2%nodal_data)
       CALL check_err(iret)
-      iret = nf_put_vara_DOUBLE(hs%ncid, hs%zetad_id, start, kount, hs%zetad)
+      iret = nf_put_vara_DOUBLE(hs%ncid, hs%zetad%nodal_data_id, start,
+     &       kount, hs%zetad%nodal_data)
       CALL check_err(iret)
-      iret = nf_put_vara_DOUBLE(hs%ncid, hs%u_id, start, kount, hs%u)
+      iret = nf_put_vara_DOUBLE(hs%ncid, hs%vel%u_nodal_data_id, start,
+     &       kount, hs%vel%u_nodal_data)
       CALL check_err(iret)
-      iret = nf_put_vara_DOUBLE(hs%ncid, hs%v_id, start, kount, hs%v)
+      iret = nf_put_vara_DOUBLE(hs%ncid, hs%vel%v_nodal_data_id, start,
+     &       kount, hs%vel%v_nodal_data)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%nodecodenc_id, hs%nodecodenc)
+      iret = nf_put_vara_INT(hs%ncid, hs%nodecodenc%nodal_data_id,
+     &      start, kount, hs%nodecodenc%nodal_int)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%noffnc_id, hs%noffnc)
+      iret = nf_put_vara_INT(hs%ncid, hs%noffnc%nodal_data_id,
+     &       start, kount, hs%noffnc%nodal_int)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%imhs_id, imhs)
+C
+C     Get each variable ID for the model parameters in the netcdf file
+C     and immediately write the parameter value to that variable ID before
+C     going on to the next one. 
+      iret = nf_inq_varid(hs%ncid,"imhs",varid)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%iths_id, iths)
+      iret = nf_put_var_int(hs%ncid, varid, imhs)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%iestp_id, iestp)
+      iret = nf_inq_varid(hs%ncid,"iths",varid)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%nscoue_id, nscoue)
+      iret = nf_put_var_int(hs%ncid, varid, iths)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%ivstp_id, ivstp)
+      iret = nf_inq_varid(hs%ncid,"iestp",varid)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%nscouv_id, nscouv)
+      iret = nf_put_var_int(hs%ncid, varid, iestp)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%icstp_id, icstp)
+      iret = nf_inq_varid(hs%ncid,"nscoue",varid)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%nscouc_id, nscouc)
+      iret = nf_put_var_int(hs%ncid, varid, nscoue)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%ipstp_id, ipstp)
+      iret = nf_inq_varid(hs%ncid,"ivstp",varid)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%iwstp_id, iwstp)
+      iret = nf_put_var_int(hs%ncid, varid, ivstp)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%nscoum_id, nscoum)
+      iret = nf_inq_varid(hs%ncid,"nscouv",varid)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%igep_id, igep)
+      iret = nf_put_var_int(hs%ncid, varid, nscouv)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%nscouge_id, nscouge)
+      iret = nf_inq_varid(hs%ncid,"icstp",varid)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%igvp_id, igvp)
+      iret = nf_put_var_int(hs%ncid, varid, icstp)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%nscougv_id, nscougv)
+      iret = nf_inq_varid(hs%ncid,"nscouc",varid)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%igcp_id, igcp)
+      iret = nf_put_var_int(hs%ncid, varid, nscouc)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%nscougc_id, nscougc)
+      iret = nf_inq_varid(hs%ncid,"ipstp",varid)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%igpp_id, igpp)
+      iret = nf_put_var_int(hs%ncid, varid, ipstp)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%igwp_id, igwp)
+      iret = nf_inq_varid(hs%ncid,"iwstp",varid)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, hs%nscougw_id, nscougw)
+      iret = nf_put_var_int(hs%ncid, varid, iwstp)
       CALL check_err(iret)
-#endif
+      iret = nf_inq_varid(hs%ncid,"nscoum",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, nscoum)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"igep",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, igep)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nscouge",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, nscouge)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"igvp",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, igvp)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nscougv",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, nscougv)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"igcp",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, igcp)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nscougc",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, nscougc)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"igpp",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, igpp)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"igwp",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, igwp)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nscougw",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, nscougw)
+      CALL check_err(iret)
+C
+C     now close the netcdf file
+      iret = nf_close(hs%ncid)
+      CALL check_err(iret)
+C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Returning from writeNetCDFHotstart."
 #endif
@@ -2383,7 +2432,12 @@ C-----------------------------------------------------------------------
      &                   FileFmtMajor, imhs, iths, iestp, nscoue, ivstp,
      &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
      &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
-     &                   igpp, igwp, nscougw
+     &                   igpp, igwp, nscougw, ETA1, ETA2, EtaDisc, 
+     &                   UU2, VV2, NODECODE, NOFF, NODES_LG, IMAP_EL_LG,
+     &                   MNPROC, NE, NP, MYPROC
+#ifdef CMPI
+      USE MESSENGER, ONLY : MSG_FINI
+#endif
       IMPLICIT NONE
 C
       INTEGER, intent(in) :: lun
@@ -2392,142 +2446,251 @@ C
       INTEGER counti(1), starti(1), n
       INTEGER kount(2), start(2)
       INTEGER iret ! success or failure of the netcdf call
+      INTEGER recid
+      INTEGER fd_node_number
+      INTEGER sd_node_number
+      INTEGER fd_ele_number
+      INTEGER sd_ele_number
+      INTEGER varid
 C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Entering readNetCDFHotstart."
 #endif
-#if 0
+C
+      hs%myFile%fileFound = .false.
+      hs%myFile%FILEFORT = 'fort.'
+      hs%myFile%FILEEXT = '.nc'
+      WRITE(hs%myFile%FILENAME,'(A5,I2,A3)') 
+     &      hs%myFile%FILEFORT, lun, hs%myFile%FILEEXT
+C
+C     Open fulldomain file
+      INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
+      IF (hs%myFile%fileFound.eqv..false.) THEN
+         WRITE(*,*) "ERROR: The file ",hs%myFile%FILENAME,
+     &      " was not found; ADCIRC terminating."
+#ifdef CMPI
+            CALL MSG_FINI()
+#endif
+         STOP
+      ELSE
+         iret = nf_open(hs%myFile%FILENAME, NF_NOWRITE, hs%ncid)
+         CALL check_err(iret) 
+      ENDIF
+! 
+!     Inquire variables
+      iret=nf_inq_unlimdim(hs%ncid,recid)
+      CALL check_err(iret)   
+      iret=nf_inq_dimlen(hs%ncid,recid,hs%myFile%record_counter)
+      CALL check_err(iret)   
 C
       iret=nf_inq_dimid(hs%ncid, "node", hs%myMesh%num_nodes_dim_id)
       CALL check_err(iret)   
-      iret=nf_inq_dimlen(hs%ncid, hs%myMesh%num_nodes_dim_id, hs%num_nodes)
+      iret=nf_inq_dimlen(hs%ncid, hs%myMesh%num_nodes_dim_id,
+     &     hs%myMesh%num_nodes)
       CALL check_err(iret)   
-      iret=nf_inq_dimid(hs%ncid, "nele", hs%num_elems_dim_id)
+      iret=nf_inq_dimid(hs%ncid, "nele", hs%myMesh%num_elems_dim_id)
       CALL check_err(iret)   
-      iret=nf_inq_dimlen(hs%ncid, hs%num_elems_dim_id, hs%num_elems)
+      iret=nf_inq_dimlen(hs%ncid, hs%myMesh%num_elems_dim_id,
+     &     hs%myMesh%num_elems)
       CALL check_err(iret)   
-C       IF(hs%nlen.NE.hs%node_len.OR.hs%nelen.NE.hs%elem_len) THEN
-C         WRITE(6,887) hs%node_len,hs%elem_len,hs%nlen,hs%nelen
-C887      FORMAT("===================================================",/,
-C     &   "The grid input file you are reading is not",/, 
-C     &   "consistent with the grid in the hotstart file.",/,
-C     &   "Your grid file has the following parameters:",/,/,
-C     &   "Number of nodes    = ",I10,/,
-C     &   "Number of elements = ",I10,/,/,
-C     &   "The hotstart file has the following parameters",/, 
-C     &   "Number of nodes    = ",I10,/,
-C     &   "Number of elements = ",I10,/,/,
-C     &    "         ******* ADCIRC will stop! *******",/,
-C     &    "====================================================")
-C         STOP
-C      ENDIF
-
-      iret = nf_get_att_int(hs%ncid, NCGLOBAL, 'FileFmtMajor',  
-     &                      hs%FileFmtMajorFile)
-      CALL check_err(iret)
-      iret = nf_get_att_int(hs%ncid, NCGLOBAL, 'FileFmtMinor',  
-     &                      hs%FileFmtMinorFile)
-      CALL check_err(iret)
-      iret = nf_get_att_int(hs%ncid, NCGLOBAL, 'FileFmtRev', 
-     &                      hs%FileFmtRevFile)
-      CALL check_err(iret)
-      
-      IF(hs%FileFmtMajorFile.NE.FileFmtMajor.OR.
-     &   hs%FileFmtMinorFile.NE.FileFmtMinor.OR.
-     &   hs%FileFmtRevFile.NE.FileFmtRev)THEN
-         WRITE(6,888) hs%FileFmtMajorFile,hs%FileFmtMinorFile,hs%FileFmtRevFile,
-     & FileFmtMajor,FileFmtMinor,FileFmtRev
-888      FORMAT("===================================================",/,
-     &   "The input hotstart file you are reading is not",/, 
-     &    "consistent with the version of the model you are running.",/,
-     &    "Your file has the following file format parameters:",/,/,
-     &    "FileFmtMajorFile = ",I3,/,
-     &    "FileFmtMinorFile = ",I3,/,
-     &    "FileFmtRevFile   = ",I3,/,/,
-     &    "The current version of ADCIRC needs a hotstart file",/, 
-     &    "with the following file format parameters:",/,/,
-     &    "FileFmtMajor = ",I3,/,
-     &    "FileFmtMinor = ",I3,/,
-     &    "FileFmtRev   = ",I3,/,/,
-     &    "         ******* ADCIRC will stop! *******",/,
-     &    "====================================================")
-         STOP
-      ENDIF
-        
+C
+C     Elev1
+      ALLOCATE(hs%zeta1%nodal_data(hs%myMesh%num_nodes,
+     &       hs%myTime%timenc_len))
+C     Elev2
+      ALLOCATE(hs%zeta2%nodal_data(hs%myMesh%num_nodes,
+     &       hs%myTime%timenc_len))
+C     EtaDisc
+      ALLOCATE(hs%zetad%nodal_data(hs%myMesh%num_nodes,
+     &       hs%myTime%timenc_len))
+C     Vel
+      ALLOCATE(hs%vel%u_nodal_data(hs%myMesh%num_nodes,
+     &       hs%myTime%timenc_len))
+      ALLOCATE(hs%vel%v_nodal_data(hs%myMesh%num_nodes,
+     &       hs%myTime%timenc_len))
+C     CH1
+      ALLOCATE(hs%ch1%nodal_data(hs%myMesh%num_nodes,
+     &       hs%myTime%timenc_len))
+C     NodeCode 
+      ALLOCATE(hs%nodecodenc%nodal_int(hs%myMesh%num_nodes,
+     &       hs%myTime%timenc_len))
+C     NOFF 
+      ALLOCATE(hs%noffnc%nodal_int(hs%myMesh%num_elems,
+     &       hs%myTime%timenc_len))
+C
       hs%myFile%record_counter = 1
-      kount(1)=hs%num_nodes
+      kount(1)=hs%myMesh%num_nodes
       kount(2)=hs%myTime%timenc_len
       start(1)=1
       start(2)=hs%myFile%record_counter
 !   
-!     Store time
+!     Get time
       starti(1)=hs%myFile%record_counter
       counti(1)=hs%myTime%timenc_len
-      iret = nf_get_vara_DOUBLE(hs%ncid, hs%myTime%timenc_id, starti,counti,
-     &       hs%myTime%timenc)
+      iret = nf_get_vara_DOUBLE(hs%ncid, hs%myTime%timenc_id, starti, 
+     &       counti, hs%myTime%timenc)
       CALL check_err(iret)
-      iret = nf_get_vara_DOUBLE(hs%ncid, hs%zeta1_id, start, kount, hs%zeta1)
+C
+C     Read in fulldomain data
+      iret = nf_get_vara_DOUBLE(hs%ncid, hs%zeta1%nodal_data_id, start,
+     &       kount, hs%zeta1%nodal_data)
       CALL check_err(iret)
-      iret = nf_get_vara_DOUBLE(hs%ncid, hs%zeta2_id, start, kount, hs%zeta2)
+      iret = nf_get_vara_DOUBLE(hs%ncid, hs%zeta2%nodal_data_id, start,
+     &       kount, hs%zeta2%nodal_data)
       CALL check_err(iret)
-      iret = nf_get_vara_DOUBLE(hs%ncid, hs%zetad_id, start, kount, hs%zetad)
+      iret = nf_get_vara_DOUBLE(hs%ncid, hs%zetad%nodal_data_id, start,
+     &       kount, hs%zetad%nodal_data)
       CALL check_err(iret)
-      iret = nf_get_vara_DOUBLE(hs%ncid, hs%u_id, start, kount, hs%u)
+      iret = nf_get_vara_DOUBLE(hs%ncid, hs%vel%u_nodal_data_id, start,
+     &       kount, hs%vel%u_nodal_data)
       CALL check_err(iret)
-      iret = nf_get_vara_DOUBLE(hs%ncid, hs%v_id, start, kount, hs%v)
+      iret = nf_get_vara_DOUBLE(hs%ncid, hs%vel%v_nodal_data_id, start,
+     &       kount, hs%vel%v_nodal_data)
       CALL check_err(iret)
-      iret = nf_get_vara_int(hs%ncid, hs%nodecodenc_id, start, kount, 
-     &                       hs%nodecodenc)
+      iret = nf_get_vara_INT(hs%ncid, hs%nodecodenc%nodal_data_id, 
+     &       start, kount, hs%nodecodenc%nodal_int)
       CALL check_err(iret)
       start(1)=1
-      kount(1)=hs%num_elems
-      iret = nf_get_vara_int(hs%ncid, hs%noffnc_id, start, kount, hs%noffnc)
+      kount(1)=hs%myMesh%num_elems
+      iret = nf_get_vara_INT(hs%ncid, hs%noffnc%nodal_data_id, start,
+     &       kount, hs%noffnc%nodal_int)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%imhs_id, imhs)
+C
+C     Place nodal data in ADCIRC arrays 
+
+      ! serial
+      IF (MNPROC.eq.1) THEN 
+         ETA1(:) = hs%zeta1%nodal_data(:,kount(2))
+         ETA2(:) = hs%zeta2%nodal_data(:,kount(2))
+         UU2(:) = hs%vel%u_nodal_data(:,kount(2))
+         VV2(:) = hs%vel%v_nodal_data(:,kount(2))
+         EtaDisc(:) = hs%zetad%nodal_data(:,kount(2))
+         NODECODE(:) = hs%nodecodenc%nodal_int(:,kount(2))
+         NOFF(:) = hs%noffnc%nodal_int(:,kount(2))
+
+      ! parallel
+      ELSE 
+         ! loop over subdomain nodes
+         DO sd_node_number=1,np
+            ! get the corresponding fulldomain node number 
+            fd_node_number = ABS(NODES_LG(sd_node_number)) 
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+            ETA1(sd_node_number) = 
+     &          hs%zeta1%nodal_data(fd_node_number,kount(2))
+            ETA2(sd_node_number) = 
+     &          hs%zeta2%nodal_data(fd_node_number,kount(2))
+            UU2(sd_node_number) = 
+     &          hs%vel%u_nodal_data(fd_node_number,kount(2))
+            VV2(sd_node_number) = 
+     &          hs%vel%v_nodal_data(fd_node_number,kount(2))
+            EtaDisc(sd_node_number) = 
+     &          hs%zetad%nodal_data(fd_node_number,kount(2))
+            NODECODE(sd_node_number) = 
+     &          hs%nodecodenc%nodal_int(fd_node_number,kount(2))
+         ENDDO   
+         ! loop over subdomain elements
+         DO sd_ele_number=1,ne
+            fd_ele_number = ABS(IMAP_EL_LG(sd_ele_number))
+            NOFF(sd_ele_number) = 
+     &          hs%noffnc%nodal_int(fd_ele_number,kount(2))
+         ENDDO
+      ENDIF
+C
+C     Read in model parameters to ADCIRC variables
+      iret = nf_inq_varid(hs%ncid,"imhs",varid)
       CALL check_err(iret)
-!      PRINT *,"NETCDFIO imhs = ", imhs
-      iret = nf_get_var_int(hs%ncid, hs%iths_id, iths)
+      iret = nf_get_var_int(hs%ncid, varid, imhs)
       CALL check_err(iret)
-!      PRINT *,"NETCDFIO iths = ", iths
-      iret = nf_get_var_int(hs%ncid, hs%iestp_id,iestp)
+      iret = nf_inq_varid(hs%ncid,"iths",varid)
       CALL check_err(iret)
-!      PRINT *,"NETCDFIO IESTP = ", iestp
-      iret = nf_get_var_int(hs%ncid, hs%nscoue_id, nscoue)
+      iret = nf_get_var_int(hs%ncid, varid, iths)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%ivstp_id, ivstp)
+      iret = nf_inq_varid(hs%ncid,"iestp",varid)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%nscouv_id, nscouv)
+      iret = nf_get_var_int(hs%ncid, varid, iestp)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%icstp_id, icstp)
+      iret = nf_inq_varid(hs%ncid,"nscoue",varid)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%nscouc_id, nscouc)
+      iret = nf_get_var_int(hs%ncid, varid, nscoue)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%ipstp_id, ipstp)
+      iret = nf_inq_varid(hs%ncid,"ivstp",varid)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%iwstp_id, iwstp)
+      iret = nf_get_var_int(hs%ncid, varid, ivstp)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%nscoum_id,nscoum)
+      iret = nf_inq_varid(hs%ncid,"nscouv",varid)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%igep_id, igep)
+      iret = nf_get_var_int(hs%ncid, varid, nscouv)
       CALL check_err(iret)
-!      PRINT *,"NETCDFIO igep = ", igep
-      iret = nf_get_var_int(hs%ncid, hs%nscouge_id, nscouge)
+      iret = nf_inq_varid(hs%ncid,"icstp",varid)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%igvp_id, igvp)
+      iret = nf_get_var_int(hs%ncid, varid, icstp)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%nscougv_id, nscougv)
+      iret = nf_inq_varid(hs%ncid,"nscouc",varid)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%igcp_id, igcp)
+      iret = nf_get_var_int(hs%ncid, varid, nscouc)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%nscougc_id, nscougc)
+      iret = nf_inq_varid(hs%ncid,"ipstp",varid)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%igpp_id, igpp)
+      iret = nf_get_var_int(hs%ncid, varid, ipstp)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%igwp_id, igwp)
+      iret = nf_inq_varid(hs%ncid,"iwstp",varid)
       CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, hs%nscougw_id, nscougw)
+      iret = nf_get_var_int(hs%ncid, varid, iwstp)
       CALL check_err(iret)
-#endif
+      iret = nf_inq_varid(hs%ncid,"nscoum",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, nscoum)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"igep",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, igep)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nscouge",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, nscouge)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"igvp",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, igvp)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nscougv",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, nscougv)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"igcp",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, igcp)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nscougc",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, nscougc)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"igpp",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, igpp)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"igwp",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, igwp)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nscougw",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, nscougw)
+      CALL check_err(iret)
+C  
+      DEALLOCATE(hs%zeta1%nodal_data)
+      DEALLOCATE(hs%zeta2%nodal_data)
+      DEALLOCATE(hs%zetad%nodal_data)
+      DEALLOCATE(hs%vel%u_nodal_data)
+      DEALLOCATE(hs%vel%v_nodal_data)
+      DEALLOCATE(hs%nodecodenc%nodal_int)
+      DEALLOCATE(hs%noffnc%nodal_int)
+C
+C     now close the netcdf file
+      iret = nf_close(hs%ncid)
+      CALL check_err(iret)
+C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Returning from readNetCDFHotstart."
 #endif

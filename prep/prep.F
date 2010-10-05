@@ -6120,14 +6120,14 @@ C
 C     Create NetCDF output files for those output files where NetCDF
 C     was specified. 
       error = .false.
-      CALL allocNetCDFArrays(61,ElevStaDescript, error)
-      CALL allocNetCDFArrays(62,VelStaDescript, error)
-      CALL allocNetCDFArrays(63,ElevDescript, error)
-      CALL allocNetCDFArrays(64,VelDescript, error)
-      CALL allocNetCDFArrays(71,PrStaDescript, error)
-      CALL allocNetCDFArrays(72,WindVelStaDescript, error)
-      CALL allocNetCDFArrays(73,PrDescript, error)
-      CALL allocNetCDFArrays(74,WindVelDescript, error)
+      CALL allocNetCDFArrays(61, ElevStaDescript, error)
+      CALL allocNetCDFArrays(62, VelStaDescript, error)
+      CALL allocNetCDFArrays(63, ElevDescript, error)
+      CALL allocNetCDFArrays(64, VelDescript, error)
+      CALL allocNetCDFArrays(71, PrStaDescript, error)
+      CALL allocNetCDFArrays(72, WindVelStaDescript, error)
+      CALL allocNetCDFArrays(73, PrDescript, error)
+      CALL allocNetCDFArrays(74, WindVelDescript, error)
 #endif
 c----------------------------------------------------------------------------
       END SUBROUTINE prepNetCDF

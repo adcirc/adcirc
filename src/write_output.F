@@ -2346,9 +2346,9 @@ C
          write(screenUnit,*) 'NetCDF Hotstart undergoing testing.'
 
 #ifdef NETCDF
-C     jgf49.35: TODO: Update this subroutine call with the full complement
-C     of i/o descriptors
-      CALL writeNetCDFHotstart(hss%lun, Elev1Descript, time)
+         CALL writeNetCDFHotstart(hss%lun, Elev1Descript,
+     &        Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
+     &        NodeCodeDescript, NOFFDescript, time)
 #endif
 
       CASE DEFAULT

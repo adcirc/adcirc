@@ -194,14 +194,6 @@ ifeq ($(BUILDTYPE),adcpost)
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
   VPATH :=  $(SRCDIR)/prep 
 endif
-#                                      init
-ifeq ($(BUILDTYPE),init)
-  CF:= $(FC)
-  O_DIR:=odir14/
-  FFLAGS:= $(FFLAGS2) $(DPRE) $(IMODS) $(O_DIR)
-  VPATH :=  $(SRCDIR)/util:$(SRCDIR)/src:$(SRCDIR)
-  LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
-endif
 #                                      aswip
 ifeq ($(BUILDTYPE),aswip)
   CF:= $(PPFC)
@@ -268,7 +260,6 @@ B23_SRC    =  buildstwave23.F
 H2A_SRC    =  hot2asc.F
 INF_SRC    =  inflate.F
 HST_SRC    =  hstime.F
-INI_SRC    =  init.F
 ASW_SRC    =  aswip_1.0.3.F
 
 METIS_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(METIS_SRC) )
@@ -377,8 +368,6 @@ ifeq ($(MAKELEVEL),0)
 	$(MAKE) BUILDTYPE=inflate $@ 
    hstime:
 	$(MAKE) BUILDTYPE=hstime $@
-   init:
-	$(MAKE) BUILDTYPE=init $@
    aswip:
 	$(MAKE) BUILDTYPE=aswip $@
 else
@@ -395,7 +384,6 @@ else
    hot2asc:: $(O_DIR)
    inflate:: $(O_DIR)
    hstime::   $(O_DIR)
-   init::   $(O_DIR)
    aswip::  $(O_DIR)
 
 ifeq ($(NETCDF),enable)
@@ -522,11 +510,11 @@ $(O_DIR)pre_global.o  :  pre_global.F  $(PREP_MOBJ) $(O_DIR)version.o
 
 $(O_DIR)adcprep.o     :  adcprep.F  $(PGLO_MOBJ) $(PMSG_OBJ)
 $(O_DIR)decomp.o      :  decomp.F   $(PGLO_MOBJ)
-$(O_DIR)read_global.o :  read_global.F  $(PGLO_MOBJ)
+$(O_DIR)read_global.o :  read_global.F  $(PGLO_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
 ifeq ($(NETCDF),enable)
 $(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ) $(NC_MOBJ)
 else
-$(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ)
+$(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
 endif
 $(O_DIR)interp.o      :  interp.F  
 $(O_DIR)machdep.o     :  machdep.F
@@ -616,10 +604,6 @@ $(O_DIR)inflate.o     : inflate.F
 # hot start time examiner
 
 $(O_DIR)hstime.o     : hstime.F
-
-# netcdf output file initializer
-
-$(O_DIR)init.o       : init.F $(ADC_MOBJ) $(NC_MOBJ)
 
 # Casey 090302: Added the following lines for SWAN.
 $(O_DIR)swmod1.o                : swmod1.f

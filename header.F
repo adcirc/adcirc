@@ -3,6 +3,12 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.37   - 10/05/2010 - jgf - Removed utility program called init b/c it
+C             was not being used; made compilation of prep.F and read_global.F
+C             dependent on adcirc modules to facilitate sharing of common 
+C             code (this fixes an issue with compiling adcprep w/o netcdf); 
+C             finished reorganization and redevelopment of netcdf hotstart
+C             code in netcdf module (netcdf hotstart testing still required).
 C  v49.36   - 10/04/2010 - rjw - 1) Modifications to 3D turbulence: addition of 
 C             enhanced surface mixed layer.  Variety of chioces hardcoded in
 C             vsmy.f.  Surface roughness in fort.15 is now the minimum
