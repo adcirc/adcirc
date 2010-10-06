@@ -3,6 +3,15 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.38   - 10/06/2010 - jgf - Significant rearrangement of hstart.F to
+C             consolidate the reading of the binary hotstart file all in
+C             one section of the hotstart() subroutine; this was necessary 
+C             b/c the subroutine mingled the reading of the file with 
+C             initialization and logging. In order to have a choice of 
+C             file formats, the reading of the hotstart file must be a 
+C             separate step from initialization, logging and other tasks. 
+C             A call to read a netcdf hotstart file if IHOT.eq.367 or
+C             IHOT.eq.368 was added. 
 C  v49.37   - 10/05/2010 - jgf - Removed utility program called init b/c it
 C             was not being used; made compilation of prep.F and read_global.F
 C             dependent on adcirc modules to facilitate sharing of common 

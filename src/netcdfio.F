@@ -1238,6 +1238,8 @@ C     upon to create them.
 #endif
          ENDIF
       ELSE
+         ! these lines are executed to create netcdf hotstart files
+         myFile%createFile = .true.
          myFile%record_counter = 1         
       ENDIF
 C     
@@ -2434,7 +2436,7 @@ C-----------------------------------------------------------------------
      &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
      &                   igpp, igwp, nscougw, ETA1, ETA2, EtaDisc, 
      &                   UU2, VV2, NODECODE, NOFF, NODES_LG, IMAP_EL_LG,
-     &                   MNPROC, NE, NP, MYPROC
+     &                   MNPROC, MYPROC, NE, NP
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif

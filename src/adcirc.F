@@ -154,9 +154,10 @@ C...    writer processors will not execute the rest in this source file (adcirc.
 
       ! File Fmt Version  must match Major and Minor numbers.
       FileFmtVersion = 
-     &VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
-      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,'(a)')"ADCIRC Version is "//ADC_VERSION
-
+     &   VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
+      IF ((NSCREEN.NE.0).AND.(MYPROC.EQ.0)) THEN
+         WRITE(ScreenUnit,'(a)')"ADCIRC Version is "//ADC_VERSION
+      ENDIF
 
 #ifdef CMACHSUN
       CALL ABRUPT_UNDERFLOW() ! Abrupt underflow for Sun computers
@@ -180,14 +181,26 @@ C     kmd 48.33bc - include a new initial condition file for baroclinic
 C...
 C...******************** PROGRAM SETUP SECTION ************************
 C...
-      IF (IHOT.EQ.0) THEN
-         CALL COLDSTART()
-         ITHS = 0  !TCM20091029 v49.02 Initialized to zero for coldstarts
-      ELSE IF (IHOT.EQ.17) THEN 
-         CALL INIT_COND()
-      ELSE
-         CALL HOTSTART()
-      ENDIF
+      SELECT CASE(IHOT)
+         CASE(0) 
+            CALL COLDSTART()
+            ITHS = 0  !TCM20091029 v49.02 Initialized to zero for coldstarts
+         CASE(17) 
+            CALL INIT_COND()
+         CASE(67,68,367,368) ! non-portable binary or netcdf hotstart file
+            CALL HOTSTART()
+         CASE DEFAULT
+            IF ((NSCREEN.ne.0).and.(myProc.eq.0)) THEN
+               WRITE(screenUnit,*) "ERROR: IHOT=",IHOT," is not valid."
+               WRITE(screenUnit,*) "ADCIRC terminating."
+            ENDIF
+            WRITE(16,*) "ERROR: IHOT=",IHOT," is not valid."
+            WRITE(16,*) "ADCIRC terminating."
+#ifdef CMPI
+            CALL MSG_FINI()
+#endif 
+            STOP
+      END SELECT
 
 C...Default beginning and ending time steps
 

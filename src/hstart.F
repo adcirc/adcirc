@@ -35,7 +35,9 @@ C
       USE GLOBAL
       USE GLOBAL_IO
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT,
-     &    qsurf
+     &    qsurf, NFEN, DUU, DUV, DVV, UU, VV, BSX, BSY, Q, WZ, q20, l, 
+     &    SigT, Sal, Temp, N3DSD, I3DSDRec, N3DSV, I3DSVRec, N3DST,
+     &    I3DSTRec, N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec
 C
       USE SIZES
       USE HARM
@@ -55,7 +57,7 @@ C   End Addition for netCDF by MCF 5/18/08
       IMPLICIT NONE
 
       INTEGER IT
-      INTEGER I, J              !local loop counters
+      INTEGER I, J, NH, N              !local loop counters
       INTEGER NCyc, NA, InputFileFmtVn
 
 C   kmd48.33bc - add variable for timestep change 
@@ -108,114 +110,62 @@ C   kmd48.33bc - add variables for heat flux
       CHARACTER(80) :: CDUM80
       REAL(SZ), PARAMETER :: RHOAIR=1.225d0
       REAL(SZ) :: RNDAYHS
+      REAL(SZ),ALLOCATABLE :: RealQ_Tmp(:,:)
+      INTEGER :: IDenHS
+      REAL(SZ) :: ImaginaryPartOfQ
 C
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
 C
       useNetCDF = .FALSE.
+C     -----------------------------------
 C
-      IF (  (ABS(NOUTE).EQ.3).OR.(ABS(NOUTV).EQ.3).OR. 
-     &      (ABS(NOUTM).EQ.3).OR.(ABS(NOUTC).EQ.3).OR. 
-     &       (ABS(NOUTGE).EQ.3).OR.(ABS(NOUTV).EQ.3).OR.
-     &       (ABS(NOUTGC).EQ.3).OR.(ABS(NOUTGW).EQ.3).OR.
-     &       (NHSTAR.LT.0) .OR. (IHOT.LT.0) ) THEN
-         useNetCDF = .TRUE.
-      ENDIF
-C...  
-C......READ IN 2DDI HOT START INITIAL CONDITION OVER WHOLE DOMAIN
-C......THIS FILE ALWAYS HAS A RECL=8 BECAUSE IT IS ASSUMED THAT THE HARMONIC
-C......ANALYSIS IS ALWAYS DONE IN 64 BITS, EVEN ON A WORKSTATION
-C...  
+C     R E A D   H O T S T A R T   F I L E
+C
+C     -----------------------------------
+C     The value of IHOT indicates the type of
+C     the file as well as the file name.
+      SELECT CASE(IHOT)
 
-C     Determine if the hot start file exists.
-      FileFound=.False.
-!      IF(myproc.eq.0) PRINT *,"IHOT = ", IHOT, " ncmode = ",ncmode
-#ifdef NETCDF
-      IF ((IHOT.eq.67).OR.(IHOT.eq.-67)) THEN
-#else
-      IF (IHOT.eq.67) THEN
-#endif     
-!      IF(myproc.eq.0) PRINT *,"1- IHOT = ", IHOT, " ncmode = ",ncmode
-         INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.67',EXIST=FileFound)
-      ENDIF
-#ifdef NETCDF
-      IF ((IHOT.eq.68).OR.(IHOT.eq.-68)) THEN
-#else
-      IF (IHOT.eq.68) THEN
-#endif
-!      IF(myproc.eq.0) PRINT *,"2- IHOT = ", IHOT, " ncmode = ",ncmode
-         INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.68',EXIST=FileFound)
-      ENDIF
-
-#ifdef NETCDF
-      if (MNPROC.EQ.1) THEN
-!      IF(myproc.eq.0) PRINT *,"======serial netcdf========",ncmode
-!      IF(myproc.eq.0) PRINT *,"3- IHOT = ", IHOT, " ncmode = ",ncmode
-         IF(IHOT.EQ.-67)THEN 
-!      IF(myproc.eq.0) PRINT *,"4- IHOT = ", IHOT, " ncmode = ",ncmode
-!        PRINT *, "OPEN NETCDF HOTSTART FILE: fort.67.nc"
-!        INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.67.nc',EXIST=FileFound)
-            INQUIRE(FILE='fort.67.nc',EXIST=FileFound)
-         ELSEIF(IHOT.EQ.-68) THEN
-!      IF(myproc.eq.0) PRINT *,"5- IHOT = ", IHOT, " ncmode = ",ncmode
-!        PRINT *, "OPEN NETCDF HOTSTART FILE: fort.68.nc"
-!        INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.68.nc',EXIST=FileFound)
-            INQUIRE(FILE='fort.68.nc',EXIST=FileFound)
+      CASE(67,68) ! non-portable binary file format
+C...  
+C...     READ IN 2DDI HOT START INITIAL CONDITION OVER WHOLE DOMAIN
+C...     THIS FILE ALWAYS HAS A RECL=8 BECAUSE IT IS ASSUMED THAT THE HARMONIC
+C...     ANALYSIS IS ALWAYS DONE IN 64 BITS, EVEN ON A WORKSTATION
+C...  
+C        Determine if the hot start file exists.
+         fileFound=.False.
+         IF (IHOT.eq.67) THEN
+            hss%lun = 67
+            hss%filename = "fort.67"
+         ELSE
+            hss%lun = 68
+            hss%filename = "fort.68"
          ENDIF
-      ENDIF
-#endif
-      IF (.not.FileFound) THEN
-         WRITE(16,1001)         ! hot start file  
-         WRITE(16,1011)         ! was not found.
-         WRITE(16,9973)         ! execution terminated
-         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-            WRITE(ScreenUnit,1001)       
-            WRITE(ScreenUnit,1011)       
-            WRITE(16,9973)      ! execution terminated
-         ENDIF
+         INQUIRE(FILE=TRIM(INPUTDIR)//'/'//trim(hss%filename),
+     &      EXIST=fileFound)
+ 
+         IF (fileFound.eqv..false.) THEN
+            WRITE(16,1001)         ! hot start file  
+            WRITE(16,1011)         ! was not found.
+            WRITE(16,9973)         ! execution terminated
+            IF (NScreen.ne.0.and.MyProc.eq.0) THEN
+               WRITE(ScreenUnit,1001)       
+               WRITE(ScreenUnit,1011)       
+               WRITE(16,9973)      ! execution terminated
+            ENDIF
 #ifdef CMPI
-         CALL MSG_FINI()
+            CALL MSG_FINI()
 #endif
-         STOP
-      ENDIF
-C
-C     Now open the hot start (unit 67 or 68) file.
-#ifdef NETCDF
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68. or.   
-     &     IHOT.EQ.-67.or. IHOT.EQ.-68 ) THEN 
-#else
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68) THEN 
-#endif
-
+            STOP
+         ENDIF
 C        start reading binary hot start file
-
          WRITE(16,240) 
  240     FORMAT(/,9X,'Hot start file was found.',
      &     ' Opening file.') 
-!      IF(IHOT.EQ.67) OPEN(67,FILE=TRIM(INPUTDIR)//'/'//'fort.67',
-!     &     ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
-!      IF(IHOT.EQ.68) OPEN(68,FILE=TRIM(INPUTDIR)//'/'//'fort.68',
-!     &     ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
+         OPEN(hss%lun,FILE=TRIM(INPUTDIR)//'/'//hss%filename,
+     &        ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
 
-#ifdef NETCDF
-         IF(IHOT.EQ.67.or.(IHOT.EQ.-67) ) THEN 
-              OPEN(67,FILE=TRIM(INPUTDIR)//'/'//'fort.67',
-     &        ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
-      
-         ELSEIF(IHOT.EQ.68.or.(IHOT.EQ.-68) ) THEN
-              OPEN(68,FILE=TRIM(INPUTDIR)//'/'//'fort.68',
-     &        ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
-         ENDIF
-#else
-         IF(IHOT.EQ.67) THEN 
-              OPEN(67,FILE=TRIM(INPUTDIR)//'/'//'fort.67',
-     &        ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
-      
-         ELSEIF(IHOT.EQ.68)  THEN
-              OPEN(68,FILE=TRIM(INPUTDIR)//'/'//'fort.68',
-     &        ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
-         ENDIF
-#endif
          IF (ErrorIO.GT.0) THEN 
             WRITE(16,1001)         ! hot start file
             WRITE(16,1005)         ! exists but can't be opened
@@ -230,83 +180,332 @@ C        start reading binary hot start file
 #endif
             STOP                   ! We're toast.
          ENDIF
-      
-      ENDIF
 C
- 1001 FORMAT('ERROR: The hot start file')
- 1011 FORMAT('was not found.') 
- 1012 FORMAT('was a nonmatching version') 
- 1005 FORMAT('exists but cannot be opened.')
- 9973 FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-
-C   Start Addition for netCDF by MCF 5/8/08
+ 1001    FORMAT('ERROR: The hot start file')
+ 1011    FORMAT('was not found.') 
+ 1012    FORMAT('was a nonmatching version') 
+ 1005    FORMAT('exists but cannot be opened.')
+ 9973    FORMAT(/,1X,'!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!',//)
 C
-C   READ NETCDF HOTSTART FILE IF SERIAL VERSION IS BEING USED
+C        Now read the non-portable binary hot start file.
+         IHOTSTP=1
+         READ(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
+         if (.not.
+     &     CMP_VERSION_NUMBERS(InputFileFmtVn,FileFmtVersion))then
+            WRITE(16, 1001)
+            write(16, 1012)
+            write(16, 9973)
+            if (NScreen /= 0 .and. myproc == 0) then
+               WRITE(ScreenUnit, 1001)
+               write(ScreenUnit, 1012)
+               write(ScreenUnit, 9973)
+            endif
+#ifdef CMPI
+            call msg_fini()
+#endif
+            stop
+         endif
+         READ(IHOT,REC=IHOTSTP) IMHS         ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) TIME         ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) ITHS         ; IHOTSTP = IHOTSTP + 1
 
+         READ(IHOT,REC=IHOTSTP) NP_G_IN      ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) NE_G_IN      ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) NP_A_IN      ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) NE_A_IN      ; IHOTSTP = IHOTSTP + 1
+C      
+         DO I=1, NP
+            READ(IHOT,REC=IHOTSTP) ETA1(I)   ; IHOTSTP = IHOTSTP + 1
+         END DO
+         DO I=1, NP
+            READ(IHOT,REC=IHOTSTP) ETA2(I)   ; IHOTSTP = IHOTSTP + 1
+         END DO
+C        jgf46.34 Added support for IBTYPE=52.
+         DO I=1, NP
+            READ(IHOT,REC=IHOTSTP) EtaDisc(I); IHOTSTP = IHOTSTP + 1
+         END DO
+         DO I=1, NP
+            READ(IHOT,REC=IHOTSTP) UU2(I)    ; IHOTSTP = IHOTSTP + 1
+         END DO
+         DO I=1, NP
+            READ(IHOT,REC=IHOTSTP) VV2(I)    ; IHOTSTP = IHOTSTP + 1
+         END DO
+         IF(IMHS.EQ.10) THEN
+           DO I=1, NP
+              READ(IHOT,REC=IHOTSTP) CH1(I)  ; IHOTSTP = IHOTSTP + 1
+           END DO
+         ENDIF
+         DO I=1, NP
+            READ(IHOT,REC=IHOTSTP) NNODECODE(I)  ; IHOTSTP = IHOTSTP + 1
+         END DO
+         DO I=1,NE
+            READ(IHOT,REC=IHOTSTP) NOFF(I)       ; IHOTSTP = IHOTSTP + 1
+         END DO
+C
+         READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
+         READ(IHOT,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
+         !
+         ! Read 3D data from binary hotstart file if this is a 3D run
+         IF (C3D) THEN
+C           kmd48.33bc - allocate realQ_tmp
+            ALLOCATE(RealQ_Tmp(NP,NFEN) )
+            READ(IHOT,REC=IHOTSTP) IDenHS
+            IHOTSTP=IHOTSTP+1
+            !3D station density output time counter
+            READ(IHOT,REC=IHOTSTP) N3DSD 
+            IHOTSTP=IHOTSTP+1
+            READ(IHOT,REC=IHOTSTP) I3DSDRec
+            IHOTSTP=IHOTSTP+1
+            !3D station velocity output time counter
+            READ(IHOT,REC=IHOTSTP) N3DSV
+            IHOTSTP=IHOTSTP+1
+            READ(IHOT,REC=IHOTSTP) I3DSVRec
+            IHOTSTP=IHOTSTP+1
+            !3D station turbulence output time counter
+            READ(IHOT,REC=IHOTSTP) N3DST
+            IHOTSTP=IHOTSTP+1
+            READ(IHOT,REC=IHOTSTP) I3DSTRec
+            IHOTSTP=IHOTSTP+1
+            READ(IHOT,REC=IHOTSTP) N3DGD
+            IHOTSTP=IHOTSTP+1
+            READ(IHOT,REC=IHOTSTP) I3DGDRec
+            IHOTSTP=IHOTSTP+1
+            READ(IHOT,REC=IHOTSTP) N3DGV
+            IHOTSTP=IHOTSTP+1
+            READ(IHOT,REC=IHOTSTP) I3DGVRec
+            IHOTSTP=IHOTSTP+1
+            READ(IHOT,REC=IHOTSTP) N3DGT
+            IHOTSTP=IHOTSTP+1
+            READ(IHOT,REC=IHOTSTP) I3DGTRec
+            IHOTSTP=IHOTSTP+1
+C           kmd48.33bc - changed to the format used with the global IO
+            DO NH=1,NP
+               READ(IHOT,REC=IHOTSTP) DUU(NH)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO NH=1,NP
+               READ(IHOT,REC=IHOTSTP) DUV(NH)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO NH=1,NP
+               READ(IHOT,REC=IHOTSTP) DVV(NH)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO NH=1,NP
+               READ(IHOT,REC=IHOTSTP) UU(NH)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO NH=1,NP
+               READ(IHOT,REC=IHOTSTP) VV(NH)
+               IHOTSTP=IHOTSTP+1
+            END DO
+            DO NH=1,NP
+               READ(IHOT,REC=IHOTSTP) BSX(NH)
+               IHOTSTP=IHOTSTP+1
+               IF((MYPROC.EQ.23).AND.(NH.EQ.15784)) THEN
+                  PRINT *, "BSX(346561) = ", BSX(15784)
+               END IF
+            END DO
+            DO NH=1,NP
+               READ(IHOT,REC=IHOTSTP) BSY(NH)
+               IHOTSTP=IHOTSTP+1
+               IF((MYPROC.EQ.23).AND.(NH.EQ.15784)) THEN
+                  PRINT *, "BSY(346561) = ", BSY(15784)
+               END IF
+            ENDDO
+C           kmd48.33bc - changed to format used in global IO, layer output
+            DO N=1,NFEN
+               DO NH=1,NP
+                  READ(IHOT,REC=IHOTSTP) RealQ_Tmp(NH,N)
+                  IHOTSTP=IHOTSTP+1
+                  IF((MYPROC.EQ.23).AND.(NH.EQ.15785)) THEN
+                     PRINT *,"RealQ_Tmp(346562,1) = ",RealQ_Tmp(15785,1)
+                  END IF
+               END DO
+            END DO
+            DO N=1,NFEN
+               DO NH=1,NP
+                  READ(IHOT,REC=IHOTSTP) ImaginaryPartOfQ
+                  IHOTSTP=IHOTSTP+1
+                  Q(NH,N) = RealQ_Tmp(NH,N) + I*ImaginaryPartOfQ
+               END DO
+            END DO
+            DO N=1,NFEN
+               DO NH=1,NP
+                  READ(IHOT,REC=IHOTSTP) WZ(NH,N)
+                  IHOTSTP=IHOTSTP+1
+               END DO
+            END DO
+            DO N=1,NFEN
+               DO NH=1,NP
+                  READ(IHOT,REC=IHOTSTP) q20(NH,N)
+                  IHOTSTP=IHOTSTP+1
+               END DO
+            END DO
+            DO N=1,NFEN
+               DO NH=1,NP
+                  READ(IHOT,REC=IHOTSTP) l(NH,N)
+                  IHOTSTP=IHOTSTP+1
+               END DO
+            END DO
+C           kmd48.33bc - need to determine if IDEN parameter in hotstart
+C           is different than IDEN from fort.15 file. If so, determine which
+C           one should be used in the simulation. 
+            IF (MYPROC.EQ.0) THEN
+               PRINT *, "IDEN = ", IDEN
+               PRINT *, "IDENHS = ", IDENHS
+            END IF
+            IF (IDenHS.NE.IDEN) THEN
+               IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GE.1)) THEN
+                  ! IDEN value from fort.15 should be used 
+               ELSE IF ((CBAROCLINIC).AND.(RES_BC_FLAG.LE.0)) THEN
+                  IDEN=IDenHS
+               END IF
+            END IF
+            IF(ABS(IDen).EQ.1) THEN
+               DO N=1,NFEN
+                  DO NH=1,NP
+                     READ(IHOT,REC=IHOTSTP) SigT(NH,N)
+                     IHOTSTP=IHOTSTP+1
+                  END DO
+               END DO
+            ENDIF
+            IF(ABS(IDen).EQ.2) THEN
+               DO N=1,NFEN
+                  DO NH=1,NP
+                     READ(IHOT,REC=IHOTSTP) Sal(NH,N)
+                     IHOTSTP=IHOTSTP+1
+                  END DO
+               END DO
+            ENDIF
+            IF(ABS(IDen).EQ.3) THEN
+               DO N=1,NFEN
+                  DO NH=1,NP
+                     READ(IHOT,REC=IHOTSTP) Temp(NH,N)
+                     IHOTSTP=IHOTSTP+1
+                  END DO
+               END DO
+            ENDIF
+            IF(ABS(IDen).EQ.4) THEN
+               DO N=1,NFEN
+                  DO NH=1,NP
+                     READ(IHOT,REC=IHOTSTP) Sal(NH,N)
+                     IHOTSTP=IHOTSTP+1
+                     IF((MYPROC.EQ.23).AND.(NH.EQ.15785)) THEN
+                        PRINT *, "Sal(346562,1) = ", Sal(15785,1)
+                     END IF
+                  END DO
+               END DO
+               DO N=1,NFEN
+                  DO NH=1,NP
+                     READ(IHOT,REC=IHOTSTP) Temp(NH,N)
+                     IHOTSTP=IHOTSTP+1
+                     IF((MYPROC.EQ.23).AND.(NH.EQ.15785)) THEN
+                        PRINT *, "Temp(346562,1) = ", Temp(15785,1)
+                     END IF
+                  ENDDO
+               ENDDO
+            END IF
+            DEALLOCATE(RealQ_Tmp)
+         ENDIF  ! C3D
+C...
+C......  HOT START INFORMATION FOR HARMONIC ANALYSIS
+C...
+         IF(IHARIND.EQ.1) THEN
+            IHABEG=ITHAS+NHAINC
+C...
+C........   IF HARMONIC ANALYSIS HAS ALREADY BEGUN, READ IN HOT START
+C........   HARMONIC ANALYSIS, MEAN AND SQUARE INFO
+C...
+            IF(ITHS.GT.ITHAS) THEN
+               READ(IHOT,REC=IHOTSTP) ICHA ; IHOTSTP = IHOTSTP + 1
+            ENDIF
+            IF(ITHS.GE.IHABEG) THEN
+               !jgf49.38: TODO: The HAHOTS subroutine mingles reading
+               ! with initialization ... these will have to be separated
+               ! to enable harmonic analysis data to be stored in other
+               ! file formats (e.g., netcdf).
+               CALL HAHOTS(NSTAE,NSTAV,NP,NHASE,NHASV,NHAGE,NHAGV,
+     &             NSCREEN,ScreenUnit,IHOTSTP,IHOT,MYPROC)
+               IF(NHASE.EQ.1) CALL HAHOTSES(NSTAE,IHOTSTP,IHOT)
+               IF(NHASV.EQ.1) CALL HAHOTSVS(NSTAV,IHOTSTP,IHOT)
+               IF(NHAGE.EQ.1) CALL HAHOTSEG(NP,IHOTSTP,IHOT)
+               IF(NHAGV.EQ.1) CALL HAHOTSVG(NP,IHOTSTP,IHOT)
+            ENDIF
+
+C..         Read in Means and Squares
+            IF(CHARMV.eqv..true.) THEN
+               IF((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN
+                  READ(IHOT,REC=IHOTSTP) NTSTEPS ; IHOTSTP = IHOTSTP + 1
+                  IF(NHAGE.EQ.1) THEN
+                     DO I=1,NP
+                        READ(IHOT,REC=IHOTSTP) ELAV(I) 
+                        IHOTSTP = IHOTSTP + 1
+                        READ(IHOT,REC=IHOTSTP) ELVA(I) 
+                        IHOTSTP = IHOTSTP + 1
+                     ENDDO
+                  ENDIF
+                  IF(NHAGV.EQ.1) THEN
+                     DO I=1,NP
+                        READ(IHOT,REC=IHOTSTP) XVELAV(I) 
+                        IHOTSTP = IHOTSTP+1
+                        READ(IHOT,REC=IHOTSTP) YVELAV(I) 
+                        IHOTSTP = IHOTSTP+1
+                        READ(IHOT,REC=IHOTSTP) XVELVA(I) 
+                        IHOTSTP = IHOTSTP+1
+                        READ(IHOT,REC=IHOTSTP) YVELVA(I) 
+                        IHOTSTP = IHOTSTP+1
+                     ENDDO
+                  ENDIF
+               ENDIF
+            ENDIF   !  charmv
+         ENDIF    !HARIND
+         CLOSE(hss%lun)  ! close non-portable binary hotstart file
+C
+C
+      CASE(367,368)  ! netcdf hotstart file
+         IF (IHOT.eq.367) THEN
+            hss%lun = 67
+         ELSE 
+            hss%lun = 68
+         ENDIF
 #ifdef NETCDF
-      IF(MNPROC.eq.1) THEN                     ! serial
-         IF (IHOT.EQ.-67.OR.IHOT.EQ.-68) THEN  ! start reading netCDF hot start file
-            call readNetCDFHotstart(ABS(IHOT))
-            DO I=1,MNP
-C               populate adcirc arrays from the netcdf file
-C               eta1 (I)=eta11(I, 1)
-C               eta2 (I)=eta22(I, 1)
-C               EtaDisc (I)=etadd(I, 1)
-C               UU2 (I)=UU22(I, 1)
-C               VV2 (I)=VV22(I, 1)
-C               nnodecode (I)=nodecodenc(I)
-            END DO
-            DO I=1,MNE
-C               noff (I)=noffnc(I)
-            END DO
-            NP_G_IN = mnp
-            NE_G_IN = mne
-            NP_A_IN = mnp
-            NE_A_IN = mne
-         ENDIF             ! finish reading netCDF hot start file
-      ENDIF     
-
-C   End Addition for netCDF by MCF 5/8/08
+         ! jgf49.38: TODO: The NetCDF hotstart file does not
+         ! support 3D or harmonic analysis data yet.
+         CALL readNetCDFHotstart(hss%lun) 
 #endif
 
-
-C
-C     Now read the hot start file.
-#ifdef NETCDF
-       IF(( IHOT.EQ.-67.or. IHOT.EQ.-68 )) IHOTNC=IHOT
-             ! start reading binary hot start file
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68. or.
-     &    (MNPROC.gt.1.and.
-     &    ( IHOT.EQ.-67.or. IHOT.EQ.-68 ) ) )THEN  
-#else
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68) THEN
+      CASE DEFAULT
+         WRITE(*,*) "ERROR: IHOT was set to '",IHOT,
+     &    "' but this value of IHOT is not valid.
+     &This run will now terminate."
+#ifdef CMPI
+         CALL MSG_FINI()
 #endif
-       IHOT=ABS(IHOT)
-
-      IHOTSTP=1
-      READ(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
-
-      IF(IHOTNC.GE.0)THEN
-      if (.not.CMP_VERSION_NUMBERS(InputFileFmtVn,FileFmtVersion))then
-!      PRINT *,"IHOTNC ", IHOTNC
-!      PRINT *,"InputFileFmtVn",InputFileFmtVn
-!      PRINT *,"FileFmtVersion",FileFmtVersion
-        WRITE(16, 1001)
-        write(16, 1012)
-        write(16, 9973)
-        if (NScreen /= 0 .and. myproc == 0) then
-          WRITE(ScreenUnit, 1001)
-          write(ScreenUnit, 1012)
-          write(ScreenUnit, 9973)
-        endif
-        stop
-      endif
-      ENDIF
-      READ(IHOT,REC=IHOTSTP) IMHS         ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) TIME         ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) ITHS         ; IHOTSTP = IHOTSTP + 1
-
-C   kmd48.33bc - implemented a varying Dt for 3D baroclinic
+         STOP
+      END SELECT
+C     ---------------------------------------------
+C
+C     I N I T I A L I Z E   H O T S T A R T   R U N
+C
+C     ---------------------------------------------
+C     kmd48.33bc - implemented a varying Dt for 3D baroclinic
       IF((IDEN.GE.1).AND.(C3D).AND.(CBAROCLINIC)) THEN 
          CHOTHS=.TRUE.
       END IF 
@@ -323,60 +522,52 @@ C   kmd48.33bc - implemented a varying Dt for 3D baroclinic
       ELSE 
         DTDPHS=DTDP
       END IF 
-
-
-      READ(IHOT,REC=IHOTSTP) NP_G_IN      ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NE_G_IN      ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NP_A_IN      ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NE_A_IN      ; IHOTSTP = IHOTSTP + 1
-      
-!      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"IMHS = ",IMHS
-!      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"TIME = ",TIME
-!      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"ITHS = ",ITHS
-!      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"NP_G_IN = ",NP_G_IN
-!      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"NE_G_IN = ",NE_G_IN
-!      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"NP_A_IN = ",NP_A_IN
-!      IF(ncmode.eq.2.and.MyProc.eq.0)PRINT *,"NE_A_IN = ",NE_A_IN
-      
-      DO I=1, NP
-         READ(IHOT,REC=IHOTSTP) ETA1(I)   ; IHOTSTP = IHOTSTP + 1
-      END DO
-      DO I=1, NP
-         READ(IHOT,REC=IHOTSTP) ETA2(I)   ; IHOTSTP = IHOTSTP + 1
-      END DO
-C     jgf46.34 Added support for IBTYPE=52.
-      DO I=1, NP
-         READ(IHOT,REC=IHOTSTP) EtaDisc(I); IHOTSTP = IHOTSTP + 1
-      END DO
-      DO I=1, NP
-         READ(IHOT,REC=IHOTSTP) UU2(I)    ; IHOTSTP = IHOTSTP + 1
-      END DO
-      DO I=1, NP
-         READ(IHOT,REC=IHOTSTP) VV2(I)    ; IHOTSTP = IHOTSTP + 1
-      END DO
-      IF(IMHS.EQ.10) THEN
-        DO I=1, NP
-           READ(IHOT,REC=IHOTSTP) CH1(I)  ; IHOTSTP = IHOTSTP + 1
-        END DO
-      ENDIF
-      DO I=1, NP
-         READ(IHOT,REC=IHOTSTP) NNODECODE(I)  ; IHOTSTP = IHOTSTP + 1
-      END DO
-      DO I=1,NE
-         READ(IHOT,REC=IHOTSTP) NOFF(I)       ; IHOTSTP = IHOTSTP + 1
-      END DO
-
-      ENDIF                                                             ! finish reading binary hot start file
-!      if(myproc.eq.0) THEN
-!                   PRINT *,"  ETA1(1) = ", ETA1(1)
-!                   PRINT *,"  ETA2(1) = ", ETA2(1)
-!      ENDIF
       IF (DTDP.NE.DTDPHS) THEN
          DO I=1,NP
             ETA1(I)=ETA2(I) + DTDP*((ETA1(I)-ETA2(I))/DTDPHS)
          END DO 
       END IF 
-
+C     kmd48.33bc - added time and time step to be passed to the hotstart file
+      IF(C3D) THEN
+        CALL HOTSTART_3D(TIME,ITHS)
+      ENDIF
+C...
+C.....IF HARMONIC ANALYSIS WAS REQUESTED BUT HAS NOT STARTED, SET UP
+C     THE HARMONIC ANALYSIS
+C
+C     jgf49.38: TODO: Initialization the harmonic analysis in-progress was
+C     performed during the reading of harmonic analysis section of the
+C     binary hotstart file.
+C...
+      IF(IHARIND.EQ.1) THEN
+        IHABEG=ITHAS+NHAINC
+         IF(ITHS.LT.IHABEG) THEN
+            ICHA=0
+            CALL HACOLDS(HAFREQ)
+            IF(NHASE.EQ.1) CALL HACOLDSES(NSTAE)
+            IF(NHASV.EQ.1) CALL HACOLDSVS(NSTAV)
+            IF(NHAGE.EQ.1) CALL HACOLDSEG(NP)
+            IF(NHAGV.EQ.1) CALL HACOLDSVG(NP)
+            IF (CHARMV) THEN
+               DO I=1,NP
+                  ELAV(I)=0.D0
+                  XVELAV(I)=0.D0
+                  YVELAV(I)=0.D0
+                  ELVA(I)=0.D0
+                  XVELVA(I)=0.D0
+                  YVELVA(I)=0.D0
+               END DO
+            ENDIF   !   charmv
+         ENDIF
+      ENDIF
+C
+      IF (  (ABS(NOUTE).EQ.3).OR.(ABS(NOUTV).EQ.3).OR. 
+     &      (ABS(NOUTM).EQ.3).OR.(ABS(NOUTC).EQ.3).OR. 
+     &       (ABS(NOUTGE).EQ.3).OR.(ABS(NOUTV).EQ.3).OR.
+     &       (ABS(NOUTGC).EQ.3).OR.(ABS(NOUTGW).EQ.3)) THEN
+         useNetCDF = .TRUE.
+      ENDIF
+C
       DO I=1, NP
          ETAS(I)=ETA2(I)-ETA1(I)
          H2=DP(I)+IFNLFA*ETA2(I)
@@ -419,12 +610,7 @@ C     for IBTYPE=52.
          RampMete2=0.0d0
          RampWRad2=0.0d0
       ENDIF
-     
-Cjgf46.02 comm.out for Katrina  IF(NRAMP.EQ.1) THEN
-Cjgf46.02 comm.out for Katrina    RAMP1=TANH((2.D0*(ITHS-1)*DTDP/86400.D0)/DRAMP)
-Cjgf46.02 comm.out for Katrina    RAMP2=TANH((2.D0*ITHS*DTDP/86400.D0)/DRAMP)
-Cjgf46.02 comm.out for Katrina  ENDIF
-
+C
 C     jgf48.4627 If user only requests meteorological output, then 
 C     set a flag that turns off the calculation of the GWCE and
 C     momentum equations
@@ -1570,27 +1756,11 @@ C...
 C....IF RESTARTING THE ELEVATION STATION OUTPUT FILE, GO TO THE PROPER PLACE
 C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
 C...
-#ifdef NETCDF
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68. OR.
-     &    ((IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
-#else
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68) THEN
-#endif
-
-      READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
       WRITE(16,1040) IESTP,NSCOUE
  1040 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN ELEVATION ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER = ',I6)
      
-      ENDIF 
-#ifdef NETCDF      
-      IF ((IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
-         NCIESTP=IESTP
-         NCCOUE=NSCOUE
-      ENDIF
-#endif    
       IF(NOUTE.LT.0) THEN
         IESTP=0
         NSCOUE=0
@@ -1658,27 +1828,11 @@ c       WRITE(61,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE W
 C...
 C....GO TO THE PROPER PLACE IN THE VELOCITY STATION OUTPUT FILE
 C...
-#ifdef NETCDF
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68.OR.
-     &    ((IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
-#else
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68.)THEN
-#endif
-
-      READ(IHOT,REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
       WRITE(16,1042) IVSTP,NSCOUV
  1042 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN VELOCITY ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER =',I6)
      
-      ENDIF
-#ifdef NETCDF     
-      IF ((IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
-         NCIVSTP=IVSTP
-         NCCOUV=NSCOUV
-      ENDIF
-#endif     
       IF(NOUTV.LT.0) THEN
         IVSTP=0
         NSCOUV=0
@@ -1746,23 +1900,10 @@ c       WRITE(62,REC=ITEMPSTP+1) NTRSPV   ! ALLOW ADDITIONAL OUTPUT DATA TO BE W
 C...
 C....GO TO THE PROPER PLACE IN THE CONCENTRATION STATION OUTPUT FILE
 C...
-#ifdef NETCDF
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68. OR.
-     &    ( (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
-#else
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
-#endif
-
-
-      READ(IHOT,REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
       WRITE(16,1044) ICSTP,NSCOUC
  1044 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN CONCENTRATION ',
      &                'STATION FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER = ',I6)
-     
-      ENDIF
-      
       IF(NOUTC.LT.0) THEN
         ICSTP=0
         NSCOUC=0
@@ -1831,31 +1972,12 @@ c       WRITE(81,REC=ITEMPSTP+1) NTRSPC   ! ALLOW ADDITIONAL OUTPUT DATA TO BE W
 C...
 C....GO TO THE PROPER PLACE IN THE METEOROLOGICAL STATION OUTPUT FILE
 C...
-#ifdef NETCDF
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68.OR.
-     &    ( (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
-#else
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68) THEN
-#endif
-
-      READ(IHOT,REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
-      READ(IHOT,REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
       WRITE(16,1038) IWSTP,IPSTP,NSCOUM
  1038 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE WIND STATION',
      &                ' FILE BY THE TIME OF THE HOT START',
      &        /,1X,I6,' LINES OR RECORDS WRITTIN IN THE PRES STATION',
      &                ' FILE BY THE TMIE OF THE HOT START',
      &           /,8X,'SPOOL COUNTER = ',I6)
-     
-      ENDIF
-#ifdef NETCDF
-      IF ( (IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
-         NCIWSTP=IWSTP
-         NCIPSTP=IPSTP
-         NCCOUM=NSCOUM
-      ENDIF
-#endif
      
       IF(NOUTM.LT.0) THEN
         IPSTP=0
@@ -1953,38 +2075,10 @@ c         WRITE(72,REC=ITMEPSTP+1) NTRSPM
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL ELEVATION OUTPUT FILE
 C...
-#ifdef NETCDF
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68. OR.
-     &    ( (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
-#else
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68) THEN
-#endif
-!      PRINT *,"START READING HOT START FILE - BINARY IGEP,NSCOUGE"
-
-
-        READ(IHOT,REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
         WRITE(16,1046) IGEP,NSCOUGE
  1046   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'ELEVATION FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I6)
-     
-!         IF (MYPROC.EQ.0) PRINT *,"B-HS: IGEP == ", IGEP
-!         IF (MYPROC.EQ.0) PRINT *,"B-HS: NSCOUGE == ", NSCOUGE
-!         IF (MYPROC.EQ.0) PRINT *,"B-HS: NCIGEP == ", NCIGEP
-!         IF (MYPROC.EQ.0) PRINT *,"B-HS: NCCOUGE == ", NCCOUGE
-!         IF (MYPROC.EQ.0) PRINT *,"B-HS: NCMODE == ", ncmode
-!         IF (MYPROC.EQ.0) PRINT *,"B-HS: IHOT == ", IHOT
-
-       ENDIF
-#ifdef NETCDF
-      IF ( (IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
-         NCIGEP=IGEP
-         NCCOUGE=NSCOUGE
-!         IF (MYPROC.EQ.0) PRINT *,"N-HS: NCIGEP == ", NCIGEP
-!         IF (MYPROC.EQ.0) PRINT *,"N-HS: NCCOUGE == ", NCCOUGE
-      ENDIF
-#endif      
 
         IF(NOUTGE.LT.0) THEN
           IGEP=0
@@ -2078,32 +2172,10 @@ c         WRITE(63,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL VELOCITY OUTPUT FILE
 C...
-#ifdef NETCDF
-        IF (IHOT.EQ.67.OR.IHOT.EQ.68. OR.
-     &    ( (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
-#else
-        IF (IHOT.EQ.67.OR.IHOT.EQ.68) THEN
-#endif
-
-
-!        PRINT *,"START READING HOT START FILE - BINARY IGVP,NSCOUGV"
-
-
-
-        READ(IHOT,REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
         WRITE(16,1048) IGVP,NSCOUGV
  1048   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'VELOCITY FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I6)
-     
-        ENDIF
-#ifdef NETCDF
-      IF ( (IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
-         NCIGVP=IGVP
-         NCCOUGV=NSCOUGV
-      ENDIF
-#endif     
         IF(NOUTGV.LT.0) THEN
           IGVP=0
           NSCOUGV=0
@@ -2177,19 +2249,10 @@ c         WRITE(64,REC=ITEMPSTP+1) NDSETSV  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL CONCENTRATION OUTPUT FILE
 C...
-
-        IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
-
-!        PRINT *,"START READING HOT START FILE - BINARY IGCP,NSCOUGC"
-
-        READ(IHOT,REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
         WRITE(16,1053) IGCP,NSCOUGC
  1053   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                'CONCENTRATION FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I6)
-     
-        ENDIF
      
         IF(NOUTGC.LT.0) THEN
           IGCP=0
@@ -2275,19 +2338,6 @@ c         WRITE(83,REC=ITEMPSTP+1) NDSETSC  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL METEOROLOGICAL OUTPUT FILES
 C...
-#ifdef NETCDF
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68. OR.
-     &    ( (IHOT.EQ.-67.OR.IHOT.EQ.-68) ) )THEN
-#else
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68) THEN
-#endif
-
-
-!        PRINT *,"START READING HOT START FILE- BINARY IGWP,IGPP,NSCOUGW"
-
-        READ(IHOT,REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
-        READ(IHOT,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
         WRITE(16,1055) IGWP,IGPP,NSCOUGW
  1055   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'WIND FILE BY THE TIME OF THE HOT START',
@@ -2295,14 +2345,6 @@ C...
      &                  'PRESSURE FILE BY THE TIME OF THE HOT START',   
      &          /,8X,'SPOOL COUNTER =',I6)
      
-      ENDIF
-#ifdef NETCDF
-      IF ( (IHOTNC.EQ.-67.OR.IHOTNC.EQ.-68) ) then
-         NCIGWP=IGWP
-         NCIGPP=IGPP
-         NCCOUGW=NSCOUGW
-      ENDIF
-#endif     
         IF(NOUTGW.LT.0) THEN
           IGPP=0
           IGWP=0
@@ -2455,130 +2497,6 @@ c         WRITE(73,REC=ITempStp+1) ndsetsw  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
 c         WRITE(74,REC=ITEMPSTP+1) NDSETSW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
           CLOSE(74)                         ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
-
-!       IF (ncmode.eq.1. or. MYPROC.eq. 0) THEN
-!                 PRINT *,"  ----------START--PARAMETERS-after 74------"
-!                   PRINT *,"  IMHS = ", IMHS
-!                   PRINT *,"  TIME = ", TIME
-!                   PRINT *,"  ITHS = ", ITHS
-!                   PRINT *,"  ETA1 = ", ETA1(11)
-!                   PRINT *,"  ETA2 = ", ETA2(11)
-!                   PRINT *,"  ETADD = ", EtaDisc(11)
-!                   PRINT *,"  uu2 = ", uu2(11)
-!                   PRINT *,"  vv2 = ", vv2(11)
-!                   PRINT *,"  nodecode = ", nnodecode(11)
-!                   PRINT *,"  noff = ", noff(11)
-!                   PRINT *,"  IESTP = ",IESTP
-!                   PRINT *,"  NSCOUE = ",NSCOUE
-!                   PRINT *,"  IVSTP = ",IVSTP
-!                   PRINT *,"  NSCOUV = ",NSCOUV
-!                   PRINT *,"  ICSTP = ",ICSTP
-!                   PRINT *,"  NSCOUC = ",NSCOUC
-!                   PRINT *,"  IPSTP = ",IPSTP
-!                   PRINT *,"  IWSTP = ",IWSTP
-!                   PRINT *,"  NSCOUM = ",NSCOUM
-!                   PRINT *,"  IGEP = ",IGEP
-!                   PRINT *,"  NSCOUGE = ",NSCOUGE
-!                   PRINT *,"  IGVP = ",IGVP
-!                   PRINT *,"  NSCOUGV = ",NSCOUGV
-!                   PRINT *,"  IGCP = ",IGCP
-!                   PRINT *,"  NSCOUGC = ",NSCOUGC
-!                   PRINT *,"  IGPP = ",IGPP
-!                   PRINT *,"  IGWP = ",IGWP
-!                   PRINT *,"  NSCOUGW = ",NSCOUGW
-!                   PRINT *,
-!     &             "  ---------END-------PARAMETERS--------------------"
-!     
-!      ENDIF
-C...
-C...  HOT START INFORMATION FOR A 3D RUN
-C...
-
-C  kmd48.33bc - added time and time step to be passed to the hotstart file
-      IF(C3D) THEN
-        CALL HOTSTART_3D(TIME,ITHS)
-      ENDIF
-
-
-C...
-C......HOT START INFORMATION FOR HARMONIC ANALYSIS
-C...
-      IF(IHARIND.EQ.1) THEN
-        IHABEG=ITHAS+NHAINC
-C...
-C........IF HARMONIC ANALYSIS HAS NOT BEGUN, COLD START THE HARMONIC ANALYSIS
-C...
-        IF(ITHS.LT.IHABEG) THEN
-          ICHA=0
-          CALL HACOLDS(HAFREQ)
-          IF(NHASE.EQ.1) CALL HACOLDSES(NSTAE)
-          IF(NHASV.EQ.1) CALL HACOLDSVS(NSTAV)
-          IF(NHAGE.EQ.1) CALL HACOLDSEG(NP)
-          IF(NHAGV.EQ.1) CALL HACOLDSVG(NP)
-          IF (CHARMV) THEN
-            DO I=1,NP
-               ELAV(I)=0.D0
-               XVELAV(I)=0.D0
-               YVELAV(I)=0.D0
-               ELVA(I)=0.D0
-               XVELVA(I)=0.D0
-               YVELVA(I)=0.D0
-            END DO
-          ENDIF   !   charmv
-
-        ENDIF
-
-C...
-C........IF HARMONIC ANALYSIS HAS ALREADY BEGUN, READ IN HOT START
-C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
-C...
-!        PRINT *,"START READING HOT START FILE- HARMONIC"
-
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
-!        PRINT *,"START READING HOT START FILE- BINARY ICHA"
-
-        IF(ITHS.GT.ITHAS) THEN
-          READ(IHOT,REC=IHOTSTP) ICHA ; IHOTSTP = IHOTSTP + 1
-        ENDIF
-        IF(ITHS.GE.IHABEG) THEN
-          CALL HAHOTS(NSTAE,NSTAV,NP,NHASE,NHASV,NHAGE,NHAGV,
-     &          NSCREEN,ScreenUnit,IHOTSTP,IHOT,MYPROC)
-          IF(NHASE.EQ.1) CALL HAHOTSES(NSTAE,IHOTSTP,IHOT)
-          IF(NHASV.EQ.1) CALL HAHOTSVS(NSTAV,IHOTSTP,IHOT)
-          IF(NHAGE.EQ.1) CALL HAHOTSEG(NP,IHOTSTP,IHOT)
-          IF(NHAGV.EQ.1) CALL HAHOTSVG(NP,IHOTSTP,IHOT)
-        ENDIF
-
-      ENDIF  
-
-C..Read in Means and Squares
-!        PRINT *,"START READING HOT START FILE - MEANS"
-
-      IF (IHOT.EQ.67.OR.IHOT.EQ.68)THEN
-!        PRINT *,"START READING HOT START FILE- BINARY ELAV"
-
-        IF(CHARMV) THEN
-          IF((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN
-            READ(IHOT,REC=IHOTSTP) NTSTEPS ; IHOTSTP = IHOTSTP + 1
-            IF(NHAGE.EQ.1) THEN
-              DO I=1,NP
-                READ(IHOT,REC=IHOTSTP) ELAV(I) ; IHOTSTP = IHOTSTP + 1
-                READ(IHOT,REC=IHOTSTP) ELVA(I) ; IHOTSTP = IHOTSTP + 1
-              ENDDO
-            ENDIF
-            IF(NHAGV.EQ.1) THEN
-              DO I=1,NP
-                READ(IHOT,REC=IHOTSTP) XVELAV(I) ; IHOTSTP = IHOTSTP + 1
-                READ(IHOT,REC=IHOTSTP) YVELAV(I) ; IHOTSTP = IHOTSTP + 1
-                READ(IHOT,REC=IHOTSTP) XVELVA(I) ; IHOTSTP = IHOTSTP + 1
-                READ(IHOT,REC=IHOTSTP) YVELVA(I) ; IHOTSTP = IHOTSTP + 1
-              ENDDO
-            ENDIF
-          ENDIF
-        ENDIF   !  charmv
-      ENDIF    !HARIND
-
-      ENDIF
 C
 C     jgf48.4635 If the maxele.63 (etc) files are present, we need to
 C     load them up, to preserve high water marks across hotstarts. 
@@ -2618,11 +2536,6 @@ C     If they are not present, thats okay too.
          HOT_RSNMAX(:) = 0.d0  ! initialize the value
          CALL readMinMax('maxrs.63',HOT_RSNMAX)
       endif
-C
-      IF(IHOT.EQ.67.OR.IHOT.EQ.68)THEN
-!         IF(Myproc.eq.0) PRINT *, "IHOT == ",IHOT
-         CLOSE(IHOT)
-      ENDIF
 C
  1112 FORMAT(/,1X,79('_'))
  1197 FORMAT(/,1X,'THE E29 MET GRID INTERPOLATING FACTORS ARE ',
@@ -2664,15 +2577,15 @@ C   kmd48.33bc - variable information needed from the global.F file
       INTEGER :: IRType                  !number of fields in output file
       INTEGER :: NH, N                   !horizontal & vertical loop counters
 !      REAL(SZ) :: RealPartOfQ     
-      REAL(SZ) :: ImaginaryPartOfQ
+
 
 C  kmd48.33bc - new variables
       INTEGER :: NumofBCNodes, J, NOD, IT
       INTEGER, INTENT(IN) :: ITHS
       REAL(SZ), INTENT(IN) :: TIME
-      INTEGER :: IDenHS
+
       CHARACTER(80) :: CDUM80
-      REAL(SZ),ALLOCATABLE :: RealQ_Tmp(:,:)
+
       INTEGER :: INDEX
       INTEGER :: NumofNodes, K
       REAL(SZ),ALLOCATABLE :: TMP(:,:)
@@ -2687,171 +2600,6 @@ C.. RJW bug fix in format 498 (kendra found this)
  498  FORMAT(1X,I10,1X,I10,1X,E15.7,I10,1X,I10,1X,I3)
  497  FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE ASCII')
  496  FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE BINARY')
-
-C  kmd48.33bc - allocate realQ_tmp
-      ALLOCATE(RealQ_Tmp(NP,NFEN) )
-C...
-C...  Read in 3D portion of hotstart file
-C...
-      READ(IHOT,REC=IHOTSTP) IDenHS
-      IHOTSTP=IHOTSTP+1
-      READ(IHOT,REC=IHOTSTP) N3DSD           !3D station density output time counter
-      IHOTSTP=IHOTSTP+1
-      READ(IHOT,REC=IHOTSTP) I3DSDRec
-      IHOTSTP=IHOTSTP+1
-      READ(IHOT,REC=IHOTSTP) N3DSV           !3D station velocity output time counter
-      IHOTSTP=IHOTSTP+1
-      READ(IHOT,REC=IHOTSTP) I3DSVRec
-      IHOTSTP=IHOTSTP+1
-      READ(IHOT,REC=IHOTSTP) N3DST           !3D station turbulence output time counter
-      IHOTSTP=IHOTSTP+1
-      READ(IHOT,REC=IHOTSTP) I3DSTRec
-      IHOTSTP=IHOTSTP+1
-      READ(IHOT,REC=IHOTSTP) N3DGD
-      IHOTSTP=IHOTSTP+1
-      READ(IHOT,REC=IHOTSTP) I3DGDRec
-      IHOTSTP=IHOTSTP+1
-      READ(IHOT,REC=IHOTSTP) N3DGV
-      IHOTSTP=IHOTSTP+1
-      READ(IHOT,REC=IHOTSTP) I3DGVRec
-      IHOTSTP=IHOTSTP+1
-      READ(IHOT,REC=IHOTSTP) N3DGT
-      IHOTSTP=IHOTSTP+1
-      READ(IHOT,REC=IHOTSTP) I3DGTRec
-      IHOTSTP=IHOTSTP+1
-
-C  kmd48.33bc - need to determine if IDEN parameter in hotstart is different than IDEN from
-C               fort.15 file. If so, determine which one should be used in the simulation. 
-      IF(MYPROC.EQ.0) THEN 
-        PRINT *, "IDEN = ", IDEN
-        PRINT *, "IDENHS = ", IDENHS
-      END IF 
-      IF(IDenHS.NE.IDEN) THEN 
-        IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GE.1)) THEN 
-            ! IDEN value from fort.15 should be used 
-        ELSE IF ((CBAROCLINIC).AND.(RES_BC_FLAG.LE.0)) THEN 
-            IDEN=IDenHS
-        END IF 
-      END IF 
-
-C  kmd48.33bc - changed to the format used with the global IO
-      DO NH=1,NP
-        READ(IHOT,REC=IHOTSTP) DUU(NH)
-        IHOTSTP=IHOTSTP+1
-      END DO 
-      DO NH=1,NP
-        READ(IHOT,REC=IHOTSTP) DUV(NH)
-        IHOTSTP=IHOTSTP+1
-      END DO 
-      DO NH=1,NP
-        READ(IHOT,REC=IHOTSTP) DVV(NH)
-        IHOTSTP=IHOTSTP+1
-      END DO 
-      DO NH=1,NP
-        READ(IHOT,REC=IHOTSTP) UU(NH)
-        IHOTSTP=IHOTSTP+1
-      END DO 
-      DO NH=1,NP
-        READ(IHOT,REC=IHOTSTP) VV(NH)
-        IHOTSTP=IHOTSTP+1
-      END DO 
-      DO NH=1,NP
-        READ(IHOT,REC=IHOTSTP) BSX(NH)
-        IHOTSTP=IHOTSTP+1
-         IF((MYPROC.EQ.23).AND.(NH.EQ.15784)) THEN
-             PRINT *, "BSX(346561) = ", BSX(15784)
-         END IF 
-      END DO 
-      DO NH=1,NP
-        READ(IHOT,REC=IHOTSTP) BSY(NH)
-        IHOTSTP=IHOTSTP+1
-         IF((MYPROC.EQ.23).AND.(NH.EQ.15784)) THEN
-             PRINT *, "BSY(346561) = ", BSY(15784)
-         END IF 
-      ENDDO
-
-C  kmd48.33bc - changed to format used in global IO, layer output
-      DO N=1,NFEN
-        DO NH=1,NP
-          READ(IHOT,REC=IHOTSTP) RealQ_Tmp(NH,N)
-          IHOTSTP=IHOTSTP+1
-         IF((MYPROC.EQ.23).AND.(NH.EQ.15785)) THEN
-             PRINT *, "RealQ_Tmp(346562,1) = ", RealQ_Tmp(15785,1)
-         END IF 
-        END DO 
-      END DO 
-      DO N=1,NFEN
-        DO NH=1,NP
-          READ(IHOT,REC=IHOTSTP) ImaginaryPartOfQ
-          IHOTSTP=IHOTSTP+1
-          Q(NH,N) = RealQ_Tmp(NH,N) + I*ImaginaryPartOfQ 
-        END DO 
-      END DO 
-      DO N=1,NFEN
-        DO NH=1,NP
-          READ(IHOT,REC=IHOTSTP) WZ(NH,N)
-          IHOTSTP=IHOTSTP+1
-        END DO 
-      END DO 
-      DO N=1,NFEN
-        DO NH=1,NP
-          READ(IHOT,REC=IHOTSTP) q20(NH,N)
-          IHOTSTP=IHOTSTP+1
-        END DO 
-      END DO 
-      DO N=1,NFEN
-        DO NH=1,NP
-          READ(IHOT,REC=IHOTSTP) l(NH,N)
-          IHOTSTP=IHOTSTP+1
-        END DO 
-      END DO 
-
-      IF(ABS(IDen).EQ.1) THEN 
-        DO N=1,NFEN
-          DO NH=1,NP
-            READ(IHOT,REC=IHOTSTP) SigT(NH,N)
-            IHOTSTP=IHOTSTP+1           
-          END DO
-        END DO 
-      ENDIF
-      IF(ABS(IDen).EQ.2) THEN 
-        DO N=1,NFEN
-          DO NH=1,NP
-            READ(IHOT,REC=IHOTSTP) Sal(NH,N)
-            IHOTSTP=IHOTSTP+1           
-          END DO
-        END DO 
-      ENDIF
-      IF(ABS(IDen).EQ.3) THEN 
-        DO N=1,NFEN
-          DO NH=1,NP
-            READ(IHOT,REC=IHOTSTP) Temp(NH,N)
-            IHOTSTP=IHOTSTP+1
-          END DO
-        END DO 
-      ENDIF
-      IF(ABS(IDen).EQ.4) THEN 
-        DO N=1,NFEN
-          DO NH=1,NP
-            READ(IHOT,REC=IHOTSTP) Sal(NH,N)
-            IHOTSTP=IHOTSTP+1
-         IF((MYPROC.EQ.23).AND.(NH.EQ.15785)) THEN
-             PRINT *, "Sal(346562,1) = ", Sal(15785,1)
-         END IF 
-          END DO 
-        END DO 
-        DO N=1,NFEN
-          DO NH=1,NP
-            READ(IHOT,REC=IHOTSTP) Temp(NH,N)
-            IHOTSTP=IHOTSTP+1
-         IF((MYPROC.EQ.23).AND.(NH.EQ.15785)) THEN
-             PRINT *, "Temp(346562,1) = ", Temp(15785,1)
-         END IF 
-          ENDDO
-        ENDDO
-      END IF 
-
-      DEALLOCATE(RealQ_Tmp)
 
 C  kmd48.33bc - restart boundary condtions for baroclinic simulations
       IF (MYPROC.EQ.0) THEN 
