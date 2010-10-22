@@ -3,6 +3,11 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.39   - 10/22/2010 - jgf - Updates to netcdf module for hotstarting, 
+C             including alternation of netcdf 67 and 68 files; additions to
+C             support fulldomain integer arrays for nodecode and noff; updating
+C             it and im in hotstart file; fix for ordering write in prep15
+C             (write metadata after 3D data in fort.15).
 C  v49.38   - 10/06/2010 - jgf - Significant rearrangement of hstart.F to
 C             consolidate the reading of the binary hotstart file all in
 C             one section of the hotstart() subroutine; this was necessary 

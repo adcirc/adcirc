@@ -190,16 +190,11 @@ C...
          CASE(67,68,367,368) ! non-portable binary or netcdf hotstart file
             CALL HOTSTART()
          CASE DEFAULT
+            ! the IHOT value was vetted already, so this code should
+            ! not be reachable
             IF ((NSCREEN.ne.0).and.(myProc.eq.0)) THEN
                WRITE(screenUnit,*) "ERROR: IHOT=",IHOT," is not valid."
-               WRITE(screenUnit,*) "ADCIRC terminating."
             ENDIF
-            WRITE(16,*) "ERROR: IHOT=",IHOT," is not valid."
-            WRITE(16,*) "ADCIRC terminating."
-#ifdef CMPI
-            CALL MSG_FINI()
-#endif 
-            STOP
       END SELECT
 
 C...Default beginning and ending time steps

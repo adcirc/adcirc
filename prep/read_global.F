@@ -1250,19 +1250,17 @@ C
 !     IF output is in netCDF format read global attributes for netCDF file
 !     --------------------------------------------------------------------
 
-      IF( (noutge.EQ.3) .OR. (noutgv.EQ.3) .OR. (noutv.EQ.3)
-     &       .or. (noute.EQ.3) .or. (noutm.eq.3) . or. NHSTAR.EQ.3 )THEN
+      IF(useNetCDF.eqv..true.) THEN
 #ifndef NETCDF
          print *, "NetCDF was selected but is not supported by your
-      &            compilation flag.
-      &
-      &            You need to compile with:
-      &
-      &  gmake NETCDF=enable NETCDFHOME=the netcdf library location"
+     &            compilation flag.
+     &
+     &            You need to compile with:
+     &
+     &  gmake NETCDF=enable NETCDFHOME=the netcdf library location"
          stop
 #endif
-        READ(15,'(A80)') title
-!        WRITE(6,'(A80)') title
+         READ(15,'(A80)') title
          READ(15,'(A80)') institution
          READ(15,'(A80)') source
          READ(15,'(A80)') history
@@ -1272,11 +1270,6 @@ C
          READ(15,'(A80)') convention
          READ(15,'(A80)') contact
          READ(15,'(A80)') base_date
-!        WRITE(6,'(A80)') base_date
-!        WRITE(6,*)
-!     &                title, institution, source, history,
-!     &                references, comments, host, convention, contact,
-!     &                base_date
 
         ELSEIF(NOUTGC.eq.3.                                 ! fort.93
      &       or.NOUTC.eq.3.                                 ! fort.91
@@ -1295,10 +1288,6 @@ C
      &  "netCDF output not available yet for the options selected"
 
       ENDIF
-C
-C     FINISH ADDITION BY MCF FOR NETCDF OPTION for NETCDF I/O - 6/20/07
-C     ==================================================================
-C
 #endif
 
 

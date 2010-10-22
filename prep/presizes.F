@@ -221,7 +221,7 @@ C
       INTEGER  I,IL,IDUM,N,N1,N2,N3,NDIF1,NDIF2,NDIF3,NETA,NBN,NVEL,
      &  IK,IBN,NDISC,NBBN,NFLUXB,NFLUXI,NFLUXF,NIBP,IBTYPE,IBN1,IM,NWP,
      &  NCOR,NTIP,NWS,NRAMP,IREFYR,NTIF,IL1,Il2,NHARF,NHAINC,IDUM2,
-     &  ITITER,ILUMP
+     &  ITITER,ILUMP,IHOT
      &  , NHSTAR                                                        !for netCDF
       INTEGER IGC  ! 3DVS vertical grid code
       INTEGER NFEN ! 3DVS number of nodes in the vertical grid
@@ -446,12 +446,15 @@ C
       ENDDO
       GOTO 24
 C
- 25   DO IL=1,5                                     !SKIP OVER NFOVER-ICS
-         READ(15,*) IDUM
-      ENDDO
-
+ 25   READ(15,*) IDUM  ! SKIP NFOVER
+      READ(15,*) IDUM  ! SKIP NABOUT
+      READ(15,*) IDUM  ! SKIP NSCREEN
+      READ(15,*) IHOT 
+      IF ((IHOT.EQ.367).OR.(IHOT.EQ.368)) useNetCDF = .true.
+      READ(15,*) IDUM  ! SKIP ICS
+C
       READ(15,*) IM                                 !READ IM (model type)
-      
+C      
       SELECT CASE (IM) ! jgf46.28 added transport/baroclinic support
       CASE(0)
         C2DDI = .TRUE.

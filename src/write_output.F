@@ -53,8 +53,7 @@ C----------------------------------------------------------------------
       REAL(SZ) H2, H2N1, H2N2, H2N3
       REAL(SZ) U11, U22, U33
       REAL(SZ) V11, V22, V33
-     
-      type(OutputDataDescript_t) :: descript
+C     
       type(OutputDataDescript_t), SAVE :: ElevStaDescript
       type(OutputDataDescript_t), SAVE :: VelStaDescript
       type(OutputDataDescript_t), SAVE :: ElevDescript
@@ -1866,6 +1865,8 @@ C-----------------------------------------------------------------------
       INTEGER, SAVE, ALLOCATABLE, TARGET :: NodeCode_g(:)
       INTEGER, SAVE, ALLOCATABLE, TARGET :: NOFF_g(:)
       LOGICAL error
+      INTEGER numHotstartWrites ! number writes to hot start files
+      INTEGER nextLun           ! next LUN to write to, after initial write
 C
       LOGICAL, SAVE :: FirstCall = .true.
       error = .false.
@@ -1975,11 +1976,25 @@ C
          NOFFDescript % iarray_g             => NOFF_g
 C
 #ifdef NETCDF
+C        jgf49.35 TODO: Allocate arrays to write harmonic analysis data
+C        jgf49.35 TODO: Allocate arrays to write 3D data
          CALL initNetCDFHotstart(hss%lun, Elev1Descript,
      &       Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &       NodeCodeDescript, NOFFDescript, error)
-C        jgf49.35 TODO: Allocate arrays to write harmonic analysis data
-C        jgf49.35 TODO: Allocate arrays to write 3D data
+         ! Determine if we need to init both hotstart files ... if the 
+         ! hotstart timestep increment is short enough that we will need
+         ! to write both the 67 and 68 file during this run
+         numHotstartWrites = (NT-IT)/NHSINC
+         IF (numHotstartWrites.ge.1) THEN
+            IF (hss%lun.eq.67) THEN
+               nextLun = 68
+            ELSE
+               nextLun = 67
+            ENDIF
+            CALL initNetCDFHotstart(nextLun, Elev1Descript,
+     &         Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
+     &         NodeCodeDescript, NOFFDescript, error)
+         ENDIF
 #endif
          FirstCall = .false.
       ENDIF
@@ -2342,13 +2357,13 @@ C
 C        TODO: 3D data in ascii 
 C        TODO: harmonic analysis data in ascii
 C
-      CASE(3) ! netcdf 
+      CASE(3,367,368) ! netcdf 
          write(screenUnit,*) 'NetCDF Hotstart undergoing testing.'
 
 #ifdef NETCDF
          CALL writeNetCDFHotstart(hss%lun, Elev1Descript,
      &        Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
-     &        NodeCodeDescript, NOFFDescript, time)
+     &        NodeCodeDescript, NOFFDescript, time, it)
 #endif
 
       CASE DEFAULT
@@ -2388,7 +2403,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
             hss % filename = 'fort.67'
          ENDIF
       ENDIF
-      IF (TEST_HOTSTART) THEN
+      IF (TEST_HOTSTART.eqv..true.) THEN
 #ifdef CMPI
           CALL MSG_FINI()
 #endif               

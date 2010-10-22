@@ -1496,52 +1496,46 @@ C     IF (NWS.NE.0) WRITE(15,80) OUTGWMSG
 C
 C--Write Harmonic Analysis Data
 C
-         WRITE(15,80) HARFRMSG
-         DO I=1,NHARFR
-            WRITE(15,80) HAFNAM(I)
-            WRITE(15,80) HAFREMSG(I)
+      WRITE(15,80) HARFRMSG
+      DO I=1,NHARFR
+         WRITE(15,80) HAFNAM(I)
+         WRITE(15,80) HAFREMSG(I)
 c           WRITE(15,*) HAFREQ(I),HAFF(I),HAFACE(I)
-         ENDDO
+      ENDDO
 C
-         WRITE(15,80) HARPARMSG
-         WRITE(15,80) OUTHARMSG
+      WRITE(15,80) HARPARMSG
+      WRITE(15,80) OUTHARMSG
 C
 C--Write Hot Start Info
 C
-         WRITE(15,80) HSTARMSG
+      WRITE(15,80) HSTARMSG
 C
 C--Write Solver Info
 C
-         WRITE(15,80) SOLVMSG
-C
-C        jgf48.03 Write netCDF metadata, if necessary
-C        TODO: Extend this to other file types that are netCDF-enabled
-         IF ( (ABS(NOUTE).EQ.3) .OR. (ABS(NOUTV).EQ.3) .OR.
-     &        (ABS(NOUTC).EQ.3) .OR. (ABS(NOUTM).EQ.3) .OR.
-     &        (ABS(NOUTGE).EQ.3) .OR. (ABS(NOUTGV).EQ.3) .OR.
-     &        (ABS(NOUTGC).EQ.3) .OR. (ABS(NOUTGW).EQ.3). OR.
-     &        (ABS(NHSTAR).EQ.3))THEN                                   ! for netCDF hotstart option
-            WRITE(15,80) title
-            WRITE(15,80) institution
-            WRITE(15,80) source
-            WRITE(15,80) history
-            WRITE(15,80) references
-            WRITE(15,80) comments
-            WRITE(15,80) host
-            WRITE(15,80) convention
-            WRITE(15,80) contact
-            WRITE(15,80) base_date
-         ENDIF
+      WRITE(15,80) SOLVMSG
 C
 C--Write 3DVS Info
 C
-         IF(C3DVS) THEN
-            CALL PREP15_3DVS(IPROC)
+      IF(C3DVS) THEN
+         CALL PREP15_3DVS(IPROC)
 c        ELSEIF(C3DDSS) THEN
 c           CALL PREP15_3DDSS(IPROC)
-         ENDIF
+      ENDIF
 C
-         CLOSE(15)
+C     jgf48.03 Write netCDF metadata, if necessary
+      IF (useNetCDF.eqv..true.) THEN
+         WRITE(15,80) title
+         WRITE(15,80) institution
+         WRITE(15,80) source
+         WRITE(15,80) history
+         WRITE(15,80) references
+         WRITE(15,80) comments
+         WRITE(15,80) host
+         WRITE(15,80) convention
+         WRITE(15,80) contact
+         WRITE(15,80) base_date
+      ENDIF
+      CLOSE(15)
 C
  1000 CONTINUE
 C     jgf45.12 Release memory that may have been allocated for vertical

@@ -303,26 +303,33 @@ C...
 C...  READ AND PROCESS IHOT - HOT START OPTION
 C...  
       READ(15,*) IHOT
-      
-!      COMMENTED SINCE NEGATIVE IHOT IS USED FOR NETCDF I/O  --- MCF 6/10/08
-!      IF (IHOT < 0) THEN
-!        hss % lun      = 67
-!        hss % filename = 'fort.67'
-!      ELSE IF ((IHOT == 0).OR.(IHOT == 68)) then
-
-C!     kmd48.33bc - added in the hot start option for the fort.17
-      IF ((IHOT == 0).OR.(IHOT == 17).OR.(IHOT == 68)) then
-        hss % lun      = 67
-        hss % filename = 'fort.67'
-      ELSE IF (IHOT == 67) then
-        hss % lun      = 68
-        hss % filename = 'fort.68'
-      ELSE IF (IHOT == -67) then
-        hss % lun      = 68
-      ELSE IF (IHOT == -68) then
-        hss % lun      = 67
-      ENDIF
-
+C
+C     Logic to set the output unit number and output file name of the next
+C     hotstart file to be written (so that the LUNs and file names alternate). 
+C
+C     kmd48.33bc - added in the hot start option for the fort.17
+C     jgf49.39: netcdf hotstart is 367 or 368. Changed if/then structure
+C     to SELECT CASE to avoid confusing myself. The netcdf module makes
+C     its own file name based on the unit number, and ignores hss%filename.
+      SELECT CASE(IHOT)
+      CASE(0,17,68,368)
+         hss%lun = 67
+         hss%filename = 'fort.67'
+      CASE(67,367)
+        hss%lun = 68
+        hss%filename = 'fort.68'
+      CASE DEFAULT
+            IF ((NSCREEN.ne.0).and.(myProc.eq.0)) THEN
+               WRITE(screenUnit,*) "ERROR: IHOT=",IHOT," is not valid."
+               WRITE(screenUnit,*) "ADCIRC terminating."
+            ENDIF
+            WRITE(16,*) "ERROR: IHOT=",IHOT," is not valid."
+            WRITE(16,*) "ADCIRC terminating."
+#ifdef CMPI
+            CALL MSG_FINI()
+#endif 
+            STOP
+      END SELECT
 #ifdef CSWAN
 Casey 100205: Enable hot-start file generation by SWAN.
       SwanHotStartUnit = hss%lun

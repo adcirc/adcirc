@@ -84,11 +84,11 @@ C     jgf46.08 Fine grained ramp functions
       REAL(SZ) RampMete2   ! Ramp for wind and atmospheric pressure @ITHS 
       REAL(SZ) RampWRad2   ! Ramp for wave radiation stress @ITHS
 C     jgf46.14 Check for file existence before attempting to open.
-      LOGICAL FileFound    ! .True. if the the file exists
+      LOGICAL fileFound    ! .True. if the the file exists
       INTEGER ErrorIO      ! zero if file opened successfully
       INTEGER NP_G_IN, NE_G_IN  ! Global and
       INTEGER NP_A_IN, NE_A_IN  ! active number nodes, elements.
-      INTEGER IHOTNC            ! variable to keep -67 and -68 in parallel
+      CHARACTER(len=7) :: hsfn  ! name of binary hotstart file
 C
 C     jgf48.4628 Add capability to turn off solution if only met output
 C     was requested.
@@ -136,13 +136,11 @@ C...
 C        Determine if the hot start file exists.
          fileFound=.False.
          IF (IHOT.eq.67) THEN
-            hss%lun = 67
-            hss%filename = "fort.67"
+            hsfn = "fort.67"
          ELSE
-            hss%lun = 68
-            hss%filename = "fort.68"
+            hsfn = "fort.68"
          ENDIF
-         INQUIRE(FILE=TRIM(INPUTDIR)//'/'//trim(hss%filename),
+         INQUIRE(FILE=TRIM(INPUTDIR)//'/'//hsfn,
      &      EXIST=fileFound)
  
          IF (fileFound.eqv..false.) THEN
@@ -163,7 +161,7 @@ C        start reading binary hot start file
          WRITE(16,240) 
  240     FORMAT(/,9X,'Hot start file was found.',
      &     ' Opening file.') 
-         OPEN(hss%lun,FILE=TRIM(INPUTDIR)//'/'//hss%filename,
+         OPEN(IHOT,FILE=TRIM(INPUTDIR)//'/'//hsfn,
      &        ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
 
          IF (ErrorIO.GT.0) THEN 
@@ -476,22 +474,24 @@ C..         Read in Means and Squares
                ENDIF
             ENDIF   !  charmv
          ENDIF    !HARIND
-         CLOSE(hss%lun)  ! close non-portable binary hotstart file
+         CLOSE(IHOT)  ! close non-portable binary hotstart file
 C
 C
       CASE(367,368)  ! netcdf hotstart file
-         IF (IHOT.eq.367) THEN
-            hss%lun = 67
-         ELSE 
-            hss%lun = 68
-         ENDIF
-#ifdef NETCDF
          ! jgf49.38: TODO: The NetCDF hotstart file does not
          ! support 3D or harmonic analysis data yet.
-         CALL readNetCDFHotstart(hss%lun) 
+#ifdef NETCDF
+         IF (IHOT.eq.367) THEN
+            CALL readNetCDFHotstart(67) 
+         ELSE 
+            CALL readNetCDFHotstart(68) 
+         ENDIF
 #endif
-
+C
+C
       CASE DEFAULT
+         ! This code should be unreachable since IHOT was already
+         ! checked to be sure that it is valid.
          WRITE(*,*) "ERROR: IHOT was set to '",IHOT,
      &    "' but this value of IHOT is not valid.
      &This run will now terminate."

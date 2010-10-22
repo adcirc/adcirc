@@ -277,7 +277,9 @@ C
          type(meshStructure) :: myMesh
       END TYPE hotstartData   
 C
-      type(hotstartData), private, save :: hs  ! for fort.67 or fort.68
+      type(hotstartData), private, save, target :: hs67 ! for fort.67
+      type(hotstartData), private, save, target :: hs68 ! for fort.68
+      type(hotstartData), pointer :: hs   ! indicates the current hs file    
 C
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
@@ -1679,7 +1681,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE initNetCDFHotstart(lun, Elev1Descript,
      &   Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &   NodeCodeDescript, NOFFDescript, error) 
-      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, G, IM
+      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, G, IM, NE_G, NP_G
       IMPLICIT NONE
 C
       INTEGER, intent(in) :: lun
@@ -1700,11 +1702,18 @@ C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Entering initNetCDFHotstart."
 #endif
+C     Point to the hotstart file we want to work on
+      IF (lun.eq.67) THEN
+         hs => hs67
+      ELSE 
+         hs => hs68
+      ENDIF
+C 
       error = .false.
 C
 C     nodes and elements
-      hs%myMesh%num_nodes = Elev1Descript % num_fd_records
-      hs%myMesh%num_elems = NOFFDescript%num_fd_records
+      hs%myMesh%num_nodes = NP_G
+      hs%myMesh%num_elems = NE_G
       hs%myMesh%nface_len = 3
       ALLOCATE(hs%myTime%timenc(hs%myTime%timenc_len))
 C
@@ -2208,9 +2217,9 @@ C     jgf49.17.02 Writes data to hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE writeNetCDFHotstart(lun, Elev1Descript,
      &        Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
-     &        NodeCodeDescript, NOFFDescript, time)
+     &        NodeCodeDescript, NOFFDescript, time, it)
       USE GLOBAL, ONLY : OutputDataDescript_t, MNPROC, 
-     &                   imhs, iths, iestp, nscoue, ivstp,
+     &                   im, iestp, nscoue, ivstp,
      &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
      &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
      &                   igpp, igwp, nscougw
@@ -2225,6 +2234,7 @@ C
       type(OutputDataDescript_t), intent(in) :: NodeCodeDescript
       type(OutputDataDescript_t), intent(in) :: NOFFDescript
       REAL(8), intent(in) :: time
+      INTEGER, intent(in) :: it   ! current ADCIRC time step
 C
       INTEGER i,j
       INTEGER counti(1), starti(1), n
@@ -2237,6 +2247,13 @@ C
       write(*,*) "DEBUG: Entering writeNetCDFHotstart."
 #endif
 C
+C     Point to the hotstart file we want to work on
+      IF (lun.eq.67) THEN
+         hs => hs67
+      ELSE 
+         hs => hs68
+      ENDIF
+C 
       iret = nf_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)   
 !   
@@ -2251,9 +2268,11 @@ C
      &            hs%myFile%record_counter
 #endif
 C
-C     Increment the record counter so that we can store data at the
-C     next location in the netcdf file
-      hs%myFile%record_counter = hs%myFile%record_counter + 1       
+C     Don't increment the record counter so that we can store data at the
+C     next location in the netcdf file -- the hotstart file is only intended
+C     to have a single snapshot of data in it.
+C      hs%myFile%record_counter = hs%myFile%record_counter + 1       
+      hs%myFile%record_counter = 1       
 !     
 !     Store time
       iret=nf_inq_varid(hs%ncid,"time",hs%myTime%timenc_id)
@@ -2293,17 +2312,17 @@ C     Place the nodal data into the netcdf arrays
          hs%zetad%nodal_data(:,kount(2)) = EtaDiscDescript%array 
          hs%vel%u_nodal_data(:,kount(2)) = VelDescript%array 
          hs%vel%v_nodal_data(:,kount(2)) = VelDescript%array2 
-         hs%nodecodenc%nodal_data(:,kount(2)) = NodeCodeDescript%iarray 
-         hs%noffnc%nodal_data(:,kount(2)) = NOFFDescript%iarray 
+         hs%nodecodenc%nodal_int(:,kount(2)) = NodeCodeDescript%iarray 
+         hs%noffnc%nodal_int(:,kount(2)) = NOFFDescript%iarray 
       ELSE
          hs%zeta1%nodal_data(:,kount(2)) = Elev1Descript%array_g 
          hs%zeta2%nodal_data(:,kount(2)) = Elev2Descript%array_g 
          hs%zetad%nodal_data(:,kount(2)) = EtaDiscDescript%array_g 
          hs%vel%u_nodal_data(:,kount(2)) = VelDescript%array_g
          hs%vel%v_nodal_data(:,kount(2)) = VelDescript%array2_g
-         hs%nodecodenc%nodal_data(:,kount(2)) =
+         hs%nodecodenc%nodal_int(:,kount(2)) =
      &                                  NodeCodeDescript%iarray_g 
-         hs%noffnc%nodal_data(:,kount(2)) = NOFFDescript%iarray_g 
+         hs%noffnc%nodal_int(:,kount(2)) = NOFFDescript%iarray_g 
       ENDIF
 C
 C     Write the nodal data to the netcdf file 
@@ -2334,11 +2353,11 @@ C     and immediately write the parameter value to that variable ID before
 C     going on to the next one. 
       iret = nf_inq_varid(hs%ncid,"imhs",varid)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, varid, imhs)
+      iret = nf_put_var_int(hs%ncid, varid, im)
       CALL check_err(iret)
       iret = nf_inq_varid(hs%ncid,"iths",varid)
       CALL check_err(iret)
-      iret = nf_put_var_int(hs%ncid, varid, iths)
+      iret = nf_put_var_int(hs%ncid, varid, it)
       CALL check_err(iret)
       iret = nf_inq_varid(hs%ncid,"iestp",varid)
       CALL check_err(iret)
@@ -2459,6 +2478,13 @@ C
       write(*,*) "DEBUG: Entering readNetCDFHotstart."
 #endif
 C
+C     Point to the hotstart file we want to work on
+      IF (lun.eq.67) THEN
+         hs => hs67
+      ELSE 
+         hs => hs68
+      ENDIF
+C
       hs%myFile%fileFound = .false.
       hs%myFile%FILEFORT = 'fort.'
       hs%myFile%FILEEXT = '.nc'
@@ -2527,6 +2553,8 @@ C
       start(2)=hs%myFile%record_counter
 !   
 !     Get time
+      iret=nf_inq_varid(hs%ncid, "time", hs%myTime%timenc_id)
+      CALL check_err(iret)
       starti(1)=hs%myFile%record_counter
       counti(1)=hs%myTime%timenc_len
       iret = nf_get_vara_DOUBLE(hs%ncid, hs%myTime%timenc_id, starti, 
