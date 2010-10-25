@@ -1524,16 +1524,16 @@ c           CALL PREP15_3DDSS(IPROC)
 C
 C     jgf48.03 Write netCDF metadata, if necessary
       IF (useNetCDF.eqv..true.) THEN
-         WRITE(15,80) title
-         WRITE(15,80) institution
-         WRITE(15,80) source
-         WRITE(15,80) history
-         WRITE(15,80) references
-         WRITE(15,80) comments
-         WRITE(15,80) host
-         WRITE(15,80) convention
-         WRITE(15,80) contact
-         WRITE(15,80) base_date
+         WRITE(15,*) trim(adjustl(title))
+         WRITE(15,*) trim(adjustl(institution))
+         WRITE(15,*) trim(adjustl(source))
+         WRITE(15,*) trim(adjustl(history))
+         WRITE(15,*) trim(adjustl(references))
+         WRITE(15,*) trim(adjustl(comments))
+         WRITE(15,*) trim(adjustl(host))
+         WRITE(15,*) trim(adjustl(convention))
+         WRITE(15,*) trim(adjustl(contact))
+         WRITE(15,*) trim(adjustl(base_date))
       ENDIF
       CLOSE(15)
 C

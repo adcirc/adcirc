@@ -3176,37 +3176,41 @@ C     back to degrees to write them back out
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid_type', 10, 
      &                      'Triangular')
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'description',
-     &       metalength(adjustl(rundes)), adjustl(rundes))      
+     &       metalength(trim(adjustl(rundes))), trim(adjustl(rundes)))
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid',
-     &       metalength(adjustl(agrid)), adjustl(agrid))       
+     &       metalength(trim(adjustl(agrid))), trim(adjustl(agrid)))   
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'title',
-     &       metalength(adjustl(title)), adjustl(title))
+     &       metalength(trim(adjustl(title))), trim(adjustl(title)))
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'institution', 
-     &       metalength(adjustl(institution)), adjustl(institution))
+     &       metalength(trim(adjustl(institution))),
+     &       trim(adjustl(institution)))
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'source', 
-     &       metalength(adjustl(source)), adjustl(source))     
+     &       metalength(trim(adjustl(source))), trim(adjustl(source))) 
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'history', 
-     &       metalength(adjustl(history)), adjustl(history))    
+     &       metalength(trim(adjustl(history))), trim(adjustl(history)))
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'references', 
-     &       metalength(adjustl(references)), adjustl(references))
+     &       metalength(trim(adjustl(references))),
+     &       trim(adjustl(references)))
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'comments', 
-     &       metalength(adjustl(comments)), adjustl(comments))
+     &       metalength(trim(adjustl(comments))),
+     &       trim(adjustl(comments)))
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'host', 
-     &       metalength(adjustl(host)), adjustl(host))    
+     &       metalength(trim(adjustl(host))), trim(adjustl(host)))    
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'convention', 
-     &       metalength(adjustl(convention)), adjustl(convention))
+     &       metalength(trim(adjustl(convention))),
+     &       trim(adjustl(convention)))
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'contact', 
-     &       metalength(adjustl(contact)), adjustl(contact))
+     &       metalength(trim(adjustl(contact))), trim(adjustl(contact)))
       CALL check_err(iret)
       CALL date_and_time(now_date,big_ben,zone,values)
       WRITE(date_string,71) values(1),values(2),values(3),
@@ -3305,7 +3309,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     F U N C T I O N     G E T   M E T A   L E N G T H 
+C     F U N C T I O N     M E T A   L E N G T H 
 C-----------------------------------------------------------------------
 C     jgf49.29 Gets the length of the metadata line, depending on the
 C     presence of a "!" in the line; if a "!" is present, it is used to

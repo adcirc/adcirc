@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.40   - 10/25/2010 - jgf - Fixes for writing netcdf metadata to trim
+C             off trailing spaces when writing netcdf files from adcirc or
+C             adcprep, as well as when writing subdomain fort.15 files from
+C             adcprep.
 C  v49.39   - 10/22/2010 - jgf - Updates to netcdf module for hotstarting, 
 C             including alternation of netcdf 67 and 68 files; additions to
 C             support fulldomain integer arrays for nodecode and noff; updating

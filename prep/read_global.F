@@ -1213,25 +1213,6 @@ C
          ENDIF
       ENDIF
 C
-C     jgf48.03 Read netCDF metadata, if necessary
-C     TODO: Extend this to the other files that may be in 
-C     netCDF format, not just the fort.61 file (NOUTE).
-!      IF ( ABS(NOUTE).EQ.3 ) THEN
-!#ifndef NETCDF
-!         print *, "NetCDF was selected but is not supported."
-!         stop
-!#endif
-!         READ(15,80) title
-!         READ(15,80) institution
-!         READ(15,80) source
-!         READ(15,80) history
-!         READ(15,80) references
-!         READ(15,80) comments
-!         READ(15,80) host
-!         READ(15,80) convention
-!         READ(15,80) contact
-!         READ(15,80) base_date
-!      ENDIF
 C
 C--Read in 3D data
 C
