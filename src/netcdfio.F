@@ -1176,6 +1176,30 @@ C-----------------------------------------------------------------------
       END SUBROUTINE initNodalData
 C-----------------------------------------------------------------------
 
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E  S E T  N E T C D F  F I L E  N A M E  
+C-----------------------------------------------------------------------
+C     jgf49.41 Sets the name of the netcdf file. 
+C-----------------------------------------------------------------------
+      SUBROUTINE setNetCDFFileName(lun, myFile)
+      IMPLICIT NONE
+      INTEGER, intent(in) :: lun ! logical unit number
+      TYPE(fileData) :: myFile
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering setNetCDFFileName."
+#endif
+      myFile%FILEFORT = 'fort.'
+      myFile%FILEEXT = '.nc'
+      WRITE(myFile%FILENAME,'(A5,I2,A3)') 
+     &      myFile%FILEFORT, lun, myFile%FILEEXT
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from setNetCDFFileName."
+#endif
+C-----------------------------------------------------------------------
+      END SUBROUTINE setNetCDFFileName
+C-----------------------------------------------------------------------
+
+
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  C R E A T E  N E T C D F  O U T P U T  F I L E 
@@ -1204,18 +1228,15 @@ C
       error = .false.
       myFile%createFile = .false.
       myFile%fileFound = .false.
-      myFile%FILEFORT = 'fort.'
-      myFile%FILEEXT = '.nc'
-      WRITE(myFile%FILENAME,'(A5,I2,A3)') 
-     &      myFile%FILEFORT, lun, myFile%FILEEXT
+      CALL setNetCDFFileName(lun,myFile)
 C
 C     jgf49.17.02: Simplified the criteria for creating a new netCDF
 C     output file: coldstart, overwrite upon hotstart, or output
 C     that does not already exist. These criteria do not apply to 
 C     netcdf hotstart files; we will always write those when called
 C     upon to create them.
+      INQUIRE(FILE=myFile%FILENAME,EXIST=myFile%fileFound)
       IF ((lun.ne.67).and.(lun.ne.68)) THEN
-         INQUIRE(FILE=myFile%FILENAME,EXIST=myFile%fileFound)
          IF ((IHOT.EQ.0).OR.(descript%specifier.lt.0).OR.
      &      (myFile%fileFound.eqv..false.)) THEN
 #ifdef CMPI
@@ -1241,8 +1262,15 @@ C     upon to create them.
          ENDIF
       ELSE
          ! these lines are executed to create netcdf hotstart files
-         myFile%createFile = .true.
-         myFile%record_counter = 1         
+         ! don't overwrite existing hotstart files
+         IF (myFile%fileFound.eqv..true.) THEN
+            write(*,*) "INFO: Hotstart file ",lun,
+     &        " already exists."
+           myFile%createFile = .false.
+         ELSE
+            myFile%createFile = .true.
+            myFile%record_counter = 1 
+         ENDIF        
       ENDIF
 C     
 C     RETURN if we don't need to create a file.
@@ -1285,18 +1313,22 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
       type(meshStructure), intent(inout) :: myMesh
       INTEGER :: i, j, k  ! array indices
+      INTEGER :: max_seg_nodes  ! size of longest list of nodes on a bdry seg
 C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Entering initNetCDFCoord."
 #endif
+C
       ALLOCATE(myMesh%xnc(NP_G))
       ALLOCATE(myMesh%ync(NP_G))
       ALLOCATE(myMesh%nvdllnc(nope))
       ALLOCATE(myMesh%ibtypeenc(nope))
       ALLOCATE(myMesh%ibtypenc(nbou))
       ALLOCATE(myMesh%nvellnc(nbou))
-      ALLOCATE(myMesh%nbdvnc(nope,neta))
-      ALLOCATE(myMesh%nbvvnc(nbou,nvel))
+      max_seg_nodes = maxval(nvdll) ! dimension of seg with most nodes
+      ALLOCATE(myMesh%nbdvnc(nope,max_seg_nodes))
+      max_seg_nodes = maxval(nvell) ! dimension of seg with most nodes
+      ALLOCATE(myMesh%nbvvnc(nbou,max_seg_nodes))
       ALLOCATE(myMesh%element(myMesh%nface_len,myMesh%num_elems))
       ALLOCATE(myMesh%nmnc(myMesh%num_elems,myMesh%nface_len))
 C
@@ -1420,13 +1452,16 @@ C
 !     Inquire variables
       iret=nf_inq_unlimdim(sta%ncid,recid)
       CALL check_err(iret)   
-      write(*,*) "sta%myFile%record_counter = ",sta%myFile%record_counter
       iret=nf_inq_dimlen(sta%ncid,recid,sta%myFile%record_counter)
       CALL check_err(iret)   
 C
 C     Increment the record counter so that we can store data at the
 C     next location in the netcdf file
       sta%myFile%record_counter = sta%myFile%record_counter + 1       
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: sta%myFile%record_counter = ",
+     &           sta%myFile%record_counter
+#endif
 !    
 !     Store time
       iret=nf_inq_varid(sta%ncid, "time", sta%myTime%timenc_id)
@@ -1475,6 +1510,12 @@ C
          ELSE
             sta%station_data(:,kount(2)) = descript%array_g
          ENDIF
+#ifdef NETCDF_DEBUG
+         DO i=1,sta%num_stations
+            write(*,*) "DEBUG: station_data(",i,")=",
+     &                  sta%station_data(i,kount(2))
+         ENDDO
+#endif
          iret = nf_put_vara_DOUBLE(sta%ncid, sta%station_data_id,
      &          start, kount, sta%station_data)
          CALL check_err(iret)
@@ -1542,10 +1583,6 @@ C
       iret=nf_inq_unlimdim(dat%ncid,recid)
       CALL check_err(iret)   
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: dat%myFile%record_counter = ",
-     &            dat%myFile%record_counter
-#endif
 C
       iret=nf_inq_dimlen(dat%ncid,recid,dat%myFile%record_counter)
       CALL check_err(iret)   
@@ -1553,6 +1590,10 @@ C
 C     Increment the record counter so that we can store data at the
 C     next location in the netcdf file
       dat%myFile%record_counter = dat%myFile%record_counter + 1       
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: dat%myFile%record_counter = ",
+     &            dat%myFile%record_counter
+#endif
 !     
 !     Store time
       iret=nf_inq_varid(dat%ncid,"time",dat%myTime%timenc_id)
@@ -1675,7 +1716,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E    I N I T   N E T C D F   H O T S T A R T
 C-----------------------------------------------------------------------
-C     jgf49.35 Sets up netCDF variables and allocates memory for  
+C     jgf49.35 Sets up netCDF variables and writes mesh data into netcdf  
 C     hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE initNetCDFHotstart(lun, Elev1Descript,
@@ -1702,60 +1743,27 @@ C
 #ifdef NETCDF_DEBUG
       write(*,*) "DEBUG: Entering initNetCDFHotstart."
 #endif
-C     Point to the hotstart file we want to work on
-      IF (lun.eq.67) THEN
-         hs => hs67
-      ELSE 
-         hs => hs68
-      ENDIF
-C 
       error = .false.
 C
-C     nodes and elements
-      hs%myMesh%num_nodes = NP_G
-      hs%myMesh%num_elems = NE_G
-      hs%myMesh%nface_len = 3
-      ALLOCATE(hs%myTime%timenc(hs%myTime%timenc_len))
+C     Point to the correct hotstart block and then allocate 
+C     the netcdf data arrays.
+      CALL allocateNetCDFHotstart(lun)
 C
-C     Elev1
-      ALLOCATE(hs%zeta1%nodal_data(hs%myMesh%num_nodes,
-     &       hs%myTime%timenc_len))
+C     initialize array values with implicit loop
       hs%zeta1%nodal_data = Elev1Descript%initial_value
-C     Elev2
-      ALLOCATE(hs%zeta2%nodal_data(hs%myMesh%num_nodes,
-     &       hs%myTime%timenc_len))
       hs%zeta2%nodal_data = Elev2Descript%initial_value
-C     EtaDisc
-      ALLOCATE(hs%zetad%nodal_data(hs%myMesh%num_nodes,
-     &       hs%myTime%timenc_len))
       hs%zetad%nodal_data = EtaDiscDescript%initial_value
-C     Vel
-      ALLOCATE(hs%vel%u_nodal_data(hs%myMesh%num_nodes,
-     &       hs%myTime%timenc_len))
-      ALLOCATE(hs%vel%v_nodal_data(hs%myMesh%num_nodes,
-     &       hs%myTime%timenc_len))
       hs%vel%u_nodal_data = VelDescript%initial_value
       hs%vel%v_nodal_data = VelDescript%initial_value
-C     CH1
-      ALLOCATE(hs%ch1%nodal_data(hs%myMesh%num_nodes,
-     &       hs%myTime%timenc_len))
       hs%ch1%nodal_data = CH1Descript%initial_value
-C     NodeCode 
-      ALLOCATE(hs%nodecodenc%nodal_int(hs%myMesh%num_nodes,
-     &       hs%myTime%timenc_len))
       hs%nodecodenc%nodal_int = NodeCodeDescript%int_initial_value
-C     NOFF 
-      ALLOCATE(hs%noffnc%nodal_int(hs%myMesh%num_elems,
-     &       hs%myTime%timenc_len))
       hs%noffnc%nodal_int = NOFFDescript%int_initial_value
-C
 C
 C     Initialize netCDF hotstart file, creating a new one 
       CALL createNetCDFOutputFile(hs%ncid, hs%myFile, lun, hs%myTime,
      &                            Elev1Descript, error)
       CALL initNetCDFCoord(hs%myMesh)
       CALL defineMeshVariables(hs%ncid, hs%myMesh)
-C
 C
 C     Z E T A 1
       hs%zeta1%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
@@ -1939,7 +1947,7 @@ C     N O D E C O D E
       CALL check_err(iret)
 C
 C     N O F F
-      hs%noffnc%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
+      hs%noffnc%nodal_data_dims(1) = hs%myMesh%num_elems_dim_id
       hs%noffnc%nodal_data_dims(2) = hs%myTime%timenc_dim_id
       iret = nf_def_var(hs%ncid, 'noff', NF_INT,
      &       hs%noffnc%nodal_data_rank, 
@@ -2209,6 +2217,65 @@ C-----------------------------------------------------------------------
       END SUBROUTINE initNetCDFHotstart
 C-----------------------------------------------------------------------
 
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   A L L O C A T E   N E T C D F   H O T S T A R T
+C-----------------------------------------------------------------------
+C     jgf49.41 Allocates memory for netcdf hotstart data.
+C-----------------------------------------------------------------------
+      SUBROUTINE allocateNetCDFHotstart(lun)
+      USE GLOBAL, ONLY : NE_G, NP_G, IM, IMHS
+      IMPLICIT NONE
+      INTEGER, intent(in) :: lun ! unit number of hotstart file (67 or 68)
+C
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Entering allocateNetCDFHotstart."
+#endif
+C
+C     Point to the hotstart file we want to work on.
+      IF (lun.eq.67) THEN
+         hs => hs67
+      ELSE 
+         hs => hs68
+      ENDIF
+C
+C     nodes and elements
+      hs%myMesh%num_nodes = NP_G
+      hs%myMesh%num_elems = NE_G
+      hs%myMesh%nface_len = 3
+      ALLOCATE(hs%myTime%timenc(hs%myTime%timenc_len))
+C
+C     Elev1
+      ALLOCATE(hs%zeta1%nodal_data(hs%myMesh%num_nodes,
+     &       hs%myTime%timenc_len))
+C     Elev2
+      ALLOCATE(hs%zeta2%nodal_data(hs%myMesh%num_nodes,
+     &       hs%myTime%timenc_len))
+C     EtaDisc
+      ALLOCATE(hs%zetad%nodal_data(hs%myMesh%num_nodes,
+     &       hs%myTime%timenc_len))
+C     Vel
+      ALLOCATE(hs%vel%u_nodal_data(hs%myMesh%num_nodes,
+     &       hs%myTime%timenc_len))
+      ALLOCATE(hs%vel%v_nodal_data(hs%myMesh%num_nodes,
+     &       hs%myTime%timenc_len))
+C     CH1
+      IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
+         ALLOCATE(hs%ch1%nodal_data(hs%myMesh%num_nodes,
+     &          hs%myTime%timenc_len))
+      ENDIF
+C     NodeCode 
+      ALLOCATE(hs%nodecodenc%nodal_int(hs%myMesh%num_nodes,
+     &       hs%myTime%timenc_len))
+C     NOFF 
+      ALLOCATE(hs%noffnc%nodal_int(hs%myMesh%num_elems,
+     &       hs%myTime%timenc_len))
+C
+#ifdef NETCDF_DEBUG
+      write(*,*) "DEBUG: Returning from allocateNetCDFHotstart."
+#endif
+C-----------------------------------------------------------------------
+      END SUBROUTINE allocateNetCDFHotstart
+C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E    W R I T E   N E T C D F   H O T S T A R T   
@@ -2238,7 +2305,8 @@ C
 C
       INTEGER i,j
       INTEGER counti(1), starti(1), n
-      INTEGER kount(2), start(2)
+      INTEGER kount(2), start(2) ! for nodally based data
+      INTEGER elekount(2) ! for elementally based data
       INTEGER iret ! success or failure of the netcdf call
       INTEGER recid    
       INTEGER varid
@@ -2254,6 +2322,8 @@ C     Point to the hotstart file we want to work on
          hs => hs68
       ENDIF
 C 
+      CALL setNetCDFFileName(lun,hs%myFile)
+C
       iret = nf_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)   
 !   
@@ -2285,6 +2355,8 @@ C      hs%myFile%record_counter = hs%myFile%record_counter + 1
 C
       kount(1)=hs%myMesh%num_nodes
       kount(2)=hs%myTime%timenc_len
+      elekount(1)=hs%myMesh%num_elems
+      elekount(2)=kount(2)
       start(1)=1
       start(2)=hs%myFile%record_counter
       hs%myTime%timenc(hs%myTime%timenc_len)=time
@@ -2313,7 +2385,7 @@ C     Place the nodal data into the netcdf arrays
          hs%vel%u_nodal_data(:,kount(2)) = VelDescript%array 
          hs%vel%v_nodal_data(:,kount(2)) = VelDescript%array2 
          hs%nodecodenc%nodal_int(:,kount(2)) = NodeCodeDescript%iarray 
-         hs%noffnc%nodal_int(:,kount(2)) = NOFFDescript%iarray 
+         hs%noffnc%nodal_int(:,elekount(2)) = NOFFDescript%iarray 
       ELSE
          hs%zeta1%nodal_data(:,kount(2)) = Elev1Descript%array_g 
          hs%zeta2%nodal_data(:,kount(2)) = Elev2Descript%array_g 
@@ -2322,7 +2394,7 @@ C     Place the nodal data into the netcdf arrays
          hs%vel%v_nodal_data(:,kount(2)) = VelDescript%array2_g
          hs%nodecodenc%nodal_int(:,kount(2)) =
      &                                  NodeCodeDescript%iarray_g 
-         hs%noffnc%nodal_int(:,kount(2)) = NOFFDescript%iarray_g 
+         hs%noffnc%nodal_int(:,elekount(2)) = NOFFDescript%iarray_g 
       ENDIF
 C
 C     Write the nodal data to the netcdf file 
@@ -2345,7 +2417,7 @@ C     Write the nodal data to the netcdf file
      &      start, kount, hs%nodecodenc%nodal_int)
       CALL check_err(iret)
       iret = nf_put_vara_INT(hs%ncid, hs%noffnc%nodal_data_id,
-     &       start, kount, hs%noffnc%nodal_int)
+     &       start, elekount, hs%noffnc%nodal_int)
       CALL check_err(iret)
 C
 C     Get each variable ID for the model parameters in the netcdf file
@@ -2454,8 +2526,8 @@ C-----------------------------------------------------------------------
      &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
      &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
      &                   igpp, igwp, nscougw, ETA1, ETA2, EtaDisc, 
-     &                   UU2, VV2, NODECODE, NOFF, NODES_LG, IMAP_EL_LG,
-     &                   MNPROC, MYPROC, NE, NP
+     &                   UU2, VV2, NNODECODE, NOFF, NODES_LG,
+     &                   IMAP_EL_LG, MNPROC, MYPROC, NE, NP
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -2486,10 +2558,7 @@ C     Point to the hotstart file we want to work on
       ENDIF
 C
       hs%myFile%fileFound = .false.
-      hs%myFile%FILEFORT = 'fort.'
-      hs%myFile%FILEEXT = '.nc'
-      WRITE(hs%myFile%FILENAME,'(A5,I2,A3)') 
-     &      hs%myFile%FILEFORT, lun, hs%myFile%FILEEXT
+      CALL setNetCDFFileName(lun,hs%myFile)
 C
 C     Open fulldomain file
       INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
@@ -2522,29 +2591,7 @@ C
      &     hs%myMesh%num_elems)
       CALL check_err(iret)   
 C
-C     Elev1
-      ALLOCATE(hs%zeta1%nodal_data(hs%myMesh%num_nodes,
-     &       hs%myTime%timenc_len))
-C     Elev2
-      ALLOCATE(hs%zeta2%nodal_data(hs%myMesh%num_nodes,
-     &       hs%myTime%timenc_len))
-C     EtaDisc
-      ALLOCATE(hs%zetad%nodal_data(hs%myMesh%num_nodes,
-     &       hs%myTime%timenc_len))
-C     Vel
-      ALLOCATE(hs%vel%u_nodal_data(hs%myMesh%num_nodes,
-     &       hs%myTime%timenc_len))
-      ALLOCATE(hs%vel%v_nodal_data(hs%myMesh%num_nodes,
-     &       hs%myTime%timenc_len))
-C     CH1
-      ALLOCATE(hs%ch1%nodal_data(hs%myMesh%num_nodes,
-     &       hs%myTime%timenc_len))
-C     NodeCode 
-      ALLOCATE(hs%nodecodenc%nodal_int(hs%myMesh%num_nodes,
-     &       hs%myTime%timenc_len))
-C     NOFF 
-      ALLOCATE(hs%noffnc%nodal_int(hs%myMesh%num_elems,
-     &       hs%myTime%timenc_len))
+      CALL allocateNetCDFHotstart(lun)
 C
       hs%myFile%record_counter = 1
       kount(1)=hs%myMesh%num_nodes
@@ -2562,26 +2609,47 @@ C
       CALL check_err(iret)
 C
 C     Read in fulldomain data
+C     Elev1
+      iret=nf_inq_varid(hs%ncid, "zeta1", hs%zeta1%nodal_data_id)
+      CALL check_err(iret)
       iret = nf_get_vara_DOUBLE(hs%ncid, hs%zeta1%nodal_data_id, start,
      &       kount, hs%zeta1%nodal_data)
+      CALL check_err(iret)
+C     Elev2
+      iret=nf_inq_varid(hs%ncid, "zeta2", hs%zeta2%nodal_data_id)
       CALL check_err(iret)
       iret = nf_get_vara_DOUBLE(hs%ncid, hs%zeta2%nodal_data_id, start,
      &       kount, hs%zeta2%nodal_data)
       CALL check_err(iret)
+C     EtaDisc
+      iret=nf_inq_varid(hs%ncid, "zetad", hs%zetad%nodal_data_id)
+      CALL check_err(iret)
       iret = nf_get_vara_DOUBLE(hs%ncid, hs%zetad%nodal_data_id, start,
      &       kount, hs%zetad%nodal_data)
+      CALL check_err(iret)
+C     Vel
+      iret=nf_inq_varid(hs%ncid, "u-vel", hs%vel%u_nodal_data_id)
       CALL check_err(iret)
       iret = nf_get_vara_DOUBLE(hs%ncid, hs%vel%u_nodal_data_id, start,
      &       kount, hs%vel%u_nodal_data)
       CALL check_err(iret)
+C
+      iret=nf_inq_varid(hs%ncid, "v-vel", hs%vel%v_nodal_data_id)
+      CALL check_err(iret)
       iret = nf_get_vara_DOUBLE(hs%ncid, hs%vel%v_nodal_data_id, start,
      &       kount, hs%vel%v_nodal_data)
+      CALL check_err(iret)
+C     NodeCode
+      iret=nf_inq_varid(hs%ncid, "nodecode",hs%nodecodenc%nodal_data_id)
       CALL check_err(iret)
       iret = nf_get_vara_INT(hs%ncid, hs%nodecodenc%nodal_data_id, 
      &       start, kount, hs%nodecodenc%nodal_int)
       CALL check_err(iret)
+C     NOFF
       start(1)=1
       kount(1)=hs%myMesh%num_elems
+      iret=nf_inq_varid(hs%ncid, "noff", hs%noffnc%nodal_data_id)
+      CALL check_err(iret)
       iret = nf_get_vara_INT(hs%ncid, hs%noffnc%nodal_data_id, start,
      &       kount, hs%noffnc%nodal_int)
       CALL check_err(iret)
@@ -2595,9 +2663,8 @@ C     Place nodal data in ADCIRC arrays
          UU2(:) = hs%vel%u_nodal_data(:,kount(2))
          VV2(:) = hs%vel%v_nodal_data(:,kount(2))
          EtaDisc(:) = hs%zetad%nodal_data(:,kount(2))
-         NODECODE(:) = hs%nodecodenc%nodal_int(:,kount(2))
+         NNODECODE(:) = hs%nodecodenc%nodal_int(:,kount(2))
          NOFF(:) = hs%noffnc%nodal_int(:,kount(2))
-
       ! parallel
       ELSE 
          ! loop over subdomain nodes
@@ -2616,7 +2683,7 @@ C     Place nodal data in ADCIRC arrays
      &          hs%vel%v_nodal_data(fd_node_number,kount(2))
             EtaDisc(sd_node_number) = 
      &          hs%zetad%nodal_data(fd_node_number,kount(2))
-            NODECODE(sd_node_number) = 
+            NNODECODE(sd_node_number) = 
      &          hs%nodecodenc%nodal_int(fd_node_number,kount(2))
          ENDDO   
          ! loop over subdomain elements
@@ -2714,8 +2781,12 @@ C
       DEALLOCATE(hs%zetad%nodal_data)
       DEALLOCATE(hs%vel%u_nodal_data)
       DEALLOCATE(hs%vel%v_nodal_data)
+      IF (IMHS.EQ.10) THEN
+         DEALLOCATE(hs%CH1%nodal_data)
+      ENDIF
       DEALLOCATE(hs%nodecodenc%nodal_int)
       DEALLOCATE(hs%noffnc%nodal_int)
+      DEALLOCATE(hs%myTime%timenc)
 C
 C     now close the netcdf file
       iret = nf_close(hs%ncid)

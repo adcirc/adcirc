@@ -730,8 +730,10 @@ C
       READ(15,*) IDUM,IDUM,IDUM,IDUM                !SKIP OVER NHASE,NHASV,...
       READ(15,*) NHSTAR,IDUM                          !SKIP OVER NHSTAR,NHSINC
       PRINT *, "NHSTAR = ", NHSTAR                    
-      IF (ABS(NHSTAR).EQ.3) useNetCDF = .true.                          !for netCDF
-
+      IF ((ABS(NHSTAR).EQ.3).OR.(ABS(NHSTAR).EQ.367)
+     &    .OR.(ABS(NHSTAR).EQ.368)) THEN
+          useNetCDF = .true.                          !for netCDF
+      ENDIF
       IF ( (useNetCDF).AND.(.NOT.(NETCDF_AVAIL)) ) THEN
          WRITE(*,*) 'ERROR: NetCDF was requested, but not supported.'
          STOP

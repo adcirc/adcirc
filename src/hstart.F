@@ -500,6 +500,7 @@ C
 #endif
          STOP
       END SELECT
+
 C     ---------------------------------------------
 C
 C     I N I T I A L I Z E   H O T S T A R T   R U N
@@ -574,7 +575,6 @@ C
          QX2(I)=UU2(I)*H2
          QY2(I)=VV2(I)*H2
       END DO
-     
 C     jgf46.08 Fine grained ramp functions
 C     jgf46.21 Split flux into internal and external, added support
 C     for IBTYPE=52.

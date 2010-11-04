@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.41   - 11/04/2010 - jgf - Fixes for reading and writing netcdf hotstart
+C             files in serial and in parallel; fix to allocate memory for
+C             boundary arrays more efficiently in netcdf module.
 C  v49.40   - 10/25/2010 - jgf - Fixes for writing netcdf metadata to trim
 C             off trailing spaces when writing netcdf files from adcirc or
 C             adcprep, as well as when writing subdomain fort.15 files from

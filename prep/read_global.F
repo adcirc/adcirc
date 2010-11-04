@@ -269,7 +269,7 @@ C
 
       SUBROUTINE READ15() 
       USE PRE_GLOBAL 
-      USE GLOBAL, ONLY : parse, a2f
+      USE GLOBAL, ONLY : parse, a2f, hss
       USE PRESIZES, ONLY : SZ
       use memory_usage
       IMPLICIT NONE
@@ -329,6 +329,7 @@ C
 C
       READ(15,80) HOTMSG
       READ(HOTMSG,*) IHOT
+
 C
       READ(15,80) ICSMSG
       READ(ICSMSG,*) ICS
@@ -1182,18 +1183,22 @@ C     jgf45.07 added undocumented option to allow ADCIRC to stop after writing
 C     hot start file. This is used to test hot starting capabilities.
       READ(15,80) HSTARMSG
       READ(HSTARMSG,*) NHSTAR,NHSINC
-!      PRINT *, " NHSTAR,NHSINC ", NHSTAR,NHSINC
-      IF ((NHSTAR.NE.0).AND.(NHSTAR.NE.1).AND.(NHSTAR.NE.67)
-     &     .AND.(NHSTAR.NE.68).AND.(NHSTAR.NE.3)) THEN 
-        print *, "NHSTAR does not have an allowable value"
+C     jgf49.41: Added new options for hotstart file format indicator: 2, 3,
+C     367, 368. Not sure we need to check the validity of NHSTAR values in 
+C     adcprep though.
+      SELECT CASE(NHSTAR)
+      CASE(0,1,2,3,67,68,367,368)
+         ! do nothing, these are allowable values
+      CASE DEFAULT
+        print *, "WARNING: NHSTAR=",NHSTAR," is not valid."
         IF (NFOVER.EQ.1) THEN
-          print *, "Program will override and reset NHSTAR=0 "
-          NHSTAR = 0
+           print *, "WARNING: Program will override and reset NHSTAR=0."
+           NHSTAR = 0
         ELSE
-          stop
+           print *,"ERROR: Halting adcprep due to invalid NHSTAR value."
+           stop
         ENDIF
-      ENDIF
-!      PRINT *, " NHSTAR,NHSINC ", NHSTAR,NHSINC
+      END SELECT
 C
 C--Read Solver Data
 C
@@ -1270,9 +1275,6 @@ C
 
       ENDIF
 #endif
-
-
-
 C
 C--Close Global Run Info file 
 C

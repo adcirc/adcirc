@@ -5959,7 +5959,8 @@ C---------------------------------------------------------------------------
      &    title, institution,
      &    source, history, references, comments, host, convention,
      &    contact, base_date
-      USE NETCDFIO, ONLY : setADCIRCParameters, allocNetCDFArrays
+      USE NETCDFIO, ONLY : setADCIRCParameters, allocNetCDFArrays,
+     &                     initNetCDFHotstart
       USE GLOBAL, ONLY : OutputDataDescript_t
 C
       IMPLICIT NONE
@@ -5979,6 +5980,15 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: WindVelStaDescript ! fort.72
       type(OutputDataDescript_t), SAVE :: PrDescript         ! fort.73
       type(OutputDataDescript_t), SAVE :: WindVelDescript    ! fort.74
+C     For hotstart files:
+      type(OutputDataDescript_t), SAVE :: Elev1Descript
+      type(OutputDataDescript_t), SAVE :: Elev2Descript
+      type(OutputDataDescript_t), SAVE :: CH1Descript
+      type(OutputDataDescript_t), SAVE :: EtaDiscDescript
+      type(OutputDataDescript_t), SAVE :: NodeCodeDescript
+      type(OutputDataDescript_t), SAVE :: NOFFDescript
+      INTEGER numHotstartWrites ! number writes to hot start files
+      INTEGER nextLun           ! next LUN to write to, after initial write
 C
 C     fort.61
       ElevStaDescript % specifier            = NOUTE
@@ -6088,6 +6098,21 @@ C     fort.74
       WindVelDescript % alternate_value      = 0.0
       WindVelDescript % field_name           = 'WindVel'
 C
+C     fort.67 and fort.68
+C     Need to populate the global and nodal attributes modules with
+      Elev1Descript % specifier            = NHSTAR
+      Elev1Descript % initial_value        = 0.0
+      Elev2Descript % specifier            = NHSTAR
+      Elev2Descript % initial_value        = 0.0
+      CH1Descript % specifier            = NHSTAR
+      CH1Descript % initial_value        = 0.0
+      EtaDiscDescript % specifier            = NHSTAR
+      EtaDiscDescript % initial_value        = 0.0
+      NodeCodeDescript % specifier            = NHSTAR
+      NodeCodeDescript % int_initial_value        = 0
+      NOFFDescript % specifier            = NHSTAR
+      NOFFDescript % int_initial_value        = 0
+C
 C     Need to populate the global and nodal attributes modules with
 C     these parameters, since the netcdfio module relies on those
 C     modules, rather than the pre_global module. Some day, adcprep
@@ -6122,6 +6147,18 @@ C     was specified.
       CALL allocNetCDFArrays(72, WindVelStaDescript, error)
       CALL allocNetCDFArrays(73, PrDescript, error)
       CALL allocNetCDFArrays(74, WindVelDescript, error)
+C
+C     Create NetCDF hotstart files if NetCDF was specified.
+      IF ((NHSTAR.EQ.3).OR.(NHSTAR.EQ.367).OR.(NHSTAR.EQ.368)) THEN
+         ! must init both hotstart files ... there is not enough information
+         ! available to determine if they will both be needed
+         CALL initNetCDFHotstart(67, Elev1Descript,
+     &       Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
+     &       NodeCodeDescript, NOFFDescript, error)
+         CALL initNetCDFHotstart(68, Elev1Descript,
+     &      Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
+     &      NodeCodeDescript, NOFFDescript, error)
+      ENDIF
 #endif
 c----------------------------------------------------------------------------
       END SUBROUTINE prepNetCDF

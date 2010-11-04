@@ -295,10 +295,10 @@ C
       IF (PARTITION) THEN
         CALL METIS()
         print *, " "
-        print *, 'METIS has partitioned nodes'
+        print *, 'INFO: METIS has partitioned nodes.'
         GO TO 9999
       ELSE
-        print *, 'Opening file partmesh.txt'
+        print *, 'INFO: Opening file partmesh.txt.'
         OPEN(990,FILE='partmesh.txt')
 C        print *, 'made it this part and MNP = ', MNP
         DO I=1, MNP
@@ -306,14 +306,14 @@ C        print *, 'made it this part and MNP = ', MNP
 C           print *," PROC for ",I," = ", PROC(I)
         ENDDO
         CLOSE(990)           
-        print *, 'closed file'
+        print *, 'INFO: Closed partmesh.txt file.'
       ENDIF
 C
 C-- Read the Global Input File ( Unit 15 )
 C
-      print *, 'start reading in fort.15'
+      print *, 'INFO: Starting read of fort.15'
       CALL READ15()
-      print *, 'Global Input file read successfully.'
+      print *, 'INFO: Fulldomain fort.15 file read successfully.'
 C
 C     jgf45.07 In the case of starting a parallel job from a full domain
 C     hot start file, we must reverse the signs of NOUTM, NOUTV, etc.

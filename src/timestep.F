@@ -2555,7 +2555,7 @@ C     the screen.
      &           2X,'ON MYPROC = ',I4,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev,',
      &           ' ADCIRC stopping. **')
-         ErrorElevExceeded = 1                ! Clint's Zombie Slyaer
+         ErrorElevExceeded = 1                ! Clint's Zombie Slayer
          ENDIF
          call WarnElevSum(ErrorElevExceeded)  ! Clint's Zombie Slayer 2010.08.07
          IF( ErrorElevExceeded /= 0 ) THEN    !  Finalize MPI Environment,
@@ -2564,8 +2564,13 @@ C     the screen.
          ENDIF                                !st3
 #else 
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
-            WRITE(ScreenUnit,1992) 
-     &           IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            IF (KEMAX.GT.0) THEN
+               WRITE(ScreenUnit,1992) 
+     &              IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            ELSE
+               WRITE(ScreenUnit,1992) 
+     &              IT,NUMITR,TIME,0.,KEMAX,VELMAX,KVMAX
+            ENDIF
  1992       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E14.8,
      &           /,2X,'ELMAX = ', E10.4,' AT NODE',I7,

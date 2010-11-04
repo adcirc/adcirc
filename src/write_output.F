@@ -1835,7 +1835,7 @@ C-----------------------------------------------------------------------
       USE MESSENGER
 #endif
 #ifdef NETCDF
-       USE NETCDFIO, ONLY : initNetCDFHotstart, 
+       USE NETCDFIO, ONLY : initNetCDFHotstart, allocateNetCDFHotstart,
      &                      writeNetCDFHotstart
        USE NodalAttributes, ONLY :
      &     nolibf, nwp, tau0, cf, eslm
@@ -1976,26 +1976,38 @@ C
          NOFFDescript % iarray_g             => NOFF_g
 C
 #ifdef NETCDF
-C        jgf49.35 TODO: Allocate arrays to write harmonic analysis data
-C        jgf49.35 TODO: Allocate arrays to write 3D data
-         CALL initNetCDFHotstart(hss%lun, Elev1Descript,
-     &       Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
-     &       NodeCodeDescript, NOFFDescript, error)
-         ! Determine if we need to init both hotstart files ... if the 
-         ! hotstart timestep increment is short enough that we will need
-         ! to write both the 67 and 68 file during this run
-         numHotstartWrites = (NT-IT)/NHSINC
-         IF (numHotstartWrites.ge.1) THEN
-            IF (hss%lun.eq.67) THEN
-               nextLun = 68
-            ELSE
-               nextLun = 67
+         IF (MNPROC.eq.1) THEN  ! serial
+C           jgf49.35 TODO: Allocate arrays to write harmonic analysis data
+C           jgf49.35 TODO: Allocate arrays to write 3D data
+            CALL initNetCDFHotstart(hss%lun, Elev1Descript,
+     &         Elev2Descript, VelDescript, CH1Descript, 
+     &         EtaDiscDescript, NodeCodeDescript, NOFFDescript, error)
+            ! Determine if we need to init both hotstart files ... if the 
+            ! hotstart timestep increment is short enough that we will need
+            ! to write both the 67 and 68 file during this run
+            numHotstartWrites = (NT-IT)/NHSINC
+            IF (numHotstartWrites.ge.1) THEN
+               IF (hss%lun.eq.67) THEN
+                  nextLun = 68
+               ELSE
+                  nextLun = 67
+               ENDIF
+               CALL initNetCDFHotstart(nextLun, Elev1Descript,
+     &            Elev2Descript, VelDescript, CH1Descript,
+     &            EtaDiscDescript, NodeCodeDescript, NOFFDescript,
+     &            error)
             ENDIF
-            CALL initNetCDFHotstart(nextLun, Elev1Descript,
-     &         Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
-     &         NodeCodeDescript, NOFFDescript, error)
-         ENDIF
+         ELSE ! parallel
+            ! jgf49.41: We don't need to create the hotstart file, it was
+            ! created by adcprep. All we need to do is allocate memory for
+            ! the netcdf arrays that will be written to the netcdf file.
+            IF (myProc.eq.0) THEN
+               CALL allocateNetCDFHotstart(67)
+               CALL allocateNetCDFHotstart(68)
+            ENDIF
+         ENDIF 
 #endif
+C
          FirstCall = .false.
       ENDIF
 
@@ -2361,9 +2373,11 @@ C
          write(screenUnit,*) 'NetCDF Hotstart undergoing testing.'
 
 #ifdef NETCDF
-         CALL writeNetCDFHotstart(hss%lun, Elev1Descript,
-     &        Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
-     &        NodeCodeDescript, NOFFDescript, time, it)
+         IF (myProc.eq.0) THEN
+            CALL writeNetCDFHotstart(hss%lun, Elev1Descript,
+     &         Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
+     &         NodeCodeDescript, NOFFDescript, time, it)
+         ENDIF 
 #endif
 
       CASE DEFAULT
