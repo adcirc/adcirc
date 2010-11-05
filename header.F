@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.42   - 11/05/2010 - jgf - Added compiler flags and library flags for
+C             compiling with netcdf support on sapphire, jade, and diamond
+C             at ERDC.
 C  v49.41   - 11/04/2010 - jgf - Fixes for reading and writing netcdf hotstart
 C             files in serial and in parallel; fix to allocate memory for
 C             boundary arrays more efficiently in netcdf module.

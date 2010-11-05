@@ -143,6 +143,14 @@ ifeq ($(compiler),cray_xt3)
   IMODS		:=  -module 
   FLIBS  	:=  
   MSGLIBS	:=  
+# When compiling with netCDF support, the HDF5 libraries must also
+# be linked in, so the user must specify HDF5HOME on the command line.
+# jgf20101102: on Sapphire, 
+#              NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.1.1-serial
+#              HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.5-serial/lib
+  ifeq ($(NETCDF),enable)
+     FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5_fortran -lhdf5_hl -lhdf5 -lz
+  endif
   BACKEND_EXEC  := metis_be adcprep_be
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -171,11 +179,14 @@ ifeq ($(compiler),cray_xt4)
   FLIBS  	:=  
 # When compiling with netCDF support, the HDF5 libraries must also
 # be linked in, so the user must specify HDF5HOME on the command line.
-# jgf20090518: on Jade, NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.0
-# jgf20090518: on Jade, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.2/lib
+# On Jade, HDF5 was compiled with szip compression, so this library is 
+# required as well.
+# jgf20101102: on Jade, NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.0.1-serial
+# jgf20101102: on Jade, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.4-serial/lib
+# jgf20101103: on Jade, SZIPHOME=/usr/local/usp/PETtools/CE/pkgs/szip-2.1/lib
   ifeq ($(NETCDF),enable)
-     FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
-  endif   
+     FLIBS          := $(FLIBS) -L$(HDF5HOME) -L$(SZIPHOME) -lhdf5_fortran -lhdf5_hl -lhdf5 -lsz -lz
+  endif
   MSGLIBS	:=  
   BACKEND_EXEC  := metis_be adcprep_be
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
@@ -283,13 +294,20 @@ ifeq ($(compiler),diamond)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
   DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
+  DPRE          :=  -DREAL8 -DLINUX #-DADCSWAN
   IMODS         :=  -I
   CC            := icc
   CCBE          := $(CC)
   CFLAGS        := $(INCDIRS) -O3 -xT
   CLIBS         :=
   LIBS          :=
+# When compiling with netCDF support, the HDF5 libraries must also
+# be linked in, so the user must specify HDF5HOME on the command line.
+# jgf20101103: on Diamond, NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.0.1-serial
+# jgf20101103: on Diamond, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.4-serial/lib
+  ifeq ($(NETCDF),enable)
+     FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5_hl -lhdf5 -lhdf5_fortran -lz
+  endif
   MSGLIBS       := -lmpi
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
