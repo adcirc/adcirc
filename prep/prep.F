@@ -3258,8 +3258,6 @@ C
       LOGICAL FOUND
       INTEGER I,J,IPROC,INDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF, NH, N
-      !INTEGER N3DSD, I3DSDRec, N3DSV, I3DSVRec, N3DST, I3DSTRec !kmd48.33bc defined in global
-      !INTEGER N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec
       CHARACTER FNAME*60,LOCFN*14
       CHARACTER*16 FNAME1
       CHARACTER*8 FNAM8(2)
@@ -3286,38 +3284,34 @@ C
       REAL(SZ),ALLOCATABLE ::  STAULV(:,:),STAVLV(:,:)
       REAL(SZ) TIME
 
-C
-C     ALLOCATE ARRAYS FOR NETCDF - MCF 
-C
-      REAL(SZ),ALLOCATABLE :: zeta1 (:,:)  
-      REAL(SZ),ALLOCATABLE :: zeta2 (:,:)  
-      REAL(SZ),ALLOCATABLE :: zetadisc (:,:) 
       REAL(SZ) DUMMY
       INTEGER IDUMMY
       INTEGER LUN
       INTEGER NHS
-     
-!      REAL(SZ),ALLOCATABLE :: uu22 (:,:) 
-!      REAL(SZ),ALLOCATABLE :: vv22 (:,:) 
-!      INTEGER, ALLOCATABLE :: nodecodenc (:) 
-!      INTEGER, ALLOCATABLE :: noffnc (:) 
-
 C
 C--   Open Appropriate Hot Start File based on the value of IHOT from
 C--   the fort.15 file
 C
       write(*,*) "enter IHOT: "
       read(*,*) IHOT
-      IF(IHOT.EQ.67) FNAME='fort.67'
-      IF(IHOT.EQ.68) FNAME='fort.68'
-
-C     START ADDITION FOR NETCDF - MCF - 6/27/08  
-
-      IF(IHOT.EQ.-67) FNAME='fort.67.nc'
-      IF(IHOT.EQ.-68) FNAME='fort.68.nc'
-
-C     END ADDITION FOR NETCDF - MCF - 6/27/08  
-
+      SELECT CASE (IHOT)
+      CASE(67)
+         FNAME='fort.67'
+      CASE(68)
+         FNAME='fort.68'
+      CASE(367,368)
+         write(*,*) "INFO: IHOT=",IHOT,
+     &      " means parallel ADCIRC should read a NetCDF hotstart file."
+         write(*,*) 
+     &      "INFO: NetCDF hotstart files do not require decomposition."
+         RETURN
+      CASE DEFAULT
+         write(*,*) "ERROR: The IHOT value ",IHOT,
+     &      " is not a valid option."
+         write(*,*) "INFO: 67 and 68 are the only valid options."
+         RETURN
+      END SELECT
+C
       INQUIRE(FILE=FNAME,EXIST=FOUND)
       IF (FOUND) THEN
          WRITE(*,1011) FNAME
@@ -3327,13 +3321,6 @@ C     END ADDITION FOR NETCDF - MCF - 6/27/08
          WRITE(*,1010) FNAME
          STOP
       ENDIF
-
-
-C     START ADDITION FOR NETCDF - MCF - 6/27/08  
-
-C     If hotstart files are binary files then:
-
-      IF(IHOT.EQ.67.or.IHOT.EQ.68) THEN
 
 C--   Read in info from global hot start files
 
@@ -3441,7 +3428,7 @@ C
       END DO
 
       DO I=1,MNE
-         READ(IHOT,REC=IHOTSTP) NOFF(I)  ; IHOTSTP = IHOTSTP + 1                    
+         READ(IHOT,REC=IHOTSTP) NOFF(I)  ; IHOTSTP = IHOTSTP + 1 
       END DO
 
       READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
@@ -3470,33 +3457,16 @@ C
       READ(IHOT,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
       READ(IHOT,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
 
-
-
 C kmd48.33 moved 3D hot start information to subroutine
 C          and took out other lines
 C jgf49.17 refined check of IMHSF so that it picks up only
 C     IM values that indicate 3D (and so we can use six integer IM values).
       IF ((IMHSF.EQ.1).OR.(IMHSF.EQ.11).OR.
      &    (IMHSF.EQ.21).OR.(IMHSF.EQ.31)) THEN 
-        CALL ReadHotStart3D(IHOT,IHOTSTP)
+         CALL ReadHotStart3D(IHOT,IHOTSTP)
       ENDIF
-
-      
-      ELSEIF(IHOT.EQ.-67.or.IHOT.EQ.-68) THEN
-
-
-      
-      ELSE
- 
-        PRINT *,"The hotstart files are neither binary nor netCDF files"
-
-      ENDIF             
-C   End Addition for netCDF by MCF 6/27/08
-      
-      
       
 C     jgf48.03 harmonic analysis not supported yet
-       IF(IHOT.GT.0) THEN
 #if 0
 C
 C....DETERMINE HARMONIC ANALYSIS PARAMETERS
@@ -3624,46 +3594,9 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
          ENDIF    ! charmv
       ENDIF     ! HARIND
 #endif
-               ENDIF
 C
 C--Open All Local Hot Start files 
 C
-
-!                   PRINT *,"  ----------START-LOC-NETCDF---------------"
-!                   PRINT *,"  IMHSF = ", IMHSF
-!                   PRINT *,"  TIMEHSF = ", TIMEHSF
-!                   PRINT *,"  TIME = ", time
-!                   PRINT *,"  ITHSF = ", ITHSF
-!                   PRINT *,"  ETA11 = ", ETA1(11)
-!                   PRINT *,"  ETA22 = ", ETA2(11)
-!                   PRINT *,"  ETADD = ", EtaDisc(11)
-!                   PRINT *,"  uu22 = ", uu2(11)
-!                   PRINT *,"  vv22 = ", vv2(11)
-!                   PRINT *,"  nodecode = ", nodecode(11)
-!                   PRINT *,"  noff = ", noff(11)
-!                   PRINT *,"  IESTP = ",IESTP
-!                   PRINT *,"  NSCOUE = ",NSCOUE
-!                   PRINT *,"  IVSTP = ",IVSTP
-!                   PRINT *,"  NSCOUV = ",NSCOUV
-!                   PRINT *,"  ICSTP = ",ICSTP
-!                   PRINT *,"  NSCOUC = ",NSCOUC
-!                   PRINT *,"  IPSTP = ",IPSTP
-!                   PRINT *,"  IWSTP = ",IWSTP
-!                   PRINT *,"  NSCOUM = ",NSCOUM
-!                   PRINT *,"  IGEP = ",IGEP
-!                   PRINT *,"  NSCOUGE = ",NSCOUGE
-!                   PRINT *,"  IGVP = ",IGVP
-!                   PRINT *,"  NSCOUGV = ",NSCOUGV
-!                   PRINT *,"  IGCP = ",IGCP
-!                   PRINT *,"  NSCOUGC = ",NSCOUGC
-!                   PRINT *,"  IGPP = ",IGPP
-!                   PRINT *,"  IGWP = ",IGWP
-!                   PRINT *,"  NSCOUGW = ",NSCOUGW
-!                   DO I=1,MNP
-!                     PRINT *, "ETA1(I) = ",I, ETA1(I)
-!                   END DO
-!
-!                   PRINT *,"  ---------END----LOC---NETCDF------------"
 
       ALLOCATE ( LOC(NPROC) )
       DO IPROC = 1,NPROC
@@ -3696,12 +3629,6 @@ C
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
             WRITE(LOC(IPROC),REC=IHOTSTP) ETA2(INDX)
             IHOTSTP=IHOTSTP+1
-
-
-
-
-
-
          END DO
 
          DO I=1, NNODP(IPROC)
@@ -3769,9 +3696,12 @@ C
          WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUGW  ; IHOTSTP = IHOTSTP + 1
 
 C  kmd48.33bc moved 3D hot start information to subroutine
-         IF (IMHSF.GT.10) THEN
+C jgf49.43 refined check of IMHSF so that it picks up only
+C     IM values that indicate 3D (and so we can use six integer IM values).
+      IF ((IMHSF.EQ.1).OR.(IMHSF.EQ.11).OR.
+     &    (IMHSF.EQ.21).OR.(IMHSF.EQ.31)) THEN 
             CALL WriteHotStart3D(LOC(IPROC),IHOTSTP,IPROC)
-         ENDIF
+      ENDIF
 
 #if 0
 C 
@@ -3819,14 +3749,10 @@ c         ENDIF
 C
 C--Close Global file and all the Local Files     
 C
-!            PRINT *, "BEFORE CLOSE GLOBAL = ", IHOT
-
-      IF(IHOT.EQ.67.OR.IHOT.EQ.68)CLOSE (IHOT)
-!            PRINT *, "BEFORE CLOSE LOCAL = ", IHOT
+      CLOSE (IHOT)
       DO IPROC=1, NPROC
          CLOSE (LOC(IPROC))
       ENDDO
-!            PRINT *, "AFTER CLOSE LOCAL = ", IHOT
 C
       IF(ALLOCATED(LOC)) DEALLOCATE ( LOC )
       nbytes = 4*nproc

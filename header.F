@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.43   - 11/05/2010 - jgf - Removed netcdf remnants from hotlocalize
+C             in prep.F and corrected a seg fault bug in hotlocalize caused
+C             by six-digit IM values.
 C  v49.42   - 11/05/2010 - jgf - Added compiler flags and library flags for
 C             compiling with netcdf support on sapphire, jade, and diamond
 C             at ERDC.
