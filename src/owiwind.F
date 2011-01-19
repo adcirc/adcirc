@@ -12,16 +12,20 @@ C
 #endif         
       IMPLICIT NONE
       character*100 :: title
-      character :: part1*12,part2*7,part3*6
+
+!      tcm v49.44 Changed the way the header line is read
+!      character :: part1*12,part2*7,part3*6
+      character :: owiheader*80
+
       real(SZ), dimension(:,:), allocatable :: uR,vR,pR,uB,vB,pB
       real(SZ), dimension(:), allocatable :: latR,longR,latB,longB
       real(SZ) :: Along, Alat
       real(SZ) :: ramp,rampfrac
       real(SZ) :: uu,vv,PP
       real(SZ) :: Penv
-      integer(8) :: date1R,date2R,date1B,date2B
-      integer(8) :: date1w,date2w
-      integer(8) :: date1p,date2p
+      integer(8):: date1R,date2R,date1B,date2B
+      integer(8):: date1w,date2w
+      integer(8):: date1p,date2p
       integer :: iLatR,iLongR,iCYMDHR,iMinR
       real(SZ)  :: dxR,dyR,swlatR,swlongR
       integer :: iLatB,iLongB,iCYMDHB,iMinB
@@ -104,9 +108,10 @@ C***********************************************************************
       if(numBlankSnaps.LT.0) then
         numSkipSnaps = ABS(numBlankSnaps)
         numBlankSnaps = 0
-!     v49.01 TCM 20091028 Added else to initialize numSkipSnaps to be 0 
+
+      ! v49.01 TCM 10/28/2009 -- Added else to initialize numSkipSnaps to be 0 
       else
-        numSkipSnaps = 0
+        numSkipSnaps = 0 
       endif
 
       ! Read a wind velocity multiplier
@@ -119,9 +124,15 @@ C***********************************************************************
       OPEN(221,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.221', STATUS='OLD')
 
       ! Read begining/ending dates of pre file
-      read(221,11,err=99999,ADVANCE="NO")part1,part2,part3
- 11   FORMAT(a,1x,a,1x,a)
-      read(221,*)date1p,date2p
+!      tcm v49.44 changed the way the header is read
+!      read(221,11,err=99999,ADVANCE="NO")part1,part2,part3
+! 11   FORMAT(a,1x,a,1x,a)
+!      read(221,*)date1p,date2p
+      owiheader(:) = ' '  !set owiheader to blanks before read
+      read(221,fmt='(a80)',err=99999) owiheader
+      read(owiheader(56:65),'(I10)') date1p
+      read(owiheader(71:80),'(I10)') date2p
+
       if (myproc == 0)then
          write(screenunit,*)'date1 in basin pre file = ',date1p
          write(screenunit,*)'date2 in basin pre file = ',date2p
@@ -132,8 +143,14 @@ C***********************************************************************
       OPEN(222,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.222',STATUS='OLD')
 
       ! Read begining/ending dates of win file
-      read(222,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
-      read(222,*)date1w,date2w
+!      tcm v49.44 changed the way the header is read
+!      read(222,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
+!      read(222,*)date1w,date2w
+      owiheader(:) = ' '  !set owiheader to blanks before next read
+      read(222,fmt='(a80)',err=99999) owiheader
+      read(owiheader(56:65),'(I10)') date1w
+      read(owiheader(71:80),'(I10)') date2w
+
       if (myproc == 0)then
          write(screenunit,*)'date1 in basin win file = ',date1w
          write(screenunit,*)'date2 in basin win file = ',date2w
@@ -164,8 +181,14 @@ C***********************************************************************
       OPEN(223,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.223',STATUS='OLD')
 
       ! Read begining/ending dates of pre file
-      read(223,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
-      read(223,*)date1p,date2p
+!      tcm v49.44 changed the way the header is read
+!      read(223,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
+!      read(223,*)date1p,date2p
+      owiheader(:) = ' '  !set owiheader to blanks before next read
+      read(223,fmt='(a80)',err=99999) owiheader
+      read(owiheader(56:65),'(I10)') date1p
+      read(owiheader(71:80),'(I10)') date2p
+
       if (myproc == 0)then
          write(screenunit,*)'date1 in region pre file = ',date1p
          write(screenunit,*)'date2 in region pre file = ',date2p
@@ -176,8 +199,14 @@ C***********************************************************************
       OPEN(224,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.224',STATUS='OLD')
 
       ! Read begining/ending dates of win file
-      read(224,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
-      read(224,*)date1w,date2w
+!      tcm v49.44 changed the way the header is read
+!      read(224,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
+!      read(224,*)date1w,date2w
+      owiheader(:) = ' '  !set owiheader to blanks before next read
+      read(224,fmt='(a80)',err=99999) owiheader
+      read(owiheader(56:65),'(I10)') date1w
+      read(owiheader(71:80),'(I10)') date2w
+
       if (myproc == 0)then
          write(screenunit,*)'date1 in region win file = ',date1w
          write(screenunit,*)'date2 in region win file = ',date2w
@@ -267,7 +296,7 @@ C***********************************************************************
           if(MYPROC.EQ.0) then
             WRITE(screenunit,16) cntSnaps
           endif
-          WRITE(16,16) cntSnaps   !TCM v49.02 (Changed format number from 15 to 16)
+          WRITE(16,16) cntSnaps    !TCM v49.02 (Changed format number from 15 to 16)
         ENDIF
         return
       endif

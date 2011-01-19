@@ -3,6 +3,13 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.44    - 01/19/2011 - tcm -- For owiwind.F changed the way the header
+C              line of the file was read so that if changes in the text 
+C              portion occur in a file, these would not cause read failures.
+C              This line is an 80 character line with two 10 digit date
+C              fields which are the only data used off that line.  The first
+C              date field is contained in positions 56-65, and the second
+C              date field is in positions 71-80.
 C  v49.43   - 11/05/2010 - jgf - Removed netcdf remnants from hotlocalize
 C             in prep.F and corrected a seg fault bug in hotlocalize caused
 C             by six-digit IM values.
