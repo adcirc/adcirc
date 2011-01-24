@@ -243,13 +243,6 @@ C
       CHARACTER CMD*6     ! string to hold shell command
       CHARACTER PENUM*6   ! string to hold directory name
       CHARACTER DIRCMD*72 ! string to hold complete shell command line
-
-C     jgf48.17 If compiling for ADCSWAN, need to copy UnSWAN file
-Casey 090304: Moved this call to later, after the PE directories have been made.
-#ifdef ADCSWAN
-C     CALL PREPUNSWAN()
-#endif
-
  
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then
@@ -343,6 +336,15 @@ C   kmd48.33bc add information for 3D
       ENDIF
 
       ENDIF
+
+
+      !jgf48.07 Initialize netCDF output files
+      IF (useNetCDF) THEN
+         write(*,*) "INFO: Initializing the netCDF output file(s)."
+         ! call netCDF module
+         CALL PREPNETCDF()
+      ENDIF
+
 C
 C-- Decompose the ADCIRC grid into MNPROC subdomains
 C
@@ -521,14 +523,6 @@ CC -- Start Addition by CF  8/2007
          CALL PREP80()
       ENDIF
 CC -- Finish Addition by CF      
-
-      !jgf48.07 Initialize netCDF output files
-      IF (useNetCDF) THEN
-         write(*,*) "INFO: Initializing the netCDF output file(s)."
-         ! call netCDF module
-         CALL PREPNETCDF()
-      ENDIF
-
 9999  CONTINUE
       print *, ""
       print *, "Finished pre-processing input files"

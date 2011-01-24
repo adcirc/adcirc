@@ -35,6 +35,9 @@
       !=================================================================
       MODULE NETCDFIO
       USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
+     &     screen, logMessage, allMessage, setMessageSource, 
+     &     unsetMessageSource
       IMPLICIT NONE
       include 'netcdf.inc'
 C
@@ -101,6 +104,7 @@ C
       CHARACTER*12 , PARAMETER :: VAR_S_Y='y_coordinate'
       
       TYPE, PRIVATE :: meshStructure
+         LOGICAL :: initialized = .false.
          INTEGER :: X_id          ! x-coordinate or longitude
          INTEGER :: Y_id          ! y-coordinate or latitude
          INTEGER :: DEPTH_id      ! distance from geoid
@@ -113,6 +117,8 @@ C
          INTEGER :: ibtypeenc_id  ! elevation boundary type
          INTEGER :: nvellnc_id    ! nodes on norm flow spec boundary seg
          INTEGER :: nopenc_id  
+         INTEGER :: max_nvdllnc_id ! max num nodes on any elev boundary seg
+         INTEGER :: max_nvellnc_id ! max num nodes on any discharge boundary seg
          INTEGER :: slam0nc_id
          INTEGER :: sfea0nc_id
          INTEGER :: netanc_id
@@ -127,6 +133,8 @@ C
          INTEGER :: nvelnc_dim_id  ! total number of normal flow specified boundary nodes
          INTEGER :: ibtypenc_dim_id
          INTEGER :: ibtypeenc_dim_id  ! elevation boundary types
+         INTEGER :: max_nvdllnc_dim_id
+         INTEGER :: max_nvellnc_dim_id
 !        Dimension lengths
          INTEGER  num_nodes
          INTEGER  num_elems
@@ -135,6 +143,8 @@ C
          INTEGER  netanc
          INTEGER  nbounc
          INTEGER  nvelnc
+         INTEGER max_nvdllnc
+         INTEGER max_nvellnc
 !        Rank (number of dimensions) for each variable
          INTEGER :: depth_rank = 1
          INTEGER :: ele_rank = 2
@@ -178,6 +188,8 @@ C
          INTEGER, ALLOCATABLE ::  nmnc(:,:) 
          INTEGER, ALLOCATABLE ::  element(:,:)
       END TYPE meshStructure
+
+      type(meshStructure), private, save, target :: adcircMesh 
  
       TYPE, PRIVATE :: fileData
          INTEGER record_counter
@@ -204,12 +216,9 @@ C
          INTEGER, ALLOCATABLE :: name_lengths(:) ! lengths of station names 
          CHARACTER(50), POINTER :: statnames(:)
          INTEGER :: slen_dim_id
-         INTEGER :: scode_dim_id
          INTEGER :: station_rank = 2
          INTEGER :: station_id
-         INTEGER :: scode_rank = 2
          INTEGER :: station_dims(2)
-         INTEGER :: scode_dims(2)
          INTEGER :: x_id          ! station x-coordinate or longitude
          INTEGER :: y_id          ! station y-coordinate or latitude
          INTEGER :: x_dims(1)
@@ -235,12 +244,44 @@ C
       type(stationData), private, save :: velSta  ! velocity stations (fort.62)
       type(stationData), private, save :: wVelSta ! wind vel stations (fort.72)
 
+      TYPE, PRIVATE :: stationData3D
+         INTEGER ncid              ! the id of its netcdf file
+         INTEGER num_stations      ! total number of stations 
+         INTEGER :: num_sta_dim_id
+         INTEGER, ALLOCATABLE :: name_lengths(:) ! lengths of station names 
+         CHARACTER(50), POINTER :: statnames(:)
+         INTEGER :: slen_dim_id
+         INTEGER :: station_rank = 2
+         INTEGER :: station_id
+         INTEGER :: station_dims(2)
+         INTEGER :: x_id          ! station x-coordinate or longitude
+         INTEGER :: y_id          ! station y-coordinate or latitude
+         INTEGER :: x_dims(1)
+         INTEGER :: y_dims(1)
+         INTEGER :: x_rank = 1
+         INTEGER :: y_rank = 1 
+         REAL(SZ), ALLOCATABLE :: station_data(:,:,:) ! for scalar data 
+         REAL(SZ), ALLOCATABLE :: u_station_data(:,:,:)! for vector component 1
+         REAL(SZ), ALLOCATABLE :: v_station_data(:,:,:)! for vector component 2 
+         REAL(SZ), ALLOCATABLE :: w_station_data(:,:,:)! for vector component 3 
+         REAL(SZ), ALLOCATABLE :: x(:) ! x coordinate or longitude
+         REAL(SZ), ALLOCATABLE :: y(:) ! y coordinate or latitude  
+         INTEGER :: station_data_id
+         INTEGER :: station_data_rank = 3
+         INTEGER :: u_station_data_id
+         INTEGER :: v_station_data_id
+         INTEGER :: w_station_data_id        
+         INTEGER :: station_data_dims(3)
+         type(timeData) :: myTime
+         type(fileData) :: myFile
+      END TYPE stationData3D
+
       TYPE, PRIVATE :: nodalData
          INTEGER ncid              ! the id of its netcdf file
          REAL(SZ) :: initial_value ! array will be initialized to this
          INTEGER :: int_initial_value ! int array will be initialized to this
          REAL(SZ), ALLOCATABLE :: nodal_data(:,:)   ! for scalar data 
-         INTEGER, ALLOCATABLE :: nodal_int(:,:)    ! for scalar integer data 
+         INTEGER, ALLOCATABLE :: nodal_int(:,:)     ! for scalar integer data 
          REAL(SZ), ALLOCATABLE :: u_nodal_data(:,:) ! for 1st vector component
          REAL(SZ), ALLOCATABLE :: v_nodal_data(:,:) ! for 2nd vector component
          INTEGER :: nodal_data_id
@@ -250,8 +291,26 @@ C
          INTEGER :: nodal_data_dims(2)
          type(timeData) :: myTime
          type(fileData) :: myFile
-         type(meshStructure) :: myMesh
+         type(meshStructure), pointer :: myMesh
       END TYPE nodalData
+
+      TYPE, PRIVATE :: nodalData3D
+         INTEGER ncid              ! the id of its netcdf file
+         REAL(SZ) :: initial_value ! array will be initialized to this
+         REAL(SZ), ALLOCATABLE :: nodal_data(:,:,:) 
+         REAL(SZ), ALLOCATABLE :: u_nodal_data(:,:,:) ! for 1st vector component
+         REAL(SZ), ALLOCATABLE :: v_nodal_data(:,:,:) ! for 2nd vector component
+         REAL(SZ), ALLOCATABLE :: w_nodal_data(:,:,:) ! for 3rd vector component
+         INTEGER :: nodal_data_id
+         INTEGER :: u_nodal_data_id
+         INTEGER :: v_nodal_data_id
+         INTEGER :: w_nodal_data_id
+         INTEGER :: nodal_data_rank = 3
+         INTEGER :: nodal_data_dims(3)
+         type(timeData) :: myTime
+         type(fileData) :: myFile
+         type(meshStructure), pointer :: myMesh
+      END TYPE nodalData3D
 
       type(nodalData), private, save :: elev       ! for fort.63
       type(nodalData), private, save :: pr         ! for fort.73
@@ -262,9 +321,13 @@ C
          INTEGER lun               ! ADCIRC's logical unit number
          INTEGER ncid              ! the id of its netcdf file
          INTEGER varid
-         INTEGER :: FileFmtMajorFile
+         INTEGER :: FileFmtMajorFile ! 
          INTEGER :: FileFmtMinorFile
          INTEGER :: FileFmtRevFile
+         type(fileData) :: myFile
+         type(timeData) :: myTime
+         type(meshStructure), pointer :: myMesh
+C        2D simulation state
          type(nodalData) :: zeta1
          type(nodalData) :: zeta2
          type(nodalData) :: zetad
@@ -272,9 +335,34 @@ C
          type(nodalData) :: ch1
          type(nodalData) :: nodecodenc
          type(nodalData) :: noffnc      
-         type(fileData) :: myFile
-         type(timeData) :: myTime
-         type(meshStructure) :: myMesh
+C        harmonic analysis components
+         INTEGER :: namefr_len = 10
+         INTEGER :: namefr_len_dim_id
+         INTEGER :: namefr_dims(2)
+         INTEGER :: namefr_rank = 2
+         INTEGER :: mnharf_dim_id
+         INTEGER :: load_vector_dim_id  ! 2x the number of frequencies 
+         INTEGER :: component_rank = 1
+         INTEGER :: component_dims(1)
+         INTEGER :: ha_rank = 2
+         INTEGER :: ha_dims(2)
+         INTEGER :: hafreq_id
+         INTEGER :: haff_id
+         INTEGER :: haface_id
+         INTEGER :: ha_id
+         INTEGER :: namefr_id
+C        harmonic analysis load vectors
+         type(nodalData3D) :: gloelv               
+         type(nodalData3D) :: glovellv               
+         type(stationData3D) :: staelv               
+         type(stationData3D) :: stavellv               
+C        harmonic analysis means and variance calculations
+         type(nodalData) :: xvelav               
+         type(nodalData) :: yvelav               
+         type(nodalData) :: xvelva               
+         type(nodalData) :: yvelva               
+         type(nodalData) :: elav               
+         type(nodalData) :: elva               
       END TYPE hotstartData   
 C
       type(hotstartData), private, save, target :: hs67 ! for fort.67
@@ -301,16 +389,19 @@ C-----------------------------------------------------------------------
       INTEGER, intent(in) :: lun
       TYPE(OutputDataDescript_t) :: descript
       LOGICAL error
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering allocNetCDFArrays."
+C
+      call setMessageSource("allocNetCDFArrays")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.")
 #endif
 C 
       ! don't allocate or initialize anything if this output type is not
       ! using netcdf
       IF (ABS(descript % specifier).ne.3) THEN
-#ifdef NETCDF_DEBUG
-         write(*,*) "DEBUG: Returning from allocNetCDFArrays."
+#ifdef NETCDF_TRACE
+         call screen(DEBUG,"Return.")
 #endif
+         call unsetMessageSource()
          RETURN  
       ENDIF
 C
@@ -338,9 +429,10 @@ C
 
       END SELECT    
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from allocNetCDFArrays."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE allocNetCDFArrays
 C-----------------------------------------------------------------------
@@ -377,14 +469,12 @@ C
       character zone*5
       integer values(8)
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering initStation."
+      call setMessageSource("initStation.")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.")
 #endif
       error = .false.
       sta % num_stations = descript % num_fd_records
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: There are ",sta%num_stations," stations."
-#endif
       ALLOCATE(sta%myTime%timenc(sta%myTime%timenc_len))
 C      
 C     Memory allocation for the station type, according to the number
@@ -394,20 +484,15 @@ C     of stations and time
          case(1)
             ALLOCATE(sta%station_data(sta%num_stations,
      &              sta%myTime%timenc_len))
-            DO n=1, sta%num_stations
-               sta%station_data(n,sta%myTime%timenc_len) 
-     &             = descript%initial_value
-            END DO
+            sta%station_data = descript%initial_value
          case(2)
             ALLOCATE(sta%u_station_data(sta%num_stations,
      &                                  sta%myTime%timenc_len))
             ALLOCATE(sta%v_station_data(sta%num_stations,
      &                                  sta%myTime%timenc_len))
             DO n=1, sta % num_stations
-               sta%u_station_data(n,sta%myTime%timenc_len) 
-     &              = descript%initial_value
-               sta%v_station_data(n,sta%myTime%timenc_len) 
-     &              = descript%initial_value
+               sta%u_station_data = descript%initial_value
+               sta%v_station_data = descript%initial_value
             END DO
          case default
             WRITE(6,*) "ERROR: The station has ",
@@ -425,9 +510,10 @@ C     if we didn't need to create a file, update metadata and return
          IF (error.eqv..false.) THEN
             CALL updateMetaData(sta%ncid,sta%myFile)
          ENDIF
-#ifdef NETCDF_DEBUG
-         write(*,*) "DEBUG: Returning from initStation."
+#ifdef NETCDF_TRACE
+         call screen(DEBUG,"Return.")
 #endif
+         call unsetMessageSource()
          RETURN
       ENDIF     
 C
@@ -453,8 +539,8 @@ C     Create station dimension and station name dimension
 !     Define stations name
       sta%station_dims(1) = sta%slen_dim_id
       sta%station_dims(2) = sta%num_sta_dim_id
-      iret = nf_def_var(sta%ncid, 'station_name', NF_CHAR, sta%station_rank, 
-     &   sta%station_dims, sta%station_id)
+      iret = nf_def_var(sta%ncid, 'station_name', NF_CHAR,
+     &   sta%station_rank, sta%station_dims, sta%station_id)
       CALL check_err(iret)
 C
 C     Define station locations
@@ -732,7 +818,7 @@ C
             iret = nf_put_att_DOUBLE(sta%ncid, sta%v_station_data_id,
      &             '_FillValue', NF_DOUBLE, 1, doubleval)
             CALL check_err(iret)
-            sta%statnames => STATNAMEM !jgfdebug
+            sta%statnames => STATNAMEM 
     
          CASE DEFAULT
             WRITE(*,*) "ERROR: The unit number ",lun," cannot be ",
@@ -800,9 +886,10 @@ C
 C     now close the initialized netcdf file
       iret = nf_close(sta%ncid)
       CALL check_err(iret)
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from initStation."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE initStation
 C-----------------------------------------------------------------------
@@ -826,13 +913,17 @@ C
       INTEGER n    ! node counter
       INTEGER iret ! success or failure of netcdf call
 C 
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering initNodalData."
+      call setMessageSource("initNodalData")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
       error = .false.
-      dat%myMesh%num_nodes = descript % num_fd_records
-      dat%myMesh%num_elems = NE_G
-      dat%myMesh%nface_len = 3
+      dat%myMesh => adcircMesh
+      IF (dat%myMesh%initialized .eqv..false.) THEN
+         dat%myMesh%num_nodes = descript % num_fd_records
+         dat%myMesh%num_elems = NE_G
+         dat%myMesh%nface_len = 3
+      ENDIF
       ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
      
       SELECT CASE(descript%num_items_per_record)
@@ -840,22 +931,15 @@ C
          ALLOCATE(dat%nodal_data(dat%myMesh%num_nodes,
      &       dat%myTime%timenc_len))
 C        initialization
-         DO n=1, dat%myMesh%num_nodes
-            dat%nodal_data(n,dat%myTime%timenc_len)
-     &         = descript%initial_value
-         END DO
+         dat%nodal_data = descript%initial_value
       CASE(2)
          ALLOCATE(dat%u_nodal_data(dat%myMesh%num_nodes,
      &       dat%myTime%timenc_len))
          ALLOCATE(dat%v_nodal_data(dat%myMesh%num_nodes,
      &       dat%myTime%timenc_len))
 C        initialization
-         DO n=1, dat%myMesh%num_nodes
-            dat%u_nodal_data(n,dat%myTime%timenc_len) 
-     &         = descript%initial_value
-            dat%v_nodal_data(n,dat%myTime%timenc_len) 
-     &         = descript%initial_value
-         END DO
+         dat%u_nodal_data = descript%initial_value
+         dat%v_nodal_data = descript%initial_value
       CASE DEFAULT
          WRITE(*,*) "ADCIRC's NetCDF cannot write ",
      &     descript%num_items_per_record, " dimensional arrays."
@@ -870,13 +954,16 @@ C     if we didn't need to create a file, update metadata and return
          IF (error.eqv..false.) THEN
             CALL updateMetaData(dat%ncid,dat%myFile)
          ENDIF
-#ifdef NETCDF_DEBUG
-         write(*,*) "DEBUG: Returning from initNodalData."
+#ifdef NETCDF_TRACE
+         call screen(DEBUG,"Return.")
 #endif
+         call unsetMessageSource()
          RETURN
       ENDIF     
 C
-      CALL initNetCDFCoord(dat%myMesh)
+      IF (dat%myMesh%initialized.eqv..false.) THEN
+         CALL initNetCDFCoord(dat%myMesh)
+      ENDIF
       CALL defineMeshVariables(dat%ncid, dat%myMesh)
 c
       SELECT CASE(lun)
@@ -1169,9 +1256,10 @@ C     now close the initialized netcdf file
       iret = nf_close(dat%ncid)
       CALL check_err(iret)
 
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from initNodalData."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE initNodalData
 C-----------------------------------------------------------------------
@@ -1185,21 +1273,22 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, intent(in) :: lun ! logical unit number
       TYPE(fileData) :: myFile
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering setNetCDFFileName."
+C
+      call setMessageSource("setNetCDFFileName")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
       myFile%FILEFORT = 'fort.'
       myFile%FILEEXT = '.nc'
       WRITE(myFile%FILENAME,'(A5,I2,A3)') 
      &      myFile%FILEFORT, lun, myFile%FILEEXT
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from setNetCDFFileName."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE setNetCDFFileName
 C-----------------------------------------------------------------------
-
-
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  C R E A T E  N E T C D F  O U T P U T  F I L E 
@@ -1207,8 +1296,9 @@ C-----------------------------------------------------------------------
 C     jgf49.22 Creates a new netcdf output file if needed. 
 C-----------------------------------------------------------------------
       SUBROUTINE createNetCDFOutputFile(ncid, myFile, lun, myTime,
-     &                                  descript, error)
-      USE GLOBAL, ONLY : OutputDataDescript_t, IHOT, screenUnit
+     &                                  descript, ret_error)
+      USE GLOBAL, ONLY : OutputDataDescript_t, IHOT, DEBUG, ERROR,
+     &                   screen, screenUnit
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -1218,14 +1308,15 @@ C-----------------------------------------------------------------------
       INTEGER :: lun
       TYPE(timeData) :: myTime
       TYPE(OutputDataDescript_t) :: descript
-      LOGICAL :: error
+      LOGICAL :: ret_error
 C
       INTEGER iret
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering createNetCDFOutputFile."
+      call setMessageSource("createNetCDFOutputFile")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
-      error = .false.
+      ret_error = .false.
       myFile%createFile = .false.
       myFile%fileFound = .false.
       CALL setNetCDFFileName(lun,myFile)
@@ -1252,7 +1343,7 @@ C     upon to create them.
      &           "' was not found. It should have been created by 
      &adcprep."
                write(screenUnit,*) "ERROR: ADCIRC execution terminated."
-               error = .true.
+               ret_error = .true.
             ENDIF
 #else
             ! these lines are executed by serial adcirc and adcprep
@@ -1262,22 +1353,28 @@ C     upon to create them.
          ENDIF
       ELSE
          ! these lines are executed to create netcdf hotstart files
-         ! don't overwrite existing hotstart files
+#ifdef CMPI
          IF (myFile%fileFound.eqv..true.) THEN
-            write(*,*) "INFO: Hotstart file ",lun,
-     &        " already exists."
-           myFile%createFile = .false.
+            call screen(DEBUG,"Hotstart file was created by adcprep.")
+            myFile%createFile = .false.
          ELSE
-            myFile%createFile = .true.
-            myFile%record_counter = 1 
-         ENDIF        
+             call screen(ERROR,"Hotstart file is missing.")
+             call screen(ERROR,
+     &          "It should have been created by adcprep.")      
+             ret_error = .true.
+         ENDIF
+#else           
+         myFile%createFile = .true.
+         myFile%record_counter = 1 
+#endif
       ENDIF
 C     
 C     RETURN if we don't need to create a file.
       IF (myFile%createFile.eqv..false.) THEN
-#ifdef NETCDF_DEBUG
-         write(*,*) "DEBUG: Returning from createNetCDFOutputFile."
+#ifdef NETCDF_TRACE
+         call screen(DEBUG,"Return.")
 #endif
+         call unsetMessageSource()
          RETURN
       ENDIF     
 C
@@ -1294,9 +1391,10 @@ C
      &       myTime%timenc_dims, myTime%timenc_id)
       CALL check_err(iret)
 
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from createNetCDFOutputFile."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE createNetCDFOutputFile
 C-----------------------------------------------------------------------
@@ -1309,28 +1407,37 @@ C-----------------------------------------------------------------------
       SUBROUTINE initNetCDFCoord(myMesh)
       USE GLOBAL, ONLY : RAD2DEG, NBOU, NVEL, NOPE, NP_G, SLAM0, SFEA0,
      &                   NBVV, NVDLL, NBDV, NVELL, NETA, X, Y, SLAM,
-     &                   SFEA, ICS, IBTYPEE, IBTYPE
+     &                   SFEA, ICS, IBTYPEE, IBTYPE, NM, NE_G
       IMPLICIT NONE
       type(meshStructure), intent(inout) :: myMesh
       INTEGER :: i, j, k  ! array indices
       INTEGER :: max_seg_nodes  ! size of longest list of nodes on a bdry seg
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering initNetCDFCoord."
+      call setMessageSource("initNetCDFCoord")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
+C
+      myMesh%nopenc = nope
+      myMesh%netanc = neta
+      myMesh%nbounc = nbou
+      myMesh%nvelnc = nvel*2 ! mimic the upper bound from read_input.F
+      myMesh%max_nvdllnc = maxval(nvdll) ! dimension of seg with most nodes
+      myMesh%max_nvellnc =2*maxval(nvell) ! dimension of seg with most nodes    
 C
       ALLOCATE(myMesh%xnc(NP_G))
       ALLOCATE(myMesh%ync(NP_G))
-      ALLOCATE(myMesh%nvdllnc(nope))
-      ALLOCATE(myMesh%ibtypeenc(nope))
-      ALLOCATE(myMesh%ibtypenc(nbou))
-      ALLOCATE(myMesh%nvellnc(nbou))
-      max_seg_nodes = maxval(nvdll) ! dimension of seg with most nodes
-      ALLOCATE(myMesh%nbdvnc(nope,max_seg_nodes))
-      max_seg_nodes = maxval(nvell) ! dimension of seg with most nodes
-      ALLOCATE(myMesh%nbvvnc(nbou,max_seg_nodes))
-      ALLOCATE(myMesh%element(myMesh%nface_len,myMesh%num_elems))
-      ALLOCATE(myMesh%nmnc(myMesh%num_elems,myMesh%nface_len))
+      ALLOCATE(myMesh%nvdllnc(myMesh%nopenc))
+      ALLOCATE(myMesh%ibtypeenc(myMesh%nopenc))
+      ALLOCATE(myMesh%ibtypenc(myMesh%nbounc))
+      ALLOCATE(myMesh%nvellnc(myMesh%nbounc))
+
+      ALLOCATE(myMesh%nbdvnc(myMesh%nopenc,myMesh%max_nvdllnc))
+C      ALLOCATE(myMesh%nbdvnc(myMesh%nopenc,myMesh%netanc))
+      ALLOCATE(myMesh%nbvvnc(myMesh%nbounc,myMesh%max_nvellnc))
+C      ALLOCATE(myMesh%nbvvnc(myMesh%nbounc,myMesh%nvelnc))
+      ALLOCATE(myMesh%element(myMesh%nface_len,NE_G))
+      ALLOCATE(myMesh%nmnc(NE_G,myMesh%nface_len))
 C
 C     Store nodal coordinates
       if (ics.eq.1) then
@@ -1342,31 +1449,47 @@ C     Store nodal coordinates
       endif
 !
 !     elevation specified boundary forcing segments
-      myMesh%nopenc = nope
-      myMesh%netanc = neta
-      DO k=1,nope
+      myMesh%nvdllnc = 0
+      myMesh%nbdvnc = 0
+      DO k=1,myMesh%nopenc
          myMesh%nvdllnc(k) = nvdll(k)
          myMesh%ibtypeenc(k) = ibtypee(k)
-         DO j=1,nvdll(k)
+         DO j=1,myMesh%nvdllnc(k)
             myMesh%nbdvnc(k,j) = nbdv(k,j)
          END DO  
       END DO
 !
 !     normal flow (discharge) specified boundary segments
-      myMesh%nbounc = nbou
-      myMesh%nvelnc = nvel
 C
-      DO k=1,nbou
+      myMesh%nvellnc = 0
+      myMesh%nbvvnc = 0
+      DO k=1,myMesh%nbounc
          myMesh%nvellnc(k) = nvell(k)
          myMesh%ibtypenc(k) = ibtype(k)
-         DO J=1,nvell(k)
+         DO J=1,myMesh%nvellnc(k)
             myMesh%nbvvnc(k,j)=nbvv(k,j)
          END DO
       END DO
+!
+      myMesh%nmnc=NM
+!     Switch order in array for NETCDF
+C       write(*,*)  myMesh%num_elems
+C       write(*,*)  myMesh%nface_len
+      do i=1, NE_G
+         do j=1, myMesh%nface_len
+            myMesh%element(j,i) = myMesh%nmnc(i,j)
+         end do
+      end do
+!       write(99,*) myMesh%nmnc
+!       write(98,*) NM
+!       write(97,*) myMesh%element
+!      stop
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from initNetCDFCoord."
+      myMesh%initialized = .true.
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE initNetCDFCoord
 C-----------------------------------------------------------------------
@@ -1388,8 +1511,9 @@ C     args
       INTEGER, intent(in) :: it   ! number of time steps since cold start
       type(OutputDataDescript_t), intent(in) :: descript !describes output data
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering writeOutArrayNetCDF."
+      call setMessageSource("writeOutArrayNetCDF.")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.")
 #endif
 C
       SELECT CASE(lun)
@@ -1415,9 +1539,10 @@ C
       END SELECT
 C
 
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from writeOutArrayNetCDF."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE writeOutArrayNetCDF
 C-----------------------------------------------------------------------
@@ -1441,27 +1566,24 @@ C
       INTEGER counti(1), starti(1), n
       INTEGER kount(2), start(2)
       INTEGER iret  ! success or failure of netcdf call
-      INTEGER recid ! netcdf id of the record counter information
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering writeStation."
+      call setMessageSource("writeStation.")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
       iret = nf_open(sta%myFile%FILENAME, NF_WRITE, sta%ncid)
       CALL check_err(iret)   
 !   
 !     Inquire variables
-      iret=nf_inq_unlimdim(sta%ncid,recid)
+      iret=nf_inq_unlimdim(sta%ncid,sta%myTime%timenc_dim_id)
       CALL check_err(iret)   
-      iret=nf_inq_dimlen(sta%ncid,recid,sta%myFile%record_counter)
+      iret=nf_inq_dimlen(sta%ncid,sta%myTime%timenc_dim_id,
+     &     sta%myFile%record_counter)
       CALL check_err(iret)   
 C
 C     Increment the record counter so that we can store data at the
 C     next location in the netcdf file
       sta%myFile%record_counter = sta%myFile%record_counter + 1       
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: sta%myFile%record_counter = ",
-     &           sta%myFile%record_counter
-#endif
 !    
 !     Store time
       iret=nf_inq_varid(sta%ncid, "time", sta%myTime%timenc_id)
@@ -1510,12 +1632,6 @@ C
          ELSE
             sta%station_data(:,kount(2)) = descript%array_g
          ENDIF
-#ifdef NETCDF_DEBUG
-         DO i=1,sta%num_stations
-            write(*,*) "DEBUG: station_data(",i,")=",
-     &                  sta%station_data(i,kount(2))
-         ENDDO
-#endif
          iret = nf_put_vara_DOUBLE(sta%ncid, sta%station_data_id,
      &          start, kount, sta%station_data)
          CALL check_err(iret)
@@ -1542,9 +1658,10 @@ C
 9999  iret = nf_close(sta%ncid)
       CALL check_err(iret)
 
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from writeStation."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine writeStation
 C-----------------------------------------------------------------------     
@@ -1569,31 +1686,28 @@ C
       INTEGER counti(1), starti(1), n
       INTEGER kount(2), start(2)
       INTEGER iret ! success or failure of the netcdf call
-      INTEGER recid ! netcdf id of the record counter info
       INTEGER num_values ! number of values in the array
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering writeNodalData."
+      call setMessageSource("writeNodalData.")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
 C
       iret = nf_open(dat%myFile%FILENAME, NF_WRITE, dat%ncid)
       CALL check_err(iret)   
 !   
 !     Inquire variables
-      iret=nf_inq_unlimdim(dat%ncid,recid)
+      iret=nf_inq_unlimdim(dat%ncid,dat%myTime%timenc_dim_id)
       CALL check_err(iret)   
 C
 C
-      iret=nf_inq_dimlen(dat%ncid,recid,dat%myFile%record_counter)
+      iret=nf_inq_dimlen(dat%ncid,dat%myTime%timenc_dim_id,
+     &     dat%myFile%record_counter)
       CALL check_err(iret)   
 C
 C     Increment the record counter so that we can store data at the
 C     next location in the netcdf file
       dat%myFile%record_counter = dat%myFile%record_counter + 1       
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: dat%myFile%record_counter = ",
-     &            dat%myFile%record_counter
-#endif
 !     
 !     Store time
       iret=nf_inq_varid(dat%ncid,"time",dat%myTime%timenc_id)
@@ -1705,9 +1819,10 @@ C     Write the values
 9999  iret = nf_close(dat%ncid)
       CALL check_err(iret)
 
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from writeNodalData."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine writeNodalData
 C-----------------------------------------------------------------------     
@@ -1722,7 +1837,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE initNetCDFHotstart(lun, Elev1Descript,
      &   Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &   NodeCodeDescript, NOFFDescript, error) 
-      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, G, IM, NE_G, NP_G
+      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, G, IM, NE_G, NP_G,
+     &   IMHS
       IMPLICIT NONE
 C
       INTEGER, intent(in) :: lun
@@ -1740,8 +1856,9 @@ C
       CHARACTER(1024) :: att_text
       INTEGER :: varid
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering initNetCDFHotstart."
+      call setMessageSource("initNetCDFHotstart")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
       error = .false.
 C
@@ -1755,14 +1872,18 @@ C     initialize array values with implicit loop
       hs%zetad%nodal_data = EtaDiscDescript%initial_value
       hs%vel%u_nodal_data = VelDescript%initial_value
       hs%vel%v_nodal_data = VelDescript%initial_value
-      hs%ch1%nodal_data = CH1Descript%initial_value
+      IF ((IM.eq.10).or.(IMHS.eq.10)) THEN
+         hs%ch1%nodal_data = CH1Descript%initial_value
+      ENDIF
       hs%nodecodenc%nodal_int = NodeCodeDescript%int_initial_value
       hs%noffnc%nodal_int = NOFFDescript%int_initial_value
 C
 C     Initialize netCDF hotstart file, creating a new one 
       CALL createNetCDFOutputFile(hs%ncid, hs%myFile, lun, hs%myTime,
      &                            Elev1Descript, error)
-      CALL initNetCDFCoord(hs%myMesh)
+      IF (hs%myMesh%initialized.eqv..false.) THEN
+         CALL initNetCDFCoord(hs%myMesh)
+      ENDIF
       CALL defineMeshVariables(hs%ncid, hs%myMesh)
 C
 C     Z E T A 1
@@ -2210,12 +2331,656 @@ C     now close the initialized netcdf file
       iret = nf_close(hs%ncid)
       CALL check_err(iret)
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from initNetCDFHotstart."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE initNetCDFHotstart
 C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   
+C        I N I T   N E T C D F   H O T S T A R T   H A R M O N I C
+C-----------------------------------------------------------------------
+C     jgf49.35 Sets up netCDF variables for hotstarting harmonic analysis.
+C-----------------------------------------------------------------------
+      SUBROUTINE initNetCDFHotstartHarmonic(lun, GLOELVDescript,
+     &   STAELVDescript, GLOULVDescript, GLOVLVDescript, STAULVDescript,
+     &   STAVLVDescript, error) 
+      USE SIZES, ONLY : MNHARF
+      USE HARM, ONLY : NHASE, NHASV, NHAGE, NHAGV
+      USE GLOBAL, ONLY : OutputDataDescript_t
+      IMPLICIT NONE
+C
+      INTEGER, intent(in) :: lun
+      type(OutputDataDescript_t), intent(in) :: GLOELVDescript
+      type(OutputDataDescript_t), intent(in) :: STAELVDescript
+      type(OutputDataDescript_t), intent(in) :: GLOULVDescript
+      type(OutputDataDescript_t), intent(in) :: GLOVLVDescript
+      type(OutputDataDescript_t), intent(in) :: STAULVDescript
+      type(OutputDataDescript_t), intent(in) :: STAVLVDescript
+C
+      LOGICAL error
+C
+      INTEGER iret ! success or failure of the netcdf call     
+      CHARACTER(1024) :: att_text
+      INTEGER :: varid
+C
+      call setMessageSource("initNetCDFHotstartHarmonic")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
+      error = .false.
+C
+C     Point to the correct hotstart block and then allocate 
+C     the netcdf data arrays.
+      CALL allocateNetCDFHotstartHarmonic(lun)
+C
+C     Open existing NetCDF file
+      iret = nf_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
+      CALL check_err(iret)   
+C
+C     Enter "redefine" mode
+      iret = NF_REDEF(hs%ncid)
+      CALL check_err(iret)
+!   
+!     Inquire variables
+      iret=nf_inq_unlimdim(hs%ncid, hs%myTime%timenc_dim_id)
+      CALL check_err(iret)   
+      iret=nf_inq_dimlen(hs%ncid, hs%myTime%timenc_dim_id, 
+     &     hs%myFile%record_counter)
+      CALL check_err(iret)   
+C
+C     Get the NetCDF IDs of the relevant variables from the file
+      iret=nf_inq_dimid(hs%ncid,"node", hs%myMesh%num_nodes_dim_id)
+      CALL check_err(iret)
+C 
+C     Define dimensions
+      iret = nf_def_dim(hs%ncid,'mnharf',MNHARF,
+     &       hs%mnharf_dim_id)
+      CALL check_err(iret)
+      iret = nf_def_dim(hs%ncid,'mnharfx2',(MNHARF*2),
+     &       hs%load_vector_dim_id)
+      CALL check_err(iret)
+C 
+C     Create station dimension and station name dimension
+      iret = nf_def_dim(hs%ncid, 'namefrlen', hs%namefr_len, 
+     &   hs%namefr_len_dim_id)
+      CALL check_err(iret)
+!     
+!     Define harmonic analysis frequency names array
+      hs%namefr_dims(1) = hs%namefr_len_dim_id
+      hs%namefr_dims(2) = hs%mnharf_dim_id
+      iret = nf_def_var(hs%ncid, 'namefr', NF_CHAR,
+     &   hs%namefr_rank, hs%namefr_dims, hs%namefr_id)
+      CALL check_err(iret)
+C
+C     harmonic analysis components
+      hs%component_dims(1) = hs%mnharf_dim_id
+      iret = nf_def_var(hs%ncid, 'hafreq', NF_DOUBLE,
+     &       hs%component_rank, hs%component_dims, hs%hafreq_id)
+      CALL check_err(iret)
+      att_text = "frequencies (rad/s) of harmonic analysis constituents"
+      iret = nf_put_att_text(hs%ncid, hs%hafreq_id,
+     &   'long_name',len_trim(att_text), trim(att_text))
+      CALL check_err(iret)
+      att_text = "harmonic analysis frequencies (rad/s)"
+      iret = nf_put_att_text(hs%ncid, hs%hafreq_id,
+     &   'standard_name', len_trim(att_text), trim(att_text))      
+C      
+      iret = nf_def_var(hs%ncid, 'haff', NF_DOUBLE,
+     &       hs%component_rank, hs%component_dims, hs%haff_id)
+      CALL check_err(iret)
+      att_text = "nodal factors of harmonic analysis constituents"
+      iret = nf_put_att_text(hs%ncid, hs%haff_id,
+     &   'long_name',len_trim(att_text), trim(att_text))
+      CALL check_err(iret)
+      att_text = "harmonic analysis nodal factors"
+      iret = nf_put_att_text(hs%ncid, hs%haff_id,
+     &   'standard_name', len_trim(att_text), trim(att_text))      
+C
+      iret = nf_def_var(hs%ncid, 'haface', NF_DOUBLE,
+     &       hs%component_rank, hs%component_dims, hs%haface_id)
+      CALL check_err(iret)
+      att_text = "equilibrium arguments (degrees) of harmonic analysis&
+     & constituents"
+      iret = nf_put_att_text(hs%ncid, hs%haface_id,
+     &   'long_name',len_trim(att_text), trim(att_text))
+      CALL check_err(iret)
+      att_text = "equilibrium arguments (degrees)"
+      iret = nf_put_att_text(hs%ncid, hs%haface_id,
+     &   'standard_name', len_trim(att_text), trim(att_text))      
+C
+      hs%ha_dims(1) = hs%load_vector_dim_id
+      hs%ha_dims(2) = hs%load_vector_dim_id
+      iret = nf_def_var(hs%ncid, 'ha', NF_DOUBLE,
+     &       hs%ha_rank, hs%ha_dims, hs%ha_id)
+      CALL check_err(iret)
+      att_text = "left hand side matrix for harmonic analysis"
+      iret = nf_put_att_text(hs%ncid, hs%ha_id,
+     &   'long_name',len_trim(att_text), trim(att_text))
+      CALL check_err(iret)
+      att_text = "LHS for harmonic analysis"
+      iret = nf_put_att_text(hs%ncid, hs%ha_id,
+     &   'standard_name', len_trim(att_text), trim(att_text))      
+C
+C     global elevation load vector
+      IF (NHAGE.ne.0) THEN
+         hs%gloelv%nodal_data = GLOELVDescript%initial_value
+         hs%gloelv%nodal_data_dims(1) = hs%load_vector_dim_id
+         hs%gloelv%nodal_data_dims(2) = hs%myMesh%num_nodes_dim_id
+         hs%gloelv%nodal_data_dims(3) = hs%myTime%timenc_dim_id
+         iret = nf_def_var(hs%ncid, 'gloelv', NF_DOUBLE,
+     &       hs%gloelv%nodal_data_rank, hs%gloelv%nodal_data_dims,
+     &       hs%gloelv%nodal_data_id)
+         CALL check_err(iret)     
+         att_text = "full domain elevation load vector at each node"
+         iret = nf_put_att_text(hs%ncid, hs%gloelv%nodal_data_id,
+     &      'long_name',len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         att_text = "full domain elevation load vector"
+         iret = nf_put_att_text(hs%ncid, hs%gloelv%nodal_data_id,
+     &      'standard_name', len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         iret = nf_put_att_DOUBLE(hs%ncid, hs%gloelv%nodal_data_id,
+     &         '_FillValue', NF_DOUBLE, 1, doubleval)
+         CALL check_err(iret)
+         iret = nf_put_att_text(hs%ncid, hs%gloelv%nodal_data_id, 
+     &        'positive', 2, VAR_UP)
+         CALL check_err(iret)
+      ENDIF
+C
+C     global velocity load vectors
+      IF (NHAGV.ne.0) THEN
+         hs%glovellv%u_nodal_data = GLOULVDescript%initial_value
+         hs%glovellv%nodal_data_dims(1) = hs%load_vector_dim_id
+         hs%glovellv%nodal_data_dims(2) = hs%myMesh%num_nodes_dim_id
+         hs%glovellv%nodal_data_dims(3) = hs%myTime%timenc_dim_id
+         iret = nf_def_var(hs%ncid, 'gloulv', NF_DOUBLE,
+     &       hs%glovellv%nodal_data_rank, hs%glovellv%nodal_data_dims,
+     &       hs%glovellv%u_nodal_data_id)
+         CALL check_err(iret)     
+         att_text = "full domain u velocity load vector at each node"
+         iret = nf_put_att_text(hs%ncid, hs%glovellv%u_nodal_data_id,
+     &      'long_name',len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         att_text = "full domain u velocity load vector"
+         iret = nf_put_att_text(hs%ncid, hs%glovellv%u_nodal_data_id,
+     &      'standard_name', len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         iret = nf_put_att_DOUBLE(hs%ncid, hs%glovellv%u_nodal_data_id,
+     &         '_FillValue', NF_DOUBLE, 1, doubleval)
+         CALL check_err(iret)
+         iret = nf_put_att_text(hs%ncid, hs%glovellv%u_nodal_data_id,
+     &          'positive', 4, VAR_EAST)
+         CALL check_err(iret)
+C
+         hs%glovellv%v_nodal_data = GLOVLVDescript%initial_value
+         iret = nf_def_var(hs%ncid, 'glovlv', NF_DOUBLE,
+     &       hs%glovellv%nodal_data_rank, hs%glovellv%nodal_data_dims,
+     &       hs%glovellv%v_nodal_data_id)
+         CALL check_err(iret)     
+         att_text = "full domain v velocity load vector at each node"
+         iret = nf_put_att_text(hs%ncid, hs%glovellv%v_nodal_data_id,
+     &      'long_name',len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         att_text = "full domain v velocity load vector"
+         iret = nf_put_att_text(hs%ncid, hs%glovellv%v_nodal_data_id,
+     &      'standard_name', len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         iret = nf_put_att_DOUBLE(hs%ncid, hs%glovellv%v_nodal_data_id,
+     &         '_FillValue', NF_DOUBLE, 1, doubleval)
+         CALL check_err(iret)
+         iret = nf_put_att_text(hs%ncid, hs%glovellv%v_nodal_data_id,
+     &           'positive', 5, VAR_NORTH)
+         CALL check_err(iret)
+      ENDIF
+C
+C     station elevation load vector
+      IF (NHASE.ne.0) THEN
+         hs%staelv%num_stations = STAELVDescript%num_fd_records
+         iret = nf_def_dim(hs%ncid, 'elevstation',
+     &       hs%staelv%num_stations, hs%staelv%num_sta_dim_id)
+         CALL check_err(iret)
+         hs%staelv%station_data = STAELVDescript%initial_value
+         hs%staelv%station_data_dims(1) = hs%load_vector_dim_id
+         hs%staelv%station_data_dims(2) = hs%staelv%num_sta_dim_id
+         hs%staelv%station_data_dims(3) = hs%myTime%timenc_dim_id
+         iret = nf_def_var(hs%ncid, 'staelv', NF_DOUBLE,
+     &       hs%staelv%station_data_rank, hs%staelv%station_data_dims,
+     &       hs%staelv%station_data_id)
+         CALL check_err(iret)
+         att_text = "elevation load vector at each elevation station"
+         iret = nf_put_att_text(hs%ncid, hs%staelv%station_data_id,
+     &      'long_name',len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         att_text = "station elevation load vector"
+         iret = nf_put_att_text(hs%ncid, hs%staelv%station_data_id,
+     &         'standard_name', len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         iret = nf_put_att_DOUBLE(hs%ncid, hs%staelv%station_data_id,
+     &         '_FillValue', NF_DOUBLE, 1, doubleval)
+         CALL check_err(iret)
+         iret = nf_put_att_text(hs%ncid, hs%staelv%station_data_id, 
+     &      'positive', 2, VAR_UP)
+         CALL check_err(iret)
+      ENDIF
+C
+C     station velocity load vectors
+      IF (NHASV.ne.0) THEN
+         hs%stavellv%u_station_data = STAULVDescript%initial_value
+         hs%stavellv%num_stations = STAULVDescript%num_fd_records
+         iret = nf_def_dim(hs%ncid, 'velstation',
+     &       hs%stavellv%num_stations, hs%stavellv%num_sta_dim_id)
+         CALL check_err(iret)
+C        define dimension
+         hs%stavellv%station_data_dims(1) = hs%load_vector_dim_id
+         hs%stavellv%station_data_dims(2) = hs%stavellv%num_sta_dim_id
+         hs%stavellv%station_data_dims(3) = hs%myTime%timenc_dim_id
+         iret = nf_def_var(hs%ncid, 'staulv', NF_DOUBLE,
+     &       hs%stavellv%station_data_rank, 
+     &       hs%stavellv%station_data_dims, 
+     &       hs%stavellv%u_station_data_id)
+         CALL check_err(iret)     
+         att_text = "u velocity load vector at each velocity station"
+         iret = nf_put_att_text(hs%ncid, hs%stavellv%u_station_data_id,
+     &      'long_name',len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         att_text = "station u velocity load vector"
+         iret = nf_put_att_text(hs%ncid, hs%stavellv%u_station_data_id,
+     &      'standard_name', len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         iret = nf_put_att_DOUBLE(hs%ncid, 
+     &         hs%stavellv%u_station_data_id,
+     &         '_FillValue', NF_DOUBLE, 1, doubleval)
+         CALL check_err(iret)
+         iret = nf_put_att_text(hs%ncid, hs%stavellv%u_station_data_id,
+     &          'positive', 4, VAR_EAST)
+         CALL check_err(iret)
+C
+         iret = nf_def_var(hs%ncid, 'stavlv', NF_DOUBLE,
+     &       hs%stavellv%station_data_rank, 
+     &       hs%stavellv%station_data_dims, 
+     &       hs%stavellv%v_station_data_id)
+         CALL check_err(iret)     
+         att_text = "v velocity load vector at each velocity station"
+         iret = nf_put_att_text(hs%ncid, hs%stavellv%v_station_data_id,
+     &      'long_name',len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         att_text = "station v velocity load vector"
+         iret = nf_put_att_text(hs%ncid, hs%stavellv%v_station_data_id,
+     &      'standard_name', len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         iret = nf_put_att_DOUBLE(hs%ncid, hs%stavellv%v_station_data_id,
+     &         '_FillValue', NF_DOUBLE, 1, doubleval)
+         CALL check_err(iret)
+         iret = nf_put_att_text(hs%ncid, hs%stavellv%v_station_data_id,
+     &           'positive', 5, VAR_NORTH)
+         CALL check_err(iret)
+      ENDIF
+!
+!     Define harmonic analysis parameters
+      call defineParameterWithText(hs%ncid, 'icha', NF_INT, 
+     &     "harmonic analysis spool counter",
+     &     "harmonic analysis spool counter")
+C
+      call defineParameterWithText(hs%ncid, 'nz', NF_INT, 
+     &     "set to 0 if a steady harmonic component is included",
+     &     "indicator of steady harmonic component")
+C
+      call defineParameterWithText(hs%ncid, 'nf', NF_INT,
+     &  "set to 1 if a steady harmonic component is included",
+     &  "steady harmonic component number")
+C
+      call defineParameterWithText(hs%ncid, 'mm', NF_INT,
+     &"2x the number of harmonic frequencies plus any steady component",
+     &"2x harmonic frequencies [plus 1]")
+C
+      call defineParameterWithText(hs%ncid, 'nstae', NF_INT,
+     &  "number of elevation recording stations for harmonic analysis",
+     &  "number of elevation recording stations")
+C
+      call defineParameterWithText(hs%ncid, 'nstav', NF_INT,
+     &  "number of velocity recording stations for harmonic analysis",
+     &  "number of velocity recording stations")
+C
+       call defineParameterWithText(hs%ncid, 'nhase', NF_INT, 
+     &  "indicator for perfomance and formatting of harmonic analysis &
+     &of elevation station data", 
+     &  "elevation station harmonic analysis indicator")
+C        
+       call defineParameterWithText(hs%ncid, 'nhasv', NF_INT, 
+     &  "indicator for perfomance and formatting of harmonic analysis &
+     &of velocity station data", 
+     &  "velocity station harmonic analysis indicator")
+C
+       call defineParameterWithText(hs%ncid, 'nhage', NF_INT, 
+     &  "indicator for perfomance and formatting of harmonic analysis &
+     &of full domain elevation data (at every node)", 
+     &  "full domain elevation harmonic analysis indicator")
+C
+       call defineParameterWithText(hs%ncid, 'nhagv', NF_INT, 
+     &  "indicator for perfomance and formatting of harmonic analysis &
+     &of full domain velocity data (at every node)", 
+     &  "full domain velocity harmonic analysis indicator")
+C
+       call defineParameterWithText(hs%ncid, 'icall', NF_INT, 
+     &  "number of subroutine calls to update load vectors and left&
+     & matrix for harmonic analysis",
+     &  "number of calls to update harmonic analysis")
+C
+       call defineParameterWithText(hs%ncid, 'nfreq', NF_INT, 
+     &  "number of frequencies under consideration in harmonic analysis&
+     & not including a steady component, if any",
+     &  "number of frequencies for harmonic analysis")
+C
+       call defineParameterWithText(hs%ncid, 'timeud', NF_DOUBLE, 
+     &  "ADCIRC time at the most recent update of the load vectors for& 
+     &  harmonic analysis",
+     &  "update time for load vectors")
+C 
+       call defineParameterWithText(hs%ncid, 'itud', NF_INT, 
+     &  "ADCIRC time step at the most recent update of the load vectors&
+     &  for harmonic analysis",
+     &  "update time step for load vectors")
+C
+C
+C     Leave define mode
+      iret = nf_enddef(hs%ncid)
+      CALL check_err(iret)
+C
+C     now close the initialized netcdf file
+      iret = nf_close(hs%ncid)
+      CALL check_err(iret)
+C
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE initNetCDFHotstartHarmonic
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   
+C        I N I T   N E T C D F   H O T S T A R T   H A R M O N I C
+C                                  M E A N S   V A R I A N C E S
+C-----------------------------------------------------------------------
+C     jgf49.43.14 Sets up netCDF variables for hotstarting harmonic analysis
+C     means and variances calculations.
+C-----------------------------------------------------------------------
+      SUBROUTINE initNetCDFHotstartHarmonicMeansVariances(lun, 
+     &   ELAVDescript, ELVADescript, XVELAVDescript, YVELAVDescript,
+     &   XVELVADescript, YVELVADescript, error) 
+      USE SIZES, ONLY : MNHARF
+      USE HARM, ONLY : NHASE, NHASV, NHAGE, NHAGV
+      USE GLOBAL, ONLY : OutputDataDescript_t
+      IMPLICIT NONE
+C
+      INTEGER, intent(in) :: lun
+      type(OutputDataDescript_t), intent(in) :: ELAVDescript
+      type(OutputDataDescript_t), intent(in) :: ELVADescript
+      type(OutputDataDescript_t), intent(in) :: XVELAVDescript
+      type(OutputDataDescript_t), intent(in) :: YVELAVDescript
+      type(OutputDataDescript_t), intent(in) :: XVELVADescript
+      type(OutputDataDescript_t), intent(in) :: YVELVADescript
+C
+      LOGICAL error
+C
+      INTEGER iret ! success or failure of the netcdf call     
+      CHARACTER(1024) :: att_text
+      INTEGER :: varid
+C
+      call setMessageSource("initNetCDFHotstartHarmonicMeansVariances")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
+      error = .false.
+C
+C     Point to the hotstart file we want to work on. Memory allocation 
+C     was already done for means and variances by initNetCDFHotstartHarmonic.
+      IF (lun.eq.67) THEN
+         hs => hs67
+      ELSE 
+         hs => hs68
+      ENDIF
+C
+C     Open existing NetCDF file
+      iret = nf_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
+      CALL check_err(iret)   
+C
+C     Enter "redefine" mode
+      iret = NF_REDEF(hs%ncid)
+      CALL check_err(iret)
+!   
+!     Inquire variables
+      iret=nf_inq_unlimdim(hs%ncid, hs%myTime%timenc_dim_id)
+      CALL check_err(iret)   
+      iret=nf_inq_dimlen(hs%ncid, hs%myTime%timenc_dim_id, 
+     &     hs%myFile%record_counter)
+      CALL check_err(iret)   
+C
+C     Get the NetCDF IDs of the relevant variables from the file
+      iret=nf_inq_dimid(hs%ncid,"node", hs%myMesh%num_nodes_dim_id)
+      CALL check_err(iret)
+C
+C     elevation
+      IF (NHAGE.ne.0) THEN
+         ! ELAV
+         hs%elav%nodal_data = ELAVDescript%initial_value
+         hs%elav%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
+         hs%elav%nodal_data_dims(2) = hs%myTime%timenc_dim_id
+         iret = nf_def_var(hs%ncid, 'elav', NF_DOUBLE,
+     &       hs%elav%nodal_data_rank, hs%elav%nodal_data_dims,
+     &       hs%elav%nodal_data_id)
+         CALL check_err(iret)     
+         att_text = "sum of elevations computed by ADCIRC, at every &
+     &node in the model grid, over all time steps since harmonic & 
+     &analysis means and variance checking has begun"
+         iret = nf_put_att_text(hs%ncid, hs%elav%nodal_data_id,
+     &      'long_name',len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         att_text = "sum of elevations"
+         iret = nf_put_att_text(hs%ncid, hs%elav%nodal_data_id,
+     &      'standard_name', len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         iret = nf_put_att_DOUBLE(hs%ncid, hs%elav%nodal_data_id,
+     &         '_FillValue', NF_DOUBLE, 1, doubleval)
+         CALL check_err(iret)
+         iret = nf_put_att_text(hs%ncid, hs%elav%nodal_data_id, 
+     &        'positive', 2, VAR_UP)
+         CALL check_err(iret)
+         ! ELVA
+         hs%elva%nodal_data = ELVADescript%initial_value
+         hs%elva%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
+         hs%elva%nodal_data_dims(2) = hs%myTime%timenc_dim_id
+         iret = nf_def_var(hs%ncid, 'elva', NF_DOUBLE,
+     &       hs%elva%nodal_data_rank, hs%elva%nodal_data_dims,
+     &       hs%elva%nodal_data_id)
+         CALL check_err(iret)     
+         att_text = "sum of squares of elevations computed by ADCIRC,
+     &at every node in the model grid, over all time steps since
+     &harmonic analysis means and variance checking has begun"
+         iret = nf_put_att_text(hs%ncid, hs%elva%nodal_data_id,
+     &      'long_name',len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         att_text = "sum of squares of elevations"
+         iret = nf_put_att_text(hs%ncid, hs%elva%nodal_data_id,
+     &      'standard_name', len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         iret = nf_put_att_DOUBLE(hs%ncid, hs%elva%nodal_data_id,
+     &         '_FillValue', NF_DOUBLE, 1, doubleval)
+         CALL check_err(iret)
+         iret = nf_put_att_text(hs%ncid, hs%elva%nodal_data_id, 
+     &        'positive', 2, VAR_UP)
+         CALL check_err(iret)
+      ENDIF
+C
+C     global velocity load vectors
+      IF (NHAGV.ne.0) THEN
+         ! XVELAV
+         hs%xvelav%nodal_data = XVELAVDescript%initial_value
+         hs%xvelav%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
+         hs%xvelav%nodal_data_dims(2) = hs%myTime%timenc_dim_id
+         iret = nf_def_var(hs%ncid, 'xvelav', NF_DOUBLE,
+     &       hs%xvelav%nodal_data_rank, hs%xvelav%nodal_data_dims,
+     &       hs%xvelav%nodal_data_id)
+         CALL check_err(iret)     
+         att_text = "sum of depth-averaged u velocities computed by &
+     &ADCIRC, at every node in the model grid, over all time steps &
+     &since harmonic analysis means and variance checking has begun"
+         iret = nf_put_att_text(hs%ncid, hs%xvelav%nodal_data_id,
+     &      'long_name',len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         att_text = "sum of depth averaged u velocities"
+         iret = nf_put_att_text(hs%ncid, hs%xvelav%nodal_data_id,
+     &      'standard_name', len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         iret = nf_put_att_DOUBLE(hs%ncid, hs%xvelav%nodal_data_id,
+     &         '_FillValue', NF_DOUBLE, 1, doubleval)
+         CALL check_err(iret)
+         iret = nf_put_att_text(hs%ncid, hs%xvelav%nodal_data_id, 
+     &        'positive', 4, VAR_EAST)
+         CALL check_err(iret)
+         ! YVELAV
+         hs%yvelav%nodal_data = YVELAVDescript%initial_value
+         hs%yvelav%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
+         hs%yvelav%nodal_data_dims(2) = hs%myTime%timenc_dim_id
+         iret = nf_def_var(hs%ncid, 'yvelav', NF_DOUBLE,
+     &       hs%yvelav%nodal_data_rank, hs%yvelav%nodal_data_dims,
+     &       hs%yvelav%nodal_data_id)
+         CALL check_err(iret)     
+         att_text = "sum of depth-averaged v velocities computed by &
+     &ADCIRC, at every node in the model grid, over all time steps &
+     &since harmonic analysis means and variance checking has begun"
+         iret = nf_put_att_text(hs%ncid, hs%yvelav%nodal_data_id,
+     &      'long_name',len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         att_text = "sum of depth averaged v velocities"
+         iret = nf_put_att_text(hs%ncid, hs%yvelav%nodal_data_id,
+     &      'standard_name', len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         iret = nf_put_att_DOUBLE(hs%ncid, hs%yvelav%nodal_data_id,
+     &         '_FillValue', NF_DOUBLE, 1, doubleval)
+         CALL check_err(iret)
+         iret = nf_put_att_text(hs%ncid, hs%yvelav%nodal_data_id, 
+     &        'positive', 5, VAR_NORTH)
+         CALL check_err(iret)
+
+         ! XVELVA
+         hs%xvelva%nodal_data = XVELVADescript%initial_value
+         hs%xvelva%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
+         hs%xvelva%nodal_data_dims(2) = hs%myTime%timenc_dim_id
+         iret = nf_def_var(hs%ncid, 'xvelva', NF_DOUBLE,
+     &       hs%xvelva%nodal_data_rank, hs%xvelva%nodal_data_dims,
+     &       hs%xvelva%nodal_data_id)
+         CALL check_err(iret)     
+         att_text = "sum of squares of depth averaged u velocities &
+     &computed by ADCIRC, at every node in the model grid, over all &
+     &time steps since harmonic analysis means and variance checking &
+     &has begun"
+         iret = nf_put_att_text(hs%ncid, hs%xvelva%nodal_data_id,
+     &      'long_name',len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         att_text = "sum of squares of depth averaged u velocities"
+         iret = nf_put_att_text(hs%ncid, hs%xvelva%nodal_data_id,
+     &      'standard_name', len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         iret = nf_put_att_DOUBLE(hs%ncid, hs%xvelva%nodal_data_id,
+     &         '_FillValue', NF_DOUBLE, 1, doubleval)
+         CALL check_err(iret)
+         iret = nf_put_att_text(hs%ncid, hs%xvelva%nodal_data_id, 
+     &        'positive', 4, VAR_EAST)
+         CALL check_err(iret)
+         ! YVELVA
+         hs%yvelva%nodal_data = YVELVADescript%initial_value
+         hs%yvelva%nodal_data_dims(1) = hs%myMesh%num_nodes_dim_id
+         hs%yvelva%nodal_data_dims(2) = hs%myTime%timenc_dim_id
+         iret = nf_def_var(hs%ncid, 'yvelva', NF_DOUBLE,
+     &       hs%yvelva%nodal_data_rank, hs%yvelva%nodal_data_dims,
+     &       hs%yvelva%nodal_data_id)
+         CALL check_err(iret)     
+         att_text = "sum of squares of depth averaged v velocities &
+     &computed by ADCIRC, at every node in the model grid, over all &
+     &time steps since harmonic analysis means and variance checking &
+     &has begun"
+         iret = nf_put_att_text(hs%ncid, hs%yvelva%nodal_data_id,
+     &      'long_name',len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         att_text = "sum of squares of depth averaged v velocities"
+         iret = nf_put_att_text(hs%ncid, hs%yvelva%nodal_data_id,
+     &      'standard_name', len_trim(att_text), trim(att_text))
+         CALL check_err(iret)
+         iret = nf_put_att_DOUBLE(hs%ncid, hs%yvelva%nodal_data_id,
+     &         '_FillValue', NF_DOUBLE, 1, doubleval)
+         CALL check_err(iret)
+         iret = nf_put_att_text(hs%ncid, hs%yvelva%nodal_data_id, 
+     &        'positive', 2, VAR_UP)
+         CALL check_err(iret)
+      ENDIF
+!
+!     Define harmonic analysis parameters
+      call defineParameterWithText(hs%ncid, 'ntsteps', NF_INT, 
+     &     "number of time steps since start of means and variance",
+     &     "number of time steps since start of means and variance")
+C
+C
+C     Leave define mode
+      iret = nf_enddef(hs%ncid)
+      CALL check_err(iret)
+C
+C     now close the initialized netcdf file
+      iret = nf_close(hs%ncid)
+      CALL check_err(iret)
+C
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE initNetCDFHotstartHarmonicMeansVariances
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   
+C        D E F I N E   P A R A M E T E R   W I T H   T E X T
+C-----------------------------------------------------------------------
+C     jgf49.44 Defines a variable in the netcdf file and associates 
+C     attribute text with it.
+C-----------------------------------------------------------------------
+      SUBROUTINE defineParameterWithText(ncid, param, varType, 
+     &                                  longName, standardName)
+      IMPLICIT NONE
+      INTEGER, intent(in) :: ncid  
+      CHARACTER(len=*), intent(in) :: param
+      INTEGER, intent(in) :: varType      ! netcdf-defined data type
+      CHARACTER(len=*), intent(in) :: longName
+      CHARACTER(len=*), intent(in) :: standardName
+C
+      INTEGER varid  ! variable id for attaching to text  
+      INTEGER iret   ! netcdf error indicator
+      call setMessageSource("defineParameterWithText")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
+      iret = nf_def_var(ncid, param, varType, 0, 1, varid)
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, varid, 'long_name',
+     &       len_trim(longName), trim(longName))
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, varid, 'standard_name',
+     &       len_trim(standardName), trim(standardName))
+      CALL check_err(iret)
+C
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE defineParameterWithText
+C-----------------------------------------------------------------------
+
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   A L L O C A T E   N E T C D F   H O T S T A R T
@@ -2227,8 +2992,9 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, intent(in) :: lun ! unit number of hotstart file (67 or 68)
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering allocateNetCDFHotstart."
+      call setMessageSource("allocateNetCDFHotstart")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
 C
 C     Point to the hotstart file we want to work on.
@@ -2239,9 +3005,12 @@ C     Point to the hotstart file we want to work on.
       ENDIF
 C
 C     nodes and elements
-      hs%myMesh%num_nodes = NP_G
-      hs%myMesh%num_elems = NE_G
-      hs%myMesh%nface_len = 3
+      hs%myMesh => adcircMesh
+      IF (hs%myMesh%initialized.eqv..false.) THEN
+         hs%myMesh%num_nodes = NP_G
+         hs%myMesh%num_elems = NE_G
+         hs%myMesh%nface_len = 3
+      ENDIF
       ALLOCATE(hs%myTime%timenc(hs%myTime%timenc_len))
 C
 C     Elev1
@@ -2270,11 +3039,95 @@ C     NOFF
       ALLOCATE(hs%noffnc%nodal_int(hs%myMesh%num_elems,
      &       hs%myTime%timenc_len))
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from allocateNetCDFHotstart."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE allocateNetCDFHotstart
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   
+C        A L L O C A T E   N E T C D F   H O T S T A R T  H A R M O N I C
+C-----------------------------------------------------------------------
+C     jgf49.41 Allocates memory for netcdf hotstart data.
+C-----------------------------------------------------------------------
+      SUBROUTINE allocateNetCDFHotstartHarmonic(lun)
+      USE SIZES, ONLY : MNHARF
+      USE GLOBAL, ONLY : NSTAE_G, NSTAV_G 
+      USE HARM, ONLY : NHASE, NHASV, NHAGE, NHAGV, CHARMV
+      IMPLICIT NONE
+      INTEGER, intent(in) :: lun ! unit number of hotstart file (67 or 68)
+C
+      call setMessageSource("allocateNetCDFHotstartHarmonic")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
+C
+C     Point to the hotstart file we want to work on.
+      IF (lun.eq.67) THEN
+         hs => hs67
+      ELSE 
+         hs => hs68
+      ENDIF
+C
+C     full domain elevation load vector
+      IF (NHAGE.ne.0) THEN
+         ALLOCATE(hs%gloelv%nodal_data(2*MNHARF,hs%myMesh%num_nodes,
+     &          hs%myTime%timenc_len))
+      ENDIF
+C
+C     full domain velocity load vectors
+      IF (NHAGV.ne.0) THEN
+         ALLOCATE(hs%glovellv%u_nodal_data(2*MNHARF,hs%myMesh%num_nodes,
+     &          hs%myTime%timenc_len))
+         ALLOCATE(hs%glovellv%v_nodal_data(2*MNHARF,hs%myMesh%num_nodes,
+     &          hs%myTime%timenc_len))
+      ENDIF
+C
+C     station elevation load vector
+      IF (NHASE.ne.0) THEN
+         ALLOCATE(hs%staelv%station_data(2*MNHARF,nstae_g,
+     &       hs%myTime%timenc_len))
+      ENDIF
+C
+C     station velocity load vectors
+      IF (NHASV.ne.0) THEN
+         ALLOCATE(hs%stavellv%u_station_data(2*MNHARF,nstav_g,
+     &          hs%myTime%timenc_len))
+         ALLOCATE(hs%stavellv%v_station_data(2*MNHARF,nstav_g,
+     &          hs%myTime%timenc_len))
+      ENDIF
+
+C     means and variances
+      IF (CHARMV.eqv..true.) THEN
+         ! elevation
+         IF (NHAGE.ne.0) THEN
+            ALLOCATE(hs%elav%nodal_data(hs%myMesh%num_nodes,
+     &                                  hs%myTime%timenc_len))   
+            ALLOCATE(hs%elva%nodal_data(hs%myMesh%num_nodes,
+     &                                  hs%myTime%timenc_len))   
+         ENDIF
+         ! velocity
+         IF (NHAGV.ne.0) THEN
+            ALLOCATE(hs%xvelav%nodal_data(hs%myMesh%num_nodes,
+     &                                    hs%myTime%timenc_len))   
+            ALLOCATE(hs%yvelav%nodal_data(hs%myMesh%num_nodes,
+     &                                    hs%myTime%timenc_len))   
+            ALLOCATE(hs%xvelva%nodal_data(hs%myMesh%num_nodes,
+     &                                    hs%myTime%timenc_len))   
+            ALLOCATE(hs%yvelva%nodal_data(hs%myMesh%num_nodes,
+     &                                    hs%myTime%timenc_len))   
+         ENDIF
+      ENDIF
+
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE allocateNetCDFHotstartHarmonic
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
@@ -2308,11 +3161,11 @@ C
       INTEGER kount(2), start(2) ! for nodally based data
       INTEGER elekount(2) ! for elementally based data
       INTEGER iret ! success or failure of the netcdf call
-      INTEGER recid    
       INTEGER varid
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering writeNetCDFHotstart."
+      call setMessageSource("writeNetCDFHotstart")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
 C
 C     Point to the hotstart file we want to work on
@@ -2322,21 +3175,18 @@ C     Point to the hotstart file we want to work on
          hs => hs68
       ENDIF
 C 
-      CALL setNetCDFFileName(lun,hs%myFile)
+      CALL setNetCDFFileName(lun, hs%myFile)
 C
       iret = nf_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)   
 !   
 !     Inquire variables
-      iret=nf_inq_unlimdim(hs%ncid,recid)
+      iret=nf_inq_unlimdim(hs%ncid,hs%myTime%timenc_dim_id)
       CALL check_err(iret)   
-      iret=nf_inq_dimlen(hs%ncid,recid,hs%myFile%record_counter)
+      iret=nf_inq_dimlen(hs%ncid,hs%myTime%timenc_dim_id,
+     &     hs%myFile%record_counter)
       CALL check_err(iret)   
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: hs%myFile%record_counter = ",
-     &            hs%myFile%record_counter
-#endif
 C
 C     Don't increment the record counter so that we can store data at the
 C     next location in the netcdf file -- the hotstart file is only intended
@@ -2508,11 +3358,467 @@ C     now close the netcdf file
       iret = nf_close(hs%ncid)
       CALL check_err(iret)
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from writeNetCDFHotstart."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE writeNetCDFHotstart
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   
+C        W R I T E   N E T C D F   H O T S T A R T   H A R M O N I C
+C-----------------------------------------------------------------------
+C     jgf49.44.03 Writes harmonic analysis data to hotstart file.
+C-----------------------------------------------------------------------
+      SUBROUTINE writeNetCDFHotstartHarmonic(lun,
+     &            GLOELVDescript, STAELVDescript,
+     &            GLOULVDescript, GLOVLVDescript,
+     &            STAULVDescript, STAVLVDescript)
+      USE SIZES, ONLY : MNHARF, MNPROC
+      USE GLOBAL, ONLY : OutputDataDescript_t, NSTAE_G, NSTAV_G
+      USE HARM, ONLY : nz, nf, mm, nhase, nhasv, nhage, nhagv, icall, 
+     &                 nfreq, timeud, itud, namefr, hafreq, haff,
+     &                 haface, ha, icha
+      IMPLICIT NONE
+C
+      INTEGER, intent(in) :: lun
+      type(OutputDataDescript_t), intent(in) :: GLOELVDescript
+      type(OutputDataDescript_t), intent(in) :: STAELVDescript
+      type(OutputDataDescript_t), intent(in) :: GLOULVDescript
+      type(OutputDataDescript_t), intent(in) :: GLOVLVDescript
+      type(OutputDataDescript_t), intent(in) :: STAULVDescript
+      type(OutputDataDescript_t), intent(in) :: STAVLVDescript
+C
+      INTEGER i,j
+      INTEGER kount(3), start(3) ! for nodally based data
+      INTEGER hakount(2), hastart(2) ! for lhs
+      INTEGER iret ! success or failure of the netcdf call
+      INTEGER varid
+C
+      call setMessageSource("writeNetCDFHotstartHarmonic")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
+C
+C     Point to the hotstart file we want to work on
+      IF (lun.eq.67) THEN
+         hs => hs67
+      ELSE 
+         hs => hs68
+      ENDIF
+C 
+      CALL setNetCDFFileName(lun, hs%myFile)
+C
+      iret = nf_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
+      CALL check_err(iret)   
+!   
+!     Inquire variables
+!     time dimension
+      iret=nf_inq_unlimdim(hs%ncid,hs%myTime%timenc_dim_id)
+      CALL check_err(iret)   
+      iret=nf_inq_dimlen(hs%ncid,hs%myTime%timenc_dim_id,
+     &     hs%myFile%record_counter)
+      CALL check_err(iret)   
+      IF (NHASE.ne.0) THEN
+C        elevation station dimension
+         iret=nf_inq_dimid(hs%ncid,"elevstation",
+     &        hs%staelv%num_sta_dim_id)
+         CALL check_err(iret)   
+         iret=nf_inq_dimlen(hs%ncid,hs%staelv%num_sta_dim_id,
+     &        hs%staelv%num_stations)
+         CALL check_err(iret) 
+      ENDIF  
+      IF (NHASV.ne.0) THEN
+C        velocity station dimension
+         iret=nf_inq_dimid(hs%ncid,"velstation",
+     &        hs%stavellv%num_sta_dim_id)
+         CALL check_err(iret)   
+         iret=nf_inq_dimlen(hs%ncid,hs%stavellv%num_sta_dim_id,
+     &        hs%stavellv%num_stations)
+         CALL check_err(iret)   
+      ENDIF
+C
+C
+C     Don't increment the record counter so that we can store data at the
+C     next location in the netcdf file -- the hotstart file is only intended
+C     to have a single snapshot of data in it.
+      hs%myFile%record_counter = 1       
+C
+      kount(1)=MNHARF*2             ! for load vector data
+      kount(2)=hs%myMesh%num_nodes  ! for nodal data
+      kount(3)=hs%myTime%timenc_len
+      start(1)=1
+      start(2)=1
+      start(3)=hs%myFile%record_counter
+C
+C     Get the NetCDF IDs of the relevant variables from the file
+      IF (NHAGE.ne.0) THEN
+         iret=nf_inq_varid(hs%ncid,"gloelv",hs%gloelv%nodal_data_id)
+         CALL check_err(iret)
+      ENDIF
+      IF (NHASE.ne.0) THEN
+         iret=nf_inq_varid(hs%ncid,"staelv",hs%staelv%station_data_id)
+         CALL check_err(iret)
+      ENDIF
+      IF (NHAGV.ne.0) THEN
+         iret=nf_inq_varid(hs%ncid,"gloulv",hs%glovellv%u_nodal_data_id)
+         CALL check_err(iret)
+         iret=nf_inq_varid(hs%ncid,"glovlv",hs%glovellv%v_nodal_data_id)
+         CALL check_err(iret)
+      ENDIF
+      IF (NHASV.ne.0) THEN
+         iret=nf_inq_varid(hs%ncid,"staulv",
+     &                     hs%stavellv%u_station_data_id)
+         CALL check_err(iret)
+         iret=nf_inq_varid(hs%ncid,"stavlv",
+     &                     hs%stavellv%v_station_data_id)
+         CALL check_err(iret)
+      ENDIF
+C
+C     Place the nodal data into the netcdf arrays
+      IF (MNPROC.eq.1) THEN
+         IF (NHAGE.ne.0) THEN
+            hs%gloelv%nodal_data(:,:,kount(3)) = GLOELVDescript%array2D 
+         ENDIF
+         IF (NHASE.ne.0) THEN
+            hs%staelv%station_data(:,:,kount(3)) =STAELVDescript%array2D
+         ENDIF
+         IF (NHAGV.ne.0) THEN
+            hs%glovellv%u_nodal_data(:,:,kount(3)) = 
+     &                                        GLOULVDescript%array2D
+            hs%glovellv%v_nodal_data(:,:,kount(3)) =
+     &                                        GLOVLVDescript%array2D
+         ENDIF 
+         IF (NHASV.ne.0) THEN
+            hs%stavellv%u_station_data(:,:,kount(3))
+     &                                     = STAULVDescript%array2D
+            hs%stavellv%v_station_data(:,:,kount(3)) 
+     &                                     = STAVLVDescript%array2D
+         ENDIF
+      ELSE
+         IF (NHAGE.ne.0) THEN     
+            hs%gloelv%nodal_data(:,:,kount(3)) 
+     &                                     = GLOELVDescript%array2D_g
+         ENDIF       
+         IF (NHASE.ne.0) THEN
+            hs%staelv%station_data(:,:,kount(3)) 
+     &                                     = STAELVDescript%array2D_g
+         ENDIF
+         IF (NHAGV.ne.0) THEN
+            hs%glovellv%u_nodal_data(:,:,kount(3)) 
+     &                                     = GLOULVDescript%array2D_g
+            hs%glovellv%v_nodal_data(:,:,kount(3)) 
+     &                                     = GLOVLVDescript%array2D_g
+         ENDIF
+         IF (NHASV.ne.0) THEN
+            hs%stavellv%u_station_data(:,:,kount(3))
+     &                                     = STAULVDescript%array2D_g
+            hs%stavellv%v_station_data(:,:,kount(3)) 
+     &                                     = STAVLVDescript%array2D_g
+         ENDIF
+      ENDIF
+C
+C     Write the nodal data to the netcdf file 
+      IF (NHAGE.ne.0) THEN     
+         iret = nf_put_vara_DOUBLE(hs%ncid, hs%gloelv%nodal_data_id,
+     &          start, kount, hs%gloelv%nodal_data)
+         CALL check_err(iret)
+      ENDIF
+      IF (NHAGV.ne.0) THEN
+         iret = nf_put_vara_DOUBLE(hs%ncid, hs%glovellv%u_nodal_data_id,
+     &          start, kount, hs%glovellv%u_nodal_data)
+         CALL check_err(iret)
+         iret = nf_put_vara_DOUBLE(hs%ncid, hs%glovellv%v_nodal_data_id,
+     &          start, kount, hs%glovellv%v_nodal_data)
+         CALL check_err(iret)
+      ENDIF
+      IF (NHASE.ne.0) THEN
+         kount(2) = hs%staelv%num_stations ! for elevation stations
+         iret = nf_put_vara_DOUBLE(hs%ncid, hs%staelv%station_data_id,
+     &          start, kount, hs%staelv%station_data)
+         CALL check_err(iret)
+      ENDIF
+      IF (NHASV.ne.0) THEN
+         kount(2) = hs%stavellv%num_stations ! for velocity stations
+         iret = nf_put_vara_DOUBLE(hs%ncid,
+     &          hs%stavellv%u_station_data_id,
+     &          start, kount, hs%stavellv%u_station_data)
+         CALL check_err(iret)
+         iret = nf_put_vara_DOUBLE(hs%ncid,
+     &          hs%stavellv%v_station_data_id,
+     &          start, kount, hs%stavellv%v_station_data)
+         CALL check_err(iret)
+      ENDIF
+C
+C     Get each variable ID for the model parameters in the netcdf file
+C     and immediately write the parameter value to that variable ID before
+C     going on to the next one. 
+      iret = nf_inq_varid(hs%ncid,"icha",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, icha)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nz",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, nz)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nf",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, nf)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"mm",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, mm)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nstae",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, nstae_g)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nstav",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, nstav_g)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nhase",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, nhase)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nhasv",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, nhasv)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nhage",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, nhage)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nhagv",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, nhagv)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"icall",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, icall)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nfreq",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, nfreq)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"timeud",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_double(hs%ncid, varid, timeud)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"itud",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, itud)
+      CALL check_err(iret)
+C
+C     left hand side 
+      hakount(1) = 2*MNHARF
+      hakount(2) = 2*MNHARF
+      hastart(1) = 1
+      hastart(2) = 1
+      iret = nf_inq_varid(hs%ncid,"ha",hs%ha_id)
+      CALL check_err(iret)
+      iret = nf_put_vara_DOUBLE(hs%ncid, hs%ha_id, hastart,
+     &       hakount, ha)
+      CALL check_err(iret)
+C     frequency names
+      iret = nf_inq_varid(hs%ncid,"namefr",hs%namefr_id)
+      CALL check_err(iret)
+      do i=1,mnharf
+         start(1)=1
+         start(2)=i
+         kount(1)= len(namefr(i))
+         kount(2)=1
+         iret = nf_put_vara_text(hs%ncid,hs%namefr_id,start,kount,
+     &   namefr(i) )
+         CALL check_err(iret)
+      end do
+C     harmonic constituents
+      start(1) = 1
+      start(2) = 1
+      kount(1) = MNHARF ! for constituents
+      kount(2) = 1
+      iret = nf_inq_varid(hs%ncid,"hafreq",hs%hafreq_id)
+      CALL check_err(iret)
+      iret = nf_put_vara_DOUBLE(hs%ncid, hs%hafreq_id, start,
+     &       kount, hafreq)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"haff",hs%haff_id)
+      CALL check_err(iret)
+      iret = nf_put_vara_DOUBLE(hs%ncid, hs%haff_id, start,
+     &       kount, haff)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"haface",hs%haface_id)
+      CALL check_err(iret)
+      iret = nf_put_vara_DOUBLE(hs%ncid, hs%haface_id, start,
+     &       kount, haface)
+      CALL check_err(iret)
+C
+C     now close the netcdf file
+      iret = nf_close(hs%ncid)
+      CALL check_err(iret)
+C
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE writeNetCDFHotstartHarmonic
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   
+C        W R I T E   N E T C D F   H O T S T A R T   H A R M O N I C
+C                                     M E A N S   V A R I A N C E S
+C-----------------------------------------------------------------------
+C     jgf49.43.14 Writes harmonic analysis means and variance data to
+C     hotstart file.
+C-----------------------------------------------------------------------
+      SUBROUTINE writeNetCDFHotstartHarmonicMeansVariances(lun,
+     &            ELAVDescript, ELVADescript,
+     &            XVELAVDescript, YVELAVDescript,
+     &            XVELVADescript, YVELVADescript)
+      USE SIZES, ONLY : MNHARF, MNPROC
+      USE GLOBAL, ONLY : OutputDataDescript_t, NSTAE_G, NSTAV_G
+      USE HARM, ONLY : nhase, nhasv, nhage, nhagv, ntsteps
+      IMPLICIT NONE
+C
+      INTEGER, intent(in) :: lun
+      type(OutputDataDescript_t), intent(in) :: ELAVDescript
+      type(OutputDataDescript_t), intent(in) :: ELVADescript
+      type(OutputDataDescript_t), intent(in) :: XVELAVDescript
+      type(OutputDataDescript_t), intent(in) :: YVELAVDescript
+      type(OutputDataDescript_t), intent(in) :: XVELVADescript
+      type(OutputDataDescript_t), intent(in) :: YVELVADescript
+C
+      INTEGER i,j
+      INTEGER kount(2), start(2) ! for nodally based data
+      INTEGER iret ! success or failure of the netcdf call
+      INTEGER varid
+C
+      call setMessageSource("writeNetCDFHotstartHarmonicMeansVariances")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
+C
+C     Point to the hotstart file we want to work on
+      IF (lun.eq.67) THEN
+         hs => hs67
+      ELSE 
+         hs => hs68
+      ENDIF
+C 
+      CALL setNetCDFFileName(lun, hs%myFile)
+C
+      iret = nf_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
+      CALL check_err(iret)   
+!   
+!     Inquire variables
+!     time dimension
+      iret=nf_inq_unlimdim(hs%ncid,hs%myTime%timenc_dim_id)
+      CALL check_err(iret)   
+      iret=nf_inq_dimlen(hs%ncid,hs%myTime%timenc_dim_id,
+     &     hs%myFile%record_counter)
+      CALL check_err(iret)   
+C
+C     Don't increment the record counter so that we can store data at the
+C     next location in the netcdf file -- the hotstart file is only intended
+C     to have a single snapshot of data in it.
+      hs%myFile%record_counter = 1       
+C
+      kount(1)=hs%myMesh%num_nodes  ! for nodal data
+      kount(2)=hs%myTime%timenc_len
+      start(1)=1
+      start(2)=hs%myFile%record_counter
+C
+C     Get the NetCDF IDs of the relevant variables from the file
+      IF (NHAGE.ne.0) THEN
+         iret=nf_inq_varid(hs%ncid,"elav",hs%elav%nodal_data_id)
+         CALL check_err(iret)
+         iret=nf_inq_varid(hs%ncid,"elva",hs%elva%nodal_data_id)
+         CALL check_err(iret)
+      ENDIF
+      IF (NHAGV.ne.0) THEN
+         iret=nf_inq_varid(hs%ncid,"xvelav",hs%xvelav%nodal_data_id)
+         CALL check_err(iret)
+         iret=nf_inq_varid(hs%ncid,"yvelav",hs%yvelav%nodal_data_id)
+         CALL check_err(iret)
+C
+         iret=nf_inq_varid(hs%ncid,"xvelva",hs%xvelva%nodal_data_id)
+         CALL check_err(iret)
+         iret=nf_inq_varid(hs%ncid,"yvelva",hs%yvelva%nodal_data_id)
+         CALL check_err(iret)
+      ENDIF
+C
+C     Place the nodal data into the netcdf arrays
+      IF (MNPROC.eq.1) THEN
+         IF (NHAGE.ne.0) THEN
+            hs%elav%nodal_data(:,kount(2)) = ELAVDescript%array 
+            hs%elva%nodal_data(:,kount(2)) = ELVADescript%array 
+         ENDIF
+         IF (NHAGV.ne.0) THEN
+            hs%xvelav%nodal_data(:,kount(2)) = XVELAVDescript%array
+            hs%yvelav%nodal_data(:,kount(2)) = YVELAVDescript%array
+            hs%xvelva%nodal_data(:,kount(2)) = XVELVADescript%array
+            hs%yvelva%nodal_data(:,kount(2)) = YVELVADescript%array
+         ENDIF 
+      ELSE
+         IF (NHAGE.ne.0) THEN     
+            hs%elav%nodal_data(:,kount(2)) = ELAVDescript%array_g
+            hs%elva%nodal_data(:,kount(2)) = ELVADescript%array_g
+         ENDIF       
+         IF (NHAGV.ne.0) THEN
+            hs%xvelav%nodal_data(:,kount(2)) = XVELAVDescript%array_g
+            hs%yvelav%nodal_data(:,kount(2)) = YVELAVDescript%array_g
+            hs%xvelva%nodal_data(:,kount(2)) = XVELVADescript%array_g
+            hs%yvelva%nodal_data(:,kount(2)) = YVELVADescript%array_g
+         ENDIF
+      ENDIF
+C
+C     Write the nodal data to the netcdf file 
+      IF (NHAGE.ne.0) THEN     
+         iret = nf_put_vara_DOUBLE(hs%ncid, hs%elav%nodal_data_id,
+     &          start, kount, hs%elav%nodal_data)
+         CALL check_err(iret)
+         iret = nf_put_vara_DOUBLE(hs%ncid, hs%elva%nodal_data_id,
+     &          start, kount, hs%elva%nodal_data)
+         CALL check_err(iret)
+      ENDIF
+      IF (NHAGV.ne.0) THEN
+         iret = nf_put_vara_DOUBLE(hs%ncid, hs%xvelav%nodal_data_id,
+     &          start, kount, hs%xvelav%nodal_data)
+         CALL check_err(iret)
+         iret = nf_put_vara_DOUBLE(hs%ncid, hs%yvelav%nodal_data_id,
+     &          start, kount, hs%yvelav%nodal_data)
+         CALL check_err(iret)
+C
+         iret = nf_put_vara_DOUBLE(hs%ncid, hs%xvelva%nodal_data_id,
+     &          start, kount, hs%xvelva%nodal_data)
+         CALL check_err(iret)
+         iret = nf_put_vara_DOUBLE(hs%ncid, hs%yvelva%nodal_data_id,
+     &          start, kount, hs%yvelva%nodal_data)
+         CALL check_err(iret)
+      ENDIF
+C
+C     Get each variable ID for the model parameters in the netcdf file
+C     and immediately write the parameter value to that variable ID before
+C     going on to the next one. 
+      iret = nf_inq_varid(hs%ncid,"ntsteps",varid)
+      CALL check_err(iret)
+      iret = nf_put_var_int(hs%ncid, varid, ntsteps)
+      CALL check_err(iret)
+C
+C     now close the netcdf file
+      iret = nf_close(hs%ncid)
+      CALL check_err(iret)
+C
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE writeNetCDFHotstartHarmonicMeansVariances
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
@@ -2539,15 +3845,15 @@ C
       INTEGER counti(1), starti(1), n
       INTEGER kount(2), start(2)
       INTEGER iret ! success or failure of the netcdf call
-      INTEGER recid
       INTEGER fd_node_number
       INTEGER sd_node_number
       INTEGER fd_ele_number
       INTEGER sd_ele_number
       INTEGER varid
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering readNetCDFHotstart."
+      call setMessageSource("readNetCDFHotstart")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
 C
 C     Point to the hotstart file we want to work on
@@ -2557,6 +3863,7 @@ C     Point to the hotstart file we want to work on
          hs => hs68
       ENDIF
 C
+      hs%myMesh => adcircMesh
       hs%myFile%fileFound = .false.
       CALL setNetCDFFileName(lun,hs%myFile)
 C
@@ -2575,9 +3882,10 @@ C     Open fulldomain file
       ENDIF
 ! 
 !     Inquire variables
-      iret=nf_inq_unlimdim(hs%ncid,recid)
+      iret=nf_inq_unlimdim(hs%ncid,hs%myTime%timenc_dim_id)
       CALL check_err(iret)   
-      iret=nf_inq_dimlen(hs%ncid,recid,hs%myFile%record_counter)
+      iret=nf_inq_dimlen(hs%ncid,hs%myTime%timenc_dim_id,
+     &     hs%myFile%record_counter)
       CALL check_err(iret)   
 C
       iret=nf_inq_dimid(hs%ncid, "node", hs%myMesh%num_nodes_dim_id)
@@ -2792,11 +4100,545 @@ C     now close the netcdf file
       iret = nf_close(hs%ncid)
       CALL check_err(iret)
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from readNetCDFHotstart."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE readNetCDFHotstart
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E  
+C        R E A D   N E T C D F   H O T S T A R T   H A R M O N I C 
+C-----------------------------------------------------------------------
+C     jgf49.44.11 Reads harmonic analysis data from the hotstart file.
+C-----------------------------------------------------------------------
+      SUBROUTINE readNetCDFHotstartHarmonic(lun)
+      USE SIZES, ONLY : MNPROC
+      USE GLOBAL, ONLY : OutputDataDescript_t, NP, NODES_LG, 
+     &                   IMAP_STAE_LG, NSTAE, IMAP_STAV_LG, NSTAV
+      USE HARM, ONLY : GLOELV, STAELV, GLOULV, GLOVLV, STAULV, STAVLV,
+     &                 NHASE, NHASV, NHAGE, NHAGV, MNHARF, ICHA, INZ,
+     &                 INZ, INF, IMM, INSTAE, INSTAV, INHASE, INHASV,
+     &                 INHASE, INHAGE, INHAGV, ICALL, INFREQ, TIMEUD,
+     &                 ITUD, HA, INAMEFR, INP, IFF, IFACE, IFREQ
+#ifdef CMPI
+      USE MESSENGER, ONLY : MSG_FINI
+#endif
+      IMPLICIT NONE
+C
+      INTEGER, intent(in) :: lun
+C      
+      INTEGER i,j
+      INTEGER counti(1), starti(1), n
+      INTEGER kount(3), start(3)
+      INTEGER hakount(2), hastart(2)
+      INTEGER iret ! success or failure of the netcdf call
+      INTEGER fd_node_number
+      INTEGER sd_node_number
+      INTEGER fd_ele_number
+      INTEGER sd_ele_number
+      INTEGER fd_station_number
+      INTEGER sd_station_number
+      INTEGER varid
+C
+      call setMessageSource("readNetCDFHotstartHarmonic")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
+C
+C     Point to the hotstart file we want to work on
+      IF (lun.eq.67) THEN
+         hs => hs67
+      ELSE 
+         hs => hs68
+      ENDIF
+C
+      hs%myMesh => adcircMesh
+      hs%myFile%fileFound = .false.
+      CALL setNetCDFFileName(lun,hs%myFile)
+C
+C     Open fulldomain file
+      INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
+      IF (hs%myFile%fileFound.eqv..false.) THEN
+         WRITE(*,*) "ERROR: The file ",hs%myFile%FILENAME,
+     &      " was not found; ADCIRC terminating."
+#ifdef CMPI
+            CALL MSG_FINI()
+#endif
+         STOP
+      ELSE
+         iret = nf_open(hs%myFile%FILENAME, NF_NOWRITE, hs%ncid)
+         CALL check_err(iret) 
+      ENDIF
+! 
+!     Inquire variables
+      iret=nf_inq_unlimdim(hs%ncid,hs%myTime%timenc_dim_id)
+      CALL check_err(iret)   
+      iret=nf_inq_dimlen(hs%ncid,hs%myTime%timenc_dim_id,
+     &     hs%myFile%record_counter)
+      CALL check_err(iret)   
+C     node dimension
+      iret=nf_inq_dimid(hs%ncid, "node", hs%myMesh%num_nodes_dim_id)
+      CALL check_err(iret)   
+      iret=nf_inq_dimlen(hs%ncid, hs%myMesh%num_nodes_dim_id,
+     &     hs%myMesh%num_nodes)
+      CALL check_err(iret)   
+C     element dimension
+      iret=nf_inq_dimid(hs%ncid, "nele", hs%myMesh%num_elems_dim_id)
+      CALL check_err(iret)   
+      iret=nf_inq_dimlen(hs%ncid, hs%myMesh%num_elems_dim_id,
+     &     hs%myMesh%num_elems)
+      CALL check_err(iret)   
+C     elevation station dimension
+      IF (NHASE.ne.0) THEN
+         iret=nf_inq_dimid(hs%ncid,"elevstation",
+     &        hs%staelv%num_sta_dim_id)
+         CALL check_err(iret)   
+         iret=nf_inq_dimlen(hs%ncid,hs%staelv%num_sta_dim_id,
+     &        hs%staelv%num_stations)
+         CALL check_err(iret)   
+      ENDIF
+C     velocity station dimension
+      IF (NHASV.ne.0) THEN
+         iret=nf_inq_dimid(hs%ncid,"velstation",
+     &        hs%stavellv%num_sta_dim_id)
+         CALL check_err(iret)   
+         iret=nf_inq_dimlen(hs%ncid,hs%stavellv%num_sta_dim_id,
+     &        hs%stavellv%num_stations)
+         CALL check_err(iret) 
+      ENDIF  
+C
+      CALL allocateNetCDFHotstartHarmonic(lun)
+C
+      hs%myFile%record_counter = 1       
+C
+      kount(1)=MNHARF*2             ! for load vector data
+      kount(2)=hs%myMesh%num_nodes  ! for nodal data
+      kount(3)=hs%myTime%timenc_len
+      start(1)=1
+      start(2)=1
+      start(3)=hs%myFile%record_counter
+C
+C     Read in fulldomain load vector data
+C     GLOELV - full domain elevation
+      IF (NHAGE.ne.0) THEN
+         iret=nf_inq_varid(hs%ncid,"gloelv",hs%gloelv%nodal_data_id)
+         CALL check_err(iret)
+         iret = nf_get_vara_DOUBLE(hs%ncid, hs%gloelv%nodal_data_id,
+     &           start, kount, hs%gloelv%nodal_data)
+         CALL check_err(iret)
+      ENDIF 
+C     GLOULV - full domain u velocity
+      IF (NHAGV.ne.0) THEN
+         iret=nf_inq_varid(hs%ncid,"gloulv",hs%glovellv%u_nodal_data_id)
+         CALL check_err(iret)
+         iret = nf_get_vara_DOUBLE(hs%ncid, hs%glovellv%u_nodal_data_id,
+     &          start, kount, hs%glovellv%u_nodal_data)
+         CALL check_err(iret)
+C     GLOVLV - fulldomain v velocity
+         iret=nf_inq_varid(hs%ncid,"glovlv",hs%glovellv%v_nodal_data_id)
+         CALL check_err(iret)
+         iret = nf_get_vara_DOUBLE(hs%ncid, hs%glovellv%v_nodal_data_id,
+     &          start, kount, hs%glovellv%v_nodal_data)
+         CALL check_err(iret)
+      ENDIF
+C     STAELV - station elevation
+      IF (NHASE.ne.0) THEN
+         kount(2) = hs%staelv%num_stations ! for elevation stations
+         iret=nf_inq_varid(hs%ncid,"staelv",hs%staelv%station_data_id)
+         CALL check_err(iret)
+         iret = nf_get_vara_DOUBLE(hs%ncid, hs%staelv%station_data_id,
+     &          start, kount, hs%staelv%station_data)
+         CALL check_err(iret)
+      ENDIF
+C     STAULV/STAVLV - station u and v velocity
+      IF (NHASV.ne.0) THEN
+         kount(2) = hs%stavellv%num_stations ! for velocity stations
+         iret=nf_inq_varid(hs%ncid,"staulv",
+     &        hs%stavellv%u_station_data_id)
+         CALL check_err(iret)
+         iret=nf_inq_varid(hs%ncid,"stavlv",
+     &        hs%stavellv%v_station_data_id)
+         CALL check_err(iret)
+         iret = nf_get_vara_DOUBLE(hs%ncid, 
+     &          hs%stavellv%u_station_data_id,
+     &          start, kount, hs%stavellv%u_station_data)
+         CALL check_err(iret)
+         iret = nf_get_vara_DOUBLE(hs%ncid, 
+     &          hs%stavellv%v_station_data_id,
+     &          start, kount, hs%stavellv%v_station_data)
+         CALL check_err(iret)
+      ENDIF
+C
+C     Place data in ADCIRC arrays 
+
+      ! serial
+      IF (MNPROC.eq.1) THEN 
+         IF (NHAGE.ne.0) THEN
+            GLOELV(:,:) = hs%gloelv%nodal_data(:,:,kount(3))
+         ENDIF
+         IF (NHASE.ne.0) THEN
+            STAELV(:,:) = hs%staelv%station_data(:,:,kount(3))
+         ENDIF
+         IF (NHAGV.ne.0) THEN
+            GLOULV(:,:) = hs%glovellv%u_nodal_data(:,:,kount(3))
+            GLOVLV(:,:) = hs%glovellv%v_nodal_data(:,:,kount(3))
+         ENDIF
+         IF (NHASV.ne.0) THEN
+            STAULV(:,:) = hs%stavellv%u_station_data(:,:,kount(3))
+            STAVLV(:,:) = hs%stavellv%v_station_data(:,:,kount(3)) 
+         ENDIF
+      ! parallel
+      ELSE 
+         ! loop over subdomain nodes
+         DO sd_node_number=1,np
+            ! get the corresponding fulldomain node number 
+            fd_node_number = ABS(NODES_LG(sd_node_number)) 
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+            IF (NHAGE.ne.0) THEN
+               GLOELV(:,sd_node_number) 
+     &             = hs%gloelv%nodal_data(:,fd_node_number,kount(3))
+            ENDIF
+            IF (NHAGV.ne.0) THEN
+               GLOULV(:,sd_node_number) 
+     &             = hs%glovellv%u_nodal_data(:,fd_node_number,
+     &                                        kount(3))
+               GLOVLV(:,sd_node_number) 
+     &             = hs%glovellv%v_nodal_data(:,fd_node_number,
+     &                                        kount(3))
+            ENDIF
+         END DO
+         IF (NHASE.ne.0) THEN
+            ! loop over subdomain elevation stations
+            DO sd_station_number=1,nstae
+               ! get corresponding fulldomain station number
+               fd_station_number = ABS(IMAP_STAE_LG(sd_station_number))
+               ! fill in subdomain arrays with corresponding full domain values
+               STAELV(:,sd_station_number) 
+     &             = hs%staelv%station_data(:,fd_station_number,
+     &                                      kount(3))
+            END DO
+         ENDIF
+         IF (NHASV.ne.0) THEN
+            DO sd_station_number=1,nstav
+               fd_station_number = ABS(IMAP_STAV_LG(sd_station_number))
+               STAULV(:,sd_station_number) 
+     &             = hs%stavellv%u_station_data(:,fd_station_number,
+     &                                          kount(3))
+               STAVLV(:,sd_station_number) 
+     &             = hs%stavellv%v_station_data(:,fd_station_number,
+     &                                          kount(3)) 
+            END DO
+         ENDIF
+      ENDIF
+C
+C     Read in model parameters to ADCIRC variables
+      iret = nf_inq_varid(hs%ncid,"icha",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, icha)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nz",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, inz)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nf",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, inf)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"mm",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, imm)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nstae",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, instae)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nstav",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, instav)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nhase",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, inhase)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nhasv",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, inhasv)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nhage",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, inhage)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nhagv",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, inhagv)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"icall",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, icall)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"nfreq",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, infreq)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"timeud",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_double(hs%ncid, varid, timeud)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"itud",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, itud)
+      CALL check_err(iret)
+C
+C     Variables that are used to check that harmonic analysis data match
+C     the simulation that is reading this hotstart file.
+      inp = hs%myMesh%num_nodes
+C
+C     left hand side 
+      hakount(1) = 2*MNHARF
+      hakount(2) = 2*MNHARF
+      hastart(1) = 1
+      hastart(2) = 1
+      iret = nf_inq_varid(hs%ncid,"ha",hs%ha_id)
+      CALL check_err(iret)
+      iret = nf_get_vara_DOUBLE(hs%ncid, hs%ha_id, hastart,
+     &       hakount, ha)
+      CALL check_err(iret)
+C     frequency names
+      iret = nf_inq_varid(hs%ncid,"namefr",hs%namefr_id)
+      CALL check_err(iret)
+      do i=1,mnharf
+         start(1)=1
+         start(2)=i
+         kount(1)= len(inamefr(i))
+         kount(2)=1
+         iret = nf_get_vara_text(hs%ncid,hs%namefr_id,start,kount,
+     &   inamefr(i) )
+         CALL check_err(iret)
+      end do
+C     harmonic constituents
+      start(1) = 1
+      start(2) = 1
+      kount(1) = MNHARF ! for constituents
+      kount(2) = 1
+      iret = nf_inq_varid(hs%ncid,"hafreq",hs%hafreq_id)
+      CALL check_err(iret)
+      iret = nf_get_vara_DOUBLE(hs%ncid, hs%hafreq_id, start,
+     &       kount, ifreq)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"haff",hs%haff_id)
+      CALL check_err(iret)
+      iret = nf_get_vara_DOUBLE(hs%ncid, hs%haff_id, start,
+     &       kount, iff)
+      CALL check_err(iret)
+      iret = nf_inq_varid(hs%ncid,"haface",hs%haface_id)
+      CALL check_err(iret)
+      iret = nf_get_vara_DOUBLE(hs%ncid, hs%haface_id, start,
+     &       kount, iface)
+      CALL check_err(iret)
+
+C  
+      DEALLOCATE(hs%gloelv%nodal_data)
+      DEALLOCATE(hs%glovellv%u_nodal_data)
+      DEALLOCATE(hs%staelv%station_data)
+      DEALLOCATE(hs%stavellv%u_station_data)
+      DEALLOCATE(hs%stavellv%v_station_data)
+C
+C     Get each variable ID for the model parameters in the netcdf file
+C     and immediately write the parameter value to that variable ID before
+C     going on to the next one. 
+C
+C     now close the netcdf file
+      iret = nf_close(hs%ncid)
+      CALL check_err(iret)
+C
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readNetCDFHotstartHarmonic
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E  
+C        R E A D   N E T C D F   H O T S T A R T   H A R M O N I C 
+C                                   M E A N S   V A R I A N C E S
+C-----------------------------------------------------------------------
+C     jgf49.44.11 Reads harmonic analysis data from the hotstart file.
+C-----------------------------------------------------------------------
+      SUBROUTINE readNetCDFHotstartHarmonicMeansVariances(lun)
+      USE SIZES, ONLY : MNPROC
+      USE GLOBAL, ONLY : OutputDataDescript_t, NP, NODES_LG 
+      USE HARM, ONLY : ELAV, ELVA, XVELAV, YVELAV, XVELVA, YVELVA, 
+     &                 NTSTEPS, NHAGE, NHAGV
+#ifdef CMPI
+      USE MESSENGER, ONLY : MSG_FINI
+#endif
+      IMPLICIT NONE
+C
+      INTEGER, intent(in) :: lun
+C      
+      INTEGER i,j
+      INTEGER kount(2), start(2)
+      INTEGER iret ! success or failure of the netcdf call
+      INTEGER fd_node_number
+      INTEGER sd_node_number
+      INTEGER varid
+C
+      call setMessageSource("readNetCDFHotstartHarmonicMeansVariances")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
+C
+C     Point to the hotstart file we want to work on
+      IF (lun.eq.67) THEN
+         hs => hs67
+      ELSE 
+         hs => hs68
+      ENDIF
+C
+      hs%myMesh => adcircMesh
+      hs%myFile%fileFound = .false.
+      CALL setNetCDFFileName(lun,hs%myFile)
+C
+C     Open fulldomain file
+      INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
+      IF (hs%myFile%fileFound.eqv..false.) THEN
+         WRITE(*,*) "ERROR: The file ",hs%myFile%FILENAME,
+     &      " was not found; ADCIRC terminating."
+#ifdef CMPI
+            CALL MSG_FINI()
+#endif
+         STOP
+      ELSE
+         iret = nf_open(hs%myFile%FILENAME, NF_NOWRITE, hs%ncid)
+         CALL check_err(iret) 
+      ENDIF
+! 
+!     Inquire variables
+      iret=nf_inq_unlimdim(hs%ncid,hs%myTime%timenc_dim_id)
+      CALL check_err(iret)   
+      iret=nf_inq_dimlen(hs%ncid,hs%myTime%timenc_dim_id,
+     &     hs%myFile%record_counter)
+      CALL check_err(iret)   
+C     node dimension
+      iret=nf_inq_dimid(hs%ncid, "node", hs%myMesh%num_nodes_dim_id)
+      CALL check_err(iret)   
+      iret=nf_inq_dimlen(hs%ncid, hs%myMesh%num_nodes_dim_id,
+     &     hs%myMesh%num_nodes)
+      CALL check_err(iret)   
+C
+      hs%myFile%record_counter = 1       
+C
+      kount(1)=hs%myMesh%num_nodes  ! for nodal data
+      kount(2)=hs%myTime%timenc_len
+      start(1)=1
+      start(2)=hs%myFile%record_counter
+C
+      IF (NHAGE.ne.0) THEN
+         iret=nf_inq_varid(hs%ncid,"elav",hs%elav%nodal_data_id)
+         CALL check_err(iret)
+         iret = nf_get_vara_DOUBLE(hs%ncid, hs%elav%nodal_data_id,
+     &           start, kount, hs%elav%nodal_data)
+         CALL check_err(iret)
+         iret=nf_inq_varid(hs%ncid,"elva",hs%elva%nodal_data_id)
+         CALL check_err(iret)
+         iret = nf_get_vara_DOUBLE(hs%ncid, hs%elva%nodal_data_id,
+     &           start, kount, hs%elva%nodal_data)
+         CALL check_err(iret)
+      ENDIF 
+      IF (NHAGV.ne.0) THEN
+         iret=nf_inq_varid(hs%ncid,"xvelav",hs%xvelav%nodal_data_id)
+         CALL check_err(iret)
+         iret = nf_get_vara_DOUBLE(hs%ncid, hs%xvelav%nodal_data_id,
+     &          start, kount, hs%xvelav%nodal_data)
+         CALL check_err(iret)
+         iret=nf_inq_varid(hs%ncid,"yvelav",hs%yvelav%nodal_data_id)
+         CALL check_err(iret)
+         iret = nf_get_vara_DOUBLE(hs%ncid, hs%yvelav%nodal_data_id,
+     &          start, kount, hs%yvelav%nodal_data)
+         CALL check_err(iret)
+C
+         iret=nf_inq_varid(hs%ncid,"xvelva",hs%xvelva%nodal_data_id)
+         CALL check_err(iret)
+         iret = nf_get_vara_DOUBLE(hs%ncid, hs%xvelva%nodal_data_id,
+     &          start, kount, hs%xvelva%nodal_data)
+         CALL check_err(iret)
+         iret=nf_inq_varid(hs%ncid,"yvelva",hs%yvelva%nodal_data_id)
+         CALL check_err(iret)
+         iret = nf_get_vara_DOUBLE(hs%ncid, hs%yvelva%nodal_data_id,
+     &          start, kount, hs%yvelva%nodal_data)
+         CALL check_err(iret)
+      ENDIF
+C
+C     Place data in ADCIRC arrays 
+
+      ! serial
+      IF (MNPROC.eq.1) THEN 
+         IF (NHAGE.ne.0) THEN
+            ELAV(:) = hs%elav%nodal_data(:,kount(2))
+            ELVA(:) = hs%elva%nodal_data(:,kount(2))
+         ENDIF
+         IF (NHAGV.ne.0) THEN
+            XVELAV(:) = hs%xvelav%nodal_data(:,kount(2))
+            YVELAV(:) = hs%yvelav%nodal_data(:,kount(2))
+            XVELVA(:) = hs%xvelva%nodal_data(:,kount(2))
+            YVELVA(:) = hs%yvelva%nodal_data(:,kount(2))
+         ENDIF
+      ! parallel
+      ELSE 
+         ! loop over subdomain nodes
+         DO sd_node_number=1,np
+            ! get the corresponding fulldomain node number 
+            fd_node_number = ABS(NODES_LG(sd_node_number)) 
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+            IF (NHAGE.ne.0) THEN
+               ELAV(sd_node_number) 
+     &            = hs%elav%nodal_data(fd_node_number,kount(2))
+               ELVA(sd_node_number) 
+     &            = hs%elva%nodal_data(fd_node_number,kount(2))
+            ENDIF
+            IF (NHAGV.ne.0) THEN
+               XVELAV(sd_node_number) 
+     &            = hs%xvelav%nodal_data(fd_node_number,kount(2))
+               YVELAV(sd_node_number) 
+     &            = hs%yvelav%nodal_data(fd_node_number,kount(2))
+               XVELVA(sd_node_number) 
+     &            = hs%xvelva%nodal_data(fd_node_number,kount(2))
+               YVELVA(sd_node_number) 
+     &            = hs%yvelva%nodal_data(fd_node_number,kount(2))
+            ENDIF
+         END DO
+      ENDIF
+C
+C     Read in model parameters to ADCIRC variables
+      iret = nf_inq_varid(hs%ncid,"ntsteps",varid)
+      CALL check_err(iret)
+      iret = nf_get_var_int(hs%ncid, varid, ntsteps)
+      CALL check_err(iret)
+C  
+      DEALLOCATE(hs%elav%nodal_data)
+      DEALLOCATE(hs%elva%nodal_data)
+      DEALLOCATE(hs%xvelav%nodal_data)
+      DEALLOCATE(hs%yvelav%nodal_data)
+      DEALLOCATE(hs%xvelva%nodal_data)
+      DEALLOCATE(hs%yvelva%nodal_data)
+C
+C     now close the netcdf file
+      iret = nf_close(hs%ncid)
+      CALL check_err(iret)
+C
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readNetCDFHotstartHarmonicMeansVariances
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
@@ -2805,7 +4647,7 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Defines data that are common to all netCDF files.
 C-----------------------------------------------------------------------
       subroutine defineMeshVariables(ncid, myMesh)
-      USE GLOBAL, ONLY : RAD2DEG, SLAM0, SFEA0, NM
+      USE GLOBAL, ONLY : RAD2DEG, SLAM0, SFEA0
       USE SIZES, ONLY : SZ
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
       USE VERSION
@@ -2827,22 +4669,10 @@ C-----------------------------------------------------------------------
       character zone*5
       integer values(8)
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering defineMeshVariables."
+      call setMessageSource("defineMeshVariables")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
-      myMesh%nmnc=NM
-!     Switch order in array for NETCDF
-       write(*,*)  myMesh%num_elems
-       write(*,*)  myMesh%nface_len
-      do i=1, myMesh%num_elems
-         do j=1, myMesh%nface_len
-            myMesh%element(j,i) = myMesh%nmnc(i,j)
-         end do
-      end do
-!       write(99,*) myMesh%nmnc
-!       write(98,*) NM
-!       write(97,*) myMesh%element
-!      stop
 ! 
 !     Define dimensions
       iret = nf_def_dim(ncid,'node',myMesh%num_nodes,
@@ -2860,6 +4690,9 @@ C
          iret = nf_def_dim(ncid,'neta', myMesh%netanc,
      &         myMesh%netanc_dim_id)
          call check_err(iret)
+         iret = nf_def_dim(ncid,'max_nvdll', myMesh%max_nvdllnc,
+     &         myMesh%max_nvdllnc_dim_id)
+         call check_err(iret)
       endif
       if(myMesh%nbounc.ne.0) then
          iret = nf_def_dim(ncid, 'nbou',
@@ -2868,6 +4701,8 @@ C
          iret = nf_def_dim(ncid, 'nvel',
      &          myMesh%nvelnc, myMesh%nvelnc_dim_id)
          call check_err(iret)
+         iret = nf_def_dim(ncid, 'max_nvell',
+     &          myMesh%max_nvellnc, myMesh%max_nvellnc_dim_id)
       endif
 ! 
 !     Define variables
@@ -2897,13 +4732,17 @@ C         CALL check_err(iret)
          iret = nf_def_var(ncid, 'nvdll',NF_INT, myMesh%nvdllnc_rank, 
      &                  myMesh%nvdllnc_dims, myMesh%nvdllnc_id)
          CALL check_err(iret)
+         iret = nf_def_var(ncid, 'max_nvdll',NF_INT, 0, 1, 
+     &                  myMesh%max_nvdllnc_id)
+         CALL check_err(iret)
          myMesh%ibtypeenc_dims(1) = myMesh%nopenc_dim_id      
          iret = nf_def_var(ncid, 'ibtypee',NF_INT, 
      &          myMesh%ibtypeenc_rank, myMesh%ibtypeenc_dims,
      &          myMesh%ibtypeenc_id)
          CALL check_err(iret)
          myMesh%nbdvnc_dims(1) = myMesh%nopenc_dim_id
-         myMesh%nbdvnc_dims(2) = myMesh%netanc_dim_id      
+C         myMesh%nbdvnc_dims(2) = myMesh%netanc_dim_id      
+         myMesh%nbdvnc_dims(2) = myMesh%max_nvdllnc_dim_id      
          iret = nf_def_var(ncid, 'nbdv',NF_INT, myMesh%nbdvnc_rank,
      &          myMesh%nbdvnc_dims, myMesh%nbdvnc_id)
          CALL check_err(iret)
@@ -2918,12 +4757,16 @@ C         CALL check_err(iret)
          iret = nf_def_var(ncid, 'nvell',NF_INT, myMesh%nvellnc_rank, 
      &          myMesh%nvellnc_dims, myMesh%nvellnc_id)
          CALL check_err(iret)
+         iret = nf_def_var(ncid, 'max_nvell',NF_INT, 0, 1, 
+     &                  myMesh%max_nvellnc_id)
+         CALL check_err(iret)
          myMesh%ibtypenc_dims(1) = myMesh%nbounc_dim_id      
          iret = nf_def_var(ncid, 'ibtype',NF_INT, myMesh%ibtypenc_rank, 
      &          myMesh%ibtypenc_dims, myMesh%ibtypenc_id)
          CALL check_err(iret)
          myMesh%nbvvnc_dims(1) = myMesh%nbounc_dim_id      
-         myMesh%nbvvnc_dims(2) = myMesh%nvelnc_dim_id      
+C         myMesh%nbvvnc_dims(2) = myMesh%nvelnc_dim_id      
+         myMesh%nbvvnc_dims(2) = myMesh%max_nvellnc_dim_id      
          iret = nf_def_var(ncid, 'nbvv',NF_INT, myMesh%nbvvnc_rank,
      &          myMesh%nbvvnc_dims, myMesh%nbvvnc_id)
          CALL check_err(iret)
@@ -2957,7 +4800,7 @@ C     the value of ICS
       if (myMesh%nopenc.ne.0) then
 C        NOPE
          att_text = "number of elevation specified boundary &
-     &              forcing segments"
+     &forcing segments"
          iret = nf_put_att_text(ncid, myMesh%nopenc_id, 'long_name',
      &          len_trim(att_text), trim(att_text)) 
          CALL check_err(iret)
@@ -2965,7 +4808,7 @@ C        NOPE
      &                     VAR_NOND)
          CALL check_err(iret)
 C        NETA
-         att_text = "total number of elevation specified  
+         att_text = "total number of elevation specified & 
      &boundary nodes"
          iret = nf_put_att_text(ncid, myMesh%netanc_id, 'long_name',
      &          len_trim(att_text), trim(att_text)) 
@@ -2974,7 +4817,7 @@ C        NETA
      &                     VAR_NOND)
          CALL check_err(iret)
 C        NVDLL
-         att_text = "number of nodes in each elevation specified 
+         att_text = "number of nodes in each elevation specified &
      &boundary segment"
          iret = nf_put_att_text(ncid, myMesh%nvdllnc_id, 'long_name',
      &          len_trim(att_text), trim(att_text))
@@ -2991,7 +4834,7 @@ C        IBTYPEE
      &                      VAR_NOND)
          CALL check_err(iret)
 C        NBDV
-         att_text = "node numbers on each elevation specified boundary 
+         att_text = "node numbers on each elevation specified boundary &
      &segment"
          iret = nf_put_att_text(ncid, myMesh%nbdvnc_id, 'long_name',
      &          len_trim(att_text), trim(att_text))
@@ -3002,7 +4845,7 @@ C        NBDV
       endif
       if (myMesh%nbounc.ne.0) then
 C        NBOU
-         att_text = "number of normal flow (discharge) specified 
+         att_text = "number of normal flow (discharge) specified &
      &boundary segments"
          iret = nf_put_att_text(ncid, myMesh%nbounc_id, 'long_name',
      &          len_trim(att_text), trim(att_text))
@@ -3011,8 +4854,8 @@ C        NBOU
      &                      VAR_NOND)
          CALL check_err(iret)
 C        NVEL
-         att_text = "total number of normal flow specified boundary 
-     &nodes including both the front and back nodes on internal barrier
+         att_text = "total number of normal flow specified boundary & 
+     &nodes including both the front and back nodes on internal barrier&
      & boundaries"
          iret = nf_put_att_text(ncid, myMesh%nvelnc_id, 'long_name',
      &          len_trim(att_text), trim(att_text))
@@ -3044,9 +4887,10 @@ C        NBVV
      &                      VAR_NOND)
          CALL check_err(iret)
       endif
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from defineMeshVariables."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE defineMeshVariables
 C-----------------------------------------------------------------------
@@ -3068,8 +4912,9 @@ C-----------------------------------------------------------------------
       INTEGER yid
       INTEGER iret
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering defineCoordinateAttributes."
+      call setMessageSource("defineCoordinateAttributes")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
 C
       if(ics.eq.2) then  ! this indicates spherical coordinates
@@ -3116,9 +4961,10 @@ C        Define longitude attributes
          CALL check_err(iret)
       endif
 
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from defineCoordinateAttributes."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE defineCoordinateAttributes
 C-----------------------------------------------------------------------
@@ -3143,8 +4989,9 @@ C
       INTEGER kount(2), start(2)
       REAL    realval(1)
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering putMeshVariables."
+      call setMessageSource("putMeshVariables")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.")
 #endif
 C
 C     Store nodal coordinates
@@ -3161,7 +5008,8 @@ C
       kount(2)=myMesh%num_elems
       start(1)=1
       start(2)=1
-      iret=nf_put_vara_int(ncid,myMesh%ele_id,start,kount,myMesh%element)
+      iret=nf_put_vara_int(ncid,myMesh%ele_id,start,kount,
+     &     myMesh%element)
       call check_err(iret)
 !     Store elevation boundary information
       if(myMesh%nopenc.ne.0) then
@@ -3170,6 +5018,9 @@ C         CALL check_err(iret)
 C         iret = nf_put_var_int(ncid, myMesh%netanc_id ,myMesh%netanc)
          CALL check_err(iret)
          iret = nf_put_var_int(ncid, myMesh%nvdllnc_id ,myMesh%nvdllnc)
+         CALL check_err(iret)
+         iret = nf_put_var_int(ncid, myMesh%max_nvdllnc_id,
+     &          myMesh%max_nvdllnc)
          CALL check_err(iret)
          iret = nf_put_var_int(ncid,myMesh%ibtypeenc_id,
      &          myMesh%ibtypeenc)
@@ -3187,13 +5038,17 @@ C         CALL check_err(iret)
          CALL check_err(iret)
          iret = nf_put_var_int(ncid, myMesh%nvellnc_id, myMesh%nvellnc)
          CALL check_err(iret)
+         iret = nf_put_var_int(ncid, myMesh%max_nvellnc_id,
+     &          myMesh%max_nvellnc)
+         CALL check_err(iret)
          iret = nf_put_var_int(ncid, myMesh%nbvvnc_id, myMesh%nbvvnc)
          CALL check_err(iret)
       endif
 
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from putMeshVariables."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE putMeshVariables 
 C-----------------------------------------------------------------------
@@ -3226,8 +5081,10 @@ C
       character big_ben*10
       character zone*5
       integer values(8)
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering defineMetaData."
+C
+      call setMessageSource("defineMetaData")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.")
 #endif
 ! 
 !     Convert back to degrees ... the original input is in degrees,
@@ -3246,6 +5103,7 @@ C     back to degrees to write them back out
       CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'grid_type', 10, 
      &                      'Triangular')
+      CALL check_err(iret)
       iret = nf_put_att_text(ncid, NF_GLOBAL, 'description',
      &       metalength(trim(adjustl(rundes))), trim(adjustl(rundes)))
       CALL check_err(iret)
@@ -3372,9 +5230,10 @@ C     back to degrees to write them back out
       CALL check_err(iret)
       iret = nf_put_att_int(ncid, NCGLOBAL, 'nbfr', NF_INT, 1, nbfr)
       CALL check_err(iret)
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from defineMetaData."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE defineMetaData 
 C-----------------------------------------------------------------------
@@ -3425,8 +5284,9 @@ C
       character zone*5
       integer values(8)
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering updateMetaData."
+      call setMessageSource("updateMetaData")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
 C     Open existing NetCDF file
       iret = nf_open(myFile%FILENAME, NF_WRITE, ncid)
@@ -3478,9 +5338,10 @@ C
 C     now close the updated netcdf file
       iret = nf_close(ncid)
       CALL check_err(iret)
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from updateMetaData."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE updateMetaData 
 C-----------------------------------------------------------------------
@@ -3500,8 +5361,9 @@ C-----------------------------------------------------------------------
       CHARACTER(*) metric
       CHARACTER(*) english
 C        
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering putUnitsAttribute."
+      call setMessageSource("putUnitsAttribute")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
 C
       if (G.LT.11.D0) then
@@ -3513,9 +5375,10 @@ C
       endif
       CALL check_err(iret)
 
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from putUnitsAttribute."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C
 C-----------------------------------------------------------------------
       end subroutine putUnitsAttribute
@@ -3536,21 +5399,20 @@ C-----------------------------------------------------------------------
 #endif
       IMPLICIT NONE 
       INTEGER, intent(in) :: iret
-#ifdef NETCDF_DEBUG
+#ifdef NETCDF_TRACE
       REAL, ALLOCATABLE :: dummy(:)
 #endif
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering check_err."
+      call setMessageSource("check_err")     
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.")
 #endif
       if (iret .ne. NF_NOERR) then
-         write(ScreenUnit,*) "ERROR: ",nf_strerror(iret)
-         write(ScreenUnit,*) "ERROR: ADCIRC execution terminated."
-         write(16,*) "ERROR: ",nf_strerror(iret)
-         write(16,*) "ERROR: ADCIRC execution terminated."
+         call allMessage(ERROR,nf_strerror(iret))
+         call allMessage(ERROR,"ADCIRC execution terminated.")
 #ifdef CMPI
          call msg_fini()
 #endif
-#ifdef NETCDF_DEBUG
+#ifdef NETCDF_TRACE
          ! intentionally create a segmentation fault so that we can get
          ! a stack trace to determine the line number of the netcdf call
          ! that went bad ... this assumes that the code was compiled with 
@@ -3559,9 +5421,10 @@ C-----------------------------------------------------------------------
 #endif
          stop
       endif
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from check_err."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine check_err
 C-----------------------------------------------------------------------
@@ -3572,7 +5435,7 @@ C-----------------------------------------------------------------------
 C     jgf49.31 Called by adcprep to populate the global.F data normally
 C     collected by read_input.F in adcirc. This is somewhat 
 C     convoluted, since the data are collected by adcprep in read14()
-C     and read15() and used to populate in pre_global.F, and then we
+C    and read15() and used to populate in pre_global.F, and then we
 C     call this subroutine in the netcdf module to populate the global
 C     and nodalattributes modules with the same data. 
 C
@@ -3584,7 +5447,7 @@ C     global, not pre_global with these data, in other words, both
 C     adcirc and adcprep should use the global module. 
 C-----------------------------------------------------------------------
       SUBROUTINE setADCIRCParameters(
-     &   base_date_p, STATNAME_p, STATNAMEV_p, STATNAMEM_p, NE_G_p, 
+     &   base_date_p, NE_G_p, 
      &   NBOU_p, NVEL_p, NOPE_p, NP_G_p, SLAM0_p, SFEA0_p, NBVV_p,
      &   NVDLL_p, NBDV_p, NVELL_p, X_p, Y_p,
      &   IBTYPE_p, IBTYPEE_p, SLAM_p, SFEA_p,
@@ -3598,9 +5461,10 @@ C-----------------------------------------------------------------------
      &   nolifa_p, nolica_p, nolicat_p, ncor_p, ntip_p, nws_p, nramp_p,
      &   statim_p, reftim_p, rnday_p, dramp_p, a00_p, b00_p, c00_p,
      &   h0_p, cori_p, ntif_p, nbfr_p, myProc_p, screenUnit_p, nolibf_p,
-     &   nwp_p, tau0_p, cf_p, eslm_p, nstae_p, nstav_p, nstam_p, neta_p)
+     &   nwp_p, tau0_p, cf_p, eslm_p, nstae_p, nstav_p, nstam_p, neta_p,
+     &   nabout_p, nscreen_p)
       USE GLOBAL, ONLY : 
-     &   base_date, STATNAME, STATNAMEV, STATNAMEM, NE_G, NBOU,
+     &   base_date, NE_G, NBOU,
      &   NVEL, NOPE, NP_G, SLAM0, SFEA0, NBVV, NVDLL, NBDV, NVELL, X, Y,
      &   IBTYPE, IBTYPEE,
      &   SLAM, SFEA, SNAMLEN, RAD2DEG, NODECODE, G, FileFmtRev,
@@ -3611,15 +5475,12 @@ C-----------------------------------------------------------------------
      &   references, comments, host, convention, contact, dtdp, ihot,
      &   ics, nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
      &   reftim, rnday, dramp, a00, b00, c00, h0, cori, ntif, nbfr,
-     &   myProc, screenUnit, neta
+     &   myProc, screenUnit, neta, nabout, nscreen
       USE NodalAttributes, ONLY : nolibf, nwp, tau0, cf, eslm
       IMPLICIT NONE
 C
 C     Declare the argument variables coming in from adcprep.
       CHARACTER(80), intent(in) :: base_date_p
-      CHARACTER(50), intent(in) :: STATNAME_p(:)
-      CHARACTER(50), intent(in) :: STATNAMEV_p(:)
-      CHARACTER(50), intent(in) :: STATNAMEM_p(:)
       INTEGER, intent(in) :: NE_G_p 
       INTEGER, intent(in) :: NBOU_p
       INTEGER, intent(in) :: NVEL_p
@@ -3706,18 +5567,15 @@ C     Declare the argument variables coming in from adcprep.
       INTEGER, intent(in) :: nstav_p
       INTEGER, intent(in) :: nstam_p
       INTEGER, intent(in) :: neta_p
+      INTEGER, intent(in) :: nabout_p
+      INTEGER, intent(in) :: nscreen_p
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Entering setADCIRCParameters."
+      call setMessageSource("setADCIRCParameters.")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
 #endif
 C
       base_date = base_date_p
-      ALLOCATE(STATNAME(NSTAE_p))
-      ALLOCATE(STATNAMEV(NSTAV_p))
-      ALLOCATE(STATNAMEM(NSTAM_p))
-      STATNAME = STATNAME_p
-      STATNAMEV = STATNAMEV_p
-      STATNAMEM = STATNAMEM_p
       NE_G = NE_G_p 
       NBOU = NBOU_p
       NVEL = NVEL_p
@@ -3814,12 +5672,216 @@ C
       cf = cf_p
       eslm = eslm_p
       neta = neta_p
+      nabout = nabout_p
+      nscreen = nscreen_p
 C
-#ifdef NETCDF_DEBUG
-      write(*,*) "DEBUG: Returning from setADCIRCParameters."
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
 #endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE setADCIRCParameters
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   F R E E    N E T C D F   A R R A Y S  
+C-----------------------------------------------------------------------
+C     jgf49.43.05 Frees memory that was allocated for NetCDF output
+C     arrays.
+C-----------------------------------------------------------------------
+      SUBROUTINE freeNetCDFArrays(lun, descript)
+      USE GLOBAL, ONLY : OutputDataDescript_t
+#ifdef CMPI
+      USE MESSENGER, ONLY : msg_fini
+#endif 
+      IMPLICIT NONE
+      INTEGER, intent(in) :: lun
+      type(OutputDataDescript_t) :: descript
+C
+      call setMessageSource("freeNetCDFArrays.")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
+C 
+      ! don't free anything if this output type is not using netcdf
+      IF (ABS(descript % specifier).ne.3) THEN
+#ifdef NETCDF_TRACE
+         call screen(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         RETURN  
+      ENDIF
+C
+      SELECT CASE(lun)
+    
+         CASE(61)
+            DEALLOCATE(elevSta%station_data)
+            DEALLOCATE(elevSta%x)
+            DEALLOCATE(elevSta%y)
+         CASE(62) 
+            DEALLOCATE(velSta%u_station_data)
+            DEALLOCATE(velSta%v_station_data)
+            DEALLOCATE(velSta%x)
+            DEALLOCATE(velSta%y)
+         CASE(71)
+            DEALLOCATE(prSta%station_data)
+            DEALLOCATE(prSta%x)
+            DEALLOCATE(prSta%y)
+         CASE(72) 
+            DEALLOCATE(wVelSta%u_station_data)
+            DEALLOCATE(wVelSta%v_station_data)
+            DEALLOCATE(wVelSta%x)
+            DEALLOCATE(wVelSta%y)
+         CASE(63)
+            DEALLOCATE(elev%nodal_data)
+            NULLIFY(elev%myMesh)
+         CASE(64) 
+            DEALLOCATE(currentVel%u_nodal_data)         
+            DEALLOCATE(currentVel%v_nodal_data)         
+            NULLIFY(currentVel%myMesh)
+         CASE(73)
+            DEALLOCATE(pr%nodal_data)         
+            NULLIFY(currentVel%myMesh)
+         CASE(74) 
+            DEALLOCATE(windVel%u_nodal_data)         
+            DEALLOCATE(windVel%v_nodal_data)         
+            NULLIFY(currentVel%myMesh)
+         CASE DEFAULT
+             WRITE(*,*) 'ERROR: No netCDF for this filetype.' 
+
+      END SELECT    
+C
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE freeNetCDFArrays
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   F R E E    N E T C D F   H O T S T A R T
+C-----------------------------------------------------------------------
+C     jgf49.43.05 Frees up memory that was allocated for netcdf 
+C     hotstart data.
+C-----------------------------------------------------------------------
+      SUBROUTINE freeNetCDFHotstart(lun)
+      USE GLOBAL, ONLY : IM, IMHS
+      USE HARM, ONLY : IHARIND, NHAGE, NHAGV, NHASE, NHASV, CHARMV
+      IMPLICIT NONE
+      INTEGER, intent(in) :: lun ! unit number of hotstart file (67 or 68)
+C
+      call setMessageSource("freeNetCDFHotstart")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
+C
+C     Point to the hotstart file we want to work on.
+      IF (lun.eq.67) THEN
+         hs => hs67
+      ELSE 
+         hs => hs68
+      ENDIF
+C
+C     nullify pointer to nodes and elements
+      NULLIFY(hs%myMesh)
+C     free up memory
+      DEALLOCATE(hs%myTime%timenc)
+C     Elev1
+      DEALLOCATE(hs%zeta1%nodal_data)
+C     Elev2
+      DEALLOCATE(hs%zeta2%nodal_data)
+C     EtaDisc
+      DEALLOCATE(hs%zetad%nodal_data)
+C     Vel
+      DEALLOCATE(hs%vel%u_nodal_data)
+      DEALLOCATE(hs%vel%v_nodal_data)
+C     CH1
+      IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
+         DEALLOCATE(hs%ch1%nodal_data)
+      ENDIF
+C     NodeCode 
+      DEALLOCATE(hs%nodecodenc%nodal_int)
+C     NOFF 
+      DEALLOCATE(hs%noffnc%nodal_int)
+C 
+C     Harmonic analysis
+      IF (IHARIND.eq.1) THEN
+C        full domain elevation load vector
+         IF (NHAGE.ne.0) THEN
+            DEALLOCATE(hs%gloelv%nodal_data)
+         ENDIF
+C        full domain velocity load vectors
+         IF (NHAGV.ne.0) THEN
+            DEALLOCATE(hs%glovellv%u_nodal_data)
+            DEALLOCATE(hs%glovellv%v_nodal_data)
+         ENDIF
+C        station elevation load vector
+         IF (NHASE.ne.0) THEN
+            DEALLOCATE(hs%staelv%station_data)
+         ENDIF
+C        station velocity load vectors
+         IF (NHASV.ne.0) THEN
+            DEALLOCATE(hs%stavellv%u_station_data)
+            DEALLOCATE(hs%stavellv%v_station_data)
+         ENDIF
+         IF (CHARMV.eqv..true.) THEN
+            IF (NHAGE.ne.0) THEN
+               DEALLOCATE(hs%elav%nodal_data)
+               DEALLOCATE(hs%elva%nodal_data)
+            ENDIF
+            IF (NHAGV.ne.0) THEN
+               DEALLOCATE(hs%xvelav%nodal_data)
+               DEALLOCATE(hs%yvelav%nodal_data)
+               DEALLOCATE(hs%xvelva%nodal_data)
+               DEALLOCATE(hs%yvelva%nodal_data)
+            ENDIF
+         ENDIF
+      ENDIF
+C
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE freeNetCDFHotstart
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   F R E E    N E T C D F   C O O R D  
+C-----------------------------------------------------------------------
+C     jgf49.43.05 Frees memory allocated for mesh and boundary data 
+C     in NetCDF files. 
+C-----------------------------------------------------------------------
+      SUBROUTINE freeNetCDFCoord()
+      IMPLICIT NONE
+C
+      call setMessageSource("freeNetCDFCoord.")
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
+C
+      IF (adcircMesh%initialized.eqv..true.) THEN
+         DEALLOCATE(adcircMesh%xnc)
+         DEALLOCATE(adcircMesh%ync)
+         DEALLOCATE(adcircMesh%nvdllnc)
+         DEALLOCATE(adcircMesh%ibtypeenc)
+         DEALLOCATE(adcircMesh%ibtypenc)
+         DEALLOCATE(adcircMesh%nvellnc)
+         DEALLOCATE(adcircMesh%nbdvnc)
+         DEALLOCATE(adcircMesh%nbvvnc)
+         DEALLOCATE(adcircMesh%element)
+         DEALLOCATE(adcircMesh%nmnc)
+         adcircMesh%initialized = .false.
+      ENDIF
+#ifdef NETCDF_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE freeNetCDFCoord
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------

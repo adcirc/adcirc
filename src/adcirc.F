@@ -77,8 +77,8 @@ C******************************************************************************
 C******************************************************************************
 C
       USE GLOBAL
-      USE GLOBAL_3DVS, ONLY : GORho, GORhoOAMB, AMB
-      USE HARM
+      USE GLOBAL_3DVS, ONLY : GORho, GORhoOAMB, AMB, 
+     &                        allocateFullDomain3DIOArrays
       USE VERSION
 #ifdef CMPI
       USE MESSENGER
@@ -98,6 +98,9 @@ C******************************************************************************
 C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
+      USE HARM, ONLY : allocateFullDomainHAIOArrays,
+     &                 initHarmonicParameters
+      IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: COMM
       CHARACTER(*), OPTIONAL :: ROOTD
@@ -107,6 +110,13 @@ C
       INTEGER NCELE          ! local node code indicator
       REAL(8) AreaEle
 C
+C
+C     jgf49.44: Initialize global logging.
+      call initLogging()
+      call setMessageSource("ADCIRC_Init")
+#ifdef ADCIRC_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
       IF (PRESENT(ROOTD)) THEN
         ROOTDIR = TRIM(ROOTD)
       ELSE
@@ -158,6 +168,20 @@ C...    writer processors will not execute the rest in this source file (adcirc.
       IF ((NSCREEN.NE.0).AND.(MYPROC.EQ.0)) THEN
          WRITE(ScreenUnit,'(a)')"ADCIRC Version is "//ADC_VERSION
       ENDIF
+
+      !jgf49.44: Allocate memory for reading and writing full domain arrays
+      IF ( (MNPROC.gt.1).and.
+     &        ( (myProc.eq.0)
+     &          .or.(READ_LOCAL_HOT_START_FILES.eqv..false.) ) ) THEN
+          CALL allocateFullDomainIOArrays()
+          CALL allocateFullDomainHAIOArrays()
+          IF (C3D) THEN
+             CALL allocateFullDomain3DIOArrays()
+          ENDIF
+      ENDIF
+
+      !jgf49.44: Initialize harmonic analysis parameters.
+      CALL initHarmonicParameters(IHOT)
 
 #ifdef CMACHSUN
       CALL ABRUPT_UNDERFLOW() ! Abrupt underflow for Sun computers
@@ -287,6 +311,10 @@ C...
 C
  1999 format(1X, a," ADCIRC Version: ",a)
 C
+#ifdef ADCIRC_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
       END SUBROUTINE ADCIRC_Init
 
@@ -304,6 +332,10 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
 C
       INTEGER, OPTIONAL :: NTIME_STP
 C
+      call setMessageSource("ADCIRC_Run")
+#ifdef ADCIRC_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_END = ITIME_BGN+NTIME_STP-1
       ENDIF 
@@ -326,6 +358,10 @@ C
         ITIME_BGN = ITIME_END+1
       ENDIF 
 C
+#ifdef ADCIRC_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
       END SUBROUTINE ADCIRC_Run
 
@@ -334,53 +370,23 @@ C******************************************************************************
 C*    ADCIRC finalize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Final(NO_MPI_FINALIZE)
+      USE HARM, ONLY : solveHarmonicAnalysis
 C
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
 C
       INTEGER :: I
 C
+      call setMessageSource("ADCIRC_Final")
+#ifdef ADCIRC_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
+C
 C...
 C...*************** SOLVE THE HARMONIC ANALYSIS PROBLEM ****************
 C...
-
-      IF ((IHARIND.EQ.1).AND.(ITIME.GT.ITHAS)) THEN
-
-C...Compute means and variances for checking the harmonic analysis results
-C...Accumulate mean and variance at each node.
-
-        if (CHARMV) then
-          IF (FMV.NE.0.) THEN
-            DO I=1,NP
-              ELAV(I)   = ELAV(I)/NTSTEPS
-              XVELAV(I) = XVELAV(I)/NTSTEPS
-              YVELAV(I) = YVELAV(I)/NTSTEPS
-              ELVA(I)   = ELVA(I)/NTSTEPS   - ELAV(I)*ELAV(I)
-              XVELVA(I) = XVELVA(I)/NTSTEPS - XVELAV(I)*XVELAV(I)
-              YVELVA(I) = YVELVA(I)/NTSTEPS - YVELAV(I)*YVELAV(I)
-              END DO
-            TIMEBEG=ITMV*DTDP + (STATIM-REFTIM)*86400.D0
-            OPEN(55,FILE=TRIM(LOCALDIR)//'/'//'fort.55')
-            WRITE(55,*) NP
-            ENDIF
-          ENDIF
-
-C......Fill out and decompose the LHS harmonic analaysis matrix
-
-        CALL FULSOL(0)
-
-C......Solve the harmonic analysis problem and write the output
-
-        IF(NHAGE.EQ.1) CALL LSQSOLEG(NP,LOCALDIR,ELAV,ELVA,CHARMV)
-C     
-        IF(NHAGV.EQ.1) CALL LSQSOLVG(NP,LOCALDIR,
-     &                          XVELAV,YVELAV,XVELVA,YVELVA,CHARMV)
+      CALL solveHarmonicAnalysis(ITIME)
+      CALL writeHarmonicAnalysisOutput()
 C
-        IF(NHASE.EQ.1) CALL LSQSOLES(NSTAE,LOCALDIR)
-C     
-        IF(NHASV.EQ.1) CALL LSQSOLVS(NSTAV,LOCALDIR)
-C
-        ENDIF
-
 #ifdef CMPI
       IF (PRESENT(NO_MPI_FINALIZE)) THEN
         CALL MSG_FINI(NO_MPI_FINALIZE)
@@ -389,6 +395,10 @@ C
       ENDIF
 #endif
 C
+#ifdef ADCIRC_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
       END SUBROUTINE ADCIRC_Final
 

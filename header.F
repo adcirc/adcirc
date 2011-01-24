@@ -3,13 +3,123 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
-C  v49.44    - 01/19/2011 - tcm -- For owiwind.F changed the way the header
-C              line of the file was read so that if changes in the text 
-C              portion occur in a file, these would not cause read failures.
-C              This line is an 80 character line with two 10 digit date
-C              fields which are the only data used off that line.  The first
-C              date field is contained in positions 56-65, and the second
-C              date field is in positions 71-80.
+C  v49.45   - 01/24/2011 - jgf - Merged harmio branch r527:556 to trunk. 
+C  v49.43.19  01/23/2011 - jgf - Finished code to globalize all 3D output
+C             files as well as code to write fulldomain 3D files in ascii
+C             format in serial and in parallel; fixed 3D output file 
+C             initializations in cstart.F and hstart.F so they work in
+C             parallel; corrected issues with reading 3D data from binary
+C             hotstart file in parallel and mapping to subdomains on the fly.
+C  v49.43.18  01/21/2011 - jgf - Added code to prep18 to write 3D station 
+C             mappings into fort.18 for 3D runs; added code to messenger.F
+C             and global_3dvs.F to read 3D station mappings from fort.18 for
+C             3D runs; rearranged code to write out 3D turbulence stations
+C             (fort.43) so that it is organized by output format; also added
+C             code to use the new mappings to globalize and write out
+C             the resulting fulldomain fort.43 files in ascii. 
+C  v49.43.17  01/19/2011 - jgf - Added globalization of 3D density (fort.44)
+C             and 3D velocity (fort.45) to write_output.F; also added code
+C             to write out these fulldomain 3D data in ascii; rearranged
+C             existing 3D output code so that it is organized according to
+C             output format. 
+C  v49.43.16  01/18/2011 - jgf - Added new globalio subroutines packNPbyM
+C             and unpackNPbyM for globalizing 3D output; made changes to
+C             enable globalization of fulldomain turbulence output file
+C             (fort.46). 
+C  v49.43.15  01/18/2011 - jgf - Corrected several issues revealed by internal
+C             testing of reading and writing harmonic analysis data in netcdf
+C             format.
+C  v49.43.14  01/15/2011 - jgf - Finished code for reading means and variance
+C             calculation data for harmonic analysis from netcdf hotstart file;
+C             code includes capability to read data in serial or in parallel
+C             (mapping to subdomains in parallel on the fly). 
+C  v49.43.13  01/14/2011 - jgf - Finished code for reading harmonic analysis
+C             data from netcdf hotstart file to continue harmonic analysis
+C             during the hotstarted run; code includes capability to read
+C             in h.a. data in in parallel as well as serial.
+C  v49.43.12  01/12/2011 - jgf - Made adcprep reliant on harm.F for harmonic
+C             variables; made adcprep reliant on global.F for station names;
+C             completed changes to netcdfio.F and adcprep to allow harmonic
+C             data to be written to hotstart files in parallel. 
+C  v49.43.11  01/10/2011 - jgf - Added code to netcdf module to reduce the
+C             size of the 2D matrix that holds the boundary type arrays
+C             so that they are dimensioned by (nope,max(nvdll)) and 
+C             (nbou,max(nvell)).
+C  v49.43.10  01/09/2011 - jgf - Fixed initialization issues that were 
+C             preventing log and console messages from showing up during
+C             adcprep; straightened out initialization of mesh boundaries
+C             in netcdf to fix seg fault issue during adcprep of sl16 grid;
+C             added a few missing calls to check_err in netcdf.
+C  v49.43.09  12/24/2010 - jgf - Fixed issue in prep.F/prepnetcdf() that 
+C             caused compilation with netcdf to fail.
+C  v49.43.08  12/23/2010 - jgf - Fixed issue where netcdf harmonic analysis
+C             hotstart data were not being initialized in write_output.F;
+C             added icha parameter to netcdf harmonic analysis hotstart file.
+C  v49.43.07  12/22/2010 - jgf - Fixed numerous small issues in netcdf 
+C             module that were preventing it from writing harmonic analysis
+C             load vectors to netcdf hotstart files.
+C  v49.43.06  12/21/2010 - jgf - Corrected issue with initialization of netcdf
+C             mesh data for hotstart file; added check for NHSTAR=3 before
+C             initializing netcdf hotstart file; forced a rewrite of the
+C             netcdf hotstart file each time it is called to write; moved
+C             initialization of netcdf element data to initNetCDFCoord().
+C  v49.43.05  12/21/2010 - jgf - Added subroutines to netcdf module to 
+C             free memory that was allocated for writing netcdf data; added
+C             subroutine calls to prep.F to free memory from netcdf module
+C             once the data had been written; added initialization to
+C             screenUnit i/o parameter in adcprep which corrected a memory
+C             fault issue that occurred when using netcdf; moved call to
+C             prepNetCDF() to just before the call to DECOMP() in adcprep. 
+C  v49.43.04  12/21/2010 - jgf - Added code to reduce memory use of netcdf
+C             module by only retaining a single copy of the mesh and its 
+C             boundaries in memory and reusing it for each netcdf output file; 
+C             added new data types for storing harmonic station data 
+C             as well as fulldomain harmonic data to netcdf files; added 
+C             new variables, metadata, and subroutines for storing harmonic
+C             analysis load vectors to netcdf output files; added subroutine
+C             calls for tracing progress of subroutine calls to netcdf 
+C             module.
+C  v49.43.03  12/09/2010 - jgf - Added code to write out means and variance
+C             calculation results for harmonic analysis to full domain output
+C             file in parallel; fixed issues in globalio for new packMbyNP;
+C             fixed issues in output data descriptors for harmonic data;
+C             added general subroutines for writing log and screen messages 
+C             to aid in debugging; fixed descrepancies between reading
+C             and writing of binary hotstart file.  
+C  v49.43.02  12/08/2010 - jgf - Added new subroutines to write_output.F
+C             to write harmonic analysis data to full domain output files
+C             in parallel; finished separating harmonic analysis solution
+C             from writing harmonic analysis output files.
+C  v49.43.01  11/30/2010 - jgf - Preserved the reading of local hotstart
+C             files as an option, but made the reading of fulldomain hotstart
+C             files the default. Made changes to enable reading of harmonic
+C             analysis hotstart data and 3D hotstart data from fulldomain
+C             hotstart file in parallel by mapping the nodal data from 
+C             fulldomain to subdomain on each PE on the fly. Made changes
+C             to globalio by adding new subroutines that can globalize harmonic
+C             analysis data and 3D data. Reorganized harmonic analysis module
+C             in the following ways: (1) moved variables from global.F to 
+C             harm.F if they pertained only to harmonic analysis; (2) separated
+C             reading from initialization when harmonic analysis hotstart 
+C             file is read; (3) separated solution from writing when harmonic
+C             analysis data is written to output; (4) moved code that updates
+C             load vectors from timestep.F to harm.F; (5) moved code that 
+C             calls various subroutines to solve harmonic analysis at end of
+C             a run from adcirc.F to harm.F. Added new code to 
+C             write_output.F to write globalized harmonic analysis data to 
+C             fulldomain hotstart file. Added subroutines to global.F
+C             to streamline reading of hotstart arrays from binary files.
+C             Removed subroutines from globalio.F that were not called 
+C             from anywhere. Made canopy coefficient default to 1 in nodal
+C             attributes. Added fix for case where NRAMP is 1 but DRAMP is 0.
+C             Updated hot2asc to read harmonic analysis data. 
+C  v49.44   - 01/19/2011 - tcm -- For owiwind.F changed the way the header
+C             line of the file was read so that if changes in the text 
+C             portion occur in a file, these would not cause read failures.
+C             This line is an 80 character line with two 10 digit date
+C             fields which are the only data used off that line.  The first
+C             date field is contained in positions 56-65, and the second
+C             date field is in positions 71-80.
 C  v49.43   - 11/05/2010 - jgf - Removed netcdf remnants from hotlocalize
 C             in prep.F and corrected a seg fault bug in hotlocalize caused
 C             by six-digit IM values.

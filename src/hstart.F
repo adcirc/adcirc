@@ -37,20 +37,25 @@ C
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT,
      &    qsurf, NFEN, DUU, DUV, DVV, UU, VV, BSX, BSY, Q, WZ, q20, l, 
      &    SigT, Sal, Temp, N3DSD, I3DSDRec, N3DSV, I3DSVRec, N3DST,
-     &    I3DSTRec, N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec
+     &    I3DSTRec, N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec,
+     &    DUU_g, DUV_g, DVV_g, UU_g, VV_g, BSX_g, BSY_g, Q_g, WZ_g,
+     &    q20_g, l_g, SigT_g, Sal_g, Temp_g, iy
 C
       USE SIZES
-      USE HARM
+      USE HARM, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV,
+     &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
+     &                 checkHAHotstart
       USE WIND
       USE OWIWIND,ONLY : NWS12INIT,NWS12GET   ! sb46.28sb01 added 09/xx/2006
       USE RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
-C   Start Addition for netCDF by MCF 5/18/08
+C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 #ifdef NETCDF
-      USE NETCDFIO, ONLY : readNetCDFHotstart
+      USE NETCDFIO, ONLY : readNetCDFHotstart,
+     &                     readNetCDFHotstartHarmonic,
+     &                     readNetCDFHotstartHarmonicMeansVariances
 #endif
-C   End Addition for netCDF by MCF 5/18/08
       USE NodalAttributes, ONLY : 
-     &     nolibf, nwp, tau0, cf, eslm,                       ! for netcdf
+     &     nolibf, nwp, tau0, cf, eslm,            
      &     LoadDirEffRLen,
      &     ApplyDirectionalWindReduction,
      &     OutputTau0 !jgf47.06
@@ -102,8 +107,8 @@ C     if they are available
       CHARACTER(len=80) skipline ! dummy variable for min/max header data
       INTEGER numLinesInMinMaxFile ! count the lines to report to log file
       LOGICAL tooFewMinMaxLines  ! true if couldn't read enough lines from file
-
-C   kmd48.33bc - add variables for heat flux 
+C
+C     kmd48.33bc - add variables for heat flux 
       INTEGER :: NOD
       REAL(SZ),ALLOCATABLE :: TMP(:,:)
       REAL(SZ) :: CD, CDQ, QWIND
@@ -111,13 +116,24 @@ C   kmd48.33bc - add variables for heat flux
       REAL(SZ), PARAMETER :: RHOAIR=1.225d0
       REAL(SZ) :: RNDAYHS
       REAL(SZ),ALLOCATABLE :: RealQ_Tmp(:,:)
+      REAL(SZ),ALLOCATABLE :: ImQ_Tmp(:,:)
       INTEGER :: IDenHS
-      REAL(SZ) :: ImaginaryPartOfQ
+C
+C     jgf49.44: Add variables for reading fulldomain binary hotstart file 
+C     in parallel. 
+      INTEGER subdomainNode  ! subdomain node number to map fulldomain data to
+      INTEGER fulldomainNode ! fulldomain node number from hotstart file   
+      INTEGER subdomainElement ! subdomain element num to map fulldoman data to
+      INTEGER fulldomainElement ! fulldomain element number from hotstart file
+C
+      call setMessageSource("hotstart")
+#ifdef HOTSTART_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
 C
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
 C
-      useNetCDF = .FALSE.
 C     -----------------------------------
 C
 C     R E A D   H O T S T A R T   F I L E
@@ -128,6 +144,7 @@ C     the file as well as the file name.
       SELECT CASE(IHOT)
 
       CASE(67,68) ! non-portable binary file format
+
 C...  
 C...     READ IN 2DDI HOT START INITIAL CONDITION OVER WHOLE DOMAIN
 C...     THIS FILE ALWAYS HAS A RECL=8 BECAUSE IT IS ASSUMED THAT THE HARMONIC
@@ -140,9 +157,16 @@ C        Determine if the hot start file exists.
          ELSE
             hsfn = "fort.68"
          ENDIF
-         INQUIRE(FILE=TRIM(INPUTDIR)//'/'//hsfn,
-     &      EXIST=fileFound)
- 
+         IF ((MNPROC.eq.1).or.
+     &       (READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+            INQUIRE(FILE=TRIM(INPUTDIR)//'/'//hsfn,
+     &         EXIST=fileFound)
+         ELSE
+            ! look for fulldomain hotstart file
+            INQUIRE(FILE=TRIM(GBLINPUTDIR)//'/'//hsfn,
+     &         EXIST=fileFound)
+         ENDIF
+C 
          IF (fileFound.eqv..false.) THEN
             WRITE(16,1001)         ! hot start file  
             WRITE(16,1011)         ! was not found.
@@ -161,8 +185,16 @@ C        start reading binary hot start file
          WRITE(16,240) 
  240     FORMAT(/,9X,'Hot start file was found.',
      &     ' Opening file.') 
-         OPEN(IHOT,FILE=TRIM(INPUTDIR)//'/'//hsfn,
-     &        ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO)
+
+         IF ((MNPROC.eq.1).or.
+     &       (READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+            OPEN(IHOT,FILE=TRIM(INPUTDIR)//'/'//hsfn,ACTION='READ',
+     &            ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO,STATUS='OLD')
+         ELSE
+            ! fulldomain hotstart file
+            OPEN(IHOT,FILE=TRIM(GBLINPUTDIR)//'/'//hsfn,ACTION='READ',
+     &            ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO,STATUS='OLD')
+         ENDIF
 
          IF (ErrorIO.GT.0) THEN 
             WRITE(16,1001)         ! hot start file
@@ -212,33 +244,49 @@ C        Now read the non-portable binary hot start file.
          READ(IHOT,REC=IHOTSTP) NP_A_IN      ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NE_A_IN      ; IHOTSTP = IHOTSTP + 1
 C      
-         DO I=1, NP
-            READ(IHOT,REC=IHOTSTP) ETA1(I)   ; IHOTSTP = IHOTSTP + 1
-         END DO
-         DO I=1, NP
-            READ(IHOT,REC=IHOTSTP) ETA2(I)   ; IHOTSTP = IHOTSTP + 1
-         END DO
-C        jgf46.34 Added support for IBTYPE=52.
-         DO I=1, NP
-            READ(IHOT,REC=IHOTSTP) EtaDisc(I); IHOTSTP = IHOTSTP + 1
-         END DO
-         DO I=1, NP
-            READ(IHOT,REC=IHOTSTP) UU2(I)    ; IHOTSTP = IHOTSTP + 1
-         END DO
-         DO I=1, NP
-            READ(IHOT,REC=IHOTSTP) VV2(I)    ; IHOTSTP = IHOTSTP + 1
-         END DO
-         IF(IMHS.EQ.10) THEN
-           DO I=1, NP
-              READ(IHOT,REC=IHOTSTP) CH1(I)  ; IHOTSTP = IHOTSTP + 1
-           END DO
+         IF ((MNPROC.eq.1)
+     &        .or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+            CALL binaryRead2D(ETA1, NP, IHOT, IHOTSTP)
+            CALL binaryRead2D(ETA2, NP, IHOT, IHOTSTP)
+C           jgf46.34 Added support for IBTYPE=52.
+            CALL binaryRead2D(EtaDisc, NP, IHOT, IHOTSTP)
+            CALL binaryRead2D(UU2, NP, IHOT, IHOTSTP)
+            CALL binaryRead2D(VV2, NP, IHOT, IHOTSTP)
+            IF(IMHS.EQ.10) THEN
+               CALL binaryRead2D(CH1, NP, IHOT, IHOTSTP)
+            ENDIF
+            CALL binaryIntRead2D(NNODECODE, NP, IHOT, IHOTSTP)
+            CALL binaryIntRead2D(NOFF, NE, IHOT, IHOTSTP)
+         ELSE
+C           jgf49.44: Add capability to read fulldomain binary hotstart
+C           file in parallel.
+            CALL binaryRead2D(ETA1_g, NP_G, IHOT, IHOTSTP)
+            CALL binaryRead2D(ETA2_g, NP_G, IHOT, IHOTSTP)
+C           jgf46.34 Added support for IBTYPE=52.
+            CALL binaryRead2D(EtaDisc_g, NP_G, IHOT, IHOTSTP)
+            CALL binaryRead2D(UU2_g, NP_G, IHOT, IHOTSTP)
+            CALL binaryRead2D(VV2_g, NP_G, IHOT, IHOTSTP)
+            IF(IMHS.EQ.10) THEN
+               CALL binaryRead2D(CH1_g, NP_G, IHOT, IHOTSTP)
+            ENDIF
+            CALL binaryIntRead2D(NNODECODE_g, NP_G, IHOT, IHOTSTP)
+            CALL binaryIntRead2D(NOFF_g, NE_G, IHOT, IHOTSTP)
+            ! map 2D data from fulldomain to subdomain
+            DO subdomainNode=1,NP
+               fulldomainNode = ABS(NODES_LG(subdomainNode))
+               ETA1(subdomainNode)=ETA1_g(fulldomainNode)
+               ETA2(subdomainNode)=ETA2_g(fulldomainNode)
+               EtaDisc(subdomainNode)=EtaDisc_g(fulldomainNode)
+               UU2(subdomainNode)=UU2_g(fulldomainNode)
+               VV2(subdomainNode)=VV2_g(fulldomainNode)
+               IF (IMHS.eq.10) CH1(subdomainNode)=CH1_g(fulldomainNode)
+               NNODECODE(subdomainNode)=NNODECODE_g(fulldomainNode)
+            ENDDO
+            DO subdomainElement=1,NE
+               fulldomainElement = ABS(IMAP_EL_LG(subdomainElement))
+               NOFF(subdomainElement) = NOFF_g(fulldomainElement)
+            ENDDO
          ENDIF
-         DO I=1, NP
-            READ(IHOT,REC=IHOTSTP) NNODECODE(I)  ; IHOTSTP = IHOTSTP + 1
-         END DO
-         DO I=1,NE
-            READ(IHOT,REC=IHOTSTP) NOFF(I)       ; IHOTSTP = IHOTSTP + 1
-         END DO
 C
          READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
@@ -259,10 +307,9 @@ C
          READ(IHOT,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
          !
-         ! Read 3D data from binary hotstart file if this is a 3D run
+         !     R E A D   3 D   H O T S T A R T   D A T A  
+         !
          IF (C3D) THEN
-C           kmd48.33bc - allocate realQ_tmp
-            ALLOCATE(RealQ_Tmp(NP,NFEN) )
             READ(IHOT,REC=IHOTSTP) IDenHS
             IHOTSTP=IHOTSTP+1
             !3D station density output time counter
@@ -293,134 +340,144 @@ C           kmd48.33bc - allocate realQ_tmp
             READ(IHOT,REC=IHOTSTP) I3DGTRec
             IHOTSTP=IHOTSTP+1
 C           kmd48.33bc - changed to the format used with the global IO
-            DO NH=1,NP
-               READ(IHOT,REC=IHOTSTP) DUU(NH)
-               IHOTSTP=IHOTSTP+1
-            END DO
-            DO NH=1,NP
-               READ(IHOT,REC=IHOTSTP) DUV(NH)
-               IHOTSTP=IHOTSTP+1
-            END DO
-            DO NH=1,NP
-               READ(IHOT,REC=IHOTSTP) DVV(NH)
-               IHOTSTP=IHOTSTP+1
-            END DO
-            DO NH=1,NP
-               READ(IHOT,REC=IHOTSTP) UU(NH)
-               IHOTSTP=IHOTSTP+1
-            END DO
-            DO NH=1,NP
-               READ(IHOT,REC=IHOTSTP) VV(NH)
-               IHOTSTP=IHOTSTP+1
-            END DO
-            DO NH=1,NP
-               READ(IHOT,REC=IHOTSTP) BSX(NH)
-               IHOTSTP=IHOTSTP+1
-               IF((MYPROC.EQ.23).AND.(NH.EQ.15784)) THEN
-                  PRINT *, "BSX(346561) = ", BSX(15784)
+            IF ((MNPROC.eq.1)
+     &           .or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+               CALL binaryRead2D(DUU, NP, IHOT, IHOTSTP)
+               CALL binaryRead2D(DUV, NP, IHOT, IHOTSTP)
+               CALL binaryRead2D(DVV, NP, IHOT, IHOTSTP)
+               CALL binaryRead2D(UU, NP, IHOT, IHOTSTP)
+               CALL binaryRead2D(VV, NP, IHOT, IHOTSTP)
+               CALL binaryRead2D(BSX, NP, IHOT, IHOTSTP)
+               CALL binaryRead2D(BSY, NP, IHOT, IHOTSTP)
+C              kmd48.33bc - allocate realQ_tmp
+               ALLOCATE(RealQ_Tmp(NP,NFEN))
+               ALLOCATE(ImQ_Tmp(NP,NFEN))
+C              kmd48.33bc - changed to format used in global IO, layer output
+               CALL binaryRead3D(RealQ_Tmp, NP, NFEN, IHOT, IHOTSTP)
+               CALL binaryRead3D(ImQ_Tmp, NP, NFEN, IHOT, IHOTSTP)
+               Q = RealQ_Tmp + iy*ImQ_Tmp ! reconstruct Q matrix from parts
+               CALL binaryRead3D(WZ, NP, NFEN, IHOT, IHOTSTP)
+               CALL binaryRead3D(q20, NP, NFEN, IHOT, IHOTSTP)
+               CALL binaryRead3D(l, NP, NFEN, IHOT, IHOTSTP)
+C              kmd48.33bc - need to determine if IDEN parameter in hotstart
+C              is different than IDEN from fort.15 file. If so, determine which
+C              one should be used in the simulation. 
+               IF (MYPROC.EQ.0) THEN
+                  PRINT *, "IDEN = ", IDEN
+                  PRINT *, "IDENHS = ", IDENHS
                END IF
-            END DO
-            DO NH=1,NP
-               READ(IHOT,REC=IHOTSTP) BSY(NH)
-               IHOTSTP=IHOTSTP+1
-               IF((MYPROC.EQ.23).AND.(NH.EQ.15784)) THEN
-                  PRINT *, "BSY(346561) = ", BSY(15784)
-               END IF
-            ENDDO
-C           kmd48.33bc - changed to format used in global IO, layer output
-            DO N=1,NFEN
-               DO NH=1,NP
-                  READ(IHOT,REC=IHOTSTP) RealQ_Tmp(NH,N)
-                  IHOTSTP=IHOTSTP+1
-                  IF((MYPROC.EQ.23).AND.(NH.EQ.15785)) THEN
-                     PRINT *,"RealQ_Tmp(346562,1) = ",RealQ_Tmp(15785,1)
+               IF (IDenHS.NE.IDEN) THEN
+                  IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GE.1)) THEN
+                     ! IDEN value from fort.15 should be used 
+                  ELSE IF ((CBAROCLINIC).AND.(RES_BC_FLAG.LE.0)) THEN
+                     IDEN=IDenHS
                   END IF
-               END DO
-            END DO
-            DO N=1,NFEN
-               DO NH=1,NP
-                  READ(IHOT,REC=IHOTSTP) ImaginaryPartOfQ
-                  IHOTSTP=IHOTSTP+1
-                  Q(NH,N) = RealQ_Tmp(NH,N) + I*ImaginaryPartOfQ
-               END DO
-            END DO
-            DO N=1,NFEN
-               DO NH=1,NP
-                  READ(IHOT,REC=IHOTSTP) WZ(NH,N)
-                  IHOTSTP=IHOTSTP+1
-               END DO
-            END DO
-            DO N=1,NFEN
-               DO NH=1,NP
-                  READ(IHOT,REC=IHOTSTP) q20(NH,N)
-                  IHOTSTP=IHOTSTP+1
-               END DO
-            END DO
-            DO N=1,NFEN
-               DO NH=1,NP
-                  READ(IHOT,REC=IHOTSTP) l(NH,N)
-                  IHOTSTP=IHOTSTP+1
-               END DO
-            END DO
-C           kmd48.33bc - need to determine if IDEN parameter in hotstart
-C           is different than IDEN from fort.15 file. If so, determine which
-C           one should be used in the simulation. 
-            IF (MYPROC.EQ.0) THEN
-               PRINT *, "IDEN = ", IDEN
-               PRINT *, "IDENHS = ", IDENHS
-            END IF
-            IF (IDenHS.NE.IDEN) THEN
-               IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GE.1)) THEN
-                  ! IDEN value from fort.15 should be used 
-               ELSE IF ((CBAROCLINIC).AND.(RES_BC_FLAG.LE.0)) THEN
-                  IDEN=IDenHS
                END IF
-            END IF
-            IF(ABS(IDen).EQ.1) THEN
-               DO N=1,NFEN
-                  DO NH=1,NP
-                     READ(IHOT,REC=IHOTSTP) SigT(NH,N)
-                     IHOTSTP=IHOTSTP+1
-                  END DO
-               END DO
-            ENDIF
-            IF(ABS(IDen).EQ.2) THEN
-               DO N=1,NFEN
-                  DO NH=1,NP
-                     READ(IHOT,REC=IHOTSTP) Sal(NH,N)
-                     IHOTSTP=IHOTSTP+1
-                  END DO
-               END DO
-            ENDIF
-            IF(ABS(IDen).EQ.3) THEN
-               DO N=1,NFEN
-                  DO NH=1,NP
-                     READ(IHOT,REC=IHOTSTP) Temp(NH,N)
-                     IHOTSTP=IHOTSTP+1
-                  END DO
-               END DO
-            ENDIF
-            IF(ABS(IDen).EQ.4) THEN
-               DO N=1,NFEN
-                  DO NH=1,NP
-                     READ(IHOT,REC=IHOTSTP) Sal(NH,N)
-                     IHOTSTP=IHOTSTP+1
-                     IF((MYPROC.EQ.23).AND.(NH.EQ.15785)) THEN
-                        PRINT *, "Sal(346562,1) = ", Sal(15785,1)
-                     END IF
-                  END DO
-               END DO
-               DO N=1,NFEN
-                  DO NH=1,NP
-                     READ(IHOT,REC=IHOTSTP) Temp(NH,N)
-                     IHOTSTP=IHOTSTP+1
-                     IF((MYPROC.EQ.23).AND.(NH.EQ.15785)) THEN
-                        PRINT *, "Temp(346562,1) = ", Temp(15785,1)
-                     END IF
-                  ENDDO
+               SELECT CASE(ABS(IDen))
+               CASE(0)
+                  CALL logMessage(INFO,
+     &             "IDEN=0; This is a barotropic model run.")
+               CASE(1)
+                  CALL binaryRead3D(SigT, NP, NFEN, IHOT, IHOTSTP)
+               CASE(2)
+                  CALL binaryRead3D(Sal, NP, NFEN, IHOT, IHOTSTP)
+               CASE(3)
+                  CALL binaryRead3D(Temp, NP, NFEN, IHOT, IHOTSTP)
+               CASE(4)
+                  CALL binaryRead3D(Sal, NP, NFEN, IHOT, IHOTSTP)
+                  CALL binaryRead3D(Temp, NP, NFEN, IHOT, IHOTSTP)
+               CASE DEFAULT
+                  ! should not happen
+                  WRITE(scratchMessage,12) IDEN
+                  CALL allMessage(ERROR,scratchMessage)
+12                FORMAT("IDEN is ",I2,
+     &                " but the valid range is +/- 0 to 4.")
+               END SELECT
+               DEALLOCATE(RealQ_Tmp,ImQ_Tmp)
+C           jgf49.44: Added capability to read fulldomain 3D hotstart
+C           data in parallel.
+            ELSE
+               CALL binaryRead2D(DUU_G, NP_G, IHOT, IHOTSTP)
+               CALL binaryRead2D(DUV_G, NP_G, IHOT, IHOTSTP)
+               CALL binaryRead2D(DVV_G, NP_G, IHOT, IHOTSTP)
+               CALL binaryRead2D(UU_G, NP_G, IHOT, IHOTSTP)
+               CALL binaryRead2D(VV_G, NP_G, IHOT, IHOTSTP)
+               CALL binaryRead2D(BSX_G, NP_G, IHOT, IHOTSTP)
+               CALL binaryRead2D(BSY_G, NP_G, IHOT, IHOTSTP)
+               ALLOCATE(RealQ_Tmp(NP_G,NFEN))
+               ALLOCATE(ImQ_Tmp(NP_G,NFEN))
+               CALL binaryRead3D(RealQ_Tmp, NP_G, NFEN, IHOT, IHOTSTP)
+               CALL binaryRead3D(ImQ_Tmp, NP_G, NFEN, IHOT, IHOTSTP)
+               Q_g = RealQ_Tmp + iy*ImQ_Tmp  ! reconstruct Q_g matrix from parts
+               CALL binaryRead3D(WZ_g, NP_G, NFEN, IHOT, IHOTSTP)
+               CALL binaryRead3D(q20_g, NP_G, NFEN, IHOT, IHOTSTP)
+               CALL binaryRead3D(l_g, NP_G, NFEN, IHOT, IHOTSTP)
+C              kmd48.33bc - need to determine if IDEN parameter in hotstart
+C              is different than IDEN from fort.15 file. If so, determine which
+C              one should be used in the simulation. 
+               IF (MYPROC.EQ.0) THEN
+                  PRINT *, "IDEN = ", IDEN
+                  PRINT *, "IDENHS = ", IDENHS
+               END IF
+               IF (IDenHS.NE.IDEN) THEN
+                  IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GE.1)) THEN
+                     ! IDEN value from fort.15 should be used 
+                  ELSE IF ((CBAROCLINIC).AND.(RES_BC_FLAG.LE.0)) THEN
+                     IDEN=IDenHS
+                  END IF
+               END IF
+               SELECT CASE(ABS(IDen))
+               CASE(0) 
+                  CALL logMessage(INFO,
+     &             "IDEN=0; This is a barotropic model run.")
+               CASE(1)
+                  CALL binaryRead3D(SigT_g, NP_G, NFEN, IHOT, IHOTSTP)
+               CASE(2)
+                  CALL binaryRead3D(Sal_g, NP_G, NFEN, IHOT, IHOTSTP)
+               CASE(3)
+                  CALL binaryRead3D(Temp_g, NP_G, NFEN, IHOT, IHOTSTP)
+               CASE(4)
+                  CALL binaryRead3D(Sal_g, NP_G, NFEN, IHOT, IHOTSTP)
+                  CALL binaryRead3D(Temp_g, NP_G, NFEN, IHOT, IHOTSTP)
+               CASE DEFAULT
+                  ! should not happen
+                  write(*,*) "ERROR: IDEN is ",IDEN,
+     &                " but the valid range is +/- 1 to 4."
+               END SELECT
+               ! jgf49.44: map data from fulldomain to subdomain in parallel
+               DO subdomainNode=1,NP
+                  fulldomainNode = ABS(NODES_LG(subdomainNode))
+                  DUU(subdomainNode)=DUU_g(fulldomainNode)
+                  DUV(subdomainNode)=DUV_g(fulldomainNode)
+                  DVV(subdomainNode)=DVV_g(fulldomainNode)
+                  UU(subdomainNode)=UU_g(fulldomainNode)
+                  VV(subdomainNode)=VV_g(fulldomainNode)
+                  BSX(subdomainNode)=BSX_g(fulldomainNode)
+                  BSY(subdomainNode)=BSY_g(fulldomainNode)
                ENDDO
-            END IF
-            DEALLOCATE(RealQ_Tmp)
+               ! jgf49.44: map 3D arrays to subdomains in parallel
+               DO N=1,NFEN
+                  DO subdomainNode=1,NP
+                     fulldomainNode = ABS(NODES_LG(subdomainNode))
+                     Q(subdomainNode,N)=Q_g(fulldomainNode,N)
+                     WZ(subdomainNode,N)=WZ_g(fulldomainNode,N)
+                     q20(subdomainNode,N)=q20_g(fulldomainNode,N)
+                     l(subdomainNode,N)=l_g(fulldomainNode,N)
+                     SELECT CASE(ABS(IDen))
+                     CASE(1)
+                        SigT(subdomainNode,N)=SigT_g(fulldomainNode,N)
+                     CASE(2)
+                        Sal(subdomainNode,N)=Sal_g(fulldomainNode,N)   
+                     CASE(3)
+                        Temp(subdomainNode,N)=Temp_g(fulldomainNode,N)
+                     CASE(4)
+                        Sal(subdomainNode,N)=Sal_g(fulldomainNode,N)   
+                        Temp(subdomainNode,N)=Temp_g(fulldomainNode,N)
+                     END SELECT
+                  END DO
+               END DO
+               DEALLOCATE(RealQ_Tmp,ImQ_Tmp)
+            ENDIF ! read fulldomain 3D hotstart data in parallel
          ENDIF  ! C3D
 C...
 C......  HOT START INFORMATION FOR HARMONIC ANALYSIS
@@ -432,48 +489,12 @@ C........   IF HARMONIC ANALYSIS HAS ALREADY BEGUN, READ IN HOT START
 C........   HARMONIC ANALYSIS, MEAN AND SQUARE INFO
 C...
             IF(ITHS.GT.ITHAS) THEN
-               READ(IHOT,REC=IHOTSTP) ICHA ; IHOTSTP = IHOTSTP + 1
+               READ(IHOT,REC=IHOTSTP) ICHA 
             ENDIF
             IF(ITHS.GE.IHABEG) THEN
-               !jgf49.38: TODO: The HAHOTS subroutine mingles reading
-               ! with initialization ... these will have to be separated
-               ! to enable harmonic analysis data to be stored in other
-               ! file formats (e.g., netcdf).
-               CALL HAHOTS(NSTAE,NSTAV,NP,NHASE,NHASV,NHAGE,NHAGV,
-     &             NSCREEN,ScreenUnit,IHOTSTP,IHOT,MYPROC)
-               IF(NHASE.EQ.1) CALL HAHOTSES(NSTAE,IHOTSTP,IHOT)
-               IF(NHASV.EQ.1) CALL HAHOTSVS(NSTAV,IHOTSTP,IHOT)
-               IF(NHAGE.EQ.1) CALL HAHOTSEG(NP,IHOTSTP,IHOT)
-               IF(NHAGV.EQ.1) CALL HAHOTSVG(NP,IHOTSTP,IHOT)
+               CALL readBinaryHAHotstart(IHOT, IHOTSTP)
             ENDIF
-
-C..         Read in Means and Squares
-            IF(CHARMV.eqv..true.) THEN
-               IF((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN
-                  READ(IHOT,REC=IHOTSTP) NTSTEPS ; IHOTSTP = IHOTSTP + 1
-                  IF(NHAGE.EQ.1) THEN
-                     DO I=1,NP
-                        READ(IHOT,REC=IHOTSTP) ELAV(I) 
-                        IHOTSTP = IHOTSTP + 1
-                        READ(IHOT,REC=IHOTSTP) ELVA(I) 
-                        IHOTSTP = IHOTSTP + 1
-                     ENDDO
-                  ENDIF
-                  IF(NHAGV.EQ.1) THEN
-                     DO I=1,NP
-                        READ(IHOT,REC=IHOTSTP) XVELAV(I) 
-                        IHOTSTP = IHOTSTP+1
-                        READ(IHOT,REC=IHOTSTP) YVELAV(I) 
-                        IHOTSTP = IHOTSTP+1
-                        READ(IHOT,REC=IHOTSTP) XVELVA(I) 
-                        IHOTSTP = IHOTSTP+1
-                        READ(IHOT,REC=IHOTSTP) YVELVA(I) 
-                        IHOTSTP = IHOTSTP+1
-                     ENDDO
-                  ENDIF
-               ENDIF
-            ENDIF   !  charmv
-         ENDIF    !HARIND
+         ENDIF    !IHARIND
          CLOSE(IHOT)  ! close non-portable binary hotstart file
 C
 C
@@ -481,10 +502,12 @@ C
          ! jgf49.38: TODO: The NetCDF hotstart file does not
          ! support 3D or harmonic analysis data yet.
 #ifdef NETCDF
-         IF (IHOT.eq.367) THEN
-            CALL readNetCDFHotstart(67) 
-         ELSE 
-            CALL readNetCDFHotstart(68) 
+         CALL readNetCDFHotstart(IHOT-300) 
+         IF (ITHS.gt.ITHAS) THEN
+            CALL readNetCDFHotstartHarmonic(IHOT-300)
+            IF (CHARMV.eqv..true.) THEN
+               CALL readNetCDFHotstartHarmonicMeansVariances(IHOT-300)
+            ENDIF
          ENDIF
 #endif
 C
@@ -500,6 +523,12 @@ C
 #endif
          STOP
       END SELECT
+C
+C     Compare the harmonic analysis data read in from the hotstart file
+C     with data from the fort.15 file to be sure that they are consistent.
+      IF(ITHS.GE.IHABEG) THEN
+         CALL checkHAHotstart()
+      ENDIF
 
 C     ---------------------------------------------
 C
@@ -531,42 +560,6 @@ C     kmd48.33bc - implemented a varying Dt for 3D baroclinic
 C     kmd48.33bc - added time and time step to be passed to the hotstart file
       IF(C3D) THEN
         CALL HOTSTART_3D(TIME,ITHS)
-      ENDIF
-C...
-C.....IF HARMONIC ANALYSIS WAS REQUESTED BUT HAS NOT STARTED, SET UP
-C     THE HARMONIC ANALYSIS
-C
-C     jgf49.38: TODO: Initialization the harmonic analysis in-progress was
-C     performed during the reading of harmonic analysis section of the
-C     binary hotstart file.
-C...
-      IF(IHARIND.EQ.1) THEN
-        IHABEG=ITHAS+NHAINC
-         IF(ITHS.LT.IHABEG) THEN
-            ICHA=0
-            CALL HACOLDS(HAFREQ)
-            IF(NHASE.EQ.1) CALL HACOLDSES(NSTAE)
-            IF(NHASV.EQ.1) CALL HACOLDSVS(NSTAV)
-            IF(NHAGE.EQ.1) CALL HACOLDSEG(NP)
-            IF(NHAGV.EQ.1) CALL HACOLDSVG(NP)
-            IF (CHARMV) THEN
-               DO I=1,NP
-                  ELAV(I)=0.D0
-                  XVELAV(I)=0.D0
-                  YVELAV(I)=0.D0
-                  ELVA(I)=0.D0
-                  XVELVA(I)=0.D0
-                  YVELVA(I)=0.D0
-               END DO
-            ENDIF   !   charmv
-         ENDIF
-      ENDIF
-C
-      IF (  (ABS(NOUTE).EQ.3).OR.(ABS(NOUTV).EQ.3).OR. 
-     &      (ABS(NOUTM).EQ.3).OR.(ABS(NOUTC).EQ.3).OR. 
-     &       (ABS(NOUTGE).EQ.3).OR.(ABS(NOUTV).EQ.3).OR.
-     &       (ABS(NOUTGC).EQ.3).OR.(ABS(NOUTGW).EQ.3)) THEN
-         useNetCDF = .TRUE.
       ENDIF
 C
       DO I=1, NP
@@ -2544,14 +2537,21 @@ C
  3220 FORMAT(1X,A32,2X,A24,2X,A24)
  3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
 C
+#ifdef HOTSTART_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
-      END
+      END SUBROUTINE HOTSTART
 
 C******************************************************************************
 C   Subroutine to initialize the 3D routines for a hot start including        *
-C   reading the 3D portion of the HOTSTART file and finding proper places in  *
-C   3D output files.                                                          *
+C   finding proper places in 3D output files.                                 *
 C                                                                             *
+C   jgf49.43: Had to move the reading of the 3D portion of the hotstart file
+C   to the hotstart() subroutine, to facilitate separation of the reading of
+C   the file from initialization. This is required if the file is to be read
+C   in various formats (e.g., netcdf).
 C                                                                             *
 c******************************************************************************
 
@@ -2570,7 +2570,9 @@ C   kmd48.33bc - variable information needed from the global.F file
      &                   BCFLAG_LNM, BCFLAG_TEMP, TTBCTIME1,
      &                   TTBCTIME2, TTBCSTATIM, TTBCTIMEINC,
      &                   q_heat1, q_heat2, HFLUX, TTBCRATIO,
-     &                   NBD
+     &                   NBD, setMessageSource, unsetMessageSource,
+     &                   DEBUG, ECHO, INFO, WARNING, ERROR, screen,
+     &                   NP_G
 
       IMPLICIT NONE
 
@@ -2592,6 +2594,10 @@ C  kmd48.33bc - new variables
 
       REAL(SZ) :: tempp, temp1, temp2
 
+      call setMessageSource("hotstart_3D")
+#ifdef HOTSTART_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
 C...
 C...  Define format statements used to initialize 3D output files
 C...
@@ -2891,75 +2897,8 @@ C.... Initialize the station 3D density output file
       IF((IDen.EQ.2).OR.(IDen.EQ.3)) IRType=2
       IF(IDen.EQ.4) IRType=3
 
-      IF(I3DSD.EQ.-1) THEN             !start a new ASCII file
-        WRITE(16,497) 41
-        OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41')
-        WRITE(41,499) RUNDes,RunID,AGrid
-        WRITE(41,498) NDSet3DSD,NSta3DD,DTDP*NSpo3DSD,NSpo3DSD,NFEN,
-     &                                                            IRType
-        CLOSE(41)
-        I3DSDRec=2
-      ENDIF
-
-      IF(I3DSD.EQ.-2) THEN             !start a new BINARY file
-        WRITE(16,496) 41
-        OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41',ACCESS='DIRECT',
-     &       RECL=NByte)
-        I3DSDRec=0
-        IF(NByte.EQ.4) THEN
-          DO N=1,8
-            I3DSDRec=I3DSDRec+1
-            WRITE(41,REC=I3DSDRec) RDES4(N)
-          ENDDO
-          DO N=1,6
-            I3DSDREC=I3DSDREC+1
-            WRITE(41,REC=I3DSDRec) RID4(N)
-          ENDDO
-          DO N=1,6
-            I3DSDRec=I3DSDRec+1
-            WRITE(41,REC=I3DSDRec) AID4(N)
-          ENDDO
-        ENDIF
-        IF(NByte.EQ.8) THEN
-          DO N=1,4
-            I3DSDRec=I3DSDRec+1
-            WRITE(41,REC=I3DSDRec) RDES8(N)
-          ENDDO
-          DO N=1,3
-            I3DSDRec=I3DSDRec+1
-            WRITE(41,REC=I3DSDRec) RID8(N)
-          ENDDO
-          DO N=1,3
-            I3DSDRec=I3DSDRec+1
-            WRITE(41,REC=I3DSDRec) AID8(N)
-          ENDDO
-        ENDIF
-        WRITE(41,REC=I3DSDRec+1) NDSet3DSD
-        WRITE(41,REC=I3DSDRec+2) NSta3DD
-        WRITE(41,REC=I3DSDRec+3) DTDP*NSpo3DSD
-        WRITE(41,REC=I3DSDRec+4) NSpo3DSD
-        WRITE(41,REC=I3DSDRec+5) NFEN   
-        WRITE(41,REC=I3DSDRec+6) IRType
-        I3DSDRec=I3DSDRec+6
-        CLOSE(41)
-      ENDIF
-
-      IF(I3DSD.EQ.1) THEN          !find spot in existing ASCII file
-        WRITE(16,497) 41
-        OPEN(41,FILE=TRIM(INPUTDIR)//'/'//'fort.41')
-        DO N=1,I3DSDRec
-          READ(41,*) 
-        ENDDO
-        ENDFILE(41)
-        CLOSE(41)
-      ENDIF
-
-      IF(I3DSD.EQ.2) THEN          !find spot in existing BINARY file
-        WRITE(16,496) 41
-        OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41',ACCESS='DIRECT',
-     &       RECL=NByte)
-        CLOSE(41)
-      ENDIF
+      CALL initOutput3D(41, I3DSD, NDSET3DSD, NSTA3DD, NSTA3DD_g,
+     &                        NSPO3DSD, IRType, I3DSDRec)
 
 C.... Initialize the 3D velocity station output file (Unit 42)
 !kmd48.33bc - added in the information in front of all 
@@ -2983,75 +2922,9 @@ C.... Initialize the 3D velocity station output file (Unit 42)
 
       IRType=3
 
-      IF(I3DSV.EQ.-1) THEN             !start a new ASCII file
-        WRITE(16,497) 42
-        OPEN(42,FILE=TRIM(INPUTDIR)//'/'//'fort.42')
-        WRITE(42,499) RUNDES,RUNID,AGRID
-        WRITE(42,498) NDSet3DSV,NSta3DV,DTDP*NSpo3DSV,NSpo3DSV,NFEN,
-     &                                                            IRType
-        CLOSE(42)
-        I3DSVRec=2
-      ENDIF
+      CALL initOutput3D(42, I3DSV, NDSET3DSV, NSTA3DV, NSTA3DV_g,
+     &                        NSPO3DSV, IRType, I3DSVRec)
 
-      IF(ABS(I3DSV).EQ.-2) THEN        !start a new BINARY file
-        WRITE(16,496) 42
-        OPEN(42,FILE=TRIM(INPUTDIR)//'/'//'fort.42',ACCESS='DIRECT',
-     &       RECL=NBYTE)
-        I3DSVRec=0
-        IF(NByte.EQ.4) THEN
-          DO N=1,8
-            I3DSVRec=I3DSVRec+1
-            WRITE(42,REC=I3DSVRec) RDES4(N)
-          ENDDO
-          DO N=1,6
-            I3DSVRec=I3DSVRec+1
-            WRITE(42,REC=I3DSVRec) RID4(N)
-          ENDDO
-          DO N=1,6
-            I3DSVRec=I3DSVRec+1
-            WRITE(42,REC=I3DSVRec) AID4(N)
-          ENDDO
-        ENDIF
-        IF(NByte.EQ.8) THEN
-          DO N=1,4
-            I3DSVRec=I3DSVRec+1
-            WRITE(42,REC=I3DSVRec) RDES8(N)
-          ENDDO
-          DO N=1,3
-            I3DSVRec=I3DSVRec+1
-            WRITE(42,REC=I3DSVRec) RID8(N)
-          ENDDO
-          DO N=1,3
-            I3DSVRec=I3DSVRec+1
-            WRITE(42,REC=I3DSVRec) AID8(N)
-          ENDDO
-        ENDIF
-        WRITE(42,REC=I3DSVRec+1) NDSet3DSV
-        WRITE(42,REC=I3DSVRec+2) NSta3DV
-        WRITE(42,REC=I3DSVRec+3) DTDP*NSpo3DSV
-        WRITE(42,REC=I3DSVRec+4) NSpo3DSV
-        WRITE(42,REC=I3DSVRec+5) NFEN
-        WRITE(42,REC=I3DSVRec+6) IRType
-        I3DSVRec=I3DSVRec+6
-        CLOSE(42)
-      ENDIF
-
-      IF(I3DSV.EQ.1) THEN              !find spot in existing ASCII file
-        WRITE(16,497) 42
-        OPEN(42,FILE=TRIM(INPUTDIR)//'/'//'fort.42')
-        DO N=1,I3DSVRec
-          READ(42,*) 
-        ENDDO
-        ENDFILE(42)
-        CLOSE(42)
-      ENDIF
-
-      IF(I3DSV.EQ.2) THEN              !find spot in existing BINARY file
-        WRITE(16,496) 42
-        OPEN(42,FILE=TRIM(INPUTDIR)//'/'//'fort.42',ACCESS='DIRECT',
-     &       RECL=NByte)
-        CLOSE(42)
-      ENDIF
 
 C.... Initialize the 3D turbulence station output file (Unit 43)
 !kmd48.33bc - added in the information in front of all 
@@ -3081,75 +2954,8 @@ C  kmd48.33bc - changed NDSet3DST to use DTDPHS
      &              (NSpo3DST*DTDP)
       END IF
 
-      IF(I3DST.EQ.-1) THEN             !start a new ASCII file
-        WRITE(16,497) 43
-        OPEN(43,FILE=TRIM(LOCALDIR)//'/'//'fort.43')
-        WRITE(43,499) RUNDES,RUNID,AGRID
-        WRITE(43,498) NDSet3DST,NSta3DT,DTDP*NSpo3DST,NSpo3DST,NFEN,
-     &                                                            IRType
-        CLOSE(43)
-        I3DSTRec=2
-      ENDIF
-
-      IF(ABS(I3DST).EQ.2) THEN         !start a new BINARY file
-        WRITE(16,496) 43
-        OPEN(43,FILE=TRIM(LOCALDIR)//'/'//'fort.43',ACCESS='DIRECT',
-     &       RECL=NByte)
-        I3DSTRec=0
-        IF(NByte.EQ.4) THEN
-          DO N=1,8
-            I3DSTRec=I3DSTRec+1
-            WRITE(43,REC=I3DSTRec) RDES4(N)
-          ENDDO
-          DO N=1,6
-            I3DSTRec=I3DSTRec+1
-            WRITE(43,REC=I3DSTRec) RID4(N)
-          ENDDO
-          DO N=1,6
-            I3DSTRec=I3DSTRec+1
-            WRITE(43,REC=I3DSTRec) AID4(N)
-          ENDDO
-        ENDIF
-        IF(NByte.EQ.8) THEN
-          DO N=1,4
-            I3DSTRec=I3DSTRec+1
-            WRITE(43,REC=I3DSTRec) RDES8(N)
-          ENDDO
-          DO N=1,3
-            I3DSTRec=I3DSTRec+1
-            WRITE(43,REC=I3DSTRec) RID8(N)
-          ENDDO
-          DO N=1,3
-            I3DSTRec=I3DSTRec+1
-            WRITE(43,REC=I3DSTRec) AID8(N)
-          ENDDO
-        ENDIF
-        WRITE(43,REC=I3DSTRec+1) NDSet3DST
-        WRITE(43,REC=I3DSTRec+2) NSta3DT
-        WRITE(43,REC=I3DSTRec+3) DTDP*NSpo3DST
-        WRITE(43,REC=I3DSTRec+4) NSpo3DST
-        WRITE(43,REC=I3DSTRec+5) NFEN
-        WRITE(43,REC=I3DSTRec+6) IRType
-        I3DSTRec=I3DSTRec+6
-        CLOSE(43)
-      ENDIF
-
-      IF(I3DST.EQ.1) THEN          !find spot in existing ASCII file
-        WRITE(16,497) 43
-        OPEN(43,FILE=TRIM(INPUTDIR)//'/'//'fort.43')
-        DO N=1,I3DSTRec
-          READ(43,*) 
-        ENDDO
-        ENDFILE(43)
-        CLOSE(43)
-      ENDIF
-
-      IF(I3DST.EQ.2) THEN          !find spot in existing BINARY file
-        WRITE(16,496) 43
-        OPEN(43,FILE=TRIM(INPUTDIR)//'/'//'fort.43',ACCESS='DIRECT',
-     &       RECL=NByte)
-        CLOSE(43)
-      ENDIF
+      CALL initOutput3D(43, I3DST, NDSET3DST, NSTA3DT, NSTA3DT_g,
+     &                        NSPO3DST, IRType, I3DSTRec)
 
 C.... Initialize the global 3D density output file (Unit 44)
 
@@ -3176,12 +2982,10 @@ C  kmd48.33bc - change NDSet3DGD to use DTDPHS
 C     jgf46.27 Replaced IRType with IDen
 !kmd48.33bc - added in the information to make a file with all the
 !             top temperature boundary condition information in
+
+      CALL initOutput3D(44, I3DGD, NDSET3DGD, NP, NP_g,
+     &                        NSPO3DGD, IRType, I3DGDRec)
       IF(I3DGD.EQ.-1) THEN         !start a new ASCII file
-        WRITE(16,497) 44
-        OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44')
-        WRITE(44,499) RUNDES,RUNID,AGRID
-        WRITE(44,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,NFEN,IDen
-        CLOSE(44)
         IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
           IF (BCFLAG_TEMP.NE.0) THEN
             OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
@@ -3190,69 +2994,8 @@ C     jgf46.27 Replaced IRType with IDen
             CLOSE(47)
           END IF
         END IF
-        I3DGDRec=2
       ENDIF
 
-      IF(I3DGD.EQ.-2) THEN         !start a new BINARY file
-        WRITE(16,496) 44
-        OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44',ACCESS='DIRECT',
-     &       RECL=NByte)
-        I3DGDRec=0
-        IF(NByte.EQ.4) THEN
-          DO N=1,8
-            I3DGDRec=I3DGDRec+1
-            WRITE(44,REC=I3DGDRec) RDES4(N)
-          ENDDO
-          DO N=1,6
-            I3DGDRec=I3DGDRec+1
-            WRITE(44,REC=I3DGDRec) RID4(N)
-          ENDDO
-          DO N=1,6
-            I3DGDRec=I3DGDRec+1
-            WRITE(44,REC=I3DGDRec) AID4(N)
-          ENDDO
-        ENDIF
-        IF(NByte.EQ.8) THEN
-          DO N=1,4
-            I3DGDRec=I3DGDRec+1
-            WRITE(44,REC=I3DGDRec) RDES8(N)
-          ENDDO
-          DO N=1,3
-            I3DGDRec=I3DGDRec+1
-            WRITE(44,REC=I3DGDRec) RID8(N)
-          ENDDO
-          DO N=1,3
-            I3DGDRec=I3DGDRec+1
-            WRITE(44,REC=I3DGDRec) AID8(N)
-          ENDDO
-        ENDIF
-        WRITE(44,REC=I3DGDRec+1) NDSet3DGD
-        WRITE(44,REC=I3DGDRec+2) NP
-        WRITE(44,REC=I3DGDRec+3) DTDP*NSpo3DGD
-        WRITE(44,REC=I3DGDRec+4) NSpo3DGD
-        WRITE(44,REC=I3DGDRec+5) NFEN
-        WRITE(44,REC=I3DGDRec+6) IDEN
-        I3DGDRec=I3DGDRec+6
-        CLOSE(44)
-      ENDIF
-
-      IF(I3DGD.EQ.1) THEN          !find spot in existing ASCII file
-        WRITE(16,497) 44
-        OPEN(44,FILE=TRIM(INPUTDIR)//'/'//'fort.44')
-        DO N=1,I3DGDRec
-          READ(44,*) 
-        ENDDO
-        ENDFILE(44)
-        CLOSE(44)
-      ENDIF
-
-      IF(I3DGD.EQ.2) THEN          !find spot in existing BINARY file
-        WRITE(16,496) 44
-        OPEN(44,FILE=TRIM(INPUTDIR)//'/'//'fort.44',ACCESS='DIRECT',
-     &       RECL=NByte)
-        CLOSE(44)
-      ENDIF
-      
 c.... Initialize the global 3D velocity output file (Unit 45)
 
 C  kmd48.33bc - changed NDSet3DGV to use DTDPHS and added REALs to 
@@ -3273,74 +3016,8 @@ C              calculation of the start time due to timestep change
         ENDIF
       ENDIF
 
-      IF(I3DGV.EQ.-1) THEN         !start a new ASCII file
-        WRITE(16,497) 45
-        OPEN(45,FILE=TRIM(LOCALDIR)//'/'//'fort.45')
-        WRITE(45,499) RUNDES,RUNID,AGRID
-        WRITE(45,498) NDSet3DGV,NP,DTDP*NSpo3DGV,NSpo3DGV,NFEN,IRType
-        CLOSE(45)
-        I3DGVRec=2
-      ENDIF
-
-      IF(I3DGV.EQ.-2) THEN        !start a new BINARY file
-        WRITE(16,496) 45
-        OPEN(45,FILE=TRIM(LOCALDIR)//'/'//'fort.45',ACCESS='DIRECT',
-     &       RECL=NBYTE)
-        I3DGVRec=0
-        IF(NByte.EQ.4) THEN
-          DO N=1,8
-            I3DGVRec=I3DGVRec+1
-            WRITE(45,REC=I3DGVRec) RDES4(N)
-          ENDDO
-          DO N=1,6
-            I3DGVRec=I3DGVRec+1
-            WRITE(45,REC=I3DGVRec) RID4(N)
-          ENDDO
-          DO N=1,6
-            I3DGVRec=I3DGVRec+1
-            WRITE(45,REC=I3DGVRec) AID4(N)
-          ENDDO
-        ENDIF
-        IF(NByte.EQ.8) THEN
-          DO N=1,4
-            I3DGVRec=I3DGVRec+1
-            WRITE(45,REC=I3DGVRec) RDES8(N)
-          ENDDO
-          DO N=1,3
-            I3DGVRec=I3DGVRec+1
-            WRITE(45,REC=I3DGVRec) RID8(N)
-          ENDDO
-          DO N=1,3
-            I3DGVRec=I3DGVRec+1
-            WRITE(45,REC=I3DGVRec) AID8(N)
-          ENDDO
-        ENDIF
-        WRITE(45,REC=I3DGVRec+1) NDSet3DGV
-        WRITE(45,REC=I3DGVRec+2) NP
-        WRITE(45,REC=I3DGVRec+3) DTDP*NSpo3DGV
-        WRITE(45,REC=I3DGVRec+4) NSpo3DGV
-        WRITE(45,REC=I3DGVRec+5) NFEN
-        WRITE(45,REC=I3DGVRec+6) IRType
-        I3DGVRec=I3DGVRec+6
-        CLOSE(45)
-      ENDIF
-
-      IF(I3DGV.EQ.1) THEN          !find spot in existing ASCII file
-        WRITE(16,497) 45
-        OPEN(45,FILE=TRIM(INPUTDIR)//'/'//'fort.45')
-        DO N=1,I3DGVRec
-          READ(45,*) 
-        ENDDO
-        ENDFILE(45)
-        CLOSE(45)
-      ENDIF
-
-      IF(I3DGV.EQ.2) THEN          !find spot in existing BINARY file
-        WRITE(16,496) 45
-        OPEN(45,FILE=TRIM(INPUTDIR)//'/'//'fort.45',ACCESS='DIRECT',
-     &       RECL=NByte)
-        CLOSE(45)
-      ENDIF
+      CALL initOutput3D(45, I3DGV, NDSET3DGV, NP, NP_g,
+     &                        NSPO3DGV, IRType, I3DGVRec)
 
 c.... Initialize the global 3D turbulence output file (Unit 46)
 
@@ -3361,78 +3038,18 @@ C  kmd48.33bc - changed NDSet3DGT to use DTDPHS
         ENDIF
       ENDIF
 
-      IF(I3DGT.EQ.-1) THEN         !start a new ASCII file
-        WRITE(16,497) 46
-        OPEN(46,FILE=TRIM(LOCALDIR)//'/'//'fort.46')
-        WRITE(46,499) RUNDES,RUNID,AGRID
-        WRITE(46,498) NDSet3DGT,NP,DTDP*NSpo3DGT,NSpo3DGT,NFEN,IRType
-        CLOSE(46)
-        I3DGTRec=2
-      ENDIF
-
-      IF(I3DGT.EQ.-2) THEN         !start a new BINARY file
-        WRITE(16,496) 46
-        OPEN(46,FILE=TRIM(LOCALDIR)//'/'//'fort.46',ACCESS='DIRECT',
-     &       RECL=NByte)
-        I3DGTRec=0
-        IF(NByte.EQ.4) THEN
-          DO N=1,8
-            I3DGTRec=I3DGTRec+1
-            WRITE(46,REC=I3DGTRec) RDES4(N)
-          ENDDO
-          DO N=1,6
-            I3DGTRec=I3DGTRec+1
-            WRITE(46,REC=I3DGTRec) RID4(N)
-          ENDDO
-          DO N=1,6
-            I3DGTRec=I3DGTRec+1
-            WRITE(46,REC=I3DGTRec) AID4(N)
-          ENDDO
-        ENDIF
-        IF(NByte.EQ.8) THEN
-          DO N=1,4
-            I3DGTRec=I3DGTRec+1
-            WRITE(46,REC=I3DGTRec) RDES8(N)
-          ENDDO
-          DO N=1,3
-            I3DGTRec=I3DGTRec+1
-            WRITE(46,REC=I3DGTRec) RID8(N)
-          ENDDO
-          DO N=1,3
-            I3DGTRec=I3DGTRec+1
-            WRITE(46,REC=I3DGTRec) AID8(N)
-          ENDDO
-        ENDIF
-        WRITE(46,REC=I3DGTRec+1) NDSet3DGT
-        WRITE(46,REC=I3DGTRec+2) NP
-        WRITE(46,REC=I3DGTRec+3) DTDP*NSpo3DGT
-        WRITE(46,REC=I3DGTRec+4) NSpo3DGT
-        WRITE(46,REC=I3DGTRec+5) NFEN
-        WRITE(46,REC=I3DGTRec+6) IRType
-        I3DGTRec=I3DGTRec+6
-        CLOSE(46)
-      ENDIF
-
-      IF(I3DGT.EQ.1) THEN          !find spot in existing ASCII file
-        WRITE(16,497) 46
-        OPEN(46,FILE=TRIM(INPUTDIR)//'/'//'fort.46')
-        DO N=1,I3DGTRec
-          READ(46,*) 
-        ENDDO
-        ENDFILE(46)
-        CLOSE(46)
-      ENDIF
-
-      IF(I3DGT.EQ.2) THEN          !find spot in existing BINARY file
-        WRITE(16,496) 46
-        OPEN(46,FILE=TRIM(INPUTDIR)//'/'//'fort.46',ACCESS='DIRECT',
-     &       RECL=NByte)
-        CLOSE(46)
-      ENDIF
+      CALL initOutput3D(46, I3DGT, NDSET3DGT, NP, NP_g,
+     &                        NSPO3DGT, IRType, I3DGTRec)
 
 C.... Set up a few final odds and ends for a 3D run
 
       CALL VSSTUP ()
         
+#ifdef HOTSTART_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
+C----------------------------------------------------------------------
       END SUBROUTINE HOTSTART_3D
+C----------------------------------------------------------------------

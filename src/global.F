@@ -63,7 +63,8 @@ C     jgf46.10 user-controlled warning, dump and error levels on elevations
       REAL(SZ) ErrorElev      ! ADCIRC terminates if this elev is exceeded
 C     
       INTEGER ScreenUnit      ! jgf46.19 I/O unit where screen output is sent
-
+C
+C     Variables related to hotstarting.
       type HOTSTART_t
         character(10)     :: filename
         integer           :: lun
@@ -75,18 +76,27 @@ C
 C     global number of elevation, velocity, and meteorological stations
       INTEGER             :: NSTAE_G, NSTAV_G, NSTAM_G
       INTEGER             :: NSTAC_G     ! number of concentration stations
+
       INTEGER             :: COMM        ! MPI communicator.
       INTEGER             :: FileFmtVersion      ! File format version.
 !      INTEGER             :: FileFmtMajor = 1
 !      INTEGER             :: FileFmtMinor = 2
 !      INTEGER             :: FileFmtRev   = 0
-
-C     global array sizes for use in globalio
-
-      integer,allocatable,target :: imap_sta3Dd_lg(:)
-      integer,allocatable,target :: imap_sta3Dv_lg(:)
-      integer,allocatable,target :: imap_stat3t_lg(:)
-
+C
+C     jgf49.44: These variables represent fulldomain arrays and are 
+C     used in hstart.F for reading fulldomain hotstart files as well as in
+C     write_output.F/writeHotstart and 
+C     writer.F/writeHotstart_through_HSwriter
+C     for writing fulldomain hotstart files. 
+      REAL(SZ), ALLOCATABLE, TARGET :: ETA1_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: ETA2_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: EtaDisc_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: UU2_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: VV2_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: CH1_g(:)
+      INTEGER, ALLOCATABLE, TARGET :: NodeCode_g(:)
+      INTEGER, ALLOCATABLE :: NNodeCode_g(:)
+      INTEGER, ALLOCATABLE, TARGET :: NOFF_g(:)
 C...
 C...DECLARE ALL ARRAYS
 C...
@@ -186,8 +196,6 @@ Casey 090302: Added the following arrays for output of radiation stress gradient
       REAL(8),ALLOCATABLE,TARGET :: SLEL(:) ! latitudes of elevation stations
       REAL(8),ALLOCATABLE,TARGET :: SFEL(:) ! longitudes of elevation stations
       REAL(8),ALLOCATABLE ::   AREAS(:), TotalArea(:)
-      REAL(SZ),ALLOCATABLE ::   XVELAV(:),YVELAV(:),XVELVA(:),YVELVA(:)
-      REAL(SZ),ALLOCATABLE ::   ELAV(:),ELVA(:)
       REAL(SZ),ALLOCATABLE ::   AUV11(:),AUV12(:),AUV13(:),AUV14(:)
       REAL(SZ),ALLOCATABLE, TARGET ::   DUU1(:),DUV1(:),DVV1(:)
       REAL(SZ),ALLOCATABLE, TARGET ::   BSX1(:),BSY1(:)
@@ -258,14 +266,8 @@ C.....for matrix conditioning,global to allow for reading in from hotstart file
 C...
 C...DECLARE COMMON BLOCKS
 C...
-      INTEGER NTSTEPS,ITMV
-      REAL(SZ) DT,FMV
-      REAL(8) TIMEBEG
-      COMMON /MEANSQ/ TIMEBEG,DT,FMV,NTSTEPS,ITMV
+      REAL(SZ) DT
 C
-      INTEGER NHARFR
-      COMMON /LSQFREQS/ NHARFR
-C     
       INTEGER NP,NOLICA,NOLIFA,NSCREEN,IHOT,ICS,IDen
 
 C...
@@ -332,7 +334,6 @@ C     jgf45.07 The definitions of many of these are in timestep.F
       LOGICAL :: CME_AreaInt_Orig    = .FALSE.
       LOGICAL :: CME_AreaInt_Corr    = .FALSE.
       LOGICAL :: CTIP                = .FALSE.
-      LOGICAL :: CHARMV              = .FALSE.
 C    kmd48.33bc  - logical statement for hot start using different time step
       LOGICAL :: CHOTHS              = .FALSE.
   
@@ -357,22 +358,21 @@ C...
       INTEGER  NRAMP,NRS,NSTAE,NSTARTDRY,NSTAV,NT,NTCYFE
       INTEGER  NTCYFV,NTCYSE,NTCYSV,NTIF,NTIP,NTRSPE,NTRSPV
       INTEGER  NVEL,NVELEXT,NVELME,NWLAT,NWLON,NWS
-      INTEGER  IBSTART, ICHA, ICSTP, IDSETFLG, IER
+      INTEGER  IBSTART, ICSTP, IDSETFLG, IER
       INTEGER  IESTP
       INTEGER  IFNLCAT, IFNLCT, IFNLFA
-      INTEGER  IFWIND, IGCP, IGEP, IGPP, IGVP, IGWP, IHABEG
-      INTEGER  IHARIND ! =1 if harmonic analysis was requested, 0 otherwise
+      INTEGER  IFWIND, IGCP, IGEP, IGPP, IGVP, IGWP
       INTEGER  IHOTSTP, ILUMP, IMHS, IPSTP
       INTEGER  IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN, ISLDIA
-      INTEGER  ITIME, ITEMPSTP, ITEST, ITHAF, ITHAS
+      INTEGER  ITIME, ITEMPSTP, ITEST 
       INTEGER  ITHS, ITITER, ITMAX, IVSTP, IWSTP, IWTIME, IWTIMEP
       INTEGER  IWYR, J12, J13, J21, J23, J31, J32
       INTEGER  JJ, KEMAX, KVMAX, LRC, LUMPT
       INTEGER  MBW, MDF, NBDJ, NBNCTOT, NBW
       INTEGER  NCBND, NCTOT, NDRY, NDSETSC
       INTEGER  NCChange !jgf45.06 flag indicating wetting / drying has occurred
-      INTEGER  NDSETSE, NDSETSV, NDSETSW, NEle, NHAGE, NHAGV
-      INTEGER  NHAINC, NHASE, NHASV, NHSINC, NHSTAR
+      INTEGER  NDSETSE, NDSETSV, NDSETSW, NEle
+      INTEGER  NHSINC, NHSTAR
 #ifdef CSWAN
 Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER  IGRadS
@@ -423,7 +423,7 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) RBARWL1,RBARWL1F, RBARWL2, RBARWL2F, RFF, RFF1, RFF2
       REAL(SZ) SADVDTO3
       REAL(SZ) TADVODT
-      REAL(SZ) THAF, THAS, THENALLDSSSTUP, TIMEIT, TOUTFC
+      REAL(SZ) THENALLDSSSTUP, TIMEIT, TOUTFC
       REAL(SZ) TKWET
       REAL(SZ) VEL, VELABS
       REAL(SZ) VELMAX
@@ -468,7 +468,6 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       INTEGER NCIGEP,NCIGPP, NCIGVP,NCIGWP
       INTEGER NCCOUE,NCCOUM,NCCOUV,NCCOUW
       INTEGER NCCOUGE,NCCOUGW,NCCOUGV
-      LOGICAL useNetCDF ! .true. if NetCDF will be used in the run 
       
 ! CF Finish addition for NETCDF I/O
 
@@ -516,10 +515,12 @@ C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements t
         REAL(SZ), pointer :: array(:)  ! scalar data or 1st component of vector
         REAL(SZ), pointer :: array2(:) ! 2nd component of vector
         REAL(SZ), pointer :: array3(:) ! 3rd component of vector
+        REAL(SZ), pointer :: array2D(:,:) ! subdomain matrix
         INTEGER, pointer  :: iarray_g(:) ! full domain integer
         REAL(SZ), pointer :: array_g(:)  ! full domain data scalar etc
         REAL(SZ), pointer :: array2_g(:) ! full domain 2nd vec component
         REAL(SZ), pointer :: array3_g(:) ! full domain 3rd vec component
+        REAL(SZ), pointer :: array2D_g(:,:) ! fulldomain matrix
         REAL(SZ), pointer :: hotstart(:) ! from hotstart (used by min max)
         REAL(SZ), pointer :: hotstart_g(:) ! from hotstart (used by min max)
       end type OutputDataDescript_t
@@ -562,10 +563,290 @@ C     jgf48.03 Variables shared between messenger and writer modules
       INTEGER :: SIG_TERM  = 999
 C     End of variables shared between messenger and writer modules
 C
+C     jgf49.44: Log levels, in order from largest amount of log messages
+C     written (DEBUG) to fewest log messages written (ERROR). Compared
+C     to the value of NABOUT when determining which messages to write
+C     to the screen or to log files.
+      INTEGER, PARAMETER :: DEBUG = -1  ! write all messages and echo input
+      INTEGER, PARAMETER :: ECHO = 0    ! echo input, plus write all non-debug
+      INTEGER, PARAMETER :: INFO = 1    ! don't echo input; write all non-debug
+      INTEGER, PARAMETER :: WARNING = 2 ! don't echo input; write only warn/err
+      INTEGER, PARAMETER :: ERROR = 3   ! don't echo input; only fatal msgs
+C
+      CHARACTER(len=10), dimension(5) :: logLevelNames  
+      CHARACTER(len=50), dimension(50) :: messageSources ! subroutine names
+      CHARACTER(len=1024) :: scratchMessage ! used for formatted messages
+      INTEGER :: sourceNumber ! index into messageSources for current sub
 
 C-------------------end of data declarations----------------------------------C
 
       CONTAINS
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E    I N I T   L O G G I N G    
+C--------------------------------------------------------------------
+C     jgf49.44: Initialize the names for the logging levels and the counter
+C     for the current subroutine.
+C--------------------------------------------------------------------
+      SUBROUTINE initLogging()
+      IMPLICIT NONE 
+C 
+      logLevelNames(1) = "DEBUG"
+      logLevelNames(2) = "ECHO"
+      logLevelNames(3) = "INFO"
+      logLevelNames(4) = "WARNING"
+      logLevelNames(5) = "ERROR"
+      sourceNumber = 0 
+C--------------------------------------------------------------------
+      END SUBROUTINE initLogging
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E    S C R E E N   
+C--------------------------------------------------------------------
+C     jgf49.44: General purpose subroutine to write a message to
+C     the screen with a certain "logging level", and subject to the
+C     user's selection of where to write screen output. The logging 
+C     level is controlled by NABOUT from the fort.15 file. The actual
+C     destination of messages written to the screen is controlled by
+C     NSCREEN from the fort.15 file. 
+C
+C     In parallel, only the processor with rank 0 actually writes
+C     the message.
+C
+C     This subroutine assumes that the global variable "caller" has 
+C     been set to the name of the subroutine calling it. Therefore,
+C     the setMessageSource subroutine must be called at the beginning 
+C     of the subroutine that calls this one, and unsetMessageSource
+C     must be called at the end. 
+C--------------------------------------------------------------------
+      SUBROUTINE screen(level, message)
+      IMPLICIT NONE 
+      INTEGER, intent(in) :: level
+      CHARACTER(*), intent(in) :: message
+      INTEGER j  ! loop counter for stack
+C 
+      IF (myProc.eq.0) THEN
+         IF (NSCREEN.ne.0) THEN
+            IF (level.ge.NABOUT) THEN
+#ifdef FULL_STACK
+               write(screenUnit,331,advance="no") 
+     7             trim(logLevelNames(level+2)),
+     &             (trim(messageSources(j)),j=1,sourceNumber) 
+               write(screenUnit,332) trim(message)
+#else
+               write(screenUnit,333) trim(logLevelNames(level+2)),
+     &             trim(messageSources(sourceNumber)), trim(message)
+#endif
+#ifdef FLUSH_MESSAGES
+               flush(screenUnit)
+#endif
+            ENDIF
+         ENDIF
+      ENDIF
+331   FORMAT(A,": ",A,50(:,"->",A))   
+332   FORMAT(": ",A)   
+333   FORMAT(A,": ",A,": ",A)   
+C--------------------------------------------------------------------
+      END SUBROUTINE screen
+C--------------------------------------------------------------------
+
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E    L O G   M E S S A G E   
+C--------------------------------------------------------------------
+C     jgf49.44: General purpose subroutine to write a message to
+C     the fort.16 file. In parallel, processors of all ranks will
+C     write the message to their own subdomain fort.16 files.
+C
+C     This subroutine assumes that the global variable "caller" has 
+C     been set to the name of the subroutine calling it. Therefore,
+C     the setMessageSource subroutine must be called at the beginning 
+C     of the subroutine that calls this one, and unsetMessageSource
+C     must be called at the end. 
+C--------------------------------------------------------------------
+      SUBROUTINE logMessage(level, message)
+      IMPLICIT NONE 
+      INTEGER, intent(in) :: level
+      CHARACTER(*), intent(in) :: message
+      INTEGER j  ! loop counter for stack
+C
+      IF (level.ge.NABOUT) THEN
+#ifdef FULL_STACK
+         write(16,331,advance="no") trim(logLevelNames(level+2)),
+     &       (trim(messageSources(j)),j=1,sourceNumber) 
+         write(16,332) trim(message)
+#else
+         write(16,333) trim(logLevelNames(level+2)),
+     &       trim(messageSources(sourceNumber)), trim(message)
+#endif
+#ifdef FLUSH_MESSAGES
+               flush(16)
+#endif
+      ENDIF
+331   FORMAT(A,": ",A,50(:,"->",A))   
+332   FORMAT(": ",A)   
+333   FORMAT(A,": ",A,": ",A)   
+C--------------------------------------------------------------------
+      END SUBROUTINE logMessage
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E   A L L    M E S S A G E   
+C--------------------------------------------------------------------
+C     jgf49.44: General purpose subroutine to write a message to
+C     both the screen and to the fort.16 log file.
+C--------------------------------------------------------------------
+      SUBROUTINE allMessage(level, message)
+      IMPLICIT NONE 
+      INTEGER, intent(in) :: level
+      CHARACTER(*), intent(in) :: message
+C 
+      call logMessage(level, message)
+      call screen(level, message)
+C--------------------------------------------------------------------
+      END SUBROUTINE allMessage
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E   S E T   M E S S A G E   S O U R C E   
+C--------------------------------------------------------------------
+C     jgf49.44: Sets the name of the subroutine that is writing
+C     log and/or screen messages. Must use at the start of any subroutine
+C     that calls screen, logMessage, or allMessage.
+C--------------------------------------------------------------------
+      SUBROUTINE setMessageSource(source)
+      IMPLICIT NONE 
+      CHARACTER(*), intent(in) :: source 
+C
+      sourceNumber = sourceNumber + 1
+      messageSources(sourceNumber) = source
+C--------------------------------------------------------------------
+      END SUBROUTINE setMessageSource
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E   U N S E T   M E S S A G E   S O U R C E   
+C--------------------------------------------------------------------
+C     jgf49.44: Removes the name of the subroutine that is no longer 
+C     writing log and/or screen messages. Must use at the end of 
+C     any subroutine that calls screen, logMessage, or allMessage.
+C--------------------------------------------------------------------
+      SUBROUTINE unsetMessageSource()
+      IMPLICIT NONE 
+C
+      sourceNumber = sourceNumber - 1
+C--------------------------------------------------------------------
+      END SUBROUTINE unsetMessageSource
+C--------------------------------------------------------------------
+
+
+C--------------------------------------------------------------------
+C                    S U B R O U T I N E 
+C     A L L O C A T E   F U L L   D O M A I N   I O   A R R A Y S 
+C--------------------------------------------------------------------
+C     jgf49.44: Allocates memory for the full domain arrays for i/o
+C     purposes; these arrays are both read from and written to hotstart 
+C     files. Arrays that are only written are allocated in the 
+C     subroutine that does the writing. 
+C--------------------------------------------------------------------
+      SUBROUTINE allocateFullDomainIOArrays()
+      IMPLICIT NONE 
+C 
+      ALLOCATE(ETA1_g(NP_G))
+      ALLOCATE(ETA2_g(NP_G))
+      ALLOCATE(UU2_g(NP_G))
+      ALLOCATE(VV2_g(NP_G))
+      IF (IM.eq.10) THEN
+         ALLOCATE(CH1_g(NP_G))
+      ENDIF
+      ALLOCATE(EtaDisc_g(NP_G))
+      ALLOCATE(NodeCode_g(NP_G))
+      ALLOCATE(NOFF_g(NE_G))
+      ALLOCATE(NNodeCode_g(NP_G))
+C--------------------------------------------------------------------
+      END SUBROUTINE allocateFullDomainIOArrays
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      B I N A R Y   R E A D   2 D 
+C--------------------------------------------------------------------
+C     jgf49.44: Reads a real(sz) array with the specified length
+C     from a binary hotstart file; takes the file counter as an 
+C     input argument and returns the new value of the file counter
+C     at the end of the read. Its called "2D" even though it reads
+C     a 1D fortran array because the array represents a 2D physical
+C     quantity in an unstructured mesh. 
+C--------------------------------------------------------------------
+      SUBROUTINE binaryRead2D(array, length, lun, counter)
+      USE SIZES, ONLY : SZ
+      IMPLICIT NONE
+      REAL(SZ), intent(out), dimension(:) :: array ! the data to read from the hotstart file
+      INTEGER, intent(in) :: length  ! the number of values to read
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
+      INTEGER, intent(inout) :: counter ! i/o position in the file 
+C 
+      INTEGER i      ! array index
+C      
+       DO i=1, length
+          READ(lun,REC=counter) array(i)
+          counter = counter + 1
+       END DO
+C--------------------------------------------------------------------
+      END SUBROUTINE binaryRead2D
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      B I N A R Y   I N T   R E A D   2 D 
+C--------------------------------------------------------------------
+C     jgf49.44: Same as binaryRead2D except it reads an integer.
+C--------------------------------------------------------------------
+      SUBROUTINE binaryIntRead2D(array, length, lun, counter)
+      USE SIZES, ONLY : SZ
+      IMPLICIT NONE
+      INTEGER, intent(out), dimension(:) :: array ! the data to read from the hotstart file
+      INTEGER, intent(in) :: length  ! the number of values to read
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
+      INTEGER, intent(inout) :: counter ! i/o position in the file 
+C 
+      INTEGER i      ! array index
+C      
+       DO i=1, length
+          READ(lun,REC=counter) array(i)
+          counter = counter + 1
+       END DO
+C--------------------------------------------------------------------
+      END SUBROUTINE binaryIntRead2D
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      B I N A R Y   R E A D   3 D 
+C--------------------------------------------------------------------
+C     jgf49.44: Same as binaryRead2D except it reads data with 
+C     both horizontal and vertical lengths. Also used for reading
+C     harmonic analysis arrays from binary hotstart file.
+C--------------------------------------------------------------------
+      SUBROUTINE binaryRead3D(array, iLength, jLength, lun,
+     &                        counter)
+      USE SIZES, ONLY : SZ
+      IMPLICIT NONE
+      REAL(SZ), intent(out), dimension(:,:) :: array ! data to read from the hotstart file
+      INTEGER, intent(in) :: iLength  ! the number of horiz values to read
+      INTEGER, intent(in) :: jLength  ! the number of layers
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
+      INTEGER, intent(inout) :: counter ! i/o position in the file 
+C 
+      INTEGER i,j      ! array indices
+C      
+       DO j=1, jLength
+          DO i=1, iLength
+            READ(lun,REC=counter) array(i,j)
+            counter = counter + 1
+          END DO
+       END DO
+C--------------------------------------------------------------------
+      END SUBROUTINE binaryRead3D
+C--------------------------------------------------------------------
 
 C...
 C...Allocate space for Arrays dimensioned by MNE and MNP
@@ -899,21 +1180,6 @@ Casey 090302: Added the next line for output of radiation stress gradients.
       RSNMax(:) = 0.d0
 #endif
 
-C
-      RETURN
-      END SUBROUTINE
-
-C...
-C...Allocate space for harmonic analysis means and variance
-C...calculations, this is in global data because the variables are
-C...used in main source, outside of HA analysis subroutines.  This
-C...should probably be changed.
-C...
-      SUBROUTINE ALLOC_MAIN14()
-      IMPLICIT NONE
-C
-      ALLOCATE ( XVELAV(MNP),YVELAV(MNP),XVELVA(MNP),YVELVA(MNP) )
-      ALLOCATE ( ELAV(MNP),ELVA(MNP) )
 C
       RETURN
       END SUBROUTINE

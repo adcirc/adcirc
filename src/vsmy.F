@@ -332,9 +332,9 @@ c     to the solution
                CLBP=CSII(LBP)
                DO k=1,NFEN
                   Mkm1(k)=(0.D0,0.D0)
-                  Mk(k)=SLBP+I*CLBP
+                  Mk(k)=SLBP+iy*CLBP
                   Mkp1(k)=(0.D0,0.D0)
-                  Fr(k)=VelTan+I*VelNorm
+                  Fr(k)=VelTan+iy*VelNorm
 C                  EVTot(k)=0.D0 !f77diff??
                ENDDO
                GOTO 999
@@ -481,7 +481,7 @@ C    kmd48.33bc added in spherical factors for 3D
             DhDY=DhDY2A/TotalArea2
             DEtaDX=DEtaDX2A/TotalArea2
             DEtaDY=DEtaDY2A/TotalArea2
-            BTPG=(BTPDX2A+I*BTPDY2A)/TotalArea2
+            BTPG=(BTPDX2A+iy*BTPDY2A)/TotalArea2
          ENDIF
 
 c     Finished computing horizontal derivatives of water level,
@@ -716,8 +716,8 @@ C         k=NFEN
      &        + (CCR*q(NH,k)
      &        -DelT*(LAdvec(k)  +LStress(k)  +BPG(NH,k)  ))*Inm(k,2)
      &        - DelT*(VAdvec(k)+BTPG*LVn(k))-DT1MAlp3*VStress(k)
-     &        + DelT*0.5d0*((WSX2(NH)+I*WSY2(NH))/Hsp1OAMB
-     &        +(WSX1(NH)+I*WSY1(NH))/HsOAMB)
+     &        + DelT*0.5d0*((WSX2(NH)+iy*WSY2(NH))/Hsp1OAMB
+     &        +(WSX1(NH)+iy*WSY1(NH))/HsOAMB)
          Mkm1(NFEN) = CCL*Inm(NFEN,1) + RCL*KVnm(NFEN,1)
          Mk(NFEN)   = CCL*Inm(NFEN,2) + RCL*KVnm(NFEN,2)
          Mkp1(NFEN) = (0.d0,0.d0)
@@ -743,51 +743,51 @@ c     this b.c. requires on manipulation of momentum eqns.  Do nothing!
                Auv2k      =AImag(Mk(1))
                Auv1kstar  =Auv1k*SLBP
                Auv2kstar  =Auv1k*CLBP
-               Mk(1)      =Auv1kstar+I*Auv2kstar
+               Mk(1)      =Auv1kstar+iy*Auv2kstar
                Auv1kp1    =Real(Mkp1(1))
                Auv2kp1    =AImag(Mkp1(1))
                Auv1kp1star=Auv1kp1*SLBP
                Auv2kp1star=Auv1kp1*CLBP
-               Mkp1(1)    =Auv1kp1star+I*Auv2kp1star
+               Mkp1(1)    =Auv1kp1star+iy*Auv2kp1star
                Frstar     =Real(Fr(1))*SLBP-AImag(Fr(1))*CLBP
      &              +  (Auv2k+Auv2kp1)*VelNorm 
-     &              +I*(Auv1k+Auv1kp1)*VelNorm
+     &              +iy*(Auv1k+Auv1kp1)*VelNorm
                Fr(1)      =Frstar
                DO k=2,NFEN-1
                   Auv1km1    =Real(Mkm1(k))
                   Auv2km1    =AImag(Mkm1(k))
                   Auv1km1star=Auv1km1*SLBP
                   Auv2km1star=Auv1km1*CLBP
-                  Mkm1(k)    =Auv1km1star+I*Auv2km1star
+                  Mkm1(k)    =Auv1km1star+iy*Auv2km1star
                   Auv1k      =Real(Mk(k))
                   Auv2k      =AImag(Mk(k))
                   Auv1kstar  =Auv1k*SLBP
                   Auv2kstar  =Auv1k*CLBP
-                  Mk(k)      =Auv1kstar+I*Auv2kstar
+                  Mk(k)      =Auv1kstar+iy*Auv2kstar
                   Auv1kp1    =Real(Mkp1(k))
                   Auv2kp1    =AImag(Mkp1(k))
                   Auv1kp1star=Auv1kp1*SLBP
                   Auv2kp1star=Auv1kp1*CLBP
-                  Mkp1(k)    =Auv1kp1star+I*Auv2kp1star
+                  Mkp1(k)    =Auv1kp1star+iy*Auv2kp1star
                   Frstar     =Real(Fr(k))*SLBP-AImag(Fr(k))*CLBP
      &                 +  (Auv2km1+Auv2k+Auv2kp1)*VelNorm 
-     &                 +I*(Auv1km1+Auv1k+Auv1kp1)*VelNorm
+     &                 +iy*(Auv1km1+Auv1k+Auv1kp1)*VelNorm
                   Fr(k)      =Frstar
                ENDDO
                Auv1km1    =Real(Mkm1(NFEN))
                Auv2km1    =AImag(Mkm1(NFEN))
                Auv1km1star=Auv1km1*SLBP
                Auv2km1star=Auv1km1*CLBP
-               Mkm1(NFEN) =Auv1km1star+I*Auv2km1star
+               Mkm1(NFEN) =Auv1km1star+iy*Auv2km1star
                Auv1k      =Real(Mk(NFEN))
                Auv2k      =AImag(Mk(NFEN))
                Auv1kstar  =Auv1k*SLBP
                Auv2kstar  =Auv1k*CLBP
-               Mk(NFEN)   =Auv1kstar+I*Auv2kstar
+               Mk(NFEN)   =Auv1kstar+iy*Auv2kstar
                Mkp1(NFEN) =(0.d0,0.d0)
                Frstar     =Real(Fr(NFEN))*SLBP-AImag(Fr(NFEN))*CLBP
      &              +  (Auv2km1+Auv2k)*VelNorm 
-     &              +I*(Auv1km1+Auv1k)*VelNorm
+     &              +iy*(Auv1km1+Auv1k)*VelNorm
                Fr(NFEN)   =Frstar
             ENDIF
          ENDIF
@@ -1815,7 +1815,7 @@ C***********************************************************************
       Subroutine VSDISP(it,node,H,UU,VV,Duu,Duv,Dvv)
       USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug      USE GLOBAL_3DVS, ONLY : Qkp1,SZ,NFEN,SIGMA,GAMMA,AMB,I,NSCREEN
-      USE GLOBAL_3DVS, ONLY : Qkp1,SZ,NFEN,SIGMA,GAMMA,AMB,I
+      USE GLOBAL_3DVS, ONLY : Qkp1,SZ,NFEN,SIGMA,GAMMA,AMB,IY
       IMPLICIT NONE
 
       REAL(SZ) :: UU,VV,Duu,Duv,Dvv
@@ -1868,13 +1868,13 @@ c
       Txy = 0.d0
       Tyy = 0.d0
       Ump = Real(gamma(1))
-      Vmp = -Real(i*gamma(1))
+      Vmp = -Real(iy*gamma(1))
       Do 100 m=1,nfen-1
          mp = m+1
          Um = Ump
          Vm = Vmp
          Ump = Real(gamma(mp))
-         Vmp = -Real(i*gamma(mp))
+         Vmp = -Real(iy*gamma(mp))
          delst = sigma(mp) - sigma(m)
          D1P1 = delst/3.d0
          Txx = Txx + (Um*Um + Ump*Ump + Um*Ump)*D1P1
@@ -2833,6 +2833,9 @@ C***************************************************************************
 C   Subroutine to write out 3D Hot Start info 
 C                                            
 C                                    R.L.  8/16/05  
+C
+C     jgf49.44: This subroutine is only called if a binary hotstart
+C     file was specified. 
 C***************************************************************************
 C
 C  kmd48.33bc changed to follow the global IO format
@@ -2851,13 +2854,6 @@ Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
       INTEGER NH
       INTEGER N,M
       REAL(SZ),ALLOCATABLE,TARGET :: RESULTS(:)
-      REAL(SZ),SAVE,ALLOCATABLE,TARGET :: DUU_g(:)
-      REAL(SZ),SAVE,ALLOCATABLE,TARGET :: DUV_g(:)
-      REAL(SZ),SAVE,ALLOCATABLE,TARGET :: DVV_g(:)
-      REAL(SZ),SAVE,ALLOCATABLE,TARGET :: UU_g(:)
-      REAL(SZ),SAVE,ALLOCATABLE,TARGET :: VV_g(:)
-      REAL(SZ),SAVE,ALLOCATABLE,TARGET :: BSX_g(:)
-      REAL(SZ),SAVE,ALLOCATABLE,TARGET :: BSY_g(:)
       REAL(SZ),ALLOCATABLE,TARGET :: Results_g(:)
 
       type(OutputDataDescript_t),SAVE :: Duudescript
@@ -2897,9 +2893,6 @@ C...
 
 C   kmd48.33bc write out results in global IO format
       IF (FirstCall3D) THEN 
-        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN 
-           Allocate(DUU_g(NP_G))
-        END IF 
         Duudescript % specifier            =  NHSTAR 
         Duudescript % initial_value        =  0.0
         Duudescript % num_items_per_record =  1
@@ -2909,9 +2902,6 @@ C   kmd48.33bc write out results in global IO format
         Duudescript % array                => DUU1
         Duudescript % array_g              => DUU_g
 
-        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN 
-           Allocate(DUV_g(NP_G))
-        END IF 
         Duvdescript % specifier            =  NHSTAR 
         Duvdescript % initial_value        =  0.0
         Duvdescript % num_items_per_record =  1
@@ -2921,9 +2911,6 @@ C   kmd48.33bc write out results in global IO format
         Duvdescript % array                => DUV1
         Duvdescript % array_g              => DUV_g
 
-        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN 
-           Allocate(DVV_g(NP_G))
-        END IF 
         Dvvdescript % specifier            =  NHSTAR 
         Dvvdescript % initial_value        =  0.0
         Dvvdescript % num_items_per_record =  1
@@ -2933,9 +2920,6 @@ C   kmd48.33bc write out results in global IO format
         Dvvdescript % array                => DVV1
         Dvvdescript % array_g              => DVV_g
 
-        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN 
-           Allocate(UU_g(NP_G))
-        END IF 
         Uudescript % specifier            =  NHSTAR 
         Uudescript % initial_value        =  0.0
         Uudescript % num_items_per_record =  1
@@ -2945,9 +2929,6 @@ C   kmd48.33bc write out results in global IO format
         Uudescript % array                => UU2
         Uudescript % array_g              => UU_g
 
-        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN 
-           Allocate(VV_g(NP_G))
-        END IF 
         Vvdescript % specifier            =  NHSTAR 
         Vvdescript % initial_value        =  0.0
         Vvdescript % num_items_per_record =  1
@@ -2957,9 +2938,6 @@ C   kmd48.33bc write out results in global IO format
         Vvdescript % array                => VV2
         Vvdescript % array_g              => VV_g
 
-        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN 
-           Allocate(BSX_g(NP_G))
-        END IF 
         Bsxdescript % specifier            =  NHSTAR 
         Bsxdescript % initial_value        =  0.0
         Bsxdescript % num_items_per_record =  1
@@ -2969,9 +2947,6 @@ C   kmd48.33bc write out results in global IO format
         Bsxdescript % array                => BSX1 
         Bsxdescript % array_g              => BSX_g
 
-        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN 
-           Allocate(BSY_g(NP_G))
-        END IF 
         Bsydescript % specifier            =  NHSTAR 
         Bsydescript % initial_value        =  0.0
         Bsydescript % num_items_per_record =  1
@@ -2996,7 +2971,7 @@ C   kmd48.33bc write out results in global IO format
 
         SELECT CASE (NHSTAR)
 
-        CASE(1)
+        CASE(1,67,68)
 
         
       IF(MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 

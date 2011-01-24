@@ -728,14 +728,6 @@ C-----------------------------------------------------------------------
       type(OutputDataDescript_t), SAVE :: EtaDiscDescript
       type(OutputDataDescript_t), SAVE :: NodeCodeDescript
       type(OutputDataDescript_t), SAVE :: NOFFDescript
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETA1_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETA2_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: EtaDisc_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UU2_g(:)     
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: VV2_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CH1_g(:)
-      INTEGER,  SAVE, ALLOCATABLE, TARGET :: NodeCode_g(:)
-      INTEGER,  SAVE, ALLOCATABLE, TARGET :: NOFF_g(:)
       LOGICAL,  SAVE :: FirstCall = .true.
 !
       if( myproc <= MNPROC-1 ) then

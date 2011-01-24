@@ -289,7 +289,7 @@ C
       DO j=1, DirEffRLenNoOfVals
          DirEffRLenDefVal(j) = 0.0
       END DO
-      CanopyCoefDefVal       = 0.0
+      CanopyCoefDefVal       = 1.0
       QuadraticFricDefVal    = 0.0
       DO j=1, BridgePilingsNoOfVals
          BridgePilingsDefVal(j) = 0.0

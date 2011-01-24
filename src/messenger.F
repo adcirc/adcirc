@@ -6,8 +6,8 @@ C
       USE SIZES
       USE GLOBAL, ONLY: C3D, COMM, NODES_LG, IMAP_EL_LG,
      &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,
-     &    COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID, SIG_VAL, SIG_WRITE, SIG_TERM,
-     &    FLOAT_TYPE, REALTYPE, DBLETYPE
+     &    COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID, SIG_VAL,
+     &    SIG_WRITE, SIG_TERM, FLOAT_TYPE, REALTYPE, DBLETYPE
 #ifdef HAVE_MPI_MOD
       USE MPI  
 #endif
@@ -228,6 +228,9 @@ C--------------------------------------------------------------------------
 
       SUBROUTINE MSG_TABLE () 
       USE GLOBAL
+      USE GLOBAL_3DVS, ONLY : NSTA3DD, NSTA3DV, NSTA3DT,
+     &                        NSTA3DD_G, NSTA3DV_G, NSTA3DT_G,
+     &  IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
@@ -370,7 +373,35 @@ C-------------------------------------------------------------------------------
          READ(18,3010) IPROC(J),NNODSEND(J)
          READ(18,1130) (ISENDLOC(I,J), I=1,NNODSEND(J))
       ENDDO
- 
+C
+C     jgf49.43.18: Add 3D station mappings if appropriate. Used by globalio.
+      IF (C3D) THEN
+         READ(18,3015) NSTA3DD_G
+         IF (NSTA3DD > 0) THEN
+            ALLOCATE ( IMAP_STA3DD_LG(NSTA3DD) )
+            DO I=1,NSTA3DD
+               READ(18,'(I8)') IMAP_STA3DD_LG(I)              
+            ENDDO
+         ENDIF
+
+         READ(18,3015) NSTA3DV_G
+         IF (NSTA3DV > 0) THEN
+            ALLOCATE ( IMAP_STA3DV_LG(NSTA3DV) )
+            DO I=1,NSTA3DV
+               READ(18,'(I8)') IMAP_STA3DV_LG(I)              
+            ENDDO
+         ENDIF
+
+         READ(18,3015) NSTA3DT_G
+         IF (NSTA3DT > 0) THEN
+            ALLOCATE ( IMAP_STA3DT_LG(NSTA3DT) )
+            DO I=1,NSTA3DT
+               READ(18,'(I8)') IMAP_STA3DT_LG(I)              
+            ENDDO
+         ENDIF
+      ENDIF
+C
+C
       CLOSE(18)
       RETURN
 1130  FORMAT(8X,9I8)

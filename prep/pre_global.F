@@ -90,8 +90,8 @@ C     PARM15  section
       INTEGER  NOUTGV,NSPOOLGV
       INTEGER  NOUTGC,NSPOOLGC
       INTEGER  NOUTGW,NSPOOLGW
-      INTEGER  NHARFR,NHAINC,NHSINC
-      INTEGER  NHASE,NHASV,NHAGE,NHAGV,NHSTAR
+      INTEGER  NHARFR,NHSINC
+      INTEGER  NHSTAR
       INTEGER  IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN
       INTEGER  NWLAT,NWLON,NFLUXF
       INTEGER,ALLOCATABLE ::   NNSEG(:),NNSVG(:),NNSCG(:),NNSMG(:)
@@ -116,7 +116,7 @@ C
       CHARACTER(80)  SOLVMSG,WSMSG1,WSMSG2
       CHARACTER(132),ALLOCATABLE :: STAELOC(:),STAVLOC(:),STACLOC(:)
       CHARACTER(132),ALLOCATABLE :: STAMLOC(:)
-      CHARACTER*80,ALLOCATABLE :: HAFNAM(:),HAFREMSG(:)
+      CHARACTER*80,ALLOCATABLE :: HAFREMSG(:)
       CHARACTER*80,ALLOCATABLE :: TIPOTAG(:),BOUNTAG(:),FBOUNTAG(:)
       CHARACTER*80,ALLOCATABLE :: ALPHA1(:),ALPHA2(:),FREQMSG(:),
      &  QNMSG(:,:)
@@ -231,10 +231,6 @@ C     INPUT15D section
       REAL(8)    STATIM,REFTIM,WTIMINC
       REAL(8),ALLOCATABLE ::   AMIG(:),AMIGT(:),FAMIG(:)
 C
-C     HARMON section
-      REAL(SZ) THAS,THAF,FMV
-      REAL(SZ),ALLOCATABLE ::   HAFREQ(:),HAFF(:),HAFACE(:)
-C
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
       REAL(SZ) CONVCR
@@ -259,20 +255,6 @@ C     jgf48.03 netCDF metadata
       INTEGER NTRSPE, NTRSPV, NTRSPM, NDSETSE, NDSETSV, NDSETSM
       INTEGER NDSETSW
       INTEGER NHY
-#ifdef NETCDF
-C     ==================================================================
-C     START ADDITION BY MCF FOR NETCDF OPTION I/O 2/29/06
-!     -----------------
-!     Attribute general
-!     -----------------
-      CHARACTER(50), ALLOCATABLE :: STATNAMEV(:)
-      CHARACTER(50), ALLOCATABLE :: STATNAME(:)
-      CHARACTER(50), ALLOCATABLE :: STATNAMEM(:)
-      INTEGER, PARAMETER :: SNAMLEN = 50
-C
-C     END ADDITION BY MCF FOR NETCDF OPTION
-C     ==================================================================
-#endif
 C
 C
 C--------------------------------------------------------------------------C
@@ -310,22 +292,6 @@ C                                      ! Boundary Node I on PE
       INTEGER,ALLOCATABLE::NNSTA3DDP(:)! Number of 3D density stations on (PE)
       INTEGER,ALLOCATABLE::NNSTA3DVP(:)! Number of 3D velocity stations on (PE)
       INTEGER,ALLOCATABLE::NNSTA3DTP(:)! Number of 3D turbulence stationson(PE)
-
-C     jgf48.17 subdomain UnSWAN boundary data
-#ifdef ADCSWAN
-Casey 090304: This section is no longer necessary.
-C     ! Total number of UnSWAN boundary nodes on each subdomain
-C     INTEGER,ALLOCATABLE::numUnSWANBdryNodesTotalP(:)
-C     ! UnSWAN boundary nodes on each segment in each subdomain
-C     INTEGER,ALLOCATABLE::numUnSWANBdryNodesEachP(:)
-C     ! number of UnSWAN boundary segments on each subdomain
-C     INTEGER,ALLOCATABLE::numUnSWANBdrySegsP(:)
-C     ! node numbers along UnSWAN boundaries in each subdomain
-C     INTEGER,ALLOCATABLE::unswanBdryNodesP(:,:)
-C     ! boundary markers along UnSWAN boundaries in each subdomain
-C     INTEGER,ALLOCATABLE::unswanBdryMarkersP(:)
-#endif
-
 C
 C     DIAGS section
       REAL(SZ),ALLOCATABLE ::   PROC_SV(:)
@@ -343,14 +309,6 @@ C     LOC2G section
       INTEGER,ALLOCATABLE  ::   WEIRP_LG(:,:)
       INTEGER,ALLOCATABLE  ::   WEIRDP_LG(:,:)
       INTEGER,ALLOCATABLE  ::   LBINDEX_LG(:,:)
-
-C     jgf48.17 support for UnSWAN boundaries in fort.14
-#ifdef ADCSWAN
-Casey 090304: This section is now longer necessary.
-C     ! mapping of UnSWAN boundary nodes from subdomain to full domain
-C     INTEGER, ALLOCATABLE ::   unswanBdryNodes_lG(:,:)
-#endif
-
 C
 C     jgf45.11 Subdomain->Fulldomain element mappings for 3D recording stations
       INTEGER,ALLOCATABLE::IMAP_STA3DD_LG(:,:) ! density
@@ -431,8 +389,6 @@ C
       ALLOCATE ( STAELOC(MNSTAE),STAVLOC(MNSTAV),STACLOC(MNSTAC) )
       ALLOCATE ( STAMLOC(MNSTAM) )
       nbytes = nbytes + 8*(mnstae+mnstav+mnstam+mnstac)
-      ALLOCATE ( HAFNAM(MNHARF),HAFREMSG(MNHARF) )
-      nbytes = nbytes + 8*mnharf
       ALLOCATE ( TIPOTAG(MNTIF),BOUNTAG(MNBFR),FBOUNTAG(MNFFR) )
       nbytes = nbytes + 4*(mntif+mnbfr+mnffr)
       ALLOCATE ( ALPHA1(MNBFR),ALPHA2(MNFFR),FREQMSG(MNFFR),
@@ -459,8 +415,6 @@ C
       ALLOCATE ( FFF(MNFFR),FFACE(MNFFR) )
       ALLOCATE ( AMIG(MNBFR),AMIGT(MNTIF), FAMIG(MNFFR) )
       nbytes = nbytes + 8*mnbfr+8*mntif+8*mnffr
-      ALLOCATE ( HAFREQ(MNHARF),HAFF(MNHARF),HAFACE(MNHARF) )
-      nbytes = nbytes + 24*mnharf
       ALLOCATE ( NELP(MNPROC), NNODP(MNPROC) )
       ALLOCATE ( NOD_RES_TOT(MNPROC) )
       ALLOCATE ( NWEIRP(MNPROC) )
@@ -511,31 +465,6 @@ C
       STAV_SHARE(:) = -1
       STAM_SHARE(:) = -1
       STAC_SHARE(:) = -1
-C
-C     jgf48.17 allocate memory for UnSWAN boundaries
-#ifdef ADCSWAN
-Casey 090304: This section is no longer necessary.
-C     ALLOCATE(numUnSWANBdryNodesEach(numUnSWANBdrySegs),
-C    &         unswanBdryNodes(numUnSWANBdrySegs,
-C    &                         numUnSWANBdryNodesTotal))
-C     nbytes = nbytes + 4*(numUnSWANBdryNodesTotal+1)
-C    &         * numUnSWANBdrySegs
-C     ALLOCATE(unswanBdryMarkers(numUnSWANBdrySegs))
-C     nbytes = nbytes + 4*(numUnSWANBdrySegs)
-C     ALLOCATE ( numUnSWANBdryNodesEachMSG(numUnSWANBdrySegs) )
-C     nbytes = nbytes + 80*numUnSWANBdrySegs
-C     ALLOCATE (numUnSWANBdrySegsP(MNPROC))
-C     ALLOCATE (numUnSWANBdryNodesTotalP(MNPROC))
-C     ALLOCATE (numUnSWANBdryNodesEachP(numUnSWANBdrySegs))
-C     nbytes = nbytes + 8*mnproc + 4*numUnSWANBdrySegs
-C     ALLOCATE (unswanBdryNodesP(numUnSWANBdrySegs,
-C    &                           numUnSWANBdryNodesTotal))
-C     nbytes = nbytes + 4*numUnSWANBdrySegs*numUnSWANBdryNodesTotal
-C     ALLOCATE (unswanBdryMarkersP(numUnSWANBdrySegs))
-C     nbytes = nbytes + 4*numUnSWANBdrySegs
-C     ALLOCATE (unswanBdryNodes_lG(numUnSWANBdryNodesTotal,MNPROC))
-C     nbytes = nbytes + 4*numUnSWANBdryNodesTotal*mnproc
-#endif 
 
       call memory_alloc(nbytes)
       print *,"from alloc_main1: "

@@ -90,7 +90,7 @@ C
       USE SIZES, ONLY : SZ
       USE GLOBAL
       USE GLOBAL_IO
-      USE HARM
+      USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND
 C.....sb46.28sb01 added 09/xx/2006
       USE OWIWIND,ONLY : NWS12INIT,NWS12GET
@@ -175,7 +175,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
 
       REAL(SZ) ArgT, ArgTP, ArgSAlt
       REAL(SZ) CCSFEA
-      REAL(SZ) EE1, EE2, EE3, ElMax
+      REAL(SZ) ElMax
       REAL(SZ) Fr, FricBP               !for bridge pilings
       REAL(SZ) H1
       REAL(SZ) H2, H2N1, H2N2, H2N3
@@ -190,9 +190,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) DARhoMRho0N1,DARhoMRho0N2,DARhoMRho0N3
       REAL(SZ) DEta2DX,DEta2DY,DRhoDX,DRhoDY
       REAL(SZ) UN1
-      REAL(SZ) U11, U22, U33
       REAL(SZ) UV0, UV1, UV2
-      REAL(SZ) V11, V22, V33
       REAL(SZ) VIDBCPDXOHN1,VIDBCPDXOHN2,VIDBCPDXOHN3,VIDBCPDXOHAvgArea
       REAL(SZ) VIDBCPDYOHN1,VIDBCPDYOHN2,VIDBCPDYOHN3,VIDBCPDYOHAvgArea
       REAL(SZ) WindDragLimit    !jgf46.01 Cap on max wind drag coefficient
@@ -339,7 +337,6 @@ C
 C     jgf46.08 Calculate ramp functions.
 C     jgf46.21 Modify to match behavior of 46.02
       SELECT CASE(NRamp)
-
       CASE(0)
          Ramp=1.0D0
          RampExtFlux=1.0D0
@@ -356,11 +353,9 @@ C     jgf46.21 Modify to match behavior of 46.02
          RampTip=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampTip)
          RampMete=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampMete)
          RampWRad=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampWRad)
-
       END SELECT
-
 C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
-      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
+      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS).AND.(NRAMP.NE.0)) THEN
          Ramp=TANH((2.D0*Time/86400.D0)/DRamp)
          RampExtFlux=TANH((2.D0*Time/86400.D0)/DRampExtFlux)
          RampIntFlux=TANH((2.D0*Time/86400.D0)/DRampIntFlux)
@@ -395,8 +390,20 @@ C     all forcings back on.
             RampWRad=TANH((2.D0
      &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampWRad)
          ENDIF
+         !jgf49.44: Cover the case where the ramp length is zero.
+         IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
+         IF (DRampExtFlux.lt.1.0e-6) RampExtFlux = 1.0d0
+         IF (DRampIntFlux.lt.1.0e-6) RampIntFlux = 1.0d0
+         IF (DRampElev.lt.1.0e-6) RampElev = 1.0d0
+         IF (DRampTip.lt.1.0e-6) RampTip = 1.0d0
+         IF (DRampMete.lt.1.0e-6) RampMete = 1.0d0
+         IF (DRampWRad.lt.1.0e-6) RampWRad = 1.0d0
+      ELSE
+         !jgf49.44: Cover the case where the ramp length is zero.
+         IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
       ENDIF
          
+
 C------------------------MET FORCING---------------------------------------
 C
 C...  UPDATE THE WIND STRESS AND SURFACE PRESSURE AND READ IN NEW VALUES
@@ -2356,83 +2363,14 @@ C...
 C...  WRITE OUTPUT
 C...
       CALL WRITE_OUTPUT_2D (IT,Time) ! =>see write_output.F
-
-C...
-C...  IF IHARIND=1 AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
-C...  AND ON THE SPECIFIED INCREMENT, USE MODEL RESULTS TO UPDATE
-C...  HARMONIC ANALYSIS MATRIX AND LOAD VECTORS.  NOTE: AN 8 BYTE RECORD
-C...  SHOULD BE USED THROUGHOUT THE HARMONIC ANALYSIS SUBROUTINES, EVEN
-C...  ON 32 BIT WORKSTATIONS, SINCE IN THAT CASE THE HARMONIC ANALYSIS
-C...  IS DONE IN DOUBLE PRECISION.
-C...  
-      IF(IHARIND.EQ.1) THEN
-         IF((IT.GT.ITHAS).AND.(IT.LE.ITHAF)) THEN
-            IF(ICHA.EQ.NHAINC) ICHA=0
-            ICHA=ICHA+1
-            IF(ICHA.EQ.NHAINC) THEN
-C...  
-C.....UPDATE THE LHS MATRIX
-C...  
-               CALL LSQUPDLHS(timeh,IT)
-C...  IF DESIRED COMPUTE ELEVATION STATION INFORMATION AND UPDATE LOAD
-C.....VECTOR
-C...
-               IF(NHASE.EQ.1) THEN
-                  DO I=1,NSTAE
-                     EE1=ETA2(NM(NNE(I),1))
-                     EE2=ETA2(NM(NNE(I),2))
-                     EE3=ETA2(NM(NNE(I),3))
-                     ET00(I)=EE1*STAIE1(I)+EE2*STAIE2(I)+EE3*STAIE3(I)
-                  END DO
-                  CALL LSQUPDES(ET00,NSTAE)
-               ENDIF
-C...  IF DESIRED COMPUTE VELOCITY STATION INFORMATION AND UPDATE LOAD
-C.....VECTOR
-C...
-               IF(NHASV.EQ.1) THEN
-                  DO I=1,NSTAV
-                     U11=UU2(NM(NNV(I),1))
-                     U22=UU2(NM(NNV(I),2))
-                     U33=UU2(NM(NNV(I),3))
-                     V11=VV2(NM(NNV(I),1))
-                     V22=VV2(NM(NNV(I),2))
-                     V33=VV2(NM(NNV(I),3))
-                     UU00(I)=U11*STAIV1(I)+U22*STAIV2(I)+U33*STAIV3(I)
-                     VV00(I)=V11*STAIV1(I)+V22*STAIV2(I)+V33*STAIV3(I)
-                  END DO
-                  CALL LSQUPDVS(UU00,VV00,NSTAV)
-               ENDIF
-C...  
-C.....IF DESIRED UPDATE GLOBAL ELEVATION LOAD VECTOR
-C...  
-               IF(NHAGE.EQ.1) CALL LSQUPDEG(ETA2,NP)
-C...  
-C.....IF DESIRED UPDATE GLOBAL VELOCITY LOAD VECTOR
-C...  
-               IF(NHAGV.EQ.1) CALL LSQUPDVG(UU2,VV2,NP)
-
-            ENDIF
-         ENDIF
-
-C...  LINES TO COMPUTE MEANS AND VARIANCES
-
-         if (CHARMV) then
-            IF(IT.GT.ITMV) THEN
-               NTSTEPS=NTSTEPS+1
-               DO I=1,NP
-                  ELAV(I)=ELAV(I)+ETA2(I)
-                  XVELAV(I)=XVELAV(I)+UU2(I)
-                  YVELAV(I)=YVELAV(I)+VV2(I)
-                  ELVA(I)=ELVA(I)+ETA2(I)*ETA2(I)
-                  XVELVA(I)=XVELVA(I)+UU2(I)*UU2(I)
-                  YVELVA(I)=YVELVA(I)+VV2(I)*VV2(I)
-               END DO
-            ENDIF
-         endif                  !   charmv
-
-
-      ENDIF
-
+C
+C 
+C     jgf49.44: If harmonic analysis was requested and the current time
+C     is within the harmonic analysis period, update the left hand side 
+C     of the harmonic analysis matrix. Also update the load vectors for
+C     each type of analysis. If timeseries reconstruction was specified,
+C     also update the timeseries.
+      CALL updateHarmonicAnalysis(IT, TIMEH)
 C...
 C...  WRITE OUT HOT START INFORMATION IF NHSTAR=1 AND AT CORRECT TIME
 C.... STEP
@@ -8880,7 +8818,7 @@ C    kmd48.33bc changed the BPG calculation for bottom boundary issues
 !                     BCPG(k)=BCPG(k+1)
 !                  END IF 
                ELSE
-                  BCPG(k)=(DBCPDX2A+I*DBCPDY2A)/TotalBCPGArea2
+                  BCPG(k)=(DBCPDX2A+iy*DBCPDY2A)/TotalBCPGArea2
                ENDIF
 
             ENDDO

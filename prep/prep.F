@@ -1199,11 +1199,6 @@ C
       RETURN
       END
 
-
-      SUBROUTINE PREP15()
-      USE PRE_GLOBAL 
-      use memory_usage
-C
 C---------------------------------------------------------------------------C
 C                     (  Serial Version  2/28/98  )                         C 
 C  This routine writes a Local Input file "fort.15" file for each subdomain C
@@ -1215,7 +1210,10 @@ C  This version is compatible with ADCIRC version 34.03                     C
 C                                                                           C
 C           Modifications by RL on 10/9/01 to accomodate NWS = -2           C
 C---------------------------------------------------------------------------C
-C
+      SUBROUTINE PREP15()
+      USE PRE_GLOBAL 
+      use memory_usage
+      USE HARM, ONLY : NAMEFR
       IMPLICIT NONE
       integer :: nbytes = 0
       INTEGER I,J,K,M,JG,JP,KK
@@ -1498,7 +1496,7 @@ C--Write Harmonic Analysis Data
 C
       WRITE(15,80) HARFRMSG
       DO I=1,NHARFR
-         WRITE(15,80) HAFNAM(I)
+         WRITE(15,'(A10)') NAMEFR(I)
          WRITE(15,80) HAFREMSG(I)
 c           WRITE(15,*) HAFREQ(I),HAFF(I),HAFACE(I)
       ENDDO
@@ -1907,7 +1905,30 @@ c                 ISEND(ISEND_TOT(J,I)) = INDX
             WRITE(18,3040)  IPR-1, ISEND_TOT(J,I)
             WRITE(18,1130) (ISEND(K),K=1,ISEND_TOT(J,I))
          ENDDO
-         
+C
+         IF (C3D.eqv..true.) THEN
+C           jgf49.43.18: Add 3D station mappings from subdomain to fulldomain
+C           to accomodate globalio.          
+C
+C           Write the fulldomain station numbers of all 3D density stations
+C           in local node order; write the fulldomain station number as positive
+C           for resident stations and negative for ghost stations.
+            WRITE(18,3060) NSTA3DD, MAXVAL(NNSTA3DDP), NNSTA3DDP(I) 
+            DO J=1,NNSTA3DDP(I)
+               WRITE(18,1131) IMAP_STA3DD_LG(J,I)
+            END DO
+C           3D velocity stations
+            WRITE(18,3061) NSTA3DV, MAXVAL(NNSTA3DVP), NNSTA3DVP(I) 
+            DO J=1,NNSTA3DVP(I)
+               WRITE(18,'(I8)') IMAP_STA3DV_LG(J,I)
+            END DO
+C           3D turbulence stations
+            WRITE(18,3062) NSTA3DT, MAXVAL(NNSTA3DTP), NNSTA3DTP(I) 
+            DO J=1,NNSTA3DTP(I)
+               WRITE(18,'(I8)') IMAP_STA3DT_LG(J,I)
+            ENDDO
+         ENDIF
+C
          CLOSE(18)
 C     
 1000  CONTINUE
@@ -1941,6 +1962,7 @@ C
 C
   92  FORMAT(1X,A6,2X,I7,2X,F8.2)
 1130  FORMAT(8X,9I8)
+1131  FORMAT(:,I8)
 Casey 100209: Changed I8 to I12 through this section.
 3000  FORMAT('NELG    ',3I12)
 3001  FORMAT('NNODG   ',3I8)
@@ -1955,7 +1977,10 @@ Casey 100209: Changed I8 to I12 through this section.
 3030  FORMAT('RECV PE ',2I8)    
 3040  FORMAT('SEND PE ',2I8) 
 3050  FORMAT('FileFmt ',3I8)
-      END
+3060  FORMAT('NSTA3DD ',3I8)
+3061  FORMAT('NSTA3DV ',3I8)
+3062  FORMAT('NSTA3DT ',3I8)
+      END SUBROUTINE PREP18
 
 
       SUBROUTINE PREP19()
@@ -2839,7 +2864,7 @@ C
       ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet
       INTEGER INZ,INF,IMM,INP,INSTAE,INSTAV,IISTAE,IISTAV,IIGLOE,IIGLOV,
      &                                       IICALL,INFREQ,ITUD,NTSTEPS
-      INTEGER IHARIND,ITHAS,ITHAF,ITMV,IHABEG,ICHA
+      INTEGER ITHAS,ITHAF,ITMV,IHABEG,ICHA
       CHARACTER*10,ALLOCATABLE     ::  INAMEFR(:)
       REAL(8)  TIMEUD
       REAL(SZ),ALLOCATABLE ::  HA(:,:)
@@ -3370,34 +3395,6 @@ C
       call memory_alloc(nbytes)
       ALLOCATE ( NOFF(MNE) )
       nbytes = 4*mne   
-      call memory_alloc(nbytes)
-
-      ALLOCATE ( HA(2*MNHARF,2*MNHARF) )
-      nbytes = 32*mnharf
-      call memory_alloc(nbytes)
-      ALLOCATE ( GLOELV(2*MNHARF,MNP) )
-      nbytes = 16*mnharf*mnp
-      call memory_alloc(nbytes)
-      ALLOCATE ( GLOULV(2*MNHARF,MNP),GLOVLV(2*MNHARF,MNP) )
-      nbytes = 32*mnharf*mnp
-      call memory_alloc(nbytes)
-      ALLOCATE ( STAELV(2*MNHARF,MNSTAE) )
-      nbytes = 16*mnharf*mnstae
-      call memory_alloc(nbytes)
-      ALLOCATE ( STAULV(2*MNHARF,MNSTAV),STAVLV(2*MNHARF,MNSTAV) )
-      nbytes = 16*mnharf*mnstav
-      call memory_alloc(nbytes)
-      ALLOCATE ( ELAV(MNP),ELVA(MNP) )
-      nbytes = 16*mnp
-      call memory_alloc(nbytes)
-      ALLOCATE ( XVELAV(MNP),XVELVA(MNP),YVELAV(MNP),YVELVA(MNP) )
-      nbytes = 32*mnp
-      call memory_alloc(nbytes)
-      ALLOCATE ( IFREQ(MNHARF),IFF(MNHARF),IFACE(MNHARF) )
-      nbytes = 12*mnharf
-      call memory_alloc(nbytes)
-      ALLOCATE ( INAMEFR(MNHARF) )
-      nbytes = 4*mnharf
       call memory_alloc(nbytes)
 
 !  Continue reading global hot start file
@@ -5603,9 +5600,6 @@ c
 c     return
 c     end subroutine
 
-CC    Addition by CF   8/2007
-      SUBROUTINE PREP80()
-      USE PRE_GLOBAL 
 C
 C---------------------------------------------------------------------------C
 C                     (  Serial Version  2/28/98  )                         C 
@@ -5618,7 +5612,11 @@ C     processing of the NOFF array.
 C     jgf45.11 Added IDEN for processing fort.44 file, added additional 
 C     arrays to handle processing of 3D recording stations.
 C---------------------------------------------------------------------------C
-C
+CC    Addition by CF   8/2007
+      SUBROUTINE PREP80()
+      USE PRE_GLOBAL 
+      USE SIZES, ONLY : MNHARF
+      USE HARM, ONLY : NHASE, NHASV, NHAGE, NHAGV
       IMPLICIT NONE
       INTEGER I,K
 C
@@ -5865,6 +5863,7 @@ C---------------------------------------------------------------------------
       SUBROUTINE prepNetCDF()
 #ifdef NETCDF
       USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP
+      USE HARM, ONLY : IHARIND, CHARMV
       USE VERSION
       USE PRE_GLOBAL, ONLY: NSTAE, NOUTE, RUNDES, RUNID, AGRID,
      &    DTDP, TAU0, STATIM, REFTIM, RNDAY, DRAMP, A00, B00, C00,
@@ -5873,7 +5872,7 @@ C---------------------------------------------------------------------------
      &    XEV,YEV,XEM,YEM,XEL,YEL,X,Y,NELG,DT, NTIF, NODECODE,
      &    NOLICA, NOLICAT, NWP, NCOR, NTIP, NWS, NRAMP, NBFR,
      &    NHY, NOPE, NETA, NBOU, NVEL, RAD2DEG, G, SL1, SF1,
-     &    NVDLL, NVELL, IBTYPE, IBTYPEE, STATNAME, STATNAMEV,STATNAMEM,
+     &    NVDLL, NVELL, IBTYPE, IBTYPEE,
      &    NSTAV, NOUTV, SLEV, SFEV, NTRSPV,
      &    NSTAM, NOUTM, SLEM, SFEM, NTRSPM,
      &    NOUTGE, SLAM, SFEA, NDSETSE,
@@ -5884,15 +5883,17 @@ C---------------------------------------------------------------------------
      &    nhstar,nhsinc,
      &    title, institution,
      &    source, history, references, comments, host, convention,
-     &    contact, base_date
+     &    contact, base_date, NABOUT, NSCREEN
       USE NETCDFIO, ONLY : setADCIRCParameters, allocNetCDFArrays,
-     &                     initNetCDFHotstart
-      USE GLOBAL, ONLY : OutputDataDescript_t
+     &    initNetCDFHotstart, initNetCDFHotstartHarmonic,
+     &    initNetCDFHotstartHarmonicMeansVariances,
+     &    freeNetCDFArrays, freeNetCDFHotstart, freeNetCDFCoord
+      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, 
+     &                   initLogging
 C
       IMPLICIT NONE
       INTEGER :: myProc = 0
-      INTEGER :: screenUnit = 6
-      LOGICAL error
+      LOGICAL err
 C
 C     The initialization of the output data descriptors for each ADCIRC
 C     output file had to be cut and pasted from write_output.F. At some
@@ -5913,6 +5914,21 @@ C     For hotstart files:
       type(OutputDataDescript_t), SAVE :: EtaDiscDescript
       type(OutputDataDescript_t), SAVE :: NodeCodeDescript
       type(OutputDataDescript_t), SAVE :: NOFFDescript
+C     for hotstart harmonic analysis
+      type(OutputDataDescript_t), SAVE :: HarmElevFDLVDescript
+      type(OutputDataDescript_t), SAVE :: HarmElevSLVDescript
+      type(OutputDataDescript_t), SAVE :: HarmUVelFDLVDescript
+      type(OutputDataDescript_t), SAVE :: HarmVVelFDLVDescript
+      type(OutputDataDescript_t), SAVE :: HarmUVelSLVDescript
+      type(OutputDataDescript_t), SAVE :: HarmVVelSLVDescript
+C     for hotstart harmoinc analysis means and variance calculations
+      type(OutputDataDescript_t), SAVE :: ELAVDescript
+      type(OutputDataDescript_t), SAVE :: ELVADescript
+      type(OutputDataDescript_t), SAVE :: XVELAVDescript
+      type(OutputDataDescript_t), SAVE :: YVELAVDescript
+      type(OutputDataDescript_t), SAVE :: XVELVADescript
+      type(OutputDataDescript_t), SAVE :: YVELVADescript
+C 
       INTEGER numHotstartWrites ! number writes to hot start files
       INTEGER nextLun           ! next LUN to write to, after initial write
 C
@@ -6025,7 +6041,6 @@ C     fort.74
       WindVelDescript % field_name           = 'WindVel'
 C
 C     fort.67 and fort.68
-C     Need to populate the global and nodal attributes modules with
       Elev1Descript % specifier            = NHSTAR
       Elev1Descript % initial_value        = 0.0
       Elev2Descript % specifier            = NHSTAR
@@ -6038,6 +6053,44 @@ C     Need to populate the global and nodal attributes modules with
       NodeCodeDescript % int_initial_value        = 0
       NOFFDescript % specifier            = NHSTAR
       NOFFDescript % int_initial_value        = 0
+C     hotstart harmonic analysis 
+      HarmElevFDLVDescript % specifier            = NHSTAR
+      HarmElevFDLVDescript % initial_value        = 0.0
+      HarmElevFDLVDescript % num_fd_records       = MNP
+      HarmElevSLVDescript % specifier            = NHSTAR
+      HarmElevSLVDescript % initial_value        = 0.0
+      HarmElevSLVDescript % num_fd_records       = NSTAE
+      HarmUVelFDLVDescript % specifier            = NHSTAR
+      HarmUVelFDLVDescript % initial_value        = 0.0
+      HarmUVelFDLVDescript % num_fd_records       = MNP
+      HarmVVelFDLVDescript % specifier            = NHSTAR
+      HarmVVelFDLVDescript % initial_value        = 0.0
+      HarmVVelFDLVDescript % num_fd_records       = MNP
+      HarmUvelSLVDescript % specifier            = NHSTAR
+      HarmUVelSLVDescript % initial_value        = 0.0
+      HarmUVelSLVDescript % num_fd_records       = NSTAV
+      HarmVVelSLVDescript % specifier            = NHSTAR
+      HarmVVelSLVDescript % initial_value        = 0.0
+      HarmVVelSLVDescript % num_fd_records       = NSTAV
+C     hotstart means and variance calculations
+      ELAVDescript % specifier            = NHSTAR
+      ELAVDescript % initial_value        = 0.0
+      ELAVDescript % num_fd_records       = MNP
+      ELVADescript % specifier            = NHSTAR
+      ELVADescript % initial_value        = 0.0
+      ELVADescript % num_fd_records       = MNP
+      XVELAVDescript % specifier            = NHSTAR
+      XVELAVDescript % initial_value        = 0.0
+      XVELAVDescript % num_fd_records       = MNP
+      YVELAVDescript % specifier            = NHSTAR
+      YVELAVDescript % initial_value        = 0.0
+      YVELAVDescript % num_fd_records       = MNP
+      XVELVADescript % specifier            = NHSTAR
+      XVELVADescript % initial_value        = 0.0
+      XVELVADescript % num_fd_records       = MNP
+      YVELVADescript % specifier            = NHSTAR
+      YVELVADescript % initial_value        = 0.0
+      YVELVADescript % num_fd_records       = MNP
 C
 C     Need to populate the global and nodal attributes modules with
 C     these parameters, since the netcdfio module relies on those
@@ -6048,8 +6101,14 @@ C     not be needed.
          ALLOCATE(NODECODE(MNP))
       ENDIF
 C
+C     jgf49.44: Set up logging so we can trace what's going on with
+C     the netcdf module. 
+      CALL initLogging()
+C
+C     jgf49.44: Set parameters in global module based on the data
+C     we collected in read_global.F and stored in pre_global.F.
       CALL setADCIRCParameters(
-     &   base_date, STATNAME, STATNAMEV, STATNAMEM, MNE, NBOU,
+     &   base_date, MNE, NBOU,
      &   NVEL, NOPE, MNP, SL0, SF0, NBVV, NVDLL, NBDV, NVELL, X, Y,
      &   IBTYPE, IBTYPEE, SL1, SF1, NODECODE, G, FileFmtRev,
      &   FileFmtMinor, FileFmtMajor, im, iestp, nscoue, ivstp, nscouv,
@@ -6060,31 +6119,81 @@ C
      &   ics, nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
      &   reftim, rnday, dramp, a00, b00, c00, h0, cori, ntif, nbfr,
      &   myProc, screenUnit, nolibf, nwp, tau0, cf, eslm,
-     &   nstae, nstav, nstam, neta)      
+     &   nstae, nstav, nstam, neta, nabout, nscreen)      
 C
 C     Create NetCDF output files for those output files where NetCDF
 C     was specified. 
-      error = .false.
-      CALL allocNetCDFArrays(61, ElevStaDescript, error)
-      CALL allocNetCDFArrays(62, VelStaDescript, error)
-      CALL allocNetCDFArrays(63, ElevDescript, error)
-      CALL allocNetCDFArrays(64, VelDescript, error)
-      CALL allocNetCDFArrays(71, PrStaDescript, error)
-      CALL allocNetCDFArrays(72, WindVelStaDescript, error)
-      CALL allocNetCDFArrays(73, PrDescript, error)
-      CALL allocNetCDFArrays(74, WindVelDescript, error)
+      err = .false.
+      CALL allocNetCDFArrays(61, ElevStaDescript, err)
+      CALL allocNetCDFArrays(62, VelStaDescript, err)
+      CALL allocNetCDFArrays(63, ElevDescript, err)
+      CALL allocNetCDFArrays(64, VelDescript, err)
+      CALL allocNetCDFArrays(71, PrStaDescript, err)
+      CALL allocNetCDFArrays(72, WindVelStaDescript, err)
+      CALL allocNetCDFArrays(73, PrDescript, err)
+      CALL allocNetCDFArrays(74, WindVelDescript, err)
 C
 C     Create NetCDF hotstart files if NetCDF was specified.
       IF ((NHSTAR.EQ.3).OR.(NHSTAR.EQ.367).OR.(NHSTAR.EQ.368)) THEN
          ! must init both hotstart files ... there is not enough information
          ! available to determine if they will both be needed
-         CALL initNetCDFHotstart(67, Elev1Descript,
-     &       Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
-     &       NodeCodeDescript, NOFFDescript, error)
-         CALL initNetCDFHotstart(68, Elev1Descript,
-     &      Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
-     &      NodeCodeDescript, NOFFDescript, error)
+         IF (IHOT.ne.367) THEN
+            CALL initNetCDFHotstart(67, Elev1Descript,
+     &         Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
+     &         NodeCodeDescript, NOFFDescript, err)
+         ENDIF 
+         IF (IHOT.ne.368) THEN
+            CALL initNetCDFHotstart(68, Elev1Descript,
+     &         Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
+     &         NodeCodeDescript, NOFFDescript, err)
+         ENDIF
+         IF (IHARIND.eq.1) THEN
+            IF (IHOT.ne.367) THEN
+               CALL initNetCDFHotstartHarmonic(67,
+     &            HarmElevFDLVDescript, HarmElevSLVDescript,
+     &            HarmUVelFDLVDescript, HarmVVelFDLVDescript,
+     &            HarmUVelSLVDescript, HarmVVelSLVDescript, err)
+            ENDIF
+            IF (IHOT.ne.368) THEN
+               CALL initNetCDFHotstartHarmonic(68,
+     &            HarmElevFDLVDescript, HarmElevSLVDescript,
+     &            HarmUVelFDLVDescript, HarmVVelFDLVDescript,
+     &            HarmUVelSLVDescript, HarmVVelSLVDescript, err)
+            ENDIF
+            IF (CHARMV.eqv..true.) THEN
+               IF (IHOT.ne.367) THEN
+                  CALL initNetCDFHotstartHarmonicMeansVariances(
+     &               67, ELAVDescript, ELVADescript,
+     &               XVELAVDescript, YVELAVDescript, XVELVADescript,
+     &               YVELVADescript, err)
+               ENDIF
+               IF (IHOT.ne.368) THEN
+                  CALL initNetCDFHotstartHarmonicMeansVariances(
+     &               68, ELAVDescript, ELVADescript,
+     &               XVELAVDescript, YVELAVDescript, XVELVADescript,
+     &               YVELVADescript, err)
+               ENDIF
+            ENDIF
+         ENDIF
+         ! free up memory allocated for hotstart arrays
+         IF (IHOT.ne.367) THEN
+            CALL freeNetCDFHotstart(67)
+         ENDIF
+         IF (IHOT.ne.368) THEN
+            CALL freeNetCDFHotstart(68)
+         ENDIF
       ENDIF
+      ! free up memory allocated for output arrays
+      CALL freeNetCDFArrays(61, ElevStaDescript)
+      CALL freeNetCDFArrays(62, VelStaDescript)
+      CALL freeNetCDFArrays(63, ElevDescript)
+      CALL freeNetCDFArrays(64, VelDescript)
+      CALL freeNetCDFArrays(71, PrStaDescript)
+      CALL freeNetCDFArrays(72, WindVelStaDescript)
+      CALL freeNetCDFArrays(73, PrDescript)
+      CALL freeNetCDFArrays(74, WindVelDescript)
+      ! free up memory allocated for mesh and boundaries 
+      CALL freeNetCDFCoord()
 #endif
 c----------------------------------------------------------------------------
       END SUBROUTINE prepNetCDF

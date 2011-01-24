@@ -267,9 +267,18 @@ C
       END
 
 
+C----------------------------------------------------------------------
+C     Reads the global ADCIRC Input Data File for data decomposition 
+C     program ADCPP.  This version compatible with ADCIRC_v34.03
+C     vjp  3/28/98
+C---------------------------------------------------------------------
       SUBROUTINE READ15() 
       USE PRE_GLOBAL 
-      USE GLOBAL, ONLY : parse, a2f, hss
+      USE GLOBAL, ONLY : MNHARF, parse, a2f, hss, screenUnit, STATNAME,
+     &                   STATNAMEV, STATNAMEM, STATNAMEC
+      USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
+     &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
+     &                 IHARIND, ALLOC_MAIN14, CHARMV
       USE PRESIZES, ONLY : SZ
       use memory_usage
       IMPLICIT NONE
@@ -284,13 +293,6 @@ C
 C    ===================================================================
 
 
-C
-C----------------------------------------------------------------------
-C     Reads the global ADCIRC Input Data File for data decomposition 
-C     program ADCPP.  This version compatible with ADCIRC_v34.03
-C     vjp  3/28/98
-C---------------------------------------------------------------------
-C
       integer :: nbytes = 0
       REAL(SZ) RSTIMINC
       INTEGER N1, N2, N3, KMIN, JG, INDX
@@ -326,6 +328,9 @@ C
 C
       READ(15,80) SCREENMSG
       READ(SCREENMSG,*) NSCREEN
+      IF (NSCREEN.eq.0) screenUnit = 0
+      IF (NSCREEN.gt.0) screenUnit = 6
+      IF (NSCREEN.lt.0) screenUnit = 999
 C
       READ(15,80) HOTMSG
       READ(HOTMSG,*) IHOT
@@ -808,7 +813,7 @@ C
                 XEL(I)=a2f(LVAR(1))
                 YEL(I)=a2f(LVAR(2))
                 STATNAME(I)=LVAR(3)
-                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
+C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
 #endif
               ENDIF
             
@@ -896,7 +901,7 @@ C
               XEV(I)=a2f(LVAR(1))
               YEV(I)=a2f(LVAR(2))
               STATNAMEV(I)=LVAR(3)
-              WRITE(6,9911) XEV(I), YEV(I), STATNAMEV(I)
+C              WRITE(6,9911) XEV(I), YEV(I), STATNAMEV(I)
 #endif
            ENDIF
 
@@ -1031,7 +1036,7 @@ C
                 XEM(I)=a2f(LVAR(1))
                 YEM(I)=a2f(LVAR(2))
                 STATNAMEM(I)=LVAR(3)
-                WRITE(6,9911) XEM(I), YEM(I), STATNAMEM(I)
+C                WRITE(6,9911) XEM(I), YEM(I), STATNAMEM(I)
 #endif
              ENDIF
              
@@ -1120,15 +1125,14 @@ C--Read Harmonic Analysis Data
 C
       READ(15,80) HARFRMSG
       READ(HARFRMSG,*) NHARFR
-      IF (NHARFR.GT.MNHARF) THEN
-        print *, "NHARFR exceeds parameter MNHARF"
-        print *, "NHARFR = ",NHARFR, " exceeds parameter MNHARF = ",
-     &            MNHARF
-        stop 
-      ENDIF
+      MNHARF = NHARFR
+      IF (NHARFR.EQ.0) MNHARF = 1
+      CALL ALLOC_HA()
+      CALL ALLOC_MAIN14()
+      ALLOCATE(HAFREMSG(MNHARF))
 C
       DO I=1,NHARFR
-          READ(15,80) HAFNAM(I)
+          READ(15,'(A10)') NAMEFR(I)
           READ(15,80) HAFREMSG(I)
           READ(HAFREMSG(I),*) HAFREQ(I),HAFF(I),HAFACE(I)
       ENDDO
@@ -1176,6 +1180,9 @@ C
           stop
         ENDIF
       ENDIF
+      IHARIND=NHARFR*(NHASE+NHASV+NHAGE+NHAGV)
+      IF(IHARIND.GT.0) IHARIND=1
+      IF ((FMV.GT.0.).AND.(NHARFR.GT.0).AND.(C2DDI)) CHARMV = .TRUE.
 C
 C--Read Hot Start Data
 C
@@ -1285,17 +1292,15 @@ C
       END
 
 
-      SUBROUTINE READ15_3DVS() 
-      USE PRE_GLOBAL 
-      use memory_usage
-C
 C----------------------------------------------------------------------
 C     Reads the 3DVS portion of the global ADCIRC Input Data File for
 C     data decomposition program ADCPP.  This version compatible with
 C     ADCIRC_v41.11a
 C     tjc  6/24/02
 C---------------------------------------------------------------------
-C
+      SUBROUTINE READ15_3DVS() 
+      USE PRE_GLOBAL 
+      use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
       REAL(8) SL1Sta,SF1Sta
@@ -1303,7 +1308,25 @@ C
       
       REAL(8) :: STATIME
       REAL(8), PARAMETER :: day2sec=24.d0*3600.d0
-
+C
+C     jgf49.43.19: Moved memory allocation for number of 3D stations
+C     on each subdomain to here and made it unconditional.
+C     The NNSTA3D*P arrays will still be needed later b/c they are 
+C     written to the fort.18 message passing file.
+      ALLOCATE(NNSTA3DDP(MNPROC))
+      nbytes = 4*mnproc
+      call memory_alloc(nbytes)
+      ALLOCATE(NNSTA3DVP(MNPROC))
+      nbytes = 4*mnproc  
+      call memory_alloc(nbytes)
+      ALLOCATE(NNSTA3DTP(MNPROC))
+      nbytes = 4*mnproc 
+      call memory_alloc(nbytes)
+      ! initialize
+      NNSTA3DDP = 0
+      NNSTA3DVP = 0
+      NNSTA3DTP = 0
+C
       SL0=DEG2RAD*SLAM0 !jgf45.12
       SF0=DEG2RAD*SFEA0
 
@@ -1413,6 +1436,21 @@ C     jgf45.11 switched from node numbers to coordinates
       READ(DSDMSG,*) I3DSD,TO3DSDS,TO3DSDF,NSPO3DSD
       READ(15,80) NSTA3DDMSG
       READ(NSTA3DDMSG,*) NSTA3DD
+      ALLOCATE(STA3DDLOC(NSTA3DD))
+      nbytes = 8*nsta3dd
+      call memory_alloc(nbytes)
+      ALLOCATE(X3DD(NSTA3DD),Y3DD(NSTA3DD))
+      nbytes = 16*nsta3dd
+      call memory_alloc(nbytes)
+      ALLOCATE(SL3DD(NSTA3DD),SF3DD(NSTA3DD))
+      nbytes = 16*nsta3dd
+      call memory_alloc(nbytes)
+      ALLOCATE(NNS3DDG(NSTA3DD))
+      nbytes = 4*nsta3dd
+      call memory_alloc(nbytes)
+      ALLOCATE(IMAP_STA3DD_LG(NSTA3DD,MNPROC))
+      nbytes = 4*nsta3dd*mnproc
+      call memory_alloc(nbytes)
 C  kmd48.33bc changed to -2 and I3DSD not equal to 0
       IF((I3DSD.LT.-2).OR.(I3DSD.GT.2)) THEN
          WRITE(*,350)
@@ -1421,27 +1459,12 @@ C  kmd48.33bc changed to -2 and I3DSD not equal to 0
          STOP
       ENDIF
       IF(I3DSD.NE.0) THEN
-         ALLOCATE(NNSTA3DDP(MNPROC))
-         nbytes = 4*mnproc
-         call memory_alloc(nbytes)
-         ALLOCATE(IMAP_STA3DD_LG(NSTA3DD,MNPROC))
-         nbytes = 4*nsta3dd*mnproc
-         call memory_alloc(nbytes)
-         ALLOCATE(STA3DDLOC(NSTA3DD))
-         nbytes = 8*nsta3dd
-         call memory_alloc(nbytes)
-         ALLOCATE(X3DD(NSTA3DD),Y3DD(NSTA3DD))
-         nbytes = 16*nsta3dd
-         call memory_alloc(nbytes)
          IF (ICS.EQ.1) THEN
             DO I=1,NSTA3DD
                READ(15,80) STA3DDLOC(I)
                READ(STA3DDLOC(I),*) X3DD(I),Y3DD(I)
             ENDDO
          ELSE
-            ALLOCATE(SL3DD(NSTA3DD),SF3DD(NSTA3DD))
-            nbytes = 16*nsta3dd
-            call memory_alloc(nbytes)
             DO I=1,NSTA3DD
                READ(15,80) STA3DDLOC(I)
                READ(STA3DDLOC(I),*) SL3DD(I),SF3DD(I)
@@ -1455,9 +1478,6 @@ C  kmd48.33bc changed to -2 and I3DSD not equal to 0
 C     jgf45.11 For each 3D density station, find the full-domain index of 
 C     the corresponding element.
 
-         ALLOCATE(NNS3DDG(NSTA3DD))
-         nbytes = 4*nsta3dd
-         call memory_alloc(nbytes)
          CALL CoordToEle(X3DD,Y3DD,NNS3DDG,NSTA3DD,
      &        '3D density recording station  ')
 
@@ -1471,6 +1491,18 @@ C     jgf45.11 switched from node numbers to coordinates
       READ(DSVMSG,*) I3DSV,TO3DSVS,TO3DSVF,NSPO3DSV
       READ(15,80) NSTA3DVMSG
       READ(NSTA3DVMSG,*) NSTA3DV
+      ALLOCATE(IMAP_STA3DV_LG(NSTA3DV,MNPROC))
+      nbytes = 4*nsta3dv*mnproc  
+      call memory_alloc(nbytes)
+      ALLOCATE(STA3DVLOC(NSTA3DV))
+      nbytes = 8*nsta3dv
+      call memory_alloc(nbytes)
+      ALLOCATE(X3DV(NSTA3DV),Y3DV(NSTA3DV))
+      nbytes = 16*nsta3dv
+      call memory_alloc(nbytes)
+      ALLOCATE(NNS3DVG(NSTA3DV))
+      nbytes = 4*nsta3dv
+      call memory_alloc(nbytes)
 C  kmd48.33 changed to -2
       IF((I3DSV.LT.-2).OR.(I3DSV.GT.2)) THEN
          WRITE(*,350)
@@ -1479,18 +1511,6 @@ C  kmd48.33 changed to -2
          STOP
       ENDIF
       IF(I3DSV.NE.0) THEN
-         ALLOCATE(NNSTA3DVP(MNPROC))
-         nbytes = 4*mnproc  
-         call memory_alloc(nbytes)
-         ALLOCATE(IMAP_STA3DV_LG(NSTA3DV,MNPROC))
-         nbytes = 4*nsta3dv*mnproc  
-         call memory_alloc(nbytes)
-         ALLOCATE(STA3DVLOC(NSTA3DV))
-         nbytes = 8*nsta3dv
-         call memory_alloc(nbytes)
-         ALLOCATE(X3DV(NSTA3DV),Y3DV(NSTA3DV))
-         nbytes = 16*nsta3dv
-         call memory_alloc(nbytes)
          IF (ICS.EQ.1) THEN
             DO I=1,NSTA3DV
                READ(15,80) STA3DVLOC(I)
@@ -1513,9 +1533,6 @@ C  kmd48.33 changed to -2
 C     jgf45.11 For each 3D velocity station, find the full-domain index of 
 C     the corresponding element.
 
-         ALLOCATE(NNS3DVG(NSTA3DV))
-         nbytes = 4*nsta3dv
-         call memory_alloc(nbytes)
          CALL CoordToEle(X3DV,Y3DV,NNS3DVG,NSTA3DV,
      &        '3D velocity recording station ')
 
@@ -1528,6 +1545,15 @@ C     jgf45.11 switched from node numbers to coordinates
       READ(DSTMSG,*) I3DST,TO3DSTS,TO3DSTF,NSPO3DST
       READ(15,80) NSTA3DTMSG
       READ(NSTA3DTMSG,*) NSTA3DT
+      ALLOCATE(IMAP_STA3DT_LG(NSTA3DT,MNPROC))
+      nbytes = 4*nsta3dt*mnproc 
+      call memory_alloc(nbytes)
+      ALLOCATE(STA3DTLOC(NSTA3DT))
+      nbytes = 4*nsta3dt
+      call memory_alloc(nbytes)
+      ALLOCATE(X3DT(NSTA3DT),Y3DT(NSTA3DT))
+      nbytes = 16*nsta3dt
+      call memory_alloc(nbytes)
 C  kmd48.33 changed to -2
       IF((I3DST.LT.-2).OR.(I3DST.GT.2)) THEN
          WRITE(*,350)
@@ -1536,18 +1562,6 @@ C  kmd48.33 changed to -2
          STOP
       ENDIF
       IF(I3DST.NE.0) THEN
-         ALLOCATE(NNSTA3DTP(MNPROC))
-         nbytes = 4*mnproc 
-         call memory_alloc(nbytes)
-         ALLOCATE(IMAP_STA3DT_LG(NSTA3DT,MNPROC))
-         nbytes = 4*nsta3dt*mnproc 
-         call memory_alloc(nbytes)
-         ALLOCATE(STA3DTLOC(NSTA3DT))
-         nbytes = 4*nsta3dt
-         call memory_alloc(nbytes)
-         ALLOCATE(X3DT(NSTA3DT),Y3DT(NSTA3DT))
-         nbytes = 16*nsta3dt
-         call memory_alloc(nbytes)
          IF (ICS.EQ.1) THEN
             DO I=1,NSTA3DT
                READ(15,80) STA3DTLOC(I)

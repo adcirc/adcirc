@@ -133,7 +133,6 @@ C     variables which describe the full domain
       INTEGER MNWP   ! 1 If No Meteorlogical Forcing else = MNP
       INTEGER MNWLAT ! number of Latitudes 
       INTEGER MNWLON ! number of Longitudes
-      INTEGER MNHARF ! number of Constituents in Harmonic Analysis 
 
       INTEGER NSTA3DD! number of 3D density recording stations
       INTEGER NSTA3DV! number of 3D velocity recording stations
@@ -170,8 +169,6 @@ C     Solver Type:
       LOGICAL CSOLIT ! .TRUE. only if ITITER > 0
       LOGICAL CSOLDIR! .TRUE. only if ITITER = 0
       LOGICAL CSOLDIA! .TRUE. only if ITITER < 0
-C     Harmonic Analysis:
-      LOGICAL CHARMV ! .TRUE.  only if  NHARF > 0 .AND. C2DDI = .TRUE.
 C
 C For Definition of Working Directory
 C
@@ -206,7 +203,7 @@ C-----------------------------------------------------------------------------C
 C  SUBROUTINE SIZEUP
 C  Determine sizes of full domain arrays for ADCIRC.                          C
 C                                                                             C
-C  Determine runtime option logicals, C2DDI through CHARMV.                   C
+C  Determine runtime option logicals
 C                                                                             C
 C vjp 12/08/99                                                                C
 C rl  10/10/01                                                                C
@@ -433,7 +430,6 @@ C
       CLUMP  = .FALSE.
       CTIP   = .FALSE.
       CSOLIT = .FALSE.
-      CHARMV = .FALSE.
 C
  23   READ(15,80) LINEI                             !SKIP OVER RUNDES
       DO I=1,95
@@ -711,7 +707,6 @@ C
       IF (NWS.NE.0) READ(15,*) IDUM               !SKIP OVER NOUTGW, TOUTSGW...
       IF ((NWS.NE.0).AND.(ABS(IDUM).EQ.3)) useNetCDF = .true.
 
-      MNHARF = 0
       READ(15,*) NHARF                           !PROCESS MNHARF
       DO IL1=1,NHARF
  47      READ(15,80) LINEI                       !SKIP OVER HAFNAM
@@ -721,10 +716,6 @@ C
          GOTO 47
  48      READ(15,*) RDUM,RDUM,RDUM             !SKIP OVER HAFREQ,HAFF,HAFACE
       ENDDO
-      MNHARF=NHARF
-      IF(NHARF.EQ.0) MNHARF=1
-C
-      IF (NHARF.GT.0.AND.C2DDI) CHARMV = .TRUE.
 C
       READ(15,*) THAS,THAF,NHAINC,FMV               !READ THAS,...FMV
       READ(15,*) IDUM,IDUM,IDUM,IDUM                !SKIP OVER NHASE,NHASV,...
@@ -842,7 +833,7 @@ C
 C...
       WRITE(*,3000) MNPROC,MNE,MNP,MNEI,MNOPE,MNETA,
      &  MNBOU,MNVEL,MNTIF,MNBFR,MNSTAE,MNSTAV,MNSTAC,MNSTAM,MNWP,
-     &  MNWLAT,MNWLON,MNHARF,MNFFR
+     &  MNWLAT,MNWLON,MNFFR
 C
       IF(NWS.EQ.0) WRITE(*,3011)
       IF(NWS.EQ.1) WRITE(*,3012)
@@ -888,7 +879,7 @@ C
      &       ' *       MNSTAC = ',I5,4X,'  MNSTAM = ',I5,4X,'      *',/,
      &       ' *       MNWP = ',I7,'                               *',/,
      &       ' *       MNWLAT = ',I5,4X,'  MNWLON = ',I5,4X,'      *',/,
-     &       ' *       MNHARF = ',I5,4X,'  MNFFR = ',I6,3X,'       *',/,
+     &       ' *       MNFFR = ',I6,3X,'                           *',/,
      &       ' *                                                   *')
  3011 FORMAT(' *   Also, NO wind forcing will be used,             *')
  3012 FORMAT(' *   Also, NWS=1 meteorological forcing is used,     *')

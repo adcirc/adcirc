@@ -67,7 +67,7 @@ C     on each iteration of the while loop below
       endif
       ibucket = 0
 
-      do while (istart < iend)
+      do while (istart.le.iend)
 
          !------------------------------------------------------------
          ! Initialize
@@ -77,14 +77,10 @@ C     on each iteration of the while loop below
          tag     = tagbase + mod(ibucket, 8)
 
 C        now pack the buffer 
-         !write(16,*) 'About to pack globalio buffer.' !jgfdebug48.03
          call pack_cmd(descript, istart, iend)
 C        now send data to processor 0
-         !write(16,*) 'About to mpi_reduce globalio buffer.' !jgfdebug48.03
          call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
      &                   0, COMM, ierr)
-         !write(16,*) 'About to unpack globalio buffer.' !jgfdebug48.03
-
          if (myproc == 0) then
             call unpack_cmd(descript, istart, iend)
          end if
@@ -147,7 +143,6 @@ C     on each iteration of the while loop below
       num     = bufsize / descript % num_items_per_record
       iend    = num
       istart  = 1
-C      WRITE(16,*) 'istart is ',istart,' iend is ',iend !jgfdebug 48.18
       if (tagbase == 5000) then
          tagbase = 6000
       else
@@ -155,7 +150,7 @@ C      WRITE(16,*) 'istart is ',istart,' iend is ',iend !jgfdebug 48.18
       endif
       ibucket = 0
 
-      do while (istart < iend)
+      do while (istart.le.iend)
 
          !------------------------------------------------------------
          ! Initialize
@@ -165,10 +160,8 @@ C      WRITE(16,*) 'istart is ',istart,' iend is ',iend !jgfdebug 48.18
          tag     = tagbase + mod(ibucket, 8)
 
 C        now pack the buffer 
-C         write(16,*) 'About to pack globalioint buffer.' !jgfdebug48.03
          call pack_cmd(descript, istart, iend)
 C        now send data to processor 0
-C         write(16,*) 'About to mpi_reduce globalioint buffer.' !jgfdebug48.03
 ckmd48.33bc - changed this to eliminate problems with NOFF=2.
          IF (variable.EQ.1) THEN 
            call mpi_reduce(integerBuffer, integerResultBuffer, bufsize, 
@@ -179,7 +172,6 @@ ckmd48.33bc - changed this to eliminate problems with NOFF=2.
          END IF 
 
          if (myproc == 0) then
-C            write(16,*) 'About to unpack globalioint buffer.' !jgfdebug48.03
             call unpack_cmd(descript, istart, iend)
          end if
 C        set new starting position to just after the
@@ -337,7 +329,6 @@ C! CMPI
 
        j = 1
        do i = istart, iend
-C          write(16,*) i, j !jgfdebug48.03
           descript % array_g(i) = resultBuf(j)
           j = j + 1
       end do
@@ -359,10 +350,8 @@ C          write(16,*) i, j !jgfdebug48.03
       integer :: i, j, istart, iend, iglobal
       integer :: ioffset
 
-C       WRITE(16,*) "Unpacking int array." !jgfdebug48.18
        j = 1
        do i = istart, iend
-C          write(16,*) i, j, integerResultBuffer(j) !jgfdebug48.18
           descript % iarray_g(i) = integerResultBuffer(j)
           j = j + 1
       end do
@@ -413,7 +402,6 @@ C          write(16,*) i, j, integerResultBuffer(j) !jgfdebug48.18
 
       j = 1
       do i = istart, iend
-C         write(16,*) i, j !jgfdebug48.03
          descript % array_g(i) = resultBuf(j)
          descript % array2_g(i) = resultBuf(j+1)
          j = j + 2
@@ -423,6 +411,151 @@ C         write(16,*) i, j !jgfdebug48.03
       end subroutine unpackTwo
       !--------------------------------------------------------------
 
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   P A C K  M  B Y  N P 
+      !--------------------------------------------------------------
+      ! Subroutine to pack an m x np array of real
+      ! numbers into a buffer
+      !--------------------------------------------------------------
+      subroutine packMbyNP(descript, istart, iend)
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, istart, iend, iglobal
+      integer :: ioffset, j
+      integer :: k ! frequency counter
+C
+      call setMessageSource("packMbyNP")
+#ifdef GLOBALIO_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
+      ioffset = istart - 1
+      do i = 1, descript % num_records_this
+         iglobal = descript % imap(i)
+         if (istart <= iglobal .and. iglobal <= iend) then
+            j = descript%num_items_per_record * (iglobal-ioffset)
+     &          - (descript%num_items_per_record - 1 )
+            do k = 0, ( descript % num_items_per_record - 1 )
+               buf(j+k) = descript % array2D(k+1,i)
+            end do
+         end if
+      end do
+C
+ 1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10)
+#ifdef GLOBALIO_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+      !--------------------------------------------------------------
+      end subroutine packMbyNP
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E  U N P A C K  M  B Y  N P
+      !--------------------------------------------------------------
+      ! Subroutine to unpack an m x np array of real
+      ! numbers out of a buffer
+      !--------------------------------------------------------------
+      subroutine unpackMbyNP(descript, istart, iend)
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, j, istart, iend
+      integer k ! frequency counter
+
+      call setMessageSource("unpackMbyNP")
+#ifdef GLOBALIO_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
+      j = 1
+      do i = istart, iend
+         do k = 1, descript % num_items_per_record
+            descript % array2D_g(k,i) = resultBuf(j)
+            j = j + 1
+         end do
+      end do
+#ifdef GLOBALIO_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+      !--------------------------------------------------------------
+      end subroutine unpackMbyNP
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   P A C K  N P  B Y  M 
+      !--------------------------------------------------------------
+      ! Subroutine to pack an np x m array of real
+      ! numbers into a buffer
+      !--------------------------------------------------------------
+      subroutine packNPbyM(descript, istart, iend)
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, istart, iend, iglobal
+      integer :: ioffset, j
+      integer :: k ! frequency counter
+C
+      call setMessageSource("packNPbyM")
+#ifdef GLOBALIO_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
+      ioffset = istart - 1
+      do i = 1, descript % num_records_this
+         iglobal = descript % imap(i)
+         if (istart <= iglobal .and. iglobal <= iend) then
+            j = descript%num_items_per_record * (iglobal-ioffset)
+     &          - (descript%num_items_per_record - 1 )
+            do k = 0, ( descript % num_items_per_record - 1 )
+               buf(j+k) = descript % array2D(i,k+1)
+            end do
+         end if
+      end do
+C
+ 1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10)
+#ifdef GLOBALIO_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+      !--------------------------------------------------------------
+      end subroutine packNPbyM
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E  U N P A C K   N P  B Y  M
+      !--------------------------------------------------------------
+      ! Subroutine to unpack an np x m array of real
+      ! numbers out of a buffer
+      !--------------------------------------------------------------
+      subroutine unpackNPbyM(descript, istart, iend)
+      implicit none
+
+      type (OutputDataDescript_t) :: descript
+      integer :: i, j, istart, iend
+      integer k ! frequency counter
+
+      call setMessageSource("unpackNPbyM")
+#ifdef GLOBALIO_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
+      j = 1
+      do i = istart, iend
+         do k = 1, descript % num_items_per_record
+            descript % array2D_g(i,k) = resultBuf(j)
+            j = j + 1
+         end do
+      end do
+#ifdef GLOBALIO_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+      !--------------------------------------------------------------
+      end subroutine unpackNPbyM
+      !--------------------------------------------------------------
 
       !--------------------------------------------------------------   
       !    S U B R O U T I N E   O P E N _ G B L _ F I L E 
@@ -895,199 +1028,6 @@ C! CMPI
  1101 FORMAT(2x,1pE20.10,5X,I10,5X,I10,5X,1pE20.10)
       !--------------------------------------------------------------
       end subroutine write_gbl_file_skip_default
-      !--------------------------------------------------------------
-
-
-      !--------------------------------------------------------------
-      !       S U B R O U T I N E   
-      !       W R I T E _ G B L _ F I L E _ H S T A R T 
-      !--------------------------------------------------------------
-      !  Write out pieces of the hot start file
-      !--------------------------------------------------------------
-
-      subroutine write_gbl_file_hstart(lun, descript, irec, store_val,
-     &  write_val)
-      implicit none
-#ifdef CMPI
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
-#endif
-#endif
-
-      external store_val, write_val
-      integer      :: num, icnt, i, j, k, irec
-#ifdef CMPI
-      integer      :: ierr, status(MPI_STATUS_SIZE)
-      integer      :: request
-#endif
-      integer, save:: tagbase = 6000
-      integer      :: lun
-      integer      :: bufsize, ibucket
-      integer      :: istart, iend, it, tag
-      real(8)      :: time
-      type (OutputDataDescript_t) :: descript
-
-      if (WRITE_LOCAL_HOT_START_FILES) then
-        call write_val(lun, descript, descript % num_records_this, irec)
-        return
-      end if
-
-#ifdef CMPI
-
-      bufsize = min(BUFSIZE_MAX, 
-     &    descript % num_items_per_record * descript % num_fd_records)
-      num     = bufsize / descript % num_items_per_record
-      iend    = num
-      istart  = 1
-      ibucket = 0
-      if (tagbase == 5000) then
-        tagbase = 6000
-      else
-        tagbase = 5000
-      endif
-
-      do while (istart < iend)
-
-        !------------------------------------------------------------
-        ! Initialize
-        !------------------------------------------------------------
-        buf(:)  = descript % initial_value
-        ibucket = ibucket + 1
-        tag     = tagbase + mod(ibucket, 8)
-
-        call store_val(descript, istart, iend)
-        call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM, 0,
-     &    comm, ierr)
-
-        if (myproc == 0) then
-          call write_val(lun, descript, iend-istart+1, irec, resultBuf)
-        endif
-
-        istart = iend + 1
-        iend   = min(istart + num - 1, descript % num_fd_records)
-        num    = iend - istart + 1
-      end do
-#endif
-
-      !--------------------------------------------------------------
-      end subroutine write_gbl_file_hstart
-      !--------------------------------------------------------------
-
-
-      !--------------------------------------------------------------
-      !   S U B R O U T I N E   S T O R E _ R E A L
-      !--------------------------------------------------------------
-      !   STORE_REAL and STORE_INTEGER copy a single array into 'buf'
-      !--------------------------------------------------------------
-      subroutine store_real(descript, istart, iend)
-      implicit none
-
-      integer :: istart, iend
-      type (OutputDataDescript_t) :: descript
-      
-      integer :: i, ioffset, iglobal, k
-
-      ioffset = istart - 1
-      do i = 1, descript % num_records_this
-        iglobal = descript % imap(i)
-        if (istart <= iglobal .and. iglobal <= iend) then
-          buf(iglobal-ioffset) = descript % array(i)
-        endif
-      end do
-      return
-      !--------------------------------------------------------------
-      end subroutine store_real
-      !--------------------------------------------------------------
-
-
-      !--------------------------------------------------------------
-      ! S U B R O U T I N E   S T O R E _ I N T E G E R
-      !--------------------------------------------------------------
-      !
-      !--------------------------------------------------------------
-      subroutine store_integer(descript, istart, iend)
-      implicit none
-
-      integer :: istart, iend
-      type (OutputDataDescript_t) :: descript
-      
-      integer :: i, ioffset, iglobal, k
-
-      ioffset = istart - 1
-      do i = 1, descript % num_records_this
-        iglobal = descript % imap(i)
-        if (istart <= iglobal .and. iglobal <= iend) then
-          buf(iglobal-ioffset) = descript % iarray(i)
-        endif
-      end do
-      return
-      !--------------------------------------------------------------
-      end subroutine store_integer
-      !--------------------------------------------------------------
-
-      !--------------------------------------------------------------
-      ! S U B R O U T I N E   W R I T E _ R E A L 
-      !--------------------------------------------------------------
-      ! jgf47.05: Subroutine to write buffer contents to disk in
-      ! binary format for real numbers.
-      !--------------------------------------------------------------
-      subroutine write_real(lun, descript, num, irec, myBuf)
-      implicit none
-
-      type (OutputDataDescript_t) :: descript
-      integer :: lun, num, irec
-      integer :: i
-      real(sz) :: myBuf(num)
-
-      if (WRITE_LOCAL_HOT_START_FILES) then
-        do i = 1, num
-          irec = irec + 1
-          write(lun, rec=irec) descript % array(i)
-        end do
-        return
-      end if
-
-#ifdef CMPI
-      do i = 1, num
-        irec = irec + 1
-        write(lun, rec=irec) myBuf(i)
-      end do
-#endif
-      !--------------------------------------------------------------
-      end subroutine write_real
-      !--------------------------------------------------------------
-
-      !--------------------------------------------------------------
-      ! S U B R O U T I N E   W R I T E _ I N T E G E R
-      !--------------------------------------------------------------
-      ! jgf47.05: Subroutine to write buffer contents to disk in
-      ! binary format for integers.
-      !--------------------------------------------------------------
-
-      subroutine write_integer(lun, descript, num, irec, myBuf)
-      implicit none
-
-      type (OutputDataDescript_t) :: descript
-      integer :: lun, num, irec
-      integer :: i
-      real(sz) :: myBuf(num)
-
-      if (WRITE_LOCAL_HOT_START_FILES) then
-        do i = 1, num
-          irec = irec + 1
-          write(lun, rec=irec) descript % iarray(i)
-        end do
-        return
-      end if
-
-#ifdef CMPI
-      do i = 1, num
-        irec = irec + 1
-        write(lun, rec=irec) int(myBuf(i))
-      end do
-#endif
-      !--------------------------------------------------------------
-      end subroutine write_integer
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
@@ -1608,6 +1548,8 @@ C----------------------------------------------------------------------
       REAL(SZ), dimension(:), target :: array ! min/max array
       INTEGER node               ! node number of the min/max data
       CHARACTER(len=80) skipline ! dummy variable for min/max header data
+      INTEGER rawNode            ! node number, as read from file
+      REAL(SZ) rawDatum          ! array member value at node, as read from file
       INTEGER numLinesInMinMaxFile ! count the lines to report to log file
       LOGICAL tooFewMinMaxLines  ! true if couldn't read enough lines from file
       LOGICAL FileFound  ! true if the file exists
@@ -1648,11 +1590,17 @@ C     min or max array.
 C 
 C     The file exists and is open, so read the data.
       numLinesInMinMaxFile = 0
-      READ(963,*,END=3990) skipline   ! 1st header line
-      READ(963,*,END=3990) skipline   ! 2nd header line
-      READ(963,*,END=3990) skipline   ! TIME and IT line
+      READ(963,*,END=3990,ERR=3990) skipline   ! 1st header line
+      READ(963,*,END=3990,ERR=3990) skipline   ! 2nd header line
+      READ(963,*,END=3990,ERR=3990) skipline   ! TIME and IT line
       DO I=1, size(array)
-         READ(963,*,END=3990) node, array(node)
+         READ(963,*,END=3990,ERR=3990) rawNode, rawDatum 
+         IF ((node.ge.1).and.(node.le.size(array))) THEN
+            node = rawNode
+            array(node) = rawDatum
+         ELSE 
+            EXIT ! jump out of loop if node number is out of bounds
+         ENDIF
          numLinesInMinMaxFile = numLinesInMinMaxFile + 1
       ENDDO
  3990 CONTINUE ! jump to here when end of file is reached

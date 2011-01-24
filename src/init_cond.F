@@ -1951,83 +1951,20 @@ C...
 C...
 C......HOT START INFORMATION FOR HARMONIC ANALYSIS
 C...
-      IF(IHARIND.EQ.1) THEN
-        IHABEG=ITHAS+NHAINC
-C...
-C........IF HARMONIC ANALYSIS HAS NOT BEGUN, COLD START THE HARMONIC ANALYSIS
-C...
-        IF(ITHS.LT.IHABEG) THEN
-          ICHA=0
-          CALL HACOLDS(HAFREQ)
-          IF(NHASE.EQ.1) CALL HACOLDSES(NSTAE)
-          IF(NHASV.EQ.1) CALL HACOLDSVS(NSTAV)
-          IF(NHAGE.EQ.1) CALL HACOLDSEG(NP)
-          IF(NHAGV.EQ.1) CALL HACOLDSVG(NP)
-          IF (CHARMV) THEN
-            DO I=1,NP
-               ELAV(I)=0.D0
-               XVELAV(I)=0.D0
-               YVELAV(I)=0.D0
-               ELVA(I)=0.D0
-               XVELVA(I)=0.D0
-               YVELVA(I)=0.D0
-            END DO
-          ENDIF   !   charmv
-
-        ENDIF
-
 C...
 C........IF HARMONIC ANALYSIS HAS ALREADY BEGUN, READ IN HOT START
 C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
 C...
-        IF(ITHS.GT.ITHAS) THEN
-          IHOTSTP=IHOTSTP+1
-          READ(IHOT,REC=IHOTSTP) ICHA
-        ENDIF
-        IF(ITHS.GE.IHABEG) THEN
-          CALL HAHOTS(NSTAE,NSTAV,NP,NHASE,NHASV,NHAGE,NHAGV,
-     &          NSCREEN,ScreenUnit,IHOTSTP,IHOT,MYPROC)
-          IF(NHASE.EQ.1) CALL HAHOTSES(NSTAE,IHOTSTP,IHOT)
-          IF(NHASV.EQ.1) CALL HAHOTSVS(NSTAV,IHOTSTP,IHOT)
-          IF(NHAGE.EQ.1) CALL HAHOTSEG(NP,IHOTSTP,IHOT)
-          IF(NHAGV.EQ.1) CALL HAHOTSVG(NP,IHOTSTP,IHOT)
-        ENDIF
-
-C..Read in Means and Squares
-
-        IF(CHARMV) THEN
-          IF((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN
+      IF (IHARIND.EQ.1) THEN
+         IF (ITHS.GT.ITHAS) THEN
             IHOTSTP=IHOTSTP+1
-            READ(IHOT,REC=IHOTSTP) NTSTEPS
-            IF(NHAGE.EQ.1) THEN
-              DO I=1,NP
-                READ(IHOT,REC=IHOTSTP+1) ELAV(I)
-                READ(IHOT,REC=IHOTSTP+2) ELVA(I)
-                IHOTSTP=IHOTSTP+2
-              ENDDO
-            ENDIF
-            IF(NHAGV.EQ.1) THEN
-              DO I=1,NP
-                READ(IHOT,REC=IHOTSTP+1) XVELAV(I)
-                READ(IHOT,REC=IHOTSTP+2) YVELAV(I)
-                READ(IHOT,REC=IHOTSTP+3) XVELVA(I)
-                READ(IHOT,REC=IHOTSTP+4) YVELVA(I)
-                IHOTSTP=IHOTSTP+4
-              ENDDO
-            ENDIF
-          ENDIF
-        ENDIF   !  charmv
-      ENDIF    !HARIND
-
-C     jgf46.02 Added the following block of code from ral for Katrina.
-CRAL_add_42.06g           read RBC information in HS file
-C        DO I=1,NVEL
-C          IHOTSTP=IHOTSTP+1
-C          READ(IHOT,REC=IHOTSTP) Elev_Disc(I)
-C          END DO
-CRAL_add_42.06g
-
-
+            READ(IHOT,REC=IHOTSTP) ICHA
+         ENDIF
+         IF(ITHS.GE.IHABEG) THEN
+            CALL readBinaryHAHotstart(IHOT, IHOTSTP)
+            CALL checkHAHotstart()
+         ENDIF
+      ENDIF  
       CLOSE(IHOT)
 C
  1112 FORMAT(/,1X,79('_'))
@@ -2146,7 +2083,7 @@ C...
       DO N=1, NFEN 
         DO NH=1,NP
           READ(IHOT,*) ImagPartofQ
-          Q(NH,N) = RealQ_Tmp(NH,N) + I*ImagPartofQ 
+          Q(NH,N) = RealQ_Tmp(NH,N) + iy*ImagPartofQ 
         END DO 
       END DO 
 

@@ -41,15 +41,6 @@ C     was requested.
  
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
-      useNetCDF = .FALSE.
-C
-      IF (  (ABS(NOUTE).EQ.3).OR.(ABS(NOUTV).EQ.3).OR.
-     &      (ABS(NOUTM).EQ.3).OR.(ABS(NOUTC).EQ.3).OR.
-     &       (ABS(NOUTGE).EQ.3).OR.(ABS(NOUTV).EQ.3).OR.
-     &       (ABS(NOUTGC).EQ.3).OR.(ABS(NOUTGW).EQ.3).OR.
-     &       (NHSTAR.LT.0) ) THEN
-         useNetCDF = .TRUE.
-      ENDIF
 C
 C.... tcm v49.16 20100617
 C.... convert background pressure from millibars to meters of water
@@ -1004,27 +995,6 @@ C...
          WRITE(83,REC=IGCP+5) 1
          IGCP=IGCP+5
          CLOSE(83)
-         ENDIF
-C...
-C....INITIALIZE HARMONIC ANALYSIS MATRICES, MEAN AND SQUARE VECTORS
-C...
-      IF (IHARIND.EQ.1) THEN
-         ICHA=0
-         CALL HACOLDS(HAFREQ)
-         IF(NHASE.EQ.1) CALL HACOLDSES(NSTAE)
-         IF(NHASV.EQ.1) CALL HACOLDSVS(NSTAV)
-         IF(NHAGE.EQ.1) CALL HACOLDSEG(NP)
-         IF(NHAGV.EQ.1) CALL HACOLDSVG(NP)
-         IF ( CHARMV) THEN
-            DO I=1,NP
-               ELAV(I)=0.D0
-               XVELAV(I)=0.D0
-               YVELAV(I)=0.D0
-               ELVA(I)=0.D0
-               XVELVA(I)=0.D0
-               YVELVA(I)=0.D0
-            ENDDO
-         ENDIF                  !  charmv
       ENDIF
 C
  1112 FORMAT(/,1X,79('_'))
@@ -1059,7 +1029,7 @@ C                                                                             *
 c******************************************************************************
 
       SUBROUTINE COLDSTART_3D()
-
+      USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
       USE GLOBAL_3DVS
       USE GLOBAL, ONLY : BCFLAG_TEMP, RES_BC_FLAG, BCFLAG_LNM,
      &                   RBCTIME1, BCSTATIM, RBCTIME2,
@@ -1068,7 +1038,7 @@ c******************************************************************************
      &                   TTBCTIME2, TBCSTATIM, SBCTIMEINC,
      &                   TBCTIMEINC, TTBCTIMEINC, TTBCSTATIM,
      &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2,
-     &                   LNM_BC, LNM_BC1, LNM_BC2
+     &                   LNM_BC, LNM_BC1, LNM_BC2, NP_G
 
       IMPLICIT NONE
 
@@ -1322,180 +1292,23 @@ C.value, so when elements wet, the first turb length scale is nonzero
       ENDDO
 
 C...  INITIALIZE 3D OUTPUT FILES
-
+C
 C.... Initialize the 3D density station output file (Unit 41)
-
       IF(IDen.EQ.1) IRType=1
       IF((IDen.EQ.2).OR.(IDen.EQ.3)) IRType=2
       IF(IDen.EQ.4) IRType=3
-
-      IF(ABS(I3DSD).EQ.1) THEN             !start a new ASCII file
-        WRITE(16,497) 41
-        OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41')
-        WRITE(41,499) RUNDes,RunID,AGrid
-        WRITE(41,498) NDSet3DSD,NSta3DD,DTDP*NSpo3DSD,NSpo3DSD,NFEN,
-     &                                                            IRType
-        CLOSE(41)
-        I3DSDRec=2
-      ENDIF
-
-      IF(ABS(I3DSD).EQ.2) THEN             !start a new BINARY file
-        WRITE(16,496) 41
-        OPEN(41,FILE=TRIM(LOCALDIR)//'/'//'fort.41',ACCESS='DIRECT',
-     &       RECL=NByte)
-        I3DSDRec=0
-        IF(NByte.EQ.4) THEN
-          DO N=1,8
-            I3DSDRec=I3DSDRec+1
-            WRITE(41,REC=I3DSDRec) RDES4(N)
-          ENDDO
-          DO N=1,6
-            I3DSDREC=I3DSDREC+1
-            WRITE(41,REC=I3DSDRec) RID4(N)
-          ENDDO
-          DO N=1,6
-            I3DSDRec=I3DSDRec+1
-            WRITE(41,REC=I3DSDRec) AID4(N)
-          ENDDO
-        ENDIF
-        IF(NByte.EQ.8) THEN
-          DO N=1,4
-            I3DSDRec=I3DSDRec+1
-            WRITE(41,REC=I3DSDRec) RDES8(N)
-          ENDDO
-          DO N=1,3
-            I3DSDRec=I3DSDRec+1
-            WRITE(41,REC=I3DSDRec) RID8(N)
-          ENDDO
-          DO N=1,3
-            I3DSDRec=I3DSDRec+1
-            WRITE(41,REC=I3DSDRec) AID8(N)
-          ENDDO
-        ENDIF
-        WRITE(41,REC=I3DSDRec+1) NDSet3DSD
-        WRITE(41,REC=I3DSDRec+2) NSta3DD
-        WRITE(41,REC=I3DSDRec+3) DelT*NSpo3DSD
-        WRITE(41,REC=I3DSDRec+4) NSpo3DSD
-        WRITE(41,REC=I3DSDRec+5) NFEN   
-        WRITE(41,REC=I3DSDRec+6) IRType
-        I3DSDRec=I3DSDRec+6
-        CLOSE(41)
-      ENDIF
-
+      CALL initOutput3D(41, I3DSD, NDSET3DSD, NSTA3DD, NSTA3DD_G,
+     &                  NSPO3DSD, IRType, I3DSDRec)
+C
 C.... Initialize the 3D velocity station output file (Unit 42)
-
       IRType=3
-
-      IF(ABS(I3DSV).EQ.1) THEN
-        WRITE(16,497) 42
-        OPEN(42,FILE=TRIM(LOCALDIR)//'/'//'fort.42')
-        WRITE(42,499) RUNDES,RUNID,AGRID
-        WRITE(42,498) NDSet3DSV,NSta3DV,DTDP*NSpo3DSV,NSpo3DSV,NFEN,
-     &                                                            IRType
-        CLOSE(42)
-        I3DSVRec=2
-      ENDIF
-
-      IF(ABS(I3DSV).EQ.2) THEN
-        WRITE(16,496) 42
-        OPEN(42,FILE=TRIM(LOCALDIR)//'/'//'fort.42',ACCESS='DIRECT',
-     &       RECL=NBYTE)
-        I3DSVRec=0
-        IF(NByte.EQ.4) THEN
-          DO N=1,8
-            I3DSVRec=I3DSVRec+1
-            WRITE(42,REC=I3DSVRec) RDES4(N)
-          ENDDO
-          DO N=1,6
-            I3DSVRec=I3DSVRec+1
-            WRITE(42,REC=I3DSVRec) RID4(N)
-          ENDDO
-          DO N=1,6
-            I3DSVRec=I3DSVRec+1
-            WRITE(42,REC=I3DSVRec) AID4(N)
-          ENDDO
-        ENDIF
-        IF(NByte.EQ.8) THEN
-          DO N=1,4
-            I3DSVRec=I3DSVRec+1
-            WRITE(42,REC=I3DSVRec) RDES8(N)
-          ENDDO
-          DO N=1,3
-            I3DSVRec=I3DSVRec+1
-            WRITE(42,REC=I3DSVRec) RID8(N)
-          ENDDO
-          DO N=1,3
-            I3DSVRec=I3DSVRec+1
-            WRITE(42,REC=I3DSVRec) AID8(N)
-          ENDDO
-        ENDIF
-        WRITE(42,REC=I3DSVRec+1) NDSet3DSV
-        WRITE(42,REC=I3DSVRec+2) NSta3DV
-        WRITE(42,REC=I3DSVRec+3) DTDP*NSpo3DSV
-        WRITE(42,REC=I3DSVRec+4) NSpo3DSV
-        WRITE(42,REC=I3DSVRec+5) NFEN
-        WRITE(42,REC=I3DSVRec+6) IRType
-        I3DSVRec=I3DSVRec+6
-        CLOSE(42)
-      ENDIF
-
+      CALL initOutput3D(42, I3DSV, NDSET3DSV, NSTA3DV, NSTA3DV_G,
+     &                  NSPO3DSV, IRType, I3DSVRec)
+C
 C.... Initialize the 3D turbulence station output file (Unit 43)
-
       IRType=3
-
-      IF(ABS(I3DST).EQ.1) THEN
-        WRITE(16,497) 43
-        OPEN(43,FILE=TRIM(LOCALDIR)//'/'//'fort.43')
-        WRITE(43,499) RUNDES,RUNID,AGRID
-        WRITE(43,498) NDSet3DST,NSta3DT,DTDP*NSpo3DST,NSpo3DST,NFEN,
-     &                                                            IRType
-        CLOSE(43)
-        I3DSTRec=2
-      ENDIF
-
-      IF(ABS(I3DST).EQ.2) THEN
-        WRITE(16,496) 43
-        OPEN(43,FILE=TRIM(LOCALDIR)//'/'//'fort.43',ACCESS='DIRECT',
-     &       RECL=NByte)
-        I3DSTRec=0
-        IF(NByte.EQ.4) THEN
-          DO N=1,8
-            I3DSTRec=I3DSTRec+1
-            WRITE(43,REC=I3DSTRec) RDES4(N)
-          ENDDO
-          DO N=1,6
-            I3DSTRec=I3DSTRec+1
-            WRITE(43,REC=I3DSTRec) RID4(N)
-          ENDDO
-          DO N=1,6
-            I3DSTRec=I3DSTRec+1
-            WRITE(43,REC=I3DSTRec) AID4(N)
-          ENDDO
-        ENDIF
-        IF(NByte.EQ.8) THEN
-          DO N=1,4
-            I3DSTRec=I3DSTRec+1
-            WRITE(43,REC=I3DSTRec) RDES8(N)
-          ENDDO
-          DO N=1,3
-            I3DSTRec=I3DSTRec+1
-            WRITE(43,REC=I3DSTRec) RID8(N)
-          ENDDO
-          DO N=1,3
-            I3DSTRec=I3DSTRec+1
-            WRITE(43,REC=I3DSTRec) AID8(N)
-          ENDDO
-        ENDIF
-        WRITE(43,REC=I3DSTRec+1) NDSet3DST
-        WRITE(43,REC=I3DSTRec+2) NSta3DT
-        WRITE(43,REC=I3DSTRec+3) DTDP*NSpo3DST
-        WRITE(43,REC=I3DSTRec+4) NSpo3DST
-        WRITE(43,REC=I3DSTRec+5) NFEN
-        WRITE(43,REC=I3DSTRec+6) IRType
-        I3DSTRec=I3DSTRec+6
-        CLOSE(43)
-      ENDIF
-
+      CALL initOutput3D(43, I3DST, NDSET3DST, NSTA3DT, NSTA3DT_G,
+     &                  NSPO3DST, IRType, I3DSTRec)
 C.... Initialize the global 3D density output file (Unit 44)
 
       IF(IDen.EQ.1) IRType=1
@@ -1504,196 +1317,45 @@ C.... Initialize the global 3D density output file (Unit 44)
 C     jgf46.27 Replaced IRType with IDen in header.
 !kmd48.33bc - add in infomration for file containing the
 !            top temperature boundary condition information
-      IF(ABS(I3DGD).EQ.1) THEN
-        WRITE(16,497) 44
-        OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44')
-        WRITE(44,499) RUNDES,RUNID,AGRID
-        WRITE(44,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,NFEN,IDen 
-        CLOSE(44)
-        IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
-          IF (BCFLAG_TEMP.NE.0) THEN
-              OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
-              WRITE(47,499) RUNDES,RUNID,AGRID
-              WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
-              CLOSE(47)
-          END IF
-        END IF
-        I3DGDRec=2
+      CALL initOutput3D(44, I3DGD, NDSET3DGD, NP, NP_G,
+     &                  NSPO3DGD, IRType, I3DGDRec)
+      IF (ABS(I3DGD).EQ.1) THEN
+         IF ((MNPROC.EQ.1.).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
+            IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
+               IF (BCFLAG_TEMP.NE.0) THEN
+                  OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
+                  WRITE(47,499) RUNDES,RUNID,AGRID
+                  WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+                  CLOSE(47)
+               END IF
+            END IF
+         ENDIF
+         IF ((MNPROC.GT.1.).AND.(WRITE_LOCAL_FILES.eqv..false.).and.
+     &       (myProc.eq.0)) THEN
+            IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
+               IF (BCFLAG_TEMP.NE.0) THEN
+                  OPEN(47,FILE=TRIM(GLOBALDIR)//'/'//'fort.47')
+                  WRITE(47,499) RUNDES,RUNID,AGRID
+                  WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+                  CLOSE(47)
+               END IF
+            END IF
+         ENDIF
       ENDIF
-
-      IF(ABS(I3DGD).EQ.2) THEN
-        WRITE(16,496) 44
-        OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44',ACCESS='DIRECT',
-     &       RECL=NByte)
-        I3DGDRec=0
-        IF(NByte.EQ.4) THEN
-          DO N=1,8
-            I3DGDRec=I3DGDRec+1
-            WRITE(44,REC=I3DGDRec) RDES4(N)
-          ENDDO
-          DO N=1,6
-            I3DGDRec=I3DGDRec+1
-            WRITE(44,REC=I3DGDRec) RID4(N)
-          ENDDO
-          DO N=1,6
-            I3DGDRec=I3DGDRec+1
-            WRITE(44,REC=I3DGDRec) AID4(N)
-          ENDDO
-        ENDIF
-        IF(NByte.EQ.8) THEN
-          DO N=1,4
-            I3DGDRec=I3DGDRec+1
-            WRITE(44,REC=I3DGDRec) RDES8(N)
-          ENDDO
-          DO N=1,3
-            I3DGDRec=I3DGDRec+1
-            WRITE(44,REC=I3DGDRec) RID8(N)
-          ENDDO
-          DO N=1,3
-            I3DGDRec=I3DGDRec+1
-            WRITE(44,REC=I3DGDRec) AID8(N)
-          ENDDO
-        ENDIF
-        WRITE(44,REC=I3DGDRec+1) NDSet3DGD
-        WRITE(44,REC=I3DGDRec+2) NP
-        WRITE(44,REC=I3DGDRec+3) DTDP*NSpo3DGD
-        WRITE(44,REC=I3DGDRec+4) NSpo3DGD
-        WRITE(44,REC=I3DGDRec+5) NFEN
-        WRITE(44,REC=I3DGDRec+6) IDEN
-        I3DGDRec=I3DGDRec+6
-        CLOSE(44)
-      ENDIF
-      
+C
 c.... Initialize the global 3D velocity output file (Unit 45)
-
-      IF(ABS(I3DGV).EQ.1) THEN
-        WRITE(16,497) 45
-        OPEN(45,FILE=TRIM(LOCALDIR)//'/'//'fort.45')
-        WRITE(45,499) RUNDES,RUNID,AGRID
-        WRITE(45,498) NDSet3DGV,NP,DTDP*NSpo3DGV,NSpo3DGV,NFEN,IRType
-        CLOSE(45)
-        I3DGVRec=2
-      ENDIF
-
-      IF(ABS(I3DGV).EQ.2) THEN
-        WRITE(16,496) 45
-        OPEN(45,FILE=TRIM(LOCALDIR)//'/'//'fort.45',ACCESS='DIRECT',
-     &       RECL=NBYTE)
-        I3DGVRec=0
-        IF(NByte.EQ.4) THEN
-          DO N=1,8
-            I3DGVRec=I3DGVRec+1
-            WRITE(45,REC=I3DGVRec) RDES4(N)
-          ENDDO
-          DO N=1,6
-            I3DGVRec=I3DGVRec+1
-            WRITE(45,REC=I3DGVRec) RID4(N)
-          ENDDO
-          DO N=1,6
-            I3DGVRec=I3DGVRec+1
-            WRITE(45,REC=I3DGVRec) AID4(N)
-          ENDDO
-        ENDIF
-        IF(NByte.EQ.8) THEN
-          DO N=1,4
-            I3DGVRec=I3DGVRec+1
-            WRITE(45,REC=I3DGVRec) RDES8(N)
-          ENDDO
-          DO N=1,3
-            I3DGVRec=I3DGVRec+1
-            WRITE(45,REC=I3DGVRec) RID8(N)
-          ENDDO
-          DO N=1,3
-            I3DGVRec=I3DGVRec+1
-            WRITE(45,REC=I3DGVRec) AID8(N)
-          ENDDO
-        ENDIF
-        WRITE(45,REC=I3DGVRec+1) NDSet3DGV
-        WRITE(45,REC=I3DGVRec+2) NP
-        WRITE(45,REC=I3DGVRec+3) DTDP*NSpo3DGV
-        WRITE(45,REC=I3DGVRec+4) NSpo3DGV
-        WRITE(45,REC=I3DGVRec+5) NFEN
-        WRITE(45,REC=I3DGVRec+6) IRType
-        I3DGVRec=I3DGVRec+6
-        CLOSE(45)
-      ENDIF
-
+      CALL initOutput3D(45, I3DGV, NDSET3DGV, NP, NP_G,
+     &                  NSPO3DGV, IRType, I3DGVRec)
+C
 c.... Initialize the global 3D turbulence output file (Unit 46)
-
-      IF(ABS(I3DGT).EQ.1) THEN
-        WRITE(16,497) 46
-        OPEN(46,FILE=TRIM(LOCALDIR)//'/'//'fort.46')
-        WRITE(46,499) RUNDES,RUNID,AGRID
-        WRITE(46,498) NDSet3DGT,NP,DTDP*NSpo3DGT,NSpo3DGT,NFEN,IRType
-        CLOSE(46)
-        I3DGTRec=2
-      ENDIF
-
-      IF(ABS(I3DGT).EQ.2) THEN
-        WRITE(16,496) 46
-        OPEN(46,FILE=TRIM(LOCALDIR)//'/'//'fort.46',ACCESS='DIRECT',
-     &       RECL=NByte)
-        I3DGTRec=0
-        IF(NByte.EQ.4) THEN
-          DO N=1,8
-            I3DGTRec=I3DGTRec+1
-            WRITE(46,REC=I3DGTRec) RDES4(N)
-          ENDDO
-          DO N=1,6
-            I3DGTRec=I3DGTRec+1
-            WRITE(46,REC=I3DGTRec) RID4(N)
-          ENDDO
-          DO N=1,6
-            I3DGTRec=I3DGTRec+1
-            WRITE(46,REC=I3DGTRec) AID4(N)
-          ENDDO
-        ENDIF
-        IF(NByte.EQ.8) THEN
-          DO N=1,4
-            I3DGTRec=I3DGTRec+1
-            WRITE(46,REC=I3DGTRec) RDES8(N)
-          ENDDO
-          DO N=1,3
-            I3DGTRec=I3DGTRec+1
-            WRITE(46,REC=I3DGTRec) RID8(N)
-          ENDDO
-          DO N=1,3
-            I3DGTRec=I3DGTRec+1
-            WRITE(46,REC=I3DGTRec) AID8(N)
-          ENDDO
-        ENDIF
-        WRITE(46,REC=I3DGTRec+1) NDSet3DGT
-        WRITE(46,REC=I3DGTRec+2) NP
-        WRITE(46,REC=I3DGTRec+3) DTDP*NSpo3DGT
-        WRITE(46,REC=I3DGTRec+4) NSpo3DGT
-        WRITE(46,REC=I3DGTRec+5) NFEN
-        WRITE(46,REC=I3DGTRec+6) IRType
-        I3DGTRec=I3DGTRec+6
-        CLOSE(46)
-      ENDIF
-      
+      CALL initOutput3D(46, I3DGT, NDSET3DGT, NP, NP_G,
+     &                  NSPO3DGT, IRType, I3DGTRec)
+C
 C.... Set up a few final odds and ends for a 3D run
-
       CALL VSSTUP ()
 
       RETURN
-	END
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+C----------------------------------------------------------------------
+      END SUBROUTINE COLDSTART_3D
+C----------------------------------------------------------------------
 

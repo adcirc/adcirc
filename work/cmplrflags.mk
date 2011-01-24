@@ -14,10 +14,10 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=intel
 #compiler=intel-lonestar
 #compiler=cray_xt3
-#compiler=cray_xt4
+compiler=cray_xt4
 #compiler=cray_xt5
 #compiler=pgi
-compiler=pgi-ranger
+#compiler=pgi-ranger
 #compiler=diamond
 #
 #
@@ -167,8 +167,9 @@ ifeq ($(compiler),cray_xt4)
   PFC	        :=  ftn
   CC		:=  pgcc
   CCBE		:=  cc
-  FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse
-#  FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback
+#  FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse
+  FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DNETCDF_TRACE -DHARM_TRACE -DWRITE_OUTPUT_TRACE -DFLUSH_MESSAGES
+#  FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk
   FFLAGS2	:=  $(FFLAGS1) 
   FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics 
   DA  	        :=  -DREAL8 -DLINUX -DCSCA 
@@ -392,7 +393,7 @@ ifeq ($(compiler),gnu)
   FC		:=  g95
   PFC		:=  mpif90 
 #  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132
-  FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DNETCDF_DEBUG
+  FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DHARM_TRACE -DWRITE_OUTPUT_TRACE -DNETCDF_TRACE -DHOTSTART_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DADCIRC_TRACE -DGLOBALIO_TRACE
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA

@@ -69,7 +69,6 @@ c***********************************************************************
 c                                                                      *
 c    INPUT FILES:                                                      *
 c      - Frequency information is read in by ADCIRC from unit 15.      *
-c        This information is passed in common block LSQFREQS.          *
 c                                                                      *
 c      - If the model is hot start, input is read from UNIT 67 or 68   *
 c                                                                      *
@@ -92,37 +91,158 @@ c***********************************************************************
 C
       MODULE HARM
 C
-      USE SIZES
+      USE SIZES, ONLY : SZ, MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR
+      USE GLOBAL, ONLY : screen, logMessage, DEBUG, ECHO, INFO,
+     &                   WARNING, ERROR, setMessageSource, 
+     &                   unsetMessageSource, allMessage, scratchMessage
+#ifdef CMPI
+      USE MESSENGER, ONLY : MSG_FINI
+#endif
 C
       REAL(8),PRIVATE,PARAMETER :: PI=3.141592653589793D0
-      INTEGER NFREQ
-      CHARACTER*10,ALLOCATABLE ::  NAMEFR(:)
-      REAL(SZ),    ALLOCATABLE ::  HAFREQ(:),HAFF(:),HAFACE(:)
 C
-      INTEGER, PRIVATE,SAVE :: NZ, NF, MM, ITUD, ICALL
-      REAL(8), PRIVATE,SAVE :: TIMEUD
-      REAL(SZ),PRIVATE,ALLOCATABLE ::  HA(:,:)
-      REAL(SZ),PRIVATE,ALLOCATABLE ::  HAP(:),HAX(:)
-      REAL(SZ),PRIVATE,ALLOCATABLE ::  GLOELV(:,:)
-      REAL(SZ),PRIVATE,ALLOCATABLE ::  GLOULV(:,:),GLOVLV(:,:)
-      REAL(SZ),PRIVATE,ALLOCATABLE ::  STAELV(:,:)
-      REAL(SZ),PRIVATE,ALLOCATABLE ::  STAULV(:,:),STAVLV(:,:)
-
+      ! jgf49.44: parameters describing the harmonic constituents to be
+      ! included in the harmonic analysis of model results
+      INTEGER :: IHARIND ! =1 if harmonic analysis was requested, 0 otherwise
+      LOGICAL :: CHARMV=.false.  ! .true. for timeseries reconstruction 
+      INTEGER :: NFREQ                      ! number of frequencies
+      CHARACTER*10,ALLOCATABLE :: NAMEFR(:) ! "M2", "S2", etc
+      REAL(SZ), ALLOCATABLE :: HAFREQ(:)    ! frequency (rad/s) 
+      REAL(SZ), ALLOCATABLE :: HAFF(:)      ! nodal factor
+      REAL(SZ), ALLOCATABLE :: HAFACE(:)    ! equilibrium argument (deg)
+C
+      INTEGER :: NZ ! nz=0 if there is a steady component, nz=1 otherwise
+      INTEGER :: NF ! nf=0 if no steady constituent, nf=1 otherwise
+C
+      INTEGER :: ITHAS  ! time step upon which harmonic analysis starts
+      INTEGER :: ITHAF  ! time step upon which harmonic analysis finishes
+      INTEGER :: ITMV   ! time step upon which means and variance calcs start
+      INTEGER :: TIMEBEG ! model time (sec) at which means and var calcs start
+      INTEGER :: IHABEG ! 1 h.a. time increment past the start of h.a.
+      INTEGER :: ICHA   ! spool counter for HA updates
+      INTEGER :: NTSTEPS! number of time steps into means and variance calcs
+      INTEGER :: ICALL  ! number of times HA update sub has been called
+      INTEGER :: ITUD   ! time step of most recent HA update
+      REAL(8) :: TIMEUD ! model time of most recent HA update
+C
+      REAL(SZ), ALLOCATABLE :: HA(:,:) ! LHS matrix
+      INTEGER :: MM ! 2nd dim of HA matrix; 2x num freqs (+ steady)
+      REAL(SZ), ALLOCATABLE :: HAP(:)  ! used in matrix solution
+      REAL(SZ), ALLOCATABLE :: HAX(:)  ! used in matrix solution
+C
+C     Load Vectors
+      REAL(SZ), ALLOCATABLE, TARGET :: GLOELV(:,:) ! fulldomain elevation
+      REAL(SZ), ALLOCATABLE, TARGET :: GLOULV(:,:) ! fulldomain u velocity
+      REAL(SZ), ALLOCATABLE, TARGET :: GLOVLV(:,:) ! fulldomain v velocity
+      REAL(SZ), ALLOCATABLE, TARGET :: STAELV(:,:) ! station elevation
+      REAL(SZ), ALLOCATABLE, TARGET :: STAULV(:,:) ! station u velocity
+      REAL(SZ), ALLOCATABLE, TARGET :: STAVLV(:,:) ! station v velocity
+C
+C     Arrays for time series reconstruction.
+      REAL(SZ),ALLOCATABLE,TARGET :: XVELAV(:)
+      REAL(SZ),ALLOCATABLE,TARGET :: YVELAV(:)
+      REAL(SZ),ALLOCATABLE,TARGET :: XVELVA(:)
+      REAL(SZ),ALLOCATABLE,TARGET :: YVELVA(:)
+      REAL(SZ),ALLOCATABLE,TARGET :: ELAV(:)
+      REAL(SZ),ALLOCATABLE,TARGET :: ELVA(:)
+C
+C     jgf49.44: Parameters that control the spatial locations where
+C     harmonic analysis is performed:
+      INTEGER :: NHASE ! =1 to perform HA at elevation recording stations
+      INTEGER :: NHASV ! =1 to perform HA at velocity recording stations
+      INTEGER :: NHAGE ! =1 to do elevation HA at all nodes in the mesh
+      INTEGER :: NHAGV ! =1 to do velocity HA at all nodes in the mesh  
+C 
+C     jgf49.44: Parameters that control the calculation of harmonic 
+C     constituents:
+      REAL(SZ) :: THAS ! number of days b/f harmonic analysis starts
+      REAL(SZ) :: THAF ! number of days at which harmonic analysis ends
+      INTEGER :: NHAINC ! time step increment for including data in HA
+      REAL(SZ) :: FMV  ! fraction of HA period for means and var. calcs (0to1)
+C
+C     jgf49.44: Harmonic analysis hotstarting:
+      REAL(SZ), ALLOCATABLE, TARGET :: GLOELV_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: STAELV_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: GLOULV_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: GLOVLV_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: STAULV_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: STAVLV_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: ELAV_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: ELVA_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: XVELAV_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: YVELAV_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: XVELVA_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: YVELVA_g(:)
+C
+C     jgf49.44: Equivalence variables for reading in hotstart data, either
+C     in serial or in parallel.
+      REAL(SZ), POINTER :: STAELV_pt(:,:),STAULV_pt(:,:),STAVLV_pt(:,:)
+      REAL(SZ), POINTER :: GLOELV_pt(:,:),GLOULV_pt(:,:),GLOVLV_pt(:,:)
+      REAL(SZ), POINTER :: ELAV_pt(:), ELVA_pt(:)
+      REAL(SZ), POINTER :: XVELAV_pt(:), YVELAV_pt(:)
+      REAL(SZ), POINTER :: XVELVA_pt(:), YVELVA_pt(:) 
+C
+C     jgf49.44: The following variables are read from the hotstart file and
+C     later compared with the values from the fort.15 to ensure that they 
+C     match.
+      INTEGER INHASE, INHASV, INHAGE, INHAGV, IFLAG
+      INTEGER INFREQ, INSTAE, INSTAV, INP, INZ, INF, IMM, IICALL
+      REAL(SZ),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
+      CHARACTER*10,ALLOCATABLE :: INAMEFR(:)
+C     
+      CHARACTER*16 FNAME
+      CHARACTER*8 FNAM8(2)
+      EQUIVALENCE (FNAM8(1),FNAME)
+C
+C     jgf49.44: Raised output variables to module level and added 
+C     full domain counterparts for globalio. These arrays represent
+C     magnitudes and phases for each frequency at each station or node.
+C     Stations:
+      REAL(SZ), ALLOCATABLE, TARGET :: EMAG(:,:)    ! elevation magnitudes 
+      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDE(:,:) ! elevation phases
+      REAL(SZ), ALLOCATABLE, TARGET :: UMAG(:,:)    ! u velocity magnitudes
+      REAL(SZ), ALLOCATABLE, TARGET :: VMAG(:,:)    ! v velocity magnitudes
+      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDU(:,:) ! u velocity phases
+      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDV(:,:) ! v velocity phases
+C     Nodes:
+      REAL(SZ), ALLOCATABLE, TARGET :: EMAGT(:,:)    ! elevation magnitudes 
+      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDEN(:,:) ! elevation phases
+      REAL(SZ), ALLOCATABLE, TARGET :: UMAGT(:,:)    ! u velocity magnitudes 
+      REAL(SZ), ALLOCATABLE, TARGET :: VMAGT(:,:)    ! v velocity magnitudes 
+      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDUT(:,:) ! u velocity phases
+      REAL(SZ), ALLOCATABLE, TARGET :: PHASEDVT(:,:) ! v velocity phases
+C     Time series reconstruction:
+      REAL(SZ), ALLOCATABLE, TARGET :: EAV(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: ESQ(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: EAVDIF(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: EVADIF(:)
+C
+      REAL(SZ), ALLOCATABLE, TARGET :: UAV(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: USQ(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: UAVDIF(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: UVADIF(:)
+C
+      REAL(SZ), ALLOCATABLE, TARGET :: VAV(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: VSQ(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: VAVDIF(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: VVADIF(:)
 
 C-----------------END OF DECLARATIONS---------------------------------------
 
       CONTAINS
-
-
 C
 C***********************************************************************
 C  Allocate arays used by LSQ_HARM.
 C
 C  vjp 8/99
 C***********************************************************************
-C
       SUBROUTINE ALLOC_HA()
       IMPLICIT NONE
+C
+      call setMessageSource("ALLOC_HA")
+#ifdef HARM_TRACE
+      call screen(DEBUG, "Enter.")
+#endif
       ALLOCATE ( HAFREQ(MNHARF),HAFF(MNHARF),HAFACE(MNHARF) )
       ALLOCATE ( NAMEFR(MNHARF) )
 C     
@@ -132,10 +252,330 @@ C
       ALLOCATE ( GLOULV(2*MNHARF,MNP),GLOVLV(2*MNHARF,MNP) )
       ALLOCATE ( STAELV(2*MNHARF,MNSTAE) )
       ALLOCATE ( STAULV(2*MNHARF,MNSTAV),STAVLV(2*MNHARF,MNSTAV) )
-      
+C
+      ALLOCATE ( IFREQ(MNHARF),IFF(MNHARF),IFACE(MNHARF) )
+      ALLOCATE ( INAMEFR(MNHARF) )
+C
+      ALLOCATE ( EMAG(MNHARF,MNSTAE), PHASEDE(MNHARF,MNSTAE) )
+      ALLOCATE ( UMAG(MNHARF,MNSTAE), PHASEDU(MNHARF,MNSTAE) )
+      ALLOCATE ( VMAG(MNHARF,MNSTAE), PHASEDV(MNHARF,MNSTAE) )
+      ALLOCATE ( EMAGT(MNHARF,MNP), PHASEDEN(MNHARF,MNP) )
+      ALLOCATE ( UMAGT(MNHARF,MNP), PHASEDUT(MNHARF,MNP) )
+      ALLOCATE ( VMAGT(MNHARF,MNP), PHASEDVT(MNHARF,MNP) )
+C      
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
-      END SUBROUTINE
+C----------------------------------------------------------------------
+      END SUBROUTINE ALLOC_HA
+C----------------------------------------------------------------------
+
+
+
+C----------------------------------------------------------------------
+C...
+C...Allocate space for harmonic analysis means and variance
+C...calculations
+C...
+C----------------------------------------------------------------------
+      SUBROUTINE ALLOC_MAIN14()
+      IMPLICIT NONE
+C
+      call setMessageSource("ALLOC_MAIN14")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
+C
+      ALLOCATE ( XVELAV(MNP),YVELAV(MNP),XVELVA(MNP),YVELVA(MNP) )
+      ALLOCATE ( ELAV(MNP),ELVA(MNP) )
+C
+      ALLOCATE( EAV(MNP),ESQ(MNP),EAVDIF(MNP),EVADIF(MNP) )
+      ALLOCATE( UAV(MNP),USQ(MNP),UAVDIF(MNP),UVADIF(MNP) )
+      ALLOCATE( VAV(MNP),VSQ(MNP),VAVDIF(MNP),VVADIF(MNP) )
+C
+
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+C----------------------------------------------------------------------
+      END SUBROUTINE ALLOC_MAIN14
+C----------------------------------------------------------------------
+
+
       
+C--------------------------------------------------------------------
+C                    S U B R O U T I N E 
+C     A L L O C A T E   F U L L   D O M A I N   H A   I O   A R R A Y S 
+C--------------------------------------------------------------------
+C     jgf49.44: Allocates memory for the full domain arrays for i/o
+C     purposes.
+C--------------------------------------------------------------------
+      SUBROUTINE allocateFullDomainHAIOArrays()
+      USE GLOBAL, ONLY : NP_G, NSTAE_G, NSTAV_G
+      IMPLICIT NONE
+C
+      call setMessageSource("allocateFullDomainHAIOArrays")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
+      IF (IHARIND.eq.1) THEN
+         ALLOCATE(GLOELV_g(2*MNHARF,NP_G))
+         ALLOCATE(STAELV_g(2*MNHARF,NSTAE_G))
+         ALLOCATE(GLOULV_g(2*MNHARF,NP_G))
+         ALLOCATE(GLOVLV_g(2*MNHARF,NP_G))
+         ALLOCATE(STAULV_g(2*MNHARF,NSTAV_G))
+         ALLOCATE(STAVLV_g(2*MNHARF,NSTAV_G))
+      ENDIF
+      IF (CHARMV) THEN
+         ALLOCATE(ELAV_g(NP_G))
+         ALLOCATE(ELVA_g(NP_G))
+         ALLOCATE(XVELAV_g(NP_G))
+         ALLOCATE(YVELAV_g(NP_G))
+         ALLOCATE(XVELVA_g(NP_G))
+         ALLOCATE(YVELVA_g(NP_G))
+      ENDIF
+
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE allocateFullDomainHAIOArrays
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E  I N I T   H A R M O N I C   P A R A M E T E R S 
+C--------------------------------------------------------------------
+C     jgf49.44: Initializes harmonic analysis arrays and parameters.
+C     Based on HACOLDS, written by rl.
+C--------------------------------------------------------------------
+      SUBROUTINE initHarmonicParameters(ihot)
+      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES
+      USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, NP, myProc, MNPROC
+      IMPLICIT NONE
+      INTEGER, intent(in) :: ihot  ! 0 indicates cold start; hotstart otherwise
+      INTEGER :: i, j, n           ! loop counters
+C
+      call setMessageSource("initHarmonicParameters")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
+      IF (IHARIND.EQ.0) THEN
+
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         RETURN ! EARLY RETURN if harmonic analysis is not part of this run
+      ENDIF
+      IF (ihot.ne.0) THEN
+         IHABEG = ITHAS + NHAINC
+      ENDIF
+      IF ((ihot.eq.0).or.((ihot.ne.0).and.(ITHS.LT.IHABEG))) THEN
+         ICHA=0
+C
+         if (hafreq(1).eq.0.0) then
+            nz=0
+            nf=1
+         else
+            nz=1
+            nf=0
+         endif
+c
+         nfreq=nfreq-nf
+         mm=2*nfreq+nf
+c
+         do i=1,mm
+            do j=1,mm
+               ha(i,j)=0.0d0
+            end do
+         end do
+         icall=0
+C     
+         IF (NHASE.EQ.1) THEN
+            do i=1,mm
+               do N=1,NSTAE
+                  STAELV(I,N)=0.d0
+               end do
+            end do
+         ENDIF
+         IF (NHASV.EQ.1) THEN
+            do i=1,mm
+               do N=1,NSTAV
+                  STAULV(I,N)=0.d0
+                  STAVLV(I,N)=0.d0
+               enddo
+            enddo
+         ENDIF
+         IF (NHAGE.EQ.1) THEN
+            do i=1,mm
+               do N=1,NP
+                  GLOELV(I,N)=0.d0
+               end do
+            end do
+         ENDIF
+         IF(NHAGV.EQ.1) THEN
+            do i=1,mm
+               do N=1,NP
+                  GLOULV(I,N)=0.d0
+                  GLOVLV(I,N)=0.d0
+               end do
+            end do
+         ENDIF
+         IF (CHARMV.eqv..true.) THEN
+            DO I=1,NP
+               ELAV(I)=0.D0
+               XVELAV(I)=0.D0
+               YVELAV(I)=0.D0
+               ELVA(I)=0.D0
+               XVELVA(I)=0.D0
+               YVELVA(I)=0.D0
+            ENDDO
+         ENDIF                  !  charmv
+      ENDIF
+C
+C     jgf49.44: Initialize all the full domain i/o arrays to zero, if 
+C     they will be used (i.e., if we are in serial or if we might be
+C     reading or writing full domain arrays in parallel).
+      IF ( (MNPROC.gt.1).and.
+     &   ( (myProc.eq.0)
+     &          .or.(READ_LOCAL_HOT_START_FILES.eqv..false.) ) ) THEN
+         GLOELV_g(:,:) = 0.d0
+         STAELV_g(:,:) = 0.d0
+         GLOULV_g(:,:) = 0.d0
+         GLOVLV_g(:,:) = 0.d0
+         STAULV_g(:,:) = 0.d0
+         STAVLV_g(:,:) = 0.d0
+         IF (CHARMV.eqv..true.) THEN
+            ELAV_g(:) = 0.d0
+            ELVA_g(:) = 0.d0
+            XVELAV_g(:) = 0.d0
+            YVELAV_g(:) = 0.d0
+            XVELVA_g(:) = 0.d0
+            YVELVA_g(:) = 0.d0
+         ENDIF
+      ENDIF
+
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      end subroutine initHarmonicParameters
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E  U P D A T E   H A R M O N I C  A N A L Y S I S 
+C--------------------------------------------------------------------
+C     jgf49.44: Removed from timestep.F and placed here.
+C...
+C...  IF IHARIND=1 AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
+C...  AND ON THE SPECIFIED INCREMENT, USE MODEL RESULTS TO UPDATE
+C...  HARMONIC ANALYSIS MATRIX AND LOAD VECTORS.  NOTE: AN 8 BYTE RECORD
+C...  SHOULD BE USED THROUGHOUT THE HARMONIC ANALYSIS SUBROUTINES, EVEN
+C...  ON 32 BIT WORKSTATIONS, SINCE IN THAT CASE THE HARMONIC ANALYSIS
+C...  IS DONE IN DOUBLE PRECISION.
+C...  
+C--------------------------------------------------------------------
+      SUBROUTINE updateHarmonicAnalysis(it, timeh)
+      USE GLOBAL, ONLY : ET00, UU00, VV00, ETA2, UU2, VV2,
+     &                   STAIE1, STAIE2, STAIE3, STAIV1, STAIV2, STAIV3,
+     &                   NP, NSTAE, NSTAV, NNE, NNV, NM
+      IMPLICIT NONE
+      INTEGER, intent(in) :: it    ! current ADCIRC timestep
+      REAL(8), intent(in) :: timeh ! time (sec) incl. STATIM and REFTIM
+C
+      INTEGER :: i, j              ! loop counters
+      REAL(SZ) :: EE1, EE2, EE3    ! nodal elevations around an element
+      REAL(SZ) :: U11, U22, U33    ! nodal u velocities around an element
+      REAL(SZ) :: V11, V22, V33    ! nodal v velocities around an element
+C
+      call setMessageSource("updateHarmonicAnalysis")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
+C...  
+      IF(IHARIND.EQ.1) THEN
+         IF((IT.GT.ITHAS).AND.(IT.LE.ITHAF)) THEN
+            IF(ICHA.EQ.NHAINC) ICHA=0
+            ICHA=ICHA+1
+            IF(ICHA.EQ.NHAINC) THEN
+C...  
+C.....UPDATE THE LHS MATRIX
+C...  
+               CALL LSQUPDLHS(timeh,IT)
+
+C...  IF DESIRED COMPUTE ELEVATION STATION INFORMATION AND UPDATE LOAD
+C.....VECTOR
+C...
+               IF(NHASE.EQ.1) THEN
+                  DO I=1,NSTAE
+                     EE1=ETA2(NM(NNE(I),1))
+                     EE2=ETA2(NM(NNE(I),2))
+                     EE3=ETA2(NM(NNE(I),3))
+                     ET00(I)=EE1*STAIE1(I)+EE2*STAIE2(I)+EE3*STAIE3(I)
+                  END DO
+                  CALL LSQUPDES(ET00,NSTAE)
+               ENDIF
+C...  IF DESIRED COMPUTE VELOCITY STATION INFORMATION AND UPDATE LOAD
+C.....VECTOR
+C...
+               IF(NHASV.EQ.1) THEN
+                  DO I=1,NSTAV
+                     U11=UU2(NM(NNV(I),1))
+                     U22=UU2(NM(NNV(I),2))
+                     U33=UU2(NM(NNV(I),3))
+                     V11=VV2(NM(NNV(I),1))
+                     V22=VV2(NM(NNV(I),2))
+                     V33=VV2(NM(NNV(I),3))
+                     UU00(I)=U11*STAIV1(I)+U22*STAIV2(I)+U33*STAIV3(I)
+                     VV00(I)=V11*STAIV1(I)+V22*STAIV2(I)+V33*STAIV3(I)
+                  END DO
+                  CALL LSQUPDVS(UU00,VV00,NSTAV)
+               ENDIF
+C...  
+C.....IF DESIRED UPDATE GLOBAL ELEVATION LOAD VECTOR
+C...  
+               IF(NHAGE.EQ.1) CALL LSQUPDEG(ETA2,NP)
+C...  
+C.....IF DESIRED UPDATE GLOBAL VELOCITY LOAD VECTOR
+C...  
+               IF(NHAGV.EQ.1) CALL LSQUPDVG(UU2,VV2,NP)
+
+            ENDIF
+         ENDIF
+
+C...  LINES TO COMPUTE MEANS AND VARIANCES
+
+         if (CHARMV) then
+            IF(IT.GT.ITMV) THEN
+               NTSTEPS=NTSTEPS+1
+               DO I=1,NP
+                  ELAV(I)=ELAV(I)+ETA2(I)
+                  XVELAV(I)=XVELAV(I)+UU2(I)
+                  YVELAV(I)=YVELAV(I)+VV2(I)
+                  ELVA(I)=ELVA(I)+ETA2(I)*ETA2(I)
+                  XVELVA(I)=XVELVA(I)+UU2(I)*UU2(I)
+                  YVELVA(I)=YVELVA(I)+VV2(I)*VV2(I)
+               END DO
+            ENDIF
+         endif                  !   charmv
+
+
+      ENDIF
+
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      end subroutine updateHarmonicAnalysis
+C--------------------------------------------------------------------
+
 
 c***********************************************************************
 c   Subroutine to update the Left Hand Side Matrix                     *
@@ -153,6 +593,11 @@ c
       INTEGER IT,I,J,I1,I2,J1,J2
       REAL(SZ) TF1,TF2
       REAL(8) TIME
+C
+      call setMessageSource("LSQUPDLHS")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
 c
       icall = icall + 1
 c     
@@ -193,9 +638,13 @@ c   Record update time and time step
 
       TIMEUD = TIME
       ITUD = IT
-      
+
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
-      end subroutine
+      end subroutine LSQUPDLHS
 
 c***********************************************************************
 c   Subroutine to update the Right Hand Side Load Vectors for the      *
@@ -214,6 +663,11 @@ c
       INTEGER NSTAE,N,I,I1,I2
       REAL(SZ) TF1,CTF1,STF1
       REAL(SZ) STAE(MNSTAE)
+C
+      call setMessageSource("LSQUPDES")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
 c
 c***** Update the Right Hand Side Load Vectors
 c
@@ -239,8 +693,12 @@ c   Take care of the other constituents
          end do
       end do
 C     
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
-      end subroutine
+      end subroutine LSQUPDES
       
 c***********************************************************************
 c   Subroutine to update the Right Hand Side Load Vectors for the      *
@@ -261,6 +719,11 @@ c
       INTEGER NSTAV,N,I,I1,I2
       REAL(SZ) TF1,CTF1,STF1
       REAL(SZ) STAU(MNSTAV),STAV(MNSTAV)
+C 
+      call setMessageSource("LSQUPDVS")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
 c
 c***** Update the Right Hand Side Load Vectors
 c
@@ -289,8 +752,12 @@ c     Take care of the other constituents
          end do
       end do
 C     
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
-      end subroutine
+      end subroutine LSQUPDVS
 
 
 c***********************************************************************
@@ -307,9 +774,14 @@ c***********************************************************************
 c
       SUBROUTINE LSQUPDEG(GLOE,NP)
       IMPLICIT NONE
-      INTEGER I,J,NP,N,I1,I2,IR,IRE,K,JR
+      INTEGER I,NP,N,I1,I2
       REAL(SZ) TF1,CTF1,STF1
       REAL(SZ) GLOE(MNP)
+C
+      call setMessageSource("LSQUPDEG")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
 c     
 c*****Update the Right Hand Side Load Vectors
 c     
@@ -335,8 +807,13 @@ c     Take care of the other constituents
          end do
       end do
 C     
+
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
-      end subroutine
+      end subroutine LSQUPDEG
 
 
 c***********************************************************************
@@ -355,9 +832,14 @@ c***********************************************************************
 c
       SUBROUTINE LSQUPDVG(GLOU,GLOV,NP)
       IMPLICIT NONE
-      INTEGER NP,NPI1,I1,I2,N,I,J,IR,IRE,K,JR
+      INTEGER NP,I1,I2,N,I,J
       REAL(SZ) TF1,CTF1,STF1
       REAL(SZ) GLOU(MNP),GLOV(MNP)
+C
+      call setMessageSource("LSQUPDVG")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
 c     
 c*****Update the Right Hand Side Load Vectors
 c     
@@ -386,8 +868,75 @@ c     Take care of the other constituents
          end do
       end do
 C     
+
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
-      end subroutine
+      end subroutine LSQUPDVG
+      
+C--------------------------------------------------------------------
+C     S U B R O U T I N E  S O L V E   H A R M O N I C   A N A L Y S I S 
+C--------------------------------------------------------------------
+C     jgf49.44: Solves for amplitudes and phases at the nodes and/or
+C     stations as specified. Also finishes time series reconstruction
+C     if necessary.
+C--------------------------------------------------------------------
+      SUBROUTINE solveHarmonicAnalysis(ITIME)
+      USE GLOBAL, ONLY : NP, STATIM, REFTIM, DTDP, LOCALDIR
+      IMPLICIT NONE
+      INTEGER, intent(in) :: ITIME
+      INTEGER :: I
+C
+      call setMessageSource("solveHarmonicAnalysis")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
+C
+      IF ((IHARIND.NE.1).OR.(ITIME.LE.ITHAS)) THEN
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         RETURN ! EARLY RETURN if we weren't supposed to do harmonic analysis
+                ! or it hasn't started yet.
+      ENDIF
+C      
+C...Compute means and variances for checking the harmonic analysis results
+C...Accumulate mean and variance at each node.
+      if ((CHARMV.eqv..true.).and.(FMV.gt.1.0d-3)) then
+         DO I=1,NP
+            ELAV(I)   = ELAV(I)/NTSTEPS
+            XVELAV(I) = XVELAV(I)/NTSTEPS
+            YVELAV(I) = YVELAV(I)/NTSTEPS
+            ELVA(I)   = ELVA(I)/NTSTEPS   - ELAV(I)*ELAV(I)
+            XVELVA(I) = XVELVA(I)/NTSTEPS - XVELAV(I)*XVELAV(I)
+            YVELVA(I) = YVELVA(I)/NTSTEPS - YVELAV(I)*YVELAV(I)
+         END DO
+         TIMEBEG=ITMV*DTDP + (STATIM-REFTIM)*86400.D0
+      ENDIF
+
+C......Fill out and decompose the LHS harmonic analaysis matrix
+
+      CALL FULSOL(0)
+
+C......Solve the harmonic analysis problems
+
+      IF(NHAGE.EQ.1) CALL LSQSOLEG()
+      IF(NHAGV.EQ.1) CALL LSQSOLVG()
+      IF(NHASE.EQ.1) CALL LSQSOLES()
+      IF(NHASV.EQ.1) CALL LSQSOLVS()
+
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE solveHarmonicAnalysis
+C--------------------------------------------------------------------
+
+
 
 c***********************************************************************
 c   Subroutine to fill out, decompose and solve the lsq system         *
@@ -406,9 +955,13 @@ c
       implicit none
       integer idecom,i,j,ir,ire,k,jr
       real(sz),allocatable ::  c(:),y(:)
-
+C
+      call setMessageSource("fulsol")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
 c     
-c**** If only want to fill out matrix and decomponse
+c**** If only want to fill out matrix and decompose
 c     
       if(idecom.eq.0) then
          
@@ -425,15 +978,20 @@ c     Decomposition of matrix a
          do 100 ir=1,mm
             ire=ir+1
             do 20 j=ire,mm
- 20         ha(ir,j)=ha(ir,j)/ha(ir,ir)
-            if(ire.gt.mm) goto 100
+ 20            ha(ir,j)=ha(ir,j)/ha(ir,ir)
+            if (ire.gt.mm) goto 100
             do 40 j=ire,mm
               do 40 k=ire,mm
- 40           ha(k,j)=ha(k,j)-ha(k,ir)*ha(ir,j)
+ 40              ha(k,j)=ha(k,j)-ha(k,ir)*ha(ir,j)
             do 50 j=ire,mm
- 50           ha(j,ir)=0.0
+ 50           ha(j,ir)=0.0d0
  100     continue
-         return
+
+#ifdef HARM_TRACE
+         call screen(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         return ! EARLY RETURN if idecom.eq.0
       endif
 
 c...  solve for y by forward substitution for l*y=p
@@ -444,24 +1002,28 @@ c
          y(ir)=hap(ir)
          do 110 jr=1,ir-1
  110        y(ir)=y(ir)-ha(jr,ir)*y(jr)
- 120     continue
+ 120  continue
 
 c...  calculate c=d**(-1)*y
 
-         do 130 ir=1,mm
- 130        c(ir)=y(ir)/ha(ir,ir)
+      do 130 ir=1,mm
+ 130     c(ir)=y(ir)/ha(ir,ir)
 
 c...  solve for x by back-substituting for l(tr)*x=c
 
-            ir=mm
- 140        continue
-            hax(ir)=c(ir)
-            do 150 jr=ir+1,mm
- 150          hax(ir)=hax(ir)-ha(ir,jr)*hax(jr)
-            ir=ir-1
-            if(ir.ge.1) goto 140
-            return
-            end subroutine
+      ir=mm
+ 140  continue
+      hax(ir)=c(ir)
+      do 150 jr=ir+1,mm
+ 150     hax(ir)=hax(ir)-ha(ir,jr)*hax(jr)
+      ir=ir-1
+      if(ir.ge.1) goto 140
+
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      end subroutine fulsol
 
 
 c***********************************************************************
@@ -474,25 +1036,19 @@ c                                                                      *
 c  closed unit 51            08/23/05                                  *
 c***********************************************************************
 c
-      SUBROUTINE LSQSOLES(NSTAE,DIRNAME)
+      SUBROUTINE LSQSOLES()
+      USE GLOBAL, ONLY : NSTAE
       IMPLICIT NONE
-      INTEGER NSTAE,N,I,J,K,I1,I2
+      INTEGER N,I,J,K,I1,I2
       REAL(8) CONVRD
-      REAL(SZ) EMAG,PHASEE,PHASEDE
-      CHARACTER(LEN=*) DIRNAME
+      REAL(SZ) PHASEE
+C
+      call setMessageSource("LSQSOLES")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
 C
       convrd=180.d0/pi
-c
-c**** Open elevation station harmonic output file and write header information
-c
-      open(51,file=TRIM(LOCALDIR)//'/'//'fort.51')
-      write(51,*) nfreq+nf
-      do j=1,nfreq+nf
-         write(51,3679) hafreq(j),HAFF(j),HAFACE(j),namefr(j)
-      end do
- 3679 format(1x,e20.10,1x,f10.7,1x,f12.8,1x,a10)
-      write(51,*) NSTAE
-
 c
 c**** AT each STATION TRANSFER each load vector to p and solve the system
 c
@@ -501,39 +1057,36 @@ c
             hap(k)=STAELV(k,n)
          end do
          call fulsol(n)
-
+c
 c        Compute amplitude and phase for each frequency making sure that the
-c        phase is between 0 and 360 deg.  Then write output.
-
-         write(51,*) N
+c        phase is between 0 and 360 deg. 
          do i=1,nfreq+nf
             if((nf.eq.1).and.(i.eq.1)) then
-               emag=hax(i)/haff(i)
-               phasee=0.
+               emag(i,n)=hax(i)/haff(i)
+               phasee=0.d0
             else
                i1=2*i-1-nf
                i2=i1+1
-               emag=sqrt(hax(i1)*hax(i1)+hax(i2)*hax(i2))/haff(i)
+               emag(i,n)=sqrt(hax(i1)*hax(i1)+hax(i2)*hax(i2))/haff(i)
                if((hax(i1).eq.0.).and.(hax(i2).eq.0.)) then
-                  phasee=0.
+                  phasee=0.d0
                else
                   phasee = atan2(hax(i2),hax(i1))
                endif
             endif
-            phasede=convrd*phasee+haface(i)
-            if(phasede.lt.0.) phasede=phasede+360.d0
-            if(phasede.ge.360.d0) phasede=phasede-360.d0
-               
-            write(51,6635) emag,phasede
- 6635       format(2x,e16.8,1x,f11.4)
+            phasede(i,n)=convrd*phasee+haface(i)
+            if(phasede(i,n).lt.0.d0) phasede(i,n)=phasede(i,n)+360.d0
+            if(phasede(i,n).ge.360.d0) phasede(i,n)=phasede(i,n)-360.d0
          end do
-            
       end do
-      
-	CLOSE(51)
 C     
-         return
-         end subroutine
+
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+      end subroutine lsqsoles
       
 
 c***********************************************************************
@@ -547,27 +1100,22 @@ c                        R.L. 11/8/95                                  *
 c   closed unit 52            08/23/05                                 *
 c***********************************************************************
 c
-      SUBROUTINE LSQSOLVS(NSTAV,DIRNAME)
+      SUBROUTINE LSQSOLVS()
+      USE GLOBAL, ONLY : NSTAV
       IMPLICIT NONE
-      INTEGER NSTAV,I,J,N,K,I1,I2
+      INTEGER I,J,N,K,I1,I2
       REAL(8) CONVRD
-      REAL(SZ) UMAG,VMAG,PHASEU,PHASEV,PHASEDU,PHASEDV
+      REAL(SZ) PHASEU,PHASEV
       REAL(SZ),ALLOCATABLE :: Y(:)
-      CHARACTER(LEN=*) DIRNAME
+C
+      call setMessageSource("LSQSOLVS")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
 c
       convrd=180.d0/pi
 c
       ALLOCATE ( Y(2*MNHARF) )
-c
-c**** Open velocity station harmonic output file and write header information
-c
-      open(52,file=TRIM(DIRNAME)//'/'//'fort.52')
-      write(52,*) nfreq+nf
-      do j=1,nfreq+nf
-         write(52,3679) hafreq(j),HAFF(j),HAFACE(j),namefr(j)
-      end do
- 3679 format(1x,e20.10,1x,f10.7,1x,f12.8,1x,a10)
-      write(52,*) NSTAV
 c
 c**** AT each STATION, transfer each load vector to p, solve system, 
 c**** then write results
@@ -586,20 +1134,19 @@ c
          call fulsol(n)
          
 c        Compute amplitude and phase for each frequency making sure that the
-c        phase is between 0 and 360 deg.  Then write output.
+c        phase is between 0 and 360 deg. 
 
-         write(52,*) N
          do i=1,nfreq+nf
             if((nf.eq.1).and.(i.eq.1)) then
-               umag=hax(i)/haff(i)
-               vmag=y(i)/haff(i)
+               umag(i,n)=hax(i)/haff(i)
+               vmag(i,n)=y(i)/haff(i)
                phaseu=0.
                phasev=0.
             else
                i1=2*i-1-nf
                i2=i1+1
-               umag=sqrt(hax(i1)*hax(i1)+hax(i2)*hax(i2))/haff(i)
-               vmag=sqrt(y(i1)*y(i1)+y(i2)*y(i2))/haff(i)
+               umag(i,n)=sqrt(hax(i1)*hax(i1)+hax(i2)*hax(i2))/haff(i)
+               vmag(i,n)=sqrt(y(i1)*y(i1)+y(i2)*y(i2))/haff(i)
                if((hax(i1).eq.0.).and.(hax(i2).eq.0.)) then
                   phaseu=0.
                else
@@ -611,23 +1158,21 @@ c        phase is between 0 and 360 deg.  Then write output.
                   phasev = atan2(y(i2),y(i1))
                endif
             endif
-            phasedu=convrd*phaseu+haface(i)
-            if(phasedu.lt.0.) phasedu=phasedu+360.d0
-            if(phasedu.ge.360.d0) phasedu=phasedu-360.d0
-            phasedv=convrd*phasev+haface(i)
-            if(phasedv.lt.0.) phasedv=phasedv+360.d0
-            if(phasedv.ge.360.d0) phasedv=phasedv-360.d0
-            
-            write(52,6636) umag,phasedu,vmag,phasedv
- 6636       format(2x,e16.8,1x,f11.4,2x,e16.8,1x,f11.4)
+            phasedu(i,n)=convrd*phaseu+haface(i)
+            if(phasedu(i,n).lt.0.) phasedu(i,n)=phasedu(i,n)+360.d0
+            if(phasedu(i,n).ge.360.d0) phasedu(i,n)=phasedu(i,n)-360.d0
+            phasedv(i,n)=convrd*phasev+haface(i)
+            if(phasedv(i,n).lt.0.) phasedv(i,n)=phasedv(i,n)+360.d0
+            if(phasedv(i,n).ge.360.d0) phasedv(i,n)=phasedv(i,n)-360.d0
          end do
-         
       end do
 
-      CLOSE(52)
-      
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
-      end subroutine
+      end subroutine lsqsolvs
 
 c***********************************************************************
 c   Subroutine to solve the system and write output for elevation      *
@@ -642,36 +1187,24 @@ c   added local LOGICAL CHARMV declaration 04/09/2004                  *
 c   closed unit 53 08/23/05                                            *
 c***********************************************************************
 c
-      SUBROUTINE LSQSOLEG(NP,DIRNAME,ELAV,ELVA,CHARMV)
+      SUBROUTINE LSQSOLEG()
+      USE GLOBAL, ONLY : DTDP
       IMPLICIT NONE
-      LOGICAL CHARMV            !rl 04/09/2004
-      integer J,NP,N,K,I,I1,I2,IT,IFR,NEAVMAX,NEAVMIN,
+      integer J,N,K,I,I1,I2,IT,IFR,NEAVMAX,NEAVMIN,
      &  NEVAMAX,NEVAMIN
       REAL(8)  CONVRD 
-      REAL(SZ) EAVMAX,EVAMAX,EAVMIN,EVAMIN,EMAGT
-      REAL(SZ) PHASEDE,EAV,ESQ,TIME,RSE,FTIME,EAVDIF,EVADIF
-      REAL(SZ) ELAV(MNP),ELVA(MNP)
+      REAL(SZ) EAVMAX,EVAMAX,EAVMIN,EVAMIN
+      REAL(SZ) TIME,RSE,FTIME
       REAL(SZ),ALLOCATABLE  ::  PHASEE(:),EMAG(:)
 C
-      INTEGER NTSTEPS,ITMV
-      REAL(8) TIMEBEG
-      REAL(SZ) DT,FMV
-      COMMON /MEANSQ/ TIMEBEG,DT,FMV,NTSTEPS,ITMV
-      CHARACTER(LEN=*) DIRNAME
-c
+      call setMessageSource("LSQSOLEG")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
+C
       convrd=180.d0/pi
 c
       ALLOCATE ( PHASEE(MNHARF),EMAG(MNHARF) )
-c
-c**** Open velocity station harmonic output file and write header information
-c
-      open(53,file=TRIM(DIRNAME)//'/'//'fort.53')
-      write(53,*) nfreq+nf
-      do j=1,nfreq+nf
-         write(53,3679) hafreq(j),HAFF(j),HAFACE(j),namefr(j)
-      end do
- 3679 format(1x,e20.10,1x,f10.7,1x,f12.8,1x,a10)
-      write(53,*) NP
 C
       if (CHARMV) then
          EAVMAX=-999.
@@ -682,7 +1215,7 @@ C
 c
 c***** AT each node transfer each load vector to p, solve and write output
 c
-      DO N=1,NP
+      DO N=1,MNP
          do k=1,mm
             hap(k) = GLOELV(k,n)
          end do
@@ -691,84 +1224,75 @@ c
 c        Compute amplitude and phase for each frequency making sure that the
 c        phase is between 0 and 360 deg.  Then write output.
 c
-         write(53,*) N
          do i=1,nfreq+nf
             if((nf.eq.1).and.(i.eq.1)) then
                emag(i)=hax(i)
-               emagt=emag(i)/haff(i)
+               emagt(i,n)=emag(i)/haff(i)
                phasee(i)=0.
             else
                i1=2*i-1-nf
                i2=i1+1
                emag(i)=sqrt(hax(i1)*hax(i1)+hax(i2)*hax(i2))
-               emagt=emag(i)/haff(i)
+               emagt(i,n)=emag(i)/haff(i)
                if((hax(i1).eq.0.).and.(hax(i2).eq.0.)) then
                   phasee(i)=0.
                else
                   phasee(i) = atan2(hax(i2),hax(i1))
                endif
             endif
-            phasede=convrd*phasee(i)+haface(i)
-            if(phasede.lt.0.) phasede=phasede+360.d0
-            if(phasede.ge.360.d0) phasede=phasede-360.d0
-            write(53,6635) emagt,phasede
- 6635       format(2x,e16.8,1x,f11.4)
+            phaseden(i,n)=convrd*phasee(i)+haface(i)
+            if(phaseden(i,n).lt.0.) phaseden(i,n)=phaseden(i,n)+360.d0
+            if(phaseden(i,n).ge.360.d0) phaseden(i,n)=phaseden(i,n)-360.d0
          end do
          
          if (CHARMV) then
-            eav = 0.
-            esq = 0.
+            eav(n) = 0.d0
+            esq(n) = 0.d0
             do it=1,ntsteps
-               TIME=TIMEBEG+DT*IT
-               rse=0.
+               TIME=TIMEBEG+DTDP*IT
+               rse=0.d0
                do ifr=1,nfreq+nf
                   ftime=hafreq(ifr)*time
                   rse=rse+emag(ifr)*cos(ftime-phasee(ifr))
                end do
-               eav=eav+rse
-               esq=esq+rse*rse
+               eav(n)=eav(n)+rse
+               esq(n)=esq(n)+rse*rse
             end do
-            
-         eav=eav/ntsteps
-         esq=esq/ntsteps-eav*eav
-         if(elav(n).eq.0.) then
-            if(eav.eq.0.) eavdif=1.0d0
-            if(eav.ne.0.) eavdif=99d19
-         else
-            eavdif=eav/elav(n)
-         endif
-         if(elva(n).eq.0.) then
-            if(esq.eq.0.) evadif=1.0d0
-            if(esq.ne.0.) evadif=99e19
-         else
-            evadif=esq/elva(n)
-         endif
-         write(55,*) n
-         write(55,7637) elav(n),eav,eavdif,elva(n),esq,evadif
- 7637    format(2x,3(e16.8,1x),2x,3(e16.8,1x))
-         
-         IF(EAVDIF.GT.EAVMAX) THEN
-            EAVMAX=EAVDIF
-            NEAVMAX=n
-         ENDIF
-         IF(EAVDIF.LT.EAVMIN) THEN
-            EAVMIN=EAVDIF
-            NEAVMIN=n
-         ENDIF
-         IF(EVADIF.GT.EVAMAX) THEN
-            EVAMAX=EVADIF
-            NEVAMAX=n
-         ENDIF
-         IF(EVADIF.LT.EVAMIN) THEN
-            EVAMIN=EVADIF
-            NEVAMIN=n
-         ENDIF
-      endif                     ! charmv
-      
+C            
+            eav(n)=eav(n)/ntsteps
+            esq(n)=esq(n)/ntsteps-eav(n)*eav(n)
+            if(elav(n).eq.0.) then
+               if(eav(n).eq.0.) eavdif(n)=1.0d0
+               if(eav(n).ne.0.) eavdif(n)=99d19
+            else
+               eavdif(n)=eav(n)/elav(n)
+            endif
+            if(elva(n).eq.0.) then
+               if(esq(n).eq.0.) evadif(n)=1.0d0
+               if(esq(n).ne.0.) evadif(n)=99e19
+            else
+               evadif(n)=esq(n)/elva(n)
+            endif
+C         
+            IF(EAVDIF(n).GT.EAVMAX) THEN
+               EAVMAX=EAVDIF(n)
+               NEAVMAX=n
+            ENDIF
+            IF(EAVDIF(n).LT.EAVMIN) THEN
+               EAVMIN=EAVDIF(n)
+               NEAVMIN=n
+            ENDIF
+            IF(EVADIF(n).GT.EVAMAX) THEN
+               EVAMAX=EVADIF(n)
+               NEVAMAX=n
+            ENDIF
+            IF(EVADIF(n).LT.EVAMIN) THEN
+               EVAMIN=EVADIF(n)
+               NEVAMIN=n
+            ENDIF
+         endif                     ! charmv
       end do
-
-      CLOSE(53)
-      
+C      
       if (charmv) then
 c
       WRITE(16,7740)
@@ -786,8 +1310,13 @@ c
 c     
       endif                     ! charmv
 c
+
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
-      end subroutine
+      end subroutine lsqsoleg
 
 c***********************************************************************
 c   Subroutine to solve the system and write output for velocity       *
@@ -802,43 +1331,31 @@ c   added local LOGICAL CHARMV declaration 04/09/2004                  *
 c   closed unit 54 08/23/05                                            *
 c***********************************************************************
 c
-      SUBROUTINE LSQSOLVG(NP,DIRNAME,
-     &                    XVELAV,YVELAV,XVELVA,YVELVA,CHARMV)
+      SUBROUTINE LSQSOLVG()
+      USE GLOBAL, ONLY : DTDP
       IMPLICIT NONE
-      LOGICAL CHARMV            !rl 04/09/2004      
-      INTEGER NP,I,J,N,K,I1,I2,IT,IFR
+      INTEGER I,J,N,K,I1,I2,IT,IFR
       INTEGER NUAVMAX,NUAVMIN,NVAVMAX,NVAVMIN,NUVAMAX,NUVAMIN,
      &  NVVAMAX,NVVAMIN
-      REAL(SZ) UAV,VAV,USQ,VSQ,TIME,FTIME,RSU,RSV
+      REAL(SZ) TIME,FTIME,RSU,RSV
       REAL(SZ) UAVMAX,VAVMAX,UVAMAX,VVAMAX,UAVMIN,VAVMIN,
-     & UVAMIN,VVAMIN,PHASEDU,PHASEDV,UAVDIF,VAVDIF,UMAGT,VMAGT,
-     & UVADIF,VVADIF
+     & UVAMIN,VVAMIN
       REAL(8) CONVRD
-      REAL(SZ) XVELAV(MNP),YVELAV(MNP),XVELVA(MNP),YVELVA(MNP)
-      REAL(SZ),ALLOCATABLE :: UMAG(:),VMAG(:),PHASEU(:),PHASEV(:)
+      REAL(SZ),ALLOCATABLE :: UMAGG(:),VMAGG(:),PHASEUG(:),PHASEVG(:)
       REAL(SZ),ALLOCATABLE :: Y(:)
-      INTEGER NTSTEPS,ITMV
-      REAL(8) TIMEBEG
-      REAL(SZ) DT,FMV
-      COMMON /MEANSQ/ TIMEBEG,DT,FMV,NTSTEPS,ITMV
-      CHARACTER(LEN=*) DIRNAME
+C
+      call setMessageSource("LSQSOLVG")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
 c
       convrd=180.d0/pi
 c
+      ALLOCATE ( UMAGG(MNHARF),VMAGG(MNHARF) )
+      ALLOCATE ( PHASEUG(MNHARF),PHASEVG(MNHARF) )
       ALLOCATE ( Y(2*MNHARF) )
-      ALLOCATE ( UMAG(MNHARF),VMAG(MNHARF) )
-      ALLOCATE ( PHASEU(MNHARF),PHASEV(MNHARF) )
 c
-c**** Open velocity station harmonic output file and write header information
 c
-      open(54,file=TRIM(DIRNAME)//'/'//'fort.54')
-      write(54,*) nfreq+nf
-      do j=1,nfreq+nf
-         write(54,3679) hafreq(j),HAFF(j),HAFACE(j),namefr(j)
-      end do
- 3679 format(1x,e20.10,1x,f10.7,1x,f12.8,1x,a10)
-      write(54,*) NP
-      
       if ( charmv ) then
          UAVMAX=-999.
          VAVMAX=-999.
@@ -852,7 +1369,7 @@ c
 c
 c***** AT each node transfer each load vector to p, solve and write output
 c
-      DO N=1,NP
+      DO N=1,MNP
          do k=1,mm
             hap(k) = GLOVLV(k,n)
          end do
@@ -864,41 +1381,38 @@ c
             hap(k) = GLOULV(k,n)
          end do
          call fulsol(n)
-         write(54,*) n
          do i=1,nfreq+nf
             if((nf.eq.1).and.(i.eq.1)) then
-               umag(i)=hax(i)
-               umagt=umag(i)/haff(i)
-               vmag(i)=y(i)
-               vmagt=vmag(i)/haff(i)
-               phaseu(i)=0.
-               phasev(i)=0.
+               umagg(i)=hax(i)
+               umagt(i,n)=umagg(i)/haff(i)
+               vmagg(i)=y(i)
+               vmagt(i,n)=vmagg(i)/haff(i)
+               phaseug(i)=0.d0
+               phasevg(i)=0.d0
             else
                i1=2*i-1-nf
                i2=i1+1
-               umag(i)=sqrt(hax(i1)*hax(i1)+hax(i2)*hax(i2))
-               umagt=umag(i)/haff(i)
-               vmag(i)=sqrt(y(i1)*y(i1)+y(i2)*y(i2))
-               vmagt=vmag(i)/haff(i)
+               umagg(i)=sqrt(hax(i1)*hax(i1)+hax(i2)*hax(i2))
+               umagt(i,n)=umagg(i)/haff(i)
+               vmagg(i)=sqrt(y(i1)*y(i1)+y(i2)*y(i2))
+               vmagt(i,n)=vmagg(i)/haff(i)
                if((hax(i1).eq.0.).and.(hax(i2).eq.0.)) then
-                  phaseu(i)=0.
+                  phaseug(i)=0.
                else
-                  phaseu(i)=atan2(hax(i2),hax(i1))
+                  phaseug(i)=atan2(hax(i2),hax(i1))
                endif
                if((y(i1).eq.0.).and.(y(i2).eq.0.)) then
-                  phasev(i)=0.
+                  phasevg(i)=0.
                else
-                  phasev(i)=atan2(y(i2),y(i1))
+                  phasevg(i)=atan2(y(i2),y(i1))
                endif
             endif
-            phasedu=convrd*phaseu(i)+haface(i)
-            if(phasedu.lt.0.) phasedu=phasedu+360.d0
-            if(phasedu.ge.360.d0) phasedu=phasedu-360.d0
-            phasedv=convrd*phasev(i)+haface(i)
-            if(phasedv.lt.0.) phasedv=phasedv+360.d0
-            if(phasedv.ge.360.d0) phasedv=phasedv-360.d0
-
-            write(54,6636) umagt,phasedu,vmagt,phasedv
+            phasedut(i,n)=convrd*phaseug(i)+haface(i)
+            if(phasedut(i,n).lt.0.) phasedut(i,n)=phasedut(i,n)+360.d0
+            if(phasedut(i,n).ge.360.d0) phasedut(i,n)=phasedut(i,n)-360.d0
+            phasedvt(i,n)=convrd*phasevg(i)+haface(i)
+            if(phasedvt(i,n).lt.0.) phasedvt(i,n)=phasedvt(i,n)+360.d0
+            if(phasedvt(i,n).ge.360.d0) phasedv(i,n)=phasedvt(i,n)-360.d0
  6636       format(2x,e16.8,1x,f11.4,2x,e16.8,1x,f11.4)
          end do
 
@@ -907,96 +1421,90 @@ CHARMV...FOR CHECKING THE HARMONIC ANALYSIS RESULTS.
 CHARMV...Resynthesize the time series to compute the average and variances.
 CHARMV...Compare resynthesized values with those computed during time stepping.
          if ( charmv ) then
-            uav = 0.
-            vav = 0.
-            usq = 0.
-            vsq = 0.
+            uav(n) = 0.d0
+            vav(n) = 0.d0
+            usq(n) = 0.d0
+            vsq(n) = 0.d0
             do it=1,ntsteps
-               TIME=TIMEBEG+DT*IT
+               TIME=TIMEBEG+DTDP*IT
                rsu=0.
                rsv=0.
                do ifr=1,nfreq+nf
                   ftime=hafreq(ifr)*time
-                  rsu=rsu+umag(ifr)*cos(ftime-phaseu(ifr))
-                  rsv=rsv+vmag(ifr)*cos(ftime-phasev(ifr))
+                  rsu=rsu+umagg(ifr)*cos(ftime-phaseug(ifr))
+                  rsv=rsv+vmagg(ifr)*cos(ftime-phasevg(ifr))
                end do
-               uav=uav+rsu
-               vav=vav+rsv
-               usq=usq+rsu*rsu
-               vsq=vsq+rsv*rsv
+               uav(n)=uav(n)+rsu
+               vav(n)=vav(n)+rsv
+               usq(n)=usq(n)+rsu*rsu
+               vsq(n)=vsq(n)+rsv*rsv
             end do
 
-            uav=uav/ntsteps
-            vav=vav/ntsteps
-            usq=usq/ntsteps-uav*uav
-            vsq=vsq/ntsteps-vav*vav
+            uav(n)=uav(n)/ntsteps
+            vav(n)=vav(n)/ntsteps
+            usq(n)=usq(n)/ntsteps-uav(n)*uav(n)
+            vsq(n)=vsq(n)/ntsteps-vav(n)*vav(n)
             if(xvelav(n).eq.0.) then
-               if(uav.eq.0.) uavdif=1.0d0
-               if(uav.ne.0.) uavdif=99e19
+               if(uav(n).eq.0.) uavdif(n)=1.0d0
+               if(uav(n).ne.0.) uavdif(n)=99e19
             else
-               uavdif=uav/xvelav(n)
+               uavdif(n)=uav(n)/xvelav(n)
             endif
             if(yvelav(n).eq.0.) then
-               if(vav.eq.0.) vavdif=1.0d0
-               if(vav.ne.0.) vavdif=99e19
+               if(vav(n).eq.0.) vavdif(n)=1.0d0
+               if(vav(n).ne.0.) vavdif(n)=99e19
             else
-               vavdif=vav/yvelav(n)
+               vavdif(n)=vav(n)/yvelav(n)
             endif
             if(xvelva(n).eq.0.) then
-               if(usq.eq.0.) uvadif=1.0d0
-               if(usq.ne.0.) uvadif=99e19
+               if(usq(n).eq.0.) uvadif(n)=1.0d0
+               if(usq(n).ne.0.) uvadif(n)=99e19
             else
-               uvadif=usq/xvelva(n)
+               uvadif(n)=usq(n)/xvelva(n)
             endif
             if(yvelva(n).eq.0.) then
-               if(vsq.eq.0.) vvadif=1.0d0
-               if(vsq.ne.0.) vvadif=99e19
+               if(vsq(n).eq.0.) vvadif(n)=1.0d0
+               if(vsq(n).ne.0.) vvadif(n)=99e19
             else
-               vvadif=vsq/yvelva(n)
+               vvadif(n)=vsq(n)/yvelva(n)
             endif
-            write(55,*) n
-            write(55,7637) xvelav(n),uav,uavdif,xvelva(n),usq,uvadif
-            write(55,7637) yvelav(n),vav,vavdif,yvelva(n),vsq,vvadif
- 7637       format(2x,3(e16.8,1x),2x,3(e16.8,1x))
 
-            IF(UAVDIF.GT.UAVMAX) THEN
-               UAVMAX=UAVDIF
+            IF(UAVDIF(n).GT.UAVMAX) THEN
+               UAVMAX=UAVDIF(n)
                NUAVMAX=n
             ENDIF
-            IF(UAVDIF.LT.UAVMIN) THEN
-               UAVMIN=UAVDIF
+            IF(UAVDIF(n).LT.UAVMIN) THEN
+               UAVMIN=UAVDIF(n)
                NUAVMIN=n
             ENDIF
-            IF(VAVDIF.GT.VAVMAX) THEN
-               VAVMAX=VAVDIF
+            IF(VAVDIF(n).GT.VAVMAX) THEN
+               VAVMAX=VAVDIF(n)
                NVAVMAX=n
             ENDIF
-            IF(VAVDIF.LT.VAVMIN) THEN
-               VAVMIN=VAVDIF
+            IF(VAVDIF(n).LT.VAVMIN) THEN
+               VAVMIN=VAVDIF(n)
                NVAVMIN=n
             ENDIF
-            IF(UVADIF.GT.UVAMAX) THEN
-               UVAMAX=UVADIF
+            IF(UVADIF(n).GT.UVAMAX) THEN
+               UVAMAX=UVADIF(n)
                NUVAMAX=n
             ENDIF
-            IF(UVADIF.LT.UVAMIN) THEN
-               UVAMIN=UVADIF
+            IF(UVADIF(n).LT.UVAMIN) THEN
+               UVAMIN=UVADIF(n)
                NUVAMIN=n
             ENDIF
-            IF(VVADIF.GT.VVAMAX) THEN
-               VVAMAX=VVADIF
+            IF(VVADIF(n).GT.VVAMAX) THEN
+               VVAMAX=VVADIF(n)
                NVVAMAX=n
             ENDIF
-            IF(VVADIF.LT.VVAMIN) THEN
-               VVAMIN=VVADIF
+            IF(VVADIF(n).LT.VVAMIN) THEN
+               VVAMIN=VVADIF(n)
                NVVAMIN=n
             ENDIF
 
          endif                  !  charmv
 
       end do
-
-      CLOSE(54)
 
       if ( charmv ) then 
 c
@@ -1021,154 +1529,43 @@ c
 c     
       endif                     ! charmv
 c
-      return
-      end subroutine
 
-C
-c***********************************************************************
-c   Subroutine to initialize parameters for harmonic analysis with a   *
-c   cold start.                                                        *
-c                                                                      *
-c                        R.L.  11/9/95                                 *
-c***********************************************************************
-c
-      SUBROUTINE HACOLDS(HAFREQ)
-      implicit none
-      INTEGER I,J
-      REAL(SZ) HAFREQ(MNHARF)
-C
-      if (hafreq(1).eq.0.0) then
-         nz=0
-         nf=1
-      else
-         nz=1
-         nf=0
-      endif
-c
-      nfreq=nfreq-nf
-      mm=2*nfreq+nf
-c
-      do i=1,mm
-         do j=1,mm
-            ha(i,j)=0.
-         end do
-      end do
-      icall=0
-C     
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
-      end subroutine
+      end subroutine lsqsolvg
 
-c***********************************************************************
-c   Subroutine to initialize global elevation load vectors for         *
-c   harmonic analysis with a cold start.                               *
-c                                                                      *
-c                        R.L.  11/9/95                                 *
-c***********************************************************************
-c
-      SUBROUTINE HACOLDSEG(NP)
-      implicit none
-      INTEGER NP,I,N
-c
-      do i=1,mm
-         do N=1,NP
-            GLOELV(I,N)=0.
-         end do
-      end do
-C
-      return
-      end subroutine
+      
 
-c***********************************************************************
-c   Subroutine to initialize elevation station load vectors for        *
-c   harmonic analysis with a cold start.                               *
-c                                                                      *
-c                        R.L.  11/9/95                                 *
-c***********************************************************************
-c
-      SUBROUTINE HACOLDSES(NSTAE)
-      implicit none
-      INTEGER  NSTAE
-      INTEGER I,N
-C
-      do i=1,mm
-         do N=1,NSTAE
-            STAELV(I,N)=0.
-         end do
-      end do
-C     
-      return
-      end subroutine
-
-c***********************************************************************
-c   Subroutine to initialize global velocity load vectors for          *
-c   harmonic analysis with a cold start.                               *
-c                                                                      *
-c                        R.L.  11/9/95                                 *
-c***********************************************************************
-c
-      SUBROUTINE HACOLDSVG(NP)
-      implicit none
-      INTEGER NP,I,N
-C
-      do i=1,mm
-         do N=1,NP
-            GLOULV(I,N)=0.
-            GLOVLV(I,N)=0.
-         end do
-      end do
-C
-      return
-      end subroutine
-
-c***********************************************************************
-c   Subroutine to initialize elevation station load vectors for        *
-c   harmonic analysis with a cold start.                               *
-c                                                                      *
-c                        R.L.  11/9/95                                 *
-c***********************************************************************
-c
-      SUBROUTINE HACOLDSVS(NSTAV)
-      implicit none
-      INTEGER NSTAV,I,N
-c
-      do i=1,mm
-         do N=1,NSTAV
-            STAULV(I,N)=0.
-            STAVLV(I,N)=0.
-         enddo
-      enddo
-C
-      return
-      end subroutine
-
-c***********************************************************************
-c   Subroutine to read in and initialize harmonic analysis for a hot   *
-c   start.                                                             *
-c                                                                      *
-c   Checks are made to ensure agreement between values read in from    *
-c   the hotstart file and values read in from the UNIT 15 file.        *
-c                                                                      *
-c                        R.L. 11/9/95                                  *
-c***********************************************************************
-c
-      SUBROUTINE HAHOTS(NSTAE,NSTAV,NP,ISTAE,ISTAV,IGLOE,IGLOV,
-     &   NSCREEN,ScreenUnit,IHOTSTP,IHOT,MYPROC)
+C--------------------------------------------------------------------
+C     S U B R O U T I N E  R E A D  B I N A R Y  H A  H O T S T A R T 
+C--------------------------------------------------------------------
+C     jgf49.44: Reads harmonic analysis data from a binary hotstart
+C     file. Based on HAHOTS, written by rl.
+C--------------------------------------------------------------------
+      SUBROUTINE readBinaryHAHotstart(lun, counter)
+      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES 
+      USE GLOBAL, ONLY : NP, NP_G, NSTAE, NSTAE_G, NSTAV, NSTAV_G,
+     &                   binaryRead3D, ITHS, NODES_LG, IMAP_STAE_LG,
+     &                   IMAP_STAV_LG
       IMPLICIT NONE
-      INTEGER NSTAE,NSTAV,NP, MYPROC
-      INTEGER ISTAE, ISTAV, IGLOE, IGLOV, IFLAG, I, J
-C     
-      INTEGER INFREQ, INSTAE, INSTAV, INP, INZ, INF
-      INTEGER IISTAE, IISTAV, IIGLOE, IIGLOV
-      INTEGER IHOTSTP, IHOT, IMM, IICALL
-      INTEGER NSCREEN, ScreenUnit 
-      REAL(SZ) FDIFF
-C     
-      REAL(SZ),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
-      CHARACTER*10,ALLOCATABLE :: INAMEFR(:)
-C     
-      CHARACTER*16 FNAME
-      CHARACTER*8 FNAM8(2)
-      EQUIVALENCE (FNAM8(1),FNAME)
+      INTEGER, intent(in) :: lun          ! i/o logical unit number
+      INTEGER, intent(inout) :: counter   ! i/o record
+      INTEGER :: i, n                     ! loop counters
+      INTEGER :: num_elev_sta   ! number of elevation stations to read
+      INTEGER :: num_vel_sta    ! number of velocity stations to read
+      INTEGER :: num_nodes      ! number of nodes to read
+      INTEGER :: subdomainStation  ! number of station to map data to
+      INTEGER :: fulldomainStation ! number of station to map data from
+      INTEGER :: subdomainNode  ! number of node to map data to
+      INTEGER :: fulldomainNode ! number of node to map data from     
+C
+      call setMessageSource("readBinaryHAHotstart")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
 c     
 c***** Compute parameter values for checking
 c
@@ -1181,49 +1578,249 @@ c
       endif
       nfreq=nfreq-nf
       mm=2*nfreq+nf
+C
+C     Settings for reading in hotstart file in serial, or for reading 
+C     subdomain hotstart files in parallel.
+      IF ((MNPROC.eq.1)
+     &   .or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+         STAELV_pt => STAELV
+         num_elev_sta = NSTAE
+         STAULV_pt => STAULV
+         STAVLV_pt => STAVLV         
+         num_vel_sta = NSTAV
+         GLOELV_pt => GLOELV
+         num_nodes = NP
+         GLOULV_pt => GLOULV
+         GLOVLV_pt => GLOVLV
+         ELAV_pt => ELAV
+         ELVA_pt => ELVA
+         XVELAV_pt => XVELAV
+         YVELAV_pt => YVELAV
+         XVELVA_pt => XVELVA
+         YVELVA_pt => YVELVA
+      ELSE
+C        ! read full domain hotstart file in parallel
+         STAELV_pt => STAELV_G
+         num_elev_sta = NSTAE_G
+         STAULV_pt => STAULV_G
+         STAVLV_pt => STAVLV_G         
+         num_vel_sta = NSTAV_G
+         GLOELV_pt => GLOELV_G
+         num_nodes = NP_G
+         GLOULV_pt => GLOULV_G
+         GLOVLV_pt => GLOVLV_G
+         ELAV_pt => ELAV_g
+         ELVA_pt => ELVA_g
+         XVELAV_pt => XVELAV_g
+         YVELAV_pt => YVELAV_g
+         XVELVA_pt => XVELVA_g
+         YVELVA_pt => YVELVA_g
+      ENDIF
+c
+c***** Read in parameter values
+c
+      READ(lun,REC=counter+1) inz
+      READ(lun,REC=counter+2) inf
+      READ(lun,REC=counter+3) imm
+      READ(lun,REC=counter+4) inp
+      READ(lun,REC=counter+5) instae
+      READ(lun,REC=counter+6) instav
+      READ(lun,REC=counter+7) inhase
+      READ(lun,REC=counter+8) inhasv
+      READ(lun,REC=counter+9) inhage
+      READ(lun,REC=counter+10) inhagv
+      READ(lun,REC=counter+11) iicall
+      READ(lun,REC=counter+12) infreq
+      counter = counter+12
+c
+      do i=1,nfreq+nf
+         READ(lun,REC=counter+1) FNAM8(1)
+         READ(lun,REC=counter+2) FNAM8(2)
+         counter = counter + 2
+         INAMEFR(I) = FNAME
+         read(lun,REC=counter+1) ifreq(i)
+         read(lun,REC=counter+2) iff(i)
+         read(lun,REC=counter+3) iface(i)
+         counter = counter + 3
+      end do
+c
+c***** Read in time of most recent H.A. update
+c
+      READ(lun,REC=counter+1) TIMEUD
+      READ(lun,REC=counter+2) ITUD
+      counter = counter + 2
+c
+c     Read in LHS Matrix
+      counter = counter + 1
+      CALL binaryRead3D(HA, mm, mm, lun, counter)
+C
+c     Read in Station Elevation LHS load vector
+      IF (NHASE.EQ.1) THEN
+         CALL binaryRead3D(STAELV_pt, mm, num_elev_sta, lun, counter)
+      ENDIF
+c     Read in Station Velocity LHS load vector
+      IF (NHASV.EQ.1) THEN
+         do n=1,num_vel_sta
+            do i=1,mm
+               READ(lun,REC=counter) STAULV_pt(I,N)
+               READ(lun,REC=counter+1) STAVLV_pt(I,N)
+               counter = counter + 2
+            enddo
+         enddo
+      ENDIF
+c     Read in Global Elevation LHS load vector
+      IF (NHAGE.EQ.1) THEN
+         CALL binaryRead3D(GLOELV_pt, mm, num_nodes, lun, counter)
+      ENDIF
+c     Read in Global Velocity LHS load vector
+      IF (NHAGV.EQ.1) THEN
+         do n=1,num_nodes
+            do i=1,mm
+               READ(lun,REC=counter) GLOULV_pt(I,N)
+               READ(lun,REC=counter+1) GLOVLV_pt(I,N)
+               counter = counter + 2
+            end do
+         end do
+      ENDIF
+C..   Read in Means and Squares
+      IF (CHARMV.eqv..true.) THEN
+         IF ((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN
+            READ(lun,REC=counter) NTSTEPS ; counter = counter + 1
+            IF(NHAGE.EQ.1) THEN
+               DO I=1,num_nodes
+                  READ(lun,REC=counter) ELAV_pt(I)
+                  counter = counter + 1
+                  READ(lun,REC=counter) ELVA_pt(I)
+                  counter = counter + 1
+               ENDDO
+            ENDIF
+            IF (NHAGV.EQ.1) THEN
+               DO I=1,num_nodes
+                  READ(lun,REC=counter) XVELAV_pt(I)
+                  counter = counter + 1
+                  READ(lun,REC=counter) YVELAV_pt(I)
+                  counter = counter + 1
+                  READ(lun,REC=counter) XVELVA_pt(I)
+                  counter = counter + 1
+                  READ(lun,REC=counter) YVELVA_pt(I)
+                  counter = counter + 1
+               ENDDO
+            ENDIF
+         ENDIF
+      ENDIF   !  charmv
+C
+C     Map data from fulldomain to subdomain in parallel
+      IF ((MNPROC.gt.1)
+     &   .and.(READ_LOCAL_HOT_START_FILES.eqv..false.)) THEN
+         IF (NHASE.EQ.1) THEN 
+            DO subdomainStation=1,NSTAE
+               fulldomainStation = ABS(IMAP_STAE_LG(subdomainStation))
+               DO i=1,mm
+                  STAELV(i,subdomainStation) = 
+     &               STAELV_g(i,fulldomainStation)
+               END DO
+            END DO
+         ENDIF
+         IF (NHASV.EQ.1) THEN
+            DO subdomainStation=1,NSTAV
+               fulldomainStation = ABS(IMAP_STAV_LG(subdomainStation))
+               DO i=1,mm
+                  STAELV(i,subdomainStation) = 
+     &               STAELV_g(i,fulldomainStation)
+               END DO
+            END DO
+         ENDIF
+         IF (NHAGE.EQ.1) THEN
+            DO subdomainNode=1,NP
+               fulldomainNode = ABS(NODES_LG(subdomainNode))
+               DO i=1,mm 
+                  GLOELV(i,subdomainNode) = GLOELV_g(i,fulldomainNode)
+                  GLOULV(i,subdomainNode) = GLOULV_g(i,fulldomainNode)
+                  GLOVLV(i,subdomainNode) = GLOVLV_g(i,fulldomainNode) 
+               ENDDO
+            ENDDO
+         ENDIF
+C..      Map Means and Squares
+         IF (CHARMV.eqv..true.) THEN
+            IF ((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN
+               IF(NHAGE.EQ.1) THEN
+                  DO subdomainNode=1,NP
+                     fulldomainNode = ABS(NODES_LG(subdomainNode))
+                     ELAV(subdomainNode) = ELAV_g(fulldomainNode)
+                     ELVA(subdomainNode) = ELVA_g(fulldomainNode)
+                  ENDDO
+               ENDIF
+               IF (NHAGV.EQ.1) THEN
+                  DO subdomainNode=1,NP
+                     fulldomainNode = ABS(NODES_LG(subdomainNode))
+                     XVELAV(subdomainNode) = XVELAV_g(fulldomainNode)
+                     YVELAV(subdomainNode) = YVELAV_g(fulldomainNode)
+                     XVELVA(subdomainNode) = XVELVA_g(fulldomainNode)
+                     YVELVA(subdomainNode) = YVELVA_g(fulldomainNode)
+                  END DO
+               ENDIF   
+            ENDIF
+         ENDIF
+      ENDIF ! MNPROC.gt.1 etc
 
-      ALLOCATE ( IFREQ(MNHARF),IFF(MNHARF),IFACE(MNHARF) )
-      ALLOCATE ( INAMEFR(MNHARF) )
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      end subroutine readBinaryHAHotstart
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E  C H E C K   H A  H O T S T A R T 
+C--------------------------------------------------------------------
+C     jgf49.44: Checks harmonic analysis data from a hotstart file
+C     by comparing with parameters read from the fort.15.
+C     Based on HAHOTS, written by rl.
+C--------------------------------------------------------------------
+      SUBROUTINE checkHAHotstart()
+      USE GLOBAL, ONLY : NP_G, NSTAE_G, NSTAV_G, MYPROC, 
+     &                   NSCREEN, SCREENUNIT
+      IMPLICIT NONE
+      INTEGER :: i    ! loop counter
+      REAL(SZ) FDIFF  ! difference between frequencies btw hotstart and fort.15
+      CHARACTER(len=1024) :: message
+C  
+      call setMessageSource("checkHAHotstart")
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Enter.") 
+#endif
+      call logMessage(INFO,
+     & "Comparing harmonic parameters in hotstart file to fort.15...")
+c     
+c***** Compute parameter values for checking
 c
-c***** Read in and check various parameter values
-c
-      READ(IHOT,REC=IHOTSTP+1) inz
-      READ(IHOT,REC=IHOTSTP+2) inf
-      READ(IHOT,REC=IHOTSTP+3) imm
-      READ(IHOT,REC=IHOTSTP+4) inp
-      READ(IHOT,REC=IHOTSTP+5) instae
-      READ(IHOT,REC=IHOTSTP+6) instav
-      READ(IHOT,REC=IHOTSTP+7) iistae
-      READ(IHOT,REC=IHOTSTP+8) iistav
-      READ(IHOT,REC=IHOTSTP+9) iigloe
-      READ(IHOT,REC=IHOTSTP+10) iiglov
-      READ(IHOT,REC=IHOTSTP+11) iicall
-      READ(IHOT,REC=IHOTSTP+12) infreq
-      IHOTSTP = IHOTSTP+12
-c
+      if (hafreq(1).eq.0.0) then
+         nz=0
+         nf=1
+      else
+         nz=1
+         nf=0
+      endif
+      nfreq=nfreq-nf
+      mm=2*nfreq+nf
+C
       iflag=0
       if(nz.ne.inz) iflag=1
       if(nf.ne.inf) iflag=1
       if(mm.ne.imm) iflag=1
-      if(np.ne.inp) iflag=1
-      if(nstae.ne.instae) iflag=1
-      if(nstav.ne.instav) iflag=1
-      if(istae.ne.iistae) iflag=1
-      if(istav.ne.iistav) iflag=1
-      if(igloe.ne.iigloe) iflag=1
-      if(iglov.ne.iiglov) iflag=1
+      if (myProc.eq.0) then
+         if(np_g.ne.inp) iflag=1
+         if(nstae_g.ne.instae) iflag=1
+         if(nstav_g.ne.instav) iflag=1
+      endif
+      if(nhase.ne.inhase) iflag=1
+      if(nhasv.ne.inhasv) iflag=1
+      if(nhage.ne.inhage) iflag=1
+      if(nhagv.ne.inhagv) iflag=1
       if(nfreq.ne.infreq) iflag=1
 c
       do i=1,nfreq+nf
-         READ(IHOT,REC=IHOTSTP+1) FNAM8(1)
-         READ(IHOT,REC=IHOTSTP+2) FNAM8(2)
-         IHOTSTP = IHOTSTP + 2
-         INAMEFR(I) = FNAME
-         read(IHOT,REC=IHOTSTP+1) ifreq(i)
-         read(IHOT,REC=IHOTSTP+2) iff(i)
-         read(IHOT,REC=IHOTSTP+3) iface(i)
-         IHOTSTP = IHOTSTP + 3
-
          if(namefr(i).ne.inamefr(i)) iflag=1
          if(abs(hafreq(i)+ifreq(i)).lt.1.0d-30) then
             fdiff=0.
@@ -1244,425 +1841,131 @@ c
          endif
          if(fdiff.ge.1.d-6) iflag=1
       end do
-      if(iflag.eq.1) goto 999
-c
-c***** Read in time of most recent H.A. update
-c
-      READ(IHOT,REC=IHOTSTP+1) TIMEUD
-      READ(IHOT,REC=IHOTSTP+2) ITUD
-      IHOTSTP = IHOTSTP + 2
-c
-c***** Read in RHS Matrix
-c
-      do i=1,mm
-         do j=1,mm
-            READ(IHOT,REC=IHOTSTP) HA(I,J)
-            IHOTSTP = IHOTSTP + 1
-         end do
-      end do
-
+C
+      if(iflag.eq.0) then
+         call logMessage(INFO,
+     &      "Harmonic data in hotstart file matches fort.15. PASSED.")
+      else
 c
 c***** FATAL Error Messages
 c
- 999  continue
-      if(iflag.ne.0) then
-         if(NSCREEN.NE.0.AND.MYPROC.EQ.0) write(ScreenUnit,1000)
-         write(16,1000)
- 1000    FORMAT(////,5x,'***** DISCREPANCY IN HARMONIC ANALYSIS HOT ',
-     +        'START FILE *****',/)
-      endif
-
-      if(iflag.eq.1) then
+         write(message,1000)
+         call allMessage(ERROR, message)
+ 1000    FORMAT('***** DISCREPANCY IN HARMONIC ANALYSIS HOT ',
+     +        'START FILE *****')
          if(nz.ne.inz) then
-            if(NSCREEN.NE.0.AND.MYPROC.EQ.0) then
-               write(ScreenUnit,2010) inz,nz
-            endif
-            write(16,2010) inz,nz
- 2010       format(5x,'NZ COMPUTED FROM UNIT 14 INPUT = ',I2,
-     +           ', NZ READ IN FROM HOT START FILE = ',I2,/)
+            write(message,2010) nz,inz
+            call allMessage(ERROR, message)
+ 2010       format('NZ COMPUTED FROM UNIT 14 INPUT = ',I2,
+     +           ', NZ READ IN FROM HOT START FILE = ',I2)
          endif
          if(nf.ne.inf) then
-            if(NSCREEN.NE.0.AND.MYPROC.EQ.0) then
-               write(ScreenUnit,2020) inf,nf
-            endif
-            write(16,2020) inf,nf
- 2020       format(5x,'NF COMPUTED FROM UNIT 14 INPUT = ',I2,
-     +           ', NF READ IN FROM HOT START FILE = ',I2,/)
+            write(message,2010) nf, inf
+            call allMessage(ERROR, message)
+ 2020       format('NF COMPUTED FROM UNIT 14 INPUT = ',I2,
+     +           ', NF READ IN FROM HOT START FILE = ',I2)
          endif
          if(mm.ne.imm) then
-            if(NSCREEN.NE.0.AND.MYPROC.EQ.0) then
-               write(ScreenUnit,2030) imm,mm
-            endif
-            write(16,2030) imm,mm
- 2030       format(5x,'MM COMPUTED FROM UNIT 14 INPUT = ',I2,
-     +           ', MM READ IN FROM HOT START FILE = ',I2,/)
+            write(message,2030) mm, imm
+            call allMessage(ERROR, message)
+ 2030       format('MM COMPUTED FROM UNIT 14 INPUT = ',I2,
+     +           ', MM READ IN FROM HOT START FILE = ',I2)
          endif
-         if(np.ne.inp) then
-            if(NSCREEN.NE.0.AND.MYPROC.EQ.0) then
-               write(ScreenUnit,2040) inp,np
+         If (myproc.eq.0) then
+            if(np_g.ne.inp) then
+               write(message,2040) np_g, inp
+               call allMessage(ERROR, message)
+ 2040          format('NP READ IN FROM UNIT 14 = ',I2,
+     +              ', NP READ IN FROM HOT START FILE = ',I2)
             endif
-            write(16,2040) inp,np
- 2040       format(5x,'NP READ IN FROM UNIT 15 = ',I2,
-     +           ', NP READ IN FROM HOT START FILE = ',I2,/)
-         endif
-         if(nstae.ne.instae) then
-            if(NSCREEN.NE.0.AND.MYPROC.EQ.0) then
-               write(ScreenUnit,2050) instae,nstae
-            endif 
-            write(16,2050) instae,nstae
- 2050       format(5x,'NSTAE READ IN FROM UNIT 15 = ',I2,
-     +           ', NSTAE READ IN FROM HOT START FILE = ',I2,/)
-         endif
-         if(nstav.ne.instav) then
-            if(NSCREEN.NE.0.AND.MYPROC.EQ.0) then
-               write(ScreenUnit,2060) instav,nstav
+            if(nstae_g.ne.instae) then
+               write(message,2050) nstae_g, instae
+               call allMessage(ERROR, message)
+ 2050          format('NSTAE READ IN FROM UNIT 15 = ',I2,
+     +           ', NSTAE READ IN FROM HOT START FILE = ',I2)
             endif
-            write(16,2060) instav,nstav
- 2060       format(5x,'NSTAV READ IN FROM UNIT 15 = ',I2,
-     +           ', NSTAV READ IN FROM HOT START FILE = ',I2,/)
-         endif
-         if(istae.ne.iistae) then
-            if(NSCREEN.ne.0.AND.MYPROC.EQ.0) then
-               write(ScreenUnit,2070) iistae,istae
+            if(nstav_g.ne.instav) then
+               write(message,2060) nstav_g, instav
+               call allMessage(ERROR, message)
+ 2060          format('NSTAV READ IN FROM UNIT 15 = ',I2,
+     +              ', NSTAV READ IN FROM HOT START FILE = ',I2)
             endif
-            write(16,2070) iistae,istae
- 2070       format(5x,'ISTAE READ IN FROM UNIT 15 = ',I2,
-     +           ', ISTAE READ IN FROM HOT START FILE = ',I2,/)
          endif
-         if(istav.ne.iistav) then
-            if(NSCREEN.NE.0.AND.MYPROC.EQ.0) then
-               write(ScreenUnit,2080) iistav,istav
-            endif
-            write(16,2080) iistav,istav
- 2080       format(5x,'ISTAV READ IN FROM UNIT 15 = ',I2,
-     +           ', ISTAV READ IN FROM HOT START FILE = ',I2,/)
+         if(nhase.ne.inhase) then
+            write(message,2070) NHASE, INHASE
+            call allMessage(ERROR, message)
+ 2070       format('NHASE READ IN FROM UNIT 15 = ',I2,
+     +           ', NHASE READ IN FROM HOT START FILE = ',I2)
          endif
-         if(igloe.ne.iigloe) then
-            if(NSCREEN.NE.0.AND.MYPROC.EQ.0) then
-               write(ScreenUnit,2090) iigloe,igloe
-            endif
-            write(16,2090) iigloe,igloe
- 2090       format(5x,'IGLOE READ IN FROM UNIT 15 = ',I2,
-     +           ', IGLOE READ IN FROM HOT START FILE = ',I2,/)
+         if(nhasv.ne.inhasv) then
+            write(message,2080) NHASV, INHASV
+            call allMessage(ERROR, message)
+ 2080       format('NHASV READ IN FROM UNIT 15 = ',I2,
+     +           ', NHASV READ IN FROM HOT START FILE = ',I2)
          endif
-         if(iglov.ne.iiglov) then
-            if(NSCREEN.NE.0.AND.MYPROC.EQ.0) then
-               write(ScreenUnit,2100) iiglov,iglov
-            endif
-            write(16,2100) iiglov,iglov
- 2100       format(5x,'IGLOV READ IN FROM UNIT 15 = ',I2,
-     +           ', IGLOV READ IN FROM HOT START FILE = ',I2,/)
+         if(nhage.ne.inhage) then
+            write(message,2090) NHAGE, INHAGE
+            call allMessage(ERROR, message)
+ 2090       format('NHAGE READ IN FROM UNIT 15 = ',I2,
+     +           ', NHAGE READ IN FROM HOT START FILE = ',I2)
+         endif
+         if(nhagv.ne.inhagv) then
+            write(message,2100) NHAGV, INHAGV
+            call allMessage(ERROR, message)
+ 2100       format('NHAGV READ IN FROM UNIT 15 = ',I2,
+     +           ', NHAGV READ IN FROM HOT START FILE = ',I2)
          endif
          if(nfreq.ne.infreq) then
-            if(NSCREEN.NE.0.AND.MYPROC.EQ.0) then
-               write(ScreenUnit,2110) infreq,nfreq
-            endif
-            write(16,2110) infreq,nfreq
- 2110       format(5x,'NFREQ COMPUTED FROM UNIT 15 INPUT = ',I2,
-     +           ', NFREQ READ IN FROM HOT START FILE = ',I2,/)
+            write(message,2110) NFREQ,INFREQ 
+            call allMessage(ERROR, message)
+ 2110       format('NFREQ COMPUTED FROM UNIT 15 INPUT = ',I2,
+     +           ', NFREQ READ IN FROM HOT START FILE = ',I2)
          endif
          do i=1,nfreq+nf
             if(namefr(i).ne.inamefr(i)) then
-               if(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
-     &              write(ScreenUnit,2120) i,inamefr(i),namefr(i)
-               write(16,2120) i,namefr(i),namefr(i)
- 2120          format(5x,'FOR CONSTITUENT # ',I3,
+               write(message,2120) i,namefr(i),inamefr(i) 
+               call allMessage(ERROR, message)
+ 2120          format('FOR CONSTITUENT # ',I3,
      +              ', NAMEFR READ IN FROM UNIT 15 = ',A10,
-     +              ', NAMEFR READ IN FROM HOT START FILE = ',A10,/)
+     +              ', NAMEFR READ IN FROM HOT START FILE = ',A10)
             endif
             if(hafreq(i).ne.ifreq(i)) then
-               if(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
-     &              write(ScreenUnit,2130) i,ifreq(i),hafreq(i)
-               write(16,2130) i,ifreq(i),hafreq(i)
- 2130          format(5x,'FOR CONSTITUENT # ',I3,
+               write(message,2130) i,hafreq(i),ifreq(i) 
+               call allMessage(ERROR, message)
+ 2130          format('FOR CONSTITUENT # ',I3,
      +              ', FREQ READ IN FROM UNIT 15 = ',D20.10,
-     +              ', FREQ READ IN FROM HOT START FILE = ',D20.10,/)
+     +              ', FREQ READ IN FROM HOT START FILE = ',D20.10)
             endif
             if(HAFF(i).ne.iFF(i)) then
-               if(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
-     &              write(ScreenUnit,2140) i,iff(i),haff(i)
-               write(16,2140) i,iff(i),haff(i)
- 2140          format(5x,'FOR CONSTITUENT # ',I3,
+               write(message,2140) i,haff(i),iff(i)
+               call allMessage(ERROR, message)
+ 2140          format('FOR CONSTITUENT # ',I3,
      +              ', FF READ IN FROM UNIT 15 = ',F10.5,
-     +              ', FF READ IN FROM HOT START FILE = ',F10.5,/)
+     +              ', FF READ IN FROM HOT START FILE = ',F10.5)
             endif
             if(HAFACE(i).ne.iFACE(i)) then
-               if(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
-     &              write(ScreenUnit,2150) i,iface(i),haface(i)
-               write(16,2150) i,iface(i),haface(i)
- 2150          format(5x,'FOR CONSTITUENT # ',I3,
+               write(message,2150) i,haface(i),iface(i)
+               call allMessage(ERROR, message)
+ 2150          format('FOR CONSTITUENT # ',I3,
      +              ', FACE READ IN FROM UNIT 15 = ',F10.5,
-     +              ', FACE READ IN FROM HOT START FILE = ',F10.5,/)
+     +              ', FACE READ IN FROM HOT START FILE = ',F10.5)
             endif
          end do
-         if(NSCREEN.NE.0.AND.MYPROC.EQ.0) write(ScreenUnit,1010)
-         write(16,1010)
- 1010    FORMAT(//,5x,'********** RUN TERMINATED **********',/)
+         call screen(ERROR,"********** RUN TERMINATED **********")
+#ifdef CMPI
+         call msg_fini()
+#endif
          stop
       endif
 
-      return
-      end subroutine
+#ifdef HARM_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      end subroutine checkHAHotstart
+C--------------------------------------------------------------------
 
-
-c***********************************************************************
-c   Subroutine to read in and initialize the global elevation load     *
-c   vector for harmonic analysis with a hot start.                     *
-c                                                                      *
-c                        R.L. 11/9/95                                  *
-c***********************************************************************
-c
-      SUBROUTINE HAHOTSEG(NP,IHOTSTP,IHOT)
-      implicit none
-      integer np, ihotstp, ihot, n,i
-c
-c***** Read in Global Elevation LHS load vector
-c
-      do n=1,np
-         do i=1,mm
-            READ(IHOT,REC=IHOTSTP) GLOELV(I,N)
-            IHOTSTP=IHOTSTP+1
-         end do
-      end do
-C
-      return
-      end subroutine
-
-
-c***********************************************************************
-c   Subroutine to read in and initialize the elevation station load    *
-c   vector for harmonic analysis with a hot start.                     *
-c                                                                      *
-c                        R.L. 11/9/95                                  *
-c***********************************************************************
-c
-      SUBROUTINE HAHOTSES(NSTAE,IHOTSTP,IHOT)
-      implicit none
-      INTEGER NSTAE,IHOTSTP,IHOT,I,N
-c
-c***** Read in Station Elevation LHS load vector
-c
-      do n=1,NSTAE
-         do i=1,mm
-            READ(IHOT,REC=IHOTSTP) STAELV(I,N)
-            IHOTSTP=IHOTSTP+1
-         end do
-      end do
-C
-      return
-      end subroutine
-
-
-c***********************************************************************
-c   Subroutine to read in and initialize the global velocity load      *
-c   vector for harmonic analysis with a hot start.                     *
-c                                                                      *
-c                        R.L. 11/9/95                                  *
-c***********************************************************************
-c
-      SUBROUTINE HAHOTSVG(NP,IHOTSTP,IHOT)
-      implicit none
-      integer np, ihotstp, ihot, n, i
-c
-c***** Read in Global Velocity LHS load vector
-c
-      do n=1,np
-         do i=1,mm
-            READ(IHOT,REC=IHOTSTP+1) GLOULV(I,N)
-            READ(IHOT,REC=IHOTSTP+2) GLOVLV(I,N)
-            IHOTSTP = IHOTSTP + 2
-         end do
-      end do
-C
-      return
-      end subroutine
-
-
-c***********************************************************************
-c   Subroutine to read in and initialize the velocity station load     *
-c   vector for harmonic analysis with a hot start.                     *
-c                                                                      *
-c                        R.L. 11/9/95                                  *
-c***********************************************************************
-c
-      SUBROUTINE HAHOTSVS(NSTAV,IHOTSTP,IHOT)
-      implicit none
-      INTEGER NSTAV,IHOTSTP,IHOT,N,I
-c
-c***** Read in Station Velocity LHS load vector
-c
-      do n=1,NSTAV
-         do i=1,mm
-            READ(IHOT,REC=IHOTSTP+1) STAULV(I,N)
-            READ(IHOT,REC=IHOTSTP+2) STAVLV(I,N)
-            IHOTSTP = IHOTSTP + 2
-         enddo
-      enddo
-C
-      return
-      end subroutine
-
-
-c***********************************************************************
-c   Subroutine to write out to the hotstart file (UNITS 67 and 68)     *
-c   header information and the LHS matrix for the harmonic analysis    *
-c                                                                      *
-c                        R.L.  11/8/95                                 *
-C     jgf45.07 name changes to variables ISTAE:IGLOV -> NHASE:NHAGV    *
-c***********************************************************************
-c
-      SUBROUTINE HAHOUT(NP,NSTAE,NSTAV,NHASE,NHASV,NHAGE,NHAGV,
-     &  IOUNIT,IHOTSTP)
-      implicit none
-      INTEGER NP,NSTAE,NSTAV,NHASE,AE,NHASV
-      INTEGER NHAGE,NHAGV,IOUNIT,IHOTSTP,I,J
-      CHARACTER*16 FNAME
-      CHARACTER*8 FNAM8(2)
-      EQUIVALENCE (FNAM8(1),FNAME)
-
-c
-c***** Write Out various parameter values
-c
-      WRITE(IOUNIT,REC=IHOTSTP+1) NZ
-      WRITE(IOUNIT,REC=IHOTSTP+2) NF
-      WRITE(IOUNIT,REC=IHOTSTP+3) MM
-      WRITE(IOUNIT,REC=IHOTSTP+4) NP
-      WRITE(IOUNIT,REC=IHOTSTP+5) NSTAE
-      WRITE(IOUNIT,REC=IHOTSTP+6) NSTAV
-      WRITE(IOUNIT,REC=IHOTSTP+7) NHASE
-      WRITE(IOUNIT,REC=IHOTSTP+8) NHASV
-      WRITE(IOUNIT,REC=IHOTSTP+9) NHAGE
-      WRITE(IOUNIT,REC=IHOTSTP+10) NHAGV
-      WRITE(IOUNIT,REC=IHOTSTP+11) ICALL
-      WRITE(IOUNIT,REC=IHOTSTP+12) NFREQ
-      IHOTSTP = IHOTSTP+12
-
-      do i=1,nfreq+nf
-         FNAME=NAMEFR(I)
-         WRITE(IOUNIT,REC=IHOTSTP+1) FNAM8(1)
-         WRITE(IOUNIT,REC=IHOTSTP+2) FNAM8(2)
-         IHOTSTP=IHOTSTP+2
-         WRITE(IOUNIT,REC=IHOTSTP+1) hafreq(i)
-         WRITE(IOUNIT,REC=IHOTSTP+2) HAFF(i)
-         WRITE(IOUNIT,REC=IHOTSTP+3) HAFACE(i)
-         IHOTSTP=IHOTSTP+3
-      end do
-
-c
-c***** Write Out time of most recent H.A. update
-c
-      WRITE(IOUNIT,REC=IHOTSTP+1) TIMEUD
-      WRITE(IOUNIT,REC=IHOTSTP+2) ITUD
-      IHOTSTP=IHOTSTP+2
-c
-c***** Write Out LHS Matrix
-c
-      do i=1,mm
-         do j=1,mm
-            WRITE(IOUNIT,REC=IHOTSTP) HA(I,J)
-            IHOTSTP = IHOTSTP + 1
-         END DO
-      END DO
-
-      return
-      end subroutine
-
-c***********************************************************************
-c   Subroutine to write global elevation harmonic analysis RHS load    *
-c   vector to a hot start file (UNITS 67 and 68)                       *
-c                                                                      *
-c                        R.L.  11/8/95                                 *
-c***********************************************************************
-c
-      SUBROUTINE HAHOUTEG(NP,IOUNIT,IHOTSTP)
-      implicit none
-      INTEGER IOUNIT
-      INTEGER NP,IHOTSTP,N,I 
-c
-c***** Write Out Global Elevation RHS load vector
-c
-      do n=1,np
-         do i=1,mm
-            WRITE(IOUNIT,REC=IHOTSTP) GLOELV(I,N)
-            IHOTSTP=IHOTSTP+1
-         end do
-      end do
-      
-      return
-      end subroutine
-
-c***********************************************************************
-c   Subroutine to write elevation station harmonic analysis RHS load   *
-c   vector to a hot start file (UNITS 67 and 68)                       *
-c                                                                      *
-c                        R.L.  11/8/95                                 *
-c***********************************************************************
-c
-      SUBROUTINE HAHOUTES(NSTAE,IOUNIT,IHOTSTP)
-      implicit none
-      INTEGER NSTAE,IOUNIT,IHOTSTP,N,I
-c
-c***** Write Out Station Elevation RHS load vector
-c
-      do n=1,NSTAE
-         do i=1,mm
-            WRITE(IOUNIT,REC=IHOTSTP) STAELV(I,N)
-            IHOTSTP=IHOTSTP+1
-         end do
-      end do
-
-      return
-      end subroutine
-
-c***********************************************************************
-c   Subroutine to write global velocity harmonic analysis RHS load     *
-c   vector to a hot start file (UNITS 67 and 68)                       *
-c                                                                      *
-c                        R.L.  11/8/95                                 *
-c***********************************************************************
-c
-      SUBROUTINE HAHOUTVG(NP,IOUNIT,IHOTSTP)
-      implicit none
-      INTEGER NP,IOUNIT,IHOTSTP,N,I
-c
-c***** Write Out Global Velocity RHS load vector
-c
-      do n=1,np
-         do i=1,mm
-            WRITE(IOUNIT,REC=IHOTSTP) GLOULV(I,N)
-            IHOTSTP=IHOTSTP+1
-            WRITE(IOUNIT,REC=IHOTSTP) GLOVLV(I,N)
-            IHOTSTP=IHOTSTP+1
-         end do
-      end do
-      
-      return
-      end subroutine
-
-c***********************************************************************
-c   Subroutine to write velocity station harmonic analysis RHS load    *
-c   vector to a hot start file (UNITS 67 and 68)                       *
-c                                                                      *
-c                        R.L.  11/8/95                                 *
-c***********************************************************************
-c
-      SUBROUTINE HAHOUTVS(NSTAV,IOUNIT,IHOTSTP)
-      implicit none
-      INTEGER NSTAV,IOUNIT,IHOTSTP,N,I
-c
-c***** Write Out Station Velocity LHS load vector
-c
-      do N=1,NSTAV
-         do i=1,mm
-            WRITE(IOUNIT,REC=IHOTSTP) STAULV(I,N)
-            IHOTSTP=IHOTSTP+1
-            WRITE(IOUNIT,REC=IHOTSTP) STAVLV(I,N)
-            IHOTSTP=IHOTSTP+1
-         end do
-      end do
-
-      return
-      end subroutine
-
-
+C--------------------------------------------------------------
       END MODULE HARM
+C--------------------------------------------------------------

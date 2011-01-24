@@ -45,9 +45,11 @@ C
       INTEGER,SAVE :: MYPROC
       LOGICAL      :: WRITE_LOCAL_FILES
       LOGICAL      :: WRITE_LOCAL_HOT_START_FILES
+      ! jgf49.44: Make it an option to read local binary hotstart files
+      LOGICAL      :: READ_LOCAL_HOT_START_FILES
 
       CHARACTER(256),  SAVE :: ROOTDIR
-      CHARACTER(2048), SAVE :: INPUTDIR, GLOBALDIR, LOCALDIR
+      CHARACTER(2048), TARGET, SAVE :: INPUTDIR, GLOBALDIR, LOCALDIR
       CHARACTER(2048), SAVE :: GBLINPUTDIR, HOTSTARTDIR
       
 C---------------------end of data declarations--------------------------------C
@@ -68,6 +70,7 @@ C---------------------end of data declarations--------------------------------C
       LOCALDIR  = ""
       ARGCOUNT  = IARGC()
       WRITE_LOCAL_HOT_START_FILES = .FALSE.
+      READ_LOCAL_HOT_START_FILES = .FALSE.
       WRITE_LOCAL_FILES = .FALSE.
 
 Casey 090527: Debug.
@@ -76,6 +79,7 @@ Casey 090527: Debug.
       IF ( MNPROC.EQ.1 ) THEN
          WRITE_LOCAL_FILES = .TRUE.
          WRITE_LOCAL_HOT_START_FILES = .TRUE.
+         READ_LOCAL_HOT_START_FILES = .TRUE.
       ENDIF
   
       if (ARGCOUNT > 0) then
@@ -108,6 +112,11 @@ C     &       ": Processing command line options."
                WRITE_LOCAL_HOT_START_FILES = .TRUE.
                if (myProc.eq.0) then
                   write(*,*) "INFO: Processing '-S'."
+               endif
+            case("-R")
+               READ_LOCAL_HOT_START_FILES = .TRUE.
+               if (myProc.eq.0) then
+                  write(*,*) "INFO: Processing '-R'."
                endif
             case("-W")
                i = i + 1

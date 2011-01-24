@@ -1713,12 +1713,20 @@ C
          WRITE(16,5841)
  5841    FORMAT(11X,' DAYS OF SIMULATION',2X,' TIME  ',6X,'  RAMP VALUE'
      &                                                               ,/)
-         Day=0.0d0
- 999     RampVal=TANH(Day*2.d0/DRAMP)
-         WRITE(16,5845) Day,Day+StaTim,RampVal
- 5845    FORMAT(15X,F8.2,6X,F8.2,2X,F15.7)
-         DAY=DAY+0.5d0
-         IF(Day.LT.DRAMP*1.25) GOTO 999
+         IF (DRAMP.lt.1.0d-6) THEN !jgf49.44: cover the case where DRAMP is zero
+            WRITE(16,*) 
+     &         "WARNING: DRAMP=",DRAMP,". It will be rounded to zero."
+            WRITE(16,*)
+     &         "All forcing and boundary conditions will be at full"
+            WRITE(16,*) "strength from the start of the simulation."
+         ELSE
+            Day=0.0d0
+ 999        RampVal=TANH(Day*2.d0/DRAMP)
+            WRITE(16,5845) Day,Day+StaTim,RampVal
+ 5845       FORMAT(15X,F8.2,6X,F8.2,2X,F15.7)
+            DAY=DAY+0.5d0
+            IF(Day.LT.DRAMP*1.25) GOTO 999
+         ENDIF
       ENDIF
 C...
 C...  READ GWCE TIME WEIGHTING FACTORS
@@ -4482,7 +4490,7 @@ C     allocate harmonic analysis arrays
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99391)
          WRITE(16,99391)
 99391    FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
-     &        //,1X,'YOUR SELECTION OF NHARFR (A UNIT 15 '
+     &        //,1X,'YOUR SELECTION OF NFREQ (A UNIT 15 '
      &        ,'INPUT PARAMETER) IS NOT AN ALLOWABLE VALUE',/,1X,
      &        'PLEASE CHECK YOUR INPUT',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
@@ -4915,6 +4923,8 @@ C
 !     --------------------------------------------------------------------
 
       IF( (abs(noutge).EQ.3) .OR. (abs(noutgv).EQ.3) .OR.
+     &    (abs(noutgw).eq.3).or.
+     &    (abs(nhstar).eq.367).or.(abs(nhstar).eq.368).or.
      &    (abs(noutv).EQ.3) .or. (abs(noute).EQ.3) .OR.
      &    (abs(noutm).eq.3) .or. abs(NHSTAR).eq.3 )    THEN
 
@@ -4929,7 +4939,6 @@ C
 #endif
 
          READ(15,'(A80)') title
-!         WRITE(6,'(A80)') title
          READ(15,'(A80)') institution
          READ(15,'(A80)') source
          READ(15,'(A80)') history
@@ -4939,11 +4948,6 @@ C
          READ(15,'(A80)') convention
          READ(15,'(A80)') contact
          READ(15,'(A80)') base_date
-!        WRITE(6,'(A80)') base_date
-!        WRITE(6,*)
-!     &                title, institution, source, history,
-!     &                references, comments, host, convention, contact,
-!     &                base_date
 
         ELSEIF(NOUTGC.eq.3.                                 ! fort.93
      &       or.NOUTC.eq.3.                                 ! fort.91
@@ -5101,8 +5105,8 @@ C...  READ IN THE TIME STEPPING COEFFICIENTS AND COMPUTE ASSOCIATED VARIABLES
  390  FORMAT(/,5X,'3D TIME STEPPING COEFFS Alp1 = ',E8.2,' Alp2 = ',
      &     E8.2,' Alp3 = ',E8.2)
 
-      IDTAlp1 = I*DelT*Alp1
-      IDT1MAlp1 = I*DelT*(1.-Alp1)
+      IDTAlp1 = iy*DelT*Alp1
+      IDT1MAlp1 = iy*DelT*(1.-Alp1)
       DTAlp3 = DelT*Alp3
       DT1MAlp3 = DelT*(1-Alp3)
       DTAlp2 = DelT*Alp2

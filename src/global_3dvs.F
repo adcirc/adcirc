@@ -85,14 +85,14 @@ c.RJW merged 9/02/2008 Casey 071219: Added the following variable for cumulative
       REAL(SZ),ALLOCATABLE :: EVTot(:)       !  EVTot(NFEN): vertical eddy viscosity values at a node 
       REAL(SZ),ALLOCATABLE :: INM(:,:)       !  INM(NFEN,3): Integral used in vertical FE assembly
       REAL(SZ),ALLOCATABLE :: LVN(:)         !  LVN(NFEN): Integral used in vertical FE assembly
-      REAL(SZ),ALLOCATABLE :: WZ(:,:)        !  WZ(MNP,NFEN): "z" vertical velocity, all nodes
-      REAL(SZ),ALLOCATABLE :: SIGT(:,:)      !  SIGT(MNP,NFEN): sigma T, all nodes   
-      REAL(SZ),ALLOCATABLE :: Temp(:,:)      !  TEMP(MNP,NFEN): temperature, all nodes
-      REAL(SZ),ALLOCATABLE :: Sal(:,:)       !  Sal(MNP,NFEN): salinity, all nodes
+      REAL(SZ),ALLOCATABLE,TARGET :: WZ(:,:)        !  WZ(MNP,NFEN): "z" vertical velocity, all nodes
+      REAL(SZ),ALLOCATABLE,TARGET :: SIGT(:,:)      !  SIGT(MNP,NFEN): sigma T, all nodes   
+      REAL(SZ),ALLOCATABLE,TARGET :: Temp(:,:)      !  TEMP(MNP,NFEN): temperature, all nodes
+      REAL(SZ),ALLOCATABLE,TARGET :: Sal(:,:)       !  Sal(MNP,NFEN): salinity, all nodes
       REAL(SZ),ALLOCATABLE :: BCP(:,:)       !  BCP(MNP,NFEN): baroclinic pressure, integrated down from surface,all nodes
-      REAL(SZ),ALLOCATABLE :: Q20(:,:)       !  Q20(MNP,NFEN): Turbulent Kinetic Energy computed by Mellor-Yamada L2.5 closure, all nodes
-      REAL(SZ),ALLOCATABLE :: L(:,:)         !  L(MNP,NFEN): turbulent length scale computed by Mellor-Yamada L2.5 closure, all nodes
-      REAL(SZ),ALLOCATABLE :: EV(:,:)        !  EV(MNP,NFEN): Vertical eddy viscosity, all nodes  
+      REAL(SZ),ALLOCATABLE,TARGET :: Q20(:,:)       !  Q20(MNP,NFEN): Turbulent Kinetic Energy computed by Mellor-Yamada L2.5 closure, all nodes
+      REAL(SZ),ALLOCATABLE,TARGET :: L(:,:)         !  L(MNP,NFEN): turbulent length scale computed by Mellor-Yamada L2.5 closure, all nodes
+      REAL(SZ),ALLOCATABLE,TARGET :: EV(:,:)        !  EV(MNP,NFEN): Vertical eddy viscosity, all nodes  
 
 C     kmd45.12 Added in variables for transport 
 
@@ -103,8 +103,9 @@ C     kmd45.12 Added in variables for transport
 C     kmd45.12 Added in these variables for the top boundary conditions
 C     associated with the temperature field
 
-      REAL(SZ), ALLOCATABLE :: qsurfkp1(:), qsurf(:)
-
+      REAL(SZ), ALLOCATABLE, TARGET :: qsurfkp1(:)
+      REAL(SZ), ALLOCATABLE :: qsurf(:)
+ 
 C     kmd45.12 Added in the variables for saving 3D velocities for two
 C     time levels
 
@@ -150,7 +151,7 @@ C...  DECLARE 3D GLOBAL SCALARS
 
       COMPLEX(SZ) :: IDTALP1              !i*DelT*alpha1 
       COMPLEX(SZ) :: IDT1MALP1            !i*DelT*(1-alpha1)
-      COMPLEX(SZ),  PARAMETER ::  I=(0.0d0, 1.0d0)   !imaginary i
+      COMPLEX(SZ),  PARAMETER ::  iy=(0.0d0, 1.0d0)   !imaginary i
 
 C...Terms added for the transport parameters !kmd45.11 transport
       REAL(SZ) :: NLSD, NVSD           !diffusion coefficients for the salinity field
@@ -185,9 +186,9 @@ C...3D Density station output variables
       REAL(8),ALLOCATABLE :: StaI3DD1(:)   !interpolating factor used to compute output at 3D density station N
       REAL(8),ALLOCATABLE :: StaI3DD2(:)   !interpolating factor used to compute output at 3D density station N
       REAL(8),ALLOCATABLE :: StaI3DD3(:)   !interpolating factor used to compute output at 3D density station N
-      REAL(SZ),ALLOCATABLE :: SigTSta(:)   !3D Sigma T station output - not a global variable but easier to allocate here 
-      REAL(SZ),ALLOCATABLE :: TempSta(:)   !3D Temperature station output - not a global variable but easier to allocate here
-      REAL(SZ),ALLOCATABLE :: SalSta(:)    !3D Salinity station output - not a global variable but easier to allocate here
+      REAL(SZ),ALLOCATABLE,TARGET :: SigTSta(:,:)   !3D Sigma T station output - not a global variable but easier to allocate here 
+      REAL(SZ),ALLOCATABLE,TARGET :: TempSta(:,:)   !3D Temperature station output - not a global variable but easier to allocate here
+      REAL(SZ),ALLOCATABLE,TARGET :: SalSta(:,:)    !3D Salinity station output - not a global variable but easier to allocate here
 
 C...3D Velocity station output variables
 
@@ -205,9 +206,9 @@ C...3D Velocity station output variables
       REAL(8),ALLOCATABLE :: StaI3DV1(:)   !interpolating factor used to compute output at 3D velocity station N
       REAL(8),ALLOCATABLE :: StaI3DV2(:)   !interpolating factor used to compute output at 3D velocity station N
       REAL(8),ALLOCATABLE :: StaI3DV3(:)   !interpolating factor used to compute output at 3D velocity station N
-      REAL(SZ),ALLOCATABLE :: WZSta(:)     !vertical velocity station output - not a global variable but easier to allocate here
+      REAL(SZ),ALLOCATABLE,TARGET :: WZSta(:,:)     !vertical velocity station output - not a global variable but easier to allocate here
       !jgf48.50 Declare COMPLEX as size SZ
-      COMPLEX(SZ),ALLOCATABLE :: qSta(:)       !3D velocity station output - not a global variable but easier to allocate here
+      COMPLEX(SZ),ALLOCATABLE,TARGET :: qSta(:,:)       !3D velocity station output - not a global variable but easier to allocate here
 
 C...3D Turbulence station output variables
 
@@ -225,9 +226,9 @@ C...3D Turbulence station output variables
       REAL(8),ALLOCATABLE :: StaI3DT1(:)   !interpolating factor used to compute output at 3D turbulence station N
       REAL(8),ALLOCATABLE :: StaI3DT2(:)   !interpolating factor used to compute output at 3D turbulence station N
       REAL(8),ALLOCATABLE :: StaI3DT3(:)   !interpolating factor used to compute output at 3D turbulence station N
-      REAL(SZ),ALLOCATABLE :: q20Sta(:)    !TKE station output - not a global variable but easier to allocate here
-      REAL(SZ),ALLOCATABLE :: lSta(:)      !turb length scale station output - not a global variable but easier to allocate here
-      REAL(SZ),ALLOCATABLE ::	EVSta(:)     !vertical viscosity station output - not a global variable but easier to allocate here
+      REAL(SZ),ALLOCATABLE, TARGET :: q20Sta(:,:)    !TKE station output - not a global variable but easier to allocate here
+      REAL(SZ),ALLOCATABLE, TARGET :: lSta(:,:)      !turb length scale station output - not a global variable but easier to allocate here
+      REAL(SZ),ALLOCATABLE, TARGET :: EVSta(:,:)     !vertical viscosity station output - not a global variable but easier to allocate here
 
 C...3D Global density output variables
 
@@ -259,12 +260,67 @@ C...3D Global turbulence output variables
       INTEGER :: N3DGT        !counter to determine if it is time to write 3D global turbulence data
       INTEGER :: I3DGTRec     !record pointer for binary file writes
 
+C     jgf49.44: These variables represent fulldomain arrays and are 
+C     used in hstart.F for reading fulldomain hotstart files as well as in
+C     write_output.F/writeHotstart and writer.F/writeHotstart_through_HSwriter
+C     for writing fulldomain hotstart files. 
+      REAL(SZ), ALLOCATABLE, TARGET :: DUU_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: DUV_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: DVV_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: UU_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: VV_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: BSX_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET :: BSY_g(:)
+      COMPLEX(SZ), ALLOCATABLE :: Q_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: WZ_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: q20_g(:,:)    
+      REAL(SZ), ALLOCATABLE, TARGET :: l_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: EV_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: SigT_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: Sal_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: Temp_g(:,:)
+C
+C     global array sizes for use in globalio
+      integer,allocatable,target :: imap_sta3Dd_lg(:)
+      integer,allocatable,target :: imap_sta3Dv_lg(:)
+      integer,allocatable,target :: imap_sta3Dt_lg(:)
+
+
 C-------------------end of data declarations----------------------------------C
 
 
       CONTAINS
 
-
+C--------------------------------------------------------------------
+C                    S U B R O U T I N E 
+C     A L L O C A T E   F U L L   D O M A I N   3 D   I O   A R R A Y S 
+C--------------------------------------------------------------------
+C     jgf49.44: Allocates memory for the full domain arrays for i/o
+C     purposes; these arrays are both read from and written to hotstart 
+C     files. Arrays that are only written are allocated in the 
+C     subroutine that does the writing. 
+C--------------------------------------------------------------------
+      SUBROUTINE allocateFullDomain3DIOArrays()
+      USE GLOBAL, ONLY : NP_G
+      IMPLICIT NONE
+      ALLOCATE(DUU_g(NP_G))
+      ALLOCATE(DUV_g(NP_G))
+      ALLOCATE(DVV_g(NP_G))
+      ALLOCATE(UU_g(NP_G))
+      ALLOCATE(VV_g(NP_G))
+      ALLOCATE(BSX_g(NP_G))
+      ALLOCATE(BSY_g(NP_G))
+      ALLOCATE(Q_g(NP_G,NFEN))
+      ALLOCATE(WZ_g(NP_G,NFEN))
+      ALLOCATE(q20_g(NP_G,NFEN))
+      ALLOCATE(l_g(NP_G,NFEN))
+      ALLOCATE(EV_g(NP_G,NFEN))
+      ALLOCATE(SigT_g(NP_G,NFEN))
+      ALLOCATE(Sal_g(NP_G,NFEN))
+      ALLOCATE(Temp_g(NP_G,NFEN))
+C--------------------------------------------------------------------
+      END SUBROUTINE allocateFullDomain3DIOArrays
+C--------------------------------------------------------------------
 
 
 C
@@ -297,7 +353,8 @@ C
       ALLOCATE( NE3DD(MNSta3DD) ) 
       ALLOCATE( StaI3DD1(MNSta3DD), StaI3DD2(MNSta3DD),
      &                              StaI3DD3(MNSta3DD) )
-      ALLOCATE( SigTSta(NFEN), SalSta(NFEN), TempSta(NFEN) )
+      ALLOCATE( SigTSta(MNSTA3DD,NFEN), SalSta(MNSTA3DD,NFEN),
+     &          TempSta(MNSTA3DD,NFEN) )
       RETURN
       END SUBROUTINE ALLOC_3DSD      
 
@@ -308,7 +365,7 @@ C
       ALLOCATE( NE3DV(MNSta3DV) ) 
       ALLOCATE( StaI3DV1(MNSta3DV), StaI3DV2(MNSta3DV),
      &                              StaI3DV3(MNSta3DV) )
-      ALLOCATE( qSta(NFEN), WZSta(NFEN) )
+      ALLOCATE( qSta(MNSTA3DV,NFEN), WZSta(MNSTA3DV,NFEN) )
       RETURN
       END SUBROUTINE ALLOC_3DSV
 
@@ -319,7 +376,8 @@ C
       ALLOCATE( NE3DT(MNSta3DT) ) 
       ALLOCATE( StaI3DT1(MNSta3DT), StaI3DT2(MNSta3DT),
      &                              StaI3DT3(MNSta3DT) )
-      ALLOCATE( q20Sta(NFEN), lSta(NFEN), EVSta(NFEN) )
+      ALLOCATE( q20Sta(MNSTA3DT,NFEN), lSta(MNSTA3DT,NFEN),
+     &          EVSta(MNSTA3DT,NFEN) )
       RETURN
       END SUBROUTINE ALLOC_3DST
 
