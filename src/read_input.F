@@ -1640,8 +1640,8 @@ C...
      &       5X,'DAYS',/)
 C     NWS=4xx added for STWAVE tighly coupled run 01/03/2008
       IF(NRS.EQ.4) THEN 
-         WRITE(16,2393) NRS
- 2393    FORMAT(/,5X,'NRS = ',I2,
+         WRITE(16,2395) NRS
+ 2395    FORMAT(/,5X,'NRS = ',I2,
      &    /,9X,'WAVE RADIATION STRESS IS USED TO FORCE THE COMPUTATION',
      &    /,9X,'STRESSES ARE COMPUTED ON THE FLY BY STWAVE COMPUTE    ',
      &    /,9X,'PROCS.')

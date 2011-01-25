@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.47   - 01/25/2011 - rjw - Changed format statement 2393 to 2395 on 
+C              cmassey STWAVE routine in Updated read_input.F 
 C  v49.46   - 01/25/2011 - tcm - Updated read_input.F and adcprep routines
 C             to allow for NRS=4 which is tightly coupled ADCIRC+STWAVE.
 C  v49.45   - 01/24/2011 - jgf - Merged harmio branch r527:556 to trunk. 
