@@ -447,20 +447,30 @@ C
       NRS=0
       READ(15,80) NWSMSG
       READ(NWSMSG,*) NWS
-      IF(ABS(NWS/100).EQ.1) THEN ! sb46.28sb03
-         NRS=1
-         NWS=(ABS(NWS)-100)*(NWS/ABS(NWS))
+!       IF(ABS(NWS/100).EQ.1) THEN ! sb46.28sb03
+!          NRS=1
+!          NWS=(ABS(NWS)-100)*(NWS/ABS(NWS))
+!       ENDIF
+! C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
+!       IF(ABS(NWS/100).EQ.2) THEN
+!          NRS=2
+!          NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
+!       ENDIF
+! Casey 090302: Added NWS=3xx for coupling to SWAN.
+!       IF(ABS(NWS/100).EQ.3) THEN
+!         NRS=3
+!         NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
+!       ENDIF
+
+C....tcm v49.46 -- added logic to handle multiple NRS types (100's place)
+      IF(NWS.EQ.0) THEN
+         NWS = 0
+         NRS = 0
+      ELSE
+         NRS=ABS(NWS/100)
+         NWS=(ABS(NWS)-NRS*100)*(NWS/ABS(NWS))
       ENDIF
-C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
-      IF(ABS(NWS/100).EQ.2) THEN
-         NRS=2
-         NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
-      ENDIF
-Casey 090302: Added NWS=3xx for coupling to SWAN.
-      IF(ABS(NWS/100).EQ.3) THEN
-        NRS=3
-        NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
-      ENDIF
+
 C     jgfdebug46.02 added NWS=45
 C     jgf46.02 Added NWS=8.
 C     jgf46.16 merged:
@@ -566,7 +576,8 @@ C     sb46.28sb01 added NWS=12: OWI format
          IF(NRS.EQ.0) READ(WSMSG1,*) WTIMINC
 Casey 090825: Fix for NRS = 3.
 C        IF(NRS.GE.1) READ(WSMSG1,*) WTIMINC,RSTIMINC ! sb46.28sb03
-         IF((NRS.EQ.1).OR.(NRS.EQ.2)) READ(WSMSG1,*) WTIMINC,RSTIMINC ! sb46.28sb03
+         IF((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4))
+     &                  READ(WSMSG1,*) WTIMINC,RSTIMINC ! tcm v49.46 added nrs=4
          IF(NRS.EQ.3)THEN
             IF(ABS(NWS).EQ.8)THEN
                READ(WSMSG1,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,RSTIMINC

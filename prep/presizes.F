@@ -550,20 +550,29 @@ C
       MNWP=1
 C
       NRS=0
-      IF(ABS(NWS/100).EQ.1) THEN ! sb46.28sb03
-         NRS=1
-         NWS=(ABS(NWS)-100)*(NWS/ABS(NWS))
+!       IF(ABS(NWS/100).EQ.1) THEN ! sb46.28sb03
+!          NRS=1
+!          NWS=(ABS(NWS)-100)*(NWS/ABS(NWS))
+!       ENDIF
+! C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
+!       IF(ABS(NWS/100).EQ.2) THEN
+!          NRS=2
+!          NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
+!       ENDIF
+! Casey 090302: Added NWS=3xx for coupling to SWAN.
+!       IF(ABS(NWS/100).EQ.3) THEN
+!          NRS=3
+!          NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
+!       ENDIF
+c. tcm v49.46 unified the special cases above
+      IF(NWS.EQ.0) THEN
+         NWS = 0
+         NRS = 0
+      ELSE
+         NRS=ABS(NWS/100)
+         NWS=(ABS(NWS)-NRS*100)*(NWS/ABS(NWS))
       ENDIF
-C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
-      IF(ABS(NWS/100).EQ.2) THEN
-         NRS=2
-         NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
-      ENDIF
-Casey 090302: Added NWS=3xx for coupling to SWAN.
-      IF(ABS(NWS/100).EQ.3) THEN
-         NRS=3
-         NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
-      ENDIF
+
       IF((NWS.EQ.0).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03
       IF((NWS.EQ.1).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03
 C     jgf46.02 added NWS=8
@@ -578,7 +587,8 @@ C     sb46.28sb01 added NWS=12: OWI format
         IF(NRS.EQ.0) READ(15,*) WTIMINC
 Casey 090825: Fix for NRS = 3.
 C       IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
-        IF((NRS.EQ.1).OR.(NRS.EQ.2)) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+        IF((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4))
+     &                       READ(15,*) WTIMINC,RSTIMINC ! tcm v49.46 nrs=4
         IF(NRS.EQ.3)THEN
            IF(ABS(NWS).EQ.8)THEN
               READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,RSTIMINC
@@ -597,7 +607,7 @@ C       IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
 
       IF(ABS(NWS).EQ.6) THEN
         IF(NRS.EQ.0) READ(15,*) WTIMINC            !SKIP OVER WTIMINC
-        IF(NRS.EQ.1) READ(15,*) WTIMINC,RSTIMINC
+        IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC     !tcm v49.46 changed nrs=1 to nrs ge 1
         MNWP=MNP
       ENDIF
 

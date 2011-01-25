@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.46   - 01/25/2011 - tcm - Updated read_input.F and adcprep routines
+C             to allow for NRS=4 which is tightly coupled ADCIRC+STWAVE.
 C  v49.45   - 01/24/2011 - jgf - Merged harmio branch r527:556 to trunk. 
 C  v49.43.19  01/23/2011 - jgf - Finished code to globalize all 3D output
 C             files as well as code to write fulldomain 3D files in ascii

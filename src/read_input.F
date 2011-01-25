@@ -1021,6 +1021,7 @@ C     cf & cm  Added NWS=9 (asymmetric hurricane winds)
 C     rjw      Added NWS=19(asymmetric hurricane winds v2.0)
 C     sb46.28sb01 Added NWS=12 (OWI format) 09/xx/2006
 C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
+C     tcm v49.46 Added NWS = 4xx for tight coupling with STWAVE
       READ(15,*) NWS
       IF((NWS.NE.0)    .AND.(NWS.NE.1)       .AND.(ABS(NWS).NE.2)  .AND.
      &   (NWS.NE.3)    .AND.(ABS(NWS).NE.4)  .AND.(ABS(NWS).NE.5)  .AND.
@@ -1039,7 +1040,13 @@ Casey 090720: Added the following cases for coupling to unstructured SWAN.
      &   (ABS(NWS).NE.300).AND.(ABS(NWS).NE.303).AND.(ABS(NWS).NE.304).AND.
      &   (ABS(NWS).NE.305).AND.(ABS(NWS).NE.306).AND.(ABS(NWS).NE.308).AND.
      &   (ABS(NWS).NE.309).AND.(ABS(NWS).NE.310).AND.(ABS(NWS).NE.311).AND.
-     &   (ABS(NWS).NE.312)) THEN
+     &   (ABS(NWS).NE.312) .AND.
+C
+     &   (NWS.NE.400)                                              .AND.
+     &   (NWS.NE.403)  .AND.(ABS(NWS).NE.404).AND.(ABS(NWS).NE.405).AND.
+     &   (NWS.NE.406)  .AND.(NWS.NE.410)     .AND.(NWS.NE.411)     .AND.
+     &   (ABS(NWS).NE.412).AND.(NWS.NE.419) ) THEN
+
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'NWS =',NWS
@@ -1060,23 +1067,33 @@ Casey 090720: Added the following cases for coupling to unstructured SWAN.
 
 C.... SET WAVE RADIATION STRESS FLAG AND ADJUST NWS ACCORDINGLY
 
-      NRS=0
-      IF(ABS(NWS/100).EQ.1) THEN ! sb46.28sb03
-         NRS=1
-         NWS=(ABS(NWS)-100)*(NWS/ABS(NWS))
+!       NRS=0
+!       IF(ABS(NWS/100).EQ.1) THEN ! sb46.28sb03
+!          NRS=1
+!          NWS=(ABS(NWS)-100)*(NWS/ABS(NWS))
+!       ENDIF
+! C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
+!       IF(ABS(NWS/100).EQ.2) THEN
+!          NRS=2
+!          NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
+!       ENDIF
+! #ifdef CSWAN
+! Casey 090302: Added the option for coupling directly to SWAN.
+!       IF(ABS(NWS/100).EQ.3) THEN
+!          NRS=3
+!          NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
+!       ENDIF
+! #endif
+C.... tcm v49.46 rewrote to compine different 100's power NRS
+      NRS = 0
+      IF(NWS.EQ.0) THEN
+         NWS = 0
+         NRS = 0
+      ELSE
+         NRS=ABS(NWS/100)
+         NWS=(ABS(NWS)-NRS*100)*(NWS/ABS(NWS))
       ENDIF
-C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
-      IF(ABS(NWS/100).EQ.2) THEN
-         NRS=2
-         NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
-      ENDIF
-#ifdef CSWAN
-Casey 090302: Added the option for coupling directly to SWAN.
-      IF(ABS(NWS/100).EQ.3) THEN
-         NRS=3
-         NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
-      ENDIF
-#endif
+
       IF(NWS.EQ.0) THEN
          WRITE(16,237) NWS
  237     FORMAT(/,5X,'NWS = ',I2,/,9X,
@@ -1331,6 +1348,8 @@ C     rjw added nws = 19: asymmetric hurricane winds v2.0
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
+
+C....Surface Wave Stresses
       IF(NRS.EQ.0) THEN
          WRITE(16,2390) NRS
  2390    FORMAT(/,5X,'NRS = ',I2,
@@ -1370,7 +1389,16 @@ Casey 090302: Added the following lines.
      &    /,9X,'WAVES WILL BE COUPLED TO SWAN!')
       ENDIF
 #endif
- 
+
+C     NWS=4xx added for STWAVE tighly coupled run  (v49.46 tcm)
+      IF(NRS.EQ.4) THEN 
+         WRITE(16,2394) NRS
+ 2394    FORMAT(/,5X,'NRS = ',I2,
+     &    /,9X,'WAVE RADIATION STRESS IS USED TO FORCE THE COMPUTATION',
+     &    /,9X,'STRESSES ARE COMPUTED ON THE FLY BY STWAVE COMPUTE    ',
+     &    /,9X,'PROCS.')
+      ENDIF
+
 C...  
 C...  READ AND PROCESS NRAMP - WHETHER A RAMP FUNCTION WILL BE USED
 C...  
@@ -1610,7 +1638,14 @@ C...
       WRITE(16,10) RNDAY
  10   FORMAT(5X,'TOTAL LENGTH OF NUMERICAL SIMULATION =',F12.4,
      &       5X,'DAYS',/)
-
+C     NWS=4xx added for STWAVE tighly coupled run 01/03/2008
+      IF(NRS.EQ.4) THEN 
+         WRITE(16,2393) NRS
+ 2393    FORMAT(/,5X,'NRS = ',I2,
+     &    /,9X,'WAVE RADIATION STRESS IS USED TO FORCE THE COMPUTATION',
+     &    /,9X,'STRESSES ARE COMPUTED ON THE FLY BY STWAVE COMPUTE    ',
+     &    /,9X,'PROCS.')
+      ENDIF
 C...
 C...  COMPUTE TOTAL NUMBER OF TIME STEPS NT
 C...
