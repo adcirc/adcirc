@@ -954,92 +954,114 @@ C--------------------END MET FORCING---------------------------------------
 
 
 
-
-
 C...  UPDATE THE WAVE RADIATION STRESS AND READ IN NEW VALUES FROM
 C.... UNIT 23.  APPLY Ramp FUNCTION.  ADD RADIATION STRESS TO WIND
 C...  STRESS
 C...  
 C...  NRS=2 was added.  sb46.28sb03 09/xx/2006
-      IF(NRS.GE.1) THEN
-         IF(TIME.GT.RSTIME2) THEN
-            RSTIME1=RSTIME2
-            RSTIME2=RSTIME2+RSTIMINC
-            DO I=1,NP
-               RSNX1(I)=RSNX2(I)
-               RSNY1(I)=RSNY2(I)
-            END DO
-            IF(NRS.EQ.1) THEN
-              CALL RSGET(RSNX2,RSNY2,NP)
-            ENDIF
-            IF(NRS.EQ.2) THEN
-              CALL RS2GET(RSNX2,RSNY2,NP)
-            ENDIF
+C...  TCM v49.48 Restructured the wave stress updates in order to 
+c...             include NRS=4
+      IF(NRS.NE.0) THEN
+         if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3)) then
+            IF(TIME.GT.RSTIME2) THEN
+               RSTIME1=RSTIME2
+               RSTIME2=RSTIME2+RSTIMINC
+               DO I=1,NP
+                  RSNX1(I)=RSNX2(I)
+                  RSNY1(I)=RSNY2(I)
+               END DO
+               IF(NRS.EQ.1) THEN
+                 CALL RSGET(RSNX2,RSNY2,NP)
+               ENDIF
+               IF(NRS.EQ.2) THEN
+                 CALL RS2GET(RSNX2,RSNY2,NP)
+               ENDIF
 #ifdef CSWAN
 Casey 090302: Added for coupling to SWAN.
-            IF(NRS.EQ.3) THEN
-              InterpoWeight = 1.0
-              CALL ComputeWaveDrivenForces
+               IF(NRS.EQ.3) THEN
+                 InterpoWeight = 1.0
+                 CALL ComputeWaveDrivenForces
 Casey 090707: We want to extrapolate forward in time.  Load the latest (current) forces
 C             into RSNX1/RSNY1, and then load the future forces into RSNX2/RSNY2.
-              DO I=1,NP
-                RSX = RSNX1(I)
-                RSY = RSNY1(I)
-                RSNX1(I) = RSNX2(I)
-                RSNY1(I) = RSNY2(I)
-                RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX)
-                RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
-              ENDDO
+                 DO I=1,NP
+                   RSX = RSNX1(I)
+                   RSY = RSNY1(I)
+                   RSNX1(I) = RSNX2(I)
+                   RSNY1(I) = RSNY2(I)
+                   RSNX2(I) = RSNX2(I) + (RSNX2(I)-RSX)
+                   RSNY2(I) = RSNY2(I) + (RSNY2(I)-RSY)
+                 ENDDO
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.  Compute the wave properties
 C             for height, period, angle and dissipation.  Then extrapolate forward
 C             in time using the same logic as above.
-              DO I=1,NP
-                WAVE_A1(I) = WAVE_A2(I)
-                WAVE_H1(I) = WAVE_H2(I)
-                WAVE_T1(I) = WAVE_T2(I)
-              ENDDO
-              CALL ComputeWaveFrictionProperties
-              DO I=1,NP
-                WAVA = WAVE_A1(I)
-                WAVH = WAVE_H1(I)
-                WAVT = WAVE_T1(I)
-                WAVE_A1(I) = WAVE_A2(I)
-                WAVE_H1(I) = WAVE_H2(I)
-                WAVE_T1(I) = WAVE_T2(I)
-                WAVE_A2(I) = WAVE_A2(I) + (WAVE_A2(I)-WAVA)
-                WAVE_H2(I) = WAVE_H2(I) + (WAVE_H2(I)-WAVH)
-                WAVE_T2(I) = WAVE_T2(I) + (WAVE_T2(I)-WAVT)
-              ENDDO
+                 DO I=1,NP
+                   WAVE_A1(I) = WAVE_A2(I)
+                   WAVE_H1(I) = WAVE_H2(I)
+                   WAVE_T1(I) = WAVE_T2(I)
+                 ENDDO
+                 CALL ComputeWaveFrictionProperties
+                 DO I=1,NP
+                   WAVA = WAVE_A1(I)
+                   WAVH = WAVE_H1(I)
+                   WAVT = WAVE_T1(I)
+                   WAVE_A1(I) = WAVE_A2(I)
+                   WAVE_H1(I) = WAVE_H2(I)
+                   WAVE_T1(I) = WAVE_T2(I)
+                   WAVE_A2(I) = WAVE_A2(I) + (WAVE_A2(I)-WAVA)
+                   WAVE_H2(I) = WAVE_H2(I) + (WAVE_H2(I)-WAVH)
+                   WAVE_T2(I) = WAVE_T2(I) + (WAVE_T2(I)-WAVT)
+                 ENDDO
+#endif
+               ENDIF
 #endif
             ENDIF
-#endif
-         ENDIF
-         RStRatio=(TIME-RSTIME1)/RSTIMINC
-         DO I=1,NP
-            RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
-            RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
-            WSX2(I) = WSX2(I) + RSX
-            WSY2(I) = WSY2(I) + RSY
+            RStRatio=(TIME-RSTIME1)/RSTIMINC
+            DO I=1,NP
+               RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
+               RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
+               WSX2(I) = WSX2(I) + RSX
+               WSY2(I) = WSY2(I) + RSY
 #ifdef CSWAN
 Casey 090302: Added these lines for output to the rads.64 file.
-            RSNXOUT(I) = RSX
-            RSNYOUT(I) = RSY
+               RSNXOUT(I) = RSX
+               RSNYOUT(I) = RSY
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
-            WAVE_A(I) = WAVE_A1(I) + RSTRATIO*(WAVE_A2(I)-WAVE_A1(I))
-            WAVE_H(I) = WAVE_H1(I) + RSTRATIO*(WAVE_H2(I)-WAVE_H1(I))
-            WAVE_T(I) = WAVE_T1(I) + RSTRATIO*(WAVE_T2(I)-WAVE_T1(I))
+               WAVE_A(I) = WAVE_A1(I) + RSTRATIO*(WAVE_A2(I)-WAVE_A1(I))
+               WAVE_H(I) = WAVE_H1(I) + RSTRATIO*(WAVE_H2(I)-WAVE_H1(I))
+               WAVE_T(I) = WAVE_T1(I) + RSTRATIO*(WAVE_T2(I)-WAVE_T1(I))
 #endif
 #endif
-         ENDDO
+            ENDDO
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
-         CALL ComputeModifiedWaveFriction(TK)
+            CALL ComputeModifiedWaveFriction(TK)
 #endif
 #endif
-      ENDIF
+         ENDIF  !nrs = 1,2,or 3
+
+         ! Tightly Coupled Code with STWAVE
+         ! Apply the ramping function and add wave stress to WSX2,WSY2
+         ! This cases uses a step function in time
+         IF(NRS == 4) THEN    ! vjp modified Jan 22 2010
+            IF(TIME.GE.RSTIME2) THEN   !Get a new wave record
+               RSTIME1=RSTIME2
+               RSTIME2=RSTIME2+RSTIMINC
+            ENDIF
+            IF (TIME > ENDWAVE+RSTIMINC) THEN
+              RSNX2(:) = 0.0d0;  RSNY2(:) = 0.0d0
+            ENDIF
+            DO I=1,NP
+               RSX = RampWRad*RSNX2(I)
+               RSY = RampWRad*RSNY2(I)
+               WSX2(I) = WSX2(I) + RSX
+               WSY2(I) = WSY2(I) + RSY
+            END DO
+         ENDIF !(NRS = 4)
+      
+      ENDIF  !(End test for updating wave radiation stress)
 
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
 C     meteorological output was requested.

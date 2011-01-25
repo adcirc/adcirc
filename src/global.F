@@ -44,6 +44,10 @@ C     jgf46.21 Added support for IBTYPE=52.
       REAL(SZ) FluxSettlingTime
       INTEGER  FluxSettlingIT
 
+C... v49.48 tcm -- added for coupling with STWAVE (NRS=4)
+      REAL(8)  :: STARTWAVE   ! Start of Wave Service
+      REAL(8)  :: ENDWAVE     ! End of Wave Service
+
 C      real(sz) rampriver,drampriver,rampriver1,rampriver2
 
 C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)

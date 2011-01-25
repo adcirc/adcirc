@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.48   - 01/25/2011 - tcm - Added support for NRS=4 tight coupling with
+C             STWAVE in timestep.F.
 C  v49.47   - 01/25/2011 - rjw - Changed format statement 2393 to 2395 on 
 C              cmassey STWAVE routine in Updated read_input.F 
 C  v49.46   - 01/25/2011 - tcm - Updated read_input.F and adcprep routines
