@@ -397,21 +397,21 @@ C              one should be used in the simulation.
 C           jgf49.44: Added capability to read fulldomain 3D hotstart
 C           data in parallel.
             ELSE
-               CALL binaryRead2D(DUU_G, NP_G, IHOT, IHOTSTP)
-               CALL binaryRead2D(DUV_G, NP_G, IHOT, IHOTSTP)
-               CALL binaryRead2D(DVV_G, NP_G, IHOT, IHOTSTP)
-               CALL binaryRead2D(UU_G, NP_G, IHOT, IHOTSTP)
-               CALL binaryRead2D(VV_G, NP_G, IHOT, IHOTSTP)
-               CALL binaryRead2D(BSX_G, NP_G, IHOT, IHOTSTP)
-               CALL binaryRead2D(BSY_G, NP_G, IHOT, IHOTSTP)
-               ALLOCATE(RealQ_Tmp(NP_G,NFEN))
-               ALLOCATE(ImQ_Tmp(NP_G,NFEN))
-               CALL binaryRead3D(RealQ_Tmp, NP_G, NFEN, IHOT, IHOTSTP)
-               CALL binaryRead3D(ImQ_Tmp, NP_G, NFEN, IHOT, IHOTSTP)
-               Q_g = RealQ_Tmp + iy*ImQ_Tmp  ! reconstruct Q_g matrix from parts
-               CALL binaryRead3D(WZ_g, NP_G, NFEN, IHOT, IHOTSTP)
-               CALL binaryRead3D(q20_g, NP_G, NFEN, IHOT, IHOTSTP)
-               CALL binaryRead3D(l_g, NP_G, NFEN, IHOT, IHOTSTP)
+               CALL binaryMap2D(DUU, IHOT, IHOTSTP)
+               CALL binaryMap2D(DUV, IHOT, IHOTSTP)
+               CALL binaryMap2D(DVV, IHOT, IHOTSTP)
+               CALL binaryMap2D(UU, IHOT, IHOTSTP)
+               CALL binaryMap2D(VV, IHOT, IHOTSTP)
+               CALL binaryMap2D(BSX, IHOT, IHOTSTP)
+               CALL binaryMap2D(BSY, IHOT, IHOTSTP)
+               ALLOCATE(RealQ_Tmp(NP,NFEN))
+               ALLOCATE(ImQ_Tmp(NP,NFEN))
+               CALL binaryMap3D(RealQ_Tmp, NFEN, IHOT, IHOTSTP)
+               CALL binaryMap3D(ImQ_Tmp, NFEN, IHOT, IHOTSTP)
+               Q = RealQ_Tmp + iy*ImQ_Tmp  ! reconstruct Q_g matrix from parts
+               CALL binaryMap3D(WZ, NFEN, IHOT, IHOTSTP)
+               CALL binaryMap3D(q20, NFEN, IHOT, IHOTSTP)
+               CALL binaryMap3D(l, NFEN, IHOT, IHOTSTP)
 C              kmd48.33bc - need to determine if IDEN parameter in hotstart
 C              is different than IDEN from fort.15 file. If so, determine which
 C              one should be used in the simulation. 
@@ -431,51 +431,19 @@ C              one should be used in the simulation.
                   CALL logMessage(INFO,
      &             "IDEN=0; This is a barotropic model run.")
                CASE(1)
-                  CALL binaryRead3D(SigT_g, NP_G, NFEN, IHOT, IHOTSTP)
+                  CALL binaryMap3D(SigT, NFEN, IHOT, IHOTSTP)
                CASE(2)
-                  CALL binaryRead3D(Sal_g, NP_G, NFEN, IHOT, IHOTSTP)
+                  CALL binaryMap3D(Sal, NFEN, IHOT, IHOTSTP)
                CASE(3)
-                  CALL binaryRead3D(Temp_g, NP_G, NFEN, IHOT, IHOTSTP)
+                  CALL binaryMap3D(Temp, NFEN, IHOT, IHOTSTP)
                CASE(4)
-                  CALL binaryRead3D(Sal_g, NP_G, NFEN, IHOT, IHOTSTP)
-                  CALL binaryRead3D(Temp_g, NP_G, NFEN, IHOT, IHOTSTP)
+                  CALL binaryMap3D(Sal, NFEN, IHOT, IHOTSTP)
+                  CALL binaryMap3D(Temp, NFEN, IHOT, IHOTSTP)
                CASE DEFAULT
                   ! should not happen
                   write(*,*) "ERROR: IDEN is ",IDEN,
      &                " but the valid range is +/- 1 to 4."
                END SELECT
-               ! jgf49.44: map data from fulldomain to subdomain in parallel
-               DO subdomainNode=1,NP
-                  fulldomainNode = ABS(NODES_LG(subdomainNode))
-                  DUU(subdomainNode)=DUU_g(fulldomainNode)
-                  DUV(subdomainNode)=DUV_g(fulldomainNode)
-                  DVV(subdomainNode)=DVV_g(fulldomainNode)
-                  UU(subdomainNode)=UU_g(fulldomainNode)
-                  VV(subdomainNode)=VV_g(fulldomainNode)
-                  BSX(subdomainNode)=BSX_g(fulldomainNode)
-                  BSY(subdomainNode)=BSY_g(fulldomainNode)
-               ENDDO
-               ! jgf49.44: map 3D arrays to subdomains in parallel
-               DO N=1,NFEN
-                  DO subdomainNode=1,NP
-                     fulldomainNode = ABS(NODES_LG(subdomainNode))
-                     Q(subdomainNode,N)=Q_g(fulldomainNode,N)
-                     WZ(subdomainNode,N)=WZ_g(fulldomainNode,N)
-                     q20(subdomainNode,N)=q20_g(fulldomainNode,N)
-                     l(subdomainNode,N)=l_g(fulldomainNode,N)
-                     SELECT CASE(ABS(IDen))
-                     CASE(1)
-                        SigT(subdomainNode,N)=SigT_g(fulldomainNode,N)
-                     CASE(2)
-                        Sal(subdomainNode,N)=Sal_g(fulldomainNode,N)   
-                     CASE(3)
-                        Temp(subdomainNode,N)=Temp_g(fulldomainNode,N)
-                     CASE(4)
-                        Sal(subdomainNode,N)=Sal_g(fulldomainNode,N)   
-                        Temp(subdomainNode,N)=Temp_g(fulldomainNode,N)
-                     END SELECT
-                  END DO
-               END DO
                DEALLOCATE(RealQ_Tmp,ImQ_Tmp)
             ENDIF ! read fulldomain 3D hotstart data in parallel
          ENDIF  ! C3D

@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.49   - 02/02/2011 - jgf - Rearranged memory allocation for 3D globalio
+C             to minimize the total amount of RAM required at any given time
+C             for writing 3D output files. 
 C  v49.48   - 01/25/2011 - tcm - Added support for NRS=4 tight coupling with
 C             STWAVE in timestep.F.
 C  v49.47   - 01/25/2011 - rjw - Changed format statement 2393 to 2395 on 

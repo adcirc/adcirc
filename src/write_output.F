@@ -1785,18 +1785,6 @@ C
 1105  FORMAT(2X,I8,2X,1pE20.10)
 C
       IF (FirstCall.eqv..true.) THEN
-         IF ((MNPROC.GT.1).and.(myProc.eq.0)) THEN
-            ALLOCATE(rp_g(NP_G,NFEN),ip_g(NP_G,NFEN))
-            ALLOCATE(rpSta_g(NSTA3DV_G,NFEN),ipSta_g(NSTA3DV_G,NFEN))
-            ALLOCATE(qsurfkp1_g(NP_G))
-            ALLOCATE(q20Sta_g(NSTA3DT_G,NFEN))
-            ALLOCATE(lSta_g(NSTA3DT_G,NFEN))
-            ALLOCATE(EVSta_g(NSTA3DT_G,NFEN))
-            ALLOCATE(SigTSta_g(NSTA3DD_G,NFEN))
-            ALLOCATE(SalSta_g(NSTA3DD_G,NFEN))
-            ALLOCATE(TempSta_g(NSTA3DD_G,NFEN))
-            ALLOCATE(WZSta_g(NSTA3DV_G,NFEN))
-         ENDIF
          ALLOCATE(rp(NP,NFEN),ip(NP,NFEN))
          ALLOCATE(rpSta(NSTA3DV,NFEN),ipSta(NSTA3DV,NFEN))
 C 
@@ -2059,15 +2047,32 @@ C              Interpolate to station locations
                   ENDIF
                ENDDO
             END DO
+
             ! jgf49.43.19 Collect fulldomain data in parallel.
             IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.)) THEN
-               CALL collectFullDomainArray(SigTStaDescript,
+               IF ((ABS(IDEN).NE.0)) THEN
+                  IF (myProc.eq.0)  THEN
+                     ALLOCATE(SigTSta_g(NSTA3DD_G,NFEN))
+                     SigTStaDescript % array2D_g => SigTSta_g
+                  ENDIF
+                  CALL collectFullDomainArray(SigTStaDescript,
      &                     packNPbyM, unpackNPbyM)
+               ENDIF
                IF ((ABS(IDEN).EQ.2).OR.(ABS(IDEN).EQ.4)) THEN
+                  IF (myProc.eq.0) THEN
+                     ALLOCATE(SalSta_g(NSTA3DD_G,NFEN))
+                     SalStaDescript % array2D_g => SalSta_g
+                  ENDIF
                   CALL collectFullDomainArray(SalStaDescript,
      &                     packNPbyM, unpackNPbyM)
                ENDIF
                IF ((ABS(IDEN).EQ.3).OR.(ABS(IDEN).EQ.4)) THEN
+                  IF (myProc.eq.0) THEN
+                     ALLOCATE(TempSta_g(NSTA3DD_G,NFEN))
+                     ALLOCATE(SalSta_g(NSTA3DD_G,NFEN))
+                     SalStaDescript % array2D_g => SalSta_g
+                     TempStaDescript % array2D_g => TempSta_g
+                  ENDIF
                   CALL collectFullDomainArray(TempStaDescript,
      &                     packNPbyM, unpackNPbyM)
                ENDIF
@@ -2133,6 +2138,7 @@ C                 Write time header into file
                         WRITE(41,1104) NN,(SigTSta_g(NN,k),k=1,NFEN)  
                         I3DSDRec=I3DSDRec+1
                      END DO
+                     DEALLOCATE(SigTSta_g)
                   CASE(2) 
                      WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
      &                               k=1,NFEN-1),Sigma(NFEN)            
@@ -2142,6 +2148,7 @@ C                 Write time header into file
      &                     (SigTSta_g(NN,k),SalSta_g(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
+                     DEALLOCATE(SigTSta_g,SalSta_g)
                   CASE(3)
                      WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
      &                               k=1,NFEN-1),Sigma(NFEN)
@@ -2151,6 +2158,7 @@ C                 Write time header into file
      &                     (SigTSta_g(NN,k),TempSta_g(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
+                     DEALLOCATE(SigTSta_g,TempSta_g)
                   CASE(4) 
                      WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
      &                      Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
@@ -2160,6 +2168,7 @@ C                 Write time header into file
      &                      SalSta_g(NN,k),TempSta_g(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO 
+                     DEALLOCATE(SigTSta_g,SalSta_g,TempSta_g)
                   CASE DEFAULT
                      CALL allMessage(WARNING,
      &                 "IDEN is not +/- 0 to 4 and is invalid.")
@@ -2234,8 +2243,17 @@ C              Interpolate to station locations
      &                       +WZ(N3,k)*StaI3DV3(NN)
                ENDDO
             END DO
+
             ! jgf49.43.19 Collect fulldomain data in parallel.
             IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.)) THEN
+               IF (myProc.eq.0) THEN
+                  ALLOCATE(rpSta_g(NSTA3DV_G,NFEN),
+     &               ipSta_g(NSTA3DV_G,NFEN))
+                  ALLOCATE(WZSta_g(NSTA3DV_G,NFEN))
+                  RealQStaDescript % array2D_g => rpSta_g
+                  ImaginaryQStaDescript % array2D_g => ipSta_g
+                  WZStaDescript % array2D_g => WZSta_g
+               ENDIF
                rpSta = real(qSta)
                ipSta = aimag(qSta)
                CALL collectFullDomainArray(RealQStaDescript,
@@ -2275,6 +2293,7 @@ C                 Write time header into file
      &                  WZSta_g(NN,k),k=1,NFEN)
                      I3DSVRec=I3DSVRec+1
                   ENDDO
+                  DEALLOCATE(rpSta_g,ipSta_g,WZSta_g)
                   CLOSE(42)
                ENDIF 
             CASE(2) !BINARY FORMAT
@@ -2328,8 +2347,17 @@ C              Interpolate to station locations
      &               +EV(N2,k) *StaI3DT2(NN)+EV(N3,k) *StaI3DT3(NN)
                END DO
             END DO
+
             ! jgf49.43.18 Collect fulldomain data in parallel.
             IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.)) THEN
+               IF (myProc.eq.0) THEN
+                  ALLOCATE(q20Sta_g(NSTA3DT_G,NFEN))
+                  ALLOCATE(lSta_g(NSTA3DT_G,NFEN))
+                  ALLOCATE(EVSta_g(NSTA3DT_G,NFEN))
+                  Q20StaDescript % array2D_g => q20Sta_g
+                  LStaDescript % array2D_g => lSta_g
+                  EVStaDescript % array2D_g => EVSta_g
+               ENDIF
                CALL collectFullDomainArray(Q20StaDescript,
      &                     packNPbyM, unpackNPbyM)
                CALL collectFullDomainArray(LStaDescript,
@@ -2366,6 +2394,7 @@ C                 Write time header into file
      &                  EVSta_g(NN,k),k=1,NFEN)
                      I3DSTRec=I3DSTRec+1
                   END DO
+                  DEALLOCATE(q20Sta_g,lSta_g,EVSta_g)
                   CLOSE(43)
                ENDIF
             CASE(2)  ! binary
@@ -2403,7 +2432,51 @@ C
          IF((IT.GT.NTO3DGDS).AND.(IT.LE.NTO3DGDF)) N3DGD=N3DGD+1
 C        Check to see if it is time to generate 3D fulldomain density output.
          IF(N3DGD.EQ.NSpo3DGD) THEN
-C         Write time header into file
+            ! collect up output data in parallel if fulldomain files are needed
+            IF ((MNPROC.gt.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
+               IF (ABS(IDEN).NE.0) THEN
+                  IF (myProc.eq.0) THEN
+                     ALLOCATE(SigT_g(NP_G,NFEN))
+                     SigTDescript % array2D_g => SigT_g
+                  ENDIF
+                  CALL collectFullDomainArray(SigTDescript,
+     &               packNPbyM, unpackNPbyM)
+               ENDIF
+               SELECT CASE(ABS(IDEN))
+               CASE(0) ! barotropic
+                  CALL allMessage(WARNING,
+     &            "IDEN was set to 0 but density output was requested.")
+               CASE(1)
+                  ! already collected SigT above
+               CASE(2)
+                  IF (myProc.eq.0) THEN
+                     ALLOCATE(Sal_g(NP_G,NFEN))
+                     SalDescript % array2D_g => Sal_g
+                  ENDIF
+                  CALL collectFullDomainArray(SalDescript,
+     &                  packNPbyM, unpackNPbyM)
+               CASE(3)
+                  IF (myProc.eq.0) THEN
+                     ALLOCATE(Temp_g(NP_G,NFEN))
+                     TempDescript % array2D_g => Temp_g
+                  ENDIF
+                  CALL collectFullDomainArray(TempDescript,
+     &                  packNPbyM, unpackNPbyM)
+               CASE(4)
+                  IF (myProc.eq.0) THEN
+                     ALLOCATE(Sal_g(NP_G,NFEN),Temp_g(NP_G,NFEN))
+                     SalDescript % array2D_g => Sal_g
+                     TempDescript % array2D_g => Temp_g
+                  ENDIF
+                  CALL collectFullDomainArray(SalDescript,
+     &                  packNPbyM, unpackNPbyM)
+                  CALL collectFullDomainArray(TempDescript,
+     &                  packNPbyM, unpackNPbyM)
+               CASE DEFAULT
+                  CALL allMessage(WARNING,
+     &            "IDEN is not +/- 0 to 4 and is invalid.")
+               END SELECT
+            ENDIF
 !kmd48.33bc - add in the information for outputting the top temperature
 !             boundary condition.
             SELECT CASE(ABS(I3DGD))
@@ -2467,6 +2540,9 @@ C         Write time header into file
                IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.)) THEN
                   IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN  
                      IF(BCFLAG_TEMP.NE.0) THEN  
+                        IF (myProc.eq.0) THEN
+                           ALLOCATE(qsurfkp1_g(NP_G))
+                        ENDIF  
                         CALL collectFullDomainArray(QSurfKp1Descript,
      &                     packOne, unpackOne)
                         OPEN(47,FILE=TRIM(GLOBALDIR)//'/'//'fort.47',
@@ -2475,13 +2551,12 @@ C         Write time header into file
                         DO NH=1,NP_G
                            WRITE(47,1105) NH, qsurfkp1_g(NH) 
                         END DO
+                        DEALLOCATE(qsurfkp1_g)
                         CLOSE(47)
                      END IF 
                   END IF 
                   OPEN(44,FILE=TRIM(GLOBALDIR)//'/'//'fort.44',
      &                ACCESS='SEQUENTIAL',POSITION='APPEND')
-                  CALL collectFullDomainArray(SigTDescript,
-     &               packNPbyM, unpackNPbyM)
                   SELECT CASE(ABS(IDEN))
                   CASE(0) ! barotropic
                      CALL allMessage(WARNING,
@@ -2492,9 +2567,8 @@ C         Write time header into file
                         WRITE(44,1104) NH,(SigT_g(NH,k),k=1,NFEN)
                         I3DGDRec=I3DGDRec+1
                      ENDDO
+                     DEALLOCATE(SigT_g)
                   CASE(2) ! Salinity density
-                     CALL collectFullDomainArray(SalDescript,
-     &                  packNPbyM, unpackNPbyM)
                      WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
      &                                k=1,NFEN-1),Sigma(NFEN) 
                      DO NH=1,NP_G
@@ -2502,6 +2576,7 @@ C         Write time header into file
      &                     NH,(SigT_g(NH,k),Sal_g(NH,k),k=1,NFEN) 
                            I3DGDRec=I3DGDRec+1
                      ENDDO
+                     DEALLOCATE(SigT_g,Sal_g)
                   CASE(3) ! Temperature density
                      WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
      &                                k=1,NFEN-1),Sigma(NFEN)
@@ -2512,6 +2587,7 @@ C         Write time header into file
      &                     NH,(SigT_g(NH,k),Temp_g(NH,k),k=1,NFEN)
                         I3DGDRec=I3DGDRec+1
                      ENDDO
+                     DEALLOCATE(SigT_g,Temp_g)
                   CASE(4) ! Salinity+Temperature density
                      CALL collectFullDomainArray(SalDescript,
      &                  packNPbyM, unpackNPbyM)
@@ -2524,6 +2600,7 @@ C         Write time header into file
      &                          Sal_g(NH,k),k=1,NFEN)
                         I3DGDRec=I3DGDRec+1
                      ENDDO
+                     DEALLOCATE(SigT_g,Temp_g,Sal_g) 
                   CASE DEFAULT
                      CALL allMessage(WARNING,
      &               "IDEN is not +/- 0 to 4 and is invalid.")
@@ -2623,6 +2700,13 @@ C                 Write time header into file
                   CLOSE(45)
                ENDIF
                IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
+                  IF (myProc.eq.0) THEN
+                     ALLOCATE(rp_g(NP_G,NFEN),ip_g(NP_G,NFEN),
+     &                  WZ_g(NP_G,NFEN))
+                     RealQDescript % array2D_g => rp_g
+                     ImaginaryQDescript % array2D_g => ip_g
+                     WZDescript % array2D_g => WZ_g
+                  ENDIF
                   rp = real(q)
                   ip = aimag(q)
                   CALL collectFullDomainArray(RealQDescript,
@@ -2642,6 +2726,7 @@ C                 Write time header into file
      &                     (rp_g(NH,k),ip_g(NH,k),WZ_g(NH,k),k=1,NFEN) 
                         I3DGVRec=I3DGVRec+1
                      ENDDO
+                     DEALLOCATE(rp_g,ip_g,WZ_g)
                      CLOSE(45)
                   ENDIF
                ENDIF
@@ -2698,6 +2783,13 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
                   CLOSE(46)
                ENDIF
                IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
+                  IF (myProc.eq.0) THEN
+                     ALLOCATE(q20_g(NP_G,NFEN),l_g(NP_G,NFEN),
+     &                  EV_g(NP_G,NFEN))
+                     Q20Descript % array2D_g => q20_g
+                     LDescript % array2D_g => l_g
+                     EVDescript % array2D_g => EV_g
+                  ENDIF
                   CALL collectFullDomainArray(Q20Descript,
      &               packNPbyM, unpackNPbyM)
                   CALL collectFullDomainArray(LDescript,
@@ -2716,6 +2808,7 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
                         I3DGTRec=I3DGTRec+1
                      ENDDO
                      CLOSE(46)
+                     DEALLOCATE(q20_g,l_g,EV_g)
                   ENDIF
                ENDIF
             CASE(2)

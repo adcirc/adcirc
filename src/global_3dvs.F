@@ -291,38 +291,6 @@ C-------------------end of data declarations----------------------------------C
 
       CONTAINS
 
-C--------------------------------------------------------------------
-C                    S U B R O U T I N E 
-C     A L L O C A T E   F U L L   D O M A I N   3 D   I O   A R R A Y S 
-C--------------------------------------------------------------------
-C     jgf49.44: Allocates memory for the full domain arrays for i/o
-C     purposes; these arrays are both read from and written to hotstart 
-C     files. Arrays that are only written are allocated in the 
-C     subroutine that does the writing. 
-C--------------------------------------------------------------------
-      SUBROUTINE allocateFullDomain3DIOArrays()
-      USE GLOBAL, ONLY : NP_G
-      IMPLICIT NONE
-      ALLOCATE(DUU_g(NP_G))
-      ALLOCATE(DUV_g(NP_G))
-      ALLOCATE(DVV_g(NP_G))
-      ALLOCATE(UU_g(NP_G))
-      ALLOCATE(VV_g(NP_G))
-      ALLOCATE(BSX_g(NP_G))
-      ALLOCATE(BSY_g(NP_G))
-      ALLOCATE(Q_g(NP_G,NFEN))
-      ALLOCATE(WZ_g(NP_G,NFEN))
-      ALLOCATE(q20_g(NP_G,NFEN))
-      ALLOCATE(l_g(NP_G,NFEN))
-      ALLOCATE(EV_g(NP_G,NFEN))
-      ALLOCATE(SigT_g(NP_G,NFEN))
-      ALLOCATE(Sal_g(NP_G,NFEN))
-      ALLOCATE(Temp_g(NP_G,NFEN))
-C--------------------------------------------------------------------
-      END SUBROUTINE allocateFullDomain3DIOArrays
-C--------------------------------------------------------------------
-
-
 C
 C     Allocate space for arrays used in 3D VS routines
 C

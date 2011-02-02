@@ -6451,10 +6451,10 @@ C
          ENDIF
 C
          CALL CoordinateToElement(xcoord(I), ycoord(I),
-     &         NNV(I), I, 'VELOCITY RECORDING STATION    ')
+     &         NNV(I), I, 'RECORDING STATION             ')
 
           IF(ICS.EQ.1) THEN
-             WRITE(16,1880) I,NNV(I),xcoord(I),xcoord(I)
+             WRITE(16,1880) I,NNV(I),xcoord(I),ycoord(I)
           ELSE
              WRITE(16,1883) I,NNV(I),lat(I)*RAD2DEG,lon(I)*RAD2DEG,
      &            xcoord(I),ycoord(I)

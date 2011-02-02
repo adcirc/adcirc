@@ -852,6 +852,72 @@ C--------------------------------------------------------------------
       END SUBROUTINE binaryRead3D
 C--------------------------------------------------------------------
 
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      B I N A R Y   M A P   2 D 
+C--------------------------------------------------------------------
+C     jgf49.48.01: Same as binaryRead2D except it reads data and maps 
+C     on the fly. It allocates and deallocates memory internally,
+C     since the memory requirements for large 3D meshes can be
+C     very large. Only to be called for parallel operation where
+C     all subdomains read a fulldomain hotstart file and retrieve
+C     2D nodal data.
+C--------------------------------------------------------------------
+      SUBROUTINE binaryMap2D(array, lun, counter)
+      USE SIZES, ONLY : SZ
+      IMPLICIT NONE
+      REAL(SZ), intent(out), dimension(:) :: array ! data to read from the hotstart file
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
+      INTEGER, intent(inout) :: counter ! i/o position in the file 
+C 
+      INTEGER subdomainNode     ! array index
+      INTEGER fulldomainNode    ! mapped node number
+      REAL(SZ), ALLOCATABLE :: array_g(:)
+C      
+      ALLOCATE(array_g(NP_G))
+      CALL binaryRead2D(array_g, NP_G, lun, counter)
+      DO subdomainNode=1,NP
+         fulldomainNode=ABS(NODES_LG(subdomainNode))
+         array(subdomainNode)=array_g(fulldomainNode)
+      ENDDO 
+      DEALLOCATE(array_g)
+C--------------------------------------------------------------------
+      END SUBROUTINE binaryMap2D
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      B I N A R Y   M A P   3 D 
+C--------------------------------------------------------------------
+C     jgf49.48.01: Same as binaryRead3D except it reads data and maps 
+C     on the fly. It allocates and deallocates memory internally,
+C     since the memory requirements for large 3D meshes can be
+C     very large. Only to be called for parallel operation where
+C     all subdomains read a fulldomain hotstart file and retrieve
+C     3D nodal data.
+C--------------------------------------------------------------------
+      SUBROUTINE binaryMap3D(array, vert, lun, counter)
+      USE SIZES, ONLY : SZ
+      IMPLICIT NONE
+      REAL(SZ), intent(out), dimension(:,:) :: array ! data to read from the hotstart file
+      INTEGER, intent(in) :: vert    ! number of nodes in the vertical
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
+      INTEGER, intent(inout) :: counter ! i/o position in the file 
+C 
+      INTEGER i,j      ! array indices
+      REAL(SZ), ALLOCATABLE :: array_g(:,:)
+      INTEGER subdomainNode     ! array index
+      INTEGER fulldomainNode    ! mapped node number
+C      
+      ALLOCATE(array_g(NP_G,vert))
+      CALL binaryRead3D(array_g, NP_G, vert, lun, counter)
+      DO subdomainNode=1,NP
+         fulldomainNode=ABS(NODES_LG(subdomainNode))
+         array(subdomainNode,:)=array_g(fulldomainNode,:)
+      ENDDO
+      DEALLOCATE(array_g)
+C--------------------------------------------------------------------
+      END SUBROUTINE binaryMap3D
+C--------------------------------------------------------------------
+
 C...
 C...Allocate space for Arrays dimensioned by MNE and MNP
 C...

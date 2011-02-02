@@ -77,8 +77,7 @@ C******************************************************************************
 C******************************************************************************
 C
       USE GLOBAL
-      USE GLOBAL_3DVS, ONLY : GORho, GORhoOAMB, AMB, 
-     &                        allocateFullDomain3DIOArrays
+      USE GLOBAL_3DVS, ONLY : GORho, GORhoOAMB, AMB 
       USE VERSION
 #ifdef CMPI
       USE MESSENGER
@@ -175,9 +174,6 @@ C...    writer processors will not execute the rest in this source file (adcirc.
      &          .or.(READ_LOCAL_HOT_START_FILES.eqv..false.) ) ) THEN
           CALL allocateFullDomainIOArrays()
           CALL allocateFullDomainHAIOArrays()
-          IF (C3D) THEN
-             CALL allocateFullDomain3DIOArrays()
-          ENDIF
       ENDIF
 
       !jgf49.44: Initialize harmonic analysis parameters.

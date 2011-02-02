@@ -2893,6 +2893,9 @@ C...
 
 C   kmd48.33bc write out results in global IO format
       IF (FirstCall3D) THEN 
+        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+           Allocate(DUU_g(NP_G))
+        END IF
         Duudescript % specifier            =  NHSTAR 
         Duudescript % initial_value        =  0.0
         Duudescript % num_items_per_record =  1
@@ -2902,6 +2905,9 @@ C   kmd48.33bc write out results in global IO format
         Duudescript % array                => DUU1
         Duudescript % array_g              => DUU_g
 
+        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+           Allocate(DUV_g(NP_G))
+        END IF
         Duvdescript % specifier            =  NHSTAR 
         Duvdescript % initial_value        =  0.0
         Duvdescript % num_items_per_record =  1
@@ -2911,6 +2917,9 @@ C   kmd48.33bc write out results in global IO format
         Duvdescript % array                => DUV1
         Duvdescript % array_g              => DUV_g
 
+        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+           Allocate(DVV_g(NP_G))
+        END IF
         Dvvdescript % specifier            =  NHSTAR 
         Dvvdescript % initial_value        =  0.0
         Dvvdescript % num_items_per_record =  1
@@ -2920,6 +2929,9 @@ C   kmd48.33bc write out results in global IO format
         Dvvdescript % array                => DVV1
         Dvvdescript % array_g              => DVV_g
 
+        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+           Allocate(UU_g(NP_G))
+        END IF
         Uudescript % specifier            =  NHSTAR 
         Uudescript % initial_value        =  0.0
         Uudescript % num_items_per_record =  1
@@ -2929,6 +2941,9 @@ C   kmd48.33bc write out results in global IO format
         Uudescript % array                => UU2
         Uudescript % array_g              => UU_g
 
+        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+           Allocate(VV_g(NP_G))
+        END IF
         Vvdescript % specifier            =  NHSTAR 
         Vvdescript % initial_value        =  0.0
         Vvdescript % num_items_per_record =  1
@@ -2938,6 +2953,9 @@ C   kmd48.33bc write out results in global IO format
         Vvdescript % array                => VV2
         Vvdescript % array_g              => VV_g
 
+        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+           Allocate(BSX_g(NP_G))
+        END IF
         Bsxdescript % specifier            =  NHSTAR 
         Bsxdescript % initial_value        =  0.0
         Bsxdescript % num_items_per_record =  1
@@ -2947,6 +2965,9 @@ C   kmd48.33bc write out results in global IO format
         Bsxdescript % array                => BSX1 
         Bsxdescript % array_g              => BSX_g
 
+        IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+           Allocate(BSY_g(NP_G))
+        END IF
         Bsydescript % specifier            =  NHSTAR 
         Bsydescript % initial_value        =  0.0
         Bsydescript % num_items_per_record =  1
