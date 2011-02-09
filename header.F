@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.50   - 02/09/2011 - jgf - Fixed an issue in hstart.F where harmonic
+C             analysis data were checked, even though harmonic analysis was
+C             not specified as part of the simulation.
 C  v49.49   - 02/02/2011 - jgf - Rearranged memory allocation for 3D globalio
 C             to minimize the total amount of RAM required at any given time
 C             for writing 3D output files. 

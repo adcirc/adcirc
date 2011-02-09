@@ -471,7 +471,7 @@ C
          ! support 3D or harmonic analysis data yet.
 #ifdef NETCDF
          CALL readNetCDFHotstart(IHOT-300) 
-         IF (ITHS.gt.ITHAS) THEN
+         IF ((IHARIND.eq.1).AND.(ITHS.gt.ITHAS)) THEN
             CALL readNetCDFHotstartHarmonic(IHOT-300)
             IF (CHARMV.eqv..true.) THEN
                CALL readNetCDFHotstartHarmonicMeansVariances(IHOT-300)
@@ -494,7 +494,7 @@ C
 C
 C     Compare the harmonic analysis data read in from the hotstart file
 C     with data from the fort.15 file to be sure that they are consistent.
-      IF(ITHS.GE.IHABEG) THEN
+      IF((IHARIND.EQ.1).AND.(ITHS.GE.IHABEG)) THEN
          CALL checkHAHotstart()
       ENDIF
 
