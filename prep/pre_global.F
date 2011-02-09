@@ -329,7 +329,13 @@ C     MSGTAB section
       INTEGER,ALLOCATABLE  ::   ISEND_TOT(:,:),ISEND(:)
 
       integer, save       :: FileFmtVersion      ! File format version.
- 
+
+C...tcm v49.48.01 -- Added for new point in element searches
+C-- KDTREE2 ENABLED SEARCH ALGORITHM VARIABLES
+C
+      INTEGER :: SRCHDP=100
+      REAL(sz), ALLOCATABLE ::  RMAX(:),BCXY(:,:)
+
 C-------------------end of data declarations------------------------C
 
 
@@ -465,6 +471,10 @@ C
       STAV_SHARE(:) = -1
       STAM_SHARE(:) = -1
       STAC_SHARE(:) = -1
+
+C....tcm 44.48.01 allocate memory for fast Search Tree
+      allocate (rmax(mne),bcxy(2,mne))
+      nbytes = nbytes + 8*mne + 2*8*mne
 
       call memory_alloc(nbytes)
       print *,"from alloc_main1: "

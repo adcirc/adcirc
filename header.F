@@ -3,6 +3,12 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.51   - 02/09/2011 - tcm - Merging fast search algorithms from the
+C             merge_erdc_to49 branch.  Incorporated the new search tree
+C             searches into the prep routines and read_input.F. Updated the
+C             readstations subroutine to accept a description variable for
+C             allowing for the inputing of the correct station type.  Added 
+C             the writer_pause subroutine but not using it currently.
 C  v49.50   - 02/09/2011 - jgf - Fixed an issue in hstart.F where harmonic
 C             analysis data were checked, even though harmonic analysis was
 C             not specified as part of the simulation.

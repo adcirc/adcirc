@@ -10,7 +10,7 @@ C
       USE GLOBAL, ONLY: C3D, COMM,
      &     BUFSIZE_MAX, BUF, resultBuf, OutputDataDescript_t, float_type
       USE MESSENGER, ONLY: TAG, COMM_WRITER, WRITER_ID,
-     &     SIG_VAL, SIG_WRITE, SIG_TERM, 
+     &     SIG_VAL, SIG_WRITE, SIG_TERM, SIG_PAUSE,
      &     MSG_FINI, REALTYPE, DBLETYPE
 #ifdef HAVE_MPI_MOD
       use mpi  
@@ -89,6 +89,7 @@ C...  Main loop
         ELSE IF(SIG == SIG_TERM) THEN
           WRITE(ScreenUnit,*) 'WRITER PROC ',WRITER_ID,
      &         ' RECEIVED SIG_TERM'
+
           EXIT
         ENDIF
       ENDDO
@@ -98,6 +99,23 @@ C...  Main loop
 
       END SUBROUTINE WRITER_MAIN
 
+
+      subroutine WRITER_PAUSE()
+      use global
+      use messenger
+      implicit none
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+      integer i
+
+      DO I=1,MNWPROC
+         CALL MPI_SEND( SIG_PAUSE, 1, MPI_INTEGER, MNPROC,
+     &                  TAG,COMM_WRITER(I), IERR)
+      ENDDO
+
+      return
+      end subroutine WRITER_PAUSE
  
       subroutine WRITE_GBL_FILE_THROUGH_WRITER
      &     (filename, descript, time, it, store_cmd, default)

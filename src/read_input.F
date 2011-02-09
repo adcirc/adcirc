@@ -20,6 +20,7 @@ C-----------------------------------------------------------------------
       USE SIZES               !since GLOBAL uses SIZES, is this necessary?
       USE GLOBAL
       USE GLOBAL_IO
+      USE KDTREE2_MODULE     ! V49.48.02 tcm -- added for fast searching
       USE GLOBAL_3DVS, ONLY: C3D_PTrans,
      &    I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT
       USE HARM
@@ -52,6 +53,10 @@ Casey 100205: Enable hot-start file generation by SWAN.
       REAL(SZ) TOUTFM, TOUTSGC, TOUTSGE, TOUTSGV, TOUTSGW, TOUTSM
       CHARACTER CDUM80
       LOGICAL fileFound
+!     v49.48.02 tcm added these local variable for computing
+!     multiple values like element radius and areas, etc...
+      REAL(SZ) X2MX1,X3MX2,X1MX3,Y2MY1,Y3MY2,Y1MY3
+      REAL(SZ) LENED1,LENED2,LENED3
 C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
 C     Module. 
@@ -1894,13 +1899,35 @@ C     the input grid
          Y1=Y(NM(JKI,1))
          Y2=Y(NM(JKI,2))
          Y3=Y(NM(JKI,3))
+C...v49.48.02 tcm added these to reuse the computed values
+         X2mX1 = x2-x1
+         X3mX2 = x3-x2
+         X1mX3 = x1-x3
+         Y2mY1 = y2-y1
+         Y3mY2 = y3-y2
+         Y1mY3 = y1-y3
+
          AVGXY=(ABS(X1)+ABS(X2)+ABS(X3)+ABS(Y1)+ABS(Y2)+ABS(Y3))/6.d0
-         DIF1R=AVGXY/(((X2-X1)**2+(Y2-Y1)**2)**0.5d0)
-         DIF2R=AVGXY/(((X3-X2)**2+(Y3-Y2)**2)**0.5d0)
-         DIF3R=AVGXY/(((X3-X1)**2+(Y3-Y1)**2)**0.5d0)
+
+C v49.48.02 tcm -- These are the lengths of each element edge
+         LENED1=((X2mX1)**2+(Y2mY1)**2)**0.5d0
+         LENED2=((X3mX2)**2+(Y3mY2)**2)**0.5d0
+         LENED3=((X1mX3)**2+(Y1mY3)**2)**0.5d0
+
+!         DIF1R=AVGXY/(((X2-X1)**2+(Y2-Y1)**2)**0.5d0)
+!         DIF2R=AVGXY/(((X3-X2)**2+(Y3-Y2)**2)**0.5d0)
+!         DIF3R=AVGXY/(((X3-X1)**2+(Y3-Y1)**2)**0.5d0)
+!         DIF1R=LOG10(DIF1R)
+!         DIF2R=LOG10(DIF2R)
+!         DIF3R=LOG10(DIF3R)
+! v49.48.02 rewrote to use the edge lengths which get used below also
+         DIF1R=AVGXY/LENED1
+         DIF2R=AVGXY/LENED2
+         DIF3R=AVGXY/LENED3
          DIF1R=LOG10(DIF1R)
          DIF2R=LOG10(DIF2R)
          DIF3R=LOG10(DIF3R)
+
          IF((DIF1R.GT.NPREC).OR.(DIF2R.GT.NPREC).OR.
      &                          (DIF3R.GT.NPREC))THEN
            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9898) JKI
@@ -1914,7 +1941,9 @@ C     the input grid
            ENDIF
 
 C     compute and store 2 x element areas
-         AREAS(JKI)=(X1-X3)*(Y2-Y3)+(X3-X2)*(Y1-Y3)
+c.... v49.48.02 tcm rewrote 2 x area to reuse values already being used
+!         AREAS(JKI)=(X1-X3)*(Y2-Y3)+(X3-X2)*(Y1-Y3)
+         AREAS(JKI)=(X1mX3)*(-Y3mY2)+(X3mX2)*(Y1mY3)
 
 C     check to insure that the nodal ordering in the connectivity table is 
 C     counter clockwise around the elements
@@ -1930,7 +1959,32 @@ C     counter clockwise around the elements
      &                    '!!!!!!',//)
            STOP
            ENDIF
-        END DO
+
+C...
+C... v49.48.02 tcm -- compute element barycenters and element radius
+           bcxy(1,jki) = (x1+x2+x3)/3.d0
+           bcxy(2,jki) = (y1+y2+y3)/3.d0
+
+C...     compute the radius of the circle that circumscribes
+C...     the element then scale it by 50% larger to allow for 
+C...     a buffer later on 
+
+           RMAX(JKI) = 1.5D0*(LENED1*LENED2*LENED3)/(2.D0*AREAS(JKI))
+
+        END DO  !End loop over elements
+
+C... v49.48.02 tcm -- Allocate space for kdtree search
+C...       Be sure the maximum search depth is not larger than 
+C...       the number of elements being kept
+        IF (NE.LT.SRCHDP) SRCHDP = NE
+
+C...  Create the search tree
+      tree => kdtree2_create(bcxy,rearrange=.true.,sort=.true.)
+
+C...  allocate space for the search results from the tree
+C...  this space will be deallocated later in the subroutine
+      ALLOCATE(KDRESULTS(SRCHDP))
+
 C...
 C...  Compute neighbor tables.  
 C...
@@ -3832,7 +3886,8 @@ C....INPUT COORDINATES OF ELEVATION RECORDING STATIONS THEN COMPUTE
 C....THE ELEMENT NO. THE STATION LIES IN
       ALLOCATE(STATNAME(NSTAE))
       CALL readStations(STATNAME, NSTAE, NNE, XEL, YEL, SLEL, SFEL,
-     &                  STAIE1, STAIE2, STAIE3)
+     &                  STAIE1, STAIE2, STAIE3,
+     &                  'ELEVATION RECORDING STATION   ')
  9911            FORMAT(F12.3,2X,F12.3, 6X, A50)
  9111            FORMAT(F8.3,2X,F8.3, 6X, A50)
 C...
@@ -3938,7 +3993,8 @@ C....INPUT COORDINATES OF VELOCITY RECORDING STATIONS
 C....THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
       ALLOCATE(STATNAMEV(NSTAV))
       CALL readStations(STATNAMEV, NSTAV, NNV, XEV, YEV, SLEV, SFEV,
-     &                  STAIV1, STAIV2, STAIV3)
+     &                  STAIV1, STAIV2, STAIV3,
+     &                 'VELOCITY RECORDING STATION    ' )
 C...
 C...  IF TRANSPORT IS INCLUDED IN THE RUN, INPUT INFORMATION FOR CONCENTRATION
 C...  RECORDING STATIONS
@@ -4048,7 +4104,8 @@ C...  INPUT COORDINATES OF CONCENTRATION RECORDING STATIONS
 C...  THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
       ALLOCATE(STATNAMEC(NSTAC))
       CALL readStations(STATNAMEC, NSTAC, NNC, XEC, YEC, SLEC, SFEC,
-     &                  STAIC1, STAIC2, STAIC3)
+     &                  STAIC1, STAIC2, STAIC3,
+     &                  'CONCENTRATION REC. STATION    ')
       ENDIF
       IF (NSTAC.EQ.0) MNSTAC = 1
 C...  
@@ -4159,7 +4216,8 @@ C...  INPUT COORDINATES OF METEOROLOGICAL RECORDING STATIONS
 C...  THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
          ALLOCATE(STATNAMEM(NSTAM))
          CALL readStations(STATNAMEM, NSTAM, NNM, XEM, YEM, SLEM, SFEM,
-     &                     STAIM1, STAIM2, STAIM3)
+     &                     STAIM1, STAIM2, STAIM3,
+     &                      'METEOROLOGICAL REC. STATION   ')
       ENDIF
       IF (NSTAM.EQ.0) MNSTAM = 1
 
@@ -5007,6 +5065,13 @@ C     ==================================================================
 C
 #endif
 
+C
+C... v49.48.02 tcm -- Deallocating rmax, bcxy and kdresults
+C...                 used for searching and finding points in elements
+      IF(ALLOCATED(KDRESULTS)) DEALLOCATE(KDRESULTS)
+      IF(ALLOCATED(RMAX)) DEALLOCATE(RMAX)
+      IF(ALLOCATED(BCXY)) DEALLOCATE(BCXY)
+
 C...
 C...  CLOSE FILES FORT.14 and FORT.15                 
 C...
@@ -5021,7 +5086,7 @@ C      CALL COMPUTE_RESELEM
 C#endif
 c.
       RETURN 
-      END
+      END SUBROUTINE READ_INPUT
 
 
 c******************************************************************************
@@ -5454,7 +5519,10 @@ C....and then compute the element # containing each station
             CALL CPP(X3DS,Y3DS,SL3DS,SF3DS,SLAM0,SFEA0)
           ENDIF
 
-          CALL CoordinateToElement(X3DS, Y3DS,
+C... v49.48.02 tcm replaced with call to kdtsearch
+C          CALL CoordinateToElement(X3DS, Y3DS,
+C     &         NE3DD(N), N, '3D Density recording station  ')
+          CALL kdtsearch(X3DS, Y3DS,
      &         NE3DD(N), N, '3D Density recording station  ')
 
 C....     Write element and station
@@ -5632,8 +5700,12 @@ C....and then compute the element # containing each station
             CALL CPP(X3DS,Y3DS,SL3DS,SF3DS,SLAM0,SFEA0)
           ENDIF
 
-          CALL CoordinateToElement(X3DS, Y3DS,
+C... v49.48.02 tcm replaced with call to kdtsearch
+C          CALL CoordinateToElement(X3DS, Y3DS,
+C     &         NE3DV(N), N, '3D Velocity recording station ')
+          CALL KDTSEARCH(X3DS, Y3DS,
      &         NE3DV(N), N, '3D Velocity recording station ')
+
 
 C....     Write element and station
 
@@ -5808,18 +5880,21 @@ C....and then compute the element # containing each station
                CALL CPP(X3DS,Y3DS,SL3DS,SF3DS,SLAM0,SFEA0)
             ENDIF
 
-            CALL CoordinateToElement(X3DS, Y3DS,
+C... v49.48.02 tcm replaced with call to kdtsearch
+C            CALL CoordinateToElement(X3DS, Y3DS,
+C     &           NE3DT(N), N, '3D Turbulence rec. station    ')
+            CALL kdtsearch(X3DS, Y3DS,
      &           NE3DT(N), N, '3D Turbulence rec. station    ')
-            
+
 C.... Write element and station
-            
+
             IF(ICS.EQ.1) THEN
                WRITE(16,1880) N,NE3DT(N),X3DS,Y3DS
             ELSE
                WRITE(16,1883) N,NE3DT(N),SL3DS*Rad2Deg,
      &              SF3DS*Rad2Deg,X3DS,Y3DS
             ENDIF
-            
+
 C.... COMPUTE INTERPOLATING FACTORS
             CALL ComputeInterpolatingFactors(X3DS, Y3DS, NE3DT(N),
      &           StaI3DT1(N), StaI3DT2(N), StaI3DT3(N)) 
@@ -6415,9 +6490,11 @@ C-----------------------------------------------------------------------
 C     jgf45.12 Subroutine to read in station names and coordinates, 
 C     determine the element that the station falls in, and compute
 C     interpolating factors.
+C     tcm v49.48.01 -- added the description variable for correct
+C     referencing of the type of station.
 C-----------------------------------------------------------------------
       SUBROUTINE readStations(names, num_stations, nnv, xcoord, ycoord,
-     &                        lat, lon, sta1, sta2, sta3)  
+     &                        lat, lon, sta1, sta2, sta3,Description)
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, SLAM0, SFEA0, ICS, parse,
      &   a2f
@@ -6430,11 +6507,12 @@ C-----------------------------------------------------------------------
       REAL(SZ), dimension(num_stations) :: lat
       REAL(SZ), dimension(num_stations) :: lon
       REAL(SZ), dimension(num_stations) :: sta1
-      REAL(SZ), dimension(num_stations) :: sta2    
+      REAL(SZ), dimension(num_stations) :: sta2
       REAL(SZ), dimension(num_stations) :: sta3
       INTEGER I
       CHARACTER(132) STATLINE
       CHARACTER(50) LVAR(3)
+      CHARACTER(30), INTENT(IN) :: Description
 C
       DO I=1,num_stations
          NNV(I)=0
@@ -6450,18 +6528,22 @@ C
             CALL CPP(xcoord(I),ycoord(I),lat(I),lon(I),SLAM0,SFEA0)
          ENDIF
 C
-         CALL CoordinateToElement(xcoord(I), ycoord(I),
-     &         NNV(I), I, 'RECORDING STATION             ')
+C... v49.48.02 -- tcm replaced with call to kdtsearch
+C         CALL CoordinateToElement(xcoord(I), ycoord(I),
+C     &         NNV(I), I, Description)
+         CALL KDTSEARCH(xcoord(I), ycoord(I),
+     &         NNV(I), I, Description)
 
-          IF(ICS.EQ.1) THEN
-             WRITE(16,1880) I,NNV(I),xcoord(I),ycoord(I)
-          ELSE
-             WRITE(16,1883) I,NNV(I),lat(I)*RAD2DEG,lon(I)*RAD2DEG,
+
+         IF(ICS.EQ.1) THEN
+            WRITE(16,1880) I,NNV(I),xcoord(I),xcoord(I)
+         ELSE
+            WRITE(16,1883) I,NNV(I),lat(I)*RAD2DEG,lon(I)*RAD2DEG,
      &            xcoord(I),ycoord(I)
-          ENDIF
+         ENDIF
 
 C....PRE-COMPUTE INFORMATION REQUIRED TO INTERPOLATE AT VEL. RECORDING STATIONS
-          CALL ComputeInterpolatingFactors(xcoord(I), ycoord(I), NNV(I),
+         CALL ComputeInterpolatingFactors(xcoord(I), ycoord(I), NNV(I),
      &         sta1(I), sta2(I), sta3(I))
 
       END DO
@@ -6470,6 +6552,148 @@ C....PRE-COMPUTE INFORMATION REQUIRED TO INTERPOLATE AT VEL. RECORDING STATIONS
 C-----------------------------------------------------------------------
       END SUBROUTINE readStations
 C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   K D T S E A R C H
+C-----------------------------------------------------------------------
+C
+C  Subroutine that uses the KDTREE2 algorithm for finding
+C      which element a point lies in.
+C
+C  Written by:  Chris Massey, USACE-ERDC-CHL, Vicksburg, MS 39056
+C  Added in v49.48.02
+C
+C-----------------------------------------------------------------------
+
+      SUBROUTINE kdtsearch(InputXCoordinate, InputYCoordinate,
+     &     OutputElement, StationNumber, Description)
+
+      use sizes, only : sz, MyProc
+      use global, only : NE,NM,X,Y,Areas,NFOver,NScreen, ScreenUnit,
+     &                   rmax,bcxy,kdresults,srchdp,tree
+      use kdtree2_module
+#ifdef CMPI
+      USE MESSENGER, ONLY : msg_fini
+#endif
+      implicit none
+      REAL(sz), intent(in) :: InputXCoordinate                  ! cartesian
+      REAL(sz), intent(in) :: InputYCoordinate                  ! cartesian
+      INTEGER, intent(out) :: OutputElement
+      INTEGER, intent(in) :: StationNumber                     ! for err. mesg.
+      CHARACTER(len=30), intent(in) :: Description             ! for err. mesg.
+
+      INTEGER Element         ! element loop counter
+      INTEGER ClosestElement  ! element with closest match
+      INTEGER :: ielm(3),itc,iek
+      REAL(sz) X1, X2, X3, X4, Y1, Y2, Y3, Y4,Xsta,Ysta       ! geometry
+      REAL(sz) A1, A2, A3, AE, AREASK, AA            ! area
+      real(sz) :: elmmin(2),xelm(3),yelm(3),dist
+      LOGICAL ElementFound  ! .true. when a corresponding element is found
+
+      REAL(sz), PARAMETER :: Tolerance = 1.0d-5     ! area difference for match 
+
+
+
+      ElementFound = .false.
+
+      Xsta = InputXCoordinate
+      Ysta = InputYCoordinate
+
+      call kdtree2_n_nearest(tp=tree,qv=(/Xsta,Ysta/),
+     &                  nn=srchdp,results=KDRESULTS)
+C...    Check to see if the point lies with rmax of any of these elements
+
+      ITC = 1
+      ClosestElement = KDRESULTS(itc)%idx
+
+      elmmin = minval(sqrt(KDRESULTS(1:srchdp)%dis)
+     &                              - rmax(KDRESULTS(1:srchdp)%idx) )
+
+      if(elmmin(1).le.0.0D0) then  ! Point lies within search radius of an element
+C...        loop through the elements in the search list
+         do while ((ElementFound.eqv..false.).and.(itc.le.srchdp))
+            iek = KDRESULTS(itc)%idx  !Current search element number
+C...           Get the distance from this point to the barycenter of the 
+C...           current element
+            dist = sqrt(KDRESULTS(itc)%dis)
+C...           If the distance is less than or equal to rmax (rmax=1.5*element radius)
+C...           Then the point is near the element and might be in it
+C...           Proceed with the weights test
+            if(dist-rmax(iek).le.0.0d0) then
+               !get the shape function for this element
+               ielm(:) = NM(iek,(/1,2,3/))  !element's node numbers
+               xelm(:) = X(ielm(:))      !element's vertex x-values
+               yelm(:) = Y(ielm(:))      !element's vertex y-values
+               X1=xelm(1)
+               X2=xelm(2)
+               X3=xelm(3)
+               Y1=yelm(1)
+               Y2=yelm(2)
+               Y3=yelm(3)
+               A1=(Xsta-X3)*(Y2-Y3)+(X2-X3)*(Y3-Ysta)
+               A2=(Xsta-X1)*(Y3-Y1)-(Ysta-Y1)*(X3-X1)
+               A3=(Ysta-Y1)*(X2-X1)-(Xsta-X1)*(Y2-Y1)
+               AA=ABS(A1)+ABS(A2)+ABS(A3)
+               AREASK=X2*Y3+X1*Y2+X3*Y1-Y1*X2-Y2*X3-Y3*X1
+               AE=ABS(AA-AREASK)/AREASK
+               IF (AE.LT.Tolerance) THEN
+                  ElementFound = .true.
+                  ClosestElement = iek
+                  OutputElement = ClosestElement
+               else !not in this element keep looking
+                  itc = itc + 1
+               endif !End area ratio test
+            else !
+C...             point is too far away from the barycenter of the
+C...             element to possibly be in the element, so move to
+C...             the next element
+              itc = itc + 1
+            endif !end Radius test
+         enddo !end the while loop
+      endif
+      IF (.not. ElementFound ) THEN
+         IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
+            WRITE(ScreenUnit,9892) Description, StationNumber
+         ENDIF
+         WRITE(16,9892) Description, StationNumber
+         IF(NFOVER.EQ.1) THEN
+            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+               WRITE(ScreenUnit,9890) sqrt(KDRESULTS(1)%dis)
+            ENDIF
+            WRITE(16,9890) sqrt(KDRESULTS(1)%dis)
+            OutputElement = ClosestElement
+         ELSE
+            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+               WRITE(ScreenUnit,9891) sqrt(KDRESULTS(1)%dis)
+            ENDIF
+            WRITE(16,9891) sqrt(KDRESULTS(1)%dis)
+#ifdef CMPI
+            call msg_fini()
+#endif
+            STOP
+         ENDIF
+      ENDIF
+
+ 9892 FORMAT(///,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
+     &     'INPUT ERROR  !!!!!!!!!',//
+     &     ,1X,A30,1X,I6,' DOES ',
+     &     'NOT LIE WITHIN ANY ELEMENT IN THE DEFINED',
+     &     /,1X,'COMPUTATIONAL DOMAIN.   PLEASE CHECK THE ',
+     &     'INPUT COORDINATES FOR THIS STATION')
+
+ 9890 FORMAT(/,1X,'PROGRAM WILL ESTIMATE NEAREST ELEMENT',
+     &     /,1X,'DISTANCE TO NEAREST ELEMENT IS ',E15.6,
+     &     //,1X,'!!!!!! EXECUTION WILL CONTINUE !!!!!!',//)
+
+ 9891 FORMAT(/,1X,'PROGRAM WILL NOT CORRECT ERROR ',
+     &     'SINCE NON-FATAL ERROR OVERIDE OPTION, NFOVER,',
+     &     /,1X,'HAS BEEN SELECTED EQUAL TO 0',
+     &     /,1X,'DISTANCE TO NEAREST ELEMENT IS ',E15.6,
+     &     //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',
+     &     //)
+
+      END SUBROUTINE KDTSEARCH
+
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   C O O R D I N A T E  T O  E L E M E N T 

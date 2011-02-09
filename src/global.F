@@ -11,6 +11,7 @@ C
       MODULE GLOBAL
       USE SIZES
       USE VERSION
+      USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
       IMPLICIT NONE
       SAVE
 C...
@@ -564,7 +565,10 @@ C     jgf48.03 Variables shared between messenger and writer modules
       ! Following signals are used in messenger.F and writer.F
       INTEGER :: SIG_VAL   = 1
       INTEGER :: SIG_WRITE = 100
-      INTEGER :: SIG_TERM  = 999
+      INTEGER :: SIG_TERM  = 999  ! signal to terminate adc_writer
+!  tcm v49.48.01
+      integer :: SIG_PAUSE = 99 ! signal to pause adc_writer
+
 C     End of variables shared between messenger and writer modules
 C
 C     jgf49.44: Log levels, in order from largest amount of log messages
@@ -581,6 +585,12 @@ C
       CHARACTER(len=50), dimension(50) :: messageSources ! subroutine names
       CHARACTER(len=1024) :: scratchMessage ! used for formatted messages
       INTEGER :: sourceNumber ! index into messageSources for current sub
+
+C     v49.48.01 tcm 20110126 Variables related to kdtree searches
+      REAL(SZ), ALLOCATABLE :: BCXY(:,:), RMAX(:)
+      INTEGER :: SRCHDP=100
+      TYPE(KDTREE2), POINTER :: TREE
+      TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
 
 C-------------------end of data declarations----------------------------------C
 
@@ -998,8 +1008,12 @@ C     the non-C3D case.
       UMAX(:) = 0.d0 ! v46.50 sb 11/11/2006
 #endif
 
+C... v49.48.02 tcm -- Variables related to kdtree searches
+C...    which are deallocated at the end of read_input.F
+      ALLOCATE( BCXY(2,MNE), RMAX(MNE) )
+
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN1a
 
 
 C...
@@ -1013,7 +1027,7 @@ C  Neighbor Table
       ALLOCATE ( NEITABELE(MNP,MNEI))
 C
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN1b
 
 
 C...
@@ -1033,7 +1047,7 @@ C    kmd48.33bc - arrays for boundary conditions
       END IF 
 C      
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN2
 
 
 C...
@@ -1072,7 +1086,7 @@ C     jgf46.21 Added support for IBTYPE=52.
       ALLOCATE ( ElevDisc(MNVEL))
 
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN3
 
 
 C...
@@ -1090,7 +1104,7 @@ C
       ENDIF  
 C      
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN4a
 
 
 C...     
@@ -1102,7 +1116,7 @@ C
       ALLOCATE ( SALTAMP(MNTIF,MNP),SALTPHA(MNTIF,MNP) )
 C
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN4b
 
 
 C...     
@@ -1116,7 +1130,7 @@ C
       ALLOCATE ( BOUNTAG(MNBFR) )
 C      
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN5
 
 
 C...
@@ -1131,7 +1145,7 @@ C
       ALLOCATE ( FAMIG(MNFFR), FFF(MNFFR), FFACE(MNFFR), FPER(MNFFR) )
 C      
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN6
 
 
 C...
@@ -1145,7 +1159,7 @@ C
       ALLOCATE ( XEL(MNSTAE),YEL(MNSTAE),SLEL(MNSTAE),SFEL(MNSTAE))
 C
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN7
 
 
 C...     
@@ -1160,7 +1174,7 @@ C
       ALLOCATE ( STAIV1(MNSTAV),STAIV2(MNSTAV),STAIV3(MNSTAV))
 C      
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN8
 
 
 C...
@@ -1175,7 +1189,7 @@ C
       ALLOCATE ( STAIC1(MNSTAC),STAIC2(MNSTAC),STAIC3(MNSTAC))
 C      
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN9
 
 
 C...
@@ -1190,7 +1204,7 @@ C
       ALLOCATE ( STAIM1(MNSTAM),STAIM2(MNSTAM),STAIM3(MNSTAM))
 C
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN10
 
 
 C...
@@ -1202,7 +1216,7 @@ C...
 C     jgf48.4619: Array used in lumped GWCE (from Seizo)
       ALLOCATE( COEFD(MNP) ) 
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN11_LUMPED
 
 
 
@@ -1217,7 +1231,7 @@ C  Arrays used by JCG iterative solver
       ALLOCATE( IPARM(12),RPARM(12) )
 C
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN11
 
 
 C...
@@ -1252,7 +1266,9 @@ Casey 090302: Added the next line for output of radiation stress gradients.
 
 C
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE ALLOC_MAIN12
+
+C-------------------------------------------------------------------
 
       function VERSION_NUMBER(Major, Minor, Rev) result(vn)
 
@@ -1262,7 +1278,9 @@ C
       vn = ior(ior(ishft(major,20),ishft(minor,10)),rev)
 
       return
-      end function
+      end function VERSION_NUMBER
+
+C-------------------------------------------------------------------
 
       function CMP_VERSION_NUMBERS(a,b) result(match)
 
@@ -1273,7 +1291,8 @@ C
       match = ishft(a,-10) == ishft(b,-10)
 
       return
-      end function
+      end function CMP_VERSION_NUMBERS
+C-------------------------------------------------------------------
 
       !=================================================================
       !=================================================================

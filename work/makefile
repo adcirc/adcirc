@@ -56,7 +56,7 @@ ifeq ($(BUILDTYPE),adcprep)
   CF:= $(PPFC)
   O_DIR:=odir1/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind 
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/KDTREE2:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind 
   ifeq ($(NETCDF),enable)
     LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   else
@@ -69,7 +69,7 @@ ifeq ($(BUILDTYPE),adcprep_be)
   CF:= $(FC)
   O_DIR:=odir2/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
-  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/src:$(SRCDIR):$(SRCDIR)/wind 
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/KDTREE2:$(SRCDIR)/src:$(SRCDIR):$(SRCDIR)/wind 
   ifeq ($(NETCDF),enable)
     LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS) 
   else
@@ -82,7 +82,7 @@ ifeq ($(BUILDTYPE),adcirc)
   CF:= $(FC)
   O_DIR:=odir3/
   FFLAGS:= $(FFLAGS2) $(DA) $(IMODS) $(O_DIR)
-  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   endif
@@ -94,7 +94,7 @@ ifeq ($(BUILDTYPE),adcswan)
   CF:= $(FC)
   O_DIR:=odir33/
   FFLAGS:= $(FFLAGS2) -DCSWAN $(DA) $(IMODS) $(O_DIR)
-  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
+  VPATH:=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   endif
@@ -105,7 +105,7 @@ ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
   CF:= $(PFC)
   O_DIR:=odir4/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
-  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep 
+  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep 
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   endif
@@ -117,7 +117,7 @@ ifeq ($(BUILDTYPE),padcswan)
   CF:= $(PFC)
   O_DIR:=odir44/
   FFLAGS:= $(FFLAGS3) -DCSWAN $(DP) $(IMODS) $(O_DIR)
-  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
+  VPATH :=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   endif
@@ -225,6 +225,8 @@ NC_MSRC    =  netcdfio.F
 GIO_MSRC   =  globalio.F
 #Casey 090302: Add file for coupling to unstructured SWAN.
 COUP_MSRC  =  couple2swan.F
+#tcm v49.48.01 Adding File for kdtree2 fast search algorithm
+KDTREE_MSRC = kdtree2.F
 
 PREP_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PREP_MSRC) )
 POST_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(POST_MSRC) )
@@ -243,6 +245,8 @@ NC_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NC_MSRC)  )
 GIO_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(GIO_MSRC)  ) 
 #Casey 090302: Add rules for coupling to unstructured SWAN.
 COUP_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(COUP_MSRC)  )
+# tcm v49.48.01 Adding rule for kdtree2 fast search algorithm
+KDTREE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(KDTREE_MSRC) )
 
 ############################# Source & Object Files ######################
 #meb 04/20/2004 - added machdep.F onto POST_SRC
@@ -387,41 +391,41 @@ else
    aswip::  $(O_DIR)
 
 ifeq ($(NETCDF),enable)
-   adcprep ::  $(NC_MOBJ) $(METIS_OBJ) $(PREP_OBJ) 
+   adcprep ::  $(NC_MOBJ) $(METIS_OBJ) $(KDTREE_MOBJ) $(PREP_OBJ) 
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 else
-   adcprep ::  $(METIS_OBJ) $(PREP_OBJ) 
+   adcprep ::  $(METIS_OBJ) $(KDTREE_MOBJ) $(PREP_OBJ) 
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 endif
-   adcprep_be ::  $(METIS_OBJ) $(PREP_OBJ) 
+   adcprep_be ::  $(METIS_OBJ) $(KDTREE_MOBJ) $(PREP_OBJ) 
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    adcpost ::  $(POST_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
 ifeq ($(NETCDF),enable)
-   adcirc ::  $(NC_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
+   adcirc ::  $(NC_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 else
-   adcirc ::  $(ADC_OBJ) $(O_DIR)driver.o
+   adcirc ::  $(KDTREE_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 endif
-   $(PARALLEL_ADCIRC) ::  $(NA_MOBJ) $(MSG_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
+   $(PARALLEL_ADCIRC) ::  $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
 
 #Casey 080106: Added the following lines.
    adcswan :: $(O_DIR)
 ifeq ($(NETCDF),enable)
-   adcswan ::  $(NC_MOBJ) $(SWAN_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+   adcswan ::  $(NC_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 else
-   adcswan :: $(SWAN_MOBJ)  $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+   adcswan :: $(SWAN_MOBJ)  $(KDTREE_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 endif
    padcswan :: $(O_DIR)
-   padcswan ::  $(NA_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+   padcswan ::  $(NA_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
 
    p15     ::  $(P15_OBJ) 
@@ -505,12 +509,13 @@ cvstag:
 
 $(O_DIR)version.o     :  version.F
 $(O_DIR)presize.o     :  presize.F
-$(O_DIR)pre_global.o  :  pre_global.F  $(PREP_MOBJ) $(O_DIR)version.o
+$(O_DIR)kdtree2.o     :  kdtree2.F $(O_DIR)sizes.o
+$(O_DIR)pre_global.o  :  pre_global.F  $(KDTREE_MOBJ) $(PREP_MOBJ) $(O_DIR)version.o
 #  adcprep
 
 $(O_DIR)adcprep.o     :  adcprep.F  $(PGLO_MOBJ) $(PMSG_OBJ)
 $(O_DIR)decomp.o      :  decomp.F   $(PGLO_MOBJ)
-$(O_DIR)read_global.o :  read_global.F  $(PGLO_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
+$(O_DIR)read_global.o :  read_global.F  $(PGLO_MOBJ) $(KDTREE_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
 ifeq ($(NETCDF),enable)
 $(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ) $(NC_MOBJ) $(HARM_MOBJ)
 else
@@ -544,7 +549,7 @@ $(O_DIR)aswip.o      :  aswip_1.0.3.F $(PREC_MOBJ) $(CONS_MOBJ) $(LSQ_MOBJ) $(FI
 
 $(O_DIR)version.o     :  version.F
 $(O_DIR)sizes.o       :  sizes.F
-$(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o
+$(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)kdtree2.o
 $(O_DIR)nodalattr.o   :  nodalattr.F  $(ADC_MOBJ)
 $(O_DIR)messenger.o   :  messenger.F  $(ADC_MOBJ) 
 #!st3 100711: Added globalio.o to writer.F for HSWRITER MODULE
@@ -558,6 +563,8 @@ $(O_DIR)itpackv.o     :  itpackv.F    $(ADC_MOBJ)
 $(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
 #Casey 090302: Added the next line.
 $(O_DIR)couple2swan.o :  couple2swan.F
+# tcm v49.48.01 added for fast search algorithm
+$(O_DIR)kdtree2.o : kdtree2.F
 
 #  adcirc & $(PARALLEL_ADCIRC)
 
@@ -570,9 +577,9 @@ $(O_DIR)timestep.o    : timestep.F
 $(O_DIR)write_output.o: write_output.F  
 $(O_DIR)massbal.o     : massbal.F
 ifeq ($(NETCDF),enable)
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(NC_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(NC_MOBJ)
 else
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ)
 endif
 $(O_DIR)driver.o      : driver.F $(O_DIR)adcirc.o
 
