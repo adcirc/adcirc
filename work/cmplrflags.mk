@@ -11,10 +11,10 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #
 #compiler=gnu
 #compiler=g95
-#compiler=intel
+compiler=intel
 #compiler=intel-lonestar
 #compiler=cray_xt3
-compiler=cray_xt4
+#compiler=cray_xt4
 #compiler=cray_xt5
 #compiler=pgi
 #compiler=pgi-ranger
@@ -97,6 +97,8 @@ ifeq ($(compiler),intel)
   else 
      MULTIPLE := TRUE
   endif
+  #jgf20110217: For netcdf on blueridge or kittyhawk at RENCI, use
+  #NETCDFHOME=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.0.1-icc-ifort
 endif
 #
 # sb46.50.02 These flags work on the UT Austin Lonstar cluster.

@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.52   - 02/17/2011 - jgf - Declared several subroutines in netcdf
+C             module as private to enable compilation on Intel v9 compiler
+C             on kittyhawk at RENCI. 
 C  v49.51   - 02/09/2011 - tcm - Merging fast search algorithms from the
 C             merge_erdc_to49 branch.  Incorporated the new search tree
 C             searches into the prep routines and read_input.F. Updated the

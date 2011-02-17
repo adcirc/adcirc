@@ -367,7 +367,12 @@ C        harmonic analysis means and variance calculations
 C
       type(hotstartData), private, save, target :: hs67 ! for fort.67
       type(hotstartData), private, save, target :: hs68 ! for fort.68
-      type(hotstartData), pointer :: hs   ! indicates the current hs file    
+      type(hotstartData), private, pointer :: hs   ! current hs file    
+C
+      private initStation, initNodalData, createNetCDFOutputFile,
+     &   updateMetaData, initNetCDFCoord, defineMeshVariables, 
+     &   putMeshVariables, setNetCDFFileName, writeStation,
+     &   writeNodalData
 C
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
