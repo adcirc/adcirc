@@ -5888,11 +5888,9 @@ C---------------------------------------------------------------------------
      &    initNetCDFHotstart, initNetCDFHotstartHarmonic,
      &    initNetCDFHotstartHarmonicMeansVariances,
      &    freeNetCDFArrays, freeNetCDFHotstart, freeNetCDFCoord
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, 
-     &                   initLogging
+      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc 
 C
       IMPLICIT NONE
-      INTEGER :: myProc = 0
       LOGICAL err
 C
 C     The initialization of the output data descriptors for each ADCIRC
@@ -6100,10 +6098,6 @@ C     not be needed.
       IF (.not.ALLOCATED(NODECODE)) THEN
          ALLOCATE(NODECODE(MNP))
       ENDIF
-C
-C     jgf49.44: Set up logging so we can trace what's going on with
-C     the netcdf module. 
-      CALL initLogging()
 C
 C     jgf49.44: Set parameters in global module based on the data
 C     we collected in read_global.F and stored in pre_global.F.

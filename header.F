@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.53   - 02/18/2011 - jgf - Cleaned up logging for netcdf in adcprep
+C             and fixed minor bug with v-velocity metadata in netcdf hotstart
+C             files. 
 C  v49.52   - 02/17/2011 - jgf - Declared several subroutines in netcdf
 C             module as private to enable compilation on Intel v9 compiler
 C             on kittyhawk at RENCI. 

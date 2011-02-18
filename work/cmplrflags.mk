@@ -77,8 +77,9 @@ ifeq ($(compiler),intel)
   PPFC            :=  ifort	
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O2 -FI  -Vaxlib -assume byterecl -132
-#jgfdebug  FFLAGS1       :=  $(INCDIRS) -g -traceback -FI  -Vaxlib -assume byterecl -132
+#  FFLAGS1       :=  $(INCDIRS) -O2 -FI  -Vaxlib -assume byterecl -132
+ FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -check all -FI -Vaxlib -assume byterecl -132
+#jgfdebug  FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -check all -FI -Vaxlib -assume byterecl -132
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA 

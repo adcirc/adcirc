@@ -1968,7 +1968,7 @@ C     U V E L
       hs%vel%nodal_data_dims(2) = hs%myTime%timenc_dim_id
       iret = nf_def_var(hs%ncid, 'u-vel', NF_DOUBLE,
      &       hs%vel%nodal_data_rank, hs%vel%nodal_data_dims,
-     &       hs%vel%nodal_data_id)
+     &       hs%vel%u_nodal_data_id)
       CALL check_err(iret)
       if (ics.eq.2) then
          iret = nf_put_att_text(hs%ncid, hs%vel%u_nodal_data_id, 
@@ -2002,7 +2002,7 @@ C
 C     V V E L   
       iret = nf_def_var(hs%ncid, 'v-vel', NF_DOUBLE,
      &       hs%vel%nodal_data_rank, hs%vel%nodal_data_dims,
-     &       hs%vel%nodal_data_id)
+     &       hs%vel%v_nodal_data_id)
       CALL check_err(iret)     
       if (ics.eq.2) then
          iret = nf_put_att_text(hs%ncid, hs%vel%v_nodal_data_id,

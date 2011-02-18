@@ -264,7 +264,7 @@ C
  80   FORMAT(A80)
 C
       RETURN
-      END
+      END SUBROUTINE READ14
 
 
 C----------------------------------------------------------------------
@@ -275,7 +275,9 @@ C---------------------------------------------------------------------
       SUBROUTINE READ15() 
       USE PRE_GLOBAL 
       USE GLOBAL, ONLY : MNHARF, parse, a2f, hss, screenUnit, STATNAME,
-     &                   STATNAMEV, STATNAMEM, STATNAMEC
+     &                   STATNAMEV, STATNAMEM, STATNAMEC, ERROR, DEBUG,
+     &                   allMessage, setMessageSource,
+     &                   unsetMessageSource
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
      &                 IHARIND, ALLOC_MAIN14, CHARMV
@@ -302,9 +304,15 @@ C    ===================================================================
       REAL(8) SL1Sta,SF1Sta
       REAL(8) AE, AEMIN, AREASK, AA
       INTEGER NBV(MNVEL)
+      INTEGER ios  ! status of read operations, 0=success
 Casey 090825: Added dummy variables.
       INTEGER IDUM
       REAL(8) RDUM
+C
+      call setMessageSource("read15")
+#ifdef READ_GLOBAL_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
 C
 C--The Run Info file was opened in SIZEUP, performed a rewind, and is ready here
 C
@@ -328,9 +336,7 @@ C
 C
       READ(15,80) SCREENMSG
       READ(SCREENMSG,*) NSCREEN
-      IF (NSCREEN.eq.0) screenUnit = 0
-      IF (NSCREEN.gt.0) screenUnit = 6
-      IF (NSCREEN.lt.0) screenUnit = 999
+      screenUnit = 6 ! always write to screen in adcprep
 C
       READ(15,80) HOTMSG
       READ(HOTMSG,*) IHOT
@@ -1260,6 +1266,13 @@ c     ELSEIF(C3DDSS) THEN
 c       CALL READ15_3DDSS()
       ENDIF
 
+      IF((useNetCDF.eqv..true.).and.(NETCDF_AVAIL.eqv..false.)) THEN
+         CALL allMessage(ERROR, 
+     &      "NetCDF was selected in the fort.15 file.")
+         CALL allMessage(ERROR,
+     &      "NetCDF was not compiled into this executable program.")
+         stop
+      ENDIF
 #ifdef NETCDF
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION for NETCDF I/O - 6/20/07
@@ -1269,42 +1282,35 @@ C
 !     --------------------------------------------------------------------
 
       IF(useNetCDF.eqv..true.) THEN
-#ifndef NETCDF
-         print *, "NetCDF was selected but is not supported by your
-     &            compilation flag.
-     &
-     &            You need to compile with:
-     &
-     &  gmake NETCDF=enable NETCDFHOME=the netcdf library location"
-         stop
-#endif
-         READ(15,'(A80)') title
-         READ(15,'(A80)') institution
-         READ(15,'(A80)') source
-         READ(15,'(A80)') history
-         READ(15,'(A80)') references
-         READ(15,'(A80)') comments
-         READ(15,'(A80)') host
-         READ(15,'(A80)') convention
-         READ(15,'(A80)') contact
-         READ(15,'(A80)') base_date
-
-        ELSEIF(NOUTGC.eq.3.                                 ! fort.93
+         IF (NOUTGC.eq.3.                                 ! fort.93
      &       or.NOUTC.eq.3.                                 ! fort.91
-     &       or.NHASE.eq.3.                                 ! fort.51
-     &       or.NHASV.eq.3.                                 ! fort.52
-     &       or.NHAGE.eq.3.                                 ! fort.53
-     &       or.NHAGV.eq.3.                                 ! fort.54
      &       or.I3DSD.eq.3.                                 ! fort.41
      &       or.I3DSV.eq.3.                                 ! fort.42
      &       or.I3DST.eq.3.                                 ! fort.43
      &       or.I3DGD.eq.3.                                 ! fort.44
      &       or.I3DGV.eq.3.                                 ! fort.45
      &       or.I3DGT.eq.3) THEN                            ! fort.46
+            CALL allMessage(ERROR,
+     &         "NetCDF output not available yet for 3D output.")
+            STOP
+         ENDIF
+C
+         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) title
+         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) institution
+         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) source
+         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) history
+         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) references
+         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) comments
+         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) host
+         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) convention
+         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) contact
+         READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) base_date
 
-        WRITE(6,*)
-     &  "netCDF output not available yet for the options selected"
-
+      ENDIF
+999   IF (ios.ne.0) THEN
+         CALL allMessage(ERROR,
+     &      "Could not read metadata for NetCDF at end of fort.15.")
+         STOP
       ENDIF
 #endif
 C
@@ -1312,9 +1318,15 @@ C--Close Global Run Info file
 C
       CLOSE(15)
       call memory_status()
+C
+#ifdef READ_GLOBAL_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C
       RETURN
  80   FORMAT(A80)
-      END
+      END SUBROUTINE READ15
 
 
 C----------------------------------------------------------------------

@@ -172,8 +172,6 @@ C     Solver Type:
 C
 C For Definition of Working Directory
 C
-      INTEGER,SAVE :: MYPROC
-
       INTEGER,SAVE :: LNAME = 6
       CHARACTER*6,SAVE :: DIRNAME = 'PE0000'
 
@@ -188,16 +186,12 @@ C Logicals added for adcprep paths
      
       LOGICAL :: useNetCDF = .false.  !jgf48.07
       INTEGER, ALLOCATABLE :: NM(:,:) !jgf48.08
+
+      LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in
  
 C---------------------end of data declarations--------------------------------C
 
       CONTAINS
-
-      SUBROUTINE MAKE_DIRNAME()
-      WRITE(DIRNAME(3:6),'(I4.4)') MYPROC
-      RETURN
-      END SUBROUTINE
-
 C
 C-----------------------------------------------------------------------------C
 C  SUBROUTINE SIZEUP
@@ -232,10 +226,11 @@ C
       LOGICAL FOUND
       CHARACTER*60 GRID,RUNINFO
       CHARACTER(len=80) skipped !jgf46.00 data that we want to skip
-      LOGICAL :: NETCDF_AVAIL = .false. ! true if netCDF was compiled in
       
 #ifdef NETCDF
       NETCDF_AVAIL = .true.
+#else
+      NETCDF_AVAIL = .false.
 #endif
 
 C

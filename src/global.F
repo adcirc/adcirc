@@ -67,7 +67,7 @@ C     jgf46.10 user-controlled warning, dump and error levels on elevations
       INTEGER WarnElevDumpCounter ! counter for number of elev dumps to fort.69
       REAL(SZ) ErrorElev      ! ADCIRC terminates if this elev is exceeded
 C     
-      INTEGER ScreenUnit      ! jgf46.19 I/O unit where screen output is sent
+      INTEGER :: screenUnit = 6 ! jgf46.19 I/O unit where screen output is sent
 C
 C     Variables related to hotstarting.
       type HOTSTART_t
@@ -273,7 +273,8 @@ C...DECLARE COMMON BLOCKS
 C...
       REAL(SZ) DT
 C
-      INTEGER NP,NOLICA,NOLIFA,NSCREEN,IHOT,ICS,IDen
+      INTEGER NP,NOLICA,NOLIFA,IHOT,ICS,IDen
+      INTEGER :: NSCREEN = 1
 
 C...
 C...DECLARE REAL(8) AND CHAR VARIABLES, EQUIVALENCES
@@ -352,7 +353,8 @@ C...EXPLICITLY DECLARE ADDITIONAL VARIABLES
 C...
       INTEGER  NODEDRYMIN,NODEWETMIN
       INTEGER  IM,JGW,JKI,JME
-      INTEGER  JNMM,KMIN,N1,N2,N3,NABOUT
+      INTEGER  JNMM,KMIN,N1,N2,N3
+      INTEGER :: NABOUT = 0
       INTEGER  NBFR,NBOU,NBVI,NBVJ,NCOR,NE,NE2,NP2
       INTEGER  NEIMIN,NEIMAX,NETA,NFFR
       INTEGER  NFLUXB,NFLUXF,NFLUXIB,NFLUXRBC

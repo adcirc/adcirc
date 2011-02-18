@@ -90,11 +90,20 @@ C
 C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
+      USE GLOBAL, ONLY : screenUnit, myProc, initLogging 
       USE PRE_GLOBAL 
       USE VERSION
       use memory_usage
+      IMPLICIT NONE
 C
       CHARACTER JOB*80 ! user input for menu selection
+C
+      screenUnit=6
+      myProc=0
+      nscreen=1
+      nabout=0
+      CALL initLogging()
+C
 
 C  Define File Format Version
 
@@ -264,7 +273,6 @@ C-- If ONLY processing hotstart File(s) ( fort.67-68 )
         GO TO 9999
       endif
 
-      CALL MAKE_DIRNAME()
       CALL SIZEUP()
       CALL ALLOC_MAIN1()
 C
