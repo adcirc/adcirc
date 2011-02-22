@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.54   - 02/22/2011 - tcm - Fixed a bug with hot start writers related
+C             to the NOFF varible in writer.F.  Cleaned up use of reserved
+C             (dim, index, and scale) in the other files changed in this
+C             commit.  (dim --> iidim, index --> iindx, scale --> scaleval)
 C  v49.53   - 02/18/2011 - jgf - Cleaned up logging for netcdf in adcprep
 C             and fixed minor bug with v-velocity metadata in netcdf hotstart
 C             files. 

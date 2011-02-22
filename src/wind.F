@@ -735,7 +735,7 @@ C***********************************************************************
       IMPLICIT NONE
       REAL(SZ) COLRAD(*),WGT(*),WGTCS(*),RCS2(*)
       INTEGER LGGHAF,L2,K,K1,ITER
-      REAL(SZ) SI,SCALE,RL2,DRAD,DRADZ,RAD,P1,P2,EPS,PHI,X,W,SN,RC
+      REAL(SZ) SI,SCALEVAL,RL2,DRAD,DRADZ,RAD,P1,P2,EPS,PHI,X,W,SN,RC
 C     
       EPS=1.d-6
 C     EPS=1.d-12
@@ -746,7 +746,7 @@ C
       SI = 1.0d0
       L2=2*LGGHAF
       RL2=L2
-      SCALE = 2.0d0/(RL2*RL2)
+      SCALEVAL = 2.0d0/(RL2*RL2)
       K1=L2-1
       DRADZ = PI / 360.d0
       RAD = 0.0
@@ -768,7 +768,7 @@ C
          PHI = RAD * 180.d0 / PI
          CALL POLY(K1,RAD,P1)
          X = COS(RAD)
-         W = SCALE * (1.0d0 - X*X)/ (P1*P1)
+         W = SCALEVAL * (1.0d0 - X*X)/ (P1*P1)
          WGT(K) = W
          SN = SIN(RAD)
          W=W/(SN*SN)

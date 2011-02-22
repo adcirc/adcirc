@@ -1053,7 +1053,7 @@ ckmd  additional variable for baroclinic boundary conditions
       CHARACTER(80) :: CDUM80
       INTEGER :: NumofBCNodes
       INTEGER :: NOD, J, NumofNodes, K
-      INTEGER :: INDEX
+      INTEGER :: IINDX
       REAL(SZ), ALLOCATABLE :: TMP(:,:)
 
 C...
@@ -1159,8 +1159,8 @@ C...  and baroclinic.
              ! is taken in two ways from the HYCOM results
            ELSE IF (BCFLAG_LNM.EQ.3) THEN
              DO NumofBCNodes=1,NETA
-                INDEX=NBD(NumofBCNodes)
-                LNM_BC1(NumofBCNodes)=ETA2(INDEX)
+                IINDX=NBD(NumofBCNodes)
+                LNM_BC1(NumofBCNodes)=ETA2(IINDX)
                 LNM_BC2(NumofBCNodes)=LNM_BC1(NumofBCNodes)
              END DO
            END IF
@@ -1253,8 +1253,8 @@ C...  and baroclinic.
             ! add later
           ELSE IF (BCFLAG_LNM.EQ.3) THEN
             DO NumofBCNodes=1,NETA
-               INDEX=NBD(NumofBCNodes)
-               LNM_BC(NumofBCNodes)=ETA2(INDEX)
+               IINDX=NBD(NumofBCNodes)
+               LNM_BC(NumofBCNodes)=ETA2(IINDX)
             END DO
           END IF
          END IF

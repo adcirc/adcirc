@@ -2556,7 +2556,7 @@ C  kmd48.33bc - new variables
 
       CHARACTER(80) :: CDUM80
 
-      INTEGER :: INDEX
+      INTEGER :: IINDX
       INTEGER :: NumofNodes, K
       REAL(SZ),ALLOCATABLE :: TMP(:,:)
 
@@ -2621,8 +2621,8 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
               ! is taken in two ways from the HYCOM results
             ELSE IF (BCFLAG_LNM.EQ.3) THEN
               DO NumofBCNodes=1,NETA
-                 INDEX=NBD(NumofBCNodes)
-                 LNM_BC1(NumofBCNodes)=ETA2(INDEX)
+                 IINDX=NBD(NumofBCNodes)
+                 LNM_BC1(NumofBCNodes)=ETA2(IINDX)
                  LNM_BC2(NumofBCNodes)=LNM_BC1(NumofBCNodes)
               END DO
             END IF
@@ -2831,9 +2831,9 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
             ! add later
          ELSE IF (BCFLAG_LNM.EQ.3) THEN 
             DO NumofBCNodes=1,NETA
-               INDEX=NBD(NumofBCNodes)
-               LNM_BC(NumofBCNodes)=ETA2(INDEX)
-         !IF((MYPROC.EQ.23).AND.(INDEX.EQ.15785)) THEN
+               IINDX=NBD(NumofBCNodes)
+               LNM_BC(NumofBCNodes)=ETA2(IINDX)
+         !IF((MYPROC.EQ.23).AND.(IINDX.EQ.15785)) THEN
          !    PRINT *, "ETA2(346562) = ", ETA2(15785)
          !END IF 
             END DO

@@ -2013,7 +2013,7 @@ c******************************************************************************
       INTEGER :: NumofBCNodes, J, NOD, IT
       INTEGER, INTENT(IN) :: ITHS
       REAL(SZ), INTENT(IN) :: TIME
-      INTEGER :: IDenHS, INDEX
+      INTEGER :: IDenHS, IINDX
       CHARACTER(80) :: CDUM80
       REAL(SZ), ALLOCATABLE :: RealQ_Tmp(:,:)
       REAL(SZ), ALLOCATABLE :: TMP(:,:)
@@ -2181,8 +2181,8 @@ C...
               ! is taken in two ways from the HYCOM results
             ELSE IF (BCFLAG_LNM.EQ.3) THEN 
               DO NumofBCNodes=1,NETA
-                 INDEX=NBD(NumofBCNodes)
-                 LNM_BC1(NumofBCNodes)=ETA2(INDEX)
+                 IINDX=NBD(NumofBCNodes)
+                 LNM_BC1(NumofBCNodes)=ETA2(IINDX)
                  LNM_BC2(NumofBCNodes)=LNM_BC1(NumofBCNodes)
               END DO 
             END IF 
@@ -2398,8 +2398,8 @@ C...
            ! is taken in two ways from the HYCOM results
          ELSE IF (BCFLAG_LNM.EQ.3) THEN 
             DO NumofBCNodes=1,NETA
-               INDEX=NBD(NumofBCNodes)
-               LNM_BC(NumofBCNodes)=ETA2(INDEX)
+               IINDX=NBD(NumofBCNodes)
+               LNM_BC(NumofBCNodes)=ETA2(IINDX)
             END DO 
          END IF 
       END IF

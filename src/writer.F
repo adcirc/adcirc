@@ -959,7 +959,9 @@ C     collect up the data from subdomains if running in parallel
          CALL collectFullDomainArrayw(EtaDiscDescript, packOne, unpackOne)
          CALL collectFullDomainIntArrayw(NodeCodeDescript, packOneInt, unpackOneInt)
          CALL collectFullDomainIntArrayw(NOFFDescript, packOneInt, unpackOneInt)
-         WHERE (NOFF.gt.1) NOFF = 1
+
+! tcm v49.54 -- changed noff to noff_g to fix an allocation bug in hot start writer
+         WHERE (NOFF_G.gt.1) NOFF_g = 1
 !
          WRITE(16,*) "FINISH collectFullDomainArray"
       SELECT CASE (NHSTAR)
