@@ -81,8 +81,9 @@ C
       USE VERSION
 #ifdef CMPI
       USE MESSENGER
-      USE WRITER, ONLY: WRITER_MAIN, WRITER_INIT
-      USE HSWRITER, ONLY: HSWRITER_MAIN, HSWRITER_INIT !st3 for hstart
+      USE WRITER, ONLY: WRITER_MAIN, WRITER_INIT, WRITER_PAUSE !tcm added pause
+      USE HSWRITER, ONLY: HSWRITER_MAIN, HSWRITER_INIT,!st3 for hstart
+     &                    HSWRITER_PAUSE !tcm v49.52.01 added pause
 #endif
       IMPLICIT NONE
       PUBLIC
@@ -130,25 +131,34 @@ C
         CALL MSG_INIT()      ! Init MPI and get MPI-rank of this cpu
       ENDIF
 
-C...  Special instructions for writer processors
-      IF(MYPROC >= MNPROC) THEN
-C...    02/07/2007 - sb - Writer processors will enter "WRITER_MAIN" subroutine 
-C...    and will be terminated before they exit this subroutine.  For this reason,
-C...    The "STOP" statement in the next line to "CALL WRITER_MAIN()" will NOT
-C...    have any effect, but it is placed there to make it apparent that
-C...    writer processors will not execute the rest in this source file (adcirc.F).
-        IF( MYPROC < MNPROC+MNWPROC ) THEN   !st3
-          CALL WRITER_MAIN()
-          STOP
-        ELSE
-          CALL HSWRITER_MAIN()   !st3 for hstart
-          STOP
-        ENDIF
-      ENDIF
+C... TCM v49.52.01 --commented out the next section and replaced with 
+C  if(((mnwproh > 0).or.(mnwproc > 0)) .and. MYPROC >= MNPROC)
 
+C...  Special instructions for writer processors
+!       IF(MYPROC >= MNPROC) THEN
+! C...    02/07/2007 - sb - Writer processors will enter "WRITER_MAIN" subroutine 
+! C...    and will be terminated before they exit this subroutine.  For this reason,
+! C...    The "STOP" statement in the next line to "CALL WRITER_MAIN()" will NOT
+! C...    have any effect, but it is placed there to make it apparent that
+! C...    writer processors will not execute the rest in this source file (adcirc.F).
+!         IF( MYPROC < MNPROC+MNWPROC ) THEN   !st3
+!           CALL WRITER_MAIN()
+!           STOP
+!         ELSE
+!           CALL HSWRITER_MAIN()   !st3 for hstart
+!           STOP
+!         ENDIF
+!       ENDIF
+
+      CALL MAKE_DIRNAME()    ! Establish Working Directory Name
       CALL WRITER_INIT()     ! Initialize WRITER module
       CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
-      CALL MAKE_DIRNAME()    ! Establish Working Directory Name
+      if(((mnwproh > 0).or.(mnwproc > 0)) .and. MYPROC >= MNPROC) return
+
+!      CALL WRITER_INIT()     ! Initialize WRITER module
+!      CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
+! tcm v49.52.01 moved make_dirname up a level
+!      CALL MAKE_DIRNAME()    ! Establish Working Directory Name
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
       CALL MSG_TABLE()       ! Read Message-Passing Tables
       CALL MSG_START()       ! Startup message passing
@@ -159,7 +169,7 @@ C...    writer processors will not execute the rest in this source file (adcirc.
       MYPROC = 0             ! Init task id for serial
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
-#endif         
+#endif
 
       ! File Fmt Version  must match Major and Minor numbers.
       FileFmtVersion = 
@@ -328,6 +338,20 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
 C
       INTEGER, OPTIONAL :: NTIME_STP
 C
+
+!TCM v49.52.01 added this ifdef (brought in from adcirc_init()
+#ifdef CMPI
+      IF (((MNWPROH > 0).OR.(MNWPROC > 0)) .AND. MYPROC >= MNPROC) THEN
+         IF( MYPROC < MNPROC+MNWPROC ) THEN   !st3
+            CALL WRITER_MAIN()
+            RETURN
+         ELSE
+            CALL HSWRITER_MAIN()
+            RETURN
+         ENDIF
+      ENDIF
+#endif
+
       call setMessageSource("ADCIRC_Run")
 #ifdef ADCIRC_TRACE
       call screen(DEBUG,"Enter.")
@@ -358,6 +382,15 @@ C
       call screen(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
+
+!TCM v49.52.01 added the following ifdef to pause writer processors
+! before exiting adcirc_run phase.  This is to allow them to be
+! used again if adcirc_run is called more than once.
+#ifdef CMPI
+      IF (MYPROC == 0 .and. MNWPROC > 0) CALL WRITER_PAUSE()
+      IF (MYPROC == 0 .and. MNWPROH > 0) CALL HSWRITER_PAUSE()
+#endif
+
       RETURN
       END SUBROUTINE ADCIRC_Run
 

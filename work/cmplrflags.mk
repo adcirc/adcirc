@@ -26,11 +26,11 @@ ifeq ($(compiler),gnu)
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-132 -march=k8 -m64
+  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-132 -march=k8 -m64 
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
-  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
   DPRE		:=  -DREAL8 -DLINUX
   IMODS 	:=  -I
   CC		:= gcc
@@ -297,7 +297,7 @@ ifeq ($(compiler),diamond)
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
   DPRE          :=  -DREAL8 -DLINUX #-DADCSWAN
   IMODS         :=  -I
   CC            := icc
@@ -395,8 +395,8 @@ ifeq ($(compiler),gnu)
   PPFC		:=  g95
   FC		:=  g95
   PFC		:=  mpif90 
-#  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132
-  FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DHARM_TRACE -DWRITE_OUTPUT_TRACE -DNETCDF_TRACE -DHOTSTART_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DADCIRC_TRACE -DGLOBALIO_TRACE
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132
+#  FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DHARM_TRACE -DWRITE_OUTPUT_TRACE -DNETCDF_TRACE -DHOTSTART_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DADCIRC_TRACE -DGLOBALIO_TRACE
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA

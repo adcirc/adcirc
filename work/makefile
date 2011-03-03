@@ -123,6 +123,16 @@ ifeq ($(BUILDTYPE),padcswan)
   endif
   MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o
 endif
+#                                    libadc.a
+ifeq ($(BUILDTYPE),$(LIBADC)) 
+  CF:= $(PFC)
+  FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
+  VPATH := $(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep 
+  ifeq ($(NETCDF),enable)
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
+  endif
+  MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o
+endif
 #                                      p15
 ifeq ($(BUILDTYPE),p15)
   CF:= $(PPFC)
@@ -356,6 +366,9 @@ ifeq ($(MAKELEVEL),0)
    padcswan:
 	@perl ../swan/switch.pl -unix -f95 -pun -adcirc ../swan/*.ftn ../swan/*.ftn90
 	$(MAKE) BUILDTYPE=padcswan CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
+   $(LIBADC): 
+	@echo $(MAKE) LIBADC=$@ BUILDTYPE=$(LIBADC) $@
+	$(MAKE) LIBADC=$@ BUILDTYPE=$(LIBADC) $@
    p15:
 	$(MAKE) BUILDTYPE=p15 $@ 
    owi22:
@@ -380,6 +393,7 @@ else
    adcirc::   $(O_DIR)
    adcpost::  $(O_DIR)
    $(PARALLEL_ADCIRC)::  $(O_DIR)
+   $(LIBADC)::  $(O_DIR)
    p15::      $(O_DIR)
    owi22::    $(O_DIR)
    build13::  $(O_DIR)
@@ -412,6 +426,10 @@ else
 endif
    $(PARALLEL_ADCIRC) ::  $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
+
+   $(LIBADC): $(O_DIR) $(ADC_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) 
+	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ)
+	ar -ts $@
 
 #Casey 080106: Added the following lines.
    adcswan :: $(O_DIR)
@@ -513,7 +531,7 @@ $(O_DIR)kdtree2.o     :  kdtree2.F $(O_DIR)sizes.o
 $(O_DIR)pre_global.o  :  pre_global.F  $(KDTREE_MOBJ) $(PREP_MOBJ) $(O_DIR)version.o
 #  adcprep
 
-$(O_DIR)adcprep.o     :  adcprep.F  $(PGLO_MOBJ) $(PMSG_OBJ)
+$(O_DIR)adcprep.o     :  adcprep.F  $(PGLO_MOBJ) $(PMSG_OBJ) $(ADC_MOBJ)
 $(O_DIR)decomp.o      :  decomp.F   $(PGLO_MOBJ)
 $(O_DIR)read_global.o :  read_global.F  $(PGLO_MOBJ) $(KDTREE_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
 ifeq ($(NETCDF),enable)

@@ -3,6 +3,16 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.55    - 03/03/2011 - tcm - Merged the last of the changes from the
+C             ERDC tightly coupled with STWAVE branch.
+C  v49.54.04 -03/03/2011 - tcm - Bring updates from the trunk getting 
+C  v49.54.03 -02/24/2011 - tcm - Added the option to make parallel adcirc
+C             as a library back to the makefile.  This library option is 
+C             needed for the external coupler.
+C  v49.54.02- 02/34/2011 - jgf - Fixed minor compilation issues in adcprep.F
+C             and writer.F.
+C  v49.54.01- 02/22/2011 - tcm - Modifications to adcirc.F and writer.F to 
+C             allow for coupling with STWAVE via external couplers.
 C  v49.54   - 02/22/2011 - tcm - Fixed a bug with hot start writers related
 C             to the NOFF varible in writer.F.  Cleaned up use of reserved
 C             (dim, index, and scale) in the other files changed in this

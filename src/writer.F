@@ -19,7 +19,6 @@ C
       IMPLICIT NONE
 #endif
 
- 
 C  variables
 
       INTEGER, PARAMETER :: NUM_BUF_MAX = 7      !st3 100708: Increase for SWAN OUTPUT
@@ -51,7 +50,7 @@ C---------------------end of data declarations--------------------------------C
       NEED_FLUSH = .FALSE.
       ALLOCATE ( NWLOADED(1:MNWPROC) )   !st3 100708: Allocate Round Robin Chamber
       NWLOADED(1:MNWPROC) = 0            !st3 100708: Zeroc    Round Robin Chamber
-      
+
       RETURN
       END SUBROUTINE WRITER_INIT
 
@@ -86,6 +85,12 @@ C...  Main loop
      &         ' RECEIVED SIG_WRITE'
           CALL WRITER_WRITE()
 
+! tcm addeded v49.52.01 SIG_PAUSE
+        ELSE IF(SIG == SIG_PAUSE) THEN
+           WRITE(ScreenUnit,*) 'WRITER PROC ',WRITER_ID,
+     &         ' RECEIVED SIG_PAUSE'
+           EXIT
+
         ELSE IF(SIG == SIG_TERM) THEN
           WRITE(ScreenUnit,*) 'WRITER PROC ',WRITER_ID,
      &         ' RECEIVED SIG_TERM'
@@ -94,8 +99,9 @@ C...  Main loop
         ENDIF
       ENDDO
 
-      CALL MSG_FINI()
-      STOP
+! tcm commented out v49.52.01
+!      CALL MSG_FINI()
+!      STOP
 
       END SUBROUTINE WRITER_MAIN
 
@@ -662,7 +668,7 @@ C
         USE SIZES
         USE GLOBAL
         USE MESSENGER, ONLY: TAG, COMM_WRITEH, COMM_HSLEEP, WRITER_ID,
-     &       SIG_WRITE, SIG_TERM, MSG_FINI
+     &       SIG_WRITE, SIG_TERM, SIG_PAUSE, MSG_FINI
 #ifdef HAVE_MPI_MOD
         use mpi  
 #endif
@@ -670,14 +676,19 @@ C
       INTEGER :: WCOMMID, WCOMM
       CONTAINS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!?
 
+!------------------------------------------------------------
       SUBROUTINE HSWRITER_INIT ()
         WCOMMID = 0
       END SUBROUTINE HSWRITER_INIT
 !
+!------------------------------------------------------------
+!
       SUBROUTINE HSWRITER_MAIN ()
         USE GLOBAL,ONLY : ScreenUnit
         IMPLICIT NONE
+#ifndef HAVE_MPI_MOD
         include 'mpif.h'
+#endif
         INTEGER :: SIG,IERR
         INTEGER :: STAT(MPI_STATUS_SIZE)
 !
@@ -690,18 +701,50 @@ C...  Main loop
      &       COMM_WRITEH(WRITER_ID),STAT,IERR)
 
         IF(SIG == SIG_WRITE) THEN
-          WRITE(ScreenUnit,*) 'HSWRITER PROC W',WRITER_ID
+          WRITE(ScreenUnit,*) 'HSWRITER PROC ',WRITER_ID,
+     &         ' RECEIVED SIG_WRITE'
           CALL writeHotstart_through_HSwriter(0.0d0, 0)
+
+!tcm v49.52.01 added SIG_PAUSE
+        ELSE IF(SIG == SIG_PAUSE) then
+           WRITE(ScreenUnit,*) 'HSWRITER PROC ',WRITER_ID,
+     &         ' RECEIVED SIG_PAUSE'
+           EXIT
+
         ELSE IF(SIG == SIG_TERM) THEN
-          WRITE(ScreenUnit,*) 'HSWRITER PROC T',WRITER_ID
+          WRITE(ScreenUnit,*) 'HSWRITER PROC ',WRITER_ID,
+     &         ' RECEIVED SIG_TERM'
           EXIT
         ENDIF
       ENDDO
-
-      CALL MSG_FINI()
-      STOP
+!tcm v49.52.01 commented out next two lines
+!      CALL MSG_FINI()
+!      STOP
 
       END SUBROUTINE HSWRITER_MAIN
+!
+!------------------------------------------------------------
+! tcm v49.52.01 added the HSWRITER_PAUSE subroutine
+!
+      subroutine HSWRITER_PAUSE()
+      use global
+      use messenger
+      implicit none
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+      integer i
+
+      DO I=1,MNWPROH
+         CALL MPI_SEND( SIG_PAUSE, 1, MPI_INTEGER, MNPROC,
+     &                  TAG,COMM_WRITEH(I), IERR)
+      ENDDO
+
+      return
+      end subroutine HSWRITER_PAUSE
+!
+!------------------------------------------------------------
+
 C 
 C-----------------------------------------------------------------------
 C     SUBROUTINE BASED ON "WRITEHOTSTART"
@@ -727,7 +770,6 @@ C-----------------------------------------------------------------------
       INTEGER :: STAT(MPI_STATUS_SIZE)
       integer :: i
 
-
       REAL(8), intent(in) :: Time
       INTEGER, intent(in) :: IT
 !
@@ -748,6 +790,7 @@ C-----------------------------------------------------------------------
       type(OutputDataDescript_t), SAVE :: NOFFDescript
       LOGICAL,  SAVE :: FirstCall = .true.
 !
+
       if( myproc <= MNPROC-1 ) then
         CALL GET_NEXT_HSWRITER_COMM(WCOMM)
       endif
@@ -787,7 +830,7 @@ C-----------------------------------------------------------------------
         dpack(1) = Time
         cjunk1 = trim(adjustl(HOTSTARTDIR))
         cjunk2 = trim(adjustl(hss%filename))
-        
+
         CALL MPI_SEND(ipack,25,MPI_INTEGER,MNPROC,TAG,WCOMM,IERR)
         CALL MPI_SEND(dpack,1,MPI_DOUBLE_PRECISION,MNPROC,TAG,WCOMM,IERR)
         CALL MPI_SEND(WRITE_LOCAL_HOT_START_FILES,1,MPI_LOGICAL,
@@ -795,6 +838,7 @@ C-----------------------------------------------------------------------
         CALL MPI_SEND(cjunk1,2048,MPI_CHARACTER,MNPROC,TAG,WCOMM,IERR)
         CALL MPI_SEND(cjunk2,  10,MPI_CHARACTER,MNPROC,TAG,WCOMM,IERR)
       endif
+
       if( WRITER_ID /= 0 ) then
         CALL MPI_RECV(ipack,25,MPI_INTEGER,0,TAG,WCOMM,STAT,IERR)
         CALL MPI_RECV(dpack,1,MPI_DOUBLE_PRECISION,0,TAG,WCOMM,STAT,IERR)
@@ -873,7 +917,7 @@ C-----------------------------------------------------------------------
          Elev2Descript % imap                 => NODES_LG
          Elev2Descript % array                => ETA2
          Elev2Descript % array_g              => ETA2_g
-         
+
          IF ( WRITER_ID /= 0 ) THEN
             IF (.not.ALLOCATED(UU2_g)) THEN
                write(16,*) 'Allocating VelDescript' 
