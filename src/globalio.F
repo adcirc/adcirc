@@ -49,7 +49,11 @@ C     &    COMM, nodecode
       ! number of vector tuples in the buffer
       integer      :: num        
       integer      :: i, j, k
-
+C
+      call setMessageSource("collectFullDomainArray")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
       bufsize = min(BUFSIZE_MAX, 
      &    descript % num_items_per_record * descript % num_fd_records)
 C     num will be less than the number of full domain records if the 
@@ -98,6 +102,10 @@ C! CMPI
 
  1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10, 1pE20.10, 1pE20.10)
  1100 FORMAT(2x,1pE20.10,5X,I10)
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       !--------------------------------------------------------------
       end subroutine collectFullDomainArray
       !--------------------------------------------------------------
@@ -426,8 +434,8 @@ C! CMPI
       integer :: k ! frequency counter
 C
       call setMessageSource("packMbyNP")
-#ifdef GLOBALIO_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
       ioffset = istart - 1
       do i = 1, descript % num_records_this
@@ -442,8 +450,8 @@ C
       end do
 C
  1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10)
-#ifdef GLOBALIO_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return
@@ -465,8 +473,8 @@ C
       integer k ! frequency counter
 
       call setMessageSource("unpackMbyNP")
-#ifdef GLOBALIO_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
       j = 1
       do i = istart, iend
@@ -475,8 +483,8 @@ C
             j = j + 1
          end do
       end do
-#ifdef GLOBALIO_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return
@@ -499,8 +507,8 @@ C
       integer :: k ! frequency counter
 C
       call setMessageSource("packNPbyM")
-#ifdef GLOBALIO_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
       ioffset = istart - 1
       do i = 1, descript % num_records_this
@@ -515,8 +523,8 @@ C
       end do
 C
  1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10)
-#ifdef GLOBALIO_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return
@@ -538,8 +546,8 @@ C
       integer k ! frequency counter
 
       call setMessageSource("unpackNPbyM")
-#ifdef GLOBALIO_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
       j = 1
       do i = istart, iend
@@ -548,8 +556,8 @@ C
             j = j + 1
          end do
       end do
-#ifdef GLOBALIO_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return

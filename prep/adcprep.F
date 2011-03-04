@@ -287,6 +287,12 @@ C-- If ONLY localizing Run Info File ( fort.15 )
         print *, 'Global Run Info file read successfully.'
         CALL RELOCALIZE()
         CALL PREP15()
+        !jgf48.07 Initialize netCDF output files
+        IF (useNetCDF) THEN
+           write(*,*) "INFO: Initializing the netCDF output file(s)."
+           ! call netCDF module
+           CALL PREPNETCDF()
+        ENDIF
         GO TO 9999
       endif
 

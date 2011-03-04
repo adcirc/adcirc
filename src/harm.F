@@ -240,8 +240,8 @@ C***********************************************************************
       IMPLICIT NONE
 C
       call setMessageSource("ALLOC_HA")
-#ifdef HARM_TRACE
-      call screen(DEBUG, "Enter.")
+#if defined(HARM_TRACE) || defined (ALL_TRACE)
+      call allMessage(DEBUG, "Enter.")
 #endif
       ALLOCATE ( HAFREQ(MNHARF),HAFF(MNHARF),HAFACE(MNHARF) )
       ALLOCATE ( NAMEFR(MNHARF) )
@@ -263,8 +263,8 @@ C
       ALLOCATE ( UMAGT(MNHARF,MNP), PHASEDUT(MNHARF,MNP) )
       ALLOCATE ( VMAGT(MNHARF,MNP), PHASEDVT(MNHARF,MNP) )
 C      
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       RETURN
@@ -284,8 +284,8 @@ C----------------------------------------------------------------------
       IMPLICIT NONE
 C
       call setMessageSource("ALLOC_MAIN14")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
 C
       ALLOCATE ( XVELAV(MNP),YVELAV(MNP),XVELVA(MNP),YVELVA(MNP) )
@@ -296,8 +296,8 @@ C
       ALLOCATE( VAV(MNP),VSQ(MNP),VAVDIF(MNP),VVADIF(MNP) )
 C
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       RETURN
@@ -319,8 +319,8 @@ C--------------------------------------------------------------------
       IMPLICIT NONE
 C
       call setMessageSource("allocateFullDomainHAIOArrays")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
       IF (IHARIND.eq.1) THEN
          ALLOCATE(GLOELV_g(2*MNHARF,NP_G))
@@ -339,8 +339,8 @@ C
          ALLOCATE(YVELVA_g(NP_G))
       ENDIF
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C--------------------------------------------------------------------
@@ -353,90 +353,63 @@ C--------------------------------------------------------------------
 C     jgf49.44: Initializes harmonic analysis arrays and parameters.
 C     Based on HACOLDS, written by rl.
 C--------------------------------------------------------------------
-      SUBROUTINE initHarmonicParameters(ihot)
+      SUBROUTINE initHarmonicParameters()
       USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, NP, myProc, MNPROC
       IMPLICIT NONE
-      INTEGER, intent(in) :: ihot  ! 0 indicates cold start; hotstart otherwise
       INTEGER :: i, j, n           ! loop counters
 C
       call setMessageSource("initHarmonicParameters")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.") 
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
 #endif
       IF (IHARIND.EQ.0) THEN
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
          call unsetMessageSource()
          RETURN ! EARLY RETURN if harmonic analysis is not part of this run
       ENDIF
-      IF (ihot.ne.0) THEN
-         IHABEG = ITHAS + NHAINC
-      ENDIF
-      IF ((ihot.eq.0).or.((ihot.ne.0).and.(ITHS.LT.IHABEG))) THEN
-         ICHA=0
+      IHABEG = ITHAS + NHAINC
+      ICHA=0
+      icall=0
 C
-         if (hafreq(1).eq.0.0) then
-            nz=0
-            nf=1
-         else
-            nz=1
-            nf=0
-         endif
+      if (hafreq(1).eq.0.0) then
+         nz=0
+         nf=1
+      else
+         nz=1
+         nf=0
+      endif
 c
-         nfreq=nfreq-nf
-         mm=2*nfreq+nf
-c
-         do i=1,mm
-            do j=1,mm
-               ha(i,j)=0.0d0
-            end do
-         end do
-         icall=0
+      nfreq=nfreq-nf
+      mm=2*nfreq+nf
+C
+      ha(:,:)=0.0d0
 C     
-         IF (NHASE.EQ.1) THEN
-            do i=1,mm
-               do N=1,NSTAE
-                  STAELV(I,N)=0.d0
-               end do
-            end do
-         ENDIF
-         IF (NHASV.EQ.1) THEN
-            do i=1,mm
-               do N=1,NSTAV
-                  STAULV(I,N)=0.d0
-                  STAVLV(I,N)=0.d0
-               enddo
-            enddo
-         ENDIF
-         IF (NHAGE.EQ.1) THEN
-            do i=1,mm
-               do N=1,NP
-                  GLOELV(I,N)=0.d0
-               end do
-            end do
-         ENDIF
-         IF(NHAGV.EQ.1) THEN
-            do i=1,mm
-               do N=1,NP
-                  GLOULV(I,N)=0.d0
-                  GLOVLV(I,N)=0.d0
-               end do
-            end do
-         ENDIF
-         IF (CHARMV.eqv..true.) THEN
-            DO I=1,NP
-               ELAV(I)=0.D0
-               XVELAV(I)=0.D0
-               YVELAV(I)=0.D0
-               ELVA(I)=0.D0
-               XVELVA(I)=0.D0
-               YVELVA(I)=0.D0
-            ENDDO
-         ENDIF                  !  charmv
+      IF (NHASE.EQ.1) THEN
+         STAELV(:,:)=0.d0
       ENDIF
+      IF (NHASV.EQ.1) THEN
+         STAULV(:,:)=0.d0
+         STAVLV(:,:)=0.d0
+      ENDIF
+      IF (NHAGE.EQ.1) THEN
+         GLOELV(:,:)=0.d0
+      ENDIF
+      IF (NHAGV.EQ.1) THEN
+         GLOULV(:,:)=0.d0
+         GLOVLV(:,:)=0.d0
+      ENDIF
+      IF (CHARMV.eqv..true.) THEN
+         ELAV(:)=0.D0
+         XVELAV(:)=0.D0
+         YVELAV(:)=0.D0
+         ELVA(:)=0.D0
+         XVELVA(:)=0.D0
+         YVELVA(:)=0.D0
+      ENDIF                  !  charmv
 C
 C     jgf49.44: Initialize all the full domain i/o arrays to zero, if 
 C     they will be used (i.e., if we are in serial or if we might be
@@ -460,8 +433,8 @@ C     reading or writing full domain arrays in parallel).
          ENDIF
       ENDIF
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C--------------------------------------------------------------------
@@ -495,8 +468,8 @@ C
       REAL(SZ) :: V11, V22, V33    ! nodal v velocities around an element
 C
       call setMessageSource("updateHarmonicAnalysis")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
 C...  
       IF(IHARIND.EQ.1) THEN
@@ -568,8 +541,8 @@ C...  LINES TO COMPUTE MEANS AND VARIANCES
 
       ENDIF
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C--------------------------------------------------------------------
@@ -595,8 +568,8 @@ c
       REAL(8) TIME
 C
       call setMessageSource("LSQUPDLHS")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
 c
       icall = icall + 1
@@ -639,8 +612,8 @@ c   Record update time and time step
       TIMEUD = TIME
       ITUD = IT
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return
@@ -665,8 +638,8 @@ c
       REAL(SZ) STAE(MNSTAE)
 C
       call setMessageSource("LSQUPDES")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.") 
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
 #endif
 c
 c***** Update the Right Hand Side Load Vectors
@@ -693,8 +666,8 @@ c   Take care of the other constituents
          end do
       end do
 C     
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return
@@ -721,8 +694,8 @@ c
       REAL(SZ) STAU(MNSTAV),STAV(MNSTAV)
 C 
       call setMessageSource("LSQUPDVS")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.") 
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
 #endif
 c
 c***** Update the Right Hand Side Load Vectors
@@ -752,8 +725,8 @@ c     Take care of the other constituents
          end do
       end do
 C     
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return
@@ -779,8 +752,8 @@ c
       REAL(SZ) GLOE(MNP)
 C
       call setMessageSource("LSQUPDEG")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
 c     
 c*****Update the Right Hand Side Load Vectors
@@ -808,8 +781,8 @@ c     Take care of the other constituents
       end do
 C     
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return
@@ -837,8 +810,8 @@ c
       REAL(SZ) GLOU(MNP),GLOV(MNP)
 C
       call setMessageSource("LSQUPDVG")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.") 
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
 #endif
 c     
 c*****Update the Right Hand Side Load Vectors
@@ -869,8 +842,8 @@ c     Take care of the other constituents
       end do
 C     
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return
@@ -890,13 +863,13 @@ C--------------------------------------------------------------------
       INTEGER :: I
 C
       call setMessageSource("solveHarmonicAnalysis")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.") 
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
 #endif
 C
       IF ((IHARIND.NE.1).OR.(ITIME.LE.ITHAS)) THEN
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
          call unsetMessageSource()
          RETURN ! EARLY RETURN if we weren't supposed to do harmonic analysis
@@ -928,8 +901,8 @@ C......Solve the harmonic analysis problems
       IF(NHASE.EQ.1) CALL LSQSOLES()
       IF(NHASV.EQ.1) CALL LSQSOLVS()
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C--------------------------------------------------------------------
@@ -957,8 +930,8 @@ c
       real(sz),allocatable ::  c(:),y(:)
 C
       call setMessageSource("fulsol")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
 c     
 c**** If only want to fill out matrix and decompose
@@ -987,8 +960,8 @@ c     Decomposition of matrix a
  50           ha(j,ir)=0.0d0
  100     continue
 
-#ifdef HARM_TRACE
-         call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
 #endif
          call unsetMessageSource()
          return ! EARLY RETURN if idecom.eq.0
@@ -1019,8 +992,8 @@ c...  solve for x by back-substituting for l(tr)*x=c
       ir=ir-1
       if(ir.ge.1) goto 140
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       end subroutine fulsol
@@ -1044,8 +1017,8 @@ c
       REAL(SZ) PHASEE
 C
       call setMessageSource("LSQSOLES")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
 C
       convrd=180.d0/pi
@@ -1081,8 +1054,8 @@ c        phase is between 0 and 360 deg.
       end do
 C     
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return
@@ -1109,8 +1082,8 @@ c
       REAL(SZ),ALLOCATABLE :: Y(:)
 C
       call setMessageSource("LSQSOLVS")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
 c
       convrd=180.d0/pi
@@ -1167,8 +1140,8 @@ c        phase is between 0 and 360 deg.
          end do
       end do
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return
@@ -1198,8 +1171,8 @@ c
       REAL(SZ),ALLOCATABLE  ::  PHASEE(:),EMAG(:)
 C
       call setMessageSource("LSQSOLEG")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.") 
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
 #endif
 C
       convrd=180.d0/pi
@@ -1311,8 +1284,8 @@ c
       endif                     ! charmv
 c
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return
@@ -1345,8 +1318,8 @@ c
       REAL(SZ),ALLOCATABLE :: Y(:)
 C
       call setMessageSource("LSQSOLVG")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
 c
       convrd=180.d0/pi
@@ -1530,8 +1503,8 @@ c
       endif                     ! charmv
 c
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return
@@ -1563,21 +1536,9 @@ C--------------------------------------------------------------------
       INTEGER :: fulldomainNode ! number of node to map data from     
 C
       call setMessageSource("readBinaryHAHotstart")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
-c     
-c***** Compute parameter values for checking
-c
-      if (hafreq(1).eq.0.0) then
-         nz=0
-         nf=1
-      else
-         nz=1
-         nf=0
-      endif
-      nfreq=nfreq-nf
-      mm=2*nfreq+nf
 C
 C     Settings for reading in hotstart file in serial, or for reading 
 C     subdomain hotstart files in parallel.
@@ -1763,8 +1724,8 @@ C..      Map Means and Squares
          ENDIF
       ENDIF ! MNPROC.gt.1 etc
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C--------------------------------------------------------------------
@@ -1787,23 +1748,11 @@ C--------------------------------------------------------------------
       CHARACTER(len=1024) :: message
 C  
       call setMessageSource("checkHAHotstart")
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Enter.") 
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
 #endif
       call logMessage(INFO,
      & "Comparing harmonic parameters in hotstart file to fort.15...")
-c     
-c***** Compute parameter values for checking
-c
-      if (hafreq(1).eq.0.0) then
-         nz=0
-         nf=1
-      else
-         nz=1
-         nf=0
-      endif
-      nfreq=nfreq-nf
-      mm=2*nfreq+nf
 C
       iflag=0
       if(nz.ne.inz) iflag=1
@@ -1958,8 +1907,8 @@ c
          stop
       endif
 
-#ifdef HARM_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C--------------------------------------------------------------------

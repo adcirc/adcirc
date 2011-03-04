@@ -55,7 +55,6 @@ C...
      &       NScreen,                      !flag to suppress or allow screen output
      &       ScreenUnit,                   !i/o for screen output
      &       IHOT,                         !flag to specify if coldstart (=0) or hotstart file to read from (63 or 64)
-     &       HSS,                          !hotstart output file structure
      &       IHOTSTP,                      !hotstart file record counter
      &       NWS,
      &       IDen,                         !flag telling whether salinity, temperature and/or sigmaT are being used
@@ -134,9 +133,11 @@ C...  DECLARE 3D GLOBAL SCALARS
 
       REAL(SZ) :: GORho                ! = G/RhoWat0
       REAL(SZ) :: GORhoOAMB            ! = GORho/AMB
+      INTEGER  :: IGC                  !vertical grid code
       REAL(SZ) :: KP                   !3D bottom friction coefficient
       REAL(SZ) :: EVMin, EVCon         !minimum vertical eddy viscosity and vertical eddy viscosity constant
       REAL(SZ) :: Z0S, Z0B             !surface and bottom roughnesses
+      REAL(SZ) :: Alp1,Alp2,Alp3       !time stepping coefficients
       REAL(SZ) :: DTALP2, DT1MALP2     !DelT*alpha2, DelT*(1-alpha2)
       REAL(SZ) :: DTALP3, DT1MALP3     !DelT*alpha3, DelT*(1-alpha3)
       REAL(SZ) :: THETA1, THETA2       !timestepping coefficients for MY L2.5 TKE calculations
@@ -168,11 +169,19 @@ C...Declare and initialize logical variables
       LOGICAL  :: C3D_BTrans     = .FALSE.      !if true, then 3D prognostic baroclinic run
       LOGICAL  :: C3D_PTrans     = .FALSE.      !if true, then 3D passive scalar transport included
       LOGICAL  :: turb_allocated = .FALSE.
+C
+      REAL(SZ) :: TO3DSDS, TO3DSDF !3D Density station output start & end times
+      REAL(SZ) :: TO3DSVS, TO3DSVF !3D Velocity station output start&end times
+      REAL(SZ) :: TO3DSTS, TO3DSTF !3D Turbulence station output start&end times
+      REAL(SZ) :: TO3DGDS, TO3DGDF !3D Global density output start&end times
+      REAL(SZ) :: TO3DGVS, TO3DGVF !3D Global velocity output start&end times
+      REAL(SZ) :: TO3DGTS, TO3DGTF !3D Global turbulence output start&end times
+C...3D Station Density Output (fort.41)
 
-
-C...3D Density station output variables
-
-      INTEGER :: I3DSD        !flag for whether to have 3D station density output and format of this output
+C     I3DSD    - flag for 3D station density output
+C       If ABS(I3DSD)>0 densities are interpolated to stations and written out
+C       If ABS(I3DSD)=1, output is ascii. If ABS(I3DSD)=2, output is binary.
+      INTEGER :: I3DSD 
       INTEGER :: NSpo3DSD     !3D station density output interval in timesteps
       INTEGER :: NTO3DSDS     !TO3DSDS converted to timesteps after StaTime
       INTEGER :: NTO3DSDF     !TO3DSDF converted to timesteps after StaTime
@@ -189,6 +198,12 @@ C...3D Density station output variables
       REAL(SZ),ALLOCATABLE,TARGET :: SigTSta(:,:)   !3D Sigma T station output - not a global variable but easier to allocate here 
       REAL(SZ),ALLOCATABLE,TARGET :: TempSta(:,:)   !3D Temperature station output - not a global variable but easier to allocate here
       REAL(SZ),ALLOCATABLE,TARGET :: SalSta(:,:)    !3D Salinity station output - not a global variable but easier to allocate here
+      CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMED(:)!density station names
+      REAL(8),ALLOCATABLE,TARGET :: XED(:)  ! station x coordinate (cartesian)
+      REAL(8),ALLOCATABLE,TARGET :: YED(:)  ! station y coordinate (cartesian)
+      REAL(8),ALLOCATABLE,TARGET :: SLED(:) ! station lon coordinate 
+      REAL(8),ALLOCATABLE,TARGET :: SFED(:) ! station lat coordinate
+
 
 C...3D Velocity station output variables
 
@@ -209,6 +224,11 @@ C...3D Velocity station output variables
       REAL(SZ),ALLOCATABLE,TARGET :: WZSta(:,:)     !vertical velocity station output - not a global variable but easier to allocate here
       !jgf48.50 Declare COMPLEX as size SZ
       COMPLEX(SZ),ALLOCATABLE,TARGET :: qSta(:,:)       !3D velocity station output - not a global variable but easier to allocate here
+      CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEV3D(:) !vel station names
+      REAL(8),ALLOCATABLE,TARGET :: XE3DV(:)  ! station x coordinate (cartesian)
+      REAL(8),ALLOCATABLE,TARGET :: YE3DV(:)  ! station y coordinate (cartesian)
+      REAL(8),ALLOCATABLE,TARGET :: SLE3DV(:) ! station lon coordinate 
+      REAL(8),ALLOCATABLE,TARGET :: SFE3DV(:) ! station lat coordinate
 
 C...3D Turbulence station output variables
 
@@ -229,6 +249,11 @@ C...3D Turbulence station output variables
       REAL(SZ),ALLOCATABLE, TARGET :: q20Sta(:,:)    !TKE station output - not a global variable but easier to allocate here
       REAL(SZ),ALLOCATABLE, TARGET :: lSta(:,:)      !turb length scale station output - not a global variable but easier to allocate here
       REAL(SZ),ALLOCATABLE, TARGET :: EVSta(:,:)     !vertical viscosity station output - not a global variable but easier to allocate here
+      CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMET(:) !turb station names
+      REAL(8),ALLOCATABLE,TARGET :: XET(:)  ! station x coordinate (cartesian)
+      REAL(8),ALLOCATABLE,TARGET :: YET(:)  ! station y coordinate (cartesian)
+      REAL(8),ALLOCATABLE,TARGET :: SLET(:) ! station lon coordinate 
+      REAL(8),ALLOCATABLE,TARGET :: SFET(:) ! station lat coordinate
 
 C...3D Global density output variables
 
@@ -323,6 +348,9 @@ C
      &                              StaI3DD3(MNSta3DD) )
       ALLOCATE( SigTSta(MNSTA3DD,NFEN), SalSta(MNSTA3DD,NFEN),
      &          TempSta(MNSTA3DD,NFEN) )
+      ALLOCATE(STATNAMED(MNSTA3DD))
+      ALLOCATE(XED(MNSTA3DD),YED(MNSTA3DD),
+     &         SLED(MNSTA3DD),SFED(MNSTA3DD))
       RETURN
       END SUBROUTINE ALLOC_3DSD      
 
@@ -334,6 +362,9 @@ C
       ALLOCATE( StaI3DV1(MNSta3DV), StaI3DV2(MNSta3DV),
      &                              StaI3DV3(MNSta3DV) )
       ALLOCATE( qSta(MNSTA3DV,NFEN), WZSta(MNSTA3DV,NFEN) )
+      ALLOCATE(STATNAMEV3D(MNSTA3DV))
+      ALLOCATE(XE3DV(MNSTA3DV),YE3DV(MNSTA3DV),
+     &         SLE3DV(MNSTA3DV),SFE3DV(MNSTA3DV))
       RETURN
       END SUBROUTINE ALLOC_3DSV
 
@@ -346,6 +377,9 @@ C
      &                              StaI3DT3(MNSta3DT) )
       ALLOCATE( q20Sta(MNSTA3DT,NFEN), lSta(MNSTA3DT,NFEN),
      &          EVSta(MNSTA3DT,NFEN) )
+      ALLOCATE(STATNAMET(MNSTA3DT))
+      ALLOCATE(XET(MNSTA3DT),YET(MNSTA3DT),
+     &         SLET(MNSTA3DT),SFET(MNSTA3DT))
       RETURN
       END SUBROUTINE ALLOC_3DST
 

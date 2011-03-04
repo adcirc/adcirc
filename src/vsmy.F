@@ -1193,7 +1193,7 @@ C     present time levels so we can advance in time.
 C***************************************************************************
 C     WRITE 3D MODEL OUTPUT
 
-      CALL Write_Output_3D (Time,IT) !jgf48_11 moved to write_output.F
+      CALL writeOutput3D(Time,IT) !jgf48_11 moved to write_output.F
 
 
 C***************************************************************************
@@ -2839,22 +2839,23 @@ C     file was specified.
 C***************************************************************************
 C
 C  kmd48.33bc changed to follow the global IO format
-      SUBROUTINE HSTART3D_OUT()
-Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
+      SUBROUTINE HSTART3D_OUT(IT)
       USE SIZES
       USE GLOBAL
       USE GLOBAL_3DVS
       USE GLOBAL_IO
 #ifdef CMPI
-!      USE WRITER
       USE MESSENGER
+#endif
+#ifdef NETCDF
+      USE NETCDFIO, ONLY : initNetCDFHotstart3D, writeNetCDFHotstart3D,
+     &   writeNetCDFHotstart3DVar, allocateNetCDFHotstart3D
 #endif
 
       IMPLICIT NONE
-      INTEGER NH
+      INTEGER, intent(in) :: IT ! current time step
+      INTEGER NH, I, J ! loop counters
       INTEGER N,M
-      REAL(SZ),ALLOCATABLE,TARGET :: RESULTS(:)
-      REAL(SZ),ALLOCATABLE,TARGET :: Results_g(:)
 
       type(OutputDataDescript_t),SAVE :: Duudescript
       type(OutputDataDescript_t),SAVE :: Duvdescript
@@ -2863,36 +2864,43 @@ Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
       type(OutputDataDescript_t),SAVE :: Vvdescript
       type(OutputDataDescript_t),SAVE :: Bsxdescript
       type(OutputDataDescript_t),SAVE :: Bsydescript
-      type(OutputDataDescript_t),SAVE :: resultsdescript
+C     jgf49.49.02: Added variables for 3D fields
+      type(OutputDataDescript_t), save :: SigTDescript
+      type(OutputDataDescript_t), save :: SalDescript
+      type(OutputDataDescript_t), save :: TempDescript
+      type(OutputDataDescript_t), save :: RealQDescript
+      type(OutputDataDescript_t), save :: ImaginaryQDescript
+      type(OutputDataDescript_t), save :: WZDescript
+      type(OutputDataDescript_t), save :: Q20Descript
+      type(OutputDataDescript_t), save :: LDescript
+      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: rp(:,:) !real part subdomain data
+      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: ip(:,:) !imaginary part subdom dat
+      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: rp_g(:,:) !real part fulldomain
+      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: ip_g(:,:) !imaginary part fulldom
+      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: layer(:) ! horiz layer in 3D
+      INTEGER :: numHotstartWrites
+      INTEGER :: nextLun 
 
       LOGICAL, SAVE :: FirstCall3D = .true.
-C...  
-C...  WRITE HOT START OUTPUT
-C...  
-      IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN
-        WRITE(hss % lun,REC=IHOTSTP) IDen  ;  IHOTSTP = IHOTSTP + 1
+      call setMessageSource("hstart3D_out")
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+C
+C     kmd48.33bc write out results in global IO format
+      IF (FirstCall3D.eqv..true.) THEN 
 
-        WRITE(hss % lun,REC=IHOTSTP) N3DSD  ;  IHOTSTP = IHOTSTP + 1
-        WRITE(hss % lun,REC=IHOTSTP) I3DSDRec  ;  IHOTSTP = IHOTSTP + 1
+        ALLOCATE(rp(NP,NFEN),ip(NP,NFEN))
 
-        WRITE(hss % lun,REC=IHOTSTP) N3DSV  ;  IHOTSTP = IHOTSTP + 1
-        WRITE(hss % lun,REC=IHOTSTP) I3DSVRec  ;  IHOTSTP = IHOTSTP + 1
+        IF ((MNPROC.GT.1).AND.(myProc.eq.0).AND.
+     &     (WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN 
+           ALLOCATE(layer(np_g))
+        ENDIF
+        IF ((MNPROC.eq.1)
+     &     .OR.(WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+           ALLOCATE(layer(np))
+        ENDIF
 
-        WRITE(hss % lun,REC=IHOTSTP) N3DST  ;  IHOTSTP = IHOTSTP + 1
-        WRITE(hss % lun,REC=IHOTSTP) I3DSTRec  ;  IHOTSTP = IHOTSTP + 1
-
-        WRITE(hss % lun,REC=IHOTSTP) N3DGD  ;  IHOTSTP = IHOTSTP + 1
-        WRITE(hss % lun,REC=IHOTSTP) I3DGDRec  ;  IHOTSTP = IHOTSTP + 1
-
-        WRITE(hss % lun,REC=IHOTSTP) N3DGV  ;  IHOTSTP = IHOTSTP + 1
-        WRITE(hss % lun,REC=IHOTSTP) I3DGVRec  ;  IHOTSTP = IHOTSTP + 1
-
-        WRITE(hss % lun,REC=IHOTSTP) N3DGT  ;  IHOTSTP = IHOTSTP + 1
-        WRITE(hss % lun,REC=IHOTSTP) I3DGTRec  ;  IHOTSTP = IHOTSTP + 1
-      END IF 
-
-C   kmd48.33bc write out results in global IO format
-      IF (FirstCall3D) THEN 
         IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
            Allocate(DUU_g(NP_G))
         END IF
@@ -2977,403 +2985,425 @@ C   kmd48.33bc write out results in global IO format
         Bsydescript % array                => BSY1 
         Bsydescript % array_g              => BSY_g
 
-        FirstCall3d = .false.
+         SigTDescript % specifier            =  I3DGD
+         SigTDescript % initial_value        =  0.0
+         SigTDescript % num_items_per_record =  NFEN
+         SigTDescript % num_fd_records       =  NP_G
+         SigTDescript % num_records_this     =  NP
+         SigTDescript % imap                 => nodes_lg
+         SigTDescript % array2D              => SigT
+         SigTDescript % array2D_g            => SigT_g
+         SigTDescript % considerWetDry       = .FALSE.
+         SigTDescript % alternate_value      = -99999.0
+         SigTDescript % field_name           = 'SigmaT'
+
+         SalDescript % specifier            =  I3DGD
+         SalDescript % initial_value        =  0.0
+         SalDescript % num_items_per_record =  NFEN
+         SalDescript % num_fd_records       =  NP_G
+         SalDescript % num_records_this     =  NP
+         SalDescript % imap                 => nodes_lg
+         SalDescript % array2D              => Sal
+         SalDescript % array2D_g            => Sal_g
+         SalDescript % considerWetDry       = .FALSE.
+         SalDescript % alternate_value      = -99999.0
+         SalDescript % field_name           = 'Salinity'
+
+         TempDescript % specifier            =  I3DGD
+         TempDescript % initial_value        =  0.0
+         TempDescript % num_items_per_record =  NFEN
+         TempDescript % num_fd_records       =  NP_G
+         TempDescript % num_records_this     =  NP
+         TempDescript % imap                 => nodes_lg
+         TempDescript % array2D              => Temp
+         TempDescript % array2D_g            => Temp_g
+         TempDescript % considerWetDry       = .FALSE.
+         TempDescript % alternate_value      = -99999.0
+         TempDescript % field_name           = 'Temperature'
+
+         RealQDescript % specifier            =  I3DGV
+         RealQdescript % initial_value        =  0.0
+         RealQDescript % num_items_per_record =  NFEN
+         RealQDescript % num_fd_records       =  NP_G
+         RealQDescript % num_records_this     =  NP
+         RealQDescript % imap                 => nodes_lg
+         RealQDescript % array2D              => rp
+         RealQDescript % array2D_g            => rp_g
+         RealQDescript % considerWetDry       = .FALSE.
+         RealQDescript % alternate_value      = -99999.0
+         RealQDescript % field_name           = 'u-vel3D'
+
+         ImaginaryQDescript % specifier            =  I3DGV
+         ImaginaryQDescript % initial_value        =  0.0
+         ImaginaryQDescript % num_items_per_record =  NFEN
+         ImaginaryQDescript % num_fd_records       =  NP_G
+         ImaginaryQDescript % num_records_this     =  NP
+         ImaginaryQDescript % imap                 => nodes_lg
+         ImaginaryQDescript % array2D              => ip
+         ImaginaryQDescript % array2D_g            => ip_g
+         ImaginaryQDescript % considerWetDry       = .FALSE.
+         ImaginaryQDescript % alternate_value      = -99999.0
+         ImaginaryQDescript % field_name           = 'v-vel3D'
+
+         WZDescript % specifier            =  I3DGV
+         WZDescript % initial_value        =  0.0
+         WZDescript % num_items_per_record =  NFEN
+         WZDescript % num_fd_records       =  NP_G
+         WZDescript % num_records_this     =  NP
+         WZDescript % imap                 => nodes_lg
+         WZDescript % array2D              => WZ
+         WZDescript % array2D_g            => WZ_g
+         WZDescript % considerWetDry       = .FALSE.
+         WZDescript % alternate_value      = -99999.0
+         WZDescript % field_name           = 'w-vel3D'
+
+         Q20Descript % specifier            =  I3DGT
+         Q20Descript % initial_value        =  0.0
+         Q20Descript % num_items_per_record =  NFEN
+         Q20Descript % num_fd_records       =  NP_G
+         Q20Descript % num_records_this     =  NP
+         Q20Descript % imap                 => nodes_lg
+         Q20Descript % array2D              => q20
+         Q20Descript % array2D_g            => q20_g
+         Q20Descript % considerWetDry       = .FALSE.
+         Q20Descript % alternate_value      = -99999.0
+         Q20Descript % field_name           = 'q20'
+
+         LDescript % specifier            =  I3DGT
+         LDescript % initial_value        =  0.0
+         LDescript % num_items_per_record =  NFEN
+         LDescript % num_fd_records       =  NP_G
+         LDescript % num_records_this     =  NP
+         LDescript % imap                 => nodes_lg
+         LDescript % array2D              => l
+         LDescript % array2D_g            => l_g
+         LDescript % considerWetDry       = .FALSE.
+         LDescript % alternate_value      = -99999.0
+         LDescript % field_name           = 'l'
+
+
+         IF ((NHSTAR.eq.3).or.(NHSTAR.eq.367).or.(NHSTAR.eq.368)) THEN
+#ifdef NETCDF
+            IF (MNPROC.eq.1) THEN
+               CALL initNetCDFHotstart3D(hss%lun)
+               numHotstartWrites = (NT-IT)/NHSINC
+               IF (numHotstartWrites.ge.1) THEN
+                  IF (hss%lun.eq.67) THEN
+                     nextLun = 68
+                  ELSE
+                     nextLun = 67
+                  ENDIF
+                  CALL initNetCDFHotstart3D(nextLun)
+               ENDIF
+            ELSE ! parallel
+               ! We don't need to create the hotstart file, it was
+               ! created by adcprep. All we need to do is allocate memory for
+               ! the netcdf arrays that will be written to the netcdf file.
+               IF (myProc.eq.0) THEN
+                  CALL allocateNetCDFHotstart3D(67)
+                  CALL allocateNetCDFHotstart3D(68)
+               ENDIF
+            ENDIF
+#endif
+         ENDIF
+ 
+         FirstCall3d = .false.
       END IF 
 
 #ifdef CMPI
-        CALL collectFullDomainArray(Duudescript,packOne,unpackOne)
-        CALL collectFullDomainArray(Duvdescript,packOne,unpackOne)
-        CALL collectFullDomainArray(Dvvdescript,packOne,unpackOne)
-        CALL collectFullDomainArray(Uudescript,packOne,unpackOne)
-        CALL collectFullDomainArray(Vvdescript,packOne,unpackOne)
-        CALL collectFullDomainArray(Bsxdescript,packOne,unpackOne)
-        CALL collectFullDomainArray(Bsydescript,packOne,unpackOne)
+      CALL collectFullDomainArray(Duudescript,packOne,unpackOne)
+      CALL collectFullDomainArray(Duvdescript,packOne,unpackOne)
+      CALL collectFullDomainArray(Dvvdescript,packOne,unpackOne)
+      CALL collectFullDomainArray(Uudescript,packOne,unpackOne)
+      CALL collectFullDomainArray(Vvdescript,packOne,unpackOne)
+      CALL collectFullDomainArray(Bsxdescript,packOne,unpackOne)
+      CALL collectFullDomainArray(Bsydescript,packOne,unpackOne)
 #endif
+      
+      SELECT CASE (NHSTAR)
 
-        SELECT CASE (NHSTAR)
+      CASE(1,67,68) ! non-portable binary
 
-        CASE(1,67,68)
+         IF((MYPROC.eq.0).or.
+     &      (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN 
+            WRITE(hss % lun,REC=IHOTSTP) IDen  ;  IHOTSTP = IHOTSTP + 1
 
+            WRITE(hss % lun,REC=IHOTSTP) N3DSD  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) I3DSDRec  ;  IHOTSTP = IHOTSTP + 1
+
+            WRITE(hss % lun,REC=IHOTSTP) N3DSV  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) I3DSVRec  ;  IHOTSTP = IHOTSTP + 1
+
+            WRITE(hss % lun,REC=IHOTSTP) N3DST  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) I3DSTRec  ;  IHOTSTP = IHOTSTP + 1
+
+            WRITE(hss % lun,REC=IHOTSTP) N3DGD  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) I3DGDRec  ;  IHOTSTP = IHOTSTP + 1
+
+            WRITE(hss % lun,REC=IHOTSTP) N3DGV  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) I3DGVRec  ;  IHOTSTP = IHOTSTP + 1
+
+            WRITE(hss % lun,REC=IHOTSTP) N3DGT  ;  IHOTSTP = IHOTSTP + 1
+            WRITE(hss % lun,REC=IHOTSTP) I3DGTRec  ;  IHOTSTP = IHOTSTP + 1
+         ENDIF
+C
+         IF ((MNPROC.gt.1).and.(myProc.eq.0).and.
+     &        (WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN
+            CALL binaryWrite2D(DUU_g, np_g, hss%lun, ihotstp) 
+            CALL binaryWrite2D(DUV_g, np_g, hss%lun, ihotstp) 
+            CALL binaryWrite2D(DVV_g, np_g, hss%lun, ihotstp) 
+            CALL binaryWrite2D(UU_g, np_g, hss%lun, ihotstp) 
+            CALL binaryWrite2D(VV_g, np_g, hss%lun, ihotstp) 
+            CALL binaryWrite2D(BSX_g, np_g, hss%lun, ihotstp) 
+            CALL binaryWrite2D(BSY_g, np_g, hss%lun, ihotstp) 
+         ENDIF
+         IF ((MNPROC.eq.1).or.
+     &      (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+            CALL binaryWrite2D(DUU, np_g, hss%lun, ihotstp) 
+            CALL binaryWrite2D(DUV, np_g, hss%lun, ihotstp) 
+            CALL binaryWrite2D(DVV, np_g, hss%lun, ihotstp) 
+            CALL binaryWrite2D(UU, np_g, hss%lun, ihotstp) 
+            CALL binaryWrite2D(VV, np_g, hss%lun, ihotstp) 
+            CALL binaryWrite2D(BSX, np_g, hss%lun, ihotstp) 
+            CALL binaryWrite2D(BSY, np_g, hss%lun, ihotstp) 
+         ENDIF
+
+         CASE(3,367,368) ! netcdf
+#ifdef NETCDF
+            IF (myProc.eq.0) THEN
+               CALL writeNetCDFHotstart3D(hss%lun,DUUDescript,
+     &            DUVDescript, DVVDescript, UUDescript, VVDescript, 
+     &            BSXDescript, BSYDescript)
+            ENDIF
+#endif
+         CASE DEFAULT
         
-      IF(MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
-#ifdef CMPI
-        DO M=1, NP_G
-           WRITE(hss % lun, REC=IHOTSTP) Duudescript % array_g(M)
-           IHOTSTP = IHOTSTP + 1
-        END DO 
-        DO M=1, NP_G
-           WRITE(hss % lun, REC=IHOTSTP) Duvdescript % array_g(M)
-           IHOTSTP = IHOTSTP + 1
-        END DO 
-        DO M=1, NP_G
-           WRITE(hss % lun, REC=IHOTSTP) Dvvdescript % array_g(M)
-           IHOTSTP = IHOTSTP + 1
-        END DO 
-        DO M=1, NP_G
-           WRITE(hss % lun, REC=IHOTSTP) Uudescript % array_g(M)
-           IHOTSTP = IHOTSTP + 1
-        END DO 
-        DO M=1, NP_G
-           WRITE(hss % lun, REC=IHOTSTP) Vvdescript % array_g(M)
-           IHOTSTP = IHOTSTP + 1
-        END DO 
-        DO M=1, NP_G
-           WRITE(hss % lun, REC=IHOTSTP) Bsxdescript % array_g(M)
-           IHOTSTP = IHOTSTP + 1
-        END DO 
-        DO M=1, NP_G
-           WRITE(hss % lun, REC=IHOTSTP) Bsydescript % array_g(M)
-           IHOTSTP = IHOTSTP + 1
-        END DO 
-#else
-        DO M=1, NP_G
-           WRITE(hss % lun, REC=IHOTSTP) DUU(M)
-           IHOTSTP = IHOTSTP + 1
-        END DO 
-        DO M=1, NP_G
-           WRITE(hss % lun, REC=IHOTSTP) DUV(M)
-           IHOTSTP = IHOTSTP + 1
-        END DO 
-        DO M=1, NP_G
-           WRITE(hss % lun, REC=IHOTSTP) DVV(M)
-           IHOTSTP = IHOTSTP + 1
-        END DO 
-        DO M=1, NP_G
-           WRITE(hss % lun, REC=IHOTSTP) UU(M)
-           IHOTSTP = IHOTSTP + 1
-        END DO 
-        DO M=1, NP_G
-           WRITE(hss % lun, REC=IHOTSTP) VV(M)
-           IHOTSTP = IHOTSTP + 1
-        END DO 
-        DO M=1, NP_G
-           WRITE(hss % lun, REC=IHOTSTP) BSX(M)
-           IHOTSTP = IHOTSTP + 1
-        END DO 
-        DO M=1, NP_G
-           WRITE(hss % lun, REC=IHOTSTP) BSY(M)
-           IHOTSTP = IHOTSTP + 1
-        END DO 
-#endif
-      END IF 
-
-C  kmd48.33bc break up 3D arrays to fit with global IO
-       ALLOCATE (RESULTS(NP))
-       ALLOCATE (RESULTS_g(NP_G))
-       DO N=1,NFEN
-          DO NH=1,NP
-             RESULTS(NH) = REAL(Q(NH,N))
-          END DO
-          resultsdescript % specifier            =  NHSTAR 
-          resultsdescript % initial_value        =  0.0
-          resultsdescript % num_items_per_record =  1
-          resultsdescript % num_fd_records       =  NP_G
-          resultsdescript % num_records_this     =  NP
-          resultsdescript % imap                 => nodes_lg
-          resultsdescript % array                => results 
-          resultsdescript % array_g              => results_g
-#ifdef CMPI
-          CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
-#endif
-          IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
-#ifdef CMPI
-          DO M=1, NP_G
-             WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
-             IHOTSTP = IHOTSTP + 1
-          END DO 
-#else
-          DO M=1, NP_G
-             WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
-             IHOTSTP = IHOTSTP + 1
-          END DO 
-#endif
-          ENDIF 
-       END DO
-
-       DO N=1,NFEN
-          DO NH=1,NP
-             RESULTS(NH) = AIMAG(Q(NH,N))
-          END DO
-          resultsdescript % specifier            =  NHSTAR 
-          resultsdescript % initial_value        =  0.0
-          resultsdescript % num_items_per_record =  1
-          resultsdescript % num_fd_records       =  NP_G
-          resultsdescript % num_records_this     =  NP
-          resultsdescript % imap                 => nodes_lg
-          resultsdescript % array                => results 
-          resultsdescript % array_g              => results_g
-#ifdef CMPI
-          CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
-#endif
-          IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
-#ifdef CMPI
-          DO M=1, NP_G
-             WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
-             IHOTSTP = IHOTSTP + 1
-          END DO 
-#else
-          DO M=1, NP_G
-             WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
-             IHOTSTP = IHOTSTP + 1
-          END DO 
-#endif
-          END IF 
-       END DO
-
-       DO N=1,NFEN
-          DO NH=1,NP
-             RESULTS(NH) = WZ(NH,N)
-          END DO
-          resultsdescript % specifier            =  NHSTAR 
-          resultsdescript % initial_value        =  0.0
-          resultsdescript % num_items_per_record =  1
-          resultsdescript % num_fd_records       =  NP_G
-          resultsdescript % num_records_this     =  NP
-          resultsdescript % imap                 => nodes_lg
-          resultsdescript % array                => results 
-          resultsdescript % array_g              => results_g
-#ifdef CMPI
-          CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
-#endif
-          IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
-#ifdef CMPI
-          DO M=1, NP_G
-             WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
-             IHOTSTP = IHOTSTP + 1
-          END DO 
-#else
-          DO M=1, NP_G
-             WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
-             IHOTSTP = IHOTSTP + 1
-          END DO 
-#endif
-          END IF 
-       END DO
-
-       DO N=1,NFEN
-          DO NH=1,NP
-             RESULTS(NH) = q20(NH,N)
-          END DO
-          resultsdescript % specifier            =  NHSTAR 
-          resultsdescript % initial_value        =  0.0
-          resultsdescript % num_items_per_record =  1
-          resultsdescript % num_fd_records       =  NP_G
-          resultsdescript % num_records_this     =  NP
-          resultsdescript % imap                 => nodes_lg
-          resultsdescript % array                => results 
-          resultsdescript % array_g              => results_g
-#ifdef CMPI
-          CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
-#endif
-          IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
-#ifdef CMPI
-          DO M=1, NP_G
-             WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
-             IHOTSTP = IHOTSTP + 1
-          END DO 
-#else
-          DO M=1, NP_G
-             WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
-             IHOTSTP = IHOTSTP + 1
-          END DO 
-#endif
-          END IF 
-       END DO
-
-       DO N=1,NFEN
-          DO NH=1,NP
-             RESULTS(NH) = l(NH,N)
-          END DO
-          resultsdescript % specifier            =  NHSTAR 
-          resultsdescript % initial_value        =  0.0
-          resultsdescript % num_items_per_record =  1
-          resultsdescript % num_fd_records       =  NP_G
-          resultsdescript % num_records_this     =  NP
-          resultsdescript % imap                 => nodes_lg
-          resultsdescript % array                => results 
-          resultsdescript % array_g              => results_g
-#ifdef CMPI
-          CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
-#endif
-          IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
-#ifdef CMPI
-          DO M=1, NP_G
-             WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
-             IHOTSTP = IHOTSTP + 1
-          END DO 
-#else
-          DO M=1, NP_G
-             WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
-             IHOTSTP = IHOTSTP + 1
-          END DO 
-#endif
-          END IF 
-       END DO
-
-       IF (ABS(IDEN).EQ.1) THEN
-         DO N=1,NFEN
-            DO NH=1,NP
-               RESULTS(NH) = SIGT(NH,N)
-            END DO
-            resultsdescript % specifier            =  NHSTAR 
-            resultsdescript % initial_value        =  0.0
-            resultsdescript % num_items_per_record =  1
-            resultsdescript % num_fd_records       =  NP_G
-            resultsdescript % num_records_this     =  NP
-            resultsdescript % imap                 => nodes_lg
-            resultsdescript % array                => results 
-            resultsdescript % array_g              => results_g
-#ifdef CMPI
-            CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
-#endif
-          IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
-#ifdef CMPI
-            DO M=1, NP_G
-               WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
-               IHOTSTP = IHOTSTP + 1
-            END DO 
-#else
-            DO M=1, NP_G
-               WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
-               IHOTSTP = IHOTSTP + 1
-            END DO 
-#endif
-            END IF 
-         END DO
-       END IF
-
-       IF (ABS(IDEN).EQ.2) THEN
-         DO N=1,NFEN
-            DO NH=1,NP
-               RESULTS(NH) = SAL(NH,N)
-            END DO
-            resultsdescript % specifier            =  NHSTAR 
-            resultsdescript % initial_value        =  0.0
-            resultsdescript % num_items_per_record =  1
-            resultsdescript % num_fd_records       =  NP_G
-            resultsdescript % num_records_this     =  NP
-            resultsdescript % imap                 => nodes_lg
-            resultsdescript % array                => results 
-            resultsdescript % array_g              => results_g
-#ifdef CMPI
-            CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
-#endif
-            IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
-#ifdef CMPI
-            DO M=1, NP_G
-               WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
-               IHOTSTP = IHOTSTP + 1
-            END DO 
-#else
-            DO M=1, NP_G
-               WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
-               IHOTSTP = IHOTSTP + 1
-            END DO 
-#endif
-            END IF 
-         END DO
-       END IF
-
-       IF (ABS(IDEN).EQ.3) THEN
-         DO N=1,NFEN
-            DO NH=1,NP
-               RESULTS(NH) = TEMP(NH,N)
-            END DO
-            resultsdescript % specifier            =  NHSTAR 
-            resultsdescript % initial_value        =  0.0
-            resultsdescript % num_items_per_record =  1
-            resultsdescript % num_fd_records       =  NP_G
-            resultsdescript % num_records_this     =  NP
-            resultsdescript % imap                 => nodes_lg
-            resultsdescript % array                => results 
-            resultsdescript % array_g              => results_g
-#ifdef CMPI
-            CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
-#endif
-            IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
-#ifdef CMPI
-
-            DO M=1, NP_G
-               WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
-               IHOTSTP = IHOTSTP + 1
-            END DO 
-#else
-            DO M=1, NP_G
-               WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
-               IHOTSTP = IHOTSTP + 1
-            END DO 
-#endif
-            END IF 
-         END DO
-       END IF
-
-       IF (ABS(IDEN).EQ.4) THEN
-         DO N=1,NFEN
-            DO NH=1,NP
-               RESULTS(NH) = SAL(NH,N)
-            END DO
-            resultsdescript % specifier            =  NHSTAR 
-            resultsdescript % initial_value        =  0.0
-            resultsdescript % num_items_per_record =  1
-            resultsdescript % num_fd_records       =  NP_G
-            resultsdescript % num_records_this     =  NP
-            resultsdescript % imap                 => nodes_lg
-            resultsdescript % array                => results 
-            resultsdescript % array_g              => results_g
-#ifdef CMPI
-            CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
-#endif
-            IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
-#ifdef CMPI
-            DO M=1, NP_G
-               WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
-               IHOTSTP = IHOTSTP + 1
-            END DO 
-#else
-            DO M=1, NP_G
-               WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
-               IHOTSTP = IHOTSTP + 1
-            END DO 
-#endif
-            END IF 
-         END DO
-         DO N=1,NFEN
-            DO NH=1,NP
-               RESULTS(NH) = TEMP(NH,N)
-            END DO
-            resultsdescript % specifier            =  NHSTAR 
-            resultsdescript % initial_value        =  0.0
-            resultsdescript % num_items_per_record =  1
-            resultsdescript % num_fd_records       =  NP_G
-            resultsdescript % num_records_this     =  NP
-            resultsdescript % imap                 => nodes_lg
-            resultsdescript % array                => results 
-            resultsdescript % array_g              => results_g
-#ifdef CMPI
-            CALL collectFullDomainArray(resultsdescript,packOne,unpackOne)
-#endif
-            IF (MYPROC == 0 .or. WRITE_LOCAL_HOT_START_FILES) THEN 
-#ifdef CMPI
-            DO M=1, NP_G
-               WRITE(hss % lun, REC=IHOTSTP) resultsdescript % array_g(M)
-               IHOTSTP = IHOTSTP + 1
-            END DO 
-#else
-            DO M=1, NP_G
-               WRITE(hss % lun, REC=IHOTSTP) RESULTS(M) 
-               IHOTSTP = IHOTSTP + 1
-            END DO 
-#endif
-            END IF
-         END DO
-       END IF
-       DEALLOCATE(RESULTS)
-       DEALLOCATE(RESULTS_g)
       END SELECT
+C
+C     3 D  V E L O C I T Y
+      IF ((MNPROC.GT.1).and.
+     &   (WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN
+         IF (myProc.eq.0) THEN
+            ALLOCATE(rp_g(NP_G,NFEN),ip_g(NP_G,NFEN),WZ_g(NP_G,NFEN))
+            RealQDescript % array2D_g => rp_g
+            ImaginaryQDescript % array2D_g => ip_g
+            WZDescript % array2D_g => WZ_g
+         ENDIF
+         rp = real(q)
+         CALL collectFullDomainArray(RealQDescript,
+     &      packNPbyM, unpackNPbyM)
+         ip = aimag(q)
+         CALL collectFullDomainArray(ImaginaryQDescript,
+     &      packNPbyM, unpackNPbyM)
+         CALL collectFullDomainArray(WZDescript,
+     &      packNPbyM, unpackNPbyM)
+      ENDIF
 
+      SELECT CASE(NHSTAR)
+         CASE(1,67,68) ! non-portable binary
+            IF ((MNPROC.eq.1).or.
+     &         (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+               DO N=1,NFEN
+                  layer(:) = real(q(:,N))
+                  CALL binaryWrite2D(layer, np, hss%lun, ihotstp) 
+               END DO
+               DO N=1,NFEN
+                  layer(:) = aimag(q(:,N))
+                  CALL binaryWrite2D(layer, np, hss%lun, ihotstp) 
+               END DO
+               DO N=1,NFEN
+                  CALL binaryWrite2D(WZ(:,N), np, hss%lun, ihotstp) 
+               END DO
+            ENDIF
+            IF ((MNPROC.GT.1).AND.(myProc.eq.0)
+     &         .AND.(WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN
+               DO N=1,NFEN
+                  CALL binaryWrite2D(rp_g(:,N), np_g, hss%lun, ihotstp)
+               END DO
+               DO N=1,NFEN
+                  CALL binaryWrite2D(ip_g(:,N), np_g, hss%lun, ihotstp)
+               END DO
+               DO N=1,NFEN
+                  CALL binaryWrite2D(WZ_g(:,N), np_g, hss%lun, ihotstp)
+               END DO
+            ENDIF
+         CASE(3,367,368)
+#ifdef NETCDF
+            IF (myProc.eq.0) THEN
+               rp = real(q)
+               CALL writeNetCDFHotstart3DVar(hss%lun, RealQDescript)
+               ip = aimag(q)
+               CALL writeNetCDFHotstart3DVar(hss%lun,ImaginaryQDescript)
+               CALL writeNetCDFHotstart3DVar(hss%lun, WZDescript)
+            ENDIF
+#endif
+         CASE DEFAULT
+
+      END SELECT 
+
+      IF ((MNPROC.GT.1).and.
+     &    (WRITE_LOCAL_HOT_START_FILES.eqv..false.).AND.
+     &     (myProc.eq.0)) THEN
+            DEALLOCATE(rp_g,ip_g,WZ_g)
+      ENDIF
+C
+C     3 D  T U R B U L E N C E 
+      IF ((MNPROC.GT.1).and.
+     &   (WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN
+         IF (myProc.eq.0) THEN
+            ALLOCATE(q20_g(NP_G,NFEN),l_g(NP_G,NFEN))
+            Q20Descript % array2D_g => q20_g
+            LDescript % array2D_g => l_g
+         ENDIF
+         CALL collectFullDomainArray(Q20Descript,
+     &      packNPbyM, unpackNPbyM)
+         CALL collectFullDomainArray(LDescript,
+     &      packNPbyM, unpackNPbyM)
+      ENDIF
+      SELECT CASE(NHSTAR)
+         CASE(1,67,68) ! non-portable binary
+            IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
+               DO N=1,NFEN
+                  CALL binaryWrite2D(q20(:,N), np, hss%lun, ihotstp) 
+               END DO
+               DO N=1,NFEN
+                  CALL binaryWrite2D(l(:,N), np, hss%lun, ihotstp) 
+               END DO
+            ENDIF
+            IF ((MNPROC.GT.1).AND.(myProc.eq.0)
+     &         .AND.(WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN
+               DO N=1,NFEN
+                  CALL binaryWrite2D(q20_g(:,N), np_g, hss%lun, ihotstp)
+               END DO
+               DO N=1,NFEN
+                  CALL binaryWrite2D(l_g(:,N), np_g, hss%lun, ihotstp)
+               END DO
+            ENDIF
+         CASE(3,367,368)
+#ifdef NETCDF
+            IF (myProc.eq.0) THEN
+               CALL writeNetCDFHotstart3DVar(hss%lun, Q20Descript)
+               CALL writeNetCDFHotstart3DVar(hss%lun, LDescript)
+            ENDIF
+#endif
+         CASE DEFAULT
+
+      END SELECT 
+      IF ((MNPROC.GT.1).and.
+     &   (WRITE_LOCAL_HOT_START_FILES.eqv..false.).AND.
+     &    (myProc.eq.0)) THEN
+         DEALLOCATE(q20_g,l_g)
+      ENDIF
+C
+C     3 D  D E N S I T Y 
+      IF ((MNPROC.GT.1).and.
+     &   (WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN
+         IF (myProc.eq.0) THEN
+            IF (ABS(IDEN).EQ.1) THEN
+               ALLOCATE(SigT_g(NP_G,NFEN))
+               SigTDescript % array2D_g => SigT_g
+            ENDIF
+            IF ((ABS(IDEN).EQ.2).OR.(ABS(IDEN).EQ.4)) THEN
+               ALLOCATE(Sal_g(NP_G,NFEN))
+               SalDescript % array2D_g => Sal_g
+            ENDIF
+            IF ((ABS(IDEN).EQ.3).OR.(ABS(IDEN).EQ.4)) THEN
+               ALLOCATE(Temp_g(NP_G,NFEN))
+               TempDescript % array2D_g => Temp_g
+            ENDIF
+         ENDIF
+         IF (ABS(IDEN).EQ.1) THEN        
+            CALL collectFullDomainArray(SigTDescript,
+     &         packNPbyM, unpackNPbyM)
+         ENDIF
+         IF ((ABS(IDEN).EQ.2).OR.(ABS(IDEN).EQ.4)) THEN
+            CALL collectFullDomainArray(SalDescript,
+     &         packNPbyM, unpackNPbyM)
+         ENDIF
+         IF ((ABS(IDEN).EQ.3).OR.(ABS(IDEN).EQ.4)) THEN
+            CALL collectFullDomainArray(TempDescript,
+     &         packNPbyM, unpackNPbyM)
+         ENDIF
+      ENDIF
+C
+      SELECT CASE(NHSTAR)
+         CASE(1,67,68) ! non-portable binary
+            IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
+               IF (ABS(IDEN).EQ.1) THEN        
+                  DO N=1,NFEN
+                     CALL binaryWrite2D(SigT(:,N), np, hss%lun, ihotstp)
+                  END DO
+               ENDIF
+               IF ((ABS(IDEN).EQ.2).OR.(ABS(IDEN).EQ.4)) THEN
+                  DO N=1,NFEN
+                     CALL binaryWrite2D(Sal(:,N), np, hss%lun, ihotstp) 
+                  END DO
+               ENDIF
+               IF ((ABS(IDEN).EQ.3).OR.(ABS(IDEN).EQ.4)) THEN
+                  DO N=1,NFEN
+                     CALL binaryWrite2D(Temp(:,N), np, hss%lun, ihotstp)
+                  END DO
+               ENDIF
+            ENDIF
+            IF ((MNPROC.GT.1).AND.(myProc.eq.0)
+     &         .AND.(WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN
+               IF (ABS(IDEN).EQ.1) THEN        
+                  DO N=1,NFEN
+                     CALL binaryWrite2D(SigT_g(:,N), np_g, hss%lun,
+     &                  ihotstp)
+                  END DO
+               ENDIF
+               IF ((ABS(IDEN).EQ.2).OR.(ABS(IDEN).EQ.4)) THEN
+                  DO N=1,NFEN
+                     CALL binaryWrite2D(Sal_g(:,N), np_g, hss%lun,
+     &                  ihotstp)
+                  END DO
+               ENDIF
+               IF ((ABS(IDEN).EQ.3).OR.(ABS(IDEN).EQ.4)) THEN
+                  DO N=1,NFEN
+                     CALL binaryWrite2D(Temp_g(:,N), np_g, hss%lun,
+     &                  ihotstp)
+                  END DO
+               ENDIF
+            ENDIF
+         CASE(3,367,368)
+#ifdef NETCDF
+         IF (myProc.eq.0) THEN
+            IF (ABS(IDEN).EQ.1) THEN        
+               CALL writeNetCDFHotstart3DVar(hss%lun, SigTDescript)
+            ENDIF
+            IF ((ABS(IDEN).EQ.2).OR.(ABS(IDEN).EQ.4)) THEN
+               CALL writeNetCDFHotstart3DVar(hss%lun, SalDescript)
+            ENDIF
+            IF ((ABS(IDEN).EQ.3).OR.(ABS(IDEN).EQ.4)) THEN
+               CALL writeNetCDFHotstart3DVar(hss%lun, TempDescript)
+            ENDIF
+         ENDIF
+#endif
+      END SELECT 
+C
+      IF ((MNPROC.GT.1).and.
+     &   (WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN
+         IF (myProc.eq.0) THEN
+            IF (ABS(IDEN).EQ.1) THEN
+               DEALLOCATE(SigT_g)
+            ENDIF
+            IF ((ABS(IDEN).EQ.2).OR.(ABS(IDEN).EQ.4)) THEN
+               DEALLOCATE(Sal_g)
+            ENDIF
+            IF ((ABS(IDEN).EQ.3).OR.(ABS(IDEN).EQ.4)) THEN
+               DEALLOCATE(Temp_g)
+            ENDIF
+         ENDIF
+      ENDIF
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
-      END
-
+C-----------------------------------------------------------------------
+      END SUBROUTINE HSTART3D_OUT
+C-----------------------------------------------------------------------
 !      DO NH=1,NP
 !         IHOTSTP=IHOTSTP+1
 !         WRITE(hss % lun,REC=IHOTSTP) DUU(NH)

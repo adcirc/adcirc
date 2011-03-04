@@ -212,6 +212,14 @@ ifeq ($(BUILDTYPE),aswip)
   VPATH :=  $(SRCDIR)/wind
   MSG_MOBJ:=
 endif
+#                                      adccmp
+ifeq ($(BUILDTYPE),adccmp)
+  CF:= $(PPFC)
+  O_DIR:=odir17/
+  FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
+  VPATH :=  $(SRCDIR)/util
+  MSG_MOBJ:=
+endif
 #
 $(O_DIR):
 	mkdir -p $@
@@ -275,6 +283,7 @@ H2A_SRC    =  hot2asc.F
 INF_SRC    =  inflate.F
 HST_SRC    =  hstime.F
 ASW_SRC    =  aswip_1.0.3.F
+CMP_SRC    =  adccmp.F
 
 METIS_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(METIS_SRC) )
 PREP_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PREP_SRC) ) $(O_DIR)mkdir.o
@@ -289,6 +298,7 @@ H2A_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(H2A_SRC) )
 INF_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(INF_SRC) )
 HST_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(HST_SRC) )
 ASW_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(ASW_SRC) )
+CMP_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CMP_SRC) )
 
 #################### SWAN Source & Object Files #########################
 # Casey 090302: Added this section for coupling to unstructured SWAN.
@@ -336,7 +346,7 @@ $(O_DIR)%.o  : %.f90
 
 ########################## Executable Targets ############################
 
-.PHONY: all metis metis_be adcprep adcprep_be adcpost adcirc $(PARALLEL_ADCIRC)  p15 owi22 build13 build12 buildstwave23 hot2asc inflate hstime aswip
+.PHONY: all metis metis_be adcprep adcprep_be adcpost adcirc $(PARALLEL_ADCIRC)  p15 owi22 build13 build12 buildstwave23 hot2asc inflate hstime aswip adccmp
 
 all :  metis adcprep $(BACKEND_EXEC) adcpost adcirc $(PARALLEL_ADCIRC)
 
@@ -387,6 +397,8 @@ ifeq ($(MAKELEVEL),0)
 	$(MAKE) BUILDTYPE=hstime $@
    aswip:
 	$(MAKE) BUILDTYPE=aswip $@
+   adccmp:
+	$(MAKE) BUILDTYPE=adccmp $@
 else
    adcprep::  $(O_DIR)
    adcprep_be::  $(O_DIR)
@@ -403,6 +415,7 @@ else
    inflate:: $(O_DIR)
    hstime::   $(O_DIR)
    aswip::  $(O_DIR)
+   adccmp:  $(O_DIR)
 
 ifeq ($(NETCDF),enable)
    adcprep ::  $(NC_MOBJ) $(METIS_OBJ) $(KDTREE_MOBJ) $(PREP_OBJ) 
@@ -473,6 +486,10 @@ endif
    aswip ::  $(ASW_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ)
 
+   adccmp :  $(O_DIR) $(CMP_OBJ)
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
+
+
 endif
 
 ########################## Misc Commands ####################################
@@ -482,7 +499,7 @@ clean:
 clobber:
 	rm -r -f odir* 
 	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 \
-           build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost
+           build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp
 help:
 	@echo "This makefile supports the following:"
 	@echo "make all        - makes all seven targets"
@@ -499,6 +516,7 @@ help:
 	@echo "make hot2asc       - makes the hotstart debug program"
 	@echo "make inflate       - makes the output file inflation program"
 	@echo "make hstime   - makes the hot start time examiner"
+	@echo "make adccmp     - makes the output file comparison program"
 #Casey 091013: Add text for the SWAN+ADCIRC targets.
 	@echo "make adcswan     - makes the serial SWAN+ADCIRC executable"
 	@echo "make padcswan     - makes the parallel SWAN+ADCIRC executable"
@@ -629,6 +647,10 @@ $(O_DIR)inflate.o     : inflate.F
 # hot start time examiner
 
 $(O_DIR)hstime.o     : hstime.F
+
+# output file comparison utility
+
+$(O_DIR)adccmp.o      : adccmp.F
 
 # Casey 090302: Added the following lines for SWAN.
 $(O_DIR)swmod1.o                : swmod1.f

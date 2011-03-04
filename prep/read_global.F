@@ -1055,39 +1055,35 @@ C
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
-             IF(NOUTM.NE.3)THEN
-            
-               READ(STAMLOC(I),*) XEM(I),YEM(I)
-             ELSE
+               IF(NOUTM.NE.3) THEN
+                  READ(STAMLOC(I),*) XEM(I),YEM(I)
+               ELSE
 #ifdef NETCDF
-                call parse(STAMLOC(I), LVAR)
-                XEM(I)=a2f(LVAR(1))
-                YEM(I)=a2f(LVAR(2))
-                STATNAMEM(I)=LVAR(3)
-C                WRITE(6,9911) XEM(I), YEM(I), STATNAMEM(I)
+                  call parse(STAMLOC(I), LVAR)
+                  XEM(I)=a2f(LVAR(1))
+                  YEM(I)=a2f(LVAR(2))
+                  STATNAMEM(I)=LVAR(3)
+C                 WRITE(6,9911) XEM(I), YEM(I), STATNAMEM(I)
 #endif
-             ENDIF
-             
-         ELSE
+               ENDIF
+            ELSE
+               IF(NOUTM.NE.3) THEN
 
-             IF(NOUTM.NE.3)THEN
-
-!              READ(15,80) STAMLOC(I)
-               READ(STAMLOC(I),*) SLEM(I),SFEM(I)
-               
-             ELSE
+!                 READ(15,80) STAMLOC(I)
+                  READ(STAMLOC(I),*) SLEM(I),SFEM(I)
+               ELSE
 #ifdef NETCDF
 
-               call parse(STAMLOC(I), LVAR)
-               SLEM(I)=a2f(LVAR(1))
-               SFEM(I)=a2f(LVAR(2))
-               STATNAMEM(I)=LVAR(3)
-!               WRITE(6,9911) SLEM(I), SFEM(I), STATNAMEM(I,SNAMLEN)
-!               WRITE(6,*)"STATION INFO STAMLOC",
-!     &             SLEM(I),SFEM(I),STATNAMEM(I,SNAMLEN)
-!    &             SLEM(I),SFEM(I),STATNUMBM(I),STATNAMEM(I)
+                  call parse(STAMLOC(I), LVAR)
+                  SLEM(I)=a2f(LVAR(1))
+                  SFEM(I)=a2f(LVAR(2))
+                  STATNAMEM(I)=LVAR(3)
+!                 WRITE(6,9911) SLEM(I), SFEM(I), STATNAMEM(I,SNAMLEN)
+!                 WRITE(6,*)"STATION INFO STAMLOC",
+!     &           SLEM(I),SFEM(I),STATNAMEM(I,SNAMLEN)
+!    &            SLEM(I),SFEM(I),STATNUMBM(I),STATNAMEM(I)
 #endif
-             ENDIF
+               ENDIF
 C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
@@ -1282,16 +1278,10 @@ C
 !     --------------------------------------------------------------------
 
       IF(useNetCDF.eqv..true.) THEN
-         IF (NOUTGC.eq.3.                                 ! fort.93
-     &       or.NOUTC.eq.3.                                 ! fort.91
-     &       or.I3DSD.eq.3.                                 ! fort.41
-     &       or.I3DSV.eq.3.                                 ! fort.42
-     &       or.I3DST.eq.3.                                 ! fort.43
-     &       or.I3DGD.eq.3.                                 ! fort.44
-     &       or.I3DGV.eq.3.                                 ! fort.45
-     &       or.I3DGT.eq.3) THEN                            ! fort.46
+         IF (NOUTGC.eq.3.or.                               ! fort.93
+     &       NOUTC.eq.3) then                                 ! fort.91
             CALL allMessage(ERROR,
-     &         "NetCDF output not available yet for 3D output.")
+     &         "NetCDF output not available for concentration output.")
             STOP
          ENDIF
 C
@@ -1306,11 +1296,12 @@ C
          READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) contact
          READ(15,'(A80)',ERR=999,END=999,IOSTAT=ios) base_date
 
-      ENDIF
-999   IF (ios.ne.0) THEN
-         CALL allMessage(ERROR,
-     &      "Could not read metadata for NetCDF at end of fort.15.")
-         STOP
+999      IF (ios.ne.0) THEN
+            CALL allMessage(ERROR,
+     &         "Could not read metadata for NetCDF at end of fort.15.")
+            STOP
+         ENDIF
+
       ENDIF
 #endif
 C
@@ -1337,12 +1328,14 @@ C     tjc  6/24/02
 C---------------------------------------------------------------------
       SUBROUTINE READ15_3DVS() 
       USE PRE_GLOBAL 
+      USE GLOBAL, ONLY : parse, a2f, SNAMLEN
+      USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
       REAL(8) SL1Sta,SF1Sta
       INTEGER I,J,K,M,N                                        ! loop counters
-      
+      CHARACTER(50) LVAR(3)
       REAL(8) :: STATIME
       REAL(8), PARAMETER :: day2sec=24.d0*3600.d0
 C
@@ -1488,30 +1481,34 @@ C     jgf45.11 switched from node numbers to coordinates
       ALLOCATE(IMAP_STA3DD_LG(NSTA3DD,MNPROC))
       nbytes = 4*nsta3dd*mnproc
       call memory_alloc(nbytes)
+      ALLOCATE(STATNAMED(NSTA3DD))
+      nbytes = 4*SNAMLEN*NSTA3DD
+      call memory_alloc(nbytes)
 C  kmd48.33bc changed to -2 and I3DSD not equal to 0
-      IF((I3DSD.LT.-2).OR.(I3DSD.GT.2)) THEN
+      IF(ABS(I3DSD).GT.3) THEN
          WRITE(*,350)
          WRITE(*,511)
- 511     FORMAT(/,2X,'    I3DSD MUST BE -2,-1,0,1 OR 2')
+ 511     FORMAT(/,2X,'    I3DSD MUST BE -3,-2,-1,0,1,2, or 3')
          STOP
       ENDIF
       IF(I3DSD.NE.0) THEN
-         IF (ICS.EQ.1) THEN
-            DO I=1,NSTA3DD
-               READ(15,80) STA3DDLOC(I)
-               READ(STA3DDLOC(I),*) X3DD(I),Y3DD(I)
-            ENDDO
-         ELSE
-            DO I=1,NSTA3DD
-               READ(15,80) STA3DDLOC(I)
-               READ(STA3DDLOC(I),*) SL3DD(I),SF3DD(I)
+         DO I=1,NSTA3DD
+            READ(15,80) STA3DDLOC(I)
+            call parse(STA3DDLOC(I), LVAR)
+            STATNAMED(I)=LVAR(3)
+            IF (ICS.EQ.1) THEN
+               X3DD(I)=a2f(LVAR(1))
+               Y3DD(I)=a2f(LVAR(2))
+            ELSE
+               SL3DD(I)=a2f(LVAR(1))
+               SF3DD(I)=a2f(LVAR(2))
                SL1Sta=DEG2RAD*SL3DD(I)
                SF1Sta=DEG2RAD*SF3DD(I)
                X3DD(I) = R*(SL1Sta-SL0)*COS(SF0)
                Y3DD(I) = R*SF1Sta
-            ENDDO
-         ENDIF
-
+            ENDIF
+         ENDDO
+C
 C     jgf45.11 For each 3D density station, find the full-domain index of 
 C     the corresponding element.
 c...tcm v49.48.01 replace with new call to kdtsearch
@@ -1542,32 +1539,36 @@ C     jgf45.11 switched from node numbers to coordinates
       ALLOCATE(NNS3DVG(NSTA3DV))
       nbytes = 4*nsta3dv
       call memory_alloc(nbytes)
+      ALLOCATE(STATNAMEV3D(NSTA3DV))
+      nbytes = 4*SNAMLEN*NSTA3DV
+      call memory_alloc(nbytes)
 C  kmd48.33 changed to -2
-      IF((I3DSV.LT.-2).OR.(I3DSV.GT.2)) THEN
+      IF(ABS(I3DSV).GT.3) THEN
          WRITE(*,350)
          WRITE(*,512)
- 512     FORMAT(/,2X,'    I3DSV MUST BE -2,-1,0,1 OR 2')
+ 512     FORMAT(/,2X,'    I3DSV MUST BE -3,-2,-1,0,1,2,or 3')
          STOP
       ENDIF
       IF(I3DSV.NE.0) THEN
-         IF (ICS.EQ.1) THEN
-            DO I=1,NSTA3DV
-               READ(15,80) STA3DVLOC(I)
-               READ(STA3DVLOC(I),*) X3DV(I),Y3DV(I)
-            ENDDO
-         ELSE
-            ALLOCATE(SL3DV(NSTA3DV),SF3DV(NSTA3DV))
-            nbytes = 16*nsta3dv
-            call memory_alloc(nbytes)
-            DO I=1,NSTA3DV
-               READ(15,80) STA3DVLOC(I)
-               READ(STA3DVLOC(I),*) SL3DV(I),SF3DV(I)
+         DO I=1,NSTA3DV
+            READ(15,80) STA3DVLOC(I)
+            call parse(STA3DVLOC(I), LVAR)
+            STATNAMEV3D(I)=LVAR(3)
+            IF (ICS.EQ.1) THEN
+               X3DV(I)=a2f(LVAR(1))
+               Y3DV(I)=a2f(LVAR(2))
+            ELSE
+               ALLOCATE(SL3DV(NSTA3DV),SF3DV(NSTA3DV))
+               nbytes = 16*nsta3dv
+               call memory_alloc(nbytes)
+               SL3DV(I)=a2f(LVAR(1))
+               SF3DV(I)=a2f(LVAR(2))
                SL1Sta=DEG2RAD*SL3DV(I)
                SF1Sta=DEG2RAD*SF3DV(I)
                X3DV(I) = R*(SL1Sta-SL0)*COS(SF0)
                Y3DV(I) = R*SF1Sta
-            ENDDO
-         ENDIF
+            ENDIF
+         ENDDO
 
 C     jgf45.11 For each 3D velocity station, find the full-domain index of 
 C     the corresponding element.
@@ -1594,32 +1595,36 @@ C     jgf45.11 switched from node numbers to coordinates
       ALLOCATE(X3DT(NSTA3DT),Y3DT(NSTA3DT))
       nbytes = 16*nsta3dt
       call memory_alloc(nbytes)
+      ALLOCATE(STATNAMET(NSTA3DT))
+      nbytes = 4*SNAMLEN*NSTA3DT
+      call memory_alloc(nbytes)
 C  kmd48.33 changed to -2
-      IF((I3DST.LT.-2).OR.(I3DST.GT.2)) THEN
+      IF(ABS(I3DST).GT.3) THEN
          WRITE(*,350)
          WRITE(*,513)
- 513     FORMAT(/,2X,'    I3DST MUST BE -2,-1,0,1 OR 2')
+ 513     FORMAT(/,2X,'    I3DST MUST BE -3,-2,-1,0,1,2, or 3')
          STOP
       ENDIF
       IF(I3DST.NE.0) THEN
-         IF (ICS.EQ.1) THEN
-            DO I=1,NSTA3DT
-               READ(15,80) STA3DTLOC(I)
-               READ(STA3DTLOC(I),*) X3DT(I),Y3DT(I)
-            ENDDO
-         ELSE
-            ALLOCATE(SL3DT(NSTA3DT),SF3DT(NSTA3DT))
-            nbytes = 16*nsta3dt
-            call memory_alloc(nbytes)
-            DO I=1,NSTA3DT
-               READ(15,80) STA3DTLOC(I)
-               READ(STA3DTLOC(I),*) SL3DT(I),SF3DT(I)
+         DO I=1,NSTA3DT
+            READ(15,80) STA3DTLOC(I)
+            call parse(STA3DTLOC(I), LVAR)
+            STATNAMET(I)=LVAR(3)
+            IF (ICS.EQ.1) THEN
+               X3DT(I)=a2f(LVAR(1))
+               Y3DT(I)=a2f(LVAR(2))
+            ELSE
+               ALLOCATE(SL3DT(NSTA3DT),SF3DT(NSTA3DT))
+               nbytes = 16*nsta3dv
+               call memory_alloc(nbytes)
+               SL3DT(I)=a2f(LVAR(1))
+               SF3DT(I)=a2f(LVAR(2))
                SL1Sta=DEG2RAD*SL3DT(I)
                SF1Sta=DEG2RAD*SF3DT(I)
                X3DT(I) = R*(SL1Sta-SL0)*COS(SF0)
                Y3DT(I) = R*SF1Sta
-            ENDDO
-         ENDIF
+            ENDIF
+         ENDDO
 
 C     jgf45.11 For each 3D turbulence station, find the full-domain index of 
 C     the corresponding element.
@@ -1640,10 +1645,10 @@ C....  GLOBAL 3D DENSITY, TEMPERATURE, SALINITY OUTPUT
       READ(15,80) DGDMSG
       READ(DGDMSG,*) I3DGD,TO3DGDS,TO3DGDF,NSPO3DGD
 C   kmd48.33bc changed to -2
-      IF((I3DGD.LT.-2).OR.(I3DGD.GT.2)) THEN
+      IF(ABS(I3DGD).GT.2) THEN
          WRITE(*,350)
          WRITE(*,514)
- 514     FORMAT(/,2X,'    I3DGD MUST BE -2,-1,0,1 OR 2')
+ 514     FORMAT(/,2X,'    I3DGD MUST BE -3,-2,-1,0,1,2, or 3')
          STOP
       ENDIF
 
@@ -1652,10 +1657,10 @@ C....  GLOBAL 3D VELOCITY OUTPUT
       READ(15,80) DGVMSG
       READ(DGVMSG,*) I3DGV,TO3DGVS,TO3DGVF,NSPO3DGV
 C   kmd48.33bc changed to -2
-      IF((I3DGV.LT.-2).OR.(I3DGV.GT.2)) THEN
+      IF(ABS(I3DGV).GT.3) THEN
          WRITE(*,350)
          WRITE(*,515)
- 515     FORMAT(/,2X,'    I3DGV MUST BE -2,-1,0,1 OR 2')
+ 515     FORMAT(/,2X,'    I3DGV MUST BE -3,-2,-1,0,1,2 or 3')
          STOP
       ENDIF
 
@@ -1664,10 +1669,10 @@ C....  GLOBAL 3D TURBULENCE OUTPUT
       READ(15,80) DGTMSG
       READ(DGTMSG,*) I3DGT,TO3DGTS,TO3DGTF,NSPO3DGT
 C   kmd48.33bc changed to -2
-      IF((I3DGT.LT.-2).OR.(I3DGT.GT.2)) THEN
+      IF(ABS(I3DGT).GT.3) THEN
          WRITE(*,350)
          WRITE(16,516)
- 516     FORMAT(/,2X,'    I3DGT MUST BE -2,-1,0,1 OR 2')
+ 516     FORMAT(/,2X,'    I3DGT MUST BE -3,-2,-1,0,1,2, or 3')
          STOP
       ENDIF
 

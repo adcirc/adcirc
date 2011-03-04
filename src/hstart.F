@@ -127,8 +127,8 @@ C     in parallel.
       INTEGER fulldomainElement ! fulldomain element number from hotstart file
 C
       call setMessageSource("hotstart")
-#ifdef HOTSTART_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
 C
       metOutputOn = .FALSE.
@@ -244,49 +244,19 @@ C        Now read the non-portable binary hot start file.
          READ(IHOT,REC=IHOTSTP) NP_A_IN      ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NE_A_IN      ; IHOTSTP = IHOTSTP + 1
 C      
-         IF ((MNPROC.eq.1)
-     &        .or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-            CALL binaryRead2D(ETA1, NP, IHOT, IHOTSTP)
-            CALL binaryRead2D(ETA2, NP, IHOT, IHOTSTP)
-C           jgf46.34 Added support for IBTYPE=52.
-            CALL binaryRead2D(EtaDisc, NP, IHOT, IHOTSTP)
-            CALL binaryRead2D(UU2, NP, IHOT, IHOTSTP)
-            CALL binaryRead2D(VV2, NP, IHOT, IHOTSTP)
-            IF(IMHS.EQ.10) THEN
-               CALL binaryRead2D(CH1, NP, IHOT, IHOTSTP)
-            ENDIF
-            CALL binaryIntRead2D(NNODECODE, NP, IHOT, IHOTSTP)
-            CALL binaryIntRead2D(NOFF, NE, IHOT, IHOTSTP)
-         ELSE
-C           jgf49.44: Add capability to read fulldomain binary hotstart
-C           file in parallel.
-            CALL binaryRead2D(ETA1_g, NP_G, IHOT, IHOTSTP)
-            CALL binaryRead2D(ETA2_g, NP_G, IHOT, IHOTSTP)
-C           jgf46.34 Added support for IBTYPE=52.
-            CALL binaryRead2D(EtaDisc_g, NP_G, IHOT, IHOTSTP)
-            CALL binaryRead2D(UU2_g, NP_G, IHOT, IHOTSTP)
-            CALL binaryRead2D(VV2_g, NP_G, IHOT, IHOTSTP)
-            IF(IMHS.EQ.10) THEN
-               CALL binaryRead2D(CH1_g, NP_G, IHOT, IHOTSTP)
-            ENDIF
-            CALL binaryIntRead2D(NNODECODE_g, NP_G, IHOT, IHOTSTP)
-            CALL binaryIntRead2D(NOFF_g, NE_G, IHOT, IHOTSTP)
-            ! map 2D data from fulldomain to subdomain
-            DO subdomainNode=1,NP
-               fulldomainNode = ABS(NODES_LG(subdomainNode))
-               ETA1(subdomainNode)=ETA1_g(fulldomainNode)
-               ETA2(subdomainNode)=ETA2_g(fulldomainNode)
-               EtaDisc(subdomainNode)=EtaDisc_g(fulldomainNode)
-               UU2(subdomainNode)=UU2_g(fulldomainNode)
-               VV2(subdomainNode)=VV2_g(fulldomainNode)
-               IF (IMHS.eq.10) CH1(subdomainNode)=CH1_g(fulldomainNode)
-               NNODECODE(subdomainNode)=NNODECODE_g(fulldomainNode)
-            ENDDO
-            DO subdomainElement=1,NE
-               fulldomainElement = ABS(IMAP_EL_LG(subdomainElement))
-               NOFF(subdomainElement) = NOFF_g(fulldomainElement)
-            ENDDO
+C        jgf49.44: Add capability to read fulldomain binary hotstart
+C        file in parallel.
+         CALL readAndMapToSubdomain2D(ETA1, IHOT, IHOTSTP)
+         CALL readAndMapToSubdomain2D(ETA2, IHOT, IHOTSTP)
+C        jgf46.34 Added support for IBTYPE=52.
+         CALL readAndMapToSubdomain2D(ETADisc, IHOT, IHOTSTP)
+         CALL readAndMapToSubdomain2D(UU2, IHOT, IHOTSTP)
+         CALL readAndMapToSubdomain2D(VV2, IHOT, IHOTSTP)
+         IF(IMHS.EQ.10) THEN
+            CALL readAndMapToSubdomain2D(CH1, IHOT, IHOTSTP)
          ENDIF
+         CALL readAndMapToSubdomainInt2D(NNODECODE, IHOT, IHOTSTP)
+         CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP)
 C
          READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
@@ -340,112 +310,60 @@ C
             READ(IHOT,REC=IHOTSTP) I3DGTRec
             IHOTSTP=IHOTSTP+1
 C           kmd48.33bc - changed to the format used with the global IO
-            IF ((MNPROC.eq.1)
-     &           .or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-               CALL binaryRead2D(DUU, NP, IHOT, IHOTSTP)
-               CALL binaryRead2D(DUV, NP, IHOT, IHOTSTP)
-               CALL binaryRead2D(DVV, NP, IHOT, IHOTSTP)
-               CALL binaryRead2D(UU, NP, IHOT, IHOTSTP)
-               CALL binaryRead2D(VV, NP, IHOT, IHOTSTP)
-               CALL binaryRead2D(BSX, NP, IHOT, IHOTSTP)
-               CALL binaryRead2D(BSY, NP, IHOT, IHOTSTP)
-C              kmd48.33bc - allocate realQ_tmp
-               ALLOCATE(RealQ_Tmp(NP,NFEN))
-               ALLOCATE(ImQ_Tmp(NP,NFEN))
-C              kmd48.33bc - changed to format used in global IO, layer output
-               CALL binaryRead3D(RealQ_Tmp, NP, NFEN, IHOT, IHOTSTP)
-               CALL binaryRead3D(ImQ_Tmp, NP, NFEN, IHOT, IHOTSTP)
-               Q = RealQ_Tmp + iy*ImQ_Tmp ! reconstruct Q matrix from parts
-               CALL binaryRead3D(WZ, NP, NFEN, IHOT, IHOTSTP)
-               CALL binaryRead3D(q20, NP, NFEN, IHOT, IHOTSTP)
-               CALL binaryRead3D(l, NP, NFEN, IHOT, IHOTSTP)
-C              kmd48.33bc - need to determine if IDEN parameter in hotstart
-C              is different than IDEN from fort.15 file. If so, determine which
-C              one should be used in the simulation. 
-               IF (MYPROC.EQ.0) THEN
-                  PRINT *, "IDEN = ", IDEN
-                  PRINT *, "IDENHS = ", IDENHS
+C           jgf49.44: Add capability to read fulldomain 3D binary hotstart
+C           file in parallel.
+            CALL readAndMapToSubdomain2D(DUU, IHOT, IHOTSTP)
+            CALL readAndMapToSubdomain2D(DUV, IHOT, IHOTSTP)
+            CALL readAndMapToSubdomain2D(DVV, IHOT, IHOTSTP)
+            CALL readAndMapToSubdomain2D(UU, IHOT, IHOTSTP)
+            CALL readAndMapToSubdomain2D(VV, IHOT, IHOTSTP)
+            CALL readAndMapToSubdomain2D(BSX, IHOT, IHOTSTP)
+            CALL readAndMapToSubdomain2D(BSY, IHOT, IHOTSTP)
+C           kmd48.33bc - allocate realQ_tmp
+            ALLOCATE(RealQ_Tmp(NP,NFEN))
+            ALLOCATE(ImQ_Tmp(NP,NFEN))
+C           kmd48.33bc - changed to format used in global IO, layer output
+            CALL readAndMapToSubdomain3D(RealQ_Tmp, NFEN, IHOT, IHOTSTP)
+            CALL readAndMapToSubdomain3D(ImQ_Tmp, NFEN, IHOT, IHOTSTP)
+            Q = RealQ_Tmp + iy*ImQ_Tmp ! reconstruct Q matrix from parts
+            DEALLOCATE(RealQ_Tmp, ImQ_Tmp)
+            CALL readAndMapToSubdomain3D(WZ, NFEN, IHOT, IHOTSTP)
+            CALL readAndMapToSubdomain3D(q20, NFEN, IHOT, IHOTSTP)
+            CALL readAndMapToSubdomain3D(l, NFEN, IHOT, IHOTSTP)
+C           kmd48.33bc - need to determine if IDEN parameter in hotstart
+C           is different than IDEN from fort.15 file. If so, determine which
+C           one should be used in the simulation. 
+            IF (MYPROC.EQ.0) THEN
+               PRINT *, "IDEN = ", IDEN
+               PRINT *, "IDENHS = ", IDENHS
+            END IF
+            IF (IDenHS.NE.IDEN) THEN
+               IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GE.1)) THEN
+                  ! IDEN value from fort.15 should be used 
+               ELSE IF ((CBAROCLINIC).AND.(RES_BC_FLAG.LE.0)) THEN
+                  IDEN=IDenHS
                END IF
-               IF (IDenHS.NE.IDEN) THEN
-                  IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GE.1)) THEN
-                     ! IDEN value from fort.15 should be used 
-                  ELSE IF ((CBAROCLINIC).AND.(RES_BC_FLAG.LE.0)) THEN
-                     IDEN=IDenHS
-                  END IF
-               END IF
-               SELECT CASE(ABS(IDen))
-               CASE(0)
-                  CALL logMessage(INFO,
-     &             "IDEN=0; This is a barotropic model run.")
-               CASE(1)
-                  CALL binaryRead3D(SigT, NP, NFEN, IHOT, IHOTSTP)
-               CASE(2)
-                  CALL binaryRead3D(Sal, NP, NFEN, IHOT, IHOTSTP)
-               CASE(3)
-                  CALL binaryRead3D(Temp, NP, NFEN, IHOT, IHOTSTP)
-               CASE(4)
-                  CALL binaryRead3D(Sal, NP, NFEN, IHOT, IHOTSTP)
-                  CALL binaryRead3D(Temp, NP, NFEN, IHOT, IHOTSTP)
-               CASE DEFAULT
-                  ! should not happen
-                  WRITE(scratchMessage,12) IDEN
-                  CALL allMessage(ERROR,scratchMessage)
-12                FORMAT("IDEN is ",I2,
-     &                " but the valid range is +/- 0 to 4.")
-               END SELECT
-               DEALLOCATE(RealQ_Tmp,ImQ_Tmp)
-C           jgf49.44: Added capability to read fulldomain 3D hotstart
-C           data in parallel.
-            ELSE
-               CALL binaryMap2D(DUU, IHOT, IHOTSTP)
-               CALL binaryMap2D(DUV, IHOT, IHOTSTP)
-               CALL binaryMap2D(DVV, IHOT, IHOTSTP)
-               CALL binaryMap2D(UU, IHOT, IHOTSTP)
-               CALL binaryMap2D(VV, IHOT, IHOTSTP)
-               CALL binaryMap2D(BSX, IHOT, IHOTSTP)
-               CALL binaryMap2D(BSY, IHOT, IHOTSTP)
-               ALLOCATE(RealQ_Tmp(NP,NFEN))
-               ALLOCATE(ImQ_Tmp(NP,NFEN))
-               CALL binaryMap3D(RealQ_Tmp, NFEN, IHOT, IHOTSTP)
-               CALL binaryMap3D(ImQ_Tmp, NFEN, IHOT, IHOTSTP)
-               Q = RealQ_Tmp + iy*ImQ_Tmp  ! reconstruct Q_g matrix from parts
-               CALL binaryMap3D(WZ, NFEN, IHOT, IHOTSTP)
-               CALL binaryMap3D(q20, NFEN, IHOT, IHOTSTP)
-               CALL binaryMap3D(l, NFEN, IHOT, IHOTSTP)
-C              kmd48.33bc - need to determine if IDEN parameter in hotstart
-C              is different than IDEN from fort.15 file. If so, determine which
-C              one should be used in the simulation. 
-               IF (MYPROC.EQ.0) THEN
-                  PRINT *, "IDEN = ", IDEN
-                  PRINT *, "IDENHS = ", IDENHS
-               END IF
-               IF (IDenHS.NE.IDEN) THEN
-                  IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GE.1)) THEN
-                     ! IDEN value from fort.15 should be used 
-                  ELSE IF ((CBAROCLINIC).AND.(RES_BC_FLAG.LE.0)) THEN
-                     IDEN=IDenHS
-                  END IF
-               END IF
-               SELECT CASE(ABS(IDen))
-               CASE(0) 
-                  CALL logMessage(INFO,
-     &             "IDEN=0; This is a barotropic model run.")
-               CASE(1)
-                  CALL binaryMap3D(SigT, NFEN, IHOT, IHOTSTP)
-               CASE(2)
-                  CALL binaryMap3D(Sal, NFEN, IHOT, IHOTSTP)
-               CASE(3)
-                  CALL binaryMap3D(Temp, NFEN, IHOT, IHOTSTP)
-               CASE(4)
-                  CALL binaryMap3D(Sal, NFEN, IHOT, IHOTSTP)
-                  CALL binaryMap3D(Temp, NFEN, IHOT, IHOTSTP)
-               CASE DEFAULT
-                  ! should not happen
-                  write(*,*) "ERROR: IDEN is ",IDEN,
-     &                " but the valid range is +/- 1 to 4."
-               END SELECT
-               DEALLOCATE(RealQ_Tmp,ImQ_Tmp)
-            ENDIF ! read fulldomain 3D hotstart data in parallel
+            END IF
+            SELECT CASE(ABS(IDen))
+            CASE(0)
+               CALL logMessage(INFO,
+     &          "IDEN=0; This is a barotropic model run.")
+            CASE(1)
+               CALL readAndMapToSubdomain3D(SigT, NFEN, IHOT, IHOTSTP)
+            CASE(2)
+               CALL readAndMapToSubdomain3D(Sal, NFEN, IHOT, IHOTSTP)
+            CASE(3)
+               CALL readAndMapToSubdomain3D(Temp, NFEN, IHOT, IHOTSTP)
+            CASE(4)
+               CALL readAndMapToSubdomain3D(Sal, NFEN, IHOT, IHOTSTP)
+               CALL readAndMapToSubdomain3D(Temp, NFEN, IHOT, IHOTSTP)
+            CASE DEFAULT
+               ! should not happen
+               WRITE(scratchMessage,12) IDEN
+               CALL allMessage(ERROR,scratchMessage)
+12             FORMAT("IDEN is ",I2,
+     &             " but the valid range is +/- 0 to 4.")
+            END SELECT
          ENDIF  ! C3D
 C...
 C......  HOT START INFORMATION FOR HARMONIC ANALYSIS
@@ -2505,8 +2423,8 @@ C
  3220 FORMAT(1X,A32,2X,A24,2X,A24)
  3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
 C
-#ifdef HOTSTART_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       RETURN
@@ -2524,7 +2442,6 @@ C                                                                             *
 c******************************************************************************
 
       SUBROUTINE HOTSTART_3D(TIME,ITHS)
-
       USE GLOBAL_3DVS
 
 C   kmd48.33bc - variable information needed from the global.F file
@@ -2540,15 +2457,13 @@ C   kmd48.33bc - variable information needed from the global.F file
      &                   q_heat1, q_heat2, HFLUX, TTBCRATIO,
      &                   NBD, setMessageSource, unsetMessageSource,
      &                   DEBUG, ECHO, INFO, WARNING, ERROR, screen,
-     &                   NP_G
+     &                   NP_G, allMessage
 
       IMPLICIT NONE
 
       INTEGER :: IRType                  !number of fields in output file
       INTEGER :: NH, N                   !horizontal & vertical loop counters
 !      REAL(SZ) :: RealPartOfQ     
-
-
 C  kmd48.33bc - new variables
       INTEGER :: NumofBCNodes, J, NOD, IT
       INTEGER, INTENT(IN) :: ITHS
@@ -2563,8 +2478,8 @@ C  kmd48.33bc - new variables
       REAL(SZ) :: tempp, temp1, temp2
 
       call setMessageSource("hotstart_3D")
-#ifdef HOTSTART_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
 C...
 C...  Define format statements used to initialize 3D output files
@@ -2845,19 +2760,8 @@ C.... Initialize the station 3D density output file
 !             the other output files for resetting the 
 !             information. 
       IF (I3DSD.LT.0) THEN 
-        N3DSD=0
-        I3DSDRec=0 
-        IF ((NTO3DSDS.LT.ITHS).AND.(NSpo3DSD.GT.0)) THEN 
-           NTO3DSDS=NTO3DSDS+((REAL(ITHS)-REAL(NTO3DSDS))/
-     &              REAL(NSpo3DSD))*REAL(NSpo3DSD)
-           IF (NTO3DSDS.LT.ITHS) NTO3DSDS=NTO3DSDS+NSpo3DSD
-           IF (DTDP.NE.DTDPHS) THEN
-              NDSet3DSD=((NTO3DSDF*DTDP)-(NTO3DSDS*DTDPHS))/
-     &                  (NSpo3DSD*DTDP)
-           ELSE 
-              NDSet3DSD=(NTO3DSDF-NTO3DSDS)/NSpo3DSD
-           END IF
-        END IF 
+         CALL setOutputTiming(N3DSD, I3DSDRec,
+     &      NTO3DSDS, NTO3DSDF, NSpo3DSD, NDSet3DSD, iths, dtdphs)
       END IF 
             
 
@@ -2873,19 +2777,8 @@ C.... Initialize the 3D velocity station output file (Unit 42)
 !             the other output files for resetting the 
 !             information. 
       IF (I3DSV.LT.0) THEN 
-        N3DSV=0
-        I3DSVRec=0 
-        IF ((NTO3DSVS.LT.ITHS).AND.(NSpo3DSV.GT.0)) THEN 
-           NTO3DSVS=NTO3DSVS+((REAL(ITHS)-REAL(NTO3DSVS))/
-     &              REAL(NSpo3DSV))*REAL(NSpo3DSV)
-           IF (NTO3DSVS.LT.ITHS) NTO3DSVS=NTO3DSVS+NSpo3DSV
-           IF (DTDP.NE.DTDPHS) THEN
-              NDSet3DSV=((NTO3DSVF*DTDP)-(NTO3DSVS*DTDPHS))/
-     &                  (NSpo3DSV*DTDP)
-           ELSE 
-              NDSet3DSV=(NTO3DSVF-NTO3DSVS)/NSpo3DSV
-           END IF
-        END IF 
+         CALL setOutputTiming(N3DSV, I3DSVRec,
+     &      NTO3DSVS, NTO3DSVF, NSpo3DSV, NDSet3DSV, iths, dtdphs)
       END IF 
 
       IRType=3
@@ -2899,19 +2792,8 @@ C.... Initialize the 3D turbulence station output file (Unit 43)
 !             the other output files for resetting the 
 !             information. 
       IF (I3DST.LT.0) THEN 
-        N3DST=0
-        I3DSTRec=0 
-        IF ((NTO3DSTS.LT.ITHS).AND.(NSpo3DST.GT.0)) THEN 
-           NTO3DSTS=NTO3DSTS+((REAL(ITHS)-REAL(NTO3DSTS))/
-     &              REAL(NSpo3DST))*REAL(NSpo3DST)
-           IF (NTO3DSTS.LT.ITHS) NTO3DSTS=NTO3DSTS+NSpo3DST
-           IF (DTDP.NE.DTDPHS) THEN
-              NDSet3DST=((NTO3DSTF*DTDP)-(NTO3DSTS*DTDPHS))/
-     &                  (NSpo3DST*DTDP)
-           ELSE 
-              NDSet3DST=(NTO3DSTF-NTO3DSTS)/NSpo3DST
-           END IF
-        END IF 
+         CALL setOutputTiming(N3DST, I3DSTRec,
+     &      NTO3DSTS, NTO3DSTF, NSpo3DST, NDSet3DST, iths, dtdphs)
       END IF 
 
       IRType=3
@@ -2929,19 +2811,8 @@ C.... Initialize the global 3D density output file (Unit 44)
 
 C  kmd48.33bc - change NDSet3DGD to use DTDPHS
       IF(I3DGD.LT.0) THEN
-         N3DGD=0
-         I3DGDRec=0
-         IF((NTO3DGDS.LT.ITHS).AND.(NSpo3DGD.GT.0)) THEN
-           NTO3DGDS=NTO3DGDS+((REAL(ITHS)-REAL(NTO3DGDS))/
-     &               REAL(NSpo3DGD))*REAL(NSpo3DGD)
-           IF(NTO3DGDS.LT.ITHS) NTO3DGDS=NTO3DGDS+NSpo3DGD
-           IF (DTDP.NE.DTDPHS) THEN
-             NDSet3DGD=((NTO3DGDF*DTDP)-(NTO3DGDS*DTDPHS))/
-     &                  (NSpo3DGD*DTDP)
-           ELSE
-             NDSet3DGD=(NTO3DGDF-NTO3DGDS)/NSpo3DGD
-           ENDIF
-         END IF
+         CALL setOutputTiming(N3DGD, I3DGDRec,
+     &      NTO3DGDS, NTO3DGDF, NSpo3DGD, NDSet3DGD, iths, dtdphs)
       END IF
 
       IF(IDen.EQ.1) IRType=1
@@ -2969,19 +2840,8 @@ c.... Initialize the global 3D velocity output file (Unit 45)
 C  kmd48.33bc - changed NDSet3DGV to use DTDPHS and added REALs to 
 C              calculation of the start time due to timestep change
       IF(I3DGV.LT.0) THEN
-        N3DGV=0
-        I3DGVRec=0
-        IF((NTO3DGVS.LT.ITHS).AND.(NSpo3DGV.GT.0)) THEN
-          NTO3DGVS=NTO3DGVS+((REAL(ITHS)-REAL(NTO3DGVS))/
-     &             REAL(NSpo3DGV))*REAL(NSpo3DGV)
-          IF(NTO3DGVS.LT.ITHS) NTO3DGVS=NTO3DGVS+NSpo3DGV
-          IF (DTDP.NE.DTDPHS) THEN
-            NDSet3DGV=((NTO3DGVF*DTDP)-(NTO3DGVS*DTDPHS))/
-     &                 (NSpo3DGV*DTDP)
-          ELSE
-            NDSet3DGV=(NTO3DGVF-NTO3DGVS)/NSpo3DGV
-          END IF
-        ENDIF
+         CALL setOutputTiming(N3DGV, I3DGVRec,
+     &      NTO3DGVS, NTO3DGVF, NSpo3DGV, NDSet3DGV, iths, dtdphs)
       ENDIF
 
       CALL initOutput3D(45, I3DGV, NDSET3DGV, NP, NP_g,
@@ -2991,19 +2851,8 @@ c.... Initialize the global 3D turbulence output file (Unit 46)
 
 C  kmd48.33bc - changed NDSet3DGT to use DTDPHS
       IF(I3DGT.LT.0) THEN
-        N3DGT=0
-        I3DGTRec=0
-        IF((NTO3DGTS.LT.ITHS).AND.(NSpo3DGT.GT.0)) THEN
-          NTO3DGTS=NTO3DGTS+((REAL(ITHS)-REAL(NTO3DGTS))/
-     &             REAL(NSpo3DGT))*REAL(NSpo3DGT)
-          IF(NTO3DGTS.LT.ITHS) NTO3DGTS=NTO3DGTS+NSpo3DGT
-          IF (DTDP.NE.DTDPHS) THEN
-            NDSet3DGT=((NTO3DGTF*DTDP)-(NTO3DGTS*DTDPHS))/
-     &                 (NSpo3DGT*DTDP)
-          ELSE
-            NDSet3DGT=(NTO3DGTF-NTO3DGTS)/NSpo3DGT
-          END IF
-        ENDIF
+         CALL setOutputTiming(N3DGT, I3DGTRec,
+     &      NTO3DGTS, NTO3DGTF, NSpo3DGT, NDSet3DGT, iths, dtdphs)
       ENDIF
 
       CALL initOutput3D(46, I3DGT, NDSET3DGT, NP, NP_g,
@@ -3013,11 +2862,57 @@ C.... Set up a few final odds and ends for a 3D run
 
       CALL VSSTUP ()
         
-#ifdef HOTSTART_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE HOTSTART_3D
+C----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   S E T   O U T P U T   T I M I N G  
+C-----------------------------------------------------------------------
+C     jgf49.48.04 For output files that start anew on hotstart, calculate
+C     the timing of outputs, taking into account that the run that wrote
+C     the hotstart file may have had a different time step than this run.
+C-----------------------------------------------------------------------
+      SUBROUTINE setOutputTiming(tsCounter, recCounter,
+     &   startTS, endTS, tsPeriod, nSets, iths, dtdphs)
+      USE GLOBAL, ONLY : DTDP, setMessageSource, unsetMessageSource,
+     &   screen, DEBUG, allMessage
+      IMPLICIT NONE
+      INTEGER, intent(out) :: tsCounter  ! time step counter btw outputs
+      INTEGER, intent(out) :: recCounter ! counts lines in the output file
+      INTEGER, intent(inout) :: startTS  ! time step for output to start
+      INTEGER, intent(inout) :: endTS    ! time step for output to end
+      INTEGER, intent(inout) :: tsPeriod ! period of time steps between outputs
+      INTEGER, intent(out) :: nSets      ! num data sets in output file
+      INTEGER, intent(in) :: iths
+      REAL(8), intent(in) :: dtdphs
+C
+      call setMessageSource("setOutputTiming")
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      tsCounter=0
+      recCounter=0 
+      IF ((startTS.LT.ITHS).AND.(tsPeriod.GT.0)) THEN 
+         startTS=startTS+((REAL(ITHS)-REAL(startTS))/
+     &           REAL(tsPeriod))*REAL(tsPeriod)
+         IF (startTS.LT.ITHS) startTS=startTS+tsPeriod
+         IF (DTDP.NE.DTDPHS) THEN
+            nSets=((endTS*DTDP)-(startTS*DTDPHS))/
+     &                (tsPeriod*DTDP)
+         ELSE 
+           nSets=(endTS-startTS)/tsPeriod
+         END IF
+      END IF 
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C----------------------------------------------------------------------
+      END SUBROUTINE setOutputTiming
 C----------------------------------------------------------------------

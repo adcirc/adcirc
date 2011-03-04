@@ -114,8 +114,8 @@ C
 C     jgf49.44: Initialize global logging.
       call initLogging()
       call setMessageSource("ADCIRC_Init")
-#ifdef ADCIRC_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
       IF (PRESENT(ROOTD)) THEN
         ROOTDIR = TRIM(ROOTD)
@@ -187,7 +187,7 @@ C...  Special instructions for writer processors
       ENDIF
 
       !jgf49.44: Initialize harmonic analysis parameters.
-      CALL initHarmonicParameters(IHOT)
+      CALL initHarmonicParameters()
 
 #ifdef CMACHSUN
       CALL ABRUPT_UNDERFLOW() ! Abrupt underflow for Sun computers
@@ -317,8 +317,8 @@ C...
 C
  1999 format(1X, a," ADCIRC Version: ",a)
 C
-#ifdef ADCIRC_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       RETURN
@@ -353,14 +353,14 @@ C
 #endif
 
       call setMessageSource("ADCIRC_Run")
-#ifdef ADCIRC_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_END = ITIME_BGN+NTIME_STP-1
       ENDIF 
 C
-      WRITE(16,*) "DEBUG: Begin timestepping."
+      call allMessage(INFO,"Begin timestepping.")
       DO 100 ITIME=ITIME_BGN,ITIME_END
         CALL TIMESTEP(ITIME)
 C
@@ -378,8 +378,8 @@ C
         ITIME_BGN = ITIME_END+1
       ENDIF 
 C
-#ifdef ADCIRC_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 
@@ -406,8 +406,8 @@ C
       INTEGER :: I
 C
       call setMessageSource("ADCIRC_Final")
-#ifdef ADCIRC_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
 C
 C...
@@ -424,8 +424,8 @@ C
       ENDIF
 #endif
 C
-#ifdef ADCIRC_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       RETURN

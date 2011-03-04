@@ -5883,8 +5883,14 @@ C---------------------------------------------------------------------------
      &    nhstar,nhsinc,
      &    title, institution,
      &    source, history, references, comments, host, convention,
-     &    contact, base_date, NABOUT, NSCREEN
+     &    contact, base_date, NABOUT, NSCREEN,
+     &    I3DSD, NFEN, NSTA3DD, I3DSV, NSTA3DV, I3DST, NSTA3DT, 
+     &    I3DGD, I3DGV, I3DGT, IDEN, islip, kp, z0s, z0b, theta1,
+     &    theta2, ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd,
+     &    nvsd, nltd, nvtd, alp4, C3D, X3DD, Y3DD, SL3DD, SF3DD,
+     &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D
       USE NETCDFIO, ONLY : setADCIRCParameters, allocNetCDFArrays,
+     &    allocNetCDFArrays3D, initNetCDFHotstart3D,
      &    initNetCDFHotstart, initNetCDFHotstartHarmonic,
      &    initNetCDFHotstartHarmonicMeansVariances,
      &    freeNetCDFArrays, freeNetCDFHotstart, freeNetCDFCoord
@@ -5905,6 +5911,26 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: WindVelStaDescript ! fort.72
       type(OutputDataDescript_t), SAVE :: PrDescript         ! fort.73
       type(OutputDataDescript_t), SAVE :: WindVelDescript    ! fort.74
+C     3D output data
+      type(OutputDataDescript_t), save :: SigTStaDescript    ! fort.41
+      type(OutputDataDescript_t), save :: SalStaDescript
+      type(OutputDataDescript_t), save :: TempStaDescript
+      type(OutputDataDescript_t), save :: QSurfKp1Descript
+      type(OutputDataDescript_t), save :: RealQStaDescript   ! fort.42
+      type(OutputDataDescript_t), save :: ImaginaryQStaDescript
+      type(OutputDataDescript_t), save :: WZStaDescript
+      type(OutputDataDescript_t), save :: Q20StaDescript     ! fort.43
+      type(OutputDataDescript_t), save :: LStaDescript
+      type(OutputDataDescript_t), save :: EVStaDescript
+      type(OutputDataDescript_t), save :: SigTDescript       ! fort.44
+      type(OutputDataDescript_t), save :: SalDescript
+      type(OutputDataDescript_t), save :: TempDescript
+      type(OutputDataDescript_t), save :: RealQDescript      ! fort.45
+      type(OutputDataDescript_t), save :: ImaginaryQDescript
+      type(OutputDataDescript_t), save :: WZDescript
+      type(OutputDataDescript_t), save :: Q20Descript        ! fort.46
+      type(OutputDataDescript_t), save :: LDescript
+      type(OutputDataDescript_t), save :: EVDescript
 C     For hotstart files:
       type(OutputDataDescript_t), SAVE :: Elev1Descript
       type(OutputDataDescript_t), SAVE :: Elev2Descript
@@ -5912,6 +5938,14 @@ C     For hotstart files:
       type(OutputDataDescript_t), SAVE :: EtaDiscDescript
       type(OutputDataDescript_t), SAVE :: NodeCodeDescript
       type(OutputDataDescript_t), SAVE :: NOFFDescript
+C     for hotstart 3D data
+      type(OutputDataDescript_t),SAVE :: Duudescript
+      type(OutputDataDescript_t),SAVE :: Duvdescript
+      type(OutputDataDescript_t),SAVE :: Dvvdescript
+      type(OutputDataDescript_t),SAVE :: Uudescript
+      type(OutputDataDescript_t),SAVE :: Vvdescript
+      type(OutputDataDescript_t),SAVE :: Bsxdescript
+      type(OutputDataDescript_t),SAVE :: Bsydescript
 C     for hotstart harmonic analysis
       type(OutputDataDescript_t), SAVE :: HarmElevFDLVDescript
       type(OutputDataDescript_t), SAVE :: HarmElevSLVDescript
@@ -6037,6 +6071,199 @@ C     fort.74
       WindVelDescript % ConsiderWetDry       = .FALSE.
       WindVelDescript % alternate_value      = 0.0
       WindVelDescript % field_name           = 'WindVel'
+C     3D data    
+C     fort.41
+      SigTStaDescript % specifier            = I3DSD
+      SigTStaDescript % initial_value        = 0.0
+      SigTStaDescript % num_items_per_record = NFEN
+      SigTStaDescript % num_fd_records       = NSTA3DD
+      SigTStaDescript % num_records_this     = NSTA3DD
+      SigTStaDescript % field_name           = 'SigmaTStations'
+      IF (ICS.eq.2) THEN
+         SigTStaDescript % x_coord           => SL3DD
+         SigTStaDescript % y_coord           => SF3DD
+      ELSE
+         SigTStaDescript % x_coord           => X3DD
+         SigTStaDescript % y_coord           => Y3DD
+      ENDIF
+
+      SalStaDescript % specifier            = I3DSD
+      SalStaDescript % initial_value        = 0.0
+      SalStaDescript % num_items_per_record = NFEN
+      SalStaDescript % num_fd_records       = NSTA3DD
+      SalStaDescript % num_records_this     = NSTA3DD
+      SalStaDescript % field_name           = 'SalinityStations'
+      IF (ICS.eq.2) THEN
+         SalStaDescript % x_coord           => SL3DD
+         SalStaDescript % y_coord           => SF3DD
+      ELSE
+         SalStaDescript % x_coord           => X3DD
+         SalStaDescript % y_coord           => Y3DD
+      ENDIF
+
+      TempStaDescript % specifier            = I3DSD
+      TempStaDescript % initial_value        = 0.0
+      TempStaDescript % num_items_per_record = NFEN
+      TempStaDescript % num_fd_records       = NSTA3DD
+      TempStaDescript % num_records_this     = NSTA3DD
+      TempStaDescript % field_name           = 'TemperatureStations'
+      IF (ICS.eq.2) THEN
+         TempStaDescript % x_coord           => SL3DD
+         TempStaDescript % y_coord           => SF3DD
+      ELSE
+         TempStaDescript % x_coord           => X3DD
+         TempStaDescript % y_coord           => Y3DD
+      ENDIF
+C
+C     fort.42
+      RealQStaDescript % specifier            =  I3DSV
+      RealQStaDescript % initial_value        =  0.0
+      RealQStaDescript % num_items_per_record =  NFEN
+      RealQStaDescript % num_fd_records       =  NSta3DV
+      RealQStaDescript % num_records_this     =  NSta3DV
+      RealQStaDescript % field_name           = 'RealQStations'
+      IF (ICS.eq.2) THEN
+         RealQStaDescript % x_coord           => SL3DV
+         RealQStaDescript % y_coord           => SF3DV
+      ELSE
+         RealQStaDescript % x_coord           => X3DV
+         RealQStaDescript % y_coord           => Y3DV
+      ENDIF
+      ImaginaryQStaDescript % specifier            =  I3DSV
+      ImaginaryQStaDescript % initial_value        =  0.0
+      ImaginaryQStaDescript % num_items_per_record =  NFEN
+      ImaginaryQStaDescript % num_fd_records       =  NSTA3DV
+      ImaginaryQStaDescript % num_records_this     =  NSTA3DV
+      ImaginaryQStaDescript % field_name      ='ImaginaryQStations'
+      IF (ICS.eq.2) THEN
+         ImaginaryQStaDescript % x_coord           => SL3DV
+         ImaginaryQStaDescript % y_coord           => SF3DV
+      ELSE
+         ImaginaryQStaDescript % x_coord           => X3DV
+         ImaginaryQStaDescript % y_coord           => Y3DV
+      ENDIF
+      WZStaDescript % specifier            =  I3DSV
+      WZStaDescript % initial_value        =  0.0
+      WZStaDescript % num_items_per_record =  NFEN
+      WZStaDescript % num_fd_records       =  NSTA3DV
+      WZStaDescript % num_records_this     =  NSTA3DV
+      WZStaDescript % field_name           = 'WZStations'
+      IF (ICS.eq.2) THEN
+         WZStaDescript % x_coord           => SL3DV
+         WZStaDescript % y_coord           => SF3DV
+      ELSE
+         WZStaDescript % x_coord           => X3DV
+         WZStaDescript % y_coord           => Y3DV
+      ENDIF
+C
+C     fort.43
+      Q20StaDescript % specifier            =  I3DST
+      Q20StaDescript % initial_value        =  0.0
+      Q20StaDescript % num_items_per_record =  NFEN
+      Q20StaDescript % num_fd_records       =  NSta3DT
+      Q20StaDescript % num_records_this     =  NSta3DT
+      Q20StaDescript % field_name           = 'q20Stations'
+      IF (ICS.eq.2) THEN
+         Q20StaDescript % x_coord           => SL3DT
+         Q20StaDescript % y_coord           => SF3DT
+      ELSE
+         Q20StaDescript % x_coord           => X3DT
+         Q20StaDescript % y_coord           => Y3DT
+      ENDIF
+
+      LStaDescript % specifier        =  I3DST
+      LStaDescript % initial_value        =  0.0
+      LStaDescript % num_items_per_record =  NFEN
+      LStaDescript % num_fd_records       =  NSTA3DT
+      LStaDescript % num_records_this     =  NSTA3DT
+      LStaDescript % field_name           = 'LStations'
+      IF (ICS.eq.2) THEN
+         LStaDescript % x_coord           => SL3DT
+         LStaDescript % y_coord           => SF3DT
+      ELSE
+         LStaDescript % x_coord           => X3DT
+         LStaDescript % y_coord           => Y3DT
+      ENDIF
+
+      EVStaDescript % specifier            =  I3DST
+      EVStaDescript % initial_value        =  0.0
+      EVStaDescript % num_items_per_record =  NFEN
+      EVStaDescript % num_fd_records       =  NSTA3DT
+      EVStaDescript % num_records_this     =  NSTA3DT
+      EVStaDescript % field_name           = 'EVStations'
+      IF (ICS.eq.2) THEN
+         EVStaDescript % x_coord           => SL3DT
+         EVStaDescript % y_coord           => SF3DT
+      ELSE
+         EVStaDescript % x_coord           => X3DT
+         EVStaDescript % y_coord           => Y3DT
+      ENDIF
+C
+C     fort.44
+      QSurfKp1Descript % specifier            =  I3DGD
+      QSurfKp1Descript % initial_value        =  0.0
+      QSurfKp1Descript % num_items_per_record =  1
+      QSurfKp1Descript % num_fd_records     =  MNP
+      QSurfKp1Descript % num_records_this   =  MNP
+      QSurfKp1Descript % field_name           = 'qsurfkp1'
+      SigTDescript % specifier            =  I3DGD
+      SigTDescript % initial_value        =  0.0
+      SigTDescript % num_items_per_record =  NFEN
+      SigTDescript % num_fd_records        =  MNP
+      SigTDescript % num_records_this     =  MNP
+      SigTDescript % field_name           = 'SigmaT'
+      SalDescript % specifier            =  I3DGD
+      SalDescript % initial_value        =  0.0
+      SalDescript % num_items_per_record =  NFEN
+      SalDescript % num_fd_records       =  MNP
+      SalDescript % num_records_this     =  MNP
+      SalDescript % field_name           = 'Salinity'
+      TempDescript % specifier            =  I3DGD
+      TempDescript % initial_value        =  0.0
+      TempDescript % num_items_per_record =  NFEN
+      TempDescript % num_fd_records       =  MNP
+      TempDescript % num_records_this     =  MNP
+      TempDescript % field_name           = 'Temperature'
+C
+C     fort.45
+      RealQDescript % specifier            =  I3DGV
+      RealQdescript % initial_value        =  0.0
+      RealQDescript % num_items_per_record =  NFEN
+      RealQDescript % num_fd_records       =  MNP
+      RealQDescript % num_records_this     =  MNP
+      RealQDescript % field_name           = 'RealQ'
+      ImaginaryQDescript % specifier            =  I3DGV
+      ImaginaryQDescript % initial_value        =  0.0
+      ImaginaryQDescript % num_items_per_record =  NFEN
+      ImaginaryQDescript % num_fd_records       =  MNP
+      ImaginaryQDescript % num_records_this     =  MNP
+      ImaginaryQDescript % field_name           = 'ImaginaryQ'
+      WZDescript % specifier            =  I3DGV
+      WZDescript % initial_value        =  0.0
+      WZDescript % num_items_per_record =  NFEN
+      WZDescript % num_fd_records       =  MNP
+      WZDescript % num_records_this     =  MNP
+      WZDescript % field_name           = 'WZ'
+C
+C     fort.46
+      Q20Descript % specifier            =  I3DGT
+      Q20Descript % initial_value        =  0.0
+      Q20Descript % num_items_per_record =  NFEN
+      Q20Descript % num_fd_records       =  MNP
+      Q20Descript % num_records_this     =  MNP
+      Q20Descript % field_name           = 'q20'
+      LDescript % specifier            =  I3DGT
+      LDescript % initial_value        =  0.0
+      LDescript % num_items_per_record =  NFEN
+      LDescript % num_fd_records       =  MNP
+      LDescript % num_records_this     =  MNP
+      LDescript % field_name           = 'L'
+      EVDescript % specifier            =  I3DGT
+      EVDescript % initial_value        =  0.0
+      EVDescript % num_items_per_record =  NFEN
+      EVDescript % num_fd_records       =  MNP
+      EVDescript % num_records_this     =  MNP
+      EVDescript % field_name           = 'EV'
 C
 C     fort.67 and fort.68
       Elev1Descript % specifier            = NHSTAR
@@ -6051,6 +6278,42 @@ C     fort.67 and fort.68
       NodeCodeDescript % int_initial_value        = 0
       NOFFDescript % specifier            = NHSTAR
       NOFFDescript % int_initial_value        = 0
+C     hotstart 3D
+      Duudescript % specifier            =  NHSTAR
+      Duudescript % initial_value        =  0.0
+      Duudescript % num_items_per_record =  1
+      Duudescript % num_fd_records       =  MNP
+      Duudescript % num_records_this     =  MNP
+      Duvdescript % specifier            =  NHSTAR
+      Duvdescript % initial_value        =  0.0
+      Duvdescript % num_items_per_record =  1
+      Duvdescript % num_fd_records       =  MNP
+      Duvdescript % num_records_this     =  MNP
+      Dvvdescript % specifier            =  NHSTAR
+      Dvvdescript % initial_value        =  0.0
+      Dvvdescript % num_items_per_record =  1
+      Dvvdescript % num_fd_records       =  MNP
+      Dvvdescript % num_records_this     =  MNP
+      Uudescript % specifier            =  NHSTAR
+      Uudescript % initial_value        =  0.0
+      Uudescript % num_items_per_record =  1
+      Uudescript % num_fd_records       =  MNP
+      Uudescript % num_records_this     =  MNP
+      Vvdescript % specifier            =  NHSTAR
+      Vvdescript % initial_value        =  0.0
+      Vvdescript % num_items_per_record =  1
+      Vvdescript % num_fd_records       =  MNP
+      Vvdescript % num_records_this     =  MNP
+      Bsxdescript % specifier            =  NHSTAR
+      Bsxdescript % initial_value        =  0.0
+      Bsxdescript % num_items_per_record =  1
+      Bsxdescript % num_fd_records       =  MNP
+      Bsxdescript % num_records_this     =  MNP
+      Bsydescript % specifier            =  NHSTAR
+      Bsydescript % initial_value        =  0.0
+      Bsydescript % num_items_per_record =  1
+      Bsydescript % num_fd_records       =  MNP
+      Bsydescript % num_records_this     =  MNP
 C     hotstart harmonic analysis 
       HarmElevFDLVDescript % specifier            = NHSTAR
       HarmElevFDLVDescript % initial_value        = 0.0
@@ -6113,7 +6376,10 @@ C     we collected in read_global.F and stored in pre_global.F.
      &   ics, nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
      &   reftim, rnday, dramp, a00, b00, c00, h0, cori, ntif, nbfr,
      &   myProc, screenUnit, nolibf, nwp, tau0, cf, eslm,
-     &   nstae, nstav, nstam, neta, nabout, nscreen)      
+     &   nstae, nstav, nstam, neta, nabout, nscreen, 
+     &   nfen, iden, islip, kp, z0s, z0b, theta1, theta2,
+     &   ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd,
+     &   nvtd, alp4, C3D)      
 C
 C     Create NetCDF output files for those output files where NetCDF
 C     was specified. 
@@ -6127,6 +6393,21 @@ C     was specified.
       CALL allocNetCDFArrays(73, PrDescript, err)
       CALL allocNetCDFArrays(74, WindVelDescript, err)
 C
+      IF (C3D.eqv..true.) THEN
+         CALL allocNetCDFArrays3D(41, SigTStaDescript, SalStaDescript,
+     &      TempStaDescript, err)     
+         CALL allocNetCDFArrays3D(42, RealQStaDescript, 
+     &      ImaginaryQStaDescript, WZStaDescript, err)     
+         CALL allocNetCDFArrays3D(43, Q20StaDescript, LStaDescript,
+     &      EVStaDescript, err)     
+         CALL allocNetCDFArrays3D(44, SigTDescript, SalDescript,
+     &      TempDescript, err)     
+         CALL allocNetCDFArrays3D(45, RealQDescript, 
+     &      ImaginaryQDescript, WZDescript, err)     
+         CALL allocNetCDFArrays3D(46, Q20Descript, LDescript,
+     &      EVDescript, err)     
+      ENDIF
+C
 C     Create NetCDF hotstart files if NetCDF was specified.
       IF ((NHSTAR.EQ.3).OR.(NHSTAR.EQ.367).OR.(NHSTAR.EQ.368)) THEN
          ! must init both hotstart files ... there is not enough information
@@ -6135,11 +6416,17 @@ C     Create NetCDF hotstart files if NetCDF was specified.
             CALL initNetCDFHotstart(67, Elev1Descript,
      &         Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &         NodeCodeDescript, NOFFDescript, err)
+            IF (C3D.eqv..true.) THEN
+               CALL initNetCDFHotstart3D(67)
+            ENDIF
          ENDIF 
          IF (IHOT.ne.368) THEN
             CALL initNetCDFHotstart(68, Elev1Descript,
      &         Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &         NodeCodeDescript, NOFFDescript, err)
+            IF (C3D.eqv..true.) THEN
+               CALL initNetCDFHotstart3D(68)
+            ENDIF
          ENDIF
          IF (IHARIND.eq.1) THEN
             IF (IHOT.ne.367) THEN
@@ -6186,6 +6473,14 @@ C     Create NetCDF hotstart files if NetCDF was specified.
       CALL freeNetCDFArrays(72, WindVelStaDescript)
       CALL freeNetCDFArrays(73, PrDescript)
       CALL freeNetCDFArrays(74, WindVelDescript)
+      IF (C3D.eqv..true.) THEN
+         CALL freeNetCDFArrays(41, SigTStaDescript)
+         CALL freeNetCDFArrays(42, RealQStaDescript)
+         CALL freeNetCDFArrays(43, Q20StaDescript)
+         CALL freeNetCDFArrays(44, SigTDescript)
+         CALL freeNetCDFArrays(45, RealQDescript)
+         CALL freeNetCDFArrays(46, Q20Descript)
+      ENDIF
       ! free up memory allocated for mesh and boundaries 
       CALL freeNetCDFCoord()
 #endif

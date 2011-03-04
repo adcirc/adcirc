@@ -532,28 +532,6 @@ C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements t
         REAL(SZ), pointer :: hotstart_g(:) ! from hotstart (used by min max)
       end type OutputDataDescript_t
       INTEGER ITAU0P ! position in tau0 output file for variable tau0
-C   
-C     jgf48.12 the following data structure is used to describe
-C     the size and shape of the 3D output data. 
-      type OutputDataDescript3D_t
-        integer           :: specifier  ! output format from fort.15 (NOUTE,etc)
-        REAL(SZ)          :: initial_value 
-        ! num_items_per_record is number of "tuples", i.e.
-        ! it is equal to 1 if scalar, 2 if 2D vector, 3 if 3D vector, etc
-        integer           :: num_components
-        ! array length in the vertical
-        integer           :: num_layers
-        ! 
-        integer           :: num_fd_records
-        ! 
-        integer           :: num_records_this
-        integer,  pointer :: imap(:)   ! local-to-global mapping
-        integer,  pointer :: iarray(:)
-        ! components are indexed via (horiz node, vert node)
-        REAL(SZ), pointer :: comp1(:) ! scalar data or 1st component of vector
-        REAL(SZ), pointer :: comp2(:) ! 2nd component of vector
-        REAL(SZ), pointer :: comp3(:) ! 3rd component of vector
-      end type OutputDataDescript3D_t
 C
 C     jgf48.03 Variables shared between messenger and writer modules
       INTEGER ::  REALTYPE, DBLETYPE
@@ -769,6 +747,10 @@ C--------------------------------------------------------------------
       SUBROUTINE allocateFullDomainIOArrays()
       IMPLICIT NONE 
 C 
+      call setMessageSource("allocateFullDomainIOArrays")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
       ALLOCATE(ETA1_g(NP_G))
       ALLOCATE(ETA2_g(NP_G))
       ALLOCATE(UU2_g(NP_G))
@@ -780,6 +762,11 @@ C
       ALLOCATE(NodeCode_g(NP_G))
       ALLOCATE(NOFF_g(NE_G))
       ALLOCATE(NNodeCode_g(NP_G))
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C--------------------------------------------------------------------
       END SUBROUTINE allocateFullDomainIOArrays
 C--------------------------------------------------------------------
@@ -804,12 +791,56 @@ C--------------------------------------------------------------------
 C 
       INTEGER i      ! array index
 C      
+      call setMessageSource("binaryRead2D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
        DO i=1, length
           READ(lun,REC=counter) array(i)
           counter = counter + 1
        END DO
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C--------------------------------------------------------------------
       END SUBROUTINE binaryRead2D
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      B I N A R Y   W R I T E   2 D 
+C--------------------------------------------------------------------
+C     jgf49.49.01: Writes a real(sz) array with the specified length
+C     to a binary hotstart file; takes the file counter as an 
+C     input argument and returns the new value of the file counter
+C     at the end of the write.
+C--------------------------------------------------------------------
+      SUBROUTINE binaryWrite2D(array, length, lun, counter)
+      USE SIZES, ONLY : SZ
+      IMPLICIT NONE
+      REAL(SZ), intent(in), dimension(:) :: array ! data to write
+      INTEGER, intent(in) :: length  ! the number of values to write
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to write to 
+      INTEGER, intent(inout) :: counter ! i/o position in the file 
+C 
+      INTEGER i      ! array index
+C      
+      call setMessageSource("binaryWrite2D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+       DO i=1, length
+          WRITE(lun,REC=counter) array(i)
+          counter = counter + 1
+       END DO
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE binaryWrite2D
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
@@ -827,10 +858,20 @@ C--------------------------------------------------------------------
 C 
       INTEGER i      ! array index
 C      
+      call setMessageSource("binaryIntRead2D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+C
        DO i=1, length
           READ(lun,REC=counter) array(i)
           counter = counter + 1
        END DO
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C--------------------------------------------------------------------
       END SUBROUTINE binaryIntRead2D
 C--------------------------------------------------------------------
@@ -854,81 +895,221 @@ C--------------------------------------------------------------------
 C 
       INTEGER i,j      ! array indices
 C      
+      call setMessageSource("binaryRead3D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
        DO j=1, jLength
           DO i=1, iLength
             READ(lun,REC=counter) array(i,j)
+            write(*,*) array(i,j)
             counter = counter + 1
           END DO
        END DO
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C--------------------------------------------------------------------
       END SUBROUTINE binaryRead3D
 C--------------------------------------------------------------------
 
-C--------------------------------------------------------------------
-C     S U B R O U T I N E      B I N A R Y   M A P   2 D 
-C--------------------------------------------------------------------
-C     jgf49.48.01: Same as binaryRead2D except it reads data and maps 
-C     on the fly. It allocates and deallocates memory internally,
-C     since the memory requirements for large 3D meshes can be
-C     very large. Only to be called for parallel operation where
-C     all subdomains read a fulldomain hotstart file and retrieve
-C     2D nodal data.
-C--------------------------------------------------------------------
-      SUBROUTINE binaryMap2D(array, lun, counter)
-      USE SIZES, ONLY : SZ
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E 
+C            R E A D  A N D  M A P  T O  S U B D O M A I N  2 D  
+C-----------------------------------------------------------------------
+C     jgf49.48.04 Reads a fulldomain array in binary format and maps
+C     to a subdomain array.
+C-----------------------------------------------------------------------
+      subroutine readAndMapToSubdomain2D(sd_array, lun, counter)
       IMPLICIT NONE
-      REAL(SZ), intent(out), dimension(:) :: array ! data to read from the hotstart file
+C
+      REAL(SZ), intent(out), dimension(:) :: sd_array ! subdomain array
       INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
       INTEGER, intent(inout) :: counter ! i/o position in the file 
+      INTEGER :: sd_node_number
+      INTEGER :: fd_node_number
 C 
-      INTEGER subdomainNode     ! array index
-      INTEGER fulldomainNode    ! mapped node number
-      REAL(SZ), ALLOCATABLE :: array_g(:)
-C      
-      ALLOCATE(array_g(NP_G))
-      CALL binaryRead2D(array_g, NP_G, lun, counter)
-      DO subdomainNode=1,NP
-         fulldomainNode=ABS(NODES_LG(subdomainNode))
-         array(subdomainNode)=array_g(fulldomainNode)
-      ENDDO 
-      DEALLOCATE(array_g)
-C--------------------------------------------------------------------
-      END SUBROUTINE binaryMap2D
-C--------------------------------------------------------------------
+      REAL(SZ), allocatable, dimension(:) :: fd_array ! full domain array
+C
+      call setMessageSource("readAndMapToSubdomain2D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! serial
+      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+         CALL binaryRead2D(sd_array, NP, lun, counter)
+      ! parallel
+      ELSE
+         allocate(fd_array(NP_G))
+         CALL binaryRead2D(fd_array, NP_G, lun, counter)
+         ! loop over subdomain nodes
+         DO sd_node_number=1,np
+            ! get the corresponding fulldomain node number 
+            fd_node_number = ABS(NODES_LG(sd_node_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+            sd_array(sd_node_number) = fd_array(fd_node_number)
+         END DO
+         deallocate(fd_array)
+      ENDIF
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readAndMapToSubdomain2D
+C-----------------------------------------------------------------------
 
-C--------------------------------------------------------------------
-C     S U B R O U T I N E      B I N A R Y   M A P   3 D 
-C--------------------------------------------------------------------
-C     jgf49.48.01: Same as binaryRead3D except it reads data and maps 
-C     on the fly. It allocates and deallocates memory internally,
-C     since the memory requirements for large 3D meshes can be
-C     very large. Only to be called for parallel operation where
-C     all subdomains read a fulldomain hotstart file and retrieve
-C     3D nodal data.
-C--------------------------------------------------------------------
-      SUBROUTINE binaryMap3D(array, vert, lun, counter)
-      USE SIZES, ONLY : SZ
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E 
+C            R E A D  A N D  M A P  T O  S U B D O M A I N  I N T  2 D  
+C-----------------------------------------------------------------------
+C     jgf49.48.04 Reads a fulldomain array in binary format and maps
+C     to a subdomain array.
+C-----------------------------------------------------------------------
+      subroutine readAndMapToSubdomainInt2D(sd_array, lun, counter)
       IMPLICIT NONE
-      REAL(SZ), intent(out), dimension(:,:) :: array ! data to read from the hotstart file
-      INTEGER, intent(in) :: vert    ! number of nodes in the vertical
+C
+      INTEGER, intent(out), dimension(:) :: sd_array ! subdomain array
       INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
       INTEGER, intent(inout) :: counter ! i/o position in the file 
+      INTEGER :: sd_node_number
+      INTEGER :: fd_node_number
 C 
-      INTEGER i,j      ! array indices
-      REAL(SZ), ALLOCATABLE :: array_g(:,:)
-      INTEGER subdomainNode     ! array index
-      INTEGER fulldomainNode    ! mapped node number
-C      
-      ALLOCATE(array_g(NP_G,vert))
-      CALL binaryRead3D(array_g, NP_G, vert, lun, counter)
-      DO subdomainNode=1,NP
-         fulldomainNode=ABS(NODES_LG(subdomainNode))
-         array(subdomainNode,:)=array_g(fulldomainNode,:)
-      ENDDO
-      DEALLOCATE(array_g)
-C--------------------------------------------------------------------
-      END SUBROUTINE binaryMap3D
-C--------------------------------------------------------------------
+      INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
+C
+      call setMessageSource("readAndMapToSubdomainInt2D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! serial
+      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+         CALL binaryIntRead2D(sd_array, NP, lun, counter)
+      ! parallel
+      ELSE
+         allocate(fd_array(NP_G))
+         CALL binaryIntRead2D(fd_array, NP_G, lun, counter)
+         ! loop over subdomain nodes
+         DO sd_node_number=1,np
+            ! get the corresponding fulldomain node number 
+            fd_node_number = ABS(NODES_LG(sd_node_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+            sd_array(sd_node_number) = fd_array(fd_node_number)
+         END DO
+         deallocate(fd_array)
+      ENDIF
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readAndMapToSubdomainInt2D
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E 
+C            R E A D  A N D  M A P  E L E   
+C                 T O  S U B D O M A I N  I N T  2 D  
+C-----------------------------------------------------------------------
+C     jgf49.48.04 Reads a fulldomain array in binary format and maps
+C     to a subdomain array (for elemental mappings as opposed to node
+C     mapping).
+C-----------------------------------------------------------------------
+      subroutine readAndMapEleToSubdomainInt2D(sd_array, lun, counter)
+      IMPLICIT NONE
+C
+      INTEGER, intent(out), dimension(:) :: sd_array ! subdomain array
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
+      INTEGER, intent(inout) :: counter ! i/o position in the file 
+      INTEGER :: sd_ele_number
+      INTEGER :: fd_ele_number
+C 
+      INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
+C
+      call setMessageSource("readAndMapEleToSubdomainInt2D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! serial
+      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+         CALL binaryIntRead2D(sd_array, NE, lun, counter)
+      ! parallel
+      ELSE
+         allocate(fd_array(NE_G))
+         CALL binaryIntRead2D(fd_array, NE_G, lun, counter)
+         ! loop over subdomain nodes
+         DO sd_ele_number=1,ne
+            ! get the corresponding fulldomain ele number 
+            fd_ele_number = ABS(IMAP_EL_LG(sd_ele_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+            sd_array(sd_ele_number) = fd_array(fd_ele_number)
+         END DO
+         deallocate(fd_array)
+      ENDIF
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readAndMapEleToSubdomainInt2D
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E 
+C            R E A D  A N D  M A P  T O  S U B D O M A I N  3 D  
+C-----------------------------------------------------------------------
+C     jgf49.48.04 Reads a fulldomain array in binary format and maps
+C     to a subdomain array.
+C-----------------------------------------------------------------------
+      subroutine readAndMapToSubdomain3D(sd_array, nfen, lun, counter)
+      IMPLICIT NONE
+C
+      REAL(SZ), intent(out), dimension(:,:) :: sd_array ! subdomain array
+      INTEGER, intent(in) :: nfen    ! number of vertical layers  
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
+      INTEGER, intent(inout) :: counter ! i/o position in the file 
+      INTEGER :: sd_node_number
+      INTEGER :: fd_node_number
+C 
+      REAL(SZ), allocatable, dimension(:,:) :: fd_array ! full domain array
+C
+      call setMessageSource("readAndMapToSubdomain3D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! serial
+      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+         CALL binaryRead3D(sd_array, NP, NFEN, lun, counter)
+      ! parallel
+      ELSE
+         allocate(fd_array(NP_G,NFEN))
+         CALL binaryRead3D(fd_array, NP_G, NFEN, lun, counter)
+         ! loop over subdomain nodes
+         DO sd_node_number=1,np
+            ! get the corresponding fulldomain node number 
+            fd_node_number = ABS(NODES_LG(sd_node_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+            sd_array(sd_node_number,:) = fd_array(fd_node_number,:)
+         END DO
+         deallocate(fd_array)
+      ENDIF
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readAndMapToSubdomain3D
+C-----------------------------------------------------------------------
 
 C...
 C...Allocate space for Arrays dimensioned by MNE and MNP

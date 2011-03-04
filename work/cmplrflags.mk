@@ -9,20 +9,20 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 # ***NOTE*** User must select between various Linux setups
 #            by commenting/uncommenting the appropriate compiler
 #
-#compiler=gnu
-#compiler=g95
-compiler=intel
-#compiler=intel-lonestar
-#compiler=cray_xt3
-#compiler=cray_xt4
-#compiler=cray_xt5
-#compiler=pgi
-#compiler=pgi-ranger
-#compiler=diamond
+#COMPILER=gnu
+#COMPILER=g95
+#COMPILER=intel
+#COMPILER=intel-lonestar
+#COMPILER=cray_xt3
+COMPILER=cray_xt4
+#COMPILER=cray_xt5
+#COMPILER=pgi
+#COMPILER=pgi-ranger
+#COMPILER=diamond
 #
 #
 # Compiler Flags for gfortran and gcc
-ifeq ($(compiler),gnu)
+ifeq ($(COMPILER),gnu)
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90
@@ -47,7 +47,7 @@ ifeq ($(compiler),gnu)
   endif
 endif
 # 
-ifeq ($(compiler),g95)
+ifeq ($(COMPILER),g95)
   PPFC		:=  g95
   FC		:=  g95
   PFC		:=  mpif90
@@ -73,7 +73,7 @@ ifeq ($(compiler),g95)
 endif
 #
 # jgf45.12 These flags work on the UNC Topsail Cluster.
-ifeq ($(compiler),intel)
+ifeq ($(COMPILER),intel)
   PPFC            :=  ifort	
   FC            :=  ifort
   PFC           :=  mpif90
@@ -103,7 +103,7 @@ ifeq ($(compiler),intel)
 endif
 #
 # sb46.50.02 These flags work on the UT Austin Lonstar cluster.
-ifeq ($(compiler),intel-lonestar)
+ifeq ($(COMPILER),intel-lonestar)
   PPFC            :=  ifort	
   FC            :=  ifort
   PFC           :=  mpif90
@@ -130,7 +130,7 @@ ifeq ($(compiler),intel-lonestar)
 endif
 #
 # Cray-XT3 using standard compilers, from vjp; added by jgf46.00
-ifeq ($(compiler),cray_xt3)
+ifeq ($(COMPILER),cray_xt3)
   PPFC	        :=  pgf90
   FC	        :=  ftn
   PFC	        :=  ftn
@@ -164,7 +164,7 @@ ifeq ($(compiler),cray_xt3)
 endif
 #
 # Cray-XT4 (e.g. Jade@ERDC) using standard compilers, added by jgf48.4607
-ifeq ($(compiler),cray_xt4)
+ifeq ($(COMPILER),cray_xt4)
   PPFC	        :=  pgf90
   FC	        :=  ftn
   PFC	        :=  ftn
@@ -202,7 +202,7 @@ ifeq ($(compiler),cray_xt4)
 endif
 #
 # Cray-XT5 (e.g. einstein@NAVO) using standard compilers, added by jgf49.07
-ifeq ($(compiler),cray_xt5)
+ifeq ($(COMPILER),cray_xt5)
   PPFC	        :=  ftn
   FC	        :=  ftn
   PFC	        :=  ftn
@@ -235,8 +235,8 @@ ifeq ($(compiler),cray_xt5)
   endif
 endif
 #
-# Portland Group compiler
-ifeq ($(compiler),pgi)
+# Portland Group 
+ifeq ($(COMPILER),pgi)
   PPFC		:=  pgf90
   FC		:=  pgf90
   PFC		:=  mpif90
@@ -261,8 +261,8 @@ ifeq ($(compiler),pgi)
   endif
 endif
 #
-# Portland Group compiler on TU Ranger (AMD Opteron 8356, Barcelona Core)  Seizo
-ifeq ($(compiler),pgi-ranger)
+# Portland Group on TU Ranger (AMD Opteron 8356, Barcelona Core)  Seizo
+ifeq ($(COMPILER),pgi-ranger)
   PPFC          :=  pgf95
   FC            :=  pgf95
   PFC           :=  mpif90
@@ -289,7 +289,7 @@ ifeq ($(compiler),pgi-ranger)
 endif
 #
 # ERDC Diamond
-ifeq ($(compiler),diamond)
+ifeq ($(COMPILER),diamond)
   PPFC          :=  ifort
   FC            :=  ifort
   PFC           :=  ifort
@@ -328,14 +328,16 @@ endif
 ifeq ($(MACHINE)-$(OS),i686-linux-gnu)
 #
 # ***NOTE*** User must select between various Linux setups
-#            by commenting/uncommenting the appropriate compiler
+#            by commenting/uncommenting the appropriate compiler or
+#            by specifying on the make command line, e.g.,
+#            make all COMPILER=gnu
 #
-compiler=gnu
-#compiler=intel
-#compiler=pgi
+#COMPILER=gnu
+#COMPILER=intel
+#COMPILER=pgi
 #
-# Portland Group compiler
-ifeq ($(compiler),pgi)
+# Portland Group 
+ifeq ($(COMPILER),pgi)
   PPFC          :=  pgf90
   FC	        :=  pgf90
   PFC	        :=  mpif90
@@ -360,8 +362,8 @@ ifeq ($(compiler),pgi)
   endif
 endif
 #
-# Intel compiler
-ifeq ($(compiler),intel) 
+# Intel 
+ifeq ($(COMPILER),intel) 
   PPFC	        :=  ifort -w 
   FC	        :=  ifort -w 
   PFC	        :=  mpif90
@@ -391,21 +393,29 @@ ifeq ($(compiler),intel)
 endif
 #
 # g95
-ifeq ($(compiler),gnu)
+ifeq ($(COMPILER),gnu)
   PPFC		:=  g95
   FC		:=  g95
   PFC		:=  mpif90 
   FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132
-#  FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DHARM_TRACE -DWRITE_OUTPUT_TRACE -DNETCDF_TRACE -DHOTSTART_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DADCIRC_TRACE -DGLOBALIO_TRACE
+  ifeq ($(DEBUG),full)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
   DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
   DPRE		:=  -DREAL8 -DLINUX
+  ifeq ($(swan),enable)
+     DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
+  endif
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
   CFLAGS	:= $(INCDIRS) -O2 -DLINUX
+  ifeq ($(DEBUG),full)
+     CFLAGS     := $(INCDIRS) -g -O0 -DLINUX
+  endif
   CLIBS	:= 
   FLIBS		:=  
   MSGLIBS	:=  
@@ -514,8 +524,17 @@ endif
 # IBM SP - AIX operating system on 32bit PowerPC CPU
 # From vjp; added by jgf46.00
 # gcc by bde for IBM p5: bluedawg.loni.org; added by jgf46.04
+#
+# jgf20110303: Added capability to specify ibm=p5 or ibm=p6 on make 
+# command line to get the appropriate compiler flags. It also possible
+# to uncomment either ibm=p5 or ibm=p6 below and not specify it on the
+# make command line. The ibm p6 compiler flags were inserted based on
+# feedback from Yuji Funakoshi at NOAA CSDL. 
 # 
 ifneq (,$(findstring powerpc-aix,$(MACHINE)-$(OS)))
+#IBM=p5
+#IBM=p6
+ifeq ($(IBM),p5)
   PPFC          := xlf90_r -q64
   FC            := xlf90_r -q64
   PFC           := mpxlf90_r -q64
@@ -540,6 +559,46 @@ ifneq (,$(findstring powerpc-aix,$(MACHINE)-$(OS)))
   else 
      MULTIPLE := TRUE
   endif
+endif
+ifeq ($(IBM),p6)
+   export OBJECT_MODE=64
+   PPFC          := xlf90_r
+   FC            := xlf90_r
+   PFC           := mpxlf90_r
+   FFLAGS1       := $(INCDIRS) -q64 -w -O2 -qfixed=132 -qarch=auto -qcache=auto
+   FFLAGS2       := $(FFLAGS1)
+   FFLAGS3       := $(FFLAGS1)
+   ifeq ($(NETCDF,enable))
+      DA            := -WF,"-DREAL8,-DIBM,-DNETCDF,-DCSCA"
+      DP            := -tF -WF,"-DREAL8,-DIBM,-DNETCDF,-DCSCA,-DCMPI"
+      DPRE          := -tF -WF,"-DREAL8,-DIBM,-DNETCDF"
+   else
+      DA            := -WF,"-DREAL8,-DIBM,-DCSCA"
+      DP            := -tF -WF,"-DREAL8,-DIBM,-DCSCA,-DCMPI"
+      DPRE          := -tF -WF,"-DREAL8,-DIBM"
+   endif
+   IMODS         := -I
+   CC            := mpcc_r
+   CCBE          :=  $(CC)
+   CFLAGS        := -q64 -I. -O2 -DIBM
+   LDFLAGS       := -q64
+   FLIBS          :=
+   MSGLIBS       := -lm
+# When compiling with netCDF support, the HDF5 libraries must also
+# be linked in, so the user must specify HDF5HOME on the command line.
+# yf20110301: on Cirrus/Stratus, NETCDFHOME=/usrx/local/bin/
+# yf20110301: on Cirrus/Stratus, HDF5HOME=/usrx/local/hdf5/lib
+  HDF5HOME=/usrx/local/hdf5/lib
+  ifeq ($(NETCDF),enable)
+     FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5_fortran -lhdf5_hl -lhdf5 -lz
+  endif
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
+     MULTIPLE := TRUE
+  endif
+endif
 endif
 
 ########################################################################
@@ -575,7 +634,7 @@ endif
 
 
 ########################################################################
-# Sun Solaris Using standard compilers
+# Sun Solaris 
 #
 #ifneq (,$(findstring sparc-solaris,$(MACHINE)-$(OS)))
 #  PPFC	        := f90
@@ -627,7 +686,7 @@ ifneq (,$(findstring sparc-solaris,$(MACHINE)-$(OS)))
 endif
 
 ########################################################################
-# Alpha-Linux computers using Compaq (a.k.a. DEC) compiler
+# Alpha-Linux computers using Compaq (a.k.a. DEC) 
 
 ifneq (,$(findstring alphaev6-linux,$(MACHINE)-$(OS)))
   PPFC	        :=  fort
@@ -655,7 +714,7 @@ ifneq (,$(findstring alphaev6-linux,$(MACHINE)-$(OS)))
 endif
  
 ########################################################################
-# Compaq True64 computers using Compaq compilers
+# Compaq True64 computers 
 
 ifneq (,$(findstring alphaev6-osf,$(MACHINE)-$(OS)))
   PPFC		:=  f90
@@ -684,7 +743,7 @@ endif
 
 
 ########################################################################
-# CPQ SC40 - DEC using standard compilers
+# CPQ SC40 - DEC using standard 
 
 ifneq (,$(findstring alphaev6-dec-osf5.1,$(MACHINE)-$(VENDOR)-$(OS)))
   PPFC            := f90
@@ -711,7 +770,7 @@ ifneq (,$(findstring alphaev6-dec-osf5.1,$(MACHINE)-$(VENDOR)-$(OS)))
 endif
 
 ########################################################################
-# Cray SV1 - Cray using standard compilers
+# Cray SV1 - Cray
 # written by MEB 04/01/04 added by jgf45.06
 ifneq (,$(findstring sv1-unicos,$(MACHINE)-$(OS)))
   PPFC           := f90
@@ -740,7 +799,7 @@ ifneq (,$(findstring sv1-unicos,$(MACHINE)-$(OS)))
 endif
 
 ########################################################################
-# Cray-X1- Cray-X1 using standard compilers
+# Cray-X1- Cray-X1 
 # written by MEB 04/01/04 added by jgf45.06
 ifneq (,$(findstring x1-unicos,$(MACHINE)-$(OS)))
   PPFC          :=  ftn
@@ -770,7 +829,7 @@ ifneq (,$(findstring x1-unicos,$(MACHINE)-$(OS)))
 endif
 
 ########################################################################
-# SGI Origin - SGI using standard compilers
+# SGI Origin
 ifneq (,$(findstring mips-irix,$(MACHINE)-$(OS)))
   PPFC            := f90 
   FC              := f90 
@@ -798,7 +857,7 @@ endif
 
 
 ########################################################################
-# powerpc-apple-darwin using absoft compilers
+# powerpc-apple-darwin using absoft
 
 ifneq (,$(findstring powerpc-darwin,$(MACHINE)-$(OS)))
   PPFC	        := f90    
@@ -829,7 +888,7 @@ endif
 
 
 ########################################################################
-# i386-apple-darwin using intel compilers
+# i386-apple-darwin using intel
 
 ifneq (,$(findstring i386-darwin,$(MACHINE)-$(OS)))
   PPFC	        := ifort

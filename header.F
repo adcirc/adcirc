@@ -3,6 +3,63 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.56   - 03/03/2011 - jgf - Merged in netcdf3D branch revisions 562:597
+C             to trunk (branch version numbers v49.48.01 through v49.48.09).
+C  v49.48.09- 03/03/2011 - jgf - Added compiler flags for IBM P6; added 
+C             capability to activate comprehensive trace logging with a single 
+C             compiler flag; changed trace logging so that all processors
+C             write trace messages to local fort.16, which makes debugging
+C             easier during parallel execution; added conditions
+C             to netcdf memory deallocation for harmonic analysis hotstart;
+C             fixed issue in binary hotstart in parallel by mapping to 
+C             NNODECODE instead of NODECODE; removed IHOT as argument to
+C             initHarmonicParameters and eliminated duplicate calculations
+C             of nfreq in harm.F; added doc directory with rough draft
+C             for an ADCIRC Developers Guide.  
+C  v49.48.08- 02/25/2011 - jgf - Fixed record accounting in netcdf module 
+C             so that appends place data in proper position within the netcdf
+C             data file, rather than always appending at the end; fixed issue
+C             where 'it' was missing from call to hstart3D_out; added 
+C             call to prepnetcdf() to PREP15 option in adcprep.
+C  v49.48.07- 02/24/2011 - jgf - Brought over vparr's adccmp.F from ERDC_esmf
+C             branch for use in testing; added experimental new autotest code
+C             for use in automated testing. 
+C  v49.48.06- 02/24/2011 - jgf - Fixed initialization issues for 3D netcdf 
+C             output files and 3D netcdf hotstart files in parallel; added
+C             code to adcprep to capture 3D station names; added initialization
+C             of 3D station coordinates to adcprep and adcirc/write_output.F.
+C  v49.48.05- 02/23/2011 - jgf - Added dedicated arrays for storing coordinates
+C             of 3D stations for use in 3D netcdf station output files; fixed
+C             several typos and redundancy issues in netcdf module that 
+C             were interfering with 3D netcdf output.
+C  v49.48.04- 02/23/2011 - jgf - Added new code to adcprep to set up 
+C             3D netcdf output files for parallel runs and to set up netcdf
+C             hotstart file file with 3D data for parallel runs; further
+C             modularized mapping of full domain data to subdomains on the
+C             fly during hotstart; modularized setting of output timing
+C             during 3D hotstart.
+C  v49.48.03- 02/11/2011 - jgf - Added new subroutines to netcdf module for
+C             reading 3D data from netcdf hotstart file and for mapping
+C             this 3D data from fulldomain to subdomains, combining reading
+C             and mapping for each variable to conserve memory to the 
+C             greatest extent possible. 
+C  v49.48.02- 02/09/2011 - jgf - Added new subroutines to netcdf module for 
+C             allocating memory for 3D data in netcdf hotstart files; 
+C             initializing 3D data in netcdf hotstart files; and writing 3D
+C             data to netcdf hotstart files; rearranged HSTART3D_OUT in 
+C             vsmy.F to handle both binary and netcdf output and to globalize
+C             each 3D variable all at once rather than in horizontal layers
+C             (although the layered output format is preserved for binary
+C             output) and to allocate the memory for each 3D variable just 
+C             before it is needed and deallocating memory immediately after 
+C             its use is complete; the option of writing either subdomain or 
+C             fulldomain hotstart files was preserved for binary output; 
+C             the writing of data to binary hotstart files was also modularized
+C             with the addition of a new subroutine. 
+C  v49.48.01- 02/03/2011 - jgf - Added new subroutines to netcdf module for
+C             initializing and writing 3D data to netcdf output files; 
+C             modularized code for reading 3D stations in read_input.F and
+C             added capability for reading 3D station names.
 C  v49.55    - 03/03/2011 - tcm - Merged the last of the changes from the
 C             ERDC tightly coupled with STWAVE branch.
 C  v49.54.04 -03/03/2011 - tcm - Bring updates from the trunk getting 

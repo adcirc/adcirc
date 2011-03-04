@@ -1020,7 +1020,6 @@ C     a check of FirstCall is not necessary. However, we'll still do it, in
 C     case the subroutine is ever called more than once in some future
 C     scenario. 
       IF (FirstCall) THEN
-         call screen(DEBUG,"Inside first call.") 
          IF (NHASE.ne.0) THEN
             ! fort.51 magnitude
             IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
@@ -1284,7 +1283,6 @@ C        ! as the full domain elevation harmonic analysis file (fort.53)
             MVDescript % alternate_value      = -99999.0
             MVDescript % field_name           = 'HAMeansVariances'
          ENDIF
-         call screen(DEBUG,"Finished first call.") 
       ENDIF  ! firstcall
 C
 C     Collect fulldomain data if running in parallel.
@@ -1706,7 +1704,7 @@ C-----------------------------------------------------------------------
 C     jgf48.11 Moved from vsmy.F to write_output.F. 
 C     jgf49.43 Rewrote for globalio.
 C-----------------------------------------------------------------------
-      SUBROUTINE Write_Output_3D (Time,IT)
+      SUBROUTINE writeOutput3D(Time,IT)
       USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, 
      &    WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
       USE GLOBAL, ONLY : ScreenUnit, BCFLAG_TEMP, scratchMessage,
@@ -1719,6 +1717,11 @@ C-----------------------------------------------------------------------
 #ifdef NETCDF
        USE NodalAttributes, ONLY : 
      &     nolibf, nwp, tau0, cf, eslm
+       USE NetCDFIO, ONLY : allocNetCDFArrays, allocNetCDFArrays3D,
+     &     writeOutArrayNetCDF, writeOutArrayNetCDF3D
+#endif
+#ifdef CMPI
+       USE MESSENGER, ONLY : msg_lbcast, msg_fini
 #endif
       IMPLICIT NONE 
       INTEGER, intent(in) :: IT
@@ -1726,13 +1729,14 @@ C-----------------------------------------------------------------------
 
       INTEGER NC1, NC2, NC3, NCEle
       INTEGER NM1, NM2, NM3
-      INTEGER ::     NN, NH, NEle, N1, N2, N3, k
+      INTEGER :: NN, NH, NEle, N1, N2, N3, k, i
       REAL(SZ) C1, C2, C3
       REAL(SZ) EE1, EE2, EE3
       REAL(SZ) H2, H2N1, H2N2, H2N3
       REAL(SZ) U11, U22, U33
       REAL(SZ) V11, V22, V33
       LOGICAL, SAVE :: FirstCall = .true.
+      LOGICAL, dimension(8) :: netcdf_error
 C
       type(OutputDataDescript_t), save :: SigTStaDescript
       type(OutputDataDescript_t), save :: SalStaDescript
@@ -1799,6 +1803,13 @@ C
          SigTStaDescript % considerWetDry       = .FALSE.
          SigTStaDescript % alternate_value      = -99999.0
          SigTStaDescript % field_name           = 'SigmaTStations'
+         IF (ICS.eq.2) THEN
+            SigTStaDescript % x_coord           => SLED
+            SigTStaDescript % y_coord           => SFED
+         ELSE 
+            SigTStaDescript % x_coord           => XED
+            SigTStaDescript % y_coord           => YED
+         ENDIF
 
          SalStaDescript % specifier            =  I3DSD
          SalStaDescript % initial_value        =  0.0
@@ -1811,6 +1822,13 @@ C
          SalStaDescript % considerWetDry       = .FALSE.
          SalStaDescript % alternate_value      = -99999.0
          SalStaDescript % field_name           = 'SalinityStations'
+         IF (ICS.eq.2) THEN
+            SalStaDescript % x_coord           => SLED
+            SalStaDescript % y_coord           => SFED
+         ELSE 
+            SalStaDescript % x_coord           => XED
+            SalStaDescript % y_coord           => YED
+         ENDIF
 
          TempStaDescript % specifier            =  I3DSD
          TempStaDescript % initial_value        =  0.0
@@ -1823,6 +1841,13 @@ C
          TempStaDescript % considerWetDry       = .FALSE.
          TempStaDescript % alternate_value      = -99999.0
          TempStaDescript % field_name           = 'TemperatureStations'
+         IF (ICS.eq.2) THEN
+            TempStaDescript % x_coord           => SLED
+            TempStaDescript % y_coord           => SFED
+         ELSE 
+            TempStaDescript % x_coord           => XED
+            TempStaDescript % y_coord           => YED
+         ENDIF
 
          RealQStaDescript % specifier            =  I3DSV
          RealQStaDescript % initial_value        =  0.0
@@ -1835,6 +1860,13 @@ C
          RealQStaDescript % considerWetDry       = .FALSE.
          RealQStaDescript % alternate_value      = -99999.0
          RealQStaDescript % field_name           = 'RealQStations'
+         IF (ICS.eq.2) THEN
+            RealQStaDescript % x_coord           => SLE3DV
+            RealQStaDescript % y_coord           => SFE3DV
+         ELSE 
+            RealQStaDescript % x_coord           => XE3DV
+            RealQStaDescript % y_coord           => YE3DV
+         ENDIF
 
          ImaginaryQStaDescript % specifier            =  I3DSV
          ImaginaryQStaDescript % initial_value        =  0.0
@@ -1847,6 +1879,13 @@ C
          ImaginaryQStaDescript % considerWetDry       = .FALSE.
          ImaginaryQStaDescript % alternate_value      = -99999.0
          ImaginaryQStaDescript % field_name      ='ImaginaryQStations'
+         IF (ICS.eq.2) THEN
+            ImaginaryQStaDescript % x_coord           => SLE3DV
+            ImaginaryQStaDescript % y_coord           => SFE3DV
+         ELSE 
+            ImaginaryQStaDescript % x_coord           => XE3DV
+            ImaginaryQStaDescript % y_coord           => YE3DV
+         ENDIF
 
          WZStaDescript % specifier            =  I3DSV
          WZStaDescript % initial_value        =  0.0
@@ -1859,6 +1898,13 @@ C
          WZStaDescript % considerWetDry       = .FALSE.
          WZStaDescript % alternate_value      = -99999.0
          WZStaDescript % field_name           = 'WZStations'
+         IF (ICS.eq.2) THEN
+            WZStaDescript % x_coord           => SLE3DV
+            WZStaDescript % y_coord           => SFE3DV
+         ELSE 
+            WZStaDescript % x_coord           => XE3DV
+            WZStaDescript % y_coord           => YE3DV
+         ENDIF
 
          Q20StaDescript % specifier            =  I3DST
          Q20StaDescript % initial_value        =  0.0
@@ -1871,6 +1917,13 @@ C
          Q20StaDescript % considerWetDry       = .FALSE.
          Q20StaDescript % alternate_value      = -99999.0
          Q20StaDescript % field_name           = 'q20Stations'
+         IF (ICS.eq.2) THEN
+            Q20StaDescript % x_coord           => SLET
+            Q20StaDescript % y_coord           => SFET
+         ELSE 
+            Q20StaDescript % x_coord           => XET
+            Q20StaDescript % y_coord           => YET
+         ENDIF
 
          LStaDescript % specifier        =  I3DST
          LStaDescript % initial_value        =  0.0
@@ -1883,6 +1936,13 @@ C
          LStaDescript % considerWetDry       = .FALSE.
          LStaDescript % alternate_value      = -99999.0
          LStaDescript % field_name           = 'LStations'
+         IF (ICS.eq.2) THEN
+            LStaDescript % x_coord           => SLET
+            LStaDescript % y_coord           => SFET
+         ELSE 
+            LStaDescript % x_coord           => XET
+            LStaDescript % y_coord           => YET
+         ENDIF
 
          EVStaDescript % specifier            =  I3DST
          EVStaDescript % initial_value        =  0.0
@@ -1895,6 +1955,13 @@ C
          EVStaDescript % considerWetDry       = .FALSE.
          EVStaDescript % alternate_value      = -99999.0
          EVStaDescript % field_name           = 'EVStations'
+         IF (ICS.eq.2) THEN
+            EVStaDescript % x_coord           => SLET
+            EVStaDescript % y_coord           => SFET
+         ELSE 
+            EVStaDescript % x_coord           => XET
+            EVStaDescript % y_coord           => YET
+         ENDIF
 
          QSurfKp1Descript % specifier            =  I3DGD
          QSurfKp1Descript % initial_value        =  0.0
@@ -2016,6 +2083,36 @@ C
          EVDescript % alternate_value      = -99999.0
          EVDescript % field_name           = 'EV'
 
+#ifdef NETCDF
+         netcdf_error = .false.
+         ! jgf49.48.01: if netcdf is not required for a particular output file,
+         ! the associated subroutine call will do nothing and just return
+         IF (myProc.eq.0) THEN
+            CALL allocNetCDFArrays3D(41, SigTStaDescript,
+     &           SalStaDescript, TempStaDescript, netcdf_error(1))
+            CALL allocNetCDFArrays3D(42, RealQStaDescript, 
+     &           ImaginaryQStaDescript, WZStaDescript, netcdf_error(1))
+            CALL allocNetCDFArrays3D(43, Q20StaDescript, 
+     &           LStaDescript, EVStaDescript, netcdf_error(1))
+            CALL allocNetCDFArrays3D(44, SigTDescript, 
+     &           SalDescript, TempDescript, netcdf_error(1))
+            CALL allocNetCDFArrays3D(45, RealQDescript, 
+     &           ImaginaryQDescript, WZDescript, netcdf_error(1))
+            CALL allocNetCDFArrays3D(46, Q20Descript, 
+     &           LDescript, EVDescript, netcdf_error(1))
+            CALL allocNetCDFArrays(47, QSurfKp1Descript,
+     &           netcdf_error(1))
+         ENDIF
+#ifdef CMPI 
+         CALL msg_lbcast(netcdf_error,8)
+         DO i=1,8
+            IF (netcdf_error(i).eqv..true.) THEN
+               CALL msg_fini()
+               STOP
+            ENDIF
+         ENDDO
+#endif
+#endif
          FirstCall = .false.
       ENDIF
 C
@@ -2138,7 +2235,6 @@ C                 Write time header into file
                         WRITE(41,1104) NN,(SigTSta_g(NN,k),k=1,NFEN)  
                         I3DSDRec=I3DSDRec+1
                      END DO
-                     DEALLOCATE(SigTSta_g)
                   CASE(2) 
                      WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
      &                               k=1,NFEN-1),Sigma(NFEN)            
@@ -2148,7 +2244,6 @@ C                 Write time header into file
      &                     (SigTSta_g(NN,k),SalSta_g(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
-                     DEALLOCATE(SigTSta_g,SalSta_g)
                   CASE(3)
                      WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
      &                               k=1,NFEN-1),Sigma(NFEN)
@@ -2158,7 +2253,6 @@ C                 Write time header into file
      &                     (SigTSta_g(NN,k),TempSta_g(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
-                     DEALLOCATE(SigTSta_g,TempSta_g)
                   CASE(4) 
                      WRITE(41,1100) Time,IT,(Sigma(k),Sigma(k),
      &                      Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
@@ -2168,7 +2262,6 @@ C                 Write time header into file
      &                      SalSta_g(NN,k),TempSta_g(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO 
-                     DEALLOCATE(SigTSta_g,SalSta_g,TempSta_g)
                   CASE DEFAULT
                      CALL allMessage(WARNING,
      &                 "IDEN is not +/- 0 to 4 and is invalid.")
@@ -2210,13 +2303,31 @@ C              Write station output
                ENDDO
                CLOSE(41)
             CASE(3) ! netcdf
-               CALL allMessage(ERROR,
-     &          "I3DSD=3 but NetCDF output is not yet available for 3D
-     &density stations.")
+#ifdef NETCDF
+               IF (myProc.eq.0) THEN
+                  CALL writeOutArrayNetCDF3D(41, time, it,
+     &             SigTStaDescript, SalStaDescript, TempStaDescript)
+               ENDIF
+#endif
             CASE DEFAULT
-               CALL allMessage(ERROR,"I3DSD must be either 0, 1, or 2.")
+               CALL allMessage(ERROR,
+     &            "ABS(I3DSD) must be either 0, 1, or 2.")
             END SELECT
             N3DSD=0
+            ! deallocate memory used in globalio
+            IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.).AND.
+     &          (myProc.eq.0)) THEN
+               IF ((ABS(IDEN).NE.0)) THEN
+                  DEALLOCATE(SigTSta_g)
+               ENDIF
+               IF ((ABS(IDEN).EQ.2).OR.(ABS(IDEN).EQ.4)) THEN
+                  DEALLOCATE(SalSta_g)
+               ENDIF
+               IF ((ABS(IDEN).EQ.3).OR.(ABS(IDEN).EQ.4)) THEN
+                  DEALLOCATE(TempSta_g,SalSta_g)
+               ENDIF
+            ENDIF
+
          ENDIF
       ENDIF
 
@@ -2293,7 +2404,6 @@ C                 Write time header into file
      &                  WZSta_g(NN,k),k=1,NFEN)
                      I3DSVRec=I3DSVRec+1
                   ENDDO
-                  DEALLOCATE(rpSta_g,ipSta_g,WZSta_g)
                   CLOSE(42)
                ENDIF 
             CASE(2) !BINARY FORMAT
@@ -2314,13 +2424,23 @@ C                 Write time header into file
                END DO
                CLOSE(42)
             CASE(3) ! netcdf
-               CALL allMessage(ERROR,
-     &          "I3DSV=3 but NetCDF output is not yet available for 3D
-     &velocity stations.")
+#ifdef NETCDF
+               IF (myProc.eq.0) THEN
+                  CALL writeOutArrayNetCDF3D(42, time, it, 
+     &               RealQStaDescript,ImaginaryQStaDescript,
+     &               WZStaDescript)
+               ENDIF
+#endif
             CASE DEFAULT
-               CALL allMessage(ERROR,"I3DSV must be either 0, 1, or 2.")
+               CALL allMessage(ERROR,
+     &            "ABS(I3DSV) must be either 0, 1, or 2.")
             END SELECT         
             N3DSV=0
+            ! deallocate memory for globalio.
+            IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.).AND.
+     &           (myProc.eq.0)) THEN
+               DEALLOCATE(rpSta_g,ipSta_g,WZSta_g)
+            ENDIF
         ENDIF
       ENDIF
 
@@ -2394,7 +2514,6 @@ C                 Write time header into file
      &                  EVSta_g(NN,k),k=1,NFEN)
                      I3DSTRec=I3DSTRec+1
                   END DO
-                  DEALLOCATE(q20Sta_g,lSta_g,EVSta_g)
                   CLOSE(43)
                ENDIF
             CASE(2)  ! binary
@@ -2415,13 +2534,23 @@ C                 Write time header into file
                END DO
                CLOSE(43)
             CASE(3) ! netcdf
-               CALL allMessage(ERROR,
-     &          "I3DST=3 but NetCDF output is not yet available for 3D
-     &turbulence stations.")
+#ifdef NETCDF
+               IF (myProc.eq.0) THEN
+                  CALL writeOutArrayNetCDF3D(43, time, it, 
+     &               Q20StaDescript,LStaDescript,EVStaDescript)
+               ENDIF
+#endif
             CASE DEFAULT
-               CALL allMessage(ERROR,"I3DST must be either 0, 1, or 2.")
+               CALL allMessage(ERROR,
+     &            "ABS(I3DST) must be either 0, 1, or 2.")
             END SELECT
             N3DST=0
+            ! deallocate memory for globalio
+            IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.).AND.
+     &            (myProc.eq.0)) THEN
+               DEALLOCATE(q20Sta_g,lSta_g,EVSta_g)
+            ENDIF
+
          ENDIF
       ENDIF
 
@@ -2534,7 +2663,6 @@ C        Check to see if it is time to generate 3D fulldomain density output.
      &               "IDEN is not +/- 0 to 4 and is invalid.")
                   END SELECT
                   I3DGDRec=I3DGDRec+1 ! for the header line
-                  N3DGD=0
                   CLOSE(44)
                ENDIF
                IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.)) THEN
@@ -2580,8 +2708,6 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                   CASE(3) ! Temperature density
                      WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
      &                                k=1,NFEN-1),Sigma(NFEN)
-                     CALL collectFullDomainArray(TempDescript,
-     &                  packNPbyM, unpackNPbyM)
                      DO NH=1,NP_G
                         WRITE(44,1104)
      &                     NH,(SigT_g(NH,k),Temp_g(NH,k),k=1,NFEN)
@@ -2589,10 +2715,6 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                      ENDDO
                      DEALLOCATE(SigT_g,Temp_g)
                   CASE(4) ! Salinity+Temperature density
-                     CALL collectFullDomainArray(SalDescript,
-     &                  packNPbyM, unpackNPbyM)
-                     CALL collectFullDomainArray(TempDescript,
-     &                  packNPbyM, unpackNPbyM)
                      WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
      &                    Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                      DO NH=1,NP_G
@@ -2606,7 +2728,6 @@ C        Check to see if it is time to generate 3D fulldomain density output.
      &               "IDEN is not +/- 0 to 4 and is invalid.")
                   END SELECT
                   I3DGDRec=I3DGDRec+1 ! for the header line
-                  N3DGD=0
                   CLOSE(44)
                ENDIF
             CASE(2)  !BINARY FORMAT
@@ -2663,15 +2784,42 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                   CALL allMessage(WARNING,
      &              "IDEN is not +/- 0 to 4 and is invalid.")
                END SELECT
-               N3DGD=0
                CLOSE(44)
             CASE(3) ! netcdf
-               CALL allMessage(ERROR,
-     &          "I3DGD=3 but NetCDF output is not yet available for 3D
-     &fulldomain density data.")
+#ifdef NETCDF
+               IF (myProc.eq.0) THEN
+                  CALL writeOutArrayNetCDF3D(44, time, it, 
+     &               SigTDescript,SalDescript,TempDescript)
+               ENDIF
+#endif
             CASE DEFAULT
-               CALL allMessage(ERROR,"I3DGD must be either 0, 1, or 2.")
+               CALL allMessage(ERROR,
+     &            "ABS(I3DGD) must be either 0, 1, or 2.")
             END SELECT
+            N3DGD=0
+            ! deallocate memory used in globalio
+            IF ((MNPROC.gt.1).and.(WRITE_LOCAL_FILES.eqv..false.).AND.
+     &          (myProc.eq.0)) THEN
+               IF (ABS(IDEN).NE.0) THEN
+                  DEALLOCATE(SigT_g)
+               ENDIF
+               SELECT CASE(ABS(IDEN))
+               CASE(0) ! barotropic
+                  CALL allMessage(WARNING,
+     &            "IDEN was set to 0 but density output was requested.")
+               CASE(1)
+                  ! already deallocated SigT above
+               CASE(2)
+                  DEALLOCATE(Sal_g)
+               CASE(3)
+                  DEALLOCATE(Temp_g)
+               CASE(4)
+                  DEALLOCATE(Sal_g,Temp_g)
+               CASE DEFAULT
+                  CALL allMessage(WARNING,
+     &            "IDEN is not +/- 0 to 4 and is invalid.")
+               END SELECT
+            ENDIF
          ENDIF
       ENDIF
 
@@ -2683,6 +2831,23 @@ C kmd48.33bc changed to NE from GT
          IF ((IT.GT.NTO3DGVS).AND.(IT.LE.NTO3DGVF)) N3DGV=N3DGV+1
 C        Check to see if it is time to generate 3D fulldomain velocity output.
          IF (N3DGV.EQ.NSpo3DGV) THEN
+            IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
+               IF (myProc.eq.0) THEN
+                  ALLOCATE(rp_g(NP_G,NFEN),ip_g(NP_G,NFEN),
+     &               WZ_g(NP_G,NFEN))
+                  RealQDescript % array2D_g => rp_g
+                  ImaginaryQDescript % array2D_g => ip_g
+                  WZDescript % array2D_g => WZ_g
+               ENDIF
+               rp = real(q)
+               ip = aimag(q)
+               CALL collectFullDomainArray(RealQDescript,
+     &            packNPbyM, unpackNPbyM)
+               CALL collectFullDomainArray(ImaginaryQDescript,
+     &            packNPbyM, unpackNPbyM)
+               CALL collectFullDomainArray(WZDescript,
+     &            packNPbyM, unpackNPbyM)
+            ENDIF
             SELECT CASE(ABS(I3DGV))
             CASE(1) ! ascii
                IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
@@ -2701,21 +2866,6 @@ C                 Write time header into file
                ENDIF
                IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
                   IF (myProc.eq.0) THEN
-                     ALLOCATE(rp_g(NP_G,NFEN),ip_g(NP_G,NFEN),
-     &                  WZ_g(NP_G,NFEN))
-                     RealQDescript % array2D_g => rp_g
-                     ImaginaryQDescript % array2D_g => ip_g
-                     WZDescript % array2D_g => WZ_g
-                  ENDIF
-                  rp = real(q)
-                  ip = aimag(q)
-                  CALL collectFullDomainArray(RealQDescript,
-     &               packNPbyM, unpackNPbyM)
-                  CALL collectFullDomainArray(ImaginaryQDescript,
-     &               packNPbyM, unpackNPbyM)
-                  CALL collectFullDomainArray(WZDescript,
-     &               packNPbyM, unpackNPbyM)
-                  IF (myProc.eq.0) THEN
                      OPEN(45,FILE=TRIM(GLOBALDIR)//'/'//'fort.45',
      &                  ACCESS='SEQUENTIAL',POSITION='APPEND')
                      WRITE(45,1100) Time,IT,(Sigma(k),Sigma(k),Sigma(k),
@@ -2726,7 +2876,6 @@ C                 Write time header into file
      &                     (rp_g(NH,k),ip_g(NH,k),WZ_g(NH,k),k=1,NFEN) 
                         I3DGVRec=I3DGVRec+1
                      ENDDO
-                     DEALLOCATE(rp_g,ip_g,WZ_g)
                      CLOSE(45)
                   ENDIF
                ENDIF
@@ -2748,14 +2897,22 @@ C                 Write time header into file
                END DO
                CLOSE(45)
             CASE(3) ! netcdf
-               CALL allMessage(ERROR,
-     &          "I3DGV=3 but NetCDF output is not yet available for 3D
-     &fulldomain velocity data.")
+#ifdef NETCDF
+               IF (myProc.eq.0) THEN
+                  CALL writeOutArrayNetCDF3D(45, time, it, 
+     &               RealQDescript,ImaginaryQDescript,WZDescript)
+               ENDIF
+#endif
             CASE DEFAULT
                write(scratchMessage,'("Invalid I3DGV: ",I2)') ABS(I3DGV)
                CALL screen(ERROR, scratchMessage)
             END SELECT
             N3DGV=0
+            IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.).and.
+     &          (myProc.eq.0)) THEN
+                  DEALLOCATE(rp_g,ip_g,WZ_g)
+            ENDIF
+
          ENDIF
       ENDIF
 
@@ -2767,6 +2924,21 @@ C kmd48.33bc changed to NE from GT
 C        Check to see if it is time to generate 3D fulldomain turbulence output.
          IF((IT.GT.NTO3DGTS).AND.(IT.LE.NTO3DGTF)) N3DGT=N3DGT+1
          IF (N3DGT.EQ.NSpo3DGT) THEN
+            IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
+               IF (myProc.eq.0) THEN
+                  ALLOCATE(q20_g(NP_G,NFEN),l_g(NP_G,NFEN),
+     &               EV_g(NP_G,NFEN))
+                  Q20Descript % array2D_g => q20_g
+                  LDescript % array2D_g => l_g
+                  EVDescript % array2D_g => EV_g
+               ENDIF
+               CALL collectFullDomainArray(Q20Descript,
+     &            packNPbyM, unpackNPbyM)
+               CALL collectFullDomainArray(LDescript,
+     &            packNPbyM, unpackNPbyM)
+               CALL collectFullDomainArray(EVDescript,
+     &            packNPbyM, unpackNPbyM)
+            ENDIF
             SELECT CASE(ABS(I3DGT))
             CASE(1) ! ascii
                IF((MNPROC.EQ.1).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
@@ -2784,19 +2956,6 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
                ENDIF
                IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
                   IF (myProc.eq.0) THEN
-                     ALLOCATE(q20_g(NP_G,NFEN),l_g(NP_G,NFEN),
-     &                  EV_g(NP_G,NFEN))
-                     Q20Descript % array2D_g => q20_g
-                     LDescript % array2D_g => l_g
-                     EVDescript % array2D_g => EV_g
-                  ENDIF
-                  CALL collectFullDomainArray(Q20Descript,
-     &               packNPbyM, unpackNPbyM)
-                  CALL collectFullDomainArray(LDescript,
-     &               packNPbyM, unpackNPbyM)
-                  CALL collectFullDomainArray(EVDescript,
-     &               packNPbyM, unpackNPbyM)
-                  IF (myProc.eq.0) THEN
                      OPEN(46,FILE=TRIM(GLOBALDIR)//'/'//'fort.46',
      &                  ACCESS='SEQUENTIAL',POSITION='APPEND')
                      WRITE(46,1100) Time,IT,(Sigma(k),Sigma(k),Sigma(k),
@@ -2808,7 +2967,6 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
                         I3DGTRec=I3DGTRec+1
                      ENDDO
                      CLOSE(46)
-                     DEALLOCATE(q20_g,l_g,EV_g)
                   ENDIF
                ENDIF
             CASE(2)
@@ -2829,14 +2987,22 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
                ENDDO
                CLOSE(46)
             CASE(3) ! netcdf
-               CALL allMessage(ERROR,
-     &          "I3DGT=3 but NetCDF output is not yet available for 3D
-     &fulldomain turbulence data.")
+#ifdef NETCDF
+               IF (myProc.eq.0) THEN
+                  CALL writeOutArrayNetCDF3D(46, time, it, 
+     &               Q20Descript,LDescript,EVDescript)
+               ENDIF
+#endif
             CASE DEFAULT 
                write(scratchMessage,'("Invalid I3DGT: ",I2)') ABS(I3DGT)
                CALL screen(ERROR, scratchMessage)
             END SELECT
             N3DGT=0
+            IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.).and.
+     &          (myProc.eq.0)) THEN
+               DEALLOCATE(q20_g,l_g,EV_g)
+            ENDIF
+
          ENDIF
       ENDIF
 
@@ -3008,7 +3174,7 @@ C            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
 
       CASE(3) !netcdf (portable)
 #ifdef NETCDF
-         IF(MYPROC.EQ.0) THEN
+         IF (MYPROC.EQ.0) THEN
             CALL writeOutArrayNetCDF(lun, time, it, descript)
          ENDIF
 #else
@@ -3662,9 +3828,9 @@ C
 C...
 C...  ADD IN 3D STUFF IF APPROPRIATE
 C...
-         IF (C3D) THEN
+         IF (C3D.eqv..true.) THEN
             CALL logMessage(INFO,"Writing 3D hotstart information.")
-            CALL HSTART3D_OUT() ! -> see vsmy.F
+            CALL HSTART3D_OUT(IT) ! -> see vsmy.F
          ENDIF
 C...  
 C...  IF APPROPRIATE ADD HARMONIC ANALYSIS INFORMATION TO HOT START FILE
@@ -4035,6 +4201,9 @@ C
      &            YVELAVDescript, XVELVADescript, YVELVADescript)
             ENDIF
          ENDIF 
+         IF (C3D.eqv..true.) THEN
+            CALL HSTART3D_OUT(IT) ! -> see vsmy.F
+         ENDIF
 #endif
 
       CASE DEFAULT

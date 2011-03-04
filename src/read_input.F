@@ -21,8 +21,9 @@ C-----------------------------------------------------------------------
       USE GLOBAL
       USE GLOBAL_IO
       USE KDTREE2_MODULE     ! V49.48.02 tcm -- added for fast searching
-      USE GLOBAL_3DVS, ONLY: C3D_PTrans,
-     &    I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT
+      USE GLOBAL_3DVS, ONLY: C3D_PTrans, NSTA3DD, NSTA3DV, NSTA3DT,
+     &    I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT, NSTA3DD_G, NSTA3DV_G,
+     &    NSTA3DT_G
       USE HARM
       USE WIND
       USE ITPACKV
@@ -4937,6 +4938,11 @@ C - allocate arrays dealing with wind forcing
         NSTAV_G = NSTAV
         NSTAM_G = NSTAM
         NSTAC_G = NSTAC
+        IF (C3D.eqv..true.) THEN
+           NSTA3DD_G = NSTA3DD 
+           NSTA3DV_G = NSTA3DV
+           NSTA3DT_G = NSTA3DT
+        ENDIF
       endif
 
 C     write table of ADCIRC parameter sizes
@@ -5106,7 +5112,8 @@ C    kmd48.33bc - added the variables from Global
      &                  TBCTIMEINC, SBCSTATIM, TBCSTATIM, 
      &                  BCFLAG_LNM, BCFLAG_TEMP, TTBCSTATIM,
      &                  TTBCTIMEINC, SPONGEDIST, NBD, Sponge,
-     &                  OUTPUTSPONGE
+     &                  OUTPUTSPONGE, scratchMessage, INFO, 
+     &                  setMessageSource, logMessage, unsetMessageSource
       USE GLOBAL_3DVS
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
@@ -5114,25 +5121,13 @@ C    kmd48.33bc - added the variables from Global
       IMPLICIT NONE !jgf45.09 added
 C...  Declaration and definition of local variables used in this subroutine
 
-      REAL(8)  :: StaTime                     !Model start time
-      REAL(SZ) :: TO3DSDS, TO3DSDF            !3D Density station output starting & ending times
-      REAL(SZ) :: TO3DSVS, TO3DSVF            !3D Velocity station output starting & ending times
-      REAL(SZ) :: TO3DSTS, TO3DSTF            !3D Turbulence station output starting & ending times
-      REAL(SZ) :: TO3DGDS, TO3DGDF            !3D Global density output starting & ending times
-      REAL(SZ) :: TO3DGVS, TO3DGVF            !3D Global velocity output starting & ending times
-      REAL(SZ) :: TO3DGTS, TO3DGTF            !3D Global turbulence output starting & ending times
-      REAL(8)  :: X3DS,Y3DS,SF3DS,SL3DS       !3D station coordinates
-      REAL(8)  :: X4,Y4
-      REAL(8)  :: X1,X2,X3,Y1,Y2,Y3           !Used for computing interpolating factors for station output
-      REAL(8)  :: A1,A2,A3,AA,AE,AEMin        !Used for computing interpolating factors for station output
-      REAL(SZ) :: HH1                         !domain averaged depth used for some vertical FE grids
-      REAL(SZ) :: Alp1,Alp2,Alp3              !time stepping coefficients
-
-      INTEGER  :: NT                          !Total number of time steps in model run
-      INTEGER  :: N1,N2,N3,KMin               !Used for computing interpolating factors for station output
-      INTEGER  :: N,K,NN,J                      !loop counters
-      INTEGER  :: NH                          !horizontal node loop counter
-      INTEGER  :: IGC                         !vertical grid code
+      REAL(8), intent(in)  :: StaTime          !Model start time
+      INTEGER, intent(in)  :: NT   !Total number of time steps in model run
+C
+      REAL(SZ) :: HH1  !domain averaged depth used for some vertical FE grids
+      INTEGER  :: N,K,NN,J         !loop counters
+      INTEGER  :: NH               !horizontal node loop counter
+      CHARACTER CDUM80
 
 C    kmd48.33bc - additional variables for sponge layers
       REAL(SZ) :: Xloc1, Xloc2, Yloc1, Yloc2, Xloc, Yloc
@@ -5141,7 +5136,11 @@ C    kmd48.33bc - additional variables for sponge layers
       REAL(SZ),ALLOCATABLE :: compdist(:)
       INTEGER :: BCnode, counter
       INTEGER, ALLOCATABLE :: nodedist(:)
-
+C
+      call setMessageSource("read_input_3D")
+#ifdef READ_INPUT_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
 C     
 C...  General invalid entry format statement used throughout
 C     
@@ -5361,126 +5360,33 @@ C.... General variable definitions
 C     NE       - total number of elements in grid
 C     Areas(K) - 2x area of element K
 
-
 C...3D Station Density Output (fort.41)
 C
-C     I3DSD    - flag for 3D station density output
-C                If ABS(I3DSD)>0 densities are interpolated to stations and written out
-C                If ABS(I3DSD)=1, output is in ascii. If ABS(I3DSD)=2, output is in binary.
 C     TO3DSDS  - starting time in days for 3D station density output
 C     TO3DSDF  - ending time in days for 3D station density output
-C     NSpo3DSD - 3D station density output interval in timesteps
-C     NTO3DSDS  - TO3DSDS converted to timesteps after StaTime
-C     NTO3DSDF  - TO3DSDF converted to timesteps after StaTime
-C     NDSet3DSD - total number of times that 3D density station data will be written
-C     N3DSD    - counter to determine if it is time to write 3D density station data
-C     NSta3DD  - number of 3D density stations 
-C     MNSta3DD - larger of 1 or NSta3DD, used to dimension arrays
-C     NE3DD(N) - element number containing 3D density station N
-C     StaI3DD1(N),StaI3DD2(N),StaI3DD3(N) - interpolating factors used to compute output at 3D density station N
-C     I3DSDRec - record pointer for ascii or binary output
 C
       READ(15,*) I3DSD,TO3DSDS,TO3DSDF,NSpo3DSD
 
-C.... CHECK INPUT PARAMETER I3DSD
-
-      WRITE(16,501) I3DSD
- 501  FORMAT(//,1X,'3D DENSITY STATION OUTPUT PARAMETER: I3DSD = ',I2)
-      IF(ABS(I3DSD).GT.2) THEN
-        IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-          WRITE(ScreenUnit,350)          
-          WRITE(ScreenUnit,511)
-        ENDIF
-        WRITE(16,350)
-        WRITE(16,511)
- 511    FORMAT(/,1X,'YOUR SELECTION OF I3DSD IS NOT VALID. ',
-     &              'CHECK YOUR INPUT!!')
-#ifdef CMPI
-        call msg_fini()
-#endif
-        STOP
-      ENDIF
- 
-      IF((I3DSD.NE.0).AND.(NSpo3DSD.EQ.0)) THEN
-        IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-          WRITE(ScreenUnit,350)
-          WRITE(ScreenUnit,561) NSpo3DSD
-        ENDIF
-        WRITE(16,350)
-        WRITE(16,561) NSpo3DSD
- 561    FORMAT(2X,'    NSpo3DSD = ',I3,' IT MUST BE > 0')
-#ifdef CMPI
-        call msg_fini()
-#endif
-        STOP
-      ENDIF
-
-C.... IF NO STATION DENSITY OUTPUT WILL BE GENERATED
-
-      IF(I3DSD.EQ.0) THEN
-        WRITE(16,521)
- 521    FORMAT(/,5X,'No 3D Station density will be output')
-
-C.... IF STATION DENSITY OUTPUT WILL BE GENERATED
-
-      ELSE
-
-C....   COMPUTE NTO3DSDS, NTO3DSDF, WHICH = TO3DSDS AND TO3DSDF IN TIME STEPS
-#ifdef IBM
-        NTO3DSDS=INT((TO3DSDS-StaTime)*Day2Sec/DTDP+0.5d0,
-     &        KIND(0.0d0))      !jgf45.11 was NINT
-        NTO3DSDF=INT((TO3DSDF-StaTime)*Day2Sec/DTDP+0.5d0,
-     &       KIND(0.0d0))       !jgf45.11 was NINT
-#else
-        NTO3DSDS=INT((TO3DSDS-StaTime)*Day2Sec/DTDP+0.5d0) !jgf45.11 was NINT
-        NTO3DSDF=INT((TO3DSDF-StaTime)*Day2Sec/DTDP+0.5d0) !jgf45.11 was NINT
-#endif
-         IF(NTO3DSDS.LT.0) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,531) TO3DSDS
-          ENDIF
-          WRITE(16,531) TO3DSDS
- 531      FORMAT(5X,'NOTE: TO3DSDS = ',E14.6,' < START TIME. ',
-     &              'IT HAS BEEN RESET = START TIME.')
-          TO3DSDS=StaTime
-          NTO3DSDS=0
-        ENDIF
-        IF(NTO3DSDF.LT.NTO3DSDS) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,541) TO3DSDF
-          ENDIF
-          WRITE(16,541) TO3DSDF
- 541      FORMAT(5X,'NOTE: TO3DSDF = ',E14.6,' < TO3DSDS. ',
-     &              'IT HAS BEEN RESET = TO3DSDS.')
-          TO3DSDF=TO3DSDS
-          NTO3DSDF=NTO3DSDS
-        ENDIF
-        IF(NTO3DSDF.GT.NT) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,551) TO3DSDF
-          ENDIF
-          WRITE(16,551) TO3DSDF
- 551      FORMAT(5X,'NOTE: TO3DSDF = ',E14.6,' > RNDAY. ',
-     &              'IT HAS BEEN RESET = RNDAY.')
-          NTO3DSDF=NT
-        ENDIF
-
-        NDSet3DSD = (NTO3DSDF-NTO3DSDS)/NSpo3DSD
-        N3DSD=0
-        I3DSDRec=0
-
-C.....  WRITE Density station output information to UNIT 16
-
-        WRITE(16,571) NSpo3DSD,TO3DSDS,(TO3DSDS+NSpo3DSD*DTDP*Sec2Day), 
+C.... CHECK INPUT PARAMETERS
+      CDUM80 = "3D density station"
+      CALL checkAndFillIOParameters(I3DSD, CDUM80, staTime,
+     &   NSpo3DSD, TO3DSDS, TO3DSDF, NTO3DSDS, NTO3DSDF, NDSET3DSD, 
+     &   N3DSD, I3DSDRec)
+C
+C.....WRITE Density station output information to UNIT 16
+      IF (I3DSD.ne.0) THEN 
+         WRITE(scratchMessage,571) trim(CDUM80), NSpo3DSD,TO3DSDS,
+     &                (TO3DSDS+NSpo3DSD*DTDP*Sec2Day), 
      &                (NTO3DSDS+NSpo3DSD),TO3DSDF,NTO3DSDF,NSpo3DSD,
      &                NDSet3DSD
- 571    FORMAT(/,5X,'3D Density station output will start',I9,
-     &              ' timesteps after day TO3DSD = ',F9.3,
+         CALL logMessage(INFO,scratchMessage)
+ 571     FORMAT(/,5X,A,' data output will start',I9,
+     &              ' timesteps after day = ',F9.3,
      &         /,9X,'This = ',F9.3,' days = ',I9,' timesteps relative',
      &              ' to the simulation Start Time.',
      &         /,9X,'Output will stop ',F9.3,' days = ',I9,' timesteps',
      &              ' relative to the simulation Start Time.',
-     &         /,9X,'Data will be written to file fort.42 every ',I7,
+     &         /,9X,'Data will be written every ',I7,
      &              ' time steps at total of ',I7,' times.')
       ENDIF
  
@@ -5492,772 +5398,179 @@ C.... RECORDING STATIONS
  581  FORMAT(/,5X,' Output will be written at ',I7,' stations.')
 
       IF (NSta3DD.EQ.0) THEN
-        MNSta3DD=1
-        ELSE
-        MNSta3DD = NSta3DD
+         MNSta3DD=1
+      ELSE
+         MNSta3DD = NSta3DD
       ENDIF
-
-C  Allocate arrays for station density output
-
+C
+C     Allocate arrays for station density output
       call alloc_3DSD()
-
-C....Input the coordinates of the density output stations
-C....and then compute the element # containing each station
-
+C
+C.... Input the coordinates of the density output stations
+C.... and then compute the element # containing each station
       IF(NSta3DD.GT.0) THEN
-        IF(ICS.EQ.1) WRITE(16,3108)
-        IF(ICS.EQ.2) WRITE(16,3109)
-
-        DO N=1,NSta3DD
-          NE3DD(N)=0
-          IF(ICS.EQ.1) THEN
-            READ(15,*) X3DS,Y3DS
-          ELSE
-            READ(15,*) SL3DS,SF3DS
-            SL3DS=SL3DS*Deg2Rad
-            SF3DS=SF3DS*Deg2Rad
-            CALL CPP(X3DS,Y3DS,SL3DS,SF3DS,SLAM0,SFEA0)
-          ENDIF
-
-C... v49.48.02 tcm replaced with call to kdtsearch
-C          CALL CoordinateToElement(X3DS, Y3DS,
-C     &         NE3DD(N), N, '3D Density recording station  ')
-          CALL kdtsearch(X3DS, Y3DS,
-     &         NE3DD(N), N, '3D Density recording station  ')
-
-C....     Write element and station
-
-          IF(ICS.EQ.1) THEN
-            WRITE(16,1880) N,NE3DD(N),X3DS,Y3DS
-          ELSE
-            WRITE(16,1883) N,NE3DD(N),SL3DS*Rad2Deg,
-     &                     SF3DS*Rad2Deg,X3DS,Y3DS
-          ENDIF
-
-C....     COMPUTE INTERPOLATING FACTORS
-          CALL ComputeInterpolatingFactors(X3DS, Y3DS, NE3DD(N),
-     &         StaI3DD1(N), StaI3DD2(N), StaI3DD3(N)) 
-
-        END DO
-
-        WRITE(16,*) ' '
+         CALL readStations(STATNAMED, NSta3DD, NE3DD, XED, YED,
+     &         SLED, SFED, StaI3DD1, StaI3DD2, StaI3DD3,
+     &                      '3D DENSITY RECORDING STATION  ')
       ENDIF
-
+C
 C...3D Station Velocity Output (fort.42)
 C
-C     I3DSV    - flag for 3D station velocity output
-C                If ABS(I3DSV)>0 velocities are interpolated to stations and written out
-C                If ABS(I3DSV)=1, output is in ascii. If ABS(I3DSV)=2, output is in binary.
 C     TO3DSVS  - starting time in days for 3D station velocity output
 C     TO3DSVF  - ending time in days for 3D station velocity output
-C     NSpo3DSV - 3D station velocity output interval in timesteps
-C     NTO3DSVS  - TO3DSVS converted to timesteps after StaTime
-C     NTO3DSVF  - TO3DSVF converted to timesteps after StaTime
-C     NDSet3DSV - total number of times that 3D velocity station data will be written
-C     N3DSV    - counter to determine if it is time to write 3D velocity station data
-C     NSta3DV  - number of 3D velocity stations 
-C     MNSta3DV - larger of 1 or NSta3DV, used to dimension arrays
-C     NE3DV(N) - element number containing 3D velocity station N
-C     StaI3DV1(N),StaI3DV2(N),StaI3DV3(N) - interpolating factors used to compute output at 3D velocity station N
-C     I3DSVRec - record pointer for ascii or binary output
 C
       READ(15,*) I3DSV,TO3DSVS,TO3DSVF,NSpo3DSV
-
-C.... CHECK INPUT PARAMETER I3DSV
-
-      WRITE(16,502) I3DSV
- 502  FORMAT(//,1X,'3D VELOCITY STATION OUTPUT PARAMETER: I3DSV = ',I2)
-      IF(ABS(I3DSV).GT.2) THEN
-        IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-          WRITE(ScreenUnit,350)          
-          WRITE(ScreenUnit,512)
-        ENDIF
-        WRITE(16,350)
-        WRITE(16,512)
- 512    FORMAT(/,1X,'YOUR SELECTION OF I3DSV IS NOT VALID. ',
-     &              'CHECK YOUR INPUT!!')
-#ifdef CMPI
-        call msg_fini()
-#endif
-        STOP
-      ENDIF
- 
-      IF((I3DSV.NE.0).AND.(NSpo3DSV.EQ.0)) THEN
-        IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-          WRITE(ScreenUnit,350)
-          WRITE(ScreenUnit,562) NSpo3DSV
-        ENDIF
-        WRITE(16,350)
-        WRITE(16,562) NSpo3DSV
- 562    FORMAT(2X,'    NSpo3DSV = ',I3,' IT MUST BE > 0')
-#ifdef CMPI
-        call msg_fini()
-#endif
-        STOP
-      ENDIF
-
-C.... IF NO STATION VELOCITY OUTPUT WILL BE GENERATED
-
-      IF(I3DSV.EQ.0) THEN
-        WRITE(16,522)
- 522    FORMAT(/,5X,'No 3D Station velocity will be output')
-
-C.... IF STATION VELOCITY OUTPUT WILL BE GENERATED
-
-      ELSE
-
-C....   COMPUTE NTO3DSVS, NTO3DSVF, WHICH = TO3DSVS AND TO3DSVF IN TIME STEPS
-#ifdef IBM
-        NTO3DSVS=INT((TO3DSVS-StaTime)*Day2Sec/DTDP+0.5d0,
-     &        KIND(0.0d0))   !jgf45.11 was NINT
-        NTO3DSVF=INT((TO3DSVF-StaTime)*Day2Sec/DTDP+0.5d0, 
-     &       KIND(0.0d0))       !jgf45.11 was NINT
-#else
-        NTO3DSVS=INT((TO3DSVS-StaTime)*Day2Sec/DTDP+0.5d0) !jgf45.11 was NINT
-        NTO3DSVF=INT((TO3DSVF-StaTime)*Day2Sec/DTDP+0.5d0) !jgf45.11 was NINT
-#endif
-        IF(NTO3DSVS.LT.0) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,532) TO3DSVS
-          ENDIF
-          WRITE(16,532) TO3DSVS
- 532      FORMAT(5X,'NOTE: TO3DSVS = ',E14.6,' < START TIME. ',
-     &              'IT HAS BEEN RESET = START TIME.')
-          TO3DSVS=StaTime
-          NTO3DSVS=0
-        ENDIF
-        IF(NTO3DSVF.LT.NTO3DSVS) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,542) TO3DSVF
-          ENDIF
-          WRITE(16,542) TO3DSVF
- 542      FORMAT(5X,'NOTE: TO3DSVF = ',E14.6,' < TO3DSVS. ',
-     &              'IT HAS BEEN RESET = TO3DSVS.')
-          TO3DSVF=TO3DSVS
-          NTO3DSVF=NTO3DSVS
-        ENDIF
-        IF(NTO3DSVF.GT.NT) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,552) TO3DSVF
-          ENDIF
-          WRITE(16,552) TO3DSVF
- 552      FORMAT(5X,'NOTE: TO3DSVF = ',E14.6,' > RNDAY. ',
-     &              'IT HAS BEEN RESET = RNDAY.')
-          NTO3DSVF=NT
-        ENDIF
-
-        NDSet3DSV = (NTO3DSVF-NTO3DSVS)/NSpo3DSV
-        N3DSV=0
-        I3DSVRec=0
-
-C.....  WRITE Velocity station output information to UNIT 16
-
-        WRITE(16,572) NSpo3DSV,TO3DSVS,(TO3DSVS+NSpo3DSV*DTDP*Sec2Day), 
+C
+C.... CHECK INPUT PARAMETERS
+      CDUM80 = "3D velocity station"
+      CALL checkAndFillIOParameters(I3DSV, CDUM80, staTime,
+     &   NSpo3DSV, TO3DSVS, TO3DSVF, NTO3DSVS, NTO3DSVF, NDSET3DSV, 
+     &   N3DSV, I3DSVRec)
+C
+C.....WRITE Velocity station output information to UNIT 16
+      IF (I3DSV.ne.0) THEN
+         WRITE(scratchMessage,571) CDUM80,NSpo3DSV,TO3DSVS,
+     &                (TO3DSVS+NSpo3DSV*DTDP*Sec2Day), 
      &                (NTO3DSVS+NSpo3DSV),TO3DSVF,NTO3DSVF,NSpo3DSV,
      &                NDSet3DSV
- 572    FORMAT(/,5X,'3D Velocity station output will start',I9,
-     &              ' timesteps after day TO3DSV = ',F9.3,
-     &         /,9X,'This = ',F9.3,' days = ',I9,' timesteps relative',
-     &              ' to the simulation Start Time.',
-     &         /,9X,'Output will stop ',F9.3,' days = ',I9,' timesteps',
-     &              ' relative to the simulation Start Time.',
-     &         /,9X,'Data will be written to file fort.42 every ',I7,
-     &              ' time steps at total of ',I7,' times.')
+         CALL logMessage(INFO,scratchMessage)
       ENDIF
- 
+C 
 C.... REGARDLESS OF WHETHER I3DSV=0, READ IN THE NUMBER OF 3D VELOCITY
 C.... RECORDING STATIONS
-
       READ(15,*) NSta3DV
       IF(I3DSV.NE.0) WRITE(16,582) NSta3DV
  582  FORMAT(/,5X,' Output will be written at ',I7,' stations.')
-
+C
       IF (NSta3DV.EQ.0) THEN
         MNSta3DV=1
-        ELSE
+      ELSE
         MNSta3DV = NSta3DV
       ENDIF
-
+C
 C  Allocate arrays for station velocity output
-
       call alloc_3DSV()
-
+C
 C....Input the coordinates of the velocity output stations
 C....and then compute the element # containing each station
-
       IF(NSta3DV.GT.0) THEN
-        IF(ICS.EQ.1) WRITE(16,3108)
-        IF(ICS.EQ.2) WRITE(16,3109)
-
-        DO N=1,NSta3DV
-          NE3DV(N)=0
-          IF(ICS.EQ.1) THEN
-            READ(15,*) X3DS,Y3DS
-          ELSE
-            READ(15,*) SL3DS,SF3DS
-            SL3DS=SL3DS*Deg2Rad
-            SF3DS=SF3DS*Deg2Rad
-            CALL CPP(X3DS,Y3DS,SL3DS,SF3DS,SLAM0,SFEA0)
-          ENDIF
-
-C... v49.48.02 tcm replaced with call to kdtsearch
-C          CALL CoordinateToElement(X3DS, Y3DS,
-C     &         NE3DV(N), N, '3D Velocity recording station ')
-          CALL KDTSEARCH(X3DS, Y3DS,
-     &         NE3DV(N), N, '3D Velocity recording station ')
-
-
-C....     Write element and station
-
-          IF(ICS.EQ.1) THEN
-            WRITE(16,1880) N,NE3DV(N),X3DS,Y3DS
-          ELSE
-            WRITE(16,1883) N,NE3DV(N),SL3DS*Rad2Deg,
-     &                     SF3DS*Rad2Deg,X3DS,Y3DS
-          ENDIF
-
-C....     COMPUTE INTERPOLATING FACTORS
-          CALL ComputeInterpolatingFactors(X3DS, Y3DS, NE3DV(N),
-     &         StaI3DV1(N), StaI3DV2(N), StaI3DV3(N)) 
-
-        END DO
-
-        WRITE(16,*) ' '
+         CALL readStations(STATNAMEV3D, NSta3DV, NE3DV, XE3DV, YE3DV,
+     &         SLE3DV, SFE3DV, StaI3DV1, StaI3DV2, StaI3DV3,
+     &                      '3D VELOCITY RECORDING STATION ')
       ENDIF
-
-C...3D Station Turbulence Output  (fort.43)
 C
-C     I3DST    - flag for 3D station turbulence output
-C                If ABS(I3DST)>0 turbulence is interpolated to stations and written out
-C                If ABS(I3DST)=1, output is in ascii. If ABS(I3DST)=2, output is in binary.
+C...3D Station Turbulence Output  (fort.43)
 C     TO3DSTS  - starting time in days for 3D station turbulence output
 C     TO3DSTF  - ending time in days for 3D station turbulence output
-C     NSpo3DST - 3D station turbulence output interval in timesteps
-C     NTO3DSTS  - TO3DSTS converted to timesteps after StaTime
-C     NTO3DSTF  - TO3DSTF converted to timesteps after StaTime
-C     NDSet3DST - total number of times that 3D turbulence station data will be written
-C     N3DST    - counter to determine if it is time to write 3D turbulence station data
-C     NSta3DT  - number of 3D turbulence stations 
-C     MNSta3DT - larger of 1 or NSta3DT, used to dimension arrays
-C     NE3DT(N) - element number containing 3D turbulence station N
-C     StaI3DT1(N),StaI3DT2(N),StaI3DT3(N) - interpolating factors used to compute output at 3D turbulence station N
-C     I3DSTRec - record pointer for ascii or binary output
-C
       READ(15,*) I3DST,TO3DSTS,TO3DSTF,NSpo3DST
-
-C.... CHECK INPUT PARAMETER I3DST
-
-      WRITE(16,503) I3DST
- 503  FORMAT(//,1X,'3D Turbulence Station output parameter: I3DST = ',
-     &                                                               I2)
-      IF(ABS(I3DST).GT.2) THEN
-        IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-          WRITE(ScreenUnit,350)          
-          WRITE(ScreenUnit,513)
-        ENDIF
-        WRITE(16,350)
-        WRITE(16,513)
- 513    FORMAT(/,1X,'Your selection of I3DST is not valid. ',
-     &              'CHECK YOUR INPUT!!')
-#ifdef CMPI
-        call msg_fini()
-#endif
-        STOP
-      ENDIF
-
-      IF((I3DST.NE.0).AND.(NSpo3DST.EQ.0)) THEN
-        IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-          WRITE(ScreenUnit,350)
-          WRITE(ScreenUnit,563) NSpo3DST
-        ENDIF
-        WRITE(16,350)
-        WRITE(16,563) NSpo3DST
- 563    FORMAT(2X,'    NSpo3DST = ',I3,' IT MUST BE > 0')
-        STOP
-      ENDIF
-
-C.... IF NO 3D STATION TURBULENCE OUTPUT WILL BE GENERATED
-
-      IF(I3DST.EQ.0) THEN
-        WRITE(16,523)
- 523    FORMAT(/,5X,'No 3D Station Turbulence will be output')
-
-C.... IF 3D STATION TURBULENCE OUTPUT WILL BE GENERATED
-
-      ELSE
-
-C....   COMPUTE NTO3DSTS, NTO3DSTF, WHICH = TO3DSTS AND TO3DSTF IN TIME STEPS
-#ifdef IBM
-        NTO3DSTS=INT((TO3DSTS-StaTime)*Day2Sec/DTDP+0.5d0, 
-     &        KIND(0.0d0))   !jgf45.11 was NINT
-        NTO3DSTF=INT((TO3DSTF-StaTime)*Day2Sec/DTDP+0.5d0,
-     &       KIND(0.0d0))       !jgf45.11 was NINT
-#else
-        NTO3DSTS=INT((TO3DSTS-StaTime)*Day2Sec/DTDP+0.5d0) !jgf45.11 was NINT
-        NTO3DSTF=INT((TO3DSTF-StaTime)*Day2Sec/DTDP+0.5d0) !jgf45.11 was NINT
-#endif
-        IF(NTO3DSTS.LT.0) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,533) TO3DSTS
-          ENDIF
-          WRITE(16,533) TO3DSTS
- 533      FORMAT(5X,'NOTE: TO3DSTS = ',E14.6,' < START TIME. ',
-     &              'IT HAS BEEN RESET = START TIME.')
-          TO3DSTS=StaTime
-          NTO3DSTS=0
-        ENDIF
-        IF(NTO3DSTF.LT.NTO3DSTS) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,543) TO3DSTF
-          ENDIF
-          WRITE(16,543) TO3DSTF
- 543      FORMAT(5X,'NOTE: TO3DSTF = ',E14.6,' < TO3DSTS. ',
-     &              'IT HAS BEEN RESET = TO3DSTS.')
-          TO3DSTF=TO3DSTS
-          NTO3DSTF=NTO3DSTS
-        ENDIF
-        IF(NTO3DSTF.GT.NT) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,553) TO3DSTF
-          ENDIF
-          WRITE(16,553) TO3DSTF
- 553      FORMAT(5X,'NOTE: TO3DSTF = ',E14.6,' > RNDay. ',
-     &              'IT HAS BEEN RESET = RNDay.')
-          NTO3DSTF=NT
-        ENDIF
-
-        NDSet3DST = (NTO3DSTF-NTO3DSTS)/NSpo3DST
-        N3DST=0
-        I3DSTRec=0
-
+C
+C.... CHECK INPUT PARAMETERS
+      CDUM80 = "3D turbulence station"
+      CALL checkAndFillIOParameters(I3DST, CDUM80, staTime,
+     &   NSpo3DST, TO3DSTS, TO3DSTF, NTO3DSTS, NTO3DSTF, NDSET3DST, 
+     &   N3DST, I3DSTRec)
+C
 C.....  Write turbulence station output information to UNIT 16
-
-        WRITE(16,573) NSpo3DST,TO3DSTS,(TO3DSTS+NSpo3DST*DTDP*Sec2Day), 
+      IF (I3DST.ne.0) THEN
+         WRITE(scratchMessage,571) CDUM80, NSpo3DST,TO3DSTS,
+     &                (TO3DSTS+NSpo3DST*DTDP*Sec2Day), 
      &                (NTO3DSTS+NSpo3DST),TO3DSTF,NTO3DSTF,NSpo3DST,
      &                NDSet3DST
- 573    FORMAT(/,5X,'3D Turbulence station output will start',I9,
-     &              ' timesteps after day TO3DST = ',F9.3,
-     &         /,9X,'This = ',F9.3,' days = ',I9,' timesteps relative',
-     &              ' to the simulation Start Time.',
-     &         /,9X,'Output will stop ',F9.3,' days = ',I9,' timesteps',
-     &              ' relative to the simulation Start Time.',
-     &         /,9X,'Data will be written to file fort.43 every ',I7,
-     &              ' time steps at total of ',I7,' times.')
+         CALL logMessage(INFO,scratchMessage)
       ENDIF
- 
+C 
 C.... REGARDLESS OF WHETHER I3DST=0, READ IN THE NUMBER OF 3D Turbulence
 C.... STATIONS
-
       READ(15,*) NSta3DT
       IF(I3DST.NE.0) WRITE(16,583) NSta3DT
  583  FORMAT(/,5X,'Output will be written at ',I7,' stations')
-
+C
       IF (NSta3DT.EQ.0) THEN
          MNSta3DT=1
       ELSE
          MNSta3DT = NSta3DT
       ENDIF
-
+C
 C  Allocate arrays for station turbulence output
-
       call alloc_3DST()
-
+C
 C....Input the coordinates of the turbulence output stations
 C....and then compute the element # containing each station
-
       IF(NSta3DT.GT.0) THEN
-         IF(ICS.EQ.1) WRITE(16,3108)
-         IF(ICS.EQ.2) WRITE(16,3109)
-
-         DO N=1,NSta3DT
-            NE3DT(N)=0
-            IF(ICS.EQ.1) THEN
-               READ(15,*) X3DS,Y3DS
-            ELSE
-               READ(15,*) SL3DS,SF3DS
-               SL3DS=SL3DS*Deg2Rad
-               SF3DS=SF3DS*Deg2Rad
-               CALL CPP(X3DS,Y3DS,SL3DS,SF3DS,SLAM0,SFEA0)
-            ENDIF
-
-C... v49.48.02 tcm replaced with call to kdtsearch
-C            CALL CoordinateToElement(X3DS, Y3DS,
-C     &           NE3DT(N), N, '3D Turbulence rec. station    ')
-            CALL kdtsearch(X3DS, Y3DS,
-     &           NE3DT(N), N, '3D Turbulence rec. station    ')
-
-C.... Write element and station
-
-            IF(ICS.EQ.1) THEN
-               WRITE(16,1880) N,NE3DT(N),X3DS,Y3DS
-            ELSE
-               WRITE(16,1883) N,NE3DT(N),SL3DS*Rad2Deg,
-     &              SF3DS*Rad2Deg,X3DS,Y3DS
-            ENDIF
-
-C.... COMPUTE INTERPOLATING FACTORS
-            CALL ComputeInterpolatingFactors(X3DS, Y3DS, NE3DT(N),
-     &           StaI3DT1(N), StaI3DT2(N), StaI3DT3(N)) 
-            
-         END DO
-         
-         WRITE(16,*) ' '
+         CALL readStations(STATNAMET, NSta3DT, NE3DT, XET, YET,
+     &         SLET, SFET, StaI3DT1, StaI3DT2, StaI3DT3,
+     &                      '3D TURBULENCE REC. STATION    ')
       ENDIF
-      
+C      
 C...3D Global Density Output (fort.44)
 C
-C     I3DGD    - flag for 3D global density output
-C                If ABS(I3DGD)>0 global density is written out
-C                If ABS(I3DGD)=1, output is in ascii. If ABS(I3DGD)=2, output is in binary.
 C     TO3DGDS  - starting time in days for 3D global density output
 C     TO3DGDF  - ending time in days for 3D global density output
-C     NSpo3DGD - 3D global density output interval in timesteps
-C     NTO3DGDS  - TO3DSDS converted to timesteps after StaTime
-C     NTO3DGDF  - TO3DSDF converted to timesteps after StaTime
-C     NDSet3DGD - total number of times that 3D global density data will be written
-C     N3DGD    - counter to determine if it is time to write 3D global density data
-C     I3DGDRec - record pointer for binary output
 C
       READ(15,*) I3DGD,TO3DGDS,TO3DGDF,NSpo3DGD
-
-C.... CHECK INPUT PARAMETER I3DGD
-
-      WRITE(16,504) I3DGD
- 504  FORMAT(//,1X,'3D DENSITY GLOBAL OUTPUT PARAMETER: I3DGD = ',I2)
-      IF(ABS(I3DGD).GT.2) THEN
-        IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-          WRITE(ScreenUnit,350)          
-          WRITE(ScreenUnit,514)
-        ENDIF
-        WRITE(16,350)
-        WRITE(16,514)
- 514    FORMAT(/,1X,'YOUR SELECTION OF I3DGD IS NOT VALID. ',
-     &              'CHECK YOUR INPUT!!')
-        STOP
-      ENDIF
- 
-      IF((I3DGD.NE.0).AND.(NSpo3DGD.EQ.0)) THEN
-        IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-          WRITE(ScreenUnit,350)
-          WRITE(ScreenUnit,564) NSpo3DGD
-        ENDIF
-        WRITE(16,350)
-        WRITE(16,564) NSpo3DGD
- 564    FORMAT(2X,'    NSpo3DGD = ',I3,' IT MUST BE > 0')
-        STOP
-      ENDIF
-
-C.... IF NO GLOBAL DENSITY OUTPUT WILL BE GENERATED
-
-      IF(I3DGD.EQ.0) THEN
-        WRITE(16,524)
- 524    FORMAT(/,5X,'No 3D global density will be output')
-
-C.... IF GLOBAL DENSITY OUTPUT WILL BE GENERATED
-
-      ELSE
-
-C....   COMPUTE NTO3DGDS, NTO3DGDF, WHICH = TO3DGDS AND TO3DGDF IN TIME STEPS
-#ifdef IBM
-        NTO3DGDS=INT((TO3DGDS-StaTime)*Day2Sec/DTDP+0.5d0, 
-     &        KIND(0.0d0))      !jgf45.11 was NINT
-        NTO3DGDF=INT((TO3DGDF-StaTime)*Day2Sec/DTDP+0.5d0, 
-     &       KIND(0.0d0))       !jgf45.11 was NINT
-#else
-        NTO3DGDS=INT((TO3DGDS-StaTime)*Day2Sec/DTDP+0.5d0) !jgf45.11 was NINT
-        NTO3DGDF=INT((TO3DGDF-StaTime)*Day2Sec/DTDP+0.5d0) !jgf45.11 was NINT
-#endif
-        IF(NTO3DGDS.LT.0) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,534) TO3DGDS
-          ENDIF
-          WRITE(16,534) TO3DGDS
- 534      FORMAT(5X,'NOTE: TO3DGDS = ',E14.6,' < START TIME. ',
-     &              'IT HAS BEEN RESET = START TIME.')
-          TO3DGDS=StaTime
-          NTO3DGDS=0
-        ENDIF
-        IF(NTO3DGDF.LT.NTO3DGDS) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,544) TO3DGDF
-          ENDIF
-          WRITE(16,544) TO3DGDF
- 544      FORMAT(5X,'NOTE: TO3DGDF = ',E14.6,' < TO3DGDS. ',
-     &              'IT HAS BEEN RESET = TO3DGDS.')
-          TO3DGDF=TO3DGDS
-          NTO3DGDF=NTO3DGDS
-        ENDIF
-        IF(NTO3DGDF.GT.NT) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,554) TO3DGDF
-          ENDIF
-          WRITE(16,554) TO3DGDF
- 554      FORMAT(5X,'NOTE: TO3DGDF = ',E14.6,' > RNDAY. ',
-     &              'IT HAS BEEN RESET = RNDAY.')
-          NTO3DGDF=NT
-        ENDIF
-
-        NDSet3DGD = (NTO3DGDF-NTO3DGDS)/NSpo3DGD
-        N3DGD=0
-        I3DGDRec=0
-
+C
+C.... CHECK INPUT PARAMETERS
+      CDUM80 = "3D fulldomain density"
+      CALL checkAndFillIOParameters(I3DGD, CDUM80, staTime,
+     &   NSpo3DGD, TO3DGDS, TO3DGDF, NTO3DGDS, NTO3DGDF, NDSET3DGD, 
+     &   N3DGD, I3DGDRec)
+C
 C.....  Write global 3D Density output information to UNIT 16
-
-        WRITE(16,574) NSpo3DGD,TO3DGDS,(TO3DGDS+NSpo3DGD*DTDP*Sec2Day), 
+      IF (I3DGD.ne.0) THEN
+         WRITE(scratchMessage,571) CDUM80,
+     &                NSpo3DGD,TO3DGDS,(TO3DGDS+NSpo3DGD*DTDP*Sec2Day), 
      &                (NTO3DGDS+NSpo3DGD),TO3DGDF,NTO3DGDF,NSpo3DGD,
      &                NDSet3DGD
- 574    FORMAT(/,5X,'3D Density global output will start',I9,
-     &              ' timesteps after day TO3DGD = ',F9.3,
-     &         /,9X,'This = ',F9.3,' days = ',I9,' timesteps relative',
-     &              ' to the simulation Start Time.',
-     &         /,9X,'Output will stop',F9.3,' days = ',I9,' timesteps',
-     &              ' relative to the simulation Start Time.',
-     &         /,9X,'Data will be written to file fort.44 every ',I7,
-     &              ' time steps at total of ',I7,' times.')
- 
-        WRITE(16,*) ' '
+         CALL logMessage(INFO,scratchMessage)
       ENDIF
-
+C
 C...3D Global Velocity Output  (fort.45)
 C
-C     I3DGV    - flag for 3D global velocity output
-C                If ABS(I3DGV)>0 global velocity is written out
-C                If ABS(I3DGV)=1, output is in ascii. If ABS(I3DGV)=2, output is in binary.
 C     TO3DGVS  - starting time in days for 3D global velocity output
 C     TO3DGVF  - ending time in days for 3D global velocity output
-C     NSpo3DGV - 3D global velocity output interval in timesteps
-C     NTO3DGVS  - TO3DGVS converted to timesteps after StaTime
-C     NTO3DGVF  - TO3DGVF converted to timesteps after StaTime
-C     NDSet3DGV - total number of times that 3D velocity global data will be written
-C     N3DGV    - counter to determine if it is time to write 3D velocity global data
-C     I3DGVRec - record pointer for ascii or binary output
 C
       READ(15,*) I3DGV,TO3DGVS,TO3DGVF,NSpo3DGV
-
-C.... CHECK INPUT PARAMETER I3DGV
-
-      WRITE(16,505) I3DGV
- 505  FORMAT(//,1X,'3D Global Velocity Output Parameter: I3DGV = ',I2)
-      IF(ABS(I3DGV).GT.2) THEN
-        IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-          WRITE(ScreenUnit,350)          
-          WRITE(ScreenUnit,515)
-        ENDIF
-        WRITE(16,350)
-        WRITE(16,515)
- 515    FORMAT(/,1X,'YOUR SELECTION OF I3DGV IS NOT VALID. ',
-     &              'CHECK YOUR INPUT!!')
-        STOP
-      ENDIF
- 
-      IF((I3DGV.NE.0).AND.(NSpo3DGV.EQ.0)) THEN
-        IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-          WRITE(ScreenUnit,350)
-          WRITE(ScreenUnit,565) NSpo3DGV
-        ENDIF
-        WRITE(16,350)
-        WRITE(16,565) NSpo3DGV
- 565    FORMAT(2X,'    NSpo3DGV = ',I3,' IT MUST BE > 0')
-        STOP
-      ENDIF
-
-C.... IF NO GLOBAL VELOCITY OUTPUT WILL BE GENERATED
-
-      IF(I3DGV.EQ.0) THEN
-        WRITE(16,525)
- 525    FORMAT(/,5X,'No 3D Global velocity will be output')
-
-C.... IF GLOBAL VELOCITY OUTPUT WILL BE GENERATED
-
-      ELSE
-
-C....   COMPUTE NTO3DGVS, NTO3DGVF, WHICH = TO3DGVS AND TO3DGVF IN TIME STEPS
-#ifdef IBM
-        NTO3DGVS=INT((TO3DGVS-StaTime)*Day2Sec/DTDP+0.5d0, 
-     &        KIND(0.0d0))      !jgf45.11 was NINT
-        NTO3DGVF=INT((TO3DGVF-StaTime)*Day2Sec/DTDP+0.5d0,
-     &       KIND(0.0d0))       !jgf45.11 was NINT
-#else
-        NTO3DGVS=INT((TO3DGVS-StaTime)*Day2Sec/DTDP+0.5d0) !jgf45.11 was NINT
-        NTO3DGVF=INT((TO3DGVF-StaTime)*Day2Sec/DTDP+0.5d0) !jgf45.11 was NINT
-#endif
-
-        IF(NTO3DGVS.LT.0) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,535) TO3DGVS
-          ENDIF
-          WRITE(16,535) TO3DGVS
- 535      FORMAT(5X,'NOTE: TO3DGVS = ',E14.6,' < START TIME. ',
-     &              'IT HAS BEEN RESET = START TIME.')
-          TO3DGVS=StaTime
-          NTO3DGVS=0
-        ENDIF
-        IF(NTO3DGVF.LT.NTO3DGVS) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,545) TO3DGVF
-          ENDIF
-          WRITE(16,545) TO3DGVF
- 545      FORMAT(5X,'NOTE: TO3DGVF = ',E14.6,' < TO3DGVS. ',
-     &              'IT HAS BEEN RESET = TO3DGVS.')
-          TO3DGVF=TO3DGVS
-          NTO3DGVF=NTO3DGVS
-        ENDIF
-        IF(NTO3DGVF.GT.NT) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,555) TO3DGVF
-          ENDIF
-          WRITE(16,555) TO3DGVF
- 555      FORMAT(5X,'NOTE: TO3DGVF = ',E14.6,' > RNDAY. ',
-     &              'IT HAS BEEN RESET = RNDAY.')
-          NTO3DGVF=NT
-        ENDIF
-
-        NDSet3DGV = (NTO3DGVF-NTO3DGVS)/NSpo3DGV
-        N3DGV=0
-        I3DGVRec=0
-
+C
+C.... CHECK INPUT PARAMETERS
+      CDUM80 = "3D fulldomain velocity"
+      CALL checkAndFillIOParameters(I3DGV, CDUM80, staTime, 
+     &   NSpo3DGV, TO3DGVS, TO3DGVF, NTO3DGVS, NTO3DGVF, NDSET3DGV, 
+     &   N3DGV, I3DGVRec)
+C
 C.....  Write global velocity output information to UNIT 16
-
-        WRITE(16,575) NSpo3DGV,TO3DGVS,(TO3DGVS+NSpo3DGV*DTDP*Sec2Day), 
+      IF (I3DGV.ne.0) THEN
+         WRITE(scratchMessage,571) CDUM80, NSpo3DGV,TO3DGVS,
+     &                (TO3DGVS+NSpo3DGV*DTDP*Sec2Day), 
      &                (NTO3DGVS+NSpo3DGV),TO3DGVF,NTO3DGVF,NSpo3DGV,
      &                NDSet3DGV
- 575    FORMAT(/,5X,'3D Global Velocity output will start',I9,
-     &              ' timesteps after day TO3DGV = ',F9.3,
-     &         /,9X,'This = ',F9.3,' days = ',I9,' timesteps relative',
-     &              ' to the simulation Start Time.',
-     &         /,9X,'Output will stop ',F9.3,' days = ',I9,' timesteps',
-     &              ' relative to the simulation Start Time.',
-     &         /,9X,'Data will be written to file fort.45 every ',I7,
-     &              ' time steps at total of ',I7,' times.')
-
-        WRITE(16,*) ' '
+         CALL logMessage(INFO,scratchMessage)
       ENDIF
-
+C
 C...3D Global Turbulence Output  (fort.46)
 C
-C     I3DGT    - flag for 3D global turbulence output
-C                If ABS(I3DGT)>0 global turbulence is written out
-C                If ABS(I3DGT)=1, output is in ascii. If ABS(I3DGT)=2, output is in binary.
 C     TO3DGTS  - starting time in days for 3D global turbulence output
 C     TO3DGTF  - ending time in days for 3D global turbulence output
-C     NSpo3DGT - 3D global turbulence output interval in timesteps
-C     NTO3DGTS  - TO3DGTS converted to timesteps after StaTime
-C     NTO3DGTF  - TO3DGTF converted to timesteps after StaTime
-C     NDSet3DGT - total number of times that 3D global turbulence data will be written
-C     N3DGT    - counter to determine if it is time to write 3D global turbulence data
-C     I3DGTRec - record pointer for ascii or binary output
 C
       READ(15,*) I3DGT,TO3DGTS,TO3DGTF,NSpo3DGT
-
-C.... CHECK INPUT PARAMETER I3DGT
-
-      WRITE(16,506) I3DGT
- 506  FORMAT(//,1X,'3D Global Turbulence output parameter: I3DGT = ',I2)
-      IF(ABS(I3DGT).GT.2) THEN
-        IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-          WRITE(ScreenUnit,350)          
-          WRITE(ScreenUnit,516)
-        ENDIF
-        WRITE(16,350)
-        WRITE(16,516)
- 516    FORMAT(/,1X,'Your selection of I3DGT is not valid. ',
-     &              'CHECK YOUR INPUT!!')
-#ifdef CMPI
-        call msg_fini()
-#endif
-        STOP
-      ENDIF
-
-      IF((I3DGT.NE.0).AND.(NSpo3DGT.EQ.0)) THEN
-        IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-          WRITE(ScreenUnit,350)
-          WRITE(ScreenUnit,566) NSpo3DGT
-        ENDIF
-        WRITE(16,350)
-        WRITE(16,566) NSpo3DGT
- 566    FORMAT(2X,'    NSpo3DGT = ',I3,' IT MUST BE > 0')
-#ifdef CMPI
-        call msg_fini()
-#endif
-        STOP
-      ENDIF
-
-C.... IF NO 3D GLOBAL TURBULENCE OUTPUT WILL BE GENERATED
-
-      IF(I3DGT.EQ.0) THEN
-        WRITE(16,526)
- 526    FORMAT(/,5X,'No 3D Global Turbulence will be output')
-
-C.... IF 3D GLOBAL TURBULENCE OUTPUT WILL BE GENERATED
-
-      ELSE
-
-C....   COMPUTE NTO3DGTS, NTO3DGTF, WHICH = TO3DGTS AND TO3DGTF IN TIME STEPS
-#ifdef IBM
-        NTO3DGTS=INT((TO3DGTS-StaTime)*Day2Sec/DTDP+0.5d0,
-     &        KIND(0.0d0))      !jgf45.11 was NINT
-        NTO3DGTF=INT((TO3DGTF-StaTime)*Day2Sec/DTDP+0.5d0, 
-     &       KIND(0.0d0))       !jgf45.11 was NINT
-#else
-        NTO3DGTS=INT((TO3DGTS-StaTime)*Day2Sec/DTDP+0.5d0) !jgf45.11 was NINT
-        NTO3DGTF=INT((TO3DGTF-StaTime)*Day2Sec/DTDP+0.5d0) !jgf45.11 was NINT
-#endif
-
-        IF(NTO3DGTS.LT.0) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,536) TO3DGTS
-          ENDIF
-          WRITE(16,536) TO3DGTS
- 536      FORMAT(5X,'NOTE: TO3DGTS = ',E14.6,' < START TIME. ',
-     &              'IT HAS BEEN RESET = START TIME.')
-          TO3DGTS=StaTime
-          NTO3DGTS=0
-        ENDIF
-        IF(NTO3DGTF.LT.NTO3DGTS) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,546) TO3DGTF
-          ENDIF
-          WRITE(16,546) TO3DGTF
- 546      FORMAT(5X,'NOTE: TO3DGTF = ',E14.6,' < TO3DGTS. ',
-     &              'IT HAS BEEN RESET = TO3DGTS.')
-          TO3DGTF=TO3DGTS
-          NTO3DGTF=NTO3DGTS
-        ENDIF
-        IF(NTO3DGTF.GT.NT) THEN
-          IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-             WRITE(ScreenUnit,556) TO3DGTF
-          ENDIF
-          WRITE(16,556) TO3DGTF
- 556      FORMAT(5X,'NOTE: TO3DGTF = ',E14.6,' > RNDay. ',
-     &              'IT HAS BEEN RESET = RNDay.')
-          NTO3DGTF=NT
-        ENDIF
-
-        NDSet3DGT = (NTO3DGTF-NTO3DGTS)/NSpo3DGT
-        N3DGT=0
-        I3DGTRec=0
-
+C
+C.... CHECK INPUT PARAMETERS
+      CDUM80 = "3D fulldomain turbulence"
+      CALL checkAndFillIOParameters(I3DGT, CDUM80, staTime, 
+     &   NSpo3DGT, TO3DGTS, TO3DGTF, NTO3DGTS, NTO3DGTF, NDSET3DGT, 
+     &   N3DGT, I3DGTRec)
+C
 C.....  Write global turbulence output information to UNIT 16
-
-        WRITE(16,576) NSpo3DGT,TO3DGTS,(TO3DGTS+NSpo3DGT*DTDP*Sec2Day), 
+      IF (I3DGT.ne.0) THEN
+         WRITE(scratchMessage,571) CDUM80, NSpo3DGT,TO3DGTS,
+     &                (TO3DGTS+NSpo3DGT*DTDP*Sec2Day), 
      &                (NTO3DGTS+NSpo3DGT),TO3DGTF,NTO3DGTF,NSpo3DGT,
      &                NDSet3DGT
- 576    FORMAT(/,5X,'3D Global Turbulence output will start',I9,
-     &              ' timesteps after day TO3DGT = ',F9.3,
-     &         /,9X,'This = ',F9.3,' days = ',I9,' timesteps relative',
-     &              ' to the simulation Start Time.',
-     &         /,9X,'Output will stop ',F9.3,' days = ',I9,' timesteps',
-     &              ' relative to the simulation Start Time.',
-     &         /,9X,'Data will be written to file fort.46 every ',I7,
-     &              ' time steps at total of ',I7,' times.')
-
-        WRITE(16,*) ' '
+         CALL logMessage(INFO,scratchMessage)
       ENDIF
-
+C
 C    kmd48.33bc - added in the information of the 3D boundary conditions
 C                 these boundary conditions are the level of no motion, 
 C                 salinity and temperature forcings.
-
       IF (CBAROCLINIC) THEN
         READ(15,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP !bc flags for elevation and temperature
         WRITE(16,429) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
@@ -6415,19 +5728,23 @@ C                 Note that this is only used in the wind and advective terms
          IF ((Eqnstate.EQ.2).OR.(Eqnstate.EQ.3)) THEN 
             IF (ABS(IDEN).NE.4) THEN 
               WRITE(16,424) 
- 424          FORMAT(/,1X,'Your selection of Eqnstate is not allowed with 
+ 424          FORMAT(/,1X,
+     &        'Your selection of Eqnstate is not allowed with 
      &               your choice of IDEN')
             END IF 
          END IF 
          IF (Eqnstate.eq.1) THEN 
            WRITE(16,418) 
- 418       FORMAT(/,5X,'Equation of state uses the simple equation from Mellor') 
+ 418       FORMAT(/,5X,
+     &        'Equation of state uses the simple equation from Mellor') 
          ELSE IF (Eqnstate.eq.2) THEN 
            WRITE(16,419)
- 419       FORMAT(/,5X,'Equation of state uses the equation from McDougall et al(2003)') 
+ 419       FORMAT(/,5X,
+     &'Equation of state uses the equation from McDougall et al(2003)') 
          ELSE IF (Eqnstate.eq.3) THEN 
            WRITE(16,420)
- 420       FORMAT(/,5X,'Equation of state uses the equation from UNESCO(1980)') 
+ 420       FORMAT(/,5X,
+     &'Equation of state uses the equation from UNESCO(1980)') 
          ELSE 
            WRITE(16,422) 
  422       FORMAT(/,1X,'Your selection of Eqnstate (a UNIT 15 input ',
@@ -6435,9 +5752,7 @@ C                 Note that this is only used in the wind and advective terms
            STOP
          END IF 
       END IF 
-
-
-
+C
 !     Kendra45.12: Read in the new input values for the transport equation
 C     jgf45.12: Made READs conditional on value of C3D_BTrans.
 
@@ -6477,10 +5792,150 @@ C                new information being used.
 !         endif
 
       endif
-      
+#ifdef READ_INPUT_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource() 
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE READ_INPUT_3D
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   
+C          C H E C K   A N D   F I L L   I O   P A R A M E T E R S 
+C-----------------------------------------------------------------------
+C     jgf49.48.01 Checks i/o parameters and fills in parameters that
+C     must be calculated.
+C-----------------------------------------------------------------------
+      SUBROUTINE checkAndFillIOParameters(specifier, description, 
+     &   staTime, tsPeriod, startTime, endTime, startTS, endTS, nSets, 
+     &   tsCounter, recCounter)
+      USE GLOBAL, ONLY : scratchMessage, ECHO, INFO, WARNING, ERROR,
+     &   DTDP, Day2Sec, NT, setMessageSource, logMessage, allMessage,
+     &   unsetMessageSource
+#ifdef CMPI
+      USE MESSENGER, ONLY : msg_fini
+#endif
+      IMPLICIT NONE
+      INTEGER, intent(in) :: specifier   ! format, 1=ascii, 2=binary, etc
+      CHARACTER(*), intent(in) :: description ! type of output data
+      REAL(8), intent(in) :: staTime
+      INTEGER, intent(inout) :: tsPeriod ! period of time steps between outputs
+      REAL(8), intent(inout) :: startTime! time for output to start (days)
+      REAL(8), intent(inout) :: endTime  ! time for output to end (days)
+      INTEGER, intent(inout) :: startTS  ! time step for output to start
+      INTEGER, intent(inout) :: endTS    ! time step for output to end
+      INTEGER, intent(out) :: nSets      ! num data sets in output file
+      INTEGER, intent(out) :: tsCounter  ! time step counter btw outputs
+      INTEGER, intent(out) :: recCounter ! counts lines in the output file
+C
+      call setMessageSource("checkAndFillIOParameters")
+#ifdef READ_INPUT_TRACE
+      call screen(DEBUG,"Enter.")
+#endif
+C
+      tsCounter = 0  ! init
+      recCounter = 0 ! init
+C
+      WRITE(scratchMessage,501) trim(description), specifier
+      CALL logMessage(ECHO,scratchMessage)    
+ 501  FORMAT(//,1X,A,' OUTPUT PARAMETER = ',I2)
+C
+C     jgf49.48.01: Check to make sure that we can write in the 
+C     specified format.
+      IF(ABS(specifier).GT.3) THEN
+         WRITE(scratchMessage,350)
+         CALL allMessage(ERROR, scratchMessage)
+         WRITE(scratchMessage,511) specifier, trim(description)
+         CALL allMessage(ERROR, scratchMessage)
+ 511     FORMAT(/,1X,'YOUR SETTING OF ',I2,' FOR THE ',A,
+     &   ' OUTPUT PARAMETER IS NOT VALID. ','CHECK YOUR INPUT!!')
+#ifdef CMPI
+         call msg_fini()
+#endif
+         STOP
+      ENDIF
+C
+C     jgf49.48.01: Check to make sure we have a valid output period 
+C     (if output was requested). 
+      IF ((specifier.NE.0).AND.(tsPeriod.EQ.0)) THEN
+         WRITE(scratchMessage,350) 
+         CALL allMessage(ERROR,scratchMessage)
+         WRITE(scratchMessage,561) description
+         CALL allMessage(ERROR,scratchMessage)
+ 350  FORMAT(//,2X,'***** INVALID ENTRY IN THE 3D INPUT SECTION OF ',
+     &     ' FILE (UNIT 15) ****',/,'****** RUN TERMINATED ******')
+ 561     FORMAT(2X,' Time step period for ',A,
+     &      ' output data was 0, but it must be greater than zero.')
+#ifdef CMPI
+         call msg_fini()
+#endif
+         STOP
+      ENDIF
+C
+C     jgf49.48.01: Calculate output parameters and check their values.
+      IF (specifier.EQ.0) THEN
+C....    IF NO OUTPUT WILL BE GENERATED
+ 521     FORMAT(/,5X,A,' data will not be output.')
+         WRITE(scratchMessage,521) description
+         CALL logMessage(INFO,scratchMessage)
+      ELSE
+C....    COMPUTE startTS, endTS, WHICH = startTime AND endTime IN TIME STEPS
+#ifdef IBM
+         startTS=INT((startTime-StaTime)*Day2Sec/DTDP+0.5d0,
+     &       KIND(0.0d0))      !jgf45.11 was NINT
+         endTS=INT((endTime-StaTime)*Day2Sec/DTDP+0.5d0,
+     &       KIND(0.0d0))       !jgf45.11 was NINT
+#else
+         startTS=INT((startTime-StaTime)*Day2Sec/DTDP+0.5d0) !jgf45.11 was NINT
+         endTS=INT((endTime-StaTime)*Day2Sec/DTDP+0.5d0) !jgf45.11 was NINT
+#endif
+C
+C        jgf49.48.01: Check to make sure the start time step for output 
+C        is later than the actual start of the simulation.
+         IF (startTS.LT.0) THEN
+            WRITE(scratchMessage,531) description, startTime
+            CALL allMessage(WARNING,scratchMessage) 
+ 531        FORMAT(5X,'Start time for output of ',A,' data = ',E14.6,
+     &         ' which is before the start time of the simulation. ',
+     &         'It has been reset to coincide with the start time.')
+            startTime=StaTime
+            startTS=0
+         ENDIF
+C
+C        jgf49.48.01: Check to make sure the end time step for output
+C        is later than the start time for output.
+         IF(endTS.LT.startTS) THEN
+            WRITE(scratchMessage,541) description, endTime
+            CALL allMessage(WARNING,scratchMessage)
+ 541        FORMAT(5X,'End time for output of ',A,' data = ',E14.6,
+     &       ' which is before the start time for output of these data.'
+     &       ' It has been reset to coincide with the start time.')
+            endTime=startTime
+            endTS=startTS
+         ENDIF
+C
+C        jgf49.48.01: Check to see if the end time step for output
+C        is later than the end of the simulation.
+         IF(endTS.GT.NT) THEN
+            WRITE(scratchMessage,551) description, endTime
+            CALL logMessage(INFO,scratchMessage)
+ 551        FORMAT(5X,'End time for output of ',A,' data = ',E14.6,
+     &         ' is later than the end of the simulation (RNDAY). ',
+     &  'It has been reset to coincide with the end of the simulation.')
+            endTS=NT
+         ENDIF
+         nSets = (endTS-startTS)/tsPeriod
+      ENDIF
+#ifdef READ_INPUT_TRACE
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource() 
+      RETURN
+C-----------------------------------------------------------------------
+      END SUBROUTINE checkAndFillIOParameters
 C-----------------------------------------------------------------------
 
 
@@ -6533,7 +5988,6 @@ C         CALL CoordinateToElement(xcoord(I), ycoord(I),
 C     &         NNV(I), I, Description)
          CALL KDTSEARCH(xcoord(I), ycoord(I),
      &         NNV(I), I, Description)
-
 
          IF(ICS.EQ.1) THEN
             WRITE(16,1880) I,NNV(I),xcoord(I),xcoord(I)
