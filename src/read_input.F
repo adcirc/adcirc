@@ -5380,13 +5380,13 @@ C.....WRITE Density station output information to UNIT 16
      &                (NTO3DSDS+NSpo3DSD),TO3DSDF,NTO3DSDF,NSpo3DSD,
      &                NDSet3DSD
          CALL logMessage(INFO,scratchMessage)
- 571     FORMAT(/,5X,A,' data output will start',I9,
+ 571     FORMAT(5X,A,' data output will start',I9,
      &              ' timesteps after day = ',F9.3,
-     &         /,9X,'This = ',F9.3,' days = ',I9,' timesteps relative',
+     &         9X,'This = ',F9.3,' days = ',I9,' timesteps relative',
      &              ' to the simulation Start Time.',
-     &         /,9X,'Output will stop ',F9.3,' days = ',I9,' timesteps',
-     &              ' relative to the simulation Start Time.',
-     &         /,9X,'Data will be written every ',I7,
+     &         9X,'Output will stop ',F9.3,' days = ',I9,' timesteps',
+     &             ' relative to the simulation Start Time.',
+     &         9X,'Data will be written every ',I7,
      &              ' time steps at total of ',I7,' times.')
       ENDIF
  
@@ -5841,7 +5841,7 @@ C
 C
       WRITE(scratchMessage,501) trim(description), specifier
       CALL logMessage(ECHO,scratchMessage)    
- 501  FORMAT(//,1X,A,' OUTPUT PARAMETER = ',I2)
+ 501  FORMAT(A,' OUTPUT PARAMETER = ',I2)
 C
 C     jgf49.48.01: Check to make sure that we can write in the 
 C     specified format.
@@ -5879,8 +5879,8 @@ C     jgf49.48.01: Calculate output parameters and check their values.
       IF (specifier.EQ.0) THEN
 C....    IF NO OUTPUT WILL BE GENERATED
  521     FORMAT(/,5X,A,' data will not be output.')
-         WRITE(scratchMessage,521) description
-         CALL logMessage(INFO,scratchMessage)
+C         WRITE(scratchMessage,521) description
+C         CALL logMessage(INFO,scratchMessage)
       ELSE
 C....    COMPUTE startTS, endTS, WHICH = startTime AND endTime IN TIME STEPS
 #ifdef IBM

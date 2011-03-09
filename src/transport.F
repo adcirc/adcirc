@@ -459,6 +459,11 @@ C     depth. Note: TotalArea2 = 2X total elemental area surrounding a node
             hN2=DP(N2)
             NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
 
+            ! jgf49.58: NOFF array lookups fail if NEle comes back 0.
+            IF (NEle.eq.0) THEN
+               CYCLE
+            ENDIF
+ 
 Casey: Added the computation of "NCELE" and the second half of the IF statement.
 C
             NCELE = NODECODE(NH)*NODECODE(N2)
@@ -490,8 +495,11 @@ C   kmd48.33bc add in spherical factors
 
 Casey: Added the computation of "NCELE" and the second half of the IF statement.
 C
-         NCELE = NODECODE(NH)*NODECODE(N2)
-     &       *NODECODE(N3)*NOFF(NELE)
+         ! jgf49.58: NOFF array lookups fail if NEle comes back 0.
+         IF (NEle.ne.0) THEN
+            NCELE = NODECODE(NH)*NODECODE(N2)
+     &          *NODECODE(N3)*NOFF(NELE)
+         ENDIF
          IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN
             TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
 C   kmd48.33bc add in spherical factors
@@ -598,6 +606,10 @@ C     Compute lateral advection and lateral diffusion terms
 
 Casey: Added the computation of "NCELE" and the second half of the IF statement.
 C
+               ! jgf49.58: NOFF array lookups fail if NELE comes back 0.
+               IF (NELE.eq.0) THEN
+                  CYCLE
+               ENDIF
                NCELE = NODECODE(NH)*NODECODE(N2)
      &              *NODECODE(N3)*NOFF(NELE)
                IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN !if element exists, compute terms
@@ -635,8 +647,11 @@ C   kmd48.33bc add in spherical factors
 
 Casey: Added the computation of "NCELE" and the second half of the IF statement.
 C
-            NCELE = NODECODE(NH)*NODECODE(N2)
-     &          *NODECODE(N3)*NOFF(NELE)
+            ! jgf49.58: NOFF array lookups fail if NELE comes back 0.
+            IF (NELE.ne.0) THEN
+               NCELE = NODECODE(NH)*NODECODE(N2)
+     &             *NODECODE(N3)*NOFF(NELE)
+            ENDIF
             IF((NEle.NE.0).AND.(NCELE.NE.0)) THEN
                qn=(qN1+qN2+qN3)/3.d0
                Un=real(qn)

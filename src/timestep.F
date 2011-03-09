@@ -8786,7 +8786,14 @@ C
                   SigmaNN=B+AMB*(Zk+DP(N2))/HsN2 !equivalent sigma value at neighbor
                   CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
                   NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
-
+                  ! jgf49.58: The NeiTabEle matrix is semi sparse; see
+                  ! Casey's comments in vsmy.F. NOFF array lookups fail
+                  ! if NEle comes back 0, so I will just cycle to the next
+                  ! N value here if that happens ... TODO: somebody please
+                  ! confirm that this is the right answer here.
+                  IF (NEle.eq.0) THEN
+                     CYCLE
+                  ENDIF
 Casey: Added the computation of "NCELE" and the last part of the IF statement.
 C
                   NCELE = NODECODE(NH)*NODECODE(N2)
@@ -8815,8 +8822,11 @@ C    kmd48.33bc add in spherical factors
 
 Casey: Added the computation of "NCELE" and the last part of the IF statement.
 C
-               NCELE = NODECODE(NH)*NODECODE(N2)
-     &             *NODECODE(N3)*NOFF(NELE)
+               ! jgf49.58 NOFF lookups fail if NELE comes back 0.
+               IF (NELE.ne.0) THEN
+                  NCELE = NODECODE(NH)*NODECODE(N2)
+     &                *NODECODE(N3)*NOFF(NELE)
+               ENDIF
                IF((BCPN2.NE.-999.).AND.(BCPN3.NE.-999.)
      &              .AND.(NEle.NE.0).AND.(NCELE.NE.0)) THEN
                   TotalBCPGArea2=TotalBCPGArea2+Areas(NEle)
@@ -8922,6 +8932,8 @@ C     jgf46.00 Explicitly declared the following variables
       REAL(SZ) SigBelo
       REAL(SZ) SigAbov
       REAL(SZ) SigTry
+
+      IDiag=0 
 
       IF(SigmaNN.LE.1.0001*b) THEN !if into ground then skip
          SigBelo=-999
