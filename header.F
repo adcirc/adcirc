@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.59   - 03/09/2011 - tcm - Changed "COMPILER" back to "compiler" in the 
+C             cmplrflags.mk file.
 C  v49.58   - 03/08/2011 - jgf - Fixed NeiTabEle handling to account for its
 C             semi-sparseness in subroutine bpg3D and in transport.F.
 C  v49.57   - 03/08/2011 - jgf - Added private declaration to subroutines

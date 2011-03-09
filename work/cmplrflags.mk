@@ -9,20 +9,20 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 # ***NOTE*** User must select between various Linux setups
 #            by commenting/uncommenting the appropriate compiler
 #
-#COMPILER=gnu
-#COMPILER=g95
-#COMPILER=intel
-#COMPILER=intel-lonestar
-#COMPILER=cray_xt3
-#COMPILER=cray_xt4
-#COMPILER=cray_xt5
-#COMPILER=pgi
-#COMPILER=pgi-ranger
-#COMPILER=diamond
+#compiler=gnu
+#compiler=g95
+#compiler=intel
+#compiler=intel-lonestar
+#compiler=cray_xt3
+#compiler=cray_xt4
+#compiler=cray_xt5
+#compiler=pgi
+#compiler=pgi-ranger
+#compiler=diamond
 #
 #
 # Compiler Flags for gfortran and gcc
-ifeq ($(COMPILER),gnu)
+ifeq ($(compiler),gnu)
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90
@@ -47,7 +47,7 @@ ifeq ($(COMPILER),gnu)
   endif
 endif
 # 
-ifeq ($(COMPILER),g95)
+ifeq ($(compiler),g95)
   PPFC		:=  g95
   FC		:=  g95
   PFC		:=  mpif90
@@ -73,7 +73,7 @@ ifeq ($(COMPILER),g95)
 endif
 #
 # jgf45.12 These flags work on the UNC Topsail Cluster.
-ifeq ($(COMPILER),intel)
+ifeq ($(compiler),intel)
   PPFC            :=  ifort	
   FC            :=  ifort
   PFC           :=  mpif90
@@ -107,7 +107,7 @@ ifeq ($(COMPILER),intel)
 endif
 #
 # sb46.50.02 These flags work on the UT Austin Lonstar cluster.
-ifeq ($(COMPILER),intel-lonestar)
+ifeq ($(compiler),intel-lonestar)
   PPFC            :=  ifort	
   FC            :=  ifort
   PFC           :=  mpif90
@@ -134,7 +134,7 @@ ifeq ($(COMPILER),intel-lonestar)
 endif
 #
 # Cray-XT3 using standard compilers, from vjp; added by jgf46.00
-ifeq ($(COMPILER),cray_xt3)
+ifeq ($(compiler),cray_xt3)
   PPFC	        :=  pgf90
   FC	        :=  ftn
   PFC	        :=  ftn
@@ -168,7 +168,7 @@ ifeq ($(COMPILER),cray_xt3)
 endif
 #
 # Cray-XT4 (e.g. Jade@ERDC) using standard compilers, added by jgf48.4607
-ifeq ($(COMPILER),cray_xt4)
+ifeq ($(compiler),cray_xt4)
   PPFC	        :=  pgf90
   FC	        :=  ftn
   PFC	        :=  ftn
@@ -206,7 +206,7 @@ ifeq ($(COMPILER),cray_xt4)
 endif
 #
 # Cray-XT5 (e.g. einstein@NAVO) using standard compilers, added by jgf49.07
-ifeq ($(COMPILER),cray_xt5)
+ifeq ($(compiler),cray_xt5)
   PPFC	        :=  ftn
   FC	        :=  ftn
   PFC	        :=  ftn
@@ -240,7 +240,7 @@ ifeq ($(COMPILER),cray_xt5)
 endif
 #
 # Portland Group 
-ifeq ($(COMPILER),pgi)
+ifeq ($(compiler),pgi)
   PPFC		:=  pgf90
   FC		:=  pgf90
   PFC		:=  mpif90
@@ -266,7 +266,7 @@ ifeq ($(COMPILER),pgi)
 endif
 #
 # Portland Group on TU Ranger (AMD Opteron 8356, Barcelona Core)  Seizo
-ifeq ($(COMPILER),pgi-ranger)
+ifeq ($(compiler),pgi-ranger)
   PPFC          :=  pgf95
   FC            :=  pgf95
   PFC           :=  mpif90
@@ -293,7 +293,7 @@ ifeq ($(COMPILER),pgi-ranger)
 endif
 #
 # ERDC Diamond
-ifeq ($(COMPILER),diamond)
+ifeq ($(compiler),diamond)
   PPFC          :=  ifort
   FC            :=  ifort
   PFC           :=  ifort
@@ -334,14 +334,14 @@ ifeq ($(MACHINE)-$(OS),i686-linux-gnu)
 # ***NOTE*** User must select between various Linux setups
 #            by commenting/uncommenting the appropriate compiler or
 #            by specifying on the make command line, e.g.,
-#            make all COMPILER=gnu
+#            make all compiler=gnu
 #
-#COMPILER=gnu
-#COMPILER=intel
-#COMPILER=pgi
+#compiler=gnu
+#compiler=intel
+#compiler=pgi
 #
 # Portland Group 
-ifeq ($(COMPILER),pgi)
+ifeq ($(compiler),pgi)
   PPFC          :=  pgf90
   FC	        :=  pgf90
   PFC	        :=  mpif90
@@ -367,7 +367,7 @@ ifeq ($(COMPILER),pgi)
 endif
 #
 # Intel 
-ifeq ($(COMPILER),intel) 
+ifeq ($(compiler),intel) 
   PPFC	        :=  ifort -w 
   FC	        :=  ifort -w 
   PFC	        :=  mpif90
@@ -397,7 +397,7 @@ ifeq ($(COMPILER),intel)
 endif
 #
 # g95
-ifeq ($(COMPILER),gnu)
+ifeq ($(compiler),gnu)
   PPFC		:=  g95
   FC		:=  g95
   PFC		:=  mpif90 
