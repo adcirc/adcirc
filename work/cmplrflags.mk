@@ -14,7 +14,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #COMPILER=intel
 #COMPILER=intel-lonestar
 #COMPILER=cray_xt3
-COMPILER=cray_xt4
+#COMPILER=cray_xt4
 #COMPILER=cray_xt5
 #COMPILER=pgi
 #COMPILER=pgi-ranger
@@ -77,9 +77,10 @@ ifeq ($(COMPILER),intel)
   PPFC            :=  ifort	
   FC            :=  ifort
   PFC           :=  mpif90
-#  FFLAGS1       :=  $(INCDIRS) -O2 -FI  -Vaxlib -assume byterecl -132
- FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -check all -FI -Vaxlib -assume byterecl -132
-#jgfdebug  FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -check all -FI -Vaxlib -assume byterecl -132
+  FFLAGS1       :=  $(INCDIRS) -O2 -FI  -Vaxlib -assume byterecl -132
+  ifeq ($(DEBUG),full)
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -check all -FI -Vaxlib -assume byterecl -132 -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA 
@@ -89,6 +90,9 @@ ifeq ($(COMPILER),intel)
   CC            := gcc
   CCBE		:= $(CC)
   CFLAGS        := $(INCDIRS) -O2 -march=k8 -m64 -mcmodel=medium -DLINUX
+  ifeq ($(DEBUG),full)
+     CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
+  endif
   CLIBS         :=
   FLIBS          :=  
   MSGLIBS       :=

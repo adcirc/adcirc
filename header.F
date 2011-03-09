@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.57   - 03/08/2011 - jgf - Added private declaration to subroutines
+C             in netcdf module to fix compilation on intel v9.1 compiler
+C             (on kittyhawk); also tweaked intel compiler flag setup.
 C  v49.56   - 03/03/2011 - jgf - Merged in netcdf3D branch revisions 562:597
 C             to trunk (branch version numbers v49.48.01 through v49.48.09).
 C  v49.48.09- 03/03/2011 - jgf - Added compiler flags for IBM P6; added 

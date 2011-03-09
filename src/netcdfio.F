@@ -400,7 +400,8 @@ C
       private initStation, initNodalData, createNetCDFOutputFile,
      &   updateMetaData, initNetCDFCoord, defineMeshVariables, 
      &   putMeshVariables, setNetCDFFileName, writeStation,
-     &   writeNodalData
+     &   writeNodalData, setRecordCounterAndStoreTime, initStation3D,
+     &   initNodalData3D, writeNodalData3D, writeStation3D
 C
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
@@ -1867,7 +1868,12 @@ C-----------------------------------------------------------------------
 C     S U B R O U T I N E  
 C      S E T   R E C O R D   C O U N T E R   A N D   S T O R E   T I M E   
 C-----------------------------------------------------------------------
-C     jgf49.17.02 Writes data to station file.
+C     jgf49.48.08 Compares the current ADCIRC simulation time with the
+C     array of output times in the file, and if the simulation time
+C     is before the end of the file, it sets the record counter to the
+C     right place within the existing data. Data that occur after the
+C     inserted data will remain, due to the inability of netcdf to 
+C     delete data from files. 
 C-----------------------------------------------------------------------
       SUBROUTINE setRecordCounterAndStoreTime(ncid, f, t)
       USE GLOBAL, ONLY : scratchMessage
