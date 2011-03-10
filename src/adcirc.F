@@ -371,8 +371,7 @@ C             to then call the SWAN time-stepping subroutine.
           CALL PADCSWAN_RUN(ITIME)
         ENDIF
 #endif
-C
- 100    CONTINUE
+100   CONTINUE
 C
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_BGN = ITIME_END+1

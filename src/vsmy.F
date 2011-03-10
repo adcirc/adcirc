@@ -218,12 +218,6 @@ C   kmd48.33bc added the following variables for boundary conditions
       INTEGER :: NOD
       CHARACTER(80) :: CDUM80
 
-C     
-C     INCREMENT THE TIMESTEP SINCE START COUNTER
-C     
-      IStart3D=IStart3D+1
-
-
 C***************************************************************************
 C     Set up several variables that are needed for 3D run     
 
@@ -347,8 +341,7 @@ C Hs is the previous time step (if node is recently wet then this is no good
 C Hsp1 is current time step, if node is newly wet then we now have agreement 
 C and Hsp1 has a value that can be used
          CALL EDDYVIS(Hsp1,UU(NH),VV(NH),
-     &        WSXsNH,WSYsNH,BSX(NH),BSY(NH),
-     &        IStart3D,NH,IT)
+     &        WSXsNH,WSYsNH,BSX(NH),BSY(NH),NH,IT)
 
 c     Compute the integral KVnm
 
@@ -794,7 +787,6 @@ c     this b.c. requires on manipulation of momentum eqns.  Do nothing!
 
 c     Finished section to modify equations depending on normal flux
 c     boundary condition
-         
 c     Decompose and solve the system
 
  999     CALL TRIDIAG(Mkm1,Mk,Mkp1,Fr,Gamma,NFEN)
@@ -1454,9 +1446,7 @@ C                                                                             *
 C                               06/17/05                                      *
 C******************************************************************************
 C
-      SUBROUTINE EDDYVIS(H,UU,VV,WSX,WSY,BSX,BSY,
-
-     &     istart,NODE,IT)
+      SUBROUTINE EDDYVIS(H,UU,VV,WSX,WSY,BSX,BSY,NODE,IT)
 Cjgfdebug USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug  USE GLOBAL_3DVS, ONLY : SZ,LOCALDIR,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
 Cjgfdebug     &     NFEN,Z0B,Z0S,A,B,AMB,NSCREEN,NWS,DELT
@@ -1468,7 +1458,7 @@ Cjgfdebug     &     NFEN,Z0B,Z0S,A,B,AMB,NSCREEN,NWS,DELT
 
 C     jgf46.00 explicitly declared the following variables
       INTEGER NODE
-      INTEGER istart
+      INTEGER, SAVE :: istart = 0
       INTEGER IT
       INTEGER J
       REAL(SZ) RKAPPA
@@ -1495,7 +1485,8 @@ C...
 C...  IEVC=1 SET EV = EVCON ON THE FIRST TIME STEP
 C     .
 
-      IF((IEVC.eq.1).and.(istart.eq.1)) THEN
+      IF((IEVC.eq.1).and.(istart.eq.0)) THEN
+         istart = 1
          DO J=1,NFEN
             EVTOT(J)=EVCON
          ENDDO

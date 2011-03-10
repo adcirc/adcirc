@@ -1562,7 +1562,8 @@ C----------------------------------------------------------------------
       USE SIZES, ONLY : SZ, LOCALDIR, GLOBALDIR, MNPROC,
      &   WRITE_LOCAL_FILES, NBYTE
       USE GLOBAL, ONLY : RUNDES, RUNID, AGRID, MYPROC, RDES4, RID4,
-     &   AID4, RDES8, RID8, AID8, DTDP, IHOT
+     &   AID4, RDES8, RID8, AID8, DTDP, IHOT, DEBUG, scratchMessage,
+     &   logMessage, ERROR, allMessage
       USE GLOBAL_3DVS, ONLY : NFEN
       IMPLICIT NONE
 C
@@ -1577,6 +1578,9 @@ C
 C
       CHARACTER(len=7) :: fn ! file name of 3D output file
       INTEGER :: N ! loop counter
+      INTEGER :: ios ! i/o status, 0 indicates success
+C
+      ios=0
 C
 C     form file name from lun  
       fn(1:5) = 'fort.'
@@ -1606,13 +1610,30 @@ C
       ENDIF
       IF ((specifier.eq.1).and.(IHOT.NE.0)) THEN
          ! find spot in existing ASCII file
+ 123     FORMAT('Skipping down ',I12,' lines in the output file.')
+         WRITE(scratchMessage,123) recNum
+         CALL logMessage(DEBUG,scratchMessage)
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
             WRITE(16,497) lun
             OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//fn)
             DO N=1,recNum
-               READ(lun,*)
+               READ(lun,*,END=456,ERR=456)
             ENDDO
-            ENDFILE(lun)
+            ! jgf49.59 Tell user there were not enough records.
+456         IF (N.lt.recNum) THEN
+               CALL allMessage(ERROR,
+     &            "There are not enough records in the output file.")
+               CALL allMessage(ERROR,
+     &            "There will be a gap in the output data.")
+            ENDIF
+            ENDFILE(lun,IOSTAT=ios,ERR=789)
+            ! jgf49.59 The gfortran compiler complains when we write an
+            ! end-of-file record at the end of the file. Sheesh. 
+789         IF (ios.lt.0) THEN
+               CALL logMessage(DEBUG,"End of output file reached.")! no big deal
+            ELSE IF (ios.gt.0) THEN
+               CALL allMessage(ERROR,"I/O error ending output file.")
+            ENDIF
             CLOSE(lun)
          ENDIF
          IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.).AND.
@@ -1620,9 +1641,23 @@ C
             WRITE(16,497) lun
             OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//fn)
             DO N=1,recNum
-               READ(lun,*)
+               READ(lun,*,END=654,ERR=654)
             ENDDO
-            ENDFILE(lun)
+            ! jgf49.59 Tell user there were not enough records.
+654         IF (N.lt.recNum) THEN
+               CALL allMessage(ERROR,
+     &            "There are not enough records in the output file.")
+               CALL allMessage(ERROR,
+     &            "There will be a gap in the output data.")
+            ENDIF
+            ENDFILE(lun,IOSTAT=ios,ERR=987)
+            ! jgf49.59 The gfortran compiler complains when we write an
+            ! end-of-file record at the end of the file. Sheesh. 
+987         IF (ios.lt.0) THEN
+               CALL logMessage(DEBUG,"End of output file reached.")! no big deal
+            ELSE IF (ios.gt.0) THEN
+               CALL allMessage(ERROR,"I/O error ending output file.")
+            ENDIF
             CLOSE(lun)
          ENDIF
       ENDIF

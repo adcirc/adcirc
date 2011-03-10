@@ -339,6 +339,7 @@ ifeq ($(MACHINE)-$(OS),i686-linux-gnu)
 #compiler=gnu
 #compiler=intel
 #compiler=pgi
+#compiler=gfortran
 #
 # Portland Group 
 ifeq ($(compiler),pgi)
@@ -410,7 +411,7 @@ ifeq ($(compiler),gnu)
   DA		:=  -DREAL8 -DLINUX -DCSCA
   DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
   DPRE		:=  -DREAL8 -DLINUX
-  ifeq ($(swan),enable)
+  ifeq ($(SWAN),enable)
      DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
   endif
   IMODS 	:=  -I
@@ -430,6 +431,42 @@ ifeq ($(compiler),gnu)
      MULTIPLE := TRUE
   endif
 endif
+#
+# gfortran
+ifeq ($(compiler),gfortran)
+  PPFC		:=  gfortran
+  FC		:=  gfortran
+  PFC		:=  mpif90 
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none -fno-underscoring
+  ifeq ($(DEBUG),full)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fno-underscoring -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,underflow,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
+  FFLAGS2	:=  $(FFLAGS1)
+  FFLAGS3	:=  $(FFLAGS1)
+  DA		:=  -DREAL8 -DLINUX -DCSCA
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI
+  DPRE		:=  -DREAL8 -DLINUX
+  ifeq ($(SWAN),enable)
+     DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
+  endif
+  IMODS 	:=  -I
+  CC		:= gcc
+  CCBE		:= $(CC)
+  CFLAGS	:= $(INCDIRS) -O2 -DLINUX
+  ifeq ($(DEBUG),full)
+     CFLAGS     := $(INCDIRS) -g -O0 -DLINUX
+  endif
+  CLIBS	:= 
+  FLIBS		:=  
+  MSGLIBS	:=  
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
+     MULTIPLE := TRUE
+  endif
+endif
+
 endif
 
 ########################################################################

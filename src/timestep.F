@@ -149,7 +149,8 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 
 
       IMPLICIT NONE 
-
+      INTEGER, intent(in) :: IT
+C
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -165,7 +166,6 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) :: KSLIP
 
       INTEGER IE, I, J, K                  !local loop counters
-      INTEGER IT
       INTEGER NM1, NM2, NM3, NM123
       INTEGER NC1, NC2, NC3, NCEle, NCI
       INTEGER NCyc, NA,NITEMS

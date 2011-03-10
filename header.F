@@ -3,6 +3,13 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.60   - 03/09/2011 - jgf - Removed IStart3D variable from global_3dvs.F
+C             to fix initialization issues with evtot; explicitly initialized
+C             wsx1, wsy1, wsx2, wsy2 to avoid NaNs in vssol upon hotstart
+C             of 3D runs in serial; added error handling to code that skips
+C             down to the proper location in 3D output files; added flags for
+C             gfortran compiler to take advantage of floating point exception
+C             trapping for debugging.
 C  v49.59   - 03/09/2011 - tcm - Changed "COMPILER" back to "compiler" in the 
 C             cmplrflags.mk file.
 C  v49.58   - 03/08/2011 - jgf - Fixed NeiTabEle handling to account for its

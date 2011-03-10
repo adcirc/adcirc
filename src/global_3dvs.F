@@ -148,7 +148,6 @@ C...  DECLARE 3D GLOBAL SCALARS
       INTEGER  :: NFEN                 !Number of nodes in the vertical
       INTEGER  :: ISLIP                !bottom slip coefficient flag (0=no slip, 1=linear, 2=quadratic)
       INTEGER  :: IEVC                 !eddy viscosity flag determine type of EV used
-      INTEGER  :: IStart3D = 0         !=0 when code starts up, incremented each time VSSOL is called, used to initialize EV
 
       COMPLEX(SZ) :: IDTALP1              !i*DelT*alpha1 
       COMPLEX(SZ) :: IDT1MALP1            !i*DelT*(1-alpha1)
@@ -336,6 +335,10 @@ C   kmd48.33bc - allocate arrays
       ALLOCATE( RESSAL(NETA,NFEN), RESSAL1(NETA,NFEN) )
       ALLOCATE( RESSAL2(NETA,NFEN), RESTEMP(NETA,NFEN) )
       ALLOCATE( RESTEMP1(NETA,NFEN), RESTEMP2(NETA,NFEN) )
+      ! jgf49.60: Explicitly initialize arrays that would otherwise
+      ! be used without initialization.
+      EVTot(:) = 0.0d0
+      
       RETURN
       END SUBROUTINE ALLOC_3DVS
 

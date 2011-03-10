@@ -902,7 +902,6 @@ C
        DO j=1, jLength
           DO i=1, iLength
             READ(lun,REC=counter) array(i,j)
-            write(*,*) array(i,j)
             counter = counter + 1
           END DO
        END DO
@@ -1267,6 +1266,10 @@ C
 C      
 C     jgf46.21 Added support for IBTYPE=52.
       ALLOCATE ( ElevDisc(MNVEL))
+C
+C     jgf49.58 Explicitly initialize variables that would otherwise be
+C     used without initialization.
+      EN2(:) = 0.0D0
 
       RETURN
       END SUBROUTINE ALLOC_MAIN3
@@ -1429,6 +1432,12 @@ C
       ALLOCATE ( WVNX2(MNP),WVNY2(MNP),PRN2(MNP) )
       ALLOCATE ( RSNX1(MNP),RSNY1(MNP),RSNX2(MNP),RSNY2(MNP) )
       ALLOCATE ( WVNXOUT(MNP),WVNYOUT(MNP) )
+      WSX1(:) = 0.0d0
+      WSY1(:) = 0.0d0
+      PR1(:) = 0.0d0
+      WSX2(:) = 0.0d0
+      WSY2(:) = 0.0d0
+      PR2(:) = 0.0d0
 #ifdef CSWAN
 Casey 090302: Added the next line for output of radiation stress gradients.
       ALLOCATE ( RSNXOUT(MNP),RSNYOUT(MNP) )
