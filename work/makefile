@@ -41,12 +41,15 @@ $(warning (INFO) The C compiler is set to $(CC).)
 
 # Specify NETCDF=enable to gmake on the command line to activate netcdf i/o
 ifeq ($(NETCDF),enable)
-  PPFC    := $(PPFC) -DNETCDF -I$(NETCDFHOME)/include
-  PFC     := $(PFC) -DNETCDF -I$(NETCDFHOME)/include
-  FFLAGS1 := $(FFLAGS1) -DNETCDF -I$(NETCDFHOME)/include
-  FFLAGS2 := $(FFLAGS2) -DNETCDF -I$(NETCDFHOME)/include
-  FFLAGS3 := $(FFLAGS3) -DNETCDF -I$(NETCDFHOME)/include
-  FFLAGS4 := $(FFLAGS4) -DNETCDF -I$(NETCDFHOME)/include
+# jgf49.61: Don't add the -DNETCDF for the IBM compilers (see cmplrflags.mk)
+ifeq ($(IBM),)
+     PPFC    := $(PPFC) -DNETCDF -I$(NETCDFHOME)/include
+     PFC     := $(PFC) -DNETCDF -I$(NETCDFHOME)/include
+     FFLAGS1 := $(FFLAGS1) -DNETCDF -I$(NETCDFHOME)/include
+     FFLAGS2 := $(FFLAGS2) -DNETCDF -I$(NETCDFHOME)/include
+     FFLAGS3 := $(FFLAGS3) -DNETCDF -I$(NETCDFHOME)/include
+     FFLAGS4 := $(FFLAGS4) -DNETCDF -I$(NETCDFHOME)/include
+endif
 endif
 
 ####################### Target Specific Rules ###################################

@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.61   - 03/17/2011 - jgf - Corrected compiler flags for IBM p6 and 
+C             removed extra -DNETCDF for IBM p6 platform; corrected double
+C             deallocation issue when writing ascii fort.44 file in parallel. 
 C  v49.60   - 03/09/2011 - jgf - Removed IStart3D variable from global_3dvs.F
 C             to fix initialization issues with evtot; explicitly initialized
 C             wsx1, wsy1, wsx2, wsy2 to avoid NaNs in vssol upon hotstart

@@ -609,7 +609,7 @@ ifeq ($(IBM),p6)
    FFLAGS1       := $(INCDIRS) -q64 -w -O2 -qfixed=132 -qarch=auto -qcache=auto
    FFLAGS2       := $(FFLAGS1)
    FFLAGS3       := $(FFLAGS1)
-   ifeq ($(NETCDF,enable))
+   ifeq ($(NETCDF),enable))
       DA            := -WF,"-DREAL8,-DIBM,-DNETCDF,-DCSCA"
       DP            := -tF -WF,"-DREAL8,-DIBM,-DNETCDF,-DCSCA,-DCMPI"
       DPRE          := -tF -WF,"-DREAL8,-DIBM,-DNETCDF"

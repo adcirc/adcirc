@@ -2725,39 +2725,43 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                      CALL allMessage(WARNING,
      &            "IDEN was set to 0 but density output was requested.")
                   CASE(1) ! SigmaT density
-                     WRITE(44,1100) Time,IT,(Sigma(k),k=1,NFEN-1)
-                     DO NH=1,NP_G
-                        WRITE(44,1104) NH,(SigT_g(NH,k),k=1,NFEN)
-                        I3DGDRec=I3DGDRec+1
-                     ENDDO
-                     DEALLOCATE(SigT_g)
-                  CASE(2) ! Salinity density
-                     WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
-     &                                k=1,NFEN-1),Sigma(NFEN) 
-                     DO NH=1,NP_G
-                        WRITE(44,1104)
-     &                     NH,(SigT_g(NH,k),Sal_g(NH,k),k=1,NFEN) 
+                     IF (myProc.eq.0) THEN
+                        WRITE(44,1100) Time,IT,(Sigma(k),k=1,NFEN-1)
+                        DO NH=1,NP_G
+                           WRITE(44,1104) NH,(SigT_g(NH,k),k=1,NFEN)
                            I3DGDRec=I3DGDRec+1
-                     ENDDO
-                     DEALLOCATE(SigT_g,Sal_g)
+                        ENDDO
+                     ENDIF
+                  CASE(2) ! Salinity density
+                     IF (myProc.eq.0) THEN
+                        WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                                   k=1,NFEN-1),Sigma(NFEN) 
+                        DO NH=1,NP_G
+                           WRITE(44,1104)
+     &                        NH,(SigT_g(NH,k),Sal_g(NH,k),k=1,NFEN) 
+                              I3DGDRec=I3DGDRec+1
+                        ENDDO
+                     ENDIF
                   CASE(3) ! Temperature density
-                     WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
-     &                                k=1,NFEN-1),Sigma(NFEN)
-                     DO NH=1,NP_G
-                        WRITE(44,1104)
-     &                     NH,(SigT_g(NH,k),Temp_g(NH,k),k=1,NFEN)
-                        I3DGDRec=I3DGDRec+1
-                     ENDDO
-                     DEALLOCATE(SigT_g,Temp_g)
+                     IF (myProc.eq.0) THEN
+                        WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                                   k=1,NFEN-1),Sigma(NFEN)
+                        DO NH=1,NP_G
+                           WRITE(44,1104)
+     &                        NH,(SigT_g(NH,k),Temp_g(NH,k),k=1,NFEN)
+                           I3DGDRec=I3DGDRec+1
+                        ENDDO
+                     ENDIF
                   CASE(4) ! Salinity+Temperature density
-                     WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
-     &                    Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
-                     DO NH=1,NP_G
-                        WRITE(44,1104) NH,(SigT_g(NH,k),Temp_g(NH,k),
+                     IF (myProc.eq.0) THEN
+                        WRITE(44,1100) Time,IT,(Sigma(k),Sigma(k),
+     &                      Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
+                        DO NH=1,NP_G
+                           WRITE(44,1104) NH,(SigT_g(NH,k),Temp_g(NH,k),
      &                          Sal_g(NH,k),k=1,NFEN)
-                        I3DGDRec=I3DGDRec+1
-                     ENDDO
-                     DEALLOCATE(SigT_g,Temp_g,Sal_g) 
+                           I3DGDRec=I3DGDRec+1
+                        ENDDO
+                     ENDIF
                   CASE DEFAULT
                      CALL allMessage(WARNING,
      &               "IDEN is not +/- 0 to 4 and is invalid.")
