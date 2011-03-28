@@ -1255,7 +1255,6 @@ C
 C
 C--Read in 3D data
 C
-C      print *, " made it to the end of the 2D read of fort.15"
       IF(C3DVS) THEN
         CALL READ15_3DVS()
 c     ELSEIF(C3DDSS) THEN
@@ -1366,7 +1365,6 @@ C
 
 C     jgf45.10 removed IDIAG
 C... SPECIFY WHETHER A BAROTROPIC OR BAROCLINIC RUN
-
       READ(15,80) IDENMSG
       READ(IDENMSG,*) IDEN
       IF((IDEN.GT.4).OR.(IDEN.LT.-4)) THEN
@@ -1425,9 +1423,7 @@ C     vertical layers.
             READ(15,*) Sigma(N)
          ENDDO
       ENDIF
-
 C... SPECIFY TYPE OF EDDY VISCOSITY PROFILE
-
       READ(15,80) EVCMSG
       READ(EVCMSG,*) IEVC,EVMIN,EVCON
       IF((IEVC.NE.0 ).and.(IEVC.NE.1 ).and.
@@ -1481,7 +1477,8 @@ C     jgf45.11 switched from node numbers to coordinates
       ALLOCATE(IMAP_STA3DD_LG(NSTA3DD,MNPROC))
       nbytes = 4*nsta3dd*mnproc
       call memory_alloc(nbytes)
-      ALLOCATE(STATNAMED(NSTA3DD))
+      IF(.NOT. ALLOCATED(STATNAMED))ALLOCATE(STATNAMED(NSTA3DD))
+C     ALLOCATE(STATNAMED(NSTA3DD))
       nbytes = 4*SNAMLEN*NSTA3DD
       call memory_alloc(nbytes)
 C  kmd48.33bc changed to -2 and I3DSD not equal to 0
@@ -1522,7 +1519,6 @@ c...tcm v49.48.01 replace with new call to kdtsearch
 C     -----------------------------------------------------
 C.... Station 3D Velocity output
 C     jgf45.11 switched from node numbers to coordinates
-
       READ(15,80) DSVMSG
       READ(DSVMSG,*) I3DSV,TO3DSVS,TO3DSVF,NSPO3DSV
       READ(15,80) NSTA3DVMSG
@@ -1539,9 +1535,14 @@ C     jgf45.11 switched from node numbers to coordinates
       ALLOCATE(NNS3DVG(NSTA3DV))
       nbytes = 4*nsta3dv
       call memory_alloc(nbytes)
-      ALLOCATE(STATNAMEV3D(NSTA3DV))
+      IF(.NOT. ALLOCATED(STATNAMEV3D))ALLOCATE(STATNAMEV3D(NSTA3DV)) 
+C      ALLOCATE(STATNAMEV3D(NSTA3DV))
       nbytes = 4*SNAMLEN*NSTA3DV
       call memory_alloc(nbytes)
+       ALLOCATE(SL3DV(NSTA3DV),SF3DV(NSTA3DV))
+        nbytes = 16*nsta3dv
+        call memory_alloc(nbytes)
+
 C  kmd48.33 changed to -2
       IF(ABS(I3DSV).GT.3) THEN
          WRITE(*,350)
@@ -1558,9 +1559,6 @@ C  kmd48.33 changed to -2
                X3DV(I)=a2f(LVAR(1))
                Y3DV(I)=a2f(LVAR(2))
             ELSE
-               ALLOCATE(SL3DV(NSTA3DV),SF3DV(NSTA3DV))
-               nbytes = 16*nsta3dv
-               call memory_alloc(nbytes)
                SL3DV(I)=a2f(LVAR(1))
                SF3DV(I)=a2f(LVAR(2))
                SL1Sta=DEG2RAD*SL3DV(I)
@@ -1569,7 +1567,6 @@ C  kmd48.33 changed to -2
                Y3DV(I) = R*SF1Sta
             ENDIF
          ENDDO
-
 C     jgf45.11 For each 3D velocity station, find the full-domain index of 
 C     the corresponding element.
 c...tcm v49.48.01 replace with new call to kdtsearch
@@ -1581,7 +1578,6 @@ c...tcm v49.48.01 replace with new call to kdtsearch
 C     -----------------------------------------------------
 C.... Station 3D turbulence output
 C     jgf45.11 switched from node numbers to coordinates
-
       READ(15,80) DSTMSG
       READ(DSTMSG,*) I3DST,TO3DSTS,TO3DSTF,NSPO3DST
       READ(15,80) NSTA3DTMSG
@@ -1595,8 +1591,12 @@ C     jgf45.11 switched from node numbers to coordinates
       ALLOCATE(X3DT(NSTA3DT),Y3DT(NSTA3DT))
       nbytes = 16*nsta3dt
       call memory_alloc(nbytes)
-      ALLOCATE(STATNAMET(NSTA3DT))
+      IF(.NOT. ALLOCATED(STATNAMET))ALLOCATE(STATNAMET(NSTA3DT))
+C      ALLOCATE(STATNAMET(NSTA3DT))
       nbytes = 4*SNAMLEN*NSTA3DT
+      call memory_alloc(nbytes)
+      ALLOCATE(SL3DT(NSTA3DT),SF3DT(NSTA3DT))
+      nbytes = 16*nsta3dv
       call memory_alloc(nbytes)
 C  kmd48.33 changed to -2
       IF(ABS(I3DST).GT.3) THEN
@@ -1614,9 +1614,6 @@ C  kmd48.33 changed to -2
                X3DT(I)=a2f(LVAR(1))
                Y3DT(I)=a2f(LVAR(2))
             ELSE
-               ALLOCATE(SL3DT(NSTA3DT),SF3DT(NSTA3DT))
-               nbytes = 16*nsta3dv
-               call memory_alloc(nbytes)
                SL3DT(I)=a2f(LVAR(1))
                SF3DT(I)=a2f(LVAR(2))
                SL1Sta=DEG2RAD*SL3DT(I)
@@ -1639,7 +1636,6 @@ c...tcm v49.48.01 replace with new call to kdtsearch
      &        '3D turbulence rec. station    ')
 
       ENDIF
-
 C....  GLOBAL 3D DENSITY, TEMPERATURE, SALINITY OUTPUT
 
       READ(15,80) DGDMSG
@@ -1734,8 +1730,6 @@ C     Temperature boundary condition file type, if necessary
 C
  80   FORMAT(A80)
       END SUBROUTINE
-
-
 
 *******************************************************************************
 C                                                                             *

@@ -68,6 +68,7 @@ C      BK,BAlpha,BDelX,POAN  "bridge_pilings_friction_parameters"
 C                            (bridge_pilings... has ValuesPerNode=4)
 C      ManningsN             "mannings_n_at_sea_floor"
 C      Chezy                 "chezy_friction_coefficient_at_sea_floor"
+C      Z0b_var               "bottom_roughness_length"
 C      GeoidOffset           "sea_surface_height_above_geoid"
 C      EVM        "average_horizontal_eddy_viscosity_in_sea_water_wrt_depth"
 C      EVC        "average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth"
@@ -104,6 +105,7 @@ C     required for the run, according to the unit 15 control file
       LOGICAL LoadEVM
       LOGICAL LoadEVC
       LOGICAL LoadTau0MinMax 
+      LOGICAL LoadZ0b_var 
 C
 C     The following flags are .true. if there are data with the
 C     corresponding label in the unit 13 file.
@@ -119,6 +121,7 @@ C     corresponding label in the unit 13 file.
       LOGICAL FoundEVM
       LOGICAL FoundEVC
       LOGICAL FoundTau0MinMax
+      LOGICAL FoundZ0b_var
 C
 C     These variables hold the strings which describe the attribute's
 C     units. These data are loaded from the file, but not used as of
@@ -135,6 +138,7 @@ C     v46.00.
       CHARACTER(len=80) EVMUnits 
       CHARACTER(len=80) EVCUnits
       CHARACTER(len=80) Tau0MinMaxUnits     
+      CHARACTER(len=80) Z0b_varUnits     
 C
 C     These variables hold the number of values per node for each
 C     attribute.
@@ -150,6 +154,7 @@ C     attribute.
       INTEGER EVMNoOfVals
       INTEGER EVCNoOfVals
       INTEGER Tau0MinMaxNoOfVals
+      INTEGER Z0b_varNoOfVals
 C
 C     These variables hold the default values for each attribute.
       REAL(SZ) Tau0DefVal
@@ -164,6 +169,7 @@ C     These variables hold the default values for each attribute.
       REAL(SZ) EVMDefVal
       REAL(SZ) EVCDefVal
       REAL(SZ) Tau0MinMaxDefVal(2)
+      REAL(SZ) Z0b_varDefVal
 C
       INTEGER NumOfNodes    ! number of nodes listed in unit 13 file, cf. NP
       INTEGER NAttr         ! number of nodal attributes in the unit 13 file
@@ -174,6 +180,7 @@ C     The following variables are inputs from the unit 15 model param. file
       REAL(SZ) Tau0   ! primitive continuity eqn. weight
       REAL(SZ) Tau    ! linear friction coefficient (1/sec)
       REAL(SZ) CF     ! 2DDI bottom fric. coef., effect varies based on NoLiBF
+      REAL(SZ) Z0B    ! 3D bottom roughness length 
       REAL(SZ) HBreak ! break depth for NOLIBF .eq. 2
       REAL(SZ) FTheta ! dimless param. for NOLIBF .eq. 2
       REAL(SZ) FGamma ! dimless param. for NOLIBF .eq. 
@@ -219,6 +226,7 @@ C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(SZ), ALLOCATABLE :: EVM(:)
       REAL(SZ), ALLOCATABLE :: EVC(:)
       REAL(SZ), ALLOCATABLE :: Tau0MinMax(:,:)  ! (node,i); i=1(min), i=2(max) 
+      REAL(SZ), ALLOCATABLE :: Z0b_var(:)  ! patially varyuing 3D bottom roughness length
 C
       INTEGER i        ! node loop counter
       INTEGER j        ! attribute values loop counter
@@ -257,6 +265,7 @@ C
       LoadEVM            = .False.
       LoadEVC            = .False.
       LoadTau0MinMax     = .False.
+      LoadZ0b_var        = .False.
 C
       FoundTau0           = .False.
       FoundStartDry       = .False.
@@ -270,6 +279,7 @@ C
       FoundEVM            = .False.
       FoundEVC            = .False.
       FoundTau0MinMax     = .False.
+      FoundZ0b_var        = .False.
 C      
       Tau0NoOfVals          = 1
       StartDryNoOfVals      = 1
@@ -283,6 +293,7 @@ C
       EVMNoOfVals           = 1
       EVCNoOfVals           = 1
       Tau0MinMaxNoOfVals    = 2
+      Z0b_varNoOfVals       = 1
 C
       Tau0DefVal             = 0.0
       StartDryDefVal         = 0.0
@@ -302,6 +313,7 @@ C
       DO j=1, Tau0MinMaxNoOfVals
          Tau0DefVal = 0.0
       END DO
+      Z0b_varDefVal          = 0.001
 C
       HighResTimeVaryingTau0     = .False.
       FullDomainTimeVaryingTau0  = .False.
@@ -424,6 +436,8 @@ C     loaded from nodal attributes file.
             LoadManningsN = .True. 
          CASE("chezy_friction_coefficient_at_sea_floor") 
             LoadChezy = .True.
+         CASE("bottom_roughness_length")
+            LoadZ0b_var = .True. 
          CASE("sea_surface_height_above_geoid") 
             LoadGeoidOffset = .True.
          CASE
@@ -516,6 +530,11 @@ C     Read each attribute name, units, number of values, and default value
             READ(13,'(A80)') ManningsNUnits 
             READ(13,*) ManningsNNoOfVals
             READ(13,*) ManningsNDefVal 
+         CASE("bottom_roughness_length")
+            FoundZ0b_var = .True. 
+            READ(13,'(A80)') Z0b_varUnits 
+            READ(13,*) Z0b_varNoOfVals
+            READ(13,*) Z0b_varDefVal 
          CASE("chezy_friction_coefficient_at_sea_floor")
             FoundChezy = .True.
             READ(13,'(A80)') ChezyUnits     
@@ -575,6 +594,8 @@ C     that are not in the nodal attributes file.
      &    (.not.FoundBridgePilings)).or.
      &   ((LoadManningsN).and.
      &    (.not.FoundManningsN)).or.
+     &   ((LoadZ0b_var).and.
+     &    (.not.FoundZ0b_var)).or.
      &   ((LoadGeoidOffset).and.
      &    (.not.FoundGeoidOffset)).or.
      &   ((LoadChezy).and.(.not.FoundChezy)).or.
@@ -605,6 +626,7 @@ C     Allocate memory to hold our data.
       ALLOCATE(GeoidOffset(NumOfNodes))
       ALLOCATE(Chezy(NumOfNodes))
       ALLOCATE(ManningsN(NumOfNodes))
+      ALLOCATE(Z0b_var(NumOfNodes))
       ALLOCATE(EVM(NumOfNodes))
       ALLOCATE(EVC(NumOfNodes))
       ALLOCATE(Tau0MinMax(NumOfNodes,Tau0MinMaxNoOfVals))
@@ -669,6 +691,13 @@ C     (unit 15) file and skip past the others.
          CASE("mannings_n_at_sea_floor")
             IF (LoadManningsN) THEN
                CALL LoadAttrVec(ManningsN, ManningsNDefVal, 
+     &              NumNodesNotDefault, NScreen, MyProc, NAbOut)
+            ELSE
+               SkipDataSet = .True.
+            ENDIF
+         CASE("bottom_roughness_length")
+            IF (LoadZ0b_var) THEN
+               CALL LoadAttrVec(Z0b_var, Z0b_varDefVal, 
      &              NumNodesNotDefault, NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .True.
@@ -865,6 +894,7 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE InitNodalAttr(DP, NP, G, NScreen, ScreenUnit,
      &     MyProc, NAbOut)
+      USE GLOBAL, ONLY : C3D
       IMPLICIT NONE
       INTEGER, intent(in) :: NP ! number of nodes in the grid file 
       REAL(SZ), intent(in), dimension(NP) :: DP ! array of bathymetric depths
@@ -1097,6 +1127,26 @@ C     minimum equivalent quadratic friction value.
          BFCdLLimit = CF
       ENDIF
 C     
+      IF(C3D) THEN
+C     Initialize 3D bottom roughness if it was not loaded from unit 13.
+        IF((.not.LoadZ0b_var)) THEN
+C     If a nodal attributes file was read, Z0b_var was allocated there.
+          IF (NWP.eq.0) THEN
+             ALLOCATE(Z0b_var(NP))
+             ALLOCATE(FRIC(NP))
+          ENDIF
+          DO I=1,NP
+             Z0b_var(I)=Z0B
+             FRIC(I)=CF
+          END DO
+        ENDIF
+C     jgf47.04 If a depth-dependent friction parameterization is used, 
+C     the value from the fort.15 file is used as a floor for the 
+C     minimum equivalent quadratic friction value. 
+         IF (LoadZ0b_var) THEN
+            BFCdLLimit = CF
+         ENDIF
+      ENDIF
 C
 C     Initialize bridge pilings.
 C
@@ -1293,6 +1343,7 @@ C     ... Convert Chezy to Cd, if necessary.
          END DO
       ENDIF
 C
+
 C     Step 1. Apply friction arising from turbulent viscous interaction
 C     with the sea floor.
       DO I=1, NP

@@ -32,7 +32,7 @@ C-----------------------------------------------------------------------
       USE NodalAttributes, ONLY : 
      &     NoLiBF, NWP, Tau0, HBreak, FTheta, FGamma, Tau, CF,
      &     InitNAModule, ReadNodalAttr, InitNodalAttr, ESLM, ESLC,
-     &     Tau0FullDomainMin, Tau0FullDomainMax
+     &     Tau0FullDomainMin, Tau0FullDomainMax, Z0b_var
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
@@ -506,7 +506,8 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
             WRITE(16,*) '        2 Part, velocity based lateral ',
      &           'symmetric stress in GWCE'
          ELSEIF(IMDig1.EQ.6) THEN
-            CGWCE_LS_KGQ       = .TRUE.
+            C2DDI        = .FALSE.
+            CGWCE_LS_KGQ  = .TRUE.
             C3D           = .TRUE.
             C3DVS         = .TRUE.
             ILump=0
@@ -570,11 +571,11 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
 c     - - - - - - - - - - - - - - - - - - - - - - - -
          IF(IMDig5.EQ.1) THEN
             CME_AreaInt_Corr = .TRUE. !jgf This is the default.
-            WRITE(16,*) '        Original Area Integration in ',
+            WRITE(16,*) '        Corrected Area Integration in ',
      &           'Momentum Eqs.'
          ELSEIF(IMDig5.EQ.2) THEN
             CME_AreaInt_Orig = .TRUE. 
-            WRITE(16,*) '        Corrected Area Integration in ',
+            WRITE(16,*) '        Original Area Integration in ',
      &           'Momentum Eqs.'
          ENDIF
 c     - - - - - - - - - - - - - - - - - - - - - - - -
@@ -2273,7 +2274,8 @@ C     initialized in the call to InitNodalAttr.
 C
 C     jgf46.00 Initialize nodal attributes, now that grid has been read
 C     in from unit 14 file.
-      CALL InitNodalAttr(DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut)
+C     RJW IOOS move until after ZOB definition
+C      CALL InitNodalAttr(DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut)
 C...
 C...  READ CORIOLIS INFORMATION AND COMPUTE THE CORIOLIS VECTOR
 C...  OUTPUT RESULTING CORIOLIS INFORMATION
@@ -4886,7 +4888,7 @@ C     read in and check matrix solver parameters
           ENDIF
         ENDIF
 
-C     jgf48.4619: Accommodate Seizo's changes for explicit solve
+C     jgf48.4619: Accommodate Seizos changes for explicit solve
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
 C        allocate arrays needed by GWCE matrix and iterative solver
          call alloc_main11()
@@ -4910,6 +4912,11 @@ C...
 c     ELSEIF(C3DDSS) THEN
 c     CALL READ_INPUT_3DDSS(STATIM,NT)
       ENDIF
+C     RJWW jgf46.00 Initialize nodal attributes, now that grid has been read
+C     in from unit 14 file.
+C     RJW IOOS move until after ZOB definition
+      CALL InitNodalAttr(DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut)
+
 
 C...  INITIALIZE AVERAGING FOR INTERNAL BARRIER WATER LEVELS
 C...  BARAVGWT=0.000 -> NO AVERAGING PERFORMED
@@ -5115,6 +5122,8 @@ C    kmd48.33bc - added the variables from Global
      &                  OUTPUTSPONGE, scratchMessage, INFO, 
      &                  setMessageSource, logMessage, unsetMessageSource
       USE GLOBAL_3DVS
+      USE NodalAttributes, ONLY : Z0b_var
+
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
@@ -5192,10 +5201,13 @@ C...  READ IN THE TYPE OF BOTTOM BOUNDARY CONDITION AND THE SLIP COEFFICIENTS
       ENDIF
 
 C...  READ IN THE SURFACE AND BOTTOM ROUGHNESSES
-
+C
+C     Made Z0B bottom roughness a nodal attribute read in from fort.13 file if desired
+C
       READ(15,*) Z0S, Z0B
       WRITE(16,380) Z0S,Z0B
  380  FORMAT(/,5X,'Z0S = ',E10.5,' Z0B = ',E10.5)
+
 
 C...  READ IN THE TIME STEPPING COEFFICIENTS AND COMPUTE ASSOCIATED VARIABLES
 
@@ -5291,7 +5303,7 @@ c     IGC <> 0 - Set up grid in subroutine FEGRIDS
             HH1=HH1+DP(NH)
          ENDDO 
          HH1=HH1/NP                        !domain averaged depth
-         CALL FEGRIDS(IGC,HH1)
+         CALL FEGRIDS(IGC,HH1,NH)
       ENDIF
 
 c     write out the vertical grid in fort.16 file

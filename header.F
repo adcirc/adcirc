@@ -3,6 +3,14 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.62   - 03/28/2011 - rjw - Modified the 3D code to include a hard wired
+C             enhancement to the Mellor-Yamada 2.5 Turbulence Closure scheme
+C             to account for increased mixing at the surface based on magnitude
+C             of surface stress.  Additionally, added nodal attribute,
+C             "bottom_roughness_length" to be used in the 3D simulations.
+C             included a couple of bug fixes found when implementing the
+C             IM=611112 run type, and added back in the calculation of BSX and BSY
+C             to the 3D wetting code in timestep.f.
 C  v49.61   - 03/17/2011 - jgf - Corrected compiler flags for IBM p6 and 
 C             removed extra -DNETCDF for IBM p6 platform; corrected double
 C             deallocation issue when writing ascii fort.44 file in parallel. 

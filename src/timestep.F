@@ -102,6 +102,7 @@ C.....sb46.28sb03 added 09/xx/2006
      &     ApplyDirectionalWindReduction,
      &     LoadDirEffRLen,
      &     ManningsN, LoadManningsN, !sb46.28sb02
+     &     Z0b_var, LoadZ0B_var,!Rjw IOOS 2010
      &     BFCdLLimit !sb46.28sb02/jgf47.04 lower limit of Cd for bot. friction
 
 
@@ -177,6 +178,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) CCSFEA
       REAL(SZ) ElMax
       REAL(SZ) Fr, FricBP               !for bridge pilings
+      REAL(SZ) Z0B1                     !for varying roughness
       REAL(SZ) H1
       REAL(SZ) H2, H2N1, H2N2, H2N3
       REAL(SZ) HTOT
@@ -1793,16 +1795,23 @@ C>>
                         TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
      &                    (IFNLBF+IFHYBF*
      &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
+
                         IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
                         VEL=G*(DELETA/DELDIST)/TKWET
+
                      ELSEIF(C3D)THEN
 C solve for the depth averaged velocity,U, from the relation :
 C        tau=rho*g*(h+eta)*(deta/dx)=rho*Cd*|U|*U
 C          U=sqrt(g*(h+eta)*(deta/dx)/Cd )
 C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
+                       IF(LoadZ0B_var) THEN
+                           Z0B1=Z0B_var(NM123)
+                       ELSE
+                           Z0B1=Z0B
+                       ENDIF
                         VEL=sqrt(g*H1*(DELETA/DELDIST))
-     &                 * ((H1+Z0B)*LOG((H1+Z0B)/Z0B)-H1)/(H1*0.41D0)
-                     ENDIF
+     &                 * ((H1+Z0B1)*LOG((H1+Z0B1)/Z0B1)-H1)/(H1*0.41D0)
+                    ENDIF
 
                      IF(VEL.GT.VELMIN) THEN
 C    ....         third node met criteria and is also wet
@@ -1822,6 +1831,62 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                            TKXY(NM123) = 0.D0
 #endif
 #endif
+                        ELSEIF(C3D)THEN
+                           IF(ISLIP.EQ.0)THEN
+                              DUDS=(Q(NM123,2)-Q(NM123,1))
+     &                           /(SIGMA(2)-SIGMA(1))
+                              BSX1(NM123)=EVTOT(1)*REAL(DUDS)*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                              BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                           ENDIF
+                           IF(ISLIP.NE.0)THEN
+                              IF(ISLIP.EQ.1)THEN
+                                 KSLIP=KP
+                              ENDIF
+                              IF(ISLIP.EQ.2)THEN
+                                 IF(
+     &                               ABS( ((SIGMA(2)-B)/(A-B))
+     &                                     *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                               .LE. 0.1D0 )THEN
+                                     KSLIP = 1.D+4
+                                 ELSEIF(
+     &                               ABS( ((SIGMA(2)-B)/(A-B))
+     &                                     *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                               .LT. 1.D0 )THEN
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                                       LOG( ABS(
+     &                                       ((SIGMA(2)-B)/(A-B))
+     &                                       *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123))+Z0B1 )
+     &                                       / (Z0B1) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                 ELSE
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                                       LOG( (1.D0+Z0B1)
+     &                                       / (Z0B1) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                 ENDIF
+                                 IF(KSLIP.GT.1.D0) KSLIP=1.D0
+                                 IF(KSLIP.LT.1.D-8) KSLIP=1.D-8
+                              ENDIF
+                              BSX1(NM123)=KSLIP*REAL(Q(NM123,1))*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                              BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                           ENDIF
                         ENDIF
                      ENDIF
                   ENDIF
@@ -1853,13 +1918,19 @@ C>>
      &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
                         IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
                         VEL=G*(DELETA/DELDIST)/TKWET
+
                      ELSEIF(C3D)THEN
 C solve for the depth averaged velocity,U, from the relation :
 C        tau=rho*g*(h+eta)*(deta/dx)=rho*Cd*|U|*U
 C          U=sqrt(g*(h+eta)*(deta/dx)/Cd )
 C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
+                        IF(LoadZ0B_var) THEN
+                           Z0B1=Z0B_var(NM123)
+                        ELSE
+                           Z0B1=Z0B
+                        ENDIF
                         VEL=sqrt(g*H1*(DELETA/DELDIST))
-     &                 * ((H1+Z0B)*LOG((H1+Z0B)/Z0B)-H1)/(H1*0.41D0)
+     &                 * ((H1+Z0B1)*LOG((H1+Z0B1)/Z0B1)-H1)/(H1*0.41D0)
                      ENDIF
 
                      IF(VEL.GT.VELMIN) THEN
@@ -1878,6 +1949,62 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                            TKXY(NM123) = 0.D0
 #endif
 #endif
+                        ELSEIF(C3D)THEN
+                           IF(ISLIP.EQ.0)THEN
+                              DUDS=(Q(NM123,2)-Q(NM123,1))
+     &                           /(SIGMA(2)-SIGMA(1))
+                              BSX1(NM123)=EVTOT(1)*REAL(DUDS)*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                              BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                           ENDIF
+                           IF(ISLIP.NE.0)THEN
+                              IF(ISLIP.EQ.1)THEN
+                                 KSLIP=KP
+                              ENDIF
+                              IF(ISLIP.EQ.2)THEN
+                                 IF(
+     &                               ABS( ((SIGMA(2)-B)/(A-B))
+     &                                     *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                               .LE. 0.1D0 )THEN
+                                     KSLIP = 1.D+4
+                                 ELSEIF(
+     &                               ABS( ((SIGMA(2)-B)/(A-B))
+     &                                     *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                               .LT. 1.D0 )THEN
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                                       LOG( ABS(
+     &                                       ((SIGMA(2)-B)/(A-B))
+     &                                       *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123))+Z0B1 )
+     &                                       / (Z0B1) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                 ELSE
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                                       LOG( (1.D0+Z0B1)
+     &                                       / (Z0B1) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                 ENDIF
+                                 IF(KSLIP.GT.1.D0) KSLIP=1.D0
+                                 IF(KSLIP.LT.1.D-8) KSLIP=1.D-8
+                              ENDIF
+                              BSX1(NM123)=KSLIP*REAL(Q(NM123,1))*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                              BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                           ENDIF
                         ENDIF
 
                      ENDIF
@@ -1908,15 +2035,20 @@ C>>
                         TKWET=FRIC(NM123)*(IFLINBF+(VELMIN/H1)*
      &                    (IFNLBF+IFHYBF*
      &                    (1.D0+(HBREAK/H1)**FTHETA)**(FGAMMA/FTHETA)))
-                        IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
-                        VEL=G*(DELETA/DELDIST)/TKWET
+                       IF(TKWET.LT.0.0001d0) TKWET=0.0001d0
+                       VEL=G*(DELETA/DELDIST)/TKWET
                      ELSEIF(C3D)THEN
 C solve for the depth averaged velocity,U, from the relation :
 C        tau=rho*g*(h+eta)*(deta/dx)=rho*Cd*|U|*U
 C          U=sqrt(g*(h+eta)*(deta/dx)/Cd )
 C where:  Cd=kappa^2/(ln(z+zo)/z0)^2 is the depth integrated drag coefficient
-                        VEL=sqrt(g*H1*(DELETA/DELDIST))
-     &                 * ((H1+Z0B)*LOG((H1+Z0B)/Z0B)-H1)/(H1*0.41D0)
+                        IF(LoadZ0B_var) THEN
+                           Z0B1=Z0B_var(NM123)
+                        ELSE
+                           Z0B1=Z0B
+                        ENDIF
+                      VEL=sqrt(g*H1*(DELETA/DELDIST))
+     &                 * ((H1+Z0B1)*LOG((H1+Z0B1)/Z0B1)-H1)/(H1*0.41D0)
                      ENDIF
 
                      IF(VEL.GT.VELMIN) THEN
@@ -1935,6 +2067,62 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                            TKXY(NM123) = 0.D0
 #endif
 #endif
+                        ELSEIF(C3D)THEN
+                           IF(ISLIP.EQ.0)THEN
+                              DUDS=(Q(NM123,2)-Q(NM123,1))
+     &                           /(SIGMA(2)-SIGMA(1))
+                              BSX1(NM123)=EVTOT(1)*REAL(DUDS)*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                              BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                           ENDIF
+                           IF(ISLIP.NE.0)THEN
+                              IF(ISLIP.EQ.1)THEN
+                                 KSLIP=KP
+                              ENDIF
+                              IF(ISLIP.EQ.2)THEN
+                                 IF(
+     &                               ABS( ((SIGMA(2)-B)/(A-B))
+     &                                     *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                               .LE. 0.1D0 )THEN
+                                     KSLIP = 1.D+4
+                                 ELSEIF(
+     &                               ABS( ((SIGMA(2)-B)/(A-B))
+     &                                     *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123)) )
+     &                               .LT. 1.D0 )THEN
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                                       LOG( ABS(
+     &                                       ((SIGMA(2)-B)/(A-B))
+     &                                       *(DP(NM123)+
+     &                                       IFNLFA*ETA2(NM123))+Z0B1 )
+     &                                       / (Z0B1) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                 ELSE
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                                       LOG( (1.D0+Z0B1)
+     &                                       / (Z0B1) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                 ENDIF
+                                 IF(KSLIP.GT.1.D0) KSLIP=1.D0
+                                 IF(KSLIP.LT.1.D-8) KSLIP=1.D-8
+                              ENDIF
+                              BSX1(NM123)=KSLIP*REAL(Q(NM123,1))*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                              BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))*
+     &                           (IFLINBF+(VEL/H1)*(IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+                           ENDIF
                         ENDIF
                      ENDIF
                   ENDIF

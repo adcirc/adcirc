@@ -98,7 +98,7 @@ c.RJW merged 08282008 Casey 071219: Added the following variable declarations fr
 Cjgfdebug     &      , H0
 
       USE GLOBAL_3DVS
-      USE NodalAttributes, ONLY: EVM
+      USE NodalAttributes, ONLY: EVM, Z0b_var
 #ifdef CMPI
       USE MESSENGER
       IMPLICIT NONE
@@ -638,32 +638,43 @@ C     physics of the boundary layer.
 C.RJW.02042009.. for log layer lets use the bottom roughness Z0B as set in the fort.15 file
 C to do this we nedd to define a minimmum depth for this calculation
 C ---
-            IF(
-     &          ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
-     &                *(DP(NH)+IFNLFA*ETA2(NH)) )
-     &      .LT. 1.D0 )THEN
+
+C            IF(
+C     &          ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
+C     &                *(DP(NH)+IFNLFA*ETA2(NH)) )
+C     &          .LT. 1.D0 )THEN
+C
                 KSlip = (1.D0 / ( (1.D0/0.41D0) *
      &                  LOG( ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
-     &                     *( DP(NH)+IFNLFA*ETA2(NH) ) + Z0B )
-     &                  / (Z0B) ) ) )**2.D0
+     &                     *( DP(NH)+IFNLFA*ETA2(NH) ) + Z0B_var(NH) )
+     &                  / (Z0B_var(NH)) ) ) )**2.D0
      &                * ABS(Q(NH,1))
-            ELSE
-                KSlip = (1.D0 / ( (1.D0/0.41D0) *
-     &                  LOG( (1.D0+Z0B)
-     &                  / (Z0B) ) ) )**2.D0
-     &                * ABS(Q(NH,1))
-            ENDIF
-              IF(KSlip.GT.0.1d0) KSlip=0.1d0
-              IF(KSlip.LT.0.0d0) KSlip=0.0d0
-C              IF(KSlip.LT.KP) KSlip=KP
+
+C            ELSE
+C
+C                KSlip = (1.D0 / ( (1.D0/0.41D0) *
+C     &                  LOG( (1.D0+Z0B_var(NH))
+C     &                  / (Z0B_var(NH)) ) ) )**2.D0
+C     &                * ABS(Q(NH,1))
+C
+C            ENDIF
+
+       !  IF(KSlip.GT.0.5d0) KSlip=0.5d0
+       !  IF(KSlip.LT.KP) KSlip=KP
+          IF(KSlip.GT.1.0d0* ABS(Q(NH,1))) KSlip=1.0d0*ABS(Q(NH,1))
+          IF(KSlip.LT.0.0010d0*ABS(Q(NH,1))) KSlip=0.0010d0*ABS(Q(NH,1))
+
          ENDIF
+
          IF(ISlip.EQ.3) THEN
              KSlip=KP*ABS(Q(NH,1))
               IF(KSlip.GT.0.1d0) KSlip=0.1d0
               IF(KSlip.LT.0.0d0) KSlip=0.0d0
 
          ENDIF
-
+         write(939,938)NH, Z0B_var(NH), KSlip/ABS(Q(NH,1)),
+     &                  KSlip, ABS(Q(NH,1))
+938    format(i10,4(3x,f15.10))
 c     Set up the RHS forcing vector Fr and LHS matrix in compact storage
 c     (Mkm1,Mk,Mkp1)
 
@@ -1202,13 +1213,16 @@ c                                                                      *
 c                           6/16/2005                                  *
 c***********************************************************************
 c     
-      SUBROUTINE FEGRIDS(IGC,H)
+      SUBROUTINE FEGRIDS(IGC,H,NH)
       USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug USE GLOBAL_3DVS, ONLY : SZ,LOCALDIR,NFEN,SIGMA,A,B,Z0B,Z0S,NSCREEN
       USE GLOBAL_3DVS, ONLY : SZ,NFEN,SIGMA,A,B,Z0B,Z0S
+      USE NodalAttributes, ONLY: Z0b_var
+
       IMPLICIT NONE
 Cjgfdebug INTEGER :: IGC,N,NODE,NFEN2,IANS,NUM,I
-      INTEGER :: IGC,N,NFEN2,IANS,NUM,I
+      INTEGER :: IGC,N,NFEN2,IANS,NUM,I,NH
+C      INTEGER :: IGC,N,NODE,NFEN2,IANS,NUM,I,NH
       REAL(SZ) :: H,DETA,SSTAR,DENOM,SIG0,SS,SB,RP,AVAL,EPS
 
       select case(igc)
@@ -1235,8 +1249,8 @@ c
       case(2)
          write(screenunit,*) '   '
          write(screenunit,*) '********** Depth = ',H,' ***********'
-         write(screenunit,*) '********** So = ',Z0B,' ***********'
-         Sb = Z0B
+         write(screenunit,*) '********** So = ',Z0B_var(NH),' *********'
+         Sb = Z0B_var(NH)
 c     write(screenunit,*) '********** Enter So from the keyboard ***********'
 c     write(screenunit,*) '   '
 c     read(*,*) Sb
@@ -1253,9 +1267,9 @@ c
       case(3)
          write(screenunit,*) '   '
          write(screenunit,*) '********** Depth = ',H,' ***********'
-         write(screenunit,*) '********** So = ',Z0B,' ***********'
-         write(screenunit,*) '********** S* = ',-H-Sb,' ***********'
-         Sb = Z0B
+         write(screenunit,*) '********** So = ',Z0B_var(NH),' ****'
+         write(screenunit,*) '********** S* = ',-H-Sb,' **********'
+         Sb = Z0B_var(NH)
          Sstar = -H-Sb
          write(screenunit,*)
      &      '******** Enter So from the keyboard *******'
@@ -1286,8 +1300,8 @@ c
          write(screenunit,*) '   '
          write(screenunit,*) '********** Depth = ',H,' ***********'
          write(screenunit,*) 
-     &       '********** So bottom = ',Z0B,' ***********'
-         Sb = Z0B
+     &       '********** So bottom = ',Z0B_var(NH),' ***********'
+         Sb = Z0B_var(NH)
          write(screenunit,*) 
      &       '********** So surface = ',Z0S,' ***********'
          Ss = Z0S
@@ -1446,12 +1460,13 @@ C                                                                             *
 C                               06/17/05                                      *
 C******************************************************************************
 C
-      SUBROUTINE EDDYVIS(H,UU,VV,WSX,WSY,BSX,BSY,NODE,IT)
+       SUBROUTINE EDDYVIS(H,UU,VV,WSX,WSY,BSX,BSY,NODE,IT)
 Cjgfdebug USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug  USE GLOBAL_3DVS, ONLY : SZ,LOCALDIR,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
 Cjgfdebug     &     NFEN,Z0B,Z0S,A,B,AMB,NSCREEN,NWS,DELT
       USE GLOBAL_3DVS, ONLY : SZ,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
-     &     NFEN,Z0B,A,B,AMB
+     &     NFEN,Z0B,Z0S,A,B,AMB
+      USE NodalAttributes, ONLY : Z0B_var
       IMPLICIT NONE
       REAL(8) :: H
       REAL(SZ) :: UU,VV,WSX,WSY,BSX,BSY
@@ -1529,8 +1544,7 @@ C...  KAPPA USTAR Z FORMULATION
 C...  
       IF(IEVC.EQ.20) THEN
          USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
-
-         EVTOT(1)=RKAPPA*USTARB*Z0B
+         EVTOT(1)=RKAPPA*USTARB*Z0B_var(NODE)
          EVBASE=RKAPPA*USTARB*H
          IF(EVBASE.LT.EVTOT(1)) EVBASE=EVTOT(1)
          SLOPE=(EVBASE-EVTOT(1))/amb
@@ -1542,8 +1556,7 @@ C...
       ENDIF
       IF(IEVC.EQ.21) THEN
          USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
-
-         EVTOT(1)=RKAPPA*USTARB*Z0B
+         EVTOT(1)=RKAPPA*USTARB*Z0B_var(NODE)
          EVBASE=RKAPPA*USTARB*H*0.2D0
          IF(EVBASE.LT.EVTOT(1)) EVBASE=EVTOT(1)
          SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
@@ -1562,7 +1575,7 @@ C...
          USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
 
          USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
-         EVTOT(1)=RKAPPA*0.5*(USTARB+USTARS)*Z0B
+         EVTOT(1)=RKAPPA*0.5*(USTARB+USTARS)*Z0B_var(NODE)
          EVBASE=RKAPPA*0.5*(USTARB+USTARS)*H*0.2D0
          IF(EVBASE.LT.EVTOT(1)) EVBASE=EVTOT(1)
          SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
@@ -2203,17 +2216,18 @@ c************************************************************************
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug      USE GLOBAL_3DVS, EXCEPT_BSX => BSX ,EXCEPT_BSY => BSY
       USE GLOBAL_3DVS
+      USE NodalAttributes, ONLY : Z0B_var
+C>>>>>>> IOOS_w_3D/src/vsmy.F
       IMPLICIT NONE
       
       COMPLEX(SZ) :: dQdz,dQdz1,dQdz2
       REAL(8) :: H,H_crit
 
       REAL(SZ) :: bsx_loc,bsy_loc,WSX,WSY
-      REAL(SZ) :: Z0Sw
       REAL(SZ),SAVE :: H2
-Cjgfdebug      REAL(SZ),SAVE :: Sh,H2
 C  kmd48.33bc need to change Sh to an array for transport
       REAL(SZ),SAVE,ALLOCATABLE :: Sh(:)
+      REAL(SZ) :: Z0Sw
       REAL(SZ),SAVE,ALLOCATABLE :: KQnm(:,:)
       REAL(SZ),SAVE,ALLOCATABLE :: Mqa(:),Mqb(:),Mqc(:)
       REAL(SZ),SAVE,ALLOCATABLE :: LVq(:),Sm(:)
@@ -2262,12 +2276,13 @@ c     allocate local arrays
          turb_allocated = .true.
       endif
 
+
           Z0Sw=Z0S
 C  RJW taken from Jones monismith 2008 
-C modify suyrface roughness length to account for wave breaking
+C  modify surface roughness length to account for wave breaking
 C         Z0Sw = 1400.0d0*USTARS*USTARS/g   ! ( Bye (1988)  , Craig and Banner (1994))
-C          Z0Sw = 14000.0d0*USTARS*USTARS/g  ! (Stipps et al. 2005 extended to wave breaking)
-          Z0Sw = 200000.0d0*USTARS*USTARS/g  ! ( O(10^5)  Stacy et al. (1999) for wave ages > 25)
+          Z0Sw = 14000.0d0*USTARS*USTARS/g  ! (Stipps et al. 2005 extended to wave breaking)
+C         Z0Sw = 200000.0d0*USTARS*USTARS/g  ! ( O(10^5)  Stacy et al. (1999) for wave ages > 25)
 C         Z0Sw = 1.3*Wave Height            ! (sig wave height) (Jones and Monosmith (2007) k-omega)  
 C         Z0Sw = (0.25-1.0)*Wave Height     ! (sig wave height) (Burchard (2001) k-epsilon ) 
 
@@ -2277,6 +2292,7 @@ C         Z0Sw = (0.25-1.0)*Wave Height     ! (sig wave height) (Burchard (2001)
          Z0Sw=Z0Sw
        endif
        if (Z0Sw .lt. Z0S ) Z0Sw = Z0S
+
 
 c     
 c     At time step 1, set flags and initialize variables
@@ -2308,22 +2324,22 @@ c     initialization for a cold start only
                q20(nh,n) = q2min ! initialize q2 to a minimal value
 c     initilize l to a minimal value if computed from q2l equation
                if(il.eq.1) then
-c     l(nh,n)=rkap*Z0B                        !rog way
-                  l(nh,n)=rkap*(Z0B*(a-sigma(n))-Z0Sw*(b-sigma(n)))/amb
+C           l(nh,n)=rkap*Z0B_var(nh)                        !rog way
+          l(nh,n)=rkap*(Z0B_var(nh)*(a-sigma(n))-Z0Sw*(b-sigma(n)))/amb
                endif
 c     set l to an exponential type length scale (davies and xing)
                if(il.eq.2)then
                   sig = (sigma(n)+1.d0)/amb
-                  rl1 = 1.d0/(rkap*(sig*H+Z0B)*exp(-amb*sig))
-                  rl2 = 1.d0/(rkap*(H-sig*H+Z0Sw))
+                 rl1 = 1.d0/(rkap*(sig*H+Z0B_var(nh))*exp(-amb*sig))
+                 rl2 = 1.d0/(rkap*(H-sig*H+Z0Sw))
                   l(nh,n) = 1.d0/(rl1+rl2)
                endif
 c     set l to a linear variation with kz over lower 15% with constant above
                if(il.eq.3)then
                   HOamb=H/amb
                   zval = (sigma(n)+1.d0)*HOamb-H
-                  if(sigma(n).le.-0.7d0) l(nh,n)=rkap*(H+zval+Z0B)
-                  if(sigma(n).gt.-0.7d0) l(nh,n)=rkap*(0.15d0*H+Z0B)
+              if(sigma(n).le.-0.7d0) l(nh,n)=rkap*(H+zval+Z0B_var(nh))
+              if(sigma(n).gt.-0.7d0) l(nh,n)=rkap*(0.15d0*H+Z0B_var(nh))
                endif
             end do
          endif
@@ -2337,17 +2353,19 @@ C identify if node was dry last timestep but is now wet
 C the initialized value of L can be recomputed to a more meaningful 
 C value before used to compute q2
 C as of now problem is fixed by initializing L to a nonzero value
-C use same formula as above
 C
       if (L(nh,1) .eq. -9999d0 ) Then
-C we know that the node was previously wet, so
-C lets reinitialize the parameters that were initialized when
-C istart = 1, for these nodes
+
+C we know that the node was previously wet, soooo
+C lets try reinitializing the parameters that were initialized when
+C istart = 1
         B123 = B1**(2.d0/3.d0)
         Sq = 0.2d0 ! initialize the stability constant stability function
          do n = 1,nfen
-               l(nh,n) = rkap*(Z0B*(a-sigma(n))-Z0Sw*(b-sigma(n)))/amb 
-c now initialize the Brunt-Vaisala freq squared = 0 if density not considered
+C           l(nh,n) = H    
+         l(nh,n)=rkap*(Z0B_var(nh)*(a-sigma(n))-Z0Sw*(b-sigma(n)))/amb
+
+c     initialize the Brunt-Vaisala freq squared = 0 if density not considered
          if(iden.eq.0) then
                BVfreq2(n)=0.d0
          endif
@@ -2362,8 +2380,8 @@ C now check q20 it may also be zero
 
 c         if(il.eq.2)then
 c                  sig = (sigma(n)+1.d0)/amb
-c                  rl1 = 1.d0/(rkap*(sig*H+Z0B)*exp(-amb*sig))
-c                  rl2 = 1.d0/(rkap*(H-sig*H+Z0Sw))
+c                  rl1 = 1.d0/(rkap*(sig*H+Z0B_var(nh))*exp(-amb*sig))
+c                  rl2 = 1.d0/(rkap*(H-sig*H+Z0S))
 c                  l(nh,n) = 1.d0/(rl1+rl2)
 c               endif
 
@@ -2420,7 +2438,7 @@ c     Compute the wall function if the mixing length is determined from
 c     q2l eqn
 
       if(il.eq.1)then
-         BSlay=Z0B
+         BSlay=Z0B_var(nh)
          SSlay=Z0Sw
          do n = 1,nfen
             db=(HOamb*(sigma(n)-b)+BSlay)*rkap
@@ -2437,7 +2455,6 @@ c     the previous time step
 C RJW rweaver add wave production of TKE 
 C alpha * USTARS*USTARS*USTARS, USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
 C and alpha = 60 - 250 
- 
 
       do n = 1,nfen
          q2prev(n)=q20(nh,n)
@@ -2555,7 +2572,7 @@ c     Compute length scale
       if(il.eq.2)then
          do n=1,nfen
             sig = (sigma(n)+1.d0)/amb
-            rl1 = 1.d0/(rkap*(sig*H+Z0B)*exp(-amb*sig))
+            rl1 = 1.d0/(rkap*(sig*H+Z0B_var(nh))*exp(-amb*sig))
             rl2 = 1.d0/(rkap*(H-sig*H+Z0Sw))
             l(nh,n) = 1.d0/(rl1+rl2)
 
@@ -2568,8 +2585,8 @@ c     Compute length scale
          do n=1,nfen
             HOamb=H/amb
             zval = (sigma(n)+1.d0)*HOamb-H
-            if(sigma(n).le.-0.7d0) l(nh,n)=rkap*(H+zval+Z0B)
-            if(sigma(n).gt.-0.7d0) l(nh,n)=rkap*(0.15d0*H+Z0B)
+            if(sigma(n).le.-0.7d0) l(nh,n)=rkap*(H+zval+Z0B_var(nh))
+            if(sigma(n).gt.-0.7d0) l(nh,n)=rkap*(0.15d0*H+Z0B_var(nh))
          enddo
       endif
       
@@ -2630,7 +2647,7 @@ c     Transfer to global array and check for stability limit
          do n = 2,nfen-1
             l(nh,n) = q2l(n)/q2(n)
             if(l(nh,n).lt.0.) 
-     &           l(nh,n)=rkap*(Z0B*(a-sigma(n))-Z0Sw*(b-sigma(n)))/amb
+     &     l(nh,n)=rkap*(Z0B_var(nh)*(a-sigma(n))-Z0Sw*(b-sigma(n)))/amb
             if(l(nh,n).gt.H) l(nh,n)=H
             if((iden.ne.0).and.(BVfreq2(n).gt.0.0)) then
                elmax = 0.53D0*sqrt(q2(n))/sqrt(BVfreq2(n))
