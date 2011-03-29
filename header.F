@@ -3,6 +3,7 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.63   - 03/29/2011 - rjw - Removed debugging write stament from vsmy.F
 C  v49.62   - 03/28/2011 - rjw - Modified the 3D code to include a hard wired
 C             enhancement to the Mellor-Yamada 2.5 Turbulence Closure scheme
 C             to account for increased mixing at the surface based on magnitude

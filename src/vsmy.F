@@ -672,9 +672,6 @@ C            ENDIF
               IF(KSlip.LT.0.0d0) KSlip=0.0d0
 
          ENDIF
-         write(939,938)NH, Z0B_var(NH), KSlip/ABS(Q(NH,1)),
-     &                  KSlip, ABS(Q(NH,1))
-938    format(i10,4(3x,f15.10))
 c     Set up the RHS forcing vector Fr and LHS matrix in compact storage
 c     (Mkm1,Mk,Mkp1)
 
