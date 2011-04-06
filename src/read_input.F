@@ -5330,7 +5330,8 @@ C...  SPECIFY TYPE OF EDDY VISCOSITY PROFILE
      &   (IEVC.NE.33).and.
      &   (IEVC.NE.40).and.(IEVC.NE.41).and.(IEVC.NE.42).and.
      &   (IEVC.NE.43).and.
-     &   (IEVC.NE.50)) THEN
+     &   (IEVC.NE.50).and.
+     &   (IEVC.NE.51)) THEN
         IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
           WRITE(screenunit,350)
           WRITE(screenunit,411)
@@ -5338,10 +5339,10 @@ C...  SPECIFY TYPE OF EDDY VISCOSITY PROFILE
         WRITE(16,350)
         WRITE(16,411)
  411    FORMAT(/,2X,'    IEVC MUST BE 0,1,10,11,20,21,22,23,',
-     &        '30,31,32,33,40,41,42,43,50')
+     &        '30,31,32,33,40,41,42,43,50,51')
         STOP
       ENDIF
-      IF(IEVC.EQ.50) READ(15,*) Theta1,Theta2
+      IF((IEVC.EQ.50).or.(IEVC.EQ.51)) READ(15,*) Theta1,Theta2
 
 C...  FOR IEVC=0, CONSTANT EDDY VISCOSITY, READ IN PROFILE
 

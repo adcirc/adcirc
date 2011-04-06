@@ -3,6 +3,14 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.64   - 04/06/2011 - rjw - Modified 3D code to allow user to select 
+C             standard Mellor-Yamada 2.5 closure (IVEC=50), or modified 
+C             Mellor-Yamada 2.5 with enhanced mixing (IVEC=51). (Note: for
+C             IEVC=51, the alpha parameter for Z0S is read in from EVCON)  
+C             Added ability for 3D code use Manning's n values to compute 
+C             bottom roughness values based on Casey's work taken from
+C             Bretschneider(1986).  Modified 3D wetting scheme to simplify the 
+C             calculation of BSX/Y at newly wetted node.
 C  v49.63   - 03/29/2011 - rjw - Removed debugging write stament from vsmy.F
 C  v49.62   - 03/28/2011 - rjw - Modified the 3D code to include a hard wired
 C             enhancement to the Mellor-Yamada 2.5 Turbulence Closure scheme

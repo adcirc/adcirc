@@ -398,7 +398,7 @@ C        First develop the NTVTot values - Currently only using a constant value
 C  kmd48.33bc changed to use either a constant value or the value obtained
 C             from the Mellor-Yamada turbulence subroutine
          DO k=1,NFEN
-           IF (IEVC.EQ.50) THEN 
+           IF ((IEVC.EQ.50).or(IEVC.EQ.51)) THEN 
             NTVTot(k)=DV(NH,k)
            ELSE
             NTVTot(k)=diffvert
