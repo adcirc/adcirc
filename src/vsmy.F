@@ -2278,7 +2278,7 @@ c     allocate local arrays
 
 
           Z0Sw=Z0S
-          IF (IVEC.EQ.51) THEN
+          IF (IEVC.EQ.51) THEN
            Z0Sw=EVCON*USTARS*USTARS/g
           ELSE
             Z0Sw=Z0S
