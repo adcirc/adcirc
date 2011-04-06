@@ -3,6 +3,7 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.65   - 04/06/2011 - tcm - Fixed typo bug in transport.F.
 C  v49.64   - 04/06/2011 - rjw - Modified 3D code to allow user to select 
 C             standard Mellor-Yamada 2.5 closure (IVEC=50), or modified 
 C             Mellor-Yamada 2.5 with enhanced mixing (IVEC=51). (Note: for
