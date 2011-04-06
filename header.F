@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.67   - 04/06/2011 - tcm - making additions for compiling adcirc on a
+C             Windows based PC.  In vortex.F resolved a conflict with the
+C             variable "error" used as an integer in global.F and as a 
+C             real in constants.F.
 C  v49.66   - 04/06/2011 - tcm - merged ice coverage into the trunk from 
 C             branch versions v49.64.01 through v49.64.01.
 C  v49.64.02- 04/01/2011 - tcm - Fixed bug in Harmonic Analysis output when

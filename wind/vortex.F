@@ -1332,23 +1332,23 @@ C               CALL setWindRadii (r)
 
                REAL, PARAMETER :: tension = 1.75
 
-               INTEGER :: error
+               INTEGER :: error_vortex
 
                !--------------------------------------------------------
                ! Generate derivatives at grid points along the 1-D curve
                !--------------------------------------------------------
                CALL curv1 (ndim, xgrid,ygrid, dydxlo,dydxhi,slopes,
-     &                     d2ydx2, work, tension, error)
+     &                     d2ydx2, work, tension, error_vortex)
 
                !------------------
                ! Error diagnostics
                !------------------
-               IF (error .NE. 0) THEN
+               IF (error_vortex .NE. 0) THEN
 
-                  IF (error .EQ. 1) THEN
+                  IF (error_vortex .EQ. 1) THEN
                      CALL killJob("SUBROUTINE fitSpline: " //
      &                            "too few end points specified!")
-                  ELSE IF (error .EQ. 2) THEN
+                  ELSE IF (error_vortex .EQ. 2) THEN
                      CALL killJob("SUBROUTINE fitSpline: x values " //
      &                            "not monotonically increasing!")
                   END IF
@@ -1417,6 +1417,7 @@ C               CALL setWindRadii (r)
             !    findRoot    root returned
             !==============================================================
             FUNCTION findRoot(func, x1,x2, dx, a,b)
+               USE CONSTANTS, ONLY : error
                !--------------------------------------------------
                ! External function f(x)=0 for which root is sough
                !--------------------------------------------------
@@ -1524,6 +1525,7 @@ C               CALL setWindRadii (r)
             !    http://en.wikipedia.org/wiki/Brent's_method
             !=============================================================
             FUNCTION zbrent(func, x1,x2, tol)
+               USE CONSTANTS, ONLY : ERROR
                !--------------------------------------------------
                ! External function f(x)=0 for which root is sough
                !--------------------------------------------------

@@ -188,7 +188,14 @@ C
       WRITE(LOCALDIR,'(2A)') TRIM(ROOTDIR),TRIM(PREFIX(iprefix))
       LNAME = LEN_TRIM(LOCALDIR)
       WRITE(LOCALDIR(LNAME-3:LNAME),'(I4.4)') MYPROC
+
+C... tcm v49.67 -- additions for Windows based PC compilations
+#ifdef WINDOWS
+      call system('mkdir '//trim(LOCALDIR))
+#else      
       call MAKEDIR(trim(LOCALDIR))
+#endif      
+
 #else
       WRITE(LOCALDIR,'(A)') TRIM(ROOTDIR)
 #endif
