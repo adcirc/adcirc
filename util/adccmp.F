@@ -121,7 +121,7 @@
         stop
       endif
 
-      print *,"ADCCMP Version 1.0"
+      print *,"ADCCMP Version 1.1"
 
       iarg = 1
 
@@ -302,11 +302,11 @@
       if (x % itype == 1) then
         read(lun, 1100, end = 200) x % time, x % it, nitems
         x % a(1: x % nsize) = 0.0
-        x % nc(1:x % nsize) = 0
+        if (etatype) x % nc(1:x % nsize) = 0       ! vjp
         do i = 1, nitems
           read(lun, *, err = 100, end = 150) iglobal, x1
           x % a(iglobal)  = x1
-          x % nc(iglobal) = 1
+          if (etatype) x % nc(iglobal) = 1         ! vjp
         end do
         return
 
@@ -360,20 +360,16 @@
         read(lun, 1100, end = 200) x % time, x % it, nitems
         x % a(1: x % nsize) = 0.0
         x % b(1: x % nsize) = 0.0
-        x % nc(1:x % nsize) = 0
         do i = 1, nitems    
           read(lun, *, end = 150, err = 100) iglobal, x1, x2
           x % a(iglobal)  = x1
           x % b(iglobal)  = x2
-          x % nc(iglobal) = 1
         end do
 
       else if ( x % itype == 2) then
-        x % nc(1:x % nsize) = 1
         read(lun, 1100, end = 200) x % time, x % it
         do i = 1, x % nsize
           read(lun, *, end = 200) iglobal, x1, x2
-          if ( x1 == 0.0d0 .and. x2 == 0.0d0) x % nc(iglobal) = 0
           x % a(iglobal) = x1
           x % b(iglobal) = x2
         end do
@@ -408,15 +404,15 @@
         x % maxsize = max(1,nsize)
         allocate( x % a(nsize))
         allocate( x % b(nsize))
-        allocate( x % nc(nsize))
+        allocate( x % nc(nsize))   
         print *, 'allocating nsize:', nsize
       else if (x % maxsize < nsize) then
         deallocate (x % a)
         deallocate (x % b)
-        deallocate (x % nc)
+        deallocate (x % nc) 
         allocate( x % a(nsize))
         allocate( x % b(nsize))
-        allocate( x % nc(nsize))
+        allocate( x % nc(nsize))   
         x % maxsize = max(1,nsize)
         print *, 'reallocating nsize:', nsize
       end if
@@ -526,7 +522,7 @@
             nodDiff(1) = i
           endif
 
-          if (gold % nc(i) /= trial % nc(i)) then
+          if (file%etatype .and. gold % nc(i) /= trial % nc(i)) then   ! vjp
             ncFlag = .TRUE.
             icount = icount + 1
             if (icount > isz) then
@@ -562,19 +558,21 @@
             diffSln(2) = diff(2)
             nodDiff(2) = i
           endif
-          if (gold % nc(i) /= trial % nc(i)) then
-            ncFlag = .TRUE.
-            icount = icount + 1
-            if (icount > isz) then
-              itmp => ncList
-              iszOld = isz
-              isz    = 2*isz
-              allocate(ncList(isz))
-              ncList(1:iszOld) = itmp(:)
-              deallocate(itmp)
-            end if
-            ncList(icount) = i
-          endif
+! vjp
+!         if (gold % nc(i) /= trial % nc(i)) then
+!           ncFlag = .TRUE.
+!           icount = icount + 1
+!           if (icount > isz) then
+!             itmp => ncList
+!             iszOld = isz
+!             isz    = 2*isz
+!             allocate(ncList(isz))
+!             ncList(1:iszOld) = itmp(:)
+!             deallocate(itmp)
+!           end if
+!           ncList(icount) = i
+!         endif
+! vjp
         end do
 
       endif
