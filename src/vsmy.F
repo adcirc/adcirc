@@ -2482,7 +2482,7 @@ c     Kq(n)=Km(n)*Sq/Sm(n)                           !rog way
          diss(n)=qprev/(B1*rmlen(n))
 c     diss(n)=q2prev(n)*Sm(n)/(Km(n)*B1)             !rog way
 CRJW ADDTOTEST
-           if ((n.eq.nfen).and.(IVEC.eq.51)) then
+           if ((n.eq.nfen).and.(IEVC.eq.51)) then
              prod(n)=prod(n)+(150.0*USTARS*USTARS*USTARS)
            endif
       enddo
