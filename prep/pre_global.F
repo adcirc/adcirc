@@ -85,6 +85,7 @@ C     PARM15  section
       INTEGER  NOLIBF,NOLIFA,NOLICA,NOLICAT
       INTEGER  NWP,NCOR,NTIP,NWS,NRAMP
       INTEGER  NRS
+      INTEGER  NCICE  !tcm v49.64.01 added ice concentration
       INTEGER  NTIF,NBFR,NFFR
       INTEGER  NOUTGE,NSPOOLGE
       INTEGER  NOUTGV,NSPOOLGV
@@ -231,6 +232,7 @@ C     INPUT15D section
       REAL(SZ)   DT
       REAL(8)    STATIM,REFTIM,WTIMINC
       REAL(8),ALLOCATABLE ::   AMIG(:),AMIGT(:),FAMIG(:)
+      REAL(8)    CICE_TIMINC   ! tcm v49.64.01 addition for ice
 C
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX

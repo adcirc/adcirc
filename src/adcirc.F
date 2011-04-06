@@ -413,7 +413,7 @@ C...
 C...*************** SOLVE THE HARMONIC ANALYSIS PROBLEM ****************
 C...
       CALL solveHarmonicAnalysis(ITIME)
-      CALL writeHarmonicAnalysisOutput()
+      CALL writeHarmonicAnalysisOutput(ITIME)
 C
 #ifdef CMPI
       IF (PRESENT(NO_MPI_FINALIZE)) THEN

@@ -2877,6 +2877,537 @@ C
       END
 
 
+C---------------------------------------------------------------------------
+C                  S U B R O U T I N E   P O S T 9 1 
+C---------------------------------------------------------------------------
+C     Merge the file containing ice concentration data at the ice 
+C     concentration stations (fort.91 file) from each subdomain
+C     into a single, full domain fort.91 file. This version is
+C     compatible with ADCIRC version 45.07. jgf 11/02/2005.
+C
+C     jgf46.02 Fixed fort.80 file to contain the station mapping, fixed
+C     memory allocation bug in post_global.F (had MNSTAV instead of
+C     MNSTAM).
+C
+C     v49.64.01 tcm -- added this routine, modified from post71
+C---------------------------------------------------------------------------
+      SUBROUTINE POST91()
+      USE POST_GLOBAL
+      IMPLICIT NONE
+c     counters
+      INTEGER I,J,K,L ! loop counters 
+      INTEGER IPROC   ! subdomain counter
+      INTEGER OREC    ! record counter in binary output file
+      INTEGER,ALLOCATABLE :: IREC(:) ! input record counters for binary files
+c     containers
+      INTEGER IDUM                         ! to read number of nodes in binary
+      CHARACTER*80  OUTMSG                 ! text line of full domain data 
+      CHARACTER*85  INLINE                 ! hold RUNDES, RUNID, AGRID in text
+      CHARACTER*4 RDES4(8),RID4(6),AID4(6) ! hold RUNDES, RUNID, AGRID in bin.
+      CHARACTER*8 RDES8(8),RID8(6),AID8(6) ! hold RUNDES, RUNID, AGRID in bin.
+c     file stuff 
+      LOGICAL FOUND                        ! TRUE if the file exists
+      INTEGER,ALLOCATABLE::LOC(:)          ! unit numbers of subdomains
+      CHARACTER*14,ALLOCATABLE::LOCNAME(:) ! subdomain dir./file names
+c     actual data 
+      INTEGER NTRSPM  ! number of data sets to be written to fort.91
+      INTEGER NUMSTNS ! number of subdomain meteorlogical recording stations
+      INTEGER NSTEMP  ! time step interval at which fort.91 is written
+      INTEGER ITEMPM  ! record type (1=elev.,2=vel.,3=3D vel.)
+      REAL(SZ) DTM    ! total time: DT*NSPOOLM = step size * no. time steps
+      INTEGER ITSM    ! model time step number
+      REAL(8)TIMEOUTSM! model time
+      REAL(SZ),ALLOCATABLE::CiceBIN(:)    ! full domain ice concent. val.(bin)
+      REAL(SZ),ALLOCATABLE::CiceBINP(:)   ! subdomain ice concent. val. (bin)
+      INTEGER,ALLOCATABLE::StaNum(:)         ! recording station number
+      CHARACTER(len=80),ALLOCATABLE::CiceASC(:) ! ice concentration data
+C
+      ALLOCATE ( LOC(MNPROC),IREC(MNPROC) )
+      ALLOCATE ( CiceBIN(MNSTAM),CiceBINP(MNSTAM))
+      ALLOCATE ( CiceASC(MNSTAM))
+      ALLOCATE ( LOCNAME(MNPROC))
+C
+C     Determine whether Unit 91 is Sequential Formatted or Direct Access Binary
+C
+      SELECT CASE(ABS(NOUTM))
+C     -------      
+      CASE(1)                   ! text (sequential formatted)
+C     -------
+C     Open All Local Sequential Formatted fort.91 files
+         DO IPROC = 1,NPROC
+            LOCNAME(IPROC) = 'PE0000/fort.91'
+            WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
+            LOC(IPROC) = 105 + (IPROC-1)
+            INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
+            IF (FOUND) THEN
+               OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+            ELSE
+               print *, "ERROR: No subdomain fort.91 files found."
+               RETURN           ! *** EARLY RETURN ***
+            ENDIF
+            READ(LOC(IPROC),'(A85)') INLINE
+            READ(LOC(IPROC),3645) NTRSPM,NUMSTNS,DTM,NSTEMP,ITEMPM
+            IF (NUMSTNS.NE.NSTAMP(IPROC)) THEN
+               STOP 'ERROR: Inconsistency in no. of ice conc. sta.'
+            ENDIF
+         ENDDO
+C     
+C     Open Global Sequential Formatted fort.91 file
+         OPEN(UNIT=91,FILE='fort.91')
+C     
+         WRITE(91,'(A85)') INLINE
+         WRITE(91,3645) NTRSPM,NUMSTNS,DTM,NSPOOLM,ITEMPM
+C     
+         DO                     ! loop infinitely over data sets
+C     
+            DO IPROC=1,NPROC
+               READ(LOC(IPROC),2120,END=9999) TIMEOUTSM,ITSM
+               IF (NSTAMP(IPROC).GT.0) THEN
+                  READ(LOC(IPROC),80,END=9999) 
+     &                 (CiceASC(IMAP_STAM_LG(K,IPROC)),
+     &                 K=1,NSTAMP(IPROC))
+               ENDIF
+            ENDDO
+C     
+            WRITE(91,2120) TIMEOUTSM,ITSM
+            DO I=1, NSTAM
+               CALL NEWINDEX(CiceASC(I),OUTMSG,I)
+               WRITE(91,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size 
+            ENDDO
+C     
+         ENDDO
+C     -------
+      CASE(2)                   ! binary
+C     -------
+C     Open All Local and the Global Direct Access Binary fort.91 files
+         DO IPROC = 1,NPROC
+            LOCNAME(IPROC) = 'PE0000/fort.91'
+            WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
+            LOC(IPROC) = 105 + (IPROC-1)
+            INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
+            IF (FOUND) THEN
+               OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+     &              RECL=NBYTE)
+            ELSE
+               print *, "ERROR: No subdomain fort.91 files found."
+               RETURN
+            ENDIF
+         ENDDO
+         OPEN(91,FILE='fort.91',ACCESS='DIRECT',RECL=NBYTE)
+C     
+C     
+C--   Read RUNDES RUNID and AGRID from each subdomain file
+C     
+         DO IPROC = 1,NPROC
+            IREC(IPROC) = 0
+            IF (NBYTE.EQ.4) THEN
+               DO I=1,8
+                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES4(I)
+               ENDDO
+               IREC(IPROC)=IREC(IPROC)+8
+               DO I=1,6
+                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RID4(I)
+               ENDDO
+               IREC(IPROC)=IREC(IPROC)+6
+               DO I=1,6
+                  READ(LOC(IPROC),REC=IREC(IPROC)+I) AID4(I)
+               ENDDO
+               IREC(IPROC)=IREC(IPROC)+6
+            ENDIF
+            IF (NBYTE.EQ.8) THEN
+               DO I=1,4
+                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES8(I)
+               ENDDO
+               IREC(IPROC)=IREC(IPROC)+4
+               DO I=1,3
+                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RID8(I)
+               ENDDO
+               IREC(IPROC)=IREC(IPROC)+3
+               DO I=1,3
+                  READ(LOC(IPROC),REC=IREC(IPROC)+I) AID8(I)
+               ENDDO
+               IREC(IPROC)=IREC(IPROC)+3
+            ENDIF
+         ENDDO
+C     
+C--   Write RUNDES RUNID and AGRID to Global File
+C     
+         OREC = 0
+         IF (NBYTE.EQ.4) THEN
+            DO I=1,8
+               WRITE(91,REC=OREC+I) RDES4(I)
+            ENDDO
+            OREC=OREC+8
+            DO I=1,6
+               WRITE(91,REC=OREC+I) RID4(I)
+            ENDDO
+            OREC=OREC+6
+            DO I=1,6
+               WRITE(91,REC=OREC+I) AID4(I)
+            ENDDO
+            OREC=OREC+6
+         ENDIF
+         IF (NBYTE.EQ.8) THEN
+            DO I=1,4
+               WRITE(91,REC=OREC+I) RDES8(I)
+            ENDDO
+            OREC=OREC+4
+            DO I=1,3
+               WRITE(91,REC=OREC+I) RID8(I)
+            ENDDO
+            OREC=OREC+3
+            DO I=1,3
+               WRITE(91,REC=OREC+I) AID8(I)
+            ENDDO
+            OREC=OREC+3
+         ENDIF
+C     
+C--   Read NTRSPM, NSTAM, DT*NSPOOLM from each subdomain file
+C     and then close files to flush file buffers
+C     
+         DO IPROC = 1,NPROC
+            READ(LOC(IPROC),REC=IREC(IPROC)+1) NTRSPM
+            READ(LOC(IPROC),REC=IREC(IPROC)+2) NUMSTNS
+            READ(LOC(IPROC),REC=IREC(IPROC)+3) DTM
+            READ(LOC(IPROC),REC=IREC(IPROC)+4) NSPOOLM 
+            READ(LOC(IPROC),REC=IREC(IPROC)+5) ITEMPM
+            IREC(IPROC) = IREC(IPROC)+5
+            CLOSE(LOC(IPROC))   ! Flush the Write Buffer
+            IF (NSTAM.NE.NSTAMP(IPROC)) THEN
+               STOP 'ERROR: Inconsistency in no. of ice conc. sta.'
+            ENDIF
+            OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+     &           RECL=NBYTE)
+         ENDDO
+C     
+C--   Write same info to full-domain file and close it to flush buffer also
+C     
+         WRITE(91,REC=OREC+1) NTRSPM
+         WRITE(91,REC=OREC+2) NUMSTNS
+         WRITE(91,REC=OREC+3) DTM
+         WRITE(91,REC=OREC+4) NSPOOLM
+         WRITE(91,REC=OREC+5) ITEMPM
+         OREC = OREC+5
+         CLOSE(91)              ! Flush the Write Buffer
+         OPEN(91,FILE='fort.91',ACCESS='DIRECT',RECL=NBYTE)
+C     
+         DO J=1,NTRSPM
+C     
+            DO IPROC=1,NPROC
+               READ(LOC(IPROC),REC=IREC(IPROC)+1) TIMEOUTSM
+               READ(LOC(IPROC),REC=IREC(IPROC)+2) ITSM
+               IREC(IPROC) = IREC(IPROC) + 2
+               IF (NSTAMP(IPROC).GT.0) THEN
+                  DO K=1, NSTAMP(IPROC)
+                     READ(LOC(IPROC),REC=IREC(IPROC)+K) CiceBINP(K)
+                  ENDDO
+                  DO K=1,NSTAMP(IPROC)
+                     CiceBIN(IMAP_STAM_LG(K,IPROC)) = CiceBINP(K)
+                  ENDDO
+                  IREC(IPROC) = IREC(IPROC) + NSTAMP(IPROC)
+               ENDIF
+            ENDDO
+C     
+            WRITE(91,REC=OREC+1) TIMEOUTSM
+            WRITE(91,REC=OREC+2) ITSM
+            OREC = OREC + 2
+            DO K=1, NSTAM
+               WRITE(91,REC=OREC+K) CiceBIN(K)
+            ENDDO
+            OREC = OREC + NSTAM
+C     
+         ENDDO
+C
+      CASE DEFAULT
+C     
+         WRITE(*,2125) NOUTM
+C
+      END SELECT
+C     
+C     Close the full domain and subdomain fort.91 Files
+C
+ 9999 CONTINUE
+      CLOSE(91)
+      DO IPROC = 1,NPROC
+         CLOSE(LOC(IPROC))
+      ENDDO
+C     
+ 80   FORMAT(A40)
+ 2120 FORMAT(2X,E20.10,5X,I10)
+ 2125 FORMAT(2X,'ERROR: Incorrect value of NOUTM; NOUTM=',I3) 
+ 3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
+C     
+      RETURN
+C---------------------------------------------------------------------------
+      END SUBROUTINE POST91
+C---------------------------------------------------------------------------
+
+
+C---------------------------------------------------------------------------
+C                  S U B R O U T I N E   P O S T 9 3 
+C---------------------------------------------------------------------------
+C     Merge the ice concentration data (fort.93 files) from each
+C     subdomain into a single, full domain fort.93 file. This version is
+C     compatible with ADCIRC version 45.07. jgf 11/02/2005.
+C
+C     v49.64.01 tcm -- added
+C---------------------------------------------------------------------------
+      SUBROUTINE POST93()
+      USE POST_GLOBAL
+      IMPLICIT NONE
+C     counters
+      INTEGER I,J,K,L ! loop counters 
+      INTEGER IPROC   ! subdomain counter
+      INTEGER OREC    ! record counter in binary output file
+      INTEGER, ALLOCATABLE::IREC(:) ! input record counters for binary files
+      INTEGER INDX   ! full domain node number
+C     containers
+      CHARACTER*80 OUTMSG                  ! text line of full domain data 
+      CHARACTER*85 INLINE                  ! hold RUNDES, RUNID, AGRID in text
+      CHARACTER*4 RDES4(8),RID4(6),AID4(6) ! hold RUNDES, RUNID, AGRID in bin.
+      CHARACTER*8 RDES8(8),RID8(6),AID8(6) ! hold RUNDES, RUNID, AGRID in bin.
+      INTEGER IDUM                         ! to read number of nodes in binary
+C     file stuff
+      INTEGER, ALLOCATABLE::LOC(:)         ! unit numbers of subdomains
+      CHARACTER*14, ALLOCATABLE::LOCNAME(:)! subdomain dir./file names
+      LOGICAL FOUND                        ! TRUE if the file exists
+C     actual data
+      INTEGER NDSETSGW! number of data sets to be written to fort.93
+      INTEGER NP      ! number of nodes in the subdomain grid
+      REAL(SZ) DTGW   ! total time: DT*NSPOOLGW = step size * no. time steps
+      INTEGER NSTEMP  ! time step interval at which fort.93 is written
+      INTEGER ITEMPGW ! record type (1=elev.,2=vel.,3=3D vel.)
+C
+      REAL(8)TIMEOUTGW! model time
+      INTEGER ITGW    ! model time step
+C
+      CHARACTER*80,ALLOCATABLE::CiceSC(:) !full domain ice concentration values
+      CHARACTER*80,ALLOCATABLE::CiceSCP(:)!subdomain ice concentration values
+      REAL(SZ),ALLOCATABLE::CiceBIN(:)    ! full domain ice conc. val.(bin)
+      REAL(SZ),ALLOCATABLE::CiceBINP(:)   ! subdomain ice conc. val. (bin)
+C
+      ALLOCATE (LOC(MNPROC),IREC(MNPROC))
+      ALLOCATE (CiceBIN(MNP),CiceBINP(MNPP))
+      ALLOCATE (CiceSC(MNP),CiceSCP(MNPP))
+      ALLOCATE ( LOCNAME(MNPROC))
+C     
+C--   Determine whether Unit 93 is Sequential Formatted or Direct Access Binary
+C     
+      IF (ABS(NOUTGW).EQ.1) THEN
+         GO TO 1000 ! file is text
+      ELSE
+         GO TO 2000 ! file is binary(=2) or nothing (=0)
+      ENDIF
+C
+C
+ 1000 CONTINUE !here begins the post-processing if the files are ASCII text
+C
+      DO IPROC = 1,NPROC
+C     Open ASCII text fort.93 files in each subdirectory
+         LOCNAME(IPROC) = 'PE0000/fort.93'
+         WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
+         LOC(IPROC) = 105 + (IPROC-1)
+         INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
+         IF (FOUND) THEN
+            OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+         ELSE
+            print *, "ERROR: No local fort.93 files found."
+            RETURN !**** EARLY RETURN ****
+         ENDIF
+C     Read header information from each fort.93 file
+         READ(LOC(IPROC),'(A85)') INLINE ! read RUNDES, RUNID, AGRID
+         READ(LOC(IPROC),3645)  NDSETSGW,NP,DTGW,NSTEMP,ITEMPGW
+         IF (NP.NE.NNODP(IPROC)) THEN
+            print *, "NP = ",NP," NNODP(",IPROC,") = ",NNODP(IPROC)
+            STOP 'ERROR: Inconsistency in expected subdomain nodes.'
+         ENDIF
+      ENDDO
+C     Create fort.93 file for full domain
+      OPEN(UNIT=93,FILE='fort.93')
+      WRITE(93,'(A85)') INLINE ! write RUNDES, RUNID, AGRID
+      WRITE(93,3645) NDSETSGW,NNODG,DTGW,NSPOOLGW,ITEMPGW 
+C
+C     jgf46.00 Made the loop over data sets an infinite loop because the
+C     number of data sets at the top of the file will be wrong if the
+C     run was hot started.
+C
+      DO ! loop infinitely over data sets
+C
+         DO IPROC=1,NPROC  ! loop over subdomains
+            READ(LOC(IPROC),FMT=2120,END=9999) TIMEOUTGW,ITGW
+            IF (IPROC.EQ.1) WRITE(93,2120) TIMEOUTGW,ITGW    
+            DO K = 1,NNODP(IPROC) ! loop over subdomain nodes
+               READ(LOC(IPROC),80,END=9999) CiceSCP(K)
+               INDX = IMAP_NOD_LG(K,IPROC) ! sub --> full (lookup table)
+               IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
+                  CiceSC(INDX) = CiceSCP(K)
+               ENDIF
+            ENDDO ! next subdomain node  
+         ENDDO ! next subdomain
+C
+         DO I = 1,NNODG   ! loop over full domain nodes
+            CALL NEWINDEX(CiceSC(I),OUTMSG,I)
+            WRITE(93,*) TRIM(OUTMSG) !jgf46.00 TRIM to cut down file size 
+         ENDDO 
+      ENDDO ! next output time
+      GO TO 9999 ! jump to end of subroutine where fort.93 file is closed
+C
+C     
+ 2000 CONTINUE !here begins the post-processing if files are binary
+C--   Open all subdomain and the full domain Direct Access Binary fort.93 files
+      DO IPROC = 1,NPROC
+         LOCNAME(IPROC) = 'PE0000/fort.93'
+         WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
+         LOC(IPROC) = 105 + (IPROC-1)
+         INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
+         IF (FOUND) THEN
+            OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+     &           RECL=NBYTE)
+         ELSE
+            print *, "ERROR: No local fort.93 files found."
+            RETURN
+         ENDIF
+      ENDDO
+      OPEN(93,FILE='fort.93',ACCESS='DIRECT',RECL=NBYTE)
+C--   Read RUNDES RUNID and AGRID from each subdomain file
+      DO IPROC = 1,NPROC
+         IREC(IPROC) = 0
+         IF (NBYTE.EQ.4) THEN
+            DO I=1,8
+               READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES4(I)
+            ENDDO
+            IREC(IPROC)=IREC(IPROC)+8
+            DO I=1,6
+               READ(LOC(IPROC),REC=IREC(IPROC)+I) RID4(I)
+            ENDDO
+            IREC(IPROC)=IREC(IPROC)+6
+            DO I=1,6
+               READ(LOC(IPROC),REC=IREC(IPROC)+I) AID4(I)
+            ENDDO
+            IREC(IPROC)=IREC(IPROC)+6
+         ENDIF
+         IF (NBYTE.EQ.8) THEN
+            DO I=1,4
+               READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES8(I)
+            ENDDO
+            IREC(IPROC)=IREC(IPROC)+4
+            DO I=1,3
+               READ(LOC(IPROC),REC=IREC(IPROC)+I) RID8(I)
+            ENDDO
+            IREC(IPROC)=IREC(IPROC)+3
+            DO I=1,3
+               READ(LOC(IPROC),REC=IREC(IPROC)+I) AID8(I)
+            ENDDO
+            IREC(IPROC)=IREC(IPROC)+3
+         ENDIF
+      ENDDO
+C--   Write RUNDES RUNID and AGRID to full domain file
+      OREC = 0
+      IF (NBYTE.EQ.4) THEN
+         DO I=1,8
+            WRITE(93,REC=OREC+I) RDES4(I)
+         ENDDO
+         OREC=OREC+8
+         DO I=1,6
+            WRITE(93,REC=OREC+I) RID4(I)
+         ENDDO
+         OREC=OREC+6
+         DO I=1,6
+            WRITE(93,REC=OREC+I) AID4(I)
+         ENDDO
+         OREC=OREC+6
+      ENDIF
+      IF (NBYTE.EQ.8) THEN
+         DO I=1,4
+            WRITE(93,REC=OREC+I) RDES8(I)
+         ENDDO
+         OREC=OREC+4
+         DO I=1,3
+            WRITE(93,REC=OREC+I) RID8(I)
+         ENDDO
+         OREC=OREC+3
+         DO I=1,3
+            WRITE(93,REC=OREC+I) AID8(I)
+         ENDDO
+         OREC=OREC+3
+      ENDIF
+C     
+C--   Read NDSETSGW, NNODP, DTGW, NSPOOLGW, ITEMPGW from each subdomain file
+C     and then close files to flush file buffers
+C     
+      DO IPROC = 1,NPROC
+         READ(LOC(IPROC),REC=IREC(IPROC)+1) NDSETSGW
+         READ(LOC(IPROC),REC=IREC(IPROC)+2) IDUM   
+         READ(LOC(IPROC),REC=IREC(IPROC)+3) DTGW
+         READ(LOC(IPROC),REC=IREC(IPROC)+4) NSTEMP
+         READ(LOC(IPROC),REC=IREC(IPROC)+5) ITEMPGW
+         IREC(IPROC) = IREC(IPROC)+5
+         CLOSE(LOC(IPROC))      ! flush the write buffer
+         OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
+      ENDDO
+C     
+C--   Write same info to full domain file and close it to flush buffer also
+C     
+      WRITE(93,REC=OREC+1) NDSETSGW
+      WRITE(93,REC=OREC+2) NNODG
+      WRITE(93,REC=OREC+3) DTGW
+      WRITE(93,REC=OREC+4) NSPOOLGW
+      WRITE(93,REC=OREC+5) ITEMPGW
+      OREC = OREC+5
+      CLOSE(93)                 ! flush the write buffer
+      OPEN(93,FILE='fort.93',ACCESS='DIRECT',RECL=NBYTE)
+C     
+      DO J=1,NDSETSGW
+C     
+         DO IPROC=1,NPROC
+            READ(LOC(IPROC),REC=IREC(IPROC)+1) TIMEOUTGW
+            READ(LOC(IPROC),REC=IREC(IPROC)+2) ITGW
+            IREC(IPROC) = IREC(IPROC) + 2
+            DO K=1, NNODP(IPROC)
+               READ(LOC(IPROC),REC=IREC(IPROC)+K) CiceBINP(K)
+            ENDDO
+            DO K=1,NNODP(IPROC)
+               INDX = IMAP_NOD_LG(K,IPROC)
+               IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
+                  CiceBIN(INDX) = CiceBINP(K)
+               ENDIF
+            ENDDO
+            IREC(IPROC) = IREC(IPROC) + NNODP(IPROC)
+         ENDDO
+C     
+         WRITE(93,REC=OREC+1) TIMEOUTGW
+         WRITE(93,REC=OREC+2) ITGW
+         OREC = OREC + 2
+         DO K=1, NNODG
+            WRITE(93,REC=OREC+K) CiceBIN(K)
+         ENDDO
+         OREC = OREC + NNODG
+C     
+      ENDDO
+C     
+ 9999 CONTINUE
+C     
+C--   Close the full domain and subdomain fort.93 Files
+C     
+      CLOSE(93)
+      DO IPROC = 1,NPROC
+         CLOSE(LOC(IPROC))
+      ENDDO
+C     
+ 80   FORMAT(A80)
+ 2120 FORMAT(2X,E20.10,5X,I10)
+ 2453 FORMAT(2X,I8,2X,E15.8)
+ 3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
+C     
+      RETURN
+      END SUBROUTINE POST93
+C---------------------------------------------------------------------------
+C     End of subroutine Post93 
+C---------------------------------------------------------------------------
+
+
+
+
 
       SUBROUTINE POST67_68()
       USE POST_GLOBAL 

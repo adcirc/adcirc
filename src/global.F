@@ -127,6 +127,7 @@ c.
 #endif
       REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  RMICE00(:), CICEOUT(:) !v49.64.01 tcm -added for ice concentration
       REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:), WVNXOut(:), WVNYOut(:)
 #ifndef NPRMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
@@ -189,6 +190,8 @@ Casey 090302: Added the following arrays for output of radiation stress gradient
       REAL(SZ),ALLOCATABLE ::   WVNX1(:),WVNY1(:),PRN1(:)
       REAL(SZ),ALLOCATABLE ::   WVNX2(:),WVNY2(:),PRN2(:)
       REAL(SZ),ALLOCATABLE ::   RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
+      REAL(SZ),ALLOCATABLE ::   CICE1(:),CICE2(:)   !v49.64.01 tcm -- added 
+                                                    !for ice concentration
 #ifndef NRSMAX
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax(:) 
@@ -477,6 +480,10 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       INTEGER NCCOUGE,NCCOUGW,NCCOUGV
       
 ! CF Finish addition for NETCDF I/O
+
+! TCM v49.64.01 Addition for Ice Concentration Fields
+      INTEGER :: NCICE,IGIP,IICESTP
+      REAL(8) :: CICE_TIMINC,CICE_TIME1,CICE_TIME2
 
 C     jgf48.03 Arrays for mapping subdomain nodes and elements to full
 C     domain ... used in globalio module but allocated and populated
@@ -1387,6 +1394,9 @@ C
       ALLOCATE ( XEM(MNSTAM),YEM(MNSTAM),SLEM(MNSTAM),SFEM(MNSTAM))
       ALLOCATE ( NNM(MNSTAM))
       ALLOCATE ( RMU00(MNSTAM),RMV00(MNSTAM),RMP00(MNSTAM))
+      if (NCICE.NE.0) then
+         ALLOCATE ( RMICE00(MNSTAM) )    ! v49.64.01 tcm added for ice concentration
+      endif
       ALLOCATE ( STAIM1(MNSTAM),STAIM2(MNSTAM),STAIM3(MNSTAM))
 C
       RETURN
@@ -1431,6 +1441,10 @@ C
       ALLOCATE ( WVNX1(MNP),WVNY1(MNP),PRN1(MNP) )
       ALLOCATE ( WVNX2(MNP),WVNY2(MNP),PRN2(MNP) )
       ALLOCATE ( RSNX1(MNP),RSNY1(MNP),RSNX2(MNP),RSNY2(MNP) )
+      if (NCICE.NE.0) then
+         ALLOCATE ( CICE1(MNP),CICE2(MNP),CICEOUT(MNP) ) !tcm v49.64.01 added
+                                                         ! for ice concentration
+      ENDIF
       ALLOCATE ( WVNXOUT(MNP),WVNYOUT(MNP) )
       WSX1(:) = 0.0d0
       WSY1(:) = 0.0d0
@@ -1438,6 +1452,11 @@ C
       WSX2(:) = 0.0d0
       WSY2(:) = 0.0d0
       PR2(:) = 0.0d0
+      IF (NCICE.NE.0) then
+         CICE1(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
+         CICE2(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
+         CICEOUT(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
+      ENDIF
 #ifdef CSWAN
 Casey 090302: Added the next line for output of radiation stress gradients.
       ALLOCATE ( RSNXOUT(MNP),RSNYOUT(MNP) )

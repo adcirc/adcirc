@@ -48,7 +48,7 @@ C
 C     ----------------------------------------------------------------
       REAL(SZ) FUNCTION WindDrag(WindSpeed, DragLimit, 
      &      DragLawString)
-      REAL(SZ) WindSpeed         
+      REAL(SZ) WindSpeed
       REAL(SZ) DragLimit
       CHARACTER(len=10) DragLawString
 C
@@ -72,6 +72,73 @@ C
       RETURN
 C     ----------------------------------------------------------------
       END FUNCTION WindDrag
+C     ----------------------------------------------------------------
+
+
+C     ----------------------------------------------------------------
+C      F U N C T I O N   W I N D I C E  D R A G
+C     ----------------------------------------------------------------
+C
+C     tcm v49.64.01 -- Added a function to modify wind drag coefficents
+C          based on ice effects from a percentage of ice coverage
+C          value (ice concentration limits 0.0 to 100.0)
+C          If the percentage of ice is less than 1.0% then no 
+C          modifications are done to the incoming wind drag 
+C          coefficient values.
+C
+C     ----------------------------------------------------------------
+      REAL(SZ) FUNCTION WindIceDrag(WindDrag,PercentIce,DragLimit, 
+     &      DragLawString)
+      REAL(SZ) DragLimit,PercentIce
+      REAL(SZ) pic,WindDrag,IceDrag
+      CHARACTER(len=10) DragLawString
+C
+      SELECT CASE(TRIM(DragLawString))
+C
+!      CASE("RaysIce")
+!C........If there is virtually no ice, then
+!C........just use the non-ice drag values
+!         if (PercentIce .lt. 1.d0) then
+!            WindIceDrag = WindDrag
+!         else
+!            pic = PercentIce*0.01d0
+!            IceDrag = (0.125d0 + 0.5d0*pic*(1.0d0-pic))*0.01d0
+!            WindIceDrag = max(IceDrag,WindDrag)
+!         endif
+
+      CASE("IceCube")
+C........This formula is a cubic function such that
+C....... When pic = 0 the drag coefficient is equal to 
+C....... the minimum value for Garratt (.000075), when pic = 50
+C....... it has a value of 0.0025 and a zero gradient, and
+C....... when pic = 100 it has a value of 0.00125.
+C....... This represents a smoother transition between Garratt
+C....... and Ray's Ice for low ice values and low winds
+
+         IF (PercentIce.lt.0.d0) then
+            WindIceDrag = WindDrag
+         ELSE
+            pic = PercentIce*0.01d0
+            IceDrag = (0.075d0 + 0.75d0*pic - 0.9d0*pic*pic
+     &              + 0.2d0*pic*pic*pic)*0.01d0
+            WindIceDrag = max(IceDrag,WindDrag)
+         ENDIF
+
+      CASE DEFAULT
+         WRITE(16,*) 'ERROR: Ice drag law not recognized:'
+         WRITE(16,'(A10)') DragLawString
+         WRITE(16,*) 'Execution will now be terminated.'
+#ifdef CMPI
+         call msg_fini()
+#endif
+         STOP
+C
+      END SELECT
+      IF(WindIceDrag.gt.DragLimit) WindIceDrag=DragLimit
+C
+      RETURN
+C     ----------------------------------------------------------------
+      END FUNCTION WindIceDrag
 C     ----------------------------------------------------------------
 
 

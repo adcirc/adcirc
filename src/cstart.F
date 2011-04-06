@@ -19,6 +19,7 @@ C
       USE WIND
       USE GLOBAL_IO
       USE OWIWIND,ONLY : NWS12INIT,NWS12GET    ! sb added 09/xx/2006
+      USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
       USE NodalAttributes, ONLY : 
      &         STARTDRY, GeoidOffset, LoadGeoidOffset,
@@ -397,6 +398,28 @@ Casey 090302: Added this call to initialize the radiation stress gradients.
          WRITE(16,1981)
  1981    FORMAT(/,1X,'RADIATION STRESS INFORMATION READ.',/)
       ENDIF
+
+C... v49.64.01 - tcm added
+C...INPUT ICE CONCENTRATION INFORMATION FROM UNIT 25
+C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
+      IF (NCICE.GE.1) THEN
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
+         WRITE(16,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,2980)
+         WRITE(16,2980)
+ 2980    FORMAT(/,1X,'ICE CONCENTRATION INFORMATION READ.',/)
+
+         IF(NCICE.EQ.12) THEN
+            CALL NCICE1_INIT(CICE1,NP)
+            CALL NCICE1_GET(CICE1,NP)
+            CALL NCICE1_GET(CICE2,NP)
+            CICE_TIME1 = STATIM*86400.D0
+            CICE_TIME2 = CICE_TIME1 + CICE_TIMINC
+         ENDIF
+      ENDIF
+
+
+
 C...
 C...LINES TO USE TIDAL POTENTIAL FORCING
 C...
@@ -611,6 +634,7 @@ C...
       NSCOUM=0
       IPSTP=0
       IWSTP=0
+      IICESTP = 0  ! v49.64.01 tcm -added ice stations
 
       IF(ABS(NOUTM).EQ.1) THEN
          CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71',
@@ -619,6 +643,12 @@ C...
          CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72',
      $     NSTAM_G, NSTAM, HEADER72)
          IWSTP=2
+! V49.64.01 TCM -ADDED ICE STATIONS
+         IF(NCICE.NE.0) THEN
+            CALL OPEN_GBL_FILE(91, TRIM(GLOBALDIR)//'/'//'fort.91',
+     $     NSTAM_G, NSTAM, HEADER91)
+            IICESTP=2
+         ENDIF
       ENDIF
 
       IF(ABS(NOUTM).EQ.2) THEN
@@ -626,46 +656,63 @@ C...
      &           ACCESS='DIRECT',RECL=NBYTE)
          OPEN(72,FILE=TRIM(LOCALDIR)//'/'//'fort.72',
      &           ACCESS='DIRECT',RECL=NBYTE)
+! V49.64.01 TCM -ADDED ICE STATIONS
+         IF(NCICE.NE.0) THEN
+            OPEN(91,FILE=TRIM(LOCALDIR)//'/'//'fort.91',
+     &           ACCESS='DIRECT',RECL=NBYTE)
+         ENDIF
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
                WRITE(71,REC=IPSTP+I) RDES4(I)
                WRITE(72,REC=IWSTP+I) RDES4(I)
-               ENDDO
+               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RDES4(I)
+            ENDDO
             IPSTP=IPSTP+8
             IWSTP=IWSTP+8
+            IF (NCICE.NE.0) IICESTP = IICESTP+8
             DO I=1,6
                WRITE(71,REC=IPSTP+I) RID4(I)
                WRITE(72,REC=IWSTP+I) RID4(I)
-               ENDDO
+               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RID4(I)
+            ENDDO
             IPSTP=IPSTP+6
             IWSTP=IWSTP+6
+            IF (NCICE.NE.0) IICESTP = IICESTP+6
             DO I=1,6
                WRITE(71,REC=IPSTP+I) AID4(I)
                WRITE(72,REC=IWSTP+I) AID4(I)
-               ENDDO
+               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) AID4(I)
+            ENDDO
             IPSTP=IPSTP+6
             IWSTP=IWSTP+6
-            ENDIF
+            IF (NCICE.NE.0) IICESTP = IICESTP+6
+         ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
                WRITE(71,REC=IPSTP+I) RDES8(I)
                WRITE(72,REC=IWSTP+I) RDES8(I)
-               ENDDO
+               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RDES8(I)
+            ENDDO
             IPSTP=IPSTP+4
             IWSTP=IWSTP+4
+            IF (NCICE.NE.0) IICESTP = IICESTP+4
             DO I=1,3
                WRITE(71,REC=IPSTP+I) RID8(I)
                WRITE(72,REC=IWSTP+I) RID8(I)
-               ENDDO
+               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RID8(I)
+            ENDDO
             IPSTP=IPSTP+3
             IWSTP=IWSTP+3
+            IF (NCICE.NE.0) IICESTP = IICESTP+3
             DO I=1,3
                WRITE(71,REC=IPSTP+I) AID8(I)
                WRITE(72,REC=IWSTP+I) AID8(I)
-               ENDDO
+               IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) AID8(I)
+            ENDDO
             IPSTP=IPSTP+3
             IWSTP=IWSTP+3
-            ENDIF
+            IF (NCICE.NE.0) IICESTP = IICESTP+3
+         ENDIF
          WRITE(71,REC=IPSTP+1) NTRSPM
          WRITE(71,REC=IPSTP+2) NSTAM
          WRITE(71,REC=IPSTP+3) DT*NSPOOLM
@@ -680,7 +727,17 @@ C...
          IWSTP=IWSTP+5
          CLOSE(71)
          CLOSE(72)
+!  v49.64.01 tcm - added ice station support
+         IF(NCICE.NE.0) THEN
+            WRITE(91,REC=IICESTP+1) NTRSPM
+            WRITE(91,REC=IICESTP+2) NSTAM
+            WRITE(91,REC=IICESTP+3) DT*NSPOOLM
+            WRITE(91,REC=IICESTP+4) NSPOOLM
+            WRITE(91,REC=IICESTP+5) 1
+            IICESTP = IICESTP + 5
+            CLOSE(91)
          ENDIF
+      ENDIF
 C...
 C....INITIALIZE GLOBAL ELEVATION SPOOL COUNTER
 C....OPEN GLOBAL ELEVATION OUTPUT FILE
@@ -819,6 +876,7 @@ C...
       NSCOUGW=0
       IGWP=0
       IGPP=0
+      IGIP=0  !tcm v49.64.01 added for global ice concentration field
 
 !Casey 090302: Added the possibility of NOUTGW = +/- 4.
 !kmd - changed for -4 option      IF((ABS(NOUTGW).EQ.1)) THEN
@@ -829,6 +887,12 @@ C...
          CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
      $     NP_G, NP, HEADER74)
          IGWP=2
+! tcm v49.64.01 added for ice
+         IF(NCICE.NE.0) then
+            CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93',
+     $        NP_G, NP, HEADER93)
+            IGIP=2
+         ENDIF
       ENDIF
 
       IF(ABS(NOUTGW).EQ.2) THEN
@@ -836,53 +900,70 @@ C...
      &           ACCESS='DIRECT',RECL=NByte)
          OPEN(74,FILE=TRIM(LOCALDIR)//'/'//'fort.74',
      &           ACCESS='DIRECT',RECL=NByte)
+! tcm v49.64.01 added for ice
+         IF(NCICE.NE.0) THEN
+            OPEN(93,FILE=TRIM(LOCALDIR)//'/'//'fort.93',
+     &           ACCESS='DIRECT',RECL=NByte)
+         ENDIF
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
                write(73,rec=igpp+i) rdes4(i)
                WRITE(74,REC=IGWP+I) RDES4(I)
-               ENDDO
+               if(ncice.ne.0) write(93,rec=igip+i) rdes4(i)
+            ENDDO
             igpp=igpp+8
             IGWP=IGWP+8
+            if(ncice.ne.0) igip = igip+8
             DO I=1,6
                write(73,rec=igpp+i) rid4(i)
                WRITE(74,REC=IGWP+I) RID4(I)
-               ENDDO
+               if(ncice.ne.0) write(93,rec=igip+i) rid4(i)
+            ENDDO
             igpp=igpp+6
             IGWP=IGWP+6
+            if(ncice.ne.0) igip = igip+6
             DO I=1,6
                write(73,rec=igpp+i) aid4(i)
                WRITE(74,REC=IGWP+I) AID4(I)
-               ENDDO
+               if(ncice.ne.0) write(93,rec=igip+i) aid4(i)
+            ENDDO
             igpp=igpp+6
             IGWP=IGWP+6
-            ENDIF
+            if(ncice.ne.0) igip = igip+6
+         ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
                write(73,rec=igpp+i) rdes8(i)
                WRITE(74,REC=IGWP+I) RDES8(I)
-               ENDDO
+               if(ncice.ne.0) write(93,rec=igip+i) rdes8(i)
+            ENDDO
             igpp=igpp+4
             IGWP=IGWP+4
+            if(ncice.ne.0) igip = igip+4
             DO I=1,3
                write(73,rec=igpp+i) rid8(i)
                WRITE(74,REC=IGWP+I) RID8(I)
-               ENDDO
+               if(ncice.ne.0) write(93,rec=igip+i) rid8(i)
+            ENDDO
             igpp=igpp+3
             IGWP=IGWP+3
+            if(ncice.ne.0) igip = igip+3
             DO I=1,3
                write(73,rec=igpp+i) aid8(i)
                WRITE(74,REC=IGWP+I) AID8(I)
-               ENDDO
+               if(ncice.ne.0) write(93,rec=igip+i) aid8(i)
+            ENDDO
             igpp=igpp+3
             IGWP=IGWP+3
-            ENDIF
+            if(ncice.ne.0) igip = igip+3
+         ENDIF
          write(73,rec=igpp+1) ndsetsw
          write(73,rec=igpp+2) np
          write(73,rec=igpp+3) dt*nspoolgw
          write(73,rec=igpp+4) nspoolgw
          write(73,rec=igpp+5) 2
          igpp=igpp+5
-         close(73)              
+         close(73)
          WRITE(74,REC=IGWP+1) NDSETSW
          WRITE(74,REC=IGWP+2) NP
          WRITE(74,REC=IGWP+3) DT*NSPOOLGW
@@ -890,7 +971,16 @@ C...
          WRITE(74,REC=IGWP+5) 2
          IGWP=IGWP+5
          CLOSE(74)
+         IF(NCICE.NE.0) THEN
+            WRITE(93,REC=IGIP+1) NDSETSW
+            WRITE(93,REC=IGIP+2) NP
+            WRITE(93,REC=IGIP+3) DT*NSPOOLGW
+            WRITE(93,REC=IGIP+4) NSPOOLGW
+            WRITE(93,REC=IGIP+5) 2
+            IGIP=IGIP+5
+            CLOSE(93)
          ENDIF
+      ENDIF
 #ifdef CSWAN
 Casey 090302: Added the output of radiation stress gradients.
       IGRadS=0

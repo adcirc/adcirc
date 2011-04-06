@@ -451,6 +451,7 @@ C
       ENDIF
 C
       NRS=0
+      NCICE = 0  !tcm v49.64.01 -- added for ice
       READ(15,80) NWSMSG
       READ(NWSMSG,*) NWS
 !       IF(ABS(NWS/100).EQ.1) THEN ! sb46.28sb03
@@ -469,12 +470,15 @@ C
 !       ENDIF
 
 C....tcm v49.46 -- added logic to handle multiple NRS types (100's place)
+C.....tcm v49.64.01 Additions for ice
       IF(NWS.EQ.0) THEN
          NWS = 0
          NRS = 0
+         NCICE = 0
       ELSE
-         NRS=ABS(NWS/100)
-         NWS=(ABS(NWS)-NRS*100)*(NWS/ABS(NWS))
+         NCICE = INT(ABS(NWS)/1000)
+         NRS=INT((ABS(NWS) - NCICE*1000)/100)
+         NWS=INT((ABS(NWS)- NCICE*1000 - NRS*100))*INT(NWS/ABS(NWS))
       ENDIF
 
 C     jgfdebug46.02 added NWS=45
@@ -491,6 +495,19 @@ C     sb46.28sb01 added NWS=12: OWI format
            stop
         ENDIF
 C
+C... TCM v49.64.02 -- added
+C...  BE SURE NWS AND NCICE ARE COMPATABLE
+      IF((NCICE.GT.0).AND.
+     &       ((NWS.EQ.1).OR.(NWS.EQ.2).OR.(NWS.EQ.7))) THEN
+         PRINT*,'NCICE = ',NCICE
+         PRINT*,'NWS = ', NWS
+         PRINT*, "Your selection of NCICE (a UNIT 15 input ",
+     &        "parameter) is not compatable"
+         PRINT*,"with your NWS value.  NCICE is not allowed for",
+     &         " abs(NWS)=1,2, or 7."
+         STOP
+      ENDIF
+
 C     jgf46.08 Modified to accomodate fine grained ramp functions.
       READ(15,80) RAMPMSG
       READ(RAMPMSG,*) NRAMP
@@ -559,12 +576,19 @@ C
       IF(NWS.EQ.3) THEN
          READ(15,80) WSMSG1
          READ(15,80) WSMSG2
-         IF(NRS.EQ.0) THEN
+C....    TCM V49.64.01 ADDITIONS FOR ICE
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
             READ(WSMSG2,*) NWLAT,NWLON,WLATMAX,WLONMIN,WLATINC,
      &           WLONINC,WTIMINC
-         ELSE
+         ELSEIF ((NCICE.EQ.0).AND.(NRS.GE.1)) THEN
             READ(WSMSG2,*) NWLAT,NWLON,WLATMAX,WLONMIN,WLATINC,
      &           WLONINC,WTIMINC,RSTIMINC
+         ELSEIF((NCICE.GE.1).AND.(NRS.EQ.0)) THEN
+            READ(WSMSG2,*) NWLAT,NWLON,WLATMAX,WLONMIN,WLATINC,
+     &           WLONINC,WTIMINC,CICE_TIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.GE.1)) THEN
+            READ(WSMSG2,*) NWLAT,NWLON,WLATMAX,WLONMIN,WLATINC,
+     &           WLONINC,WTIMINC,RSTIMINC,CICE_TIMINC
          ENDIF
       ENDIF
 C
@@ -574,33 +598,54 @@ C     jgf46.16 Merged:
 C     cf & cm Added NWS=9: asymmetric hurricane wind model
 C     rjw Added NWS=19: asymmetric hurricane wind model v2.0
 C     sb46.28sb01 added NWS=12: OWI format
-      IF((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.5)
+C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
+      IF(ABS(NWS).EQ.2) THEN
+         IF(NRS.EQ.0) READ(WSMSG1,*) WTIMINC
+         IF(NRS.GE.1) READ(WSMSG1,*) WTIMINC,RSTIMINC ! sb46.28sb03
+      ENDIF
+      IF((ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8).OR.
      &         (ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)
      &     .OR.(ABS(NWS).EQ.19)) THEN
          READ(15,80) WSMSG1
-         IF(NRS.EQ.0) READ(WSMSG1,*) WTIMINC
-Casey 090825: Fix for NRS = 3.
-C        IF(NRS.GE.1) READ(WSMSG1,*) WTIMINC,RSTIMINC ! sb46.28sb03
-         IF((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4))
-     &                  READ(WSMSG1,*) WTIMINC,RSTIMINC ! tcm v49.46 added nrs=4
-         IF(NRS.EQ.3)THEN
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(WSMSG1,*) WTIMINC
+         IF((NCICE.EQ.0).AND.
+     &   ((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4))) READ(WSMSG1,*) WTIMINC,RSTIMINC
+         IF((NCICE.EQ.0).AND.(NRS.EQ.3)) THEN  !Casey 090825: Fix for NRS = 3.
             IF(ABS(NWS).EQ.8)THEN
                READ(WSMSG1,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,RSTIMINC
             ELSE
                READ(WSMSG1,*) WTIMINC,RSTIMINC
             ENDIF
          ENDIF
+         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(WSMSG1,*) WTIMINC,CICE_TIMINC
+         IF((NCICE.GE.1).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
+     &                       READ(WSMSG1,*) WTIMINC,RSTIMINC,CICE_TIMINC
+         IF((NCICE.GE.1).AND.(NRS.EQ.3)) THEN  !Casey 090825: Fix for NRS = 3.
+            IF(ABS(NWS).EQ.8)THEN
+               READ(WSMSG1,*) IDUM,IDUM,IDUM,IDUM,IDUM,
+     &                        RDUM,RSTIMINC,CICE_TIMINC
+            ELSE
+               READ(WSMSG1,*) WTIMINC,RSTIMINC,CICE_TIMINC
+            ENDIF
+         ENDIF
       ENDIF
 C
       IF(ABS(NWS).EQ.6) THEN
          READ(15,80) WSMSG1
-         IF(NRS.EQ.0) THEN
+C..... tcm v49.64.01 additions for ICE
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
             READ(WSMSG1,*) NWLAT,NWLON,WLATMAX,WLONMIN,WLATINC,
      &           WLONINC,WTIMINC
-         ELSE
+         ELSEIF ((NCICE.EQ.0).AND.(NRS.GE.1)) THEN
             READ(WSMSG1,*) NWLAT,NWLON,WLATMAX,WLONMIN,WLATINC,
      &           WLONINC,WTIMINC,RSTIMINC
+         ELSEIF((NCICE.GE.1).AND.(NRS.EQ.0)) THEN
+            READ(WSMSG1,*) NWLAT,NWLON,WLATMAX,WLONMIN,WLATINC,
+     &           WLONINC,WTIMINC,CICE_TIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.GE.1)) THEN
+            READ(WSMSG1,*) NWLAT,NWLON,WLATMAX,WLONMIN,WLATINC,
+     &           WLONINC,WTIMINC,RSTIMINC,CICE_TIMINC
          ENDIF
       ENDIF
 C

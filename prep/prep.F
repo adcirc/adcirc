@@ -1272,6 +1272,7 @@ C        jgf47.11 Added writing of limits for time varying tau0
          WRITE(15,80) STATMSG
          WRITE(15,80) REFTMSG
 
+!       tcm v49.64.01 No changes needed here for the use of ICE
          IF((NWS.EQ.0).AND.(NRS.GE.1)) WRITE(15,80) RSTIMMSG  ! sb46.28sb03
          IF((NWS.EQ.1).AND.(NRS.GE.1)) WRITE(15,80) RSTIMMSG  ! sb46.28sb03
 C     jgfdebug46.02 Added check for NWS=45.

@@ -217,7 +217,9 @@ C
       INTEGER IGC  ! 3DVS vertical grid code
       INTEGER NFEN ! 3DVS number of nodes in the vertical grid
       INTEGER NRS
+      INTEGER NCICE !tcm v49.64.01 -- added for ice
       REAL(8) RSTIMINC,DT,STATIM,REFTIM,WTIMINC
+      REAL(8) CICE_TIMINC !tcm v49.64.01 -- added for ice
       REAL(SZ) GRAVITY,TAU0,RDUM,A00,B00,C00,THAS,THAF,FMV
       INTEGER IEVC,I3DSD,I3DSV,I3DST
       CHARACTER*95 LINEI
@@ -545,6 +547,7 @@ C
       MNWP=1
 C
       NRS=0
+      NCICE=0   !tcm v49.64.01 -- added for ice
 !       IF(ABS(NWS/100).EQ.1) THEN ! sb46.28sb03
 !          NRS=1
 !          NWS=(ABS(NWS)-100)*(NWS/ABS(NWS))
@@ -560,12 +563,15 @@ C
 !          NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
 !       ENDIF
 c. tcm v49.46 unified the special cases above
+C.....tcm v49.64.01 Additions for ice
       IF(NWS.EQ.0) THEN
          NWS = 0
          NRS = 0
+         NCICE = 0
       ELSE
-         NRS=ABS(NWS/100)
-         NWS=(ABS(NWS)-NRS*100)*(NWS/ABS(NWS))
+         NCICE = INT(ABS(NWS)/1000)
+         NRS=INT((ABS(NWS) - NCICE*1000)/100)
+         NWS=INT((ABS(NWS)- NCICE*1000 - NRS*100))*INT(NWS/ABS(NWS))
       ENDIF
 
       IF((NWS.EQ.0).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03
@@ -576,19 +582,36 @@ C     jgf46.16 merged:
 C     cf & cm added NWS=9: asymmetric hurricane wind model
 C     rjw added NWS=19: asymmetric hurricane wind model v2.0
 C     sb46.28sb01 added NWS=12: OWI format
-      IF((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).eq.5)
+
+C     tcm v49.64.01 broke nws = 2 out of the group below for additions to ice
+      IF(ABS(NWS).eq.2) then
+        IF(NRS.EQ.0) READ(15,*) WTIMINC
+        IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+        MNWP=MNP
+      ENDIF
+C.... tcm v48.4641 additions for ice
+      IF((ABS(NWS).EQ.4).OR.(ABS(NWS).eq.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(NWS.EQ.8).OR.(NWS.EQ.9)
      &     .OR.(ABS(NWS).EQ.12).OR. (NWS.EQ.19)) THEN
-        IF(NRS.EQ.0) READ(15,*) WTIMINC
-Casey 090825: Fix for NRS = 3.
-C       IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
-        IF((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4))
-     &                       READ(15,*) WTIMINC,RSTIMINC ! tcm v49.46 nrs=4
-        IF(NRS.EQ.3)THEN
-           IF(ABS(NWS).EQ.8)THEN
+        IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
+        IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
+     &         READ(15,*) WTIMINC,RSTIMINC
+        IF((NCICE.EQ.0).AND.(NRS.EQ.3)) THEN  !Casey 090825: Fix for NRS = 3.
+          IF(ABS(NWS).EQ.8) THEN
               READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,RSTIMINC
            ELSE
               READ(15,*) WTIMINC,RSTIMINC
+           ENDIF
+        ENDIF
+        IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC
+        IF((NCICE.GE.1).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
+     &                READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
+        IF((NCICE.GE.1).AND.(NRS.EQ.3)) THEN  !Casey 090825: Fix for NRS = 3.
+          IF(ABS(NWS).EQ.8) THEN
+              READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,
+     &                                     RSTIMINC,CICE_TIMINC
+           ELSE
+              READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
            ENDIF
         ENDIF
         MNWP=MNP
@@ -599,10 +622,12 @@ C       IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
         READ(15,*) MNWLAT,MNWLON                   !SKIP THE REST OF THIS LINE
         MNWP=MNP
       ENDIF
-
+C.... tcm v49.64.01 additions for ice
       IF(ABS(NWS).EQ.6) THEN
-        IF(NRS.EQ.0) READ(15,*) WTIMINC            !SKIP OVER WTIMINC
-        IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC     !tcm v49.46 changed nrs=1 to nrs ge 1
+        IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC            !SKIP OVER WTIMINC
+        IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC
+        IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC            !SKIP OVER WTIMINC
+        IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
         MNWP=MNP
       ENDIF
 
@@ -849,12 +874,14 @@ C
       IF(ABS(NWS).EQ.5) WRITE(*,3016)
       IF(ABS(NWS).EQ.6) WRITE(*,3017)
       IF(ABS(NWS).EQ.8) WRITE(*,3217)
+      IF(ABS(NWS).EQ.9) WRITE(*,3218)  ! tcm v49.64.01
       IF(NRS.GE.1) WRITE(*,3018) ! sb46.28sb03
       IF(NWS.EQ.10) WRITE(*,3019)
       IF(NWS.EQ.11) WRITE(*,3020)
 C     sb46.28sb01 added NWS=12: OWI format
       IF(ABS(NWS).EQ.12) WRITE(*,3023)
       IF(ABS(NWS).EQ.19) WRITE(*,3219)
+      IF(NCICE.GE.1) WRITE(*,3220)  !tcm v49.64.01
       IF((NHARF.EQ.0).OR.(FMV.EQ.0.)) WRITE(*,3021)
       IF((NHARF.GE.1).AND.(FMV.NE.0.)) WRITE(*,3022)
       IF(ILUMP.EQ.0) WRITE(*,3031)
@@ -893,9 +920,11 @@ C
  3015 FORMAT(' *   Also, NWS=+-4 meteorological forcing is used,   *')
  3016 FORMAT(' *   Also, NWS=+-5 meteorological forcing is used,   *')
  3017 FORMAT(' *   Also, NWS=+-6 meteorological forcing is used,   *') 
- 3217 FORMAT(' *   Also, NWS=+-8 Holland wind forcing is used,     *') 
+ 3217 FORMAT(' *   Also, NWS=+-8 Holland wind forcing is used,     *')
+ 3218 FORMAT(' *   Also, NWS=+-9 Holland wind forcing is used,     *') 
  3219 FORMAT(' *   Also, NWS=+-19 Asymmetric Holland wind v2.0     *',/,
-     &       ' *                 forcing is used,                  *') 
+     &       ' *                 forcing is used,                  *')
+ 3220 FORMAT(' *   Also, ABS(NWS)>=1000 ice concentration are used,*') 
  3018 FORMAT(' *   Also, ABS(NWS)>=100 wave stress forcing is used,*')
  3019 FORMAT(' *   Also, AVN wind & pressure forcing will be used, *')
  3020 FORMAT(' *   Also, ETA wind & pressure forcing will be used, *')

@@ -53,6 +53,7 @@ C----------------------------------------------------------------------
       REAL(SZ) H2, H2N1, H2N2, H2N3
       REAL(SZ) U11, U22, U33
       REAL(SZ) V11, V22, V33
+      REAL(SZ) CIC11,CIC22,CIC33  ! v49.64.01 tcm -- added for ice
 C     
       type(OutputDataDescript_t), SAVE :: ElevStaDescript
       type(OutputDataDescript_t), SAVE :: VelStaDescript
@@ -65,6 +66,8 @@ C
       type(OutputDataDescript_t), SAVE :: WindVelDescript
       type(OutputDataDescript_t), SAVE :: ConcStaDescript
       type(OutputDataDescript_t), SAVE :: ConcDescript
+      type(OutputDataDescript_t), SAVE :: IceDescript    !tcm v49.64.01 added for ice
+      type(OutputDataDescript_t), SAVE :: IceStaDescript !tcm v49.64.01 added for ice stations
       type(OutputDataDescript_t), SAVE :: EtaMaxDescript
       type(OutputDataDescript_t), SAVE :: UMaxDescript
       type(OutputDataDescript_t), SAVE :: WVMaxDescript
@@ -88,6 +91,8 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNXOut_g(:)     
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNYOut_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CC00_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CICEOut_g(:)  !tcm v49.64.01 added for ice
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMICE00_g(:)  !tcm v49.64.01 added for ice
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETAMAX_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UMAX_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: PRMIN_g(:)
@@ -300,6 +305,48 @@ C         write(16,*) 'Allocating WindVelDescript' !jgfdebug48.03
          WindVelDescript % ConsiderWetDry       = .FALSE.
          WindVelDescript % alternate_value      = 0.0
          WindVelDescript % field_name           = 'WindVel'
+
+         ! fort.93
+C         write(16,*) 'Allocating IceDescript' !tcm v49.64.01 added for ice
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(CICEOUT_g(NP_G))
+         ENDIF
+         IceDescript % specifier            = NOUTGW
+         IceDescript % initial_value        = 0.0
+         IceDescript % num_items_per_record = 1
+         IceDescript % num_fd_records       = NP_G
+         IceDescript % num_records_this     = NP
+         IceDescript % imap                 => NODES_LG
+         IceDescript % array                => CICEOUT
+         IceDescript % array_g              => CICEOUT_g
+         IceDescript % ConsiderWetDry       = .FALSE.
+         IceDescript % alternate_value      = 0.0
+         IceDescript % field_name           = 'Ice'
+
+C... v49.64.01 tcm -- added for ice stations
+         ! fort.91
+C         write(16,*) 'Allocating IceStaDescript'
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(RMICE00_g(NSTAM_G))
+         ENDIF
+         IceStaDescript % specifier            = NOUTM
+         IceStaDescript % initial_value        = 0.0
+         IceStaDescript % num_items_per_record = 1
+         IceStaDescript % num_fd_records       = NSTAM_G
+         IceStaDescript % num_records_this     = NSTAM
+         IceStaDescript % imap                 => IMAP_STAM_LG
+         IceStaDescript % array                => RMICE00
+         IceStaDescript % array_g              => RMICE00_g
+         IceStaDescript % ConsiderWetDry       = .FALSE.
+         IceStaDescript % alternate_value      = 0.0
+         IceStaDescript % field_name           = 'IceSta'
+         IF (ICS.eq.2) THEN
+            IceStaDescript % x_coord           => SLEM
+            IceStaDescript % y_coord           => SFEM
+         ELSE 
+            IceStaDescript % x_coord           => XEM
+            IceStaDescript % y_coord           => YEM
+         ENDIF
 
 #ifdef CSWAN
 Casey 090302: Copied these lines for the rads.64 file.
@@ -609,6 +656,20 @@ C            write(16,*) 'About to write fort.71,72 files.' !jgfdebug48.03
                RMV00(I)=V11*STAIM1(I)+V22*STAIM2(I)+V33*STAIM3(I)
                RMP00(I)=P11*STAIM1(I)+P22*STAIM2(I)+P33*STAIM3(I)
             END DO
+C... v49.64.01 tcm -- added support for ice station output
+C           IF using ICE fields, collect ice station data fort.91  
+            IF (NCICE.NE.0) THEN
+               DO I = 1,NSTAM
+                  NM1=NM(NNM(I),1)
+                  NM2=NM(NNM(I),2)
+                  NM3=NM(NNM(I),3)
+                  CIC11 = CICEOUT(NM1)
+                  CIC22 = CICEOUT(NM2)
+                  CIC33 = CICEOUT(NM3)
+                  RMICE00(I) = CIC11*STAIM1(I) + 
+     &                         CIC22*STAIM2(I)+CIC33*STAIM3(I)
+               END DO
+            ENDIF
 C
 C           save atmospheric pressure recording station data to file
 Casey 090302: Added file name.
@@ -621,6 +682,14 @@ Casey 090302: Added file name.
             CALL writeOutArray(72, TIME, IT, WindVelStaDescript,
      &                         packTwo, unpackTwo, IWSTP,
      &                         'fort.72        ')
+c  V49.64.01 TCM -- ADDED ICE STATIONS
+C           save ice field recording station data to file 
+            IF(NCICE.NE.0) THEN
+               CALL writeOutArray(91, TIME, IT, IceStaDescript,
+     &                         packOne, unpackOne, IICESTP,
+     &                         'fort.91        ')
+            ENDIF 
+
             NSCOUM=0
             NCCOUM=NSCOUM
          ENDIF
@@ -767,6 +836,14 @@ Casey 090302: Added file name.
                CALL writeOutArray(74, TIME, IT, WindVelDescript,
      &                            packTwo, unpackTwo, IGWP,
      &                            'fort.74        ')
+               IF (NCICE.NE.0) THEN
+C TCM V49.64.01 -- ADDED ICE SUPPORT 
+C           save global ICE data to file
+                  CALL writeOutArray(93, TIME, IT, IceDescript,
+     &                         packOne, unpackOne, IGIP,
+     &                         'fort.93        ') 
+               ENDIF
+
 #ifdef CSWAN
 Casey 090302: Added these lines for output of radiation stresses.
                CALL writeOutArray(164,TIME, IT, RSDescript,
@@ -797,21 +874,41 @@ C           jgf48.03 TODO: Make this globalio compliant.
 C           IF (ABS(NOUTGW).EQ.4) THEN
 #ifdef CMPI
 Casey 090302: Changed descript to WindVelDescript
-                  IF(MNWPROC.GT.0) THEN
-                    CALL WRITE_GBL_FILE_THROUGH_WRITER
+               IF(MNWPROC.GT.0) THEN
+                 CALL WRITE_GBL_FILE_THROUGH_WRITER
      $                   (TRIM(GLOBALDIR)//'/'//'fort.74',
      &                   WindVelDescript,time,it,
      $                   writer_storeTwo, 0.D0)
-                  ELSE
-                    CALL WRITE_GBL_FILE_SKIP_DEFAULT
+               ELSE
+                 CALL WRITE_GBL_FILE_SKIP_DEFAULT
      $                   (74, TRIM(GLOBALDIR)//'/'//'fort.74',
      $                   WindVelDescript, time, it, storeTwo,0.d0)
-                  ENDIF
+               ENDIF
 #else
-                  CALL WRITE_GBL_FILE_SKIP_DEFAULT
+               CALL WRITE_GBL_FILE_SKIP_DEFAULT
      $              (74, TRIM(GLOBALDIR)//'/'//'fort.74',
      $              WindVelDescript, time, it, storeTwo,0.d0)
 #endif
+
+C  ! tcm v49.64.01 ADDED for ICE
+C           jgf48.03 TODO: Make this globalio compliant.
+               IF (NCICE.NE.0) THEN
+#ifdef CMPI
+                  IF(MNWPROC.GT.0) THEN
+                    CALL WRITE_GBL_FILE_THROUGH_WRITER
+     $                (TRIM(GLOBALDIR)//'/'//'fort.93',
+     $                IceDescript,time,it,writer_storeOne, 0.D0)
+                  ELSE
+                     CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     $                 (93, TRIM(GLOBALDIR)//'/'//'fort.93',
+     $                 IceDescript, time, it, storeOne,0.d0)
+                  ENDIF
+#else
+                  CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     $               (93, TRIM(GLOBALDIR)//'/'//'fort.93',
+     $               IceDescript, time, it, storeOne,0.d0)
+#endif
+               ENDIF
 #ifdef CSWAN
 Casey 090302: Added these lines for output of radiation stresses.
 #ifdef CMPI
@@ -925,7 +1022,7 @@ C----------------------------------------------------------------------
 C     jgf49.44: Subroutine to write harmonic analysis output files
 C     in serial or in parallel using globalio.
 C----------------------------------------------------------------------
-      SUBROUTINE writeHarmonicAnalysisOutput()
+      SUBROUTINE writeHarmonicAnalysisOutput(ITIME)
       USE SIZES, ONLY : SZ, MNHARF, LOCALDIR, GLOBALDIR, 
      &                  WRITE_LOCAL_FILES
       USE GLOBAL, ONLY : OutputDataDescript_t, myProc, MNPROC, NSTAE_G,
@@ -942,14 +1039,16 @@ C----------------------------------------------------------------------
      &    umagt, vmagt, phasedut, phasedvt, elav_g, elva_g,
      &    xvelav_g, xvelva_g, yvelav_g, yvelva_g,
      &    elav, elva, xvelav, uav, uavdif, nhase, nhasv, nhage, nhagv,
-     &    charmv, fmv, eav, esq, eavdif, evadif, iharind, 
+     &    charmv, fmv, eav, esq, eavdif, evadif, iharind, ITHAS,
      &    xvelva, usq, uvadif, yvelav, vav, vavdif, yvelva, vsq, vvadif
+
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini, msg_lbcast
 #endif
 
       IMPLICIT NONE 
       INTEGER I, J, N                      !local loop counters
+      INTEGER, intent(in) :: ITIME  !tcm v49.64.02 added
 C     
       type(OutputDataDescript_t), SAVE :: HAElevStaMagDescript
       type(OutputDataDescript_t), SAVE :: HAElevStaPhaseDescript
@@ -1008,7 +1107,9 @@ C
       call screen(DEBUG,"Enter.")
 #endif
       ! JUST RETURN if harmonic analysis was not specified
-      IF (IHARIND.eq.0) THEN
+      ! tcm v49.64.02 -added itime le ithas to be 
+      ! consistent with what is in solveHarmonicAnalysis
+      IF ((IHARIND.eq.0).or.(ITIME.LE.ITHAS)) THEN
 #ifdef WRITE_OUTPUT_TRACE
       call screen(DEBUG,"Return.")
 #endif
@@ -3862,6 +3963,10 @@ C
 
             WRITE(hss % lun,REC=IHOTSTP) IGPP    ; IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) IGWP    ; IHOTSTP = IHOTSTP + 1
+!         if(ncice.ne.0) then
+!           WRITE(hss % lun,REC=IHOTSTP) IGIP    ; IHOTSTP = IHOTSTP + 1
+!         endif
+!         igip is in sync. with igpp so no need to store it
             WRITE(hss % lun,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
          ENDIF
 C...

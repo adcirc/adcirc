@@ -10,6 +10,7 @@ SRCDIR?=..
 #  meb 4/20/2004
 #  vjp 9/18/2006  made mods for Robert McLay's globalio module
 #  vjp 9/19/2006  made mods for Shintaro's winds and waves
+#  tcm 03/30/2011 added owi_ice module v49.64.01
 
 ########################################################################
 #  Get Canonical Machine NAME from config.guess
@@ -239,7 +240,7 @@ CONS_MSRC  =  constants.F
 FITP_MSRC  =  fitpack.F
 VORT_MSRC  =  vortex.F
 LSQ_MSRC   =  lsq.F
-WIND_MSRC  =  wind.F owiwind.F rs2.F
+WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F
 SOLV_MSRC  =  itpackv.F
 NA_MSRC    =  nodalattr.F
 NC_MSRC    =  netcdfio.F
@@ -597,6 +598,7 @@ $(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ)
 $(O_DIR)harm.o        :  harm.F
 $(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(FITP_MOBJ)
 $(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ)
+$(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ)
 $(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ)
 $(O_DIR)itpackv.o     :  itpackv.F    $(ADC_MOBJ)
 $(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)

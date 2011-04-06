@@ -47,6 +47,7 @@ C
      &                 checkHAHotstart
       USE WIND
       USE OWIWIND,ONLY : NWS12INIT,NWS12GET   ! sb46.28sb01 added 09/xx/2006
+      USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
 C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 #ifdef NETCDF
@@ -126,6 +127,10 @@ C     in parallel.
       INTEGER subdomainElement ! subdomain element num to map fulldoman data to
       INTEGER fulldomainElement ! fulldomain element number from hotstart file
 C
+C     tcm v49.64.01 -- ADDED variables for Ice concentration fields
+      REAL(SZ) PIC,CICE_TRatio  !ICE VARIABLES
+
+
       call setMessageSource("hotstart")
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -874,6 +879,33 @@ C.............RESET INFORMATION FOR K TIME LEVEL
       ENDIF
 cjjwm001 - end add    
 
+C------------------------ICE FIELDS----------------------------------------
+C...  UPDATE THE ICE CONCENTRATION FIELDS FROM UNIT 25, 225, 227
+c...  TCM V49.64.01 ADDED THE ICE FIELDS SECTION
+C
+      IF (NCICE.EQ.12) THEN 
+          CICE_TIME1 = STATIM*86400.D0
+          CICE_TIME2 = CICE_TIME1 + CICE_TIMINC
+          ! This just initializes some variables and might set CICE,etc...
+          ! if skipping ahead is used
+          CALL NCICE1_INIT(CICE1,NP)
+          CALL NCICE1_GET(CICE1,NP)
+          CALL NCICE1_GET(CICE2,NP)
+          DO IT=1,ITHS
+             TIMEIT=IT*DTDP + STATIM*86400.D0
+             IF(TIMEIT.GT.CICE_TIME2) THEN
+                CICE_TIME1 = CICE_TIME2
+                CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
+                DO I=1,NP
+                   CICE1(I)=CICE2(I)
+                END DO
+                CALL NCICE1_GET(CICE2,NP)
+             ENDIF
+          END DO
+      ENDIF
+C
+C
+
 C------------------------MET FORCING---------------------------------------
 C
 C......RESTART WIND AND PRESSURE INFORMATION
@@ -1022,6 +1054,12 @@ C     jgf46.01 Add directional wind reduction.
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
                WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
             ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+            ENDIF
             WSX2(I)=RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I)=RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
          END DO
@@ -1064,6 +1102,12 @@ C     jgf46.01 Add directional wind reduction.
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
                WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
             ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+            ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
 C  tcm v49.16 20100617
@@ -1091,6 +1135,12 @@ C     jgf46.01 Add directional wind reduction.
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
                WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
@@ -1137,6 +1187,12 @@ C     jgf46.01 Add directional wind reduction.
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
                WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
             ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+            ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
 C  tcm v49.16 20100617
@@ -1168,6 +1224,12 @@ C     jgf46.01 Add directional wind reduction.
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
                WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
@@ -1217,6 +1279,12 @@ C     jgf46.00 Add directional wind reduction.
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
                WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
@@ -1305,6 +1373,12 @@ C     generate hurricane winds from the Holland Wind Model.
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
                WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
             ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+            ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617
@@ -1338,6 +1412,12 @@ C  tcm v49.16 20100617
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
             ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+            ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617
@@ -1370,6 +1450,12 @@ C  tcm v49.16 20100617
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
@@ -1412,6 +1498,12 @@ C     jgf46.00 Add directional wind reduction.
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
                WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
             ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
@@ -1463,6 +1555,12 @@ C     jgf46.00 Add directional wind reduction.
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
                WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
             ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+            ENDIF
             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
 C  tcm v49.16 20100617
@@ -1505,6 +1603,12 @@ C.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
                 WindMag = SQRT(WindX*WindX+WindY*WindY) 
                 WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
              ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+            ENDIF
              WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
              WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
 C  tcm v49.16 20100617
@@ -1534,6 +1638,12 @@ C  tcm v49.16 20100617
                 WindMag = SQRT(WindX*WindX+WindY*WindY) 
                 WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
              ENDIF
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+            ENDIF
              WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
              WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
 C  tcm v49.16 20100617
@@ -1851,16 +1961,31 @@ c       WRITE(81,REC=ITEMPSTP+1) NTRSPC   ! ALLOW ADDITIONAL OUTPUT DATA TO BE W
 C...
 C....GO TO THE PROPER PLACE IN THE METEOROLOGICAL STATION OUTPUT FILE
 C...
+c... v49.64.01 tcm -added support for ice stations
+      IF(NCICE.EQ.0)  THEN
+         WRITE(16,1038) IWSTP,IPSTP,NSCOUM
+      ELSE
+         IICESTP = IPSTP  !SET TO THE SAME PLACE AS THE PRESSURE FILE
+         WRITE(16,2038) IWSTP,IPSTP,IICESTP,NSCOUM
+      ENDIF
       WRITE(16,1038) IWSTP,IPSTP,NSCOUM
  1038 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE WIND STATION',
      &                ' FILE BY THE TIME OF THE HOT START',
      &        /,1X,I6,' LINES OR RECORDS WRITTIN IN THE PRES STATION',
-     &                ' FILE BY THE TMIE OF THE HOT START',
+     &                ' FILE BY THE TIME OF THE HOT START',
      &           /,8X,'SPOOL COUNTER = ',I6)
-     
+ 2038 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE WIND STATION',
+     &                ' FILE BY THE TIME OF THE HOT START',
+     &        /,1X,I6,' LINES OR RECORDS WRITTEN IN THE PRES STATION',
+     &                ' FILE BY THE TIME OF THE HOT START',
+     &        /,1X,I6,' LINES OR RECORDS WRITTEN IN THE ICE STATION',
+     &                ' FILE BY THE TIME OF THE HOT START',
+     &           /,8X,'SPOOL COUNTER = ',I6)
+C
       IF(NOUTM.LT.0) THEN
         IPSTP=0
         IWSTP=0
+        IICESTP = 0  !v49.64.01 tcm added ice station
         NSCOUM=0
         IF((NTCYSM.LT.ITHS).AND.(NSPOOLM.GT.0)) THEN
           NTCYSM=NTCYSM+((REAL(ITHS)-REAL(NTCYSM))/
@@ -1877,45 +2002,62 @@ C...
      &                      ACCESS='DIRECT',RECL=NBYTE)
         OPEN(72,FILE=TRIM(LOCALDIR)//'/'//'fort.72',
      &                      ACCESS='DIRECT',RECL=NBYTE)
+!       v49.64.01 tcm added ice station
+        IF(NCICE.NE.0) THEN
+           OPEN(91,FILE=TRIM(LOCALDIR)//'/'//'fort.91',
+     &                      ACCESS='DIRECT',RECL=NBYTE)
+        ENDIF
         IF(NBYTE.EQ.4) THEN
           DO I=1,8
             WRITE(71,REC=IPSTP+I) RDES4(I)
             WRITE(72,REC=IWSTP+I) RDES4(I)
+            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RDES4(I)
           ENDDO
           IPSTP=IPSTP+8
           IWSTP=IWSTP+8
+          IF (NCICE.NE.0) IICESTP = IICESTP+8
           DO I=1,6
             WRITE(71,REC=IPSTP+I) RID4(I)
             WRITE(72,REC=IWSTP+I) RID4(I)
+            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RID4(I)
           ENDDO
           IPSTP=IPSTP+6
           IWSTP=IWSTP+6
+          IF (NCICE.NE.0) IICESTP = IICESTP+6
           DO I=1,6
             WRITE(71,REC=IPSTP+I) AID4(I)
             WRITE(72,REC=IWSTP+I) AID4(I)
+            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) AID4(I)
           ENDDO
           IPSTP=IPSTP+6
           IWSTP=IWSTP+6
+          IF (NCICE.NE.0) IICESTP = IICESTP+6
         ENDIF
         IF(NBYTE.EQ.8) THEN
           DO I=1,4
             WRITE(71,REC=IPSTP+I) RDES8(I)
             WRITE(72,REC=IWSTP+I) RDES8(I)
+            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RDES8(I)
           ENDDO
           IPSTP=IPSTP+4
           IWSTP=IWSTP+4
+          IF (NCICE.NE.0) IICESTP = IICESTP+4
           DO I=1,3
             WRITE(71,REC=IPSTP+I) RID8(I)
-            WRITE(72,REC=IWSTP+I) RID8(I) 
+            WRITE(72,REC=IWSTP+I) RID8(I)
+            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) RID8(I)
           ENDDO
           IPSTP=IPSTP+3
           IWSTP=IWSTP+3
+          IF (NCICE.NE.0) IICESTP = IICESTP+3
           DO I=1,3
             WRITE(71,REC=IPSTP+I) AID8(I)
             WRITE(72,REC=IWSTP+I) AID8(I)
+            IF (NCICE.NE.0) WRITE(91,REC=IICESTP+I) AID8(I)
           ENDDO
           IPSTP=IPSTP+3
           IWSTP=IWSTP+3
+          IF (NCICE.NE.0) IICESTP = IICESTP+3
         ENDIF
         WRITE(71,REC=IPSTP+1) NTRSPM
         WRITE(71,REC=IPSTP+2) NSTAM
@@ -1931,6 +2073,16 @@ C...
         IWSTP=IWSTP+5
         CLOSE(71)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         CLOSE(72)
+        ! v49.64.01 tcm -- added ice stations
+        IF(NCICE.NE.0) THEN
+           WRITE(91,REC=IICESTP+1) NTRSPM
+           WRITE(91,REC=IICESTP+2) NSTAM
+           WRITE(91,REC=IICESTP+3) DT*NSPOOLM
+           WRITE(91,REC=IICESTP+4) NSPOOLM
+           WRITE(91,REC=IICESTP+5) 1
+           IICESTP = IICESTP + 5
+           CLOSE(91)
+        ENDIF
       ENDIF
       IF(NOUTM.EQ.-1) THEN
         CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71',
@@ -1939,6 +2091,12 @@ C...
         CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72',
      $    NSTAM_G, NSTAM, HEADER72)
         IWSTP=2
+!       v49.64.01 tcm added ice station support
+        IF(NCICE.NE.0) THEN
+           CALL OPEN_GBL_FILE(91, TRIM(GLOBALDIR)//'/'//'fort.91',
+     $       NSTAM_G, NSTAM, HEADER91)
+           IICESTP=2
+        ENDIF
       ENDIF
       IF(NOUTM.EQ.2) THEN
         OPEN(71,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
@@ -1949,6 +2107,12 @@ c         WRITE(71,REC=ITEMPSTP+1) NTRSPM   ! ALLOW ADDITIONAL OUTPUT DATA TO BE
 c         WRITE(72,REC=ITMEPSTP+1) NTRSPM
         CLOSE(71)                         ! DO THIS TO FLUSH THE WRITE BUFFER
         CLOSE(72)
+!       v49.64.01 tcm added ice station support
+        IF(NCICE.NE.0) THEN
+           OPEN(91,FILE=TRIM(LOCALDIR)//'/'//'fort.91',
+     &                      ACCESS='DIRECT',RECL=NBYTE)
+           CLOSE(91)
+        ENDIF
       ENDIF
 
 C...
@@ -2217,17 +2381,30 @@ c         WRITE(83,REC=ITEMPSTP+1) NDSETSC  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL METEOROLOGICAL OUTPUT FILES
 C...
-        WRITE(16,1055) IGWP,IGPP,NSCOUGW
+!       V49.64.01 TCM ADDED GLOBAL ICE CONCENTRATION FILES
+        IF(NCICE.NE.0) THEN
+           WRITE(16,2055) IGWP,IGPP,IGIP,NSCOUGW
+        ELSE
+           WRITE(16,1055) IGWP,IGPP,NSCOUGW
+        ENDIF
  1055   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'WIND FILE BY THE TIME OF THE HOT START',
      &          /,1X,I6,'LINES OR RECORDS WRITTEN IN THE GLOBAL ',
-     &                  'PRESSURE FILE BY THE TIME OF THE HOT START',   
+     &                  'PRESSURE FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I6)
-     
+ 2055   FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
+     &                  'WIND FILE BY THE TIME OF THE HOT START',
+     &          /,1X,I6,'LINES OR RECORDS WRITTEN IN THE GLOBAL ',
+     &                  'PRESSURE FILE BY THE TIME OF THE HOT START',   
+     &          /,1X,I6,'LINES OR RECORDS WRITTEN IN THE GLOBAL ',
+     &                  'ICE FILE BY THE TIME OF THE HOT START',
+     &          /,8X,'SPOOL COUNTER =',I6)
+c
         IF(NOUTGW.LT.0) THEN
           IGPP=0
           IGWP=0
           NSCOUGW=0
+          IGIP=0
           IF((NTCYSGW.LT.ITHS).AND.(NSPOOLGW.GT.0)) THEN
             NTCYSGW=NTCYSGW+((REAL(ITHS)-REAL(NTCYSGW))/
      &              REAL(NSPOOLGW))*REAL(NSPOOLGW)
@@ -2240,8 +2417,15 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
               NDSETSW=(NTCYFGW-NTCYSGW)/NSPOOLGW
             END IF 
           ENDIF
+! TCM V49.64.01 -- ADDED ICE SUPPORT
+          IF(NCICE.NE.0) THEN
+             WRITE(16,2056)
+          ELSE
+             WRITE(16,1056)
+          ENDIF
           WRITE(16,1056)
  1056     FORMAT(//,' NEW GLOBAL WIND & pressure FILEs WILL BE STARTED')
+ 2056   FORMAT(//,' NEW GLOBAL WIND & pressure & Ice FILEs WILL BE STARTED')
         ENDIF
 
         IF(NOUTGW.EQ.-2) THEN
@@ -2249,46 +2433,63 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
      &          access='DIRECT',recl=nbyte)
           OPEN(74,FILE=TRIM(LOCALDIR)//'/'//'fort.74',
      &          ACCESS='DIRECT',RECL=NBYTE)
+! TCM V49.64.01 -- ADDED ICE SUPPORT
+          IF(NCICE.NE.0) THEN
+             OPEN(93,FILE=TRIM(LOCALDIR)//'/'//'fort.93',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+          ENDIF
           IF(NBYTE.EQ.4) THEN
             DO I=1,8
               write(73,rec=igpp+i) rdes4(i)
               WRITE(74,REC=IGWP+I) RDES4(I)
+              IF(NCICE.NE.0) write(93,rec=igip+i) rdes4(i)
               ENDDO
             igpp=igpp+8
             IGWP=IGWP+8
+            if(ncice.ne.0) igip = igip+8
             DO I=1,6
               write(73,rec=igpp+i) rid4(i)
               WRITE(74,REC=IGWP+I) RID4(I)
-              ENDDO
+              IF(NCICE.NE.0) write(93,rec=igip+i) rid4(i)
+            ENDDO
             igpp=igpp+6
             IGWP=IGWP+6
+            if(ncice.ne.0) igip = igip+6
             DO I=1,6
               write(73,rec=igpp+i) aid4(i)
               WRITE(74,REC=IGWP+I) AID4(I)
-              ENDDO
+              IF(NCICE.NE.0) write(93,rec=igip+i) aid4(i)
+            ENDDO
             igpp=igpp+6
             IGWP=IGWP+6
-            ENDIF
+            if(ncice.ne.0) igip = igip+6
+          ENDIF
           IF(NBYTE.EQ.8) THEN
             DO I=1,4
               write(73,rec=igpp+i) rdes8(i)
               WRITE(74,REC=IGWP+I) RDES8(I)
-              ENDDO
+              IF(NCICE.NE.0) write(93,rec=igip+i) rdes8(i)
+            ENDDO
             igpp=igpp+4
             IGWP=IGWP+4
+            if(ncice.ne.0) igip = igip+4
             DO I=1,3
               write(73,rec=igpp+i) rid8(i)
               WRITE(74,REC=IGWP+I) RID8(I)
-              ENDDO
+              IF(NCICE.NE.0) write(93,rec=igip+i) rid8(i)
+            ENDDO
             igpp=igpp+3
             IGWP=IGWP+3
+            if(ncice.ne.0) igip = igip+3
             DO I=1,3
               write(73,rec=igpp+i) aid8(i)
               WRITE(74,REC=IGWP+I) AID8(I)
-              ENDDO
+              IF(NCICE.NE.0) write(93,rec=igip+i) aid8(i)
+            ENDDO
             igpp=igpp+3
             IGWP=IGWP+3
-            ENDIF
+            if(ncice.ne.0) igip = igip+3
+          ENDIF
           WRITE(73,rec=igpp+1) ndsetsw
           WRITE(73,rec=igpp+2) np
           WRITE(73,rec=igpp+3) dt*nspoolgw
@@ -2303,6 +2504,16 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
           WRITE(74,REC=IGWP+5) 2
           IGWP=IGWP+5
           CLOSE(74)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+! TCM V49.64.01 -- ADDED ICE SUPPORT
+          IF(NCICE.NE.0) THEN
+             WRITE(93,REC=IGIP+1) NDSETSW
+             WRITE(93,REC=IGIP+2) NP
+             WRITE(93,REC=IGIP+3) DT*NSPOOLGW
+             WRITE(93,REC=IGIP+4) NSPOOLGW
+             WRITE(93,REC=IGIP+5) 2
+             IGIP=IGIP+5
+             CLOSE(93)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+          ENDIF
         ENDIF
 
 Casey 090310: Added the possibility for NOUTGW = -4.
@@ -2313,6 +2524,12 @@ Casey 090310: Added the possibility for NOUTGW = -4.
           CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
      $      NP_G, NP, HEADER74)
           IGWP=2
+! TCM V49.64.01 -- ADDED ICE SUPPORT
+          IF (NCICE.NE.0) THEN
+            CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93',
+     $        NP_G, NP, HEADER93)
+            IGIP=2
+          ENDIF
         ENDIF
 
 #ifdef CSWAN
@@ -2375,6 +2592,13 @@ c         WRITE(73,REC=ITempStp+1) ndsetsw  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
      &          ACCESS='DIRECT',RECL=NBYTE)
 c         WRITE(74,REC=ITEMPSTP+1) NDSETSW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
           CLOSE(74)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+! TCM V49.64.01 -- ADDED ICE SUPPORT
+          IF(NCICE.NE.0) THEN
+             OPEN(93,FILE=TRIM(LOCALDIR)//'/'//'fort.93',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+c         WRITE(93,REC=ITempStp+1) ndsetsw  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+             CLOSE(93)                      ! DO THIS TO FLUSH THE WRITE BUFFER
+          ENDIF
         ENDIF
 C
 C     jgf48.4635 If the maxele.63 (etc) files are present, we need to

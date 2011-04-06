@@ -1029,7 +1029,22 @@ C     rjw      Added NWS=19(asymmetric hurricane winds v2.0)
 C     sb46.28sb01 Added NWS=12 (OWI format) 09/xx/2006
 C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
 C     tcm v49.46 Added NWS = 4xx for tight coupling with STWAVE
+C     tcm v49.64.01 Added NWS = 1xxx's for ice concentration
+      NCICE = 0  !set ice type to be 0
+
       READ(15,*) NWS
+
+C.... BREAK OUT THE ICE CONCENTRATION FLAG FROM NWS/NRS
+      IF (NWS.EQ.0) THEN
+         NCICE = 0
+      ELSE
+         NCICE = INT(ABS(NWS)/1000)
+         NWS = INT(ABS(NWS)-NCICE*1000)*INT(NWS/ABS(NWS))  !RESETTING NWS/NRS
+                                                           !BY REMOVING THE 1000'S
+                                                           !PLACE FOR ICE
+      ENDIF
+
+
       IF((NWS.NE.0)    .AND.(NWS.NE.1)       .AND.(ABS(NWS).NE.2)  .AND.
      &   (NWS.NE.3)    .AND.(ABS(NWS).NE.4)  .AND.(ABS(NWS).NE.5)  .AND.
      &   (NWS.NE.6)    .AND.(NWS.NE.7)       .AND.(NWS.NE.8)       .AND.
@@ -1091,7 +1106,7 @@ C.... SET WAVE RADIATION STRESS FLAG AND ADJUST NWS ACCORDINGLY
 !          NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
 !       ENDIF
 ! #endif
-C.... tcm v49.46 rewrote to compine different 100's power NRS
+C.... tcm v49.46 rewrote to combine different 100's power NRS
       NRS = 0
       IF(NWS.EQ.0) THEN
          NWS = 0
@@ -1405,6 +1420,79 @@ C     NWS=4xx added for STWAVE tighly coupled run  (v49.46 tcm)
      &    /,9X,'STRESSES ARE COMPUTED ON THE FLY BY STWAVE COMPUTE    ',
      &    /,9X,'PROCS.')
       ENDIF
+C
+C------------------ BEGIN ICE CONCENTRATION ---------------------------C
+C
+C     TCM V49.64.01 ADDITION FOR ICE CONCENTRATION FIELDS
+
+!     TEST TO BE SURE NCICE HAS AN ALLOWABLE VALUE
+      IF((NCICE.NE.0).AND.(NCICE.NE.12)) THEN
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+            WRITE(ScreenUnit,9972)
+            WRITE(ScreenUnit,*) 'NCICE =',NCICE
+            WRITE(ScreenUnit,9812)
+            WRITE(ScreenUnit,9973)
+         ENDIF
+         WRITE(16,9972)
+         WRITE(16,*) 'NCICE =',NCICE
+         WRITE(16,9812)
+         WRITE(16,9973)
+ 9812    FORMAT(/,1X,'Your selection of NCICE (a UNIT 15 input ',
+     &        'parameter) is not an allowable value')
+#ifdef CMPI
+         call msg_fini()
+#endif
+         STOP
+      ENDIF
+C...  TCM v49.64.02 -- added
+C...  BE SURE NWS AND NCICE ARE COMPATABLE
+      IF((NCICE.GT.0).AND.
+     &       ((NWS.EQ.1).OR.(NWS.EQ.2).OR.(NWS.EQ.7))) THEN
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+            WRITE(ScreenUnit,9972)
+            WRITE(ScreenUnit,*) 'NCICE =',NCICE
+            WRITE(ScreenUnit,*) 'NWS =',NWS
+            WRITE(ScreenUnit,9813)
+            WRITE(ScreenUnit,9973)
+         ENDIF
+         WRITE(16,9972)
+         WRITE(16,*) 'NCICE =',NCICE
+         WRITE(16,*) 'NWS =',NWS
+         WRITE(16,9813)
+         WRITE(16,9973)
+ 9813    FORMAT(/,1X,'Your selection of NCICE (a UNIT 15 input ',
+     &    'parameter) is not compatable',
+     &    /,1x,'with your NWS value. ',
+     &    'NCICE is not allowed for use with abs(NWS)=1,2, or 7.')
+
+#ifdef CMPI
+         call msg_fini()
+#endif
+         STOP
+      ENDIF
+
+      IF(NCICE.EQ.0) THEN
+         WRITE(16,3294) NCICE
+ 3294    FORMAT(/,5X,'NCICE = ',I2,
+     &        /,9X,'ICE CONCENTRATION FIELDS ARE NOT USED TO ',
+     &        'ADJUST WIND STRESS COMPUTATIONS')
+      ENDIF
+      IF(NCICE.EQ.12) THEN
+         WRITE(16,3295) NCICE
+ 3295    FORMAT(/,5X,'NCICE = ',I2,
+     &    /,9X,'ICE CONCENTRATION FIELDS ARE USED TO ',
+     &        'ADJUST WIND STRESS COMPUTATIONS'
+     &    /,9X,'ICE CONCENTRATION FIELDS ARE READ FROM RAW ',
+     &    /,9X,'OWI DATA FILES (UNIT 225).',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE ICE DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.',
+     &    /,9X,'FOR A COLD START, THE UNIT 225 FILE BEGINS AT THE TIME ',
+     &    /,9X,'OF THE COLD START.  FOR A HOT START, THE UNIT 225 FILE ',
+     &    /,9X,'BEGINS AT THE TIME OF THE HOT START.')
+      ENDIF
+C
+C------------------ END ICE CONCENTRATION ------------------------------C
+C
 
 C...  
 C...  READ AND PROCESS NRAMP - WHETHER A RAMP FUNCTION WILL BE USED
@@ -1551,24 +1639,40 @@ C...
      &        I2,'/',I2,'/',I2,'  ',I2,':',I2,':',f7.4,/)
          CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN,REFSEC,
      &        WREFTIM, MyProc, NScreen, ScreenUnit)
-         IF(NRS.EQ.0) READ(15,*) NWLAT,NWLON,WLATMAX,WLONMIN,WLATINC,
-     &        WLONINC,WTIMINC
-         IF(NRS.GE.1) READ(15,*) NWLAT,NWLON,WLATMAX,WLONMIN,WLATINC,  ! sb46.28sb03
-     &        WLONINC,WTIMINC,RSTIMINC
+C...     TCM V49.64.01 CHANGES FOR ICE CONCENTRATION
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) NWLAT,NWLON,WLATMAX,
+     &        WLONMIN,WLATINC,WLONINC,WTIMINC
+         IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) NWLAT,NWLON,WLATMAX,  ! sb46.28sb03
+     &        WLONMIN,WLATINC,WLONINC,WTIMINC,RSTIMINC
+         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) NWLAT,NWLON,WLATMAX,
+     &        WLONMIN,WLATINC,WLONINC,WTIMINC,CICE_TIMINC
+         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) NWLAT,NWLON,WLATMAX,  ! sb46.28sb03
+     &        WLONMIN,WLATINC,WLONINC,WTIMINC,RSTIMINC,CICE_TIMINC
       ENDIF
       IF(ABS(NWS).EQ.4) THEN
-         IF(NRS.EQ.0) READ(15,*) WTIMINC
-         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
+         IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC
+         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
       ENDIF
       IF(ABS(NWS).EQ.5) THEN
-         IF(NRS.EQ.0) READ(15,*) WTIMINC
-         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
+         IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,CICE_TIMINC
+         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,CICE_TIMINC
       ENDIF
       IF(NWS.EQ.6) THEN
-         IF(NRS.EQ.0) READ(15,*) NWLAT,NWLON,WLATMAX,WLONMIN,WLATINC,
-     &        WLONINC,WTIMINC
-         IF(NRS.GE.1) READ(15,*) NWLAT,NWLON,WLATMAX,WLONMIN,WLATINC, ! sb46.28sb03
-     &        WLONINC,WTIMINC,RSTIMINC
+C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) NWLAT,NWLON,WLATMAX,
+     &        WLONMIN,WLATINC,WLONINC,WTIMINC
+         IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) NWLAT,NWLON,WLATMAX, ! sb46.28sb03
+     &        WLONMIN,WLATINC,WLONINC,WTIMINC,RSTIMINC
+         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) NWLAT,NWLON,WLATMAX,
+     &        WLONMIN,WLATINC,WLONINC,WTIMINC,CICE_TIMINC
+         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) NWLAT,NWLON,WLATMAX, ! sb46.28sb03
+     &        WLONMIN,WLATINC,WLONINC,WTIMINC,RSTIMINC,CICE_TIMINC
       ENDIF
 C     jgf46.00 Added NWS=7 (direct surface stress).
       IF(ABS(NWS).EQ.7) THEN
@@ -1579,56 +1683,90 @@ C     jgf46.05 Added NWS=8 (Holland Wind Model).
 C     jgf46.28 Changed WTIMINC to StormNumber for activating 
 C     wind multiplier to final wind speeds from Holland model.
       IF(ABS(NWS).EQ.8) THEN
-         IF(NRS.EQ.0) THEN
+C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION AND FIXED BUG
+C...     WHERE NRS=2, NRS=4 WERE NOT BEING INCLUDED
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj
-Casey 090302: Added possibility for SWAN coupling.
-         ELSEIF (NRS.EQ.1 .OR. NRS.EQ.3) THEN
+         ELSEIF ((NCICE.EQ.0).AND.(NRS.GE.1)) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
      &           RSTIMINC
-            WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
- 6111       FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
-     &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
+         ELSEIF ((NCICE.GE.1).AND.(NRS.EQ.0)) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &           CICE_TIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.GE.1)) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &           RSTIMINC,CICE_TIMINC
          ENDIF
+         WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
+ 6111    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
+     &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
          CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
      &        WindRefTime, MyProc, NScreen, ScreenUnit)
       ENDIF
 C     jgf46.16 Merged:
 C     cf & cm added nws = 9: asymmetric hurricane winds
       IF(ABS(NWS).EQ.9) THEN
-         IF(NRS.EQ.0) READ(15,*) WTIMINC
-         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
+         IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,
+     &                                                CICE_TIMINC
+         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,
+     &                                                CICE_TIMINC
          WRITE(16,1117) WTIMINC
       ENDIF
       IF(NWS.EQ.10) THEN
          NWLAT=190
          NWLON=384
-         IF(NRS.EQ.0) READ(15,*) WTIMINC
-         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
+         IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,
+     &                                                 CICE_TIMINC
+         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC, ! sb46.28sb03
+     &                                                 CICE_TIMINC
       ENDIF
       IF(NWS.EQ.11) THEN
          NWLAT=271
          NWLON=181
          WTIMINC=10800.
-         IF(NRS.GE.1) READ(15,*) RSTIMINC ! sb46.28sb03
+C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
+         IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) RSTIMINC
+         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) CICE_TIMINC
+         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) RSTIMINC,
+     &                                                 CICE_TIMINC
          !READ(15,*) NWLAT,NWLON,WTIMINC
       ENDIF
 C     sb46.28sb01 Added NWS=12 (OWI format)      
       IF(ABS(NWS).EQ.12) THEN
-         IF(NRS.EQ.0) READ(15,*) WTIMINC
-         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
+         IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,
+     &                                                 CICE_TIMINC
+         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC, ! sb46.28sb03
+     &                                                 CICE_TIMINC
       ENDIF
 C     rjw added nws = 19: asymmetric hurricane winds
       IF(ABS(NWS).EQ.19) THEN
-         IF(NRS.EQ.0) THEN
+C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj
-         ELSEIF (NRS.GE.1) THEN
+         ELSEIF ((NCICE.EQ.0).AND.(NRS.GE.1)) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
      &           RSTIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.EQ.0)) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &           CICE_TIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.GE.1)) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &           RSTIMINC,CICE_TIMINC
+         ELSE
+         ENDIF
 C LETS not use this now but have the option to i nthe future
 c            WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
 c 6112       FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
 c     &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
-         ENDIF
 c         CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
 c     &        WindRefTime, MyProc, NScreen, ScreenUnit)
       ENDIF
@@ -1637,7 +1775,10 @@ c     &        WindRefTime, MyProc, NScreen, ScreenUnit)
  1117 FORMAT(5X,'WIND TIME INCREMENT (SEC) = ',F10.2,/)
       IF(NRS.NE.0) WRITE(16,1118) RSTIMINC
  1118 FORMAT(5X,'RADIATION STRESS TIME INCREMENT (SEC) = ',F10.2,/)
-
+C... TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
+      IF(NCICE.NE.0) WRITE(16,1119) CICE_TIMINC
+ 1119 FORMAT(5X,'ICE CONCENTRATION FIELD TIME INCREMENT (SEC) = ',
+     &         F10.2,/)
 C...
 C...  READ AND PROCESS RNDAY - SIMULATION DURATION IN DAYS
 C...

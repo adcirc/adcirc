@@ -1361,6 +1361,49 @@ C! CMPI
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
+      ! S U B R O U T I N E   H E A D E R 9 1
+      !--------------------------------------------------------------
+      ! Ice Concentration for Meteorological Recording station: fort.91
+      ! tcm v49.64.01 -- added
+      !--------------------------------------------------------------
+      subroutine header91(lun, size_this)
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1, 
+     &                 FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+     &       'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header91
+      !--------------------------------------------------------------
+
+      !--------------------------------------------------------------
+      ! S U B R O U T I N E   H E A D E R 9 3
+      !--------------------------------------------------------------
+      ! Ice Concentration Field for all nodes: fort.93
+      ! tcm v49.64.01 -- added
+      !--------------------------------------------------------------
+      subroutine header93(lun, size_this)
+      implicit none
+      integer :: lun, size_this
+
+      write(lun, 1000) rundes, runid, agrid
+      write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 1,
+     &                 FileFmtVersion
+
+ 1000 FORMAT(1X,A32,2X,A24,2X,A24)
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+     &       'FileFmtVersion: ',I10)
+      !--------------------------------------------------------------
+      end subroutine header93
+      !--------------------------------------------------------------
+
+
+      !--------------------------------------------------------------
       ! S U B R O U T I N E   H E A D E R 8 1
       !--------------------------------------------------------------
       ! Concentration Recording station: fort.81

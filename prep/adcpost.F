@@ -125,8 +125,10 @@ C
             print*,'53 Harm. Global  Elevation  63 Global  Elevation'
             print*,'54 Harm. Global  Velocity   64 Global  Velocity'
             print*,''
-            print*,'73 Atmospheric Pressure'
-            print*,'74 Wind Velocity'
+            print*,'71 Station Atm. Pres.       73 Global Atm. Pres.'
+            print*,'72 Station Wind Vel.        74 Global Wind Vel.'
+            print*,''
+            print*,'91 Ice Conc. Station      93 Global Ice Conc.'
             print*,''
             print*,'                 3D output files'
             print*,''
@@ -228,6 +230,23 @@ C
             ENDIF
          endif
 C     
+C
+!         if ((UNIT == 100) .or. (UNIT == 91)) then
+         IF (UNIT == 91) THEN
+            IF (NOUTM.NE.0) THEN
+               print *, "Post-Processing Unit 91"
+               CALL POST91()
+            ENDIF
+         endif
+C
+!         if ((UNIT == 100) .or. (UNIT == 93)) then
+         IF (UNIT == 93) THEN
+            IF (NOUTGW.NE.0) THEN
+               print *, "Post-Processing Unit 93"
+               CALL POST93()
+            ENDIF
+         endif
+
 C ***POST PROCESSING FOR 3D FILES***
 C
          if ((UNIT == 100) .or. (UNIT == 41)) then

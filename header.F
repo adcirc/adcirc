@@ -3,6 +3,22 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.66   - 04/06/2011 - tcm - merged ice coverage into the trunk from 
+C             branch versions v49.64.01 through v49.64.01.
+C  v49.64.02- 04/01/2011 - tcm - Fixed bug in Harmonic Analysis output when
+C             output was called to be generated but the model never reached
+C             the time interval between THAS and THAF during which the data
+C             is to be created.  Added a test for NWS and NCICE 
+C             compatability.  Included Ice support in the init_cond.F file.
+C  v49.64.01- 03/31/2011 - tcm - Added ice field data for use in modifying
+C             wind drag coefficients (Enabled by setting NWS >= 1000
+C             uses files (fort.25 all ice types, fort.225 and fort.227 
+C             only for ice types (NCICE) = 12 ). Added writing of global and
+C             station ice concentration files (fort.93 and fort.91).
+C             Added a cubic drag coefficient function based on ice 
+C             concentration levels and the typical Garratt wind speed
+C             computations.  Ice concentration files are only written
+C             when met. files are written.
 C  v49.65   - 04/06/2011 - tcm - Fixed typo bug in transport.F.
 C  v49.64   - 04/06/2011 - rjw - Modified 3D code to allow user to select 
 C             standard Mellor-Yamada 2.5 closure (IVEC=50), or modified 
