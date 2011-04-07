@@ -2450,7 +2450,7 @@ C...
  2092       FORMAT(/,10X,' NODE ',5X,'NODAL CORIOLIS CORIF',/)
             DO I=1,NP
                WRITE(16,2096) I,CORIF(I)
- 2096          FORMAT(7X,I6,10X,E15.9)
+ 2096          FORMAT(7X,I6,10X,E16.9)
             END DO
          ENDIF
       ENDIF
@@ -2517,7 +2517,7 @@ C...
       DO I=1,NTIF
          WRITE(16,2107) TPK(I),AMIGT(I),ETRF(I),FFT(I),FACET(I),
      &        TIPOTAG(I)
- 2107    FORMAT(1X,F9.7,1X,F15.12,2X,F10.7,5X,F10.7,1X,F10.3,7X,A5)
+ 2107    FORMAT(1X,F10.7,1X,F15.12,2X,F10.7,5X,F10.7,1X,F10.3,7X,A5)
       END DO
 C...
 C...  CONVERT FACET(I) VALUES FROM DEGREES TO RADIANS
@@ -5326,7 +5326,7 @@ C...  READ IN THE TYPE OF BOTTOM BOUNDARY CONDITION AND THE SLIP COEFFICIENTS
 
       READ(15,*) ISlip,KP
       WRITE(16,355) ISlip,KP
- 355  FORMAT(/,5X,'ISlip = ',I3,' KP = ',E10.5)
+ 355  FORMAT(/,5X,'ISlip = ',I3,' KP = ',E12.5)
       IF((ISlip.LT.0).OR.(ISlip.GT.3)) THEN
         IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
           WRITE(ScreenUnit,350)
@@ -5347,15 +5347,15 @@ C     Made Z0B bottom roughness a nodal attribute read in from fort.13 file if d
 C
       READ(15,*) Z0S, Z0B
       WRITE(16,380) Z0S,Z0B
- 380  FORMAT(/,5X,'Z0S = ',E10.5,' Z0B = ',E10.5)
+ 380  FORMAT(/,5X,'Z0S = ',E12.5,' Z0B = ',E12.5)
 
 
 C...  READ IN THE TIME STEPPING COEFFICIENTS AND COMPUTE ASSOCIATED VARIABLES
 
       READ(15,*) Alp1,Alp2,Alp3
       WRITE(16,390) Alp1,Alp2,Alp3
- 390  FORMAT(/,5X,'3D TIME STEPPING COEFFS Alp1 = ',E8.2,' Alp2 = ',
-     &     E8.2,' Alp3 = ',E8.2)
+ 390  FORMAT(/,5X,'3D TIME STEPPING COEFFS Alp1 = ',E9.2,' Alp2 = ',
+     &     E9.2,' Alp3 = ',E9.2)
 
       IDTAlp1 = iy*DelT*Alp1
       IDT1MAlp1 = iy*DelT*(1.-Alp1)
@@ -5742,28 +5742,28 @@ C                 salinity and temperature forcings.
              READ(15,*) BCSTATIM
              WRITE(16,430) RBCTIMEINC
  430         FORMAT(/,5X,'Read in elevation boundary conditions
-     &                every', E8.2 ,'seconds')
+     &                every', E9.2 ,'seconds')
          ELSE IF ((ABS(RES_BC_FLAG).EQ.2)) THEN
              READ(15,*) RBCTIMEINC, SBCTIMEINC
              READ(15,*) BCSTATIM, SBCSTATIM
              WRITE(16,431) RBCTIMEINC, SBCTIMEINC
  431         FORMAT(/,5X,'Read in elevation boundary conditions
-     &                every', E8.2 ,'seconds and salinity
-     &                boundary conditions every', E8.2,
+     &                every', E9.2 ,'seconds and salinity
+     &                boundary conditions every', E9.2,
      &                'seconds')
          ELSE IF ((ABS(RES_BC_FLAG).EQ.3)) THEN
              READ(15,*) RBCTIMEINC, TBCTIMEINC
              READ(15,*) BCSTATIM, TBCSTATIM
              WRITE(16,432) RBCTIMEINC, TBCTIMEINC
  432         FORMAT(/,5X,'Read in elevation boundary conditions
-     &                every', E8.2 ,'seconds and temperature
-     &                boundary conditions every', E8.2,
+     &                every', E9.2 ,'seconds and temperature
+     &                boundary conditions every', E9.2,
      &                'seconds')
              IF (BCFLAG_TEMP.NE.0) THEN
                  READ(15,*) TTBCTIMEINC, TTBCSTATIM
                  WRITE(16,434) TTBCTIMEINC
  434             FORMAT(/,5X,'Read in the top temperature
-     &                   boundary condition every', E8.2 ,'
+     &                   boundary condition every', E9.2 ,'
      &                   seconds.')
              END IF
          ELSE IF ((ABS(RES_BC_FLAG).EQ.4)) THEN
@@ -5771,10 +5771,10 @@ C                 salinity and temperature forcings.
              READ(15,*) BCSTATIM, SBCSTATIM, TBCSTATIM
              WRITE(16,433) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
  433         FORMAT(/,5X,'Read in elevation boundary conditions
-     &                every', E8.2 ,'seconds and salinity
-     &                boundary conditions every', E8.2,
+     &                every', E9.2 ,'seconds and salinity
+     &                boundary conditions every', E9.2,
      &                'seconds and temperature boundary conditions
-     &                every', E8.2, 'seconds')
+     &                every', E9.2, 'seconds')
              IF (BCFLAG_TEMP.NE.0) THEN
                  READ(15,*) TTBCTIMEINC, TTBCSTATIM
                  WRITE(16,434) TTBCTIMEINC
@@ -5796,7 +5796,7 @@ C                 Note that this is only used in the wind and advective terms
       IF (CBAROCLINIC) THEN
         READ(15,*) SPONGEDIST
         WRITE(16,435) SPONGEDIST
- 435    FORMAT(/,5x,'SPONGEDIST = ',E8.2)
+ 435    FORMAT(/,5x,'SPONGEDIST = ',E9.2)
         IF (SPONGEDIST.GE.0.d0) THEN 
            OUTPUTSPONGE=.TRUE.
         END IF 
@@ -5918,19 +5918,19 @@ C...  READ IN NLSD, NLTD, NVTD & NVSD: Lateral and vertical diffusion
 !     coefficients.
          READ(15,*) NLSD, NVSD
          WRITE(16,416) NLSD, NVSD
- 416     FORMAT(/,5X,'Salinity Lateral Diffusion Coefficient = ',E8.2,
-     &        'Salinity Vertical Diffusion Coefficient = ',E8.2)
+ 416     FORMAT(/,5X,'Salinity Lateral Diffusion Coefficient = ',E9.2,
+     &        'Salinity Vertical Diffusion Coefficient = ',E9.2)
          
          READ(15,*) NLTD, NVTD
          WRITE(16,417) NLTD, NVTD
  417     FORMAT(/,5X,'Temperature Lateral Diffusion Coefficient = ',
-     &        E8.2,'Temperature Vertical Diffusion Coefficient = ',E8.2)
+     &        E9.2,'Temperature Vertical Diffusion Coefficient = ',E9.2)
 
 !     Kendra45.12: Read in the time stepping coefficient associated with the
 !     transport equation terms.
          READ(15,*) ALP4
          WRITE(16,445) ALP4
- 445     FORMAT(/,5X,'3D TIME STEPPING COEFFS ALP4 = ',E8.2)
+ 445     FORMAT(/,5X,'3D TIME STEPPING COEFFS ALP4 = ',E9.2)
          
          DTAlp4 = DelT*Alp4
          DT1MAlp4 = DelT*(1-Alp4)

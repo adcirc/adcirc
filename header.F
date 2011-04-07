@@ -3,6 +3,11 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.68   - 04/07/2011 - tcm - Enlarged the field width (w) on several
+C             format specifications for Ew.d fields.  Note that w should be
+C             set greater than or equal to 7 more than d according to the 
+C             FORTRAN 90 standards.  For Fw.d, w should be greater than or
+C             equal to 3 more than d.
 C  v49.67   - 04/06/2011 - tcm - making additions for compiling adcirc on a
 C             Windows based PC.  In vortex.F resolved a conflict with the
 C             variable "error" used as an integer in global.F and as a 

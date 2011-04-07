@@ -2750,18 +2750,18 @@ C     the screen.
      &              IT,NUMITR,TIME,0.,KEMAX,VELMAX,KVMAX
             ENDIF
  1992       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E14.8,
-     &           /,2X,'ELMAX = ', E10.4,' AT NODE',I7,
-     &           2X,'SPEEDMAX = ',E10.4,' AT NODE',I7)
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', E11.4,' AT NODE',I7,
+     &           2X,'SPEEDMAX = ',E11.4,' AT NODE',I7)
          ENDIF
          IF(ELMAX.GT.WarnElev) THEN
             WRITE(ScreenUnit,1994) 
      &           IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
             WRITE(16,1994) IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1994       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E14.8,
-     &           /,2X,'ELMAX = ', E10.4,' AT NODE',I7,
-     &           2X,'SPEEDMAX = ',E10.4,' AT NODE',I7,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', E11.4,' AT NODE',I7,
+     &           2X,'SPEEDMAX = ',E11.4,' AT NODE',I7,
      &           2X,'** WARNING: Elevation.gt.WarnElev **')
 #ifdef DEBUG_WARN_ELEV
             IF (WarnElevDump) CALL WriteWarnElev(Time, IT)
@@ -2772,9 +2772,9 @@ C     the screen.
      &           IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
             WRITE(16,1996) IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1996       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E14.8,
-     &           /,2X,'ELMAX = ', E10.4,' AT NODE',I7,
-     &           2X,'SPEEDMAX = ',E10.4,' AT NODE',I7,/,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', E11.4,' AT NODE',I7,
+     &           2X,'SPEEDMAX = ',E11.4,' AT NODE',I7,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev, '
      &           'ADCIRC stopping. **')
             STOP
