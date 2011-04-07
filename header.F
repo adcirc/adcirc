@@ -3,6 +3,7 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.69   - 04/07/2011 - jgf - Fixed typo (missing .) in netcdfio.F.
 C  v49.68   - 04/07/2011 - tcm - Enlarged the field width (w) on several
 C             format specifications for Ew.d fields.  Note that w should be
 C             set greater than or equal to 7 more than d according to the 

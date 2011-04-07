@@ -7744,7 +7744,7 @@ C     back to degrees to write them back out
          CALL check_err(iret)
          iret = nf_put_att_double(ncid, NCGLOBAL,'evcon',NF_DOUBLE,1,evcon)
          CALL check_err(iret)
-         IF ((ievc.eq.50).or(ievc.eq.51)) THEN
+         IF ((ievc.eq.50).or.(ievc.eq.51)) THEN
             iret = nf_put_att_double(ncid, NCGLOBAL,'theta1',NF_DOUBLE, 1,
      &      theta1)
             CALL check_err(iret)
