@@ -642,6 +642,7 @@ c     Compute the equivalent linear slip coefficient
 C RJW 02252009 changed KP for ISlip =2 
 C     For ISlip = 1, KP is the equivalent linear slip coefficient
 C     For ISlip = 2, KP is the minimum equivalent quadratic slip coefficient
+C     For ISlip = 3, KP is the quadratic slip coefficient
          IF(ISlip.EQ.1) KSlip=KP
          IF(ISlip.EQ.2) THEN
 c.RJW merged 08282008 Casey 071219: Let's get funky.  
@@ -650,17 +651,28 @@ C     and add the following to base the drag coefficient on the actual
 C     physics of the boundary layer.
 C ---
 
+           IF(
+     &          ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
+     &                *(DP(NH)+IFNLFA*ETA2(NH)) )
+     &      .LT. 1.D0 )THEN
+
+
                 KSlip = (1.D0 / ( (1.D0/0.41D0) *
      &                  LOG( (ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
      &                     *( DP(NH)+IFNLFA*ETA2(NH) )) + Z0B1 )
      &                  / Z0B1 ) ) )**2.D0
      &                * ABS(Q(NH,1))
-
+         ELSE
+                KSlip = (1.D0 / ( (1.D0/0.41D0) *
+     &                  LOG( (1.D0+Z0B1)
+     &                  / (Z0B1) ) ) )**2.D0
+     &                * ABS(Q(NH,1))
+         ENDIF
           IF(KSlip.GT.1.0d0* ABS(Q(NH,1))) KSlip=1.0d0*ABS(Q(NH,1))
-          IF(KSlip.LT.0.0010d0*ABS(Q(NH,1))) KSlip=0.0010d0*ABS(Q(NH,1))
+C          IF(KSlip.LT.0.0010d0*ABS(Q(NH,1))) KSlip=0.0010d0*ABS(Q(NH,1))
+          IF(KSlip.LT.KP*ABS(Q(NH,1))) KSlip=KP*ABS(Q(NH,1))
 
          ENDIF
-
          IF(ISlip.EQ.3) THEN
              KSlip=KP*ABS(Q(NH,1))
               IF(KSlip.GT.0.1d0) KSlip=0.1d0

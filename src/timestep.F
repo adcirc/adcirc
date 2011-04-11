@@ -101,6 +101,7 @@ C.....sb46.28sb03 added 09/xx/2006
       USE NodalAttributes, ONLY : FRIC, HBREAK, FTHETA, FGAMMA, ! for wet/dry 
      &     IFLINBF, IFNLBF, IFHYBF, ! for wet/dry
      &     Apply2DBottomFriction,
+     &     Apply3DBottomFriction,
      &     ApplyDirectionalWindReduction,
      &     LoadDirEffRLen,
      &     ManningsN, LoadManningsN, !sb46.28sb02
@@ -112,7 +113,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
 Cjgfdebug      USE GLOBAL_3DVS, ONLY:
 Cjgfdebug     &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA
       USE GLOBAL_3DVS, ONLY:
-     &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA, Z0B
+     &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA, Z0B,NFEN
 
 #ifdef CMPI
       USE MESSENGER
@@ -324,6 +325,14 @@ C     2DDI.Set up the 2D friction coefficient
      &        NP, TK) 
 C
       endif 
+C..RJW 3D for the 3D version of the code
+      if(C3D) then
+C     3D.Set up the 3D friction coefficient
+         CALL Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G, IFNLFA,
+     &        NP, TK, NFEN)
+C
+      endif
+
 C
 C...  SHIFT THE SPECIFIED NORMAL FLOW BOUNDARY CONDITION TO PREVIOUS
 C...  TIME STEPS.  ZERO OUT THE NEW SPECIFIED NORMAL FLOW BOUNDARY
@@ -3820,6 +3829,22 @@ Casey 091022: Adopt Ethan's/Joannes's modified friction.
 #endif
             CALL CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
          ENDIF
+
+         IF(C3D.AND.
+     &       ((FullDomainTimeVaryingTau0.or.HighResTimeVaryingTau0)))
+     &   THEN
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091022: Adopt Ethan's/Joannes's modified friction.
+            DO I=1,NP
+               TK(I)=0.25D0*(TKXX(I)+2.D0*TKXY(I)+TKYY(I))
+            ENDDO
+#endif
+#endif
+            CALL CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
+         ENDIF
+
+         
          
          !jgf48.4619: Added Seizo's handling of Lumping vs non-Lumping
          IF ( ILump.eq.0 ) THEN ! default case: fully consistent LHS

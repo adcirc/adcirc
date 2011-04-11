@@ -3,6 +3,11 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.70   - 04/11/2011 - rjw - Updated KSlip formulation fro KSlip=2, 3
+C             Added subroutine "Apply3DBottomFriction", to compute TK for 3D 
+C             simulations.  This fixes Tau0 bug where time varying tau0 is 
+C             computed as function of TK.  Added a call to "CalculateTimeVaryingTau0"
+C             in timestep.F for C3D.
 C  v49.69   - 04/07/2011 - jgf - Fixed typo (missing .) in netcdfio.F.
 C  v49.68   - 04/07/2011 - tcm - Enlarged the field width (w) on several
 C             format specifications for Ew.d fields.  Note that w should be

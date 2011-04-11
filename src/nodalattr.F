@@ -894,7 +894,7 @@ C
 C     ----------------------------------------------------------------
       SUBROUTINE InitNodalAttr(DP, NP, G, NScreen, ScreenUnit,
      &     MyProc, NAbOut)
-      USE GLOBAL, ONLY : C3D
+      USE GLOBAL, ONLY : C3D, C2DDI
       IMPLICIT NONE
       INTEGER, intent(in) :: NP ! number of nodes in the grid file 
       REAL(SZ), intent(in), dimension(NP) :: DP ! array of bathymetric depths
@@ -1108,7 +1108,8 @@ C     I N I T   B O T T O M   F R I C T I O N
       ENDIF
 C     
 C     Initialize bottom friction if it was not loaded from unit 13.
-      IF((.not.LoadQuadraticFric).and.(.not.LoadManningsN).and.
+      IF(C2DDI) THEN
+        IF((.not.LoadQuadraticFric).and.(.not.LoadManningsN).and.
      &     (.not.LoadChezy)) THEN
          IF (NoLiBF.eq.0) CF=Tau
 C     If a nodal attributes file was read, FRIC was allocated there.
@@ -1118,13 +1119,14 @@ C     If a nodal attributes file was read, FRIC was allocated there.
          DO I=1,NP
             FRIC(I)=CF
          END DO
-      ENDIF
+        ENDIF
 C     
 C     jgf47.04 If a depth-dependent friction parameterization is used, 
 C     the value from the fort.15 file is used as a floor for the 
 C     minimum equivalent quadratic friction value. 
-      IF (LoadManningsN) THEN
-         BFCdLLimit = CF
+        IF (LoadManningsN) THEN
+           BFCdLLimit = CF
+        ENDIF
       ENDIF
 C     
       IF(C3D) THEN
@@ -1143,7 +1145,7 @@ C     If a nodal attributes file was read, Z0b_var was allocated there.
 C     jgf47.04 If a depth-dependent friction parameterization is used, 
 C     the value from the fort.15 file is used as a floor for the 
 C     minimum equivalent quadratic friction value. 
-         IF (LoadZ0b_var) THEN
+         IF (LoadZ0b_var.OR.LoadManningsN) THEN
             BFCdLLimit = CF
          ENDIF
       ENDIF
@@ -1374,6 +1376,76 @@ C
       RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE Apply2DBottomFriction
+C     ----------------------------------------------------------------
+C     ----------------------------------------------------------------
+C     S U B R O U T I N E     
+C     A P P L Y  3 D  B O T T O M  F R I C T I O N
+C     ----------------------------------------------------------------
+C
+C     jgf46.00 Subroutine to apply 3D bottom friction from turbulent
+C     viscous effects as well as bridge pilings. This is used in the
+C     time stepping loop.
+C     ----------------------------------------------------------------
+C     ----------------------------------------------------------------
+      SUBROUTINE Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G,
+     &     IFNLFA, NP, TK, NFEN)
+      USE SIZES
+      IMPLICIT NONE
+      INTEGER, intent(in) :: NP, NFEN             ! number of nodes in grid Horizontal and Vertical
+      COMPLEX(SZ), intent(in), dimension(NP,NFEN) :: Q  ! x-dir velocities
+      REAL(SZ), intent(in), dimension(NFEN) :: SIGMA  ! x-dir velocities
+      REAL(SZ), intent(in), dimension(NP) :: DP   ! bathymetric depths
+      REAL(SZ), intent(in), dimension(NP) :: ETA2 ! water surf. elevations
+      REAL(SZ), intent(in) :: G                   ! gravitational constant
+      INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag 
+      REAL(SZ), intent(inout), dimension(NP) :: TK! depth avg. fric.
+C
+      INTEGER NH
+      REAL(SZ) Z0B1  ! velocity magnitude (speed)
+      REAL(SZ) UV1   ! velocity magnitude (speed)
+      REAL(SZ) H1    ! total depth
+      REAL(SZ) Fr
+      REAL(SZ) FricBP
+      REAL(SZ) BK    ! BK(1) is pier shape factor
+      REAL(SZ) BALPHA! BALPHA(2) is constriction fraction
+      REAL(SZ) BDELX ! BDELX(3) is effective delx
+C
+C Determine the bottom roughness length either from fort.15, from Manning's n 
+C or as read in from nodal attributes
+          DO NH=1,NP
+            H1=DP(NH)+IFNLFA*ETA2(NH)
+
+                IF (LoadZ0B_var) THEN
+                     Z0B1 = Z0B_var(NH)
+                ELSEIF (LoadManningsN) THEN
+                     Z0B1 = ( H1 )* exp(-(1.0D0+
+     &             ( (0.41D0*( H1 )**(1.0D0/6.0D0) )/
+     &                            (ManningsN(NH)*sqrt(g)) ) ))
+                ELSE
+                     Z0B1 = Z0B
+                ENDIF
+            FRIC(NH)= (1.D0 / ( (1.D0/0.41D0) *
+     &                  LOG( (ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
+     &                     *(H1) ) + Z0B1 )
+     &                  / Z0B1 ) ) )**2.D0
+
+             TK(NH)= FRIC(NH) * ABS(Q(NH,1))
+
+      IF (LoadBridgePilings) THEN
+            Fr=ABS(Q(NH,1))*ABS(Q(NH,1))/(G*H1)
+            BK = BridgePilings(I,1)
+            BALPHA = BridgePilings(I,2)
+            BDELX = BridgePilings(I,3)
+            FricBP=(H1/BDELX)*BK*(BK+5.d0*Fr*Fr-0.6d0)
+     &           *(BALPHA+15.d0*BALPHA**4)
+            TK(I)=TK(I)+FricBP*ABS(Q(NH,1))/H1
+      ENDIF       
+
+         ENDDO
+C
+      RETURN
+C     ----------------------------------------------------------------
+      END SUBROUTINE Apply3DBottomFriction
 C     ----------------------------------------------------------------
 
 
