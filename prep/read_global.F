@@ -1533,7 +1533,7 @@ C  kmd48.33bc changed to -2 and I3DSD not equal to 0
  511     FORMAT(/,2X,'    I3DSD MUST BE -3,-2,-1,0,1,2, or 3')
          STOP
       ENDIF
-      IF(I3DSD.NE.0) THEN
+      IF(NSTA3DD.NE.0) THEN  ! kmd : changed to match 2D option
          DO I=1,NSTA3DD
             READ(15,80) STA3DDLOC(I)
             call parse(STA3DDLOC(I), LVAR)
@@ -1595,7 +1595,7 @@ C  kmd48.33 changed to -2
  512     FORMAT(/,2X,'    I3DSV MUST BE -3,-2,-1,0,1,2,or 3')
          STOP
       ENDIF
-      IF(I3DSV.NE.0) THEN
+      IF(NSTA3DV.NE.0) THEN ! kmd : Changed to match 2D option
          DO I=1,NSTA3DV
             READ(15,80) STA3DVLOC(I)
             call parse(STA3DVLOC(I), LVAR)
@@ -1650,7 +1650,7 @@ C  kmd48.33 changed to -2
  513     FORMAT(/,2X,'    I3DST MUST BE -3,-2,-1,0,1,2, or 3')
          STOP
       ENDIF
-      IF(I3DST.NE.0) THEN
+      IF(NSTA3DT.NE.0) THEN ! kmd - Changed to match 2D option
          DO I=1,NSTA3DT
             READ(15,80) STA3DTLOC(I)
             call parse(STA3DTLOC(I), LVAR)

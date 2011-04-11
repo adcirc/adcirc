@@ -1620,7 +1620,7 @@ C     subdomain station locations to fort.15 file.
 C     -------------------------------------------------------------
       WRITE(15,*) I3DSD,TO3DSDS,TO3DSDF,NSPO3DSD
 C   kmd48.33bc changed
-      IF(I3DSD.NE.0) THEN
+      IF(NSTA3DD.NE.0) THEN
          NNSTA3DDP(IPROC) = 0
          DO FDStation = 1, NSTA3DD
             DO SDEle = 1, NELP(IPROC)
@@ -1646,7 +1646,7 @@ C     velocity subdomain station locations to fort.15 file.
 C     -------------------------------------------------------------
       WRITE(15,*) I3DSV,TO3DSVS,TO3DSVF,NSPO3DSV
 C   kmd48.33bc changed
-      IF(I3DSV.NE.0) THEN
+      IF(NSTA3DV.NE.0) THEN
          NNSTA3DVP(IPROC) = 0
          DO FDStation = 1, NSTA3DV
             DO SDEle = 1, NELP(IPROC)
@@ -1672,7 +1672,7 @@ C     turbulence subdomain station locations to fort.15 file.
 C     -------------------------------------------------------------
       WRITE(15,*) I3DST,TO3DSTS,TO3DSTF,NSPO3DST
 C   kmd48.33bc changed
-      IF(I3DST.NE.0) THEN
+      IF(NSTA3DT.NE.0) THEN
          NNSTA3DTP(IPROC) = 0
          DO FDStation = 1, NSTA3DT
             DO SDEle = 1, NELP(IPROC)

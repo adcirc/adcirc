@@ -816,6 +816,39 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
+C     S U B R O U T I N E      R E A L   R E A D   2 D 
+C--------------------------------------------------------------------
+C     kmd: Reads a real(sz) array with the specified length
+C     from an initial condition file in ascii format; it has the 
+C     same format as the binary version but does not require the 
+C     file counter. 
+C--------------------------------------------------------------------
+      SUBROUTINE realRead2D(array, length, lun )
+      USE SIZES, ONLY : SZ
+      IMPLICIT NONE
+      REAL(SZ), intent(out), dimension(:) :: array ! the data to read from the hotstart file
+      INTEGER, intent(in) :: length  ! the number of values to read
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
+C 
+      INTEGER i      ! array index
+C      
+      call setMessageSource("realRead2D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+       DO i=1, length
+          READ(lun,*) array(i)
+       END DO
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE realRead2D
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
 C     S U B R O U T I N E      B I N A R Y   W R I T E   2 D 
 C--------------------------------------------------------------------
 C     jgf49.49.01: Writes a real(sz) array with the specified length
@@ -884,6 +917,37 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
+C     S U B R O U T I N E      R E A L   I N T   R E A D   2 D 
+C--------------------------------------------------------------------
+C     kmd: Same as realRead2D except it reads an integer.
+C--------------------------------------------------------------------
+      SUBROUTINE realIntRead2D(array, length, lun)
+      USE SIZES, ONLY : SZ
+      IMPLICIT NONE
+      INTEGER, intent(out), dimension(:) :: array ! the data to read from the hotstart file
+      INTEGER, intent(in) :: length  ! the number of values to read
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
+C     
+      INTEGER i      ! array index
+C      
+      call setMessageSource("realIntRead2D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+C
+       DO i=1, length
+          READ(lun,*) array(i)
+       END DO
+C     
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE realIntRead2D
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
 C     S U B R O U T I N E      B I N A R Y   R E A D   3 D 
 C--------------------------------------------------------------------
 C     jgf49.44: Same as binaryRead2D except it reads data with 
@@ -921,19 +985,55 @@ C--------------------------------------------------------------------
       END SUBROUTINE binaryRead3D
 C--------------------------------------------------------------------
 
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      R E A L   R E A D   3 D 
+C--------------------------------------------------------------------
+C     kmd: Same as realRead2D except it reads data with 
+C     both horizontal and vertical lengths.
+C--------------------------------------------------------------------
+      SUBROUTINE realRead3D(array, iLength, jLength, lun)
+      USE SIZES, ONLY : SZ
+      IMPLICIT NONE
+      REAL(SZ), intent(out), dimension(:,:) :: array ! data to read from the hotstart file
+      INTEGER, intent(in) :: iLength  ! the number of horiz values to read
+      INTEGER, intent(in) :: jLength  ! the number of layers
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
+C 
+      INTEGER i,j      ! array indices
+C      
+      call setMessageSource("realRead3D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+       DO j=1, jLength
+          DO i=1, iLength
+            READ(lun,*) array(i,j)
+          END DO
+       END DO
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE realRead3D
+C--------------------------------------------------------------------
+
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E 
 C            R E A D  A N D  M A P  T O  S U B D O M A I N  2 D  
 C-----------------------------------------------------------------------
 C     jgf49.48.04 Reads a fulldomain array in binary format and maps
 C     to a subdomain array.
+C     kmd: Updated to include a real format option
 C-----------------------------------------------------------------------
-      subroutine readAndMapToSubdomain2D(sd_array, lun, counter)
+      subroutine readAndMapToSubdomain2D(sd_array, lun, counter, method)
       IMPLICIT NONE
 C
       REAL(SZ), intent(out), dimension(:) :: sd_array ! subdomain array
       INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
       INTEGER, intent(inout) :: counter ! i/o position in the file 
+      INTEGER, intent(in) :: method  ! logical to determine binary or real
       INTEGER :: sd_node_number
       INTEGER :: fd_node_number
 C 
@@ -945,20 +1045,46 @@ C
 #endif
       ! serial
       IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-         CALL binaryRead2D(sd_array, NP, lun, counter)
+         IF (method.EQ.1) THEN 
+            CALL binaryRead2D(sd_array, NP, lun, counter)
+         ELSE IF (method.EQ.2) THEN 
+            CALL realRead2D(sd_array, NP, lun)
+         ELSE 
+            WRITE(16,*) "Passing of binary or real 
+     &         information incorrect"
+            STOP
+         END IF 
       ! parallel
       ELSE
-         allocate(fd_array(NP_G))
-         CALL binaryRead2D(fd_array, NP_G, lun, counter)
-         ! loop over subdomain nodes
-         DO sd_node_number=1,np
-            ! get the corresponding fulldomain node number 
-            fd_node_number = ABS(NODES_LG(sd_node_number))
-            ! fill in the subdomain arrays with the corresponding
-            ! fulldomain values
-            sd_array(sd_node_number) = fd_array(fd_node_number)
-         END DO
-         deallocate(fd_array)
+         IF (method.EQ.1) THEN
+            allocate(fd_array(NP_G))
+            CALL binaryRead2D(fd_array, NP_G, lun, counter)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number 
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+         ELSE IF (method.EQ.2) THEN 
+            allocate(fd_array(NP_G))
+            CALL realRead2D(fd_array, NP_G, lun)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number 
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+         ELSE 
+            WRITE(16,*) "Passing of binary or real 
+     &         information incorrect"
+            STOP
+         END IF
       ENDIF
 C
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
@@ -975,13 +1101,15 @@ C            R E A D  A N D  M A P  T O  S U B D O M A I N  I N T  2 D
 C-----------------------------------------------------------------------
 C     jgf49.48.04 Reads a fulldomain array in binary format and maps
 C     to a subdomain array.
+C     kmd: Updated to include real format option
 C-----------------------------------------------------------------------
-      subroutine readAndMapToSubdomainInt2D(sd_array, lun, counter)
+      subroutine readAndMapToSubdomainInt2D(sd_array, lun, counter, method)
       IMPLICIT NONE
 C
       INTEGER, intent(out), dimension(:) :: sd_array ! subdomain array
       INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
       INTEGER, intent(inout) :: counter ! i/o position in the file 
+      INTEGER, intent(in) :: method ! logical to determine binary or real
       INTEGER :: sd_node_number
       INTEGER :: fd_node_number
 C 
@@ -993,20 +1121,46 @@ C
 #endif
       ! serial
       IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-         CALL binaryIntRead2D(sd_array, NP, lun, counter)
+         IF (method.EQ.1) THEN
+           CALL binaryIntRead2D(sd_array, NP, lun, counter)
+         ELSE IF (method.EQ.2) THEN
+           CALL realIntRead2D(sd_array, NP, lun)
+         ELSE
+            WRITE(16,*) "Passing of binary or real 
+     &         information incorrect"
+            STOP
+         END IF 
       ! parallel
       ELSE
-         allocate(fd_array(NP_G))
-         CALL binaryIntRead2D(fd_array, NP_G, lun, counter)
-         ! loop over subdomain nodes
-         DO sd_node_number=1,np
-            ! get the corresponding fulldomain node number 
-            fd_node_number = ABS(NODES_LG(sd_node_number))
-            ! fill in the subdomain arrays with the corresponding
-            ! fulldomain values
-            sd_array(sd_node_number) = fd_array(fd_node_number)
-         END DO
-         deallocate(fd_array)
+         IF (method.EQ.1) THEN
+            allocate(fd_array(NP_G))
+            CALL binaryIntRead2D(fd_array, NP_G, lun, counter)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number 
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+         ELSE IF (method.EQ.2) THEN
+            allocate(fd_array(NP_G))
+            CALL realIntRead2D(fd_array, NP_G, lun)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number 
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+         ELSE
+            WRITE(16,*) "Passing of binary or real 
+     &         information incorrect"
+            STOP
+         END IF
       ENDIF
 C
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
@@ -1025,13 +1179,15 @@ C-----------------------------------------------------------------------
 C     jgf49.48.04 Reads a fulldomain array in binary format and maps
 C     to a subdomain array (for elemental mappings as opposed to node
 C     mapping).
+C     kmd : Updated to include a real format option
 C-----------------------------------------------------------------------
-      subroutine readAndMapEleToSubdomainInt2D(sd_array, lun, counter)
+      subroutine readAndMapEleToSubdomainInt2D(sd_array, lun, counter,method)
       IMPLICIT NONE
 C
       INTEGER, intent(out), dimension(:) :: sd_array ! subdomain array
       INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
       INTEGER, intent(inout) :: counter ! i/o position in the file 
+      INTEGER, intent(in) :: method ! logical to determine binary or real
       INTEGER :: sd_ele_number
       INTEGER :: fd_ele_number
 C 
@@ -1043,20 +1199,46 @@ C
 #endif
       ! serial
       IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-         CALL binaryIntRead2D(sd_array, NE, lun, counter)
+         IF (method.EQ.1) THEN 
+            CALL binaryIntRead2D(sd_array, NE, lun, counter)
+         ELSE IF (method.EQ.2) THEN
+            CALL realIntRead2D(sd_array, NE, lun)
+         ELSE
+            WRITE(16,*) "Passing of binary or real 
+     &         information incorrect"
+            STOP
+         END IF
       ! parallel
       ELSE
-         allocate(fd_array(NE_G))
-         CALL binaryIntRead2D(fd_array, NE_G, lun, counter)
-         ! loop over subdomain nodes
-         DO sd_ele_number=1,ne
-            ! get the corresponding fulldomain ele number 
-            fd_ele_number = ABS(IMAP_EL_LG(sd_ele_number))
-            ! fill in the subdomain arrays with the corresponding
-            ! fulldomain values
-            sd_array(sd_ele_number) = fd_array(fd_ele_number)
-         END DO
-         deallocate(fd_array)
+         IF (method.EQ.1) THEN
+            allocate(fd_array(NE_G))
+            CALL binaryIntRead2D(fd_array, NE_G, lun, counter)
+            ! loop over subdomain nodes
+            DO sd_ele_number=1,ne
+               ! get the corresponding fulldomain ele number 
+               fd_ele_number = ABS(IMAP_EL_LG(sd_ele_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_ele_number) = fd_array(fd_ele_number)
+            END DO
+            deallocate(fd_array)
+         ELSE IF (method.EQ.2) THEN 
+            allocate(fd_array(NE_G))
+            CALL realIntRead2D(fd_array, NE_G, lun)
+            ! loop over subdomain nodes
+            DO sd_ele_number=1,ne
+               ! get the corresponding fulldomain ele number 
+               fd_ele_number = ABS(IMAP_EL_LG(sd_ele_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_ele_number) = fd_array(fd_ele_number)
+            END DO
+            deallocate(fd_array)
+         ELSE 
+            WRITE(16,*) "Passing of binary or real 
+     &         information incorrect"
+            STOP
+         END IF
       ENDIF
 C
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
@@ -1074,14 +1256,16 @@ C            R E A D  A N D  M A P  T O  S U B D O M A I N  3 D
 C-----------------------------------------------------------------------
 C     jgf49.48.04 Reads a fulldomain array in binary format and maps
 C     to a subdomain array.
+C     kmd : Updated to include a real format option
 C-----------------------------------------------------------------------
-      subroutine readAndMapToSubdomain3D(sd_array, nfen, lun, counter)
+      subroutine readAndMapToSubdomain3D(sd_array, nfen, lun, counter,method)
       IMPLICIT NONE
 C
       REAL(SZ), intent(out), dimension(:,:) :: sd_array ! subdomain array
       INTEGER, intent(in) :: nfen    ! number of vertical layers  
       INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
       INTEGER, intent(inout) :: counter ! i/o position in the file 
+      INTEGER, intent(in) :: method ! logical to determine binary or real
       INTEGER :: sd_node_number
       INTEGER :: fd_node_number
 C 
@@ -1093,20 +1277,46 @@ C
 #endif
       ! serial
       IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-         CALL binaryRead3D(sd_array, NP, NFEN, lun, counter)
+         IF (method.EQ.1) THEN
+            CALL binaryRead3D(sd_array, NP, NFEN, lun, counter)
+         ELSE IF (method.EQ.2) THEN
+            CALL realRead3D(sd_array, NP, NFEN, lun)
+         ELSE
+            WRITE(16,*) "Passing of binary or real 
+     &         information incorrect"
+            STOP
+         END IF
       ! parallel
       ELSE
-         allocate(fd_array(NP_G,NFEN))
-         CALL binaryRead3D(fd_array, NP_G, NFEN, lun, counter)
-         ! loop over subdomain nodes
-         DO sd_node_number=1,np
-            ! get the corresponding fulldomain node number 
-            fd_node_number = ABS(NODES_LG(sd_node_number))
-            ! fill in the subdomain arrays with the corresponding
-            ! fulldomain values
-            sd_array(sd_node_number,:) = fd_array(fd_node_number,:)
-         END DO
-         deallocate(fd_array)
+         IF (method.EQ.1) THEN
+            allocate(fd_array(NP_G,NFEN))
+            CALL binaryRead3D(fd_array, NP_G, NFEN, lun, counter)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number 
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number,:) = fd_array(fd_node_number,:)
+            END DO
+            deallocate(fd_array)
+         ELSE IF (method.EQ.2) THEN 
+            allocate(fd_array(NP_G,NFEN))
+            CALL realRead3D(fd_array, NP_G, NFEN, lun)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number 
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number,:) = fd_array(fd_node_number,:)
+            END DO
+            deallocate(fd_array)
+         ELSE
+            WRITE(16,*) "Passing of binary or real 
+     &         information incorrect"
+            STOP
+         END IF
       ENDIF
 C
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)

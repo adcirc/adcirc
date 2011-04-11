@@ -130,6 +130,9 @@ C
 C     tcm v49.64.01 -- ADDED variables for Ice concentration fields
       REAL(SZ) PIC,CICE_TRatio  !ICE VARIABLES
 
+C     kmd -- Added variables for initial conditions
+      CHARACTER(80) :: gridinfo
+      INTEGER :: moderbin ! determines whether in binary or real 
 
       call setMessageSource("hotstart")
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
@@ -147,6 +150,272 @@ C     -----------------------------------
 C     The value of IHOT indicates the type of
 C     the file as well as the file name.
       SELECT CASE(IHOT)
+
+      CASE(17) ! initial conditions or ascii hot start
+
+C      kmd49.49 - redo case(67,68) for initial conditions or ascii
+C                 format for hot start.
+C...
+C...     READ IN 2DDI HOT START INITIAL CONDITION OVER WHOLE DOMAIN
+C...     THIS FILE ALWAYS HAS A RECL=8 BECAUSE IT IS ASSUMED THAT THE HARMONIC
+C...     ANALYSIS IS ALWAYS DONE IN 64 BITS, EVEN ON A WORKSTATION
+C...  
+C        Determine if the hot start file exists.
+         fileFound=.False.
+         IF (IHOT.eq.17) THEN
+            hsfn = "fort.17"
+         ENDIF
+         IF ((MNPROC.eq.1).or.
+     &       (READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+            INQUIRE(FILE=TRIM(INPUTDIR)//'/'//hsfn,
+     &         EXIST=fileFound)
+         ELSE
+            ! look for fulldomain hotstart file
+            INQUIRE(FILE=TRIM(GBLINPUTDIR)//'/'//hsfn,
+     &         EXIST=fileFound)
+         ENDIF
+C 
+         IF (fileFound.eqv..false.) THEN
+            WRITE(16,1701)         ! hot start file  
+            WRITE(16,1711)         ! was not found.
+            WRITE(16,9773)         ! execution terminated
+            IF (NScreen.ne.0.and.MyProc.eq.0) THEN
+               WRITE(ScreenUnit,1701)
+               WRITE(ScreenUnit,1711)
+               WRITE(16,9773)      ! execution terminated
+            ENDIF
+#ifdef CMPI
+            CALL MSG_FINI()
+#endif
+            STOP
+         ENDIF
+C        start reading ascii initial conditions file
+         WRITE(16,1740) 
+ 1740     FORMAT(/,9X,'Initial condition or ascii hot start
+     &        file was found.',
+     &     ' Opening file.')
+         
+         IF ((MNPROC.eq.1).or.
+     &       (READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+            OPEN(IHOT,FILE=TRIM(INPUTDIR)//'/'//hsfn,ACTION='READ',
+     &           ACCESS='SEQUENTIAL',RECL=8,IOSTAT=ErrorIO,STATUS='OLD')
+         ELSE
+            ! fulldomain hotstart file
+            OPEN(IHOT,FILE=TRIM(GBLINPUTDIR)//'/'//hsfn,ACTION='READ',
+     &           ACCESS='SEQUENTIAL',RECL=8,IOSTAT=ErrorIO,STATUS='OLD')
+         ENDIF
+         
+         IF (ErrorIO.GT.0) THEN    
+            WRITE(16,1701)         ! hot start file
+            WRITE(16,1705)         ! exists but can't be opened
+            WRITE(16,9773)         ! execution terminated
+            IF (NScreen.ne.0.and.MyProc.eq.0) THEN
+               WRITE(ScreenUnit,1701)
+               WRITE(ScreenUnit,1705)
+               WRITE(ScreenUnit,9773)
+            ENDIF
+#ifdef CMPI 
+            CALL MSG_FINI()
+#endif      
+            STOP                   ! We're toast.
+         ENDIF
+C
+ 1701    FORMAT('ERROR: The initial condition or ascii hot start file')
+ 1711    FORMAT('was not found.') 
+ 1712    FORMAT('was a nonmatching version') 
+ 1705    FORMAT('exists but cannot be opened.')
+ 9773    FORMAT(/,1X,'!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!',//)
+C
+C        Now read the readable initial condition or hot start file.
+         moderbin=2
+         IHOTSTP=1
+         READ(IHOT,*) gridinfo
+!         if (.not.
+!     &     CMP_VERSION_NUMBERS(InputFileFmtVn,FileFmtVersion))then
+!            WRITE(16, 1001)
+!            write(16, 1012)
+!            write(16, 9973)
+!            if (NScreen /= 0 .and. myproc == 0) then
+!               WRITE(ScreenUnit, 1001)
+!               write(ScreenUnit, 1012)
+!               write(ScreenUnit, 9973)
+!            endif
+!#ifdef CMPI
+!            call msg_fini()
+!#endif
+!            stop
+!         endif
+         READ(IHOT,*) IMHS
+         READ(IHOT,*) TIME
+         READ(IHOT,*) ITHS
+!kmd - added in these lines for 3D and baroclinic 
+         IF ((IDEN.GE.1).AND.(C3D).AND.(CBAROCLINIC)) THEN
+            CHOTHS=.TRUE.
+         END IF
+         IF (CHOTHS) THEN
+            DTDPHS=TIME/ITHS ! Set up time step information for hotstart file
+            IF (DTDPHS.NE.DTDP) THEN
+               RNDAYHS=TIME/86400.D0
+               NTHS=INT((RNDAY-RNDAYHS)*(86400.D0/DTDP)+0.5d0)
+               NT=ITHS+NTHS
+               WRITE(16,*) "The number of time steps has been reset
+     &            due to a chnage in the timestep interval"
+               WRITE(16,*) "It has been changed to ", NT
+            END IF
+         ELSE
+            DTDPHS=DTDP
+         END IF
+         READ(IHOT,*) NP_G_IN
+         READ(IHOT,*) NE_G_IN
+         READ(IHOT,*) NP_A_IN
+         READ(IHOT,*) NE_A_IN
+C      
+C        jgf49.44: Add capability to read fulldomain binary hotstart
+C        file in parallel.
+         CALL readAndMapToSubdomain2D(ETA1, IHOT, IHOTSTP, moderbin)
+         CALL readAndMapToSubdomain2D(ETA2, IHOT, IHOTSTP, moderbin)
+C        jgf46.34 Added support for IBTYPE=52.
+         CALL readAndMapToSubdomain2D(ETADisc, IHOT, IHOTSTP, moderbin)
+         CALL readAndMapToSubdomain2D(UU2, IHOT, IHOTSTP, moderbin)
+         CALL readAndMapToSubdomain2D(VV2, IHOT, IHOTSTP, moderbin)
+         IF(IMHS.EQ.10) THEN
+            CALL readAndMapToSubdomain2D(CH1, IHOT, IHOTSTP, moderbin)
+         ENDIF
+         CALL readAndMapToSubdomainInt2D(NNODECODE, IHOT, IHOTSTP, moderbin)
+         CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
+
+!kmd - see if results are same between versions
+         !IF (MYPROC.EQ.0) PRINT *, "W: ETA1(397887) = ",ETA1(10)
+         !IF (MYPROC.EQ.0) PRINT *, "W: ETA2(397887) = ",ETA2(10)
+         !IF (MYPROC.EQ.0) PRINT *, "W: UU2(397887) = ",UU2(10)
+         !IF (MYPROC.EQ.0) PRINT *, "W: VV2(397887) = ",VV2(10)
+         !IF (MYPROC.EQ.0) PRINT *, "W: NODECODE(397887) = ",NNODECODE(10)
+         !IF (MYPROC.EQ.0) PRINT *, "W: NOFF(286649) = ",NOFF(10)
+C
+         READ(IHOT,*) IESTP
+         READ(IHOT,*) NSCOUE
+         READ(IHOT,*) IVSTP
+         READ(IHOT,*) NSCOUV
+         READ(IHOT,*) ICSTP
+         READ(IHOT,*) NSCOUC
+         READ(IHOT,*) IPSTP
+         READ(IHOT,*) IWSTP
+         READ(IHOT,*) NSCOUM
+         READ(IHOT,*) IGEP
+         READ(IHOT,*) NSCOUGE
+         READ(IHOT,*) IGVP
+         READ(IHOT,*) NSCOUGV
+         READ(IHOT,*) IGCP
+         READ(IHOT,*) NSCOUGC
+         READ(IHOT,*) IGPP
+         READ(IHOT,*) IGWP
+         READ(IHOT,*) NSCOUGW
+         !
+         !     R E A D   3 D   H O T S T A R T   D A T A  
+         !
+         IF (C3D) THEN
+            READ(IHOT,*) IDenHS
+            !3D station density output time counter
+            READ(IHOT,*) N3DSD
+            READ(IHOT,*) I3DSDRec
+            !3D station velocity output time counter
+            READ(IHOT,*) N3DSV
+            READ(IHOT,*) I3DSVRec
+            !3D station turbulence output time counter
+            READ(IHOT,*) N3DST
+            READ(IHOT,*) I3DSTRec
+            READ(IHOT,*) N3DGD
+            READ(IHOT,*) I3DGDRec
+            READ(IHOT,*) N3DGV
+            READ(IHOT,*) I3DGVRec
+            READ(IHOT,*) N3DGT
+            READ(IHOT,*) I3DGTRec
+C           kmd48.33bc - changed to the format used with the global IO
+C           jgf49.44: Add capability to read fulldomain 3D binary hotstart
+C           file in parallel.
+            CALL readAndMapToSubdomain2D(DUU, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(DUV, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(DVV, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(UU, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(VV, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(BSX, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(BSY, IHOT, IHOTSTP, moderbin)
+C           kmd48.33bc - allocate realQ_tmp
+            ALLOCATE(RealQ_Tmp(NP,NFEN))
+            ALLOCATE(ImQ_Tmp(NP,NFEN))
+C           kmd48.33bc - changed to format used in global IO, layer output
+            CALL readAndMapToSubdomain3D(RealQ_Tmp, NFEN, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain3D(ImQ_Tmp, NFEN, IHOT, IHOTSTP, moderbin)
+            Q = RealQ_Tmp + iy*ImQ_Tmp ! reconstruct Q matrix from parts
+            DEALLOCATE(RealQ_Tmp, ImQ_Tmp)
+            CALL readAndMapToSubdomain3D(WZ, NFEN, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain3D(q20, NFEN, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain3D(l, NFEN, IHOT, IHOTSTP, moderbin)
+C           kmd48.33bc - need to determine if IDEN parameter in hotstart
+C           is different than IDEN from fort.15 file. If so, determine which
+C           one should be used in the simulation. 
+            !IF (MYPROC.EQ.0) THEN
+            !   PRINT *, "IDEN = ", IDEN
+            !   PRINT *, "IDENHS = ", IDENHS
+            !END IF
+            IF (IDenHS.NE.IDEN) THEN
+               IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GE.1)) THEN
+                  ! IDEN value from fort.15 should be used 
+               ELSE IF ((CBAROCLINIC).AND.(RES_BC_FLAG.LE.0)) THEN
+                  IDEN=IDenHS
+               END IF
+            END IF
+            SELECT CASE(ABS(IDen))
+            CASE(0)
+               CALL logMessage(INFO,
+     &          "IDEN=0; This is a barotropic model run.")
+            CASE(1)
+               CALL readAndMapToSubdomain3D(SigT, NFEN, IHOT, IHOTSTP, moderbin)
+            CASE(2)
+               CALL readAndMapToSubdomain3D(Sal, NFEN, IHOT, IHOTSTP, moderbin)
+            CASE(3)
+               CALL readAndMapToSubdomain3D(Temp, NFEN, IHOT, IHOTSTP, moderbin)
+            CASE(4)
+               CALL readAndMapToSubdomain3D(Sal, NFEN, IHOT, IHOTSTP, moderbin)
+               CALL readAndMapToSubdomain3D(Temp, NFEN, IHOT, IHOTSTP, moderbin)
+            CASE DEFAULT
+               ! should not happen
+               WRITE(scratchMessage,1722) IDEN
+               CALL allMessage(ERROR,scratchMessage)
+1722             FORMAT("IDEN is ",I2,
+     &             " but the valid range is +/- 0 to 4.")
+            END SELECT
+         ENDIF  ! C3D
+         !IF (MYPROC.EQ.0) PRINT *, "W: DUU(397887) = ",DUU(10)
+         !IF (MYPROC.EQ.0) PRINT *, "W: DUV(397887) = ",DUV(10)
+         !IF (MYPROC.EQ.0) PRINT *, "W: DVV(397887) = ",DVV(10)
+         !IF (MYPROC.EQ.0) PRINT *, "W: UU(397887) = ",UU(10)
+         !IF (MYPROC.EQ.0) PRINT *, "W: VV(397887) = ",VV(10)
+         !IF (MYPROC.EQ.0) PRINT *, "W: Q(397887,1) = ",Q(10,1)
+         !IF (MYPROC.EQ.0) PRINT *, "W: WZ(397887,1) = ",WZ(10,1)
+         !IF (MYPROC.EQ.0) PRINT *, "W: q20(397887,1) = ",q20(10,1)
+         !IF (MYPROC.EQ.0) PRINT *, "W: l(397887,1) = ",l(10,1)
+         !IF (MYPROC.EQ.0) PRINT *, "W: Sal(397887,1) = ",Sal(10,1)
+         !IF (MYPROC.EQ.0) PRINT *, "W: Temp(397887,1) = ",Temp(10,1)
+C...
+C......  HOT START INFORMATION FOR HARMONIC ANALYSIS
+C...
+!         IF(IHARIND.EQ.1) THEN
+!            IHABEG=ITHAS+NHAINC
+C...
+C........   IF HARMONIC ANALYSIS HAS ALREADY BEGUN, READ IN HOT START
+C........   HARMONIC ANALYSIS, MEAN AND SQUARE INFO
+C...
+!            IF(ITHS.GT.ITHAS) THEN
+!               READ(IHOT,REC=IHOTSTP) ICHA 
+!            ENDIF
+!            IF(ITHS.GE.IHABEG) THEN
+!               CALL readBinaryHAHotstart(IHOT, IHOTSTP)
+!            ENDIF
+!         ENDIF    !IHARIND
+         CLOSE(IHOT)  ! close portable ascii hotstart file
+C
+C
 
       CASE(67,68) ! non-portable binary file format
 
@@ -223,6 +492,7 @@ C
  9973    FORMAT(/,1X,'!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!',//)
 C
 C        Now read the non-portable binary hot start file.
+         moderbin=1 ! kmd - sets the flag for the readAndMapToSubdomain subroutines
          IHOTSTP=1
          READ(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
          if (.not.
@@ -251,17 +521,17 @@ C        Now read the non-portable binary hot start file.
 C      
 C        jgf49.44: Add capability to read fulldomain binary hotstart
 C        file in parallel.
-         CALL readAndMapToSubdomain2D(ETA1, IHOT, IHOTSTP)
-         CALL readAndMapToSubdomain2D(ETA2, IHOT, IHOTSTP)
+         CALL readAndMapToSubdomain2D(ETA1, IHOT, IHOTSTP, moderbin)
+         CALL readAndMapToSubdomain2D(ETA2, IHOT, IHOTSTP, moderbin)
 C        jgf46.34 Added support for IBTYPE=52.
-         CALL readAndMapToSubdomain2D(ETADisc, IHOT, IHOTSTP)
-         CALL readAndMapToSubdomain2D(UU2, IHOT, IHOTSTP)
-         CALL readAndMapToSubdomain2D(VV2, IHOT, IHOTSTP)
+         CALL readAndMapToSubdomain2D(ETADisc, IHOT, IHOTSTP, moderbin)
+         CALL readAndMapToSubdomain2D(UU2, IHOT, IHOTSTP, moderbin)
+         CALL readAndMapToSubdomain2D(VV2, IHOT, IHOTSTP, moderbin)
          IF(IMHS.EQ.10) THEN
-            CALL readAndMapToSubdomain2D(CH1, IHOT, IHOTSTP)
+            CALL readAndMapToSubdomain2D(CH1, IHOT, IHOTSTP, moderbin)
          ENDIF
-         CALL readAndMapToSubdomainInt2D(NNODECODE, IHOT, IHOTSTP)
-         CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP)
+         CALL readAndMapToSubdomainInt2D(NNODECODE, IHOT, IHOTSTP, moderbin)
+         CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
 C
          READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
          READ(IHOT,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
@@ -317,24 +587,24 @@ C
 C           kmd48.33bc - changed to the format used with the global IO
 C           jgf49.44: Add capability to read fulldomain 3D binary hotstart
 C           file in parallel.
-            CALL readAndMapToSubdomain2D(DUU, IHOT, IHOTSTP)
-            CALL readAndMapToSubdomain2D(DUV, IHOT, IHOTSTP)
-            CALL readAndMapToSubdomain2D(DVV, IHOT, IHOTSTP)
-            CALL readAndMapToSubdomain2D(UU, IHOT, IHOTSTP)
-            CALL readAndMapToSubdomain2D(VV, IHOT, IHOTSTP)
-            CALL readAndMapToSubdomain2D(BSX, IHOT, IHOTSTP)
-            CALL readAndMapToSubdomain2D(BSY, IHOT, IHOTSTP)
+            CALL readAndMapToSubdomain2D(DUU, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(DUV, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(DVV, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(UU, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(VV, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(BSX, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain2D(BSY, IHOT, IHOTSTP, moderbin)
 C           kmd48.33bc - allocate realQ_tmp
             ALLOCATE(RealQ_Tmp(NP,NFEN))
             ALLOCATE(ImQ_Tmp(NP,NFEN))
 C           kmd48.33bc - changed to format used in global IO, layer output
-            CALL readAndMapToSubdomain3D(RealQ_Tmp, NFEN, IHOT, IHOTSTP)
-            CALL readAndMapToSubdomain3D(ImQ_Tmp, NFEN, IHOT, IHOTSTP)
+            CALL readAndMapToSubdomain3D(RealQ_Tmp, NFEN, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain3D(ImQ_Tmp, NFEN, IHOT, IHOTSTP, moderbin)
             Q = RealQ_Tmp + iy*ImQ_Tmp ! reconstruct Q matrix from parts
             DEALLOCATE(RealQ_Tmp, ImQ_Tmp)
-            CALL readAndMapToSubdomain3D(WZ, NFEN, IHOT, IHOTSTP)
-            CALL readAndMapToSubdomain3D(q20, NFEN, IHOT, IHOTSTP)
-            CALL readAndMapToSubdomain3D(l, NFEN, IHOT, IHOTSTP)
+            CALL readAndMapToSubdomain3D(WZ, NFEN, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain3D(q20, NFEN, IHOT, IHOTSTP, moderbin)
+            CALL readAndMapToSubdomain3D(l, NFEN, IHOT, IHOTSTP, moderbin)
 C           kmd48.33bc - need to determine if IDEN parameter in hotstart
 C           is different than IDEN from fort.15 file. If so, determine which
 C           one should be used in the simulation. 
@@ -354,14 +624,14 @@ C           one should be used in the simulation.
                CALL logMessage(INFO,
      &          "IDEN=0; This is a barotropic model run.")
             CASE(1)
-               CALL readAndMapToSubdomain3D(SigT, NFEN, IHOT, IHOTSTP)
+               CALL readAndMapToSubdomain3D(SigT, NFEN, IHOT, IHOTSTP, moderbin)
             CASE(2)
-               CALL readAndMapToSubdomain3D(Sal, NFEN, IHOT, IHOTSTP)
+               CALL readAndMapToSubdomain3D(Sal, NFEN, IHOT, IHOTSTP, moderbin)
             CASE(3)
-               CALL readAndMapToSubdomain3D(Temp, NFEN, IHOT, IHOTSTP)
+               CALL readAndMapToSubdomain3D(Temp, NFEN, IHOT, IHOTSTP, moderbin)
             CASE(4)
-               CALL readAndMapToSubdomain3D(Sal, NFEN, IHOT, IHOTSTP)
-               CALL readAndMapToSubdomain3D(Temp, NFEN, IHOT, IHOTSTP)
+               CALL readAndMapToSubdomain3D(Sal, NFEN, IHOT, IHOTSTP, moderbin)
+               CALL readAndMapToSubdomain3D(Temp, NFEN, IHOT, IHOTSTP, moderbin)
             CASE DEFAULT
                ! should not happen
                WRITE(scratchMessage,12) IDEN
@@ -2715,10 +2985,10 @@ C.. RJW bug fix in format 498 (kendra found this)
  496  FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE BINARY')
 
 C  kmd48.33bc - restart boundary condtions for baroclinic simulations
-      IF (MYPROC.EQ.0) THEN 
-        PRINT *, "RES_BC_FLAG = ", RES_BC_FLAG
-        PRINT *, "BCFLAG_LNM = ", BCFLAG_LNM
-      END IF 
+      !IF (MYPROC.EQ.0) THEN 
+      !  PRINT *, "RES_BC_FLAG = ", RES_BC_FLAG
+      !  PRINT *, "BCFLAG_LNM = ", BCFLAG_LNM
+      !END IF 
       IF((RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
          IF (ABS(RES_BC_FLAG).GE.1) THEN
             IF (BCFLAG_LNM.EQ.1) THEN

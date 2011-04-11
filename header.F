@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.71   - 04/11/2011 - kmd - Updated the initial condition file for 
+C             baroclinic to be evaluated in parallel similar to the binary 
+C             hotstart file; updated station information for 3D.
 C  v49.70   - 04/11/2011 - rjw - Updated KSlip formulation fro KSlip=2, 3
 C             Added subroutine "Apply3DBottomFriction", to compute TK for 3D 
 C             simulations.  This fixes Tau0 bug where time varying tau0 is 

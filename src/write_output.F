@@ -2302,8 +2302,9 @@ C              Interpolate to station locations
                IF ((ABS(IDEN).EQ.3).OR.(ABS(IDEN).EQ.4)) THEN
                   IF (myProc.eq.0) THEN
                      ALLOCATE(TempSta_g(NSTA3DD_G,NFEN))
-                     ALLOCATE(SalSta_g(NSTA3DD_G,NFEN))
-                     SalStaDescript % array2D_g => SalSta_g
+                     !kmd : Took out these two lines as already allocated above
+                     !ALLOCATE(SalSta_g(NSTA3DD_G,NFEN))
+                     !SalStaDescript % array2D_g => SalSta_g
                      TempStaDescript % array2D_g => TempSta_g
                   ENDIF
                   CALL collectFullDomainArray(TempStaDescript,
@@ -2460,7 +2461,9 @@ C              Write station output
                   DEALLOCATE(SalSta_g)
                ENDIF
                IF ((ABS(IDEN).EQ.3).OR.(ABS(IDEN).EQ.4)) THEN
-                  DEALLOCATE(TempSta_g,SalSta_g)
+                  DEALLOCATE(TempSta_g)
+                  !kmd : Changed Deallocate line above as Salinity is already deallocated
+                  !DEALLOCATE(TempSta_g,SalSta_g)
                ENDIF
             ENDIF
 

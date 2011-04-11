@@ -159,6 +159,7 @@ C...  Special instructions for writer processors
 !      CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
 ! tcm v49.52.01 moved make_dirname up a level
 !      CALL MAKE_DIRNAME()    ! Establish Working Directory Name
+      IF (MYPROC.EQ.0) PRINT *, "Made it to read_input call"
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
       CALL MSG_TABLE()       ! Read Message-Passing Tables
       CALL MSG_START()       ! Startup message passing
@@ -215,9 +216,8 @@ C...
          CASE(0) 
             CALL COLDSTART()
             ITHS = 0  !TCM20091029 v49.02 Initialized to zero for coldstarts
-         CASE(17) 
-            CALL INIT_COND()
-         CASE(67,68,367,368) ! non-portable binary or netcdf hotstart file
+         ! kmd : added in the initial condition read
+         CASE(17,67,68,367,368) ! non-portable binary or netcdf hotstart file
             CALL HOTSTART()
          CASE DEFAULT
             ! the IHOT value was vetted already, so this code should

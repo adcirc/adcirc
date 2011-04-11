@@ -426,12 +426,12 @@ C   kmd48.33bc added writing of subdomain initial condition file
 C
 C     Write a subdomain initial condtion file (fort.17) for each PE
 C
-      IF (PREP_ALL) THEN
-         IF ((CBaroclinic).AND.(IHOT.EQ.17)) THEN
-            PRINT *, "Writing subdomain UNIT 17 file for each PE."
-            CALL HOTINITCOND()
-         ENDIF
-      ENDIF
+!      IF (PREP_ALL) THEN
+!         IF ((CBaroclinic).AND.(IHOT.EQ.17)) THEN
+!            PRINT *, "Writing subdomain UNIT 17 file for each PE."
+!            CALL HOTINITCOND()
+!         ENDIF
+!      ENDIF
 
 C
 C     Write a subdomain nodal attributes file (fort.13) for each PE

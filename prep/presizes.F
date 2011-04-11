@@ -802,21 +802,21 @@ C     jgf45.12 add code to handle user specified vertical eddy viscosity.
          IF(IEVC.EQ.50) READ(15,*) RDUM,RDUM           !Skip THETA1,THETA2
          READ(15,*) I3DSD,RDUM,RDUM,IDUM               !Process I3DSD
          READ(15,*) NSTA3DD                            !Process NSTA3DD
-         IF(I3DSD.NE.0) THEN
+         IF(NSTA3DD.NE.0) THEN !kmd : changed to match 2D options
             DO I=1,NSTA3DD
                READ(15,*) RDUM,RDUM !Skip density stations
             END DO
          ENDIF
          READ(15,*) I3DSV,RDUM,RDUM,IDUM               !Process I3DSV
          READ(15,*) NSTA3DV                            !Process NSTA3DV
-         IF (I3DSV.NE.0) THEN 
+         IF (NSTA3DV.NE.0) THEN  !kmd : changed to match 2D options
             DO I=1,NSTA3DV
                READ(15,*) RDUM,RDUM !Skip velocity stations
             END DO
          ENDIF
          READ(15,*) I3DST,RDUM,RDUM,IDUM !Process I3DST
          READ(15,*) NSTA3DT                            !Process NSTA3DT
-         IF (I3DST.NE.0) THEN 
+         IF (NSTA3DT.NE.0) THEN  !kmd : changed to match 2D options
             DO I=1,NSTA3DT
                READ(15,*) RDUM,RDUM !Skip turbulence stations
             ENDDO
