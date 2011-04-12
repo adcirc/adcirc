@@ -272,7 +272,6 @@ KDTREE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(KDTREE_MSRC) )
 
 ############################# Source & Object Files ######################
 #meb 04/20/2004 - added machdep.F onto POST_SRC
-#kmd 04/14/2009 - added init_cond.F into ADC_SRC
 
 METIS_SRC  =  metis.F
 PREP_SRC   =  adcprep.F decomp.F read_global.F prep.F interp.F machdep.F
@@ -613,7 +612,6 @@ $(O_DIR)read_input.o  : read_input.F
 $(O_DIR)transport.o   : transport.F  
 $(O_DIR)cstart.o      : cstart.F    
 $(O_DIR)hstart.o      : hstart.F  
-#$(O_DIR)init_cond.o   : init_cond.F 
 $(O_DIR)timestep.o    : timestep.F
 $(O_DIR)write_output.o: write_output.F  
 $(O_DIR)massbal.o     : massbal.F

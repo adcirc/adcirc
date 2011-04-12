@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.72   - 04/11/2011 - jgf - Removed init_cond.F and related comments
+C             from makefile since they are no longer needed. 
 C  v49.71   - 04/11/2011 - kmd - Updated the initial condition file for 
 C             baroclinic to be evaluated in parallel similar to the binary 
 C             hotstart file; updated station information for 3D.
