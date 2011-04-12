@@ -486,11 +486,13 @@ C     jgf46.02 Added NWS=8.
 C     jgf46.16 merged:
 C     cf & cm added NWS=9: asymmetric hurricane wind model
 C     sb46.28sb01 added NWS=12: OWI format
+C     jgf49.0804 Added NWS29 VortexOWI format.
         IF((NWS.NE.0).AND.    (NWS.NE.1 ) .AND.(ABS(NWS).NE.2).AND.
      &       (NWS.NE.3).AND.(ABS(NWS).NE.4) .AND.(ABS(NWS).NE.5).AND.
      &       (ABS(NWS).NE.45).AND.(ABS(NWS).NE.6).AND.
      &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.9).AND.
-     &       (ABS(NWS).NE.12) .AND. (ABS(NWS).NE.19))  THEN
+     &       (ABS(NWS).NE.12) .AND. (ABS(NWS).NE.19).AND.
+     &       (ABS(NWS).NE.29))  THEN
            print *, "Value for NWS not supported by parallel code"
            stop
         ENDIF
@@ -629,6 +631,12 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
                READ(WSMSG1,*) WTIMINC,RSTIMINC,CICE_TIMINC
             ENDIF
          ENDIF
+      ENDIF
+C
+C     jgf49.0804 Added NWS29 VortexOWI -- don't think we need to 
+C     parse out the WTIMINC or other parameters.
+      IF ((ABS(NWS)).EQ.29) THEN
+         READ(15,80) WSMSG1
       ENDIF
 C
       IF(ABS(NWS).EQ.6) THEN

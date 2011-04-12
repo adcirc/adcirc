@@ -300,7 +300,7 @@ C
       DO j=1, DirEffRLenNoOfVals
          DirEffRLenDefVal(j) = 0.0
       END DO
-      CanopyCoefDefVal       = 1.0
+      CanopyCoefDefVal       = 1.0 ! jgf49.1001 default is now full wind stress
       QuadraticFricDefVal    = 0.0
       DO j=1, BridgePilingsNoOfVals
          BridgePilingsDefVal(j) = 0.0
@@ -1459,6 +1459,8 @@ C     based on a table of directional wind drag values. Originally
 C     written into the hstart.F file by jjw in jjw-42.06j. This is used
 C     in hstart.F and timestep.F.
 C
+C     jgf49.1001 Extracted the application of the canopy coefficient and
+C     placed in the ApplyCanopyCoefficient subroutine.
 C     ----------------------------------------------------------------
       SUBROUTINE ApplyDirectionalWindReduction(NodeNumber, WindDragCo,
      &     WindMag, BathymetricDepth, Elevation, CutOffDepth, G,
@@ -1536,14 +1538,37 @@ c     compute land wind reduction factor
       endif
       if(fr.gt.1.0000d0) fr=1.0000d0
 c     adjust time interpolated wind field
-      WindX = vcanopy(NodeNumber)*fr*WindX 
-      WindY = vcanopy(NodeNumber)*fr*WindY 
+      WindX = fr*WindX 
+      WindY = fr*WindY 
 C
       RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE ApplyDirectionalWindReduction
 C     ----------------------------------------------------------------
 
+
+C     ----------------------------------------------------------------
+C     S U B R O U T I N E     
+C     A P P L Y   C A N O P Y   C O E F F I C I E N T
+C     ----------------------------------------------------------------
+C     jgf49.1001 Subroutine to apply the canopy coefficient. Was 
+C     originally included in the subroutine ApplyDirectionalWindReduction;
+C     this combination implicitly assumed that the two attributes would
+C     always be used together.
+C     ----------------------------------------------------------------
+      SUBROUTINE ApplyCanopyCoefficient(NodeNumber, WindX, WindY)
+      IMPLICIT NONE
+      INTEGER,  intent(in) :: NodeNumber ! index of node under consideration
+      REAL(SZ), intent(inout) :: WindX   ! x-dir component of wind velocity
+      REAL(SZ), intent(inout) :: WindY   ! x-dir component of wind velocity
+C
+      WindX = vcanopy(NodeNumber)*WindX 
+      WindY = vcanopy(NodeNumber)*WindY 
+C
+      RETURN
+C     ----------------------------------------------------------------
+      END SUBROUTINE ApplyCanopyCoefficient
+C     ----------------------------------------------------------------
 
 
 C     ----------------------------------------------------------------

@@ -28,11 +28,33 @@ C
      &                             TWOPI=PI*2.D0,
      &                             HFPI=PI/2.D0,
      &                             RAD2DEG = 180.D0/PI,
-     &                             DEG2RAD = PI/180.D0
+     &                             DEG2RAD = PI/180.D0,
+     &                             re=6378206.4d0,
+     &                             mperdeg  = re * pi / 180.0d0,
+     &                             omega = 2.0d0*pi / 86164.2d0,
+     &                             e=2.718281828459045d0
       INTEGER StormNumber !jgf46.28 For Holland Wind model wind multiplier
       REAL(8) WindRefTime !jgf46.29 seconds since beginning of year, this
                           !corresponds to time=0 of the simulation 
       REAL(8) BLAdj       !jgf46.32 boundary layer adjustment for Holland model
+
+      ! jgf49.1001 Variables for use in NWS=29, for embedding an asymmetric
+      ! vortex from NWS19 into an OWI basin scale met field from NAM
+      ! using NWS12
+      REAL(SZ) vortexRMW  ! Rmax of vortex data, nautical miles
+      REAL(SZ) vortexLat  ! @center of vortex, degrees west latitude
+      REAL(SZ) vortexLon  ! @center of vortex, degrees north longitude 
+      REAL(SZ), ALLOCATABLE :: vortexWVNX2(:) ! u wind vel from vortex model
+      REAL(SZ), ALLOCATABLE :: vortexWVNY2(:) ! v wind vel from vortex model
+      REAL(SZ), ALLOCATABLE :: vortexPRN2(:)  ! bar. press. from vortex model  
+      !
+      ! radial extent of unblended vortex winds, normalized to current Rmax
+      REAL(SZ) pureVortex
+      ! 
+      ! radial distance to point where vortex effects insignificant, 
+      ! normalized to current Rmax
+      REAL(SZ) pureBackground
+
 
 C------------------------end of data declarations-----------------------
        CONTAINS 
@@ -74,6 +96,32 @@ C     ----------------------------------------------------------------
       END FUNCTION WindDrag
 C     ----------------------------------------------------------------
 
+C     ----------------------------------------------------------------
+C      S U B R O U T I N E   G E T  S P H E R I C A L   D I S T A N C E 
+C     ----------------------------------------------------------------
+C     jgf49.1001 Subroutine to get the distance along the surface of 
+C     a sphere (the earth's surface in this case). 
+C     ----------------------------------------------------------------
+      SUBROUTINE getSphericalDistance(dx, dy, y1, y2, rad)
+      IMPLICIT NONE
+      REAL(SZ), intent(in) :: DX    ! longitude distance in radians
+      REAL(SZ), intent(in) :: DY    ! latitude distance in radians
+      REAL(SZ), intent(in) :: y1    ! degrees latitude of starting point
+      REAL(SZ), intent(in) :: y2    ! degrees latitude of ending point
+      REAL(SZ), intent(out) :: rad    ! earth radius
+C
+C     compute the distances based on haversine formula for 
+C     distance along a sphere
+      rad = re *
+     &  ( 2.0d0*ASIN(
+     &     sqrt(sin(DY/2.0d0)**2.0d0
+     &      + cos(y1*DEG2RAD)*cos(y2*DEG2RAD)*sin(DX/2.0d0)**2.0d0
+     &   )))
+
+      RETURN
+C     ----------------------------------------------------------------
+      END SUBROUTINE getSphericalDistance
+C     ----------------------------------------------------------------
 
 C     ----------------------------------------------------------------
 C      F U N C T I O N   W I N D I C E  D R A G
@@ -141,6 +189,58 @@ C     ----------------------------------------------------------------
       END FUNCTION WindIceDrag
 C     ----------------------------------------------------------------
 
+C     ----------------------------------------------------------------
+C     S U B R O U T I N E   G E T   B L E N D   F A C T O R 
+C     ----------------------------------------------------------------
+C     jgf49.1001 Subroutine to get the blending factor for combining 
+C     NWS19 and NWS12 (from NAM) met data.
+C     ----------------------------------------------------------------
+      SUBROUTINE getBlendFactor(i, SLAM, SFEA, bf)
+      IMPLICIT NONE
+      INTEGER, intent(in) :: i  ! node number         
+      REAL(SZ), intent(in) :: SLAM(:)  ! nodal longitude, degrees
+      REAL(SZ), intent(in) :: SFEA(:)  ! nodal latitude, degrees
+      REAL(SZ), intent(out):: bf       ! blend factor, 0 to 1
+      REAL(SZ) XCOOR ! longitude of node in degrees
+      REAL(SZ) YCOOR ! latitude of node in degrees
+C     distance from center of vortex to mesh node:
+      REAL(SZ) DX    ! longitude distance in radians
+      REAL(SZ) DY    ! latitude distance in radians
+      REAL(SZ) rad   ! point-to-point distance over a sphere, in meters
+      REAL(SZ) vortexOnly ! radial distance to edge of pure vortex, meters
+      REAL(SZ) backgroundOnly ! radial dist to undisturbed background, meters
+C
+      XCOOR=SLAM(I)*RAD2DEG
+      YCOOR=SFEA(I)*RAD2DEG
+C
+      DX=(XCOOR-vortexLon)*DEG2RAD
+      DY=(YCOOR-vortexLat)*DEG2RAD
+C      
+C     compute the distance from the center of the storm to the mesh
+C     node along a sphere
+      CALL getSphericalDistance(DX, DY, vortexLat, YCOOR, rad)
+C
+C     compute the radial distances to the various regions, in meters
+      vortexOnly = pureVortex * vortexRMW
+     &           * 1.852000003180799d0 * 1000.0d0
+      backgroundOnly = pureBackground * vortexRMW
+     &           * 1.852000003180799d0 * 1000.0d0
+C     determine which interpolation region this mesh node falls in
+      IF ( rad.le.vortexOnly ) bf = 1.0d0
+      IF ( rad.ge.backgroundOnly ) bf = 0.0d0
+C     interpolate linearly based on radial distance in the blended region
+      IF ( (rad.gt.vortexOnly).and.(rad.lt.backgroundOnly) ) THEN
+         bf = (rad-vortexOnly)/(backgroundOnly-vortexOnly)
+Cjgfdebug         WRITE(16,*) "bf is ", bf
+         IF ( (bf.gt.1.0d0).or.(bf.lt.0.0d0) ) THEN
+            bf = 0.0d0 
+         ENDIF
+      ENDIF
+Cjgfdebug      WRITE(16,*) vortexLat, vortexLon, vortexRMW, rad, bf
+      RETURN
+C     ----------------------------------------------------------------
+      END SUBROUTINE getBlendFactor
+C     ----------------------------------------------------------------
 
 C***********************************************************************
 C                                                                      *
@@ -3168,22 +3268,21 @@ C     cf added if missing values set winds to zero and pressure to P0
          ! it's the first time the routine is called so read
          ! in all variables and set the desired radii and
          ! such
+         ! jgf49.10: Replaced opening and closing of fort.22 file with
+         ! rewind, since opening is already done in the calling routine;
+         ! this also makes it easier to vary the file name (needed
+         ! for NWS29).
          !---------------
          IF (firstCall .EQ. 0) THEN  ! first time the routine is called
-
-        OPEN(22,file="fort.22",status="old")
             i=0
-         DO      ! determin ethe number of entries in the file
-            READ(22,*,END=991)
-            i=i+1
-         ENDDO
-991    continue
-           num_entry=i
-        close(22)
-
-         OPEN(22,file="fort.22",status="old")
-
-              i=num_entry
+            DO      ! determine the number of entries in the file
+               READ(22,*,END=991)
+               i=i+1
+            ENDDO
+991         continue
+            num_entry=i
+            rewind(22)
+            i=num_entry
          !---------------
          ! Allocate some variables
          !---------------
@@ -3439,6 +3538,16 @@ C     array counter.
 
 
         Vr = one * cycle_num(icyc-1)
+
+         ! jgf49.0803 Make the current Rmax and center location
+         ! available at the module level for use in NWS29
+         vortexLat = cLat 
+         vortexLon = cLon
+         vortexRMW = 0.0d0
+         ! arithmetic mean of the Rmax in the 4 storm quadrants
+         do i=1,4
+            vortexRMW = vortexRMW + 0.25d0*crmaxw(i)
+         end do 
 
          !-------------------------------
          ! Create a new asymmetric hurricane vortex.

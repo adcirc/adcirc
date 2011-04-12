@@ -297,17 +297,34 @@ C     generate hurricane winds from the Holland Wind Model.
 C     jgf46.16 Merged:
 !     cf & cm added nws = 9: asymmetric hurricane winds
       IF(NWS.EQ.9) THEN
-        AsymmetricTime = STATIM*86400.D0
-        OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-       CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
+         AsymmetricTime = STATIM*86400.D0
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
       ENDIF
 
 C     RJW Merged:
 !    rjw added nws = 19: asymmetric hurricane winds v2.0
       IF(NWS.EQ.19) THEN
-        AsymmetricTime = STATIM*86400.D0
-        OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-       CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
+         AsymmetricTime = STATIM*86400.D0
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22',STATUS='OLD')
+        CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
+      ENDIF
+
+      ! jgf49.1001 Added NWS=29, asymmetric vortex wind (NWS19) embedded in
+      ! OWI (NWS12) basin scale wind field.
+      IF(NWS.EQ.29) THEN
+         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+         ! now blend in the vortex met field
+         AsymmetricTime = STATIM*86400.D0
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+     &        STATUS='OLD')
+         ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
+         CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
+     &                 NP,AsymmetricTime,ICS)
       ENDIF
 
       IF(NWS.EQ.10) THEN

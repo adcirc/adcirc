@@ -104,6 +104,8 @@ C.....sb46.28sb03 added 09/xx/2006
      &     Apply3DBottomFriction,
      &     ApplyDirectionalWindReduction,
      &     LoadDirEffRLen,
+     &     ApplyCanopyCoefficient,
+     &     LoadCanopyCoef,
      &     ManningsN, LoadManningsN, !sb46.28sb02
      &     Z0b_var, LoadZ0B_var,!Rjw IOOS 2010
      &     BFCdLLimit !sb46.28sb02/jgf47.04 lower limit of Cd for bot. friction
@@ -208,7 +210,8 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) Time, TimeH
       INTEGER WarnElevExceeded, ErrorElevExceeded
       REAL(SZ) HollandTime, AsymmetricTime !for parametric hurricane models
-
+      ! jgf49.1001 factor used to blend vortex and background winds for NWS29:
+      REAL(SZ) bf ! blending factor, 0.0 to 1.0
 C   kmd48.33bc - added in the heat flux variables
       CHARACTER(80) :: CDUM80
       INTEGER :: NumofBCNode
@@ -1040,6 +1043,64 @@ Casey 090302: Added these lines for coupling winds to SWAN.
                SWAN_WY2(I,2) = WindY
             ENDIF
 #endif
+         END DO
+      ENDIF
+C
+C     jgf49.1001 Added NWS29 for embedding an asymmetric vortex from
+C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
+      IF(ABS(NWS).EQ.29) THEN
+         ! bring in next set of OWI met data 
+         IF(TIME.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+               WVNX1(I)=WVNX2(I)
+               WVNY1(I)=WVNY2(I)
+               PRN1(I)=PRN2(I)
+            END DO
+            CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+         ENDIF
+         WTRATIO=(TIME-WTIME1)/WTIMINC
+         ! bring in next set of asymmetric vortex met data to separate arrays
+         CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
+     &                 NP,AsymmetricTime, ICS)
+         DO I=1,NP
+            ! compute wind stress due to background met at this node
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            ! jgf49.1001 NAM winds already contain wind reduction
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PR2(I) = RampMete*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I))) 
+            WVNXOUT(I)=RampMete*WINDX
+            WVNYOUT(I)=RampMete*WINDY
+            ! compute wind stress due to vortex met at this node
+            WindX = vortexWVNX2(I)
+            WindY = vortexWVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            ENDIF
+            IF (LoadCanopyCoef) 
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            CALL getBlendFactor(I, SLAM, SFEA, bf)
+            ! blend the wind stresses and barometric pressures
+            WSX2(I) = bf*RampMete*0.001293d0*WDragCo*WindX*WindMag
+     &               +(1.0d0-bf)*WSX2(I)
+            WSY2(I) = bf*RampMete*0.001293d0*WDragCo*WindY*WindMag
+     &               +(1.0d0-bf)*WSY2(I)
+            PR2(I)= bf*RampMete*vortexPRN2(I)
+     &               +(1.0d0-bf)*PRN2(I)
+            WVNXOUT(I)=bf*RampMete*WindX+(1.0d0-bf)*WVNXOUT(I)
+            WVNYOUT(I)=bf*RampMete*WindY+(1.0d0-bf)*WVNYOUT(I)
          END DO
       ENDIF
 

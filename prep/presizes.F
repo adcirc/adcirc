@@ -589,6 +589,7 @@ C     tcm v49.64.01 broke nws = 2 out of the group below for additions to ice
         IF(NRS.GE.1) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
         MNWP=MNP
       ENDIF
+
 C.... tcm v48.4641 additions for ice
       IF((ABS(NWS).EQ.4).OR.(ABS(NWS).eq.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(NWS.EQ.8).OR.(NWS.EQ.9)
@@ -615,6 +616,19 @@ C.... tcm v48.4641 additions for ice
            ENDIF
         ENDIF
         MNWP=MNP
+      ENDIF
+
+      !jgf49.0804: Read WTIMINC line if NWS is 29 (VortexOWI)
+      IF ((ABS(NWS)).EQ.29) THEN
+         SELECT CASE(NRS)
+         CASE(0) ! no wave radiation stress
+            ! YYYY MM DD HH24 StNum BLAdj WTIMINC pureVortex pureBackgrnd
+            READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,WTIMINC,RDUM,RDUM
+         CASE DEFAULT ! some kind of wave radiation stress
+            ! YYYY MM DD HH24 StNum BLAdj WTIMINC RSTIMINC pureVortex pureBack
+            READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,
+     &                 WTIMINC,RSTIMINC,RDUM,RDUM        
+         END SELECT
       ENDIF
 
       IF(NWS.EQ.3) THEN
@@ -882,6 +896,7 @@ C     sb46.28sb01 added NWS=12: OWI format
       IF(ABS(NWS).EQ.12) WRITE(*,3023)
       IF(ABS(NWS).EQ.19) WRITE(*,3219)
       IF(NCICE.GE.1) WRITE(*,3220)  !tcm v49.64.01
+      IF(ABS(NWS).EQ.29) WRITE(*,3223)
       IF((NHARF.EQ.0).OR.(FMV.EQ.0.)) WRITE(*,3021)
       IF((NHARF.GE.1).AND.(FMV.NE.0.)) WRITE(*,3022)
       IF(ILUMP.EQ.0) WRITE(*,3031)
@@ -925,6 +940,7 @@ C
  3219 FORMAT(' *   Also, NWS=+-19 Asymmetric Holland wind v2.0     *',/,
      &       ' *                 forcing is used,                  *')
  3220 FORMAT(' *   Also, ABS(NWS)>=1000 ice concentration are used,*') 
+ 3223 FORMAT(' *   Also, NWS=+-29 VortexOWI met forcing is used,   *') 
  3018 FORMAT(' *   Also, ABS(NWS)>=100 wave stress forcing is used,*')
  3019 FORMAT(' *   Also, AVN wind & pressure forcing will be used, *')
  3020 FORMAT(' *   Also, ETA wind & pressure forcing will be used, *')

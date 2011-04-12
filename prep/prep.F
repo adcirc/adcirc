@@ -1284,7 +1284,7 @@ C     sb46.28sb01 added NWS=12: OWI format
          IF ((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.45).OR.
      &        (ABS(NWS).EQ.5).OR.(ABS(NWS).EQ.6).OR.(ABS(NWS).EQ.8)
      &        .OR.(ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)
-     &         .OR.(ABS(NWS).EQ.19))THEN
+     &         .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29))THEN
             WRITE(15,80) WSMSG1
          ENDIF
          IF (NWS.EQ.3) THEN

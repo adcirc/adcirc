@@ -1049,7 +1049,7 @@ C.... BREAK OUT THE ICE CONCENTRATION FLAG FROM NWS/NRS
      &   (NWS.NE.3)    .AND.(ABS(NWS).NE.4)  .AND.(ABS(NWS).NE.5)  .AND.
      &   (NWS.NE.6)    .AND.(NWS.NE.7)       .AND.(NWS.NE.8)       .AND.
      &   (NWS.NE.9)    .AND.(NWS.NE.10)      .AND.(NWS.NE.11)      .AND.
-     &   (ABS(NWS).NE.12) .AND.   (NWS.NE.19)                      .AND.
+     &   (ABS(NWS).NE.12) .AND.   (NWS.NE.19) .AND.(ABS(NWS).NE.29).AND.
      &   (NWS.NE.100)  .AND.(NWS.NE.101)     .AND.(NWS.NE.102)     .AND.
      &   (NWS.NE.103)  .AND.(ABS(NWS).NE.104).AND.(ABS(NWS).NE.105).AND.
      &   (NWS.NE.106)  .AND.(NWS.NE.110)     .AND.(NWS.NE.111)     .AND.
@@ -1354,7 +1354,8 @@ C     rjw added nws = 19: asymmetric hurricane winds v2.0
      &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
      &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
-     &    /,9X,'WHICH IS CREATED FROM TEH ATCF FILE USING THE ASWIP PROGRAM',
+     &    /,9X,
+     &    'WHICH IS CREATED FROM TEH ATCF FILE USING THE ASWIP PROGRAM',
      &    /,9X,'THE UNIT 22 FILE BEGINS AT TIME=STATIM.',
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
@@ -1365,13 +1366,45 @@ C     rjw added nws = 19: asymmetric hurricane winds v2.0
      &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
      &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
-     &    /,9X,'WHICH IS CREATED FROM TEH ATCF FILE USING THE ASWIP PROGRAM',
+     &    /,9X,
+     &    'WHICH IS CREATED FROM TEH ATCF FILE USING THE ASWIP PROGRAM',
      &    /,9X,'THE UNIT 22 FILE BEGINS AT THE TIME OF THE HOT START',
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
 
 C....Surface Wave Stresses
+C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
+      IF(NWS.EQ.29) THEN
+         WRITE(16,2402) NWS
+ 2402    FORMAT(/,5X,'NWS = ',I2,
+     &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
+     &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
+     &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
+     &    /,9X,
+     &    'WHICH IS CREATED FROM THE ATCF FILE USING THE ASWIP PROGRAM',
+     &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ FROM RAW ',
+     &    /,9X,'OWI DATA FILES (UNIT 221-224).',
+     &    /,9X,'META DATA IS READ FROM UNIT 220.'
+     &    /,9X,'THE UNIT 22 FILE BEGINS AT TIME=STATIM.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.')
+      ENDIF
+      IF(NWS.EQ.-29) THEN
+         WRITE(16,2403) NWS
+ 2403    FORMAT(/,5X,'NWS = ',I2,
+     &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
+     &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
+     &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
+     &    /,9X,
+     &    'WHICH IS CREATED FROM THE ATCF FILE USING THE ASWIP PROGRAM',
+     &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ FROM RAW ',
+     &    /,9X,'OWI DATA FILES (UNIT 221-224).',
+     &    /,9X,'META DATA IS READ FROM UNIT 220.'
+     &    /,9X,'THE UNIT 22 FILE BEGINS AT THE TIME OF THE HOT START',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.')
+      ENDIF
       IF(NRS.EQ.0) THEN
          WRITE(16,2390) NRS
  2390    FORMAT(/,5X,'NRS = ',I2,
@@ -1767,6 +1800,34 @@ C LETS not use this now but have the option to i nthe future
 c            WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
 c 6112       FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
 c     &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
+c         CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
+c     &        WindRefTime, MyProc, NScreen, ScreenUnit)
+      ENDIF
+
+C     jgf49.1001 Added NWS29 format for embedding an asymmetric vortex inside
+C     an OWI basin scale met field derived from NAM winds.      
+      IF(ABS(NWS).EQ.29) THEN
+         IF(NRS.EQ.0) THEN
+             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &                  WTIMINC, pureVortex, pureBackground
+         ENDIF
+         IF(NRS.GE.1) THEN
+             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &                  WTIMINC, RSTIMINC, pureVortex, pureBackground
+         ENDIF
+      ENDIF
+C     rjw added nws = 19: asymmetric hurricane winds
+      IF(ABS(NWS).EQ.19) THEN
+         IF(NRS.EQ.0) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj
+         ELSEIF (NRS.EQ.1) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &           RSTIMINC
+C LETS not use this now but have the option to i nthe future
+c            WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
+c 6112       FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
+c     &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
+         ENDIF
 c         CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
 c     &        WindRefTime, MyProc, NScreen, ScreenUnit)
       ENDIF

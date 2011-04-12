@@ -57,8 +57,8 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 #endif
       USE NodalAttributes, ONLY : 
      &     nolibf, nwp, tau0, cf, eslm,            
-     &     LoadDirEffRLen,
-     &     ApplyDirectionalWindReduction,
+     &     LoadDirEffRLen, LoadCanopyCoef,
+     &     ApplyDirectionalWindReduction, ApplyCanopyCoefficient,
      &     OutputTau0 !jgf47.06
       IMPLICIT NONE
 
@@ -129,6 +129,9 @@ C     in parallel.
 C
 C     tcm v49.64.01 -- ADDED variables for Ice concentration fields
       REAL(SZ) PIC,CICE_TRatio  !ICE VARIABLES
+C
+C     jgf49.1001 Added for blending NWS19 and NWS12 (from NAM) met data
+      REAL(SZ) bf ! blending factor for the two wind data types
 
 C     kmd -- Added variables for initial conditions
       CHARACTER(80) :: gridinfo
@@ -1702,7 +1705,7 @@ C  tcm v49.16 20100617
 !     rjw added nws = 19: asymmetric hurricane winds v2.0
 
       IF(ABS(NWS).EQ.19) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22',STATUS='OLD')
              CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TIME, ICS)
 !         IF(NWS.EQ.9) THEN
 !             CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TIME, ICS)
@@ -1735,6 +1738,100 @@ C  tcm v49.16 20100617
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
             WVNXOUT(I)=RampMete2*WindX
             WVNYOUT(I)=RampMete2*WindY
+         ENDDO
+      ENDIF
+C
+C     jgf49.1001 Added NWS29, asymmetric vortex winds (NWS19)
+C     embedded in an OWI basin scale gridded met field (NWS12)
+C     from NAM data
+      IF(NWS.EQ.29) THEN
+         WTIME1 = STATIM*86400.D0
+         WTIME2 = WTIME1 + WTIMINC
+C        This just initializes some variables and might 
+C        set WVNX1, etc ... if skipping ahead.
+         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+C        !TCM v49.02 Added read for rec. 1
+         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G) 
+         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+         DO IT=1,ITHS
+            TIMEIT=IT*DTDP + STATIM*86400.D0
+            IF(TIMEIT.GT.WTIME2) THEN
+               WTIME1=WTIME2
+               WTIME2=WTIME2+WTIMINC
+               DO I=1,NP
+                  WVNX1(I)=WVNX2(I)
+                  WVNY1(I)=WVNY2(I)
+                  PRN1(I)=PRN2(I)
+                END DO
+                CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+             ENDIF
+         END DO
+         WTRATIO=(TIME-WTIME1)/WTIMINC
+         DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            ! jgf49.1001 NAM winds already contain wind reduction
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PR2(I) = RampMete2*PRN1(I)
+            WVNXOUT(I)=RampMete2*WINDX
+            WVNYOUT(I)=RampMete2*WINDY
+         END DO
+      ENDIF
+      IF(NWS.EQ.-29) THEN
+         WTIME1 = TIME
+         WTIME2 = WTIME1 + WTIMINC
+         CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+         CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+         DO I=1,NP
+            WINDX = WVNX1(I)
+            WINDY = WVNY1(I)
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            ! jgf49.1001 NAM winds already contain wind reduction
+            IF (LoadCanopyCoef) 
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PR2(I) = RampMete2*PRN1(I)
+            WVNXOUT(I)=RampMete*WINDX
+            WVNYOUT(I)=RampMete*WINDY
+         END DO
+      ENDIF
+C     Now blend in the vortex winds into the background OWI wind field.
+      IF(ABS(NWS).EQ.29) THEN
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22',
+     &        STATUS='OLD')
+         ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
+         CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
+     &                NP,TIME, ICS)
+         DO I=1,NP
+            WindX = vortexWVNX2(I)
+            WindY = vortexWVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            ENDIF
+            IF (LoadCanopyCoef) 
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            CALL getBlendFactor(I, SLAM, SFEA, bf)
+            WSX2(I) = bf*RampMete2*0.001293d0*WDragCo*WindX*WindMag 
+     &               +(1.0d0-bf)*WSX2(I)
+            WSY2(I) = bf*RampMete2*0.001293d0*WDragCo*WindY*WindMag
+     &               +(1.0d0-bf)*WSY2(I)                    
+            PR2(I) = bf*RampMete2*vortexPRN2(I)
+     &               +(1.0d0-bf)*PRN2(I)                    
+            WVNXOUT(I)=bf*RampMete2*WindX+(1.0d0-bf)*WVNXOUT(I)
+            WVNYOUT(I)=bf*RampMete2*WindY+(1.0d0-bf)*WVNYOUT(I)
          ENDDO
       ENDIF
 C

@@ -3,6 +3,27 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.73   - 04/11/2011 - jgf - Merged vortexowi branch (r421:r536) to trunk,
+C             bringing in the changes from v49.08.01 to v49.08.04 to create
+C             NWS=29 option for blending vortex winds (NWS19) with 
+C             OWI winds (NWS12). 
+C  v49.0804   - 12/20/10 - jgf - Made allowance for NWS29 in read_global.F,
+C               prep.F and adcprep.F; cstart.F now looks in GBLINPUTDIR for
+C               the fort.22 for NWS29; corrected missing parenthesis in wind.F;
+C               added reading of WTIMINC line for NWS29 in presizes.F; added
+C               blend factor for blending vortex winds and OWI winds.
+C  v49.0803   - 04/16/10 - jgf - Added code to NWS19 to properly export the
+C               vortex center coordinates and current Rmax.
+C  v49.0802   - 04/08/10 - jgf - Fixed array out of bounds in log message
+C               in timestep.F. Eliminated duplicate open of fort.22 in 
+C               NWS19. Fixed file name to open for NWS29 in hstart.F.
+C  v49.0801   - 03/19/10 - jgf - Added code for new NWS29 option that embeds an 
+C               asymmetric vortex (NWS19) into an OWI formatted (NWS12) 
+C               basin scale met field (derived from NAM). Also separated 
+C               the application of wind reduction factors from the application
+C               of the canopy coefficient, and made several key variables 
+C               from NWS19 available at the wind module level for use by
+C               other wind-related subroutines.
 C  v49.72   - 04/11/2011 - jgf - Removed init_cond.F and related comments
 C             from makefile since they are no longer needed. 
 C  v49.71   - 04/11/2011 - kmd - Updated the initial condition file for 
