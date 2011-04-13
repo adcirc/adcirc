@@ -3,6 +3,7 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.74   - 04/13/2011 - tcm - Fixed bug in call to FEGRIDS in read_input.F
 C  v49.73   - 04/11/2011 - jgf - Merged vortexowi branch (r421:r536) to trunk,
 C             bringing in the changes from v49.08.01 to v49.08.04 to create
 C             NWS=29 option for blending vortex winds (NWS19) with 

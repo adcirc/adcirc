@@ -5505,7 +5505,9 @@ c     IGC <> 0 - Set up grid in subroutine FEGRIDS
             HH1=HH1+DP(NH)
          ENDDO 
          HH1=HH1/NP                        !domain averaged depth
-         CALL FEGRIDS(IGC,HH1,NH)
+! tcm v49.74 -- removed NH from call to FEGRIDS which does not need it
+         !CALL FEGRIDS(IGC,HH1,NH)
+         CALL FEGRIDS(IGC,HH1)
       ENDIF
 
 c     write out the vertical grid in fort.16 file
