@@ -2847,14 +2847,14 @@ C
       IMPLICIT NONE
       integer :: nbytes = 0
       LOGICAL FOUND
-      INTEGER I,J,IPROC,INDEX,IHOTSTP, not_active
+      INTEGER I,J,IPROC,IINDX,IHOTSTP, not_active
       INTEGER IMHSF,ITHSF
       CHARACTER FNAME*60,LOCFN*14
       CHARACTER*16 FNAME1
       CHARACTER*8 FNAM8(2)
       EQUIVALENCE (FNAM8(1),FNAME1)
 
-      INTEGER,ALLOCATABLE  :: LOC(:),NOFF(:), domA(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:),NOFF(:), domA(:)
       REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:),
      &    UU2(:),VV2(:),CH1(:)
       REAL(8) TIMEHSF
@@ -3129,103 +3129,103 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
 C
 C--Open All Local Hot Start files
 C
-      ALLOCATE ( LOC(NPROC) )
+      ALLOCATE ( LOC2(NPROC) )
       DO IPROC = 1,NPROC
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          LOCFN(1:14) = 'PE0000/'//FNAME(1:7)
          CALL IWRITE(LOCFN,3,6,IPROC-1)
-         OPEN (LOC(IPROC),FILE=LOCFN)
+         OPEN (LOC2(IPROC),FILE=LOCFN)
       ENDDO
 C
 C--Write out info to local hot start files
 C
       DO IPROC = 1,NPROC
-         WRITE(LOC(IPROC),*) FileFmtVn
-         WRITE(LOC(IPROC),*) IMHSF
-         WRITE(LOC(IPROC),*) TIMEHSF
-         WRITE(LOC(IPROC),*) ITHSF
-         WRITE(LOC(IPROC),*) NNODP(IPROC)
-         WRITE(LOC(IPROC),*) NELP(IPROC)
-         WRITE(LOC(IPROC),*) NNODP(IPROC)
-         WRITE(LOC(IPROC),*) NELP(IPROC)
+         WRITE(LOC2(IPROC),*) FileFmtVn
+         WRITE(LOC2(IPROC),*) IMHSF
+         WRITE(LOC2(IPROC),*) TIMEHSF
+         WRITE(LOC2(IPROC),*) ITHSF
+         WRITE(LOC2(IPROC),*) NNODP(IPROC)
+         WRITE(LOC2(IPROC),*) NELP(IPROC)
+         WRITE(LOC2(IPROC),*) NNODP(IPROC)
+         WRITE(LOC2(IPROC),*) NELP(IPROC)
 
          DO I=1, NNODP(IPROC)
-            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),*) ETA1(INDEX)
+            IINDX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC2(IPROC),*) ETA1(IINDX)
          END DO
 
          DO I=1, NNODP(IPROC)
-            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),*) ETA2(INDEX)
+            IINDX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC2(IPROC),*) ETA2(IINDX)
          END DO
 
          DO I=1, NNODP(IPROC)
-            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),*) UU2(INDEX)
+            IINDX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC2(IPROC),*) UU2(IINDX)
          END DO
 
          DO I=1, NNODP(IPROC)
-            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),*) VV2(INDEX)
+            IINDX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC2(IPROC),*) VV2(IINDX)
          END DO
 
          IF(IM.EQ.10) THEN
             DO I=1, NNODP(IPROC)
-               INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOC(IPROC),*) CH1(INDEX)
+               IINDX = ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOC2(IPROC),*) CH1(IINDX)
             END DO
          ENDIF
 
          DO I=1, NNODP(IPROC)
-            INDEX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),*) NODECODE(INDEX)
+            IINDX = ABS(IMAP_NOD_LG(I,IPROC))
+            WRITE(LOC2(IPROC),*) NODECODE(IINDX)
          END DO
 
          DO I=1,NELP(IPROC)
-            INDEX=ABS(IMAP_EL_LG(I,IPROC))
-            WRITE(LOC(IPROC),*) NOFF(INDEX)
+            IINDX=ABS(IMAP_EL_LG(I,IPROC))
+            WRITE(LOC2(IPROC),*) NOFF(IINDX)
          END DO
 
 C
 C     jgf46.02 Write out 3D hotstart data if appropriate
          IF (IMHSF.GT.10) THEN
-            CALL WriteInitCond3D(LOC(IPROC),IPROC)
+            CALL WriteInitCond3D(LOC2(IPROC),IPROC)
          ENDIF
 #if 0
 C
 C....IF APPROPRIATE, WRITE OUT HOT START INFORMATION FOR IN PROGRESS HARMONIC ANALYSIS
 
 c       IF((IHARIND.EQ.1).AND.(ITHSF.GT.ITHAS)) THEN
-c         WRITE(LOC(IPROC),REC=IHOTSTP+1) ICHA
+c         WRITE(LOC2(IPROC),REC=IHOTSTP+1) ICHA
 c         IHOTSTP = IHOTSTP + 1
 c         CALL HAHOUT(NP,NSTAE,NSTAV,NHASE,NHASV,NHAGE,NHAGV,
-c    &                LOC(IPROC),IHOTSTP)
+c    &                LOC2(IPROC),IHOTSTP)
 c
-c         IF(NHASE.EQ.1) CALL HAHOUTES(NSTAE,LOC(IPROC),IHOTSTP)
-c         IF(NHASV.EQ.1) CALL HAHOUTVS(NSTAV,LOC(IPROC),IHOTSTP)
-c         IF(NHAGE.EQ.1) CALL HAHOUTEG(MNP,LOC(IPROC),IHOTSTP)
-c         IF(NHAGV.EQ.1) CALL HAHOUTVG(MNP,LOC(IPROC),IHOTSTP)
+c         IF(NHASE.EQ.1) CALL HAHOUTES(NSTAE,LOC2(IPROC),IHOTSTP)
+c         IF(NHASV.EQ.1) CALL HAHOUTVS(NSTAV,LOC2(IPROC),IHOTSTP)
+c         IF(NHAGE.EQ.1) CALL HAHOUTEG(MNP,LOC2(IPROC),IHOTSTP)
+c         IF(NHAGV.EQ.1) CALL HAHOUTVG(MNP,LOC2(IPROC),IHOTSTP)
 c         ENDIF
 c
 c       if(CHARMV) then
 c         IF((IHARIND.EQ.1).AND.(ITHSF.GT.ITMV)) THEN
 c           IHOTSTP=IHOTSTP+1
-c           WRITE(LOC(IPROC),REC=IHOTSTP) NTSTEPS
+c           WRITE(LOC2(IPROC),REC=IHOTSTP) NTSTEPS
 c           IF(NHAGE.EQ.1) THEN
 c             DO I=1, NNODP(IPROC)
-c               INDEX = IMAP_NOD_LG(I,IPROC)
+c               IINDX = IMAP_NOD_LG(I,IPROC)
 c               DO I=1,MNP
-c                 WRITE(LOC(IPROC),REC=IHOTSTP+1) ELAV(INDEX)
-c                 WRITE(LOC(IPROC),REC=IHOTSTP+2) ELVA(INDEX)
+c                 WRITE(LOC2(IPROC),REC=IHOTSTP+1) ELAV(IINDX)
+c                 WRITE(LOC2(IPROC),REC=IHOTSTP+2) ELVA(IINDX)
 c                 IHOTSTP=IHOTSTP+2
 c                 END DO
 c             ENDIF
 c           IF(NHAGV.EQ.1) THEN
 c             DO I=1,NNODP(IPROC)
-c               WRITE(LOC(IPROC),REC=IHOTSTP+1) XVELAV(INDEX)
-c               WRITE(LOC(IPROC),REC=IHOTSTP+2) YVELAV(INDEX)
-c               WRITE(LOC(IPROC),REC=IHOTSTP+3) XVELVA(INDEX)
-c               WRITE(LOC(IPROC),REC=IHOTSTP+4) YVELVA(INDEX)
+c               WRITE(LOC2(IPROC),REC=IHOTSTP+1) XVELAV(IINDX)
+c               WRITE(LOC2(IPROC),REC=IHOTSTP+2) YVELAV(IINDX)
+c               WRITE(LOC2(IPROC),REC=IHOTSTP+3) XVELVA(IINDX)
+c               WRITE(LOC2(IPROC),REC=IHOTSTP+4) YVELVA(IINDX)
 c               IHOTSTP=IHOTSTP+4
 c               END DO
 c             ENDIF
@@ -3239,10 +3239,10 @@ C--Close Global file and all the Local Files
 C
       CLOSE (IHOT)
       DO IPROC=1, NPROC
-         CLOSE (LOC(IPROC))
+         CLOSE (LOC2(IPROC))
       ENDDO
 C
-      DEALLOCATE ( LOC )
+      DEALLOCATE ( LOC2 )
       nbytes = 4*nproc
       call memory_dealloc(nbytes)
       DEALLOCATE ( ETA1, ETA2, EtaDisc, UU2, VV2, NODECODE, CH1 )
@@ -3289,7 +3289,7 @@ C
       CHARACTER*8 FNAM8(2)
       EQUIVALENCE (FNAM8(1),FNAME1)
 
-      INTEGER,ALLOCATABLE  :: LOC(:),NOFF(:), domA(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:),NOFF(:), domA(:)
       REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:), 
      &    UU2(:),VV2(:),CH1(:)
       REAL(8) TIMEHSF
@@ -3596,109 +3596,109 @@ C
 C--Open All Local Hot Start files 
 C
 
-      ALLOCATE ( LOC(NPROC) )
+      ALLOCATE ( LOC2(NPROC) )
       DO IPROC = 1,NPROC
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          LOCFN(1:14) = 'PE0000/'//FNAME(1:7)
          CALL IWRITE(LOCFN,3,6,IPROC-1)
-         OPEN (LOC(IPROC),FILE=LOCFN,ACCESS='DIRECT',RECL=8)
+         OPEN (LOC2(IPROC),FILE=LOCFN,ACCESS='DIRECT',RECL=8)
       ENDDO
 C
 C--Write out info to local hot start files
 C
       DO IPROC = 1,NPROC
          IHOTSTP=1
-         WRITE(LOC(IPROC),REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) IMHSF          ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) TIMEHSF        ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) ITHSF          ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) NNODP(IPROC)   ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) NELP(IPROC)    ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) NNODP(IPROC)   ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) NELP(IPROC)    ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) IMHSF          ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) TIMEHSF        ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) ITHSF          ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NNODP(IPROC)   ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NELP(IPROC)    ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NNODP(IPROC)   ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NELP(IPROC)    ; IHOTSTP = IHOTSTP + 1
 
          DO I=1, NNODP(IPROC)
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),REC=IHOTSTP) ETA1(INDX)
+            WRITE(LOC2(IPROC),REC=IHOTSTP) ETA1(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),REC=IHOTSTP) ETA2(INDX)
+            WRITE(LOC2(IPROC),REC=IHOTSTP) ETA2(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),REC=IHOTSTP) EtaDisc(INDX)
+            WRITE(LOC2(IPROC),REC=IHOTSTP) EtaDisc(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),REC=IHOTSTP) UU2(INDX)
+            WRITE(LOC2(IPROC),REC=IHOTSTP) UU2(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),REC=IHOTSTP) VV2(INDX)
+            WRITE(LOC2(IPROC),REC=IHOTSTP) VV2(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          IF(IM.EQ.10) THEN
             DO I=1, NNODP(IPROC)
                INDX = ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOC(IPROC),REC=IHOTSTP) CH1(INDX)
+               WRITE(LOC2(IPROC),REC=IHOTSTP) CH1(INDX)
                IHOTSTP=IHOTSTP+1
             END DO
          ENDIF
 
          DO I=1, NNODP(IPROC)
             INDX = ABS(IMAP_NOD_LG(I,IPROC))
-            WRITE(LOC(IPROC),REC=IHOTSTP) NODECODE(INDX)
+            WRITE(LOC2(IPROC),REC=IHOTSTP) NODECODE(INDX)
             IHOTSTP=IHOTSTP+1
          END DO
 
          DO I=1,NELP(IPROC)
             INDX=ABS(IMAP_EL_LG(I,IPROC))
-            WRITE(LOC(IPROC),REC=IHOTSTP) NOFF(INDX)
+            WRITE(LOC2(IPROC),REC=IHOTSTP) NOFF(INDX)
             IHOTSTP=IHOTSTP+1                                    
          END DO
          
-         WRITE(LOC(IPROC),REC=IHOTSTP) IESTP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) IESTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(LOC(IPROC),REC=IHOTSTP) IVSTP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) IVSTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUV  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(LOC(IPROC),REC=IHOTSTP) ICSTP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) ICSTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUC  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(LOC(IPROC),REC=IHOTSTP) IPSTP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) IWSTP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) IPSTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) IWSTP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUM  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(LOC(IPROC),REC=IHOTSTP) IGEP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUGE  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) IGEP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUGE  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(LOC(IPROC),REC=IHOTSTP) IGVP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUGV  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) IGVP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUGV  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(LOC(IPROC),REC=IHOTSTP) IGCP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUGC  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) IGCP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUGC  ; IHOTSTP = IHOTSTP + 1
 
-         WRITE(LOC(IPROC),REC=IHOTSTP) IGPP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) IGWP  ; IHOTSTP = IHOTSTP + 1
-         WRITE(LOC(IPROC),REC=IHOTSTP) NSCOUGW  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) IGPP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) IGWP  ; IHOTSTP = IHOTSTP + 1
+         WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUGW  ; IHOTSTP = IHOTSTP + 1
 
 C  kmd48.33bc moved 3D hot start information to subroutine
 C jgf49.43 refined check of IMHSF so that it picks up only
 C     IM values that indicate 3D (and so we can use six integer IM values).
       IF ((IMHSF.EQ.1).OR.(IMHSF.EQ.11).OR.
      &    (IMHSF.EQ.21).OR.(IMHSF.EQ.31)) THEN 
-            CALL WriteHotStart3D(LOC(IPROC),IHOTSTP,IPROC)
+            CALL WriteHotStart3D(LOC2(IPROC),IHOTSTP,IPROC)
       ENDIF
 
 #if 0
@@ -3706,36 +3706,36 @@ C
 C....IF APPROPRIATE, WRITE OUT HOT START INFORMATION FOR IN PROGRESS HARMONIC ANALYSIS
 
 c       IF((IHARIND.EQ.1).AND.(ITHSF.GT.ITHAS)) THEN
-c         WRITE(LOC(IPROC),REC=IHOTSTP+1) ICHA
+c         WRITE(LOC2(IPROC),REC=IHOTSTP+1) ICHA
 c         IHOTSTP = IHOTSTP + 1
 c         CALL HAHOUT(NP,NSTAE,NSTAV,NHASE,NHASV,NHAGE,NHAGV,
-c    &                LOC(IPROC),IHOTSTP)
+c    &                LOC2(IPROC),IHOTSTP)
 c
-c         IF(NHASE.EQ.1) CALL HAHOUTES(NSTAE,LOC(IPROC),IHOTSTP)
-c         IF(NHASV.EQ.1) CALL HAHOUTVS(NSTAV,LOC(IPROC),IHOTSTP)
-c         IF(NHAGE.EQ.1) CALL HAHOUTEG(MNP,LOC(IPROC),IHOTSTP)
-c         IF(NHAGV.EQ.1) CALL HAHOUTVG(MNP,LOC(IPROC),IHOTSTP)
+c         IF(NHASE.EQ.1) CALL HAHOUTES(NSTAE,LOC2(IPROC),IHOTSTP)
+c         IF(NHASV.EQ.1) CALL HAHOUTVS(NSTAV,LOC2(IPROC),IHOTSTP)
+c         IF(NHAGE.EQ.1) CALL HAHOUTEG(MNP,LOC2(IPROC),IHOTSTP)
+c         IF(NHAGV.EQ.1) CALL HAHOUTVG(MNP,LOC2(IPROC),IHOTSTP)
 c         ENDIF
 c
 c       if(CHARMV) then
 c         IF((IHARIND.EQ.1).AND.(ITHSF.GT.ITMV)) THEN
 c           IHOTSTP=IHOTSTP+1
-c           WRITE(LOC(IPROC),REC=IHOTSTP) NTSTEPS
+c           WRITE(LOC2(IPROC),REC=IHOTSTP) NTSTEPS
 c           IF(NHAGE.EQ.1) THEN
 c             DO I=1, NNODP(IPROC)
 c               INDX = IMAP_NOD_LG(I,IPROC)
 c               DO I=1,MNP
-c                 WRITE(LOC(IPROC),REC=IHOTSTP+1) ELAV(INDX)
-c                 WRITE(LOC(IPROC),REC=IHOTSTP+2) ELVA(INDX)
+c                 WRITE(LOC2(IPROC),REC=IHOTSTP+1) ELAV(INDX)
+c                 WRITE(LOC2(IPROC),REC=IHOTSTP+2) ELVA(INDX)
 c                 IHOTSTP=IHOTSTP+2
 c                 END DO
 c             ENDIF
 c           IF(NHAGV.EQ.1) THEN
 c             DO I=1,NNODP(IPROC)
-c               WRITE(LOC(IPROC),REC=IHOTSTP+1) XVELAV(INDX)
-c               WRITE(LOC(IPROC),REC=IHOTSTP+2) YVELAV(INDX)
-c               WRITE(LOC(IPROC),REC=IHOTSTP+3) XVELVA(INDX)
-c               WRITE(LOC(IPROC),REC=IHOTSTP+4) YVELVA(INDX)
+c               WRITE(LOC2(IPROC),REC=IHOTSTP+1) XVELAV(INDX)
+c               WRITE(LOC2(IPROC),REC=IHOTSTP+2) YVELAV(INDX)
+c               WRITE(LOC2(IPROC),REC=IHOTSTP+3) XVELVA(INDX)
+c               WRITE(LOC2(IPROC),REC=IHOTSTP+4) YVELVA(INDX)
 c               IHOTSTP=IHOTSTP+4
 c               END DO
 c             ENDIF
@@ -3749,10 +3749,10 @@ C--Close Global file and all the Local Files
 C
       CLOSE (IHOT)
       DO IPROC=1, NPROC
-         CLOSE (LOC(IPROC))
+         CLOSE (LOC2(IPROC))
       ENDDO
 C
-      IF(ALLOCATED(LOC)) DEALLOCATE ( LOC )
+      IF(ALLOCATED(LOC2)) DEALLOCATE ( LOC2 )
       nbytes = 4*nproc
       call memory_dealloc(nbytes)
       IF(ALLOCATED( ETA1 ))DEALLOCATE ( ETA1  )
@@ -3833,7 +3833,7 @@ C
       CHARACTER*8 FNAM8(2)
       EQUIVALENCE (FNAM8(1),FNAME1)
 
-      INTEGER,ALLOCATABLE  :: LOC(:),NOFF(:), domA(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:),NOFF(:), domA(:)
       REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:), 
      &    UU2(:),VV2(:),CH1(:)
       REAL(8) TIMEHSF, RVALUE
@@ -3867,15 +3867,15 @@ C
 C
 C--Open All Local Hot Start files 
 C
-      ALLOCATE ( LOC(NPROC) )
+      ALLOCATE ( LOC2(NPROC) )
       DO IPROC = 1,NPROC
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          LOCFN(1:14) = 'PE0000/'//FNAME(1:7)
          CALL IWRITE(LOCFN,3,6,IPROC-1)
          INQUIRE(FILE=LOCFN,EXIST=FOUND)
          IF (FOUND) THEN
            WRITE(*,1011) LOCFN
-           OPEN (LOC(IPROC),FILE=LOCFN,ACCESS='DIRECT',RECL=8)
+           OPEN (LOC2(IPROC),FILE=LOCFN,ACCESS='DIRECT',RECL=8)
          ELSE
           WRITE(*,1010) FNAME
           STOP
@@ -3937,46 +3937,46 @@ C--Read info from local hot start files
 C
       DO IPROC = 1,NPROC
          IHOTSTP=1
-         READ(LOC(IPROC),REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) IMHSF          ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) TIMEHSF        ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) ITHSF          ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) IDUMY          ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) IDUMY          ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) IDUMY          ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) IDUMY          ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IMHSF          ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) TIMEHSF        ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) ITHSF          ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IDUMY          ; IHOTSTP = IHOTSTP + 1
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
+            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE           
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) ETA1(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
+            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE           
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) ETA2(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
+            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE           
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) EtaDisc(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
+            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE           
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) UU2(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
+            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE           
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) VV2(INDX) = RVALUE
          END DO
@@ -3984,7 +3984,7 @@ C
          IF(IM.EQ.10) THEN
             DO I=1, NNODP(IPROC)
                INDX = IMAP_NOD_LG(I,IPROC)
-               READ(LOC(IPROC),REC=IHOTSTP) RVALUE           
+               READ(LOC2(IPROC),REC=IHOTSTP) RVALUE           
                IHOTSTP=IHOTSTP+1
                IF (INDX > 0) CH1(INDX) = RVALUE
             END DO
@@ -3992,91 +3992,91 @@ C
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC(IPROC),REC=IHOTSTP) IVALUE           
+            READ(LOC2(IPROC),REC=IHOTSTP) IVALUE           
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) NODECODE(INDX) = IVALUE
          END DO
 
          DO I=1,NELP(IPROC)
             INDX = IMAP_EL_LG(I,IPROC)
-            READ(LOC(IPROC),REC=IHOTSTP) IVALUE           
+            READ(LOC2(IPROC),REC=IHOTSTP) IVALUE           
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) NOFF(INDX) = IVALUE
          END DO
          
-         READ(LOC(IPROC),REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
 
-         READ(LOC(IPROC),REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
 
-         READ(LOC(IPROC),REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
 
-         READ(LOC(IPROC),REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
 
-         READ(LOC(IPROC),REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
 
-         READ(LOC(IPROC),REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
 
-         READ(LOC(IPROC),REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
 
-         READ(LOC(IPROC),REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
-         READ(LOC(IPROC),REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
+         READ(LOC2(IPROC),REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
 C
 C   kmd48.33bc add information for 3D hot start 
 C     jgf46.02 read in 3D hotstart data if appropriate
          IF (C3D) THEN
-            CALL ReadHotStart3DGlobal(LOC(IPROC),IHOTSTP,IPROC)
+            CALL ReadHotStart3DGlobal(LOC2(IPROC),IHOTSTP,IPROC)
          ENDIF
 #if HA
 C 
 C....IF APPROPRIATE, WRITE OUT HOT START INFORMATION FOR IN PROGRESS HARMONIC ANALYSIS
 
 c       IF((IHARIND.EQ.1).AND.(ITHSF.GT.ITHAS)) THEN
-c         READ(LOC(IPROC),REC=IHOTSTP+1) ICHA
+c         READ(LOC2(IPROC),REC=IHOTSTP+1) ICHA
 c         IHOTSTP = IHOTSTP + 1
 c         CALL HAHOUT(NP,NSTAE,NSTAV,NHASE,NHASV,NHAGE,NHAGV,
-c    &                LOC(IPROC),IHOTSTP)
+c    &                LOC2(IPROC),IHOTSTP)
 c
-c         IF(NHASE.EQ.1) CALL HAHOUTES(NSTAE,LOC(IPROC),IHOTSTP)
-c         IF(NHASV.EQ.1) CALL HAHOUTVS(NSTAV,LOC(IPROC),IHOTSTP)
-c         IF(NHAGE.EQ.1) CALL HAHOUTEG(MNP,LOC(IPROC),IHOTSTP)
-c         IF(NHAGV.EQ.1) CALL HAHOUTVG(MNP,LOC(IPROC),IHOTSTP)
+c         IF(NHASE.EQ.1) CALL HAHOUTES(NSTAE,LOC2(IPROC),IHOTSTP)
+c         IF(NHASV.EQ.1) CALL HAHOUTVS(NSTAV,LOC2(IPROC),IHOTSTP)
+c         IF(NHAGE.EQ.1) CALL HAHOUTEG(MNP,LOC2(IPROC),IHOTSTP)
+c         IF(NHAGV.EQ.1) CALL HAHOUTVG(MNP,LOC2(IPROC),IHOTSTP)
 c         ENDIF
 c
 c       if(CHARMV) then
 c         IF((IHARIND.EQ.1).AND.(ITHSF.GT.ITMV)) THEN
 c           IHOTSTP=IHOTSTP+1
-c           READ(LOC(IPROC),REC=IHOTSTP) NTSTEPS
+c           READ(LOC2(IPROC),REC=IHOTSTP) NTSTEPS
 c           IF(NHAGE.EQ.1) THEN
 c             DO I=1, NNODP(IPROC)
 c               INDX = IMAP_NOD_LG(I,IPROC)
 c               DO I=1,MNP
-c                 READ(LOC(IPROC),REC=IHOTSTP+1) ELAV(INDX)
-c                 READ(LOC(IPROC),REC=IHOTSTP+2) ELVA(INDX)
+c                 READ(LOC2(IPROC),REC=IHOTSTP+1) ELAV(INDX)
+c                 READ(LOC2(IPROC),REC=IHOTSTP+2) ELVA(INDX)
 c                 IHOTSTP=IHOTSTP+2
 c                 END DO
 c             ENDIF
 c           IF(NHAGV.EQ.1) THEN
 c             DO I=1,NNODP(IPROC)
-c               READ(LOC(IPROC),REC=IHOTSTP+1) XVELAV(INDX)
-c               READ(LOC(IPROC),REC=IHOTSTP+2) YVELAV(INDX)
-c               READ(LOC(IPROC),REC=IHOTSTP+3) XVELVA(INDX)
-c               READ(LOC(IPROC),REC=IHOTSTP+4) YVELVA(INDX)
+c               READ(LOC2(IPROC),REC=IHOTSTP+1) XVELAV(INDX)
+c               READ(LOC2(IPROC),REC=IHOTSTP+2) YVELAV(INDX)
+c               READ(LOC2(IPROC),REC=IHOTSTP+3) XVELVA(INDX)
+c               READ(LOC2(IPROC),REC=IHOTSTP+4) YVELVA(INDX)
 c               IHOTSTP=IHOTSTP+4
 c               END DO
 c             ENDIF
 c           ENDIF
 c         ENDIF               
 #endif
-          CLOSE (LOC(IPROC))
+          CLOSE (LOC2(IPROC))
 
       ENDDO
 
@@ -4298,7 +4298,7 @@ C--Close Global file and all the Local Files
 C
       CLOSE (IHOT)
 C
-      DEALLOCATE ( LOC )
+      DEALLOCATE ( LOC2 )
       nbytes = 4*nproc
       call memory_dealloc(nbytes)
       DEALLOCATE ( ETA1, ETA2, EtaDisc, UU2, VV2, NODECODE, CH1 )
@@ -4497,7 +4497,7 @@ C     ----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, intent(in) :: UnitNumber ! i/o unit of subdomain file
       INTEGER, intent(inout) :: FilePosition ! position in binary file
-      INTEGER IHOTSTP, LOCHSF, I, N, INDEX
+      INTEGER IHOTSTP, LOCHSF, I, N, IINDX
       INTEGER, intent(in) :: IPROC
 
 C     Start writing out the 3D hotstart information
@@ -4520,77 +4520,77 @@ C     Start writing out the 3D hotstart information
             WRITE(LOCHSF,REC=IHOTSTP) I3DGTRec ; IHOTSTP = IHOTSTP + 1
 
             DO I=1,NNODP(IPROC)
-               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) DUU(INDEX)
+               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) DUU(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) DUV(INDEX)
+               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) DUV(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) DVV(INDEX)
+               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) DVV(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) UU(INDEX)
+               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) UU(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) VV(INDEX)
+               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) VV(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) BSX(INDEX)
+               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) BSX(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) BSY(INDEX)
+               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) BSY(IINDX)
                IHOTSTP=IHOTSTP+1
              ENDDO
 
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) RealQ(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) RealQ(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
 
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) ImagQ(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) ImagQ(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
 
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) WZ(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) WZ(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
 
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) q20(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) q20(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
 
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) l(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) l(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
@@ -4598,8 +4598,8 @@ C     Start writing out the 3D hotstart information
             IF (ABS(IDEN).EQ.1) THEN
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) SigT(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) SigT(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -4607,8 +4607,8 @@ C     Start writing out the 3D hotstart information
             IF(ABS(IDen).EQ.2) THEN
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Sal(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Sal(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -4616,8 +4616,8 @@ C     Start writing out the 3D hotstart information
             IF(ABS(IDen).EQ.3) THEN
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Temp(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Temp(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -4625,15 +4625,15 @@ C     Start writing out the 3D hotstart information
             IF(ABS(IDen).EQ.4) THEN
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Sal(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Sal(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Temp(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Temp(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -4661,7 +4661,7 @@ C     ----------------------------------------------------------------------
       INTEGER, intent(inout) :: FilePosition ! position in binary file
       INTEGER, intent(in) :: ProcessNo ! i/o unit of full domain file
       INTEGER IHOTSTP,NH,K,I,IPROC
-      INTEGER INDEX
+      INTEGER IINDX
       REAL(8) RVALUE
 C
 C     Start reading in the data
@@ -4704,94 +4704,94 @@ C        PRINT *, "Made it to the 3d portion of this"
         READ(IHOT,REC=IHOTSTP) I3DGTRec ; IHOTSTP = IHOTSTP + 1
 
         DO I=1,NNODP(IPROC)
-          INDEX=IMAP_NOD_LG(I,IPROC)
+          IINDX=IMAP_NOD_LG(I,IPROC)
           READ(IHOT,REC=IHOTSTP) RVALUE
-          IF (INDEX.GT.0) DUU(INDEX) = RVALUE
+          IF (IINDX.GT.0) DUU(IINDX) = RVALUE
           IHOTSTP=IHOTSTP+1
         END DO
         DO I=1,NNODP(IPROC)
-          INDEX=IMAP_NOD_LG(I,IPROC)
+          IINDX=IMAP_NOD_LG(I,IPROC)
           READ(IHOT,REC=IHOTSTP) RVALUE
-          IF (INDEX.GT.0) DUV(INDEX) = RVALUE
+          IF (IINDX.GT.0) DUV(IINDX) = RVALUE
           IHOTSTP=IHOTSTP+1
         END DO
         DO I=1,NNODP(IPROC)
-          INDEX=IMAP_NOD_LG(I,IPROC)
+          IINDX=IMAP_NOD_LG(I,IPROC)
           READ(IHOT,REC=IHOTSTP) RVALUE
-          IF (INDEX.GT.0) DVV(INDEX) = RVALUE
+          IF (IINDX.GT.0) DVV(IINDX) = RVALUE
           IHOTSTP=IHOTSTP+1
         END DO
         DO I=1,NNODP(IPROC)
-          INDEX=IMAP_NOD_LG(I,IPROC)
+          IINDX=IMAP_NOD_LG(I,IPROC)
           READ(IHOT,REC=IHOTSTP) RVALUE
-          IF (INDEX.GT.0) UU(INDEX) = RVALUE
+          IF (IINDX.GT.0) UU(IINDX) = RVALUE
           IHOTSTP=IHOTSTP+1
         END DO
         DO I=1,NNODP(IPROC)
-          INDEX=IMAP_NOD_LG(I,IPROC)
+          IINDX=IMAP_NOD_LG(I,IPROC)
           READ(IHOT,REC=IHOTSTP) RVALUE
-          IF (INDEX.GT.0) VV(INDEX) = RVALUE
+          IF (IINDX.GT.0) VV(IINDX) = RVALUE
           IHOTSTP=IHOTSTP+1
         END DO
         DO I=1,NNODP(IPROC)
-          INDEX=IMAP_NOD_LG(I,IPROC)
+          IINDX=IMAP_NOD_LG(I,IPROC)
           READ(IHOT,REC=IHOTSTP) RVALUE
-          IF (INDEX.GT.0) BSX(INDEX) = RVALUE
+          IF (IINDX.GT.0) BSX(IINDX) = RVALUE
           IHOTSTP=IHOTSTP+1
         END DO
         DO I=1,NNODP(IPROC)
-          INDEX=IMAP_NOD_LG(I,IPROC)
+          IINDX=IMAP_NOD_LG(I,IPROC)
           READ(IHOT,REC=IHOTSTP) RVALUE
-          IF (INDEX.GT.0) BSY(INDEX) = RVALUE
+          IF (IINDX.GT.0) BSY(IINDX) = RVALUE
           IHOTSTP=IHOTSTP+1
         END DO
 
         DO K=1,NFEN
           DO I=1,NNODP(IPROC)
-            INDEX=IMAP_NOD_LG(I,IPROC)
+            IINDX=IMAP_NOD_LG(I,IPROC)
             READ(IHOT,REC=IHOTSTP) RVALUE
-            IF (INDEX.GT.0) REALQ(INDEX,K) = RVALUE
+            IF (IINDX.GT.0) REALQ(IINDX,K) = RVALUE
             IHOTSTP=IHOTSTP+1
           END DO
         END DO
         DO K=1,NFEN
           DO I=1,NNODP(IPROC)
-            INDEX=IMAP_NOD_LG(I,IPROC)
+            IINDX=IMAP_NOD_LG(I,IPROC)
             READ(IHOT,REC=IHOTSTP) RVALUE
-            IF (INDEX.GT.0) ImagQ(INDEX,K) = RVALUE
+            IF (IINDX.GT.0) ImagQ(IINDX,K) = RVALUE
             IHOTSTP=IHOTSTP+1
           END DO
         END DO
         DO K=1,NFEN
           DO I=1,NNODP(IPROC)
-            INDEX=IMAP_NOD_LG(I,IPROC)
+            IINDX=IMAP_NOD_LG(I,IPROC)
             READ(IHOT,REC=IHOTSTP) RVALUE
-            IF (INDEX.GT.0) WZ(INDEX,K) = RVALUE
+            IF (IINDX.GT.0) WZ(IINDX,K) = RVALUE
             IHOTSTP=IHOTSTP+1
           END DO
         END DO
         DO K=1,NFEN
           DO I=1,NNODP(IPROC)
-            INDEX=IMAP_NOD_LG(I,IPROC)
+            IINDX=IMAP_NOD_LG(I,IPROC)
             READ(IHOT,REC=IHOTSTP) RVALUE
-            IF (INDEX.GT.0) q20(INDEX,K) = RVALUE
+            IF (IINDX.GT.0) q20(IINDX,K) = RVALUE
             IHOTSTP=IHOTSTP+1
           END DO
         END DO
         DO K=1,NFEN
           DO I=1,NNODP(IPROC)
-            INDEX=IMAP_NOD_LG(I,IPROC)
+            IINDX=IMAP_NOD_LG(I,IPROC)
             READ(IHOT,REC=IHOTSTP) RVALUE
-            IF (INDEX.GT.0) l(INDEX,K) = RVALUE
+            IF (IINDX.GT.0) l(IINDX,K) = RVALUE
             IHOTSTP=IHOTSTP+1
           END DO
         END DO
         IF (ABS(IDEN).EQ.1) THEN
           DO K=1,NFEN
             DO I=1,NNODP(IPROC)
-              INDEX=IMAP_NOD_LG(I,IPROC)
+              IINDX=IMAP_NOD_LG(I,IPROC)
               READ(IHOT,REC=IHOTSTP) RVALUE
-              IF (INDEX.GT.0) SigT(INDEX,K) = RVALUE
+              IF (IINDX.GT.0) SigT(IINDX,K) = RVALUE
               IHOTSTP=IHOTSTP+1
             END DO
           END DO
@@ -4799,9 +4799,9 @@ C        PRINT *, "Made it to the 3d portion of this"
         IF(ABS(IDen).EQ.2) THEN
           DO K=1,NFEN
             DO I=1,NNODP(IPROC)
-              INDEX=IMAP_NOD_LG(I,IPROC)
+              IINDX=IMAP_NOD_LG(I,IPROC)
               READ(IHOT,REC=IHOTSTP) RVALUE
-              IF (INDEX.GT.0) Sal(INDEX,K) = RVALUE
+              IF (IINDX.GT.0) Sal(IINDX,K) = RVALUE
               IHOTSTP=IHOTSTP+1
             END DO
           END DO
@@ -4809,9 +4809,9 @@ C        PRINT *, "Made it to the 3d portion of this"
         IF(ABS(IDen).EQ.3) THEN
           DO K=1,NFEN
             DO I=1,NNODP(IPROC)
-              INDEX=IMAP_NOD_LG(I,IPROC)
+              IINDX=IMAP_NOD_LG(I,IPROC)
               READ(IHOT,REC=IHOTSTP) RVALUE
-              IF (INDEX.GT.0) Temp(INDEX,K) = RVALUE
+              IF (IINDX.GT.0) Temp(IINDX,K) = RVALUE
               IHOTSTP=IHOTSTP+1
             END DO
           END DO
@@ -4819,17 +4819,17 @@ C        PRINT *, "Made it to the 3d portion of this"
         IF(ABS(IDen).EQ.4) THEN
           DO K=1,NFEN
             DO I=1,NNODP(IPROC)
-              INDEX=IMAP_NOD_LG(I,IPROC)
+              IINDX=IMAP_NOD_LG(I,IPROC)
               READ(IHOT,REC=IHOTSTP) RVALUE
-              IF (INDEX.GT.0) Sal(INDEX,K) = RVALUE
+              IF (IINDX.GT.0) Sal(IINDX,K) = RVALUE
               IHOTSTP=IHOTSTP+1
             END DO
           END DO
           DO K=1,NFEN
             DO I=1,NNODP(IPROC)
-              INDEX=IMAP_NOD_LG(I,IPROC)
+              IINDX=IMAP_NOD_LG(I,IPROC)
               READ(IHOT,REC=IHOTSTP) RVALUE
-              IF (INDEX.GT.0) TEMP(INDEX,K) = RVALUE
+              IF (IINDX.GT.0) TEMP(IINDX,K) = RVALUE
               IHOTSTP=IHOTSTP+1
             END DO
           ENDDO
@@ -4856,7 +4856,7 @@ C     ----------------------------------------------------------------------
       INTEGER, intent(in) :: UnitNumber ! i/o unit of subdomain file
       INTEGER, intent(inout) :: FilePosition ! position in binary file
       INTEGER, intent(in) :: IPROC
-      INTEGER IHOTSTP, LOCHSF, I, N, INDEX
+      INTEGER IHOTSTP, LOCHSF, I, N, IINDX
 
 C     Start writing out the 3D hotstart information
 
@@ -4878,81 +4878,81 @@ C     Start writing out the 3D hotstart information
             WRITE(LOCHSF,REC=IHOTSTP) I3DGTRec ; IHOTSTP = IHOTSTP + 1
 
             DO I=1,MNP
-               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) DUU(INDEX)
+               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) DUU(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) DUV(INDEX)
+               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) DUV(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) DVV(INDEX)
+               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) DVV(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) UU(INDEX)
+               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) UU(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) VV(INDEX)
+               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) VV(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) BSX(INDEX)
+               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) BSX(IINDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-               WRITE(LOCHSF,REC=IHOTSTP) BSY(INDEX)
+               IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+               WRITE(LOCHSF,REC=IHOTSTP) BSY(IINDX)
                IHOTSTP=IHOTSTP+1
              ENDDO
 
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) RealQ(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) RealQ(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) ImagQ(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) ImagQ(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) WZ(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) WZ(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) q20(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) q20(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,REC=IHOTSTP) l(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,REC=IHOTSTP) l(IINDX,N)
                 IHOTSTP=IHOTSTP+1
               END DO
             END DO
             IF (ABS(IDEN).EQ.1) THEN
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) SigT(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) SigT(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -4960,8 +4960,8 @@ C     Start writing out the 3D hotstart information
             IF(ABS(IDen).EQ.2) THEN
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Sal(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Sal(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -4969,8 +4969,8 @@ C     Start writing out the 3D hotstart information
             IF(ABS(IDen).EQ.3) THEN
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Temp(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Temp(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -4978,15 +4978,15 @@ C     Start writing out the 3D hotstart information
             IF(ABS(IDen).EQ.4) THEN
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Sal(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Sal(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,REC=IHOTSTP) Temp(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,REC=IHOTSTP) Temp(IINDX,N)
                   IHOTSTP=IHOTSTP+1
                 END DO
               END DO
@@ -5116,7 +5116,7 @@ C     ----------------------------------------------------------------------
       USE PRE_GLOBAL
       IMPLICIT NONE
       INTEGER, intent(in) :: UnitNumber ! i/o unit of subdomain file
-      INTEGER LOCHSF, I, N, INDEX
+      INTEGER LOCHSF, I, N, IINDX
       INTEGER, intent(in) :: IPROC
 
 C     Start writing out the 3D initial condition information
@@ -5126,80 +5126,80 @@ C     Start writing out the 3D initial condition information
             WRITE(LOCHSF,*) IDEN
 
             DO I=1,NNODP(IPROC)
-              INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-              WRITE(LOCHSF,*) BSX(INDEX)
+              IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+              WRITE(LOCHSF,*) BSX(IINDX)
             END DO
 
             DO I=1,NNODP(IPROC)
-              INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-              WRITE(LOCHSF,*) BSY(INDEX)
+              IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+              WRITE(LOCHSF,*) BSY(IINDX)
             END DO
 
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,*) RealQ(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,*) RealQ(IINDX,N)
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,*) ImagQ(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,*) ImagQ(IINDX,N)
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,*) WZ(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,*) WZ(IINDX,N)
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,*) q20(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,*) q20(IINDX,N)
               END DO
             END DO
             DO N=1,NFEN
               DO I=1,NNODP(IPROC)
-                INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                WRITE(LOCHSF,*) l(INDEX,N)
+                IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                WRITE(LOCHSF,*) l(IINDX,N)
               END DO
             END DO
             IF (ABS(IDEN).EQ.1) THEN
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,*) SigT(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,*) SigT(IINDX,N)
                 END DO
               END DO
             ENDIF
             IF(ABS(IDen).EQ.2) THEN
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,*) Sal(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,*) Sal(IINDX,N)
                 END DO
               END DO
             ENDIF
             IF(ABS(IDen).EQ.3) THEN
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,*) Temp(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,*) Temp(IINDX,N)
                 END DO
               END DO
             ENDIF
             IF(ABS(IDen).EQ.4) THEN
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,*) Sal(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,*) Sal(IINDX,N)
                 END DO
               END DO
               DO N=1,NFEN
                 DO I=1,NNODP(IPROC)
-                  INDEX=ABS(IMAP_NOD_LG(I,IPROC))
-                  WRITE(LOCHSF,*) Temp(INDEX,N)
+                  IINDX=ABS(IMAP_NOD_LG(I,IPROC))
+                  WRITE(LOCHSF,*) Temp(IINDX,N)
                 END DO
               END DO
             END IF

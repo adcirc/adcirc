@@ -1898,11 +1898,11 @@ C     Based on bob's NWS67GET (See below).
 C
 C     ----------------------------------------------------------------
       SUBROUTINE HollandGet(X,Y,SLAM,SFEA,WVNX,WVNY,PRESS,NP,
-     &     ICS,RHOWAT0,G,TIME,NSCREEN,ScreenUnit)
+     &     ICS,RHOWAT0,G,TIMELOC,NSCREEN,ScreenUnit)
       USE SIZES, ONLY : MyProc, LOCALDIR
       IMPLICIT NONE
       INTEGER, intent(in) :: NP,ICS
-      REAL(SZ), intent(in) :: RHOWAT0,G,TIME
+      REAL(SZ), intent(in) :: RHOWAT0,G,TIMELOC
       REAL(8), intent(in), dimension(NP) :: X, Y, SLAM, SFEA
       REAL(SZ), intent(out), dimension(NP) :: WVNX,WVNY
       REAL(SZ), intent(out), dimension(NP) :: PRESS
@@ -1949,7 +1949,7 @@ C     The subroutine only works for ICS=2 (spherical coordinates)
       ENDIF
 C
 C     Get data for this time step.
-      CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,tvx,tvy,time,
+      CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,tvx,tvy,TIMELOC,
      &     nscreen,screenunit)
 C
 C     Calculate and limit central pressure deficit; some track files
@@ -2080,10 +2080,10 @@ C
 C     ----------------------------------------------------------------
 C
       SUBROUTINE GetHollandStormData(LatOut,LonOut,CPressOut,SpdOut,
-     &     RRPOut,RMWOut,TVXOut,TVYOut,Time,NScreen,ScreenUnit)
+     &     RRPOut,RMWOut,TVXOut,TVYOut,TIMELOC,NScreen,ScreenUnit)
       USE SIZES, ONLY : MyProc
       IMPLICIT NONE
-      REAL(SZ),intent(in) :: time
+      REAL(SZ),intent(in) :: TIMELOC
       INTEGER,intent(in) :: nscreen, screenunit
       REAL(SZ),intent(out) :: LatOut, LonOut, CPressOut
       REAL(SZ),intent(out) :: SpdOut, RRPOut, RMWOut, TVXOut, TVYOut
@@ -2318,7 +2318,7 @@ C     Determine the correspondence between the current simulation time and
 C     the fort.22 file.
          i=2
          DO
-            IF (Time.ge.CastTime(i-1).and.Time.lt.CastTime(i)) THEN
+            IF (TIMELOC.ge.CastTime(i-1).and.TIMELOC.lt.CastTime(i)) THEN
                EXIT
             ELSE
                i=i+1
@@ -2351,12 +2351,12 @@ C     ----------------------------------------------------------
 C
 C     If time exceeds the next hindcast/nowcast/forecast time, increment the
 C     array counter.
-      IF (Time.ge.CastTime(i)) THEN
+      IF (TIMELOC.ge.CastTime(i)) THEN
          i=i+1
       ENDIF
 C
 C     Interpolate w.r.t. time
-      WTRATIO=(Time-CastTime(i-1))/(CastTime(i)-CastTime(i-1))
+      WTRATIO=(TIMELOC-CastTime(i-1))/(CastTime(i)-CastTime(i-1))
       CPressOut = CPress(i-1) + WTRATIO*(CPress(i)-CPress(i-1))
       LonOut = Lon(i-1) + WTRATIO*(Lon(i)-lon(i-1))
       LatOut = Lat(i-1) + WTRATIO*(Lat(i)-lat(i-1))
@@ -2422,7 +2422,7 @@ C
 C     ----------------------------------------------------------------
 C23456
       SUBROUTINE NWS67GET  (X,Y,SLAM,SFEA,WVNX,WVNY,PRESS,NP,ICS,
-     &     RHOWAT0,G,TIME,WTIMINC,WTIME1,WTIME2)
+     &     RHOWAT0,G,TIMELOC,WTIMINC,WTIME1,WTIME2)
       USE SIZES
       IMPLICIT NONE
       REAL(8), PARAMETER :: Ambient_Pressure=101300.d0      !   Pascals!!
@@ -2430,7 +2430,7 @@ C23456
       REAL(8), PARAMETER :: Rho_Air = 1.15d0                ! kg/ m/m/m
       INTEGER, SAVE :: FIRSTCALL = 0
       INTEGER NP,I,J,ICS
-      REAL(SZ) RHOWAT0,G,WTIME1,WTIME2,TIME,WTIMINC
+      REAL(SZ) RHOWAT0,G,WTIME1,WTIME2,TIMELOC,WTIMINC
       REAL(SZ) X(*),Y(*),SLAM(*),SFEA(*)
       REAL(SZ) WVNX(*),WVNY(*),PRESS(*)
 ! LOCAL VARIABLES
@@ -2463,7 +2463,7 @@ C23456
          READ(22,*) TT,XC2,YC2,DP2,TVX2,TVY2,RMW2,B2
          OPEN(667,file='fort.22.adc')
       ENDIF
-      IF(TIME.GT.WTIME2) THEN
+      IF(TIMELOC.GT.WTIME2) THEN
          WTIME1=WTIME2
          WTIME2=WTIME2+WTIMINC
          XC1=XC2
@@ -2475,7 +2475,7 @@ C23456
          B1=B2
          READ(22,*) TT,XC2,YC2,DP2,TVX2,TVY2,RMW2,B2
       END IF
-      WTRATIO=(TIME-WTIME1)/WTIMINC
+      WTRATIO=(TIMELOC-WTIME1)/WTIMINC
       DP  = DP1  + WTRATIO*(DP2-DP1)
       XC  = XC1  + WTRATIO*(XC2-XC1)
       YC  = YC1  + WTRATIO*(YC2-YC1)
@@ -2513,7 +2513,7 @@ C23456
          WVNY(I)= VG(I)*COS(THETA(I))+TVY*TM
       END DO
 
-C      write(667,'(12(f12.4,1x))')TIME,XC,YC,TVX,TVY,DP,RMW,B
+C      write(667,'(12(f12.4,1x))')TIMELOC,XC,YC,TVX,TVY,DP,RMW,B
 C     ----------------------------------------------------------------
       END SUBROUTINE NWS67GET
 C     ----------------------------------------------------------------
@@ -2603,7 +2603,7 @@ C     ----------------------------------------------------------------
       !
       !     http://www.unc.edu/~cmattock/ncfs/NCFSreport.pdf
       !=================================================================
-      SUBROUTINE nws9get(slam,sfea, wvnx,wvny, press, np, time, ics)
+      SUBROUTINE nws9get(slam,sfea, wvnx,wvny, press, np, TIMELOC, ics)
 
          USE SIZES, ONLY : MyProc,mnproc
          !-------------------------------------------------------------
@@ -2627,7 +2627,7 @@ C     ----------------------------------------------------------------
          IMPLICIT NONE
 
          INTEGER  :: np, ics
-         REAL(sz) :: time, time1,time2, wtratio
+         REAL(sz) :: TIMELOC, time1,time2, wtratio
          REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
          REAL( 8) :: slam(np),sfea(np)
          REAL( 8) :: wvnx(np),wvny(np), press(np)
@@ -2676,13 +2676,13 @@ C     ----------------------------------------------------------------
          N='N'
          S='S'
 
-         timeNew = time
+         timeNew = TIMELOC
 
-!         WRITE(*,*) 'SUBROUTINE nws9get: time', time
+!         WRITE(*,*) 'SUBROUTINE nws9get: time', TIMELOC
 
 C     jgf46.16 commented out according to cf
-!         IF (firstCall .EQ. 0 .OR. MOD(time,100.d0) .EQ. 0)
-!     &      WRITE(*, '("SUBROUTINE nws9get: Time = ", F11.1)') time
+!         IF (firstCall .EQ. 0 .OR. MOD(TIMELOC,100.d0) .EQ. 0)
+!     &      WRITE(*, '("SUBROUTINE nws9get: Time = ", F11.1)') TIMELOC
 
          !----------------------------------------
          ! Read (lon,lat) at nodal points and
@@ -2696,7 +2696,7 @@ C     jgf46.16 commented out according to cf
                xcoor(i) = slam(i) * rad2deg
                ycoor(i) = sfea(i) * rad2deg
             END DO
-            offset=time
+            offset=TIMELOC
             told=0.0d0
 !         WRITE(*,*) 'SUBROUTINE nws9get: offset', offset
          END IF
@@ -2762,7 +2762,7 @@ C     jgf46.16 commented out according to cf
 
          time1 = iFcstInc1 * hour2sec + offset
          time2 = iFcstInc2 * hour2sec + offset
-         dt=time-told
+         dt=TIMELOC-told
 
 !          WRITE(*,*) 'SUBROUTINE nws9get:  time1,time2',
 !     &      time1,time2
@@ -2771,7 +2771,7 @@ C     jgf46.16 commented out according to cf
          ! If model reaches a new NHC forecast time,
          ! then save old values and advance forward.
          !------------------------------------------
-         IF (time .GE. time2) THEN
+         IF (TIMELOC .GE. time2) THEN
 
             iyear1    = iyear2
             imth1     = imth2
@@ -2829,7 +2829,7 @@ C     jgf46.16 commented out according to cf
 !     &      time1,time2',
 !     &      time1,time2
 
-         END IF   ! (time2 .GE. time)
+         END IF   ! (time2 .GE. TIMELOC)
 
          !--------------------------------------------------------
          ! If radial velocity (and 4 wind radii) is missing in NHC
@@ -2842,11 +2842,11 @@ C     cf added if missing values set winds to zero and pressure to P0
          IF (ivr1 .EQ. missingInt .OR.
      &       (ir1(1)*ir1(2)*ir1(3)*ir1(4) .EQ. 0)) THEN
 
-!            IF (firstCall .EQ. 0 .OR. MOD(time,outFreq) .EQ. 0)
+!            IF (firstCall .EQ. 0 .OR. MOD(TIMELOC,outFreq) .EQ. 0)
 !     &         WRITE(*, '("SUBROUTINE nws9get: Time = ", F8.1,
 !     &                    " Missing radial velocity for asymmetric",
 !     &                    " hurricane vortex calculation; continue",
-!     &                    " w/next timestep ", I3)') time, firstCall
+!     &                    " w/next timestep ", I3)') TIMELOC, firstCall
 
             DO i=1,np
                press(i) = Pzero
@@ -2863,14 +2863,14 @@ C     cf added if missing values set winds to zero and pressure to P0
          ! Interpolate NHC forecast interval in
          ! time to obtain values at model time.
          !-------------------------------------
-         wtratio = (time-time1) / (time2-time1)
+         wtratio = (TIMELOC-time1) / (time2-time1)
 
 !         WRITE(*,*) 'SUBROUTINE nws9get:  wtratio
-!     &      time1,time2, time',
-!     &      time1,time2,time
+!     &      time1,time2, TIMELOC',
+!     &      time1,time2,TIMELOC
 
 
-!         IF (firstCall .EQ. 0 .OR. MOD(time,outFreq) .EQ. 0)
+!         IF (firstCall .EQ. 0 .OR. MOD(TIMELOC,outFreq) .EQ. 0)
 !     &      WRITE(ScreenUnit, 
 !     &               '("SUBROUTINE nws9get: Time interpolation"   ,/,
 !     &                 "   t1       t             t2"             ,/,
@@ -2879,7 +2879,7 @@ C     cf added if missing values set winds to zero and pressure to P0
 !     &                 "            time = ", F11.1               ,/,
 !     &                 "                          time2 = ", F11.1,/,
 !     &                 "   time fraction = ", F7.4)')
-!     &           time1, time, time2, wtratio
+!     &           time1, TIMELOC, time2, wtratio
 
          !--------------------------------------------------------------
          ! Perform time interpolation, transform variables from integers
@@ -2910,7 +2910,7 @@ C     cf added if missing values set winds to zero and pressure to P0
             END DO
          END IF
 
-!         IF (firstCall.EQ.0 .OR. MOD(time,outFreq) .EQ. 0) THEN
+!         IF (firstCall.EQ.0 .OR. MOD(TIMELOC,outFreq) .EQ. 0) THEN
 !            WRITE(ScreenUnit,*) 'SUBROUTINE nws9get: Time interpolation'
 !            WRITE(ScreenUnit,*) 
 !     &          '   ===== Vmax =====', ispd1   , Vmax, ispd2
@@ -2926,7 +2926,7 @@ C     cf added if missing values set winds to zero and pressure to P0
 !     &          '   ===== cLon =====', ilon1   , cLon, ilon2
 !         END IF
 
-!         IF (firstCall.EQ.0 .OR. MOD(time,outFreq) .EQ. 0)
+!         IF (firstCall.EQ.0 .OR. MOD(TIMELOC,outFreq) .EQ. 0)
 !     &      WRITE(ScreenUnit,*) 
 !     &                'SUBROUTINE nws9get: before = ', name, adv,
 !     &                 iyear1,imth1,iday1,ihr1,iFcstInc1,
@@ -2940,21 +2940,21 @@ C     cf added if missing values set winds to zero and pressure to P0
             ! If this is not the first time interval (not time = 0),
             ! uvTrans is calculated at smaller time intervals.
             !-------------------------------------------------------
-            IF (time .NE. time1) THEN
+            IF (TIMELOC .NE. time1) THEN
                 CALL uvtrans(clatOld, clonOld, cLat,cLon,
      &                       timeOld,timeNew, uTrans,vTrans)
                 clatOld = cLat
                 clonOld = cLon
-                timeOld = time
+                timeOld = TIMELOC
             ELSE
-               wtratio = (time+dt-time1) / (time2-time1)
+               wtratio = (TIMELOC+dt-time1) / (time2-time1)
                cLat1 =  ilat1 * oneTenth + wtratio * (ilat2-ilat1) * oneTenth
                cLon1 = -ilon1 * oneTenth - wtratio * (ilon2-ilon1) * oneTenth
                CALL uvTrans(clat, clon, cLat1,cLon1,
-     &                      time1,time+dt, uTrans,vTrans)
+     &                      time1,TIMELOC+dt, uTrans,vTrans)
                clatOld = cLat
                clonOld = cLon
-               timeOld = time
+               timeOld = TIMELOC
             END IF
 
          ELSE IF (firstCall .EQ. 0) THEN
@@ -3006,7 +3006,7 @@ C     cf added if missing values set winds to zero and pressure to P0
          !---------------------------
          ! Print the hurricane vortex
          !---------------------------
-!        IF (firstCall .EQ. 0 .OR. MOD(time,outFreq) .EQ. 0)
+!        IF (firstCall .EQ. 0 .OR. MOD(TIMELOC,outFreq) .EQ. 0)
 !     &     CALL printVortex()
 
          !-------------------------------------------------------------
@@ -3042,9 +3042,9 @@ C     cf added if missing values set winds to zero and pressure to P0
          ! Write wind and pressure fields to a
          ! diagnostic output file (fort.300)
          !------------------------------------
-!         IF (firstCall .EQ. 0 .OR. MOD(time,outFreq) .EQ. 0) THEN
-!            nwi = time * sec2hour
-!           nwi = time
+!         IF (firstCall .EQ. 0 .OR. MOD(TIMELOC,outFreq) .EQ. 0) THEN
+!            nwi = TIMELOC * sec2hour
+!           nwi = TIMELOC
 !
 !            DO i=1,np
 !               WRITE (300,301) nwi,i, xcoor(i),ycoor(i),
@@ -3060,7 +3060,7 @@ C     cf added if missing values set winds to zero and pressure to P0
      &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 38x, 2(i3,2x), a10)
 
          firstCall = 1
-         told=time
+         told=TIMELOC
 
 !        WRITE(*,*) 'SUBROUTINE nws9get: node #',node2print,' u,v,p = ',
 !    &              wvnx(node2print),wvny(node2print), press(node2print)
@@ -3093,7 +3093,7 @@ C     cf added if missing values set winds to zero and pressure to P0
       !    slam     Longitude at model nodal points (radians)
       !    sfea     Latitude  at model nodal points (radians)
       !    np       Number of nodal points in model grid
-      !    time     Model time (seconds)
+      !    TIMELOC     Model time (seconds)
       !    ics      Coordinate system selection parameter
       !                ics = 1: cartesian coordinates
       !                ics = 2: spherical coordinates
@@ -3160,7 +3160,7 @@ C     cf added if missing values set winds to zero and pressure to P0
       !
       !     http://www.unc.edu/~cmattock/ncfs/NCFSreport.pdf
       !=================================================================
-      SUBROUTINE NWS19GET(slam,sfea, wvnx,wvny, press, np, time, ics)
+      SUBROUTINE NWS19GET(slam,sfea, wvnx,wvny, press, np, TIMELOC, ics)
 
          USE SIZES, ONLY : MyProc,mnproc
          !-------------------------------------------------------------
@@ -3187,7 +3187,7 @@ C     cf added if missing values set winds to zero and pressure to P0
          INTEGER  :: ient,itpc
          INTEGER  :: i, nwi
          INTEGER  :: num_entry
-         REAL(sz) :: time, time1, wtratio
+         REAL(sz) :: TIMELOC, time1, wtratio
          REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
          REAL( 8) :: slam(np),sfea(np)
          REAL( 8) :: wvnx(np),wvny(np), press(np)
@@ -3244,9 +3244,9 @@ C     cf added if missing values set winds to zero and pressure to P0
          N='N'
          S='S'
 
-         timeNew = time
+         timeNew = TIMELOC
 
-!         WRITE(*,*) 'SUBROUTINE nws19get: time', time
+!         WRITE(*,*) 'SUBROUTINE nws19get: time', TIMELOC
 
          !----------------------------------------
          ! Read (lon,lat) at nodal points and
@@ -3260,7 +3260,7 @@ C     cf added if missing values set winds to zero and pressure to P0
                xcoor(i) = slam(i) * rad2deg
                ycoor(i) = sfea(i) * rad2deg
             END DO
-            offset=time
+            offset=TIMELOC
          END IF   ! end of first Time data allocations and such
 
          !---------------
@@ -3504,7 +3504,7 @@ c     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
 
 C     If time exceeds the next hindcast/nowcast/forecast time, increment the
 C     array counter.
-      IF (Time.ge.CycleTime(icyc)) THEN
+      IF (TIMELOC.ge.CycleTime(icyc)) THEN
          icyc=icyc+1
       ENDIF
 
@@ -3513,7 +3513,7 @@ C     array counter.
          ! time to obtain values at model time.
          !-------------------------------------
 
-      wtratio=(time-CycleTime(icyc-1))/
+      wtratio=(TIMELOC-CycleTime(icyc-1))/
      &                  (CycleTime(icyc)-CycleTime(icyc-1))
          !--------------------------------------------------------------
          ! Perform time interpolation, transform variables from integers
@@ -3578,7 +3578,7 @@ c     &      iday(icyc-1),
 c     &      ihr(icyc-1), type(icyc-1),iFcstInc(icyc-1), Clat,ns,
 c     &      Clon,ew, Vmax, Pc, ivr(icyc-1),
 c     &       Pn, atcfRMW(icyc-1),
-c     &      time,speed(icyc-1), name(icyc-1),
+c     &      TIMELOC,speed(icyc-1), name(icyc-1),
 c     & CycleTime(icyc-1),cycle_num(icyc-1),isotachs_per_cycle1(icyc-1),
 c     &     (quadflag(icyc-1,i),i=1,4),(crmaxw(i),i=1,4),cHollB
 
@@ -3608,7 +3608,7 @@ C          CALL printVortex()
          ! NHC advisory best-track i/o format
          !-----------------------------------
          firstCall = 1
-         told=time
+         told=TIMELOC
 
 
 999      RETURN

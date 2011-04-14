@@ -21,7 +21,7 @@ c  NFEN - number of nodes in the vertical grid                                *
 c******************************************************************************
 
 C   kmd48.33bc added time to information passed into subroutine
-      SUBROUTINE TRANS_3D(inarray,diffhoriz,diffvert,outarray,field,time)
+      SUBROUTINE TRANS_3D(inarray,diffhoriz,diffvert,outarray,field,TimeLoc)
 
 C     Include the variables needed from the GLOBAL subroutine. 
 C         NODELE, NODECODE, NOFF : used in Casey's wet/dry
@@ -54,7 +54,7 @@ C
 C     Additional local variables that are passed into or out of the subroutine
       REAL(SZ), DIMENSION(MNP,MNFEN), INTENT(IN) :: inarray
       REAL(SZ), DIMENSION(MNP,MNFEN), INTENT(OUT) :: outarray
-      REAL(SZ), INTENT(IN) :: diffhoriz, diffvert, time
+      REAL(SZ), INTENT(IN) :: diffhoriz, diffvert, TimeLoc
       INTEGER, INTENT(IN) :: field 
 
 C     Local variables 
@@ -276,7 +276,7 @@ C   kmd48.33bc changed this from previous version
 C   kmd48.33 add information for the top temperature boundary condition 
       IF (field.EQ.3) THEN
          IF (BCFLAG_TEMP.EQ.1) THEN
-           IF (TIME.GT.TTBCTIME2) THEN
+           IF (TimeLoc.GT.TTBCTIME2) THEN
               TTBCTIME1=TTBCTIME2
               TTBCTIME2=TTBCTIME1+TTBCTIMEINC
               DO NumofNodes=1,NP
@@ -284,7 +284,7 @@ C   kmd48.33 add information for the top temperature boundary condition
                  READ(38,*) NOD, q_heat2(NumofNodes)
               END DO
            END IF ! ends time if loop
-           TTBCRATIO=(TIME-TTBCTIME1)/TTBCTIMEINC
+           TTBCRATIO=(TimeLoc-TTBCTIME1)/TTBCTIMEINC
            DO NumofNodes=1,NP
               qsurf(NumofNodes)=qsurfkp1(NumofNodes)
               HFLUX(NumofNodes)=q_heat1(NumofNodes)+TTBCRATIO*
@@ -292,7 +292,7 @@ C   kmd48.33 add information for the top temperature boundary condition
            END DO
          ELSE IF (BCFLAG_TEMP.EQ.2) THEN
             ALLOCATE (TMP(NP,6))
-            IF (TIME.GT.TTBCTIME2) THEN
+            IF (TimeLoc.GT.TTBCTIME2) THEN
               TTBCTIME1=TTBCTIME2
               TTBCTIME2=TTBCTIME1+TTBCTIMEINC
               DO NumofNodes=1,NP
@@ -306,7 +306,7 @@ C   kmd48.33 add information for the top temperature boundary condition
      &               TMP(NumofNodes,6)
               END DO
             END IF ! ends time if loop
-            TTBCRATIO=(TIME-TTBCTIME1)/TTBCTIMEINC
+            TTBCRATIO=(TimeLoc-TTBCTIME1)/TTBCTIMEINC
             DO  NumofNodes=1,NP
                qsurf(NumofNodes)=qsurfkp1(NumofNodes)
                HFLUX(NumofNodes)=q_heat1(NumofNodes)+TTBCRATIO*
@@ -315,7 +315,7 @@ C   kmd48.33 add information for the top temperature boundary condition
             DEALLOCATE(TMP)
          ELSE IF (BCFLAG_TEMP.EQ.3) THEN
             ALLOCATE (TMP(NP,4))
-            IF (TIME.GT.TTBCTIME2) THEN
+            IF (TimeLoc.GT.TTBCTIME2) THEN
               TTBCTIME1=TTBCTIME2
               TTBCTIME2=TTBCTIME1+TTBCTIMEINC
               DO NumofNodes=1,NP
@@ -328,7 +328,7 @@ C   kmd48.33 add information for the top temperature boundary condition
      &               TMP(NumofNodes,2)
               END DO
             END IF ! ends time if loop
-            TTBCRATIO=(TIME-TTBCTIME1)/TTBCTIMEINC
+            TTBCRATIO=(TimeLoc-TTBCTIME1)/TTBCTIMEINC
             DO NumofNodes=1,NP
                qsurf(NumofNodes)=qsurfkp1(NumofNodes)
                HFLUX(NumofNodes)=q_heat1(NumofNodes)+TTBCRATIO*

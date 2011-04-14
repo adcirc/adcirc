@@ -3,6 +3,12 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.75   - 04/14/2011 - tcm - Commented out debugging flags for cray_xt4,
+C               Cleaned up us of FORTRAN RESERVED WORDS (TIME,INDEX,SCALE,
+C                ISIGN,LOC,IIDIM). Changed to (TIME --> TIMELOC,INDEX --> INDX,
+C                ISIGN --> ISGN, LOC --> LOC2, SCALE --> SCALEVAL,
+C                IIDIM --> IDIM2).  The use of reserved words can lead to 
+C                unintended consequences and conflicts.
 C  v49.74   - 04/13/2011 - tcm - Fixed bug in call to FEGRIDS in read_input.F
 C  v49.73   - 04/11/2011 - jgf - Merged vortexowi branch (r421:r536) to trunk,
 C             bringing in the changes from v49.08.01 to v49.08.04 to create

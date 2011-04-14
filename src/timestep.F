@@ -207,7 +207,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) AreaIE2,AreaEle
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       REAL(8) FDX1O2A, FDX2O2A, FDX3O2A, FDY1O2A, FDY2O2A, FDY3O2A
-      REAL(8) Time, TimeH
+      REAL(8) TimeLoc, TimeH
       INTEGER WarnElevExceeded, ErrorElevExceeded
       REAL(SZ) HollandTime, AsymmetricTime !for parametric hurricane models
       ! jgf49.1001 factor used to blend vortex and background winds for NWS29:
@@ -248,14 +248,14 @@ C     jgf46.21 Combined flux/radiation b.c. for rivers
 C...  COMPUTE MASTER TIME WHICH IS REFERENCED TO THE BEGINNING TIME OF
 C...  THE MODEL RUN
 C...  
-      Time=IT*DTDP + StaTim*86400.D0
+      TimeLoc=IT*DTDP + StaTim*86400.D0
 C    kmd48.33bc - added for the changes in the timestep in the hot start files
       IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
          IF ((ITHS+1).EQ.IT) THEN
            StaTimHS=((IT-1)*DTDPHS)/86400.D0
            RefTimHS=((IT-1)*DTDP)/86400.D0
          END IF
-         Time=IT*DTDP + (StaTimHS - RefTimHS)*86400.D0
+         TimeLoc=IT*DTDP + (StaTimHS - RefTimHS)*86400.D0
       END IF
       
 C...  HARMONIC CALCULATIONS ARE MADE FOR TIME WHICH INCLUDES THE REFTIM
@@ -376,13 +376,13 @@ C     jgf46.21 Modify to match behavior of 46.02
       END SELECT
 C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
       IF ((CHOTHS).AND.(DTDP.NE.DTDPHS).AND.(NRAMP.NE.0)) THEN
-         Ramp=TANH((2.D0*Time/86400.D0)/DRamp)
-         RampExtFlux=TANH((2.D0*Time/86400.D0)/DRampExtFlux)
-         RampIntFlux=TANH((2.D0*Time/86400.D0)/DRampIntFlux)
-         RampElev=TANH((2.D0*Time/86400.D0)/DRampElev)
-         RampTip=TANH((2.D0*Time/86400.D0)/DRampTip)
-         RampMete=TANH((2.D0*Time/86400.D0)/DRampMete)
-         RampWRad=TANH((2.D0*Time/86400.D0)/DRampWRad)
+         Ramp=TANH((2.D0*TimeLoc/86400.D0)/DRamp)
+         RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampExtFlux)
+         RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampIntFlux)
+         RampElev=TANH((2.D0*TimeLoc/86400.D0)/DRampElev)
+         RampTip=TANH((2.D0*TimeLoc/86400.D0)/DRampTip)
+         RampMete=TANH((2.D0*TimeLoc/86400.D0)/DRampMete)
+         RampWRad=TANH((2.D0*TimeLoc/86400.D0)/DRampWRad)
       END IF
 
 C     jgf46.21 If there is an external flux (i.e. river) boundary, turn
@@ -429,7 +429,7 @@ C...  UPDATE THE ICE CONCENTRATION FIELDS FROM UNIT 25,225,227
 c...  TCM V49.64.01 ADDED THE ICE FIELDS SECTION
 C
       IF (NCICE.EQ.12) THEN 
-         IF(TIME.GT.CICE_TIME2) THEN
+         IF(TimeLoc.GT.CICE_TIME2) THEN
             CICE_TIME1 = CICE_TIME2
             CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
             DO I=1,NP
@@ -471,7 +471,7 @@ C     at a time interval that does not equal the model time
 C     step. Interpolation in time is used to synchronize the wind and
 C     pressure information with the model time step.
       IF(ABS(NWS).EQ.2) THEN
-         IF(TIME.GT.WTIME2) THEN !determine if met file time incr. is exceeded
+         IF(TimeLoc.GT.WTIME2) THEN !determine if met file time incr. is exceeded
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
             DO I=1,NP
@@ -481,7 +481,7 @@ C     pressure information with the model time step.
                READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I) ! read in 
             END DO
          ENDIF
-         WTRatio=(TIME-WTIME1)/WTIMINC ! interpolate
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC ! interpolate
          DO I=1,NP
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
@@ -502,7 +502,7 @@ C     space onto the ADCIRC grid and in time to synchronize the wind and
 C     pressure information with the model time step. Garratt's formula
 C     is used to compute wind stress from the wind velocity.
       IF(NWS.EQ.3) THEN
-         IF(TIME.GT.WTIME2) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
             DO I=1,NP
@@ -513,7 +513,7 @@ C     is used to compute wind stress from the wind velocity.
      &           NP,NWLON,NWLAT,WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,
      &           NSCREEN, ScreenUnit)
          ENDIF
-         WTRatio=(TIME-WTIME1)/WTIMINC
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
          DO I=1,NP
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
@@ -528,7 +528,7 @@ C     jgf46.00 Add directional wind reduction.
             ENDIF
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
                CICEOUT(I) = PIC
@@ -553,7 +553,7 @@ C     used to synchronize the wind and pressure information with the
 C     model time step. Garratt's formula is used to compute wind stress
 C     from wind velocity.
       IF(ABS(NWS).EQ.4) THEN 
-         IF(TIME.GT.WTIME2) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
             DO I=1,NP
@@ -563,7 +563,7 @@ C     from wind velocity.
             END DO
             CALL NWS4GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
          ENDIF
-         WTRatio=(TIME-WTIME1)/WTIMINC
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
          DO I=1,NP
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
@@ -578,7 +578,7 @@ C     jgf46.00 Add directional wind reduction.
             ENDIF
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
                CICEOUT(I) = PIC
@@ -607,7 +607,7 @@ C     nodes. Interpolation in time is used to synchronize the wind and
 C     pressure information with the model time step. Garratt's formula
 C     is used to compute wind stress from wind velocity.
       IF(ABS(NWS).EQ.5) THEN
-         IF(TIME.GT.WTIME2) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
             DO I=1,NP
@@ -617,7 +617,7 @@ C     is used to compute wind stress from wind velocity.
                READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
             END DO
          ENDIF
-         WTRatio=(TIME-WTIME1)/WTIMINC
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
          DO I=1,NP
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
@@ -632,7 +632,7 @@ C     jgf46.00 Add directional wind reduction.
             ENDIF
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
                CICEOUT(I) = PIC
@@ -664,7 +664,7 @@ C     synchronize the wind and pressure information with the model time
 C     step. Garratt's formula is used to compute wind stress from the
 C     wind velocity.
       IF(NWS.EQ.6) THEN
-         IF(TIME.GT.WTIME2) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
             DO I=1,NP
@@ -676,7 +676,7 @@ C     wind velocity.
             CALL NWS6GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
      &           WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
          ENDIF
-         WTRatio=(TIME-WTIME1)/WTIMINC
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
          DO I=1,NP
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
@@ -691,7 +691,7 @@ C     jgf46.00 Add directional wind reduction.
             ENDIF
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
                CICEOUT(I) = PIC
@@ -722,7 +722,7 @@ C     interpolate in space onto the ADCIRC grid. Interpolation in time
 C     is used to synchronize the wind and pressure information with the
 C     model time step.
       IF(ABS(NWS).EQ.7) THEN
-         IF(TIME.GT.WTIME2) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
             DO I=1,NP
@@ -733,7 +733,7 @@ C     model time step.
             CALL NWS7GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
      &           WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
          ENDIF
-         WTRatio=(TIME-WTIME1)/WTIMINC
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
          DO I=1,NP
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
@@ -752,7 +752,7 @@ C  tcm v49.16 20100617
 C     jgf46.02 New option to read in hurricane locations and generate 
 C     generate hurricane winds from the Holland Wind Model.
       IF(ABS(NWS).EQ.8) THEN
-         HollandTime = TIME
+         HollandTime = TimeLoc
          CALL HollandGet(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,
      &        ICS,RHOWAT0,G,HollandTime,NSCREEN,ScreenUnit)
          DO I=1,NP
@@ -768,7 +768,7 @@ C     generate hurricane winds from the Holland Wind Model.
             ENDIF
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
                CICEOUT(I) = PIC
@@ -793,7 +793,7 @@ Casey 090302: Added these lines for coupling winds to SWAN.
 
 C     jgf46.16 Merged:
 !     cf & cm added nws = 9: asymmetric hurricane winds
-      AsymmetricTime = TIME
+      AsymmetricTime = TimeLoc
       IF(NWS.EQ.9) THEN
          CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
          DO I=1,NP
@@ -809,7 +809,7 @@ C     jgf46.16 Merged:
             ENDIF
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
                CICEOUT(I) = PIC
@@ -840,7 +840,7 @@ C     Gaussian longitude, latitude grid at a single time. Consecutive
 C     files in the sequence are separated by N hours in time. Garratt's
 C     formula is used to compute wind stress from the wind velocity.
       IF(NWS.EQ.10) THEN
-         IF(TIME.GT.WTIME2) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
             DO I=1,NP
@@ -852,7 +852,7 @@ C     formula is used to compute wind stress from the wind velocity.
             CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,RHOWAT0,
      &           G,NWLON,NWLAT,WTIMINC)
          ENDIF
-         WTRatio=(TIME-WTIME1)/WTIMINC
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
          DO I=1,NP
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
@@ -867,7 +867,7 @@ C     jgf46.00 Add directional wind reduction.
             ENDIF
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
                CICEOUT(I) = PIC
@@ -900,7 +900,7 @@ C     data is converted to an east-west, north-south coordinate system
 C     inside ADCIRC. Garratt's formula is used to compute wind stress
 C     from the wind velocity.
       IF(NWS.EQ.11) THEN
-         IF(TIME.GT.WTIME2) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
             DO I=1,NP
@@ -916,7 +916,7 @@ C     from the wind velocity.
             CALL NWS11GET(NWSEGWI,IDSETFLG,SLAM,SFEA,WVNX2,WVNY2,PRN2,
      &           NP,RHOWAT0,G)
          ENDIF
-         WTRatio=(TIME-WTIME1)/WTIMINC
+         WTRatio=(TimeLoc-WTIME1)/WTIMINC
          DO I=1,NP
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
@@ -931,7 +931,7 @@ C     jgf46.00 Add directional wind reduction.
             ENDIF
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
                CICEOUT(I) = PIC
@@ -957,7 +957,7 @@ Casey 090302: Added these lines for coupling winds to SWAN.
 
 C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
         IF(ABS(NWS).EQ.12) THEN
-          IF(TIME.GT.WTIME2) THEN
+          IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
             DO I=1,NP
@@ -967,7 +967,7 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
             END DO
             CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
           ENDIF
-          WTRATIO=(TIME-WTIME1)/WTIMINC
+          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
           DO I=1,NP
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
@@ -981,7 +981,7 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
             ENDIF
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
                CICEOUT(I) = PIC
@@ -1007,7 +1007,7 @@ Casey 090302: Added these lines for coupling winds to SWAN.
 
 C     RJW ffpl Merged:
 !     rjw added nws = 19: asymmetric hurricane winds
-      AsymmetricTime = TIME
+      AsymmetricTime = TimeLoc
       IF(NWS.EQ.19) THEN
          CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
          DO I=1,NP
@@ -1026,7 +1026,7 @@ C     RJW ffpl Merged:
             WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
 C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TIME-CICE_TIME1)/CICE_TIMINC
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
                CICEOUT(I) = PIC
@@ -1050,7 +1050,7 @@ C     jgf49.1001 Added NWS29 for embedding an asymmetric vortex from
 C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
       IF(ABS(NWS).EQ.29) THEN
          ! bring in next set of OWI met data 
-         IF(TIME.GT.WTIME2) THEN
+         IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
             DO I=1,NP
@@ -1060,7 +1060,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
             END DO
             CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
          ENDIF
-         WTRATIO=(TIME-WTIME1)/WTIMINC
+         WTRATIO=(TimeLoc-WTIME1)/WTIMINC
          ! bring in next set of asymmetric vortex met data to separate arrays
          CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
      &                 NP,AsymmetricTime, ICS)
@@ -1127,7 +1127,7 @@ C...  TCM v49.48 Restructured the wave stress updates in order to
 c...             include NRS=4
       IF(NRS.NE.0) THEN
          if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3)) then
-            IF(TIME.GT.RSTIME2) THEN
+            IF(TimeLoc.GT.RSTIME2) THEN
                RSTIME1=RSTIME2
                RSTIME2=RSTIME2+RSTIMINC
                DO I=1,NP
@@ -1180,7 +1180,7 @@ C             in time using the same logic as above.
                ENDIF
 #endif
             ENDIF
-            RStRatio=(TIME-RSTIME1)/RSTIMINC
+            RStRatio=(TimeLoc-RSTIME1)/RSTIMINC
             DO I=1,NP
                RSX = RampWRad*(RSNX1(I) + RStRatio*(RSNX2(I)-RSNX1(I)))
                RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
@@ -1210,11 +1210,11 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
          ! Apply the ramping function and add wave stress to WSX2,WSY2
          ! This cases uses a step function in time
          IF(NRS == 4) THEN    ! vjp modified Jan 22 2010
-            IF(TIME.GE.RSTIME2) THEN   !Get a new wave record
+            IF(TimeLoc.GE.RSTIME2) THEN   !Get a new wave record
                RSTIME1=RSTIME2
                RSTIME2=RSTIME2+RSTIMINC
             ENDIF
-            IF (TIME > ENDWAVE+RSTIMINC) THEN
+            IF (TimeLoc > ENDWAVE+RSTIMINC) THEN
               RSNX2(:) = 0.0d0;  RSNY2(:) = 0.0d0
             ENDIF
             DO I=1,NP
@@ -1239,7 +1239,7 @@ C              in once and used during the simulation. Note that there is
 C              no ramp utilized for this boundary condition. 
       IF((C3D).AND.(RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
          IF (ABS(RES_BC_FLAG).GE.1) THEN
-            IF(TIME.GT.RBCTIME2) THEN
+            IF(TimeLoc.GT.RBCTIME2) THEN
                RBCTIME1=RBCTIME2
                RBCTIME2=RBCTIME2+RBCTIMEINC
                READ(35,'(A)') CDUM80
@@ -1248,7 +1248,7 @@ C              no ramp utilized for this boundary condition.
                  READ(35,*) NOD,LNM_BC2(I)
                END DO
             END IF
-            RBCRATIO=(TIME-RBCTIME1)/RBCTIMEINC
+            RBCRATIO=(TimeLoc-RBCTIME1)/RBCTIMEINC
             DO NumofBCNode=1,NETA
                   LNM_BC(NumofBCNode)=LNM_BC1(NumofBCNode)+
      &            RBCRATIO*(LNM_BC2(NumofBCNode)-
@@ -1431,7 +1431,7 @@ C...
             END DO
          END DO
          IF(NFFR.EQ.0) THEN
-            IF(TIME.GT.QTIME2) THEN
+            IF(TimeLoc.GT.QTIME2) THEN
                QTIME1=QTIME2
                QTIME2=QTIME2+FTIMINC
                DO J=1,NVEL
@@ -1447,7 +1447,7 @@ C...
                   ENDIF
                END DO
             ENDIF
-            QTRATIO=(TIME-QTIME1)/FTIMINC
+            QTRATIO=(TimeLoc-QTIME1)/FTIMINC
             DO I=1,NVEL
                QN2(I)=RampExtFlux*(QNIN1(I)+QTRATIO*(QNIN2(I)-QNIN1(I)))
                EN2(I)=RampExtFlux*(ENIN1(I)+QTRATIO*(ENIN2(I)-ENIN1(I)))
@@ -1800,7 +1800,7 @@ C...
 
 ckmd	  Changed to include the predictor-corrector algorithm
       IF(CPRECOR) THEN
-         CALL GWCE_New(IT,Time,TimeH)
+         CALL GWCE_New(IT,TimeLoc,TimeH)
          CALL Mom_Eqs_New_NC()
 C...  If running in parallel, update velocities & fluxes on all processors
          
@@ -1808,13 +1808,13 @@ C...  If running in parallel, update velocities & fluxes on all processors
          CALL UPDATER(UU2,VV2,DUMY1,2)
          CALL UPDATER(QX2,QY2,DUMY1,2)
 #endif
-         CALL GWCE_New_pc(IT,Time,TimeH)
+         CALL GWCE_New_pc(IT,TimeLoc,TimeH)
       ENDIF  
       IF(CGWCE_Orig) THEN
-         CALL GWCE_Original(IT,Time,TimeH)
+         CALL GWCE_Original(IT,TimeLoc,TimeH)
       ENDIF
       IF(CGWCE_New) THEN
-         CALL GWCE_New(IT,Time,TimeH)
+         CALL GWCE_New(IT,TimeLoc,TimeH)
       ENDIF
 
 CWET...
@@ -2623,7 +2623,7 @@ C...     MOM_LV_X gets renamed as BTP in global_3dvs.f
 
 C...  Solve for velocity at the new time level (K+1)
 
-        CALL VSSOL(IT,Time)
+        CALL VSSOL(IT,TimeLoc)
 
       ENDIF
 C...  
@@ -2636,7 +2636,7 @@ C...  IF 2D TRANSPORT IS INCLUDED SOLVE FOR THE CONCENTRATION
 C...  
       IF(C2D_PTrans) THEN
 
-        CALL SCALAR_TRANS_2D (IT, Time)
+        CALL SCALAR_TRANS_2D (IT, TimeLoc)
 
       ENDIF
 C...
@@ -2672,7 +2672,7 @@ C
 C...
 C...  WRITE OUTPUT
 C...
-      CALL WRITE_OUTPUT_2D (IT,Time) ! =>see write_output.F
+      CALL WRITE_OUTPUT_2D (IT,TimeLoc) ! =>see write_output.F
 C
 C 
 C     jgf49.44: If harmonic analysis was requested and the current time
@@ -2697,14 +2697,14 @@ C...
         if( (MNWPROH > 0) ) then   !Writer for HSfile
           if( (.not.C3D) ) then                     !Writer for HSfile
 #ifdef CMPI
-          CALL writeHotstart_through_hswriter(Time,IT)  !st3 hsfile
+          CALL writeHotstart_through_hswriter(TimeLoc,IT)  !st3 hsfile
 #endif
           else
             write(6,*) 'HS writer does not support C3D'
           endif
         else
 !     IF(myproc.eq.0) PRINT *, " writeHotstart **********"
-         CALL writeHotstart(Time, IT)
+         CALL writeHotstart(TimeLoc, IT)
         endif
 
 #ifdef CSWAN
@@ -2757,10 +2757,10 @@ C     the screen.
          IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
                WRITE(ScreenUnit,1991) 
-     &            IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,KVMAX,MYPROC
+     &            IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX,MYPROC
             ELSE
                WRITE(ScreenUnit,1991)
-     &            IT,NUMITR,TIME,0.,KEMAX,VELMAX,KVMAX,MYPROC
+     &            IT,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX,MYPROC
             ENDIF
  1991       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E14.8,
@@ -2771,9 +2771,9 @@ C     the screen.
          WarnElevExceeded = 0
          IF(ELMAX.GT.WarnElev) THEN
             WRITE(ScreenUnit,1993) 
-     &           IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
      &           KVMAX,MYPROC
-            WRITE(16,1993) IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,
+            WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
      &           KVMAX,MYPROC
  1993       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E14.8,
@@ -2786,15 +2786,15 @@ C     the screen.
 #ifdef DEBUG_WARN_ELEV
          call WarnElevSum(WarnElevExceeded)
          IF (WarnElevExceeded.ne.0) THEN
-            CALL WriteWarnElev(Time, IT)
+            CALL WriteWarnElev(TimeLoc, IT)
          ENDIF
 #endif
          ErrorElevExceeded = 0                ! Clint's Zombie Slyaer
          IF(ELMAX.GT.ErrorElev) THEN
             WRITE(ScreenUnit,1995) 
-     &           IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
      &           KVMAX,MYPROC
-            WRITE(16,1995) IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,
+            WRITE(16,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
      &           KVMAX,MYPROC
  1995       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E14.8,
@@ -2814,10 +2814,10 @@ C     the screen.
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
                WRITE(ScreenUnit,1992) 
-     &              IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+     &              IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
             ELSE
                WRITE(ScreenUnit,1992) 
-     &              IT,NUMITR,TIME,0.,KEMAX,VELMAX,KVMAX
+     &              IT,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
             ENDIF
  1992       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
@@ -2826,21 +2826,21 @@ C     the screen.
          ENDIF
          IF(ELMAX.GT.WarnElev) THEN
             WRITE(ScreenUnit,1994) 
-     &           IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1994) IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(16,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1994       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', E11.4,' AT NODE',I7,
      &           2X,'SPEEDMAX = ',E11.4,' AT NODE',I7,
      &           2X,'** WARNING: Elevation.gt.WarnElev **')
 #ifdef DEBUG_WARN_ELEV
-            IF (WarnElevDump) CALL WriteWarnElev(Time, IT)
+            IF (WarnElevDump) CALL WriteWarnElev(TimeLoc, IT)
 #endif
          ENDIF
          IF(ELMAX.GT.ErrorElev) THEN
             WRITE(ScreenUnit,1996) 
-     &           IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
-            WRITE(16,1996) IT,NUMITR,TIME,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+     &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
+            WRITE(16,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1996       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
      &           /,2X,'ELMAX = ', E11.4,' AT NODE',I7,
@@ -2872,7 +2872,7 @@ C                                                                              *
 C                            r.l.  06/22/2005                                  *
 C*******************************************************************************
 
-      SUBROUTINE GWCE_Original(IT,Time,TimeH)
+      SUBROUTINE GWCE_Original(IT,TimeLoc,TimeH)
 C     
       USE GLOBAL
       USE SIZES
@@ -2953,7 +2953,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(8) DXX11,DXX12,DXX13,DXX21,DXX22,DXX23,DXX31,DXX32,DXX33
       REAL(8) DYY11,DYY12,DYY13,DYY21,DYY22,DYY23,DYY31,DYY32,DYY33
       REAL(8) DXY11,DXY12,DXY13,DXY21,DXY22,DXY23,DXY31,DXY32,DXY33
-      REAL(8) Time, TimeH
+      REAL(8) TimeLoc, TimeH
 
 C...  RECOMPUTE THE GWCE SYSTEM MATRIX AT THE FIRST TIME STEP OR IF ANY
 C...  WETTING OR DRYING OCCURRED IN THE PREVIOUS TIME STEP.
@@ -3606,7 +3606,7 @@ C...  FOR PERIODIC ELEVATION BOUNDARY CONDITION
 C
 C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
       IF((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
-         IF(TIME.GT.ETIME2) THEN
+         IF(TimeLoc.GT.ETIME2) THEN
             ETIME1=ETIME2
             ETIME2=ETIME1+ETIMINC
             DO J=1,NETA
@@ -3614,7 +3614,7 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
                READ(19,*) ESBIN2(J)
             END DO
          ENDIF
-         ETRATIO=(TIME-ETIME1)/ETIMINC
+         ETRATIO=(TimeLoc-ETIME1)/ETIMINC
          DO I=1,NETA
             NBDI=NBD(I)
             ETA2(NBDI)=RampElev
@@ -3770,7 +3770,7 @@ C                                                                             *
 C                            r.l.  06/22/2005                                 *
 C******************************************************************************
 
-      SUBROUTINE GWCE_New(IT,Time,TimeH)
+      SUBROUTINE GWCE_New(IT,TimeLoc,TimeH)
 C     
       USE GLOBAL
       USE SIZES
@@ -3838,7 +3838,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(SZ) WSXAvg, WSYAvg
       REAL(8) AreaIE, AreaIE2, AreaIE4
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
-      REAL(8) Time, TimeH
+      REAL(8) TimeLoc, TimeH
 
       REAL(SZ) HH1 !jgf46.02 Added for Katrina.
       REAL(SZ) RDIAG ! jgf48.4619 Seizo parameter for fully explicit mode
@@ -4652,7 +4652,7 @@ C...  For periodic elevation boundary conditions
 C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
 
       IF((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
-         IF(TIME.GT.ETIME2) THEN
+         IF(TimeLoc.GT.ETIME2) THEN
             ETIME1=ETIME2
             ETIME2=ETIME1+ETIMINC
             DO J=1,NETA
@@ -4660,7 +4660,7 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
                READ(19,*) ESBIN2(J)
             END DO
          ENDIF
-         ETRATIO=(TIME-ETIME1)/ETIMINC
+         ETRATIO=(TimeLoc-ETIME1)/ETIMINC
          DO I=1,NETA
             NBDI=NBD(I)
             Eta2(NBDI)=RampElev
@@ -6944,7 +6944,7 @@ C                            k.d.  06/24/2004                                  *
 C                            r.l.  06/22/2005                                  *
 C*******************************************************************************
 
-      SUBROUTINE GWCE_new_pc(IT,Time,TimeH)
+      SUBROUTINE GWCE_new_pc(IT,TimeLoc,TimeH)
 C     
       USE GLOBAL
       USE SIZES
@@ -7003,7 +7003,7 @@ C
 
       REAL(8) AreaIE, AreaIE2, AreaIE4
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
-      REAL(8) Time, TimeH
+      REAL(8) TimeLoc, TimeH
 
 ckmd	 Added in parameters for the pc algorithm
       REAL(SZ) BSX0N1, BSX0N2, BSX0N3, BSY0N1
@@ -7737,7 +7737,7 @@ C...  For periodic elevation boundary conditions
 C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
 
       IF((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
-         IF(TIME.GT.ETIME2) THEN
+         IF(TimeLoc.GT.ETIME2) THEN
             ETIME1=ETIME2
             ETIME2=ETIME1+ETIMINC
             DO J=1,NETA
@@ -7745,7 +7745,7 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
                READ(19,*) ESBIN2(J)
             END DO
          ENDIF
-         ETRATIO=(TIME-ETIME1)/ETIMINC
+         ETRATIO=(TimeLoc-ETIME1)/ETIMINC
          DO I=1,NETA
             NBDI=NBD(I)
             Eta2(NBDI)=RampElev
@@ -8588,7 +8588,7 @@ C                                                                               
 C   Note, this is not set up for parallel operation.                                    *
 C****************************************************************************************
 C
-      SUBROUTINE SCALAR_TRANS_2D (IT,Time)
+      SUBROUTINE SCALAR_TRANS_2D (IT,TimeLoc)
 
       USE GLOBAL
       USE NodalAttributes, ONLY: EVC
@@ -8632,7 +8632,7 @@ C
       REAL(8) DDX1,DDX2,DDX3,DDY1,DDY2,DDY3
       REAL(8) DXX11,DXX12,DXX13,DXX21,DXX22,DXX23,DXX31,DXX32,DXX33
       REAL(8) DYY11,DYY12,DYY13,DYY21,DYY22,DYY23,DYY31,DYY32,DYY33
-      REAL(8) Time
+      REAL(8) TimeLoc
 
 
 C...  NOTE: THE VARIABLE CH1(I) IS ACTUALLY C*H

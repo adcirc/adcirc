@@ -1005,7 +1005,7 @@
          !
          !--------------------------------------------------------------
          !
-         INTEGER :: uper
+         INTEGER :: uper, ISGN
          LOGICAL :: bdy
          !
          ! denormalize tension factor
@@ -1015,7 +1015,7 @@
          ! determine actual upper and lower bounds
          !
          x1pp = x(1)+p
-         ISIGN = 1
+         ISGN = 1
          ilm1 = intrvp (xl,x,n,p,xxl)
          lper = INT((xl-x(1))/p)
          IF (xl < x(1)) lper = lper-1
@@ -1024,8 +1024,8 @@
          IF (xu < x(1)) uper = uper-1
          ideltp = uper-lper
          bdy = FLOAT(ideltp)*(xxu-xxl) < 0.
-         IF ((ideltp == 0 .AND. xxu < xxl) .OR. ideltp < 0) ISIGN = -1
-         IF (bdy) ideltp = ideltp-ISIGN
+         IF ((ideltp == 0 .AND. xxu < xxl) .OR. ideltp < 0) ISGN = -1
+         IF (bdy) ideltp = ideltp-ISGN
          IF (xxu >= xxl) GO TO 1
          xsave = xxl
          xxl = xxu
@@ -1216,9 +1216,9 @@
 20       so = s1+s2+s6+s7
          si = s3+s4+s5+s8
          IF (bdy) GO TO 21
-         curvpi = FLOAT(ideltp)*(so+si)+FLOAT(ISIGN)*si
+         curvpi = FLOAT(ideltp)*(so+si)+FLOAT(ISGN)*si
          RETURN
-21       curvpi = FLOAT(ideltp)*(so+si)+FLOAT(ISIGN)*so
+21       curvpi = FLOAT(ideltp)*(so+si)+FLOAT(ISGN)*so
          RETURN
       END FUNCTION curvpi
 

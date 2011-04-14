@@ -85,7 +85,7 @@ C   ARE SET IN THE CODE.                                                      *
 c                                                                             *
 c******************************************************************************
 
-      SUBROUTINE VSSOL(IT,Time)
+      SUBROUTINE VSSOL(IT,TimeLoc)
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit,
 C   kmd48.33bc added variable declarations for baroclinic boundary conditions
 c.RJW merged 08282008 Casey 071219: Added the following variable declarations from GLOBAL.
@@ -176,7 +176,7 @@ Cjgfdebug      REAL(SZ) :: DBCPDY2A
       REAL(SZ) :: Auv2kstar
 
       REAL(8) :: KVnm(MNFEN,3)  !integral used in vertical stress term
-      REAL(8) :: Time           !model time at time level s+1
+      REAL(8) :: TimeLoc           !model time at time level s+1
       REAL(8) :: DEtaDT         !time derivative of water surface elev
       REAL(8) :: DEtaDX,DEtaDY  !horizontal derivatives of water surface elev at time level s
       REAL(8) :: DEtaDX2A,DEtaDY2A !(DEtaDX,DEtaDY)*2*Element Area 
@@ -1093,7 +1093,7 @@ C              conditions are read in similar to the aperiodic elevation
 C              boundary conditions
       IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GT.0)) THEN
          IF ((ABS(RES_BC_FLAG).EQ.2).OR.(ABS(RES_BC_FLAG).EQ.4)) THEN
-            IF(TIME.GT.SBCTIME2) THEN
+            IF(TimeLoc.GT.SBCTIME2) THEN
                SBCTIME1=SBCTIME2
                SBCTIME2=SBCTIME1+SBCTIMEINC
                READ(36,'(A)') CDUM80
@@ -1104,7 +1104,7 @@ C              boundary conditions
                  READ(36,*) NOD,(RESSAL2(NumofBCNode,J),J=1,NFEN)
                END DO
             END IF
-            SBCRATIO=(TIME-SBCTIME1)/SBCTIMEINC
+            SBCRATIO=(TimeLoc-SBCTIME1)/SBCTIMEINC
             DO NumofBCNode=1,NETA
                DO J=1,NFEN
                   RESSAL(NumofBCNode,J)=RESSAL1(NumofBCNode,J)+
@@ -1115,7 +1115,7 @@ C              boundary conditions
          END IF
          IF ((ABS(RES_BC_FLAG).EQ.3).OR.
      &           (ABS(RES_BC_FLAG).EQ.4)) THEN
-            IF(TIME.GT.TBCTIME2) THEN
+            IF(TimeLoc.GT.TBCTIME2) THEN
                TBCTIME1=TBCTIME2
                TBCTIME2=TBCTIME1+TBCTIMEINC
                READ(37,'(A)') CDUM80
@@ -1126,7 +1126,7 @@ C              boundary conditions
                  READ(37,*) NOD,(RESTEMP2(NumofBCNode,J),J=1,NFEN)
                END DO
             END IF
-            TBCRATIO=(TIME-TBCTIME1)/TBCTIMEINC
+            TBCRATIO=(TimeLoc-TBCTIME1)/TBCTIMEINC
             DO NumofBCNode=1,NETA
                DO J=1,NFEN
                   RESTEMP(NumofBCNode,J)=RESTEMP1(NumofBCNode,J)+
@@ -1142,12 +1142,12 @@ C   Start computing the new density, temperature and salinity values
         IF(IDEN.EQ.1) THEN
 C           CALL 3D_SIGMAT_TRANS()
         ELSE IF(IDEN.EQ.2) THEN 
-            CALL TRANS_3D(SAL,NLSD,NVSD,SALkp1,IDEN,TIME)
+            CALL TRANS_3D(SAL,NLSD,NVSD,SALkp1,IDEN,TimeLoc)
         ELSE IF(IDEN.EQ.3) THEN 
-            CALL TRANS_3D(TEMP,NLTD,NVTD,TEMPkp1,IDEN,TIME)
+            CALL TRANS_3D(TEMP,NLTD,NVTD,TEMPkp1,IDEN,TimeLoc)
         ELSE IF(IDEN.EQ.4) THEN
-            CALL TRANS_3D(SAL,NLSD,NVSD,SALkp1,IDEN-2,TIME)
-            CALL TRANS_3D(TEMP,NLTD,NVTD,TEMPkp1,IDEN-1,TIME)
+            CALL TRANS_3D(SAL,NLSD,NVSD,SALkp1,IDEN-2,TimeLoc)
+            CALL TRANS_3D(TEMP,NLTD,NVTD,TEMPkp1,IDEN-1,TimeLoc)
         ENDIF
 C
 C     Update new temperature and salinity fields on ghost nodes
@@ -1200,7 +1200,7 @@ C     present time levels so we can advance in time.
 C***************************************************************************
 C     WRITE 3D MODEL OUTPUT
 
-      CALL writeOutput3D(Time,IT) !jgf48_11 moved to write_output.F
+      CALL writeOutput3D(TimeLoc,IT) !jgf48_11 moved to write_output.F
 
 
 C***************************************************************************

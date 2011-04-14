@@ -174,8 +174,8 @@ ifeq ($(compiler),cray_xt4)
   PFC	        :=  ftn
   CC		:=  pgcc
   CCBE		:=  cc
-#  FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse
-  FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DNETCDF_TRACE -DHARM_TRACE -DWRITE_OUTPUT_TRACE -DFLUSH_MESSAGES
+  FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse
+#  FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DNETCDF_TRACE -DHARM_TRACE -DWRITE_OUTPUT_TRACE -DFLUSH_MESSAGES
 #  FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk
   FFLAGS2	:=  $(FFLAGS1) 
   FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics 

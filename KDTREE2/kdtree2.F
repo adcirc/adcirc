@@ -613,7 +613,7 @@
 
       contains
 
-      function kdtree2_create(input_data,iidim,sort,rearrange) result (mr)
+      function kdtree2_create(input_data,idim2,sort,rearrange) result (mr)
       !
       ! create the actual tree structure, given an input array of data.
       !
@@ -621,9 +621,9 @@
       ! THIS IS THE REVERSE OF THE PREVIOUS VERSION OF THIS MODULE.
       ! The reason for it is cache friendliness, improving performance.
       !
-      ! Optional arguments:  If 'iidim' is specified, then the tree
-      !                      will only search the first 'iidim' components
-      !                      of input_data, otherwise, iidim is inferred
+      ! Optional arguments:  If 'idim2' is specified, then the tree
+      !                      will only search the first 'idim2' components
+      !                      of input_data, otherwise, idim2 is inferred
       !                      from SIZE(input_data,1).
       !
       !                      if sort .eqv. .true. then output results
@@ -638,7 +638,7 @@
       !
       ! .. Function Return Cut_value ..
       type (kdtree2), pointer :: mr
-      integer, intent(in), optional      :: iidim
+      integer, intent(in), optional      :: idim2
       logical, intent(in), optional      :: sort
       logical, intent(in), optional      :: rearrange
       ! ..
@@ -651,8 +651,8 @@
       mr%the_data => input_data
       ! pointer assignment
 
-      if (present(iidim)) then
-         mr%dimen = iidim
+      if (present(idim2)) then
+         mr%dimen = idim2
       else
          mr%dimen = size(input_data,1)
       end if

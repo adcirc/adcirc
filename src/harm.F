@@ -553,7 +553,7 @@ C--------------------------------------------------------------------
 c***********************************************************************
 c   Subroutine to update the Left Hand Side Matrix                     *
 c                                                                      *
-c  TIME  - ABSOLUTE MODEL TIME (SEC)                                   *
+c  TIMELOC  - ABSOLUTE MODEL TIME (SEC)                                   *
 c  IT    - MODEL TIME STEP                                             *
 c  icall - number of times the subroutine has been called              *
 c  a     - Left Hand Side Matrix                                       *
@@ -561,11 +561,11 @@ c                                                                      *
 c                        RL 11/7/95                                    *
 c***********************************************************************
 c
-      SUBROUTINE LSQUPDLHS(TIME,IT)
+      SUBROUTINE LSQUPDLHS(TIMELOC,IT)
       IMPLICIT NONE
       INTEGER IT,I,J,I1,I2,J1,J2
       REAL(SZ) TF1,TF2
-      REAL(8) TIME
+      REAL(8) TIMELOC
 C
       call setMessageSource("LSQUPDLHS")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -584,7 +584,7 @@ c     Take care of the steady constituent if included in the analysis
       if(nf.eq.1) then
          ha(1,1)=icall
          do j=1,nfreq
-            tf1=hafreq(j+nf)*time
+            tf1=hafreq(j+nf)*TIMELOC
             ha(1,2*j)   = ha(1,2*j) + cos(tf1)
             ha(1,2*j+1) = ha(1,2*j+1) + sin(tf1)
          end do
@@ -598,8 +598,8 @@ c   Take care of the other constituents
             i2=i1+1
             j1=2*j-(1-nf)
             j2=j1+1
-            tf1=hafreq(i+nf)*time
-            tf2=hafreq(j+nf)*time
+            tf1=hafreq(i+nf)*TIMELOC
+            tf2=hafreq(j+nf)*TIMELOC
             ha(i1,j1) = ha(i1,j1) + cos(tf1)*cos(tf2)
             ha(i1,j2) = ha(i1,j2) + cos(tf1)*sin(tf2)
             ha(i2,j2) = ha(i2,j2) + sin(tf1)*sin(tf2)
@@ -609,7 +609,7 @@ c   Take care of the other constituents
 
 c   Record update time and time step
 
-      TIMEUD = TIME
+      TIMEUD = TIMELOC
       ITUD = IT
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -1167,7 +1167,7 @@ c
      &  NEVAMAX,NEVAMIN
       REAL(8)  CONVRD 
       REAL(SZ) EAVMAX,EVAMAX,EAVMIN,EVAMIN
-      REAL(SZ) TIME,RSE,FTIME
+      REAL(SZ) TIMELOC,RSE,FTIME
       REAL(SZ),ALLOCATABLE  ::  PHASEE(:),EMAG(:)
 C
       call setMessageSource("LSQSOLEG")
@@ -1222,10 +1222,10 @@ c
             eav(n) = 0.d0
             esq(n) = 0.d0
             do it=1,ntsteps
-               TIME=TIMEBEG+DTDP*IT
+               TIMELOC=TIMEBEG+DTDP*IT
                rse=0.d0
                do ifr=1,nfreq+nf
-                  ftime=hafreq(ifr)*time
+                  ftime=hafreq(ifr)*TIMELOC
                   rse=rse+emag(ifr)*cos(ftime-phasee(ifr))
                end do
                eav(n)=eav(n)+rse
@@ -1310,7 +1310,7 @@ c
       INTEGER I,J,N,K,I1,I2,IT,IFR
       INTEGER NUAVMAX,NUAVMIN,NVAVMAX,NVAVMIN,NUVAMAX,NUVAMIN,
      &  NVVAMAX,NVVAMIN
-      REAL(SZ) TIME,FTIME,RSU,RSV
+      REAL(SZ) TIMELOC,FTIME,RSU,RSV
       REAL(SZ) UAVMAX,VAVMAX,UVAMAX,VVAMAX,UAVMIN,VAVMIN,
      & UVAMIN,VVAMIN
       REAL(8) CONVRD
@@ -1399,11 +1399,11 @@ CHARMV...Compare resynthesized values with those computed during time stepping.
             usq(n) = 0.d0
             vsq(n) = 0.d0
             do it=1,ntsteps
-               TIME=TIMEBEG+DTDP*IT
+               TIMELOC=TIMEBEG+DTDP*IT
                rsu=0.
                rsv=0.
                do ifr=1,nfreq+nf
-                  ftime=hafreq(ifr)*time
+                  ftime=hafreq(ifr)*TIMELOC
                   rsu=rsu+umagg(ifr)*cos(ftime-phaseug(ifr))
                   rsv=rsv+vmagg(ifr)*cos(ftime-phasevg(ifr))
                end do

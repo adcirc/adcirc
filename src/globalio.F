@@ -633,7 +633,7 @@ C
       !   which it writes out.
       !--------------------------------------------------------------
 
-      subroutine write_gbl_file(lun, filename, descript, time, it, 
+      subroutine write_gbl_file(lun, filename, descript, TimeLoc, it, 
      &                          write_cmd)
       implicit none
 #ifdef CMPI
@@ -644,7 +644,7 @@ C
       integer lun
       character(*) :: filename
       type (OutputDataDescript_t) :: descript
-      real(8)  :: time
+      real(8)  :: TimeLoc
       integer  :: it
       ! the subroutine used to write the file
       external write_cmd
@@ -666,7 +666,7 @@ C      write(16,*) 'About to open file.' !jgfdebug48.03
       if (myproc == 0 .or. WRITE_LOCAL_FILES) then
          open(lun, file=filename, access='SEQUENTIAL',
      &        position='APPEND')
-         write(lun, 1100) time, it
+         write(lun, 1100) TimeLoc, it
       endif
 
       if (WRITE_LOCAL_FILES) then
@@ -759,7 +759,7 @@ C! CMPI
       !--------------------------------------------------------------
 
       subroutine write_gbl_63_skip_drynode
-     &           (lun, filename, descript, time, it, write_cmd)
+     &           (lun, filename, descript, TimeLoc, it, write_cmd)
       implicit none
 #ifdef CMPI
 #ifndef HAVE_MPI_MOD
@@ -780,7 +780,7 @@ C! CMPI
       integer      :: nLWetNodes, nGWetNodes
       integer      :: iglobal
 #endif
-      real(8)      :: time
+      real(8)      :: TimeLoc
       character(*) :: filename
       type (OutputDataDescript_t) :: descript
 
@@ -792,7 +792,7 @@ C! CMPI
 #ifndef CMPI
 C     !-----IF CMPI IS NOT DEFINED -----
       open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-      write(lun, 1100) time, it
+      write(lun, 1100) TimeLoc, it
 
       call write_cmd(lun, descript, 1, descript % num_records_this)
       close(lun)
@@ -803,7 +803,7 @@ C    !-----IF CMPI IS DEFINED -----
 
       if (WRITE_LOCAL_FILES) then
         open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-        write(lun, 1100) time, it
+        write(lun, 1100) TimeLoc, it
         call write_cmd(lun, descript, 1, descript % num_records_this)
         close(lun)
 
@@ -827,7 +827,7 @@ C    !-----IF CMPI IS DEFINED -----
 
       if (myproc == 0) then
         open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-        write(lun, 1101) time, it, nGWetNodes, -99999.d0
+        write(lun, 1101) TimeLoc, it, nGWetNodes, -99999.d0
       endif
 
       bufsize = min(BUFSIZE_MAX, 
@@ -903,7 +903,7 @@ C! CMPI
       !--------------------------------------------------------------
 
       subroutine write_gbl_file_skip_default
-     &           (lun, filename, descript, time, it, write_cmd, default)
+     &           (lun, filename, descript, TimeLoc, it, write_cmd, default)
       implicit none
 #ifdef CMPI
 #ifndef HAVE_MPI_MOD
@@ -925,7 +925,7 @@ C! CMPI
       integer      :: iglobal
 #endif
       real(8)      :: default
-      real(8)      :: time
+      real(8)      :: TimeLoc
       character(*) :: filename
       type (OutputDataDescript_t) :: descript
 
@@ -936,7 +936,7 @@ C! CMPI
 #ifndef CMPI 
 C    !-----IF CMPI IS NOT DEFINED -----
       open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-      write(lun, 1100) time, it
+      write(lun, 1100) TimeLoc, it
 
       call write_cmd(lun, descript, 1, descript % num_records_this)
       close(lun)
@@ -947,7 +947,7 @@ C     !-----IF CMPI IS DEFINED -----
 
       if (WRITE_LOCAL_FILES) then
         open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-        write(lun, 1100) time, it
+        write(lun, 1100) TimeLoc, it
         call write_cmd(lun, descript, 1, descript % num_records_this)
         close(lun)
 
@@ -976,7 +976,7 @@ C     !-----IF CMPI IS DEFINED -----
 
       if (myproc == 0) then
         open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-        write(lun, 1101) time, it, nGNonDefValues, default
+        write(lun, 1101) TimeLoc, it, nGNonDefValues, default
       endif
 
       bufsize = min(BUFSIZE_MAX, 

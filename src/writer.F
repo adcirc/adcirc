@@ -124,7 +124,7 @@ C...  Main loop
       end subroutine WRITER_PAUSE
  
       subroutine WRITE_GBL_FILE_THROUGH_WRITER
-     &     (filename, descript, time, it, store_cmd, default)
+     &     (filename, descript, TimeLoc, it, store_cmd, default)
       use global
       implicit none
 #ifndef HAVE_MPI_MOD
@@ -136,7 +136,7 @@ C...  Main loop
       integer      :: ierr
       integer      :: bufsize
       integer      :: istart, iend, it
-      real(8)      :: time
+      real(8)      :: TimeLoc
       character(*) :: filename
       character(256) :: filenamebuf
       real(sz)     :: default
@@ -169,7 +169,7 @@ C...    Send some parameters associated to this file
      &       WCOMM,IERR)
 
         REBUF(1) = default
-        REBUF(2) = time
+        REBUF(2) = TimeLoc
         CALL MPI_SEND(REBUF,2,REALTYPE,MNPROC,TAG,
      &       WCOMM,IERR)
 
@@ -754,7 +754,7 @@ C       and fitted to writer core algorithm  !st3 05.15.2010
 C
 C      ******* THIS SUBROUTINE DOES NOT DEAL WITH NETCDF
 C-----------------------------------------------------------------------
-      SUBROUTINE writeHotstart_through_HSwriter(Time, IT)
+      SUBROUTINE writeHotstart_through_HSwriter(TimeLoc, IT)
 
       USE SIZES
       USE GLOBAL
@@ -770,7 +770,7 @@ C-----------------------------------------------------------------------
       INTEGER :: STAT(MPI_STATUS_SIZE)
       integer :: i
 
-      REAL(8), intent(in) :: Time
+      REAL(8), intent(in) :: TimeLoc
       INTEGER, intent(in) :: IT
 !
       double precision :: ttime, dpack(1)  !st3
@@ -827,7 +827,7 @@ C-----------------------------------------------------------------------
         ipack(24) = IGWP
         ipack(25) = NSCOUGW
 
-        dpack(1) = Time
+        dpack(1) = TimeLoc
         cjunk1 = trim(adjustl(HOTSTARTDIR))
         cjunk2 = trim(adjustl(hss%filename))
 
@@ -1109,9 +1109,9 @@ C...
       ENDIF                                                             ! end NHSTAR=1 
         
       IF(NSCREEN.NE.0.AND. WRITER_ID /= 0 ) THEN
-         WRITE(ScreenUnit,24541) hss % lun, WRITER_ID, IT,TIME
+         WRITE(ScreenUnit,24541) hss % lun, WRITER_ID, IT,TimeLoc
       ELSE 
-         WRITE(16,24541) hss % lun,WRITER_ID,IT,TIME
+         WRITE(16,24541) hss % lun,WRITER_ID,IT,TimeLoc
       ENDIF
 24541 FORMAT(1X,'HOT START OUTPUT WRITTEN TO UNIT ',I2,'  HSWriter:',i2
      &    ' AT TIME STEP = ',I9,' TIME = ',E15.8)

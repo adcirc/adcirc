@@ -475,7 +475,7 @@ C     jgf46.00 Explicitly declare the following variables.
       REAL(SZ) EPS
       REAL(SZ) SI
       REAL(SZ) RL2
-      REAL(SZ) SCALE
+      REAL(SZ) SCALEVAL
       REAL(SZ) RAD
       REAL(SZ) PHI
       REAL(SZ) P1
@@ -505,7 +505,7 @@ CCCC 1 10X, 'ITER  RES')
       SI = 1.0
       L2=2*LGGHAF
       RL2=L2
-      SCALE = 2.0/(RL2*RL2)
+      SCALEVAL = 2.0/(RL2*RL2)
       K1=L2-1
       PI = ACOS(-1.)
       DRADZ = PI / 360.
@@ -528,7 +528,7 @@ CCCC 1 10X, 'ITER  RES')
       PHI = RAD * 180 / PI
       CALL POLY(K1,RAD,P1)
       X = COS(RAD)
-      W = SCALE * (1.0 - X*X)/ (P1*P1)
+      W = SCALEVAL * (1.0 - X*X)/ (P1*P1)
       WGT(K) = W
       SN = SIN(RAD)
       W=W/(SN*SN)
