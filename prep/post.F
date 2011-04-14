@@ -238,12 +238,12 @@ C
       CHARACTER*8 RDES8(8),RID8(6),AID8(6)
       LOGICAL FOUND
 
-      INTEGER,ALLOCATABLE :: LOC(:),IREC(:)
+      INTEGER,ALLOCATABLE :: LOC2(:),IREC(:)
       REAL(SZ),ALLOCATABLE ::   ETBIN(:),ETBINP(:)
       CHARACTER*80,ALLOCATABLE ::  ETASC(:),ETASCP(:)
       CHARACTER*14,ALLOCATABLE ::  LOCNAME(:)
 
-      ALLOCATE ( LOC(MNPROC),IREC(MNPROC) )
+      ALLOCATE ( LOC2(MNPROC),IREC(MNPROC) )
       ALLOCATE ( ETBIN(MNSTAE),ETBINP(MNSTAE))
       ALLOCATE ( ETASC(MNSTAE),ETASCP(MNSTAE))
       ALLOCATE ( LOCNAME(MNPROC))
@@ -264,16 +264,16 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.61'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No Local fort.61 files found"
            RETURN
          ENDIF
-         READ(LOC(IPROC),'(A85)')  INLINE
-         READ(LOC(IPROC),3645) NTRSPE,NUMSTNS,DTE,NSTEMP,ITEMPE
+         READ(LOC2(IPROC),'(A85)')  INLINE
+         READ(LOC2(IPROC),3645) NTRSPE,NUMSTNS,DTE,NSTEMP,ITEMPE
          IF (NUMSTNS.NE.NSTAEP(IPROC)) THEN
             STOP 'Inconsistency in Number of Elevation Stations'
          ENDIF
@@ -293,9 +293,9 @@ C
       DO ! loop infinitely over data sets
 C
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),2120,END=9999) TIMEOUTSE,ITSE
+            READ(LOC2(IPROC),2120,END=9999) TIMEOUTSE,ITSE
             IF (NSTAEP(IPROC).GT.0) THEN
-              READ(LOC(IPROC),80,END=9999) (ETASCP(K),K=1,NSTAEP(IPROC))
+              READ(LOC2(IPROC),80,END=9999) (ETASCP(K),K=1,NSTAEP(IPROC))
               DO K=1,NSTAEP(IPROC)
                  ETASC(IMAP_STAE_LG(K,IPROC)) = ETASCP(K)
               ENDDO
@@ -318,10 +318,10 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.61'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &       RECL=NBYTE)
          ELSE
            print *, "No Local fort.61 files found"
@@ -337,29 +337,29 @@ C
          IREC(IPROC) = 0
          IF (NBYTE.EQ.4) THEN
            DO I=1,8
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+8
            DO I=1,6
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RID4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+6
            DO I=1,6
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) AID4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+6
          ENDIF
          IF (NBYTE.EQ.8) THEN
            DO I=1,4
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+4
            DO I=1,3
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RID8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+3
            DO I=1,3
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) AID8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+3
          ENDIF
@@ -401,17 +401,17 @@ C--Read NTRSPE, NSTAE, DT*NSPOOLE from each Local file
 C  and then close files to flush file buffers
 C
       DO IPROC = 1,NPROC
-         READ(LOC(IPROC),REC=IREC(IPROC)+1) NTRSPE
-         READ(LOC(IPROC),REC=IREC(IPROC)+2) NUMSTNS        
-         READ(LOC(IPROC),REC=IREC(IPROC)+3) DTE
-         READ(LOC(IPROC),REC=IREC(IPROC)+4) NSTEMP 
-         READ(LOC(IPROC),REC=IREC(IPROC)+5) ITEMPE
+         READ(LOC2(IPROC),REC=IREC(IPROC)+1) NTRSPE
+         READ(LOC2(IPROC),REC=IREC(IPROC)+2) NUMSTNS        
+         READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTE
+         READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP 
+         READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPE
          IREC(IPROC) = IREC(IPROC)+5
-         CLOSE(LOC(IPROC))    ! Flush the Write Buffer
+         CLOSE(LOC2(IPROC))    ! Flush the Write Buffer
          IF (NUMSTNS.NE.NSTAEP(IPROC)) THEN
             STOP 'Inconsistency in Number of Elevation Stations'
          ENDIF
-         OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
 C
 C--Write same info to Global file and close it to flush buffer also
@@ -428,12 +428,12 @@ C
       DO J=1,NTRSPE
 C
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),REC=IREC(IPROC)+1) TIMEOUTSE
-            READ(LOC(IPROC),REC=IREC(IPROC)+2) ITSE
+            READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTSE
+            READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITSE
             IREC(IPROC) = IREC(IPROC) + 2
             IF (NSTAEP(IPROC).GT.0) THEN
               DO K=1, NSTAEP(IPROC)
-                 READ(LOC(IPROC),REC=IREC(IPROC)+K) ETBINP(K)
+                 READ(LOC2(IPROC),REC=IREC(IPROC)+K) ETBINP(K)
               ENDDO
               DO K=1,NSTAEP(IPROC)
                  ETBIN(IMAP_STAE_LG(K,IPROC)) = ETBINP(K)
@@ -457,7 +457,7 @@ C
 9999  CONTINUE
       CLOSE(61)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
    80 FORMAT(A40)
@@ -490,13 +490,13 @@ C
       CHARACTER*8 RDES8(8),RID8(6),AID8(6)
       LOGICAL FOUND
 
-      INTEGER,ALLOCATABLE :: LOC(:),IREC(:)
+      INTEGER,ALLOCATABLE :: LOC2(:),IREC(:)
       REAL(SZ),ALLOCATABLE ::  UUBIN(:),VVBIN(:)
       REAL(SZ),ALLOCATABLE ::  UUBINP(:),VVBINP(:)
       CHARACTER*80,ALLOCATABLE :: UUASC(:),UUASCP(:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
-      ALLOCATE (LOC(MNPROC),IREC(MNPROC))
+      ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (UUBIN(MNSTAV),VVBIN(MNSTAV))
       ALLOCATE (UUBINP(MNSTAV),VVBINP(MNSTAV))
       ALLOCATE (UUASC(MNSTAV),UUASCP(MNSTAV))
@@ -515,16 +515,16 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.62'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No Local fort.62 files found"
            RETURN
          ENDIF
-         READ(LOC(IPROC),'(A85)')  INLINE
-         READ(LOC(IPROC),3645) NTRSPV,NUMSTNS,DTV,NSTEMP,ITEMPV
+         READ(LOC2(IPROC),'(A85)')  INLINE
+         READ(LOC2(IPROC),3645) NTRSPV,NUMSTNS,DTV,NSTEMP,ITEMPV
          IF (NUMSTNS.NE.NSTAVP(IPROC)) THEN
             STOP 'Inconsistency in Number of Velocity Stations'
          ENDIF
@@ -544,9 +544,9 @@ C
       DO ! loop infinitely over data sets
 C
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),2120,END=9999) TIMEOUTSV,ITSV
+            READ(LOC2(IPROC),2120,END=9999) TIMEOUTSV,ITSV
             IF (NSTAVP(IPROC).GT.0) THEN
-              READ(LOC(IPROC),80,END=9999) (UUASCP(K),K=1,
+              READ(LOC2(IPROC),80,END=9999) (UUASCP(K),K=1,
      &                                     NSTAVP(IPROC))
               DO K=1,NSTAVP(IPROC)
                  UUASC(IMAP_STAV_LG(K,IPROC)) = UUASCP(K)
@@ -570,10 +570,10 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.62'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &       RECL=NBYTE)
          ELSE
            print *, "No Local fort.61 files found"
@@ -588,29 +588,29 @@ C
          IREC(IPROC) = 0
          IF (NBYTE.EQ.4) THEN
            DO I=1,8
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+8
            DO I=1,6
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RID4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+6
            DO I=1,6
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) AID4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+6
          ENDIF
          IF (NBYTE.EQ.8) THEN
            DO I=1,4
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+4
            DO I=1,3
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RID8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+3
            DO I=1,3
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) AID8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+3
          ENDIF
@@ -652,17 +652,17 @@ C--Read NTRSPV, NSTAV, DT*NSPOOLV from each Local file
 C  and then close files to flush file buffers
 C
       DO IPROC = 1,NPROC
-         READ(LOC(IPROC),REC=IREC(IPROC)+1) NTRSPV
-         READ(LOC(IPROC),REC=IREC(IPROC)+2) NUMSTNS
-         READ(LOC(IPROC),REC=IREC(IPROC)+3) DTV
-         READ(LOC(IPROC),REC=IREC(IPROC)+4) NSTEMP
-         READ(LOC(IPROC),REC=IREC(IPROC)+5) ITEMPV
+         READ(LOC2(IPROC),REC=IREC(IPROC)+1) NTRSPV
+         READ(LOC2(IPROC),REC=IREC(IPROC)+2) NUMSTNS
+         READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTV
+         READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP
+         READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPV
          IREC(IPROC) = IREC(IPROC)+5
-         CLOSE(LOC(IPROC))    ! Flush the Write Buffer
+         CLOSE(LOC2(IPROC))    ! Flush the Write Buffer
          IF (NUMSTNS.NE.NSTAVP(IPROC)) THEN
             STOP 'Inconsistency in Number of Velocity Stations'
          ENDIF
-         OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
 C
 C--Write same info to Global file and close it to flush buffer also
@@ -679,13 +679,13 @@ C
       DO J=1,NTRSPV
 C
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),REC=IREC(IPROC)+1) TIMEOUTSV
-            READ(LOC(IPROC),REC=IREC(IPROC)+2) ITSV
+            READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTSV
+            READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITSV
             IREC(IPROC) = IREC(IPROC) + 2
             IF (NSTAVP(IPROC).GT.0) THEN
               DO K=1, NSTAVP(IPROC)
-                 READ(LOC(IPROC),REC=IREC(IPROC)+2*K-1) UUBINP(K)
-                 READ(LOC(IPROC),REC=IREC(IPROC)+2*K) VVBINP(K)
+                 READ(LOC2(IPROC),REC=IREC(IPROC)+2*K-1) UUBINP(K)
+                 READ(LOC2(IPROC),REC=IREC(IPROC)+2*K) VVBINP(K)
               ENDDO
               DO K=1,NSTAVP(IPROC)
                  UUBIN(IMAP_STAV_LG(K,IPROC)) = UUBINP(K)
@@ -712,7 +712,7 @@ C--Close the Global and Local fort.62 Files
 C
       CLOSE(62)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
  2120 FORMAT(2X,E20.10,5X,I10)
@@ -735,7 +735,7 @@ C
       USE POST_GLOBAL
       IMPLICIT NONE
       INTEGER I,J,K,L,IPROC,IDUM
-      INTEGER NDSETGE,NSTEMP,NP,ITE,ITEMPE,INDEX
+      INTEGER NDSETGE,NSTEMP,NP,ITE,ITEMPE,INDX
       INTEGER OREC
       REAL(SZ) DTE
       REAL(SZ) ETA
@@ -746,12 +746,12 @@ C
       CHARACTER*8 RDES8(8),RID8(6),AID8(6)
       LOGICAL FOUND
 
-      INTEGER, ALLOCATABLE  ::  LOC(:),IREC(:)
+      INTEGER, ALLOCATABLE  ::  LOC2(:),IREC(:)
       REAL(SZ), ALLOCATABLE  ::  ETBIN(:),ETBINP(:)
       CHARACTER*80, ALLOCATABLE  ::  ETASC(:),ETASCP(:)
       CHARACTER*14, ALLOCATABLE  ::  LOCNAME(:)
 
-      ALLOCATE (LOC(MNPROC),IREC(MNPROC))
+      ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (ETBIN(MNP),ETBINP(MNPP))
       ALLOCATE (ETASC(MNP),ETASCP(MNPP))
       ALLOCATE (LOCNAME(MNPROC))
@@ -772,16 +772,16 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.63'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No Local fort.63 files found"
            RETURN
          ENDIF
-         READ(LOC(IPROC),'(A85)')  INLINE
-         READ(LOC(IPROC),3645)  NDSETGE,NP,DTE,NSTEMP,ITEMPE
+         READ(LOC2(IPROC),'(A85)')  INLINE
+         READ(LOC2(IPROC),3645)  NDSETGE,NP,DTE,NSTEMP,ITEMPE
          IF (NP.NE.NNODP(IPROC)) THEN
            print *, "NP = ",NP," NNODP = ",NNODP(IPROC)
            STOP 'Inconsistency in number of local nodes'
@@ -799,13 +799,13 @@ C
       DO ! loop infinitely over data sets
 C
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),FMT=2120,END=9999) TIMEOUTE,ITE
+            READ(LOC2(IPROC),FMT=2120,END=9999) TIMEOUTE,ITE
             IF (IPROC.EQ.1) WRITE(63,2120) TIMEOUTE,ITE
             DO K = 1,NNODP(IPROC)
-               READ(LOC(IPROC),80,END=9999) ETASCP(K)
-               INDEX = IMAP_NOD_LG(K,IPROC)
-               IF (IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
-                 ETASC(INDEX) = ETASCP(K)
+               READ(LOC2(IPROC),80,END=9999) ETASCP(K)
+               INDX = IMAP_NOD_LG(K,IPROC)
+               IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
+                 ETASC(INDX) = ETASCP(K)
                 ENDIF
             ENDDO  
          ENDDO 
@@ -828,10 +828,10 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.63'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &       RECL=NBYTE)
          ELSE
            print *, "No Local fort.63 files found"
@@ -846,29 +846,29 @@ C
          IREC(IPROC) = 0
          IF (NBYTE.EQ.4) THEN
            DO I=1,8
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+8
            DO I=1,6
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RID4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+6
            DO I=1,6
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) AID4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+6
          ENDIF
          IF (NBYTE.EQ.8) THEN
            DO I=1,4
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+4
            DO I=1,3
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RID8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+3
            DO I=1,3
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) AID8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+3
          ENDIF
@@ -910,14 +910,14 @@ C--Read NDSETGE, NNODP, DTE, NSPOOLGE, ITEMPE from each Local file
 C  and then close files to flush file buffers
 C
       DO IPROC = 1,NPROC
-         READ(LOC(IPROC),REC=IREC(IPROC)+1) NDSETGE
-         READ(LOC(IPROC),REC=IREC(IPROC)+2) IDUM   
-         READ(LOC(IPROC),REC=IREC(IPROC)+3) DTE
-         READ(LOC(IPROC),REC=IREC(IPROC)+4) NSTEMP
-         READ(LOC(IPROC),REC=IREC(IPROC)+5) ITEMPE
+         READ(LOC2(IPROC),REC=IREC(IPROC)+1) NDSETGE
+         READ(LOC2(IPROC),REC=IREC(IPROC)+2) IDUM   
+         READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTE
+         READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP
+         READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPE
          IREC(IPROC) = IREC(IPROC)+5
-         CLOSE(LOC(IPROC))    ! Flush the Write Buffer
-         OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
+         CLOSE(LOC2(IPROC))    ! Flush the Write Buffer
+         OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
 C
 C--Write same info to Global file and close it to flush buffer also
@@ -934,16 +934,16 @@ C
       DO J=1,NDSETGE
 C
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),REC=IREC(IPROC)+1) TIMEOUTE
-            READ(LOC(IPROC),REC=IREC(IPROC)+2) ITE
+            READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTE
+            READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITE
             IREC(IPROC) = IREC(IPROC) + 2
             DO K=1, NNODP(IPROC)
-               READ(LOC(IPROC),REC=IREC(IPROC)+K) ETBINP(K)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+K) ETBINP(K)
             ENDDO
             DO K=1,NNODP(IPROC)
-               INDEX = IMAP_NOD_LG(K,IPROC)
-               IF (IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
-                 ETBIN(INDEX) = ETBINP(K)
+               INDX = IMAP_NOD_LG(K,IPROC)
+               IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
+                 ETBIN(INDX) = ETBINP(K)
                ENDIF
             ENDDO
             IREC(IPROC) = IREC(IPROC) + NNODP(IPROC)
@@ -965,7 +965,7 @@ C--Close the Global and Local fort.63 Files
 C
       CLOSE(63)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
    80 FORMAT(A80)
@@ -987,7 +987,7 @@ C
       USE POST_GLOBAL
       IMPLICIT NONE
       INTEGER I,J,K,L,IPROC,IDUM
-      INTEGER NDSETGV,NSTEMP,NP,ITV,ITEMPV,INDEX
+      INTEGER NDSETGV,NSTEMP,NP,ITV,ITEMPV,INDX
       INTEGER OREC
       REAL(SZ) DTV
       REAL(SZ) U1,V1
@@ -998,13 +998,13 @@ C
       CHARACTER*8 RDES8(8),RID8(6),AID8(6)
       LOGICAL FOUND
 
-      INTEGER,ALLOCATABLE  :: LOC(:),IREC(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
       REAL(SZ),ALLOCATABLE  ::  UUBIN(:),VVBIN(:)
       REAL(SZ),ALLOCATABLE  ::  UUBINP(:),VVBINP(:)
       CHARACTER*80,ALLOCATABLE  ::  UU(:),UUP(:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
-      ALLOCATE (LOC(MNPROC),IREC(MNPROC))
+      ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (UUBIN(MNP),VVBIN(MNP))
       ALLOCATE (UUBINP(MNPP),VVBINP(MNPP))
       ALLOCATE (UU(MNP),UUP(MNPP))
@@ -1026,16 +1026,16 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.64'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No Local fort.64 files found"
            RETURN
          ENDIF
-         READ(LOC(IPROC),'(A85)')  INLINE
-         READ(LOC(IPROC),3645) NDSETGV,NP,DTV,NSTEMP,ITEMPV
+         READ(LOC2(IPROC),'(A85)')  INLINE
+         READ(LOC2(IPROC),3645) NDSETGV,NP,DTV,NSTEMP,ITEMPV
          IF (NP.NE.NNODP(IPROC)) THEN
            STOP 'Inconsistency in number of local nodes'
          ENDIF
@@ -1052,13 +1052,13 @@ C
       DO ! loop infinitely over data sets
 C
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),FMT=2120,END=9999) TIMEOUTV,ITV
+            READ(LOC2(IPROC),FMT=2120,END=9999) TIMEOUTV,ITV
             IF (IPROC.EQ.1) WRITE(64,2120) TIMEOUTV,ITV
             DO K = 1,NNODP(IPROC)
-               READ(LOC(IPROC),80,END=9999) UUP(K)
-               INDEX = IMAP_NOD_LG(K,IPROC)
-               IF(IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
-                UU(INDEX) = UUP(K)
+               READ(LOC2(IPROC),80,END=9999) UUP(K)
+               INDX = IMAP_NOD_LG(K,IPROC)
+               IF(IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
+                UU(INDX) = UUP(K)
                ENDIF
             ENDDO
          ENDDO 
@@ -1082,10 +1082,10 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.64'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &       RECL=NBYTE)
          ELSE
            print *, "No Local fort.64 files found"
@@ -1100,29 +1100,29 @@ C
          IREC(IPROC) = 0
          IF (NBYTE.EQ.4) THEN
            DO I=1,8
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+8
            DO I=1,6
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RID4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+6
            DO I=1,6
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) AID4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+6
          ENDIF
          IF (NBYTE.EQ.8) THEN
            DO I=1,4
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+4
            DO I=1,3
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RID8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+3
            DO I=1,3
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) AID8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+3
          ENDIF
@@ -1164,17 +1164,17 @@ C--Read NTRSPV, NSTAV, DT*NSPOOLV from each Local file
 C  and then close files to flush file buffers
 C
       DO IPROC = 1,NPROC
-         READ(LOC(IPROC),REC=IREC(IPROC)+1) NDSETGV
-         READ(LOC(IPROC),REC=IREC(IPROC)+2) NP
-         READ(LOC(IPROC),REC=IREC(IPROC)+3) DTV
-         READ(LOC(IPROC),REC=IREC(IPROC)+4) NSTEMP
-         READ(LOC(IPROC),REC=IREC(IPROC)+5) ITEMPV
+         READ(LOC2(IPROC),REC=IREC(IPROC)+1) NDSETGV
+         READ(LOC2(IPROC),REC=IREC(IPROC)+2) NP
+         READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTV
+         READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP
+         READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPV
          IREC(IPROC) = IREC(IPROC)+5
-         CLOSE(LOC(IPROC))    ! Flush the Write Buffer
+         CLOSE(LOC2(IPROC))    ! Flush the Write Buffer
          IF (NP.NE.NNODP(IPROC)) THEN
            STOP 'Inconsistency in number of local nodes'
          ENDIF
-         OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
 C
 C--Write same info to Global file and close it to flush buffer also
@@ -1191,12 +1191,12 @@ C
       DO J=1,NDSETGV
 C
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),REC=IREC(IPROC)+1) TIMEOUTV
-            READ(LOC(IPROC),REC=IREC(IPROC)+2) ITV
+            READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTV
+            READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITV
             IREC(IPROC) = IREC(IPROC) + 2
             DO K=1, NNODP(IPROC)
-               READ(LOC(IPROC),REC=IREC(IPROC)+2*K-1) UUBINP(K)
-               READ(LOC(IPROC),REC=IREC(IPROC)+2*K) VVBINP(K)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+2*K-1) UUBINP(K)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+2*K) VVBINP(K)
             ENDDO
             DO K=1,NNODP(IPROC)
                UUBIN(IMAP_NOD_LG(K,IPROC)) = UUBINP(K)
@@ -1222,7 +1222,7 @@ C--Close the Global and Local fort.64 Files
 C
       CLOSE(64)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
    80 FORMAT(A80)
@@ -1245,17 +1245,17 @@ C---------------------------------------------------------------------------C
 C
       USE POST_GLOBAL
       IMPLICIT NONE
-      INTEGER I,J,IPROC,IDUM,IFREQ,INDEX,IREC
+      INTEGER I,J,IPROC,IDUM,IFREQ,INDX,IREC
       INTEGER NFREQ,NUMSTNS
       CHARACTER*80  NFREQMSG,INLINE
       LOGICAL FOUND
 
 
-      INTEGER,ALLOCATABLE  :: LOC(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
       CHARACTER*80,ALLOCATABLE  ::  HEADER(:),HARDAT(:)
 
-      ALLOCATE ( LOC(MNPROC))
+      ALLOCATE ( LOC2(MNPROC))
       ALLOCATE ( LOCNAME(MNPROC))
       ALLOCATE ( HEADER(MNHARF),HARDAT(MNHARF))
 
@@ -1265,10 +1265,10 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.51'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105+ (IPROC-1)
+         LOC2(IPROC) = 105+ (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No Local unit 51 files found"
            RETURN
@@ -1285,33 +1285,33 @@ C
 C
       DO IPROC = 1,NPROC
          IF (IPROC.EQ.1) THEN
-           READ(LOC(IPROC),'(A80)')  NFREQMSG
+           READ(LOC2(IPROC),'(A80)')  NFREQMSG
            READ(NFREQMSG,*) NFREQ
            WRITE(51,'(A80)') NFREQMSG
            DO I=1, NFREQ  
-             READ(LOC(IPROC),'(A80)') HEADER(I)
+             READ(LOC2(IPROC),'(A80)') HEADER(I)
              WRITE(51,'(A80)') HEADER(I)
            ENDDO
-           READ(LOC(IPROC),*) NUMSTNS
+           READ(LOC2(IPROC),*) NUMSTNS
            WRITE(51,*) NSTAE
          ELSE
-           READ(LOC(IPROC),'(A80)')  INLINE
+           READ(LOC2(IPROC),'(A80)')  INLINE
            READ(INLINE,*) IDUM
            DO I=1, NFREQ  
-             READ(LOC(IPROC),'(A80)') INLINE
+             READ(LOC2(IPROC),'(A80)') INLINE
            ENDDO
-           READ(LOC(IPROC),*) IDUM
+           READ(LOC2(IPROC),*) IDUM
          ENDIF
       ENDDO
 C
       DO IPROC = 1,NPROC
          DO J=1,NSTAEP(IPROC)
-            READ(LOC(IPROC),*) IDUM
-            INDEX = IMAP_STAE_LG(J,IPROC)
-            IF (INDEX.NE.0) THEN
+            READ(LOC2(IPROC),*) IDUM
+            INDX = IMAP_STAE_LG(J,IPROC)
+            IF (INDX.NE.0) THEN
               DO IFREQ=1, NFREQ
-                 READ(LOC(IPROC),'(A80)') HARDAT(IFREQ)
-                 IREC = IFREQ + (INDEX-1)*NFREQ
+                 READ(LOC2(IPROC),'(A80)') HARDAT(IFREQ)
+                 IREC = IFREQ + (INDX-1)*NFREQ
                  WRITE(8,REC=IREC) HARDAT(IFREQ)
               ENDDO
              ENDIF
@@ -1338,7 +1338,7 @@ C
       CLOSE(51)
       CLOSE(8,STATUS='DELETE')
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
 c3679 FORMAT(1X,E20.10,1X,F10.7,1X,F12.8,1X,A10)
@@ -1358,17 +1358,17 @@ C---------------------------------------------------------------------------C
 C
       USE POST_GLOBAL
       IMPLICIT NONE
-      INTEGER I,J,IPROC,IDUM,IFREQ,INDEX,IREC
+      INTEGER I,J,IPROC,IDUM,IFREQ,INDX,IREC
       INTEGER NFREQ,NUMSTNS
       CHARACTER*80  NFREQMSG,INLINE
       LOGICAL FOUND
 
 
-      INTEGER,ALLOCATABLE  :: LOC(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
       CHARACTER*80,ALLOCATABLE  ::  HEADER(:),HARDAT(:)
 
-      ALLOCATE ( LOC(MNPROC))
+      ALLOCATE ( LOC2(MNPROC))
       ALLOCATE ( LOCNAME(MNPROC))
       ALLOCATE ( HEADER(MNHARF),HARDAT(MNHARF))
 
@@ -1379,10 +1379,10 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.52'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No Local unit 52 files found"
            RETURN
@@ -1399,33 +1399,33 @@ C
 C
       DO IPROC = 1,NPROC
          IF (IPROC.EQ.1) THEN
-           READ(LOC(IPROC),'(A80)')  NFREQMSG
+           READ(LOC2(IPROC),'(A80)')  NFREQMSG
            READ(NFREQMSG,*) NFREQ
            WRITE(52,'(A80)') NFREQMSG
            DO I=1, NFREQ  
-             READ(LOC(IPROC),'(A80)') HEADER(I)
+             READ(LOC2(IPROC),'(A80)') HEADER(I)
              WRITE(52,'(A80)') HEADER(I)
            ENDDO
-           READ(LOC(IPROC),*) NUMSTNS
+           READ(LOC2(IPROC),*) NUMSTNS
            WRITE(52,*) NSTAV
          ELSE
-           READ(LOC(IPROC),'(A80)')  INLINE
+           READ(LOC2(IPROC),'(A80)')  INLINE
            READ(INLINE,*) IDUM
            DO I=1, NFREQ  
-             READ(LOC(IPROC),'(A80)') INLINE
+             READ(LOC2(IPROC),'(A80)') INLINE
            ENDDO
-           READ(LOC(IPROC),*) IDUM
+           READ(LOC2(IPROC),*) IDUM
          ENDIF
       ENDDO
 C
       DO IPROC = 1,NPROC
          DO J=1,NSTAVP(IPROC)
-            READ(LOC(IPROC),*) IDUM
-            INDEX = IMAP_STAV_LG(J,IPROC)
-            IF (INDEX.NE.0) THEN
+            READ(LOC2(IPROC),*) IDUM
+            INDX = IMAP_STAV_LG(J,IPROC)
+            IF (INDX.NE.0) THEN
               DO IFREQ=1, NFREQ
-                 READ(LOC(IPROC),'(A80)') HARDAT(IFREQ)
-                 IREC = IFREQ + (INDEX-1)*NFREQ
+                 READ(LOC2(IPROC),'(A80)') HARDAT(IFREQ)
+                 IREC = IFREQ + (INDX-1)*NFREQ
                  WRITE(8,REC=IREC) HARDAT(IFREQ)
               ENDDO
             ENDIF
@@ -1452,7 +1452,7 @@ C
       CLOSE(52)
       CLOSE(8,STATUS='DELETE')
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
 c3679 FORMAT(1X,E20.10,1X,F10.7,1X,F12.8,1X,A10)
@@ -1472,17 +1472,17 @@ C---------------------------------------------------------------------------C
 C
       USE POST_GLOBAL
       IMPLICIT NONE
-      INTEGER I,J,IPROC,IDUM,INDEX,NP1,IFREQ,IREC
+      INTEGER I,J,IPROC,IDUM,INDX,NP1,IFREQ,IREC
       INTEGER NFREQ
       CHARACTER*80  NFREQMSG,INLINE
       LOGICAL FOUND
 
 
-      INTEGER,ALLOCATABLE  :: LOC(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
       CHARACTER*80,ALLOCATABLE  ::  HEADER(:),HARDAT(:)
 
-      ALLOCATE ( LOC(MNPROC))
+      ALLOCATE ( LOC2(MNPROC))
       ALLOCATE ( LOCNAME(MNPROC))
       ALLOCATE (  HEADER(MNHARF),HARDAT(MNHARF))
 
@@ -1492,10 +1492,10 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.53'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No Local unit 53 files found"
            RETURN
@@ -1512,38 +1512,38 @@ C
 C
       DO IPROC = 1,NPROC
          IF (IPROC.EQ.1) THEN
-           READ(LOC(IPROC),'(A80)')  NFREQMSG
+           READ(LOC2(IPROC),'(A80)')  NFREQMSG
            READ(NFREQMSG,*) NFREQ 
            WRITE(53,'(A80)') NFREQMSG
            DO I=1, NFREQ  
-             READ(LOC(IPROC),'(A80)') HEADER(I)
+             READ(LOC2(IPROC),'(A80)') HEADER(I)
              WRITE(53,'(A80)') HEADER(I)
            ENDDO
-           READ(LOC(IPROC),*) NP1
+           READ(LOC2(IPROC),*) NP1
            WRITE(53,*) NNODG
          ELSE
-           READ(LOC(IPROC),'(A80)')  INLINE
+           READ(LOC2(IPROC),'(A80)')  INLINE
            READ(INLINE,*) IDUM 
            DO I=1, NFREQ  
-             READ(LOC(IPROC),'(A80)') INLINE
+             READ(LOC2(IPROC),'(A80)') INLINE
            ENDDO
-           READ(LOC(IPROC),*) NP1
+           READ(LOC2(IPROC),*) NP1
          ENDIF
       ENDDO
 C
       DO IPROC = 1,NPROC
          DO J=1,NNODP(IPROC)
-            READ(LOC(IPROC),*) IDUM
-            INDEX = IMAP_NOD_LG(J,IPROC)
-            IF (IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
+            READ(LOC2(IPROC),*) IDUM
+            INDX = IMAP_NOD_LG(J,IPROC)
+            IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
               DO IFREQ=1, NFREQ 
-                 READ(LOC(IPROC),'(A80)') HARDAT(IFREQ)
-                 IREC = IFREQ + (INDEX-1)*NFREQ
+                 READ(LOC2(IPROC),'(A80)') HARDAT(IFREQ)
+                 IREC = IFREQ + (INDX-1)*NFREQ
                  WRITE(8,REC=IREC) HARDAT(IFREQ) 
               ENDDO
             ELSE
               DO I=1, NFREQ 
-                 READ(LOC(IPROC),'(A80)') INLINE
+                 READ(LOC2(IPROC),'(A80)') INLINE
               ENDDO
             ENDIF
          ENDDO
@@ -1569,7 +1569,7 @@ C
       CLOSE(53)
       CLOSE(8,STATUS='DELETE')
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
 c3679 FORMAT(1X,E20.10,1X,F10.7,1X,F12.8,1X,A10)
@@ -1589,16 +1589,16 @@ C---------------------------------------------------------------------------C
 C
       USE POST_GLOBAL
       IMPLICIT NONE
-      INTEGER I,J,IPROC,IDUM,INDEX,NP1,IFREQ,IREC
+      INTEGER I,J,IPROC,IDUM,INDX,NP1,IFREQ,IREC
       INTEGER NFREQ
       CHARACTER*80  NFREQMSG,INLINE
       LOGICAL FOUND
 
-      INTEGER,ALLOCATABLE  :: LOC(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
       CHARACTER*80,ALLOCATABLE  ::  HEADER(:),HARDAT(:)
 
-      ALLOCATE (LOC(MNPROC))
+      ALLOCATE (LOC2(MNPROC))
       ALLOCATE (LOCNAME(MNPROC))
       ALLOCATE ( HEADER(MNHARF),HARDAT(MNHARF))
 
@@ -1608,10 +1608,10 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.54'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No Local unit 54 files found"
            RETURN
@@ -1628,38 +1628,38 @@ C
 C
       DO IPROC = 1,NPROC
          IF (IPROC.EQ.1) THEN
-           READ(LOC(IPROC),'(A80)')  NFREQMSG
+           READ(LOC2(IPROC),'(A80)')  NFREQMSG
            READ(NFREQMSG,*) NFREQ 
            WRITE(54,'(A80)') NFREQMSG
            DO I=1, NFREQ  
-             READ(LOC(IPROC),'(A80)') HEADER(I)
+             READ(LOC2(IPROC),'(A80)') HEADER(I)
              WRITE(54,'(A80)') HEADER(I)
            ENDDO
-           READ(LOC(IPROC),*) NP1
+           READ(LOC2(IPROC),*) NP1
            WRITE(54,*) NNODG
          ELSE
-           READ(LOC(IPROC),'(A80)')  INLINE
+           READ(LOC2(IPROC),'(A80)')  INLINE
            READ(INLINE,*) IDUM 
            DO I=1, NFREQ  
-             READ(LOC(IPROC),'(A80)') INLINE
+             READ(LOC2(IPROC),'(A80)') INLINE
            ENDDO
-           READ(LOC(IPROC),*) NP1
+           READ(LOC2(IPROC),*) NP1
          ENDIF
       ENDDO
 C
       DO IPROC = 1,NPROC
          DO J=1,NNODP(IPROC)
-            READ(LOC(IPROC),*) IDUM
-            INDEX = IMAP_NOD_LG(J,IPROC)
-            IF (IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
+            READ(LOC2(IPROC),*) IDUM
+            INDX = IMAP_NOD_LG(J,IPROC)
+            IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
               DO IFREQ=1, NFREQ 
-                 READ(LOC(IPROC),'(A80)') HARDAT(IFREQ)
-                 IREC = IFREQ + (INDEX-1)*NFREQ
+                 READ(LOC2(IPROC),'(A80)') HARDAT(IFREQ)
+                 IREC = IFREQ + (INDX-1)*NFREQ
                  WRITE(8,REC=IREC) HARDAT(IFREQ) 
               ENDDO
             ELSE
               DO I=1, NFREQ 
-                 READ(LOC(IPROC),'(A80)') INLINE
+                 READ(LOC2(IPROC),'(A80)') INLINE
               ENDDO
             ENDIF
          ENDDO
@@ -1685,7 +1685,7 @@ C
       CLOSE(54)
       CLOSE(8,STATUS='DELETE')
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
 c3679 FORMAT(1X,E20.10,1X,F10.7,1X,F12.8,1X,A10)
@@ -1704,15 +1704,15 @@ C---------------------------------------------------------------------------C
 C
       USE POST_GLOBAL
       IMPLICIT NONE
-      INTEGER I,J,IPROC,IDUM,INDEX,NP1
+      INTEGER I,J,IPROC,IDUM,INDX,NP1
       INTEGER NFREQ
       CHARACTER*114 INLINE1,INLINE2
       LOGICAL FOUND
 
-      INTEGER,ALLOCATABLE  :: LOC(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
-      ALLOCATE ( LOC(MNPROC))
+      ALLOCATE ( LOC2(MNPROC))
       ALLOCATE (  LOCNAME(MNPROC))
 
 C
@@ -1721,10 +1721,10 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.55'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No Local unit 55 files found"
            RETURN
@@ -1742,20 +1742,20 @@ C
 C
       DO IPROC = 1,NPROC
          IF (IPROC.EQ.1) THEN
-           READ(LOC(IPROC),*) NP1
+           READ(LOC2(IPROC),*) NP1
            WRITE(55,*) NNODG
          ELSE
-           READ(LOC(IPROC),*) NP1
+           READ(LOC2(IPROC),*) NP1
          ENDIF
       ENDDO
 C
       DO IPROC = 1,NPROC
          DO J=1,NNODP(IPROC)
-            READ(LOC(IPROC),*) IDUM
-            READ(LOC(IPROC),'(A114)') INLINE1
-            INDEX = IMAP_NOD_LG(J,IPROC)
-            IF (IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
-              WRITE(8,REC=INDEX)  INLINE1
+            READ(LOC2(IPROC),*) IDUM
+            READ(LOC2(IPROC),'(A114)') INLINE1
+            INDX = IMAP_NOD_LG(J,IPROC)
+            IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
+              WRITE(8,REC=INDX)  INLINE1
             ENDIF
          ENDDO
       ENDDO
@@ -1777,13 +1777,13 @@ C
 C
       DO IPROC = 1,NPROC
          DO J=1,NNODP(IPROC)
-            READ(LOC(IPROC),*) IDUM
-            READ(LOC(IPROC),'(A114)') INLINE1
-            READ(LOC(IPROC),'(A114)') INLINE2
-            INDEX = IMAP_NOD_LG(J,IPROC)
-            IF (IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
-              WRITE(8,REC=INDEX) INLINE1
-              WRITE(9,REC=INDEX) INLINE2
+            READ(LOC2(IPROC),*) IDUM
+            READ(LOC2(IPROC),'(A114)') INLINE1
+            READ(LOC2(IPROC),'(A114)') INLINE2
+            INDX = IMAP_NOD_LG(J,IPROC)
+            IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
+              WRITE(8,REC=INDX) INLINE1
+              WRITE(9,REC=INDX) INLINE2
             ENDIF
          ENDDO
       ENDDO
@@ -1810,7 +1810,7 @@ C
       CLOSE(8,STATUS='DELETE')
       CLOSE(9,STATUS='DELETE')
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
       RETURN
@@ -1845,7 +1845,7 @@ c     containers
       CHARACTER*8 RDES8(8),RID8(6),AID8(6) ! hold RUNDES, RUNID, AGRID in bin.
 c     file stuff 
       LOGICAL FOUND                        ! TRUE if the file exists
-      INTEGER,ALLOCATABLE::LOC(:)          ! unit numbers of subdomains
+      INTEGER,ALLOCATABLE::LOC2(:)          ! unit numbers of subdomains
       CHARACTER*14,ALLOCATABLE::LOCNAME(:) ! subdomain dir./file names
 c     actual data 
       INTEGER NTRSPM  ! number of data sets to be written to fort.71
@@ -1860,7 +1860,7 @@ c     actual data
       INTEGER,ALLOCATABLE::StaNum(:)         ! recording station number
       CHARACTER(len=80),ALLOCATABLE::AtmPresASC(:) ! atmospheric pressure data
 C
-      ALLOCATE ( LOC(MNPROC),IREC(MNPROC) )
+      ALLOCATE ( LOC2(MNPROC),IREC(MNPROC) )
       ALLOCATE ( AtmPresBIN(MNSTAM),AtmPresBINP(MNSTAM))
       ALLOCATE ( AtmPresASC(MNSTAM))
       ALLOCATE ( LOCNAME(MNPROC))
@@ -1875,16 +1875,16 @@ C     Open All Local Sequential Formatted fort.71 files
          DO IPROC = 1,NPROC
             LOCNAME(IPROC) = 'PE0000/fort.71'
             WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-            LOC(IPROC) = 105 + (IPROC-1)
+            LOC2(IPROC) = 105 + (IPROC-1)
             INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
             IF (FOUND) THEN
-               OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+               OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
             ELSE
                print *, "ERROR: No subdomain fort.71 files found."
                RETURN           ! *** EARLY RETURN ***
             ENDIF
-            READ(LOC(IPROC),'(A85)') INLINE
-            READ(LOC(IPROC),3645) NTRSPM,NUMSTNS,DTM,NSTEMP,ITEMPM
+            READ(LOC2(IPROC),'(A85)') INLINE
+            READ(LOC2(IPROC),3645) NTRSPM,NUMSTNS,DTM,NSTEMP,ITEMPM
             IF (NUMSTNS.NE.NSTAMP(IPROC)) THEN
                STOP 'ERROR: Inconsistency in no. of atm. pres. sta.'
             ENDIF
@@ -1899,9 +1899,9 @@ C
          DO                     ! loop infinitely over data sets
 C     
             DO IPROC=1,NPROC
-               READ(LOC(IPROC),2120,END=9999) TIMEOUTSM,ITSM
+               READ(LOC2(IPROC),2120,END=9999) TIMEOUTSM,ITSM
                IF (NSTAMP(IPROC).GT.0) THEN
-                  READ(LOC(IPROC),80,END=9999) 
+                  READ(LOC2(IPROC),80,END=9999) 
      &                 (AtmPresASC(IMAP_STAM_LG(K,IPROC)),
      &                 K=1,NSTAMP(IPROC))
                ENDIF
@@ -1921,10 +1921,10 @@ C     Open All Local and the Global Direct Access Binary fort.71 files
          DO IPROC = 1,NPROC
             LOCNAME(IPROC) = 'PE0000/fort.71'
             WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-            LOC(IPROC) = 105 + (IPROC-1)
+            LOC2(IPROC) = 105 + (IPROC-1)
             INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
             IF (FOUND) THEN
-               OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+               OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &              RECL=NBYTE)
             ELSE
                print *, "ERROR: No subdomain fort.71 files found."
@@ -1940,29 +1940,29 @@ C
             IREC(IPROC) = 0
             IF (NBYTE.EQ.4) THEN
                DO I=1,8
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES4(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES4(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+8
                DO I=1,6
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RID4(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID4(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+6
                DO I=1,6
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) AID4(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID4(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+6
             ENDIF
             IF (NBYTE.EQ.8) THEN
                DO I=1,4
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES8(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES8(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+4
                DO I=1,3
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RID8(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID8(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+3
                DO I=1,3
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) AID8(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID8(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+3
             ENDIF
@@ -2004,17 +2004,17 @@ C--   Read NTRSPM, NSTAM, DT*NSPOOLM from each subdomain file
 C     and then close files to flush file buffers
 C     
          DO IPROC = 1,NPROC
-            READ(LOC(IPROC),REC=IREC(IPROC)+1) NTRSPM
-            READ(LOC(IPROC),REC=IREC(IPROC)+2) NUMSTNS        
-            READ(LOC(IPROC),REC=IREC(IPROC)+3) DTM
-            READ(LOC(IPROC),REC=IREC(IPROC)+4) NSPOOLM 
-            READ(LOC(IPROC),REC=IREC(IPROC)+5) ITEMPM
+            READ(LOC2(IPROC),REC=IREC(IPROC)+1) NTRSPM
+            READ(LOC2(IPROC),REC=IREC(IPROC)+2) NUMSTNS        
+            READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTM
+            READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSPOOLM 
+            READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPM
             IREC(IPROC) = IREC(IPROC)+5
-            CLOSE(LOC(IPROC))   ! Flush the Write Buffer
+            CLOSE(LOC2(IPROC))   ! Flush the Write Buffer
             IF (NSTAM.NE.NSTAMP(IPROC)) THEN
                STOP 'ERROR: Inconsistency in no. of atm. pres. sta.'
             ENDIF
-            OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+            OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &           RECL=NBYTE)
          ENDDO
 C     
@@ -2032,12 +2032,12 @@ C
          DO J=1,NTRSPM
 C     
             DO IPROC=1,NPROC
-               READ(LOC(IPROC),REC=IREC(IPROC)+1) TIMEOUTSM
-               READ(LOC(IPROC),REC=IREC(IPROC)+2) ITSM
+               READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTSM
+               READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITSM
                IREC(IPROC) = IREC(IPROC) + 2
                IF (NSTAMP(IPROC).GT.0) THEN
                   DO K=1, NSTAMP(IPROC)
-                     READ(LOC(IPROC),REC=IREC(IPROC)+K) AtmPresBINP(K)
+                     READ(LOC2(IPROC),REC=IREC(IPROC)+K) AtmPresBINP(K)
                   ENDDO
                   DO K=1,NSTAMP(IPROC)
                      AtmPresBIN(IMAP_STAM_LG(K,IPROC)) = AtmPresBINP(K)
@@ -2067,7 +2067,7 @@ C
  9999 CONTINUE
       CLOSE(71)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C     
  80   FORMAT(A40)
@@ -2110,7 +2110,7 @@ c     containers
       CHARACTER*8 RDES8(8),RID8(6),AID8(6) ! hold RUNDES, RUNID, AGRID in bin.
 c     file stuff 
       LOGICAL FOUND               ! TRUE if the file exists
-      INTEGER,ALLOCATABLE::LOC(:) ! unit numbers of subdomains
+      INTEGER,ALLOCATABLE::LOC2(:) ! unit numbers of subdomains
       CHARACTER*14,ALLOCATABLE::LOCNAME(:) ! subdomain dir./file names
 c     actual data 
       REAL(SZ) DTM    ! total time: DT*NSPOOLM = step size * no. time steps
@@ -2127,7 +2127,7 @@ c     actual data
       CHARACTER*80,ALLOCATABLE::WindASC(:)  ! full domain wind vel.. val.
       CHARACTER*80,ALLOCATABLE::WindASCP(:) ! subdomain wind vel. val.
 C
-      ALLOCATE (LOC(MNPROC),IREC(MNPROC))
+      ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (UWindVelBIN(MNSTAM),VWindVelBIN(MNSTAM))
       ALLOCATE (UWindVelBINP(MNSTAM),VWindVelBINP(MNSTAM))
       ALLOCATE (WindASC(MNSTAM))
@@ -2141,16 +2141,16 @@ C
          DO IPROC = 1,NPROC
             LOCNAME(IPROC) = 'PE0000/fort.72'
             WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-            LOC(IPROC) = 105 + (IPROC-1)
+            LOC2(IPROC) = 105 + (IPROC-1)
             INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
             IF (FOUND) THEN
-               OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+               OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
             ELSE
                print *, "ERROR: No subdomain fort.72 files found."
                RETURN
             ENDIF
-            READ(LOC(IPROC),'(A85)')  INLINE
-            READ(LOC(IPROC),3645) NTRSPM,NUMSTNS,DTM,NSTEMP,ITEMPM
+            READ(LOC2(IPROC),'(A85)')  INLINE
+            READ(LOC2(IPROC),3645) NTRSPM,NUMSTNS,DTM,NSTEMP,ITEMPM
             IF (NUMSTNS.NE.NSTAMP(IPROC)) THEN
                STOP 'ERROR: Inconsistency in number of vel. stations.'
             ENDIF
@@ -2170,9 +2170,9 @@ C
          DO                     ! loop infinitely over data sets
 C     
             DO IPROC=1,NPROC
-               READ(LOC(IPROC),2120,END=9999) TIMEOUTSM,ITSM
+               READ(LOC2(IPROC),2120,END=9999) TIMEOUTSM,ITSM
                IF (NSTAMP(IPROC).GT.0) THEN
-                  READ(LOC(IPROC),80,END=9999) 
+                  READ(LOC2(IPROC),80,END=9999) 
      &                 (WindASC(IMAP_STAM_LG(K,IPROC)),
      &                 K=1,NSTAMP(IPROC))
                ENDIF
@@ -2193,10 +2193,10 @@ C
          DO IPROC = 1,NPROC
             LOCNAME(IPROC) = 'PE0000/fort.72'
             WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-            LOC(IPROC) = 105 + (IPROC-1)
+            LOC2(IPROC) = 105 + (IPROC-1)
             INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
             IF (FOUND) THEN
-               OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+               OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &              RECL=NBYTE)
             ELSE
                print *, "ERROR: No subdomain fort.72 files found."
@@ -2211,29 +2211,29 @@ C
             IREC(IPROC) = 0
             IF (NBYTE.EQ.4) THEN
                DO I=1,8
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES4(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES4(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+8
                DO I=1,6
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RID4(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID4(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+6
                DO I=1,6
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) AID4(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID4(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+6
             ENDIF
             IF (NBYTE.EQ.8) THEN
                DO I=1,4
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES8(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES8(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+4
                DO I=1,3
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RID8(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID8(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+3
                DO I=1,3
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) AID8(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID8(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+3
             ENDIF
@@ -2275,17 +2275,17 @@ C--   Read NTRSPM, NSTAM, DT*NSPOOLM from each subdomain file
 C     and then close files to flush file buffers
 C     
          DO IPROC = 1,NPROC
-            READ(LOC(IPROC),REC=IREC(IPROC)+1) NTRSPM
-            READ(LOC(IPROC),REC=IREC(IPROC)+2) NUMSTNS
-            READ(LOC(IPROC),REC=IREC(IPROC)+3) DTM
-            READ(LOC(IPROC),REC=IREC(IPROC)+4) NSTEMP
-            READ(LOC(IPROC),REC=IREC(IPROC)+5) ITEMPM
+            READ(LOC2(IPROC),REC=IREC(IPROC)+1) NTRSPM
+            READ(LOC2(IPROC),REC=IREC(IPROC)+2) NUMSTNS
+            READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTM
+            READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP
+            READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPM
             IREC(IPROC) = IREC(IPROC)+5
-            CLOSE(LOC(IPROC))   ! Flush the Write Buffer
+            CLOSE(LOC2(IPROC))   ! Flush the Write Buffer
             IF (NUMSTNS.NE.NSTAMP(IPROC)) THEN
                STOP 'ERROR: Inconsistency in number of vel. stations.'
             ENDIF
-            OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),
+            OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),
      &           ACCESS='DIRECT',RECL=NBYTE)
          ENDDO
 C     
@@ -2303,14 +2303,14 @@ C
          DO J=1,NTRSPM
 C     
             DO IPROC=1,NPROC
-               READ(LOC(IPROC),REC=IREC(IPROC)+1) TIMEOUTSM
-               READ(LOC(IPROC),REC=IREC(IPROC)+2) ITSM
+               READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTSM
+               READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITSM
                IREC(IPROC) = IREC(IPROC) + 2
                IF (NSTAMP(IPROC).GT.0) THEN
                   DO K=1, NSTAMP(IPROC)
-                     READ(LOC(IPROC),
+                     READ(LOC2(IPROC),
      &                    REC=IREC(IPROC)+2*K-1) UWindVelBINP(K)
-                     READ(LOC(IPROC),
+                     READ(LOC2(IPROC),
      &                    REC=IREC(IPROC)+2*K) VWindVelBINP(K)
                   ENDDO
                   DO K=1,NSTAMP(IPROC)
@@ -2346,7 +2346,7 @@ C--Close the full domain and subdomain fort.72 Files
 C
       CLOSE(72)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C     
  2120 FORMAT(2X,E20.10,5X,I10)
@@ -2379,7 +2379,7 @@ C     counters
       INTEGER IPROC   ! subdomain counter
       INTEGER OREC    ! record counter in binary output file
       INTEGER, ALLOCATABLE::IREC(:) ! input record counters for binary files
-      INTEGER INDEX   ! full domain node number
+      INTEGER INDX   ! full domain node number
 C     containers
       CHARACTER*80 OUTMSG                  ! text line of full domain data 
       CHARACTER*85 INLINE                  ! hold RUNDES, RUNID, AGRID in text
@@ -2387,7 +2387,7 @@ C     containers
       CHARACTER*8 RDES8(8),RID8(6),AID8(6) ! hold RUNDES, RUNID, AGRID in bin.
       INTEGER IDUM                         ! to read number of nodes in binary
 C     file stuff
-      INTEGER, ALLOCATABLE::LOC(:)         ! unit numbers of subdomains
+      INTEGER, ALLOCATABLE::LOC2(:)         ! unit numbers of subdomains
       CHARACTER*14, ALLOCATABLE::LOCNAME(:)! subdomain dir./file names
       LOGICAL FOUND                        ! TRUE if the file exists
 C     actual data
@@ -2405,7 +2405,7 @@ C
       REAL(SZ),ALLOCATABLE::AtmPresBIN(:)    ! full domain atm. pres. val.(bin)
       REAL(SZ),ALLOCATABLE::AtmPresBINP(:)   ! subdomain atm. pres. val. (bin)
 C
-      ALLOCATE (LOC(MNPROC),IREC(MNPROC))
+      ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (AtmPresBIN(MNP),AtmPresBINP(MNPP))
       ALLOCATE (AtmPresSC(MNP),AtmPresSCP(MNPP))
       ALLOCATE ( LOCNAME(MNPROC))
@@ -2425,17 +2425,17 @@ C
 C     Open ASCII text fort.73 files in each subdirectory
          LOCNAME(IPROC) = 'PE0000/fort.73'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-            OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+            OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
             print *, "ERROR: No local fort.73 files found."
             RETURN !**** EARLY RETURN ****
          ENDIF
 C     Read header information from each fort.73 file
-         READ(LOC(IPROC),'(A85)') INLINE ! read RUNDES, RUNID, AGRID
-         READ(LOC(IPROC),3645)  NDSETSGW,NP,DTGW,NSTEMP,ITEMPGW
+         READ(LOC2(IPROC),'(A85)') INLINE ! read RUNDES, RUNID, AGRID
+         READ(LOC2(IPROC),3645)  NDSETSGW,NP,DTGW,NSTEMP,ITEMPGW
          IF (NP.NE.NNODP(IPROC)) THEN
             print *, "NP = ",NP," NNODP(",IPROC,") = ",NNODP(IPROC)
             STOP 'ERROR: Inconsistency in expected subdomain nodes.'
@@ -2453,13 +2453,13 @@ C
       DO ! loop infinitely over data sets
 C
          DO IPROC=1,NPROC  ! loop over subdomains
-            READ(LOC(IPROC),FMT=2120,END=9999) TIMEOUTGW,ITGW
+            READ(LOC2(IPROC),FMT=2120,END=9999) TIMEOUTGW,ITGW
             IF (IPROC.EQ.1) WRITE(73,2120) TIMEOUTGW,ITGW    
             DO K = 1,NNODP(IPROC) ! loop over subdomain nodes
-               READ(LOC(IPROC),80,END=9999) AtmPresSCP(K)
-               INDEX = IMAP_NOD_LG(K,IPROC) ! sub --> full (lookup table)
-               IF (IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
-                  AtmPresSC(INDEX) = AtmPresSCP(K)
+               READ(LOC2(IPROC),80,END=9999) AtmPresSCP(K)
+               INDX = IMAP_NOD_LG(K,IPROC) ! sub --> full (lookup table)
+               IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
+                  AtmPresSC(INDX) = AtmPresSCP(K)
                ENDIF
             ENDDO ! next subdomain node  
          ENDDO ! next subdomain
@@ -2477,10 +2477,10 @@ C--   Open all subdomain and the full domain Direct Access Binary fort.73 files
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.73'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-            OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+            OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &           RECL=NBYTE)
          ELSE
             print *, "ERROR: No local fort.73 files found."
@@ -2493,29 +2493,29 @@ C--   Read RUNDES RUNID and AGRID from each subdomain file
          IREC(IPROC) = 0
          IF (NBYTE.EQ.4) THEN
             DO I=1,8
-               READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES4(I)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES4(I)
             ENDDO
             IREC(IPROC)=IREC(IPROC)+8
             DO I=1,6
-               READ(LOC(IPROC),REC=IREC(IPROC)+I) RID4(I)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID4(I)
             ENDDO
             IREC(IPROC)=IREC(IPROC)+6
             DO I=1,6
-               READ(LOC(IPROC),REC=IREC(IPROC)+I) AID4(I)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID4(I)
             ENDDO
             IREC(IPROC)=IREC(IPROC)+6
          ENDIF
          IF (NBYTE.EQ.8) THEN
             DO I=1,4
-               READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES8(I)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES8(I)
             ENDDO
             IREC(IPROC)=IREC(IPROC)+4
             DO I=1,3
-               READ(LOC(IPROC),REC=IREC(IPROC)+I) RID8(I)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID8(I)
             ENDDO
             IREC(IPROC)=IREC(IPROC)+3
             DO I=1,3
-               READ(LOC(IPROC),REC=IREC(IPROC)+I) AID8(I)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID8(I)
             ENDDO
             IREC(IPROC)=IREC(IPROC)+3
          ENDIF
@@ -2555,14 +2555,14 @@ C--   Read NDSETSGW, NNODP, DTGW, NSPOOLGW, ITEMPGW from each subdomain file
 C     and then close files to flush file buffers
 C     
       DO IPROC = 1,NPROC
-         READ(LOC(IPROC),REC=IREC(IPROC)+1) NDSETSGW
-         READ(LOC(IPROC),REC=IREC(IPROC)+2) IDUM   
-         READ(LOC(IPROC),REC=IREC(IPROC)+3) DTGW
-         READ(LOC(IPROC),REC=IREC(IPROC)+4) NSTEMP
-         READ(LOC(IPROC),REC=IREC(IPROC)+5) ITEMPGW
+         READ(LOC2(IPROC),REC=IREC(IPROC)+1) NDSETSGW
+         READ(LOC2(IPROC),REC=IREC(IPROC)+2) IDUM   
+         READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTGW
+         READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP
+         READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPGW
          IREC(IPROC) = IREC(IPROC)+5
-         CLOSE(LOC(IPROC))      ! flush the write buffer
-         OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
+         CLOSE(LOC2(IPROC))      ! flush the write buffer
+         OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
 C     
 C--   Write same info to full domain file and close it to flush buffer also
@@ -2579,16 +2579,16 @@ C
       DO J=1,NDSETSGW
 C     
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),REC=IREC(IPROC)+1) TIMEOUTGW
-            READ(LOC(IPROC),REC=IREC(IPROC)+2) ITGW
+            READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTGW
+            READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITGW
             IREC(IPROC) = IREC(IPROC) + 2
             DO K=1, NNODP(IPROC)
-               READ(LOC(IPROC),REC=IREC(IPROC)+K) AtmPresBINP(K)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+K) AtmPresBINP(K)
             ENDDO
             DO K=1,NNODP(IPROC)
-               INDEX = IMAP_NOD_LG(K,IPROC)
-               IF (IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
-                  AtmPresBIN(INDEX) = AtmPresBINP(K)
+               INDX = IMAP_NOD_LG(K,IPROC)
+               IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
+                  AtmPresBIN(INDX) = AtmPresBINP(K)
                ENDIF
             ENDDO
             IREC(IPROC) = IREC(IPROC) + NNODP(IPROC)
@@ -2610,7 +2610,7 @@ C--   Close the full domain and subdomain fort.73 Files
 C     
       CLOSE(73)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C     
  80   FORMAT(A80)
@@ -2637,7 +2637,7 @@ C
       USE POST_GLOBAL
       IMPLICIT NONE
       INTEGER I,J,K,L,IPROC
-      INTEGER NDSETGV,NSTEMP,NP,ITV,ITEMPV,INDEX
+      INTEGER NDSETGV,NSTEMP,NP,ITV,ITEMPV,INDX
       INTEGER OREC
       REAL(SZ) DTV
       REAL(8) TIMEOUTV
@@ -2647,13 +2647,13 @@ C
       CHARACTER*8 RDES8(8),RID8(6),AID8(6)
       LOGICAL FOUND
 
-      INTEGER,ALLOCATABLE  :: LOC(:),IREC(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
       REAL(SZ),ALLOCATABLE  ::  UUBIN(:),VVBIN(:)
       REAL(SZ),ALLOCATABLE  ::  UUBINP(:),VVBINP(:)
       CHARACTER*80,ALLOCATABLE  ::  UU(:),UUP(:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
-      ALLOCATE ( LOC(MNPROC),IREC(MNPROC))
+      ALLOCATE ( LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (  UUBIN(MNP),VVBIN(MNP))
       ALLOCATE (  UUBINP(MNPP),VVBINP(MNPP))
       ALLOCATE ( UU(MNP),UUP(MNPP))
@@ -2675,16 +2675,16 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.74'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No Local fort.74 files found"
            RETURN
          ENDIF
-         READ(LOC(IPROC),'(A85)')  INLINE
-         READ(LOC(IPROC),3645) NDSETGV,NP,DTV,NSTEMP,ITEMPV
+         READ(LOC2(IPROC),'(A85)')  INLINE
+         READ(LOC2(IPROC),3645) NDSETGV,NP,DTV,NSTEMP,ITEMPV
          IF (NP.NE.NNODP(IPROC)) THEN
            STOP 'Inconsistency in number of local nodes'
          ENDIF
@@ -2701,13 +2701,13 @@ C
       DO ! loop infinitely over data sets
 C
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),FMT=2120,END=9999) TIMEOUTV,ITV
+            READ(LOC2(IPROC),FMT=2120,END=9999) TIMEOUTV,ITV
             IF (IPROC.EQ.1) WRITE(74,2120) TIMEOUTV,ITV
             DO K = 1,NNODP(IPROC)
-               READ(LOC(IPROC),80) UUP(K)
-               INDEX = IMAP_NOD_LG(K,IPROC)
-               IF(IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
-                UU(INDEX) = UUP(K)
+               READ(LOC2(IPROC),80) UUP(K)
+               INDX = IMAP_NOD_LG(K,IPROC)
+               IF(IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
+                UU(INDX) = UUP(K)
                ENDIF
             ENDDO
          ENDDO 
@@ -2725,10 +2725,10 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.74'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &       RECL=NBYTE)
          ELSE
            print *, "No Local fort.74 files found"
@@ -2743,29 +2743,29 @@ C
          IREC(IPROC) = 0
          IF (NBYTE.EQ.4) THEN
            DO I=1,8
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+8
            DO I=1,6
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RID4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+6
            DO I=1,6
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) AID4(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID4(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+6
          ENDIF
          IF (NBYTE.EQ.8) THEN
            DO I=1,4
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+4
            DO I=1,3
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) RID8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+3
            DO I=1,3
-              READ(LOC(IPROC),REC=IREC(IPROC)+I) AID8(I)
+              READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID8(I)
            ENDDO
            IREC(IPROC)=IREC(IPROC)+3
          ENDIF
@@ -2807,17 +2807,17 @@ C--Read NTRSPV, NSTAV, DT*NSPOOLV from each Local file
 C  and then close files to flush file buffers
 C
       DO IPROC = 1,NPROC
-         READ(LOC(IPROC),REC=IREC(IPROC)+1) NDSETGV
-         READ(LOC(IPROC),REC=IREC(IPROC)+2) NP
-         READ(LOC(IPROC),REC=IREC(IPROC)+3) DTV
-         READ(LOC(IPROC),REC=IREC(IPROC)+4) NSTEMP
-         READ(LOC(IPROC),REC=IREC(IPROC)+5) ITEMPV
+         READ(LOC2(IPROC),REC=IREC(IPROC)+1) NDSETGV
+         READ(LOC2(IPROC),REC=IREC(IPROC)+2) NP
+         READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTV
+         READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP
+         READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPV
          IREC(IPROC) = IREC(IPROC)+5
-         CLOSE(LOC(IPROC))    ! Flush the Write Buffer
+         CLOSE(LOC2(IPROC))    ! Flush the Write Buffer
          IF (NP.NE.NNODP(IPROC)) THEN
            STOP 'Inconsistency in number of local nodes'
          ENDIF
-         OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
+         OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
 C
 C--Write same info to Global file and close it to flush buffer also
@@ -2834,12 +2834,12 @@ C
       DO J=1,NDSETGV
 C
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),REC=IREC(IPROC)+1) TIMEOUTV
-            READ(LOC(IPROC),REC=IREC(IPROC)+2) ITV
+            READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTV
+            READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITV
             IREC(IPROC) = IREC(IPROC) + 2
             DO K=1, NNODP(IPROC)
-               READ(LOC(IPROC),REC=IREC(IPROC)+2*K-1) UUBINP(K)
-               READ(LOC(IPROC),REC=IREC(IPROC)+2*K) VVBINP(K)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+2*K-1) UUBINP(K)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+2*K) VVBINP(K)
             ENDDO
             DO K=1,NNODP(IPROC)
                UUBIN(IMAP_NOD_LG(K,IPROC)) = UUBINP(K)
@@ -2865,7 +2865,7 @@ C--Close the Global and Local fort.74 Files
 C
       CLOSE(74)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
    80 FORMAT(A80)
@@ -2907,7 +2907,7 @@ c     containers
       CHARACTER*8 RDES8(8),RID8(6),AID8(6) ! hold RUNDES, RUNID, AGRID in bin.
 c     file stuff 
       LOGICAL FOUND                        ! TRUE if the file exists
-      INTEGER,ALLOCATABLE::LOC(:)          ! unit numbers of subdomains
+      INTEGER,ALLOCATABLE::LOC2(:)          ! unit numbers of subdomains
       CHARACTER*14,ALLOCATABLE::LOCNAME(:) ! subdomain dir./file names
 c     actual data 
       INTEGER NTRSPM  ! number of data sets to be written to fort.91
@@ -2922,7 +2922,7 @@ c     actual data
       INTEGER,ALLOCATABLE::StaNum(:)         ! recording station number
       CHARACTER(len=80),ALLOCATABLE::CiceASC(:) ! ice concentration data
 C
-      ALLOCATE ( LOC(MNPROC),IREC(MNPROC) )
+      ALLOCATE ( LOC2(MNPROC),IREC(MNPROC) )
       ALLOCATE ( CiceBIN(MNSTAM),CiceBINP(MNSTAM))
       ALLOCATE ( CiceASC(MNSTAM))
       ALLOCATE ( LOCNAME(MNPROC))
@@ -2937,16 +2937,16 @@ C     Open All Local Sequential Formatted fort.91 files
          DO IPROC = 1,NPROC
             LOCNAME(IPROC) = 'PE0000/fort.91'
             WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-            LOC(IPROC) = 105 + (IPROC-1)
+            LOC2(IPROC) = 105 + (IPROC-1)
             INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
             IF (FOUND) THEN
-               OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+               OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
             ELSE
                print *, "ERROR: No subdomain fort.91 files found."
                RETURN           ! *** EARLY RETURN ***
             ENDIF
-            READ(LOC(IPROC),'(A85)') INLINE
-            READ(LOC(IPROC),3645) NTRSPM,NUMSTNS,DTM,NSTEMP,ITEMPM
+            READ(LOC2(IPROC),'(A85)') INLINE
+            READ(LOC2(IPROC),3645) NTRSPM,NUMSTNS,DTM,NSTEMP,ITEMPM
             IF (NUMSTNS.NE.NSTAMP(IPROC)) THEN
                STOP 'ERROR: Inconsistency in no. of ice conc. sta.'
             ENDIF
@@ -2961,9 +2961,9 @@ C
          DO                     ! loop infinitely over data sets
 C     
             DO IPROC=1,NPROC
-               READ(LOC(IPROC),2120,END=9999) TIMEOUTSM,ITSM
+               READ(LOC2(IPROC),2120,END=9999) TIMEOUTSM,ITSM
                IF (NSTAMP(IPROC).GT.0) THEN
-                  READ(LOC(IPROC),80,END=9999) 
+                  READ(LOC2(IPROC),80,END=9999) 
      &                 (CiceASC(IMAP_STAM_LG(K,IPROC)),
      &                 K=1,NSTAMP(IPROC))
                ENDIF
@@ -2983,10 +2983,10 @@ C     Open All Local and the Global Direct Access Binary fort.91 files
          DO IPROC = 1,NPROC
             LOCNAME(IPROC) = 'PE0000/fort.91'
             WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-            LOC(IPROC) = 105 + (IPROC-1)
+            LOC2(IPROC) = 105 + (IPROC-1)
             INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
             IF (FOUND) THEN
-               OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+               OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &              RECL=NBYTE)
             ELSE
                print *, "ERROR: No subdomain fort.91 files found."
@@ -3002,29 +3002,29 @@ C
             IREC(IPROC) = 0
             IF (NBYTE.EQ.4) THEN
                DO I=1,8
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES4(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES4(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+8
                DO I=1,6
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RID4(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID4(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+6
                DO I=1,6
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) AID4(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID4(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+6
             ENDIF
             IF (NBYTE.EQ.8) THEN
                DO I=1,4
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES8(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES8(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+4
                DO I=1,3
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) RID8(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID8(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+3
                DO I=1,3
-                  READ(LOC(IPROC),REC=IREC(IPROC)+I) AID8(I)
+                  READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID8(I)
                ENDDO
                IREC(IPROC)=IREC(IPROC)+3
             ENDIF
@@ -3066,17 +3066,17 @@ C--   Read NTRSPM, NSTAM, DT*NSPOOLM from each subdomain file
 C     and then close files to flush file buffers
 C     
          DO IPROC = 1,NPROC
-            READ(LOC(IPROC),REC=IREC(IPROC)+1) NTRSPM
-            READ(LOC(IPROC),REC=IREC(IPROC)+2) NUMSTNS
-            READ(LOC(IPROC),REC=IREC(IPROC)+3) DTM
-            READ(LOC(IPROC),REC=IREC(IPROC)+4) NSPOOLM 
-            READ(LOC(IPROC),REC=IREC(IPROC)+5) ITEMPM
+            READ(LOC2(IPROC),REC=IREC(IPROC)+1) NTRSPM
+            READ(LOC2(IPROC),REC=IREC(IPROC)+2) NUMSTNS
+            READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTM
+            READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSPOOLM 
+            READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPM
             IREC(IPROC) = IREC(IPROC)+5
-            CLOSE(LOC(IPROC))   ! Flush the Write Buffer
+            CLOSE(LOC2(IPROC))   ! Flush the Write Buffer
             IF (NSTAM.NE.NSTAMP(IPROC)) THEN
                STOP 'ERROR: Inconsistency in no. of ice conc. sta.'
             ENDIF
-            OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+            OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &           RECL=NBYTE)
          ENDDO
 C     
@@ -3094,12 +3094,12 @@ C
          DO J=1,NTRSPM
 C     
             DO IPROC=1,NPROC
-               READ(LOC(IPROC),REC=IREC(IPROC)+1) TIMEOUTSM
-               READ(LOC(IPROC),REC=IREC(IPROC)+2) ITSM
+               READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTSM
+               READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITSM
                IREC(IPROC) = IREC(IPROC) + 2
                IF (NSTAMP(IPROC).GT.0) THEN
                   DO K=1, NSTAMP(IPROC)
-                     READ(LOC(IPROC),REC=IREC(IPROC)+K) CiceBINP(K)
+                     READ(LOC2(IPROC),REC=IREC(IPROC)+K) CiceBINP(K)
                   ENDDO
                   DO K=1,NSTAMP(IPROC)
                      CiceBIN(IMAP_STAM_LG(K,IPROC)) = CiceBINP(K)
@@ -3129,7 +3129,7 @@ C
  9999 CONTINUE
       CLOSE(91)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C     
  80   FORMAT(A40)
@@ -3168,7 +3168,7 @@ C     containers
       CHARACTER*8 RDES8(8),RID8(6),AID8(6) ! hold RUNDES, RUNID, AGRID in bin.
       INTEGER IDUM                         ! to read number of nodes in binary
 C     file stuff
-      INTEGER, ALLOCATABLE::LOC(:)         ! unit numbers of subdomains
+      INTEGER, ALLOCATABLE::LOC2(:)         ! unit numbers of subdomains
       CHARACTER*14, ALLOCATABLE::LOCNAME(:)! subdomain dir./file names
       LOGICAL FOUND                        ! TRUE if the file exists
 C     actual data
@@ -3186,7 +3186,7 @@ C
       REAL(SZ),ALLOCATABLE::CiceBIN(:)    ! full domain ice conc. val.(bin)
       REAL(SZ),ALLOCATABLE::CiceBINP(:)   ! subdomain ice conc. val. (bin)
 C
-      ALLOCATE (LOC(MNPROC),IREC(MNPROC))
+      ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (CiceBIN(MNP),CiceBINP(MNPP))
       ALLOCATE (CiceSC(MNP),CiceSCP(MNPP))
       ALLOCATE ( LOCNAME(MNPROC))
@@ -3206,17 +3206,17 @@ C
 C     Open ASCII text fort.93 files in each subdirectory
          LOCNAME(IPROC) = 'PE0000/fort.93'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-            OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+            OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
             print *, "ERROR: No local fort.93 files found."
             RETURN !**** EARLY RETURN ****
          ENDIF
 C     Read header information from each fort.93 file
-         READ(LOC(IPROC),'(A85)') INLINE ! read RUNDES, RUNID, AGRID
-         READ(LOC(IPROC),3645)  NDSETSGW,NP,DTGW,NSTEMP,ITEMPGW
+         READ(LOC2(IPROC),'(A85)') INLINE ! read RUNDES, RUNID, AGRID
+         READ(LOC2(IPROC),3645)  NDSETSGW,NP,DTGW,NSTEMP,ITEMPGW
          IF (NP.NE.NNODP(IPROC)) THEN
             print *, "NP = ",NP," NNODP(",IPROC,") = ",NNODP(IPROC)
             STOP 'ERROR: Inconsistency in expected subdomain nodes.'
@@ -3234,10 +3234,10 @@ C
       DO ! loop infinitely over data sets
 C
          DO IPROC=1,NPROC  ! loop over subdomains
-            READ(LOC(IPROC),FMT=2120,END=9999) TIMEOUTGW,ITGW
+            READ(LOC2(IPROC),FMT=2120,END=9999) TIMEOUTGW,ITGW
             IF (IPROC.EQ.1) WRITE(93,2120) TIMEOUTGW,ITGW    
             DO K = 1,NNODP(IPROC) ! loop over subdomain nodes
-               READ(LOC(IPROC),80,END=9999) CiceSCP(K)
+               READ(LOC2(IPROC),80,END=9999) CiceSCP(K)
                INDX = IMAP_NOD_LG(K,IPROC) ! sub --> full (lookup table)
                IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
                   CiceSC(INDX) = CiceSCP(K)
@@ -3258,10 +3258,10 @@ C--   Open all subdomain and the full domain Direct Access Binary fort.93 files
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.93'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-            OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
+            OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',
      &           RECL=NBYTE)
          ELSE
             print *, "ERROR: No local fort.93 files found."
@@ -3274,29 +3274,29 @@ C--   Read RUNDES RUNID and AGRID from each subdomain file
          IREC(IPROC) = 0
          IF (NBYTE.EQ.4) THEN
             DO I=1,8
-               READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES4(I)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES4(I)
             ENDDO
             IREC(IPROC)=IREC(IPROC)+8
             DO I=1,6
-               READ(LOC(IPROC),REC=IREC(IPROC)+I) RID4(I)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID4(I)
             ENDDO
             IREC(IPROC)=IREC(IPROC)+6
             DO I=1,6
-               READ(LOC(IPROC),REC=IREC(IPROC)+I) AID4(I)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID4(I)
             ENDDO
             IREC(IPROC)=IREC(IPROC)+6
          ENDIF
          IF (NBYTE.EQ.8) THEN
             DO I=1,4
-               READ(LOC(IPROC),REC=IREC(IPROC)+I) RDES8(I)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+I) RDES8(I)
             ENDDO
             IREC(IPROC)=IREC(IPROC)+4
             DO I=1,3
-               READ(LOC(IPROC),REC=IREC(IPROC)+I) RID8(I)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+I) RID8(I)
             ENDDO
             IREC(IPROC)=IREC(IPROC)+3
             DO I=1,3
-               READ(LOC(IPROC),REC=IREC(IPROC)+I) AID8(I)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+I) AID8(I)
             ENDDO
             IREC(IPROC)=IREC(IPROC)+3
          ENDIF
@@ -3336,14 +3336,14 @@ C--   Read NDSETSGW, NNODP, DTGW, NSPOOLGW, ITEMPGW from each subdomain file
 C     and then close files to flush file buffers
 C     
       DO IPROC = 1,NPROC
-         READ(LOC(IPROC),REC=IREC(IPROC)+1) NDSETSGW
-         READ(LOC(IPROC),REC=IREC(IPROC)+2) IDUM   
-         READ(LOC(IPROC),REC=IREC(IPROC)+3) DTGW
-         READ(LOC(IPROC),REC=IREC(IPROC)+4) NSTEMP
-         READ(LOC(IPROC),REC=IREC(IPROC)+5) ITEMPGW
+         READ(LOC2(IPROC),REC=IREC(IPROC)+1) NDSETSGW
+         READ(LOC2(IPROC),REC=IREC(IPROC)+2) IDUM   
+         READ(LOC2(IPROC),REC=IREC(IPROC)+3) DTGW
+         READ(LOC2(IPROC),REC=IREC(IPROC)+4) NSTEMP
+         READ(LOC2(IPROC),REC=IREC(IPROC)+5) ITEMPGW
          IREC(IPROC) = IREC(IPROC)+5
-         CLOSE(LOC(IPROC))      ! flush the write buffer
-         OPEN(LOC(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
+         CLOSE(LOC2(IPROC))      ! flush the write buffer
+         OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC),ACCESS='DIRECT',RECL=NBYTE)
       ENDDO
 C     
 C--   Write same info to full domain file and close it to flush buffer also
@@ -3360,11 +3360,11 @@ C
       DO J=1,NDSETSGW
 C     
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),REC=IREC(IPROC)+1) TIMEOUTGW
-            READ(LOC(IPROC),REC=IREC(IPROC)+2) ITGW
+            READ(LOC2(IPROC),REC=IREC(IPROC)+1) TIMEOUTGW
+            READ(LOC2(IPROC),REC=IREC(IPROC)+2) ITGW
             IREC(IPROC) = IREC(IPROC) + 2
             DO K=1, NNODP(IPROC)
-               READ(LOC(IPROC),REC=IREC(IPROC)+K) CiceBINP(K)
+               READ(LOC2(IPROC),REC=IREC(IPROC)+K) CiceBINP(K)
             ENDDO
             DO K=1,NNODP(IPROC)
                INDX = IMAP_NOD_LG(K,IPROC)
@@ -3391,7 +3391,7 @@ C--   Close the full domain and subdomain fort.93 Files
 C     
       CLOSE(93)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C     
  80   FORMAT(A80)
@@ -3425,12 +3425,12 @@ C
       LOGICAL FOUND
 C     LOGICAL CHARMV
 
-      INTEGER I,J,IPROC,LOCHSF,INDEX,IHOTSTP
+      INTEGER I,J,IPROC,LOCHSF,INDX,IHOTSTP
       INTEGER IMHSF,ITHSF,IHOT,NHSFILES
       INTEGER IESTP,NSCOUE,IVSTP,NSCOUV,ICSTP,NSCOUC,IPSTP,IWSTP,NSCOUM,
      &        IGEP,NSCOUGE,IGVP,NSCOUGV,IGCP,NSCOUGC,IGPP,IGWP,NSCOUGW
       CHARACTER FNAME*60,LOCFN*14
-      INTEGER,ALLOCATABLE  :: LOC(:),NODECODE(:),NOFF(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:),NODECODE(:),NOFF(:)
       REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),UU2(:),VV2(:),CH1(:)
 C  kmd48.33bc updates for 3d output of hotstart information
       REAL(SZ),ALLOCATABLE :: EtaDisc(:)
@@ -3452,7 +3452,7 @@ C  kmd48.33bc updates for 3d output of hotstart information
 C
 C Allocate local work arrays
 C
-      ALLOCATE ( LOC(MNPROC) )
+      ALLOCATE ( LOC2(MNPROC) )
       ALLOCATE ( ETA1(MNP),ETA2(MNP),UU2(MNP),
      &     VV2(MNP),NODECODE(MNP),CH1(MNP) )
       ALLOCATE ( NOFF(MNE) )
@@ -3490,7 +3490,7 @@ C  kmd48.33bc allocate arrays that need NFEN
 C--Set up unit numbers for all Local Hot Start files 
 
          DO IPROC = 1,NPROC
-            LOC(IPROC) = 105 + (IPROC-1)
+            LOC2(IPROC) = 105 + (IPROC-1)
          ENDDO
 
 C--Read common info from highest processor hotstart file
@@ -3498,7 +3498,7 @@ C--Read common info from highest processor hotstart file
 C  kmd48.33bc add information for hot start
          IF(IHOT.EQ.67) LOCFN(1:14) = 'PE0000/fort.67'
          IF(IHOT.EQ.68) LOCFN(1:14) = 'PE0000/fort.68' 
-         LOCHSF=LOC(NPROC)
+         LOCHSF=LOC2(NPROC)
          WRITE(LOCFN(3:6),'(I4.4)') (NPROC-1)
          OPEN (LOCHSF,FILE=LOCFN,ACCESS='DIRECT',RECL=8)
          IHOTSTP=1
@@ -3528,72 +3528,72 @@ C  kmd48.33bc update to utilize the global IO
          DO IPROC=1,NPROC
             IF(IHOT.EQ.67) LOCFN(1:14) = 'PE0000/fort.67'
             IF(IHOT.EQ.68) LOCFN(1:14) = 'PE0000/fort.68' 
-            LOCHSF=LOC(IPROC)
+            LOCHSF=LOC2(IPROC)
             WRITE(LOCFN(3:6),'(I4.4)') (IPROC-1)
             OPEN (LOCHSF,FILE=LOCFN,ACCESS='DIRECT',RECL=8)
             IHOTSTP=8
             DO I=1,NNODP(IPROC)
-               INDEX=IMAP_NOD_LG(I,IPROC)
-               READ(LOCHSF,REC=IHOTSTP+1) ETA1(INDEX)
+               INDX=IMAP_NOD_LG(I,IPROC)
+               READ(LOCHSF,REC=IHOTSTP+1) ETA1(INDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=IMAP_NOD_LG(I,IPROC)
-               READ(LOCHSF,REC=IHOTSTP+1) ETA2(INDEX)
+               INDX=IMAP_NOD_LG(I,IPROC)
+               READ(LOCHSF,REC=IHOTSTP+1) ETA2(INDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=IMAP_NOD_LG(I,IPROC)
-               READ(LOCHSF,REC=IHOTSTP+1) EtaDisc(INDEX)
+               INDX=IMAP_NOD_LG(I,IPROC)
+               READ(LOCHSF,REC=IHOTSTP+1) EtaDisc(INDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=IMAP_NOD_LG(I,IPROC)
-               READ(LOCHSF,REC=IHOTSTP+1) UU2(INDEX)
+               INDX=IMAP_NOD_LG(I,IPROC)
+               READ(LOCHSF,REC=IHOTSTP+1) UU2(INDX)
                IHOTSTP=IHOTSTP+1
             END DO
             DO I=1,NNODP(IPROC)
-               INDEX=IMAP_NOD_LG(I,IPROC)
-               READ(LOCHSF,REC=IHOTSTP+1) VV2(INDEX)
+               INDX=IMAP_NOD_LG(I,IPROC)
+               READ(LOCHSF,REC=IHOTSTP+1) VV2(INDX)
                IHOTSTP=IHOTSTP+1
             END DO
             IF(IM.EQ.10) THEN
                DO I=1,NNODP(IPROC)
-                 INDEX=IMAP_NOD_LG(I,IPROC)
-                 READ(LOCHSF,REC=IHOTSTP+1) CH1(INDEX)
+                 INDX=IMAP_NOD_LG(I,IPROC)
+                 READ(LOCHSF,REC=IHOTSTP+1) CH1(INDX)
                  IHOTSTP=IHOTSTP+1
                END DO
             ENDIF
             DO I=1,NNODP(IPROC)
-               INDEX=IMAP_NOD_LG(I,IPROC)
-               READ(LOCHSF,REC=IHOTSTP+1) NODECODE(INDEX)
+               INDX=IMAP_NOD_LG(I,IPROC)
+               READ(LOCHSF,REC=IHOTSTP+1) NODECODE(INDX)
                IHOTSTP=IHOTSTP+1
             ENDDO
             DO I=1,NELP(IPROC)
-               INDEX=IMAP_EL_LG(I,IPROC)
-               READ(LOCHSF,REC=IHOTSTP+1) NOFF(INDEX)
+               INDX=IMAP_EL_LG(I,IPROC)
+               READ(LOCHSF,REC=IHOTSTP+1) NOFF(INDX)
                IHOTSTP=IHOTSTP+1
             END DO
            CLOSE(LOCHSF)
          END DO 
 
 !            DO I=1,NNODP(IPROC)
-!               INDEX=IMAP_NOD_LG(I,IPROC)
-!               READ(LOCHSF,REC=IHOTSTP+1) ETA1(INDEX)
-!               READ(LOCHSF,REC=IHOTSTP+2) ETA2(INDEX)
-!               READ(LOCHSF,REC=IHOTSTP+3) UU2(INDEX)
-!               READ(LOCHSF,REC=IHOTSTP+4) VV2(INDEX)
+!               INDX=IMAP_NOD_LG(I,IPROC)
+!               READ(LOCHSF,REC=IHOTSTP+1) ETA1(INDX)
+!               READ(LOCHSF,REC=IHOTSTP+2) ETA2(INDX)
+!               READ(LOCHSF,REC=IHOTSTP+3) UU2(INDX)
+!               READ(LOCHSF,REC=IHOTSTP+4) VV2(INDX)
 !               IHOTSTP=IHOTSTP+4
 !c              IF(IM.EQ.10) THEN
-!c                 READ(LOCHSF,REC=IHOTSTP+1) CH1(INDEX)
+!c                 READ(LOCHSF,REC=IHOTSTP+1) CH1(INDX)
 !c                 IHOTSTP=IHOTSTP+1
 !c              ENDIF
-!               READ(LOCHSF,REC=IHOTSTP+1) NODECODE(INDEX)
+!               READ(LOCHSF,REC=IHOTSTP+1) NODECODE(INDX)
 !               IHOTSTP=IHOTSTP+1
 !            ENDDO
 !            DO I=1,NELP(IPROC)
-!               INDEX=IMAP_EL_LG(I,IPROC)
-!               READ(LOCHSF,REC=IHOTSTP+1) NOFF(INDEX)
+!               INDX=IMAP_EL_LG(I,IPROC)
+!               READ(LOCHSF,REC=IHOTSTP+1) NOFF(INDX)
 !               IHOTSTP=IHOTSTP+1                                    
 !            END DO
 
@@ -3601,7 +3601,7 @@ C--Read in more common info from higest processor hotstart file
          
          IF(IHOT.EQ.67) LOCFN(1:14) = 'PE0000/fort.67'
          IF(IHOT.EQ.68) LOCFN(1:14) = 'PE0000/fort.68' 
-         LOCHSF=LOC(NPROC)
+         LOCHSF=LOC2(NPROC)
          WRITE(LOCFN(3:6),'(I4.4)') (NPROC-1)
          OPEN (LOCHSF,FILE=LOCFN,ACCESS='DIRECT',RECL=8)
          READ(LOCHSF,REC=IHOTSTP+1 ) IESTP
@@ -3651,7 +3651,7 @@ C  kmd48.33bc add in the 3D barotropic and baroclinic information
             DO IPROC=1,NPROC
                IF(IHOT.EQ.67) LOCFN(1:14) = 'PE0000/fort.67'
                IF(IHOT.EQ.68) LOCFN(1:14) = 'PE0000/fort.68'
-               LOCHSF=LOC(IPROC)
+               LOCHSF=LOC2(IPROC)
                WRITE(LOCFN(3:6),'(I4.4)') (IPROC-1)
                OPEN (LOCHSF,FILE=LOCFN,ACCESS='DIRECT',RECL=8)
                IF (IM.EQ.10) THEN
@@ -3660,111 +3660,111 @@ C  kmd48.33bc add in the 3D barotropic and baroclinic information
                   IHOTSTP=8+(NNODP(IPROC)*6)+(NELP(IPROC)*1)+31
                END IF
                DO I=1,NNODP(IPROC)
-                 INDEX=IMAP_NOD_LG(I,IPROC)
-                 READ(LOCHSF,REC=IHOTSTP+1) DUU(INDEX)
+                 INDX=IMAP_NOD_LG(I,IPROC)
+                 READ(LOCHSF,REC=IHOTSTP+1) DUU(INDX)
                  IHOTSTP=IHOTSTP+1
                END DO
                DO I=1,NNODP(IPROC)
-                 INDEX=IMAP_NOD_LG(I,IPROC)
-                 READ(LOCHSF,REC=IHOTSTP+1) DUV(INDEX)
+                 INDX=IMAP_NOD_LG(I,IPROC)
+                 READ(LOCHSF,REC=IHOTSTP+1) DUV(INDX)
                  IHOTSTP=IHOTSTP+1
                END DO
                DO I=1,NNODP(IPROC)
-                 INDEX=IMAP_NOD_LG(I,IPROC)
-                 READ(LOCHSF,REC=IHOTSTP+1) DVV(INDEX)
+                 INDX=IMAP_NOD_LG(I,IPROC)
+                 READ(LOCHSF,REC=IHOTSTP+1) DVV(INDX)
                  IHOTSTP=IHOTSTP+1
                END DO
                DO I=1,NNODP(IPROC)
-                 INDEX=IMAP_NOD_LG(I,IPROC)
-                 READ(LOCHSF,REC=IHOTSTP+1) UU(INDEX)
+                 INDX=IMAP_NOD_LG(I,IPROC)
+                 READ(LOCHSF,REC=IHOTSTP+1) UU(INDX)
                  IHOTSTP=IHOTSTP+1
                END DO
                DO I=1,NNODP(IPROC)
-                 INDEX=IMAP_NOD_LG(I,IPROC)
-                 READ(LOCHSF,REC=IHOTSTP+1) VV(INDEX)
+                 INDX=IMAP_NOD_LG(I,IPROC)
+                 READ(LOCHSF,REC=IHOTSTP+1) VV(INDX)
                  IHOTSTP=IHOTSTP+1
                END DO
                DO I=1,NNODP(IPROC)
-                 INDEX=IMAP_NOD_LG(I,IPROC)
-                 READ(LOCHSF,REC=IHOTSTP+1) BSX(INDEX)
+                 INDX=IMAP_NOD_LG(I,IPROC)
+                 READ(LOCHSF,REC=IHOTSTP+1) BSX(INDX)
                  IHOTSTP=IHOTSTP+1
                END DO
                DO I=1,NNODP(IPROC)
-                 INDEX=IMAP_NOD_LG(I,IPROC)
-                 READ(LOCHSF,REC=IHOTSTP+1) BSY(INDEX)
+                 INDX=IMAP_NOD_LG(I,IPROC)
+                 READ(LOCHSF,REC=IHOTSTP+1) BSY(INDX)
                  IHOTSTP=IHOTSTP+1
                END DO
                DO K=1,NFEN
                  DO I=1,NNODP(IPROC)
-                   INDEX=IMAP_NOD_LG(I,IPROC)
-                   READ(LOCHSF,REC=IHOTSTP+1) REALQ(INDEX,K)
+                   INDX=IMAP_NOD_LG(I,IPROC)
+                   READ(LOCHSF,REC=IHOTSTP+1) REALQ(INDX,K)
                    IHOTSTP=IHOTSTP+1
                  END DO
                END DO
                DO K=1,NFEN
                  DO I=1,NNODP(IPROC)
-                   INDEX=IMAP_NOD_LG(I,IPROC)
-                   READ(LOCHSF,REC=IHOTSTP+1) IMAGQ(INDEX,K)
+                   INDX=IMAP_NOD_LG(I,IPROC)
+                   READ(LOCHSF,REC=IHOTSTP+1) IMAGQ(INDX,K)
                    IHOTSTP=IHOTSTP+1
                  END DO
                END DO
                DO K=1,NFEN
                  DO I=1,NNODP(IPROC)
-                   INDEX=IMAP_NOD_LG(I,IPROC)
-                   READ(LOCHSF,REC=IHOTSTP+1) WZ(INDEX,K)
+                   INDX=IMAP_NOD_LG(I,IPROC)
+                   READ(LOCHSF,REC=IHOTSTP+1) WZ(INDX,K)
                    IHOTSTP=IHOTSTP+1
                  END DO
                END DO
                DO K=1,NFEN
                  DO I=1,NNODP(IPROC)
-                   INDEX=IMAP_NOD_LG(I,IPROC)
-                   READ(LOCHSF,REC=IHOTSTP+1) q20(INDEX,K)
+                   INDX=IMAP_NOD_LG(I,IPROC)
+                   READ(LOCHSF,REC=IHOTSTP+1) q20(INDX,K)
                    IHOTSTP=IHOTSTP+1
                  END DO
                END DO
                DO K=1,NFEN
                  DO I=1,NNODP(IPROC)
-                   INDEX=IMAP_NOD_LG(I,IPROC)
-                   READ(LOCHSF,REC=IHOTSTP+1) l(INDEX,K)
+                   INDX=IMAP_NOD_LG(I,IPROC)
+                   READ(LOCHSF,REC=IHOTSTP+1) l(INDX,K)
                    IHOTSTP=IHOTSTP+1
                  END DO
                END DO
                IF (ABS(IDEN).EQ.1) THEN
                  DO K=1,NFEN
                    DO I=1,NNODP(IPROC)
-                     INDEX=IMAP_NOD_LG(I,IPROC)
-                     READ(LOCHSF,REC=IHOTSTP+1) SIGT(INDEX,K)
+                     INDX=IMAP_NOD_LG(I,IPROC)
+                     READ(LOCHSF,REC=IHOTSTP+1) SIGT(INDX,K)
                      IHOTSTP=IHOTSTP+1
                    END DO
                  END DO
                ELSE IF (ABS(IDEN).EQ.2) THEN
                  DO K=1,NFEN
                    DO I=1,NNODP(IPROC)
-                     INDEX=IMAP_NOD_LG(I,IPROC)
-                     READ(LOCHSF,REC=IHOTSTP+1) SAL(INDEX,K)
+                     INDX=IMAP_NOD_LG(I,IPROC)
+                     READ(LOCHSF,REC=IHOTSTP+1) SAL(INDX,K)
                      IHOTSTP=IHOTSTP+1
                    END DO
                  END DO
                ELSE IF (ABS(IDEN).EQ.3) THEN
                  DO K=1,NFEN
                    DO I=1,NNODP(IPROC)
-                     INDEX=IMAP_NOD_LG(I,IPROC)
-                     READ(LOCHSF,REC=IHOTSTP+1) TEMP(INDEX,K)
+                     INDX=IMAP_NOD_LG(I,IPROC)
+                     READ(LOCHSF,REC=IHOTSTP+1) TEMP(INDX,K)
                      IHOTSTP=IHOTSTP+1
                    END DO
                  END DO
                ELSE IF (ABS(IDEN).EQ.4) THEN
                  DO K=1,NFEN
                    DO I=1,NNODP(IPROC)
-                     INDEX=IMAP_NOD_LG(I,IPROC)
-                     READ(LOCHSF,REC=IHOTSTP+1) SAL(INDEX,K)
+                     INDX=IMAP_NOD_LG(I,IPROC)
+                     READ(LOCHSF,REC=IHOTSTP+1) SAL(INDX,K)
                      IHOTSTP=IHOTSTP+1
                    END DO
                  END DO
                  DO K=1,NFEN
                    DO I=1,NNODP(IPROC)
-                     INDEX=IMAP_NOD_LG(I,IPROC)
-                     READ(LOCHSF,REC=IHOTSTP+1) TEMP(INDEX,K)
+                     INDX=IMAP_NOD_LG(I,IPROC)
+                     READ(LOCHSF,REC=IHOTSTP+1) TEMP(INDX,K)
                      IHOTSTP=IHOTSTP+1
                    END DO
                  END DO
@@ -4047,7 +4047,7 @@ C---------------------------------------------------------------------------
       CHARACTER*8 RDES8(8),RID8(6),AID8(6)
       LOGICAL FOUND
 
-      INTEGER,ALLOCATABLE  :: LOC(:),IREC(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
       REAL(SZ),ALLOCATABLE  ::  SIGMA(:,:)
       REAL(SZ),ALLOCATABLE  ::  SDVar(:,:,:)  ! subdomain station data
       REAL(SZ),ALLOCATABLE  ::  FDvar(:,:,:)  ! full domain station data
@@ -4055,7 +4055,7 @@ C---------------------------------------------------------------------------
       INTEGER M     ! counter for NVar
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
-      ALLOCATE (LOC(MNPROC),IREC(MNPROC))
+      ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (LOCNAME(MNPROC))
 
 C
@@ -4074,16 +4074,16 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.41'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No Local fort.41 files found."
            RETURN
          ENDIF
-         READ(LOC(IPROC),'(A85)')  INLINE
-         READ(LOC(IPROC),3645) NDSET,NSTA,DT,NSPO3DSD,NFEN,IRTYPE
+         READ(LOC2(IPROC),'(A85)')  INLINE
+         READ(LOC2(IPROC),3645) NDSET,NSTA,DT,NSPO3DSD,NFEN,IRTYPE
          IF (NSTA.NE.NNSTA3DDP(IPROC)) THEN
             STOP 'Inconsistency in number of 3D density stations.'
          ENDIF
@@ -4118,12 +4118,12 @@ C     number of data sets at the top of the file will be wrong if the
 C     run was hot started.
       DO                     ! loop infinitely over data sets
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
+            READ(LOC2(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
      &           ((SIGMA(M,N),M=1,NVar),N=1,NFEN-1),
      &           SIGMA(1,NFEN),SIGMA(2,NFEN)
             IF (NNSTA3DDP(IPROC).GT.0) THEN
                DO K = 1,NNSTA3DDP(IPROC)
-                  READ(LOC(IPROC),1104,END=9999) IDUM,
+                  READ(LOC2(IPROC),1104,END=9999) IDUM,
      &               ((SDVar(K,M,L),M=1,NVar),L=1,NFEN)
                   IG = IMAP_STA3DD_LG(K,IPROC) ! global station number
                   DO M=1,NVar
@@ -4165,7 +4165,7 @@ C
 9999  CONTINUE
       CLOSE(41)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
    80 FORMAT(A40)
@@ -4213,7 +4213,7 @@ C---------------------------------------------------------------------------
       CHARACTER*8 RDES8(8),RID8(6),AID8(6)
       LOGICAL FOUND
 
-      INTEGER,ALLOCATABLE  :: LOC(:),IREC(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
       REAL(SZ),ALLOCATABLE  ::  SIGMA(:)
       REAL(SZ),ALLOCATABLE  ::  SDVar(:,:,:)  ! subdomain station data
       REAL(SZ),ALLOCATABLE  ::  FDvar(:,:,:)  ! full domain station data
@@ -4221,7 +4221,7 @@ C---------------------------------------------------------------------------
       INTEGER M     ! counter for NVar
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
-      ALLOCATE (LOC(MNPROC),IREC(MNPROC))
+      ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (LOCNAME(MNPROC))
 C
 C     Determine whether unit 42 is sequential formatted or direct access binary
@@ -4239,16 +4239,16 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.42'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No local fort.42 files found."
            RETURN
          ENDIF
-         READ(LOC(IPROC),'(A85)')  INLINE
-         READ(LOC(IPROC),3645) NDSET,NSTA,DT,NSPO3DSV,NFEN,IRTYPE
+         READ(LOC2(IPROC),'(A85)')  INLINE
+         READ(LOC2(IPROC),3645) NDSET,NSTA,DT,NSPO3DSV,NFEN,IRTYPE
          IF (NSTA.NE.NNSTA3DVP(IPROC)) THEN
             STOP 'Inconsistency in number of 3D velocity stations.'
          ENDIF
@@ -4271,12 +4271,12 @@ C     run was hot started.
 C
       DO                        ! loop infinitely over data sets
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
+            READ(LOC2(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
      &           (SIGMA(N),SIGMA(N),SIGMA(N),N=1,NFEN-1),
      &           SIGMA(NFEN),SIGMA(NFEN)
             IF (NNSTA3DVP(IPROC).GT.0) THEN
                DO K = 1,NNSTA3DVP(IPROC)
-                  READ(LOC(IPROC),1104,END=9999) IDUM,
+                  READ(LOC2(IPROC),1104,END=9999) IDUM,
      &               ((SDVar(K,M,L),M=1,NVar),L=1,NFEN)
                   IG = IMAP_STA3DV_LG(K,IPROC)
                   DO M=1,NVar
@@ -4318,7 +4318,7 @@ C
 9999  CONTINUE
       CLOSE(42)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
    80 FORMAT(A40)
@@ -4363,7 +4363,7 @@ C---------------------------------------------------------------------------
       CHARACTER*4 RDES4(8),RID4(6),AID4(6)
       CHARACTER*8 RDES8(8),RID8(6),AID8(6)
       LOGICAL FOUND
-      INTEGER,ALLOCATABLE  :: LOC(:),IREC(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
       REAL(SZ),ALLOCATABLE  ::  SIGMA(:)
       REAL(SZ),ALLOCATABLE  ::  SDVar(:,:,:)  ! subdomain station data
       REAL(SZ),ALLOCATABLE  ::  FDvar(:,:,:)  ! full domain station data
@@ -4371,7 +4371,7 @@ C---------------------------------------------------------------------------
       INTEGER M     ! counter for NVar
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
-      ALLOCATE (LOC(MNPROC),IREC(MNPROC))
+      ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (LOCNAME(MNPROC))
 C
 C     Determine whether unit 43 is sequential formatted or direct access binary
@@ -4389,16 +4389,16 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.43'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No local fort.43 files found."
            RETURN
          ENDIF
-         READ(LOC(IPROC),'(A85)')  INLINE
-         READ(LOC(IPROC),3645) NDSET,NSTA,DT,NSPO3DST,NFEN,IRTYPE
+         READ(LOC2(IPROC),'(A85)')  INLINE
+         READ(LOC2(IPROC),3645) NDSET,NSTA,DT,NSPO3DST,NFEN,IRTYPE
          IF (NSTA.NE.NNSTA3DTP(IPROC)) THEN
             STOP 'Inconsistency in number of 3D turbulence stations.'
          ENDIF
@@ -4421,12 +4421,12 @@ C     run was hot started.
 C
       DO                        ! loop infinitely over data sets
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
+            READ(LOC2(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
      &           (SIGMA(N),SIGMA(N),SIGMA(N),N=1,NFEN-1),
      &           SIGMA(NFEN),SIGMA(NFEN)
             IF (NNSTA3DTP(IPROC).GT.0) THEN
                DO K = 1,NNSTA3DTP(IPROC)
-                  READ(LOC(IPROC),1104,END=9999) IDUM,
+                  READ(LOC2(IPROC),1104,END=9999) IDUM,
      &               ((SDVar(K,M,L),M=1,NVar),L=1,NFEN)
                   IG = IMAP_STA3DT_LG(K,IPROC)
                   DO M=1,NVar
@@ -4468,7 +4468,7 @@ C
 9999  CONTINUE
       CLOSE(43)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
    80 FORMAT(A40)
@@ -4506,7 +4506,7 @@ C---------------------------------------------------------------------------
       USE POST_GLOBAL
       IMPLICIT NONE
       INTEGER I,J,K,L,IPROC,IDUM
-      INTEGER NDSET,NSTEMP,NP,IT,ITEMP,INDEX
+      INTEGER NDSET,NSTEMP,NP,IT,ITEMP,INDX
       INTEGER OREC
       INTEGER N      ! loop counter
       INTEGER IRTYPE ! record type, elevation=1, velocity=2, 3Dvelocity=3
@@ -4518,12 +4518,12 @@ C---------------------------------------------------------------------------
       CHARACTER*8 RDES8(8),RID8(6),AID8(6)
       LOGICAL FOUND
 
-      INTEGER,ALLOCATABLE  :: LOC(:),LOC1(:),IREC(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:),LOC1(:),IREC(:)
       REAL(SZ),ALLOCATABLE  ::  SIGMA(:),VAR1(:,:),VAR2(:,:),VAR3(:,:)
       REAL(SZ),ALLOCATABLE  ::  VAR1P(:,:),VAR2P(:,:),VAR3P(:,:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:),LOCNAME1(:)
 
-      ALLOCATE (LOC(MNPROC),IREC(MNPROC),LOC1(MNPROC))
+      ALLOCATE (LOC2(MNPROC),IREC(MNPROC),LOC1(MNPROC))
       ALLOCATE (LOCNAME(MNPROC),LOCNAME1(MNPROC))
 C
 C     jgf45.12 When post processing a diagnostic run, it does not make
@@ -4551,16 +4551,16 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.44'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-            OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+            OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
             print *, "No Local fort.44 files found"
             RETURN
          ENDIF
-         READ(LOC(IPROC),'(A85)')  INLINE
-         READ(LOC(IPROC),3645) NDSET,NP,DT,NSPO3DGD,NFEN,IRTYPE
+         READ(LOC2(IPROC),'(A85)')  INLINE
+         READ(LOC2(IPROC),3645) NDSET,NP,DT,NSPO3DGD,NFEN,IRTYPE
          IF (NP.NE.NNODP(IPROC)) THEN
             STOP 'Inconsistency in number of local nodes.'
          ENDIF
@@ -4581,18 +4581,18 @@ C     run was hot started.
 C
          DO                     ! loop infinitely over data sets
             DO IPROC=1,NPROC
-               READ(LOC(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
+               READ(LOC2(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
      &              (SIGMA(N),N=1,NFEN-1)
 
                IF (IPROC.EQ.1) WRITE(44,1100) TIMEOUT,IT,
      &              (SIGMA(N),N=1,NFEN-1)
                DO K = 1,NNODP(IPROC)
-                  READ(LOC(IPROC),1104,END=9999) IDUM,(VAR1P(K,L),
+                  READ(LOC2(IPROC),1104,END=9999) IDUM,(VAR1P(K,L),
      &                 L=1,NFEN)
-                  INDEX = IMAP_NOD_LG(K,IPROC)
-                  IF(IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
+                  INDX = IMAP_NOD_LG(K,IPROC)
+                  IF(IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
                      DO L=1,NFEN
-                        VAR1(INDEX,L) = VAR1P(K,L)
+                        VAR1(INDX,L) = VAR1P(K,L)
                      ENDDO
                   ENDIF
                ENDDO
@@ -4608,18 +4608,18 @@ C
      &        VAR2(MNP,NFEN),VAR2P(MNPP,NFEN))
          DO                     ! loop infinitely over data sets
             DO IPROC=1,NPROC
-               READ(LOC(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
+               READ(LOC2(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
      &              (SIGMA(N),SIGMA(N),N=1,NFEN-1),SIGMA(NFEN)
                IF (IPROC.EQ.1) WRITE(44,1100) TIMEOUT,IT,
      &              (SIGMA(N),SIGMA(N),N=1,NFEN-1),SIGMA(NFEN)
                DO K = 1,NNODP(IPROC)
-                  READ(LOC(IPROC),1104,END=9999) IDUM,(VAR1P(K,L),
+                  READ(LOC2(IPROC),1104,END=9999) IDUM,(VAR1P(K,L),
      &                 VAR2P(K,L),L=1,NFEN)
-                  INDEX = IMAP_NOD_LG(K,IPROC)
-                  IF(IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
+                  INDX = IMAP_NOD_LG(K,IPROC)
+                  IF(IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
                      DO L=1,NFEN
-                        VAR1(INDEX,L) = VAR1P(K,L)
-                        VAR2(INDEX,L) = VAR2P(K,L)
+                        VAR1(INDX,L) = VAR1P(K,L)
+                        VAR2(INDX,L) = VAR2P(K,L)
                      ENDDO
                   ENDIF
                ENDDO
@@ -4636,21 +4636,21 @@ C
      &        VAR3(MNP,NFEN),VAR3P(MNPP,NFEN))
          DO                     ! loop infinitely over data sets
             DO IPROC=1,NPROC
-               READ(LOC(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
+               READ(LOC2(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
      &              (SIGMA(N),SIGMA(N),SIGMA(N),N=1,NFEN-1),
      &              SIGMA(NFEN),SIGMA(NFEN)
                IF (IPROC.EQ.1) WRITE(44,1100) TIMEOUT,IT,
      &              (SIGMA(N),SIGMA(N),SIGMA(N),N=1,NFEN-1),
      &              SIGMA(NFEN),SIGMA(NFEN)
                DO K = 1,NNODP(IPROC)
-                  READ(LOC(IPROC),1104,END=9999) IDUM,(VAR1P(K,L),
+                  READ(LOC2(IPROC),1104,END=9999) IDUM,(VAR1P(K,L),
      &             VAR2P(K,L),VAR3P(K,L),L=1,NFEN)
-                  INDEX = IMAP_NOD_LG(K,IPROC)
-                  IF(IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
+                  INDX = IMAP_NOD_LG(K,IPROC)
+                  IF(IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
                      DO L=1,NFEN
-                        VAR1(INDEX,L) = VAR1P(K,L)
-                        VAR2(INDEX,L) = VAR2P(K,L)
-                        VAR3(INDEX,L) = VAR3P(K,L)
+                        VAR1(INDX,L) = VAR1P(K,L)
+                        VAR2(INDX,L) = VAR2P(K,L)
+                        VAR3(INDX,L) = VAR3P(K,L)
                      ENDDO
                   ENDIF
                ENDDO
@@ -4683,7 +4683,7 @@ C--Close the Global and Local fort.44 Files
 C
       CLOSE(44)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
    80 FORMAT(A80)
@@ -4715,7 +4715,7 @@ C
       USE POST_GLOBAL
       IMPLICIT NONE
       INTEGER I,J,K,L,IPROC,IDUM
-      INTEGER NDSET,NSTEMP,NP,IT,ITEMP,INDEX
+      INTEGER NDSET,NSTEMP,NP,IT,ITEMP,INDX
       INTEGER OREC
       INTEGER N      ! loop counter
       INTEGER IRTYPE ! record type, elevation=1, velocity=2, 3Dvelocity=3
@@ -4728,12 +4728,12 @@ C
       CHARACTER*8 RDES8(8),RID8(6),AID8(6)
       LOGICAL FOUND
 
-      INTEGER,ALLOCATABLE  :: LOC(:),IREC(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
       REAL(SZ),ALLOCATABLE  ::  SIGMA(:),VAR1(:,:),VAR2(:,:),VAR3(:,:)
       REAL(SZ),ALLOCATABLE  ::  VAR1P(:,:),VAR2P(:,:),VAR3P(:,:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
-      ALLOCATE (LOC(MNPROC),IREC(MNPROC))
+      ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (LOCNAME(MNPROC))
 C
 C--Determine whether Unit 45 is Sequential Formatted or Direct Access Binary
@@ -4751,16 +4751,16 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.45'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No Local fort.45 files found"
            RETURN
          ENDIF
-         READ(LOC(IPROC),'(A85)')  INLINE
-         READ(LOC(IPROC),3645) NDSET,NP,DT,NSPO3DGV,NFEN,IRTYPE
+         READ(LOC2(IPROC),'(A85)')  INLINE
+         READ(LOC2(IPROC),3645) NDSET,NP,DT,NSPO3DGV,NFEN,IRTYPE
          IF (NP.NE.NNODP(IPROC)) THEN
            STOP 'Inconsistency in number of local nodes'
          ENDIF
@@ -4782,21 +4782,21 @@ C     run was hot started.
 C
       DO                        ! loop infinitely over data sets
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
+            READ(LOC2(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
      &                    (SIGMA(N),SIGMA(N),SIGMA(N),N=1,NFEN-1),
      &                     SIGMA(NFEN),SIGMA(NFEN)
             IF (IPROC.EQ.1) WRITE(45,1100) TIMEOUT,IT,
      &                    (SIGMA(N),SIGMA(N),SIGMA(N),N=1,NFEN-1),
      &                     SIGMA(NFEN),SIGMA(NFEN)
             DO K = 1,NNODP(IPROC)
-               READ(LOC(IPROC),1104,END=9999) IDUM,(VAR1P(K,L),
+               READ(LOC2(IPROC),1104,END=9999) IDUM,(VAR1P(K,L),
      &                                   VAR2P(K,L),VAR3P(K,L),L=1,NFEN)
-               INDEX = IMAP_NOD_LG(K,IPROC)
-               IF(IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
+               INDX = IMAP_NOD_LG(K,IPROC)
+               IF(IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
                  DO L=1,NFEN
-                   VAR1(INDEX,L) = VAR1P(K,L)
-                   VAR2(INDEX,L) = VAR2P(K,L)
-                   VAR3(INDEX,L) = VAR3P(K,L)
+                   VAR1(INDX,L) = VAR1P(K,L)
+                   VAR2(INDX,L) = VAR2P(K,L)
+                   VAR3(INDX,L) = VAR3P(K,L)
                  ENDDO
                ENDIF
             ENDDO
@@ -4821,7 +4821,7 @@ C--Close the Global and Local fort.45 Files
 C
       CLOSE(45)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
       DEALLOCATE(SIGMA)
@@ -4850,7 +4850,7 @@ C---------------------------------------------------------------------------C
       USE POST_GLOBAL
       IMPLICIT NONE
       INTEGER I,J,K,L,IPROC,IDUM
-      INTEGER NDSET,NSTEMP,NP,IT,ITEMP,INDEX
+      INTEGER NDSET,NSTEMP,NP,IT,ITEMP,INDX
       INTEGER OREC
       INTEGER N      ! loop counter
       INTEGER IRTYPE ! record type, elevation=1, velocity=2, 3Dvelocity=3
@@ -4861,12 +4861,12 @@ C---------------------------------------------------------------------------C
       CHARACTER*4 RDES4(8),RID4(6),AID4(6)
       CHARACTER*8 RDES8(8),RID8(6),AID8(6)
       LOGICAL FOUND
-      INTEGER,ALLOCATABLE  :: LOC(:),IREC(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
       REAL(SZ),ALLOCATABLE  ::  SIGMA(:),VAR1(:,:),VAR2(:,:),VAR3(:,:)
       REAL(SZ),ALLOCATABLE  ::  VAR1P(:,:),VAR2P(:,:),VAR3P(:,:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
-      ALLOCATE (LOC(MNPROC),IREC(MNPROC))
+      ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (LOCNAME(MNPROC))
 
 C
@@ -4885,16 +4885,16 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.46'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-           OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+           OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
            print *, "No local fort.46 files found."
            RETURN
          ENDIF
-         READ(LOC(IPROC),'(A85)')  INLINE
-         READ(LOC(IPROC),3646) NDSET,NP,DT,NSPO3DGT,NFEN,IRTYPE
+         READ(LOC2(IPROC),'(A85)')  INLINE
+         READ(LOC2(IPROC),3646) NDSET,NP,DT,NSPO3DGT,NFEN,IRTYPE
          IF (NP.NE.NNODP(IPROC)) THEN
            STOP 'Inconsistency in number of local nodes.'
          ENDIF
@@ -4914,21 +4914,21 @@ C     run was hot started.
 C
       DO                        ! loop infinitely over data sets
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
+            READ(LOC2(IPROC),FMT=1100,END=9999) TIMEOUT,IT,
      &                    (SIGMA(N),SIGMA(N),SIGMA(N),N=1,NFEN-1),
      &                     SIGMA(NFEN),SIGMA(NFEN)
             IF (IPROC.EQ.1) WRITE(46,1100) TIMEOUT,IT,
      &                    (SIGMA(N),SIGMA(N),SIGMA(N),N=1,NFEN-1),
      &                     SIGMA(NFEN),SIGMA(NFEN)
             DO K = 1,NNODP(IPROC)
-               READ(LOC(IPROC),1104,END=9999) IDUM,(VAR1P(K,L),
+               READ(LOC2(IPROC),1104,END=9999) IDUM,(VAR1P(K,L),
      &                                   VAR2P(K,L),VAR3P(K,L),L=1,NFEN)
-               INDEX = IMAP_NOD_LG(K,IPROC)
-               IF(IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
+               INDX = IMAP_NOD_LG(K,IPROC)
+               IF(IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
                  DO L=1,NFEN
-                   VAR1(INDEX,L) = VAR1P(K,L)
-                   VAR2(INDEX,L) = VAR2P(K,L)
-                   VAR3(INDEX,L) = VAR3P(K,L)
+                   VAR1(INDX,L) = VAR1P(K,L)
+                   VAR2(INDX,L) = VAR2P(K,L)
+                   VAR3(INDX,L) = VAR3P(K,L)
                  ENDDO
                ENDIF
             ENDDO
@@ -4953,7 +4953,7 @@ C--Close the Global and Local fort.46 Files
 C
       CLOSE(46)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
       DEALLOCATE(SIGMA)
@@ -4988,7 +4988,7 @@ C---------------------------------------------------------------------------
       USE POST_GLOBAL
       IMPLICIT NONE
       INTEGER I,J,K,L,IPROC,IDUM
-      INTEGER NDSET,NSTEMP,NP,ITE,ITEMP,INDEX
+      INTEGER NDSET,NSTEMP,NP,ITE,ITEMP,INDX
       INTEGER OREC
       INTEGER N      ! loop counter
       INTEGER IRTYPE ! record type, elevation=1, velocity=2, 3Dvelocity=3
@@ -5000,11 +5000,11 @@ C---------------------------------------------------------------------------
       CHARACTER*8 RDES8(8),RID8(6),AID8(6)
       LOGICAL FOUND
 
-      INTEGER,ALLOCATABLE  :: LOC(:),IREC(:)
+      INTEGER,ALLOCATABLE  :: LOC2(:),IREC(:)
       CHARACTER*80, ALLOCATABLE  ::  TOPTEMP(:),TOPTEMPP(:)
       CHARACTER*14,ALLOCATABLE  ::  LOCNAME(:)
 
-      ALLOCATE (LOC(MNPROC),IREC(MNPROC))
+      ALLOCATE (LOC2(MNPROC),IREC(MNPROC))
       ALLOCATE (TOPTEMP(MNP),TOPTEMPP(MNPP))
       ALLOCATE (LOCNAME(MNPROC))
 
@@ -5024,16 +5024,16 @@ C
       DO IPROC = 1,NPROC
          LOCNAME(IPROC) = 'PE0000/fort.47'
          WRITE(LOCNAME(IPROC)(3:6),'(I4.4)') (IPROC-1)
-         LOC(IPROC) = 105 + (IPROC-1)
+         LOC2(IPROC) = 105 + (IPROC-1)
          INQUIRE(FILE=LOCNAME(IPROC),EXIST=FOUND)
          IF (FOUND) THEN
-            OPEN(LOC(IPROC),FILE=LOCNAME(IPROC))
+            OPEN(LOC2(IPROC),FILE=LOCNAME(IPROC))
          ELSE
             print *, "No Local fort.47 files found"
             RETURN
          ENDIF
-         READ(LOC(IPROC),'(A85)')  INLINE
-         READ(LOC(IPROC),3645) NDSET,NP,DT,NSPO3DGD,IRTYPE
+         READ(LOC2(IPROC),'(A85)')  INLINE
+         READ(LOC2(IPROC),3645) NDSET,NP,DT,NSPO3DGD,IRTYPE
          IF (NP.NE.NNODP(IPROC)) THEN
             STOP 'Inconsistency in number of local nodes.'
          ENDIF
@@ -5046,13 +5046,13 @@ C
       DO ! loop infinitely over data sets
 C
          DO IPROC=1,NPROC
-            READ(LOC(IPROC),FMT=2110,END=9999) TIMEOUTE,ITE
+            READ(LOC2(IPROC),FMT=2110,END=9999) TIMEOUTE,ITE
             IF (IPROC.EQ.1) WRITE(47,2110) TIMEOUTE,ITE
             DO K = 1,NNODP(IPROC)
-               READ(LOC(IPROC),80,END=9999) TOPTEMPP(K)
-               INDEX = IMAP_NOD_LG(K,IPROC)
-               IF (IMAP_NOD_GL(1,INDEX).EQ.IPROC) THEN
-                 TOPTEMP(INDEX) = TOPTEMPP(K)
+               READ(LOC2(IPROC),80,END=9999) TOPTEMPP(K)
+               INDX = IMAP_NOD_LG(K,IPROC)
+               IF (IMAP_NOD_GL(1,INDX).EQ.IPROC) THEN
+                 TOPTEMP(INDX) = TOPTEMPP(K)
                 ENDIF
             ENDDO  
          ENDDO 
@@ -5079,7 +5079,7 @@ C--Close the Global and Local fort.47 Files
 C
       CLOSE(47)
       DO IPROC = 1,NPROC
-         CLOSE(LOC(IPROC))
+         CLOSE(LOC2(IPROC))
       ENDDO
 C
    80 FORMAT(A80)

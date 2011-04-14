@@ -62,7 +62,7 @@ C
       CHARACTER DUM  ! variable used in waiting for menu choice  
       INTEGER I,PE,PRECIS,ISP,NWTYPE
 
-      REAL(SZ) TOL,SCALE
+      REAL(SZ) TOL,SCALEVAL
       LOGICAL FOUND
       CHARACTER DIRCMD*72,CMD*6,PENUM*6,PHASE*9,ISET*6,DIR1*80,DIR2*80,
      &     CONVDIR*6,HOTANS*1
@@ -382,16 +382,16 @@ C
          print *, "enter pathame of second directory"
          READ(*,'(A80)') DIR2
          print *, "enter scale factor"    
-         READ(*,*) SCALE
+         READ(*,*) SCALEVAL
 C     
          IF (NOUTGE.NE.0) THEN
             print *, "DiffMerge of Unit 63 files"
-            CALL DIFFMERGE63(DIR1,DIR2,SCALE)
+            CALL DIFFMERGE63(DIR1,DIR2,SCALEVAL)
          ENDIF
 C     
          IF (NOUTGV.NE.0) THEN
             print *, "DiffMerge of Unit 64 files"
-            CALL DIFFMERGE64(DIR1,DIR2,SCALE)
+            CALL DIFFMERGE64(DIR1,DIR2,SCALEVAL)
          ENDIF
 C     
          GO TO 99
@@ -439,8 +439,8 @@ c
       END
 
 
-      SUBROUTINE NEWINDEX ( ISTRING, OSTRING, INDEX )
-      INTEGER I,I1,I2,I3,I4,INDEX
+      SUBROUTINE NEWINDEX ( ISTRING, OSTRING, INDX )
+      INTEGER I,I1,I2,I3,I4,INDX
       CHARACTER  ISTRING*(*),OSTRING*(*),TARGET
       CHARACTER TEMP1*80, TEMP2*100
 c
@@ -473,7 +473,7 @@ c
 c     
 c--   Create a temporary string containing new index
 c     
-      WRITE(TEMP1(1:80),'(I8)') INDEX
+      WRITE(TEMP1(1:80),'(I8)') INDX
 c     
 c--   Find first non-blank character of String
 c     
