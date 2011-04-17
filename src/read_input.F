@@ -1816,21 +1816,6 @@ C     an OWI basin scale met field derived from NAM winds.
      &                  WTIMINC, RSTIMINC, pureVortex, pureBackground
          ENDIF
       ENDIF
-C     rjw added nws = 19: asymmetric hurricane winds
-      IF(ABS(NWS).EQ.19) THEN
-         IF(NRS.EQ.0) THEN
-            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj
-         ELSEIF (NRS.EQ.1) THEN
-            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
-     &           RSTIMINC
-C LETS not use this now but have the option to i nthe future
-c            WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
-c 6112       FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
-c     &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
-         ENDIF
-c         CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
-c     &        WindRefTime, MyProc, NScreen, ScreenUnit)
-      ENDIF
 
       IF(NWS.NE.0) WRITE(16,1117) WTIMINC
  1117 FORMAT(5X,'WIND TIME INCREMENT (SEC) = ',F10.2,/)

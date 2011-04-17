@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.77   - 04/17/2011 - jgf - Removed erroneous second read of WTIMINC line
+C             for NWS19. 
 C  v49.76   - 04/14/2011 - tcm - Cleaned up more reserved words in post.F
 C               and adcpost.F  (INDEX,LOC,SCALE).
 C  v49.75   - 04/14/2011 - tcm - Commented out debugging flags for cray_xt4,
