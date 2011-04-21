@@ -1612,7 +1612,7 @@ C     jgf45.12 Add code to record vertical eddy viscosity profile.
             WRITE(15,*) EVTot(N)
          ENDDO
       ENDIF
-      IF(IEVC.EQ.50) WRITE(15,80) THETAMSG
+      IF((IEVC.EQ.50).OR. (IEVC.EQ.51)) WRITE(15,80) THETAMSG
 C     -------------------------------------------------------------
 C     jgf45.11 Create mapping from full domain 3D density station
 C     elements to corresponding elements in subdomains. Write out

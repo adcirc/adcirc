@@ -1487,14 +1487,14 @@ C... SPECIFY TYPE OF EDDY VISCOSITY PROFILE
      &   (IEVC.NE.33).and.
      &   (IEVC.NE.40).and.(IEVC.NE.41).and.(IEVC.NE.42).and.
      &   (IEVC.NE.43).and.
-     &   (IEVC.NE.50)) THEN
+     &   (IEVC.NE.50).and.(IEVC.NE.51)) THEN
          WRITE(*,350)
          WRITE(*,411)
  411     FORMAT(/,2X,'    IEVC MUST BE 0,1,10,11,20,21,22,23,',
-     &              '30,31,32,33,40,41,42,43,50')
+     &              '30,31,32,33,40,41,42,43,50,51')
          STOP
       ENDIF
-      IF(IEVC.EQ.50) THEN
+      IF((IEVC.EQ.50).OR.(IEVC.NE.51)) THEN
          READ(15,80) THETAMSG
          READ(THETAMSG,*) THETA1,THETA2
       ENDIF

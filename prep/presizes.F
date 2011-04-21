@@ -813,7 +813,7 @@ C     jgf45.12 add code to handle user specified vertical eddy viscosity.
                READ(15,*) RDUM  !skip over vertical eddy viscosity
             ENDDO
          ENDIF
-         IF(IEVC.EQ.50) READ(15,*) RDUM,RDUM           !Skip THETA1,THETA2
+         IF((IEVC.EQ.50).OR.(IEVC.EQ.51)) READ(15,*) RDUM,RDUM           !Skip THETA1,THETA2
          READ(15,*) I3DSD,RDUM,RDUM,IDUM               !Process I3DSD
          READ(15,*) NSTA3DD                            !Process NSTA3DD
          IF(NSTA3DD.NE.0) THEN !kmd : changed to match 2D options
