@@ -3,6 +3,7 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.79   - 04/21/2011 - rjw - Fixed bug in ./prep/read_global.F for IEVC=51
 C  v49.78   - 04/21/2011 - rjw - Modified files in ./prep to allow for IEVC=51
 C  v49.77   - 04/17/2011 - jgf - Removed erroneous second read of WTIMINC line
 C             for NWS19. 
