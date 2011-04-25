@@ -159,7 +159,6 @@ C...  Special instructions for writer processors
 !      CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
 ! tcm v49.52.01 moved make_dirname up a level
 !      CALL MAKE_DIRNAME()    ! Establish Working Directory Name
-      IF (MYPROC.EQ.0) PRINT *, "Made it to read_input call"
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
       CALL MSG_TABLE()       ! Read Message-Passing Tables
       CALL MSG_START()       ! Startup message passing
