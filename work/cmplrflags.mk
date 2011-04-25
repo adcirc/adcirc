@@ -102,8 +102,13 @@ ifeq ($(compiler),intel)
   else 
      MULTIPLE := TRUE
   endif
+#  ifeq ($(NETCDF),enable)
+#     FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
+#     IMODS          := -I$(NETCDFHOME)/include
+#  endif   
   #jgf20110217: For netcdf on blueridge or kittyhawk at RENCI, use
   #NETCDFHOME=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.0.1-icc-ifort
+NETCDFHOME=/ifs1/apps/netcdf/
 endif
 #
 # sb46.50.02 These flags work on the UT Austin Lonstar cluster.

@@ -96,6 +96,7 @@ MSG_OBJS = \
 $(O_DIR)mkdir.$(EXTO) \
 $(O_DIR)sizes.$(EXTO) \
 $(O_DIR)global.$(EXTO) \
+$(O_DIR)global_3dvs.$(EXTO) \
 $(O_DIR)messenger.$(EXTO)
 
 .SUFFIXES: .f .F .for .f90 .F90
