@@ -3,6 +3,11 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.82   - 04/26/2011 - jgf - Fixed initialization issue in netcdf when
+C             netcdf hotstart file was requested in 3D but no other fulldomain
+C             netcdf output was requested; removed warning message about 
+C             ITITER from adcprep; initialized previously uninitialized
+C             variable in station parsing routine.
 C  v49.81   - 04/25/2011 - rjw - Fixed bug in ./swan/Makefile now it will be able
 C             to read the variables from global_3dv
 C  v49.80   - 04/25/2011 - jgf - Removed stray debug msg from read_input.F.

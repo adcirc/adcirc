@@ -1837,6 +1837,7 @@ C     character of a string.
       INTEGER                        :: res
       !// Local variables
       INTEGER                        :: i, lng
+      res = 1
       lng = LEN_TRIM(buf)
       DO i = 1, lng
          IF (buf(i:i) .NE. ' ') THEN

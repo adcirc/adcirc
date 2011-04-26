@@ -3231,6 +3231,9 @@ C     Initialize netCDF hotstart file, creating a new one
       CALL createNetCDFOutputFile(hs%ncid, hs%myFile, lun, hs%myTime,
      &                            Elev1Descript, err)
       IF (hs%myMesh%initialized.eqv..false.) THEN
+         hs%myMesh%num_nodes = NP_G
+         hs%myMesh%num_elems = NE_G
+         hs%myMesh%nface_len = 3
          CALL initNetCDFCoord(hs%myMesh)
       ENDIF
       CALL defineMeshVariables(hs%ncid, hs%myMesh)
@@ -7129,6 +7132,7 @@ C     jgf49.17.02 Defines data that are common to all netCDF files.
 C-----------------------------------------------------------------------
       subroutine defineMeshVariables(ncid, myMesh)
       USE GLOBAL, ONLY : RAD2DEG, SLAM0, SFEA0, C3D
+      USE GLOBAL_3DVS, ONLY : NFEN
       USE SIZES, ONLY : SZ
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
       USE VERSION
@@ -7163,6 +7167,7 @@ C
      &       myMesh%num_elems_dim_id)
       call check_err(iret)
       IF (C3D.eqv..true.) THEN
+         myMesh%num_v_nodes = NFEN
          iret = nf_def_dim(ncid,'num_v_nodes',myMesh%num_v_nodes,
      &       myMesh%num_v_nodes_dim_id)
          call check_err(iret)
