@@ -13,7 +13,14 @@
  */
 
 #include "metis.h"
+
+/*TCM added dependency for WINDOWS build*/
+#ifdef WINDOWS
+#include <gettimeofday.h>
+#else
 #include <sys/time.h>
+#endif
+
 #include <time.h>
 
 

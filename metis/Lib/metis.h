@@ -18,7 +18,12 @@
 #else
 #include <malloc.h>
 #endif
+
+/*TCM added windows dependency*/
+#ifndef WINDOWS
 #include <strings.h>
+#endif
+
 #include <string.h>
 #include <ctype.h>
 #include <math.h>

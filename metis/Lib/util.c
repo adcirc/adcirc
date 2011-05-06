@@ -13,6 +13,9 @@
 
 #include "metis.h"
 
+/*TCM added 20110504 */
+#include "stdlib.h"
+
 
 /*************************************************************************
 * This function prints an error message and exits
@@ -62,7 +65,7 @@ idxtype *idxmalloc(int n, char *msg)
 
 
 /*************************************************************************
-* The following function allocates an array of float 
+* The following function allocates an array of float
 **************************************************************************/
 float *fmalloc(int n, char *msg)
 {
@@ -109,7 +112,7 @@ void *GKmalloc(int nbytes, char *msg)
     return NULL;
 
   ptr = (void *)malloc(nbytes);
-  if (ptr == NULL) 
+  if (ptr == NULL)
     errexit("***Memory allocation failed for %s. Requested size: %d bytes", msg, nbytes);
 
   return ptr;
@@ -117,7 +120,7 @@ void *GKmalloc(int nbytes, char *msg)
 #endif
 
 /*************************************************************************
-* This function is my wrapper around free, allows multiple pointers    
+* This function is my wrapper around free, allows multiple pointers
 **************************************************************************/
 void GKfree(void **ptr1,...)
 {
@@ -138,7 +141,7 @@ void GKfree(void **ptr1,...)
   }
 
   va_end(plist);
-}            
+}
 
 
 /*************************************************************************
@@ -409,7 +412,7 @@ float snorm2(int n, float *v)
 {
   int i;
   float partial = 0;
- 
+
   for (i = 0; i<n; i++)
     partial += v[i] * v[i];
 
@@ -425,7 +428,7 @@ float sdot(int n, float *x, float *y)
 {
   int i;
   float partial = 0;
- 
+
   for (i = 0; i<n; i++)
     partial += x[i] * y[i];
 
@@ -439,8 +442,8 @@ float sdot(int n, float *x, float *y)
 void saxpy(int n, float alpha, float *x, int incx, float *y, int incy)
 {
   int i;
- 
-  for (i=0; i<n; i++, x+=incx, y+=incy) 
+
+  for (i=0; i<n; i++, x+=incx, y+=incy)
     *y += alpha*(*x);
 }
 
@@ -450,7 +453,7 @@ void saxpy(int n, float alpha, float *x, int incx, float *y, int incy)
 /*************************************************************************
 * This file randomly permutes the contents of an array.
 * flag == 0, don't initialize perm
-* flag == 1, set p[i] = i 
+* flag == 1, set p[i] = i
 **************************************************************************/
 void RandomPermute(int n, idxtype *p, int flag)
 {
@@ -494,15 +497,15 @@ void InitRandom(int seed)
 {
   if (seed == -1) {
 #ifndef __VC__
-    srand48(7654321L);  
+    srand48(7654321L);
 #endif
-    srand(4321);  
+    srand(4321);
   }
   else {
 #ifndef __VC__
-    srand48(seed);  
+    srand48(seed);
 #endif
-    srand(seed);  
+    srand(seed);
   }
 }
 
