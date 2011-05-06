@@ -13,3 +13,7 @@ have it installed.
 
 These changes to metis do not change the usual building or functionality
 of metis on Linux/Unix machines.
+
+
+Pre-processor definitions to use on a Window's PC for compiling metis:
+NDEBUG;_LIB;__VC__;WINDOWS
