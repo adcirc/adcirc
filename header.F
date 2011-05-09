@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.03   - 05/06/2011 - jgf - Applied fixes to timestep.F and ipackv.F from
+C             st to fix issue when the NeiMax node is on a boundary. 
 C  v50.02   - 05/06/2011 - tcm - Added a list of pre-processor definitions to
 C             use in order to build Metis on a Window's based PC.
 C  v50.01   - 05/06/2011 - tcm - Added a readme file about the changes to metis.
