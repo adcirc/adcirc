@@ -3,6 +3,21 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.02   - 05/06/2011 - tcm - Added a list of pre-processor definitions to
+C             use in order to build Metis on a Window's based PC.
+C  v50.01   - 05/06/2011 - tcm - Added a readme file about the changes to metis.
+C  v50.00   - 05/06/2011 - tcm - Made a couple of modifications to the packages
+C             called by metis to get it to work on a Windows based machine. 
+C             Added the gettimeofday.h module which is not available on a 
+C             Windows machine.  A person wanting to compile metis for a Windows
+C             based PC would select all the routines in the Lib folder and
+C             would also include the gettimeofday.h routine in the Windows
+C             folder and would use a -WINDOWS pre-processor flag in addition to
+C             the other pre-processor flags in the normal makefile.  
+C             NOTE:  Only use the gettimeofday.h for Windows machines,
+C             Linux/Unix machines typically already have it installed. 
+C             These changes to metis do not change the usual building or 
+C             functionality of metis on Linux/Unix machines. 
 C  v49.82   - 04/26/2011 - jgf - Fixed initialization issue in netcdf when
 C             netcdf hotstart file was requested in 3D but no other fulldomain
 C             netcdf output was requested; removed warning message about 
