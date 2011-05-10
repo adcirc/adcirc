@@ -379,7 +379,11 @@ C
       DO PE=0, MNPROC-1
          PENUM  = 'PE0000'
          CALL IWRITE(PENUM,3,6,PE)
+#ifdef PC_DIG_FORT  !tcm 20110510 v50.05 adding support for windows
+         call  system('mkdir '//PENUM)
+#else
          CALL MAKEDIR(PENUM)
+#endif
       ENDDO
 C
 C-- Write a Local Grid File ( fort.14 ) for each PE

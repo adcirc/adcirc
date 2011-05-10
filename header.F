@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.05   - 05/10/2011 - tcm - added support in adcprep for compilation 
+C             on Window's based PC.  Fixed a couple of stray bugs related
+C             to character lengths in prep.F and added the NOFF variable to
+C             hs_2_ascii.F.
 C  v50.04   - 05/10/2011 - jgf - Fixed stray metadata in netcdf file due to
 C             nvelnc not being defined correctly.
 C  v50.03   - 05/09/2011 - jgf - Applied fixes to timestep.F and ipackv.F from
