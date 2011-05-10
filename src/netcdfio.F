@@ -112,11 +112,9 @@ C
          INTEGER :: nbdvnc_id       ! nodes on elev spec boundary seg
          INTEGER :: nbvvnc_id       ! nodes on normal flow boundary seg
          INTEGER :: nvdllnc_id      ! num nodes on elev boundary seg
-         INTEGER :: nbounc_id
          INTEGER :: ibtypenc_id   ! discharge boundary type
          INTEGER :: ibtypeenc_id  ! elevation boundary type
          INTEGER :: nvellnc_id    ! nodes on norm flow spec boundary seg
-         INTEGER :: nopenc_id  
          INTEGER :: max_nvdllnc_id ! max num nodes on any elev boundary seg
          INTEGER :: max_nvellnc_id ! max num nodes on any discharge boundary seg
          INTEGER :: slam0nc_id
@@ -129,9 +127,7 @@ C
          INTEGER :: num_elems_dim_id
          INTEGER :: nface_dim_id
          INTEGER :: nopenc_dim_id   ! num elev spec boundary forcing segs
-         INTEGER :: netanc_dim_id   ! total number of elevation specified boundary nodes
          INTEGER :: nbounc_dim_id  ! number of normal flow specified boundary segment
-         INTEGER :: nvelnc_dim_id  ! total number of normal flow specified boundary nodes
          INTEGER :: ibtypenc_dim_id
          INTEGER :: ibtypeenc_dim_id  ! elevation boundary types
          INTEGER :: max_nvdllnc_dim_id
@@ -142,9 +138,7 @@ C
          INTEGER :: num_elems
          INTEGER :: nface_len
          INTEGER :: nopenc
-         INTEGER :: netanc
          INTEGER :: nbounc
-         INTEGER :: nvelnc
          INTEGER :: max_nvdllnc
          INTEGER :: max_nvellnc
          INTEGER :: num_v_nodes
@@ -171,13 +165,11 @@ C
          INTEGER :: ele_dims(2)
          INTEGER :: nvdll_dims(1)
          INTEGER :: nbounc_dims(1)
-         INTEGER :: nvelnc_dims(1)
          INTEGER :: ibtypenc_dims(1)
          INTEGER :: ibtypeenc_dims(1)
          INTEGER :: nvellnc_dims(1)
          INTEGER :: nvdllnc_dims(1)
          INTEGER :: nopenc_dims(1)
-         INTEGER :: netanc_dims(1)
          INTEGER :: nbdvnc_dims(2)
          INTEGER :: nbvvnc_dims(2)
          INTEGER :: igc_dims(1)
@@ -194,6 +186,8 @@ C
          INTEGER, ALLOCATABLE ::  nmnc(:,:) 
          INTEGER, ALLOCATABLE ::  element(:,:)
          REAL(SZ), ALLOCATABLE :: igc(:) ! nondimensional vertical coordinates
+         INTEGER :: netanc
+         INTEGER :: nvelnc
       END TYPE meshStructure
 
       type(meshStructure), private, save, target :: adcircMesh 
@@ -1482,9 +1476,9 @@ C
 #endif
 C
       myMesh%nopenc = nope
-      myMesh%netanc = neta
       myMesh%nbounc = nbou
-      myMesh%nvelnc = nvel*2 ! mimic the upper bound from read_input.F
+      myMesh%netanc = neta
+      myMesh%nvelnc = nvel
       myMesh%max_nvdllnc = maxval(nvdll) ! dimension of seg with most nodes
       myMesh%max_nvellnc =2*maxval(nvell) ! dimension of seg with most nodes    
 C
@@ -7178,9 +7172,6 @@ C
          iret = nf_def_dim(ncid,'nope', myMesh%nopenc,
      &         myMesh%nopenc_dim_id)
          call check_err(iret)
-         iret = nf_def_dim(ncid,'neta', myMesh%netanc,
-     &         myMesh%netanc_dim_id)
-         call check_err(iret)
          iret = nf_def_dim(ncid,'max_nvdll', myMesh%max_nvdllnc,
      &         myMesh%max_nvdllnc_dim_id)
          call check_err(iret)
@@ -7188,9 +7179,6 @@ C
       if(myMesh%nbounc.ne.0) then
          iret = nf_def_dim(ncid, 'nbou',
      &          myMesh%nbounc, myMesh%nbounc_dim_id)
-         call check_err(iret)
-         iret = nf_def_dim(ncid, 'nvel',
-     &          myMesh%nvelnc, myMesh%nvelnc_dim_id)
          call check_err(iret)
          iret = nf_def_dim(ncid, 'max_nvell',
      &          myMesh%max_nvellnc, myMesh%max_nvellnc_dim_id)
@@ -7215,10 +7203,8 @@ C
       CALL check_err(iret)
 !     Define elevation specified boundary forcing segments information
       if (myMesh%nopenc.ne.0) then
-C         iret = nf_def_var(ncid,'nope', NF_INT, 1, 1, myMesh%nopenc_id) 
-C         CALL check_err(iret)
-C         iret = nf_def_var(ncid,'neta', NF_INT, 1, 1, myMesh%netanc_id) 
-C         CALL check_err(iret)
+         iret = nf_def_var(ncid,'neta', NF_INT, 1, 1, myMesh%netanc_id) 
+         CALL check_err(iret)
          myMesh%nvdllnc_dims(1) = myMesh%nopenc_dim_id      
          iret = nf_def_var(ncid, 'nvdll',NF_INT, myMesh%nvdllnc_rank, 
      &                  myMesh%nvdllnc_dims, myMesh%nvdllnc_id)
@@ -7240,10 +7226,8 @@ C         myMesh%nbdvnc_dims(2) = myMesh%netanc_dim_id
       endif
 !     Define normal flow boundary information
       if (myMesh%nbounc.ne.0) then
-C         iret = nf_def_var(ncid,'nbou', NF_INT, 1, 1, myMesh%nbounc_id) 
-C         CALL check_err(iret)
-C         iret = nf_def_var(ncid,'nvel', NF_INT, 1, 1, myMesh%nvelnc_id) 
-C         CALL check_err(iret)
+         iret = nf_def_var(ncid,'nvel', NF_INT, 1, 1, myMesh%nvelnc_id) 
+         CALL check_err(iret)
          myMesh%nvellnc_dims(1) = myMesh%nbounc_dim_id      
          iret = nf_def_var(ncid, 'nvell',NF_INT, myMesh%nvellnc_rank, 
      &          myMesh%nvellnc_dims, myMesh%nvellnc_id)
@@ -7290,14 +7274,14 @@ C     the value of ICS
 !     Define text attributes for boundary segments
       if (myMesh%nopenc.ne.0) then
 C        NOPE
-         att_text = "number of elevation specified boundary &
-     &forcing segments"
-         iret = nf_put_att_text(ncid, myMesh%nopenc_id, 'long_name',
-     &          len_trim(att_text), trim(att_text)) 
-         CALL check_err(iret)
-         iret = nf_put_att_text(ncid, myMesh%nopenc_id, 'units', 14, 
-     &                     VAR_NOND)
-         CALL check_err(iret)
+C         att_text = "number of elevation specified boundary &
+C     &forcing segments"
+C         iret = nf_put_att_text(ncid, myMesh%nopenc_id, 'long_name',
+C     &          len_trim(att_text), trim(att_text)) 
+C         CALL check_err(iret)
+C         iret = nf_put_att_text(ncid, myMesh%nopenc_id, 'units', 14, 
+C     &                     VAR_NOND)
+C         CALL check_err(iret)
 C        NETA
          att_text = "total number of elevation specified & 
      &boundary nodes"
@@ -7336,14 +7320,14 @@ C        NBDV
       endif
       if (myMesh%nbounc.ne.0) then
 C        NBOU
-         att_text = "number of normal flow (discharge) specified &
-     &boundary segments"
-         iret = nf_put_att_text(ncid, myMesh%nbounc_id, 'long_name',
-     &          len_trim(att_text), trim(att_text))
-         CALL check_err(iret)
-         iret = nf_put_att_text(ncid, myMesh%nbounc_id, 'units', 14, 
-     &                      VAR_NOND)
-         CALL check_err(iret)
+C         att_text = "number of normal flow (discharge) specified &
+C     &boundary segments"
+C         iret = nf_put_att_text(ncid, myMesh%nbounc_id, 'long_name',
+C     &          len_trim(att_text), trim(att_text))
+C         CALL check_err(iret)
+C         iret = nf_put_att_text(ncid, myMesh%nbounc_id, 'units', 14, 
+C     &                      VAR_NOND)
+C         CALL check_err(iret)
 C        NVEL
          att_text = "total number of normal flow specified boundary & 
      &nodes including both the front and back nodes on internal barrier&
@@ -7504,11 +7488,9 @@ C
       call check_err(iret)
 !     Store elevation boundary information
       if(myMesh%nopenc.ne.0) then
-C         iret = nf_put_var_int(ncid, myMesh%nopenc_id, myMesh%nopenc)
-C         CALL check_err(iret)
-C         iret = nf_put_var_int(ncid, myMesh%netanc_id ,myMesh%netanc)
+         iret = nf_put_var_int(ncid, myMesh%netanc_id, myMesh%netanc)
          CALL check_err(iret)
-         iret = nf_put_var_int(ncid, myMesh%nvdllnc_id ,myMesh%nvdllnc)
+         iret = nf_put_var_int(ncid, myMesh%nvdllnc_id, myMesh%nvdllnc)
          CALL check_err(iret)
          iret = nf_put_var_int(ncid, myMesh%max_nvdllnc_id,
      &          myMesh%max_nvdllnc)
@@ -7521,10 +7503,8 @@ C         iret = nf_put_var_int(ncid, myMesh%netanc_id ,myMesh%netanc)
       endif
 !     Store normal flow boundary information
       if(myMesh%nbounc.ne.0) then
-C         iret = nf_put_var_int(ncid, myMesh%nbounc_id, myMesh%nbounc)
-C         CALL check_err(iret)
-C         iret = nf_put_var_int(ncid, myMesh%nvelnc_id, myMesh%nvelnc)
-C         CALL check_err(iret)
+         iret = nf_put_var_int(ncid, myMesh%nvelnc_id, myMesh%nvelnc)
+         CALL check_err(iret)
          iret = nf_put_var_int(ncid,myMesh%ibtypenc_id, myMesh%ibtypenc)
          CALL check_err(iret)
          iret = nf_put_var_int(ncid, myMesh%nvellnc_id, myMesh%nvellnc)
