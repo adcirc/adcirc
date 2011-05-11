@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.82.01  05/11/2011 - jgf - Fixed stray metadata in netcdf file due to
+C             nvelnc not being defined correctly.
 C  v49.82   - 04/26/2011 - jgf - Fixed initialization issue in netcdf when
 C             netcdf hotstart file was requested in 3D but no other fulldomain
 C             netcdf output was requested; removed warning message about 
