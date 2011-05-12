@@ -2593,7 +2593,7 @@ C--Enter, Locate, Open, and Read the ADCIRC UNIT 36
 C  Global Salinity Boundary Conditions file for baroclinic
 C
 C     Open full domain and subdomain fort.36 files
-      CALL OpenPrepFiles(36, 'salinity boundary  ',
+      CALL OpenPrepFiles(36, 'salinity boundary             ',
      &     1, nproc, SDU, Success)
       IF (.not.Success) THEN
          WRITE(*,*) 'WARNING: Unit 36 files not preprocessed.'
@@ -2678,7 +2678,7 @@ C--Enter, Locate, Open, and Read the ADCIRC UNIT 37
 C  Global Temperature Boundary Conditions file for baroclinic
 C
 C     Open full domain and subdomain fort.37 files
-      CALL OpenPrepFiles(37, 'temperature boundary  ',
+      CALL OpenPrepFiles(37, 'temperature boundary          ',
      &     1, nproc, SDU, Success)
       IF (.not.Success) THEN
          WRITE(*,*) 'WARNING: Unit 37 files not preprocessed.'
@@ -2765,7 +2765,7 @@ C--Enter, Locate, Open, and Read the ADCIRC UNIT 38
 C  Global Salinity Boundary Conditions file for baroclinic
 C
 C     Open full domain and subdomain fort.38 files
-      CALL OpenPrepFiles(38, 'top temperature boundary  ',
+      CALL OpenPrepFiles(38,'top temperature boundary      ',
      &     1, nproc, SDU, Success)
       IF (.not.Success) THEN
          WRITE(*,*) 'WARNING: Unit 38 files not preprocessed.'
