@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.82.03  05/15/2011 - jgf - Applied fixes to timestep.F and ipackv.F from
+C             st to fix issue when the NeiMax node is on a boundary.
 C  v49.82.02  05/12/2011 - jgf - Fixed character string constant descriptions
 C             that were not the correct size in prep.F.
 C  v49.82.01  05/11/2011 - jgf - Fixed stray metadata in netcdf file due to

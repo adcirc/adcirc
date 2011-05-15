@@ -1935,7 +1935,7 @@ c
 C      maxm1 = maxnz-1  !jgf46.00 commented out
 C      call ymasx2 (ndim,n,maxm1,coef(1,2),jcoef(1,2),rhs,u)!jgf46.00 comm.out
 C     jgf46.00 Begin add.
-      do j = 2,maxnz-1
+      do j = 2,maxnz ! jgf50.03: st3 from maxnz-1, Bug fix, 06.02.2010 
       do i = 1,n
          rhs(i) = rhs(i) - coef(i,j)*u(jcoef(i,j))
       enddo
@@ -1973,7 +1973,7 @@ c
 C      maxm1 = maxnz-1 !jgf46.00 commented out
 C      call ypasx2 (ndim,n,maxm1,coef(1,2),jcoef(1,2),c,b) !jgf46.00 comm.out
 C     jgf46.00 Begin add.
-      do j = 2,maxnz-1
+      do j = 2,maxnz !jgf50.03: st3 from maxnz-1, Bug fix, 06.02.2010
       do i = 1,n
          c(i) = c(i) - coef(i,j)*b(jcoef(i,j))
       enddo

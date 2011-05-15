@@ -2965,11 +2965,7 @@ c     WRITE(16,3806)
  3806    FORMAT(/,1X,'RE-SETTING GWCE SYSTEM MATRIX',/)
 
 C.....Set up the LHS matrix (for the iterative matrix solver)
-         DO I=1,NP
-            DO J=1,NEIMAX
-               COEF(I,J)=0.0d0
-            END DO
-         END DO
+         COEF(:,:)=0.0d0
 
          DO IE=1,NE
             NMI1=NM(IE,1)
@@ -3865,15 +3861,9 @@ c        WRITE(16,3806)
 
 C.....Set up the LHS matrix (for the iterative matrix solver)
          IF ( ILump.eq.0 ) THEN ! default, fully consistent case
-            DO I=1,NP
-               DO J=1,NeiMax
-                  Coef(I,J)=0.0d0
-               ENDDO
-            ENDDO
+            Coef(:,:)=0.0d0
          ELSE ! jgf48.4619: ILump.eq.1, only need the diagonals (Seizo)
-            DO I=1,NP
-               Coefd(I)=0.0d0    ! Only Diagnal
-            ENDDO
+            Coefd(:)=0.0d0    ! Only Diagnal
          ENDIF
 C
 C        jgf47.08 Moved time-varying tau0 subroutine to nodalattr.F
