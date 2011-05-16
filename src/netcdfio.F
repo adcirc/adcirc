@@ -4798,6 +4798,7 @@ C-----------------------------------------------------------------------
 C     jgf49.49.02 Allocates memory for netcdf 3D data.
 C-----------------------------------------------------------------------
       SUBROUTINE allocateNetCDFHotstart3D(lun)
+      USE SIZES, ONLY : MNPROC
       USE GLOBAL, ONLY : NE_G, NP_G, IDEN
       USE GLOBAL_3DVS, ONLY : NFEN
       IMPLICIT NONE
@@ -4817,6 +4818,13 @@ C     Point to the hotstart file we want to work on.
 C
 C     nodes and elements
       hs%myMesh => adcircMesh
+C
+
+C     jgf50.06: If this is called during a parallel run, and all other 
+C     fulldomain 3D output is turned off, the number of vertical nodes will not C     have been set. 
+      IF (MNPROC.gt.1) THEN
+         hs%myMesh%num_v_nodes = NFEN
+      ENDIF
 C
       ALLOCATE(hs%duu%nodal_data(hs%myMesh%num_nodes,
      &       hs%myTime%timenc_len))
@@ -5823,6 +5831,7 @@ C     Get the NetCDF ID of the relevant variable from the file
          iret = nf_put_vara_DOUBLE(hs%ncid, 
      &       hs%density3D%u_nodal_data_id, start, kount, 
      &       hs%density3D%u_nodal_data)
+         CALL check_err(iret)   
       CASE("Salinity")
          iret=nf_inq_varid(hs%ncid,"salinity",
      &      hs%density3D%v_nodal_data_id)
@@ -5835,6 +5844,7 @@ C     Get the NetCDF ID of the relevant variable from the file
          iret = nf_put_vara_DOUBLE(hs%ncid, 
      &       hs%density3D%v_nodal_data_id, start, kount, 
      &       hs%density3D%v_nodal_data)
+         CALL check_err(iret)   
       CASE("Temperature")
          iret=nf_inq_varid(hs%ncid,"temperature",
      &      hs%density3D%nodal_data_id)
@@ -5847,6 +5857,7 @@ C     Get the NetCDF ID of the relevant variable from the file
          iret = nf_put_vara_DOUBLE(hs%ncid, 
      &       hs%density3D%w_nodal_data_id, start, kount, 
      &       hs%density3D%w_nodal_data)
+         CALL check_err(iret)   
       CASE("u-vel3D")
          iret=nf_inq_varid(hs%ncid,"u-vel3D",
      &      hs%velocity3D%u_nodal_data_id)
@@ -5859,6 +5870,7 @@ C     Get the NetCDF ID of the relevant variable from the file
          iret = nf_put_vara_DOUBLE(hs%ncid, 
      &       hs%velocity3D%u_nodal_data_id, start, kount, 
      &       hs%velocity3D%u_nodal_data)
+         CALL check_err(iret)   
       CASE("v-vel3D")
          iret=nf_inq_varid(hs%ncid,"v-vel3D",hs%velocity3D%v_nodal_data_id)
          CALL check_err(iret)
@@ -5870,6 +5882,7 @@ C     Get the NetCDF ID of the relevant variable from the file
          iret = nf_put_vara_DOUBLE(hs%ncid, 
      &       hs%velocity3D%v_nodal_data_id, start, kount, 
      &       hs%velocity3D%v_nodal_data)
+         CALL check_err(iret)   
       CASE("w-vel3D")
          iret=nf_inq_varid(hs%ncid,"w-vel3D",hs%velocity3D%w_nodal_data_id)
          CALL check_err(iret)
@@ -5881,6 +5894,7 @@ C     Get the NetCDF ID of the relevant variable from the file
          iret = nf_put_vara_DOUBLE(hs%ncid, 
      &       hs%velocity3D%w_nodal_data_id, start, kount, 
      &       hs%velocity3D%w_nodal_data)
+         CALL check_err(iret)   
       CASE("q20")
          iret=nf_inq_varid(hs%ncid,"q20",hs%turbulence3D%u_nodal_data_id)
          CALL check_err(iret)
@@ -5893,8 +5907,9 @@ C     Get the NetCDF ID of the relevant variable from the file
          iret = nf_put_vara_DOUBLE(hs%ncid, 
      &       hs%turbulence3D%u_nodal_data_id, start, kount, 
      &       hs%turbulence3D%u_nodal_data)
+         CALL check_err(iret)   
       CASE("l")
-         iret=nf_inq_varid(hs%ncid,"l",hs%turbulence3D%nodal_data_id)
+         iret=nf_inq_varid(hs%ncid,"l",hs%turbulence3D%v_nodal_data_id)
          CALL check_err(iret)
          IF (MNPROC.eq.1) THEN
             hs%turbulence3D%v_nodal_data(:,:,kount(3))= descript%array2D
@@ -5905,6 +5920,7 @@ C     Get the NetCDF ID of the relevant variable from the file
          iret = nf_put_vara_DOUBLE(hs%ncid, 
      &       hs%turbulence3D%v_nodal_data_id, start, kount, 
      &       hs%turbulence3D%v_nodal_data)
+         CALL check_err(iret)   
       CASE DEFAULT
 
       END SELECT

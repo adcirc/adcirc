@@ -3,6 +3,15 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.06   - 05/16/2011 - jgf - Fixed issue where 3D netcdf hotstart file
+C             was requested but no other fulldomain 3D netcdf output was 
+C             requested (had to initialize num_v_nodes to NFEN in netcdfio.F).
+C             Added some check_err calls to netcdfio.F  where they were 
+C             previously missing. Fixed an issue with turbulence length
+C             scale output in netcdf (nodal_data_id was referenced rather than
+C             v_nodal_data_id). Fixed format issue with NHSTAR in read_input.F.
+C             Initialized E0XGrad2A and E0YGrad2A in timestep.F to zero
+C             to appease Intel compiler. 
 C  v50.05   - 05/10/2011 - tcm - added support in adcprep for compilation 
 C             on Window's based PC.  Fixed a couple of stray bugs related
 C             to character lengths in prep.F and added the NOFF variable to
