@@ -10,6 +10,7 @@ C
 #ifdef CSWAN
 Casey 090302: Include the following routines for coupling to unstructured SWAN.
       USE Couple2swan, ONLY: PADCSWAN_INIT, PADCSWAN_FINAL
+      USE SIZES, ONLY: MNPROC,MYPROC
 #endif
 C
       IMPLICIT NONE
@@ -20,14 +21,22 @@ C
 Casey 090302: Allow SWAN to initialize stuff before the start
 C             of the time step loop.  This subroutine is inside
 C             the 'couple2swan.F' src file.
-      CALL PADCSWAN_INIT
+Casey 110516: Added this IF statement to prevent the writer cores
+C             from entering SWAN.
+      IF(MYPROC.LT.MNPROC)THEN
+         CALL PADCSWAN_INIT
+      ENDIF
 #endif
 C
       CALL ADCIRC_Run
 C
 #ifdef CSWAN
 Casey 090302: Let SWAN clean up stuff.
-      CALL PADCSWAN_FINAL
+Casey 110516: Added this IF statement to prevent the writer cores
+C             from entering SWAN.
+      IF(MYPROC.LT.MNPROC)THEN
+         CALL PADCSWAN_FINAL
+      ENDIF
 #endif
 C
       CALL ADCIRC_Final
