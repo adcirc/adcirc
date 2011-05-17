@@ -3,6 +3,15 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.82.05  05/16/2011 - jgf - Fixed issue where 3D netcdf hotstart file
+C             was requested but no other fulldomain 3D netcdf output was 
+C             requested (had to initialize num_v_nodes to NFEN in netcdfio.F).
+C             Added some check_err calls to netcdfio.F  where they were 
+C             previously missing. Fixed an issue with turbulence length
+C             scale output in netcdf (nodal_data_id was referenced rather than
+C             v_nodal_data_id). Fixed format issue with NHSTAR in read_input.F.
+C             Initialized E0XGrad2A and E0YGrad2A in timestep.F to zero
+C             to appease Intel compiler. 
 C  v49.82.04  05/16/2011 - jcd - Applied fix to driver.F to prevent the writer
 C             cores from entering SWAN.
 C  v49.82.03  05/15/2011 - jgf - Applied fixes to timestep.F and ipackv.F from

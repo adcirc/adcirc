@@ -3254,10 +3254,13 @@ C     3 D  V E L O C I T Y
             ENDIF
          CASE(3,367,368)
 #ifdef NETCDF
-            IF (myProc.eq.0) THEN
+            IF ((MNPROC.eq.1).or.
+     &         (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
                rp = real(q)
-               CALL writeNetCDFHotstart3DVar(hss%lun, RealQDescript)
                ip = aimag(q)
+            ENDIF
+            IF (myProc.eq.0) THEN
+               CALL writeNetCDFHotstart3DVar(hss%lun, RealQDescript)
                CALL writeNetCDFHotstart3DVar(hss%lun,ImaginaryQDescript)
                CALL writeNetCDFHotstart3DVar(hss%lun, WZDescript)
             ENDIF

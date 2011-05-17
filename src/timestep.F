@@ -4374,6 +4374,8 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 
 C...     Compute part of several spatial gradients for use below
 
+         E0XGrad2A = 0.0d0
+         E0YGrad2A = 0.0d0
          IF (ILump.eq.0) THEN
             E0XGrad2A=E0N1*FDX1+E0N2*FDX2+E0N3*FDX3        !2*Area*deta0/dx
             E0YGrad2A=E0N1*FDY1+E0N2*FDY2+E0N3*FDY3        !2*Area*deta0/dy

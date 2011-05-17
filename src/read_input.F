@@ -5011,7 +5011,7 @@ C
      &      (NHSTAR.EQ.267).OR.(NHSTAR.EQ.268).OR.
      &      (NHSTAR.EQ.367).OR.(NHSTAR.EQ.368) ) THEN
             WRITE(16,34626) NHSTAR
-34626       FORMAT(/,5X,'ADCIRC will stop after writing to unit ',I2)
+34626       FORMAT(/,5X,'ADCIRC will stop after writing to unit ',I3)
          ENDIF
 C
       CASE DEFAULT  ! not an allowable NHSTAR value
