@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.07   - 05/18/2011 - jgf - Added missing subroutine call to 
+C             readNetCDFHotstart3D in hstart.F; cleaned up typos in the
+C             netcdf 3D hotstart reading subroutine.
 C  v50.06   - 05/16/2011 - jgf - Fixed issue where 3D netcdf hotstart file
 C             was requested but no other fulldomain 3D netcdf output was 
 C             requested (had to initialize num_v_nodes to NFEN in netcdfio.F).
