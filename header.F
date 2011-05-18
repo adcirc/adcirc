@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.09   - 05/18/2011 - jcd - Incorporated Powell's sector-based wind drag
+C             scheme, which is controlled by the -DPOWELL compiler flag.
+C             Also corrected a few bugs.
 C  v50.08   - 05/18/2011 - jgf - Changed node to rawNode in subroutine that
 C             reads in min/max files ... not sure if this caused any issues
 C             but the Intel compiler complained; fixed format statement for
