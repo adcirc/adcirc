@@ -76,6 +76,13 @@ C---------------------end of data declarations--------------------------------C
 Casey 090527: Debug.
       ROOTDIR = "."
 
+Cobell 110518: Add compiler flag for local hot start.
+#ifdef LOCALHOT
+      WRITE_LOCAL_HOT_START_FILES = .TRUE.
+#else
+      WRITE_LOCAL_HOT_START_FILES = .FALSE.
+#endif
+
       IF ( MNPROC.EQ.1 ) THEN
          WRITE_LOCAL_FILES = .TRUE.
          WRITE_LOCAL_HOT_START_FILES = .TRUE.

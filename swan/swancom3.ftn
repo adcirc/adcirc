@@ -532,7 +532,9 @@
      &                   FPM        ,UFRIC      ,
      &                   WX2        ,WY2        ,
      &                   ANYWND     ,SPCDIR     ,                         40.00
-     &                   UX2        ,UY2        ,SPCSIG     )             30.70
+!NADC     &                   UX2        ,UY2        ,SPCSIG     )             30.70
+!ADC     &                   UX2,UY2,SPCSIG,NodeNumber)
+!Casey 110518: Use ADCIRC's new sector-based wind drag.
 !
 !****************************************************************
 !
@@ -544,7 +546,8 @@
       USE SWCOMM2                                                         40.41
       USE SWCOMM3                                                         40.41
       USE SWCOMM4                                                         40.41
-!
+!Casey 110518: Use ADCIRC's new sector-based wind drag.
+!ADC      USE WIND, ONLY: WindDrag
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
@@ -722,6 +725,9 @@
 !
 !***********************************************************************
 !
+!Casey 110518: Use ADCIRC's new sector-based wind drag.
+!ADC      INTEGER, OPTIONAL :: NodeNumber
+!
       INTEGER      IDWMIN ,IDWMAX                                         30.70
 !
       REAL         WIND10 ,THETAW ,                                       30.70
@@ -864,10 +870,13 @@
 !Casey 081013: Apply a cap to the wind drag coefficient.
 !Casey 091217: Lower the wind drag limit from 0.0035 to 0.0020.
 !NADC          UFRIC = WIND10 * SQRT (( 0.8 + 0.065 * WIND10 ) * 0.001 )
-!ADC          CDRAG = 0.001 * (0.8 + 0.065 * WIND10)
+!ADC          CDRAG = 0.001 * (0.8 + 0.065 * WIND10)                    
 !ADC          IF(CDRAG.GT.0.0020)THEN
 !ADC            CDRAG = 0.0020
 !ADC          ENDIF
+!ADC          UFRIC = WIND10 * SQRT( CDRAG )
+!Casey 110518: Use ADCIRC's new sector-based wind drag.
+!ADC          CDRAG = WindDrag(DBLE(WIND10),0.002D0,"Powell    ",NodeNumber)
 !ADC          UFRIC = WIND10 * SQRT( CDRAG )
         ELSE
           CDRAG = 0.0012873

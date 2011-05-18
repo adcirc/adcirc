@@ -339,6 +339,23 @@ C
          ENDIF
       ENDDO
 
+Casey 110518: Added this change from Seizo.
+!     Send <=> Receive Proc CHECK & CORRECTION !st3 06.19.2009
+      DO I = 1, NPROC
+         DO J = 1, NUM_COMM_PE(I)
+            INDX = COMM_PE_NUM(J,I)
+            ITOT = 0
+            DO K = 1, NUM_COMM_PE(INDX)
+               INDX2 = COMM_PE_NUM(K,INDX)
+               IF( I == INDX2 ) ITOT = 1
+            ENDDO
+            IF( ITOT == 0 ) THEN
+               NUM_COMM_PE(INDX) = NUM_COMM_PE(INDX) + 1
+               COMM_PE_NUM( NUM_COMM_PE(INDX), INDX )  = I
+            ENDIF
+         ENDDO
+      ENDDO
+
 C STEP 9:
 C--Construct a Global-to-Local node mapping: IMAP_NOD_GL2(*,J)
 C  This is not a function, but is rather a relation

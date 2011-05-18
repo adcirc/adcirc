@@ -972,12 +972,22 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+Casey 110518: Enable Mark Powell's sector-based wind drag.
+#ifdef POWELL
+            WDragCo = WindDrag(WindMag, WindDragLimit, "Powell    ", I)
+#else
             WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+#endif
             IF (LoadDirEffRLen) THEN
               CALL ApplyDirectionalWindReduction(I, WDragCo,
      &             WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
               WindMag = SQRT(WindX*WindX+WindY*WindY) 
+Casey 110518: Enable Mark Powell's sector-based wind drag.
+#ifdef POWELL
+              WDragCo = WindDrag(WindMag, WindDragLimit, "Powell    ", I)
+#else
               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+#endif
             ENDIF
 C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN

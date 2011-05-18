@@ -11,6 +11,13 @@ C
       use messenger, only : msg_fini
 #endif
 
+#ifdef POWELL
+Casey 110518: Added for Mark Powell's sectorial wind drag.
+      REAL(SZ) :: EyeLatR(3) = 0.D0
+      REAL(SZ) :: EyeLonR(3) = 0.D0
+      LOGICAL  :: FoundEye
+#endif
+
 C
 C
 C***********************************************************************
@@ -69,16 +76,187 @@ C     windspeed.
 C       
 C     ----------------------------------------------------------------
       REAL(SZ) FUNCTION WindDrag(WindSpeed, DragLimit, 
-     &      DragLawString)
+     &      DragLawString, NodeNumber)
+#ifdef POWELL
+Casey 110518: Added variables for Mark Powell's sector-based wind drag.
+      USE GLOBAL, ONLY: DEG2RAD,
+     &                  SFEA,
+     &                  SLAM
+      INTRINSIC :: ATAN2
+      INTRINSIC :: MOD
+      INTEGER   :: IS
+      LOGICAL   :: FoundSector
+      REAL(SZ)  :: Dir1
+      REAL(SZ)  :: Dir2
+      REAL(SZ)  :: Drag(3)
+      REAL(SZ)  :: NodeDirection
+      REAL(SZ)  :: NodeLat
+      REAL(SZ)  :: NodeLon
+      REAL(SZ)  :: StormDirection
+      REAL(SZ)  :: Weight(3)
+#endif
+      CHARACTER(LEN=10) :: DragLawStringInternal
+      INTEGER,OPTIONAL :: NodeNumber
+C
       REAL(SZ) WindSpeed
       REAL(SZ) DragLimit
       CHARACTER(len=10) DragLawString
 C
-      SELECT CASE(TRIM(DragLawString))
+Casey 110518: Fix a bug with some compilers.
+      WRITE(DragLawStringInternal,'(A10)') DragLawString
+Casey 110518: Added Mark Powell's sector-based wind drag.
+#ifndef POWELL
+      IF(INDEX(DragLawStringInternal,"Powell").GT.0)THEN
+         WRITE(DragLawStringInternal,'(A)') "Garratt   "
+      ENDIF
+#endif
+C
+      SELECT CASE(TRIM(DragLawStringInternal))
 C
       CASE("Garratt")
          WindDrag = 0.001d0*(0.75d0+0.067d0*WindSpeed)
+         IF(WindDrag.gt.DragLimit) WindDrag=DragLimit
 C
+#ifdef POWELL
+Casey 110518: Added Mark Powell's sector-based wind drag.
+      CASE("Powell")
+C.. Check whether we have previously found the eye.
+         IF((EyeLatR(1).EQ.0.D0).OR.(EyeLonR(1).EQ.0.D0).OR.
+     &      (EyeLatR(2).EQ.0.D0).OR.(EyeLonR(2).EQ.0.D0).OR.
+     &      (EyeLatR(3).EQ.0.D0).OR.(EyeLonR(3).EQ.0.D0))THEN
+            FoundEye = .FALSE.
+         ENDIF
+C.. If the eye has not been found then apply Garratt.
+         WindDrag = 0.001D0*(0.75D0+0.067D0*WindSpeed)
+         IF(.NOT.FoundEye)THEN
+            FoundSector = .FALSE.
+            Weight = 0.D0
+            IF(WindDrag.GT.DragLimit) WindDrag = DragLimit
+         ELSE
+C.. We have found the eye!
+C.. Compute the storm's direction.  We use the convention of northward
+C.. being zero degrees, and then cycling clockwise.
+            Dir1 = ATAN2(EyeLatR(2)-EyeLatR(1),EyeLonR(2)-EyeLonR(1))
+            Dir2 = ATAN2(EyeLatR(3)-EyeLatR(2),EyeLonR(3)-EyeLonR(2))
+            StormDirection = ATAN2(SIN(Dir1)+SIN(Dir2),COS(Dir1)+COS(Dir2))
+            StormDirection = StormDirection/DEG2RAD
+            StormDirection = 90.D0 - StormDirection
+            IF(StormDirection.LT.0.D0)THEN
+               StormDirection = StormDirection + 360.D0
+            ENDIF
+C.. Compute the direction of node relative to the eye.
+            NodeLon = SLAM(NodeNumber)/DEG2RAD
+            NodeLat = SFEA(NodeNumber)/DEG2RAD
+            NodeDirection = ATAN2(NodeLat-EyeLatR(3),NodeLon-EyeLonR(3))
+            NodeDirection = NodeDirection/DEG2RAD
+            NodeDirection = 90.D0 - NodeDirection
+            IF(NodeDirection.LT.0.D0)THEN
+               NodeDirection = NodeDirection + 360.D0
+            ENDIF
+C.. Compute the weights for the sector in which the node is located.
+C..     0- 40 : Transition from left (3) to right (1).
+C..    40-130 : Right (1).
+C..   130-170 : Transition from right (1) to rear (2).
+C..   170-220 : Rear (2).
+C..   220-260 : Transition from rear (2) to left (3).
+C..   260-  0 : Left (3).
+            FoundSector = .FALSE.
+            DO IS=1,6
+               IF(IS.EQ.1)THEN
+                  Dir1 = MOD(StormDirection+  0.D0,360.D0)
+                  Dir2 = MOD(StormDirection+ 40.D0,360.D0)
+               ELSEIF(IS.EQ.2)THEN
+                  Dir1 = MOD(StormDirection+ 40.D0,360.D0)
+                  Dir2 = MOD(StormDirection+130.D0,360.D0)
+               ELSEIF(IS.EQ.3)THEN
+                  Dir1 = MOD(StormDirection+130.D0,360.D0)
+                  Dir2 = MOD(StormDirection+170.D0,360.D0)
+               ELSEIF(IS.EQ.4)THEN
+                  Dir1 = MOD(StormDirection+170.D0,360.D0)
+                  Dir2 = MOD(StormDirection+220.D0,360.D0)
+               ELSEIF(IS.EQ.5)THEN
+                  Dir1 = MOD(StormDirection+220.D0,360.D0)
+                  Dir2 = MOD(StormDirection+260.D0,360.D0)
+               ELSEIF(IS.EQ.6)THEN
+                  Dir1 = MOD(StormDirection+260.D0,360.D0)
+                  Dir2 = MOD(StormDirection+  0.D0,360.D0)
+               ENDIF
+               IF(Dir1.GT.Dir2)THEN
+                  IF((Dir1.LE.NodeDirection).AND.(NodeDirection.LE.360.D0))THEN
+                     Dir2 = Dir2 + 360.D0
+                  ELSEIF((0.D0.LE.NodeDirection).AND.(NodeDirection.LE.Dir2))THEN
+                     Dir1 = Dir1 - 360.D0
+                  ENDIF
+               ENDIF
+               IF((Dir1.LE.NodeDirection).AND.(NodeDirection.LE.Dir2))THEN
+                  IF(MOD(IS,2).EQ.0)THEN
+                     FoundSector = .TRUE.
+                     Weight = 0.D0
+                     Weight(IS/2) = 1.D0
+                  ELSE
+                     FoundSector = .TRUE.
+                     Weight = 0.D0
+                     IF(IS.EQ.1)THEN
+                        IW1 = 3
+                        IW2 = 1
+                     ELSEIF(IS.EQ.3)THEN
+                        IW1 = 1
+                        IW2 = 2
+                     ELSEIF(IS.EQ.5)THEN
+                        IW1 = 2
+                        IW2 = 3
+                     ENDIF
+                     Weight(IW1) = 1.D0 + (0.D0-1.D0)/(Dir2-Dir1)*(NodeDirection-Dir1)
+                     Weight(IW2) = 0.D0 + (1.D0-0.D0)/(Dir2-Dir1)*(NodeDirection-Dir1)
+                  ENDIF
+               ENDIF
+            ENDDO
+C.. Apply the wind drag limit in case of emergency.
+            IF(.NOT.FoundSector)THEN
+               Weight = 0.D0
+               IF(WindDrag.GT.DragLimit) WindDrag = DragLimit
+            ELSE
+C.. Determine the wind drag for sector 1 (right).
+               Drag(1) = WindDrag
+               IF(WindSpeed.LE.35.0)THEN
+                  IF(Drag(1).GT.0.0020)THEN
+                     Drag(1) = 0.0020
+                  ENDIF
+               ELSEIF(WindSpeed.LE.45.0)THEN
+                  Drag(1) = 0.0020 + (0.0030-0.0020)/(45.0-35.0)*(WindSpeed-35.0)
+               ELSE
+                  Drag(1) = 0.0030
+               ENDIF
+C.. Determine the wind drag for sector 2 (rear).
+               Drag(2) = WindDrag
+               IF(WindSpeed.LE.35.0)THEN
+                  IF(Drag(2).GT.0.0020)THEN
+                     Drag(2) = 0.0020
+                  ENDIF
+               ELSEIF(WindSpeed.LE.45.0)THEN
+                  Drag(2) = 0.0020 + (0.0010-0.0020)/(45.0-35.0)*(WindSpeed-35.0)
+               ELSE
+                  Drag(2) = 0.0010
+               ENDIF
+C.. Determine the wind drag for sector 3 (left).
+               Drag(3) = WindDrag
+               IF(Drag(3).GT.0.0018)THEN
+                  IF(WindSpeed.LE.25.0)THEN
+                     Drag(3) = 0.0018
+                  ELSEIF(WindSpeed.LE.30.0)THEN
+                     Drag(3) = 0.0018 + (0.0045-0.0018)/(30.0-25.0)*(WindSpeed-25.0)
+                  ELSEIF(WindSpeed.LE.45.0)THEN
+                     Drag(3) = 0.0045 + (0.0010-0.0045)/(45.0-30.0)*(WindSpeed-30.0)
+                  ELSE
+                     Drag(3) = 0.0010
+                  ENDIF
+               ENDIF
+C.. Apply a weighted average.
+               WindDrag = Weight(1)*Drag(1) + Weight(2)*Drag(2) + Weight(3)*Drag(3)
+            ENDIF
+         ENDIF
+#endif
+
       CASE DEFAULT
          WRITE(16,*) 'ERROR: Wind drag law not recognized:'
          WRITE(16,'(A10)') DragLawString
@@ -89,7 +267,8 @@ C
          STOP
 C
       END SELECT
-      IF(WindDrag.gt.DragLimit) WindDrag=DragLimit
+Casey 110518: Moved this limit up to the Garratt section.
+C     IF(WindDrag.gt.DragLimit) WindDrag=DragLimit
 C
       RETURN
 C     ----------------------------------------------------------------

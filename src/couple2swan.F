@@ -683,6 +683,9 @@ C             friction formulation inside SWAN.
          H  = SWAN_ETA2(IN,2) + DP(IN)
          N  = ManningsN(IN)
 
+Casey 110518: Enforce a lower limit on the Manning's n seen by SWAN.
+         IF(N.LT.0.03D0) N = 0.03D0
+
          Z0 = ( H ) * EXP( -1.D0 * ( 1.D0 + K * H**(1.D0/6.D0)
      &      / ( N * SQRT(G) ) ) )
 
@@ -707,6 +710,7 @@ Casey 091216: If we get a junk number, then use the default value.
      &                        DT,
      &                        ETA2,
      &                        NDSETSW,
+     &                        NODECODE,
      &                        NODES_LG,
      &                        NOUTGW,
      &                        NP,
@@ -790,6 +794,7 @@ Casey 091216: If we get a junk number, then use the default value.
       INTEGER,SAVE                  :: SWAN_MTC
       INTEGER                       :: UnitNumber
       INTEGER                       :: IFileCounter   !st3 100708:
+      INTEGER                       :: UpdateMax(NP)
 
       LOGICAL                       :: CROSS(4,NP)
 
@@ -876,7 +881,7 @@ Casey 091216: If we get a junk number, then use the default value.
       FileName(7) = "swan_"//TRIM(Names(7))//".63"//"       "
       IF(.NOT.Processed26)THEN
          DO IW=1,NumSwanOutput
-            IF((IW.EQ.5).OR.(IW.EQ.6).OR.(IW.EQ.7))THEN
+            IF((IW.EQ.3).OR.(IW.EQ.5).OR.(IW.EQ.6))THEN
                CYCLE
             ENDIF
             UnitNumber = 300 + IW
@@ -939,7 +944,15 @@ Casey 091216: If we get a junk number, then use the default value.
          IF(.NOT.ALLOCATED(SWAN_MAX)) ALLOCATE(SWAN_MAX(1:NP,1:NumSwanOutput))
          DO IP=1,nverts
             DO IW=1,NumSwanOutput
-               SWAN_MAX(IP,IW) = 0.D0
+!Casey 110518: Force the max files to take the correct default values.
+               IF(IW.EQ.1) IVTYPE=10
+               IF(IW.EQ.2) IVTYPE=13
+               IF(IW.EQ.3) IVTYPE=11
+               IF(IW.EQ.4) IVTYPE=53
+               IF(IW.EQ.5) IVTYPE=26
+               IF(IW.EQ.6) IVTYPE=32
+               IF(IW.EQ.7) IVTYPE=47
+               SWAN_MAX(IP,IW) = OVEXCV(IVTYPE)
             ENDDO
          ENDDO
       ENDIF
@@ -1000,9 +1013,10 @@ Casey 091216: If we get a junk number, then use the default value.
      &            SWAN_WK, SWAN_CG, SPCDIR, SWAN_NE, SWAN_NED,
      &            KGRPNT, DEPXY, CROSS)
 
+      UpdateMax = 0
       IFileCounter = 0        !st3 100708: counter of file number
       DO IW=1,NumSwanOutput
-         IF((IW.EQ.5).OR.(IW.EQ.6).OR.(IW.EQ.7))THEN
+         IF((IW.EQ.3).OR.(IW.EQ.5).OR.(IW.EQ.6))THEN
             CYCLE
          ENDIF
          UnitNumber = 300 + NumSwanOutput
@@ -1032,19 +1046,28 @@ Casey 091216: If we get a junk number, then use the default value.
          DO IP=1,NP
 !Casey 090615: On Ranger, this information was not being assigned correctly.
 !              Force it to assign by writing it to a temporary string.
-               SwanOut(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
+            SwanOut(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
             WRITE(UNIT=TempC,FMT=*) SwanOut(IP)
             IF(IW.EQ.5)THEN
                SwanOut2(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)+1))
                WRITE(UNIT=TempC,FMT=*) SwanOut2(IP)
             ENDIF
             IF(IW.NE.5)THEN
-               IF(SwanOut(IP).GT.SWAN_MAX(IP,IW))THEN
-                  SWAN_MAX(IP,IW) = SwanOut(IP)
+!Casey 110518: Ensure that dry nodes are written with default values.
+               IF((NODECODE(IP).EQ.1).AND.(SwanOut(IP).GT.SWAN_MAX(IP,IW)))THEN
+                  IF(IW.EQ.1)THEN
+                     UpdateMax(IP) = 1
+                     SWAN_MAX(IP,IW) = SwanOut(IP)
+                  ELSEIF(UpdateMax(IP).EQ.1)THEN
+                      SWAN_MAX(IP,IW) = SwanOut(IP)
+                  ENDIF
                ENDIF
             ELSE
-               IF(SQRT(SwanOut(IP)*SwanOut(IP)+SwanOut2(IP)*SwanOut2(IP)).GT.SWAN_MAX(IP,IW))THEN
-                  SWAN_MAX(IP,IW) = SQRT(SwanOut(IP)*SwanOut(IP)+SwanOut2(IP)*SwanOut2(IP))
+               IF((NODECODE(IP).EQ.1).AND.
+     &            (SQRT(SwanOut(IP)*SwanOut(IP)+SwanOut2(IP)*SwanOut2(IP)).GT.SWAN_MAX(IP,IW)))THEN
+                  IF(UpdateMax(IP).EQ.1)THEN
+                     SWAN_MAX(IP,IW) = SQRT(SwanOut(IP)*SwanOut(IP)+SwanOut2(IP)*SwanOut2(IP))
+                  ENDIF
                ENDIF
             ENDIF
          ENDDO
@@ -1117,7 +1140,7 @@ Casey 091216: If we get a junk number, then use the default value.
          IF(.NOT.ALLOCATED(SWAN_MAXTEMP)) ALLOCATE(SWAN_MAXTEMP(1:NP))
 !... Copy code from write_output.F to write the global maximum files.
          DO IW=1,NumSwanOutput
-            IF((IW.EQ.5).OR.(IW.EQ.6).OR.(IW.EQ.7))THEN
+            IF((IW.EQ.3).OR.(IW.EQ.5).OR.(IW.EQ.6))THEN
                CYCLE
             ENDIF
             FileNameMax = "swan_"//TRIM(Names(IW))//"_max.63"
@@ -1224,10 +1247,12 @@ Casey 090302: Need to pass correct first wind snaps to SWAN.
       ENDDO
 
 Casey 091216: Initialize arrays for friction coupling and compute first set of values.
-      CALL Manning2Madsen
-      DO IN=1,NP
-         SWAN_Z0(IN,1) = SWAN_Z0(IN,2)
-      ENDDO
+      IF(COUPFRIC)THEN
+         CALL Manning2Madsen
+         DO IN=1,NP
+            SWAN_Z0(IN,1) = SWAN_Z0(IN,2)
+         ENDDO
+      ENDIF
 
 Casey 090302: Allow SWAN to initialize.
       CALL SWINITMPI
