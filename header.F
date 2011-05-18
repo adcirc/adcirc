@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.08   - 05/18/2011 - jgf - Changed node to rawNode in subroutine that
+C             reads in min/max files ... not sure if this caused any issues
+C             but the Intel compiler complained; fixed format statement for
+C             log message reporting the value of IHOT.
 C  v50.07   - 05/18/2011 - jgf - Added missing subroutine call to 
 C             readNetCDFHotstart3D in hstart.F; cleaned up typos in the
 C             netcdf 3D hotstart reading subroutine.

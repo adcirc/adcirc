@@ -344,7 +344,7 @@ Casey 100205: Enable hot-start file generation by SWAN.
       IF(IHOT.NE.0) THEN
          WRITE(16,9733) IHOT
  9733    FORMAT(/,5X,'ADCIRC will be hot started using information ',
-     &        'on UNIT ',I2)
+     &        'on UNIT ',I3)
       ELSE
          WRITE(16,9734)
  9734    FORMAT(/,5X,'ADCIRC will be cold started')
