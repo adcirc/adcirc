@@ -52,6 +52,7 @@ C
 C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 #ifdef NETCDF
       USE NETCDFIO, ONLY : readNetCDFHotstart,
+     &                     readNetCDFHotstart3D,
      &                     readNetCDFHotstartHarmonic,
      &                     readNetCDFHotstartHarmonicMeansVariances
 #endif
@@ -667,6 +668,9 @@ C
          ! support 3D or harmonic analysis data yet.
 #ifdef NETCDF
          CALL readNetCDFHotstart(IHOT-300) 
+         IF (C3D) THEN
+            CALL readNetCDFHotstart3D(IHOT-300)
+         ENDIF
          IF ((IHARIND.eq.1).AND.(ITHS.gt.ITHAS)) THEN
             CALL readNetCDFHotstartHarmonic(IHOT-300)
             IF (CHARMV.eqv..true.) THEN

@@ -6895,7 +6895,7 @@ C
       iret=nf_inq_varid(hs%ncid,"vv",hs%vv%nodal_data_id)
       CALL check_err(iret)
       iret = nf_get_vara_DOUBLE(hs%ncid, hs%vv%nodal_data_id,
-     &       start, kount, hs%vv%nodal_data)
+     &       start, kount, data2D)
       CALL check_err(iret)
       CALL mapNetCDFToSubdomain2D(VV2, data2D, 1)
 C
@@ -6977,10 +6977,6 @@ C
       deallocate(data3D)
 C
 C     Read in model parameters to ADCIRC variables
-      iret = nf_inq_varid(hs%ncid,"iden",varid)
-      CALL check_err(iret)
-      iret = nf_get_var_int(hs%ncid, varid, iden)
-      CALL check_err(iret)
       iret = nf_inq_varid(hs%ncid,"n3dsd",varid)
       CALL check_err(iret)
       iret = nf_get_var_int(hs%ncid, varid, n3dsd)
@@ -7017,7 +7013,7 @@ C     Read in model parameters to ADCIRC variables
       CALL check_err(iret)
       iret = nf_get_var_int(hs%ncid, varid, n3dgv)
       CALL check_err(iret)
-      iret = nf_inq_varid(hs%ncid,"id3dvrec",varid)
+      iret = nf_inq_varid(hs%ncid,"i3dgvrec",varid)
       CALL check_err(iret)
       iret = nf_get_var_int(hs%ncid, varid, i3dgvrec)
       CALL check_err(iret)

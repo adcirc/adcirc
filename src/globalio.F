@@ -1646,7 +1646,7 @@ C     The file exists and is open, so read the data.
       READ(963,*,END=3990,ERR=3990) skipline   ! TIME and IT line
       DO I=1, size(array)
          READ(963,*,END=3990,ERR=3990) rawNode, rawDatum 
-         IF ((node.ge.1).and.(node.le.size(array))) THEN
+         IF ((rawNode.ge.1).and.(rawNode.le.size(array))) THEN
             node = rawNode
             array(node) = rawDatum
          ELSE 
