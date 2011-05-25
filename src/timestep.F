@@ -1247,8 +1247,8 @@ C   kmd48.33 - added in information for the elevation boundary conditions
 C              used in prognostic runs. The diagnostic information is read 
 C              in once and used during the simulation. Note that there is 
 C              no ramp utilized for this boundary condition. 
-      IF((C3D).AND.(RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
-         IF (ABS(RES_BC_FLAG).GE.1) THEN
+      IF((C3D).AND.(RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN 
+         IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
             IF(TimeLoc.GT.RBCTIME2) THEN
                RBCTIME1=RBCTIME2
                RBCTIME2=RBCTIME2+RBCTIMEINC
@@ -1419,7 +1419,8 @@ C...
 C...  COMPUTE SPECIFIED NORMAL FLOW BOUNDARY CONDITION
 C...  
       IF(NFLUXF.EQ.1) THEN
-         DO J=1,NFFR
+         IF (NFFR.GT.0) THEN 
+          DO J=1,NFFR
             IF(FPER(J).EQ.0.D0) THEN
                NCYC=0.
             ELSE
@@ -1439,8 +1440,9 @@ C...
                   EN2(I)=EN2(I)+ENAM(J,I)*RFF*COS(ARG)
                ENDIF
             END DO
-         END DO
-         IF(NFFR.EQ.0) THEN
+          END DO
+         END IF 
+         IF((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
             IF(TimeLoc.GT.QTIME2) THEN
                QTIME1=QTIME2
                QTIME2=QTIME2+FTIMINC
@@ -3637,7 +3639,7 @@ C     jgf46.02 Added the ability to include geoid offset on the boundary.
 
 C   kmd48.33bc add information for the levels of no motion boundary conditions
 C              these are considered the steric adjustments. 
-      IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic))  THEN
+      IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic).AND.(NOPE.GT.0))  THEN
          DO I=1,NETA
            NBDI=NBD(I)
            ETA2(NBDI) = ETA2(NBDI) + LNM_BC(I)
@@ -4687,7 +4689,7 @@ C      END DO
 
 C   kmd48.33bc add information for the levels of no motion boundary conditions
 C              these are considered the steric adjustments. 
-      IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic))  THEN
+      IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic).AND.(NOPE.GT.0))  THEN
          DO I=1,NETA
            NBDI=NBD(I)
            ETA2(NBDI) = ETA2(NBDI) + LNM_BC(I)
@@ -4857,6 +4859,22 @@ C     UPDATE ELEVATIONS
 #ifdef CMPI
       CALL UPDATER(ETA2,DUMY1,DUMY2,1)
 #endif
+!      IF (MYPROC.EQ.2) THEN 
+!        DO I=1,NP
+!          IF ((I.EQ.89469).OR.(I.EQ.89731).OR.
+!     &        (I.EQ.89743).OR.(I.EQ.89744)) THEN 
+!               PRINT *, "ETA2(",I,") = ", ETA2(I)
+!          END IF 
+!        END DO 
+!      END IF 
+!      IF (MYPROC.EQ.3) THEN 
+!        DO I=1,NP
+!          IF ((I.EQ.90631).OR.(I.EQ.90875).OR.(I.EQ.90876).OR.
+!     &       (I.EQ.90895).OR.(I.EQ.90896)) THEN 
+!               PRINT *, "ETA2(",I,") = ", ETA2(I)
+!          END IF 
+!        END DO 
+!      END IF 
       RETURN
       END SUBROUTINE GWCE_NEW
 

@@ -44,6 +44,8 @@ c
       CHARACTER(80) DNBOUMSG,DNVELMSG
       CHARACTER(80),ALLOCATABLE ::  DNVELLMSG(:)
       CHARACTER(80) DUM
+! kmd - variable for river in baroclinic simulation
+      LOGICAL BC_Rivers
 
       ALLOCATE ( DNVELL(MNBOU),DNBVV(MNBOU,0:MNVEL),DIBTYPE(MNBOU) )
       ALLOCATE ( DNVELLMSG(MNBOU+1) )
@@ -146,6 +148,16 @@ C
          READ(14,80) NVELLMSG(K)
          READ(NVELLMSG(K),*) NVELL(K),IBTYPE(K)
          ITYPE = IBTYPE(K)
+! kmd - added for rivers in a baroclinic simulation
+         IF (ABS(ITYPE/100).EQ.1) THEN 
+            IF (IDEN.LE.0) THEN 
+               ITYPE=(ABS(ITYPE)-100)*(ITYPE/ABS(ITYPE))
+            ELSE IF (IDEN.GT.0) THEN 
+               APERIODIC_BC_TS=.TRUE.
+               BndBCRiver=.TRUE.
+               ITYPE=(ABS(ITYPE)-100)*(ITYPE/ABS(ITYPE))
+            END IF 
+         END IF 
 C
          DO I=1, NVELL(K)
             J = J+1
@@ -201,7 +213,12 @@ C
               EXIST_FLUX = EXIST_FLUX + 1
               READ(14,*) NBVV(K,I)
               IBCONNR(K,I) = 0
+!kmd - added river boundary conditions for baroclinic 
+              IF (BndBCRiver) THEN
+                 EXIST_BC_TS=EXIST_BC_TS+1
+              END IF
            ENDDO
+           BndBCRiver=.FALSE.
          ENDIF
 C
       ENDDO
@@ -215,7 +232,10 @@ C MEB --------------------------------------------------
       IF (EXIST_FLUX.GT.0) THEN 
          REWIND(14)
          ALLOCATE ( FLUX14_ARY(EXIST_FLUX) )
+!kmd - added river boundary conditions for baroclinic 
+         ALLOCATE ( BCTS14_ARY(EXIST_BC_TS) )
          EXIST_FLUX=0
+         EXIST_BC_TS=0
 c
 C  SKIP OVER UNNEEDED LINES
 c
@@ -235,25 +255,45 @@ c
             READ(14,80) DNVELLMSG(K)
             READ(DNVELLMSG(K),*) DNVELL(K), DIBTYPE(K)
             DITYPE=DIBTYPE(K)
-C     jgf46.21 Added support for IBTYPE=52.
+! kmd - added in boundary conditions for rivers in a baroclinic simulation
+            IF (ABS(DITYPE/100).EQ.1) THEN 
+               IF (IDEN.LE.0) THEN 
+                  DITYPE=(ABS(DITYPE)-100)*(DITYPE/ABS(DITYPE))
+               ELSE IF (IDEN.GT.0) THEN
+                  BC_Rivers=.TRUE.
+                  DITYPE=(ABS(DITYPE)-100)*(DITYPE/ABS(DITYPE))
+               END IF
+            END IF
+C     jgf46.21 Ad
             IF ((DITYPE.EQ.2).OR.(DITYPE.EQ.12).OR.(DITYPE.EQ.22).OR.
      &           (DITYPE.EQ.52)) THEN
                DO I=1, DNVELL(K)
                   EXIST_FLUX = EXIST_FLUX + 1
                   READ(14,*) DNBVV(K,I) 
                   FLUX14_ARY(EXIST_FLUX) = DNBVV(K,I)
+! kmd - added in boundary conditions for rivers in a baroclinic simulation
+                  IF (BC_Rivers) THEN  
+                     EXIST_BC_TS=EXIST_BC_TS+1
+                     BCTS14_ARY(EXIST_BC_TS)=DNBVV(K,I)
+                  END IF 
+                  IF (DP(DNBVV(K,I)).LT.0.d0) THEN 
+                     River_above_MSL=.TRUE.  ! kmd - Evan's changes for rivers above MSL 
+                  END IF 
                ENDDO
             ELSE
                DO I=1, DNVELL(K)
                   READ(14,*) DNBVV(K,I)
                ENDDO
             ENDIF
+            BC_Rivers = .FALSE.  ! kmd - reset logic for next river boundary segment
          ENDDO
          DEALLOCATE ( DNVELL,DNBVV,DIBTYPE )
          DEALLOCATE ( DNVELLMSG )
          nbytes = 8*mnbou + 16*(mnbou+1) + 8*mnbou*(mnvel+1)
          call memory_dealloc(nbytes)
       ENDIF
+
+
 c     jgf45.06 end of section written by MEB04/01/04
 C
 C--Close Global Grid file
@@ -308,6 +348,8 @@ C    ===================================================================
 Casey 090825: Added dummy variables.
       INTEGER IDUM
       REAL(8) RDUM
+! kmd - add a variable for boundary conditions
+      INTEGER ITYPE
 C
       call setMessageSource("read15")
 #ifdef READ_GLOBAL_TRACE
@@ -773,16 +815,31 @@ C
 C     jgf46.21 Added support for IBTYPE=52.
       NFLUXF = 0
       DO K=1, NBOU
-         IF ((IBTYPE(K).EQ.2).OR.(IBTYPE(K).EQ.12)
+C         PRINT *, "IBTYPE(K) = ", IBTYPE(K)
+! kmd - changed due to river additions for baroclinic simulation
+         IF (ABS(IBTYPE(K))/100.EQ.1) THEN 
+            ITYPE=(ABS(IBTYPE(K))-100)*(IBTYPE(K)/ABS(IBTYPE(K)))
+            IF ((ITYPE.EQ.2).OR.(ITYPE.EQ.12)
+     &        .OR.(ITYPE.EQ.22).OR.(ITYPE.EQ.32)
+     &        .OR.(ITYPE.EQ.52)) THEN
+              NFLUXF = 1
+            END IF 
+         ELSE 
+            IF ((IBTYPE(K).EQ.2).OR.(IBTYPE(K).EQ.12)
      &        .OR.(IBTYPE(K).EQ.22).OR.(IBTYPE(K).EQ.32)
      &        .OR.(IBTYPE(K).EQ.52)) THEN
-            NFLUXF = 1
+              NFLUXF = 1
+            END IF 
          ENDIF
       ENDDO
+C      PRINT *, "NFLUXF = ", NFLUXF
 C     
 C--If so, read the number of frequencies present and other info.
 C  Use LBCODE array constructed in read14.
 C
+Ckmd Added in information for processing fort.15 information if
+C    NFFR=-1 so the river information does not have to start at 
+C    time=0. 
       IF (NFLUXF.EQ.1) THEN
          READ(15,80) NFFRMSG
          READ(NFFRMSG,*) NFFR
@@ -791,7 +848,7 @@ C
             stop
          ENDIF         
 C     
-         IF (NFFR.NE.0) THEN
+         IF ((NFFR.NE.0).AND.(NFFR.NE.-1)) THEN
             DO I=1,NFFR
                READ(15,80) FBOUNTAG(I)
                READ(15,80) FREQMSG(I)
@@ -837,6 +894,7 @@ C
             APERIODIC_FLOW_BC = .TRUE. !jgf45.09 need to break up a fort.20
          ENDIF
       ENDIF
+C      PRINT *, "APERIODIC_FLOW_BC = ", APERIODIC_FLOW_BC
 
 C
 C--Read Elevation Recording Stations
@@ -1719,27 +1777,37 @@ C   kmd48.33bc add in information for 3D boundary condition
         READ(15,80) RESBCFLAGMSG
         READ(RESBCFLAGMSG,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
         IF (RES_BC_FLAG.NE.0) THEN
-           READ(15,80) BCTIMEMSG
-           READ(15,80) BCSTATMSG
+           IF (NOPE.GT.0) THEN 
+             READ(15,80) BCTIMEMSG
+             READ(15,80) BCSTATMSG
+           END IF 
            IF (BCFLAG_TEMP.NE.0) THEN
               READ(15,80) TBCTIMEMSG
            END IF
         END IF
         IF ((RES_BC_FLAG.LT.0).OR.(RES_BC_FLAG.EQ.1))  THEN
-           READ(BCTIMEMSG,*) RBCTIMEINC
-           READ(BCSTATMSG,*) BCSTATIM
+           IF (NOPE.GT.0) THEN 
+             READ(BCTIMEMSG,*) RBCTIMEINC
+             READ(BCSTATMSG,*) BCSTATIM
+           END IF
         ELSE IF (RES_BC_FLAG.EQ.2) THEN
-           READ(BCTIMEMSG,*) RBCTIMEINC, SBCTIMEINC
-           READ(BCSTATMSG,*) BCSTATIM, SBCSTATIM
+           IF (NOPE.GT.0) THEN 
+             READ(BCTIMEMSG,*) RBCTIMEINC, SBCTIMEINC
+             READ(BCSTATMSG,*) BCSTATIM, SBCSTATIM
+           END IF 
         ELSE IF (RES_BC_FLAG.EQ.3) THEN
-           READ(BCTIMEMSG,*) RBCTIMEINC, TBCTIMEINC
-           READ(BCSTATMSG,*) BCSTATIM, TBCSTATIM
+           IF (NOPE.GT.0) THEN 
+             READ(BCTIMEMSG,*) RBCTIMEINC, TBCTIMEINC
+             READ(BCSTATMSG,*) BCSTATIM, TBCSTATIM
+           END IF 
            IF (BCFLAG_TEMP.NE.0) THEN
               READ(TBCTIMEMSG,*) TTBCTIMEINC, TTBCSTATIM
            END IF
         ELSE IF (RES_BC_FLAG.EQ.4) THEN
-           READ(BCTIMEMSG,*) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
-           READ(BCSTATMSG,*) BCSTATIM, SBCSTATIM, TBCSTATIM
+           IF (NOPE.GT.0) THEN 
+             READ(BCTIMEMSG,*) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
+             READ(BCSTATMSG,*) BCSTATIM, SBCSTATIM, TBCSTATIM
+           END IF 
            IF (BCFLAG_TEMP.NE.0) THEN
               READ(TBCTIMEMSG,*) TTBCTIMEINC, TTBCSTATIM
            END IF

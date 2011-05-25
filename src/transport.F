@@ -34,7 +34,7 @@ C             removed ScreenUnit
       USE GLOBAL, ONLY: NODELE, NODECODE, NOFF, NBD, NETA,
      &                  HFLUX, sponge, TTBCTIME1, TTBCTIME2,TTBCRATIO,
      &                  q_heat1, q_heat2, TTBCTIMEINC, BCFLAG_TEMP, SFAC,
-     &                  NOPE, NVDLL, NBDV
+     &                  NOPE, NVDLL, NBDV, bcriversec, BCRNVELL, BCRNBVV
       USE GLOBAL_3DVS
 C  kmd48.33bc add implicit none if not in parallel
 #ifdef CMPI
@@ -338,6 +338,119 @@ C   kmd48.33 add information for the top temperature boundary condition
          END IF ! ends the BCFLAG_TEMP flag if loop
       END IF  ! ends the field if loop
 
+C   kmd_rivers - add information for the weak boundary condition with
+C              rivers for the baroclinic code.
+
+C     Determine the weak boundary conditions that will be used in the
+C     assembly process later. Note that the boundary conditions will
+C     be utilized in both the salinity and temperature fields.
+      IF (BNDBCRiver) THEN
+        DO BCSEC=1, bcriversec
+          DO NBC=1,BCRNVELL(BCSEC)-1
+C     First obtain the two nodes that with be top two nodes of
+C     the rectangle and define two vertical nodes for the depths.
+             NM1=BCRNBVV(BCSEC,NBC)
+             NM2=BCRNBVV(BCSEC,NBC+1)
+             VM1=NFEN
+             VM2=NFEN-1
+C     Compute the depths at the vertical nodes associated with
+C     these two nodes.
+             Hsp1N1=DP(NM1)+IFNLFA*ETA2(NM1)
+             Hsp1N2=DP(NM2)+IFNLFA*ETA2(NM2)
+             Hsp1OAMBN1=Hsp1N1/AMB
+             Hsp1OAMBN2=Hsp1N2/AMB
+             ZVN1=Hsp1OAMBN1*(Sigma(VM1)-B)-DP(NM1)
+             ZVN2=Hsp1OAMBN2*(Sigma(VM1)-B)-DP(NM2)
+             ZVN3=Hsp1OAMBN2*(Sigma(VM2)-B)-DP(NM2)
+             ZVN4=Hsp1OAMBN1*(Sigma(VM2)-B)-DP(NM1)
+
+C     Compute the distance used in the calculations of the normal
+C     vector.
+             XDIST1=X(NM1)-X(NM2)
+             YDIST1=Y(NM1)-Y(NM2)
+             ZDIST1=ZVN1-ZVN2
+             ZVN1=Hsp1OAMBN1*(Sigma(VM1)-B)-DP(NM1)
+             ZVN2=Hsp1OAMBN2*(Sigma(VM1)-B)-DP(NM2)
+             ZVN3=Hsp1OAMBN2*(Sigma(VM2)-B)-DP(NM2)
+             ZVN4=Hsp1OAMBN1*(Sigma(VM2)-B)-DP(NM1)
+
+C     Compute the distance used in the calculations of the normal
+C     vector.
+             XDIST1=X(NM1)-X(NM2)
+             YDIST1=Y(NM1)-Y(NM2)
+             ZDIST1=ZVN1-ZVN2
+             XDIST2=X(NM2)-X(NM2)
+             YDIST2=Y(NM2)-Y(NM2)
+             ZDIST2=ZVN3-ZVN2
+
+C     Determine normal vector
+             CALL CROSSPRODUCT(XDIST1,YDIST1,ZDIST1,XDIST2,
+     &            YDIST2,ZDIST2,NORM1)
+
+C     Now develop the average velocity values for the dot product
+C     to be determined later.
+
+             DO k=1,NFEN
+                IF (k.NE.NFEN) THEN
+                   AVEUN=0.25d0*(REAL(Q(NM1,k))+REAL(Q(NM2,k))+
+     &                  REAL(Q(NM2,k+1))+REAL(Q(NM1,k+1)))
+                   AVEVN=0.25d0*(AIMAG(Q(NM1,k))+AIMAG(Q(NM2,k))+
+     &                  AIMAG(Q(NM2,k+1))+AIMAG(Q(NM1,k+1)))
+                   AVEWN=0.25d0*(WZ(NM1,k)+WZ(NM2,k)+
+     &                  WZ(NM2,k+1)+WZ(NM1,k+1))
+                ELSE IF (k.EQ.NFEN) THEN
+                   AVEUN=0.25d0*(REAL(Q(NM1,k-1))+REAL(Q(NM2,k-1))+
+     &                  REAL(Q(NM2,k))+REAL(Q(NM1,k)))
+                   AVEVN=0.25d0*(AIMAG(Q(NM1,k-1))+AIMAG(Q(NM2,k-1))+
+     &                  AIMAG(Q(NM2,k))+AIMAG(Q(NM1,k)))
+                   AVEWN=0.25d0*(WZ(NM1,k-1)+WZ(NM2,k-1)+
+     &                  WZ(NM2,k)+WZ(NM1,k))
+                END IF
+                VELDOTNORM=AVEUN*NORM1(1)+AVEVN*NORM1(2)+
+     &               AVEWN*NORM1(3)
+                XSQUARE=(X(NM1)-X(NM2))*(X(NM1)-X(NM2))
+                YSQUARE=(Y(NM1)-Y(NM2))*(Y(NM1)-Y(NM2))
+                LENGTHEDGE=SQRT(XSQUARE+YSQUARE)
+                IF (field.EQ.2) THEN
+                   IF (k.NE.NFEN) THEN
+                       ref=0.25d0*(BCRivSal(NBC,k)+BCRivSal(NBC,k+1)+
+     &                    BCRivSal(NBC+1,k)+BCRivSal(NBC+1,k+1))
+                   ELSE IF (k.EQ.NFEN) THEN
+                       ref=0.25d0*(BCRivSal(NBC,k-1)+BCRivSal(NBC,k)+
+     &                    BCRivSal(NBC+1,k-1)+BCRivSal(NBC+1,k))
+                   END IF
+                   !ref=32.d0   ! kmd48.33bc changed to 32 as the salinity reference
+                ELSE IF (field.EQ.3) THEN
+                   IF (k.NE.NFEN) THEN
+                       ref=0.25d0*(BCRivTemp(NBC,k)+BCRivTemp(NBC,k+1)+
+     &                    BCRivTemp(NBC+1,k)+BCRivTemp(NBC+1,k+1))
+                   ELSE IF (k.EQ.NFEN) THEN
+                       ref=0.25d0*(BCRivTemp(NBC,k-1)+BCRivTemp(NBC,k)+
+     &                    BCRivTemp(NBC+1,k-1)+BCRivTemp(NBC+1,k))
+                   END IF
+                   !ref=10.d0
+                END IF
+                IF (VELDOTNORM.LE.0.d0) THEN
+                   IF (k.NE.NFEN) THEN
+                      AVERESN=0.25d0*(inarray(NM1,k)+inarray(NM2,k)+
+     &                     inarray(NM2,k+1)+inarray(NM1,k+1))
+                   ELSE IF (k.EQ.NFEN) THEN
+                      AVERESN=0.25d0*(inarray(NM1,k-1)+inarray(NM2,k-1)+
+     &                     inarray(NM2,k)+inarray(NM1,k))
+                   END IF
+                   TOTRES=AVERESN-ref
+C   kmd48.33bc changed this from previous version
+                   RESWBCN=(VELDOTNORM*(TOTRES)*(1.d0/2.d0)*LVn(k))
+                   RESWBC(NM1,k)=RESWBC(NM1,k)+RESWBCN
+                   RESWBC(NM2,k)=RESWBC(NM2,k)+RESWBCN
+                ELSE IF (VELDOTNORM.GT.0.d0) THEN
+                   RESWBC(NM1,k)=RESWBC(NM1,k)+0.d0
+                   RESWBC(NM2,k)=RESWBC(NM2,k)+0.d0
+                END IF
+             END DO
+          END DO
+        END DO
+      END IF
       
 C     
 C     Loop over each horizontal and vertical nodes to compute the transport concentrations

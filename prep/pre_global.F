@@ -61,19 +61,19 @@ C                                   ! Ith Flow Boundary Node
       INTEGER EXIST_FLUX
       LOGICAL APERIODIC_FLOW_BC     ! .true. if EXIST_FLUX is .true. .AND.
                                     ! NFFR=0 in fort.15
+
+! kmd - updates for rivers in a baroclinic simulation
+      INTEGER EXIST_BC_TS
+      LOGICAL APERIODIC_BC_TS
+      INTEGER, ALLOCATABLE :: BCTS14_ARY(:)
+! kmd - Evan's changes for rivers above MSL
+      LOGICAL River_above_MSL
 C
 C     STRING14 section
       CHARACTER(80) AGRID,NSIZES,SIZEMSG
       CHARACTER(80) NOPEMSG,NETAMSG
       CHARACTER(80) NBOUMSG,NVELMSG
       CHARACTER(80),ALLOCATABLE   ::  NVELLMSG(:),NVDLLMSG(:)
-
-      !jgf48.17 support for UnSWAN boundaries in fort.14
-#ifdef ADCSWAN
-Casey 090304: This section is no longer necessary.
-C     CHARACTER(80) numUnSWANBdrySegsMSG, numUnSWANBdryNodesTotalMSG
-C     CHARACTER(80),ALLOCATABLE :: numUnSWANBdryNodesEachMSG(:)
-#endif
 C
 C     PARM15  section
       INTEGER  NOUTE,NSPOOLE,NSTAE,NSTAE_MAX

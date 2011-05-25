@@ -3,6 +3,56 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.10   - 05/25/2011 - jgf - Merged rivers50 branch r643:660, which 
+C             contained the changes for initialization of rivers above msl.
+C    v50.05.05  05/23/2011 - jgf - Removed code that had been commented out b/c
+C               it was no longer being used.
+C    v50.05.04  05/13/2011 - jgf - Updated hstime utility to remove hardcoding
+C               of the hotstart file name; added support for netcdf hotstart
+C               files. 
+C    v50.05.03  05/13/2011 - jgf - Commented out more leftover debugging 
+C               statements.
+C    v50.05.02  05/12/2011 - jgf - Commented out leftover debugging statements.
+C    v50.05.01  05/11/2011 - jgf - Merged and resolved conflicts for the
+C             following changes from the rivers_init branch:
+C    ------------------------------------------------------------------------
+C    r484 | kdresback | 2010-06-28 12:19:14 -0400 (Mon, 28 Jun 2010) | 1 line
+C    Changed paths:
+C      M /adcirc/branches/rivers_init/prep/prep.F
+C      M /adcirc/branches/rivers_init/prep/presizes.F
+C      M /adcirc/branches/rivers_init/prep/read_global.F
+C      M /adcirc/branches/rivers_init/src/hstart.F
+C      M /adcirc/branches/rivers_init/src/read_input.F
+C      M /adcirc/branches/rivers_init/src/timestep.F
+C      Updates for the river initialization - adding the option for the river 
+C      boundary condition to not use time==0 as the start time.
+C    ------------------------------------------------------------------------
+C    r460 | kdresback | 2010-06-07 18:29:40 -0400 (Mon, 07 Jun 2010) | 1 line
+C    Changed paths:
+C      M /adcirc/branches/rivers_init/prep/pre_global.F
+C      Updates for river initialization when rivers are above MSL
+C    ------------------------------------------------------------------------
+C    r454 | kdresback | 2010-06-02 15:52:24 -0400 (Wed, 02 Jun 2010) | 1 line
+C    Changed paths:
+C      M /adcirc/branches/rivers_init/prep/adcprep.F
+C      M /adcirc/branches/rivers_init/prep/prep.F
+C      M /adcirc/branches/rivers_init/prep/presizes.F
+C      M /adcirc/branches/rivers_init/prep/read_global.F
+C      M /adcirc/branches/rivers_init/src/cstart.F
+C      M /adcirc/branches/rivers_init/src/global.F
+C      M /adcirc/branches/rivers_init/src/global_3dvs.F
+C      M /adcirc/branches/rivers_init/src/hstart.F
+C      M /adcirc/branches/rivers_init/src/init_cond.F
+C      M /adcirc/branches/rivers_init/src/read_input.F
+C      M /adcirc/branches/rivers_init/src/transport.F
+C      M /adcirc/branches/rivers_init/src/vsmy.F
+C      Updates for river initialization when rivers are above MSL
+C    ------------------------------------------------------------------------
+C    r453 | kdresback | 2010-06-02 14:10:49 -0400 (Wed, 02 Jun 2010) | 1 line
+C    Changed paths:
+C      A /adcirc/branches/rivers_init (from /adcirc/trunk:447)
+C      Creating a branch for river initialization when rivers are above MSL
+C    ------------------------------------------------------------------------
 C  v50.09   - 05/18/2011 - jcd - Incorporated Powell's sector-based wind drag
 C             scheme, which is controlled by the -DPOWELL compiler flag.
 C             Also corrected a few bugs.

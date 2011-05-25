@@ -198,6 +198,9 @@ ifeq ($(BUILDTYPE),hstime)
   CF:= $(PPFC)
   O_DIR:=odir12/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
+  ifeq ($(NETCDF),enable)
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
+  endif
   VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
 endif
@@ -484,7 +487,7 @@ endif
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
 
    hstime ::  $(HST_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    aswip ::  $(ASW_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ)

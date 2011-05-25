@@ -922,6 +922,53 @@ C......FILE IF IT IS REQUIRED
          END DO
       ENDIF
 
+! kmd - added in a option to start the river information at the hot start time
+      IF((NFLUXF.EQ.1).AND.(NFFR.EQ.-1)) THEN
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
+         WRITE(16,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1978)
+         WRITE(16,1978)
+! 1978    FORMAT(/,1X,'LOCATING NORMAL FLOW INFORMATION IN UNIT 20',/)
+C         IF (MYPROC.EQ.7) THEN 
+C            PRINT *, "Made it to the reading in of the river file"
+C         END IF 
+         OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
+         READ(20,*) FTIMINC
+         QTIME1=TIMELOC
+         QTIME2=QTIME1+FTIMINC
+         DO J=1,NVEL
+            QNIN1(J)=0.D0
+            IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
+     &           .OR.(LBCODEI(J).EQ.22))
+     &           READ(20,*) QNIN1(J)
+         END DO
+         DO J=1,NVEL
+            QNIN2(J)=0.D0
+            IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
+     &           .OR.(LBCODEI(J).EQ.22))
+     &           READ(20,*) QNIN2(J)
+         END DO
+         QTRATIO=(TIMEIT-QTIME1)/FTIMINC
+         DO I=1,NVEL
+            QN1(I)=RampExtFlux1*(QNIN1(I)+QTRATIO*(QNIN2(I)-QNIN1(I)))
+         END DO
+         IF(TIMELOC.GT.QTIME2) THEN
+            QTIME1=QTIME2
+            QTIME2=QTIME1+FTIMINC
+            DO J=1,NVEL
+               IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
+     &              .OR.(LBCODEI(J).EQ.22)) THEN
+                  QNIN1(J)=QNIN2(J)
+                  READ(20,*) QNIN2(J)
+               ENDIF
+            END DO
+         ENDIF
+         QTRATIO=(TIMELOC-QTIME1)/FTIMINC
+         DO I=1,NVEL
+            QN2(I)=RampExtFlux2*(QNIN1(I)+QTRATIO*(QNIN2(I)-QNIN1(I)))
+         END DO
+      ENDIF
+
 C......RESTART THE PERIODIC NORMAL FLOW BOUNDARY CONDITION
 
       IF((NFLUXF.EQ.1).AND.(NFFR.GT.0)) THEN
@@ -2024,6 +2071,9 @@ C  tcm v49.16 20100617
              WVNXOUT(I)=RampMete2*WINDX  ! tcm 20100618 v49.16 changed RampMete to RampMete2
              WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
           END DO
+C          IF (MYPROC.EQ.0) THEN 
+C             PRINT *, "Made it to the end of the wind calls"
+C          END IF 
        ENDIF
 
 C
@@ -2034,6 +2084,10 @@ C......RESTART THE WAVE RADIATION STRESS
         IF(NRS.GE.1) THEN ! sb46.28sb03
           RSTIME1 = TimeLoc
           RSTIME2 = RSTIME1 + RSTIMINC
+C          IF (MYPROC.EQ.0) THEN 
+C             PRINT *, "Made it to the radiation stress"
+C             PRINT *, TIMELOC, RSTIME2, NRS
+C          END IF 
           ! NRS=2 was added. sb46.28sb03 09/xx/2006
           IF(NRS.EQ.1) THEN
             OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
@@ -3040,6 +3094,7 @@ c******************************************************************************
       USE GLOBAL_3DVS
 
 C   kmd48.33bc - variable information needed from the global.F file
+! kmd - added variables for river information 
       USE GLOBAL, ONLY : RES_BC_FLAG, RBCTIME1, RBCTIME2,
      &                   RBCTIMEINC, SBCTIME1, SBCTIME2,
      &                   SBCTIMEINC, TBCTIME1, TBCTIME2,
@@ -3050,9 +3105,12 @@ C   kmd48.33bc - variable information needed from the global.F file
      &                   BCFLAG_LNM, BCFLAG_TEMP, TTBCTIME1,
      &                   TTBCTIME2, TTBCSTATIM, TTBCTIMEINC,
      &                   q_heat1, q_heat2, HFLUX, TTBCRATIO,
-     &                   NBD, setMessageSource, unsetMessageSource,
+     &                   setMessageSource, unsetMessageSource,
      &                   DEBUG, ECHO, INFO, WARNING, ERROR, screen,
-     &                   NP_G, allMessage
+     &                   NP_G, allMessage,
+     &                   NBD, RIVBCTIMINC, RIVBCTIME1,RIVBCTIME2,
+     &                   totalbcrivernodes, BCRivRATIO, NOPE,
+     &                   RIVBCSTATIM
 
       IMPLICIT NONE
 
@@ -3091,7 +3149,7 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
       !  PRINT *, "BCFLAG_LNM = ", BCFLAG_LNM
       !END IF 
       IF((RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
-         IF (ABS(RES_BC_FLAG).GE.1) THEN
+         IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
             IF (BCFLAG_LNM.EQ.1) THEN
               OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
               RBCTIME1=BCSTATIM*86400.d0
@@ -3138,83 +3196,87 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
             END IF
          END IF
          IF ((ABS(RES_BC_FLAG).EQ.2).OR.(ABS(RES_BC_FLAG).EQ.4)) THEN
-            OPEN(36,FILE=TRIM(INPUTDIR)//'/'//'fort.36')
-            SBCTIME1=SBCSTATIM*86400.D0
-            SBCTIME2=SBCTIME1+SBCTIMEINC
-            READ(36,'(A)') CDUM80
-            DO NumofBCNodes=1,NETA
-               READ(36,*) NOD,(RESSAL1(NumofBCNodes,J),J=1,NFEN)
-            END DO
-            READ(36,'(A)') CDUM80
-            DO NumofBCNodes=1,NETA
-               READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
-            END DO
-            DO IT=1,ITHS
-               TIMEIT=IT*DTDPHS + STATIM*86400.D0
-               IF(TIMEIT.GT.SBCTIME2) THEN
-                  SBCTIME1=SBCTIME2
-                  SBCTIME2=SBCTIME1+SBCTIMEINC
-                  READ(36,'(A)') CDUM80
-                  DO NumofBCNodes=1,NETA
-                     DO J=1,NFEN
-                       RESSAL1(NumofBCNodes,J)=RESSAL2(NumofBCNodes,J)
-                     END DO
-                     READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
-                  END DO
-               END IF
-            END DO
-            IF(TimeLoc.GT.SBCTIME2) THEN
-               SBCTIME1=SBCTIME2
-               SBCTIME2=SBCTIME2+SBCTIMEINC
-               READ(36,'(A)') CDUM80
-               DO NumofBCNodes=1,NETA
-                 DO J=1,NFEN
-                   RESSAL1(NumofBCNodes,J)=RESSAL2(NumofBCNodes,J)
-                 END DO
+            IF (NOPE.GT.0) THEN 
+              OPEN(36,FILE=TRIM(INPUTDIR)//'/'//'fort.36')
+              SBCTIME1=SBCSTATIM*86400.D0
+              SBCTIME2=SBCTIME1+SBCTIMEINC
+              READ(36,'(A)') CDUM80
+              DO NumofBCNodes=1,NETA
+                 READ(36,*) NOD,(RESSAL1(NumofBCNodes,J),J=1,NFEN)
+              END DO
+              READ(36,'(A)') CDUM80
+              DO NumofBCNodes=1,NETA
                  READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
-               END DO
+              END DO
+              DO IT=1,ITHS
+                 TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                 IF(TIMEIT.GT.SBCTIME2) THEN
+                    SBCTIME1=SBCTIME2
+                    SBCTIME2=SBCTIME1+SBCTIMEINC
+                    READ(36,'(A)') CDUM80
+                    DO NumofBCNodes=1,NETA
+                       DO J=1,NFEN
+                         RESSAL1(NumofBCNodes,J)=RESSAL2(NumofBCNodes,J)
+                       END DO
+                       READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+                    END DO
+                 END IF
+              END DO
+              IF(TIMELOC.GT.SBCTIME2) THEN
+                 SBCTIME1=SBCTIME2
+                 SBCTIME2=SBCTIME2+SBCTIMEINC
+                 READ(36,'(A)') CDUM80
+                 DO NumofBCNodes=1,NETA
+                   DO J=1,NFEN
+                     RESSAL1(NumofBCNodes,J)=RESSAL2(NumofBCNodes,J)
+                   END DO
+                   READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+                 END DO
+              END IF
+              SBCRATIO=(TIMEIT-SBCTIME1)/SBCTIMEINC
             END IF
-            SBCRATIO=(TIMEIT-SBCTIME1)/SBCTIMEINC
-         END IF
+         END IF 
          IF ((ABS(RES_BC_FLAG).EQ.3).OR.
      &            (ABS(RES_BC_FLAG).EQ.4)) THEN
-            OPEN(37,FILE=TRIM(INPUTDIR)//'/'//'fort.37')
-            TBCTIME1=TBCSTATIM*86400.D0
-            TBCTIME2=TBCTIME1+TBCTIMEINC
-            READ(37,'(A)') CDUM80
-            DO NumofBCNodes=1,NETA
-               READ(37,*) NOD,(RESTEMP1(NumofBCNodes,J),J=1,NFEN)
-            END DO
-            READ(37,'(A)') CDUM80
-            DO NumofBCNodes=1,NETA
-               READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
-            END DO
-            DO IT=1,ITHS
-               TIMEIT=IT*DTDPHS + STATIM*86400.D0
-               IF(TIMEIT.GT.TBCTIME2) THEN
-                  TBCTIME1=TBCTIME2
-                  TBCTIME2=TBCTIME1+TBCTIMEINC
-                  READ(37,'(A)') CDUM80
-                  DO NumofBCNodes=1,NETA
-                     DO J=1,NFEN
-                       RESTEMP1(NumofBCNodes,J)=RESTEMP2(NumofBCNodes,J)
-                     END DO
-                     READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
-                  END DO
-               END IF
-            END DO
-            IF(TimeLoc.GT.TBCTIME2) THEN
-               TBCTIME1=TBCTIME2
-               TBCTIME2=TBCTIME2+TBCTIMEINC
-               READ(37,'(A)') CDUM80
-               DO NumofBCNodes=1,NETA
-                 DO J=1,NFEN
-                   RESTEMP1(NumofBCNodes,J)=RESTEMP2(NumofBCNodes,J)
-                 END DO
+            IF (NOPE.GT.0) THEN 
+              OPEN(37,FILE=TRIM(INPUTDIR)//'/'//'fort.37')
+              TBCTIME1=TBCSTATIM*86400.D0
+              TBCTIME2=TBCTIME1+TBCTIMEINC
+              READ(37,'(A)') CDUM80
+              DO NumofBCNodes=1,NETA
+                 READ(37,*) NOD,(RESTEMP1(NumofBCNodes,J),J=1,NFEN)
+              END DO
+              READ(37,'(A)') CDUM80
+              DO NumofBCNodes=1,NETA
                  READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
-               END DO
-            END IF
-            TBCRATIO=(TIMEIT-TBCTIME1)/TBCTIMEINC
+              END DO
+              DO IT=1,ITHS
+                 TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                 IF(TIMEIT.GT.TBCTIME2) THEN
+                    TBCTIME1=TBCTIME2
+                    TBCTIME2=TBCTIME1+TBCTIMEINC
+                    READ(37,'(A)') CDUM80
+                    DO NumofBCNodes=1,NETA
+                       DO J=1,NFEN
+                         RESTEMP1(NumofBCNodes,J)=RESTEMP2(NumofBCNodes,J)
+                       END DO
+                       READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+                    END DO
+                 END IF
+              END DO
+              IF(TIMELOC.GT.TBCTIME2) THEN
+                 TBCTIME1=TBCTIME2
+                 TBCTIME2=TBCTIME2+TBCTIMEINC
+                 READ(37,'(A)') CDUM80
+                 DO NumofBCNodes=1,NETA
+                   DO J=1,NFEN
+                     RESTEMP1(NumofBCNodes,J)=RESTEMP2(NumofBCNodes,J)
+                   END DO
+                   READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+                 END DO
+              END IF
+              TBCRATIO=(TIMEIT-TBCTIME1)/TBCTIMEINC
+            END IF 
             IF (BCFLAG_TEMP.EQ.1) THEN ! read in file with multiple values but no calcs
                OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
                TTBCTIME1=TTBCSTATIM*86400.D0
@@ -3330,7 +3392,7 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
                DEALLOCATE(TMP)
             END IF ! end if for heat flux file
          END IF ! end if for temperature boundary and heat flux
-      ELSE IF ((RES_BC_FLAG.LT.0).AND.(CBAROCLINIC)) THEN
+      ELSE IF ((RES_BC_FLAG.LT.0).AND.(CBAROCLINIC).AND.(NOPE.GT.0)) THEN
          IF (BCFLAG_LNM.EQ.1) THEN 
             OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
             READ(35,'(A)') CDUM80
@@ -3349,6 +3411,79 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
             END DO
          END IF
       END IF 
+
+C kmd - River information for boundary conditions 
+      IF (BndBCRiver) THEN
+        OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
+        READ(39,*) RIVBCTIMINC, RIVBCSTATIM
+        RIVBCTIME1=RIVBCSTATIM*86400.d0
+        RIVBCTIME2=RIVBCTIME1+RIVBCTIMINC
+        DO J=1,totalbcrivernodes
+         IF (IDEN.EQ.2) THEN
+           READ(39,*) (BCRivSalN1(J,K),K=1,NFEN)
+         ELSE IF (IDEN.EQ.3) THEN
+           READ(39,*) (BCRivTempN1(J,K),K=1,NFEN)
+         ELSE IF (IDEN.EQ.4) THEN
+           READ(39,*) (BCRivSalN1(J,K), BCRivTempN1(J,K),K=1,NFEN)
+         END IF
+        END DO
+        DO J=1,totalbcrivernodes
+         IF (IDEN.EQ.2) THEN
+           READ(39,*) (BCRivSalN2(J,K),K=1,NFEN)
+         ELSE IF (IDEN.EQ.3) THEN
+           READ(39,*) (BCRivTempN2(J,K),K=1,NFEN)
+         ELSE IF (IDEN.EQ.4) THEN
+           READ(39,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
+         END IF
+        END DO
+        DO IT=1,ITHS-1
+           TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
+           IF(TIMEIT.GT.RIVBCTIME2) THEN
+              RIVBCTIME1=RIVBCTIME2
+              RIVBCTIME2=RIVBCTIME2+RIVBCTIMINC
+              DO J=1,totalbcrivernodes
+                IF (IDEN.EQ.2) THEN
+                 DO K=1,NFEN
+                   BCRivSalN1(J,K)=BCRivSalN2(J,K)
+                 END DO
+                 READ(39,*) (BCRivSalN2(J,K),K=1,NFEN)
+                ELSE IF (IDEN.EQ.3) THEN
+                 DO K=1,NFEN
+                   BCRivTempN1(J,K)=BCRivTempN2(J,K)
+                 END DO
+                 READ(39,*) (BCRivTempN2(J,K),K=1,NFEN)
+                ELSE IF (IDEN.EQ.4) THEN
+                 DO K=1,NFEN
+                   BCRivSalN1(J,K)=BCRivSalN2(J,K)
+                   BCRivTempN1(J,K)=BCRivTempN2(J,K)
+                 END DO
+                 READ(39,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
+                END IF
+              END DO
+           END IF
+        END DO
+        BCRivRATIO=(TIMEIT-RIVBCTIME1)/RIVBCTIMINC
+        DO J=1,totalbcrivernodes
+           IF (IDEN.EQ.2) THEN
+             DO K=1,NFEN
+               BCRivSal(J,K)=BCRivSalN1(J,K)+BCRivRATIO*
+     &             (BCRivSalN2(J,K)-BCRivSalN1(J,K))
+             END DO
+           ELSE IF (IDEN.EQ.3) THEN
+             DO K=1,NFEN
+               BCRivTemp(J,K)=BCRivTempN1(J,K)+BCRivRATIO*
+     &             (BCRivTempN2(J,K)-BCRivTempN1(J,K))
+             END DO
+           ELSE IF (IDEN.EQ.4) THEN
+             DO K=1,NFEN
+               BCRivSal(J,K)=BCRivSalN1(J,K)+BCRivRATIO*
+     &             (BCRivSalN2(J,K)-BCRivSalN1(J,K))
+               BCRivTemp(J,K)=BCRivTempN1(J,K)+BCRivRATIO*
+     &             (BCRivTempN2(J,K)-BCRivTempN1(J,K))
+             END DO
+           END IF
+        END DO
+      END IF
 
 C.... Initialize the station 3D density output file
 !kmd48.33bc - added in the information in front of all 

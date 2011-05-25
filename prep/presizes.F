@@ -141,13 +141,6 @@ C     variables which describe the full domain
 ! kmd48.33bc - added these variables for boundary conditions
       INTEGER RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
 
-      !jgf48.17 sizes of UnSWAN boundaries in fort.14
-#ifdef ADCSWAN
-Casey 090304: This section is no longer necessary.
-C     INTEGER numUnSWANBdrySegs   ! total number of SWAN boundary segments
-C     INTEGER numUnSWANBdryNodesTotal ! total num nodes in SWAN boundaries
-#endif
-
       INTEGER MNPP   ! number of max nodes of any subdomain
       INTEGER MNEP   ! number of max elements of any subdomain
 C     Model Type:
@@ -169,6 +162,10 @@ C     Solver Type:
       LOGICAL CSOLIT ! .TRUE. only if ITITER > 0
       LOGICAL CSOLDIR! .TRUE. only if ITITER = 0
       LOGICAL CSOLDIA! .TRUE. only if ITITER < 0
+! kmd - added for baroclinic portion of rivers
+      LOGICAL BndBCRiver ! .TRUE. if 3D, baroclinc and includes rivers in the simulation
+      INTEGER NRIVBCN    ! number of river nodes to be evaluate for salinity and temperature
+
 C
 C For Definition of Working Directory
 C
@@ -327,6 +324,13 @@ C
 C     jgf46.21 Added support for IBTYPE=52.
       DO IL=1,MNBOU
          READ(14,*) NBN,IBTYPE
+! kmd - added in rivers for baroclinic simulations
+         IF (ABS(IBTYPE/100).EQ.1) THEN 
+            BndBCRiver=.TRUE.
+            NRIVBCN=NRIVBCN+NBN
+            IBTYPE=(ABS(IBTYPE)-100)*(IBTYPE/ABS(IBTYPE))
+         END IF 
+! kmd - continue on with the normal dividing of the land boundaries
          IF((IBTYPE.EQ.2).OR.(IBTYPE.EQ.12).OR.(IBTYPE.EQ.22).OR.
      &        (IBTYPE.EQ.32).OR.(IBTYPE.EQ.52)) THEN
             NFLUXF=1
@@ -369,13 +373,6 @@ C
          IF(NNEIGH(IL).GT.MNEI) MNEI=NNEIGH(IL)
       END DO
       MNEI=MNEI+1
-      !jgf48.17 read in and process UnSWAN boundaries
-#ifdef ADCSWAN
-Casey 090304: This section is no longer necessary.
-C     READ(14,*) numUnSWANBdrySegs
-C     READ(14,*) numUnSWANBdryNodesTotal
-#endif
-
 C
 C if ONLY partitioning mesh using metis or a prephot
       IF (PARTITION .or. HOT_LOCAL .or. HOT_GLOBAL) THEN   
@@ -704,7 +701,7 @@ C.... tcm v49.64.01 additions for ice
           READ(15,*) RDUM                          !SKIP OVER BOUNDARY FORCINGS
           ENDDO
         ENDDO
-      IF(MNFFR.EQ.0) MNFFR=1
+      IF((MNFFR.EQ.0).OR.(MNFFR.EQ.-1)) MNFFR=1
       MNSTAE=0
       READ(15,*)  IDUM                              !SKIP OVER NOUTE, TOUTSE...
       IF (ABS(IDUM).EQ.3) useNetCDF = .true.

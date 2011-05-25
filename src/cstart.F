@@ -34,6 +34,9 @@ C
       REAL(SZ) HTOT    
       REAL(SZ) HollandTime, AsymmetricTime
       REAL(SZ) :: PRBCKGRND_MH2O  !tcm v49.16 20100617
+!kmd - Evan's updates for rivers above MSL
+      REAL(SZ),ALLOCATABLE :: et_WSE(:)
+      LOGICAL FOUND
 
 C     jgf48.4628 Add capability to turn off solution if only met output
 C     was requested. 
@@ -42,6 +45,18 @@ C     was requested.
  
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
+
+! kmd - Evan's updates for rivers above MSL
+! open the fort.88 files if needed
+      INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.88',EXIST=FOUND)
+      IF (FOUND) THEN 
+         ALLOCATE (et_WSE(NP) )
+         OPEN (88, FILE=TRIM(INPUTDIR)//'/'//'fort.88')
+         DO I=1,NP
+            READ(88,*) et_WSE(i)
+         END DO 
+         River_above_MSL=.TRUE.
+      END IF 
 C
 C.... tcm v49.16 20100617
 C.... convert background pressure from millibars to meters of water
@@ -67,6 +82,21 @@ C     jgf46.01 Added the ability to include steric effects.
          ELSE
             ETA2(I)=0.D0
          ENDIF
+! kmd - Evan's updates for rivers above MSL
+! It is only necessary to read in and reset the ETA2 values
+! in this case for the cold start conditions. 
+         IF (River_above_MSL) THEN 
+            IF (LoadGeoidOffset) THEN 
+               IF (et_WSE(i).GT.GeoidOffset(I)) THEN 
+                  ETA2(I)=et_WSE(i)
+               END IF 
+            ELSE 
+               IF (et_WSE(i).GT.0.d0) THEN 
+                  ETA2(I)=et_WSE(i)
+               END IF 
+            END IF 
+         END IF  
+
          NNODECODE(I)=1
          IF(NOLIFA.EQ.2) THEN
             HTOT=DP(I)+ETA2(I)
@@ -1144,8 +1174,10 @@ c******************************************************************************
      &                   SBCTIME2, SBCSTATIM, TTBCTIME1,
      &                   TTBCTIME2, TBCSTATIM, SBCTIMEINC,
      &                   TBCTIMEINC, TTBCTIMEINC, TTBCSTATIM,
-     &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2,
-     &                   LNM_BC, LNM_BC1, LNM_BC2, NP_G
+     &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2, NP_G,
+     &                   LNM_BC, LNM_BC1, LNM_BC2, RIVBCTIMINC,
+     &                   RIVBCTIME1, RIVBCTIME2, totalbcrivernodes,
+     &                   NOPE, RIVBCSTATIM
 
       IMPLICIT NONE
 
@@ -1248,7 +1280,7 @@ C...  we are using the transport portion of the code (IDEN.GE.1)
 C...  and baroclinic.
 
       IF ((CBAROCLINIC).AND.(IDEN.GE.1)) THEN
-         IF (ABS(RES_BC_FLAG).GE.1) THEN
+         IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
            IF (BCFLAG_LNM.EQ.1) THEN
              OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
              RBCTIME1=BCSTATIM*86400.d0
@@ -1273,31 +1305,35 @@ C...  and baroclinic.
            END IF
          END IF
          IF ((ABS(RES_BC_FLAG).EQ.2).OR.(ABS(RES_BC_FLAG).EQ.4)) THEN
-           OPEN(36,FILE=TRIM(INPUTDIR)//'/'//'fort.36')
-           SBCTIME1=SBCSTATIM*86400.D0
-           SBCTIME2=SBCTIME1+SBCTIMEINC
-           READ(36,'(A)') CDUM80
-           DO NumofBCNodes=1,NETA
-              READ(36,*) NOD,(RESSAL1(NumofBCNodes,J),J=1,NFEN)
-           END DO
-           READ(36,'(A)') CDUM80
-           DO NumofBCNodes=1,NETA
-              READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
-           END DO
+           IF (NOPE.GT.0) THEN 
+             OPEN(36,FILE=TRIM(INPUTDIR)//'/'//'fort.36')
+             SBCTIME1=SBCSTATIM*86400.D0
+             SBCTIME2=SBCTIME1+SBCTIMEINC
+             READ(36,'(A)') CDUM80
+             DO NumofBCNodes=1,NETA
+                READ(36,*) NOD,(RESSAL1(NumofBCNodes,J),J=1,NFEN)
+             END DO
+             READ(36,'(A)') CDUM80
+             DO NumofBCNodes=1,NETA
+                READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+             END DO
+           END IF 
          END IF
          IF ((ABS(RES_BC_FLAG).EQ.3).OR.
      &            (ABS(RES_BC_FLAG).EQ.4)) THEN
-           OPEN(37,FILE=TRIM(INPUTDIR)//'/'//'fort.37')
-           TBCTIME1=TBCSTATIM*86400.D0
-           TBCTIME2=TBCTIME1+TBCTIMEINC
-           READ(37,'(A)') CDUM80
-           DO NumofBCNodes=1,NETA
-              READ(37,*) NOD,(RESTEMP1(NumofBCNodes,J),J=1,NFEN)
-           END DO
-           READ(37,'(A)') CDUM80
-           DO NumofBCNodes=1,NETA
-              READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
-           END DO
+           IF (NOPE.GT.0) THEN 
+             OPEN(37,FILE=TRIM(INPUTDIR)//'/'//'fort.37')
+             TBCTIME1=TBCSTATIM*86400.D0
+             TBCTIME2=TBCTIME1+TBCTIMEINC
+             READ(37,'(A)') CDUM80
+             DO NumofBCNodes=1,NETA
+                READ(37,*) NOD,(RESTEMP1(NumofBCNodes,J),J=1,NFEN)
+             END DO
+             READ(37,'(A)') CDUM80
+             DO NumofBCNodes=1,NETA
+                READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+             END DO
+           END IF 
            IF (BCFLAG_TEMP.EQ.1) THEN ! read in file with multiple values but no calcs
               OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
               TTBCTIME1=TTBCSTATIM*86400.D0
@@ -1349,7 +1385,7 @@ C...  and baroclinic.
            END IF ! end if for heat flux file
          END IF ! end if for temperature boundary and heat flux
       ELSE IF ((CBAROCLINIC).AND.(IDEN.LE.-1)) THEN
-         IF (RES_BC_FLAG.LT.0) THEN
+         IF ((RES_BC_FLAG.LT.0).AND.(NOPE.GT.0)) THEN
           IF (BCFLAG_LNM.EQ.1) THEN
             OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
             READ(35,'(A)') CDUM80
@@ -1365,6 +1401,32 @@ C...  and baroclinic.
             END DO
           END IF
          END IF
+      END IF
+
+C kmd - River information for boundary conditions in baroclinic simulation
+      IF (BndBCRiver) THEN
+        OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
+        READ(39,*) RIVBCTIMINC, RIVBCSTATIM
+        RIVBCTIME1=RIVBCSTATIM*86400.d0
+        RIVBCTIME2=RIVBCTIME1+RIVBCTIMINC
+        DO J=1,totalbcrivernodes
+         IF (IDEN.EQ.2) THEN
+           READ(39,*) (BCRivSalN1(J,K),K=1,NFEN)
+         ELSE IF (IDEN.EQ.3) THEN
+           READ(39,*) (BCRivTempN1(J,K),K=1,NFEN)
+         ELSE IF (IDEN.EQ.4) THEN
+           READ(39,*) (BCRivSalN1(J,K), BCRivTempN1(J,K),K=1,NFEN)
+         END IF
+        END DO
+        DO J=1,totalbcrivernodes
+         IF (IDEN.EQ.2) THEN
+           READ(39,*) (BCRivSalN2(J,K),K=1,NFEN)
+         ELSE IF (IDEN.EQ.3) THEN
+           READ(39,*) (BCRivTempN2(J,K),K=1,NFEN)
+         ELSE IF (IDEN.EQ.4) THEN
+           READ(39,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
+         END IF
+        END DO
       END IF
 
 C...  ZERO OUT STUFF PASSED FROM 3D SOLUTION TO EXTERNAL MODE

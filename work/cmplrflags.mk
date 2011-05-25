@@ -86,6 +86,9 @@ ifeq ($(compiler),intel)
   DA            :=  -DREAL8 -DLINUX -DCSCA 
   DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI 
   DPRE          :=  -DREAL8 -DLINUX 
+  ifeq ($(SWAN),enable)
+     DPRE          := $(DPRE) -DADCSWAN
+  endif
   IMODS         :=  -I
   CC            := gcc
   CCBE		:= $(CC)
@@ -108,7 +111,8 @@ ifeq ($(compiler),intel)
 #  endif   
   #jgf20110217: For netcdf on blueridge or kittyhawk at RENCI, use
   #NETCDFHOME=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.0.1-icc-ifort
-NETCDFHOME=/ifs1/apps/netcdf/
+  #jgf20110519: For netcdf on topsail at UNC, use
+  #NETCDFHOME=/ifs1/apps/netcdf/
 endif
 #
 # sb46.50.02 These flags work on the UT Austin Lonstar cluster.

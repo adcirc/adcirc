@@ -90,20 +90,13 @@ C
 C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
-      USE GLOBAL, ONLY : screenUnit, myProc, initLogging 
+      USE GLOBAL, ONLY : screenUnit, myProc, initLogging
       USE PRE_GLOBAL 
       USE VERSION
       use memory_usage
       IMPLICIT NONE
 C
       CHARACTER JOB*80 ! user input for menu selection
-C
-      screenUnit=6
-      myProc=0
-      nscreen=1
-      nabout=0
-      CALL initLogging()
-C
 
 C  Define File Format Version
 
@@ -288,26 +281,24 @@ C-- If ONLY localizing Run Info File ( fort.15 )
         CALL RELOCALIZE()
         CALL PREP15()
         !jgf48.07 Initialize netCDF output files
-        IF (useNetCDF) THEN
-           write(*,*) "INFO: Initializing the netCDF output file(s)."
-           ! call netCDF module
-           CALL PREPNETCDF()
-        ENDIF
-        GO TO 9999
+        IF (useNetCDF) THEN                                   
+           write(*,*) "INFO: Initializing the netCDF output files." 
+           ! call netCDF module                               
+           CALL PREPNETCDF()                                  
+         ENDIF                                                 
+         GO TO 9999
       endif
-
 C
 C-- Partition Nodes with METIS 4.0 Graph Partition Library
 C
       IF (PARTITION) THEN
         CALL METIS()
         print *, " "
-        print *, 'INFO: METIS has partitioned nodes.'
+        print *, 'INFO: METIS has partitioned nodes'
         GO TO 9999
       ELSE
-        print *, 'INFO: Opening file partmesh.txt.'
+        print *, 'INFO: Opening file partmesh.txt'
         OPEN(990,FILE='partmesh.txt')
-C        print *, 'made it this part and MNP = ', MNP
         DO I=1, MNP
            READ(990,*) PROC(I)
 C           print *," PROC for ",I," = ", PROC(I)
@@ -318,7 +309,7 @@ C           print *," PROC for ",I," = ", PROC(I)
 C
 C-- Read the Global Input File ( Unit 15 )
 C
-      print *, 'INFO: Starting read of fort.15'
+      print *, 'INFO: Start reading in fort.15.'
       CALL READ15()
       print *, 'INFO: Fulldomain fort.15 file read successfully.'
 C
@@ -351,14 +342,12 @@ C   kmd48.33bc add information for 3D
 
       ENDIF
 
-
-      !jgf48.07 Initialize netCDF output files
-      IF (useNetCDF) THEN
-         write(*,*) "INFO: Initializing the netCDF output file(s)."
-         ! call netCDF module
-         CALL PREPNETCDF()
+      !jgf48.07 Initialize netCDF output files                
+      IF (useNetCDF) THEN                                     
+         write(*,*) "INFO: Initializing the netCDF output files." 
+         ! call netCDF module                                 
+         CALL PREPNETCDF()                                    
       ENDIF
-
 C
 C-- Decompose the ADCIRC grid into MNPROC subdomains
 C
@@ -428,14 +417,16 @@ C   kmd48.33bc changed the if statement to include IHOT parameter
 
 C   kmd48.33bc added writing of subdomain initial condition file
 C
+C     jgf50.05.01: Commented out b/c we now (as of v49release) map 
+C     this file to subdomains on the fly during padcirc execution.
 C     Write a subdomain initial condtion file (fort.17) for each PE
 C
-!      IF (PREP_ALL) THEN
-!         IF ((CBaroclinic).AND.(IHOT.EQ.17)) THEN
-!            PRINT *, "Writing subdomain UNIT 17 file for each PE."
-!            CALL HOTINITCOND()
-!         ENDIF
-!      ENDIF
+C      IF (PREP_ALL) THEN
+C         IF ((CBaroclinic).AND.(IHOT.EQ.17)) THEN
+C            PRINT *, "Writing subdomain UNIT 17 file for each PE."
+C            CALL HOTINITCOND()
+C         ENDIF
+C      ENDIF
 
 C
 C     Write a subdomain nodal attributes file (fort.13) for each PE
@@ -466,6 +457,14 @@ C
             CALL PREP20()
          endif
       ENDIF
+! kmd - Evan's changes for rivers above MSL
+      IF (PREP_ALL) THEN 
+         IF ((EXIST_FLUX.NE.0).AND.(River_above_MSL)) THEN 
+            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN 
+               CALL PREP88()
+            END IF 
+         END IF 
+      END IF 
 C
 C-- If required write a Local Wind Stress file for each PE
 C
@@ -506,26 +505,34 @@ C  kmd48.33bc add information for 3D baroclinic simulations
       IF (PREP_ALL) THEN
         IF (CBAROCLINIC) THEN
            IF ((RES_BC_FLAG.GE.1).OR.(RES_BC_FLAG.LE.-1)) THEN
-             IF (BCFLAG_LNM.EQ.1) THEN
-               print *, "Ready to Write Local UNIT 35 File for each PE"
-               CALL PREP35()
-             END IF
+             IF (NOPE.GT.0) THEN 
+               IF (BCFLAG_LNM.EQ.1) THEN
+                print *, "Ready to Write Local UNIT 35 File for each PE"
+                CALL PREP35()
+               END IF
+             END IF 
            END IF
            IF (RES_BC_FLAG.EQ.2) THEN
-             print *, "Ready to Write Local UNIT 36 File for each PE"
-             CALL PREP36()
+             IF (NOPE.GT.0) THEN 
+               print *, "Ready to Write Local UNIT 36 File for each PE"
+               CALL PREP36()
+             END IF 
            ELSE IF (RES_BC_FLAG.EQ.3) THEN
-             print *, "Ready to Write Local UNIT 37 File for each PE"
-             CALL PREP37()
+             IF (NOPE.GT.0) THEN 
+               print *, "Ready to Write Local UNIT 37 File for each PE"
+               CALL PREP37()
+             END IF 
              IF (BCFLAG_TEMP.NE.0) THEN
                print *, "Ready to Write Local UNIT 38 File for each PE"
                CALL PREP38()
              END IF
            ELSE IF (RES_BC_FLAG.EQ.4) THEN
-             print *, "Ready to Write Local UNIT 36 File for each PE"
-             CALL PREP36()
-             print *, "Ready to Write Local UNIT 37 File for each PE"
-             CALL PREP37()
+             IF (NOPE.GT.0) THEN 
+               print *, "Ready to Write Local UNIT 36 File for each PE"
+               CALL PREP36()
+               print *, "Ready to Write Local UNIT 37 File for each PE"
+               CALL PREP37()
+             END IF 
              IF (BCFLAG_TEMP.NE.0) THEN
                print *, "Ready to Write Local UNIT 38 File for each PE"
                CALL PREP38()
@@ -533,6 +540,14 @@ C  kmd48.33bc add information for 3D baroclinic simulations
            END IF
         END IF
       END IF
+
+! kmd - added for rivers in a baroclinic simulation
+      IF (PREP_ALL) THEN 
+         IF ((EXIST_BC_TS.NE.0).AND.(APERIODIC_BC_TS)) THEN 
+           print *, "Ready to Write Local UNIT 39 File for each PE"
+           CALL PREP39()
+         END IF 
+      END IF 
 
 C
 C-- Save domain-decomposition information for post-processor
@@ -543,6 +558,7 @@ CC -- Start Addition by CF  8/2007
          CALL PREP80()
       ENDIF
 CC -- Finish Addition by CF      
+
 9999  CONTINUE
       print *, ""
       print *, "Finished pre-processing input files"

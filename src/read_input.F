@@ -58,6 +58,8 @@ Casey 100205: Enable hot-start file generation by SWAN.
 !     multiple values like element radius and areas, etc...
       REAL(SZ) X2MX1,X3MX2,X1MX3,Y2MY1,Y3MY2,Y1MY3
       REAL(SZ) LENED1,LENED2,LENED3
+! kmd - variables for river boundary condition in baroclinic simulation
+      INTEGER riverval, BCRiver
 C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
 C     Module. 
@@ -1118,13 +1120,13 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
 
       IF(NWS.EQ.0) THEN
          WRITE(16,237) NWS
- 237     FORMAT(/,5X,'NWS = ',I2,/,9X,
+ 237     FORMAT(/,5X,'NWS = ',I3,/,9X,
      &        'WIND STRESS OR SURFACE PRESSURE ARE NOT USED TO FORCE',
      &        'THE COMPUTATION')
       ENDIF
       IF(NWS.EQ.1) THEN
          WRITE(16,238) NWS
- 238     FORMAT(/,5X,'NWS = ',I2,
+ 238     FORMAT(/,5X,'NWS = ',I3,
      &        /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &        /,9X,' THE COMPUTATION',
      &        /,9X,'VALUES ARE READ AT ADCIRC GRID NODES FROM UNIT 22',
@@ -1132,7 +1134,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
       ENDIF
       IF(NWS.EQ.2) THEN
          WRITE(16,2381) NWS
- 2381    FORMAT(/,5X,'NWS = ',I2,
+ 2381    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
      &    /,9X,'VALUES ARE READ AT ADCIRC GRID NODES FROM UNIT 22',
@@ -1142,7 +1144,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
       ENDIF
       IF(NWS.EQ.-2) THEN
          WRITE(16,2380) NWS
- 2380    FORMAT(/,5X,'NWS = ',I2,
+ 2380    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
      &    /,9X,'VALUES ARE READ AT ADCIRC GRID NODES FROM UNIT 22',
@@ -1152,7 +1154,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
       ENDIF
       IF(NWS.EQ.3) THEN
          WRITE(16,2382) NWS
- 2382    FORMAT(/,5X,'NWS = ',I2,
+ 2382    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS ONLY IS USED TO FORCE THE COMPUTATION.',
      &    /,9X,'WIND SPEEDS AND DIRECTIONS ARE READ FROM A FLEET ',
      &    /,9X,'NUMERIC FORMAT FILE AT UNIT 22 AND INTERPOLATED TO',
@@ -1164,7 +1166,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
       ENDIF
       IF(NWS.EQ.4) THEN
          WRITE(16,2383) NWS
- 2383    FORMAT(/,5X,'NWS = ',I2,
+ 2383    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
      &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ AT SELECTED',
@@ -1177,7 +1179,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
       ENDIF
       IF(NWS.EQ.-4) THEN
          WRITE(16,2388) NWS
- 2388    FORMAT(/,5X,'NWS = ',I2,
+ 2388    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
      &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ AT SELECTED',
@@ -1190,7 +1192,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
       ENDIF
       IF(NWS.EQ.5) THEN
          WRITE(16,2384) NWS
- 2384    FORMAT(/,5X,'NWS = ',I2,
+ 2384    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
      &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ AT ADCIRC ',
@@ -1203,7 +1205,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
       ENDIF
       IF(NWS.EQ.-5) THEN
          WRITE(16,2389) NWS
- 2389    FORMAT(/,5X,'NWS = ',I2,
+ 2389    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
      &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ AT ADCIRC ',
@@ -1216,7 +1218,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
       ENDIF
       IF(NWS.EQ.6) THEN
          WRITE(16,2385) NWS
- 2385    FORMAT(/,5X,'NWS = ',I2,
+ 2385    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
      &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ FROM A ',
@@ -1230,7 +1232,7 @@ C.... tcm v49.46 rewrote to combine different 100's power NRS
 C     jgf46.00 Added NWS=7 (direct surface stress).
       IF(NWS.EQ.7) THEN
          WRITE(16,1234) NWS
- 1234    FORMAT(/,5X,'NWS = ',I2,
+ 1234    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'SURFACE STRESS AND PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
      &    /,9X,'VALUES ARE READ AT ADCIRC GRID NODES FROM UNIT 22',
@@ -1240,7 +1242,7 @@ C     jgf46.00 Added NWS=7 (direct surface stress).
       ENDIF
       IF(NWS.EQ.-7) THEN
          WRITE(16,1235) NWS
- 1235    FORMAT(/,5X,'NWS = ',I2,
+ 1235    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'SURFACE STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
      &    /,9X,'VALUES ARE READ AT ADCIRC GRID NODES FROM UNIT 22',
@@ -1251,7 +1253,7 @@ C     jgf46.00 Added NWS=7 (direct surface stress).
 C     jgf46.03 Added NWS=8 (Holland wind model).
       IF(NWS.EQ.8) THEN
          WRITE(16,1237) NWS
- 1237    FORMAT(/,5X,'NWS = ',I2,
+ 1237    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'HURRICANE PARAMETERS AND THE HOLLAND WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
      &    /,9X,'VALUES ARE READ AT FOR THE STORM FROM UNIT 22',
@@ -1261,7 +1263,7 @@ C     jgf46.03 Added NWS=8 (Holland wind model).
       ENDIF
       IF(NWS.EQ.-8) THEN
          WRITE(16,1238) NWS
- 1238    FORMAT(/,5X,'NWS = ',I2,
+ 1238    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'HURRICANE PARAMETERS AND THE HOLLAND WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
      &    /,9X,'VALUES ARE READ AT FOR THE STORM FROM UNIT 22',
@@ -1273,7 +1275,7 @@ C     jgf46.16 Merged:
 C     cf & cm added nws = 9: asymmetric hurricane winds
       IF(NWS.EQ.9) THEN                                           
          WRITE(16,2399) NWS
- 2399    FORMAT(/,5X,'NWS = ',I2,
+ 2399    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
      &    /,9X,'VALUES ARE READ AT FOR THE STORM FROM UNIT 22',
@@ -1283,7 +1285,7 @@ C     cf & cm added nws = 9: asymmetric hurricane winds
       ENDIF
       IF(NWS.EQ.-9) THEN
          WRITE(16,2398) NWS
- 2398    FORMAT(/,5X,'NWS = ',I2,
+ 2398    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
      &    /,9X,'VALUES ARE READ AT FOR THE STORM FROM UNIT 22',
@@ -1293,7 +1295,7 @@ C     cf & cm added nws = 9: asymmetric hurricane winds
       ENDIF
       IF(NWS.EQ.10) THEN
          WRITE(16,2386) NWS
- 2386    FORMAT(/,5X,'NWS = ',I2,
+ 2386    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
      &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ EVERY N',
@@ -1307,7 +1309,7 @@ C     cf & cm added nws = 9: asymmetric hurricane winds
       ENDIF
       IF(NWS.EQ.11) THEN
          WRITE(16,2387) NWS
- 2387    FORMAT(/,5X,'NWS = ',I2,
+ 2387    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
      &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ EVERY 3 ',
@@ -1321,7 +1323,7 @@ C     cf & cm added nws = 9: asymmetric hurricane winds
 C.....sb46_28sb01 added for NWS=-12,12 09/xx/2006
       IF(NWS.EQ.12) THEN
          WRITE(16,12384) NWS
-12384    FORMAT(/,5X,'NWS = ',I2,
+12384    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
      &    /,9X,' THE COMPUTATION',
      &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ FROM RAW ',
@@ -1350,7 +1352,7 @@ C.....sb46_28sb01 added for NWS=-12,12 09/xx/2006
 C     rjw added nws = 19: asymmetric hurricane winds v2.0
       IF(NWS.EQ.19) THEN
          WRITE(16,2400) NWS
- 2400    FORMAT(/,5X,'NWS = ',I2,
+ 2400    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
      &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
@@ -1362,7 +1364,7 @@ C     rjw added nws = 19: asymmetric hurricane winds v2.0
       ENDIF
       IF(NWS.EQ.-19) THEN
          WRITE(16,2401) NWS
- 2401    FORMAT(/,5X,'NWS = ',I2,
+ 2401    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
      &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
@@ -1407,13 +1409,13 @@ C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
       ENDIF
       IF(NRS.EQ.0) THEN
          WRITE(16,2390) NRS
- 2390    FORMAT(/,5X,'NRS = ',I2,
+ 2390    FORMAT(/,5X,'NRS = ',I3,
      &        /,9X,'WAVE RADIATION STRESS IS NOT USED TO FORCE THE ',
      &        'COMPUTATION')
       ENDIF
       IF(NRS.EQ.1) THEN
          WRITE(16,2391) NRS
- 2391    FORMAT(/,5X,'NRS = ',I2,
+ 2391    FORMAT(/,5X,'NRS = ',I3,
      &    /,9X,'WAVE RADIATION STRESS IS USED TO FORCE THE COMPUTATION',
      &    /,9X,'STRESSES ARE READ AT SELECTED ADCIRC GRID NODES FROM A',
      &    /,9X,'PBL TYPE FILE AT UNIT 23.  INTERPOLATION IN TIME IS ',
@@ -1425,7 +1427,7 @@ C     jgf49.1001 Added option to embed NWS19 in a NAM background wind field
 C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
       IF(NRS.EQ.2) THEN
          WRITE(16,2392) NRS
- 2392    FORMAT(/,5X,'NRS = ',I2,
+ 2392    FORMAT(/,5X,'NRS = ',I3,
      &    /,9X,'WAVE RADIATION STRESS IS USED TO FORCE THE COMPUTATION',
      &    /,9X,'STRESSES ARE READ AT SELECTED ADCIRC GRID NODES FROM A',
      &    /,9X,'UNIT 23 FILE GENERATED BY UTIL/BUILDSTWAVE23. ',
@@ -1440,7 +1442,7 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
 Casey 090302: Added the following lines.
       IF(NRS.EQ.3) THEN
          WRITE(16,2393) NRS
- 2393    FORMAT(/,5X,'NRS = ',I2,
+ 2393    FORMAT(/,5X,'NRS = ',I3,
      &    /,9X,'WAVES WILL BE COUPLED TO SWAN!')
       ENDIF
 #endif
@@ -2813,10 +2815,26 @@ C.....AND THE BOUNDARY TYPE
       NFLUXRBC=0 
       NFLUXGBC=0 
       NVELEXT=0
+! kmd - add variables for river boundary conditions
+      riverval=0
+      bcriversec=0
+      BCRiver=0
+      totalbcrivernodes=0
 
       DO K=1,NBOU
          READ(14,*) NVELL(K),IBTYPE(K)
-         ! IBTYPENC(K)=IBTYPE !jgfdebug
+! kmd - added for river boundary conditions
+         IF ((ABS(IBTYPE(K)/100)).EQ.1) THEN 
+            IF (C3D.AND.(IDEN.LE.0)) THEN
+               IBTYPE(K)=(ABS(IBTYPE(K))-100)*(IBTYPE(K)/ABS(IBTYPE(K)))
+            ELSE IF (C3D.AND.(IDEN.GE.1)) THEN
+               BCRiver=1
+               BndBCRiver=.TRUE.
+               bcriversec=bcriversec+1
+               BCRNVELL(bcriversec)=NVELL(K)
+               IBTYPE(K)=(ABS(IBTYPE(K))-100)*(IBTYPE(K)/ABS(IBTYPE(K)))
+            END IF
+         END IF
 C     check that IBTYPE parameter has been set properly
 C     jgf46.21 Added IBTYPE=52.
 
@@ -3112,9 +3130,20 @@ C...  boundary segment
      &      (IBTYPE(K).NE. 5).AND.(IBTYPE(K).NE.25)) THEN
            DO I=1,NVELL(K)
              READ(14,*) NBVV(K,I)
-             END DO
+! kmd - add information for river boundary condition
+             IF ((IBTYPE(K).EQ.2).OR.(IBTYPE(K).EQ.12).OR.
+     &           (IBTYPE(K).EQ.22).OR.
+     &           (IBTYPE(K).EQ.52)) THEN 
+                 IF (BCRiver.EQ.1) THEN 
+                    totalbcrivernodes=totalbcrivernodes+1
+                    riverval=riverval+1
+                    BCRNBVV(bcriversec,riverval)=NBVV(K,I)
+                 END IF 
+             END IF 
+           END DO
            NPRBI=1
            NPIPE=0
+           BCRiver=0  !  kmd - reset river boundary value 
            ENDIF
 
 C...  For EXTERNAL BARRIER type boundaries, read the node number, the
@@ -3789,10 +3818,14 @@ C.....READ FORCING INFORMATION FROM UNIT 15 FILE
 
 C.....INPUT FROM THE NUMBER OF FREQUENCIES PRESENT IN NORMAL FLOW FORCING
 C......DATA.  IF THIS = 0, NORMAL FLOW DATA IS READ IN FROM THE FORT.20 FILE.
+Ckmd  Made it to where if NFFR = -1, then the normal flow data is to be read
+C     from the fort.20 file, too. However, it will not be read from time=0 but
+C     from time=hotstart time
 
          READ(15,*) NFFR
          MNFFR = NFFR
          IF (NFFR.EQ.0) MNFFR = 1
+        IF (NFFR.EQ.-1) MNFFR = 1
 
 C.....Allocate space for periodic normal flow boundary conditions
          call alloc_main6()
@@ -3804,19 +3837,22 @@ C
          END DO
 
 C.....READ IN AND WRITE OUT INFO ON SPECIFIED NORMAL FLOW BOUNDARIES
+Ckmd  Added in a NFFR=-1 for reading information from the fort.20 files
+C     for hot starting the run, so file does not have to include all 
+C     river data from time=0. 
 
-         WRITE(16,1112)
-         WRITE(16,2200)
- 2200    FORMAT(//,1X,'NORMAL FLOW BOUNDARY FORCING INFORMATION ',//)
-         IF(NFFR.EQ.0) THEN
-            WRITE(16,2201)
- 2201       FORMAT(/,5X,'NORMAL FLOW VALUES WILL BE READ FROM UNIT 20 ',
-     &      /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE FLOW DATA ',
-     &      /,9X,'WITH THE MODEL TIME STEP.')
-         ENDIF
-         IF(NFFR.NE.0) THEN
-            WRITE(16,2202) NFFR
- 2202       FORMAT(/,5X,'NUMBER OF PERIODIC NORMAL FLOW CONSTITUENTS =',
+        WRITE(16,1112)
+        WRITE(16,2200)
+ 2200   FORMAT(//,1X,'NORMAL FLOW BOUNDARY FORCING INFORMATION ',//)
+        IF((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
+          WRITE(16,2201)
+ 2201     FORMAT(/,5X,'NORMAL FLOW VALUES WILL BE READ FROM UNIT 20 ',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE FLOW DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.')
+          ENDIF
+        IF((NFFR.NE.0).AND.(NFFR.NE.-1)) THEN
+          WRITE(16,2202) NFFR
+ 2202     FORMAT(/,5X,'NUMBER OF PERIODIC NORMAL FLOW CONSTITUENTS =',
      &                                                               I5)
             WRITE(16,2203)
  2203       FORMAT(/,7X,'CONSTITUENT #',4X,'FREQUENCY',4X,'NODAL FACTOR',
@@ -5306,8 +5342,9 @@ C    kmd48.33bc - added the variables from Global
      &                  TBCTIMEINC, SBCSTATIM, TBCSTATIM, 
      &                  BCFLAG_LNM, BCFLAG_TEMP, TTBCSTATIM,
      &                  TTBCTIMEINC, SPONGEDIST, NBD, Sponge,
-     &                  OUTPUTSPONGE, scratchMessage, INFO, 
-     &                  setMessageSource, logMessage, unsetMessageSource
+     &                  scratchMessage, INFO, 
+     &                  setMessageSource, logMessage, unsetMessageSource,
+     &                  OUTPUTSPONGE, NOPE
       USE GLOBAL_3DVS
       USE NodalAttributes, ONLY : Z0b_var
 
@@ -5780,18 +5817,23 @@ C                 salinity and temperature forcings.
      &    'BCFLAG_TEMP = ',I3)
        IF ((RES_BC_FLAG.LT.0)) THEN  ! Diagnostic
          IF (ABS(RES_BC_FLAG).GE.1) THEN ! only have one set of values to read
+           IF (NOPE.GT.0) THEN 
              READ(15,*) RBCTIMEINC
              READ(15,*) BCSTATIM
              WRITE(16,430) RBCTIMEINC
+           END IF 
          END IF
        ELSE IF ((RES_BC_FLAG.GT.0)) THEN
          IF (ABS(RES_BC_FLAG).EQ.1) THEN ! only read in the elevation changes
+           IF (NOPE.GT.0) THEN 
              READ(15,*) RBCTIMEINC
              READ(15,*) BCSTATIM
              WRITE(16,430) RBCTIMEINC
  430         FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds')
+           END IF 
          ELSE IF ((ABS(RES_BC_FLAG).EQ.2)) THEN
+           IF (NOPE.GT.0) THEN 
              READ(15,*) RBCTIMEINC, SBCTIMEINC
              READ(15,*) BCSTATIM, SBCSTATIM
              WRITE(16,431) RBCTIMEINC, SBCTIMEINC
@@ -5799,7 +5841,9 @@ C                 salinity and temperature forcings.
      &                every', E9.2 ,'seconds and salinity
      &                boundary conditions every', E9.2,
      &                'seconds')
+           END IF 
          ELSE IF ((ABS(RES_BC_FLAG).EQ.3)) THEN
+           IF (NOPE.GT.0) THEN 
              READ(15,*) RBCTIMEINC, TBCTIMEINC
              READ(15,*) BCSTATIM, TBCSTATIM
              WRITE(16,432) RBCTIMEINC, TBCTIMEINC
@@ -5814,7 +5858,9 @@ C                 salinity and temperature forcings.
      &                   boundary condition every', E9.2 ,'
      &                   seconds.')
              END IF
+           END IF 
          ELSE IF ((ABS(RES_BC_FLAG).EQ.4)) THEN
+           IF (NOPE.GT.0) THEN 
              READ(15,*) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
              READ(15,*) BCSTATIM, SBCSTATIM, TBCSTATIM
              WRITE(16,433) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
@@ -5827,6 +5873,7 @@ C                 salinity and temperature forcings.
                  READ(15,*) TTBCTIMEINC, TTBCSTATIM
                  WRITE(16,434) TTBCTIMEINC
              END IF
+           END IF 
          ELSE
              WRITE(16,350)
              WRITE(16,*) 'RES_BC_FLAG = ',RES_BC_FLAG

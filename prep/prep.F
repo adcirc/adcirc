@@ -978,6 +978,10 @@ C     jgf46.21 Added support for IBTYPE=52.
          DO 400 K=1,NBOU
             IF (NVELLP(K).EQ.0) GOTO 400
             ITYPE = IBTYPEP(K,IPROC)
+! kmd - added for rivers in baroclinic simulation
+            IF (ABS(ITYPE/100).EQ.1) THEN 
+               ITYPE = (ABS(ITYPE)-100)*(ITYPE/ABS(ITYPE))
+            END IF 
             IF ((ITYPE.EQ.2).OR.(ITYPE.EQ.12).OR.(ITYPE.EQ.22).OR.
      &           (ITYPE.EQ.52)) THEN
               DISC = DISC + NVELLP(K)
@@ -1030,11 +1034,16 @@ C
 C
 C--Determine whether there are any normal flow boundaries local to PE
 C
+! kmd - changed for rivers in baroclinic simulations
          NFLUXFP(IPROC) = 0
          DO K=1, NBOU
             IF (NVELLP(K).GT.0) THEN
-              IF ((IBTYPE(K).EQ.2).OR.(IBTYPE(K).EQ.12)
-     &            .OR.(IBTYPE(K).EQ.22).OR.(IBTYPE(K).EQ.52)) THEN
+              ITYPE=IBTYPE(K)
+              IF (ABS(ITYPE/100).EQ.1) THEN
+                 ITYPE = (ABS(ITYPE)-100)*(ITYPE/ABS(ITYPE))
+              END IF
+              IF ((ITYPE.EQ.2).OR.(ITYPE.EQ.12)
+     &            .OR.(ITYPE.EQ.22).OR.(ITYPE.EQ.52)) THEN
                 NFLUXFP(IPROC) = 1
               ENDIF
             ENDIF
@@ -1143,36 +1152,6 @@ C
                 ENDIF
              ENDIF
           ENDDO
-          !jgf48.17 Added support for UnSWAN boundaries in fort.14
-#ifdef ADCSWAN
-Casey 090304: This section is no longer necessary.
-C
-C--Write UnSWAN Boundary Data
-C
-C         CALL NEWINDEX(numUnSWANBdrySegsMSG,OUTMSG,
-C    &                  numUnSWANBdrySegsP(IPROC))
-C         WRITE(14,80) OUTMSG
-C
-C         CALL NEWINDEX(numUnSWANBdryNodesTotalMSG,OUTMSG,
-C    &                  numUnSWANBdryNodesTotalP(IPROC))
-C         WRITE(14,80) OUTMSG
-C
-C         ITOT = 0
-C         DO K = 1,numUnSWANBdrySegs
-C            IF (numUnSWANBdryNodesEachP(K).GT.0)THEN
-C               ITOT = ITOT + 1
-C                WRITE(14,*) numUnSWANBdryNodesEachP(K),
-C    &                       unswanBdryMarkers(K)
-C                CALL NEWINDEX(numSWANBdryNodesEachMSG(K),OUTMSG,
-C     &                        numSWANBdryNodesEachP(K))
-C                WRITE(14,80) OUTMSG
-C               DO I = 1,numUnSWANBdryNodesEachP(K)
-C                  WRITE(14,*) unswanBdryNodesP(K,I)
-C               ENDDO
-C            ENDIF
-C         ENDDO
-#endif
-
 C
           CLOSE(14)
 C
@@ -1322,6 +1301,9 @@ C     sb46.28sb01 added NWS=12: OWI format
 C
 C--If there were any normal flow boundaries local to PE, process them
 C
+C         PRINT *, NFFRMSG
+C         PRINT *, "NFLUXFP(",IPROC,") = ", NFLUXFP(IPROC)
+
          IF (NFLUXFP(IPROC).EQ.1) THEN
 C
             NFLBNP = 0
@@ -1337,7 +1319,7 @@ C
             ENDDO
 C     
             WRITE(15,80) NFFRMSG
-            IF (NFFR.NE.0) THEN
+            IF ((NFFR.NE.0).AND.(NFFR.NE.-1)) THEN
                DO I=1,NFFR
                   WRITE(15,80) FBOUNTAG(I)
                   WRITE(15,80) FREQMSG(I)
@@ -1700,8 +1682,10 @@ C    kmd48.33bc add 3D boundary condition information
       IF (CBAROCLINIC) THEN
         WRITE(15,80) RESBCFLAGMSG
         IF (RES_BC_FLAG.NE.0) THEN
-          WRITE(15,80) BCTIMEMSG
-          WRITE(15,80) BCSTATMSG
+          IF (NOPEP(IPROC).GT.0) THEN 
+             WRITE(15,80) BCTIMEMSG
+             WRITE(15,80) BCSTATMSG
+          END IF 
           IF (BCFLAG_TEMP.NE.0) THEN
              WRITE(15,80) TBCTIMEMSG
           END IF
@@ -2144,7 +2128,55 @@ c----------------------------------------------------------------------------
       END SUBROUTINE PREP20
 c----------------------------------------------------------------------------
 
+C---------------------------------------------------------------------------
+C                S U B R O U T I N E   P R E P 8 8
+C---------------------------------------------------------------------------
+C
+C     kmd49 This subroutine will break up the full domain elevation 
+C     changes due to the river boundary information being above mean
+C     sea level. It writes the fort.88 file into each subdomain using  
+C     the ADCIRC grid created by the routine DECOMP.
+C
+C     - added as part of Evan's changes for rivers above MSL.
+C
+C---------------------------------------------------------------------------
 
+      SUBROUTINE PREP88()
+      USE PRE_GLOBAL
+      use memory_usage
+C
+      IMPLICIT NONE
+      integer :: nbytes = 0
+      INTEGER I,J,IPROC
+      INTEGER SDU(NPROC) ! subdomain unit numbers
+      LOGICAL Success    ! .true. if files opened without errors
+      INTEGER :: NODP
+      CHARACTER*80 :: et_tempsWSE
+      CHARACTER*80,ALLOCATABLE :: et_SWSE(:)
+C
+      CALL OpenPrepFiles(88, '  river elevation data  ',
+     &     1, nproc, SDU, Success)
+      IF (.not.Success) THEN
+         WRITE(*,*) 'WARNING: Unit 88 files not preprocessed.'
+         RETURN ! note early return
+      ENDIF
+
+      ALLOCATE(et_SWSE(NNODG))
+      DO I=1, NNODG
+            READ(88,80,END=9999) et_SWSE(I)
+      END DO
+
+      DO IPROC=1,NPROC
+            DO I=1, NNODP(IPROC)
+                  NODP=IMAP_NOD_LG(I,IPROC)
+                  et_tempsWSE=et_SWSE(NODP)
+                  WRITE(SDU(IPROC),80) et_tempsWSE
+            END DO
+      END DO
+ 80   FORMAT(A80)
+9999  CLOSE(88)
+      END
+C  End SUBROUTINE PREP88
 
 
 C---------------------------------------------------------------------------
@@ -2828,6 +2860,97 @@ C
       RETURN
       END
 
+      SUBROUTINE PREP39()
+C---------------------------------------------------------------------------
+C                                                                           C
+C  This routine writes a Local river boundary file for the baroclnic        C
+C  simulation (fort.39) for each subdomain using the domain                 C
+C  decomposition of the ADCIRC grid created by the routine DECOMP.          C
+C                                                                           C
+C                Added by Kendra Dresback (January 14, 2010)                C
+C---------------------------------------------------------------------------C
+C
+      USE PRE_GLOBAL
+      use memory_usage
+      IMPLICIT NONE
+      integer :: nbytes = 0
+      INTEGER IPROC, FLUX_INC
+      INTEGER INDEX14, I
+      REAL(SZ),ALLOCATABLE ::  FLUX_VAL(:,:)
+      INTEGER SDU(NPROC)  ! subdomain unit numbers
+      LOGICAL Success     ! .true. if all files open without error
+      INTEGER INDX ! full domain node number for a flow boundary node
+      INTEGER J,M     ! counter for subdomains that corrsp. to a single f.d. node
+      INTEGER IPROC2! PE of a subdomain that matches a single full domain node
+      INTEGER, ALLOCATABLE :: NOD(:)
+      REAL(SZ),ALLOCATABLE ::  RESBCBINP(:)
+
+C     Open full domain and subdomain fort.20 files
+      CALL OpenPrepFiles(39, 'aperiodic river temp and salinity   ',
+     &     1, nproc, SDU, Success)
+      IF (.not.Success) THEN
+         WRITE(*,*) 'WARNING: Unit 39 files not preprocessed.'
+         RETURN ! note early return
+      ENDIF
+
+      ALLOCATE ( NOD(MNVEL) )
+      ALLOCATE ( RESBCBINP(NFEN) )
+      ALLOCATE ( FLUX_VAL(MNVEL,NFEN) )
+c
+c     Write Increment into all flux files
+c
+      READ(39,*) FLUX_INC
+      DO IPROC=1,NPROC
+         WRITE(SDU(IPROC),*) FLUX_INC
+      ENDDO
+C
+C     jgf45.12 Write each full domain nodal flux value into each of the
+C     subdomains that that full domain node maps to. The full domain
+C     node may map to more than one subdomain node if it falls on a
+C     boundary between subdomains (ghost nodes).
+C
+
+      DO  ! continue to loop over file until you reach the end of the file
+
+      DO I=1, EXIST_BC_TS      ! loop through full domain flow nodes
+         INDX=BCTS14_ARY(I)
+         READ(39,*,END=40)  (FLUX_VAL(INDX,M),M=1,NFEN)
+      END DO
+
+      DO I=1, EXIST_BC_TS
+         INDX = BCTS14_ARY(I)      ! get full domain flow node number
+         DO J=1, ITOTPROC(INDX)    ! loop over subdomains for 1 f.d. node
+            IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDX) ! find next subdomain
+            DO IPROC=1, NPROC
+               IF (IPROC.EQ.IPROC2) THEN ! full domain node maps to this s.d.
+                 DO M=1,NFEN
+                    RESBCBINP(M) = FLUX_VAL(INDX,M)
+                 END DO
+                 WRITE(SDU(IPROC),80) (RESBCBINP(M),M=1,NFEN)
+               ENDIF
+            END DO
+         END DO
+      END DO
+      END DO
+
+ 40   CLOSE (39)
+      DO IPROC=1, NPROC
+         CLOSE (SDU(IPROC))
+      ENDDO
+
+      IF (allocated(BCTS14_ARY)) then
+        DEALLOCATE (BCTS14_ARY)
+        nbytes = 4*exist_bc_ts
+        call memory_dealloc(nbytes)
+      ENDIF
+      call memory_status()
+      return
+ 80   FORMAT(1X,32000(F11.7,2X))
+c----------------------------------------------------------------------------
+      END SUBROUTINE PREP39
+c----------------------------------------------------------------------------
+
+
 C   kmd48.33bc add information for initial condition file
       SUBROUTINE HOTINITCOND()
       USE PRE_GLOBAL
@@ -2860,6 +2983,8 @@ C
       REAL(8) TIMEHSF
       integer :: InputFileFmtVn, NP_G_IN, NE_G_IN, NP_A_IN, NE_A_IN
       CHARACTER*60 FileFmtVn
+      INTEGER SDU(NPROC)  ! subdomain unit numbers
+      LOGICAL Success     ! .true. if all files open without error
 
 #if 0
       ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet
@@ -2881,17 +3006,16 @@ C
 C--   Open the Initial Condition Start File based on the value of IHOT from
 C--   the fort.15 file
 C
-      write(*,*) "enter IHOT: "
-      read(*,*) IHOT
-      IF(IHOT.EQ.17) FNAME='fort.17'
-      INQUIRE(FILE=FNAME,EXIST=FOUND)
-      IF (FOUND) THEN
-         WRITE(*,1011) FNAME
-         OPEN(IHOT,FILE=FNAME)
-      ELSE
-         WRITE(*,1010) FNAME
-         STOP
+C     Open full domain and subdomain fort.17 files
+      Print *, "Made it to prepping the files"
+      CALL OpenPrepFiles(17, 'initial condition file  ',
+     &     1, nproc, SDU, Success)
+      Print *, "Made it out of prepping the files"
+      IF (.not.Success) THEN
+         WRITE(*,*) 'WARNING: Unit 17 files not preprocessed.'
+         RETURN ! note early return
       ENDIF
+      IHOT=17
 
 C--   Read in info from global initial condition file
 
@@ -2995,9 +3119,13 @@ C
          READ(IHOT,*) NOFF(I)
       END DO
 
+      PRINT *, "Made it through the 2D values"
+
        ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet
 C     jgf46.02 Read in 3D hotstart data if appropriate
       IF (IMHSF.GT.10) THEN
+         PRINT *, "set to go into 3D read"
+         PRINT *, "NFEN = ", NFEN
          CALL ReadInitCond3D(IHOT)
       ENDIF
 #if 0
@@ -4347,13 +4475,14 @@ C     Start reading in the data
       ALLOCATE ( BSX(MNP),BSY(MNP))
 !kmd end of additions
 
+        PRINT *, "NFEN = ", NFEN
         IHOT=UnitNumber
         IHOTSTP=FilePosition
 
-        PRINT*, "How many layers need to be evaluated:"
+        PRINT *, "How many layers need to be evaluated:"
         READ *, NFEN
 
-C        PRINT *, "made it to 3D portion of code"
+        PRINT *, "made it to 3D portion of code"
         PRINT *, "MNP = ", MNP
         PRINT *, "NFEN = ", NFEN
         PRINT *, "IHOTSTP = ", IHOTSTP

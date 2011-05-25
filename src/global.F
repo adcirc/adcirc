@@ -243,6 +243,9 @@ C    kmd48.33bc - added variables for the levels of no motion and top temperatur
       INTEGER,ALLOCATABLE ::    NBVV(:,:)
       INTEGER,ALLOCATABLE ::    IBTYPE(:)  !jgf49.32 now ibtype is an array
       INTEGER,ALLOCATABLE ::    IBTYPEE(:) !jgf49.32 added ibtypee
+! kmd - added for rivers in baroclinic simulation
+      INTEGER,ALLOCATABLE ::    BCRNBVV(:,:)
+      INTEGER,ALLOCATABLE ::    BCRNVELL(:)
 C
 C.....for buoyancy forcing
       REAL(SZ),ALLOCATABLE ::   DASigT(:), DASalt(:), DATemp(:)
@@ -345,6 +348,10 @@ C     jgf45.07 The definitions of many of these are in timestep.F
       LOGICAL :: CTIP                = .FALSE.
 C    kmd48.33bc  - logical statement for hot start using different time step
       LOGICAL :: CHOTHS              = .FALSE.
+! kmd - logical statement for rivers in baroclinic simulation
+      LOGICAL :: BndBCRiver          = .FALSE.
+! kmd - Evan's updates for rivers above MSL
+      LOGICAL :: River_above_MSL     = .FALSE.
   
 C     jgf48.4627 When only meteorological output is requested, skip past
 C     the GWCE and Momentum equations, so that ADCIRC runs faster and
@@ -416,6 +423,11 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) TTBCSTATIM, TTBCRATIO
       REAL(SZ) SPONGEDIST  ! distance information for the sponge layer
       LOGICAL :: OUTPUTSPONGE  =  .FALSE.
+! kmd - variables for river boundary conditions
+      INTEGER  totalbcrivernodes  ! nodes for the river boundary conditions for baroclinic
+      INTEGER  bcriversec  ! river boundary information
+      REAL(SZ) RIVBCTIMINC, RIVBCTIME1, RIVBCTIME2  ! time information for river - baroclinic
+      REAL(SZ) BCRivRATIO, RIVBCSTATIM
 
       REAL(SZ) ADVECX, ADVECY, AGIRD, ARG
       REAL(SZ) ARG1, ARG2, ARGJ, ARGJ1, ARGJ2
@@ -1487,6 +1499,10 @@ C
 C     jgf49.58 Explicitly initialize variables that would otherwise be
 C     used without initialization.
       EN2(:) = 0.0D0
+
+! kmd - added for rivers in baroclinic simulation
+      ALLOCATE (BCRNBVV(MNBOU,0:MNVEL))
+      ALLOCATE (BCRNVELL(MNBOU))
 
       RETURN
       END SUBROUTINE ALLOC_MAIN3

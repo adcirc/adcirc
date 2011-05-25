@@ -94,7 +94,9 @@ c.RJW merged 08282008 Casey 071219: Added the following variable declarations fr
      &                   SBCTIME1, SBCTIME2, TBCTIME1,
      &                   TBCTIME2, SBCTIMEINC, TBCTIMEINC,
      &                   SBCRATIO, TBCRATIO, sponge, 
-     &                   BCFLAG_TEMP, SFAC
+     &                   BCFLAG_TEMP, SFAC, BCRivRATIO,
+     &                   RIVBCTIMINC, RIVBCTIME1, RIVBCTIME2,
+     &                   totalbcrivernodes, NOPE
 Cjgfdebug     &      , H0
 
       USE GLOBAL_3DVS
@@ -1091,7 +1093,7 @@ c   kmd48.33bc need to update the boundary condition information for both
 C              salinity and temperature in prognostic runs. The boundary
 C              conditions are read in similar to the aperiodic elevation
 C              boundary conditions
-      IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GT.0)) THEN
+      IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GT.0).AND.(NOPE.GT.0)) THEN
          IF ((ABS(RES_BC_FLAG).EQ.2).OR.(ABS(RES_BC_FLAG).EQ.4)) THEN
             IF(TimeLoc.GT.SBCTIME2) THEN
                SBCTIME1=SBCTIME2
@@ -1135,6 +1137,55 @@ C              boundary conditions
                END DO
             END DO
          END IF
+      END IF
+
+!kmd - adding information for rivers - baroclinic
+
+      IF ((CBaroclinic).AND.(BndBCRiver)) THEN
+         IF (TIMELOC.GT.RIVBCTIME2) THEN
+            RIVBCTIME1=RIVBCTIME2
+            RIVBCTIME2=RIVBCTIME1+RIVBCTIMINC
+            DO J=1,totalbcrivernodes
+               IF (IDEN.EQ.2) THEN
+                  DO K=1,NFEN
+                     BCRivSalN1(J,K)=BCRivSalN2(J,K)
+                  END DO
+                  READ(39,*) NOD, (BCRivSalN2(J,K),K=1,NFEN)
+               ELSE IF (IDEN.EQ.3) THEN
+                  DO K=1,NFEN
+                     BCRivTempN1(J,K)=BCRivTempN2(J,K)
+                  END DO
+                  READ(39,*) NOD, (BCRivTempN2(J,K),K=1,NFEN)
+               ELSE IF (IDEN.EQ.4) THEN
+                  DO K=1,NFEN
+                     BCRivSalN1(J,K)=BCRivSalN2(J,K)
+                     BCRivTempN1(J,K)=BCRivTempN2(J,K)
+                  END DO
+                  READ(39,*) NOD, (BCRivSalN2(J,K),BCRivTempN2(J,K),K=1,NFEN)
+               END IF
+            END DO
+         END IF
+         BCRivRATIO=(TIMELOC-RIVBCTIME1)/RIVBCTIMINC
+         DO J=1,totalbcrivernodes
+             IF (IDEN.EQ.2) THEN
+                 DO K=1,NFEN
+                    BCRivSal(J,K)=BCRivSalN1(J,K)+BCRivRATIO*
+     &                 (BCRivSalN2(J,K)-BCRivSalN1(J,K))
+                 END DO
+             ELSE IF (IDEN.EQ.3) THEN
+                 DO K=1,NFEN
+                    BCRivTemp(J,K)=BCRivTempN1(J,K)+BCRivRATIO*
+     &                 (BCRivTempN2(J,K)-BCRivTempN1(J,K))
+                 END DO
+             ELSE IF (IDEN.EQ.4) THEN
+                 DO K=1,NFEN
+                    BCRivSal(J,K)=BCRivSalN1(J,K)+BCRivRATIO*
+     &                 (BCRivSalN2(J,K)-BCRivSalN1(J,K))
+                    BCRivTemp(J,K)=BCRivTempN1(J,K)+BCRivRATIO*
+     &                 (BCRivTempN2(J,K)-BCRivTempN1(J,K))
+                 END DO
+             END IF
+         END DO
       END IF
 
 C   Start computing the new density, temperature and salinity values

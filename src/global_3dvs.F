@@ -69,7 +69,9 @@ C...
      &       SLAM0, SFEA0,                 !center point of CPP spherical projection
      &       Deg2Rad, Rad2Deg,
      &       Day2Sec, Sec2Day,
-     &       NETA                          ! number of ocean boundary
+     &       NETA,                          ! number of ocean boundary
+     &       NVEL,                          ! number of land boundary for river information
+     &       BndBCRiver                    ! logic flag for rivers - baroclinic
 
       SAVE
 
@@ -127,7 +129,13 @@ C     kmd48.33bc - added these variables for boundary condtions
       REAL(SZ),ALLOCATABLE :: RESTEMP(:,:)   !  RESTEMP(NETA,NFEN): Vertical temperature boundary condition used in transport 
       REAL(SZ),ALLOCATABLE :: RESTEMP1(:,:)  !  RESTEMP1(NETA,NFEN): Vertical temperature boundary condition used in transport 
       REAL(SZ),ALLOCATABLE :: RESTEMP2(:,:)  !  RESTEMP2(NETA,NFEN): Vertical temperature boundary condition used in transport 
-
+C     ! kmd - added these variables for river boundary conditions in baroclinic simulation
+      REAL(SZ),ALLOCATABLE :: BCRivSal(:,:)    !  BCRivSal(NVEL,NFEN) : Vertical salinity boundary information for rivers
+      REAL(SZ),ALLOCATABLE :: BCRivSalN1(:,:)  !  BCRivSal(NVEL,NFEN) : Vertical salinity boundary information for rivers
+      REAL(SZ),ALLOCATABLE :: BCRivSalN2(:,:)  !  BCRivSal(NVEL,NFEN) : Vertical salinity boundary information for rivers
+      REAL(SZ),ALLOCATABLE :: BCRivTemp(:,:)   !  BCRivTemp(NVEL,NFEN): Vertical temperature boundary information for rivers
+      REAL(SZ),ALLOCATABLE :: BCRivTempN1(:,:) !  BCRivTemp(NVEL,NFEN): Vertical temperature boundary information for rivers
+      REAL(SZ),ALLOCATABLE :: BCRivTempN2(:,:) !  BCRivTemp(NVEL,NFEN): Vertical temperature boundary information for rivers
 
 C...  DECLARE 3D GLOBAL SCALARS
 
@@ -338,7 +346,10 @@ C   kmd48.33bc - allocate arrays
       ! jgf49.60: Explicitly initialize arrays that would otherwise
       ! be used without initialization.
       EVTot(:) = 0.0d0
-      
+C   kmd - add arrays for river boundary condition in baroclinic simulation
+      ALLOCATE( BCRivSal(NVEL,NFEN), BCRivSalN1(NVEL,NFEN) )
+      ALLOCATE( BCRivSalN2(NVEL,NFEN), BCRivTemp(NVEL,NFEN) )
+      ALLOCATE( BCRivTempN1(NVEL,NFEN), BCRivTempN2(NVEL,NFEN) )
       RETURN
       END SUBROUTINE ALLOC_3DVS
 
