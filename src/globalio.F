@@ -100,8 +100,8 @@ C        or to the end of the full domain array, whichever is less
 #endif   
 C! CMPI
 
- 1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10, 1pE20.10, 1pE20.10)
- 1100 FORMAT(2x,1pE20.10,5X,I10)
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
+ 1100 FORMAT(2x,1pE20.10E3,5X,I10)
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -194,8 +194,8 @@ C        or to the end of the full domain array, whichever is less
 #endif   
 C! CMPI
 
- 1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10, 1pE20.10, 1pE20.10)
- 1100 FORMAT(2x,1pE20.10,5X,I10)
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
+ 1100 FORMAT(2x,1pE20.10E3,5X,I10)
       !--------------------------------------------------------------
       end subroutine collectFullDomainIntArray
       !--------------------------------------------------------------
@@ -284,7 +284,7 @@ C! CMPI
 #endif
 
       return
- 1000 format(2x, i8, 2x, 1pE20.10)
+ 1000 format(2x, i8, 2x, 1pE20.10E3)
       !--------------------------------------------------------------
       end subroutine pack63
       !--------------------------------------------------------------
@@ -317,7 +317,7 @@ C! CMPI
 #endif
 
       return
- 1000 format(2x, i8, 2x, 1pE20.10)
+ 1000 format(2x, i8, 2x, 1pE20.10E3)
       !--------------------------------------------------------------
       end subroutine pack83
       !--------------------------------------------------------------
@@ -391,7 +391,7 @@ C! CMPI
         end if
       end do
       return
- 1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10)
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
       !--------------------------------------------------------------
       end subroutine packTwo
       !--------------------------------------------------------------
@@ -449,7 +449,7 @@ C
          end if
       end do
 C
- 1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10)
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -522,7 +522,7 @@ C
          end if
       end do
 C
- 1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10)
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -733,8 +733,8 @@ C        or to the end of the full domain array, whichever is less
 #endif   
 C! CMPI
 
- 1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10, 1pE20.10, 1pE20.10)
- 1100 FORMAT(2x,1pE20.10,5X,I10)
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
+ 1100 FORMAT(2x,1pE20.10E3,5X,I10)
       !--------------------------------------------------------------
       end subroutine write_gbl_file
       !--------------------------------------------------------------
@@ -877,9 +877,9 @@ C    !-----IF CMPI IS DEFINED -----
 #endif   
 C! CMPI
 
- 1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10, 1pE20.10, 1pE20.10)
- 1100 FORMAT(2x,1pE20.10,5X,I10)
- 1101 FORMAT(2x,1pE20.10,5X,I10,5X,I10,5X,1pE20.10)      
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
+ 1100 FORMAT(2x,1pE20.10E3,5X,I10)
+ 1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)      
       !--------------------------------------------------------------
       end subroutine write_gbl_63_skip_drynode
       !--------------------------------------------------------------
@@ -1031,9 +1031,9 @@ C     !-----IF CMPI IS DEFINED -----
 #endif   
 C! CMPI
 
- 1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10, 1pE20.10, 1pE20.10)
- 1100 FORMAT(2x,1pE20.10,5X,I10)
- 1101 FORMAT(2x,1pE20.10,5X,I10,5X,I10,5X,1pE20.10)
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
+ 1100 FORMAT(2x,1pE20.10E3,5X,I10)
+ 1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)
       !--------------------------------------------------------------
       end subroutine write_gbl_file_skip_default
       !--------------------------------------------------------------
@@ -1080,7 +1080,7 @@ C! CMPI
 #endif
 
       return
- 1000 format(2x, i8, 2x, 1pE20.10)
+ 1000 format(2x, i8, 2x, 1pE20.10E3)
       !--------------------------------------------------------------
       end subroutine storeOne
       !--------------------------------------------------------------
@@ -1121,7 +1121,7 @@ C! CMPI
       end do
 #endif
       return
- 1000 format(2x, i8, 2x, 1pE20.10, 1pE20.10)
+ 1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
       !--------------------------------------------------------------
       end subroutine storeTwo
       !--------------------------------------------------------------
@@ -1175,7 +1175,7 @@ C! CMPI
 #endif
 
       return
- 1000 format(2x, i8, 2x, 1pE20.10)
+ 1000 format(2x, i8, 2x, 1pE20.10E3)
       !--------------------------------------------------------------
       end subroutine store63
       !--------------------------------------------------------------
@@ -1195,7 +1195,7 @@ C! CMPI
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header61
@@ -1215,7 +1215,7 @@ C! CMPI
      &     FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
      &      'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header62
@@ -1235,7 +1235,7 @@ C! CMPI
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header63
@@ -1254,7 +1254,7 @@ C! CMPI
       write(lun, 1010) 1, size_this, 1.d0, 1, 1, FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
      &      'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header_max
@@ -1274,7 +1274,7 @@ C! CMPI
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
      &      'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header64
@@ -1294,7 +1294,7 @@ C! CMPI
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header71
@@ -1314,7 +1314,7 @@ C! CMPI
      &                  FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header72
@@ -1334,7 +1334,7 @@ C! CMPI
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header73
@@ -1354,7 +1354,7 @@ C! CMPI
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header74
@@ -1375,7 +1375,7 @@ C! CMPI
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header91
@@ -1396,7 +1396,7 @@ C! CMPI
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header93
@@ -1417,7 +1417,7 @@ C! CMPI
      &                  FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
      &      'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header81
@@ -1481,9 +1481,9 @@ C! CMPI
       end select
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
      &      'FileFmtVersion: ',I10)
- 1020 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,I5,1X,
+ 1020 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,I5,1X,
      &      'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine writeStationHeader
@@ -1575,9 +1575,9 @@ C     close the file
       close(lun)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
      &      'FileFmtVersion: ',I10)
- 1020 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5,1X,I5,1X,
+ 1020 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,I5,1X,
      &      'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine writeDomainHeader

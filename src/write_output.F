@@ -1008,9 +1008,9 @@ C     can be preserved across hot starts.
       ENDIF
 
       RETURN
- 2120 FORMAT(2X,E20.10,5X,I10)
- 2453 FORMAT(2x, i8, 2x, E20.10, E20.10, E20.10, E20.10) 
- 2454 FORMAT(2X,I8,2(2X,E15.8))
+ 2120 FORMAT(2X,1pE20.10E3,5X,I10)
+ 2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3) 
+ 2454 FORMAT(2X,I8,2(2X,1pE20.10E3))
 C-----------------------------------------------------------------------
       END SUBROUTINE WRITE_OUTPUT_2D
 C-----------------------------------------------------------------------
@@ -1534,7 +1534,7 @@ C     Means and variance calculations, if specified (fort.55).
          ENDIF
       ENDIF
 
- 7637 format(2x,3(e16.8,1x),2x,3(e16.8,1x))
+ 7637 format(2x,3(1pe16.8E3,1x),2x,3(1pe16.8E3,1x))
 #ifdef WRITE_OUTPUT_TRACE
       call screen(DEBUG,"Return.")
 #endif
@@ -1641,9 +1641,9 @@ C
       END SELECT
 
  2    FORMAT(I2)
- 6635 format(2x,e16.8,1x,f11.4)
- 6636 format(2x,e16.8,1x,f11.4,2x,e16.8,1x,f11.4)
- 3679 format(1x,e20.10,1x,f10.7,1x,f12.8,1x,a10)
+ 6635 format(2x,1pe16.8E3,1x,f11.4)
+ 6636 format(2x,1pe16.8E3,1x,f11.4,2x,1pe16.8E3,1x,f11.4)
+ 3679 format(1x,1pe20.10E3,1x,f10.7,1x,f12.8,1x,a10)
 #ifdef WRITE_OUTPUT_TRACE
       call screen(DEBUG,"Return.")
 #endif
@@ -1815,7 +1815,7 @@ C
 C
  499  FORMAT(1X,A32,2X,A24,2X,A24)
 C..RJW bug fix in 498 (kendra found this)
- 498  FORMAT(1X,I10,1X,I10,1X,E15.7,I10,1X,I10,1X,I3)
+ 498  FORMAT(1X,I10,1X,I10,1X,E15.7E3,I10,1X,I10,1X,I3)
  497  FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE ASCII')
  496  FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE BINARY')
 C----------------------------------------------------------------------
@@ -1919,10 +1919,10 @@ C
       call screen(DEBUG,"Enter.")
 #endif
 C
-1099  FORMAT(2X,1pE20.10,5X,I10)
+1099  FORMAT(2X,1pE20.10E3,5X,I10)
 1100  FORMAT(1X,E17.10,1X,I10,32000(2X,E13.6))
 1104  FORMAT(9X,I6,4X,32000(E13.6,2X))
-1105  FORMAT(2X,I8,2X,1pE20.10)
+1105  FORMAT(2X,I8,2X,1pE20.10E3)
 C
       IF (FirstCall.eqv..true.) THEN
          ALLOCATE(rp(NP,NFEN),ip(NP,NFEN))
@@ -3330,9 +3330,9 @@ C            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
       END SELECT
 
  2    FORMAT(I2)
- 2120 FORMAT(2X,E20.10,5X,I10)
- 2453 FORMAT(2x, i8, 2x, E20.10, E20.10, E20.10, E20.10) 
- 2454 FORMAT(2X,I8,2(2X,E15.8))
+ 2120 FORMAT(2X,1pE20.10E3,5X,I10)
+ 2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3) 
+ 2454 FORMAT(2X,I8,2(2X,1pE20.10E3))
 C-----------------------------------------------------------------------
        END SUBROUTINE writeOutArray
 C-----------------------------------------------------------------------
@@ -3432,9 +3432,9 @@ C     write data in ascii text only (other output formats are not supported)
       END SELECT
 
  2    FORMAT(I2)
- 2120 FORMAT(2X,E20.10,5X,I10)
- 2453 FORMAT(2x, i8, 2x, E20.10, E20.10, E20.10, E20.10) 
- 2454 FORMAT(2X,I8,2(2X,E15.8))
+ 2120 FORMAT(2X,1pE20.10E3,5X,I10)
+ 2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3) 
+ 2454 FORMAT(2X,I8,2(2X,1pE20.10E3))
 C-----------------------------------------------------------------------
        END SUBROUTINE writeOutArrayMinMax
 C-----------------------------------------------------------------------
@@ -4432,16 +4432,16 @@ C     file.
          WRITE(69,6000) WarnElevDumpLimit,NP,DTDP*1.d0,1,1
          CLOSE(69)
       ENDIF
- 6000 FORMAT(1x,I10,1x,I10,1x,E15.7,1x,I5,1x,I5)
+ 6000 FORMAT(1x,I10,1x,I10,1x,E15.7E3,1x,I5,1x,I5)
 C
 C     Open the file and append the new elevation data.
       OPEN(69,FILE=TRIM(LOCALDIR)//'/'//'fort.69',
      &     ACCESS='SEQUENTIAL',POSITION='APPEND')
       WRITE(69,2120) TimeLoc,IT
- 2120 FORMAT(2X,1pE20.10,5X,I10)
+ 2120 FORMAT(2X,1pE20.10E3,5X,I10)
       DO I=1,NP
          IF(NODECODE(I).EQ.1) WRITE(69,2453) I,ETA2(I)
- 2453    FORMAT(2X,I8,2X,E15.8)
+ 2453    FORMAT(2X,I8,2X,1pE20.10E3)
       ENDDO
       CLOSE(69)
 C

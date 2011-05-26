@@ -3,6 +3,16 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.82.07  05/26/2011 - tcm - Changed E20.10 to 1PE20.10E3 in globalio.F
+C             and in write_output.F.  Also changed the output format in
+C             write_output.F to match the formats in globalio.F.  Increased 
+C             the format lenghts in timestep.F for the screen output of 
+C             ELMAX and VELMAX.  These were bug fixes that caused output
+C             to overflow the formats on some compilers, for example, an
+C             output of -0.1234567891E-123 using Ew.d would show up as 
+C                       -0.1234567891-123, without the E.  The FORTRAN 
+C             standard is not clear on how the exp is written out when using
+C             Ew.d so we are switching to Ew.dEe in order to be exact. 
 C  v49.82.06  05/18/2011 - jgf - Changed node to rawNode in subroutine that
 C             reads in min/max files ... not sure if this caused any issues
 C             but the Intel compiler complained; fixed format statement for
