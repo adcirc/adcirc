@@ -397,7 +397,7 @@ Casey 100208: Changed I8 to I12.
       ENDDO
 
 C  This section for prep15
-      IF (PREP_15) THEN
+      IF ((PREP_15.eqv..true.).or.(PREP_20.eqv..true.)) THEN
         print *, "from relocalize: reading nfluxf for each subdomain"
         DO IPROC = 1,NPROC
            READ(LUNP(IPROC),'(8X,I8)') NFLUXFP(IPROC)

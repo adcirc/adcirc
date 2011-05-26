@@ -3,6 +3,12 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.11   - 05/26/2011 - jgf - Added capability to adcprep to prep just
+C             the fort.88 file; add capability to just prep the fort.20 file;
+C             added command line argument processing to adcprep to bypass
+C             menu driven interface; the menu driven interface is still 
+C             the default, and is triggered if there aren't any command 
+C             line options.
 C  v50.10   - 05/25/2011 - jgf - Merged rivers50 branch r643:660, which 
 C             contained the changes for initialization of rivers above msl.
 C    v50.05.05  05/23/2011 - jgf - Removed code that had been commented out b/c

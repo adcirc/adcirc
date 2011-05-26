@@ -97,6 +97,10 @@ C
       IMPLICIT NONE
 C
       CHARACTER JOB*80 ! user input for menu selection
+      INTEGER :: ARGCOUNT ! number of command line arguments
+      INTEGER :: IARGC    ! function to return command line arguments
+      INTEGER :: I        ! loop counter for command line arguments
+      CHARACTER(2048) :: CMDLINEARG ! content of cmd line arg
 
 C  Define File Format Version
 
@@ -121,6 +125,61 @@ C
       PREP_15    = .FALSE.
       HOT_LOCAL   = .FALSE.
       HOT_GLOBAL  = .FALSE.
+      PREP_20 = .FALSE.
+      PREP_88 = .FALSE.
+      MNPROC = 0
+C
+C--Init Memory Usage
+C
+      call memory_init()
+C
+C     jgf50.11: Parse command line arguments. This is needed initially
+C     so that fort.20 and fort.88 can be prepped individually (without 
+C     having to do a prep all and without having to add menu items). 
+      ARGCOUNT = IARGC() ! count up command line options
+      IF (ARGCOUNT.gt.0) THEN
+         I=0
+         DO WHILE (I.lt.ARGCOUNT)
+            I = I + 1
+            CALL GETARG(I, CMDLINEARG)
+            WRITE(*,*) "INFO: Processing ",TRIM(CMDLINEARG)
+            SELECT CASE(TRIM(CMDLINEARG))
+            CASE("--partmesh")
+               PARTITION = .TRUE.
+            CASE("--prepall")
+               PREP_ALL = .TRUE.
+            CASE("--prep13")
+               PREP_13 = .TRUE.
+            CASE("--prep15")
+               PREP_15 = .TRUE.
+            CASE("--prep20")
+               PREP_20 = .TRUE.
+            CASE("--prep88")
+               PREP_88 = .TRUE.
+            CASE("--np")
+               I = I + 1
+               CALL GETARG(I,CMDLINEARG)
+               READ(CMDLINEARG,*) MNPROC
+            CASE DEFAULT
+               WRITE(*,*) "WARNING: Command line argument '",
+     &            TRIM(CMDLINEARG),"' was not recognized."
+            END SELECT
+         END DO
+         ! Conk out if MNPROC was not specified
+         IF (MNPROC.EQ.0) THEN
+            WRITE(*,*) "ERROR: MNPROC was not specified."
+            STOP
+         ELSE
+            NPROC=MNPROC
+         ENDIF
+         ! The command-line and menu-driven options are mutually 
+         ! exclusive.
+         USE_DEFAULT = .TRUE. 
+         CALL PREPINPUT()
+         call memory_status()
+         STOP
+      ENDIF   
+
 C
 C-- Say Hello Gracie
 C
@@ -129,10 +188,6 @@ C
       print *," Serial version of ADCIRC Pre-processor   "
       print *," *****************************************"
       print *, " "
-C
-C--Init Memory Usage
-C
-      call memory_init()
 C
 C-- Prompt for user input
 C
@@ -288,6 +343,37 @@ C-- If ONLY localizing Run Info File ( fort.15 )
          ENDIF                                                 
          GO TO 9999
       endif
+
+C   If ONLY decomposing a fort.20 (variable flux) file.  
+C   -- Write a Local Flux File ( fort.20 ) for each PE if needed
+C   -- EXIST_FLUX and other variables are set when the fort.14 is 
+C   -- initially read in within the READ14() subroutine.
+      IF (PREP_20.eqv..true.) THEN
+         print *, 'INFO: Start reading in fort.15.'
+         CALL READ15() ! need to determine value of APERIODIC_FLOW_BC
+         print *, 'INFO: Fulldomain fort.15 file read successfully.'
+         if (EXIST_FLUX .ne. 0 .and. APERIODIC_FLOW_BC) then
+            WRITE(*,*) 
+     &         "INFO: Decomposing fort.20 (variable flux) file."
+            CALL RELOCALIZE()
+            CALL PREP20()
+            GOTO 9999
+         endif
+      ENDIF
+C
+Ca    IF ONLY decomposing a fort.88 (river elev init) file.
+!        kmd - Evan's changes for rivers above MSL
+      IF (PREP_88.eqv..true.) THEN 
+         IF ((EXIST_FLUX.NE.0).AND.(River_above_MSL)) THEN 
+            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN 
+               WRITE(*,*) 
+     &            "INFO: Decomposing fort.88 (river init) file."
+               CALL RELOCALIZE()
+               CALL PREP88()
+               GOTO 9999
+            END IF 
+         END IF 
+      END IF 
 C
 C-- Partition Nodes with METIS 4.0 Graph Partition Library
 C
@@ -561,7 +647,7 @@ CC -- Finish Addition by CF
 
 9999  CONTINUE
       print *, ""
-      print *, "Finished pre-processing input files"
+      print *, "INFO: Finished pre-processing input files."
       RETURN
       END SUBROUTINE
 C---------------------------------------------------------------------------
