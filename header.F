@@ -3,6 +3,15 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.12   - 05/26/2011 - tcm - Fixed bug that caused output to overflow the
+C             formats on some compilers, for example, an output of 
+C             -0.1234567891E-123 would be written as -0.1234567891-123, when
+C             using the Ew.d format.  The FORTRAN 90 standard is not clear
+C             on how the exp part is displayed when using Ew.d so we area
+C             switching to the Ew.dEe format.  Changes were made in 
+C             globalio.F, write_output.F and timestep.F for these.  Also,
+C             made the output formats consistent between globalio.F and 
+C             write_output.F.
 C  v50.11   - 05/26/2011 - jgf - Added capability to adcprep to prep just
 C             the fort.88 file; add capability to just prep the fort.20 file;
 C             added command line argument processing to adcprep to bypass

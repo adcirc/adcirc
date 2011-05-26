@@ -2775,9 +2775,9 @@ C     the screen.
      &            IT,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX,MYPROC
             ENDIF
  1991       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E14.8,
-     &           /,2X,'ELMAX = ', E10.4,' AT NODE',I7,
-     &           2X,'SPEEDMAX = ',E10.4,' AT NODE',I7,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE',I7,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE',I7,
      &           2X,'ON MYPROC = ',I4)
          ENDIF
          WarnElevExceeded = 0
@@ -2788,9 +2788,9 @@ C     the screen.
             WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
      &           KVMAX,MYPROC
  1993       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E14.8,
-     &           /,2X,'ELMAX = ', E10.4,' AT NODE',I7,
-     &           2X,'SPEEDMAX = ',E10.4,' AT NODE',I7,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE',I7,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE',I7,
      &           2X,'ON MYPROC = ',I4,
      &           3X,'** WARNING: Elevation.gt.WarnElev **')
             IF (WarnElevDump) WarnElevExceeded=1
@@ -2809,9 +2809,9 @@ C     the screen.
             WRITE(16,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
      &           KVMAX,MYPROC
  1995       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
-     &           5X,'TIME = ',E14.8,
-     &           /,2X,'ELMAX = ', E10.4,' AT NODE',I7,
-     &           2X,'SPEEDMAX = ',E10.4,' AT NODE',I7,
+     &           5X,'TIME = ',E15.8,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE',I7,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE',I7,
      &           2X,'ON MYPROC = ',I4,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev,',
      &           ' ADCIRC stopping. **')
