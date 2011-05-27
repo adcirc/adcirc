@@ -3,6 +3,13 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.14   - 05/27/2011 - RJW - Fixed 3D hotstart bug in the turb subroutine,
+C             that resulted in variables not being initialized upon return to
+C             the program from hotstart.(vsmy.F)
+C             Explicitly allow subroutines to access variables using the "USE"
+C             statement.  This was needed to ensure MYPROC, MNPROC, SZ were
+C             being properly used in subroutines (write_output.F,globalio.F,
+C             global.F).
 C  v50.13   - 05/27/2011 - jgf - Fixed issue caused by requesting netcdf
 C             station output while specifying zero stations.
 C  v50.12   - 05/26/2011 - tcm - Fixed bug that caused output to overflow the

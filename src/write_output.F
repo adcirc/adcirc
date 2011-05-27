@@ -21,7 +21,8 @@ C     including hotstart and harmonic analysis.
 C
 C----------------------------------------------------------------------
       SUBROUTINE WRITE_OUTPUT_2D (IT,TimeLoc)
-      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC
+      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC
+C RJW added MYPROC, MNPROC
       USE GLOBAL
       USE GLOBAL_IO, ONLY: storeOne, storeTwo, store63, HEADER_MAX,
      &    open_gbl_file, write_gbl_file, write_gbl_63_skip_drynode,
@@ -1024,8 +1025,10 @@ C     in serial or in parallel using globalio.
 C----------------------------------------------------------------------
       SUBROUTINE writeHarmonicAnalysisOutput(ITIME)
       USE SIZES, ONLY : SZ, MNHARF, LOCALDIR, GLOBALDIR, 
-     &                  WRITE_LOCAL_FILES
-      USE GLOBAL, ONLY : OutputDataDescript_t, myProc, MNPROC, NSTAE_G,
+     &                  WRITE_LOCAL_FILES, MNPROC, MYPROC
+C RJW added MNPROC and MYPROC
+C removed from global  myProc, MNPROC,
+      USE GLOBAL, ONLY : OutputDataDescript_t, NSTAE_G,
      &                   NOUTE, NSTAE, IMAP_STAE_LG, ICS, SLEL,
      &                   XEL, SFEL, YEL, NSTAV_G, NSTAV,  MNP,
      &                   IMAP_STAV_LG, SLEV, XEV, SFEV,
@@ -1552,10 +1555,12 @@ C     jgf49.44 Writes the harmonic arrays in output files of the desired
 C     format. Only ascii is supported at this point.
 C-----------------------------------------------------------------------
       SUBROUTINE writeOutHarmonicArrays(lun, sets, mag1, ph1, mag2, ph2)
-      USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, LOCALDIR, GLOBALDIR
+      USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, LOCALDIR, GLOBALDIR,
+     & MYPROC
       USE HARM, ONLY : nf, nfreq, hafreq, haff, haface, namefr
-      USE GLOBAL, ONLY : OutputDataDescript_t, myProc, screen,
+      USE GLOBAL, ONLY : OutputDataDescript_t, screen,
      &                   DEBUG, setMessageSource, unsetMessageSource
+c     & ,myproc
       IMPLICIT NONE
       INTEGER, intent(in) :: lun  ! adcirc logical unit number for i/o
       INTEGER, intent(in) :: sets ! how many sets of mags/phases to write
@@ -1661,8 +1666,10 @@ C----------------------------------------------------------------------
       SUBROUTINE initOutput3D(lun, specifier, nset, nPerSet, nPerSet_g,
      &                        tsPeriod, outputShape, recNum)
       USE SIZES, ONLY : SZ, LOCALDIR, GLOBALDIR, MNPROC,
-     &   WRITE_LOCAL_FILES, NBYTE
-      USE GLOBAL, ONLY : RUNDES, RUNID, AGRID, MYPROC, RDES4, RID4,
+     &   WRITE_LOCAL_FILES, NBYTE, Myproc
+C RJW added myproc
+C MYPROC,
+      USE GLOBAL, ONLY : RUNDES, RUNID, AGRID, RDES4, RID4,
      &   AID4, RDES8, RID8, AID8, DTDP, IHOT, DEBUG, scratchMessage,
      &   logMessage, ERROR, allMessage
       USE GLOBAL_3DVS, ONLY : NFEN
@@ -1842,7 +1849,8 @@ C     jgf49.43 Rewrote for globalio.
 C-----------------------------------------------------------------------
       SUBROUTINE writeOutput3D(TimeLoc,IT)
       USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, 
-     &    WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
+     &    WRITE_LOCAL_FILES, MNPROC, GLOBALDIR, MYPROC
+C RJW added MYPROC
       USE GLOBAL, ONLY : ScreenUnit, BCFLAG_TEMP, scratchMessage,
      &    DEBUG, INFO, WARNING, ERROR, screen, setMessageSource,
      &    unsetMessageSource, allMessage, OutputDataDescript_t,

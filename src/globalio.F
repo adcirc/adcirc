@@ -27,6 +27,8 @@ C     &    COMM, nodecode
       ! jgf48.03 Collects array data from each subdomain. 
       !--------------------------------------------------------------
       subroutine collectFullDomainArray(descript, pack_cmd, unpack_cmd)
+      USE SIZES
+      USE GLOBAL
       implicit none
 #ifdef CMPI
 #ifndef HAVE_MPI_MOD
@@ -118,6 +120,8 @@ C! CMPI
       !--------------------------------------------------------------
       subroutine collectFullDomainIntArray(descript, 
      &                                    pack_cmd, unpack_cmd,variable)
+      USE SIZES
+      USE GLOBAL
       implicit none
 #ifdef CMPI
 #ifndef HAVE_MPI_MOD
@@ -207,6 +211,8 @@ C! CMPI
       !  to a buffer 
       !--------------------------------------------------------------
       subroutine packOne(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -235,6 +241,8 @@ C! CMPI
       !  to a buffer 
       !--------------------------------------------------------------
       subroutine packOneInt(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -263,6 +271,8 @@ C! CMPI
       !  elevations are set to -99999.0 during the packing process.
       !--------------------------------------------------------------
       subroutine pack63(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -296,6 +306,8 @@ C! CMPI
       !  elevations are set to -99999.0 during the packing process.
       !--------------------------------------------------------------
       subroutine pack83(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -329,6 +341,8 @@ C! CMPI
       !  from a buffer 
       !--------------------------------------------------------------
       subroutine unpackOne(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -352,6 +366,8 @@ C! CMPI
       !  from a buffer 
       !--------------------------------------------------------------
       subroutine unpackOneInt(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -375,6 +391,8 @@ C! CMPI
       ! numbers into a buffer
       !--------------------------------------------------------------
       subroutine packTwo(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -403,6 +421,8 @@ C! CMPI
       ! numbers into a buffer
       !--------------------------------------------------------------
       subroutine unpackTwo(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -426,6 +446,8 @@ C! CMPI
       ! numbers into a buffer
       !--------------------------------------------------------------
       subroutine packMbyNP(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -466,6 +488,8 @@ C
       ! numbers out of a buffer
       !--------------------------------------------------------------
       subroutine unpackMbyNP(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -499,6 +523,8 @@ C
       ! numbers into a buffer
       !--------------------------------------------------------------
       subroutine packNPbyM(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -539,6 +565,8 @@ C
       ! numbers out of a buffer
       !--------------------------------------------------------------
       subroutine unpackNPbyM(descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -573,6 +601,8 @@ C
       !--------------------------------------------------------------
       subroutine open_gbl_file(lun, filename, size_g, size_this,
      &                          write_header)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       external write_header ! subroutine used to actually write the header
@@ -601,6 +631,8 @@ C
       !--------------------------------------------------------------
       subroutine open_minmax_file(lun, filename, size_g, size_this,
      &                          write_header)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       external write_header ! subroutine used to actually write the header
@@ -635,6 +667,8 @@ C
 
       subroutine write_gbl_file(lun, filename, descript, TimeLoc, it, 
      &                          write_cmd)
+      USE SIZES
+      USE GLOBAL
       implicit none
 #ifdef CMPI
 #ifndef HAVE_MPI_MOD
@@ -760,6 +794,8 @@ C! CMPI
 
       subroutine write_gbl_63_skip_drynode
      &           (lun, filename, descript, TimeLoc, it, write_cmd)
+      USE SIZES
+      USE GLOBAL
       implicit none
 #ifdef CMPI
 #ifndef HAVE_MPI_MOD
@@ -904,6 +940,8 @@ C! CMPI
 
       subroutine write_gbl_file_skip_default
      &           (lun, filename, descript, TimeLoc, it, write_cmd, default)
+      USE SIZES
+      USE GLOBAL
       implicit none
 #ifdef CMPI
 #ifndef HAVE_MPI_MOD
@@ -1056,6 +1094,8 @@ C! CMPI
       !   +to a buffer if we are running in parallel
       !--------------------------------------------------------------
       subroutine storeOne(lun, descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -1095,6 +1135,8 @@ C! CMPI
       !  +to a buffer if we are running in parallel
       !--------------------------------------------------------------
       subroutine storeTwo(lun, descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -1133,6 +1175,8 @@ C! CMPI
       !
       !--------------------------------------------------------------
       subroutine store63(lun, descript, istart, iend)
+      USE SIZES
+      USE GLOBAL
       implicit none
 
       type (OutputDataDescript_t) :: descript
@@ -1187,6 +1231,8 @@ C! CMPI
       ! Elevation for Elevation Recording station: fort.61
       !--------------------------------------------------------------
       subroutine header61(lun, size_this)
+      USE SIZES
+      USE GLOBAL
       implicit none
       integer :: lun, size_this
 
@@ -1207,6 +1253,8 @@ C! CMPI
       ! Velocity for Velocity Recording station: fort.62
       !--------------------------------------------------------------
       subroutine header62(lun, size_this)
+      USE SIZES
+      USE GLOBAL
       implicit none
       integer :: lun, size_this
 
@@ -1227,6 +1275,8 @@ C! CMPI
       ! Elevation for all nodes: fort.63
       !--------------------------------------------------------------
       subroutine header63(lun, size_this)
+      USE SIZES
+      USE GLOBAL
       implicit none
       integer :: lun, size_this
 
@@ -1247,6 +1297,8 @@ C! CMPI
       ! Maximum elevation for all nodes: fort.63
       !--------------------------------------------------------------
       subroutine header_max(lun, size_this)
+      USE SIZES
+      USE GLOBAL
       implicit none
       integer :: lun, size_this
 
@@ -1266,6 +1318,8 @@ C! CMPI
       ! Velocity for all nodes: fort.64
       !--------------------------------------------------------------
       subroutine header64(lun, size_this)
+      USE SIZES
+      USE GLOBAL
       implicit none
       integer :: lun, size_this
 
@@ -1286,6 +1340,8 @@ C! CMPI
       ! Pressure for Meteorological Recording station: fort.71
       !--------------------------------------------------------------
       subroutine header71(lun, size_this)
+      USE SIZES
+      USE GLOBAL
       implicit none
       integer :: lun, size_this
 
@@ -1306,6 +1362,8 @@ C! CMPI
       ! Wind Velocity for Meteorological Recording stations : fort.72
       !--------------------------------------------------------------
       subroutine header72(lun, size_this)
+      USE SIZES
+      USE GLOBAL
       implicit none
       integer :: lun, size_this
 
@@ -1326,6 +1384,8 @@ C! CMPI
       ! Atmospheric Pressure for all nodes: fort.73
       !--------------------------------------------------------------
       subroutine header73(lun, size_this)
+      USE SIZES
+      USE GLOBAL
       implicit none
       integer :: lun, size_this
 
@@ -1346,6 +1406,8 @@ C! CMPI
       ! Wind Stress for all nodes: fort.74
       !--------------------------------------------------------------
       subroutine header74(lun, size_this)
+      USE SIZES
+      USE GLOBAL
       implicit none
       integer :: lun, size_this
 
@@ -1367,6 +1429,8 @@ C! CMPI
       ! tcm v49.64.01 -- added
       !--------------------------------------------------------------
       subroutine header91(lun, size_this)
+      USE SIZES
+      USE GLOBAL
       implicit none
       integer :: lun, size_this
 
@@ -1388,6 +1452,8 @@ C! CMPI
       ! tcm v49.64.01 -- added
       !--------------------------------------------------------------
       subroutine header93(lun, size_this)
+      USE SIZES
+      USE GLOBAL
       implicit none
       integer :: lun, size_this
 
@@ -1409,6 +1475,8 @@ C! CMPI
       ! Concentration Recording station: fort.81
       !--------------------------------------------------------------
       subroutine header81(lun, size_this)
+      USE SIZES
+      USE GLOBAL
       implicit none
       integer :: lun, size_this
 
@@ -1433,6 +1501,8 @@ C! CMPI
       ! station files.
       !--------------------------------------------------------------
       subroutine writeStationHeader(lun, numSta, typeStr)
+      USE SIZES
+      USE GLOBAL
       use global_3dvs, only: 
      &     ndset3dsv, nspo3dsv, nfen,
      &     ndset3dst, nspo3dst,
@@ -1500,6 +1570,8 @@ C! CMPI
       !--------------------------------------------------------------
       subroutine writeDomainHeader(lun, filename, numNodes_g, 
      &            numNodes, typeStr)
+      USE SIZES
+      USE GLOBAL
       use global_3dvs, only:
      &   ndset3dgv, nspo3dgv, nfen,
      &   ndset3dgt, nspo3dgt,

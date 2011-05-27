@@ -79,7 +79,8 @@ ifeq ($(compiler),intel)
   PFC           :=  mpif90
   FFLAGS1       :=  $(INCDIRS) -O2 -FI  -Vaxlib -assume byterecl -132
   ifeq ($(DEBUG),full)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -check all -FI -Vaxlib -assume byterecl -132 -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -check all -FI -Vaxlib -assume byterecl -132 -DNETCDF_TRACE -DHOTSTART_TRACE -DWRITE_OUTPUT_TRACE -DGLOBAL_TRACE
+#     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -check all -FI -Vaxlib -assume byterecl -132 -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK  #-DNETCDF_TRACE -DHOTSTART_TRACE -DWRITE_OUTPUT_TRACE -DGLOBAL_TRACE
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)

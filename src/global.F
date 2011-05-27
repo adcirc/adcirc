@@ -1040,6 +1040,8 @@ C     to a subdomain array.
 C     kmd: Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomain2D(sd_array, lun, counter, method)
+      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
+
       IMPLICIT NONE
 C
       REAL(SZ), intent(out), dimension(:) :: sd_array ! subdomain array
@@ -1116,6 +1118,7 @@ C     to a subdomain array.
 C     kmd: Updated to include real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomainInt2D(sd_array, lun, counter, method)
+      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
       IMPLICIT NONE
 C
       INTEGER, intent(out), dimension(:) :: sd_array ! subdomain array
@@ -1271,6 +1274,8 @@ C     to a subdomain array.
 C     kmd : Updated to include a real format option
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomain3D(sd_array, nfen, lun, counter,method)
+      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
+
       IMPLICIT NONE
 C
       REAL(SZ), intent(out), dimension(:,:) :: sd_array ! subdomain array

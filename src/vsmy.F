@@ -2365,27 +2365,25 @@ C         Z0Sw = (0.25-1.0)*Wave Height     ! (sig wave height) (Burchard (2001)
 c     
 c     At time step 1, set flags and initialize variables
 c     
-C.. RJW added as per Kendra reccomendation to algebraically compute length scale
-C.  RJW moved up and outside of if statement
+C.  RJW moved up and outside of if statement to allow variable computation in case of hotstart
          il = 1  ! length scale flag, = 1 for length scale from q2l eqn.
 c         il = 2  ! length scale flag, = 2 for length scale from algebraic eq. (see below)
 c         il = 3  ! length scale flag, = 3 for length scale from algebraic eq. (see below)
-
-      if(istart.eq.1) then
-        ! ibc = 0 ! surface b.c. flag, = 0 for specified stress, = 1 for no flux
-         ibc = 1 ! surface b.c. flag, = 0 for specified stress, = 1 for no flux
-         if((nws.eq.0).or.(nws.eq.100)) ibc =1 
-
+        ibc = 1 
+        !ibc = 0 ! surface b.c. flag, = 0 for specified stress, = 1 for no flux
+        !ibc = 1 ! surface b.c. flag, = 0 for specified stress, = 1 for no flux
+        !if((nws.eq.0).or.(nws.eq.100)) ibc =1 
 c     set constants and other parameters
-         B123 = B1**(2.d0/3.d0)
-         Sq = 0.2d0 ! initialize the stability constant stability function
-
+        B123 = B1**(2.d0/3.d0)
+        Sq = 0.2d0 ! initialize the stability constant stability function
 c     initialize the Brunt-Vaisala freq squared = 0 if density not considered
          if(iden.eq.0) then
             do n=1,nfen
-               BVfreq2(n)=0.d0            
+               BVfreq2(n)=0.d0
             end do
          endif
+
+      if(istart.eq.1) then
 c     initialization for a cold start only
          if(ihot.eq.0) then
             do n = 1,nfen
@@ -2420,23 +2418,10 @@ C.RJW..
 C identify if node was dry last timestep but is now wet
 C the initialized value of L can be recomputed to a more meaningful 
 C value before used to compute q2
-C as of now problem is fixed by initializing L to a nonzero value
-C
+
       if (L(nh,1) .eq. -9999d0 ) Then
-
-C we know that the node was previously wet, soooo
-C lets try reinitializing the parameters that were initialized when
-C istart = 1
-        B123 = B1**(2.d0/3.d0)
-        Sq = 0.2d0 ! initialize the stability constant stability function
          do n = 1,nfen
-C           l(nh,n) = H    
          l(nh,n)=rkap*(Z0B1*(a-sigma(n))-Z0Sw*(b-sigma(n)))/amb
-
-c     initialize the Brunt-Vaisala freq squared = 0 if density not considered
-         if(iden.eq.0) then
-               BVfreq2(n)=0.d0
-         endif
          enddo
        endif     
 C now check q20 it may also be zero
@@ -2544,7 +2529,6 @@ c     Kq(n)=Km(n)*Sq/Sm(n)                           !rog way
          prod(n)=Km(n)*spgrad2(n)-Kh(n)*BVfreq2(n)
          diss(n)=qprev/(B1*rmlen(n))
 c     diss(n)=q2prev(n)*Sm(n)/(Km(n)*B1)             !rog way
-CRJW ADDTOTEST
            if ((n.eq.nfen).and.(IEVC.eq.51)) then
              prod(n)=prod(n)+(150.0*USTARS*USTARS*USTARS)
            endif
@@ -2760,6 +2744,7 @@ C              viscosity
          EVTOT(n) = Sm(n)*sqrt(q2(n))*l(nh,n)
          NTVTOT(n) = Sh(n)*sqrt(q2(n))*l(nh,n)
          if(EVTOT(n).lt.EVMIN) EVTOT(n)=EVMIN
+         if(EVTOT(n).gt.100.0d0) EVTOT(n)=100.0d0
          if(NTVTOT(n).lt.EVMIN) NTVTOT(n)=EVMIN
       end do
 
