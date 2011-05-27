@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.13   - 05/27/2011 - jgf - Fixed issue caused by requesting netcdf
+C             station output while specifying zero stations.
 C  v50.12   - 05/26/2011 - tcm - Fixed bug that caused output to overflow the
 C             formats on some compilers, for example, an output of 
 C             -0.1234567891E-123 would be written as -0.1234567891-123, when

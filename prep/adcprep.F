@@ -429,7 +429,7 @@ C   kmd48.33bc add information for 3D
       ENDIF
 
       !jgf48.07 Initialize netCDF output files                
-      IF (useNetCDF) THEN                                     
+      IF ((useNetCDF.eqv..true.).and.(PREP_ALL.eqv..true.)) THEN
          write(*,*) "INFO: Initializing the netCDF output files." 
          ! call netCDF module                                 
          CALL PREPNETCDF()                                    
