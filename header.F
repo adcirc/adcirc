@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.98.08  05/27/2011 - jgf - Fixed issue caused by requesting netcdf
+C             station output while specifying zero stations.
 C  v49.82.07  05/26/2011 - tcm - Changed E20.10 to 1PE20.10E3 in globalio.F
 C             and in write_output.F.  Also changed the output format in
 C             write_output.F to match the formats in globalio.F.  Increased 

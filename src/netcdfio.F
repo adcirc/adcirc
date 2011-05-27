@@ -505,6 +505,17 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
       err = .false.
+C     
+C     jgf50.13: if netcdf output was requested, but there are no stations, 
+C     don't initialize the file; just return. 
+      IF ( descript % num_fd_records.eq.0 ) THEN
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         RETURN
+      ENDIF     
+C
       sta % num_stations = descript % num_fd_records
       ALLOCATE(sta%myTime%timenc(sta%myTime%timenc_len))
 C      
@@ -1633,6 +1644,17 @@ C
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.") 
 #endif
+C     
+C     jgf50.13: if netcdf output was requested, but there are no stations, 
+C     don't write to the file (it doesn't exist); just return. 
+      IF ( descript % num_fd_records.eq.0 ) THEN
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         RETURN
+      ENDIF     
+
       iret = nf_open(sta%myFile%FILENAME, NF_WRITE, sta%ncid)
       CALL check_err(iret)   
       sta%myTime%timenc(sta%myTime%timenc_len)=time
@@ -2065,6 +2087,16 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
       err = .false.
+C     
+C     jgf50.13: if netcdf output was requested, but there are no stations, 
+C     don't initialize the file; just return. 
+      IF ( descript1 % num_fd_records.eq.0 ) THEN
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         RETURN
+      ENDIF     
       sta3D % num_stations = descript1 % num_fd_records
       sta3D % num_v_nodes = descript1 % num_items_per_record
       ALLOCATE(sta3D%myTime%timenc(sta3D%myTime%timenc_len))
@@ -2923,6 +2955,16 @@ C
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.") 
 #endif
+C     
+C     jgf50.13: if netcdf output was requested, but there are no stations, 
+C     don't write to the file (it doesn't exist); just return. 
+      IF ( descript1 % num_fd_records.eq.0 ) THEN
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         RETURN
+      ENDIF     
       iret = nf_open(sta%myFile%FILENAME, NF_WRITE, sta%ncid)
       CALL check_err(iret)   
       sta%myTime%timenc(sta%myTime%timenc_len)=time
@@ -8304,21 +8346,27 @@ C
       SELECT CASE(lun)
         
          CASE(41)
-            DEALLOCATE(densityStations3D%u_station_data)
-            IF ((IDEN.eq.2).or.(IDEN.eq.4)) THEN 
-               DEALLOCATE(densityStations3D%v_station_data)
-            ENDIF
-            IF ((IDEN.eq.3).or.(IDEN.eq.4)) THEN
-               DEALLOCATE(densityStations3D%w_station_data)
+            IF (descript % num_fd_records.ne.0) THEN
+               DEALLOCATE(densityStations3D%u_station_data)
+               IF ((IDEN.eq.2).or.(IDEN.eq.4)) THEN 
+                  DEALLOCATE(densityStations3D%v_station_data)
+               ENDIF
+               IF ((IDEN.eq.3).or.(IDEN.eq.4)) THEN
+                  DEALLOCATE(densityStations3D%w_station_data)
+               ENDIF
             ENDIF
          CASE(42)
-            DEALLOCATE(velocityStations3D%u_station_data)
-            DEALLOCATE(velocityStations3D%v_station_data)
-            DEALLOCATE(velocityStations3D%w_station_data)
+            IF (descript % num_fd_records.ne.0) THEN
+               DEALLOCATE(velocityStations3D%u_station_data)
+               DEALLOCATE(velocityStations3D%v_station_data)
+               DEALLOCATE(velocityStations3D%w_station_data)
+            ENDIF
          CASE(43)
-            DEALLOCATE(turbulenceStations3D%u_station_data)
-            DEALLOCATE(turbulenceStations3D%v_station_data)
-            DEALLOCATE(turbulenceStations3D%w_station_data)
+            IF (descript % num_fd_records.ne.0) THEN
+               DEALLOCATE(turbulenceStations3D%u_station_data)
+               DEALLOCATE(turbulenceStations3D%v_station_data)
+               DEALLOCATE(turbulenceStations3D%w_station_data)
+            ENDIF
          CASE(44)
             DEALLOCATE(density3D%u_nodal_data)
             DEALLOCATE(density3D%v_nodal_data)
@@ -8334,23 +8382,31 @@ C
          CASE(47)
             DEALLOCATE(futureSurfaceTemperature%nodal_data)
          CASE(61)
-            DEALLOCATE(elevSta%station_data)
-            DEALLOCATE(elevSta%x)
-            DEALLOCATE(elevSta%y)
+            IF (descript % num_fd_records.ne.0) THEN
+               DEALLOCATE(elevSta%station_data)
+               DEALLOCATE(elevSta%x)
+               DEALLOCATE(elevSta%y)
+            ENDIF
          CASE(62) 
-            DEALLOCATE(velSta%u_station_data)
-            DEALLOCATE(velSta%v_station_data)
-            DEALLOCATE(velSta%x)
-            DEALLOCATE(velSta%y)
+            IF (descript % num_fd_records.ne.0) THEN
+               DEALLOCATE(velSta%u_station_data)
+               DEALLOCATE(velSta%v_station_data)
+               DEALLOCATE(velSta%x)
+               DEALLOCATE(velSta%y)
+            ENDIF
          CASE(71)
-            DEALLOCATE(prSta%station_data)
-            DEALLOCATE(prSta%x)
-            DEALLOCATE(prSta%y)
+            IF (descript % num_fd_records.ne.0) THEN
+               DEALLOCATE(prSta%station_data)
+               DEALLOCATE(prSta%x)
+               DEALLOCATE(prSta%y)
+            ENDIF
          CASE(72) 
-            DEALLOCATE(wVelSta%u_station_data)
-            DEALLOCATE(wVelSta%v_station_data)
-            DEALLOCATE(wVelSta%x)
-            DEALLOCATE(wVelSta%y)
+            IF (descript % num_fd_records.ne.0) THEN
+               DEALLOCATE(wVelSta%u_station_data)
+               DEALLOCATE(wVelSta%v_station_data)
+               DEALLOCATE(wVelSta%x)
+               DEALLOCATE(wVelSta%y)
+            ENDIF
          CASE(63)
             DEALLOCATE(elev%nodal_data)
             NULLIFY(elev%myMesh)
