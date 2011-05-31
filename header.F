@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.15   - 05/31/2011 - jgf - Modified prepUnSWAN routine in adcprep so that
+C             it loads the name of the swan command file from the swaninit 
+C             file; it will then copy that command file to the subdomain 
+C             directories without changing the name. 
 C  v50.14   - 05/27/2011 - RJW - Fixed 3D hotstart bug in the turb subroutine,
 C             that resulted in variables not being initialized upon return to
 C             the program from hotstart.(vsmy.F)

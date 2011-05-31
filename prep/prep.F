@@ -5930,8 +5930,13 @@ C     jgf48.17 This subroutine just copies the UnSWAN input file to each
 C     subdomain. Currently, it is only called if the compiler directive
 C     ADCSWAN is defined. 
 C
+C     jgf50.15: After discussion with Casey, it was decided that changes
+C     should be made such that adcprep looks for the swaninit file and
+C     parses it to find the name of the swan control file (conventionally
+C     called fort.26 in the adcirc community). It should then attempt to
+C     copy that file to the subdomains. 
 C---------------------------------------------------------------------------
-      SUBROUTINE prepUnSWAN()
+      SUBROUTINE  prepUnSWAN
 C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       use memory_usage
@@ -5940,29 +5945,90 @@ C---------------------------------------------------------------------------
       CHARACTER*170 Line ! line of data from UnSWAN file
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error
+      LOGICAL swanInitFound !.true. if the swaninit file was found 
       LOGICAL origUseDefault ! there is no default UnSWAN input file name
+      INTEGER swiLUN ! logical unit number of swaninit file
+      INTEGER ErrorIO ! zero if the file was opened successfully
+      LOGICAL readError ! .true. if there was an error reading a file 
+      CHARACTER(36) swanComFile ! name of swan command file
+      LOGICAL swanComFound ! .true. if swan command file was found
+      CHARACTER(len=43) sdFileName     ! subdomain file name
 C
-C     Open full domain and all subdomain fort.26 files (UnSWAN)
-      origUseDefault = USE_DEFAULT
-      USE_DEFAULT = .false. ! abusing the global variable to act as an argument
-      CALL OpenPrepFiles(26, 'UnSWAN                        ', 
-     &     1, nproc, sdu, success)
-      USE_DEFAULT = origUseDefault
-
-      IF (.not.success) THEN
-         WRITE(*,*) 'WARNING: UnSWAN files not preprocessed.'
-         RETURN ! note early return
-      ELSE
-Casey 090304: Changed the formatting through the next section.
-         DO 
-C           READ(26,170,END=9999) Line
-            READ(26,'(A)',END=9999) Line
-            DO IPROC = 1,NPROC
-C              WRITE(SDU(IPROC),60) trim(Line)
-               WRITE(SDU(IPROC),'(A)') trim(Line)
-            ENDDO
-         ENDDO
+C     
+      swanInitFound = .false.
+      swanComFound = .false.
+      readError = .true.
+      INQUIRE(FILE='swaninit',EXIST=swanInitFound)
+      IF (swanInitFound.eqv..true.) THEN
+         WRITE(*,*) "INFO: The swaninit file was found."
+         OPEN(swiLUN,FILE='swaninit',ACTION='READ', 
+     &       ACCESS='SEQUENTIAL',IOSTAT=ErrorIO,STATUS='OLD')
+         IF (ErrorIO.ne.0) THEN
+            WRITE(*,*) "ERROR: The swaninit file could not be opened."
+         ELSE
+            WRITE(*,*) 
+     &      "INFO: Parsing swaninit file for swan command file name."
+            ! skip down to the 4th line 
+            DO I=1,4
+               READ(swiLUN,*,ERR=4321,END=4321,IOSTAT=ErrorIO) Line
+            ENDDO 
+            READ(Line,*,ERR=4321,END=4321,IOSTAT=ErrorIO) swanComFile
+            WRITE(*,*) "INFO: The swan command file is '",
+     &         swanComFile,"'."
+            readError = .false.
+            ! If swan was started without a swaninit file, it will create
+            ! its own swaninit, and it will use the string DEFAULT to
+            ! represent the name of the swan command file ... there may
+            ! be one of these lying around ... lets not use it
+            IF (TRIM(swanComFile).eq.'DEFAULT') THEN
+               WRITE(*,*) "ERROR: 'DEFAULT' is an invalid name."
+            ELSE
+               ! check to see if the swan command file is present
+               INQUIRE(FILE=swanComFile,EXIST=swanComFound)   
+               IF (swanComFound.eqv..true.) THEN 
+                  WRITE(*,*) "INFO: The swan command file '",
+     &               swanComFile,"' was found."
+                  OPEN(26,FILE='swanComFile',ACTION='READ', 
+     &            ACCESS='SEQUENTIAL',IOSTAT=ErrorIO,STATUS='OLD')
+                  IF (ErrorIO.ne.0) THEN
+                     WRITE(*,*) "ERROR: The swan command file '",
+     &                  swanComFile,"' could not be opened."
+                  ENDIF
+               ELSE
+                   WRITE(*,*) "ERROR: The swan command file '",
+     &               swanComFile,"' was not found" 
+               ENDIF
+            ENDIF
+         ENDIF
       ENDIF
+4321  IF ((readError.eqv..true.).or.(ErrorIO.ne.0).or.
+     &     (swanInitFound.eqv..false.).or.
+     &     (swanComFound.eqv..false.)) THEN
+         WRITE(*,*) 'ERROR: There was an error reading swan files.'
+         WRITE(*,*) 'WARNING: swan files not preprocessed.'
+         RETURN ! note early return
+      ENDIF
+C
+C     Open each of the subdomain files
+      DO iproc = 1, nproc
+         sdu(iproc) = 105 + (iproc-1)
+         sdFileName = 'PE0000/'//swanComFile
+         CALL IWRITE(sdFileName, 3, 6, iproc-1)
+         OPEN (UNIT=SDU(iproc), FILE=TRIM(sdFileName), IOSTAT=ErrorIO)
+         IF ( ErrorIO .GT. 0 ) THEN
+            WRITE(*,*) "ERROR: Subdomain file '",TRIM(sdFileName),
+     &         " cannot be opened."
+            RETURN ! failed to open at least one subdomain file
+         ENDIF
+      ENDDO
+C
+Casey 090304: Changed the formatting through the next section.
+      DO 
+         READ(26,'(A)',END=9999) Line
+         DO IPROC = 1,NPROC
+            WRITE(SDU(IPROC),'(A)') trim(Line)
+         ENDDO
+      ENDDO
 C
 C--Close fulldomain file and all the subdomain files     
 C
