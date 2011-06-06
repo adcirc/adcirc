@@ -3,6 +3,14 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.16   - 06/06/2011 - jgf - Fixed issue with netcdf hotstart where the
+C             time (in seconds) was being read from the netcdf hotstart file
+C             but not communicated back to hstart.F for use in initialization;
+C             added enhanced logging and i/o error checking to owiwind.F, as
+C             well as creating a subroutine to remove some repeated code for
+C             i/o; widened the format for NSPOOLG* in globalio.F from 
+C             I5 to I8 and widened format for NHSINC from I5 to just I in 
+C             read_input.F to avoid format overflows. 
 C  v50.15   - 05/31/2011 - jgf - Modified prepUnSWAN routine in adcprep so that
 C             it loads the name of the swan command file from the swaninit 
 C             file; it will then copy that command file to the subdomain 

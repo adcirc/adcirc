@@ -1336,12 +1336,81 @@ C
          END IF
       ENDIF
 C
+
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE readAndMapToSubdomain3D
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   O P E N  F I L E  F O R  R E A D 
+C-----------------------------------------------------------------------
+C     jgf50.16 Added general subroutine for opening an existing input
+C     file for reading. Includes error checking.
+C-----------------------------------------------------------------------
+      SUBROUTINE openFileForRead(lun, filename, errorIO)
+      IMPLICIT NONE      
+      INTEGER, intent(in) :: lun   ! fortran logical unit number
+      CHARACTER(*), intent(in) :: filename ! full pathname of file
+      INTEGER, intent(out) :: errorIO  ! zero if the file opened successfully
+      LOGICAL :: fileFound    ! .true. if the file is present
+C
+      call setMessageSource("openFileForRead")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+C
+      errorIO = 0
+C 
+C     Check to see if file exists
+      write(scratchMessage,21) lun
+  21  format("Searching for file to open on unit ",I5,"...")
+      call allMessage(INFO,trim(scratchMessage))
+      inquire(FILE=trim(filename),EXIST=fileFound)
+      if (fileFound.eqv..false.) then
+         write(scratchMessage,23) trim(filename)
+  23     format("The file '",A,"' was not found.")
+         call allMessage(ERROR,scratchMessage)
+         errorIO = 1
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         return  ! file not found
+      else
+         write(scratchMessage,24) trim(filename)
+  24     format("The file '",A,"' was found. The file will be opened.")
+         call allMessage(INFO,trim(scratchMessage))
+      endif
+C
+C     Open existing file
+      OPEN(lun,FILE=trim(filename),STATUS='OLD',
+     & ACTION='READ',IOSTAT=errorIO)
+      if (errorIO.ne.0) then
+          write(scratchMessage,25) trim(filename)
+  25      format("Could not open the file '",A,"'.")
+          call allMessage(ERROR,trim(scratchMessage))
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+          call allMessage(DEBUG,"Return.")
+#endif
+          call unsetMessageSource()
+          return  ! file found but could not be opened
+      else
+         write(scratchMessage,26) trim(filename)
+  26     format("The file '",A,"' was opened successfully.")
+         call allMessage(INFO,trim(scratchMessage))
+      endif
+
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+C-----------------------------------------------------------------------
+      END SUBROUTINE openFileForRead
 C-----------------------------------------------------------------------
 
 C...

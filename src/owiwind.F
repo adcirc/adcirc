@@ -6,7 +6,10 @@ C
       MODULE OWIWIND
 C
       USE SIZES,ONLY : SZ,MYPROC
-      USE GLOBAL,ONLY : NSCREEN, ScreenUnit
+      USE GLOBAL,ONLY : NSCREEN, ScreenUnit, DEBUG, ECHO, INFO, 
+     &   WARNING, ERROR, screen, logMessage, allMessage, 
+     &   setMessageSource, unsetMessageSource, scratchMessage,
+     &   openFileForRead
 #ifdef CMPI
       USE MESSENGER,ONLY : MSG_FINI
 #endif         
@@ -23,9 +26,11 @@ C
       real(SZ) :: ramp,rampfrac
       real(SZ) :: uu,vv,PP
       real(SZ) :: Penv
+      ! start and end dates for region and basin scale data
       integer(8):: date1R,date2R,date1B,date2B
-      integer(8):: date1w,date2w
-      integer(8):: date1p,date2p
+      integer(8):: date1,date2  ! generic start and end dates from OWI header  
+      integer(8):: date1w,date2w ! start and end dates for wind data
+      integer(8):: date1p,date2p ! start and end dates for atm. press. data
       integer :: iLatR,iLongR,iCYMDHR,iMinR
       real(SZ)  :: dxR,dyR,swlatR,swlongR
       integer :: iLatB,iLongB,iCYMDHB,iMinB
@@ -46,12 +51,18 @@ C
       real(SZ),allocatable :: wR(:,:)
       real(SZ),allocatable :: wB(:,:)
 
-      CHARACTER FNAME*60
+      CHARACTER FNAME*1024 ! file to read from; used in error messages
 
       integer :: numSets,numBlankSnaps,cntSnaps,numSkipSnaps
       real(SZ) :: windMultiplier
 
-
+      integer :: lun       ! fortran logical number to read from; used in
+                           ! error messages
+      integer :: errorIO   ! zero if the file opened successfully
+C      logical :: fileFound ! true if the file is present
+      character(len=100) :: errorVar ! name of variable that was being read
+                                    ! when an error occurred
+ 
       PUBLIC
 
 C      INTEGER,SAVE,PRIVATE :: REALTYPE, DBLETYPE   
@@ -74,162 +85,125 @@ C***********************************************************************
 
       IMPLICIT NONE
       INTEGER   NP,I
-      REAL(SZ)  WVNX(*),WVNY(*),PRN(*)
+      REAL(SZ), intent(out), dimension(:) ::  WVNX,WVNY,PRN
       REAL(SZ)  RHOWAT0,RHOWATG,G
+C
+      call setMessageSource("nws12init")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       allocate(swpointsB(NP,2),wB(NP,4))
       allocate(swpointsR(NP,2),wR(NP,4))
+      errorIO = 0
       
 ! Read meta info -------------------------------------------------
-
-      OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD',
-     & ACTION='READ')
-
-      ! Read the number of sets of .pre and .win files.
+C    
+C     R E A D   F O R T 2 2
+C     ---------------------  
+      lun = 22
+      FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.22'
+      errorVar = ""
+      call openFileForRead(lun, FNAME, errorIO)
+      call check_err(errorIO)
+      ! Read the number of sets of .pre and .win files from the fort.22.
       ! If numSets = 1 then ADCIRC requires UNIT 221 and 222.
-      ! If numSets = 2 then ADCIRC requires UNIT 223 and 224 in addition to 221 and 222.
+      ! If numSets = 2 then ADCIRC requires UNIT 223 and 224 
+      !           in addition to 221 and 222.
       !   UNIT 221 and 223 are atmospheric pressure fields
       !   UNIT 222 and 224 are wind velocity fields.
-      read(22,*,err=99999) numSets
-
-      if(numSets.NE.1.AND.numSets.NE.2) then
-        if (myproc == 0) write(screenunit,1004)
-        write(16,1004)
-#ifdef CMPI
-        call msg_fini()
-#endif
-        stop
+      errorVar = "NWSET" ! used in error msgs
+      read(lun,*,err=99999,end=99998,iostat=errorIO) numSets
+      if((numSets.NE.1).AND.(numSets.NE.2)) then
+         write(scratchMessage,1004) numSets
+ 1004    format("NWSET was '",I2,"' in unit 22.",
+     &   " It must be set to 1 or 2. ADCIRC will stop.")
+         call check_err(1)
       endif
 
       ! Read the number of blank snaps to be inserted before OWI winds start
-      read(22,*,err=99999) numBlankSnaps
-
+      errorVar = "NWBS" ! used in error messages
+      read(lun,*,err=99999,end=99998,iostat=errorIO) numBlankSnaps
+      call check_err(errorIO)
       ! If numBlankSnaps < 0, ABS(numBlankSnaps) snaps in OWI wind files (UNIT221,222,223 and 224) will be skipped.
       if(numBlankSnaps.LT.0) then
-        numSkipSnaps = ABS(numBlankSnaps)
-        numBlankSnaps = 0
+         numSkipSnaps = ABS(numBlankSnaps)
+         numBlankSnaps = 0
 
       ! v49.01 TCM 10/28/2009 -- Added else to initialize numSkipSnaps to be 0 
       else
-        numSkipSnaps = 0 
+         numSkipSnaps = 0 
       endif
 
       ! Read a wind velocity multiplier
-      read(22,*,err=99999) windMultiplier
-
-      close(22)
+      errorVar = "DWM" ! used in error messages
+      read(lun,*,err=99999, end=99998, iostat=errorIO) windMultiplier
+      call check_err(errorIO)
+      close(lun)
 
 ! Read basin pre file header ------------------------------------------------
-
-      OPEN(221,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.221', STATUS='OLD')
-
-      ! Read begining/ending dates of pre file
-!      tcm v49.44 changed the way the header is read
-!      read(221,11,err=99999,ADVANCE="NO")part1,part2,part3
-! 11   FORMAT(a,1x,a,1x,a)
-!      read(221,*)date1p,date2p
-      owiheader(:) = ' '  !set owiheader to blanks before read
-      read(221,fmt='(a80)',err=99999) owiheader
-      read(owiheader(56:65),'(I10)') date1p
-      read(owiheader(71:80),'(I10)') date2p
-
-      if (myproc == 0)then
-         write(screenunit,*)'date1 in basin pre file = ',date1p
-         write(screenunit,*)'date2 in basin pre file = ',date2p
-      endif
+ 
+      lun = 221
+      FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.221'
+      errorVar = ""
+      call readHeader()
+      date1p = date1
+      date2p = date2
 
 ! Read basin win file header -------------------------------------------------
 
-      OPEN(222,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.222',STATUS='OLD')
+      lun = 222
+      FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.222'
+      errorVar = ""
+      call readHeader()
+      date1w = date1
+      date2w = date2
 
-      ! Read begining/ending dates of win file
-!      tcm v49.44 changed the way the header is read
-!      read(222,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
-!      read(222,*)date1w,date2w
-      owiheader(:) = ' '  !set owiheader to blanks before next read
-      read(222,fmt='(a80)',err=99999) owiheader
-      read(owiheader(56:65),'(I10)') date1w
-      read(owiheader(71:80),'(I10)') date2w
-
-      if (myproc == 0)then
-         write(screenunit,*)'date1 in basin win file = ',date1w
-         write(screenunit,*)'date2 in basin win file = ',date2w
+C
+C     Error checking for basin scale data
+      if ((date1p.ne.date1w).or.(date2p.ne.date2w)) then
+         call allMessage(ERROR,
+     &      "Start and end dates of basin met. data do not match.")
+         errorVar = ""
+         call check_err(1)
       endif
-
-      if(date1p.ne.date1w.or.date2p.ne.date2w) then
-        if (myproc == 0) then
-          WRITE(screenunit,1001)
-          WRITE(screenunit,1003)
-        endif
-        WRITE(16,1001)
-        WRITE(16,1003)
-#ifdef CMPI
-        call msg_fini()
-#endif
-        STOP
-      endif
-
       date1B = date1p
       date2B = date2p
 
 ! Check if region scale data exist
 
-      IF(numSets.eq.1) GOTO 100
+      if (numSets.eq.2) then
 
 ! Read region pre file header -----------------------------------------------
-
-      OPEN(223,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.223',STATUS='OLD')
-
-      ! Read begining/ending dates of pre file
-!      tcm v49.44 changed the way the header is read
-!      read(223,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
-!      read(223,*)date1p,date2p
-      owiheader(:) = ' '  !set owiheader to blanks before next read
-      read(223,fmt='(a80)',err=99999) owiheader
-      read(owiheader(56:65),'(I10)') date1p
-      read(owiheader(71:80),'(I10)') date2p
-
-      if (myproc == 0)then
-         write(screenunit,*)'date1 in region pre file = ',date1p
-         write(screenunit,*)'date2 in region pre file = ',date2p
-      endif
+  
+         lun = 223
+         FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.223'
+         errorVar = ""
+         call readHeader()
+         date1p = date1
+         date2p = date2
 
 ! Read region win file header -----------------------------------------------
 
-      OPEN(224,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.224',STATUS='OLD')
+         lun = 224
+         FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.224'
+         errorVar = ""
+         call readHeader()
+         date1w = date1
+         date2w = date2
+C
+C     Error checking for region scale data
+         if(date1p.ne.date1w.or.date2p.ne.date2w) then
+            call allMessage(ERROR,
+     &         "Start and end dates of region met. data do not match.")
+            errorVar = ""
+            call check_err(1)
+         endif
 
-      ! Read begining/ending dates of win file
-!      tcm v49.44 changed the way the header is read
-!      read(224,'(a,1x,a,1x,a)',err=99999,ADVANCE="NO")part1,part2,part3
-!      read(224,*)date1w,date2w
-      owiheader(:) = ' '  !set owiheader to blanks before next read
-      read(224,fmt='(a80)',err=99999) owiheader
-      read(owiheader(56:65),'(I10)') date1w
-      read(owiheader(71:80),'(I10)') date2w
+         date1R = date1p
+         date2R = date2p
 
-      if (myproc == 0)then
-         write(screenunit,*)'date1 in region win file = ',date1w
-         write(screenunit,*)'date2 in region win file = ',date2w
       endif
-
-      if(date1p.ne.date1w.or.date2p.ne.date2w) then
-        if (myproc == 0) then
-          WRITE(screenunit,1002)
-          WRITE(screenunit,1003)
-        endif
-        WRITE(16,1002)
-        WRITE(16,1003)
-#ifdef CMPI
-        call msg_fini()
-#endif
-        STOP
-      endif
-
-      date1R = date1p
-      date2R = date2p
-
- 100  CONTINUE
-
 
 ! Initialize flags ----------------------------------------------------------
       isnapB = 0
@@ -240,29 +214,27 @@ C***********************************************************************
 
 ! Skip snaps if necessary ---------------------------------------------------
       do i = 1,numSkipSnaps
-        CALL NWS12GET(WVNX,WVNY,PRN,NP,RHOWAT0,G)
+         write(scratchMessage,41) i
+  41     format("Skipping snap '",I,"' in OWI wind data.")
+         call logMessage(DEBUG,trim(scratchMessage))
+         CALL NWS12GET(WVNX,WVNY,PRN,NP,RHOWAT0,G)
       enddo
 
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
 
+99998 call allMessage(ERROR,"Unexpectedly reached end-of-file.") ! END jumps here
 
- 10   format(a51,i12,a5,i12)
- 1001 FORMAT(1X,'HEADER INFO IN UNIT222 AND UNIT221 DO NOT MATCH')
- 1002 FORMAT(1X,'HEADER INFO IN UNIT224 AND UNIT223 DO NOT MATCH')
- 1003 FORMAT(1X,'EXECUTION WILL BE TERMINATED')
- 1004 FORMAT(//,1X,' NUMBER OF SETS WAS SPECIFIED'//
-     &       'INCORRECTLY IN UNIT22.'/
-     &       ' IT MUST BE ETEHR OF 1 or 2'/
-     &       ' EXECUTION WILL BE TERMINATED.'//)
+99999 call check_err(1) !  ERR jumps here
+C-----------------------------------------------------------------------
+      END SUBROUTINE NWS12INIT
+C-----------------------------------------------------------------------
 
-99999 CONTINUE
 
-#ifdef CMPI
-      call msg_fini()
-#endif
-      STOP 'OWIWIND READ ERROR (1)'
 
-      END SUBROUTINE
 
 C***********************************************************************
 C   SOBROUTINE NWS12GET
@@ -280,7 +252,7 @@ Casey 110518: Added for Mark Powell's sector-based wind drag.
       IMPLICIT NONE
 
       INTEGER   NP,I,J,XI,YI
-      REAL(SZ)  WVNX(*),WVNY(*),PRN(*)
+      REAL(SZ), intent(out), dimension(:) ::  WVNX,WVNY,PRN
       REAL(SZ)  RHOWAT0,RHOWATG,G
       CHARACTER*80 PBLJAGF
 
@@ -293,7 +265,10 @@ Casey 110518: Added for Mark Powell's sector-based wind drag.
       REAL(SZ) :: EyePressure
       FoundEye = .FALSE.
 #endif
-
+      call setMessageSource("nws12get")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
       RHOWATG=RHOWAT0*G
 
 ! Read basin data  ---------------------------------------------------------
@@ -301,48 +276,48 @@ Casey 110518: Added for Mark Powell's sector-based wind drag.
       ! Increment counter (cntSnaps initialized to zero in nws12init)
       cntSnaps = cntSnaps+1
       
-      ! Put a blank snap for the first 'numBlankSnaps' snaps
-      if(cntSnaps.LE.numBlankSnaps) then
-        do i=1,NP
-          WVNX(I)=0.d0
-          WVNY(I)=0.d0
-          PRN(I)=101300.d0/RHOWATG
-        enddo
-        IF(NSCREEN.GE.1) THEN
-          if(MYPROC.EQ.0) then
-            WRITE(screenunit,16) cntSnaps
-          endif
-          WRITE(16,16) cntSnaps    !TCM v49.02 (Changed format number from 15 to 16)
-        ENDIF
-        return
+      ! Put a blank snap for the first 'numBlankSnaps' snaps and then return
+      if (cntSnaps.LE.numBlankSnaps) then
+         do i=1,NP
+            WVNX(I)=0.d0
+            WVNY(I)=0.d0
+            PRN(I)=101300.d0/RHOWATG
+         enddo  
+         !TCM v49.02 (Changed format number from 15 to 16)
+         write(scratchMessage,16) cntSnaps
+ 16      format('INSERTING A BLANK WIND SNAP, COUNT=',i4)
+         call allMessage(INFO,trim(scratchMessage))
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         RETURN
       endif
         
 
       ! Increment counter
       isnapB = isnapB+1
 
-      ! Read grid specifications/date in pressure file
-      read (221,11,end=10000,err=99999) 
+      ! Read grid specifications/date in basin pressure file
+      errorVar = "grid specifications/date in basin pressure file"
+      read (221,11,end=9997,err=9999,iostat=errorIO) 
      &      iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
+      call check_err(errorIO)
 
-      ! Read grid specifications/date in wind file
-      read (222,11,end=10000,err=99999) 
+      ! Read grid specifications/date in basin wind file
+      errorVar = "grid specifications/date in basin wind file"
+      read (222,11,end=9997,err=9999,iostat=errorIO) 
      &      iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
+      call check_err(errorIO)
 
       ! Check consistency
       if(iLatp.ne.iLatw.or.iLongp.ne.iLongw.or.dxp.ne.dxw.or. 
      &     dyp.ne.dyw.or.swlatp.ne.swlatw.or.swlongp.ne.swlongw.or. 
      &     iCYMDHp.ne.iCYMDHw.or.iMinp.ne.iMinw) then
-        if (myproc == 0) then
-          write(screenunit,12)
-          write(screenunit,13)
-        endif
-        write(16,12)
-        write(16,13)
-#ifdef CMPI
-        call msg_fini()
-#endif
-        stop
+         call allMessage(ERROR,
+     &  "Grid specifications/date in OWI win and pre files must match.")
+         errorVar = ""
+         call check_err(1)
       endif
 
       ! Check if header info has changed from the previous snapshot
@@ -350,6 +325,7 @@ Casey 110518: Added for Mark Powell's sector-based wind drag.
         if(iLatp.ne.iLatB.or.iLongp.ne.iLongB.or.dxp.ne.dxB.or.
      &       dyp.ne.dyB.or.swlatp.ne.swlatB.or.
      &       swlongp.ne.swlongB) then
+          call logMessage(INFO,"Basin scale grid has changed.")
           updateB = 1
         else
           updateB = 0
@@ -361,15 +337,26 @@ Casey 110518: Added for Mark Powell's sector-based wind drag.
       
       ! Update coordinate mapping coefficients if necessary
       if(updateB.eq.1) then
-        call nws12interp_basin(np)
+         call logMessage(INFO,
+     &       "Updating basin grid coordinate mapping coefficients.")
+         call nws12interp_basin(np)
       endif
       
-      ! Read pressure
-      read(221,22,end=9999,err=99999) ((pB(i,j),i=1,iLongB),j=1,iLatB)
+      ! Read basin scale atmospheric pressure snapshot
+      errorVar = "basin scale atmospheric pressure snapshot"
+      read(221,22,end=10000,err=9999,iostat=errorIO) 
+     &   ((pB(i,j),i=1,iLongB),j=1,iLatB)
+      call check_err(errorIO)
 
-      ! Read u/v components of the wind
-      read(222,22,end=9999,err=99999) ((uB(i,j),i=1,iLongB),j=1,iLatB)
-      read(222,22,end=9999,err=99999) ((vB(i,j),i=1,iLongB),j=1,iLatB)
+      ! Read basin scale snapshot of u/v components of the wind
+      errorVar = "basin scale wind u-velocity snapshot"
+      read(222,22,end=10000,err=9999,iostat=errorIO)
+     &   ((uB(i,j),i=1,iLongB),j=1,iLatB)
+      call check_err(errorIO)
+      errorVar = "basin scale wind v-velocity snapshot"
+      read(222,22,end=10000,err=9999,iostat=errorIO)
+     &   ((vB(i,j),i=1,iLongB),j=1,iLatB)
+      call check_err(errorIO)
 
 #ifdef POWELL
 Casey 110518: Find lon,lat location of eye.
@@ -420,74 +407,75 @@ Casey 110518: Find lon,lat location of eye.
       ! Increment counter         
       isnapR = isnapR+1
 
-      ! Read grid specifications/date in pressure file
-      read (223,11,end=10000,err=99999) 
+      ! Read grid specifications/date in region pressure file
+      errorVar = "grid specifications/date in region pressure file"
+      read (223,11,end=9997,err=9999,iostat=errorIO) 
      &     iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
+      call check_err(errorIO)
 
-      ! Read grid specifications/date in wind file
-      read (224,11,end=10000,err=99999) 
+      ! Read grid specifications/date in region wind file
+      errorVar = "grid specifications/date in region wind file"
+      read (224,11,end=9997,err=9999,iostat=errorIO) 
      &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
+      call check_err(errorIO)
 
       if(iLatp.ne.iLatw.or.iLongp.ne.iLongw.or.dxp.ne.dxw.or.
      &     dyp.ne.dyw.or.swlatp.ne.swlatw.or.swlongp.ne.swlongw.or.
      &     iCYMDHp.ne.iCYMDHw.or.iMinp.ne.iMinw) then
-        if (myproc == 0) then
-          write(screenunit,12)
-          write(screenunit,13)
-        endif
-        write(16,12)
-        write(16,13)
-#ifdef CMPI
-        call msg_fini()
-#endif
-        stop
+         call allMessage(ERROR,
+     &   "Grid specfications/date in OWI win and pre files must match.")
+         errorVar = ""
+         call check_err(1)
       endif
 
       ! Check if header info has changed from the previous snapshot
       if(isnapR.gt.1) then
-        if(iLatp.ne.iLatR.or.iLongp.ne.iLongR.or.dxp.ne.dxR.or. 
+         if(iLatp.ne.iLatR.or.iLongp.ne.iLongR.or.dxp.ne.dxR.or. 
      &       dyp.ne.dyR.or.swlatp.ne.swlatR.or.
      &       swlongp.ne.swlongR) then
-          updateR = 1
-        else
-          updateR = 0
-        endif
+            call logMessage(INFO,"Region scale grid has changed.")
+            updateR = 1
+         else
+            updateR = 0
+         endif
 
       endif
-
 
       iCYMDHR = iCYMDHp
       iMinR = iMinp
 
-      if(iCYMDHB.ne.iCYMDHR.or.iMinB.ne.iMinR) then
-        if (myproc == 0) then
-          WRITE(screenunit,*) 'SNAPSHOTS NOT SYNCRONIZED'
-          WRITE(screenunit,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-          WRITE(screenunit,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-          WRITE(screenunit,*) 'EXECUTION WILL BE TERMINATED'
-        endif
-        WRITE(16,*) 'SNAPSHOTS NOT SYNCRONIZED'
-        WRITE(16,*) '  iCYMDHB=',iCYMDHB, ' iMinB=',iMinB
-        WRITE(16,*) '  iCYMDHR=',iCYMDHR, ' iMinR=',iMinR
-        WRITE(16,*) 'EXECUTION WILL BE TERMINATED'
-#ifdef CMPI
-        call msg_fini()
-#endif
-        STOP
+      if (iCYMDHB.ne.iCYMDHR.or.iMinB.ne.iMinR) then
+         call allMessage(ERROR,"Snapshots not synchronized.")
+         write(scratchMessage,51) iCYMDHB, iMinB, iCYMDHR, iMinR
+  51     format("Basin snapshot date is '",I10,"' and '",
+     &      I2,"' minutes. Region snapshot date is '",I10,
+     &      "' and '",I2,"' minutes.")
+         errorVar = ""
+         call check_err(1)
       endif
 
       ! Update coordinate mapping coefficients if necessary
-      if(updateR.eq.1) then
-        call nws12interp_region(np)
+      if (updateR.eq.1) then
+         call logMessage(INFO,
+     &       "Updating region grid coordinate mapping coefficients.")
+         call nws12interp_region(np)
       endif
 
-      
       ! Read pressure
-      read(223,22,end=9999,err=99999) ((pR(i,j),i=1,iLongR),j=1,iLatR)
+      errorVar = "region scale atmospheric pressure snapshot"
+      read(223,22,end=10000,err=9999,iostat=errorIO)
+     &   ((pR(i,j),i=1,iLongR),j=1,iLatR)
+      call check_err(errorIO)
       
       ! Read u/v components of the wind
-      read(224,22,end=9999,err=99999) ((uR(i,j),i=1,iLongR),j=1,iLatR)
-      read(224,22,end=9999,err=99999) ((vR(i,j),i=1,iLongR),j=1,iLatR)
+      errorVar = "region scale wind u-velocity snapshot"
+      read(224,22,end=10000,err=9999,iostat=errorIO) 
+     &   ((uR(i,j),i=1,iLongR),j=1,iLatR)
+      call check_err(errorIO)
+      errorVar = "region scale wind v-velocity snapshot"
+      read(224,22,end=10000,err=9999,iostat=errorIO) 
+     &   ((vR(i,j),i=1,iLongR),j=1,iLatR)
+      call check_err(errorIO)
 
 #ifdef POWELL
 Casey 110518: Find lon,lat location of eye.
@@ -542,19 +530,15 @@ c        ramp = tanh(18d0*rampfrac/36d0)
 c      end if
       ramp = 1.0
 
-      IF(NSCREEN.GE.1) THEN
-        if(regionExists.EQV..TRUE.) then
-          if(MYPROC.EQ.0) then
-            WRITE(screenunit,15) iCYMDHB,iMinB
-          endif
-          WRITE(16,15) iCYMDHB,iMinB
-        else
-          if(MYPROC.EQ.0) then
-            WRITE(screenunit,14) iCYMDHB,iMinB
-          endif
-          WRITE(16,14) iCYMDHB,iMinB
-        endif
-      ENDIF
+      if (regionExists.EQV..TRUE.) then
+         write(scratchMessage,15) iCYMDHB,iMinB
+ 15      format("Processing basin scale wind data ",I12," ",I2,".")
+         call allMessage(INFO,trim(scratchMessage))
+      else
+         write(scratchMessage,14) iCYMDHB,iMinB
+ 14      format("Processing region scale wind data ",I12," ",I2,".")
+         call allMessage(INFO,trim(scratchMessage))
+      endif
          
       do i=1,NP
 
@@ -601,7 +585,7 @@ c      end if
           
         endif
 
-        ! COPY TO ARRAYS ----------------------------------------------------------
+        ! COPY TO ARRAYS ---------------------------------------------------
 
         if(uu.eq.-9999.9D0) then
           WVNX(I)=0.d0
@@ -628,72 +612,42 @@ c      end if
 
       enddo
 
-      RETURN
-      
-9999  continue
-
-      if (myproc == 0) then
-      WRITE(screenunit,*)''
-      WRITE(screenunit,*)' !!!!!FATAL ERROR!!!!!'
-      WRITE(screenunit,*)'EITHER OF UNIT221,222,223,224',
-     & ' COULD NOT BE READ'
-      WRITE(screenunit,*)' EXECUTION WILL BE TERMINATED'
-      WRITE(screenunit,*)''
-      endif
-
-      WRITE(16,*) ''
-      WRITE(16,*) ' !!!!!FATAL ERROR!!!!!'
-      WRITE(16,*) ' EITHER OF UNIT221,222,223,224 COULD NOT BE READ'
-      WRITE(16,*) ' EXECUTION WILL BE TERMINATED'
-      WRITE(16,*) ''
-#ifdef CMPI
-      call msg_fini()
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
-      STOP
+      call unsetMessageSource()
+      RETURN
+     
+ 
+9999  call check_err(1) ! ERR during read jumps to here
 
-10000 continue
+      ! END during read of required data jumps to here
+9997  call allMessage(ERROR,"Unexpected end-of-file reached.")
+      call check_err(1) 
 
-      IF(MYPROC.EQ.0) THEN
-        WRITE(screenunit,*) ''
-        WRITE(screenunit,*) ' !!! WARNING !!!'
-        WRITE(screenunit,*) ' EITHER OF UNIT221,222,223,224 RAN OUT'
-        WRITE(screenunit,*) ' EXECUTION WILL CONTINUE'
-        WRITE(screenunit,*) ''
-      ENDIF
+10000 continue  ! END during read of u, v, p data jumps to here
+      write(scratchMessage,61) trim(errorVar)
+  61  format("Unexpected end-of-file while reading '",A,
+     &    "'. Wind speeds set to zero and pressure to 1013mb.")
+      call allMessage(WARNING,trim(scratchMessage))
 
-      WRITE(16,*) ''
-      WRITE(16,*) ' !!! WARNING !!!'
-      WRITE(16,*) ' EITHER OF UNIT221,222,223,224 RAN OUT'
-      WRITE(16,*) ' EXECUTION WILL CONTINUE'
-      WRITE(16,*) ''
+      WVNX=0.d0
+      WVNY=0.d0
+      PRN=101300.d0/RHOWATG
 
-      do i=1,NP
-        WVNX(I)=0.d0
-        WVNY(I)=0.d0
-        PRN(I)=101300.d0/RHOWATG
-      enddo
-
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
 
 
  11   format(t6,i4,t16,i4,t23,f6.0,t32,f6.0,
      &     t44,f8.0,t58,f8.0,t69,i10,i2)
- 12   format(1X,'SNAPSHOT HEADER IN WIN AND PRE FILES DO NOT MATCH')
- 13   format(1X,'EXECUTION WILL BE TERMINATED')
- 14   format(/,1X,'PROCESSING BASIN-SCALE WIND DATA',i12,' ',i2)
- 15   format(/,1X,'PROCESSING BASIN&REGION-SCALE DATA',i12,' ',i2)
- 16   format(/,1X,'INSERTING A BLANK WIND SNAP, COUNT=',i4)
  
  22   format(8f10.0)
-      
-99999 CONTINUE
 
-#ifdef CMPI
-      call msg_fini()
-#endif
-      STOP 'OWIWIND READ ERROR (2)'
-
-      END SUBROUTINE
+      END SUBROUTINE NWS12GET
 
 C***********************************************************************
 C   SOBROUTINE NWS12INTERP_BASIN
@@ -710,7 +664,12 @@ C***********************************************************************
 
       INTEGER   NP,I,J,K,XI,YI
       REAL(SZ)  adcLat,adcLong
-
+C
+      call setMessageSource("nws12interp_basin")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+C
       WRITE(16,*) ''
       WRITE(16,*) 'BASIN-SCALE WIND MAPPING UPDATED'
       WRITE(16,*) ''
@@ -785,7 +744,13 @@ C***********************************************************************
             
         endif
       enddo
-      END SUBROUTINE
+
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+      END SUBROUTINE NWS12INTERP_BASIN
 
 
 C***********************************************************************
@@ -803,6 +768,11 @@ C***********************************************************************
       INTEGER   NP,I,J,K,XI,YI
       REAL(SZ)  adcLat,adcLong
 
+      call setMessageSource("nws12interp_region")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+C
       WRITE(16,*) ''
       WRITE(16,*) 'REGION-SCALE WIND MAPPING UPDATED'
       WRITE(16,*) ''
@@ -873,9 +843,109 @@ C***********************************************************************
           swpointsR(i,2) = 0
         endif
       enddo
-      END SUBROUTINE
 
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+      END SUBROUTINE NWS12INTERP_REGION
 
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   R E A D   H E A D E R    
+C-----------------------------------------------------------------------
+C     jgf50.16 Read the header from the OWI file and sets the value
+C     of the date1p, date2p, date1w, or date2w variables as appropriate.
+C-----------------------------------------------------------------------
+      SUBROUTINE readHeader()
+      IMPLICIT NONE
+C
+      call setMessageSource("readHeader")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      call openFileForRead(lun, FNAME, errorIO)
+      call check_err(errorIO)
+C
+      ! Read begining/ending dates of pre file
+!      tcm v49.44 changed the way the header is read
+!      read(221,11,err=99999,ADVANCE="NO")part1,part2,part3
+! 11   FORMAT(a,1x,a,1x,a)
+!      read(221,*)date1p,date2p
+      owiheader(:) = ' '  !set owiheader to blanks before read
+      errorVar = "owiheader"
+      read(lun, fmt='(a80)',
+     &   end=99998,err=99999,iostat=errorIO) owiheader
+      call check_err(errorIO)
+C
+      errorVar = "start date"
+      read(owiheader(56:65),'(I10)',
+     &   end=99998,err=99999,iostat=errorIO) date1
+      call check_err(errorIO)
+      write(scratchMessage,31) trim(errorVar), trim(FNAME), date1
+  31  format("'",A,"' in  '",A,"' is '",I,"'.")
+      call allMessage(INFO,scratchMessage)
+C
+      errorVar = "end date"
+      read(owiheader(71:80),'(I10)',
+     &    end=99998,err=99999,iostat=errorIO) date2
+      call check_err(errorIO)
+      write(scratchMessage,31) trim(errorVar), trim(FNAME), date2
+      call allMessage(INFO,scratchMessage)
+C
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+
+99998 call allMessage(ERROR,"Unexpectedly reached end-of-file.") ! END jumps here
+99999 call check_err(1) !  ERR jumps here
+C-----------------------------------------------------------------------
+      end subroutine readHeader
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   C H E C K  _  E R R  
+C-----------------------------------------------------------------------
+C     jgf50.16 Checks the return value from subroutine calls; if there
+C     was an error, it writes a termination message to the screen and to the
+C     fort.16 file and terminates ADCIRC.
+C-----------------------------------------------------------------------
+      subroutine check_err(iret)
+#ifdef CMPI
+      USE MESSENGER, ONLY : MSG_FINI
+#endif
+      IMPLICIT NONE
+      INTEGER, intent(in) :: iret
+      call setMessageSource("check_err")
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      if (iret.ne.0) then
+         if (errorVar.ne."") then
+            write(scratchMessage,888) 
+     &         trim(errorVar), trim(FNAME), lun 
+ 888        format("Failed to read '",A,"' from '",A,
+     &         "' (unit number ",I3,").")
+            call allMessage(ERROR,trim(scratchMessage))
+         endif
+         call allMessage(ERROR,"ADCIRC execution terminated.")
+#ifdef CMPI
+         call msg_fini()
+#endif
+         stop
+      endif
+#if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+C-----------------------------------------------------------------------
+      end subroutine check_err
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
       END MODULE OWIWIND
-      
+C-----------------------------------------------------------------------     
       

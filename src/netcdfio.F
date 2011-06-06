@@ -5984,7 +5984,7 @@ C     S U B R O U T I N E    R E A D   N E T C D F   H O T S T A R T
 C-----------------------------------------------------------------------
 C     jgf49.17.02 Reads data from the hotstart file.
 C-----------------------------------------------------------------------
-      SUBROUTINE readNetCDFHotstart(lun)
+      SUBROUTINE readNetCDFHotstart(lun, timeLoc)
       USE GLOBAL, ONLY : OutputDataDescript_t, FileFmtRev, FileFmtMinor,
      &                   FileFmtMajor, imhs, iths, iestp, nscoue, ivstp,
      &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
@@ -5998,6 +5998,7 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
 C
       INTEGER, intent(in) :: lun
+      REAL(8), intent(out) :: timeLoc
 C      
       INTEGER i,j
       INTEGER counti(1), starti(1), n
@@ -6073,6 +6074,8 @@ C
       iret = nf_get_vara_DOUBLE(hs%ncid, hs%myTime%timenc_id, starti, 
      &       counti, hs%myTime%timenc)
       CALL check_err(iret)
+      ! set timeLoc in hstart.F to the current time in the hotstart file 
+      timeLoc = hs%myTime%timenc(hs%myFile%record_counter)
 C
 C     Read in fulldomain data
 C     Elev1

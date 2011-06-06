@@ -1283,9 +1283,8 @@ C! CMPI
       write(lun, 1000) rundes, runid, agrid
       write(lun, 1010) ndsetse, size_this, dtdp*nspoolge, nspoolge, 1,
      &                 FileFmtVersion
-
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header63
@@ -1306,7 +1305,7 @@ C! CMPI
       write(lun, 1010) 1, size_this, 1.d0, 1, 1, FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
      &      'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header_max
@@ -1328,7 +1327,7 @@ C! CMPI
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
      &      'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header64
@@ -1350,7 +1349,7 @@ C! CMPI
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header71
@@ -1372,7 +1371,7 @@ C! CMPI
      &                  FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header72
@@ -1394,7 +1393,7 @@ C! CMPI
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header73
@@ -1416,7 +1415,7 @@ C! CMPI
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header74
@@ -1439,7 +1438,7 @@ C! CMPI
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header91
@@ -1462,7 +1461,7 @@ C! CMPI
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
      &       'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header93
@@ -1485,7 +1484,7 @@ C! CMPI
      &                  FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
      &      'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine header81
@@ -1647,9 +1646,9 @@ C     close the file
       close(lun)
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
- 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,
+ 1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
      &      'FileFmtVersion: ',I10)
- 1020 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I5,1X,I5,1X,I5,1X,
+ 1020 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,I5,1X,
      &      'FileFmtVersion: ',I10)
       !--------------------------------------------------------------
       end subroutine writeDomainHeader
