@@ -667,7 +667,7 @@ C
          ! jgf49.38: TODO: The NetCDF hotstart file does not
          ! support 3D or harmonic analysis data yet.
 #ifdef NETCDF
-         CALL readNetCDFHotstart(IHOT-300) 
+         CALL readNetCDFHotstart(IHOT-300, timeLoc) 
          IF (C3D) THEN
             CALL readNetCDFHotstart3D(IHOT-300)
          ENDIF

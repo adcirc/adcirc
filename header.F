@@ -3,7 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
-C  v49.98.08  05/27/2011 - jgf - Fixed issue caused by requesting netcdf
+C  v49.82.09  06/06/2011 - jgf - Fixed issue with netcdf hotstart where the 
+C             time (in seconds) was being read from the netcdf hotstart file
+C             but not communicated back to hstart.F for use in initialization.
+C  v49.82.08  05/27/2011 - jgf - Fixed issue caused by requesting netcdf
 C             station output while specifying zero stations.
 C  v49.82.07  05/26/2011 - tcm - Changed E20.10 to 1PE20.10E3 in globalio.F
 C             and in write_output.F.  Also changed the output format in
