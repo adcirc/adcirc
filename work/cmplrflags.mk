@@ -412,9 +412,12 @@ ifeq ($(compiler),gnu)
   PPFC		:=  g95
   FC		:=  g95
   PFC		:=  mpif90 
-  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132 
   ifeq ($(DEBUG),full)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
+  ifeq ($(SWAN),enable)
+     FFLAGS1    :=  $(FFLAGS1) -freal-loops 
   endif
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)

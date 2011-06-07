@@ -215,7 +215,7 @@ C     Error checking for region scale data
 ! Skip snaps if necessary ---------------------------------------------------
       do i = 1,numSkipSnaps
          write(scratchMessage,41) i
-  41     format("Skipping snap '",I,"' in OWI wind data.")
+  41     format("Skipping snap '",I6,"' in OWI wind data.")
          call logMessage(DEBUG,trim(scratchMessage))
          CALL NWS12GET(WVNX,WVNY,PRN,NP,RHOWAT0,G)
       enddo
@@ -883,7 +883,7 @@ C
      &   end=99998,err=99999,iostat=errorIO) date1
       call check_err(errorIO)
       write(scratchMessage,31) trim(errorVar), trim(FNAME), date1
-  31  format("'",A,"' in  '",A,"' is '",I,"'.")
+  31  format("'",A,"' in  '",A,"' is '",I10,"'.")
       call allMessage(INFO,scratchMessage)
 C
       errorVar = "end date"

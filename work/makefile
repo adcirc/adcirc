@@ -344,10 +344,10 @@ $(O_DIR)%.o  : %.F
 
 # Casey 080106: Added the following rules for the unstructured SWAN.
 $(O_DIR)%.o  : %.f
-	$(CF) -c $(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER) -module $(O_DIR) -o $@  $<
+	$(CF) -c $(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER) $(IMODS) $(O_DIR) -o $@  $<
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 $(O_DIR)%.o  : %.f90
-	$(CF) -c $(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER) -module $(O_DIR) -o $@  $<
+	$(CF) -c $(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER) $(IMODS) $(O_DIR) -o $@  $<
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 
 ########################## Executable Targets ############################

@@ -1,14 +1,14 @@
 ##############################################################################
-# IA32_Intel/x86-64_Intel:	Intel Pentium with Linux using Intel compiler 9.1.
+# IA32_GNU:		Intel Pentium with Linux using GNU compiler gfortran.
 ##############################################################################
-F90_SER = ifort
-F90_OMP = ifort
+F90_SER = g95
+F90_OMP = 
 F90_MPI = mpif90
-FLAGS_OPT = -O2 -ipo -xW -mp1
-FLAGS_MSC = -W0 -assume byterecl -traceback
+FLAGS_OPT = -O
+FLAGS_MSC = -w -ffree-line-length-huge
 FLAGS_F90 =
 FLAGS_SER =
-FLAGS_OMP = -openmp -assume cc_omp -fpp2
+FLAGS_OMP =
 FLAGS_MPI =
 INCS_SER =
 INCS_OMP =
@@ -20,5 +20,5 @@ OUT = -o
 EXTO = o
 MAKE = make
 RM = rm -f
-swch = -unix -f95 -timg -impi
+swch = -unix -f95 
 O_DIR = ../work/odir4/

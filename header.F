@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.17   - 06/07/2011 - jgf - Added -freal-loops to g95 compiler flags 
+C             for padcswan; changed -module to $(IMODS) in swan compilation
+C             rules in makefile; added specific format lengths for I 
+C             to placate g95 compiler.  
 C  v50.16   - 06/06/2011 - jgf - Fixed issue with netcdf hotstart where the
 C             time (in seconds) was being read from the netcdf hotstart file
 C             but not communicated back to hstart.F for use in initialization;
