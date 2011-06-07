@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.19   - 06/07/2011 - tcm - Fixed a bug in the makefile for the
+C             library build of parallel adcirc. 
 C  v50.18   - 06/08/2011 - rjw - Added CASE(bottom_roughness_length) to prep.F
 C  v50.17   - 06/07/2011 - jgf - Added -freal-loops to g95 compiler flags 
 C             for padcswan; changed -module to $(IMODS) in swan compilation

@@ -446,7 +446,7 @@ endif
    $(PARALLEL_ADCIRC) ::  $(NA_MOBJ) $(MSG_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
 
-   $(LIBADC): $(O_DIR) $(ADC_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) 
+   $(LIBADC) :: $(O_DIR) $(ADC_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) 
 	ar $(ARFLAGS) $@  $(ADC_MOBJ) $(MSG_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(AGIO_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ)
 	ar -ts $@
 
