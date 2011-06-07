@@ -686,6 +686,8 @@ C
             NumCol=1
          CASE("mannings_n_at_sea_floor")
             NumCol=1
+         CASE("bottom_roughness_length")
+            NumCol=1
          CASE("chezy_friction_coefficient_at_sea_floor")
             NumCol=1
          CASE("sea_surface_height_above_geoid")
