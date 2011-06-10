@@ -5976,7 +5976,7 @@ C
             ENDDO 
             READ(Line,*,ERR=4321,END=4321,IOSTAT=ErrorIO) swanComFile
             WRITE(*,*) "INFO: The swan command file is '",
-     &         swanComFile,"'."
+     &         trim(swanComFile),"'."
             readError = .false.
             ! If swan was started without a swaninit file, it will create
             ! its own swaninit, and it will use the string DEFAULT to
@@ -5986,19 +5986,19 @@ C
                WRITE(*,*) "ERROR: 'DEFAULT' is an invalid name."
             ELSE
                ! check to see if the swan command file is present
-               INQUIRE(FILE=swanComFile,EXIST=swanComFound)   
+               INQUIRE(FILE=trim(swanComFile),EXIST=swanComFound)   
                IF (swanComFound.eqv..true.) THEN 
                   WRITE(*,*) "INFO: The swan command file '",
-     &               swanComFile,"' was found."
-                  OPEN(26,FILE='swanComFile',ACTION='READ', 
+     &               trim(swanComFile),"' was found."
+                  OPEN(26,FILE=trim(swanComFile),ACTION='READ', 
      &            ACCESS='SEQUENTIAL',IOSTAT=ErrorIO,STATUS='OLD')
                   IF (ErrorIO.ne.0) THEN
                      WRITE(*,*) "ERROR: The swan command file '",
-     &                  swanComFile,"' could not be opened."
+     &                  trim(swanComFile),"' could not be opened."
                   ENDIF
                ELSE
                    WRITE(*,*) "ERROR: The swan command file '",
-     &               swanComFile,"' was not found" 
+     &               trim(swanComFile),"' was not found." 
                ENDIF
             ENDIF
          ENDIF
