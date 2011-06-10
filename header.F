@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.21   - 06/10/2011 - tcm - Changed I8 to I12 format specifications in
+C             the fort.18 files (prep.F, messenger.F, SwanReadfort18.ftn90)
 C  v50.20   - 06/10/2011 - jgf - Fixed an issue in prepUnSWAN that was causing
 C             the opening of the fulldomain fort.26 file to fail. 
 C  v50.19   - 06/07/2011 - tcm - Fixed a bug in the makefile for the

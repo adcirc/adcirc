@@ -253,6 +253,8 @@ C   (6) Read Message-Passing Receive List
 C   (7) MPI rank of each neighbor and number of ghosts nodes to send
 C   (8) Read Message-Passing Send List
 C  vjp  10/13/2006
+C
+C  tcm v50.21 20110610 -- Changed I8 to I12 formats
 C--------------------------------------------------------------------------
  
       FileFound = .FALSE.
@@ -291,10 +293,10 @@ C Read Global number of nodes and Local-to_Global node map ( used by module glob
 
 C  This information is provided for relocalizing fort.15
 C  Just read past it.
-      READ(18,'(8X,I8)') jdumy                          ! nfluxf for subdomain
-      READ(18,'(8X,3I8)') jdumy_g, jdumy_max, jdumy_loc ! neta for subdomain
+      READ(18,'(8X,I12)') jdumy                          ! nfluxf for subdomain
+      READ(18,'(8X,3I12)') jdumy_g, jdumy_max, jdumy_loc ! neta for subdomain
       DO I=1, jdumy_loc
-         READ(18,'(I8)') jdumy                          ! obnode_lg table
+         READ(18,'(I12)') jdumy                          ! obnode_lg table
       ENDDO
 
 C Read Global indexes of Elevation Station nodes ( used by module global_io )
@@ -302,7 +304,7 @@ C Read Global indexes of Elevation Station nodes ( used by module global_io )
       IF (NSTAE > 0) THEN
         ALLOCATE ( IMAP_STAE_LG(NSTAE) )
         DO I=1,NSTAE
-           READ(18,'(I8)') IMAP_STAE_LG(I)              
+           READ(18,'(I12)') IMAP_STAE_LG(I)              
         ENDDO
       ENDIF
 
@@ -311,7 +313,7 @@ C Read Global indexes of Velocity  Station nodes ( used by module global_io )
       IF (NSTAV > 0) THEN
         ALLOCATE ( IMAP_STAV_LG(NSTAV) )
         DO I=1,NSTAV
-           READ(18,'(I8)') IMAP_STAV_LG(I)              
+           READ(18,'(I12)') IMAP_STAV_LG(I)              
         ENDDO
       ENDIF
 
@@ -320,7 +322,7 @@ C Read Global indexes of Meteorlogical Station nodes ( used by module global_io 
       IF (NSTAM > 0) THEN
         ALLOCATE ( IMAP_STAM_LG(NSTAM) )
         DO I=1,NSTAM
-           READ(18,'(I8)') IMAP_STAM_LG(I)              
+           READ(18,'(I12)') IMAP_STAM_LG(I)              
         ENDDO
       ENDIF
 
@@ -329,7 +331,7 @@ C Read Global indexes of Concentration Station nodes ( used by module global_io 
       IF (NSTAC > 0) THEN
         ALLOCATE ( IMAP_STAC_LG(NSTAC) )
         DO I=1,NSTAC
-           READ(18,'(I8)') IMAP_STAC_LG(I)              
+           READ(18,'(I12)') IMAP_STAC_LG(I)              
         ENDDO
       ENDIF
 
@@ -382,7 +384,7 @@ C     jgf49.43.18: Add 3D station mappings if appropriate. Used by globalio.
          IF (NSTA3DD > 0) THEN
             ALLOCATE ( IMAP_STA3DD_LG(NSTA3DD) )
             DO I=1,NSTA3DD
-               READ(18,'(I8)') IMAP_STA3DD_LG(I)              
+               READ(18,'(I12)') IMAP_STA3DD_LG(I)              
             ENDDO
          ENDIF
 
@@ -390,7 +392,7 @@ C     jgf49.43.18: Add 3D station mappings if appropriate. Used by globalio.
          IF (NSTA3DV > 0) THEN
             ALLOCATE ( IMAP_STA3DV_LG(NSTA3DV) )
             DO I=1,NSTA3DV
-               READ(18,'(I8)') IMAP_STA3DV_LG(I)              
+               READ(18,'(I12)') IMAP_STA3DV_LG(I)              
             ENDDO
          ENDIF
 
@@ -398,7 +400,7 @@ C     jgf49.43.18: Add 3D station mappings if appropriate. Used by globalio.
          IF (NSTA3DT > 0) THEN
             ALLOCATE ( IMAP_STA3DT_LG(NSTA3DT) )
             DO I=1,NSTA3DT
-               READ(18,'(I8)') IMAP_STA3DT_LG(I)              
+               READ(18,'(I12)') IMAP_STA3DT_LG(I)              
             ENDDO
          ENDIF
       ENDIF
@@ -406,10 +408,10 @@ C
 C
       CLOSE(18)
       RETURN
-1130  FORMAT(8X,9I8)
-3010  FORMAT(8X,2I8)
-3015  FORMAT(8X,3I8)
-3020  format(a8,I8)
+1130  FORMAT(8X,6I12)
+3010  FORMAT(8X,2I12)
+3015  FORMAT(8X,3I12)
+3020  format(a8,I12)
 9973  FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
       END SUBROUTINE MSG_TABLE
  

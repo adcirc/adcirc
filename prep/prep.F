@@ -303,6 +303,7 @@ C---------------------------------------------------------------------------
 C
 C     This routine allows re-localizing selected files after a prepall 
 C     operation.  vjp 10/2006
+C     tcm v50.21 20110610 -- changed I8 to I12 format specifications
 C
 C---------------------------------------------------------------------------
       SUBROUTINE RELOCALIZE()
@@ -379,7 +380,7 @@ Casey 100208: Changed I8 to I12.
 
       print *, "from relocalize: reading local-to-global node maps"
       DO IPROC = 1,NPROC
-         READ(LUNP(IPROC),'(8X,3I8)') NNODG, MNPP, NNODP(IPROC)
+         READ(LUNP(IPROC),'(8X,3I12)') NNODG, MNPP, NNODP(IPROC)   !tcm v50.21
       ENDDO
 !      print *, "nnodg = ", nnodg
 
@@ -391,7 +392,7 @@ Casey 100208: Changed I8 to I12.
 
       DO IPROC = 1,NPROC
       DO I=1, NNODP(IPROC)
-         READ(LUNP(IPROC),'(I8)') idumy                 
+         READ(LUNP(IPROC),'(I12)') idumy        !tcm v50.21
          IMAP_NOD_LG(I,IPROC) = abs(idumy)
       ENDDO
       ENDDO
@@ -400,12 +401,12 @@ C  This section for prep15
       IF ((PREP_15.eqv..true.).or.(PREP_20.eqv..true.)) THEN
         print *, "from relocalize: reading nfluxf for each subdomain"
         DO IPROC = 1,NPROC
-           READ(LUNP(IPROC),'(8X,I8)') NFLUXFP(IPROC)
+           READ(LUNP(IPROC),'(8X,I12)') NFLUXFP(IPROC)        !tcm v50.21
         ENDDO
 
         print *, "from relocalize: reading neta for each subdomain"
         DO IPROC = 1,NPROC
-           READ(LUNP(IPROC),'(8X,3I8)') idumy, NETA_MAX, NETAP(IPROC)
+           READ(LUNP(IPROC),'(8X,3I12)') idumy, NETA_MAX, NETAP(IPROC)   !tcm v50.21
         ENDDO
 
         if (.not.allocated(obnode_lg)) then
@@ -416,9 +417,9 @@ C  This section for prep15
 
         print *, "from relocalize: reading open boundary table"
         DO IPROC = 1,NPROC
-        DO I=1, NETAP(IPROC)
-           READ(LUNP(IPROC),'(I8)') OBNODE_LG(I,IPROC)    
-        ENDDO
+           DO I=1, NETAP(IPROC)
+              READ(LUNP(IPROC),'(I12)') OBNODE_LG(I,IPROC)    !tcm v50.21
+           ENDDO
         ENDDO
       ENDIF
       
@@ -1730,13 +1731,14 @@ C-----------------------------------------------------------------------
       use memory_usage
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  2/28/98  )                         C 
+C                     (  Serial Version  6/10/2011  )                       C 
 C  This Routine writes a message-passing file "fort.18" for each subdomain  C
 C  of the domain decomposition created by DECOMP.                           C
 C                                                                           C
 C  The Decomposition Variables are defined in the include file adcprep.inc  C 
-C  This version is compatible with ADCIRC version 34.03                     C
+C  This version is compatible with ADCIRC version 50.21                     C
 C                                                                           C
+C  tcm V50.21 -- Changed all I8 formats to I12                              C
 C---------------------------------------------------------------------------C
 C
       IMPLICIT NONE
@@ -1785,9 +1787,9 @@ C  if a ghost node
             IF (IPR.EQ.I)THEN
                ITOT = ITOT + 1
                RES_NODE(ITOT) = J
-               WRITE(18,'(I8)') INDX        ! Global index of resident node
+               WRITE(18,'(I12)') INDX        ! Global index of resident node
             ELSE
-               WRITE(18,'(I8)') -1*INDX     ! Global index of ghost node
+               WRITE(18,'(I12)') -1*INDX     ! Global index of ghost node
             ENDIF
          ENDDO
          IF (ITOT.NE.NOD_RES_TOT(I)) STOP 'ERROR IN # OF RES. NODES'
@@ -1801,7 +1803,7 @@ C--vjp This info is used only for relocalizing fort.15
          WRITE(18,3003) NETA, NETA_MAX, NETAP(I) ! number of global elevation b.c. nodes
          DO J = 1,NETAP(I)
             INDX = OBNODE_LG(J,I)
-            WRITE(18,'(I8)') INDX           ! Global open boundary node index
+            WRITE(18,'(I12)') INDX           ! Global open boundary node index
          ENDDO
 
 C--Write the Global indexes of all Elevation Stations in local node order
@@ -1811,7 +1813,7 @@ C  if a ghost node
          WRITE(18,3004) NSTAE, NSTAE_MAX, NSTAEP(I) ! number of Global Elevation Stations
          DO J = 1,NSTAEP(I)
             INDX = IMAP_STAE_LG(J,I)
-            WRITE(18,'(I8)') INDX           ! Global station number
+            WRITE(18,'(I12)') INDX           ! Global station number
          ENDDO
 
 C--Write the Global indexes of all Velocity Stations in local node order
@@ -1821,7 +1823,7 @@ C  if a ghost node
          WRITE(18,3005) NSTAV, NSTAV_MAX, NSTAVP(I) ! number of Global Velocity Stations
          DO J = 1,NSTAVP(I)
             INDX = IMAP_STAV_LG(J,I)
-            WRITE(18,'(I8)') INDX           ! Global station number
+            WRITE(18,'(I12)') INDX           ! Global station number
          ENDDO
 
 C--Write the Global indexes of all Elevation Stations in local node order
@@ -1831,7 +1833,7 @@ C  if a ghost node
          WRITE(18,3006) NSTAM, NSTAM_MAX, NSTAMP(I) ! number of Global Meteorlogical Stations
          DO J = 1,NSTAMP(I)
             INDX = IMAP_STAM_LG(J,I)
-            WRITE(18,'(I8)') INDX           ! Global station number
+            WRITE(18,'(I12)') INDX           ! Global station number
          ENDDO
 
 C--Write the Global indexes of all Concentration Stations in local node order
@@ -1841,7 +1843,7 @@ C  if a ghost node
          WRITE(18,3007) NSTAC, NSTAC_MAX, NSTACP(I) ! number of Global Concentration Stations
          DO J = 1,NSTACP(I)
             INDX = IMAP_STAC_LG(J,I)
-            WRITE(18,'(I8)') INDX           ! Global station number
+            WRITE(18,'(I12)') INDX           ! Global station number
          ENDDO
 
 C---------------------------------------------------------------------------------
@@ -1907,12 +1909,12 @@ C           for resident stations and negative for ghost stations.
 C           3D velocity stations
             WRITE(18,3061) NSTA3DV, MAXVAL(NNSTA3DVP), NNSTA3DVP(I) 
             DO J=1,NNSTA3DVP(I)
-               WRITE(18,'(I8)') IMAP_STA3DV_LG(J,I)
+               WRITE(18,'(I12)') IMAP_STA3DV_LG(J,I)
             END DO
 C           3D turbulence stations
             WRITE(18,3062) NSTA3DT, MAXVAL(NNSTA3DTP), NNSTA3DTP(I) 
             DO J=1,NNSTA3DTP(I)
-               WRITE(18,'(I8)') IMAP_STA3DT_LG(J,I)
+               WRITE(18,'(I12)') IMAP_STA3DT_LG(J,I)
             ENDDO
          ENDIF
 C
@@ -1948,25 +1950,25 @@ C
       RETURN
 C
   92  FORMAT(1X,A6,2X,I7,2X,F8.2)
-1130  FORMAT(8X,9I8)
-1131  FORMAT(:,I8)
+1130  FORMAT(8X,6I12) !(8X,9I8)
+1131  FORMAT(:,I12)
 Casey 100209: Changed I8 to I12 through this section.
 3000  FORMAT('NELG    ',3I12)
-3001  FORMAT('NNODG   ',3I8)
-3002  FORMAT('NFLUXF  ',I8)
-3003  FORMAT('NETA    ',3I8)
-3004  FORMAT('NSTAE   ',3I8)
-3005  FORMAT('NSTAV   ',3I8)
-3006  FORMAT('NSTAM   ',3I8)
-3007  FORMAT('NSTAC   ',3I8)
-3010  FORMAT('RES NODE',2I8)    
-3020  FORMAT('COMM PE ',2I8)    
-3030  FORMAT('RECV PE ',2I8)    
-3040  FORMAT('SEND PE ',2I8) 
-3050  FORMAT('FileFmt ',3I8)
-3060  FORMAT('NSTA3DD ',3I8)
-3061  FORMAT('NSTA3DV ',3I8)
-3062  FORMAT('NSTA3DT ',3I8)
+3001  FORMAT('NNODG   ',3I12)
+3002  FORMAT('NFLUXF  ',I12)
+3003  FORMAT('NETA    ',3I12)
+3004  FORMAT('NSTAE   ',3I12)
+3005  FORMAT('NSTAV   ',3I12)
+3006  FORMAT('NSTAM   ',3I12)
+3007  FORMAT('NSTAC   ',3I12)
+3010  FORMAT('RES NODE',2I12)    
+3020  FORMAT('COMM PE ',2I12)    
+3030  FORMAT('RECV PE ',2I12)    
+3040  FORMAT('SEND PE ',2I12) 
+3050  FORMAT('FileFmt ',3I12)
+3060  FORMAT('NSTA3DD ',3I12)
+3061  FORMAT('NSTA3DV ',3I12)
+3062  FORMAT('NSTA3DT ',3I12)
       END SUBROUTINE PREP18
 
 
