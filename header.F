@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.23   - 06/27/2011 - jgf - Added NWS=319 to list of allowable NWS values
+C             in read_input.F; fixed initialization in hstime.F; fixed debug
+C             flags for intel compiler. 
 C  v50.22   - 06/27/2011 - jcd - Set the unit number swiLUN = 26 in prep.F
 C  v50.21   - 06/10/2011 - tcm - Changed I8 to I12 format specifications in
 C             the fort.18 files (prep.F, messenger.F, SwanReadfort18.ftn90)

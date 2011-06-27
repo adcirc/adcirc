@@ -1064,7 +1064,7 @@ Casey 090720: Added the following cases for coupling to unstructured SWAN.
      &   (ABS(NWS).NE.300).AND.(ABS(NWS).NE.303).AND.(ABS(NWS).NE.304).AND.
      &   (ABS(NWS).NE.305).AND.(ABS(NWS).NE.306).AND.(ABS(NWS).NE.308).AND.
      &   (ABS(NWS).NE.309).AND.(ABS(NWS).NE.310).AND.(ABS(NWS).NE.311).AND.
-     &   (ABS(NWS).NE.312) .AND.
+     &   (ABS(NWS).NE.312) .AND. (ABS(NWS).NE.319) .AND.
 C
      &   (NWS.NE.400)                                              .AND.
      &   (NWS.NE.403)  .AND.(ABS(NWS).NE.404).AND.(ABS(NWS).NE.405).AND.

@@ -31,6 +31,7 @@ C
       netCDFFormat = .false.
       fileFound = .false.
 C
+      i=0
       argCount = iArgC()
       DO WHILE (i < argCount) 
          i = i + 1
