@@ -5959,6 +5959,9 @@ C---------------------------------------------------------------------------
       CHARACTER(len=43) sdFileName     ! subdomain file name
 C
 C     
+Casey 110627: Set the unit number.
+      swiLUN = 26
+
       swanInitFound = .false.
       swanComFound = .false.
       readError = .true.
@@ -5977,6 +5980,8 @@ C
                READ(swiLUN,*,ERR=4321,END=4321,IOSTAT=ErrorIO) Line
             ENDDO 
             READ(Line,*,ERR=4321,END=4321,IOSTAT=ErrorIO) swanComFile
+Casey 110627: Close the swaninit file.
+            CLOSE(UNIT=swiLUN,STATUS='KEEP')
             WRITE(*,*) "INFO: The swan command file is '",
      &         trim(swanComFile),"'."
             readError = .false.
