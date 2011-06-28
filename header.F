@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.25   - 06/28/2011 - jgf - Fixed debug flags for Jade; removed -Mextend
+C             from macros.inc for Jade; corrected typo in hstime.F.
 C  v50.24   - 06/27/2011 - jgf - Made NWS=19 look in the fulldomain directory
 C             for fort.22 in parallel rather than the subdomain directories.
 C  v50.23   - 06/27/2011 - jgf - Added NWS=319 to list of allowable NWS values

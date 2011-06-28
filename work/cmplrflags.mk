@@ -184,14 +184,21 @@ ifeq ($(compiler),cray_xt4)
   CC		:=  pgcc
   CCBE		:=  cc
   FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse
-#  FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DNETCDF_TRACE -DHARM_TRACE -DWRITE_OUTPUT_TRACE -DFLUSH_MESSAGES
-#  FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk
+  ifeq ($(DEBUG),full)
+     FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
   FFLAGS2	:=  $(FFLAGS1) 
   FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics 
   DA  	        :=  -DREAL8 -DLINUX -DCSCA 
   DP  	        :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA  
   DPRE	        :=  -DREAL8 -DLINUX
-  CFLAGS	:=  -c89 $(INCDIRS) -DLINUX
+  ifeq ($(SWAN),enable)
+     DPRE	        :=  -DREAL8 -DLINUX -DADCSWAN
+  endif
+  CFLAGS	:=  -c89 $(INCDIRS) -DLINUX 
+  ifeq ($(DEBUG),full)
+     CFLAGS	:=  -c89 $(INCDIRS) -DLINUX -g -O0
+  endif
   IMODS		:=  -module 
   FLIBS  	:=  
 # When compiling with netCDF support, the HDF5 libraries must also

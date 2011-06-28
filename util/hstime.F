@@ -20,7 +20,7 @@ C***************************************************************************
       INTEGER :: i
       INTEGER :: ihotstp  ! record counter for binary hotstart file
       INTEGER :: iArgC    ! function returns the number of command line options 
-      INTEGER: : argCount ! number of command line options
+      INTEGER :: argCount ! number of command line options
       CHARACTER(2048) :: cmdLineArg  ! the command line arguments
       LOGICAL :: fileFound           ! .true. if the file was found
       INTEGER :: ErrorIO             ! nonzero if there was an error
