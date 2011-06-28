@@ -1754,7 +1754,7 @@ C  tcm v49.16 20100617
 !     rjw added nws = 19: asymmetric hurricane winds v2.0
 
       IF(ABS(NWS).EQ.19) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
              CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)
 !         IF(NWS.EQ.9) THEN
 !             CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)

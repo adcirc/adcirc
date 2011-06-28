@@ -336,7 +336,7 @@ C     RJW Merged:
 !    rjw added nws = 19: asymmetric hurricane winds v2.0
       IF(NWS.EQ.19) THEN
          AsymmetricTime = STATIM*86400.D0
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22',STATUS='OLD')
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
         CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
       ENDIF
 
