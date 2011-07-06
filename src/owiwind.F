@@ -300,13 +300,13 @@ Casey 110518: Added for Mark Powell's sector-based wind drag.
 
       ! Read grid specifications/date in basin pressure file
       errorVar = "grid specifications/date in basin pressure file"
-      read (221,11,end=9997,err=9999,iostat=errorIO) 
+      read (221,11,end=10000,err=9999,iostat=errorIO) 
      &      iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
       call check_err(errorIO)
 
       ! Read grid specifications/date in basin wind file
       errorVar = "grid specifications/date in basin wind file"
-      read (222,11,end=9997,err=9999,iostat=errorIO) 
+      read (222,11,end=10000,err=9999,iostat=errorIO) 
      &      iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
       call check_err(errorIO)
 
@@ -409,13 +409,13 @@ Casey 110518: Find lon,lat location of eye.
 
       ! Read grid specifications/date in region pressure file
       errorVar = "grid specifications/date in region pressure file"
-      read (223,11,end=9997,err=9999,iostat=errorIO) 
+      read (223,11,end=10000,err=9999,iostat=errorIO) 
      &     iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
       call check_err(errorIO)
 
       ! Read grid specifications/date in region wind file
       errorVar = "grid specifications/date in region wind file"
-      read (224,11,end=9997,err=9999,iostat=errorIO) 
+      read (224,11,end=10000,err=9999,iostat=errorIO) 
      &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
       call check_err(errorIO)
 
