@@ -939,7 +939,7 @@ C! CMPI
       !--------------------------------------------------------------
 
       subroutine write_gbl_file_skip_default
-     &           (lun, filename, descript, TimeLoc, it, write_cmd, default)
+     &           (lun, filename, descript, TimeLoc, it, write_cmd, default_val)
       USE SIZES
       USE GLOBAL
       implicit none
@@ -962,7 +962,7 @@ C! CMPI
       integer      :: nLNonDefValues, nGNonDefValues
       integer      :: iglobal
 #endif
-      real(8)      :: default
+      real(8)      :: default_val
       real(8)      :: TimeLoc
       character(*) :: filename
       type (OutputDataDescript_t) :: descript
@@ -1000,10 +1000,10 @@ C     !-----IF CMPI IS DEFINED -----
         if(iglobal.le.0) cycle ! cycle if node i is ghost
 
         if(descript%num_items_per_record.eq.1) then
-          if(descript%array (i).eq.default) cycle
+          if(descript%array (i).eq.default_val) cycle
         else if(descript%num_items_per_record.eq.2) then
-          if(descript%array (i).eq.default.and.
-     &       descript%array2(i).eq.default) cycle
+          if(descript%array (i).eq.default_val.and.
+     &       descript%array2(i).eq.default_val) cycle
         endif
 
         nLNonDefValues=nLNonDefValues+1
@@ -1014,7 +1014,7 @@ C     !-----IF CMPI IS DEFINED -----
 
       if (myproc == 0) then
         open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-        write(lun, 1101) TimeLoc, it, nGNonDefValues, default
+        write(lun, 1101) TimeLoc, it, nGNonDefValues, default_val
       endif
 
       bufsize = min(BUFSIZE_MAX, 
@@ -1048,10 +1048,10 @@ C     !-----IF CMPI IS DEFINED -----
 
             !If values are eqaul to the default value, skip this node
             if(descript % num_items_per_record == 1) then
-              if(resultBuf(j) == default) cycle
+              if(resultBuf(j) == default_val) cycle
             else if(descript % num_items_per_record == 2) then
-              if((resultBuf(j)   == default).and.
-     &           (resultBuf(j+1) == default)) cycle
+              if((resultBuf(j)   == default_val).and.
+     &           (resultBuf(j+1) == default_val)) cycle
             endif
 
             write(lun, 1000) i, (resultBuf(k), k = j, j +

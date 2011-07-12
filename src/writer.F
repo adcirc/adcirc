@@ -25,6 +25,7 @@ C  variables
       INTEGER  :: NNOD_GLOBAL(NUM_BUF_MAX)
       INTEGER  :: NUM_ITEMS_PER_RECORD(NUM_BUF_MAX)
       INTEGER  :: ITS(NUM_BUF_MAX)
+      INTEGER  :: FULLREC_SWITCH(NUM_BUF_MAX)  ! tcm v50.27 added for full record option
       REAL(SZ) :: DEFAULT_VALUES(NUM_BUF_MAX)
       REAL(SZ) :: TIMES(NUM_BUF_MAX)
       CHARACTER(256)  :: WFILENAMES(NUM_BUF_MAX)
@@ -124,7 +125,7 @@ C...  Main loop
       end subroutine WRITER_PAUSE
  
       subroutine WRITE_GBL_FILE_THROUGH_WRITER
-     &     (filename, descript, TimeLoc, it, store_cmd, default)
+     &     (filename, descript, TimeLoc, it, store_cmd, default_val)
       use global
       implicit none
 #ifndef HAVE_MPI_MOD
@@ -136,11 +137,12 @@ C...  Main loop
       integer      :: ierr
       integer      :: bufsize
       integer      :: istart, iend, it
+      integer      :: fullrec   !1 = true, 0 = false   tcm v50.27 added
       real(8)      :: TimeLoc
       character(*) :: filename
       character(256) :: filenamebuf
-      real(sz)     :: default
-      integer      :: INTBUF(3)
+      real(sz)     :: default_val
+      integer      :: INTBUF(4)  !tcm v50.27 increased size from 3 to 4
       real(sz)     :: REBUF(2)
       integer      :: wcomm
       type (OutputDataDescript_t) :: descript
@@ -162,13 +164,21 @@ C...    Send SIG_VAL to a writer to get it ready to receive values.
      &       wcomm,IERR)
 
 C...    Send some parameters associated to this file
+C....   tcm v50.27 added for full/compact record
+        FULLREC = 1  !full record output
+        IF (ABS(descript % specifier) == 4) THEN
+           !compact record
+           FULLREC = 0
+        ENDIF
+C
         INTBUF(1) = NP_G
         INTBUF(2) = descript % num_items_per_record
         INTBUF(3) = IT
-        CALL MPI_SEND(INTBUF,3,MPI_INTEGER,MNPROC,TAG,
+        INTBUF(4) = FULLREC   !tcm v50.27 added
+        CALL MPI_SEND(INTBUF,4,MPI_INTEGER,MNPROC,TAG,
      &       WCOMM,IERR)
 
-        REBUF(1) = default
+        REBUF(1) = default_val
         REBUF(2) = TimeLoc
         CALL MPI_SEND(REBUF,2,REALTYPE,MNPROC,TAG,
      &       WCOMM,IERR)
@@ -303,7 +313,7 @@ C...
       integer      :: bufsize
       integer      :: istart, iend
       character(256) :: filenamebuf
-      integer      :: intbuf(3)
+      integer      :: intbuf(4)  !tcm v50.27 increased size from 3 to 4
       real(sz)     :: rebuf(2)
       integer      :: wcomm
       INTEGER      :: STAT(MPI_STATUS_SIZE)
@@ -316,11 +326,13 @@ C...  Writers use their own communicator
       wcomm = comm_writer(writer_id)
 
 C...  Receive some parameters necessary to write a file
-      CALL MPI_RECV(INTBUF,3,MPI_INTEGER,0,TAG,
+      CALL MPI_RECV(INTBUF,4,MPI_INTEGER,0,TAG,
      &     WCOMM,STAT,IERR)
       NNOD_GLOBAL(BUFID) = INTBUF(1)
       NUM_ITEMS_PER_RECORD(BUFID) = INTBUF(2)
       ITS(BUFID) = INTBUF(3)
+      FULLREC_SWITCH(BUFID) = INTBUF(4)  !tcm v50.27 added
+
 #ifdef WRITER_DEBUG
       print *, 'RECEIVED NNOD_GLOBAL = ',NNOD_GLOBAL(BUFID)
       print *, 'RECEIVED NUM_ITEMS_PER_REC = ',NUM_ITEMS_PER_RECORD(BUFID)
@@ -534,8 +546,9 @@ C     WCOMMID = 0
       INTEGER :: WCOMM
       INTEGER :: IBUF,INOD
       INTEGER :: nNonDefVal
+      INTEGER :: FULLREC  !tcm v50.27 added
       INTEGER, PARAMETER :: FID = 100
-      REAL(SZ) :: VAL1,VAL2,DEFAULT
+      REAL(SZ) :: VAL1,VAL2,DEFAULT_VAL
 
       WCOMM = COMM_WRITER(WRITER_ID)
 
@@ -553,7 +566,9 @@ C...    Validity check
           STOP
         ENDIF
 
-        DEFAULT = DEFAULT_VALUES(IBUF)
+        DEFAULT_VAL = DEFAULT_VALUES(IBUF)
+
+        FULLREC = FULLREC_SWITCH(IBUF)
 
 C...    Retrieve a RESGBUF corresponding to BUFID
         CALL WRITER_SET_RESGBUF(IBUF, .FALSE.)
@@ -567,59 +582,69 @@ C...    Open file
      &         ACTION='WRITE')                                     !st3  split file 100708
         endif
 
-        
+c... tcm v50.27 added full record writing options        
+        IF(FULLREC == 1) THEN
+           nNonDefVal = NNOD_GLOBAL(IBUF)
+        ELSE
 C...    Count non-default values
-        nNonDefVal = 0
+           nNonDefVal = 0
 C....   Scalar data
-        IF(NUM_ITEMS_PER_RECORD(IBUF) == 1) THEN
-          DO INOD=1,NNOD_GLOBAL(IBUF)
-            VAL1 = RESGBUF(1,INOD)
+           IF(NUM_ITEMS_PER_RECORD(IBUF) == 1) THEN
+             DO INOD=1,NNOD_GLOBAL(IBUF)
+               VAL1 = RESGBUF(1,INOD)
 
-            IF(VAL1 == DEFAULT) CYCLE
+               IF(VAL1 == DEFAULT_VAL) CYCLE
 
-            nNonDefVal = nNonDefVal + 1
-          ENDDO
+               nNonDefVal = nNonDefVal + 1
+             ENDDO
 
 C....   Vector data
-        ELSE IF(NUM_ITEMS_PER_RECORD(IBUF) == 2) THEN
-          DO INOD=1,NNOD_GLOBAL(IBUF)
-            VAL1 = RESGBUF(1,INOD)
-            VAL2 = RESGBUF(2,INOD)
+           ELSE IF(NUM_ITEMS_PER_RECORD(IBUF) == 2) THEN
+              DO INOD=1,NNOD_GLOBAL(IBUF)
+                 VAL1 = RESGBUF(1,INOD)
+                 VAL2 = RESGBUF(2,INOD)
 
-            IF((VAL1 == DEFAULT).AND.
-     &         (VAL2 == DEFAULT)) CYCLE
+                 IF((VAL1 == DEFAULT_VAL).AND.
+     &              (VAL2 == DEFAULT_VAL)) CYCLE
 
-            nNonDefVal = nNonDefVal + 1
-          ENDDO
+                 nNonDefVal = nNonDefVal + 1
+              ENDDO
 
+           ENDIF
         ENDIF
         
 C...    Writes a time stamp
-        write(fid, 100) TIMES(IBUF), ITS(IBUF), nNonDefVal, DEFAULT
- 100    FORMAT(2x,1pE20.10,5X,I10,5X,I10,5X,1pE20.10)
+c.      tcm v50.27 added for full record option
+        IF (FULLREC == 0) THEN
+           WRITE(FID, 100) TIMES(IBUF), ITS(IBUF), nNonDefVal, DEFAULT_VAL
+        ELSE
+           WRITE(FID, 110) TIMES(IBUF), ITS(IBUF)
+        ENDIF
+ 100    FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)  !changed formats to match those in globalio.F
+ 110    FORMAT(2x,1pE20.10E3,5X,I10)  !tcm v50.27 added for full record
 
 C...    Write data
 C....   Scalar data
         IF(NUM_ITEMS_PER_RECORD(IBUF) == 1) THEN
-          DO INOD=1,NNOD_GLOBAL(IBUF)
-            VAL1 = RESGBUF(1,INOD)
+           DO INOD=1,NNOD_GLOBAL(IBUF)
+              VAL1 = RESGBUF(1,INOD)
 
-            IF(VAL1 == DEFAULT) CYCLE
+              IF((FULLREC==0).AND.(VAL1 == DEFAULT_VAL)) CYCLE
 
-            WRITE(FID,1000) INOD, VAL1
-          ENDDO
+              WRITE(FID,1000) INOD, VAL1
+           ENDDO
 
 C....   Vector data
         ELSE IF(NUM_ITEMS_PER_RECORD(IBUF) == 2) THEN
-          DO INOD=1,NNOD_GLOBAL(IBUF)
-            VAL1 = RESGBUF(1,INOD)
-            VAL2 = RESGBUF(2,INOD)
+           DO INOD=1,NNOD_GLOBAL(IBUF)
+              VAL1 = RESGBUF(1,INOD)
+              VAL2 = RESGBUF(2,INOD)
 
-            IF((VAL1 == DEFAULT).AND.
-     &         (VAL2 == DEFAULT)) CYCLE
+              IF((FULLREC==0).AND.((VAL1 == DEFAULT_VAL).AND.
+     &           (VAL2 == DEFAULT_VAL))) CYCLE
 
-            WRITE(FID,2000) INOD, VAL1, VAL2
-          ENDDO
+              WRITE(FID,2000) INOD, VAL1, VAL2
+           ENDDO
 
         ENDIF
         
@@ -633,8 +658,9 @@ C...    Close file
 #endif
 
       RETURN
- 1000 format(i8, 1x, 1pE20.10)
- 2000 format(i8, 1x, 1pE20.10, 1pE20.10)
+C.... tcm v50.27 changed formats to match those in globalio.F
+ 1000 FORMAT(2X,I8, 2X, 1PE20.10E3) !format(i8, 1x, 1pE20.10)
+ 2000 FORMAT(2X,I8, 2X, 1PE20.10E3, 1PE20.10E3) !format(i8, 1x, 1pE20.10, 1pE20.10)
 
       END SUBROUTINE WRITER_WRITE
 

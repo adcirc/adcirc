@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.27   - 07/12/2011 - tcm - Added the option to use dedicated writer
+C             processors for full in addition to compact formats for ascii
+C             global field files (fort 63,64,73,74,93,164 (cswan) ).  Renamed
+C             local variable "default" to "default_val".
 C  v50.26   - 07/06/2011 - jcd - Changed owiwind.F so that blank snaps are
 C             inserted when the end of file is reached.
 C  v50.25   - 06/28/2011 - jgf - Fixed debug flags for Jade; removed -Mextend

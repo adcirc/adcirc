@@ -715,10 +715,31 @@ Casey 090302: Added outer IF statement.
      &         (ABS(NOUTGE).EQ.2).OR. 
      &         (ABS(NOUTGE).EQ.3)) THEN
 C           save fulldomain elevation data to file
-Casey 090302: Added file name.
-               CALL writeOutArray(63, TimeLoc, IT, ElevDescript,
+
+C....tcm v50.27 added using writer processors for full domain output
+               if(ABS(NOUTGE).eq.1) then
+#ifdef CMPI
+Casey 090302: Changed descript to ElevDescript.
+                  IF(MNWPROC.GT.0) THEN
+                     CALL WRITE_GBL_FILE_THROUGH_WRITER
+     $              (TRIM(GLOBALDIR)//'/'//'fort.63',ElevDescript,TimeLoc,it,
+     $                 writer_store63, -99999.D0)
+                  ELSE
+                     CALL writeOutArray(63, TimeLoc, IT, ElevDescript,
      &                            pack63, unpackOne, IGEP,
      &                            'fort.63        ')
+                  ENDIF
+#else
+                  CALL writeOutArray(63, TimeLoc, IT, ElevDescript,
+     &                            pack63, unpackOne, IGEP,
+     &                            'fort.63        ')
+#endif
+               else
+Casey 090302: Added file name.
+                  CALL writeOutArray(63, TimeLoc, IT, ElevDescript,
+     &                            pack63, unpackOne, IGEP,
+     &                            'fort.63        ')
+               endif
 C
 C              jgf47.06: Write out tau0 if it is time varying and the user has 
 C              requested it with tau0 = -4 in fort.15.
@@ -782,11 +803,31 @@ Casey 090302: Added outer IF statement.
             IF((ABS(NOUTGV).EQ.1).OR.
      &         (ABS(NOUTGV).EQ.2).OR.
      &         (ABS(NOUTGV).EQ.3)) THEN
-Casey 090302: Added file name.
-               CALL writeOutArray(64, TimeLoc, IT, VelDescript,
+
+C....tcm v50.27 added using writer processors for full domain output
+               if(ABS(NOUTGV).eq.1) then
+#ifdef CMPI
+Casey 090302: Changed descript to VelDescript.
+                  IF(MNWPROC.GT.0) THEN
+                     CALL WRITE_GBL_FILE_THROUGH_WRITER
+     $                (TRIM(GLOBALDIR)//'/'//'fort.64',VelDescript,TimeLoc,it,
+     $                 writer_storeTwo, 0.D0)
+                  ELSE
+                     CALL writeOutArray(64, TimeLoc, IT, VelDescript,
      &                         packTwo, unpackTwo, IGVP,
      &                         'fort.64        ')
-
+                  ENDIF
+#else
+                  CALL writeOutArray(64, TimeLoc, IT, VelDescript,
+     &                         packTwo, unpackTwo, IGVP,
+     &                         'fort.64        ')
+#endif
+               else
+Casey 090302: Added file name.
+                  CALL writeOutArray(64, TimeLoc, IT, VelDescript,
+     &                         packTwo, unpackTwo, IGVP,
+     &                         'fort.64        ')
+               endif
             ELSEIF (ABS(NOUTGV).EQ.4) THEN
             ! jgf48.03 TODO: Make this globalio compliant.
             ! kmd - updated
@@ -827,30 +868,103 @@ Casey 090302: Added outer IF statement.
      &         (ABS(NOUTGW).EQ.2).OR.
      &         (ABS(NOUTGW).EQ.3)) THEN
 C           save atmospheric pressure recording station data to file
-Casey 090302: Added file name.
-               CALL writeOutArray(73, TimeLoc, IT, PrDescript,
+C....tcm v50.27 added using writer processors for full domain output
+               IF(ABS(NOUTGW).eq.1) then
+#ifdef CMPI
+Casey 090302: Changed descript to VelDescript.
+                  IF(MNWPROC.GT.0) THEN
+                     CALL WRITE_GBL_FILE_THROUGH_WRITER
+     $                  (TRIM(GLOBALDIR)//'/'//'fort.73',PrDescript,TimeLoc,
+     $                   it,writer_storeOne, 0.D0)
+                     CALL WRITE_GBL_FILE_THROUGH_WRITER
+     $                   (TRIM(GLOBALDIR)//'/'//'fort.74',
+     &                   WindVelDescript,TimeLoc,it,writer_storeTwo, 0.D0)
+                     IF(NCICE.NE.0) then
+                        CALL WRITE_GBL_FILE_THROUGH_WRITER
+     $                       (TRIM(GLOBALDIR)//'/'//'fort.93',
+     $                       IceDescript,TimeLoc,it,writer_storeOne, 0.D0)
+                     ENDIF
+#ifdef CSWAN
+                     CALL WRITE_GBL_FILE_THROUGH_WRITER
+     &                   (TRIM(GLOBALDIR)//'/'//'rads.64',RSDescript,
+     &                    TimeLoc,it,writer_storeTwo, 0.D0)
+#endif
+
+                  ELSE  !no writer processors
+
+                     CALL writeOutArray(73, TimeLoc, IT, PrDescript,
      &                            packOne, unpackOne, IGPP,
      &                            'fort.73        ')
-C
-C           save wind velocity recording station data to file
+C           save wind velocity global data to file
 Casey 090302: Added file name.
-               CALL writeOutArray(74, TimeLoc, IT, WindVelDescript,
+                     CALL writeOutArray(74, TimeLoc, IT, WindVelDescript,
      &                            packTwo, unpackTwo, IGWP,
      &                            'fort.74        ')
-               IF (NCICE.NE.0) THEN
+                     IF (NCICE.NE.0) THEN
 C TCM V49.64.01 -- ADDED ICE SUPPORT 
 C           save global ICE data to file
-                  CALL writeOutArray(93, TimeLoc, IT, IceDescript,
+                        CALL writeOutArray(93, TimeLoc, IT, IceDescript,
      &                         packOne, unpackOne, IGIP,
      &                         'fort.93        ') 
-               ENDIF
-
+                     ENDIF
 #ifdef CSWAN
 Casey 090302: Added these lines for output of radiation stresses.
-               CALL writeOutArray(164,TimeLoc, IT, RSDescript,
+                     CALL writeOutArray(164,TimeLoc, IT, RSDescript,
+     &                             packTwo, unpackTwo, IGRadS,
+     &                            'rads.64        ')
+#endif
+                  ENDIF  !test for writer processors
+
+#else
+       !Not parallel
+                  CALL writeOutArray(73, TimeLoc, IT, PrDescript,
+     &                            packOne, unpackOne, IGPP,
+     &                            'fort.73        ')
+C           save wind velocity global data to file
+Casey 090302: Added file name.
+                  CALL writeOutArray(74, TimeLoc, IT, WindVelDescript,
+     &                            packTwo, unpackTwo, IGWP,
+     &                            'fort.74        ')
+                  IF (NCICE.NE.0) THEN
+C TCM V49.64.01 -- ADDED ICE SUPPORT 
+C           save global ICE data to file
+                     CALL writeOutArray(93, TimeLoc, IT, IceDescript,
+     &                         packOne, unpackOne, IGIP,
+     &                         'fort.93        ') 
+                  ENDIF
+#ifdef CSWAN
+Casey 090302: Added these lines for output of radiation stresses.
+                  CALL writeOutArray(164,TimeLoc, IT, RSDescript,
+     &                               packTwo, unpackTwo, IGRadS,
+     &                               'rads.64        ')
+#endif
+
+#endif
+               ELSE  ! abs(noutgw) == 2 or 3
+
+Casey 090302: Added file name.
+                  CALL writeOutArray(73, TimeLoc, IT, PrDescript,
+     &                            packOne, unpackOne, IGPP,
+     &                            'fort.73        ')
+C           save wind velocity global data to file
+Casey 090302: Added file name.
+                  CALL writeOutArray(74, TimeLoc, IT, WindVelDescript,
+     &                            packTwo, unpackTwo, IGWP,
+     &                            'fort.74        ')
+                  IF (NCICE.NE.0) THEN
+C TCM V49.64.01 -- ADDED ICE SUPPORT 
+C           save global ICE data to file
+                     CALL writeOutArray(93, TimeLoc, IT, IceDescript,
+     &                         packOne, unpackOne, IGIP,
+     &                         'fort.93        ') 
+                  ENDIF
+#ifdef CSWAN
+Casey 090302: Added these lines for output of radiation stresses.
+                  CALL writeOutArray(164,TimeLoc, IT, RSDescript,
      &                            packTwo, unpackTwo, IGRadS,
      &                            'rads.64        ')
 #endif
+               ENDIF  !test for abs(noutgw) == 1
 
 C           jgf48.03 TODO: Make this globalio compliant.
             ELSEIF (ABS(NOUTGW).EQ.4) THEN
