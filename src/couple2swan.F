@@ -1319,14 +1319,15 @@ C             and then compute the 'new' values.
          CALL Manning2Madsen
       ENDIF
 
-      DO IT=1,(CouplingInterval*DT)/SWAN_DT
+      !jgf50.28: Removed DO ... when SWAN coupling was under development,
+      ! this was a loop so that SWAN could do multiple time steps per coupling
+      ! interval, but it became clear that there was not a need for that and
+      ! that new information should be used at the start of each SWAN step.
 
 Casey 090729: Average values over the time step.
-         InterpoWeight = 0.5D0
-         SwanTimeStep = SwanTimeStep + 1
-         CALL SWMAIN(ITIME,SwanTimeStep)
-
-      ENDDO
+      InterpoWeight = 0.5D0
+      SwanTimeStep = SwanTimeStep + 1
+      CALL SWMAIN(ITIME,SwanTimeStep)
 
 Casey 090302: Move the 'old' values into the first columns.
 C             We do this for the winds after the SWAN time steps
