@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.29   - 08/01/2011 - jgf - Modified aswip so that if a storm becomes
+C             stationary, its direction will be persisted and speed reduced
+C             to 1 ... feeding 0 and 0 to ADCIRC NWS19 caused NaNs. 
 C  v50.28   - 07/26/2011 - jgf - Removed vestigial DO/ENDDO surrounding call to
 C             SWMAIN in couple2swan, purely to enhance readability. 
 C  v50.27   - 07/12/2011 - tcm - Added the option to use dedicated writer

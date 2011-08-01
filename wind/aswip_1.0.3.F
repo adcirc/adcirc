@@ -388,8 +388,17 @@ C
      &                          vTrans(ient) * vTrans(ient))           ! in kts
 
 
-         IF (h_speed(ient) == 0 ) then
-            h_dir(ient) = 0 
+         IF (h_speed(ient) .lt. 1.0d0 ) then
+            !jgf50.29: The vortex module can't handle speed and direction 
+            ! being zero; it will return NaNs as a result. Persist the
+            ! direction from the previous cycle, and make the storm translation
+            ! speed small but nonzero.
+            h_speed(ient) = 1.0d0
+            if (ient.gt.1) then 
+               h_dir(ient) = h_dir(ient-1)
+            else 
+               h_dir(ient)=0.0 
+            endif
          ELSE 
             h_dir(ient)= asin(abs(uTrans(ient))/h_speed(ient))*rad2deg  ! in deg
             if ( uTrans(ient) .gt. 0.0d0 ) then
