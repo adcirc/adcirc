@@ -6,7 +6,9 @@ C***********************************************************************
 C
        MODULE WIND
        USE SIZES, ONLY : SZ, LOCALDIR
-       USE GLOBAL, ONLY : ScreenUnit
+       USE GLOBAL, ONLY : ScreenUnit, setMessageSource, allMessage, 
+     &    screen, logMessage, unsetMessageSource, DEBUG, ECHO, INFO,
+     &    WARNING, ERROR, scratchMessage
 #ifdef CMPI
       use messenger, only : msg_fini
 #endif
@@ -3418,6 +3420,14 @@ C     cf added if missing values set winds to zero and pressure to P0
          CHARACTER(LEN = 10),DIMENSION(:),ALLOCATABLE,SAVE::name,name1
          REAL(sz),SAVE :: timeOld,timeNew
          CHARACTER*1 ew,E,W,ns,N,S
+         INTEGER, SAVE :: num_cycles ! num unique date/times in the fort.22
+C
+      call setMessageSource("nws19get")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+
          E='E'
          W='W'
          N='N'
@@ -3666,13 +3676,16 @@ c     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
           enddo ! loop through quads
 
         ENDDO ! loop through entries (lines ) in input file
-               write(*,*) icyc
+        write(scratchMessage,12) icyc
+ 12     format('There are ',i2,' cycles in the fort.22 input file')
+        CALL logMessage(INFO,scratchMessage)
+        num_cycles = icyc
 
          !-------------------------------
          ! ALL DATA READ IN AND VARIABLES SET
          !-------------------------------
 
-      icyc=1
+      icyc=2
          END IF   ! (firstCall .EQ. 0)
 
         !--------------------------------------
@@ -3683,8 +3696,19 @@ c     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient)
 
 C     If time exceeds the next hindcast/nowcast/forecast time, increment the
 C     array counter.
-      IF (TIMELOC.ge.CycleTime(icyc)) THEN
-         icyc=icyc+1
+C     jgf50.30 Changed .ge. to .gt. so that we wouldn't start looking at the
+C     next cycle until we are in it ... this should prevent problems when
+C     the ADCIRC run ends right at the end of the fort.22 ... otherwise,
+C     we are running off the end of the data.    
+      IF (TIMELOC.gt.CycleTime(icyc)) THEN
+         IF (icyc.gt.num_cycles) THEN
+            CALL allMessage(WARNING,
+     & "ADCIRC simulation time is later than the last data in fort.22.")
+            CALL allMessage(WARNING,
+     &      "The simulation has run out of meteorological data.")
+         ELSE
+            icyc=icyc+1
+         ENDIF
       ENDIF
 
          !-------------------------------------
@@ -3789,7 +3813,10 @@ C          CALL printVortex()
          firstCall = 1
          told=TIMELOC
 
-
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
 999      RETURN
 
       END SUBROUTINE NWS19GET

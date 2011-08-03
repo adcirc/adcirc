@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.30   - 08/03/2011 - jgf - Modified NWS19 so that it won't try to 
+C             interpolate beyond the end of the fort.22 file if the run
+C             ends right at the last line of the file. 
 C  v50.29   - 08/01/2011 - jgf - Modified aswip so that if a storm becomes
 C             stationary, its direction will be persisted and speed reduced
 C             to 1 ... feeding 0 and 0 to ADCIRC NWS19 caused NaNs. 
