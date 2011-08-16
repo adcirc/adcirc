@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.82.11  08/16/2011 - jgf - Added call to ApplyCanopyCoefficient 
+C             subroutine to all wind subroutines.
 C  v49.82.10  06/07/2011 - rjw - Added Case(bottom_roughness_length)        
 C  v49.82.09  06/06/2011 - jgf - Fixed issue with netcdf hotstart where the 
 C             time (in seconds) was being read from the netcdf hotstart file
