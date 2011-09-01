@@ -60,10 +60,19 @@ Casey 100205: Enable hot-start file generation by SWAN.
       REAL(SZ) LENED1,LENED2,LENED3
 ! kmd - variables for river boundary condition in baroclinic simulation
       INTEGER riverval, BCRiver
+ 
+      NAMELIST /metControl/ nws,WindDragLimit,DragLawString 
+      CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
+      CHARACTER(len=200) :: modifiedLine ! converted to namelist
+      INTEGER :: commentStart            ! location of fort.15 comment start
+      INTEGER :: ios                     ! i/o status of read operation
 C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
 C     Module. 
       CALL InitNAModule() 
+C
+C     jgf50.32: Initialize default values in wind module. 
+      CALL initWindModule()
 C
 C...
 C...OPEN STATEMENT FOR UNIT 14 AND 15 INPUT FILES
@@ -1033,8 +1042,43 @@ C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
 C     tcm v49.46 Added NWS = 4xx for tight coupling with STWAVE
 C     tcm v49.64.01 Added NWS = 1xxx's for ice concentration
       NCICE = 0  !set ice type to be 0
-
-      READ(15,*) NWS
+C
+C     jgf50.32: Added code to read the NWS line as a namelist, so that
+C     the drag formulation and wind drag limit can be read from the fort.15
+C     file if they are present.   
+      READ(15,'(A160)') origLine
+      CALL logMessage(DEBUG,'Reading'//origLine)
+      commentStart = scan(origLine,'!') ! to trim off existing comment, if any
+      IF (commentStart.eq.0) THEN 
+         ! there is no comment in this line
+         commentStart = len(origLine)
+      ENDIF
+      ! reformat this line as a namelist: add the name of the namelist 
+      ! we are reading, left justify the original line, provide the keyword 
+      ! for the NWS value that is already present, trim off trailing comments
+      ! and spaces, and add a terminator character.
+      modifiedLine = '&metControl nws='//
+     &   adjustl(trim(origLine(1:commentStart-1)))//" /"
+      CALL logMessage(DEBUG,'modifiedLine='//modifiedLine)
+      ios=0
+      read(modifiedLine,NML=metControl,END=32,ERR=2,IOSTAT=ios)
+ 2    IF (ios.gt.0) THEN
+         CALL allMessage(ERROR,"I/O error reading NWS line.")
+#ifdef CMPI
+         call msg_fini()
+#endif
+         STOP
+      ENDIF
+ 32   IF (ios.gt.0) THEN
+        CALL allMessage(ERROR,"END of NWS line reached.")
+#ifdef CMPI
+         call msg_fini()
+#endif
+         STOP
+      ENDIF
+      write(scratchMessage,*) 'nws=',nws,' WindDragLimit=',WindDragLimit,
+     &   'DragLawString=',DragLawString
+      CALL logMessage(DEBUG,scratchMessage)
 
 C.... BREAK OUT THE ICE CONCENTRATION FLAG FROM NWS/NRS
       IF (NWS.EQ.0) THEN
@@ -1065,6 +1109,7 @@ Casey 090720: Added the following cases for coupling to unstructured SWAN.
      &   (ABS(NWS).NE.305).AND.(ABS(NWS).NE.306).AND.(ABS(NWS).NE.308).AND.
      &   (ABS(NWS).NE.309).AND.(ABS(NWS).NE.310).AND.(ABS(NWS).NE.311).AND.
      &   (ABS(NWS).NE.312) .AND. (ABS(NWS).NE.319) .AND.
+     &   (ABS(NWS).NE.329) .AND.
 C
      &   (NWS.NE.400)                                              .AND.
      &   (NWS.NE.403)  .AND.(ABS(NWS).NE.404).AND.(ABS(NWS).NE.405).AND.

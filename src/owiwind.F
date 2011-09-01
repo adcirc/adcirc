@@ -242,12 +242,12 @@ C***********************************************************************
 
       SUBROUTINE NWS12GET(WVNX,WVNY,PRN,NP,RHOWAT0,G)
       USE SIZES,ONLY : MYPROC,MNPROC
-#ifdef POWELL
-Casey 110518: Added for Mark Powell's sector-based wind drag.
+
+      !Casey 110518: Added for Mark Powell's sector-based wind drag.
       USE WIND, ONLY: EyeLatR,
      &                EyeLonR,
-     &                FoundEye
-#endif
+     &                FoundEye,
+     &                DragLawString
 
       IMPLICIT NONE
 
@@ -256,15 +256,14 @@ Casey 110518: Added for Mark Powell's sector-based wind drag.
       REAL(SZ)  RHOWAT0,RHOWATG,G
       CHARACTER*80 PBLJAGF
 
-#ifdef POWELL 
-Casey 110518: Added for Mark Powell's sector-based wind drag.
+      !Casey 110518: Added for Mark Powell's sector-based wind drag.
       INTEGER  :: EyeLatI
       INTEGER  :: EyeLonI
       REAL(SZ) :: EyeLatTemp 
       REAL(SZ) :: EyeLonTemp 
       REAL(SZ) :: EyePressure
       FoundEye = .FALSE.
-#endif
+C
       call setMessageSource("nws12get")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -358,40 +357,43 @@ Casey 110518: Added for Mark Powell's sector-based wind drag.
      &   ((vB(i,j),i=1,iLongB),j=1,iLatB)
       call check_err(errorIO)
 
-#ifdef POWELL
-Casey 110518: Find lon,lat location of eye.
-      EyeLatI = 0
-      EyeLonI = 0
-      EyePressure = 1013.D0
-      DO i=1,iLongB
-         DO j=1,iLatB
-            IF((pB(i,j).LT.EyePressure).AND.(pB(i,j).LT.1000.D0))THEN
-               EyeLatI = j
-               EyeLonI = i
-               EyePressure = pB(i,j)
-            ENDIF
+      ! jgf50.32: Made this if block dependent on the drag law formulation.
+      IF (trim(DragLawString) == "Powell" .or.
+     &    trim(DragLawString) == "POWELL" .or.
+     &    trim(DragLawString) == "powell" ) THEN
+         !Casey 110518: Find lon,lat location of eye.
+         EyeLatI = 0
+         EyeLonI = 0
+         EyePressure = 1013.D0
+         DO i=1,iLongB
+            DO j=1,iLatB
+               IF((pB(i,j).LT.EyePressure).AND.(pB(i,j).LT.1000.D0))THEN
+                  EyeLatI = j
+                  EyeLonI = i
+                  EyePressure = pB(i,j)
+               ENDIF
+            ENDDO
          ENDDO
-      ENDDO
-      IF((EyeLatI.EQ.0).AND.(EyeLonI.EQ.0))THEN
-         FoundEye = .FALSE.
-      ELSEIF((EyeLatI.EQ.1).OR.(EyeLatI.EQ.iLatB).OR.(EyeLonI.EQ.1).OR.(EyeLonI.EQ.iLongB))THEN
-         FoundEye = .FALSE.
-      ELSE
-         FoundEye = .TRUE.
-         EyeLatTemp = swlatB  + (EyeLatI-1)*dyB
-         EyeLonTemp = swlongB + (EyeLonI-1)*dxB
-         IF((EyeLatTemp.EQ.EyeLatR(3)).AND.(EyeLonTemp.EQ.EyeLonR(3)))THEN
-            CONTINUE
+         IF((EyeLatI.EQ.0).AND.(EyeLonI.EQ.0))THEN
+            FoundEye = .FALSE.
+         ELSEIF((EyeLatI.EQ.1).OR.(EyeLatI.EQ.iLatB).OR.(EyeLonI.EQ.1).OR.(EyeLonI.EQ.iLongB))THEN
+            FoundEye = .FALSE.
          ELSE
-            EyeLatR(1) = EyeLatR(2)
-            EyeLonR(1) = EyeLonR(2)
-            EyeLatR(2) = EyeLatR(3)
-            EyeLonR(2) = EyeLonR(3)
-            EyeLatR(3) = EyeLatTemp
-            EyeLonR(3) = EyeLonTemp
+            FoundEye = .TRUE.
+            EyeLatTemp = swlatB  + (EyeLatI-1)*dyB
+            EyeLonTemp = swlongB + (EyeLonI-1)*dxB
+            IF((EyeLatTemp.EQ.EyeLatR(3)).AND.(EyeLonTemp.EQ.EyeLonR(3)))THEN
+               CONTINUE
+            ELSE
+               EyeLatR(1) = EyeLatR(2)
+               EyeLonR(1) = EyeLonR(2)
+               EyeLatR(2) = EyeLatR(3)
+               EyeLonR(2) = EyeLonR(3)
+               EyeLatR(3) = EyeLatTemp
+               EyeLonR(3) = EyeLonTemp
+            ENDIF
          ENDIF
       ENDIF
-#endif
 
 ! Read region data  --------------------------------------------------------
 
@@ -477,48 +479,51 @@ Casey 110518: Find lon,lat location of eye.
      &   ((vR(i,j),i=1,iLongR),j=1,iLatR)
       call check_err(errorIO)
 
-#ifdef POWELL
-Casey 110518: Find lon,lat location of eye.
-      EyeLatI = 0
-      EyeLonI = 0
-      EyePressure = 1013.D0
-      DO i=1,iLongR
-         DO j=1,iLatR
-            IF((pR(i,j).LT.EyePressure).AND.(pR(i,j).LT.1000.D0))THEN
-               EyeLatI = j
-               EyeLonI = i
-               EyePressure = pR(i,j)
-            ENDIF
+      ! jgf50.32: Made this if block dependent on the drag law formulation.
+      IF (trim(DragLawString) == "Powell" .or.
+     &    trim(DragLawString) == "POWELL" .or.
+     &    trim(DragLawString) == "powell" ) THEN
+         !Casey 110518: Find lon,lat location of eye.
+         EyeLatI = 0
+         EyeLonI = 0
+         EyePressure = 1013.D0
+         DO i=1,iLongR
+            DO j=1,iLatR
+               IF((pR(i,j).LT.EyePressure).AND.(pR(i,j).LT.1000.D0))THEN
+                  EyeLatI = j
+                  EyeLonI = i
+                  EyePressure = pR(i,j)
+               ENDIF
+            ENDDO
          ENDDO
-      ENDDO
-      IF((EyeLatI.EQ.0).AND.(EyeLonI.EQ.0))THEN
-         IF(.NOT.FoundEye)THEN
-            FoundEye = .FALSE.
+         IF((EyeLatI.EQ.0).AND.(EyeLonI.EQ.0))THEN
+            IF(.NOT.FoundEye)THEN
+               FoundEye = .FALSE.
+            ELSE
+               FoundEye = .TRUE.
+            ENDIF
+         ELSEIF((EyeLatI.EQ.1).OR.(EyeLatI.EQ.iLatR).OR.(EyeLonI.EQ.1).OR.(EyeLonI.EQ.iLongR))THEN
+            IF(.NOT.FoundEye)THEN
+               FoundEye = .FALSE.
+            ELSE
+               FoundEye = .TRUE.
+            ENDIF
          ELSE
             FoundEye = .TRUE.
-         ENDIF
-      ELSEIF((EyeLatI.EQ.1).OR.(EyeLatI.EQ.iLatR).OR.(EyeLonI.EQ.1).OR.(EyeLonI.EQ.iLongR))THEN
-         IF(.NOT.FoundEye)THEN
-            FoundEye = .FALSE.
-         ELSE
-            FoundEye = .TRUE.
-         ENDIF
-      ELSE
-         FoundEye = .TRUE.
-         EyeLatTemp = swlatR  + (EyeLatI-1)*dyR
-         EyeLonTemp = swlongR + (EyeLonI-1)*dxR
-         IF((EyeLatTemp.EQ.EyeLatR(3)).AND.(EyeLonTemp.EQ.EyeLonR(3)))THEN
-            CONTINUE
-         ELSE
-            EyeLatR(1) = EyeLatR(2)
-            EyeLonR(1) = EyeLonR(2)
-            EyeLatR(2) = EyeLatR(3)
-            EyeLonR(2) = EyeLonR(3)
-            EyeLatR(3) = EyeLatTemp
-            EyeLonR(3) = EyeLonTemp
+            EyeLatTemp = swlatR  + (EyeLatI-1)*dyR
+            EyeLonTemp = swlongR + (EyeLonI-1)*dxR
+            IF((EyeLatTemp.EQ.EyeLatR(3)).AND.(EyeLonTemp.EQ.EyeLonR(3)))THEN
+               CONTINUE
+            ELSE
+               EyeLatR(1) = EyeLatR(2)
+               EyeLonR(1) = EyeLonR(2)
+               EyeLatR(2) = EyeLatR(3)
+               EyeLonR(2) = EyeLonR(3)
+               EyeLatR(3) = EyeLatTemp
+               EyeLonR(3) = EyeLonTemp
+            ENDIF
          ENDIF
       ENDIF
-#endif
 
  100  CONTINUE
 

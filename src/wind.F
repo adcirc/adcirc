@@ -13,13 +13,10 @@ C
       use messenger, only : msg_fini
 #endif
 
-#ifdef POWELL
 Casey 110518: Added for Mark Powell's sectorial wind drag.
       REAL(SZ) :: EyeLatR(3) = 0.D0
       REAL(SZ) :: EyeLonR(3) = 0.D0
       LOGICAL  :: FoundEye
-#endif
-
 C
 C
 C***********************************************************************
@@ -64,10 +61,44 @@ C
       ! normalized to current Rmax
       REAL(SZ) pureBackground
 
+      REAL(SZ) :: WindDragLimit          ! maximum wind drag value
+      CHARACTER(len=10) :: DragLawString ! controls wind drag formulation
 
 C------------------------end of data declarations-----------------------
        CONTAINS 
 C-----------------------------------------------------------------------
+
+C     ----------------------------------------------------------------
+C       I N I T   W I N D   M O D U L E
+C     ----------------------------------------------------------------
+C
+C     jgf50.32 Subroutine to initialize meteorological parameters to their
+C     default values. 
+C       
+C     ----------------------------------------------------------------
+      SUBROUTINE initWindModule()
+
+      ! jgf50.32: The wind drag limit was originally set to 0.002d0 
+      ! in v46 ... the higher value of 0.0035d0 was used in ~v48 and
+      ! is now the default.
+      WindDragLimit = 0.0035d0
+
+      ! jgf50.32: If DragLawString is not set in the fort.15 input file, 
+      ! it will remain 'default'; this will cause 'Garratt' to be used 
+      ! in FUNCTION WindDrag, and 'IceCube' to be used in 
+      ! FUNCTION WindIceDrag.
+      DragLawString = 'default'
+#ifdef POWELL
+      ! jgf50.32 Provide backward compatibility with hardcoded POWELL
+      ! support.
+      DragLawString = 'Powell' 
+#endif
+
+      RETURN
+C     ----------------------------------------------------------------
+      END SUBROUTINE initWindModule
+C     ----------------------------------------------------------------
+
 
 C     ----------------------------------------------------------------
 C      F U N C T I O N   W I N D   D R A G
@@ -77,13 +108,15 @@ C     jgf46.00 Function to calculate wind drag coefficient from the
 C     windspeed.
 C       
 C     ----------------------------------------------------------------
-      REAL(SZ) FUNCTION WindDrag(WindSpeed, DragLimit, 
-     &      DragLawString, NodeNumber)
-#ifdef POWELL
-Casey 110518: Added variables for Mark Powell's sector-based wind drag.
+      REAL(SZ) FUNCTION WindDrag(WindSpeed, NodeNumber)
+      !Casey 110518: Added variables for Mark Powell's sector-based wind drag.
       USE GLOBAL, ONLY: DEG2RAD,
      &                  SFEA,
      &                  SLAM
+      REAL(SZ) WindSpeed
+      ! jgf50.32: Even if present, NodeNumber is ignored by Garratt formulation
+      INTEGER,OPTIONAL :: NodeNumber
+C
       INTRINSIC :: ATAN2
       INTRINSIC :: MOD
       INTEGER   :: IS
@@ -96,32 +129,15 @@ Casey 110518: Added variables for Mark Powell's sector-based wind drag.
       REAL(SZ)  :: NodeLon
       REAL(SZ)  :: StormDirection
       REAL(SZ)  :: Weight(3)
-#endif
-      CHARACTER(LEN=10) :: DragLawStringInternal
-      INTEGER,OPTIONAL :: NodeNumber
 C
-      REAL(SZ) WindSpeed
-      REAL(SZ) DragLimit
-      CHARACTER(len=10) DragLawString
+      SELECT CASE(TRIM(DragLawString))
 C
-Casey 110518: Fix a bug with some compilers.
-      WRITE(DragLawStringInternal,'(A10)') DragLawString
-Casey 110518: Added Mark Powell's sector-based wind drag.
-#ifndef POWELL
-      IF(INDEX(DragLawStringInternal,"Powell").GT.0)THEN
-         WRITE(DragLawStringInternal,'(A)') "Garratt   "
-      ENDIF
-#endif
-C
-      SELECT CASE(TRIM(DragLawStringInternal))
-C
-      CASE("Garratt")
+      CASE("Garratt","GARRATT","garratt","default")
          WindDrag = 0.001d0*(0.75d0+0.067d0*WindSpeed)
-         IF(WindDrag.gt.DragLimit) WindDrag=DragLimit
+         IF(WindDrag.gt.WindDragLimit) WindDrag=WindDragLimit
 C
-#ifdef POWELL
 Casey 110518: Added Mark Powell's sector-based wind drag.
-      CASE("Powell")
+      CASE("Powell","POWELL","powell")
 C.. Check whether we have previously found the eye.
          IF((EyeLatR(1).EQ.0.D0).OR.(EyeLonR(1).EQ.0.D0).OR.
      &      (EyeLatR(2).EQ.0.D0).OR.(EyeLonR(2).EQ.0.D0).OR.
@@ -133,7 +149,7 @@ C.. If the eye has not been found then apply Garratt.
          IF(.NOT.FoundEye)THEN
             FoundSector = .FALSE.
             Weight = 0.D0
-            IF(WindDrag.GT.DragLimit) WindDrag = DragLimit
+            IF(WindDrag.GT.WindDragLimit) WindDrag = WindDragLimit
          ELSE
 C.. We have found the eye!
 C.. Compute the storm's direction.  We use the convention of northward
@@ -216,7 +232,7 @@ C..   260-  0 : Left (3).
 C.. Apply the wind drag limit in case of emergency.
             IF(.NOT.FoundSector)THEN
                Weight = 0.D0
-               IF(WindDrag.GT.DragLimit) WindDrag = DragLimit
+               IF(WindDrag.GT.WindDragLimit) WindDrag = WindDragLimit
             ELSE
 C.. Determine the wind drag for sector 1 (right).
                Drag(1) = WindDrag
@@ -257,7 +273,6 @@ C.. Apply a weighted average.
                WindDrag = Weight(1)*Drag(1) + Weight(2)*Drag(2) + Weight(3)*Drag(3)
             ENDIF
          ENDIF
-#endif
 
       CASE DEFAULT
          WRITE(16,*) 'ERROR: Wind drag law not recognized:'
@@ -269,8 +284,6 @@ C.. Apply a weighted average.
          STOP
 C
       END SELECT
-Casey 110518: Moved this limit up to the Garratt section.
-C     IF(WindDrag.gt.DragLimit) WindDrag=DragLimit
 C
       RETURN
 C     ----------------------------------------------------------------
@@ -305,7 +318,7 @@ C     ----------------------------------------------------------------
 C     ----------------------------------------------------------------
 
 C     ----------------------------------------------------------------
-C      F U N C T I O N   W I N D I C E  D R A G
+C      F U N C T I O N   W I N D  I C E  D R A G
 C     ----------------------------------------------------------------
 C
 C     tcm v49.64.01 -- Added a function to modify wind drag coefficents
@@ -316,26 +329,24 @@ C          modifications are done to the incoming wind drag
 C          coefficient values.
 C
 C     ----------------------------------------------------------------
-      REAL(SZ) FUNCTION WindIceDrag(WindDrag,PercentIce,DragLimit, 
-     &      DragLawString)
-      REAL(SZ) DragLimit,PercentIce
+      REAL(SZ) FUNCTION WindIceDrag(WindDrag,PercentIce)
+      REAL(SZ) PercentIce
       REAL(SZ) pic,WindDrag,IceDrag
-      CHARACTER(len=10) DragLawString
 C
       SELECT CASE(TRIM(DragLawString))
 C
-!      CASE("RaysIce")
-!C........If there is virtually no ice, then
-!C........just use the non-ice drag values
-!         if (PercentIce .lt. 1.d0) then
-!            WindIceDrag = WindDrag
-!         else
-!            pic = PercentIce*0.01d0
-!            IceDrag = (0.125d0 + 0.5d0*pic*(1.0d0-pic))*0.01d0
-!            WindIceDrag = max(IceDrag,WindDrag)
-!         endif
+      CASE("RaysIce")
+C........If there is virtually no ice, then
+C........just use the non-ice drag values
+         if (PercentIce .lt. 1.d0) then
+            WindIceDrag = WindDrag
+         else
+            pic = PercentIce*0.01d0
+            IceDrag = (0.125d0 + 0.5d0*pic*(1.0d0-pic))*0.01d0
+            WindIceDrag = max(IceDrag,WindDrag)
+         endif
 
-      CASE("IceCube")
+      CASE("IceCube","default")
 C........This formula is a cubic function such that
 C....... When pic = 0 the drag coefficient is equal to 
 C....... the minimum value for Garratt (.000075), when pic = 50
@@ -363,7 +374,7 @@ C....... and Ray's Ice for low ice values and low winds
          STOP
 C
       END SELECT
-      IF(WindIceDrag.gt.DragLimit) WindIceDrag=DragLimit
+      IF(WindIceDrag.gt.WindDragLimit) WindIceDrag=WindDragLimit
 C
       RETURN
 C     ----------------------------------------------------------------
@@ -2133,6 +2144,18 @@ C     Get data for this time step.
       CALL GetHollandStormData(lat,lon,cpress,spd,rrp,rmw,tvx,tvy,TIMELOC,
      &     nscreen,screenunit)
 C
+C     jgf50.32: If we are using sector-based wind drag, record the location
+C     of the center of the storm.
+      IF ((lat.ne.EyeLatR(3)).or.(lon.ne.EyeLonR(3))) THEN
+         EyeLatR(1) = EyeLatR(2)
+         EyeLonR(1) = EyeLonR(2)
+         EyeLatR(2) = EyeLatR(3)
+         EyeLonR(2) = EyeLonR(3)
+         EyeLatR(3) = lat
+         EyeLonR(3) = lon
+         FoundEye = .true.
+      ENDIF
+C
 C     Calculate and limit central pressure deficit; some track files
 C     (e.g., Charley 2004) may have a central pressure greater than the
 C     ambient pressure that this subroutine assumes
@@ -3184,6 +3207,18 @@ C     cf added if missing values set winds to zero and pressure to P0
      &                  ( (Vmax -  ms2kt*SQRT(uTrans*uTrans + vTrans*vTrans))
      &                    /windReduction), (Vr/windReduction), r)
 
+         ! jgf50.32: For using sectorially based wind drag, record the location
+         ! of the center of the storm.
+         IF ((cLat.ne.EyeLatR(3)).or.(cLon.ne.EyeLonR(3))) THEN
+            EyeLatR(1) = EyeLatR(2)
+            EyeLonR(1) = EyeLonR(2)
+            EyeLatR(2) = EyeLatR(3)
+            EyeLonR(2) = EyeLonR(3)
+            EyeLatR(3) = cLat
+            EyeLonR(3) = cLon
+            FoundEye = .true.
+         ENDIF
+
          !---------------------------
          ! Print the hurricane vortex
          !---------------------------
@@ -3747,6 +3782,18 @@ C     we are running off the end of the data.
          vortexLat = cLat 
          vortexLon = cLon
          vortexRMW = 0.0d0
+         !jgf50.32: For sector-based wind drag, record the center
+         !of the storm.
+         IF ((cLat.ne.EyeLatR(3)).or.(cLon.ne.EyeLonR(3))) THEN
+            EyeLatR(1) = EyeLatR(2)
+            EyeLonR(1) = EyeLonR(2)
+            EyeLatR(2) = EyeLatR(3)
+            EyeLonR(2) = EyeLonR(3)
+            EyeLatR(3) = cLat
+            EyeLonR(3) = cLon
+            FoundEye = .true.
+         ENDIF
+
          ! arithmetic mean of the Rmax in the 4 storm quadrants
          do i=1,4
             vortexRMW = vortexRMW + 0.25d0*crmaxw(i)

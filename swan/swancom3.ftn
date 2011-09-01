@@ -547,7 +547,7 @@
       USE SWCOMM3                                                         40.41
       USE SWCOMM4                                                         40.41
 !Casey 110518: Use ADCIRC's new sector-based wind drag.
-!ADC      USE WIND, ONLY: WindDrag
+!ADC      USE WIND, ONLY: WindDrag, WindDragLimit
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
@@ -871,12 +871,12 @@
 !Casey 091217: Lower the wind drag limit from 0.0035 to 0.0020.
 !NADC          UFRIC = WIND10 * SQRT (( 0.8 + 0.065 * WIND10 ) * 0.001 )
 !ADC          CDRAG = 0.001 * (0.8 + 0.065 * WIND10)                    
-!ADC          IF(CDRAG.GT.0.0020)THEN
-!ADC            CDRAG = 0.0020
+!ADC          IF(CDRAG.GT.WindDragLimit)THEN
+!ADC            CDRAG = WindDragLimit
 !ADC          ENDIF
 !ADC          UFRIC = WIND10 * SQRT( CDRAG )
 !Casey 110518: Use ADCIRC's new sector-based wind drag.
-!ADC          CDRAG = WindDrag(DBLE(WIND10),0.002D0,"Powell    ",NodeNumber)
+!ADC          CDRAG = WindDrag(DBLE(WIND10),NodeNumber)
 !ADC          UFRIC = WIND10 * SQRT( CDRAG )
         ELSE
           CDRAG = 0.0012873

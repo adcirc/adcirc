@@ -200,7 +200,6 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) UV0, UV1, UV2
       REAL(SZ) VIDBCPDXOHN1,VIDBCPDXOHN2,VIDBCPDXOHN3,VIDBCPDXOHAvgArea
       REAL(SZ) VIDBCPDYOHN1,VIDBCPDYOHN2,VIDBCPDYOHN3,VIDBCPDYOHAvgArea
-      REAL(SZ) WindDragLimit    !jgf46.01 Cap on max wind drag coefficient
       REAL(SZ) DPMIN      ! sb v46.28.sb05.06 11/01/2006
       REAL(SZ) PRDIFF,PRBCKGRND_MH2O     ! tcm v49.16 20100617 added
 
@@ -448,9 +447,7 @@ C
 C  tcm v49.16 20100617 -- Changed pressure ramping so that we apply the ramp
 C     to the difference between the background pressure and the forced pressure,
 C     then add that ramped difference back to the background pressure
-
-Casey 091217: Lower the wind drag limit from 0.0035 to 0.0020.
-      WindDragLimit = 0.0035
+C
 C     No wind, radiation stress or atmospheric pressure forcings are used.
       IF(NWS.EQ.1) THEN
          DO I=1,NP
@@ -518,13 +515,13 @@ C     is used to compute wind stress from the wind velocity.
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            WDragCo = WindDrag(WindMag, I)
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
-               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+               WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
@@ -532,8 +529,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo =
-     &              WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+               WDragCo = WindIceDrag(WDragCo,PIC)
                CICEOUT(I) = PIC
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
@@ -571,13 +567,13 @@ C     from wind velocity.
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            WDragCo = WindDrag(WindMag, I)
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
-               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+               WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
@@ -586,7 +582,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo = 
-     &             WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+     &             WindIceDrag(WDragCo,PIC)
                CICEOUT(I) = PIC
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
@@ -628,13 +624,13 @@ C     is used to compute wind stress from wind velocity.
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            WDragCo = WindDrag(WindMag, I)
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
-               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+               WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
@@ -643,7 +639,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo =
-     &            WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+     &            WindIceDrag(WDragCo,PIC)
                CICEOUT(I) = PIC
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
@@ -690,13 +686,13 @@ C     wind velocity.
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            WDragCo = WindDrag(WindMag, I)
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
-               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+               WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
@@ -705,7 +701,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo =
-     &            WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+     &            WindIceDrag(WDragCo,PIC)
                CICEOUT(I) = PIC
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
@@ -771,12 +767,12 @@ C     generate hurricane winds from the Holland Wind Model.
             WindX = WVNX2(I)
             WindY = WVNY2(I)
             WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
-               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+               WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
@@ -785,7 +781,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo =
-     &            WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+     &            WindIceDrag(WDragCo,PIC)
                CICEOUT(I) = PIC
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
@@ -815,12 +811,12 @@ C     jgf46.16 Merged:
             WindX = WVNX2(I)
             WindY = WVNY2(I)
             WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
-               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+               WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
@@ -829,7 +825,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo =
-     &            WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+     &            WindIceDrag(WDragCo,PIC)
                CICEOUT(I) = PIC
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
@@ -875,13 +871,13 @@ C     formula is used to compute wind stress from the wind velocity.
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            WDragCo = WindDrag(WindMag, I)
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
-               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+               WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
@@ -890,7 +886,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo = 
-     &            WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+     &            WindIceDrag(WDragCo,PIC)
                CICEOUT(I) = PIC
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
@@ -942,13 +938,13 @@ C     from the wind velocity.
             WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
             WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
             WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            WDragCo = WindDrag(WindMag, I)
 C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY) 
-               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+               WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
@@ -957,7 +953,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
                WDragCo =
-     &            WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+     &            WindIceDrag(WDragCo,PIC)
                CICEOUT(I) = PIC
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
@@ -996,22 +992,14 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-Casey 110518: Enable Mark Powell's sector-based wind drag.
-#ifdef POWELL
-            WDragCo = WindDrag(WindMag, WindDragLimit, "Powell    ", I)
-#else
-            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
-#endif
+            !Casey 110518: Enable Mark Powell's sector-based wind drag.
+            WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
               CALL ApplyDirectionalWindReduction(I, WDragCo,
      &             WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
               WindMag = SQRT(WindX*WindX+WindY*WindY) 
-Casey 110518: Enable Mark Powell's sector-based wind drag.
-#ifdef POWELL
-              WDragCo = WindDrag(WindMag, WindDragLimit, "Powell    ", I)
-#else
-              WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
-#endif
+              !Casey 110518: Enable Mark Powell's sector-based wind drag.
+              WDragCo = WindDrag(WindMag,I)
             ENDIF
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
@@ -1019,8 +1007,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC,WindDragLimit,
-     &            "IceCube   ")
+               WDragCo = WindIceDrag(WDragCo,PIC)
                CICEOUT(I) = PIC
             ENDIF
             WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
@@ -1051,12 +1038,12 @@ C     RJW ffpl Merged:
             WindX = WVNX2(I)
             WindY = WVNY2(I)
             WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+               WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef) 
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
@@ -1066,8 +1053,7 @@ C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = 
-     &             WindIceDrag(WDragCo,PIC,WindDragLimit,"IceCube   ")
+               WDragCo = WindIceDrag(WDragCo,PIC)
                CICEOUT(I) = PIC
             ENDIF
 !            PR2(I)=RampMete*PRN2(I)
@@ -1108,7 +1094,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
-            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            WDragCo = WindDrag(WindMag, I)
             ! jgf49.1001 NAM winds already contain wind reduction
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
@@ -1121,12 +1107,12 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
             WindX = vortexWVNX2(I)
             WindY = vortexWVNY2(I)
             WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+            WDragCo = WindDrag(WindMag, I)
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
                WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, WindDragLimit, "Garratt   ")
+               WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef) 
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)

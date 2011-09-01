@@ -1,25 +1,24 @@
 ##############################################################################
-# IA32_PGF:		Intel Pentium with Linux using Portland Group compiler
-# Note: -lpgc is required for OpenMP.
+# IA32_Intel/x86-64_Intel:	Intel Pentium with Linux using Intel compiler 9.1.
 ##############################################################################
 F90_SER = ifort
 F90_OMP = ifort
-F90_MPI = ifort
-FLAGS_OPT =
-FLAGS_MSC = -mcmodel=medium
+F90_MPI = mpif90
+FLAGS_OPT = -O2 -ipo -xW -mp1
+FLAGS_MSC = -W0 -assume byterecl -traceback
 FLAGS_F90 =
-FLAGS_SER = -fast
-FLAGS_OMP = -mp
-FLAGS_MPI = -fast
+FLAGS_SER =
+FLAGS_OMP = -openmp -assume cc_omp -fpp2
+FLAGS_MPI =
 INCS_SER =
 INCS_OMP =
 INCS_MPI =
 LIBS_SER =
-LIBS_OMP = -lpgc
-LIBS_MPI = -lmpi
+LIBS_OMP =
+LIBS_MPI =
 OUT = -o 
 EXTO = o
 MAKE = make
 RM = rm -f
-swch = -unix -impi -timg
+swch = -unix -f95 -timg -impi
 O_DIR = ../work/odir4/

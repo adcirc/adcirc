@@ -2,7 +2,22 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
-C
+C  v50.34   - 09/01/2011 - jgf - Merged the following changes from r689:HEAD
+C             of the nws_namelist branch:
+C     v50.31.03  08/25/2011 - jgf - Checked for stationary storm when finding
+C              storm direction in wind.F; added NWS value to read_input.F.
+C     v50.31.02  08/19/2011 - jgf - Made different capitalizations of drag
+C              law formulations valid; removed stop statement that was inserted
+C              after reading of nws line for debugging. 
+C     v50.31.01  08/18/2011 - jgf - Reorganized reading of NWS line so that it
+C              could be read as a namelist and still be backward compatible with
+C              existing fort.15 files; made WindDragLimit and DragLawString
+C              optionally selectable from the fort.15 with default value of 
+C              0.0035 for WindDragLimit and default values of Garratt and
+C              IceCube (depending on whether ice drag is active) for 
+C              DragLawString; added storm center recording to NWS=8, 9, and 19
+C              to make them compatible with Powell (sector-based) drag 
+C              formulation; made wind drag limit in SWAN the same as in ADCIRC.
 C  v50.33   - 09/01/2011 - jgf - Fixed compiler flags for garnet at ERDC.
 C  v50.32   - 09/01/2011 - jgf - Fixed compiler flags for diamond at ERDC.
 C  v50.31   - 08/16/2011 - jgf - Added call to ApplyCanopyCoefficient 
