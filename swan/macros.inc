@@ -6,20 +6,20 @@ F90_SER = ifort
 F90_OMP = ifort
 F90_MPI = ifort
 FLAGS_OPT =
-FLAGS_MSC = 
+FLAGS_MSC = -mcmodel=medium
+FLAGS_F90 =
 FLAGS_SER = -fast
 FLAGS_OMP = -mp
-FLAGS_MPI = -xT -axT 
+FLAGS_MPI = -fast
 INCS_SER =
 INCS_OMP =
 INCS_MPI =
 LIBS_SER =
 LIBS_OMP = -lpgc
 LIBS_MPI = -lmpi
-O_DIR = ../work/odir4/
 OUT = -o 
 EXTO = o
 MAKE = make
 RM = rm -f
 swch = -unix -impi -timg
-
+O_DIR = ../work/odir4/

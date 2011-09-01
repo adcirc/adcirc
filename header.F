@@ -3,6 +3,7 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v50.33   - 09/01/2011 - jgf - Fixed compiler flags for garnet at ERDC.
 C  v50.32   - 09/01/2011 - jgf - Fixed compiler flags for diamond at ERDC.
 C  v50.31   - 08/16/2011 - jgf - Added call to ApplyCanopyCoefficient 
 C             subroutine to all wind subroutines. 

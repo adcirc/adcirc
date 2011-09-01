@@ -208,6 +208,7 @@ ifeq ($(compiler),cray_xt4)
 # jgf20101102: on Jade, NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.0.1-serial
 # jgf20101102: on Jade, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.4-serial/lib
 # jgf20101103: on Jade, SZIPHOME=/usr/local/usp/PETtools/CE/pkgs/szip-2.1/lib
+# jgf20110728: on Garnet, NETCDFHOME=/opt/cray/netcdf/4.1.1.0/netcdf-pgi 
   ifeq ($(NETCDF),enable)
      FLIBS          := $(FLIBS) -L$(HDF5HOME) -L$(SZIPHOME) -lhdf5_fortran -lhdf5_hl -lhdf5 -lsz -lz
   endif
@@ -346,6 +347,46 @@ ifeq ($(compiler),diamond)
   ifneq ($(FOUND),TRUE)
      FOUND := TRUE
   else
+     MULTIPLE := TRUE
+  endif
+endif
+#
+# Cray-XE6 (e.g., Garnet at ERDC) using standard compilers, added by jgf50.29
+ifeq ($(compiler),garnet)
+  PPFC	        :=  pgf90
+  FC	        :=  ftn
+  PFC	        :=  ftn
+  CC		:=  pgcc
+  CCBE		:=  cc
+  FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse
+  ifeq ($(DEBUG),full)
+     FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
+  FFLAGS2	:=  $(FFLAGS1) 
+  FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics 
+  DA  	        :=  -DREAL8 -DLINUX -DCSCA 
+  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA  
+  DPRE	        :=  -DREAL8 -DLINUX
+  ifeq ($(SWAN),enable)
+     DPRE	        :=  -DREAL8 -DLINUX -DADCSWAN
+  endif
+  CFLAGS	:=  -c89 $(INCDIRS) -DLINUX 
+  ifeq ($(DEBUG),full)
+     CFLAGS	:=  -c89 $(INCDIRS) -DLINUX -g -O0
+  endif
+  IMODS		:=  -module 
+  FLIBS  	:=  
+# jgf20110728: on Garnet, NETCDFHOME=/opt/cray/netcdf/4.1.1.0/netcdf-pgi 
+# jgf20110815: on Garnet, HDF5HOME=/opt/cray/hdf5/default/hdf5-pgi
+  ifeq ($(NETCDF),enable)
+     FLIBS          := $(FLIBS) -lnetcdff -L$(HDF5HOME)/lib -L$(NETCDFHOME) -lnetcdf -lhdf5_hl -lhdf5 -lhdf5_fortran -lz
+  endif
+  MSGLIBS	:=  
+  BACKEND_EXEC  := metis_be adcprep_be
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else 
      MULTIPLE := TRUE
   endif
 endif
