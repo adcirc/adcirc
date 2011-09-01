@@ -314,15 +314,24 @@ ifeq ($(compiler),diamond)
   FC            :=  ifort
   PFC           :=  ifort
   FFLAGS1       :=  $(INCDIRS) -O3 -xT -132
+  ifeq ($(DEBUG),full)
+     FFLAGS1	:=  $(INCDIRS) -g -O0 -132 -traceback -check all -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
   DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
-  DPRE          :=  -DREAL8 -DLINUX #-DADCSWAN
+  DPRE          :=  -DREAL8 -DLINUX 
+  ifeq ($(SWAN),enable)
+     DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
+  endif
   IMODS         :=  -I
   CC            := icc
   CCBE          := $(CC)
   CFLAGS        := $(INCDIRS) -O3 -xT
+  ifeq ($(DEBUG),full)
+     CFLAGS        := $(INCDIRS) -g -O0
+  endif
   CLIBS         :=
   LIBS          :=
 # When compiling with netCDF support, the HDF5 libraries must also
