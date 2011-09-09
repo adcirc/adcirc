@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.35   - 09/09/2011 - jgf - Fixed issue in adcprep when using prep13
+C             option: allocated and populated imap_nod_gl in relocalize().
 C  v50.34   - 09/01/2011 - jgf - Merged the following changes from r689:HEAD
 C             of the nws_namelist branch:
 C     v50.31.03  08/25/2011 - jgf - Checked for stationary storm when finding

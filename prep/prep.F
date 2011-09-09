@@ -464,6 +464,24 @@ C  This section for prep15
          ENDDO
       ENDDO
 
+      !jgf50.35: Need this for --prep13 option.
+      if (.not.allocated(imap_nod_gl)) then
+         ALLOCATE (IMAP_NOD_GL(2,NNODG))
+         nbytes = nbytes + 8*mnp 
+         call memory_alloc(nbytes)
+      endif
+      print *, "allocated imap_nod_GL"
+      ! jgf50.35: Formulate the global-to-local 
+      ! mapping for resident nodes
+      DO IPROC=1,NPROC
+         DO J=1,NNODP(IPROC)
+            INDX = IMAP_NOD_LG(J,IPROC)
+            IF (ITOTPROC(INDX).eq.1) THEN
+               IMAP_NOD_GL(1,INDX) = IPROC 
+               IMAP_NOD_GL(2,INDX) = J
+            ENDIF
+         ENDDO
+      ENDDO 
       call memory_status()
       print *, "leaving relocalize"
       RETURN
