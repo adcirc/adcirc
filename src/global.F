@@ -1833,27 +1833,48 @@ C-------------------------------------------------------------------
       !                          points in the station names, and to make use
       !                          of trailing exclamation points as station name
       !                          terminators or comment separators.
+      ! v50.36    Chris Massey   Added logic to parse to handle tabs and commas
+      !                          and not just spaces.
       !=================================================================
       subroutine parse (line, lvar)
       IMPLICIT NONE
       CHARACTER(132) LINE,L
       CHARACTER(50) LVAR(3)
       INTEGER LS, L1, LEN1, I
+      INTEGER L2,L3,L4,PB
       INTEGER NAMSTART  ! position of beginning of station name   
       INTEGER NAMEND    ! position of end of station name
       INTEGER BANGEND   ! location of terminating "!", if any
 C
       LS=1
       L=TRIM(ADJUSTL(LINE))
+      CALL COMPACT(L)
       LEN1=LEN(L)
 
 !     EXTRACT STATION DATA FROM LINE
 
       DO I=1,2
 !        DO I=1,3
-         L1=LEN(TRIM(ADJUSTL(L(1:INDEX(L," ")-1))))
+         L2=LEN(TRIM(ADJUSTL(L(1:INDEX(L," ")-1))))          !space
+         L3=LEN(Trim(adjustl(L(1:index(L,achar(9))-1))))     !tab
+         L4=LEN(trim(adjustl(L(1:index(L,",")-1))))          !comma
+
+         !Determine starting position based on which delimiter was found first
+         L1 = L2
+         PB = 1
+         IF(L1.GT.L3.AND.L3.NE.0) THEN
+            L1 = L3
+            PB = 2
+         ENDIF
+         IF(L1.GT.L4.AND.L4.NE.0) THEN
+           L1=L4
+           PB = 2
+         ENDIF
+
          LVAR(I)=ADJUSTL(L(LS:L1))
          L=ADJUSTL(L(L1+1:LEN(L)))
+         CALL COMPACT(L)
+
       END DO
 C
 C     Find start of station name, ignoring leading "!" if it is there
@@ -1874,6 +1895,54 @@ C     they are assumed to be a comment.
       !=================================================================
       END SUBROUTINE parse
       !=================================================================
+
+      !=================================================================
+       SUBROUTINE COMPACT(STR)
+C     tcm50.36 SUBROUTINE TO CONVERT MULTIPLE SPACES AND TABS TO SINGLE
+C              SPACES; DELETES CONTROL CHARACTERS;REMOVES INITIAL SPACES.
+C              Adapted from stringmod.f90 from the website:
+C              http://www.gbenthien.net/strings/index.html
+      !=================================================================
+       IMPLICIT NONE
+
+       INTEGER :: I,K,ISP,LENSTR,ICH
+       CHARACTER(LEN=*):: STR
+       CHARACTER(LEN=1):: CH
+       CHARACTER(LEN=LEN_TRIM(STR)):: OUTSTR
+
+       STR=ADJUSTL(STR)
+       LENSTR=LEN_TRIM(STR)
+       OUTSTR=' '
+       ISP=0
+       K=0
+
+       DO I=1,LENSTR
+          CH=STR(I:I)
+          ICH=IACHAR(CH)
+        
+          SELECT CASE(ICH)
+        
+          CASE(9,32)     ! SPACE OR TAB CHARACTER
+             IF(ISP==0) THEN
+                K=K+1
+                OUTSTR(K:K)=' '
+             END IF
+             ISP=1
+        
+          CASE(33:)      ! NOT A SPACE, QUOTE, OR CONTROL CHARACTER
+             K=K+1
+             OUTSTR(K:K)=CH
+             ISP=0
+        
+          END SELECT
+        
+       END DO
+
+       STR=ADJUSTL(OUTSTR)
+      !=================================================================
+       END SUBROUTINE COMPACT
+      !=================================================================
+
 
       !=================================================================
         SUBROUTINE i2a(in2t, res)

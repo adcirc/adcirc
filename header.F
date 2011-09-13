@@ -2,6 +2,12 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.36   - 09/13/2011 - tcm - Added tabs and comma delimiters to the parse
+C             subroutine to handle issues with parsing station locations
+C             in the fort.15 file.  Utlitmately the station locations should
+C             be read in as two real numbers followed by a ! and then a comment
+C             line and the adcirc documention updated to reflect a standard
+C             way of inserting comments.
 C  v50.35   - 09/09/2011 - jgf - Fixed issue in adcprep when using prep13
 C             option: allocated and populated imap_nod_gl in relocalize().
 C  v50.34   - 09/01/2011 - jgf - Merged the following changes from r689:HEAD
