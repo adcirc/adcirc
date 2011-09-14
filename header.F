@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.82.13  09/14/2011 - tcm - Fixed a typo in the libadc section of the
+C             makefile (library build for parallel adcirc)
 C  v49.82.12  09/09/2011 - jgf - Fixed issue in adcprep when using prep13
 C             option: allocated and populated imap_nod_gl in relocalize().
 C  v49.82.11  08/16/2011 - jgf - Added call to ApplyCanopyCoefficient 
