@@ -1883,7 +1883,7 @@ C               REAL(sz), PARAMETER :: accuracy    = .0001_dp
 C               REAL(sz), PARAMETER :: zoom        = oneHundredth
 C               INTEGER , PARAMETER :: itmax = 3
 C               REAL(sz)            :: r1,r2, r3,r4, dr
-               INTEGER             :: n, iter
+               INTEGER             :: n, iter,i
                REAL(sz), INTENT(IN),DIMENSION(nQuads) :: rmaxw
 
               !-----------------------------
@@ -1921,6 +1921,8 @@ c                enddo
                   ! Fit a cubic spline to the (theta,Rmax) data points.
                   ! 2nd derivatives are stored in array 'd2ydx2'.
                   !----------------------------------------------------
+C                  write(16,85) (Rmax(i),i=1,nPoints) !jgfdebug
+C 85               format('Rmax=',6(E14.5,','))
                   CALL fitSpline(nPoints, REAL(theta),REAL(Rmax),
      &                            0.,0., 3, work, d2ydx2)
                END IF

@@ -825,7 +825,7 @@ C
  1001 FORMAT(/,10X,'Set all nodes to the default value of ',E16.8,/)
  1005 FORMAT(/,10X,'Now setting the following nodes to these values:',
      &     /,10X,'NODE',5X,'DATA',5X/)
- 1010 FORMAT(7X,I6,6X,E16.8)
+ 1010 FORMAT(7X,I8,6X,E16.8)
 C
       RETURN
 C     ----------------------------------------------------------------

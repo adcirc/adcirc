@@ -180,7 +180,7 @@ C
          INTEGER, ALLOCATABLE ::  nvellnc(:)  ! boundary array
          INTEGER, ALLOCATABLE ::  nvdllnc(:)  ! boundary array
          INTEGER, ALLOCATABLE ::  nodecodenc(:)
-         INTEGER, ALLOCATABLE ::  noffnc(:)     ! boundary array
+         INTEGER, ALLOCATABLE ::  noffnc(:) 
          INTEGER, ALLOCATABLE ::  ibtypenc(:)     ! boundary array
          INTEGER, ALLOCATABLE ::  ibtypeenc(:)
          INTEGER, ALLOCATABLE ::  nmnc(:,:) 

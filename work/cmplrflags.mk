@@ -316,7 +316,7 @@ ifeq ($(compiler),diamond)
   PFC           :=  ifort
   FFLAGS1       :=  $(INCDIRS) -O3 -xT -132
   ifeq ($(DEBUG),full)
-     FFLAGS1	:=  $(INCDIRS) -g -O0 -132 -traceback -check all -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+     FFLAGS1	:=  $(INCDIRS) -g -O0 -debug -fpe0 -132 -traceback -check all -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)

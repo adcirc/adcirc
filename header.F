@@ -2,6 +2,12 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.37   - 09/23/2011 - jgf - Added extra checks to the debugging flags
+C             for diamond in cmplrflags.mk; widened some integer format
+C             for logging when reading fort.13, fort.14 and fort.15; 
+C             partial reorganization of aswip code including modification 
+C             to correct an issue that occasionally resulted in Rmax=0
+C             used as input to NWS19 subroutine in adcirc. 
 C  v50.36   - 09/13/2011 - tcm - Added tabs and comma delimiters to the parse
 C             subroutine to handle issues with parsing station locations
 C             in the fort.15 file.  Utlitmately the station locations should

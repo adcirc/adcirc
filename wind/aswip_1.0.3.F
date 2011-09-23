@@ -4,97 +4,73 @@ C last changes in this file VERSION 45.05                              *
 C                                                                      *
 C***********************************************************************
 C
-      PROGRAM COMPUTE_RMAX_B
-
-      !-------------------------------------------------------------
+      PROGRAM ASWIP
       ! Import custom precision types for cross-platform portability
-      !-------------------------------------------------------------
       USE precision
-
-      !------------------------
       ! Import global constants
-      !------------------------
       USE constants
-
-      !-----------------------------------------
       ! Import asymmetric hurricane vortex class
-      !-----------------------------------------
       USE vortex
-
-      !--------------------------------------------
-      ! Force explicit declaration of all variables
-      !--------------------------------------------
       IMPLICIT NONE
 
       !=================================================================
       !=================================================================
       !=================================================================
       !      =====                                           =====
-      !      =====      PROGRAM ASYMMETRIC_RMAX_B            =====
+      !      =====              PROGRAM ASWIP                =====
       !      =====                                           =====
       !=================================================================
       !=================================================================
       !=================================================================
 
-      INTEGER  :: np, ics,ient,icyc,itpc,itpc2,method
+      INTEGER  :: np, ics,ient,icyc,itpc,method
       REAL(sz) :: time, time1,time2, wtratio,timest
+      INTEGER,DIMENSION(:),ALLOCATABLE::iFcstInc ! hours between forecasts
+      INTEGER,DIMENSION(:),ALLOCATABLE :: iyear, imth, iday, ihr
+      INTEGER,DIMENSION(:),ALLOCATABLE::ilat,ilon
+      REAL(sz),DIMENSION(:),ALLOCATABLE::rlat,rlon,CycleTime
+      INTEGER,DIMENSION(:),ALLOCATABLE::ispd,icpress,atcfRMW
+      REAL(sz), SAVE ::  dt
+      CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE:: castType! hindcast/nowcast or forecast?
+      REAL(sz),DIMENSION(:),ALLOCATABLE :: HollB
+      INTEGER ,DIMENSION(:),ALLOCATABLE :: advr
+      REAL(sz) :: Vmax !,speedmax,Rmax,Rmaxmax
+      REAL(sz) :: Vr,speedmax2
+      REAL(sz), DIMENSION(4) :: r
+      REAL(sz) :: Pn
+      REAL(sz) :: Pc
+      REAL(sz) :: cLat
+      REAL(sz) :: cLon
+      REAL(sz) :: offset
+      REAL(sz) :: dx,dy
 
-      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE :: iyear, imth, iday, ihr
-      INTEGER , SAVE :: iyear1, imth1, iday1, ihr1
-      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon
-      REAL(sz),DIMENSION(:),ALLOCATABLE,SAVE::rlat,rlon,CycleTime
-      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ispd,icpress,atcfRMW
-      INTEGER , SAVE :: ilat1,ilon1, ispd1, icpress1!, irmw1
-      REAL(sz), SAVE :: rlat1,rlon1
-      REAL(sz), SAVE ::  lat1, lon1,  spd1,  cpress1!,  rmw1
-      REAL(sz), SAVE ::  dt, cLat1, cLon1
-      CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE:: type! hindcast/nowcast or forecast?
-      CHARACTER(LEN=4) :: type1              ! hindcast/nowcast or forecast?
-      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::iFcstInc ! hours between forecasts
-      INTEGER,SAVE::iFcstInc1, iFcstInc2 ! hours between forecasts
-      INTEGER , SAVE :: firstCall = 0
-      LOGICAL , SAVE :: firstTime = .TRUE.
-
-      REAL(sz),DIMENSION(:),ALLOCATABLE,SAVE :: HollB
-      REAL(sz), SAVE :: HollB1
-      INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: advr
-      INTEGER , SAVE :: adv
-      REAL(sz), SAVE :: Vmax !,speedmax,Rmax,Rmaxmax
-      REAL(sz), SAVE :: Vr,speedmax2
-      REAL(sz), SAVE, DIMENSION(4) :: r
-      REAL(sz), SAVE :: Pn
-      REAL(sz), SAVE :: Pc
-      REAL(sz), SAVE :: cLat
-      REAL(sz), SAVE :: cLon
-      REAL(sz), SAVE :: offset
-      REAL(sz), SAVE :: dx,dy
-
-      INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: ivr, dir, speed
-      INTEGER , SAVE :: ivr1, dir1, speed1
-      INTEGER , DIMENSION(:,:), ALLOCATABLE,SAVE :: ir
-      INTEGER , DIMENSION(:,:), ALLOCATABLE,SAVE :: quadflag
-      INTEGER , DIMENSION(4), SAVE :: ir1
-      REAL(sz) , DIMENSION(:,:), ALLOCATABLE,SAVE :: rmaxw
-      REAL(sz) , DIMENSION(4), SAVE :: rmaxw1
-      INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: count_newcycle
-      INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: cycle_num
-      INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: isotachs_per_cycle
-      INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: ipn
-      INTEGER , SAVE :: ipn1
-      CHARACTER (LEN = 10),DIMENSION(:),ALLOCATABLE, SAVE :: name
+      INTEGER ,DIMENSION(:),ALLOCATABLE :: ivr, dir, speed
+      INTEGER , DIMENSION(:,:), ALLOCATABLE :: ir   ! given isotach radii
+      INTEGER , DIMENSION(:,:), ALLOCATABLE :: irad ! working isotach radii
+      INTEGER , DIMENSION(:,:), ALLOCATABLE :: quadflag
+      REAL(sz) , DIMENSION(:,:), ALLOCATABLE :: rmaxw
+      INTEGER ,DIMENSION(:),ALLOCATABLE :: count_newcycle
+      INTEGER ,DIMENSION(:),ALLOCATABLE :: cycle_num
+      INTEGER ,DIMENSION(:),ALLOCATABLE :: isotachs_per_cycle
+      INTEGER ,DIMENSION(:),ALLOCATABLE :: ipn
+      CHARACTER (LEN = 10),DIMENSION(:),ALLOCATABLE :: stormname
       REAL(sz), PARAMETER :: outFreq = thirtySixHundred
-!        REAL(sz), PARAMETER :: outFreq = one
       INTEGER :: i, nwi,screenunit,num_cycles,numdiffcyc,num_entry
 
-      REAL(sz),SAVE :: clatOld,clonOld, clatNew,clonNew,
+      REAL(sz) :: clatOld,clonOld, clatNew,clonNew,
      &                    timeOld,timeNew
-      REAL(sz) :: uTrans1 = zero
-      REAL(sz) :: vTrans1 = zero
-      REAL(sz) ,DIMENSION(:),ALLOCATABLE, SAVE :: uTrans, vTrans
-      REAL(sz) ,DIMENSION(:),ALLOCATABLE, SAVE :: uTrans2, vTrans2
-      REAL(sz) ,DIMENSION(:),ALLOCATABLE, SAVE :: h_speed, h_dir
-      INTEGER , PARAMETER :: node2print = 6205
+      REAL(sz) ,DIMENSION(:),ALLOCATABLE :: uTrans, vTrans
+      REAL(sz) ,DIMENSION(:),ALLOCATABLE :: uTrans2, vTrans2
+      REAL(sz) ,DIMENSION(:),ALLOCATABLE :: h_speed, h_dir
       CHARACTER*1 ew,E,W,ns,N,S
+      REAL(sz) :: VmaxBL ! max sustained wind at top of atm. b.l.
+      REAL(sz) :: VrBL   ! wind vel at top of atm. b.l. at wind radius 
+      INTEGER, DIMENSION(0:5) :: lookup_radii ! periodic interpolation 
+      INTEGER :: radii_sum ! record radius values for filling in missing vals
+      INTEGER :: num_nonzero ! number of nonzero isotach radii 
+      INTEGER :: first_entry    ! first entry in the cycle
+      INTEGER :: last_entry     ! last entry in the cycle
+      LOGICAL :: higher_isotach ! true if a valid Rmax exists at higher isotach
 C
 C     jgf49.30: New variables to support command line options
       INTEGER :: IARGC   ! function to return number of command line arguments
@@ -205,23 +181,24 @@ C     message and terminate.
       OPEN(22,file="fort.22",status="old")
 
       i=num_entry 
-      allocate(advr(i),iyear(i),imth(i),iday(i),ihr(i),type(i))
+      allocate(advr(i),iyear(i),imth(i),iday(i),ihr(i),castType(i))
       allocate(iFcstInc(i),ilat(i),ilon(i), ispd(i))
       allocate(rlat(i),rlon(i))
+      allocate(irad(i,4))
       allocate(icpress(i), ivr(i),ir(i,4), rmaxw(i,4), ipn(i))
       allocate(dir(i),speed(i),count_newcycle(i),cycle_num(i))
       allocate(isotachs_per_cycle(i),CycleTime(i))
-      allocate(quadflag(i,4),name(i))
+      allocate(quadflag(i,4),stormname(i))
       allocate(uTrans(i), vTrans(i),HollB(i),atcfRMW(i) )
       allocate(uTrans2(i), vTrans2(i)) !,HollB(i),atcfRMW(i) )
       allocate(h_speed(i), h_dir(i) )
       
       ient=1
       READ(22,22) advr(ient), iyear(ient),imth(ient),iday(ient),
-     &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
+     &      ihr(ient), castType(ient),iFcstInc(ient), ilat(ient),ns,
      &      ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
      &      (ir(ient,i),i=1,4), ipn(ient),atcfRMW(ient),
-     &      dir(ient),speed(ient), name(ient)
+     &      dir(ient),speed(ient), stormname(ient)
 
       num_cycles = 1
       count_newcycle(1) = 1
@@ -248,10 +225,10 @@ C     message and terminate.
       DO ient=2,num_entry
 
          READ(22,22) advr(ient), iyear(ient),imth(ient),iday(ient),
-     &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
+     &      ihr(ient), castType(ient),iFcstInc(ient), ilat(ient),ns,
      &      ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
      &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
-     &      dir(ient),speed(ient), name(ient)
+     &      dir(ient),speed(ient), stormname(ient)
 
 
 !        The logic for the code is set for W and N so if E or S
@@ -427,186 +404,78 @@ C
       !  call the vortex module and compute the Rmax's
       !  to be used in the new input file        
       !----------------------------------------------
-            
+      irad(:,:) = ir(:,:)      
       DO ient=1,num_entry
 
-         adv    = advr(ient)
-         iyear1 = iyear(ient)
-         imth1  = imth(ient)
-         iday1  = iday(ient)
-         ihr1   = ihr(ient)
-         type1  = type(ient)
-         iFcstInc1 = iFcstInc(ient)
-         rlat1  = rlat(ient)
-         rlon1  = rlon(ient)
-         ispd1  = ispd(ient)
-         icpress1 = icpress(ient)
-         ivr1   = ivr(ient)
-         ir1(:) = ir(ient,:)
-         ipn1   = ipn(ient)
-         dir1   = dir(ient)
-         speed1 = speed(ient)
-         uTrans1 =uTrans(ient)
-         vTrans1 =vTrans(ient)
          !--------------------------------------------------------------
          ! transform variables from integers
          ! to real numbers for hurricane vortex calcualtions.
          !--------------------------------------------------------------
-         Vmax =  one * ( ispd1  )
-         Pn   =  one * ( ipn1   )
-         Pc   =  one * ( icpress1  )
-         cLat = rlat1 
-         cLon = rlon1  
+         Vmax =  one * ( ispd(ient)  )
+         Pn   =  one * ( ipn(ient)   )
+         Pc   =  one * ( icpress(ient)  )
+         cLat = rlat(ient) 
+         cLon = rlon(ient)  
 
          !---------------------------------------------
          !  need to get some logic incase Vr is  zero
          !  if so we will also be setting ir(:) to Rmax 
          !---------------------------------------------
-         if ( ivr1 == 0 ) ivr1 = Vmax
-
-         Vr = one* ivr1
+         if ( ivr(ient) == 0 ) then
+            Vr = Vmax
+         else
+            Vr = one* ivr(ient)
+         endif
          
-         !-------------------------------------------------------
-         !  need to get some logic in case any of radii are zero
-         !  in the end we will keep the adjustments to the 34kt
-         !  isotach...and reset the other isotachs to their initial
-         !  zero value...
-         !  We will then indicate which quadrant radii from which
-         !  isotach we will have ADCIRC use in calculating the 
-         !  Asymmetric Holland wind
-         !-------------------------------------------------------
-         if (ir1(1) .eq. 0 ) then    
-             !rad1 = 0
-             quadflag(ient,1)=0 
-             ! compute radius from nonzero entries
-             if (ir1(2) .ne. 0 ) then 
-                !rad1 = 0,rad2 != 0
-                quadflag(ient,2)=1 
-                if (ir1(3) .ne. 0 ) then
-                   !rad1 = 0,rad2 != 0,rad3 != 0
-                   quadflag(ient,3)=1 
-                   ir1(1) = 0.5 * (ir1(2)+ir1(3))
-                elseif (ir1(4) .ne. 0 ) then  
-                   !rad1 = 0,rad2 != 0,rad3 = 0,rad4 != 0
-                   quadflag(ient,3)=0 
-                   quadflag(ient,4)=1 
-                   ir1(1) = 0.5 * (ir1(2)+ir1(4))
-                   ir1(3) = 0.5 * (ir1(2)+ir1(4))
-                else          
-                   !rad1 = 0,rad2 != 0,rad3 = 0,rad4 = 0
-                   quadflag(ient,3)=0 
-                   quadflag(ient,4)=0 
-                   ir1(1) = (ir1(2))
-                   ir1(3) = (ir1(2))
-                   ir1(4) = (ir1(2))
-                endif                      
-             elseif (ir1(3) .ne. 0 ) then
-                !rad1 = 0,rad2 = 0,rad3 != 0 
-                quadflag(ient,2)=0
-                quadflag(ient,3)=1
-                if (ir1(4) .ne. 0 ) then  
-                   !rad1 = 0,rad2 = 0,rad3 != 0,rad4 != 0
-                   quadflag(ient,4)=1
-                   ir1(1) = 0.5 * (ir1(3)+ir1(4))  
-                   ir1(2) = 0.5 * (ir1(3)+ir1(4))
-                else   
-                   !rad1 = 0,rad2 = 0,rad3 != 0,rad4 = 0
-                   quadflag(ient,4)=0
-                   ir1(1) = (ir1(3))
-                   ir1(2) = (ir1(3))
-                   ir1(4) = (ir1(3))
-                endif     
-             elseif (ir1(4) .ne. 0 ) then 
-                !rad1 = 0,rad2 = 0,rad3 = 0,rad4 != 0
-                quadflag(ient,2)=0
-                quadflag(ient,3)=0
-                quadflag(ient,4)=1
-                ir1(1) = (ir1(4))
-                ir1(2) = (ir1(4))
-                ir1(3) = (ir1(4))
-             else     
-                 !rad1 = 0,rad2 = 0,rad3 = 0,rad4 = 0
-                 ! will happen if no isotachs are reported 
-                 ! in that case use RMW and Vmax
-                 quadflag(ient,1)=1
-                 quadflag(ient,2)=1
-                 quadflag(ient,3)=1
-                 quadflag(ient,4)=1
-C                 jgf49.30 Some log messages to debug issues.
-C                 write(*,*) "DEBUG: Line ",ient,
-C     &              ": All isotach radii are zero."
-C                 write(*,*) 
-C     &              "DEBUG: Using Rmax (aka MRD) of ",atcfRMW(ient),
-C     &                 " as isotach radius in all quadrants."
-C                 write(*,*) 
-C     &              "DEBUG: Using Vmax of ",Vmax,
-C     &                 " as isotach wind speed in all quadrants."
-                 Vr=Vmax 
-                 do i=1,4
-                    ir1(i) = atcfRMW(ient)
-                 enddo
-              endif
-           elseif (ir1(2) .eq. 0 ) then  
-              !rad1 != 0,rad2 = 0
-              quadflag(ient,1)=1
-              quadflag(ient,2)=0
-              if (ir1(3) .ne. 0 ) then
-                 !rad1 != 0,rad2 = 0,rad3 != 0
-                 quadflag(ient,3)=1
-                 ir1(2) =  0.5 * (ir1(1)+ir1(3))
-              elseif( ir1(4) .ne. 0 ) then
-                 !rad1 != 0,rad2 = 0,rad3 = 0 ,rad4 != 0
-                 quadflag(ient,3)=0
-                 quadflag(ient,4)=1
-                 ir1(2) =  0.5 * (ir1(1)+ir1(4))
-                 ir1(3) =  0.5 * (ir1(1)+ir1(4))
-              else        
-                 !rad1 != 0,rad2 = 0,rad3 = 0 ,rad4 = 0
-                 quadflag(ient,3)=0
-                 quadflag(ient,4)=0
-                 ir1(2) = (ir1(1))
-                 ir1(3) = (ir1(1))
-                 ir1(4) = (ir1(1))
-              endif
+         ! jgf50.36: fill missing values based on number of nonzero radii.
+         lookup_radii(0)=ir(ient,4)
+         lookup_radii(5)=ir(ient,1)
+         radii_sum = 0
+         num_nonzero = 0
+         do i=1,4
+            lookup_radii(i) = ir(ient,i)
+            radii_sum = radii_sum + ir(ient,i)
+            if (ir(ient,i).gt.0) then
+               num_nonzero = num_nonzero + 1
+               quadflag(ient,i) = 1   ! use the Rmax resulting from this
+            else
+               quadflag(ient,i) = 0   ! don't use Rmax resulting from this 
+            endif
+         end do
+         ! fill missing values based on how many are missing
+         select case(num_nonzero)
+         case(0) ! no isotachs reported, use overall Rmax; set isotach to Vmax
+            quadflag(ient,:) = 1
+            if (atcfRMW(ient).ne.0) then
+               irad(ient,:) = atcfRMW(ient)
+            else 
+               irad(ient,:) = 40 ! need a nonzero value for Rmax calcs,
+                                 ! this result will be thrown away later
+            endif   
+            Vr=Vmax 
+         case(1) ! set all radii equal to the nonzero radius
+            where (ir(ient,:).eq.0) irad(ient,:) = radii_sum
+         case(2) ! avg the 2 radii that are given to get the 2 that are missing
+            where (ir(ient,:).eq.0) irad(ient,:) = 0.5 * radii_sum 
+         case(3) ! average the radii on either side of the missing radius
+            do i=1,4
+               if (ir(ient,i).eq.0) then
+                  irad(ient,i) = 0.5*
+     &               (lookup_radii(i+1)+lookup_radii(i-1))
+               endif
+            enddo 
+         case(4) 
+            ! use all these radii as-is
+         case default
+            ! the following error message should be unreachable
+            write(16,*) "ERROR: aswip: Number of nonzero radii on ",
+     &      "line ",ient," not in range 0 to 4."
+         end select
 
-           elseif (ir1(3) .eq. 0 ) then 
-              !rad1 != 0,rad2 != 0,rad3 = 0
-              quadflag(ient,1)=1
-              quadflag(ient,2)=1
-              quadflag(ient,3)=0
-              if (ir1(4) .ne. 0 ) then  
-                 !rad1 != 0,rad2 != 0,rad3 = 0 ,rad4 != 0
-                 quadflag(ient,4)=1
-                 ir1(3) =  0.5 * (ir1(2)+ir1(4))
-              else        
-                 !rad1 != 0,rad2 != 0,rad3 = 0 ,rad4 = 0
-                 quadflag(ient,4)=0
-                 ir1(3) =  0.5 * (ir1(1)+ir1(2))
-                 ir1(4) =  0.5 * (ir1(1)+ir1(2))
-              endif                  
-
-           elseif (ir1(4) .eq. 0 ) then   
-              !rad1 != 0,rad2 != 0,rad3 != 0 ,rad4 = 0
-              quadflag(ient,1)=1
-              quadflag(ient,2)=1
-              quadflag(ient,3)=1
-              quadflag(ient,4)=0
-              ir1(4) =  0.5 * (ir1(2)+ir1(3))
-
-           else 
-              !rad1 != 0,rad2 != 0,rad3 != 0 ,rad4 != 0
-              quadflag(ient,1)=1
-              quadflag(ient,2)=1
-              quadflag(ient,3)=1
-              quadflag(ient,4)=1
-C             write(*,*) " all 4 nonzero radii ! "
-
-           endif
- 
         DO i=1,4
-           r(i) = one * ir1(i)
+           r(i) = one * irad(ient,i)
         END DO
-        HollB1=one
+        HollB(ient)=one
         !-------------------------------------------------------
         ! Create a new asymmetric hurricane vortex.
         !
@@ -614,13 +483,19 @@ C             write(*,*) " all 4 nonzero radii ! "
         ! scale (Vmax - Vt) and Vr up to the top of the surface,
         ! where the cylcostrophic wind balance is valid.
         !-------------------------------------------------------
-        CALL newVortex_rmax_b_OUT(
-     &   name(ient),adv,iyear1,imth1,iday1,ihr1,iFcstInc1,
-     &   Pn,Pc,cLat,cLon,((Vmax-SQRT(uTrans1*uTrans1+vTrans1*vTrans1))
-     &   /windReduction),(Vr/windReduction),r,rmaxw1,HollB1)
-
-        HollB(ient)=HollB1
-        rmaxw(ient,:)=rmaxw1(:)
+        VmaxBL = (Vmax-SQRT(uTrans(ient)*uTrans(ient)
+     &                     +vTrans(ient)*vTrans(ient)))/windReduction
+        VrBL = Vr/windReduction
+        ! jgfdebug
+        do i=1,4
+           if (r(i).lt.1.d0) then
+              print *,"ERROR: ient=",ient,"r(",i,")=",r(i)
+           endif
+        enddo
+        CALL newVortex_rmax_b_OUT(stormname(ient),
+     &   advr(ient),iyear(ient),imth(ient),iday(ient),ihr(ient),
+     &   iFcstInc(ient),Pn,Pc,cLat,cLon,VmaxBL,VrBL,r,
+     &   rmaxw(ient,:),HollB(ient))
 
 C    reset rmax to zero if there was a zero radius to the isotach for all
 C    isotachs EXCEPT the 34 kt isotach.  in that case leave the radius that
@@ -639,100 +514,98 @@ C       if ivr was zero.
 
       ENDDO ! num_entry (main do loop)
 
-C       !-------------------------------------
-        ! Now indicate which isotach quadrant radius 
-        ! that the user desires ADCIRC to read in 
-        ! for the final calculation of RMX in the 
-        ! Asymmetric Holland wind calculations
-        !
-        ! 34... - 0 0 0 0 ...
-        ! 50... - 0 0 1 1 ...
-        ! 64... - 1 1 0 0 ...
-        !  
-        ! would indicate -
-        ! use NO radii from the 34 kt isotach
-        ! use the 3 & 4 radii form the 50 kt isotach
-        ! use the 1 & 2 radii form the 64 kt isotach  
-        !
-        ! users can then modify the input file
-        ! to indicate which set of radii to use
-        ! for each cycle
-        !
-        !  Loop through each cycle and choose 
-        !  the isotach radii to use
-        ! 
-        !  method 1
-        !  use the 34kt isotach only (like original NWS=9)
-        ! 
-        !  method 2 
-        !  use the fancy way of taking the highest 
-        !  isotach Rmax that exists
-        ! 
-        !------------------------------------
+C     !-------------------------------------
+      ! Now indicate which isotach quadrant radius 
+      ! that the user desires ADCIRC to read in 
+      ! for the final calculation of RMX in the 
+      ! Asymmetric Holland wind calculations
+      !
+      ! 34... - 0 0 0 0 ...
+      ! 50... - 0 0 1 1 ...
+      ! 64... - 1 1 0 0 ...
+      !  
+      ! would indicate -
+      ! use NO radii from the 34 kt isotach
+      ! use the 3 & 4 radii form the 50 kt isotach
+      ! use the 1 & 2 radii form the 64 kt isotach  
       
-        !------------------------------------
-        ! SET METHOD HERE!
-        !------------------------------------
-C       method = 2  ! jgf49.30: this is now set at the top of the file 
-                    ! and can be optionally selected via a command line option
-        ient = 0
-        DO icyc = 1,num_cycles
-           ient = ient+isotachs_per_cycle(icyc) ! last entry of the cycle
-           IF (isotachs_per_cycle(icyc).gt.1) then
-              DO i = 1,4  ! quadrants
-                 SELECT CASE(method)
-                 CASE(1) ! just use the 34kt isotach
-                    DO itpc=1,isotachs_per_cycle(icyc)-1 ! isotachs
-                       ! set all other isotach flags to zero
-                       quadflag((ient-(itpc-1)),i) = 0
-                    ENDDO
-                 CASE(2) ! use the highest isotach in each quadrant
-                    !-----------------------
-                    ! only check isotachs greater than 34 kt
-                    !----------------------
-                    DO itpc=1,isotachs_per_cycle(icyc) ! isotachs
-                       if ( quadflag((ient-(itpc-1)),i) == 1 ) then 
-                          ! the highest vel isotach has a value here so
-                          ! zero out the others
-                          DO itpc2=itpc,isotachs_per_cycle(icyc)-1
-                             quadflag((ient-itpc2),i) = 0
-                          ENDDO
-                          EXIT 
-                       endif
-                    ENDDO  ! isotachs
-                 CASE DEFAULT  
-                    write(*,*) "ERROR: method=",method,
-     &                " is not valid for setting rmax in quadrants."
-                    write(*,*) "ERROR: Execution terminated."
-                    STOP 1
-                 END SELECT
-              ENDDO ! quadrants
-           ELSE  
-              ! jgf49.30: isotachs per cycle .eq. 1 (i.e., just the 34kt)
-              DO i = 1,4  ! quadrants
-                 quadflag((ient),i) = 1 
-              enddo
-              !-----------------------------------
-              ! Now write logic to fill in Forecast entries with no radii
-              ! we want to persist the last flagged values for RMW
-              !-----------------------------------
-              ! 34 kt isotach is zero in all quadrants,
-              ! AND there is no RMW here to fill in 
-              IF ( (ir(ient,1).eq.0).and.(ir(ient,2).eq.0).and.
-     &             (ir(ient,3).eq.0).and.(ir(ient,4).eq.0).and.
-     &             (atcfRMW(ient).eq.0)) THEN
-C                 write(*,*) "DEBUG: Line ",ient,
-C     &               ": atcfRMW=0, ir(ient,:)=0."
-                 DO i = 1,4  ! quadrants
-                    DO itpc=1,isotachs_per_cycle(icyc-1)
-                       if ( quadflag((ient-itpc),i) == 1 ) then 
-                          rmaxw(ient,i) = rmaxw(ient-itpc,i)
-                       endif
-                    ENDDO
-                 ENDDO
-              ENDIF
-           ENDIF    ! if isotachs per cycle .gt. 1
-        ENDDO    ! num_cycles        
+      ! users can then modify the input file
+      ! to indicate which set of radii to use
+      ! for each cycle
+      !
+      !  Loop through each cycle and choose 
+      !  the isotach radii to use
+      ! 
+      !  method 1
+      !  use the 34kt isotach only (like original NWS=9)
+      ! 
+      !  method 2 
+      !  use the fancy way of taking the highest 
+      !  isotach Rmax that exists
+      ! 
+      !------------------------------------
+      
+      !------------------------------------
+      ! SET METHOD HERE!
+      !------------------------------------
+C     method = 2  ! jgf49.30: this is now set at the top of the file 
+                  ! and can be optionally selected via a command line option
+      select case(method)
+      case(1) ! just use the Rmaxes from the 34kt isotach
+         do ient=1,num_entry
+            if ((ivr(ient).eq.34).or.(ivr(ient).eq.0)) then
+               quadflag(ient,:)=1   
+            else
+               quadflag(ient,:)=0
+            endif
+         enddo
+      case(2) ! use the Rmax from the highest isotach in each quadrant
+         do icyc=1,num_cycles
+            last_entry = sum(isotachs_per_cycle(1:icyc))
+            first_entry = last_entry-(isotachs_per_cycle(icyc)-1)
+            if (isotachs_per_cycle(icyc).eq.1) then
+               quadflag(last_entry,:)=1
+            else 
+               ! loop over quadrants
+               do i=1,4
+                  num_nonzero = 
+     &               count(quadflag(first_entry:last_entry,i).ne.0)
+                  select case(num_nonzero)
+                     case(0,1) ! none, or only 34kt isotach has a radius value
+                        quadflag(first_entry,i) = 1
+                     case(2) ! the 34kt and 50kt isotachs have radius value
+                        quadflag(first_entry,i) = 0
+                     case(3) ! the 34kt, 50kt, and 64kt isotachs have values
+                        quadflag(first_entry:first_entry+1,i) = 0
+                     case default ! zero isotachs have been flagged
+                        write(*,*) 
+     &                    "ERROR: aswip: ",num_nonzero," isotachs were "
+     &                      "nonzero."
+                  end select
+               enddo
+            endif
+         enddo
+      case default      
+         write(*,*) "ERROR: method=",method,
+     &      " is not valid for setting rmax in quadrants."
+         write(*,*) "ERROR: Execution terminated."
+      end select
+
+      ! persist last good 34kt Rmax values if all radii are missing
+      do icyc=1,num_cycles
+         if (isotachs_per_cycle(icyc).eq.1) then
+            ient = sum(isotachs_per_cycle(1:icyc))
+            if ((all(ir(ient,:).eq.0)).and.(atcfRMW(ient).eq.0)) then
+               if ((icyc-1).ge.1) then
+                  rmaxw(ient,:) = 
+     &                     rmaxw(ient-isotachs_per_cycle(icyc-1),:)
+               else
+                  rmaxw(ient,:) = 25 ! default value when all else fails
+               endif
+            endif
+         endif
+      enddo
+
 C!-------------------------------------------------------------------
 
          !------------------------
@@ -743,10 +616,6 @@ C!-------------------------------------------------------------------
          !-----------------------------------
          ! NHC advisory best-track i/o format
          !-----------------------------------
-cnld 1.0.3   Longitude may have more then 3 digits 
-cnld 22      FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
-cnld      &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
-cnld      &          27x, 2(i3,2x), a10)
 22       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 1x, i5,a1, 2x,
      &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
      &          27x, 2(i3,2x), a10)
@@ -760,18 +629,8 @@ cnld      &          27x, 2(i3,2x), a10)
      &         a10," ",1x,",",i4,",",i5,",",1x, 4(i1,",",1x),2x, 
      &         4(f6.1,",",1x), 2x, f8.4)!,2(2x,f10.4))
 
-c26      FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
-c     &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
-c     &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
-c     &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4) !,2(2x,f10.4))
-
-c28      FORMAT(1x, i3, 2x, i4, 3i2, 2x, a4, 2(2x,i3),a1, 2x, i3,a1, 2x,
-c     &         i3,2x, i4, 2x, i3, 2x, 4(i4,1x), i4, 2x, i3,
-c     &          2x, 2(f7.2,1x), a10, 2x, i4, 2x, i4,
-c     &         2x, 4(i1,1x),2x, 4(f6.1,1x), 2x, f8.4,4(2x,f10.4))
 
          ! jgf49.30: Modify the Rmax as specified on the command line.
-C
          IF (constantRmax.eqv..true.) THEN
             DO i=1,4
                rmaxw(ient,i) = rMax
@@ -783,24 +642,12 @@ C
          ENDIF
 C
          WRITE(222,26) advr(ient), iyear(ient),imth(ient),iday(ient),
-     &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
+     &      ihr(ient), castType(ient),iFcstInc(ient), ilat(ient),ns,
      &      ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
      &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
-     &      nint(h_dir(ient)),nint(h_speed(ient)), name(ient), 
+     &      nint(h_dir(ient)),nint(h_speed(ient)), stormname(ient), 
      &      cycle_num(ient),isotachs_per_cycle(cycle_num(ient)),
      &     (quadflag(ient,i),i=1,4),(rmaxw(ient,i),i=1,4),HollB(ient)
-c     &      uTrans(ient),vTrans(ient)
-
-c             uTrans2(ient) = sin(h_dir(ient)/rad2deg)*h_speed(ient)
-c             vTrans2(ient) = cos(h_dir(ient)/rad2deg)*h_speed(ient)
-c            WRITE(223,28) advr(ient), iyear(ient),imth(ient),iday(ient),
-c     &      ihr(ient), type(ient),iFcstInc(ient), ilat(ient),ns,
-c     &      ilon(ient),ew, ispd(ient), icpress(ient), ivr(ient),
-c     &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
-c     &      h_dir(ient),h_speed(ient), name(ient), 
-c     &      cycle_num(ient),isotachs_per_cycle(cycle_num(ient)),
-c     &     (quadflag(ient,i),i=1,4),(rmaxw(ient,i),i=1,4),HollB(ient),
-c     &      uTrans(ient),vTrans(ient),uTrans2(ient),vTrans2(ient)
 
       ENDDO
 
