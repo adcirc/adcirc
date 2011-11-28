@@ -85,7 +85,6 @@ C
       CHARACTER*6  , PARAMETER :: VAR_FPS='ft s-1'   !'feet/second' (11)
       CHARACTER*6  , PARAMETER :: VAR_MPS_2='m2 s-2' !'meters**2/second**2' (19)
       CHARACTER*7  , PARAMETER :: VAR_FPS_2='ft2 s-2'!'feet**2/second**2'(17)
-      CHARACTER*23 , PARAMETER :: VAR_TUN='seconds since base_date'
       CHARACTER*12 , PARAMETER :: VAR_DEGE='degrees_east'
       CHARACTER*13 , PARAMETER :: VAR_DEGN='degrees_north'
 
@@ -476,7 +475,7 @@ C     station.
 C-----------------------------------------------------------------------
       SUBROUTINE initStation(sta, lun, descript, err)
       USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t, ICS, RAD2DEG,
-     &                   IHOT, NWS, base_date, STATNAME, STATNAMEV,
+     &                   IHOT, NWS, STATNAME, STATNAMEV,
      &                   STATNAMEM
 #ifdef NCMPI
       USE MESSENGER, ONLY : msg_fini
@@ -873,31 +872,7 @@ C
       CALL check_err(iret)
 !
 !     Define time attributes
-      iret = nf_put_att_text(sta%ncid, sta%myTime%timenc_id,
-     &       'long_name',10,'model time')
-      CALL check_err(iret)
-      iret = nf_put_att_text(sta%ncid,sta%myTime%timenc_id,
-     &       'standard_name', 4, 'time')
-      CALL check_err(iret)
-      iret = nf_put_att_text(sta%ncid, sta%myTime%timenc_id, 'units', 23, 
-     .       'seconds since base_date')
-      CALL check_err(iret)
-      iret = nf_put_att_text(sta%ncid, sta%myTime%timenc_id,
-     &       'base_date', metalength(adjustl(base_date)),
-     &        adjustl(base_date))
-      CALL check_err(iret)
-
-      CALL date_and_time(now_date,big_ben,zone,values)
-      WRITE(date_string,71) values(1),values(2),values(3),
-     &      values(5),values(6),values(7),   (values(4))/60
- 71   FORMAT(I4,'-',I2.2,'-',i2.2,' ',i2,':',i2.2,':',i2.2,' '
-     &  ,i3.2,':00')
-      iret = nf_put_att_text(sta%ncid, NF_GLOBAL,'creation_date',
-     &       len_trim(date_string),date_string)
-      CALL check_err(iret)
-      iret = nf_put_att_text(sta%ncid, NF_GLOBAL,'modification_date',
-     &       len_trim(date_string),date_string)
-      CALL check_err(iret)
+      CALL defineTimeAttributes(sta%ncid, sta%myTime)
 C
 C     define metadata and selected fort.15 parameters in netcdf file
       CALL defineMetaData(sta%ncid)
@@ -942,8 +917,7 @@ C     jgf49.17.02 Sets up netCDF variables and allocates memory for
 C     full domain data.
 C-----------------------------------------------------------------------
       SUBROUTINE initNodalData(dat, lun, descript, err)
-      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, NWS, NE_G, 
-     &   C3D, base_date
+      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, NWS, NE_G, C3D
       USE GLOBAL_3DVS, ONLY : NFEN
       IMPLICIT NONE
 C
@@ -1296,19 +1270,7 @@ C
 C     RJW added 9/13/2010
 C     to include time atributes in global data files
 C     Define time attributes
-      iret = nf_put_att_text(dat%ncid, dat%myTime%timenc_id,
-     &       'long_name',10,'model time')
-      CALL check_err(iret)
-      iret = nf_put_att_text(dat%ncid,dat%myTime%timenc_id,
-     &       'standard_name', 4, 'time')
-      CALL check_err(iret)
-      iret = nf_put_att_text(dat%ncid, dat%myTime%timenc_id, 'units', 
-     &       23, 'seconds since base_date')
-      CALL check_err(iret)
-      iret = nf_put_att_text(dat%ncid, dat%myTime%timenc_id,
-     &       'base_date', metalength(adjustl(base_date)),
-     &        adjustl(base_date))
-      CALL check_err(iret)
+      CALL defineTimeAttributes(dat%ncid, dat%myTime)
 C
 C     define metadata and selected fort.15 parameters in netcdf file
       CALL defineMetaData(dat%ncid)
@@ -2055,7 +2017,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE initStation3D(sta3D, lun, descript1, descript2,
      &           descript3, err)
       USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t, ICS, RAD2DEG,
-     &                   IHOT, base_date, scratchMessage, ERROR, IDEN
+     &                   IHOT, scratchMessage, ERROR, IDEN
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET 
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
@@ -2452,31 +2414,7 @@ C
       CALL check_err(iret)
 !
 !     Define time attributes
-      iret = nf_put_att_text(sta3D%ncid, sta3D%myTime%timenc_id,
-     &       'long_name',10,'model time')
-      CALL check_err(iret)
-      iret = nf_put_att_text(sta3D%ncid,sta3D%myTime%timenc_id,
-     &       'standard_name', 4, 'time')
-      CALL check_err(iret)
-      iret = nf_put_att_text(sta3D%ncid, sta3D%myTime%timenc_id,
-     &       'units', 23, 'seconds since base_date')
-      CALL check_err(iret)
-      iret = nf_put_att_text(sta3D%ncid, sta3D%myTime%timenc_id,
-     &       'base_date', metalength(adjustl(base_date)),
-     &        adjustl(base_date))
-      CALL check_err(iret)
-
-      CALL date_and_time(now_date,big_ben,zone,values)
-      WRITE(date_string,71) values(1),values(2),values(3),
-     &      values(5),values(6),values(7),   (values(4))/60
- 71   FORMAT(I4,'-',I2.2,'-',i2.2,' ',i2,':',i2.2,':',i2.2,' '
-     &  ,i3.2,':00')
-      iret = nf_put_att_text(sta3D%ncid, NF_GLOBAL,'creation_date',
-     &       len_trim(date_string),date_string)
-      CALL check_err(iret)
-      iret = nf_put_att_text(sta3D%ncid, NF_GLOBAL,'modification_date',
-     &       len_trim(date_string),date_string)
-      CALL check_err(iret)
+      CALL defineTimeAttributes(sta3D%ncid, sta3D%myTime)
 C
 C     define metadata and selected fort.15 parameters in netcdf file
       CALL defineMetaData(sta3D%ncid)
@@ -2521,8 +2459,7 @@ C     full domain 3D data.
 C-----------------------------------------------------------------------
       SUBROUTINE initNodalData3D(dat, lun, descript1, descript2,
      &   descript3, err)
-      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, NWS, NE_G,base_date,
-     &   IDEN
+      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, NWS, NE_G, IDEN
       IMPLICIT NONE
 C
       type(nodalData3D), intent(inout) :: dat
@@ -2837,19 +2774,7 @@ C
 C     RJW added 9/13/2010
 C     to include time atributes in global data files
 C     Define time attributes
-      iret = nf_put_att_text(dat%ncid, dat%myTime%timenc_id,
-     &       'long_name',10,'model time')
-      CALL check_err(iret)
-      iret = nf_put_att_text(dat%ncid,dat%myTime%timenc_id,
-     &       'standard_name', 4, 'time')
-      CALL check_err(iret)
-      iret = nf_put_att_text(dat%ncid, dat%myTime%timenc_id, 'units', 
-     &       23, 'seconds since base_date')
-      CALL check_err(iret)
-      iret = nf_put_att_text(dat%ncid, dat%myTime%timenc_id,
-     &       'base_date', metalength(adjustl(base_date)),
-     &        adjustl(base_date))
-      CALL check_err(iret)
+      CALL defineTimeAttributes(dat%ncid, dat%myTime)
 C
 C     define metadata and selected fort.15 parameters in netcdf file
       CALL defineMetaData(dat%ncid)
@@ -3705,6 +3630,8 @@ C
      &   'time_step_counter_of_atm_press_and_wind_vel_at_model_nodes')
       CALL check_err(iret)
 C
+C     define time attributes
+      CALL defineTimeAttributes(hs%ncid, hs%myTime)
 C
 C     define metadata and selected fort.15 parameters in netcdf file
       CALL defineMetaData(hs%ncid)
@@ -7582,6 +7509,39 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
+C     S U B R O U T I N E   D E F I N E   T I M E   A T T R I B U T E S 
+C-----------------------------------------------------------------------
+C     jgf50.38 Writes time data that are common to all netCDF files
+C     to the specified file.
+C-----------------------------------------------------------------------
+      SUBROUTINE defineTimeAttributes(ncid, myTime)
+      USE GLOBAL, ONLY : base_date
+      IMPLICIT NONE
+      INTEGER, intent(in) :: ncid  ! file id of netcdf file
+      type(TimeData), intent(in) :: myTime ! time data for this netcdf file
+C
+      character date_string*60
+      integer :: iret    ! error status of netcdf call
+C
+      iret = nf_put_att_text(ncid, myTime%timenc_id,
+     &       'long_name',10,'model time')
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, myTime%timenc_id,
+     &       'standard_name', 4, 'time')
+      CALL check_err(iret)
+      date_string = 'seconds since '//adjustl(trim(base_date))
+      iret = nf_put_att_text(ncid, myTime%timenc_id, 'units',
+     &        metalength(date_string), date_string) 
+      CALL check_err(iret)
+      iret = nf_put_att_text(ncid, myTime%timenc_id,
+     &       'base_date', metalength(adjustl(base_date)),
+     &        adjustl(base_date))
+      CALL check_err(iret)
+C-----------------------------------------------------------------------
+      END SUBROUTINE defineTimeAttributes 
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
 C     S U B R O U T I N E   D E F I N E   M E T A D A T A 
 C-----------------------------------------------------------------------
 C     jgf49.17.02 Writes data that are common to all netCDF files
@@ -7683,6 +7643,7 @@ C     back to degrees to write them back out
       iret = nf_put_att_text(ncid, NF_GLOBAL,'modification_date',
      &       len_trim(date_string),date_string)
       CALL check_err(iret)
+
 !     -------------------------------------------
 !     writing global attributes from fort.15 file 
 !     -------------------------------------------

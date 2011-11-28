@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.38   - 11/28/2011 - jgf - Fixed CF compliance of time metadata in netcdf 
+C             by changing attribute text from seconds since base_date to 
+C             e.g., seconds since 2010-05-01 00:00:00 UTC (the date is
+C             simply copied verbatim from the existing base_date metadata
+C             field in the fort.15 file). 
 C  v50.37   - 09/23/2011 - jgf - Added extra checks to the debugging flags
 C             for diamond in cmplrflags.mk; widened some integer format
 C             for logging when reading fort.13, fort.14 and fort.15; 
