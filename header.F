@@ -3,6 +3,11 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.82.14  11/28/2011 - jgf - Fixed CF compliance of time metadata in netcdf
+C             by changing attribute text from seconds since base_date to
+C             e.g., seconds since 2010-05-01 00:00:00 UTC (the date is
+C             simply copied verbatim from the existing base_date metadata
+C             field in the fort.15 file). 
 C  v49.82.13  09/14/2011 - tcm - Fixed a typo in the libadc section of the
 C             makefile (library build for parallel adcirc)
 C  v49.82.12  09/09/2011 - jgf - Fixed issue in adcprep when using prep13
