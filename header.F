@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.82.15  12/08/2011 - tcm - Fixed a possible bug where eta2 was supposed
+C             to be zeroed out after setting eta1 = eta2 but was not.
 C  v49.82.14  11/28/2011 - jgf - Fixed CF compliance of time metadata in netcdf
 C             by changing attribute text from seconds since base_date to
 C             e.g., seconds since 2010-05-01 00:00:00 UTC (the date is
