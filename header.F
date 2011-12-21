@@ -2,6 +2,12 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.40   - 12/21/2011 - jgf - Merged the r364:365 of the debug_support 
+C             branch (v49.06.01), as follows: 
+C  v49.0601   - 12/09/09 - jgf - Added capability to produce fulldomain fort.69
+C               file (i.e., fulldomain elevation file on timesteps where the 
+C               warning elevation has been exceeded) in addition to existing
+C               subdomain fort.69 files.
 C  v50.39     12/08/2011 - tcm - Fixed a possible bug where eta2 was supposed
 C             to be zeroed out after setting eta1 = eta2 but was not.
 C  v50.38   - 11/28/2011 - jgf - Fixed CF compliance of time metadata in netcdf 

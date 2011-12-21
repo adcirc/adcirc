@@ -13,7 +13,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=g95
 #compiler=intel
 #compiler=intel-lonestar
-#compiler=cray_xt3
+compiler=cray_xt3
 #compiler=cray_xt4
 #compiler=cray_xt5
 #compiler=pgi
@@ -153,7 +153,8 @@ ifeq ($(compiler),cray_xt3)
   FFLAGS2	:=  $(FFLAGS1) 
   FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics 
   DA  	        :=  -DREAL8 -DLINUX -DCSCA 
-  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA  
+  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA -DDEBUG_WARN_ELEV 
+#  DP  	        :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA  
   DPRE	        :=  -DREAL8 -DLINUX
   CFLAGS	:=  -c89 $(INCDIRS) -DLINUX
   IMODS		:=  -module 
@@ -471,6 +472,10 @@ ifeq ($(compiler),gnu)
   FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132 
   ifeq ($(DEBUG),full)
      FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+      # g95 environment variables to set for enhanced debugging:
+      # G95_UNBUFFERED_ALL, G95_ABORT, G95_FPU_DENORMAL, G95_FPU_INVALID, 
+      # G95_FPU_ZERODIV, G95_FPU_OVERFLOW, G95_FPU_UNDERFLOW, 
+      # G95_FPU_EXCEPTIONS 
   endif
   ifeq ($(SWAN),enable)
      FFLAGS1    :=  $(FFLAGS1) -freal-loops 

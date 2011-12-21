@@ -4536,6 +4536,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE WriteWarnElev(TimeLoc, it)
       USE SIZES
       USE GLOBAL
+      USE GLOBAL_IO, ONLY: collectFullDomainArray, unpackOne, pack63
 #ifdef CMPI
       USE MESSENGER
 #endif
@@ -4544,6 +4545,8 @@ C-----------------------------------------------------------------------
       INTEGER, intent(in) :: it
 C      
       INTEGER I ! node loop counter
+      type(OutputDataDescript_t), SAVE :: DebugElevDescript
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETA_DEBUG_g(:)
 C
 C     Open the file and write the header on the first warning. Format
 C     the actual header data to make it look more or less like a fort.63
@@ -4553,6 +4556,28 @@ C     file.
          WRITE(69,'(A80)') TRIM(RUNDES)
          WRITE(69,6000) WarnElevDumpLimit,NP,DTDP*1.d0,1,1
          CLOSE(69)
+#ifdef CMPI
+         !jgf49.0601: if running in parallel, also initialize a fulldomain file
+         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+            ALLOCATE(ETA_DEBUG_g(NP_G))
+         ENDIF
+         DebugElevDescript % specifier            = 1 ! TODO: make configurable 
+         DebugElevDescript % initial_value        = 0.0
+         DebugElevDescript % num_items_per_record = 1
+         DebugElevDescript % num_fd_records       = NP_G
+         DebugElevDescript % num_records_this     = NP
+         DebugElevDescript % imap                 => NODES_LG
+         DebugElevDescript % array                => ETA2
+         DebugElevDescript % array_g              => ETA_DEBUG_g
+         DebugElevDescript % ConsiderWetDry       = .TRUE.
+         DebugElevDescript % alternate_value      = -99999.0
+         DebugElevDescript % field_name           = 'DebugElev'
+
+         OPEN(69,FILE=TRIM(GLOBALDIR)//'/'//'fort.69')
+         WRITE(69,'(A80)') TRIM(RUNDES)
+         WRITE(69,6000) WarnElevDumpLimit,NP_G,DTDP*1.d0,1,1
+         CLOSE(69)
+#endif
       ENDIF
  6000 FORMAT(1x,I10,1x,I10,1x,1pE15.7E3,1x,I5,1x,I5)
 C
@@ -4566,6 +4591,14 @@ C     Open the file and append the new elevation data.
  2453    FORMAT(2X,I8,2X,1pE20.10E3)
       ENDDO
       CLOSE(69)
+
+
+#ifdef CMPI
+      !jgf49.0601: if running in parallel, also append to fulldomain file
+      CALL writeOutArray(69, TimeLoc, IT, DebugElevDescript,
+     &                         pack63, unpackOne, IGEP,  
+     &                         'fort.69        ') 
+#endif
 C
       WarnElevDumpCounter = WarnElevDumpCounter+1
 C

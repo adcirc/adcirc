@@ -579,7 +579,7 @@ C     method = 2  ! jgf49.30: this is now set at the top of the file
                         quadflag(first_entry:first_entry+1,i) = 0
                      case default ! zero isotachs have been flagged
                         write(*,*) 
-     &                    "ERROR: aswip: ",num_nonzero," isotachs were "
+     &                  "ERROR: aswip: ",num_nonzero," isotachs were ",
      &                      "nonzero."
                   end select
                enddo
