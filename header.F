@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.41   - 12/23/2011 - tcm - Added compiler options for ERDC's Utility
+C              server (compiler=utils)
 C  v50.40   - 12/21/2011 - jgf - Merged the r364:365 of the debug_support 
 C             branch (v49.06.01), as follows: 
 C  v49.0601   - 12/09/09 - jgf - Added capability to produce fulldomain fort.69
