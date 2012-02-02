@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.42   - 02/02/2011 - jgf - Changed reading of NWS line so that namelist
+C             is written and then read from a scratch file rather than 
+C             an internal character array (fixes issue caught by pgif95).
 C  v50.41   - 12/23/2011 - tcm - Added compiler options for ERDC's Utility
 C              server (compiler=utils)
 C  v50.40   - 12/21/2011 - jgf - Merged the r364:365 of the debug_support 

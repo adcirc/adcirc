@@ -1047,7 +1047,7 @@ C     jgf50.32: Added code to read the NWS line as a namelist, so that
 C     the drag formulation and wind drag limit can be read from the fort.15
 C     file if they are present.   
       READ(15,'(A160)') origLine
-      CALL logMessage(DEBUG,'Reading'//origLine)
+      CALL logMessage(DEBUG,'Reading '//origLine)
       commentStart = scan(origLine,'!') ! to trim off existing comment, if any
       IF (commentStart.eq.0) THEN 
          ! there is no comment in this line
@@ -1060,8 +1060,15 @@ C     file if they are present.
       modifiedLine = '&metControl nws='//
      &   adjustl(trim(origLine(1:commentStart-1)))//" /"
       CALL logMessage(DEBUG,'modifiedLine='//modifiedLine)
+      ! because namelist i/o is not available for internal files, we must
+      ! write this line to a scratch file, then read it from the scratch
+      ! file
       ios=0
-      read(modifiedLine,NML=metControl,END=32,ERR=2,IOSTAT=ios)
+      open(1,file='namelist.scratch',iostat=ios,status='replace',err=2,
+     &     action='write')
+      write(1,'(A)') modifiedLine
+      rewind(1)
+      read(1,NML=metControl,END=32,ERR=2,IOSTAT=ios)
  2    IF (ios.gt.0) THEN
          CALL allMessage(ERROR,"I/O error reading NWS line.")
 #ifdef CMPI
@@ -1076,6 +1083,7 @@ C     file if they are present.
 #endif
          STOP
       ENDIF
+      close(1,err=2,status='delete')
       write(scratchMessage,*) 'nws=',nws,' WindDragLimit=',WindDragLimit,
      &   'DragLawString=',DragLawString
       CALL logMessage(DEBUG,scratchMessage)
