@@ -1064,11 +1064,12 @@ C     file if they are present.
       ! write this line to a scratch file, then read it from the scratch
       ! file
       ios=0
-      open(1,file='namelist.scratch',iostat=ios,status='replace',err=2,
+      open(99,file='namelist.scratch',iostat=ios,status='replace',err=2,
      &     action='write')
-      write(1,'(A)') modifiedLine
-      rewind(1)
-      read(1,NML=metControl,END=32,ERR=2,IOSTAT=ios)
+      write(99,'(A)') trim(modifiedLine)
+      close(99,err=2,status='keep')
+      call openFileForRead(99,'namelist.scratch',ios)
+      read(99,NML=metControl,END=32,ERR=2,IOSTAT=ios)
  2    IF (ios.gt.0) THEN
          CALL allMessage(ERROR,"I/O error reading NWS line.")
 #ifdef CMPI
@@ -1083,7 +1084,7 @@ C     file if they are present.
 #endif
          STOP
       ENDIF
-      close(1,err=2,status='delete')
+      close(99,err=2,status='delete')
       write(scratchMessage,*) 'nws=',nws,' WindDragLimit=',WindDragLimit,
      &   'DragLawString=',DragLawString
       CALL logMessage(DEBUG,scratchMessage)
