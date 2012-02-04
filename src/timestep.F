@@ -84,9 +84,9 @@ C                        integrated lateral viscosity coefficient             *
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C   See header.f for a summary history of code modifications.                 *
 C******************************************************************************
-C 
+C
       SUBROUTINE TIMESTEP(IT)
-C     
+C
       USE SIZES, ONLY : SZ
       USE GLOBAL
       USE GLOBAL_IO
@@ -98,7 +98,7 @@ C.... TCM V49.64.01 ADDITIONS FOR ICE
       USE OWI_ICE,ONLY : NCICE1_INIT,NCICE1_GET
 C.....sb46.28sb03 added 09/xx/2006
       USE RS2,ONLY : RS2INIT,RS2GET
-      USE NodalAttributes, ONLY : FRIC, HBREAK, FTHETA, FGAMMA, ! for wet/dry 
+      USE NodalAttributes, ONLY : FRIC, HBREAK, FTHETA, FGAMMA, ! for wet/dry
      &     IFLINBF, IFNLBF, IFHYBF, ! for wet/dry
      &     Apply2DBottomFriction,
      &     Apply3DBottomFriction,
@@ -154,7 +154,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 #endif
 
 
-      IMPLICIT NONE 
+      IMPLICIT NONE
       INTEGER, intent(in) :: IT
 C
 #ifdef CSWAN
@@ -187,7 +187,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) H1
       REAL(SZ) H2, H2N1, H2N2, H2N3
       REAL(SZ) HTOT
-      REAL(SZ) EtaN1,EtaN2,EtaN3,HTotN1,HTotN2,HTotN3               
+      REAL(SZ) EtaN1,EtaN2,EtaN3,HTotN1,HTotN2,HTotN3
       REAL(SZ) QTRatio
       REAL(SZ) RStRatio, RSX, RSY
       REAL(SZ) SAltMul, S2SFEA
@@ -246,7 +246,7 @@ C     jgf46.21 Combined flux/radiation b.c. for rivers
 
 C...  COMPUTE MASTER TIME WHICH IS REFERENCED TO THE BEGINNING TIME OF
 C...  THE MODEL RUN
-C...  
+C...
       TimeLoc=IT*DTDP + StaTim*86400.D0
 C    kmd48.33bc - added for the changes in the timestep in the hot start files
       IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
@@ -256,11 +256,11 @@ C    kmd48.33bc - added for the changes in the timestep in the hot start files
          END IF
          TimeLoc=IT*DTDP + (StaTimHS - RefTimHS)*86400.D0
       END IF
-      
+
 C...  HARMONIC CALCULATIONS ARE MADE FOR TIME WHICH INCLUDES THE REFTIM
 C...  TO ALLOW FOR THE POSSIBILITY THAT THE EQUILIBRIUM ARGUMENTS MAY
 C...  BE FOR A TIME OTHER THAN THE MODEL STARTING TIME.
-C...  
+C...
       TimeH=IT*DTDP + (StaTim - RefTim)*86400.D0
 !kmd - added this for the cases where the timestep changes from hot start timestep
       IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
@@ -276,12 +276,12 @@ C...  SHIFT THE FLUX PER UNIT WIDTH, DEPTH AVERAGED VELOCITIES, BOTTOM STRESS,
 C...  WIND STRESS, SURFACE PRESSURE AND TIDAL POTENTIALS TO PREVIOUS TIME STEP.
 C...  ZERO OUT THE NEW FORCING TERMS AND LOAD VECTORS
 C...  COMPUTE A NEW BOTTOM FRICTION COEFFICIENT
-C...  
-ckmd	Shift values in time for predictor-corrector algorithm 
-         
+C...
+ckmd  Shift values in time for predictor-corrector algorithm
+
       DO I=1,NP
 
-         if(CPRECOR) THEN 
+         if(CPRECOR) THEN
             UU0(I)=UU1(I)
             VV0(I)=VV1(I)
             QX0(I)=QX1(I)
@@ -308,7 +308,7 @@ C...  Wind (& wave radiation stress if used)
             WSY1(I)=WSY2(I)
             WSY2(I)=0.D0
             PR1(I)=PR2(I)
-!            PR2(I)=0.D0   !tcm v49.16 20100617 
+!            PR2(I)=0.D0   !tcm v49.16 20100617
             PR2(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
             ENDIF
 
@@ -324,9 +324,9 @@ C     2DDI.For the 2DDI version of the code
       if(C2DDI) then
 C     2DDI.Set up the 2D friction coefficient
          CALL Apply2DBottomFriction(UU1, VV1, DP, ETA2, G, IFNLFA,
-     &        NP, TK) 
+     &        NP, TK)
 C
-      endif 
+      endif
 C..RJW 3D for the 3D version of the code
       if(C3D) then
 C     3D.Set up the 3D friction coefficient
@@ -339,19 +339,19 @@ C
 C...  SHIFT THE SPECIFIED NORMAL FLOW BOUNDARY CONDITION TO PREVIOUS
 C...  TIME STEPS.  ZERO OUT THE NEW SPECIFIED NORMAL FLOW BOUNDARY
 C...  CONDITION
-C...  
+C...
       DO I=1,NVEL
          QN0(I)=QN1(I)
          QN1(I)=QN2(I)
          QN2(I)=0.D0
          EN0(I)=EN1(I)
          EN1(I)=EN2(I)
-         EN2(I)=0.D0 
+         EN2(I)=0.D0
       END DO
-C...  
+C...
 C...  DEFINE Ramp FUNCTION FOR BOUNDARY ELEVATION FORCING, WIND AND PRESSURE
 C.... FORCING AND TIDAL POTENTIAL FORCING
-C...  
+C...
 C
 C     jgf46.08 Calculate ramp functions.
 C     jgf46.21 Modify to match behavior of 46.02
@@ -427,7 +427,7 @@ C------------------------ICE FIELDS----------------------------------------
 C...  UPDATE THE ICE CONCENTRATION FIELDS FROM UNIT 25,225,227
 c...  TCM V49.64.01 ADDED THE ICE FIELDS SECTION
 C
-      IF (NCICE.EQ.12) THEN 
+      IF (NCICE.EQ.12) THEN
          IF(TimeLoc.GT.CICE_TIME2) THEN
             CICE_TIME1 = CICE_TIME2
             CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
@@ -475,7 +475,7 @@ C     pressure information with the model time step.
                WVNX1(I)=WVNX2(I) ! move current data to old
                WVNY1(I)=WVNY2(I)
                PRN1(I)=PRN2(I)
-               READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I) ! read in 
+               READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I) ! read in
             END DO
          ENDIF
          WTRatio=(TimeLoc-WTIME1)/WTIMINC ! interpolate
@@ -490,7 +490,7 @@ C  tcm v49.16 20100617
      &                          -PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
             wvnxout(i)=WSX2(i) !for met recording sta. output
-            wvnyout(i)=WSY2(i)             
+            wvnyout(i)=WSY2(i)
          END DO
       ENDIF
 
@@ -520,7 +520,7 @@ C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY) 
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
@@ -551,7 +551,7 @@ C     format) at selected ADCIRC grid nodes. Interpolation in time is
 C     used to synchronize the wind and pressure information with the
 C     model time step. Garratt's formula is used to compute wind stress
 C     from wind velocity.
-      IF(ABS(NWS).EQ.4) THEN 
+      IF(ABS(NWS).EQ.4) THEN
          IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
@@ -572,7 +572,7 @@ C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY) 
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
@@ -581,7 +581,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = 
+               WDragCo =
      &             WindIceDrag(WDragCo,PIC)
                CICEOUT(I) = PIC
             ENDIF
@@ -629,7 +629,7 @@ C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY) 
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
@@ -691,7 +691,7 @@ C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY) 
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
@@ -753,11 +753,11 @@ C  tcm v49.16 20100617
      &                           -PRBCKGRND_MH2O)
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
             wvnxout(i)=WSX2(i) !for met recording sta. output
-            wvnyout(i)=WSY2(i)             
+            wvnyout(i)=WSY2(i)
          END DO
       ENDIF
 
-C     jgf46.02 New option to read in hurricane locations and generate 
+C     jgf46.02 New option to read in hurricane locations and generate
 C     generate hurricane winds from the Holland Wind Model.
       IF(ABS(NWS).EQ.8) THEN
          HollandTime = TimeLoc
@@ -771,7 +771,7 @@ C     generate hurricane winds from the Holland Wind Model.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY) 
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
@@ -800,7 +800,7 @@ Casey 090302: Added these lines for coupling winds to SWAN.
             ENDIF
 #endif
          ENDDO
-      ENDIF       
+      ENDIF
 
 C     jgf46.16 Merged:
 !     cf & cm added nws = 9: asymmetric hurricane winds
@@ -815,7 +815,7 @@ C     jgf46.16 Merged:
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY) 
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
@@ -876,7 +876,7 @@ C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY) 
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
@@ -885,7 +885,7 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             IF(NCICE.NE.0) THEN
                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = 
+               WDragCo =
      &            WindIceDrag(WDragCo,PIC)
                CICEOUT(I) = PIC
             ENDIF
@@ -943,7 +943,7 @@ C     jgf46.00 Add directional wind reduction.
             IF (LoadDirEffRLen) THEN
                CALL ApplyDirectionalWindReduction(I, WDragCo,
      &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY) 
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
             IF (LoadCanopyCoef)
@@ -997,7 +997,7 @@ C...sb46.28sb01 NWS=12 reads in raw OWI files 09/xx/2006
             IF (LoadDirEffRLen) THEN
               CALL ApplyDirectionalWindReduction(I, WDragCo,
      &             WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-              WindMag = SQRT(WindX*WindX+WindY*WindY) 
+              WindMag = SQRT(WindX*WindX+WindY*WindY)
               !Casey 110518: Enable Mark Powell's sector-based wind drag.
               WDragCo = WindDrag(WindMag,I)
             ENDIF
@@ -1016,7 +1016,7 @@ C  tcm v49.16 20100617
 !            PR2(I)=RampMete*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
             PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
      &                          -PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF 
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
             WVNXOUT(I)=RampMete*WINDX
             WVNYOUT(I)=RampMete*WINDY
 #ifdef CSWAN
@@ -1045,7 +1045,7 @@ C     RJW ffpl Merged:
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
-            IF (LoadCanopyCoef) 
+            IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
             WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
             WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
@@ -1074,7 +1074,7 @@ C
 C     jgf49.1001 Added NWS29 for embedding an asymmetric vortex from
 C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
       IF(ABS(NWS).EQ.29) THEN
-         ! bring in next set of OWI met data 
+         ! bring in next set of OWI met data
          IF(TimeLoc.GT.WTIME2) THEN
             WTIME1=WTIME2
             WTIME2=WTIME2+WTIMINC
@@ -1100,7 +1100,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
             WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
             WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
-            PR2(I) = RampMete*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I))) 
+            PR2(I) = RampMete*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
             WVNXOUT(I)=RampMete*WINDX
             WVNYOUT(I)=RampMete*WINDY
             ! compute wind stress due to vortex met at this node
@@ -1114,7 +1114,7 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
                WindMag = SQRT(WindX*WindX+WindY*WindY)
                WDragCo = WindDrag(WindMag, I)
             ENDIF
-            IF (LoadCanopyCoef) 
+            IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
             CALL getBlendFactor(I, SLAM, SFEA, bf)
             ! blend the wind stresses and barometric pressures
@@ -1153,9 +1153,9 @@ C--------------------END MET FORCING---------------------------------------
 C...  UPDATE THE WAVE RADIATION STRESS AND READ IN NEW VALUES FROM
 C.... UNIT 23.  APPLY Ramp FUNCTION.  ADD RADIATION STRESS TO WIND
 C...  STRESS
-C...  
+C...
 C...  NRS=2 was added.  sb46.28sb03 09/xx/2006
-C...  TCM v49.48 Restructured the wave stress updates in order to 
+C...  TCM v49.48 Restructured the wave stress updates in order to
 c...             include NRS=4
       IF(NRS.NE.0) THEN
          if((NRS.eq.1).or.(nrs.eq.2).or.(nrs.eq.3)) then
@@ -1256,20 +1256,20 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                WSY2(I) = WSY2(I) + RSY
             END DO
          ENDIF !(NRS = 4)
-      
+
       ENDIF  !(End test for updating wave radiation stress)
 
 C     jgf48.4627 Skip past GWCE and momentum calculations if only
 C     meteorological output was requested.
-      IF (METONLY) THEN 
+      IF (METONLY) THEN
          goto 9999
       ENDIF
 
 C   kmd48.33 - added in information for the elevation boundary conditions
-C              used in prognostic runs. The diagnostic information is read 
-C              in once and used during the simulation. Note that there is 
-C              no ramp utilized for this boundary condition. 
-      IF((C3D).AND.(RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN 
+C              used in prognostic runs. The diagnostic information is read
+C              in once and used during the simulation. Note that there is
+C              no ramp utilized for this boundary condition.
+      IF((C3D).AND.(RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
          IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
             IF(TimeLoc.GT.RBCTIME2) THEN
                RBCTIME1=RBCTIME2
@@ -1289,11 +1289,11 @@ C              no ramp utilized for this boundary condition.
          END IF
       END IF
 
-C...  
+C...
 C...  Tidal Potential Forcing
 C...  Note, the Earth tide potential reduction factor, ETRF(J) has been
 C...        incorporated into this calculation.
-C... 
+C...
       IF(CTIP) THEN
          DO J=1,NTIF
             IF(PERT(J).EQ.0.) THEN
@@ -1329,7 +1329,7 @@ C...
                   ARGSALT=ARGT-SALTPHA(J,I)
 #ifdef REAL4
                   S2SFEA=SIN(2.e0*SFEA(I))
-#else 
+#else
                   S2SFEA=SIN(2.d0*SFEA(I))
 #endif
                   TIP2(I)=TIP2(I)+TPMUL*S2SFEA*COS(ARGTP)
@@ -1349,18 +1349,18 @@ C...
          VIDBCPDYOH(J)=0.D0
 cjgf45.06 TotalArea(J)=0.D0 ! What if CBaroclinic=F and nolifa=0?
       ENDDO
-  
+
       IF(CBaroclinic) Then
 
          DO J=1,NP              !jgf45.06 try this instead
             TotalArea(J)=0.D0   !jgf45.06
          ENDDO                  !jgf45.06
 
-!     Kendra45.12 - Test placement of BPG 
+!     Kendra45.12 - Test placement of BPG
          if (C3DVS) CALL BPG3D()
-         
+
 c     jgf45.12 this algorithm only works in 2D
-         if (C2DDI) then 
+         if (C2DDI) then
             DO IE=1,NE
                NM1=NM(IE,1)
                NM2=NM(IE,2)
@@ -1376,7 +1376,7 @@ c     jgf45.12 this algorithm only works in 2D
                EtaN2=IFNLFA*Eta2(NM2)
                EtaN3=IFNLFA*Eta2(NM3)
                SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
-               
+
                AreaIE2=Areas(IE)
                AreaEle=NCEle*AreaIE2/2.D0
                FDX1=(Y(NM2)-Y(NM3))*SFacAvg !b1
@@ -1391,7 +1391,7 @@ c     jgf45.12 this algorithm only works in 2D
                FDY2O2A=FDY2/AreaIE2 !dphi2/dy
                FDX3O2A=FDX3/AreaIE2 !dphi3/dx
                FDY3O2A=FDY3/AreaIE2 !dphi3/dy
-               
+
                DARhoMRho0N1=(DASigT(NM1)-SigT0)/RhoWat0
                DARhoMRho0N2=(DASigT(NM2)-SigT0)/RhoWat0
                DARhoMRho0N3=(DASigT(NM3)-SigT0)/RhoWat0
@@ -1427,7 +1427,7 @@ c     jgf45.12 this algorithm only works in 2D
                TotalArea(NM2)=TotalArea(NM2)+AreaEle
                TotalArea(NM3)=TotalArea(NM3)+AreaEle
             ENDDO
-            
+
             DO J=1,NP
                IF(TotalArea(J).NE.0.) THEN
                   VIDBCPDXOH(J)=VIDBCPDXOH(J)/TotalArea(J)
@@ -1437,11 +1437,11 @@ c     jgf45.12 this algorithm only works in 2D
          ENDIF
       ENDIF
 
-C...  
+C...
 C...  COMPUTE SPECIFIED NORMAL FLOW BOUNDARY CONDITION
-C...  
+C...
       IF(NFLUXF.EQ.1) THEN
-         IF (NFFR.GT.0) THEN 
+         IF (NFFR.GT.0) THEN
           DO J=1,NFFR
             IF(FPER(J).EQ.0.D0) THEN
                NCYC=0.
@@ -1463,7 +1463,7 @@ C...
                ENDIF
             END DO
           END DO
-         END IF 
+         END IF
          IF((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
             IF(TimeLoc.GT.QTIME2) THEN
                QTIME1=QTIME2
@@ -1512,9 +1512,9 @@ C     jgf46.21 Collect elevation information for river radiation b.c.
          ENDIF
 
       ENDIF
-C...  
+C...
 C...  COMPUTE DISCHARGE CONTRIBUTION FROM RADIATION BOUNDARY CONDITION
-C...  
+C...
       IF(NFLUXRBC.EQ.1) THEN
          DO J=1,NVEL
             IF(LBCODEI(J).EQ.30) THEN
@@ -1528,7 +1528,7 @@ C...
 
 C...  COMPUTE DISCHARGE CONTRIBUTION FROM ZERO NORMAL VELOCITY GRADIENT
 C...  BOUNDARY CONDITION
-C...  
+C...
         IF(NFLUXGBC.EQ.1) THEN
           DO J=1,NVEL
             IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) THEN
@@ -1539,10 +1539,10 @@ C...
               ENDIF
             END DO
           ENDIF
-C...  
+C...
 C...  COMPUTE SUPERCRITICAL OUTWARD NORMAL FLOW OVER SPECIFIED
 C.... EXTERNAL BARRIER BOUNDARY NODES
-C...  
+C...
         IF(NFLUXB.EQ.1) THEN
           DO I=1,NVEL
             IF((LBCODEI(I).EQ.3).OR.(LBCODEI(I).EQ.13).OR.
@@ -1561,9 +1561,9 @@ C...
 
 C...  COMPUTE INWARD/OUTWARD NORMAL FLOW OVER SPECIFIED INTERNAL BARRIER
 C...  BOUNDARY (PERMEABLE OR NOT) NODES
-C...  
+C...
 C     jgf46.03 Begin block of notes for internal barrier boundaries
-C     
+C
 C     NFLUXIB is set to 1 in read_input.F if there are internal barrier
 C     boundaries in the fort.14 (mesh) file.
 C
@@ -1576,7 +1576,7 @@ C     to turn off any time averaging here.
 C
 C     NIBNODECODE seems to be set to 1 for nodes receiving water across
 C     the barrier
-C 
+C
 C     BARMIN is used in several places, mainly as the minimum elevation
 C     above the levee for flow to occur. It is a parameter and is set to
 C     0.04 in global.F.
@@ -1640,7 +1640,7 @@ C...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW BARRIER -> CASE 1
                ENDIF
                IF(ABS(RBARWL1-RBARWL2).LT.0.01D0) THEN
 cjjw               IF(ABS(RBARWL1-RBARWL2).LT.BARMIN) THEN
-C...............WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER 
+C...............WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
 C................TO WITHIN TOLERANCE BARMIN -> CASE 2
                   QN2(I)=0.D0
                   GOTO 1034
@@ -1729,12 +1729,12 @@ C..................INWARD SUPERCRITICAL FLOW -> CASE 6
             ENDIF
          END DO NBOU_LOOP_K
       ENDIF
-   
-C...  
-C...  COMPUTE INWARD/OUTWARD NORMAL FLOW FOR INTERNAL BARRIER 
+
+C...
+C...  COMPUTE INWARD/OUTWARD NORMAL FLOW FOR INTERNAL BARRIER
 C.... BOUNDARY NODES THROUGH CROSS BARRIER PIPES
 C.... NOTE THAT THIS ADDS AN ADDITIONAL FLOW COMPONENT INTO QN2
-C...  
+C...
       IF(NFLUXIBP.EQ.1) THEN
          DO I=1,NVEL
             IF((LBCODEI(I).EQ.5).OR.(LBCODEI(I).EQ.25)) THEN
@@ -1765,7 +1765,7 @@ C...............WATER LEVEL EQUAL ON BOTH SIDES OF PIPE -> CASE 2
                IF((RBARWL1.GT.RBARWL2).AND.(RBARWL1.GT.BARMIN)) THEN
 C...............WATER LEVEL GREATER ON THIS SIDE OF THE PIPE AND IS SUCH
 C................THAT OUTWARD DISCHARGE IS OCCURING
-C................THUS THIS SIDE IS THE SOURCE SIDE OF THE FLOW THROUGH THE PIPE  
+C................THUS THIS SIDE IS THE SOURCE SIDE OF THE FLOW THROUGH THE PIPE
 C................NOTE THAT WE DO NOT FORCE THE SOURCE SIDE OF THE PIPE TO
 C................REMAIN WET. ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
 C................PIPE HAS BEEN DRIED. IF IT HAS, WE SHUT DOWN THE FLOW ACROSS
@@ -1794,11 +1794,11 @@ C..................OUTWARD SUBMERGED DISCHARGE -> CASE 4
                IF((RBARWL2.GT.RBARWL1).AND.(RBARWL2.GT.BARMIN)) THEN
 C...............WATER LEVEL LOWER ON THIS SIDE OF PIPE AND IS SUCH
 C................THAT INWARD DISCHARGE IS OCCURING
-C................THUS THIS IS THE RECEIVING SIDE OF THE FLOW THROUGH THE  PIPE 
+C................THUS THIS IS THE RECEIVING SIDE OF THE FLOW THROUGH THE  PIPE
 C................NOTE THAT WE DO FORCE THE RECEIVING SIDE OF THE PIPE TO
 C................REMAIN WET WHEN THERE IS FLOW ACROSS THE PIPE.
 C................ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
-C................PIPE HAS BEEN DRIED. IF IT HAS, WE SHUT DOWN THE FLOW THROUGH 
+C................PIPE HAS BEEN DRIED. IF IT HAS, WE SHUT DOWN THE FLOW THROUGH
 C................THE PIPE
                   IF(RBARWL1.LE.0) THEN
 C..................INWARD FREE DISCHARGE -> CASE 5
@@ -1832,18 +1832,18 @@ C...
 C...  Compute the water surface elevation from the GWCE form of the 2D continuity eq.
 C...
 
-ckmd	  Changed to include the predictor-corrector algorithm
+ckmd    Changed to include the predictor-corrector algorithm
       IF(CPRECOR) THEN
          CALL GWCE_New(IT,TimeLoc,TimeH)
          CALL Mom_Eqs_New_NC()
 C...  If running in parallel, update velocities & fluxes on all processors
-         
+
 #ifdef CMPI
          CALL UPDATER(UU2,VV2,DUMY1,2)
          CALL UPDATER(QX2,QY2,DUMY1,2)
 #endif
          CALL GWCE_New_pc(IT,TimeLoc,TimeH)
-      ENDIF  
+      ENDIF
       IF(CGWCE_Orig) THEN
          CALL GWCE_Original(IT,TimeLoc,TimeH)
       ENDIF
@@ -1855,7 +1855,7 @@ CWET...
 CWET...THE FOLLOWING LINES ARE FOR WETTING AND DRYING
 CWET...
 CWET...NOTE:NNODECODE is a working variable that can change more than once
-CWET...               during a time step 
+CWET...               during a time step
 CWET...     NNODECODE = 0 for a dry node
 CWET...     NNODECODE = 1 for a wet node
 CWET...     NODECODE  - is a more static version of NNODECODE that is reconciled
@@ -1865,7 +1865,7 @@ CWET...
 CWET...        (   DRYING CRITERIA   )
 CWET...
 CWET...A node should be dry under two conditions.
-CWET...D1.) If the total water depth falls below H0. 
+CWET...D1.) If the total water depth falls below H0.
 CWET .......Note: if the total water depth falls below 0.8*H0, the surface elevation
 CWET........is lifted up so that the total water depth = 0.8*H0.
 CWET......
@@ -1883,22 +1883,22 @@ CWET...
 CWET...        (   WETTING CRITERIA   )
 CWET...
 CWET...A node should be wet under two conditions.
-CWET...W1.) If 2 nodes on an element are wet and one is dry, wet the dry node 
-CWET........if the water level at one of the wet nodes is greater than the 
-CWET........water level at the dry node and the steady state velocity that 
-CWET........would result from a balance between the water level gradient and 
-CWET........bottom friction would yield a velocity > VELMIN.  
-CWET........Note that the criteria outlined in DE3 must also be satified before 
-CWET........the node is allowed to wet           
+CWET...W1.) If 2 nodes on an element are wet and one is dry, wet the dry node
+CWET........if the water level at one of the wet nodes is greater than the
+CWET........water level at the dry node and the steady state velocity that
+CWET........would result from a balance between the water level gradient and
+CWET........bottom friction would yield a velocity > VELMIN.
+CWET........Note that the criteria outlined in DE3 must also be satified before
+CWET........the node is allowed to wet
 CWET...
-CWET...W2.) If an element has a node lying on a receiving internal barrier boundary or 
+CWET...W2.) If an element has a node lying on a receiving internal barrier boundary or
 CWET......specified discharge boundary that is actively discharging flow into the
-CWET......domain at that node, all nodes in this element must stay wet. 
+CWET......domain at that node, all nodes in this element must stay wet.
 CWET...
 CWET...
 CWET...        (  VELOCITY BOUNDARY CONDITION  )
 CWET...
-CWET...Either a natural or essential boundary condition can be used as a velocity 
+CWET...Either a natural or essential boundary condition can be used as a velocity
 CWET...boundary condition in the momentum equation solution along a wet/dry boudary
 CWET...To use a natural boundary condition, do nothing along the wet/dry interface.
 CWET...To use an essential, no velocity boundary condition, identify the nodes along
@@ -1910,14 +1910,14 @@ CWET...further comments at the end of the momentum equation solution section.
 CWET...
 
 CWET...
-CWET...WET/DRY - INITIALIZATIONS FOR WET/DRY LOOP    
+CWET...WET/DRY - INITIALIZATIONS FOR WET/DRY LOOP
 CWET...
       IF(NOLIFA.EQ.2) THEN      !  This goes on until end of part 6
          DO I=1,NP
-            NIBCNT(I) = 0        
+            NIBCNT(I) = 0
          ENDDO
          DO I=1,NE
-            NOFFOLD(I)=NOFF(I)  
+            NOFFOLD(I)=NOFF(I)
             NOFF(I)=1
          ENDDO
 
@@ -1935,7 +1935,7 @@ CWET...
                      NODECODE(I)=0
                      NCCHANGE=NCCHANGE+1 !NCCHANGE=0 set near beginning of GWCE
 C                  ENDIF
-               ENDIF         
+               ENDIF
             ENDIF
          ENDDO
 CWET...
@@ -1954,7 +1954,7 @@ CWET...
             NM1=NM(I,1)
             NM2=NM(I,2)
             NM3=NM(I,3)
-            
+
 CWET...
 CWET...Nodal Wetting Criteria W1: This depends on changes that occurred in D1
 CWET...
@@ -1971,7 +1971,7 @@ CWET...
                      NM123=NM1
                      IF(ETA2(NM2).GT.ETA2(NM1)) NM123=NM2
                      DELDIST=SQRT((y(NM3)-y(NM123))**2.D0
-     &                    +(X(NM3)-X(NM123))**2.D0)         
+     &                    +(X(NM3)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM3)
                      H1=ETA2(NM123)+DP(NM123)
 c. RJW merged from Casey 071219: Added the following logic for 3D friction.
@@ -2066,7 +2066,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                      ENDIF
                   ENDIF
 C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-               ELSEIF((NODECODE(NM2).EQ.1).AND.(NODECODE(NM3).EQ.1)) 
+               ELSEIF((NODECODE(NM2).EQ.1).AND.(NODECODE(NM3).EQ.1))
      &          THEN
                   IF((HTOTN2.GE.HOFF).AND.(HTOTN3.GE.HOFF)) THEN
                      NM123=NM2
@@ -2162,9 +2162,9 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                         ENDIF
 
                      ENDIF
-                  ENDIF 
+                  ENDIF
 C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-               ELSEIF((NODECODE(NM3).EQ.1).AND.(NODECODE(NM1).EQ.1)) 
+               ELSEIF((NODECODE(NM3).EQ.1).AND.(NODECODE(NM1).EQ.1))
      &          THEN
                   IF((HTOTN3.GE.HOFF).AND.(HTOTN1.GE.HOFF)) THEN
                      NM123=NM3
@@ -2284,7 +2284,7 @@ CWET...to receiving barrier nodes
 CWET...
          DO I=1,NP
             IF((NIBCNT(I).GT.0).AND.(NNODECODE(I).EQ.0)) THEN
-               NNODECODE(I)=1  
+               NNODECODE(I)=1
             ENDIF
          ENDDO
 
@@ -2388,16 +2388,16 @@ C...ACB pattern
                    IF(HTOTN2.LT.HOFF) NOFF(I)=0
                  ENDIF
                ENDIF
-#endif    
-    
+#endif
+
 #ifdef SB_WETDRY
 C...An element is set to be dry if it is determined to be a flooding type
 C...wetting element.  An element is a flooding type wetting element if
-C...the bed elevation at the node with the biggest water column height  
-C...is lower than the heighest point on the bed in the element.  
+C...the bed elevation at the node with the biggest water column height
+C...is lower than the heighest point on the bed in the element.
 C...sb v46.28.sb05.06 11/01/2006
 C...This is applied only when NOFF flag of the element at the previous time step
-C...is 0, which means that this logic works to prevent an element from 
+C...is 0, which means that this logic works to prevent an element from
 C...re-wetting.
 C...sb v46.52.03
                IF(NOFFOLD(I).EQ.0) THEN
@@ -2419,7 +2419,7 @@ C...sb v46.52.03
 #ifdef SB_WETDRY
 CWET......added by sb on 11/02/2006
 CWET...
-CWET...This section is added after we realize that it's not possible 
+CWET...This section is added after we realize that it's not possible
 CWET...to compute a correct flow going through two elements if
 CWET...the elements are connected just by one node. i.e., elements need
 CWET...to share an edge to let the flow go through between the elements.
@@ -2480,9 +2480,9 @@ CWET...
 CWET...END WET/DRY SECTION  - PART 3
 CWET...
 
-CWET...  
-CWET...START WET/DRY SECTION PART 4 - NODAL DRYING LOOP D2 
-CWET...Update number of active elements (MJU) and the total area (TotalArea) connected  
+CWET...
+CWET...START WET/DRY SECTION PART 4 - NODAL DRYING LOOP D2
+CWET...Update number of active elements (MJU) and the total area (TotalArea) connected
 CWET...to a node. If these are zero, the node is landlocked and should be dried.
 CWET...These depend on NNODECODE which varies during the time step
 CWET...
@@ -2509,7 +2509,7 @@ CWET...
          ENDDO
 
 cjjwnote - looks like this is used later in momentum equations
-cjjwnote - this has implications on making this into a subroutine   
+cjjwnote - this has implications on making this into a subroutine
 
          DO I=1,NP
             IF((NNODECODE(I).EQ.1).AND.(MJU(I).EQ.0)) THEN
@@ -2522,44 +2522,44 @@ C     WET...
 C     WET...END WET/DRY SECTION - PART 4
 C     WET...
 
-cjjwnote - may have to pass TotalArea and mju as well               
- 
+cjjwnote - may have to pass TotalArea and mju as well
+
 C     Use Message-Passing to update nnodecode at ghost nodes
 #ifdef CMPI
          CALL UPDATEI(NNODECODE,IDUMY,1)
 #endif
-CWET...  
-CWET...WET/DRY SECTION - PART 5 - RESET NODECODE USING NNODECODE 
-CWET...Check to see if any wetting occurred & update NODECODE 
+CWET...
+CWET...WET/DRY SECTION - PART 5 - RESET NODECODE USING NNODECODE
+CWET...Check to see if any wetting occurred & update NODECODE
 CWET...Note, NCCHANGE=0 set near the beginning of GWCE subroutine
-CWET...       
+CWET...
          DO I=1,NP
             IF(NNODECODE(I).NE.NODECODE(I)) THEN
                NODECODE(I)=NNODECODE(I)
-               NCCHANGE=NCCHANGE+1             
+               NCCHANGE=NCCHANGE+1
             ENDIF
          ENDDO
 CWET...
 CWET...END WET/DRY SECTION - PART 5
 CWET...
 
-CWET...  
-CWET...WET/DRY SECTION - PART 6 
+CWET...
+CWET...WET/DRY SECTION - PART 6
 CWET...Check to see if any NOFF changed requiring the matrix to be reset
 CWET...Note, NCCHANGE=0 set near the beginning of GWCE subroutine
-CWET...      
+CWET...
          DO I=1,NE
             IF(NOFF(I).NE.NOFFOLD(I)) NCCHANGE=NCCHANGE+1
          ENDDO
 CWET...
 CWET... jgf45.06 If there has been any wetting or drying in any
-CWET... of the subdomains, the NCCHANGE flag will be activated on all 
+CWET... of the subdomains, the NCCHANGE flag will be activated on all
 CWET... of the subdomains, to prevent them from getting out of sync
 CWET... with their MPI calls as some reset the GWCE and others do not.
 CWET...
 #ifdef CMPI
-         !jgf48.4619 implementing Seizo's changes for Lumped, fully 
-         ! explicit operation. In that case, the GWCE LHS matrix is 
+         !jgf48.4619 implementing Seizo's changes for Lumped, fully
+         ! explicit operation. In that case, the GWCE LHS matrix is
          ! recalculated on each individual subdomain that has wetted
          ! or dried, without recourse to MPI, eliminating the need
          ! for the call to the subroutine WetDrySum.
@@ -2606,10 +2606,10 @@ c. RJW merged 08/26/2008 Casey 071219: Added these output lines for wet/dry visu
 !      ENDIF
 
 c.end rjw merge vis....
-C...  
+C...
 C...  2DDI Momentum Equation Solution
-C...  
-      IF (C2DDI) THEN    
+C...
+      IF (C2DDI) THEN
          IF (CME_Orig) THEN
             CALL Mom_Eqs_Original()
          ENDIF
@@ -2629,21 +2629,21 @@ C...  If running in parallel, update velocities & fluxes on all processors
          CALL UPDATER(UU2,VV2,DUMY1,2)
          CALL UPDATER(QX2,QY2,DUMY1,2)
 #endif
-     
-      ENDIF 
 
-C...  
+      ENDIF
+
+C...
 C     C2DDI....END OF 2DDI MOMENTUM EQUATION SOLUTION
-C...  
+C...
 
 
 
-C...  
+C...
 C...  3DVS Momentum Equation Solution
 C...
       IF (C3DVS) THEN
 
-C... Load the vector MOM_LV_X(I) with barotropic pressure terms 
+C... Load the vector MOM_LV_X(I) with barotropic pressure terms
 C...     including atmospheric pressure, water level and tidal potential
 C...     averaged between time levels s and s+1, (time levels 1 and 2).  Note:
 C...     MOM_LV_X gets renamed as BTP in global_3dvs.f
@@ -2660,14 +2660,14 @@ C...  Solve for velocity at the new time level (K+1)
         CALL VSSOL(IT,TimeLoc)
 
       ENDIF
-C...  
+C...
 C...  End of 3DVS Momentum Equation Solution
-C...  
+C...
 
 
-C...  
+C...
 C...  IF 2D TRANSPORT IS INCLUDED SOLVE FOR THE CONCENTRATION
-C...  
+C...
       IF(C2D_PTrans) THEN
 
         CALL SCALAR_TRANS_2D (IT, TimeLoc)
@@ -2676,9 +2676,9 @@ C...
 C...
 C...  End of 2D Scalar Transport Solution
 C...
-C     jgf48.4627 Jump to here if METONLY is .TRUE., i.e., if only 
+C     jgf48.4627 Jump to here if METONLY is .TRUE., i.e., if only
 C     meteorological output is requested.
-9999  CONTINUE  
+9999  CONTINUE
 C...
 C...  Collect maximum values of variables   v46.50 sb 11/11/2006
 C...
@@ -2694,7 +2694,7 @@ C...
          endif
          if((wvnoutmax(i)*wvnoutmax(i)).lt.
      &        (wvnxout(i)*wvnxout(i)+wvnyout(i)*wvnyout(i))) then
-            wvnoutmax(i) 
+            wvnoutmax(i)
      &          = sqrt(wvnxout(i)*wvnxout(i)+wvnyout(i)*wvnyout(i))
          endif
          if((rsnmax(i)*rsnmax(i)).lt.
@@ -2702,15 +2702,15 @@ C...
             rsnmax(i) = sqrt(rsnx2(i)*rsnx2(i)+rsny2(i)*rsny2(i))
          endif
       enddo
-C      
+C
 C...
 C...  WRITE OUTPUT
 C...
       CALL WRITE_OUTPUT_2D (IT,TimeLoc) ! =>see write_output.F
 C
-C 
+C
 C     jgf49.44: If harmonic analysis was requested and the current time
-C     is within the harmonic analysis period, update the left hand side 
+C     is within the harmonic analysis period, update the left hand side
 C     of the harmonic analysis matrix. Also update the load vectors for
 C     each type of analysis. If timeseries reconstruction was specified,
 C     also update the timeseries.
@@ -2722,11 +2722,11 @@ C...  NOTE: THE HOT START FILES USE A RECORD LENGTH OF 8 ON BOTH 32 BIT
 C.... WORKSTATIONS AND THE 64 BIT CRAY.  THIS IS BECAUSE THE HARMONIC
 C.... ANALYSIS IS DONE IN DOUBLE PRECISION (64 BITS) ON WORKSTATIONS.
 C...
-     
-      ITEST=(IT/NHSINC)*NHSINC  
-      
+
+      ITEST=(IT/NHSINC)*NHSINC
+
 !     IF(myproc.eq.0) PRINT *, " ITEST **********", ITEST
-      
+
       if ((NHSTAR > 0 .and. ITEST == IT) .or. (-IHOT == IT)) then
         if( (MNWPROH > 0) ) then   !Writer for HSfile
           if( (.not.C3D) ) then                     !Writer for HSfile
@@ -2759,7 +2759,7 @@ C...
 C
 C     jgf46.00 Added option to output data to the screen every NSCREEN
 C     time steps, rather than on every time step, as long as there are
-C     no high elevations. In the case of high elevations, the warning 
+C     no high elevations. In the case of high elevations, the warning
 C     messages are sent to the screen each time they are generated.
 C
       IF(NSCREEN.NE.0) THEN
@@ -2779,18 +2779,18 @@ C
             ENDIF
          END DO
          VELMAX=VELMAX**0.5d0
-         ITEST=(IT/NSCREEN)*NSCREEN 
+         ITEST=(IT/NSCREEN)*NSCREEN
 
 C     jgf46.10 Added the ability to for the user to control the warning
 C     and error elevations. Also added the ability for the user to write
-C     a fort.69 (global elevation debug) file. 
+C     a fort.69 (global elevation debug) file.
 
 C     jgf46.12 Removed the dependence on KEMAX for producing output to
 C     the screen.
 #ifdef CMPI
          IF(MYPROC.EQ.0.AND.ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
-               WRITE(ScreenUnit,1991) 
+               WRITE(ScreenUnit,1991)
      &            IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX,MYPROC
             ELSE
                WRITE(ScreenUnit,1991)
@@ -2804,7 +2804,7 @@ C     the screen.
          ENDIF
          WarnElevExceeded = 0
          IF(ELMAX.GT.WarnElev) THEN
-            WRITE(ScreenUnit,1993) 
+            WRITE(ScreenUnit,1993)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
      &           KVMAX,MYPROC
             WRITE(16,1993) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
@@ -2825,7 +2825,7 @@ C     the screen.
 #endif
          ErrorElevExceeded = 0                ! Clint's Zombie Slyaer
          IF(ELMAX.GT.ErrorElev) THEN
-            WRITE(ScreenUnit,1995) 
+            WRITE(ScreenUnit,1995)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
      &           KVMAX,MYPROC
             WRITE(16,1995) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,
@@ -2844,13 +2844,13 @@ C     the screen.
            CALL MSG_FINI()                    !  if there are Error Elvation nodes.
            STOP                               !
          ENDIF                                !st3
-#else 
+#else
          IF(ELMAX.LT.WarnElev.AND.ITEST.EQ.IT) THEN
             IF (KEMAX.GT.0) THEN
-               WRITE(ScreenUnit,1992) 
+               WRITE(ScreenUnit,1992)
      &              IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
             ELSE
-               WRITE(ScreenUnit,1992) 
+               WRITE(ScreenUnit,1992)
      &              IT,NUMITR,TimeLoc,0.,KEMAX,VELMAX,KVMAX
             ENDIF
  1992       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
@@ -2859,7 +2859,7 @@ C     the screen.
      &           2X,'SPEEDMAX = ',E11.4,' AT NODE',I7)
          ENDIF
          IF(ELMAX.GT.WarnElev) THEN
-            WRITE(ScreenUnit,1994) 
+            WRITE(ScreenUnit,1994)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
             WRITE(16,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1994       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
@@ -2872,7 +2872,7 @@ C     the screen.
 #endif
          ENDIF
          IF(ELMAX.GT.ErrorElev) THEN
-            WRITE(ScreenUnit,1996) 
+            WRITE(ScreenUnit,1996)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
             WRITE(16,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1996       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
@@ -2881,14 +2881,15 @@ C     the screen.
      &           2X,'SPEEDMAX = ',E11.4,' AT NODE',I7,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev, '
      &           'ADCIRC stopping. **')
+            call msg_fini()
             STOP
          ENDIF
 #endif
       ENDIF
 
-C...  
+C...
 C...  ****************** TIME STEPPING LOOP ENDS HERE ********************
-C...  
+C...
 
 c. RJW merged 08/26/2008 Casey 071219: Added the folowing call to the mass balance subroutine.
 C      IF(C3DVS)THEN
@@ -2897,900 +2898,6 @@ C      ENDIF
 
       RETURN
       END
-
-
-C*******************************************************************************
-C                                                                              *
-C    Subroutine to compute the elevation using the original GWCE formluation   *
-C                                                                              *
-C                            r.l.  06/22/2005                                  *
-C*******************************************************************************
-
-      SUBROUTINE GWCE_Original(IT,TimeLoc,TimeH)
-C     
-      USE GLOBAL
-      USE SIZES
-      USE WIND
-      USE ITPACKV
-      USE NodalAttributes, ONLY : 
-     &     Tau0Var, LoadGeoidOffset, GeoidOffset, EVM
-#ifdef CMPI
-      USE MESSENGER
-#endif
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-      USE Couple2Swan, ONLY: TKXX,
-     &                       TKXY,
-     &                       TKYY
-#endif
-#endif
-
-      IMPLICIT NONE 
-
-      INTEGER IE, JN, IJ, I, J                           !local loop counters
-      INTEGER IT
-      INTEGER NM1, NM2, NM3, NMI1, NMI2, NMI3, NMJ1, NMJ2, NMJ3
-      INTEGER NC1, NC2, NC3, NCEle, NCI, NCJ
-      INTEGER NCyc
-      INTEGER NBDI
-
-      REAL(SZ) BSXN1, BSXN2, BSXN3, BSYN1, BSYN2, BSYN3
-      REAL(SZ) BSXAvg3, BSYAvg3
-      REAL(SZ) BXN1, BXN2, BXN3, BYN1, BYN2, BYN3
-      REAL(SZ) CorifAvg
-      REAL(SZ) CoefO2
-      REAL(SZ) DXN1, DXN2, DXN3, DYN1, DYN2, DYN3
-      REAL(SZ) DEta1SqDX, DEta1SqDY
-      REAL(SZ) DPAvg
-      REAL(SZ) DPrMTiPDX, DPrMTiPDY
-      REAL(SZ) DU1DX, DU1DY, DV1DX, DV1DY
-      REAL(SZ) DU1QX1DX,  DV1QX1DY,  DU1QY1DX,  DV1QY1DY
-      REAL(SZ) DUU1N1, DUU1N2, DUU1N3
-      REAL(SZ) DUV1N1, DUV1N2, DUV1N3
-      REAL(SZ) DVV1N1, DVV1N2, DVV1N3
-      REAL(SZ) DXXYY11, DXXYY12, DXXYY13, DXXYY21
-      REAL(SZ) DXXYY22, DXXYY23, DXXYY31
-      REAL(SZ) DXXYY32, DXXYY33, DXYH11, DXYH12
-      REAL(SZ) DXYH13, DXYH21, DXYH22
-      REAL(SZ) DXYH23, DXYH31, DXYH32, DXYH33
-      REAL(SZ) E0N1, E0N2, E0N3
-      REAL(SZ) E1N1, E1N2, E1N3, E1N1SQ, E1N2SQ, E1N3SQ 
-      REAL(SZ) ESN1, ESN2, ESN3
-      REAL(SZ) EVMAvgODT
-      REAL(SZ) GFac, GHAvg, GH1Fac
-      REAL(SZ) H1, H1N1, H1N2, H1N3
-      REAL(SZ) H2, H2N1, H2N2, H2N3
-      REAL(SZ) HPPO2
-      REAL(SZ) PR1N1, PR1N2, PR1N3
-      REAL(SZ) QX1N1, QX1N2, QX1N3, QY1N1, QY1N2, QY1N3
-      REAL(SZ) QX1Avg, QY1Avg, QX1Avg3, QY1Avg3
-      REAL(SZ) SFacAvg
-      REAL(SZ) SpaVarTau0
-      REAL(SZ) T0N1,T0N2, T0N3, T0XN1, T0XN2, T0XN3, T0YN1, T0YN2, T0YN3
-      REAL(SZ) Tau0Avg, T0XAvg3, T0YAvg3
-      REAL(SZ) TT0L, TT0R
-      REAL(SZ) TEMP_LV_A1, TEMP_LV_A2, TEMP_LV_A3
-      REAL(SZ) TEMP_LV_B1, TEMP_LV_B2, TEMP_LV_B3
-      REAL(SZ) TIPN1, TIPN2, TIPN3
-      REAL(SZ) U1N1,U1N2,U1N3, U1Avg
-      REAL(SZ) V1N1,V1N2,V1N3, V1Avg
-      REAL(SZ) VIDBCPDXAvg3, VIDBCPDYAvg3
-      REAL(SZ) WSXN1, WSXN2, WSXN3, WSYN1, WSYN2, WSYN3
-      REAL(SZ) WSXAvg3, WSYAvg3
-
-      REAL(8) AREAIE, AREAIE2, AO6, AO12
-      REAL(8) FDDD, FDDOD    
-      REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
-      REAL(8) FDX1O2A, FDX2O2A, FDX3O2A, FDY1O2A, FDY2O2A, FDY3O2A
-      REAL(8) DDX1,DDX2,DDX3,DDY1,DDY2,DDY3
-      REAL(8) DXX11,DXX12,DXX13,DXX21,DXX22,DXX23,DXX31,DXX32,DXX33
-      REAL(8) DYY11,DYY12,DYY13,DYY21,DYY22,DYY23,DYY31,DYY32,DYY33
-      REAL(8) DXY11,DXY12,DXY13,DXY21,DXY22,DXY23,DXY31,DXY32,DXY33
-      REAL(8) TimeLoc, TimeH
-
-C...  RECOMPUTE THE GWCE SYSTEM MATRIX AT THE FIRST TIME STEP OR IF ANY
-C...  WETTING OR DRYING OCCURRED IN THE PREVIOUS TIME STEP.
-C...  
-      IF(NCCHANGE.GT.0) THEN !if any subdomain grid has changed
-         NCCHANGE=0
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3806)
-c     WRITE(16,3806)
- 3806    FORMAT(/,1X,'RE-SETTING GWCE SYSTEM MATRIX',/)
-
-C.....Set up the LHS matrix (for the iterative matrix solver)
-         COEF(:,:)=0.0d0
-
-         DO IE=1,NE
-            NMI1=NM(IE,1)
-            NMI2=NM(IE,2)
-            NMI3=NM(IE,3)
-            NMJ1=NMI1
-            NMJ2=NMI2
-            NMJ3=NMI3
-            NC1=NODECODE(NMI1)
-            NC2=NODECODE(NMI2)
-            NC3=NODECODE(NMI3)
-            NCELE=NC1*NC2*NC3*NOFF(IE)
-
-            SFacAvg=(SFAC(NMI1)+SFAC(NMI2)+SFAC(NMI3))/3.d0
-            Tau0Avg=(TAU0VAR(NMI1)+TAU0VAR(NMI2)+TAU0VAR(NMI3))/3.d0
-            TT0L=((1.0d0+0.5d0*DT*Tau0Avg)/DT)/DT
-
-            FDX1 = (Y(NMI2)-Y(NMI3))*SFacAvg         !b1
-            FDX2 = (Y(NMI3)-Y(NMI1))*SFacAvg         !b2
-            FDX3 = (Y(NMI1)-Y(NMI2))*SFacAvg         !b3
-            FDY1 = X(NMI3)-X(NMI2)                   !a1
-            FDY2 = X(NMI1)-X(NMI3)                   !a2
-            FDY3 = X(NMI2)-X(NMI1)                   !a3
-
-            DPAvg=(DP(NMI1)+DP(NMI2)+DP(NMI3))/3.d0
-
-            AREAIE=AREAS(IE)/2.0d0
-            AO6=AREAIE/6.d0
-            AO12=AREAIE/12.d0
-            FDDD=(1+ILUMP)*AO6             !<phi*phj> diagonal terms
-            FDDOD=(1-ILUMP)*AO12           !<phi*phj> off diagonal terms
-
-            DO JN=2,NEIMAX
-               IF(NeiTab(NMI1,JN).EQ.NMJ2) J12=JN
-               IF(NeiTab(NMI1,JN).EQ.NMJ3) J13=JN
-               IF(NeiTab(NMI2,JN).EQ.NMJ1) J21=JN
-               IF(NeiTab(NMI2,JN).EQ.NMJ3) J23=JN
-               IF(NeiTab(NMI3,JN).EQ.NMJ1) J31=JN
-               IF(NeiTab(NMI3,JN).EQ.NMJ2) J32=JN
-            END DO
-
-            GFac=GA00*DPAvg/(4.d0*AREAIE)
-            COEF(NMI1,1)  =COEF(NMI1,1)
-     &               +2.d0*(TT0L*FDDD +GFac*(FDY1*FDY1+FDX1*FDX1))*NCELE
-            COEF(NMI1,J12)=COEF(NMI1,J12)
-     &               +2.d0*(TT0L*FDDOD+GFac*(FDY1*FDY2+FDX1*FDX2))*NCELE
-            COEF(NMI1,J13)=COEF(NMI1,J13)
-     &               +2.d0*(TT0L*FDDOD+GFac*(FDY1*FDY3+FDX1*FDX3))*NCELE
-            COEF(NMI2,J21)=COEF(NMI2,J21)
-     &               +2.d0*(TT0L*FDDOD+GFac*(FDY2*FDY1+FDX2*FDX1))*NCELE
-            COEF(NMI2,1)  =COEF(NMI2,1)
-     &               +2.d0*(TT0L*FDDD +GFac*(FDY2*FDY2+FDX2*FDX2))*NCELE
-            COEF(NMI2,J23)=COEF(NMI2,J23)
-     &               +2.d0*(TT0L*FDDOD+GFac*(FDY2*FDY3+FDX2*FDX3))*NCELE
-            COEF(NMI3,J31)=COEF(NMI3,J31)
-     &               +2.d0*(TT0L*FDDOD+GFac*(FDY3*FDY1+FDX3*FDX1))*NCELE
-            COEF(NMI3,J32)=COEF(NMI3,J32)
-     &               +2.d0*(TT0L*FDDOD+GFac*(FDY3*FDY2+FDX3*FDX2))*NCELE
-            COEF(NMI3,1)  =COEF(NMI3,1)
-     &               +2.d0*(TT0L*FDDD +GFac*(FDY3*FDY3+FDX3*FDX3))*NCELE
-
-c...  NOTE: the factor of 2 that multiplies each of the lines above was
-c...  only only added for backward compatability with the RHS
-c...  formluation in earlier versions of the code.  It should be removed
-c...  as soon as possible.  RL 4/12/02
-
-         END DO
-
-C...  Modify the matrix "COEF" by imposing the elevation specified
-C...  boundary conditions while maintaining the symmetry of the system
-c...  This could be redone every time matrix is recomputed...............rl 2/25/04
-c...  Then will no longer need to pass IT
-cjjw         IF ((IT.EQ.1).OR.(IT.EQ.ITHS+1)) THEN
-        IF (IT.EQ.1) THEN
-#ifdef CMPI
-            EP = PSDOT(NP,COEF(1,1),COEF(1,1))
-            EP = SQRT(RNP_GLOBAL*EP)
-#else 
-            EP=0.0D0
-            DO I=1,NP
-               EP=EP+COEF(I,1)*COEF(I,1)
-            END DO
-            EP=SQRT(EP/NP)
-#endif
-         ENDIF
-
-c...  for each elevation specified boundary node, zero all off diagonal
-c...  terms on the row and set diagonal term to EP
-
-         DO I=1,NETA
-            COEF(NBD(I),1)=EP
-            DO J=2,NNEIGH(NBD(I))
-               COEF(NBD(I),J)=0.0d0
-            END DO
-         END DO
-
-c...  for each elevation specified boundary node, zero all off diagnoal
-c...  terms on the column but save these to be multiplied by the
-c...  boundary value and subtracted from the RHS
-
-         DO I=1,NETA
-            DO J=2,NNeigh(NBD(I))
-               DO IJ=2,NNeigh(NeiTab(NBD(I),J))
-                  IF(NBD(I).EQ.NeiTab(NeiTab(NBD(I),J),IJ)) THEN
-                     OBCCOEF(I,J-1)=COEF(NeiTab(NBD(I),J),IJ)
-                     COEF(NeiTab(NBD(I),J),IJ)=0.0d0
-                  ENDIF
-               END DO
-            END DO
-         END DO
-
-C.....Check that all the diagonal elements in "COEF" are > 0.
-         DO I=1,NP
-            IF(COEF(I,1).EQ.0.d0) COEF(I,1)=EP
-            IF(COEF(I,1).LT.0.d0) THEN
-               IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
-     &          WRITE(ScreenUnit,1019) I,COEF(I,1)
-               WRITE(16,1019) I,COEF(I,1)
- 1019          FORMAT(/,1X,'!!!!!!!!  ERROR  !!!!!!!',
-     &           /,1X,'THE DIAGONAL TERM IN THE EQUATION FOR NODE ',I10,
-     &             '= ',E15.6,' AND IS <= 0',/)
-               STOP
-            END IF
-         END DO
-
-      ENDIF                     !END OF GWCE MATRIX SETUP
-C...  
-C...  COMPUTE THE THE LOAD VECTOR GWCE_LV FOR THE GWCE ELEMENT BY ELEMENT
-C...  BY FORMING TEMPORARY VECTORS AND THEN ASSEMBLING AT THE END.
-C...  THE FOLLOWING ASSEMBLY LOOPS HAVE BEEN UNROLLED TO OPTIMIZE
-C...  VECORIZATION
-C...  
-
-C...  Initialize variables to zero if forcing is not used
-C...  
-      if((NWS.NE.0).OR.(NRS.NE.0)) then
-      else
-         WSXN1=0.d0
-         WSXN2=0.d0
-         WSXN3=0.d0
-         WSYN1=0.d0
-         WSYN2=0.d0
-         WSYN3=0.d0
-         PR1N1=0.d0
-         PR1N2=0.d0
-         PR1N3=0.d0
-      endif
-
-      if (CTIP) then
-      else
-         TIPN1=0.d0
-         TIPN2=0.d0
-         TIPN3=0.d0
-      endif
-
-      if (CBaroclinic) then
-      else
-         VIDBCPDXAvg3=0.D0
-         VIDBCPDYAvg3=0.D0
-      endif
-
-
-      DO 1037 IE=1,NE
-C...  
-C...  SET NODAL VALUES FOR EACH ELEMENT
-C...  
-         NM1=NM(IE,1)
-         NM2=NM(IE,2)
-         NM3=NM(IE,3)
-         NC1=NODECODE(NM1)
-         NC2=NODECODE(NM2)
-         NC3=NODECODE(NM3)
-         NCELE=NC1*NC2*NC3*NOFF(IE)
-         E0N1=ETA1(NM1)
-         E0N2=ETA1(NM2)
-         E0N3=ETA1(NM3)
-         E1N1=ETA2(NM1)
-         E1N2=ETA2(NM2)
-         E1N3=ETA2(NM3)
-         E1N1SQ=E1N1*E1N1
-         E1N2SQ=E1N2*E1N2
-         E1N3SQ=E1N3*E1N3
-         ESN1=ETAS(NM1)
-         ESN2=ETAS(NM2)
-         ESN3=ETAS(NM3)
-         U1N1=UU1(NM1)
-         U1N2=UU1(NM2)
-         U1N3=UU1(NM3)
-         V1N1=VV1(NM1)
-         V1N2=VV1(NM2)
-         V1N3=VV1(NM3)
-         QX1N1=QX1(NM1)
-         QX1N2=QX1(NM2)
-         QX1N3=QX1(NM3)
-         QY1N1=QY1(NM1)
-         QY1N2=QY1(NM2)
-         QY1N3=QY1(NM3)
-         H1N1=DP(NM1)+IFNLFA*E1N1
-         H1N2=DP(NM2)+IFNLFA*E1N2
-         H1N3=DP(NM3)+IFNLFA*E1N3
-         SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
-
-C     jjw - m10 - define various tau0 values                   
-         T0N1=Tau0Var(NM1) 
-         T0N2=Tau0Var(NM2) 
-         T0N3=Tau0Var(NM3) 
-         Tau0Avg=(T0N1+T0N2+T0N3)/3.d0
-         TT0R=((0.5d0*Tau0Avg*DT-1.0d0)/DT)/DT
-         T0XN1=T0N1*QX1N1
-         T0YN1=T0N1*QY1N1
-         T0XN2=T0N2*QX1N2
-         T0YN2=T0N2*QY1N2
-         T0XN3=T0N3*QX1N3
-         T0YN3=T0N3*QY1N3
-
-         IF((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
-            WSXN1=WSX1(NM1)
-            WSXN2=WSX1(NM2)
-            WSXN3=WSX1(NM3)
-            WSYN1=WSY1(NM1)
-            WSYN2=WSY1(NM2)
-            WSYN3=WSY1(NM3)
-            PR1N1=PR1(NM1)
-            PR1N2=PR1(NM2)
-            PR1N3=PR1(NM3)
-         ENDIF
-
-CTIP..If using tidal potential terms
-         if (CTIP) then         !tidal potential
-            TIPN1=TIP1(NM1)
-            TIPN2=TIP1(NM2)
-            TIPN3=TIP1(NM3)
-         endif
-
-C2DDI.For the 2DDI version of the code
-C2DDI.Compute bottom friction
-         if (C2DDI) then        !2D bottom friction
-            BSXN1=TK(NM1)*QX1N1
-            BSYN1=TK(NM1)*QY1N1
-            BSXN2=TK(NM2)*QX1N2
-            BSYN2=TK(NM2)*QY1N2
-            BSXN3=TK(NM3)*QX1N3
-            BSYN3=TK(NM3)*QY1N3
-#ifdef CSWAN
-#ifdef CSWANFRIC
-Casey 091020: Adopt Ethan's/Joannes's modified friction.
-            BSXN1 = TKXX(NM1)*QX1N1 + TKXY(NM1)*QY1N1
-            BSYN1 = TKXY(NM1)*QX1N1 + TKYY(NM1)*QY1N1
-            BSXN2 = TKXX(NM2)*QX1N2 + TKXY(NM2)*QY1N2
-            BSYN2 = TKXY(NM2)*QX1N2 + TKYY(NM2)*QY1N2
-            BSXN3 = TKXX(NM3)*QX1N3 + TKXY(NM3)*QY1N3
-            BSYN3 = TKXY(NM3)*QX1N3 + TKYY(NM3)*QY1N3
-#endif
-#endif
-         endif      
-
-C3D...For the 3D version of the code
-C3D...Setup bottom friction and velocity dispersion
-         if (C3D) then          !3D bottom friction & dispersion
-            BSXN1=BSX1(NM1)
-            BSXN2=BSX1(NM2)
-            BSXN3=BSX1(NM3)
-            BSYN1=BSY1(NM1)
-            BSYN2=BSY1(NM2)
-            BSYN3=BSY1(NM3)
-            DVV1N1=DVV1(NM1)
-            DVV1N2=DVV1(NM2)
-            DVV1N3=DVV1(NM3)
-            DUV1N1=DUV1(NM1)
-            DUV1N2=DUV1(NM2)
-            DUV1N3=DUV1(NM3)
-            DUU1N1=DUU1(NM1)
-            DUU1N2=DUU1(NM2)
-            DUU1N3=DUU1(NM3)
-         endif
-
-
-C...  
-C...  COMPUTE ELEMENT AVERAGED QUANTITIES
-C... 
-         QX1Avg3=QX1N1+QX1N2+QX1N3
-         QY1Avg3=QY1N1+QY1N2+QY1N3
-         QX1Avg=QX1Avg3/3.d0
-         QY1Avg=QY1Avg3/3.d0
-         DPAvg=(DP(NM1)+DP(NM2)+DP(NM3))/3.d0
-         GHAvg=GO3*(H1N1+H1N2+H1N3)
-         U1Avg=(U1N1+U1N2+U1N3)/3.d0
-         V1Avg=(V1N1+V1N2+V1N3)/3.d0
-         EVMAvgODT=((EVM(NM1)+EVM(NM2)+EVM(NM3))/3.d0)/DT
-         CorifAvg=(CORIF(NM1)+CORIF(NM2)+CORIF(NM3))/3.d0
-         BSXAvg3=BSXn1+BSXn2+BSXn3
-         BSYAvg3=BSYn1+BSYn2+BSYn3
-         WSXAvg3=WSXN1+WSXN2+WSXN3
-         WSYAvg3=WSYN1+WSYN2+WSYN3
-         T0XAvg3=T0XN1+T0XN2+T0XN3
-         T0YAvg3=T0YN1+T0YN2+T0YN3
-         IF(CBaroclinic) THEN
-            VIDBCPDXAvg3=H1N1*VIDBCPDXOH(NM1)+H1N2*VIDBCPDXOH(NM2)
-     &                                       +H1N3*VIDBCPDXOH(NM3)
-            VIDBCPDYAvg3=H1N1*VIDBCPDYOH(NM1)+H1N2*VIDBCPDYOH(NM2)
-     &                                       +H1N3*VIDBCPDYOH(NM3)
-         ENDIF
-
-C...
-C...  Compute elemental coefficients
-C...
-         AREAIE2=AREAS(IE)               !2A
-
-         FDX1 = (Y(NM2)-Y(NM3))*SFacAvg !b1
-         FDX2 = (Y(NM3)-Y(NM1))*SFacAvg !b2
-         FDX3 = (Y(NM1)-Y(NM2))*SFacAvg !b3
-         FDY1 = X(NM3)-X(NM2)           !a1
-         FDY2 = X(NM1)-X(NM3)           !a2
-         FDY3 = X(NM2)-X(NM1)           !a3
-
-         FDX1O2A=FDX1/AREAIE2     !dphi1/dx
-         FDY1O2A=FDY1/AREAIE2     !dphi1/dy
-         FDX2O2A=FDX2/AREAIE2     !dphi2/dx
-         FDY2O2A=FDY2/AREAIE2     !dphi2/dy
-         FDX3O2A=FDX3/AREAIE2     !dphi3/dx
-         FDY3O2A=FDY3/AREAIE2     !dphi3/dy
-
-C...  
-C...  COMPUTE ADDITIONAL ELEMENTAL COEFFICIENTS
-C...  
-         DDX1=FDX1/3.d0         !<2*(dphi1/dx)*phij> j=1,2,3
-         DDY1=FDY1/3.d0         !<2*(dphi1/dy)*phij> j=1,2,3
-         DXX11=FDX1O2A*FDX1      !<2*(dphi1/dx)*(dphi1/dx)>
-         DYY11=FDY1O2A*FDY1      !<2*(dphi1/dy)*(dphi1/dy)>
-         DXY11=FDX1O2A*FDY1      !<2*(dphi1/dx)*(dphi1/dy)>
-         DXXYY11=DXX11+DYY11
-         DXYH11=DPAvg*DXXYY11   
-         DXX12=FDX1O2A*FDX2      !<2*(dphi1/dx)*(dphi2/dx)>
-         DYY12=FDY1O2A*FDY2      !<2*(dphi1/dy)*(dphi2/dy)>
-         DXY12=FDX1O2A*FDY2      !<2*(dphi1/dx)*(dphi2/dy)>
-         DXXYY12=DXX12+DYY12
-         DXYH12=DPAvg*DXXYY12
-         DXX13=FDX1O2A*FDX3      !<2*(dphi1/dx)*(dphi3/dx)>
-         DYY13=FDY1O2A*FDY3      !<2*(dphi1/dy)*(dphi3/dy)>
-         DXY13=FDX1O2A*FDY3      !<2*(dphi1/dx)*(dphi3/dy)>
-         DXXYY13=DXX13+DYY13
-         DXYH13=DPAvg*DXXYY13
-
-         DDX2=FDX2/3.d0         !<2*(dphi2/dx)*phij> j=1,2,3
-         DDY2=FDY2/3.d0         !<2*(dphi2/dy)*phij> j=1,2,3
-         DXX21=DXX12            !<2*(dphi2/dx)*(dphi1/dx)>
-         DYY21=DYY12            !<2*(dphi2/dy)*(dphi1/dy)>
-         DXY21=FDX2O2A*FDY1      !<2*(dphi2/dx)*(dphi1/dy)>
-         DXXYY21=DXXYY12
-         DXYH21=DXYH12
-         DXX22=FDX2O2A*FDX2      !<2*(dphi2/dx)*(dphi2/dx)>
-         DYY22=FDY2O2A*FDY2      !<2*(dphi2/dy)*(dphi2/dy)>
-         DXY22=FDX2O2A*FDY2      !<2*(dphi2/dx)*(dphi2/dy)>
-         DXXYY22=DXX22+DYY22
-         DXYH22=DPAvg*DXXYY22      
-         DXX23=FDX2O2A*FDX3      !<2*(dphi2/dx)*(dphi3/dx)>
-         DYY23=FDY2O2A*FDY3      !<2*(dphi2/dy)*(dphi3/dy)>
-         DXY23=FDX2O2A*FDY3      !<2*(dphi2/dx)*(dphi3/dy)>
-         DXXYY23=DXX23+DYY23
-         DXYH23=DPAvg*DXXYY23      
-
-         DDX3=FDX3/3.d0         !<2*(dphi3/dx)*phij> j=1,2,3
-         DDY3=FDY3/3.d0         !<2*(dphi3/dy)*phij> j=1,2,3
-         DXX31=DXX13            !<2*(dphi3/dx)*(dphi1/dx)>
-         DYY31=DYY13            !<2*(dphi3/dy)*(dphi1/dy)>
-         DXY31=FDX3O2A*FDY1      !<2*(dphi3/dx)*(dphi1/dy)>
-         DXXYY31=DXXYY13
-         DXYH31=DXYH13
-         DXX32=DXX23            !<2*(dphi3/dx)*(dphi2/dx)>
-         DYY32=DYY23            !<2*(dphi3/dy)*(dphi2/dy)>
-         DXY32=FDX3O2A*FDY2      !<2*(dphi3/dx)*(dphi2/dy)>
-         DXXYY32=DXXYY23
-         DXYH32=DXYH23
-         DXX33=FDX3O2A*FDX3      !<2*(dphi3/dx)*(dphi3/dx)>
-         DYY33=FDY3O2A*FDY3      !<2*(dphi3/dy)*(dphi3/dy)>
-         DXY33=FDX3O2A*FDY3      !<2*(dphi3/dx)*(dphi3/dy)>
-         DXXYY33=DXX33+DYY33
-         DXYH33=DPAvg*DXXYY33      
-
-         AO6=AREAIE2/6.d0
-         AO12=AREAIE2/12.d0
-         FDDD=(1+ILUMP)*AO6     !2*<phi*phj> diagonal terms
-         FDDOD=(1-ILUMP)*AO12   !2*<phi*phj> off diagonal terms
-
-C
-C...  COMPUTE THE CONTRIBUTION OF A SPATIALLY VARIABLE Tau0
-C 
-        SpaVarTau0=(T0N1*DDX1+T0N2*DDX2+T0N3*DDX3)*QX1Avg
-     &            +(T0N1*DDY1+T0N2*DDY2+T0N3*DDY3)*QY1Avg
-
-C...  
-C...  COMPUTE THE RHS GWCE FORCING AND PUT INTO TEMP_LV_A VECTOR FOR NODE NM1
-C...  
-         TEMP_LV_A1=
-C...  TRANSIENT AND Tau0 TERMS FROM LHS
-     &        -(FDDD*ESN1+FDDOD*ESN2+FDDOD*ESN3)*TT0R
-
-C...  FREE SURFACE TERMS FROM LHS (TIME LEVEL K-1)
-     &        -(DXYH11*E0N1+DXYH12*E0N2+DXYH13*E0N3)*GC00
-
-C...  FREE SURFACE TERMS FROM LHS (TIME LEVEL K)
-     &        -(DXYH11*E1N1+DXYH12*E1N2+DXYH13*E1N3)*GB00A00
-
-C...  BOTTOM FRICTION & Tau0
-     &        +(T0XAvg3-BSXAvg3)*DDX1
-     &        +(T0YAvg3-BSYAvg3)*DDY1
-     &        +SpaVarTau0
-
-C...  CORIOLIS FORCE
-     &        +CorifAvg*(QY1Avg3*DDX1-QX1Avg3*DDY1)
-
-C...  WIND STRESS & ATMONPHERIC PRESSURE GRADIENTS
-     &        +WSXAvg3*DDX1+WSYAvg3*DDY1
-     &        -GHAvg*(PR1N1*DXXYY11+PR1N2*DXXYY12+PR1N3*DXXYY13)
-
-C...  TIDAL POTENTIAL FORCING
-     &        +GHAvg*(TIPN1*DXXYY11+TIPN2*DXXYY12+TIPN3*DXXYY13)
-
-C...  LATERAL VISCOSITY TERM  
-     &        -EVMAvgODT*(DXXYY11*ESN1+DXXYY12*ESN2+DXXYY13*ESN3)
-
-C...  FINITE AMPLITUDE
-     &        -GFAO2*(E1N1SQ*DXXYY11+E1N2SQ*DXXYY12+E1N3SQ*DXXYY13)
-
-C... SPATIAL DERIVATIVE PORTION OF THE ADVECTIVE TERMS
-     &        -IFNLCT*(QX1Avg*(U1N1*DXX11+U1N2*DXX21+U1N3*DXX31
-     &        +                V1N1*DXY11+V1N2*DXY21+V1N3*DXY31)
-     &        +        QY1Avg*(U1N1*DXY11+U1N2*DXY12+U1N3*DXY13
-     &        +                V1N1*DYY11+V1N2*DYY21+V1N3*DYY31))
-
-C...  Advective terms (time derivative portion in gwce) which must be
-c...  bundled in with the finite amplitude terms in order to get good
-c...  mass conservation when the advective terms are shut down
-     &        +TADVODT*(U1Avg*DDX1+V1Avg*DDY1)*(ESN1+ESN2+ESN3)
-
-C...  DENSITY TERMS 
-     &        -VIDBCPDXAvg3*DDX1-VIDBCPDYAvg3*DDY1
-
-C     3D.3D Velocity dispersion
-         if (C3D) then
-           TEMP_LV_A1=TEMP_LV_A1-IFNLCT*
-     &           (DUU1N1*DXX11+DUU1N2*DXX12+DUU1N3*DXX13
-     &           +DUV1N1*DXY11+DUV1N2*DXY12+DUV1N3*DXY13
-     &           +DUV1N1*DXY11+DUV1N2*DXY21+DUV1N3*DXY31
-     &           +DVV1N1*DYY11+DVV1N2*DYY12+DVV1N3*DYY13)
-           endif
-
-C...  
-C...  COMPUTE THE RHS GWCE FORCING AND PUT INTO TEMP_LV_A VECTOR FOR NODE NM2
-C...  
-         TEMP_LV_A2=
-C...  TRANSIENT AND Tau0 TERMS FROM LHS
-     &        -(FDDOD*ESN1+FDDD*ESN2+FDDOD*ESN3)*TT0R
-
-C...  FREE SURFACE TERMS FROM LHS (TIME LEVEL K-1)
-     &        -(DXYH12*E0N1+DXYH22*E0N2+DXYH23*E0N3)*GC00
-
-C...  FREE SURFACE TERMS FROM LHS (TIME LEVEL K)
-     &        -(DXYH12*E1N1+DXYH22*E1N2+DXYH23*E1N3)*GB00A00
-
-C...  BOTTOM FRICTION & Tau0
-     &        +(T0XAvg3-BSXAvg3)*DDX2
-     &        +(T0YAvg3-BSYAvg3)*DDY2
-     &        +SpaVarTau0
-
-C...  CORIOLIS FORCE
-     &        +CorifAvg*(QY1Avg3*DDX2-QX1Avg3*DDY2)
-
-C...  WIND AND ATMOSPHERIC PRESSURE FORCING
-     &        +WSXAvg3*DDX2+WSYAvg3*DDY2
-     &        -GHAvg*(PR1N1*DXXYY21+PR1N2*DXXYY22+PR1N3*DXXYY23)
-
-C...  TIDAL POTENTIAL FORCING
-     &        +GHAvg*(TIPN1*DXXYY21+TIPN2*DXXYY22+TIPN3*DXXYY23)
-
-C...  LATERAL VISCOSITY TERM
-     &        -EVMAvgODT*(DXXYY12*ESN1+DXXYY22*ESN2+DXXYY23*ESN3)
-
-C...  FINITE AMPLITUDE
-     &        -GFAO2*(E1N1SQ*DXXYY21+E1N2SQ*DXXYY22+E1N3SQ*DXXYY23)
-
-C...  SPATIAL DERIVATIVE PORTION OF THE ADVECTIVE TERMS
-     &        -IFNLCT*(QX1Avg*(U1N1*DXX12+U1N2*DXX22+U1N3*DXX32
-     &        +                V1N1*DXY12+V1N2*DXY22+V1N3*DXY32)
-     &        +        QY1Avg*(U1N1*DXY21+U1N2*DXY22+U1N3*DXY23
-     &        +                V1N1*DYY12+V1N2*DYY22+V1N3*DYY32))
-
-C...  Advective terms (time derivative portion in gwce) which must be
-c...  bundled in with the finite amplitude terms in order to get good
-c...  mass conservation when the advective terms are shut down - non-conservative
-
-     &        +TADVODT*(U1Avg*DDX2+V1Avg*DDY2)*(ESN1+ESN2+ESN3)
-
-C...  DENSITY TERMS 
-     &        -VIDBCPDXAvg3*DDX2-VIDBCPDYAvg3*DDY2
-
-C     3D.3D Velocity dispersion
-         if (C3D) then
-           TEMP_LV_A2=TEMP_LV_A2-IFNLCT*
-     &           (DUU1N1*DXX12+DUU1N2*DXX22+DUU1N3*DXX23
-     &           +DUV1N1*DXY21+DUV1N2*DXY22+DUV1N3*DXY23
-     &           +DUV1N1*DXY12+DUV1N2*DXY22+DUV1N3*DXY32
-     &           +DVV1N1*DYY12+DVV1N2*DYY22+DVV1N3*DYY23)
-           endif
-
-C...  
-C...  COMPUTE THE RHS GWCE FORCING AND PUT INTO TEMP_LV_A VECTOR FOR NODE NM1
-C...  
-         TEMP_LV_A3=
-C...  TRANSIENT AND Tau0 TERMS FROM LHS
-     &        -(FDDOD*ESN1+FDDOD*ESN2+FDDD*ESN3)*TT0R
-
-C...  FREE SURFACE TERMS FROM LHS (TIME LEVEL K-1)
-     &        -(DXYH13*E0N1+DXYH23*E0N2+DXYH33*E0N3)*GC00
-
-C...  FREE SURFACE TERMS FROM LHS (TIME LEVEL K)
-     &        -(DXYH13*E1N1+DXYH23*E1N2+DXYH33*E1N3)*GB00A00
-
-C...  BOTTOM FRICTION & Tau0
-     &        +(T0XAvg3-BSXAvg3)*DDX3
-     &        +(T0YAvg3-BSYAvg3)*DDY3
-     &        +SpaVarTau0
-
-C...  CORIOLIS FORCE
-     &        +CorifAvg*(QY1Avg3*DDX3-QX1Avg3*DDY3)
-
-C...  WIND AND ATMOSPHERIC PRESSURE FORCING
-     &        +WSXAvg3*DDX3+WSYAvg3*DDY3
-     &        -GHAvg*(PR1N1*DXXYY31+PR1N2*DXXYY32+PR1N3*DXXYY33)
-
-C...  TIDAL POTENTIAL FORCING
-     &        +GHAvg*(TIPN1*DXXYY31+TIPN2*DXXYY32+TIPN3*DXXYY33)
-
-C...  LATERAL VISCOSITY TERM
-     &        -EVMAvgODT*(DXXYY13*ESN1+DXXYY23*ESN2+DXXYY33*ESN3)
-
-C...  FINITE AMPLITUDE
-     &        -GFAO2*(E1N1SQ*DXXYY31+E1N2SQ*DXXYY32+E1N3SQ*DXXYY33)
-
-C...  SPATIAL DERIVATIVE PORTION OF THE ADVECTIVE TERMS
-     &        -IFNLCT*(QX1Avg*(U1N1*DXX13+U1N2*DXX23+U1N3*DXX33
-     &        +                V1N1*DXY13+V1N2*DXY23+V1N3*DXY33)
-     &        +        QY1Avg*(U1N1*DXY31+U1N2*DXY32+U1N3*DXY33
-     &        +                V1N1*DYY13+V1N2*DYY23+V1N3*DYY33))
-
-C...  Advective terms (time derivative portion in gwce) which must be
-c...  bundled in with the finite amplitude terms in order to get good
-c...  mass conservation when the advective terms are shut down - non-conservative
-
-     &        +TADVODT*(U1Avg*DDX3+V1Avg*DDY3)*(ESN1+ESN2+ESN3)
-           
-C...  DENSITY TERMS 
-     &        -VIDBCPDXAvg3*DDX3-VIDBCPDYAvg3*DDY3
-
-C     3D.3D Velocity dispersion
-         if (C3D) then
-           TEMP_LV_A3=TEMP_LV_A3-IFNLCT*
-     &           (DUU1N1*DXX13+DUU1N2*DXX23+DUU1N3*DXX33
-     &           +DUV1N1*DXY31+DUV1N2*DXY32+DUV1N3*DXY33
-     &           +DUV1N1*DXY13+DUV1N2*DXY23+DUV1N3*DXY33
-     &           +DVV1N1*DYY13+DVV1N2*DYY23+DVV1N3*DYY33)
-           endif
-
-C     LINES TO RUN ON A VECTOR COMPUTER
-#ifdef CVEC
-         TEMP_LV_A(IE,1)=TEMP_LV_A1*NCELE
-         TEMP_LV_A(IE,2)=TEMP_LV_A2*NCELE
-         TEMP_LV_A(IE,3)=TEMP_LV_A3*NCELE
-#endif
-
-C     LINES TO RUN ON A SCALAR COMPUTER.
-C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR GWCE_LV
-C     ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
-#ifdef CSCA
-         GWCE_LV(NM1)=GWCE_LV(NM1)+TEMP_LV_A1*NCELE
-         GWCE_LV(NM2)=GWCE_LV(NM2)+TEMP_LV_A2*NCELE
-         GWCE_LV(NM3)=GWCE_LV(NM3)+TEMP_LV_A3*NCELE
-#endif
-
-c        IF(IE.EQ.1) THEN
-c           WRITE(101,*) ' '
-c           WRITE(101,*) '  ************ GWCE Load Vector/2 ***********'
-c           WRITE(101,*) '  Time Step = ',IT
-c           ENDIF
-c        WRITE(101,*) IE, ESN1, ESN2, ESN3
-c        WRITE(101,*) IE, TEMP_LV_A1/2., TEMP_LV_A2/2., TEMP_LV_A3/2.
- 
- 1037 CONTINUE
-
-C     LINES TO RUN ON A VECTOR COMPUTER
-C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR GWCE_LV
-C     ON A VECTOR COMPUTER USING THE TEMPORARY VECTORS
-#ifdef CVEC
-      DO IE=1,NE
-         NM1=NM(IE,1)
-         NM2=NM(IE,2)
-         NM3=NM(IE,3)
-         GWCE_LV(NM1)=GWCE_LV(NM1)+TEMP_LV_A(IE,1)
-         GWCE_LV(NM2)=GWCE_LV(NM2)+TEMP_LV_A(IE,2)
-         GWCE_LV(NM3)=GWCE_LV(NM3)+TEMP_LV_A(IE,3)
-      END DO
-#endif
-
-C...  
-C...  SAVE THE ELEVATION AT THE PAST TIME STEP INTO ETA1 AND ZERO ETA2
-C...  
-      DO I=1,NP
-         ETA1(I)=ETA2(I)
-         ETA2(I)=0.d0  !tcm v50.39 added
-      END DO
-      
-C...  AT ELEVATION BOUNDARY CONDITION NODES DETERMINE ELEVATION AT NEXT
-C...  TIME STEP
-C...  
-C...  FOR PERIODIC ELEVATION BOUNDARY CONDITION
-
-      DO J=1,NBFR
-         IF(PER(J).EQ.0.) THEN
-            NCYC=0.
-         ELSE
-#ifdef IBM
-            NCYC=INT(timeh/PER(J),KIND(0.0d0))
-#else
-            NCYC=INT(timeh/PER(J))
-#endif
-         ENDIF
-         ARGJ=AMIG(J)*(timeh-NCYC*PER(J))+FACE(J)
-         RFF=FF(J)*RampElev
-         DO I=1,NETA
-            ARG=ARGJ-EFA(J,I)
-            NBDI=NBD(I)
-            ETA2(NBDI)=ETA2(NBDI)+EMO(J,I)*RFF*COS(ARG)
-         END DO
-      END DO
-C
-C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
-      IF((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
-         IF(TimeLoc.GT.ETIME2) THEN
-            ETIME1=ETIME2
-            ETIME2=ETIME1+ETIMINC
-            DO J=1,NETA
-               ESBIN1(J)=ESBIN2(J)
-               READ(19,*) ESBIN2(J)
-            END DO
-         ENDIF
-         ETRATIO=(TimeLoc-ETIME1)/ETIMINC
-         DO I=1,NETA
-            NBDI=NBD(I)
-            ETA2(NBDI)=RampElev
-     &           *(ESBIN1(I)+ETRATIO*(ESBIN2(I)-ESBIN1(I)))
-         END DO
-      ENDIF
-C
-C     jgf46.02 Added the ability to include geoid offset on the boundary.
-      IF (LoadGeoidOffset) THEN
-         DO I=1,NETA
-            ETA2(NBD(I))=ETA2(NBD(I))+GeoidOffset(NBD(I))
-         END DO
-      ENDIF
-
-C   kmd48.33bc add information for the levels of no motion boundary conditions
-C              these are considered the steric adjustments. 
-      IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic).AND.(NOPE.GT.0))  THEN
-         DO I=1,NETA
-           NBDI=NBD(I)
-           ETA2(NBDI) = ETA2(NBDI) + LNM_BC(I)
-         END DO
-      END IF
-
-C
-C...  IMPOSE NORMAL FLOW, RADIATION OR GRADIENT BOUNDARY CONDITIONS
-C...  ALONG FLOW BOUNDARY TO LOAD VECTOR GWCE_LV(I)
-
-C...  Note 1, these values all must be multiplied by 2 since all
-C...  elemental coefficients have been
-
-C...  Note 2, Boundary conditions using specified fluxes (LBCODEI < 29)
-C...  assume that QN is positive into the domain.  QFORCEJ has a -1
-C...  built in and the terms are not explicitly negated. Boundary
-C...  conditions using computed fluxes (LBCODEI 30, 40) compute a normal
-C...  flux that  is positive out of the domain.  Therefore, to match
-C...  the formulation these terms must be explicitly multiplied by -1.
-
-C...Note 3, Eta1 is the latest computed elevation (it was updated above).
-
-      IF((NFLUXF.EQ.1).OR.(NFLUXB.EQ.1).OR.(NFLUXIB.EQ.1)
-     &     .OR.(NFLUXGBC.EQ.1).OR.(NFLUXRBC.EQ.1)) THEN 
-         NBDJ=NBV(1)
-         IF(LBCODEI(1).LE.29) QFORCEJ=(QN2(1)-QN0(1))/DT2 + 
-     &        Tau0VAR(NBDJ)*QN1(1)
-
-         IF(LBCODEI(1).EQ.30) THEN
-            H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-            CELERITY=SQRT(G*H1)
-            QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(1)
-            ENDIF
-
-         IF(LBCODEI(1).EQ.32) THEN 
-            H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-            CELERITY=SQRT(G*H1)
-            QFORCEJ=(QN1(1)-QN0(1))/DT
-     &           -CELERITY*(ETAS(NBDJ)-(EN1(1)-EN0(1)))/DT
-     &           +TAU0VAR(NBDJ)*(QN1(1)-CELERITY*(ETA1(NBDJ)-EN1(1)))
-            ENDIF
-
-         IF((LBCODEI(1).EQ.40).OR.(LBCODEI(1).EQ.41)) QFORCEJ=
-     &        -(QN1(1)-QN0(1))/DT - TAU0VAR(NBDJ)*(QN1(1)+QN0(1))/2.d0
-
-         DO J=2,NVEL
-            NBDI=NBDJ
-            NBDJ=NBV(J)
-            QFORCEI=QFORCEJ
-
-            IF(LBCODEI(J).LE.29) QFORCEJ=(QN2(J)-QN0(J))/DT2+
-     &           Tau0VAR(NBDJ)*QN1(J)
-
-            IF(LBCODEI(J).EQ.30) THEN
-               H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-               CELERITY=SQRT(G*H1)
-               QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(J)
-               ENDIF
-
-            IF(LBCODEI(J).EQ.32) THEN 
-               H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
-               CELERITY=SQRT(G*H1)
-               QFORCEJ=(QN1(J)-QN0(J))/DT
-     &              -CELERITY*(ETAS(NBDJ)-(EN1(J)-EN0(J)))/DT
-     &              +TAU0VAR(NBDJ)*(QN1(J)-CELERITY*(ETA1(NBDJ)-EN1(J)))
-               ENDIF
-
-            IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) QFORCEJ=
-     &        -(QN1(J)-QN0(J))/DT - TAU0VAR(NBDJ)*(QN1(J)+QN0(J))/2.d0
-
-            NCI=NODECODE(NBDI)
-            NCJ=NODECODE(NBDJ)
-            NCBND=NCI*NCJ
-            BNDLEN2O3NC=NCBND*BNDLEN2O3(J-1)
-            GWCE_LV(NBDI)=GWCE_LV(NBDI)
-     &                              + BNDLEN2O3NC*(QFORCEI+QFORCEJ/2.D0)
-            GWCE_LV(NBDJ)=GWCE_LV(NBDJ)
-     &                              + BNDLEN2O3NC*(QFORCEJ+QFORCEI/2.D0)
-            END DO
-        ENDIF
-
-C...
-C...  IMPOSE ELEVATION BOUNDARY CONDITIONS TO LOAD VECTOR GWCE_LV(I) NOTE; EP
-C...  IS THE RMS OF ALL THE DIAGONAL MEMBERS IN THE GWCE.  IT IS USED TO
-C...  SCALE THE DIAGONAL ELEMENT FOR THE ELEVATION SPECIFIED BOUNDARY
-C...  NODES AND THEREFORE MUST ALSO BE USED TO SCALE THE RHS OF THE
-C...  EQUATIONS
-C...  
-      DO I=1,NETA
-         NBDI=NBD(I)
-         ETAS(NBDI)=ETA2(NBDI)-ETA1(NBDI)
-         GWCE_LV(NBDI)=ETAS(NBDI)*NODECODE(NBDI)*EP
-         DO J=2,NNEIGH(NBDI)
-            GWCE_LV(NEITAB(NBDI,J))=GWCE_LV(NEITAB(NBDI,J))
-     &           -ETAS(NBDI)*OBCCOEF(I,J-1)
-         END DO
-      END DO
-
-C...  
-C...  SOLVE GWCE FOR ELEVATION AT NEW TIME LEVEL
-C...  
-
-C...  UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
-
-#ifdef CMPI
-C...UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
-      CALL UPDATER(GWCE_LV,COEF(1,1),DUMY1,2)
-#endif
-
-C...  JCG ITERATIVE MATRIX SOLVER
-      IPARM(1)=ITMAX
-      CALL JCG(NP,MNP,MNEI,NEITAB,COEF,GWCE_LV,ETAS,
-     &     IWKSP,NW,WKSP,IPARM,RPARM,IER)
-
-      NUMITR=IPARM(1)
-      DO I=1,NP
-         ETA2(I)=NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
-      END DO
-     
-C     UPDATE ELEVATIONS
-
-#ifdef CMPI
-      CALL UPDATER(ETA2,DUMY1,DUMY2,1)
-#endif
-
-      RETURN
-      END SUBROUTINE GWCE_ORIGINAL
-
 
 
 C******************************************************************************
@@ -3802,13 +2909,13 @@ C                            r.l.  06/22/2005                                 *
 C******************************************************************************
 
       SUBROUTINE GWCE_New(IT,TimeLoc,TimeH)
-C     
+C
       USE GLOBAL
       USE SIZES
       USE WIND
       USE ITPACKV
-      USE NodalAttributes, ONLY : 
-     &     LoadGeoidOffset, GeoidOffset, EVM, 
+      USE NodalAttributes, ONLY :
+     &     LoadGeoidOffset, GeoidOffset, EVM,
      &     TAU0VAR, HighResTimeVaryingTau0, FullDomainTimeVaryingTau0,
      &     CalculateTimeVaryingTau0
 #ifdef CMPI
@@ -3823,7 +2930,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 #endif
 #endif
 
-      IMPLICIT NONE 
+      IMPLICIT NONE
 
       INTEGER IE, JN, IJ, I, J                           !local loop counters
       INTEGER IT
@@ -3887,11 +2994,11 @@ C...  Consistent mass matrix: ILump=0, lumped mass matrix: ILump=1
 C...
 C...  Recompute the GWCE system matrix at the first time step or if any
 C...  wetting or drying occurred in the previous time step.
-C...  
+C...
       IF(NCChange.GT.0) THEN !if any subdomain grid has changed
          NCChange=0
-c        IF(NScreen.GT.0.AND.MYProc.EQ.0) WRITE(screenunit,3806) 
-c        WRITE(16,3806)                                 
+c        IF(NScreen.GT.0.AND.MYProc.EQ.0) WRITE(screenunit,3806)
+c        WRITE(16,3806)
  3806    FORMAT(/,1X,'RE-SETTING GWCE SYSTEM MATRIX',/)
 
 C.....Set up the LHS matrix (for the iterative matrix solver)
@@ -3930,8 +3037,8 @@ Casey 091022: Adopt Ethan's/Joannes's modified friction.
             CALL CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
          ENDIF
 
-         
-         
+
+
          !jgf48.4619: Added Seizo's handling of Lumping vs non-Lumping
          IF ( ILump.eq.0 ) THEN ! default case: fully consistent LHS
             DO IE=1,NE
@@ -4019,17 +3126,17 @@ Casey 091022: Adopt Ethan's/Joannes's modified friction.
                Coefd(NMI1)  =Coefd(NMI1)   + (MsFacLOnDiag)*NCELE
                Coefd(NMI2)  =Coefd(NMI2)   + (MsFacLOnDiag)*NCELE
                Coefd(NMI3)  =Coefd(NMI3)   + (MsFacLOnDiag)*NCELE
-            ENDDO          
+            ENDDO
          ENDIF
 
 C...  Modify the matrix "COEF" by imposing the elevation specified
 C...  boundary conditions while maintaining the symmetry of the system
 
-         IF (ILump.eq.0) THEN    
+         IF (ILump.eq.0) THEN
 #ifdef CMPI
             EP = PSDOT(NP,Coef(1,1),Coef(1,1))
             EP = SQRT(RNP_GLOBAL*EP)
-#else 
+#else
             EP=0.0D0
             DO I=1,NP
                EP=EP+Coef(I,1)*Coef(I,1)
@@ -4062,13 +3169,18 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
             DO I=1,NP
                IF(COEF(I,1).EQ.0.d0) COEF(I,1)=EP
                IF(COEF(I,1).LT.0.d0) THEN
-                  IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
+                  IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
      &              WRITE(ScreenUnit,1019) I,COEF(I,1)
                   WRITE(16,1019) I,COEF(I,1)
                   DIE = .TRUE.
                ENDIF
             ENDDO
-            IF (DIE) STOP
+            IF (DIE) THEN
+#ifdef CMPI
+               call msg_fini()
+#endif
+               STOP
+            ENDIF
 
          ELSE  ! jgf48.4619: include Seizo's changes for lumped LHS
 
@@ -4089,7 +3201,7 @@ C.....      Check that all the diagonal elements in "COEFD" are > 0.
             DO I=1,NP
                IF(COEFD(I).EQ.0.d0) COEFD(I)=EP
                IF(COEFD(I).LT.0.d0) THEN
-                  IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
+                  IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
      &              WRITE(ScreenUnit,1019) I,COEFD(I)
                   WRITE(16,1019) I,COEFD(I)
  1019             FORMAT(/,1X,'!!!!!!!!  ERROR  !!!!!!!',
@@ -4098,21 +3210,26 @@ C.....      Check that all the diagonal elements in "COEFD" are > 0.
                   DIE = .TRUE.
                ENDIF
             ENDDO
-            IF (DIE) STOP
+            IF (DIE) THEN
+#ifdef CMPI
+               call msg_fini()
+#endif
+               STOP
+            ENDIF
          ENDIF
-        
+
       ENDIF                     !End of GWCE matrix setup
 
 
-C...  
+C...
 C...  Compute the GWCE load vector GWCE_LV
-C...  This is done primarily element by element by forming 
-C...  temporary vectors and then assembling at the end.  
+C...  This is done primarily element by element by forming
+C...  temporary vectors and then assembling at the end.
 C...  This has been set up to unroll loops to optimize performance
-C...  on vector processors.  
+C...  on vector processors.
 C...
 C...  Elevation and flux boundary conditions are imposed after the
-C...  element by element assembly section.  
+C...  element by element assembly section.
 C...
 
 C...  Initialize variables to zero if these forcings are not used
@@ -4182,7 +3299,7 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
      &                 +(LSYXGradA+LSXYGradA)*(LSYXGradA+LSXYGradA))
                EVMEle=EVMSmag
             ENDIF
-            LSXXEle = LSXXGradA*EVMEle            
+            LSXXEle = LSXXGradA*EVMEle
             LSXX(NM1)=LSXX(NM1)+LSXXEle
             LSXX(NM2)=LSXX(NM2)+LSXXEle
             LSXX(NM3)=LSXX(NM3)+LSXXEle
@@ -4267,7 +3384,7 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
             LSXYGradA=(QX1(NM1)*FDY1+QX1(NM2)*FDY2+QX1(NM3)*FDY3)/2.d0
             LSYXGradA=(QY1(NM1)*FDX1+QY1(NM2)*FDX2+QY1(NM3)*FDX3)/2.d0
             LSYYGradA=(QY1(NM1)*FDY1+QY1(NM2)*FDY2+QY1(NM3)*FDY3)/2.d0
-            LSXXEle = LSXXGradA*EVMEle            
+            LSXXEle = LSXXGradA*EVMEle
             LSXX(NM1)=LSXX(NM1)+LSXXEle
             LSXX(NM2)=LSXX(NM2)+LSXXEle
             LSXX(NM3)=LSXX(NM3)+LSXXEle
@@ -4312,9 +3429,9 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
 C...  Assemble the GWCE RHS except for the boundary integral terms
 
       DO 1037 IE=1,NE
-  
+
 C...     Set nodal values for each element
-  
+
          NM1=NM(IE,1)
          NM2=NM(IE,2)
          NM3=NM(IE,3)
@@ -4352,9 +3469,9 @@ C...     Set nodal values for each element
          EVMN1=EVM(NM1)
          EVMN2=EVM(NM2)
          EVMN3=EVM(NM3)
-         T0N1=Tau0Var(NM1) 
-         T0N2=Tau0Var(NM2) 
-         T0N3=Tau0Var(NM3) 
+         T0N1=Tau0Var(NM1)
+         T0N2=Tau0Var(NM2)
+         T0N3=Tau0Var(NM3)
 
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
             Pr1N1=PR1(NM1)
@@ -4384,7 +3501,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
             BSYN3 = TKXY(NM3)*QX1N3 + TKYY(NM3)*QY1N3
 #endif
 #endif
-         ENDIF      
+         ENDIF
          IF (C3D) THEN                         !3D bottom friction
             BSXN1=BSX1(NM1)
             BSXN2=BSX1(NM2)
@@ -4453,7 +3570,7 @@ C...     Compute the spatial gradients of the velocity dispersion terms if 3D
      &            +DVV1(NM1)*FDY1+DVV1(NM2)*FDY2+DVV1(NM3)*FDY3)/AreaIE2
          ENDIF
 
-C...     Compute elemental averages                   
+C...     Compute elemental averages
 
          CorifAvg=(Corif(NM1)+Corif(NM2)+Corif(NM3))/3.d0
          Tau0Avg=(T0N1+T0N2+T0N3)/3.d0
@@ -4502,7 +3619,7 @@ C...     Compute the JX, JY terms less the advection terms
      &                                        +E1N3SQ*FDX3)
      &          -GHAvgOAreaIE2*((PR1N1-TiPN1)*FDX1
      &                     +(PR1N2-TiPN2)*FDX2+(PR1N3-TiPN3)*FDX3)
-     &          +WSXAvg-BSXAvg+MXAvg-DispXAvg-BCXAvg+Tau0QXAvg 
+     &          +WSXAvg-BSXAvg+MXAvg-DispXAvg-BCXAvg+Tau0QXAvg
 
          JYAvg =-CorifAvg*QX1Avg
      &          -IFNLFA*GOAreaIE4*(E1N1SQ*FDY1+E1N2SQ*FDY2
@@ -4548,7 +3665,7 @@ C...     Complete the JX, JY terms depending on the advection formulation
      &             +V1Avg*(QY1N1*FDY1+QY1N2*FDY2+QY1N3*FDY3))/AreaIE2
          ENDIF
 
-C...     Assemble forcing for node NM1 (local index j=1) 
+C...     Assemble forcing for node NM1 (local index j=1)
 
          Temp_LV_A1=
 
@@ -4557,7 +3674,7 @@ C...     Transient and Tau0 terms from LHS
 
 C...     Free surface terms from LHS (time levels s-1 & s)
      &        -GDPAvgOAreaIE4*(  C00  *(FDX1*E0XGrad2A+FDY1*E0YGrad2A)
-     &                        +A00pB00*(FDX1*E1XGrad2A+FDY1*E1YGrad2A)) 
+     &                        +A00pB00*(FDX1*E1XGrad2A+FDY1*E1YGrad2A))
 
 C...     Terms from momentum eqs.
      &        +(JXAvg*FDX1 + JYAvg*FDY1)/2.d0
@@ -4565,7 +3682,7 @@ C...     Terms from momentum eqs.
 C...     Spatially varying Tau0 terms
      &        +Tau0SpaVar
 
-C...     Assemble forcing for node NM2 (local index j=2) 
+C...     Assemble forcing for node NM2 (local index j=2)
 
          Temp_LV_A2=
 
@@ -4574,7 +3691,7 @@ C...     Transient and Tau0 terms from LHS
 
 C...     Free surface terms from LHS (time levels s-1 & s)
      &        -GDPAvgOAreaIE4*(  C00  *(FDX2*E0XGrad2A+FDY2*E0YGrad2A)
-     &                        +A00pB00*(FDX2*E1XGrad2A+FDY2*E1YGrad2A)) 
+     &                        +A00pB00*(FDX2*E1XGrad2A+FDY2*E1YGrad2A))
 
 C...     Terms from momentum eqs.
      &        +(JXAvg*FDX2 + JYAvg*FDY2)/2.d0
@@ -4583,7 +3700,7 @@ C...     Spatially varying Tau0 terms
      &        +Tau0SpaVar
 
 
-C...     Assemble forcing for node NM3 (local index j=3) 
+C...     Assemble forcing for node NM3 (local index j=3)
 
          Temp_LV_A3=
 
@@ -4593,7 +3710,7 @@ C...    (consistent mass matrix: ILump=0, lumped mass matrix: ILump=1)
 
 C...     Free surface terms from LHS (time levels s-1 & s)
      &        -GDPAvgOAreaIE4*(  C00  *(FDX3*E0XGrad2A+FDY3*E0YGrad2A)
-     &                        +A00pB00*(FDX3*E1XGrad2A+FDY3*E1YGrad2A)) 
+     &                        +A00pB00*(FDX3*E1XGrad2A+FDY3*E1YGrad2A))
 
 C...     Terms from momentum eqs.
      &        +(JXAvg*FDX3 + JYAvg*FDY3)/2.d0
@@ -4616,7 +3733,7 @@ C...     Put these partial products directly into nodal storage for a scalar (no
          GWCE_LV(NM2)=GWCE_LV(NM2)+Temp_LV_A2*NCEle
          GWCE_LV(NM3)=GWCE_LV(NM3)+Temp_LV_A3*NCEle
 #endif
-            
+
  1037 CONTINUE                  !End of elemental loop
 
 C...  Put load vector elemental values into nodal storage for a vector computer
@@ -4631,7 +3748,7 @@ C...  Put load vector elemental values into nodal storage for a vector computer
       END DO
 #endif
 
-C     jgfdebug4608 
+C     jgfdebug4608
 C      if (it.eq.16) then
 C         open(unit=99,file=trim(localdir)//'/'//'fort.99')
 C         do i=1,np
@@ -4641,20 +3758,20 @@ C         close(99)
 C      endif
 
 C...  Save the elevation at the past time step into Eta1 and zero out Eta2
-ckmd	Need to save z(s-1) and etas(s-1) for the corrector loop
- 
+ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
+
       DO I=1,NP
-         IF(CPRECOR) THEN 
+         IF(CPRECOR) THEN
             ETAS0(I)=ETAS(I)
             Eta0(I)=Eta1(I)
-         END IF 
+         END IF
          Eta1(I)=Eta2(I)
          Eta2(I)=0.0d0
       END DO
 
 C...  At elevation boundary condition nodes, determine the elevation at
 C...  the s+1 time step
-C...  
+C...
 C...  For periodic elevation boundary conditions
 
       DO J=1,NBFR
@@ -4711,7 +3828,7 @@ C     &       + RampMete*(101300.d0/(RHOWAT0*G)) - PR2(NBD(I))
 C      END DO
 
 C   kmd48.33bc add information for the levels of no motion boundary conditions
-C              these are considered the steric adjustments. 
+C              these are considered the steric adjustments.
       IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic).AND.(NOPE.GT.0))  THEN
          DO I=1,NETA
            NBDI=NBD(I)
@@ -4732,9 +3849,9 @@ C...  the formulation these terms must be explicitly multiplied by -1.
 C...Note 3, Eta1 is the latest computed elevation (it was updated above).
 
       IF((NFLUXF.EQ.1).OR.(NFLUXB.EQ.1).OR.(NFLUXIB.EQ.1)
-     &     .OR.(NFLUXGBC.EQ.1).OR.(NFLUXRBC.EQ.1)) THEN 
+     &     .OR.(NFLUXGBC.EQ.1).OR.(NFLUXRBC.EQ.1)) THEN
          NBDJ=NBV(1)
-         IF(LBCODEI(1).LE.29) QFORCEJ=(QN2(1)-QN0(1))/DT2 + 
+         IF(LBCODEI(1).LE.29) QFORCEJ=(QN2(1)-QN0(1))/DT2 +
      &        Tau0VAR(NBDJ)*QN1(1)
 
          IF(LBCODEI(1).EQ.30) THEN
@@ -4743,7 +3860,7 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
             QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(1)
             ENDIF
 
-         IF(LBCODEI(1).EQ.32) THEN 
+         IF(LBCODEI(1).EQ.32) THEN
             H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
             CELERITY=SQRT(G*H1)
             QFORCEJ=(QN1(1)-QN0(1))/DT
@@ -4778,7 +3895,7 @@ C
                QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(J)
                ENDIF
 
-            IF(LBCODEI(J).EQ.32) THEN 
+            IF(LBCODEI(J).EQ.32) THEN
                H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
                CELERITY=SQRT(G*H1)
                QFORCEJ=(QN1(J)-QN0(J))/DT
@@ -4794,7 +3911,7 @@ C
      &           Tau0VAR(NBDJ)*QN1(J)
 C
 C     jgf46.21 Added IBTYPE=52
-            IF(LBCODEI(J).EQ.52) THEN 
+            IF(LBCODEI(J).EQ.52) THEN
                QFORCEJ=(QN2(J)-QN0(J))/DT2 + Tau0VAR(NBDJ)*QN1(J)
                IF (IT.GT.FluxSettlingIT) THEN
                   HH1=DP(NBDJ)+IFNLFA*Eta1(NBDJ)
@@ -4820,7 +3937,7 @@ C...  IS THE RMS OF ALL THE DIAGONAL MEMBERS IN THE GWCE.  IT IS USED TO
 C...  SCALE THE DIAGONAL ELEMENT FOR THE ELEVATION SPECIFIED BOUNDARY
 C...  NODES AND THEREFORE MUST ALSO BE USED TO SCALE THE RHS OF THE
 C...  EQUATIONS
-C...  
+C...
       IF ( ILump.eq.0 ) THEN ! default, fully consistent GWCE LHS
          DO I=1,NETA
             NBDI=NBD(I)
@@ -4838,9 +3955,9 @@ C...
             GWCE_LV(NBDI)=ETAS(NBDI)*NODECODE(NBDI)*COEFD(NBDI)
          END DO
       ENDIF
-C...  
+C...
 C...  SOLVE GWCE FOR ELEVATION AT NEW TIME LEVEL
-C...  
+C...
 
 C...  UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
 
@@ -4850,7 +3967,7 @@ C...UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
          CALL UPDATER(GWCE_LV,COEF(1,1),DUMY1,2)
       ELSE  ! lumped LHS
          CALL UPDATER(GWCE_LV,COEFD,DUMY1,2)
-      ENDIF 
+      ENDIF
 #endif
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
 C...  JCG ITERATIVE MATRIX SOLVER
@@ -4882,22 +3999,22 @@ C     UPDATE ELEVATIONS
 #ifdef CMPI
       CALL UPDATER(ETA2,DUMY1,DUMY2,1)
 #endif
-!      IF (MYPROC.EQ.2) THEN 
+!      IF (MYPROC.EQ.2) THEN
 !        DO I=1,NP
 !          IF ((I.EQ.89469).OR.(I.EQ.89731).OR.
-!     &        (I.EQ.89743).OR.(I.EQ.89744)) THEN 
+!     &        (I.EQ.89743).OR.(I.EQ.89744)) THEN
 !               PRINT *, "ETA2(",I,") = ", ETA2(I)
-!          END IF 
-!        END DO 
-!      END IF 
-!      IF (MYPROC.EQ.3) THEN 
+!          END IF
+!        END DO
+!      END IF
+!      IF (MYPROC.EQ.3) THEN
 !        DO I=1,NP
 !          IF ((I.EQ.90631).OR.(I.EQ.90875).OR.(I.EQ.90876).OR.
-!     &       (I.EQ.90895).OR.(I.EQ.90896)) THEN 
+!     &       (I.EQ.90895).OR.(I.EQ.90896)) THEN
 !               PRINT *, "ETA2(",I,") = ", ETA2(I)
-!          END IF 
-!        END DO 
-!      END IF 
+!          END IF
+!        END DO
+!      END IF
       RETURN
       END SUBROUTINE GWCE_NEW
 
@@ -4918,7 +4035,7 @@ C*******************************************************************************
 
       SUBROUTINE Mom_Eqs_Original()
 
-C     
+C
       USE GLOBAL
       USE WIND
       USE NodalAttributes, ONLY: EVM
@@ -4931,10 +4048,10 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 #endif
 #endif
 
-      IMPLICIT NONE 
- 
+      IMPLICIT NONE
+
       INTEGER IE, I, J, N                           !local loop counters
-      INTEGER	NM1, NM2, NM3
+      INTEGER  NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCEle, NCI
       INTEGER NBDI
       INTEGER NNFirst
@@ -4959,7 +4076,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(SZ) VCoef1, VCoef2
       REAL(SZ) VCoef3N1, VCoef3N2, VCoef3N3, VCoef3X, VCoef3Y
       REAL(SZ) VelNorm, VelTan
-      REAL(SZ) VIDBCPDX, VIDBCPDY                          
+      REAL(SZ) VIDBCPDX, VIDBCPDY
       REAL(SZ) WSX, WSY
       REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
 
@@ -4987,7 +4104,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 
 C...
 C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
-C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF 
+C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF
 C...        THE TIME STEPPING LOOP.
 
 C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
@@ -5034,7 +4151,7 @@ C...  SET NODAL VALUES FOR EACH ELEMENT
          FDY2O2A=FDY2/AREAIE2  !dphi2/dy
          FDX3O2A=FDX3/AREAIE2  !dphi3/dx
          FDY3O2A=FDY3/AREAIE2  !dphi3/dy
-            
+
          DDX1=FDX1/3.d0      !<2*(dphi1/dx)*phij> j=1,2,3
          DDY1=FDY1/3.d0      !<2*(dphi1/dy)*phij> j=1,2,3
          DXX11=FDX1O2A*FDX1   !<2*(dphi1/dx)*(dphi1/dx)>
@@ -5120,7 +4237,7 @@ C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
 C...  TEMP_LV_A
 C.... VECTOR FOR NODE NM1
 
-         TEMP_LV_A1=NCELE*(               
+         TEMP_LV_A1=NCELE*(
 C...  SURFACE GRADIENT, ATMOSPHERIC PRESSURE AND TIDAL POTENTIAL TERMS
      &           -VCOEF3X
 C...  LATERAL VISCOUS TERMS
@@ -5129,11 +4246,11 @@ C...  ADVECTIVE TERMS
      &           -ADVECX
 C...  COMMON DIVISION OPERATION
      &           )/FIIN
-C...  
+C...
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO TEMP_LV_A
 C.... VECTOR FOR NODE NM2
-C...  
-         TEMP_LV_A2=NCELE*(   
+C...
+         TEMP_LV_A2=NCELE*(
 C...  SURFACE GRADIENT, ATMOSPHERIC PRESSURE AND TIDAL POTENTIAL TERMS
      &           -VCOEF3X
 C...  LATERAL VISCOUS TERMS]
@@ -5142,11 +4259,11 @@ C...  ADVECTIVE TERMS
      &           -ADVECX
 C...  COMMON DIVISION OPERATION
      &           )/FIIN
-C...  
+C...
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO TEMP_LV_A
 C.... VECTOR FOR NODE NM3
-C...  
-         TEMP_LV_A3=NCELE*(   
+C...
+         TEMP_LV_A3=NCELE*(
 C...  SURFACE GRADIENT, ATMOSPHERIC PRESSURE AND TIDAL POTENTIAL TERMS
      &           -VCOEF3X
 C...  LATERAL VISCOUS TERMS
@@ -5155,11 +4272,11 @@ C...  ADVECTIVE TERMS
      &           -ADVECX
 C...  COMMON DIVISION OPERATION
      &           )/FIIN
-C...  
+C...
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO TEMP_LV_B
 C.... VECTOR FOR NODE NM1
-C...  
-         TEMP_LV_B1=NCELE*( 
+C...
+         TEMP_LV_B1=NCELE*(
 C...  SURFACE GRADIENT, ATMOSPHERIC PRESSURE AND TIDAL POTENTIAL TERMS
      &           -VCOEF3Y
 C...  LATERAL VISCOUS TERMS
@@ -5168,11 +4285,11 @@ C...  ADVECTIVE TERMS
      &           -ADVECY
 C...  COMMON DIVISION OPERATION
      &           )/FIIN
-C...  
+C...
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO TEMP_LV_B
 C.... VECTOR FOR NODE NM2
-C...  
-         TEMP_LV_B2=NCELE*(  
+C...
+         TEMP_LV_B2=NCELE*(
 C...  SURFACE GRADIENT, ATMOSPHERIC PRESSURE AND TIDAL POTENTIAL TERMS
      &           -VCOEF3Y
 C...  LATERAL VISCOUS TERMS
@@ -5181,11 +4298,11 @@ C...  ADVECTIVE TERMS
      &           -ADVECY
 C...  COMMON DIVISION OPERATION
      &           )/FIIN
-C...  
+C...
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO TEMP_LV_B
 C.... VECTOR FOR NODE NM3
-C...  
-         TEMP_LV_B3=NCELE*(   
+C...
+         TEMP_LV_B3=NCELE*(
 C...  SURFACE GRADIENT, ATMOSPHERIC PRESSURE AND TIDAL POTENTIAL TERMS
      &           -VCOEF3Y
 C...  LATERAL VISCOUS TERMS
@@ -5219,7 +4336,7 @@ C           AND QUV ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
 
          ENDDO                        !end of elemental assembly loop
 
-  
+
 C     LINES TO RUN ON A VECTOR COMPUTER
 C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
 C           AND AUV
@@ -5277,7 +4394,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
             VIDBCPDX=DT*VIDBCPDXOH(I)
             VIDBCPDY=DT*VIDBCPDYOH(I)
          ENDIF
-               
+
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -5323,8 +4440,8 @@ C...  AUV12=-AUV21)
 
 C      Specified essential normal flow and free tangential slip
 
-         IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN 
-            VELNORM=-QN2(I)/H2 
+         IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
+            VELNORM=-QN2(I)/H2
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -5379,7 +4496,7 @@ C     the normal derivatives. Note: this is fully explicit and therefore
 C     the velocity at the boundary is computed entirely from surrounding
 C     velocities at the previous time step.
 
-         IF(LBCODEI(I).EQ.41) THEN 
+         IF(LBCODEI(I).EQ.41) THEN
             NM1=NBDI
             ZNGRHS1=0.d0     !Zero Norm Grad of U Eqn
             ZNGRHS2=0.d0     !Zero Norm Grad of V Eqn
@@ -5475,7 +4592,7 @@ cjjw
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           UU2(I)=0.D0    !no slip and normal flux
 c           VV2(I)=0.D0    !on wet/dry interface nodes
-c           ENDIF                               
+c           ENDIF
          END DO
 
 C...
@@ -5506,7 +4623,7 @@ C...
                ENDIF
             ENDDO
          ENDIF
-         
+
 C...  Compute fluxes
 
       DO I=1,NP
@@ -5540,7 +4657,7 @@ C                            r.l.  06/22/2005                                  *
 C*******************************************************************************
 
       SUBROUTINE Mom_Eqs_New_NC()
-C     
+C
       USE GLOBAL
       USE WIND
       USE NodalAttributes, ONLY: EVM
@@ -5553,10 +4670,10 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 #endif
 #endif
 
-      IMPLICIT NONE 
- 
+      IMPLICIT NONE
+
       INTEGER IE, I, J, N                           !local loop counters
-      INTEGER	NM1, NM2, NM3
+      INTEGER  NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCEle, NCI
       INTEGER NBDI
       INTEGER NNFirst
@@ -5571,9 +4688,9 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(SZ) H1, H1N1, H1N2, H1N3
       REAL(SZ) H2, H2N1, H2N2, H2N3
       REAL(SZ) LSXXN1, LSXXN2, LSXXN3
-      REAL(SZ) LSXYN1, LSXYN2, LSXYN3 
-      REAL(SZ) LSYXN1, LSYXN2, LSYXN3 
-      REAL(SZ) LSYYN1, LSYYN2, LSYYN3 
+      REAL(SZ) LSXYN1, LSXYN2, LSXYN3
+      REAL(SZ) LSYXN1, LSYXN2, LSYXN3
+      REAL(SZ) LSYYN1, LSYYN2, LSYYN3
       REAL(SZ) QTan
       REAL(SZ) QX1N1, QX1N2, QX1N3
       REAL(SZ) QY1N1, QY1N2, QY1N3
@@ -5586,7 +4703,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(SZ) V1AvgDU1DYA, V1AvgDV1DYA
       REAL(SZ) VCoef1, VCoef2
       REAL(SZ) VelNorm, VelTan
-      REAL(SZ) VIDBCPDX, VIDBCPDY                          
+      REAL(SZ) VIDBCPDX, VIDBCPDY
       REAL(SZ) WSX, WSY
       REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
 
@@ -5609,7 +4726,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 
 C...
 C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
-C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF 
+C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF
 C...        THE TIME STEPPING LOOP.
 
 C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
@@ -5724,18 +4841,18 @@ C...  Compute the lateral viscous terms for the element (flux formulation)
             DQX1DY=(QX1N1*FDY1+QX1N2*FDY2+QX1N3*FDY3)/AreaIE2
             DQY1DX=(QY1N1*FDX1+QY1N2*FDX2+QY1N3*FDX3)/AreaIE2
             DQY1DY=(QY1N1*FDY1+QY1N2*FDY2+QY1N3*FDY3)/AreaIE2
-            LSXXN1=EVMEle*DQX1DX 
-            LSXXN2=LSXXN1 
+            LSXXN1=EVMEle*DQX1DX
+            LSXXN2=LSXXN1
             LSXXN3=LSXXN1
-            LSXYN1=EVMEle*DQX1DY 
-            LSXYN2=LSXYN1 
-            LSXYN3=LSXYN1 
-            LSYXN1=EVMEle*DQY1DX 
-            LSYXN2=LSYXN1 
-            LSYXN3=LSYXN1 
-            LSYYN1=EVMEle*DQY1DY 
-            LSYYN2=LSYYN1 
-            LSYYN3=LSYYN1 
+            LSXYN1=EVMEle*DQX1DY
+            LSXYN2=LSXYN1
+            LSXYN3=LSXYN1
+            LSYXN1=EVMEle*DQY1DX
+            LSYXN2=LSYXN1
+            LSYXN3=LSYXN1
+            LSYYN1=EVMEle*DQY1DY
+            LSYYN2=LSYYN1
+            LSYYN3=LSYYN1
          ENDIF
 
 C...  Compute the lateral viscous terms for the element (symmetric flux formulation)
@@ -5745,18 +4862,18 @@ C...  Compute the lateral viscous terms for the element (symmetric flux formulat
             DQX1DY=(QX1N1*FDY1+QX1N2*FDY2+QX1N3*FDY3)/AreaIE2
             DQY1DX=(QY1N1*FDX1+QY1N2*FDX2+QY1N3*FDX3)/AreaIE2
             DQY1DY=(QY1N1*FDY1+QY1N2*FDY2+QY1N3*FDY3)/AreaIE2
-            LSXXN1=EVMEle*DQX1DX 
-            LSXXN2=LSXXN1 
+            LSXXN1=EVMEle*DQX1DX
+            LSXXN2=LSXXN1
             LSXXN3=LSXXN1
             LSXYN1=0.5d0*EVMEle*(DQX1DY+DQY1DX)
-            LSXYN2=LSXYN1 
+            LSXYN2=LSXYN1
             LSXYN3=LSXYN1
             LSYXN1=LSXYN1
             LSYXN2=LSXYN2
             LSYXN3=LSXYN3
-            LSYYN1=EVMEle*DQY1DY 
-            LSYYN2=LSYYN1 
-            LSYYN3=LSYYN1 
+            LSYYN1=EVMEle*DQY1DY
+            LSYYN2=LSYYN1
+            LSYYN3=LSYYN1
          ENDIF
 
 C...  Compute the lateral viscous terms for the element (velocity formulation)
@@ -5769,18 +4886,18 @@ C...  Compute the lateral viscous terms for the element (velocity formulation)
             EVMH1N1=EVMEle*H1N1
             EVMH1N2=EVMEle*H1N2
             EVMH1N3=EVMEle*H1N3
-            LSXXN1=EVMH1N1*DU1DX 
-            LSXXN2=EVMH1N2*DU1DX 
-            LSXXN3=EVMH1N3*DU1DX 
-            LSXYN1=EVMH1N1*DU1DY 
-            LSXYN2=EVMH1N2*DU1DY 
-            LSXYN3=EVMH1N3*DU1DY 
-            LSYXN1=EVMH1N1*DV1DX 
-            LSYXN2=EVMH1N2*DV1DX 
-            LSYXN3=EVMH1N3*DV1DX 
-            LSYYN1=EVMH1N1*DV1DY 
-            LSYYN2=EVMH1N2*DV1DY 
-            LSYYN3=EVMH1N3*DV1DY 
+            LSXXN1=EVMH1N1*DU1DX
+            LSXXN2=EVMH1N2*DU1DX
+            LSXXN3=EVMH1N3*DU1DX
+            LSXYN1=EVMH1N1*DU1DY
+            LSXYN2=EVMH1N2*DU1DY
+            LSXYN3=EVMH1N3*DU1DY
+            LSYXN1=EVMH1N1*DV1DX
+            LSYXN2=EVMH1N2*DV1DX
+            LSYXN3=EVMH1N3*DV1DX
+            LSYYN1=EVMH1N1*DV1DY
+            LSYYN2=EVMH1N2*DV1DY
+            LSYYN3=EVMH1N3*DV1DY
          ENDIF
 
 C...  Compute the lateral viscous terms for the element (symmetric velocity formulation)
@@ -5793,25 +4910,25 @@ C...  Compute the lateral viscous terms for the element (symmetric velocity form
             EVMH1N1=EVMEle*H1N1
             EVMH1N2=EVMEle*H1N2
             EVMH1N3=EVMEle*H1N3
-            LSXXN1=EVMH1N1*DU1DX 
-            LSXXN2=EVMH1N2*DU1DX 
-            LSXXN3=EVMH1N3*DU1DX 
+            LSXXN1=EVMH1N1*DU1DX
+            LSXXN2=EVMH1N2*DU1DX
+            LSXXN3=EVMH1N3*DU1DX
             LSXYN1=0.5d0*EVMH1N1*(DU1DY+DV1DX)
-            LSXYN2=0.5d0*EVMH1N2*(DU1DY+DV1DX) 
+            LSXYN2=0.5d0*EVMH1N2*(DU1DY+DV1DX)
             LSXYN3=0.5d0*EVMH1N3*(DU1DY+DV1DX)
             LSYXN1=LSXYN1
             LSYXN2=LSXYN2
             LSYXN3=LSXYN3
-            LSYYN1=EVMH1N1*DV1DY 
-            LSYYN2=EVMH1N2*DV1DY 
-            LSYYN3=EVMH1N3*DV1DY 
+            LSYYN1=EVMH1N1*DV1DY
+            LSYYN2=EVMH1N2*DV1DY
+            LSYYN3=EVMH1N3*DV1DY
          ENDIF
 
 C
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
 C...  TEMP_LV_A VECTOR FOR NODE NM1
 
-         TEMP_LV_A1=NCEle*DT*(               
+         TEMP_LV_A1=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(U1AvgDU1DXA+V1AvgDU1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -5821,11 +4938,11 @@ C...  LATERAL VISCOUS TERMS
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
-C...  
+C...
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
 C...  TEMP_LV_A VECTOR FOR NODE NM2
-C...  
-         TEMP_LV_A2=NCEle*DT*(   
+C...
+         TEMP_LV_A2=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(U1AvgDU1DXA+V1AvgDU1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -5835,11 +4952,11 @@ C...  LATERAL VISCOUS TERMS
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
-C...  
+C...
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
 C...  TEMP_LV_A VECTOR FOR NODE NM3
-C...  
-         TEMP_LV_A3=NCEle*DT*(   
+C...
+         TEMP_LV_A3=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(U1AvgDU1DXA+V1AvgDU1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -5852,7 +4969,7 @@ C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
 C...  TEMP_LV_B VECTOR FOR NODE NM1
 
-         TEMP_LV_B1=NCEle*DT*(               
+         TEMP_LV_B1=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(U1AvgDV1DXA+V1AvgDV1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -5865,7 +4982,7 @@ C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
 C...  TEMP_LV_B VECTOR FOR NODE NM2
 
-         TEMP_LV_B2=NCEle*DT*(               
+         TEMP_LV_B2=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(U1AvgDV1DXA+V1AvgDV1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -5878,7 +4995,7 @@ C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
 C...  TEMP_LV_B VECTOR FOR NODE NM3
 
-         TEMP_LV_B3=NCEle*DT*(               
+         TEMP_LV_B3=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(U1AvgDV1DXA+V1AvgDV1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -5922,7 +5039,7 @@ C           AND QUV ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
 #endif
 
          ENDDO
-         
+
 
 C     LINES TO RUN ON A VECTOR COMPUTER
 C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
@@ -5960,7 +5077,7 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
                MOM_LV_X(I)=MOM_LV_X(I)/TotalArea(I)
                MOM_LV_Y(I)=MOM_LV_Y(I)/TotalArea(I)
             ENDIF
-            IF (CME_AreaInt_Orig) THEN       !Original (incorrect) area integration       
+            IF (CME_AreaInt_Orig) THEN       !Original (incorrect) area integration
                MOM_LV_X(I)=MOM_LV_X(I)/MJU(I)
                MOM_LV_Y(I)=MOM_LV_Y(I)/MJU(I)
             ENDIF
@@ -6004,7 +5121,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
          MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
      &                                     -VCoef2*UU1(I)-VIDBCPDY)
 #endif
-               
+
          AUV11(I)=1.D0+VCoef1*NCI
          AUV12(I)=-VCoef2*NCI
 
@@ -6017,7 +5134,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
          AUVYX(I) = VCOEFXY*NCI
 #endif
 #endif
- 
+
          END DO
 
 C...  Modify the momentum equations to impose velocity boundary
@@ -6033,7 +5150,7 @@ C...  AUV12=-AUV21)
 
 C      Specified essential normal flow and free tangential slip
 
-         IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN 
+         IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
             VelNorm=-QN2(I)/H2
 #ifdef CSWAN
 #ifdef CSWANFRIC
@@ -6089,7 +5206,7 @@ C     the normal derivatives. Note: this is fully explicit and therefore
 C     the velocity at the boundary is computed entirely from surrounding
 C     velocities at the previous time step.
 
-         IF(LBCODEI(I).EQ.41) THEN 
+         IF(LBCODEI(I).EQ.41) THEN
             NM1=NBDI
             ZNGRHS1=0.d0     !Zero Norm Grad of U Eqn
             ZNGRHS2=0.d0     !Zero Norm Grad of V Eqn
@@ -6183,7 +5300,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           UBAR2(I)=0.D0    !no slip and normal flux
 c           VBAR2(I)=0.D0    !on wet/dry interface nodes
-c           ENDIF                               
+c           ENDIF
       END DO
 
 C...
@@ -6214,7 +5331,7 @@ C...
                ENDIF
             ENDDO
          ENDIF
-         
+
 C...  Compute fluxes
 
       DO I=1,NP
@@ -6245,7 +5362,7 @@ C                            r.l.  06/22/2005                                  *
 C*******************************************************************************
 
       SUBROUTINE Mom_Eqs_New_Conserv()
-C     
+C
       USE GLOBAL
       USE WIND
       USE NodalAttributes, ONLY: EVM
@@ -6257,10 +5374,10 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
      &                       TKYY
 #endif
 #endif
-      IMPLICIT NONE 
- 
+      IMPLICIT NONE
+
       INTEGER IE, I, J, N                           !local loop counters
-      INTEGER	NM1, NM2, NM3
+      INTEGER  NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCEle, NCI
       INTEGER NBDI
       INTEGER NNFirst
@@ -6278,9 +5395,9 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(SZ) H1, H1N1, H1N2, H1N3, H1Avg
       REAL(SZ) H2, H2N1, H2N2, H2N3, H2Avg
       REAL(SZ) LSXXN1, LSXXN2, LSXXN3
-      REAL(SZ) LSXYN1, LSXYN2, LSXYN3 
-      REAL(SZ) LSYXN1, LSYXN2, LSYXN3 
-      REAL(SZ) LSYYN1, LSYYN2, LSYYN3 
+      REAL(SZ) LSXYN1, LSXYN2, LSXYN3
+      REAL(SZ) LSYXN1, LSYXN2, LSYXN3
+      REAL(SZ) LSYYN1, LSYYN2, LSYYN3
       REAL(SZ) QTan
       REAL(SZ) QX1N1, QX1N2, QX1N3, QX1Avg, QX1DU1DXA, QX1DV1DYA
       REAL(SZ) QY1N1, QY1N2, QY1N3, QY1Avg, QY1DU1DXA, QY1DV1DYA
@@ -6290,7 +5407,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(SZ) U1N1, U1N2, U1N3, U1Avg, U1DQX1DXA, U1DQY1DXA
       REAL(SZ) V1N1, V1N2, V1N3, V1Avg, V1DQX1DYA, V1DQY1DYA
       REAL(SZ) VCoef1, VCoef2
-      REAL(SZ) VIDBCPDX, VIDBCPDY                          
+      REAL(SZ) VIDBCPDX, VIDBCPDY
       REAL(SZ) WSX, WSY
       REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
 
@@ -6313,7 +5430,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 
 C...
 C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
-C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF 
+C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF
 C...        THE TIME STEPPING LOOP.
 
 C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
@@ -6461,18 +5578,18 @@ C...  Compute the lateral viscous terms for the element (flux formulation)
             DQX1DY=DQX1DY2A/AreaIE2
             DQY1DX=DQY1DX2A/AreaIE2
             DQY1DY=DQY1DY2A/AreaIE2
-            LSXXN1=EVMEle*DQX1DX 
-            LSXXN2=LSXXN1 
-            LSXXN3=LSXXN1 
-            LSXYN1=EVMEle*DQX1DY 
-            LSXYN2=LSXYN1 
-            LSXYN3=LSXYN1 
-            LSYXN1=EVMEle*DQY1DX 
-            LSYXN2=LSYXN1 
-            LSYXN3=LSYXN1 
-            LSYYN1=EVMEle*DQY1DY 
-            LSYYN2=LSYYN1 
-            LSYYN3=LSYYN1 
+            LSXXN1=EVMEle*DQX1DX
+            LSXXN2=LSXXN1
+            LSXXN3=LSXXN1
+            LSXYN1=EVMEle*DQX1DY
+            LSXYN2=LSXYN1
+            LSXYN3=LSXYN1
+            LSYXN1=EVMEle*DQY1DX
+            LSYXN2=LSYXN1
+            LSYXN3=LSYXN1
+            LSYYN1=EVMEle*DQY1DY
+            LSYYN2=LSYYN1
+            LSYYN3=LSYYN1
          ENDIF
 
 C...  Compute the lateral viscous terms for the element (symmetric flux formulation)
@@ -6482,18 +5599,18 @@ C...  Compute the lateral viscous terms for the element (symmetric flux formulat
             DQX1DY=DQX1DY2A/AreaIE2
             DQY1DX=DQY1DX2A/AreaIE2
             DQY1DY=DQY1DY2A/AreaIE2
-            LSXXN1=EVMEle*DQX1DX 
-            LSXXN2=LSXXN1 
-            LSXXN3=LSXXN1 
+            LSXXN1=EVMEle*DQX1DX
+            LSXXN2=LSXXN1
+            LSXXN3=LSXXN1
             LSXYN1=0.5d0*EVMEle*(DQX1DY+DQY1DX)
-            LSXYN2=LSXYN1 
+            LSXYN2=LSXYN1
             LSXYN3=LSXYN1
             LSYXN1=LSXYN1
             LSYXN2=LSXYN2
             LSYXN3=LSXYN3
-            LSYYN1=EVMEle*DQY1DY 
+            LSYYN1=EVMEle*DQY1DY
             LSYYN2=LSYYN1
-            LSYYN3=LSYYN1 
+            LSYYN3=LSYYN1
          ENDIF
 
 C...  Compute the lateral viscous terms for the element (velocity formulation)
@@ -6506,18 +5623,18 @@ C...  Compute the lateral viscous terms for the element (velocity formulation)
             EVMH1N1=EVMEle*H1N1
             EVMH1N2=EVMEle*H1N2
             EVMH1N3=EVMEle*H1N3
-            LSXXN1=EVMH1N1*DU1DX 
-            LSXXN2=EVMH1N2*DU1DX 
-            LSXXN3=EVMH1N3*DU1DX 
-            LSXYN1=EVMH1N1*DU1DY 
-            LSXYN2=EVMH1N2*DU1DY 
-            LSXYN3=EVMH1N3*DU1DY 
-            LSYXN1=EVMH1N1*DV1DX 
-            LSYXN2=EVMH1N2*DV1DX 
-            LSYXN3=EVMH1N3*DV1DX 
-            LSYYN1=EVMH1N1*DV1DY 
-            LSYYN2=EVMH1N2*DV1DY 
-            LSYYN3=EVMH1N3*DV1DY 
+            LSXXN1=EVMH1N1*DU1DX
+            LSXXN2=EVMH1N2*DU1DX
+            LSXXN3=EVMH1N3*DU1DX
+            LSXYN1=EVMH1N1*DU1DY
+            LSXYN2=EVMH1N2*DU1DY
+            LSXYN3=EVMH1N3*DU1DY
+            LSYXN1=EVMH1N1*DV1DX
+            LSYXN2=EVMH1N2*DV1DX
+            LSYXN3=EVMH1N3*DV1DX
+            LSYYN1=EVMH1N1*DV1DY
+            LSYYN2=EVMH1N2*DV1DY
+            LSYYN3=EVMH1N3*DV1DY
          ENDIF
 
 C...  Compute the lateral viscous terms for the element (symmetric velocity formulation)
@@ -6530,25 +5647,25 @@ C...  Compute the lateral viscous terms for the element (symmetric velocity form
             EVMH1N1=EVMEle*H1N1
             EVMH1N2=EVMEle*H1N2
             EVMH1N3=EVMEle*H1N3
-            LSXXN1=EVMH1N1*DU1DX 
-            LSXXN2=EVMH1N2*DU1DX 
-            LSXXN3=EVMH1N3*DU1DX 
+            LSXXN1=EVMH1N1*DU1DX
+            LSXXN2=EVMH1N2*DU1DX
+            LSXXN3=EVMH1N3*DU1DX
             LSXYN1=0.5d0*EVMH1N1*(DU1DY+DV1DX)
-            LSXYN2=0.5d0*EVMH1N2*(DU1DY+DV1DX) 
+            LSXYN2=0.5d0*EVMH1N2*(DU1DY+DV1DX)
             LSXYN3=0.5d0*EVMH1N3*(DU1DY+DV1DX)
             LSYXN1=LSXYN1
             LSYXN2=LSXYN2
             LSYXN3=LSXYN3
-            LSYYN1=EVMH1N1*DV1DY 
-            LSYYN2=EVMH1N2*DV1DY 
-            LSYYN3=EVMH1N3*DV1DY 
+            LSYYN1=EVMH1N1*DV1DY
+            LSYYN2=EVMH1N2*DV1DY
+            LSYYN3=EVMH1N3*DV1DY
          ENDIF
 
 C
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
 C...  TEMP_LV_A VECTOR FOR NODE NM1
 
-         TEMP_LV_A1=NCELE*DT*(    
+         TEMP_LV_A1=NCELE*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(DU1QX1DXA+DV1QX1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -6558,11 +5675,11 @@ C...  LATERAL VISCOUS TERMS
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
-C...  
+C...
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
 C...  TEMP_LV_A VECTOR FOR NODE NM2
-C...  
-         TEMP_LV_A2=NCELE*DT*(   
+C...
+         TEMP_LV_A2=NCELE*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(DU1QX1DXA+DV1QX1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -6572,11 +5689,11 @@ C...  LATERAL VISCOUS TERMS
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
-C...  
+C...
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
 C...  TEMP_LV_A VECTOR FOR NODE NM3
-C...  
-         TEMP_LV_A3=NCELE*DT*(   
+C...
+         TEMP_LV_A3=NCELE*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(DU1QX1DXA+DV1QX1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -6589,7 +5706,7 @@ C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
 C...  TEMP_LV_B VECTOR FOR NODE NM1
 
-         TEMP_LV_B1=NCELE*DT*(               
+         TEMP_LV_B1=NCELE*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(DU1QY1DXA+DV1QY1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -6602,7 +5719,7 @@ C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
 C...  TEMP_LV_B VECTOR FOR NODE NM2
 
-         TEMP_LV_B2=NCELE*DT*(               
+         TEMP_LV_B2=NCELE*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(DU1QY1DXA+DV1QY1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -6615,7 +5732,7 @@ C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
 C...  TEMP_LV_B VECTOR FOR NODE NM3
 
-         TEMP_LV_B3=NCELE*DT*(               
+         TEMP_LV_B3=NCELE*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*(DU1QY1DXA+DV1QY1DYA)
 C...  BAROTROPIC PRESSURE GRADIENT
@@ -6659,7 +5776,7 @@ C           AND QUV ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
 #endif
 
          ENDDO
-         
+
 
 
 C     LINES TO RUN ON A VECTOR COMPUTER
@@ -6699,7 +5816,7 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
                MOM_LV_X(I)=MOM_LV_X(I)/TotalArea(I)
                MOM_LV_Y(I)=MOM_LV_Y(I)/TotalArea(I)
             ENDIF
-            IF (CME_AreaInt_Orig) THEN !Original (incorrect) area integration       
+            IF (CME_AreaInt_Orig) THEN !Original (incorrect) area integration
                MOM_LV_X(I)=MOM_LV_X(I)/MJU(I)
                MOM_LV_Y(I)=MOM_LV_Y(I)/MJU(I)
             ENDIF
@@ -6741,7 +5858,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
          MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*QY1(I)
      &        -VCoef2*QX1(I)-VIDBCPDY)
 #endif
-         
+
          AUV11(I)=1.D0+VCoef1*NCI
          AUV12(I)=-VCoef2*NCI
 
@@ -6769,7 +5886,7 @@ C...  AUV12=-AUV21)
 
 C      Specified essential normal flow and free tangential slip
 
-         IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN 
+         IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -6823,7 +5940,7 @@ C     the normal derivatives. Note: this is fully explicit and therefore
 C     the flux at the boundary is computed entirely from surrounding
 C     fluxes at the previous time step.
 
-         IF(LBCODEI(I).EQ.41) THEN 
+         IF(LBCODEI(I).EQ.41) THEN
             NM1=NBDI
             ZNGRHS1=0.d0                                     !Zero Norm Grad of U Eqn
             ZNGRHS2=0.d0                                     !Zero Norm Grad of V Eqn
@@ -6918,7 +6035,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           QX2(I)=0.D0    !no slip and normal flux
 c           QY2(I)=0.D0    !on wet/dry interface nodes
-c           ENDIF                               
+c           ENDIF
        END DO
 
 C...
@@ -6959,7 +6076,7 @@ C...  Compute velocities
             VV2(I)=QY2(I)/H2
             ELSE
             WRITE(16,*) ''
-            WRITE(16,*) ''  
+            WRITE(16,*) ''
             WRITE(16,*) '*******************************************'
             WRITE(16,*) '*******************************************'
             WRITE(16,*) 'WARNING: Total water depth = 0 at node  ',I
@@ -6967,12 +6084,12 @@ C...  Compute velocities
             WRITE(16,*) '*******************************************'
             WRITE(16,*) '*******************************************'
             WRITE(16,*) ''
-            WRITE(16,*) ''               
+            WRITE(16,*) ''
             UU2(I)=-999.
             VV2(I)=-999.
             ENDIF
          ENDDO
-         
+
       RETURN
       END
 
@@ -6988,7 +6105,7 @@ C                            r.l.  06/22/2005                                  *
 C*******************************************************************************
 
       SUBROUTINE GWCE_new_pc(IT,TimeLoc,TimeH)
-C     
+C
       USE GLOBAL
       USE SIZES
       USE WIND
@@ -6999,11 +6116,11 @@ C
       USE MESSENGER
 #endif
 
-      IMPLICIT NONE 
+      IMPLICIT NONE
 
       INTEGER IE, JN, IJ, I, J                           !local loop counters
       INTEGER IT
-      INTEGER	NM1, NM2, NM3, NMI1, NMI2, NMI3, NMJ1, NMJ2, NMJ3
+      INTEGER  NM1, NM2, NM3, NMI1, NMI2, NMI3, NMJ1, NMJ2, NMJ3
       INTEGER NC1, NC2, NC3, NCEle, NCI, NCJ
       INTEGER NCyc
       INTEGER NBDI
@@ -7048,7 +6165,7 @@ C
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       REAL(8) TimeLoc, TimeH
 
-ckmd	 Added in parameters for the pc algorithm
+ckmd   Added in parameters for the pc algorithm
       REAL(SZ) BSX0N1, BSX0N2, BSX0N3, BSY0N1
       REAL(SZ) BSY0N2, BSY0N3, BSX0Avg, BSY0Avg
       REAL(SZ) BSX2N1, BSX2N2, BSX2N3, BSY2N1
@@ -7069,30 +6186,30 @@ ckmd	 Added in parameters for the pc algorithm
 
 
 ckmd    Must reset the result vector to zero before recomputing
-ckmd	the next time level.
+ckmd  the next time level.
       DO I=1,NP
          GWCE_LV(I) =0.D0
       END DO
 
-C     Consistent mass matrix: ILump=0, lumped mass matrix: ILump=1 
+C     Consistent mass matrix: ILump=0, lumped mass matrix: ILump=1
 C     Re-compute these local values
 
       OnDiag=(1+ILump)*2                         !diagonal coefficient
       OffDiag=(1-ILump)                          !off diagonal coefficient
 
-c...  
+c...
 C...  Compute the GWCE load vector GWCE_LV
-C...  This is done primarily element by element by forming 
-C...  temporary vectors and then assembling at the end.  
+C...  This is done primarily element by element by forming
+C...  temporary vectors and then assembling at the end.
 C...  This has been set up to unroll loops to optimize performance
-C...  on vector processors.  
+C...  on vector processors.
 C...
 C...  Elevation and flux boundary conditions are imposed after the
-C...  element by element assembly section.  
+C...  element by element assembly section.
 C...
 
 C...  Initialize variables to zero if these forcings are not used
- 
+
       IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
       ELSE
         WSXAvg=0.d0
@@ -7116,7 +6233,7 @@ C...  Initialize variables to zero if these forcings are not used
       ENDIF
 
       IF(CBaroclinic) THEN
-	ELSE
+   ELSE
         BCXAvg=0.d0
         BCYAvg=0.d0
       ENDIF
@@ -7158,7 +6275,7 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
      &                 +(LSYXGradA+LSXYGradA)*(LSYXGradA+LSXYGradA))
                EVMEle=EVMSmag
             ENDIF
-            LSXXEle = LSXXGradA*EVMEle            
+            LSXXEle = LSXXGradA*EVMEle
             LSXX(NM1)=LSXX(NM1)+LSXXEle
             LSXX(NM2)=LSXX(NM2)+LSXXEle
             LSXX(NM3)=LSXX(NM3)+LSXXEle
@@ -7243,7 +6360,7 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
             LSXYGradA=(QX1(NM1)*FDY1+QX1(NM2)*FDY2+QX1(NM3)*FDY3)/2.d0
             LSYXGradA=(QY1(NM1)*FDX1+QY1(NM2)*FDX2+QY1(NM3)*FDX3)/2.d0
             LSYYGradA=(QY1(NM1)*FDY1+QY1(NM2)*FDY2+QY1(NM3)*FDY3)/2.d0
-            LSXXEle = LSXXGradA*EVMEle            
+            LSXXEle = LSXXGradA*EVMEle
             LSXX(NM1)=LSXX(NM1)+LSXXEle
             LSXX(NM2)=LSXX(NM2)+LSXXEle
             LSXX(NM3)=LSXX(NM3)+LSXXEle
@@ -7287,8 +6404,8 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
 
       DO I=1,NP
 ckmd
-ckmd	Added in the three time levels for the tau term.
-ckmd	Every term is updated for the three time levels.
+ckmd  Added in the three time levels for the tau term.
+ckmd  Every term is updated for the three time levels.
 ckmd
             UV0=SQRT(UU0(I)*UU0(I)+VV0(I)*VV0(I))
             UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
@@ -7305,21 +6422,21 @@ ckmd
        END DO
 
 ckmd      Added in the time weights
-C...     Time weights for the nonlinear terms in the GWCE for 
+C...     Time weights for the nonlinear terms in the GWCE for
 C...       the corrector step
           timewtgwce0=0.33d0
           timewtgwce1=0.34d0
-          timewtgwce2=0.33d0 
+          timewtgwce2=0.33d0
           timeagflag=1.0d0
 
 C...  Assemble the GWCE RHS except for the boundary integral terms
-ckmd	Renumber the GWCE loop for the corrector step
+ckmd  Renumber the GWCE loop for the corrector step
 
       DO 1038 IE=1,NE
-  
+
 C...     Set nodal values for each element
 ckmd
-ckmd	Define the needed product terms at three time levels
+ckmd  Define the needed product terms at three time levels
 ckmd
 
          NM1=NM(IE,1)
@@ -7398,9 +6515,9 @@ ckmd
          EVMN1=EVM(NM1)
          EVMN2=EVM(NM2)
          EVMN3=EVM(NM3)
-         T0N1=Tau0Var(NM1) 
-         T0N2=Tau0Var(NM2) 
-         T0N3=Tau0Var(NM3) 
+         T0N1=Tau0Var(NM1)
+         T0N2=Tau0Var(NM2)
+         T0N3=Tau0Var(NM3)
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN     !wind or radiation stress
             Pr1N1=PR1(NM1)
             Pr1N2=PR1(NM2)
@@ -7431,7 +6548,7 @@ ckmd
             BSX2N3=TK2(NM3)*QX2N3
             BSY2N3=TK2(NM3)*QY2N3
 
-         ENDIF      
+         ENDIF
          IF (C3D) THEN                         !3D bottom friction
             BSXN1=BSX1(NM1)
             BSXN2=BSX1(NM2)
@@ -7495,7 +6612,7 @@ C...     Compute the spatial gradients of the velocity dispersion terms if 3D
      &            +DVV1(NM1)*FDY1+DVV1(NM2)*FDY2+DVV1(NM3)*FDY3)/AreaIE2
          ENDIF
 
-C...     Compute elemental averages                   
+C...     Compute elemental averages
 
          CorifAvg=(Corif(NM1)+Corif(NM2)+Corif(NM3))/3.d0
          Tau0Avg=(T0N1+T0N2+T0N3)/3.d0
@@ -7570,7 +6687,7 @@ C...     Compute the JX, JY terms less the advection terms
      &                                        -timewtgwce2*BSX2Avg
      &          +MXAvg-DispXAvg-BCXAvg
      &          +timewtgwce0*Tau0QX0Avg+timewtgwce1*Tau0QXAvg
-     &                                 +timewtgwce2*Tau0QX2Avg 
+     &                                 +timewtgwce2*Tau0QX2Avg
          JYAvg =-timewtgwce0*CorifAvg*QX0Avg-timewtgwce1*CorifAvg
      &                          *QX1Avg-timewtgwce2*CorifAvg*QX2Avg
      &          -IFNLFA*GOAreaIE4*timewtgwce0*(E0N1SQ*FDY1+E0N2SQ*FDY2
@@ -7644,7 +6761,7 @@ C...     Complete the JX, JY terms depending on the advection formulation
          ENDIF
 
 
-C...     Assemble forcing for node NM1 (local index j=1) 
+C...     Assemble forcing for node NM1 (local index j=1)
 
          Temp_LV_A1=
 
@@ -7653,7 +6770,7 @@ C...     Transient and Tau0 terms from LHS
 
 C...     Free surface terms from LHS (time levels s-1 & s)
      &        -GDPAvgOAreaIE4*(  C00  *(FDX1*E0XGrad2A+FDY1*E0YGrad2A)
-     &                        +A00pB00*(FDX1*E1XGrad2A+FDY1*E1YGrad2A)) 
+     &                        +A00pB00*(FDX1*E1XGrad2A+FDY1*E1YGrad2A))
 
 C...     Terms from momentum eqs.
      &        +(JXAvg*FDX1 + JYAvg*FDY1)/2.d0
@@ -7663,7 +6780,7 @@ C...     Spatially varying Tau0 terms
      &                    +timewtgwce2*Tau0SpaVar2
 
 
-C...     Assemble forcing for node NM2 (local index j=2) 
+C...     Assemble forcing for node NM2 (local index j=2)
 
          Temp_LV_A2=
 
@@ -7672,7 +6789,7 @@ C...     Transient and Tau0 terms from LHS
 
 C...     Free surface terms from LHS (time levels s-1 & s)
      &        -GDPAvgOAreaIE4*(  C00  *(FDX2*E0XGrad2A+FDY2*E0YGrad2A)
-     &                        +A00pB00*(FDX2*E1XGrad2A+FDY2*E1YGrad2A)) 
+     &                        +A00pB00*(FDX2*E1XGrad2A+FDY2*E1YGrad2A))
 
 C...     Terms from momentum eqs.
      &        +(JXAvg*FDX2 + JYAvg*FDY2)/2.d0
@@ -7682,7 +6799,7 @@ C...     Spatially varying Tau0 terms
      &                   +timewtgwce2*Tau0SpaVar2
 
 
-C...     Assemble forcing for node NM3 (local index j=3) 
+C...     Assemble forcing for node NM3 (local index j=3)
 
          Temp_LV_A3=
 
@@ -7692,7 +6809,7 @@ C...    (consistent mass matrix: ILump=0, lumped mass matrix: ILump=1)
 
 C...     Free surface terms from LHS (time levels s-1 & s)
      &        -GDPAvgOAreaIE4*(  C00  *(FDX3*E0XGrad2A+FDY3*E0YGrad2A)
-     &                        +A00pB00*(FDX3*E1XGrad2A+FDY3*E1YGrad2A)) 
+     &                        +A00pB00*(FDX3*E1XGrad2A+FDY3*E1YGrad2A))
 
 C...     Terms from momentum eqs.
      &        +(JXAvg*FDX3 + JYAvg*FDY3)/2.d0
@@ -7744,9 +6861,9 @@ C...  Put load vector elemental values into nodal storage for a vector computer
 
 C...  Save the elevation at the past time step into Eta1 and zero out Eta2
 ckmd
-ckmd	Already did this and haven't advanced in time yet, so just
-ckmd	comment out the save elevation line. But we do need to zero
-ckmd	out eta2 because it's involved in the summation below.
+ckmd  Already did this and haven't advanced in time yet, so just
+ckmd  comment out the save elevation line. But we do need to zero
+ckmd  out eta2 because it's involved in the summation below.
 ckmd
       DO I=1,NP
 c         Eta1(I)=Eta2(I)
@@ -7755,7 +6872,7 @@ c         Eta1(I)=Eta2(I)
 
 C...  At elevation boundary condition nodes, determine the elevation at
 C...  the s+1 time step
-C...  
+C...
 C...  For periodic elevation boundary conditions
 
       DO J=1,NBFR
@@ -7810,9 +6927,9 @@ C...  the formulation these terms must be explicitly multiplied by -1.
 C...Note 3, Eta1 is the latest computed elevation (it was updated above).
 
       IF((NFLUXF.EQ.1).OR.(NFLUXB.EQ.1).OR.(NFLUXIB.EQ.1)
-     &     .OR.(NFLUXGBC.EQ.1).OR.(NFLUXRBC.EQ.1)) THEN 
+     &     .OR.(NFLUXGBC.EQ.1).OR.(NFLUXRBC.EQ.1)) THEN
          NBDJ=NBV(1)
-         IF(LBCODEI(1).LE.29) QFORCEJ=(QN2(1)-QN0(1))/DT2 + 
+         IF(LBCODEI(1).LE.29) QFORCEJ=(QN2(1)-QN0(1))/DT2 +
      &        Tau0VAR(NBDJ)*QN1(1)
 
          IF(LBCODEI(1).EQ.30) THEN
@@ -7821,7 +6938,7 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
             QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(1)
             ENDIF
 
-         IF(LBCODEI(1).EQ.32) THEN 
+         IF(LBCODEI(1).EQ.32) THEN
             H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
             CELERITY=SQRT(G*H1)
             QFORCEJ=(QN1(1)-QN0(1))/DT
@@ -7846,7 +6963,7 @@ C...Note 3, Eta1 is the latest computed elevation (it was updated above).
                QFORCEJ=-CELERITY*ETAS(NBDJ)/DT - Tau0VAR(NBDJ)*QN1(J)
                ENDIF
 
-            IF(LBCODEI(J).EQ.32) THEN 
+            IF(LBCODEI(J).EQ.32) THEN
                H1=DP(NBDJ)+IFNLFA*ETA1(NBDJ)
                CELERITY=SQRT(G*H1)
                QFORCEJ=(QN1(J)-QN0(J))/DT
@@ -7873,7 +6990,7 @@ C...  IS THE RMS OF ALL THE DIAGONAL MEMBERS IN THE GWCE.  IT IS USED TO
 C...  SCALE THE DIAGONAL ELEMENT FOR THE ELEVATION SPECIFIED BOUNDARY
 C...  NODES AND THEREFORE MUST ALSO BE USED TO SCALE THE RHS OF THE
 C...  EQUATIONS
-C...  
+C...
       DO I=1,NETA
          NBDI=NBD(I)
          ETAS(NBDI)=ETA2(NBDI)-ETA1(NBDI)
@@ -7884,9 +7001,9 @@ C...
          END DO
       END DO
 
-C...  
+C...
 C...  SOLVE GWCE FOR ELEVATION AT NEW TIME LEVEL
-C...  
+C...
 
 C...  UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
 
@@ -7904,7 +7021,7 @@ C...  JCG ITERATIVE MATRIX SOLVER
       DO I=1,NP
          ETA2(I)=NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
       END DO
-     
+
 C     UPDATE ELEVATIONS
 
 #ifdef CMPI
@@ -7912,7 +7029,7 @@ C     UPDATE ELEVATIONS
 #endif
 
 ckmd
-ckmd	Eta2 values are now corrected elevations at time level s+1.
+ckmd  Eta2 values are now corrected elevations at time level s+1.
 ckmd
 
       RETURN
@@ -7943,15 +7060,15 @@ C                            r.l.  06/22/2005                                  *
 C*******************************************************************************
 
       SUBROUTINE Mom_Eqs_Non_Conserv_pc()
-C     
+C
       USE GLOBAL
       USE WIND
       USE NodalAttributes, ONLY: EVM
 
-      IMPLICIT NONE 
- 
+      IMPLICIT NONE
+
       INTEGER IE, I, J, N                           !local loop counters
-      INTEGER	NM1, NM2, NM3
+      INTEGER  NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCEle, NCI
       INTEGER NBDI
       INTEGER NNFirst
@@ -7966,9 +7083,9 @@ C
       REAL(SZ) H1, H1N1, H1N2, H1N3
       REAL(SZ) H2, H2N1, H2N2, H2N3
       REAL(SZ) LSXXN1, LSXXN2, LSXXN3
-      REAL(SZ) LSXYN1, LSXYN2, LSXYN3 
-      REAL(SZ) LSYXN1, LSYXN2, LSYXN3 
-      REAL(SZ) LSYYN1, LSYYN2, LSYYN3 
+      REAL(SZ) LSXYN1, LSXYN2, LSXYN3
+      REAL(SZ) LSYXN1, LSYXN2, LSYXN3
+      REAL(SZ) LSYYN1, LSYYN2, LSYYN3
       REAL(SZ) QTan
       REAL(SZ) QX1N1, QX1N2, QX1N3
       REAL(SZ) QY1N1, QY1N2, QY1N3
@@ -7981,11 +7098,11 @@ C
       REAL(SZ) V1AvgDU1DYA, V1AvgDV1DYA
       REAL(SZ) VCoef1, VCoef2
       REAL(SZ) VelNorm, VelTan
-      REAL(SZ) VIDBCPDX, VIDBCPDY                          
+      REAL(SZ) VIDBCPDX, VIDBCPDY
       REAL(SZ) WSX, WSY
       REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
 
-ckmd	 Added in parameters for the pc algorithm
+ckmd   Added in parameters for the pc algorithm
       REAL(SZ) QX0N1, QX0N2, QX0N3
       REAL(SZ) QY0N1, QY0N2, QY0N3
       REAL(SZ) QX2N1, QX2N2, QX2N3
@@ -8009,10 +7126,10 @@ ckmd	 Added in parameters for the pc algorithm
 
 C...
 C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
-C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF 
+C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF
 C...        THE TIME STEPPING LOOP.
 ckmd    Must reset the result vectors to zero before recomputing
-ckmd	the next time level.
+ckmd  the next time level.
       DO I=1,NP
          MOM_LV_X(I)=0.D0
          MOM_LV_Y(I)=0.D0
@@ -8181,18 +7298,18 @@ C...  Compute the lateral viscous terms for the element (flux formulation)
             DQX1DY=(QX1N1*FDY1+QX1N2*FDY2+QX1N3*FDY3)/AreaIE2
             DQY1DX=(QY1N1*FDX1+QY1N2*FDX2+QY1N3*FDX3)/AreaIE2
             DQY1DY=(QY1N1*FDY1+QY1N2*FDY2+QY1N3*FDY3)/AreaIE2
-            LSXXN1=EVMEle*DQX1DX 
-            LSXXN2=LSXXN1 
+            LSXXN1=EVMEle*DQX1DX
+            LSXXN2=LSXXN1
             LSXXN3=LSXXN1
-            LSXYN1=EVMEle*DQX1DY 
-            LSXYN2=LSXYN1 
-            LSXYN3=LSXYN1 
-            LSYXN1=EVMEle*DQY1DX 
-            LSYXN2=LSYXN1 
-            LSYXN3=LSYXN1 
-            LSYYN1=EVMEle*DQY1DY 
-            LSYYN2=LSYYN1 
-            LSYYN3=LSYYN1 
+            LSXYN1=EVMEle*DQX1DY
+            LSXYN2=LSXYN1
+            LSXYN3=LSXYN1
+            LSYXN1=EVMEle*DQY1DX
+            LSYXN2=LSYXN1
+            LSYXN3=LSYXN1
+            LSYYN1=EVMEle*DQY1DY
+            LSYYN2=LSYYN1
+            LSYYN3=LSYYN1
          ENDIF
 
 C...  Compute the lateral viscous terms for the element (symmetric flux formulation)
@@ -8202,18 +7319,18 @@ C...  Compute the lateral viscous terms for the element (symmetric flux formulat
             DQX1DY=(QX1N1*FDY1+QX1N2*FDY2+QX1N3*FDY3)/AreaIE2
             DQY1DX=(QY1N1*FDX1+QY1N2*FDX2+QY1N3*FDX3)/AreaIE2
             DQY1DY=(QY1N1*FDY1+QY1N2*FDY2+QY1N3*FDY3)/AreaIE2
-            LSXXN1=EVMEle*DQX1DX 
-            LSXXN2=LSXXN1 
+            LSXXN1=EVMEle*DQX1DX
+            LSXXN2=LSXXN1
             LSXXN3=LSXXN1
             LSXYN1=0.5d0*EVMEle*(DQX1DY+DQY1DX)
-            LSXYN2=LSXYN1 
+            LSXYN2=LSXYN1
             LSXYN3=LSXYN1
             LSYXN1=LSXYN1
             LSYXN2=LSXYN2
             LSYXN3=LSXYN3
-            LSYYN1=EVMEle*DQY1DY 
-            LSYYN2=LSYYN1 
-            LSYYN3=LSYYN1 
+            LSYYN1=EVMEle*DQY1DY
+            LSYYN2=LSYYN1
+            LSYYN3=LSYYN1
          ENDIF
 
 C...  Compute the lateral viscous terms for the element (velocity formulation)
@@ -8226,18 +7343,18 @@ C...  Compute the lateral viscous terms for the element (velocity formulation)
             EVMH1N1=EVMEle*H1N1
             EVMH1N2=EVMEle*H1N2
             EVMH1N3=EVMEle*H1N3
-            LSXXN1=EVMH1N1*DU1DX 
-            LSXXN2=EVMH1N2*DU1DX 
-            LSXXN3=EVMH1N3*DU1DX 
-            LSXYN1=EVMH1N1*DU1DY 
-            LSXYN2=EVMH1N2*DU1DY 
-            LSXYN3=EVMH1N3*DU1DY 
-            LSYXN1=EVMH1N1*DV1DX 
-            LSYXN2=EVMH1N2*DV1DX 
-            LSYXN3=EVMH1N3*DV1DX 
-            LSYYN1=EVMH1N1*DV1DY 
-            LSYYN2=EVMH1N2*DV1DY 
-            LSYYN3=EVMH1N3*DV1DY 
+            LSXXN1=EVMH1N1*DU1DX
+            LSXXN2=EVMH1N2*DU1DX
+            LSXXN3=EVMH1N3*DU1DX
+            LSXYN1=EVMH1N1*DU1DY
+            LSXYN2=EVMH1N2*DU1DY
+            LSXYN3=EVMH1N3*DU1DY
+            LSYXN1=EVMH1N1*DV1DX
+            LSYXN2=EVMH1N2*DV1DX
+            LSYXN3=EVMH1N3*DV1DX
+            LSYYN1=EVMH1N1*DV1DY
+            LSYYN2=EVMH1N2*DV1DY
+            LSYYN3=EVMH1N3*DV1DY
          ENDIF
 
 C...  Compute the lateral viscous terms for the element (symmetric velocity formulation)
@@ -8250,25 +7367,25 @@ C...  Compute the lateral viscous terms for the element (symmetric velocity form
             EVMH1N1=EVMEle*H1N1
             EVMH1N2=EVMEle*H1N2
             EVMH1N3=EVMEle*H1N3
-            LSXXN1=EVMH1N1*DU1DX 
-            LSXXN2=EVMH1N2*DU1DX 
-            LSXXN3=EVMH1N3*DU1DX 
+            LSXXN1=EVMH1N1*DU1DX
+            LSXXN2=EVMH1N2*DU1DX
+            LSXXN3=EVMH1N3*DU1DX
             LSXYN1=0.5d0*EVMH1N1*(DU1DY+DV1DX)
-            LSXYN2=0.5d0*EVMH1N2*(DU1DY+DV1DX) 
+            LSXYN2=0.5d0*EVMH1N2*(DU1DY+DV1DX)
             LSXYN3=0.5d0*EVMH1N3*(DU1DY+DV1DX)
             LSYXN1=LSXYN1
             LSYXN2=LSXYN2
             LSYXN3=LSXYN3
-            LSYYN1=EVMH1N1*DV1DY 
-            LSYYN2=EVMH1N2*DV1DY 
-            LSYYN3=EVMH1N3*DV1DY 
+            LSYYN1=EVMH1N1*DV1DY
+            LSYYN2=EVMH1N2*DV1DY
+            LSYYN3=EVMH1N3*DV1DY
          ENDIF
 
 C
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
 C...  TEMP_LV_A VECTOR FOR NODE NM1
 
-         TEMP_LV_A1=NCEle*DT*(               
+         TEMP_LV_A1=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*timewtmom0*(U0AvgDU0DXA+V0AvgDU0DYA)
      &             -IFNLCT*timewtmom1*(U1AvgDU1DXA+V1AvgDU1DYA)
@@ -8280,11 +7397,11 @@ C...  LATERAL VISCOUS TERMS
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
-C...  
+C...
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
 C...  TEMP_LV_A VECTOR FOR NODE NM2
-C...  
-         TEMP_LV_A2=NCEle*DT*(   
+C...
+         TEMP_LV_A2=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*timewtmom0*(U0AvgDU0DXA+V0AvgDU0DYA)
      &             -IFNLCT*timewtmom1*(U1AvgDU1DXA+V1AvgDU1DYA)
@@ -8296,11 +7413,11 @@ C...  LATERAL VISCOUS TERMS
 C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
      &             )
 
-C...  
+C...
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
 C...  TEMP_LV_A VECTOR FOR NODE NM3
-C...  
-         TEMP_LV_A3=NCEle*DT*(   
+C...
+         TEMP_LV_A3=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*timewtmom0*(U0AvgDU0DXA+V0AvgDU0DYA)
      &             -IFNLCT*timewtmom1*(U1AvgDU1DXA+V1AvgDU1DYA)
@@ -8315,7 +7432,7 @@ C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
 C...  TEMP_LV_B VECTOR FOR NODE NM1
 
-         TEMP_LV_B1=NCEle*DT*(               
+         TEMP_LV_B1=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*timewtmom0*(U0AvgDV0DXA+V0AvgDV0DYA)
      &             -IFNLCT*timewtmom1*(U1AvgDV1DXA+V1AvgDV1DYA)
@@ -8330,7 +7447,7 @@ C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
 C...  TEMP_LV_B VECTOR FOR NODE NM2
 
-         TEMP_LV_B2=NCEle*DT*(               
+         TEMP_LV_B2=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*timewtmom0*(U0AvgDV0DXA+V0AvgDV0DYA)
      &             -IFNLCT*timewtmom1*(U1AvgDV1DXA+V1AvgDV1DYA)
@@ -8345,7 +7462,7 @@ C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
 C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
 C...  TEMP_LV_B VECTOR FOR NODE NM3
 
-         TEMP_LV_B3=NCEle*DT*(               
+         TEMP_LV_B3=NCEle*DT*(
 C...  ADVECTIVE TERMS
      &             -IFNLCT*timewtmom0*(U0AvgDV0DXA+V0AvgDV0DYA)
      &             -IFNLCT*timewtmom1*(U1AvgDV1DXA+V1AvgDV1DYA)
@@ -8391,7 +7508,7 @@ C           AND QUV ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
 #endif
 
          ENDDO
-         
+
 
 C     LINES TO RUN ON A VECTOR COMPUTER
 C     NOTE: THESE LINES FINALIZE THE ASSEMBLY PROCESS FOR MOM_LV_X, MOM_LV_Y
@@ -8430,7 +7547,7 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
                MOM_LV_X(I)=MOM_LV_X(I)/TotalArea(I)
                MOM_LV_Y(I)=MOM_LV_Y(I)/TotalArea(I)
             ENDIF
-            IF (CME_AreaInt_Orig) THEN     !Original (incorrect) area integration       
+            IF (CME_AreaInt_Orig) THEN     !Original (incorrect) area integration
                MOM_LV_X(I)=MOM_LV_X(I)/MJU(I)
                MOM_LV_Y(I)=MOM_LV_Y(I)/MJU(I)
             ENDIF
@@ -8442,8 +7559,8 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
             WSY=DTO2*IFWIND*(WSY1(I)/H1+WSY2(I)/H2)
          ENDIF
 ckmd
-ckmd	Added time weights to tau terms in the momentum equation here.
-ckmd	Note the weighting should follow the weighting in the GWCE.
+ckmd  Added time weights to tau terms in the momentum equation here.
+ckmd  Note the weighting should follow the weighting in the GWCE.
 ckmd
          VCoef1=DTO2*TK(I)                     !TK = Kslip/H
          VCoef12=DTO2*(TK2(I)*timebfflag+TK(I)*(1.D0-timebfflag))
@@ -8452,13 +7569,13 @@ ckmd
             VIDBCPDX=DT*VIDBCPDXOH(I)
             VIDBCPDY=DT*VIDBCPDYOH(I)
             ENDIF
-               
+
          MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
      &                                     +VCoef2*VV1(I)-VIDBCPDX)
          MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
      &                                     -VCoef2*UU1(I)-VIDBCPDY)
 
-ckmd	  Change for the corrector formulation
+ckmd    Change for the corrector formulation
          AUV11(I)=1.D0+VCoef12*NCI
          AUV12(I)=-VCoef2*NCI
          END DO
@@ -8476,8 +7593,8 @@ C...  AUV12=-AUV21)
 
 C      Specified essential normal flow and free tangential slip
 
-         IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN 
-            VelNorm=-QN2(I)/H2 
+         IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
+            VelNorm=-QN2(I)/H2
             MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
      &                     -CSII(I)*MOM_LV_Y(NBDI)
      &                     -VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
@@ -8502,7 +7619,7 @@ C     the normal derivatives. Note: this is fully explicit and therefore
 C     the velocity at the boundary is computed entirely from surrounding
 C     velocities at the previous time step.
 
-         IF(LBCODEI(I).EQ.41) THEN 
+         IF(LBCODEI(I).EQ.41) THEN
             NM1=NBDI
             ZNGRHS1=0.d0     !Zero Norm Grad of U Eqn
             ZNGRHS2=0.d0     !Zero Norm Grad of V Eqn
@@ -8581,7 +7698,7 @@ C.....interface nodes.
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
 c           UBAR2(I)=0.D0    !no slip and normal flux
 c           VBAR2(I)=0.D0    !on wet/dry interface nodes
-c           ENDIF                               
+c           ENDIF
          END DO
 
 C...
@@ -8612,7 +7729,7 @@ C...
                ENDIF
             ENDDO
          ENDIF
-         
+
 C...  Compute fluxes
 
       DO I=1,NP
@@ -8639,8 +7756,8 @@ C
       USE MESSENGER
 #endif
 
-      IMPLICIT NONE 
- 
+      IMPLICIT NONE
+
       INTEGER IE, I                         !local loop counters
       INTEGER IT
       INTEGER NM1, NM2, NM3
@@ -8655,7 +7772,7 @@ C
       REAL(SZ) ECONST
       REAL(SZ) EVC1, EVC2, EVC3, EVCEA
       REAL(SZ) FDDDODT, FDDODODT
-      REAL(SZ) HEA                
+      REAL(SZ) HEA
       REAL(SZ) H1, H1N1, H1N2, H1N3
       REAL(SZ) HSD, HSE
       REAL(SZ) SFacAvg
@@ -8669,7 +7786,7 @@ C
       REAL(SZ) WS, WSMOD
 
       REAL(8) AreaIE2
-      REAL(8) FDDD, FDDOD    
+      REAL(8) FDDD, FDDOD
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       REAL(8) FDX1O2A, FDX2O2A, FDX3O2A, FDY1O2A, FDY2O2A, FDY3O2A
       REAL(8) DDX1,DDX2,DDX3,DDY1,DDY2,DDY3
@@ -8953,7 +8070,7 @@ C
 
 
 c******************************************************************************
-!Kendra: Eliminated the bpg calculation in the vsmy subroutine and added a 
+!Kendra: Eliminated the bpg calculation in the vsmy subroutine and added a
 !        subroutine for the bpg calculation v45.12
 c******************************************************************************
 c  SUBROUTINE BPG3D                                                           *
@@ -9032,27 +8149,27 @@ C
       REAL(SZ) :: a1,a2,a3,b1,b2,b3
       REAL(SZ) :: TotalBCPGArea2
 
-      REAL(SZ) :: DBCPDX2A  
-      REAL(SZ) :: DBCPDY2A  
+      REAL(SZ) :: DBCPDX2A
+      REAL(SZ) :: DBCPDY2A
       COMPLEX(SZ) :: BCPG(NFEN)   !baroclinic pressure gradient
       COMPLEX(SZ) :: VIBCPG         !baroclinic pressure gradient
-C     
+C
 C     INCREMENT THE TIMESTEP SINCE START COUNTER
-C     
+C
 
 C*************************************************************************************
-C     Check whether it is time to print various 3D outputs      
+C     Check whether it is time to print various 3D outputs
 
-C     
+C
 C     If a baroclinic run, compute the 3D baroclinic pressure field
 C     The buoyancy field is defined as
 C     BCP(z)    =(gravity/rho ref)*          integral (SigT) from surface down to z
 C     BCP(sigma)=(gravity/rho ref)*(H/(a-b))*integral (SigT) from a down to sigma
-C     where 
+C     where
 C     SigT = Sigma T = Rho - 1000 = density - 1000
 C     SigT0 = Sigma t value of reference density (typically = 0)
 C     Sigma = dimensionless vertical coordinate
-C     
+C
       IF((IDEN.GE.1).OR.(IDEN.LE.-1)) THEN
          DO NH=1,NP             !loop over horizontal nodes
 
@@ -9075,11 +8192,11 @@ C      CALL UPDATER3D(BCP) !!!!Don't know if this is needed at this time
 
 
 C*************************************************************************************
-C     Compute 3D baroclinic pressure gradients    
+C     Compute 3D baroclinic pressure gradients
 
-C     
+C
 C     Loop over each horizontal node to compute the horizontal velocity
-C     
+C
       DO NH=1,NP                !loop over horizontal nodes
 
          Hs  = DP(NH)+IFNLFA*Eta2(NH) !Total depth at previous (s) timestep
@@ -9190,12 +8307,12 @@ C    kmd48.33bc add in spherical factors
                ENDIF
 
 C    kmd48.33bc changed the BPG calculation for bottom boundary issues
-               IF(TotalBCPGArea2.EQ.0.) THEN 
+               IF(TotalBCPGArea2.EQ.0.) THEN
 !                  IF (k.eq.NFEN) THEN !kd46.01
                      BCPG(k)=(0.d0,0.d0)
 !                  ELSE
 !                     BCPG(k)=BCPG(k+1)
-!                  END IF 
+!                  END IF
                ELSE
                   BCPG(k)=(DBCPDX2A+iy*DBCPDY2A)/TotalBCPGArea2
                ENDIF
@@ -9211,7 +8328,7 @@ C    kmd48.33bc added this to BPG
 
 
             DO k=1,NFEN
-               BPG(NH,k) = BCPG(k) 
+               BPG(NH,k) = BCPG(k)
             END DO
 
 c     Finished computing baroclinic pressure gradient (computed in level
@@ -9244,12 +8361,12 @@ C     Finish loop over horizontal nodes to compute the horizontal velocity
 C***********************************************************************
 C     Update new 3D baroclinic pressure gradient and the vertically
 C     integrated baroclinic pressure gradient on ghost nodes
-C     
-      CALL UPDATEC3D(BPG)    
-      CALL UPDATER(VIDBCPDXOH,VIDBCPDYOH,DUMV1,2) 
+C
+      CALL UPDATEC3D(BPG)
+      CALL UPDATER(VIDBCPDXOH,VIDBCPDYOH,DUMV1,2)
 #endif
 
-      RETURN 
+      RETURN
       END SUBROUTINE BPG3D
 
 
@@ -9280,7 +8397,7 @@ C     jgf46.00 Explicitly declared the following variables
       REAL(SZ) SigAbov
       REAL(SZ) SigTry
 
-      IDiag=0 
+      IDiag=0
 
       IF(SigmaNN.LE.1.0001*b) THEN !if into ground then skip
          SigBelo=-999
@@ -9304,7 +8421,7 @@ C     jgf46.00 Explicitly declared the following variables
       ENDIF
 
       LTry=J                    !start search for SIGABOV and SIGBELO
-      SigTry=Sigma(LTry)                    
+      SigTry=Sigma(LTry)
       IF(SigmaNN.GT.SigTry) THEN !too low
          SigBelo=SigTry         !SIGBELO may = SIGTRY
          LBelo=LTry
@@ -9314,7 +8431,7 @@ C     jgf46.00 Explicitly declared the following variables
             SigBelo=SigTry
             LBelo=LTry
             LTry=LTry+1
-            GOTO 90 
+            GOTO 90
          ENDIF
          SigAbov=SigTry         !found upper bracketing sigma
          LAbov=LTry
@@ -9322,7 +8439,7 @@ C     jgf46.00 Explicitly declared the following variables
       ENDIF
       IF(SigmaNN.LE.SigTry) THEN !to high
          SigAbov=SigTry         !SIGABOV may = SIGTRY
-         LAbov=LTry                          
+         LAbov=LTry
          LTry=LTry-1            !look at next level lower
  91      SigTry=Sigma(LTry)
          IF(SigmaNN.LE.SigTry) THEN !still too high

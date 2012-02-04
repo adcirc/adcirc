@@ -532,6 +532,9 @@ ifeq ($(compiler),gnu)
   endif
   CLIBS	:= 
   FLIBS		:=  
+  ifeq ($(NETCDF),enable)
+     FLIBS          := $(FLIBS) -L$(HDF5HOME)/lib -L$(NETCDFHOME) -lnetcdf -lhdf5_hl -lhdf5 -lhdf5_fortran -lz
+  endif
   MSGLIBS	:=  
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)

@@ -2,9 +2,14 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
-C  v50.43   - 02/03/2011 - jgf - Changed rewind() on scratch file to open()
+C  v50.44   - 02/04/2012 - jgf - Set namelist scratch file to write to localdir
+C             to avoid collisions when running in parallel; removed the 
+C             GWCE_Original() subroutine from timestep.F per Rick's request,
+C             fixed 3 instances in timestep.F when STOP was called without
+C             shutting down mpi first. 
+C  v50.43   - 02/03/2012 - jgf - Changed rewind() on scratch file to open()
 C             and close() to appease g95 compiler (for nws namelist i/o). 
-C  v50.42   - 02/02/2011 - jgf - Changed reading of NWS line so that namelist
+C  v50.42   - 02/02/2012 - jgf - Changed reading of NWS line so that namelist
 C             is written and then read from a scratch file rather than 
 C             an internal character array (fixes issue caught by pgif95).
 C  v50.41   - 12/23/2011 - tcm - Added compiler options for ERDC's Utility
