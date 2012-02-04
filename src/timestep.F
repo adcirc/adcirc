@@ -26,7 +26,6 @@ C                        (used in 3D subroutines only)                        *
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C     CBaroclinic      - Include baroclinic terms                             *
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
-C     CGWCE_Orig       - Original ADCIRC GWCE formulation                     *
 C     CGWCE_New        - New ADCIRC GWCE formulation (old algorithm, new code)*
 C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - *
 C     CGWCE_Lump       - Lump the GWCE matrix                                 *
@@ -120,7 +119,6 @@ Cjgfdebug     &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA
 #ifdef CMPI
       USE MESSENGER
       USE HSWRITER, ONLY: writeHotstart_through_HSwriter  !st3 100711 for hsfile
-
 #endif
 
 #ifdef CSWAN
@@ -1844,9 +1842,6 @@ C...  If running in parallel, update velocities & fluxes on all processors
 #endif
          CALL GWCE_New_pc(IT,TimeLoc,TimeH)
       ENDIF
-      IF(CGWCE_Orig) THEN
-         CALL GWCE_Original(IT,TimeLoc,TimeH)
-      ENDIF
       IF(CGWCE_New) THEN
          CALL GWCE_New(IT,TimeLoc,TimeH)
       ENDIF
@@ -2881,7 +2876,9 @@ C     the screen.
      &           2X,'SPEEDMAX = ',E11.4,' AT NODE',I7,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev, '
      &           'ADCIRC stopping. **')
+#ifdef CMPI
             call msg_fini()
+#endif
             STOP
          ENDIF
 #endif
@@ -6233,7 +6230,7 @@ C...  Initialize variables to zero if these forcings are not used
       ENDIF
 
       IF(CBaroclinic) THEN
-   ELSE
+      ELSE
         BCXAvg=0.d0
         BCYAvg=0.d0
       ENDIF

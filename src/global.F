@@ -7,7 +7,7 @@ C routines.  The 3D exclusive variables are declared in global_3DVS           *
 C                                                                             *
 C******************************************************************************
 
-C 
+C
       MODULE GLOBAL
       USE SIZES
       USE VERSION
@@ -22,7 +22,7 @@ C.....nominal density of water RHOWAT0
       REAL(SZ), PARAMETER ::  RhoWat0=1000.D0
 
 C.....Sigma T value of reference density
-      REAL(SZ), PARAMETER ::  SigT0=RHOWAT0-1000.D0 
+      REAL(SZ), PARAMETER ::  SigT0=RHOWAT0-1000.D0
 
 C.....Background Atmospheric Pressure in mb
       REAL(SZ), PARAMETER :: PRBCKGRND = 1013.0d0   !tcm 20100617 v49.16 Added
@@ -36,7 +36,7 @@ C.....Days to seconds conversion
       REAL(8), PARAMETER :: day2sec=24.d0*3600.d0
       REAL(8), PARAMETER :: sec2day=1.d0/day2sec
 
-C.....parameters used in barrier overflow 
+C.....parameters used in barrier overflow
       REAL(SZ), PARAMETER ::  BARMIN=0.04D0
 
 C     jgf46.21 Added support for IBTYPE=52.
@@ -56,17 +56,17 @@ C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
       REAL(SZ) RampIntFlux,DRampIntFlux ! Ramp for internal flux b.c.s
       REAL(SZ) RampElev,DRampElev    ! Ramp for elevation boundary conditions.
       REAL(SZ) RampTip,DRampTip      ! Ramp for tidal potential
-      REAL(SZ) RampMete,DRampMete    ! Ramp for wind and atmospheric pressure 
+      REAL(SZ) RampMete,DRampMete    ! Ramp for wind and atmospheric pressure
       REAL(SZ) RampWRad,DRampWRad    ! Ramp for wave radiation stress
 C
 C     jgf46.10 user-controlled warning, dump and error levels on elevations
       REAL(SZ) WarnElev       ! elevation at which a warning is issued
       INTEGER iWarnElevDump   ! 1 to dump warning elevs to fort.69
       LOGICAL WarnElevDump    ! .True. if iWarnElevDump.eq.1
-      INTEGER WarnElevDumpLimit ! max dumps; ADCIRC terminates if exceeded 
+      INTEGER WarnElevDumpLimit ! max dumps; ADCIRC terminates if exceeded
       INTEGER WarnElevDumpCounter ! counter for number of elev dumps to fort.69
       REAL(SZ) ErrorElev      ! ADCIRC terminates if this elev is exceeded
-C     
+C
       INTEGER :: screenUnit = 6 ! jgf46.19 I/O unit where screen output is sent
 C
 C     Variables related to hotstarting.
@@ -88,11 +88,11 @@ C     global number of elevation, velocity, and meteorological stations
 !      INTEGER             :: FileFmtMinor = 2
 !      INTEGER             :: FileFmtRev   = 0
 C
-C     jgf49.44: These variables represent fulldomain arrays and are 
+C     jgf49.44: These variables represent fulldomain arrays and are
 C     used in hstart.F for reading fulldomain hotstart files as well as in
-C     write_output.F/writeHotstart and 
+C     write_output.F/writeHotstart and
 C     writer.F/writeHotstart_through_HSwriter
-C     for writing fulldomain hotstart files. 
+C     for writing fulldomain hotstart files.
       REAL(SZ), ALLOCATABLE, TARGET :: ETA1_g(:)
       REAL(SZ), ALLOCATABLE, TARGET :: ETA2_g(:)
       REAL(SZ), ALLOCATABLE, TARGET :: EtaDisc_g(:)
@@ -117,13 +117,13 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  ETA1(:), ETA2(:), UU2(:), VV2(:)
 #ifndef NELMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX(:) ! v46.50 sb 11/11/2006
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX(:) 
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX_G(:) 
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX(:)
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX_G(:)
 #endif
 #ifndef NUVMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  UMAX(:) ! v46.50 sb 11/11/2006
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX(:) 
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX_G(:) 
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX(:)
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX_G(:)
 #endif
       REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
@@ -131,13 +131,13 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:), WVNXOut(:), WVNYOut(:)
 #ifndef NPRMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin(:) 
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin_G(:) 
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin(:)
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin_G(:)
 #endif
 #ifndef NWVMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax(:) 
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax_G(:) 
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax(:)
+         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax_G(:)
 #endif
 #ifdef CSWAN
 Casey 090302: Added the following arrays for output of radiation stress gradients.
@@ -190,12 +190,12 @@ Casey 090302: Added the following arrays for output of radiation stress gradient
       REAL(SZ),ALLOCATABLE ::   WVNX1(:),WVNY1(:),PRN1(:)
       REAL(SZ),ALLOCATABLE ::   WVNX2(:),WVNY2(:),PRN2(:)
       REAL(SZ),ALLOCATABLE ::   RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
-      REAL(SZ),ALLOCATABLE ::   CICE1(:),CICE2(:)   !v49.64.01 tcm -- added 
+      REAL(SZ),ALLOCATABLE ::   CICE1(:),CICE2(:)   !v49.64.01 tcm -- added
                                                     !for ice concentration
 #ifndef NRSMAX
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006
-      REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax(:) 
-      REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:) 
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:)
 #endif
       REAL(SZ),ALLOCATABLE :: TK(:)
       REAL(8),ALLOCATABLE :: EMO(:,:),EFA(:,:)
@@ -225,7 +225,7 @@ C    kmd48.33bc - added variables for the levels of no motion and top temperatur
       INTEGER,ALLOCATABLE ::    NBV(:),LBCODEI(:)
       INTEGER,ALLOCATABLE ::    NEleZNG(:)
       INTEGER,ALLOCATABLE ::    NNODECODE(:)
-      INTEGER,ALLOCATABLE ::    NOFFOLD(:) 
+      INTEGER,ALLOCATABLE ::    NOFFOLD(:)
       INTEGER,ALLOCATABLE ::    NIBCNT(:)
       INTEGER,ALLOCATABLE ::    NM(:,:)
       INTEGER,ALLOCATABLE ::    NNEIGH(:),MJU(:),NODELE(:)
@@ -269,9 +269,9 @@ C.....for internal barrier boundaries with flowthrough pipes
       INTEGER, ALLOCATABLE ::   IBCONN(:),IBCONNR(:),NTRAN1(:),NTRAN2(:)
 
 C.....for wet/dry
-      REAL(SZ)                  HABSMIN,HOFF   
+      REAL(SZ)                  HABSMIN,HOFF
 
-cjjw...added 2 lines 
+cjjw...added 2 lines
 C.....for matrix conditioning,global to allow for reading in from hotstart file
       REAL(SZ)                  EP !jgf45.08 EP global for predictor-corrector
 C...
@@ -310,7 +310,7 @@ c      EQUIVALENCE (RDES4(1),RDES8(1),RUNDES), (RID4(1),RID8(1),RUNID),
 c     &            (AID4(1),AID8(1),AGRID)
 
 C...
-C...DECLARE AND INITIALIZE LOGICAL VARIABLES 
+C...DECLARE AND INITIALIZE LOGICAL VARIABLES
 C...  jgf45.06 Default choices are set to .TRUE. in read_input.F
 C     jgf45.07 The definitions of many of these are in timestep.F
       LOGICAL :: C2DDI               = .FALSE.
@@ -321,7 +321,6 @@ C     jgf45.07 The definitions of many of these are in timestep.F
       LOGICAL :: C2D_PTrans          = .FALSE.
       LOGICAL :: CBaroclinic         = .FALSE.
       LOGICAL :: CSmag_Eh            = .FALSE.
-      LOGICAL :: CGWCE_Orig          = .FALSE.
       LOGICAL :: CGWCE_New           = .FALSE.
       LOGICAL :: CGWCE_Lump          = .FALSE.
       LOGICAL :: CGWCE_LS_KGQ        = .FALSE.
@@ -352,7 +351,7 @@ C    kmd48.33bc  - logical statement for hot start using different time step
       LOGICAL :: BndBCRiver          = .FALSE.
 ! kmd - Evan's updates for rivers above MSL
       LOGICAL :: River_above_MSL     = .FALSE.
-  
+
 C     jgf48.4627 When only meteorological output is requested, skip past
 C     the GWCE and Momentum equations, so that ADCIRC runs faster and
 C     only calculates the requested quantities.
@@ -370,7 +369,7 @@ C...
       INTEGER  NFLUXB,NFLUXF,NFLUXIB,NFLUXRBC
       INTEGER  NFLUXGBC
       INTEGER  NFLUXIBP,NPIPE
-      INTEGER  NFOVER,NHG,NHY,NOLICAT,NOPE,NOUTC 
+      INTEGER  NFOVER,NHG,NHY,NOLICAT,NOPE,NOUTC
       INTEGER  NOUTE,NSPOOLE,NOUTV,NSPOOLV,NPRBI
       INTEGER  NRAMP,NRS,NSTAE,NSTARTDRY,NSTAV,NT,NTCYFE
       INTEGER  NTCYFV,NTCYSE,NTCYSV,NTIF,NTIP,NTRSPE,NTRSPV
@@ -381,7 +380,7 @@ C...
       INTEGER  IFWIND, IGCP, IGEP, IGPP, IGVP, IGWP
       INTEGER  IHOTSTP, ILUMP, IMHS, IPSTP
       INTEGER  IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN, ISLDIA
-      INTEGER  ITIME, ITEMPSTP, ITEST 
+      INTEGER  ITIME, ITEMPSTP, ITEST
       INTEGER  ITHS, ITITER, ITMAX, IVSTP, IWSTP, IWTIME, IWTIMEP
       INTEGER  IWYR, J12, J13, J21, J23, J31, J32
       INTEGER  JJ, KEMAX, KVMAX, LRC, LUMPT
@@ -414,7 +413,7 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       INTEGER  BCFLAG_LNM   ! boundary condition flag for levels of no motion
       INTEGER  BCFLAG_TEMP  ! boundary condition flag for heat flux (top temperature)
       REAL(SZ) RBCTIMEINC, RBCTIME1, RBCTIME2  ! time information for level of no motion
-      REAL(SZ) SBCTIMEINC, SBCTIME1, SBCTIME2  ! time information for salinity 
+      REAL(SZ) SBCTIMEINC, SBCTIME1, SBCTIME2  ! time information for salinity
       REAL(SZ) TBCTIMEINC, TBCTIME1, TBCTIME2  ! time information for temperature
       REAL(SZ) TTBCTIMEINC, TTBCTIME1, TTBCTIME2  ! time information for heat flux (top temperature)
       REAL(SZ) BCSTATIM, RBCRATIO
@@ -450,9 +449,9 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) VEL, VELABS
       REAL(SZ) VELMAX
       REAL(SZ) A00,B00,C00,ANGINN
-      REAL(SZ) CORI,COSTHETA,COSTHETA1,COSTSET,CROSS,CROSS1 
+      REAL(SZ) CORI,COSTHETA,COSTHETA1,COSTSET,CROSS,CROSS1
       REAL(SZ) DAY,DOTVEC,DRAMP,DUM1,DUM2
-      REAL(SZ) H0 
+      REAL(SZ) H0
       REAL(SZ) RNDAY,THETA,THETA1
       REAL(SZ) XL
       REAL(SZ) VECNORM,VL1X,VL1Y,VL2X,VL2Y,WLATMAX
@@ -469,8 +468,8 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       CHARACTER(80) :: title       ! description of the dataset
       CHARACTER(80) :: institution ! where the original data was produced
       CHARACTER(80) :: source      ! method of production of the original data
-      CHARACTER(80) :: history     ! provides an audit trail for modifications to the original data 
-      CHARACTER(80) :: base_date 
+      CHARACTER(80) :: history     ! provides an audit trail for modifications to the original data
+      CHARACTER(80) :: base_date
       CHARACTER(80) :: comments    ! miscellaneous information about the data
       CHARACTER(80) :: host
       CHARACTER(80) :: convention
@@ -485,12 +484,12 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       CHARACTER(7),  ALLOCATABLE  :: STATNUMBM(:,:)
       CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEM(:)
       CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEC(:)
-      
+
       INTEGER NCIESTP, NCIPSTP,NCIVSTP,NCIWSTP
       INTEGER NCIGEP,NCIGPP, NCIGVP,NCIGWP
       INTEGER NCCOUE,NCCOUM,NCCOUV,NCCOUW
       INTEGER NCCOUGE,NCCOUGW,NCCOUGV
-      
+
 ! CF Finish addition for NETCDF I/O
 
 ! TCM v49.64.01 Addition for Ice Concentration Fields
@@ -500,29 +499,29 @@ C    kmd48.33bc - added variables for 3D boundary conditions
 C     jgf48.03 Arrays for mapping subdomain nodes and elements to full
 C     domain ... used in globalio module but allocated and populated
 C     in messenger module
-      integer,allocatable,target :: nodes_lg(:) 
+      integer,allocatable,target :: nodes_lg(:)
       integer,allocatable,target :: imap_el_lg(:)
       integer,allocatable,target :: imap_stae_lg(:)
       integer,allocatable,target :: imap_stav_lg(:)
       integer,allocatable,target :: imap_stam_lg(:)
       integer,allocatable,target :: imap_stac_lg(:)
       integer                    :: float_type
-C     jgf48.03 Variable, arrays, and datastructure that are used by both 
+C     jgf48.03 Variable, arrays, and datastructure that are used by both
 C     globalio and writer modules
       integer, parameter :: BUFSIZE_MAX = 131072
       real(sz) :: buf(BUFSIZE_MAX)
       real(sz) :: resultBuf(BUFSIZE_MAX)
       integer :: integerBuffer(BUFSIZE_MAX)
       integer :: integerResultBuffer(BUFSIZE_MAX)
-C   
+C
 C     jgf48.03 the following data structure is used to describe
-C     the size and shape of the output data. 
+C     the size and shape of the output data.
 C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements to the structure
       type OutputDataDescript_t
         CHARACTER(12)     :: file_name ! name of output file
         character(20)     :: field_name !Name of the field associated with the data structure
         integer           :: specifier  ! output format from fort.15 (NOUTE,etc)
-        REAL(SZ)          :: initial_value 
+        REAL(SZ)          :: initial_value
         integer           :: int_initial_value
         logical           :: ConsiderWetDry ! Flag for considering nodes wet/dry status
         real(sz)          :: alternate_value  ! Value that can be used as an alternate value
@@ -580,7 +579,7 @@ C     to the screen or to log files.
       INTEGER, PARAMETER :: WARNING = 2 ! don't echo input; write only warn/err
       INTEGER, PARAMETER :: ERROR = 3   ! don't echo input; only fatal msgs
 C
-      CHARACTER(len=10), dimension(5) :: logLevelNames  
+      CHARACTER(len=10), dimension(5) :: logLevelNames
       CHARACTER(len=50), dimension(50) :: messageSources ! subroutine names
       CHARACTER(len=1024) :: scratchMessage ! used for formatted messages
       INTEGER :: sourceNumber ! index into messageSources for current sub
@@ -596,56 +595,56 @@ C-------------------end of data declarations----------------------------------C
       CONTAINS
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E    I N I T   L O G G I N G    
+C     S U B R O U T I N E    I N I T   L O G G I N G
 C--------------------------------------------------------------------
 C     jgf49.44: Initialize the names for the logging levels and the counter
 C     for the current subroutine.
 C--------------------------------------------------------------------
       SUBROUTINE initLogging()
-      IMPLICIT NONE 
-C 
+      IMPLICIT NONE
+C
       logLevelNames(1) = "DEBUG"
       logLevelNames(2) = "ECHO"
       logLevelNames(3) = "INFO"
       logLevelNames(4) = "WARNING"
       logLevelNames(5) = "ERROR"
-      sourceNumber = 0 
+      sourceNumber = 0
 C--------------------------------------------------------------------
       END SUBROUTINE initLogging
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E    S C R E E N   
+C     S U B R O U T I N E    S C R E E N
 C--------------------------------------------------------------------
 C     jgf49.44: General purpose subroutine to write a message to
 C     the screen with a certain "logging level", and subject to the
-C     user's selection of where to write screen output. The logging 
+C     user's selection of where to write screen output. The logging
 C     level is controlled by NABOUT from the fort.15 file. The actual
 C     destination of messages written to the screen is controlled by
-C     NSCREEN from the fort.15 file. 
+C     NSCREEN from the fort.15 file.
 C
 C     In parallel, only the processor with rank 0 actually writes
 C     the message.
 C
-C     This subroutine assumes that the global variable "caller" has 
+C     This subroutine assumes that the global variable "caller" has
 C     been set to the name of the subroutine calling it. Therefore,
-C     the setMessageSource subroutine must be called at the beginning 
+C     the setMessageSource subroutine must be called at the beginning
 C     of the subroutine that calls this one, and unsetMessageSource
-C     must be called at the end. 
+C     must be called at the end.
 C--------------------------------------------------------------------
       SUBROUTINE screen(level, message)
-      IMPLICIT NONE 
+      IMPLICIT NONE
       INTEGER, intent(in) :: level
       CHARACTER(*), intent(in) :: message
       INTEGER j  ! loop counter for stack
-C 
+C
       IF (myProc.eq.0) THEN
          IF (NSCREEN.ne.0) THEN
             IF (level.ge.NABOUT) THEN
 #ifdef FULL_STACK
-               write(screenUnit,331,advance="no") 
+               write(screenUnit,331,advance="no")
      7             trim(logLevelNames(level+2)),
-     &             (trim(messageSources(j)),j=1,sourceNumber) 
+     &             (trim(messageSources(j)),j=1,sourceNumber)
                write(screenUnit,332) trim(message)
 #else
                write(screenUnit,333) trim(logLevelNames(level+2)),
@@ -657,29 +656,29 @@ C
             ENDIF
          ENDIF
       ENDIF
-331   FORMAT(A,": ",A,50(:,"->",A))   
-332   FORMAT(": ",A)   
-333   FORMAT(A,": ",A,": ",A)   
+331   FORMAT(A,": ",A,50(:,"->",A))
+332   FORMAT(": ",A)
+333   FORMAT(A,": ",A,": ",A)
 C--------------------------------------------------------------------
       END SUBROUTINE screen
 C--------------------------------------------------------------------
 
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E    L O G   M E S S A G E   
+C     S U B R O U T I N E    L O G   M E S S A G E
 C--------------------------------------------------------------------
 C     jgf49.44: General purpose subroutine to write a message to
 C     the fort.16 file. In parallel, processors of all ranks will
 C     write the message to their own subdomain fort.16 files.
 C
-C     This subroutine assumes that the global variable "caller" has 
+C     This subroutine assumes that the global variable "caller" has
 C     been set to the name of the subroutine calling it. Therefore,
-C     the setMessageSource subroutine must be called at the beginning 
+C     the setMessageSource subroutine must be called at the beginning
 C     of the subroutine that calls this one, and unsetMessageSource
-C     must be called at the end. 
+C     must be called at the end.
 C--------------------------------------------------------------------
       SUBROUTINE logMessage(level, message)
-      IMPLICIT NONE 
+      IMPLICIT NONE
       INTEGER, intent(in) :: level
       CHARACTER(*), intent(in) :: message
       INTEGER j  ! loop counter for stack
@@ -687,7 +686,7 @@ C
       IF (level.ge.NABOUT) THEN
 #ifdef FULL_STACK
          write(16,331,advance="no") trim(logLevelNames(level+2)),
-     &       (trim(messageSources(j)),j=1,sourceNumber) 
+     &       (trim(messageSources(j)),j=1,sourceNumber)
          write(16,332) trim(message)
 #else
          write(16,333) trim(logLevelNames(level+2)),
@@ -697,24 +696,24 @@ C
                flush(16)
 #endif
       ENDIF
-331   FORMAT(A,": ",A,50(:,"->",A))   
-332   FORMAT(": ",A)   
-333   FORMAT(A,": ",A,": ",A)   
+331   FORMAT(A,": ",A,50(:,"->",A))
+332   FORMAT(": ",A)
+333   FORMAT(A,": ",A,": ",A)
 C--------------------------------------------------------------------
       END SUBROUTINE logMessage
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E   A L L    M E S S A G E   
+C     S U B R O U T I N E   A L L    M E S S A G E
 C--------------------------------------------------------------------
 C     jgf49.44: General purpose subroutine to write a message to
 C     both the screen and to the fort.16 log file.
 C--------------------------------------------------------------------
       SUBROUTINE allMessage(level, message)
-      IMPLICIT NONE 
+      IMPLICIT NONE
       INTEGER, intent(in) :: level
       CHARACTER(*), intent(in) :: message
-C 
+C
       call logMessage(level, message)
       call screen(level, message)
 C--------------------------------------------------------------------
@@ -722,15 +721,15 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E   S E T   M E S S A G E   S O U R C E   
+C     S U B R O U T I N E   S E T   M E S S A G E   S O U R C E
 C--------------------------------------------------------------------
 C     jgf49.44: Sets the name of the subroutine that is writing
 C     log and/or screen messages. Must use at the start of any subroutine
 C     that calls screen, logMessage, or allMessage.
 C--------------------------------------------------------------------
       SUBROUTINE setMessageSource(source)
-      IMPLICIT NONE 
-      CHARACTER(*), intent(in) :: source 
+      IMPLICIT NONE
+      CHARACTER(*), intent(in) :: source
 C
       sourceNumber = sourceNumber + 1
       messageSources(sourceNumber) = source
@@ -739,14 +738,14 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E   U N S E T   M E S S A G E   S O U R C E   
+C     S U B R O U T I N E   U N S E T   M E S S A G E   S O U R C E
 C--------------------------------------------------------------------
-C     jgf49.44: Removes the name of the subroutine that is no longer 
-C     writing log and/or screen messages. Must use at the end of 
+C     jgf49.44: Removes the name of the subroutine that is no longer
+C     writing log and/or screen messages. Must use at the end of
 C     any subroutine that calls screen, logMessage, or allMessage.
 C--------------------------------------------------------------------
       SUBROUTINE unsetMessageSource()
-      IMPLICIT NONE 
+      IMPLICIT NONE
 C
       sourceNumber = sourceNumber - 1
 C--------------------------------------------------------------------
@@ -755,17 +754,17 @@ C--------------------------------------------------------------------
 
 
 C--------------------------------------------------------------------
-C                    S U B R O U T I N E 
-C     A L L O C A T E   F U L L   D O M A I N   I O   A R R A Y S 
+C                    S U B R O U T I N E
+C     A L L O C A T E   F U L L   D O M A I N   I O   A R R A Y S
 C--------------------------------------------------------------------
 C     jgf49.44: Allocates memory for the full domain arrays for i/o
-C     purposes; these arrays are both read from and written to hotstart 
-C     files. Arrays that are only written are allocated in the 
-C     subroutine that does the writing. 
+C     purposes; these arrays are both read from and written to hotstart
+C     files. Arrays that are only written are allocated in the
+C     subroutine that does the writing.
 C--------------------------------------------------------------------
       SUBROUTINE allocateFullDomainIOArrays()
-      IMPLICIT NONE 
-C 
+      IMPLICIT NONE
+C
       call setMessageSource("allocateFullDomainIOArrays")
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -791,25 +790,25 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E      B I N A R Y   R E A D   2 D 
+C     S U B R O U T I N E      B I N A R Y   R E A D   2 D
 C--------------------------------------------------------------------
 C     jgf49.44: Reads a real(sz) array with the specified length
-C     from a binary hotstart file; takes the file counter as an 
+C     from a binary hotstart file; takes the file counter as an
 C     input argument and returns the new value of the file counter
 C     at the end of the read. Its called "2D" even though it reads
 C     a 1D fortran array because the array represents a 2D physical
-C     quantity in an unstructured mesh. 
+C     quantity in an unstructured mesh.
 C--------------------------------------------------------------------
       SUBROUTINE binaryRead2D(array, length, lun, counter)
       USE SIZES, ONLY : SZ
       IMPLICIT NONE
       REAL(SZ), intent(out), dimension(:) :: array ! the data to read from the hotstart file
       INTEGER, intent(in) :: length  ! the number of values to read
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
-      INTEGER, intent(inout) :: counter ! i/o position in the file 
-C 
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+C
       INTEGER i      ! array index
-C      
+C
       call setMessageSource("binaryRead2D")
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -828,22 +827,22 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E      R E A L   R E A D   2 D 
+C     S U B R O U T I N E      R E A L   R E A D   2 D
 C--------------------------------------------------------------------
 C     kmd: Reads a real(sz) array with the specified length
-C     from an initial condition file in ascii format; it has the 
-C     same format as the binary version but does not require the 
-C     file counter. 
+C     from an initial condition file in ascii format; it has the
+C     same format as the binary version but does not require the
+C     file counter.
 C--------------------------------------------------------------------
       SUBROUTINE realRead2D(array, length, lun )
       USE SIZES, ONLY : SZ
       IMPLICIT NONE
       REAL(SZ), intent(out), dimension(:) :: array ! the data to read from the hotstart file
       INTEGER, intent(in) :: length  ! the number of values to read
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
-C 
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+C
       INTEGER i      ! array index
-C      
+C
       call setMessageSource("realRead2D")
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -861,10 +860,10 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E      B I N A R Y   W R I T E   2 D 
+C     S U B R O U T I N E      B I N A R Y   W R I T E   2 D
 C--------------------------------------------------------------------
 C     jgf49.49.01: Writes a real(sz) array with the specified length
-C     to a binary hotstart file; takes the file counter as an 
+C     to a binary hotstart file; takes the file counter as an
 C     input argument and returns the new value of the file counter
 C     at the end of the write.
 C--------------------------------------------------------------------
@@ -873,11 +872,11 @@ C--------------------------------------------------------------------
       IMPLICIT NONE
       REAL(SZ), intent(in), dimension(:) :: array ! data to write
       INTEGER, intent(in) :: length  ! the number of values to write
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to write to 
-      INTEGER, intent(inout) :: counter ! i/o position in the file 
-C 
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to write to
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+C
       INTEGER i      ! array index
-C      
+C
       call setMessageSource("binaryWrite2D")
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -896,7 +895,7 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E      B I N A R Y   I N T   R E A D   2 D 
+C     S U B R O U T I N E      B I N A R Y   I N T   R E A D   2 D
 C--------------------------------------------------------------------
 C     jgf49.44: Same as binaryRead2D except it reads an integer.
 C--------------------------------------------------------------------
@@ -905,11 +904,11 @@ C--------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, intent(out), dimension(:) :: array ! the data to read from the hotstart file
       INTEGER, intent(in) :: length  ! the number of values to read
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
-      INTEGER, intent(inout) :: counter ! i/o position in the file 
-C 
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+C
       INTEGER i      ! array index
-C      
+C
       call setMessageSource("binaryIntRead2D")
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -929,7 +928,7 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E      R E A L   I N T   R E A D   2 D 
+C     S U B R O U T I N E      R E A L   I N T   R E A D   2 D
 C--------------------------------------------------------------------
 C     kmd: Same as realRead2D except it reads an integer.
 C--------------------------------------------------------------------
@@ -938,10 +937,10 @@ C--------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, intent(out), dimension(:) :: array ! the data to read from the hotstart file
       INTEGER, intent(in) :: length  ! the number of values to read
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
-C     
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+C
       INTEGER i      ! array index
-C      
+C
       call setMessageSource("realIntRead2D")
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -950,7 +949,7 @@ C
        DO i=1, length
           READ(lun,*) array(i)
        END DO
-C     
+C
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -960,9 +959,9 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E      B I N A R Y   R E A D   3 D 
+C     S U B R O U T I N E      B I N A R Y   R E A D   3 D
 C--------------------------------------------------------------------
-C     jgf49.44: Same as binaryRead2D except it reads data with 
+C     jgf49.44: Same as binaryRead2D except it reads data with
 C     both horizontal and vertical lengths. Also used for reading
 C     harmonic analysis arrays from binary hotstart file.
 C--------------------------------------------------------------------
@@ -973,11 +972,11 @@ C--------------------------------------------------------------------
       REAL(SZ), intent(out), dimension(:,:) :: array ! data to read from the hotstart file
       INTEGER, intent(in) :: iLength  ! the number of horiz values to read
       INTEGER, intent(in) :: jLength  ! the number of layers
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
-      INTEGER, intent(inout) :: counter ! i/o position in the file 
-C 
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+C
       INTEGER i,j      ! array indices
-C      
+C
       call setMessageSource("binaryRead3D")
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -998,9 +997,9 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E      R E A L   R E A D   3 D 
+C     S U B R O U T I N E      R E A L   R E A D   3 D
 C--------------------------------------------------------------------
-C     kmd: Same as realRead2D except it reads data with 
+C     kmd: Same as realRead2D except it reads data with
 C     both horizontal and vertical lengths.
 C--------------------------------------------------------------------
       SUBROUTINE realRead3D(array, iLength, jLength, lun)
@@ -1009,10 +1008,10 @@ C--------------------------------------------------------------------
       REAL(SZ), intent(out), dimension(:,:) :: array ! data to read from the hotstart file
       INTEGER, intent(in) :: iLength  ! the number of horiz values to read
       INTEGER, intent(in) :: jLength  ! the number of layers
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
-C 
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+C
       INTEGER i,j      ! array indices
-C      
+C
       call setMessageSource("realRead3D")
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -1032,8 +1031,8 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E 
-C            R E A D  A N D  M A P  T O  S U B D O M A I N  2 D  
+C     S U B R O U T I N E
+C            R E A D  A N D  M A P  T O  S U B D O M A I N  2 D
 C-----------------------------------------------------------------------
 C     jgf49.48.04 Reads a fulldomain array in binary format and maps
 C     to a subdomain array.
@@ -1045,12 +1044,12 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
 C
       REAL(SZ), intent(out), dimension(:) :: sd_array ! subdomain array
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
-      INTEGER, intent(inout) :: counter ! i/o position in the file 
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
       INTEGER, intent(in) :: method  ! logical to determine binary or real
       INTEGER :: sd_node_number
       INTEGER :: fd_node_number
-C 
+C
       REAL(SZ), allocatable, dimension(:) :: fd_array ! full domain array
 C
       call setMessageSource("readAndMapToSubdomain2D")
@@ -1059,15 +1058,15 @@ C
 #endif
       ! serial
       IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-         IF (method.EQ.1) THEN 
+         IF (method.EQ.1) THEN
             CALL binaryRead2D(sd_array, NP, lun, counter)
-         ELSE IF (method.EQ.2) THEN 
+         ELSE IF (method.EQ.2) THEN
             CALL realRead2D(sd_array, NP, lun)
-         ELSE 
-            WRITE(16,*) "Passing of binary or real 
+         ELSE
+            WRITE(16,*) "Passing of binary or real
      &         information incorrect"
             STOP
-         END IF 
+         END IF
       ! parallel
       ELSE
          IF (method.EQ.1) THEN
@@ -1075,27 +1074,27 @@ C
             CALL binaryRead2D(fd_array, NP_G, lun, counter)
             ! loop over subdomain nodes
             DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number 
+               ! get the corresponding fulldomain node number
                fd_node_number = ABS(NODES_LG(sd_node_number))
                ! fill in the subdomain arrays with the corresponding
                ! fulldomain values
                sd_array(sd_node_number) = fd_array(fd_node_number)
             END DO
             deallocate(fd_array)
-         ELSE IF (method.EQ.2) THEN 
+         ELSE IF (method.EQ.2) THEN
             allocate(fd_array(NP_G))
             CALL realRead2D(fd_array, NP_G, lun)
             ! loop over subdomain nodes
             DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number 
+               ! get the corresponding fulldomain node number
                fd_node_number = ABS(NODES_LG(sd_node_number))
                ! fill in the subdomain arrays with the corresponding
                ! fulldomain values
                sd_array(sd_node_number) = fd_array(fd_node_number)
             END DO
             deallocate(fd_array)
-         ELSE 
-            WRITE(16,*) "Passing of binary or real 
+         ELSE
+            WRITE(16,*) "Passing of binary or real
      &         information incorrect"
             STOP
          END IF
@@ -1110,8 +1109,8 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E 
-C            R E A D  A N D  M A P  T O  S U B D O M A I N  I N T  2 D  
+C     S U B R O U T I N E
+C            R E A D  A N D  M A P  T O  S U B D O M A I N  I N T  2 D
 C-----------------------------------------------------------------------
 C     jgf49.48.04 Reads a fulldomain array in binary format and maps
 C     to a subdomain array.
@@ -1122,12 +1121,12 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
 C
       INTEGER, intent(out), dimension(:) :: sd_array ! subdomain array
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
-      INTEGER, intent(inout) :: counter ! i/o position in the file 
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
       INTEGER, intent(in) :: method ! logical to determine binary or real
       INTEGER :: sd_node_number
       INTEGER :: fd_node_number
-C 
+C
       INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
 C
       call setMessageSource("readAndMapToSubdomainInt2D")
@@ -1141,10 +1140,10 @@ C
          ELSE IF (method.EQ.2) THEN
            CALL realIntRead2D(sd_array, NP, lun)
          ELSE
-            WRITE(16,*) "Passing of binary or real 
+            WRITE(16,*) "Passing of binary or real
      &         information incorrect"
             STOP
-         END IF 
+         END IF
       ! parallel
       ELSE
          IF (method.EQ.1) THEN
@@ -1152,7 +1151,7 @@ C
             CALL binaryIntRead2D(fd_array, NP_G, lun, counter)
             ! loop over subdomain nodes
             DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number 
+               ! get the corresponding fulldomain node number
                fd_node_number = ABS(NODES_LG(sd_node_number))
                ! fill in the subdomain arrays with the corresponding
                ! fulldomain values
@@ -1164,7 +1163,7 @@ C
             CALL realIntRead2D(fd_array, NP_G, lun)
             ! loop over subdomain nodes
             DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number 
+               ! get the corresponding fulldomain node number
                fd_node_number = ABS(NODES_LG(sd_node_number))
                ! fill in the subdomain arrays with the corresponding
                ! fulldomain values
@@ -1172,7 +1171,7 @@ C
             END DO
             deallocate(fd_array)
          ELSE
-            WRITE(16,*) "Passing of binary or real 
+            WRITE(16,*) "Passing of binary or real
      &         information incorrect"
             STOP
          END IF
@@ -1187,9 +1186,9 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E 
-C            R E A D  A N D  M A P  E L E   
-C                 T O  S U B D O M A I N  I N T  2 D  
+C     S U B R O U T I N E
+C            R E A D  A N D  M A P  E L E
+C                 T O  S U B D O M A I N  I N T  2 D
 C-----------------------------------------------------------------------
 C     jgf49.48.04 Reads a fulldomain array in binary format and maps
 C     to a subdomain array (for elemental mappings as opposed to node
@@ -1200,12 +1199,12 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
 C
       INTEGER, intent(out), dimension(:) :: sd_array ! subdomain array
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
-      INTEGER, intent(inout) :: counter ! i/o position in the file 
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
       INTEGER, intent(in) :: method ! logical to determine binary or real
       INTEGER :: sd_ele_number
       INTEGER :: fd_ele_number
-C 
+C
       INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
 C
       call setMessageSource("readAndMapEleToSubdomainInt2D")
@@ -1214,12 +1213,12 @@ C
 #endif
       ! serial
       IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-         IF (method.EQ.1) THEN 
+         IF (method.EQ.1) THEN
             CALL binaryIntRead2D(sd_array, NE, lun, counter)
          ELSE IF (method.EQ.2) THEN
             CALL realIntRead2D(sd_array, NE, lun)
          ELSE
-            WRITE(16,*) "Passing of binary or real 
+            WRITE(16,*) "Passing of binary or real
      &         information incorrect"
             STOP
          END IF
@@ -1230,27 +1229,27 @@ C
             CALL binaryIntRead2D(fd_array, NE_G, lun, counter)
             ! loop over subdomain nodes
             DO sd_ele_number=1,ne
-               ! get the corresponding fulldomain ele number 
+               ! get the corresponding fulldomain ele number
                fd_ele_number = ABS(IMAP_EL_LG(sd_ele_number))
                ! fill in the subdomain arrays with the corresponding
                ! fulldomain values
                sd_array(sd_ele_number) = fd_array(fd_ele_number)
             END DO
             deallocate(fd_array)
-         ELSE IF (method.EQ.2) THEN 
+         ELSE IF (method.EQ.2) THEN
             allocate(fd_array(NE_G))
             CALL realIntRead2D(fd_array, NE_G, lun)
             ! loop over subdomain nodes
             DO sd_ele_number=1,ne
-               ! get the corresponding fulldomain ele number 
+               ! get the corresponding fulldomain ele number
                fd_ele_number = ABS(IMAP_EL_LG(sd_ele_number))
                ! fill in the subdomain arrays with the corresponding
                ! fulldomain values
                sd_array(sd_ele_number) = fd_array(fd_ele_number)
             END DO
             deallocate(fd_array)
-         ELSE 
-            WRITE(16,*) "Passing of binary or real 
+         ELSE
+            WRITE(16,*) "Passing of binary or real
      &         information incorrect"
             STOP
          END IF
@@ -1266,8 +1265,8 @@ C-----------------------------------------------------------------------
 
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E 
-C            R E A D  A N D  M A P  T O  S U B D O M A I N  3 D  
+C     S U B R O U T I N E
+C            R E A D  A N D  M A P  T O  S U B D O M A I N  3 D
 C-----------------------------------------------------------------------
 C     jgf49.48.04 Reads a fulldomain array in binary format and maps
 C     to a subdomain array.
@@ -1279,13 +1278,13 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
 C
       REAL(SZ), intent(out), dimension(:,:) :: sd_array ! subdomain array
-      INTEGER, intent(in) :: nfen    ! number of vertical layers  
-      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from 
-      INTEGER, intent(inout) :: counter ! i/o position in the file 
+      INTEGER, intent(in) :: nfen    ! number of vertical layers
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
       INTEGER, intent(in) :: method ! logical to determine binary or real
       INTEGER :: sd_node_number
       INTEGER :: fd_node_number
-C 
+C
       REAL(SZ), allocatable, dimension(:,:) :: fd_array ! full domain array
 C
       call setMessageSource("readAndMapToSubdomain3D")
@@ -1299,7 +1298,7 @@ C
          ELSE IF (method.EQ.2) THEN
             CALL realRead3D(sd_array, NP, NFEN, lun)
          ELSE
-            WRITE(16,*) "Passing of binary or real 
+            WRITE(16,*) "Passing of binary or real
      &         information incorrect"
             STOP
          END IF
@@ -1310,19 +1309,19 @@ C
             CALL binaryRead3D(fd_array, NP_G, NFEN, lun, counter)
             ! loop over subdomain nodes
             DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number 
+               ! get the corresponding fulldomain node number
                fd_node_number = ABS(NODES_LG(sd_node_number))
                ! fill in the subdomain arrays with the corresponding
                ! fulldomain values
                sd_array(sd_node_number,:) = fd_array(fd_node_number,:)
             END DO
             deallocate(fd_array)
-         ELSE IF (method.EQ.2) THEN 
+         ELSE IF (method.EQ.2) THEN
             allocate(fd_array(NP_G,NFEN))
             CALL realRead3D(fd_array, NP_G, NFEN, lun)
             ! loop over subdomain nodes
             DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number 
+               ! get the corresponding fulldomain node number
                fd_node_number = ABS(NODES_LG(sd_node_number))
                ! fill in the subdomain arrays with the corresponding
                ! fulldomain values
@@ -1330,7 +1329,7 @@ C
             END DO
             deallocate(fd_array)
          ELSE
-            WRITE(16,*) "Passing of binary or real 
+            WRITE(16,*) "Passing of binary or real
      &         information incorrect"
             STOP
          END IF
@@ -1346,13 +1345,13 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E   O P E N  F I L E  F O R  R E A D 
+C     S U B R O U T I N E   O P E N  F I L E  F O R  R E A D
 C-----------------------------------------------------------------------
 C     jgf50.16 Added general subroutine for opening an existing input
 C     file for reading. Includes error checking.
 C-----------------------------------------------------------------------
       SUBROUTINE openFileForRead(lun, filename, errorIO)
-      IMPLICIT NONE      
+      IMPLICIT NONE
       INTEGER, intent(in) :: lun   ! fortran logical unit number
       CHARACTER(*), intent(in) :: filename ! full pathname of file
       INTEGER, intent(out) :: errorIO  ! zero if the file opened successfully
@@ -1364,7 +1363,7 @@ C
 #endif
 C
       errorIO = 0
-C 
+C
 C     Check to see if file exists
       write(scratchMessage,21) lun
   21  format("Searching for file to open on unit ",I5,"...")
@@ -1420,14 +1419,14 @@ C...
       IMPLICIT NONE
 C
       ALLOCATE ( SLAM(MNP),SFEA(MNP),X(MNP),Y(MNP))
-      ALLOCATE ( DP(MNP),SFAC(MNP)) 
-      ALLOCATE ( NM(MNE,3)) 
+      ALLOCATE ( DP(MNP),SFAC(MNP))
+      ALLOCATE ( NM(MNE,3))
       ALLOCATE ( ETAS(MNP))
       ALLOCATE ( GWCE_LV(MNP))
       ALLOCATE ( UU1(MNP),VV1(MNP))
       ALLOCATE ( QX1(MNP),QY1(MNP))
       ALLOCATE ( NNODECODE(MNP))
-      ALLOCATE ( NOFF(MNE),NOFFOLD(MNE)) 
+      ALLOCATE ( NOFF(MNE),NOFFOLD(MNE))
       ALLOCATE ( NNEIGH(MNP),MJU(MNP),NODELE(MNP))
       ALLOCATE ( NIBNODECODE(MNP))
       ALLOCATE ( CH1(MNP),TRANS_LV_B(MNP),TRANS_LV_A(MNP))
@@ -1453,7 +1452,7 @@ C
       ALLOCATE ( VIDBCPDXOH(MNP), VIDBCPDYOH(MNP))
       ALLOCATE ( DAConc(MNP))
       ALLOCATE ( LSXX(MNP),LSXY(MNP),LSYX(MNP),LSYY(MNP))
-ckmd	 Added in parameters for the pc algorithm 
+ckmd   Added in parameters for the pc algorithm
       ALLOCATE ( ETA0(MNP), UU0(MNP), VV0(MNP))
       ALLOCATE ( QX0(MNP), QY0(MNP), ETAS0(MNP))
       ALLOCATE ( TK0(MNP), TK2(MNP))
@@ -1502,7 +1501,7 @@ C...    which are deallocated at the end of read_input.F
 
 
 C...
-C...Allocate space for Arrays needed to determine neighbor tables   
+C...Allocate space for Arrays needed to determine neighbor tables
 C...
       SUBROUTINE ALLOC_MAIN1b()
       IMPLICIT NONE
@@ -1517,10 +1516,10 @@ C
 
 C...
 C...Allocate space for Arrays dimensioned by MNOPE and MNETA
-C...     
+C...
       SUBROUTINE ALLOC_MAIN2()
       IMPLICIT NONE
-C    
+C
       ALLOCATE ( ESBIN1(MNETA),ESBIN2(MNETA))
       ALLOCATE ( NBDV(MNOPE,MNETA))
       ALLOCATE ( NVDLL(MNOPE),NBD(MNETA), IBTYPEE(MNOPE))
@@ -1529,8 +1528,8 @@ C    kmd48.33bc - arrays for boundary conditions
       IF (CBAROCLINIC) THEN
          ALLOCATE ( LNM_BC1(MNETA), LNM_BC2(MNETA) )
          ALLOCATE ( LNM_BC(MNETA) )
-      END IF 
-C      
+      END IF
+C
       RETURN
       END SUBROUTINE ALLOC_MAIN2
 
@@ -1566,7 +1565,7 @@ C
       ALLOCATE ( QNIN1(MNVEL),QNIN2(MNVEL))
       ALLOCATE ( NBVV(MNBOU,0:MNVEL))
       ALLOCATE ( NVELL(MNBOU), IBTYPE(MNBOU))
-C      
+C
 C     jgf46.21 Added support for IBTYPE=52.
       ALLOCATE ( ElevDisc(MNVEL))
 C
@@ -1583,7 +1582,7 @@ C     used without initialization.
 
 
 C...
-C...Allocate space for tidal potential terms 
+C...Allocate space for tidal potential terms
 C...
       SUBROUTINE ALLOC_MAIN4a()
       IMPLICIT NONE
@@ -1591,18 +1590,18 @@ C
       ALLOCATE ( TPK(MNTIF),AMIGT(MNTIF),FFT(MNTIF) )
       ALLOCATE ( FACET(MNTIF),PERT(MNTIF),ETRF(MNTIF) )
       ALLOCATE ( TIPOTAG(MNTIF) )
-      
+
       IF ( CTIP ) THEN
          ALLOCATE( TIP1(MNP),TIP2(MNP))
-      ENDIF  
-C      
+      ENDIF
+C
       RETURN
       END SUBROUTINE ALLOC_MAIN4a
 
 
-C...     
-C...Allocate space for Earth load/self-attraction tide 
-C...     
+C...
+C...Allocate space for Earth load/self-attraction tide
+C...
       SUBROUTINE ALLOC_MAIN4b()
       IMPLICIT NONE
 C
@@ -1612,16 +1611,16 @@ C
       END SUBROUTINE ALLOC_MAIN4b
 
 
-C...     
-C...Allocate space for Arrays dimensioned by MNBFR      
-C...     
+C...
+C...Allocate space for Arrays dimensioned by MNBFR
+C...
       SUBROUTINE ALLOC_MAIN5()
       IMPLICIT NONE
 C
       ALLOCATE ( AMIG(MNBFR),PER(MNBFR))
       ALLOCATE ( FF(MNBFR),FACE(MNBFR))
       ALLOCATE ( BOUNTAG(MNBFR) )
-C      
+C
       RETURN
       END SUBROUTINE ALLOC_MAIN5
 
@@ -1636,7 +1635,7 @@ C
       ALLOCATE ( ENAM(MNFFR,MNVEL),ENPH(MNFFR,MNVEL))
       ALLOCATE ( FBOUNTAG(MNFFR))
       ALLOCATE ( FAMIG(MNFFR), FFF(MNFFR), FFACE(MNFFR), FPER(MNFFR) )
-C      
+C
       RETURN
       END SUBROUTINE ALLOC_MAIN6
 
@@ -1655,7 +1654,7 @@ C
       END SUBROUTINE ALLOC_MAIN7
 
 
-C...     
+C...
 C...Allocate space for arrays used for station velocity output
 C...
       SUBROUTINE ALLOC_MAIN8()
@@ -1665,7 +1664,7 @@ C
       ALLOCATE ( NNV(MNSTAV))
       ALLOCATE ( UU00(MNSTAV),VV00(MNSTAV))
       ALLOCATE ( STAIV1(MNSTAV),STAIV2(MNSTAV),STAIV3(MNSTAV))
-C      
+C
       RETURN
       END SUBROUTINE ALLOC_MAIN8
 
@@ -1680,7 +1679,7 @@ C
       ALLOCATE ( NNC(MNSTAC))
       ALLOCATE ( CC00(MNSTAC))
       ALLOCATE ( STAIC1(MNSTAC),STAIC2(MNSTAC),STAIC3(MNSTAC))
-C      
+C
       RETURN
       END SUBROUTINE ALLOC_MAIN9
 
@@ -1704,13 +1703,13 @@ C
 
 
 C...
-C...Allocate space for arrays needed by GWCE matrix and iterative solver   
+C...Allocate space for arrays needed by GWCE matrix and iterative solver
 C...
 
       SUBROUTINE ALLOC_MAIN11_LUMPED()
       IMPLICIT NONE
 C     jgf48.4619: Array used in lumped GWCE (from Seizo)
-      ALLOCATE( COEFD(MNP) ) 
+      ALLOCATE( COEFD(MNP) )
       RETURN
       END SUBROUTINE ALLOC_MAIN11_LUMPED
 
@@ -1721,7 +1720,7 @@ C     jgf48.4619: Array used in lumped GWCE (from Seizo)
       IMPLICIT NONE
 
 C  Arrays used by JCG iterative solver
-      
+
       ALLOCATE( OBCCOEF(MNETA,MNEI-1),COEF(MNP,MNEI))
       ALLOCATE( IWKSP(3*MNP),WKSP(4*MNP+400) )
       ALLOCATE( IPARM(12),RPARM(12) )
@@ -1731,7 +1730,7 @@ C
 
 
 C...
-C...Allocate space for wind forcing   
+C...Allocate space for wind forcing
 C...
       SUBROUTINE ALLOC_MAIN12()
       IMPLICIT NONE
@@ -1842,7 +1841,7 @@ C-------------------------------------------------------------------
       CHARACTER(50) LVAR(3)
       INTEGER LS, L1, LEN1, I
       INTEGER L2,L3,L4,PB
-      INTEGER NAMSTART  ! position of beginning of station name   
+      INTEGER NAMSTART  ! position of beginning of station name
       INTEGER NAMEND    ! position of end of station name
       INTEGER BANGEND   ! location of terminating "!", if any
 C
@@ -1919,23 +1918,23 @@ C              http://www.gbenthien.net/strings/index.html
        DO I=1,LENSTR
           CH=STR(I:I)
           ICH=IACHAR(CH)
-        
+
           SELECT CASE(ICH)
-        
+
           CASE(9,32)     ! SPACE OR TAB CHARACTER
              IF(ISP==0) THEN
                 K=K+1
                 OUTSTR(K:K)=' '
              END IF
              ISP=1
-        
+
           CASE(33:)      ! NOT A SPACE, QUOTE, OR CONTROL CHARACTER
              K=K+1
              OUTSTR(K:K)=CH
              ISP=0
-        
+
           END SELECT
-        
+
        END DO
 
        STR=ADJUSTL(OUTSTR)
@@ -1987,7 +1986,7 @@ C     modules.
 C
       !=================================================================
       FUNCTION front_trim(buf) RESULT(res)
-C     jgf49.31 Subroutine to return the index of the first non-space 
+C     jgf49.31 Subroutine to return the index of the first non-space
 C     character of a string.
       !=================================================================
       IMPLICIT NONE

@@ -403,7 +403,6 @@ c     jgf Set defaults for model type (IM). All LOGICAL variables are
 c     initialized to .FALSE. when declared in global.F.  To use original
 c     GWCE equation, uncomment the following line and comment out the
 c     following three lines.
-c         CGWCE_Orig       = .TRUE.  !uncomment for original GWCE
          CGWCE_New        = .TRUE. !comment out for original GWCE
          CGWCE_LS_KGQ     = .TRUE. !comment out for original GWCE
          CGWCE_Advec_NC   = .TRUE. !comment out for original GWCE
@@ -662,7 +661,6 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
 c     WRITE(16,*) '         C3D_BTrans       = ',C3D_BTrans            !haven't yet read 3D input
       WRITE(16,*) '         C3D_PTrans       = ',C3D_PTrans
       WRITE(16,*) '         CBaroclinic      = ',CBaroclinic
-      WRITE(16,*) '         CGWCE_Orig       = ',CGWCE_Orig
       WRITE(16,*) '         CGWCE_Lump       = ',CGWCE_Lump
       WRITE(16,*) '         CGWCE_LS_KGQ     = ',CGWCE_LS_KGQ
       WRITE(16,*) '         CGWCE_LS_2PartQ  = ',CGWCE_LS_2PartQ
@@ -1677,7 +1675,6 @@ ckmd   order to turn on the predictor-corrector algorithm.
       READ(15,*) DTDP
       IF(DTDP.LT.0.d0) THEN
          CPRECOR    = .TRUE.
-         CGWCE_Orig = .FALSE.
          CGWCE_New  = .FALSE. !jgf Turn off the default.
          CME_New_NC = .FALSE. !jgf Turn off the default.
          CME_New_C1 = .FALSE.
@@ -2489,7 +2486,7 @@ C     initialized in the call to InitNodalAttr.
           WRITE(16,1111) ESLM
  1111     FORMAT(5X,'Smagorinski lateral stress coefficient with ',
      &              'constant =',E15.8,//)
-          IF((CGWCE_Orig).OR.(CGWCE_LS_KGQ).OR.(CME_Orig)) THEN
+          IF((CGWCE_LS_KGQ).OR.(CME_Orig)) THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
               WRITE(screenunit,1112)
               WRITE(screenunit,9972)
@@ -2501,8 +2498,8 @@ C     initialized in the call to InitNodalAttr.
             WRITE(16,9973)
             WRITE(16,1110)
 1110        FORMAT(5X,'The Smagorinski lateral stress coefficient is ',
-     &                'not compatible with the original ADCIRC GWCE',//
-     &             5X,'or Momentum Eqn formulations or with the ',
+     &                'not compatible with the',//
+     &             5X,'Momentum Eqn formulations or with the ',
      &                'Kolar & Gray GWCE lateral stress formulation',//)
 #ifdef CMPI
             call msg_fini()
