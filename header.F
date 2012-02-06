@@ -2,7 +2,14 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
-C  v50.45   - 02/04/2010 - jgf - Cleaned up stray references to CGWCE_Original.
+C  v50.46   - 02/04/2012 - jgf - Created new nodal attribute called 
+C             water_surface_elevation_smoother and added code to GWCE_New
+C             to apply the smoother if it has been loaded; the value of this
+C             nodal attribute is the time step increment between applications
+C             of the smoother; i.e., 0 represents no smoothing at that node,
+C             1 represents smoothing at every time step, 2 indicates smoothing
+C             every other time step, etc. 
+C  v50.45   - 02/04/2012 - jgf - Cleaned up stray references to CGWCE_Original.
 C  v50.44   - 02/04/2012 - jgf - Set namelist scratch file to write to localdir
 C             to avoid collisions when running in parallel; removed the 
 C             GWCE_Original() subroutine from timestep.F per Rick's request,

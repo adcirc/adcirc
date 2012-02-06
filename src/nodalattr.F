@@ -1,7 +1,7 @@
 C******************************************************************************
 C     PADCIRC VERSION 46.00 xx/xx/2006
 C     last changes in this file VERSION 46.00
-C     
+C
 C     Written for ADCIRC v46.00 by Jason G. Fleming.
 C******************************************************************************
 C
@@ -32,15 +32,15 @@ C     Summary of the file format for the Nodal Attributes File:
 C
 C     AGRID                       ! user's comment line - should be a cross
 C                                 !    reference to the grid file
-C     NumOfNodes                  ! number of nodes, must match NP 
+C     NumOfNodes                  ! number of nodes, must match NP
 C                                 !    from grid file
 C     NAttr                       ! number of attributes contained in this file
 C
 C     do i=1, NAttr
-C        AttrName(i)              ! nodal attribute name (see 
+C        AttrName(i)              ! nodal attribute name (see
 C                                 !    valid names below)
 C        Units(i)                 ! physical units (ft, m/s, none)
-C        ValuesPerNode(i)         ! number of values at each node for 
+C        ValuesPerNode(i)         ! number of values at each node for
 C                                 !   a particular attribute
 C        DefaultVal(i)            ! default value(s) for the nodal attribute
 C     end do
@@ -52,11 +52,11 @@ C        do j=1, NumNodesNotDefault(i)
 C           n, (Attr(n,k), k=1,ValuesPerNode(i))
 C        end do
 C     end do
-C     
-C 
+C
+C
 C
 C     Valid labels are as follows:
-C     
+C
 C     ADCIRC Variable:       CF-Style Label:
 C      Tau0                  "primitive_weighting_in_continuity_equation"
 C      StartDry              "surface_submergence_state"
@@ -93,97 +93,102 @@ C             ADCIRC is coupled to SWAN.
 C
 C     The following flags are .true. if the corresponding data are
 C     required for the run, according to the unit 15 control file
-      LOGICAL LoadTau0          
-      LOGICAL LoadStartDry      
+      LOGICAL LoadTau0
+      LOGICAL LoadStartDry
       LOGICAL LoadDirEffRLen
       LOGICAL LoadCanopyCoef
-      LOGICAL LoadQuadraticFric 
-      LOGICAL LoadBridgePilings 
-      LOGICAL LoadChezy     
-      LOGICAL LoadManningsN 
+      LOGICAL LoadQuadraticFric
+      LOGICAL LoadBridgePilings
+      LOGICAL LoadChezy
+      LOGICAL LoadManningsN
       LOGICAL LoadGeoidOffset
       LOGICAL LoadEVM
       LOGICAL LoadEVC
-      LOGICAL LoadTau0MinMax 
-      LOGICAL LoadZ0b_var 
+      LOGICAL LoadTau0MinMax
+      LOGICAL LoadZ0b_var
+      LOGICAL LoadWSESmoother ! jgf50.46: water surface elevation smoother
 C
 C     The following flags are .true. if there are data with the
 C     corresponding label in the unit 13 file.
-      LOGICAL FoundTau0          
-      LOGICAL FoundStartDry      
+      LOGICAL FoundTau0
+      LOGICAL FoundStartDry
       LOGICAL FoundDirEffRLen
       LOGICAL FoundCanopyCoef
       LOGICAL FoundQuadraticFric
-      LOGICAL FoundBridgePilings  
-      LOGICAL FoundChezy     
-      LOGICAL FoundManningsN 
+      LOGICAL FoundBridgePilings
+      LOGICAL FoundChezy
+      LOGICAL FoundManningsN
       LOGICAL FoundGeoidOffset
       LOGICAL FoundEVM
       LOGICAL FoundEVC
       LOGICAL FoundTau0MinMax
       LOGICAL FoundZ0b_var
+      LOGICAL FoundWSESmoother
 C
 C     These variables hold the strings which describe the attribute's
 C     units. These data are loaded from the file, but not used as of
 C     v46.00.
-      CHARACTER(len=80) Tau0Units   
-      CHARACTER(len=80) StartDryUnits      
-      CHARACTER(len=80) DirEffRLenUnits  
+      CHARACTER(len=80) Tau0Units
+      CHARACTER(len=80) StartDryUnits
+      CHARACTER(len=80) DirEffRLenUnits
       CHARACTER(len=80) CanopyCoefUnits
-      CHARACTER(len=80) QuadraticFricUnits 
-      CHARACTER(len=80) BridgePilingsUnits 
-      CHARACTER(len=80) ChezyUnits     
-      CHARACTER(len=80) ManningsNUnits 
-      CHARACTER(len=80) GeoidOffsetUnits 
-      CHARACTER(len=80) EVMUnits 
+      CHARACTER(len=80) QuadraticFricUnits
+      CHARACTER(len=80) BridgePilingsUnits
+      CHARACTER(len=80) ChezyUnits
+      CHARACTER(len=80) ManningsNUnits
+      CHARACTER(len=80) GeoidOffsetUnits
+      CHARACTER(len=80) EVMUnits
       CHARACTER(len=80) EVCUnits
-      CHARACTER(len=80) Tau0MinMaxUnits     
-      CHARACTER(len=80) Z0b_varUnits     
+      CHARACTER(len=80) Tau0MinMaxUnits
+      CHARACTER(len=80) Z0b_varUnits
+      CHARACTER(len=80) WSESmootherUnits
 C
 C     These variables hold the number of values per node for each
 C     attribute.
       INTEGER Tau0NoOfVals
-      INTEGER StartDryNoOfVals      
-      INTEGER DirEffRLenNoOfVals  
+      INTEGER StartDryNoOfVals
+      INTEGER DirEffRLenNoOfVals
       INTEGER CanopyCoefNoOfVals
       INTEGER QuadraticFricNoOfVals
       INTEGER BridgePilingsNoOfVals
-      INTEGER ChezyNoOfVals     
-      INTEGER ManningsNNoOfVals 
+      INTEGER ChezyNoOfVals
+      INTEGER ManningsNNoOfVals
       INTEGER GeoidOffsetNoOfVals
       INTEGER EVMNoOfVals
       INTEGER EVCNoOfVals
       INTEGER Tau0MinMaxNoOfVals
       INTEGER Z0b_varNoOfVals
+      INTEGER WSESmootherNoOfVals
 C
 C     These variables hold the default values for each attribute.
       REAL(SZ) Tau0DefVal
-      REAL(SZ) StartDryDefVal      
-      REAL(SZ) DirEffRLenDefVal(12)  
+      REAL(SZ) StartDryDefVal
+      REAL(SZ) DirEffRLenDefVal(12)
       REAL(SZ) CanopyCoefDefVal
       REAL(SZ) QuadraticFricDefVal
       REAL(SZ) BridgePilingsDefVal(4)
-      REAL(SZ) ChezyDefVal     
-      REAL(SZ) ManningsNDefVal 
+      REAL(SZ) ChezyDefVal
+      REAL(SZ) ManningsNDefVal
       REAL(SZ) GeoidOffsetDefVal
       REAL(SZ) EVMDefVal
       REAL(SZ) EVCDefVal
       REAL(SZ) Tau0MinMaxDefVal(2)
       REAL(SZ) Z0b_varDefVal
+      REAL(SZ) WSESmootherDefVal
 C
       INTEGER NumOfNodes    ! number of nodes listed in unit 13 file, cf. NP
       INTEGER NAttr         ! number of nodal attributes in the unit 13 file
 C
 C     The following variables are inputs from the unit 15 model param. file
       INTEGER NWP     ! number of nodal attributes to read from file
-      INTEGER NoLiBF  ! nonlinear bottom friction indicator 
+      INTEGER NoLiBF  ! nonlinear bottom friction indicator
       REAL(SZ) Tau0   ! primitive continuity eqn. weight
       REAL(SZ) Tau    ! linear friction coefficient (1/sec)
       REAL(SZ) CF     ! 2DDI bottom fric. coef., effect varies based on NoLiBF
-      REAL(SZ) Z0B    ! 3D bottom roughness length 
+      REAL(SZ) Z0B    ! 3D bottom roughness length
       REAL(SZ) HBreak ! break depth for NOLIBF .eq. 2
       REAL(SZ) FTheta ! dimless param. for NOLIBF .eq. 2
-      REAL(SZ) FGamma ! dimless param. for NOLIBF .eq. 
+      REAL(SZ) FGamma ! dimless param. for NOLIBF .eq.
       REAL(SZ) ESLM   ! horizontal eddy viscosity (length^2/time)
       REAL(SZ) ESLC   ! horizontal eddy diffusivity (length^2/time)
       INTEGER  IFLINBF! flag to turn on linear bottom friction
@@ -193,25 +198,26 @@ C     The following variables are inputs from the unit 15 model param. file
       REAL(SZ) Tau0FullDomainMin ! lower limit of tau0 if time varying
       REAL(SZ) Tau0FullDomainMax ! upper limit of tau0 if time varying
 C     jgf48.42 Used to control the back-loaded time averaged tau0
-      REAL(SZ), PARAMETER :: AlphaTau0 = 0.25d0 
+      REAL(SZ), PARAMETER :: AlphaTau0 = 0.25d0
 C
 C     Nodal attributes.
       REAL(SZ), ALLOCATABLE :: STARTDRY(:) ! 1=nodes below geoid initially dry
       REAL(SZ), ALLOCATABLE :: FRIC(:)     ! bottom friction coefficient
       REAL(SZ), ALLOCATABLE, TARGET :: TAU0VAR(:)! primitive equation weighting
       REAL(SZ), ALLOCATABLE :: Tau0Temp(:) ! used in time varying tau0
-C     jjw&sb46.39.sb01: Base (original) primitive equation weighting. 
+C     jjw&sb46.39.sb01: Base (original) primitive equation weighting.
 C     Tau0Var may be optimized later based on Tau0Base
-      REAL(SZ), ALLOCATABLE :: TAU0BASE(:) 
+      REAL(SZ), ALLOCATABLE :: TAU0BASE(:)
 C     jgf47.33 Used for time averaged tau0
       REAL(SZ), ALLOCATABLE :: LastTau0(:)
+      INTEGER, ALLOCATABLE :: elevation_smoothing_timestep_increment(:)
 
 C     jgf47.06: Added variables to trigger calculations and output of tau0
 C     jgf47.30: Added "FullDomain" or "High Res Areas Only" distinction
 C     jgf47.31: Added time averaging to time varying tau0
 C     jgf48.42: Added backloaded time averaged tau0
       LOGICAL :: HighResTimeVaryingTau0    ! .true. if Tau0 == -3.x in fort.15
-      LOGICAL :: FullDomainTimeVaryingTau0 ! .true. if Tau0 == -5.x in fort.15  
+      LOGICAL :: FullDomainTimeVaryingTau0 ! .true. if Tau0 == -5.x in fort.15
       LOGICAL :: OutputTau0      ! .true. if Tau0Dig2 == -1 in fort.15
       LOGICAL :: TimeAveragedTau0 ! .true. if Tau0 == -6.x in fort.15
       LOGICAL :: BackLoadedTimeAveragedTau0 ! .true. if Tau0 == -7.x
@@ -225,16 +231,16 @@ C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(SZ), ALLOCATABLE :: GeoidOffset(:)
       REAL(SZ), ALLOCATABLE :: EVM(:)
       REAL(SZ), ALLOCATABLE :: EVC(:)
-      REAL(SZ), ALLOCATABLE :: Tau0MinMax(:,:)  ! (node,i); i=1(min), i=2(max) 
+      REAL(SZ), ALLOCATABLE :: Tau0MinMax(:,:)  ! (node,i); i=1(min), i=2(max)
       REAL(SZ), ALLOCATABLE :: Z0b_var(:)  ! patially varyuing 3D bottom roughness length
 C
       INTEGER i        ! node loop counter
       INTEGER j        ! attribute values loop counter
       INTEGER k        ! attribute loop counter
 C
-C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-      CONTAINS !- - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      CONTAINS !- - - - - - - - - - - - - - - - - - - - - - - - - - - -
+C - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 C     ----------------------------------------------------------------
 C     S U B R O U T I N E     I N I T  N  A  M O D U L E
@@ -254,9 +260,9 @@ Casey 100210: Make changes compact.
       SwanWaveRefracDefVal   = 0.D0
 C
       LoadTau0           = .False.
-      LoadStartDry       = .False. 
+      LoadStartDry       = .False.
       LoadDirEffRLen     = .False.
-      LoadManningsN      = .False. 
+      LoadManningsN      = .False.
       LoadQuadraticFric  = .False.
       LoadChezy          = .False.
       LoadBridgePilings  = .False.
@@ -266,11 +272,12 @@ C
       LoadEVC            = .False.
       LoadTau0MinMax     = .False.
       LoadZ0b_var        = .False.
+      LoadWSESmoother    = .False.
 C
       FoundTau0           = .False.
       FoundStartDry       = .False.
       FoundDirEffRLen     = .False.
-      FoundManningsN      = .False. 
+      FoundManningsN      = .False.
       FoundQuadraticFric  = .False.
       FoundChezy          = .False.
       FoundBridgePilings  = .False.
@@ -280,7 +287,8 @@ C
       FoundEVC            = .False.
       FoundTau0MinMax     = .False.
       FoundZ0b_var        = .False.
-C      
+      FoundWSESmoother    = .False.
+C
       Tau0NoOfVals          = 1
       StartDryNoOfVals      = 1
       DirEffRLenNoOfVals    = 12
@@ -294,6 +302,7 @@ C
       EVCNoOfVals           = 1
       Tau0MinMaxNoOfVals    = 2
       Z0b_varNoOfVals       = 1
+      WSESmootherNoOfVals   = 1
 C
       Tau0DefVal             = 0.0
       StartDryDefVal         = 0.0
@@ -314,6 +323,7 @@ C
          Tau0DefVal = 0.0
       END DO
       Z0b_varDefVal          = 0.001
+      WSESmootherDefVal      = 1
 C
       HighResTimeVaryingTau0     = .False.
       FullDomainTimeVaryingTau0  = .False.
@@ -325,8 +335,8 @@ C
       FTHETA=1.d0
       FGAMMA=1.d0
 C
-C   kmd48.33bc this resets the ESLM to 0 and if using constant eddy 
-C              viscosity it eliminates what the user specified in 
+C   kmd48.33bc this resets the ESLM to 0 and if using constant eddy
+C              viscosity it eliminates what the user specified in
 C              the input file. The InitNAModule originally come before
 C              the read_input call but now it appears after the read_input
 C              call.
@@ -349,10 +359,10 @@ C     ----------------------------------------------------------------
       SUBROUTINE ReadNodalAttr(NScreen, ScreenUnit, MyProc, NAbOut)
       IMPLICIT NONE
       INTEGER, intent(in) :: NScreen ! nonzero for debug info to screen
-      INTEGER, intent(in) :: ScreenUnit ! i/o for screen 
+      INTEGER, intent(in) :: ScreenUnit ! i/o for screen
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
-C     
+C
       LOGICAL NAFound  ! .true. if Nodal Attributes File (fort.13) exists
       INTEGER ErrorIO  ! zero if file opened successfully
       CHARACTER(len=80) AttrName ! string where the attribute name is stored
@@ -361,6 +371,11 @@ C
       LOGICAL SkipDataSet ! .true. if a data set in unit 13 is not needed
       CHARACTER(len=80) Skipped ! data in unit 13 we do not need
       INTEGER L                 ! line counter
+C
+      ! temp array; used to load a real from the file,
+      ! then convert to integer
+      REAL(sz), ALLOCATABLE :: real_loader(:)
+
 C
       NAFound = .False.
       SkipDataSet = .False.
@@ -401,12 +416,12 @@ C     Determine if the Nodal Attributes File exists.
       INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.13',EXIST=NAFound)
 C
       IF (.not.NAFound) THEN
-         WRITE(16,1001)         ! Nodal Attributes file 
+         WRITE(16,1001)         ! Nodal Attributes file
          WRITE(16,1011)         ! was not found.
          WRITE(16,9973)         ! execution terminated
          IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-            WRITE(ScreenUnit,1001)       
-            WRITE(ScreenUnit,1011)       
+            WRITE(ScreenUnit,1001)
+            WRITE(ScreenUnit,1011)
             WRITE(ScreenUnit,9973)      ! execution terminated
          ENDIF
          STOP
@@ -426,19 +441,19 @@ C     loaded from nodal attributes file.
             LoadStartDry = .True.
          CASE("quadratic_friction_coefficient_at_sea_floor")
             LoadQuadraticFric = .True.
-         CASE("surface_directional_effective_roughness_length") 
-            LoadDirEffRLen = .True. 
-         CASE("surface_canopy_coefficient") 
+         CASE("surface_directional_effective_roughness_length")
+            LoadDirEffRLen = .True.
+         CASE("surface_canopy_coefficient")
             LoadCanopyCoef = .True.
-         CASE("bridge_pilings_friction_parameters") 
+         CASE("bridge_pilings_friction_parameters")
             LoadBridgePilings = .True.
          CASE("mannings_n_at_sea_floor")
-            LoadManningsN = .True. 
-         CASE("chezy_friction_coefficient_at_sea_floor") 
+            LoadManningsN = .True.
+         CASE("chezy_friction_coefficient_at_sea_floor")
             LoadChezy = .True.
          CASE("bottom_roughness_length")
-            LoadZ0b_var = .True. 
-         CASE("sea_surface_height_above_geoid") 
+            LoadZ0b_var = .True.
+         CASE("sea_surface_height_above_geoid")
             LoadGeoidOffset = .True.
          CASE
      &   ("average_horizontal_eddy_viscosity_in_sea_water_wrt_depth")
@@ -452,114 +467,117 @@ C     loaded from nodal attributes file.
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
          CASE("wave_refraction_in_swan")
             LoadSwanWaveRefrac = .TRUE.
-         CASE DEFAULT     
+         ! jgf50.46: Adding smoothing attribute for wse
+         CASE("water_surface_elevation_smoother")
+            LoadWSESmoother = .TRUE.
+         CASE DEFAULT
             WRITE(16,1000)          ! unit 15 Model Parameter file
             WRITE(16,1021) AttrName ! contains invalid name
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1000)       
-               WRITE(ScreenUnit,1021) AttrName 
+               WRITE(ScreenUnit,1000)
+               WRITE(ScreenUnit,1021) AttrName
             ENDIF
          END SELECT
       ENDDO
 C
 C     Now open the nodal attributes (unit 13) file.
-      WRITE(16,240) 
+      WRITE(16,240)
  240  FORMAT(/,9X,'Nodal Attributes File (unit 13) was found.',
-     &     ' Opening file.') 
-      OPEN(UNIT=13, FILE=TRIM(INPUTDIR)//'/'//'fort.13', 
+     &     ' Opening file.')
+      OPEN(UNIT=13, FILE=TRIM(INPUTDIR)//'/'//'fort.13',
      &     IOSTAT=ErrorIO)
-      IF ( ErrorIO .GT. 0 ) THEN 
+      IF ( ErrorIO .GT. 0 ) THEN
          WRITE(16,1001)         ! Nodal attribute file
          WRITE(16,1005)         ! exists but can't be opened
          WRITE(16,9973)         ! execution terminated
          IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-            WRITE(ScreenUnit,1001) 
+            WRITE(ScreenUnit,1001)
             WRITE(ScreenUnit,1005)
-            WRITE(ScreenUnit,9973) 
+            WRITE(ScreenUnit,9973)
          ENDIF
          STOP                   ! We're toast.
       ENDIF
 C
 C     Read each attribute name, units, number of values, and default value
       READ(13,'(A80)') header
-      WRITE(16,250) 
- 250  FORMAT(/,9X,'User comment line from unit 13:') 
+      WRITE(16,250)
+ 250  FORMAT(/,9X,'User comment line from unit 13:')
       WRITE(16,'(14X,A80,/)') header
       READ(13,*) NumOfNodes     ! number of nodes according to unit 13
       READ(13,*) NAttr          ! number of attributes in the unit 13 file
       DO k=1, NAttr
          READ(13,*) AttrName
          WRITE(16,'(9X,A80)') AttrName
-         WRITE(16,260) 
- 260     FORMAT(14X,'was found!',/) 
+         WRITE(16,260)
+ 260     FORMAT(14X,'was found!',/)
          SELECT CASE (AttrName)
          CASE("primitive_weighting_in_continuity_equation")
             FoundTau0 = .True.
-            READ(13,'(A80)') Tau0Units   
+            READ(13,'(A80)') Tau0Units
             READ(13,*) Tau0NoOfVals
             READ(13,*) Tau0DefVal
          CASE("surface_submergence_state")
-            FoundStartDry = .True. 
-            READ(13,'(A80)') StartDryUnits      
+            FoundStartDry = .True.
+            READ(13,'(A80)') StartDryUnits
             READ(13,*) StartDryNoOfVals
-            READ(13,*) StartDryDefVal            
+            READ(13,*) StartDryDefVal
          CASE("quadratic_friction_coefficient_at_sea_floor")
             FoundQuadraticFric = .True.
-            READ(13,'(A80)') QuadraticFricUnits 
+            READ(13,'(A80)') QuadraticFricUnits
             READ(13,*) QuadraticFricNoOfVals
             READ(13,*) QuadraticFricDefVal
-         CASE("surface_directional_effective_roughness_length") 
-            FoundDirEffRLen = .True. 
-            READ(13,'(A80)') DirEffRLenUnits  
+         CASE("surface_directional_effective_roughness_length")
+            FoundDirEffRLen = .True.
+            READ(13,'(A80)') DirEffRLenUnits
             READ(13,*) DirEffRLenNoOfVals
-            READ(13,*) 
-     &      (DirEffRLenDefVal(j),j=1,DirEffRLenNoOfVals)    
-         CASE("surface_canopy_coefficient") 
-            FoundCanopyCoef = .True. 
-            READ(13,'(A80)') CanopyCoefUnits  
+            READ(13,*)
+     &      (DirEffRLenDefVal(j),j=1,DirEffRLenNoOfVals)
+         CASE("surface_canopy_coefficient")
+            FoundCanopyCoef = .True.
+            READ(13,'(A80)') CanopyCoefUnits
             READ(13,*) CanopyCoefNoOfVals
-            READ(13,*) CanopyCoefDefVal 
-         CASE("bridge_pilings_friction_parameters") 
+            READ(13,*) CanopyCoefDefVal
+         CASE("bridge_pilings_friction_parameters")
             FoundBridgePilings = .True.
-            READ(13,'(A80)') BridgePilingsUnits  
+            READ(13,'(A80)') BridgePilingsUnits
             READ(13,*) BridgePilingsNoOfVals
-            READ(13,*) 
-     &       (BridgePilingsDefVal(j),j=1,BridgePilingsNoOfVals)  
+            READ(13,*)
+     &       (BridgePilingsDefVal(j),j=1,BridgePilingsNoOfVals)
          CASE("mannings_n_at_sea_floor")
-            FoundManningsN = .True. 
-            READ(13,'(A80)') ManningsNUnits 
+            FoundManningsN = .True.
+            READ(13,'(A80)') ManningsNUnits
             READ(13,*) ManningsNNoOfVals
-            READ(13,*) ManningsNDefVal 
+            READ(13,*) ManningsNDefVal
          CASE("bottom_roughness_length")
-            FoundZ0b_var = .True. 
-            READ(13,'(A80)') Z0b_varUnits 
+            FoundZ0b_var = .True.
+            READ(13,'(A80)') Z0b_varUnits
             READ(13,*) Z0b_varNoOfVals
-            READ(13,*) Z0b_varDefVal 
+            READ(13,*) Z0b_varDefVal
          CASE("chezy_friction_coefficient_at_sea_floor")
             FoundChezy = .True.
-            READ(13,'(A80)') ChezyUnits     
+            READ(13,'(A80)') ChezyUnits
             READ(13,*) ChezyNoOfVals
-            READ(13,*) ChezyDefVal          
+            READ(13,*) ChezyDefVal
          CASE("sea_surface_height_above_geoid")
             FoundGeoidOffset = .True.
-            READ(13,'(A80)') GeoidOffsetUnits     
+            READ(13,'(A80)') GeoidOffsetUnits
             READ(13,*) GeoidOffsetNoOfVals
             READ(13,*) GeoidOffsetDefVal
          CASE
      &    ("average_horizontal_eddy_viscosity_in_sea_water_wrt_depth")
             FoundEVM = .True.
-            READ(13,'(A80)') EVMUnits     
+            READ(13,'(A80)') EVMUnits
             READ(13,*) EVMNoOfVals
             READ(13,*) EVMDefVal
          CASE
      &   ("average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth")
-            READ(13,'(A80)') EVCUnits     
+            READ(13,'(A80)') EVCUnits
             READ(13,*) EVCNoOfVals
             READ(13,*) EVCDefVal
          CASE
      &   ("min_and_max_primitive_weighting_in_continuity_equation")
             FoundTau0MinMax = .True.
-            READ(13,'(A80)') Tau0MinMaxUnits   
+            READ(13,'(A80)') Tau0MinMaxUnits
             READ(13,*) Tau0MinMaxNoOfVals
             READ(13,*) (Tau0MinMaxDefVal(j),j=1,Tau0MinMaxNoOfVals)
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
@@ -568,12 +586,18 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
             READ(13,'(A80)') SwanWaveRefracUnits
             READ(13,*) SwanWaveRefracNoOfVals
             READ(13,*) SwanWaveRefracDefVal
-         CASE DEFAULT     
+         ! jgf50.46: Added attribute for smoothing water surface elev
+          CASE("water_surface_elevation_smoother")
+            FoundWSESmoother = .TRUE.
+            READ(13,'(A80)') WSESmootherUnits
+            READ(13,*) WSESmootherNoOfVals
+            READ(13,*) WSESmootherDefVal
+         CASE DEFAULT
             WRITE(16,1001)          ! Nodal Attributes file
             WRITE(16,1021) AttrName ! contains invalid name
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1001)       
-               WRITE(ScreenUnit,1021) AttrName 
+               WRITE(ScreenUnit,1001)
+               WRITE(ScreenUnit,1021) AttrName
             ENDIF
             READ(13,'(A80)') Skipped  ! skip the Units for the invalid name
             READ(13,'(A80)') Skipped  ! skip the NoOfVals for invalid name
@@ -603,6 +627,7 @@ C     that are not in the nodal attributes file.
      &   ((LoadEVC).and.(.not.FoundEVC)).or.
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
      &   ((LoadSwanWaveRefrac).and.(.not.FoundSwanWaveRefrac)).or.
+     &   ((LoadWSESmoother).and.(.not.FoundWSESmoother)).or.
      &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax))) THEN
          WRITE(16,1111)
  1111    FORMAT('ERROR: Nodal Attributes file (unit 13) does '
@@ -610,7 +635,7 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
      &        /,'model parameter file (unit 15).')
          WRITE(16,9973)         ! execution terminated
          IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-            WRITE(ScreenUnit,1111) 
+            WRITE(ScreenUnit,1111)
             WRITE(ScreenUnit,9973)       ! execution terminated
          ENDIF
          STOP                   ! We're toast.
@@ -618,7 +643,7 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
 
 C     Allocate memory to hold our data.
       ALLOCATE(TAU0VAR(NumOfNodes),TAU0BASE(NumOfNodes)) ! jjw&sb46.39sb01
-      ALLOCATE(STARTDRY(NumOfNodes)) 
+      ALLOCATE(STARTDRY(NumOfNodes))
       ALLOCATE(FRIC(NumOfNodes))
       ALLOCATE(z0land(NumOfNodes,DirEffRLenNoOfVals))
       ALLOCATE(vcanopy(NumOfNodes))
@@ -632,6 +657,7 @@ C     Allocate memory to hold our data.
       ALLOCATE(Tau0MinMax(NumOfNodes,Tau0MinMaxNoOfVals))
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
       ALLOCATE(SwanWaveRefrac(NumOfNodes))
+      ALLOCATE(elevation_smoothing_timestep_increment(NumOfNodes))
 C
 C     Now read each of the attributes required by the model parameter
 C     (unit 15) file and skip past the others.
@@ -653,65 +679,65 @@ C     (unit 15) file and skip past the others.
             ENDIF
          CASE("surface_submergence_state")
             IF (LoadStartDry) THEN
-               CALL LoadAttrVec(STARTDRY, StartDryDefVal, 
+               CALL LoadAttrVec(STARTDRY, StartDryDefVal,
      &               NumNodesNotDefault, NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .True.
             ENDIF
          CASE("quadratic_friction_coefficient_at_sea_floor")
             IF (LoadQuadraticFric) THEN
-               CALL LoadAttrVec(FRIC, QuadraticFricDefVal, 
+               CALL LoadAttrVec(FRIC, QuadraticFricDefVal,
      &              NumNodesNotDefault, NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .True.
             ENDIF
-         CASE("surface_directional_effective_roughness_length") 
+         CASE("surface_directional_effective_roughness_length")
             IF (LoadDirEffRLen) THEN
-               CALL LoadAttrMat(z0land, DirEffRLenNoOfVals,  
-     &              DirEffRLenDefVal, NumNodesNotDefault,  
+               CALL LoadAttrMat(z0land, DirEffRLenNoOfVals,
+     &              DirEffRLenDefVal, NumNodesNotDefault,
      &              NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .True.
             ENDIF
-         CASE("surface_canopy_coefficient") 
+         CASE("surface_canopy_coefficient")
             IF (LoadCanopyCoef) THEN
                CALL LoadAttrVec(vcanopy, CanopyCoefDefVal,
      &               NumNodesNotDefault, NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .True.
             ENDIF
-         CASE("bridge_pilings_friction_parameters") 
+         CASE("bridge_pilings_friction_parameters")
             IF (LoadBridgePilings) THEN
-               CALL LoadAttrMat(BridgePilings, BridgePilingsNoOfVals, 
-     &              BridgePilingsDefVal,  NumNodesNotDefault, 
+               CALL LoadAttrMat(BridgePilings, BridgePilingsNoOfVals,
+     &              BridgePilingsDefVal,  NumNodesNotDefault,
      &              NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .True.
             ENDIF
          CASE("mannings_n_at_sea_floor")
             IF (LoadManningsN) THEN
-               CALL LoadAttrVec(ManningsN, ManningsNDefVal, 
+               CALL LoadAttrVec(ManningsN, ManningsNDefVal,
      &              NumNodesNotDefault, NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .True.
             ENDIF
          CASE("bottom_roughness_length")
             IF (LoadZ0b_var) THEN
-               CALL LoadAttrVec(Z0b_var, Z0b_varDefVal, 
+               CALL LoadAttrVec(Z0b_var, Z0b_varDefVal,
      &              NumNodesNotDefault, NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .True.
             ENDIF
          CASE("chezy_friction_coefficient_at_sea_floor")
             IF (LoadChezy) THEN
-               CALL LoadAttrVec(Chezy, ChezyDefVal, 
+               CALL LoadAttrVec(Chezy, ChezyDefVal,
      &               NumNodesNotDefault, NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .True.
             ENDIF
          CASE("sea_surface_height_above_geoid")
             IF (LoadGeoidOffset) THEN
-               CALL LoadAttrVec(GeoidOffset, GeoidOffsetDefVal, 
+               CALL LoadAttrVec(GeoidOffset, GeoidOffsetDefVal,
      &               NumNodesNotDefault, NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .True.
@@ -719,7 +745,7 @@ C     (unit 15) file and skip past the others.
          CASE
      &   ("average_horizontal_eddy_viscosity_in_sea_water_wrt_depth")
             IF (LoadEVM) THEN
-               CALL LoadAttrVec(EVM, EVMDefVal, 
+               CALL LoadAttrVec(EVM, EVMDefVal,
      &               NumNodesNotDefault, NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .True.
@@ -727,7 +753,7 @@ C     (unit 15) file and skip past the others.
          CASE
      &   ("average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth")
             IF (LoadEVC) THEN
-               CALL LoadAttrVec(EVC, EVCDefVal, 
+               CALL LoadAttrVec(EVC, EVCDefVal,
      &               NumNodesNotDefault, NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .True.
@@ -735,8 +761,8 @@ C     (unit 15) file and skip past the others.
          CASE
      &   ("min_and_max_primitive_weighting_in_continuity_equation")
             IF (LoadTau0MinMax) THEN
-               CALL LoadAttrMat(Tau0MinMax, Tau0MinMaxNoOfVals, 
-     &              Tau0MinMaxDefVal, NumNodesNotDefault, 
+               CALL LoadAttrMat(Tau0MinMax, Tau0MinMaxNoOfVals,
+     &              Tau0MinMaxDefVal, NumNodesNotDefault,
      &              NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .True.
@@ -749,13 +775,24 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
             ELSE
                SkipDataSet = .TRUE.
             ENDIF
+         CASE("water_surface_elevation_smoother")
+            IF (LoadWSESmoother) THEN
+               allocate(real_loader(NumOfNodes))
+               CALL LoadAttrVec(real_loader, WSESmootherDefVal,
+     &              NumNodesNotDefault, NScreen, MyProc, NAbOut)
+               elevation_smoothing_timestep_increment(:) =
+     &              nint(real_loader(:))
+               deallocate(real_loader)
+            ELSE
+               SkipDataSet = .TRUE.
+            ENDIF
          CASE DEFAULT
             SkipDataSet = .True.
             WRITE(16,1001)      ! Nodal Attributes file
             WRITE(16,1021) AttrName ! contains invalid name
             IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-               WRITE(ScreenUnit,1001)       
-               WRITE(ScreenUnit,1021) AttrName 
+               WRITE(ScreenUnit,1001)
+               WRITE(ScreenUnit,1021) AttrName
             ENDIF
          END SELECT
          IF (SkipDataSet) THEN
@@ -775,11 +812,11 @@ C
  1003 FORMAT('ERROR: Spatially Varying Fric. Coeff. File (unit 21)')
 C
  1005 FORMAT('exists but cannot be opened.')
- 1011 FORMAT('was not found.') 
- 1021 FORMAT('contains invalid name: ',A80) 
+ 1011 FORMAT('was not found.')
+ 1021 FORMAT('contains invalid name: ',A80)
  9972 FORMAT(////,1X,'!!!!!!!!!! INPUT ERROR !!!!!!!!!',/)
  9973 FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-C      
+C
       RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE ReadNodalAttr
@@ -787,7 +824,7 @@ C     ----------------------------------------------------------------
 
 
 C     ----------------------------------------------------------------
-C         S U B R O U T I N E     L O A D  A T T R  V E C 
+C         S U B R O U T I N E     L O A D  A T T R  V E C
 C     ----------------------------------------------------------------
 C
 C     jgf46.00 Subroutine to set a single set of nodal attributes to
@@ -797,7 +834,7 @@ C     is used for nodal attributes with only one value per node, hence
 C     the suffix "vec" in the name.
 C
 C     ----------------------------------------------------------------
-      SUBROUTINE LoadAttrVec(AttributeData, Default, NumNodesNotDef, 
+      SUBROUTINE LoadAttrVec(AttributeData, Default, NumNodesNotDef,
      &     NScreen, MyProc, NAbOut)
       IMPLICIT NONE
       REAL(SZ), intent(out), dimension(NumOfNodes) :: AttributeData
@@ -810,16 +847,16 @@ C
       INTEGER NodeNum            ! node number listed in the file
 C
 C     Set all values to user-specified default values.
-      IF (NABOUT.EQ.0) WRITE(16,1001) Default 
+      IF (NABOUT.EQ.0) WRITE(16,1001) Default
       DO i=1, NumOfNodes
-         AttributeData(i) = Default 
+         AttributeData(i) = Default
       END DO
 C
-      IF (NABOUT.EQ.0) WRITE(16,1005) 
+      IF (NABOUT.EQ.0) WRITE(16,1005)
       DO i=1, NumNodesNotDef
          READ(13,*) NodeNum, AttributeData(NodeNum)
-         IF (NABOUT.EQ.0) 
-     &       WRITE(16,1010) NodeNum, AttributeData(NodeNum)     
+         IF (NABOUT.EQ.0)
+     &       WRITE(16,1010) NodeNum, AttributeData(NodeNum)
       END DO
 C
  1001 FORMAT(/,10X,'Set all nodes to the default value of ',E16.8,/)
@@ -842,11 +879,11 @@ C     the Nodal Attributes File (unit 13) if there is more than one
 C     value per node.
 C
 C     ----------------------------------------------------------------
-      SUBROUTINE LoadAttrMat(AttributeData, NumCol, Default, 
+      SUBROUTINE LoadAttrMat(AttributeData, NumCol, Default,
      &     NumNodesNotDef, NScreen, MyProc, NAbOut)
       IMPLICIT NONE
-      INTEGER, intent(in) :: NumCol  ! number of columns in the matrix 
-      REAL(SZ), intent(out), 
+      INTEGER, intent(in) :: NumCol  ! number of columns in the matrix
+      REAL(SZ), intent(out),
      &     dimension(NumOfNodes,NumCol) :: AttributeData
       REAL(SZ), intent(in), dimension(NumCol) :: Default ! default values
       INTEGER, intent(in) :: NumNodesNotDef  ! number of nodes spec. in file
@@ -857,17 +894,17 @@ C
       INTEGER NodeNum            ! node number listed in the file
 C
 C     Set all nodes to user-specified default values.
-      IF (NABOUT.EQ.0) WRITE(16,1001) 
+      IF (NABOUT.EQ.0) WRITE(16,1001)
       DO i=1, NumOfNodes
          DO j=1, NumCol
             AttributeData(i,j)=Default(j)
          END DO
       END DO
 C
-      IF (NABOUT.EQ.0) WRITE(16,1005) 
+      IF (NABOUT.EQ.0) WRITE(16,1005)
       DO i=1, NumNodesNotDef
          READ(13,*) NodeNum, (AttributeData(NodeNum,j),j=1,NumCol)
-         IF (NABOUT.EQ.0) WRITE(16,1010) NodeNum, 
+         IF (NABOUT.EQ.0) WRITE(16,1010) NodeNum,
      &        (AttributeData(NodeNum,j),j=1,NumCol)
       END DO
 C
@@ -885,10 +922,10 @@ C     ----------------------------------------------------------------
 
 
 C     ----------------------------------------------------------------
-C         S U B R O U T I N E     I N I T  N O D A L  A T T R 
+C         S U B R O U T I N E     I N I T  N O D A L  A T T R
 C     ----------------------------------------------------------------
 C
-C     jgf46.00 Subroutine to initialize and error check the nodal 
+C     jgf46.00 Subroutine to initialize and error check the nodal
 C     attributes read in from the Nodal Attributes File (unit 13).
 C
 C     ----------------------------------------------------------------
@@ -896,7 +933,7 @@ C     ----------------------------------------------------------------
      &     MyProc, NAbOut)
       USE GLOBAL, ONLY : C3D, C2DDI
       IMPLICIT NONE
-      INTEGER, intent(in) :: NP ! number of nodes in the grid file 
+      INTEGER, intent(in) :: NP ! number of nodes in the grid file
       REAL(SZ), intent(in), dimension(NP) :: DP ! array of bathymetric depths
       REAL(SZ), intent(in):: G  ! gravitational acceleration
       INTEGER, intent(in) :: NScreen ! nonzero for debug info to screen
@@ -908,7 +945,7 @@ C     ----------------------------------------------------------------
 
       IF (Tau0.lt.0) THEN
          Tau0Dig1 = INT(Tau0)   ! jgf47.30 truncate the fractional part
-         !jgf47.34 round away from zero by subtracting 0.5d0 
+         !jgf47.34 round away from zero by subtracting 0.5d0
          Tau0Dig2 = INT( (Tau0 - REAL(Tau0Dig1))*10.0d0 - 0.5d0)
       ELSE
          Tau0Dig1 = 0
@@ -929,7 +966,7 @@ C     same as the number of nodes in the grid file.
       ENDIF
 C
 C     ERROR CHECK: If Chezy, Manning's or Quadratic friction was loaded
-C     from the nodal attributes file, NOLIBF must be 1. 
+C     from the nodal attributes file, NOLIBF must be 1.
       IF ((LoadChezy.or.LoadManningsN.or.LoadQuadraticFric).and.
      &     NoLiBF.ne.1) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9800)
@@ -959,11 +996,11 @@ C     from nodal attributes file.
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
          STOP                   ! We're toast.
       ENDIF
-C     
+C
 C     I N I T    S T A R T D R Y
       IF (.not.LoadStartDry) THEN
          IF (NWP.eq.0) THEN
-            ALLOCATE(STARTDRY(NP)) 
+            ALLOCATE(STARTDRY(NP))
          ENDIF
          DO I=1, NP
             STARTDRY(I) = 0.0D0
@@ -989,23 +1026,23 @@ C     jgf46.25 If input tau0 is positive, set all nodes to that value.
      &           ' CONTINUITY EQUATION.',
      &           /,5X,'Tau0 = ',E15.8,2X,'1/sec',/)
          ELSE
-C           If input tau0 is negative, set value using hardcoded scheme 
+C           If input tau0 is negative, set value using hardcoded scheme
 C           based on depth
             DO I=1,NP
                Tau0Var(I)=Tau0NodalValue(Tau0,DP(I))
             ENDDO
-            ! jgf47.30.TODO: This logging needs to be cleaned up.  
+            ! jgf47.30.TODO: This logging needs to be cleaned up.
             IF(Tau0.eq.-2) THEN
                WRITE(16,6) ! spatially vary tau0 according to hard coded scheme
                WRITE(16,62) ! description of scheme
- 62            FORMAT(/,5X,'IF DEPTH > 200           Tau0 = 0.005',    
-     &              /,5X,'IF 200   > DEPTH > 1     Tau0 = 1/DEPTH  ',    
+ 62            FORMAT(/,5X,'IF DEPTH > 200           Tau0 = 0.005',
+     &              /,5X,'IF 200   > DEPTH > 1     Tau0 = 1/DEPTH  ',
      &              /,5X,'IF 1     > DEPTH         Tau0 = 1.0 ')
             ENDIF
             IF (.not.( (Tau0Dig1.eq.-3) .or. (Tau0Dig1.eq.-5) ) ) THEN
                WRITE(16,6) ! spatially vary tau0 according to hard coded scheme
                WRITE(16,61) ! description of scheme
- 61            FORMAT(/,5X,' IF DEPTH GE 10           -> TAU0 = 0.005',    
+ 61            FORMAT(/,5X,' IF DEPTH GE 10           -> TAU0 = 0.005',
      &              /,5X,' IF DEPTH LT 10           -> TAU0 = 0.020',/)
             ENDIF
          ENDIF
@@ -1032,9 +1069,9 @@ C     jgf47.06 Activate time varying tau0 and output tau0 if these options
 C     were selected.
 
 C     jgf47.30 Use Joannes' scheme for steady Tau0 in deep water and
-C     other coarsely gridded areas, and time varying Tau0 in high 
+C     other coarsely gridded areas, and time varying Tau0 in high
 C     resolution areas.
-      IF ( (Tau0Dig1.eq.-3).or.(Tau0Dig1.eq.-6) 
+      IF ( (Tau0Dig1.eq.-3).or.(Tau0Dig1.eq.-6)
      &      .or. (Tau0Dig1.eq.-7) ) THEN
          HighResTimeVaryingTau0 = .True.
          DO I=1, NP
@@ -1052,16 +1089,16 @@ C     jgf47.30 Changed to emphasize full domain time varying tau0
                Tau0MinMax(I,1) = Tau0FullDomainMin
                Tau0MinMax(I,2) = Tau0FullDomainMax
             ENDDO
-         ENDIF 
+         ENDIF
       ENDIF
 C
 C     jgf47.30: Output of tau0 is now activated by having a 0.1 fraction
 C     for tau0
       IF ( Tau0Dig2.eq.-1 ) THEN
-         OutputTau0 = .True. 
+         OutputTau0 = .True.
       ENDIF
 C
-C     jjw&sb46.38.sb01 If tau0 is loaded from nodal attributes file and 
+C     jjw&sb46.38.sb01 If tau0 is loaded from nodal attributes file and
 C     Tau0 is -3, time-varing tau0 optimizer will be applied in timestep.F
       IF (HighResTimeVaryingTau0 .or. FullDomainTimeVaryingTau0) THEN
          ALLOCATE(Tau0Temp(NP))
@@ -1071,12 +1108,12 @@ C     Tau0 is -3, time-varing tau0 optimizer will be applied in timestep.F
      &     ,/,5X,' WEIGHTING COEFFICIENT (Tau0) WILL BE USED '
      &     ,/,5X,' IN THE GENERALIZED WAVE CONTINUITY EQUATION.',/)
 C
-C     jgf47.33 Enable time averaging of tau0 if requested. 
+C     jgf47.33 Enable time averaging of tau0 if requested.
       IF (Tau0Dig1.eq.-6) THEN
          TimeAveragedTau0 = .true.
       ENDIF
 C
-C     jgf48.42 Enable back loaded time averaging of tau0 if requested. 
+C     jgf48.42 Enable back loaded time averaging of tau0 if requested.
       IF (Tau0Dig1.eq.-7) THEN
          BackLoadedTimeAveragedTau0 = .true.
       ENDIF
@@ -1106,7 +1143,7 @@ C     I N I T   B O T T O M   F R I C T I O N
          IFLINBF=0
          IFHYBF=1
       ENDIF
-C     
+C
 C     Initialize bottom friction if it was not loaded from unit 13.
       IF(C2DDI) THEN
         IF((.not.LoadQuadraticFric).and.(.not.LoadManningsN).and.
@@ -1120,15 +1157,15 @@ C     If a nodal attributes file was read, FRIC was allocated there.
             FRIC(I)=CF
          END DO
         ENDIF
-C     
-C     jgf47.04 If a depth-dependent friction parameterization is used, 
-C     the value from the fort.15 file is used as a floor for the 
-C     minimum equivalent quadratic friction value. 
+C
+C     jgf47.04 If a depth-dependent friction parameterization is used,
+C     the value from the fort.15 file is used as a floor for the
+C     minimum equivalent quadratic friction value.
         IF (LoadManningsN) THEN
            BFCdLLimit = CF
         ENDIF
       ENDIF
-C     
+C
       IF(C3D) THEN
 C     Initialize 3D bottom roughness if it was not loaded from unit 13.
         IF((.not.LoadZ0b_var)) THEN
@@ -1142,9 +1179,9 @@ C     If a nodal attributes file was read, Z0b_var was allocated there.
              FRIC(I)=CF
           END DO
         ENDIF
-C     jgf47.04 If a depth-dependent friction parameterization is used, 
-C     the value from the fort.15 file is used as a floor for the 
-C     minimum equivalent quadratic friction value. 
+C     jgf47.04 If a depth-dependent friction parameterization is used,
+C     the value from the fort.15 file is used as a floor for the
+C     minimum equivalent quadratic friction value.
          IF (LoadZ0b_var.OR.LoadManningsN) THEN
             BFCdLLimit = CF
          ENDIF
@@ -1155,7 +1192,7 @@ C
       IF (LoadBridgePilings) THEN
          DO I=1, NP
             IF (BridgePilings(I,1).ne.0) THEN ! only for nodes w/piers
-               BridgePilings(I,3) = 4.d0 * 
+               BridgePilings(I,3) = 4.d0 *
      &              BridgePilings(I,3) / BridgePilings(I,4)
             ENDIF
          END DO
@@ -1186,19 +1223,19 @@ C     ----------------------------------------------------------------
 
 
 C     ----------------------------------------------------------------
-C      F U N C T I O N   T A U 0  N O D A L  V A L U E 
+C      F U N C T I O N   T A U 0  N O D A L  V A L U E
 C     ----------------------------------------------------------------
 C
 C     jgf46.27 Function to calculate tau0 based on the scheme selection
-C     and the depth. This assumes that Scheme is negative. 
-C       
+C     and the depth. This assumes that Scheme is negative.
+C
 C     ----------------------------------------------------------------
       REAL(SZ) FUNCTION Tau0NodalValue(Scheme, Depth)
       IMPLICIT NONE
-      REAL(SZ) Scheme         
+      REAL(SZ) Scheme
       REAL(SZ) Depth
 C
-      IF (Scheme.eq.-2.d0) THEN 
+      IF (Scheme.eq.-2.d0) THEN
 C     Smoothly varying tau0 with depth.
          IF(Depth.GE.200.) Tau0NodalValue=0.005
          IF((Depth.LT.200.).AND.(Depth.GE.1.)) THEN
@@ -1206,30 +1243,30 @@ C     Smoothly varying tau0 with depth.
          ENDIF
          IF(Depth.LT.1.) Tau0NodalValue=1.0
       ELSE
-C     Abrupt variation in tau0 with depth.           
-         IF(Depth.LE.10.) Tau0NodalValue=0.020d0    
+C     Abrupt variation in tau0 with depth.
+         IF(Depth.LE.10.) Tau0NodalValue=0.020d0
          IF(Depth.GT.10.) Tau0NodalValue=0.005d0
-      ENDIF         
+      ENDIF
 C     ----------------------------------------------------------------
       END FUNCTION Tau0NodalValue
 C     ----------------------------------------------------------------
 
 
 C     ----------------------------------------------------------------
-C      S U B R O U T I N E  
-C         C A L C U L A T E  T I M E  V A R Y I N G  T A U 0 
+C      S U B R O U T I N E
+C         C A L C U L A T E  T I M E  V A R Y I N G  T A U 0
 C     ----------------------------------------------------------------
 C
 C     jgf47.08 Subroutine to calculate a new tau0 value. Called from
 C     GWCE_New in timestep.F each time the GWCE matrix is reset (i.e.,
 C     upon startup and whenever wetting and/or drying occurs in any
 C     subdomain. Based on Casey050711.
-C       
+C
 C     ----------------------------------------------------------------
       SUBROUTINE CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
       IMPLICIT NONE
       REAL(SZ), intent(in) :: TK(:)       ! bottom friction
-      INTEGER, intent(in) :: NNeigh(:)   ! number of neighbor nodes 
+      INTEGER, intent(in) :: NNeigh(:)   ! number of neighbor nodes
       INTEGER, intent(in) :: NeiTab(:,:) ! table of neighbor nodes
       INTEGER, intent(in) :: NP           ! number of nodes in the domain
       REAL(SZ) CaseySum  ! sum of tau0temp values around a particular node
@@ -1244,7 +1281,7 @@ cjjw46.39.sb01 :  "high/low LIMITED" variable G.
                Tau0Temp(i)=Tau0MinMax(i,1)
             ENDIF
             IF(Tau0Temp(i).gt.Tau0MinMax(i,2)) THEN
-               Tau0Temp(i)=Tau0MinMax(i,2) 
+               Tau0Temp(i)=Tau0MinMax(i,2)
             ENDIF
          ENDDO
       ENDIF
@@ -1278,7 +1315,7 @@ C
 C     jgf48.42 Perform backloaded time averaging of tau0 if requested.
       IF (BackLoadedTimeAveragedTau0) THEN
          DO I=1, NP
-            TAU0VAR(I) = AlphaTau0*TAU0VAR(I) 
+            TAU0VAR(I) = AlphaTau0*TAU0VAR(I)
      &                 + (1.d0-AlphaTau0)*LastTau0(I)
             LastTau0(I) = TAU0VAR(I)
          ENDDO
@@ -1290,7 +1327,7 @@ C     ----------------------------------------------------------------
 
 
 C     ----------------------------------------------------------------
-C     S U B R O U T I N E     
+C     S U B R O U T I N E
 C     A P P L Y  2 D  B O T T O M  F R I C T I O N
 C     ----------------------------------------------------------------
 C
@@ -1303,7 +1340,7 @@ C
 C     sb46.28sb02 Lower limit of Cd was added as an argument.
 C     jgf47.04 Argument for lower limit of Cd was removed; this value
 C     is now specified by the user in fort.15.
-C 
+C
 C     ----------------------------------------------------------------
       SUBROUTINE Apply2DBottomFriction(UU1, VV1, DP, ETA2, G,
      &     IFNLFA, NP, TK)
@@ -1315,7 +1352,7 @@ C     ----------------------------------------------------------------
       REAL(SZ), intent(in), dimension(NP) :: DP   ! bathymetric depths
       REAL(SZ), intent(in), dimension(NP) :: ETA2 ! water surf. elevations
       REAL(SZ), intent(in) :: G                   ! gravitational constant
-      INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag 
+      INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag
       REAL(SZ), intent(inout), dimension(NP) :: TK! depth avg. fric.
 C
       REAL(SZ) UV1   ! velocity magnitude (speed)
@@ -1364,9 +1401,9 @@ C     pilings, if required.
             UV1=SQRT(UU1(I)*UU1(I)+VV1(I)*VV1(I))
             H1=DP(I)+IFNLFA*ETA2(I)
             Fr=UV1*UV1/(G*H1)
-            BK = BridgePilings(I,1) 
-            BALPHA = BridgePilings(I,2) 
-            BDELX = BridgePilings(I,3) 
+            BK = BridgePilings(I,1)
+            BALPHA = BridgePilings(I,2)
+            BDELX = BridgePilings(I,3)
             FricBP=(H1/BDELX)*BK*(BK+5.d0*Fr*Fr-0.6d0)
      &           *(BALPHA+15.d0*BALPHA**4)
             TK(I)=TK(I)+FricBP*UV1/H1
@@ -1378,7 +1415,7 @@ C     ----------------------------------------------------------------
       END SUBROUTINE Apply2DBottomFriction
 C     ----------------------------------------------------------------
 C     ----------------------------------------------------------------
-C     S U B R O U T I N E     
+C     S U B R O U T I N E
 C     A P P L Y  3 D  B O T T O M  F R I C T I O N
 C     ----------------------------------------------------------------
 C
@@ -1397,7 +1434,7 @@ C     ----------------------------------------------------------------
       REAL(SZ), intent(in), dimension(NP) :: DP   ! bathymetric depths
       REAL(SZ), intent(in), dimension(NP) :: ETA2 ! water surf. elevations
       REAL(SZ), intent(in) :: G                   ! gravitational constant
-      INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag 
+      INTEGER, intent(in) :: IFNLFA               ! nonlin. finite amp. flag
       REAL(SZ), intent(inout), dimension(NP) :: TK! depth avg. fric.
 C
       INTEGER NH
@@ -1410,7 +1447,7 @@ C
       REAL(SZ) BALPHA! BALPHA(2) is constriction fraction
       REAL(SZ) BDELX ! BDELX(3) is effective delx
 C
-C Determine the bottom roughness length either from fort.15, from Manning's n 
+C Determine the bottom roughness length either from fort.15, from Manning's n
 C or as read in from nodal attributes
           DO NH=1,NP
             H1=DP(NH)+IFNLFA*ETA2(NH)
@@ -1439,7 +1476,7 @@ C or as read in from nodal attributes
             FricBP=(H1/BDELX)*BK*(BK+5.d0*Fr*Fr-0.6d0)
      &           *(BALPHA+15.d0*BALPHA**4)
             TK(I)=TK(I)+FricBP*ABS(Q(NH,1))/H1
-      ENDIF       
+      ENDIF
 
          ENDDO
 C
@@ -1450,7 +1487,7 @@ C     ----------------------------------------------------------------
 
 
 C     ----------------------------------------------------------------
-C     S U B R O U T I N E     
+C     S U B R O U T I N E
 C     A P P L Y  D I R E C T I O N A L  W I N D  R E D U C T I O N
 C     ----------------------------------------------------------------
 C
@@ -1513,22 +1550,22 @@ C
 C     define land roughness from usace values
       z0l=z0land(NodeNumber,idir)
 C
-C     reset z0l depending on situation                       
-      if(z0l.le.0.006) then    
+C     reset z0l depending on situation
+      if(z0l.le.0.006) then
 c     coe set their value to a marine value -> reset to correct marine value
-         z0l=z0m    
-      else 
+         z0l=z0m
+      else
 c     coe set their value to a land value -> proceed with checking this value
          TotalDepth = BathymetricDepth + Elevation
          if( (TotalDepth.gt.2*CutOffDepth).and.
      &        (BathymetricDepth.lt.20)) then
-c     compute adjusted z0l to account for overland flooding - do this only 
-c     in the case where the water column is greater than twice h0 and 
-c     you are not in a river (I assume that rivers are deeper than 20m 
-c     and have z0l>0.006) 
+c     compute adjusted z0l to account for overland flooding - do this only
+c     in the case where the water column is greater than twice h0 and
+c     you are not in a river (I assume that rivers are deeper than 20m
+c     and have z0l>0.006)
             z0l=z0l-TotalDepth/30. ! correction for overland flooding
-         endif 
-      endif  
+         endif
+      endif
 C
 c     compute land wind reduction factor
       if(z0l.gt.0.0001) then
@@ -1538,8 +1575,8 @@ c     compute land wind reduction factor
       endif
       if(fr.gt.1.0000d0) fr=1.0000d0
 c     adjust time interpolated wind field
-      WindX = fr*WindX 
-      WindY = fr*WindY 
+      WindX = fr*WindX
+      WindY = fr*WindY
 C
       RETURN
 C     ----------------------------------------------------------------
@@ -1548,10 +1585,10 @@ C     ----------------------------------------------------------------
 
 
 C     ----------------------------------------------------------------
-C     S U B R O U T I N E     
+C     S U B R O U T I N E
 C     A P P L Y   C A N O P Y   C O E F F I C I E N T
 C     ----------------------------------------------------------------
-C     jgf49.1001 Subroutine to apply the canopy coefficient. Was 
+C     jgf49.1001 Subroutine to apply the canopy coefficient. Was
 C     originally included in the subroutine ApplyDirectionalWindReduction;
 C     this combination implicitly assumed that the two attributes would
 C     always be used together.
@@ -1562,8 +1599,8 @@ C     ----------------------------------------------------------------
       REAL(SZ), intent(inout) :: WindX   ! x-dir component of wind velocity
       REAL(SZ), intent(inout) :: WindY   ! x-dir component of wind velocity
 C
-      WindX = vcanopy(NodeNumber)*WindX 
-      WindY = vcanopy(NodeNumber)*WindY 
+      WindX = vcanopy(NodeNumber)*WindX
+      WindY = vcanopy(NodeNumber)*WindY
 C
       RETURN
 C     ----------------------------------------------------------------
@@ -1583,7 +1620,7 @@ C     never called. It is vestigial and listed here purely as reference
 C     material.
 C
 C     ----------------------------------------------------------------
-      SUBROUTINE ReadLegacyStartDryFile(NP, NScreen, ScreenUnit, 
+      SUBROUTINE ReadLegacyStartDryFile(NP, NScreen, ScreenUnit,
      &     MyProc, NAbOut)
       IMPLICIT NONE
       INTEGER, intent(in) :: NP ! number of nodes in grid file
@@ -1601,13 +1638,13 @@ C     ----------------------------------------------------------------
 
       OPEN(12,FILE=TRIM(INPUTDIR)//'/'//'fort.12')
 C
-C...  READ STARTDRY INFORMATION FROM UNIT 12 
+C...  READ STARTDRY INFORMATION FROM UNIT 12
       READ(12,'(A80)') AGRID2
       WRITE(16,2038) AGRID2
 2038  FORMAT(5X,'STARTDRY FILE IDENTIFICATION : ',A80,/)
       READ(12,*) NE2,NP2
 C
-C...  CHECK THAT NE2 AND NP2 MATCH WITH GRID FILE 
+C...  CHECK THAT NE2 AND NP2 MATCH WITH GRID FILE
 C      IF((NE2.NE.NE).OR.(NP2.NE.NP)) THEN
        IF(NP2.NE.NP) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9900)
@@ -1631,9 +1668,9 @@ C...  READ IN STARTDRY CODE VALUES
      &           'CHECK YOUR UNIT 12 INPUT FILE CAREFULLY',//)
          ENDIF
       END DO
-C     
-C...  CLOSE UNIT 12 FILE       
-      CLOSE(12)     
+C
+C...  CLOSE UNIT 12 FILE
+      CLOSE(12)
 C
       RETURN
 C     ----------------------------------------------------------------
@@ -1642,7 +1679,7 @@ C     ----------------------------------------------------------------
 
 
 C     ----------------------------------------------------------------
-C                       S U B R O U T I N E     
+C                       S U B R O U T I N E
 C       R E A D  L E G A C Y  B O T T O M  F R I C T I O N  F I L E
 C     ----------------------------------------------------------------
 C
@@ -1661,7 +1698,7 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: ScreenUnit ! i/o for debug info to screen
       INTEGER, intent(in) :: MyProc  ! in parallel, only MyProc=0 i/o to screen
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
-      
+
       CHARACTER(len=80) AFRIC  ! user's comment/description line
       INTEGER NHG    ! node number from file
 

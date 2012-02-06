@@ -2723,18 +2723,18 @@ C...
 !     IF(myproc.eq.0) PRINT *, " ITEST **********", ITEST
 
       if ((NHSTAR > 0 .and. ITEST == IT) .or. (-IHOT == IT)) then
-        if( (MNWPROH > 0) ) then   !Writer for HSfile
-          if( (.not.C3D) ) then                     !Writer for HSfile
+         if( (MNWPROH > 0) ) then   !Writer for HSfile
+            if( (.not.C3D) ) then                     !Writer for HSfile
 #ifdef CMPI
-          CALL writeHotstart_through_hswriter(TimeLoc,IT)  !st3 hsfile
+               CALL writeHotstart_through_hswriter(TimeLoc,IT)  !st3 hsfile
 #endif
-          else
-            write(6,*) 'HS writer does not support C3D'
-          endif
-        else
+            else
+               write(6,*) 'HS writer does not support C3D'
+            endif
+         else
 !     IF(myproc.eq.0) PRINT *, " writeHotstart **********"
-         CALL writeHotstart(TimeLoc, IT)
-        endif
+            CALL writeHotstart(TimeLoc, IT)
+         endif
 
 #ifdef CSWAN
 Casey 100205: Enable writing of SWAN hot-start file.  We need to wait
@@ -2914,7 +2914,8 @@ C
       USE NodalAttributes, ONLY :
      &     LoadGeoidOffset, GeoidOffset, EVM,
      &     TAU0VAR, HighResTimeVaryingTau0, FullDomainTimeVaryingTau0,
-     &     CalculateTimeVaryingTau0
+     &     CalculateTimeVaryingTau0, LoadWSESmoother,
+     &     elevation_smoothing_timestep_increment
 #ifdef CMPI
       USE MESSENGER
 #endif
@@ -2974,9 +2975,23 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(8) AreaIE, AreaIE2, AreaIE4
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
       REAL(8) TimeLoc, TimeH
-
+C
+C     jgf50.44: Added water surface elevation smoothing
+      REAL(sz) :: EtaN1, ETaN2, EtaN3, AreaEle, EtaN123
+      INTEGER :: IT_SmoothTime
+      REAL(sz), ALLOCATABLE, SAVE :: elevSum(:) ! used if wse smoother is active
+      LOGICAL, SAVE :: firstCall = .true.
+C
       REAL(SZ) HH1 !jgf46.02 Added for Katrina.
       REAL(SZ) RDIAG ! jgf48.4619 Seizo parameter for fully explicit mode
+C
+      IF (LoadWSESmoother.eqv..true.) THEN
+         IF (firstCall.eqv..true.) THEN
+            allocate(elevSum(mnp))
+            firstCall = .false.
+         ENDIF
+      ENDIF
+
 Casey 050711 : Added for averaged variable Tau0.
 C      REAL(SZ) :: CaseySum
 C      REAL(SZ), ALLOCATABLE :: TAU0VARTEMP(:)
@@ -3745,15 +3760,6 @@ C...  Put load vector elemental values into nodal storage for a vector computer
       END DO
 #endif
 
-C     jgfdebug4608
-C      if (it.eq.16) then
-C         open(unit=99,file=trim(localdir)//'/'//'fort.99')
-C         do i=1,np
-C            write(99,'(i5,2x,e16.8)') i, gwce_lv(i)
-C         enddo
-C         close(99)
-C      endif
-
 C...  Save the elevation at the past time step into Eta1 and zero out Eta2
 ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
 
@@ -3996,22 +4002,58 @@ C     UPDATE ELEVATIONS
 #ifdef CMPI
       CALL UPDATER(ETA2,DUMY1,DUMY2,1)
 #endif
-!      IF (MYPROC.EQ.2) THEN
-!        DO I=1,NP
-!          IF ((I.EQ.89469).OR.(I.EQ.89731).OR.
-!     &        (I.EQ.89743).OR.(I.EQ.89744)) THEN
-!               PRINT *, "ETA2(",I,") = ", ETA2(I)
-!          END IF
-!        END DO
-!      END IF
-!      IF (MYPROC.EQ.3) THEN
-!        DO I=1,NP
-!          IF ((I.EQ.90631).OR.(I.EQ.90875).OR.(I.EQ.90876).OR.
-!     &       (I.EQ.90895).OR.(I.EQ.90896)) THEN
-!               PRINT *, "ETA2(",I,") = ", ETA2(I)
-!          END IF
-!        END DO
-!      END IF
+
+CSMOOTH...
+CSMOOTH...Once the elevations are computed, smooth them over the neighboring nodes
+CSMOOTH...GWCE_LV is used for temporary storage of the smoothed elevations
+CSMOOTH...
+      IF (LoadWSESmoother.eqv..true.) THEN
+         elevSum(:) = 0.d0
+         DO IE=1,NE
+            NM1=NM(IE,1)
+            NM2=NM(IE,2)
+            NM3=NM(IE,3)
+            NC1=NODECODE(NM1)
+            NC2=NODECODE(NM2)
+            NC3=NODECODE(NM3)
+            NCEle=NC1*NC2*NC3*NOFF(IE)
+            EtaN1=IFNLFA*Eta2(NM1)
+            EtaN2=IFNLFA*Eta2(NM2)
+            EtaN3=IFNLFA*Eta2(NM3)
+            AreaEle=NCEle*Areas(IE)/2.d0
+            EtaN123=(EtaN1+EtaN2+EtaN3)/3.d0
+            elevSum(NM1)=elevSum(NM1)+AreaEle*EtaN123
+            elevSum(NM2)=elevSum(NM2)+AreaEle*EtaN123
+            elevSum(NM3)=elevSum(NM3)+AreaEle*EtaN123
+         ENDDO
+
+         DO I=1,NP
+            ! don't smooth the solution here if the time inc is zero
+            IF (elevation_smoothing_timestep_increment(I).ne.0) THEN
+               IT_SmoothTime =
+     &         (IT/elevation_smoothing_timestep_increment(I))*
+     &          elevation_smoothing_timestep_increment(I)
+               IF ((TotalArea(I).eq.0.).or.(IT_SmoothTime.ne.IT)) THEN
+                  ! if there is no associated area for this node, or
+                  ! this is not the right ts to smooth the solution
+                  ! here, go to the next node
+                  CYCLE
+               ELSE
+                  ! otherwise, use the smoothed value of water surface elev
+                  Eta2(I)=elevSum(I)/TotalArea(I)
+               ENDIF
+            ENDIF
+         ENDDO
+#ifdef CMPI
+         ! update boundaries with smoothed solution
+         CALL UPDATER(ETA2,DUMY1,DUMY2,1)
+#endif
+      ENDIF
+CSMOOTH...
+CSMOOTH...END SMOOTHING SECTION
+CSMOOTH...
+
+
       RETURN
       END SUBROUTINE GWCE_NEW
 
