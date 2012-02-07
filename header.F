@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.47   - 02/07/2012 - jgf - Fixed tab handling issued in subroutine
+C             parse() for station names that caused a segfault on pgi compiler.
 C  v50.46   - 02/04/2012 - jgf - Created new nodal attribute called 
 C             water_surface_elevation_smoother and added code to GWCE_New
 C             to apply the smoother if it has been loaded; the value of this

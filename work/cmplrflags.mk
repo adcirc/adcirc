@@ -324,7 +324,9 @@ ifeq ($(compiler),pgi-ranger)
   FC            :=  pgf95
   PFC           :=  mpif90
   FFLAGS1       :=  $(INCDIRS) -fast -tp barcelona-64 -Mextend
-#  FFLAGS1       :=  $(INCDIRS) -Minform,inform -Mextend -g -O0 -DNETCDF_DEBUG -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DNETCDF_DEBUG
+  ifeq ($(DEBUG),full)
+     FFLAGS1	:=  $(INCDIRS) -Minform,inform -Mextend -g -O0 -traceback -DNETCDF_DEBUG -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
@@ -333,7 +335,7 @@ ifeq ($(compiler),pgi-ranger)
   IMODS         :=  -I
   CC            := gcc
   CCBE          := $(CC)
-  CFLAGS        := $(INCDIRS)  -DLINUX
+  CFLAGS        := $(INCDIRS) -DLINUX
   CLIBS         :=
   LIBS          :=
   MSGLIBS       :=

@@ -1067,23 +1067,26 @@ C     file if they are present.
       write(99,'(A)') trim(modifiedLine)
       close(99,err=2,status='keep')
       call openFileForRead(99,trim(localdir)//'/namelist.scratch',ios)
-      read(99,NML=metControl,END=32,ERR=2,IOSTAT=ios)
- 2    IF (ios.gt.0) THEN
-         CALL allMessage(ERROR,"I/O error reading NWS line.")
+      IF (ios.eq.0) THEN
+         read(99,NML=metControl,END=32,ERR=2,IOSTAT=ios)
+ 2       IF (ios.gt.0) THEN
+            CALL allMessage(ERROR,"I/O error reading NWS line.")
 #ifdef CMPI
-         call msg_fini()
+            call msg_fini()
 #endif
-         STOP
-      ENDIF
+            STOP
+         ENDIF
+      ENDIF 
  32   IF (ios.gt.0) THEN
-        CALL allMessage(ERROR,"END of NWS line reached.")
+        CALL allMessage(ERROR,"I/O error reading NWS line.")
 #ifdef CMPI
          call msg_fini()
 #endif
          STOP
       ENDIF
       close(99,err=2,status='delete')
-      write(scratchMessage,*) 'nws=',nws,' WindDragLimit=',WindDragLimit,
+      write(scratchMessage,*) 'nws=',nws,
+     &   ' WindDragLimit=',WindDragLimit,
      &   'DragLawString=',DragLawString
       CALL logMessage(DEBUG,scratchMessage)
 

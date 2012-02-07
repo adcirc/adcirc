@@ -1844,20 +1844,32 @@ C-------------------------------------------------------------------
       INTEGER NAMSTART  ! position of beginning of station name
       INTEGER NAMEND    ! position of end of station name
       INTEGER BANGEND   ! location of terminating "!", if any
+      CHARACTER(len=1) :: tab_character
 C
+      call setMessageSource("parse")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      tab_character = achar(9)
       LS=1
       L=TRIM(ADJUSTL(LINE))
       CALL COMPACT(L)
       LEN1=LEN(L)
-
 !     EXTRACT STATION DATA FROM LINE
-
+      L2 = 0
+      L3 = 0
+      L4 = 0
       DO I=1,2
 !        DO I=1,3
-         L2=LEN(TRIM(ADJUSTL(L(1:INDEX(L," ")-1))))          !space
-         L3=LEN(Trim(adjustl(L(1:index(L,achar(9))-1))))     !tab
-         L4=LEN(trim(adjustl(L(1:index(L,",")-1))))          !comma
-
+         if (index(L," ").ne.0) then
+            L2=LEN(TRIM(ADJUSTL(L(1:INDEX(L," ")-1))))          !space
+         endif
+         if (index(L,tab_character).ne.0) then
+            L3=LEN(Trim(adjustl(L(1:index(L,tab_character)-1))))     !tab
+         endif
+         if (index(L,",").ne.0) then
+            L4=LEN(trim(adjustl(L(1:index(L,",")-1))))          !comma
+         endif
          !Determine starting position based on which delimiter was found first
          L1 = L2
          PB = 1
@@ -1891,6 +1903,10 @@ C     they are assumed to be a comment.
          NAMEND = BANGEND + (NAMSTART-2)
       ENDIF
       LVAR(3)=ADJUSTL(L(NAMSTART:NAMEND)) !jgf49.29: trim leading "!" and spaces
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       !=================================================================
       END SUBROUTINE parse
       !=================================================================
@@ -1909,6 +1925,10 @@ C              http://www.gbenthien.net/strings/index.html
        CHARACTER(LEN=1):: CH
        CHARACTER(LEN=LEN_TRIM(STR)):: OUTSTR
 
+      call setMessageSource("compact")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
        STR=ADJUSTL(STR)
        LENSTR=LEN_TRIM(STR)
        OUTSTR=' '
@@ -1938,6 +1958,11 @@ C              http://www.gbenthien.net/strings/index.html
        END DO
 
        STR=ADJUSTL(OUTSTR)
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       !=================================================================
        END SUBROUTINE COMPACT
       !=================================================================
