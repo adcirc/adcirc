@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.48   - 02/08/2012 - jgf - Made stations allocate memory with MNST* 
+C             rather than NST* dimensions; moved statement that sets 1 station
+C             as the minimum to allocate for concentration and meteorology 
+C             stations to avoid potential memory issues.
 C  v50.47   - 02/07/2012 - jgf - Fixed tab handling issued in subroutine
 C             parse() for station names that caused a segfault on pgi compiler.
 C  v50.46   - 02/04/2012 - jgf - Created new nodal attribute called 
