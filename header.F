@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.50   - 02/08/2012 - jgf - Changed organization of smoother and slope
+C             limiter calculations slightly for sustainability; made negative
+C             value of threshold gradient signify unlimited slope at a node
+C             (setting threshold gradient to 0.0 now gives continuously limited
+C             slope). 
 C  v50.49   - 02/08/2012 - zc - Created new nodal attribute for 
 C             elemental_slope_limiter which takes as a value the maximum 
 C             gradient to allow before applying the smoothing function which

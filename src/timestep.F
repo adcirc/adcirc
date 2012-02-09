@@ -202,7 +202,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) DPMIN      ! sb v46.28.sb05.06 11/01/2006
       REAL(SZ) PRDIFF,PRBCKGRND_MH2O     ! tcm v49.16 20100617 added
 
-      REAL(SZ) dEta2Mag
+      REAL(SZ) dEta2Mag ! magnitude of the slope of the water surface elevation
 
       REAL(8) AreaIE2,AreaEle
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
@@ -2749,8 +2749,8 @@ C             everything is up-to-date.
 
 C...  CHECK IF THE LOCAL GRADIENT FOR ELEMENTS IS EXCEEDED AND TRIGGER THE
 C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY - ZC (original routine by Crystal Fulcher)
-      IF(LoadEleSlopeLim)THEN
-        DO IE=1,NE
+      IF (LoadEleSlopeLim) THEN
+         DO IE=1,NE
             NM1=NM(IE,1)
             NM2=NM(IE,2)
             NM3=NM(IE,3)
@@ -2759,48 +2759,43 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY - ZC (original routine by Crystal Fulc
             NC3=NODECODE(NM3)
             NCEle=NC1*NC2*NC3*NOFF(IE)
             IF(NCEle.EQ.0)THEN
-                dEta2Mag=-9999
-            ELSE
-                SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
-                AreaIE2=Areas(IE)
-                FDX1=(Y(NM2)-Y(NM3))*SFacAvg 
-                FDX2=(Y(NM3)-Y(NM1))*SFacAvg
-                FDX3=(Y(NM1)-Y(NM2))*SFacAvg
-                FDY1=X(NM3)-X(NM2)
-                FDY2=X(NM1)-X(NM3)
-                FDY3=X(NM2)-X(NM1)
-                dEta2Dx  = (Eta2(NM1)*FDX1+Eta2(NM2)*FDX2+Eta2(NM3)*FDX3)
-     &                     /AreaIE2
-                dEta2Dy  = (Eta2(NM1)*FDY1+Eta2(NM2)*FDY2+Eta2(NM3)*FDY3)
-     &                     /AreaIE2
-                dEta2Mag = (dEta2Dx*dEta2Dx+dEta2Dy*dEta2Dy)**(1D0/2D0)
-                IF((dEta2Mag.GE.elemental_slope_limiter_grad_max(NM1)).AND.
-     &             (.NOT.elemental_slope_limiter_active(NM1)).AND.
-     &             (elemental_slope_limiter_grad_max(NM1).GT.0D0))THEN
-                      elemental_slope_limiter_active(NM1) = .TRUE.
-                      ESLONOFF(NM1) = 1
-                      WRITE(ScreenUnit,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,MyProc
-                      WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,MyProc
-                ENDIF
-                IF((dEta2Mag.GE.elemental_slope_limiter_grad_max(NM2)).AND.
-     &             (.NOT.elemental_slope_limiter_active(NM2)).AND.
-     &             (elemental_slope_limiter_grad_max(NM2).GT.0D0))THEN
-                      elemental_slope_limiter_active(NM2) = .TRUE.
-                      ESLONOFF(NM2) = 1
-                      WRITE(ScreenUnit,1983) IT,NumItr,TimeLoc,dEta2Mag,NM2,MyProc
-                      WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM2,MyProc
-                ENDIF
-                IF((dEta2Mag.GE.elemental_slope_limiter_grad_max(NM3)).AND.
-     &             (.NOT.elemental_slope_limiter_active(NM3)).AND.
-     &             (elemental_slope_limiter_grad_max(NM3).GT.0D0))THEN
-                      elemental_slope_limiter_active(NM3) = .TRUE.
-                      ESLONOFF(NM3) = 1
-                      WRITE(ScreenUnit,1983) IT,NumItr,TimeLoc,dEta2Mag,NM3,MyProc
-                      WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM3,MyProc
-                ENDIF
+               CYCLE  ! this element is dry, go to the next one
             ENDIF
-        ENDDO
-      ENDIF   
+            SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
+            AreaIE2=Areas(IE)
+            FDX1=(Y(NM2)-Y(NM3))*SFacAvg
+            FDX2=(Y(NM3)-Y(NM1))*SFacAvg
+            FDX3=(Y(NM1)-Y(NM2))*SFacAvg
+            FDY1=X(NM3)-X(NM2)
+            FDY2=X(NM1)-X(NM3)
+            FDY3=X(NM2)-X(NM1)
+            dEta2Dx  = (Eta2(NM1)*FDX1+Eta2(NM2)*FDX2+Eta2(NM3)*FDX3)
+     &                 /AreaIE2
+            dEta2Dy  = (Eta2(NM1)*FDY1+Eta2(NM2)*FDY2+Eta2(NM3)*FDY3)
+     &                 /AreaIE2
+            dEta2Mag = sqrt(dEta2Dx**2.d0+dEta2Dy**2.d0)
+            DO I=1,3
+               ! check if user specified unlimited slope, or if we've already
+               ! turned the limiter on here (once its on, its on for the
+               ! rest of the run, so no need to check it again)
+               IF ((elemental_slope_limiter_grad_max(NM(IE,I)).LT.0.d0)
+     &            .OR.
+     &            (elemental_slope_limiter_active(NM(IE,I)).EQV..TRUE.))
+     &            THEN
+                     CYCLE  ! go to next node of this element
+               ENDIF
+               IF
+     &          (dEta2Mag.GE.elemental_slope_limiter_grad_max(NM(IE,I)))
+     &            THEN
+                  ESLONOFF(NM(IE,I)) = 1 ! for output file
+                  elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
+                  WRITE(screenUnit,1983) IT,NumItr,TimeLoc,
+     &                dEta2Mag,NM1,MyProc
+                  WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,MyProc
+               ENDIF
+            ENDDO ! loop around nodes of an element
+         ENDDO ! loop over the elements
+      ENDIF
 1983  FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &       5X,'TIME = ',E15.8,
      &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE',I7,
@@ -4074,7 +4069,9 @@ CSMOOTH...
 CSMOOTH...Once the elevations are computed, smooth them over the neighboring nodes
 CSMOOTH...GWCE_LV is used for temporary storage of the smoothed elevations
 CSMOOTH...
-      IF (LoadWSESmoother.eqv..true.) THEN
+      IF((LoadEleSlopeLim.eqv..true.).OR.
+     &      (LoadWSESmoother.eqv..true.))THEN
+C
          elevSum(:) = 0.d0
          DO IE=1,NE
             NM1=NM(IE,1)
@@ -4093,77 +4090,48 @@ CSMOOTH...
             elevSum(NM2)=elevSum(NM2)+AreaEle*EtaN123
             elevSum(NM3)=elevSum(NM3)+AreaEle*EtaN123
          ENDDO
-
-         DO I=1,NP
-            ! don't smooth the solution here if the time inc is zero
-            IF (elevation_smoothing_timestep_increment(I).ne.0) THEN
-               IT_SmoothTime =
-     &         (IT/elevation_smoothing_timestep_increment(I))*
-     &          elevation_smoothing_timestep_increment(I)
-               IF ((TotalArea(I).eq.0.).or.(IT_SmoothTime.ne.IT)) THEN
-                  ! if there is no associated area for this node, or
-                  ! this is not the right ts to smooth the solution
-                  ! here, go to the next node
-                  CYCLE
-               ELSE
-                  ! otherwise, use the smoothed value of water surface elev
-                  Eta2(I)=elevSum(I)/TotalArea(I)
+C
+         IF (LoadWSESmoother.eqv..true.) THEN
+            DO I=1,NP
+               ! don't smooth the solution here if the time inc is zero
+               IF (elevation_smoothing_timestep_increment(I).ne.0) THEN
+                  IT_SmoothTime =
+     &            (IT/elevation_smoothing_timestep_increment(I))*
+     &             elevation_smoothing_timestep_increment(I)
+                  IF ((TotalArea(I).eq.0.).or.(IT_SmoothTime.ne.IT)) THEN
+                     ! if there is no associated area for this node, or
+                     ! this is not the right ts to smooth the solution
+                     ! here, go to the next node
+                     CYCLE
+                  ELSE
+                     ! otherwise, use the smoothed value of water surface elev
+                     Eta2(I)=elevSum(I)/TotalArea(I)
+                  ENDIF
                ENDIF
-            ENDIF
-         ENDDO
-      ENDIF
+            ENDDO
+         ENDIF
 CSMOOTH...
 CSMOOTH...END SMOOTHING SECTION
 CSMOOTH...
 
-C     ELEMENTAL SLOPE LIMITER
+C       ELEMENTAL SLOPE LIMITER
 C
-C     CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
-C     TIME STEP AND APPLY SMOOTHING IF DESIRED. THIS ROUTINE PARALLELS THE
-C     ABOVE ROUTINE. -ZC
-      IF (LoadEleSlopeLim.EQV..true.) THEN
-         elevSum(:) = 0D0
-         DO IE=1,NE
-            NM1=NM(IE,1)
-            NM2=NM(IE,2)
-            NM3=NM(IE,3)
-            NC1=NODECODE(NM1)
-            NC2=NODECODE(NM2)
-            NC3=NODECODE(NM3)
-            NCEle=NC1*NC2*NC3*NOFF(IE)
-            EtaN1=IFNLFA*Eta2(NM1)
-            EtaN2=IFNLFA*Eta2(NM2)
-            EtaN3=IFNLFA*Eta2(NM3)
-            AreaEle=NCEle*Areas(IE)/2.d0
-            EtaN123=(EtaN1+EtaN2+EtaN3)/3.d0
-            elevSum(NM1)=elevSum(NM1)+AreaEle*EtaN123
-            elevSum(NM2)=elevSum(NM2)+AreaEle*EtaN123
-            elevSum(NM3)=elevSum(NM3)+AreaEle*EtaN123
-         ENDDO
-
-C      IF THE CHECK ON GRADIENTS HAS BEEN TURNED ON, CHECK TO MAKE SURE
-C      THIS NODE IS NOT PART OF THE ELEVATION_SMOOTHING ROUTINE ABOVE TO 
-C      AVOID DOUBLE SMOOTHING
-
-         DO I = 1,NP
-            IF ((elevation_smoothing_timestep_increment(I).EQ.0).AND.
-     &          (elemental_slope_limiter_active(I).eqv..true.))THEN
-            
-                Eta2(I)=elevSum(I)/TotalArea(I)
-
-            ENDIF    
-         ENDDO
-      ENDIF
+C        CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
+C        TIME STEP AND APPLY SMOOTHING IF DESIRED. THIS ROUTINE PARALLELS THE
+C        ABOVE ROUTINE. -ZC
+         IF (LoadEleSlopeLim.EQV..true.) THEN
+            WHERE ((elemental_slope_limiter_active.eqv..true.).and.
+     &         (TotalArea.ne.0.d0))
+               Eta2 = elevSum / TotalArea
+            END WHERE
+         ENDIF
 
 C     IF EITHER OF THE SMOOTHING ROUTINES ARE ACTIVE, CALL UPDATER
 #ifdef CMPI
-         ! update boundaries with smoothed solution
-         IF((LoadEleSlopeLim.eqv..true.).OR.
-     &      (LoadWSESmoother.eqv..true.))THEN
-               CALL UPDATER(ETA2,DUMY1,DUMY2,1)
-         ENDIF   
+         ! update boundaries with smoothed and/or slope limited elevations
+         CALL UPDATER(ETA2,DUMY1,DUMY2,1)
 #endif
-
+      ENDIF
 
 
 
