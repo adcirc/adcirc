@@ -11,9 +11,9 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #
 #compiler=gnu
 #compiler=g95
-#compiler=intel
+compiler=intel
 #compiler=intel-lonestar
-compiler=cray_xt3
+#compiler=cray_xt3
 #compiler=cray_xt4
 #compiler=cray_xt5
 #compiler=pgi
@@ -78,9 +78,9 @@ ifeq ($(compiler),intel)
   PPFC            :=  ifort	
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O2 -FI  -Vaxlib -assume byterecl -132 -i-dynamic
+  FFLAGS1       :=  $(INCDIRS) -O3 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io 
   ifeq ($(DEBUG),full)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug -check all -i-dynamic -FI -Vaxlib -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug -check all -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)

@@ -143,6 +143,9 @@ c.
 Casey 090302: Added the following arrays for output of radiation stress gradients.
       REAL(SZ),ALLOCATABLE, TARGET :: RSNXOUT(:), RSNYOUT(:)
 #endif
+C..ZC Added the following for output of ESL at end of run
+      REAL(SZ),ALLOCATABLE, TARGET :: ESLONOFF(:),HOT_ESLONOFF(:),HOT_ESLONOFF_G(:)
+
       REAL(SZ),ALLOCATABLE, TARGET ::  CC00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  EtaDisc(:) ! vjp 9/2006 added for hotstart file
       REAL(SZ),ALLOCATABLE, TARGET ::   CH1(:)
@@ -1460,6 +1463,10 @@ ckmd   Added in parameters for the pc algorithm
 C    kmd48.33bc - arrays for baroclinic
       ALLOCATE (q_heat1(MNP), q_heat2(MNP), HFLUX(MNP) )
       ALLOCATE (sponge(MNP) )
+
+C    Allocate arrays for ESL output
+      ALLOCATE (ESLONOFF(MNP))
+
 
 #ifdef CMPI
       ALLOCATE ( IDUMY(1), DUMY1(1), DUMY2(1) )

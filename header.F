@@ -2,6 +2,12 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.49   - 02/08/2012 - zc - Created new nodal attribute for 
+C             elemental_slope_limiter which takes as a value the maximum 
+C             gradient to allow before applying the smoothing function which
+C             is exactly the same as that used in water_surface_elevation_smooother.
+C             ESLNodes.63 is written out at the end of the run showing the 
+C             nodes which triggered the function.
 C  v50.48   - 02/08/2012 - jgf - Made stations allocate memory with MNST* 
 C             rather than NST* dimensions; moved statement that sets 1 station
 C             as the minimum to allocate for concentration and meteorology 

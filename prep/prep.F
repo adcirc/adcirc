@@ -732,6 +732,10 @@ C
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
          CASE("wave_refraction_in_swan")
             NumCol=1
+         CASE("water_surface_elevation_smoother")
+            NumCol=1
+         CASE("elemental_slope_limiter")
+            NumCol=1
          CASE DEFAULT
             NumCol=1
             IF (Mode.eq.0) THEN

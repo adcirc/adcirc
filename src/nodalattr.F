@@ -107,6 +107,7 @@ C     required for the run, according to the unit 15 control file
       LOGICAL LoadTau0MinMax
       LOGICAL LoadZ0b_var
       LOGICAL LoadWSESmoother ! jgf50.46: water surface elevation smoother
+      LOGICAL LoadEleSlopeLim ! zc: elemental slope limiter
 C
 C     The following flags are .true. if there are data with the
 C     corresponding label in the unit 13 file.
@@ -124,6 +125,7 @@ C     corresponding label in the unit 13 file.
       LOGICAL FoundTau0MinMax
       LOGICAL FoundZ0b_var
       LOGICAL FoundWSESmoother
+      LOGICAL FoundEleSlopeLim 
 C
 C     These variables hold the strings which describe the attribute's
 C     units. These data are loaded from the file, but not used as of
@@ -142,6 +144,7 @@ C     v46.00.
       CHARACTER(len=80) Tau0MinMaxUnits
       CHARACTER(len=80) Z0b_varUnits
       CHARACTER(len=80) WSESmootherUnits
+      CHARACTER(len=80) EleSlopeLimUnits
 C
 C     These variables hold the number of values per node for each
 C     attribute.
@@ -159,6 +162,7 @@ C     attribute.
       INTEGER Tau0MinMaxNoOfVals
       INTEGER Z0b_varNoOfVals
       INTEGER WSESmootherNoOfVals
+      INTEGER EleSlopeLimNoofVals
 C
 C     These variables hold the default values for each attribute.
       REAL(SZ) Tau0DefVal
@@ -175,6 +179,7 @@ C     These variables hold the default values for each attribute.
       REAL(SZ) Tau0MinMaxDefVal(2)
       REAL(SZ) Z0b_varDefVal
       REAL(SZ) WSESmootherDefVal
+      REAL(SZ) EleSlopeLimDefVal
 C
       INTEGER NumOfNodes    ! number of nodes listed in unit 13 file, cf. NP
       INTEGER NAttr         ! number of nodal attributes in the unit 13 file
@@ -221,6 +226,8 @@ C     jgf48.42: Added backloaded time averaged tau0
       LOGICAL :: OutputTau0      ! .true. if Tau0Dig2 == -1 in fort.15
       LOGICAL :: TimeAveragedTau0 ! .true. if Tau0 == -6.x in fort.15
       LOGICAL :: BackLoadedTimeAveragedTau0 ! .true. if Tau0 == -7.x
+      LOGICAL,ALLOCATABLE :: elemental_slope_limiter_active(:) ! .true. if elemental_slope_limiter_grad_max
+                                                               ! has been exceeded, initialized as .false.  
 
       REAL(SZ), ALLOCATABLE :: z0land(:,:) ! directional wind speed red. fac.
       REAL(SZ), ALLOCATABLE :: vcanopy(:)  ! canopy coefficient
@@ -233,6 +240,7 @@ C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(SZ), ALLOCATABLE :: EVC(:)
       REAL(SZ), ALLOCATABLE :: Tau0MinMax(:,:)  ! (node,i); i=1(min), i=2(max)
       REAL(SZ), ALLOCATABLE :: Z0b_var(:)  ! patially varyuing 3D bottom roughness length
+      REAL(SZ), ALLOCATABLE :: elemental_slope_limiter_grad_max(:)
 C
       INTEGER i        ! node loop counter
       INTEGER j        ! attribute values loop counter
@@ -273,6 +281,7 @@ C
       LoadTau0MinMax     = .False.
       LoadZ0b_var        = .False.
       LoadWSESmoother    = .False.
+      LoadEleSlopeLim    = .False.
 C
       FoundTau0           = .False.
       FoundStartDry       = .False.
@@ -288,6 +297,7 @@ C
       FoundTau0MinMax     = .False.
       FoundZ0b_var        = .False.
       FoundWSESmoother    = .False.
+      FoundEleSlopeLim    = .False.
 C
       Tau0NoOfVals          = 1
       StartDryNoOfVals      = 1
@@ -303,6 +313,7 @@ C
       Tau0MinMaxNoOfVals    = 2
       Z0b_varNoOfVals       = 1
       WSESmootherNoOfVals   = 1
+      EleSlopeLimNoOfVals   = 1
 C
       Tau0DefVal             = 0.0
       StartDryDefVal         = 0.0
@@ -324,6 +335,7 @@ C
       END DO
       Z0b_varDefVal          = 0.001
       WSESmootherDefVal      = 1
+      EleSlopeLimDefVal      = 0D0
 C
       HighResTimeVaryingTau0     = .False.
       FullDomainTimeVaryingTau0  = .False.
@@ -470,6 +482,8 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
          ! jgf50.46: Adding smoothing attribute for wse
          CASE("water_surface_elevation_smoother")
             LoadWSESmoother = .TRUE.
+         CASE("elemental_slope_limiter")
+            LoadEleSlopeLim = .TRUE.
          CASE DEFAULT
             WRITE(16,1000)          ! unit 15 Model Parameter file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -592,6 +606,11 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
             READ(13,'(A80)') WSESmootherUnits
             READ(13,*) WSESmootherNoOfVals
             READ(13,*) WSESmootherDefVal
+          CASE("elemental_slope_limiter")
+            FoundEleSlopeLim = .TRUE.
+            READ(13,'(A80)') EleSlopeLimUnits
+            READ(13,*) EleSlopeLimNoOfVals
+            READ(13,*) EleSlopeLimDefVal
          CASE DEFAULT
             WRITE(16,1001)          ! Nodal Attributes file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -658,6 +677,11 @@ C     Allocate memory to hold our data.
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
       ALLOCATE(SwanWaveRefrac(NumOfNodes))
       ALLOCATE(elevation_smoothing_timestep_increment(NumOfNodes))
+      ALLOCATE(elemental_slope_limiter_grad_max(NumOfNodes))
+      ALLOCATE(elemental_slope_limiter_active(NumOfNodes))
+      elemental_slope_limiter_active(:) = .FALSE.  !...Alloate and initialize to keep
+                                                   !   track of elemental_slope_limiter nodes
+
 C
 C     Now read each of the attributes required by the model parameter
 C     (unit 15) file and skip past the others.
@@ -786,6 +810,12 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
             ELSE
                SkipDataSet = .TRUE.
             ENDIF
+         CASE("elemental_slope_limiter")
+            IF( LoadEleSlopeLim ) THEN
+                CALL LoadAttrVec(elemental_slope_limiter_grad_max, 
+     &              EleSlopeLimDefVal, NumNodesNotDefault, NScreen, 
+     &              MyProc, NAbOut)
+            ENDIF    
          CASE DEFAULT
             SkipDataSet = .True.
             WRITE(16,1001)      ! Nodal Attributes file

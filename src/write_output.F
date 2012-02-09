@@ -29,7 +29,7 @@ C RJW added MYPROC, MNPROC
      &    write_gbl_file_skip_default, collectFullDomainArray,
      &    packOne, unpackOne, packTwo, unpackTwo, pack63, pack83,
      &    open_minmax_file
-      USE NodalAttributes, ONLY : OutputTau0, Tau0Var
+      USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim
 #ifdef CMPI
       USE WRITER, ONLY : WRITE_GBL_FILE_THROUGH_WRITER, 
      $     FLUSH_WRITERS, WRITER_STOREONE, 
@@ -75,6 +75,7 @@ C
       type(OutputDataDescript_t), SAVE :: PrMinDescript
       type(OutputDataDescript_t), SAVE :: RSMaxDescript
       type(OutputDataDescript_t), SAVE :: SpongeDescript
+      type(OutputDataDescript_t), SAVE :: ESLDescript
 #ifdef CSWAN
 Casey 090302: Added this type for output of radiation stress gradients.
       type(OutputDataDescript_t), SAVE :: RSDescript
@@ -100,6 +101,7 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNOUTMAX_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNMAX_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: sponge_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ESLONOFF_G(:) !zc added for ESL On/Off output
 #ifdef CSWAN
 Casey 090302: Added these arrays for output of radiation stress gradients.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNXOut_g(:)     
@@ -493,6 +495,26 @@ C        maxrs.63
          RSMaxDescript % alternate_value       = 0.0
          RSMaxDescript % field_name            = 'RSMax'
          RSMaxDescript % file_name             = 'maxrs.63'
+C        ESLNodes.63
+         IF(LoadEleSlopeLim)THEN
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+                ALLOCATE(ESLONOFF_G(NP_G))
+            ENDIF   
+            ESLDescript % specifier            = 1
+            ESLDescript % initial_value        = 0.0
+            ESLDescript % num_items_per_record = 1
+            ESLDescript % num_fd_records       = NP_G
+            ESLDescript % num_records_this     = NP
+            ESLDescript % imap                 => NODES_LG
+            ESLDescript % array                => ESLONOFF 
+            ESLDescript % array_g              => ESLONOFF_G
+            ESLDescript % hotstart             => HOT_ESLONOFF
+            ESLDescript % hotstart_g           => HOT_ESLONOFF_G
+            ESLDescript % ConsiderWetDry       = .FALSE.
+            ESLDescript % alternate_value      = 0.0
+            ESLDescript % field_name           = 'ESLActive'
+            ESLDescript % file_name            = 'ESLNodes.63' 
+         ENDIF 
 C
 #ifdef NETCDF
          netcdf_error = .false.
@@ -1097,6 +1119,14 @@ C     can be preserved across hot starts.
      &           NP_G, NP, HEADER_MAX)
          CALL OPEN_MINMAX_FILE(963, TRIM(GLOBALDIR)//'/'//'maxrs.63',
      &           NP_G, NP, HEADER_MAX)
+
+C       OUTPUT THE NODES WHERE THE ELEMENTAL SLOPE LIMITER HAS BEEN 
+C       TURNED ON DURING THE RUN
+         IF(LoadEleSlopeLim)THEN
+            CALL OPEN_MINMAX_FILE(963, TRIM(GLOBALDIR)//'/'//'ESLNodes.63',
+     &           NP_G, NP, HEADER_MAX)
+         ENDIF   
+
          IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
             CALL writeOutArrayMinMax(963, TimeLoc, IT, EtaMaxDescript,
      &           packOne, unpackOne,'cld') 
@@ -1108,6 +1138,10 @@ C     can be preserved across hot starts.
      &           packOne, unpackOne, 'cld') 
             CALL writeOutArrayMinMax(963, TimeLoc, IT, RSMaxDescript,
      &           packOne, unpackOne, 'cld') 
+            IF(LoadEleSlopeLim)THEN
+                CALL writeOutArrayMinMax(963, TimeLoc, IT, ESLDescript,
+     &               packOne, unpackOne, 'cld')
+            ENDIF    
          ELSE
             CALL writeOutArrayMinMax(963, TimeLoc, IT, EtaMaxDescript,
      &           packOne, unpackOne,'max') 
@@ -1118,7 +1152,11 @@ C     can be preserved across hot starts.
             CALL writeOutArrayMinMax(963, TimeLoc, IT, WVMaxDescript,
      &           packOne, unpackOne, 'max') 
             CALL writeOutArrayMinMax(963, TimeLoc, IT, RSMaxDescript,
-     &           packOne, unpackOne, 'max') 
+     &           packOne, unpackOne, 'max')
+            IF(LoadEleSlopeLim)THEN
+                CALL writeOutArrayMinMax(963, TimeLoc, IT, ESLDescript,
+     &               packOne, unpackOne, 'max')
+            ENDIF    
          ENDIF
       ENDIF
 
