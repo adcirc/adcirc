@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.51   - 02/13/2012 - jgf - Merged ADCIRC compiler flags and SWAN 
+C             macros.inc for Kraken. 
 C  v50.50   - 02/08/2012 - jgf - Changed organization of smoother and slope
 C             limiter calculations slightly for sustainability; made negative
 C             value of threshold gradient signify unlimited slope at a node

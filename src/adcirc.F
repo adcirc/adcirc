@@ -188,7 +188,7 @@ C...  Special instructions for writer processors
 
       !jgf49.44: Initialize harmonic analysis parameters.
       CALL initHarmonicParameters()
-
+ 
 #ifdef CMACHSUN
       CALL ABRUPT_UNDERFLOW() ! Abrupt underflow for Sun computers
 #endif
