@@ -68,7 +68,7 @@ C                   Naval Research Lab, Stennis Space Center                  *
 C                             summer 2002                                     *
 C                                                                             *
 C******************************************************************************
- 
+
 
 C******************************************************************************
 C******************************************************************************
@@ -77,7 +77,7 @@ C******************************************************************************
 C******************************************************************************
 C
       USE GLOBAL
-      USE GLOBAL_3DVS, ONLY : GORho, GORhoOAMB, AMB 
+      USE GLOBAL_3DVS, ONLY : GORho, GORhoOAMB, AMB
       USE VERSION
 #ifdef CMPI
       USE MESSENGER
@@ -93,7 +93,7 @@ C
 
       CONTAINS
 
- 
+
 C******************************************************************************
 C*    ADCIRC initialize routine
 C******************************************************************************
@@ -131,12 +131,12 @@ C
         CALL MSG_INIT()      ! Init MPI and get MPI-rank of this cpu
       ENDIF
 
-C... TCM v49.52.01 --commented out the next section and replaced with 
+C... TCM v49.52.01 --commented out the next section and replaced with
 C  if(((mnwproh > 0).or.(mnwproc > 0)) .and. MYPROC >= MNPROC)
 
 C...  Special instructions for writer processors
 !       IF(MYPROC >= MNPROC) THEN
-! C...    02/07/2007 - sb - Writer processors will enter "WRITER_MAIN" subroutine 
+! C...    02/07/2007 - sb - Writer processors will enter "WRITER_MAIN" subroutine
 ! C...    and will be terminated before they exit this subroutine.  For this reason,
 ! C...    The "STOP" statement in the next line to "CALL WRITER_MAIN()" will NOT
 ! C...    have any effect, but it is placed there to make it apparent that
@@ -172,7 +172,7 @@ C...  Special instructions for writer processors
 #endif
 
       ! File Fmt Version  must match Major and Minor numbers.
-      FileFmtVersion = 
+      FileFmtVersion =
      &   VERSION_NUMBER(FileFmtMajor, FileFmtMinor, FileFmtRev)
       IF ((NSCREEN.NE.0).AND.(MYPROC.EQ.0)) THEN
          WRITE(ScreenUnit,'(a)')"ADCIRC Version is "//ADC_VERSION
@@ -194,11 +194,11 @@ C...  Special instructions for writer processors
 #endif
 
 
-C...Compute the reciprocal of the number of nodes in the entire domain 
+C...Compute the reciprocal of the number of nodes in the entire domain
 
 #ifdef CMPI
       CALL ALLNODES(NP_GLOBAL)
-      RNP_GLOBAL = 1.0D0/NP_GLOBAL      
+      RNP_GLOBAL = 1.0D0/NP_GLOBAL
 #endif
 
 C     jgf45.08 put this here so it can be used in hot start
@@ -212,11 +212,11 @@ C...
 C...******************** PROGRAM SETUP SECTION ************************
 C...
       SELECT CASE(IHOT)
-         CASE(0) 
+         CASE(0)
             CALL COLDSTART()
             ITHS = 0  !TCM20091029 v49.02 Initialized to zero for coldstarts
          ! kmd : added in the initial condition read
-         CASE(17,67,68,367,368) ! non-portable binary or netcdf hotstart file
+         CASE(17,67,68,367,368,567,568) ! non-portable binary or netcdf hotstart file
             CALL HOTSTART()
          CASE DEFAULT
             ! the IHOT value was vetted already, so this code should
@@ -231,7 +231,7 @@ C...Default beginning and ending time steps
       ITIME_BGN = ITHS+1
       ITIME_END = NT  !NT is set in read_input.F
 
-C...Determine the number of active elements (MJU), the total number of 
+C...Determine the number of active elements (MJU), the total number of
 C...elements (NODELE) and the total area of elements (TotalArea) attached to each node
 
       DO I=1,NP
@@ -245,7 +245,7 @@ C...elements (NODELE) and the total area of elements (TotalArea) attached to eac
          NM1=NM(IE,1)
          NM2=NM(IE,2)
          NM3=NM(IE,3)
-         NCELE=NODECODE(NM1)*NODECODE(NM2)*NODECODE(NM3)*NOFF(IE) 
+         NCELE=NODECODE(NM1)*NODECODE(NM2)*NODECODE(NM3)*NOFF(IE)
          MJU(NM1)=MJU(NM1)+NCELE
          MJU(NM2)=MJU(NM2)+NCELE
          MJU(NM3)=MJU(NM3)+NCELE
@@ -300,10 +300,10 @@ C...Compute several constant coefficients
       GORhoOAMB=GORho/AMB
 
 C...
-C.....Compute necesary wet/dry coefficients 
+C.....Compute necesary wet/dry coefficients
 C...
-      HABSMIN=0.8d0*H0  
-      HOFF=1.2d0*H0    
+      HABSMIN=0.8d0*H0
+      HOFF=1.2d0*H0
 
       WRITE(16,1112)
       WRITE(16,17931)
@@ -311,7 +311,7 @@ C...
       IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,17931)
  1112 FORMAT(/,1X,79('_'))
 17931 FORMAT(//,1X,'LIMITED RUNTIME INFORMATION SECTION ',//)
-      
+
       NCChange=1 !jgf45.06 set flag to set up GWCE LHS on 1st iteration
 C
  1999 format(1X, a," ADCIRC Version: ",a)
@@ -334,6 +334,7 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
       USE Couple2Swan, ONLY: CouplingInterval,
      &                       PADCSWAN_RUN
 #endif
+      IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: NTIME_STP
 C
@@ -357,7 +358,7 @@ C
 #endif
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_END = ITIME_BGN+NTIME_STP-1
-      ENDIF 
+      ENDIF
 C
       call allMessage(INFO,"Begin timestepping.")
       DO 100 ITIME=ITIME_BGN,ITIME_END
@@ -374,7 +375,7 @@ C             to then call the SWAN time-stepping subroutine.
 C
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_BGN = ITIME_END+1
-      ENDIF 
+      ENDIF
 C
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -398,6 +399,7 @@ C*    ADCIRC finalize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Final(NO_MPI_FINALIZE)
       USE HARM, ONLY : solveHarmonicAnalysis
+      IMPLICIT NONE
 C
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
 C
@@ -429,6 +431,38 @@ C
       RETURN
       END SUBROUTINE ADCIRC_Final
 
+
+C******************************************************************************
+C*    ADCIRC terminate routine
+C*    jgf50.44: Mostly just needed so that we can clean up mpi when
+C*    bombing out.
+C******************************************************************************
+      SUBROUTINE ADCIRC_Terminate(NO_MPI_FINALIZE)
+      IMPLICIT NONE
+C
+      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+C
+      call setMessageSource("ADCIRC_Terminate")
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      call allMessage(INFO,"ADCIRC Terminating.")
+
+#ifdef CMPI
+      IF (PRESENT(NO_MPI_FINALIZE)) THEN
+        CALL MSG_FINI(NO_MPI_FINALIZE)
+      ELSE
+        CALL MSG_FINI()
+      ENDIF
+#endif
+      STOP
+C
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+      END SUBROUTINE ADCIRC_Terminate
 
 C******************************************************************************
 C******************************************************************************
@@ -507,9 +541,9 @@ C
       ALLOCATE ( ANGLE(MNEI) )
       ALLOCATE ( NEITEM(MNP) )
       ALLOCATE ( NNeighEle(MNP) )
-C     
+C
       RAD2DEG=45.0d0/ATAN(1.0d0)
-C     
+C
       DO N=1,NP
          NNeigh(N)=0
          NNeighEle(N)=0
@@ -549,7 +583,7 @@ C
          IF((NNeigh(NN1).GT.MNEI-1).OR.(NNeigh(NN3).GT.MNEI-1)) GOTO 999
          NeiTab(NN1,NNeigh(NN1))=NN3
          NeiTab(NN3,NNeigh(NN3))=NN1
-         
+
  35      CONTINUE
          DO J=1,NNeigh(NN2)
             IF(NN3.EQ.NeiTab(NN2,J)) GOTO 10
@@ -649,7 +683,7 @@ C
       END DO
 
 C
-C  WRITE OUT DIAGNOSTIC OUTPUT  
+C  WRITE OUT DIAGNOSTIC OUTPUT
 C
 C     OPEN(333,file='fort.333')
 C     DO N=1,NP
@@ -662,8 +696,8 @@ C     CLOSE (333)
 
 C  Deallocate local work arrays
 
-      DEALLOCATE ( ANGLE )     
-      DEALLOCATE ( NEITEM )    
+      DEALLOCATE ( ANGLE )
+      DEALLOCATE ( NEITEM )
       DEALLOCATE ( NNEIGHELE )
 
 C  DONE

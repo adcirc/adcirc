@@ -27,6 +27,7 @@ C-----------------------------------------------------------------------
       USE HARM
       USE WIND
       USE ITPACKV
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE VERSION
 !     jgf46.00
       USE NodalAttributes, ONLY :
@@ -52,7 +53,7 @@ Casey 100205: Enable hot-start file generation by SWAN.
       REAL(SZ) TOUTSV,TOUTFV
       REAL(SZ) TOUTFGC, TOUTFGE, TOUTFGV, TOUTFGW
       REAL(SZ) TOUTFM, TOUTSGC, TOUTSGE, TOUTSGV, TOUTSGW, TOUTSM
-      CHARACTER CDUM80
+      CHARACTER(len=80) :: CDUM80
       LOGICAL fileFound
 !     v49.48.02 tcm added these local variable for computing
 !     multiple values like element radius and areas, etc...
@@ -66,48 +67,36 @@ Casey 100205: Enable hot-start file generation by SWAN.
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       INTEGER :: commentStart            ! location of fort.15 comment start
       INTEGER :: ios                     ! i/o status of read operation
+#ifdef ADCNETCDF
+      LOGICAL, PARAMETER :: NETCDF_AVAIL = .true.
+#else
+      LOGICAL, PARAMETER :: NETCDF_AVAIL = .false.
+#endif
+      call setMessageSource("read_input")
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 C
 C     jgf46.00 Zero out all the variables in the Nodal Attributes
 C     Module.
-      CALL InitNAModule()
+      CALL initNAModule()
 C
 C     jgf50.32: Initialize default values in wind module.
       CALL initWindModule()
 C
 C...
-C...OPEN STATEMENT FOR UNIT 14 AND 15 INPUT FILES
+C...  OPEN UNIT 14 AND 15 INPUT FILES
 C...
       fileFound = .false.
-      INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.14',EXIST=FileFound)
-      IF (FileFound.eqv..FALSE.) THEN
-         WRITE(*,*) "ERROR: ",myProc,": The file ",
-     &      TRIM(INPUTDIR)//'/'//'fort.14 was not found.'
-         WRITE(*,9973)      ! execution terminated
-#ifdef CMPI
-         CALL MSG_FINI()
-#endif
-         STOP
+      CALL openFileForRead(14,TRIM(INPUTDIR)//'/'//'fort.14',ios)
+      IF (ios.gt.0) THEN
+         CALL ADCIRC_Terminate()
       ENDIF
-C      WRITE(*,*) "DEBUG: ",myProc,": Opening fort.14 file."
-      OPEN(14,FILE=TRIM(INPUTDIR)//'/'//'fort.14',STATUS='OLD')
-C
-      INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.15',EXIST=FileFound)
-      IF (FileFound.eqv..FALSE.) THEN
-         WRITE(*,*) "ERROR: ",myProc,": The file ",
-     &      TRIM(INPUTDIR)//'/'//'fort.15 was not found.'
-         WRITE(*,9973)      ! execution terminated
-#ifdef CMPI
-         CALL MSG_FINI()
-#endif
-         STOP
+
+      CALL openFileForRead(15,TRIM(INPUTDIR)//'/'//'fort.15',ios)
+      IF (ios.gt.0) THEN
+         CALL ADCIRC_Terminate()
       ENDIF
-C      WRITE(*,*) "DEBUG: ",myProc,": Opening fort.15 file."
-      OPEN(15,FILE=TRIM(INPUTDIR)//'/'//'fort.15',STATUS='OLD')
-C...
-C...OPEN STATEMENT FOR UNIT 16 OUTPUT FILE
-C...
-C      WRITE(*,*) "DEBUG: ",myProc,": Opening fort.16 file."
-      OPEN(16,FILE=TRIM(LOCALDIR)//'/'//'fort.16',STATUS='REPLACE')
 C
 C...GENERAL PURPOSE FORMAT STATEMENTS
 C...
@@ -320,7 +309,9 @@ C...
 C...  READ AND PROCESS IHOT - HOT START OPTION
 C...
       READ(15,*) IHOT
-C
+      WRITE(scratchMessage,'("IHOT=",I3,".")') IHOT
+      CALL logMessage(ECHO,scratchMessage)
+
 C     Logic to set the output unit number and output file name of the next
 C     hotstart file to be written (so that the LUNs and file names alternate).
 C
@@ -329,23 +320,22 @@ C     jgf49.39: netcdf hotstart is 367 or 368. Changed if/then structure
 C     to SELECT CASE to avoid confusing myself. The netcdf module makes
 C     its own file name based on the unit number, and ignores hss%filename.
       SELECT CASE(IHOT)
-      CASE(0,17,68,368)
+      CASE(0,17,68,368,568)
          hss%lun = 67
          hss%filename = 'fort.67'
-      CASE(67,367)
-        hss%lun = 68
-        hss%filename = 'fort.68'
+         IF ((IHOT.EQ.368).OR.(IHOT.EQ.568)) THEN
+            useNetCDF = .true.
+         ENDIF
+      CASE(67,367,567)
+         hss%lun = 68
+         hss%filename = 'fort.68'
+         IF ((IHOT.EQ.367).OR.(IHOT.EQ.567)) THEN
+            useNetCDF = .true.
+         ENDIF
       CASE DEFAULT
-            IF ((NSCREEN.ne.0).and.(myProc.eq.0)) THEN
-               WRITE(screenUnit,*) "ERROR: IHOT=",IHOT," is not valid."
-               WRITE(screenUnit,*) "ADCIRC terminating."
-            ENDIF
-            WRITE(16,*) "ERROR: IHOT=",IHOT," is not valid."
-            WRITE(16,*) "ADCIRC terminating."
-#ifdef CMPI
-            CALL MSG_FINI()
-#endif
-            STOP
+         write(scratchMessage,'("IHOT=",I3," is not valid.")') IHOT
+         call allMessage(ERROR,scratchMessage)
+         call ADCIRC_Terminate()
       END SELECT
 #ifdef CSWAN
 Casey 100205: Enable hot-start file generation by SWAN.
@@ -355,10 +345,9 @@ Casey 100205: Enable hot-start file generation by SWAN.
       IF(IHOT.NE.0) THEN
          WRITE(16,9733) IHOT
  9733    FORMAT(/,5X,'ADCIRC will be hot started using information ',
-     &        'on UNIT ',I3)
+     &        'on UNIT ',I3,'.')
       ELSE
-         WRITE(16,9734)
- 9734    FORMAT(/,5X,'ADCIRC will be cold started')
+         CALL logMessage(INFO,'ADCIRC will be cold started.')
       ENDIF
 C...
 C...  READ AND PROCESS ICS - CARTESIAN/SPHERICAL COORDINATE OPTION
@@ -377,7 +366,7 @@ C...
          WRITE(16,9973)
  9735    FORMAT(/,1X,'Your selection of ICS (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-         STOP
+         CALL ADCIRC_Terminate()
       ENDIF
       IF(ICS.EQ.1) THEN
          WRITE(16,9736) ICS
@@ -400,12 +389,10 @@ C...
 c     - - - - - - - - - - - - - - - - - - - - - - - -
       IF (IM.LT.100) THEN
 c     jgf Set defaults for model type (IM). All LOGICAL variables are
-c     initialized to .FALSE. when declared in global.F.  To use original
-c     GWCE equation, uncomment the following line and comment out the
-c     following three lines.
-         CGWCE_New        = .TRUE. !comment out for original GWCE
-         CGWCE_LS_KGQ     = .TRUE. !comment out for original GWCE
-         CGWCE_Advec_NC   = .TRUE. !comment out for original GWCE
+c     initialized to .FALSE. when declared in global.F.
+         CGWCE_New        = .TRUE.
+         CGWCE_LS_KGQ     = .TRUE.
+         CGWCE_Advec_NC   = .TRUE.
 c     jgf To use original momentum equations, uncomment the following
 c     line and comment out the following two lines.
 c     CME_Orig         = .TRUE. !uncomment for original momentum eqs
@@ -611,7 +598,7 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
          WRITE(16,9973)
  9721    FORMAT(/,1X,'Your selection of IM (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-         STOP
+         CALL ADCIRC_Terminate()
       ENDIF
 
 
@@ -702,7 +689,7 @@ C...
          WRITE(16,9973)
  9722    FORMAT(/,1X,'Your selection of NOLIBF (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-         STOP
+         CALL ADCIRC_Terminate()
       ENDIF
       WRITE(16,9845) NOLIBF
  9845 FORMAT(/,5X,'NOLIBF = ',I3)
@@ -754,7 +741,7 @@ C...
      &           'use NWP to load this data.',/)
             WRITE(16,9973)      ! execution will terminate
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-            STOP
+            CALL ADCIRC_Terminate()
          ENDIF
       ENDIF
       WRITE(16,9846) NOLIFA
@@ -785,7 +772,7 @@ C...
          WRITE(16,9973)
  9724    FORMAT(/,1X,'Your selection of NOLICA (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-         STOP
+         CALL ADCIRC_Terminate()
       ENDIF
       WRITE(16,9847) NOLICA
  9847 FORMAT(/,5X,'NOLICA = ',I3)
@@ -813,7 +800,7 @@ C...
          WRITE(16,9973)
  9725    FORMAT(/,1X,'Your selection of NOLICAT (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-         STOP
+         CALL ADCIRC_Terminate()
       ENDIF
 
       IF((NOLIFA.GE.1).AND.(NOLICAT.EQ.0)) THEN
@@ -839,10 +826,7 @@ C...
             if (myproc == 0) WRITE(ScreenUnit,9974)
          ELSE
             if (myproc == 0) WRITE(ScreenUnit,9973)
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
+            call ADCIRC_Terminate()
          ENDIF
       ENDIF
 
@@ -865,10 +849,7 @@ C...
             if (myproc == 0) WRITE(ScreenUnit,9974)
          ELSE
             if (myproc == 0) WRITE(ScreenUnit,9973)
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
+            CALL ADCIRC_Terminate()
          ENDIF
       ENDIF
 
@@ -895,10 +876,7 @@ C...
             if (myproc == 0) WRITE(ScreenUnit,9974)
          ELSE
             if (myproc == 0) WRITE(ScreenUnit,9973)
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
+            call ADCIRC_Terminate()
          ENDIF
       ENDIF
 
@@ -934,7 +912,7 @@ C...
          WRITE(16,9973)
  9729    FORMAT(/,1X,'Your selection of NCOR (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-         STOP
+         CALL ADCIRC_Terminate()
       ENDIF
       IF((ICS.EQ.1).AND.(NCOR.EQ.1)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
@@ -952,10 +930,7 @@ C...
      &        /,1X,'selection of coordinate systems.  Spatially ',
      &        'variable Coriolis should be used only with ',
      &        /,1X,'Spherical coordinates')
-#ifdef CMPI
-         call msg_fini()
-#endif
-         STOP
+         CALL ADCIRC_Terminate()
       ENDIF
       IF(NCOR.EQ.0) THEN
          WRITE(16,233) NCOR
@@ -986,10 +961,7 @@ C...
          WRITE(16,9973)
  9710    FORMAT(/,1X,'Your selection of NTIP (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-#ifdef CMPI
-         call msg_fini()
-#endif
-         STOP
+         CALL ADCIRC_Terminate()
       ENDIF
       IF((ICS.EQ.1).AND.(NTIP.GE.1)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
@@ -1007,7 +979,7 @@ C...
      &        /,1X,'selection of coordinate systems.  Tidal',
      &        'potential forcing should be used only with ',
      &        /,1X,'Spherical coordinates')
-         STOP
+         CALL ADCIRC_Terminate()
       ENDIF
       IF (NTIP.NE.0) CTIP = .TRUE.
       IF(NTIP.EQ.0) THEN
@@ -1045,7 +1017,7 @@ C     jgf50.32: Added code to read the NWS line as a namelist, so that
 C     the drag formulation and wind drag limit can be read from the fort.15
 C     file if they are present.
       READ(15,'(A160)') origLine
-      CALL logMessage(DEBUG,'Reading '//origLine)
+      CALL logMessage(DEBUG,'Reading'//origLine)
       commentStart = scan(origLine,'!') ! to trim off existing comment, if any
       IF (commentStart.eq.0) THEN
          ! there is no comment in this line
@@ -1058,9 +1030,6 @@ C     file if they are present.
       modifiedLine = '&metControl nws='//
      &   adjustl(trim(origLine(1:commentStart-1)))//" /"
       CALL logMessage(DEBUG,'modifiedLine='//modifiedLine)
-      ! because namelist i/o is not available for internal files, we must
-      ! write this line to a scratch file, then read it from the scratch
-      ! file
       ios=0
       open(99,file=trim(localdir)//'/namelist.scratch',
      &     iostat=ios,status='replace',err=2,action='write')
@@ -1071,20 +1040,13 @@ C     file if they are present.
          read(99,NML=metControl,END=32,ERR=2,IOSTAT=ios)
  2       IF (ios.gt.0) THEN
             CALL allMessage(ERROR,"I/O error reading NWS line.")
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
+            CALL ADCIRC_Terminate()
          ENDIF
       ENDIF
  32   IF (ios.gt.0) THEN
-        CALL allMessage(ERROR,"I/O error reading NWS line.")
-#ifdef CMPI
-         call msg_fini()
-#endif
-         STOP
+         CALL allMessage(ERROR,"END of NWS line reached.")
+         CALL ADCIRC_Terminate()
       ENDIF
-      close(99,err=2,status='delete')
       write(scratchMessage,*) 'nws=',nws,
      &   ' WindDragLimit=',WindDragLimit,
      &   'DragLawString=',DragLawString
@@ -1138,10 +1100,7 @@ C
          WRITE(16,9973)
  9712    FORMAT(/,1X,'Your selection of NWS (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-#ifdef CMPI
-         call msg_fini()
-#endif
-         STOP
+         call ADCIRC_Terminate()
       ENDIF
 
 C.... SET WAVE RADIATION STRESS FLAG AND ADJUST NWS ACCORDINGLY
@@ -1529,10 +1488,7 @@ C     TCM V49.64.01 ADDITION FOR ICE CONCENTRATION FIELDS
          WRITE(16,9973)
  9812    FORMAT(/,1X,'Your selection of NCICE (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-#ifdef CMPI
-         call msg_fini()
-#endif
-         STOP
+         CALL ADCIRC_Terminate()
       ENDIF
 C...  TCM v49.64.02 -- added
 C...  BE SURE NWS AND NCICE ARE COMPATABLE
@@ -1554,11 +1510,7 @@ C...  BE SURE NWS AND NCICE ARE COMPATABLE
      &    'parameter) is not compatable',
      &    /,1x,'with your NWS value. ',
      &    'NCICE is not allowed for use with abs(NWS)=1,2, or 7.')
-
-#ifdef CMPI
-         call msg_fini()
-#endif
-         STOP
+         CALL ADCIRC_Terminate()
       ENDIF
 
       IF(NCICE.EQ.0) THEN
@@ -2202,8 +2154,8 @@ C     counter clockwise around the elements
      &                    ' - CHECK INPUT ',
      &              //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED ',
      &                    '!!!!!!',//)
-           STOP
-           ENDIF
+            CALL ADCIRC_Terminate()
+         ENDIF
 
 C...
 C... v49.48.02 tcm -- compute element barycenters and element radius
@@ -2301,7 +2253,7 @@ C...
      &                /,' MUST EQUAL THE NUMBER OF NODES (NP) IN ',
      &                  'THE ADCIRC GRID FILE (UNIT 14)'
      &               //,' !!!!! EXECUTION WILL NOW BE TERMINATED !!!!!')
-            STOP
+            CALL ADCIRC_Terminate()
          ENDIF
 
          IF    (ABS(IDEN).EQ.1) THEN
@@ -2344,7 +2296,7 @@ C...
      &                /,' MUST EQUAL THE NUMBER OF NODES (NP) IN ',
      &                  'THE ADCIRC GRID FILE (UNIT 14)'
      &               //,' !!!!! EXECUTION WILL NOW BE TERMINATED !!!!!')
-            STOP
+            CALL ADCIRC_Terminate()
          ENDIF
 
          DO I=1,NP
@@ -2651,7 +2603,7 @@ C...
          ELSE
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
             WRITE(16,9973)
-            STOP
+            CALL ADCIRC_Terminate()
          ENDIF
          GOTO 1893
       ENDIF
@@ -2772,7 +2724,7 @@ C...
 
           IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
           WRITE(16,9973)
-          STOP
+          CALL ADCIRC_Terminate()
        ENDIF
 
 C...
@@ -2914,7 +2866,7 @@ C     jgf46.21 Added IBTYPE=52.
      &           /,1X,'USER MUST CORRECT UNIT 14 INPUT FILE',
      &           //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED ',
      &           '!!!!!!',//)
-            STOP
+            CALL ADCIRC_Terminate()
          ENDIF
 
 C     write out flow boundary information to unit 16
@@ -3677,7 +3629,7 @@ C...........CHECK INTERNAL BARRIER HEIGHTS AGAINST DEPTHS
                         WRITE(ScreenUnit,9973)
                      ENDIF
                      WRITE(16,9973)
-                     STOP
+                     CALL ADCIRC_Terminate()
                   ENDIF
                ENDIF
 
@@ -3771,7 +3723,7 @@ C...  CHECK FOR ILLEGAL OVERLAPS
                               WRITE(ScreenUnit,9973)
                            ENDIF
                            WRITE(16,9973)
-                           STOP
+                           CALL ADCIRC_Terminate()
                         ENDIF
 C...  CHECK FOR OVERLAPS WHICH REQUIRE ADJUSTMENTS OF BOUNDARY
 C...  CODE ON THE EXTERNAL BOUNDARY
@@ -4075,29 +4027,29 @@ C....TIME STEPS BETWEEN TIMES TOUTSE AND TOUTFE
      &        //,5X,'NOUTE = ',I2)
 
 C....CHECK INPUT PARAMETER NOUTE
-
-      IF(ABS(NOUTE).GT.3) THEN
-        IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3002)
-        WRITE(16,3002)
- 3002   FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
-     &           //,1X,'YOUR SELECTION OF THE UNIT 15 INPUT PARAMETER',
-     &                 ' NOUTE',
-     &            /,1X,'IS NOT AN ALLOWABLE VALUE.  CHECK YOUR INPUT!!')
-        IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-        WRITE(16,9973)
-#ifdef CMPI
-        call msg_fini()
-#endif
-        STOP
-        ENDIF
-
-C....IF STATION ELEVATION OUTPUT WILL NOT BE GENERATED
-
-      IF(NOUTE.EQ.0) THEN
-        WRITE(16,3003)
- 3003   FORMAT(/,5X,'NO OUTPUT WILL BE SPOOLED AT ELEVATION ',
-     &              'RECORDING STATIONS')
-        ENDIF
+      SELECT CASE(ABS(NOUTE))
+         CASE(0)
+            ! IF STATION ELEVATION OUTPUT WILL NOT BE GENERATED
+            CALL logMessage(INFO,
+     &     'NO OUTPUT WILL BE SPOOLED AT ELEVATION RECORDING STATIONS.')
+         CASE(1)
+            CALL logMessage(INFO,'UNIT 61 FORMAT WILL BE ASCII.')
+         CASE(2)
+            CALL logMessage(INFO,'UNIT 61 FORMAT WILL BE BINARY.')
+         CASE(3)
+            useNetCDF = .true.
+            CALL logMessage(INFO,
+     &       'UNIT 61 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
+         CASE(5)
+            useNetCDF = .true.
+            CALL logMessage(INFO,
+     &  'UNIT 61 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
+         CASE(4,6:)
+            call allMessage(ERROR,"This NOUTE value is invalid.")
+            call ADCIRC_Terminate()
+         CASE DEFAULT
+            ! do nothing, the other cases handled below
+      END SELECT
 
 C....IF STATION ELEVATION OUTPUT WILL BE GENERATED
 
@@ -4106,26 +4058,26 @@ C....IF STATION ELEVATION OUTPUT WILL BE GENERATED
 C......COMPUTE NTCYSE, NTCYFE, WHICH = TOUTSE AND TOUTFE IN TIMESTEPS
 
 #ifdef IBM
-        NTCYSE=INT((TOUTSE-STATIM)*(86400.D0/DTDP)+0.5d0,KIND(0.0d0))
-        NTCYFE=INT((TOUTFE-STATIM)*(86400.D0/DTDP)+0.5d0,KIND(0.0d0))
+         NTCYSE=INT((TOUTSE-STATIM)*(86400.D0/DTDP)+0.5d0,KIND(0.0d0))
+         NTCYFE=INT((TOUTFE-STATIM)*(86400.D0/DTDP)+0.5d0,KIND(0.0d0))
 #else
-        NTCYSE=INT((TOUTSE-STATIM)*(86400.D0/DTDP)+0.5d0)
-        NTCYFE=INT((TOUTFE-STATIM)*(86400.D0/DTDP)+0.5d0)
+         NTCYSE=INT((TOUTSE-STATIM)*(86400.D0/DTDP)+0.5d0)
+         NTCYFE=INT((TOUTFE-STATIM)*(86400.D0/DTDP)+0.5d0)
 #endif
-        IF(NTCYFE.GT.NT) NTCYFE=NT
+         IF(NTCYFE.GT.NT) NTCYFE=NT
 
 C......COMPUTE NTRSPE = THE NO. OF DATA SETS TO BE SPOOLED TO UNIT 61
 
-        IF(NSPOOLE.EQ.0) NTRSPE=0
+         IF(NSPOOLE.EQ.0) NTRSPE=0
 #ifdef IBM
-        IF(NSPOOLE.NE.0) NTRSPE=INT((NTCYFE-NTCYSE)/NSPOOLE,KIND(0.0d0))
+         IF(NSPOOLE.NE.0) NTRSPE=INT((NTCYFE-NTCYSE)/NSPOOLE,KIND(0.0d0))
 #else
-        IF(NSPOOLE.NE.0) NTRSPE=INT((NTCYFE-NTCYSE)/NSPOOLE)
+         IF(NSPOOLE.NE.0) NTRSPE=INT((NTCYFE-NTCYSE)/NSPOOLE)
 #endif
 C......WRITE TOUTSE,TOUTFE,NTCYSE,NTCYFE,NSPOOLE TO UNIT 16
 
-        WRITE(16,3004) TOUTSE,NTCYSE,TOUTFE,NTCYFE,NSPOOLE
- 3004   FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSE =',F8.3,
+         WRITE(16,3004) TOUTSE,NTCYSE,TOUTFE,NTCYFE,NSPOOLE
+ 3004    FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSE =',F8.3,
      &              ' DAY(S) RELATIVE',
      &         /,9X,'TO THE STARTING TIME OR',I9,
      &              ' TIME STEPS INTO THE SIMULATION',
@@ -4134,14 +4086,11 @@ C......WRITE TOUTSE,TOUTFE,NTCYSE,NTCYFE,NSPOOLE TO UNIT 16
      &           I9,' TIME STEPS INTO THE SIMULATION',
      &        //,5X,'INFORMATION WILL BE SPOOLED TO UNIT 61 EVERY',
      &              ' NSPOOLE =',I8,' TIME STEPS')
-        IF(ABS(NOUTE).EQ.1) WRITE(16,3005)
- 3005   FORMAT(/,5X,'UNIT 61 FORMAT WILL BE ASCII')
-        IF(ABS(NOUTE).EQ.2) WRITE(16,3006)
- 3006   FORMAT(/,5X,'UNIT 61 FORMAT WILL BE BINARY')
-        ENDIF
 
+      ENDIF
 C....REGARDLESS OF WHETHER NOUTE=0, READ IN THE NUMBER OF ELEVATION
 C....RECORDING STATIONS
+
 
       READ(15,*) NSTAE
       WRITE(16,3007) NSTAE
@@ -4149,17 +4098,17 @@ C....RECORDING STATIONS
      &              I5)
 
       IF(NSTAE.GT.0) THEN
-        IF(ICS.EQ.1) WRITE(16,3008)
- 3008   FORMAT(/,7X,'STATION #   ELEMENT',9X,'X',13X,'Y',/)
-        IF(ICS.EQ.2) WRITE(16,3009)
- 3009   FORMAT(/,5X,'STATION   ELEMENT',3X,'LAMBDA(DEG)',
+         IF(ICS.EQ.1) WRITE(16,3008)
+ 3008     FORMAT(/,7X,'STATION #   ELEMENT',9X,'X',13X,'Y',/)
+         IF(ICS.EQ.2) WRITE(16,3009)
+ 3009      FORMAT(/,5X,'STATION   ELEMENT',3X,'LAMBDA(DEG)',
      &           4X,'FEA(DEG)',10X,'XCP',12X,'YCP',/)
-        MNSTAE = NSTAE
+         MNSTAE = NSTAE
       ENDIF
       IF (NSTAE.EQ.0) MNSTAE = 1
 
 C  Allocate arrays dimensioned by MNSTAE
-       call alloc_main7()
+      call alloc_main7()
 
 
 C....INPUT COORDINATES OF ELEVATION RECORDING STATIONS THEN COMPUTE
@@ -4168,8 +4117,8 @@ C....THE ELEMENT NO. THE STATION LIES IN
       CALL readStations(STATNAME, NSTAE, NNE, XEL, YEL, SLEL, SFEL,
      &                  STAIE1, STAIE2, STAIE3,
      &                  'ELEVATION RECORDING STATION   ')
- 9911            FORMAT(F12.3,2X,F12.3, 6X, A50)
- 9111            FORMAT(F8.3,2X,F8.3, 6X, A50)
+ 9911 FORMAT(F12.3,2X,F12.3, 6X, A50)
+ 9111 FORMAT(F8.3,2X,F8.3, 6X, A50)
 C...
 C...INPUT INFORMATION FOR VELOCITY RECORDING STATIONS
 C...
@@ -4184,57 +4133,57 @@ C....TIMES TOUTSV AND TOUTFV; IF ABS(NOUTV)=2, OUTPUT WILL BE BINARY
      &         //,5X,'NOUTV = ',I2)
 
 C....CHECK INPUT PARAMETER NOUTV
-
-      IF(ABS(NOUTV).GT.3) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3102)
-        WRITE(16,3102)
- 3102   FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
-     &           //,1X,'YOUR SELECTION OF THE UNIT 15 INPUT PARAMETER',
-     &                 ' NOUTV',
-     &            /,1X,'IS NOT AN ALLOWABLE VALUE.  CHECK YOUR INPUT!!')
-        IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-        WRITE(16,9973)
-#ifdef CMPI
-        call msg_fini()
-#endif
-        STOP
-        ENDIF
-
-C....IF STATION VELOCITY OUTPUT WILL NOT BE GENERATED
-
-      IF(NOUTV.EQ.0) THEN
-        WRITE(16,3103)
- 3103   FORMAT(///,5X,'NO OUTPUT WILL BE SPOOLED AT VELOCITY',
-     &                ' RECORDING STATIONS')
-        ENDIF
+      SELECT CASE(ABS(NOUTV))
+         CASE(0)
+            ! IF STATION OUTPUT WILL NOT BE GENERATED
+            CALL logMessage(INFO,
+     &      'NO OUTPUT WILL BE SPOOLED AT VELOCITY RECORDING STATIONS')
+         CASE(1)
+            CALL logMessage(INFO,'UNIT 62 FORMAT WILL BE ASCII.')
+         CASE(2)
+            CALL logMessage(INFO,'UNIT 62 FORMAT WILL BE BINARY.')
+         CASE(3)
+            useNetCDF = .true.
+            CALL logMessage(INFO,
+     &       'UNIT 62 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
+         CASE(5)
+            useNetCDF = .true.
+            CALL logMessage(INFO,
+     &  'UNIT 62 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
+         CASE(4,6:)
+            call allMessage(ERROR,"This NOUTV value is invalid.")
+            call ADCIRC_Terminate()
+         CASE DEFAULT
+            ! do nothing, the other cases handled below
+      END SELECT
 
 C....IF STATION VELOCITY OUTPUT WILL BE GENERATED
 
       IF(NOUTV.NE.0) THEN
 
-C......COMPUTE NTCYSV, NTCYFV, WHICH = TOUTSV AND TOUTFV IN TIME STEPS
+C......  COMPUTE NTCYSV, NTCYFV, WHICH = TOUTSV AND TOUTFV IN TIME STEPS
 #ifdef IBM
-        NTCYSV=INT((TOUTSV-STATIM)*(86400.D0/DTDP) + 0.5d0,KIND(0.0d0))
-        NTCYFV=INT((TOUTFV-STATIM)*(86400.D0/DTDP) + 0.5d0,KIND(0.0d0))
+         NTCYSV=INT((TOUTSV-STATIM)*(86400.D0/DTDP) + 0.5d0,KIND(0.0d0))
+         NTCYFV=INT((TOUTFV-STATIM)*(86400.D0/DTDP) + 0.5d0,KIND(0.0d0))
 #else
-        NTCYSV=INT((TOUTSV-STATIM)*(86400.D0/DTDP) + 0.5d0)
-        NTCYFV=INT((TOUTFV-STATIM)*(86400.D0/DTDP) + 0.5d0)
+         NTCYSV=INT((TOUTSV-STATIM)*(86400.D0/DTDP) + 0.5d0)
+         NTCYFV=INT((TOUTFV-STATIM)*(86400.D0/DTDP) + 0.5d0)
 #endif
-        IF(NTCYFV.GT.NT) NTCYFV=NT
+         IF(NTCYFV.GT.NT) NTCYFV=NT
 
 C......CALCULATE NTRSPV = THE NO. OF DATA SETS TO BE SPOOLED TO UNIT 62
 
-        IF(NSPOOLV.EQ.0) NTRSPV=0
+         IF(NSPOOLV.EQ.0) NTRSPV=0
 #ifdef IBM
-        IF(NSPOOLV.NE.0) NTRSPV=INT((NTCYFV-NTCYSV)/NSPOOLV,KIND(0.0d0))
+         IF(NSPOOLV.NE.0) NTRSPV=INT((NTCYFV-NTCYSV)/NSPOOLV,KIND(0.0d0))
 #else
-        IF(NSPOOLV.NE.0) NTRSPV=INT((NTCYFV-NTCYSV)/NSPOOLV)
+         IF(NSPOOLV.NE.0) NTRSPV=INT((NTCYFV-NTCYSV)/NSPOOLV)
 #endif
 
 C......WRITE NOUTV,TOUTSV,TOUTFV,NTCYSV,NTCYFV,NSPOOLV TO UNIT 16
 
-        WRITE(16,3104) TOUTSV,NTCYSV,TOUTFV,NTCYFV,NSPOOLV
- 3104   FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSV =',F8.3,
+         WRITE(16,3104) TOUTSV,NTCYSV,TOUTFV,NTCYFV,NSPOOLV
+ 3104    FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSV =',F8.3,
      &              ' DAY(S) RELATIVE',/,9X,'TO THE STARTING TIME OR',
      &           I9,' TIME STEPS INTO THE SIMULATION',
      &        //,5X,'DATA RECORDS WILL STOP AFTER TOUTFV =',F8.3,
@@ -4242,12 +4191,8 @@ C......WRITE NOUTV,TOUTSV,TOUTFV,NTCYSV,NTCYFV,NSPOOLV TO UNIT 16
      &           I9,' TIME STEPS INTO THE SIMULATION',
      &        //,5X,'INFORMATION WILL BE SPOOLED TO UNIT 62 EVERY ',
      &              ' NSPOOLV =',I8,' TIME STEPS')
-        IF(ABS(NOUTV).EQ.1) WRITE(16,3105)
- 3105   FORMAT(/,5X,'UNIT 62 FORMAT WILL BE ASCII')
-        IF(ABS(NOUTV).EQ.2) WRITE(16,3106)
- 3106   FORMAT(/,5X,'UNIT 62 FORMAT WILL BE BINARY')
-        ENDIF
 
+      ENDIF
 C....REGARDLESS OF WHETHER NOUTV=0, READ IN THE NUMBER OF VELOCITY
 C....RECORDING STATIONS
 
@@ -4257,17 +4202,17 @@ C....RECORDING STATIONS
      &            I5)
 
       IF(NSTAV.GT.0) THEN
-        IF(ICS.EQ.1) WRITE(16,3108)
- 3108   FORMAT(/,7X,'STATION #   ELEMENT',9X,'X',13X,'Y',/)
-        IF(ICS.EQ.2) WRITE(16,3109)
- 3109   FORMAT(/,5X,'STATION   ELEMENT',3X,'LAMBDA(DEG)',
+         IF(ICS.EQ.1) WRITE(16,3108)
+ 3108     FORMAT(/,7X,'STATION #   ELEMENT',9X,'X',13X,'Y',/)
+         IF(ICS.EQ.2) WRITE(16,3109)
+ 3109     FORMAT(/,5X,'STATION   ELEMENT',3X,'LAMBDA(DEG)',
      &             4X,'FEA(DEG)',10X,'XCP',12X,'YCP',/)
-        MNSTAV = NSTAV
+         MNSTAV = NSTAV
       ENDIF
       IF (NSTAV.EQ.0) MNSTAV = 1
 
 C      Allocate arrays dimensioned by MNSTAV
-       call alloc_main8()
+      call alloc_main8()
 
 C....INPUT COORDINATES OF VELOCITY RECORDING STATIONS
 C....THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
@@ -4291,30 +4236,31 @@ C...  BETWEEN TIMES TOUTSC AND TOUTFC; IF ABS(NOUTC)=2, OUTPUT WILL BE BINARY
  3201    FORMAT(///,1X,'CONCENTRATION RECORDING STATION OUTPUT : ',
      &          //,5X,'NOUTC = ',I2)
 
-C...  CHECK INPUT PARAMETER NOUTC
+C...     CHECK INPUT PARAMETER NOUTC
+         SELECT CASE(ABS(NOUTC))
+            CASE(0)
+               ! IF STATION OUTPUT WILL NOT BE GENERATED
+               CALL logMessage(INFO,
+     &         'NO OUTPUT WILL BE SPOOLED AT CONC. RECORDING STATIONS')
+            CASE(1)
+               CALL logMessage(INFO,'UNIT 81 FORMAT WILL BE ASCII.')
+            CASE(2)
+               CALL logMessage(INFO,'UNIT 81 FORMAT WILL BE BINARY.')
+            CASE(3)
+               useNetCDF = .true.
+               CALL logMessage(INFO,
+     &       'UNIT 81 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
+            CASE(5)
+               useNetCDF = .true.
+               CALL logMessage(INFO,
+     &  'UNIT 81 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
+            CASE(4,6:)
+               call allMessage(ERROR,"This NOUTC value is invalid.")
+               call ADCIRC_Terminate()
+            CASE DEFAULT
+               ! do nothing, the other cases handled below
+         END SELECT
 
-         IF(ABS(NOUTC).GT.2) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3202)
-            WRITE(16,3202)
- 3202       FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!',
-     &           //,1X,'YOUR SELECTION OF THE UNIT 15 INPUT PARAMETER',
-     &           ' NOUTC',
-     &           /,1X,'IS NOT AN ALLOWABLE VALUE.  CHECK YOUR INPUT!!')
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-            WRITE(16,9973)
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
-         ENDIF
-
-C...  IF STATION CONCENTRATION OUTPUT WILL NOT BE GENERATED
-
-         IF(NOUTC.EQ.0) THEN
-            WRITE(16,3203)
- 3203       FORMAT(/,5X,'NO OUTPUT WILL BE SPOOLED AT CONCENTRATION',
-     &           ' RECORDING STATIONS')
-         ENDIF
 
 C...  IF STATION CONCENTRATION OUTPUT WILL BE GENERATED
 
@@ -4354,10 +4300,6 @@ C...  WRITE TOUTSC,TOUTFC,NTCYSC,NTCYFC,NSPOOLC TO UNIT 16
      &             I9,' TIME STEPS INTO THE SIMULATION',
      &          //,5X,'INFORMATION WILL BE SPOOLED TO UNIT 81 EVERY',
      &                ' NSPOOLC =',I8,' TIME STEPS')
-            IF(ABS(NOUTC).EQ.1) WRITE(16,3205)
- 3205       FORMAT(/,5X,'UNIT 81 FORMAT WILL BE ASCII')
-            IF(ABS(NOUTC).EQ.2) WRITE(16,3206)
- 3206       FORMAT(/,5X,'UNIT 81 FORMAT WILL BE BINARY')
          ENDIF
 
 C...  REGARDLESS OF WHETHER NOUTC=0, READ IN THE NUMBER OF CONCENTRATION
@@ -4376,24 +4318,26 @@ C...  RECORDING STATIONS
      &           4X,'FEA(DEG)',10X,'XCP',12X,'YCP',/)
             MNSTAC = NSTAC
          ENDIF
+
          IF (NSTAC.EQ.0) MNSTAC = 1
 
 C  Allocate arrays dimensioned by MNSTAC
          call alloc_main9()
 
-C...     INPUT COORDINATES OF CONCENTRATION RECORDING STATIONS
-C...     THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
-         ALLOCATE(STATNAMEC(MNSTAC))
+
+C...  INPUT COORDINATES OF CONCENTRATION RECORDING STATIONS
+C...  THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
+         ALLOCATE(STATNAMEC(NSTAC))
          CALL readStations(STATNAMEC, NSTAC, NNC, XEC, YEC, SLEC, SFEC,
      &                  STAIC1, STAIC2, STAIC3,
      &                  'CONCENTRATION REC. STATION    ')
       ENDIF
-C...
+
 C...  IF METEOROLOICAL FORCING IS INCLUDED IN THE RUN, INPUT
 C...  INFORMATION FOR MET RECORDING STATIONS - OUTPUT
 C...
       NOUTM=0
-      NSTAM = 0
+      NSTAM=0
 C
       IF(NWS.NE.0) THEN
 
@@ -4406,27 +4350,34 @@ C...  BETWEEN TIMES TOUTSM AND TOUTFM; IF ABS(NOUTM)=2, OUTPUT WILL BE BINARY
  3211    FORMAT(///,1X,'METEOROLOGICAL RECORDING STATION OUTPUT : ',
      &        //,5X,'NOUTM = ',I2)
 
-C...  CHECK INPUT PARAMETER NOUTM
-
-         IF(ABS(NOUTM).GT.3) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3212)
-            WRITE(16,3202)
- 3212       FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!',
-     &           //,1X,'YOUR SELECTION OF THE UNIT 15 INPUT PARAMETER',
-     &           ' NOUTC',
-     &           /,1X,'IS NOT AN ALLOWABLE VALUE.  CHECK YOUR INPUT!!')
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-            WRITE(16,9973)
-            STOP
-         ENDIF
-
-C...  IF STATION METEOROLOGICAL OUTPUT WILL NOT BE GENERATED
-
-         IF(NOUTM.EQ.0) THEN
-            WRITE(16,3213)
- 3213       FORMAT(/,5X,'NO OUTPUT WILL BE SPOOLED AT METEOROLOGICAL',
-     &           ' RECORDING STATIONS')
-         ENDIF
+C...     CHECK INPUT PARAMETER NOUTM
+         SELECT CASE(ABS(NOUTM))
+            CASE(0)
+               ! IF STATION OUTPUT WILL NOT BE GENERATED
+               CALL logMessage(INFO,
+     &         'NO OUTPUT WILL BE SPOOLED AT MET. RECORDING STATIONS')
+            CASE(1)
+               CALL logMessage(INFO,
+     &         'UNIT 71 AND 72 FORMATS WILL BE ASCII.')
+            CASE(2)
+               CALL logMessage(INFO,
+     &          'UNIT 71 AND 72 FORMATS WILL BE BINARY.')
+            CASE(3)
+               useNetCDF = .true.
+               CALL logMessage(INFO,
+     &          'UNIT 71 AND 72 FORMATS WILL BE NETCDF CLASSIC MODEL'
+     &           //' / NETCDF3 FORMAT.')
+            CASE(5)
+               useNetCDF = .true.
+               CALL logMessage(INFO,
+     &         'UNIT 71 AND 72 FORMATS WILL BE NETCDF CLASSIC MODEL'
+     &         //' / NETCDF4 (HDF5) FORMAT.')
+            CASE(4,6:)
+               call allMessage(ERROR,"This NOUTM value is invalid.")
+               call ADCIRC_Terminate()
+            CASE DEFAULT
+               ! do nothing, the other cases handled below
+         END SELECT
 
 C...  IF STATION MET OUTPUT WILL BE GENERATED
 
@@ -4466,10 +4417,6 @@ C...  WRITE TOUTSM,TOUTFM,NTCYSM,NTCYFM,NSPOOLM TO UNIT 16
      &           I9,' TIME STEPS INTO THE SIMULATION',
      &           //,5X,'INFORMATION WILL BE SPOOLED TO UNITS 71&72',
      &           ' EVERY NSPOOLM =',I8,' TIME STEPS')
-            IF(ABS(NOUTM).EQ.1) WRITE(16,3215)
- 3215       FORMAT(/,5X,'UNITS 71&72 FORMAT WILL BE ASCII')
-            IF(ABS(NOUTM).EQ.2) WRITE(16,3216)
- 3216       FORMAT(/,5X,'UNITS 71&72 FORMAT WILL BE BINARY')
          ENDIF
 
 C...  REGARDLESS OF WHETHER NOUTM=0, READ IN THE NUMBER OF METEOROLOGICAL
@@ -4489,6 +4436,7 @@ C...  RECORDING STATIONS
             MNSTAM = NSTAM
          ENDIF
          IF (NSTAM.EQ.0) MNSTAM = 1
+
 
 C  Allocate arrays dimensioned by MNSTAM
          call alloc_main10()
@@ -4516,29 +4464,34 @@ C...  TIMES TOUTSGE AND TOUTFGE; IF ABS(NOUTGE)=2, OUTPUT WILL BE BINARY
      &     //,5X,'NOUTGE = ',I2)
 
 C...  CHECK INPUT PARAMETER NOUTGE
-
-Casey 090302: Changed this line to allow for NOUTGE = +/- 4.
-      IF(ABS(NOUTGE).GT.3 .AND. ABS(NOUTGE).NE.4) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3302)
-         WRITE(16,3302)
- 3302    FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
-     &        //,1X,'YOUR SELECTION OF THE UNIT 15 INPUT PARAMETER',
-     &        ' NOUTGE',
-     &        /,1X,'IS NOT AN ALLOWABLE VALUE.  CHECK YOUR INPUT!!')
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-         WRITE(16,9973)
-#ifdef CMPI
-         call msg_fini()
-#endif
-         STOP
-      ENDIF
-
-C...  IF GLOBAL ELEVATION OUTPUT WILL NOT BE GENERATED
-
-      IF(NOUTGE.EQ.0) THEN
-         WRITE(16,3303)
- 3303    FORMAT(///,5X,'NO GLOBAL ELEVATION OUTPUT WILL BE SPOOLED')
-      ENDIF
+      SELECT CASE(ABS(NOUTGE))
+         CASE(0)
+            ! IF STATION OUTPUT WILL NOT BE GENERATED
+            CALL logMessage(INFO,
+     &         'NO GLOBAL ELEVATION OUTPUT WILL BE SPOOLED.')
+         CASE(1)
+            CALL logMessage(INFO,'UNIT 63 FORMAT WILL BE ASCII.')
+         CASE(2)
+            CALL logMessage(INFO,'UNIT 63 FORMAT WILL BE BINARY.')
+         CASE(3)
+            useNetCDF = .true.
+            CALL logMessage(INFO,
+     &          'UNIT 63 FORMAT WILL BE NETCDF CLASSIC MODEL'
+     &           //' / NETCDF3 FORMAT.')
+         CASE(4)
+            CALL logMessage(INFO,
+     &       'UNIT 63 FORMAT WILL BE COMPACT ASCII.')
+         CASE(5)
+            useNetCDF = .true.
+            CALL logMessage(INFO,
+     &         'UNIT 63 FORMAT WILL BE NETCDF CLASSIC MODEL'
+     &         //' / NETCDF4 (HDF5) FORMAT.')
+         CASE(6:)
+            call allMessage(ERROR,"This NOUTGE value is invalid.")
+            call ADCIRC_Terminate()
+         CASE DEFAULT
+            ! do nothing, the other cases handled below
+      END SELECT
 
 C...  IF GLOBAL ELEVATION OUTPUT WILL BE GENERATED
 
@@ -4577,13 +4530,6 @@ C...  WRITE NOUTGE,TOUTSGE,TOUTFGE,NTCYSGE,NTCYFGE,NSPOOLGE TO UNIT 16
      &           I9,' TIME STEPS INTO THE SIMULATION',
      &        //,5X,'INFORMATION WILL BE SPOOLED TO UNIT 63 EVERY ',
      &              'NSPOOLGE =',I8,' TIME STEPS')
-         IF(ABS(NOUTGE).EQ.1) WRITE(16,3305)
- 3305    FORMAT(/,5X,'UNIT 63 FORMAT WILL BE ASCII')
-         IF(ABS(NOUTGE).EQ.2) WRITE(16,3306)
- 3306    FORMAT(/,5X,'UNIT 63 FORMAT WILL BE BINARY')
-         IF(ABS(NOUTGE).EQ.4) WRITE(16,3307)
- 3307    FORMAT(/,5X,'UNIT 63 FORMAT WILL BE COMPACT ASCII')
-
       ENDIF
 
 C...
@@ -4600,28 +4546,34 @@ C...  TIMES TOUTSGV AND TOUTFGV; IF ABS(NOUTGV)=2, OUTPUT WILL BE BINARY
      &     //,5X,'NOUTGV = ',I2)
 
 C...  CHECK INPUT PARAMETER NOUTGV
-
-      IF(ABS(NOUTGV).GT.4) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3352)
-         WRITE(16,3352)
- 3352    FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
-     &        //,1X,'YOUR SELECTION OF THE UNIT 15 INPUT PARAMETER',
-     &        ' NOUTGV',
-     &        /,1X,'IS NOT AN ALLOWABLE VALUE.  CHECK YOUR INPUT!!')
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-         WRITE(16,9973)
-#ifdef CMPI
-         call msg_fini()
-#endif
-         STOP
-      ENDIF
-
-C...  IF GLOBAL VELOCITY OUTPUT WILL NOT BE GENERATED
-
-      IF(NOUTGV.EQ.0) THEN
-         WRITE(16,3353)
- 3353    FORMAT(///,5X,'NO GLOBAL VELOCITY OUTPUT WILL BE SPOOLED')
-      ENDIF
+      SELECT CASE(ABS(NOUTGV))
+         CASE(0)
+            ! IF STATION OUTPUT WILL NOT BE GENERATED
+            CALL logMessage(INFO,
+     &         'NO GLOBAL VELOCITY OUTPUT WILL BE SPOOLED.')
+         CASE(1)
+            CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE ASCII.')
+         CASE(2)
+            CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE BINARY.')
+         CASE(3)
+            useNetCDF = .true.
+            CALL logMessage(INFO,
+     &          'UNIT 64 FORMAT WILL BE NETCDF CLASSIC MODEL'
+     &           //' / NETCDF3 FORMAT.')
+         CASE(4)
+            CALL logMessage(INFO,
+     &       'UNIT 64 FORMAT WILL BE COMPACT ASCII.')
+         CASE(5)
+            useNetCDF = .true.
+            CALL logMessage(INFO,
+     &         'UNIT 64 FORMAT WILL BE NETCDF CLASSIC MODEL'
+     &         //' / NETCDF4 (HDF5) FORMAT.')
+         CASE(6:)
+            call allMessage(ERROR,"This NOUTGV value is invalid.")
+            call ADCIRC_Terminate()
+         CASE DEFAULT
+            ! do nothing, the other cases handled below
+      END SELECT
 
 C...  IF GLOBAL VELOCITY OUTPUT WILL BE GENERATED
 
@@ -4659,12 +4611,6 @@ C...  WRITE NOUTGV,TOUTSGV,TOUTFGV,NTCYSGV,NTCYFGV,NSPOOLGV TO UNIT 16
      &         I9,' TIME STEPS INTO THE SIMULATION',
      &         //,5X,'INFORMATION WILL BE SPOOLED TO UNIT 64 EVERY ',
      &         'NSPOOLGV =',I8,' TIME STEPS')
-          IF(ABS(NOUTGV).EQ.1) WRITE(16,3355)
- 3355     FORMAT(/,5X,'UNIT 64 FORMAT WILL BE ASCII')
-          IF(ABS(NOUTGV).EQ.2) WRITE(16,3356)
- 3356     FORMAT(/,5X,'UNIT 64 FORMAT WILL BE BINARY')
-          IF(ABS(NOUTGV).EQ.4) WRITE(16,3357)
- 3357     FORMAT(/,5X,'UNIT 64 FORMAT WILL BE COMPACT ASCII')
 
        ENDIF
 
@@ -4672,74 +4618,66 @@ C...
 C...  IF TRANSPORT IS INCLUDED IN THE RUN, INPUT INFORMATION ABOUT GLOBAL
 C...  CONCENTRATION DATA OUTPUT
 C...
-       NOUTGC=0
-       IF(IM.EQ.10) THEN
+      NOUTGC=0
+      IF(IM.EQ.10) THEN
 
 C...  READ IN NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC : IF NOUTGC<>0, GLOBAL
 C...  CONCENTRATION OUTPUT IS SPOOLED TO UNIT 73 EVERY NSPOOLGC TIME
 C...  STEPS BETWEEN TIMES TOUTSGC AND TOUTFGC; IF ABS(NOUTGC)=2, OUTPUT
 C...  WILL BE BINARY
 
-          READ(15,*) NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC
-          WRITE(16,3401) NOUTGC
- 3401  FORMAT(////,1X,'GLOBAL NODAL CONCENTRATION INFORMATION OUTPUT:',
+         READ(15,*) NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC
+         WRITE(16,3401) NOUTGC
+ 3401    FORMAT(////,1X,'GLOBAL NODAL CONCENTRATION INFORMATION OUTPUT:',
      &         //,5X,'NOUTGC = ',I2)
 
 C...  CHECK INPUT PARAMETER NOUTGC
-
-          IF(ABS(NOUTGC).GT.2) THEN
-             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3402)
-             WRITE(16,3402)
- 3402     FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
-     &           //,1X,'YOUR SELECTION OF THE UNIT 15 INPUT PARAMETER',
-     &                 ' NOUTGC',
-     &            /,1X,'IS NOT AN ALLOWABLE VALUE.  CHECK YOUR INPUT!!')
-             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-             WRITE(16,9973)
-#ifdef CMPI
-             call msg_fini()
-#endif
-             STOP
-          ENDIF
-
-C...  IF GLOBAL CONCENTRATION OUTPUT WILL NOT BE GENERATED
-
-        IF(NOUTGC.EQ.0) THEN
-           WRITE(16,3403)
- 3403      FORMAT(///,5X,'NO GLOBAL CONCENTRATION OUTPUT WILL BE ',
-     &          'SPOOLED')
-        ENDIF
+         SELECT CASE(ABS(NOUTGC))
+            CASE(0)
+               ! IF STATION OUTPUT WILL NOT BE GENERATED
+               CALL logMessage(INFO,
+     &         'NO GLOBAL CONCENTRATION OUTPUT WILL BE SPOOLED.')
+            CASE(1)
+               CALL logMessage(INFO,'UNIT 83 FORMAT WILL BE ASCII.')
+            CASE(2)
+               CALL logMessage(INFO,'UNIT 83 FORMAT WILL BE BINARY.')
+            CASE(3:)
+               call allMessage(ERROR,"This NOUTGV value is invalid.")
+               call ADCIRC_Terminate()
+            CASE DEFAULT
+               ! do nothing, the other cases handled below
+         END SELECT
 
 C...  IF GLOBAL CONCENTRATION OUTPUT WILL BE GENERATED
 
-        IF(NOUTGC.NE.0) THEN
+         IF(NOUTGC.NE.0) THEN
 
 C...  COMPUTE NTCYSGC, NTCYFGC, WHICH = TOUTSGC AND TOUTFGC IN TIMESTEPS
 #ifdef IBM
-           NTCYSGC=INT((TOUTSGC-STATIM)*(86400.D0/DTDP) + 0.5d0,
+            NTCYSGC=INT((TOUTSGC-STATIM)*(86400.D0/DTDP) + 0.5d0,
      &          KIND(0.0d0))
-           NTCYFGC=INT((TOUTFGC-STATIM)*(86400.D0/DTDP) + 0.5d0,
+            NTCYFGC=INT((TOUTFGC-STATIM)*(86400.D0/DTDP) + 0.5d0,
      &          KIND(0.0d0))
 #else
-           NTCYSGC=INT((TOUTSGC-STATIM)*(86400.D0/DTDP) + 0.5d0)
-           NTCYFGC=INT((TOUTFGC-STATIM)*(86400.D0/DTDP) + 0.5d0)
+            NTCYSGC=INT((TOUTSGC-STATIM)*(86400.D0/DTDP) + 0.5d0)
+            NTCYFGC=INT((TOUTFGC-STATIM)*(86400.D0/DTDP) + 0.5d0)
 #endif
-           IF(NTCYFGC.GT.NT) NTCYFGC=NT
+            IF(NTCYFGC.GT.NT) NTCYFGC=NT
 
 C...  CALCULATE NDSETSC = THE # OF DATA SETS TO BE SPOOLED TO UNIT 73
 
-           IF(NSPOOLGC.EQ.0) NDSETSC=0
+            IF(NSPOOLGC.EQ.0) NDSETSC=0
 #ifdef IBM
-           IF(NSPOOLGC.NE.0) NDSETSC=INT((NTCYFGC-NTCYSGC)/NSPOOLGC,
+            IF(NSPOOLGC.NE.0) NDSETSC=INT((NTCYFGC-NTCYSGC)/NSPOOLGC,
      &          KIND(0.0d0))
 #else
-           IF(NSPOOLGC.NE.0) NDSETSC=INT((NTCYFGC-NTCYSGC)/NSPOOLGC)
+            IF(NSPOOLGC.NE.0) NDSETSC=INT((NTCYFGC-NTCYSGC)/NSPOOLGC)
 #endif
 
 C...  WRITE NOUTGC,TOUTSGC,TOUTFGC,NTCYSGC,NTCYFGC,NSPOOLGC TO UNIT 16
 
-           WRITE(16,3404) TOUTSGC,NTCYSGC,TOUTFGC,NTCYFGC,NSPOOLGC
- 3404      FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSGC =',F8.3,
+            WRITE(16,3404) TOUTSGC,NTCYSGC,TOUTFGC,NTCYFGC,NSPOOLGC
+ 3404       FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSGC =',F8.3,
      &                ' DAY(S) RELATIVE',/,9X,'TO THE STARTING TIME OR',
      &             I9,' TIME STEPS INTO THE SIMULATION',
      &          //,5X,'DATA RECORDS WILL STOP AFTER TOUTFGC =',F8.3,
@@ -4747,11 +4685,7 @@ C...  WRITE NOUTGC,TOUTSGC,TOUTFGC,NTCYSGC,NTCYFGC,NSPOOLGC TO UNIT 16
      &             I9,' TIME STEPS INTO THE SIMULATION',
      &          //,5X,'INFORMATION WILL BE SPOOLED TO UNIT 73 EVERY ',
      &                'NSPOOLGC =',I8,' TIME STEPS')
-           IF(ABS(NOUTGC).EQ.1) WRITE(16,3405)
- 3405      FORMAT(/,5X,'UNIT 73 FORMAT WILL BE ASCII')
-           IF(ABS(NOUTGC).EQ.2) WRITE(16,3406)
- 3406      FORMAT(/,5X,'UNIT 73 FORMAT WILL BE BINARY')
-        ENDIF
+         ENDIF
 
       ENDIF
 
@@ -4771,60 +4705,66 @@ C...  BE BINARY
      &           //,5X,'NOUTGW = ',I2)
 
 C...  CHECK INPUT PARAMETER NOUTGW
-
-Casey 090302: Changed to allow NOUTGW = +/- 4.
-         IF(ABS(NOUTGW).GT.3 .AND. ABS(NOUTGW).NE.4) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3452)
-            WRITE(16,3452)
- 3452       FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!',
-     &           //,1X,'YOUR SELECTION OF THE UNIT 15 INPUT PARAMETER',
-     &                 ' NOUTGW',
-     &            /,1X,'IS NOT AN ALLOWABLE VALUE.  CHECK YOUR INPUT!!')
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,3453)
-            WRITE(16,3453)
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
-         ENDIF
-
-C...  IF GLOBAL WIND STRESS OUTPUT WILL NOT BE GENERATED
-
-         IF(NOUTGW.EQ.0) THEN
-            WRITE(16,3453)
- 3453    FORMAT(///,5X,'NO GLOBAL WIND STRESS OUTPUT WILL BE SPOOLED')
-         ENDIF
+         SELECT CASE(ABS(NOUTM))
+            CASE(0)
+               CALL logMessage(INFO,
+     &         'NO GLOBAL METEOROLOGICAL OUTPUT WILL BE SPOOLED.')
+            CASE(1)
+               CALL logMessage(INFO,
+     &         'UNIT 73 AND 74 FORMATS WILL BE ASCII.')
+            CASE(2)
+               CALL logMessage(INFO,
+     &          'UNIT 73 AND 74 FORMATS WILL BE BINARY.')
+            CASE(3)
+               useNetCDF = .true.
+               CALL logMessage(INFO,
+     &          'UNIT 73 AND 74 FORMATS WILL BE NETCDF CLASSIC MODEL'
+     &           //' / NETCDF3 FORMAT.')
+            CASE(4)
+               CALL logMessage(INFO,
+     &          'UNIT 73 AND 74 FORMATS WILL BE COMPACT ASCII.')
+            CASE(5)
+               useNetCDF = .true.
+               CALL logMessage(INFO,
+     &         'UNIT 73 AND 74 FORMATS WILL BE NETCDF CLASSIC MODEL'
+     &         //' / NETCDF4 (HDF5) FORMAT.')
+            CASE(6:)
+               call allMessage(ERROR,"This NOUTM value is invalid.")
+               call ADCIRC_Terminate()
+            CASE DEFAULT
+               ! do nothing, the other cases handled below
+         END SELECT
 
 C...  IF GLOBAL WIND STRESS OUTPUT WILL BE GENERATED
 
-        IF(NOUTGW.NE.0) THEN
+         IF(NOUTGW.NE.0) THEN
 
 C...  COMPUTE NTCYSGW, NTCYFGW, WHICH = TOUTSGW AND TOUTFGW IN TIMESTEPS
 #ifdef IBM
-           NTCYSGW=INT((TOUTSGW-STATIM)*(86400.D0/DTDP) + 0.5d0,
+            NTCYSGW=INT((TOUTSGW-STATIM)*(86400.D0/DTDP) + 0.5d0,
      &          KIND(0.0d0))
-           NTCYFGW=INT((TOUTFGW-STATIM)*(86400.D0/DTDP) + 0.5d0,
+
+            NTCYFGW=INT((TOUTFGW-STATIM)*(86400.D0/DTDP) + 0.5d0,
      &          KIND(0.0d0))
 #else
-           NTCYSGW=INT((TOUTSGW-STATIM)*(86400.D0/DTDP) + 0.5d0)
-           NTCYFGW=INT((TOUTFGW-STATIM)*(86400.D0/DTDP) + 0.5d0)
+            NTCYSGW=INT((TOUTSGW-STATIM)*(86400.D0/DTDP) + 0.5d0)
+            NTCYFGW=INT((TOUTFGW-STATIM)*(86400.D0/DTDP) + 0.5d0)
 #endif
-           IF(NTCYFGW.GT.NT) NTCYFGW=NT
+            IF(NTCYFGW.GT.NT) NTCYFGW=NT
 
 C...  CALCULATE NDSETSW = THE # OF DATA SETS TO BE SPOOLED TO UNIT 74
-
-           IF(NSPOOLGW.EQ.0) NDSETSW=0
+            IF(NSPOOLGW.EQ.0) NDSETSW=0
 #ifdef IBM
-           IF(NSPOOLGW.NE.0) NDSETSW=INT((NTCYFGW-NTCYSGW)/NSPOOLGW,
+            IF(NSPOOLGW.NE.0) NDSETSW=INT((NTCYFGW-NTCYSGW)/NSPOOLGW,
      &          KIND(0.0d0))
 #else
-           IF(NSPOOLGW.NE.0) NDSETSW=INT((NTCYFGW-NTCYSGW)/NSPOOLGW)
+            IF(NSPOOLGW.NE.0) NDSETSW=INT((NTCYFGW-NTCYSGW)/NSPOOLGW)
 #endif
 
 C...  WRITE NOUTGW,TOUTSGW,TOUTFGW,NTCYSGW,NTCYFGW,NSPOOLGW TO UNIT 16
 
-           WRITE(16,3454) TOUTSGW,NTCYSGW,TOUTFGW,NTCYFGW,NSPOOLGW
- 3454      FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSGW =',F8.3,
+            WRITE(16,3454) TOUTSGW,NTCYSGW,TOUTFGW,NTCYFGW,NSPOOLGW
+ 3454       FORMAT(/,5X,'DATA RECORDS WILL START AFTER TOUTSGW =',F8.3,
      &                ' DAY(S) RELATIVE',/,9X,'TO THE STARTING TIME OR',
      &             I9,' TIME STEPS INTO THE SIMULATION',
      &          //,5X,'DATA RECORDS WILL STOP AFTER TOUTFGW =',F8.3,
@@ -4832,13 +4772,8 @@ C...  WRITE NOUTGW,TOUTSGW,TOUTFGW,NTCYSGW,NTCYFGW,NSPOOLGW TO UNIT 16
      &             I9,' TIME STEPS INTO THE SIMULATION',
      &          //,5X,'INFORMATION WILL BE SPOOLED TO UNIT 74 EVERY ',
      &                'NSPOOLGW =',I8,' TIME STEPS')
-           IF(ABS(NOUTGW).EQ.1) WRITE(16,3455)
- 3455      FORMAT(/,5X,'UNIT 74 FORMAT WILL BE ASCII')
-           IF(ABS(NOUTGW).EQ.2) WRITE(16,3456)
- 3456      FORMAT(/,5X,'UNIT 74 FORMAT WILL BE BINARY')
-           IF(ABS(NOUTGW).EQ.4) WRITE(16,3457)
- 3457      FORMAT(/,5X,'UNIT 74 FORMAT WILL BE SPARSE ASCII')
-        ENDIF
+
+         ENDIF
 
       ENDIF
 
@@ -4927,122 +4862,11 @@ C     read in and write out information on where harmonic analysis will
 C     be done
 
       READ(15,*) NHASE,NHASV,NHAGE,NHAGV
-      IF((NHASE.LT.0).OR.(NHASE.GT.1)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99661)
-         WRITE(16,99661)
-99661    FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
-     &        'INPUT ERROR  !!!!!!!!!',//
-     &        ,1X,'YOUR SELECTION OF NHASE (A UNIT 15 '
-     &        ,'INPUT PARAMETER) IS NOT AN ALLOWABLE VALUE',/,1X,
-     &        'PLEASE CHECK YOUR INPUT')
-         IF(NFOVER.EQ.1) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99671)
-            WRITE(16,99671)
-99671       FORMAT(/,1X,'PROGRAM WILL OVERRIDE SPECIFIED INPUT',
-     &           ' AND SET NHASE EQUAL TO 0 ',
-     &           //,1X,'!!!!!! EXECUTION WILL CONTINUE !!!!!!',//)
-            NHASE=0
-         ELSE
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-            WRITE(16,9973)
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
-         ENDIF
-      ENDIF
-      IF(NHASE.EQ.1) THEN
-         WRITE(16,34641)
-34641    FORMAT(///,5X,'STATION ELEVATION HARMONIC ANAL WILL BE ',
-     &        'WRITTEN TO UNIT 51')
-      ENDIF
-      IF((NHASV.LT.0).OR.(NHASV.GT.1)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99662)
-         WRITE(16,99662)
-99662    FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
-     &        'INPUT ERROR  !!!!!!!!!',//
-     &        ,1X,'YOUR SELECTION OF NHASV (A UNIT 15 '
-     &        ,'INPUT PARAMETER) IS NOT AN ALLOWABLE VALUE',/,1X,
-     &        'PLEASE CHECK YOUR INPUT')
-         IF(NFOVER.EQ.1) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99672)
-            WRITE(16,99672)
-99672       FORMAT(/,1X,'PROGRAM WILL OVERRIDE SPECIFIED INPUT',
-     &           ' AND SET NHASV EQUAL TO 0 ',
-     &           //,1X,'!!!!!! EXECUTION WILL CONTINUE !!!!!!',//)
-            NHASV=0
-         ELSE
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-            WRITE(16,9973)
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
-         ENDIF
-      ENDIF
-      IF(NHASV.EQ.1) THEN
-         WRITE(16,34642)
-34642    FORMAT(///,5X,'STATION VELOCITY HARMONIC ANAL WILL BE ',
-     &        'WRITTEN TO UNIT 52')
-      ENDIF
-      IF((NHAGE.LT.0).OR.(NHAGE.GT.1)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99663)
-         WRITE(16,99663)
-99663    FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
-     &        'INPUT ERROR  !!!!!!!!!',//
-     &        ,1X,'YOUR SELECTION OF NHAGE (A UNIT 15 '
-     &        ,'INPUT PARAMETER) IS NOT AN ALLOWABLE VALUE',/,1X,
-     &        'PLEASE CHECK YOUR INPUT')
-         IF(NFOVER.EQ.1) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99673)
-            WRITE(16,99673)
-99673       FORMAT(/,1X,'PROGRAM WILL OVERRIDE SPECIFIED INPUT',
-     &           ' AND SET NHAGE EQUAL TO 0 ',
-     &           //,1X,'!!!!!! EXECUTION WILL CONTINUE !!!!!!',//)
-            NHAGE=0
-         ELSE
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-            WRITE(16,9973)
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
-         ENDIF
-      ENDIF
-      IF(NHAGE.EQ.1) THEN
-         WRITE(16,34643)
-34643    FORMAT(///,5X,'GLOBAL ELEVATION HARMONIC ANAL WILL BE ',
-     &        'WRITTEN TO UNIT 53')
-      ENDIF
-      IF((NHAGV.LT.0).OR.(NHAGV.GT.1)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99664)
-         WRITE(16,99664)
-99664    FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
-     &        'INPUT ERROR  !!!!!!!!!',//
-     &        ,1X,'YOUR SELECTION OF NHAGV (A UNIT 15 '
-     &        ,'INPUT PARAMETER) IS NOT AN ALLOWABLE VALUE',/,1X,
-     &        'PLEASE CHECK YOUR INPUT')
-         IF(NFOVER.EQ.1) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99674)
-            WRITE(16,99674)
-99674       FORMAT(/,1X,'PROGRAM WILL OVERRIDE SPECIFIED INPUT',
-     &           ' AND SET NHAGV EQUAL TO 0 ',
-     &           //,1X,'!!!!!! EXECUTION WILL CONTINUE !!!!!!',//)
-            NHAGV=0
-         ELSE
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-            WRITE(16,9973)
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
-         ENDIF
-      ENDIF
-      IF(NHAGV.EQ.1) THEN
-         WRITE(16,34644)
-34644    FORMAT(///,5X,'GLOBAL VELOCITY HARMONIC ANAL WILL BE ',
-     &        'WRITTEN TO UNIT 54')
-      ENDIF
+      WRITE(scratchMessage,
+     &   '("NHASE=",I1," NHASV=",I1," NHAGE=",I1," NHAGV=",I1,".")')
+     &    NHASE, NHASV, NHAGE, NHAGV
+      CALL logMessage(ECHO,scratchMessage)
+      CALL checkHarmonicParameters()
 
 C     compute flag telling whether any harmonic analysis will be done
 
@@ -5055,80 +4879,51 @@ C...
 C     jgf45.07 added undocumented option to STOP after writing hot start file.
 C     This option will be used in testing ADCIRC's hot start capabilities.
       READ(15,*) NHSTAR,NHSINC
-      WRITE(16,99655)
-99655 FORMAT(////,1X,'HOT START OUTPUT INFORMATION OUTPUT : ')
+
+      CALL logMessage(INFO,'HOT START OUTPUT INFORMATION : ')
+      WRITE(scratchMessage,'("NHSTAR=",I3," NHSINC=",I8,".")')
+     &      NHSTAR, NHSINC
+      CALL logMessage(ECHO,scratchMessage)
 C
       SELECT CASE(NHSTAR)
 
       CASE(0)
-         WRITE(16,34646)
-34646    FORMAT(///,5X,'NO HOT START OUTPUT WILL BE GENERATED')
-
-      CASE(1,2,3,67,68,267,268,367,368) ! the allowable nonzero NHSTAR values
-#ifndef NETCDF
-         IF ((NHSTAR.EQ.3).OR.(NHSTAR.EQ.367).OR.(NHSTAR.EQ.368)) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-               WRITE(ScreenUnit,99660) NHSTAR
-            ENDIF
-            WRITE(16,99660) NHSTAR
-99660       FORMAT('ERROR: This version of ADCIRC does not have ',
-     &      'NetCDF enabled, but NHSTAR was set to ',I3,'. Execution ',
-     &      'teminated.')
-#ifdef CMPI
-            CALL msg_fini()
-#endif
-            STOP
-         ENDIF
-#endif
-         IF(NHSINC.EQ.0) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99666)
-            WRITE(16,99666)
-99666       FORMAT(////,1X,'!!!!!!!!!! WARNING - FATAL ERROR !!!!!!!!!',
-     &        //,1X,'YOU HAVE SELECTED A HOT START INTERVAL OF ',
-     &        'ZERO LENGTH.',
-     &        /,1X,'NHSTAR = 1 AND NHSINC = 0 ARE INCOMPATIBLE ',
-     &        'UNIT 15 INPUT PARAMETERS',
-     &        /,1X,'PLEASE CHECK YOUR INPUT',
-     &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
-         ENDIF
-         WRITE(16,34636) NHSINC
-34636    FORMAT(/,5X,'HOT START OUTPUT WILL BE WRITTEN TO UNIT',
-     &        ' 67 OR 68 EVERY ',I10,' TIME STEPS')
-         IF((NHSTAR.EQ.67).OR.(NHSTAR.EQ.68).OR.(NHSTAR.EQ.67).OR.
-     &      (NHSTAR.EQ.267).OR.(NHSTAR.EQ.268).OR.
-     &      (NHSTAR.EQ.367).OR.(NHSTAR.EQ.368) ) THEN
-            WRITE(16,34626) NHSTAR
-34626       FORMAT(/,5X,'ADCIRC will stop after writing to unit ',I3)
-         ENDIF
-C
-      CASE DEFAULT  ! not an allowable NHSTAR value
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99665)
-         WRITE(16,99665)
-99665    FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL ',
-     &        'INPUT ERROR  !!!!!!!!!',//
-     &        ,1X,'YOUR SELECTION OF NHSTAR (A UNIT 15 '
-     &        ,'INPUT PARAMETER) IS NOT AN ALLOWABLE VALUE',/,1X,
-     &        'PLEASE CHECK YOUR INPUT')
-         IF(NFOVER.EQ.1) THEN
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99675)
-            WRITE(16,99675)
-99675       FORMAT(/,1X,'PROGRAM WILL OVERRIDE SPECIFIED INPUT',
-     &           ' AND SET NHSTAR EQUAL TO 0 ',
-     &           //,1X,'!!!!!! EXECUTION WILL CONTINUE !!!!!!',//)
-            NHSTAR=0
-         ELSE
-            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-            WRITE(16,9973)
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
-         ENDIF
+         CALL logMessage(INFO,'HOT START OUTPUT WILL NOT BE GENERATED.')
+      CASE(1,67,68)
+         CALL logMessage(INFO,'HOT START OUTPUT WILL BE GENERATED'
+     &        //' IN NON-PORTABLE BINARY FORMAT.')
+      CASE(3,367,368)
+         useNetCDF = .true.
+         CALL logMessage(INFO,'HOT START OUTPUT WILL BE GENERATED'
+     &        //' IN PORTABLE NETCDF CLASSIC / NETCDF3 FORMAT.')
+      CASE(5,567,568)
+         useNetCDF = .true.
+         CALL logMessage(INFO,'HOT START OUTPUT WILL BE GENERATED'
+     &        //' IN PORTABLE NETCDF CLASSIC / NETCDF4 (HDF5) FORMAT.')
+      CASE DEFAULT
+         CALL allMessage(ERROR,"Input value of NHSTAR is invalid.")
+         CALL ADCIRC_Terminate()
       END SELECT
+
+      IF((NHSINC.EQ.0).AND.(NHSTAR.NE.0)) THEN
+         CALL allMessage(ERROR,"Input value of NHSINC is 0"
+     &     //" but the input value of NHSTAR is nonzero.")
+         CALL allMessage(ERROR,"Please specify a time step increment"
+     &     //" for writing hotstart files.")
+         CALL ADCIRC_Terminate()
+      ENDIF
+C
+      WRITE(16,34636) NHSINC
+34636 FORMAT(/,5X,'HOT START OUTPUT WILL BE WRITTEN TO UNIT',
+     &        ' 67 OR 68 EVERY ',I10,' TIME STEPS')
+C
+      IF((NHSTAR.EQ.67).OR.(NHSTAR.EQ.68).OR.
+     &      (NHSTAR.EQ.367).OR.(NHSTAR.EQ.368).OR.
+     &      (NHSTAR.EQ.567).OR.(NHSTAR.EQ.568) ) THEN
+         WRITE(16,34626) NHSTAR
+34626    FORMAT(/,5X,'ADCIRC will stop after writing to unit ',I3)
+      ENDIF
+C
       if (NHSINC <= 0) NHSINC = 1  ! rtm 46.xx NHSINC must have a
                                    ! reasonable value even when not
                                    ! generating hot start files.
@@ -5143,28 +4938,28 @@ C     read in and check matrix solver parameters
       WRITE(16,99656)
 99656 FORMAT(//,1X,'SOLVER INFORMATION OUTPUT : ')
       IF((ISLDIA.LT.0).OR.(ISLDIA.GT.5)) THEN
-        IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9920)
-        WRITE(16,9920)
- 9920   FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL INPUT ERROR ',
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9920)
+         WRITE(16,9920)
+ 9920     FORMAT(////,1X,'!!!!!!!!!!  WARNING - NONFATAL INPUT ERROR ',
      &                 '!!!!!!!!!',
      &           //,1X,'ISLDIA (A UNIT 15 INPUT PARAMETER) MUST BE 0-5',
      &            /,1X,'PLEASE CHECK YOUR INPUT')
-        IF(NFOVER.EQ.1) THEN
-          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9921)
-          WRITE(16,9921)
- 9921     FORMAT(/,1X,'PROGRAM WILL OVERRIDE SPECIFIED INPUT',
+         IF(NFOVER.EQ.1) THEN
+            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9921)
+            WRITE(16,9921)
+ 9921       FORMAT(/,1X,'PROGRAM WILL OVERRIDE SPECIFIED INPUT',
      &                ' AND SET ISLDIA EQUAL TO 0 ',
      &           //,1X,'!!!!!! EXECUTION WILL CONTINUE !!!!!!',//)
-          ISLDIA=0
-          ELSE
-          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
-          WRITE(16,9973)
+            ISLDIA=0
+         ELSE
+            IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
+            WRITE(16,9973)
 #ifdef CMPI
-          call msg_fini()
+            call msg_fini()
 #endif
-          STOP
-          ENDIF
-        ENDIF
+            STOP
+         ENDIF
+      ENDIF
 
 C     jgf48.4619: Accommodate Seizos changes for explicit solve
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
@@ -5202,9 +4997,9 @@ cjjwm001 changed one line
       BARAVGWT=0.000D0
       IBSTART=0
       DO I=1,NVEL
-        RBARWL1AVG(I)=0.D0
-        RBARWL2AVG(I)=0.D0
-        END DO
+         RBARWL1AVG(I)=0.D0
+         RBARWL2AVG(I)=0.D0
+      END DO
 
 C...  INITIALIZE NIBNODECODE(I)
 
@@ -5217,17 +5012,17 @@ C - allocate arrays dealing with wind forcing
       call alloc_main12()
 
       if (mnproc == 1) then
-        NP_G    = NP               !
-        NE_G    = NE               !
-        NSTAE_G = NSTAE
-        NSTAV_G = NSTAV
-        NSTAM_G = NSTAM
-        NSTAC_G = NSTAC
-        IF (C3D.eqv..true.) THEN
-           NSTA3DD_G = NSTA3DD
-           NSTA3DV_G = NSTA3DV
-           NSTA3DT_G = NSTA3DT
-        ENDIF
+         NP_G    = NP               !
+         NE_G    = NE               !
+         NSTAE_G = NSTAE
+         NSTAV_G = NSTAV
+         NSTAM_G = NSTAM
+         NSTAC_G = NSTAC
+         IF (C3D.eqv..true.) THEN
+            NSTA3DD_G = NSTA3DD
+            NSTA3DV_G = NSTA3DV
+            NSTA3DT_G = NSTA3DT
+         ENDIF
       endif
 
 C     write table of ADCIRC parameter sizes
@@ -5239,7 +5034,7 @@ C     write table of ADCIRC parameter sizes
       IF(NWS.EQ.3) WRITE(16,4014)
       IF(ABS(NWS).EQ.4) WRITE(16,4015)
       IF(ABS(NWS).EQ.5) WRITE(16,4115)
-      IF(ABS(NWS).EQ.7) WRITE(16,4013) !jgf46.00 Added NWS=7 (direct stress)
+      IF(ABS(NWS).EQ.7) WRITE(16,4013) !46.00 Added NWS=7 (direct stress)
       IF(NWS.EQ.9) WRITE(16,4018)      !cf & cm added nws = 9 (jgf46.16 merged)
       IF(NWS.EQ.9) WRITE(16,4019)      !cf & cm added nws = 9 (jgf46.16 merged)
       IF(NWS.EQ.10) WRITE(16,4016)
@@ -5298,63 +5093,41 @@ C
  4108 FORMAT(' *****************************************************',/)
 C
 
-#ifdef NETCDF
-C     ==================================================================
-C     START ADDITION BY MCF FOR NETCDF OPTION for NETCDF I/O - 6/20/07
-C
-!     --------------------------------------------------------------------
-!     IF output is in netCDF format read global attributes for netCDF file
-!     --------------------------------------------------------------------
-
-      IF( (abs(noutge).EQ.3) .OR. (abs(noutgv).EQ.3) .OR.
-     &    (abs(noutgw).eq.3).or.
-     &    (abs(nhstar).eq.367).or.(abs(nhstar).eq.368).or.
-     &    (abs(noutv).EQ.3) .or. (abs(noute).EQ.3) .OR.
-     &    (abs(noutm).eq.3) .or. abs(NHSTAR).eq.3 )    THEN
-
-#ifndef NETCDF
-         print *, "NetCDF was selected but is not supported by the
-     &            compilation flag chosen.
-     &
-     &            Compile with:
-     &
-     &  gmake NETCDF=enable NETCDFHOME=the netcdf library location"
-        stop
-#endif
-
-         READ(15,'(A80)') title
-         READ(15,'(A80)') institution
-         READ(15,'(A80)') source
-         READ(15,'(A80)') history
-         READ(15,'(A80)') references
-         READ(15,'(A80)') comments
-         READ(15,'(A80)') host
-         READ(15,'(A80)') convention
-         READ(15,'(A80)') contact
-         READ(15,'(A80)') base_date
-
-        ELSEIF(NOUTGC.eq.3.                                 ! fort.93
-     &       or.NOUTC.eq.3.                                 ! fort.91
-     &       or.NHASE.eq.3.                                 ! fort.51
-     &       or.NHASV.eq.3.                                 ! fort.52
-     &       or.NHAGE.eq.3.                                 ! fort.53
-     &       or.NHAGV.eq.3.                                 ! fort.54
-     &       or.I3DSD.eq.3.                                 ! fort.41
-     &       or.I3DSV.eq.3.                                 ! fort.42
-     &       or.I3DST.eq.3.                                 ! fort.43
-     &       or.I3DGD.eq.3.                                 ! fort.44
-     &       or.I3DGV.eq.3.                                 ! fort.45
-     &       or.I3DGT.eq.3) THEN                            ! fort.46
-
-        WRITE(6,*)
-     &  "netCDF output not available yet for the options selected"
-
+      IF ((useNetCDF.eqv..true.).and.(NETCDF_AVAIL.eqv..false.)) THEN
+         CALL allMessage(ERROR,"NetCDF input and/or output was"
+     &     //" indicated in the control parameters of the fort.15 file"
+     &     //" but it is not supported by this ADCIRC executable"
+     &     //" program. This program must be recompiled with NetCDF"
+     &     //" libraries in order to enable NetCDF input or output.")
+         CALL ADCIRC_Terminate()
       ENDIF
-C
-C     FINISH ADDITION BY MCF FOR NETCDF OPTION for NETCDF I/O - 6/20/07
-C     ==================================================================
-C
-#endif
+
+      IF (useNetCDF.eqv..true.) THEN
+         CALL logMessage(INFO,"Now reading metadata from fort.15 file"
+     &     //" for use in NetCDF files.")
+         READ(15,'(A80)',err=99999,end=99998,iostat=ios) title
+         CALL logMessage(ECHO,"metadata, title: "//trim(title))
+         READ(15,'(A80)',err=99999,end=99998,iostat=ios) institution
+         CALL logMessage(ECHO,"metadata, institution: "
+     &     //trim(institution))
+         READ(15,'(A80)',err=99999,end=99998,iostat=ios) source
+         CALL logMessage(ECHO,"metadata, source: "//trim(source))
+         READ(15,'(A80)',err=99999,end=99998,iostat=ios) history
+         CALL logMessage(ECHO,"metadata, history: "//trim(history))
+         READ(15,'(A80)',err=99999,end=99998,iostat=ios) references
+         CALL logMessage(ECHO,"metadata, references: "
+     &     //trim(references))
+         READ(15,'(A80)',err=99999,end=99998,iostat=ios) comments
+         CALL logMessage(ECHO,"metadata, comments: "//trim(comments))
+         READ(15,'(A80)',err=99999,end=99998,iostat=ios) host
+         CALL logMessage(ECHO,"metadata, host: "//trim(host))
+         READ(15,'(A80)',err=99999,end=99998,iostat=ios) convention
+         CALL logMessage(ECHO,"metadata, convention: "//trim(convention))
+         READ(15,'(A80)',err=99999,end=99998,iostat=ios) contact
+         CALL logMessage(ECHO,"metadata, contact: "//trim(contact))
+         READ(15,'(A80)',err=99999,end=99998,iostat=ios) base_date
+         CALL logMessage(ECHO,"metadata, base_date: "//trim(base_date))
+      ENDIF
 
 C
 C... v49.48.02 tcm -- Deallocating rmax, bcxy and kdresults
@@ -5376,8 +5149,29 @@ C#ifdef CMPI
 C      CALL COMPUTE_RESELEM
 C#endif
 c.
+C
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
       RETURN
+C
+C
+C     jgf50.41: This section is where we jump if there was an error
+C     reading a file.
+99998 call allMessage(ERROR,"Unexpectedly reached end-of-file.") ! END jumps here
+99999 call allMessage(ERROR,"I/O error during file access.") !  ERR jumps here
+      if (ios.gt.0) then
+         write(scratchMessage,'(A,I3,A)')
+     &       'The value of the i/o error flag was ',ios,'.'
+         call allMessage(ERROR,scratchMessage)
+      endif
+      CALL ADCIRC_Terminate()
+C
+c******************************************************************************
       END SUBROUTINE READ_INPUT
+c******************************************************************************
+
 
 
 c******************************************************************************
@@ -5397,9 +5191,10 @@ C    kmd48.33bc - added the variables from Global
      &                  TBCTIMEINC, SBCSTATIM, TBCSTATIM,
      &                  BCFLAG_LNM, BCFLAG_TEMP, TTBCSTATIM,
      &                  TTBCTIMEINC, SPONGEDIST, NBD, Sponge,
-     &                  scratchMessage, INFO,
+     &                  scratchMessage, INFO, DEBUG, ERROR, allMessage,
      &                  setMessageSource, logMessage, unsetMessageSource,
-     &                  OUTPUTSPONGE, NOPE
+     &                  OUTPUTSPONGE, NOPE, screen, ECHO
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE GLOBAL_3DVS
       USE NodalAttributes, ONLY : Z0b_var
 
@@ -5415,7 +5210,7 @@ C
       REAL(SZ) :: HH1  !domain averaged depth used for some vertical FE grids
       INTEGER  :: N,K,NN,J         !loop counters
       INTEGER  :: NH               !horizontal node loop counter
-      CHARACTER CDUM80
+      CHARACTER(len=80) :: CDUM80
 
 C    kmd48.33bc - additional variables for sponge layers
       REAL(SZ) :: Xloc1, Xloc2, Yloc1, Yloc2, Xloc, Yloc
@@ -5424,11 +5219,14 @@ C    kmd48.33bc - additional variables for sponge layers
       REAL(SZ),ALLOCATABLE :: compdist(:)
       INTEGER :: BCnode, counter
       INTEGER, ALLOCATABLE :: nodedist(:)
+      INTEGER :: ios   ! i/o status of read operation
 C
       call setMessageSource("read_input_3D")
-#ifdef READ_INPUT_TRACE
+#if defined(READ_INPUT_TRACE) || defined (ALL_TRACE)
       call screen(DEBUG,"Enter.")
 #endif
+C
+      ios = 0
 C
 C...  General invalid entry format statement used throughout
 C
@@ -5454,7 +5252,7 @@ C...  SPECIFY WHETHER A BAROTROPIC OR BAROCLINIC RUN
         WRITE(16,350)
         WRITE(16,423)
  423    FORMAT(/,2X,'    IDen MUST = -4, -3, -2, -1, 0, 1, 2, 3, 4')
-        STOP
+        CALL ADCIRC_Terminate()
       ENDIF
 
       IF(IDen.NE.0) CBaroclinic = .TRUE.
@@ -5504,7 +5302,7 @@ C...  READ IN THE TIME STEPPING COEFFICIENTS AND COMPUTE ASSOCIATED VARIABLES
 
 C...  READ IN IGC & NFEN: F.E. GRID CODE & # NODES IN F.E. GRID
 
-      READ(15,*) IGC,NFEN
+      READ(15,*,err=99999,end=99998,iostat=ios) IGC,NFEN
       WRITE(16,400) IGC,NFEN
  400  FORMAT(/,5X,'Vertical grid code IGC = ',I3,
      &            '  Number of vertical nodes (NFEN) = ',I5)
@@ -5516,7 +5314,7 @@ C...  READ IN IGC & NFEN: F.E. GRID CODE & # NODES IN F.E. GRID
         WRITE(16,350)
         WRITE(16,408)
  408    FORMAT(/,2X,'    IGC MUST BE 0, 1, 2, 3, 4, 5, 6')
-        STOP
+        CALL ADCIRC_Terminate()
       ENDIF
       IF(NFEN.LT.0) THEN
         IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
@@ -5526,7 +5324,7 @@ C...  READ IN IGC & NFEN: F.E. GRID CODE & # NODES IN F.E. GRID
         WRITE(16,350)
         WRITE(16,409)
  409    FORMAT(/,2X,'    NFEN MUST BE > 0')
-        STOP
+        CALL ADCIRC_Terminate()
       ENDIF
 
 C...  SET MNFEN = NFEN
@@ -5557,7 +5355,7 @@ c     IGC = 0 - Read in grid from UNIT 15
  1011     FORMAT(' Error reading in the vertical finite element grid')
  1012     FORMAT(' The first point in the finite element grid ',
      +           'must = b (-1) : run terminated'/)
-          STOP
+          CALL ADCIRC_Terminate()
         ENDIF
         IF(Sigma(NFEN).NE.A) THEN
           IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
@@ -5570,7 +5368,7 @@ c     IGC = 0 - Read in grid from UNIT 15
           WRITE(16,1013)
  1013     FORMAT(' The last point in the finite element grid ',
      +           'must = a (1) : run terminated'/)
-          STOP
+          CALL ADCIRC_Terminate()
         ENDIF
       ENDIF
 
@@ -5621,9 +5419,14 @@ C...  SPECIFY TYPE OF EDDY VISCOSITY PROFILE
         WRITE(16,411)
  411    FORMAT(/,2X,'    IEVC MUST BE 0,1,10,11,20,21,22,23,',
      &        '30,31,32,33,40,41,42,43,50,51')
-        STOP
+        CALL ADCIRC_Terminate()
       ENDIF
-      IF((IEVC.EQ.50).or.(IEVC.EQ.51)) READ(15,*) Theta1,Theta2
+      IF((IEVC.EQ.50).or.(IEVC.EQ.51)) THEN
+         READ(15,*,err=99999,end=99998,iostat=ios) Theta1,Theta2
+         WRITE(scratchMessage,'("theta1=",E15.9," theta2=",E15.9,".")')
+     &      theta1, theta2
+      CALL logMessage(ECHO,scratchMessage)
+      ENDIF
 
 C...  FOR IEVC=0, CONSTANT EDDY VISCOSITY, READ IN PROFILE
 
@@ -5935,7 +5738,7 @@ C                 salinity and temperature forcings.
              WRITE(16,9722)
  9722    FORMAT(/,1X,'Your selection of RES_BC_FLAG (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-             STOP
+             CALL ADCIRC_Terminate()
          END IF
        END IF
       END IF
@@ -6053,7 +5856,8 @@ C                 Note that this is only used in the wind and advective terms
            WRITE(16,422)
  422       FORMAT(/,1X,'Your selection of Eqnstate (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-           STOP
+
+           CALL ADCIRC_Terminate()
          END IF
       END IF
 C
@@ -6096,11 +5900,29 @@ C                new information being used.
 !         endif
 
       endif
-#ifdef READ_INPUT_TRACE
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
       call screen(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       RETURN
+C
+C
+C     jgf50.41: This section is where we jump if there was an error
+C     reading a file.
+99998 call allMessage(ERROR,"Unexpectedly reached end-of-file.") ! END jumps here
+99999 call allMessage(ERROR,"I/O error during file access.") !  ERR jumps here
+      call allMessage(ERROR,
+     &   "Check the fort.16 file for more information."
+     &  //" Also, reducing the value of NABOUT to 0"
+     &  //" will maximize the information written to the fort.16 file,"
+     &  //" which may aid in troubleshooting this issue.")
+      if (ios.gt.0) then
+         write(scratchMessage,'(A,I3,A)')
+     &       'The value of the i/o error flag was ',ios,'.'
+         call allMessage(ERROR,scratchMessage)
+      endif
+      CALL ADCIRC_Terminate()
+
 C-----------------------------------------------------------------------
       END SUBROUTINE READ_INPUT_3D
 C-----------------------------------------------------------------------
@@ -6118,13 +5940,14 @@ C-----------------------------------------------------------------------
      &   tsCounter, recCounter)
       USE GLOBAL, ONLY : scratchMessage, ECHO, INFO, WARNING, ERROR,
      &   DTDP, Day2Sec, NT, setMessageSource, logMessage, allMessage,
-     &   unsetMessageSource
+     &   unsetMessageSource, DEBUG, screen, useNetCDF
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
       IMPLICIT NONE
       INTEGER, intent(in) :: specifier   ! format, 1=ascii, 2=binary, etc
-      CHARACTER(*), intent(in) :: description ! type of output data
+      CHARACTER(len=80), intent(in) :: description ! type of output data
       REAL(8), intent(in) :: staTime
       INTEGER, intent(inout) :: tsPeriod ! period of time steps between outputs
       REAL(8), intent(inout) :: startTime! time for output to start (days)
@@ -6136,7 +5959,7 @@ C-----------------------------------------------------------------------
       INTEGER, intent(out) :: recCounter ! counts lines in the output file
 C
       call setMessageSource("checkAndFillIOParameters")
-#ifdef READ_INPUT_TRACE
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
       call screen(DEBUG,"Enter.")
 #endif
 C
@@ -6145,22 +5968,39 @@ C
 C
       WRITE(scratchMessage,501) trim(description), specifier
       CALL logMessage(ECHO,scratchMessage)
- 501  FORMAT(A,' OUTPUT PARAMETER = ',I2)
+ 501  FORMAT(A,' output specifier = ',I2)
 C
 C     jgf49.48.01: Check to make sure that we can write in the
 C     specified format.
-      IF(ABS(specifier).GT.3) THEN
-         WRITE(scratchMessage,350)
-         CALL allMessage(ERROR, scratchMessage)
-         WRITE(scratchMessage,511) specifier, trim(description)
-         CALL allMessage(ERROR, scratchMessage)
- 511     FORMAT(/,1X,'YOUR SETTING OF ',I2,' FOR THE ',A,
+      SELECT CASE(ABS(specifier))
+         CASE(0)
+            CALL logMessage(INFO,
+     &         'OUTPUT WILL NOT BE SPOOLED FOR THIS FILE TYPE.')
+         CASE(1)
+            CALL logMessage(INFO,'OUTPUT FORMAT WILL BE ASCII.')
+         CASE(2)
+            CALL logMessage(INFO,'OUTPUT FORMAT WILL BE BINARY.')
+         CASE(3)
+            useNetCDF = .true.
+            CALL logMessage(INFO,
+     &          'OUTPUT FORMAT WILL BE NETCDF CLASSIC MODEL'
+     &           //' / NETCDF3 FORMAT.')
+         CASE(5)
+            useNetCDF = .true.
+            CALL logMessage(INFO,
+     &         'OUTPUT FORMAT WILL BE NETCDF CLASSIC MODEL'
+     &         //' / NETCDF4 (HDF5) FORMAT.')
+         CASE(4,6:)
+            WRITE(scratchMessage,350)
+            CALL allMessage(ERROR, scratchMessage)
+            WRITE(scratchMessage,511) specifier, trim(description)
+            CALL allMessage(ERROR, scratchMessage)
+ 511        FORMAT('YOUR SETTING OF ',I2,' FOR THE ',A,
      &   ' OUTPUT PARAMETER IS NOT VALID. ','CHECK YOUR INPUT!!')
-#ifdef CMPI
-         call msg_fini()
-#endif
-         STOP
-      ENDIF
+            call ADCIRC_Terminate()
+         CASE DEFAULT
+            ! do nothing, the other cases handled below
+      END SELECT
 C
 C     jgf49.48.01: Check to make sure we have a valid output period
 C     (if output was requested).
@@ -6169,23 +6009,15 @@ C     (if output was requested).
          CALL allMessage(ERROR,scratchMessage)
          WRITE(scratchMessage,561) description
          CALL allMessage(ERROR,scratchMessage)
- 350  FORMAT(//,2X,'***** INVALID ENTRY IN THE 3D INPUT SECTION OF ',
-     &     ' FILE (UNIT 15) ****',/,'****** RUN TERMINATED ******')
- 561     FORMAT(2X,' Time step period for ',A,
+ 350     FORMAT('***** INVALID ENTRY IN THE 3D INPUT SECTION OF',
+     &     ' FILE (UNIT 15) ****')
+ 561     FORMAT(' Time step increment for ',A,
      &      ' output data was 0, but it must be greater than zero.')
-#ifdef CMPI
-         call msg_fini()
-#endif
-         STOP
+         CALL ADCIRC_Terminate()
       ENDIF
 C
 C     jgf49.48.01: Calculate output parameters and check their values.
-      IF (specifier.EQ.0) THEN
-C....    IF NO OUTPUT WILL BE GENERATED
- 521     FORMAT(/,5X,A,' data will not be output.')
-C         WRITE(scratchMessage,521) description
-C         CALL logMessage(INFO,scratchMessage)
-      ELSE
+      IF (specifier.NE.0) THEN
 C....    COMPUTE startTS, endTS, WHICH = startTime AND endTime IN TIME STEPS
 #ifdef IBM
          startTS=INT((startTime-StaTime)*Day2Sec/DTDP+0.5d0,
@@ -6202,7 +6034,7 @@ C        is later than the actual start of the simulation.
          IF (startTS.LT.0) THEN
             WRITE(scratchMessage,531) description, startTime
             CALL allMessage(WARNING,scratchMessage)
- 531        FORMAT(5X,'Start time for output of ',A,' data = ',E14.6,
+ 531        FORMAT('Start time for output of ',A,' data = ',E14.6,
      &         ' which is before the start time of the simulation. ',
      &         'It has been reset to coincide with the start time.')
             startTime=StaTime
@@ -6214,7 +6046,7 @@ C        is later than the start time for output.
          IF(endTS.LT.startTS) THEN
             WRITE(scratchMessage,541) description, endTime
             CALL allMessage(WARNING,scratchMessage)
- 541        FORMAT(5X,'End time for output of ',A,' data = ',E14.6,
+ 541        FORMAT('End time for output of ',A,' data = ',E14.6,
      &       ' which is before the start time for output of these data.'
      &       ' It has been reset to coincide with the start time.')
             endTime=startTime
@@ -6226,14 +6058,14 @@ C        is later than the end of the simulation.
          IF(endTS.GT.NT) THEN
             WRITE(scratchMessage,551) description, endTime
             CALL logMessage(INFO,scratchMessage)
- 551        FORMAT(5X,'End time for output of ',A,' data = ',E14.6,
+ 551        FORMAT('End time for output of ',A,' data = ',E14.6,
      &         ' is later than the end of the simulation (RNDAY). ',
      &  'It has been reset to coincide with the end of the simulation.')
             endTS=NT
          ENDIF
          nSets = (endTS-startTS)/tsPeriod
       ENDIF
-#ifdef READ_INPUT_TRACE
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
       call screen(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
@@ -6256,7 +6088,7 @@ C-----------------------------------------------------------------------
      &                        lat, lon, sta1, sta2, sta3,Description)
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, SLAM0, SFEA0, ICS, parse,
-     &   a2f
+     &   a2f, DEBUG, screen, setMessageSource, unsetMessageSource
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
       INTEGER num_stations
@@ -6272,6 +6104,11 @@ C-----------------------------------------------------------------------
       CHARACTER(132) STATLINE
       CHARACTER(50) LVAR(3)
       CHARACTER(30), INTENT(IN) :: Description
+C
+      call setMessageSource("readStations")
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call screen(DEBUG,"Enter.")
+#endif
 C
       DO I=1,num_stations
          NNV(I)=0
@@ -6307,6 +6144,10 @@ C....PRE-COMPUTE INFORMATION REQUIRED TO INTERPOLATE AT VEL. RECORDING STATIONS
       END DO
 1880  FORMAT(8X,I3,6X,I7,2(2X,F14.2))
 1883  FORMAT(6X,I3,4X,I7,2(2X,F13.8),2X,2(1X,F13.2))
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       END SUBROUTINE readStations
 C-----------------------------------------------------------------------
@@ -6328,7 +6169,9 @@ C-----------------------------------------------------------------------
 
       use sizes, only : sz, MyProc
       use global, only : NE,NM,X,Y,Areas,NFOver,NScreen, ScreenUnit,
-     &                   rmax,bcxy,kdresults,srchdp,tree
+     &                   rmax,bcxy,kdresults,srchdp,tree, DEBUG,screen,
+     &                   setMessageSource, unsetMessageSource
+      use adcirc_mod, only : adcirc_terminate
       use kdtree2_module
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
@@ -6349,9 +6192,11 @@ C-----------------------------------------------------------------------
       LOGICAL ElementFound  ! .true. when a corresponding element is found
 
       REAL(sz), PARAMETER :: Tolerance = 1.0d-5     ! area difference for match
-
-
-
+C
+      call setMessageSource("kdtsearch")
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call screen(DEBUG,"Enter.")
+#endif
       ElementFound = .false.
 
       Xsta = InputXCoordinate
@@ -6425,10 +6270,7 @@ C...             the next element
                WRITE(ScreenUnit,9891) sqrt(KDRESULTS(1)%dis)
             ENDIF
             WRITE(16,9891) sqrt(KDRESULTS(1)%dis)
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
+            call ADCIRC_Terminate()
          ENDIF
       ENDIF
 
@@ -6449,7 +6291,10 @@ C...             the next element
      &     /,1X,'DISTANCE TO NEAREST ELEMENT IS ',E15.6,
      &     //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',
      &     //)
-
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       END SUBROUTINE KDTSEARCH
 
 
@@ -6464,7 +6309,9 @@ C-----------------------------------------------------------------------
       SUBROUTINE CoordinateToElement(InputXCoordinate, InputYCoordinate,
      &     OutputElement, StationNumber, Description)
       USE SIZES, ONLY : SZ, MyProc
-      USE GLOBAL, ONLY: NE, NM, X, Y, Areas, NFOver, NScreen, ScreenUnit
+      USE GLOBAL, ONLY: NE, NM, X, Y, Areas, NFOver, NScreen, screen,
+     & DEBUG, ScreenUnit, setMessageSource, unsetMessageSource
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
@@ -6482,6 +6329,11 @@ C-----------------------------------------------------------------------
       REAL(8) A1, A2, A3, AE, AEMIN, AA            ! area
       LOGICAL ElementFound  ! .true. when a corresponding element is found
       REAL(8), PARAMETER :: Tolerance = 1.0E-5     ! area difference for match
+C
+      call setMessageSource("CoordinateToElement")
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call screen(DEBUG,"Enter.")
+#endif
 
       ElementFound = .false.
       AEMIN=1.0E+25
@@ -6526,10 +6378,7 @@ C-----------------------------------------------------------------------
                WRITE(ScreenUnit,9791) AEMIN
             ENDIF
             WRITE(16,9791) AEMIN
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
+            call ADCIRC_Terminate()
          ENDIF
       ENDIF
 
@@ -6548,7 +6397,10 @@ C-----------------------------------------------------------------------
      &     /,1X,'PROXIMITY INDEX FOR THIS STATION EQUALS ',E15.6,
      &     //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',
      &     //)
-
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE CoordinateToElement
@@ -6566,7 +6418,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE ComputeInterpolatingFactors(InputXCoordinate,
      &     InputYCoordinate, InputElement, Factor1, Factor2, Factor3)
 
-      USE GLOBAL, ONLY : NM, X, Y, Areas
+      USE GLOBAL, ONLY : NM, X, Y, Areas, DEBUG, screen,
+     &    setMessageSource, unsetMessageSource
       IMPLICIT NONE
       REAL(8), intent(in) :: InputXCoordinate                  ! cartesian
       REAL(8), intent(in) :: InputYCoordinate                  ! cartesian
@@ -6574,7 +6427,11 @@ C-----------------------------------------------------------------------
       REAL(8), intent(out):: Factor1, Factor2, Factor3
 
       REAL(8) X1, X2, X3, X4, Y1, Y2, Y3, Y4                   ! geometry
-
+C
+      call setMessageSource("ComputeInterpolatingFactors")
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call screen(DEBUG,"Enter.")
+#endif
       X1=X(NM(InputElement,1))
       X2=X(NM(InputElement,2))
       X3=X(NM(InputElement,3))
@@ -6587,7 +6444,11 @@ C-----------------------------------------------------------------------
       Factor1=((X4-X3)*(Y2-Y3)+(X2-X3)*(Y3-Y4))/Areas(InputElement)
       Factor2=((X4-X1)*(Y3-Y1)-(Y4-Y1)*(X3-X1))/Areas(InputElement)
       Factor3=(-(X4-X1)*(Y2-Y1)+(Y4-Y1)*(X2-X1))/Areas(InputElement)
-
+C
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call screen(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE ComputeInterpolatingFactors

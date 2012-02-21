@@ -114,31 +114,32 @@ c.
       INTEGER, ALLOCATABLE ::   IDUMY(:)
       REAL(SZ),ALLOCATABLE ::   DUMY1(:),DUMY2(:)
 #endif
+      !jgf50.44: Added variable to record the time that the min or max
+      ! has occurred
       REAL(SZ),ALLOCATABLE, TARGET ::  ETA1(:), ETA2(:), UU2(:), VV2(:)
-#ifndef NELMAX
+
       REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX(:) ! v46.50 sb 11/11/2006
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX(:)
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX_G(:)
-#endif
-#ifndef NUVMAX
+      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX_G(:)
+
       REAL(SZ),ALLOCATABLE, TARGET ::  UMAX(:) ! v46.50 sb 11/11/2006
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX(:)
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX_G(:)
-#endif
+      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX_G(:)
+
       REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMICE00(:), CICEOUT(:) !v49.64.01 tcm -added for ice concentration
       REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:), WVNXOut(:), WVNYOut(:)
-#ifndef NPRMAX
+
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin(:)
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin_G(:)
-#endif
-#ifndef NWVMAX
+      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin_G(:)
+
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax(:)
-         REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax_G(:)
-#endif
+      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax_G(:)
+
+
 #ifdef CSWAN
 Casey 090302: Added the following arrays for output of radiation stress gradients.
       REAL(SZ),ALLOCATABLE, TARGET :: RSNXOUT(:), RSNYOUT(:)
@@ -195,11 +196,11 @@ C..ZC Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE ::   RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
       REAL(SZ),ALLOCATABLE ::   CICE1(:),CICE2(:)   !v49.64.01 tcm -- added
                                                     !for ice concentration
-#ifndef NRSMAX
+
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax(:)
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:)
-#endif
+
       REAL(SZ),ALLOCATABLE :: TK(:)
       REAL(8),ALLOCATABLE :: EMO(:,:),EFA(:,:)
       REAL(8),ALLOCATABLE,TARGET :: XEL(:)  ! x-coords of elevation stations
@@ -447,7 +448,7 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) RBARWL1,RBARWL1F, RBARWL2, RBARWL2F, RFF, RFF1, RFF2
       REAL(SZ) SADVDTO3
       REAL(SZ) TADVODT
-      REAL(SZ) THENALLDSSSTUP, TIMEIT, TOUTFC
+      REAL(SZ) TIMEIT, TOUTFC
       REAL(SZ) TKWET
       REAL(SZ) VEL, VELABS
       REAL(SZ) VELMAX
@@ -463,7 +464,7 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       REAL(8)  RNP_GLOBAL
       REAL(8)  REFSEC   ! required to run in either 32-bit or 64-bit
 
-
+      LOGICAL :: useNetCDF = .false.
 ! CF Start addition for NETCDF I/O 6/21/06
 !     -----------------
 !     Attribute general
@@ -1439,12 +1440,10 @@ C
       ALLOCATE ( UU2(MNP),VV2(MNP))
       ALLOCATE ( QX2(MNP),QY2(MNP))
       ALLOCATE ( ETA1(MNP),ETA2(MNP), EtaDisc(MNP))
-#ifndef NELMAX
+
       ALLOCATE ( ETAMAX(MNP)) ! v46.50 sb 11/11/2006
-#endif
-#ifndef NUVMAX
       ALLOCATE ( UMAX(MNP)) ! v46.50 sb 11/11/2006
-#endif
+
       ALLOCATE ( CORIF(MNP))
       ALLOCATE ( MOM_LV_X(MNP),MOM_LV_Y(MNP))
       ALLOCATE ( LBArray_Pointer(MNP))
@@ -1758,6 +1757,10 @@ C
       WSX2(:) = 0.0d0
       WSY2(:) = 0.0d0
       PR2(:) = 0.0d0
+      RSNX2(:) = 0.d0
+      RSNY2(:) = 0.d0
+      WVNXOUT(:) = 0.d0
+      WVNYOUT(:) = 0.d0
       IF (NCICE.NE.0) then
          CICE1(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
          CICE2(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
@@ -1768,18 +1771,12 @@ Casey 090302: Added the next line for output of radiation stress gradients.
       ALLOCATE ( RSNXOUT(MNP),RSNYOUT(MNP) )
 #endif
 
-#ifndef NPRMAX
-      ALLOCATE ( PrMin(MNP) ) ! v46.50 sb 11/11/2006
+      ALLOCATE ( PrMin(MNP)) ! v46.50 sb 11/11/2006
       PrMin(:) = 99999.d0
-#endif
-#ifndef NWVMAX
-      ALLOCATE ( WVNOUTMax(MNP) ) ! v46.50 sb 11/11/2006
+      ALLOCATE ( WVNOUTMax(MNP)) ! v46.50 sb 11/11/2006
       WVNOUTMAX(:) = 0.d0
-#endif
-#ifndef NRSMAX
-      ALLOCATE ( RSNMax(MNP) )               ! v46.50 sb 11/11/2006
+      ALLOCATE ( RSNMax(MNP))               ! v46.50 sb 11/11/2006
       RSNMax(:) = 0.d0
-#endif
 
 C
       RETURN

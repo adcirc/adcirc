@@ -39,33 +39,33 @@ C   Add prep13 ONLY command      ( V. Parr 09/2006 )
 C   Add prep15 ONLY command      ( V. Parr 10/2006 )
 C   Add prephot ONLY command     ( V. Parr 10/2006 )
 C   Added NWS=19 asymmetric holland v2.0 ( R. Weaver 07/2009)
-c   Removed NWS=3 and NWS=6      (T.C. Massey 11/2009) 
+c   Removed NWS=3 and NWS=6      (T.C. Massey 11/2009)
 C
 C----------------------------------------------------------------------------
 C
 C  ADCPREP performs 7 operations:
-C    (1) partmesh  =  partition the mesh with metis                        
+C    (1) partmesh  =  partition the mesh with metis
 C    (2) prepall   =  Localize grid, input, and hot start files using default
 C                     file names
-C    (3) prepspec  =  same as prepall but allows custom file names and 
+C    (3) prepspec  =  same as prepall but allows custom file names and
 C                     skipping over files.
-C    (4) prep15    =  Localizes ONLY a RunInfo file ( fort.15)         
+C    (4) prep15    =  Localizes ONLY a RunInfo file ( fort.15)
 C                     after a prepall has been run
-C    (5) prep13    =  Localizes ONLY a nodal attributes file ( fort.13)         
+C    (5) prep13    =  Localizes ONLY a nodal attributes file ( fort.13)
 C                     after a prepall has been run
-C    (6) hotlocal  =  Localize  ONLY a hotstart file  (fort.67 or fort.68)       
-C    (7) hotglobal =  Globalize ONLY a hotstart files (fort.67 or fort.68)       
+C    (6) hotlocal  =  Localize  ONLY a hotstart file  (fort.67 or fort.68)
+C    (7) hotglobal =  Globalize ONLY a hotstart files (fort.67 or fort.68)
 C
 C  Pre-processor
 C  -------------
-C  The Pre-processor "prep" performs data decomposition of the ADCIRC grid 
-C  and localizes global input files to subdomains of the decomposition for 
+C  The Pre-processor "prep" performs data decomposition of the ADCIRC grid
+C  and localizes global input files to subdomains of the decomposition for
 C  parallel runs of ADCIRC.
-C   
-C  Subdirectories "PExxxx" of the working directory ( where "xxxx" is a 
-C  4-digit integer representing the MPI_rank of a Processing Element ) 
-C  are created and "localized" input files are placed in the appropriate 
-C  subdirectory with the same filename as the global file in the working 
+C
+C  Subdirectories "PExxxx" of the working directory ( where "xxxx" is a
+C  4-digit integer representing the MPI_rank of a Processing Element )
+C  are created and "localized" input files are placed in the appropriate
+C  subdirectory with the same filename as the global file in the working
 C  directory.  A unit 14 and 15 file, called respectively, setup.14 and
 C  setup.15  are written to the working directory to allow setup to
 C  prepare the source code for a parallel run.
@@ -83,15 +83,15 @@ C   fort.67    Global Hot Start file
 C   fort.68    Global Hot Start file
 C   fort.150   METIS input information
 C   fort.151   METIS output information
-C 
-C  When a parallel ADCIRC job is run, each PExxxx takes its input from its 
+C
+C  When a parallel ADCIRC job is run, each PExxxx takes its input from its
 C  subdirectory PExxxx and writes local output files to the same directory.
 C
 C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
       USE GLOBAL, ONLY : screenUnit, myProc, initLogging
-      USE PRE_GLOBAL 
+      USE PRE_GLOBAL
       USE VERSION
       use memory_usage
       IMPLICIT NONE
@@ -104,7 +104,7 @@ C
 
 C  Define File Format Version
 
-      FileFmtVersion = VERSION_NUMBER(FileFmtMajor, 
+      FileFmtVersion = VERSION_NUMBER(FileFmtMajor,
      &                                FileFmtMinor,
      &                                FileFmtRev)
 
@@ -117,8 +117,8 @@ C
 C
 C     Initialize flags.
 C
-      USE_DEFAULT = .FALSE.      
-      APERIODIC_FLOW_BC = .FALSE. 
+      USE_DEFAULT = .FALSE.
+      APERIODIC_FLOW_BC = .FALSE.
       PARTITION  = .FALSE.
       PREP_ALL   = .FALSE.
       PREP_13    = .FALSE.
@@ -134,8 +134,8 @@ C
       call memory_init()
 C
 C     jgf50.11: Parse command line arguments. This is needed initially
-C     so that fort.20 and fort.88 can be prepped individually (without 
-C     having to do a prep all and without having to add menu items). 
+C     so that fort.20 and fort.88 can be prepped individually (without
+C     having to do a prep all and without having to add menu items).
       ARGCOUNT = IARGC() ! count up command line options
       IF (ARGCOUNT.gt.0) THEN
          I=0
@@ -172,13 +172,13 @@ C     having to do a prep all and without having to add menu items).
          ELSE
             NPROC=MNPROC
          ENDIF
-         ! The command-line and menu-driven options are mutually 
+         ! The command-line and menu-driven options are mutually
          ! exclusive.
-         USE_DEFAULT = .TRUE. 
+         USE_DEFAULT = .TRUE.
          CALL PREPINPUT()
          call memory_status()
          STOP
-      ENDIF   
+      ENDIF
 
 C
 C-- Say Hello Gracie
@@ -207,9 +207,9 @@ C
       print *, ' 2. prepall'
       print *, ' - Full pre-process using default names (i.e., fort.14)'
       print *, ''
-      print *, ' 3. prepspec'     
+      print *, ' 3. prepspec'
       print *, ' - Full pre-process except user may specify the names'
-      print *, '   of input files. This option also allows the user' 
+      print *, '   of input files. This option also allows the user'
       print *, '   to skip the preprocessing of certain files.'
       print *, ''
       print *, ' 4. prep15'
@@ -259,7 +259,7 @@ C
         CASE DEFAULT  ! fall-through -> user can re-enter menu selection
            PRINT *, 'Input was misunderstood.'
            PRINT *, 'Please select number or action.'
-           GO TO 9999 
+           GO TO 9999
 
       END SELECT
 
@@ -267,8 +267,8 @@ C
       print *, "use_default = ", use_default
       print *, "partition = ", partition
       print *, "prep_all  = ", prep_all
-      print *, "prep_15   = ", prep_15  
-      print *, "prep_13   = ", prep_13  
+      print *, "prep_15   = ", prep_15
+      print *, "prep_13   = ", prep_13
       print *, "hot_local  = ", hot_local
       print *, "hot_global  = ", hot_global
       CALL PREPINPUT()
@@ -284,7 +284,7 @@ C---------------------------------------------------------------------------
 
 
 C---------------------------------------------------------------------------
-C               S U B R O U T I N E   P R E P I N P U T 
+C               S U B R O U T I N E   P R E P I N P U T
 C---------------------------------------------------------------------------
 C     Read in the full domain input files, perform domain decomposition,
 C     and write new subdomain input files.
@@ -300,7 +300,7 @@ C
       CHARACTER CMD*6     ! string to hold shell command
       CHARACTER PENUM*6   ! string to hold directory name
       CHARACTER DIRCMD*72 ! string to hold complete shell command line
- 
+
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then
         write(*,'(/)')
@@ -326,7 +326,7 @@ C-- If ONLY processing hotstart File(s) ( fort.67-68 )
 C
 C-- Read the Global Grid File ( Unit 14 )
 C
-      CALL READ14() 
+      CALL READ14()
       print *, 'Global Grid file read successfully.'
 
 C-- If ONLY localizing Run Info File ( fort.15 )
@@ -336,24 +336,24 @@ C-- If ONLY localizing Run Info File ( fort.15 )
         CALL RELOCALIZE()
         CALL PREP15()
         !jgf48.07 Initialize netCDF output files
-        IF (useNetCDF) THEN                                   
-           write(*,*) "INFO: Initializing the netCDF output files." 
-           ! call netCDF module                               
-           CALL PREPNETCDF()                                  
-         ENDIF                                                 
+        IF (useNetCDF) THEN
+           write(*,*) "INFO: Initializing the netCDF output files."
+           ! call netCDF module
+           CALL PREPNETCDF()
+         ENDIF
          GO TO 9999
       endif
 
-C   If ONLY decomposing a fort.20 (variable flux) file.  
+C   If ONLY decomposing a fort.20 (variable flux) file.
 C   -- Write a Local Flux File ( fort.20 ) for each PE if needed
-C   -- EXIST_FLUX and other variables are set when the fort.14 is 
+C   -- EXIST_FLUX and other variables are set when the fort.14 is
 C   -- initially read in within the READ14() subroutine.
       IF (PREP_20.eqv..true.) THEN
          print *, 'INFO: Start reading in fort.15.'
          CALL READ15() ! need to determine value of APERIODIC_FLOW_BC
          print *, 'INFO: Fulldomain fort.15 file read successfully.'
          if (EXIST_FLUX .ne. 0 .and. APERIODIC_FLOW_BC) then
-            WRITE(*,*) 
+            WRITE(*,*)
      &         "INFO: Decomposing fort.20 (variable flux) file."
             CALL RELOCALIZE()
             CALL PREP20()
@@ -363,17 +363,17 @@ C   -- initially read in within the READ14() subroutine.
 C
 Ca    IF ONLY decomposing a fort.88 (river elev init) file.
 !        kmd - Evan's changes for rivers above MSL
-      IF (PREP_88.eqv..true.) THEN 
-         IF ((EXIST_FLUX.NE.0).AND.(River_above_MSL)) THEN 
-            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN 
-               WRITE(*,*) 
+      IF (PREP_88.eqv..true.) THEN
+         IF ((EXIST_FLUX.NE.0).AND.(River_above_MSL)) THEN
+            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
+               WRITE(*,*)
      &            "INFO: Decomposing fort.88 (river init) file."
                CALL RELOCALIZE()
                CALL PREP88()
                GOTO 9999
-            END IF 
-         END IF 
-      END IF 
+            END IF
+         END IF
+      END IF
 C
 C-- Partition Nodes with METIS 4.0 Graph Partition Library
 C
@@ -389,7 +389,7 @@ C
            READ(990,*) PROC(I)
 C           print *," PROC for ",I," = ", PROC(I)
         ENDDO
-        CLOSE(990)           
+        CLOSE(990)
         print *, 'INFO: Closed partmesh.txt file.'
       ENDIF
 C
@@ -428,11 +428,11 @@ C   kmd48.33bc add information for 3D
 
       ENDIF
 
-      !jgf48.07 Initialize netCDF output files                
+      !jgf48.07 Initialize netCDF output files
       IF ((useNetCDF.eqv..true.).and.(PREP_ALL.eqv..true.)) THEN
-         write(*,*) "INFO: Initializing the netCDF output files." 
-         ! call netCDF module                                 
-         CALL PREPNETCDF()                                    
+         write(*,*) "INFO: Initializing the netCDF output files."
+         ! call netCDF module
+         CALL PREPNETCDF()
       ENDIF
 C
 C-- Decompose the ADCIRC grid into MNPROC subdomains
@@ -454,7 +454,8 @@ C
       DO PE=0, MNPROC-1
          PENUM  = 'PE0000'
          CALL IWRITE(PENUM,3,6,PE)
-#ifdef PC_DIG_FORT  !tcm 20110510 v50.05 adding support for windows
+         !tcm 20110510 v50.05 adding support for windows
+#ifdef PC_DIG_FORT
          call  system('mkdir '//PENUM)
 #else
          CALL MAKEDIR(PENUM)
@@ -503,7 +504,7 @@ C   kmd48.33bc changed the if statement to include IHOT parameter
 
 C   kmd48.33bc added writing of subdomain initial condition file
 C
-C     jgf50.05.01: Commented out b/c we now (as of v49release) map 
+C     jgf50.05.01: Commented out b/c we now (as of v49release) map
 C     this file to subdomains on the fly during padcirc execution.
 C     Write a subdomain initial condtion file (fort.17) for each PE
 C
@@ -535,7 +536,7 @@ C
       ENDIF
 C
 C-- Write a Local Flux File ( fort.20 ) for each PE if needed
-C   -- EXIST_FLUX and other variables are set when the fort.14 is 
+C   -- EXIST_FLUX and other variables are set when the fort.14 is
 C   -- initially read in within the READ14() subroutine.
 C
       IF (PREP_ALL) THEN
@@ -544,13 +545,13 @@ C
          endif
       ENDIF
 ! kmd - Evan's changes for rivers above MSL
-      IF (PREP_ALL) THEN 
-         IF ((EXIST_FLUX.NE.0).AND.(River_above_MSL)) THEN 
-            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN 
+      IF (PREP_ALL) THEN
+         IF ((EXIST_FLUX.NE.0).AND.(River_above_MSL)) THEN
+            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
                CALL PREP88()
-            END IF 
-         END IF 
-      END IF 
+            END IF
+         END IF
+      END IF
 C
 C-- If required write a Local Wind Stress file for each PE
 C
@@ -566,11 +567,11 @@ C     jgf49.0804 NWS=29 does not need fort.22 decomposition.
 C     jgf46.00 Added NWS=7
 C     jgfdebug46.02 Added NWS=45
 C     jgf46.02 Added NWS=8
-C     jgf46.16 Merged: 
+C     jgf46.16 Merged:
 C     cf & cm added NWS=9: asymmetric hurricane wind model
 C     rjw added NWS=9: asymmetric hurricane wind model v2.0
 c     tcm_v49.04 NWS=3 and NWS=6 no longer need fort.22 decomposition
-            IF((NWS.EQ.1).OR.(ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.    
+            IF((NWS.EQ.1).OR.(ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.
      &           (ABS(NWS).EQ.5).OR.(NWS.EQ.7).OR.
      &           (ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8)
      &           .OR.(ABS(NWS).EQ.9) .OR.(ABS(NWS).EQ.19)) THEN
@@ -591,34 +592,34 @@ C  kmd48.33bc add information for 3D baroclinic simulations
       IF (PREP_ALL) THEN
         IF (CBAROCLINIC) THEN
            IF ((RES_BC_FLAG.GE.1).OR.(RES_BC_FLAG.LE.-1)) THEN
-             IF (NOPE.GT.0) THEN 
+             IF (NOPE.GT.0) THEN
                IF (BCFLAG_LNM.EQ.1) THEN
                 print *, "Ready to Write Local UNIT 35 File for each PE"
                 CALL PREP35()
                END IF
-             END IF 
+             END IF
            END IF
            IF (RES_BC_FLAG.EQ.2) THEN
-             IF (NOPE.GT.0) THEN 
+             IF (NOPE.GT.0) THEN
                print *, "Ready to Write Local UNIT 36 File for each PE"
                CALL PREP36()
-             END IF 
+             END IF
            ELSE IF (RES_BC_FLAG.EQ.3) THEN
-             IF (NOPE.GT.0) THEN 
+             IF (NOPE.GT.0) THEN
                print *, "Ready to Write Local UNIT 37 File for each PE"
                CALL PREP37()
-             END IF 
+             END IF
              IF (BCFLAG_TEMP.NE.0) THEN
                print *, "Ready to Write Local UNIT 38 File for each PE"
                CALL PREP38()
              END IF
            ELSE IF (RES_BC_FLAG.EQ.4) THEN
-             IF (NOPE.GT.0) THEN 
+             IF (NOPE.GT.0) THEN
                print *, "Ready to Write Local UNIT 36 File for each PE"
                CALL PREP36()
                print *, "Ready to Write Local UNIT 37 File for each PE"
                CALL PREP37()
-             END IF 
+             END IF
              IF (BCFLAG_TEMP.NE.0) THEN
                print *, "Ready to Write Local UNIT 38 File for each PE"
                CALL PREP38()
@@ -628,22 +629,22 @@ C  kmd48.33bc add information for 3D baroclinic simulations
       END IF
 
 ! kmd - added for rivers in a baroclinic simulation
-      IF (PREP_ALL) THEN 
-         IF ((EXIST_BC_TS.NE.0).AND.(APERIODIC_BC_TS)) THEN 
+      IF (PREP_ALL) THEN
+         IF ((EXIST_BC_TS.NE.0).AND.(APERIODIC_BC_TS)) THEN
            print *, "Ready to Write Local UNIT 39 File for each PE"
            CALL PREP39()
-         END IF 
-      END IF 
+         END IF
+      END IF
 
 C
 C-- Save domain-decomposition information for post-processor
-C     
-CC -- Start Addition by CF  8/2007    
+C
+CC -- Start Addition by CF  8/2007
       IF (PREP_ALL) THEN
          print *, "Writing domain-decomposition file for post-processor"
          CALL PREP80()
       ENDIF
-CC -- Finish Addition by CF      
+CC -- Finish Addition by CF
 
 9999  CONTINUE
       print *, ""
@@ -782,7 +783,7 @@ c
            GOTO 10
          ENDIF
       ENDDO
- 10   CONTINUE  
+ 10   CONTINUE
 c
 c-- Scan input string for character after old number list
 c

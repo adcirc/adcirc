@@ -91,6 +91,7 @@ C
       USE GLOBAL_IO
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 C.....sb46.28sb01 added 09/xx/2006
       USE OWIWIND,ONLY : NWS12INIT,NWS12GET
 C.... TCM V49.64.01 ADDITIONS FOR ICE
@@ -224,6 +225,10 @@ C   kmd48.33bc - added in the heat flux variables
 C   TCM V49.64.01 -- ADDED FOR ICE CONCENTRATION FIELDS
       REAL(SZ) PIC,CICE_TRatio  !ICE VARIABLES
 
+      call setMessageSource("timestep")
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
 C.... tcm v49.16 20100617 added
 C.... convert background pressure from millibars to meters of water
@@ -2679,7 +2684,7 @@ C     meteorological output is requested.
 9999  CONTINUE
 C...
 C...  Collect maximum values of variables   v46.50 sb 11/11/2006
-C...
+C...  jgf50.44: Collect time that min/max occurs as well.
       do i=1,np
          if(nodecode(i).eq.1.and.etamax(i).lt.eta2(i)) then
             etamax(i) = eta2(i)
@@ -2937,10 +2942,7 @@ C     the screen.
      &           2X,'SPEEDMAX = ',E11.4,' AT NODE',I7,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev, '
      &           'ADCIRC stopping. **')
-#ifdef CMPI
-            call msg_fini()
-#endif
-            STOP
+            CALL ADCIRC_Terminate()
          ENDIF
 #endif
       ENDIF
@@ -2954,8 +2956,16 @@ C      IF(C3DVS)THEN
 C         CALL MASSBAL3D(IT)
 C      ENDIF
 
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
+
       RETURN
-      END
+C**********************************************************************
+      END SUBROUTINE TIMESTEP
+C**********************************************************************
 
 
 C******************************************************************************
@@ -2972,6 +2982,7 @@ C
       USE SIZES
       USE WIND
       USE ITPACKV
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE NodalAttributes, ONLY :
      &     LoadGeoidOffset, GeoidOffset, EVM,
      &     TAU0VAR, HighResTimeVaryingTau0, FullDomainTimeVaryingTau0,
@@ -3046,6 +3057,11 @@ C     jgf50.44: Added water surface elevation smoothing
 C
       REAL(SZ) HH1 !jgf46.02 Added for Katrina.
       REAL(SZ) RDIAG ! jgf48.4619 Seizo parameter for fully explicit mode
+
+      call setMessageSource("gwce_new")
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 C
       IF ((LoadWSESmoother.eqv..true.).or.(LoadEleSlopeLim.eqv..true.)) THEN
          IF (firstCall.eqv..true.) THEN
@@ -3249,12 +3265,7 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
                   DIE = .TRUE.
                ENDIF
             ENDDO
-            IF (DIE) THEN
-#ifdef CMPI
-               call msg_fini()
-#endif
-               STOP
-            ENDIF
+            IF (DIE) CALL ADCIRC_Terminate()
 
          ELSE  ! jgf48.4619: include Seizo's changes for lumped LHS
 
@@ -3284,14 +3295,8 @@ C.....      Check that all the diagonal elements in "COEFD" are > 0.
                   DIE = .TRUE.
                ENDIF
             ENDDO
-            IF (DIE) THEN
-#ifdef CMPI
-               call msg_fini()
-#endif
-               STOP
-            ENDIF
+            IF (DIE) CALL ADCIRC_Terminate()
          ENDIF
-
       ENDIF                     !End of GWCE matrix setup
 
 
@@ -4133,11 +4138,15 @@ C     IF EITHER OF THE SMOOTHING ROUTINES ARE ACTIVE, CALL UPDATER
 #endif
       ENDIF
 
-
-
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
-      END SUBROUTINE GWCE_NEW
 
+C**********************************************************************
+      END SUBROUTINE GWCE_NEW
+C**********************************************************************
 
 
 C*******************************************************************************
@@ -4221,7 +4230,10 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(SZ) :: VCOEFYY
 #endif
 #endif
-
+      call setMessageSource("mom_eqs_original")
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 C...
 C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
 C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF
@@ -4752,9 +4764,15 @@ C...  Compute fluxes
          QY2(I)=VV2(I)*H2
          ENDDO
 
-      RETURN
-      END
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 
+      RETURN
+C**********************************************************************
+      END SUBROUTINE MOM_EQS_ORIGINAL
+C**********************************************************************
 
 C*******************************************************************************
 C                                                                              *
@@ -4843,7 +4861,10 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(SZ) :: VCOEFYY
 #endif
 #endif
-
+      call setMessageSource("mom_eqs_new_nc")
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 C...
 C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
 C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF
@@ -5460,8 +5481,16 @@ C...  Compute fluxes
          QY2(I)=VV2(I)*H2
       ENDDO
 
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
       RETURN
-      END
+C*******************************************************************************
+      END SUBROUTINE MOM_EQS_NEW_NC
+C*******************************************************************************
+
 
 
 C*******************************************************************************
@@ -5546,6 +5575,10 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(SZ) :: VCOEFYX
       REAL(SZ) :: VCOEFYY
 #endif
+#endif
+      call setMessageSource("mom_eqs_new_conserv")
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
 
 C...
@@ -6210,8 +6243,15 @@ C...  Compute velocities
             ENDIF
          ENDDO
 
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
-      END
+C**********************************************************************
+      END SUBROUTINE MOM_EQS_NEW_CONSERV
+C**********************************************************************
+
 
 C*******************************************************************************
 C                                                                              *
@@ -6304,6 +6344,10 @@ ckmd   Added in parameters for the pc algorithm
       REAL(SZ) V2N1,V2N2,V2N3, V2Avg
       REAL(SZ) timewtgwce0,timewtgwce1,timewtgwce2,timeagflag
 
+      call setMessageSource("gwce_new_pc")
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
 ckmd    Must reset the result vector to zero before recomputing
 ckmd  the next time level.
@@ -7151,9 +7195,15 @@ C     UPDATE ELEVATIONS
 ckmd
 ckmd  Eta2 values are now corrected elevations at time level s+1.
 ckmd
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 
       RETURN
-      END
+C**********************************************************************
+      END SUBROUTINE GWCE_NEW_PC
+C**********************************************************************
 
 C*******************************************************************************
 C                                                                              *
@@ -7243,7 +7293,11 @@ ckmd   Added in parameters for the pc algorithm
 
       REAL(8) AreaIE, AreaIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
-
+C
+      call setMessageSource("mom_eqs_non_conserv_pc")
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 C...
 C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
 C...  NOTE: MOM_LV_X, MOM_LV_Y AND AUV ARE ZEROED OUT AT THE TOP OF
@@ -7858,9 +7912,15 @@ C...  Compute fluxes
          QY2(I)=VV2(I)*H2
          ENDDO
 
-      RETURN
-      END
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 
+      RETURN
+C**********************************************************************
+      END SUBROUTINE MOM_EQS_NON_CONSERV_PC
+C**********************************************************************
 
 C****************************************************************************************
 C   Subroutine to compute Scalar Transport                                              *
@@ -7914,7 +7974,10 @@ C
       REAL(8) DYY11,DYY12,DYY13,DYY21,DYY22,DYY23,DYY31,DYY32,DYY33
       REAL(8) TimeLoc
 
-
+      call setMessageSource("scalar_trans_2D")
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 C...  NOTE: THE VARIABLE CH1(I) IS ACTUALLY C*H
 C.... COMPUTE SOURCE/SINK TERM AT THE NODES USING CLASSICAL COHESIVE
 C.... SEDIMENT TRANSPORT RELATIONS
@@ -8157,9 +8220,15 @@ C.... SOLVE FOR C*H NODE BY NODE
 C     IF(LBArray_Pointer(I).NE.0) CH1(I)=0.d0  !ESSENTIAL C=0 BOUNDARY CONDITION
       END DO
 
-      RETURN
-      END
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 
+      RETURN
+C**********************************************************************
+      END SUBROUTINE SCALAR_TRANS_2D
+C**********************************************************************
 
 C****************************************************************************************
 C   Subroutine to compute 2D SigmaT fields from 3D salinity and/or temperature fields   *
@@ -8174,6 +8243,12 @@ C
 
       INTEGER NH
 
+      call setMessageSource("calc_sigmat_2D")
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+
       IF(ABS(IDEN).EQ.2) THEN
         DO NH=1,NP
         ENDDO
@@ -8184,9 +8259,16 @@ C
         DO NH=1,NP
         ENDDO
       ENDIF
-
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
-      END
+c*********************************************************************
+      END SUBROUTINE CALC_SIGMAT_2D
+c*********************************************************************
+
+
 
 
 c******************************************************************************
@@ -8219,15 +8301,20 @@ c******************************************************************************
 
 Casey: Added the following variable declarations from GLOBAL.
 C
+      USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY: IFNLFA, IFNLCT, NODELE, NM,
      &      NEITABELE, NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
-     &      SFAC
-
-      USE GLOBAL_3DVS
+     &      SFAC, setMessageSource, unsetMessageSource, allMessage,
+     &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
+     &      DP, ETA2, NEITAB, NNEIGH, AREAS, X, Y, NP, SIGT0
+      USE GLOBAL_3DVS, ONLY : BCP, BPG, NFEN, SIGT, SIGMA, IDEN,
+     &      GORhoOAMB, AMB, B, IY
 #ifdef CMPI
       USE MESSENGER
       IMPLICIT NONE
       REAL(SZ) :: DUMV1(1),DUMV2(1)
+#else
+      IMPLICIT NONE
 #endif
 
 Casey: Added the following local variable declarations.
@@ -8274,6 +8361,12 @@ C
       COMPLEX(SZ) :: BCPG(NFEN)   !baroclinic pressure gradient
       COMPLEX(SZ) :: VIBCPG         !baroclinic pressure gradient
 C
+      call setMessageSource("bpg3D")
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+
 C     INCREMENT THE TIMESTEP SINCE START COUNTER
 C
 
@@ -8478,7 +8571,6 @@ c     Finished computing baroclinic terms
 C     Finish loop over horizontal nodes to compute the horizontal velocity
 
 #ifdef CMPI
-C***********************************************************************
 C     Update new 3D baroclinic pressure gradient and the vertically
 C     integrated baroclinic pressure gradient on ghost nodes
 C
@@ -8486,8 +8578,14 @@ C
       CALL UPDATER(VIDBCPDXOH,VIDBCPDYOH,DUMV1,2)
 #endif
 
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
+C***********************************************************************
       END SUBROUTINE BPG3D
+C***********************************************************************
 
 
 
@@ -8516,6 +8614,11 @@ C     jgf46.00 Explicitly declared the following variables
       REAL(SZ) SigBelo
       REAL(SZ) SigAbov
       REAL(SZ) SigTry
+
+      call setMessageSource("zsurfbuoy")
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       IDiag=0
 
@@ -8585,7 +8688,13 @@ C     jgf46.00 Explicitly declared the following variables
  777     FORMAT(I7,I5,3(F10.3),E14.5)
       ENDIF
 
-      RETURN
-      END
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 
+      RETURN
+C**********************************************************************
+      END SUBROUTINE ZSURFBUOY
+C**********************************************************************
 

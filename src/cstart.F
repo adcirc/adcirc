@@ -18,20 +18,21 @@ C
       USE HARM
       USE WIND
       USE GLOBAL_IO
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE OWIWIND,ONLY : NWS12INIT,NWS12GET    ! sb added 09/xx/2006
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
-      USE NodalAttributes, ONLY : 
+      USE NodalAttributes, ONLY :
      &         STARTDRY, GeoidOffset, LoadGeoidOffset,
      &         OutputTau0 !jgf47.06
 
       IMPLICIT NONE
 
-      INTEGER I, J 
+      INTEGER I, J
       INTEGER NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCELE
 
-      REAL(SZ) HTOT    
+      REAL(SZ) HTOT
       REAL(SZ) HollandTime, AsymmetricTime
       REAL(SZ) :: PRBCKGRND_MH2O  !tcm v49.16 20100617
 !kmd - Evan's updates for rivers above MSL
@@ -39,24 +40,28 @@ C
       LOGICAL FOUND
 
 C     jgf48.4628 Add capability to turn off solution if only met output
-C     was requested. 
-      LOGICAL metOutputOn     ! .true. if met output was requested 
+C     was requested.
+      LOGICAL metOutputOn     ! .true. if met output was requested
       LOGICAL nonMetOutputOff ! .true. no other output was requested
- 
+C
+      call setMessageSource("coldstart")
+#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
 
 ! kmd - Evan's updates for rivers above MSL
 ! open the fort.88 files if needed
       INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.88',EXIST=FOUND)
-      IF (FOUND) THEN 
+      IF (FOUND) THEN
          ALLOCATE (et_WSE(NP) )
          OPEN (88, FILE=TRIM(INPUTDIR)//'/'//'fort.88')
          DO I=1,NP
             READ(88,*) et_WSE(i)
-         END DO 
+         END DO
          River_above_MSL=.TRUE.
-      END IF 
+      END IF
 C
 C.... tcm v49.16 20100617
 C.... convert background pressure from millibars to meters of water
@@ -84,18 +89,18 @@ C     jgf46.01 Added the ability to include steric effects.
          ENDIF
 ! kmd - Evan's updates for rivers above MSL
 ! It is only necessary to read in and reset the ETA2 values
-! in this case for the cold start conditions. 
-         IF (River_above_MSL) THEN 
-            IF (LoadGeoidOffset) THEN 
-               IF (et_WSE(i).GT.GeoidOffset(I)) THEN 
+! in this case for the cold start conditions.
+         IF (River_above_MSL) THEN
+            IF (LoadGeoidOffset) THEN
+               IF (et_WSE(i).GT.GeoidOffset(I)) THEN
                   ETA2(I)=et_WSE(i)
-               END IF 
-            ELSE 
-               IF (et_WSE(i).GT.0.d0) THEN 
+               END IF
+            ELSE
+               IF (et_WSE(i).GT.0.d0) THEN
                   ETA2(I)=et_WSE(i)
-               END IF 
-            END IF 
-         END IF  
+               END IF
+            END IF
+         END IF
 
          NNODECODE(I)=1
          IF(NOLIFA.EQ.2) THEN
@@ -106,7 +111,7 @@ C     jgf46.01 Added the ability to include steric effects.
             ELSE
                IF(STARTDRY(I).EQ.1) THEN
                   NNODECODE(I)=0
-                  ETA2(I)=H0-DP(I) 
+                  ETA2(I)=H0-DP(I)
                ENDIF
             ENDIF
          ENDIF
@@ -114,16 +119,16 @@ C     jgf46.01 Added the ability to include steric effects.
          ETAS(I)=0.D0
          CH1(I)=0.d0
       END DO
-C...  
-C...  INITIALIZE DRY ELEMENT CODE                                  
-C...  
+C...
+C...  INITIALIZE DRY ELEMENT CODE
+C...
       DO I=1,NE
-         NOFF(I)=1          
+         NOFF(I)=1
       END DO
-C...  
+C...
 C...  INITIALIZE THE ELEVATION SPECIFIED BOUNDARY CONDITION IF IT
 C...  REQUIRES THE USE OF THE UNIT 19 FILE.
-C...  
+C...
 
       IF((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
@@ -182,30 +187,30 @@ C....NOTE: CAN'T DEAL WITH WIND THAT STARTS AFTER WREFTIM!!!!!!!!!!!!
 C....READ IN AND INTERPOLATE IN SPACE ONTO THE ADCIRC GRID THE
 C....TIME LEVEL 1 AND LEVEL 2 WIND FIELDS
 
-      DO I=1,NP 
+      DO I=1,NP
          WSX1(I)=0.D0
          WSY1(I)=0.D0
-!        PR1(I)=0.D0   !tcm v49.16 20100617 
+!        PR1(I)=0.D0   !tcm v49.16 20100617
          PR1(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
          WSX2(I)=0.D0
          WSY2(I)=0.D0
-!        PR2(I)=0.D0   !tcm v49.16 20100617 
+!        PR2(I)=0.D0   !tcm v49.16 20100617
          PR2(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
       ENDDO
 
       IF(NWS.NE.0) THEN
-C        jgf48.4627 If user only requests meteorological output, then 
+C        jgf48.4627 If user only requests meteorological output, then
 C        set a flag that turns off the calculation of the GWCE and
 C        momentum equations
          IF ((NOUTE.EQ.0) .AND. (NOUTV.EQ.0) .AND. (NOUTC.EQ.0) .AND.
      &       (NOUTGE.EQ.0) .AND. (NOUTGV.EQ.0) .AND. (NOUTGC.EQ.0 ).AND.
      &       (I3DSD.EQ.0) .AND. (I3DSV.EQ.0) .AND. (I3DST.EQ.0) .AND.
      &       (I3DGD.EQ.0) .AND. (I3DGV.EQ.0) .AND. (I3DGT.EQ.0) .AND.
-     &       (NHASE.EQ.0) .AND. (NHASV.EQ.0) .AND. 
+     &       (NHASE.EQ.0) .AND. (NHASV.EQ.0) .AND.
      &       (NHAGE.EQ.0) .AND. (NHAGV.EQ.0) )
      &       THEN
             nonMetOutputOff = .TRUE.
-         ENDIF      
+         ENDIF
          IF ( (NOUTM.NE.0) .OR. (NOUTGW.NE.0) ) THEN
             metOutputOn = .TRUE.
          ENDIF
@@ -220,8 +225,8 @@ C        momentum equations
      &      'INFO: Only meterological output was requested. ADCIRC'
              WRITE(16,*)
      &      'will not solve the GWCE or momentum equations.'
-            METONLY = .TRUE. ! set flag 
-         ENDIF         
+            METONLY = .TRUE. ! set flag
+         ENDIF
 
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
          WRITE(16,1112)
@@ -267,10 +272,10 @@ C....                           to correspond with having only a global wind fil
             END DO
             GOTO 2222
          ENDIF
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
      &        WRITE(ScreenUnit,*)'FOUND WIND DATA AT TIME= ',IWTIMEP
          WRITE(16,*) 'FOUND WIND DATA AT TIME= ',IWTIMEP
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) 
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
      &        WRITE(ScreenUnit,*)'FOUND WIND DATA AT TIME= ',IWTIME
          WRITE(16,*) 'FOUND WIND DATA AT TIME= ',IWTIME
          WTIME2=WTIMED-WREFTIM  !CAST INTO MODEL TIME REFERENCE
@@ -316,13 +321,13 @@ C     other correction factors.
          WTIME2 = WTIME1 + WTIMINC
       ENDIF
 
-C     jgf46.02 New option to read in hurricane locations and generate 
+C     jgf46.02 New option to read in hurricane locations and generate
 C     generate hurricane winds from the Holland Wind Model.
       IF(ABS(NWS).EQ.8) THEN
          HollandTime = STATIM*86400.D0
          CALL HollandGet(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,
      &     ICS,RHOWAT0,G,HollandTime,NSCREEN,ScreenUnit)
-      ENDIF       
+      ENDIF
 
 C     jgf46.16 Merged:
 !     cf & cm added nws = 9: asymmetric hurricane winds
@@ -491,7 +496,7 @@ CWET...
             NC1=NNODECODE(NM1)
             NC2=NNODECODE(NM2)
             NC3=NNODECODE(NM3)
-            NCELE=NC1*NC2*NC3*NOFF(I)     
+            NCELE=NC1*NC2*NC3*NOFF(I)
             MJU(NM1)=MJU(NM1)+NCELE
             MJU(NM2)=MJU(NM2)+NCELE
             MJU(NM3)=MJU(NM3)+NCELE
@@ -518,10 +523,10 @@ C...
 
       IF(ABS(NOUTE).EQ.1) THEN
          CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
-     &    NSTAE_G, NSTAE, HEADER61) 
+     &    NSTAE_G, NSTAE, HEADER61)
          IESTP=2
       ENDIF
-      
+
       IF(ABS(NOUTE).EQ.2) THEN
          OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61',
      &           ACCESS='DIRECT',RECL=NBYTE)
@@ -559,7 +564,7 @@ C...
          WRITE(61,REC=IESTP+4) NSPOOLE
          WRITE(61,REC=IESTP+5) 1
          IESTP=IESTP+5
-         CLOSE(61)                                                      
+         CLOSE(61)
          ENDIF
 
 C...
@@ -614,7 +619,7 @@ C...
          WRITE(62,REC=IVSTP+4) NSPOOLV
          WRITE(62,REC=IVSTP+5) 2
          IVSTP=IVSTP+5
-         CLOSE(62)      
+         CLOSE(62)
          ENDIF
 
 C...
@@ -800,17 +805,17 @@ C...
      $    NP_G, NP, HEADER63)
 
 C   kmd48.33 add the ability to output the sponge layer
-          IF (OUTPUTSPONGE) THEN 
-           CALL writeDomainHeader(92, 
+          IF (OUTPUTSPONGE) THEN
+           CALL writeDomainHeader(92,
      &          TRIM(GLOBALDIR)//'/'//'fort.92',
      $           NP_G, NP, 'sponge     ')
-          END IF 
+          END IF
 C
 C        jgf47.06 Tau0 output is produced on the same schedule as
 C        global elevation
          IF (OutputTau0) THEN
 Casey 090302: Corrected the unit number from 10 to 90.
-            CALL writeDomainHeader(90, 
+            CALL writeDomainHeader(90,
      &           TRIM(GLOBALDIR)//'/'//'fort.tau0',
      $           NP_G, NP, 'Tau0      ')
          ENDIF
@@ -911,7 +916,7 @@ C...
          WRITE(64,REC=IGVP+4) NSPOOLGV
          WRITE(64,REC=IGVP+5) 2
          IGVP=IGVP+5
-         CLOSE(64) 
+         CLOSE(64)
          ENDIF
 C...
 C....INITIALIZE GLOBAL WIND and pressure SPOOL COUNTER
@@ -1137,25 +1142,29 @@ C
  1112 FORMAT(/,1X,79('_'))
  9883 FORMAT(' !!! NODE ',I6,' DRIED (LANDLOCKING)')
 
-C...  
+C...
 C......INITIALIZE 3D SOLUTION
-C...  
-      
+C...
+
 C...  LINES TO RUN THE CODE IN 3D VS MODE.
-      
+
       if (C3D) then
          CALL COLDSTART_3D()
       endif
-      
+
 C...LINES TO RUN THE CODE IN 3D DSS MODE
 
 c     if (C3DDSS) then
 c       CALL DSSSTUP(DT,NT)
 c     endif
 C...
+#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 
       RETURN
-      END
+      END SUBROUTINE COLDSTART
 
 
 C******************************************************************************
@@ -1177,8 +1186,9 @@ c******************************************************************************
      &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2, NP_G,
      &                   LNM_BC, LNM_BC1, LNM_BC2, RIVBCTIMINC,
      &                   RIVBCTIME1, RIVBCTIME2, totalbcrivernodes,
-     &                   NOPE, RIVBCSTATIM
-
+     &                   NOPE, RIVBCSTATIM, DEBUG, setMessageSource,
+     &                   unsetMessageSource, allMessage
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       IMPLICIT NONE
 
       INTEGER :: IRType
@@ -1194,16 +1204,15 @@ ckmd  additional variable for baroclinic boundary conditions
       INTEGER :: NOD, J, NumofNodes, K
       INTEGER :: IINDX
       REAL(SZ), ALLOCATABLE :: TMP(:,:)
-
+C
+      call setMessageSource("coldstart_3D")
+#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 C...
 C...  Define format statements used to initialize 3D output files
 C...
  499  FORMAT(1X,A32,2X,A24,2X,A24)
-C..RJW bug fix in 498 (kendra found this)
- 498  FORMAT(1X,I10,1X,I10,1X,E15.7,I10,1X,I10,1X,I3)
- 497  FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE ASCII')
- 496  FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE BINARY')
-
 
 C...  IF A BAROCLINIC RUN, READ IN INITIAL DENSITY FIELD
 
@@ -1214,7 +1223,7 @@ C...  IF A BAROCLINIC RUN, READ IN INITIAL DENSITY FIELD
             WRITE(16,*)
      &           "ERROR: 2DDI baroclinic runs not currently supported."
          ENDIF
-         STOP
+         CALL ADCIRC_Terminate()
       ENDIF
 C
 
@@ -1235,13 +1244,13 @@ C
      &           /,2X,'***** NVN = ',I4,' MUST MATCH NFEN = ',I4,
      &           ' *****',
      &           /,10X,'****** RUN TERMINATED ******')
-            STOP
+            CALL ADCIRC_Terminate()
          ENDIF
          DO IHN=1,NP
             DO IVN=1,NFEN
-               IF(ABS(IDen).EQ.1) 
+               IF(ABS(IDen).EQ.1)
      &              READ(11,*) NHNN,NVNN,SigT(NHNN,NVNN)
-               IF(ABS(IDen).EQ.2) 
+               IF(ABS(IDen).EQ.2)
      &              READ(11,*) NHNN,NVNN,Sal(NHNN,NVNN)
                IF(ABS(IDen).EQ.3)
      &              READ(11,*) NHNN,NVNN,Temp(NHNN,NVNN)
@@ -1251,8 +1260,8 @@ C
          ENDDO
          CLOSE(11)
       ENDIF
-      
-      IF (CBaroclinic) THEN 
+
+      IF (CBaroclinic) THEN
 !     Kendra45.12: Read in the temperature boundary condition for the
 !     temperature field. Note, we will add the salinity condition
 !     later. Currently, we are adopting the sign convention that the
@@ -1273,8 +1282,8 @@ C
                CLOSE(111)
             END IF
          END IF
-      END IF 
-      
+      END IF
+
 ckmd  Read in boundary condition information from files if
 C...  we are using the transport portion of the code (IDEN.GE.1)
 C...  and baroclinic.
@@ -1305,7 +1314,7 @@ C...  and baroclinic.
            END IF
          END IF
          IF ((ABS(RES_BC_FLAG).EQ.2).OR.(ABS(RES_BC_FLAG).EQ.4)) THEN
-           IF (NOPE.GT.0) THEN 
+           IF (NOPE.GT.0) THEN
              OPEN(36,FILE=TRIM(INPUTDIR)//'/'//'fort.36')
              SBCTIME1=SBCSTATIM*86400.D0
              SBCTIME2=SBCTIME1+SBCTIMEINC
@@ -1317,11 +1326,11 @@ C...  and baroclinic.
              DO NumofBCNodes=1,NETA
                 READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
              END DO
-           END IF 
+           END IF
          END IF
          IF ((ABS(RES_BC_FLAG).EQ.3).OR.
      &            (ABS(RES_BC_FLAG).EQ.4)) THEN
-           IF (NOPE.GT.0) THEN 
+           IF (NOPE.GT.0) THEN
              OPEN(37,FILE=TRIM(INPUTDIR)//'/'//'fort.37')
              TBCTIME1=TBCSTATIM*86400.D0
              TBCTIME2=TBCTIME1+TBCTIMEINC
@@ -1333,7 +1342,7 @@ C...  and baroclinic.
              DO NumofBCNodes=1,NETA
                 READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
              END DO
-           END IF 
+           END IF
            IF (BCFLAG_TEMP.EQ.1) THEN ! read in file with multiple values but no calcs
               OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
               TTBCTIME1=TTBCSTATIM*86400.D0
@@ -1432,38 +1441,38 @@ C kmd - River information for boundary conditions in baroclinic simulation
 C...  ZERO OUT STUFF PASSED FROM 3D SOLUTION TO EXTERNAL MODE
 
       DO NH=1,NP
-        DUU(NH)=0.d0
-        DUV(NH)=0.d0
-        DVV(NH)=0.d0
-        UU(NH)=0.d0
-        VV(NH)=0.d0
-        DAFluxX(NH)=0.d0
-        DAFluxY(NH)=0.d0
-        BSX(NH)=0.d0
-        BSY(NH)=0.d0
+         DUU(NH)=0.d0
+         DUV(NH)=0.d0
+         DVV(NH)=0.d0
+         UU(NH)=0.d0
+         VV(NH)=0.d0
+         DAFluxX(NH)=0.d0
+         DAFluxY(NH)=0.d0
+         BSX(NH)=0.d0
+         BSY(NH)=0.d0
       ENDDO
 
 C...  INITIALIZE 3D VELOCITY AND TURBULENCE SOLUTION
-!     kmd45.12 Need to initialize the new qkp1 and wzkp1 arrays 
-         
+!     kmd45.12 Need to initialize the new qkp1 and wzkp1 arrays
       DO NH=1,NP
-        DO N=1,NFEN
-          Q(NH,N)=(0.d0,0.d0)
-          Qkp1(NH,N)=(0.d0,0.d0)
+         DO N=1,NFEN
+            Q(NH,N)=(0.d0,0.d0)
+            Qkp1(NH,N)=(0.d0,0.d0)
 C. same problem as with L
-          q20(NH,N)=-9999d0
+            q20(NH,N)=-9999d0
 C.RJW bug fix cannot initialize L to zero, must initialize to lmin or non-zero
 C.value, so when elements wet, the first turb length scale is nonzero
-          l(NH,N)=-9999d0
-          wz(NH,N)=0.d0
-          wzkp1(NH,N)=0.d0
-        ENDDO
+            l(NH,N)=-9999d0
+            wz(NH,N)=0.d0
+            wzkp1(NH,N)=0.d0
+         ENDDO
       ENDDO
+      bpg(:,:)=(0.d0,0.d0) ! jgf50.44: was not initialized anywhere else
 
 C...  INITIALIZE 3D OUTPUT FILES
 C
 C.... Initialize the 3D density station output file (Unit 41)
-      IF(IDen.EQ.1) IRType=1
+      IF((IDen.EQ.1).OR.(IDen.EQ.0)) IRType=1
       IF((IDen.EQ.2).OR.(IDen.EQ.3)) IRType=2
       IF(IDen.EQ.4) IRType=3
       CALL initOutput3D(41, I3DSD, NDSET3DSD, NSTA3DD, NSTA3DD_G,
@@ -1480,7 +1489,7 @@ C.... Initialize the 3D turbulence station output file (Unit 43)
      &                  NSPO3DST, IRType, I3DSTRec)
 C.... Initialize the global 3D density output file (Unit 44)
 
-      IF(IDen.EQ.1) IRType=1
+      IF((IDen.EQ.1).OR.(IDen.EQ.0)) IRType=1
       IF((IDen.EQ.2).OR.(IDen.EQ.3)) IRType=2
       IF(IDen.EQ.4) IRType=3
 C     jgf46.27 Replaced IRType with IDen in header.
@@ -1511,6 +1520,9 @@ C     jgf46.27 Replaced IRType with IDen in header.
             END IF
          ENDIF
       ENDIF
+C..RJW bug fix in 498 (kendra found this)
+ 498  FORMAT(1X,I10,1X,I10,1X,E15.7,I10,1X,I10,1X,I3)
+
 C
 c.... Initialize the global 3D velocity output file (Unit 45)
       CALL initOutput3D(45, I3DGV, NDSET3DGV, NP, NP_G,
@@ -1522,6 +1534,11 @@ c.... Initialize the global 3D turbulence output file (Unit 46)
 C
 C.... Set up a few final odds and ends for a 3D run
       CALL VSSTUP ()
+
+#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 
       RETURN
 C----------------------------------------------------------------------

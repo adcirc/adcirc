@@ -15,10 +15,15 @@ C      USE GLOBAL, ONLY : ScreenUnit !jgfdebug
       USE GLOBAL_3DVS
       IMPLICIT NONE
       INTEGER :: NH, N
+C
+      call setMessageSource("vsstup")
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
 C...  FOR BOTH COLD START AND HOT START, NEED TO INITIALIZE Sigma T FROM
 C...  TEMPERATURE AND SALINITY DEPENDING ON VALUE OF IDEN
-C...  
+C...
 
       IF(ABS(IDen).GE.1) CALL CALC_SIGMAT_3D ()
 
@@ -38,20 +43,27 @@ C...
           ENDIF
        ENDDO
 
-C...  
+C...
 C...  ADDITIONAL RUN SETUP
-C...  
+C...
 
 C...  COMPUTE THE INTEGRALS Inm and LVn (INDEPENDENT OF HORIZONTAL NODE)
-      
+
       CALL INMInt()
 
       CALL LVnInt()
 
-      RETURN
-      END SUBROUTINE VSSTUP
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 
- 
+      RETURN
+c******************************************************************************
+      END SUBROUTINE VSSTUP
+c******************************************************************************
+
+
 
 c******************************************************************************
 c  SUBROUTINE VSSOL                                                           *
@@ -93,7 +105,7 @@ c.RJW merged 08282008 Casey 071219: Added the following variable declarations fr
      &                   NETA, NBD, RES_BC_FLAG,
      &                   SBCTIME1, SBCTIME2, TBCTIME1,
      &                   TBCTIME2, SBCTIMEINC, TBCTIMEINC,
-     &                   SBCRATIO, TBCRATIO, sponge, 
+     &                   SBCRATIO, TBCRATIO, sponge,
      &                   BCFLAG_TEMP, SFAC, BCRivRATIO,
      &                   RIVBCTIMINC, RIVBCTIME1, RIVBCTIME2,
      &                   totalbcrivernodes, NOPE
@@ -169,9 +181,9 @@ Cjgfdebug      REAL(SZ) :: BCPDX2A,BCPDY2A !(Horiz. grads of BCP)*2*Element Area
 Cjgfdebug      REAL(SZ) :: SigTAvg       !avg SigT between 2 vertical nodes
 Cjgfdebug      REAL(SZ) :: HGORhoOAMB    !depth*gravity/(reference density)/(a-b)
 
-Cjgfdebug      REAL(SZ) :: DBCPDX2A  
-Cjgfdebug      REAL(SZ) :: DBCPDY2A  
-      REAL(SZ) :: RCL       
+Cjgfdebug      REAL(SZ) :: DBCPDX2A
+Cjgfdebug      REAL(SZ) :: DBCPDY2A
+      REAL(SZ) :: RCL
       REAL(SZ) :: Auv1k
       REAL(SZ) :: Auv2k
       REAL(SZ) :: Auv1kstar
@@ -181,7 +193,7 @@ Cjgfdebug      REAL(SZ) :: DBCPDY2A
       REAL(8) :: TimeLoc           !model time at time level s+1
       REAL(8) :: DEtaDT         !time derivative of water surface elev
       REAL(8) :: DEtaDX,DEtaDY  !horizontal derivatives of water surface elev at time level s
-      REAL(8) :: DEtaDX2A,DEtaDY2A !(DEtaDX,DEtaDY)*2*Element Area 
+      REAL(8) :: DEtaDX2A,DEtaDY2A !(DEtaDX,DEtaDY)*2*Element Area
       REAL(8) :: DhDX,DhDY      !horizontal derivatives of DP
       REAL(8) :: DhDX2A,DhDY2A  !(DhDX,DhDY)*2*Element Area
       REAL(8) :: TotalArea2     !2*Area of all elements around a node
@@ -197,7 +209,7 @@ Cjgfdebug      REAL(8) :: HsN2           !Total water depth at time level s at l
       REAL(8) :: Hsp1Hsp1OAMBAMB !(Hsp1/(a-b))^2
 
       COMPLEX(SZ) :: Fr(MNFEN)      !right side forcing vector
-      COMPLEX(SZ) :: Frstar         !rotated right side forcing vector at flux boundary node 
+      COMPLEX(SZ) :: Frstar         !rotated right side forcing vector at flux boundary node
       COMPLEX(SZ) :: Mkm1(MNFEN)    !1st column (k-1) in left side compact storage matrix
       COMPLEX(SZ) :: Mk(MNFEN)      !2nd column (k) in left side compact storage matrix
       COMPLEX(SZ) :: Mkp1(MNFEN)    !3rd column (k+1) in left side cpmpact storage matrix
@@ -223,25 +235,31 @@ C   kmd48.33bc added the following variables for boundary conditions
       INTEGER :: NOD
       CHARACTER(80) :: CDUM80
 
-C***************************************************************************
-C     Set up several variables that are needed for 3D run     
+      call setMessageSource("vssol")
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
-C     
+C***************************************************************************
+C     Set up several variables that are needed for 3D run
+
+C
 C     Zero out surface stress and stress forcing at top for case of no wind
-C     
+C
       WSXsNH=0.d0
       WSYsNH=0.d0
 
-C     
+
+C
 C     If a baroclinic run, compute the 3D baroclinic pressure field
 C     The buoyancy field is defined as
 C     BCP(z)    =(gravity/rho ref)*          integral (SigT) from surface down to z
 C     BCP(sigma)=(gravity/rho ref)*(H/(a-b))*integral (SigT) from a down to sigma
-C     where 
+C     where
 C     SigT = Sigma T = Rho - 1000 = density - 1000
 C     SigT0 = Sigma t value of reference density (typically = 0)
 C     Sigma = dimensionless vertical coordinate
-C     
+C
 C!      IF(CBaroclinic) THEN
 C!        DO NH=1,NP             !loop over horizontal nodes
 C!            Hs=DP(NH)+IFNLFA*Eta1(NH) !total depth at previous (s) timestep
@@ -261,10 +279,10 @@ C!      ENDIF
 
 
 C***************************************************************************
-C     Compute 3D horizontal velocities     
-C     
+C     Compute 3D horizontal velocities
+C
 C     Loop over each horizontal node to compute the horizontal velocity
-C     
+C
       DO NH=1,NP                !loop over horizontal nodes
 
 c     Set up some values at the node being worked on
@@ -296,10 +314,10 @@ C
                TEMPSTOP = TEMPSTOP + 1
             ENDIF
             TEMPNCELE = TEMPNCELE +
-     &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),1))*
-     &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),2))*
-     &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),3))*
-     &         NOFF(NEITABELE(NH,K+TEMPSTOP))
+     &      NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),1))*
+     &      NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),2))*
+     &      NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),3))*
+     &      NOFF(NEITABELE(NH,K+TEMPSTOP))
          ENDDO
 
 Casey 071219: If TEMPNCELE is zero, then the current horizontal node is
@@ -324,7 +342,7 @@ c     to the solution
          LBP=LBArray_Pointer(NH)
          IF(LBP.GT.0) THEN
                                 !essential normal flow
-            IF((LBCodeI(LBP).GE.10).AND.(LBCodeI(LBP).LE.19)) THEN 
+            IF((LBCodeI(LBP).GE.10).AND.(LBCodeI(LBP).LE.19)) THEN
                VelNorm=-QNormsp1(LBP)/Hsp1 !with essential no tan.
                VelTan=0.D0
                SLBP=SIII(LBP)
@@ -340,22 +358,22 @@ C                  EVTot(k)=0.D0 !f77diff??
             ENDIF
          ENDIF
 
-C Determine the bottom roughness length either from fort.15, from Manning's n 
+C Determine the bottom roughness length either from fort.15, from Manning's n
 C or as read in from nodal attributes
-                IF(LoadZ0B_var) THEN
-                     Z0B1 = Z0B_var(NH)
-                ELSEIF (LoadManningsN) THEN
-                     Z0B1 = ( DP(NH)+IFNLFA*ETA2(NH) )* exp(-(1.0D0+
+         IF(LoadZ0B_var) THEN
+            Z0B1 = Z0B_var(NH)
+         ELSEIF (LoadManningsN) THEN
+               Z0B1 = ( DP(NH)+IFNLFA*ETA2(NH) )* exp(-(1.0D0+
      &             ( (0.41D0*( DP(NH)+IFNLFA*ETA2(NH))**(1.0D0/6.0D0) )/
-     &                                 (ManningsN(NH)*sqrt(g)) ) ))
-                ELSE
-                     Z0B1 = Z0B
-                ENDIF
+     &                              (ManningsN(NH)*sqrt(g)) ) ))
+         ELSE
+            Z0B1 = Z0B
+         ENDIF
 
 c     Compute the vertical eddy viscosity
-C... RJW changed Hs to Hsp1 
+C... RJW changed Hs to Hsp1
 C Hs is the previous time step (if node is recently wet then this is no good
-C Hsp1 is current time step, if node is newly wet then we now have agreement 
+C Hsp1 is current time step, if node is newly wet then we now have agreement
 C and Hsp1 has a value that can be used
          CALL EDDYVIS(Hsp1,UU(NH),VV(NH),
      &        WSXsNH,WSYsNH,BSX(NH),BSY(NH),NH,IT,Z0B1)
@@ -367,11 +385,11 @@ c     Compute the integral KVnm
          KVnm(1,2)=-(KVnm(1,1)+KVnm(1,3))
          DO k=2,NFEN-1
             KVnm(k,1)=KVnm(k-1,3)
-         KVnm(k,3)=-0.5d0*(EVTot(k+1)+EVTot(k))/(Sigma(k+1)-Sigma(k))
+            KVnm(k,3)=-0.5d0*(EVTot(k+1)+EVTot(k))/(Sigma(k+1)-Sigma(k))
             KVnm(k,2)=-(KVnm(k,1)+KVnm(k,3))
          ENDDO
          KVnm(NFEN,1)=KVnm(NFEN-1,3)
-         KVnm(NFEN,3)=0.d0      
+         KVnm(NFEN,3)=0.d0
          KVnm(NFEN,2)=-(KVnm(NFEN,1)+KVnm(NFEN,3))
 
 c     Compute time derivative of water surface position
@@ -422,7 +440,7 @@ c     surrounding a node
             BTPN2=BTP(N2)
             NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
 c.RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
-            !jgf48.50 If NEle is zero, the NOFF check would be out of 
+            !jgf48.50 If NEle is zero, the NOFF check would be out of
             ! bounds, making it look like NOFF is always zero (depending
             ! on how the compiler handles array out-of-bounds)
             IF (NEle.eq.0) THEN
@@ -430,26 +448,26 @@ c.RJW merged 08282008 Casey 071219: Added the computation of NCELE and the secon
             ENDIF
 c.RJW 06092009  modified to elimiate zero index NOFF
             IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
-            NCELE = NODECODE(NH)*NODECODE(N2)*
+               NCELE = NODECODE(NH)*NODECODE(N2)*
      &              NODECODE(N3)*NOFF(NELE)
-            IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+               IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
 
-               TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
-C    kmd48.33bc added in spherical factors for 3D 
-               SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
-               a1=X(N3)-X(N2)
-               a2=X(N1)-X(N3)
-               a3=X(N2)-X(N1)
-               b1=(Y(N2)-Y(N3))*SFacAvg
-               b2=(Y(N3)-Y(N1))*SFacAvg
-               b3=(Y(N1)-Y(N2))*SFacAvg
-               DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
-               DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
-               DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
-               DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
-               BTPDX2A=BTPDX2A+(BTPN1*b1+BTPN2*b2+BTPN3*b3)
-               BTPDY2A=BTPDY2A+(BTPN1*a1+BTPN2*a2+BTPN3*a3)
-            ENDIF
+                  TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
+C               kmd48.33bc added in spherical factors for 3D
+                  SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+                  a1=X(N3)-X(N2)
+                  a2=X(N1)-X(N3)
+                  a3=X(N2)-X(N1)
+                  b1=(Y(N2)-Y(N3))*SFacAvg
+                  b2=(Y(N3)-Y(N1))*SFacAvg
+                  b3=(Y(N1)-Y(N2))*SFacAvg
+                  DhDX2A=DhDX2A+(hN1*b1+hN2*b2+hN3*b3)
+                  DhDY2A=DhDY2A+(hN1*a1+hN2*a2+hN3*a3)
+                  DEtaDX2A=DEtaDX2A+(EtaN1*b1+EtaN2*b2+EtaN3*b3)
+                  DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
+                  BTPDX2A=BTPDX2A+(BTPN1*b1+BTPN2*b2+BTPN3*b3)
+                  BTPDY2A=BTPDY2A+(BTPN1*a1+BTPN2*a2+BTPN3*a3)
+               ENDIF
             ENDIF
          ENDDO
 
@@ -469,7 +487,7 @@ c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the seco
      &              NODECODE(N3)*NOFF(NELE)
             IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
                TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
-C    kmd48.33bc added in spherical factors for 3D 
+C    kmd48.33bc added in spherical factors for 3D
                SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
                a1=X(N3)-X(N2)
                a2=X(N1)-X(N3)
@@ -483,7 +501,7 @@ C    kmd48.33bc added in spherical factors for 3D
                DEtaDY2A=DEtaDY2A+(EtaN1*a1+EtaN2*a2+EtaN3*a3)
                BTPDX2A=BTPDX2A+(BTPN1*b1+BTPN2*b2+BTPN3*b3)
                BTPDY2A=BTPDY2A+(BTPN1*a1+BTPN2*a2+BTPN3*a3)
-           ENDIF
+            ENDIF
          ENDIF
 
          IF(TotalArea2.NE.0.) THEN
@@ -498,7 +516,7 @@ c     Finished computing horizontal derivatives of water level,
 c     bathymetric depth and total barotropic pressure (atmos pres, water
 c     level, tidal potential)
 
-c     Compute the "sigma" vertical velocity from the "z" vertical velocity 
+c     Compute the "sigma" vertical velocity from the "z" vertical velocity
 
          DO k=1,NFEN
             SigmaMAOAMB=(Sigma(k)-A)/AMB
@@ -551,7 +569,7 @@ c     Compute lateral advection and lateral stress terms
             DqDYDPhiDY2A=0.d0
 
             N1=NH               !node 1 is always the central node
-            qN1=q(N1,k)       
+            qN1=q(N1,k)
 
             N2=NEITAB(NH,2)     !operate on 1st neighbor
             qN2=q(N2,k)
@@ -571,27 +589,27 @@ c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the seco
                   CYCLE
                ENDIF
                IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
-               NCELE = NODECODE(NH)*NODECODE(N2)*
+                  NCELE = NODECODE(NH)*NODECODE(N2)*
      &                 NODECODE(N3)*NOFF(NELE)
-               IF (NCELE.NE.0) THEN !if element exists, compute terms
-C    kmd48.33bc added in spherical factors for 3D 
-                  SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
-                  qn=(qN1+qN2+qN3)/3.d0
-                  Un=REAL(qn)
-                  Vn=AIMAG(qn)
-                  a1=X(N3)-X(N2)
-                  a2=X(N1)-X(N3)
-                  a3=X(N2)-X(N1)
-                  b1=(Y(N2)-Y(N3))*SFacAvg
-                  b2=(Y(N3)-Y(N1))*SFacAvg
-                  b3=(Y(N1)-Y(N2))*SFacAvg
-                  UnDqDX2A=UnDqDX2A+Un*(qN1*b1+qN2*b2+qN3*b3)
-                  VnDqDY2A=VnDqDY2A+Vn*(qN1*a1+qN2*a2+qN3*a3)
-                  DqDXDPhiDX2A=DqDXDPhiDX2A
+                  IF (NCELE.NE.0) THEN !if element exists, compute terms
+C    kmd48.33bc added in spherical factors for 3D
+                     SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+                     qn=(qN1+qN2+qN3)/3.d0
+                     Un=REAL(qn)
+                     Vn=AIMAG(qn)
+                     a1=X(N3)-X(N2)
+                     a2=X(N1)-X(N3)
+                     a3=X(N2)-X(N1)
+                     b1=(Y(N2)-Y(N3))*SFacAvg
+                     b2=(Y(N3)-Y(N1))*SFacAvg
+                     b3=(Y(N1)-Y(N2))*SFacAvg
+                     UnDqDX2A=UnDqDX2A+Un*(qN1*b1+qN2*b2+qN3*b3)
+                     VnDqDY2A=VnDqDY2A+Vn*(qN1*a1+qN2*a2+qN3*a3)
+                     DqDXDPhiDX2A=DqDXDPhiDX2A
      &                 +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
-                  DqDYDPhiDY2A=DqDYDPhiDY2A
+                     DqDYDPhiDY2A=DqDYDPhiDY2A
      &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
-               ENDIF
+                  ENDIF
                ENDIF
             ENDDO
 
@@ -606,7 +624,7 @@ c.RJW 06092009  modified to elimiate zero index NOFF
             NCELE = NODECODE(NH)*NODECODE(N2)*
      &              NODECODE(N3)*NOFF(NELE)
             IF((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
-C    kmd48.33bc added in spherical factors for 3D 
+C    kmd48.33bc added in spherical factors for 3D
                   SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
                   qn=(qN1+qN2+qN3)/3.d0
                   Un=real(qn)
@@ -641,22 +659,21 @@ c     Finished computing advection and stress terms in the momentum
 c     equation at each level in the vertical
 
 c     Compute the equivalent linear slip coefficient
-C RJW 02252009 changed KP for ISlip =2 
+C RJW 02252009 changed KP for ISlip =2
 C     For ISlip = 1, KP is the equivalent linear slip coefficient
 C     For ISlip = 2, KP is the minimum equivalent quadratic slip coefficient
 C     For ISlip = 3, KP is the quadratic slip coefficient
          IF(ISlip.EQ.1) KSlip=KP
          IF(ISlip.EQ.2) THEN
-c.RJW merged 08282008 Casey 071219: Let's get funky.  
+c.RJW merged 08282008 Casey 071219: Let's get funky.
 c.RJW enable this modification
 C     and add the following to base the drag coefficient on the actual
 C     physics of the boundary layer.
 C ---
 
-           IF(
-     &          ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
+            IF (ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
      &                *(DP(NH)+IFNLFA*ETA2(NH)) )
-     &      .LT. 1.D0 )THEN
+     &                        .LT. 1.D0 )THEN
 
 
                 KSlip = (1.D0 / ( (1.D0/0.41D0) *
@@ -664,28 +681,27 @@ C ---
      &                     *( DP(NH)+IFNLFA*ETA2(NH) )) + Z0B1 )
      &                  / Z0B1 ) ) )**2.D0
      &                * ABS(Q(NH,1))
-         ELSE
+            ELSE
                 KSlip = (1.D0 / ( (1.D0/0.41D0) *
      &                  LOG( (1.D0+Z0B1)
      &                  / (Z0B1) ) ) )**2.D0
      &                * ABS(Q(NH,1))
-         ENDIF
-          IF(KSlip.GT.1.0d0* ABS(Q(NH,1))) KSlip=1.0d0*ABS(Q(NH,1))
+            ENDIF
+            IF(KSlip.GT.1.0d0* ABS(Q(NH,1))) KSlip=1.0d0*ABS(Q(NH,1))
 C          IF(KSlip.LT.0.0010d0*ABS(Q(NH,1))) KSlip=0.0010d0*ABS(Q(NH,1))
-          IF(KSlip.LT.KP*ABS(Q(NH,1))) KSlip=KP*ABS(Q(NH,1))
+            IF(KSlip.LT.KP*ABS(Q(NH,1))) KSlip=KP*ABS(Q(NH,1))
 
          ENDIF
          IF(ISlip.EQ.3) THEN
-             KSlip=KP*ABS(Q(NH,1))
-              IF(KSlip.GT.0.1d0) KSlip=0.1d0
-              IF(KSlip.LT.0.0d0) KSlip=0.0d0
-
+            KSlip=KP*ABS(Q(NH,1))
+            IF(KSlip.GT.0.1d0) KSlip=0.1d0
+            IF(KSlip.LT.0.0d0) KSlip=0.0d0
          ENDIF
 c     Set up the RHS forcing vector Fr and LHS matrix in compact storage
 c     (Mkm1,Mk,Mkp1)
 
          CCL = 1.d0+Corif(NH)*IDTAlp1
-         CCR = 1.d0-Corif(NH)*IDT1MAlp1  
+         CCR = 1.d0-Corif(NH)*IDT1MAlp1
          RCL = DTAlp3/Hsp1Hsp1OAMBAMB
 
          IF(ISlip.EQ.0) THEN    !no slip bottom boundary condition
@@ -698,10 +714,10 @@ c     (Mkm1,Mk,Mkp1)
      &           -DelT*(LAdvec(1)  +LStress(1)  +BPG(NH,1)))*Inm(1,2)
      &           + (CCR*q(NH,2)
      &           -DelT*(LAdvec(2)  +LStress(2)  +BPG(NH,2)))*Inm(1,3)
-     &           - DelT*(VAdvec(1)+BTPG*LVn(1))-DT1MAlp3*VStress(1)     
-     &           - q(NH,1)*DT1MAlp2*KSlip/HsOAMB     
+     &           - DelT*(VAdvec(1)+BTPG*LVn(1))-DT1MAlp3*VStress(1)
+     &           - q(NH,1)*DT1MAlp2*KSlip/HsOAMB
             Mkm1(1) = (0.d0,0.d0)
-            Mk(1)   = CCL*Inm(1,2) + RCL*KVnm(1,2) 
+            Mk(1)   = CCL*Inm(1,2) + RCL*KVnm(1,2)
      &           + DTAlp2*KSlip/Hsp1OAMB
             Mkp1(1) = CCL*Inm(1,3) + RCL*KVnm(1,3)
          ENDIF
@@ -718,7 +734,7 @@ c     (Mkm1,Mk,Mkp1)
             Mk(k)   = CCL*Inm(k,2) + RCL*KVnm(k,2)
             Mkp1(k) = CCL*Inm(k,3) + RCL*KVnm(k,3)
          ENDDO
-C RJW 09/01/2009 RJW k = NFEN-1 
+C RJW 09/01/2009 RJW k = NFEN-1
 C            try to fix this by setting k=NFEN
 C         k=NFEN
          Fr(NFEN) = (CCR*q(NH,k-1)
@@ -746,7 +762,7 @@ c     this b.c. requires on manipulation of momentum eqns.  Do nothing!
             IF((LBCODEI(LBP).GE. 0).AND.(LBCODEI(LBP).LE. 9)) THEN
                SLBP=SIII(LBP)
                CLBP=CSII(LBP)
-               VelNorm=-QNormsp1(LBP)/Hsp1                              
+               VelNorm=-QNormsp1(LBP)/Hsp1
 
                Mkm1(1)    =(0.d0,0.d0)
                Auv1k      =Real(Mk(1))
@@ -760,7 +776,7 @@ c     this b.c. requires on manipulation of momentum eqns.  Do nothing!
                Auv2kp1star=Auv1kp1*CLBP
                Mkp1(1)    =Auv1kp1star+iy*Auv2kp1star
                Frstar     =Real(Fr(1))*SLBP-AImag(Fr(1))*CLBP
-     &              +  (Auv2k+Auv2kp1)*VelNorm 
+     &              +  (Auv2k+Auv2kp1)*VelNorm
      &              +iy*(Auv1k+Auv1kp1)*VelNorm
                Fr(1)      =Frstar
                DO k=2,NFEN-1
@@ -780,7 +796,7 @@ c     this b.c. requires on manipulation of momentum eqns.  Do nothing!
                   Auv2kp1star=Auv1kp1*CLBP
                   Mkp1(k)    =Auv1kp1star+iy*Auv2kp1star
                   Frstar     =Real(Fr(k))*SLBP-AImag(Fr(k))*CLBP
-     &                 +  (Auv2km1+Auv2k+Auv2kp1)*VelNorm 
+     &                 +  (Auv2km1+Auv2k+Auv2kp1)*VelNorm
      &                 +iy*(Auv1km1+Auv1k+Auv1kp1)*VelNorm
                   Fr(k)      =Frstar
                ENDDO
@@ -796,7 +812,7 @@ c     this b.c. requires on manipulation of momentum eqns.  Do nothing!
                Mk(NFEN)   =Auv1kstar+iy*Auv2kstar
                Mkp1(NFEN) =(0.d0,0.d0)
                Frstar     =Real(Fr(NFEN))*SLBP-AImag(Fr(NFEN))*CLBP
-     &              +  (Auv2km1+Auv2k)*VelNorm 
+     &              +  (Auv2km1+Auv2k)*VelNorm
      &              +iy*(Auv1km1+Auv1k)*VelNorm
                Fr(NFEN)   =Frstar
             ENDIF
@@ -806,9 +822,10 @@ c     Finished section to modify equations depending on normal flux
 c     boundary condition
 c     Decompose and solve the system
 
+
  999     CALL TRIDIAG(Mkm1,Mk,Mkp1,Fr,Gamma,NFEN)
 
-C     Changed this q value to qkp1 since we need to save q and qkp1 for 
+C     Changed this q value to qkp1 since we need to save q and qkp1 for
 C     transport calculations
 C     Save the horizontal velocity and Eddy Viscosity solutions
 C   kmd48.33bc added the vertical diffusion term for the transport equation
@@ -835,7 +852,7 @@ C     Update horizontal velocity solution on ghost nodes
 C****************************************************************************
 C     Compute the depth averaged velocity, depth averaged flux, bottom stress and
 C     velocity dispersion
-     
+
       DO NH=1,NP                                !loop over horizontal nodes
 
          Hsp1= DP(NH)+IFNLFA*Eta2(NH)           !Total depth at present (s+1) timestep
@@ -867,16 +884,16 @@ C     velocity dispersion
             CALL VSDISP (IT,NH,Hsp1,UU(NH),VV(NH),
      &           DUU(NH),DUV(NH),DVV(NH))
          ENDIF
-        
+
       ENDDO
 
 C***************************************************************************
-C     Compute "z" vertical velocity     
+C     Compute "z" vertical velocity
 
-C     
+C
 C     Loop over each horizontal node to compute the "z" version of the
 C     vertical velocity
-C     
+C
       DO NH=1,NP
 
 c. RJW merged 08282008 Casey 071219: Solve for TEMPNCELE, same as above.
@@ -960,7 +977,7 @@ c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the seco
      &              NODECODE(N3)*NOFF(NELE)
             IF(NCELE.NE.0) THEN  !if element is active, compute velocity grads
                TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
-C    kmd48.33bc added in spherical factors for 3D 
+C    kmd48.33bc added in spherical factors for 3D
                SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
                a1=X(N3)-X(N2)
                a2=X(N1)-X(N3)
@@ -996,7 +1013,7 @@ c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the seco
      &           NODECODE(N3)*NOFF(NELE)
             IF (NCELE.NE.0) THEN  !if element is active, compute velocity grads
                TotalArea2=TotalArea2+Areas(NEle) !accumulate 2X total areas to complete calc.
-C    kmd48.33bc added in spherical factors for 3D 
+C    kmd48.33bc added in spherical factors for 3D
                SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
                a1=X(N3)-X(N2)
                a2=X(N1)-X(N3)
@@ -1049,7 +1066,7 @@ c.
      &           + (DEtaDY+SigAvgMAOAMB*(DhDY+DEtaDY))*DelV
          ENDDO
 
-c     Correct this using Adjoint method        
+c     Correct this using Adjoint method
 
          Wf=0.d0                !This value should match surface B.C. exactly
          Hsp1= DP(NH)+IFNLFA*Eta2(NH) !Total depth at present (s+1) timestep
@@ -1073,9 +1090,9 @@ C
             ENDDO
          ENDIF
 c.
-C     
+C
 C     End loop over horizontal nodes to compute vertical velocity
-C     
+C
       ENDDO
 
 C***************************************************************************
@@ -1088,8 +1105,8 @@ C     Update vertical velocity on ghost nodes - this is necessary
 
 C**************************************************************************
 C     For a prognostic baroclinic run, compute new density, temperature, salinity fields
-C     
-c   kmd48.33bc need to update the boundary condition information for both 
+C
+c   kmd48.33bc need to update the boundary condition information for both
 C              salinity and temperature in prognostic runs. The boundary
 C              conditions are read in similar to the aperiodic elevation
 C              boundary conditions
@@ -1192,9 +1209,9 @@ C   Start computing the new density, temperature and salinity values
       IF(C3D_BTrans) THEN
         IF(IDEN.EQ.1) THEN
 C           CALL 3D_SIGMAT_TRANS()
-        ELSE IF(IDEN.EQ.2) THEN 
+        ELSE IF(IDEN.EQ.2) THEN
             CALL TRANS_3D(SAL,NLSD,NVSD,SALkp1,IDEN,TimeLoc)
-        ELSE IF(IDEN.EQ.3) THEN 
+        ELSE IF(IDEN.EQ.3) THEN
             CALL TRANS_3D(TEMP,NLTD,NVTD,TEMPkp1,IDEN,TimeLoc)
         ELSE IF(IDEN.EQ.4) THEN
             CALL TRANS_3D(SAL,NLSD,NVSD,SALkp1,IDEN-2,TimeLoc)
@@ -1202,14 +1219,14 @@ C           CALL 3D_SIGMAT_TRANS()
         ENDIF
 C
 C     Update new temperature and salinity fields on ghost nodes
-C     
+C
 #ifdef CMPI
 C      CALL UPDATER3D(SIGT) !jgf45.12
       IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) CALL UPDATER3D(Tempkp1)
       IF((IDEN.EQ.2).OR.(IDEN.EQ.4)) CALL UPDATER3D(Salkp1)
 #endif
 
-C     Need to update and move results from the future time levels to the 
+C     Need to update and move results from the future time levels to the
 C     present time levels so we can advance in time and before obtaining
 C     new sigma-t values. We will update velocities later.
         DO NH = 1,NP
@@ -1225,9 +1242,9 @@ C     new sigma-t values. We will update velocities later.
            END DO
         END DO
         IF(IDEN.GT.1) CALL CALC_SIGMAT_3D ()
- 
+
 C     Compute Depth averaged SigmaT
-               
+
         DO NH=1,NP
          DASigT(NH)=0.d0
           DO k=1,NFEN-1
@@ -1238,7 +1255,7 @@ C     Compute Depth averaged SigmaT
         ENDDO
       ENDIF
 
-C     Need to update and move results from the future time levels to the 
+C     Need to update and move results from the future time levels to the
 C     present time levels so we can advance in time.
       DO NH = 1,NP
          DO k = 1,NFEN
@@ -1247,18 +1264,21 @@ C     present time levels so we can advance in time.
          END DO
       END DO
 
-
-C***************************************************************************
 C     WRITE 3D MODEL OUTPUT
-
       CALL writeOutput3D(TimeLoc,IT) !jgf48_11 moved to write_output.F
 
-
-C***************************************************************************
 C     RETURN TO THE 2-D MODEL TO COMPUTE H AT NEXT TIME STEP
-      
+
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
       RETURN
-      END
+C***************************************************************************
+      END SUBROUTINE VSSOL
+C***************************************************************************
+
 
 
 c***********************************************************************
@@ -1267,11 +1287,14 @@ C     SUBROUTINE TO SET UP THE VERTICAL FINITE ELEMENT GRID            *
 c                                                                      *
 c                           6/16/2005                                  *
 c***********************************************************************
-c     
+c
       SUBROUTINE FEGRIDS(IGC,H)
       USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug USE GLOBAL_3DVS, ONLY : SZ,LOCALDIR,NFEN,SIGMA,A,B,Z0B,Z0S,NSCREEN
-      USE GLOBAL_3DVS, ONLY : SZ,NFEN,SIGMA,A,B,Z0B,Z0S
+      USE GLOBAL_3DVS, ONLY : SZ,NFEN,SIGMA,A,B,Z0B,Z0S,
+     &   setMessageSource, unsetMessageSource, allMessage, logMessage,
+     &   DEBUG, ECHO, INFO, WARNING, ERROR
+
 C      USE NodalAttributes, ONLY: Z0b_var
 
       IMPLICIT NONE
@@ -1279,15 +1302,20 @@ Cjgfdebug INTEGER :: IGC,N,NODE,NFEN2,IANS,NUM,I
       INTEGER :: IGC,N,NFEN2,IANS,NUM,I,NH
 C      INTEGER :: IGC,N,NODE,NFEN2,IANS,NUM,I,NH
       REAL(SZ) :: H,DETA,SSTAR,DENOM,SIG0,SS,SB,RP,AVAL,EPS
+C
+      call setMessageSource("fegrids")
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       select case(igc)
-c     
+c
 c     igc = 0 - Read in grid from UNIT 15 in subroutine READ_INPUT_3DVS
-c     
+c
 
-c     
+c
 c     igc = 1 - Evenly spaced grid
-c     
+c
       case(1)
          if(nfen.le.1) nfen = 2
          deta = (a-b)/(nfen-1)
@@ -1298,9 +1326,9 @@ c
          nfen2 = nfen/2
          if(2*nfen2.ne.nfen) sigma(nfen2+1) = 0.d0
          sigma(nfen) = a
-c     
+c
 c     igc = 2 - logarithmically grid  (after Davies 1991)
-c     
+c
       case(2)
          write(screenunit,*) '   '
          write(screenunit,*) '********** Depth = ',H,' ***********'
@@ -1316,9 +1344,9 @@ c     read(*,*) Sb
             sigma(n) = b + (a-b)*Sb/H*(((H+Sb)/Sb)**(deta*(n-1))-1.d0)
          enddo
          sigma(nfen) = a
-c     
+c
 c     igc = 3 - log-linear grid  (after Davies 1991)
-c     
+c
       case(3)
          write(screenunit,*) '   '
          write(screenunit,*) '********** Depth = ',H,' ***********'
@@ -1330,7 +1358,7 @@ c
      &      '******** Enter So from the keyboard *******'
          write(screenunit,*) '   '
          read(*,*) Sb
-         write(screenunit,*) 
+         write(screenunit,*)
      &      '******** Enter S* from the keyboard *******'
          write(screenunit,*) '   '
          read(*,*) Sstar
@@ -1348,38 +1376,38 @@ c
             endif
          enddo
          sigma(nfen) = a
-c     
+c
 c     igc = 4 - Double logarithmic grid
-c     
+c
       case(4)
          write(screenunit,*) '   '
          write(screenunit,*) '********** Depth = ',H,' ***********'
-         write(screenunit,*) 
+         write(screenunit,*)
      &       '********** So bottom = ',Z0B,' ***********'
          Sb = Z0B
-         write(screenunit,*) 
+         write(screenunit,*)
      &       '********** So surface = ',Z0S,' ***********'
          Ss = Z0S
-c     
+c
 c     write(screenunit,*) '******* Enter So bottom from the keyboard ********'
 c     write(screenunit,*) '   '
 c     read(*,*) Sb
 c     write(screenunit,*) '******* Enter So surface from the keyboard *******'
 c     write(screenunit,*) '   '
 c     read(*,*) Ss
-c     
+c
          write(screenunit,*) '   '
          if(mod(nfen,2).eq.0) then
-            write(screenunit,*) 
+            write(screenunit,*)
      &         '**********************************WARNING*****',
      &         '******************************'
-            write(screenunit,*) 
+            write(screenunit,*)
      &         '**** You have specified a double log grid with',
      &           ' an even number of nodes. ****'
-            write(screenunit,*) 
+            write(screenunit,*)
      &           '**** Much better results are obtained using an',
      &           ' an odd number of nodes.  ****'
-            write(screenunit,*) 
+            write(screenunit,*)
      &           '**** Do you want to terminate now or continue?',
      &           '  0=Terminate/1=continue. ****'
             write(screenunit,*) '  '
@@ -1394,18 +1422,18 @@ c
          sigma(1) = b
          sigma(nfen) = a
          do n=2,num
-            sigma(n) 
+            sigma(n)
      &        = b + 0.5d0*(a-b)*Sb/H*(((H+Sb)/Sb)**(deta*(n-1))-1.d0)
             sigma(nfen+1-n) = a - 0.5d0*(a-b)*Ss/H*(((H+Ss)/Ss)**
      &           (deta*(n-1))-1.d0)
          enddo
-c     
+c
 c     igc = 5 - "P-grid" after Fortunato and Baptista (IJNMF submitted 12/1994)
 c     optimal p value of 0.25 may be used as default for tidal flow problems
 c     note: p = 1 - uniform, p<1 makes fine grid near bottom,p>1 makes
 c     fine grid near sfc
-c     sigma converted to range from -1 to 1 in ADCIRC        
-c     
+c     sigma converted to range from -1 to 1 in ADCIRC
+c
       case(5)
          if(nfen.le.1) nfen = 2
          write(screenunit,*)
@@ -1415,12 +1443,12 @@ c
          do i = 1,nfen
             sigma(i) = -1.d0 + 2.d0
      &          *(1.d0+((1.d0-i)/(1.d0-nfen))**(1.d0/rp) - 1.d0)
-         end do             
-c     
+         end do
+c
 c     igc = 6 - "sine grid" after Naimie,Lynch
 c     Value of A determines stretching at ends, check in unit 18
-c     sigma converted to range from -1 to 1 in ADCIRC        
-c     
+c     sigma converted to range from -1 to 1 in ADCIRC
+c
       case(6)
          if(nfen.le.1) nfen = 2
          write(screenunit,*)
@@ -1429,9 +1457,9 @@ c
          read(*,*)aval
          do i = 1,nfen
             eps = float(i-1)/float(nfen-1)
-            sigma(i) = -1.d0 
+            sigma(i) = -1.d0
      &         + (2.d0/H)*(eps*H-aval*sin(2.d0*3.14159d0*eps))
-         end do             
+         end do
       case default
          write(screenunit,4321) igc
 4321     format('The value of igc=',I2,' is not valid. There are seven',
@@ -1442,8 +1470,15 @@ c
 
       end select
 
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
-      END
+
+c******************************************************************************
+      END SUBROUTINE FEGRIDS
+c******************************************************************************
 
 c******************************************************************************
 c     Subroutine to compute the eddy viscosity profile.                       *
@@ -1526,7 +1561,8 @@ Cjgfdebug USE GLOBAL, ONLY : ScreenUnit
 Cjgfdebug  USE GLOBAL_3DVS, ONLY : SZ,LOCALDIR,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
 Cjgfdebug     &     NFEN,Z0B,Z0S,A,B,AMB,NSCREEN,NWS,DELT
       USE GLOBAL_3DVS, ONLY : SZ,IEVC,EVMIN,EVCON,EVTOT,SIGMA,
-     &     NFEN,Z0B,Z0S,A,B,AMB
+     &     NFEN,Z0B,Z0S,A,B,AMB,setMessageSource, unsetMessageSource,
+     &     logMessage, allMessage, DEBUG, ECHO, INFO, WARNING, ERROR
 Crjwdebug  USE NodalAttributes, ONLY : Z0B_var
       IMPLICIT NONE
       REAL(8) :: H
@@ -1549,16 +1585,21 @@ C     jgf46.00 explicitly declared the following variables
       REAL(SZ) UAVMAG
       REAL(SZ) UAVMAGS
 
+      call setMessageSource("eddyvis")
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
 Cjgfdebug 350  FORMAT(//,2X,'***** INVALID INPUT IN THE PRIMARY VERTICAL INPUT',
 Cjgfdebug     &     ' FILE (UNIT 15) ****',/,'****** RUN TERMINATED ******')
 
       RKAPPA = 0.41
 
-C...  
+C...
 C...  IEVC=0 READ IN FROM UNIT 15 in subroutine READ_INPUT_3DVS
-C...  
+C...
 
-C...  
+C...
 C...  IEVC=1 SET EV = EVCON ON THE FIRST TIME STEP
 C     .
 
@@ -1570,15 +1611,15 @@ C     .
       ENDIF
 
       IF(IEVC.eq.1) GOTO 100
-      
-C...  
+
+C...
 C...  OMEGA*H*H formulation FOLLOWING
 C...  LYNCH AND OFFICER (1986), LYNCH AND WERNER (1987, 1991)
-C...  
+C...
       IF(IEVC.EQ.10) THEN
          OMEGA=1.40525D-4
          EVBASE=OMEGA*H*H/10.D0
-         IF(EVBASE.LT.EVMIN) EVBASE=EVMIN          
+         IF(EVBASE.LT.EVMIN) EVBASE=EVMIN
          DO J=1,NFEN
             EVTOT(J) = EVBASE
          END DO
@@ -1601,9 +1642,9 @@ C...
          GOTO 100
       ENDIF
 
-C...  
+C...
 C...  KAPPA USTAR Z FORMULATION
-C...  
+C...
       IF(IEVC.EQ.20) THEN
          USTARB=SQRT(SQRT(BSX*BSX+BSY*BSY))
          EVTOT(1)=RKAPPA*USTARB*Z0B1
@@ -1663,9 +1704,9 @@ C...
          GOTO 100
       ENDIF
 
-C...  
+C...
 C...  H UAVG FORMULATION FOLLOWING DAVIES (1990) + [EQ. (33)]
-C...  
+C...
       IF(IEVC.EQ.30) THEN
          UAVMAG=SQRT(UU*UU+VV*VV)
          EVBASE=0.025*H*UAVMAG/9.001D0
@@ -1685,7 +1726,7 @@ C...
       IF(IEVC.EQ.32) THEN
          UAVMAG=SQRT(UU*UU+VV*VV)
          EVBASE = 0.025*H*UAVMAG/9.001D0
-         EVTOT(1) = EVBASE/1000.D0  
+         EVTOT(1) = EVBASE/1000.D0
          SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
          BREAK=b+0.2D0*amb
          EVBEGIN=EVTOT(1)-SLOPE*b
@@ -1701,7 +1742,7 @@ C...
       IF(IEVC.EQ.33) THEN
          UAVMAG=SQRT(UU*UU+VV*VV)
          EVBASE=EVCON*H*UAVMAG
-         EVTOT(1)=EVBASE/1000.D0  
+         EVTOT(1)=EVBASE/1000.D0
          SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
          BREAK=b+0.2D0*amb
          EVBEGIN=EVTOT(1)-SLOPE*b
@@ -1715,9 +1756,9 @@ C...
          GOTO 100
       ENDIF
 
-C...  
+C...
 C...  UAVG SQUARED FORMULATION FOLLOWING DAVIES (1990) + [EQ. (34)]
-C...  
+C...
       IF(IEVC.EQ.40) THEN
          UAVMAGS=UU*UU+VV*VV
          EVBASE=2.D0*UAVMAGS/9.001D0
@@ -1737,7 +1778,7 @@ C...
       IF(IEVC.EQ.42) THEN
          UAVMAGS=UU*UU+VV*VV
          EVBASE=2.D0*H*UAVMAGS/9.001D0
-         EVTOT(1)=EVBASE/1000.D0  
+         EVTOT(1)=EVBASE/1000.D0
          SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
          BREAK=b+0.2D0*amb
          EVBEGIN=EVTOT(1)-SLOPE*b
@@ -1753,7 +1794,7 @@ C...
       IF(IEVC.EQ.43) THEN
          UAVMAGS=UU*UU+VV*VV
          EVBASE=EVCON*UAVMAGS
-         EVTOT(1)=EVBASE/1000.D0  
+         EVTOT(1)=EVBASE/1000.D0
          SLOPE=(EVBASE-EVTOT(1))/(0.2D0*amb)
          BREAK=b+0.2D0*amb
          EVBEGIN=EVTOT(1)-SLOPE*b
@@ -1767,36 +1808,40 @@ C...
          GOTO 100
       ENDIF
 
-C...  
+C...
 C...  MELLOR-YAMADA LEVEL 2.5 CLOSURE
-C...  
+C...
       IF((IEVC.EQ.50).or.(IEVC.EQ.51)) THEN
          CALL TURB(NODE,H,BSX,BSY,WSX,WSY,IStart,Z0B1)
 
          GOTO 100
       ENDIF
-      
-C...  
+
+C...
 C...  ONCE EDDY VISCOSITY IS COMPUTED
-C...  
+C...
 
 
  100  CONTINUE
 
-C...  
+C...
 C...  CHECK SO THAT EDDY VISCOSITY NEVER GETS BELOW MINIMUM VALUE
-C...  
+C...
       DO J=1,NFEN
          IF(EVTOT(J).LT.EVMIN) THEN
             EVTOT(J)=EVMIN
          ENDIF
       ENDDO
-
-C...  
-C...  RETURN
-C...  
+C...
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
-      END
+C***********************************************************************
+      END SUBROUTINE EDDYVIS
+C***********************************************************************
+
 
 
 C***********************************************************************
@@ -1830,13 +1875,19 @@ C***********************************************************************
 C
 C  kmd48.33bc changed to use Implicit None
       SUBROUTINE TRIDIAG(A,B,C,R,U,nfen)
-      USE GLOBAL, ONLY : SZ, ScreenUnit
+      USE GLOBAL, ONLY : SZ, ScreenUnit, setMessageSource,
+     &   unsetMessageSource, logMessage, allMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       INTEGER :: J,nfen
 
       COMPLEX(SZ) :: A(nfen), B(nfen), C(nfen), R(nfen), U(nfen)
       COMPLEX(SZ) :: P1
-C     
+C
+      call setMessageSource("tridiag")
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+C
       DO 11 J=nfen-1,1,-1
          IF(ABS(B(J+1)).EQ.0.) then
             write(screenunit,*) 'Diagonal term in the VS matrix is zero'
@@ -1862,9 +1913,17 @@ C
 
       DO 12 J=2,nfen
  12      U(J)=(R(J)-A(J)*U(J-1))/B(J)
-   
+
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
       RETURN
-      END
+C***********************************************************************
+      END SUBROUTINE TRIDIAG
+C***********************************************************************
+
 
 C***********************************************************************
 C                                                                      *
@@ -1879,9 +1938,11 @@ C                          R.L. 06/22/05                               *
 C***********************************************************************
 
       Subroutine VSDISP(it,node,H,UU,VV,Duu,Duv,Dvv)
-      USE GLOBAL, ONLY : ScreenUnit
+      USE GLOBAL, ONLY : ScreenUnit, allMessage, DEBUG, scratchMessage
 Cjgfdebug      USE GLOBAL_3DVS, ONLY : Qkp1,SZ,NFEN,SIGMA,GAMMA,AMB,I,NSCREEN
-      USE GLOBAL_3DVS, ONLY : Qkp1,SZ,NFEN,SIGMA,GAMMA,AMB,IY
+      USE GLOBAL_3DVS, ONLY : Qkp1,SZ,NFEN,SIGMA,GAMMA,AMB,IY,
+     &    setMessageSource,
+     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
 
       REAL(SZ) :: UU,VV,Duu,Duv,Dvv
@@ -1907,28 +1968,39 @@ Cjgfdebug      REAL(SZ) g4
 Cjgfdebug      REAL(SZ) g5
 Cjgfdebug      REAL(SZ) g6
 Cjgfdebug      REAL(SZ) E1
-c     
+c
 c     parameters
-c     
+c
 Cjgfdebug      ierr = 0
-c     
+c
 c     don't waste time if entire profile is zero
-c     
+c
+      call setMessageSource("vsdisp")
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
       do j=1,nfen
          gamma(j)=Qkp1(node,j)
       end do
+
       do j=1,nfen
          if(gamma(j).ne.(0.d0,0.d0)) goto 1
       end do
       Duu = 0.d0
       Duv = 0.d0
       Dvv = 0.d0
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
       return
 
-c     
+c
 c     Domain is split up into intervals according to sigma grid and
 c     contribution to total integral is computed on each interval.
-c     
+c
 
  1    Txx = 0.d0
       Txy = 0.d0
@@ -1997,8 +2069,16 @@ c
       if(Duu.lt.0.) Duu = 0.d0
       if(Dvv.lt.0.) Dvv = 0.d0
 
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
       return
-      end
+c***********************************************************************
+      end subroutine vsdisp
+c***********************************************************************
+
 
 
 c***********************************************************************
@@ -2013,20 +2093,26 @@ c***********************************************************************
 
       subroutine InmINT()
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : Sigma, NFEN, INM
+      USE GLOBAL_3DVS, ONLY : Sigma, NFEN, INM, setMessageSource,
+     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       INTEGER k
+C
+      call setMessageSource("InmINT")
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
 C     integral over lower element of psi(k-1)*psi(k)
       Inm(1,1) = 0.d0
 C     integral over upper element of psi(k+1)*psi(k)
       Inm(1,3) = (Sigma(2)-Sigma(1))/6.d0
 C     integral over both elements of psi(k)*psi(k)
-      Inm(1,2) = 2.d0*Inm(1,3) 
+      Inm(1,2) = 2.d0*Inm(1,3)
 
       do k=2,NFEN-1
 C     integral over lower element of psi(k-1)*psi(k)
-         Inm(k,1) = Inm(k-1,3) 
+         Inm(k,1) = Inm(k-1,3)
 C     integral over upper element of psi(k+1)*psi(k)
          Inm(k,3) = (Sigma(k+1)-Sigma(k))/6.d0
 C     integral over both elements of psi(k)*psi(k)
@@ -2035,13 +2121,20 @@ C     integral over both elements of psi(k)*psi(k)
 
 C     integral over lower element of psi(k-1)*psi(k)
       Inm(NFEN,1) = Inm(NFEN-1,3)
-C     integral over both elements of psi(k)*psi(k)  
+C     integral over both elements of psi(k)*psi(k)
       Inm(NFEN,2) = 2.d0*Inm(NFEN,1)
 C     integral over upper element of psi(k+1)*psi(k)
-      Inm(NFEN,3) = 0.d0        
-         
+      Inm(NFEN,3) = 0.d0
+
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
-      end
+c***********************************************************************
+      end subroutine InmINT
+c***********************************************************************
+
 
 c***********************************************************************
 c      Subroutine to compute the LVn integral (used only in VS)        *
@@ -2051,21 +2144,32 @@ c***********************************************************************
 
       subroutine LVnInt()
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : Sigma, NFEN, LVN
+      USE GLOBAL_3DVS, ONLY : Sigma, NFEN, LVN, setMessageSource,
+     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       INTEGER n
+C
+      call setMessageSource("LVnInt")
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
 
       LVn(1) = (sigma(2) - sigma(1))/2.d0
-
       DO n=2,nfen-1
          LVn(n) = (sigma(n+1) - sigma(n-1))/2.d0
       enddo
-
       LVn(nfen) = (sigma(nfen) - sigma(nfen-1))/2.d0
 
-      RETURN
-      END
 
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+c***********************************************************************
+      END subroutine LVnInt
+c***********************************************************************
 
 c***********************************************************************
 c      Subroutine to compute the KQnm integral                         *
@@ -2075,11 +2179,20 @@ c***********************************************************************
 
       subroutine KQnmInt(KQnm,Kq)
 Cjgfdebug      USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : SZ,SIGMA,NFEN,MNFEN
+      USE GLOBAL_3DVS, ONLY : SZ,SIGMA,NFEN,MNFEN, setMessageSource,
+     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       REAL(SZ) :: KQnm(MNFEN,3),Kq(MNFEN)
       REAL(8) :: EM,EP
       INTEGER n
+
+      call setMessageSource("KQnmInt")
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+
+
 c     do 1st element by hand
 
       EP=(Kq(2)+Kq(1))/(sigma(2)-sigma(1))/2.d0
@@ -2106,9 +2219,14 @@ c     do last element by hand
       KQnm(nfen,2)=EM
       KQnm(nfen,3)=0.D0
 
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
-      end
-
+c************************************************************************
+      end subroutine KQnmInt
+c************************************************************************
 
 c************************************************************************
 c MY2.5 TURBULENCE MODEL PROGRAM
@@ -2281,7 +2399,7 @@ Cjgfdebug      USE GLOBAL_3DVS, EXCEPT_BSX => BSX ,EXCEPT_BSY => BSY
 Crjwdebug     USE NodalAttributes, ONLY : Z0B_var
 C>>>>>>> IOOS_w_3D/src/vsmy.F
       IMPLICIT NONE
-      
+
       COMPLEX(SZ) :: dQdz,dQdz1,dQdz2
       REAL(8) :: H,H_crit
 
@@ -2305,7 +2423,7 @@ C     jgf46.12 gave them SAVE and PARAMETER properties (from jgf45.18)
       INTEGER nh, istart, n
       INTEGER,SAVE :: il, ibc
       REAL(SZ), PARAMETER :: rkap = 0.41d0
-      REAL(SZ), PARAMETER :: B1 = 16.6d0 
+      REAL(SZ), PARAMETER :: B1 = 16.6d0
       REAL(SZ), PARAMETER :: g2 = 0.39327d0
       REAL(SZ), PARAMETER :: g3 = 3.0858d0
       REAL(SZ), PARAMETER :: g4 = 34.676d0
@@ -2321,6 +2439,11 @@ C     jgf46.12 gave them SAVE and PARAMETER properties (from jgf45.18)
       REAL(SZ), SAVE :: qprev, qlprev, Gh, tdiss, elmax
       REAL(SZ), SAVE :: coef1, coef2, coef3, coef4, coef5
       REAL(SZ) :: USTARS
+
+      call setMessageSource("turb")
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
 
@@ -2346,13 +2469,13 @@ c     allocate local arrays
           ELSE
             Z0Sw=Z0S
           ENDIF
-C  RJW taken from Jones monismith 2008 
+C  RJW taken from Jones monismith 2008
 C  modify surface roughness length to account for wave breaking
 C         Z0Sw = 1400.0d0*USTARS*USTARS/g   ! ( Bye (1988)  , Craig and Banner (1994))
 C         Z0Sw = 14000.0d0*USTARS*USTARS/g  ! (Stipps et al. 2005 extended to wave breaking)
 C         Z0Sw = 200000.0d0*USTARS*USTARS/g  ! ( O(10^5)  Stacy et al. (1999) for wave ages > 25)
-C         Z0Sw = 1.3*Wave Height            ! (sig wave height) (Jones and Monosmith (2007) k-omega)  
-C         Z0Sw = (0.25-1.0)*Wave Height     ! (sig wave height) (Burchard (2001) k-epsilon ) 
+C         Z0Sw = 1.3*Wave Height            ! (sig wave height) (Jones and Monosmith (2007) k-omega)
+C         Z0Sw = (0.25-1.0)*Wave Height     ! (sig wave height) (Burchard (2001) k-epsilon )
 
        if (Z0Sw .gt. H-Z0B1) then
           Z0Sw = H-Z0B1 ! bound Z0S to water depth
@@ -2362,17 +2485,17 @@ C         Z0Sw = (0.25-1.0)*Wave Height     ! (sig wave height) (Burchard (2001)
        if (Z0Sw .lt. Z0S ) Z0Sw = Z0S
 
 
-c     
+c
 c     At time step 1, set flags and initialize variables
-c     
+c
 C.  RJW moved up and outside of if statement to allow variable computation in case of hotstart
          il = 1  ! length scale flag, = 1 for length scale from q2l eqn.
 c         il = 2  ! length scale flag, = 2 for length scale from algebraic eq. (see below)
 c         il = 3  ! length scale flag, = 3 for length scale from algebraic eq. (see below)
-        ibc = 1 
+        ibc = 1
         !ibc = 0 ! surface b.c. flag, = 0 for specified stress, = 1 for no flux
         !ibc = 1 ! surface b.c. flag, = 0 for specified stress, = 1 for no flux
-        !if((nws.eq.0).or.(nws.eq.100)) ibc =1 
+        !if((nws.eq.0).or.(nws.eq.100)) ibc =1
 c     set constants and other parameters
         B123 = B1**(2.d0/3.d0)
         Sq = 0.2d0 ! initialize the stability constant stability function
@@ -2411,19 +2534,19 @@ c     set l to a linear variation with kz over lower 15% with constant above
          endif
 c     end cold start initialization
       endif                     !end of 1st time step section
-c     
+c
 c     Begin calculations for each time step
-c     
+c
 C.RJW..
 C identify if node was dry last timestep but is now wet
-C the initialized value of L can be recomputed to a more meaningful 
+C the initialized value of L can be recomputed to a more meaningful
 C value before used to compute q2
 
       if (L(nh,1) .eq. -9999d0 ) Then
          do n = 1,nfen
          l(nh,n)=rkap*(Z0B1*(a-sigma(n))-Z0Sw*(b-sigma(n)))/amb
          enddo
-       endif     
+       endif
 C now check q20 it may also be zero
       if (q20(nh,1) .eq. -9999d0 ) Then
             do n = 1,nfen
@@ -2456,7 +2579,7 @@ c     and split out the mixing length
       dudz=real(dQdz)
       dvdz=aimag(dQdz)
       spgrad2(1)=dudz*dudz+dvdz*dvdz
-      
+
       do n=2,nfen-1
          rmlen(n)=l(nh,n)
          rmlen2(n)=rmlen(n)*rmlen(n)
@@ -2486,7 +2609,7 @@ c     and split out the mixing length
       dudz=real(dQdz)
       dvdz=aimag(dQdz)
       spgrad2(nfen)=dudz*dudz+dvdz*dvdz
-      
+
 c     Compute the wall function if the mixing length is determined from
 c     q2l eqn
 
@@ -2505,9 +2628,9 @@ c     q2l eqn
 c     Compute the stability functions, eddy viscosity and partial
 c     turbulence production & dissipation terms using information from
 c     the previous time step
-C RJW rweaver add wave production of TKE 
+C RJW rweaver add wave production of TKE
 C alpha * USTARS*USTARS*USTARS, USTARS=SQRT(SQRT(WSX*WSX+WSY*WSY))
-C and alpha = 60 - 250 
+C and alpha = 60 - 250
 
       do n = 1,nfen
          q2prev(n)=q20(nh,n)
@@ -2521,7 +2644,7 @@ C and alpha = 60 - 250
          Km(n)=Sm(n)*qlprev
          if(Km(n).lt.EVMIN) Km(n)=EVMIN
 c     if(istart.eq.1) Km(n)=EVMIN                        !rog way
-         Kq(n)=Sq*qlprev                                   
+         Kq(n)=Sq*qlprev
          if(Kq(n).lt.EVMIN) Kq(n)=EVMIN
 c     Kq(n)=Km(n)*Sq/Sm(n)                           !rog way
          Kh(n)=Sh(n)*qlprev ! kmd48.33bc changed Sh to an array
@@ -2542,7 +2665,7 @@ c     Compute the q2 LHS Matrix and RHS Load Vector
       Mqb(1) = 1.d0
       Mqc(1) = 0.d0
       LVq(1) = B123*sqrt(bsx_loc*bsx_loc+bsy_loc*bsy_loc)
-      
+
       coef2 = delt*theta1/HOamb2
 c     coef2 = theta1/HOamb2                !rog way
       coef4 = 2.d0*delt
@@ -2559,7 +2682,7 @@ c     Mqa(n) = KQnm(n,1)*coef2               !lumping
 c     Mqb(n) = (Inm(n,1)+Inm(n,2)+Inm(n,3))*coef1+KQnm(n,2)*coef2  !lumping
          Mqc(n) = Inm(n,3)*coef1+KQnm(n,3)*coef2
 c     Mqc(n) = KQnm(n,3)*coef2                                     !lumping
-         
+
          coef3 = 1.d0 - delt*(1.d0-theta2)*tdiss
 c     coef3 = 1.d0/delt - (1.d0-theta2)*tdiss                      !rog way
          LVq(n) = Inm(n,1)*(coef3*q2prev(n-1)+coef4*prod(n-1))
@@ -2587,7 +2710,7 @@ c     &         -KQnm(n,3)*coef5*q2prev(n+1)     !lumping
          n=nfen
          tdiss = 2.d0*diss(n)
          coef1 = 1.d0 + delt*theta2*tdiss
-c     coef1 = 1.d0/delt + theta2*tdiss                   !rog way    
+c     coef1 = 1.d0/delt + theta2*tdiss                   !rog way
          Mqa(n) = Inm(n,1)*coef1+KQnm(n,1)*coef2
 c     Mqa(n) = KQnm(n,1)*coef2                           !lumping
          Mqb(n) = Inm(n,2)*coef1+KQnm(n,2)*coef2
@@ -2632,7 +2755,7 @@ c     Compute length scale
             if(l(nh,n).gt.H) l(nh,n)=H
          enddo
       endif
-      
+
       if(il.eq.3)then
          do n=1,nfen
             HOamb=H/amb
@@ -2641,9 +2764,9 @@ c     Compute length scale
             if(sigma(n).gt.-0.7d0) l(nh,n)=rkap*(0.15d0*H+Z0B1)
          enddo
       endif
-      
+
       if(il.eq.1)then
-         
+
 c     Compute the q2l LHS Matrix and RHS Load Vector
 
          Mqa(1) = 0.d0
@@ -2681,14 +2804,14 @@ c     &    + (Inm(n,1)+Inm(n,2)+Inm(n,3))                           !lumping
 c     &     *(coef3*q2lprev(n)+coef4*prod(n))                       !lumping
 c     &       -KQnm(n,2)*coef5*q2lprev(n)    !lumping
 c     &     -KQnm(n,3)*coef5*q2lprev(n+1)  !lumping
-c     
+c
          enddo
 
          Mqa(nfen) = 0.d0
          Mqb(nfen) = 1.d0
          Mqc(nfen) = 0.d0
          LVq(nfen) = SSlay*rkap*q2(nfen)
-         
+
 c     Solve the system for q2l
 
          CALL TRIDAG(Mqa,Mqb,Mqc,LVq,q2l,nfen)
@@ -2698,7 +2821,7 @@ c     Transfer to global array and check for stability limit
          l(nh,1) = q2l(1)/q2(1)
          do n = 2,nfen-1
             l(nh,n) = q2l(n)/q2(n)
-            if(l(nh,n).lt.0.) 
+            if(l(nh,n).lt.0.)
      &     l(nh,n)=rkap*(Z0B1*(a-sigma(n))-Z0Sw*(b-sigma(n)))/amb
             if(l(nh,n).gt.H) l(nh,n)=H
             if((iden.ne.0).and.(BVfreq2(n).gt.0.0)) then
@@ -2709,7 +2832,7 @@ c     Transfer to global array and check for stability limit
          l(nh,nfen) = q2l(nfen)/q2(nfen)
 
 C RJW 02252009 ...
-c Now we do a little bookeeping, to be sure things stay in 
+c Now we do a little bookeeping, to be sure things stay in
 c reasonable bounds.
 c 1) set a lower limit on the turbulent length scale of 10 cm
 c 2)in shallow water we want to modify the calculation of l
@@ -2722,7 +2845,7 @@ c equal the water depth
         do n = 1, nfen
 
           if (l(nh,n) .lt. 0.10 ) l(nh,n) = 0.10
-  
+
           if ( H .le. H_crit ) then
 
            l(nh,n) = H/H_crit*l(nh,n) + (1-H/H_crit)*H
@@ -2734,11 +2857,11 @@ c...
 
       endif
 
-c     
+c
 c     compute eddy viscosity and store variables for output and next step
-c     
+c
 C   kmd48.33bc need to add the vertical diffusion term for transport
-C              the lower limit will be the same as that for the eddy 
+C              the lower limit will be the same as that for the eddy
 C              viscosity
       do n = 1,nfen
          EVTOT(n) = Sm(n)*sqrt(q2(n))*l(nh,n)
@@ -2748,8 +2871,15 @@ C              viscosity
          if(NTVTOT(n).lt.EVMIN) NTVTOT(n)=EVMIN
       end do
 
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
-      END
+C***********************************************************************
+      END subroutine turb
+C***********************************************************************
+
 
 
 C***********************************************************************
@@ -2776,16 +2906,21 @@ C***********************************************************************
 c
       SUBROUTINE TRIDAG(A,B,C,R,U,N)
       USE GLOBAL, ONLY : ScreenUnit
-      USE GLOBAL_3DVS, ONLY : SZ
+      USE GLOBAL_3DVS, ONLY : SZ, setMessageSource,
+     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
       IMPLICIT NONE
       INTEGER :: J, N
 
       REAL(SZ) :: A(N),B(N),C(N),R(N),U(N)
       REAL(SZ) :: BET,GAM(N)
 
-c     
+      call setMessageSource("tridag")
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+c
 c     check for zero elements on diagonal
-c     
+c
       DO J=1,N
          if(B(j).EQ.0.) then
             write(screenunit,*) 'Problem in Tridag Solver.  ',
@@ -2808,8 +2943,16 @@ c
       DO J = N-1,1,-1
          U(J) = U(J) - GAM(J+1)*U(J+1)
       END DO
+
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
-      END
+C***********************************************************************
+      END SUBROUTINE TRIDAG
+C***********************************************************************
+
 
 
 C****************************************************************************************
@@ -2850,7 +2993,7 @@ C
 !      ENDIF
 !
 !      LTry=J                    !start search for SIGABOV and SIGBELO
-!      SigTry=Sigma(LTry)                    
+!      SigTry=Sigma(LTry)
 !      IF(SigmaNN.GT.SigTry) THEN !too low
 !         SigBelo=SigTry         !SIGBELO may = SIGTRY
 !         LBelo=LTry
@@ -2860,7 +3003,7 @@ C
 !            SigBelo=SigTry
 !            LBelo=LTry
 !            LTry=LTry+1
-!            GOTO 90 
+!            GOTO 90
 !         ENDIF
 !         SigAbov=SigTry         !found upper bracketing sigma
 !         LAbov=LTry
@@ -2868,7 +3011,7 @@ C
 !      ENDIF
 !      IF(SigmaNN.LE.SigTry) THEN !to high
 !         SigAbov=SigTry         !SIGABOV may = SIGTRY
-!         LAbov=LTry                          
+!         LAbov=LTry
 !         LTry=LTry-1            !look at next level lower
 ! 91      SigTry=Sigma(LTry)
 !         IF(SigmaNN.LE.SigTry) THEN !still too high
@@ -2891,12 +3034,12 @@ C
 !
 
 C***************************************************************************
-C   Subroutine to write out 3D Hot Start info 
-C                                            
-C                                    R.L.  8/16/05  
+C   Subroutine to write out 3D Hot Start info
+C
+C                                    R.L.  8/16/05
 C
 C     jgf49.44: This subroutine is only called if a binary hotstart
-C     file was specified. 
+C     file was specified.
 C***************************************************************************
 C
 C  kmd48.33bc changed to follow the global IO format
@@ -2908,7 +3051,7 @@ C  kmd48.33bc changed to follow the global IO format
 #ifdef CMPI
       USE MESSENGER
 #endif
-#ifdef NETCDF
+#ifdef ADCNETCDF
       USE NETCDFIO, ONLY : initNetCDFHotstart3D, writeNetCDFHotstart3D,
      &   writeNetCDFHotstart3DVar, allocateNetCDFHotstart3D
 #endif
@@ -2940,7 +3083,7 @@ C     jgf49.49.02: Added variables for 3D fields
       REAL(SZ), ALLOCATABLE, TARGET, SAVE :: ip_g(:,:) !imaginary part fulldom
       REAL(SZ), ALLOCATABLE, TARGET, SAVE :: layer(:) ! horiz layer in 3D
       INTEGER :: numHotstartWrites
-      INTEGER :: nextLun 
+      INTEGER :: nextLun
 
       LOGICAL, SAVE :: FirstCall3D = .true.
       call setMessageSource("hstart3D_out")
@@ -2949,12 +3092,12 @@ C     jgf49.49.02: Added variables for 3D fields
 #endif
 C
 C     kmd48.33bc write out results in global IO format
-      IF (FirstCall3D.eqv..true.) THEN 
+      IF (FirstCall3D.eqv..true.) THEN
 
         ALLOCATE(rp(NP,NFEN),ip(NP,NFEN))
 
         IF ((MNPROC.GT.1).AND.(myProc.eq.0).AND.
-     &     (WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN 
+     &     (WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN
            ALLOCATE(layer(np_g))
         ENDIF
         IF ((MNPROC.eq.1)
@@ -2965,7 +3108,7 @@ C     kmd48.33bc write out results in global IO format
         IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
            Allocate(DUU_g(NP_G))
         END IF
-        Duudescript % specifier            =  NHSTAR 
+        Duudescript % specifier            =  NHSTAR
         Duudescript % initial_value        =  0.0
         Duudescript % num_items_per_record =  1
         Duudescript % num_fd_records       =  NP_G
@@ -2977,7 +3120,7 @@ C     kmd48.33bc write out results in global IO format
         IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
            Allocate(DUV_g(NP_G))
         END IF
-        Duvdescript % specifier            =  NHSTAR 
+        Duvdescript % specifier            =  NHSTAR
         Duvdescript % initial_value        =  0.0
         Duvdescript % num_items_per_record =  1
         Duvdescript % num_fd_records       =  NP_G
@@ -2989,7 +3132,7 @@ C     kmd48.33bc write out results in global IO format
         IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
            Allocate(DVV_g(NP_G))
         END IF
-        Dvvdescript % specifier            =  NHSTAR 
+        Dvvdescript % specifier            =  NHSTAR
         Dvvdescript % initial_value        =  0.0
         Dvvdescript % num_items_per_record =  1
         Dvvdescript % num_fd_records       =  NP_G
@@ -3001,7 +3144,7 @@ C     kmd48.33bc write out results in global IO format
         IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
            Allocate(UU_g(NP_G))
         END IF
-        Uudescript % specifier            =  NHSTAR 
+        Uudescript % specifier            =  NHSTAR
         Uudescript % initial_value        =  0.0
         Uudescript % num_items_per_record =  1
         Uudescript % num_fd_records       =  NP_G
@@ -3013,7 +3156,7 @@ C     kmd48.33bc write out results in global IO format
         IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
            Allocate(VV_g(NP_G))
         END IF
-        Vvdescript % specifier            =  NHSTAR 
+        Vvdescript % specifier            =  NHSTAR
         Vvdescript % initial_value        =  0.0
         Vvdescript % num_items_per_record =  1
         Vvdescript % num_fd_records       =  NP_G
@@ -3025,25 +3168,25 @@ C     kmd48.33bc write out results in global IO format
         IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
            Allocate(BSX_g(NP_G))
         END IF
-        Bsxdescript % specifier            =  NHSTAR 
+        Bsxdescript % specifier            =  NHSTAR
         Bsxdescript % initial_value        =  0.0
         Bsxdescript % num_items_per_record =  1
         Bsxdescript % num_fd_records       =  NP_G
         Bsxdescript % num_records_this     =  NP
         Bsxdescript % imap                 => nodes_lg
-        Bsxdescript % array                => BSX1 
+        Bsxdescript % array                => BSX1
         Bsxdescript % array_g              => BSX_g
 
         IF ((MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
            Allocate(BSY_g(NP_G))
         END IF
-        Bsydescript % specifier            =  NHSTAR 
+        Bsydescript % specifier            =  NHSTAR
         Bsydescript % initial_value        =  0.0
         Bsydescript % num_items_per_record =  1
         Bsydescript % num_fd_records       =  NP_G
         Bsydescript % num_records_this     =  NP
         Bsydescript % imap                 => nodes_lg
-        Bsydescript % array                => BSY1 
+        Bsydescript % array                => BSY1
         Bsydescript % array_g              => BSY_g
 
          SigTDescript % specifier            =  I3DGD
@@ -3143,10 +3286,11 @@ C     kmd48.33bc write out results in global IO format
          LDescript % field_name           = 'l'
 
 
-         IF ((NHSTAR.eq.3).or.(NHSTAR.eq.367).or.(NHSTAR.eq.368)) THEN
-#ifdef NETCDF
+         IF ((NHSTAR.eq.3).or.(NHSTAR.eq.367).or.(NHSTAR.eq.368).or.
+     &        (NHSTAR.eq.5).or.(NHSTAR.eq.567).or.(NHSTAR.eq.568)) THEN
+#ifdef ADCNETCDF
             IF (MNPROC.eq.1) THEN
-               CALL initNetCDFHotstart3D(hss%lun)
+               CALL initNetCDFHotstart3D(hss%lun, NHSTAR)
                numHotstartWrites = (NT-IT)/NHSINC
                IF (numHotstartWrites.ge.1) THEN
                   IF (hss%lun.eq.67) THEN
@@ -3154,7 +3298,7 @@ C     kmd48.33bc write out results in global IO format
                   ELSE
                      nextLun = 67
                   ENDIF
-                  CALL initNetCDFHotstart3D(nextLun)
+                  CALL initNetCDFHotstart3D(nextLun, NHSTAR)
                ENDIF
             ELSE ! parallel
                ! We don't need to create the hotstart file, it was
@@ -3167,9 +3311,9 @@ C     kmd48.33bc write out results in global IO format
             ENDIF
 #endif
          ENDIF
- 
+
          FirstCall3d = .false.
-      END IF 
+      END IF
 
 #ifdef CMPI
       CALL collectFullDomainArray(Duudescript,packOne,unpackOne)
@@ -3180,13 +3324,13 @@ C     kmd48.33bc write out results in global IO format
       CALL collectFullDomainArray(Bsxdescript,packOne,unpackOne)
       CALL collectFullDomainArray(Bsydescript,packOne,unpackOne)
 #endif
-      
+
       SELECT CASE (NHSTAR)
 
       CASE(1,67,68) ! non-portable binary
 
          IF((MYPROC.eq.0).or.
-     &      (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN 
+     &      (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
             WRITE(hss % lun,REC=IHOTSTP) IDen  ;  IHOTSTP = IHOTSTP + 1
 
             WRITE(hss % lun,REC=IHOTSTP) N3DSD  ;  IHOTSTP = IHOTSTP + 1
@@ -3210,35 +3354,35 @@ C     kmd48.33bc write out results in global IO format
 C
          IF ((MNPROC.gt.1).and.(myProc.eq.0).and.
      &        (WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN
-            CALL binaryWrite2D(DUU_g, np_g, hss%lun, ihotstp) 
-            CALL binaryWrite2D(DUV_g, np_g, hss%lun, ihotstp) 
-            CALL binaryWrite2D(DVV_g, np_g, hss%lun, ihotstp) 
-            CALL binaryWrite2D(UU_g, np_g, hss%lun, ihotstp) 
-            CALL binaryWrite2D(VV_g, np_g, hss%lun, ihotstp) 
-            CALL binaryWrite2D(BSX_g, np_g, hss%lun, ihotstp) 
-            CALL binaryWrite2D(BSY_g, np_g, hss%lun, ihotstp) 
+            CALL binaryWrite2D(DUU_g, np_g, hss%lun, ihotstp)
+            CALL binaryWrite2D(DUV_g, np_g, hss%lun, ihotstp)
+            CALL binaryWrite2D(DVV_g, np_g, hss%lun, ihotstp)
+            CALL binaryWrite2D(UU_g, np_g, hss%lun, ihotstp)
+            CALL binaryWrite2D(VV_g, np_g, hss%lun, ihotstp)
+            CALL binaryWrite2D(BSX_g, np_g, hss%lun, ihotstp)
+            CALL binaryWrite2D(BSY_g, np_g, hss%lun, ihotstp)
          ENDIF
          IF ((MNPROC.eq.1).or.
      &      (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-            CALL binaryWrite2D(DUU, np_g, hss%lun, ihotstp) 
-            CALL binaryWrite2D(DUV, np_g, hss%lun, ihotstp) 
-            CALL binaryWrite2D(DVV, np_g, hss%lun, ihotstp) 
-            CALL binaryWrite2D(UU, np_g, hss%lun, ihotstp) 
-            CALL binaryWrite2D(VV, np_g, hss%lun, ihotstp) 
-            CALL binaryWrite2D(BSX, np_g, hss%lun, ihotstp) 
-            CALL binaryWrite2D(BSY, np_g, hss%lun, ihotstp) 
+            CALL binaryWrite2D(DUU, np_g, hss%lun, ihotstp)
+            CALL binaryWrite2D(DUV, np_g, hss%lun, ihotstp)
+            CALL binaryWrite2D(DVV, np_g, hss%lun, ihotstp)
+            CALL binaryWrite2D(UU, np_g, hss%lun, ihotstp)
+            CALL binaryWrite2D(VV, np_g, hss%lun, ihotstp)
+            CALL binaryWrite2D(BSX, np_g, hss%lun, ihotstp)
+            CALL binaryWrite2D(BSY, np_g, hss%lun, ihotstp)
          ENDIF
 
-         CASE(3,367,368) ! netcdf
-#ifdef NETCDF
+         CASE(3,367,368,5,567,568) ! netcdf classic; netcdf3 or netcdf4
+#ifdef ADCNETCDF
             IF (myProc.eq.0) THEN
                CALL writeNetCDFHotstart3D(hss%lun,DUUDescript,
-     &            DUVDescript, DVVDescript, UUDescript, VVDescript, 
+     &            DUVDescript, DVVDescript, UUDescript, VVDescript,
      &            BSXDescript, BSYDescript)
             ENDIF
 #endif
          CASE DEFAULT
-        
+
       END SELECT
 C
 C     3 D  V E L O C I T Y
@@ -3266,14 +3410,14 @@ C     3 D  V E L O C I T Y
      &         (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
                DO N=1,NFEN
                   layer(:) = real(q(:,N))
-                  CALL binaryWrite2D(layer, np, hss%lun, ihotstp) 
+                  CALL binaryWrite2D(layer, np, hss%lun, ihotstp)
                END DO
                DO N=1,NFEN
                   layer(:) = aimag(q(:,N))
-                  CALL binaryWrite2D(layer, np, hss%lun, ihotstp) 
+                  CALL binaryWrite2D(layer, np, hss%lun, ihotstp)
                END DO
                DO N=1,NFEN
-                  CALL binaryWrite2D(WZ(:,N), np, hss%lun, ihotstp) 
+                  CALL binaryWrite2D(WZ(:,N), np, hss%lun, ihotstp)
                END DO
             ENDIF
             IF ((MNPROC.GT.1).AND.(myProc.eq.0)
@@ -3288,8 +3432,8 @@ C     3 D  V E L O C I T Y
                   CALL binaryWrite2D(WZ_g(:,N), np_g, hss%lun, ihotstp)
                END DO
             ENDIF
-         CASE(3,367,368)
-#ifdef NETCDF
+         CASE(3,367,368,5,567,568)
+#ifdef ADCNETCDF
             IF ((MNPROC.eq.1).or.
      &         (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
                rp = real(q)
@@ -3303,7 +3447,7 @@ C     3 D  V E L O C I T Y
 #endif
          CASE DEFAULT
 
-      END SELECT 
+      END SELECT
 
       IF ((MNPROC.GT.1).and.
      &    (WRITE_LOCAL_HOT_START_FILES.eqv..false.).AND.
@@ -3311,7 +3455,7 @@ C     3 D  V E L O C I T Y
             DEALLOCATE(rp_g,ip_g,WZ_g)
       ENDIF
 C
-C     3 D  T U R B U L E N C E 
+C     3 D  T U R B U L E N C E
       IF ((MNPROC.GT.1).and.
      &   (WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN
          IF (myProc.eq.0) THEN
@@ -3328,10 +3472,10 @@ C     3 D  T U R B U L E N C E
          CASE(1,67,68) ! non-portable binary
             IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
                DO N=1,NFEN
-                  CALL binaryWrite2D(q20(:,N), np, hss%lun, ihotstp) 
+                  CALL binaryWrite2D(q20(:,N), np, hss%lun, ihotstp)
                END DO
                DO N=1,NFEN
-                  CALL binaryWrite2D(l(:,N), np, hss%lun, ihotstp) 
+                  CALL binaryWrite2D(l(:,N), np, hss%lun, ihotstp)
                END DO
             ENDIF
             IF ((MNPROC.GT.1).AND.(myProc.eq.0)
@@ -3343,8 +3487,8 @@ C     3 D  T U R B U L E N C E
                   CALL binaryWrite2D(l_g(:,N), np_g, hss%lun, ihotstp)
                END DO
             ENDIF
-         CASE(3,367,368)
-#ifdef NETCDF
+         CASE(3,367,368,5,567,568)
+#ifdef ADCNETCDF
             IF (myProc.eq.0) THEN
                CALL writeNetCDFHotstart3DVar(hss%lun, Q20Descript)
                CALL writeNetCDFHotstart3DVar(hss%lun, LDescript)
@@ -3352,14 +3496,14 @@ C     3 D  T U R B U L E N C E
 #endif
          CASE DEFAULT
 
-      END SELECT 
+      END SELECT
       IF ((MNPROC.GT.1).and.
      &   (WRITE_LOCAL_HOT_START_FILES.eqv..false.).AND.
      &    (myProc.eq.0)) THEN
          DEALLOCATE(q20_g,l_g)
       ENDIF
 C
-C     3 D  D E N S I T Y 
+C     3 D  D E N S I T Y
       IF ((MNPROC.GT.1).and.
      &   (WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN
          IF (myProc.eq.0) THEN
@@ -3376,7 +3520,7 @@ C     3 D  D E N S I T Y
                TempDescript % array2D_g => Temp_g
             ENDIF
          ENDIF
-         IF (ABS(IDEN).EQ.1) THEN        
+         IF (ABS(IDEN).EQ.1) THEN
             CALL collectFullDomainArray(SigTDescript,
      &         packNPbyM, unpackNPbyM)
          ENDIF
@@ -3393,14 +3537,14 @@ C
       SELECT CASE(NHSTAR)
          CASE(1,67,68) ! non-portable binary
             IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
-               IF (ABS(IDEN).EQ.1) THEN        
+               IF (ABS(IDEN).EQ.1) THEN
                   DO N=1,NFEN
                      CALL binaryWrite2D(SigT(:,N), np, hss%lun, ihotstp)
                   END DO
                ENDIF
                IF ((ABS(IDEN).EQ.2).OR.(ABS(IDEN).EQ.4)) THEN
                   DO N=1,NFEN
-                     CALL binaryWrite2D(Sal(:,N), np, hss%lun, ihotstp) 
+                     CALL binaryWrite2D(Sal(:,N), np, hss%lun, ihotstp)
                   END DO
                ENDIF
                IF ((ABS(IDEN).EQ.3).OR.(ABS(IDEN).EQ.4)) THEN
@@ -3411,7 +3555,7 @@ C
             ENDIF
             IF ((MNPROC.GT.1).AND.(myProc.eq.0)
      &         .AND.(WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN
-               IF (ABS(IDEN).EQ.1) THEN        
+               IF (ABS(IDEN).EQ.1) THEN
                   DO N=1,NFEN
                      CALL binaryWrite2D(SigT_g(:,N), np_g, hss%lun,
      &                  ihotstp)
@@ -3430,10 +3574,10 @@ C
                   END DO
                ENDIF
             ENDIF
-         CASE(3,367,368)
-#ifdef NETCDF
+         CASE(3,367,368,5,567,568)
+#ifdef ADCNETCDF
          IF (myProc.eq.0) THEN
-            IF (ABS(IDEN).EQ.1) THEN        
+            IF (ABS(IDEN).EQ.1) THEN
                CALL writeNetCDFHotstart3DVar(hss%lun, SigTDescript)
             ENDIF
             IF ((ABS(IDEN).EQ.2).OR.(ABS(IDEN).EQ.4)) THEN
@@ -3444,7 +3588,7 @@ C
             ENDIF
          ENDIF
 #endif
-      END SELECT 
+      END SELECT
 C
       IF ((MNPROC.GT.1).and.
      &   (WRITE_LOCAL_HOT_START_FILES.eqv..false.)) THEN
@@ -3521,24 +3665,25 @@ C-----------------------------------------------------------------------
 
 
 C****************************************************************************
-C   Subroutine to compute 3D SigmaT fields from 3D salinity 
-C   and/or temperature fields   
-C                              
-C                                    R.L.  6/22/05  
-C                                    K.D.  2/03/06 updated 
+C   Subroutine to compute 3D SigmaT fields from 3D salinity
+C   and/or temperature fields
+C
+C                                    R.L.  6/22/05
+C                                    K.D.  2/03/06 updated
 C*****************************************************************************
 C
 
       SUBROUTINE CALC_SIGMAT_3D ()
 
 !Kendra: Added in information needed for the calculation of sigma-t.
-!        Currently, I have added only the equation of state from 
-!        Cushman-Roisin book entitled "Introduction to Geophysical 
+!        Currently, I have added only the equation of state from
+!        Cushman-Roisin book entitled "Introduction to Geophysical
 !        Fluid Dynamics". Later, we can update this to include more
-!        complex equations of state. 
+!        complex equations of state.
 C   kmd48.33bc need to add variables for new equation of state
       USE GLOBAL_3DVS, ONLY : SAL, TEMP, SIGT, IDEN, NFEN, SZ,
-     &                        SIGMA, EQNSTATE, A, B
+     &                        SIGMA, EQNSTATE, A, B, setMessageSource,
+     &    unsetMessageSource, allMessage, logMessage, DEBUG, ECHO, INFO
 Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
       USE GLOBAL, ONLY : NP,RHOWAT0, DP, ETA2, IFNLFA, G
       IMPLICIT NONE
@@ -3604,8 +3749,12 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
 !Kendra: Variables for the 3rd equation of state
       REAL(SZ) :: Kappa
 
+      call setMessageSource("calc_sigmat_3D")
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
-      
+
 !Kendra: Equation of state from Cushman-Roisin book entitled "Introduction to
 !        Geophysical Fluid Dynamics".
       IF (Eqnstate.EQ.1) THEN
@@ -3630,7 +3779,7 @@ Cjgfdebug      USE GLOBAL, ONLY : NP,RHOWAT0, ScreenUnit
           DO N=1,NFEN
              SIGT(NH,N) = 1028.d0*(1.d0-T_alpha*(TEMP(NH,N)-
      &                    T_ref)+S_beta*(SAL(NH,N)-S_ref))-
-     &                    RHOWAT0 
+     &                    RHOWAT0
           ENDDO
         ENDDO
        ENDIF
@@ -3783,5 +3932,11 @@ C        with both salinity and temperature.
         END IF
       END IF
 
+#if defined(VSMY_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
-      END
+C*****************************************************************************
+      END SUBROUTINE CALC_SIGMAT_3D
+C*****************************************************************************

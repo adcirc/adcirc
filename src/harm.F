@@ -93,21 +93,18 @@ C
 C
       USE SIZES, ONLY : SZ, MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR
       USE GLOBAL, ONLY : screen, logMessage, DEBUG, ECHO, INFO,
-     &                   WARNING, ERROR, setMessageSource, 
+     &                   WARNING, ERROR, setMessageSource,
      &                   unsetMessageSource, allMessage, scratchMessage
-#ifdef CMPI
-      USE MESSENGER, ONLY : MSG_FINI
-#endif
 C
       REAL(8),PRIVATE,PARAMETER :: PI=3.141592653589793D0
 C
       ! jgf49.44: parameters describing the harmonic constituents to be
       ! included in the harmonic analysis of model results
       INTEGER :: IHARIND ! =1 if harmonic analysis was requested, 0 otherwise
-      LOGICAL :: CHARMV=.false.  ! .true. for timeseries reconstruction 
+      LOGICAL :: CHARMV=.false.  ! .true. for timeseries reconstruction
       INTEGER :: NFREQ                      ! number of frequencies
       CHARACTER*10,ALLOCATABLE :: NAMEFR(:) ! "M2", "S2", etc
-      REAL(SZ), ALLOCATABLE :: HAFREQ(:)    ! frequency (rad/s) 
+      REAL(SZ), ALLOCATABLE :: HAFREQ(:)    ! frequency (rad/s)
       REAL(SZ), ALLOCATABLE :: HAFF(:)      ! nodal factor
       REAL(SZ), ALLOCATABLE :: HAFACE(:)    ! equilibrium argument (deg)
 C
@@ -151,9 +148,9 @@ C     harmonic analysis is performed:
       INTEGER :: NHASE ! =1 to perform HA at elevation recording stations
       INTEGER :: NHASV ! =1 to perform HA at velocity recording stations
       INTEGER :: NHAGE ! =1 to do elevation HA at all nodes in the mesh
-      INTEGER :: NHAGV ! =1 to do velocity HA at all nodes in the mesh  
-C 
-C     jgf49.44: Parameters that control the calculation of harmonic 
+      INTEGER :: NHAGV ! =1 to do velocity HA at all nodes in the mesh
+C
+C     jgf49.44: Parameters that control the calculation of harmonic
 C     constituents:
       REAL(SZ) :: THAS ! number of days b/f harmonic analysis starts
       REAL(SZ) :: THAF ! number of days at which harmonic analysis ends
@@ -180,35 +177,35 @@ C     in serial or in parallel.
       REAL(SZ), POINTER :: GLOELV_pt(:,:),GLOULV_pt(:,:),GLOVLV_pt(:,:)
       REAL(SZ), POINTER :: ELAV_pt(:), ELVA_pt(:)
       REAL(SZ), POINTER :: XVELAV_pt(:), YVELAV_pt(:)
-      REAL(SZ), POINTER :: XVELVA_pt(:), YVELVA_pt(:) 
+      REAL(SZ), POINTER :: XVELVA_pt(:), YVELVA_pt(:)
 C
 C     jgf49.44: The following variables are read from the hotstart file and
-C     later compared with the values from the fort.15 to ensure that they 
+C     later compared with the values from the fort.15 to ensure that they
 C     match.
       INTEGER INHASE, INHASV, INHAGE, INHAGV, IFLAG
       INTEGER INFREQ, INSTAE, INSTAV, INP, INZ, INF, IMM, IICALL
       REAL(SZ),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
       CHARACTER*10,ALLOCATABLE :: INAMEFR(:)
-C     
+C
       CHARACTER*16 FNAME
       CHARACTER*8 FNAM8(2)
       EQUIVALENCE (FNAM8(1),FNAME)
 C
-C     jgf49.44: Raised output variables to module level and added 
+C     jgf49.44: Raised output variables to module level and added
 C     full domain counterparts for globalio. These arrays represent
 C     magnitudes and phases for each frequency at each station or node.
 C     Stations:
-      REAL(SZ), ALLOCATABLE, TARGET :: EMAG(:,:)    ! elevation magnitudes 
+      REAL(SZ), ALLOCATABLE, TARGET :: EMAG(:,:)    ! elevation magnitudes
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDE(:,:) ! elevation phases
       REAL(SZ), ALLOCATABLE, TARGET :: UMAG(:,:)    ! u velocity magnitudes
       REAL(SZ), ALLOCATABLE, TARGET :: VMAG(:,:)    ! v velocity magnitudes
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDU(:,:) ! u velocity phases
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDV(:,:) ! v velocity phases
 C     Nodes:
-      REAL(SZ), ALLOCATABLE, TARGET :: EMAGT(:,:)    ! elevation magnitudes 
+      REAL(SZ), ALLOCATABLE, TARGET :: EMAGT(:,:)    ! elevation magnitudes
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDEN(:,:) ! elevation phases
-      REAL(SZ), ALLOCATABLE, TARGET :: UMAGT(:,:)    ! u velocity magnitudes 
-      REAL(SZ), ALLOCATABLE, TARGET :: VMAGT(:,:)    ! v velocity magnitudes 
+      REAL(SZ), ALLOCATABLE, TARGET :: UMAGT(:,:)    ! u velocity magnitudes
+      REAL(SZ), ALLOCATABLE, TARGET :: VMAGT(:,:)    ! v velocity magnitudes
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDUT(:,:) ! u velocity phases
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDVT(:,:) ! v velocity phases
 C     Time series reconstruction:
@@ -245,7 +242,7 @@ C
 #endif
       ALLOCATE ( HAFREQ(MNHARF),HAFF(MNHARF),HAFACE(MNHARF) )
       ALLOCATE ( NAMEFR(MNHARF) )
-C     
+C
       ALLOCATE ( HA(2*MNHARF,2*MNHARF) )
       ALLOCATE ( HAP(2*MNHARF),HAX(2*MNHARF) )
       ALLOCATE ( GLOELV(2*MNHARF,MNP) )
@@ -262,7 +259,7 @@ C
       ALLOCATE ( EMAGT(MNHARF,MNP), PHASEDEN(MNHARF,MNP) )
       ALLOCATE ( UMAGT(MNHARF,MNP), PHASEDUT(MNHARF,MNP) )
       ALLOCATE ( VMAGT(MNHARF,MNP), PHASEDVT(MNHARF,MNP) )
-C      
+C
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -306,10 +303,10 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
 
 
-      
+
 C--------------------------------------------------------------------
-C                    S U B R O U T I N E 
-C     A L L O C A T E   F U L L   D O M A I N   H A   I O   A R R A Y S 
+C                    S U B R O U T I N E
+C     A L L O C A T E   F U L L   D O M A I N   H A   I O   A R R A Y S
 C--------------------------------------------------------------------
 C     jgf49.44: Allocates memory for the full domain arrays for i/o
 C     purposes.
@@ -348,7 +345,82 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E  I N I T   H A R M O N I C   P A R A M E T E R S 
+C     S U B R O U T I N E  C H E C K   H A R M O N I C   P A R A M E T E R S
+C--------------------------------------------------------------------
+C     jgf50.41: Checks harmonic analysis settings.
+C--------------------------------------------------------------------
+      SUBROUTINE checkHarmonicParameters()
+      USE GLOBAL, ONLY :  NFOVER
+      IMPLICIT NONE
+C
+      call setMessageSource("checkHarmonicParameters")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      IF((NHASE.LT.0).OR.(NHASE.GT.1)) THEN
+         CALL allMessage(WARNING,"Input value of NHASE is not valid.")
+         IF (NFOVER.EQ.1) THEN
+            CALL allMessage(WARNING,"NHASE will be set to zero.")
+         ELSE
+            CALL harmonicTerminate()
+         ENDIF
+      ELSE IF (NHASE.EQ.1) THEN
+         CALL logMessage(INFO,
+     &        'STATION ELEVATION HARMONIC ANALYSIS'
+     &        //' WILL BE WRITTEN TO UNIT 51 IN ASCII FORMAT.')
+      ENDIF
+
+      IF((NHASV.LT.0).OR.(NHASV.GT.1)) THEN
+         CALL allMessage(WARNING,"Input value of NHASV is not valid.")
+         IF (NFOVER.EQ.1) THEN
+            CALL allMessage(WARNING,"NHASV will be set to zero.")
+         ELSE
+            CALL harmonicTerminate()
+         ENDIF
+      ELSE IF (NHASV.EQ.1) THEN
+         CALL logMessage(INFO,
+     &        'STATION VELOCITY HARMONIC ANALYSIS'
+     &        //' WILL BE WRITTEN TO UNIT 52 IN ASCII FORMAT.')
+      ENDIF
+
+      IF((NHAGE.LT.0).OR.(NHAGE.GT.1)) THEN
+         CALL allMessage(WARNING,"Input value of NHAGE is not valid.")
+         IF (NFOVER.EQ.1) THEN
+            CALL allMessage(WARNING,"NHAGE will be set to zero.")
+         ELSE
+            CALL harmonicTerminate()
+         ENDIF
+      ELSE IF (NHAGE.EQ.1) THEN
+         CALL logMessage(INFO,
+     &        'FULL DOMAIN ELEVATION HARMONIC ANALYSIS'
+     &        //' WILL BE WRITTEN TO UNIT 53 IN ASCII FORMAT.')
+      ENDIF
+
+      IF((NHAGV.LT.0).OR.(NHAGV.GT.1)) THEN
+         CALL allMessage(WARNING,"Input value of NHAGV is not valid.")
+         IF (NFOVER.EQ.1) THEN
+            CALL allMessage(WARNING,"NHAGV will be set to zero.")
+         ELSE
+            CALL harmonicTerminate()
+         ENDIF
+      ELSE IF (NHAGV.EQ.1) THEN
+         CALL logMessage(INFO,
+     &        'FULL DOMAIN VELOCITY HARMONIC ANALYSIS'
+     &        //' WILL BE WRITTEN TO UNIT 54 ASCII FORMAT.')
+      ENDIF
+
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE checkHarmonicParameters
+C--------------------------------------------------------------------
+
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E  I N I T   H A R M O N I C   P A R A M E T E R S
 C--------------------------------------------------------------------
 C     jgf49.44: Initializes harmonic analysis arrays and parameters.
 C     Based on HACOLDS, written by rl.
@@ -361,7 +433,7 @@ C--------------------------------------------------------------------
 C
       call setMessageSource("initHarmonicParameters")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
       IF (IHARIND.EQ.0) THEN
 
@@ -387,7 +459,7 @@ c
       mm=2*nfreq+nf
 C
       ha(:,:)=0.0d0
-C     
+C
       IF (NHASE.EQ.1) THEN
          STAELV(:,:)=0.d0
       ENDIF
@@ -411,7 +483,7 @@ C
          YVELVA(:)=0.D0
       ENDIF                  !  charmv
 C
-C     jgf49.44: Initialize all the full domain i/o arrays to zero, if 
+C     jgf49.44: Initialize all the full domain i/o arrays to zero, if
 C     they will be used (i.e., if we are in serial or if we might be
 C     reading or writing full domain arrays in parallel).
       IF ( (MNPROC.gt.1).and.
@@ -442,7 +514,7 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E  U P D A T E   H A R M O N I C  A N A L Y S I S 
+C     S U B R O U T I N E  U P D A T E   H A R M O N I C  A N A L Y S I S
 C--------------------------------------------------------------------
 C     jgf49.44: Removed from timestep.F and placed here.
 C...
@@ -452,7 +524,7 @@ C...  HARMONIC ANALYSIS MATRIX AND LOAD VECTORS.  NOTE: AN 8 BYTE RECORD
 C...  SHOULD BE USED THROUGHOUT THE HARMONIC ANALYSIS SUBROUTINES, EVEN
 C...  ON 32 BIT WORKSTATIONS, SINCE IN THAT CASE THE HARMONIC ANALYSIS
 C...  IS DONE IN DOUBLE PRECISION.
-C...  
+C...
 C--------------------------------------------------------------------
       SUBROUTINE updateHarmonicAnalysis(it, timeh)
       USE GLOBAL, ONLY : ET00, UU00, VV00, ETA2, UU2, VV2,
@@ -471,15 +543,15 @@ C
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-C...  
+C...
       IF(IHARIND.EQ.1) THEN
          IF((IT.GT.ITHAS).AND.(IT.LE.ITHAF)) THEN
             IF(ICHA.EQ.NHAINC) ICHA=0
             ICHA=ICHA+1
             IF(ICHA.EQ.NHAINC) THEN
-C...  
+C...
 C.....UPDATE THE LHS MATRIX
-C...  
+C...
                CALL LSQUPDLHS(timeh,IT)
 
 C...  IF DESIRED COMPUTE ELEVATION STATION INFORMATION AND UPDATE LOAD
@@ -510,13 +582,13 @@ C...
                   END DO
                   CALL LSQUPDVS(UU00,VV00,NSTAV)
                ENDIF
-C...  
+C...
 C.....IF DESIRED UPDATE GLOBAL ELEVATION LOAD VECTOR
-C...  
+C...
                IF(NHAGE.EQ.1) CALL LSQUPDEG(ETA2,NP)
-C...  
+C...
 C.....IF DESIRED UPDATE GLOBAL VELOCITY LOAD VECTOR
-C...  
+C...
                IF(NHAGV.EQ.1) CALL LSQUPDVG(UU2,VV2,NP)
 
             ENDIF
@@ -573,7 +645,7 @@ C
 #endif
 c
       icall = icall + 1
-c     
+c
 c***** Update the Left Hand Side Matrix
 c     Note: this is a symmetric matrix and therefore only store the
 c     upper triangular part.  The lower part will be filled out in
@@ -639,7 +711,7 @@ c
 C
       call setMessageSource("LSQUPDES")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
 c
 c***** Update the Right Hand Side Load Vectors
@@ -665,14 +737,14 @@ c   Take care of the other constituents
             STAELV(I2,N) = STAELV(I2,N) + STAE(N)*STF1
          end do
       end do
-C     
+C
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       return
       end subroutine LSQUPDES
-      
+
 c***********************************************************************
 c   Subroutine to update the Right Hand Side Load Vectors for the      *
 c   velocity station harmonic analysis.                                *
@@ -692,10 +764,10 @@ c
       INTEGER NSTAV,N,I,I1,I2
       REAL(SZ) TF1,CTF1,STF1
       REAL(SZ) STAU(MNSTAV),STAV(MNSTAV)
-C 
+C
       call setMessageSource("LSQUPDVS")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
 c
 c***** Update the Right Hand Side Load Vectors
@@ -724,7 +796,7 @@ c     Take care of the other constituents
             STAVLV(I2,N) = STAVLV(I2,N) + STAV(N)*STF1
          end do
       end do
-C     
+C
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -755,9 +827,9 @@ C
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-c     
+c
 c*****Update the Right Hand Side Load Vectors
-c     
+c
 c     Take care of the steady constituent if included in the analysis
 
       if(nz.eq.0) then
@@ -779,7 +851,7 @@ c     Take care of the other constituents
             GLOELV(I2,N)=GLOELV(I2,N)+GLOE(N)*STF1
          end do
       end do
-C     
+C
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -811,11 +883,11 @@ c
 C
       call setMessageSource("LSQUPDVG")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
-c     
+c
 c*****Update the Right Hand Side Load Vectors
-c     
+c
 c     Take care of the steady constituent if included in the analysis
 
       if(nz.eq.0) then
@@ -840,7 +912,7 @@ c     Take care of the other constituents
             GLOVLV(I2,N) = GLOVLV(I2,N) + GLOV(N)*STF1
          end do
       end do
-C     
+C
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -848,9 +920,9 @@ C
       call unsetMessageSource()
       return
       end subroutine LSQUPDVG
-      
+
 C--------------------------------------------------------------------
-C     S U B R O U T I N E  S O L V E   H A R M O N I C   A N A L Y S I S 
+C     S U B R O U T I N E  S O L V E   H A R M O N I C   A N A L Y S I S
 C--------------------------------------------------------------------
 C     jgf49.44: Solves for amplitudes and phases at the nodes and/or
 C     stations as specified. Also finishes time series reconstruction
@@ -864,7 +936,7 @@ C--------------------------------------------------------------------
 C
       call setMessageSource("solveHarmonicAnalysis")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
 C
       IF ((IHARIND.NE.1).OR.(ITIME.LE.ITHAS)) THEN
@@ -875,7 +947,7 @@ C
          RETURN ! EARLY RETURN if we weren't supposed to do harmonic analysis
                 ! or it hasn't started yet.
       ENDIF
-C      
+C
 C...Compute means and variances for checking the harmonic analysis results
 C...Accumulate mean and variance at each node.
       if ((CHARMV.eqv..true.).and.(FMV.gt.1.0d-3)) then
@@ -933,19 +1005,19 @@ C
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-c     
+c
 c**** If only want to fill out matrix and decompose
-c     
+c
       if(idecom.eq.0) then
-         
+
 c     Set up the lower triangular part of the LHS a matrix
-         
+
          do j=1,mm
             do i=j,mm
                ha(i,j)=ha(j,i)
             end do
          end do
-         
+
 c     Decomposition of matrix a
 
          do 100 ir=1,mm
@@ -970,7 +1042,7 @@ c     Decomposition of matrix a
 c...  solve for y by forward substitution for l*y=p
 
       allocate ( c(2*MNHARF),y(2*MNHARF) )
-c     
+c
       do 120 ir=1,mm
          y(ir)=hap(ir)
          do 110 jr=1,ir-1
@@ -1032,7 +1104,7 @@ c
          call fulsol(n)
 c
 c        Compute amplitude and phase for each frequency making sure that the
-c        phase is between 0 and 360 deg. 
+c        phase is between 0 and 360 deg.
          do i=1,nfreq+nf
             if((nf.eq.1).and.(i.eq.1)) then
                emag(i,n)=hax(i)/haff(i)
@@ -1052,7 +1124,7 @@ c        phase is between 0 and 360 deg.
             if(phasede(i,n).ge.360.d0) phasede(i,n)=phasede(i,n)-360.d0
          end do
       end do
-C     
+C
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -1060,7 +1132,7 @@ C
       call unsetMessageSource()
       return
       end subroutine lsqsoles
-      
+
 
 c***********************************************************************
 c   Subroutine to solve the system and write output for velocity       *
@@ -1090,9 +1162,9 @@ c
 c
       ALLOCATE ( Y(2*MNHARF) )
 c
-c**** AT each STATION, transfer each load vector to p, solve system, 
+c**** AT each STATION, transfer each load vector to p, solve system,
 c**** then write results
-c     
+c
       DO N=1,NSTAV
          do k=1,mm
             hap(k) = STAVLV(k,n)
@@ -1105,9 +1177,9 @@ c
             hap(k) = STAULV(k,n)
          end do
          call fulsol(n)
-         
+
 c        Compute amplitude and phase for each frequency making sure that the
-c        phase is between 0 and 360 deg. 
+c        phase is between 0 and 360 deg.
 
          do i=1,nfreq+nf
             if((nf.eq.1).and.(i.eq.1)) then
@@ -1165,14 +1237,14 @@ c
       IMPLICIT NONE
       integer J,N,K,I,I1,I2,IT,IFR,NEAVMAX,NEAVMIN,
      &  NEVAMAX,NEVAMIN
-      REAL(8)  CONVRD 
+      REAL(8)  CONVRD
       REAL(SZ) EAVMAX,EVAMAX,EAVMIN,EVAMIN
       REAL(SZ) TIMELOC,RSE,FTIME
       REAL(SZ),ALLOCATABLE  ::  PHASEE(:),EMAG(:)
 C
       call setMessageSource("LSQSOLEG")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
 C
       convrd=180.d0/pi
@@ -1217,7 +1289,7 @@ c
             if(phaseden(i,n).lt.0.) phaseden(i,n)=phaseden(i,n)+360.d0
             if(phaseden(i,n).ge.360.d0) phaseden(i,n)=phaseden(i,n)-360.d0
          end do
-         
+
          if (CHARMV) then
             eav(n) = 0.d0
             esq(n) = 0.d0
@@ -1231,7 +1303,7 @@ c
                eav(n)=eav(n)+rse
                esq(n)=esq(n)+rse*rse
             end do
-C            
+C
             eav(n)=eav(n)/ntsteps
             esq(n)=esq(n)/ntsteps-eav(n)*eav(n)
             if(elav(n).eq.0.) then
@@ -1246,7 +1318,7 @@ C
             else
                evadif(n)=esq(n)/elva(n)
             endif
-C         
+C
             IF(EAVDIF(n).GT.EAVMAX) THEN
                EAVMAX=EAVDIF(n)
                NEAVMAX=n
@@ -1265,7 +1337,7 @@ C
             ENDIF
          endif                     ! charmv
       end do
-C      
+C
       if (charmv) then
 c
       WRITE(16,7740)
@@ -1280,7 +1352,7 @@ c
       WRITE(16,7742) EVAMIN,NEVAMIN
  7741 FORMAT(9X,'  AVERAGE ELEVATION RATIO = ',E15.7,' AT NODE ',I8)
  7742 FORMAT(9X,' VARIANCE ELEVATION RATIO = ',E15.7,' AT NODE ',I8)
-c     
+c
       endif                     ! charmv
 c
 
@@ -1479,7 +1551,7 @@ CHARMV...Compare resynthesized values with those computed during time stepping.
 
       end do
 
-      if ( charmv ) then 
+      if ( charmv ) then
 c
          WRITE(16,7740)
  7740    FORMAT(///,5X,'THE LARGEST VALUES OF THE RATIO ',
@@ -1499,7 +1571,7 @@ c
  7744    FORMAT(9X,'VARIANCE U VELOCITY RATIO = ',E15.7,' AT NODE ',I8)
  7745    FORMAT(9X,' AVERAGE V VELOCITY RATIO = ',E15.7,' AT NODE ',I8)
  7746    FORMAT(9X,'VARIANCE V VELOCITY RATIO = ',E15.7,' AT NODE ',I8)
-c     
+c
       endif                     ! charmv
 c
 
@@ -1510,16 +1582,16 @@ c
       return
       end subroutine lsqsolvg
 
-      
+
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E  R E A D  B I N A R Y  H A  H O T S T A R T 
+C     S U B R O U T I N E  R E A D  B I N A R Y  H A  H O T S T A R T
 C--------------------------------------------------------------------
 C     jgf49.44: Reads harmonic analysis data from a binary hotstart
 C     file. Based on HAHOTS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE readBinaryHAHotstart(lun, counter)
-      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES 
+      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
       USE GLOBAL, ONLY : NP, NP_G, NSTAE, NSTAE_G, NSTAV, NSTAV_G,
      &                   binaryRead3D, ITHS, NODES_LG, IMAP_STAE_LG,
      &                   IMAP_STAV_LG
@@ -1533,21 +1605,21 @@ C--------------------------------------------------------------------
       INTEGER :: subdomainStation  ! number of station to map data to
       INTEGER :: fulldomainStation ! number of station to map data from
       INTEGER :: subdomainNode  ! number of node to map data to
-      INTEGER :: fulldomainNode ! number of node to map data from     
+      INTEGER :: fulldomainNode ! number of node to map data from
 C
       call setMessageSource("readBinaryHAHotstart")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 C
-C     Settings for reading in hotstart file in serial, or for reading 
+C     Settings for reading in hotstart file in serial, or for reading
 C     subdomain hotstart files in parallel.
       IF ((MNPROC.eq.1)
      &   .or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
          STAELV_pt => STAELV
          num_elev_sta = NSTAE
          STAULV_pt => STAULV
-         STAVLV_pt => STAVLV         
+         STAVLV_pt => STAVLV
          num_vel_sta = NSTAV
          GLOELV_pt => GLOELV
          num_nodes = NP
@@ -1564,7 +1636,7 @@ C        ! read full domain hotstart file in parallel
          STAELV_pt => STAELV_G
          num_elev_sta = NSTAE_G
          STAULV_pt => STAULV_G
-         STAVLV_pt => STAVLV_G         
+         STAVLV_pt => STAVLV_G
          num_vel_sta = NSTAV_G
          GLOELV_pt => GLOELV_G
          num_nodes = NP_G
@@ -1673,11 +1745,11 @@ C
 C     Map data from fulldomain to subdomain in parallel
       IF ((MNPROC.gt.1)
      &   .and.(READ_LOCAL_HOT_START_FILES.eqv..false.)) THEN
-         IF (NHASE.EQ.1) THEN 
+         IF (NHASE.EQ.1) THEN
             DO subdomainStation=1,NSTAE
                fulldomainStation = ABS(IMAP_STAE_LG(subdomainStation))
                DO i=1,mm
-                  STAELV(i,subdomainStation) = 
+                  STAELV(i,subdomainStation) =
      &               STAELV_g(i,fulldomainStation)
                END DO
             END DO
@@ -1686,7 +1758,7 @@ C     Map data from fulldomain to subdomain in parallel
             DO subdomainStation=1,NSTAV
                fulldomainStation = ABS(IMAP_STAV_LG(subdomainStation))
                DO i=1,mm
-                  STAELV(i,subdomainStation) = 
+                  STAELV(i,subdomainStation) =
      &               STAELV_g(i,fulldomainStation)
                END DO
             END DO
@@ -1694,10 +1766,10 @@ C     Map data from fulldomain to subdomain in parallel
          IF (NHAGE.EQ.1) THEN
             DO subdomainNode=1,NP
                fulldomainNode = ABS(NODES_LG(subdomainNode))
-               DO i=1,mm 
+               DO i=1,mm
                   GLOELV(i,subdomainNode) = GLOELV_g(i,fulldomainNode)
                   GLOULV(i,subdomainNode) = GLOULV_g(i,fulldomainNode)
-                  GLOVLV(i,subdomainNode) = GLOVLV_g(i,fulldomainNode) 
+                  GLOVLV(i,subdomainNode) = GLOVLV_g(i,fulldomainNode)
                ENDDO
             ENDDO
          ENDIF
@@ -1719,7 +1791,7 @@ C..      Map Means and Squares
                      XVELVA(subdomainNode) = XVELVA_g(fulldomainNode)
                      YVELVA(subdomainNode) = YVELVA_g(fulldomainNode)
                   END DO
-               ENDIF   
+               ENDIF
             ENDIF
          ENDIF
       ENDIF ! MNPROC.gt.1 etc
@@ -1733,23 +1805,23 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
-C     S U B R O U T I N E  C H E C K   H A  H O T S T A R T 
+C     S U B R O U T I N E  C H E C K   H A  H O T S T A R T
 C--------------------------------------------------------------------
 C     jgf49.44: Checks harmonic analysis data from a hotstart file
 C     by comparing with parameters read from the fort.15.
 C     Based on HAHOTS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE checkHAHotstart()
-      USE GLOBAL, ONLY : NP_G, NSTAE_G, NSTAV_G, MYPROC, 
+      USE GLOBAL, ONLY : NP_G, NSTAE_G, NSTAV_G, MYPROC,
      &                   NSCREEN, SCREENUNIT
       IMPLICIT NONE
       INTEGER :: i    ! loop counter
       REAL(SZ) FDIFF  ! difference between frequencies btw hotstart and fort.15
       CHARACTER(len=1024) :: message
-C  
+C
       call setMessageSource("checkHAHotstart")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.") 
+      call allMessage(DEBUG,"Enter.")
 #endif
       call logMessage(INFO,
      & "Comparing harmonic parameters in hotstart file to fort.15...")
@@ -1865,21 +1937,21 @@ c
      +           ', NHAGV READ IN FROM HOT START FILE = ',I2)
          endif
          if(nfreq.ne.infreq) then
-            write(message,2110) NFREQ,INFREQ 
+            write(message,2110) NFREQ,INFREQ
             call allMessage(ERROR, message)
  2110       format('NFREQ COMPUTED FROM UNIT 15 INPUT = ',I2,
      +           ', NFREQ READ IN FROM HOT START FILE = ',I2)
          endif
          do i=1,nfreq+nf
             if(namefr(i).ne.inamefr(i)) then
-               write(message,2120) i,namefr(i),inamefr(i) 
+               write(message,2120) i,namefr(i),inamefr(i)
                call allMessage(ERROR, message)
  2120          format('FOR CONSTITUENT # ',I3,
      +              ', NAMEFR READ IN FROM UNIT 15 = ',A10,
      +              ', NAMEFR READ IN FROM HOT START FILE = ',A10)
             endif
             if(hafreq(i).ne.ifreq(i)) then
-               write(message,2130) i,hafreq(i),ifreq(i) 
+               write(message,2130) i,hafreq(i),ifreq(i)
                call allMessage(ERROR, message)
  2130          format('FOR CONSTITUENT # ',I3,
      +              ', FREQ READ IN FROM UNIT 15 = ',D20.10,
@@ -1900,11 +1972,7 @@ c
      +              ', FACE READ IN FROM HOT START FILE = ',F10.5)
             endif
          end do
-         call screen(ERROR,"********** RUN TERMINATED **********")
-#ifdef CMPI
-         call msg_fini()
-#endif
-         stop
+         call harmonicTerminate()
       endif
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -1914,6 +1982,37 @@ c
 C--------------------------------------------------------------------
       end subroutine checkHAHotstart
 C--------------------------------------------------------------------
+
+C----------------------------------------------------------------------
+C...  jgf50.41: Subroutine to terminate the run cleanly.
+C...
+C----------------------------------------------------------------------
+      SUBROUTINE harmonicTerminate()
+#ifdef CMPI
+      USE MESSENGER, ONLY : MSG_FINI
+#endif
+      IMPLICIT NONE
+C
+      call setMessageSource("harmonicTerminate")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+C
+      call allMessage(ERROR,"ADCIRC terminating.")
+#ifdef CMPI
+      call msg_fini()
+#endif
+      stop
+C
+
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+C----------------------------------------------------------------------
+      END SUBROUTINE harmonicTerminate
+C----------------------------------------------------------------------
 
 C--------------------------------------------------------------
       END MODULE HARM

@@ -1,7 +1,7 @@
 C******************************************************************************
 C PADCIRC VERSION 47.xx 10/13/2006                                             *
 C******************************************************************************
-C 
+C
       MODULE MESSENGER
       USE SIZES
       USE GLOBAL, ONLY: C3D, COMM, NODES_LG, IMAP_EL_LG,
@@ -10,21 +10,21 @@ C
      &    SIG_WRITE, SIG_TERM, SIG_PAUSE, FLOAT_TYPE, REALTYPE,
      &    DBLETYPE
 #ifdef HAVE_MPI_MOD
-      USE MPI  
+      USE MPI
 #endif
       IMPLICIT NONE
       SAVE
 
- 
+
 C--------------------------------------------------------------------------
 C  This module supplies the MPI Message-Passing Interface for PADCIRC.
-C  Uses asynchronous communication with buffer packing as performance 
+C  Uses asynchronous communication with buffer packing as performance
 C  enhancement for "cluster" architectures.
 C--------------------------------------------------------------------------
 
- 
+
 C  Message-Passing Array space
- 
+
       INTEGER ::  MPI_COMM_ADCIRC                     ! Local communicator
       INTEGER ::  NEIGHPROC, RDIM, IERR
       INTEGER ::  TAG = 100
@@ -35,10 +35,10 @@ C  Message-Passing Array space
       INTEGER, ALLOCATABLE ::  GROUP_HSLEEP(:)        ! GROUPS FOR HOTSTART FILE WRITING !st3 100711
       LOGICAL, ALLOCATABLE :: RESNODE(:)
 
-      INTEGER, ALLOCATABLE :: IPROC(:), NNODELOC(:), NNODSEND(:), 
-     &    NNODRECV(:), IBELONGTO(:),ISENDLOC(:,:), IRECVLOC(:,:), 
+      INTEGER, ALLOCATABLE :: IPROC(:), NNODELOC(:), NNODSEND(:),
+     &    NNODRECV(:), IBELONGTO(:),ISENDLOC(:,:), IRECVLOC(:,:),
      &    ISENDBUF(:,:), IRECVBUF(:,:)
- 
+
       INTEGER, ALLOCATABLE :: REQ_I1(:), REQ_I2(:)
       INTEGER, ALLOCATABLE :: STAT_I1(:,:), STAT_I2(:,:)
       INTEGER, ALLOCATABLE :: REQ_R1(:), REQ_R2(:), REQ_R3(:)
@@ -59,9 +59,9 @@ C---------------------end of data declarations--------------------------------C
 C--------------------------------------------------------------------------
 C  Routine performs following steps:
 C   (1)  define mpi data types to be used
-C   (2)  initialize MPI, 
+C   (2)  initialize MPI,
 C   (3)  get number of processors,
-C   (4)  get MPI rank of processor 
+C   (4)  get MPI rank of processor
 C   (5)  initialize adcirc COMM communicator MPI_COMM_WORLD
 C  vjp  10/3/2006
 C--------------------------------------------------------------------------
@@ -100,7 +100,7 @@ C.......Duplicate communicator
 
       CALL MPI_COMM_SIZE (MPI_COMM_ADCIRC,MNALLPROC,IERR)   ! Get number of procs
       CALL MPI_COMM_RANK (MPI_COMM_ADCIRC,MYPROC,IERR)   ! Get MPI rank
-      
+
       MNPROC = MNALLPROC - MNWPROC             ! MNALLPROC = MNPROC + MNWPROC
      &                   - MNWPROH             !             + MNWPROH  !st3 100711 for hsfile
 
@@ -138,8 +138,8 @@ C...  Create communicators for global file writings
 
       ENDIF
 !st3 for hsfile 05.14.2010
-#ifdef NETCDF
-      MNWPROH = 0
+#ifdef ADCNETCDF
+      MNWPROH = 0 !jgfdebug20120215: why is this here?
 #endif
 #ifndef CMPI
       MNWPROH = 0
@@ -214,13 +214,13 @@ C--------------------------------------------------------------------------
       IF (PRESENT(NO_MPI_FINALIZE)) THEN
          IF (.NOT.NO_MPI_FINALIZE) THEN
             CALL MPI_FINALIZE(IERR)
-            IF (MYPROC.EQ.0)  
-     &      PRINT *, "MPI terminated with Status = ",IERR      
+            IF (MYPROC.EQ.0)
+     &      PRINT *, "MPI terminated with Status = ",IERR
          ENDIF
       ELSE
          CALL MPI_FINALIZE(IERR)
-         IF (MYPROC.EQ.0)  
-     &   PRINT *, "MPI terminated with Status = ",IERR      
+         IF (MYPROC.EQ.0)
+     &   PRINT *, "MPI terminated with Status = ",IERR
       ENDIF
 
       RETURN
@@ -228,7 +228,7 @@ C--------------------------------------------------------------------------
 
 
 
-      SUBROUTINE MSG_TABLE () 
+      SUBROUTINE MSG_TABLE ()
       USE GLOBAL
       USE GLOBAL_3DVS, ONLY : NSTA3DD, NSTA3DV, NSTA3DT,
      &                        NSTA3DD_G, NSTA3DV_G, NSTA3DT_G,
@@ -246,7 +246,7 @@ C  Routine preforms following steps:
 C
 C   (1) Read Message-Passing Information from file "fort.18"
 C   (2) Determine resident nodes: RESNODE(I) is true  if I is resident node
-C   (3) Determine ghost nodes:    RESNODE(I) is false if I is ghost node    
+C   (3) Determine ghost nodes:    RESNODE(I) is false if I is ghost node
 C   (4) Determine number of neighbor subdomains
 C   (5) MPI rank of each neighbor and number of ghosts nodes to receive
 C   (6) Read Message-Passing Receive List
@@ -256,7 +256,7 @@ C  vjp  10/13/2006
 C
 C  tcm v50.21 20110610 -- Changed I8 to I12 formats
 C--------------------------------------------------------------------------
- 
+
       FileFound = .FALSE.
       INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.18',EXIST=FileFound)
       IF (FileFound.eqv..FALSE.) THEN
@@ -304,7 +304,7 @@ C Read Global indexes of Elevation Station nodes ( used by module global_io )
       IF (NSTAE > 0) THEN
         ALLOCATE ( IMAP_STAE_LG(NSTAE) )
         DO I=1,NSTAE
-           READ(18,'(I12)') IMAP_STAE_LG(I)              
+           READ(18,'(I12)') IMAP_STAE_LG(I)
         ENDDO
       ENDIF
 
@@ -313,7 +313,7 @@ C Read Global indexes of Velocity  Station nodes ( used by module global_io )
       IF (NSTAV > 0) THEN
         ALLOCATE ( IMAP_STAV_LG(NSTAV) )
         DO I=1,NSTAV
-           READ(18,'(I12)') IMAP_STAV_LG(I)              
+           READ(18,'(I12)') IMAP_STAV_LG(I)
         ENDDO
       ENDIF
 
@@ -322,7 +322,7 @@ C Read Global indexes of Meteorlogical Station nodes ( used by module global_io 
       IF (NSTAM > 0) THEN
         ALLOCATE ( IMAP_STAM_LG(NSTAM) )
         DO I=1,NSTAM
-           READ(18,'(I12)') IMAP_STAM_LG(I)              
+           READ(18,'(I12)') IMAP_STAM_LG(I)
         ENDDO
       ENDIF
 
@@ -331,7 +331,7 @@ C Read Global indexes of Concentration Station nodes ( used by module global_io 
       IF (NSTAC > 0) THEN
         ALLOCATE ( IMAP_STAC_LG(NSTAC) )
         DO I=1,NSTAC
-           READ(18,'(I12)') IMAP_STAC_LG(I)              
+           READ(18,'(I12)') IMAP_STAC_LG(I)
         ENDDO
       ENDIF
 
@@ -339,11 +339,11 @@ C-------------------------------------------------------------------------------
 C--Message-Passing tables start here
 C---------------------------------------------------------------------------------
 
-      READ(18,3010) IDPROC,NLOCAL    
+      READ(18,3010) IDPROC,NLOCAL
       ALLOCATE ( NNODELOC(NLOCAL) )
       READ(18,1130) (NNODELOC(I), I=1,NLOCAL)
       ALLOCATE ( IBELONGTO(MNP),RESNODE(MNP) )
- 
+
       DO I=1,MNP
          IBELONGTO(I) = 0
       ENDDO
@@ -353,26 +353,26 @@ C-------------------------------------------------------------------------------
       DO I=1, MNP
          IF (IBELONGTO(I)-1.EQ.MYPROC) THEN
            RESNODE(I) = .TRUE.
-         ELSE 
+         ELSE
            RESNODE(I) = .FALSE.
          ENDIF
       ENDDO
- 
+
       READ(18,3015) NEIGHPROC
 
       RDIM = 2*NEIGHPROC
       ALLOCATE( INDX(RDIM) )
       ALLOCATE( IPROC(NEIGHPROC),NNODRECV(NEIGHPROC) )
       ALLOCATE( IRECVLOC(MNP,NEIGHPROC) )
- 
+
       DO J=1,NEIGHPROC
          READ(18,3010) IPROC(J),NNODRECV(J)
          READ(18,1130) (IRECVLOC(I,J), I=1,NNODRECV(J))
       ENDDO
- 
+
       ALLOCATE( NNODSEND(NEIGHPROC) )
       ALLOCATE( ISENDLOC(MNP,NEIGHPROC) )
- 
+
       DO J=1,NEIGHPROC
          READ(18,3010) IPROC(J),NNODSEND(J)
          READ(18,1130) (ISENDLOC(I,J), I=1,NNODSEND(J))
@@ -384,7 +384,7 @@ C     jgf49.43.18: Add 3D station mappings if appropriate. Used by globalio.
          IF (NSTA3DD > 0) THEN
             ALLOCATE ( IMAP_STA3DD_LG(NSTA3DD) )
             DO I=1,NSTA3DD
-               READ(18,'(I12)') IMAP_STA3DD_LG(I)              
+               READ(18,'(I12)') IMAP_STA3DD_LG(I)
             ENDDO
          ENDIF
 
@@ -392,7 +392,7 @@ C     jgf49.43.18: Add 3D station mappings if appropriate. Used by globalio.
          IF (NSTA3DV > 0) THEN
             ALLOCATE ( IMAP_STA3DV_LG(NSTA3DV) )
             DO I=1,NSTA3DV
-               READ(18,'(I12)') IMAP_STA3DV_LG(I)              
+               READ(18,'(I12)') IMAP_STA3DV_LG(I)
             ENDDO
          ENDIF
 
@@ -400,7 +400,7 @@ C     jgf49.43.18: Add 3D station mappings if appropriate. Used by globalio.
          IF (NSTA3DT > 0) THEN
             ALLOCATE ( IMAP_STA3DT_LG(NSTA3DT) )
             DO I=1,NSTA3DT
-               READ(18,'(I12)') IMAP_STA3DT_LG(I)              
+               READ(18,'(I12)') IMAP_STA3DT_LG(I)
             ENDDO
          ENDIF
       ENDIF
@@ -414,7 +414,7 @@ C
 3020  format(a8,I12)
 9973  FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
       END SUBROUTINE MSG_TABLE
- 
+
 
 
       SUBROUTINE MSG_START ()
@@ -429,12 +429,12 @@ C--------------------------------------------------------------------------
       ALLOCATE ( ISENDBUF(MNP,NEIGHPROC), IRECVBUF(MNP,NEIGHPROC) )
       ALLOCATE ( REQ_I1(RDIM),REQ_I2(RDIM) )
       ALLOCATE ( REQ_R1(RDIM),REQ_R2(RDIM),REQ_R3(RDIM) )
-      ALLOCATE ( STAT_I1(MPI_STATUS_SIZE,RDIM),       
+      ALLOCATE ( STAT_I1(MPI_STATUS_SIZE,RDIM),
      &           STAT_I2(MPI_STATUS_SIZE,RDIM) )
-      ALLOCATE ( STAT_R1(MPI_STATUS_SIZE,RDIM),       
+      ALLOCATE ( STAT_R1(MPI_STATUS_SIZE,RDIM),
      &           STAT_R2(MPI_STATUS_SIZE,RDIM),
      &           STAT_R3(MPI_STATUS_SIZE,RDIM) )
- 
+
       IF (C3D) THEN
          ALLOCATE ( SENDBUF(2*MNP*MNFEN,NEIGHPROC) )
          ALLOCATE ( RECVBUF(2*MNP*MNFEN,NEIGHPROC) )
@@ -479,22 +479,22 @@ C--------------------------------------------------------------------------
       ENDDO
                           ! Send/receive messages to/from all neighbors
       IF (NMSG.EQ.1) THEN
-        DO J=1,NEIGHPROC   
-           CALL MPI_IRECV( IRECVBUF(1,J), NNODRECV(J), 
+        DO J=1,NEIGHPROC
+           CALL MPI_IRECV( IRECVBUF(1,J), NNODRECV(J),
      &             MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I1(J),IERR)
-           CALL MPI_ISEND( ISENDBUF(1,J), NNODSEND(J), 
+           CALL MPI_ISEND( ISENDBUF(1,J), NNODSEND(J),
      &       MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I1(J+NEIGHPROC),IERR )
         ENDDO
       ELSE
-        DO J=1,NEIGHPROC   
-           CALL MPI_IRECV( IRECVBUF(1,J), 2*NNODRECV(J), 
+        DO J=1,NEIGHPROC
+           CALL MPI_IRECV( IRECVBUF(1,J), 2*NNODRECV(J),
      &             MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I2(J),IERR)
-           CALL MPI_ISEND( ISENDBUF(1,J), 2*NNODSEND(J), 
+           CALL MPI_ISEND( ISENDBUF(1,J), 2*NNODSEND(J),
      &       MPI_INTEGER,IPROC(J), TAG, COMM, REQ_I2(J+NEIGHPROC),IERR )
         ENDDO
       ENDIF
-                          !..Unpack Received messages as they arrive  
-      IF (NMSG.EQ.1) THEN   
+                          !..Unpack Received messages as they arrive
+      IF (NMSG.EQ.1) THEN
         TOT = 0
         DO WHILE (TOT.LT.RDIM)
            DO N=1, RDIM
@@ -558,7 +558,7 @@ C  and persistent message-passing.
 C
 C  vjp  8/06/1999
 C--------------------------------------------------------------------------
- 
+
       DO J=1,NEIGHPROC
          NCOUNT = 0
          DO I=1,NNODSEND(J)
@@ -578,31 +578,31 @@ C--------------------------------------------------------------------------
            ENDDO
          ENDIF
       ENDDO
- 
+
       IF (NMSG.EQ.1) THEN
-        DO J=1,NEIGHPROC  
-           CALL MPI_IRECV( RECVBUF(1,J), NNODRECV(J), 
+        DO J=1,NEIGHPROC
+           CALL MPI_IRECV( RECVBUF(1,J), NNODRECV(J),
      &             REALTYPE,IPROC(J), TAG, COMM, REQ_R1(J),IERR)
-            CALL MPI_ISEND( SENDBUF(1,J), NNODSEND(J), 
+            CALL MPI_ISEND( SENDBUF(1,J), NNODSEND(J),
      &         REALTYPE,IPROC(J), TAG, COMM, REQ_R1(J+NEIGHPROC),IERR)
         ENDDO
       ELSEIF (NMSG.EQ.2) THEN
-        DO J=1,NEIGHPROC  
-           CALL MPI_IRECV( RECVBUF(1,J), 2*NNODRECV(J), 
+        DO J=1,NEIGHPROC
+           CALL MPI_IRECV( RECVBUF(1,J), 2*NNODRECV(J),
      &        REALTYPE,IPROC(J), TAG, COMM, REQ_R2(J),IERR)
-           CALL MPI_ISEND( SENDBUF(1,J), 2*NNODSEND(J), 
+           CALL MPI_ISEND( SENDBUF(1,J), 2*NNODSEND(J),
      &        REALTYPE,IPROC(J), TAG, COMM, REQ_R2(J+NEIGHPROC),IERR)
         ENDDO
       ELSE
-        DO J=1,NEIGHPROC  
-           CALL MPI_IRECV( RECVBUF(1,J), 3*NNODRECV(J), 
+        DO J=1,NEIGHPROC
+           CALL MPI_IRECV( RECVBUF(1,J), 3*NNODRECV(J),
      &             REALTYPE,IPROC(J), TAG, COMM, REQ_R3(J),IERR)
-           CALL MPI_ISEND( SENDBUF(1,J), 3*NNODSEND(J), 
+           CALL MPI_ISEND( SENDBUF(1,J), 3*NNODSEND(J),
      &        REALTYPE,IPROC(J), TAG, COMM, REQ_R3(J+NEIGHPROC),IERR)
         ENDDO
       ENDIF
- 
-      IF (NMSG.EQ.1) THEN   
+
+      IF (NMSG.EQ.1) THEN
         TOT = 0
         DO WHILE (TOT.LT.RDIM)
            DO N=1, RDIM
@@ -682,7 +682,7 @@ cdebug     print *, myproc, tot,nfini,INDX(1),INDX(2)
         ENDDO
         GOTO 999
       ENDIF
-  
+
  999  RETURN
       END SUBROUTINE UPDATER
 
@@ -699,7 +699,7 @@ C  and persistent message-passing.
 C
 C  tjc  6/24/2002
 C--------------------------------------------------------------------------
- 
+
                              !..Pack Messages
       DO J=1,NEIGHPROC
          NCOUNT = 0
@@ -711,14 +711,14 @@ C--------------------------------------------------------------------------
          ENDDO
       ENDDO
               ! Send/receive messages to/from all neighbors
-      DO J=1,NEIGHPROC  
-         CALL MPI_IRECV( RECVBUF(1,J), MNFEN*NNODRECV(J), 
+      DO J=1,NEIGHPROC
+         CALL MPI_IRECV( RECVBUF(1,J), MNFEN*NNODRECV(J),
      &        REALTYPE,IPROC(J), TAG, COMM, REQ_R3D(J),IERR)
-         CALL MPI_ISEND( SENDBUF(1,J), MNFEN*NNODSEND(J), 
+         CALL MPI_ISEND( SENDBUF(1,J), MNFEN*NNODSEND(J),
      &        REALTYPE,IPROC(J), TAG, COMM, REQ_R3D(J+NEIGHPROC),IERR)
       ENDDO
 
-              !..Unpack Received messages as they arrive     
+              !..Unpack Received messages as they arrive
       TOT = 0
       DO WHILE (TOT.LT.RDIM)
          DO N=1, RDIM
@@ -756,7 +756,7 @@ C  Update 1 Three-dimensional Complex Arrays' Ghost Cells using asynchronous
 C  and persistent message-passing.
 C  tjc  6/24/2002
 C--------------------------------------------------------------------------
-  
+
                              !..Pack Messages
       DO J=1,NEIGHPROC
          NCOUNT = 0
@@ -769,21 +769,21 @@ C--------------------------------------------------------------------------
             ENDDO
          ENDDO
       ENDDO
-                     
+
               ! Send/receive messages to/from all neighbors
- 
-      DO J=1,NEIGHPROC  
-         CALL MPI_IRECV( RECVBUF(1,J), 2*MNFEN*NNODRECV(J), 
+
+      DO J=1,NEIGHPROC
+         CALL MPI_IRECV( RECVBUF(1,J), 2*MNFEN*NNODRECV(J),
      &        REALTYPE,IPROC(J), TAG, COMM, REQ_C3D(J),IERR)
-C     jgf48.02 Commented out the following two lines and added the 
+C     jgf48.02 Commented out the following two lines and added the
 C     two after that to fix bug.
-C         CALL MPI_SEND_INIT ( SENDBUF(1,J), 2*MNFEN*NNODSEND(J), 
+C         CALL MPI_SEND_INIT ( SENDBUF(1,J), 2*MNFEN*NNODSEND(J),
 C     &        REALTYPE,IPROC(J), TAG, COMM, REQ_C3D(J+NEIGHPROC),IERR)
-         CALL MPI_ISEND ( SENDBUF(1,J), 2*MNFEN*NNODSEND(J), 
+         CALL MPI_ISEND ( SENDBUF(1,J), 2*MNFEN*NNODSEND(J),
      &        REALTYPE,IPROC(J), TAG, COMM, REQ_C3D(J+NEIGHPROC),IERR)
       ENDDO
 
-              !..Unpack Received messages as they arrive     
+              !..Unpack Received messages as they arrive
       TOT = 0
       DO WHILE (TOT.LT.RDIM)
          DO N=1, RDIM
@@ -813,7 +813,7 @@ C     &        REALTYPE,IPROC(J), TAG, COMM, REQ_C3D(J+NEIGHPROC),IERR)
             ENDIF
          ENDDO
       ENDDO
-C 
+C
       RETURN
       END SUBROUTINE UPDATEC3D
 
@@ -830,26 +830,26 @@ C
 C------------------------------------------------------------------------------
 C  Parallel version of SDOT for ITPACKV module
 C------------------------------------------------------------------------------
- 
+
       gsum = 0.0d0
       if (n.le.0) return
- 
+
       lsum = 0.0D0
       do i = 1,n
          if (RESNODE(i)) then
             lsum = lsum  + sx(i)*sy(i)
          endif
       enddo
- 
-      kount = 1                              
+
+      kount = 1
       call MPI_ALLREDUCE( lsum, gsum, kount, DBLETYPE,
      &     MPI_SUM, COMM, ierr)
- 
+
       return
       end function psdot
 
 
-      subroutine ps2dots( n, sd, sdt ,dot3rray) 
+      subroutine ps2dots( n, sd, sdt ,dot3rray)
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
@@ -862,12 +862,12 @@ C------------------------------------------------------------------------------
 C  Parallel version of 2-SDOTs for ITPACKV module
 C  jbr  6/17/00
 C------------------------------------------------------------------------------
- 
+
       dot3rray(1) = 0.0
       dot3rray(2) = 0.0
       dot3rray(3) = 0.0
       if (n.le.0) return
- 
+
       lsum(1) = 0.0D0
       lsum(2) = 0.0D0
 
@@ -877,11 +877,11 @@ C------------------------------------------------------------------------------
       do i = 1,n
          if (RESNODE(i)) lsum(2) = lsum(2)  + sd(i)*sdt(i)
       enddo
-      
-      kount=2 
+
+      kount=2
       call MPI_ALLREDUCE( lsum, gsum, kount, DBLETYPE,
      &     MPI_SUM, COMM, ierr)
- 
+
       dot3rray(1) = gsum(1)
       dot3rray(2) = gsum(2)
       dot3rray(3) = 1.0
@@ -901,12 +901,12 @@ C------------------------------------------------------------------------------
 C  Parallel version of 3-SDOTs for ITPACKV module
 C  jbr  6/17/00
 C------------------------------------------------------------------------------
- 
+
       dot3rray(1) = 0.0
       dot3rray(2) = 0.0
       dot3rray(3) = 0.0
       if (n.le.0) return
- 
+
       lsum(1) = 0.0D0
       lsum(2) = 0.0D0
       lsum(3) = 0.0D0
@@ -920,11 +920,11 @@ C------------------------------------------------------------------------------
       do i = 1,n
          if (RESNODE(i)) lsum(3) = lsum(3)  + su(i)*su(i)
       enddo
- 
-      kount=3 
+
+      kount=3
       call MPI_ALLREDUCE( lsum, gsum, kount, DBLETYPE,
      &     MPI_SUM, COMM, ierr)
- 
+
       dot3rray(1) = gsum(1)
       dot3rray(2) = gsum(2)
       dot3rray(3) = gsum(3)
@@ -936,26 +936,26 @@ C------------------------------------------------------------------------------
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-      INTEGER I   
+      INTEGER I
       INTEGER LNODES,TOTNODES
       INTEGER kount !jgf46.00 added
 C------------------------------------------------------------------------------
-C  Compute Number of nodes in entire domain.   
+C  Compute Number of nodes in entire domain.
 C------------------------------------------------------------------------------
- 
+
       LNODES = 0
       DO I=1,MNP
          IF (RESNODE(I)) LNODES = LNODES + 1
       ENDDO
- 
-      kount=1  
+
+      kount=1
       CALL MPI_ALLREDUCE(LNODES,TOTNODES,kount,MPI_INTEGER,MPI_SUM,
      &                   COMM,IERR)
       END SUBROUTINE ALLNODES
 
 
 C------------------------------------------------------------------------------
-C               S U B R O U T I N E   W E T D R Y S U M 
+C               S U B R O U T I N E   W E T D R Y S U M
 C------------------------------------------------------------------------------
 C     jgf45.06 The GWCE left hand side must be reset whenever wetting or
 C     drying has caused the grid to change. In parallel execution,
@@ -987,7 +987,7 @@ C
 
 
 C------------------------------------------------------------------------------
-C               S U B R O U T I N E   W A R N  E L E V  S U M 
+C               S U B R O U T I N E   W A R N  E L E V  S U M
 C------------------------------------------------------------------------------
 C     jgf46.11 If the warning elevation was exceeded in one subdomain,
 C     that information is propagated to the other subdomains so that the

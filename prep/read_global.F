@@ -25,7 +25,7 @@ C
       IMPLICIT NONE
 C
 C----------------------------------------------------------------------
-C     Reads the global ADCIRC grid data file for data decomposition 
+C     Reads the global ADCIRC grid data file for data decomposition
 C     program ADCPP.  This version compatible with ADCIRC_v34.03
 C     vjp  2/28/98
 C---------------------------------------------------------------------
@@ -66,8 +66,8 @@ c     READ(14,80) NSIZES
 c     READ(NSIZES,*) NELG,NNODG
 c     CALL GETMSG(NSIZES,SIZEMSG)
 C
-C--Read Nodal Coordinates and Bathymetry 
-C  If ICS=2 Will Convert later in read15 
+C--Read Nodal Coordinates and Bathymetry
+C  If ICS=2 Will Convert later in read15
 C
       NUMLINES=2
       DO I = 1,NNODG
@@ -77,7 +77,7 @@ C
             STOP 'Node Numbering not in Sequential Order'
          ENDIF
       ENDDO
-C      
+C
 C--Read Element Connectivity Table
 C
        DO I = 1,NELG
@@ -101,7 +101,7 @@ C...
       READ(NETAMSG,*) NETA
       NUMLINES=NUMLINES+1
 C...
-C...Read Number of Nodes on Open Boundary Segment 
+C...Read Number of Nodes on Open Boundary Segment
 C...and Segment Nodes Numbers
 C...
       J=0
@@ -116,7 +116,7 @@ C...
          ENDDO
          J=J+NVDLL(K)
       ENDDO
-C     
+C
       IF (NETA.NE.J) THEN
          print *, "Total Number of Boundary Nodes = ",J
          print *, "This exceeds NETA = ",NETA
@@ -129,7 +129,7 @@ C
       ENDIF
 C
 C--Read Total Number of Land Boundary Segments
-C     
+C
       READ(14,80) NBOUMSG
       READ(NBOUMSG,*) NBOU
 C
@@ -149,15 +149,15 @@ C
          READ(NVELLMSG(K),*) NVELL(K),IBTYPE(K)
          ITYPE = IBTYPE(K)
 ! kmd - added for rivers in a baroclinic simulation
-         IF (ABS(ITYPE/100).EQ.1) THEN 
-            IF (IDEN.LE.0) THEN 
+         IF (ABS(ITYPE/100).EQ.1) THEN
+            IF (IDEN.LE.0) THEN
                ITYPE=(ABS(ITYPE)-100)*(ITYPE/ABS(ITYPE))
-            ELSE IF (IDEN.GT.0) THEN 
+            ELSE IF (IDEN.GT.0) THEN
                APERIODIC_BC_TS=.TRUE.
                BndBCRiver=.TRUE.
                ITYPE=(ABS(ITYPE)-100)*(ITYPE/ABS(ITYPE))
-            END IF 
-         END IF 
+            END IF
+         END IF
 C
          DO I=1, NVELL(K)
             J = J+1
@@ -166,10 +166,10 @@ C
 C
 C     jgf46.21 Added support for IBTYPE=52.
          IF   ((ITYPE.NE.0).AND.(ITYPE.NE.10).AND.(ITYPE.NE.20)
-     &    .AND.(ITYPE.NE.1).AND.(ITYPE.NE.11).AND.(ITYPE.NE.21)      
-     &    .AND.(ITYPE.NE.2).AND.(ITYPE.NE.12).AND.(ITYPE.NE.22)      
+     &    .AND.(ITYPE.NE.1).AND.(ITYPE.NE.11).AND.(ITYPE.NE.21)
+     &    .AND.(ITYPE.NE.2).AND.(ITYPE.NE.12).AND.(ITYPE.NE.22)
      &    .AND.(ITYPE.NE.52)
-     &    .AND.(ITYPE.NE.3).AND.(ITYPE.NE.13).AND.(ITYPE.NE.23)      
+     &    .AND.(ITYPE.NE.3).AND.(ITYPE.NE.13).AND.(ITYPE.NE.23)
      &    .AND.(ITYPE.NE.4).AND.                  (ITYPE.NE.24)
      &    .AND.(ITYPE.NE.5).AND.                  (ITYPE.NE.25)
      &    .AND.                 (ITYPE.NE.30).AND.(ITYPE.NE.32)
@@ -213,7 +213,7 @@ C
               EXIST_FLUX = EXIST_FLUX + 1
               READ(14,*) NBVV(K,I)
               IBCONNR(K,I) = 0
-!kmd - added river boundary conditions for baroclinic 
+!kmd - added river boundary conditions for baroclinic
               IF (BndBCRiver) THEN
                  EXIST_BC_TS=EXIST_BC_TS+1
               END IF
@@ -229,10 +229,10 @@ C MEB This entire section written 04/01/04 to accomodate
 C MEB division of fort.20 files between PE directories.
 C MEB This must be modified if fort.14 format changes.
 C MEB --------------------------------------------------
-      IF (EXIST_FLUX.GT.0) THEN 
+      IF (EXIST_FLUX.GT.0) THEN
          REWIND(14)
          ALLOCATE ( FLUX14_ARY(EXIST_FLUX) )
-!kmd - added river boundary conditions for baroclinic 
+!kmd - added river boundary conditions for baroclinic
          ALLOCATE ( BCTS14_ARY(EXIST_BC_TS) )
          EXIST_FLUX=0
          EXIST_BC_TS=0
@@ -256,8 +256,8 @@ c
             READ(DNVELLMSG(K),*) DNVELL(K), DIBTYPE(K)
             DITYPE=DIBTYPE(K)
 ! kmd - added in boundary conditions for rivers in a baroclinic simulation
-            IF (ABS(DITYPE/100).EQ.1) THEN 
-               IF (IDEN.LE.0) THEN 
+            IF (ABS(DITYPE/100).EQ.1) THEN
+               IF (IDEN.LE.0) THEN
                   DITYPE=(ABS(DITYPE)-100)*(DITYPE/ABS(DITYPE))
                ELSE IF (IDEN.GT.0) THEN
                   BC_Rivers=.TRUE.
@@ -269,16 +269,16 @@ C     jgf46.21 Ad
      &           (DITYPE.EQ.52)) THEN
                DO I=1, DNVELL(K)
                   EXIST_FLUX = EXIST_FLUX + 1
-                  READ(14,*) DNBVV(K,I) 
+                  READ(14,*) DNBVV(K,I)
                   FLUX14_ARY(EXIST_FLUX) = DNBVV(K,I)
 ! kmd - added in boundary conditions for rivers in a baroclinic simulation
-                  IF (BC_Rivers) THEN  
+                  IF (BC_Rivers) THEN
                      EXIST_BC_TS=EXIST_BC_TS+1
                      BCTS14_ARY(EXIST_BC_TS)=DNBVV(K,I)
-                  END IF 
-                  IF (DP(DNBVV(K,I)).LT.0.d0) THEN 
-                     River_above_MSL=.TRUE.  ! kmd - Evan's changes for rivers above MSL 
-                  END IF 
+                  END IF
+                  IF (DP(DNBVV(K,I)).LT.0.d0) THEN
+                     River_above_MSL=.TRUE.  ! kmd - Evan's changes for rivers above MSL
+                  END IF
                ENDDO
             ELSE
                DO I=1, DNVELL(K)
@@ -308,12 +308,12 @@ C
 
 
 C----------------------------------------------------------------------
-C     Reads the global ADCIRC Input Data File for data decomposition 
+C     Reads the global ADCIRC Input Data File for data decomposition
 C     program ADCPP.  This version compatible with ADCIRC_v34.03
 C     vjp  3/28/98
 C---------------------------------------------------------------------
-      SUBROUTINE READ15() 
-      USE PRE_GLOBAL 
+      SUBROUTINE READ15()
+      USE PRE_GLOBAL
       USE GLOBAL, ONLY : MNHARF, parse, a2f, hss, screenUnit, STATNAME,
      &                   STATNAMEV, STATNAMEM, STATNAMEC, ERROR, DEBUG,
      &                   allMessage, setMessageSource,
@@ -592,7 +592,7 @@ C
             stop
          ENDIF
       ENDIF
-C     
+C
 C     jgf47.11 Allow the limits of time varying tau0 to be read in from
 C     the fort.15 file
       READ(15,80) TAU0MSG
@@ -601,8 +601,8 @@ C     the fort.15 file
          READ(15,80) TAU0LIMMSG
          READ(TAU0LIMMSG,*) Tau0FullDomainMin, Tau0FullDomainMax
       ENDIF
-       
-C     
+
+C
       READ(15,80) DTMSG
       READ(DTMSG,*) DT
 C
@@ -675,7 +675,7 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
          ENDIF
       ENDIF
 C
-C     jgf49.0804 Added NWS29 VortexOWI -- don't think we need to 
+C     jgf49.0804 Added NWS29 VortexOWI -- don't think we need to
 C     parse out the WTIMINC or other parameters.
       IF ((ABS(NWS)).EQ.29) THEN
          READ(15,80) WSMSG1
@@ -725,7 +725,7 @@ C
          SLAM(I) = X(I)
          SFEA(I) = Y(I)
       ENDDO
-      
+
 !      WRITE(6,*)"SLAM0,SFEA0", SLAM0,SFEA0
 C
 C--If ICS = 2 then apply CPP projection
@@ -738,7 +738,7 @@ C
             SFEA(I) = R*SF1(I)
          ENDDO
       ENDIF
-      
+
 
 C
       READ(15,80) TAUMSG
@@ -753,7 +753,7 @@ C
       READ(15,80) ESLMSG
       IF (IM.EQ.10) THEN
          READ(ESLMSG,*) ESLM,ESLC
-      ELSE 
+      ELSE
          READ(ESLMSG,*) ESLM
       ENDIF
 C
@@ -766,7 +766,7 @@ C
       READ(NTIFMSG,*) NTIF
       IF (NTIF.GT.MNTIF) THEN
          print *, "NTIF = ",NTIF, " exceeds parameter MNTIF = ",MNTIF
-         stop 
+         stop
       ENDIF
 C
       DO I=1,NTIF
@@ -790,7 +790,7 @@ C
       READ(NBFRMSG,*) NBFR
       IF (NBFR.GT.MNBFR) THEN
         print *, "NBFR = ",NBFR, " exceeds parameter MNBFR = ",MNBFR
-        stop 
+        stop
       ENDIF
 C
       DO I=1,NBFR
@@ -817,37 +817,37 @@ C     jgf46.21 Added support for IBTYPE=52.
       DO K=1, NBOU
 C         PRINT *, "IBTYPE(K) = ", IBTYPE(K)
 ! kmd - changed due to river additions for baroclinic simulation
-         IF (ABS(IBTYPE(K))/100.EQ.1) THEN 
+         IF (ABS(IBTYPE(K))/100.EQ.1) THEN
             ITYPE=(ABS(IBTYPE(K))-100)*(IBTYPE(K)/ABS(IBTYPE(K)))
             IF ((ITYPE.EQ.2).OR.(ITYPE.EQ.12)
      &        .OR.(ITYPE.EQ.22).OR.(ITYPE.EQ.32)
      &        .OR.(ITYPE.EQ.52)) THEN
               NFLUXF = 1
-            END IF 
-         ELSE 
+            END IF
+         ELSE
             IF ((IBTYPE(K).EQ.2).OR.(IBTYPE(K).EQ.12)
      &        .OR.(IBTYPE(K).EQ.22).OR.(IBTYPE(K).EQ.32)
      &        .OR.(IBTYPE(K).EQ.52)) THEN
               NFLUXF = 1
-            END IF 
+            END IF
          ENDIF
       ENDDO
 C      PRINT *, "NFLUXF = ", NFLUXF
-C     
+C
 C--If so, read the number of frequencies present and other info.
 C  Use LBCODE array constructed in read14.
 C
 Ckmd Added in information for processing fort.15 information if
-C    NFFR=-1 so the river information does not have to start at 
-C    time=0. 
+C    NFFR=-1 so the river information does not have to start at
+C    time=0.
       IF (NFLUXF.EQ.1) THEN
          READ(15,80) NFFRMSG
          READ(NFFRMSG,*) NFFR
          IF (NFFR.GT.MNFFR) THEN
             print *, "NFFR = ",NFFR, " exceeds parameter MNFFR = ",MNFFR
             stop
-         ENDIF         
-C     
+         ENDIF
+C
          IF ((NFFR.NE.0).AND.(NFFR.NE.-1)) THEN
             DO I=1,NFFR
                READ(15,80) FBOUNTAG(I)
@@ -859,13 +859,13 @@ C
                DO J=1,NVEL
                   IF ((LBCODE(J).EQ.2).OR.(LBCODE(J).EQ.12)
      &                 .OR.(LBCODE(J).EQ.22).OR.(LBCODE(J).EQ.52)) THEN
-                     READ(15,80) QNMSG(I,J)         
+                     READ(15,80) QNMSG(I,J)
                      READ(QNMSG(I,J),*) QNAM(I,J),QNPH(I,J)
 c     dbug             print *, "disc lbnode index = ",J
                   ENDIF
                ENDDO
-            ENDDO        
-            
+            ENDDO
+
 Cvjp 5/1/99  added to help localize the flow boundary nodes
 C  NBV    =  global node number of all boundary nodes
 C  NFLBN  =  number of flow boundary nodes
@@ -880,7 +880,7 @@ C
                   JG = JG + 1
                ENDDO
             ENDDO
-C     
+C
             NFLBN = 0
             DO J=1,NVEL
                IF ((LBCODE(J).EQ.2).OR.(LBCODE(J).EQ.12)
@@ -901,7 +901,7 @@ C--Read Elevation Recording Stations
 C...
       READ(15,80) STAEMSG
       READ(STAEMSG,*) NOUTE,TOUTSE,TOUTFE,NSPOOLE
-      IF (ABS(NOUTE).GT.4) THEN
+      IF (ABS(NOUTE).GT.5) THEN
         print *, "The value of NOUTE is not allowed"
         stop
       ENDIF
@@ -911,9 +911,9 @@ C
       IF (NSTAE.GT.MNSTAE) THEN
          print *, "NSTAE = ",NSTAE, " exceeds parameter MNSTAE = ",
      &              MNSTAE
-          stop   
+          stop
       ENDIF
-#ifdef NETCDF
+#ifdef ADCNETCDF
 C
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
@@ -931,10 +931,10 @@ C     ==================================================================
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
-              IF(NOUTE.NE.3)THEN
+              IF((abs(NOUTE).NE.3).AND.(abs(NOUTE).NE.5))THEN
                  READ(STAELOC(I),*) XEL(I),YEL(I)
               ELSE
-#ifdef NETCDF
+#ifdef ADCNETCDF
 !               READ(15,'(A132)') STATLINE
 !               call parse(STATLINE, LVAR)
                 call parse(STAELOC(I), LVAR)
@@ -944,13 +944,13 @@ C
 C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
 #endif
               ENDIF
-            
+
          ELSE
-              IF(NOUTE.NE.3)THEN
+              IF((abs(NOUTE).NE.3).AND.(abs(NOUTE).NE.5))THEN
 
                  READ(STAELOC(I),*) SLEL(I),SFEL(I)
               ELSE
-#ifdef NETCDF
+#ifdef ADCNETCDF
 !                READ(15,'(A132)') STATLINE
 !                call parse(STATLINE, LVAR)
                  call parse(STAELOC(I), LVAR)
@@ -962,7 +962,7 @@ C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
 #endif
              ENDIF
 
-            
+
             SL1Sta=DEG2RAD*SLEL(I)
             SF1Sta=DEG2RAD*SFEL(I)
 c           CALL CPP(XEL(I),YEL(I),SL1,SF1,SL0,SF0)
@@ -980,7 +980,7 @@ c           CALL CPP(XEL(I),YEL(I),SL1,SF1,SL0,SF0)
 !      END DO
 
 C
-C--For Each Elevation Station: 
+C--For Each Elevation Station:
 C  Find the Global Index of the element it lies in.
 C
 c...tcm v49.48.01 replace with new call to kdtsearch
@@ -994,7 +994,7 @@ C--Read Velocity Recording Stations
 C
       READ(15,80) STAVMSG
       READ(STAVMSG,*) NOUTV,TOUTSV,TOUTFV,NSPOOLV
-      IF (ABS(NOUTV).GT.4) THEN
+      IF (ABS(NOUTV).GT.5) THEN
         print *, "Value for NOUTV is not allowable"
         stop
       ENDIF
@@ -1004,9 +1004,9 @@ C
       IF (NSTAV.GT.MNSTAV) THEN
         print *, "NSTAV = ",NSTAV, " exceeds parameter MNSTAV = ",
      &             MNSTAV
-        stop 
+        stop
       ENDIF
-#ifdef NETCDF
+#ifdef ADCNETCDF
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
@@ -1018,17 +1018,17 @@ C     ==================================================================
 C
 #endif
       IF (ICS.EQ.1) THEN
-      
+
 
         DO I=1,NSTAV
            READ(15,'(A132)') STAVLOC(I)
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
-           IF(NOUTV.NE.3) THEN
+           IF((abs(NOUTV).NE.3).AND.(abs(NOUTV).NE.5)) THEN
               READ(STAVLOC(I),*) XEV(I),YEV(I)
            ELSE
-#ifdef NETCDF
+#ifdef ADCNETCDF
               call parse(STAVLOC(I), LVAR)
               XEV(I)=a2f(LVAR(1))
               YEV(I)=a2f(LVAR(2))
@@ -1038,17 +1038,17 @@ C              WRITE(6,9911) XEV(I), YEV(I), STATNAMEV(I)
            ENDIF
 
         ENDDO
-        
+
       ELSE
         DO I=1,NSTAV
            READ(15,'(A132)') STAVLOC(I)
-           
-           IF(NOUTV.NE.3) THEN
-           
+
+           IF((abs(NOUTV).NE.3).AND.(abs(NOUTV).NE.5)) THEN
+
                READ(STAVLOC(I),*) SLEV(I),SFEV(I)
 
            ELSE
-#ifdef NETCDF
+#ifdef ADCNETCDF
               call parse(STAVLOC(I), LVAR)
               SLEV(I)=a2f(LVAR(1))
               SFEV(I)=a2f(LVAR(2))
@@ -1063,7 +1063,7 @@ C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
 
-           
+
            SL1Sta=DEG2RAD*SLEV(I)
            SF1Sta=DEG2RAD*SFEV(I)
 C          CALL CPP(XEV(I),YEV(I),SL1,SF1,SL0,SF0)
@@ -1072,7 +1072,7 @@ C          CALL CPP(XEV(I),YEV(I),SL1,SF1,SL0,SF0)
         ENDDO
       ENDIF
 C
-C--For Each Velocity Station: 
+C--For Each Velocity Station:
 C  Find the Global Index of the element it lies in.
 C
 c...tcm v49.48.01 replace with new call to kdtsearch
@@ -1082,7 +1082,7 @@ c...tcm v49.48.01 replace with new call to kdtsearch
      &     'Velocity recording station   ')
 
 C
-C     If Passive Transport is indicated, then read Concentration Station Info 
+C     If Passive Transport is indicated, then read Concentration Station Info
 C
       IF (C2D_PTrans.or.C3D_PTrans) THEN
 C
@@ -1098,7 +1098,7 @@ C
         IF (NSTAC.GT.MNSTAC) THEN
           print *, "NSTAC = ",NSTAC, " exceeds parameter MNSTAC = ",
      &              MNSTAC
-          stop 
+          stop
         ENDIF
 C
         DO I=1,NSTAC
@@ -1116,7 +1116,7 @@ c            CALL CPP(XEC(I),YEC(I),SL1,SF1,SL0,SF0)
            ENDIF
         ENDDO
 C
-C--For Each Concentration Recording Station: 
+C--For Each Concentration Recording Station:
 C  Find the Global Index of the element it lies in.
 C
 c...tcm v49.48.01 replace with new call to kdtsearch
@@ -1127,26 +1127,26 @@ c...tcm v49.48.01 replace with new call to kdtsearch
 C
       ENDIF
 C
-C--If NWS <> 0 , then read Meteorlogical Station Info 
+C--If NWS <> 0 , then read Meteorlogical Station Info
 C
       NOUTM = 0
       IF (NWS.NE.0) THEN
 C
          READ(15,80) STAMMSG
          READ(STAMMSG,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
-         IF (ABS(NOUTM).GT.3) THEN
+         IF (ABS(NOUTM).GT.5) THEN
             print *, "Value of NOUTM is not allowable"
             stop
          ENDIF
-C     
+C
          READ(15,80) NSTAMMSG
          READ(NSTAMMSG,*) NSTAM
          IF (NSTAM.GT.MNSTAM) THEN
             print *, "NSTAM = ",NSTAM, " exceeds parameter MNSTAM = ",
      &           MNSTAM
-            stop 
+            stop
          ENDIF
-#ifdef NETCDF
+#ifdef ADCNETCDF
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
@@ -1155,21 +1155,21 @@ C
 C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
-C     
+C
 #endif
          DO I=1,NSTAM
             READ(15,'(A132)') STAMLOC(I)
 !            READ(15,'(A132)') STAMLOC(I)
 !            WRITE(6,*)"STAMLOC(I) ================",I,STAMLOC(I)
             IF (ICS.EQ.1) THEN
-            
+
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
-               IF(NOUTM.NE.3) THEN
+               IF((ABS(NOUTM).NE.3).AND.(ABS(NOUTM).NE.5)) THEN
                   READ(STAMLOC(I),*) XEM(I),YEM(I)
                ELSE
-#ifdef NETCDF
+#ifdef ADCNETCDF
                   call parse(STAMLOC(I), LVAR)
                   XEM(I)=a2f(LVAR(1))
                   YEM(I)=a2f(LVAR(2))
@@ -1178,12 +1178,12 @@ C                 WRITE(6,9911) XEM(I), YEM(I), STATNAMEM(I)
 #endif
                ENDIF
             ELSE
-               IF(NOUTM.NE.3) THEN
+               IF((ABS(NOUTM).NE.3).AND.(ABS(NOUTM).NE.5)) THEN
 
 !                 READ(15,80) STAMLOC(I)
                   READ(STAMLOC(I),*) SLEM(I),SFEM(I)
                ELSE
-#ifdef NETCDF
+#ifdef ADCNETCDF
 
                   call parse(STAMLOC(I), LVAR)
                   SLEM(I)=a2f(LVAR(1))
@@ -1206,9 +1206,9 @@ c     CALL CPP(XEM(I),YEM(I),SL1,SF1,SL0,SF0)
                YEM(I) = R*SF1Sta
             ENDIF
          ENDDO
-        
+
 C
-C--For Each Meterological Recording Station: 
+C--For Each Meterological Recording Station:
 C  Find the Global Index of the element it lies in.
 C
 c...tcm v49.48.01 replace with new call to kdtsearch
@@ -1216,15 +1216,15 @@ c...tcm v49.48.01 replace with new call to kdtsearch
 !     &        'Meteorological station        ')
           call kdtsearch(XEM,YEM,NNSMG,NSTAM,
      &         'Meteorological station        ')
-C     
+C
       ENDIF
-C     
+C
 C
 C--Read Global Elevation Data Output
 C
       READ(15,80) OUTGEMSG
       READ(OUTGEMSG,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
-      IF (ABS(NOUTGE).GT.4) THEN
+      IF (ABS(NOUTGE).GT.5) THEN
          print *, "NOUTGE does not have an allowable value"
          stop
       ENDIF
@@ -1233,7 +1233,7 @@ C--Read Global Velocity Data Output
 C
       READ(15,80) OUTGVMSG
       READ(OUTGVMSG,*) NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV
-      IF (ABS(NOUTGV).GT.4) THEN
+      IF (ABS(NOUTGV).GT.5) THEN
         print *, "NOUTGV does not have an allowable value"
         stop
       ENDIF
@@ -1253,7 +1253,7 @@ C
         READ(15,80) OUTGWMSG
         READ(OUTGWMSG,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
 Casey 090302: Changed the following line for ABS(NOUTGW).EQ.4
-        IF (ABS(NOUTGW).GT.3 .AND. ABS(NOUTGW).NE.4) THEN
+        IF (ABS(NOUTGW).GT.5) THEN
           print *, "NOUTGW does not have an allowable value"
           stop
         ENDIF
@@ -1329,10 +1329,10 @@ C     hot start file. This is used to test hot starting capabilities.
       READ(15,80) HSTARMSG
       READ(HSTARMSG,*) NHSTAR,NHSINC
 C     jgf49.41: Added new options for hotstart file format indicator: 2, 3,
-C     367, 368. Not sure we need to check the validity of NHSTAR values in 
+C     367, 368. Not sure we need to check the validity of NHSTAR values in
 C     adcprep though.
       SELECT CASE(NHSTAR)
-      CASE(0,1,2,3,67,68,367,368)
+      CASE(0,1,2,3,5,67,68,367,368,567,568)
          ! do nothing, these are allowable values
       CASE DEFAULT
         print *, "WARNING: NHSTAR=",NHSTAR," is not valid."
@@ -1362,13 +1362,13 @@ c       CALL READ15_3DDSS()
       ENDIF
 
       IF((useNetCDF.eqv..true.).and.(NETCDF_AVAIL.eqv..false.)) THEN
-         CALL allMessage(ERROR, 
+         CALL allMessage(ERROR,
      &      "NetCDF was selected in the fort.15 file.")
          CALL allMessage(ERROR,
      &      "NetCDF was not compiled into this executable program.")
          stop
       ENDIF
-#ifdef NETCDF
+#ifdef ADCNETCDF
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION for NETCDF I/O - 6/20/07
 C
@@ -1404,7 +1404,7 @@ C
       ENDIF
 #endif
 C
-C--Close Global Run Info file 
+C--Close Global Run Info file
 C
       CLOSE(15)
       call memory_status()
@@ -1425,8 +1425,8 @@ C     data decomposition program ADCPP.  This version compatible with
 C     ADCIRC_v41.11a
 C     tjc  6/24/02
 C---------------------------------------------------------------------
-      SUBROUTINE READ15_3DVS() 
-      USE PRE_GLOBAL 
+      SUBROUTINE READ15_3DVS()
+      USE PRE_GLOBAL
       USE GLOBAL, ONLY : parse, a2f, SNAMLEN
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET
       use memory_usage
@@ -1440,16 +1440,16 @@ C---------------------------------------------------------------------
 C
 C     jgf49.43.19: Moved memory allocation for number of 3D stations
 C     on each subdomain to here and made it unconditional.
-C     The NNSTA3D*P arrays will still be needed later b/c they are 
+C     The NNSTA3D*P arrays will still be needed later b/c they are
 C     written to the fort.18 message passing file.
       ALLOCATE(NNSTA3DDP(MNPROC))
       nbytes = 4*mnproc
       call memory_alloc(nbytes)
       ALLOCATE(NNSTA3DVP(MNPROC))
-      nbytes = 4*mnproc  
+      nbytes = 4*mnproc
       call memory_alloc(nbytes)
       ALLOCATE(NNSTA3DTP(MNPROC))
-      nbytes = 4*mnproc 
+      nbytes = 4*mnproc
       call memory_alloc(nbytes)
       ! initialize
       NNSTA3DDP = 0
@@ -1469,7 +1469,7 @@ C... SPECIFY WHETHER A BAROTROPIC OR BAROCLINIC RUN
       READ(IDENMSG,*) IDEN
       IF((IDEN.GT.4).OR.(IDEN.LT.-4)) THEN
          WRITE(*,*) "ERROR: IDEN=",IDEN
-         WRITE(*,423) 
+         WRITE(*,423)
          WRITE(*,350)
  423     FORMAT(/,2X,' IDEN must be an integer between -4 and 4.')
          STOP
@@ -1582,10 +1582,10 @@ C     ALLOCATE(STATNAMED(NSTA3DD))
       nbytes = 4*SNAMLEN*NSTA3DD
       call memory_alloc(nbytes)
 C  kmd48.33bc changed to -2 and I3DSD not equal to 0
-      IF(ABS(I3DSD).GT.3) THEN
+      IF(ABS(I3DSD).GT.5) THEN
          WRITE(*,350)
          WRITE(*,511)
- 511     FORMAT(/,2X,'    I3DSD MUST BE -3,-2,-1,0,1,2, or 3')
+ 511     FORMAT(/,2X,'    I3DSD MUST BE -5,-3,-2,-1,0,1,2, 3, or 5')
          STOP
       ENDIF
       IF(NSTA3DD.NE.0) THEN  ! kmd : changed to match 2D option
@@ -1606,7 +1606,7 @@ C  kmd48.33bc changed to -2 and I3DSD not equal to 0
             ENDIF
          ENDDO
 C
-C     jgf45.11 For each 3D density station, find the full-domain index of 
+C     jgf45.11 For each 3D density station, find the full-domain index of
 C     the corresponding element.
 c...tcm v49.48.01 replace with new call to kdtsearch
 !         CALL CoordToEle(X3DD,Y3DD,NNS3DDG,NSTA3DD,
@@ -1624,7 +1624,7 @@ C     jgf45.11 switched from node numbers to coordinates
       READ(15,80) NSTA3DVMSG
       READ(NSTA3DVMSG,*) NSTA3DV
       ALLOCATE(IMAP_STA3DV_LG(NSTA3DV,MNPROC))
-      nbytes = 4*nsta3dv*mnproc  
+      nbytes = 4*nsta3dv*mnproc
       call memory_alloc(nbytes)
       ALLOCATE(STA3DVLOC(NSTA3DV))
       nbytes = 8*nsta3dv
@@ -1635,7 +1635,7 @@ C     jgf45.11 switched from node numbers to coordinates
       ALLOCATE(NNS3DVG(NSTA3DV))
       nbytes = 4*nsta3dv
       call memory_alloc(nbytes)
-      IF(.NOT. ALLOCATED(STATNAMEV3D))ALLOCATE(STATNAMEV3D(NSTA3DV)) 
+      IF(.NOT. ALLOCATED(STATNAMEV3D))ALLOCATE(STATNAMEV3D(NSTA3DV))
 C      ALLOCATE(STATNAMEV3D(NSTA3DV))
       nbytes = 4*SNAMLEN*NSTA3DV
       call memory_alloc(nbytes)
@@ -1644,10 +1644,10 @@ C      ALLOCATE(STATNAMEV3D(NSTA3DV))
         call memory_alloc(nbytes)
 
 C  kmd48.33 changed to -2
-      IF(ABS(I3DSV).GT.3) THEN
+      IF(ABS(I3DSV).GT.5) THEN
          WRITE(*,350)
          WRITE(*,512)
- 512     FORMAT(/,2X,'    I3DSV MUST BE -3,-2,-1,0,1,2,or 3')
+ 512     FORMAT(/,2X,'    I3DSV MUST BE -5,-3,-2,-1,0,1,2,3 or 5')
          STOP
       ENDIF
       IF(NSTA3DV.NE.0) THEN ! kmd : Changed to match 2D option
@@ -1667,7 +1667,7 @@ C  kmd48.33 changed to -2
                Y3DV(I) = R*SF1Sta
             ENDIF
          ENDDO
-C     jgf45.11 For each 3D velocity station, find the full-domain index of 
+C     jgf45.11 For each 3D velocity station, find the full-domain index of
 C     the corresponding element.
 c...tcm v49.48.01 replace with new call to kdtsearch
 !         CALL CoordToEle(X3DV,Y3DV,NNS3DVG,NSTA3DV,
@@ -1683,7 +1683,7 @@ C     jgf45.11 switched from node numbers to coordinates
       READ(15,80) NSTA3DTMSG
       READ(NSTA3DTMSG,*) NSTA3DT
       ALLOCATE(IMAP_STA3DT_LG(NSTA3DT,MNPROC))
-      nbytes = 4*nsta3dt*mnproc 
+      nbytes = 4*nsta3dt*mnproc
       call memory_alloc(nbytes)
       ALLOCATE(STA3DTLOC(NSTA3DT))
       nbytes = 4*nsta3dt
@@ -1699,10 +1699,10 @@ C      ALLOCATE(STATNAMET(NSTA3DT))
       nbytes = 16*nsta3dv
       call memory_alloc(nbytes)
 C  kmd48.33 changed to -2
-      IF(ABS(I3DST).GT.3) THEN
+      IF(ABS(I3DST).GT.5) THEN
          WRITE(*,350)
          WRITE(*,513)
- 513     FORMAT(/,2X,'    I3DST MUST BE -3,-2,-1,0,1,2, or 3')
+ 513     FORMAT(/,2X,'    I3DST MUST BE -5,-3,-2,-1,0,1,2,3 or 5')
          STOP
       ENDIF
       IF(NSTA3DT.NE.0) THEN ! kmd - Changed to match 2D option
@@ -1723,7 +1723,7 @@ C  kmd48.33 changed to -2
             ENDIF
          ENDDO
 
-C     jgf45.11 For each 3D turbulence station, find the full-domain index of 
+C     jgf45.11 For each 3D turbulence station, find the full-domain index of
 C     the corresponding element.
 
          ALLOCATE(NNS3DTG(NSTA3DT))
@@ -1741,7 +1741,7 @@ C....  GLOBAL 3D DENSITY, TEMPERATURE, SALINITY OUTPUT
       READ(15,80) DGDMSG
       READ(DGDMSG,*) I3DGD,TO3DGDS,TO3DGDF,NSPO3DGD
 C   kmd48.33bc changed to -2
-      IF(ABS(I3DGD).GT.2) THEN  !tcm 20110511 should this be .GT.3 instead of .GT.2 ?
+      IF(ABS(I3DGD).GT.5) THEN  !tcm 20110511 should this be .GT.3 instead of .GT.2 ?
          WRITE(*,350)
          WRITE(*,514)
  514     FORMAT(/,2X,'    I3DGD MUST BE -3,-2,-1,0,1,2, or 3')
@@ -1753,7 +1753,7 @@ C....  GLOBAL 3D VELOCITY OUTPUT
       READ(15,80) DGVMSG
       READ(DGVMSG,*) I3DGV,TO3DGVS,TO3DGVF,NSPO3DGV
 C   kmd48.33bc changed to -2
-      IF(ABS(I3DGV).GT.3) THEN
+      IF(ABS(I3DGV).GT.5) THEN
          WRITE(*,350)
          WRITE(*,515)
  515     FORMAT(/,2X,'    I3DGV MUST BE -3,-2,-1,0,1,2 or 3')
@@ -1765,7 +1765,7 @@ C....  GLOBAL 3D TURBULENCE OUTPUT
       READ(15,80) DGTMSG
       READ(DGTMSG,*) I3DGT,TO3DGTS,TO3DGTF,NSPO3DGT
 C   kmd48.33bc changed to -2
-      IF(ABS(I3DGT).GT.3) THEN
+      IF(ABS(I3DGT).GT.5) THEN
          WRITE(*,350)
          WRITE(16,516)
  516     FORMAT(/,2X,'    I3DGT MUST BE -3,-2,-1,0,1,2, or 3')
@@ -1777,37 +1777,37 @@ C   kmd48.33bc add in information for 3D boundary condition
         READ(15,80) RESBCFLAGMSG
         READ(RESBCFLAGMSG,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
         IF (RES_BC_FLAG.NE.0) THEN
-           IF (NOPE.GT.0) THEN 
+           IF (NOPE.GT.0) THEN
              READ(15,80) BCTIMEMSG
              READ(15,80) BCSTATMSG
-           END IF 
+           END IF
            IF (BCFLAG_TEMP.NE.0) THEN
               READ(15,80) TBCTIMEMSG
            END IF
         END IF
         IF ((RES_BC_FLAG.LT.0).OR.(RES_BC_FLAG.EQ.1))  THEN
-           IF (NOPE.GT.0) THEN 
+           IF (NOPE.GT.0) THEN
              READ(BCTIMEMSG,*) RBCTIMEINC
              READ(BCSTATMSG,*) BCSTATIM
            END IF
         ELSE IF (RES_BC_FLAG.EQ.2) THEN
-           IF (NOPE.GT.0) THEN 
+           IF (NOPE.GT.0) THEN
              READ(BCTIMEMSG,*) RBCTIMEINC, SBCTIMEINC
              READ(BCSTATMSG,*) BCSTATIM, SBCSTATIM
-           END IF 
+           END IF
         ELSE IF (RES_BC_FLAG.EQ.3) THEN
-           IF (NOPE.GT.0) THEN 
+           IF (NOPE.GT.0) THEN
              READ(BCTIMEMSG,*) RBCTIMEINC, TBCTIMEINC
              READ(BCSTATMSG,*) BCSTATIM, TBCSTATIM
-           END IF 
+           END IF
            IF (BCFLAG_TEMP.NE.0) THEN
               READ(TBCTIMEMSG,*) TTBCTIMEINC, TTBCSTATIM
            END IF
         ELSE IF (RES_BC_FLAG.EQ.4) THEN
-           IF (NOPE.GT.0) THEN 
+           IF (NOPE.GT.0) THEN
              READ(BCTIMEMSG,*) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
              READ(BCSTATMSG,*) BCSTATIM, SBCSTATIM, TBCSTATIM
-           END IF 
+           END IF
            IF (BCFLAG_TEMP.NE.0) THEN
               READ(TBCTIMEMSG,*) TTBCTIMEINC, TTBCSTATIM
            END IF
@@ -1912,14 +1912,14 @@ C----------------------------------------------------------------------
      &                   - shplocal(2)*shplocal(4)
 
 !        compute the radius of the circle that circumscribes
-!        the triangle then scale it by 50% larger to allow for 
-!        a buffer later on 
+!        the triangle then scale it by 50% larger to allow for
+!        a buffer later on
          rmax(i)=1.50D0*( sqrt(shplocal(6)*shplocal(6)+
-     &                         shplocal(3)*shplocal(3))* 
-     &                    sqrt(shplocal(4)*shplocal(4)+ 
-     &                         shplocal(1)*shplocal(1))* 
-     &                    sqrt(shplocal(5)*shplocal(5)+ 
-     &                         shplocal(2)*shplocal(2))/ 
+     &                         shplocal(3)*shplocal(3))*
+     &                    sqrt(shplocal(4)*shplocal(4)+
+     &                         shplocal(1)*shplocal(1))*
+     &                    sqrt(shplocal(5)*shplocal(5)+
+     &                         shplocal(2)*shplocal(2))/
      &                     (2.d0*shplocal(7)) )
 !        Compute the barycenter of the element
           bcxy(1,i) = sum(xelm)/3.d0
@@ -1959,18 +1959,18 @@ C----------------------------------------------------------------------
       TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
       LOGICAL ElementFound  ! .true. when a corresponding element is found
       INTEGER ClosestElement  ! element with closest match
-      REAL(sz), PARAMETER :: Tolerance = 1.0d-5     ! area difference for match 
+      REAL(sz), PARAMETER :: Tolerance = 1.0d-5     ! area difference for match
 
       ElementFound = .false.
 
-!    Be sure the maximum search depth is not larger than 
+!    Be sure the maximum search depth is not larger than
 !    the number of elements being kept
       if (nelg.lt.srchdp) srchdp = nelg
 
 !     Create the search tree
       tree => kdtree2_create(bcxy,rearrange=.true.,sort=.true.)
 
-!     allocate space for the search results from the tree       
+!     allocate space for the search results from the tree
       allocate(KDRESULTS(srchdp))
 
 
@@ -1991,7 +1991,7 @@ C----------------------------------------------------------------------
 !           loop through the elements in the search list
             do while ((ElementFound.eqv..false.).and.(itc.le.srchdp))
                iek = KDRESULTS(itc)%idx  !Current search element number
-!              Get the distance from this point to the barycenter of the 
+!              Get the distance from this point to the barycenter of the
 !              current element
                dist = sqrt(KDRESULTS(itc)%dis)
 !              If the distance is less than or equal to rmax (rmax=1.5*element radius)
@@ -2057,7 +2057,7 @@ C----------------------------------------------------------------------
 
 
 C-----------------------------------------------------------------------
-C          S U B R O U T I N E   C O O R D  T O  E L E 
+C          S U B R O U T I N E   C O O R D  T O  E L E
 C-----------------------------------------------------------------------
 C
 C     jgf45.11 Subroutine to take a list of X and Y cartesian

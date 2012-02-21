@@ -1,7 +1,7 @@
       !--------------------------------------------------------------
       ! Global IO module.
       !
-      !  This module exists to write out global output files on 
+      !  This module exists to write out global output files on
       !  parallel machines and one file on uniproc machines.
       !--------------------------------------------------------------
 
@@ -21,10 +21,10 @@ C     &    COMM, nodecode
       contains
 
       !--------------------------------------------------------------
-      !                  S U B R O U T I N E   
-      !     C O L L E C T  F U L L  D O M A I N  A R R A Y 
+      !                  S U B R O U T I N E
+      !     C O L L E C T  F U L L  D O M A I N  A R R A Y
       !--------------------------------------------------------------
-      ! jgf48.03 Collects array data from each subdomain. 
+      ! jgf48.03 Collects array data from each subdomain.
       !--------------------------------------------------------------
       subroutine collectFullDomainArray(descript, pack_cmd, unpack_cmd)
       USE SIZES
@@ -44,21 +44,21 @@ C     &    COMM, nodecode
       integer, save:: tagbase = 6000
       integer      :: iproc
       integer      :: bufsize
-      integer      :: ibucket    
+      integer      :: ibucket
       integer      :: istart     ! vector tuple to start with
       integer      :: iend       ! vector tuple to end on
-      integer      :: tag        
+      integer      :: tag
       ! number of vector tuples in the buffer
-      integer      :: num        
+      integer      :: num
       integer      :: i, j, k
 C
       call setMessageSource("collectFullDomainArray")
 #if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      bufsize = min(BUFSIZE_MAX, 
+      bufsize = min(BUFSIZE_MAX,
      &    descript % num_items_per_record * descript % num_fd_records)
-C     num will be less than the number of full domain records if the 
+C     num will be less than the number of full domain records if the
 C     buffer is too small to hold all the records in the full domain,
 C     in this case it is the number of records passed back to proc 0
 C     on each iteration of the while loop below
@@ -82,7 +82,7 @@ C     on each iteration of the while loop below
          ibucket = ibucket + 1
          tag     = tagbase + mod(ibucket, 8)
 
-C        now pack the buffer 
+C        now pack the buffer
          call pack_cmd(descript, istart, iend)
 C        now send data to processor 0
          call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
@@ -94,12 +94,12 @@ C        set new starting position to just after the
 C        current ending position in full domain array
          istart = iend + 1
 C        set new ending position to either the current start plus the
-C        number of records that will fit in the buffer (minus 1), 
+C        number of records that will fit in the buffer (minus 1),
 C        or to the end of the full domain array, whichever is less
          iend   = min(istart + num - 1, descript % num_fd_records)
          num    = iend - istart + 1
       end do
-#endif   
+#endif
 C! CMPI
 
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
@@ -113,12 +113,12 @@ C! CMPI
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
-      !                  S U B R O U T I N E   
-      !     C O L L E C T  F U L L  D O M A I N  I N T  A R R A Y 
+      !                  S U B R O U T I N E
+      !     C O L L E C T  F U L L  D O M A I N  I N T  A R R A Y
       !--------------------------------------------------------------
-      ! jgf48.17 Collects integer array data from each subdomain. 
+      ! jgf48.17 Collects integer array data from each subdomain.
       !--------------------------------------------------------------
-      subroutine collectFullDomainIntArray(descript, 
+      subroutine collectFullDomainIntArray(descript,
      &                                    pack_cmd, unpack_cmd,variable)
       USE SIZES
       USE GLOBAL
@@ -138,17 +138,17 @@ C! CMPI
       integer, save:: tagbase = 6000
       integer      :: iproc
       integer      :: bufsize
-      integer      :: ibucket    
+      integer      :: ibucket
       integer      :: istart     ! vector tuple to start with
       integer      :: iend       ! vector tuple to end on
-      integer      :: tag        
+      integer      :: tag
       ! number of vector tuples in the buffer
-      integer      :: num        
+      integer      :: num
       integer      :: i, j, k
 
-      bufsize = min(BUFSIZE_MAX, 
+      bufsize = min(BUFSIZE_MAX,
      &    descript % num_items_per_record * descript % num_fd_records)
-C     num will be less than the number of full domain records if the 
+C     num will be less than the number of full domain records if the
 C     buffer is too small to hold all the records in the full domain,
 C     in this case it is the number of records passed back to proc 0
 C     on each iteration of the while loop below
@@ -171,17 +171,17 @@ C     on each iteration of the while loop below
          ibucket = ibucket + 1
          tag     = tagbase + mod(ibucket, 8)
 
-C        now pack the buffer 
+C        now pack the buffer
          call pack_cmd(descript, istart, iend)
 C        now send data to processor 0
 ckmd48.33bc - changed this to eliminate problems with NOFF=2.
-         IF (variable.EQ.1) THEN 
-           call mpi_reduce(integerBuffer, integerResultBuffer, bufsize, 
+         IF (variable.EQ.1) THEN
+           call mpi_reduce(integerBuffer, integerResultBuffer, bufsize,
      &                 MPI_INTEGER, MPI_SUM, 0, COMM, ierr)
-         ELSE IF (variable.eq.2) THEN 
-           call mpi_reduce(integerBuffer, integerResultBuffer, bufsize, 
+         ELSE IF (variable.eq.2) THEN
+           call mpi_reduce(integerBuffer, integerResultBuffer, bufsize,
      &                 MPI_INTEGER, MPI_MAX, 0, COMM, ierr)
-         END IF 
+         END IF
 
          if (myproc == 0) then
             call unpack_cmd(descript, istart, iend)
@@ -190,12 +190,12 @@ C        set new starting position to just after the
 C        current ending position in full domain array
          istart = iend + 1
 C        set new ending position to either the current start plus the
-C        number of records that will fit in the buffer (minus 1), 
+C        number of records that will fit in the buffer (minus 1),
 C        or to the end of the full domain array, whichever is less
          iend   = min(istart + num - 1, descript % num_fd_records)
          num    = iend - istart + 1
       end do
-#endif   
+#endif
 C! CMPI
 
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
@@ -208,7 +208,7 @@ C! CMPI
       ! S U B R O U T I N E   P A C K  O N E
       !--------------------------------------------------------------
       !  jgf48.03 Subroutine to store a single array of real numbers
-      !  to a buffer 
+      !  to a buffer
       !--------------------------------------------------------------
       subroutine packOne(descript, istart, iend)
       USE SIZES
@@ -238,7 +238,7 @@ C! CMPI
       ! S U B R O U T I N E   P A C K  O N E  I N T
       !--------------------------------------------------------------
       !  jgf48.17 Subroutine to store a single array of integers
-      !  to a buffer 
+      !  to a buffer
       !--------------------------------------------------------------
       subroutine packOneInt(descript, istart, iend)
       USE SIZES
@@ -265,9 +265,9 @@ C! CMPI
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
-      !       S U B R O U T I N E   P A C K 6 3 
+      !       S U B R O U T I N E   P A C K 6 3
       !--------------------------------------------------------------
-      !  jgf48.03 Subroutine similar to packOne, except dry node 
+      !  jgf48.03 Subroutine similar to packOne, except dry node
       !  elevations are set to -99999.0 during the packing process.
       !--------------------------------------------------------------
       subroutine pack63(descript, istart, iend)
@@ -300,9 +300,9 @@ C! CMPI
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
-      !       S U B R O U T I N E   P A C K 8 3 
+      !       S U B R O U T I N E   P A C K 8 3
       !--------------------------------------------------------------
-      !  jgf48.03 Subroutine similar to packOne, except dry node 
+      !  jgf48.03 Subroutine similar to packOne, except dry node
       !  elevations are set to -99999.0 during the packing process.
       !--------------------------------------------------------------
       subroutine pack83(descript, istart, iend)
@@ -338,7 +338,7 @@ C! CMPI
       ! S U B R O U T I N E   U N P A C K  O N E
       !--------------------------------------------------------------
       !  Subroutine to retrieve a single array of real numbers
-      !  from a buffer 
+      !  from a buffer
       !--------------------------------------------------------------
       subroutine unpackOne(descript, istart, iend)
       USE SIZES
@@ -363,7 +363,7 @@ C! CMPI
       ! S U B R O U T I N E   U N P A C K  O N E  I N T
       !--------------------------------------------------------------
       !  Subroutine to retrieve a single array of integers
-      !  from a buffer 
+      !  from a buffer
       !--------------------------------------------------------------
       subroutine unpackOneInt(descript, istart, iend)
       USE SIZES
@@ -403,7 +403,7 @@ C! CMPI
       do i = 1, descript % num_records_this
         iglobal = descript % imap(i)
         if (istart <= iglobal .and. iglobal <= iend) then
-          j = 2*(iglobal - ioffset) - 1 
+          j = 2*(iglobal - ioffset) - 1
           buf(j)     = descript % array(i)
           buf(j + 1) = descript % array2(i)
         end if
@@ -440,7 +440,7 @@ C! CMPI
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
-      ! S U B R O U T I N E   P A C K  M  B Y  N P 
+      ! S U B R O U T I N E   P A C K  M  B Y  N P
       !--------------------------------------------------------------
       ! Subroutine to pack an m x np array of real
       ! numbers into a buffer
@@ -517,7 +517,7 @@ C
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
-      ! S U B R O U T I N E   P A C K  N P  B Y  M 
+      ! S U B R O U T I N E   P A C K  N P  B Y  M
       !--------------------------------------------------------------
       ! Subroutine to pack an np x m array of real
       ! numbers into a buffer
@@ -593,8 +593,8 @@ C
       end subroutine unpackNPbyM
       !--------------------------------------------------------------
 
-      !--------------------------------------------------------------   
-      !    S U B R O U T I N E   O P E N _ G B L _ F I L E 
+      !--------------------------------------------------------------
+      !    S U B R O U T I N E   O P E N _ G B L _ F I L E
       !--------------------------------------------------------------
       ! Open Global File: opens the file, opens the write_header
       !                   routine and closes the file
@@ -622,8 +622,8 @@ C
       end subroutine open_gbl_file
       !--------------------------------------------------------------
 
-      !--------------------------------------------------------------   
-      !    S U B R O U T I N E   O P E N _ M I N M A X _ F I L E 
+      !--------------------------------------------------------------
+      !    S U B R O U T I N E   O P E N _ M I N M A X _ F I L E
       !--------------------------------------------------------------
       ! Open Global File: opens the file, replacing the existing file,
       !                   executes the write_header routine and closes
@@ -665,7 +665,7 @@ C
       !   which it writes out.
       !--------------------------------------------------------------
 
-      subroutine write_gbl_file(lun, filename, descript, TimeLoc, it, 
+      subroutine write_gbl_file(lun, filename, descript, TimeLoc, it,
      &                          write_cmd)
       USE SIZES
       USE GLOBAL
@@ -688,12 +688,12 @@ C
       integer, save:: tagbase = 6000
       integer      :: iproc
       integer      :: bufsize
-      integer      :: ibucket    
+      integer      :: ibucket
       integer      :: istart     ! vector tuple to start with
       integer      :: iend       ! vector tuple to end on
-      integer      :: tag        
+      integer      :: tag
       ! number of vector tuples in the buffer
-      integer      :: num        
+      integer      :: num
       integer      :: i, j, k
 
 C      write(16,*) 'About to open file.' !jgfdebug48.03
@@ -710,9 +710,9 @@ C      write(16,*) 'About to open file.' !jgfdebug48.03
       end if
 
 #ifdef CMPI
-      bufsize = min(BUFSIZE_MAX, 
+      bufsize = min(BUFSIZE_MAX,
      &    descript % num_items_per_record * descript % num_fd_records)
-C     num will be less than the number of full domain records if the 
+C     num will be less than the number of full domain records if the
 C     buffer is too small to hold all the records in the full domain,
 C     in this case it is the number of records passed back to proc 0
 C     on each iteration of the while loop below
@@ -735,10 +735,10 @@ C     on each iteration of the while loop below
          buf(:)  = descript % initial_value
          ibucket = ibucket + 1
          tag     = tagbase + mod(ibucket, 8)
-         
+
 C         write(16,*) 'About to call write_cmd.' !jgfdebug48.03
          call write_cmd(lun, descript, istart, iend)
-C         write(16,*) 'About to call mpi_reduce.' !jgfdebug48.03 
+C         write(16,*) 'About to call mpi_reduce.' !jgfdebug48.03
          call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
      &                   0, COMM, ierr)
 C         write(16,*) 'Completed call to mpi_reduce.' !jgfdebug48.03
@@ -756,7 +756,7 @@ C        set new starting position to just after the
 C        current ending position in full domain array
          istart = iend + 1
 C        set new ending position to either the current start plus the
-C        number of records that will fit in the buffer (minus 1), 
+C        number of records that will fit in the buffer (minus 1),
 C        or to the end of the full domain array, whichever is less
          iend   = min(istart + num - 1, descript % num_fd_records)
          num    = iend - istart + 1
@@ -764,7 +764,7 @@ C        or to the end of the full domain array, whichever is less
       if (myproc == 0) then
          close(lun)
       endif
-#endif   
+#endif
 C! CMPI
 
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
@@ -775,7 +775,7 @@ C! CMPI
 
 
       !--------------------------------------------------------------
-      !      S U B R O U T I N E   
+      !      S U B R O U T I N E
       !      W R I T E _ G B L _ 6 3 _ S K I P _ D R Y N O D E
       !--------------------------------------------------------------
       ! Write Global File Skip Default : sb 11/10/2006
@@ -788,7 +788,7 @@ C! CMPI
       !      brigade by copying a block of data to proc 0
       !      which it writes out.
       !
-      !      The specified default values will not be written 
+      !      The specified default values will not be written
       !      out.
       !--------------------------------------------------------------
 
@@ -866,7 +866,7 @@ C    !-----IF CMPI IS DEFINED -----
         write(lun, 1101) TimeLoc, it, nGWetNodes, -99999.d0
       endif
 
-      bufsize = min(BUFSIZE_MAX, 
+      bufsize = min(BUFSIZE_MAX,
      &    descript % num_items_per_record * descript % num_fd_records)
       num     = bufsize / descript % num_items_per_record
       iend    = num
@@ -910,19 +910,19 @@ C    !-----IF CMPI IS DEFINED -----
       if (myproc == 0) then
         close(lun)
       endif
-#endif   
+#endif
 C! CMPI
 
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  1100 FORMAT(2x,1pE20.10E3,5X,I10)
- 1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)      
+ 1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)
       !--------------------------------------------------------------
       end subroutine write_gbl_63_skip_drynode
       !--------------------------------------------------------------
 
 
       !--------------------------------------------------------------
-      !       S U B R O U T I N E   
+      !       S U B R O U T I N E
       !       W R I T E _ G B L _ F I L E _ S K I P _ D E F A U L T
       !--------------------------------------------------------------
       ! Write Global File Skip Default : sb 11/10/2006
@@ -934,7 +934,7 @@ C! CMPI
       !       brigade by copying a block of data to proc 0
       !       which it writes out.
       !
-      !       The specified default values will not be written 
+      !       The specified default values will not be written
       !       out.
       !--------------------------------------------------------------
 
@@ -971,7 +971,7 @@ C! CMPI
         stop 'FATAL ERROR: descript%num_records_this.ne.np'
       endif
 
-#ifndef CMPI 
+#ifndef CMPI
 C    !-----IF CMPI IS NOT DEFINED -----
       open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
       write(lun, 1100) TimeLoc, it
@@ -980,7 +980,7 @@ C    !-----IF CMPI IS NOT DEFINED -----
       close(lun)
       return
 
-#else   
+#else
 C     !-----IF CMPI IS DEFINED -----
 
       if (WRITE_LOCAL_FILES) then
@@ -1017,7 +1017,7 @@ C     !-----IF CMPI IS DEFINED -----
         write(lun, 1101) TimeLoc, it, nGNonDefValues, default_val
       endif
 
-      bufsize = min(BUFSIZE_MAX, 
+      bufsize = min(BUFSIZE_MAX,
      &    descript % num_items_per_record * descript % num_fd_records)
       num     = bufsize / descript % num_items_per_record
       iend    = num
@@ -1066,7 +1066,7 @@ C     !-----IF CMPI IS DEFINED -----
       if (myproc == 0) then
         close(lun)
       endif
-#endif   
+#endif
 C! CMPI
 
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
@@ -1077,7 +1077,7 @@ C! CMPI
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
-      ! These are the store, header routines. For each file (fort.61, ...) 
+      ! These are the store, header routines. For each file (fort.61, ...)
       ! that is being globalize, there is a pair of routines : header61 and
       ! store61 etc.  The header routine writes out the header once
       ! and the store routine copies the data (heights, velocities, etc)
@@ -1156,7 +1156,7 @@ C! CMPI
       do i = 1, descript % num_records_this
         iglobal = descript % imap(i)
         if (istart <= iglobal .and. iglobal <= iend) then
-          j = 2*(iglobal - ioffset) - 1 
+          j = 2*(iglobal - ioffset) - 1
           buf(j)     = descript % array(i)
           buf(j + 1) = descript % array2(i)
         end if
@@ -1170,7 +1170,7 @@ C! CMPI
 
 
       !--------------------------------------------------------------
-      !       S U B R O U T I N E   S T O R E 6 3 
+      !       S U B R O U T I N E   S T O R E 6 3
       !--------------------------------------------------------------
       !
       !--------------------------------------------------------------
@@ -1226,7 +1226,7 @@ C! CMPI
 
 
       !--------------------------------------------------------------
-      !     S U B R O U T I N E   H E A D E R 6 1 
+      !     S U B R O U T I N E   H E A D E R 6 1
       !--------------------------------------------------------------
       ! Elevation for Elevation Recording station: fort.61
       !--------------------------------------------------------------
@@ -1237,7 +1237,7 @@ C! CMPI
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspe, size_this, dtdp*nspoole, nspoole, 1, 
+      write(lun, 1010) ntrspe, size_this, dtdp*nspoole, nspoole, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1312,7 +1312,7 @@ C! CMPI
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
-      !  S U B R O U T I N E   H E A D E R 6 4 
+      !  S U B R O U T I N E   H E A D E R 6 4
       !--------------------------------------------------------------
       ! Velocity for all nodes: fort.64
       !--------------------------------------------------------------
@@ -1323,7 +1323,7 @@ C! CMPI
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetsv, size_this, dtdp*nspoolgv, nspoolgv, 2, 
+      write(lun, 1010) ndsetsv, size_this, dtdp*nspoolgv, nspoolgv, 2,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1345,7 +1345,7 @@ C! CMPI
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1, 
+      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1400,7 +1400,7 @@ C! CMPI
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
-      ! S U B R O U T I N E   H E A D E R 7 4      
+      ! S U B R O U T I N E   H E A D E R 7 4
       !--------------------------------------------------------------
       ! Wind Stress for all nodes: fort.74
       !--------------------------------------------------------------
@@ -1411,7 +1411,7 @@ C! CMPI
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 2, 
+      write(lun, 1010) ndsetsw, size_this, dtdp*nspoolgw, nspoolgw, 2,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1434,7 +1434,7 @@ C! CMPI
       integer :: lun, size_this
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1, 
+      write(lun, 1010) ntrspm, size_this, dtdp*nspoolm, nspoolm, 1,
      &                 FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
@@ -1491,60 +1491,60 @@ C! CMPI
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
-      ! S U B R O U T I N E  
-      !    W R I T E  S T A T I O N  H E A D E R 
+      ! S U B R O U T I N E
+      !    W R I T E  S T A T I O N  H E A D E R
       !--------------------------------------------------------------
       ! jgf47.05: This subroutine will write the header for station
-      ! files (scalars or vectors, 2D or 3D). This is intended to 
-      ! eventually replace the header subroutines "headerXX" for 
+      ! files (scalars or vectors, 2D or 3D). This is intended to
+      ! eventually replace the header subroutines "headerXX" for
       ! station files.
       !--------------------------------------------------------------
       subroutine writeStationHeader(lun, numSta, typeStr)
       USE SIZES
       USE GLOBAL
-      use global_3dvs, only: 
+      use global_3dvs, only:
      &     ndset3dsv, nspo3dsv, nfen,
      &     ndset3dst, nspo3dst,
      &     ndset3dsd, nspo3dsd
       implicit none
       integer lun               ! logical unit number to write to
       integer numSta            ! number of stations to write
-      character(len=10) typeStr ! the type of header to write 
-       
+      character(len=10) typeStr ! the type of header to write
+
       write(lun, 1000) rundes, runid, agrid
 
       select case(trim(typeStr))
       case("Elev")
-          write(lun, 1010) ntrspe, numSta, dtdp*nspoole, nspoole, 1, 
+          write(lun, 1010) ntrspe, numSta, dtdp*nspoole, nspoole, 1,
      &         FileFmtVersion
       case("Vel2D")
           write(lun, 1010) ntrspv, numSta, dtdp*nspoolv, nspoolv, 2,
      &         FileFmtVersion
       case("Vel3D")
-          write(lun, 1020) ndset3dsv, numSta, dtdp*nspo3dsv, 
+          write(lun, 1020) ndset3dsv, numSta, dtdp*nspo3dsv,
      &         nspo3dsv, nfen, 3, FileFmtVersion
       case("Turb3D")
-          write(lun, 1020) ndset3dst, numSta, dtdp*nspo3dst, 
+          write(lun, 1020) ndset3dst, numSta, dtdp*nspo3dst,
      &         nspo3dst, nfen, 3, FileFmtVersion
       case("Dens2D")
-          write(ScreenUnit,*) 
+          write(ScreenUnit,*)
      &         'ERROR: 2D density station output not implemented.'
           stop
       case("Dens3D")
-          write(lun, 1020) ndset3dsd, numSta, dtdp*nspo3dsd, 
+          write(lun, 1020) ndset3dsd, numSta, dtdp*nspo3dsd,
      &         nspo3dsd, nfen, 3, FileFmtVersion
       case("Press","Wind")
-          write(lun, 1010) ntrspm, numSta, dtdp*nspoolm, nspoolm, 1, 
+          write(lun, 1010) ntrspm, numSta, dtdp*nspoolm, nspoolm, 1,
      &                 FileFmtVersion
       case("Conc2D")
           write(lun, 1010) ntrspc, numSta, dtdp*nspoolc, nspoolc, 1,
      &                  FileFmtVersion
       case("Conc3D")
-          write(ScreenUnit,*) 
+          write(ScreenUnit,*)
      &         'ERROR: 3D conc. station output not implemented.'
           stop
       case default
-          write(ScreenUnit,*) 
+          write(ScreenUnit,*)
      &         'ERROR: Station header type unrecongnized.'
           stop
       end select
@@ -1559,15 +1559,15 @@ C! CMPI
       !--------------------------------------------------------------
 
       !--------------------------------------------------------------
-      ! S U B R O U T I N E  
-      !    W R I T E  D O M A I N  H E A D E R 
+      ! S U B R O U T I N E
+      !    W R I T E  D O M A I N  H E A D E R
       !--------------------------------------------------------------
-      ! jgf47.05: This subroutine will write the header for domain 
-      ! output files, i.e., not station files. It handles scalars or 
-      ! vectors, 2D or 3D). This is intended to eventually replace 
+      ! jgf47.05: This subroutine will write the header for domain
+      ! output files, i.e., not station files. It handles scalars or
+      ! vectors, 2D or 3D). This is intended to eventually replace
       ! the header subroutines "headerXX" for domain files.
       !--------------------------------------------------------------
-      subroutine writeDomainHeader(lun, filename, numNodes_g, 
+      subroutine writeDomainHeader(lun, filename, numNodes_g,
      &            numNodes, typeStr)
       USE SIZES
       USE GLOBAL
@@ -1580,12 +1580,12 @@ C! CMPI
       character(*) filename     ! name of file to create
       integer numNodes          ! number of nodes in this domain
       integer numNodes_g        ! number of nodes in the full domain
-      character(len=10) typeStr ! the type of header to write 
+      character(len=10) typeStr ! the type of header to write
       integer nodes             ! number of nodes to write into header
 C
 C     Unless we are processor 0 or we are supposed to write local
 C     files, there is nothing to do but *** RETURN EARLY ***
-      if ( (myproc.ne.0).and.(.not.WRITE_LOCAL_FILES) ) return 
+      if ( (myproc.ne.0).and.(.not.WRITE_LOCAL_FILES) ) return
 C
 C     Set the appropriate number of nodes
       if ( (myproc.eq.1).or.(WRITE_LOCAL_FILES) ) then
@@ -1609,26 +1609,26 @@ C     Open the file
      &                     nspoolgv, 2, FileFmtVersion
       case("Vel3D")
           write(lun, 1020) ndset3dgv, nodes, dtdp*nspo3dgv,
-     &                     nspo3dgv, nfen, 3, FileFmtVersion 
+     &                     nspo3dgv, nfen, 3, FileFmtVersion
       case("Turb3D")
           write(lun, 1020) ndset3dgt, nodes, dtdp*nspo3dgt,
-     &                     nspo3dgt, nfen, 3, FileFmtVersion 
+     &                     nspo3dgt, nfen, 3, FileFmtVersion
       case("Dens2D")
-          write(ScreenUnit,*) 
+          write(ScreenUnit,*)
      &         'ERROR: 2D density output not implemented.'
           stop
       case("Dens3D")
           write(lun, 1020) ndset3dgd, nodes, dtdp*nspo3dgd,
-     &                     nspo3dgd, nfen, 3, FileFmtVersion 
+     &                     nspo3dgd, nfen, 3, FileFmtVersion
       case("Press","Wind")
           write(lun, 1010) ndsetsw, nodes, dtdp*nspoolgw,
      &                     nspoolgw, 1, FileFmtVersion
       case("Conc2D")
-          write(ScreenUnit,*) 
+          write(ScreenUnit,*)
      &         'ERROR: 2D conc. output not implemented.'
           stop
       case("Conc3D")
-          write(ScreenUnit,*) 
+          write(ScreenUnit,*)
      &         'ERROR: 3D conc. output not implemented.'
           stop
       case("Tau0")
@@ -1638,7 +1638,7 @@ C     Open the file
           write(lun, 1010) 1, nodes, dtdp*nspoolge,
      &                 nspoolge, 1, FileFmtVersion
       case default
-          write(ScreenUnit,*) 
+          write(ScreenUnit,*)
      &         'ERROR: Full domain header type unrecongnized.'
       end select
 C
@@ -1655,11 +1655,11 @@ C     close the file
       !--------------------------------------------------------------
 
 C----------------------------------------------------------------------
-C       S U B R O U T I N E   R E A D  M I N  M A X 
+C       S U B R O U T I N E   R E A D  M I N  M A X
 C----------------------------------------------------------------------
 C
 C     jgf48.4636 Subroutine to read in continuous min and max files,
-C     if they are present. 
+C     if they are present.
 C
 C----------------------------------------------------------------------
       SUBROUTINE readMinMax(minMaxFN,array)
@@ -1674,71 +1674,44 @@ C----------------------------------------------------------------------
       REAL(SZ) rawDatum          ! array member value at node, as read from file
       INTEGER numLinesInMinMaxFile ! count the lines to report to log file
       LOGICAL tooFewMinMaxLines  ! true if couldn't read enough lines from file
-      LOGICAL FileFound  ! true if the file exists
       INTEGER ErrorIO      ! zero if file opened successfully
       INTEGER I
 C
-      FileFound=.False.
-      INQUIRE(FILE=TRIM(GLOBALDIR)//'/'//trim(minMaxFN),
-     &   EXIST=FileFound)
-
-      IF (.not.FileFound) THEN
-         WRITE(16,2331) trim(minMaxFN)  ! INFO: min/max file  
-         WRITE(16,1011)           ! was not found.
-         WRITE(16,3333) trim(minMaxFN)  ! WARNING: values not preserved
-         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-            WRITE(ScreenUnit,2331) trim(minMaxFN)
-            WRITE(ScreenUnit,1011)
-            WRITE(ScreenUnit,3333) trim(minMaxFN)! WARNING: values not preserved
-         ENDIF
+      CALL openFileForRead(963,TRIM(GLOBALDIR)//'/'//trim(minMaxFN),
+     &                     errorIO)
+      IF ( errorIO.gt.0 ) THEN
+         write(scratchMessage,3333) trim(minMaxFN)
+         call allMessage(WARNING,scratchMessage)
          RETURN  ! early return
       ENDIF
 C
-C     Now open the file and use the contents to initialize the 
-C     min or max array.
-      WRITE(16,440) minMaxFN
- 440  FORMAT(/,9X,'Min/max file ', (A),' was found. Opening file.')
-      OPEN(963,FILE=TRIM(GLOBALDIR)//'/'//trim(minMaxFN),
-     &   STATUS='OLD',ACCESS='SEQUENTIAL',IOSTAT=ErrorIO)
-      IF (ErrorIO.GT.0) THEN
-         WRITE(16,3001) trim(minMaxFN) ! ERROR: min/max file
-         WRITE(16,1005)         ! exists but can't be opened
-         IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-            WRITE(ScreenUnit,3001) trim(minMaxFN)
-            WRITE(ScreenUnit,1005)
-         ENDIF
-         RETURN  ! early return
-      ENDIF
-C 
 C     The file exists and is open, so read the data.
       numLinesInMinMaxFile = 0
       READ(963,*,END=3990,ERR=3990) skipline   ! 1st header line
       READ(963,*,END=3990,ERR=3990) skipline   ! 2nd header line
       READ(963,*,END=3990,ERR=3990) skipline   ! TIME and IT line
       DO I=1, size(array)
-         READ(963,*,END=3990,ERR=3990) rawNode, rawDatum 
+         READ(963,*,END=3990,ERR=3990) rawNode, rawDatum
          IF ((rawNode.ge.1).and.(rawNode.le.size(array))) THEN
             node = rawNode
             array(node) = rawDatum
-         ELSE 
+         ELSE
             EXIT ! jump out of loop if node number is out of bounds
          ENDIF
          numLinesInMinMaxFile = numLinesInMinMaxFile + 1
       ENDDO
  3990 CONTINUE ! jump to here when end of file is reached
-      WRITE(16,450) numLinesInMinMaxFile, trim(minMaxFN)
+      WRITE(scratchMessage,450) numLinesInMinMaxFile, trim(minMaxFN)
+      CALL logMessage(INFO,scratchMessage)
       IF (numLinesInMinMaxFile.lt.size(array)) THEN
-         WRITE(16,*) "ERROR: Not enough data in ",trim(minMaxFN),"."
+          call allMessage(ERROR,"Not enough data in "
+     &         //trim(minMaxFN)//".")
       ENDIF
+      CLOSE(963)
+C
  450  FORMAT(/,'Finished reading ',(I8),' lines from the ',
      &   (A12),' file.')
-      CLOSE(963)
-      RETURN
- 1011 FORMAT('was not found.')
- 1005 FORMAT('exists but cannot be opened.')
- 2331 FORMAT('INFO: The full domain min/max file ', (A12))
- 3001 FORMAT('ERROR: The full domain min/max file ', (A12))
- 3333 FORMAT('WARNING: Values from ',(A12),
+ 3333 FORMAT('Values from ',(A12),
      &       ' will not reflect the solution prior to this hotstart.')
 C-----------------------------------------------------------------------
       END SUBROUTINE readMinMax

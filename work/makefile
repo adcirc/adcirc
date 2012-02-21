@@ -42,14 +42,14 @@ $(warning (INFO) The C compiler is set to $(CC).)
 
 # Specify NETCDF=enable to gmake on the command line to activate netcdf i/o
 ifeq ($(NETCDF),enable)
-# jgf49.61: Don't add the -DNETCDF for the IBM compilers (see cmplrflags.mk)
+# jgf49.61: Don't add the -DADCNETCDF for the IBM compilers (see cmplrflags.mk)
 ifeq ($(IBM),)
-     PPFC    := $(PPFC) -DNETCDF -I$(NETCDFHOME)/include
-     PFC     := $(PFC) -DNETCDF -I$(NETCDFHOME)/include
-     FFLAGS1 := $(FFLAGS1) -DNETCDF -I$(NETCDFHOME)/include
-     FFLAGS2 := $(FFLAGS2) -DNETCDF -I$(NETCDFHOME)/include
-     FFLAGS3 := $(FFLAGS3) -DNETCDF -I$(NETCDFHOME)/include
-     FFLAGS4 := $(FFLAGS4) -DNETCDF -I$(NETCDFHOME)/include
+     PPFC    := $(PPFC) -DADCNETCDF -I$(NETCDFHOME)/include
+     PFC     := $(PFC) -DADCNETCDF -I$(NETCDFHOME)/include
+     FFLAGS1 := $(FFLAGS1) -DADCNETCDF -I$(NETCDFHOME)/include
+     FFLAGS2 := $(FFLAGS2) -DADCNETCDF -I$(NETCDFHOME)/include
+     FFLAGS3 := $(FFLAGS3) -DADCNETCDF -I$(NETCDFHOME)/include
+     FFLAGS4 := $(FFLAGS4) -DADCNETCDF -I$(NETCDFHOME)/include
 endif
 endif
 
@@ -601,7 +601,7 @@ $(O_DIR)messenger.o   :  messenger.F  $(ADC_MOBJ)
 #!st3 100711: Added globalio.o to writer.F for HSWRITER MODULE
 $(O_DIR)writer.o      :  writer.F  $(O_DIR)messenger.o $(O_DIR)globalio.o
 $(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ)
-$(O_DIR)harm.o        :  harm.F
+$(O_DIR)harm.o        :  harm.F 
 $(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(FITP_MOBJ)
 $(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ)
 $(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ)

@@ -9,12 +9,12 @@
       end type MemoryDescript_t
 
       type (MemoryDescript_t),save :: mem_descript
-      
+
       CONTAINS
 
       subroutine memory_init( )
-        mem_descript % highmem = 0 
-        mem_descript % currmem = 0 
+        mem_descript % highmem = 0
+        mem_descript % currmem = 0
       end subroutine memory_init
 
 
@@ -66,14 +66,14 @@ C  Program Development History
 C  ---------------------------
 C
 C  45.06 jgf Added contribution dated 4/09/04 written by M. Brown:
-C   - Modified SIZEUP() subroutine to pass a parameter, USE_DEFAULT, that 
-C     instructs SIZEUP to use default filenames. If default filename does 
+C   - Modified SIZEUP() subroutine to pass a parameter, USE_DEFAULT, that
+C     instructs SIZEUP to use default filenames. If default filename does
 C     not exist, ADCPREP resorts to user-specified action.
 C
-C  45.07 jgf Changed REAL variable declarations 
+C  45.07 jgf Changed REAL variable declarations
 C   - Needed to make the precision of REALs consistent with ADCIRC to
 C     prevent any possible loss of precision during pre/post processing.
-C    
+C
 C  45.10 jgf Partially updated input routines
 C   - File format for 3D input files had changed in ADCIRC and the process
 C     of updating ADCPREP for these changes is partially complete.
@@ -84,8 +84,8 @@ C     node numbers; routines for handling this are now complete but not
 C     extensively tested.
 C
 C  45.12 jgf Added features to skip over user specified vertical grid
-C     spacing as well as user specified eddy viscosity profile. 
-C     
+C     spacing as well as user specified eddy viscosity profile.
+C
 C  46.34 vjp added code for partition-only command and Shintaro's winds
 C
 C  46.44 vjp added code for prep13-only command
@@ -95,7 +95,7 @@ C----------------------------------------------------------------------------
 C
       IMPLICIT NONE
 C
-C...SET NUMBER OF BYTES "SZ" IN REAL(SZ) DECLARATIONS       
+C...SET NUMBER OF BYTES "SZ" IN REAL(SZ) DECLARATIONS
 C...SET "NBYTE" FOR PROCESSING INPUT DATA RECORD LENGTH
 
 #ifdef REAL4
@@ -111,7 +111,7 @@ C...SET MAX OF DIGITS OF PRECISION "NPREC" THE GRID CAN BE EXPECTED TO HAVE
 C...NOTE: IF THE GRID WAS BUILT ON A 32 BIT COMPUTER, IT SHOULD BE
 C   ACCURATE TO ABOUT 7 DIGITS.  THUS, IF THE NODAL SPACING REQUIRES MORE
 C   THAN 5 DIGITS OF PRECISION, THE MODEL RESULTS MAY NOT BE TRUSTWORTHY.
- 
+
       INTEGER, PARAMETER ::  NPREC=7
 C
 C     variables which describe the full domain
@@ -131,7 +131,7 @@ C     variables which describe the full domain
       INTEGER MNSTAC ! number of Concentration Recording Stations
       INTEGER MNSTAM ! number of meteorological Recording Stations
       INTEGER MNWP   ! 1 If No Meteorlogical Forcing else = MNP
-      INTEGER MNWLAT ! number of Latitudes 
+      INTEGER MNWLAT ! number of Latitudes
       INTEGER MNWLON ! number of Longitudes
 
       INTEGER NSTA3DD! number of 3D density recording stations
@@ -149,7 +149,7 @@ C     Model Type:
       LOGICAL C2D_BTrans  ! .True. if 2D with baroclinic transport
       LOGICAL C2D_PTrans  ! .True. if 2D with passive transport
       LOGICAL CBaroclinic ! .True. if baroclinic (density forcing)
-      LOGICAL C3D         ! .TRUE. if 3D 
+      LOGICAL C3D         ! .TRUE. if 3D
       LOGICAL C3DDSS      ! .TRUE. if 3D stress formulation
       LOGICAL C3DVS       ! .TRUE. if 3D velocity formulation
       LOGICAL C3D_BTrans  ! .true. if 3D with baroclinic transport
@@ -174,7 +174,7 @@ C
 
 C Logicals added for adcprep paths
       LOGICAL PARTITION   ! .true. if only mesh partition is to be performed
-      LOGICAL USE_DEFAULT ! .true. iff fort.x to be used as input            
+      LOGICAL USE_DEFAULT ! .true. iff fort.x to be used as input
       LOGICAL PREP_ALL    ! .true. if all input files should be written
       LOGICAL PREP_15     ! .true. if only RunInfo file is to be localized
       LOGICAL PREP_13     ! .true. if only nodal attributes file is to be localized
@@ -182,12 +182,12 @@ C Logicals added for adcprep paths
       LOGICAL HOT_GLOBAL   ! .true. if only hotstart files is to be globalized
       LOGICAL :: PREP_20  ! .true. if user specified --prep20 cmd line option
       LOGICAL :: PREP_88  ! .true. if user specified --prep88 cmd line option
-     
+
       LOGICAL :: useNetCDF = .false.  !jgf48.07
       INTEGER, ALLOCATABLE :: NM(:,:) !jgf48.08
 
       LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in
- 
+
 C---------------------end of data declarations--------------------------------C
 
       CONTAINS
@@ -200,7 +200,7 @@ C  Determine runtime option logicals
 C                                                                             C
 C vjp 12/08/99                                                                C
 C rl  10/10/01                                                                C
-C      
+C
 C-----------------------------------------------------------------------------C
 C
       SUBROUTINE SIZEUP()
@@ -227,8 +227,8 @@ C
       LOGICAL FOUND
       CHARACTER*60 GRID,RUNINFO
       CHARACTER(len=80) skipped !jgf46.00 data that we want to skip
-      
-#ifdef NETCDF
+
+#ifdef ADCNETCDF
       NETCDF_AVAIL = .true.
 #else
       NETCDF_AVAIL = .false.
@@ -238,14 +238,14 @@ C
 C...OPEN AND PROCESS THE UNIT 14 ADCIRC GRID FILE TO DETERMINE SIZES
 C
       FOUND = .FALSE.
-      IF (USE_DEFAULT) THEN 
-        GRID='fort.14' 
+      IF (USE_DEFAULT) THEN
+        GRID='fort.14'
         INQUIRE(FILE=GRID,EXIST=FOUND)
         IF(FOUND) THEN
            GOTO 32
         ELSE
            print *, GRID, " not found"
-           STOP   
+           STOP
         ENDIF
       ELSE
   31    WRITE(*,*) 'Enter the name of the ADCIRC UNIT 14 (Grid) file:'
@@ -276,24 +276,24 @@ C     jgf48.08 For netCDF
       call memory_alloc(nbytes)
 C
       DO IL=1,MNP                                   !SKIP OVER NODES
-         READ(14,*) IDUM                            
-         NNEIGH(IL)=0                            
+         READ(14,*) IDUM
+         NNEIGH(IL)=0
       END DO
 C
       DO IL=1,MNE                                   !READ IN THE ELEMENT
          READ(14,*) N,IDUM,N1,N2,N3                 !CONNECTIVITY TABLE
          NNEIGH(N1)=NNEIGH(N1)+1                    !DETERMINE THE # OF NEIGHBORS
-         NNEIGH(N2)=NNEIGH(N2)+1                              
-         NNEIGH(N3)=NNEIGH(N3)+1  
+         NNEIGH(N2)=NNEIGH(N2)+1
+         NNEIGH(N3)=NNEIGH(N3)+1
          !jgf48.08 populate element table for netCDF
          NM(N,1)=N1
          NM(N,2)=N2
-         NM(N,3)=N3       
+         NM(N,3)=N3
       ENDDO
 C
       NETA=0                                        !PROCESS OPEN BOUNDARIES
-      READ(14,*) MNOPE                             
-      READ(14,*) MNETA                           
+      READ(14,*) MNOPE
+      READ(14,*) MNETA
 C
       MNEI=0                                        !PROCESS MAX # NEIGHBORS
       DO IL=1,MNOPE
@@ -320,18 +320,18 @@ C
       NFLUXI=0                          !SPECIFIED INTERNAL BARRIER BC
       NFLUXF=0                          !SPECIFIED FLUX BC
 C
-      READ(14,*) MNBOU                  !Land Boundary Segments    
+      READ(14,*) MNBOU                  !Land Boundary Segments
       READ(14,*) MNVEL                  !Land Boundary Nodes
 C
 C     jgf46.21 Added support for IBTYPE=52.
       DO IL=1,MNBOU
          READ(14,*) NBN,IBTYPE
 ! kmd - added in rivers for baroclinic simulations
-         IF (ABS(IBTYPE/100).EQ.1) THEN 
+         IF (ABS(IBTYPE/100).EQ.1) THEN
             BndBCRiver=.TRUE.
             NRIVBCN=NRIVBCN+NBN
             IBTYPE=(ABS(IBTYPE)-100)*(IBTYPE/ABS(IBTYPE))
-         END IF 
+         END IF
 ! kmd - continue on with the normal dividing of the land boundaries
          IF((IBTYPE.EQ.2).OR.(IBTYPE.EQ.12).OR.(IBTYPE.EQ.22).OR.
      &        (IBTYPE.EQ.32).OR.(IBTYPE.EQ.52)) THEN
@@ -348,7 +348,7 @@ C     jgf46.21 Added support for IBTYPE=52.
          ENDIF
          IF((IBTYPE.NE.2).AND.(IBTYPE.NE.12).AND.(IBTYPE.NE.22).AND.
      &        (IBTYPE.NE.52).AND.
-     &        (IBTYPE.NE.3).AND.(IBTYPE.NE.13).AND.(IBTYPE.NE.23).AND.   
+     &        (IBTYPE.NE.3).AND.(IBTYPE.NE.13).AND.(IBTYPE.NE.23).AND.
      &        (IBTYPE.NE.4).AND.(IBTYPE.NE.24)) THEN
             NVEL=NVEL+NBN
          ENDIF
@@ -360,7 +360,7 @@ C     jgf46.21 Added support for IBTYPE=52.
               IF (NNEIGH(IBN).GT.MNEI) MNEI=NNEIGH(IBN)
               NNEIGH(IBN) = 0
             ENDIF
-            IF ((IBTYPE.EQ.1).OR.(IBTYPE.EQ.11).OR.(IBTYPE.EQ.21)) THEN 
+            IF ((IBTYPE.EQ.1).OR.(IBTYPE.EQ.11).OR.(IBTYPE.EQ.21)) THEN
               IF ((IK.EQ.NBN).AND.(IBN.NE.IBN1)) NVEL=NVEL+1
             ENDIF
             IF (IK.EQ.1) IBN1=IBN
@@ -377,7 +377,7 @@ C
       MNEI=MNEI+1
 C
 C if ONLY partitioning mesh using metis or a prephot
-      IF (PARTITION .or. HOT_LOCAL .or. HOT_GLOBAL) THEN   
+      IF (PARTITION .or. HOT_LOCAL .or. HOT_GLOBAL) THEN
          CLOSE(14)
          GO TO 9999
       ELSE
@@ -390,14 +390,14 @@ C
 C--Enter, Locate, Open, and Read the ADCIRC UNIT 15 (Run Info) File
 C
       FOUND = .FALSE.
-      IF (USE_DEFAULT) THEN 
-        RUNINFO='fort.15' 
+      IF (USE_DEFAULT) THEN
+        RUNINFO='fort.15'
         INQUIRE(FILE=RUNINFO,EXIST=FOUND)
         IF(FOUND) THEN
            GOTO 132
         ELSE
            print *, RUNINFO, " not found"
-           STOP   
+           STOP
         ENDIF
       ELSE
  131    WRITE(*,*) 'Enter the name of ADCIRC UNIT 15 (Run Info) file:'
@@ -419,10 +419,10 @@ C
       C3DDSS = .FALSE.
       C3DVS  = .FALSE.
       C2D_BTrans  = .FALSE. !jgf46.28 Added transport/baroclinic support
-      C2D_PTrans  = .FALSE. 
-      CBaroclinic = .FALSE. 
-      C3D_BTrans  = .FALSE. 
-      C3D_PTrans  = .FALSE. 
+      C2D_PTrans  = .FALSE.
+      CBaroclinic = .FALSE.
+      C3D_BTrans  = .FALSE.
+      C3D_PTrans  = .FALSE.
       CLUMP  = .FALSE.
       CTIP   = .FALSE.
       CSOLIT = .FALSE.
@@ -441,12 +441,15 @@ C
  25   READ(15,*) IDUM  ! SKIP NFOVER
       READ(15,*) IDUM  ! SKIP NABOUT
       READ(15,*) IDUM  ! SKIP NSCREEN
-      READ(15,*) IHOT 
-      IF ((IHOT.EQ.367).OR.(IHOT.EQ.368)) useNetCDF = .true.
+      READ(15,*) IHOT
+      IF ((IHOT.EQ.367).OR.(IHOT.EQ.368).OR.
+     &    (IHOT.EQ.567).OR.(IHOT.EQ.568)) THEN
+         useNetCDF = .true.
+      ENDIF
       READ(15,*) IDUM  ! SKIP ICS
 C
       READ(15,*) IM                                 !READ IM (model type)
-C      
+C
       SELECT CASE (IM) ! jgf46.28 added transport/baroclinic support
       CASE(0)
         C2DDI = .TRUE.
@@ -482,8 +485,8 @@ c        C3DDSS = .TRUE.
          C3D_PTrans    = .TRUE.
          CBaroclinic   = .TRUE.
       CASE DEFAULT
-         IF ((IM.GE.111111).AND.(IM.LE.534322)) THEN 
-            C2DDI = .TRUE.                              
+         IF ((IM.GE.111111).AND.(IM.LE.534322)) THEN
+            C2DDI = .TRUE.
          ELSEIF ((IM.GE.611111).AND.(IM.LE.634322)) THEN
            C3D  = .TRUE.
            C3DVS  = .TRUE.
@@ -492,12 +495,12 @@ c        C3DDSS = .TRUE.
             stop
          ENDIF
       END SELECT
-C     
+C
       IDEN=0
       IF (CBaroclinic) READ(15,*) IDEN
       SELECT CASE(IDEN)
       CASE(0) ! Barotropic
-         ! do nothing, this is valid when IDEN is read in 3D section 
+         ! do nothing, this is valid when IDEN is read in 3D section
       CASE(1) ! 2DDI Prognostic Baroclinic ADCIRC run with SigmaT forcing
          C2D_BTrans = .TRUE.
       CASE(-1)! 2DDI Diagnostic Baroclinic ADCIRC run with SigmaT forcing
@@ -513,7 +516,7 @@ C
       CASE(4) ! 2DDI Prognostic Baroclinic ADCIRC run with Salinity
 C               and Temperature forcing
          C2D_BTrans = .TRUE.
-      CASE(-4)! 2DDI Diagnostic Baroclinic ADCIRC run with Salinity 
+      CASE(-4)! 2DDI Diagnostic Baroclinic ADCIRC run with Salinity
 C               and Temperature forcing'
          ! do nothing
       CASE DEFAULT
@@ -525,7 +528,7 @@ C
          READ(15,*) IDUM
       ENDDO
       READ(15,*) NWP                                !SKIP NWP
-      DO IL=1,NWP           
+      DO IL=1,NWP
          READ(15,*) skipped                !jgf46.00 skip over nodal attributes
       ENDDO
       READ(15,*) NCOR                               !SKIP OVER NCOR
@@ -537,7 +540,7 @@ C
       READ(15,*) TAU0                               !SKIP OVER TAU0
       IF ( (TAU0.LE.-5.d0).AND.(TAU0.GT.-6.d0) ) THEN
          READ(15,*) RDUM, RDUM                      !SKIP OVER TAU0 MIN AND MAX
-      ENDIF 
+      ENDIF
       READ(15,*) DT                                 !SKIP OVER DT
       READ(15,*) STATIM                             !SKIP OVER STATIM
       READ(15,*) REFTIM                             !SKIP OVER REFTIM
@@ -576,7 +579,7 @@ C.....tcm v49.64.01 Additions for ice
       IF((NWS.EQ.0).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03
       IF((NWS.EQ.1).AND.(NRS.GE.1)) READ(15,*) RSTIMINC ! sb46.28sb03
 C     jgf46.02 added NWS=8
-C     jgfdebug46.02 added NWS=45 
+C     jgfdebug46.02 added NWS=45
 C     jgf46.16 merged:
 C     cf & cm added NWS=9: asymmetric hurricane wind model
 C     rjw added NWS=19: asymmetric hurricane wind model v2.0
@@ -626,7 +629,7 @@ C.... tcm v48.4641 additions for ice
          CASE DEFAULT ! some kind of wave radiation stress
             ! YYYY MM DD HH24 StNum BLAdj WTIMINC RSTIMINC pureVortex pureBack
             READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,
-     &                 WTIMINC,RSTIMINC,RDUM,RDUM        
+     &                 WTIMINC,RSTIMINC,RDUM,RDUM
          END SELECT
       ENDIF
 
@@ -706,7 +709,7 @@ C.... tcm v49.64.01 additions for ice
       IF((MNFFR.EQ.0).OR.(MNFFR.EQ.-1)) MNFFR=1
       MNSTAE=0
       READ(15,*)  IDUM                              !SKIP OVER NOUTE, TOUTSE...
-      IF (ABS(IDUM).EQ.3) useNetCDF = .true.
+      IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
       READ(15,*) MNSTAE                             !PROCESS MNSTAE
       DO IL=1,MNSTAE
          READ(15,*) RDUM                            !SKIP OVER STA COORDS
@@ -714,7 +717,7 @@ C.... tcm v49.64.01 additions for ice
       IF(MNSTAE.EQ.0) MNSTAE=1
       MNSTAV=0
       READ(15,*) IDUM                               !SKIP OVER NOUTV, TOUTSV...
-      IF (ABS(IDUM).EQ.3) useNetCDF = .true.
+      IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
       READ(15,*) MNSTAV                             !PROCESS MNSTAV
       DO IL=1,MNSTAV
          READ(15,*) RDUM                            !SKIP OVER STA COORDS
@@ -723,7 +726,7 @@ C.... tcm v49.64.01 additions for ice
       MNSTAC=0
       IF(IM.EQ.10) THEN
          READ(15,*) IDUM                            !SKIP OVER NOUTC, TOUTSC...
-         IF (ABS(IDUM).EQ.3) useNetCDF = .true.
+         IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
          READ(15,*) MNSTAC                          !PROCESS MNSTAC
          DO IL=1,MNSTAC
             READ(15,*) RDUM                         !SKIP OVER STA COORDS
@@ -733,7 +736,7 @@ C.... tcm v49.64.01 additions for ice
       MNSTAM=0
       IF(NWS.NE.0) THEN
         READ(15,*) IDUM                           !SKIP OVER NOUTM, TOUTSM...
-        IF (ABS(IDUM).EQ.3) useNetCDF = .true.
+        IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
         READ(15,*) MNSTAM                         !PROCESS MNSTAM
         DO IL=1,MNSTAM
            READ(15,*) RDUM                        !SKIP OVER STA COORDS
@@ -742,14 +745,17 @@ C.... tcm v49.64.01 additions for ice
       IF(MNSTAM.EQ.0) MNSTAM=1
 C
       READ(15,*) IDUM                            !SKIP OVER NOUTGE, TOUTSGE...
-      IF (ABS(IDUM).EQ.3) useNetCDF = .true.
+      IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
       READ(15,*) IDUM                            !SKIP OVER NOUTGV, TOUTSGV...
-      IF (ABS(IDUM).EQ.3) useNetCDF = .true.
+      IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
       IF (IM.EQ.10) READ(15,*) IDUM               !SKIP OVER NOUTGC, TOUTSGC...
-      IF ((IM.EQ.10).AND.(ABS(IDUM).EQ.3)) useNetCDF = .true.
+      IF ((IM.EQ.10).AND.((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5))) THEN
+         useNetCDF = .true.
+      ENDIF
       IF (NWS.NE.0) READ(15,*) IDUM               !SKIP OVER NOUTGW, TOUTSGW...
-      IF ((NWS.NE.0).AND.(ABS(IDUM).EQ.3)) useNetCDF = .true.
-
+      IF ((NWS.NE.0).AND.((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5))) THEN
+         useNetCDF = .true.
+      ENDIF
       READ(15,*) NHARF                           !PROCESS MNHARF
       DO IL1=1,NHARF
  47      READ(15,80) LINEI                       !SKIP OVER HAFNAM
@@ -763,15 +769,19 @@ C
       READ(15,*) THAS,THAF,NHAINC,FMV               !READ THAS,...FMV
       READ(15,*) IDUM,IDUM,IDUM,IDUM                !SKIP OVER NHASE,NHASV,...
       READ(15,*) NHSTAR,IDUM                          !SKIP OVER NHSTAR,NHSINC
-      PRINT *, "NHSTAR = ", NHSTAR                    
+      PRINT *, "NHSTAR = ", NHSTAR
       IF ((ABS(NHSTAR).EQ.3).OR.(ABS(NHSTAR).EQ.367)
-     &    .OR.(ABS(NHSTAR).EQ.368)) THEN
+     &    .OR.(ABS(NHSTAR).EQ.368).OR.
+     &    (ABS(NHSTAR).EQ.5).OR.(ABS(NHSTAR).EQ.567)
+     &    .OR.(ABS(NHSTAR).EQ.568) ) THEN
           useNetCDF = .true.                          !for netCDF
       ENDIF
       IF ( (useNetCDF).AND.(.NOT.(NETCDF_AVAIL)) ) THEN
-         WRITE(*,*) 'ERROR: NetCDF was requested, but not supported.'
+         WRITE(*,*)'ERROR: NetCDF input or output files were specified.'
+         WRITE(*,*) 'but adcprep was not compiled with NetCDF support.'
+         WRITE(*,*) 'Please recompile adcprep with NetCDF libraries.'
          STOP
-      ENDIF   
+      ENDIF
 C
 C...THIS SECTION TO LUMP THE GWCE MATRIX
 Cvjp 11/30/99 made lumping a compile time option
@@ -799,8 +809,8 @@ c     jgf45.10 removed IDIAG
          READ(15,*) RDUM,RDUM                          !Skip Z0S,Z0B
          READ(15,*) RDUM,RDUM,RDUM                     !Skip ALP1,ALP2,ALP3
 C     jgf45.12 add code to handle user specified vertical spacing.
-         READ(15,*) IGC,NFEN  
-         IF (IGC.EQ.0) THEN       
+         READ(15,*) IGC,NFEN
+         IF (IGC.EQ.0) THEN
             DO I=1,NFEN
                READ(15,*) RDUM  !skip over vertical spacing
             ENDDO
@@ -933,13 +943,13 @@ C
  3014 FORMAT(' *   Also, NWS=3 meteorological forcing is used,     *')
  3015 FORMAT(' *   Also, NWS=+-4 meteorological forcing is used,   *')
  3016 FORMAT(' *   Also, NWS=+-5 meteorological forcing is used,   *')
- 3017 FORMAT(' *   Also, NWS=+-6 meteorological forcing is used,   *') 
+ 3017 FORMAT(' *   Also, NWS=+-6 meteorological forcing is used,   *')
  3217 FORMAT(' *   Also, NWS=+-8 Holland wind forcing is used,     *')
- 3218 FORMAT(' *   Also, NWS=+-9 Holland wind forcing is used,     *') 
+ 3218 FORMAT(' *   Also, NWS=+-9 Holland wind forcing is used,     *')
  3219 FORMAT(' *   Also, NWS=+-19 Asymmetric Holland wind v2.0     *',/,
      &       ' *                 forcing is used,                  *')
- 3220 FORMAT(' *   Also, ABS(NWS)>=1000 ice concentration are used,*') 
- 3223 FORMAT(' *   Also, NWS=+-29 VortexOWI met forcing is used,   *') 
+ 3220 FORMAT(' *   Also, ABS(NWS)>=1000 ice concentration are used,*')
+ 3223 FORMAT(' *   Also, NWS=+-29 VortexOWI met forcing is used,   *')
  3018 FORMAT(' *   Also, ABS(NWS)>=100 wave stress forcing is used,*')
  3019 FORMAT(' *   Also, AVN wind & pressure forcing will be used, *')
  3020 FORMAT(' *   Also, ETA wind & pressure forcing will be used, *')

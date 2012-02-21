@@ -19,7 +19,7 @@ C...
      &     MNE,
      &     MNEI,
      &     MNVEL,
-     &     MNFEN, 
+     &     MNFEN,
      &     MYProc,
      &     INPUTDIR,
      &     LOCALDIR
@@ -31,12 +31,12 @@ C...
      &       NM,                           !NM(MNE,3) = nodal table for each element
      &       NNeigh,                       !NNeigh(MNP) = number of neighboring nodes for each node
      &       NEITAB,                       !NeiTab(MNP,MNEI) = table of neighbor nodes for each node
-     &       NEITABELE,                    !NeiTabEle(MNP,MNei) = table of neighboring elements for each node 
+     &       NEITABELE,                    !NeiTabEle(MNP,MNei) = table of neighboring elements for each node
      &       AREAS,                        !AREAS(MNE) = 2*Element Area
-     &       WSX1, WSY1,                   !WSX1(MNP),WSY1(MNP) = Wind stress components at time level s  
+     &       WSX1, WSY1,                   !WSX1(MNP),WSY1(MNP) = Wind stress components at time level s
      &       WSX2, WSY2,                   !WSX2(MNP),WSY2(MNP) = Wind stress components at time level s+1
      &       BSX => BSX1, BSY => BSY1,     !BSX(MNP),BSY(MNP) = bottom stress computed after velocity solution
-     &       UU => UU2, VV => VV2,         !UU(MNP),VV(MNP) = vertically averaged velocity components 
+     &       UU => UU2, VV => VV2,         !UU(MNP),VV(MNP) = vertically averaged velocity components
      &       DAFluxX => QX2, DAFluxY => QY2,
      &       DUU => DUU1, DUV => DUV1, DVV => DVV1,   !DUU(MNP),DVV(MNP),DUV(MNP) = velocity dispersion terms
      &       DASigT,
@@ -63,7 +63,7 @@ C...
      &       RUNID, RID4, RID8,
      &       AGRID, AID4, AID8,
      &       CBaroclinic,
-     &       C3DVS,                        
+     &       C3DVS,
      &       DelT => DTDP,                 !DelT = altername for timestep real(8)
      &       DTDP,                         !DTDP = timestep declared as real(8)
      &       SLAM0, SFEA0,                 !center point of CPP spherical projection
@@ -71,8 +71,9 @@ C...
      &       Day2Sec, Sec2Day,
      &       NETA,                          ! number of ocean boundary
      &       NVEL,                          ! number of land boundary for river information
-     &       BndBCRiver                    ! logic flag for rivers - baroclinic
-
+     &       BndBCRiver,                    ! logic flag for rivers - baroclinic
+     &       allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
+     &       setMessageSource, unsetMessageSource
       SAVE
 
 C...DECLARE 3D GLOBAL ARRAYS
@@ -82,31 +83,31 @@ c.RJW merged 9/02/2008 Casey 071219: Added the following variable for cumulative
 
       COMPLEX(SZ),ALLOCATABLE  :: Gamma(:)   !  Gamma(NFEN): horizontal velocity solution in the complex form u+iv for a specific node
       COMPLEX(SZ),ALLOCATABLE  :: Q(:,:)     !  Q(MNP,NFEN): horizontal velocity solution in the complex form u+iv for all nodes
-      REAL(SZ),ALLOCATABLE :: SIGMA(:)       !  Sigma(NFEN): stretched vertical coordinate levels (-1 to 1) 
-      REAL(SZ),ALLOCATABLE :: EVTot(:)       !  EVTot(NFEN): vertical eddy viscosity values at a node 
+      REAL(SZ),ALLOCATABLE :: SIGMA(:)       !  Sigma(NFEN): stretched vertical coordinate levels (-1 to 1)
+      REAL(SZ),ALLOCATABLE :: EVTot(:)       !  EVTot(NFEN): vertical eddy viscosity values at a node
       REAL(SZ),ALLOCATABLE :: INM(:,:)       !  INM(NFEN,3): Integral used in vertical FE assembly
       REAL(SZ),ALLOCATABLE :: LVN(:)         !  LVN(NFEN): Integral used in vertical FE assembly
       REAL(SZ),ALLOCATABLE,TARGET :: WZ(:,:)        !  WZ(MNP,NFEN): "z" vertical velocity, all nodes
-      REAL(SZ),ALLOCATABLE,TARGET :: SIGT(:,:)      !  SIGT(MNP,NFEN): sigma T, all nodes   
+      REAL(SZ),ALLOCATABLE,TARGET :: SIGT(:,:)      !  SIGT(MNP,NFEN): sigma T, all nodes
       REAL(SZ),ALLOCATABLE,TARGET :: Temp(:,:)      !  TEMP(MNP,NFEN): temperature, all nodes
       REAL(SZ),ALLOCATABLE,TARGET :: Sal(:,:)       !  Sal(MNP,NFEN): salinity, all nodes
       REAL(SZ),ALLOCATABLE :: BCP(:,:)       !  BCP(MNP,NFEN): baroclinic pressure, integrated down from surface,all nodes
       REAL(SZ),ALLOCATABLE,TARGET :: Q20(:,:)       !  Q20(MNP,NFEN): Turbulent Kinetic Energy computed by Mellor-Yamada L2.5 closure, all nodes
       REAL(SZ),ALLOCATABLE,TARGET :: L(:,:)         !  L(MNP,NFEN): turbulent length scale computed by Mellor-Yamada L2.5 closure, all nodes
-      REAL(SZ),ALLOCATABLE,TARGET :: EV(:,:)        !  EV(MNP,NFEN): Vertical eddy viscosity, all nodes  
+      REAL(SZ),ALLOCATABLE,TARGET :: EV(:,:)        !  EV(MNP,NFEN): Vertical eddy viscosity, all nodes
 
-C     kmd45.12 Added in variables for transport 
+C     kmd45.12 Added in variables for transport
 
       REAL(SZ),ALLOCATABLE :: Gammatrans(:)  !  Gammatrans(NFEN): horizontal transport soln for a specific node
-      REAL(SZ),ALLOCATABLE :: Tempkp1(:,:)   !  Tempkp1(MNP,NFEN): temperature of all nodes at future time level  
+      REAL(SZ),ALLOCATABLE :: Tempkp1(:,:)   !  Tempkp1(MNP,NFEN): temperature of all nodes at future time level
       REAL(SZ),ALLOCATABLE :: Salkp1(:,:)    !  Salkp1(MNP,NFEN): salinity of all nodes at future time level
-     
+
 C     kmd45.12 Added in these variables for the top boundary conditions
 C     associated with the temperature field
 
       REAL(SZ), ALLOCATABLE, TARGET :: qsurfkp1(:)
       REAL(SZ), ALLOCATABLE :: qsurf(:)
- 
+
 C     kmd45.12 Added in the variables for saving 3D velocities for two
 C     time levels
 
@@ -115,7 +116,7 @@ C     time levels
 
 !     kmd45.12 added in for baroclinic changes
 
-      COMPLEX(SZ), ALLOCATABLE :: BPG(:,:)      
+      COMPLEX(SZ), ALLOCATABLE :: BPG(:,:)
 
 C     kmd48.33bc - added these variables for the vertical diffusion terms in the transport equation
 C              Note: terms used when vertical eddy viscosity is defined from Mellor-Yamada
@@ -123,12 +124,12 @@ C              Note: terms used when vertical eddy viscosity is defined from Mel
       REAL(SZ),ALLOCATABLE :: DV(:,:)       !  DV(MNP,NFEN): Vertical diffusion, all nodes
 
 C     kmd48.33bc - added these variables for boundary condtions
-      REAL(SZ),ALLOCATABLE :: RESSAL(:,:)    !  RESSAL(NETA,NFEN): Vertical salinity boundary condition used in transport 
-      REAL(SZ),ALLOCATABLE :: RESSAL1(:,:)   !  RESSAL1(NETA,NFEN): Vertical salinity boundary condition used in transport 
-      REAL(SZ),ALLOCATABLE :: RESSAL2(:,:)   !  RESSAL2(NETA,NFEN): Vertical salinity boundary condition used in transport 
-      REAL(SZ),ALLOCATABLE :: RESTEMP(:,:)   !  RESTEMP(NETA,NFEN): Vertical temperature boundary condition used in transport 
-      REAL(SZ),ALLOCATABLE :: RESTEMP1(:,:)  !  RESTEMP1(NETA,NFEN): Vertical temperature boundary condition used in transport 
-      REAL(SZ),ALLOCATABLE :: RESTEMP2(:,:)  !  RESTEMP2(NETA,NFEN): Vertical temperature boundary condition used in transport 
+      REAL(SZ),ALLOCATABLE :: RESSAL(:,:)    !  RESSAL(NETA,NFEN): Vertical salinity boundary condition used in transport
+      REAL(SZ),ALLOCATABLE :: RESSAL1(:,:)   !  RESSAL1(NETA,NFEN): Vertical salinity boundary condition used in transport
+      REAL(SZ),ALLOCATABLE :: RESSAL2(:,:)   !  RESSAL2(NETA,NFEN): Vertical salinity boundary condition used in transport
+      REAL(SZ),ALLOCATABLE :: RESTEMP(:,:)   !  RESTEMP(NETA,NFEN): Vertical temperature boundary condition used in transport
+      REAL(SZ),ALLOCATABLE :: RESTEMP1(:,:)  !  RESTEMP1(NETA,NFEN): Vertical temperature boundary condition used in transport
+      REAL(SZ),ALLOCATABLE :: RESTEMP2(:,:)  !  RESTEMP2(NETA,NFEN): Vertical temperature boundary condition used in transport
 C     ! kmd - added these variables for river boundary conditions in baroclinic simulation
       REAL(SZ),ALLOCATABLE :: BCRivSal(:,:)    !  BCRivSal(NVEL,NFEN) : Vertical salinity boundary information for rivers
       REAL(SZ),ALLOCATABLE :: BCRivSalN1(:,:)  !  BCRivSal(NVEL,NFEN) : Vertical salinity boundary information for rivers
@@ -157,18 +158,18 @@ C...  DECLARE 3D GLOBAL SCALARS
       INTEGER  :: ISLIP                !bottom slip coefficient flag (0=no slip, 1=linear, 2=quadratic)
       INTEGER  :: IEVC                 !eddy viscosity flag determine type of EV used
 
-      COMPLEX(SZ) :: IDTALP1              !i*DelT*alpha1 
+      COMPLEX(SZ) :: IDTALP1              !i*DelT*alpha1
       COMPLEX(SZ) :: IDT1MALP1            !i*DelT*(1-alpha1)
       COMPLEX(SZ),  PARAMETER ::  iy=(0.0d0, 1.0d0)   !imaginary i
 
 C...Terms added for the transport parameters !kmd45.11 transport
       REAL(SZ) :: NLSD, NVSD           !diffusion coefficients for the salinity field
-      REAL(SZ) :: NLTD, NVTD           !diffusion coefficients for the temperature field 
+      REAL(SZ) :: NLTD, NVTD           !diffusion coefficients for the temperature field
       REAL(SZ) :: Alp4                 !time weighting coefficient for the vertical diffusion term in the transport equation
       INTEGER :: NTF                  !Flag for the top boundary condition for the temperature field in the transport equation
       REAL(SZ) :: DTALP4, DT1MALP4     !DelT*alpha4, DelT*(1-alpha4)
 
-C   kmd48.33bc - added term for baroclinic 
+C   kmd48.33bc - added term for baroclinic
       INTEGER :: EQNSTATE ! determine equation of state to be used
 
 C...Declare and initialize logical variables
@@ -188,7 +189,7 @@ C...3D Station Density Output (fort.41)
 C     I3DSD    - flag for 3D station density output
 C       If ABS(I3DSD)>0 densities are interpolated to stations and written out
 C       If ABS(I3DSD)=1, output is ascii. If ABS(I3DSD)=2, output is binary.
-      INTEGER :: I3DSD 
+      INTEGER :: I3DSD
       INTEGER :: NSpo3DSD     !3D station density output interval in timesteps
       INTEGER :: NTO3DSDS     !TO3DSDS converted to timesteps after StaTime
       INTEGER :: NTO3DSDF     !TO3DSDF converted to timesteps after StaTime
@@ -202,13 +203,13 @@ C       If ABS(I3DSD)=1, output is ascii. If ABS(I3DSD)=2, output is binary.
       REAL(8),ALLOCATABLE :: StaI3DD1(:)   !interpolating factor used to compute output at 3D density station N
       REAL(8),ALLOCATABLE :: StaI3DD2(:)   !interpolating factor used to compute output at 3D density station N
       REAL(8),ALLOCATABLE :: StaI3DD3(:)   !interpolating factor used to compute output at 3D density station N
-      REAL(SZ),ALLOCATABLE,TARGET :: SigTSta(:,:)   !3D Sigma T station output - not a global variable but easier to allocate here 
+      REAL(SZ),ALLOCATABLE,TARGET :: SigTSta(:,:)   !3D Sigma T station output - not a global variable but easier to allocate here
       REAL(SZ),ALLOCATABLE,TARGET :: TempSta(:,:)   !3D Temperature station output - not a global variable but easier to allocate here
       REAL(SZ),ALLOCATABLE,TARGET :: SalSta(:,:)    !3D Salinity station output - not a global variable but easier to allocate here
       CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMED(:)!density station names
       REAL(8),ALLOCATABLE,TARGET :: XED(:)  ! station x coordinate (cartesian)
       REAL(8),ALLOCATABLE,TARGET :: YED(:)  ! station y coordinate (cartesian)
-      REAL(8),ALLOCATABLE,TARGET :: SLED(:) ! station lon coordinate 
+      REAL(8),ALLOCATABLE,TARGET :: SLED(:) ! station lon coordinate
       REAL(8),ALLOCATABLE,TARGET :: SFED(:) ! station lat coordinate
 
 
@@ -234,7 +235,7 @@ C...3D Velocity station output variables
       CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMEV3D(:) !vel station names
       REAL(8),ALLOCATABLE,TARGET :: XE3DV(:)  ! station x coordinate (cartesian)
       REAL(8),ALLOCATABLE,TARGET :: YE3DV(:)  ! station y coordinate (cartesian)
-      REAL(8),ALLOCATABLE,TARGET :: SLE3DV(:) ! station lon coordinate 
+      REAL(8),ALLOCATABLE,TARGET :: SLE3DV(:) ! station lon coordinate
       REAL(8),ALLOCATABLE,TARGET :: SFE3DV(:) ! station lat coordinate
 
 C...3D Turbulence station output variables
@@ -259,7 +260,7 @@ C...3D Turbulence station output variables
       CHARACTER(50), ALLOCATABLE, TARGET  :: STATNAMET(:) !turb station names
       REAL(8),ALLOCATABLE,TARGET :: XET(:)  ! station x coordinate (cartesian)
       REAL(8),ALLOCATABLE,TARGET :: YET(:)  ! station y coordinate (cartesian)
-      REAL(8),ALLOCATABLE,TARGET :: SLET(:) ! station lon coordinate 
+      REAL(8),ALLOCATABLE,TARGET :: SLET(:) ! station lon coordinate
       REAL(8),ALLOCATABLE,TARGET :: SFET(:) ! station lat coordinate
 
 C...3D Global density output variables
@@ -292,10 +293,10 @@ C...3D Global turbulence output variables
       INTEGER :: N3DGT        !counter to determine if it is time to write 3D global turbulence data
       INTEGER :: I3DGTRec     !record pointer for binary file writes
 
-C     jgf49.44: These variables represent fulldomain arrays and are 
+C     jgf49.44: These variables represent fulldomain arrays and are
 C     used in hstart.F for reading fulldomain hotstart files as well as in
 C     write_output.F/writeHotstart and writer.F/writeHotstart_through_HSwriter
-C     for writing fulldomain hotstart files. 
+C     for writing fulldomain hotstart files.
       REAL(SZ), ALLOCATABLE, TARGET :: DUU_g(:)
       REAL(SZ), ALLOCATABLE, TARGET :: DUV_g(:)
       REAL(SZ), ALLOCATABLE, TARGET :: DVV_g(:)
@@ -305,7 +306,7 @@ C     for writing fulldomain hotstart files.
       REAL(SZ), ALLOCATABLE, TARGET :: BSY_g(:)
       COMPLEX(SZ), ALLOCATABLE :: Q_g(:,:)
       REAL(SZ), ALLOCATABLE, TARGET :: WZ_g(:,:)
-      REAL(SZ), ALLOCATABLE, TARGET :: q20_g(:,:)    
+      REAL(SZ), ALLOCATABLE, TARGET :: q20_g(:,:)
       REAL(SZ), ALLOCATABLE, TARGET :: l_g(:,:)
       REAL(SZ), ALLOCATABLE, TARGET :: EV_g(:,:)
       REAL(SZ), ALLOCATABLE, TARGET :: SigT_g(:,:)
@@ -357,7 +358,7 @@ C
 C     Allocate space for arrays used in 3D Density station output
 C
       SUBROUTINE ALLOC_3DSD()
-      ALLOCATE( NE3DD(MNSta3DD) ) 
+      ALLOCATE( NE3DD(MNSta3DD) )
       ALLOCATE( StaI3DD1(MNSta3DD), StaI3DD2(MNSta3DD),
      &                              StaI3DD3(MNSta3DD) )
       ALLOCATE( SigTSta(MNSTA3DD,NFEN), SalSta(MNSTA3DD,NFEN),
@@ -366,13 +367,13 @@ C
       ALLOCATE(XED(MNSTA3DD),YED(MNSTA3DD),
      &         SLED(MNSTA3DD),SFED(MNSTA3DD))
       RETURN
-      END SUBROUTINE ALLOC_3DSD      
+      END SUBROUTINE ALLOC_3DSD
 
 C
 C     Allocate space for arrays used in 3D Velocity station output
 C
       SUBROUTINE ALLOC_3DSV()
-      ALLOCATE( NE3DV(MNSta3DV) ) 
+      ALLOCATE( NE3DV(MNSta3DV) )
       ALLOCATE( StaI3DV1(MNSta3DV), StaI3DV2(MNSta3DV),
      &                              StaI3DV3(MNSta3DV) )
       ALLOCATE( qSta(MNSTA3DV,NFEN), WZSta(MNSTA3DV,NFEN) )
@@ -386,7 +387,7 @@ C
 C     Allocate space for arrays used in 3D Turbulence station output
 C
       SUBROUTINE ALLOC_3DST()
-      ALLOCATE( NE3DT(MNSta3DT) ) 
+      ALLOCATE( NE3DT(MNSta3DT) )
       ALLOCATE( StaI3DT1(MNSta3DT), StaI3DT2(MNSta3DT),
      &                              StaI3DT3(MNSta3DT) )
       ALLOCATE( q20Sta(MNSTA3DT,NFEN), lSta(MNSTA3DT,NFEN),

@@ -19,7 +19,6 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=pgi
 #compiler=pgi-ranger
 #compiler=diamond
-#compiler=utils
 #compiler=kraken
 #
 #
@@ -136,40 +135,6 @@ ifeq ($(compiler),intel-lonestar)
   CLIBS         :=
   FLIBS          :=
   MSGLIBS       :=
-  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
-  ifneq ($(FOUND),TRUE)
-     FOUND := TRUE
-  else
-     MULTIPLE := TRUE
-  endif
-endif
-#
-# ERDC Utility Server using standard compilers, from vjp; added by tcm v50.41
-ifeq ($(compiler),utils)
-  PPFC          :=  pgf90
-  FC            :=  pgf90
-  PFC           :=  mpif90
-  CC            :=  pgcc
-  CCBE          :=  pgcc
-  FFLAGS1       :=  $(INCDIRS) -fastsse -Mextend
-  FFLAGS2       :=  $(FFLAGS1)
-  FFLAGS3       :=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics
-  DA            :=  -DREAL8 -DLINUX -DCSCA
-  DP            :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA
-  DPRE          :=  -DREAL8 -DLINUX
-  CFLAGS        :=  $(INCDIRS) -DLINUX
-  IMODS         :=  -module
-  FLIBS         :=
-  MSGLIBS       :=
-# When compiling with netCDF support, the HDF5 libraries must also
-# be linked in, so the user must specify HDF5HOME on the command line.
-# jgf20101102: on Sapphire,
-#              NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.1.1-serial
-#              HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.5-serial/lib
-  ifeq ($(NETCDF),enable)
-     FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5_fortran -lhdf5_hl -lhdf5 -lz
-  endif
-  BACKEND_EXEC  := metis_be adcprep_be
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
      FOUND := TRUE

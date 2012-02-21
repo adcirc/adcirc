@@ -7,11 +7,11 @@ C      current for ADCIRC v46.44   10/07/2006
 C
 C      Version 1.1 5/04/99 vjp
 c      jjw fixes 053100
-C      Revisions by rl 10/12/01, MEB 3/03, rl 3/03, rl 5/21/03, rl 5/18/04, 
+C      Revisions by rl 10/12/01, MEB 3/03, rl 3/03, rl 5/21/03, rl 5/18/04,
 C                   vp 11/27/03 (by rl)
 C      Revisions by MEB 4/04
-C      jgf Created PREP11, rewrote PREP20 for ADCIRC v45.12 02/24/2006 
-C      jgf Created PREP13 for ADCRIC v46.00 
+C      jgf Created PREP11, rewrote PREP20 for ADCIRC v45.12 02/24/2006
+C      jgf Created PREP13 for ADCRIC v46.00
 C      vjp PREP13 updates for ADCIRC v46.44
 C      vjp PREP67_68 localization updates for ADCIRC v46.44
 C      vjp added Relocalize for relocalizing fort.13 and fort.15
@@ -31,7 +31,7 @@ C
 C---------------------------------------------------------------------------
       SUBROUTINE PREP10()
 C---------------------------------------------------------------------------
-      USE PRE_GLOBAL 
+      USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
@@ -48,9 +48,9 @@ C---------------------------------------------------------------------------
       REAL(SZ), ALLOCATABLE :: fdData3D(:,:) !(MNP,NFEN) full domain data
       REAL(SZ), ALLOCATABLE :: sdData2D(:)   !(MNP)      subdomain data
       REAL(SZ), ALLOCATABLE :: sdData3D(:,:) !(MNP,NFEN) subdomain data
-      LOGICAL success        ! .true. if all files opened successfully 
+      LOGICAL success        ! .true. if all files opened successfully
 
-      CALL OpenPrepFiles(10, 'initial concentration         ', 
+      CALL OpenPrepFiles(10, 'initial concentration         ',
      &     1, nproc, sdu, success)
 
       IF (.not.success) THEN
@@ -161,7 +161,7 @@ C
 C---------------------------------------------------------------------------
       SUBROUTINE PREP11()
 C---------------------------------------------------------------------------
-      USE PRE_GLOBAL 
+      USE PRE_GLOBAL
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
@@ -178,9 +178,9 @@ C---------------------------------------------------------------------------
       REAL(SZ), ALLOCATABLE :: fdData2(:,:) !(MNP,NFEN) full domain data
       REAL(SZ), ALLOCATABLE :: sdData1(:,:) !(MNP,NFEN) subdomain data
       REAL(SZ), ALLOCATABLE :: sdData2(:,:) !(MNP,NFEN) subdomain data
-      LOGICAL success        ! .true. if all files opened successfully 
+      LOGICAL success        ! .true. if all files opened successfully
 
-      CALL OpenPrepFiles(11, 'initial density forcing       ', 
+      CALL OpenPrepFiles(11, 'initial density forcing       ',
      &     1, nproc, sdu, success)
 
       IF (.not.success) THEN
@@ -213,7 +213,7 @@ C     2D runs.
 
 c     read in the full domain data
       SELECT CASE (ABS(IDEN))
-      
+
       CASE(1,2,3)
          ALLOCATE ( fdData1(MNP,NFEN) )
          nbytes = 8*mnp*nfen
@@ -231,17 +231,17 @@ c     read in the full domain data
          call memory_alloc(nbytes)
          DO i=1, NNODG
             DO j=1, nfen
-               READ(11,*) nhnn, nvnn, 
+               READ(11,*) nhnn, nvnn,
      &              fdData1(nhnn,nvnn),fdData2(nhnn,nvnn)
             ENDDO
          ENDDO
 
       END SELECT
-         
+
 c     write out subdomain data
       SELECT CASE (ABS(IDEN))
-         
-      CASE(1,2,3) 
+
+      CASE(1,2,3)
          ALLOCATE ( sdData1(MNP,NFEN) )
          nbytes = 8*mnp*nfen
          call memory_alloc(nbytes)
@@ -257,8 +257,8 @@ c     write out subdomain data
          DEALLOCATE ( fdData1, sdData1 )
          nbytes = 16*mnp*nfen
          call memory_dealloc(nbytes)
-         
-      CASE(4) 
+
+      CASE(4)
          ALLOCATE ( sdData1(MNP,NFEN) )
          ALLOCATE ( sdData2(MNP,NFEN) )
          nbytes = 16*mnp*nfen
@@ -277,7 +277,7 @@ c     write out subdomain data
          DEALLOCATE ( sdData1, sdData2 )
          nbytes = 32*mnp*nfen
          call memory_dealloc(nbytes)
-         
+
       END SELECT
 C
 C     Close full domain file and all subdomain files
@@ -301,7 +301,7 @@ C---------------------------------------------------------------------------
 C                S U B R O U T I N E   R E L O C A L I Z E
 C---------------------------------------------------------------------------
 C
-C     This routine allows re-localizing selected files after a prepall 
+C     This routine allows re-localizing selected files after a prepall
 C     operation.  vjp 10/2006
 C     tcm v50.21 20110610 -- changed I8 to I12 format specifications
 C
@@ -373,7 +373,7 @@ Casey 100208: Changed I8 to I12.
       DO IPROC = 1,NPROC
       DO I=1, NELP(IPROC)
 Casey 100208: Changed I8 to I12.
-         READ(LUNP(IPROC),'(I12)') idumy                 
+         READ(LUNP(IPROC),'(I12)') idumy
          IMAP_EL_LG(I,IPROC) = abs(idumy)
       ENDDO
       ENDDO
@@ -422,11 +422,11 @@ C  This section for prep15
            ENDDO
         ENDDO
       ENDIF
-      
+
 ! Build Global-to-Local Node Map
       if (.not.allocated(itotproc)) then
         ALLOCATE ( ITOTPROC(NNODG) )
-        nbytes = 4*nnodg               
+        nbytes = 4*nnodg
         call memory_alloc(nbytes)
       endif
       DO I = 1,NNODG
@@ -438,7 +438,7 @@ C  This section for prep15
             ITOTPROC(INDX) = ITOTPROC(INDX) + 1
          ENDDO
       ENDDO
-      MNEI = 0    
+      MNEI = 0
       DO I = 1,NNODG
          IF (ITOTPROC(I) .gt. MNEI) MNEI = ITOTPROC(I)
       ENDDO
@@ -446,7 +446,7 @@ C  This section for prep15
 
       if (.not.allocated(imap_nod_gl2)) then
         ALLOCATE( IMAP_NOD_GL2( 2*MNEI, NNODG) )
-        nbytes = 8*mnei*nnodg               
+        nbytes = 8*mnei*nnodg
         call memory_alloc(nbytes)
       endif
       print *, "allocated imap_nod_GL2"
@@ -467,21 +467,21 @@ C  This section for prep15
       !jgf50.35: Need this for --prep13 option.
       if (.not.allocated(imap_nod_gl)) then
          ALLOCATE (IMAP_NOD_GL(2,NNODG))
-         nbytes = nbytes + 8*mnp 
+         nbytes = nbytes + 8*mnp
          call memory_alloc(nbytes)
       endif
       print *, "allocated imap_nod_GL"
-      ! jgf50.35: Formulate the global-to-local 
+      ! jgf50.35: Formulate the global-to-local
       ! mapping for resident nodes
       DO IPROC=1,NPROC
          DO J=1,NNODP(IPROC)
             INDX = IMAP_NOD_LG(J,IPROC)
             IF (ITOTPROC(INDX).eq.1) THEN
-               IMAP_NOD_GL(1,INDX) = IPROC 
+               IMAP_NOD_GL(1,INDX) = IPROC
                IMAP_NOD_GL(2,INDX) = J
             ENDIF
          ENDDO
-      ENDDO 
+      ENDDO
       call memory_status()
       print *, "leaving relocalize"
       RETURN
@@ -505,7 +505,7 @@ C     it). Also adding following documentation:
 C
 C     BY DEFAULT, ONLY 256 SUBDOMAINS WILL BE PREPPED AT A TIME TO AVOID
 C     OPENING TOO MANY FILES ON CERTAIN PLATFORMS. THIS NUMBER CAN BE
-C     CONTROLLED BY THE PARAMETER MAXOPENFILES. 
+C     CONTROLLED BY THE PARAMETER MAXOPENFILES.
 C
 C---------------------------------------------------------------------------
       SUBROUTINE PREP13()
@@ -531,14 +531,14 @@ C
       REAL(SZ) DefaultVal(12) ! default value of attribute
       INTEGER NoOfVals       ! at each node for an attribute
       INTEGER Mode           !=0 to count, =1 to write
-      LOGICAL success        ! .true. if all files opened successfully 
+      LOGICAL success        ! .true. if all files opened successfully
       INTEGER, ALLOCATABLE :: SDNumND(:,:)  ! subdomain # of nodes not default
 C     jgf48.47 Do the decomposition for a max of 256 subdomains at a
-C     time ... some platforms/compilers limit the number of files that 
+C     time ... some platforms/compilers limit the number of files that
 C     can be open at any one time.
-      INTEGER, PARAMETER :: maxOpenFiles = 256 
-      INTEGER startProc  
-      INTEGER endProc 
+      INTEGER, PARAMETER :: maxOpenFiles = 256
+      INTEGER startProc
+      INTEGER endProc
       INTEGER deltaProc
 C
 C     Perform decomposition over range of subdomains.
@@ -549,7 +549,7 @@ C     Perform decomposition over range of subdomains.
          endProc = startProc + deltaProc
 C
 C        Open full domain and subdomain fort.13 files.
-         CALL OpenPrepFiles(13, 'nodal attributes              ', 
+         CALL OpenPrepFiles(13, 'nodal attributes              ',
      &       startProc, endProc, sdu, success)
 C
          IF (.not.success) THEN
@@ -576,7 +576,7 @@ C
 C        Transcribe header information into subdomain unit 13 files
          DO iproc = startProc, endProc
             WRITE(sdu(iproc),'(A80)') header
-            WRITE(sdu(iproc),*) NNODP(iproc) 
+            WRITE(sdu(iproc),*) NNODP(iproc)
             WRITE(sdu(iproc),*) NAttr
          ENDDO
 C
@@ -590,7 +590,7 @@ C        Transcribe attribute names from full domain file to subdomains.
                WRITE(sdu(IPROC),'(A80)') AttrName
                WRITE(sdu(IPROC),'(A80)') Units
                WRITE(sdu(IPROC),*) NoOfVals
-               WRITE(sdu(IPROC),'(12(1x,e16.9))') 
+               WRITE(sdu(IPROC),'(12(1x,e16.9))')
      &          (DefaultVal(m),m=1,NoOfVals)
             END DO
          END DO
@@ -617,11 +617,11 @@ C     Now rewind and advance to the beginning of the data again
          END DO
          DO k=1, NAttr
             DO ll=1, 4
-               READ(13,*) skipped ! skip AttrName,Units,NoOfVals,Default 
+               READ(13,*) skipped ! skip AttrName,Units,NoOfVals,Default
             END DO
          END DO
 C
-C        Now read each of the nodal attributes and transcribe them to the 
+C        Now read each of the nodal attributes and transcribe them to the
 C        appropriate subdomain.
          CALL processNodalAttr(NAttr, 1, sdu, SDNumND,
      &      startProc, endProc)
@@ -633,11 +633,11 @@ C        Close full domain and subdomain files
          CLOSE (13)
          DO iproc=startProc, endProc
             CLOSE(sdu(iproc))
-         ENDDO 
+         ENDDO
          startProc = endProc + 1
       END DO
 C
-      if (allocated(NodalAttributes)) then  
+      if (allocated(NodalAttributes)) then
          DEALLOCATE(NodalAttributes)
          nbytes = 4*nwp
          call memory_dealloc(nbytes)
@@ -650,19 +650,19 @@ C---------------------------------------------------------------------------
 C---------------------------------------------------------------------------
 
 C     ----------------------------------------------------------------
-C        S U B R O U T I N E   P R O C E S S   N O D A L   A T T R 
+C        S U B R O U T I N E   P R O C E S S   N O D A L   A T T R
 C     ----------------------------------------------------------------
 C
 C     jgf46.00 Subroutine to support PREP13. This subroutine is called
 C     twice; once to determine the number of nodes with non-default
 C     values going into each subdomain, then a second time to actually
-C     place the data in the subdomain files. 
+C     place the data in the subdomain files.
 C
 C     This is necessary because the attributes in the subdomain files
 C     must each have the number of non-default values at the top, and
 C     this information cannot be known until we have processed the
-C     entire fulldomain file. 
-C     
+C     entire fulldomain file.
+C
 C     ----------------------------------------------------------------
       SUBROUTINE ProcessNodalAttr(NAttr, mode, sdu, SDNumND,
      &   startProc, endProc)
@@ -671,9 +671,9 @@ C     ----------------------------------------------------------------
 C
       INTEGER,intent(in) :: NAttr  ! number of attributes in the file
       INTEGER,intent(in) :: Mode   !=0 to count and return, =1 to write
-      INTEGER,intent(in),dimension(nproc) :: sdu !i/o unit number array 
+      INTEGER,intent(in),dimension(nproc) :: sdu !i/o unit number array
       INTEGER,intent(inout),dimension(nproc,NAttr) :: SDNumND
-      INTEGER,intent(in) :: startProc 
+      INTEGER,intent(in) :: startProc
       INTEGER,intent(in) :: endProc
       INTEGER NumNotDefault      ! number of nodes specified in the file
       INTEGER NumCol             ! number of values per node for an attr
@@ -686,8 +686,8 @@ C
       INTEGER iproc              ! subdomain loop counter
       INTEGER iproc2             ! mapped subdomain
       CHARACTER(len=80) AttrName ! label for attribute
-      REAL(SZ), ALLOCATABLE :: AttrData(:)  ! attribute data 
-      CHARACTER(len=80) Skipped  ! data we want to skip over 
+      REAL(SZ), ALLOCATABLE :: AttrData(:)  ! attribute data
+      CHARACTER(len=80) Skipped  ! data we want to skip over
 C
       DO k=1, NAttr
          READ(13,*) AttrName
@@ -711,23 +711,23 @@ C
             NumCol=1
          CASE("sea_surface_height_above_geoid")
             NumCol=1
-         CASE("surface_directional_effective_roughness_length") 
+         CASE("surface_directional_effective_roughness_length")
             NumCol=12
-         CASE("surface_canopy_coefficient") 
+         CASE("surface_canopy_coefficient")
             NumCol=1
-         CASE("bridge_pilings_friction_parameters") 
+         CASE("bridge_pilings_friction_parameters")
             NumCol=4
          CASE
-     &   ("average_horizontal_eddy_viscosity_in_sea_water_wrt_depth") 
+     &   ("average_horizontal_eddy_viscosity_in_sea_water_wrt_depth")
             NumCol=1
          CASE
-     &   ("average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth") 
+     &   ("average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth")
             NumCol=1
-         CASE 
+         CASE
      &   ("min_and_max_primitive_weighting_in_continuity_equation")
             NumCol=2
          CASE
-     &   ("subtract_from_depth_to_equal_mean_sea_level") 
+     &   ("subtract_from_depth_to_equal_mean_sea_level")
             NumCol=1
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
          CASE("wave_refraction_in_swan")
@@ -757,7 +757,7 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
             IF (ITOTPROC(NodeNum).eq.1) THEN
                iproc = IMAP_NOD_GL(1,NodeNum)
                IF ( (iproc.lt.startProc) .or. (iproc.gt.endProc) ) THEN
-                  CYCLE ! skip it if it does not map to our range of procs 
+                  CYCLE ! skip it if it does not map to our range of procs
                ENDIF
                IF (Mode.eq.0) SDNumND(iproc,k) = SDNumND(iproc,k)+1
                IF (Mode.eq.1) THEN
@@ -768,7 +768,7 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
                DO m=1, ITOTPROC(NodeNum)
                   iproc2 = IMAP_NOD_GL2(2*(m-1)+1,NodeNum)
                   DO iproc=startProc, endProc
-                     IF (iproc.EQ.iproc2) THEN !f.d. node maps to this s.d. 
+                     IF (iproc.EQ.iproc2) THEN !f.d. node maps to this s.d.
                         IF (Mode.eq.0) THEN
                            SDNumND(iproc,k)=SDNumND(iproc,k)+1
                         ENDIF
@@ -791,8 +791,8 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
 C
 C
  1001 FORMAT('ERROR: The Nodal Attributes File (unit 13)')
- 1021 FORMAT('contains invalid name: ',A80) 
- 1031 FORMAT('WARNING: Processed only one column of unrecognized ',A80) 
+ 1021 FORMAT('contains invalid name: ',A80)
+ 1031 FORMAT('WARNING: Processed only one column of unrecognized ',A80)
  1100 FORMAT(I10,32000(2X,E16.8))
 C
       RETURN
@@ -802,15 +802,15 @@ C     ----------------------------------------------------------------
 
 
       SUBROUTINE PREP14()
-      USE PRE_GLOBAL 
+      USE PRE_GLOBAL
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  2/28/98  )                         C 
+C                     (  Serial Version  2/28/98  )                         C
 C  This routine writes a Local Grid file "fort.14" file for each subdomain  C
 C  using the domain decomposition of the ADCIRC grid created by the routine C
 C  DECOMP.                                                                  C
 C                                                                           C
-C  The Decomposition Variables are defined in the include file adcprep.inc  C 
+C  The Decomposition Variables are defined in the include file adcprep.inc  C
 C  This version is compatible with ADCIRC version 34.03                     C
 C                                                                           C
 C---------------------------------------------------------------------------C
@@ -910,7 +910,7 @@ C
                       ITEMP2 = (JD-1)*2 + 1
                       IPROC3  = IMAP_NOD_GL2(ITEMP2,INDEX2)
                       ILNODE3 = IMAP_NOD_GL2(ITEMP2+1,INDEX2)
-                      IF (IPROC.EQ.IPROC3) THEN 
+                      IF (IPROC.EQ.IPROC3) THEN
                         NVELP(IPROC) = NVELP(IPROC) + 1
                         NVELLP(K) = NVELLP(K) + 1
                         LBINDEX_LG(K,NVELLP(K)) = I
@@ -932,7 +932,7 @@ C
                  ITEMP = (J-1)*2 + 1
                  IPROC2 =  IMAP_NOD_GL2(ITEMP,INDX)
                  ILNODE =  IMAP_NOD_GL2(ITEMP+1,INDX)
-                 IF (IPROC.EQ.IPROC2) THEN 
+                 IF (IPROC.EQ.IPROC2) THEN
                    NVELP(IPROC) = NVELP(IPROC) + 1
                    NVELLP(K) = NVELLP(K) + 1
                    LBINDEX_LG(K,NVELLP(K)) = I
@@ -946,8 +946,8 @@ C
          ENDDO
 C
 Cmod 05/18/2004 rl -- I don't think this next part is the correct
-c  way to handle islands.  Rather, if an island is split by a domain, it 
-c  should remain an island.  This will ensure that the boundary is 
+c  way to handle islands.  Rather, if an island is split by a domain, it
+c  should remain an island.  This will ensure that the boundary is
 c  closed.  The only error would occur in ghost node space, which is
 c  not a problem since the answers are not used there anyway.
 
@@ -974,17 +974,17 @@ c            ENDIF
 c          ENDIF
 c        ENDDO
 
-C If a segment contains only one node, remove the segment from the list     
-C (NOTE: rl 5/18/04 I don't see how this could possibly happen, including 
+C If a segment contains only one node, remove the segment from the list
+C (NOTE: rl 5/18/04 I don't see how this could possibly happen, including
 C  ghost nodes)
 
          DO K=1, NBOU
            IF (NVELLP(K).EQ.1) NVELLP(K) = 0
          ENDDO
 
-C    
+C
 C--Count the number of land boundary segments on PE IPROC.
-C         
+C
          NBOUP(IPROC) = 0
          DO K = 1,NBOU
             IF (NVELLP(K).NE.0) THEN
@@ -1004,9 +1004,9 @@ C     jgf46.21 Added support for IBTYPE=52.
             IF (NVELLP(K).EQ.0) GOTO 400
             ITYPE = IBTYPEP(K,IPROC)
 ! kmd - added for rivers in baroclinic simulation
-            IF (ABS(ITYPE/100).EQ.1) THEN 
+            IF (ABS(ITYPE/100).EQ.1) THEN
                ITYPE = (ABS(ITYPE)-100)*(ITYPE/ABS(ITYPE))
-            END IF 
+            END IF
             IF ((ITYPE.EQ.2).OR.(ITYPE.EQ.12).OR.(ITYPE.EQ.22).OR.
      &           (ITYPE.EQ.52)) THEN
               DISC = DISC + NVELLP(K)
@@ -1075,7 +1075,7 @@ C
          ENDDO
 C
 C--------------------------------------------------------------------------
-C--BEGIN WRITING LOCAL GRID ( fort.14 ) FILE HERE        
+C--BEGIN WRITING LOCAL GRID ( fort.14 ) FILE HERE
 C--------------------------------------------------------------------------
 C
 C--Write Mesh Data
@@ -1084,7 +1084,7 @@ C
 C
           NUMS(1) = NELP(IPROC)
           NUMS(2) = NNODP(IPROC)
-c  
+c
 cjgf45.06    CALL INSERT(SIZEMSG,OUTMSG,NUMS,2)
 cjgf45.06    WRITE(14,80) OUTMSG
           WRITE(14,43) NELP(IPROC),NNODP(IPROC) !jgf45.06
@@ -1162,7 +1162,7 @@ C
                      WRITE(14,'(I8)') NBVVP(K,I)
                   ENDDO
                 ELSEIF ((ITYPE.EQ.3).OR.(ITYPE.EQ.13).OR.
-     &                  (ITYPE.EQ.23)) THEN 
+     &                  (ITYPE.EQ.23)) THEN
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
                      WRITE(14,81) NBVVP(K,I),BAR1(K,INDX),BAR2(K,INDX)
@@ -1204,18 +1204,18 @@ C
       END
 
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  2/28/98  )                         C 
+C                     (  Serial Version  2/28/98  )                         C
 C  This routine writes a Local Input file "fort.15" file for each subdomain C
 C  using the domain decomposition of the ADCIRC grid created by the routine C
 C  DECOMP.                                                                  C
 C                                                                           C
-C  The Decomposition Variables are defined in the include file adcprep.inc  C 
+C  The Decomposition Variables are defined in the include file adcprep.inc  C
 C  This version is compatible with ADCIRC version 34.03                     C
 C                                                                           C
 C           Modifications by RL on 10/9/01 to accomodate NWS = -2           C
 C---------------------------------------------------------------------------C
       SUBROUTINE PREP15()
-      USE PRE_GLOBAL 
+      USE PRE_GLOBAL
       use memory_usage
       USE HARM, ONLY : NAMEFR
       IMPLICIT NONE
@@ -1245,21 +1245,21 @@ C
          WRITE(15,80) ICSMSG
          WRITE(15,80) IMMSG
          IF (CBaroclinic) THEN  !jgf46.28
-            WRITE(15,80) IDENMSG  
+            WRITE(15,80) IDENMSG
          ENDIF
          WRITE(15,80) IBFMSG
          WRITE(15,80) IFAMSG
          WRITE(15,80) ICAMSG
          WRITE(15,80) ICATMSG
          WRITE(15,80) NWPMSG
-         IF (NWP.gt.0) THEN !jgf46.00 write nodal attributes 
+         IF (NWP.gt.0) THEN !jgf46.00 write nodal attributes
             DO I=1, NWP
                WRITE(15,80) NodalAttributes(I)
             ENDDO
          ENDIF
          WRITE(15,80) NCORMSG
          WRITE(15,80) NTIPMSG
-C     jgfdebug46.02 Added check for NWS=45 to write NWS=5 
+C     jgfdebug46.02 Added check for NWS=45 to write NWS=5
          IF (NWS.EQ.45) THEN
             WRITE(15,'(A1)') "5"
          ELSE
@@ -1300,16 +1300,16 @@ C     sb46.28sb01 added NWS=12: OWI format
          WRITE(15,80) DRAMPMSG
          WRITE(15,80) COEFMSG
          WRITE(15,80) H0MSG
-         WRITE(15,80) SLMSG        
-         WRITE(15,80) TAUMSG        
-         WRITE(15,80) ESLMSG        
+         WRITE(15,80) SLMSG
+         WRITE(15,80) TAUMSG
+         WRITE(15,80) ESLMSG
          WRITE(15,80) CORIMSG
          WRITE(15,80) NTIFMSG
          DO I=1,NTIF
             WRITE(15,80)  TIPOTAG(I)
             WRITE(15,80)  TPKMSG(I)
          ENDDO
-         
+
          WRITE(15,80) NBFRMSG
          DO I=1,NBFR
             WRITE(15,80) BOUNTAG(I)
@@ -1319,9 +1319,9 @@ C     sb46.28sb01 added NWS=12: OWI format
             WRITE(15,80) ALPHA1(I)
             DO J=1,NETAP(IPROC)
                WRITE(15,80) EMOMSG(I,OBNODE_LG(J,IPROC))
-            ENDDO 
-         ENDDO   
-         
+            ENDDO
+         ENDDO
+
          WRITE(15,80) ANGMSG
 C
 C--If there were any normal flow boundaries local to PE, process them
@@ -1342,7 +1342,7 @@ C
                   ENDIF
                ENDDO
             ENDDO
-C     
+C
             WRITE(15,80) NFFRMSG
             IF ((NFFR.NE.0).AND.(NFFR.NE.-1)) THEN
                DO I=1,NFFR
@@ -1357,7 +1357,7 @@ cdebug               print *, "PE=",IPROC," FLUXNODE=",FLBNXP(J)
                   ENDDO
                ENDDO
             ENDIF
-C     
+C
          ENDIF
 C
 C--Write Local Elevation Station Info:
@@ -1377,17 +1377,17 @@ C
                   IMAP_STAE_LG(NSTAEP(IPROC),IPROC) = KK
                   STAE_SHARE(K) = IPROC
                ENDIF
-            ENDDO  
-         ENDDO        
-         NSTAE_MAX = MAX(NSTAEP(IPROC),NSTAE_MAX) 
-C     
+            ENDDO
+         ENDDO
+         NSTAE_MAX = MAX(NSTAEP(IPROC),NSTAE_MAX)
+C
          CALL INSERT(NSTAEMSG,OUTMSG,NSTAEP(IPROC),1)
-         WRITE(15,80) OUTMSG       
-C     
+         WRITE(15,80) OUTMSG
+C
          DO K=1,NSTAEP(IPROC)
             INDX = abs(IMAP_STAE_LG(K,IPROC))
             WRITE(15,80) STAELOC(INDX)
-         ENDDO             
+         ENDDO
 C
 C--Write Local Velocity Station Info:
 C--Create Local-to-Global element "ownership" of an velocity station
@@ -1405,12 +1405,12 @@ C
                   IMAP_STAV_LG(NSTAVP(IPROC),IPROC) = KK
                   STAV_SHARE(K) = IPROC
                ENDIF
-            ENDDO 
-         ENDDO   
-         NSTAV_MAX = MAX(NSTAVP(IPROC),NSTAV_MAX) 
+            ENDDO
+         ENDDO
+         NSTAV_MAX = MAX(NSTAVP(IPROC),NSTAV_MAX)
 C
          CALL INSERT(NSTAVMSG,OUTMSG,NSTAVP(IPROC),1)
-         WRITE(15,80) OUTMSG       
+         WRITE(15,80) OUTMSG
 C
          DO K=1,NSTAVP(IPROC)
             INDX = abs(IMAP_STAV_LG(K,IPROC))
@@ -1436,18 +1436,18 @@ C
                      IMAP_STAC_LG(NSTACP(IPROC),IPROC) = KK
                      STAC_SHARE(K) = IPROC
                   ENDIF
-               ENDDO 
-            ENDDO   
-            NSTAC_MAX = MAX(NSTACP(IPROC),NSTAC_MAX) 
+               ENDDO
+            ENDDO
+            NSTAC_MAX = MAX(NSTACP(IPROC),NSTAC_MAX)
 C
             CALL INSERT(NSTACMSG,OUTMSG,NSTACP(IPROC),1)
-            WRITE(15,80) OUTMSG       
-C     
+            WRITE(15,80) OUTMSG
+C
             DO K=1,NSTACP(IPROC)
                INDX = abs(IMAP_STAC_LG(K,IPROC))
                WRITE(15,80) STACLOC(INDX)
             ENDDO
-C     
+C
          ENDIF
 C
 C--Write Local Meterological Station Info:
@@ -1466,82 +1466,85 @@ C
                      IMAP_STAM_LG(NSTAMP(IPROC),IPROC) = KK
                      STAM_SHARE(K) = IPROC
                   ENDIF
-               ENDDO  
-            ENDDO        
-            NSTAM_MAX = MAX(NSTAMP(IPROC),NSTAM_MAX) 
+               ENDDO
+            ENDDO
+            NSTAM_MAX = MAX(NSTAMP(IPROC),NSTAM_MAX)
 C
             CALL INSERT(NSTAMMSG,OUTMSG,NSTAMP(IPROC),1)
-            WRITE(15,80) OUTMSG       
+            WRITE(15,80) OUTMSG
 C
             DO K=1,NSTAMP(IPROC)
                INDX = abs(IMAP_STAM_LG(K,IPROC))
                WRITE(15,80) STAMLOC(INDX)
-            ENDDO             
+            ENDDO
          ENDIF
 
 C
 C--Write Local Elevation Data Output Info
 C
-C     WRITE(15,80) OUTGEMSG !jgf45.07 we may have changed NOUTGE in adcprep
-      WRITE(15,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
+C      WRITE(15,80) OUTGEMSG !jgf45.07 we may have changed NOUTGE in adcprep
+         WRITE(15,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
 C
 C--Write Local Velocity Data Output Info
 C
 C     WRITE(15,80) OUTGVMSG !jgf45.07 we may have changed NOUTGV in adcprep
-      WRITE(15,*) NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV
+         WRITE(15,*) NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV
 C
 C     jgf45.07 write subdomain concentration data output info if necessary
 C
-      IF (IM.EQ.10) WRITE(15,*) NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC
+         IF (IM.EQ.10) WRITE(15,*) NOUTGC,TOUTSGC,TOUTFGC,NSPOOLGC
 C
 C--Write Local Wind Velocity Data Output Info ( added 4/16/98 vjp )
 C
 C     jgf45.07 we may have changed NOUTGW in adcprep
 C     IF (NWS.NE.0) WRITE(15,80) OUTGWMSG
-      IF (NWS.NE.0) WRITE(15,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
+         IF (NWS.NE.0) WRITE(15,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
 C
 C--Write Harmonic Analysis Data
 C
-      WRITE(15,80) HARFRMSG
-      DO I=1,NHARFR
-         WRITE(15,'(A10)') NAMEFR(I)
-         WRITE(15,80) HAFREMSG(I)
+         WRITE(15,80) HARFRMSG
+         DO I=1,NHARFR
+            WRITE(15,'(A10)') NAMEFR(I)
+            WRITE(15,80) HAFREMSG(I)
 c           WRITE(15,*) HAFREQ(I),HAFF(I),HAFACE(I)
-      ENDDO
+         ENDDO
 C
-      WRITE(15,80) HARPARMSG
-      WRITE(15,80) OUTHARMSG
+         WRITE(15,80) HARPARMSG
+         WRITE(15,80) OUTHARMSG
 C
 C--Write Hot Start Info
 C
-      WRITE(15,80) HSTARMSG
+         WRITE(15,80) HSTARMSG
 C
 C--Write Solver Info
 C
-      WRITE(15,80) SOLVMSG
+         WRITE(15,80) SOLVMSG
 C
 C--Write 3DVS Info
 C
-      IF(C3DVS) THEN
-         CALL PREP15_3DVS(IPROC)
+         IF(C3DVS) THEN
+            CALL PREP15_3DVS(IPROC)
 c        ELSEIF(C3DDSS) THEN
 c           CALL PREP15_3DDSS(IPROC)
-      ENDIF
+         ENDIF
 C
 C     jgf48.03 Write netCDF metadata, if necessary
-      IF (useNetCDF.eqv..true.) THEN
-         WRITE(15,*) trim(adjustl(title))
-         WRITE(15,*) trim(adjustl(institution))
-         WRITE(15,*) trim(adjustl(source))
-         WRITE(15,*) trim(adjustl(history))
-         WRITE(15,*) trim(adjustl(references))
-         WRITE(15,*) trim(adjustl(comments))
-         WRITE(15,*) trim(adjustl(host))
-         WRITE(15,*) trim(adjustl(convention))
-         WRITE(15,*) trim(adjustl(contact))
-         WRITE(15,*) trim(adjustl(base_date))
-      ENDIF
-      CLOSE(15)
+         IF (useNetCDF.eqv..true.) THEN
+            write(*,*) 'writing netcdf metadata to fort.15' ! jgfdebug
+            WRITE(15,*) trim(adjustl(title))
+            WRITE(15,*) trim(adjustl(institution))
+            WRITE(15,*) trim(adjustl(source))
+            WRITE(15,*) trim(adjustl(history))
+            WRITE(15,*) trim(adjustl(references))
+            WRITE(15,*) trim(adjustl(comments))
+            WRITE(15,*) trim(adjustl(host))
+            WRITE(15,*) trim(adjustl(convention))
+            WRITE(15,*) trim(adjustl(contact))
+            WRITE(15,*) trim(adjustl(base_date))
+         ELSE
+            write(*,*) 'not writing netcdf metadata' ! jgfdebug
+         ENDIF
+         CLOSE(15)
 C
  1000 CONTINUE
 C     jgf45.12 Release memory that may have been allocated for vertical
@@ -1570,7 +1573,7 @@ C
          WRITE(*,92)  PE,NSTAEP(IPROC),NSTAVP(IPROC),
      .        NSTACP(IPROC),NSTAMP(IPROC)
       ENDDO
-C     
+C
       RETURN
  80   FORMAT(A80)
  92   FORMAT(1X,A6,4I8)
@@ -1578,26 +1581,26 @@ C
 
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  6/24/02  )                         C 
+C                     (  Serial Version  6/24/02  )                         C
 C  This routine writes the 3DVS info in the Local Input file "fort.15" file C
 C  for each subdomain using the domain decomposition of the ADCIRC grid     C
 C  created by the routine DECOMP.                                           C
 C                                                                           C
-C  The Decomposition Variables are defined in the include file adcprep.inc  C 
+C  The Decomposition Variables are defined in the include file adcprep.inc  C
 C  This version is compatible with ADCIRC version 41.11a                    C
 C
 C     jgf45.11 Updated to handle new format of 3D input files with stations
-C     defined by coordinates rather than node numbers. 
+C     defined by coordinates rather than node numbers.
 C---------------------------------------------------------------------------C
       SUBROUTINE PREP15_3DVS(IPROC)
       USE PRE_GLOBAL
       IMPLICIT NONE
       INTEGER N          ! vertical grid layer counter
       INTEGER IPROC      ! subdomain counter
-      INTEGER SDStation  ! subdomain station 
-      INTEGER FDStation  ! full domain station 
-      INTEGER SDEle      ! subdomain station element 
-      INTEGER FDEle      ! full domain element 
+      INTEGER SDStation  ! subdomain station
+      INTEGER FDStation  ! full domain station
+      INTEGER SDEle      ! subdomain station element
+      INTEGER FDEle      ! full domain element
 
 c     jgf45.10 removed IDIAG
       WRITE(15,80) IDENMSG
@@ -1637,7 +1640,7 @@ C   kmd48.33bc changed
                   IMAP_STA3DD_LG(NNSTA3DDP(IPROC),IPROC) = FDStation
                ENDIF
             END DO
-         END DO   
+         END DO
          WRITE(15,*) NNSTA3DDP(IPROC)
          DO SDStation = 1, NNSTA3DDP(IPROC)
             FDStation = IMAP_STA3DD_LG(SDStation,IPROC)
@@ -1663,7 +1666,7 @@ C   kmd48.33bc changed
                   IMAP_STA3DV_LG(NNSTA3DVP(IPROC),IPROC) = FDStation
                ENDIF
             END DO
-         END DO   
+         END DO
          WRITE(15,*) NNSTA3DVP(IPROC)
          DO SDStation = 1, NNSTA3DVP(IPROC)
             FDStation = IMAP_STA3DV_LG(SDStation,IPROC)
@@ -1689,7 +1692,7 @@ C   kmd48.33bc changed
                   IMAP_STA3DT_LG(NNSTA3DTP(IPROC),IPROC) = FDStation
                ENDIF
             END DO
-         END DO   
+         END DO
          WRITE(15,*) NNSTA3DTP(IPROC)
          DO SDStation = 1, NNSTA3DTP(IPROC)
             FDStation = IMAP_STA3DT_LG(SDStation,IPROC)
@@ -1707,10 +1710,10 @@ C    kmd48.33bc add 3D boundary condition information
       IF (CBAROCLINIC) THEN
         WRITE(15,80) RESBCFLAGMSG
         IF (RES_BC_FLAG.NE.0) THEN
-          IF (NOPEP(IPROC).GT.0) THEN 
+          IF (NOPEP(IPROC).GT.0) THEN
              WRITE(15,80) BCTIMEMSG
              WRITE(15,80) BCSTATMSG
-          END IF 
+          END IF
           IF (BCFLAG_TEMP.NE.0) THEN
              WRITE(15,80) TBCTIMEMSG
           END IF
@@ -1748,16 +1751,16 @@ C     End of subroutine PREP15_3DVS
 C-----------------------------------------------------------------------
 
 
-      SUBROUTINE PREP18()   
-      USE PRE_GLOBAL 
+      SUBROUTINE PREP18()
+      USE PRE_GLOBAL
       use memory_usage
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  6/10/2011  )                       C 
+C                     (  Serial Version  6/10/2011  )                       C
 C  This Routine writes a message-passing file "fort.18" for each subdomain  C
 C  of the domain decomposition created by DECOMP.                           C
 C                                                                           C
-C  The Decomposition Variables are defined in the include file adcprep.inc  C 
+C  The Decomposition Variables are defined in the include file adcprep.inc  C
 C  This version is compatible with ADCIRC version 50.21                     C
 C                                                                           C
 C  tcm V50.21 -- Changed all I8 formats to I12                              C
@@ -1784,9 +1787,9 @@ C
          LOCFN(1:14) = 'PE0000/fort.18'
          CALL IWRITE(LOCFN,3,6,I-1)
          OPEN (18,FILE=LOCFN)
- 
+
          write(18,3050) FileFmtVersion, 0, 0
- 
+
 !vjp 9/17/06
 C--Write the Global indexes of all local elements in local element order
 
@@ -1798,8 +1801,8 @@ Casey 100209: Changed I8 to I12.
          ENDDO
 
 C--Write the Global indexes of all local nodes in local node order
-C  write global index as positive if a resident node and negative 
-C  if a ghost node 
+C  write global index as positive if a resident node and negative
+C  if a ghost node
 
          WRITE(18,3001) NNODG, MNPP, NNODP(I)   ! number of Global nodes
          ITOT = 0
@@ -1816,7 +1819,7 @@ C  if a ghost node
          ENDDO
          IF (ITOT.NE.NOD_RES_TOT(I)) STOP 'ERROR IN # OF RES. NODES'
 
-C--Write local normal flow boundary flag               
+C--Write local normal flow boundary flag
 C--vjp This info is used only for relocalizing fort.15
          WRITE(18,3002) NFLUXFP(I) ! normal flow b.c. flag for subdomain
 
@@ -1829,8 +1832,8 @@ C--vjp This info is used only for relocalizing fort.15
          ENDDO
 
 C--Write the Global indexes of all Elevation Stations in local node order
-C  write global index as positive if a resident node and negative 
-C  if a ghost node 
+C  write global index as positive if a resident node and negative
+C  if a ghost node
 
          WRITE(18,3004) NSTAE, NSTAE_MAX, NSTAEP(I) ! number of Global Elevation Stations
          DO J = 1,NSTAEP(I)
@@ -1839,8 +1842,8 @@ C  if a ghost node
          ENDDO
 
 C--Write the Global indexes of all Velocity Stations in local node order
-C  write global index as positive if a resident node and negative 
-C  if a ghost node 
+C  write global index as positive if a resident node and negative
+C  if a ghost node
 
          WRITE(18,3005) NSTAV, NSTAV_MAX, NSTAVP(I) ! number of Global Velocity Stations
          DO J = 1,NSTAVP(I)
@@ -1849,8 +1852,8 @@ C  if a ghost node
          ENDDO
 
 C--Write the Global indexes of all Elevation Stations in local node order
-C  write global index as positive if a resident node and negative 
-C  if a ghost node 
+C  write global index as positive if a resident node and negative
+C  if a ghost node
 
          WRITE(18,3006) NSTAM, NSTAM_MAX, NSTAMP(I) ! number of Global Meteorlogical Stations
          DO J = 1,NSTAMP(I)
@@ -1859,8 +1862,8 @@ C  if a ghost node
          ENDDO
 
 C--Write the Global indexes of all Concentration Stations in local node order
-C  write global index as positive if a resident node and negative 
-C  if a ghost node 
+C  write global index as positive if a resident node and negative
+C  if a ghost node
 
          WRITE(18,3007) NSTAC, NSTAC_MAX, NSTACP(I) ! number of Global Concentration Stations
          DO J = 1,NSTACP(I)
@@ -1898,7 +1901,7 @@ c                 IRECV(IRECV_TOT(J,I)) = INDX
             WRITE(18,3030) (IPR-1), IRECV_TOT(J,I)
             WRITE(18,1130) (IRECV(K),K=1,IRECV_TOT(J,I))
          ENDDO
-C              
+C
 C--write the send list
 C
          DO J = 1,NUM_COMM_PE(I)
@@ -1919,29 +1922,29 @@ c                 ISEND(ISEND_TOT(J,I)) = INDX
 C
          IF (C3D.eqv..true.) THEN
 C           jgf49.43.18: Add 3D station mappings from subdomain to fulldomain
-C           to accomodate globalio.          
+C           to accomodate globalio.
 C
 C           Write the fulldomain station numbers of all 3D density stations
 C           in local node order; write the fulldomain station number as positive
 C           for resident stations and negative for ghost stations.
-            WRITE(18,3060) NSTA3DD, MAXVAL(NNSTA3DDP), NNSTA3DDP(I) 
+            WRITE(18,3060) NSTA3DD, MAXVAL(NNSTA3DDP), NNSTA3DDP(I)
             DO J=1,NNSTA3DDP(I)
                WRITE(18,1131) IMAP_STA3DD_LG(J,I)
             END DO
 C           3D velocity stations
-            WRITE(18,3061) NSTA3DV, MAXVAL(NNSTA3DVP), NNSTA3DVP(I) 
+            WRITE(18,3061) NSTA3DV, MAXVAL(NNSTA3DVP), NNSTA3DVP(I)
             DO J=1,NNSTA3DVP(I)
                WRITE(18,'(I12)') IMAP_STA3DV_LG(J,I)
             END DO
 C           3D turbulence stations
-            WRITE(18,3062) NSTA3DT, MAXVAL(NNSTA3DTP), NNSTA3DTP(I) 
+            WRITE(18,3062) NSTA3DT, MAXVAL(NNSTA3DTP), NNSTA3DTP(I)
             DO J=1,NNSTA3DTP(I)
                WRITE(18,'(I12)') IMAP_STA3DT_LG(J,I)
             ENDDO
          ENDIF
 C
          CLOSE(18)
-C     
+C
 1000  CONTINUE
 C
 C--Compute the surface to volume ratio (in %)
@@ -1983,10 +1986,10 @@ Casey 100209: Changed I8 to I12 through this section.
 3005  FORMAT('NSTAV   ',3I12)
 3006  FORMAT('NSTAM   ',3I12)
 3007  FORMAT('NSTAC   ',3I12)
-3010  FORMAT('RES NODE',2I12)    
-3020  FORMAT('COMM PE ',2I12)    
-3030  FORMAT('RECV PE ',2I12)    
-3040  FORMAT('SEND PE ',2I12) 
+3010  FORMAT('RES NODE',2I12)
+3020  FORMAT('COMM PE ',2I12)
+3030  FORMAT('RECV PE ',2I12)
+3040  FORMAT('SEND PE ',2I12)
 3050  FORMAT('FileFmt ',3I12)
 3060  FORMAT('NSTA3DD ',3I12)
 3061  FORMAT('NSTA3DV ',3I12)
@@ -1995,11 +1998,11 @@ Casey 100209: Changed I8 to I12 through this section.
 
 
       SUBROUTINE PREP19()
-      USE PRE_GLOBAL 
+      USE PRE_GLOBAL
       use memory_usage
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  2/28/98  )                         C 
+C                     (  Serial Version  2/28/98  )                         C
 C  This routine writes a Local "Aperiodic Elevation Boundary Condtions"     C
 C  (fort.19) file for each subdomain using the domain decomposition of      C
 C  the ADCIRC grid created by the routine DECOMP.                           C
@@ -2020,11 +2023,11 @@ C
       CHARACTER*40,ALLOCATABLE :: ESBIN(:)
 
 C
-C--Enter, Locate, Open, and Read the ADCIRC UNIT 19 
+C--Enter, Locate, Open, and Read the ADCIRC UNIT 19
 C  Global Aperiodic Elevation Boundary Conditions file
 C
 C     Open full domain and subdomain fort.19 files
-      CALL OpenPrepFiles(19, 'aperiodic elevation boundary  ', 
+      CALL OpenPrepFiles(19, 'aperiodic elevation boundary  ',
      &     1, nproc, SDU, Success)
       IF (.not.Success) THEN
          WRITE(*,*) 'WARNING: Unit 19 files not preprocessed.'
@@ -2058,7 +2061,7 @@ C
 C
       GO TO 1000
 C
-C--Close Global file and all the Local Files     
+C--Close Global file and all the Local Files
 C
  9999 CLOSE (19)
       DO IPROC=1, NPROC
@@ -2105,7 +2108,7 @@ C---------------------------------------------------------------------------
       INTEGER IPROC2! PE of a subdomain that matches a single full domain node
 
 C     Open full domain and subdomain fort.20 files
-      CALL OpenPrepFiles(20, 'aperiodic flux boundary       ', 
+      CALL OpenPrepFiles(20, 'aperiodic flux boundary       ',
      &     1, nproc, SDU, Success)
       IF (.not.Success) THEN
          WRITE(*,*) 'WARNING: Unit 20 files not preprocessed.'
@@ -2113,7 +2116,7 @@ C     Open full domain and subdomain fort.20 files
       ENDIF
 c
 c     Write Increment into all flux files
-c 
+c
       READ(20,*) FLUX_INC
       DO IPROC=1,NPROC
          WRITE(SDU(IPROC),*) FLUX_INC
@@ -2126,11 +2129,11 @@ C     boundary between subdomains (ghost nodes).
 C
  33   DO I=1, EXIST_FLUX            ! loop through full domain flow nodes
          READ(20,*,END=40) FLUX_VAL ! get a flo val for this f.d. flow node
-         INDX = FLUX14_ARY(I)      ! get full domain flow node number 
+         INDX = FLUX14_ARY(I)      ! get full domain flow node number
          DO J=1, ITOTPROC(INDX)    ! loop over subdomains for 1 f.d. node
             IPROC2 = IMAP_NOD_GL2(2*(J-1)+1,INDX) ! find next subdomain
             DO IPROC=1, NPROC
-               IF (IPROC.EQ.IPROC2) THEN ! full domain node maps to this s.d. 
+               IF (IPROC.EQ.IPROC2) THEN ! full domain node maps to this s.d.
                   WRITE(SDU(IPROC),50) FLUX_VAL
                ENDIF
             END DO
@@ -2158,9 +2161,9 @@ C---------------------------------------------------------------------------
 C                S U B R O U T I N E   P R E P 8 8
 C---------------------------------------------------------------------------
 C
-C     kmd49 This subroutine will break up the full domain elevation 
+C     kmd49 This subroutine will break up the full domain elevation
 C     changes due to the river boundary information being above mean
-C     sea level. It writes the fort.88 file into each subdomain using  
+C     sea level. It writes the fort.88 file into each subdomain using
 C     the ADCIRC grid created by the routine DECOMP.
 C
 C     - added as part of Evan's changes for rivers above MSL.
@@ -2209,13 +2212,13 @@ C---------------------------------------------------------------------------
 C                S U B R O U T I N E   P R E P 2 2
 C---------------------------------------------------------------------------
 C
-C                     (  Serial Version  2/28/98  )                         C 
+C                     (  Serial Version  2/28/98  )                         C
 C  This routine reads a global external meteorology file when NWS=1,+-2,    C
 C  +-4,+-5.  In each case it wites a local meteorology file of the same     C
 C  format for each subdomain using the domain decomposition of the ADCIRC   C
 C  grid created by the routine DECOMP.                                      C
 C                                                                           C
-C  The Decomposition Variables are defined in the include file adcprep.inc  C 
+C  The Decomposition Variables are defined in the include file adcprep.inc  C
 C  This version is compatible with ADCIRC version 43.03                     C
 C
 C     jgf46.02 Added subroutine call to open prep files; this provides
@@ -2224,7 +2227,7 @@ C
 C     jgfdebug46.02 Added NWS=45 to imitate the behavior of the v42 (IPET)
 C     code.
 C
-C     jgf46.02 Added NWS=8 to copy the wind files for the Holland model 
+C     jgf46.02 Added NWS=8 to copy the wind files for the Holland model
 C     into the subdomains.
 C
 C     tcm_v49.04 Removed NWS=3 and NWS=6 to correspond with the use of a
@@ -2250,13 +2253,13 @@ C      CHARACTER FNAME*60,LOCFN*14,CMD1*63,CMD2*7,CMD*70,INLINE*80
       REAL(SZ),ALLOCATABLE :: WVNXG(:),WVNYG(:),PRG(:)
       REAL(SZ),ALLOCATABLE :: WVNXL(:),WVNYL(:),PRL(:)
       REAL(SZ) U,V,PR
-      REAL(SZ) RHOWAT     !jgfdebug46.02  
+      REAL(SZ) RHOWAT     !jgfdebug46.02
 C     jgf48.47 Do the decomposition for a max of 256 subdomains at a
-C     time ... some platforms/compilers limit the number of files that 
+C     time ... some platforms/compilers limit the number of files that
 C     can be open at any one time.
-      INTEGER, PARAMETER :: maxOpenFiles = 256 
-      INTEGER startProc  
-      INTEGER endProc 
+      INTEGER, PARAMETER :: maxOpenFiles = 256
+      INTEGER startProc
+      INTEGER endProc
       INTEGER deltaProc
 C
 C     Allocate local work arrays
@@ -2279,7 +2282,7 @@ C     Perform decomposition over a range of subdomains.
          endProc = startProc + deltaProc
 
 C        Open full domain and all subdomain fort.22 files
-         CALL OpenPrepFiles(22, 'wind information              ', 
+         CALL OpenPrepFiles(22, 'wind information              ',
      &      startProc, endProc, sdu, success)
 
          IF (.not.success) THEN
@@ -2297,9 +2300,9 @@ C
 C     MAIN LOOP FOR NWS = 1, +-2,+-5,+-7
 C     (1)  Read a record from Global Wind Stress File
 C     (2)  Use Decomp arrarys to Localize record to a subdomain
-C     (3)  Write Local Wind Stress record in same format 
+C     (3)  Write Local Wind Stress record in same format
            DO                     ! loop forever (or until file ends)
-              READ(22,*,END=9999)  
+              READ(22,*,END=9999)
      &           (NG(I),WVNXG(I),WVNYG(I),PRG(I),I=1,NNODG)
               DO IPROC = STARTPROC, ENDPROC
                  DO I=1, NNODP(IPROC)
@@ -2314,7 +2317,7 @@ C     (3)  Write Local Wind Stress record in same format
               ENDDO
            ENDDO
 C
-C        -------     
+C        -------
          CASE(4)
 C        -------
 C        MAIN LOOP FOR NWS = +- 4  ( PBL Format )
@@ -2332,8 +2335,8 @@ C
                   WRITE(SDU(IPROC),1100) 1,0.0,0.0,0.0 !victor didn't like this line 27/11/03
                ENDDO
             ELSE
-!     vjp 27/11/03 
-!     rewrote this section to handle ghost-nodes 
+!     vjp 27/11/03
+!     rewrote this section to handle ghost-nodes
 C              READ(PBLJAGF,'(I8,3E13.5)',END=9999) NHG,U,V,PR
                READ(PBLJAGF,*,END=9999) NHG,U,V,PR
                DO J=1, ITOTPROC(NHG)
@@ -2344,7 +2347,7 @@ C              READ(PBLJAGF,'(I8,3E13.5)',END=9999) NHG,U,V,PR
             ENDIF
          END DO
 C
-C        --------     
+C        --------
          CASE(45)
 C        --------
 C        jgf46.02 Convert NWS=4 winds to NWS=5 winds to imitate the Katrina
@@ -2355,7 +2358,7 @@ C
          DO
             RHOWAT=1000.0d0
             CALL NWS4GET(WVNXG,WVNYG,PRG,G,RHOWAT,NNODG,DONE)
-C     
+C
             DO IPROC = STARTPROC,ENDPROC
                DO I=1, NNODP(IPROC)
                   INDX = IMAP_NOD_LG(I,IPROC)
@@ -2368,11 +2371,11 @@ C
                ENDDO
             ENDDO
 C--   If reached EOF in NWS4GET last time go close files and return
-C     
+C
             IF (DONE) GOTO 9999
          ENDDO
-C     
-C        ---------     
+C
+C        ---------
          CASE(8,9)
 C        ---------
 C     jgf46.16 Added NWS=9, asymmetric hurricane wind model
@@ -2397,14 +2400,14 @@ C     subdirectory. We will read it in and write it out to each
 C     subdirectory rather than cp or ln it, because I (jgf) happen to
 C     prefer to avoid calls to the platform-dependent shell from
 C     Fortran.
-         DO 
+         DO
             READ(22,170,END=9999) Line
             DO IPROC = STARTPROC,ENDPROC
                WRITE(SDU(IPROC),170) Line
             ENDDO
          ENDDO
 C
-C        ---------     
+C        ---------
          CASE(19)
 C        ---------
 C     RJW Added NWS=19, asymmetric hurricane wind model v2.0
@@ -2439,7 +2442,7 @@ C        ------------
          END SELECT
 
 C
-C--Close Global file and all the Local Files     
+C--Close Global file and all the Local Files
 C
  9999    CLOSE (22)
          DO IPROC=STARTPROC, ENDPROC
@@ -2447,7 +2450,7 @@ C
          ENDDO
          startProc=endProc+1
       ENDDO
-      
+
 
       DEALLOCATE ( NG,  WVNXG, WVNYG, PRG )
       DEALLOCATE ( WVNXL, WVNYL, PRL )
@@ -2465,8 +2468,8 @@ C
 c----------------------------------------------------------------------------
       END SUBROUTINE PREP22
 c----------------------------------------------------------------------------
-      
-      
+
+
 
       SUBROUTINE PREP23()
       USE PRE_GLOBAL
@@ -2490,7 +2493,7 @@ C
       REAL(SZ)                U,V
 C
 C--Open Global Wave Stress File ( UNIT 23 )
-C 
+C
 C     Open full domain and subdomain fort.23 files
       CALL OpenPrepFiles(23, 'wave stress                   ',
      &     1, nproc, SDU, Success)
@@ -2504,9 +2507,9 @@ C   (1)  Read a record from Global Wave Stress File
 C   (2)  Use Decomp arrays to Localize record to a subdomain
 C   (3)  Write Local Wave Stress record in standard PBL format
 C--------------------------------------------------------------------------
-C 
-C--Read a wave field record from the global input file                         
-C--and write out to respective local fort.23 file.                                    
+C
+C--Read a wave field record from the global input file
+C--and write out to respective local fort.23 file.
 C
  170  READ(23,'(A80)',END=9999) PBLJAGF
       IF(PBLJAGF(2:2).EQ.'#') THEN
@@ -2515,8 +2518,8 @@ C
             WRITE(SDU(IPROC),1100) 1,0.0,0.0 !victor didn't like this line 27/11/03
          ENDDO
       ELSE
-! vjp 27/11/03 
-! rewrote this section to handle ghost-nodes 
+! vjp 27/11/03
+! rewrote this section to handle ghost-nodes
 ! and changed if test from "and" to "or"
          READ(PBLJAGF,'(I8,2E13.5)',END=9999) NHG,U,V
          IF ((U.NE.0.).OR.(V.NE.0.)) THEN
@@ -2527,17 +2530,17 @@ C
             ENDDO
          ENDIF
       ENDIF
-      
+
       GOTO 170
 
  9999 CLOSE(23)
       DO IPROC=1,NPROC
          CLOSE(SDU(IPROC))
       ENDDO
-      
+
  1100 FORMAT(I8,2E13.5)
  1101 FORMAT (' #')
-      
+
  99   RETURN
       END
 
@@ -2832,7 +2835,7 @@ C     Open full domain and subdomain fort.38 files
 C
 C  Determine how many values are in the top temperature boundary
 C  condition
- 
+
       IF (BCFLAG_TEMP.EQ.1) THEN
          NFLUX = 1
       ELSE IF (BCFLAG_TEMP.EQ.2) THEN
@@ -3384,7 +3387,7 @@ c               IHOTSTP=IHOTSTP+4
 c               END DO
 c             ENDIF
 c           ENDIF
-c         ENDIF  
+c         ENDIF
 #endif
 
       ENDDO
@@ -3419,14 +3422,14 @@ C
 
       SUBROUTINE HOTLOCALIZE()
       USE VERSION
-      USE PRE_GLOBAL 
+      USE PRE_GLOBAL
       use presizes; use memory_usage
 C
 C---------------------------------------------------------------------------C
 C                     written 10/11/01 by RL                                C
 C             started mods for harmonic analysis and 3D RL 5/22/03          C
 C         jgf Updated for v45.06 09/07/2005 not incl. harmonic or 3D        C
-C         kmd48.33bc updated with 3D information                            C  
+C         kmd48.33bc updated with 3D information                            C
 C                                                                           C
 C  This routine reads the global hot start file (either fort.67 or fort.68) C
 C  and writes local hot start files of the same format.                     C
@@ -3444,7 +3447,7 @@ C
       EQUIVALENCE (FNAM8(1),FNAME1)
 
       INTEGER,ALLOCATABLE  :: LOC2(:),NOFF(:), domA(:)
-      REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:), 
+      REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:),
      &    UU2(:),VV2(:),CH1(:)
       REAL(8) TIMEHSF
       integer :: InputFileFmtVn, NP_G_IN, NE_G_IN, NP_A_IN, NE_A_IN
@@ -3457,7 +3460,7 @@ C
       REAL(SZ),ALLOCATABLE ::  HA(:,:)
       REAL(SZ),ALLOCATABLE ::  ELAV(:),ELVA(:),XVELAV(:),XVELVA(:),
      &                                         YVELAV(:),YVELVA(:)
-      REAL(SZ),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)    
+      REAL(SZ),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
       REAL(SZ),ALLOCATABLE ::  GLOELV(:,:)
       REAL(SZ),ALLOCATABLE ::  GLOULV(:,:),GLOVLV(:,:)
       REAL(SZ),ALLOCATABLE ::  STAELV(:,:)
@@ -3482,7 +3485,7 @@ C
       CASE(367,368)
          write(*,*) "INFO: IHOT=",IHOT,
      &      " means parallel ADCIRC should read a NetCDF hotstart file."
-         write(*,*) 
+         write(*,*)
      &      "INFO: NetCDF hotstart files do not require decomposition."
          RETURN
       CASE DEFAULT
@@ -3528,28 +3531,28 @@ C--   Read in info from global hot start files
         print *, "number global nodes does not match hotstart file"
         write(*,'(A,I8)') "expected value   = ", nnodg
         write(*,'(A,I8)') "hotstart value = ", np_g_in
-        stop 
+        stop
       endif
       if (nelg ==  ne_g_in) then
         MNE = nelg
       else
         print *, "number global elements does not match hotstart file"
-        write(*,'(A,I8)') "expected value   = ", nelg  
+        write(*,'(A,I8)') "expected value   = ", nelg
         write(*,'(A,I8)') "hotstart value = ", ne_g_in
-        stop 
+        stop
       endif
-      PRINT *, "IMHSF ", IMHSF 
+      PRINT *, "IMHSF ", IMHSF
 C
 C Allocate local work arrays
 C
-      nbytes = 4*nproc 
+      nbytes = 4*nproc
       call memory_alloc(nbytes)
       ALLOCATE ( ETA1(MNP),ETA2(MNP),EtaDisc(MNP),UU2(MNP),
      &           VV2(MNP),NODECODE(MNP),CH1(MNP) )
-      nbytes = 7*mnp*8   
+      nbytes = 7*mnp*8
       call memory_alloc(nbytes)
       ALLOCATE ( NOFF(MNE) )
-      nbytes = 4*mne   
+      nbytes = 4*mne
       call memory_alloc(nbytes)
 
 !  Continue reading global hot start file
@@ -3580,7 +3583,7 @@ C
       END DO
 
       DO I=1,MNE
-         READ(IHOT,REC=IHOTSTP) NOFF(I)  ; IHOTSTP = IHOTSTP + 1 
+         READ(IHOT,REC=IHOTSTP) NOFF(I)  ; IHOTSTP = IHOTSTP + 1
       END DO
 
       READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
@@ -3614,10 +3617,10 @@ C          and took out other lines
 C jgf49.17 refined check of IMHSF so that it picks up only
 C     IM values that indicate 3D (and so we can use six integer IM values).
       IF ((IMHSF.EQ.1).OR.(IMHSF.EQ.11).OR.
-     &    (IMHSF.EQ.21).OR.(IMHSF.EQ.31)) THEN 
+     &    (IMHSF.EQ.21).OR.(IMHSF.EQ.31)) THEN
          CALL ReadHotStart3D(IHOT,IHOTSTP)
       ENDIF
-      
+
 C     jgf48.03 harmonic analysis not supported yet
 #if 0
 C
@@ -3626,8 +3629,8 @@ C....DETERMINE HARMONIC ANALYSIS PARAMETERS
       IHARIND=NHARFR*(NHASE+NHASV+NHAGE+NHAGV)
       IF(IHARIND.GT.0) IHARIND=1
 
-C.....IF HARMONIC ANALYSIS IS INCLUDED IN THE RUN, PROCESS HOT START 
-C     INFORMATION FOR IN PROGRESS HARMONIC ANALYSIS      
+C.....IF HARMONIC ANALYSIS IS INCLUDED IN THE RUN, PROCESS HOT START
+C     INFORMATION FOR IN PROGRESS HARMONIC ANALYSIS
 
       IF(IHARIND.EQ.1) THEN
          ITHAS=INT((THAS-STATIM)*(86400.D0/DT) + 0.5d0)
@@ -3656,7 +3659,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             READ(IHOT,REC=IHOTSTP) IIGLOV ; IHOTSTP = IHOTSTP + 1
             READ(IHOT,REC=IHOTSTP) IICALL ; IHOTSTP = IHOTSTP + 1
             READ(IHOT,REC=IHOTSTP) INFREQ ; IHOTSTP = IHOTSTP + 1
-            
+
             DO I=1,INFREQ+INF
                READ(IHOT,REC=IHOTSTP) FNAM8(1) ; IHOTSTP = IHOTSTP + 1
                READ(IHOT,REC=IHOTSTP) FNAM8(2) ; IHOTSTP = IHOTSTP + 1
@@ -3666,16 +3669,16 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                READ(IHOT,REC=IHOTSTP) IFF(I) ; IHOTSTP = IHOTSTP + 1
                READ(IHOT,REC=IHOTSTP) IFACE(I) ; IHOTSTP = IHOTSTP + 1
             ENDDO
-            
+
             READ(IHOT,REC=IHOTSTP) TIMEUD ; IHOTSTP = IHOTSTP + 1
             READ(IHOT,REC=IHOTSTP) ITUD ; IHOTSTP = IHOTSTP + 1
-            
+
             DO I=1,IMM
                DO J=1,IMM
                   READ(IHOT,REC=IHOTSTP) HA(I,J) ; IHOTSTP = IHOTSTP + 1
                ENDDO
             ENDDO
-            
+
             IF(NHASE.EQ.1) THEN
                DO J=1,INSTAE
                   DO I=1,IMM
@@ -3684,18 +3687,18 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                   ENDDO
                ENDDO
             ENDIF
-            
+
             IF(NHASV.EQ.1) THEN
                DO J=1,INSTAV
                   DO I=1,IMM
-                     READ(IHOT,REC=IHOTSTP) STAULV(I,J) 
+                     READ(IHOT,REC=IHOTSTP) STAULV(I,J)
                      IHOTSTP = IHOTSTP + 1
-                     READ(IHOT,REC=IHOTSTP) STAVLV(I,J) 
+                     READ(IHOT,REC=IHOTSTP) STAVLV(I,J)
                      IHOTSTP = IHOTSTP + 1
                   ENDDO
                ENDDO
             ENDIF
-            
+
             IF(NHAGE.EQ.1) THEN
                DO J=1,INP
                   DO I=1,IMM
@@ -3704,7 +3707,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                   ENDDO
                ENDDO
             ENDIF
-            
+
             IF(NHAGV.EQ.1) THEN
                DO J=1,INP
                   DO I=1,IMM
@@ -3715,9 +3718,9 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                   ENDDO
                ENDDO
             ENDIF
-            
+
          ENDIF
-         
+
          IF((FMV.GT.0.).AND.(INFREQ.GT.0).AND.(IM.EQ.0)) THEN !include means and variances
             IF(ITHSF.GT.ITMV) THEN
                READ(IHOT,REC=IHOTSTP) NTSTEPS
@@ -3747,7 +3750,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
       ENDIF     ! HARIND
 #endif
 C
-C--Open All Local Hot Start files 
+C--Open All Local Hot Start files
 C
 
       ALLOCATE ( LOC2(NPROC) )
@@ -3818,9 +3821,9 @@ C
          DO I=1,NELP(IPROC)
             INDX=ABS(IMAP_EL_LG(I,IPROC))
             WRITE(LOC2(IPROC),REC=IHOTSTP) NOFF(INDX)
-            IHOTSTP=IHOTSTP+1                                    
+            IHOTSTP=IHOTSTP+1
          END DO
-         
+
          WRITE(LOC2(IPROC),REC=IHOTSTP) IESTP  ; IHOTSTP = IHOTSTP + 1
          WRITE(LOC2(IPROC),REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
 
@@ -3851,12 +3854,12 @@ C  kmd48.33bc moved 3D hot start information to subroutine
 C jgf49.43 refined check of IMHSF so that it picks up only
 C     IM values that indicate 3D (and so we can use six integer IM values).
       IF ((IMHSF.EQ.1).OR.(IMHSF.EQ.11).OR.
-     &    (IMHSF.EQ.21).OR.(IMHSF.EQ.31)) THEN 
+     &    (IMHSF.EQ.21).OR.(IMHSF.EQ.31)) THEN
             CALL WriteHotStart3D(LOC2(IPROC),IHOTSTP,IPROC)
       ENDIF
 
 #if 0
-C 
+C
 C....IF APPROPRIATE, WRITE OUT HOT START INFORMATION FOR IN PROGRESS HARMONIC ANALYSIS
 
 c       IF((IHARIND.EQ.1).AND.(ITHSF.GT.ITHAS)) THEN
@@ -3894,12 +3897,12 @@ c               IHOTSTP=IHOTSTP+4
 c               END DO
 c             ENDIF
 c           ENDIF
-c         ENDIF               
+c         ENDIF
 #endif
 
       ENDDO
 C
-C--Close Global file and all the Local Files     
+C--Close Global file and all the Local Files
 C
       CLOSE (IHOT)
       DO IPROC=1, NPROC
@@ -3916,10 +3919,10 @@ C
       IF(ALLOCATED( VV2 ))DEALLOCATE ( VV2 )
       IF(ALLOCATED( NODECODE ))DEALLOCATE ( NODECODE )
       IF(ALLOCATED( CH1 ))DEALLOCATE ( CH1 )
-      nbytes = 7*mnp*8  
+      nbytes = 7*mnp*8
       call memory_dealloc(nbytes)
       IF(ALLOCATED(NOFF))DEALLOCATE ( NOFF )
-      nbytes = 6*mne  
+      nbytes = 6*mne
       call memory_dealloc(nbytes)
       IF(ALLOCATED( DUU ))DEALLOCATE ( DUU  )
       IF(ALLOCATED( DUV ))DEALLOCATE ( DUV  )
@@ -3956,14 +3959,14 @@ C
  1001 FORMAT('ERROR: The hot start file')
  1010 FORMAT(' File ',A60,/,' WAS NOT FOUND!  ADCPrep Terminated!!!',/)
  1011 FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
- 1012 FORMAT('was a nonmatching version') 
+ 1012 FORMAT('was a nonmatching version')
  1005 FORMAT('exists but cannot be opened.')
  9973 FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
       END SUBROUTINE HOTLOCALIZE
 
 
       SUBROUTINE HOTGLOBALIZE()
-      USE PRE_GLOBAL 
+      USE PRE_GLOBAL
       use presizes; use memory_usage
 C
 C---------------------------------------------------------------------------C
@@ -3988,13 +3991,13 @@ C
       EQUIVALENCE (FNAM8(1),FNAME1)
 
       INTEGER,ALLOCATABLE  :: LOC2(:),NOFF(:), domA(:)
-      REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:), 
+      REAL(SZ),ALLOCATABLE :: ETA1(:),ETA2(:),EtaDisc(:),
      &    UU2(:),VV2(:),CH1(:)
       REAL(8) TIMEHSF, RVALUE
       integer :: InputFileFmtVn, NP_G_IN, NE_G_IN, NP_A_IN, NE_A_IN
 
 #if 0
-      ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet 
+      ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet
       INTEGER INZ,INF,IMM,INP,INSTAE,INSTAV,IISTAE,IISTAV,IIGLOE,IIGLOV,
      &                                       IICALL,INFREQ,ITUD,NTSTEPS
       INTEGER IHARIND,ITHAS,ITHAF,ITMV,IHABEG,ICHA
@@ -4003,7 +4006,7 @@ C
       REAL(SZ),ALLOCATABLE ::  HA(:,:)
       REAL(SZ),ALLOCATABLE ::  ELAV(:),ELVA(:),XVELAV(:),XVELVA(:),
      &                                         YVELAV(:),YVELVA(:)
-      REAL(SZ),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)    
+      REAL(SZ),ALLOCATABLE ::  IFREQ(:),IFF(:),IFACE(:)
       REAL(SZ),ALLOCATABLE ::  GLOELV(:,:)
       REAL(SZ),ALLOCATABLE ::  GLOULV(:,:),GLOVLV(:,:)
       REAL(SZ),ALLOCATABLE ::  STAELV(:,:)
@@ -4019,7 +4022,7 @@ C
       IF(IHOT.EQ.68) FNAME='fort.68'
 
 C
-C--Open All Local Hot Start files 
+C--Open All Local Hot Start files
 C
       ALLOCATE ( LOC2(NPROC) )
       DO IPROC = 1,NPROC
@@ -4041,22 +4044,22 @@ C
       MNP  =  nnodg    !  global number of nodes    ( read from fort.18 )
       print *, "MNP =", MNP
 
-      nbytes = 4*nproc 
+      nbytes = 4*nproc
       call memory_alloc(nbytes)
       ALLOCATE ( ETA1(MNP),ETA2(MNP),EtaDisc(MNP),UU2(MNP),
      &           VV2(MNP),NODECODE(MNP),CH1(MNP) )
-      nbytes = 7*mnp   
+      nbytes = 7*mnp
 
       MNE  =  nelg     !  global number of elements ( read from fort.18 )
       print *, "MNE =", MNE
 
       call memory_alloc(nbytes)
       ALLOCATE ( NOFF(MNE) )
-      nbytes = 4*mne   
+      nbytes = 4*mne
       call memory_alloc(nbytes)
 
 #if HA
-      ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet 
+      ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet
       ALLOCATE ( HA(2*MNHARF,2*MNHARF) )
       nbytes = 32*mnharf
       call memory_alloc(nbytes)
@@ -4102,35 +4105,35 @@ C
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE           
+            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) ETA1(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE           
+            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) ETA2(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE           
+            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) EtaDisc(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE           
+            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) UU2(INDX) = RVALUE
          END DO
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE           
+            READ(LOC2(IPROC),REC=IHOTSTP) RVALUE
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) VV2(INDX) = RVALUE
          END DO
@@ -4138,7 +4141,7 @@ C
          IF(IM.EQ.10) THEN
             DO I=1, NNODP(IPROC)
                INDX = IMAP_NOD_LG(I,IPROC)
-               READ(LOC2(IPROC),REC=IHOTSTP) RVALUE           
+               READ(LOC2(IPROC),REC=IHOTSTP) RVALUE
                IHOTSTP=IHOTSTP+1
                IF (INDX > 0) CH1(INDX) = RVALUE
             END DO
@@ -4146,18 +4149,18 @@ C
 
          DO I=1, NNODP(IPROC)
             INDX = IMAP_NOD_LG(I,IPROC)
-            READ(LOC2(IPROC),REC=IHOTSTP) IVALUE           
+            READ(LOC2(IPROC),REC=IHOTSTP) IVALUE
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) NODECODE(INDX) = IVALUE
          END DO
 
          DO I=1,NELP(IPROC)
             INDX = IMAP_EL_LG(I,IPROC)
-            READ(LOC2(IPROC),REC=IHOTSTP) IVALUE           
+            READ(LOC2(IPROC),REC=IHOTSTP) IVALUE
             IHOTSTP=IHOTSTP+1
             IF (INDX > 0) NOFF(INDX) = IVALUE
          END DO
-         
+
          READ(LOC2(IPROC),REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
          READ(LOC2(IPROC),REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
 
@@ -4184,13 +4187,13 @@ C
          READ(LOC2(IPROC),REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
          READ(LOC2(IPROC),REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
 C
-C   kmd48.33bc add information for 3D hot start 
+C   kmd48.33bc add information for 3D hot start
 C     jgf46.02 read in 3D hotstart data if appropriate
          IF (C3D) THEN
             CALL ReadHotStart3DGlobal(LOC2(IPROC),IHOTSTP,IPROC)
          ENDIF
 #if HA
-C 
+C
 C....IF APPROPRIATE, WRITE OUT HOT START INFORMATION FOR IN PROGRESS HARMONIC ANALYSIS
 
 c       IF((IHARIND.EQ.1).AND.(ITHSF.GT.ITHAS)) THEN
@@ -4228,7 +4231,7 @@ c               IHOTSTP=IHOTSTP+4
 c               END DO
 c             ENDIF
 c           ENDIF
-c         ENDIF               
+c         ENDIF
 #endif
           CLOSE (LOC2(IPROC))
 
@@ -4282,8 +4285,8 @@ C-----------------------------------------------------------------------
          IHOTSTP=IHOTSTP+1
       END DO
       DO I=1,MNE
-         WRITE(IHOT,REC=IHOTSTP) NOFF(I)                     
-         IHOTSTP=IHOTSTP+1                                    
+         WRITE(IHOT,REC=IHOTSTP) NOFF(I)
+         IHOTSTP=IHOTSTP+1
       END DO
 
       WRITE(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
@@ -4312,8 +4315,8 @@ C-----------------------------------------------------------------------
       WRITE(IHOT,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
       WRITE(IHOT,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
 C
-     
-       ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet 
+
+       ! vjp 2006/9/30 not supporting harmonic analysis or C3D yet
 C   kmd48.33bc add information for 3D hot start
 C     jgf46.02 Write in 3D hotstart data if appropriate
       IF (C3D) THEN
@@ -4327,7 +4330,7 @@ C.....DETERMINE HARMONIC ANALYSIS PARAMETERS
       IF(IHARIND.GT.0) IHARIND=1
 
 C.....IF HARMONIC ANALYSIS IS INCLUDED IN THE RUN, PROCESS HOT START INFORMATION FOR
-C.....IN PROGRESS HARMONIC ANALYSIS      
+C.....IN PROGRESS HARMONIC ANALYSIS
 
       IF(IHARIND.EQ.1) THEN
          ITHAS=INT((THAS-STATIM)*(86400.D0/DT) + 0.5d0)
@@ -4356,7 +4359,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
             WRITE(IHOT,REC=IHOTSTP) IIGLOV ;  IHOTSTP = IHOTSTP + 1
             WRITE(IHOT,REC=IHOTSTP) IICALL ;  IHOTSTP = IHOTSTP + 1
             WRITE(IHOT,REC=IHOTSTP) INFREQ ;  IHOTSTP = IHOTSTP + 1
-            
+
             DO I=1,INFREQ+INF
                WRITE(IHOT,REC=IHOTSTP) FNAM8(1) ;  IHOTSTP = IHOTSTP + 1
                WRITE(IHOT,REC=IHOTSTP) FNAM8(2) ;  IHOTSTP = IHOTSTP + 1
@@ -4365,17 +4368,17 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                WRITE(IHOT,REC=IHOTSTP) IFF(I) ;  IHOTSTP = IHOTSTP + 1
                WRITE(IHOT,REC=IHOTSTP) IFACE(I) ;  IHOTSTP = IHOTSTP + 1
             ENDDO
-            
+
             WRITE(IHOT,REC=IHOTSTP) TIMEUD ;  IHOTSTP = IHOTSTP + 1
             WRITE(IHOT,REC=IHOTSTP) ITUD ;  IHOTSTP = IHOTSTP + 1
-            
+
             DO I=1,IMM
                DO J=1,IMM
                   WRITE(IHOT,REC=IHOTSTP) HA(I,J)
                   IHOTSTP = IHOTSTP + 1
                ENDDO
             ENDDO
-            
+
             IF(NHASE.EQ.1) THEN
                DO J=1,INSTAE
                   DO I=1,IMM
@@ -4384,18 +4387,18 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                   ENDDO
                ENDDO
             ENDIF
-            
+
             IF(NHASV.EQ.1) THEN
                DO J=1,INSTAV
                   DO I=1,IMM
                      WRITE(IHOT,REC=IHOTSTP) STAULV(I,J)
-                     IHOTSTP=IHOTSTP+1                    
+                     IHOTSTP=IHOTSTP+1
                      WRITE(IHOT,REC=IHOTSTP) STAVLV(I,J)
                      IHOTSTP=IHOTSTP+1
                   ENDDO
                ENDDO
             ENDIF
-            
+
             IF(NHAGE.EQ.1) THEN
                DO J=1,INP
                   DO I=1,IMM
@@ -4404,7 +4407,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                   ENDDO
                ENDDO
             ENDIF
-            
+
             IF(NHAGV.EQ.1) THEN
                DO J=1,INP
                   DO I=1,IMM
@@ -4415,9 +4418,9 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
                   ENDDO
                ENDDO
             ENDIF
-            
+
          ENDIF
-         
+
          IF((FMV.GT.0.).AND.(INFREQ.GT.0).AND.(IM.EQ.0)) THEN !include means and variances
             IF(ITHSF.GT.ITMV) THEN
                WRITE(IHOT,REC=IHOTSTP) NTSTEPS
@@ -4448,7 +4451,7 @@ C........HARMONIC ANALYSIS, MEAN AND SQUARE INFO
 #endif
 
 C
-C--Close Global file and all the Local Files     
+C--Close Global file and all the Local Files
 C
       CLOSE (IHOT)
 C
@@ -4456,10 +4459,10 @@ C
       nbytes = 4*nproc
       call memory_dealloc(nbytes)
       DEALLOCATE ( ETA1, ETA2, EtaDisc, UU2, VV2, NODECODE, CH1 )
-      nbytes = 7*mnp  
+      nbytes = 7*mnp
       call memory_dealloc(nbytes)
       DEALLOCATE ( NOFF )
-      nbytes = 6*mne  
+      nbytes = 6*mne
       call memory_dealloc(nbytes)
       call memory_status()
 C
@@ -4467,7 +4470,7 @@ C
  1001 FORMAT('ERROR: The hot start file')
  1010 FORMAT(' File ',A60,/,' WAS NOT FOUND!  ADCPrep Terminated!!!',/)
  1011 FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
- 1012 FORMAT('was a nonmatching version') 
+ 1012 FORMAT('was a nonmatching version')
  1005 FORMAT('exists but cannot be opened.')
  9973 FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
       END SUBROUTINE HOTGLOBALIZE
@@ -4487,7 +4490,7 @@ C
 C     ----------------------------------------------------------------------
       SUBROUTINE ReadHotStart3D(UnitNumber,FilePosition)
 C     ----------------------------------------------------------------------
-      USE PRE_GLOBAL 
+      USE PRE_GLOBAL
       IMPLICIT NONE
       INTEGER, intent(in) :: UnitNumber ! i/o unit of full domain file
       INTEGER, intent(inout) :: FilePosition ! position in binary file
@@ -4648,7 +4651,7 @@ C
 C     ----------------------------------------------------------------------
       SUBROUTINE WriteHotStart3D(UnitNumber,FilePosition,IPROC)
 C     ----------------------------------------------------------------------
-      USE PRE_GLOBAL 
+      USE PRE_GLOBAL
       IMPLICIT NONE
       INTEGER, intent(in) :: UnitNumber ! i/o unit of subdomain file
       INTEGER, intent(inout) :: FilePosition ! position in binary file
@@ -4833,7 +4836,7 @@ C     Start reading in the data
 
         PRINT*, "How many layers need to be evaluated:"
         READ *, NFEN
-   
+
 C        PRINT *, "Made it to the 3d portion of this"
         PRINT *, "NFEN = ", NFEN
 
@@ -5366,17 +5369,17 @@ C     ----------------------------------------------------------------------
 
 
 C---------------------------------------------------------------------------
-C     S U B R O U T I N E    O P E N  F U L L  D O M A I N  F I L E 
+C     S U B R O U T I N E    O P E N  F U L L  D O M A I N  F I L E
 C---------------------------------------------------------------------------
 C
 C     jgf47.02 This subroutine will open the full domain file
 C
 C---------------------------------------------------------------------------
-      SUBROUTINE OpenFullDomainFile(UnitNumber, Description, Success) 
+      SUBROUTINE OpenFullDomainFile(UnitNumber, Description, Success)
 C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       IMPLICIT NONE
-      INTEGER, intent(in) :: UnitNumber     ! i/o unit number to open 
+      INTEGER, intent(in) :: UnitNumber     ! i/o unit number to open
       CHARACTER(len=30), intent(in) :: Description ! description of file
       LOGICAL, intent(out):: Success     ! .true. if file opened w/o errors
       LOGICAL Found               !.true. if the full domain file exists
@@ -5394,7 +5397,7 @@ C---------------------------------------------------------------------------
       WRITE(DefaultName(6:7),2) UnitNumber
 C
 C     Determine the name of the file; if found, open it
- 31   IF (USE_DEFAULT) THEN     
+ 31   IF (USE_DEFAULT) THEN
          FileName = DefaultName
       ELSE
          WRITE(*,850) ! type skip to bypass
@@ -5416,7 +5419,7 @@ C     If it does exist, open it
             WRITE(*,*) "ERROR: Full domain file exists but"
             WRITE(*,*) "cannot be opened."
             Success = .false.
-         ELSE 
+         ELSE
             WRITE(*,*) "Successfully opened full domain file."
          ENDIF
       ELSE
@@ -5425,7 +5428,7 @@ C     Give the user a chance to opt out of prepping this file.
          WRITE(*,1010) FileName !not found
          GOTO 31
       ENDIF
- 
+
  2    FORMAT(I2)
  30   FORMAT(A30)
  850  FORMAT(/,'Type ''skip'' to bypass preprocessing or')
@@ -5441,17 +5444,17 @@ C---------------------------------------------------------------------------
 
 
 C---------------------------------------------------------------------------
-C     S U B R O U T I N E   O P E N  S U B D O M A I N  F I L E 
+C     S U B R O U T I N E   O P E N  S U B D O M A I N  F I L E
 C---------------------------------------------------------------------------
 C
 C     jgf47.02 This subroutine will open a single subdomain file
 C
 C---------------------------------------------------------------------------
-      SUBROUTINE OpenSubDomainFile(UnitNumber, IProc, sdu, Success) 
+      SUBROUTINE OpenSubDomainFile(UnitNumber, IProc, sdu, Success)
 C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       IMPLICIT NONE
-      INTEGER, intent(in) :: UnitNumber     ! i/o unit number of full dom file 
+      INTEGER, intent(in) :: UnitNumber     ! i/o unit number of full dom file
       INTEGER, intent(in) :: iproc          ! subdomain number
       INTEGER, intent(out) :: sdu  ! i/o unit nunber that was opened
       LOGICAL, intent(out):: Success     ! .true. if files opened w/o errors
@@ -5502,11 +5505,11 @@ C     arguments. It assumes that all unit numbers are between 10 and 99.
 C
 C---------------------------------------------------------------------------
       SUBROUTINE OpenPrepFiles(UnitNumber, Description,
-     &     startProc, endProc, SDU, Success) 
+     &     startProc, endProc, SDU, Success)
 C---------------------------------------------------------------------------
       USE PRE_GLOBAL
       IMPLICIT NONE
-      INTEGER, intent(in) :: UnitNumber     ! i/o unit number to open 
+      INTEGER, intent(in) :: UnitNumber     ! i/o unit number to open
       CHARACTER(len=30), intent(in) :: Description ! description of file
       INTEGER, intent(in) :: startProc        ! subdomains to start with
       INTEGER, intent(in) :: endProc          ! subdomain to end on
@@ -5530,7 +5533,7 @@ C---------------------------------------------------------------------------
 
 C
 C     Determine the name of the file; if found, open it
- 31   IF (USE_DEFAULT) THEN     
+ 31   IF (USE_DEFAULT) THEN
          FileName = DefaultName
       ELSE
          WRITE(*,850) ! type skip to bypass
@@ -5669,7 +5672,7 @@ c
 c     SUBROUTINE HAHOUTEG(NP,IOUNIT,IHOTSTP)
 c     implicit none
 c     INTEGER IOUNIT
-c     INTEGER NP,IHOTSTP,N,I 
+c     INTEGER NP,IHOTSTP,N,I
 c
 c***** Write Out Global Elevation RHS load vector
 c
@@ -5679,7 +5682,7 @@ c           IHOTSTP=IHOTSTP+1
 c           WRITE(IOUNIT,REC=IHOTSTP) GLOELV(I,N)
 c        end do
 c     end do
-c     
+c
 c     return
 c     end subroutine
 
@@ -5727,7 +5730,7 @@ c           IHOTSTP=IHOTSTP+1
 c           WRITE(IOUNIT,REC=IHOTSTP) GLOVLV(I,N)
 c        end do
 c     end do
-c     
+c
 c     return
 c     end subroutine
 c
@@ -5758,19 +5761,19 @@ c     end subroutine
 
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version  2/28/98  )                         C 
+C                     (  Serial Version  2/28/98  )                         C
 C  This routine writes the domain decomposition information into a file,    C
 C  "fort.80".  This file is used by the ADCIRC post-processor ADCPOST.      C
 C  This version is compatible with ADCIRC version 34.03                     C
 C                                                                           C
 C     jgf45.07 Added subdomain->fulldomain element mapping to handle the    C
 C     processing of the NOFF array.
-C     jgf45.11 Added IDEN for processing fort.44 file, added additional 
+C     jgf45.11 Added IDEN for processing fort.44 file, added additional
 C     arrays to handle processing of 3D recording stations.
 C---------------------------------------------------------------------------C
 CC    Addition by CF   8/2007
       SUBROUTINE PREP80()
-      USE PRE_GLOBAL 
+      USE PRE_GLOBAL
       USE SIZES, ONLY : MNHARF
       USE HARM, ONLY : NHASE, NHASV, NHAGE, NHAGV
       IMPLICIT NONE
@@ -5803,7 +5806,7 @@ C
 C
 Casey 100301: Changed I8 to I12.
       DO I = 1,NPROC
-         WRITE(80,'(3I8,A33)') I-1, NNODP(I), NOD_RES_TOT(I), 
+         WRITE(80,'(3I8,A33)') I-1, NNODP(I), NOD_RES_TOT(I),
      &        '  ! PE, NNODP(PE), NOD_RES_TOT(PE)'
          WRITE(80,'(9I12)') (IMAP_NOD_LG(K,I),K=1,NNODP(I))
       ENDDO
@@ -5821,7 +5824,7 @@ Casey 100301: Changed I8 to I12.
          WRITE(80,'(9I12)') (IMAP_EL_LG(K,I),K=1,NELP(I))
       ENDDO
 C
-      WRITE(80,'(I8,2E15.8,I8,A32)') NOUTE,TOUTSE,TOUTFE,NSPOOLE, 
+      WRITE(80,'(I8,2E15.8,I8,A32)') NOUTE,TOUTSE,TOUTFE,NSPOOLE,
      &    '   ! NOUTE,TOUTSE,TOUTFE,NSPOOLE'
 C
       DO I = 1,NPROC
@@ -5879,9 +5882,9 @@ C
      &    '   ! NHASE, NHASV, NHAGE, NHAGV'
 
 C     -------------------------------------------------------------
-C     
-C     S T A R T   3 D   D A T A 
-C     
+C
+C     S T A R T   3 D   D A T A
+C
 C     -------------------------------------------------------------
 
       WRITE(80,*) IDEN !jgf45.11 needed to post process the fort.44 file
@@ -5949,18 +5952,18 @@ C
 
 
 C---------------------------------------------------------------------------
-C                S U B R O U T I N E   P R E P   U N S W A N  
+C                S U B R O U T I N E   P R E P   U N S W A N
 C---------------------------------------------------------------------------
 C
 C     jgf48.17 This subroutine just copies the UnSWAN input file to each
 C     subdomain. Currently, it is only called if the compiler directive
-C     ADCSWAN is defined. 
+C     ADCSWAN is defined.
 C
 C     jgf50.15: After discussion with Casey, it was decided that changes
 C     should be made such that adcprep looks for the swaninit file and
 C     parses it to find the name of the swan control file (conventionally
 C     called fort.26 in the adcirc community). It should then attempt to
-C     copy that file to the subdomains. 
+C     copy that file to the subdomains.
 C---------------------------------------------------------------------------
       SUBROUTINE  prepUnSWAN
 C---------------------------------------------------------------------------
@@ -5971,16 +5974,16 @@ C---------------------------------------------------------------------------
       CHARACTER*170 Line ! line of data from UnSWAN file
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error
-      LOGICAL swanInitFound !.true. if the swaninit file was found 
+      LOGICAL swanInitFound !.true. if the swaninit file was found
       LOGICAL origUseDefault ! there is no default UnSWAN input file name
       INTEGER swiLUN ! logical unit number of swaninit file
       INTEGER ErrorIO ! zero if the file was opened successfully
-      LOGICAL readError ! .true. if there was an error reading a file 
+      LOGICAL readError ! .true. if there was an error reading a file
       CHARACTER(36) swanComFile ! name of swan command file
       LOGICAL swanComFound ! .true. if swan command file was found
       CHARACTER(len=43) sdFileName     ! subdomain file name
 C
-C     
+C
 Casey 110627: Set the unit number.
       swiLUN = 26
 
@@ -5990,17 +5993,17 @@ Casey 110627: Set the unit number.
       INQUIRE(FILE='swaninit',EXIST=swanInitFound)
       IF (swanInitFound.eqv..true.) THEN
          WRITE(*,*) "INFO: The swaninit file was found."
-         OPEN(swiLUN,FILE='swaninit',ACTION='READ', 
+         OPEN(swiLUN,FILE='swaninit',ACTION='READ',
      &       ACCESS='SEQUENTIAL',IOSTAT=ErrorIO,STATUS='OLD')
          IF (ErrorIO.ne.0) THEN
             WRITE(*,*) "ERROR: The swaninit file could not be opened."
          ELSE
-            WRITE(*,*) 
+            WRITE(*,*)
      &      "INFO: Parsing swaninit file for swan command file name."
-            ! skip down to the 4th line 
+            ! skip down to the 4th line
             DO I=1,4
                READ(swiLUN,*,ERR=4321,END=4321,IOSTAT=ErrorIO) Line
-            ENDDO 
+            ENDDO
             READ(Line,*,ERR=4321,END=4321,IOSTAT=ErrorIO) swanComFile
 Casey 110627: Close the swaninit file.
             CLOSE(UNIT=swiLUN,STATUS='KEEP')
@@ -6015,11 +6018,11 @@ Casey 110627: Close the swaninit file.
                WRITE(*,*) "ERROR: 'DEFAULT' is an invalid name."
             ELSE
                ! check to see if the swan command file is present
-               INQUIRE(FILE=trim(swanComFile),EXIST=swanComFound)   
-               IF (swanComFound.eqv..true.) THEN 
+               INQUIRE(FILE=trim(swanComFile),EXIST=swanComFound)
+               IF (swanComFound.eqv..true.) THEN
                   WRITE(*,*) "INFO: The swan command file '",
      &               trim(swanComFile),"' was found."
-                  OPEN(26,FILE=trim(swanComFile),ACTION='READ', 
+                  OPEN(26,FILE=trim(swanComFile),ACTION='READ',
      &            ACCESS='SEQUENTIAL',IOSTAT=ErrorIO,STATUS='OLD')
                   IF (ErrorIO.ne.0) THEN
                      WRITE(*,*) "ERROR: The swan command file '",
@@ -6027,7 +6030,7 @@ Casey 110627: Close the swaninit file.
                   ENDIF
                ELSE
                    WRITE(*,*) "ERROR: The swan command file '",
-     &               trim(swanComFile),"' was not found." 
+     &               trim(swanComFile),"' was not found."
                ENDIF
             ENDIF
          ENDIF
@@ -6054,14 +6057,14 @@ C     Open each of the subdomain files
       ENDDO
 C
 Casey 090304: Changed the formatting through the next section.
-      DO 
+      DO
          READ(26,'(A)',END=9999) Line
          DO IPROC = 1,NPROC
             WRITE(SDU(IPROC),'(A)') trim(Line)
          ENDDO
       ENDDO
 C
-C--Close fulldomain file and all the subdomain files     
+C--Close fulldomain file and all the subdomain files
 C
  9999 CLOSE (26)
       DO IPROC=1, NPROC
@@ -6076,19 +6079,19 @@ C
 c----------------------------------------------------------------------------
       END SUBROUTINE prepUnSWAN
 c----------------------------------------------------------------------------
-      
+
 C---------------------------------------------------------------------------
-C                S U B R O U T I N E   P R E P   N E T C D F  
+C                S U B R O U T I N E   P R E P   N E T C D F
 C---------------------------------------------------------------------------
 C
 C     jgf49.31 This subroutine will initialize the fulldomain netcdf
-C     output files for the parallel run. These files are initialized 
+C     output files for the parallel run. These files are initialized
 C     in the adcprep phase because they contain fulldomain data which
 C     are not available to the subdomains during a parallel run.
 C
 C---------------------------------------------------------------------------
       SUBROUTINE prepNetCDF()
-#ifdef NETCDF
+#ifdef ADCNETCDF
       USE PRESIZES, ONLY: NM, MNTIF, MNE, MNP
       USE HARM, ONLY : IHARIND, CHARMV
       USE VERSION
@@ -6111,7 +6114,7 @@ C---------------------------------------------------------------------------
      &    title, institution,
      &    source, history, references, comments, host, convention,
      &    contact, base_date, NABOUT, NSCREEN,
-     &    I3DSD, NFEN, NSTA3DD, I3DSV, NSTA3DV, I3DST, NSTA3DT, 
+     &    I3DSD, NFEN, NSTA3DD, I3DSV, NSTA3DV, I3DST, NSTA3DT,
      &    I3DGD, I3DGV, I3DGT, IDEN, islip, kp, z0s, z0b, theta1,
      &    theta2, ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd,
      &    nvsd, nltd, nvtd, alp4, C3D, X3DD, Y3DD, SL3DD, SF3DD,
@@ -6121,14 +6124,14 @@ C---------------------------------------------------------------------------
      &    initNetCDFHotstart, initNetCDFHotstartHarmonic,
      &    initNetCDFHotstartHarmonicMeansVariances,
      &    freeNetCDFArrays, freeNetCDFHotstart, freeNetCDFCoord
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc 
+      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc
 C
       IMPLICIT NONE
       LOGICAL err
 C
 C     The initialization of the output data descriptors for each ADCIRC
 C     output file had to be cut and pasted from write_output.F. At some
-C     point in the future, adcprep will be part of adcirc, making this 
+C     point in the future, adcprep will be part of adcirc, making this
 C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: ElevStaDescript    ! fort.61
       type(OutputDataDescript_t), SAVE :: VelStaDescript     ! fort.62
@@ -6187,7 +6190,7 @@ C     for hotstart harmoinc analysis means and variance calculations
       type(OutputDataDescript_t), SAVE :: YVELAVDescript
       type(OutputDataDescript_t), SAVE :: XVELVADescript
       type(OutputDataDescript_t), SAVE :: YVELVADescript
-C 
+C
       INTEGER numHotstartWrites ! number writes to hot start files
       INTEGER nextLun           ! next LUN to write to, after initial write
 C
@@ -6298,7 +6301,7 @@ C     fort.74
       WindVelDescript % ConsiderWetDry       = .FALSE.
       WindVelDescript % alternate_value      = 0.0
       WindVelDescript % field_name           = 'WindVel'
-C     3D data    
+C     3D data
 C     fort.41
       SigTStaDescript % specifier            = I3DSD
       SigTStaDescript % initial_value        = 0.0
@@ -6427,12 +6430,6 @@ C     fort.43
       ENDIF
 C
 C     fort.44
-      QSurfKp1Descript % specifier            =  I3DGD
-      QSurfKp1Descript % initial_value        =  0.0
-      QSurfKp1Descript % num_items_per_record =  1
-      QSurfKp1Descript % num_fd_records     =  MNP
-      QSurfKp1Descript % num_records_this   =  MNP
-      QSurfKp1Descript % field_name           = 'qsurfkp1'
       SigTDescript % specifier            =  I3DGD
       SigTDescript % initial_value        =  0.0
       SigTDescript % num_items_per_record =  NFEN
@@ -6492,6 +6489,14 @@ C     fort.46
       EVDescript % num_records_this     =  MNP
       EVDescript % field_name           = 'EV'
 C
+C     fort.47
+      QSurfKp1Descript % specifier            =  I3DGD
+      QSurfKp1Descript % initial_value        =  0.0
+      QSurfKp1Descript % num_items_per_record =  1
+      QSurfKp1Descript % num_fd_records     =  MNP
+      QSurfKp1Descript % num_records_this   =  MNP
+      QSurfKp1Descript % field_name           = 'qsurfkp1'
+C
 C     fort.67 and fort.68
       Elev1Descript % specifier            = NHSTAR
       Elev1Descript % initial_value        = 0.0
@@ -6541,7 +6546,7 @@ C     hotstart 3D
       Bsydescript % num_items_per_record =  1
       Bsydescript % num_fd_records       =  MNP
       Bsydescript % num_records_this     =  MNP
-C     hotstart harmonic analysis 
+C     hotstart harmonic analysis
       HarmElevFDLVDescript % specifier            = NHSTAR
       HarmElevFDLVDescript % initial_value        = 0.0
       HarmElevFDLVDescript % num_fd_records       = MNP
@@ -6583,8 +6588,8 @@ C
 C     Need to populate the global and nodal attributes modules with
 C     these parameters, since the netcdfio module relies on those
 C     modules, rather than the pre_global module. Some day, adcprep
-C     will be integrated with ADCIRC and this subroutine call will 
-C     not be needed.     
+C     will be integrated with ADCIRC and this subroutine call will
+C     not be needed.
       IF (.not.ALLOCATED(NODECODE)) THEN
          ALLOCATE(NODECODE(MNP))
       ENDIF
@@ -6603,13 +6608,13 @@ C     we collected in read_global.F and stored in pre_global.F.
      &   ics, nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
      &   reftim, rnday, dramp, a00, b00, c00, h0, cori, ntif, nbfr,
      &   myProc, screenUnit, nolibf, nwp, tau0, cf, eslm,
-     &   nstae, nstav, nstam, neta, nabout, nscreen, 
+     &   nstae, nstav, nstam, neta, nabout, nscreen,
      &   nfen, iden, islip, kp, z0s, z0b, theta1, theta2,
      &   ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd,
-     &   nvtd, alp4, C3D)      
+     &   nvtd, alp4, C3D)
 C
 C     Create NetCDF output files for those output files where NetCDF
-C     was specified. 
+C     was specified.
       err = .false.
       CALL allocNetCDFArrays(61, ElevStaDescript, err)
       CALL allocNetCDFArrays(62, VelStaDescript, err)
@@ -6622,41 +6627,43 @@ C     was specified.
 C
       IF (C3D.eqv..true.) THEN
          CALL allocNetCDFArrays3D(41, SigTStaDescript, SalStaDescript,
-     &      TempStaDescript, err)     
-         CALL allocNetCDFArrays3D(42, RealQStaDescript, 
-     &      ImaginaryQStaDescript, WZStaDescript, err)     
+     &      TempStaDescript, err)
+         CALL allocNetCDFArrays3D(42, RealQStaDescript,
+     &      ImaginaryQStaDescript, WZStaDescript, err)
          CALL allocNetCDFArrays3D(43, Q20StaDescript, LStaDescript,
-     &      EVStaDescript, err)     
+     &      EVStaDescript, err)
          CALL allocNetCDFArrays3D(44, SigTDescript, SalDescript,
-     &      TempDescript, err)     
-         CALL allocNetCDFArrays3D(45, RealQDescript, 
-     &      ImaginaryQDescript, WZDescript, err)     
+     &      TempDescript, err)
+         CALL allocNetCDFArrays3D(45, RealQDescript,
+     &      ImaginaryQDescript, WZDescript, err)
          CALL allocNetCDFArrays3D(46, Q20Descript, LDescript,
-     &      EVDescript, err)     
+     &      EVDescript, err)
+         CALL allocNetCDFArrays(47, QSurfKp1Descript, err)
       ENDIF
 C
 C     Create NetCDF hotstart files if NetCDF was specified.
-      IF ((NHSTAR.EQ.3).OR.(NHSTAR.EQ.367).OR.(NHSTAR.EQ.368)) THEN
+      IF ((NHSTAR.EQ.3).OR.(NHSTAR.EQ.367).OR.(NHSTAR.EQ.368).OR.
+     & (NHSTAR.EQ.5).OR.(NHSTAR.EQ.567).OR.(NHSTAR.EQ.568)) THEN
          ! must init both hotstart files ... there is not enough information
          ! available to determine if they will both be needed
-         IF (IHOT.ne.367) THEN
+         IF ((IHOT.ne.367).and.(IHOT.ne.567)) THEN
             CALL initNetCDFHotstart(67, Elev1Descript,
      &         Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &         NodeCodeDescript, NOFFDescript, err)
             IF (C3D.eqv..true.) THEN
-               CALL initNetCDFHotstart3D(67)
+               CALL initNetCDFHotstart3D(67,NHSTAR)
             ENDIF
-         ENDIF 
-         IF (IHOT.ne.368) THEN
+         ENDIF
+         IF ((IHOT.ne.368).and.(IHOT.ne.568)) THEN
             CALL initNetCDFHotstart(68, Elev1Descript,
      &         Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &         NodeCodeDescript, NOFFDescript, err)
             IF (C3D.eqv..true.) THEN
-               CALL initNetCDFHotstart3D(68)
+               CALL initNetCDFHotstart3D(68,NHSTAR)
             ENDIF
          ENDIF
          IF (IHARIND.eq.1) THEN
-            IF (IHOT.ne.367) THEN
+            IF ((IHOT.ne.367).and.(IHOT.ne.567)) THEN
                CALL initNetCDFHotstartHarmonic(67,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,
      &            HarmUVelFDLVDescript, HarmVVelFDLVDescript,
@@ -6669,13 +6676,13 @@ C     Create NetCDF hotstart files if NetCDF was specified.
      &            HarmUVelSLVDescript, HarmVVelSLVDescript, err)
             ENDIF
             IF (CHARMV.eqv..true.) THEN
-               IF (IHOT.ne.367) THEN
+               IF ((IHOT.ne.367).and.(IHOT.ne.567)) THEN
                   CALL initNetCDFHotstartHarmonicMeansVariances(
      &               67, ELAVDescript, ELVADescript,
      &               XVELAVDescript, YVELAVDescript, XVELVADescript,
      &               YVELVADescript, err)
                ENDIF
-               IF (IHOT.ne.368) THEN
+               IF ((IHOT.ne.368).and.(IHOT.ne.568)) THEN
                   CALL initNetCDFHotstartHarmonicMeansVariances(
      &               68, ELAVDescript, ELVADescript,
      &               XVELAVDescript, YVELAVDescript, XVELVADescript,
@@ -6684,10 +6691,10 @@ C     Create NetCDF hotstart files if NetCDF was specified.
             ENDIF
          ENDIF
          ! free up memory allocated for hotstart arrays
-         IF (IHOT.ne.367) THEN
+         IF ((IHOT.ne.367).and.(IHOT.ne.567)) THEN
             CALL freeNetCDFHotstart(67)
          ENDIF
-         IF (IHOT.ne.368) THEN
+         IF ((IHOT.ne.368).and.(IHOT.ne.568)) THEN
             CALL freeNetCDFHotstart(68)
          ENDIF
       ENDIF
@@ -6708,7 +6715,7 @@ C     Create NetCDF hotstart files if NetCDF was specified.
          CALL freeNetCDFArrays(45, RealQDescript)
          CALL freeNetCDFArrays(46, Q20Descript)
       ENDIF
-      ! free up memory allocated for mesh and boundaries 
+      ! free up memory allocated for mesh and boundaries
       CALL freeNetCDFCoord()
 #endif
 c----------------------------------------------------------------------------

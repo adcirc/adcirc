@@ -125,7 +125,7 @@ C     corresponding label in the unit 13 file.
       LOGICAL FoundTau0MinMax
       LOGICAL FoundZ0b_var
       LOGICAL FoundWSESmoother
-      LOGICAL FoundEleSlopeLim 
+      LOGICAL FoundEleSlopeLim
 C
 C     These variables hold the strings which describe the attribute's
 C     units. These data are loaded from the file, but not used as of
@@ -227,7 +227,7 @@ C     jgf48.42: Added backloaded time averaged tau0
       LOGICAL :: TimeAveragedTau0 ! .true. if Tau0 == -6.x in fort.15
       LOGICAL :: BackLoadedTimeAveragedTau0 ! .true. if Tau0 == -7.x
       LOGICAL,ALLOCATABLE :: elemental_slope_limiter_active(:) ! .true. if elemental_slope_limiter_grad_max
-                                                               ! has been exceeded, initialized as .false.  
+                                                               ! has been exceeded, initialized as .false.
 
       REAL(SZ), ALLOCATABLE :: z0land(:,:) ! directional wind speed red. fac.
       REAL(SZ), ALLOCATABLE :: vcanopy(:)  ! canopy coefficient
@@ -298,6 +298,7 @@ C
       FoundZ0b_var        = .False.
       FoundWSESmoother    = .False.
       FoundEleSlopeLim    = .False.
+C
 C
       Tau0NoOfVals          = 1
       StartDryNoOfVals      = 1
@@ -812,10 +813,10 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
             ENDIF
          CASE("elemental_slope_limiter")
             IF( LoadEleSlopeLim ) THEN
-                CALL LoadAttrVec(elemental_slope_limiter_grad_max, 
-     &              EleSlopeLimDefVal, NumNodesNotDefault, NScreen, 
+                CALL LoadAttrVec(elemental_slope_limiter_grad_max,
+     &              EleSlopeLimDefVal, NumNodesNotDefault, NScreen,
      &              MyProc, NAbOut)
-            ENDIF    
+            ENDIF
          CASE DEFAULT
             SkipDataSet = .True.
             WRITE(16,1001)      ! Nodal Attributes file
@@ -1479,26 +1480,25 @@ C
 C
 C Determine the bottom roughness length either from fort.15, from Manning's n
 C or as read in from nodal attributes
-          DO NH=1,NP
-            H1=DP(NH)+IFNLFA*ETA2(NH)
-
-                IF (LoadZ0B_var) THEN
-                     Z0B1 = Z0B_var(NH)
-                ELSEIF (LoadManningsN) THEN
-                     Z0B1 = ( H1 )* exp(-(1.0D0+
+      DO NH=1,NP
+         H1=DP(NH)+IFNLFA*ETA2(NH)
+         IF (LoadZ0B_var) THEN
+            Z0B1 = Z0B_var(NH)
+         ELSEIF (LoadManningsN) THEN
+            Z0B1 = ( H1 )* exp(-(1.0D0+
      &             ( (0.41D0*( H1 )**(1.0D0/6.0D0) )/
      &                            (ManningsN(NH)*sqrt(g)) ) ))
-                ELSE
-                     Z0B1 = Z0B
-                ENDIF
-            FRIC(NH)= (1.D0 / ( (1.D0/0.41D0) *
-     &                  LOG( (ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
-     &                     *(H1) ) + Z0B1 )
-     &                  / Z0B1 ) ) )**2.D0
+         ELSE
+            Z0B1 = Z0B
+         ENDIF
+         FRIC(NH)= (1.D0 / ( (1.D0/0.41D0) *
+     &       LOG( (ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
+     &             *(H1) ) + Z0B1 )
+     &           / Z0B1 ) ) )**2.D0
 
-             TK(NH)= FRIC(NH) * ABS(Q(NH,1))
+         TK(NH)= FRIC(NH) * ABS(Q(NH,1))
 
-      IF (LoadBridgePilings) THEN
+         IF (LoadBridgePilings) THEN
             Fr=ABS(Q(NH,1))*ABS(Q(NH,1))/(G*H1)
             BK = BridgePilings(I,1)
             BALPHA = BridgePilings(I,2)
@@ -1506,9 +1506,8 @@ C or as read in from nodal attributes
             FricBP=(H1/BDELX)*BK*(BK+5.d0*Fr*Fr-0.6d0)
      &           *(BALPHA+15.d0*BALPHA**4)
             TK(I)=TK(I)+FricBP*ABS(Q(NH,1))/H1
-      ENDIF
-
-         ENDDO
+         ENDIF
+      ENDDO
 C
       RETURN
 C     ----------------------------------------------------------------

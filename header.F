@@ -2,64 +2,84 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
-C  v50.51   - 02/13/2012 - jgf - Merged ADCIRC compiler flags and SWAN 
-C             macros.inc for Kraken. 
+C  v50.52   - 02/21/2011 - jgf - Merged the following changes from revisions
+C             r728:r738 of the netcdf4 branch; this branch was developed to
+C             enable compressed native netdf4 output from ADCIRC using an
+C             output specifier of 5, i.e., setting NOUTGE=5 will cause ADCIRC
+C             to produce fulldomain elevation output in NetCDF Classic Model,
+C             NetCDF4-formatted, compressed output files:
+C             v50.43.01  02/20/2011 - jgf - Changes related to netcdf4
+C                  output files (output specifier = 5); changed NETCDF
+C                  preprocessor definition to ADCNETCDF to avoid collision
+C                  with the official NETCDF module, which was introduced
+C                  to allow access to the fortran 90 interface for netcdf;
+C                  automatically enabled compression for netcdf4 output format;
+C                  used f90 interface for saving text attributes to netcdf
+C                  files to avoid potential mismatches in character counts
+C                  in nf_put_att_text(); added tracing to vsmy.F and
+C                  timestep.F to track down memory issues; initialized
+C                  BPG to zero in cstart.F; added a convenience subroutine
+C                  ADCIRC_Terminate() to adcirc.F.
+C  v50.51   - 02/13/2012 - jgf - Merged ADCIRC compiler flags and SWAN
+C             macros.inc for Kraken.
 C  v50.50   - 02/08/2012 - jgf - Changed organization of smoother and slope
 C             limiter calculations slightly for sustainability; made negative
 C             value of threshold gradient signify unlimited slope at a node
 C             (setting threshold gradient to 0.0 now gives continuously limited
-C             slope). 
-C  v50.49   - 02/08/2012 - zc - Created new nodal attribute for 
-C             elemental_slope_limiter which takes as a value the maximum 
+C             slope).
+C  v50.49   - 02/08/2012 - zc - Created new nodal attribute for
+C             elemental_slope_limiter which takes as a value the maximum
 C             gradient to allow before applying the smoothing function which
 C             is exactly the same as that used in water_surface_elevation_smooother.
-C             ESLNodes.63 is written out at the end of the run showing the 
+C             ESLNodes.63 is written out at the end of the run showing the
 C             nodes which triggered the function.
-C  v50.48   - 02/08/2012 - jgf - Made stations allocate memory with MNST* 
+C  v50.48   - 02/08/2012 - jgf - Made stations allocate memory with MNST*
 C             rather than NST* dimensions; moved statement that sets 1 station
-C             as the minimum to allocate for concentration and meteorology 
+C             as the minimum to allocate for concentration and meteorology
 C             stations to avoid potential memory issues.
 C  v50.47   - 02/07/2012 - jgf - Fixed tab handling issued in subroutine
 C             parse() for station names that caused a segfault on pgi compiler.
-C  v50.46   - 02/04/2012 - jgf - Created new nodal attribute called 
+C  v50.46   - 02/04/2012 - jgf - Created new nodal attribute called
 C             water_surface_elevation_smoother and added code to GWCE_New
 C             to apply the smoother if it has been loaded; the value of this
 C             nodal attribute is the time step increment between applications
 C             of the smoother; i.e., 0 represents no smoothing at that node,
 C             1 represents smoothing at every time step, 2 indicates smoothing
-C             every other time step, etc. 
+C             every other time step, etc.
 C  v50.45   - 02/04/2012 - jgf - Cleaned up stray references to CGWCE_Original.
 C  v50.44   - 02/04/2012 - jgf - Set namelist scratch file to write to localdir
-C             to avoid collisions when running in parallel; removed the 
+C             to avoid collisions when running in parallel; removed the
 C             GWCE_Original() subroutine from timestep.F per Rick's request,
 C             fixed 3 instances in timestep.F when STOP was called without
-C             shutting down mpi first. 
+C             shutting down mpi first.
 C  v50.43   - 02/03/2012 - jgf - Changed rewind() on scratch file to open()
-C             and close() to appease g95 compiler (for nws namelist i/o). 
+C  v50.43   - 02/03/2011 - jgf - Changed rewind() on scratch file to open()
+>>>>>>> .merge-right.r738
+C             and close() to appease g95 compiler (for nws namelist i/o).
 C  v50.42   - 02/02/2012 - jgf - Changed reading of NWS line so that namelist
-C             is written and then read from a scratch file rather than 
+C             is written and then read from a scratch file rather than
 C             an internal character array (fixes issue caught by pgif95).
 C  v50.41   - 12/23/2011 - tcm - Added compiler options for ERDC's Utility
 C              server (compiler=utils)
-C  v50.40   - 12/21/2011 - jgf - Merged the r364:365 of the debug_support 
-C             branch (v49.06.01), as follows: 
+C  v50.40   - 12/21/2011 - jgf - Merged the r364:365 of the debug_support
+C             branch (v49.06.01), as follows:
 C  v49.0601   - 12/09/09 - jgf - Added capability to produce fulldomain fort.69
-C               file (i.e., fulldomain elevation file on timesteps where the 
+C               file (i.e., fulldomain elevation file on timesteps where the
 C               warning elevation has been exceeded) in addition to existing
 C               subdomain fort.69 files.
 C  v50.39     12/08/2011 - tcm - Fixed a possible bug where eta2 was supposed
 C             to be zeroed out after setting eta1 = eta2 but was not.
-C  v50.38   - 11/28/2011 - jgf - Fixed CF compliance of time metadata in netcdf 
-C             by changing attribute text from seconds since base_date to 
+C  v50.38   - 11/28/2011 - jgf - Fixed CF compliance of time metadata in netcdf
+C             by changing attribute text from seconds since base_date to
 C             e.g., seconds since 2010-05-01 00:00:00 UTC (the date is
 C             simply copied verbatim from the existing base_date metadata
-C             field in the fort.15 file). 
+C             field in the fort.15 file).
 C  v50.37   - 09/23/2011 - jgf - Added extra checks to the debugging flags
 C             for diamond in cmplrflags.mk; widened some integer format
-C             for logging when reading fort.13, fort.14 and fort.15; 
-C             partial reorganization of aswip code including modification 
+C             for logging when reading fort.13, fort.14 and fort.15;
+C             partial reorganization of aswip code including modification
 C             to correct an issue that occasionally resulted in Rmax=0
-C             used as input to NWS19 subroutine in adcirc. 
+C             used as input to NWS19 subroutine in adcirc.
 C  v50.36   - 09/13/2011 - tcm - Added tabs and comma delimiters to the parse
 C             subroutine to handle issues with parsing station locations
 C             in the fort.15 file.  Utlitmately the station locations should
@@ -74,28 +94,28 @@ C     v50.31.03  08/25/2011 - jgf - Checked for stationary storm when finding
 C              storm direction in wind.F; added NWS value to read_input.F.
 C     v50.31.02  08/19/2011 - jgf - Made different capitalizations of drag
 C              law formulations valid; removed stop statement that was inserted
-C              after reading of nws line for debugging. 
+C              after reading of nws line for debugging.
 C     v50.31.01  08/18/2011 - jgf - Reorganized reading of NWS line so that it
 C              could be read as a namelist and still be backward compatible with
 C              existing fort.15 files; made WindDragLimit and DragLawString
-C              optionally selectable from the fort.15 with default value of 
+C              optionally selectable from the fort.15 with default value of
 C              0.0035 for WindDragLimit and default values of Garratt and
-C              IceCube (depending on whether ice drag is active) for 
+C              IceCube (depending on whether ice drag is active) for
 C              DragLawString; added storm center recording to NWS=8, 9, and 19
-C              to make them compatible with Powell (sector-based) drag 
+C              to make them compatible with Powell (sector-based) drag
 C              formulation; made wind drag limit in SWAN the same as in ADCIRC.
 C  v50.33   - 09/01/2011 - jgf - Fixed compiler flags for garnet at ERDC.
 C  v50.32   - 09/01/2011 - jgf - Fixed compiler flags for diamond at ERDC.
-C  v50.31   - 08/16/2011 - jgf - Added call to ApplyCanopyCoefficient 
-C             subroutine to all wind subroutines. 
-C  v50.30   - 08/03/2011 - jgf - Modified NWS19 so that it won't try to 
+C  v50.31   - 08/16/2011 - jgf - Added call to ApplyCanopyCoefficient
+C             subroutine to all wind subroutines.
+C  v50.30   - 08/03/2011 - jgf - Modified NWS19 so that it won't try to
 C             interpolate beyond the end of the fort.22 file if the run
-C             ends right at the last line of the file. 
+C             ends right at the last line of the file.
 C  v50.29   - 08/01/2011 - jgf - Modified aswip so that if a storm becomes
 C             stationary, its direction will be persisted and speed reduced
-C             to 1 ... feeding 0 and 0 to ADCIRC NWS19 caused NaNs. 
+C             to 1 ... feeding 0 and 0 to ADCIRC NWS19 caused NaNs.
 C  v50.28   - 07/26/2011 - jgf - Removed vestigial DO/ENDDO surrounding call to
-C             SWMAIN in couple2swan, purely to enhance readability. 
+C             SWMAIN in couple2swan, purely to enhance readability.
 C  v50.27   - 07/12/2011 - tcm - Added the option to use dedicated writer
 C             processors for full in addition to compact formats for ascii
 C             global field files (fort 63,64,73,74,93,164 (cswan) ).  Renamed
@@ -108,31 +128,31 @@ C  v50.24   - 06/27/2011 - jgf - Made NWS=19 look in the fulldomain directory
 C             for fort.22 in parallel rather than the subdomain directories.
 C  v50.23   - 06/27/2011 - jgf - Added NWS=319 to list of allowable NWS values
 C             in read_input.F; fixed initialization in hstime.F; fixed debug
-C             flags for intel compiler. 
+C             flags for intel compiler.
 C  v50.22   - 06/27/2011 - jcd - Set the unit number swiLUN = 26 in prep.F
 C  v50.21   - 06/10/2011 - tcm - Changed I8 to I12 format specifications in
 C             the fort.18 files (prep.F, messenger.F, SwanReadfort18.ftn90)
 C  v50.20   - 06/10/2011 - jgf - Fixed an issue in prepUnSWAN that was causing
-C             the opening of the fulldomain fort.26 file to fail. 
+C             the opening of the fulldomain fort.26 file to fail.
 C  v50.19   - 06/07/2011 - tcm - Fixed a bug in the makefile for the
-C             library build of parallel adcirc. 
+C             library build of parallel adcirc.
 C  v50.18   - 06/08/2011 - rjw - Added CASE(bottom_roughness_length) to prep.F
-C  v50.17   - 06/07/2011 - jgf - Added -freal-loops to g95 compiler flags 
+C  v50.17   - 06/07/2011 - jgf - Added -freal-loops to g95 compiler flags
 C             for padcswan; changed -module to $(IMODS) in swan compilation
-C             rules in makefile; added specific format lengths for I 
-C             to placate g95 compiler.  
+C             rules in makefile; added specific format lengths for I
+C             to placate g95 compiler.
 C  v50.16   - 06/06/2011 - jgf - Fixed issue with netcdf hotstart where the
 C             time (in seconds) was being read from the netcdf hotstart file
 C             but not communicated back to hstart.F for use in initialization;
 C             added enhanced logging and i/o error checking to owiwind.F, as
 C             well as creating a subroutine to remove some repeated code for
-C             i/o; widened the format for NSPOOLG* in globalio.F from 
-C             I5 to I8 and widened format for NHSINC from I5 to just I in 
-C             read_input.F to avoid format overflows. 
+C             i/o; widened the format for NSPOOLG* in globalio.F from
+C             I5 to I8 and widened format for NHSINC from I5 to just I in
+C             read_input.F to avoid format overflows.
 C  v50.15   - 05/31/2011 - jgf - Modified prepUnSWAN routine in adcprep so that
-C             it loads the name of the swan command file from the swaninit 
-C             file; it will then copy that command file to the subdomain 
-C             directories without changing the name. 
+C             it loads the name of the swan command file from the swaninit
+C             file; it will then copy that command file to the subdomain
+C             directories without changing the name.
 C  v50.14   - 05/27/2011 - RJW - Fixed 3D hotstart bug in the turb subroutine,
 C             that resulted in variables not being initialized upon return to
 C             the program from hotstart.(vsmy.F)
@@ -143,28 +163,28 @@ C             global.F).
 C  v50.13   - 05/27/2011 - jgf - Fixed issue caused by requesting netcdf
 C             station output while specifying zero stations.
 C  v50.12   - 05/26/2011 - tcm - Fixed bug that caused output to overflow the
-C             formats on some compilers, for example, an output of 
+C             formats on some compilers, for example, an output of
 C             -0.1234567891E-123 would be written as -0.1234567891-123, when
 C             using the Ew.d format.  The FORTRAN 90 standard is not clear
 C             on how the exp part is displayed when using Ew.d so we area
-C             switching to the Ew.dEe format.  Changes were made in 
+C             switching to the Ew.dEe format.  Changes were made in
 C             globalio.F, write_output.F and timestep.F for these.  Also,
-C             made the output formats consistent between globalio.F and 
+C             made the output formats consistent between globalio.F and
 C             write_output.F.
 C  v50.11   - 05/26/2011 - jgf - Added capability to adcprep to prep just
 C             the fort.88 file; add capability to just prep the fort.20 file;
 C             added command line argument processing to adcprep to bypass
-C             menu driven interface; the menu driven interface is still 
-C             the default, and is triggered if there aren't any command 
+C             menu driven interface; the menu driven interface is still
+C             the default, and is triggered if there aren't any command
 C             line options.
-C  v50.10   - 05/25/2011 - jgf - Merged rivers50 branch r643:660, which 
+C  v50.10   - 05/25/2011 - jgf - Merged rivers50 branch r643:660, which
 C             contained the changes for initialization of rivers above msl.
 C    v50.05.05  05/23/2011 - jgf - Removed code that had been commented out b/c
 C               it was no longer being used.
 C    v50.05.04  05/13/2011 - jgf - Updated hstime utility to remove hardcoding
 C               of the hotstart file name; added support for netcdf hotstart
-C               files. 
-C    v50.05.03  05/13/2011 - jgf - Commented out more leftover debugging 
+C               files.
+C    v50.05.03  05/13/2011 - jgf - Commented out more leftover debugging
 C               statements.
 C    v50.05.02  05/12/2011 - jgf - Commented out leftover debugging statements.
 C    v50.05.01  05/11/2011 - jgf - Merged and resolved conflicts for the
@@ -178,7 +198,7 @@ C      M /adcirc/branches/rivers_init/prep/read_global.F
 C      M /adcirc/branches/rivers_init/src/hstart.F
 C      M /adcirc/branches/rivers_init/src/read_input.F
 C      M /adcirc/branches/rivers_init/src/timestep.F
-C      Updates for the river initialization - adding the option for the river 
+C      Updates for the river initialization - adding the option for the river
 C      boundary condition to not use time==0 as the start time.
 C    ------------------------------------------------------------------------
 C    r460 | kdresback | 2010-06-07 18:29:40 -0400 (Mon, 07 Jun 2010) | 1 line
@@ -214,44 +234,44 @@ C  v50.08   - 05/18/2011 - jgf - Changed node to rawNode in subroutine that
 C             reads in min/max files ... not sure if this caused any issues
 C             but the Intel compiler complained; fixed format statement for
 C             log message reporting the value of IHOT.
-C  v50.07   - 05/18/2011 - jgf - Added missing subroutine call to 
+C  v50.07   - 05/18/2011 - jgf - Added missing subroutine call to
 C             readNetCDFHotstart3D in hstart.F; cleaned up typos in the
 C             netcdf 3D hotstart reading subroutine.
 C  v50.06   - 05/16/2011 - jgf - Fixed issue where 3D netcdf hotstart file
-C             was requested but no other fulldomain 3D netcdf output was 
+C             was requested but no other fulldomain 3D netcdf output was
 C             requested (had to initialize num_v_nodes to NFEN in netcdfio.F).
-C             Added some check_err calls to netcdfio.F  where they were 
+C             Added some check_err calls to netcdfio.F  where they were
 C             previously missing. Fixed an issue with turbulence length
 C             scale output in netcdf (nodal_data_id was referenced rather than
 C             v_nodal_data_id). Fixed format issue with NHSTAR in read_input.F.
 C             Initialized E0XGrad2A and E0YGrad2A in timestep.F to zero
-C             to appease Intel compiler. 
-C  v50.05   - 05/10/2011 - tcm - added support in adcprep for compilation 
+C             to appease Intel compiler.
+C  v50.05   - 05/10/2011 - tcm - added support in adcprep for compilation
 C             on Window's based PC.  Fixed a couple of stray bugs related
 C             to character lengths in prep.F and added the NOFF variable to
 C             hs_2_ascii.F.
 C  v50.04   - 05/10/2011 - jgf - Fixed stray metadata in netcdf file due to
 C             nvelnc not being defined correctly.
 C  v50.03   - 05/09/2011 - jgf - Applied fixes to timestep.F and ipackv.F from
-C             st to fix issue when the NeiMax node is on a boundary. 
+C             st to fix issue when the NeiMax node is on a boundary.
 C  v50.02   - 05/06/2011 - tcm - Added a list of pre-processor definitions to
 C             use in order to build Metis on a Window's based PC.
 C  v50.01   - 05/06/2011 - tcm - Added a readme file about the changes to metis.
 C  v50.00   - 05/06/2011 - tcm - Made a couple of modifications to the packages
-C             called by metis to get it to work on a Windows based machine. 
-C             Added the gettimeofday.h module which is not available on a 
+C             called by metis to get it to work on a Windows based machine.
+C             Added the gettimeofday.h module which is not available on a
 C             Windows machine.  A person wanting to compile metis for a Windows
 C             based PC would select all the routines in the Lib folder and
 C             would also include the gettimeofday.h routine in the Windows
 C             folder and would use a -WINDOWS pre-processor flag in addition to
-C             the other pre-processor flags in the normal makefile.  
+C             the other pre-processor flags in the normal makefile.
 C             NOTE:  Only use the gettimeofday.h for Windows machines,
-C             Linux/Unix machines typically already have it installed. 
-C             These changes to metis do not change the usual building or 
-C             functionality of metis on Linux/Unix machines. 
+C             Linux/Unix machines typically already have it installed.
+C             These changes to metis do not change the usual building or
+C             functionality of metis on Linux/Unix machines.
 C  v49.82   - 04/26/2011 - jgf - Fixed initialization issue in netcdf when
 C             netcdf hotstart file was requested in 3D but no other fulldomain
-C             netcdf output was requested; removed warning message about 
+C             netcdf output was requested; removed warning message about
 C             ITITER from adcprep; initialized previously uninitialized
 C             variable in station parsing routine.
 C  v49.81   - 04/25/2011 - rjw - Fixed bug in ./swan/Makefile now it will be able
@@ -260,20 +280,20 @@ C  v49.80   - 04/25/2011 - jgf - Removed stray debug msg from read_input.F.
 C  v49.79   - 04/21/2011 - rjw - Fixed bug in ./prep/read_global.F for IEVC=51
 C  v49.78   - 04/21/2011 - rjw - Modified files in ./prep to allow for IEVC=51
 C  v49.77   - 04/17/2011 - jgf - Removed erroneous second read of WTIMINC line
-C             for NWS19. 
+C             for NWS19.
 C  v49.76   - 04/14/2011 - tcm - Cleaned up more reserved words in post.F
 C               and adcpost.F  (INDEX,LOC,SCALE).
 C  v49.75   - 04/14/2011 - tcm - Commented out debugging flags for cray_xt4,
 C               Cleaned up us of FORTRAN RESERVED WORDS (TIME,INDEX,SCALE,
 C                ISIGN,LOC,IIDIM). Changed to (TIME --> TIMELOC,INDEX --> INDX,
 C                ISIGN --> ISGN, LOC --> LOC2, SCALE --> SCALEVAL,
-C                IIDIM --> IDIM2).  The use of reserved words can lead to 
+C                IIDIM --> IDIM2).  The use of reserved words can lead to
 C                unintended consequences and conflicts.
 C  v49.74   - 04/13/2011 - tcm - Fixed bug in call to FEGRIDS in read_input.F
 C  v49.73   - 04/11/2011 - jgf - Merged vortexowi branch (r421:r536) to trunk,
 C             bringing in the changes from v49.08.01 to v49.08.04 to create
-C             NWS=29 option for blending vortex winds (NWS19) with 
-C             OWI winds (NWS12). 
+C             NWS=29 option for blending vortex winds (NWS19) with
+C             OWI winds (NWS12).
 C  v49.0804   - 12/20/10 - jgf - Made allowance for NWS29 in read_global.F,
 C               prep.F and adcprep.F; cstart.F now looks in GBLINPUTDIR for
 C               the fort.22 for NWS29; corrected missing parenthesis in wind.F;
@@ -282,59 +302,59 @@ C               blend factor for blending vortex winds and OWI winds.
 C  v49.0803   - 04/16/10 - jgf - Added code to NWS19 to properly export the
 C               vortex center coordinates and current Rmax.
 C  v49.0802   - 04/08/10 - jgf - Fixed array out of bounds in log message
-C               in timestep.F. Eliminated duplicate open of fort.22 in 
+C               in timestep.F. Eliminated duplicate open of fort.22 in
 C               NWS19. Fixed file name to open for NWS29 in hstart.F.
-C  v49.0801   - 03/19/10 - jgf - Added code for new NWS29 option that embeds an 
-C               asymmetric vortex (NWS19) into an OWI formatted (NWS12) 
-C               basin scale met field (derived from NAM). Also separated 
+C  v49.0801   - 03/19/10 - jgf - Added code for new NWS29 option that embeds an
+C               asymmetric vortex (NWS19) into an OWI formatted (NWS12)
+C               basin scale met field (derived from NAM). Also separated
 C               the application of wind reduction factors from the application
-C               of the canopy coefficient, and made several key variables 
+C               of the canopy coefficient, and made several key variables
 C               from NWS19 available at the wind module level for use by
 C               other wind-related subroutines.
 C  v49.72   - 04/11/2011 - jgf - Removed init_cond.F and related comments
-C             from makefile since they are no longer needed. 
-C  v49.71   - 04/11/2011 - kmd - Updated the initial condition file for 
-C             baroclinic to be evaluated in parallel similar to the binary 
+C             from makefile since they are no longer needed.
+C  v49.71   - 04/11/2011 - kmd - Updated the initial condition file for
+C             baroclinic to be evaluated in parallel similar to the binary
 C             hotstart file; updated station information for 3D.
 C  v49.70   - 04/11/2011 - rjw - Updated KSlip formulation fro KSlip=2, 3
-C             Added subroutine "Apply3DBottomFriction", to compute TK for 3D 
-C             simulations.  This fixes Tau0 bug where time varying tau0 is 
+C             Added subroutine "Apply3DBottomFriction", to compute TK for 3D
+C             simulations.  This fixes Tau0 bug where time varying tau0 is
 C             computed as function of TK.  Added a call to "CalculateTimeVaryingTau0"
 C             in timestep.F for C3D.
 C  v49.69   - 04/07/2011 - jgf - Fixed typo (missing .) in netcdfio.F.
 C  v49.68   - 04/07/2011 - tcm - Enlarged the field width (w) on several
 C             format specifications for Ew.d fields.  Note that w should be
-C             set greater than or equal to 7 more than d according to the 
+C             set greater than or equal to 7 more than d according to the
 C             FORTRAN 90 standards.  For Fw.d, w should be greater than or
 C             equal to 3 more than d.
 C  v49.67   - 04/06/2011 - tcm - making additions for compiling adcirc on a
 C             Windows based PC.  In vortex.F resolved a conflict with the
-C             variable "error" used as an integer in global.F and as a 
+C             variable "error" used as an integer in global.F and as a
 C             real in constants.F.
-C  v49.66   - 04/06/2011 - tcm - merged ice coverage into the trunk from 
+C  v49.66   - 04/06/2011 - tcm - merged ice coverage into the trunk from
 C             branch versions v49.64.01 through v49.64.01.
 C  v49.64.02- 04/01/2011 - tcm - Fixed bug in Harmonic Analysis output when
 C             output was called to be generated but the model never reached
 C             the time interval between THAS and THAF during which the data
-C             is to be created.  Added a test for NWS and NCICE 
+C             is to be created.  Added a test for NWS and NCICE
 C             compatability.  Included Ice support in the init_cond.F file.
 C  v49.64.01- 03/31/2011 - tcm - Added ice field data for use in modifying
 C             wind drag coefficients (Enabled by setting NWS >= 1000
-C             uses files (fort.25 all ice types, fort.225 and fort.227 
+C             uses files (fort.25 all ice types, fort.225 and fort.227
 C             only for ice types (NCICE) = 12 ). Added writing of global and
 C             station ice concentration files (fort.93 and fort.91).
-C             Added a cubic drag coefficient function based on ice 
+C             Added a cubic drag coefficient function based on ice
 C             concentration levels and the typical Garratt wind speed
 C             computations.  Ice concentration files are only written
 C             when met. files are written.
 C  v49.65   - 04/06/2011 - tcm - Fixed typo bug in transport.F.
-C  v49.64   - 04/06/2011 - rjw - Modified 3D code to allow user to select 
-C             standard Mellor-Yamada 2.5 closure (IVEC=50), or modified 
+C  v49.64   - 04/06/2011 - rjw - Modified 3D code to allow user to select
+C             standard Mellor-Yamada 2.5 closure (IVEC=50), or modified
 C             Mellor-Yamada 2.5 with enhanced mixing (IVEC=51). (Note: for
-C             IEVC=51, the alpha parameter for Z0S is read in from EVCON)  
-C             Added ability for 3D code use Manning's n values to compute 
+C             IEVC=51, the alpha parameter for Z0S is read in from EVCON)
+C             Added ability for 3D code use Manning's n values to compute
 C             bottom roughness values based on Casey's work taken from
-C             Bretschneider(1986).  Modified 3D wetting scheme to simplify the 
+C             Bretschneider(1986).  Modified 3D wetting scheme to simplify the
 C             calculation of BSX/Y at newly wetted node.
 C  v49.63   - 03/29/2011 - rjw - Removed debugging write stament from vsmy.F
 C  v49.62   - 03/28/2011 - rjw - Modified the 3D code to include a hard wired
@@ -345,9 +365,9 @@ C             "bottom_roughness_length" to be used in the 3D simulations.
 C             included a couple of bug fixes found when implementing the
 C             IM=611112 run type, and added back in the calculation of BSX and BSY
 C             to the 3D wetting code in timestep.f.
-C  v49.61   - 03/17/2011 - jgf - Corrected compiler flags for IBM p6 and 
+C  v49.61   - 03/17/2011 - jgf - Corrected compiler flags for IBM p6 and
 C             removed extra -DNETCDF for IBM p6 platform; corrected double
-C             deallocation issue when writing ascii fort.44 file in parallel. 
+C             deallocation issue when writing ascii fort.44 file in parallel.
 C  v49.60   - 03/09/2011 - jgf - Removed IStart3D variable from global_3dvs.F
 C             to fix initialization issues with evtot; explicitly initialized
 C             wsx1, wsy1, wsx2, wsy2 to avoid NaNs in vssol upon hotstart
@@ -355,7 +375,7 @@ C             of 3D runs in serial; added error handling to code that skips
 C             down to the proper location in 3D output files; added flags for
 C             gfortran compiler to take advantage of floating point exception
 C             trapping for debugging.
-C  v49.59   - 03/09/2011 - tcm - Changed "COMPILER" back to "compiler" in the 
+C  v49.59   - 03/09/2011 - tcm - Changed "COMPILER" back to "compiler" in the
 C             cmplrflags.mk file.
 C  v49.58   - 03/08/2011 - jgf - Fixed NeiTabEle handling to account for its
 C             semi-sparseness in subroutine bpg3D and in transport.F.
@@ -364,34 +384,34 @@ C             in netcdf module to fix compilation on intel v9.1 compiler
 C             (on kittyhawk); also tweaked intel compiler flag setup.
 C  v49.56   - 03/03/2011 - jgf - Merged in netcdf3D branch revisions 562:597
 C             to trunk (branch version numbers v49.48.01 through v49.48.09).
-C  v49.48.09- 03/03/2011 - jgf - Added compiler flags for IBM P6; added 
-C             capability to activate comprehensive trace logging with a single 
+C  v49.48.09- 03/03/2011 - jgf - Added compiler flags for IBM P6; added
+C             capability to activate comprehensive trace logging with a single
 C             compiler flag; changed trace logging so that all processors
 C             write trace messages to local fort.16, which makes debugging
 C             easier during parallel execution; added conditions
 C             to netcdf memory deallocation for harmonic analysis hotstart;
-C             fixed issue in binary hotstart in parallel by mapping to 
+C             fixed issue in binary hotstart in parallel by mapping to
 C             NNODECODE instead of NODECODE; removed IHOT as argument to
 C             initHarmonicParameters and eliminated duplicate calculations
 C             of nfreq in harm.F; added doc directory with rough draft
-C             for an ADCIRC Developers Guide.  
-C  v49.48.08- 02/25/2011 - jgf - Fixed record accounting in netcdf module 
+C             for an ADCIRC Developers Guide.
+C  v49.48.08- 02/25/2011 - jgf - Fixed record accounting in netcdf module
 C             so that appends place data in proper position within the netcdf
 C             data file, rather than always appending at the end; fixed issue
-C             where 'it' was missing from call to hstart3D_out; added 
+C             where 'it' was missing from call to hstart3D_out; added
 C             call to prepnetcdf() to PREP15 option in adcprep.
 C  v49.48.07- 02/24/2011 - jgf - Brought over vparr's adccmp.F from ERDC_esmf
 C             branch for use in testing; added experimental new autotest code
-C             for use in automated testing. 
-C  v49.48.06- 02/24/2011 - jgf - Fixed initialization issues for 3D netcdf 
+C             for use in automated testing.
+C  v49.48.06- 02/24/2011 - jgf - Fixed initialization issues for 3D netcdf
 C             output files and 3D netcdf hotstart files in parallel; added
 C             code to adcprep to capture 3D station names; added initialization
 C             of 3D station coordinates to adcprep and adcirc/write_output.F.
 C  v49.48.05- 02/23/2011 - jgf - Added dedicated arrays for storing coordinates
 C             of 3D stations for use in 3D netcdf station output files; fixed
-C             several typos and redundancy issues in netcdf module that 
+C             several typos and redundancy issues in netcdf module that
 C             were interfering with 3D netcdf output.
-C  v49.48.04- 02/23/2011 - jgf - Added new code to adcprep to set up 
+C  v49.48.04- 02/23/2011 - jgf - Added new code to adcprep to set up
 C             3D netcdf output files for parallel runs and to set up netcdf
 C             hotstart file file with 3D data for parallel runs; further
 C             modularized mapping of full domain data to subdomains on the
@@ -400,34 +420,34 @@ C             during 3D hotstart.
 C  v49.48.03- 02/11/2011 - jgf - Added new subroutines to netcdf module for
 C             reading 3D data from netcdf hotstart file and for mapping
 C             this 3D data from fulldomain to subdomains, combining reading
-C             and mapping for each variable to conserve memory to the 
-C             greatest extent possible. 
-C  v49.48.02- 02/09/2011 - jgf - Added new subroutines to netcdf module for 
-C             allocating memory for 3D data in netcdf hotstart files; 
+C             and mapping for each variable to conserve memory to the
+C             greatest extent possible.
+C  v49.48.02- 02/09/2011 - jgf - Added new subroutines to netcdf module for
+C             allocating memory for 3D data in netcdf hotstart files;
 C             initializing 3D data in netcdf hotstart files; and writing 3D
-C             data to netcdf hotstart files; rearranged HSTART3D_OUT in 
+C             data to netcdf hotstart files; rearranged HSTART3D_OUT in
 C             vsmy.F to handle both binary and netcdf output and to globalize
 C             each 3D variable all at once rather than in horizontal layers
 C             (although the layered output format is preserved for binary
-C             output) and to allocate the memory for each 3D variable just 
-C             before it is needed and deallocating memory immediately after 
-C             its use is complete; the option of writing either subdomain or 
-C             fulldomain hotstart files was preserved for binary output; 
+C             output) and to allocate the memory for each 3D variable just
+C             before it is needed and deallocating memory immediately after
+C             its use is complete; the option of writing either subdomain or
+C             fulldomain hotstart files was preserved for binary output;
 C             the writing of data to binary hotstart files was also modularized
-C             with the addition of a new subroutine. 
+C             with the addition of a new subroutine.
 C  v49.48.01- 02/03/2011 - jgf - Added new subroutines to netcdf module for
-C             initializing and writing 3D data to netcdf output files; 
+C             initializing and writing 3D data to netcdf output files;
 C             modularized code for reading 3D stations in read_input.F and
 C             added capability for reading 3D station names.
 C  v49.55    - 03/03/2011 - tcm - Merged the last of the changes from the
 C             ERDC tightly coupled with STWAVE branch.
-C  v49.54.04 -03/03/2011 - tcm - Bring updates from the trunk getting 
+C  v49.54.04 -03/03/2011 - tcm - Bring updates from the trunk getting
 C  v49.54.03 -02/24/2011 - tcm - Added the option to make parallel adcirc
-C             as a library back to the makefile.  This library option is 
+C             as a library back to the makefile.  This library option is
 C             needed for the external coupler.
 C  v49.54.02- 02/34/2011 - jgf - Fixed minor compilation issues in adcprep.F
 C             and writer.F.
-C  v49.54.01- 02/22/2011 - tcm - Modifications to adcirc.F and writer.F to 
+C  v49.54.01- 02/22/2011 - tcm - Modifications to adcirc.F and writer.F to
 C             allow for coupling with STWAVE via external couplers.
 C  v49.54   - 02/22/2011 - tcm - Fixed a bug with hot start writers related
 C             to the NOFF varible in writer.F.  Cleaned up use of reserved
@@ -435,58 +455,58 @@ C             (dim, index, and scale) in the other files changed in this
 C             commit.  (dim --> iidim, index --> iindx, scale --> scaleval)
 C  v49.53   - 02/18/2011 - jgf - Cleaned up logging for netcdf in adcprep
 C             and fixed minor bug with v-velocity metadata in netcdf hotstart
-C             files. 
+C             files.
 C  v49.52   - 02/17/2011 - jgf - Declared several subroutines in netcdf
 C             module as private to enable compilation on Intel v9 compiler
-C             on kittyhawk at RENCI. 
+C             on kittyhawk at RENCI.
 C  v49.51   - 02/09/2011 - tcm - Merging fast search algorithms from the
 C             merge_erdc_to49 branch.  Incorporated the new search tree
 C             searches into the prep routines and read_input.F. Updated the
 C             readstations subroutine to accept a description variable for
-C             allowing for the inputing of the correct station type.  Added 
+C             allowing for the inputing of the correct station type.  Added
 C             the writer_pause subroutine but not using it currently.
 C  v49.50   - 02/09/2011 - jgf - Fixed an issue in hstart.F where harmonic
 C             analysis data were checked, even though harmonic analysis was
 C             not specified as part of the simulation.
 C  v49.49   - 02/02/2011 - jgf - Rearranged memory allocation for 3D globalio
 C             to minimize the total amount of RAM required at any given time
-C             for writing 3D output files. 
+C             for writing 3D output files.
 C  v49.48   - 01/25/2011 - tcm - Added support for NRS=4 tight coupling with
 C             STWAVE in timestep.F.
-C  v49.47   - 01/25/2011 - rjw - Changed format statement 2393 to 2395 on 
-C              cmassey STWAVE routine in Updated read_input.F 
+C  v49.47   - 01/25/2011 - rjw - Changed format statement 2393 to 2395 on
+C              cmassey STWAVE routine in Updated read_input.F
 C  v49.46   - 01/25/2011 - tcm - Updated read_input.F and adcprep routines
 C             to allow for NRS=4 which is tightly coupled ADCIRC+STWAVE.
-C  v49.45   - 01/24/2011 - jgf - Merged harmio branch r527:556 to trunk. 
+C  v49.45   - 01/24/2011 - jgf - Merged harmio branch r527:556 to trunk.
 C  v49.43.19  01/23/2011 - jgf - Finished code to globalize all 3D output
 C             files as well as code to write fulldomain 3D files in ascii
-C             format in serial and in parallel; fixed 3D output file 
+C             format in serial and in parallel; fixed 3D output file
 C             initializations in cstart.F and hstart.F so they work in
 C             parallel; corrected issues with reading 3D data from binary
 C             hotstart file in parallel and mapping to subdomains on the fly.
-C  v49.43.18  01/21/2011 - jgf - Added code to prep18 to write 3D station 
+C  v49.43.18  01/21/2011 - jgf - Added code to prep18 to write 3D station
 C             mappings into fort.18 for 3D runs; added code to messenger.F
 C             and global_3dvs.F to read 3D station mappings from fort.18 for
 C             3D runs; rearranged code to write out 3D turbulence stations
 C             (fort.43) so that it is organized by output format; also added
 C             code to use the new mappings to globalize and write out
-C             the resulting fulldomain fort.43 files in ascii. 
+C             the resulting fulldomain fort.43 files in ascii.
 C  v49.43.17  01/19/2011 - jgf - Added globalization of 3D density (fort.44)
 C             and 3D velocity (fort.45) to write_output.F; also added code
 C             to write out these fulldomain 3D data in ascii; rearranged
 C             existing 3D output code so that it is organized according to
-C             output format. 
+C             output format.
 C  v49.43.16  01/18/2011 - jgf - Added new globalio subroutines packNPbyM
 C             and unpackNPbyM for globalizing 3D output; made changes to
 C             enable globalization of fulldomain turbulence output file
-C             (fort.46). 
+C             (fort.46).
 C  v49.43.15  01/18/2011 - jgf - Corrected several issues revealed by internal
 C             testing of reading and writing harmonic analysis data in netcdf
 C             format.
 C  v49.43.14  01/15/2011 - jgf - Finished code for reading means and variance
 C             calculation data for harmonic analysis from netcdf hotstart file;
 C             code includes capability to read data in serial or in parallel
-C             (mapping to subdomains in parallel on the fly). 
+C             (mapping to subdomains in parallel on the fly).
 C  v49.43.13  01/14/2011 - jgf - Finished code for reading harmonic analysis
 C             data from netcdf hotstart file to continue harmonic analysis
 C             during the hotstarted run; code includes capability to read
@@ -494,22 +514,22 @@ C             in h.a. data in in parallel as well as serial.
 C  v49.43.12  01/12/2011 - jgf - Made adcprep reliant on harm.F for harmonic
 C             variables; made adcprep reliant on global.F for station names;
 C             completed changes to netcdfio.F and adcprep to allow harmonic
-C             data to be written to hotstart files in parallel. 
+C             data to be written to hotstart files in parallel.
 C  v49.43.11  01/10/2011 - jgf - Added code to netcdf module to reduce the
 C             size of the 2D matrix that holds the boundary type arrays
-C             so that they are dimensioned by (nope,max(nvdll)) and 
+C             so that they are dimensioned by (nope,max(nvdll)) and
 C             (nbou,max(nvell)).
-C  v49.43.10  01/09/2011 - jgf - Fixed initialization issues that were 
+C  v49.43.10  01/09/2011 - jgf - Fixed initialization issues that were
 C             preventing log and console messages from showing up during
 C             adcprep; straightened out initialization of mesh boundaries
 C             in netcdf to fix seg fault issue during adcprep of sl16 grid;
 C             added a few missing calls to check_err in netcdf.
-C  v49.43.09  12/24/2010 - jgf - Fixed issue in prep.F/prepnetcdf() that 
+C  v49.43.09  12/24/2010 - jgf - Fixed issue in prep.F/prepnetcdf() that
 C             caused compilation with netcdf to fail.
 C  v49.43.08  12/23/2010 - jgf - Fixed issue where netcdf harmonic analysis
 C             hotstart data were not being initialized in write_output.F;
 C             added icha parameter to netcdf harmonic analysis hotstart file.
-C  v49.43.07  12/22/2010 - jgf - Fixed numerous small issues in netcdf 
+C  v49.43.07  12/22/2010 - jgf - Fixed numerous small issues in netcdf
 C             module that were preventing it from writing harmonic analysis
 C             load vectors to netcdf hotstart files.
 C  v49.43.06  12/21/2010 - jgf - Corrected issue with initialization of netcdf
@@ -517,29 +537,29 @@ C             mesh data for hotstart file; added check for NHSTAR=3 before
 C             initializing netcdf hotstart file; forced a rewrite of the
 C             netcdf hotstart file each time it is called to write; moved
 C             initialization of netcdf element data to initNetCDFCoord().
-C  v49.43.05  12/21/2010 - jgf - Added subroutines to netcdf module to 
+C  v49.43.05  12/21/2010 - jgf - Added subroutines to netcdf module to
 C             free memory that was allocated for writing netcdf data; added
 C             subroutine calls to prep.F to free memory from netcdf module
 C             once the data had been written; added initialization to
 C             screenUnit i/o parameter in adcprep which corrected a memory
 C             fault issue that occurred when using netcdf; moved call to
-C             prepNetCDF() to just before the call to DECOMP() in adcprep. 
+C             prepNetCDF() to just before the call to DECOMP() in adcprep.
 C  v49.43.04  12/21/2010 - jgf - Added code to reduce memory use of netcdf
-C             module by only retaining a single copy of the mesh and its 
-C             boundaries in memory and reusing it for each netcdf output file; 
-C             added new data types for storing harmonic station data 
-C             as well as fulldomain harmonic data to netcdf files; added 
+C             module by only retaining a single copy of the mesh and its
+C             boundaries in memory and reusing it for each netcdf output file;
+C             added new data types for storing harmonic station data
+C             as well as fulldomain harmonic data to netcdf files; added
 C             new variables, metadata, and subroutines for storing harmonic
 C             analysis load vectors to netcdf output files; added subroutine
-C             calls for tracing progress of subroutine calls to netcdf 
+C             calls for tracing progress of subroutine calls to netcdf
 C             module.
 C  v49.43.03  12/09/2010 - jgf - Added code to write out means and variance
 C             calculation results for harmonic analysis to full domain output
 C             file in parallel; fixed issues in globalio for new packMbyNP;
 C             fixed issues in output data descriptors for harmonic data;
-C             added general subroutines for writing log and screen messages 
+C             added general subroutines for writing log and screen messages
 C             to aid in debugging; fixed descrepancies between reading
-C             and writing of binary hotstart file.  
+C             and writing of binary hotstart file.
 C  v49.43.02  12/08/2010 - jgf - Added new subroutines to write_output.F
 C             to write harmonic analysis data to full domain output files
 C             in parallel; finished separating harmonic analysis solution
@@ -548,27 +568,27 @@ C  v49.43.01  11/30/2010 - jgf - Preserved the reading of local hotstart
 C             files as an option, but made the reading of fulldomain hotstart
 C             files the default. Made changes to enable reading of harmonic
 C             analysis hotstart data and 3D hotstart data from fulldomain
-C             hotstart file in parallel by mapping the nodal data from 
+C             hotstart file in parallel by mapping the nodal data from
 C             fulldomain to subdomain on each PE on the fly. Made changes
 C             to globalio by adding new subroutines that can globalize harmonic
 C             analysis data and 3D data. Reorganized harmonic analysis module
-C             in the following ways: (1) moved variables from global.F to 
+C             in the following ways: (1) moved variables from global.F to
 C             harm.F if they pertained only to harmonic analysis; (2) separated
-C             reading from initialization when harmonic analysis hotstart 
+C             reading from initialization when harmonic analysis hotstart
 C             file is read; (3) separated solution from writing when harmonic
 C             analysis data is written to output; (4) moved code that updates
-C             load vectors from timestep.F to harm.F; (5) moved code that 
+C             load vectors from timestep.F to harm.F; (5) moved code that
 C             calls various subroutines to solve harmonic analysis at end of
-C             a run from adcirc.F to harm.F. Added new code to 
-C             write_output.F to write globalized harmonic analysis data to 
+C             a run from adcirc.F to harm.F. Added new code to
+C             write_output.F to write globalized harmonic analysis data to
 C             fulldomain hotstart file. Added subroutines to global.F
 C             to streamline reading of hotstart arrays from binary files.
-C             Removed subroutines from globalio.F that were not called 
+C             Removed subroutines from globalio.F that were not called
 C             from anywhere. Made canopy coefficient default to 1 in nodal
 C             attributes. Added fix for case where NRAMP is 1 but DRAMP is 0.
-C             Updated hot2asc to read harmonic analysis data. 
+C             Updated hot2asc to read harmonic analysis data.
 C  v49.44   - 01/19/2011 - tcm -- For owiwind.F changed the way the header
-C             line of the file was read so that if changes in the text 
+C             line of the file was read so that if changes in the text
 C             portion occur in a file, these would not cause read failures.
 C             This line is an 80 character line with two 10 digit date
 C             fields which are the only data used off that line.  The first
@@ -587,46 +607,46 @@ C  v49.40   - 10/25/2010 - jgf - Fixes for writing netcdf metadata to trim
 C             off trailing spaces when writing netcdf files from adcirc or
 C             adcprep, as well as when writing subdomain fort.15 files from
 C             adcprep.
-C  v49.39   - 10/22/2010 - jgf - Updates to netcdf module for hotstarting, 
+C  v49.39   - 10/22/2010 - jgf - Updates to netcdf module for hotstarting,
 C             including alternation of netcdf 67 and 68 files; additions to
 C             support fulldomain integer arrays for nodecode and noff; updating
 C             it and im in hotstart file; fix for ordering write in prep15
 C             (write metadata after 3D data in fort.15).
 C  v49.38   - 10/06/2010 - jgf - Significant rearrangement of hstart.F to
 C             consolidate the reading of the binary hotstart file all in
-C             one section of the hotstart() subroutine; this was necessary 
-C             b/c the subroutine mingled the reading of the file with 
-C             initialization and logging. In order to have a choice of 
-C             file formats, the reading of the hotstart file must be a 
-C             separate step from initialization, logging and other tasks. 
+C             one section of the hotstart() subroutine; this was necessary
+C             b/c the subroutine mingled the reading of the file with
+C             initialization and logging. In order to have a choice of
+C             file formats, the reading of the hotstart file must be a
+C             separate step from initialization, logging and other tasks.
 C             A call to read a netcdf hotstart file if IHOT.eq.367 or
-C             IHOT.eq.368 was added. 
+C             IHOT.eq.368 was added.
 C  v49.37   - 10/05/2010 - jgf - Removed utility program called init b/c it
 C             was not being used; made compilation of prep.F and read_global.F
-C             dependent on adcirc modules to facilitate sharing of common 
-C             code (this fixes an issue with compiling adcprep w/o netcdf); 
+C             dependent on adcirc modules to facilitate sharing of common
+C             code (this fixes an issue with compiling adcprep w/o netcdf);
 C             finished reorganization and redevelopment of netcdf hotstart
 C             code in netcdf module (netcdf hotstart testing still required).
-C  v49.36   - 10/04/2010 - rjw - 1) Modifications to 3D turbulence: addition of 
+C  v49.36   - 10/04/2010 - rjw - 1) Modifications to 3D turbulence: addition of
 C             enhanced surface mixed layer.  Variety of chioces hardcoded in
 C             vsmy.f.  Surface roughness in fort.15 is now the minimum
 C             surface roughness.  2) Modifications to 3D wetting and drying
-C             in timestep.f, modified wetting velocity formulation.  
-C             3) Added ability to run 3D in GWCE explicit mode.  GWCE is 
-C             solved outside 3D routine, IM type 611122 enables all of the 
-C             same GWCE explicit settings as 111122 except indicates to run 
-C             3D instead of 2D.  To implement also change GWCE time weighting 
+C             in timestep.f, modified wetting velocity formulation.
+C             3) Added ability to run 3D in GWCE explicit mode.  GWCE is
+C             solved outside 3D routine, IM type 611122 enables all of the
+C             same GWCE explicit settings as 111122 except indicates to run
+C             3D instead of 2D.  To implement also change GWCE time weighting
 C             factors to 0.0 1.0 0.0 and change solver flag to 0.
-C  v49.35   - 10/04/2010 - jgf - Fixes for netcdf: Fixed dimensioning of 
+C  v49.35   - 10/04/2010 - jgf - Fixes for netcdf: Fixed dimensioning of
 C             NVELL during adcprep (was causing segfault on ec95d.grd among
 C             others); streamlined netcdf module by removing redundant
 C             dimensioning and ids for multidimensional nodal and station
-C             data; fixed error handling and added graceful exit when 
+C             data; fixed error handling and added graceful exit when
 C             netcdf file from adcprep is not present when padcirc starts;
 C             added and significantly rearranged code for writing netcdf
-C             hotstart files. 
+C             hotstart files.
 C  v49.34   - 09/28/2010 - jgf - Fixes for netcdf: added call to update meta
-C             data when hotstarting; eliminated ncmode variable, the 
+C             data when hotstarting; eliminated ncmode variable, the
 C             subroutine that sets it, and all references to it throughout
 C             adcirc and adcprep.
 C  v49.33   - 09/27/2010 - jgf - Fixes for netcdf: boundary data now written
@@ -635,7 +655,7 @@ C             and a2f() subroutines from global.F instead of repeating them
 C             in read_global.F ... this allows adcprep to pick up the fixes
 C             that were made in global.F for parsing station names and also cuts
 C             down on the incidence of cut-and-pasted code in ADCIRC.
-C  v49.32   - 09/23/2010 - jgf - Fixes for netcdf: SLAM0 and SFEA0 
+C  v49.32   - 09/23/2010 - jgf - Fixes for netcdf: SLAM0 and SFEA0
 C             as well as mesh boundaries. Now works in serial. Parallel
 C             should also work, but testing is required to confirm.
 C  v49.31   - 09/23/2010 - jgf - Changes for writing netcdf in parallel:
@@ -648,27 +668,27 @@ C             called from different places; fixed miscellaneous bug in NWS19
 C             in read_input.F by reading RSTIMINC when NRS.GE.1 instead of
 C             just NRS.eq.1; fixed memory allocation for station names
 C             in prep/read_global.F; moved the hotstart-relevant variables
-C             from local declarations in prep.F to declarations in 
+C             from local declarations in prep.F to declarations in
 C             pre_global.F; created new subroutine in prep.F to initialize
 C             netcdf output files for parallel runs where they will be
 C             required.
 C  v49.30   - 09/16/2010 - jgf - Working on aswip: added capability to set
 C             the Rmax to a constant or to a percentage of the calculated
-C             value based on isotach data (if any) via command line options; 
-C             added capability to set method of selecting quadrant Rmax 
+C             value based on isotach data (if any) via command line options;
+C             added capability to set method of selecting quadrant Rmax
 C             via command line option; removed persistence of average Rmax
 C             from hindcast into the forecast; corrected issue where
-C             isotach speed can sometimes be zero in source data. 
+C             isotach speed can sometimes be zero in source data.
 C  v49.29   - 08/25/2010 - jgf - Cleaned up parsing of metadata and station
 C             names such that the netcdf module no longer assumes that a "!"
 C             is present on each line, but is able to use it as a metadata
-C             terminator if it is present. 
-C  v49.28   - 08/24/2010 - jgf - Declared variables in netcdf module as 
+C             terminator if it is present.
+C  v49.28   - 08/24/2010 - jgf - Declared variables in netcdf module as
 C             private if the underlying type declaration was private.
 C  v49.27   - 08/15/2010 - jgf - Fixes to storage of meta data, lat/lon
 C             coordinates for stations and mesh nodes, and station names in
-C             netcdf. 
-C  v49.26   - 08/15/2010 - jgf - Fixes to netcdf so it is now capable of 
+C             netcdf.
+C  v49.26   - 08/15/2010 - jgf - Fixes to netcdf so it is now capable of
 C             writing all data to the eight main output files in serial.
 C ------------------------------------------------------------------------
 C   r501 | stanaka | 2010-08-11 10:20:22 -0400 (Wed, 11 Aug 2010) | 1 line
@@ -680,23 +700,23 @@ C             called to finalize MPI environment.
 C             (jgf: let's call this v49.25.)
 C  v49.24   - 08/10/2010 - jgf - Fixed issues with the construction of arrays
 C             for writing in netcdf files. Data in the reorganized module were
-C             not being copied correctly from ADCIRC arrays to netcdf arrays. 
-C  v49.23   - 08/06/2010 - jgf - Fixes to reorganized NetCDF module. 
+C             not being copied correctly from ADCIRC arrays to netcdf arrays.
+C  v49.23   - 08/06/2010 - jgf - Fixes to reorganized NetCDF module.
 C             Files now initialize properly, but there are still issues with
 C             writing actual data.
 C  v49.22   - 08/06/2010 - jgf - Commented out DEBUG statements in sizes.F
 C             (related to command line option processing) and read_input.F
 C             (related to opening files fort.14, fort.15, and fort.16).
-C  v49.21   - jgf - Merged the subdomainhotstart branch into the trunk, 
+C  v49.21   - jgf - Merged the subdomainhotstart branch into the trunk,
 C             which included a massive reorganization of the netcdf module
 C             for greater flexibility. The subdomainhotstart branch included
 C             the following changes:
-C  v49.17.04  08/04/2010 - jgf - Fourth set of changes for netcdf. 
+C  v49.17.04  08/04/2010 - jgf - Fourth set of changes for netcdf.
 C  v49.17.03  07/29/2010 - jgf - Third set of changes for netcdf.
 C  v49.17.03  07/27/2010 - jgf - Second set of changes for netcdf.
-C  v49.17.02  07/23/2010 - jgf - First set of changes for working through 
-C             netcdf issues. 
-C  v49.17.01  07/14/2010 - jgf - Added an extra command line option -S to 
+C  v49.17.02  07/23/2010 - jgf - First set of changes for working through
+C             netcdf issues.
+C  v49.17.01  07/14/2010 - jgf - Added an extra command line option -S to
 C             write subdomain hotstart files during a run where fulldomain
 C             hotstart files are specified.
 C------------------------------------------------------------------------
@@ -729,30 +749,30 @@ C             and adding spliting output file option. For safety outputting,
 C             this round robin outputting works only with spliting option. If
 C             you want to use the writer cores with this option, you should use
 C             '-Ws' option instead of original writer cores option '-W'.
-C             (jgf: let's call this v49.19). 
+C             (jgf: let's call this v49.19).
 C ------------------------------------------------------------------------
 C   r487 | ndill | 2010-07-07 11:10:40 -0400 (Wed, 07 Jul 2010) | 1 line
 C             Changed paths:
 C             M /adcirc/trunk/wind/aswip_1.0.3.F
 C             fixed format for reading in atcf when abs(longitude) > 100
-C             (jgf: let's call this v49.18). 
+C             (jgf: let's call this v49.18).
 C ------------------------------------------------------------------------
 C  v49.17   - 06/28/2010 - jgf - Fixed a bug in hotlocalize where IM values of
-C             greater than 10 triggered loading of 3D hotstart info. 
+C             greater than 10 triggered loading of 3D hotstart info.
 C  v49.16   - 06/18/2010 - tcm -- Implemented pressure ramping differently,
 C             as per Rick Luettich's suggestion:
 C             We now set a background pressure at 1013 mb, then compute
 C             the difference between the applied pressure and the
 C             background pressure.  Then apply the meterological ramp to
 C             that difference and add it back to the background pressure.
-C             Fixed a couple of typos in hstart.F where RampMete was 
+C             Fixed a couple of typos in hstart.F where RampMete was
 C             used instead of RampMete2. This fix, also fixes the problem
 C             with the prmin for cold-started runs.
 C  v49.15   - 06/16/10 - tcm Expanded the functionality of store63 and fixed
 C             a bug in that same routine.  store63 could now be used in
 C             place of storeOne.
-C  v49.14   - 06/04/10 - tcm Fixed a bug in write_output.F related to 
-C             globalizing NOFF (an elemental quantity) for parallel jobs 
+C  v49.14   - 06/04/10 - tcm Fixed a bug in write_output.F related to
+C             globalizing NOFF (an elemental quantity) for parallel jobs
 C             which caused hotstart runs to behave different than coldstart.
 C             This bug was first worked on in v48.4638 and v48.4642.
 C  v49.13   - 04/16/10 - jgf - Commented out debugging statements in adcprep.F,
@@ -760,8 +780,8 @@ C             prep.F, and read_global.F.
 C  v49.12   - 04/16/10 - jgf - Commented out debugging statement in adcprep.F.
 C  v49.11   - 03/23/10 - rjw - r431 -Changed KSlip formula in vsmy.F to use
 C             q(n,1) for bottom velocity assuming that it occurs at height
-C             delta z off the bed, where delta z is thickness of bottom 
-C             vertical layer 
+C             delta z off the bed, where delta z is thickness of bottom
+C             vertical layer
 C  v49.10   - 03/17/10 - jgf - r424 -Changed WindDragLimit back to 0.0035
 C             from 0.0020 in preparation for merge back to trunk.
 C             r419 | cdietrich | 2010-03-09
@@ -795,7 +815,7 @@ C             r391 | cdietrich | 2010-01-20
 C             Implement coupling of bottom friction from ADCIRC to SWAN.
 C             Our Manning's n values are used to compute a physical
 C             roughness length, which is passed to SWAN and used with its
-C             Madsen formulation.  Now bottom friction in SWAN varies 
+C             Madsen formulation.  Now bottom friction in SWAN varies
 C             spatially and is tied to the same roughness information used
 C             by ADCIRC.
 C             r390 | cdietrich | 2010-01-20
@@ -811,7 +831,7 @@ C             Updating SWAN compiler flags for the ERDC Sapphire machine.
 C             r373 | cdietrich | 2010-01-06
 C             Removed SWAN's check for skinny elements.
 C             r366 | cdietrich | 2009-12-16
-C             Committing changes related to the wave-modified friction.  
+C             Committing changes related to the wave-modified friction.
 C             Now the Manning n inside ADCIRC is increased in regions with
 C             heavy wave breaking in SWAN.  The wave-modified friction is
 C             activated with an extra CSWANFRIC compiler flag.
@@ -821,48 +841,48 @@ C             r327 | cdietrich | 2009-10-19
 C             Committing ADCIRC half of coupling changes to repository.
 C             r322 | cdietrich | 2009-10-13
 C             Creating new branch for coupling to the unstructured SWAN.
-C  v49.09     -  03/17/10 - jgf - Removed stray cr from line endings in 
+C  v49.09     -  03/17/10 - jgf - Removed stray cr from line endings in
 C                makefile.
 C  v49.08     -  03/08/10 - kmd - merged 3D_kmd branch into trunk
-C             -  02/22/10 - kmd - modified the station output for the 
-C                3D density file (fort.41) and updated the 2D compact 
+C             -  02/22/10 - kmd - modified the station output for the
+C                3D density file (fort.41) and updated the 2D compact
 C                output for fort.63, fort.64, fort.73 and fort.74
-C             -  01/19/10 - kmd - updates to code for the spherical 
-C                factors in 3D and some of the output for 3D 
-C               r368  |  kdresback  |  2009-12-22 
-C                created a branch for 3D baroclinic changes in this 
+C             -  01/19/10 - kmd - updates to code for the spherical
+C                factors in 3D and some of the output for 3D
+C               r368  |  kdresback  |  2009-12-22
+C                created a branch for 3D baroclinic changes in this
 C                version of the code (v49) - merged my 3D_baroclinic
 C                branch with v49.06 that contained updates by rjw.
 C               r332  |  kdresback  |  2009-10-22
 C                updates to the messenger.F file for bug
 C               r323  |  kdresback  |  2009-10-13
 C                created initial branch for baroclinic code using v48
-C                of the code. This branch contains major updates 
+C                of the code. This branch contains major updates
 C                to the transport.F, vsmy.F, hstart.F and introduces
 C                a new subroutine for initial conditions (init_cond.F).
 C  v49.07     - 02/04/10 - jgf - Added entry for Cray-XT5 to
 C               cmplrflags.mk.
-C  v49.06     - 11/25/09 - rjw - merged 3D_rjw branch into trunk 
+C  v49.06     - 11/25/09 - rjw - merged 3D_rjw branch into trunk
 C             - 10/30/09 - rjw - modifed turbulent lenght scale for newly wet
-C               nodes and fixed bug in post processing fort.43 files and 
-C               commented out call to massbal3D  
-C             - 10/06/09 - rjw - Created a branch for 3D changes and merged 
-C               previous changes back into this branch to be debugged and 
+C               nodes and fixed bug in post processing fort.43 files and
+C               commented out call to massbal3D
+C             - 10/06/09 - rjw - Created a branch for 3D changes and merged
+C               previous changes back into this branch to be debugged and
 C               then remerged into the trunk
-C               r285 | rweaver | 2009-09-01 12:31:04 -0400 (Tue, 01 Sep 2009) 
+C               r285 | rweaver | 2009-09-01 12:31:04 -0400 (Tue, 01 Sep 2009)
 C               modified vsmy.F and fixed bug in vsmy.F
-C               r208 | rweaver | 2009-06-18 16:53:47 -0400 (Thu, 18 Jun 2009) 
+C               r208 | rweaver | 2009-06-18 16:53:47 -0400 (Thu, 18 Jun 2009)
 C               fix bug in Holland wind NWS=8 computation of translational velocity
-C               r178 | rweaver | 2009-04-15 11:09:31 -0400 (Wed, 15 Apr 2009) 
+C               r178 | rweaver | 2009-04-15 11:09:31 -0400 (Wed, 15 Apr 2009)
 C               fixed format statements in post.f
-C               r136 | rweaver | 2009-03-06 10:47:47 -0500 (Fri, 06 Mar 2009) 
-C               Commit changes in src and prep to 3D turbulent calculations 
+C               r136 | rweaver | 2009-03-06 10:47:47 -0500 (Fri, 06 Mar 2009)
+C               Commit changes in src and prep to 3D turbulent calculations
 C  v49.05     - 11/24/09 - tcm - Renamed reserved words (count became kount,
 C                  index became indx, int became in2t and sum became summ).
 C                  Index in particular was being used as a user defined integer
-C                  and the intrinsic function in the same routine. 
+C                  and the intrinsic function in the same routine.
 C  v49.04     - 11/24/09 - tcm - Fixed a bug with type NWS=3 and NWS=6 winds
-C                in prep.F by removing them from the adcprep process and 
+C                in prep.F by removing them from the adcprep process and
 C                instead of accessing local copies of the global wind file,
 C                ADCIRC/PADCIRC now access the global wind file directly which
 C                must now be in the global input directory.
@@ -883,7 +903,7 @@ C                conflicts.
 C  v49.00     - 09/29/09 - jgf - Incremented version number to v49.00 to
 C               kick off the development of the next version of ADCIRC.
 C  v48.4642   - 09/18/09 - jgf - Changed syntax for correcting NOFF in
-C               write_output.F, since g95 choked on the original syntax. 
+C               write_output.F, since g95 choked on the original syntax.
 C               Also fixed several bugs related to writing output
 C               (particularly hotstart output) to subdomain files during
 C               parallel execution.
@@ -891,30 +911,30 @@ C  v48.4641   - 09/09/09 - jgf - Fixed a potential issue in globalio.F where
 C               the fortran intrinsic function 'size' was used as a variable
 C               name in several older subroutines; replaced these instances
 C               with the variable name 'size_this'.
-C  v48.4640   - 09/04/09 - rjw - Changed aswip to persist Cent.press if a 
+C  v48.4640   - 09/04/09 - rjw - Changed aswip to persist Cent.press if a
 C               zero valued for the central pressure is given
-C  v48.4639   - 09/02/09 - jgf - Added feature that will read in min/max 
+C  v48.4639   - 09/02/09 - jgf - Added feature that will read in min/max
 C               files on a hotstart to preserve the full record of min and
 C               max values; set NWS8 to choke if Rmax or Cp are set to zero
-C               on any line of fort.22, including OFCL ("forecast"). 
+C               on any line of fort.22, including OFCL ("forecast").
 C  v48.4638   - 09/02/09 - tcm - Fixed a bug in writing hot start values for
 C               NOFF which could have the wrong values after globalizing
 C               because there are no rules for which processor owns an
 C               element and Noff is an elemental value. The way around is to
 C               take the minimum of (Noff, 1) as NOFF is supposed to be
 C               either 0 or 1.
-C  v48.4637   - 08/31/09 - rjw - Fixed out of bounds array in aswip 
-C  v48.4636   - 08/24/09 - rjw - Fixed Bug in NWS 19 code (first lon not 
+C  v48.4637   - 08/31/09 - rjw - Fixed out of bounds array in aswip
+C  v48.4636   - 08/24/09 - rjw - Fixed Bug in NWS 19 code (first lon not
 C               properly converted)
 C  v48.4635   - 08/14/09 - tcm - Fixed bug in call to neighb within read_input
 C               updated the adcirc makefiles for a pc
 C  v48.4634   - 08/13/09 - tcm - Fixed bug in globalio where multiple variables
 C               where repeated in use module line.
-C  v48.4633   - 08/05/09 - rjw - Fixed Bug in translation direction in ASWIP output 
-C  v48.4632   - 08/05/09 - rjw - Fixed formatting error in ASWIP output 
+C  v48.4633   - 08/05/09 - rjw - Fixed Bug in translation direction in ASWIP output
+C  v48.4632   - 08/05/09 - rjw - Fixed formatting error in ASWIP output
 C               to make it compatible with wind.F and should still be
 C               compatible with utilities that parse ATCF output.
-C  v48.4631   - 07/30/09 - rjw - Modified aswip set background pressure to 
+C  v48.4631   - 07/30/09 - rjw - Modified aswip set background pressure to
 C               hardwired value of 1013
 C  v48.4630   - 07/28/09 - jgf - Modified aswip output to include commas
 C               to make it compatible with utilities that parse ATCF output.
@@ -928,16 +948,16 @@ C               3D or harmonic output is requested, as well as the case where
 C               execution begins as a hotstart.
 C  v48.4627   - 07/27/09 - jgf - Created METONLY logical variable: if only
 C               met output is requested, ADCIRC will skip solution of the
-C               GWCE and the momentum equations. 
+C               GWCE and the momentum equations.
 C  v48.4626   - 07/27/09 - jgf - fixed bug in presizes.F if fort.15 file is
-C               not found. 
+C               not found.
 C  v48.4625   - 07/22/09 - rjw - fixed bugs in NWS19 code in wind.F and aswip.F
 C  v48.4624   - 07/22/09 - rjw - fixed bugs in NWS19 code in wind.F and aswip.F
-C  v48.4623   - 07/22/09 - rjw - fixed confusing lines and file names in 
-C               ASymmetric WInd Preprocessing (ASWIP) program 
-C  v48.4622   - 07/22/09 - rjw - Added NWS=19 Asymmetric Holland v2.0 
+C  v48.4623   - 07/22/09 - rjw - fixed confusing lines and file names in
+C               ASymmetric WInd Preprocessing (ASWIP) program
+C  v48.4622   - 07/22/09 - rjw - Added NWS=19 Asymmetric Holland v2.0
 C               to src/ files
-C  v48.4621   - 07/22/09 - rjw - Added NWS=19 Asymmetric Holland v2.0 
+C  v48.4621   - 07/22/09 - rjw - Added NWS=19 Asymmetric Holland v2.0
 C               to prep/ files
 C  v48.4620   - 07/21/09 - jgf - Modified makefile so that aswip executable
 C               may be built with 'make aswip'.
@@ -956,36 +976,36 @@ C               bug in translational velocity to account for direction.
 C  v48.4615    -06/02/09 - rjw - Removed erroneous call to
 C               COMPUTE_RESELEM from read_input.F.
 C  v48.4614   - 05/27/09 - mcf - Fixed implementation of Rick Luettich
-C               V/Vmax tapering formulation (as in NWS=8) 
+C               V/Vmax tapering formulation (as in NWS=8)
 C               for future experimentation - not activated
 C  v48.4613   - 05/27/09 - jgf - Commented out debug lines in
 C               write_output.F and globalio.F that were filling up
 C               fort.16.
-C  v48.4612   - 05/26/09 - rjw - Fix format statement in postprocess for 3D. 
+C  v48.4612   - 05/26/09 - rjw - Fix format statement in postprocess for 3D.
 C  v48.4611   - 05/22/09 - mcf - Reverted damping of translational velocity
 C               back to the original formulation
-C  v48.4610   - 05/22/09 - jgf - Changed air density back to 0.001293 in 
+C  v48.4610   - 05/22/09 - jgf - Changed air density back to 0.001293 in
 C               stress calc for NWS8 and NWS9 in timestep.F.
-C  v48.4609   - 05/21/09 - mcf - Fixed seg-fault when writing netcdf hotstart 
-C               files, incorporated fix in the define portion of netcdfio 
+C  v48.4609   - 05/21/09 - mcf - Fixed seg-fault when writing netcdf hotstart
+C               files, incorporated fix in the define portion of netcdfio
 C               for grids with no specified boundary forcing segments or nodes
 C  v48.4608   - 05/19/09 - mcf - Implemented an old bug fix: units conversion
 C               in asymmetric wind code (NWS=9)
 C  v48.4607   - 05/18/09 - jgf - Fixes to get adcprep and adcirc to compile
 C               and link with netCDF on Jade (Cray-XT4) at ERDC.
-C  v48.4606   - 05/13/09 - rjw - modify makefile to compile adcprep using 
+C  v48.4606   - 05/13/09 - rjw - modify makefile to compile adcprep using
 C               version.F
-C  v48.4605   - 05/12/09 - rjw - modify asymmetric code to use damping of 
-C               translational velocity based on ratio of V:Vmax (pass Vmax 
-C               from wind.F into vortex.F subroutine uvp), and set (in vortex.F) 
+C  v48.4605   - 05/12/09 - rjw - modify asymmetric code to use damping of
+C               translational velocity based on ratio of V:Vmax (pass Vmax
+C               from wind.F into vortex.F subroutine uvp), and set (in vortex.F)
 C               velocities at center of vortex (dist < 1m) to zero.
 C  v48.4604   - 05/08/09 - jgf - Fixed typo in version.F
-C  v48.4603  -  05/08/09 - rjw-  updated the distance calculation formula 
-C               in Holland Model (NWS=8) to more accuarately calculate 
+C  v48.4603  -  05/08/09 - rjw-  updated the distance calculation formula
+C               in Holland Model (NWS=8) to more accuarately calculate
 C               distance along a shpere, and modified the coriolis formula
-C               to compute a spatially varying coriolis term also for the 
+C               to compute a spatially varying coriolis term also for the
 C               Symmetric Holland model (NWS=8)
-C  v48.4602   - 05/08/09 - jgf - Changed air density for symmetric and 
+C  v48.4602   - 05/08/09 - jgf - Changed air density for symmetric and
 C               asymmetric vortex models (NWS=8 and 9) to 1.15 kg/m^3,
 C               for Holland B calculation as well as conversion to wind
 C               stress. Changed asymmetric far field wind damping so
@@ -998,35 +1018,35 @@ C  v48.46     - 02/26/09 - jgf - Corrected backloaded tau0 averaging
 C               formula: now just one time level.
 C  v48.45     - 02/26/09 - jgf - Fixed backloaded tau0 formula by
 C               removing an extra alpha factor from tau0(t-3) term.
-C  v48.44     - 02/02/09 - mcf - fixed time unlimited index and time variable  
-C               in the fort.63.nc output file for hotstart cases in netcdfio 
+C  v48.44     - 02/02/09 - mcf - fixed time unlimited index and time variable
+C               in the fort.63.nc output file for hotstart cases in netcdfio
 C               module
-C  v48.43     - 01/29/09 - rjw - modified fixes to massbal.F (check for 
+C  v48.43     - 01/29/09 - rjw - modified fixes to massbal.F (check for
 C               ICS status) and vsmy.F (initialized turbulent length scale to
-C               lmin= 0.001 in cstart.F (COLDSTART_3D)) and reformatted 
-C               declaration statements in global_3dvs.F. 
+C               lmin= 0.001 in cstart.F (COLDSTART_3D)) and reformatted
+C               declaration statements in global_3dvs.F.
 C  v48.42     - 01/28/09 - jgf - Added two new time averaging options for tau0
 C               ... activated by tau0=-6.x or 7.x in fort.15.
 C  v48.41     - 12/11/08 - rjw - fix massbal.F COMPUTE_RESELEM subroutine
-C               In order to compare the global to local locations 
+C               In order to compare the global to local locations
 C               Global x and y need to be in converted units not in Lat and Lon
 C               use subroutine CPP to make conversion
 C  v48.40     - 12/11/08 - rjw - fix version number in version.F
-C  v48.39     - 12/11/08 - rjw - applied bug fixes in cstart.F and hstart.F 
+C  v48.39     - 12/11/08 - rjw - applied bug fixes in cstart.F and hstart.F
 C               format statement, changed default il value to 2 in vsmy.F
-C  v48.38     - 12/10/08 - jgf - Added #ifdef HAVE_MPI_MOD around mpif.h 
+C  v48.38     - 12/10/08 - jgf - Added #ifdef HAVE_MPI_MOD around mpif.h
 C               in massbal.F to fix failed compile on Cray-XT3 (sapphire).
 C  v48.37     - 12/10/08 - mcf - modified netcdfio metadata
 C  v48.36     - 12/03/08 - jgf - Fixed a bug in PREP22 of adcprep,
 C               combined CASE(3,6) into CASE(8,9) b/c the approach of
 C               using the shell to copy files in CASE(3,6) had been
 C               commented out.
-C  v48.35     - 12/03/08 - jgf - Fixed a bug in adcprep that was causing 
+C  v48.35     - 12/03/08 - jgf - Fixed a bug in adcprep that was causing
 C               unprintable characters to appear in the names of
 C               subdomain fort.22 files on the IBM p5 platform.
 C  v48.34     - 12/02/08 - jgf - Fixed a bug in adcprep to look for
 C               tau0min and tau0max values in fort.15 if tau0 is less
-C               than -5.0 AND greater than -6.0. 
+C               than -5.0 AND greater than -6.0.
 C  v48.33     - 11/25/08 - jgf - Added a check for negative central pressure
 C               deficit in Symmetric Holland code (NWS=8). Also fixed a bug
 C               introduced in the merge of Seizo's fix to internal barrier
@@ -1034,18 +1054,18 @@ C               boundary handling in v48.32. Reimplemented tau0base
 C               formulation  when TAU0=-3.0, moved fulldomain time
 C               varying TAU0 option to TAU0=-5.0 ... if tau0 output is
 C               desired, the corresponding options are -3.1 or -5.1.
-C  v48.32     - 09/16/08 - jgf - Merged fix from C.Mattocks to include 
+C  v48.32     - 09/16/08 - jgf - Merged fix from C.Mattocks to include
 C               directives in metis, e.g., <metis.h> to "metis.h".
-C               Fixed HollandGet so that lat is read in as four digits, thus 
-C               allowing storm locations west of 99.9W lon; integrated Seizo 
+C               Fixed HollandGet so that lat is read in as four digits, thus
+C               allowing storm locations west of 99.9W lon; integrated Seizo
 C               fixes to decomp.F (mpi communication table) and in timestep.F
-C               (wet/dry checks along internal barriers). 
-C  v48.31     - 09/16/08 - mcf - added hotstart file format identifiers in 
-C               from version.F, modified netCDF metadata, added time counters 
-C               and record numbers for hotstart files, fixed netCDF hotstart 
+C               (wet/dry checks along internal barriers).
+C  v48.31     - 09/16/08 - mcf - added hotstart file format identifiers in
+C               from version.F, modified netCDF metadata, added time counters
+C               and record numbers for hotstart files, fixed netCDF hotstart
 C               flow for preprocessor, adcirc and padcirc.
 C  v48.30     - 08/29/08 - rjw - merged CD's mods for 3D wetting and Drying
-C  v48.29     - 08/07/08 - mcf - modified starting character counter in parser 
+C  v48.29     - 08/07/08 - mcf - modified starting character counter in parser
 C  v48.28     - 08/01/08 - mcf - included File Format Version parameters
 C              in netCDF hotstart files and changed FileFmtMinor to 2 to account
 C               for the removal of an extra empty record in hotstart files
@@ -1055,14 +1075,14 @@ C  v48.26     - 07/30/08 - mcf - corrected noff range value when writing netCDF
 C               hotstart files (range 0 to 1)
 C  v48.25     - 07/30/08 - mcf - corrected memory/compiling/running issues
 C               with arrays in the binary and netCDF hotstart capability
-C  v48.24     - 07/25/08 - mcf - Added code in the hstart.F file to check if 
-C               hotstart binary file exists in subdomains for netcdf hotstart 
+C  v48.24     - 07/25/08 - mcf - Added code in the hstart.F file to check if
+C               hotstart binary file exists in subdomains for netcdf hotstart
 C               input file option when running the parallel version.
-C  v48.23     - 07/25/07 - jgf - Fixed hotstart file incrementation in 
+C  v48.23     - 07/25/07 - jgf - Fixed hotstart file incrementation in
 C               write_output.F, prep.F, hstart.F and harm.F. Updated hot2asc.F
 C               utility with fixed file incrementation. Restored machdep.F.
 C               Updated cmplrflags.mk for apple darwin (removed -DIBM).
-C  v48.22     - 07/24/07 - jgf - Fixed hotstart file incrementation in 
+C  v48.22     - 07/24/07 - jgf - Fixed hotstart file incrementation in
 C               write_output.F and hstart.F.
 C  v48.21     - 07/24/08 - mcf - Added code in the hstart.F file to only read
 C               netCDF hotstart files when running the serial version.
@@ -1070,7 +1090,7 @@ C  v48.20     - 07/24/08 - mcf - Added code in the preprocessor to initialize
 C               netCDF hotstart files.
 C  v48.19     - 07/22/08 - mcf - Added code to assign the globalized
 C               hotstart variables to netCDF variables only in processor 0.
-C  v48.18     - 07/09/08 - mcf - Added code to adcprep and adcirc to 
+C  v48.18     - 07/09/08 - mcf - Added code to adcprep and adcirc to
 C               initialize and write netCDF hotstart files.
 C  v48.17     - 06/09/08 - jgf - Added code to adcprep to decompose UnSWAN
 C               boundaries and distribute the UnSWAN input file to each of the
@@ -1078,32 +1098,32 @@ C               subdomain directories.
 C  v48.16     - 06/05/08 - jgf - Merged additional changes from cf's latest
 C               (from adc48_15_4).
 C  v48.11     - 03/14/08 - jgf - Added cf's latest write_output.F, corrected
-C               Chezy conversion to quadratic in nodalattr.F, added 
+C               Chezy conversion to quadratic in nodalattr.F, added
 C               info messages to cmplrflags.mk and makefile, corrected issues
-C               to allow use of g95 compiler. 
+C               to allow use of g95 compiler.
 C  v48.10     - 03/13/08 - jgf - Added cf's latest prep.F, read_global.F,
 C               global.F, and netcdfio.F to enable boundaries and station
-C               names in the metadata and to fix bugs. 
-C  v48.09     - 02/25/08 - jgf - Added cf's latest netcdfio.F and 
+C               names in the metadata and to fix bugs.
+C  v48.09     - 02/25/08 - jgf - Added cf's latest netcdfio.F and
 C               write_output.F and synchronized arguments. Also added
 C               ibtypenc variable (and allocation). Fixed bug in makefile
 C               that prevented compilation of adcprep without netcdf.
-C  v48.08     - 02/19/08 - jgf - Removed trailing space from "pgi " in 
-C               cmplrflags.mk. Removed p15 and other utilities from 'all' 
-C               target in makefile. Corrected bug in FEGRIDS sub in vsmy.F 
-C               where variables were declared as REAL rather than REAL(SZ). 
+C  v48.08     - 02/19/08 - jgf - Removed trailing space from "pgi " in
+C               cmplrflags.mk. Removed p15 and other utilities from 'all'
+C               target in makefile. Corrected bug in FEGRIDS sub in vsmy.F
+C               where variables were declared as REAL rather than REAL(SZ).
 C               Also made all constants into doubles in FEGRIDS sub.
 C               In lsq.F, changed rinv to intent(inout) on line 538 to relieve
 C               compiler issue on certain platforms. Added PREPNETCDF
 C               subroutine to adcprep to initialize netcdf output files for
-C               parallel runs. Updated makefile to reflect the linking of 
+C               parallel runs. Updated makefile to reflect the linking of
 C               the netcdf module with adcprep.
 C  v48.07     - 02/07/08 - jgf - Merged changes from mcf for netCDF.
 C  v48.04     - 11/19/07 - jgf - Fixed bug that was preventing NetCDF metadata
 C               from being written to subdomains. Added ABS() to station
 C               mappings when reading the fort.80 file in adcpost. Added
 C               inverted barometer boundary condition (commented out pending
-C               successful testing). 
+C               successful testing).
 C  v48.03     - 10/19/07 - jgf - Created write_output.F, rearranged NetCDF
 C               to use globalio. Merged kmd's 3D hotstart decomposition
 C               in prep.F.
@@ -1114,22 +1134,22 @@ C               variable tau0 to be read even if not needed. Fixed bug in
 C               post52 that was writing NSTAE instead of NSTAV. Fixed missing
 C               comma in FORMAT statement in globalio.F. Fixed missing right
 C               paren in timestep.F.
-C  v48.00     - 10/02/07 - jgf - Added ONLY keyword to USE NETCDF in 
+C  v48.00     - 10/02/07 - jgf - Added ONLY keyword to USE NETCDF in
 C               timestep.F to enable it to compile without conflicts.
 C  v47.13     - 09/28/07 - jgf - Fixed two typo bugs in post.F for binary
 C               fort.64 and fort.74 files. Fixed 3D stations bug that gave
 C               incorrect output for stations inside ghost elements. Fixed
 C               mixup between NOUTGE=3 and NOUTGE=4.
-C  v47.12       09/05/07 - jgf - Merged code for netcdf from cf. 
+C  v47.12       09/05/07 - jgf - Merged code for netcdf from cf.
 C  v47.11     - 09/03/07 - jgf - Added code to read in limits of time varying
 C               tau0 directly from fort.15 file.
-C  v47.10     - 08/28/07 - jgf - Merged code back in to create fort.80 file 
-C               for use in post processing 3D and harmonic analysis files. 
+C  v47.10     - 08/28/07 - jgf - Merged code back in to create fort.80 file
+C               for use in post processing 3D and harmonic analysis files.
 C               Merged adcpost back in.
 C  v47.09     - 07/26/07 - jgf - Fixed two bugs with new nodal attribute that
 C               were causing SIGSEGV.
-C  v47.08     - 07/24/07 - jgf - Added new nodal attribute for floor and 
-C               ceiling of variable tau0. Made "fully populated" output format 
+C  v47.08     - 07/24/07 - jgf - Added new nodal attribute for floor and
+C               ceiling of variable tau0. Made "fully populated" output format
 C               standard again for fort.63, fort.64, etc. Made "sparse" output
 C               format selectable by setting NOUTGE(etc)=3.
 C  v47.07     - 07/23/07 - jgf - Added feature to inflate to create chunked
@@ -1140,7 +1160,7 @@ C               for time varying tau0.
 C  v47.05     - 07/15/07 - jgf - Enhanced inflate.F so that it count the
 C               number of datasets in the file and place the correct number
 C               at the top in NDSETS. Updated 3D header and store subroutines
-C               in globalio. 
+C               in globalio.
 C  v47.04     - 07/05/07 - jgf - Merged latest asymmetric vortex wind model,
 C               made CF from fort.15 into floor of equivalent quadratic
 C               bottom drag when Manning's N is used, added hstime utility
@@ -1152,9 +1172,9 @@ C               only uses one open file at a time to avoid exceeding the
 C               Fortran compiler limitation on simultaneously open files;
 C               changed to unformatted read of nodal attribute files to
 C               make them more tolerant of leading spaces and end-of-line
-C               characters. 
+C               characters.
 C  v47.01     - 06/21/07 - jgf - Applied the fixes from the stable version
-C               of ADCIRC to v46.57. 
+C               of ADCIRC to v46.57.
 C  v47.00     - 06/04/07 - jgf - Applied the changes from the stable ADCIRC
 C               series v46.32jgfxx to version 46.52 as follows:
 C  v46.32jgf12- 02/20/07 - jgf - Fixed bug in adcpost where format string was
@@ -1191,7 +1211,7 @@ C               stwave domains overlap. (It used to take the value of the     *
 C               domain of the first appearance in a fort.23 file.)            *
 C               This requires more memory,                                    *
 C             - SB_WETDRY compilation flag to enable w/d fixes that had been  *
-C               implemented since v46.48 was intoduced.                       * 
+C               implemented since v46.48 was intoduced.                       *
 C               (NOT enabled by default.)                                     *
 C             - Made torelant to leading white spaces in attribute names      *
 C               in fort.13.                                                   *
@@ -1601,6 +1621,6 @@ C                                                                             *
 C  8/7/2000 modfied jcg_with_blas -- fixed bug in itjcg for single cpu case   *
 C  8/7/2000 modfied wetting and drying section to fix bug and optimize        *
 C  11/1/2000 added init of TIP2 in hstart and fixed Sun makefile for Jesse    *
-C 
+C
 C******************************************************************************
 

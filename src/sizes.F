@@ -7,7 +7,7 @@ C
       MODULE SIZES
       IMPLICIT NONE
 C
-C...SET NUMBER OF BYTES "SZ" IN REAL(SZ) DECLARATIONS       
+C...SET NUMBER OF BYTES "SZ" IN REAL(SZ) DECLARATIONS
 C...SET "NBYTE" FOR PROCESSING INPUT DATA RECORD LENGTH
 
 #ifdef REAL4
@@ -23,7 +23,7 @@ C...SET MAX OF DIGITS OF PRECISION "NPREC" THE GRID CAN BE EXPECTED TO HAVE
 C...NOTE: IF THE GRID WAS BUILT ON A 32 BIT COMPUTER, IT SHOULD BE
 C   ACCURATE TO ABOUT 7 DIGITS.  THUS, IF THE NODAL SPACING REQUIRES MORE
 C   THAN 5 DIGITS OF PRECISION, THE MODEL RESULTS MAY NOT BE TRUSTWORTHY.
- 
+
       INTEGER, PARAMETER ::  NPREC=7
 C
       INTEGER ::  MNE,MNP,MNEI,MNOPE,MNETA,MNBOU,MNVEL,
@@ -51,7 +51,7 @@ C
       CHARACTER(256),  SAVE :: ROOTDIR
       CHARACTER(2048), TARGET, SAVE :: INPUTDIR, GLOBALDIR, LOCALDIR
       CHARACTER(2048), SAVE :: GBLINPUTDIR, HOTSTARTDIR
-      
+
 C---------------------end of data declarations--------------------------------C
 
 
@@ -61,10 +61,10 @@ C---------------------end of data declarations--------------------------------C
       SUBROUTINE MAKE_DIRNAME()
       IMPLICIT NONE
       INTEGER :: LNAME, IARGC, ARGCOUNT, I, iprefix
-      CHARACTER(2048) :: CMDLINEARG 
+      CHARACTER(2048) :: CMDLINEARG
       CHARACTER(8)    :: PREFIX(2) = (/ '/PE0000 ', '/DOM0000' /)
       logical         :: fileFound
-      
+
       INPUTDIR  = ""
       GLOBALDIR = ""
       LOCALDIR  = ""
@@ -88,7 +88,7 @@ Cobell 110518: Add compiler flag for local hot start.
          WRITE_LOCAL_HOT_START_FILES = .TRUE.
          READ_LOCAL_HOT_START_FILES = .TRUE.
       ENDIF
-  
+
       if (ARGCOUNT > 0) then
 C         write(*,*) "DEBUG: ",myProc,
 C     &       ": Processing command line options."
@@ -199,15 +199,21 @@ C
 C... tcm v49.67 -- additions for Windows based PC compilations
 #ifdef WINDOWS
       call system('mkdir '//trim(LOCALDIR))
-#else      
+#else
       call MAKEDIR(trim(LOCALDIR))
-#endif      
+#endif
 
 #else
       WRITE(LOCALDIR,'(A)') TRIM(ROOTDIR)
 #endif
       if (WRITE_LOCAL_FILES) GLOBALDIR = LOCALDIR
       HOTSTARTDIR = LOCALDIR
+C...
+C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
+C...
+      OPEN(16,FILE=TRIM(LOCALDIR)//'/'//'fort.16',ACTION='WRITE',
+     &     STATUS='REPLACE')
+
 C
 C     jgf49.17.01 Summarize and log results.
       if (myProc.eq.0) then
@@ -222,9 +228,9 @@ C     jgf49.17.01 Summarize and log results.
          endif
          if ((WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)
      &                            .AND.(MNPROC.GT.1)) then
-            write(*,*) 
+            write(*,*)
      &         "INFO: ADCIRC will write subdomain hotstart files."
-         endif 
+         endif
       endif
       RETURN
       END SUBROUTINE MAKE_DIRNAME
@@ -232,7 +238,7 @@ C     jgf49.17.01 Summarize and log results.
       SUBROUTINE GET_NUMWRITERS
       IMPLICIT NONE
       INTEGER :: IARGC, ARGCOUNT, I
-      CHARACTER(2048) :: CMDLINEARG 
+      CHARACTER(2048) :: CMDLINEARG
       ARGCOUNT  = IARGC()
       MNWPROC = 0
       isplit = 0 !st3 100708:split file
