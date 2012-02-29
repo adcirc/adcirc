@@ -613,6 +613,12 @@ C
       logLevelNames(4) = "WARNING"
       logLevelNames(5) = "ERROR"
       sourceNumber = 0
+
+C...
+C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
+C...
+      OPEN(16,FILE='fort.16',ACTION='WRITE', STATUS='REPLACE')
+
 C--------------------------------------------------------------------
       END SUBROUTINE initLogging
 C--------------------------------------------------------------------

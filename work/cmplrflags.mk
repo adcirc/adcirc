@@ -74,11 +74,14 @@ ifeq ($(compiler),g95)
 endif
 #
 # jgf45.12 These flags work on the UNC Topsail Cluster.
+# jgf: The -i-dynamic flag defers the inclusion of the library with 
+# feupdateenv until run time, thus avoiding the error message:
+# "feupdateenv is not implemented and will always fail"
 ifeq ($(compiler),intel)
   PPFC            :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O3 -FI -assume byterecl -132 -xSSE4.2 -assume buffered_io
+  FFLAGS1       :=  $(INCDIRS) -O3 -FI -assume byterecl -132 -i-dynamic -xSSE4.2 -assume buffered_io
   ifeq ($(DEBUG),full)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug -check all -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif

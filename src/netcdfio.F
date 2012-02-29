@@ -882,14 +882,14 @@ C     netcdf4 file format.
          SELECT CASE(lun)
          CASE(61,71)
             iret = nf_def_var_deflate(sta%ncid, sta%station_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
          CASE(62,72)
             iret = nf_def_var_deflate(sta%ncid, sta%u_station_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
             iret = nf_def_var_deflate(sta%ncid, sta%v_station_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
          CASE DEFAULT ! should be unreachable
             CALL allMessage(ERROR,"Invalid file number.")
@@ -1308,14 +1308,14 @@ C     netcdf4 file format.
          SELECT CASE(lun)
          CASE(47,63,73)
             iret = nf_def_var_deflate(dat%ncid, dat%nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
          CASE(64,74)
             iret = nf_def_var_deflate(dat%ncid, dat%u_nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
             iret = nf_def_var_deflate(dat%ncid, dat%v_nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
          CASE DEFAULT ! should be unreachable
             CALL allMessage(ERROR,"Invalid file number.")
@@ -2483,25 +2483,25 @@ C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
       IF (abs(descript1%specifier).eq.5) THEN
          iret = nf_def_var_deflate(sta3D%ncid, sta3D%u_station_data_id,
-     &          0, 1, 2)
+     &          1, 1, 2)
          CALL check_err(iret)
          IF (lun.eq.41) THEN
             IF ((IDEN.eq.2).or.(IDEN.eq.4)) THEN
                iret = nf_def_var_deflate(sta3D%ncid,
-     &                sta3D%v_station_data_id, 0, 1, 2)
+     &                sta3D%v_station_data_id, 1, 1, 2)
                CALL check_err(iret)
             ENDIF
             IF ((IDEN.eq.3).or.(IDEN.eq.4)) THEN
                iret = nf_def_var_deflate(sta3D%ncid,
-     &                sta3D%w_station_data_id, 0, 1, 2)
+     &                sta3D%w_station_data_id, 1, 1, 2)
                CALL check_err(iret)
             ENDIF
          ELSE
             iret = nf_def_var_deflate(sta3D%ncid,
-     &             sta3D%v_station_data_id, 0, 1, 2)
+     &             sta3D%v_station_data_id, 1, 1, 2)
             CALL check_err(iret)
             iret = nf_def_var_deflate(sta3D%ncid,
-     &             sta3D%w_station_data_id, 0, 1, 2)
+     &             sta3D%w_station_data_id, 1, 1, 2)
             CALL check_err(iret)
          ENDIF
       ENDIF
@@ -2872,25 +2872,25 @@ C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
       IF (abs(descript1%specifier).eq.5) THEN
          iret = nf_def_var_deflate(dat%ncid, dat%u_nodal_data_id,
-     &          0, 1, 2)
+     &          1, 1, 2)
          CALL check_err(iret)
          IF (lun.eq.44) THEN
             IF ((IDEN.eq.2).or.(IDEN.eq.4)) THEN
                iret = nf_def_var_deflate(dat%ncid, dat%v_nodal_data_id,
-     &                0, 1, 2)
+     &                1, 1, 2)
                CALL check_err(iret)
             ENDIF
             IF ((IDEN.eq.3).or.(IDEN.eq.4)) THEN
                iret = nf_def_var_deflate(dat%ncid, dat%w_nodal_data_id,
-     &                0, 1, 2)
+     &                1, 1, 2)
                CALL check_err(iret)
             ENDIF
          ELSE
             iret = nf_def_var_deflate(dat%ncid, dat%v_nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
             iret = nf_def_var_deflate(dat%ncid, dat%w_nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
          ENDIF
       ENDIF
@@ -3527,30 +3527,30 @@ C     netcdf4 file format.
      &     (Elev1Descript%specifier.eq.567).or.
      &     (Elev1Descript%specifier.eq.568) ) THEN
          iret = nf_def_var_deflate(hs%ncid, hs%zeta1%nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
          CALL check_err(iret)
          iret = nf_def_var_deflate(hs%ncid, hs%zeta2%nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
          CALL check_err(iret)
          iret = nf_def_var_deflate(hs%ncid, hs%zetad%nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
          CALL check_err(iret)
          iret = nf_def_var_deflate(hs%ncid, hs%vel%u_nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
          CALL check_err(iret)
          iret = nf_def_var_deflate(hs%ncid, hs%vel%v_nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
          CALL check_err(iret)
          IF ((IM.EQ.10).OR.(IMHS.EQ.10)) THEN
             iret = nf_def_var_deflate(hs%ncid, hs%ch1%nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
          ENDIF
          iret = nf_def_var_deflate(hs%ncid, hs%nodecodenc%nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
          CALL check_err(iret)
          iret = nf_def_var_deflate(hs%ncid, hs%noffnc%nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
          CALL check_err(iret)
       ENDIF
 !
@@ -4109,32 +4109,32 @@ C     netcdf4 file format.
      &     (GLOELVDescript%specifier.eq.567).or.
      &     (GLOELVDescript%specifier.eq.568) ) THEN
          iret = nf_def_var_deflate(hs%ncid, hs%ha_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
          CALL check_err(iret)
          IF (NHAGE.ne.0) THEN
             iret = nf_def_var_deflate(hs%ncid,
-     &            hs%gloelv%nodal_data_id, 0, 1, 2)
+     &            hs%gloelv%nodal_data_id, 1, 1, 2)
             CALL check_err(iret)
          ENDIF
          IF (NHAGV.ne.0) THEN
             iret = nf_def_var_deflate(hs%ncid,
-     &            hs%glovellv%u_nodal_data_id, 0, 1, 2)
+     &            hs%glovellv%u_nodal_data_id, 1, 1, 2)
             CALL check_err(iret)
             iret = nf_def_var_deflate(hs%ncid,
-     &            hs%glovellv%v_nodal_data_id, 0, 1, 2)
+     &            hs%glovellv%v_nodal_data_id, 1, 1, 2)
             CALL check_err(iret)
          ENDIF
          IF (NHASE.ne.0) THEN
             iret = nf_def_var_deflate(hs%ncid,
-     &            hs%staelv%station_data_id, 0, 1, 2)
+     &            hs%staelv%station_data_id, 1, 1, 2)
             CALL check_err(iret)
          ENDIF
          IF (NHASV.ne.0) THEN
             iret = nf_def_var_deflate(hs%ncid,
-     &            hs%stavellv%u_station_data_id, 0, 1, 2)
+     &            hs%stavellv%u_station_data_id, 1, 1, 2)
             CALL check_err(iret)
             iret = nf_def_var_deflate(hs%ncid,
-     &            hs%stavellv%v_station_data_id, 0, 1, 2)
+     &            hs%stavellv%v_station_data_id, 1, 1, 2)
             CALL check_err(iret)
          ENDIF
       ENDIF
@@ -4447,24 +4447,24 @@ C     netcdf4 file format.
      &     (ELAVDescript%specifier.eq.568) ) THEN
          IF (NHAGE.ne.0) THEN
             iret = nf_def_var_deflate(hs%ncid,
-     &            hs%elav%nodal_data_id, 0, 1, 2)
+     &            hs%elav%nodal_data_id, 1, 1, 2)
             CALL check_err(iret)
             iret = nf_def_var_deflate(hs%ncid,
-     &            hs%elva%nodal_data_id, 0, 1, 2)
+     &            hs%elva%nodal_data_id, 1, 1, 2)
             CALL check_err(iret)
          ENDIF
          IF (NHAGV.ne.0) THEN
             iret = nf_def_var_deflate(hs%ncid,
-     &            hs%xvelav%nodal_data_id, 0, 1, 2)
+     &            hs%xvelav%nodal_data_id, 1, 1, 2)
             CALL check_err(iret)
             iret = nf_def_var_deflate(hs%ncid,
-     &            hs%xvelva%nodal_data_id, 0, 1, 2)
+     &            hs%xvelva%nodal_data_id, 1, 1, 2)
             CALL check_err(iret)
             iret = nf_def_var_deflate(hs%ncid,
-     &            hs%yvelav%nodal_data_id, 0, 1, 2)
+     &            hs%yvelav%nodal_data_id, 1, 1, 2)
             CALL check_err(iret)
             iret = nf_def_var_deflate(hs%ncid,
-     &            hs%yvelva%nodal_data_id, 0, 1, 2)
+     &            hs%yvelva%nodal_data_id, 1, 1, 2)
             CALL check_err(iret)
          ENDIF
       ENDIF
@@ -4772,52 +4772,52 @@ C     netcdf4 file format.
      &     (netcdf_format.eq.567).or.
      &     (netcdf_format.eq.568) ) THEN
          iret = nf_def_var_deflate(hs%ncid, hs%duu%nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
          CALL check_err(iret)
          iret = nf_def_var_deflate(hs%ncid, hs%dvv%nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
          CALL check_err(iret)
          iret = nf_def_var_deflate(hs%ncid, hs%uu%nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
          CALL check_err(iret)
          iret = nf_def_var_deflate(hs%ncid, hs%vv%nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
          CALL check_err(iret)
          iret = nf_def_var_deflate(hs%ncid, hs%bsx%nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
          CALL check_err(iret)
          iret = nf_def_var_deflate(hs%ncid, hs%bsy%nodal_data_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
          CALL check_err(iret)
          IF (IDEN.eq.1) THEN
             iret = nf_def_var_deflate(hs%ncid,
-     &               hs%density3D%u_nodal_data_id, 0, 1, 2)
+     &               hs%density3D%u_nodal_data_id, 1, 1, 2)
             CALL check_err(iret)
          ENDIF
          IF ((IDEN.eq.2).or.(IDEN.eq.4)) THEN
             iret = nf_def_var_deflate(hs%ncid,
-     &           hs%density3D%v_nodal_data_id, 0, 1, 2)
+     &           hs%density3D%v_nodal_data_id, 1, 1, 2)
             CALL check_err(iret)
          ENDIF
          IF ((IDEN.eq.3).or.(IDEN.eq.4)) THEN
             iret = nf_def_var_deflate(hs%ncid,
-     &           hs%density3D%w_nodal_data_id, 0, 1, 2)
+     &           hs%density3D%w_nodal_data_id, 1, 1, 2)
             CALL check_err(iret)
          ENDIF
          iret = nf_def_var_deflate(hs%ncid,
-     &          hs%velocity3D%u_nodal_data_id, 0, 1, 2)
+     &          hs%velocity3D%u_nodal_data_id, 1, 1, 2)
          CALL check_err(iret)
          iret = nf_def_var_deflate(hs%ncid,
-     &          hs%velocity3D%v_nodal_data_id, 0, 1, 2)
+     &          hs%velocity3D%v_nodal_data_id, 1, 1, 2)
          CALL check_err(iret)
          iret = nf_def_var_deflate(hs%ncid,
-     &          hs%velocity3D%w_nodal_data_id, 0, 1, 2)
+     &          hs%velocity3D%w_nodal_data_id, 1, 1, 2)
          CALL check_err(iret)
          iret = nf_def_var_deflate(hs%ncid,
-     &          hs%turbulence3D%u_nodal_data_id, 0, 1, 2)
+     &          hs%turbulence3D%u_nodal_data_id, 1, 1, 2)
          CALL check_err(iret)
          iret = nf_def_var_deflate(hs%ncid,
-     &          hs%turbulence3D%v_nodal_data_id, 0, 1, 2)
+     &          hs%turbulence3D%v_nodal_data_id, 1, 1, 2)
          CALL check_err(iret)
 
       ENDIF
@@ -7492,11 +7492,11 @@ C
       !
       ! jgf50.44: Turn on compression if this is a netcdf4-formatted file.
       IF (myFile%ncformat.eq.ior(NF_CLASSIC_MODEL,NF_NETCDF4)) THEN
-         iret = nf_def_var_deflate(ncid, myMesh%X_id, 0, 1, 2)
+         iret = nf_def_var_deflate(ncid, myMesh%X_id, 1, 1, 2)
          CALL check_err(iret)
-         iret = nf_def_var_deflate(ncid, myMesh%Y_id, 0, 1, 2)
+         iret = nf_def_var_deflate(ncid, myMesh%Y_id, 1, 1, 2)
          CALL check_err(iret)
-         iret = nf_def_var_deflate(ncid, myMesh%ELE_id, 0, 1, 2)
+         iret = nf_def_var_deflate(ncid, myMesh%ELE_id, 1, 1, 2)
          CALL check_err(iret)
       ENDIF
 !
@@ -7525,13 +7525,13 @@ C         myMesh%nbdvnc_dims(2) = myMesh%netanc_dim_id
          !jgf50.44: Turn on compression if this is a netcdf4 formatted file.
          IF (myFile%ncformat.eq.ior(NF_CLASSIC_MODEL,NF_NETCDF4)) THEN
             iret = nf_def_var_deflate(ncid, myMesh%nvdllnc_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
             iret = nf_def_var_deflate(ncid, myMesh%ibtypeenc_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
             iret = nf_def_var_deflate(ncid, myMesh%nbdvnc_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
          ENDIF
       endif
@@ -7559,13 +7559,13 @@ C         myMesh%nbvvnc_dims(2) = myMesh%nvelnc_dim_id
          !jgf50.44: Turn on compression if this is a netcdf4 formatted file.
          IF (myFile%ncformat.eq.ior(NF_CLASSIC_MODEL,NF_NETCDF4)) THEN
             iret = nf_def_var_deflate(ncid, myMesh%nvellnc_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
             iret = nf_def_var_deflate(ncid, myMesh%ibtypenc_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
             iret = nf_def_var_deflate(ncid, myMesh%nbvvnc_id,
-     &             0, 1, 2)
+     &             1, 1, 2)
             CALL check_err(iret)
          ENDIF
       endif
@@ -7578,7 +7578,7 @@ C         myMesh%nbvvnc_dims(2) = myMesh%nvelnc_dim_id
       CALL check_err(iret)
       IF (myFile%ncformat.eq.ior(NF_CLASSIC_MODEL,NF_NETCDF4)) THEN
          iret = nf_def_var_deflate(ncid, myMesh%DEPTH_id,
-     &          0, 1, 2)
+     &          1, 1, 2)
          CALL check_err(iret)
       ENDIF
 C

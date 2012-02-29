@@ -2,7 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
-C  v50.52   - 02/21/2011 - jgf - Merged the following changes from revisions
+C  v50.53   - 02/29/2012 - jgf - Removed massbal.F from code and makefile;
+C             restored -i-dynamic compiler flag for intel to avoid 
+C             feupdateenv message; added swan macros.inc for g95 compiler;
+C             turned on shuffle filter for compressed netcdf4 files. 
+C  v50.52   - 02/21/2012 - jgf - Merged the following changes from revisions
 C             r728:r738 of the netcdf4 branch; this branch was developed to
 C             enable compressed native netdf4 output from ADCIRC using an
 C             output specifier of 5, i.e., setting NOUTGE=5 will cause ADCIRC

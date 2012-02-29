@@ -3378,7 +3378,7 @@ C            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
      &                               descript % array2(I)
                END DO
             ENDIF
-
+            CLOSE(lun)
          ENDIF
          filepos = filepos+1+descript % num_records_this
 

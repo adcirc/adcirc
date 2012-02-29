@@ -113,6 +113,7 @@ C
 C
 C     jgf49.44: Initialize global logging.
       call initLogging()
+
       call setMessageSource("ADCIRC_Init")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -188,7 +189,7 @@ C...  Special instructions for writer processors
 
       !jgf49.44: Initialize harmonic analysis parameters.
       CALL initHarmonicParameters()
- 
+
 #ifdef CMACHSUN
       CALL ABRUPT_UNDERFLOW() ! Abrupt underflow for Sun computers
 #endif

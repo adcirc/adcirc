@@ -208,12 +208,6 @@ C... tcm v49.67 -- additions for Windows based PC compilations
 #endif
       if (WRITE_LOCAL_FILES) GLOBALDIR = LOCALDIR
       HOTSTARTDIR = LOCALDIR
-C...
-C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
-C...
-      OPEN(16,FILE=TRIM(LOCALDIR)//'/'//'fort.16',ACTION='WRITE',
-     &     STATUS='REPLACE')
-
 C
 C     jgf49.17.01 Summarize and log results.
       if (myProc.eq.0) then
