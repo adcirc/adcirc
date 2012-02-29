@@ -275,7 +275,7 @@ KDTREE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(KDTREE_MSRC) )
 
 METIS_SRC  =  metis.F
 PREP_SRC   =  adcprep.F decomp.F read_global.F prep.F interp.F machdep.F
-ADC_SRC    =  adcirc.F read_input.F cstart.F hstart.F timestep.F vsmy.F transport.F write_output.F massbal.F
+ADC_SRC    =  adcirc.F read_input.F cstart.F hstart.F timestep.F vsmy.F transport.F write_output.F
 POST_SRC   =  adcpost.F post.F compare.F diffmerge.F machdep.F
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
@@ -614,7 +614,6 @@ $(O_DIR)cstart.o      : cstart.F
 $(O_DIR)hstart.o      : hstart.F  
 $(O_DIR)timestep.o    : timestep.F
 $(O_DIR)write_output.o: write_output.F  
-$(O_DIR)massbal.o     : massbal.F
 ifeq ($(NETCDF),enable)
 $(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(NC_MOBJ)
 else

@@ -78,9 +78,9 @@ ifeq ($(compiler),intel)
   PPFC            :=  ifort	
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O2 -FI  -Vaxlib -assume byterecl -132
+  FFLAGS1       :=  $(INCDIRS) -O2 -FI  -Vaxlib -assume byterecl -132 -i-dynamic
   ifeq ($(DEBUG),full)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -check all -FI -Vaxlib -assume byterecl -132 -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -i-dynamic -traceback -check all -FI -Vaxlib -assume byterecl -132 -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
@@ -446,6 +446,9 @@ ifeq ($(compiler),gnu)
   ifeq ($(DEBUG),full)
     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
   endif
+  ifeq ($(SWAN),enable)
+     FFLAGS1    :=  $(FFLAGS1) -freal-loops
+  endif
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
@@ -463,6 +466,9 @@ ifeq ($(compiler),gnu)
   endif
   CLIBS	:= 
   FLIBS		:=  
+ifeq ($(NETCDF),enable)
+     FLIBS          := $(FLIBS) -L$(HDF5HOME)/lib -L$(NETCDFHOME) -lnetcdf -lhdf5_hl -lhdf5 -lhdf5_fortran -lz
+  endif
   MSGLIBS	:=  
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)

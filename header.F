@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.82.17  02/29/2012 - jgf - Removed massbal.F from code and makefile;
+C             restored -i-dynamic compiler flag for intel to avoid
+C             feupdateenv error message. Added swan macros.inc for g95 compiler.
 C  v49.82.16  12/23/2011 - tcm - Added compiler options for ERDC's Utility
 C             server (compiler=utils).
 C  v49.82.15  12/08/2011 - tcm - Fixed a possible bug where eta2 was supposed
