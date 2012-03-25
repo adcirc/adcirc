@@ -103,20 +103,23 @@ ifeq ($(compiler),intel)
   CLIBS         :=
   FLIBS          :=
   MSGLIBS       :=
+  ifeq ($(NETCDF),enable)
+     ifeq ($(MACHINENAME),blueridge)
+        FLIBS       := $(FLIBS) -L$(HDF5HOME) -lhdf5  
+#        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.1-gcc4.1-ifort
+        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.0.1-icc-ifort
+     else
+        FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
+     endif
+  endif
+  #jgf20110519: For netcdf on topsail at UNC, use
+  #NETCDFHOME=/ifs1/apps/netcdf/
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
      FOUND := TRUE
   else
      MULTIPLE := TRUE
   endif
-#  ifeq ($(NETCDF),enable)
-#     FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
-#     IMODS          := -I$(NETCDFHOME)/include
-#  endif
-  #jgf20110217: For netcdf on blueridge or kittyhawk at RENCI, use
-  #NETCDFHOME=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.0.1-icc-ifort
-  #jgf20110519: For netcdf on topsail at UNC, use
-  #NETCDFHOME=/ifs1/apps/netcdf/
 endif
 #
 # sb46.50.02 These flags work on the UT Austin Lonstar cluster.

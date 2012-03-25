@@ -877,7 +877,8 @@ C
       END SELECT
 C
 C     jgf50.44: Automatically turn on compression if we are using the
-C     netcdf4 file format.
+C     netcdf4 file format. 
+#ifdef NETCDF_CAN_DEFLATE
       IF (abs(descript%specifier).eq.5) THEN
          SELECT CASE(lun)
          CASE(61,71)
@@ -895,6 +896,7 @@ C     netcdf4 file format.
             CALL allMessage(ERROR,"Invalid file number.")
          END SELECT
       ENDIF
+#endif
 !
 !     Define station names and code attributes
       iret = nf_put_att_text(sta%ncid,sta%station_id,'long_name',12,
@@ -1304,6 +1306,7 @@ C
 C
 C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
+#ifdef NETCDF_CAN_DEFLATE
       IF (abs(descript%specifier).eq.5) THEN
          SELECT CASE(lun)
          CASE(47,63,73)
@@ -1321,7 +1324,7 @@ C     netcdf4 file format.
             CALL allMessage(ERROR,"Invalid file number.")
          END SELECT
       ENDIF
-
+#endif
 
 C
 C     RJW added 9/13/2010
@@ -1468,9 +1471,9 @@ C     set the file format (netcdf3, or netcdf4/hdf5) ... the data model will
 C     be classic (netcdf3) in any case
       select case(abs(descript%specifier))
       case(3,367,368)
-         myFile%ncformat = NF_CLASSIC_MODEL
+         myFile%ncformat = NF_CLOBBER
       case(5,567,568)
-         myFile%ncformat = ior(NF_CLASSIC_MODEL,NF_NETCDF4)
+         myFile%ncformat = ior(NF_CLOBBER,NF90_FORMAT_NETCDF4_CLASSIC)
       case default
          write(scratchMessage,'(A,I2)') 'File format specifier ',
      &      descript%specifier,' is not valid.'
@@ -2481,6 +2484,7 @@ C
 C
 C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
+#ifdef NETCDF_CAN_DEFLATE
       IF (abs(descript1%specifier).eq.5) THEN
          iret = nf_def_var_deflate(sta3D%ncid, sta3D%u_station_data_id,
      &          1, 1, 2)
@@ -2505,6 +2509,7 @@ C     netcdf4 file format.
             CALL check_err(iret)
          ENDIF
       ENDIF
+#endif
 !
 !     Define station names and code attributes
       iret = nf_put_att_text(sta3D%ncid,sta3D%station_id,'long_name',12,
@@ -2870,6 +2875,7 @@ C
 C
 C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
+#ifdef NETCDF_CAN_DEFLATE
       IF (abs(descript1%specifier).eq.5) THEN
          iret = nf_def_var_deflate(dat%ncid, dat%u_nodal_data_id,
      &          1, 1, 2)
@@ -2894,6 +2900,7 @@ C     netcdf4 file format.
             CALL check_err(iret)
          ENDIF
       ENDIF
+#endif
 C
 C     RJW added 9/13/2010
 C     to include time atributes in global data files
@@ -3523,6 +3530,7 @@ C     N O F F
 C
 C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
+#ifdef NETCDF_CAN_DEFLATE
       IF ( (Elev1Descript%specifier.eq.5).or.
      &     (Elev1Descript%specifier.eq.567).or.
      &     (Elev1Descript%specifier.eq.568) ) THEN
@@ -3553,6 +3561,7 @@ C     netcdf4 file format.
      &             1, 1, 2)
          CALL check_err(iret)
       ENDIF
+#endif
 !
 !     Define hotstart parameters
       CALL check_err(iret)
@@ -4105,6 +4114,7 @@ C
 C
 C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
+#ifdef NETCDF_CAN_DEFLATE
       IF ( (GLOELVDescript%specifier.eq.5).or.
      &     (GLOELVDescript%specifier.eq.567).or.
      &     (GLOELVDescript%specifier.eq.568) ) THEN
@@ -4138,6 +4148,7 @@ C     netcdf4 file format.
             CALL check_err(iret)
          ENDIF
       ENDIF
+#endif
 !
 !     Define harmonic analysis parameters
       call defineParameterWithText(hs%ncid, 'icha', NF_INT,
@@ -4442,6 +4453,7 @@ C     global velocity load vectors
 C
 C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
+#ifdef NETCDF_CAN_DEFLATE
       IF ( (ELAVDescript%specifier.eq.5).or.
      &     (ELAVDescript%specifier.eq.567).or.
      &     (ELAVDescript%specifier.eq.568) ) THEN
@@ -4468,7 +4480,7 @@ C     netcdf4 file format.
             CALL check_err(iret)
          ENDIF
       ENDIF
-
+#endif
 !
 !     Define harmonic analysis parameters
       call defineParameterWithText(hs%ncid, 'ntsteps', NF_INT,
@@ -4768,6 +4780,7 @@ C     L
 C
 C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
+#ifdef NETCDF_CAN_DEFLATE
       IF ( (netcdf_format.eq.5).or.
      &     (netcdf_format.eq.567).or.
      &     (netcdf_format.eq.568) ) THEN
@@ -4821,7 +4834,7 @@ C     netcdf4 file format.
          CALL check_err(iret)
 
       ENDIF
-
+#endif
 C
       iret = nf_def_var(hs%ncid, 'n3dsd', NF_INT, 0, 1, varid)
       CALL check_err(iret)
@@ -7491,6 +7504,7 @@ C
       CALL check_err(iret)
       !
       ! jgf50.44: Turn on compression if this is a netcdf4-formatted file.
+#ifdef NETCDF_CAN_DEFLATE
       IF (myFile%ncformat.eq.ior(NF_CLASSIC_MODEL,NF_NETCDF4)) THEN
          iret = nf_def_var_deflate(ncid, myMesh%X_id, 1, 1, 2)
          CALL check_err(iret)
@@ -7499,6 +7513,7 @@ C
          iret = nf_def_var_deflate(ncid, myMesh%ELE_id, 1, 1, 2)
          CALL check_err(iret)
       ENDIF
+#endif
 !
 !     Define elevation specified boundary forcing segments information
       if (myMesh%nopenc.ne.0) then
@@ -7523,6 +7538,7 @@ C         myMesh%nbdvnc_dims(2) = myMesh%netanc_dim_id
      &          myMesh%nbdvnc_dims, myMesh%nbdvnc_id)
          CALL check_err(iret)
          !jgf50.44: Turn on compression if this is a netcdf4 formatted file.
+#ifdef NETCDF_CAN_DEFLATE
          IF (myFile%ncformat.eq.ior(NF_CLASSIC_MODEL,NF_NETCDF4)) THEN
             iret = nf_def_var_deflate(ncid, myMesh%nvdllnc_id,
      &             1, 1, 2)
@@ -7534,6 +7550,7 @@ C         myMesh%nbdvnc_dims(2) = myMesh%netanc_dim_id
      &             1, 1, 2)
             CALL check_err(iret)
          ENDIF
+#endif
       endif
 !     Define normal flow boundary information
       if (myMesh%nbounc.ne.0) then
@@ -7557,6 +7574,7 @@ C         myMesh%nbvvnc_dims(2) = myMesh%nvelnc_dim_id
      &          myMesh%nbvvnc_dims, myMesh%nbvvnc_id)
          CALL check_err(iret)
          !jgf50.44: Turn on compression if this is a netcdf4 formatted file.
+#ifdef NETCDF_CAN_DEFLATE
          IF (myFile%ncformat.eq.ior(NF_CLASSIC_MODEL,NF_NETCDF4)) THEN
             iret = nf_def_var_deflate(ncid, myMesh%nvellnc_id,
      &             1, 1, 2)
@@ -7568,6 +7586,7 @@ C         myMesh%nbvvnc_dims(2) = myMesh%nvelnc_dim_id
      &             1, 1, 2)
             CALL check_err(iret)
          ENDIF
+#endif
       endif
 !     -------------------
 !     Define Z coordinate
@@ -7576,11 +7595,13 @@ C         myMesh%nbvvnc_dims(2) = myMesh%nvelnc_dim_id
       iret = nf_def_var(ncid, 'depth',NF_DOUBLE, myMesh%DEPTH_rank,
      &       myMesh%DEPTH_dims, myMesh%DEPTH_id)
       CALL check_err(iret)
+#ifdef NETCDF_CAN_DEFLATE
       IF (myFile%ncformat.eq.ior(NF_CLASSIC_MODEL,NF_NETCDF4)) THEN
          iret = nf_def_var_deflate(ncid, myMesh%DEPTH_id,
      &          1, 1, 2)
          CALL check_err(iret)
       ENDIF
+#endif
 C
 C     Set coordinates as representing latitude or longitude, depending on
 C     the value of ICS

@@ -8,7 +8,7 @@ C***************************************************************************
 
       PROGRAM hstime
       IMPLICIT NONE
-#ifdef NETCDF
+#ifdef ADCNETCDF
       include 'netcdf.inc'
       INTEGER :: iret     ! return status from netcdf calls
       INTEGER :: ncid     ! id of netcdf file
@@ -39,7 +39,7 @@ C
          SELECT CASE(cmdLineArg(1:2))
          CASE("-n") 
             netCDFFormat = .true.
-#ifndef NETCDF
+#ifndef ADCNETCDF
             WRITE(*,*) "ERROR: hstime: NetCDF hotstart format was ",
      &     " specified but hstime was not compiled with NetCDF support."
      &     " You must recompile hstime with NetCDF support." 
@@ -62,7 +62,7 @@ C
       ENDIF         
 C
       IF (netCDFFormat.eqv..true.) THEN
-#ifdef NETCDF
+#ifdef ADCNETCDF
          iret = nf_open(TRIM(fileName),NF_NOWRITE, ncid)
          call check_err(iret)
          iret = nf_inq_unlimdim(ncid,dimid)
@@ -93,7 +93,7 @@ C
       ENDIF
       END PROGRAM hstime
 C
-#ifdef NETCDF
+#ifdef ADCNETCDF
       subroutine check_err(iret)
       IMPLICIT NONE
       include 'netcdf.inc'

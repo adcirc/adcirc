@@ -44,12 +44,12 @@ $(warning (INFO) The C compiler is set to $(CC).)
 ifeq ($(NETCDF),enable)
 # jgf49.61: Don't add the -DADCNETCDF for the IBM compilers (see cmplrflags.mk)
 ifeq ($(IBM),)
-     PPFC    := $(PPFC) -DADCNETCDF -I$(NETCDFHOME)/include
-     PFC     := $(PFC) -DADCNETCDF -I$(NETCDFHOME)/include
-     FFLAGS1 := $(FFLAGS1) -DADCNETCDF -I$(NETCDFHOME)/include
-     FFLAGS2 := $(FFLAGS2) -DADCNETCDF -I$(NETCDFHOME)/include
-     FFLAGS3 := $(FFLAGS3) -DADCNETCDF -I$(NETCDFHOME)/include
-     FFLAGS4 := $(FFLAGS4) -DADCNETCDF -I$(NETCDFHOME)/include
+     PPFC    := $(PPFC) -DADCNETCDF -I$(NETCDFHOME)/include 
+     PFC     := $(PFC) -DADCNETCDF -I$(NETCDFHOME)/include 
+     FFLAGS1 := $(FFLAGS1) -DADCNETCDF -I$(NETCDFHOME)/include 
+     FFLAGS2 := $(FFLAGS2) -DADCNETCDF -I$(NETCDFHOME)/include 
+     FFLAGS3 := $(FFLAGS3) -DADCNETCDF -I$(NETCDFHOME)/include 
+     FFLAGS4 := $(FFLAGS4) -DADCNETCDF -I$(NETCDFHOME)/include 
 endif
 endif
 

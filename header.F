@@ -2,6 +2,12 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.54   - 03/25/2012 - jgf - Made changes to enable compilation of netcdfio
+C             on intel compilers; upgraded hstime utility to new ADCNETCDF
+C             preprocessor variable; added preprocessor variables to turn off
+C             automatic netcdf4 compression if the system netcdf4 library 
+C             does not support it (apparently support for compression was
+C             added in netcdf v4.1, but is not available in netcdf 4.0.x).  
 C  v50.53   - 02/29/2012 - jgf - Removed massbal.F from code and makefile;
 C             restored -i-dynamic compiler flag for intel to avoid 
 C             feupdateenv message; added swan macros.inc for g95 compiler;
