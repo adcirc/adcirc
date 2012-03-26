@@ -11,7 +11,7 @@ module SwanCompdata
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -59,13 +59,12 @@ module SwanCompdata
 !   Module variables
 !
     integer                                    :: nbpol  ! total number of boundary polygons
-!Casey 080907: What if we have more than 100 boundaries?
-!NADC    integer, dimension(100)                    :: nbpt   ! number of boundary vertices for each boundary polygon
-!ADC    integer, dimension(10000)                  :: nbpt   ! number of boundary vertices for each boundary polygon
+    integer, dimension(10000)                  :: nbpt   ! number of boundary vertices for each boundary polygon
 !
     integer, dimension(MICMAX)                 :: vs     ! computational stencil, i.e. set of vertices
                                                          ! needed for the computation of a new value
                                                          ! in the present vertex
+!$omp threadprivate(vs)
 !
     integer, dimension(:,:), save, allocatable :: blist  ! list of boundary vertices in ascending order for each boundary polygon
     integer, dimension(:)  , save, allocatable :: vlist  ! vertex list

@@ -47,7 +47,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -269,11 +269,6 @@
 !
 !       ***** processing of output instructions *****
 !
-        IF (SCREEN.NE.PRINTF.AND.IAMMASTER) WRITE (SCREEN, 15) IRQ        40.30
-  15    FORMAT ('+SWAN is processing output request ', I4)                40.41 30.00
-        IF (ITEST.GE.10) WRITE(PRINTF,16) IRQ
-  16    FORMAT (' SWAN is processing output request ', I4)                40.41
-!
         BKC   = 0
         NVOQP = 0
 !
@@ -289,6 +284,11 @@
            CORQ => CORQ%NEXTORQ                                           40.31
            GOTO 70                                                        40.31 30.00
         END IF
+!
+        IF (SCREEN.NE.PRINTF.AND.IAMMASTER) WRITE (SCREEN, 15) IRQ        40.30
+  15    FORMAT ('+SWAN is processing output request ', I4)                40.41 30.00
+        IF (ITEST.GE.10) WRITE(PRINTF,16) IRQ
+  16    FORMAT (' SWAN is processing output request ', I4)                40.41
 !
         CUOPS => FOPS                                                     40.31
         DO                                                                40.31
@@ -481,7 +481,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -618,7 +618,7 @@
           OUTR(1) = TIMCO
           LOGACT = .TRUE.
         ELSE IF (OUTR(2).GT.0. .AND. TIMCO.GE.TNEXT) THEN                 40.00
-          OUTR(1) = TIMCO + OUTR(2)                                       40.00
+          OUTR(1) = TNEXT + OUTR(2)                                       40.00
           LOGACT = .TRUE.
         ELSE
           LOGACT = .FALSE.
@@ -717,7 +717,7 @@
          IF (IVTYPE.EQ.15 .OR. IVTYPE.EQ.17 .OR. IVTYPE.EQ.18 .OR.
      &       IVTYPE.EQ.19 .OR. IVTYPE.EQ.20 .OR. IVTYPE.EQ.28 .OR.        10.10
      &       IVTYPE.EQ.32 .OR. IVTYPE.EQ.33 .OR. IVTYPE.EQ.42 .OR.
-     &       IVTYPE.EQ.47 .OR. IVTYPE.EQ.59                        )      40.64 40.41 40.00
+     &       IVTYPE.EQ.47 .OR. IVTYPE.EQ.59 .OR. IVTYPE.EQ.71      )      41.15 40.64 40.41 40.00
      &   BKC = 2
 !
          IF (IVTYPE.EQ.11 .AND. ICUR.GT.0) BKC = 2                        20.36
@@ -769,6 +769,7 @@
       USE SWCOMM1                                                         40.41
       USE SWCOMM3                                                         40.41
       USE SWCOMM4                                                         40.41
+      USE OUTP_DATA
 !
 !
 !   --|-----------------------------------------------------------|--
@@ -782,7 +783,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1000,6 +1001,12 @@
         WRITE (PRTEST,'(A)') ' error SWODDC: no PSTYPE defined'           40.31
       ENDIF
 !
+      IF (PSNAME.EQ.'COMPGRID') THEN
+         LCOMPGRD=.TRUE.
+      ELSE
+         LCOMPGRD=.FALSE.
+      ENDIF
+!
       IF (ITEST.GE.100 .OR. IOUTES .GE. 30) THEN
         WRITE (PRTEST, 91) PSNAME, PSTYPE, MIP
   91    FORMAT (' Exit SWODDC  ', A16, 2X, A1, 3I6)
@@ -1045,7 +1052,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1351,6 +1358,7 @@
       USE TIMECOMM                                                        40.41
       USE M_PARALL                                                        40.31
       USE M_DIFFR                                                         40.21
+      USE OUTP_DATA
       USE SwanGriddata                                                    40.80
       USE SwanGridobjects                                                 40.91
 !
@@ -1367,7 +1375,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1396,6 +1404,7 @@
 !     40.61: Marcel Zijlema
 !     40.80: Marcel Zijlema
 !     40.86: Nico Booij
+!     41.12: Nico Booij
 !
 !  1. Updates
 !
@@ -1419,6 +1428,7 @@
 !     40.86, Feb. 08: interpolation near obstacles modified,
 !                     points on the other side of the obstacle not taken into account
 !                     calls of SWIPOL changed
+!     41.12, Apr. 10: output quantity NPL (type nr 70) added
 !
 !  2. Purpose
 !
@@ -1438,7 +1448,7 @@
 !     MIP     Int    input    number of output points
 !     XP, YP  real   outp     user coordinates of output point
 !     XC, YC  real   outp     comp. grid coordinates
-!     WX2, WY2  real   input    wind components
+!     WX2, WY2  real input    wind components
 !
 !  9. Subroutines calling
 !
@@ -1458,6 +1468,7 @@
       REAL       FORCE(nverts,2)                                          40.80
       INTEGER    VOQR(*), KGRPNT(MXC,MYC)
       INTEGER    IONOD(*)                                                 40.31
+      INTEGER, ALLOCATABLE :: KVERT(:)                                    41.07
       LOGICAL    OQPROC(*), EQREAL                                        30.72
       LOGICAL    CROSS(4,MIP)                                             40.86
       LOGICAL, ALLOCATABLE :: LTMP(:)                                     40.91
@@ -1495,6 +1506,21 @@
         ENDDO
       ENDIF
 !
+      IF (OPTG.EQ.5) THEN
+!
+!        ---find closest vertex for given point in case of unstructured grid
+!
+         ALLOCATE(KVERT(MIP))
+         IF (.NOT.LCOMPGRD) THEN
+            DO IP = 1, MIP
+               CALL SwanFindPoint ( VOQ(IP,1), VOQ(IP,2), KVERT(IP) )     41.07
+            ENDDO
+         ELSE
+            KVERT = 0
+         ENDIF
+!
+      ENDIF
+!
 !     depth
 !
  120  IF (OQPROC(4)) THEN
@@ -1507,7 +1533,7 @@
         ELSE                                                              40.80
            CALL SwanInterpolateOutput ( VOQ(1,VOQR(4)), VOQ(1,1),         40.80
      &                                  VOQ(1,2), COMPDA(1,JDP2),         40.80
-     &                                  MIP, OVEXCV(4) )                  40.80
+     &                                  MIP, KVERT, OVEXCV(4) )           40.80
         ENDIF                                                             40.80
       ENDIF
 !
@@ -1527,10 +1553,10 @@
           ELSE                                                            40.80
              CALL SwanInterpolateOutput ( VOQ(1,JVQX), VOQ(1,1),          40.80
      &                                    VOQ(1,2), COMPDA(1,JVX2),       40.80
-     &                                    MIP, OVEXCV(5) )                40.80
+     &                                    MIP, KVERT, OVEXCV(5) )         40.80
              CALL SwanInterpolateOutput ( VOQ(1,JVQY), VOQ(1,1),          40.80
      &                                    VOQ(1,2), COMPDA(1,JVY2),       40.80
-     &                                    MIP, OVEXCV(5) )                40.80
+     &                                    MIP, KVERT, OVEXCV(5) )         40.80
           ENDIF                                                           40.80
           DO IP = 1, MIP
             UXLOC = VOQ(IP,JVQX)
@@ -1557,7 +1583,7 @@
         ELSE                                                              40.80
            CALL SwanInterpolateOutput ( VOQ(1,VOQR(6)), VOQ(1,1),         40.80
      &                                  VOQ(1,2), COMPDA(1,JUBOT),        40.80
-     &                                  MIP, OVEXCV(6) )                  40.80
+     &                                  MIP, KVERT, OVEXCV(6) )           40.80
         ENDIF                                                             40.80
         KK = VOQR(6)
         RR = SQRT(2.)
@@ -1578,7 +1604,7 @@
         ELSE                                                              40.80
            CALL SwanInterpolateOutput ( VOQ(1,VOQR(34)), VOQ(1,1),        40.80
      &                                  VOQ(1,2), COMPDA(1,JUBOT),        40.80
-     &                                  MIP, OVEXCV(34) )                 40.80
+     &                                  MIP, KVERT, OVEXCV(34) )          40.80
         ENDIF                                                             40.80
       ENDIF
 !
@@ -1594,7 +1620,7 @@
            ELSE                                                           40.80
               CALL SwanInterpolateOutput ( VOQ(1,VOQR(50)), VOQ(1,1),     40.80
      &                                     VOQ(1,2), COMPDA(1,JPBOT),     40.80
-     &                                     MIP, OVEXCV(50) )              40.80
+     &                                     MIP, KVERT, OVEXCV(50) )       40.80
            ENDIF                                                          40.80
         ELSE
            DO IP = 1, MIP                                                 40.65
@@ -1614,7 +1640,7 @@
         ELSE                                                              40.80
            CALL SwanInterpolateOutput ( VOQ(1,VOQR(7)), VOQ(1,1),         40.80
      &                                  VOQ(1,2), COMPDA(1,JDISS),        40.80
-     &                                  MIP, OVEXCV(7) )                  40.80
+     &                                  MIP, KVERT, OVEXCV(7) )           40.80
         ENDIF                                                             40.80
         IF (INRHOG.EQ.1) THEN
           DO 152 IP = 1, MIP
@@ -1636,7 +1662,7 @@
            ELSE                                                           40.80
               CALL SwanInterpolateOutput ( VOQ(1,VOQR(54)), VOQ(1,1),     40.80
      &                                     VOQ(1,2), COMPDA(1,JDSXB),     40.80
-     &                                     MIP, OVEXCV(54) )              40.80
+     &                                     MIP, KVERT, OVEXCV(54) )       40.80
            ENDIF                                                          40.80
         ELSE
            DO IP = 1, MIP                                                 40.65
@@ -1663,7 +1689,7 @@
            ELSE                                                           40.80
               CALL SwanInterpolateOutput ( VOQ(1,VOQR(55)), VOQ(1,1),     40.80
      &                                     VOQ(1,2), COMPDA(1,JDSXS),     40.80
-     &                                     MIP, OVEXCV(55) )              40.80
+     &                                     MIP, KVERT, OVEXCV(55) )       40.80
            ENDIF                                                          40.80
         ELSE
            DO IP = 1, MIP                                                 40.65
@@ -1690,7 +1716,7 @@
            ELSE                                                           40.80
               CALL SwanInterpolateOutput ( VOQ(1,VOQR(56)), VOQ(1,1),     40.80
      &                                     VOQ(1,2), COMPDA(1,JDSXW),     40.80
-     &                                     MIP, OVEXCV(56) )              40.80
+     &                                     MIP, KVERT, OVEXCV(56) )       40.80
            ENDIF                                                          40.80
         ELSE
            DO IP = 1, MIP                                                 40.65
@@ -1705,6 +1731,324 @@
         ENDIF
       ENDIF
 !
+!     vegetation dissipation
+!
+      IF (OQPROC(57)) THEN                                                40.61
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 57,
+     &  VOQR(57), JDSXV
+        IF (JDSXV.GT.1) THEN                                              40.65
+           IF (OPTG.NE.5) THEN                                            40.80
+              CALL SWIPOL(COMPDA(1,JDSXV),OVEXCV(57),XC, YC, MIP, CROSS,  40.86
+     &                    VOQ(1,VOQR(57)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE                                                           40.80
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(57)), VOQ(1,1),     40.80
+     &                                     VOQ(1,2), COMPDA(1,JDSXV),     40.80
+     &                                     MIP, KVERT, OVEXCV(57) )       40.80
+           ENDIF                                                          40.80
+        ELSE
+           DO IP = 1, MIP                                                 40.65
+             VOQ(IP,VOQR(57)) = OVEXCV(57)                                40.65
+           ENDDO                                                          40.65
+        ENDIF
+        IF (INRHOG.EQ.1) THEN
+          DO IP = 1, MIP
+            F1 = VOQ(IP,VOQR(57))
+            IF (.NOT.EQREAL(F1,OVEXCV(57))) VOQ(IP,VOQR(57))=F1*RHO*GRAV
+          END DO
+        ENDIF
+      ENDIF
+!
+!     energy generation
+!
+      IF (OQPROC(60)) THEN                                                40.85
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 60,
+     &  VOQR(60), JGENR
+        IF (JGENR.GT.1) THEN
+           IF (OPTG.NE.5) THEN
+              CALL SWIPOL(COMPDA(1,JGENR),OVEXCV(60),XC, YC, MIP, CROSS,
+     &                    VOQ(1,VOQR(60)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(60)), VOQ(1,1),
+     &                                     VOQ(1,2), COMPDA(1,JGENR),
+     &                                     MIP, KVERT, OVEXCV(60) )
+           ENDIF
+        ELSE
+           DO IP = 1, MIP
+             VOQ(IP,VOQR(60)) = OVEXCV(60)
+           ENDDO
+        ENDIF
+        IF (INRHOG.EQ.1) THEN
+          DO IP = 1, MIP
+            F1 = VOQ(IP,VOQR(60))
+            IF (.NOT.EQREAL(F1,OVEXCV(60))) VOQ(IP,VOQR(60))=F1*RHO*GRAV
+          END DO
+        ENDIF
+      ENDIF
+!
+!     wind source term
+!
+      IF (OQPROC(61)) THEN                                                40.85
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 61,
+     &  VOQR(61), JGSXW
+        IF (JGSXW.GT.1) THEN
+           IF (OPTG.NE.5) THEN
+              CALL SWIPOL(COMPDA(1,JGSXW),OVEXCV(61),XC, YC, MIP, CROSS,
+     &                    VOQ(1,VOQR(61)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(61)), VOQ(1,1),
+     &                                     VOQ(1,2), COMPDA(1,JGSXW),
+     &                                     MIP, KVERT, OVEXCV(61) )
+           ENDIF
+        ELSE
+           DO IP = 1, MIP
+             VOQ(IP,VOQR(61)) = OVEXCV(61)
+           ENDDO
+        ENDIF
+        IF (INRHOG.EQ.1) THEN
+          DO IP = 1, MIP
+            F1 = VOQ(IP,VOQR(61))
+            IF (.NOT.EQREAL(F1,OVEXCV(61))) VOQ(IP,VOQR(61))=F1*RHO*GRAV
+          END DO
+        ENDIF
+      ENDIF
+!
+!     energy redistribution
+!
+      IF (OQPROC(62)) THEN                                                40.85
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 62,
+     &  VOQR(62), JREDS
+        IF (JREDS.GT.1) THEN
+           IF (OPTG.NE.5) THEN
+              CALL SWIPOL(COMPDA(1,JREDS),OVEXCV(62),XC, YC, MIP, CROSS,
+     &                    VOQ(1,VOQR(62)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(62)), VOQ(1,1),
+     &                                     VOQ(1,2), COMPDA(1,JREDS),
+     &                                     MIP, KVERT, OVEXCV(62) )
+           ENDIF
+        ELSE
+           DO IP = 1, MIP
+             VOQ(IP,VOQR(62)) = OVEXCV(62)
+           ENDDO
+        ENDIF
+        IF (INRHOG.EQ.1) THEN
+          DO IP = 1, MIP
+            F1 = VOQ(IP,VOQR(62))
+            IF (.NOT.EQREAL(F1,OVEXCV(62))) VOQ(IP,VOQR(62))=F1*RHO*GRAV
+          END DO
+        ENDIF
+      ENDIF
+!
+!     total absolute 4-wave interaction
+!
+      IF (OQPROC(63)) THEN                                                40.85
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 63,
+     &  VOQR(63), JRSXQ
+        IF (JRSXQ.GT.1) THEN
+           IF (OPTG.NE.5) THEN
+              CALL SWIPOL(COMPDA(1,JRSXQ),OVEXCV(63),XC, YC, MIP, CROSS,
+     &                    VOQ(1,VOQR(63)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(63)), VOQ(1,1),
+     &                                     VOQ(1,2), COMPDA(1,JRSXQ),
+     &                                     MIP, KVERT, OVEXCV(63) )
+           ENDIF
+        ELSE
+           DO IP = 1, MIP
+             VOQ(IP,VOQR(63)) = OVEXCV(63)
+           ENDDO
+        ENDIF
+        IF (INRHOG.EQ.1) THEN
+          DO IP = 1, MIP
+            F1 = VOQ(IP,VOQR(63))
+            IF (.NOT.EQREAL(F1,OVEXCV(63))) VOQ(IP,VOQR(63))=F1*RHO*GRAV
+          END DO
+        ENDIF
+      ENDIF
+!
+!     total absolute 3-wave interaction
+!
+      IF (OQPROC(64)) THEN                                                40.85
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 64,
+     &  VOQR(64), JRSXT
+        IF (JRSXT.GT.1) THEN
+           IF (OPTG.NE.5) THEN
+              CALL SWIPOL(COMPDA(1,JRSXT),OVEXCV(64),XC, YC, MIP, CROSS,
+     &                    VOQ(1,VOQR(64)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(64)), VOQ(1,1),
+     &                                     VOQ(1,2), COMPDA(1,JRSXT),
+     &                                     MIP, KVERT, OVEXCV(64) )
+           ENDIF
+        ELSE
+           DO IP = 1, MIP
+             VOQ(IP,VOQR(64)) = OVEXCV(64)
+           ENDDO
+        ENDIF
+        IF (INRHOG.EQ.1) THEN
+          DO IP = 1, MIP
+            F1 = VOQ(IP,VOQR(64))
+            IF (.NOT.EQREAL(F1,OVEXCV(64))) VOQ(IP,VOQR(64))=F1*RHO*GRAV
+          END DO
+        ENDIF
+      ENDIF
+!
+!     energy propagation
+!
+      IF (OQPROC(65)) THEN                                                40.85
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 65,
+     &  VOQR(65), JTRAN
+        IF (JTRAN.GT.1) THEN
+           IF (OPTG.NE.5) THEN
+              CALL SWIPOL(COMPDA(1,JTRAN),OVEXCV(65),XC, YC, MIP, CROSS,
+     &                    VOQ(1,VOQR(65)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(65)), VOQ(1,1),
+     &                                     VOQ(1,2), COMPDA(1,JTRAN),
+     &                                     MIP, KVERT, OVEXCV(65) )
+           ENDIF
+        ELSE
+           DO IP = 1, MIP
+             VOQ(IP,VOQR(65)) = OVEXCV(65)
+           ENDDO
+        ENDIF
+        IF (INRHOG.EQ.1) THEN
+          DO IP = 1, MIP
+            F1 = VOQ(IP,VOQR(65))
+            IF (.NOT.EQREAL(F1,OVEXCV(65))) VOQ(IP,VOQR(65))=F1*RHO*GRAV
+          END DO
+        ENDIF
+      ENDIF
+!
+!     xy-propagation
+!
+      IF (OQPROC(66)) THEN                                                40.85
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 66,
+     &  VOQR(66), JTSXG
+        IF (JTSXG.GT.1) THEN
+           IF (OPTG.NE.5) THEN
+              CALL SWIPOL(COMPDA(1,JTSXG),OVEXCV(66),XC, YC, MIP, CROSS,
+     &                    VOQ(1,VOQR(66)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(66)), VOQ(1,1),
+     &                                     VOQ(1,2), COMPDA(1,JTSXG),
+     &                                     MIP, KVERT, OVEXCV(66) )
+           ENDIF
+        ELSE
+           DO IP = 1, MIP
+             VOQ(IP,VOQR(66)) = OVEXCV(66)
+           ENDDO
+        ENDIF
+        IF (INRHOG.EQ.1) THEN
+          DO IP = 1, MIP
+            F1 = VOQ(IP,VOQR(66))
+            IF (.NOT.EQREAL(F1,OVEXCV(66))) VOQ(IP,VOQR(66))=F1*RHO*GRAV
+          END DO
+        ENDIF
+      ENDIF
+!
+!     theta-propagation
+!
+      IF (OQPROC(67)) THEN                                                40.85
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 67,
+     &  VOQR(67), JTSXT
+        IF (JTSXT.GT.1) THEN
+           IF (OPTG.NE.5) THEN
+              CALL SWIPOL(COMPDA(1,JTSXT),OVEXCV(67),XC, YC, MIP, CROSS,
+     &                    VOQ(1,VOQR(67)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(67)), VOQ(1,1),
+     &                                     VOQ(1,2), COMPDA(1,JTSXT),
+     &                                     MIP, KVERT, OVEXCV(67) )
+           ENDIF
+        ELSE
+           DO IP = 1, MIP
+             VOQ(IP,VOQR(67)) = OVEXCV(67)
+           ENDDO
+        ENDIF
+        IF (INRHOG.EQ.1) THEN
+          DO IP = 1, MIP
+            F1 = VOQ(IP,VOQR(67))
+            IF (.NOT.EQREAL(F1,OVEXCV(67))) VOQ(IP,VOQR(67))=F1*RHO*GRAV
+          END DO
+        ENDIF
+      ENDIF
+!
+!     sigma-propagation
+!
+      IF (OQPROC(68)) THEN                                                40.85
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 68,
+     &  VOQR(68), JTSXS
+        IF (JTSXS.GT.1) THEN
+           IF (OPTG.NE.5) THEN
+              CALL SWIPOL(COMPDA(1,JTSXS),OVEXCV(68),XC, YC, MIP, CROSS,
+     &                    VOQ(1,VOQR(68)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(68)), VOQ(1,1),
+     &                                     VOQ(1,2), COMPDA(1,JTSXS),
+     &                                     MIP, KVERT, OVEXCV(68) )
+           ENDIF
+        ELSE
+           DO IP = 1, MIP
+             VOQ(IP,VOQR(68)) = OVEXCV(68)
+           ENDDO
+        ENDIF
+        IF (INRHOG.EQ.1) THEN
+          DO IP = 1, MIP
+            F1 = VOQ(IP,VOQR(68))
+            IF (.NOT.EQREAL(F1,OVEXCV(68))) VOQ(IP,VOQR(68))=F1*RHO*GRAV
+          END DO
+        ENDIF
+      ENDIF
+!
+!     radiation stress
+!
+      IF (OQPROC(69)) THEN                                                40.85
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 69,
+     &  VOQR(69), JRADS
+        IF (JRADS.GT.1) THEN
+           IF (OPTG.NE.5) THEN
+              CALL SWIPOL(COMPDA(1,JRADS),OVEXCV(69),XC, YC, MIP, CROSS,
+     &                    VOQ(1,VOQR(69)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(69)), VOQ(1,1),
+     &                                     VOQ(1,2), COMPDA(1,JRADS),
+     &                                     MIP, KVERT, OVEXCV(69) )
+           ENDIF
+        ELSE
+           DO IP = 1, MIP
+             VOQ(IP,VOQR(69)) = OVEXCV(69)
+           ENDDO
+        ENDIF
+        IF (INRHOG.EQ.1) THEN
+          DO IP = 1, MIP
+            F1 = VOQ(IP,VOQR(69))
+            IF (.NOT.EQREAL(F1,OVEXCV(69))) VOQ(IP,VOQR(69))=F1*RHO*GRAV
+          END DO
+        ENDIF
+      ENDIF
+!
+!     number of plants per square meter
+!
+      IF (OQPROC(70)) THEN                                              ! 41.12
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 70,
+     &  VOQR(70), JNPLA2
+        IF (JNPLA2.GT.1) THEN
+           IF (OPTG.NE.5) THEN
+              CALL SWIPOL(COMPDA(1,JNPLA2),OVEXCV(70),XC,YC, MIP, CROSS,
+     &                    VOQ(1,VOQR(70)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(70)), VOQ(1,1),
+     &                                     VOQ(1,2), COMPDA(1,JNPLA2),
+     &                                     MIP, KVERT, OVEXCV(70) )
+           ENDIF
+        ELSE
+           DO IP = 1, MIP
+             VOQ(IP,VOQR(70)) = OVEXCV(70)
+           ENDDO
+        ENDIF
+      ENDIF
+!
 !     Qb
 !
       IF (OQPROC(8)) THEN
@@ -1716,7 +2060,7 @@
         ELSE                                                              40.80
            CALL SwanInterpolateOutput ( VOQ(1,VOQR(8)), VOQ(1,1),         40.80
      &                                  VOQ(1,2), COMPDA(1,JQB),          40.80
-     &                                  MIP, OVEXCV(8) )                  40.80
+     &                                  MIP, KVERT, OVEXCV(8) )           40.80
         ENDIF                                                             40.80
       ENDIF
 !
@@ -1736,10 +2080,10 @@
           ELSE                                                            40.80
              CALL SwanInterpolateOutput ( VOQ(1,JVQX), VOQ(1,1),          40.80
      &                                    VOQ(1,2), COMPDA(1,JWX2),       40.80
-     &                                    MIP, OVEXCV(26) )               40.80
+     &                                    MIP, KVERT, OVEXCV(26) )        40.80
              CALL SwanInterpolateOutput ( VOQ(1,JVQY), VOQ(1,1),          40.80
      &                                    VOQ(1,2), COMPDA(1,JWY2),       40.80
-     &                                    MIP, OVEXCV(26) )               40.80
+     &                                    MIP, KVERT, OVEXCV(26) )        40.80
           ENDIF                                                           40.80
           DO IP = 1, MIP
             UXLOC = VOQ(IP,JVQX)
@@ -1766,7 +2110,7 @@
         ELSE                                                              40.80
            CALL SwanInterpolateOutput ( VOQ(1,VOQR(30)), VOQ(1,1),        40.80
      &                                  VOQ(1,2), COMPDA(1,JDHS),         40.80
-     &                                  MIP, OVEXCV(30) )                 40.80
+     &                                  MIP, KVERT, OVEXCV(30) )          40.80
         ENDIF                                                             40.80
       ENDIF
 !
@@ -1781,7 +2125,7 @@
         ELSE                                                              40.80
            CALL SwanInterpolateOutput ( VOQ(1,VOQR(31)), VOQ(1,1),        40.80
      &                                  VOQ(1,2), COMPDA(1,JDTM),         40.80
-     &                                  MIP, OVEXCV(31) )                 40.80
+     &                                  MIP, KVERT, OVEXCV(31) )          40.80
         ENDIF                                                             40.80
       ENDIF
 !
@@ -1796,7 +2140,7 @@
         ELSE                                                              40.80
            CALL SwanInterpolateOutput ( VOQ(1,VOQR(9)), VOQ(1,1),         40.80
      &                                  VOQ(1,2), COMPDA(1,JLEAK),        40.80
-     &                                  MIP, OVEXCV(9) )                  40.80
+     &                                  MIP, KVERT, OVEXCV(9) )           40.80
         ENDIF                                                             40.80
         IF (INRHOG.EQ.1) THEN
           DO 202 IP = 1, MIP
@@ -1818,7 +2162,7 @@
           ELSE                                                            40.80
              CALL SwanInterpolateOutput ( VOQ(1,VOQR(35)), VOQ(1,1),      40.80
      &                                    VOQ(1,2), COMPDA(1,JUSTAR),     40.80
-     &                                    MIP, OVEXCV(35) )               40.80
+     &                                    MIP, KVERT, OVEXCV(35) )        40.80
           ENDIF                                                           40.80
         ELSE
           DO IP = 1, MIP                                                  31.02
@@ -1839,7 +2183,7 @@
           ELSE                                                            40.80
              CALL SwanInterpolateOutput ( VOQ(1,VOQR(36)), VOQ(1,1),      40.80
      &                                    VOQ(1,2), COMPDA(1,JZEL),       40.80
-     &                                    MIP, OVEXCV(36) )               40.80
+     &                                    MIP, KVERT, OVEXCV(36) )        40.80
           ENDIF                                                           40.80
         ELSE
           DO IP = 1, MIP                                                  31.02
@@ -1860,7 +2204,7 @@
           ELSE                                                            40.80
              CALL SwanInterpolateOutput ( VOQ(1,VOQR(37)), VOQ(1,1),      40.80
      &                                    VOQ(1,2), COMPDA(1,JTAUW),      40.80
-     &                                    MIP, OVEXCV(37) )               40.80
+     &                                    MIP, KVERT, OVEXCV(37) )        40.80
           ENDIF                                                           40.80
         ELSE
           DO IP = 1, MIP                                                  31.02
@@ -1881,7 +2225,7 @@
           ELSE                                                            40.80
              CALL SwanInterpolateOutput ( VOQ(1,VOQR(38)), VOQ(1,1),      40.80
      &                                    VOQ(1,2), COMPDA(1,JCDRAG),     40.80
-     &                                    MIP, OVEXCV(38) )               40.80
+     &                                    MIP, KVERT, OVEXCV(38) )        40.80
           ENDIF                                                           40.80
         ELSE
           DO IP = 1, MIP                                                  31.02
@@ -1902,7 +2246,7 @@
           ELSE                                                            40.80
              CALL SwanInterpolateOutput ( VOQ(1,VOQR(39)), VOQ(1,1),      40.80
      &                                    VOQ(1,2), COMPDA(1,JSETUP),     40.80
-     &                                    MIP, OVEXCV(39) )               40.80
+     &                                    MIP, KVERT, OVEXCV(39) )        40.80
           ENDIF                                                           40.80
         ELSE                                                              32.02
           DO IP = 1, MIP                                                  32.02
@@ -1918,10 +2262,10 @@
      &  VOQR(20)                                                          40.80
         CALL SwanInterpolateOutput ( VOQ(1,VOQR(20)), VOQ(1,1),           40.80
      &                               VOQ(1,2), FORCE(1,1),                40.80
-     &                               MIP, OVEXCV(20) )                    40.80
+     &                               MIP, KVERT, OVEXCV(20) )             40.80
         CALL SwanInterpolateOutput ( VOQ(1,VOQR(20)+1), VOQ(1,1),         40.80
      &                               VOQ(1,2), FORCE(1,2),                40.80
-     &                               MIP, OVEXCV(20) )                    40.80
+     &                               MIP, KVERT, OVEXCV(20) )             40.80
       ENDIF                                                               40.80
 !
 !     Ursell
@@ -1935,7 +2279,7 @@
         ELSE                                                              40.80
            CALL SwanInterpolateOutput ( VOQ(1,VOQR(45)), VOQ(1,1),        40.80
      &                                  VOQ(1,2), COMPDA(1,JURSEL),       40.80
-     &                                  MIP, OVEXCV(45) )                 40.80
+     &                                  MIP, KVERT, OVEXCV(45) )          40.80
         ENDIF                                                             40.80
       ENDIF
 !
@@ -1951,7 +2295,7 @@
            ELSE                                                           40.80
               CALL SwanInterpolateOutput ( VOQ(1,VOQR(46)), VOQ(1,1),     40.80
      &                                     VOQ(1,2), COMPDA(1,JASTD2),    40.80
-     &                                     MIP, OVEXCV(46) )              40.80
+     &                                     MIP, KVERT, OVEXCV(46) )       40.80
            ENDIF                                                          40.80
         ELSE
            DO IP = 1, MIP
@@ -1972,7 +2316,7 @@
           ELSE                                                            40.80
              CALL SwanInterpolateOutput ( VOQ(1,VOQR(49)), VOQ(1,1),      40.80
      &                                    VOQ(1,2), DIFPARAM(:),          40.80
-     &                                    MIP, OVEXCV(49) )               40.80
+     &                                    MIP, KVERT, OVEXCV(49) )        40.80
           ENDIF                                                           40.80
         ELSE
           DO IP = 1, MIP                                                  40.21
@@ -2009,7 +2353,7 @@
                vert(:)%active = .TRUE.                                    40.91
                CALL SwanInterpolateOutput ( VOQ(1,VOQR(27)), VOQ(1,1),    40.80
      &                                      VOQ(1,2), COMPDA(1,JFRC2),    40.80
-     &                                      MIP, OVEXCV(27) )             40.80
+     &                                      MIP, KVERT, OVEXCV(27) )      40.80
                vert(:)%active = LTMP(:)                                   40.91
                DEALLOCATE(LTMP)                                           40.91
             ENDIF                                                         40.80
@@ -2044,7 +2388,7 @@
               vert(:)%active = .TRUE.                                     40.91
               CALL SwanInterpolateOutput ( VOQ(1,VOQR(51)), VOQ(1,1),     40.80
      &                                     VOQ(1,2), COMPDA(1,JWLV2),     40.80
-     &                                     MIP, OVEXCV(51) )              40.80
+     &                                     MIP, KVERT, OVEXCV(51) )       40.80
               vert(:)%active = LTMP(:)                                    40.91
               DEALLOCATE(LTMP)                                            40.91
            ENDIF                                                          40.80
@@ -2079,7 +2423,7 @@
               vert(:)%active = .TRUE.                                     40.91
               CALL SwanInterpolateOutput ( VOQ(1,VOQR(52)), VOQ(1,1),     40.80
      &                                     VOQ(1,2), COMPDA(1,JBOTLV),    40.80
-     &                                     MIP, OVEXCV(52) )              40.80
+     &                                     MIP, KVERT, OVEXCV(52) )       40.80
               vert(:)%active = LTMP(:)                                    40.91
               DEALLOCATE(LTMP)                                            40.91
            ENDIF                                                          40.80
@@ -2114,15 +2458,15 @@
          IYE = MYC-IHALOY                                                 40.31
          IF ( LMYL ) IYE = MYC                                            40.41 40.31
          DO IP = 1, MIP                                                   40.31
-            IX = NINT(XC(IP)+3.) - 2                                      40.31
-            IY = NINT(YC(IP)+3.) - 2                                      40.31
-            IF ( IX.EQ.0 ) IX = 1                                         40.31
-            IF ( IY.EQ.0 ) IY = 1                                         40.31
+            IX = NINT(XC(IP)+100.) - 99                                   41.07 40.31
+            IY = NINT(YC(IP)+100.) - 99                                   41.07 40.31
             IF ( IX.GE.IXB .AND. IX.LE.IXE .AND.                          40.31
      &           IY.GE.IYB .AND. IY.LE.IYE ) IONOD(IP) = INODE            40.31
          END DO                                                           40.31
       END IF                                                              40.31
-
+!
+      IF (ALLOCATED(KVERT)) DEALLOCATE(KVERT)                             41.07
+!
       RETURN
       END
 !***********************************************************************
@@ -2148,7 +2492,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2301,7 +2645,7 @@
         ENDIF                                                             30.21
         OUTSID = .FALSE.
         FOUTP(IP) = 0.
-        JX1 = INT(XC(IP)+3.) - 2
+        JX1 = INT(XC(IP)+3.001) - 2
         JX2 = JX1 + 1
         SX2 = XC(IP) + 1. - FLOAT(JX1)
         SX1 = 1. - SX2
@@ -2320,7 +2664,7 @@
           SY1 = 0.5                                                       40.86
           SY2 = 0.5                                                       40.86
         ELSE
-          JY1 = INT(YC(IP)+3.) - 2
+          JY1 = INT(YC(IP)+3.001) - 2
           JY2 = JY1 + 1
           SY2 = YC(IP) + 1. - FLOAT(JY1)
           SY1 = 1. - SY2
@@ -2398,6 +2742,7 @@
       USE SWCOMM2                                                         40.80
       USE SWCOMM3                                                         40.41
       USE SWCOMM4                                                         40.41
+      USE OUTP_DATA
 !
 !
 !   --|-----------------------------------------------------------|--
@@ -2411,7 +2756,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2541,7 +2886,7 @@
 !
 ! 13. Source text
 !
-      PARAMETER  (NVOTP=21)                                               40.64 40.51 40.41 40.00
+      PARAMETER  (NVOTP=22)                                               41.15 40.64 40.51 40.41 40.00
       REAL       XC(MIP)        ,YC(MIP)       ,AC2(MDC,MSC,MCGRD),
      &           VOQ(MIP,*)     ,
      &           WK(*)          ,
@@ -2557,7 +2902,7 @@
       SAVE IENT, IVOTP
       DATA IENT /0/
       DATA IVOTP /10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 28, 32, 33,     20.61
-     &            42, 43, 44, 47, 48, 53, 58, 59/                         40.64 40.51 40.41 40.00
+     &            42, 43, 44, 47, 48, 53, 58, 59, 71/                     41.15 40.64 40.51 40.41 40.00
       CALL STRACE (IENT, 'SWOEXA')
 !
 !     loop over all output points
@@ -2585,9 +2930,13 @@
            CALL SWOINA (XC(IP), YC(IP), AC2, ACLOC, KGRPNT, DEPXY,        40.86 30.50
      &                  CROSS(1,IP), EXCPT)                               40.86
         ELSE                                                              40.80
-           IF (.NOT.EQREAL(VOQ(IP,1),OVEXCV(1))) XP = VOQ(IP,1) - XOFFS   40.80
-           IF (.NOT.EQREAL(VOQ(IP,2),OVEXCV(2))) YP = VOQ(IP,2) - YOFFS   40.80
-           CALL SwanInterpolateAc ( ACLOC, XP, YP, AC2, EXCPT )           40.80
+           IF (.NOT.LCOMPGRD) THEN
+              IF (.NOT.EQREAL(VOQ(IP,1),OVEXCV(1))) XP=VOQ(IP,1)-XOFFS    40.80
+              IF (.NOT.EQREAL(VOQ(IP,2),OVEXCV(2))) YP=VOQ(IP,2)-YOFFS    40.80
+              CALL SwanInterpolateAc ( ACLOC, XP, YP, AC2, EXCPT )        40.80
+           ELSE
+              ACLOC(:,:) = AC2(:,:,IP)
+           ENDIF
         ENDIF                                                             40.80
         IF (EXCPT) GOTO 700                                               40.86
 !
@@ -2915,9 +3264,7 @@
                 END IF
               END IF
            END DO
-!Casey 090327: What if ISIGM = MSC?
-!NADC           IF (ISIGM.GT.1) THEN
-!ADC           IF (ISIGM.GT.1 .AND. ISIGM.LT.MSC) THEN
+           IF (ISIGM.GT.1 .AND. ISIGM.LT.MSC) THEN                        41.20
              SIG1 = SPCSIG(ISIGM-1)
              SIG2 = SPCSIG(ISIGM+1)
              SIG3 = SPCSIG(ISIGM  )
@@ -3399,7 +3746,7 @@
                  ENDDO
  480             CONTINUE
               ENDIF
-              IF (ETOT.GT.0.) THEN
+              IF (EKTOT.GT.0.) THEN
                  WLMEAN = PI2 * (ETOT / EKTOT) ** (1./OUTPAR(3))          40.00
                  VOQ(IP,VOQR(IVTYPE)) = WLMEAN
               ELSE
@@ -3460,7 +3807,7 @@
                  ENDDO
  481             CONTINUE
               ENDIF
-              IF (ETOT.GT.0.) THEN
+              IF (EKTOT.GT.0.) THEN
                  WLMEAN = PI2 * (ETOT / EKTOT) ** (1./OUTPAR(3))          40.00
                  VOQ(IP,VOQR(IVTYPE)) = 4.* SQRT(ETOT*DDIR) / WLMEAN
               ELSE
@@ -3873,6 +4220,29 @@
            ENDIF
         ENDIF
 !
+!       peak wave length                                                  41.15
+!
+        IVTYPE = 71
+        IF (OQPROC(IVTYPE)) THEN
+           EMAX = 0.
+           ISIGM = -1
+           DO IS = 1, MSC
+              ETD = 0.
+              DO ID = 1, MDC
+                ETD = ETD + WK(IS)*ACLOC(ID,IS)*DDIR
+              ENDDO
+              IF (ETD.GT.EMAX) THEN
+                EMAX  = ETD
+                ISIGM = IS
+              ENDIF
+           ENDDO
+           IF (ISIGM.GT.0) THEN
+             VOQ(IP,VOQR(IVTYPE)) = 2.*PI/WK(ISIGM)
+           ELSE
+             VOQ(IP,VOQR(IVTYPE)) = OVEXCV(IVTYPE)
+           ENDIF
+        ENDIF
+!
         GOTO 800
 !
 !       points on land: assign exception value
@@ -3914,7 +4284,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4134,7 +4504,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as

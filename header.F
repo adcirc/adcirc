@@ -2,6 +2,12 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.55   - 03/25/2012 - jgf - Merged Casey Dietrich's changes for the
+C             latest version of SWAN (moving from v40.95 to v41.20 of SWAN)
+C             as well as the capability to limit the spectral propagation 
+C             velocities in SWAN; the merged code also contains Taylor Asher's
+C             new capability for modifying wave results in SWAN to account
+C             for ice coverage. 
 C  v50.54   - 03/25/2012 - jgf - Made changes to enable compilation of netcdfio
 C             on intel compilers; upgraded hstime utility to new ADCNETCDF
 C             preprocessor variable; added preprocessor variables to turn off

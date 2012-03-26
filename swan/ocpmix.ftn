@@ -41,7 +41,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -181,7 +181,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -364,7 +364,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -455,7 +455,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -502,7 +502,7 @@
 !
 !  5. PARAMETER VARIABLES
 !
-!  6. LOCAL VARIABLESC
+!  6. LOCAL VARIABLES
 !
       INTEGER    ITIME(6)
 !
@@ -520,7 +520,7 @@
 ! 12. STRUCTURE
 !
 ! 13. SOURCE TEXT
-!                                              30.00
+!                                                                         30.00
       CALL DTINTI (TIMESC, ITIME)
       CALL DTTIST (IOPT, TSTRNG, ITIME)
       DTTIWR = TSTRNG(1:18)                                               40.02
@@ -553,7 +553,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -786,7 +786,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1156,7 +1156,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1269,7 +1269,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1387,8 +1387,6 @@
           IERRF = 17                                                      40.13
           OPEN (UNIT=IERRF, FILE=ERRFNM, FORM='FORMATTED')                40.13
         ENDIF
-!Casey 080919: Debug.
-!ADC        PRINT*, STRING
         WRITE (IERRF,14) ERRM, STRING
   14    FORMAT (A, ': ',A)
       ENDIF
@@ -1419,7 +1417,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1469,6 +1467,8 @@
 !
 !  8. SUBROUTINE USED
 !
+!$    LOGICAL,EXTERNAL :: OMP_IN_PARALLEL
+!
 !  9. SUBROUTINES CALLING
 !
 ! 10. ERROR MESSAGES
@@ -1489,6 +1489,7 @@
         STPNOW = .FALSE.
       END IF
       IF (MAXERR.EQ.-1) STPNOW = .FALSE.
+!$    IF (OMP_IN_PARALLEL()) STPNOW = .FALSE.
 !
       RETURN
       END
@@ -1517,7 +1518,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1616,7 +1617,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1642,6 +1643,7 @@
 !     34.01: IJsbrand Haagsma
 !     40.00, 40.03: Nico Booij
 !     40.41: Marcel Zijlema
+!     41.20: Casey Dietrich
 !
 !  1. Updates
 !
@@ -1653,6 +1655,7 @@
 !     40.00, Feb. 99: DIRCH2 replaces DIRCH1 in filenames
 !     40.03, May  00: modification for Linux: local copy of filename
 !     40.41, Oct. 04: common blocks replaced by modules, include files removed
+!     41.20, Mar. 10: extension to tightly coupled ADCIRC+SWAN model
 !
 !  1. PURPOSE
 !
@@ -1842,6 +1845,7 @@
                CALL MSGERR (4,
      &         'File cannot be opened/does not exist: '//DDNAME_L)        40.03
                IOSTAT = IEEXST
+               RETURN
             END IF
             IF (OPENED) THEN
                IF (IOSTAT.GT.-1)
@@ -1850,21 +1854,19 @@
                IUNIT = IUTTM
                RETURN
             ENDIF
-!Casey 090617: See below.
-!ADC 9617       CONTINUE
+!ADC  60        CONTINUE                                                      41.20
 !           Assign free unit number
             IF (IFUN.EQ.0) THEN
                IFUN = FUNLO
             ELSE
                IFUN = IFUN + 1
             ENDIF
+!ADC!           the following unit numbers are reserved for ADCIRC            41.20
+!ADC            IF ( IFUN.EQ.13 ) GOTO 60                                     41.20
+!ADC            IF ( IFUN.EQ.14 ) GOTO 60                                     41.20
+!ADC            IF ( IFUN.EQ.15 ) GOTO 60                                     41.20
+!ADC            IF ( IFUN.EQ.22 ) GOTO 60                                     41.20
             IUNIT = IFUN
-!Casey 090617: We have to be careful when we couple to ADCIRC, which uses
-!              specific, hard-wired unit numbers for its external files.
-!ADC            IF(IUNIT.EQ.13) GOTO 9617
-!ADC            IF(IUNIT.EQ.14) GOTO 9617
-!ADC            IF(IUNIT.EQ.15) GOTO 9617
-!ADC            IF(IUNIT.EQ.22) GOTO 9617
             IF (IUNIT .GT. FUNHI) THEN
                IF (IOSTAT.GT.-2) CALL MSGERR (3, 'All free units used')
                IOSTAT= IENUNF
@@ -1965,7 +1967,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2092,7 +2094,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2188,6 +2190,8 @@
 !
       LENLIN = LEN(RELINE)
       LCHSTR = .FALSE.
+      RITM   = 1
+      ICR1   = 1
       DO IITM = 1, NUMITM
         DATITM(IITM) = '    '
       ENDDO
@@ -2197,7 +2201,7 @@
 !     blanks and commas serve as separation between data items
 !     DATITM is string containing one data item
 !
-      IITM = 0
+      IITM = 1
       DO 170 ILL = 1, LENLIN
          CRL = RELINE(ILL:ILL)
          IF (LCHSTR) THEN
@@ -2284,7 +2288,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2380,7 +2384,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as

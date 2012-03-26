@@ -11,7 +11,7 @@ subroutine SwanReadADCGrid
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -33,11 +33,13 @@ subroutine SwanReadADCGrid
 !
 !   40.80: Marcel Zijlema
 !   40.95: Marcel Zijlema
+!   41.07: Casey Dietrich
 !
 !   Updates
 !
 !   40.80, December 2007: New subroutine
 !   40.95,     June 2008: parallelization of unSWAN using MESSENGER of ADCIRC
+!   41.07,   August 2009: use ADCIRC boundary info to mark all boundary vertices
 !
 !   Purpose
 !
@@ -69,21 +71,18 @@ subroutine SwanReadADCGrid
     integer                 :: ii       ! auxiliary integer
     integer                 :: iostat   ! I/O status in call FOR
     integer                 :: istat    ! indicate status of allocation
+    integer                 :: itype    ! ADCIRC boundary type
     integer                 :: ivert    ! vertex index
+    integer                 :: ivert1   ! another vertex index
     integer                 :: j        ! loop counter
     integer                 :: k        ! loop counter
     integer                 :: n1       ! auxiliary integer
     integer                 :: n2       ! another auxiliary integer
     integer                 :: ndsd     ! unit reference number of file
+    integer                 :: nopbc    ! number of open boundaries in ADCIRC
     integer                 :: vm       ! boundary marker
     character(80)           :: line     ! auxiliary textline
     logical                 :: stpnow   ! indicate whether program must be terminated or not
-!Casey 090304: Added more variables for reading of boundary information.
-    INTEGER                 :: bdrytype
-    INTEGER                 :: ivert1
-    INTEGER                 :: ivert2
-    INTEGER                 :: numopenbdry
-    LOGICAL                 :: Parallel
 !
 !   Structure
 !
@@ -141,29 +140,6 @@ subroutine SwanReadADCGrid
        if ( ii/=j ) call msgerr ( 1, 'numbering of triangles is not sequential in grid file fort.14 ' )
     enddo
     !
-!Casey 090304: Instead of skipping the standard ADCIRC boundary information
-!              and then reading a modified version of it at the end of the file,
-!              let's just grab the information from the standard list.
-!    ! skip part containing ADCIRC boundary information (not relevant to SWAN)
-!    !
-!    read(ndsd, *, end=950, err=910) n1
-!    read(ndsd, *, end=950, err=910) idum
-!    do j = 1, n1
-!       read(ndsd, *, end=950, err=910) n2
-!       do k = 1, n2
-!          read(ndsd, *, end=950, err=910) idum
-!       enddo
-!    enddo
-!    !
-!    read(ndsd, *, end=950, err=910) n1
-!    read(ndsd, *, end=950, err=910) idum
-!    do j = 1, n1
-!       read(ndsd, *, end=950, err=910) n2, idum
-!       do k = 1, n2
-!          read(ndsd, *, end=950, err=910) idum
-!       enddo
-!    enddo
-    !
     if(.not.allocated(vmark)) allocate (vmark(nverts), stat = istat)
     if ( istat /= 0 ) then
        call msgerr ( 4, 'Allocation problem in SwanReadADCGrid: array vmark ' )
@@ -171,21 +147,17 @@ subroutine SwanReadADCGrid
     endif
     vmark = 0
     !
-    ! read and store boundary markers
+    ! read ADCIRC boundary information and store boundary markers
     !
-!Casey 090304: This section is new.
-    Parallel = .FALSE.
-!PUN    Parallel = .TRUE.
-    !
-    read(ndsd, *, end=950, err=910) numopenbdry
+    read(ndsd, *, end=950, err=910) nopbc
     read(ndsd, *, end=950, err=910) idum
-    do j = 1, numopenbdry
-       if ( .not.Parallel ) then
-          read(ndsd, *, end=950, err=910) n2
+    do j = 1, nopbc
+!PUN       if ( MNPROC==1 ) then
           vm = j
-       else
-          read(ndsd, *, end=950, err=910) n2, vm
-       endif
+          read(ndsd, *, end=950, err=910) n2
+!PUN       else
+!PUN          read(ndsd, *, end=950, err=910) n2, vm
+!PUN       endif
        do k = 1, n2
            read(ndsd, *, end=950, err=910) ivert
            vmark(ivert) = vm
@@ -195,22 +167,22 @@ subroutine SwanReadADCGrid
     read(ndsd, *, end=950, err=910) n1
     read(ndsd, *, end=950, err=910) idum
     do j = 1, n1
-       if ( .not.Parallel ) then
-          read(ndsd, *, end=950, err=910) n2, bdrytype
-          vm = numopenbdry + j
-       else
-          read(ndsd, *, end=950, err=910) n2, bdrytype, vm
-       endif
-       if((bdrytype.ne.4).and.(bdrytype.ne.24))then
+!PUN       if ( MNPROC==1 ) then
+          vm = nopbc + j
+          read(ndsd, *, end=950, err=910) n2, itype
+!PUN       else
+!PUN          read(ndsd, *, end=950, err=910) n2, itype, vm
+!PUN       endif
+       if ( itype /= 4 .and. itype /= 24 ) then
           do k = 1, n2
              read(ndsd, *, end=950, err=910) ivert
              vmark(ivert) = vm
           enddo
        else
-          do k= 1, n2
-             read(ndsd, *, end=950, err=910) ivert1, ivert2
+          do k = 1, n2
+             read(ndsd, *, end=950, err=910) ivert, ivert1
+             vmark(ivert ) = vm
              vmark(ivert1) = vm
-             vmark(ivert2) = vm
           enddo
        endif
     enddo

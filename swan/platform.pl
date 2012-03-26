@@ -31,7 +31,7 @@ if ($os =~ /IRIX64/i) {
   print OUTFILE "F90_MPI = f90\n";
   print OUTFILE "FLAGS_OPT = -Ofast=IP35 -mips4 -r12000\n";
   print OUTFILE "FLAGS_MSC = -64\n";
-  print OUTFILE "FLAGS_F90 =\n";
+  print OUTFILE "FLAGS90_MSC = \$(FLAGS_MSC)\n";
   print OUTFILE "FLAGS_SER =\n";
   print OUTFILE "FLAGS_OMP = -mp\n";
   print OUTFILE "FLAGS_MPI =\n";
@@ -41,6 +41,7 @@ if ($os =~ /IRIX64/i) {
   print OUTFILE "LIBS_SER =\n";
   print OUTFILE "LIBS_OMP =\n";
   print OUTFILE "LIBS_MPI = -lmpi\n";
+  print OUTFILE "O_DIR = ../work/odir4/\n";
   print OUTFILE "OUT = -o \n";
   print OUTFILE "EXTO = o\n";
   print OUTFILE "MAKE = make\n";
@@ -57,7 +58,7 @@ elsif ($os =~ /AIX/i) {
   print OUTFILE "FLAGS_OPT = -O3 -qstrict -qarch=auto -qtune=auto -qnohot -qcache=auto \\\n";
   print OUTFILE "            -qunroll -qalign=4k -qfloat=hsflt\n";
   print OUTFILE "FLAGS_MSC = -w -qfixed -qnosave -q64\n";
-  print OUTFILE "FLAGS_F90 = -qfree=f90\n";
+  print OUTFILE "FLAGS90_MSC = -w -qfree=f90 -qnosave -q64\n";
   print OUTFILE "FLAGS_SER =\n";
   print OUTFILE "FLAGS_OMP = -qsmp=omp\n";
   print OUTFILE "FLAGS_MPI =\n";
@@ -67,6 +68,7 @@ elsif ($os =~ /AIX/i) {
   print OUTFILE "LIBS_SER = -lessl -lmass\n";
   print OUTFILE "LIBS_OMP = -lessl -lmass\n";
   print OUTFILE "LIBS_MPI = -lessl -lmass\n";
+  print OUTFILE "O_DIR = ../work/odir4/\n";
   print OUTFILE "OUT = -o \n";
   print OUTFILE "EXTO = o\n";
   print OUTFILE "MAKE = make\n";
@@ -82,7 +84,7 @@ elsif ($os =~ /OSF1/i) {
   print OUTFILE "F90_MPI = f90\n";
   print OUTFILE "FLAGS_OPT = -fast\n";
   print OUTFILE "FLAGS_MSC = -w -fixed\n";
-  print OUTFILE "FLAGS_F90 =\n";
+  print OUTFILE "FLAGS90_MSC = -w -free\n";
   print OUTFILE "FLAGS_SER =\n";
   print OUTFILE "FLAGS_OMP = -Wp,-C -omp\n";
   print OUTFILE "FLAGS_MPI =\n";
@@ -92,6 +94,7 @@ elsif ($os =~ /OSF1/i) {
   print OUTFILE "LIBS_SER =\n";
   print OUTFILE "LIBS_OMP =\n";
   print OUTFILE "LIBS_MPI = -lfmpi -lmpi -lelan\n";
+  print OUTFILE "O_DIR = ../work/odir4/\n";
   print OUTFILE "OUT = -o \n";
   print OUTFILE "EXTO = o\n";
   print OUTFILE "MAKE = make\n";
@@ -107,7 +110,7 @@ elsif ($os =~ /SunOS/i) {
   print OUTFILE "F90_MPI = mpf90\n";
   print OUTFILE "FLAGS_OPT = -xO3 -xtarget=native -fsimple=1 -depend -libmil -xlibmopt -xlic_lib=sunperf\n";
   print OUTFILE "FLAGS_MSC = -w -silent\n";
-  print OUTFILE "FLAGS_F90 =\n";
+  print OUTFILE "FLAGS90_MSC = \$(FLAGS_MSC)\n";
   print OUTFILE "FLAGS_SER =\n";
   print OUTFILE "FLAGS_OMP = -openmp\n";
   print OUTFILE "FLAGS_MPI =\n";
@@ -117,6 +120,7 @@ elsif ($os =~ /SunOS/i) {
   print OUTFILE "LIBS_SER =\n";
   print OUTFILE "LIBS_OMP =\n";
   print OUTFILE "LIBS_MPI = -lmpi\n";
+  print OUTFILE "O_DIR = ../work/odir4/\n";
   print OUTFILE "OUT = -o \n";
   print OUTFILE "EXTO = o\n";
   print OUTFILE "MAKE = make\n";
@@ -132,7 +136,7 @@ elsif ($os =~ /HP-UX/i) {
   print OUTFILE "F90_MPI =\n";
   print OUTFILE "FLAGS_OPT = +O2 +Onolimit\n";
   print OUTFILE "FLAGS_MSC =\n";
-  print OUTFILE "FLAGS_F90 =\n";
+  print OUTFILE "FLAGS90_MSC =\n";
   print OUTFILE "FLAGS_SER = +Onoopenmp\n";
   print OUTFILE "FLAGS_OMP = +Oopenmp\n";
   print OUTFILE "FLAGS_MPI =\n";
@@ -142,6 +146,7 @@ elsif ($os =~ /HP-UX/i) {
   print OUTFILE "LIBS_SER =\n";
   print OUTFILE "LIBS_OMP =\n";
   print OUTFILE "LIBS_MPI =\n";
+  print OUTFILE "O_DIR =\n";
   print OUTFILE "OUT = -o \n";
   print OUTFILE "EXTO = o\n";
   print OUTFILE "MAKE = make\n";
@@ -159,19 +164,19 @@ elsif ($os =~ /Linux/i) {
     print OUTFILE "F90_SER = ifort\n";
     print OUTFILE "F90_OMP = ifort\n";
     print OUTFILE "F90_MPI = mpif90\n";
-    if ($cpu =~ /i686/i) {
-      print OUTFILE "FLAGS_OPT = -O2 -xN -mp1\n";
-    }
-    elsif ($cpu =~ /x86_64/i) {
-      print OUTFILE "FLAGS_OPT = -O2 -ipo -xW -mp1\n";
-    }
-    else {
+#    if ($cpu =~ /i686/i) {
+#      print OUTFILE "FLAGS_OPT = -O2 -xN -mp1\n";
+#    }
+#    elsif ($cpu =~ /x86_64/i) {
+#      print OUTFILE "FLAGS_OPT = -O2 -ipo -xW -mp1\n";
+#    }
+#    else {
       print OUTFILE "FLAGS_OPT = -O2\n";
-    }
+#    }
     print OUTFILE "FLAGS_MSC = -W0 -assume byterecl -traceback\n";
-    print OUTFILE "FLAGS_F90 =\n";
+    print OUTFILE "FLAGS90_MSC = \$(FLAGS_MSC)\n";
     print OUTFILE "FLAGS_SER =\n";
-    print OUTFILE "FLAGS_OMP = -openmp -assume cc_omp -fpp2\n";
+    print OUTFILE "FLAGS_OMP = -openmp\n";
     print OUTFILE "FLAGS_MPI =\n";
     print OUTFILE "INCS_SER =\n";
     print OUTFILE "INCS_OMP =\n";
@@ -179,11 +184,12 @@ elsif ($os =~ /Linux/i) {
     print OUTFILE "LIBS_SER =\n";
     print OUTFILE "LIBS_OMP =\n";
     print OUTFILE "LIBS_MPI =\n";
+    print OUTFILE "O_DIR = ../work/odir4/\n";
     print OUTFILE "OUT = -o \n";
     print OUTFILE "EXTO = o\n";
     print OUTFILE "MAKE = make\n";
     print OUTFILE "RM = rm -f\n";
-    print OUTFILE "swch = -unix -f95 -timg -impi\n";
+    print OUTFILE "swch = -unix -impi\n";
   }
   elsif ( -f "ifc" )
   {
@@ -197,9 +203,9 @@ elsif ($os =~ /Linux/i) {
     print OUTFILE "F90_MPI = mpif90\n";
     print OUTFILE "FLAGS_OPT = -O2 -tpp7\n";
     print OUTFILE "FLAGS_MSC = -W0 -auto\n";
-    print OUTFILE "FLAGS_F90 =\n";
+    print OUTFILE "FLAGS90_MSC = \$(FLAGS_MSC)\n";
     print OUTFILE "FLAGS_SER =\n";
-    print OUTFILE "FLAGS_OMP = -openmp -fpp2\n";
+    print OUTFILE "FLAGS_OMP = -openmp\n";
     print OUTFILE "FLAGS_MPI =\n";
     print OUTFILE "INCS_SER =\n";
     print OUTFILE "INCS_OMP =\n";
@@ -207,6 +213,7 @@ elsif ($os =~ /Linux/i) {
     print OUTFILE "LIBS_SER =\n";
     print OUTFILE "LIBS_OMP =\n";
     print OUTFILE "LIBS_MPI =\n";
+    print OUTFILE "O_DIR = ../work/odir4/\n";
     print OUTFILE "OUT = -o \n";
     print OUTFILE "EXTO = o\n";
     print OUTFILE "MAKE = make\n";
@@ -225,9 +232,9 @@ elsif ($os =~ /Linux/i) {
     print OUTFILE "F90_MPI = mpif90\n";
     print OUTFILE "FLAGS_OPT = -O2 -tpp1\n";
     print OUTFILE "FLAGS_MSC = -W0 -auto\n";
-    print OUTFILE "FLAGS_F90 =\n";
+    print OUTFILE "FLAGS90_MSC = \$(FLAGS_MSC)\n";
     print OUTFILE "FLAGS_SER =\n";
-    print OUTFILE "FLAGS_OMP = -openmp -fpp2\n";
+    print OUTFILE "FLAGS_OMP = -openmp\n";
     print OUTFILE "FLAGS_MPI =\n";
     print OUTFILE "INCS_SER =\n";
     print OUTFILE "INCS_OMP =\n";
@@ -235,6 +242,7 @@ elsif ($os =~ /Linux/i) {
     print OUTFILE "LIBS_SER =\n";
     print OUTFILE "LIBS_OMP =\n";
     print OUTFILE "LIBS_MPI =\n";
+    print OUTFILE "O_DIR = ../work/odir4/\n";
     print OUTFILE "OUT = -o \n";
     print OUTFILE "EXTO = o\n";
     print OUTFILE "MAKE = make\n";
@@ -246,28 +254,28 @@ elsif ($os =~ /Linux/i) {
     system 'rm pgf90';
     print OUTFILE "##############################################################################\n";
     print OUTFILE "# IA32_PGF:		Intel Pentium with Linux using Portland Group compiler\n";
-    print OUTFILE "# Note: -lpgc is required for OpenMP.\n";
     print OUTFILE "##############################################################################\n";
     print OUTFILE "F90_SER = pgf90\n";
     print OUTFILE "F90_OMP = pgf90\n";
     print OUTFILE "F90_MPI = mpif90\n";
-    print OUTFILE "FLAGS_OPT =\n";
-    print OUTFILE "FLAGS_MSC = -mcmodel=medium\n";
-    print OUTFILE "FLAGS_F90 =\n";
-    print OUTFILE "FLAGS_SER = -fast\n";
+    print OUTFILE "FLAGS_OPT = -fast\n";
+    print OUTFILE "FLAGS_MSC = -Mfixed\n";
+    print OUTFILE "FLAGS90_MSC = -Mfree\n";
+    print OUTFILE "FLAGS_SER =\n";
     print OUTFILE "FLAGS_OMP = -mp\n";
-    print OUTFILE "FLAGS_MPI = -fast\n";
+    print OUTFILE "FLAGS_MPI = -tp barcelona-64\n";
     print OUTFILE "INCS_SER =\n";
     print OUTFILE "INCS_OMP =\n";
     print OUTFILE "INCS_MPI =\n";
     print OUTFILE "LIBS_SER =\n";
-    print OUTFILE "LIBS_OMP = -lpgc\n";
-    print OUTFILE "LIBS_MPI = -lmpi\n";
+    print OUTFILE "LIBS_OMP =\n";
+    print OUTFILE "LIBS_MPI =\n";
+    print OUTFILE "O_DIR = ../work/odir4/\n";
     print OUTFILE "OUT = -o \n";
     print OUTFILE "EXTO = o\n";
     print OUTFILE "MAKE = make\n";
     print OUTFILE "RM = rm -f\n";
-    print OUTFILE "swch = -unix -impi -timg\n";
+    print OUTFILE "swch = -unix -impi\n";
   }
   elsif ( -f "lf95" )
   {
@@ -280,7 +288,7 @@ elsif ($os =~ /Linux/i) {
     print OUTFILE "F90_MPI = mpif90\n";
     print OUTFILE "FLAGS_OPT = -O --tpp\n";
     print OUTFILE "FLAGS_MSC = --staticlink --nwo\n";
-    print OUTFILE "FLAGS_F90 =\n";
+    print OUTFILE "FLAGS90_MSC = \$(FLAGS_MSC)\n";
     print OUTFILE "FLAGS_SER =\n";
     print OUTFILE "FLAGS_OMP =\n";
     print OUTFILE "FLAGS_MPI =\n";
@@ -290,11 +298,12 @@ elsif ($os =~ /Linux/i) {
     print OUTFILE "LIBS_SER =\n";
     print OUTFILE "LIBS_OMP =\n";
     print OUTFILE "LIBS_MPI =\n";
+    print OUTFILE "O_DIR =\n";
     print OUTFILE "OUT = -o \n";
     print OUTFILE "EXTO = o\n";
     print OUTFILE "MAKE = make\n";
     print OUTFILE "RM = rm -f\n";
-    print OUTFILE "swch = -unix -f95 -timg\n";
+    print OUTFILE "swch = -unix\n";
   }
   elsif ( -f "gfortran" )
   {
@@ -303,25 +312,26 @@ elsif ($os =~ /Linux/i) {
     print OUTFILE "# IA32_GNU:		Intel Pentium with Linux using GNU compiler gfortran.\n";
     print OUTFILE "##############################################################################\n";
     print OUTFILE "F90_SER = gfortran\n";
-    print OUTFILE "F90_OMP = \n";
+    print OUTFILE "F90_OMP = gfortran\n";
     print OUTFILE "F90_MPI = mpif90\n";
     print OUTFILE "FLAGS_OPT = -O\n";
-    print OUTFILE "FLAGS_MSC = -w -ffree-line-length-none\n";
-    print OUTFILE "FLAGS_F90 =\n";
+    print OUTFILE "FLAGS_MSC = -w -fno-second-underscore\n";
+    print OUTFILE "FLAGS90_MSC = \$(FLAGS_MSC) -ffree-line-length-none\n";
     print OUTFILE "FLAGS_SER =\n";
-    print OUTFILE "FLAGS_OMP =\n";
+    print OUTFILE "FLAGS_OMP = -fopenmp\n";
     print OUTFILE "FLAGS_MPI =\n";
     print OUTFILE "INCS_SER =\n";
     print OUTFILE "INCS_OMP =\n";
     print OUTFILE "INCS_MPI =\n";
     print OUTFILE "LIBS_SER =\n";
-    print OUTFILE "LIBS_OMP =\n";
+    print OUTFILE "LIBS_OMP = -static-libgcc\n";
     print OUTFILE "LIBS_MPI =\n";
+    print OUTFILE "O_DIR = ../work/odir4/\n";
     print OUTFILE "OUT = -o \n";
     print OUTFILE "EXTO = o\n";
     print OUTFILE "MAKE = make\n";
     print OUTFILE "RM = rm -f\n";
-    print OUTFILE "swch = -unix -f95 -timg\n";
+    print OUTFILE "swch = -unix\n";
   }
   elsif ( -f "g95" )
   {
@@ -330,11 +340,11 @@ elsif ($os =~ /Linux/i) {
     print OUTFILE "# IA32_GNU:		Intel Pentium with Linux using GNU compiler g95.\n";
     print OUTFILE "##############################################################################\n";
     print OUTFILE "F90_SER = g95\n";
-    print OUTFILE "F90_OMP = \n";
+    print OUTFILE "F90_OMP = NO_OPENMP_WITH_G95\n";
     print OUTFILE "F90_MPI = mpif90\n";
     print OUTFILE "FLAGS_OPT = -O\n";
-    print OUTFILE "FLAGS_MSC = -w\n";
-    print OUTFILE "FLAGS_F90 =\n";
+    print OUTFILE "FLAGS_MSC = -fno-second-underscore\n";
+    print OUTFILE "FLAGS90_MSC = \$(FLAGS_MSC) -ffree-line-length-huge\n";
     print OUTFILE "FLAGS_SER =\n";
     print OUTFILE "FLAGS_OMP =\n";
     print OUTFILE "FLAGS_MPI =\n";
@@ -344,11 +354,12 @@ elsif ($os =~ /Linux/i) {
     print OUTFILE "LIBS_SER =\n";
     print OUTFILE "LIBS_OMP =\n";
     print OUTFILE "LIBS_MPI =\n";
+    print OUTFILE "O_DIR = ../work/odir4/\n";
     print OUTFILE "OUT = -o \n";
     print OUTFILE "EXTO = o\n";
     print OUTFILE "MAKE = make\n";
     print OUTFILE "RM = rm -f\n";
-    print OUTFILE "swch = -unix -f95 -timg\n";
+    print OUTFILE "swch = -unix\n";
   }
   elsif ( -f "xlf90" )
   {
@@ -361,7 +372,7 @@ elsif ($os =~ /Linux/i) {
     print OUTFILE "F90_MPI = mpfort\n";
     print OUTFILE "FLAGS_OPT = -O3 -qstrict -qarch=auto -qtune=auto\n";
     print OUTFILE "FLAGS_MSC = -qfixed -qzerosize -qwarn64\n";
-    print OUTFILE "FLAGS_F90 = -qfree=f90\n";
+    print OUTFILE "FLAGS90_MSC = -qfree=f90 -qzerosize -qwarn64\n";
     print OUTFILE "FLAGS_SER =\n";
     print OUTFILE "FLAGS_OMP =\n";
     print OUTFILE "FLAGS_MPI =\n";
@@ -371,11 +382,12 @@ elsif ($os =~ /Linux/i) {
     print OUTFILE "LIBS_SER =\n";
     print OUTFILE "LIBS_OMP =\n";
     print OUTFILE "LIBS_MPI =\n";
+    print OUTFILE "O_DIR = ../work/odir4/\n";
     print OUTFILE "OUT = -o \n";
     print OUTFILE "EXTO = o\n";
     print OUTFILE "MAKE = make\n";
     print OUTFILE "RM = rm -f\n";
-    print OUTFILE "swch = -unix -f95 -timg\n";
+    print OUTFILE "swch = -unix\n";
   }
   else
   {
@@ -384,16 +396,16 @@ elsif ($os =~ /Linux/i) {
 }
 elsif ($os =~ /WindowsNT/i || $os =~ /MSWin32/i) {
   print OUTFILE "##############################################################################\n";
-  print OUTFILE "# IA32_Intel/EM64T_Intel:	Intel Pentium with MS Windows using Intel compiler 9.1.\n";
+  print OUTFILE "# IA32_Intel/EM64T_Intel:	Intel Pentium with MS Windows using Intel compiler 11.\n";
   print OUTFILE "##############################################################################\n";
   print OUTFILE "F90_SER = ifort\n";
   print OUTFILE "F90_OMP = ifort\n";
   print OUTFILE "F90_MPI = ifort\n";
   print OUTFILE "FLAGS_OPT = /optimize:2\n";
   print OUTFILE "FLAGS_MSC = /assume:byterecl /traceback /nowarn /nologo\n";
-  print OUTFILE "FLAGS_F90 =\n";
+  print OUTFILE "FLAGS90_MSC = \$(FLAGS_MSC)\n";
   print OUTFILE "FLAGS_SER =\n";
-  print OUTFILE "FLAGS_OMP = /Qopenmp /assume:cc_omp /fpp\n";
+  print OUTFILE "FLAGS_OMP = /Qopenmp /Qopenmp-link:static\n";
   print OUTFILE "FLAGS_MPI =\n";
   print OUTFILE "INCS_SER =\n";
   print OUTFILE "INCS_OMP =\n";
@@ -401,11 +413,12 @@ elsif ($os =~ /WindowsNT/i || $os =~ /MSWin32/i) {
   print OUTFILE "LIBS_SER =\n";
   print OUTFILE "LIBS_OMP =\n";
   print OUTFILE "LIBS_MPI = c:\\\progra~1\\\MPICH\\\SDK\\\llib\\\mpe.lib c:\\\progra~1\\\MPICH\\\SDK\\\llib\\\mpich.lib\n";
+  print OUTFILE "O_DIR =\n";
   print OUTFILE "OUT = /exe:\n";
   print OUTFILE "EXTO = obj\n";
   print OUTFILE "MAKE = nmake\n";
   print OUTFILE "RM = del\n";
-  print OUTFILE "swch = -dos -f95 -impi -cvis -timg\n";
+  print OUTFILE "swch = -dos -impi -cvis\n";
 }
 elsif ($os =~ /Darwin/i) {
   print OUTFILE "##############################################################################\n";
@@ -416,7 +429,7 @@ elsif ($os =~ /Darwin/i) {
   print OUTFILE "F90_MPI =\n";
   print OUTFILE "FLAGS_OPT = -O3 -qstrict -qtune=auto -qcache=auto -qalign=4k\n";
   print OUTFILE "FLAGS_MSC = -w -qfixed\n";
-  print OUTFILE "FLAGS_F90 = -qfree=f90\n";
+  print OUTFILE "FLAGS90_MSC = -w -qfree=f90\n";
   print OUTFILE "FLAGS_SER =\n";
   print OUTFILE "FLAGS_OMP =\n";
   print OUTFILE "FLAGS_MPI =\n";
@@ -426,11 +439,12 @@ elsif ($os =~ /Darwin/i) {
   print OUTFILE "LIBS_SER =\n";
   print OUTFILE "LIBS_OMP =\n";
   print OUTFILE "LIBS_MPI =\n";
+  print OUTFILE "O_DIR =\n";
   print OUTFILE "OUT = -o \n";
   print OUTFILE "EXTO = o\n";
   print OUTFILE "MAKE = make\n";
   print OUTFILE "RM = rm -f\n";
-  print OUTFILE "swch = -unix -f95 -timg\n";
+  print OUTFILE "swch = -unix\n";
 }
 else
 {

@@ -11,7 +11,7 @@ subroutine SwanReadfort18
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -46,8 +46,6 @@ subroutine SwanReadfort18
 !PUN!   These variables are needed by the message-passing routines in module MESSENGER
 !PUN!
 !PUN!   Next, we also need the number of elements and nodes in global domain for SWAN computation
-!PUN!
-!PUN!   TCM 2011/06/10 -- Changed I8 formats to I12 formats to match ADCIRC v50.21 changes 
 !PUN!
 !PUN!   Modules used
 !PUN!
@@ -90,37 +88,49 @@ subroutine SwanReadfort18
 !PUN    !
 !PUN    read(ndsd,100, end=950, err=910) idum1, idum2, idum3
 !PUN    !
-!Casey 100209: Changed FMT=100 to match ADCIRC.
-!PUN    read(ndsd,'(8X,3I12)', end=950, err=910) ncellsg, idum2, MNE   ! number of elements
+!PUN!Casey 120116: Debug.
+!PUN!   read(ndsd,'(8x,312)', end=950, err=910) ncellsg, idum2, MNE   ! number of elements
+!PUN    read(ndsd,100, end=950, err=910) ncellsg, idum2, MNE   ! number of elements
 !PUN    do j = 1, MNE
-!Casey 100209: Changed i8 to i12.
 !PUN       read(ndsd,'(i12)', end=950, err=910) idum4
 !PUN    enddo
 !PUN    !
 !PUN    read(ndsd,100, end=950, err=910) nvertsg, idum2, MNP   ! number of nodes
 !PUN    do j = 1, MNP
+!PUN!Casey 120116: Debug.
+!PUN!      read(ndsd,'(i8)', end=950, err=910) idum4
 !PUN       read(ndsd,'(i12)', end=950, err=910) idum4
 !PUN    enddo
 !PUN    !
+!PUN!Casey 120116: Debug.
+!PUN!   read(ndsd,'(8x,i8)', end=950, err=910) idum1
 !PUN    read(ndsd,'(8x,i12)', end=950, err=910) idum1
 !PUN    !
 !PUN    read(ndsd,100, end=950, err=910) idum1, idum2, idum3
 !PUN    do j = 1, idum3
+!PUN!Casey 120116: Debug.
+!PUN!      read(ndsd,'(i8)', end=950, err=910) idum4
 !PUN       read(ndsd,'(i12)', end=950, err=910) idum4
 !PUN    enddo
 !PUN    !
 !PUN    read(ndsd,100, end=950, err=910) idum1, idum2, NSTAE   ! number of elevation stations
 !PUN    do j = 1, NSTAE
+!PUN!Casey 120116: Debug.
+!PUN!      read(ndsd,'(i8)', end=950, err=910) idum4
 !PUN       read(ndsd,'(i12)', end=950, err=910) idum4
 !PUN    enddo
 !PUN    !
 !PUN    read(ndsd,100, end=950, err=910) idum1, idum2, NSTAV   ! number of velocity stations
 !PUN    do j = 1, NSTAV
+!PUN!Casey 120116: Debug.
+!PUN!      read(ndsd,'(i8)', end=950, err=910) idum4
 !PUN       read(ndsd,'(i12)', end=950, err=910) idum4
 !PUN    enddo
 !PUN    !
 !PUN    read(ndsd,100, end=950, err=910) idum1, idum2, NSTAM   ! number of meteorlogical stations
 !PUN    do j = 1, NSTAM
+!PUN!Casey 120116: Debug.
+!PUN!      read(ndsd,'(i8)', end=950, err=910) idum4
 !PUN       read(ndsd,'(i12)', end=950, err=910) idum4
 !PUN    enddo
 !PUN    !
@@ -137,6 +147,8 @@ subroutine SwanReadfort18
 !PUN 950 call msgerr (4, 'unexpected end of file in grid file fort.18' )
 !PUN    goto 900
 !PUN    !
+!PUN!Casey 120116: Debug.
+!PUN!100 format((8x,3i8))
 !PUN 100 format((8x,3i12))
 !PUN    !
 end subroutine SwanReadfort18

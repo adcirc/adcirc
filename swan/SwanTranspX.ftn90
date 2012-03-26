@@ -1,6 +1,6 @@
-subroutine SwanTranspX ( amat   , rhs, ac2   , ac1   , cax   , cay   , &
-                         rdx    , rdy, obredf, idcmin, idcmax, isslow, &
-                         isstop )
+subroutine SwanTranspX ( amat   , rhs  , ac2   , ac1   , cax   , cay   , &
+                         rdx    , rdy  , obredf, idcmin, idcmax, isslow, &
+                         isstop , trac0, trac1 )
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
@@ -13,7 +13,7 @@ subroutine SwanTranspX ( amat   , rhs, ac2   , ac1   , cax   , cay   , &
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -38,6 +38,7 @@ subroutine SwanTranspX ( amat   , rhs, ac2   , ac1   , cax   , cay   , &
 !   Updates
 !
 !   40.80, August 2007: New subroutine
+!   40.85, August 2008: add xy-propagation for output purposes
 !
 !   Purpose
 !
@@ -76,6 +77,8 @@ subroutine SwanTranspX ( amat   , rhs, ac2   , ac1   , cax   , cay   , &
     real, dimension(2), intent(in)              :: rdx    ! first component of contravariant base vector rdx(b) = a^(b)_1
     real, dimension(2), intent(in)              :: rdy    ! second component of contravariant base vector rdy(b) = a^(b)_2
     real, dimension(MDC,MSC), intent(inout)     :: rhs    ! right-hand side of system of equations in (sigma,theta) space
+    real, dimension(MDC,MSC,MTRNP), intent(out) :: trac0  ! explicit part of propagation in present vertex for output purposes
+    real, dimension(MDC,MSC,MTRNP), intent(out) :: trac1  ! implicit part of propagation in present vertex for output purposes
 !
 !   Local variables
 !
@@ -134,6 +137,9 @@ subroutine SwanTranspX ( amat   , rhs, ac2   , ac1   , cax   , cay   , &
           amat(id,is,1) = amat(id,is,1) + asum
           rhs (id,is  ) = rhs (id,is  ) + rsum
           !
+          trac0(id,is,1) = trac0(id,is,1) - rsum
+          trac1(id,is,1) = trac1(id,is,1) + asum
+          !
           if ( NSTATC == 1 ) then
              !
              if ( ITERMX == 1 ) then
@@ -144,6 +150,9 @@ subroutine SwanTranspX ( amat   , rhs, ac2   , ac1   , cax   , cay   , &
              !
              amat(id,is,1) = amat(id,is,1) + RDTIM
              rhs (id,is  ) = rhs (id,is  ) + acold*RDTIM
+             !
+             trac0(id,is,1) = trac0(id,is,1) - acold*RDTIM
+             trac1(id,is,1) = trac1(id,is,1) + RDTIM
              !
           endif
           !

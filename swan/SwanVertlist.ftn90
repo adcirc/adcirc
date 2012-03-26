@@ -11,7 +11,7 @@ subroutine SwanVertlist
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -32,10 +32,12 @@ subroutine SwanVertlist
 !   Authors
 !
 !   40.80: Marcel Zijlema
+!   41.07: Casey Dietrich
 !
 !   Updates
 !
 !   40.80, July 2007: New subroutine
+!   41.07, July 2009: small fix (assign ref.point to deepest point in case of no b.c.)
 !
 !   Purpose
 !
@@ -43,16 +45,16 @@ subroutine SwanVertlist
 !
 !   Method
 !
-!   Sorting based on distance and with respect to vertices where boundary condition is given
+!   Sorting based on distance with respect to a reference point
+!   This reference point can be either a vertex with boundary condition or a deepest point
 !
 !   Modules used
 !
     use ocpcomm4
+    use m_genarr, only: DEPTH
     use SwanGriddata
     use SwanGridobjects
     use SwanCompdata
-!Casey 090707: Make available the bathymetry.
-    use M_GENARR, ONLY: DEPTH
 !
     implicit none
 !
@@ -69,6 +71,7 @@ subroutine SwanVertlist
     !
     real                            :: d1         ! distance of a point to origin
     real                            :: d2         ! distance of another point to origin
+    real                            :: depmax     ! maximum depth found
     real                            :: rtmp       ! temporary stored real for swapping
     real                            :: x0         ! x-coordinate of reference point
     real                            :: y0         ! y-coordinate of reference point
@@ -76,9 +79,6 @@ subroutine SwanVertlist
     real, dimension(:), allocatable :: dist       ! distance of each point with respect to reference point
     !
     type(verttype), dimension(:), pointer :: vert ! datastructure for vertices with their attributes
-!
-!Casey 090707: Add a new variable for the maximum depth in the domain.
-    real                            :: maxdepth
 !
 !   Structure
 !
@@ -98,24 +98,33 @@ subroutine SwanVertlist
        return
     endif
     !
-    ! determine reference point nearest to the origin
-    ! this point is one of the vertices where boundary condition is given
+    ! determine reference point
     !
-    kx = minloc(vert(:)%attr(VERTX), vert(:)%atti(VBC)/=0)
-    ky = minloc(vert(:)%attr(VERTY), vert(:)%atti(VBC)/=0)
-    !
-!Casey 090707: If we haven't found a reference point (because the user
-!              has not specified any boundary conditions), then find
-!              the node with the maximum depth.
-    if ( kx(1).eq.0 .and. ky(1).eq.0 )then
-      maxdepth = -999.
-      inner: do j = 1, nverts
-        if (DEPTH(j).gt.maxdepth ) then
-           maxdepth = DEPTH(j)
-           kx(1) = j
-           ky(1) = j
-        endif
-      enddo inner
+    if ( all(mask=vert(:)%atti(VBC)==0) ) then
+       !
+       ! if no boundary condition is given then find the vertex with the maximum depth
+       !
+       depmax = -999.
+       !
+       do j = 1, nverts
+          !
+          if ( DEPTH(j) > depmax ) then
+             !
+             depmax = DEPTH(j)
+             kx(1)  = j
+             ky(1)  = j
+             !
+          endif
+          !
+       enddo
+       !
+    else
+       !
+       ! reference point is one of the vertices nearest to the origin where boundary condition is given
+       !
+       kx = minloc(vert(:)%attr(VERTX), vert(:)%atti(VBC)/=0)
+       ky = minloc(vert(:)%attr(VERTY), vert(:)%atti(VBC)/=0)
+       !
     endif
     !
     if ( kx(1) == ky(1) ) then

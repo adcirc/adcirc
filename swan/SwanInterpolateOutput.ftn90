@@ -1,4 +1,4 @@
-subroutine SwanInterpolateOutput ( foutp, x, y, finp, mip, excval )
+subroutine SwanInterpolateOutput ( foutp, x, y, finp, mip, kvert, excval )
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
@@ -11,7 +11,7 @@ subroutine SwanInterpolateOutput ( foutp, x, y, finp, mip, excval )
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -33,11 +33,13 @@ subroutine SwanInterpolateOutput ( foutp, x, y, finp, mip, excval )
 !
 !   40.80: Marcel Zijlema
 !   40.90: Nico Booij
+!   41.07: Marcel Zijlema
 !
 !   Updates
 !
 !   40.80, August 2007: New subroutine
 !   40.90,   June 2008: improved interpolation near obstacles
+!   41.07,   July 2009: optimization
 !
 !   Purpose
 !
@@ -56,6 +58,7 @@ subroutine SwanInterpolateOutput ( foutp, x, y, finp, mip, excval )
     use swcomm2
     use swcomm3
     use m_obsta
+    use outp_data
     use SwanGriddata
     use SwanGridobjects
 !
@@ -64,6 +67,7 @@ subroutine SwanInterpolateOutput ( foutp, x, y, finp, mip, excval )
 !   Argument variables
 !
     integer, intent(in)                 :: mip    ! number of given points
+    integer, dimension(mip), intent(in) :: kvert  ! vertex indices of output points
     !
     real, intent(in)                    :: excval ! exception value for output quantity
     real, dimension(nverts), intent(in) :: finp   ! output quantity defined on the computational grid
@@ -124,6 +128,11 @@ subroutine SwanInterpolateOutput ( foutp, x, y, finp, mip, excval )
 !
     if (ltrace) call strace (ient,'SwanInterpolateOutput')
     !
+    if ( LCOMPGRD .and. mip == nverts ) then
+       foutp = finp
+       return
+    endif
+    !
     ! point to vertex and cell objects
     !
     vert => gridobject%vert_grid
@@ -137,9 +146,9 @@ subroutine SwanInterpolateOutput ( foutp, x, y, finp, mip, excval )
     !
     pointloop: do ip = 1, mip
        !
-       ! find closest vertex for given point
+       ! assign vertex index of given point
        !
-       call SwanFindPoint ( x(ip), y(ip), ivert )
+       ivert = kvert(ip)
        !
        ! if point not found, go to next point
        !
@@ -153,7 +162,6 @@ subroutine SwanInterpolateOutput ( foutp, x, y, finp, mip, excval )
        !
        dxp = xcugrd(ivert) - x(ip)
        dyp = ycugrd(ivert) - y(ip)
-       th = atan2(dyp,dxp)
        !
        ! if given point equals closest vertex, determine output quantity and go to next point
        !
@@ -161,6 +169,8 @@ subroutine SwanInterpolateOutput ( foutp, x, y, finp, mip, excval )
           foutp(ip) = finp(ivert)
           cycle pointloop
        endif
+       !
+       th = atan2(dyp,dxp)
        !
        cellfound = .false.
        !

@@ -77,6 +77,12 @@ Casey 100205: Add variables for writing of SWAN hot-start files.
       INTEGER              :: SwanHotStartUnit
       LOGICAL              :: WriteSwanHotStart = .FALSE.
 
+Casey 120302: Merging ice changes from Taylor Asher.
+CTGA 110912:  Implementing SWAN ice handling.  This variable is set to
+C             0 wherever ice reaches/exceeds a threshold value
+      INTEGER,ALLOCATABLE :: ICY(:)
+      REAL(SZ),ALLOCATABLE :: SWAN_CICE2(:,:)
+
       CONTAINS
 
 
@@ -1181,7 +1187,16 @@ Casey 091216: If we get a junk number, then use the default value.
      &                    WVNX1,
      &                    WVNX2,
      &                    WVNY1,
-     &                    WVNY2
+     &                    WVNY2,
+Casey 120305: Merging ice changes from Taylor Asher.
+CTGA 110912:  Full SWAN ice implementation.  Use global variables
+     &                    DP,
+     &                    NCICE,
+     &                    CICE1,
+     &                    CICE2
+CTGA 111003:  Adding ability to read in ice info from fort.26 file
+      USE SWCOMM3,  ONLY: SWAN_WBICETH => WBICETH,
+     &                    SWAN_IICE => IICE
       USE TIMECOMM, ONLY: SWAN_DT => DT
 
       IMPLICIT NONE
@@ -1228,6 +1243,15 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       WAVE_T2 = 0.D0
 #endif
 
+Casey 120302: Merging ice changes from Taylor Asher.
+CTGA 110912:  Full SWAN ice implementation.  Allocating ice arrays.
+      IF(NCICE.NE.0) THEN
+         IF(.NOT.ALLOCATED(ICY)) ALLOCATE(ICY(1:NP))
+         IF(.NOT.ALLOCATED(SWAN_CICE2)) ALLOCATE(SWAN_CICE2(1:NP,1:2))
+         ICY        = 0.D0
+         SWAN_CICE2 = 0.D0
+      ENDIF
+
 Casey 090302: Initialize the arrays.
       DO IN=1,NP
          SWAN_ETA2(IN,1) = ETA2(IN)
@@ -1251,6 +1275,37 @@ Casey 091216: Initialize arrays for friction coupling and compute first set of v
          CALL Manning2Madsen
          DO IN=1,NP
             SWAN_Z0(IN,1) = SWAN_Z0(IN,2)
+         ENDDO
+      ENDIF
+
+Casey 120302: Merging ice changes from Taylor Asher.
+CTGA 110912:  Full SWAN ice implementation.  Applying ice coverage mask
+C             wherever ice concentration reaches/exceeds threshold.
+C             Mask is applied by making total water depth (water
+C             elevation plus bathymetry) equal to zero.  Same as what
+C             is done for dry nodes.
+C             The array ICY is used so it can be output in the future.
+CTGA111003:  Adding ability to read in ice parameters from fort.26 file
+CTGA      IF(NCICE.NE.0) THEN
+      IF((NCICE.NE.0).AND.(SWAN_IICE.EQ.2)) THEN
+         ICY=0
+         DO IN=1,NP
+            SWAN_CICE2(IN,1) = CICE1(IN)
+            SWAN_CICE2(IN,2) = CICE2(IN)
+CTGA 111003:  Adding ability to read in ice parameters from fort.26 file
+CTGA            IF (SWAN_CICE2(IN,1).GE.70) ICY(IN) = 1
+            IF (SWAN_CICE2(IN,1).GE.SWAN_WBICETH) ICY(IN) = 1
+            IF(ICY(IN).EQ.1) THEN
+CTGA 110915:  Ensure SWAN considers conditions to be too icy for wave
+C             generation for the current timestep by setting both
+C             values of SWAN_*(IN,:) to the "dry" values.
+               SWAN_ETA2(IN,:) = - DP(IN)
+               SWAN_UU2 (IN,:) = 0.D0
+               SWAN_VV2 (IN,:) = 0.D0
+CTGA110915               SWAN_ETA2(IN,2) = - DP(IN)
+CTGA110915               SWAN_UU2 (IN,2) = 0.D0
+CTGA110915               SWAN_VV2 (IN,2) = 0.D0
+            ENDIF
          ENDDO
       ENDIF
 
@@ -1281,7 +1336,18 @@ C             to the SWAN time step.
      &                    NODECODE,
      &                    NP,
      &                    UU2,
-     &                    VV2
+     &                    VV2,
+Casey 120302: Merging ice changes from Taylor Asher.
+CTGA 110912:  Full SWAN ice implementation.  Use global variables
+     &                    STATIM,
+     &                    NCICE,
+     &                    CICE1,
+     &                    CICE2,
+     &                    CICE_TIME1,
+     &                    CICE_TIMINC
+CTGA 111003:  Adding ability to read in ice info from fort.26 file
+      USE SWCOMM3,  ONLY: SWAN_IICE => IICE,
+     &                    SWAN_WBICETH => WBICETH
       USE TIMECOMM, ONLY: SWAN_DT => DT
 
       IMPLICIT NONE
@@ -1292,6 +1358,11 @@ C             to the SWAN time step.
       INTEGER      :: IT           ! Time step counter.
       INTEGER      :: ITIME        ! Time step from ADCIRC.
       INTEGER,SAVE :: SwanTimeStep ! Counter for SWAN time steps.
+
+Casey 120302: Merging ice changes from Taylor Asher.
+CTGA 110912:  Full SWAN ice implementation.  Adding variables.
+      REAL(SZ)             :: SWAN_PIC
+      REAL(SZ)             :: ICETIMEFRAC
 
       DO IN=1,NP
 Casey 090302: Move the 'old' values into the first columns.
@@ -1309,6 +1380,43 @@ Casey 090302: Find the 'new' values for the second columns.
             SWAN_VV2 (IN,2) = 0.D0
          ENDIF
       ENDDO
+
+Casey 120302: Merging ice changes from Taylor Asher.
+CTGA 110912:  Full SWAN ice implementation.  Applying ice coverage mask
+C             wherever ice concentration reaches/exceeds threshold.
+C             Mask is applied by making total water depth (water
+C             elevation plus bathymetry) equal to zero.  Same as what
+C             is done for dry nodes.
+C             The array ICY is used so it can be output in the future.
+CTGA111003:  Adding ability to read in ice parameters from fort.26 file
+CTGA      IF(NCICE.NE.0) THEN
+      IF((NCICE.NE.0).AND.(SWAN_IICE.EQ.2)) THEN
+         ICY=0
+         ICETIMEFRAC = ((STATIM*86400+ITIME*DT)-CICE_TIME1)/CICE_TIMINC
+         DO IN=1,NP
+            SWAN_CICE2(IN,1) = CICE1(IN)
+            SWAN_CICE2(IN,2) = CICE2(IN)
+            SWAN_PIC = ICETIMEFRAC*(SWAN_CICE2(IN,2) - SWAN_CICE2(IN,1))
+     &               + SWAN_CICE2(IN,1)
+CTGA 111003:  Adding ability to read in ice parameters from fort.26 file
+CTGA            IF (SWAN_PIC.GE.70) ICY(IN) = 1
+            IF (SWAN_PIC.GE.SWAN_WBICETH) ICY(IN) = 1
+            IF(ICY(IN).EQ.1) THEN
+CTGA 110915:  Ensure SWAN considers conditions to be too icy for wave
+C             generation for the current timestep by setting both
+C             values of SWAN_*(IN,:) to the "dry" values.
+               SWAN_ETA2(IN,:) = - DP(IN)
+               SWAN_UU2 (IN,:) = 0.D0
+               SWAN_VV2 (IN,:) = 0.D0
+CTGA110915               SWAN_ETA2(IN,1) = - DP(IN)
+CTGA110915               SWAN_UU2 (IN,1) = 0.D0
+CTGA110915               SWAN_VV2 (IN,1) = 0.D0
+CTGA110915               SWAN_ETA2(IN,2) = - DP(IN)
+CTGA110915               SWAN_UU2 (IN,2) = 0.D0
+CTGA110915               SWAN_VV2 (IN,2) = 0.D0
+            ENDIF
+         ENDDO
+      ENDIF
 
 Casey 091216: Move the 'old' values into the first column,
 C             and then compute the 'new' values.
@@ -1357,6 +1465,11 @@ C             so that we do not lose them during the ADCIRC time stepping.
 
 Casey 091216: Add deallocation for friction coupling.
       IF(ALLOCATED(SWAN_Z0)) DEALLOCATE(SWAN_Z0)
+
+Casey 120302: Merging ice changes from Taylor Asher.
+CTGA 110912:
+      IF(ALLOCATED(ICY)) DEALLOCATE(ICY)
+      IF(ALLOCATED(SWAN_CICE2)) DEALLOCATE(SWAN_CICE2)
 
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.

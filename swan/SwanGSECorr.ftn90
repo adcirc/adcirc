@@ -1,4 +1,4 @@
-subroutine SwanGSECorr ( rhs, ac2, cgo, spcdir, idcmin, idcmax, isslow, isstop )
+subroutine SwanGSECorr ( rhs, ac2, cgo, spcdir, idcmin, idcmax, isslow, isstop, trac0 )
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
@@ -11,7 +11,7 @@ subroutine SwanGSECorr ( rhs, ac2, cgo, spcdir, idcmin, idcmax, isslow, isstop )
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2009  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -70,6 +70,7 @@ subroutine SwanGSECorr ( rhs, ac2, cgo, spcdir, idcmin, idcmax, isslow, isstop )
                                                           ! (*,4): cosine^2 of spectral directions
                                                           ! (*,5): cosine*sine of spectral directions
                                                           ! (*,6): sine^2 of spectral directions
+    real, dimension(MDC,MSC,MTRNP), intent(out) :: trac0  ! explicit part of propagation in present vertex for output purposes
 !
 !   Local variables
 !
@@ -269,7 +270,8 @@ subroutine SwanGSECorr ( rhs, ac2, cgo, spcdir, idcmin, idcmax, isslow, isstop )
                 !
              endif
              !
-             rhs(id,is) = rhs(id,is) + dgxdx + dgydy
+             rhs  (id,is  ) = rhs  (id,is  ) + dgxdx + dgydy
+             trac0(id,is,1) = trac0(id,is,1) - dgxdx - dgydy
              !
           endif
           !

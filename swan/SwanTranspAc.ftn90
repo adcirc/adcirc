@@ -2,7 +2,8 @@ subroutine SwanTranspAc ( amat  , rhs   , leakcf, ac2   , ac1   , &
                           cgo   , cax   , cay   , cad   , cas   , &
                           anybin, rdx   , rdy   , spcsig, spcdir, &
                           obredf, idcmin, idcmax, iscmin, iscmax, &
-                          iddlow, iddtop, isslow, isstop )
+                          iddlow, iddtop, isslow, isstop, anyblk, &
+                          trac0 , trac1 )
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
@@ -15,7 +16,7 @@ subroutine SwanTranspAc ( amat  , rhs   , leakcf, ac2   , ac1   , &
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -40,7 +41,9 @@ subroutine SwanTranspAc ( amat  , rhs   , leakcf, ac2   , ac1   , &
 !   Updates
 !
 !   40.80,   August 2007: New subroutine
+!   40.85,   August 2008: add tranport terms for output purposes
 !   41.00, February 2009: add GSE correction
+!   41.07,     July 2009: add explicit scheme for sigma space
 !
 !   Purpose
 !
@@ -93,8 +96,11 @@ subroutine SwanTranspAc ( amat  , rhs   , leakcf, ac2   , ac1   , &
                                                           ! (*,5): cosine*sine of spectral directions
                                                           ! (*,6): sine^2 of spectral directions
     real, dimension(MSC), intent(in)            :: spcsig ! relative frequency bins
+    real, dimension(MDC,MSC,MTRNP), intent(out) :: trac0  ! explicit part of propagation in present vertex for output purposes
+    real, dimension(MDC,MSC,MTRNP), intent(out) :: trac1  ! implicit part of propagation in present vertex for output purposes
     !
     logical, dimension(MDC,MSC), intent(in)     :: anybin ! true if bin is active in considered sweep
+    logical, dimension(MDC,MSC), intent(out)    :: anyblk ! true if bin is blocked by a counter current based on a CFL criterion
 !
 !   Local variables
 !
@@ -113,20 +119,22 @@ subroutine SwanTranspAc ( amat  , rhs   , leakcf, ac2   , ac1   , &
     amat = 0.
     rhs  = 0.
     !
-    ! set leak coefficient to zero
+    ! set leak and transport coefficients to zero
     !
     leakcf = 0.
+    trac0  = 0.
+    trac1  = 0.
     !
     ! compute transport in x-y space
     !
 !TIMG    call SWTSTA(140)
-    call SwanTranspX ( amat   , rhs, ac2   , ac1   , cax   , cay   , &
-                       rdx    , rdy, obredf, idcmin, idcmax, isslow, &
-                       isstop )
+    call SwanTranspX ( amat   , rhs  , ac2   , ac1   , cax   , cay   , &
+                       rdx    , rdy  , obredf, idcmin, idcmax, isslow, &
+                       isstop , trac0, trac1 )
     !
     ! add GSE correction, if appropriate
     !
-    if ( WAVAGE > 0. ) call SwanGSECorr ( rhs, ac2, cgo, spcdir, idcmin, idcmax, isslow, isstop )
+    if ( WAVAGE > 0. ) call SwanGSECorr ( rhs, ac2, cgo, spcdir, idcmin, idcmax, isslow, isstop, trac0 )
 !TIMG    call SWTSTO(140)
     !
     ! compute transport in theta space
@@ -136,7 +144,8 @@ subroutine SwanTranspAc ( amat  , rhs   , leakcf, ac2   , ac1   , &
        !
        call STRSD ( DDIR       , idcmin     , idcmax     , cad    , &
                     amat(1,1,4), amat(1,1,1), amat(1,1,5), rhs    , &
-                    ac2        , isstop     , anybin     , leakcf )
+                    ac2        , isstop     , anybin     , leakcf , &
+                    trac0      , trac1      )
        !
     endif
 !TIMG    call SWTSTO(142)
@@ -146,18 +155,22 @@ subroutine SwanTranspAc ( amat  , rhs   , leakcf, ac2   , ac1   , &
 !TIMG    call SWTSTA(141)
     if ( (DYNDEP .OR. ICUR /= 0) .and. ITFRE /= 0 ) then
        !
-       ! only implicit scheme
-       !
        if ( int(PNUMS(8)) == 1 ) then
+          !
+          ! implicit scheme
           !
           call STRSSI ( spcsig     , cas   , amat(1,1,2), amat(1,1,1), &
                         amat(1,1,3), anybin, rhs        , ac2        , &
-                        iscmin     , iscmax, iddlow     , iddtop     )
+                        iscmin     , iscmax, iddlow     , iddtop     , &
+                        trac0      , trac1 )
           !
-       else
+       elseif ( int(PNUMS(8)) == 2 ) then
           !
-          call msgerr (4, 'No explicit scheme in sigma space available ')
-          return
+          ! explicit scheme
+          !
+          call STRSSB ( iddlow, iddtop, idcmin, idcmax, isstop, &
+                        cax   , cay   , cas   , ac2   , spcsig, &
+                        rhs   , anyblk, rdx   , rdy   , trac0 )
           !
        endif
        !

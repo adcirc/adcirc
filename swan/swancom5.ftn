@@ -55,7 +55,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -261,7 +261,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -877,7 +877,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1164,7 +1164,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1216,7 +1216,7 @@
 !     40.30, Mar. 03: correcting indices of test point with offsets MXF, MYF
 !     40.41, Oct. 04: common blocks replaced by modules, include files removed
 !     40.61, Dec. 06: correction DO loop 60 (IDCMIN, IDCMAX -> IDDLOW,IDDTOP)
-!     41.06, Mar. 09: limitation of velocity in theta-direction
+!     41.06, Mar. 09: add option of limitation of velocity in theta-direction
 !
 !  2. Purpose
 !
@@ -1862,7 +1862,7 @@
 !
 !     limit Ctheta in some frequency range if requested
 !
-      IF ( IREFR .EQ. -2 ) THEN
+      IF ( INT(PNUMS(29)) .EQ. 1 ) THEN
          FRLIM = PI2*PNUMS(26)
          PP    =     PNUMS(27)
          DO IS = 1, MSC
@@ -1923,7 +1923,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2075,7 +2075,7 @@
       SUBROUTINE STRSXY (         ISSTOP  ,IDCMIN  ,IDCMAX  ,CAX     ,
      &                   CAY     ,AC2     ,AC1     ,IMATRA  ,IMATDA  ,
      &                            RDX     ,RDY     ,                      33.09
-     &                   OBREDF         )
+     &                   OBREDF  ,TRAC0   ,TRAC1   )
 !
 !****************************************************************
 !
@@ -2097,7 +2097,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2122,6 +2122,7 @@
 !        33.09: Nico Booij (changes related to spherical coordinates)
 !        40.08: Erick Rogers
 !        40.41: Marcel Zijlema
+!        40.85: Marcel Zijlema
 !
 !     1. UPDATE
 !
@@ -2135,6 +2136,7 @@
 !                        modified; introduction of spherical coordinates
 !        40.08, Mar. 03: Removed artifact from code
 !        40.41, Oct. 04: common blocks replaced by modules, include files removed
+!        40.85, Aug. 08: store xy-propagation for output purposes
 !
 !     2. PURPOSE
 !
@@ -2240,6 +2242,8 @@
      &         RDX(10)            ,RDY(10)                    ,           40.08
      &         TRSCF(3)            ,                                      33.09
      &         OBREDF(MDC,MSC,2)                                         040697
+      REAL  :: TRAC0(MDC,MSC,MTRNP)                                       40.85
+      REAL  :: TRAC1(MDC,MSC,MTRNP)                                       40.85
 !
       INTEGER  IDCMIN(MSC)                ,
      &         IDCMAX(MSC)                                                33.09
@@ -2324,9 +2328,13 @@
             ENDIF
             IMATRA(ID,IS) = IMATRA(ID,IS) + FXY2 + ACOLD*RDTIM            33.09
             IMATDA(ID,IS) = IMATDA(ID,IS) + FXY1 + RDTIM                  33.09
+            TRAC0(ID,IS,1) = TRAC0(ID,IS,1) - FXY2 - ACOLD*RDTIM          40.85
+            TRAC1(ID,IS,1) = TRAC1(ID,IS,1) + FXY1 + RDTIM                40.85
           ELSE
             IMATRA(ID,IS) = IMATRA(ID,IS) + FXY2
             IMATDA(ID,IS) = IMATDA(ID,IS) + FXY1
+            TRAC0(ID,IS,1) = TRAC0(ID,IS,1) - FXY2                        40.85
+            TRAC1(ID,IS,1) = TRAC1(ID,IS,1) + FXY1                        40.85
           ENDIF
 !         --- Using an if statement like this--in conjunction with        40.08
 !             inclusion of all directions in calculation, i.e. non-use    40.08
@@ -2374,7 +2382,7 @@
 !
       SUBROUTINE SORDUP (         ISSTOP  ,IDCMIN  ,IDCMAX  ,CAX     ,
      &                   CAY     ,AC2     ,IMATRA  ,IMATDA  ,
-     &                            RDX     ,RDY     )                      33.10
+     &                            RDX     ,RDY     ,TRAC0   ,TRAC1   )    40.85 33.10
 !
 !****************************************************************
 !
@@ -2396,7 +2404,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2420,6 +2428,7 @@
 !        33.09: Nico Booij (changes related to spherical coordinates)
 !        40.08: Erick Rogers
 !        40.41: Marcel Zijlema
+!        40.85: Marcel Zijlema
 !        40.98: Marcel Zijlema
 !
 !     1. UPDATE
@@ -2434,6 +2443,7 @@
 !                          Remove option for controllable 1st order diffusion ("XYMU",
 !                          "THETAK", etc.)
 !        40.41, Oct. 04: common blocks replaced by modules, include files removed
+!        40.85, Aug. 08: store xy-propagation for output purposes
 !        40.98, Feb. 09: SORDUP scheme is made consistent
 !
 !     2. PURPOSE
@@ -2542,6 +2552,8 @@
       REAL  :: IMATRA(MDC,MSC)    ,IMATDA(MDC,MSC)            ,
      &         RDX(10)            ,RDY(10)                    ,           40.08
      &         XMU(5)             ,YMU(5)                                 40.08 33.10
+      REAL  :: TRAC0(MDC,MSC,MTRNP)                                       40.85
+      REAL  :: TRAC1(MDC,MSC,MTRNP)                                       40.85
 
       INTEGER  IDCMIN(MSC), IDCMAX(MSC), IENT, IXY                        33.10
       LOGICAL  XNUM                                                       33.10
@@ -2551,7 +2563,7 @@
       IF (LTRACE) CALL STRACE (IENT,'SORDUP')
 !
       IF(NSTATC.EQ.1)THEN                                                 33.10
-         CALL MSGERR (4, 'SORDUP scheme is for stationary mode only.')    33.10
+         CALL MSGERR (3, 'SORDUP scheme is for stationary mode only.')    33.10
       END IF                                                              33.10
       IF (TESTFL .AND. ITEST .GE. 120) THEN
         WRITE(PRINTF,*) ' Initial matrix coefficients at SORDUP : '
@@ -2662,6 +2674,8 @@
 !
           IMATRA(ID,IS) = IMATRA(ID,IS) + FXY2
           IMATDA(ID,IS) = IMATDA(ID,IS) + FXY1
+          TRAC0(ID,IS,1) = TRAC0(ID,IS,1) - FXY2                          40.85
+          TRAC1(ID,IS,1) = TRAC1(ID,IS,1) + FXY1                          40.85
 !
 !         *** test output ***
           IF ( ITEST .GE. 150 .AND. TESTFL ) THEN
@@ -2692,7 +2706,8 @@
 !
       SUBROUTINE SANDL ( ISSTOP  ,IDCMIN  ,IDCMAX  ,CGO     ,CAX     ,    33.08
      &                   CAY     ,AC2     ,AC1     ,IMATRA  ,IMATDA  ,
-     &                   RDX     ,RDY     ,CAX1    ,CAY1    ,SPCDIR)      33.08
+     &                   RDX     ,RDY     ,CAX1    ,CAY1    ,SPCDIR  ,    33.08
+     &                   TRAC0   ,TRAC1   )                               40.85
 !
 !****************************************************************
 !
@@ -2717,7 +2732,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2742,6 +2757,7 @@
 !        40.02: IJsbrand Haagsma
 !        40.08: W. Erick Rogers
 !        40.41: Marcel Zijlema
+!        40.85: Marcel Zijlema
 !
 !     1. UPDATE
 !
@@ -2751,6 +2767,7 @@
 !        40.02, Aug. 00: Avoid more than 19 continuation lines
 !        40.08, Feb. 03: Check for exceedence of soft CFL criterion
 !        40.41, Oct. 04: common blocks replaced by modules, include files removed
+!        40.85, Aug. 08: store xy-propagation for output purposes
 !
 !     2. PURPOSE
 !
@@ -2889,6 +2906,8 @@
       REAL     FXY1 ,FXY2, ACOLD,                                         33.08
      &         DSS, DNN, D11AC, D12AC, D22AC                              33.08
 !
+      REAL  :: TRAC0(MDC,MSC,MTRNP)                                       40.85
+      REAL  :: TRAC1(MDC,MSC,MTRNP)                                       40.85
       REAL  :: AC1(MDC,MSC,MCGRD) ,AC2(MDC,MSC,MCGRD)
 !     Changed ICMAX to MICMAX, since MICMAX doesn't vary over gridpoint   40.22
       REAL  :: CGO(MSC,MICMAX)                                            33.08 40.22
@@ -2989,7 +3008,7 @@
      &        '100km or 1 deg on a side, as a rule of thumb)')            40.08
 !        --- Note that code will stop even without this line              40.08
 !            (at beginning of next time step).                            40.08
-!         IF(MAXERR.LT.2) STOP                                             40.08
+!         IF(MAXERR.LT.2) STOP                                            40.08
       END IF                                                              40.08
 !
       DO 200 IS = 1, ISSTOP
@@ -3112,6 +3131,8 @@
           ENDIF                                                           40.08
           IMATRA(ID,IS) = IMATRA(ID,IS) + FXY2 + ACOLD*RDTIM              33.08
           IMATDA(ID,IS) = IMATDA(ID,IS) + FXY1 + RDTIM                    33.08
+          TRAC0(ID,IS,1) = TRAC0(ID,IS,1) - FXY2 - ACOLD*RDTIM            40.85
+          TRAC1(ID,IS,1) = TRAC1(ID,IS,1) + FXY1 + RDTIM                  40.85
 !
 !         *** test output ***
 !
@@ -3145,7 +3166,7 @@
       SUBROUTINE STRSSI(SPCSIG  ,
      &                  CAS     ,IMAT5L  ,IMATDA  ,IMAT6U  ,ANYBIN  ,
      &                  IMATRA  ,AC2     ,ISCMIN  ,ISCMAX  ,IDDLOW  ,
-     &                  IDDTOP                                      )     40.41 30.21
+     &                  IDDTOP  ,TRAC0   ,TRAC1                     )     40.85 40.41 30.21
 !
 !****************************************************************
 !
@@ -3165,7 +3186,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3187,11 +3208,13 @@
 !
 !     30.72: IJsbrand Haagsma
 !     40.41: Marcel Zijlema
+!     40.85: Marcel Zijlema
 !
 !  1. Updates
 !
 !     30.72, Feb. 98: Introduced generic names XCGRID, YCGRID and SPCSIG for SWAN
 !     40.41, Oct. 04: common blocks replaced by modules, include files removed
+!     40.85, Aug. 08: store sigma-propagation for output purposes
 !
 !  2. Purpose
 !
@@ -3303,6 +3326,7 @@
       REAL     DS      ,PNH     ,PN1     ,PN2     ,C1      ,C2      ,
      &         C3      ,A1      ,A3      ,PCD1    ,PCD2    ,RHS12   ,
      &         RHS23   ,DIAG12  ,DIAG23
+      REAL     TC12    ,TC23    ,S1      ,S3
 !
       LOGICAL  BIN1    ,BIN3
 !
@@ -3312,6 +3336,8 @@
      &         IMATDA(MDC,MSC)            ,
      &         IMAT6U(MDC,MSC)            ,
      &         IMATRA(MDC,MSC)
+      REAL  :: TRAC0(MDC,MSC,MTRNP)                                       40.85
+      REAL  :: TRAC1(MDC,MSC,MTRNP)                                       40.85
 !
       INTEGER  ISCMIN(MDC)                ,
      &         ISCMAX(MDC)
@@ -3337,6 +3363,8 @@
             BIN3 = ANYBIN(ID,IS+1)
             IF (.NOT.BIN3) A3 = AC2(ID,IS+1,KCGRD(1))                     30.21
             DS   = SPCSIG(IS+1) - SPCSIG(IS)                              30.72
+            S1 = 0.                                                       40.85
+            S3 = SPCSIG(IS+1)                                             40.85
           ELSE IF ( IS .EQ. MSC ) THEN
             C1   = CAS(ID,IS-1,1)
             BIN1 = ANYBIN(ID,IS-1)
@@ -3345,6 +3373,8 @@
             A3   = 0.
             BIN3 = .FALSE.
             DS   = SPCSIG(IS) - SPCSIG(IS-1)                              30.72
+            S1 = SPCSIG(IS-1)                                             40.85
+            S3 = 0.                                                       40.85
           ELSE
             C1   = CAS(ID,IS-1,1)
             C3   = CAS(ID,IS+1,1)
@@ -3353,6 +3383,8 @@
             IF (.NOT.BIN1) A1 = AC2(ID,IS-1,KCGRD(1))                     30.21
             IF (.NOT.BIN3) A3 = AC2(ID,IS+1,KCGRD(1))                     30.21
             DS   = 0.5 * ( SPCSIG(IS+1) - SPCSIG(IS-1) )                  30.72
+            S1 = SPCSIG(IS-1)                                             40.85
+            S3 = SPCSIG(IS+1)                                             40.85
           END IF
 !
           PNH = 1. / (2. * DS)
@@ -3373,6 +3405,7 @@
           END IF
 !
           RHS12 = 0.
+          TC12  = 0.
           IF ( IS .EQ. 1 .AND. C2.LT.0.) THEN
 !           fully upwind approximation at the boundary of the frequency space
             DIAG12 = - PCD1 - PCD2
@@ -3382,6 +3415,7 @@
               IMAT5L(ID,IS) = IMAT5L(ID,IS) - PCD1
             ELSE
               RHS12 = PCD1 * A1
+              TC12  = RHS12* S1
             ENDIF
           ENDIF
 !
@@ -3397,6 +3431,7 @@
           END IF
 !
           RHS23 = 0.
+          TC23  = 0.
           IF (IS .EQ. MSC .AND. C2.GT.0.) THEN
 !           full upwind approximation at the boundary
             DIAG23 = PCD2 + PCD3
@@ -3406,10 +3441,13 @@
               IMAT6U(ID,IS) = IMAT6U(ID,IS) + PCD3
             ELSE
               RHS23 = - PCD3 * A3
+              TC23  = RHS23 * S3
             ENDIF
           ENDIF
           IMATDA(ID,IS) = IMATDA(ID,IS) + DIAG12 + DIAG23
           IMATRA(ID,IS) = IMATRA(ID,IS) + RHS12 + RHS23
+          TRAC0(ID,IS,3) = TRAC0(ID,IS,3) - TC12 - TC23                   40.85
+          TRAC1(ID,IS,3) = TRAC1(ID,IS,3) + DIAG12 + DIAG23               40.85
 400     CONTINUE
 500   CONTINUE
 !
@@ -3446,7 +3484,7 @@
       SUBROUTINE STRSSB (IDDLOW  ,IDDTOP  ,
      &                   IDCMIN  ,IDCMAX  ,ISSTOP  ,CAX     ,CAY     ,
      &                   CAS     ,AC2     ,SPCSIG  ,IMATRA  ,
-     &                   ANYBLK  ,RDX     ,RDY                       )    40.41 30.21
+     &                   ANYBLK  ,RDX     ,RDY     ,TRAC0            )    41.07 40.41 30.21
 !
 !****************************************************************
 !
@@ -3466,7 +3504,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3488,11 +3526,13 @@
 !
 !     30.72: IJsbrand Haagsma
 !     40.41: Marcel Zijlema
+!     41.07: Marcel Zijlema
 !
 !  1. Updates
 !
 !     30.72, Feb. 98: Introduced generic names XCGRID, YCGRID and SPCSIG for SWAN
 !     40.41, Oct. 04: common blocks replaced by modules, include files removed
+!     41.07, Jul. 09: also central scheme blended with upwind scheme
 !
 !  2. Purpose
 !
@@ -3543,18 +3583,29 @@
 !     ---------------------------------- = -----------------------
 !                   DS                                DS
 !
-!                  /  CAS(IS+0.5) * AC2(IS+1)    IF CAS(IS+0.5) < 0
+!                  /  CAS(IS+0.5) * ( (1-0.5mu)*AC2(IS+1) + 0.5mu*AC2(IS) )    IF CAS(IS+0.5) < 0
 !     F(IS+0.5) =  |
-!                  \  CAS(IS+0.5) * AC2(IS)      IF CAS(IS+0.5) > 0
+!                  \  CAS(IS+0.5) * ( (1-0.5mu)*AC2(IS) + 0.5mu*AC2(IS+1) )    IF CAS(IS+0.5) > 0
 !
-!                  /  CAS(IS-0.5) * AC2(IS-1)    IF CAS(IS-0.5) > 0
+!                  /  CAS(IS-0.5) * ( (1-0.5mu)*AC2(IS-1) + 0.5mu*AC2(IS) )    IF CAS(IS-0.5) > 0
 !     F(IS-0.5) =  |
-!                  \  CAS(IS-0.5) * AC2(IS)      IF CAS(IS-0.5) < 0
+!                  \  CAS(IS-0.5) * ( (1-0.5mu)*AC2(IS) + 0.5mu*AC2(IS-1) )    IF CAS(IS-0.5) < 0
 !
-!     WITH:
+!     with
+!
+!           0 <= mu <= 1 a blending factor
+!
+!           mu = 0 corresponds to 1st order upwind scheme
+!           mu = 1 corresponds to 2nd order central scheme
+!
+!           default value, mu = 0.5
+!
+!    and
+!
 !           CAS(IS+0.5) = ( CAS(IS+1) + CAS(IS) ) / 2.
 !
 !           CAS(IS-0.5) = ( CAS(IS) + CAS(IS-1) ) / 2.
+!
 !
 !     ------------------------------------------------------------
 !     Courant-Friedlich-Levich criterion :
@@ -3658,7 +3709,7 @@
 !
       REAL     FSA     ,FLEFT   ,FRGHT   ,DS      ,CFLMAX  ,CFLCEN  ,
      &         CAXCEN  ,CAYCEN  ,CASCEN  ,TX      ,TY      ,TS      ,
-     &         CASL    ,CASR
+     &         CASL    ,CASR    ,PN1     ,PN2
 !
       REAL     CAS(MDC,MSC,ICMAX)       ,
      &         CAX(MDC,MSC,ICMAX)       ,
@@ -3667,6 +3718,7 @@
      &         IMATRA(MDC,MSC)          ,
      &         RDX(10)                  ,                                 40.08
      &         RDY(10)                                                    40.08
+      REAL  :: TRAC0(MDC,MSC,MTRNP)                                       41.07
 !
       INTEGER  IDCMIN(MSC)              ,
      &         IDCMAX(MSC)
@@ -3677,7 +3729,12 @@
       DATA IENT/0/
       IF (LTRACE) CALL STRACE (IENT,'STRSSB')
 !
-!     *** initialization of array and CFLMAX value ***
+!     --- determine blending factor
+!
+      PN1 = 0.5*(1.+PNUMS(7))                                             41.07
+      PN2 = 0.5*(1.-PNUMS(7))                                             41.07
+!
+!     *** initialization of ANYBLK and CFLMAX value ***
 !
       DO IS = 1, MSC
         DO ID = 1, MDC
@@ -3726,16 +3783,16 @@
               IF ( CASR .LT. 0. ) THEN
                 FRGHT = CASR * AC2(ID,IS+1,KCGRD(1))                      30.21
               ELSE
-                FRGHT = CASR * AC2(ID,IS,KCGRD(1))                        30.21
+                FRGHT = CASR * AC2(ID,IS  ,KCGRD(1))                      30.21
               END IF
               FLEFT = 0.
             ELSE IF ( IS .EQ. MSC ) THEN
 !             *** for the last discrete point in frequency space ***
 !             *** an upwind scheme is used                       ***
               CASL = CAS(ID,IS-1,1)
-              CASR = CAS(ID,IS,1  )
+              CASR = CAS(ID,IS  ,1)
               IF ( CASL .LT. 0. ) THEN
-                FLEFT = CASL * AC2(ID,IS,KCGRD(1))                        30.21
+                FLEFT = CASL * AC2(ID,IS  ,KCGRD(1))                      30.21
               ELSE
                 FLEFT = CASL * AC2(ID,IS-1,KCGRD(1))                      30.21
               END IF
@@ -3751,14 +3808,18 @@
               CASL  = 0.5 * ( CAS(ID,IS,1) + CAS(ID,IS-1,1) )
               CASR  = 0.5 * ( CAS(ID,IS,1) + CAS(ID,IS+1,1) )
               IF ( CASL .LT. 0. ) THEN
-                FLEFT = CASL * AC2(ID,IS,KCGRD(1))                        30.21
+                FLEFT = CASL * ( PN1*AC2(ID,IS  ,KCGRD(1)) +              41.07
+     &                           PN2*AC2(ID,IS-1,KCGRD(1)) )              41.07 30.21
               ELSE
-                FLEFT = CASL * AC2(ID,IS-1,KCGRD(1))                      30.21
+                FLEFT = CASL * ( PN1*AC2(ID,IS-1,KCGRD(1)) +              41.07
+     &                           PN2*AC2(ID,IS  ,KCGRD(1)) )              41.07 30.21
               END IF
               IF ( CASR .LT. 0. ) THEN
-                FRGHT = CASR * AC2(ID,IS+1,KCGRD(1))                      30.21
+                FRGHT = CASR * ( PN1*AC2(ID,IS+1,KCGRD(1)) +              41.07
+     &                           PN2*AC2(ID,IS  ,KCGRD(1)) )              41.07 30.21
               ELSE
-                FRGHT = CASR * AC2(ID,IS,KCGRD(1))                        30.21
+                FRGHT = CASR * ( PN1*AC2(ID,IS  ,KCGRD(1)) +              41.07
+     &                           PN2*AC2(ID,IS+1,KCGRD(1)) )              41.07 30.21
               END IF
             END IF
 !
@@ -3767,6 +3828,7 @@
 !           *** all the terms are known, store in IMATRA ***
 !
             IMATRA(ID,IS) = IMATRA(ID,IS) - FSA
+            TRAC0(ID,IS,3) = TRAC0(ID,IS,3) + FSA                         41.07
           ENDIF
 !
 !         *** test output ***
@@ -3814,7 +3876,7 @@
       SUBROUTINE STRSD (DD      ,IDCMIN  ,
      &                  IDCMAX  ,CAD     ,IMATLA  ,IMATDA  ,IMATUA  ,
      &                  IMATRA  ,AC2     ,ISSTOP  ,
-     &                  ANYBIN  ,LEAKC1                             )     40.41 30.21
+     &                  ANYBIN  ,LEAKC1  ,TRAC0   ,TRAC1            )     40.85 40.41 30.21
 
 !****************************************************************
 !
@@ -3834,7 +3896,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3855,6 +3917,7 @@
 !     1. UPDATE
 !
 !        40.41, Oct. 04: common blocks replaced by modules, include files removed
+!        40.85, Aug. 08: store theta-propagation for output purposes
 !
 !     2. PURPOSE
 !
@@ -3970,6 +4033,8 @@
      &         IMATUA(MDC,MSC)            ,
      &         IMATRA(MDC,MSC)            ,
      &         LEAKC1(MDC,MSC)
+      REAL  :: TRAC0(MDC,MSC,MTRNP)                                       40.85
+      REAL  :: TRAC1(MDC,MSC,MTRNP)                                       40.85
 !
       INTEGER  IDCMIN(MSC)                ,
      &         IDCMAX(MSC)
@@ -4067,6 +4132,8 @@
             ENDIF
             IMATDA(ID,IS) = IMATDA(ID,IS) + DIAG12 + DIAG23
             IMATRA(ID,IS) = IMATRA(ID,IS) + RHS12 + RHS23
+            TRAC0(ID,IS,2) = TRAC0(ID,IS,2) - RHS12 - RHS23               40.85
+            TRAC1(ID,IS,2) = TRAC1(ID,IS,2) + DIAG12 + DIAG23             40.85
           ENDIF
 !
  100    CONTINUE
@@ -4112,7 +4179,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4352,7 +4419,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4531,10 +4598,21 @@
       SUBROUTINE ADDDIS (DISSXY     ,LEAKXY     ,
      &                   AC2        ,ANYBIN     ,
      &                   DISC0      ,DISC1      ,
+     &                   GENC0      ,GENC1      ,                         40.85
+     &                   REDC0      ,REDC1      ,                         40.85
+     &                   TRAC0      ,TRAC1      ,                         40.85
+     &                   IMATLA     ,IMATUA     ,                         40.85
+     &                   IMAT5L     ,IMAT6U     ,                         40.85
      &                   DSXBOT     ,                                     40.67 40.61
      &                   DSXSRF     ,                                     40.67 40.61
      &                   DSXWCP     ,                                     40.67 40.61
-     &                   LEAKC1     ,SPCSIG     )                         30.72
+     &                   DSXVEG     ,                                     40.67 40.61
+     &                   GSXWND     ,GENRXY     ,                         40.85
+     &                   RSXQUA     ,RSXTRI     ,                         40.85
+     &                   REDSXY     ,                                     40.85
+     &                   TSXGEO     ,TSXSPT     ,                         40.85
+     &                   TSXSPS     ,TRANXY     ,                         40.85
+     &                   LEAKC1     ,RADSXY     ,SPCSIG     )             40.85 30.72
 !
 !*******************************************************************
 !
@@ -4552,7 +4630,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4575,6 +4653,7 @@
 !     30.72: IJsbrand Haagsma
 !     40.61: Marcel Zijlema
 !     40.67: Nico Booij
+!     40.85: Marcel Zijlema
 !
 !  1. Updates
 !
@@ -4583,10 +4662,12 @@
 !     30.72, Feb. 98: Introduced generic names XCGRID, YCGRID and SPCSIG for SWAN
 !     40.61, Sep. 06: introduction of all separate dissipation coefficients
 !     40.67, Jun. 07: more accurate computation of dissipation terms
+!     40.85, Aug. 08: add also propagation, generation and redistribution terms
+!                     and radiation stress
 !
 !  2. Purpose
 !
-!     Adds dissipation and leak
+!     Adds propagation, generation, dissipation, redistribution, leak and radiation stress terms
 !
 !  3. Method
 !
@@ -4640,39 +4721,157 @@
 !
       INTEGER :: II               ! counter                               40.67
       REAL    :: ADISSIP(1:MDISP)                                         40.67
+      REAL    :: AGENERT(1:MGENR)                                         40.85
+      REAL    :: AREDIST(1:MREDS)                                         40.85
+      REAL    :: ATRANSP(1:MTRNP)                                         40.85
       REAL     DISSXY(MCGRD)    ,LEAKXY(MCGRD)      ,
      &         DSXBOT(MCGRD)      ,                                       40.67 40.61
      &         DSXSRF(MCGRD)      ,                                       40.67 40.61
      &         DSXWCP(MCGRD)      ,                                       40.67 40.61
+     &         DSXVEG(MCGRD)      ,                                       40.67 40.61
+     &         GSXWND(MCGRD)      ,                                       40.85
+     &         RSXQUA(MCGRD)      ,                                       40.85
+     &         RSXTRI(MCGRD)      ,                                       40.85
+     &         TSXGEO(MCGRD)      ,                                       40.85
+     &         TSXSPT(MCGRD)      ,                                       40.85
+     &         TSXSPS(MCGRD)      ,                                       40.85
+     &         GENRXY(MCGRD)      ,REDSXY(MCGRD)    ,TRANXY(MCGRD),       40.85
+     &         RADSXY(MCGRD)      ,                                       40.85
      &         LEAKC1(MDC,MSC)  ,AC2(MDC,MSC,MCGRD)                       30.21
       REAL :: DISC0(1:MDC,1:MSC,1:MDISP)       ! dissipation coeff.       40.67
       REAL :: DISC1(1:MDC,1:MSC,1:MDISP)       ! dissipation coeff.       40.67
+      REAL :: GENC0(1:MDC,1:MSC,1:MGENR)       ! generation coeff.        40.85
+      REAL :: GENC1(1:MDC,1:MSC,1:MGENR)       ! generation coeff.        40.85
+      REAL :: REDC0(1:MDC,1:MSC,1:MREDS)       ! redistribution coeff.    40.85
+      REAL :: REDC1(1:MDC,1:MSC,1:MREDS)       ! redistribution coeff.    40.85
+      REAL :: TRAC0(1:MDC,1:MSC,1:MTRNP)       ! transport coeff.         40.85
+      REAL :: TRAC1(1:MDC,1:MSC,1:MTRNP)       ! transport coeff.         40.85
+      REAL    IMATLA(MDC,MSC)           ,                                 40.85
+     &        IMATUA(MDC,MSC)           ,                                 40.85
+     &        IMAT5L(MDC,MSC)           ,                                 40.85
+     &        IMAT6U(MDC,MSC)                                             40.85
 !
       LOGICAL  ANYBIN(MDC,MSC)
       INTEGER, SAVE :: IENT=0
       CALL STRACE (IENT, 'ADDDIS')
 !
       ADISSIP(1:MDISP) = 0.                                               40.67
+      AGENERT(1:MGENR) = 0.                                               40.85
+      AREDIST(1:MREDS) = 0.                                               40.85
+      ATRANSP(1:MTRNP) = 0.                                               40.85
+      ARADSTR          = 0.                                               40.85
       DO 100 ISC = 1, MSC
-        DSDD = DDIR * FRINTF * SPCSIG(ISC)**2
+        DSDD  = DDIR * FRINTF * SPCSIG(ISC)
+        SDSDD = DSDD * SPCSIG(ISC)
         DO 90 IDC = 1, MDC
+          IDM = MOD ( IDC - 2 + MDC , MDC ) + 1
+          IDP = MOD ( IDC     + MDC , MDC ) + 1
+!
+          S1   = SPCSIG(ISC)
+          ACT1 = AC2(IDC,ISC,KCGRD(1))
+          IF (ISC.EQ.1) THEN
+             S2   = 0.
+             ACT2 = 0.
+          ELSE
+             S2   = SPCSIG(ISC-1)
+             ACT2 = AC2(IDC,ISC-1,KCGRD(1))
+          ENDIF
+          IF (ISC.EQ.MSC) THEN
+             S3   = 0.
+             ACT3 = 0.
+          ELSE
+             S3   = SPCSIG(ISC+1)
+             ACT3 = AC2(IDC,ISC+1,KCGRD(1))
+          ENDIF
+          IF (.NOT.FULCIR .AND. IDC.EQ.1) THEN
+             ACT4 = 0.
+          ELSE
+             ACT4 = AC2(IDM,ISC,KCGRD(1))
+          ENDIF
+          IF (.NOT.FULCIR .AND. IDC.EQ.MDC) THEN
+             ACT5 = 0.
+          ELSE
+             ACT5 = AC2(IDP,ISC,KCGRD(1))
+          ENDIF
+!
           IF (ANYBIN(IDC,ISC)) THEN
-            LEAKXY(KCGRD(1)) = LEAKXY(KCGRD(1)) + DSDD *
+            LEAKXY(KCGRD(1)) = LEAKXY(KCGRD(1)) + SDSDD*
      &                      LEAKC1(IDC,ISC) * AC2(IDC,ISC,KCGRD(1))
 !
 !           --- compute for each dissipation term                         40.61
 !
             DO II = 1, MDISP                                              40.67
-              ADISSIP(II) =  ADISSIP(II) + DSDD * (DISC0(IDC,ISC,II) +    40.67
-     &                      DISC1(IDC,ISC,II) * AC2(IDC,ISC,KCGRD(1)))    40.67
+              ACONTR= SDSDD*(DISC0(IDC,ISC,II) + DISC1(IDC,ISC,II)*ACT1)  40.85
+              ADISSIP(II) = ADISSIP(II) + ACONTR                          40.85 40.67
+              ARADSTR     = ARADSTR     - ACONTR                          40.85
             ENDDO                                                         40.67
+!
+!           --- compute for each generation term                          40.85
+!
+            DO II = 1, MGENR                                              40.85
+              ACONTR= SDSDD*(GENC0(IDC,ISC,II) + GENC1(IDC,ISC,II)*ACT1)  40.85
+              AGENERT(II) = AGENERT(II) + ACONTR                          40.85
+              ARADSTR     = ARADSTR     + ACONTR                          40.85
+            ENDDO                                                         40.85
+!
+!           --- compute for each redistribution term                      40.85
+!
+            DO II = 1, MREDS                                              40.85
+              ACONTR= SDSDD*(REDC0(IDC,ISC,II) + REDC1(IDC,ISC,II)*ACT1)  40.85
+              AREDIST(II) = AREDIST(II) + ABS(ACONTR)                     40.85
+              ARADSTR     = ARADSTR     + ACONTR                          40.85
+            ENDDO                                                         40.85
+!
+!           --- compute for each propagation term
+!
+            ACONTR = SDSDD* (TRAC0(IDC,ISC,1) + TRAC1(IDC,ISC,1)*ACT1)    40.85
+            ATRANSP(1) = ATRANSP(1) + ABS(ACONTR)                         40.85
+            ARADSTR    = ARADSTR    - ACONTR                              40.85
+!
+            ACONTR = SDSDD* (TRAC0(IDC,ISC,2)      +                      40.85
+     &                       TRAC1(IDC,ISC,2)*ACT1 +                      40.85
+     &                       IMATLA(IDC,ISC) *ACT4 +                      40.85
+     &                       IMATUA(IDC,ISC) *ACT5 )                      40.85
+            ATRANSP(2) = ATRANSP(2) + ABS(ACONTR)                         40.85
+            ARADSTR    = ARADSTR    - ACONTR                              40.85
+!
+            ACONTR = DSDD * (TRAC0(IDC,ISC,3)           +                 40.85
+     &                       TRAC1(IDC,ISC,3)* S1 *ACT1 +                 40.85
+     &                       IMAT5L(IDC,ISC) * S2 *ACT2 +                 40.85
+     &                       IMAT6U(IDC,ISC) * S3 *ACT3 )                 40.85
+            ATRANSP(3) = ATRANSP(3) + ABS(ACONTR)                         40.85
+            ARADSTR    = ARADSTR    - ACONTR                              40.85
+!
+            ARADSTR    = ABS(ARADSTR)                                     40.85
           ENDIF
   90    CONTINUE
  100  CONTINUE
-      DSXWCP(KCGRD(1)) = DSXWCP(KCGRD(1)) + ADISSIP(1)     ! whitecapping 40.67
-      DSXSRF(KCGRD(1)) = DSXSRF(KCGRD(1)) + ADISSIP(2)     ! surf break   40.67
-      DSXBOT(KCGRD(1)) = DSXBOT(KCGRD(1)) + ADISSIP(3)     ! bottom fric  40.67
-      DISSXY(KCGRD(1)) = DISSXY(KCGRD(1)) + SUM(ADISSIP)   ! total dissip 40.67
+!
+      DSXWCP(KCGRD(1)) = DSXWCP(KCGRD(1)) + ADISSIP(1)     ! whitecapping         40.67
+      DSXSRF(KCGRD(1)) = DSXSRF(KCGRD(1)) + ADISSIP(2)     ! surf break           40.67
+      DSXBOT(KCGRD(1)) = DSXBOT(KCGRD(1)) + ADISSIP(3)     ! bottom fric          40.67
+      DSXVEG(KCGRD(1)) = DSXVEG(KCGRD(1)) + ADISSIP(5)     ! vegetation           40.67
+      DISSXY(KCGRD(1)) = DISSXY(KCGRD(1)) + SUM(ADISSIP)   ! total dissip         40.67
+!
+      GSXWND(KCGRD(1)) = GSXWND(KCGRD(1)) + AGENERT(1)     ! wind input           40.85
+      GENRXY(KCGRD(1)) = GENRXY(KCGRD(1)) + SUM(AGENERT)   ! total generation     40.85
+!
+      RSXQUA(KCGRD(1)) = RSXQUA(KCGRD(1)) + AREDIST(1)     ! quadruplets          40.85
+      RSXTRI(KCGRD(1)) = RSXTRI(KCGRD(1)) + AREDIST(2)     ! triads               40.85
+      REDSXY(KCGRD(1)) = REDSXY(KCGRD(1)) + SUM(AREDIST)   ! total redistribution 40.85
+!
+      TSXGEO(KCGRD(1)) = TSXGEO(KCGRD(1)) + ATRANSP(1)     ! xy-propagation       40.85
+      TSXSPT(KCGRD(1)) = TSXSPT(KCGRD(1)) + ATRANSP(2)     ! theta-propagation    40.85
+      TSXSPS(KCGRD(1)) = TSXSPS(KCGRD(1)) + ATRANSP(3)     ! sigma-propagation    40.85
+      TRANXY(KCGRD(1)) = TRANXY(KCGRD(1)) + SUM(ATRANSP)   ! total propagation    40.85
+!
+      RADSXY(KCGRD(1)) = RADSXY(KCGRD(1)) + ARADSTR        ! radiation stress     40.85
+!
+      IMATLA = 0.
+      IMATUA = 0.
+      IMAT5L = 0.
+      IMAT6U = 0.
+!
       RETURN
       END
 !
@@ -4703,7 +4902,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -5013,7 +5212,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as

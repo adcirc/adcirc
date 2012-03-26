@@ -77,10 +77,12 @@ SwanInterpolateAc.$(EXTO) \
 SwanInterpolateOutput.$(EXTO) \
 SwanConvAccur.$(EXTO) \
 SwanConvStopc.$(EXTO) \
+SwanThreadBounds.$(EXTO) \
 SwanFindObstacles.$(EXTO) \
 SwanCrossObstacle.$(EXTO) \
 SwanComputeForce.$(EXTO) \
 SwanIntgratSpc.$(EXTO) \
+SwanBndStruc.$(EXTO) \
 SwanReadfort18.$(EXTO) \
 SwanSumOverNodes.$(EXTO) \
 SwanMinOverNodes.$(EXTO) \
@@ -96,14 +98,13 @@ MSG_OBJS = \
 $(O_DIR)mkdir.$(EXTO) \
 $(O_DIR)sizes.$(EXTO) \
 $(O_DIR)global.$(EXTO) \
-$(O_DIR)kdtree2.$(EXTO) \
 $(O_DIR)global_3dvs.$(EXTO) \
 $(O_DIR)version.$(EXTO) \
 $(O_DIR)messenger.$(EXTO)
 
-.SUFFIXES: .f .F .for .f90 .F90
+.SUFFIXES: .f .for .f90
 
-.PHONEY: help
+.PHONY: help clean clobber
 
 help:
 	@echo "This Makefile supports the following:"
@@ -124,41 +125,38 @@ install:
 	@perl platform.pl
 
 ser:
-#Casey 080108: Added the -swan flag to the following line.
-	@perl switch.pl $(swch) -swan *.ftn *.ftn90
+	@perl switch.pl $(swch) *.ftn *.ftn90
 	$(MAKE) FOR=$(F90_SER) FFLAGS="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER)" \
-                FFLAGS90="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER) $(FLAGS_F90)" \
+	        FFLAGS90="$(FLAGS_OPT) $(FLAGS90_MSC) $(FLAGS_SER)" \
                 INCS="$(INCS_SER)" LIBS="$(LIBS_SER)" OBJS="$(SWAN_OBJS)" $(SWAN_EXE)
-	$(MAKE) FOR="$(F90_SER)" FFLAGS="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER)" \
-                FFLAGS90="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER) $(FLAGS_F90)" $(HCAT_EXE)
+	$(MAKE) hcat
 
 omp:
-#Casey 090826: Added the -swan flag to the following line.
-	@perl switch.pl $(swch) -omp -swan *.ftn *.ftn90
+	@perl switch.pl $(swch) *.ftn *.ftn90
 	$(MAKE) FOR=$(F90_OMP) FFLAGS="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_OMP)" \
-                FFLAGS90="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_OMP) $(FLAGS_F90)" \
+	        FFLAGS90="$(FLAGS_OPT) $(FLAGS90_MSC) $(FLAGS_OMP)" \
                 INCS="$(INCS_OMP)" LIBS="$(LIBS_OMP)" OBJS="$(SWAN_OBJS)" $(SWAN_EXE)
-	$(MAKE) FOR="$(F90_SER)" FFLAGS="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER)" \
-                FFLAGS90="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER) $(FLAGS_F90)" $(HCAT_EXE)
+	$(MAKE) hcat
 
 mpi:
-#Casey 090826: Added the -swan flag to the following line.
-	@perl switch.pl $(swch) -mpi -swan *.ftn *.ftn90
+	@perl switch.pl $(swch) -mpi *.ftn *.ftn90
 	$(MAKE) FOR=$(F90_MPI) FFLAGS="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_MPI)" \
-                FFLAGS90="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_MPI) $(FLAGS_F90)" \
+	        FFLAGS90="$(FLAGS_OPT) $(FLAGS90_MSC) $(FLAGS_MPI)" \
                 INCS="$(INCS_MPI)" LIBS="$(LIBS_MPI)" OBJS="$(SWAN_OBJS)" $(SWAN_EXE)
-	$(MAKE) FOR="$(F90_SER)" FFLAGS="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER)" \
-                FFLAGS90="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER) $(FLAGS_F90)" $(HCAT_EXE)
+	$(MAKE) hcat
 
 punswan:
-#Casey 080118: Added the -swan flag to the following line.
-	@perl switch.pl $(swch) -pun -swan *.ftn *.ftn90
+	@perl switch.pl $(swch) -pun *.ftn *.ftn90
 	$(MAKE) FOR=$(F90_MPI) FFLAGS="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_MPI)" \
-                FFLAGS90="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_MPI) $(FLAGS_F90)" \
+                FFLAGS90="$(FLAGS_OPT) $(FLAGS90_MSC) $(FLAGS_MPI)" \
                 INCS="$(INCS_MPI) -I$(O_DIR)" LIBS="$(LIBS_MPI)" \
                 OBJS="$(MSG_OBJS) $(SWAN_OBJS)" $(SWAN_EXE)
-	$(MAKE) FOR="$(F90_SER)" FFLAGS="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER)" \
-                FFLAGS90="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER) $(FLAGS_F90)" $(HCAT_EXE)
+	$(MAKE) hcat
+
+hcat:
+	@perl switch.pl $(swch) swanhcat.ftn
+	$(MAKE) FOR=$(F90_SER) FFLAGS="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER)" \
+	        FFLAGS90="$(FLAGS_OPT) $(FLAGS90_MSC) $(FLAGS_SER)" $(HCAT_EXE)
 
 doc:
 	$(MAKE) -f Makefile.latex TARGET=swanuse doc
@@ -168,21 +166,15 @@ doc:
 	$(MAKE) -f Makefile.latex TARGET=latexfordummies doc
 
 $(HCAT_EXE): $(HCAT_OBJS)
-	$(FOR) $(HCAT_OBJS) $(OUT)$(HCAT_EXE)
+	$(FOR) $(HCAT_OBJS) $(FFLAGS) $(OUT)$(HCAT_EXE)
 
 $(SWAN_EXE): $(SWAN_OBJS)
-	$(FOR) $(OBJS) $(OUT)$(SWAN_EXE) $(INCS) $(LIBS)
+	$(FOR) $(OBJS) $(FFLAGS) $(OUT)$(SWAN_EXE) $(INCS) $(LIBS)
 
 .f.o:
 	$(FOR) $< -c $(FFLAGS) $(INCS)
 
 .f90.o:
-	$(FOR) $< -c $(FFLAGS90) $(INCS)
-
-.F.o:
-	$(FOR) $< -c $(FFLAGS) $(INCS)
-
-.F90.o:
 	$(FOR) $< -c $(FFLAGS90) $(INCS)
 
 .for.o:
@@ -198,10 +190,10 @@ clean:
 	$(RM) *.$(EXTO) *.mod
 
 clobber:
-	$(RM) *.$(EXTO) *.mod *.f *.F *.F90 *.for *.f90 $(SWAN_EXE) $(HCAT_EXE)
+	$(RM) *.$(EXTO) *.mod *.f *.for *.f90 $(SWAN_EXE) $(HCAT_EXE)
 
 allclean:
-	$(RM) *.$(EXTO) *.mod *.f *.F *.F90 *.for *.f90 $(SWAN_EXE) $(HCAT_EXE)
+	$(RM) *.$(EXTO) *.mod *.f *.for *.f90 $(SWAN_EXE) $(HCAT_EXE)
 
 cleandoc:
 	$(MAKE) -f Makefile.latex TARGET=swanuse cleandoc

@@ -11,7 +11,7 @@ subroutine SwanMinOverNodes ( rval )
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -76,7 +76,9 @@ subroutine SwanMinOverNodes ( rval )
 !TIMG    call SWTSTA(202)
     minval = 0.
     count  = 1
-!PUN    call MPI_ALLREDUCE ( rval, minval, count, MPI_REAL, MPI_MIN, COMM, IERR )
+!Casey 120113: Changed from MPI_REAL to MPI_REAL4.
+!PUN!   call MPI_ALLREDUCE ( rval, minval, count, MPI_REAL, MPI_MIN, COMM, IERR )
+!PUN    call MPI_ALLREDUCE ( rval, minval, count, MPI_REAL4, MPI_MIN, COMM, IERR )
     !
     rval = minval
 !TIMG    call SWTSTO(202)

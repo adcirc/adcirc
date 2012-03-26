@@ -26,7 +26,6 @@
 !
 !***********************************************************************
 !                                                                      *
-!Casey 080110: Turn SWAN into a subroutine.
 !NADC      PROGRAM SWAN
 !ADC      SUBROUTINE SWAN
 !                                                                      *
@@ -47,7 +46,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -103,6 +102,13 @@
 !
       LOGICAL STPNOW                                                      40.30 34.01
 !
+! 11. Remarks
+!
+!     In case of coupling with ADCIRC, this program will not be executed  41.20
+!     Instead, SWAN initialization and run will be done by PADCSWAN_INIT  41.20
+!     and PADCSWAN_RUN, respectively, as they will pass a time step to    41.20
+!     routine SWMAIN. See couple2swan.F                                   41.20
+!
 ! 13. Source Code
 !
 !     --- initialize the MPI execution environment                        40.30
@@ -127,9 +133,8 @@
       END
 !***********************************************************************
 !                                                                      *
-!Casey 080115: ADCIRC will want to pass a time step to this subroutine.
 !NADC      SUBROUTINE SWMAIN                                                   40.31 34.01
-!ADC      SUBROUTINE SWMAIN(ITIME,IT)                                         40.31 34.01
+!ADC      SUBROUTINE SWMAIN ( ITIME, IT )                                     41.20 40.31 34.01
 !                                                                      *
 !***********************************************************************
 !
@@ -145,13 +150,12 @@
       USE M_PARALL                                                        40.31
       USE SwanGriddata                                                    40.80
 !PUN      USE MESSENGER                                                       40.95
-!Casey 080115: Added new modules.
-!ADC      USE Couple2Adcirc
-!ADC      USE Couple2Swan, ONLY: ComputeRadiationStresses,
+!ADC      USE Couple2Adcirc                                                   41.20
+!ADC      USE Couple2Swan, ONLY: ComputeRadiationStresses,                    41.20
 !ADC     &                       CouplingInterval,
 !ADC     &                       SwanOutput
 !ADC     &                      ,WriteSwanHotStart
-!ADC      USE GLOBAL,      ONLY: ADCIRC_DTDP => DTDP,
+!ADC      USE GLOBAL,      ONLY: ADCIRC_DTDP => DTDP,                         41.20
 !ADC     &                       ADCIRC_STATIM => STATIM
 !
       IMPLICIT NONE
@@ -168,7 +172,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -207,6 +211,7 @@
 !     40.51: Marcel Zijlema
 !     40.80: Marcel Zijlema
 !     40.95: Marcel Zijlema
+!     41.20: Casey Dietrich
 !
 !  1. Updates
 !
@@ -246,6 +251,7 @@
 !     40.51, Feb. 05: re-design output process in parallel mode
 !     40.80, Jun. 07: extension to unstructured grids
 !     40.95, Jun. 08: parallelization of unSWAN using MESSENGER of ADCIRC
+!     41.20, Mar. 10: extension to tightly coupled ADCIRC+SWAN model
 !
 !  2. Purpose
 !
@@ -256,6 +262,8 @@
 !     ---
 !
 !  4. Argument variables
+!ADC!
+!ADC      INTEGER IT, ITIME                                                   41.20
 !
 !  6. Local variables
 !
@@ -276,29 +284,26 @@
 !     LOPEN :     indicates whether a file is open                        34.01
 !     MSGSTR:     string to pass message to call MSGERR                   40.41
 !
-!Casey 080115: Move some variables to the Couple2Adcirc module,
-!              so that they will persist in memory.
 !NADC      INTEGER   IUNIT                                                     34.01
 !NADC      INTEGER   IOSTAT, IT0, IT, SAVITE, ILEN                             40.30
-!ADC      INTEGER   IT
 !NADC      INTEGER   INERR                                                     40.31
 !NADC      INTEGER   ISTAT, IF1, IL1                                           40.41
-!NADC      CHARACTER PTYPE, PNAME *8, COMPUT *4, DTTIWR*18                     40.00
-!ADC      CHARACTER DTTIWR*18
+!NADC      CHARACTER COMPUT *4, DTTIWR*18                                      40.00
 !NADC      CHARACTER*20 NUMSTR, CHARS(1)                                       40.41
-!ADC      CHARACTER*20 NUMSTR
 !NADC      CHARACTER*80 MSGSTR                                                 40.41
 !NADC      LOGICAL   LOPEN                                                     34.01
-
+!Casey 110608: Added comments before the next two lines.
+!ADC!      some variables and arrays have been moved to the                    41.20
+!ADC!      Couple2Adcirc module so that they will persist in memory            41.20
+!ADC      CHARACTER DTTIWR*18                                                 41.20
+!ADC      CHARACTER*20 NUMSTR                                                 41.20
+!NADC
 !NADC      INTEGER, ALLOCATABLE :: CROSS(:)                                    40.80 40.31
 !NADC      INTEGER, ALLOCATABLE :: BGRIDP(:)                                   40.31
 !NADC      REAL   , ALLOCATABLE :: BSPECS(:,:,:,:)                             40.31
 !NADC      REAL   , ALLOCATABLE :: AC1(:,:,:), COMPDA(:,:)                     40.31
-!
+!NADC!
 !NADC      REAL, ALLOCATABLE    :: BLKND(:), BLKNDC(:), OURQT(:)               40.51 40.41
-!
-!Casey 090326: Added a new local variable.
-!ADC      INTEGER ITIME
 !
 !  7. Common blocks used
 !
@@ -369,9 +374,9 @@
 !     ----------------------------------------------------------------
 !
 ! 13. Source text
-!
-!Casey 080115: Initialize only on first time step.
-!ADC      IF(IT.EQ.0)THEN
+!ADC!
+!ADC!     --- do the initialization for coupled ADCIRC+SWAN model             41.20
+!ADC      IF ( IT.EQ.0 ) THEN
 !
 !     --- initialize various data
 !TIMG
@@ -388,7 +393,6 @@
       CALL SWINIT (INERR)                                                 40.31 34.01
 !PUN      IF ( MNPROC>1 ) THEN                                                40.95
 !PUN         CALL SwanReadfort18                                              40.95
-!Casey 080819: Call subroutines only if ADCIRC hasn't called them already.
 !PUN!NADC         CALL MSG_TABLE()                                                 40.95
 !PUN!NADC         CALL MSG_START()                                                 40.95
 !PUN      ENDIF                                                               40.95
@@ -400,7 +404,6 @@
 
 !     --- repeat
 
-!Casey 080115: Is there a scenario when ADCIRC would need this loop?
 !NADC      DO
 
 !       --- read and process user commands
@@ -541,22 +544,24 @@
           ELSE
             IT0 = 1
           ENDIF
-
-!Casey 080116: End the LEVERR.GT.MAXERR IF statement.
+!ADC
+!ADC!       --- end the LEVERR.GT.MAXERR IF statement                         41.20
 !ADC        ENDIF
-!Casey 080116: End the IT.EQ.0 IF statement.
+!ADC!
+!ADC!     --- end the initialization for coupled ADCIRC+SWAN                  41.20
 !ADC      ENDIF
-!Casey 080116: Re-open the error IF statement.
-!ADC        IF(LEVERR.LE.MAXERR)THEN
-!
+!ADC!
+!ADC!     --- re-open the error IF statement                                  41.20
+!ADC      IF (LEVERR.LE.MAXERR) THEN
+
 !         --- synchronize nodes                                           40.30
 
           CALL SWSYNC                                                     40.30
           IF (STPNOW()) RETURN                                            40.30
 
 !         --- loop over time steps                                        40.00
+!ADC!             time stepping in the coupled model is handled elsewhere     41.20
 
-Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !NADC          DO 500 IT = IT0, MTC                                            40.00
 !
             IF (LEVERR.GT.MAXERR) THEN                                    30.82
@@ -564,9 +569,8 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
               IF (LEVERR.LT.4) WRITE (PRINTF, 6011)                       40.30 30.82
  6030         FORMAT(' ** No continuation of computation because ',       30.82
      &               'of error level:',I3)                                30.82
-!Casey 080818: The ND compiler does not like this EXIT command.
 !NADC              EXIT                                                        40.30
-!ADC              RETURN                                                      40.30
+!ADC              RETURN                                                      41.20
             ENDIF                                                         30.82
 
 !           --- synchronize nodes
@@ -580,7 +584,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
             CALL SNEXTI ( BSPECS, BGRIDP, COMPDA, AC1   , AC2   ,         40.31
      &                    SPCSIG, SPCDIR, XCGRID, YCGRID, KGRPNT,         40.31
      &                    XYTST , DEPTH , WLEVL , FRIC  , UXB   ,         40.31
-     &                    UYB   , WXI   , WYI   )                         40.31
+     &                    UYB   , NPLAF , WXI   , WYI   )                 40.55 40.31
 !TIMG            CALL SWTSTO(7)                                                40.23
             IF (STPNOW()) RETURN                                          34.01
 !
@@ -634,16 +638,15 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
             SAVITE = ITEST                                                30.21
             IF (IOUTES .GT. ITEST) ITEST = IOUTES
-
-!Casey 090326: Perform output of SWAN quantities.
-!ADC            CALL SwanOutput(ITIME,IT)
-!
-!Casey 100205: Write the SWAN hot-start file, if necessary.
-!ADC            IF(WriteSwanHotStart)THEN
-!ADC               CALL BACKUP(AC2,SPCSIG,SPCDIR,KGRPNT,XCGRID,YCGRID)
+!ADC
+!ADC!           --- perform output of SWAN quantities                         41.20
+!ADC            CALL SwanOutput ( ITIME, IT )
+!ADC!           --- write the SWAN hot-start file, if necessary               41.20
+!ADC            IF ( WriteSwanHotStart ) THEN
+!ADC               CALL BACKUP ( AC2,SPCSIG,SPCDIR,KGRPNT,XCGRID,YCGRID )
 !ADC               WriteSwanHotStart = .FALSE.
 !ADC            ENDIF
-!
+
 !           --- synchronize nodes
 
             CALL SWSYNC                                                   40.30
@@ -662,36 +665,33 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 
 !           --- update time
 
-            IF (NSTATM.EQ.1) THEN                                         40.00
-              IF (NSTATC.EQ.1 .AND. IT.LT.MTC) TIMCO = TIMCO + DT         40.00
-              CHTIME = DTTIWR(ITMOPT, TIMCO)                              40.00
-              IF (NSTATC.EQ.1) WRITE (PRINTF, 222) CHTIME, TIMCO          40.00
+            IF (NSTATC.EQ.1) THEN                                         40.00
+              IF (IT.LT.MTC) THEN
+                 TIMCO = TIMCO + DT                                       40.00
+                 CHTIME = DTTIWR(ITMOPT, TIMCO)                           40.00
+                 WRITE (PRINTF, 222) CHTIME, TIMCO                        40.00
+              ENDIF
  222          FORMAT(' Time of computation ->  ',A,' in sec:', F12.0)     40.00
             ENDIF                                                         40.00
 
-!Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !NADC 500      CONTINUE
 
           IF (LEVERR.GT.MAXERR) GOTO 900                                  40.30
 
         END IF
 
-!Casey 080115: The outer DO loop does not exist for ADCIRC.
 !NADC      END DO
 !
  900  CONTINUE
-!
-!Casey 080213: Make sure that radiation stresses are up-to-date.
-!ADC      IF(IT.NE.MTC)THEN
-!Casey 090616: On Jade, we need to pass these three arrays as function
-!              arguments.  The USE statements don't seem to work.
-!ADC         CALL ComputeRadiationStresses(AC2,SPCDIR,SPCSIG)
+!ADC!
+!ADC!     --- make sure that radiation stresses are up-to-date                41.20
+!ADC      IF ( IT.NE.MTC ) THEN
+!ADC         CALL ComputeRadiationStresses ( AC2, SPCDIR, SPCSIG )
 !ADC      ENDIF
 !
-!Casey 080115: These lines are processed only at the last time step.
-!ADC      IF(IT.EQ.MTC)THEN
-!
 !TIMG      CALL SWTSTO(1)                                                      40.23
+!ADC!
+!ADC      IF ( IT.EQ.MTC ) THEN                                               41.20
 !
       DO IUNIT=1,HIOPEN                                                   34.01
         INQUIRE(UNIT=IUNIT,OPENED=LOPEN)                                  34.01
@@ -734,9 +734,8 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       IF (ALLOCATED(OURQT )) DEALLOCATE(OURQT )                           40.51 40.30
       IF (ALLOCATED(BLKND )) DEALLOCATE(BLKND )                           40.41
       CALL SWCLME                                                         40.31
-!
-!Casey 080115: End the IF statement that applies at the last time step.
-!ADC      ENDIF
+!ADC!
+!ADC      ENDIF                                                               41.20
 !
       RETURN                                                              30.82
 !     end of subroutine SWMAIN
@@ -773,7 +772,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -819,6 +818,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !     40.61: Marcel Zijlema
 !     40.64: Marcel Zijlema
 !     40.80: Marcel Zijlema
+!     41.13: Nico Booij
 !
 !  1. Updates
 !
@@ -865,7 +865,6 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !     40.23, Nov. 02: parameter PROPFL added
 !     40.23, Dec. 02: reset of some default variables
 !     40.30, Mar. 03: introduction distributed-memory approach using MPI
-!     40.30, Mar. 03: coefficients for cumulative steepness method added
 !     40.08, Mar. 03: Unneccessary variable deleted
 !     40.31, Nov. 03: removing POOL construction and HPGL functionality
 !     40.41, Sep. 04: output variables TMM10 and RTMM10 added
@@ -874,8 +873,11 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !     40.51, Sep. 05: output variables WATLEV and BOTLEV added
 !     40.51, Feb. 06: output variable TPS added
 !     40.61, Sep. 06: output variables DISBOT, DISSRF and DISWCP added
+!     40.61, Sep. 06: output variable DISVEG added
 !     40.64, Apr. 07: output variables Qp and BFI added
 !     40.80, Jun. 07: extension to unstructured grids
+!     41.12, Apr. 10: output quantity NPL added
+!     41.13, Jul. 10: LWDATE introduced in view of nesting in WAM
 !
 !  2. Purpose
 !
@@ -925,9 +927,9 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 ! 13. Source text
 !
       VERTXT = BLANK                                                      40.03
-      VERNUM = 40.72
+      VERNUM = 40.85
       WRITE (VERTXT, '(F5.2)') VERNUM                                     40.03
-      CALL BUGFIX ('p')
+!      CALL BUGFIX ('A')
 !
       CALL OCPINI ('swaninit', .TRUE.,INERR)                              34.01
       IF (INERR.GT.0) RETURN                                              34.01
@@ -968,6 +970,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       GRAV   = 9.81
       WLEV   = 0.
       CASTD  = 0.               ! const. air-sea temp diff                40.03
+      CDCAP  = 99999.
       PI     = 4.*ATAN(1.)                                                40.31
       PI2    = 2.*PI
       UNDFLW = 1.E-15
@@ -1064,10 +1067,12 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       ISURF  = 1
       IBOT   = 0
       ITRIAD = 0
+      IVEG   = 0                                                          40.55
       VARWI  = .FALSE.
       VARFR  = .FALSE.
       VARWLV = .FALSE.                                                    20.38
       VARAST = .FALSE.       ! True means spatially variable air-sea t.d. 40.03
+      VARNPL = .FALSE.                                                    40.55
       U10    = 0.
       WDIP   = 0.
       INRHOG = 0                                                          30.20
@@ -1078,7 +1083,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       YOFFS  = 0.
       LXOFFS = .FALSE.
       DYNDEP = .FALSE.                                                    40.00
-      NWAMN = 0
+      LWDATE = 0                                                          41.13
       MXOUTAR = 0
 !
       FBS%NBS = -999                                                      40.31
@@ -1102,6 +1107,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       ONED   = .FALSE.                                                    32.02
       ACUPDA = .TRUE.                                                     40.07
       OFFSRC = .FALSE.                                                    40.80
+      LADDS  = .FALSE.                                                    40.85
       HSRERR = 0.1                                                        32.01
 !
 !     higher order propagation and spherical coordinates                  33.08
@@ -1236,6 +1242,11 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
       PNUMS(26) = 0.2                                                     41.06
       PNUMS(27) = 2.0                                                     41.06
+      PNUMS(29) = 0.0                                                     41.06
+!
+!     --- computation of Ctheta based on wave number
+!
+      PNUMS(32) = 0.                                                      41.07
 !
 !     *** (1) and (2): Komen et al. (1984) formulation ***
 !
@@ -1261,13 +1272,6 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       PWCAP(7) = 1.
       PWCAP(8) = 0.75
 !
-!     *** (12): Proportionality coefficient in cumulative steepness       40.30
-!               method                                                    40.30
-!         (13): Power of cosine term in cumulative steepness method       40.30
-!
-      PWCAP(12) = 0.5                                                     40.41 40.31 40.30
-      PWCAP(13) = 2.0                                                     40.31 40.30
-!
 !     PBOT(1)   = 0.005          modified
       PBOT(1)   = 0.0                                                     20.68
       PBOT(2)   = 0.015                                                   20.68
@@ -1280,7 +1284,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !     triad interactions
       PTRIAD(1)  = 0.05                                                   40.61 30.82
-      PTRIAD(2)  = 2.5                                                    40.61 40.55 30.82
+      PTRIAD(2)  = 2.5                                                    40.61 40.56 30.82
       PTRIAD(3)  = 10.                                                    40.23
       PTRIAD(4)  = 0.2                                                    40.13
       PTRIAD(5)  = 0.01                                                   40.23
@@ -1362,6 +1366,9 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !     added for air-sea temp. diff.:
       JASTD2= 1                                                           40.03
       JASTD3= 1                                                           40.03
+!     added for number of plants per square meter                         40.55
+      JNPLA2= 1                                                           40.55
+      JNPLA3= 1                                                           40.55
 !
 !     *** added for wave setup ***                                        32.01
 !
@@ -1375,6 +1382,17 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       JDSXB  = 1                                                          40.65 40.61
       JDSXS  = 1                                                          40.65 40.61
       JDSXW  = 1                                                          40.65 40.61
+      JDSXV  = 1                                                          40.65 40.61
+      JGENR  = 1                                                          40.85
+      JGSXW  = 1                                                          40.85
+      JREDS  = 1                                                          40.85
+      JRSXQ  = 1                                                          40.85
+      JRSXT  = 1                                                          40.85
+      JTRAN  = 1                                                          40.85
+      JTSXG  = 1                                                          40.85
+      JTSXT  = 1                                                          40.85
+      JTSXS  = 1                                                          40.85
+      JRADS  = 1                                                          40.85
 !
 !     Next pointers are for the plot of the source terms (SWTSDA)         40.31
 !
@@ -1386,7 +1404,8 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       JP4S   = 6
       JP4D   = 7
       JPTRI  = 8
-      MTSVAR = 8
+      JPVEGT = 9                                                          40.55
+      MTSVAR = 9
 !
 !     ***** test output control *****
       ITEST  = 1                                                          40.41
@@ -1487,7 +1506,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       IVTYPE = 6
       OVKEYW(IVTYPE) = 'UBOT'                                             40.00
       OVSNAM(IVTYPE) = 'Ubot'
-      OVLNAM(IVTYPE) = 'Orbital velocity at the bottom'
+      OVLNAM(IVTYPE) = 'RMS of orbital velocity amplitude at the bottom'
       OVUNIT(IVTYPE) = UV
       OVSVTY(IVTYPE) = 1
       OVLLIM(IVTYPE) = 0.
@@ -2017,7 +2036,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       IVTYPE = 50                                                         40.51
       OVKEYW(IVTYPE) = 'TMBOT'
       OVSNAM(IVTYPE) = 'TmBot'
-      OVLNAM(IVTYPE) = 'Bottom wave period'
+      OVLNAM(IVTYPE) = 'Near bottom wave period'
       OVUNIT(IVTYPE) = UT
       OVSVTY(IVTYPE) = 1
       OVLLIM(IVTYPE) = 0.
@@ -2064,7 +2083,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
       IVTYPE = 54
       OVKEYW(IVTYPE) = 'DISB'                                             40.61
-      OVSNAM(IVTYPE) = 'Disbot'
+      OVSNAM(IVTYPE) = 'Sfric'                                            40.85
       OVLNAM(IVTYPE) = 'Bottom friction dissipation'
       OVUNIT(IVTYPE) = 'm2/s'
       OVSVTY(IVTYPE) = 1
@@ -2076,8 +2095,8 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
       IVTYPE = 55
       OVKEYW(IVTYPE) = 'DISSU'                                            40.61
-      OVSNAM(IVTYPE) = 'Dissrf'
-      OVLNAM(IVTYPE) = 'Wave breaking dissipation'
+      OVSNAM(IVTYPE) = 'Ssurf'                                            40.85
+      OVLNAM(IVTYPE) = 'Surf breaking dissipation'                        40.85
       OVUNIT(IVTYPE) = 'm2/s'
       OVSVTY(IVTYPE) = 1
       OVLLIM(IVTYPE) = 0.
@@ -2088,8 +2107,20 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
       IVTYPE = 56
       OVKEYW(IVTYPE) = 'DISW'                                             40.61
-      OVSNAM(IVTYPE) = 'Diswcp'
+      OVSNAM(IVTYPE) = 'Swcap'                                            40.85
       OVLNAM(IVTYPE) = 'Whitecapping dissipation'
+      OVUNIT(IVTYPE) = 'm2/s'
+      OVSVTY(IVTYPE) = 1
+      OVLLIM(IVTYPE) = 0.
+      OVULIM(IVTYPE) = 1000.
+      OVLEXP(IVTYPE) = 0.
+      OVHEXP(IVTYPE) = 0.1
+      OVEXCV(IVTYPE) = -9.
+!
+      IVTYPE = 57
+      OVKEYW(IVTYPE) = 'DISV'                                             40.61
+      OVSNAM(IVTYPE) = 'Sveg'                                             40.85
+      OVLNAM(IVTYPE) = 'Vegetation dissipation'
       OVUNIT(IVTYPE) = 'm2/s'
       OVSVTY(IVTYPE) = 1
       OVLLIM(IVTYPE) = 0.
@@ -2120,6 +2151,150 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       OVULIM(IVTYPE) = 1000.
       OVLEXP(IVTYPE) = 0.
       OVHEXP(IVTYPE) = 1000.
+      OVEXCV(IVTYPE) = -9.
+!
+      IVTYPE = 60
+      OVKEYW(IVTYPE) = 'GENE'                                             40.85
+      OVSNAM(IVTYPE) = 'Genera'
+      OVLNAM(IVTYPE) = 'Energy generation'
+      OVUNIT(IVTYPE) = 'm2/s'
+      OVSVTY(IVTYPE) = 1
+      OVLLIM(IVTYPE) = 0.
+      OVULIM(IVTYPE) = 1000.
+      OVLEXP(IVTYPE) = 0.
+      OVHEXP(IVTYPE) = 0.1
+      OVEXCV(IVTYPE) = -9.
+!
+      IVTYPE = 61
+      OVKEYW(IVTYPE) = 'GENW'                                             40.85
+      OVSNAM(IVTYPE) = 'Swind'
+      OVLNAM(IVTYPE) = 'Wind source term'
+      OVUNIT(IVTYPE) = 'm2/s'
+      OVSVTY(IVTYPE) = 1
+      OVLLIM(IVTYPE) = 0.
+      OVULIM(IVTYPE) = 1000.
+      OVLEXP(IVTYPE) = 0.
+      OVHEXP(IVTYPE) = 0.1
+      OVEXCV(IVTYPE) = -9.
+!
+      IVTYPE = 62
+      OVKEYW(IVTYPE) = 'REDI'                                             40.85
+      OVSNAM(IVTYPE) = 'Redist'
+      OVLNAM(IVTYPE) = 'Energy redistribution'
+      OVUNIT(IVTYPE) = 'm2/s'
+      OVSVTY(IVTYPE) = 1
+      OVLLIM(IVTYPE) = 0.
+      OVULIM(IVTYPE) = 1000.
+      OVLEXP(IVTYPE) = 0.
+      OVHEXP(IVTYPE) = 0.1
+      OVEXCV(IVTYPE) = -9.
+!
+      IVTYPE = 63
+      OVKEYW(IVTYPE) = 'REDQ'                                             40.85
+      OVSNAM(IVTYPE) = 'Snl4'
+      OVLNAM(IVTYPE) = 'Total absolute 4-wave interaction'
+      OVUNIT(IVTYPE) = 'm2/s'
+      OVSVTY(IVTYPE) = 1
+      OVLLIM(IVTYPE) = 0.
+      OVULIM(IVTYPE) = 1000.
+      OVLEXP(IVTYPE) = 0.
+      OVHEXP(IVTYPE) = 0.1
+      OVEXCV(IVTYPE) = -9.
+!
+      IVTYPE = 64
+      OVKEYW(IVTYPE) = 'REDT'                                             40.85
+      OVSNAM(IVTYPE) = 'Snl3'
+      OVLNAM(IVTYPE) = 'Total absolute 3-wave interaction'
+      OVUNIT(IVTYPE) = 'm2/s'
+      OVSVTY(IVTYPE) = 1
+      OVLLIM(IVTYPE) = 0.
+      OVULIM(IVTYPE) = 1000.
+      OVLEXP(IVTYPE) = 0.
+      OVHEXP(IVTYPE) = 0.1
+      OVEXCV(IVTYPE) = -9.
+!
+      IVTYPE = 65
+      OVKEYW(IVTYPE) = 'PROPA'                                            40.85
+      OVSNAM(IVTYPE) = 'Propag'
+      OVLNAM(IVTYPE) = 'Energy propagation'
+      OVUNIT(IVTYPE) = 'm2/s'
+      OVSVTY(IVTYPE) = 1
+      OVLLIM(IVTYPE) = 0.
+      OVULIM(IVTYPE) = 1000.
+      OVLEXP(IVTYPE) = 0.
+      OVHEXP(IVTYPE) = 0.1
+      OVEXCV(IVTYPE) = -9.
+!
+      IVTYPE = 66
+      OVKEYW(IVTYPE) = 'PROPX'                                            40.85
+      OVSNAM(IVTYPE) = 'Propxy'
+      OVLNAM(IVTYPE) = 'xy-propagation'
+      OVUNIT(IVTYPE) = 'm2/s'
+      OVSVTY(IVTYPE) = 1
+      OVLLIM(IVTYPE) = 0.
+      OVULIM(IVTYPE) = 1000.
+      OVLEXP(IVTYPE) = 0.
+      OVHEXP(IVTYPE) = 0.1
+      OVEXCV(IVTYPE) = -9.
+!
+      IVTYPE = 67
+      OVKEYW(IVTYPE) = 'PROPT'                                            40.85
+      OVSNAM(IVTYPE) = 'Propth'
+      OVLNAM(IVTYPE) = 'theta-propagation'
+      OVUNIT(IVTYPE) = 'm2/s'
+      OVSVTY(IVTYPE) = 1
+      OVLLIM(IVTYPE) = 0.
+      OVULIM(IVTYPE) = 1000.
+      OVLEXP(IVTYPE) = 0.
+      OVHEXP(IVTYPE) = 0.1
+      OVEXCV(IVTYPE) = -9.
+!
+      IVTYPE = 68
+      OVKEYW(IVTYPE) = 'PROPS'                                            40.85
+      OVSNAM(IVTYPE) = 'Propsi'
+      OVLNAM(IVTYPE) = 'sigma-propagation'
+      OVUNIT(IVTYPE) = 'm2/s'
+      OVSVTY(IVTYPE) = 1
+      OVLLIM(IVTYPE) = 0.
+      OVULIM(IVTYPE) = 1000.
+      OVLEXP(IVTYPE) = 0.
+      OVHEXP(IVTYPE) = 0.1
+      OVEXCV(IVTYPE) = -9.
+!
+      IVTYPE = 69
+      OVKEYW(IVTYPE) = 'RADS'                                             40.85
+      OVSNAM(IVTYPE) = 'Radstr'
+      OVLNAM(IVTYPE) = 'Radiation stress'
+      OVUNIT(IVTYPE) = 'm2/s'
+      OVSVTY(IVTYPE) = 1
+      OVLLIM(IVTYPE) = 0.
+      OVULIM(IVTYPE) = 1000.
+      OVLEXP(IVTYPE) = 0.
+      OVHEXP(IVTYPE) = 0.1
+      OVEXCV(IVTYPE) = -9.
+!
+      IVTYPE = 70
+      OVKEYW(IVTYPE) = 'NPL'                                            ! 41.12
+      OVSNAM(IVTYPE) = 'Nplant'
+      OVLNAM(IVTYPE) = 'Plants per m2'
+      OVUNIT(IVTYPE) = '1/m2'
+      OVSVTY(IVTYPE) = 1
+      OVLLIM(IVTYPE) = 0.
+      OVULIM(IVTYPE) = 1000.
+      OVLEXP(IVTYPE) = 0.
+      OVHEXP(IVTYPE) = 100.
+      OVEXCV(IVTYPE) = -9.
+!
+      IVTYPE = 71
+      OVKEYW(IVTYPE) = 'LWAVP'                                            41.15
+      OVSNAM(IVTYPE) = 'Lwavp'
+      OVLNAM(IVTYPE) = 'Peak wave length'
+      OVUNIT(IVTYPE) = UL
+      OVSVTY(IVTYPE) = 1
+      OVLLIM(IVTYPE) = 0.
+      OVULIM(IVTYPE) = 1000.
+      OVLEXP(IVTYPE) = 0.
+      OVHEXP(IVTYPE) = 200.
       OVEXCV(IVTYPE) = -9.
 !
 !     various parameters for computation of output quantities             40.00
@@ -2177,7 +2352,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2503,7 +2678,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2886,7 +3061,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3040,6 +3215,10 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
         COMPDA(1,JASTD2) = 0.                                             40.03
         COMPDA(1,JASTD3) = 0.                                             40.03
       ENDIF
+      IF (VARNPL) THEN                                                    40.55
+        COMPDA(1,JNPLA2) = 0.                                             40.55
+        COMPDA(1,JNPLA3) = 0.                                             40.55
+      ENDIF
       COMPDA(1,JBOTLV) = 0.                                               40.65
 !
 !     --- structured grid                                                 40.80
@@ -3145,6 +3324,14 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
              COMPDA(INDX,JASTD3) = ASTD                                   40.03
           ENDIF
 !
+!     ***** compute number of plants per square meter *****               40.55
+!
+          IF (VARNPL) THEN
+             XNPL = SVALQI (XP, YP, 11, NPLAF, 1 ,IX ,IY)                 40.55
+             COMPDA(INDX,JNPLA2) = XNPL                                   40.55
+             COMPDA(INDX,JNPLA3) = XNPL                                   40.55
+          ENDIF
+!
    10   CONTINUE
    20 CONTINUE
 !
@@ -3157,11 +3344,19 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !        ***** compute depth and water level *****
 !
-         DEP = SVALQI (XP, YP, 1, DEPTH, 1, 0, 0)                         40.80
+         IF ( IGTYPE(1).EQ.3 ) THEN
+            DEP = DEPTH(INDX)
+         ELSE
+            DEP = SVALQI (XP, YP, 1, DEPTH, 1, 0, 0)                      40.80
+         ENDIF
          COMPDA(INDX,JBOTLV) = DEP                                        40.80
 !
          IF (VARWLV) THEN                                                 40.80
-            WLVL = SVALQI (XP, YP, 7, WLEVL, 1, 0, 0)                     40.80
+            IF ( IGTYPE(7).EQ.3 ) THEN
+               WLVL = WLEVL(INDX)
+            ELSE
+               WLVL = SVALQI (XP, YP, 7, WLEVL, 1, 0, 0)                  40.80
+            ENDIF
             COMPDA(INDX,JWLV2) = WLVL
             IF (JWLV1.GT.1) COMPDA(INDX,JWLV1) = WLVL                     40.80
             IF (JWLV3.GT.1) COMPDA(INDX,JWLV3) = WLVL                     40.80
@@ -3179,8 +3374,16 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
          IF (ICUR.EQ.1 .AND. IGTYPE(2) .GE. 1) THEN                       40.80
             IF (DEPW.GT.0.) THEN
-              UU  = SVALQI (XP, YP, 2, UXB, 0, 0, 0)                      40.80
-              VV  = SVALQI (XP, YP, 3, UYB, 0, 0, 0)                      40.80
+              IF ( IGTYPE(2).EQ.3 ) THEN
+                 UU = UXB(INDX)
+              ELSE
+                 UU = SVALQI (XP, YP, 2, UXB, 0, 0, 0)                    40.80
+              ENDIF
+              IF ( IGTYPE(3).EQ.3 ) THEN
+                 VV = UYB(INDX)
+              ELSE
+                 VV = SVALQI (XP, YP, 3, UYB, 0, 0, 0)                    40.80
+              ENDIF
               VTOT = SQRT (UU*UU + VV*VV)
               CGMAX = PNUMS(18)*SQRT(GRAV*DEPW)
               IF (VTOT .GT. CGMAX) THEN
@@ -3207,7 +3410,11 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !         ***** compute variable friction coefficient *****
 !
          IF (VARFR) THEN
-            FRI = SVALQI (XP, YP, 4, FRIC, 1, 0, 0)                       40.80
+            IF ( IGTYPE(4).EQ.3 ) THEN
+               FRI = FRIC(INDX)
+            ELSE
+               FRI = SVALQI (XP, YP, 4, FRIC, 1, 0, 0)                    40.80
+            ENDIF
             COMPDA(INDX,JFRC2) = FRI                                      40.80
             COMPDA(INDX,JFRC3) = FRI                                      40.80
          ENDIF
@@ -3215,8 +3422,16 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !        ***** compute variable wind velocity *****
 !
          IF (VARWI) THEN
-            UU  = SVALQI (XP, YP, 5, WXI, 0, 0, 0)                        40.80
-            VV  = SVALQI (XP, YP, 6, WYI, 0, 0, 0)                        40.80
+            IF ( IGTYPE(5).EQ.3 ) THEN
+               UU = WXI(INDX)
+            ELSE
+               UU = SVALQI (XP, YP, 5, WXI, 0, 0, 0)                      40.80
+            ENDIF
+            IF ( IGTYPE(6).EQ.3 ) THEN
+               VV = WYI(INDX)
+            ELSE
+               VV = SVALQI (XP, YP, 6, WYI, 0, 0, 0)                      40.80
+            ENDIF
             COMPDA(INDX,JWX2) =  UU*COSWC + VV*SINWC
             COMPDA(INDX,JWY2) = -UU*SINWC + VV*COSWC
             IF (JWX3.GT.1) COMPDA(INDX,JWX3) = COMPDA(INDX,JWX2)          40.80
@@ -3226,10 +3441,26 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !     ***** compute variable air-sea temperature difference *****         40.80
 !
          IF (VARAST) THEN
-            ASTD = SVALQI (XP, YP, 10, ASTDF, 1, 0, 0)                    40.80
+            IF ( IGTYPE(10).EQ.3 ) THEN
+               ASTD = ASTDF(INDX)
+            ELSE
+               ASTD = SVALQI (XP, YP, 10, ASTDF, 1, 0, 0)                 40.80
+            ENDIF
             COMPDA(INDX,JASTD2) = ASTD                                    40.80
             COMPDA(INDX,JASTD3) = ASTD                                    40.80
          ENDIF
+!
+!     ***** compute number of plants per square meter *****               40.80
+!
+          IF (VARNPL) THEN
+             IF ( IGTYPE(11).EQ.3 ) THEN
+                XNPL = NPLAF(INDX)
+             ELSE
+                XNPL = SVALQI (XP, YP, 11, NPLAF, 1 ,0, 0)                40.80
+             ENDIF
+             COMPDA(INDX,JNPLA2) = XNPL                                   40.80
+             COMPDA(INDX,JNPLA3) = XNPL                                   40.80
+          ENDIF
 !
       ENDDO                                                               40.80
 !
@@ -3280,7 +3511,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3683,7 +3914,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3812,7 +4043,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3942,7 +4173,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4117,7 +4348,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4216,7 +4447,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4261,8 +4492,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !     40.08, Mar. 03: "GE" changed to "EQ" and warning message related to
 !                     curvilinear coordinates added
 !     40.31, Dec. 03: removing POOL mechanism
-!     40.41, Jul. 04: added error concerning CSM and DIA,
-!                     added warning concerning frequency-resolution and DIA,
+!     40.41, Jul. 04: added warning concerning frequency-resolution and DIA,
 !                     added check of resonance condition for triads
 !     40.41, Oct. 04: common blocks replaced by modules, include files removed
 !     40.53, Mar. 05: change Alves and Banner parameters in case of XNL
@@ -4287,17 +4517,13 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !  6. Local variables
 !
-!     CHARS :     array to pass character info to MSGERR
 !     MSGSTR:     string to pass message to call MSGERR
 !
-      CHARACTER*20 NUMSTR, CHARS(3)
       CHARACTER*80 MSGSTR
 !
 !  8. Subroutines used
 !
 !     MSGERR : Handles error messages according to severity
-!     NUMSTR : Converts integer/real to string
-!     TXPBLA : Removes leading and trailing blanks in string
 !
 !  9. Subroutines calling
 !
@@ -4319,7 +4545,6 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 ! 13. Source text
 !
-      LOGICAL  STPNOW                                                     40.00
       LOGICAL  EQREAL                                                     40.53
       SAVE IENT
       DATA IENT/0/
@@ -4357,6 +4582,22 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !     *** WARNINGS AND ERROR MESSAGES ***
 !
 !     -----------------------------------------------------------------
+!
+!     *** Check formulation for whitecapping ***
+!
+      IF ( IWCAP.GT.7 ) THEN
+         WRITE (MSGSTR, '(A,I2,A)')
+     &               'Unknown method for whitecapping (IWCAP=',IWCAP,')'
+         CALL MSGERR( 1, TRIM(MSGSTR) )
+         CALL MSGERR( 1,
+     &     'Whitecapping according to Komen et al. (1984) will be used')
+         IWCAP     = 1
+         PWCAP(1)  = 2.36E-5
+         PWCAP(2)  = 3.02E-3
+         PWCAP(9)  = 2.
+         PWCAP(10) = 0.
+         PWCAP(11) = 1.
+      ENDIF
 !
 !     *** WAM cycle 3 physics ***
 !
@@ -4469,7 +4710,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
        IF (MSC .EQ. 3 ) THEN
          CALL MSGERR(4,'Do not activate quadruplets for boundary ')
          CALL MSGERR(4,'option BIN -> use other option           ')
-         WRITE(PRINTF,*)
+         RETURN
        END IF
 !
       END IF                                                              30.72
@@ -4502,15 +4743,8 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
          CALL MSGERR(4,'When triads are active the number of     ')       30.72
          CALL MSGERR(4,'directions chosen in the CGRID command   ')       30.72
          CALL MSGERR(4,'must be less than 200                    ')       30.72
+         RETURN
       END IF                                                              30.72
-!
-!     When CSM is applied only DIA should be used                         40.41
-!
-      IF (IWCAP.EQ.6 .AND. IQUAD.GT.3 .AND. IQUAD.NE.8) THEN              40.41 40.30
-         CALL MSGERR(3,                                                   40.30
-     &       'In case of cumulative steepness method, only DIA '//        40.30
-     &       'technique is supported')                                    40.30
-      END IF                                                              40.30
 !
 !     When Alves and Banner and XNL are applied change the parameters     40.53
 !
@@ -4522,10 +4756,6 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
          IF (EQREAL(PWCAP( 9),    0.0)) PWCAP( 9) = 0.                    40.53
          IF (EQREAL(PWCAP(11),    0.0)) PWCAP(11) = 0.                    40.53
       END IF                                                              40.53
-!OMP!
-!OMP      IF ( IQUAD.EQ.51 .OR. IQUAD.EQ.52 .OR. IQUAD.EQ.53 ) THEN           40.41
-!OMP         CALL MSGERR(4,'XNL not supported within OpenMP environment')     40.41
-!OMP      END IF                                                              40.41
 !
       IF ( ITEST .GE. 120 ) THEN
         WRITE(PRINTF,3000) IWIND ,IQUAD, ICUR, IWCAP, MSC
@@ -4546,7 +4776,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       SUBROUTINE SNEXTI (BSPECS, BGRIDP, COMPDA, AC1   , AC2   ,          40.31
      &                   SPCSIG, SPCDIR, XCGRID, YCGRID, KGRPNT,          40.31
      &                   XYTST , DEPTH , WLEVL , FRIC  , UXB   ,          40.31
-     &                   UYB   , WXI   , WYI   )                          40.31
+     &                   UYB   , NPLAF , WXI   , WYI   )                  40.55 40.31
 !                                                                    *
 !*********************************************************************
 !
@@ -4572,7 +4802,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4667,6 +4897,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       REAL     SPCSIG(MSC)                                                30.01
       REAL     XCGRID(MXC,MYC), YCGRID(MXC,MYC)                           30.21
       REAL     DEPTH(*), WLEVL(*), FRIC(*), UXB(*), UYB(*),               40.31
+     &         NPLAF(*),                                                  40.55
      &         WXI(*), WYI(*)                                             40.31
 !
 !     TIMCO ..... Time (date) of computation
@@ -4709,7 +4940,6 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 ! 13. Source text
 !
-      CHARACTER   PTYPE*1                                                 30.74
       INTEGER     IERR
       REAL        TSTVAL(10)                                              40.00
       TYPE(BSPCDAT), POINTER :: CURBFL                                    40.31
@@ -4952,7 +5182,11 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
         DO INDX = 1, nverts                                               40.80
            XP = xcugrd(INDX)
            YP = ycugrd(INDX)
-           DEP = SVALQI (XP, YP, 1, DEPTH, 1, 0, 0)
+           IF ( IGTYPE(1).EQ.3 ) THEN
+              DEP = DEPTH(INDX)
+           ELSE
+              DEP = SVALQI (XP, YP, 1, DEPTH, 1, 0, 0)
+           ENDIF
            COMPDA(INDX,JDP1) = COMPDA(INDX,JDP2)
            WLVL = COMPDA(INDX,JWLV2)
            DEPW = DEP + WLVL + WLEV
@@ -5066,6 +5300,33 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
      &          (TSTVAL(IPTST), IPTST=1,MIN(10,NPTST))
         ENDIF
       ENDIF
+
+!     field 11: field containing number of plants per square meter
+      IF (IFLDYN(11) .EQ. 1) THEN
+        CALL FLFILE (11, 0, NPLAF, 0.,
+     &               0, JNPLA2, JNPLA3, 0, 0, 0,
+     &               1., 0.,
+     &               COMPDA, XCGRID, YCGRID,
+     &               KGRPNT, IERR)
+        IF (STPNOW()) RETURN
+        IF (NPTST.GT.0) THEN
+          WRITE (PRTEST, '(A)') ' # plants/m2 from file in test points'
+          IF (OPTG.NE.5) THEN                                             40.80
+             DO IPTST = 1, MIN(10,NPTST)
+               IXP = XYTST(2*IPTST-1)
+               IYP = XYTST(2*IPTST)
+               TSTVAL(IPTST) = COMPDA(KGRPNT(IXP,IYP),JNPLA3)
+             ENDDO
+          ELSE                                                            40.80
+             DO IPTST = 1, MIN(10,NPTST)                                  40.80
+                IVP = XYTST(IPTST)                                        40.80
+                TSTVAL(IPTST) = COMPDA(IVP,JNPLA3)                        40.80
+             ENDDO                                                        40.80
+          ENDIF                                                           40.80
+          WRITE (PRTEST, 122) ' veg dens: ',
+     &          (TSTVAL(IPTST), IPTST=1,MIN(10,NPTST))
+        ENDIF
+      ENDIF
 !
 !     End of subroutine SNEXTI
 !
@@ -5100,7 +5361,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -5129,6 +5390,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !     40.31: Marcel Zijlema
 !     40.41: Marcel Zijlema
 !     40.61: Roop Lalbeharry
+!     41.13: Nico Booij
 !
 !  1. Updates
 !
@@ -5146,6 +5408,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !     40.31, Nov. 03: removing POOL-mechanism, reconsidering this subroutine
 !     40.41, Oct. 04: common blocks replaced by modules, include files removed
 !     40.61, Nov. 06: variables USNEW, THWNEW no longer written in WAM4.5
+!     41.13, Jul. 10: LWDATE introduced (length of date/time in WAM nest)
 !
 !  2. Purpose
 !
@@ -5237,12 +5500,12 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !     NSTATF    if True time appears in bound. cond. file
 !     UNFORM    if True reading is done unformatted
 !
-      CHARACTER BTYPE *4, HEDLIN *80, TIMSTR *20, CDATE *12,
-     &          DATITM(5) *18, SWWDATE*15, PTNME*12
+      CHARACTER BTYPE *4, HEDLIN *80, TIMSTR *20,
+     &          DATITM(5) *18, PTNME*12
 !     BTYPE     type of boundary condition
 !     HEDLIN    heading line
 !     TIMSTR    time string
-!     CDATE     date-time read from file
+      CHARACTER (LEN=14) :: CDATE     ! date-time
 !
       REAL, ALLOCATABLE :: SPAUX(:,:)
 !
@@ -5424,9 +5687,16 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !             for the first spectrum (first point), read time from
 !             heading line                                                40.03
                 IF (BTYPE.EQ.'WAMW') THEN                                 40.03
-                  READ(NDSD, END=380, ERR=920) XLON, XLAT, CDATE,
+                  READ(NDSD, END=380, ERR=920) XLON, XLAT,
+     &               CDATE(1:LWDATE),                                     41.13
      &               EMEAN, THQ, FMEAN
-                  TIMSTR = CDATE
+                  IF (LEN_TRIM(CDATE) == 10 ) THEN
+                     TIMSTR = TRIM(CDATE)
+                  ELSEIF (LEN_TRIM(CDATE) == 12 ) THEN
+                     TIMSTR = CDATE(1:10)
+                  ELSEIF (LEN_TRIM(CDATE) == 14 ) THEN
+                     TIMSTR = CDATE(3:12)
+                  ENDIF
 !                 convert time string to time in seconds
                   CALL DTRETI (TIMSTR, BFILED(6), TIMF2)                  40.03 40.05
                 ELSE IF (BTYPE.EQ.'WAMC') THEN
@@ -5527,11 +5797,11 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
  222          FORMAT (A)
               CALL LSPLIT (HEDLIN, DATITM, 5)
               CALL DTRETI (DATITM(1), BFILED(6), TIMF2)                   40.03
-              IF (ITEST.GE.60) WRITE (PRTEST, *) ' TPAR boundary ',
-     &              TIMF2, (SPPARM(JJ), JJ=1,4)
               DO II = 1, 4
                 READ (DATITM(II+1), '(G12.0)') SPPARM(II)
               ENDDO
+              IF (ITEST.GE.60) WRITE (PRTEST, *) ' TPAR boundary ',
+     &              TIMF2, (SPPARM(JJ), JJ=1,4)
               BFILED(3) = NINT(TIMF2)
               CALL SSHAPE (BSPECS(1,1,IBSPEC,2), SPCSIG, SPCDIR,
      &                 FSHAPE, DSHAPE)
@@ -5695,7 +5965,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -5961,7 +6231,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !   (2D) fully spectral input
         IF (UNFORM) THEN
 !          unformatted reading
-           IF (DORDER.LT.0) THEN                                          40.55
+           IF (DORDER.LT.0) THEN
               READ (NDSD,END=930,ERR=920)
      &               ((BAUX1(IANG,IFRE),IANG=NANG,1,-1),IFRE=1,NFRE)
            ELSE
@@ -6103,19 +6373,16 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       USE SWCOMM3                                                         40.41
       USE M_PARALL                                                        40.31
       USE SwanGriddata                                                    40.80
-!Casey 080116: Added information from ADCIRC's module.
-!ADC      USE Couple2Swan, ONLY: ADCIRC_ETA2 => SWAN_ETA2,
+!ADC      USE Couple2Swan, ONLY: ADCIRC_ETA2 => SWAN_ETA2,                    41.20
 !ADC     &                       ADCIRC_UU2 => SWAN_UU2,
 !ADC     &                       ADCIRC_VV2 => SWAN_VV2,
 !ADC     &                       ADCIRC_WX2 => SWAN_WX2,
 !ADC     &                       ADCIRC_WY2 => SWAN_WY2,
 !ADC     &                       COUPCUR, COUPWIND, COUPWLV,
 !ADC     &                       InterpoWeight
-!Casey 091216: Added these variables for coupling ADCIRC Manning's n values
-!              as Madsen friction lengths.
 !ADC     &                      ,ADCIRC_Z0 => SWAN_Z0,
 !ADC     &                       COUPFRIC
-!
+
       IMPLICIT NONE
 !
 !
@@ -6130,7 +6397,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -6159,6 +6426,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !     40.31: Marcel Zijlema
 !     40.41: Marcel Zijlema
 !     40.80: Marcel Zijlema
+!     41.20: Casey Dietrich
 !
 !  1. Updates
 !
@@ -6175,6 +6443,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !     40.31, Nov. 03: removing POOL-mechanism
 !     40.41, Oct. 04: common blocks replaced by modules, include files removed
 !     40.80, Sep. 07: extension to unstructured grids
+!     41.20, Mar. 10: extension to tightly coupled ADCIRC+SWAN model
 !
 !  2. PURPOSE
 !
@@ -6317,35 +6586,33 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       ENDIF
       IF (IFLNDS(IGR1).GT.0) THEN                                         40.03
         IF (INODE.EQ.MASTER) THEN
-!Casey 080116: If we have coupled to the water levels from ADCIRC,
-!              then grab them from memory instead of reading them from
-!              the external file.a
-!Casey 090820: Added the REAL() intrinsic function through this section.
-!ADC           IF((IGR1.EQ.7).AND.COUPWLV)THEN
-!ADC              DO INDX=1,nverts
+!ADC!          --- if we have coupled to the quantities from ADCIRC,          41.20
+!ADC!              then grab them from memory instead of reading them
+!ADC!              from the external file
+!ADC           IF ( (IGR1.EQ.7).AND.COUPWLV ) THEN
+!ADC              DO INDX = 1, nverts
 !ADC                 ARR(INDX) = (1.0 - REAL(InterpoWeight))
 !ADC     &                  * REAL(ADCIRC_ETA2(INDX,1))
 !ADC     &                  + REAL(InterpoWeight)
 !ADC     &                  * REAL(ADCIRC_ETA2(INDX,2))
 !ADC              ENDDO
-!ADC           ELSEIF((IGR1.EQ.2).AND.COUPCUR)THEN
-!ADC              DO INDX=1,nverts
+!ADC           ELSEIF ( (IGR1.EQ.2).AND.COUPCUR ) THEN
+!ADC              DO INDX = 1, nverts
 !ADC                 ARR(INDX) = (1.0 - REAL(InterpoWeight))
 !ADC     &                  * REAL(ADCIRC_UU2(INDX,1))
 !ADC     &                  + REAL(InterpoWeight)
 !ADC     &                  * REAL(ADCIRC_UU2(INDX,2))
 !ADC              ENDDO
-!ADC           ELSEIF((IGR1.EQ.5).AND.COUPWIND)THEN
-!ADC              DO INDX=1,nverts
-!ADC                 ARR(INDX) = (1.0 - REAL(InterpoWeight)) 
+!ADC           ELSEIF ( (IGR1.EQ.5).AND.COUPWIND ) THEN
+!ADC              DO INDX = 1, nverts
+!ADC                 ARR(INDX) = (1.0 - REAL(InterpoWeight))
 !ADC     &                  * REAL(ADCIRC_WX2(INDX,1))
 !ADC     &                  + REAL(InterpoWeight)
 !ADC     &                  * REAL(ADCIRC_WX2(INDX,2))
 !ADC              ENDDO
-!Casey 091216: Added logic for coupled friction.
-!ADC           ELSEIF((IGR1.EQ.4).AND.COUPFRIC)THEN
-!ADC              DO INDX=1,nverts
-!ADC                 ARR(INDX) = (1.0 - REAL(InterpoWeight)) 
+!ADC           ELSEIF ( (IGR1.EQ.4).AND.COUPFRIC ) THEN
+!ADC              DO INDX = 1, nverts
+!ADC                 ARR(INDX) = (1.0 - REAL(InterpoWeight))
 !ADC     &                  * REAL(ADCIRC_Z0(INDX,1))
 !ADC     &                  + REAL(InterpoWeight)
 !ADC     &                  * REAL(ADCIRC_Z0(INDX,2))
@@ -6356,8 +6623,8 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
      &                  IFLNDS(IGR1), IFLIFM(IGR1), IFLFRM(IGR1),
      &                  IFLIDL(IGR1), IFLFAC(IGR1),
      &                  IFLNHD(IGR1), IFLNHF(IGR1))
-!ADC           ENDIF
            IF (STPNOW()) RETURN                                           34.01
+!ADC           ENDIF
         END IF
         CALL SWBROADC(IFLIDL(IGR1),1,SWINT)                               40.30
         IF (IFLIDL(IGR1).LT.0) THEN
@@ -6380,17 +6647,16 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
         IFLTIM(IGR2) = IFLTIM(IGR1)
         IF (IFLNDS(IGR2).GT.0) THEN                                       40.03
           IF (INODE.EQ.MASTER) THEN                                       40.30
-!Casey 080116: Added these lines to grab the y-components.
-!Casey 090820: Added the REAL() intrinsic function through this section.
-!ADC             IF((IGR2.EQ.3).AND.COUPCUR)THEN
-!ADC               DO INDX=1,nverts
-!ADC                 ARR2(INDX) = (1.0 - REAL(InterpoWeight)) 
+!ADC!            added these lines to grab the y-components from memory       41.20
+!ADC             IF ( (IGR2.EQ.3).AND.COUPCUR ) THEN
+!ADC               DO INDX = 1, nverts
+!ADC                 ARR2(INDX) = (1.0 - REAL(InterpoWeight))
 !ADC     &                   * REAL(ADCIRC_VV2(INDX,1))
 !ADC     &                   + REAL(InterpoWeight)
 !ADC     &                   * REAL(ADCIRC_VV2(INDX,2))
 !ADC               ENDDO
-!ADC             ELSEIF((IGR2.EQ.6).AND.COUPWIND)THEN
-!ADC               DO INDX=1,nverts
+!ADC             ELSEIF ( (IGR2.EQ.6).AND.COUPWIND ) THEN
+!ADC               DO INDX = 1, nverts
 !ADC                 ARR2(INDX) = (1.0 - REAL(InterpoWeight))
 !ADC     &                   * REAL(ADCIRC_WY2(INDX,1))
 !ADC     &                   + REAL(InterpoWeight)
@@ -6401,8 +6667,8 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
      &                    IFLNDF(IGR2),
      &                    IFLNDS(IGR2), IFLIFM(IGR2), IFLFRM(IGR2),
      &                    IFLIDL(IGR2), IFLFAC(IGR2), IFLNHD(IGR2), 0)
-!ADC             ENDIF
              IF (STPNOW()) RETURN                                         34.01
+!ADC             ENDIF
           END IF
           CALL SWBROADC(ARR2,MXG(IGR2)*MYG(IGR2),SWREAL)                  40.31 40.30
         ENDIF                                                             40.03
@@ -6430,11 +6696,19 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       DO INDX = 1, nverts                                                 40.80
          XP = xcugrd(INDX)
          YP = ycugrd(INDX)
-         UU = SVALQI (XP, YP, IGR1, ARR, 0, 0, 0)
+         IF ( IGTYPE(IGR1).EQ.3 ) THEN
+            UU = ARR(INDX)
+         ELSE
+            UU = SVALQI (XP, YP, IGR1, ARR, 0, 0, 0)
+         ENDIF
          IF (IGR2.EQ.0) THEN
             COMPDA(INDX,JX3) = UU
          ELSE
-            VV = SVALQI (XP, YP, IGR2, ARR2, 0, 0, 0)
+            IF ( IGTYPE(IGR2).EQ.3 ) THEN
+               VV = ARR2(INDX)
+            ELSE
+               VV = SVALQI (XP, YP, IGR2, ARR2, 0, 0, 0)
+            ENDIF
             COMPDA(INDX,JX3) =  UU*COSFC + VV*SINFC
             COMPDA(INDX,JY3) = -UU*SINFC + VV*COSFC
          ENDIF
@@ -6504,7 +6778,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -6800,7 +7074,7 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -6867,6 +7141,11 @@ Casey 080115: Time-stepping in the coupled model is handled elsewhere.
       IF (ALLOCATED(DIFPARAM)) DEALLOCATE(DIFPARAM)
       IF (ALLOCATED(DIFPARDX)) DEALLOCATE(DIFPARDX)
       IF (ALLOCATED(DIFPARDY)) DEALLOCATE(DIFPARDY)
+      IF (ALLOCATED(NPLAF ))   DEALLOCATE(NPLAF )
+      IF (ALLOCATED(LAYH  ))   DEALLOCATE(LAYH  )
+      IF (ALLOCATED(VEGDIL))   DEALLOCATE(VEGDIL)
+      IF (ALLOCATED(VEGNSL))   DEALLOCATE(VEGNSL)
+      IF (ALLOCATED(VEGDRL))   DEALLOCATE(VEGDRL)
 !
       IF (ALLOCATED(xcugrd))   DEALLOCATE(xcugrd)
       IF (ALLOCATED(ycugrd))   DEALLOCATE(ycugrd)

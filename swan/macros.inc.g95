@@ -9,7 +9,7 @@ FLAGS_MSC = -w -ffree-line-length-huge -ftrace=full
 FLAGS_F90 =
 FLAGS_SER =
 FLAGS_OMP =
-FLAGS_MPI =
+FLAGS_MPI = -w -ffree-line-length-huge -ftrace=full
 INCS_SER =
 INCS_OMP =
 INCS_MPI =

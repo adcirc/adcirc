@@ -14,7 +14,7 @@ subroutine SwanSweepSel ( idcmin, idcmax, anybin, iscmin, iscmax, &
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -309,12 +309,10 @@ subroutine SwanSweepSel ( idcmin, idcmax, anybin, iscmin, iscmax, &
           return
        endif
        !
-       if ( isslow /= 1 ) then
-!Casey 080912: Marcel says we don't need this error message.
-!NADC          call msgerr ( 4, 'inconsistency found in SwanSweepSel: isslow <> 1 ' )
-!Casey 090706: Also remove this return message.
-!NADC          return
-       endif
+       !if ( isslow /= 1 ) then
+       !   call msgerr ( 4, 'inconsistency found in SwanSweepSel: isslow <> 1 ' )
+       !   return
+       !endif
        !
        isslow = 1
        !

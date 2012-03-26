@@ -877,7 +877,7 @@ C
       END SELECT
 C
 C     jgf50.44: Automatically turn on compression if we are using the
-C     netcdf4 file format. 
+C     netcdf4 file format.
 #ifdef NETCDF_CAN_DEFLATE
       IF (abs(descript%specifier).eq.5) THEN
          SELECT CASE(lun)
@@ -1473,7 +1473,7 @@ C     be classic (netcdf3) in any case
       case(3,367,368)
          myFile%ncformat = NF_CLOBBER
       case(5,567,568)
-         myFile%ncformat = ior(NF_CLOBBER,NF90_FORMAT_NETCDF4_CLASSIC)
+         myFile%ncformat = ior(NF90_CLASSIC_MODEL,NF90_HDF5)
       case default
          write(scratchMessage,'(A,I2)') 'File format specifier ',
      &      descript%specifier,' is not valid.'

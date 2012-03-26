@@ -50,7 +50,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -228,7 +228,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -349,7 +349,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -476,7 +476,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -611,7 +611,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -752,7 +752,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -886,7 +886,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1077,7 +1077,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1194,7 +1194,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1332,7 +1332,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1468,7 +1468,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1671,7 +1671,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1838,7 +1838,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2180,7 +2180,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2347,7 +2347,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2537,7 +2537,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2703,7 +2703,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2870,7 +2870,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3154,7 +3154,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3339,7 +3339,7 @@
                IF ( ABS(DIF).LT.0.5*DT .AND. CORQ%OQR(2).LT.0. ) THEN
                   CORQ%OQR(1) = TIMCO
                ELSE IF ( CORQ%OQR(2).GT.0. .AND. TIMCO.GE.TNEXT ) THEN
-                  CORQ%OQR(1) = TIMCO + CORQ%OQR(2)
+                  CORQ%OQR(1) = TNEXT + CORQ%OQR(2)
                ELSE
                   GOTO 50
                END IF
@@ -3512,7 +3512,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3734,14 +3734,13 @@
             END DO
          END IF
          IPLOOP : DO IP = 1, MIP                                          40.51
-            IF ( XC(IP).LT.-0.01 .OR. YC(IP).LT.-0.01 .OR.                40.51
-     &           XC(IP).GT.REAL(MXCGL-1)+0.01 .OR.                        40.51
-     &           YC(IP).GT.REAL(MYCGL-1)+0.01 ) THEN                      40.51
+            IXK = NINT(XC(IP)+100.)-99                                    41.07 40.51
+            IYK = NINT(YC(IP)+100.)-99                                    41.07 40.51
+            IF ( IXK.LT.1 .OR. IYK.LT.1 .OR. IXK.GT.MXCGL .OR.            41.07 40.51
+     &           IYK.GT.MYCGL ) THEN                                      41.07 40.51
                CALL WREXCV                                                40.51
                CYCLE IPLOOP                                               40.51
             END IF                                                        40.51
-            IXK = NINT(XC(IP)+3.)-2                                       40.51
-            IYK = NINT(YC(IP)+3.)-2                                       40.51
             IPROC = 1                                                     40.51
             PROCLOOP : DO                                                 40.51
               IF ( NINT(BLKND(IXK,IYK)).EQ.IPROC ) THEN                   40.51
@@ -3842,7 +3841,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4029,8 +4028,8 @@
      &              YC(IP).GT.REAL(MYCGL-1)+0.01 ) THEN                   40.51
                   IBLKN = NPROC+1                                         40.51
                ELSE                                                       40.51
-                  IXK   = NINT(XC(IP)+3.)-2                               40.51
-                  IYK   = NINT(YC(IP)+3.)-2                               40.51
+                  IXK   = NINT(XC(IP)+100.)-99                            41.07 40.51
+                  IYK   = NINT(YC(IP)+100.)-99                            41.07 40.51
                   IBLKN = NINT(BLKND(IXK,IYK))                            40.51
                END IF                                                     40.51
                EMPTY = .TRUE.
@@ -4095,14 +4094,13 @@
       END IF
 
       IPLOOP : DO IP = 1, MIP                                             40.51
-         IF ( XC(IP).LT.-0.01 .OR. YC(IP).LT.-0.01 .OR.                   40.51
-     &        XC(IP).GT.REAL(MXCGL-1)+0.01 .OR.                           40.51
-     &        YC(IP).GT.REAL(MYCGL-1)+0.01 ) THEN                         40.51
+         IXK = NINT(XC(IP)+100.)-99                                       41.07 40.51
+         IYK = NINT(YC(IP)+100.)-99                                       41.07 40.51
+         IF ( IXK.LT.1 .OR. IYK.LT.1 .OR. IXK.GT.MXCGL .OR.               41.07 40.51
+     &        IYK.GT.MYCGL ) THEN                                         41.07 40.51
             WRITE (NREF, '(A)') 'NODATA'                                  40.51
             CYCLE IPLOOP                                                  40.51
          END IF                                                           40.51
-         IXK = NINT(XC(IP)+3.)-2                                          40.51
-         IYK = NINT(YC(IP)+3.)-2                                          40.51
          IPROC = 1                                                        40.51
          PROCLOOP : DO                                                    40.51
            IF ( NINT(BLKND(IXK,IYK)).EQ.IPROC ) THEN                      40.51
@@ -4169,7 +4167,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4333,6 +4331,8 @@
          ILPOS  = INDEX(FILENM, '-0')
          FILENM = FILENM(1:ILPOS-1)
          INQUIRE ( FILE=FILENM, OPENED=OPENED, NUMBER=IUT )
+         MATLAB = INDEX( FILENM, '.MAT' ).NE.0 .OR.                       40.41
+     &            INDEX (FILENM, '.mat' ).NE.0                            40.41
 
 !        --- if it is not open or already open thru another request
 
@@ -4348,12 +4348,10 @@
             END IF
             OQI(1) = NREF
 
-            MATLAB = INDEX( FILENM, '.MAT' ).NE.0 .OR.                    40.41
-     &               INDEX (FILENM, '.mat' ).NE.0                         40.41
-            IF (MATLAB) THEN
+            IF (MATLAB .AND. .NOT.OPENED) THEN
                CLOSE(NREF)
                OPEN(UNIT=NREF, FILE=FILENM, FORM='UNFORMATTED',
-     &              ACCESS='DIRECT', RECL=1)
+     &              ACCESS='DIRECT', RECL=4)                              41.08
                IREC(IRQ) = 1                                              40.51
             END IF
 
@@ -4398,8 +4396,8 @@
          VOQ = OVEXCV(IVTYPE)
 
          DO IP = 1, MXK*MYK                                               40.51
-            IXK = NINT(XC(IP)+3.)-2                                       40.51
-            IYK = NINT(YC(IP)+3.)-2                                       40.51
+            IXK = NINT(XC(IP)+100.)-99                                    41.07 40.51
+            IYK = NINT(YC(IP)+100.)-99                                    41.07 40.51
             IPROC = 1                                                     40.51
             PROCLOOP1 : DO                                                40.51
               IF ( NINT(BLKND(IXK,IYK)).EQ.IPROC ) THEN                   40.51
@@ -4420,8 +4418,8 @@
          IF ( OVSVTY(IVTYPE).GE.3 ) THEN
 
             DO IP = 1, MXK*MYK                                            40.51
-               IXK = NINT(XC(IP)+3.)-2                                    40.51
-               IYK = NINT(YC(IP)+3.)-2                                    40.51
+               IXK = NINT(XC(IP)+100.)-99                                 41.07 40.51
+               IYK = NINT(YC(IP)+100.)-99                                 41.07 40.51
                IPROC = 1                                                  40.51
                PROCLOOP2 : DO                                             40.51
                  IF ( NINT(BLKND(IXK,IYK)).EQ.IPROC ) THEN                40.51
@@ -4471,7 +4469,7 @@
 
          IF (OVSVTY(IVTYPE) .LT. 3) THEN
             IF (MATLAB) THEN
-               IF (IL.EQ.1) THEN                                          40.41
+               IF (IL.EQ.1 .OR. IVTYPE.LT.3 .OR. IVTYPE.EQ.52) THEN       40.94 40.41
                   NAMVAR = OVSNAM(IVTYPE)                                 40.41
                ELSE                                                       40.41
                   NAMVAR = OVSNAM(IVTYPE)(1:LEN_TRIM(OVSNAM(IVTYPE)))//   40.41
@@ -4515,7 +4513,7 @@
 
       END DO
 
-      IF (IPD.EQ.1) WRITE (PRINTF, 111)
+      IF (IPD.EQ.1 .AND. NREF.EQ.PRINTF) WRITE (PRINTF, 111)
 
       DEALLOCATE(VOQ)
 

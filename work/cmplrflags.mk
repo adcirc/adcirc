@@ -534,6 +534,10 @@ ifeq ($(compiler),gnu)
   CLIBS	:=
   FLIBS		:=
   ifeq ($(NETCDF),enable)
+     ifeq ($(MACHINENAME),jason-desktop)
+        NETCDFHOME := /usr/local
+        HDF5HOME   := /usr/local/hdf5/hdf5-1.8.8/hdf5
+     endif
      FLIBS          := $(FLIBS) -L$(HDF5HOME)/lib -L$(NETCDFHOME) -lnetcdf -lhdf5_hl -lhdf5 -lhdf5_fortran -lz
   endif
   MSGLIBS	:=

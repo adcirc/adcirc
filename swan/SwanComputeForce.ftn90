@@ -1,4 +1,3 @@
-!Casey 080228: Changed these lines.
 !NADCsubroutine SwanComputeForce ( fx, fy, ac2, dep2, spcsig, spcdir )
 !ADCsubroutine SwanComputeForce
 !
@@ -13,7 +12,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -34,10 +33,12 @@
 !   Authors
 !
 !   40.80: Marcel Zijlema
+!   41.20: Casey Dietrich
 !
 !   Updates
 !
 !   40.80, February 2008: New subroutine
+!   41.20, February 2008: extension to tightly coupled ADCIRC+SWAN model
 !
 !   Purpose
 !
@@ -57,16 +58,14 @@
     use swcomm4
     use SwanGriddata
     use SwanGridobjects
-!Casey 080228: Added these USE statements.
 !ADC    use Couple2Adcirc, only: compda
 !ADC    use GLOBAL,        only: rsnx2, rsny2
 !ADC    use m_genarr,      only: ac2, spcdir, spcsig
 !
     implicit none
-!
-!   Argument variables
-!
-!Casey 080228: Changed this section.
+!NADC!
+!NADC!   Argument variables
+!NADC!
 !NADC    real, dimension(MDC,MSC,nverts), intent(in) :: ac2    ! action density at current time level
 !NADC    real, dimension(nverts), intent(in)         :: dep2   ! water depth at current time level
 !NADC    real, dimension(nverts), intent(out)        :: fx     ! wave-induced force in x-direction
@@ -78,11 +77,6 @@
 !NADC                                                          ! (*,5): cosine*sine of spectral directions
 !NADC                                                          ! (*,6): sine^2 of spectral directions
 !NADC    real, dimension(MSC), intent(in)            :: spcsig ! relative frequency bins
-!
-!Casey 080228: Added this section.
-!ADC    real, dimension(nverts)                     :: dep2
-!ADC    real, dimension(nverts)                     :: fx
-!ADC    real, dimension(nverts)                     :: fy
 !
 !   Local variables
 !
@@ -125,6 +119,10 @@
     real, dimension(1)                    :: n        ! ratio of group and phase velocity
     real, dimension(1)                    :: nd       ! derivative of n with respect to depth
     real, dimension(1)                    :: sig      ! relative frequency
+!ADC    !
+!ADC    real, dimension(nverts)               :: dep2     ! help array to store water depth
+!ADC    real, dimension(nverts)               :: fx       ! help array to store wave-induced force in x-direction
+!ADC    real, dimension(nverts)               :: fy       ! help array to store wave-induced force in y-direction
     !
     real, dimension(:), allocatable       :: sxx      ! x-component of radiation stress in x-direction
     real, dimension(:), allocatable       :: sxy      ! cross component of radiation stress in x/y-direction
@@ -141,11 +139,6 @@
 !
 !   Source text
 !
-!Casey 080228: Move the depths to their own array.
-!ADC    do ivert=1,nverts
-!ADC       dep2(ivert) = compda(ivert,jdp2)
-!ADC    enddo
-!ADC    !
     if (ltrace) call strace (ient,'SwanComputeForce')
     !
     ! point to vertex and cell objects
@@ -162,6 +155,11 @@
     sxx = 0.
     sxy = 0.
     syy = 0.
+!ADC    !
+!ADC    ! move the depths to their own array
+!ADC    do ivert = 1, nverts
+!ADC       dep2(ivert) = compda(ivert,jdp2)
+!ADC    enddo
     !
     ! compute radiation stresses in vertices
     !
@@ -323,13 +321,13 @@
        fy(ivert) = -RHO * GRAV * ( dsxydx  + dsyydy )
        !
     enddo vertexloop
-    !
-!Casey 080228: Pass stresses to ADCIRC.
-!ADC    do ivert=1,nverts
+!ADC    !
+!ADC    ! pass stresses to ADCIRC
+!ADC    do ivert = 1, nverts
 !ADC       rsnx2(ivert) = fx(ivert)
 !ADC       rsny2(ivert) = fy(ivert)
 !ADC    enddo
-!ADC    !
+    !
     ! deallocation of radiation stresses
     !
     deallocate(sxx)

@@ -11,7 +11,7 @@ subroutine SwanBpntlist
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 2008  Delft University of Technology
+!     Copyright (C) 1993-2011  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -33,11 +33,15 @@ subroutine SwanBpntlist
 !
 !   40.80: Marcel Zijlema
 !   40.92: Marcel Zijlema
+!   41.14: Nico Booij
+!   41.20: Casey Dietrich
 !
 !   Updates
 !
 !   40.80, April 2008: New subroutine
 !   40.92,  June 2008: changes with respect to boundary polygons
+!   41.14,  July 2010: boundary segments added as output curve
+!   41.20, March 2010: extension to tightly coupled ADCIRC+SWAN model
 !
 !   Purpose
 !
@@ -60,6 +64,7 @@ subroutine SwanBpntlist
     use SwanGriddata
     use SwanGridobjects
     use SwanCompdata
+    use OUTP_DATA                  ! 41.14
 !
     implicit none
 !
@@ -83,19 +88,40 @@ subroutine SwanBpntlist
     integer                            :: vc         ! considered vertex
     integer                            :: vcf        ! first considered vertex of a boundary polygon
     integer                            :: vn         ! next vertex with respect to considered vertex (counterclockwise)
+    integer                            :: MIP        ! number of points on a output curve               41.14
+    integer                            :: vmk        ! marker value of a boundary point                 41.14
+    integer                            :: JJ         ! counter of points on a curve                     41.14
+    integer                            :: VM         ! index of a boundary part                         41.14
+    integer                            :: VMMAX      ! highest value of VM                              41.14
+    integer                            :: JBG        ! index of a full boundary                         41.14
+    integer                            :: IP, IPP    ! point counter                                    41.14
+    integer                            :: IX         ! vertex number                                    41.14
+    integer                            :: ISH        ! shift number                                     41.14
     !
     integer, dimension(:), allocatable :: blistot    ! list of all boundary vertices in ascending order
+    integer, dimension(:), allocatable :: IARR1, IARR2 ! temporary array                                41.14
     !
     real                               :: d1         ! distance of a point to origin
     real                               :: d2         ! distance of another point to origin
+    real                               :: xp, yp     ! coordinates of a boundary point                  41.14
     !
     character(80)                      :: msgstr     ! string to pass message
+    character (len=8)                  :: PSNAME     ! name of output curve                             41.14
     !
     logical                            :: firstvert  ! indicate whether considered vertex is first vertex of boundary polygon
+    logical                            :: found      ! indicates whether a new boundary part was found  41.14
     !
     type(celltype), dimension(:), pointer :: cell    ! datastructure for cells with their attributes
     type(facetype), dimension(:), pointer :: face    ! datastructure for faces with their attributes
     type(verttype), dimension(:), pointer :: vert    ! datastructure for vertices with their attributes
+    !
+    type(OPSDAT), pointer :: OPSTMP                                   ! 41.14
+    type XYPT                                                         ! 41.14
+        real                :: X, Y                                   ! 41.14
+        type(XYPT), pointer :: NEXTXY
+    end type XYPT
+    type(XYPT), target  :: FRST                                       ! 41.14
+    type(XYPT), pointer :: CURR, TMP                                  ! 41.14
 !
 !   Structure
 !
@@ -216,9 +242,7 @@ subroutine SwanBpntlist
              !
           elseif ( vc == vcf ) then        ! end of considered boundary polygon is found
              !
-!Casey 081111: Make Marcel's change to limit endless loops over the boundaries.
 !ADC             exit faceloop
-!ADC             !
              if ( any( v1 == blistot ) .and. any( v2 == blistot ) ) goto 10
              !
              ! store number of boundary vertices for present polygon
@@ -236,10 +260,9 @@ subroutine SwanBpntlist
              firstvert           = .true.
              vert(vc)%atti(BPOL) = nbpol
              !
-             ! give error if more than 100 boundary polygons are found
+             ! give error if more than 10000 boundary polygons are found
              !
-!Casey 080907: Why?
-!NADC             if ( nbpol > 100 ) call msgerr ( 2, ' More than 100 boundary polygons are found in grid' )
+             if ( nbpol > 10000 ) call msgerr ( 2, ' More than 100 boundary polygons are found in grid' )
              !
           endif
           !
@@ -255,20 +278,17 @@ subroutine SwanBpntlist
     !
     ! store number of boundary vertices for last polygon
     !
-!Casey 081111: Make Marcel's change to limit endless loops over the boundaries.
 !NADC    nbpt(nbpol) = nbptot - nptemp
 !ADC    nbpt(nbpol) = k - nptemp
     !
     ! check if list contains boundary vertices only
     !
-!Casey 081111: Make Marcel's change to limit endless loops over the boundaries.
 !NADC    do j = 1, nbptot
 !ADC    do j = 1, k
        !
        vc = blistot(j)
        if (vert(vc)%atti(VMARKER) /= 1) then
           write (msgstr, '(a,i4,a)') ' Vertex with index ',vc,' in boundary list is not a valid boundary point'
-!Casey 080907: Be more forgiving if stray boundary points are found.
 !NADC          call msgerr( 2, trim(msgstr) )
 !ADC          vert(vc)%atti(VMARKER) = 1
        endif
@@ -303,5 +323,112 @@ subroutine SwanBpntlist
     enddo
     !
     deallocate(blistot)
+    !
+    !
+    !  Add output curve corresponding to boundary                         41.14
+    !
+    ALLOCATE(OPSTMP)
+    OPSTMP%PSTYPE = 'C'
+    MIP = nbpt(1)
+    OPSTMP%MIP = MIP
+    ALLOCATE(OPSTMP%XP(MIP))
+    ALLOCATE(OPSTMP%YP(MIP))
+    OPSTMP%PSNAME = 'BOUNDARY'
+    do m = 1, MIP
+      vc = blist(m,1)
+      OPSTMP%XP(m) = vert(vc)%attr(VERTX)
+      OPSTMP%YP(m) = vert(vc)%attr(VERTY)
+    enddo
+    IF (ITEST.GE.10) WRITE (PRTEST, 104) 'BOUNDARY', MIP
+104 format (' Generated output curve ', A8, ' with ', I4, ' vertices.')
+!   ***** store number of points of the curve *****
+    NULLIFY(OPSTMP%NEXTOPS)
+    IF ( .NOT.LOPS ) THEN
+       FOPS = OPSTMP
+       COPS => FOPS
+       LOPS = .TRUE.
+    ELSE
+       COPS%NEXTOPS => OPSTMP
+       COPS => OPSTMP
+    END IF
+    !
+    ! Determine highst value of VM
+    !
+    VMMAX = 0
+    DO JBG = 1, nbpol
+      DO IP = 1, nbpt(JBG)
+        IX = blist(IP,JBG)
+        VMMAX = MAX(VMMAX, vmark(IX))
+      ENDDO
+    ENDDO
+!TEST    write (prtest, *) 'test VMMAX ', VMMAX, nbpol
+    !
+    ALLOCATE(IARR1(SUM(nbpt)))
+    DO VM=1, VMMAX
+      MIP = 0
+      JJ = 0
+      DO JBG = 1, nbpol
+        !
+        ! first boundary polygon is assumed an outer one
+        ! (sea/mainland boundary) and hence, content of blist
+        ! is ordered in counterclockwise manner
+        !
+        DO IP = 1, nbpt(JBG)
+          IX = blist(IP,JBG)
+          IF ( vmark(IX) == VM ) THEN
+            MIP = MIP+1
+            IARR1(MIP) = IP
+            if (JJ==0) then
+              JJ=JBG
+            elseif (JJ/=JBG) then
+              !call msgerr (1, 'Side is part of 2 boundaries')
+            endif
+          ENDIF
+        ENDDO
+      ENDDO
+      !
+      IF ( MIP/=0 ) THEN
+        !
+        ALLOCATE(IARR2(MIP))
+        IARR2(1:MIP) = IARR1(1:MIP)
+        ISH = 0
+        DO IPP = 2, MIP
+          IF ( IARR2(IPP)/=IARR2(IPP-1)+1 ) THEN
+            ISH = IPP-1
+            EXIT
+          ENDIF
+        ENDDO
+        IARR2 = CSHIFT(IARR2,ISH)
+!TEST        write (prtest, *) 'Shift ', ISH, MIP, IARR2(1)
+        !
+        ALLOCATE(OPSTMP)
+        OPSTMP%PSTYPE = 'C'
+        OPSTMP%MIP = MIP
+        ALLOCATE(OPSTMP%XP(MIP))
+        ALLOCATE(OPSTMP%YP(MIP))
+        write (PSNAME, 101) VM
+ 101    format ('BOUND_',I2.2)
+        OPSTMP%PSNAME = PSNAME
+        DO IPP = 1, MIP
+          IP = IARR2(IPP)
+          IX = blist(IP,JJ)
+          OPSTMP%XP(IPP) = vert(IX)%attr(VERTX)
+          OPSTMP%YP(IPP) = vert(IX)%attr(VERTY)
+        ENDDO
+        DEALLOCATE(IARR2)
+        IF (ITEST.GE.10) WRITE (PRTEST, 104) PSNAME, MIP
+        NULLIFY(OPSTMP%NEXTOPS)
+        IF ( .NOT.LOPS ) THEN
+          FOPS = OPSTMP
+          COPS => FOPS
+          LOPS = .TRUE.
+        ELSE
+          COPS%NEXTOPS => OPSTMP
+          COPS => OPSTMP
+        END IF
+        !
+      ENDIF
+    ENDDO
+    DEALLOCATE(IARR1)
     !
 end subroutine SwanBpntlist
