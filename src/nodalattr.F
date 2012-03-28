@@ -91,6 +91,14 @@ C             ADCIRC is coupled to SWAN.
       REAL(SZ)             :: SwanWaveRefracDefVal
       REAL(SZ),ALLOCATABLE :: SwanWaveRefrac(:)
 C
+Corbitt 120321: Allow Advection to be Turned on Locally instead of Globally
+      LOGICAL              :: LoadAdvectionState
+      LOGICAL              :: FoundAdvectionState
+      CHARACTER(LEN=80)    :: AdvectionStateUnits
+      INTEGER              :: AdvectionStateNoOfVals
+      REAL(SZ)             :: AdvectionStateDefVal
+      REAL(SZ),ALLOCATABLE :: AdvectionState(:)
+C
 C     The following flags are .true. if the corresponding data are
 C     required for the run, according to the unit 15 control file
       LOGICAL LoadTau0
@@ -266,6 +274,11 @@ Casey 100210: Make changes compact.
       FoundSwanWaveRefrac    = .FALSE.
       SwanWaveRefracNoOfVals = 1
       SwanWaveRefracDefVal   = 0.D0
+Corbitt 120321:
+      LoadAdvectionState     = .False.
+      FoundAdvectionState    = .FALSE.
+      AdvectionStateNoOfVals = 1
+      AdvectionStateDefVal   = 0.D0
 C
       LoadTau0           = .False.
       LoadStartDry       = .False.
@@ -480,6 +493,9 @@ C     loaded from nodal attributes file.
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
          CASE("wave_refraction_in_swan")
             LoadSwanWaveRefrac = .TRUE.
+Corbitt 120321: Allow advection to be turned on locally instead of globally
+         CASE("advection_state")
+            LoadAdvectionState = .True.
          ! jgf50.46: Adding smoothing attribute for wse
          CASE("water_surface_elevation_smoother")
             LoadWSESmoother = .TRUE.
@@ -601,6 +617,12 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
             READ(13,'(A80)') SwanWaveRefracUnits
             READ(13,*) SwanWaveRefracNoOfVals
             READ(13,*) SwanWaveRefracDefVal
+Corbitt 120321: Allow advection to be turned on locally instead of globally
+         CASE("advection_state")
+            FoundAdvectionState = .TRUE.
+            READ(13,'(A80)') AdvectionStateUnits
+            READ(13,*) AdvectionStateNoOfVals
+            READ(13,*) AdvectionStateDefVal
          ! jgf50.46: Added attribute for smoothing water surface elev
           CASE("water_surface_elevation_smoother")
             FoundWSESmoother = .TRUE.
@@ -647,6 +669,8 @@ C     that are not in the nodal attributes file.
      &   ((LoadEVC).and.(.not.FoundEVC)).or.
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
      &   ((LoadSwanWaveRefrac).and.(.not.FoundSwanWaveRefrac)).or.
+Corbitt 120321: Allow advection to be turned on locally instead of globally
+     &   ((LoadAdvectionState).and.(.not.FoundAdvectionState)).or.
      &   ((LoadWSESmoother).and.(.not.FoundWSESmoother)).or.
      &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax))) THEN
          WRITE(16,1111)
@@ -677,6 +701,8 @@ C     Allocate memory to hold our data.
       ALLOCATE(Tau0MinMax(NumOfNodes,Tau0MinMaxNoOfVals))
 Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
       ALLOCATE(SwanWaveRefrac(NumOfNodes))
+Corbitt 120321: Allow advection to be turned on locally instead of globally
+      ALLOCATE(AdvectionState(NumOfNodes))
       ALLOCATE(elevation_smoothing_timestep_increment(NumOfNodes))
       ALLOCATE(elemental_slope_limiter_grad_max(NumOfNodes))
       ALLOCATE(elemental_slope_limiter_active(NumOfNodes))
@@ -796,6 +822,14 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
          CASE("wave_refraction_in_swan")
             IF (LoadSwanWaveRefrac) THEN
                CALL LoadAttrVec(SwanWaveRefrac, SwanWaveRefracDefVal,
+     &              NumNodesNotDefault, NScreen, MyProc, NAbOut)
+            ELSE
+               SkipDataSet = .TRUE.
+            ENDIF
+Corbitt 120321: Allow Advection to be handled locally instead of globally.
+         CASE("advection_state")
+            IF (LoadAdvectionState) THEN
+               CALL LoadAttrVec(AdvectionState,AdvectionStateDefVal,
      &              NumNodesNotDefault, NScreen, MyProc, NAbOut)
             ELSE
                SkipDataSet = .TRUE.

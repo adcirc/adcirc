@@ -281,6 +281,10 @@ C...Set flags for nonlinear terms
          IFNLCAT=1
       ENDIF
 
+Corbitt 1203022: Local Advection Flags
+      IFNLCTE  = IFNLCT
+      IFNLCATE = IFNLCAT
+
       IFWIND=1
       IF(IM.EQ.1) IFWIND=0
 
@@ -288,7 +292,8 @@ C...Compute several constant coefficients
 
       GA00=G*A00
       GC00=G*C00
-      TADVODT=IFNLCAT/DT
+Corbitt 120322: Handled in Timestep.F elementally
+C      TADVODT=IFNLCAT/Dt
       GB00A00=G*(B00+A00)
       GFAO2=G*IFNLFA/2.D0
       GO3=G/3.D0
@@ -296,7 +301,8 @@ C...Compute several constant coefficients
       DTO2=DT/2.D0
       DT2=DT*2.D0
       GDTO2=G*DT/2.D0
-      SADVDTO3=IFNLCT*DT/3.D0
+Corbitt 120322: Handled in Timestep.F elementally
+C      SADVDTO3=IFNLCT*DT/3.D0
       GORho=G/RhoWat0
       GORhoOAMB=GORho/AMB
 

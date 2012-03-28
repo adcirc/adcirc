@@ -2,6 +2,13 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.56   - 03/28/2012 - pck - Added another ramp option: NRAMP=8, where
+C             the new variable DUnRampMete is the time to begin METE ramping.
+C             Also added the nodal attribute (advection_state) that allows
+C             advection to be initiated based on depth. If the depth is
+C             greater than the advection_state depth, advection will be
+C             applied (assuming that advection is turned on); otherwise
+C             advection will be off.
 C  v50.55   - 03/25/2012 - jgf - Merged Casey Dietrich's changes for the
 C             latest version of SWAN (moving from v40.95 to v41.20 of SWAN)
 C             as well as the capability to limit the spectral propagation 

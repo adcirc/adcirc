@@ -58,6 +58,8 @@ C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
       REAL(SZ) RampTip,DRampTip      ! Ramp for tidal potential
       REAL(SZ) RampMete,DRampMete    ! Ramp for wind and atmospheric pressure
       REAL(SZ) RampWRad,DRampWRad    ! Ramp for wave radiation stress
+Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+      REAL(SZ) DUnRampMete           ! Time to not have ramped Mete
 C
 C     jgf46.10 user-controlled warning, dump and error levels on elevations
       REAL(SZ) WarnElev       ! elevation at which a warning is issued
@@ -380,7 +382,8 @@ C...
       INTEGER  NVEL,NVELEXT,NVELME,NWLAT,NWLON,NWS
       INTEGER  IBSTART, ICSTP, IDSETFLG, IER
       INTEGER  IESTP
-      INTEGER  IFNLCAT, IFNLCT, IFNLFA
+Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
+      INTEGER  IFNLCAT, IFNLCT, IFNLFA, IFNLCTE, IFNLCATE
       INTEGER  IFWIND, IGCP, IGEP, IGPP, IGVP, IGWP
       INTEGER  IHOTSTP, ILUMP, IMHS, IPSTP
       INTEGER  IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN, ISLDIA

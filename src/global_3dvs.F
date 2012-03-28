@@ -51,6 +51,8 @@ C...
      &       NP,                           !number of horizontal nodes
      &       NE,                           !number of horizontal elements
      &       IFNLCT,                       !nonlinear advection flag (1=yes, 0=no) (jgf45.11)
+Corbitt 120328: Apply Advection Locally
+     &       IFNLCTE,                      !Global nonlinear advection flag (1=yes, 0=no)
      &       IFNLFA,                       !nonlinear finite amplitude flag (1=yes,0=no) (jgf45.11)
      &       NScreen,                      !flag to suppress or allow screen output
      &       ScreenUnit,                   !i/o for screen output

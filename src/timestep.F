@@ -370,14 +370,16 @@ C     jgf46.21 Modify to match behavior of 46.02
          RampTip=1.0D0
          RampMete=1.0D0
          RampWRad=1.0D0
-      CASE(1,2,3,4,5,6,7)
+Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+      CASE(1,2,3,4,5,6,7,8)
          Ramp=TANH((2.D0*IT*DTDP/86400.D0)/DRamp)
          RampExtFlux=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampExtFlux)
          RampIntFlux=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampIntFlux)
          RampElev=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampElev)
          RampTip=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampTip)
-         RampMete=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampMete)
-         RampWRad=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampWRad)
+Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+         RampMete=TANH((2.D0*((IT)*DTDP/86400.D0-DUnRampMete))/DRampMete)
+         RampWRad=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampWRad)      
       END SELECT
 C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
       IF ((CHOTHS).AND.(DTDP.NE.DTDPHS).AND.(NRAMP.NE.0)) THEN
@@ -386,7 +388,8 @@ C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
          RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampIntFlux)
          RampElev=TANH((2.D0*TimeLoc/86400.D0)/DRampElev)
          RampTip=TANH((2.D0*TimeLoc/86400.D0)/DRampTip)
-         RampMete=TANH((2.D0*TimeLoc/86400.D0)/DRampMete)
+Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+         RampMete=TANH((2.D0*(TimeLoc/86400.D0-DUnRampMete))/DRampMete)
          RampWRad=TANH((2.D0*TimeLoc/86400.D0)/DRampWRad)
       END IF
 
@@ -414,6 +417,10 @@ C     all forcings back on.
      &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampMete)
             RampWRad=TANH((2.D0
      &           *(IT-FluxSettlingIT-10)*DTDP/86400.D0)/DRampWRad)
+Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+            IF(NRamp.eq.8) then
+               RampMete=TANH((2.D0*((((IT)*DTDP)/86400.D0)-DUnRampMete))/DRampMete)
+            endif
          ENDIF
          !jgf49.44: Cover the case where the ramp length is zero.
          IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
@@ -3511,6 +3518,9 @@ C...  Assemble the GWCE RHS except for the boundary integral terms
 
 C...     Set nodal values for each element
 
+Corbitt 120322: Localized Advection
+         Call ADVECTLOCAL(IE)
+
          NM1=NM(IE,1)
          NM2=NM(IE,2)
          NM3=NM(IE,3)
@@ -4245,6 +4255,10 @@ C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
 
 C...  SET NODAL VALUES FOR EACH ELEMENT
 
+
+Corbitt 120322: Localized Advection
+         Call ADVECTLOCAL(IE)
+
          NM1=NM(IE,1)
          NM2=NM(IE,2)
          NM3=NM(IE,3)
@@ -4343,9 +4357,9 @@ C......If using tidal potential terms
          VCOEF3N3=VCOEF3N3*GDTO2
 
 C...  COMPUTE ELEMENT AVERAGES QUANTITIES
-
-         U1AvgDT=SADVDTO3*(U1N1+U1N2+U1N3)
-         V1AvgDT=SADVDTO3*(V1N1+V1N2+V1N3)
+Corbitt 120322: Local Advection
+         U1AvgDT=IFNLCT*DT/3.D0*(U1N1+U1N2+U1N3)
+         V1AvgDT=IFNLCT*DT/3.D0*(V1N1+V1N2+V1N3)
          U1AvgDTDDX1=U1AvgDT*DDX1
          U1AvgDTDDX2=U1AvgDT*DDX2
          U1AvgDTDDX3=U1AvgDT*DDX3
@@ -4875,6 +4889,10 @@ C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
       DO IE=1,NE
 
 C...  SET NODAL VALUES FOR EACH ELEMENT
+
+
+Corbitt 120322: Localized Advection
+         Call ADVECTLOCAL(IE)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -5591,6 +5609,10 @@ C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
       DO IE=1,NE
 
 C...  SET NODAL VALUES FOR EACH ELEMENT
+
+
+Corbitt 120322: Localized Advection
+         Call ADVECTLOCAL(IE)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -6603,6 +6625,10 @@ ckmd
 ckmd  Define the needed product terms at three time levels
 ckmd
 
+
+Corbitt 120322: Localized Advection
+         Call ADVECTLOCAL(IE)
+
          NM1=NM(IE,1)
          NM2=NM(IE,2)
          NM3=NM(IE,3)
@@ -7320,6 +7346,10 @@ C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
       DO IE=1,NE
 
 C...  SET NODAL VALUES FOR EACH ELEMENT
+
+
+Corbitt 120322: Localized Advection
+         Call ADVECTLOCAL(IE)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -8588,7 +8618,6 @@ C***********************************************************************
 C***********************************************************************
 
 
-
 C*************************************************************************
 C     Subroutine to interpolate baroclinic pressure (BCP) to a specified
 C     sigma value (SigmaNN) given an initial guess of which sigma
@@ -8697,4 +8726,42 @@ C     jgf46.00 Explicitly declared the following variables
 C**********************************************************************
       END SUBROUTINE ZSURFBUOY
 C**********************************************************************
+
+
+C*************************************************************************
+C     Subroutine to determine local advection state for each element
+C
+C                                   Corbitt 120322
+C*************************************************************************
+
+      SUBROUTINE ADVECTLOCAL(IE)
+
+      USE SIZES, ONLY : SZ
+      USE GLOBAL
+      USE NodalAttributes, ONLY : LoadAdvectionState, AdvectionState
+
+      Implicit None
+
+      Integer  :: NM1, NM2, NM3,IE
+
+      NM1=NM(IE,1)
+      NM2=NM(IE,2)
+      NM3=NM(IE,3)
+
+      IF (LoadAdvectionState) Then
+         
+         IF ((DP(NM1).GE.AdvectionState(NM1)).AND.
+     &       (DP(NM2).GE.AdvectionState(NM2)).AND.
+     &       (DP(NM3).GE.AdvectionState(NM3))) THEN
+             IFNLCT = IFNLCTE
+             IFNLCAT = IFNLCATE
+         ELSE
+            IFNLCT = 0
+            IFNLCAT = 0
+         ENDIF
+      ENDIF
+
+C***********************************************************************
+      END SUBROUTINE ADVECTLOCAL
+C***********************************************************************
 

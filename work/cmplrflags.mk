@@ -12,6 +12,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=gnu
 #compiler=g95
 #compiler=intel
+compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=cray_xt3
 #compiler=cray_xt4
@@ -120,6 +121,42 @@ ifeq ($(compiler),intel)
   else
      MULTIPLE := TRUE
   endif
+endif
+#
+# Corbitt 120322:  These flags work on the Notre Dame Athos & Zas
+ifeq ($(compiler),intel-ND)
+  PPFC            :=  ifort
+  FC            :=  ifort
+  PFC           :=  mpif90
+  FFLAGS1       :=  $(INCDIRS) -O3 -FI -assume byterecl -132 -i-dynamic -assume buffered_io
+  ifeq ($(DEBUG),full)
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug -check all -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+  endif
+  FFLAGS2       :=  $(FFLAGS1)
+  FFLAGS3       :=  $(FFLAGS1)
+  DA            :=  -DREAL8 -DLINUX -DCSCA
+  DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI -DPOWELL
+  DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
+  ifeq ($(SWAN),enable)
+     DPRE          := $(DPRE) -DADCSWAN
+  endif
+  IMODS         :=  -I
+  CC            := gcc
+  CCBE          := $(CC)
+  CFLAGS        := $(INCDIRS) -O2 -march=k8 -m64 -mcmodel=medium -DLINUX
+  ifeq ($(DEBUG),full)
+     CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
+  endif
+  CLIBS         :=
+  FLIBS          :=
+  MSGLIBS       :=
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
+     MULTIPLE := TRUE
+  endif
+  #NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/scilib/netcdf/4.1.2/intel-12.0/inst
 endif
 #
 # sb46.50.02 These flags work on the UT Austin Lonstar cluster.

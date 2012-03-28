@@ -114,6 +114,8 @@ Cjgfdebug     &      , H0
       USE GLOBAL_3DVS
       USE NodalAttributes, ONLY: EVM,
      &     ManningsN, LoadManningsN,
+Corbitt 120328: Local Advection
+     &     AdvectionState, LoadAdvectionState,
      &     Z0b_var, LoadZ0B_var
 #ifdef CMPI
       USE MESSENGER
@@ -284,6 +286,15 @@ C
 C     Loop over each horizontal node to compute the horizontal velocity
 C
       DO NH=1,NP                !loop over horizontal nodes
+
+Corbitt 120328: Applies Advection Locally  
+         IF (LoadAdvectionState) Then
+            IF (DP(NH).GE.AdvectionState(NH)) THEN
+               IFNLCT = IFNLCTE 
+            ELSE
+               IFNLCT = 0
+            ENDIF
+         ENDIF
 
 c     Set up some values at the node being worked on
 
@@ -880,6 +891,16 @@ C     velocity dispersion
          DUU(NH) = 0.d0
          DUV(NH) = 0.d0
          DVV(NH) = 0.d0
+
+Corbitt 120328: Applies Advection Locally  
+         IF (LoadAdvectionState) Then
+            IF (DP(NH).GE.AdvectionState(NH)) THEN
+               IFNLCT = IFNLCTE 
+            ELSE
+               IFNLCT = 0
+            ENDIF
+         ENDIF
+
          IF(IFNLCT.EQ.1) THEN
             CALL VSDISP (IT,NH,Hsp1,UU(NH),VV(NH),
      &           DUU(NH),DUV(NH),DVV(NH))

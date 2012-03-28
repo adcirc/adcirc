@@ -1541,7 +1541,7 @@ C...  READ AND PROCESS NRAMP - WHETHER A RAMP FUNCTION WILL BE USED
 C...
 C     jgf46.08 Change to the number of ramp functions that will be used.
       READ(15,*) NRAMP
-      IF((NRAMP.NE.0).AND.(NRAMP.gt.7)) THEN
+      IF((NRAMP.NE.0).AND.(NRAMP.gt.8)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'NRAMP =',NRAMP
@@ -1868,6 +1868,8 @@ C     MS river during Katrina, split ramps for flux b.c.s into internal
 C     and external.
       FluxSettlingTime = 0.0d0
       DRamp = 1.0d0
+Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+      DUnRampMete=0.D0
       SELECT CASE(NRamp)
 C     ---------
       CASE(0,1)! Either no ramp, or same ramp for all forcings
@@ -1922,6 +1924,11 @@ C     -------
 C     -------
          READ(15,*) DRamp,DRampExtFlux,FluxSettlingTime,DRampIntFlux,
      &        DRampElev,DRampTip,DRampMete,DRampWRad
+C     -------
+      CASE(8) ! Start Time for Mete Ramping
+C     -------
+         READ(15,*) DRamp,DRampExtFlux,FluxSettlingTime,DRampIntFlux,
+     &        DRampElev,DRampTip,DRampMete,DRampWRad,DUnRampMete
 C     ------------
       CASE DEFAULT ! fall-through
 C     ------------

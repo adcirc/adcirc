@@ -36,6 +36,8 @@ C             removed ScreenUnit
      &                  q_heat1, q_heat2, TTBCTIMEINC, BCFLAG_TEMP, SFAC,
      &                  NOPE, NVDLL, NBDV, bcriversec, BCRNVELL, BCRNBVV
       USE GLOBAL_3DVS
+Corbitt 120328: Apply Advection Locally
+      USE NodalAttributes, ONLY : LoadAdvectionState, AdvectionState
 C  kmd48.33bc add implicit none if not in parallel
 #ifdef CMPI
       USE MESSENGER
@@ -457,6 +459,15 @@ C     Loop over each horizontal and vertical nodes to compute the transport conc
 C
 
       DO NH=1,NP                !loop over horizontal nodes
+
+Corbitt 120328: Applies Advection Locally
+         IF (LoadAdvectionState) Then
+            IF (DP(NH).GE.AdvectionState(NH)) THEN
+               IFNLCT = IFNLCTE
+            ELSE
+               IFNLCT = 0
+            ENDIF
+         ENDIF
          
 C     Set up some values at the node being worked on
          

@@ -736,6 +736,9 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
             NumCol=1
          CASE("elemental_slope_limiter")
             NumCol=1
+Corbitt 120328: Allow local advection as a nodal attribute.
+         CASE("advection_state")
+            NumCol=1
          CASE DEFAULT
             NumCol=1
             IF (Mode.eq.0) THEN

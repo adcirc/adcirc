@@ -754,7 +754,8 @@ C     for IBTYPE=52.
          RampIntFlux1=TANH((2.D0*(ITHS-1)*DTDPHS/86400.D0)/DRampIntFlux)
          RampIntFlux2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampIntFlux)
          RampTip2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampTip)
-         RampMete2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampMete)
+Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+         RampMete2=TANH((2.D0*((ITHS)*DTDPHS/86400.D0-DUnRampMete))/DRampMete)
          RampWRad2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampWRad)
       ENDIF
 #ifdef IBM

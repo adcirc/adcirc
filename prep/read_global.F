@@ -555,7 +555,8 @@ C...  BE SURE NWS AND NCICE ARE COMPATABLE
 C     jgf46.08 Modified to accomodate fine grained ramp functions.
       READ(15,80) RAMPMSG
       READ(RAMPMSG,*) NRAMP
-      IF ((NRAMP.NE.0).AND.(NRAMP.GT.6)) THEN
+Corbitt 120322: Includes Zach's Wind Ramping
+      IF ((NRAMP.NE.0).AND.(NRAMP.GT.8)) THEN
          print *, "Value for NRAMP not allowed"
          IF (NFOVER.EQ.1) THEN
             print *, "Program will override and use NRAMP = 0"
