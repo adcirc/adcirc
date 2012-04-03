@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.58   - 04/02/2012 - jcd - Two changes to adcprep: (1) to avoid an
+C             endless loop when prepall does not find a default file,
+C             now it will ask the user for the file name or to skip; and
+C             (2) now it will allow the SWAN control file to have its default
+C             name of INPUT, even if the swaninit file is not found.
 C  v50.57   - 03/28/2012 - pck - Added two swan files missing from the update 
 C  v50.56   - 03/28/2012 - pck - Added another ramp option: NRAMP=8, where
 C             the new variable DUnRampMete is the time to begin METE ramping.

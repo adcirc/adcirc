@@ -5538,14 +5538,19 @@ C
 C     Determine the name of the file; if found, open it
  31   IF (USE_DEFAULT) THEN
          FileName = DefaultName
-      ELSE
+Casey 120402: Avoid an endless loop.  If the default file does not exist,
+C             then give the user a chance to specify the file name or skip.
+C     ELSE
+         GOTO 33
+      ENDIF
+ 32   CONTINUE
          WRITE(*,850) ! type skip to bypass
          WRITE(*,900) Description
          WRITE(*,910) UnitNumber
          READ(*,'(A)') FileName
          FileName = trim(FILENAME)
-      ENDIF
-
+C     ENDIF
+ 33   CONTINUE
 
 C
 C     Determine if full domain file exists
@@ -5565,7 +5570,10 @@ C     If it does exist, open it
 C     Give the user a chance to opt out of prepping this file.
          IF (FileName .eq. skipstring) RETURN ! note the early RETURN
          WRITE(*,1010) FileName !not found
-         GOTO 31
+Casey 120402: Avoid an endless loop.  If the default file does not exist,
+C             then give the user a chance to specify the file name or skip.
+C        GOTO 31
+         GOTO 32
       ENDIF
 C
       If (.not.Success) RETURN ! failed to open full domain file
@@ -5990,6 +5998,14 @@ C
 Casey 110627: Set the unit number.
       swiLUN = 26
 
+Casey 120402: Changes through this section.  The procedure here is:
+C             1. Check for the swaninit file.  If it exists, then read the name
+C                of the SWAN control file from the fourth line of swaninit.
+C             2. If the swaninit file does not exist, then the user may be using
+C                the default control file of INPUT.  Check for the INPUT file.
+C                If it exists, then use it as the SWAN control file.
+C             3. Otherwise, notify the user of the error.
+
       swanInitFound = .false.
       swanComFound = .false.
       readError = .true.
@@ -6013,13 +6029,13 @@ Casey 110627: Close the swaninit file.
             WRITE(*,*) "INFO: The swan command file is '",
      &         trim(swanComFile),"'."
             readError = .false.
+Casey 120402: Changes to handle the default INPUT control file.
             ! If swan was started without a swaninit file, it will create
-            ! its own swaninit, and it will use the string DEFAULT to
-            ! represent the name of the swan command file ... there may
-            ! be one of these lying around ... lets not use it
-            IF (TRIM(swanComFile).eq.'DEFAULT') THEN
-               WRITE(*,*) "ERROR: 'DEFAULT' is an invalid name."
-            ELSE
+            ! its own swaninit, and it will use the string INPUT to
+            ! represent the name of the swan command file.
+C           IF (TRIM(swanComFile).eq.'INPUT') THEN
+C              WRITE(*,*) "ERROR: 'INPUT' is an invalid name."
+C           ELSE
                ! check to see if the swan command file is present
                INQUIRE(FILE=trim(swanComFile),EXIST=swanComFound)
                IF (swanComFound.eqv..true.) THEN
@@ -6035,7 +6051,19 @@ Casey 110627: Close the swaninit file.
                    WRITE(*,*) "ERROR: The swan command file '",
      &               trim(swanComFile),"' was not found."
                ENDIF
-            ENDIF
+C           ENDIF
+         ENDIF
+Casey 120402: Changes to handle the default INPUT control file.
+      ELSE
+         INQUIRE(FILE='INPUT',EXIST=swanComFound)
+         IF(swanComFound.eqv..true.)THEN
+            WRITE(swanComFile,'(A)') "INPUT"
+            readError = .false.
+            ErrorIO = 0
+            swanInitFound = .true.
+            swanComFound = .true.
+            WRITE(*,*) "INFO: The swan command file is '",
+     &         trim(swanComFile),"'."
          ENDIF
       ENDIF
 4321  IF ((readError.eqv..true.).or.(ErrorIO.ne.0).or.
@@ -6060,6 +6088,8 @@ C     Open each of the subdomain files
       ENDDO
 C
 Casey 090304: Changed the formatting through the next section.
+Casey 120402: Changes to handle the default INPUT control file.
+      OPEN(UNIT=26,FILE=TRIM(swanComFile),ACTION='READ')
       DO
          READ(26,'(A)',END=9999) Line
          DO IPROC = 1,NPROC
