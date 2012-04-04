@@ -2,6 +2,12 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.59   - 04/04/2012 - jgf - Added preprocessor directives so that 
+C             netcdfio.F can be compiled with either netcdf3 libraries or
+C             netcdf4 libraries; made adcprep read the flux time increment
+C             (FTIMINC) in fort.20 as a real instead of an integer; corrected
+C             the swan version numbers in the changelog below for version
+C             50.55. 
 C  v50.58   - 04/02/2012 - jcd - Two changes to adcprep: (1) to avoid an
 C             endless loop when prepall does not find a default file,
 C             now it will ask the user for the file name or to skip; and
@@ -16,7 +22,7 @@ C             greater than the advection_state depth, advection will be
 C             applied (assuming that advection is turned on); otherwise
 C             advection will be off.
 C  v50.55   - 03/25/2012 - jgf - Merged Casey Dietrich's changes for the
-C             latest version of SWAN (moving from v40.95 to v41.20 of SWAN)
+C             latest version of SWAN (moving from v40.72 to v40.85 of SWAN)
 C             as well as the capability to limit the spectral propagation 
 C             velocities in SWAN; the merged code also contains Taylor Asher's
 C             new capability for modifying wave results in SWAN to account

@@ -52,7 +52,22 @@ ifeq ($(IBM),)
      FFLAGS4 := $(FFLAGS4) -DADCNETCDF -I$(NETCDFHOME)/include 
 endif
 endif
-
+ifeq ($(NETCDF4),enable)
+     PPFC    := $(PPFC) -DHAVE_NETCDF4 
+     PFC     := $(PFC) -DHAVE_NETCDF4 
+     FFLAGS1 := $(FFLAGS1) -DHAVE_NETCDF4 
+     FFLAGS2 := $(FFLAGS2) -DHAVE_NETCDF4 
+     FFLAGS3 := $(FFLAGS3) -DHAVE_NETCDF4 
+     FFLAGS4 := $(FFLAGS4) -DHAVE_NETCDF4 
+endif
+ifeq ($(NETCDF4_COMPRESSION),enable)
+     PPFC    := $(PPFC) -DNETCDF_CAN_DEFLATE 
+     PFC     := $(PFC) -DNETCDF_CAN_DEFLATE 
+     FFLAGS1 := $(FFLAGS1) -DNETCDF_CAN_DEFLATE 
+     FFLAGS2 := $(FFLAGS2) -DNETCDF_CAN_DEFLATE 
+     FFLAGS3 := $(FFLAGS3) -DNETCDF_CAN_DEFLATE 
+     FFLAGS4 := $(FFLAGS4) -DNETCDF_CAN_DEFLATE 
+endif
 ####################### Target Specific Rules ###################################
 
 #                                      adcprep   

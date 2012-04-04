@@ -900,51 +900,51 @@ C--Weir Land Boundary Node-Pair Case
 Cmod vjp 3/8/99
 C  mod to allow that each of Weir-node pair might be ghosts nodes
 C
-         IF ((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
-           DO I = 1,NVELL(K)
-              INDX = NBVV(K,I)
-              INDEX2 = IBCONNR(K,I)
-              DO J = 1,ITOTPROC(INDX)
-                 ITEMP = (J-1)*2 + 1
-                 IPROC2  =  IMAP_NOD_GL2(ITEMP,INDX)
-                 ILNODE2 =  IMAP_NOD_GL2(ITEMP+1,INDX)
-                 IF (IPROC.EQ.IPROC2) THEN
-                   DO JD = 1, ITOTPROC(INDEX2)
-                      ITEMP2 = (JD-1)*2 + 1
-                      IPROC3  = IMAP_NOD_GL2(ITEMP2,INDEX2)
-                      ILNODE3 = IMAP_NOD_GL2(ITEMP2+1,INDEX2)
-                      IF (IPROC.EQ.IPROC3) THEN
-                        NVELP(IPROC) = NVELP(IPROC) + 1
-                        NVELLP(K) = NVELLP(K) + 1
-                        LBINDEX_LG(K,NVELLP(K)) = I
-                        NBVVP(K,NVELLP(K))   = ILNODE2
-                        IBCONNRP(K,NVELLP(K)) = ILNODE3
-                      ENDIF
-                   ENDDO
-                 ENDIF
-              ENDDO
-           ENDDO
+            IF ((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
+               DO I = 1,NVELL(K)
+                  INDX = NBVV(K,I)
+                  INDEX2 = IBCONNR(K,I)
+                  DO J = 1,ITOTPROC(INDX)
+                     ITEMP = (J-1)*2 + 1
+                     IPROC2  =  IMAP_NOD_GL2(ITEMP,INDX)
+                     ILNODE2 =  IMAP_NOD_GL2(ITEMP+1,INDX)
+                     IF (IPROC.EQ.IPROC2) THEN
+                        DO JD = 1, ITOTPROC(INDEX2)
+                           ITEMP2 = (JD-1)*2 + 1
+                           IPROC3  = IMAP_NOD_GL2(ITEMP2,INDEX2)
+                           ILNODE3 = IMAP_NOD_GL2(ITEMP2+1,INDEX2)
+                           IF (IPROC.EQ.IPROC3) THEN
+                              NVELP(IPROC) = NVELP(IPROC) + 1
+                              NVELLP(K) = NVELLP(K) + 1
+                              LBINDEX_LG(K,NVELLP(K)) = I
+                              NBVVP(K,NVELLP(K))   = ILNODE2
+                              IBCONNRP(K,NVELLP(K)) = ILNODE3
+                           ENDIF
+                        ENDDO
+                     ENDIF
+                  ENDDO
+               ENDDO
 C
 C--All Other Land Boundary Node types
 C
-         ELSE
+            ELSE
 C
-           DO I = 1,NVELL(K)
-              INDX = NBVV(K,I)
-              DO J = 1,ITOTPROC(INDX)
-                 ITEMP = (J-1)*2 + 1
-                 IPROC2 =  IMAP_NOD_GL2(ITEMP,INDX)
-                 ILNODE =  IMAP_NOD_GL2(ITEMP+1,INDX)
-                 IF (IPROC.EQ.IPROC2) THEN
-                   NVELP(IPROC) = NVELP(IPROC) + 1
-                   NVELLP(K) = NVELLP(K) + 1
-                   LBINDEX_LG(K,NVELLP(K)) = I
-                   NBVVP(K,NVELLP(K)) = ILNODE
-                 ENDIF
-              ENDDO
-           ENDDO
+               DO I = 1,NVELL(K)
+                  INDX = NBVV(K,I)
+                  DO J = 1,ITOTPROC(INDX)
+                     ITEMP = (J-1)*2 + 1
+                     IPROC2 =  IMAP_NOD_GL2(ITEMP,INDX)
+                     ILNODE =  IMAP_NOD_GL2(ITEMP+1,INDX)
+                     IF (IPROC.EQ.IPROC2) THEN
+                        NVELP(IPROC) = NVELP(IPROC) + 1
+                        NVELLP(K) = NVELLP(K) + 1
+                        LBINDEX_LG(K,NVELLP(K)) = I
+                        NBVVP(K,NVELLP(K)) = ILNODE
+                     ENDIF
+                  ENDDO
+               ENDDO
 C
-         ENDIF
+            ENDIF
 C
          ENDDO
 C
@@ -2101,9 +2101,9 @@ C---------------------------------------------------------------------------
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
-      INTEGER IPROC, FLUX_INC
+      INTEGER IPROC
       INTEGER INDEX14, I
-      REAL(SZ)  FLUX_VAL
+      REAL(SZ)  FLUX_INC, FLUX_VAL
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error
       INTEGER INDX ! full domain node number for a flow boundary node
@@ -2906,8 +2906,9 @@ C
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
-      INTEGER IPROC, FLUX_INC
+      INTEGER IPROC
       INTEGER INDEX14, I
+      REAL(SZ) :: FLUX_INC
       REAL(SZ),ALLOCATABLE ::  FLUX_VAL(:,:)
       INTEGER SDU(NPROC)  ! subdomain unit numbers
       LOGICAL Success     ! .true. if all files open without error

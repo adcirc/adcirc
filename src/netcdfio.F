@@ -1472,8 +1472,10 @@ C     be classic (netcdf3) in any case
       select case(abs(descript%specifier))
       case(3,367,368)
          myFile%ncformat = NF_CLOBBER
+#ifdef HAVE_NETCDF4
       case(5,567,568)
          myFile%ncformat = ior(NF90_CLASSIC_MODEL,NF90_HDF5)
+#endif
       case default
          write(scratchMessage,'(A,I2)') 'File format specifier ',
      &      descript%specifier,' is not valid.'
