@@ -1156,6 +1156,7 @@ C removed from global  myProc, MNPROC,
      &                   IMAP_STAV_LG, SLEV, XEV, SFEV,
      &                   YEV, NP_G, NP, NODES_LG, screen, DEBUG,
      &                   setMessageSource, unsetMessageSource
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE GLOBAL_IO, ONLY:
      &    open_gbl_file, write_gbl_file, collectFullDomainArray,
      &    packOne, unpackOne, packTwo, unpackTwo, packMbyNP, unpackMbyNP
@@ -3575,6 +3576,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL_IO, ONLY: packOne, unpackOne, packOneInt, unpackOneInt,
      &    packTwo, unpackTwo, packMbyNP, unpackMbyNP, HEADER_MAX,
      &    collectFullDomainArray, collectFullDomainIntArray
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
       USE MESSENGER
 #endif
@@ -3605,7 +3607,7 @@ C
       type(OutputDataDescript_t), SAVE :: EtaDiscDescript
       type(OutputDataDescript_t), SAVE :: NodeCodeDescript
       type(OutputDataDescript_t), SAVE :: NOFFDescript
-      LOGICAL err
+      LOGICAL ncerror
       INTEGER numHotstartWrites ! number writes to hot start files
       INTEGER nextLun           ! next LUN to write to, after initial write
 C
@@ -3632,7 +3634,7 @@ C
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call screen(DEBUG,"Enter.")
 #endif
-      err = .false.
+      ncerror = .false.
 C
       IF (FirstCall) THEN
 
@@ -3822,17 +3824,20 @@ C
 C              jgf49.35 TODO: Allocate arrays to write 3D data
                CALL initNetCDFHotstart(hss%lun, Elev1Descript,
      &         Elev2Descript, VelDescript, CH1Descript,
-     &         EtaDiscDescript, NodeCodeDescript, NOFFDescript, err)
+     &         EtaDiscDescript, NodeCodeDescript, NOFFDescript, ncerror)
+               IF ( ncerror.eqv..true. ) CALL ADCIRC_Terminate()
                IF (IHARIND.eq.1) THEN
                   CALL initNetCDFHotstartHarmonic(hss%lun,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,
      &            HarmUVelFDLVDescript, HarmVVelFDLVDescript,
-     &            HarmUVelSLVDescript, HarmVVelSLVDescript, err)
+     &            HarmUVelSLVDescript, HarmVVelSLVDescript, ncerror)
+                  IF ( ncerror.eqv..true. ) CALL ADCIRC_Terminate()
                   IF (CHARMV.eqv..true.) THEN
                      CALL initNetCDFHotstartHarmonicMeansVariances(
      &                  hss%lun, ELAVDescript, ELVADescript,
      &                  XVELAVDescript, YVELAVDescript, XVELVADescript,
-     &                  YVELVADescript,err)
+     &                  YVELVADescript,ncerror)
+                     IF ( ncerror.eqv..true. ) CALL ADCIRC_Terminate()
                   ENDIF
                ENDIF
                ! Determine if we need to init both hotstart files, i.e., if the
@@ -3848,17 +3853,20 @@ C              jgf49.35 TODO: Allocate arrays to write 3D data
                   CALL initNetCDFHotstart(nextLun, Elev1Descript,
      &            Elev2Descript, VelDescript, CH1Descript,
      &            EtaDiscDescript, NodeCodeDescript, NOFFDescript,
-     &            err)
+     &            ncerror)
+                  IF ( ncerror.eqv..true. ) CALL ADCIRC_Terminate()
                   IF (IHARIND.eq.1) THEN
                      CALL initNetCDFHotstartHarmonic(nextLun,
      &               HarmElevFDLVDescript, HarmElevSLVDescript,
      &               HarmUVelFDLVDescript, HarmVVelFDLVDescript,
-     &               HarmUVelSLVDescript, HarmVVelSLVDescript, err)
+     &               HarmUVelSLVDescript, HarmVVelSLVDescript, ncerror)
+                     IF ( ncerror.eqv..true. ) CALL ADCIRC_Terminate()
                      IF (CHARMV.eqv..true.) THEN
                         CALL initNetCDFHotstartHarmonicMeansVariances(
      &                     nextLun, ELAVDescript, ELVADescript,
      &                     XVELAVDescript, YVELAVDescript,
-     &                     XVELVADescript, YVELVADescript, err)
+     &                     XVELVADescript, YVELVADescript, ncerror)
+                        IF ( ncerror.eqv..true. ) CALL ADCIRC_Terminate()
                      ENDIF
                   ENDIF
                ENDIF

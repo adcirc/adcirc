@@ -1285,12 +1285,12 @@ C        jgf47.11 Added writing of limits for time varying tau0
 C     jgfdebug46.02 Added check for NWS=45.
 C     jgf46.02 Added NWS=8.
 C     jgf46.16 Merged:
-C     cf & cm added NWS=9: asymmetric hurricane wind model
 C     rjw added NWS=19: asymmetric hurricane wind model v2.0
 C     sb46.28sb01 added NWS=12: OWI format
+C     jgf50.38.05: added NWS=15: HWind format
          IF ((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.45).OR.
      &        (ABS(NWS).EQ.5).OR.(ABS(NWS).EQ.6).OR.(ABS(NWS).EQ.8)
-     &        .OR.(ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)
+     &        .OR.(ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.15)
      &         .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29))THEN
             WRITE(15,80) WSMSG1
          ENDIF
@@ -2377,65 +2377,7 @@ C--   If reached EOF in NWS4GET last time go close files and return
 C
             IF (DONE) GOTO 9999
          ENDDO
-C
-C        ---------
-         CASE(8,9)
-C        ---------
-C     jgf46.16 Added NWS=9, asymmetric hurricane wind model
-C
-C     tcm_49.04 20091124 Removed NWS=3 and NWS=6 because some fort.22
-C       files had line lenghts longer than 170 characters which caused
-C       the decomposed (copied) fort.22 files to be corrupt.  Instead
-C       of using decomposed (copied) fort.22 files for each PE, we
-C       now use a global fort.22 file for NWS = 3 and NWS = 6.  In the
-C       past for those NWS types, the fort.22 files were just copied
-C       into each PE.
-C
-C     Holland Wind Model (8) or asymetric hurricane wind model (9)
-C
-C     Hurricane track data are in a small file that describes the
-C     hurricane characteristics and provides parameters for the wind
-C     model. The actual wind velocity at each node will be calculated at
-C     run time from these characteristics and parameters by ADCIRC
-C     internally, the wind model. Therefore, each subdomain can use the
-C     exact same information, and we can just rewrite the file into each
-C     subdirectory. We will read it in and write it out to each
-C     subdirectory rather than cp or ln it, because I (jgf) happen to
-C     prefer to avoid calls to the platform-dependent shell from
-C     Fortran.
-         DO
-            READ(22,170,END=9999) Line
-            DO IPROC = STARTPROC,ENDPROC
-               WRITE(SDU(IPROC),170) Line
-            ENDDO
-         ENDDO
-C
-C        ---------
-         CASE(19)
-C        ---------
-C     RJW Added NWS=19, asymmetric hurricane wind model v2.0
-C
-C     Asymetric hurricane wind model v2.0 (19)
-C
-C         Need a new case because the line needs to be longer (270)
-C     Hurricane track data are in a small file that describes the
-C     hurricane characteristics and provides parameters for the wind
-C     model. The actual wind velocity at each node will be calculated at
-C     run time from these characteristics and parameters by ADCIRC
-C     internally, the wind model. Therefore, each subdomain can use the
-C     exact same information, and we can just rewrite the file into each
-C     subdirectory. We will read it in and write it out to each
-C     subdirectory rather than cp or ln it, because I (jgf) happen to
-C     prefer to avoid calls to the platform-dependent shell from
-C     Fortran.
-         DO
-            READ(22,270,END=9999) Line19
-            DO IPROC = STARTPROC,ENDPROC
-               WRITE(SDU(IPROC),270) Line19
-            ENDDO
-         ENDDO
-C
-C
+
 C        ------------
          CASE DEFAULT
 C        ------------
@@ -6089,6 +6031,7 @@ C     Open each of the subdomain files
       ENDDO
 C
 Casey 090304: Changed the formatting through the next section.
+
 Casey 120402: Changes to handle the default INPUT control file.
       OPEN(UNIT=26,FILE=TRIM(swanComFile),ACTION='READ')
       DO

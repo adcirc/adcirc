@@ -532,10 +532,10 @@ C     jgf49.0804 Added NWS29 VortexOWI format.
         IF((NWS.NE.0).AND.    (NWS.NE.1 ) .AND.(ABS(NWS).NE.2).AND.
      &       (NWS.NE.3).AND.(ABS(NWS).NE.4) .AND.(ABS(NWS).NE.5).AND.
      &       (ABS(NWS).NE.45).AND.(ABS(NWS).NE.6).AND.
-     &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.9).AND.
+     &       (ABS(NWS).NE.8).AND.(ABS(NWS).NE.15).AND. !jgf50.38.05 Added NWS=15
      &       (ABS(NWS).NE.12) .AND. (ABS(NWS).NE.19).AND.
      &       (ABS(NWS).NE.29))  THEN
-           print *, "Value for NWS not supported by parallel code"
+           print *,"ERROR: Value for NWS not supported by parallel code"
            stop
         ENDIF
 C
@@ -651,6 +651,7 @@ C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
       IF((ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8).OR.
      &         (ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)
+     &     .OR.(ABS(NWS).EQ.15) !jgf50.38.05: Added NWS=15 for HWind.
      &     .OR.(ABS(NWS).EQ.19)) THEN
          READ(15,80) WSMSG1
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(WSMSG1,*) WTIMINC
@@ -1043,9 +1044,7 @@ C              WRITE(6,9911) XEV(I), YEV(I), STATNAMEV(I)
       ELSE
         DO I=1,NSTAV
            READ(15,'(A132)') STAVLOC(I)
-
            IF((abs(NOUTV).NE.3).AND.(abs(NOUTV).NE.5)) THEN
-
                READ(STAVLOC(I),*) SLEV(I),SFEV(I)
 
            ELSE

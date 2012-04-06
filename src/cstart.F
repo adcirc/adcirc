@@ -329,14 +329,6 @@ C     generate hurricane winds from the Holland Wind Model.
      &     ICS,RHOWAT0,G,HollandTime,NSCREEN,ScreenUnit)
       ENDIF
 
-C     jgf46.16 Merged:
-!     cf & cm added nws = 9: asymmetric hurricane winds
-      IF(NWS.EQ.9) THEN
-         AsymmetricTime = STATIM*86400.D0
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-         CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
-      ENDIF
-
 C     RJW Merged:
 !    rjw added nws = 19: asymmetric hurricane winds v2.0
       IF(NWS.EQ.19) THEN
@@ -400,6 +392,12 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
         CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
         WTIME1 = STATIM*86400.D0
         WTIME2 = WTIME1 + WTIMINC
+      ENDIF
+
+      !
+      ! jgf50.38.05: Added NWS=15,-15 for reading HWind data
+      IF (ABS(NWS).EQ.15) THEN
+         CALL NWS15INIT(STATIM*86400.0)
       ENDIF
 
 C...INPUT RADIATION STRESS INFORMATION FROM UNIT 23
@@ -1453,7 +1451,9 @@ C...  ZERO OUT STUFF PASSED FROM 3D SOLUTION TO EXTERNAL MODE
       ENDDO
 
 C...  INITIALIZE 3D VELOCITY AND TURBULENCE SOLUTION
+
 !     kmd45.12 Need to initialize the new qkp1 and wzkp1 arrays
+
       DO NH=1,NP
          DO N=1,NFEN
             Q(NH,N)=(0.d0,0.d0)

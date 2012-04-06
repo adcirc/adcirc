@@ -253,11 +253,7 @@ PGLO_MSRC  =  pre_global.F
 ADC_MSRC   =  version.F sizes.F global.F global_3dvs.F 
 POST_MSRC  =  post_global.F
 HARM_MSRC  =  harm.F  
-PREC_MSRC  =  precision.F
-CONS_MSRC  =  constants.F
-FITP_MSRC  =  fitpack.F
 VORT_MSRC  =  vortex.F
-LSQ_MSRC   =  lsq.F
 WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F
 SOLV_MSRC  =  itpackv.F
 NA_MSRC    =  nodalattr.F
@@ -274,11 +270,7 @@ PGLO_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PGLO_MSRC) )
 SOLV_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SOLV_MSRC) )
 ADC_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(ADC_MSRC)  )
 HARM_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(HARM_MSRC)  )
-PREC_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(PREC_MSRC)  )
-CONS_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(CONS_MSRC)  )
-FITP_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(FITP_MSRC)  )
 VORT_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(VORT_MSRC)  )
-LSQ_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(LSQ_MSRC)  )
 WIND_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WIND_MSRC)  )
 NA_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NA_MSRC)  )
 NC_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NC_MSRC)  )
@@ -509,7 +501,7 @@ endif
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
    aswip ::  $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ)
+	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(WIND_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
@@ -600,11 +592,8 @@ $(O_DIR)diffmerge.o   :  diffmerge.F
 
 #  asymmetric hurricane wind model
 
-$(O_DIR)precision.o   :  precision.F
-$(O_DIR)constants.o   :  constants.F $(PREC_MOBJ)
-$(O_DIR)lsq.o         :  lsq.F $(PREC_MOBJ)
-$(O_DIR)vortex.o      :  vortex.F $(PREC_MOBJ) $(CONS_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ)
-$(O_DIR)aswip.o      :  aswip_1.0.3.F $(PREC_MOBJ) $(CONS_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(VORT_MOBJ)
+$(O_DIR)vortex.o      :  vortex.F 
+$(O_DIR)aswip.o      :  aswip_1.0.3.F $(VORT_MOBJ)
 
 #  adcirc & $(PARALLEL_ADCIRC) modules
 
@@ -617,10 +606,10 @@ $(O_DIR)messenger.o   :  messenger.F  $(ADC_MOBJ)
 $(O_DIR)writer.o      :  writer.F  $(O_DIR)messenger.o $(O_DIR)globalio.o
 $(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ)
 $(O_DIR)harm.o        :  harm.F 
-$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(FITP_MOBJ)
-$(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ)
-$(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ)
-$(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ)
+$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) 
+$(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ) 
+$(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ) 
+$(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ) 
 $(O_DIR)itpackv.o     :  itpackv.F    $(ADC_MOBJ)
 $(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
 #Casey 090302: Added the next line.

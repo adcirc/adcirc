@@ -594,7 +594,8 @@ C     tcm v49.64.01 broke nws = 2 out of the group below for additions to ice
 
 C.... tcm v48.4641 additions for ice
       IF((ABS(NWS).EQ.4).OR.(ABS(NWS).eq.5)
-     &     .OR.(ABS(NWS).EQ.45).OR.(NWS.EQ.8).OR.(NWS.EQ.9)
+     &     .OR.(ABS(NWS).EQ.45).OR.(NWS.EQ.8)
+     &     .OR.(ABS(NWS).EQ.15)  !jgf50.38.05: Added NWS=15 for HWind.
      &     .OR.(ABS(NWS).EQ.12).OR. (NWS.EQ.19)) THEN
         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
         IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
@@ -897,7 +898,6 @@ C
       IF(ABS(NWS).EQ.5) WRITE(*,3016)
       IF(ABS(NWS).EQ.6) WRITE(*,3017)
       IF(ABS(NWS).EQ.8) WRITE(*,3217)
-      IF(ABS(NWS).EQ.9) WRITE(*,3218)  ! tcm v49.64.01
       IF(NRS.GE.1) WRITE(*,3018) ! sb46.28sb03
       IF(NWS.EQ.10) WRITE(*,3019)
       IF(NWS.EQ.11) WRITE(*,3020)
@@ -945,7 +945,6 @@ C
  3016 FORMAT(' *   Also, NWS=+-5 meteorological forcing is used,   *')
  3017 FORMAT(' *   Also, NWS=+-6 meteorological forcing is used,   *')
  3217 FORMAT(' *   Also, NWS=+-8 Holland wind forcing is used,     *')
- 3218 FORMAT(' *   Also, NWS=+-9 Holland wind forcing is used,     *')
  3219 FORMAT(' *   Also, NWS=+-19 Asymmetric Holland wind v2.0     *',/,
      &       ' *                 forcing is used,                  *')
  3220 FORMAT(' *   Also, ABS(NWS)>=1000 ice concentration are used,*')

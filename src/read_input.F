@@ -61,8 +61,7 @@ Casey 100205: Enable hot-start file generation by SWAN.
       REAL(SZ) LENED1,LENED2,LENED3
 ! kmd - variables for river boundary condition in baroclinic simulation
       INTEGER riverval, BCRiver
-
-      NAMELIST /metControl/ nws,WindDragLimit,DragLawString
+      NAMELIST /metControl/ nws,WindDragLimit,DragLawString,rhoAir
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       INTEGER :: commentStart            ! location of fort.15 comment start
@@ -92,7 +91,6 @@ C...
       IF (ios.gt.0) THEN
          CALL ADCIRC_Terminate()
       ENDIF
-
       CALL openFileForRead(15,TRIM(INPUTDIR)//'/'//'fort.15',ios)
       IF (ios.gt.0) THEN
          CALL ADCIRC_Terminate()
@@ -1049,8 +1047,8 @@ C     file if they are present.
       ENDIF
       write(scratchMessage,*) 'nws=',nws,
      &   ' WindDragLimit=',WindDragLimit,
-     &   'DragLawString=',DragLawString
-      CALL logMessage(DEBUG,scratchMessage)
+     &   ' DragLawString=',DragLawString,' rhoAir=',rhoAir
+      CALL logMessage(ECHO,scratchMessage)
 
 C.... BREAK OUT THE ICE CONCENTRATION FLAG FROM NWS/NRS
       IF (NWS.EQ.0) THEN
@@ -1061,47 +1059,19 @@ C.... BREAK OUT THE ICE CONCENTRATION FLAG FROM NWS/NRS
                                                            !BY REMOVING THE 1000'S
                                                            !PLACE FOR ICE
       ENDIF
-
-
-      IF((NWS.NE.0)    .AND.(NWS.NE.1)       .AND.(ABS(NWS).NE.2)  .AND.
-     &   (NWS.NE.3)    .AND.(ABS(NWS).NE.4)  .AND.(ABS(NWS).NE.5)  .AND.
-     &   (NWS.NE.6)    .AND.(NWS.NE.7)       .AND.(NWS.NE.8)       .AND.
-     &   (NWS.NE.9)    .AND.(NWS.NE.10)      .AND.(NWS.NE.11)      .AND.
-     &   (ABS(NWS).NE.12) .AND.   (NWS.NE.19) .AND.(ABS(NWS).NE.29).AND.
-     &   (NWS.NE.100)  .AND.(NWS.NE.101)     .AND.(NWS.NE.102)     .AND.
-     &   (NWS.NE.103)  .AND.(ABS(NWS).NE.104).AND.(ABS(NWS).NE.105).AND.
-     &   (NWS.NE.106)  .AND.(NWS.NE.110)     .AND.(NWS.NE.111)     .AND.
-     &   (ABS(NWS).NE.112)                                         .AND.
-     &   (NWS.NE.200)  .AND.(NWS.NE.201)     .AND.(NWS.NE.202)     .AND.
-     &   (NWS.NE.203)  .AND.(ABS(NWS).NE.204).AND.(ABS(NWS).NE.205).AND.
-     &   (NWS.NE.206)  .AND.(NWS.NE.210)     .AND.(NWS.NE.211)     .AND.
-     &   (ABS(NWS).NE.212) .AND.
-Casey 090720: Added the following cases for coupling to unstructured SWAN.
-     &   (ABS(NWS).NE.300).AND.(ABS(NWS).NE.303).AND.(ABS(NWS).NE.304).AND.
-     &   (ABS(NWS).NE.305).AND.(ABS(NWS).NE.306).AND.(ABS(NWS).NE.308).AND.
-     &   (ABS(NWS).NE.309).AND.(ABS(NWS).NE.310).AND.(ABS(NWS).NE.311).AND.
-     &   (ABS(NWS).NE.312) .AND. (ABS(NWS).NE.319) .AND.
-     &   (ABS(NWS).NE.329) .AND.
-C
-     &   (NWS.NE.400)                                              .AND.
-     &   (NWS.NE.403)  .AND.(ABS(NWS).NE.404).AND.(ABS(NWS).NE.405).AND.
-     &   (NWS.NE.406)  .AND.(NWS.NE.410)     .AND.(NWS.NE.411)     .AND.
-     &   (ABS(NWS).NE.412).AND.(NWS.NE.419) ) THEN
-
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-            WRITE(ScreenUnit,9972)
-            WRITE(ScreenUnit,*) 'NWS =',NWS
-            WRITE(ScreenUnit,9712)
-            WRITE(ScreenUnit,9973)
-         ENDIF
-         WRITE(16,9972)
-         WRITE(16,*) 'NWS =',NWS
-         WRITE(16,9712)
-         WRITE(16,9973)
- 9712    FORMAT(/,1X,'Your selection of NWS (a UNIT 15 input ',
-     &        'parameter) is not an allowable value')
+      nwsOK = .false.
+      do i=0,4
+         if ( any(nws.eq.(allowable_nws + i*100)) ) then
+            nwsOK = .true.
+            exit
+         endif
+      end do
+      if (nwsOK.eqv..false.) then
+         write(scratchMessage,
+     &        '("NWS=",I3," is not an allowable value.")')
+         call allMessage(ERROR,scratchMessage)
          call ADCIRC_Terminate()
-      ENDIF
+      endif
 
 C.... SET WAVE RADIATION STRESS FLAG AND ADJUST NWS ACCORDINGLY
 
@@ -1285,28 +1255,6 @@ C     jgf46.03 Added NWS=8 (Holland wind model).
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
-C     jgf46.16 Merged:
-C     cf & cm added nws = 9: asymmetric hurricane winds
-      IF(NWS.EQ.9) THEN
-         WRITE(16,2399) NWS
- 2399    FORMAT(/,5X,'NWS = ',I3,
-     &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
-     &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
-     &    /,9X,'VALUES ARE READ AT FOR THE STORM FROM UNIT 22',
-     &    /,9X,'THE UNIT 22 FILE BEGINS AT TIME=STATIM.',
-     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
-     &    /,9X,'WITH THE MODEL TIME STEP.')
-      ENDIF
-      IF(NWS.EQ.-9) THEN
-         WRITE(16,2398) NWS
- 2398    FORMAT(/,5X,'NWS = ',I3,
-     &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
-     &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
-     &    /,9X,'VALUES ARE READ AT FOR THE STORM FROM UNIT 22',
-     &    /,9X,'THE UNIT 22 FILE BEGINS AT THE TIME OF THE HOT START',
-     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
-     &    /,9X,'WITH THE MODEL TIME STEP.')
-      ENDIF
       IF(NWS.EQ.10) THEN
          WRITE(16,2386) NWS
  2386    FORMAT(/,5X,'NWS = ',I3,
@@ -1362,6 +1310,17 @@ C.....sb46_28sb01 added for NWS=-12,12 09/xx/2006
      &    /,9X,'THE UNIT 22 FILE BEGINS AT THE TIME OF THE HOT START.',
      &    /,9X,'WIND SPEEDS ARE CONVERTED TO STRESS USING THE GARRET ',
      &         'DRAG LAW.')
+      ENDIF
+      IF (ABS(NWS).EQ.15) THEN
+         WRITE(16,10389) NWS
+10389    FORMAT(/,5X,'NWS = ',I3,
+     &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
+     &    /,9X,' THE COMPUTATION',
+     &    /,9X,'WIND VELOCITY VALUES ARE READ FROM RAW ',
+     &    /,9X,'HWIND FILES (UNIT 220). DATA WILL BE INTERPOLATED IN',
+     &    /,9X,'SPACE BY REPROJECTING THE ADCIRC MESH IN MERCATOR.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE WIND DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
 C     rjw added nws = 19: asymmetric hurricane winds v2.0
       IF(NWS.EQ.19) THEN
@@ -1823,6 +1782,17 @@ C     an OWI basin scale met field derived from NAM winds.
              READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
      &                  WTIMINC, RSTIMINC, pureVortex, pureBackground
          ENDIF
+      ENDIF
+
+      !
+      ! jgf50.38.05: Added capability to use hwind data.
+      IF(ABS(NWS).EQ.15) THEN
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
+         IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC ! sb46.28sb03
+         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,
+     &                                                 CICE_TIMINC
+         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC, ! sb46.28sb03
+     &                                                 CICE_TIMINC
       ENDIF
 
       IF(NWS.NE.0) WRITE(16,1117) WTIMINC
@@ -2448,6 +2418,7 @@ C     initialized in the call to InitNodalAttr.
           WRITE(16,1111) ESLM
  1111     FORMAT(5X,'Smagorinski lateral stress coefficient with ',
      &              'constant =',E15.8,//)
+
           IF((CGWCE_LS_KGQ).OR.(CME_Orig)) THEN
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
               WRITE(screenunit,1112)
@@ -4268,7 +4239,6 @@ C...     CHECK INPUT PARAMETER NOUTC
                ! do nothing, the other cases handled below
          END SELECT
 
-
 C...  IF STATION CONCENTRATION OUTPUT WILL BE GENERATED
 
          NSTAC = 0
@@ -4325,7 +4295,6 @@ C...  RECORDING STATIONS
      &           4X,'FEA(DEG)',10X,'XCP',12X,'YCP',/)
             MNSTAC = NSTAC
          ENDIF
-
          IF (NSTAC.EQ.0) MNSTAC = 1
 
 C  Allocate arrays dimensioned by MNSTAC
@@ -4443,7 +4412,6 @@ C...  RECORDING STATIONS
             MNSTAM = NSTAM
          ENDIF
          IF (NSTAM.EQ.0) MNSTAM = 1
-
 
 C  Allocate arrays dimensioned by MNSTAM
          call alloc_main10()
@@ -4661,9 +4629,9 @@ C...  IF GLOBAL CONCENTRATION OUTPUT WILL BE GENERATED
 
 C...  COMPUTE NTCYSGC, NTCYFGC, WHICH = TOUTSGC AND TOUTFGC IN TIMESTEPS
 #ifdef IBM
-            NTCYSGC=INT((TOUTSGC-STATIM)*(86400.D0/DTDP) + 0.5d0,
+           NTCYSGC=INT((TOUTSGC-STATIM)*(86400.D0/DTDP) + 0.5d0,
      &          KIND(0.0d0))
-            NTCYFGC=INT((TOUTFGC-STATIM)*(86400.D0/DTDP) + 0.5d0,
+           NTCYFGC=INT((TOUTFGC-STATIM)*(86400.D0/DTDP) + 0.5d0,
      &          KIND(0.0d0))
 #else
             NTCYSGC=INT((TOUTSGC-STATIM)*(86400.D0/DTDP) + 0.5d0)
@@ -4675,7 +4643,7 @@ C...  CALCULATE NDSETSC = THE # OF DATA SETS TO BE SPOOLED TO UNIT 73
 
             IF(NSPOOLGC.EQ.0) NDSETSC=0
 #ifdef IBM
-            IF(NSPOOLGC.NE.0) NDSETSC=INT((NTCYFGC-NTCYSGC)/NSPOOLGC,
+           IF(NSPOOLGC.NE.0) NDSETSC=INT((NTCYFGC-NTCYSGC)/NSPOOLGC,
      &          KIND(0.0d0))
 #else
             IF(NSPOOLGC.NE.0) NDSETSC=INT((NTCYFGC-NTCYSGC)/NSPOOLGC)
@@ -4742,8 +4710,7 @@ C...  CHECK INPUT PARAMETER NOUTGW
                ! do nothing, the other cases handled below
          END SELECT
 
-C...  IF GLOBAL WIND STRESS OUTPUT WILL BE GENERATED
-
+C...  IF GLOBAL WIND STRESS OUTPUT WILL NOT BE GENERATED
          IF(NOUTGW.NE.0) THEN
 
 C...  COMPUTE NTCYSGW, NTCYFGW, WHICH = TOUTSGW AND TOUTFGW IN TIMESTEPS
@@ -4893,7 +4860,6 @@ C     This option will be used in testing ADCIRC's hot start capabilities.
       CALL logMessage(ECHO,scratchMessage)
 C
       SELECT CASE(NHSTAR)
-
       CASE(0)
          CALL logMessage(INFO,'HOT START OUTPUT WILL NOT BE GENERATED.')
       CASE(1,67,68)
@@ -5162,7 +5128,6 @@ C
 #endif
       call unsetMessageSource()
       RETURN
-C
 C
 C     jgf50.41: This section is where we jump if there was an error
 C     reading a file.
@@ -5863,7 +5828,6 @@ C                 Note that this is only used in the wind and advective terms
            WRITE(16,422)
  422       FORMAT(/,1X,'Your selection of Eqnstate (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-
            CALL ADCIRC_Terminate()
          END IF
       END IF

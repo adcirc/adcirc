@@ -573,8 +573,7 @@ C     rjw added NWS=9: asymmetric hurricane wind model v2.0
 c     tcm_v49.04 NWS=3 and NWS=6 no longer need fort.22 decomposition
             IF((NWS.EQ.1).OR.(ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.
      &           (ABS(NWS).EQ.5).OR.(NWS.EQ.7).OR.
-     &           (ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8)
-     &           .OR.(ABS(NWS).EQ.9) .OR.(ABS(NWS).EQ.19)) THEN
+     &           (ABS(NWS).EQ.45)) THEN
                CALL PREP22()
 c           ELSEIF (NWS.EQ.10.OR.NWS.EQ.11) THEN
 c              CALL PREP200()

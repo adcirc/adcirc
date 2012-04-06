@@ -115,7 +115,6 @@ C     kmd48.33bc - add variables for heat flux
       REAL(SZ),ALLOCATABLE :: TMP(:,:)
       REAL(SZ) :: CD, CDQ, QWIND
       CHARACTER(80) :: CDUM80
-      REAL(SZ), PARAMETER :: RHOAIR=1.225d0
       REAL(SZ) :: RNDAYHS
       REAL(SZ),ALLOCATABLE :: RealQ_Tmp(:,:)
       REAL(SZ),ALLOCATABLE :: ImQ_Tmp(:,:)
@@ -136,6 +135,7 @@ C     jgf49.1001 Added for blending NWS19 and NWS12 (from NAM) met data
 
 C     kmd -- Added variables for initial conditions
       CHARACTER(80) :: gridinfo
+
       INTEGER :: moderbin ! determines whether in binary or real
       INTEGER :: ncHundreds ! hundreds place of IHOT, used for netcdf hs file
 
@@ -1725,58 +1725,11 @@ C  tcm v49.16 20100617
          ENDDO
       ENDIF
 
-!     cf & cm added nws = 9: asymmetric hurricane winds
-
-      IF(ABS(NWS).EQ.9) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
-             CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)
-!         IF(NWS.EQ.9) THEN
-!             CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)
-!         ENDIF
-!         IF(NWS.EQ.-9) THEN
-!             CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)
-!         ENDIF
-         DO I=1,NP
-            WindX = WVNX2(I)
-            WindY = WVNY2(I)
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-            ENDIF
-            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete2*PRN2(I)
-            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete2*WindX
-            WVNYOUT(I)=RampMete2*WindY
-         ENDDO
-      ENDIF
-
 !     rjw added nws = 19: asymmetric hurricane winds v2.0
 
       IF(ABS(NWS).EQ.19) THEN
          OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
              CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)
-!         IF(NWS.EQ.9) THEN
-!             CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)
-!         ENDIF
-!         IF(NWS.EQ.-9) THEN
-!             CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)
-!         ENDIF
          DO I=1,NP
             WindX = WVNX2(I)
             WindY = WVNY2(I)
@@ -2094,10 +2047,39 @@ C  tcm v49.16 20100617
              WVNXOUT(I)=RampMete2*WINDX  ! tcm 20100618 v49.16 changed RampMete to RampMete2
              WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
           END DO
-C          IF (MYPROC.EQ.0) THEN
-C             PRINT *, "Made it to the end of the wind calls"
-C          END IF
        ENDIF
+
+      !
+      ! jgf50.38.05: Added NWS=15 for reading HWind data
+       IF(ABS(NWS).EQ.15) THEN
+          CALL NWS15INIT(timeloc)
+          CALL NWS15GET(WVNX2,WVNY2,PRN2,timeloc)
+          DO I=1,NP
+             WDragCo = WindDrag(windSpeeds(i), i)
+             windx = wvnx2(i)
+             windy = wvny2(i)
+             IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(i, WDragCo,
+     &              windSpeeds(i), DP(I), ETA2(I), H0, G,
+     &              windx, windy)
+                WindMag = SQRT(windx**2+windy**2)
+                WDragCo = WindDrag(WindMag, i)
+             ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(i,windx,windy)
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+             PR2(I) = PRBCKGRND_MH2O + RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
+             WVNXOUT(I)=RampMete2*WINDX
+             WVNYOUT(I)=RampMete2*WINDY
+          END DO
+       ENDIF
+
 
 C
 C--------------------END MET FORCING---------------------------------------

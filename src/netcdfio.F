@@ -1475,24 +1475,43 @@ C     be classic (netcdf3) in any case
 #ifdef HAVE_NETCDF4
       case(5,567,568)
          myFile%ncformat = ior(NF90_CLASSIC_MODEL,NF90_HDF5)
+#else
+      case(5,567,568)
+         write(scratchMessage,'(A)')
+     &    "This ADCIRC executable was compiled with the "
+     &    //trim(nf90_inq_libvers())//" netcdf library."
+         call allMessage(INFO,scratchMessage)
+         write(scratchMessage,'(A,I6,A)') "File format specifier '",
+     &      descript%specifier,"' requires NetCDF version 4."
+         call allMessage(ERROR,scratchMessage)
+         write(scratchMessage,'(A)')
+     &    "It also requires the setting of NETCDF=enable and "
+     &    //"NETCDF4=enable on the make command line."
+         call allMessage(ERROR,scratchMessage)
+         write(scratchMessage,'(A)')
+     &    "You must recompile ADCIRC to use NetCDF4 formatting."
+         call allMessage(ERROR,scratchMessage)
+         ret_error = .true.
 #endif
       case default
-         write(scratchMessage,'(A,I2)') 'File format specifier ',
-     &      descript%specifier,' is not valid.'
+         write(scratchMessage,'(A,I2,A)') "File format specifier '",
+     &      descript%specifier,"' is not valid."
          call allMessage(ERROR,scratchMessage)
+         ret_error = .true.
       end select
-      iret = nf_create(myFile%FILENAME, myFile%ncformat, ncid)
-      CALL check_err(iret)
-C
-C
-!     Define time
-      iret = nf_def_dim(ncid, 'time', nf_unlimited,
+
+      if ( ret_error.eqv..false. ) then
+         iret = nf_create(myFile%FILENAME, myFile%ncformat, ncid)
+         CALL check_err(iret)
+         ! Define time
+         iret = nf_def_dim(ncid, 'time', nf_unlimited,
      &       myTime%timenc_dim_id)
-      CALL check_err(iret)
-      myTime%timenc_dims(1) = myTime%timenc_dim_id
-      iret = nf_def_var(ncid, 'time', NF_DOUBLE, myTime%timenc_rank,
+         CALL check_err(iret)
+         myTime%timenc_dims(1) = myTime%timenc_dim_id
+         iret = nf_def_var(ncid, 'time', NF_DOUBLE, myTime%timenc_rank,
      &       myTime%timenc_dims, myTime%timenc_id)
-      CALL check_err(iret)
+         CALL check_err(iret)
+      endif
 C
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -3279,7 +3298,7 @@ C     hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE initNetCDFHotstart(lun, Elev1Descript,
      &   Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
-     &   NodeCodeDescript, NOFFDescript, err)
+     &   NodeCodeDescript, NOFFDescript, ncerror)
       USE GLOBAL, ONLY : OutputDataDescript_t, ICS, G, IM, NE_G, NP_G,
      &   IMHS, C3D
       IMPLICIT NONE
@@ -3293,7 +3312,7 @@ C
       type(OutputDataDescript_t), intent(in) :: NodeCodeDescript
       type(OutputDataDescript_t), intent(in) :: NOFFDescript
 C
-      LOGICAL err
+      LOGICAL ncerror
 C
       INTEGER iret ! success or failure of the netcdf call
 
@@ -3303,7 +3322,7 @@ C
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      err = .false.
+      ncerror = .false.
 C
 C     Point to the correct hotstart block and then allocate
 C     the netcdf data arrays.
@@ -3323,7 +3342,16 @@ C     initialize array values with implicit loop
 C
 C     Initialize netCDF hotstart file, creating a new one
       CALL createNetCDFOutputFile(hs%ncid, hs%myFile, lun, hs%myTime,
-     &                            Elev1Descript, err)
+     &                            Elev1Descript, ncerror)
+      ! return an error flag to the calling routine if something went
+      ! wrong when we tried to create the netcdf file
+      if ( ncerror.eqv..true. ) then
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         return
+      endif
       IF (hs%myMesh%initialized.eqv..false.) THEN
          hs%myMesh%num_nodes = NP_G
          hs%myMesh%num_elems = NE_G

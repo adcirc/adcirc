@@ -550,6 +550,9 @@ ifeq ($(compiler),gnu)
       # G95_FPU_ZERODIV, G95_FPU_OVERFLOW, G95_FPU_UNDERFLOW,
       # G95_FPU_EXCEPTIONS
   endif
+  ifeq ($(DEBUG),valgrind)
+     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 
+  endif
   ifeq ($(SWAN),enable)
      FFLAGS1    :=  $(FFLAGS1) -freal-loops
   endif

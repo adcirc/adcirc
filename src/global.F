@@ -15,8 +15,9 @@ C
       IMPLICIT NONE
       SAVE
 C...
-C...SET GLOBAL PARAMETER CONSTANTS
+C...SET GLOBAL PHYSICAL CONSTANTS
 C...
+      REAL(sz) :: g = 9.80665 !default gravitational acceleration
 
 C.....nominal density of water RHOWAT0
       REAL(SZ), PARAMETER ::  RhoWat0=1000.D0
@@ -24,17 +25,32 @@ C.....nominal density of water RHOWAT0
 C.....Sigma T value of reference density
       REAL(SZ), PARAMETER ::  SigT0=RHOWAT0-1000.D0
 
+
 C.....Background Atmospheric Pressure in mb
       REAL(SZ), PARAMETER :: PRBCKGRND = 1013.0d0   !tcm 20100617 v49.16 Added
+      REAL(8) :: rhoAir = 1.15d0         ! kg/m^3
+      REAL(8) :: windReduction = 0.9d0
+      REAL(8) :: one2ten = 0.8928d0
+      REAL(8) :: ten2one = 1.d0/0.8928d0
 
-C.....PI and degrees to radians conversions
-      REAL(8), PARAMETER  ::  PI=3.141592653589793D0
-      REAL(8), PARAMETER  ::  DEG2RAD = PI/180.D0
-      REAL(8), PARAMETER  ::  RAD2DEG = 180.D0/PI
+C.....PI etc
+      REAL(8), PARAMETER ::  PI=3.141592653589793D0
+      REAL(8), PARAMETER ::  DEG2RAD = PI/180.D0  ! degrees to radians
+      REAL(8), PARAMETER ::  RAD2DEG = 180.D0/PI  ! radians to degrees
+      REAL(8), PARAMETER ::  e=2.718281828459045d0
 
 C.....Days to seconds conversion
       REAL(8), PARAMETER :: day2sec=24.d0*3600.d0
       REAL(8), PARAMETER :: sec2day=1.d0/day2sec
+
+      ! jgf50.38.03: Additional useful constants
+      REAL(8), PARAMETER :: Rearth = 6378206.4d0 ! radius of earth (m)
+      REAL(8), PARAMETER :: nm2m = 1852.d0 ! nautical miles to meters
+      REAL(8), PARAMETER :: m2nm = 1.d0/nm2m ! meters to nautical miles
+      REAL(8), PARAMETER :: kt2ms = nm2m / 3600.0 ! knots to m/s
+      REAL(8), PARAMETER :: ms2kt = 1.d0 / kt2ms ! m/s to knots
+      REAL(8), PARAMETER :: omega = 2.0d0*pi / 86164.2d0
+      REAL(8), PARAMETER :: mb2pa = 100.d0
 
 C.....parameters used in barrier overflow
       REAL(SZ), PARAMETER ::  BARMIN=0.04D0
@@ -123,11 +139,11 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX_G(:)
-
+#ifndef NUVMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  UMAX(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX_G(:)
-
+#endif
       REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMICE00(:), CICEOUT(:) !v49.64.01 tcm -added for ice concentration
@@ -136,11 +152,11 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin_G(:)
-
+#ifndef NWVMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax_G(:)
-
+#endif
 
 #ifdef CSWAN
 Casey 090302: Added the following arrays for output of radiation stress gradients.
@@ -442,7 +458,7 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) CELERITY, COND, CONVCR
       REAL(SZ) DT2, DTO2, DTOHPP
       REAL(SZ) ETIME1, ETIME2, ETRATIO
-      REAL(SZ) G, GO3, GO2, GA00, GB00A00, GC00, GDTO2, GFAO2
+      REAL(SZ) GO3, GO2, GA00, GB00A00, GC00, GDTO2, GFAO2
 
       REAL(SZ) P11, P22, P33
       REAL(SZ) QFORCEI, QFORCEJ
@@ -615,12 +631,11 @@ C
       logLevelNames(3) = "INFO"
       logLevelNames(4) = "WARNING"
       logLevelNames(5) = "ERROR"
-      sourceNumber = 0
-
 C...
 C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
 C...
-      OPEN(16,FILE='fort.16',ACTION='WRITE', STATUS='REPLACE')
+      OPEN(16,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
+      sourceNumber = 0
 
 C--------------------------------------------------------------------
       END SUBROUTINE initLogging
@@ -1076,8 +1091,8 @@ C
          ELSE IF (method.EQ.2) THEN
             CALL realRead2D(sd_array, NP, lun)
          ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
+            call allMessage(ERROR,
+     &          "Passing of binary or real information incorrect")
             STOP
          END IF
       ! parallel
@@ -1380,7 +1395,7 @@ C
 C     Check to see if file exists
       write(scratchMessage,21) lun
   21  format("Searching for file to open on unit ",I5,"...")
-      call allMessage(INFO,trim(scratchMessage))
+      call logMessage(INFO,trim(scratchMessage))
       inquire(FILE=trim(filename),EXIST=fileFound)
       if (fileFound.eqv..false.) then
          write(scratchMessage,23) trim(filename)
@@ -1395,7 +1410,7 @@ C     Check to see if file exists
       else
          write(scratchMessage,24) trim(filename)
   24     format("The file '",A,"' was found. The file will be opened.")
-         call allMessage(INFO,trim(scratchMessage))
+         call logMessage(INFO,trim(scratchMessage))
       endif
 C
 C     Open existing file
@@ -1413,7 +1428,7 @@ C     Open existing file
       else
          write(scratchMessage,26) trim(filename)
   26     format("The file '",A,"' was opened successfully.")
-         call allMessage(INFO,trim(scratchMessage))
+         call logMessage(INFO,trim(scratchMessage))
       endif
 
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
@@ -1424,6 +1439,33 @@ C     Open existing file
 C-----------------------------------------------------------------------
       END SUBROUTINE openFileForRead
 C-----------------------------------------------------------------------
+
+C     ----------------------------------------------------------------
+C      F U N C T I O N   S P H E R I C A L   D I S T A N C E
+C     ----------------------------------------------------------------
+C     jgf49.1001 Function to get the distance along the surface of
+C     a sphere (the earth's surface in this case).
+C     ----------------------------------------------------------------
+      REAL(SZ) FUNCTION sphericalDistance(dx, dy, y1, y2)
+      IMPLICIT NONE
+      REAL(SZ), intent(in) :: DX    ! longitude distance in radians
+      REAL(SZ), intent(in) :: DY    ! latitude distance in radians
+      REAL(SZ), intent(in) :: y1    ! degrees latitude of starting point
+      REAL(SZ), intent(in) :: y2    ! degrees latitude of ending point
+C
+C     compute the distances based on haversine formula for
+C     distance along a sphere
+      sphericalDistance = Rearth *
+     &  ( 2.0d0*ASIN(
+     &     sqrt(sin(DY/2.0d0)**2.0d0
+     &      + cos(y1*DEG2RAD)*cos(y2*DEG2RAD)*sin(DX/2.0d0)**2.0d0
+     &   )))
+
+      RETURN
+C     ----------------------------------------------------------------
+      END FUNCTION sphericalDistance
+C     ----------------------------------------------------------------
+
 
 C...
 C...Allocate space for Arrays dimensioned by MNE and MNP

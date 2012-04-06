@@ -1,18 +1,18 @@
 C******************************************************************************
 C  MODULE OWIWIND
 C    Written by s.b. 08/17/2006
-C****************************************************************************** 
-C 
+C******************************************************************************
+C
       MODULE OWIWIND
 C
       USE SIZES,ONLY : SZ,MYPROC
-      USE GLOBAL,ONLY : NSCREEN, ScreenUnit, DEBUG, ECHO, INFO, 
-     &   WARNING, ERROR, screen, logMessage, allMessage, 
+      USE GLOBAL,ONLY : NSCREEN, ScreenUnit, DEBUG, ECHO, INFO,
+     &   WARNING, ERROR, screen, logMessage, allMessage,
      &   setMessageSource, unsetMessageSource, scratchMessage,
      &   openFileForRead
 #ifdef CMPI
       USE MESSENGER,ONLY : MSG_FINI
-#endif         
+#endif
       IMPLICIT NONE
       character*100 :: title
 
@@ -28,7 +28,7 @@ C
       real(SZ) :: Penv
       ! start and end dates for region and basin scale data
       integer(8):: date1R,date2R,date1B,date2B
-      integer(8):: date1,date2  ! generic start and end dates from OWI header  
+      integer(8):: date1,date2  ! generic start and end dates from OWI header
       integer(8):: date1w,date2w ! start and end dates for wind data
       integer(8):: date1p,date2p ! start and end dates for atm. press. data
       integer :: iLatR,iLongR,iCYMDHR,iMinR
@@ -62,10 +62,10 @@ C
 C      logical :: fileFound ! true if the file is present
       character(len=100) :: errorVar ! name of variable that was being read
                                     ! when an error occurred
- 
+
       PUBLIC
 
-C      INTEGER,SAVE,PRIVATE :: REALTYPE, DBLETYPE   
+C      INTEGER,SAVE,PRIVATE :: REALTYPE, DBLETYPE
 C      REAL(SZ), PRIVATE,ALLOCATABLE :: SENDBUF(:,:), RECVBUF(:,:)
 C
 
@@ -96,11 +96,11 @@ C
       allocate(swpointsB(NP,2),wB(NP,4))
       allocate(swpointsR(NP,2),wR(NP,4))
       errorIO = 0
-      
+
 ! Read meta info -------------------------------------------------
-C    
+C
 C     R E A D   F O R T 2 2
-C     ---------------------  
+C     ---------------------
       lun = 22
       FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.22'
       errorVar = ""
@@ -108,7 +108,7 @@ C     ---------------------
       call check_err(errorIO)
       ! Read the number of sets of .pre and .win files from the fort.22.
       ! If numSets = 1 then ADCIRC requires UNIT 221 and 222.
-      ! If numSets = 2 then ADCIRC requires UNIT 223 and 224 
+      ! If numSets = 2 then ADCIRC requires UNIT 223 and 224
       !           in addition to 221 and 222.
       !   UNIT 221 and 223 are atmospheric pressure fields
       !   UNIT 222 and 224 are wind velocity fields.
@@ -130,9 +130,9 @@ C     ---------------------
          numSkipSnaps = ABS(numBlankSnaps)
          numBlankSnaps = 0
 
-      ! v49.01 TCM 10/28/2009 -- Added else to initialize numSkipSnaps to be 0 
+      ! v49.01 TCM 10/28/2009 -- Added else to initialize numSkipSnaps to be 0
       else
-         numSkipSnaps = 0 
+         numSkipSnaps = 0
       endif
 
       ! Read a wind velocity multiplier
@@ -142,7 +142,7 @@ C     ---------------------
       close(lun)
 
 ! Read basin pre file header ------------------------------------------------
- 
+
       lun = 221
       FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.221'
       errorVar = ""
@@ -175,7 +175,7 @@ C     Error checking for basin scale data
       if (numSets.eq.2) then
 
 ! Read region pre file header -----------------------------------------------
-  
+
          lun = 223
          FNAME = TRIM(GBLINPUTDIR)//'/'//'fort.223'
          errorVar = ""
@@ -259,8 +259,8 @@ C***********************************************************************
       !Casey 110518: Added for Mark Powell's sector-based wind drag.
       INTEGER  :: EyeLatI
       INTEGER  :: EyeLonI
-      REAL(SZ) :: EyeLatTemp 
-      REAL(SZ) :: EyeLonTemp 
+      REAL(SZ) :: EyeLatTemp
+      REAL(SZ) :: EyeLonTemp
       REAL(SZ) :: EyePressure
       FoundEye = .FALSE.
 C
@@ -274,14 +274,14 @@ C
 
       ! Increment counter (cntSnaps initialized to zero in nws12init)
       cntSnaps = cntSnaps+1
-      
+
       ! Put a blank snap for the first 'numBlankSnaps' snaps and then return
       if (cntSnaps.LE.numBlankSnaps) then
          do i=1,NP
             WVNX(I)=0.d0
             WVNY(I)=0.d0
             PRN(I)=101300.d0/RHOWATG
-         enddo  
+         enddo
          !TCM v49.02 (Changed format number from 15 to 16)
          write(scratchMessage,16) cntSnaps
  16      format('INSERTING A BLANK WIND SNAP, COUNT=',i4)
@@ -292,26 +292,26 @@ C
          call unsetMessageSource()
          RETURN
       endif
-        
+
 
       ! Increment counter
       isnapB = isnapB+1
 
       ! Read grid specifications/date in basin pressure file
       errorVar = "grid specifications/date in basin pressure file"
-      read (221,11,end=10000,err=9999,iostat=errorIO) 
+      read (221,11,end=10000,err=9999,iostat=errorIO)
      &      iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
       call check_err(errorIO)
 
       ! Read grid specifications/date in basin wind file
       errorVar = "grid specifications/date in basin wind file"
-      read (222,11,end=10000,err=9999,iostat=errorIO) 
+      read (222,11,end=10000,err=9999,iostat=errorIO)
      &      iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
       call check_err(errorIO)
 
       ! Check consistency
-      if(iLatp.ne.iLatw.or.iLongp.ne.iLongw.or.dxp.ne.dxw.or. 
-     &     dyp.ne.dyw.or.swlatp.ne.swlatw.or.swlongp.ne.swlongw.or. 
+      if(iLatp.ne.iLatw.or.iLongp.ne.iLongw.or.dxp.ne.dxw.or.
+     &     dyp.ne.dyw.or.swlatp.ne.swlatw.or.swlongp.ne.swlongw.or.
      &     iCYMDHp.ne.iCYMDHw.or.iMinp.ne.iMinw) then
          call allMessage(ERROR,
      &  "Grid specifications/date in OWI win and pre files must match.")
@@ -330,20 +330,20 @@ C
           updateB = 0
         endif
       endif
-      
+
       iCYMDHB = iCYMDHp
       iMinB = iMinp
-      
+
       ! Update coordinate mapping coefficients if necessary
       if(updateB.eq.1) then
          call logMessage(INFO,
      &       "Updating basin grid coordinate mapping coefficients.")
          call nws12interp_basin(np)
       endif
-      
+
       ! Read basin scale atmospheric pressure snapshot
       errorVar = "basin scale atmospheric pressure snapshot"
-      read(221,22,end=10000,err=9999,iostat=errorIO) 
+      read(221,22,end=10000,err=9999,iostat=errorIO)
      &   ((pB(i,j),i=1,iLongB),j=1,iLatB)
       call check_err(errorIO)
 
@@ -406,18 +406,18 @@ C
 
       regionExists = .TRUE.
 
-      ! Increment counter         
+      ! Increment counter
       isnapR = isnapR+1
 
       ! Read grid specifications/date in region pressure file
       errorVar = "grid specifications/date in region pressure file"
-      read (223,11,end=10000,err=9999,iostat=errorIO) 
+      read (223,11,end=10000,err=9999,iostat=errorIO)
      &     iLatp,iLongp,dxp,dyp,swlatp,swlongp,iCYMDHp,iMinp
       call check_err(errorIO)
 
       ! Read grid specifications/date in region wind file
       errorVar = "grid specifications/date in region wind file"
-      read (224,11,end=10000,err=9999,iostat=errorIO) 
+      read (224,11,end=10000,err=9999,iostat=errorIO)
      &        iLatw,iLongw,dxw,dyw,swlatw,swlongw,iCYMDHw,iMinw
       call check_err(errorIO)
 
@@ -432,7 +432,7 @@ C
 
       ! Check if header info has changed from the previous snapshot
       if(isnapR.gt.1) then
-         if(iLatp.ne.iLatR.or.iLongp.ne.iLongR.or.dxp.ne.dxR.or. 
+         if(iLatp.ne.iLatR.or.iLongp.ne.iLongR.or.dxp.ne.dxR.or.
      &       dyp.ne.dyR.or.swlatp.ne.swlatR.or.
      &       swlongp.ne.swlongR) then
             call logMessage(INFO,"Region scale grid has changed.")
@@ -468,14 +468,14 @@ C
       read(223,22,end=10000,err=9999,iostat=errorIO)
      &   ((pR(i,j),i=1,iLongR),j=1,iLatR)
       call check_err(errorIO)
-      
+
       ! Read u/v components of the wind
       errorVar = "region scale wind u-velocity snapshot"
-      read(224,22,end=10000,err=9999,iostat=errorIO) 
+      read(224,22,end=10000,err=9999,iostat=errorIO)
      &   ((uR(i,j),i=1,iLongR),j=1,iLatR)
       call check_err(errorIO)
       errorVar = "region scale wind v-velocity snapshot"
-      read(224,22,end=10000,err=9999,iostat=errorIO) 
+      read(224,22,end=10000,err=9999,iostat=errorIO)
      &   ((vR(i,j),i=1,iLongR),j=1,iLatR)
       call check_err(errorIO)
 
@@ -528,7 +528,7 @@ C
  100  CONTINUE
 
 ! Interpolate onto ADCIRC grid and write to file -------------------------
-      
+
       rampfrac = isnapB-1
 c      if (rampfrac<36) then
 c        ramp = tanh(18d0*rampfrac/36d0)
@@ -544,7 +544,7 @@ c      end if
  14      format("Processing region scale wind data ",I12," ",I2,".")
          call allMessage(INFO,trim(scratchMessage))
       endif
-         
+
       do i=1,NP
 
         uu=-9999.9D0
@@ -559,35 +559,35 @@ c      end if
           w2=wB(i,2)
           w3=wB(i,3)
           w4=wB(i,4)
-          
+
           uu=w1*uB(xi,yi)+w2*uB(xi+1,yi)+w3*
      &         uB(xi+1,yi+1)+w4*uB(xi,yi+1)
           vv=w1*vB(xi,yi)+w2*vB(xi+1,yi)+w3*
      &         vB(xi+1,yi+1)+w4*vB(xi,yi+1)
           PP=w1*pB(xi,yi)+w2*pB(xi+1,yi)+w3*
      &         pB(xi+1,yi+1)+w4*pB(xi,yi+1)
-          
+
         endif
-        
+
         ! REGION ---------------------------------------------------------
         ! uu, vv and PP will be overwritten if region data exist.
 
         if ((regionExists).and.(swpointsR(i,1).gt.0)) then
           xi = swpointsR(i,1)
           yi = swpointsR(i,2)
-          
+
           w1=wR(i,1)
           w2=wR(i,2)
           w3=wR(i,3)
           w4=wR(i,4)
-          
+
           uu=w1*uR(xi,yi)+w2*uR(xi+1,yi)+
      &         w3*uR(xi+1,yi+1)+w4*uR(xi,yi+1)
           vv=w1*vR(xi,yi)+w2*vR(xi+1,yi)+
      &         w3*vR(xi+1,yi+1)+w4*vR(xi,yi+1)
           PP=w1*pR(xi,yi)+w2*pR(xi+1,yi)+
      &         w3*pR(xi+1,yi+1)+w4*pR(xi,yi+1)
-          
+
         endif
 
         ! COPY TO ARRAYS ---------------------------------------------------
@@ -605,7 +605,7 @@ c      end if
 
           !CONVERT MILLIBARS TO M OF WATER
           PRN(i)  = 100.d0*PP/RHOWATG
- 
+
           ! Apply wind velocity multiplier
           uu = uu * windMultiplier
           vv = vv * windMultiplier
@@ -622,13 +622,13 @@ c      end if
 #endif
       call unsetMessageSource()
       RETURN
-     
- 
+
+
 9999  call check_err(1) ! ERR during read jumps to here
 
       ! END during read of required data jumps to here
 9997  call allMessage(ERROR,"Unexpected end-of-file reached.")
-      call check_err(1) 
+      call check_err(1)
 
 10000 continue  ! END during read of u, v, p data jumps to here
       write(scratchMessage,61) trim(errorVar)
@@ -649,7 +649,7 @@ c      end if
 
  11   format(t6,i4,t16,i4,t23,f6.0,t32,f6.0,
      &     t44,f8.0,t58,f8.0,t69,i10,i2)
- 
+
  22   format(8f10.0)
 
       END SUBROUTINE NWS12GET
@@ -678,14 +678,14 @@ C
       WRITE(16,*) ''
       WRITE(16,*) 'BASIN-SCALE WIND MAPPING UPDATED'
       WRITE(16,*) ''
-        
+
       iLatB = iLatw
       iLongB = iLongw
       dxB = dxw
       dyB = dyw
       swlatB = swlatw
       swlongB = swlongw
-        
+
       ! Allocate and create matrices
       if(allocated(uB))    deallocate(uB)
       if(allocated(vB))    deallocate(vB)
@@ -695,7 +695,7 @@ C
 
       allocate(uB(iLongB,iLatB),vB(iLongB,iLatB),pB(iLongB,iLatB))
       allocate(longB(iLongB),latB(iLatB))
-        
+
       ! Generate long&lat on each grid point
       do i=1,iLatB
         latB(i) = swlatB+(i-1)*dyB
@@ -703,41 +703,41 @@ C
       do i=1,iLongB
         longB(i) = swlongB+(i-1)*dxB
       enddo
-        
+
       ! Generate interpolation coefficients (south west point and weights)
       do i=1,NP
         adcLat  = RAD2DEG*SFEA(i)
         adcLong = RAD2DEG*SLAM(i)
 
-        if (adcLong>=longB(1).and.adcLong<longB(iLongB) .and. 
+        if (adcLong>=longB(1).and.adcLong<longB(iLongB) .and.
      &       adcLat>=latB(1).and.adcLat<latB(iLatB)) then
           do j=1,iLongB-1
-            if (adcLong>=longB(j) .and.  
+            if (adcLong>=longB(j) .and.
      &           adcLong<longB(j+1)) then
               xi=j
               goto 200
             endif
           enddo
  200      continue
-            
+
           do k=1,iLatB-1
-            if (adcLat>=latB(k) .and. 
+            if (adcLat>=latB(k) .and.
      &           adcLat<latB(k+1)) then
               yi=k
               goto 300
             endif
           enddo
  300      continue
-            
+
           swpointsB(i,1) = xi
           swpointsB(i,2) = yi
-            
+
           w=(longB(xi+1)-longB(xi))*(latB(yi+1)-latB(yi))
           w1=(longB(xi+1)-adcLong)*(latB(yi+1)-adcLat)
           w2=(adcLong-longB(xi))*(latB(yi+1)-adcLat)
           w3=(adcLong-longB(xi))*(adcLat-latB(yi))
           w4=(longB(xi+1)-adcLong)*(adcLat-latB(yi))
-            
+
           wB(i,1)=w1/w
           wB(i,2)=w2/w
           wB(i,3)=w3/w
@@ -746,7 +746,7 @@ C
         else
           swpointsB(i,1) = 0
           swpointsB(i,2) = 0
-            
+
         endif
       enddo
 
@@ -781,14 +781,14 @@ C
       WRITE(16,*) ''
       WRITE(16,*) 'REGION-SCALE WIND MAPPING UPDATED'
       WRITE(16,*) ''
-        
+
       iLatR = iLatw
       iLongR = iLongw
       dxR = dxw
       dyR = dyw
       swlatR = swlatw
       swlongR = swlongw
- 
+
       ! Allocate and create matrices
       if(allocated(uR))    deallocate(uR)
       if(allocated(vR))    deallocate(vR)
@@ -812,7 +812,7 @@ C
         adcLat  = RAD2DEG*SFEA(i)
         adcLong = RAD2DEG*SLAM(i)
 
-        if (adcLong>=longR(1).and.adcLong<longR(iLongR) .and. 
+        if (adcLong>=longR(1).and.adcLong<longR(iLongR) .and.
      &       adcLat>=latR(1).and.adcLat<latR(iLatR)) then
           do j=1,iLongR-1
             if (adcLong>=longR(j).and.adcLong<longR(j+1)) then
@@ -821,7 +821,7 @@ C
             endif
           enddo
  201      continue
-                  
+
           do k=1,iLatR-1
             if (adcLat>=latR(k).and.adcLat<latR(k+1)) then
               yi=k
@@ -857,7 +857,7 @@ C
       END SUBROUTINE NWS12INTERP_REGION
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E   R E A D   H E A D E R    
+C     S U B R O U T I N E   R E A D   H E A D E R
 C-----------------------------------------------------------------------
 C     jgf50.16 Read the header from the OWI file and sets the value
 C     of the date1p, date2p, date1w, or date2w variables as appropriate.
@@ -911,7 +911,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E   C H E C K  _  E R R  
+C     S U B R O U T I N E   C H E C K  _  E R R
 C-----------------------------------------------------------------------
 C     jgf50.16 Checks the return value from subroutine calls; if there
 C     was an error, it writes a termination message to the screen and to the
@@ -929,8 +929,8 @@ C-----------------------------------------------------------------------
 #endif
       if (iret.ne.0) then
          if (errorVar.ne."") then
-            write(scratchMessage,888) 
-     &         trim(errorVar), trim(FNAME), lun 
+            write(scratchMessage,888)
+     &         trim(errorVar), trim(FNAME), lun
  888        format("Failed to read '",A,"' from '",A,
      &         "' (unit number ",I3,").")
             call allMessage(ERROR,trim(scratchMessage))
@@ -952,5 +952,5 @@ C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
       END MODULE OWIWIND
-C-----------------------------------------------------------------------     
-      
+C-----------------------------------------------------------------------
+

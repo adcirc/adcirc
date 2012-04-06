@@ -217,7 +217,6 @@ C   kmd48.33bc - added in the heat flux variables
       CHARACTER(80) :: CDUM80
       INTEGER :: NumofBCNode
       REAL(SZ), SAVE :: StaTimHS, RefTimHS
-      REAL(SZ), PARAMETER :: RHOAIR=1.225
       INTEGER :: NOD
       REAL(SZ), ALLOCATABLE :: TMP(:,:)
       REAL(SZ) :: CD, CDQ, QWIND
@@ -379,7 +378,7 @@ Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
          RampTip=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampTip)
 Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
          RampMete=TANH((2.D0*((IT)*DTDP/86400.D0-DUnRampMete))/DRampMete)
-         RampWRad=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampWRad)      
+         RampWRad=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampWRad)
       END SELECT
 C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
       IF ((CHOTHS).AND.(DTDP.NE.DTDPHS).AND.(NRAMP.NE.0)) THEN
@@ -814,51 +813,6 @@ Casey 090302: Added these lines for coupling winds to SWAN.
 #endif
          ENDDO
       ENDIF
-
-C     jgf46.16 Merged:
-!     cf & cm added nws = 9: asymmetric hurricane winds
-      AsymmetricTime = TimeLoc
-      IF(NWS.EQ.9) THEN
-         CALL NWS9GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
-         DO I=1,NP
-            WindX = WVNX2(I)
-            WindY = WVNY2(I)
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo =
-     &            WindIceDrag(WDragCo,PIC)
-               CICEOUT(I) = PIC
-            ENDIF
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
-C  tcm v49.16 20100617
-!            PR2(I)=RampMete*PRN2(I)
-            PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete*WindX
-            WVNYOUT(I)=RampMete*WindY
-#ifdef CSWAN
-Casey 090302: Added these lines for coupling winds to SWAN.
-            IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX
-               SWAN_WY2(I,2) = WindY
-            ENDIF
-#endif
-         END DO
-      ENDIF
-
 C
 C     Wind velocity (10 m) and atmospheric pressure are read in from a
 C     sequence of National Weather Service (NWS) Aviation (AVN) model
@@ -920,7 +874,7 @@ Casey 090302: Added these lines for coupling winds to SWAN.
 #endif
          END DO
       ENDIF
-
+C
 C     Wind velocity (10 m) and atmospheric pressure are read in from a
 C     sequence of stripped down National Weather Service (NWS) ETA 29km
 C     model output files. Each ETA file is assumed to contain data on an
@@ -1148,6 +1102,44 @@ Casey 090302: Added these lines for coupling winds to SWAN.
 #endif
          END DO
       ENDIF
+
+      !
+      ! jgf50.38.05: Added NWS=15 for reading HWind data
+       IF(ABS(NWS).EQ.15) THEN
+          CALL NWS15GET(WVNX2,WVNY2,PRN2,timeloc)
+          DO I=1,NP
+             windx = wvnx2(i)
+             windy = wvny2(i)
+             windMag = sqrt(windx**2 + windy**2)
+             WDragCo = WindDrag(windMag, i)
+             IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(i, WDragCo,
+     &              windMag, DP(I), ETA2(I), H0, G,
+     &              windx, windy)
+                WindMag = SQRT(windx**2+windy**2)
+                WDragCo = WindDrag(WindMag, i)
+             ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(i,windx,windy)
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+             WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
+             WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
+             PR2(I) = PRBCKGRND_MH2O + RampMete*(PRN2(I)-PRBCKGRND_MH2O)
+             WVNXOUT(I)=RampMete*WINDX
+             WVNYOUT(I)=RampMete*WINDY
+#ifdef CSWAN
+            IF(COUPWIND)THEN
+               SWAN_WX2(I,2) = WindX
+               SWAN_WY2(I,2) = WindY
+            ENDIF
+#endif
+          END DO
+       ENDIF
+
 
 
 C    kmd48.33bc - added in information for the sponge layer
@@ -2967,13 +2959,11 @@ C      ENDIF
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-
-
       RETURN
-C**********************************************************************
-      END SUBROUTINE TIMESTEP
-C**********************************************************************
 
+C******************************************************************************
+      END SUBROUTINE TIMESTEP
+C******************************************************************************
 
 C******************************************************************************
 C                                                                             *
@@ -3305,8 +3295,6 @@ C.....      Check that all the diagonal elements in "COEFD" are > 0.
             IF (DIE) CALL ADCIRC_Terminate()
          ENDIF
       ENDIF                     !End of GWCE matrix setup
-
-
 C...
 C...  Compute the GWCE load vector GWCE_LV
 C...  This is done primarily element by element by forming
@@ -4152,6 +4140,7 @@ C     IF EITHER OF THE SMOOTHING ROUTINES ARE ACTIVE, CALL UPDATER
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
+
       RETURN
 
 C**********************************************************************
@@ -6269,6 +6258,7 @@ C...  Compute velocities
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
+
       RETURN
 C**********************************************************************
       END SUBROUTINE MOM_EQS_NEW_CONSERV
@@ -8396,7 +8386,6 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 
-
 C     INCREMENT THE TIMESTEP SINCE START COUNTER
 C
 
@@ -8648,7 +8637,6 @@ C     jgf46.00 Explicitly declared the following variables
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-
       IDiag=0
 
       IF(SigmaNN.LE.1.0001*b) THEN !if into ground then skip
@@ -8749,7 +8737,7 @@ C*************************************************************************
       NM3=NM(IE,3)
 
       IF (LoadAdvectionState) Then
-         
+
          IF ((DP(NM1).GE.AdvectionState(NM1)).AND.
      &       (DP(NM2).GE.AdvectionState(NM2)).AND.
      &       (DP(NM3).GE.AdvectionState(NM3))) THEN
