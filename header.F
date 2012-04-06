@@ -2,12 +2,15 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
-C  v50.60  - 04/05/2012 - jgf - Merged newvortex branch revisions 705 to 760
-C            into the trunk (the newvortex branch was originally created 
-C            from v50.38 of the ADCIRC trunk). This merge contains the new
-C            NWS19 asymmetric vortex model, new aswip met preprocessing and
-C            analysis code, and new NWS15 hwind input capability. Detailed 
-C            changelog is shown below (v50.38.01 through v50.38.09):
+C      v50.61  - 04/05/2012 - zc - fixed a bug when writing the sparse format
+C                in the fort.69 debug file. Switched to full format for
+C                simplicity.
+C      v50.60  - 04/05/2012 - jgf - Merged newvortex branch revisions 705 to 760
+C                into the trunk (the newvortex branch was originally created 
+C                from v50.38 of the ADCIRC trunk). This merge contains the new
+C                NWS19 asymmetric vortex model, new aswip met preprocessing and
+C                analysis code, and new NWS15 hwind input capability. Detailed 
+C                changelog is shown below (v50.38.01 through v50.38.09):
 C     v50.38.09  04/05/2012 - jgf - Removed extraneous use of globaldir from
 C                aswip code.
 C     v50.38.08  04/05/2012 - jgf - Corrected calculation of wind magnitude

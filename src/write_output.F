@@ -4598,7 +4598,8 @@ C     Open the file and append the new elevation data.
       WRITE(69,2120) TimeLoc,IT
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
       DO I=1,NP
-         IF(NODECODE(I).EQ.1) WRITE(69,2453) I,ETA2(I)
+C         IF(NODECODE(I).EQ.1) WRITE(69,2453) I,ETA2(I) !...Removed ZC, Incorrect sparse format
+          WRITE(69,2453) I,ETA2(I)
  2453    FORMAT(2X,I8,2X,1pE20.10E3)
       ENDDO
       CLOSE(69)

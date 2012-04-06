@@ -11,7 +11,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #
 #compiler=gnu
 #compiler=g95
-#compiler=intel
+compiler=intel
 compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=cray_xt3
@@ -95,9 +95,9 @@ ifeq ($(compiler),intel)
      DPRE          := $(DPRE) -DADCSWAN
   endif
   IMODS         :=  -I
-  CC            := gcc
+  CC            := icc
   CCBE		:= $(CC)
-  CFLAGS        := $(INCDIRS) -O2 -march=k8 -m64 -mcmodel=medium -DLINUX
+  CFLAGS        := $(INCDIRS) -O3 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
   ifeq ($(DEBUG),full)
      CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
   endif
