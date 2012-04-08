@@ -2791,11 +2791,13 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY - ZC (original routine by Crystal Fulc
                IF
      &          (dEta2Mag.GE.elemental_slope_limiter_grad_max(NM(IE,I)))
      &            THEN
+                  IF(.NOT.elemental_slope_limiter_active(NM(IE,I)))THEN
+                    WRITE(screenUnit,1983) IT,NumItr,TimeLoc,
+     &                dEta2Mag,NM1,MyProc
+                    WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,MyProc
+                  ENDIF  
                   ESLONOFF(NM(IE,I)) = 1 ! for output file
                   elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
-                  WRITE(screenUnit,1983) IT,NumItr,TimeLoc,
-     &                dEta2Mag,NM1,MyProc
-                  WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,MyProc
                ENDIF
             ENDDO ! loop around nodes of an element
          ENDDO ! loop over the elements

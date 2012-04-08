@@ -2,7 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
-C      v50.62  - 04/06/2012 - zc - corrected my previous update to use -99999
+C      v50.63  - 04/07/2012 - zc - corrected the elemental slope limiter
+C                output statements so they only appear once per node instead of
+C                continuously until the gradient is below the threshold
+C      v50.62  - 04/07/2012 - zc - corrected my previous update to use -99999
 C                when a node is dry instead of what resides in eta2
 C      v50.61  - 04/05/2012 - zc - fixed a bug when writing the sparse format
 C                in the fort.69 debug file. Switched to full format for
