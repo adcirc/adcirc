@@ -1030,9 +1030,13 @@ C     file if they are present.
       CALL logMessage(DEBUG,'modifiedLine='//modifiedLine)
       ios=0
       open(99,file=trim(localdir)//'/namelist.scratch',
-     &     iostat=ios,status='replace',err=2,action='write')
+     &     iostat=ios,status='replace',err=34,action='write')
       write(99,'(A)') trim(modifiedLine)
-      close(99,err=2,status='keep')
+      close(99,err=34,status='keep')
+34    if ( ios.gt.0 ) then
+         CALL allMessage(ERROR,"I/O error reading NWS line.")
+         CALL ADCIRC_Terminate()
+      endif
       call openFileForRead(99,trim(localdir)//'/namelist.scratch',ios)
       IF (ios.eq.0) THEN
          read(99,NML=metControl,END=32,ERR=2,IOSTAT=ios)
@@ -1040,16 +1044,17 @@ C     file if they are present.
             CALL allMessage(ERROR,"I/O error reading NWS line.")
             CALL ADCIRC_Terminate()
          ENDIF
+ 32      IF (ios.gt.0) THEN
+            CALL allMessage(ERROR,"END of NWS line reached.")
+            CALL ADCIRC_Terminate()
+         ENDIF
       ENDIF
- 32   IF (ios.gt.0) THEN
-         CALL allMessage(ERROR,"END of NWS line reached.")
-         CALL ADCIRC_Terminate()
-      ENDIF
-      write(scratchMessage,*) 'nws=',nws,
+       write(scratchMessage,*) 'nws=',nws,
      &   ' WindDragLimit=',WindDragLimit,
      &   ' DragLawString=',DragLawString,' rhoAir=',rhoAir
       CALL logMessage(ECHO,scratchMessage)
-
+      close(99)
+C
 C.... BREAK OUT THE ICE CONCENTRATION FLAG FROM NWS/NRS
       IF (NWS.EQ.0) THEN
          NCICE = 0
