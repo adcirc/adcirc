@@ -1066,14 +1066,14 @@ C.... BREAK OUT THE ICE CONCENTRATION FLAG FROM NWS/NRS
       ENDIF
       nwsOK = .false.
       do i=0,4
-         if ( any(nws.eq.(allowable_nws + i*100)) ) then
+         if ( any(abs(nws).eq.(allowable_nws + i*100)) ) then
             nwsOK = .true.
             exit
          endif
       end do
       if (nwsOK.eqv..false.) then
          write(scratchMessage,
-     &        '("NWS=",I3," is not an allowable value.")')
+     &        '("NWS=",I3," is not an allowable value.")') NWS
          call allMessage(ERROR,scratchMessage)
          call ADCIRC_Terminate()
       endif
