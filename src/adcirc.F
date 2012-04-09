@@ -111,12 +111,10 @@ C
       REAL(8) AreaEle
 C
 C
-C     jgf49.44: Initialize global logging.
       call initLogging()
-
       call setMessageSource("ADCIRC_Init")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
+      call screen(DEBUG,"Enter.") ! log to screen; don't have log dirname
 #endif
       IF (PRESENT(ROOTD)) THEN
         ROOTDIR = TRIM(ROOTD)
@@ -152,6 +150,7 @@ C...  Special instructions for writer processors
 !       ENDIF
 
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
+      call openLogFile()     ! jgf50.65: open subdomain log files (fort.16)
       CALL WRITER_INIT()     ! Initialize WRITER module
       CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
       if(((mnwproh > 0).or.(mnwproc > 0)) .and. MYPROC >= MNPROC) return
@@ -169,6 +168,7 @@ C...  Special instructions for writer processors
       MNALLPROC = 1          ! Init number of all procs for serial
       MYPROC = 0             ! Init task id for serial
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
+      call openLogFile()     ! jgf50.65: open fort.16 file
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
 #endif
 

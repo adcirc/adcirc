@@ -625,20 +625,39 @@ C     for the current subroutine.
 C--------------------------------------------------------------------
       SUBROUTINE initLogging()
       IMPLICIT NONE
-C
+C...
+C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
+C...
+      sourceNumber = 0
       logLevelNames(1) = "DEBUG"
       logLevelNames(2) = "ECHO"
       logLevelNames(3) = "INFO"
       logLevelNames(4) = "WARNING"
       logLevelNames(5) = "ERROR"
-C...
-C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
-C...
-      OPEN(16,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
-      sourceNumber = 0
 
 C--------------------------------------------------------------------
       END SUBROUTINE initLogging
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E    O P E N   L O G   F I L E
+C--------------------------------------------------------------------
+C     jgf50.65: Open the log file; this must be called after make dirname
+C     so that we know where to put this log file.
+C--------------------------------------------------------------------
+      SUBROUTINE openLogFile()
+      IMPLICIT NONE
+C...
+C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
+C...
+#ifdef CMPI
+      OPEN(16,FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
+     &    STATUS='REPLACE')
+#else
+      OPEN(16,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
+#endif
+C--------------------------------------------------------------------
+      END SUBROUTINE openLogFile
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------

@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C      v50.65  - 04/09/2012 - jgf - Corrected issue with logging where all 
+C                subdomains were logging to an erroneous fulldomain fort.16.
 C      v50.64  - 04/08/2012 - jcd - Updated a few SWAN source files to reflect
 C                the latest changes by the SWAN developers.
 C      v50.63  - 04/07/2012 - zc - corrected the elemental slope limiter
