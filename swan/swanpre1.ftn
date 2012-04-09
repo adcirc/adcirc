@@ -38,6 +38,7 @@
       USE M_PARALL                                                        40.31
       USE SwanGriddata                                                    40.80
 !
+!
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
 !     | Faculty of Civil Engineering                              |
@@ -49,7 +50,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1617,21 +1618,6 @@
         GOTO 100                                                          40.16
       ENDIF                                                               40.16
 !
-!Casey 120302: Changes throughout this section.
-      IF (KEYWIS ('VELLIM')) THEN
-        CALL INKEYW('STA','      ')
-        IF (KEYWIS ('CTHETA')) THEN
-          LimitTurningRate = .TRUE.
-          CALL INREAL('ALPHA',TurningRateLimiter,'STA',1.0)
-        ELSEIF (KEYWIS ('CSIGMA')) THEN
-          LimitFrequencyShift = .TRUE.
-          CALL INREAL('BETA',FrequencyShiftLimiter,'STA',1.0)
-        ELSE
-          CALL WRNKEY
-        ENDIF
-        GOTO 100
-      ENDIF
-!
 !     ------------------------------------------------------------------
 !
 !     NUM       setting numerical parameters for schemes, solvers, etc.
@@ -1648,7 +1634,7 @@
 !
 !           ( DIRimpl [cdd] [cdlim]  WNUMber                       )  &
 !
-!           ( REFRLim [frlim] [power]          (NOT documented)    )  &
+!           ( REFRLim [frlim] [power]          (NOT documented)    )  &   41.06
 !
 !           | -> SIGIMpl [css] [eps2] [outp] [niter]               |
 !          (<                                                      >) &
@@ -1656,6 +1642,9 @@
 !           |                                                      |
 !           |    FIL     [diffc]               (NOT documented)    |
 !
+!           ( CTheta [cfl]                                         )  &   41.35
+!
+!           ( CSigma [cfl]                                         )  &   41.35
 !
 !           ( SETUP [eps2] [outp] [niter]                          )      30.82
 !
@@ -1764,6 +1753,23 @@
           CALL INREAL ('DIFFC'  , PNUMS(9), 'UNC', 0.)
 !
         END IF
+!
+!       limit Csigma if user want so                                      41.35
+!
+        CALL INKEYW ('STA','  ')
+        IF (KEYWIS ('CS')) THEN
+           PNUMS(33) = 1.
+           CALL INREAL ('CFL', PNUMS(34) ,'STA', 0.5)
+        ENDIF
+!
+!       limit Ctheta if user want so                                      41.35
+!
+        CALL INKEYW ('STA','  ')
+        IF (KEYWIS ('CT')) THEN
+           PNUMS(35) = 1.
+           CALL INREAL ('CFL', PNUMS(36) ,'STA', 0.5)
+        ENDIF
+!
         CALL INKEYW ('STA','  ')                                          30.82
         IF (KEYWIS('SETUP')) THEN                                         30.82
 !         *** iterative solver        ***                                 30.82
@@ -2264,19 +2270,35 @@
 !
 !     WIND      parameters uniform wind field
 !
-! ==========================================
+! ==========================================================
 !
-!   WIND  [vel]  [dir]  [astd]                                            40.03
+!   WIND  [vel]  [dir]  [astd]  DRAG  WU|FIT                              41.33 40.03
 !
-! ==========================================
+! ==========================================================
 !
       IF (KEYWIS ('WIND')) THEN
         LWINDR = 1                                                        30.10
         IWIND  = LWINDM                                                   30.10
-        VARWI = .FALSE.
-        CALL INREAL('VEL',U10,'REQ',0.)
-        CALL INREAL('DIR',WDIP,'REQ',0.)
-        CALL INREAL('ASTD',CASTD,'STA',0.)                                40.03
+        IF (.NOT.VARWI) THEN
+           VARWI = .FALSE.
+           CALL INREAL('VEL',U10,'REQ',0.)
+           CALL INREAL('DIR',WDIP,'REQ',0.)
+           CALL INREAL('ASTD',CASTD,'STA',0.)                             40.03
+        ELSE
+           U10   = 0.
+           WDIP  = 0.
+           CASTD = 0.
+        ENDIF
+!
+        CALL INKEYW ('STA','  ')                                          41.33
+        IF ( KEYWIS('DRAG') ) THEN                                        41.33
+          CALL INKEYW ('STA','WU')                                        41.33
+          IF (KEYWIS ('FIT')) THEN                                        41.33
+             IDRAG = 2                                                    41.33
+          ELSE IF (KEYWIS ('WU')) THEN                                    41.33
+             IDRAG = 1                                                    41.33
+          ENDIF                                                           41.33
+        ENDIF                                                             41.33
 !
 !       *** Convert (if necessary) WDIP from nautical degrees ***         32.01
 !       *** to cartesian degrees                              ***         32.01
@@ -2720,7 +2742,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3151,7 +3173,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3632,7 +3654,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3799,7 +3821,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4061,7 +4083,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4276,7 +4298,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4641,7 +4663,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4751,7 +4773,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4923,7 +4945,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -5094,7 +5116,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -5565,7 +5587,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as

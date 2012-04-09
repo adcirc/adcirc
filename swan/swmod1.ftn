@@ -26,7 +26,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -184,7 +184,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -306,7 +306,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -409,7 +409,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -552,7 +552,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1393,7 +1393,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1596,7 +1596,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1647,7 +1647,7 @@
 !     MDISP  [   5] dimension for dissipation arrays                      40.67
 !     MGENR  [   1] dimension for generation arrays                       40.85
 !     MICMAX [  10] max. number of points in comput. stencil
-!     MNUMS  [  35] dimension of array PNUMS
+!     MNUMS  [  40] dimension of array PNUMS
 !     MQUAD  [  10] dimension of array PQUAD
 !     MREDS  [   2] dimension for redistribution arrays                   40.85
 !     MSETUP [   2] dimension of array PSETUP
@@ -1674,7 +1674,7 @@
       PARAMETER           (MREDS  =  2)                                   40.85
       PARAMETER           (MTRNP  =  3)                                   40.85
       PARAMETER           (MICMAX = 10)
-      PARAMETER           (MNUMS  = 35)
+      PARAMETER           (MNUMS  = 40)
       PARAMETER           (MQUAD  = 10)
       PARAMETER           (MSETUP =  2)
       PARAMETER           (MSHAPE =  5)
@@ -1997,6 +1997,9 @@
 ! IDIFFR [     0] diffraction method                                      40.21
 !                 0= no diffraction                                       40.21
 !                 1= diffraction                                          40.21
+! IDRAG  [     1] indicates formulation for wind drag coefficient         41.33
+!                 1=Wu (1982)                                             41.33
+!                 2=2nd order polynomial fit (see CE publication, 2012)   41.33
 ! IFRSRF [     0] indicates frequency dependent surf breaking             41.06
 !                 0=no frequency dependency                               41.06
 !                 1=frequency dependency                                  41.06
@@ -2191,6 +2194,14 @@
 !                 =niter, set by command NUM SETUP ... [niter] ...
 !  (28)  [    1.] Qb-value at which the limiter is not active in case lowering AC2
 !  (30)  [    0.] =under-relaxation factor
+!  (33)  [    0.] indicates use of Courant limiter for csigma
+!                 =0. no limiter
+!                 =1. csigma will be limited
+!  (34)   [  0.5] =upper limit of CFL restriction for csigma
+!  (35)  [    0.] indicates use of Courant limiter for ctheta
+!                 =0. no limiter
+!                 =1. ctheta will be limited
+!  (36)   [  0.5] =upper limit of CFL restriction for ctheta
 ! PQUAD(MQUAD)    coefficients for quadruplet interaction
 !  ( 1)  [  0.25] lambda in eq. B29 of user manual
 !  ( 2)  [  3.E7] coefficient of interactions
@@ -2382,7 +2393,7 @@
       INTEGER             IDBR,        IDIF,        IGEN,        IINC
       INTEGER             IPRE,        IQUAD,       IREFR,       ISURF
       INTEGER             ITERMX,      ITFRE,       ITRIAD
-      INTEGER             IWCAP,       IWIND,       LSETUP
+      INTEGER             IWCAP,       IWIND,       LSETUP,      IDRAG
       INTEGER             MXITST,      MXITNS,                   NCOR
       INTEGER             NSTATC,      NSTATM,      NUMOBS,      NCOMPT   40.41
       INTEGER             IDIFFR                                          40.21
@@ -2409,11 +2420,6 @@
       LOGICAL             OFFSRC                                          40.80
       LOGICAL             LADDS                                           40.85
       LOGICAL             CSETUP
-!Casey 111020: Limit csigma, ctheta.
-      LOGICAL :: LimitFrequencyShift = .FALSE.
-      LOGICAL :: LimitTurningRate    = .FALSE.
-      REAL :: FrequencyShiftLimiter
-      REAL :: TurningRateLimiter
 !$OMP THREADPRIVATE(ICMAX,CSETUP)
 !
 !  8. Subroutines and functions used
@@ -2454,7 +2460,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2610,7 +2616,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as

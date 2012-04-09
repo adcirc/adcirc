@@ -16,7 +16,7 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -40,6 +40,7 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
 !   41.02: Marcel Zijlema
 !   41.06: Gerbrant van Vledder
 !   41.07: Marcel Zijlema
+!   41.35: Casey Dietrich
 !
 !   Updates
 !
@@ -50,6 +51,7 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
 !                         wave transport velocity in theta-direction based on
 !                         (x,y)-derivatives of the wave number
 !                         (see Holthuijsen (2007), page 210, footnote 4)
+!   41.35,    March 2012: add option of limitation on csigma and ctheta
 !
 !   Purpose
 !
@@ -109,6 +111,7 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
     integer                               :: k        ! loop counter
     integer, dimension(3)                 :: v        ! vertices in considered cell
     !
+    real                                  :: alpha    ! upper limit of CFL restriction
     real, dimension(3)                    :: cd       ! coefficients for computing cad
     real, dimension(10)                   :: cs       ! coefficients for computing cas
     real                                  :: dhdx     ! derivative of dep2 to x in considered sweep
@@ -131,6 +134,7 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
     real                                  :: duydym   ! derivative of uy2 to y in sweep below considered sweep
     real                                  :: duydyp   ! derivative of uy2 to y in sweep above considered sweep
     real                                  :: fac      ! a factor
+    real                                  :: fac2     ! another factor
     real                                  :: frlim    ! frequency range in which limit on velocity in theta-direction is applied
     real                                  :: kd       ! help variable, wave number times water depth
     real                                  :: pp       ! power of the frequency dependent limiter on refraction
@@ -148,14 +152,6 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
     !
     type(celltype), dimension(:), pointer :: cell     ! datastructure for cells with their attributes
     type(verttype), dimension(:), pointer :: vert     ! datastructure for vertices with their attributes
-!
-!Casey 111020: Limit ctheta, csigma.
-    integer                               :: i
-    integer                               :: ic
-    real                                  :: courant
-    real                                  :: ds
-    real                                  :: dxc
-    real                                  :: dyc
 !
 !   Structure
 !
@@ -477,74 +473,28 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
              !
              cas(id,is) = cs(6)
              if ( ICUR /= 0 ) cas(id,is) = cas(id,is) + cs(7) + coscos(id)*cs(8) + sincos(id)*cs(9) + sinsin(id)*cs(10)
-!            !
+             !
           enddo
        enddo
        !
-!Casey 111020: Limit csigma.
+       ! limit velocity using Courant number
        !
-       if ( LimitFrequencyShift ) then
+       if ( int(PNUMS(33)) == 1 ) then
           !
-          icell = vert(iv1)%cell(jc)%atti(CELLID)
+          alpha = PNUMS(34)
           !
-          v(1) = cell(icell)%atti(CELLV1)
-          v(2) = cell(icell)%atti(CELLV2)
-          v(3) = cell(icell)%atti(CELLV3)
-          !
-          do ic = 1, ICMAX
+          do is = 1, MSC
              !
-             if ( v(ic) .eq. iv1 ) then
+             fac2 = alpha * FRINTF * spcsig(is)
+             !
+             do iddum = idcmin(is), idcmax(is)
+                id = mod ( iddum - 1 + MDC , MDC ) + 1
                 !
-                do i = 1, 2
-                   !
-                   if ( i .eq. 1 ) then
-                      dxc = cell(icell)%geom(ic)%dx1
-                      dyc = cell(icell)%geom(ic)%dy1
-                   elseif ( i .eq. 2 ) then
-                      dxc = cell(icell)%geom(ic)%dx2
-                      dyc = cell(icell)%geom(ic)%dy2
-                   endif
-                   if ( KSPHER .gt. 0 ) then
-                      dxc = dxc * ( LENDEG * COSLAT(1) )
-                      dyc = dyc *   LENDEG
-                   endif
-                   dxc = ABS(dxc)
-                   dyc = ABS(dyc)
-                   !
-                   do id = 1, MDC
-                      do is = 1, MSC
-                         !
-                         if ( is .eq. 1 ) then
-                            ds = spcsig(is+1) - spcsig(is)
-                         elseif ( is .eq. MSC ) then
-                            ds = spcsig(is) - spcsig(is-1)
-                         else
-                            ds = 0.5*( spcsig(is+1) - spcsig(is-1) )
-                         endif
-                         !
-                         if ( (dxc + dyc) .gt. 0. ) then
-                            courant = FrequencyShiftLimiter * ds &
-                                    * ( ABS(cax(id,is,ic)) + ABS(cay(id,is,ic)) ) &
-                                      / ( dxc + dyc )
-                         else
-                            courant = 0.
-                         endif
-                         !
-                         if ( LimitFrequencyShift ) then
-                            if ( ABS(cas(id,is)) .gt. ABS(courant) ) then
-                               cas(id,is) = (cas(id,is)/ABS(cas(id,is)))*courant
-                            endif
-                         endif
-                         !
-                         courant = cas(id,is) / ds * ( dxc + dyc ) &
-                                 / ( ABS(cax(id,is,ic)) + ABS(cay(id,is,ic)) )
-                         !
-                      enddo
-                   enddo
-                   !
-                enddo
+                fac = fac2 * ( abs((rdx(1)+rdx(2))*cax(id,is,1)) + abs((rdy(1)+rdy(2))*cay(id,is,1)) )
                 !
-             endif
+                if ( abs(cas(id,is)) > fac ) cas(id,is) = cas(id,is) * fac / abs(cas(id,is))
+                !
+             enddo
              !
           enddo
           !
@@ -584,6 +534,7 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
              cad(id,is) = esin(id)*cd(2) - ecos(id)*cd(3)
              if ( IDIFFR /= 0 ) cad(id,is) = cad(id,is)*DIFPARAM(iv1) - DIFPARDX(iv1)*cgo(is,1)*esin(id) + DIFPARDY(iv1)*cgo(is,1)*ecos(id)
              if ( ICUR   /= 0 ) cad(id,is) = cad(id,is) + sincos(id)*(duxdx-duydy) + sinsin(id)*duydx - coscos(id)*duxdy
+             !
           enddo
           !
           if ( int(PNUMS(32)) == 0 ) then
@@ -634,7 +585,6 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
              cd(2) = cd(1) * ecos(id)
              do is = 1, MSC
                 cad(id,is) = cad(id,is) - cd(2)*(cax(id,is,1)*ecos(id) + cay(id,is,1)*esin(id))
-                !
              enddo
           enddo
           !
@@ -658,62 +608,24 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
           !
        endif
        !
-!Casey 111020: Limit ctheta.
+       ! limit velocity using Courant number
        !
-       if ( LimitTurningRate ) then
+       if ( int(PNUMS(35)) == 1 ) then
           !
-          icell = vert(iv1)%cell(jc)%atti(CELLID)
+          alpha = PNUMS(36)
           !
-          v(1) = cell(icell)%atti(CELLV1)
-          v(2) = cell(icell)%atti(CELLV2)
-          v(3) = cell(icell)%atti(CELLV3)
+          fac2 = alpha * DDIR
           !
-          do ic = 1, ICMAX
+          do is = 1, MSC
              !
-             if ( v(ic) .eq. iv1 ) then
+             do iddum = idcmin(is)-1, idcmax(is)+1
+                id = mod ( iddum - 1 + MDC , MDC ) + 1
                 !
-                do i = 1, 2
-                   !
-                   if ( i .eq. 1 ) then
-                      dxc = cell(icell)%geom(ic)%dx1
-                      dyc = cell(icell)%geom(ic)%dy1
-                   elseif ( i .eq. 2 ) then
-                      dxc = cell(icell)%geom(ic)%dx2
-                      dyc = cell(icell)%geom(ic)%dy2
-                   endif
-                   if ( KSPHER .gt. 0 ) then
-                      dxc = dxc * ( LENDEG * COSLAT(1) )
-                      dyc = dyc *   LENDEG
-                   endif
-                   dxc = ABS(dxc)
-                   dyc = ABS(dyc)
-                   !
-                   do id = 1, MDC
-                      do is = 1, MSC
-                         !
-                         if ( (dxc + dyc) .gt. 0. ) then
-                            courant = TurningRateLimiter * DDIR &
-                                    * ( ABS(cax(id,is,ic)) + ABS(cay(id,is,ic)) ) &
-                                      / ( dxc + dyc )
-                         else
-                            courant = 0.
-                         endif
-                         !
-                         if ( LimitTurningRate ) then
-                            if ( ABS(cad(id,is)) .gt. ABS(courant) ) then
-                               cad(id,is) = (cad(id,is)/ABS(cad(id,is)))*courant
-                            endif
-                         endif
-                         !
-                         courant = cad(id,is) / DDIR * ( dxc + dyc ) &
-                                 / ( ABS(cax(id,is,ic)) + ABS(cay(id,is,ic)) )
-                         !
-                      enddo
-                   enddo
-                   !
-                enddo
+                fac = fac2 * ( abs((rdx(1)+rdx(2))*cax(id,is,1)) + abs((rdy(1)+rdy(2))*cay(id,is,1)) )
                 !
-             endif
+                if ( abs(cad(id,is)) > fac ) cad(id,is) = cad(id,is) * fac / abs(cad(id,is))
+                !
+             enddo
              !
           enddo
           !
