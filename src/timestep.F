@@ -110,7 +110,8 @@ C.....sb46.28sb03 added 09/xx/2006
      &     Z0b_var, LoadZ0B_var,!Rjw IOOS 2010
      &     BFCdLLimit, !sb46.28sb02/jgf47.04 lower limit of Cd for bot. friction
      &     LoadEleSlopeLim, elemental_slope_limiter_active,
-     &     elemental_slope_limiter_grad_max
+     &     elemental_slope_limiter_grad_max,
+     &     elemental_slope_limiter_max_exceeded
 
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
 Cjgfdebug      USE GLOBAL_3DVS, ONLY:
@@ -2782,22 +2783,43 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY - ZC (original routine by Crystal Fulc
                ! check if user specified unlimited slope, or if we've already
                ! turned the limiter on here (once its on, its on for the
                ! rest of the run, so no need to check it again)
-               IF ((elemental_slope_limiter_grad_max(NM(IE,I)).LT.0.d0)
-     &            .OR.
-     &            (elemental_slope_limiter_active(NM(IE,I)).EQV..TRUE.))
-     &            THEN
-                     CYCLE  ! go to next node of this element
-               ENDIF
-               IF
-     &          (dEta2Mag.GE.elemental_slope_limiter_grad_max(NM(IE,I)))
-     &            THEN
-                  IF(.NOT.elemental_slope_limiter_active(NM(IE,I)))THEN
-                    WRITE(screenUnit,1983) IT,NumItr,TimeLoc,
-     &                dEta2Mag,NM1,MyProc
-                    WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,MyProc
-                  ENDIF  
-                  ESLONOFF(NM(IE,I)) = 1 ! for output file
-                  elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
+C... ZC - Commented this out and replaced with the IF below to only 
+C         check if the limiter is on and allow a zero gradient to 
+C         proceed and turn on the limiter.
+C               IF ((elemental_slope_limiter_grad_max(NM(IE,I)).EQ.0.d0)
+C     &            .OR.
+C     &            (elemental_slope_limiter_active(NM(IE,I)).EQV..TRUE.))
+C     &            THEN
+C                     CYCLE  ! go to next node of this element
+C               ENDIF
+               IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
+               IF (dEta2Mag.GE.
+     &           ABS(elemental_slope_limiter_grad_max(NM(IE,I))))THEN
+                 ! zc - if gradmax is positive or zero, apply slope 
+                 ! limiting otherwise just print gradient warnings to 
+                 ! screen the first time the gradient is exceeded
+                 IF(elemental_slope_limiter_grad_max(NM(IE,I))
+     &               .GE.0D0)THEN
+                    IF(.NOT.elemental_slope_limiter_active(NM(IE,I)))
+     &               THEN
+                        WRITE(screenUnit,1983) IT,NumItr,TimeLoc,
+     &                      dEta2Mag,NM1,MyProc
+                        WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,
+     &                      MyProc
+                    ENDIF  
+                    ESLONOFF(NM(IE,I)) = 1 ! for output file
+                    elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
+                 ELSE
+                    IF(.NOT.
+     &               elemental_slope_limiter_max_exceeded(NM(IE,I)))THEN
+                        WRITE(screenUnit,1984) IT,NumItr,TimeLoc,
+     &                      dEta2Mag,NM1,MyProc
+                        WRITE(16,1984) IT,NumItr,TimeLoc,dEta2Mag,NM1,
+     &                      MyProc
+                        elemental_slope_limiter_max_exceeded(NM(IE,I)) =
+     &                      .TRUE.
+                    ENDIF
+                 ENDIF
                ENDIF
             ENDDO ! loop around nodes of an element
          ENDDO ! loop over the elements
@@ -2808,6 +2830,11 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY - ZC (original routine by Crystal Fulc
      &       2X,'ON MYPROC = ',I5,
      &       3X,'** WARNING: ELEMENTAL SLOPE LIMITER TURNED ON **')
 
+1984  FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &       5X,'TIME = ',E15.8,
+     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE',I7,
+     &       2X,'ON MYPROC = ',I5,
+     &       3X,'** WARNING: MAXIMUM ALLOWED GRADIENT EXCEEDED **')
 C...  END CHECKING ELEMENT GRADIENTS
 C...
 

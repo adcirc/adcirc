@@ -236,6 +236,8 @@ C     jgf48.42: Added backloaded time averaged tau0
       LOGICAL :: BackLoadedTimeAveragedTau0 ! .true. if Tau0 == -7.x
       LOGICAL,ALLOCATABLE :: elemental_slope_limiter_active(:) ! .true. if elemental_slope_limiter_grad_max
                                                                ! has been exceeded, initialized as .false.
+      LOGICAL,ALLOCATABLE :: elemental_slope_limiter_max_exceeded(:) ! .true. if maximum gradient has been
+                                                                   ! exceeded, used for gradient warnings
 
       REAL(SZ), ALLOCATABLE :: z0land(:,:) ! directional wind speed red. fac.
       REAL(SZ), ALLOCATABLE :: vcanopy(:)  ! canopy coefficient
@@ -706,9 +708,10 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
       ALLOCATE(elevation_smoothing_timestep_increment(NumOfNodes))
       ALLOCATE(elemental_slope_limiter_grad_max(NumOfNodes))
       ALLOCATE(elemental_slope_limiter_active(NumOfNodes))
+      ALLOCATE(elemental_slope_limiter_max_exceeded(NumOfNodes))
       elemental_slope_limiter_active(:) = .FALSE.  !...Alloate and initialize to keep
                                                    !   track of elemental_slope_limiter nodes
-
+      elemental_slope_limiter_max_exceeded(:) = .FALSE.
 C
 C     Now read each of the attributes required by the model parameter
 C     (unit 15) file and skip past the others.

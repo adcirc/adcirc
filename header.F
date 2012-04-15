@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C      v50.67  - 04/15/2012 - zc - Corrected the elemental slope limiter to 
+C                apply smoothing if fort.13 max gradient is set to zero
+C                instead of skipping the node. Also set so that a negative 
+C                fort.13 value triggers gradient warnings but no slope
+C                limiting
 C      v50.66  - 04/09/2012 - jgf - Corrected issue in reading NWS namelist
 C                that caused a compiler warning about out-of-block goto. 
 C      v50.65  - 04/09/2012 - jgf - Corrected issue with logging where all 
