@@ -2780,23 +2780,13 @@ C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY - ZC (original routine by Crystal Fulc
      &                 /AreaIE2
             dEta2Mag = sqrt(dEta2Dx**2.d0+dEta2Dy**2.d0)
             DO I=1,3
-               ! check if user specified unlimited slope, or if we've already
-               ! turned the limiter on here (once its on, its on for the
-               ! rest of the run, so no need to check it again)
-C... ZC - Commented this out and replaced with the IF below to only 
-C         check if the limiter is on and allow a zero gradient to 
-C         proceed and turn on the limiter.
-C               IF ((elemental_slope_limiter_grad_max(NM(IE,I)).EQ.0.d0)
-C     &            .OR.
-C     &            (elemental_slope_limiter_active(NM(IE,I)).EQV..TRUE.))
-C     &            THEN
-C                     CYCLE  ! go to next node of this element
-C               ENDIF
+C              check if the limiter is on and allow a zero gradient to
+C              proceed and turn on the limiter.
                IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
                IF (dEta2Mag.GE.
      &           ABS(elemental_slope_limiter_grad_max(NM(IE,I))))THEN
-                 ! zc - if gradmax is positive or zero, apply slope 
-                 ! limiting otherwise just print gradient warnings to 
+                 ! zc - if gradmax is positive or zero, apply slope
+                 ! limiting otherwise just print gradient warnings to
                  ! screen the first time the gradient is exceeded
                  IF(elemental_slope_limiter_grad_max(NM(IE,I))
      &               .GE.0D0)THEN
@@ -2806,7 +2796,7 @@ C               ENDIF
      &                      dEta2Mag,NM1,MyProc
                         WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,
      &                      MyProc
-                    ENDIF  
+                    ENDIF
                     ESLONOFF(NM(IE,I)) = 1 ! for output file
                     elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
                  ELSE
@@ -3012,8 +3002,7 @@ C
       USE NodalAttributes, ONLY :
      &     LoadGeoidOffset, GeoidOffset, EVM,
      &     TAU0VAR, HighResTimeVaryingTau0, FullDomainTimeVaryingTau0,
-     &     CalculateTimeVaryingTau0, LoadWSESmoother,
-     &     elevation_smoothing_timestep_increment,
+     &     CalculateTimeVaryingTau0,
      &     LoadEleSlopeLim,elemental_slope_limiter_active
 #ifdef CMPI
       USE MESSENGER
@@ -3078,7 +3067,7 @@ C
 C     jgf50.44: Added water surface elevation smoothing
       REAL(sz) :: EtaN1, ETaN2, EtaN3, AreaEle, EtaN123
       INTEGER :: IT_SmoothTime
-      REAL(sz), ALLOCATABLE, SAVE :: elevSum(:) ! used if wse smoother is active
+      REAL(sz), ALLOCATABLE, SAVE :: elevSum(:) ! used if elemental slope limiter is active
       LOGICAL, SAVE :: firstCall = .true.
 C
       REAL(SZ) HH1 !jgf46.02 Added for Katrina.
@@ -3089,7 +3078,7 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 C
-      IF ((LoadWSESmoother.eqv..true.).or.(LoadEleSlopeLim.eqv..true.)) THEN
+      IF (LoadEleSlopeLim.eqv..true.) THEN
          IF (firstCall.eqv..true.) THEN
             allocate(elevSum(mnp))
             firstCall = .false.
@@ -4097,12 +4086,12 @@ C     UPDATE ELEVATIONS
       CALL UPDATER(ETA2,DUMY1,DUMY2,1)
 #endif
 
-CSMOOTH...
-CSMOOTH...Once the elevations are computed, smooth them over the neighboring nodes
-CSMOOTH...GWCE_LV is used for temporary storage of the smoothed elevations
-CSMOOTH...
-      IF((LoadEleSlopeLim.eqv..true.).OR.
-     &      (LoadWSESmoother.eqv..true.))THEN
+C       ELEMENTAL SLOPE LIMITER
+C
+C        CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
+C        TIME STEP AND APPLY SMOOTHING IF DESIRED. -ZC
+
+      IF (LoadEleSlopeLim.eqv..true.) THEN
 C
          elevSum(:) = 0.d0
          DO IE=1,NE
@@ -4122,43 +4111,13 @@ C
             elevSum(NM2)=elevSum(NM2)+AreaEle*EtaN123
             elevSum(NM3)=elevSum(NM3)+AreaEle*EtaN123
          ENDDO
-C
-         IF (LoadWSESmoother.eqv..true.) THEN
-            DO I=1,NP
-               ! don't smooth the solution here if the time inc is zero
-               IF (elevation_smoothing_timestep_increment(I).ne.0) THEN
-                  IT_SmoothTime =
-     &            (IT/elevation_smoothing_timestep_increment(I))*
-     &             elevation_smoothing_timestep_increment(I)
-                  IF ((TotalArea(I).eq.0.).or.(IT_SmoothTime.ne.IT)) THEN
-                     ! if there is no associated area for this node, or
-                     ! this is not the right ts to smooth the solution
-                     ! here, go to the next node
-                     CYCLE
-                  ELSE
-                     ! otherwise, use the smoothed value of water surface elev
-                     Eta2(I)=elevSum(I)/TotalArea(I)
-                  ENDIF
-               ENDIF
-            ENDDO
-         ENDIF
-CSMOOTH...
-CSMOOTH...END SMOOTHING SECTION
-CSMOOTH...
 
-C       ELEMENTAL SLOPE LIMITER
-C
-C        CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
-C        TIME STEP AND APPLY SMOOTHING IF DESIRED. THIS ROUTINE PARALLELS THE
-C        ABOVE ROUTINE. -ZC
-         IF (LoadEleSlopeLim.EQV..true.) THEN
-            WHERE ((elemental_slope_limiter_active.eqv..true.).and.
-     &         (TotalArea.ne.0.d0))
-               Eta2 = elevSum / TotalArea
-            END WHERE
-         ENDIF
+         WHERE ((elemental_slope_limiter_active.eqv..true.).and.
+     &      (TotalArea.ne.0.d0))
+            Eta2 = elevSum / TotalArea
+         END WHERE
 
-C     IF EITHER OF THE SMOOTHING ROUTINES ARE ACTIVE, CALL UPDATER
+C     if elemental slope limiter is active in parallel, call updater
 #ifdef CMPI
          ! update boundaries with smoothed and/or slope limited elevations
          CALL UPDATER(ETA2,DUMY1,DUMY2,1)

@@ -2,31 +2,33 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
-C      v50.67  - 04/15/2012 - zc - Corrected the elemental slope limiter to 
-C                apply smoothing if fort.13 max gradient is set to zero
-C                instead of skipping the node. Also set so that a negative 
-C                fort.13 value triggers gradient warnings but no slope
-C                limiting
-C      v50.66  - 04/09/2012 - jgf - Corrected issue in reading NWS namelist
-C                that caused a compiler warning about out-of-block goto. 
-C      v50.65  - 04/09/2012 - jgf - Corrected issue with logging where all 
-C                subdomains were logging to an erroneous fulldomain fort.16.
-C      v50.64  - 04/08/2012 - jcd - Updated a few SWAN source files to reflect
-C                the latest changes by the SWAN developers.
-C      v50.63  - 04/07/2012 - zc - corrected the elemental slope limiter
-C                output statements so they only appear once per node instead of
-C                continuously until the gradient is below the threshold
-C      v50.62  - 04/07/2012 - zc - corrected my previous update to use -99999
-C                when a node is dry instead of what resides in eta2
-C      v50.61  - 04/05/2012 - zc - fixed a bug when writing the sparse format
-C                in the fort.69 debug file. Switched to full format for
-C                simplicity.
-C      v50.60  - 04/05/2012 - jgf - Merged newvortex branch revisions 705 to 760
-C                into the trunk (the newvortex branch was originally created 
-C                from v50.38 of the ADCIRC trunk). This merge contains the new
-C                NWS19 asymmetric vortex model, new aswip met preprocessing and
-C                analysis code, and new NWS15 hwind input capability. Detailed 
-C                changelog is shown below (v50.38.01 through v50.38.09):
+C  v50.68   - 04/15/2012 - jgf - Removed water surface elevation smoother
+C             nodal attribute. 
+C  v50.67   - 04/15/2012 - zc - Corrected the elemental slope limiter to 
+C             apply smoothing if fort.13 max gradient is set to zero
+C             instead of skipping the node. Also set so that a negative 
+C             fort.13 value triggers gradient warnings but no slope
+C             limiting
+C  v50.66   - 04/09/2012 - jgf - Corrected issue in reading NWS namelist
+C             that caused a compiler warning about out-of-block goto. 
+C  v50.65   - 04/09/2012 - jgf - Corrected issue with logging where all 
+C             subdomains were logging to an erroneous fulldomain fort.16.
+C  v50.64   - 04/08/2012 - jcd - Updated a few SWAN source files to reflect
+C             the latest changes by the SWAN developers.
+C  v50.63   - 04/07/2012 - zc - corrected the elemental slope limiter
+C             output statements so they only appear once per node instead of
+C             continuously until the gradient is below the threshold
+C  v50.62   - 04/07/2012 - zc - corrected my previous update to use -99999
+C             when a node is dry instead of what resides in eta2
+C  v50.61   - 04/05/2012 - zc - fixed a bug when writing the sparse format
+C             in the fort.69 debug file. Switched to full format for
+C             simplicity.
+C  v50.60   - 04/05/2012 - jgf - Merged newvortex branch revisions 705 to 760
+C             into the trunk (the newvortex branch was originally created 
+C             from v50.38 of the ADCIRC trunk). This merge contains the new
+C             NWS19 asymmetric vortex model, new aswip met preprocessing and
+C             analysis code, and new NWS15 hwind input capability. Detailed 
+C             changelog is shown below (v50.38.01 through v50.38.09):
 C     v50.38.09  04/05/2012 - jgf - Removed extraneous use of globaldir from
 C                aswip code.
 C     v50.38.08  04/05/2012 - jgf - Corrected calculation of wind magnitude
