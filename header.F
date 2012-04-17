@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.82.18  04/16/2012 - jgf - Applied fix from Kendra Dresback for 
+C             erroneous format in writeOutHarmonicArrays() subroutine
+C             that was causing phase values to be off by a factor of 10. 
 C  v49.82.17  02/29/2012 - jgf - Removed massbal.F from code and makefile;
 C             restored -i-dynamic compiler flag for intel to avoid
 C             feupdateenv error message. Added swan macros.inc for g95 compiler.

@@ -1,10 +1,10 @@
 C----------------------------------------------------------------------
-C                     W R I T E   O U T P U T . F  
+C                     W R I T E   O U T P U T . F
 C----------------------------------------------------------------------
-C jgf48.03 This file contains all the subroutines that write output to 
-C files. It was created to consolidate all the output routines that 
+C jgf48.03 This file contains all the subroutines that write output to
+C files. It was created to consolidate all the output routines that
 C were located in other parts of the code, to make it easier to incorporate
-C them into globalio, and to make it easier to add new output modes or 
+C them into globalio, and to make it easier to add new output modes or
 C formats in the future.
 C
 C tcm48.4618 Fixed Bug in writing out global elevation values that are
@@ -13,7 +13,7 @@ C----------------------------------------------------------------------
 
 
 C----------------------------------------------------------------------
-C       S U B R O U T I N E   W R I T E _ O U T P U T _ 2 D 
+C       S U B R O U T I N E   W R I T E _ O U T P U T _ 2 D
 C----------------------------------------------------------------------
 C
 C     R.L. 8/22/05 Subroutine to write primary 2D model output not
@@ -30,8 +30,8 @@ C----------------------------------------------------------------------
      &    open_minmax_file
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var
 #ifdef CMPI
-      USE WRITER, ONLY : WRITE_GBL_FILE_THROUGH_WRITER, 
-     $     FLUSH_WRITERS, WRITER_STOREONE, 
+      USE WRITER, ONLY : WRITE_GBL_FILE_THROUGH_WRITER,
+     $     FLUSH_WRITERS, WRITER_STOREONE,
      $     WRITER_STORETWO, WRITER_STORE63, WRITER_INIT
       USE MESSENGER, ONLY : msg_fini, msg_lbcast
 #endif
@@ -39,7 +39,7 @@ C----------------------------------------------------------------------
       USE NETCDFIO, ONLY : allocNetCDFArrays
 #endif
 
-      IMPLICIT NONE 
+      IMPLICIT NONE
       INTEGER, intent(in) :: IT
       REAL(8), intent(in) :: TimeLoc
 
@@ -54,7 +54,7 @@ C----------------------------------------------------------------------
       REAL(SZ) U11, U22, U33
       REAL(SZ) V11, V22, V33
       REAL(SZ) CIC11,CIC22,CIC33  ! v49.64.01 tcm -- added for ice
-C     
+C
       type(OutputDataDescript_t), SAVE :: ElevStaDescript
       type(OutputDataDescript_t), SAVE :: VelStaDescript
       type(OutputDataDescript_t), SAVE :: ElevDescript
@@ -77,18 +77,18 @@ C
 #ifdef CSWAN
 Casey 090302: Added this type for output of radiation stress gradients.
       type(OutputDataDescript_t), SAVE :: RSDescript
-#endif 
+#endif
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ET00_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: UU00_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: VV00_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: TAU0VAR_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMP00_g(:)     
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMU00_g(:)     
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMP00_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMU00_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RMV00_g(:)
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: Pr2_g(:)     
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNXOut_g(:)     
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: Pr2_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNXOut_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: WVNYOut_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CC00_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: CICEOut_g(:)  !tcm v49.64.01 added for ice
@@ -101,18 +101,18 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: sponge_g(:)
 #ifdef CSWAN
 Casey 090302: Added these arrays for output of radiation stress gradients.
-      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNXOut_g(:)     
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNXOut_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNYOut_g(:)
 #endif
       LOGICAL, dimension(8) :: netcdf_error
       LOGICAL, SAVE :: FirstCall = .true.
-      
+
       IF (FirstCall) THEN
 
          ! fort.61
 C         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(ET00_g(NSTAE_G)) 
+            ALLOCATE(ET00_g(NSTAE_G))
          ENDIF
          ElevStaDescript % specifier            = NOUTE
          ElevStaDescript % initial_value        = 0.0
@@ -128,7 +128,7 @@ C         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
          IF (ICS.eq.2) THEN
             ElevStaDescript % x_coord           => SLEL
             ElevStaDescript % y_coord           => SFEL
-         ELSE 
+         ELSE
             ElevStaDescript % x_coord           => XEL
             ElevStaDescript % y_coord           => YEL
          ENDIF
@@ -137,7 +137,7 @@ C         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
 C         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(UU00_g(NSTAV_G))
-            ALLOCATE(VV00_g(NSTAV_G)) 
+            ALLOCATE(VV00_g(NSTAV_G))
          ENDIF
          VelStaDescript % specifier            = NOUTV
          VelStaDescript % initial_value        = 0.0
@@ -155,7 +155,7 @@ C         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
          IF (ICS.eq.2) THEN
             VelStaDescript % x_coord           => SLEV
             VelStaDescript % y_coord           => SFEV
-         ELSE 
+         ELSE
             VelStaDescript % x_coord           => XEV
             VelStaDescript % y_coord           => YEV
          ENDIF
@@ -190,7 +190,7 @@ C         write(16,*) 'Allocating Tau0Descript' !jgfdebug48.03
          Tau0Descript % alternate_value      = 0.0
          Tau0Descript % field_name           = 'Tau0'
 
-         ! sponge layer 
+         ! sponge layer
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(sponge_g(NP_G))
          ENDIF
@@ -200,7 +200,7 @@ C         write(16,*) 'Allocating Tau0Descript' !jgfdebug48.03
          SpongeDescript % num_fd_records       = NP_G
          SpongeDescript % num_records_this     = NP
          SpongeDescript % imap                 => NODES_LG
-         SpongeDescript % array                => sponge 
+         SpongeDescript % array                => sponge
          SpongeDescript % array_g              => sponge_g
 
          ! fort.64
@@ -237,11 +237,11 @@ C         write(16,*) 'Allocating PrStaDescript' !jgfdebug48.03
          IF (ICS.eq.2) THEN
             PrStaDescript % x_coord           => SLEM
             PrStaDescript % y_coord           => SFEM
-         ELSE 
+         ELSE
             PrStaDescript % x_coord           => XEM
             PrStaDescript % y_coord           => YEM
          ENDIF
-     
+
          ! fort.72
 C         write(16,*) 'Allocating WindVelStaDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
@@ -264,7 +264,7 @@ C         write(16,*) 'Allocating WindVelStaDescript' !jgfdebug48.03
          IF (ICS.eq.2) THEN
             WindVelStaDescript % x_coord           => SLEM
             WindVelStaDescript % y_coord           => SFEM
-         ELSE 
+         ELSE
             WindVelStaDescript % x_coord           => XEM
             WindVelStaDescript % y_coord           => YEM
          ENDIF
@@ -290,7 +290,7 @@ C         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
 C         write(16,*) 'Allocating WindVelDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(WVNXOut_g(NP_G))
-            ALLOCATE(WVNYOut_g(NP_G)) 
+            ALLOCATE(WVNYOut_g(NP_G))
          ENDIF
          WindVelDescript % specifier            = NOUTGW
          WindVelDescript % initial_value        = 0.0
@@ -343,7 +343,7 @@ C         write(16,*) 'Allocating IceStaDescript'
          IF (ICS.eq.2) THEN
             IceStaDescript % x_coord           => SLEM
             IceStaDescript % y_coord           => SFEM
-         ELSE 
+         ELSE
             IceStaDescript % x_coord           => XEM
             IceStaDescript % y_coord           => YEM
          ENDIF
@@ -404,7 +404,7 @@ C         write(16,*) 'Allocating ConcDescript' !jgfdebug48.03
 
 C        maxele.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(ETAMAX_g(NP_G)) 
+            ALLOCATE(ETAMAX_g(NP_G))
          ENDIF
          EtaMaxDescript % specifier            = 1
          EtaMaxDescript % initial_value        = 0.0
@@ -422,9 +422,9 @@ C        maxele.63
          EtaMaxDescript % file_name            = 'maxele.63'
 C        maxvel.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(UMAX_g(NP_G)) 
+            ALLOCATE(UMAX_g(NP_G))
          ENDIF
-         UMaxDescript % specifier              = 1 
+         UMaxDescript % specifier              = 1
          UMaxDescript % initial_value          = 0.0
          UMaxDescript % num_items_per_record   = 1
          UMaxDescript % num_fd_records         = NP_G
@@ -440,12 +440,12 @@ C        maxvel.63
          UMaxDescript % file_name              = 'maxvel.63'
 C        prmin.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(PRMIN_g(NP_G)) 
+            ALLOCATE(PRMIN_g(NP_G))
          ENDIF
-         PrMinDescript % specifier             = 1 
+         PrMinDescript % specifier             = 1
          PrMinDescript % initial_value         = 0.0
          PrMinDescript % num_items_per_record  = 1
-         PrMinDescript % num_fd_records        = NP_G 
+         PrMinDescript % num_fd_records        = NP_G
          PrMinDescript % num_records_this      = NP
          PrMinDescript % imap                  => NODES_LG
          PrMinDescript % array                 => PRMIN
@@ -458,9 +458,9 @@ C        prmin.63
          PrMinDescript % file_name             = 'minpr.63'
 C        maxwvel.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(WVNOUTMAX_g(NP_G)) 
+            ALLOCATE(WVNOUTMAX_g(NP_G))
          ENDIF
-         WVMaxDescript % specifier             = 1 
+         WVMaxDescript % specifier             = 1
          WVMaxDescript % initial_value         = 0.0
          WVMaxDescript % num_items_per_record  = 1
          WVMaxDescript % num_fd_records        = NP_G
@@ -476,9 +476,9 @@ C        maxwvel.63
          WVMaxDescript % file_name             = 'maxwvel.63'
 C        maxrs.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(RSNMAX_g(NP_G)) 
+            ALLOCATE(RSNMAX_g(NP_G))
          ENDIF
-         RSMaxDescript % specifier             = 1 
+         RSMaxDescript % specifier             = 1
          RSMaxDescript % initial_value         = 0.0
          RSMaxDescript % num_items_per_record  = 1
          RSMaxDescript % num_fd_records        = NP_G
@@ -549,7 +549,7 @@ C           save elevation recording station data to file
 Casey 090302: Added file name.
             CALL writeOutArray(61, TimeLoc, IT, ElevStaDescript,
      &                         packOne, unpackOne, IESTP,
-     &                         'fort.61        ') 
+     &                         'fort.61        ')
 
 C            write(16,*) 'Finished with fort.61 output routine.' !jgfdebug48.03
             NSCOUE=0
@@ -560,7 +560,7 @@ C            write(16,*) 'Finished with fort.61 output routine.' !jgfdebug48.03
 C...  OUTPUT VELOCITY RECORDING STATION TIME SERIES INFORMATION IF
 C...  NOUTV<>0 AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
 C...  CALCULATE VELOCITY SOLUTIONS AT STATIONS USING INTERPOLATION
-C...  
+C...
       IF(NOUTV.NE.0) THEN
          IF((IT.GT.NTCYSV).AND.(IT.LE.NTCYFV)) THEN
              NSCOUV=NSCOUV+1
@@ -594,7 +594,7 @@ C            write(16,*) 'Finished with fort.62 output routine.' !jgfdebug48.03
 C...  OUTPUT CONCENTRATION RECORDING STATION INFORMATION IF NOUTC<>0
 C...  AND THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW CALCULATE
 C...  CONCENTRATION SOLUTIONS AT STATIONS USING INTERPOLATION
-C...  
+C...
       IF(NOUTC.NE.0) THEN
          IF((IT.GT.NTCYSC).AND.(IT.LE.NTCYFC)) NSCOUC=NSCOUC+1
          IF(NSCOUC.EQ.NSPOOLC) THEN
@@ -622,7 +622,7 @@ Casey 090302: Added file name.
             CALL writeOutArray(81, TimeLoc, IT, ConcStaDescript,
      &                         packOne, unpackOne, ICSTP,
      &                         'fort.81        ')
- 
+
 C            write(16,*) 'Finished with fort.81 output routine.' !jgfdebug48.03
             NSCOUC=0
          ENDIF
@@ -631,7 +631,7 @@ C            write(16,*) 'Finished with fort.81 output routine.' !jgfdebug48.03
 C...  OUTPUT METEOROLOGICAL RECORDING STATION INFORMATION IF NWS>0 AND
 C...  THE TIME STEP FALLS WITHIN THE SPECIFIED WINDOW CALCULATE
 C...  METEOROLOGICAL SOLUTIONS AT STATIONS USING INTERPOLATION
-C...  
+C...
       IF((NWS.NE.0).AND.(NOUTM.NE.0)) THEN
          IF((IT.GT.NTCYSM).AND.(IT.LE.NTCYFM)) THEN
             NSCOUM=NSCOUM+1
@@ -657,7 +657,7 @@ C            write(16,*) 'About to write fort.71,72 files.' !jgfdebug48.03
                RMP00(I)=P11*STAIM1(I)+P22*STAIM2(I)+P33*STAIM3(I)
             END DO
 C... v49.64.01 tcm -- added support for ice station output
-C           IF using ICE fields, collect ice station data fort.91  
+C           IF using ICE fields, collect ice station data fort.91
             IF (NCICE.NE.0) THEN
                DO I = 1,NSTAM
                   NM1=NM(NNM(I),1)
@@ -666,7 +666,7 @@ C           IF using ICE fields, collect ice station data fort.91
                   CIC11 = CICEOUT(NM1)
                   CIC22 = CICEOUT(NM2)
                   CIC33 = CICEOUT(NM3)
-                  RMICE00(I) = CIC11*STAIM1(I) + 
+                  RMICE00(I) = CIC11*STAIM1(I) +
      &                         CIC22*STAIM2(I)+CIC33*STAIM3(I)
                END DO
             ENDIF
@@ -683,12 +683,12 @@ Casey 090302: Added file name.
      &                         packTwo, unpackTwo, IWSTP,
      &                         'fort.72        ')
 c  V49.64.01 TCM -- ADDED ICE STATIONS
-C           save ice field recording station data to file 
+C           save ice field recording station data to file
             IF(NCICE.NE.0) THEN
                CALL writeOutArray(91, TimeLoc, IT, IceStaDescript,
      &                         packOne, unpackOne, IICESTP,
      &                         'fort.91        ')
-            ENDIF 
+            ENDIF
 
             NSCOUM=0
             NCCOUM=NSCOUM
@@ -696,7 +696,7 @@ C           save ice field recording station data to file
       ENDIF
 C...   OUTPUT GLOBAL ELEVATION DATA IF NOUTGE<>0 AND THE
 C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
-C...  
+C...
       IF(NOUTGE.NE.0) THEN
 !         IF(MYPROC.EQ.0) PRINT *, "W: NSCOUGE = ", NSCOUGE
 !         IF(MYPROC.EQ.0) PRINT *, "W: NSPOOLGE = ", NSPOOLGE
@@ -711,7 +711,7 @@ C...
 C
 Casey 090302: Added outer IF statement.
             IF((ABS(NOUTGE).EQ.1).OR.
-     &         (ABS(NOUTGE).EQ.2).OR. 
+     &         (ABS(NOUTGE).EQ.2).OR.
      &         (ABS(NOUTGE).EQ.3)) THEN
 C           save fulldomain elevation data to file
 Casey 090302: Added file name.
@@ -719,7 +719,7 @@ Casey 090302: Added file name.
      &                            pack63, unpackOne, IGEP,
      &                            'fort.63        ')
 C
-C              jgf47.06: Write out tau0 if it is time varying and the user has 
+C              jgf47.06: Write out tau0 if it is time varying and the user has
 C              requested it with tau0 = -4 in fort.15.
                IF (OUTPUTTAU0) THEN
 Casey 090302: Added file name.
@@ -728,19 +728,19 @@ Casey 090302: Added file name.
      &                               'fort.90        ')
                ENDIF
 C
-C           kmd48.33bc: Write out sponge layer so user can see which nodes 
+C           kmd48.33bc: Write out sponge layer so user can see which nodes
 C           are included in the sponge layer. Note only outputs if spongedist
-C           given in fort.15 is not equal to zero. 
+C           given in fort.15 is not equal to zero.
                IF ((OUTPUTSPONGE).AND.(countsponge.eq.1)) THEN
                   CALL writeOutArray(92, TimeLoc, IT, SpongeDescript,
      &                               packOne, unpackOne, IGEP,
-     &                               'fort.92        ') 
+     &                               'fort.92        ')
                   countsponge=countsponge + 1 ! only need to output once as it does not change with time
                ENDIF
 
 C          jgf47.08 Made sparse output an option (if NOUTGE=-4 or 4 in fort.15)
             ELSEIF(ABS(NOUTGE).EQ.4) THEN
-C              jgf47.08 Create compact output 
+C              jgf47.08 Create compact output
 C              jgf48.03 TODO: Make this globalio compliant.
 C              kmd - updated
 #ifdef CMPI
@@ -770,7 +770,7 @@ C           write(16,*) 'Finished with fort.63 output routine.' !jgfdebug48.03
 
 C...  OUTPUT GLOBAL VELOCITY DATA IF NOUTGV<>0 AND THE
 C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
-C...  
+C...
       IF(NOUTGV.NE.0) THEN
          IF((IT.GT.NTCYSGV).AND.(IT.LE.NTCYFGV)) THEN
             NSCOUGV=NSCOUGV+1
@@ -837,11 +837,11 @@ Casey 090302: Added file name.
      &                            packTwo, unpackTwo, IGWP,
      &                            'fort.74        ')
                IF (NCICE.NE.0) THEN
-C TCM V49.64.01 -- ADDED ICE SUPPORT 
+C TCM V49.64.01 -- ADDED ICE SUPPORT
 C           save global ICE data to file
                   CALL writeOutArray(93, TimeLoc, IT, IceDescript,
      &                         packOne, unpackOne, IGIP,
-     &                         'fort.93        ') 
+     &                         'fort.93        ')
                ENDIF
 
 #ifdef CSWAN
@@ -936,7 +936,7 @@ Casey 090302: Added these lines for output of radiation stresses.
 
 C...  OUTPUT GLOBAL CONCENTRATION DATA IF NOUTGC<>0 AND THE
 C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
-C...  
+C...
       IF(NOUTGC.NE.0) THEN
          IF((IT.GT.NTCYSGC).AND.(IT.LE.NTCYFGC)) NSCOUGC=NSCOUGC+1
          IF(NSCOUGC.EQ.NSPOOLGC) THEN
@@ -963,12 +963,12 @@ C...  Communicate writer processors and let them write out what
 C...  they have gotton.
       CALL FLUSH_WRITERS()
 #endif
-      
+
 
 Csb 11/11/2006
 C...   OUTPUT MAXIMUM/MINIMUM GLOBAL DATA AT THE LAST TIME STEP.
-C...  
-C     jgf48.4636 Updated to newer data structure, so that we can 
+C...
+C     jgf48.4636 Updated to newer data structure, so that we can
 C     compare with values from hot start, so that mins and maxes
 C     can be preserved across hot starts.
       IF(IT.EQ.NT) THEN
@@ -984,46 +984,46 @@ C     can be preserved across hot starts.
      &           NP_G, NP, HEADER_MAX)
          IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
             CALL writeOutArrayMinMax(963, TimeLoc, IT, EtaMaxDescript,
-     &           packOne, unpackOne,'cld') 
+     &           packOne, unpackOne,'cld')
             CALL writeOutArrayMinMax(963, TimeLoc, IT, UMaxDescript,
-     &           packOne, unpackOne, 'cld') 
+     &           packOne, unpackOne, 'cld')
             CALL writeOutArrayMinMax(963, TimeLoc, IT, PrMinDescript,
-     &           packOne, unpackOne, 'cld') 
+     &           packOne, unpackOne, 'cld')
             CALL writeOutArrayMinMax(963, TimeLoc, IT, WVMaxDescript,
-     &           packOne, unpackOne, 'cld') 
+     &           packOne, unpackOne, 'cld')
             CALL writeOutArrayMinMax(963, TimeLoc, IT, RSMaxDescript,
-     &           packOne, unpackOne, 'cld') 
+     &           packOne, unpackOne, 'cld')
          ELSE
             CALL writeOutArrayMinMax(963, TimeLoc, IT, EtaMaxDescript,
-     &           packOne, unpackOne,'max') 
+     &           packOne, unpackOne,'max')
             CALL writeOutArrayMinMax(963, TimeLoc, IT, UMaxDescript,
-     &           packOne, unpackOne, 'max') 
+     &           packOne, unpackOne, 'max')
             CALL writeOutArrayMinMax(963, TimeLoc, IT, PrMinDescript,
-     &           packOne, unpackOne, 'min') 
+     &           packOne, unpackOne, 'min')
             CALL writeOutArrayMinMax(963, TimeLoc, IT, WVMaxDescript,
-     &           packOne, unpackOne, 'max') 
+     &           packOne, unpackOne, 'max')
             CALL writeOutArrayMinMax(963, TimeLoc, IT, RSMaxDescript,
-     &           packOne, unpackOne, 'max') 
+     &           packOne, unpackOne, 'max')
          ENDIF
       ENDIF
 
       RETURN
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
- 2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3) 
+ 2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  2454 FORMAT(2X,I8,2(2X,1pE20.10E3))
 C-----------------------------------------------------------------------
       END SUBROUTINE WRITE_OUTPUT_2D
 C-----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
-C       S U B R O U T I N E   
-C          W R I T E  H A R M O N I C   A N A L Y S I S   O U T P U T 
+C       S U B R O U T I N E
+C          W R I T E  H A R M O N I C   A N A L Y S I S   O U T P U T
 C----------------------------------------------------------------------
 C     jgf49.44: Subroutine to write harmonic analysis output files
 C     in serial or in parallel using globalio.
 C----------------------------------------------------------------------
       SUBROUTINE writeHarmonicAnalysisOutput(ITIME)
-      USE SIZES, ONLY : SZ, MNHARF, LOCALDIR, GLOBALDIR, 
+      USE SIZES, ONLY : SZ, MNHARF, LOCALDIR, GLOBALDIR,
      &                  WRITE_LOCAL_FILES
       USE GLOBAL, ONLY : OutputDataDescript_t, myProc, MNPROC, NSTAE_G,
      &                   NOUTE, NSTAE, IMAP_STAE_LG, ICS, SLEL,
@@ -1031,7 +1031,7 @@ C----------------------------------------------------------------------
      &                   IMAP_STAV_LG, SLEV, XEV, SFEV,
      &                   YEV, NP_G, NP, NODES_LG, screen, DEBUG,
      &                   setMessageSource, unsetMessageSource
-      USE GLOBAL_IO, ONLY: 
+      USE GLOBAL_IO, ONLY:
      &    open_gbl_file, write_gbl_file, collectFullDomainArray,
      &    packOne, unpackOne, packTwo, unpackTwo, packMbyNP, unpackMbyNP
       USE HARM, ONLY :
@@ -1046,10 +1046,10 @@ C----------------------------------------------------------------------
       USE MESSENGER, ONLY : msg_fini, msg_lbcast
 #endif
 
-      IMPLICIT NONE 
+      IMPLICIT NONE
       INTEGER I, J, N                      !local loop counters
       INTEGER, intent(in) :: ITIME  !tcm v49.64.02 added
-C     
+C
       type(OutputDataDescript_t), SAVE :: HAElevStaMagDescript
       type(OutputDataDescript_t), SAVE :: HAElevStaPhaseDescript
 C
@@ -1071,17 +1071,17 @@ C
       type(OutputDataDescript_t), SAVE :: dummyDescript
 C
 C     Fulldomain Stations in parallel:
-      REAL(SZ), ALLOCATABLE, TARGET :: EMAG_g(:,:)    ! elevation magnitudes 
+      REAL(SZ), ALLOCATABLE, TARGET :: EMAG_g(:,:)    ! elevation magnitudes
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDE_g(:,:) ! elevation phases
       REAL(SZ), ALLOCATABLE, TARGET :: UMAG_g(:,:)    ! u velocity magnitudes
       REAL(SZ), ALLOCATABLE, TARGET :: VMAG_g(:,:)    ! v velocity magnitudes
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDU_g(:,:) ! u velocity phases
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDV_g(:,:) ! v velocity phases
 C     Fulldomain Nodes in parallel:
-      REAL(SZ), ALLOCATABLE, TARGET :: EMAGT_g(:,:)    ! elevation magnitudes 
+      REAL(SZ), ALLOCATABLE, TARGET :: EMAGT_g(:,:)    ! elevation magnitudes
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDEN_g(:,:) ! elevation phases
-      REAL(SZ), ALLOCATABLE, TARGET :: UMAGT_g(:,:)    ! u velocity magnitudes 
-      REAL(SZ), ALLOCATABLE, TARGET :: VMAGT_g(:,:)    ! v velocity magnitudes 
+      REAL(SZ), ALLOCATABLE, TARGET :: UMAGT_g(:,:)    ! u velocity magnitudes
+      REAL(SZ), ALLOCATABLE, TARGET :: VMAGT_g(:,:)    ! v velocity magnitudes
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDUT_g(:,:) ! u velocity phases
       REAL(SZ), ALLOCATABLE, TARGET :: PHASEDVT_g(:,:) ! v velocity phases
 C     Fulldomain Time means and variance calculation in parallel:
@@ -1107,7 +1107,7 @@ C
       call screen(DEBUG,"Enter.")
 #endif
       ! JUST RETURN if harmonic analysis was not specified
-      ! tcm v49.64.02 -added itime le ithas to be 
+      ! tcm v49.64.02 -added itime le ithas to be
       ! consistent with what is in solveHarmonicAnalysis
       IF ((IHARIND.eq.0).or.(ITIME.LE.ITHAS)) THEN
 #ifdef WRITE_OUTPUT_TRACE
@@ -1116,15 +1116,15 @@ C
          RETURN
       ENDIF
 C
-C     This subroutine should only be called once, at the end of a run, so 
-C     a check of FirstCall is not necessary. However, we'll still do it, in 
+C     This subroutine should only be called once, at the end of a run, so
+C     a check of FirstCall is not necessary. However, we'll still do it, in
 C     case the subroutine is ever called more than once in some future
-C     scenario. 
+C     scenario.
       IF (FirstCall) THEN
          IF (NHASE.ne.0) THEN
             ! fort.51 magnitude
             IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-              ALLOCATE(EMAG_g(MNHARF,NSTAE_G)) 
+              ALLOCATE(EMAG_g(MNHARF,NSTAE_G))
             ENDIF
             HAElevStaMagDescript % specifier            = NHASE
             HAElevStaMagDescript % initial_value        = 0.0
@@ -1139,13 +1139,13 @@ C     scenario.
             IF (ICS.eq.2) THEN
                HAElevStaMagDescript % x_coord           => SLEL
                HAElevStaMagDescript % y_coord           => SFEL
-            ELSE 
+            ELSE
                HAElevStaMagDescript % x_coord           => XEL
                HAElevStaMagDescript % y_coord           => YEL
             ENDIF
             ! fort.51 phase
             IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(PHASEDE_g(MNHARF,NSTAE_G)) 
+               ALLOCATE(PHASEDE_g(MNHARF,NSTAE_G))
             ENDIF
             HAElevStaPhaseDescript % specifier            = NHASE
             HAElevStaPhaseDescript % initial_value        = 0.0
@@ -1160,7 +1160,7 @@ C     scenario.
             IF (ICS.eq.2) THEN
                HAElevStaPhaseDescript % x_coord           => SLEL
                HAElevStaPhaseDescript % y_coord           => SFEL
-            ELSE 
+            ELSE
                HAElevStaPhaseDescript % x_coord           => XEL
                HAElevStaPhaseDescript % y_coord           => YEL
             ENDIF
@@ -1186,7 +1186,7 @@ C
             IF (ICS.eq.2) THEN
                HAVelStaUMagDescript % x_coord           => SLEV
                HAVelStaUMagDescript % y_coord           => SFEV
-            ELSE 
+            ELSE
                HAVelStaUMagDescript % x_coord           => XEV
                HAVelStaUMagDescript % y_coord           => YEV
             ENDIF
@@ -1208,7 +1208,7 @@ C
             IF (ICS.eq.2) THEN
                HAVelStaVMagDescript % x_coord           => SLEV
                HAVelStaVMagDescript % y_coord           => SFEV
-            ELSE 
+            ELSE
                HAVelStaVMagDescript % x_coord           => XEV
                HAVelStaVMagDescript % y_coord           => YEV
             ENDIF
@@ -1230,7 +1230,7 @@ C
             IF (ICS.eq.2) THEN
                HAVelStaUPhaseDescript % x_coord           => SLEV
                HAVelStaUPhaseDescript % y_coord           => SFEV
-            ELSE 
+            ELSE
                HAVelStaUPhaseDescript % x_coord           => XEV
                HAVelStaUPhaseDescript % y_coord           => YEV
             ENDIF
@@ -1252,7 +1252,7 @@ C
             IF (ICS.eq.2) THEN
                HAVelStaVPhaseDescript % x_coord           => SLEV
                HAVelStaVPhaseDescript % y_coord           => SFEV
-            ELSE 
+            ELSE
                HAVelStaVPhaseDescript % x_coord           => XEV
                HAVelStaVPhaseDescript % y_coord           => YEV
             ENDIF
@@ -1357,7 +1357,7 @@ C
             HAVelVPhaseDescript % alternate_value      = -99999.0
             HAVelVPhaseDescript % field_name           = 'HAVelVPhase'
          ENDIF
-C         
+C
 C        ! fort.55 means and variance calculations
 
 C        ! fort.55 will use the same output format (ascii, netcdf, etc)
@@ -1388,7 +1388,7 @@ C        ! as the full domain elevation harmonic analysis file (fort.53)
 C
 C     Collect fulldomain data if running in parallel.
 #ifdef CMPI
-      IF (NHASE.ne.0) THEN 
+      IF (NHASE.ne.0) THEN
          CALL collectFullDomainArray(HAElevStaMagDescript,
      &             packMbyNP, unpackMbyNP)
          CALL collectFullDomainArray(HAElevStaPhaseDescript,
@@ -1476,7 +1476,7 @@ C     Collect fulldomain data if running in parallel.
       ENDIF
 #endif
 c
-c     Now write data to file; format according to the file type specifier.  
+c     Now write data to file; format according to the file type specifier.
 C
 c     Harmonic analysis at elevation stations (fort.51).
       call writeOutHarmonicArrays(51, 1, HAElevStaMagDescript,
@@ -1497,7 +1497,7 @@ C     Means and variance calculations, if specified (fort.55).
       if ((CHARMV.eqv..true.).and.(FMV.gt.1.0d-3)) then
          IF ((MNPROC.gt.1).and.(MyProc.eq.0)
      &        .and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
-            OPEN(55,FILE=TRIM(GLOBALDIR)//'/'//'fort.55', 
+            OPEN(55,FILE=TRIM(GLOBALDIR)//'/'//'fort.55',
      &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
             WRITE(55,*) NP_G
             DO n=1,NP_G
@@ -1515,7 +1515,7 @@ C     Means and variance calculations, if specified (fort.55).
             CLOSE(55)
          ENDIF
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
-            OPEN(55,FILE=TRIM(LOCALDIR)//'/'//'fort.55', 
+            OPEN(55,FILE=TRIM(LOCALDIR)//'/'//'fort.55',
      &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
             WRITE(55,*) NP
             DO n=1,NP
@@ -1545,8 +1545,8 @@ C-----------------------------------------------------------------------
 
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E   
-C            W R I T E   O U T   H A R M O N I C  A R R A Y S  
+C     S U B R O U T I N E
+C            W R I T E   O U T   H A R M O N I C  A R R A Y S
 C-----------------------------------------------------------------------
 C     jgf49.44 Writes the harmonic arrays in output files of the desired
 C     format. Only ascii is supported at this point.
@@ -1594,12 +1594,12 @@ C     write data according to format specifier from fort.15 (e.g., NHASE)
                write(lun,*) N
                do i=1,nfreq+nf
                   if (sets.eq.2) then
-                     write(lun,6636) mag1%array2D_g(i,n), 
+                     write(lun,6636) mag1%array2D_g(i,n),
      &                               ph1%array2D_g(i,n),
-     &                               mag2%array2D_g(i,n), 
+     &                               mag2%array2D_g(i,n),
      &                               ph2%array2D_g(i,n)
                   else
-                     write(lun,6635) mag1%array2D_g(i,n), 
+                     write(lun,6635) mag1%array2D_g(i,n),
      &                               ph1%array2D_g(i,n)
                   endif
                enddo
@@ -1619,12 +1619,12 @@ C
                write(lun,*) N
                do i=1,nfreq+nf
                   if (sets.eq.2) then
-                     write(lun,6636) mag1%array2D(i,n), 
+                     write(lun,6636) mag1%array2D(i,n),
      &                               ph1%array2D(i,n),
-     &                               mag2%array2D(i,n), 
+     &                               mag2%array2D(i,n),
      &                               ph2%array2D(i,n)
                   else
-                     write(lun,6635) mag1%array2D(i,n), 
+                     write(lun,6635) mag1%array2D(i,n),
      &                               ph1%array2D(i,n)
                   endif
                enddo
@@ -1632,7 +1632,7 @@ C
             CLOSE(lun)
          ENDIF
       CASE(3)
-         write(*,*) 
+         write(*,*)
      & "ERROR: Harmonic analysis output is not yet available in NetCDF."
       CASE DEFAULT
         write(*,*)
@@ -1641,8 +1641,8 @@ C
       END SELECT
 
  2    FORMAT(I2)
- 6635 format(2x,1pe16.8E3,1x,f11.4)
- 6636 format(2x,1pe16.8E3,1x,f11.4,2x,1pe16.8E3,1x,f11.4)
+ 6635 format(2x,1pe16.8E3,1x,0pf11.4)
+ 6636 format(2x,1pe16.8E3,1x,0pf11.4,2x,1pe16.8E3,1x,0pf11.4)
  3679 format(1x,1pe20.10E3,1x,f10.7,1x,f12.8,1x,a10)
 #ifdef WRITE_OUTPUT_TRACE
       call screen(DEBUG,"Return.")
@@ -1653,7 +1653,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
-C       S U B R O U T I N E   I N I T   O U T P U T   3 D  
+C       S U B R O U T I N E   I N I T   O U T P U T   3 D
 C----------------------------------------------------------------------
 C     jgf49.43.19:  Subroutine to initialize ascii or nonportable binary
 C     output for a 3D run.
@@ -1669,7 +1669,7 @@ C----------------------------------------------------------------------
       IMPLICIT NONE
 C
       INTEGER, intent(in) :: lun       ! ADCIRC logical unit number
-      INTEGER , intent(in):: specifier ! format and append behavior 
+      INTEGER , intent(in):: specifier ! format and append behavior
       INTEGER, intent(in) :: nset      ! number of output data sets in the file
       INTEGER, intent(in) :: nPerSet   ! num of stations/nodes in each data set
       INTEGER, intent(in) :: nPerSet_g ! full domain num of stations/nodes
@@ -1683,7 +1683,7 @@ C
 C
       ios=0
 C
-C     form file name from lun  
+C     form file name from lun
       fn(1:5) = 'fort.'
       WRITE(fn(6:7),'(I2)') lun
 C
@@ -1729,7 +1729,7 @@ C
             ENDIF
             ENDFILE(lun,IOSTAT=ios,ERR=789)
             ! jgf49.59 The gfortran compiler complains when we write an
-            ! end-of-file record at the end of the file. Sheesh. 
+            ! end-of-file record at the end of the file. Sheesh.
 789         IF (ios.lt.0) THEN
                CALL logMessage(DEBUG,"End of output file reached.")! no big deal
             ELSE IF (ios.gt.0) THEN
@@ -1753,7 +1753,7 @@ C
             ENDIF
             ENDFILE(lun,IOSTAT=ios,ERR=987)
             ! jgf49.59 The gfortran compiler complains when we write an
-            ! end-of-file record at the end of the file. Sheesh. 
+            ! end-of-file record at the end of the file. Sheesh.
 987         IF (ios.lt.0) THEN
                CALL logMessage(DEBUG,"End of output file reached.")! no big deal
             ELSE IF (ios.gt.0) THEN
@@ -1824,34 +1824,34 @@ C----------------------------------------------------------------------
 
 
 C********************************************************
-C  Subroutine to generate 3D Model Output 
-C                                        
-C                          
-C  Note, the FORM='FORMATTED' field in the binary open statements 
-C  means that the record length (RECL) is specified in bytes.  
-C  If this field is omitted, the record length must be specified 
-C  in 4 byte words. 
-C                   
-C  r.l.  8/23/2005      
+C  Subroutine to generate 3D Model Output
+C
+C
+C  Note, the FORM='FORMATTED' field in the binary open statements
+C  means that the record length (RECL) is specified in bytes.
+C  If this field is omitted, the record length must be specified
+C  in 4 byte words.
+C
+C  r.l.  8/23/2005
 C*********************************************************
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E   W R I T E  O U T P U T  3 D  
+C     S U B R O U T I N E   W R I T E  O U T P U T  3 D
 C-----------------------------------------------------------------------
-C     jgf48.11 Moved from vsmy.F to write_output.F. 
+C     jgf48.11 Moved from vsmy.F to write_output.F.
 C     jgf49.43 Rewrote for globalio.
 C-----------------------------------------------------------------------
       SUBROUTINE writeOutput3D(TimeLoc,IT)
-      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, 
+      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC,
      &    WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
       USE GLOBAL, ONLY : ScreenUnit, BCFLAG_TEMP, scratchMessage,
      &    DEBUG, INFO, WARNING, ERROR, screen, setMessageSource,
      &    unsetMessageSource, allMessage, OutputDataDescript_t,
      &    NP_G, NODES_LG
-      USE GLOBAL_3DVS 
+      USE GLOBAL_3DVS
       USE GLOBAL_IO, ONLY: packNPbyM, unpackNPbyM,
      &    collectFullDomainArray, packOne, unpackOne
 #ifdef NETCDF
-       USE NodalAttributes, ONLY : 
+       USE NodalAttributes, ONLY :
      &     nolibf, nwp, tau0, cf, eslm
        USE NetCDFIO, ONLY : allocNetCDFArrays, allocNetCDFArrays3D,
      &     writeOutArrayNetCDF, writeOutArrayNetCDF3D
@@ -1859,7 +1859,7 @@ C-----------------------------------------------------------------------
 #ifdef CMPI
        USE MESSENGER, ONLY : msg_lbcast, msg_fini
 #endif
-      IMPLICIT NONE 
+      IMPLICIT NONE
       INTEGER, intent(in) :: IT
       REAL(8), intent(in) :: TimeLoc
 
@@ -1893,7 +1893,7 @@ C
       type(OutputDataDescript_t), save :: Q20Descript
       type(OutputDataDescript_t), save :: LDescript
       type(OutputDataDescript_t), save :: EVDescript
-C 
+C
 C     parts of complex variables
       REAL(SZ), ALLOCATABLE, TARGET, SAVE :: rp(:,:) !real part subdomain data
       REAL(SZ), ALLOCATABLE, TARGET, SAVE :: ip(:,:) !imaginary part subdom dat
@@ -1904,15 +1904,15 @@ C     parts of complex variables
       REAL(SZ), ALLOCATABLE, TARGET, SAVE :: rpSta_g(:,:) !real part fd sta
       REAL(SZ), ALLOCATABLE, TARGET, SAVE :: ipSta_g(:,:) !im part fd sta
 C
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: qsurfkp1_g(:) 
+      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: qsurfkp1_g(:)
 C
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: q20Sta_g(:,:) 
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: lSta_g(:,:) 
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: EVSta_g(:,:) 
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: SigTSta_g(:,:) 
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: SalSta_g(:,:) 
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: TempSta_g(:,:) 
-      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: WZSta_g(:,:) 
+      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: q20Sta_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: lSta_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: EVSta_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: SigTSta_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: SalSta_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: TempSta_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET, SAVE :: WZSta_g(:,:)
 C
       call setMessageSource("write_output_3D")
 #ifdef WRITE_OUTPUT_TRACE
@@ -1927,7 +1927,7 @@ C
       IF (FirstCall.eqv..true.) THEN
          ALLOCATE(rp(NP,NFEN),ip(NP,NFEN))
          ALLOCATE(rpSta(NSTA3DV,NFEN),ipSta(NSTA3DV,NFEN))
-C 
+C
          SigTStaDescript % specifier            =  I3DSD
          SigTStaDescript % initial_value        =  0.0
          SigTStaDescript % num_items_per_record =  NFEN
@@ -1942,7 +1942,7 @@ C
          IF (ICS.eq.2) THEN
             SigTStaDescript % x_coord           => SLED
             SigTStaDescript % y_coord           => SFED
-         ELSE 
+         ELSE
             SigTStaDescript % x_coord           => XED
             SigTStaDescript % y_coord           => YED
          ENDIF
@@ -1961,7 +1961,7 @@ C
          IF (ICS.eq.2) THEN
             SalStaDescript % x_coord           => SLED
             SalStaDescript % y_coord           => SFED
-         ELSE 
+         ELSE
             SalStaDescript % x_coord           => XED
             SalStaDescript % y_coord           => YED
          ENDIF
@@ -1980,7 +1980,7 @@ C
          IF (ICS.eq.2) THEN
             TempStaDescript % x_coord           => SLED
             TempStaDescript % y_coord           => SFED
-         ELSE 
+         ELSE
             TempStaDescript % x_coord           => XED
             TempStaDescript % y_coord           => YED
          ENDIF
@@ -1999,7 +1999,7 @@ C
          IF (ICS.eq.2) THEN
             RealQStaDescript % x_coord           => SLE3DV
             RealQStaDescript % y_coord           => SFE3DV
-         ELSE 
+         ELSE
             RealQStaDescript % x_coord           => XE3DV
             RealQStaDescript % y_coord           => YE3DV
          ENDIF
@@ -2018,7 +2018,7 @@ C
          IF (ICS.eq.2) THEN
             ImaginaryQStaDescript % x_coord           => SLE3DV
             ImaginaryQStaDescript % y_coord           => SFE3DV
-         ELSE 
+         ELSE
             ImaginaryQStaDescript % x_coord           => XE3DV
             ImaginaryQStaDescript % y_coord           => YE3DV
          ENDIF
@@ -2037,7 +2037,7 @@ C
          IF (ICS.eq.2) THEN
             WZStaDescript % x_coord           => SLE3DV
             WZStaDescript % y_coord           => SFE3DV
-         ELSE 
+         ELSE
             WZStaDescript % x_coord           => XE3DV
             WZStaDescript % y_coord           => YE3DV
          ENDIF
@@ -2056,7 +2056,7 @@ C
          IF (ICS.eq.2) THEN
             Q20StaDescript % x_coord           => SLET
             Q20StaDescript % y_coord           => SFET
-         ELSE 
+         ELSE
             Q20StaDescript % x_coord           => XET
             Q20StaDescript % y_coord           => YET
          ENDIF
@@ -2075,7 +2075,7 @@ C
          IF (ICS.eq.2) THEN
             LStaDescript % x_coord           => SLET
             LStaDescript % y_coord           => SFET
-         ELSE 
+         ELSE
             LStaDescript % x_coord           => XET
             LStaDescript % y_coord           => YET
          ENDIF
@@ -2094,7 +2094,7 @@ C
          IF (ICS.eq.2) THEN
             EVStaDescript % x_coord           => SLET
             EVStaDescript % y_coord           => SFET
-         ELSE 
+         ELSE
             EVStaDescript % x_coord           => XET
             EVStaDescript % y_coord           => YET
          ENDIF
@@ -2226,20 +2226,20 @@ C
          IF (myProc.eq.0) THEN
             CALL allocNetCDFArrays3D(41, SigTStaDescript,
      &           SalStaDescript, TempStaDescript, netcdf_error(1))
-            CALL allocNetCDFArrays3D(42, RealQStaDescript, 
+            CALL allocNetCDFArrays3D(42, RealQStaDescript,
      &           ImaginaryQStaDescript, WZStaDescript, netcdf_error(1))
-            CALL allocNetCDFArrays3D(43, Q20StaDescript, 
+            CALL allocNetCDFArrays3D(43, Q20StaDescript,
      &           LStaDescript, EVStaDescript, netcdf_error(1))
-            CALL allocNetCDFArrays3D(44, SigTDescript, 
+            CALL allocNetCDFArrays3D(44, SigTDescript,
      &           SalDescript, TempDescript, netcdf_error(1))
-            CALL allocNetCDFArrays3D(45, RealQDescript, 
+            CALL allocNetCDFArrays3D(45, RealQDescript,
      &           ImaginaryQDescript, WZDescript, netcdf_error(1))
-            CALL allocNetCDFArrays3D(46, Q20Descript, 
+            CALL allocNetCDFArrays3D(46, Q20Descript,
      &           LDescript, EVDescript, netcdf_error(1))
             CALL allocNetCDFArrays(47, QSurfKp1Descript,
      &           netcdf_error(1))
          ENDIF
-#ifdef CMPI 
+#ifdef CMPI
          CALL msg_lbcast(netcdf_error,8)
          DO i=1,8
             IF (netcdf_error(i).eqv..true.) THEN
@@ -2254,17 +2254,17 @@ C
 C
 C.... 3D Density, Temperature, Salinity Station Output (Unit 41)
 C
-      IF(I3DSD.NE.0) THEN 
+      IF(I3DSD.NE.0) THEN
 C        Check to see if it is time to generate 3D station density output.
          IF((IT.GT.NTO3DSDS).AND.(IT.LE.NTO3DSDF)) N3DSD=N3DSD+1
-         IF(N3DSD.EQ.NSpo3DSD) THEN 
+         IF(N3DSD.EQ.NSpo3DSD) THEN
 C           Process each station
             DO NN=1,NSta3DD
 C              Interpolate to station locations
                NEle=NE3DD(NN)
                N1=NM(NEle,1)
                N2=NM(NEle,2)
-               N3=NM(NEle,3)               
+               N3=NM(NEle,3)
                DO k=1,NFEN
                   SigTSta(NN,k)=SigT(N1,k)*StaI3DD1(NN)
      &              +SigT(N2,k)*StaI3DD2(NN)+SigT(N3,k)*StaI3DD3(NN)
@@ -2319,16 +2319,16 @@ C              Interpolate to station locations
      &                            ACCESS='SEQUENTIAL',POSITION='APPEND')
 C                 Write time header into file
                   SELECT CASE(ABS(IDEN))
-                  CASE(1) 
+                  CASE(1)
                      WRITE(41,1100) TimeLoc,IT,(Sigma(k),k=1,NFEN-1)
                      I3DSDRec=I3DSDRec+1
                      DO NN=1,NSta3DD
-                        WRITE(41,1104) NN,(SigTSta(NN,k),k=1,NFEN)  
+                        WRITE(41,1104) NN,(SigTSta(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
-                  CASE(2) 
+                  CASE(2)
                      WRITE(41,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                               k=1,NFEN-1),Sigma(NFEN)            
+     &                               k=1,NFEN-1),Sigma(NFEN)
                      I3DSDRec=I3DSDRec+1
                      DO NN=1,NSta3DD
                         WRITE(41,1104) NN,
@@ -2344,7 +2344,7 @@ C                 Write time header into file
      &                     (SigTSta(NN,k),TempSta(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
-                  CASE(4) 
+                  CASE(4)
                      WRITE(41,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
      &                      Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                      I3DSDRec=I3DSDRec+1
@@ -2352,7 +2352,7 @@ C                 Write time header into file
                         WRITE(41,1104) NN,(SigTSta(NN,k),
      &                      SalSta(NN,k),TempSta(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
-                     END DO 
+                     END DO
                   CASE DEFAULT
                      CALL allMessage(WARNING,
      &                 "IDEN is not +/- 0 to 4 and is invalid.")
@@ -2365,16 +2365,16 @@ C                 Write time header into file
      &                            ACCESS='SEQUENTIAL',POSITION='APPEND')
 C                 Write time header into file
                   SELECT CASE(ABS(IDEN))
-                  CASE(1) 
+                  CASE(1)
                      WRITE(41,1100) TimeLoc,IT,(Sigma(k),k=1,NFEN-1)
                      I3DSDRec=I3DSDRec+1
                      DO NN=1,NSta3DD_G
-                        WRITE(41,1104) NN,(SigTSta_g(NN,k),k=1,NFEN)  
+                        WRITE(41,1104) NN,(SigTSta_g(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
-                  CASE(2) 
+                  CASE(2)
                      WRITE(41,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                               k=1,NFEN-1),Sigma(NFEN)            
+     &                               k=1,NFEN-1),Sigma(NFEN)
                      I3DSDRec=I3DSDRec+1
                      DO NN=1,NSta3DD_G
                         WRITE(41,1104) NN,
@@ -2390,7 +2390,7 @@ C                 Write time header into file
      &                     (SigTSta_g(NN,k),TempSta_g(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
                      END DO
-                  CASE(4) 
+                  CASE(4)
                      WRITE(41,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
      &                      Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                      I3DSDRec=I3DSDRec+1
@@ -2398,7 +2398,7 @@ C                 Write time header into file
                         WRITE(41,1104) NN,(SigTSta_g(NN,k),
      &                      SalSta_g(NN,k),TempSta_g(NN,k),k=1,NFEN)
                         I3DSDRec=I3DSDRec+1
-                     END DO 
+                     END DO
                   CASE DEFAULT
                      CALL allMessage(WARNING,
      &                 "IDEN is not +/- 0 to 4 and is invalid.")
@@ -2416,7 +2416,7 @@ C              Write station output
                   I3DSDRec=I3DSDRec+1
                   DO k=1,NFEN
                      SELECT CASE(ABS(IDEN))
-                     CASE(1)        
+                     CASE(1)
                         WRITE(41,REC=I3DSDRec+1) SigTSta(NN,k)
                         I3DSDRec=I3DSDRec+1
                      CASE(2)
@@ -2476,7 +2476,7 @@ C
       IF(I3DSV.NE.0) THEN
 C        Check to see if it is time to generate 3D station velocity output.
          IF((IT.GT.NTO3DSVS).AND.(IT.LE.NTO3DSVF)) N3DSV=N3DSV+1
-         IF(N3DSV.EQ.NSpo3DSV) THEN 
+         IF(N3DSV.EQ.NSpo3DSV) THEN
 C           Process each station
             DO NN=1,NSta3DV
 C              Interpolate to station locations
@@ -2529,7 +2529,7 @@ C                 Write time header into file
                      I3DSVRec=I3DSVRec+1
                   ENDDO
                   CLOSE(42)
-               ENDIF 
+               ENDIF
                IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.).AND.
      &             (myProc.eq.0)) THEN
                   OPEN(42,FILE=TRIM(GLOBALDIR)//'/'//'fort.42',
@@ -2544,7 +2544,7 @@ C                 Write time header into file
                      I3DSVRec=I3DSVRec+1
                   ENDDO
                   CLOSE(42)
-               ENDIF 
+               ENDIF
             CASE(2) !BINARY FORMAT
                OPEN(42,FILE=TRIM(LOCALDIR)//'/'//'fort.42',
      &            ACCESS='DIRECT', RECL=NByte)
@@ -2565,7 +2565,7 @@ C                 Write time header into file
             CASE(3) ! netcdf
 #ifdef NETCDF
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF3D(42, TimeLoc, it, 
+                  CALL writeOutArrayNetCDF3D(42, TimeLoc, it,
      &               RealQStaDescript,ImaginaryQStaDescript,
      &               WZStaDescript)
                ENDIF
@@ -2573,7 +2573,7 @@ C                 Write time header into file
             CASE DEFAULT
                CALL allMessage(ERROR,
      &            "ABS(I3DSV) must be either 0, 1, or 2.")
-            END SELECT         
+            END SELECT
             N3DSV=0
             ! deallocate memory for globalio.
             IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.).AND.
@@ -2589,9 +2589,9 @@ C
       IF(I3DST.NE.0) THEN
 C        Check to see if it is time to generate 3D station turbulence output.
          IF ((IT.GT.NTO3DSTS).AND.(IT.LE.NTO3DSTF)) N3DST=N3DST+1
-         IF (N3DST.EQ.NSpo3DST) THEN 
+         IF (N3DST.EQ.NSpo3DST) THEN
 C           Process each station
-            DO NN=1,NSta3DT     
+            DO NN=1,NSta3DT
 C              Interpolate to station locations
                NEle=NE3DT(NN)
                N1=NM(NEle,1)
@@ -2633,8 +2633,8 @@ C                 Write time header into file
                   WRITE(43,1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
      &                k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                   I3DSTRec=I3DSTRec+1
-                  DO NN=1,NSta3DT     
-                     WRITE(43,1104) 
+                  DO NN=1,NSta3DT
+                     WRITE(43,1104)
      &                 NN,(q20Sta(NN,k),lSta(NN,k),EVSta(NN,k),k=1,NFEN)
                      I3DSTRec=I3DSTRec+1
                   END DO
@@ -2648,7 +2648,7 @@ C                 Write time header into file
                   WRITE(43,1100) TimeLoc,IT,(Sigma(k),Sigma(k),Sigma(k),
      &                k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                   I3DSTRec=I3DSTRec+1
-                  DO NN=1,NSta3DT_G     
+                  DO NN=1,NSta3DT_G
                      WRITE(43,1104) NN,(q20Sta_g(NN,k),lSta_g(NN,k),
      &                  EVSta_g(NN,k),k=1,NFEN)
                      I3DSTRec=I3DSTRec+1
@@ -2661,7 +2661,7 @@ C                 Write time header into file
                WRITE(43,REC=I3DSTRec+1) TimeLoc
                WRITE(43,REC=I3DSTRec+2) IT
                I3DSTRec=I3DSTRec+2
-               DO NN=1,NSta3DT                   
+               DO NN=1,NSta3DT
                   WRITE(43,REC=I3DSTRec+1) NN
                   I3DSTRec=I3DSTRec+1
                   DO k=1,NFEN
@@ -2675,7 +2675,7 @@ C                 Write time header into file
             CASE(3) ! netcdf
 #ifdef NETCDF
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF3D(43, TimeLoc, it, 
+                  CALL writeOutArrayNetCDF3D(43, TimeLoc, it,
      &               Q20StaDescript,LStaDescript,EVStaDescript)
                ENDIF
 #endif
@@ -2752,17 +2752,17 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
                   OPEN(44,FILE=TRIM(LOCALDIR)//'/'//'fort.44',
      &                ACCESS='SEQUENTIAL',POSITION='APPEND')
-                  IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN  
-                     IF(BCFLAG_TEMP.NE.0) THEN  
+                  IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
+                     IF(BCFLAG_TEMP.NE.0) THEN
                         OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47',
      &                         ACCESS='SEQUENTIAL',POSITION='APPEND')
                         WRITE(47,1099) TimeLoc,IT
                         DO NH=1,NP
-                           WRITE(47,1105) NH, qsurfkp1(NH) 
+                           WRITE(47,1105) NH, qsurfkp1(NH)
                         END DO
                         CLOSE(47)
-                     END IF 
-                  END IF 
+                     END IF
+                  END IF
                   SELECT CASE(ABS(IDEN))
                   CASE(0) ! barotropic
                      CALL allMessage(WARNING,
@@ -2775,10 +2775,10 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                      ENDDO
                   CASE(2) ! Salinity density
                      WRITE(44,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                                k=1,NFEN-1),Sigma(NFEN) 
+     &                                k=1,NFEN-1),Sigma(NFEN)
                      DO NH=1,NP
                         WRITE(44,1104)
-     &                     NH,(SigT(NH,k),Sal(NH,k),k=1,NFEN) 
+     &                     NH,(SigT(NH,k),Sal(NH,k),k=1,NFEN)
                            I3DGDRec=I3DGDRec+1
                      ENDDO
                   CASE(3) ! Temperature density
@@ -2793,7 +2793,7 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                      WRITE(44,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
      &                    Sigma(k),k=1,NFEN-1),Sigma(NFEN),Sigma(NFEN)
                      DO NH=1,NP
-                        WRITE(44,1104) 
+                        WRITE(44,1104)
      &                     NH,(SigT(NH,k),Temp(NH,k),Sal(NH,k),k=1,NFEN)
                         I3DGDRec=I3DGDRec+1
                      ENDDO
@@ -2805,23 +2805,23 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                   CLOSE(44)
                ENDIF
                IF ((MNPROC.GT.1).AND.(WRITE_LOCAL_FILES.eqv..false.)) THEN
-                  IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN  
-                     IF(BCFLAG_TEMP.NE.0) THEN  
+                  IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN
+                     IF(BCFLAG_TEMP.NE.0) THEN
                         IF (myProc.eq.0) THEN
                            ALLOCATE(qsurfkp1_g(NP_G))
-                        ENDIF  
+                        ENDIF
                         CALL collectFullDomainArray(QSurfKp1Descript,
      &                     packOne, unpackOne)
                         OPEN(47,FILE=TRIM(GLOBALDIR)//'/'//'fort.47',
      &                     ACCESS='SEQUENTIAL',POSITION='APPEND')
                         WRITE(47,1099) TimeLoc,IT
                         DO NH=1,NP_G
-                           WRITE(47,1105) NH, qsurfkp1_g(NH) 
+                           WRITE(47,1105) NH, qsurfkp1_g(NH)
                         END DO
                         DEALLOCATE(qsurfkp1_g)
                         CLOSE(47)
-                     END IF 
-                  END IF 
+                     END IF
+                  END IF
                   OPEN(44,FILE=TRIM(GLOBALDIR)//'/'//'fort.44',
      &                ACCESS='SEQUENTIAL',POSITION='APPEND')
                   SELECT CASE(ABS(IDEN))
@@ -2839,10 +2839,10 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                   CASE(2) ! Salinity density
                      IF (myProc.eq.0) THEN
                         WRITE(44,1100) TimeLoc,IT,(Sigma(k),Sigma(k),
-     &                                   k=1,NFEN-1),Sigma(NFEN) 
+     &                                   k=1,NFEN-1),Sigma(NFEN)
                         DO NH=1,NP_G
                            WRITE(44,1104)
-     &                        NH,(SigT_g(NH,k),Sal_g(NH,k),k=1,NFEN) 
+     &                        NH,(SigT_g(NH,k),Sal_g(NH,k),k=1,NFEN)
                               I3DGDRec=I3DGDRec+1
                         ENDDO
                      ENDIF
@@ -2883,8 +2883,8 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                CASE(0) ! barotropic
                   CALL allMessage(WARNING,
      &            "IDEN was set to 0 but density output was requested.")
-               CASE(1) ! sigmaT density     
-                  DO NH=1,NP                
+               CASE(1) ! sigmaT density
+                  DO NH=1,NP
                      WRITE(44,REC=I3DGDRec+1) NH
                      I3DGDRec=I3DGDRec+1
                      DO k=1,NFEN
@@ -2913,7 +2913,7 @@ C        Check to see if it is time to generate 3D fulldomain density output.
                      ENDDO
                   END DO
                CASE(4) ! salinity+temperature density
-                  DO NH=1,NP 
+                  DO NH=1,NP
                      WRITE(44,REC=I3DGDRec+1) NH
                      I3DGDRec=I3DGDRec+1
                      DO k=1,NFEN
@@ -2931,7 +2931,7 @@ C        Check to see if it is time to generate 3D fulldomain density output.
             CASE(3) ! netcdf
 #ifdef NETCDF
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF3D(44, TimeLoc, it, 
+                  CALL writeOutArrayNetCDF3D(44, TimeLoc, it,
      &               SigTDescript,SalDescript,TempDescript)
                ENDIF
 #endif
@@ -3016,7 +3016,7 @@ C                 Write time header into file
                      I3DGVRec=I3DGVRec+1
                      DO NH=1,NP_G
                         WRITE(45,1104) NH,
-     &                     (rp_g(NH,k),ip_g(NH,k),WZ_g(NH,k),k=1,NFEN) 
+     &                     (rp_g(NH,k),ip_g(NH,k),WZ_g(NH,k),k=1,NFEN)
                         I3DGVRec=I3DGVRec+1
                      ENDDO
                      CLOSE(45)
@@ -3042,7 +3042,7 @@ C                 Write time header into file
             CASE(3) ! netcdf
 #ifdef NETCDF
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF3D(45, TimeLoc, it, 
+                  CALL writeOutArrayNetCDF3D(45, TimeLoc, it,
      &               RealQDescript,ImaginaryQDescript,WZDescript)
                ENDIF
 #endif
@@ -3092,7 +3092,7 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
                   I3DGTRec=I3DGTRec+1
                   DO NH=1,NP
                      WRITE(46,1104) NH,
-     &               (q20(NH,k),l(NH,k),EV(NH,k),k=1,NFEN) 
+     &               (q20(NH,k),l(NH,k),EV(NH,k),k=1,NFEN)
                      I3DGTRec=I3DGTRec+1
                   ENDDO
                   CLOSE(46)
@@ -3106,7 +3106,7 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
                      I3DGTRec=I3DGTRec+1
                      DO NH=1,NP_G
                         WRITE(46,1104) NH,
-     &                     (q20_g(NH,k),l_g(NH,k),EV_g(NH,k),k=1,NFEN) 
+     &                     (q20_g(NH,k),l_g(NH,k),EV_g(NH,k),k=1,NFEN)
                         I3DGTRec=I3DGTRec+1
                      ENDDO
                      CLOSE(46)
@@ -3132,11 +3132,11 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
             CASE(3) ! netcdf
 #ifdef NETCDF
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF3D(46, TimeLoc, it, 
+                  CALL writeOutArrayNetCDF3D(46, TimeLoc, it,
      &               Q20Descript,LDescript,EVDescript)
                ENDIF
 #endif
-            CASE DEFAULT 
+            CASE DEFAULT
                write(scratchMessage,'("Invalid I3DGT: ",I2)') ABS(I3DGT)
                CALL screen(ERROR, scratchMessage)
             END SELECT
@@ -3157,10 +3157,10 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
       END
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E   W R I T E  O U T  A R R A Y  
+C     S U B R O U T I N E   W R I T E  O U T  A R R A Y
 C-----------------------------------------------------------------------
-C     jgf48.03 This subroutine was created to write out a column 
-C     vector (i.e., nodal data such as water surface elevation or 
+C     jgf48.03 This subroutine was created to write out a column
+C     vector (i.e., nodal data such as water surface elevation or
 C     pressure) to a file.
 C-----------------------------------------------------------------------
 Casey 090302: Added the filename as the last argument.
@@ -3172,7 +3172,7 @@ Casey 090302: Added the filename as the last argument.
       USE GLOBAL_IO, ONLY : collectFullDomainArray
 #ifdef NETCDF
       USE NETCDFIO, ONLY : writeOutArrayNetCDF
-#endif 
+#endif
       IMPLICIT NONE
 C     args
       INTEGER, intent(in) :: lun ! logical unit number of file to write to
@@ -3200,7 +3200,7 @@ C         write(16,*) 'About to collectFullDomainArray' !jgfdebug48.03
 
 C     write data according to format specifier from fort.15 (e.g., NOUTE)
       SELECT CASE (ABS(descript % specifier))
- 
+
       CASE(1) !ascii text
 
 C         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
@@ -3219,7 +3219,7 @@ C                  WRITE(16,*) I ! jgfdebug48.03
                DO I=1, descript % num_fd_records
 C                  WRITE(16,*) I ! jgfdebug48.03
                   WRITE(lun,2454) I, descript % array_g(I),
-     &                               descript % array2_g(I)  
+     &                               descript % array2_g(I)
                ENDDO
             ENDIF
 C            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
@@ -3247,13 +3247,13 @@ C            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
                   END DO
                ENDIF
             ENDIF
-            IF (descript % num_items_per_record .eq. 2) THEN 
+            IF (descript % num_items_per_record .eq. 2) THEN
                DO I=1, descript % num_records_this
                   WRITE(lun,2454) I, descript % array(I),
      &                               descript % array2(I)
                END DO
             ENDIF
- 
+
          ENDIF
          filepos = filepos+1+descript % num_records_this
 
@@ -3308,7 +3308,7 @@ C            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
                   !tcmv48.4618 -- changed from array_g to array
                   WRITE(lun,REC=filepos+2*I-1) descript % array(I)
                   !tcmv48.4618 -- changed from array2_g to array2
-                  WRITE(lun,REC=filepos+2*I)   descript % array2(I)   
+                  WRITE(lun,REC=filepos+2*I)   descript % array2(I)
                END DO
             ENDIF
             CLOSE(lun)
@@ -3326,22 +3326,22 @@ C            WRITE(16,*) 'About to close globalio text file.'!jgfdebug48.03
 #endif
 
       CASE DEFAULT
-         WRITE(ScreenUnit,*) 'ERROR: Invalid output specifier.' 
+         WRITE(ScreenUnit,*) 'ERROR: Invalid output specifier.'
       END SELECT
 
  2    FORMAT(I2)
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
- 2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3) 
+ 2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  2454 FORMAT(2X,I8,2(2X,1pE20.10E3))
 C-----------------------------------------------------------------------
        END SUBROUTINE writeOutArray
 C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
-C     S U B R O U T I N E   W R I T E  O U T  A R R A Y  M I N  M A X 
+C     S U B R O U T I N E   W R I T E  O U T  A R R A Y  M I N  M A X
 C-----------------------------------------------------------------------
-C     jgf48.4636 This subroutine was created to write out a column 
-C     vector (i.e., nodal data such as water surface elevation or 
+C     jgf48.4636 This subroutine was created to write out a column
+C     vector (i.e., nodal data such as water surface elevation or
 C     pressure) to a file, for quantities whose min or max values
 C     have been stored over the course of the run.
 C-----------------------------------------------------------------------
@@ -3369,7 +3369,7 @@ C     collect up the data from subdomains if running in parallel
 
 C     write data in ascii text only (other output formats are not supported)
       SELECT CASE (ABS(descript % specifier))
- 
+
       CASE(1) !ascii text
 
          IF ((MNPROC.gt.1).and.(MyProc.eq.0).and.
@@ -3383,7 +3383,7 @@ C     write data in ascii text only (other output formats are not supported)
                   DO I=1, descript % num_fd_records
                      WRITE(lun,2453) I, descript % array_g(I)
                   ENDDO
-               CASE('min')   
+               CASE('min')
                   DO I=1, descript % num_fd_records
                      WRITE(lun,2453) I, MIN(descript % array_g(I),
      &                   descript % hotstart_g(I))
@@ -3428,12 +3428,12 @@ C     write data in ascii text only (other output formats are not supported)
              END SELECT
          ENDIF
       CASE DEFAULT
-         WRITE(ScreenUnit,*) 'ERROR: Invalid output specifier.' 
+         WRITE(ScreenUnit,*) 'ERROR: Invalid output specifier.'
       END SELECT
 
  2    FORMAT(I2)
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
- 2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3) 
+ 2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  2454 FORMAT(2X,I8,2(2X,1pE20.10E3))
 C-----------------------------------------------------------------------
        END SUBROUTINE writeOutArrayMinMax
@@ -3460,7 +3460,7 @@ C-----------------------------------------------------------------------
        USE NETCDFIO, ONLY : initNetCDFHotstart, allocateNetCDFHotstart,
      &                      allocateNetCDFHotstartHarmonic,
      &                      writeNetCDFHotstart,
-     &                      initNetCDFHotstartHarmonic, 
+     &                      initNetCDFHotstartHarmonic,
      &                      initNetCDFHotstartHarmonicMeansVariances,
      &                      writeNetCDFHotstartHarmonic,
      &                      writeNetCDFHotstartHarmonicMeansVariances
@@ -3472,14 +3472,14 @@ C-----------------------------------------------------------------------
       REAL(8), intent(in) :: TimeLoc
       INTEGER, intent(in) :: IT
       INTEGER I,J,K
-      type(OutputDataDescript_t) :: descript 
+      type(OutputDataDescript_t) :: descript
       LOGICAL TEST_HOTSTART     !jgf45.07 used for testing hot start capability
       INTEGER npx, nex
 C
       type(OutputDataDescript_t), SAVE :: Elev1Descript
-      type(OutputDataDescript_t), SAVE :: Elev2Descript 
+      type(OutputDataDescript_t), SAVE :: Elev2Descript
       type(OutputDataDescript_t), SAVE :: VelDescript
-      type(OutputDataDescript_t), SAVE :: CH1Descript  
+      type(OutputDataDescript_t), SAVE :: CH1Descript
       type(OutputDataDescript_t), SAVE :: EtaDiscDescript
       type(OutputDataDescript_t), SAVE :: NodeCodeDescript
       type(OutputDataDescript_t), SAVE :: NOFFDescript
@@ -3489,7 +3489,7 @@ C
 C
 C     !jgf49.44: harmonic analysis vars
       INTEGER N ! number of stations
-      INTEGER NSTAEX  ! num of elev stations in either fulldomain or subdomain  
+      INTEGER NSTAEX  ! num of elev stations in either fulldomain or subdomain
       INTEGER NSTAVX  ! num of vel stations in either fulldomain or subdomain
       type(OutputDataDescript_t), SAVE :: HarmElevFDLVDescript
       type(OutputDataDescript_t), SAVE :: HarmElevSLVDescript
@@ -3511,7 +3511,7 @@ C
       call screen(DEBUG,"Enter.")
 #endif
       err = .false.
-C      
+C
       IF (FirstCall) THEN
 
          Elev1Descript % specifier            = NHSTAR
@@ -3531,7 +3531,7 @@ C
          Elev2Descript % imap                 => NODES_LG
          Elev2Descript % array                => ETA2
          Elev2Descript % array_g              => ETA2_g
-         
+
          VelDescript % specifier            = NHSTAR
          VelDescript % initial_value        = 0.0
          VelDescript % num_items_per_record = 2
@@ -3552,8 +3552,8 @@ C
             CH1Descript % imap                 => NODES_LG
             CH1Descript % array                => CH1
             CH1Descript % array_g              => CH1_g
-         ENDIF        
- 
+         ENDIF
+
          EtaDiscDescript % specifier            = NHSTAR
          EtaDiscDescript % initial_value        = 0.0
          EtaDiscDescript % num_items_per_record = 1
@@ -3562,7 +3562,7 @@ C
          EtaDiscDescript % imap                 => NODES_LG
          EtaDiscDescript % array                => EtaDisc
          EtaDiscDescript % array_g              => EtaDisc_g
-         
+
          NodeCodeDescript % specifier            = NHSTAR
          NodeCodeDescript % int_initial_value        = 0
          NodeCodeDescript % num_items_per_record = 1
@@ -3694,25 +3694,25 @@ C
          ENDIF
 C
 #ifdef NETCDF
-         IF ((NHSTAR.eq.3).or.(NHSTAR.eq.367).or.(NHSTAR.eq.368)) THEN ! netcdf 
+         IF ((NHSTAR.eq.3).or.(NHSTAR.eq.367).or.(NHSTAR.eq.368)) THEN ! netcdf
             IF (MNPROC.eq.1) THEN  ! serial
 C              jgf49.35 TODO: Allocate arrays to write 3D data
                CALL initNetCDFHotstart(hss%lun, Elev1Descript,
-     &         Elev2Descript, VelDescript, CH1Descript, 
+     &         Elev2Descript, VelDescript, CH1Descript,
      &         EtaDiscDescript, NodeCodeDescript, NOFFDescript, err)
                IF (IHARIND.eq.1) THEN
-                  CALL initNetCDFHotstartHarmonic(hss%lun, 
+                  CALL initNetCDFHotstartHarmonic(hss%lun,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,
-     &            HarmUVelFDLVDescript, HarmVVelFDLVDescript, 
+     &            HarmUVelFDLVDescript, HarmVVelFDLVDescript,
      &            HarmUVelSLVDescript, HarmVVelSLVDescript, err)
                   IF (CHARMV.eqv..true.) THEN
                      CALL initNetCDFHotstartHarmonicMeansVariances(
-     &                  hss%lun, ELAVDescript, ELVADescript, 
+     &                  hss%lun, ELAVDescript, ELVADescript,
      &                  XVELAVDescript, YVELAVDescript, XVELVADescript,
      &                  YVELVADescript,err)
                   ENDIF
                ENDIF
-               ! Determine if we need to init both hotstart files, i.e., if the 
+               ! Determine if we need to init both hotstart files, i.e., if the
                ! hotstart timestep increment is short enough that we will need
                ! to write both the 67 and 68 file during this run
                numHotstartWrites = (NT-IT)/NHSINC
@@ -3727,13 +3727,13 @@ C              jgf49.35 TODO: Allocate arrays to write 3D data
      &            EtaDiscDescript, NodeCodeDescript, NOFFDescript,
      &            err)
                   IF (IHARIND.eq.1) THEN
-                     CALL initNetCDFHotstartHarmonic(nextLun, 
+                     CALL initNetCDFHotstartHarmonic(nextLun,
      &               HarmElevFDLVDescript, HarmElevSLVDescript,
-     &               HarmUVelFDLVDescript, HarmVVelFDLVDescript, 
+     &               HarmUVelFDLVDescript, HarmVVelFDLVDescript,
      &               HarmUVelSLVDescript, HarmVVelSLVDescript, err)
                      IF (CHARMV.eqv..true.) THEN
                         CALL initNetCDFHotstartHarmonicMeansVariances(
-     &                     nextLun, ELAVDescript, ELVADescript, 
+     &                     nextLun, ELAVDescript, ELVADescript,
      &                     XVELAVDescript, YVELAVDescript,
      &                     XVELVADescript, YVELVADescript, err)
                      ENDIF
@@ -3750,9 +3750,9 @@ C              jgf49.35 TODO: Allocate arrays to write 3D data
                      ! jgf49.43.14: this includes means and variance allocation
                      CALL allocateNetCDFHotstartHarmonic(67)
                      CALL allocateNetCDFHotstartHarmonic(68)
-                  ENDIF 
+                  ENDIF
                ENDIF
-            ENDIF 
+            ENDIF
          ENDIF
 #endif
 C
@@ -3769,16 +3769,16 @@ ckmd48.33bc - changed the NOFF and NodeCode calls
          IF (IM.eq.10) THEN
             CALL collectFullDomainArray(CH1Descript, packOne, unpackOne)
          ENDIF
-         CALL collectFullDomainArray(EtaDiscDescript, 
+         CALL collectFullDomainArray(EtaDiscDescript,
      &             packOne, unpackOne)
-         CALL collectFullDomainIntArray(NodeCodeDescript, 
+         CALL collectFullDomainIntArray(NodeCodeDescript,
      &             packOneInt, unpackOneInt, 1)
-         CALL collectFullDomainIntArray(NOFFDescript, 
+         CALL collectFullDomainIntArray(NOFFDescript,
      &             packOneInt, unpackOneInt, 2)
 !         TCM v48.4638 20090902 -- NOFF could have the wrong
 !         values after globalizing because there are no rules for which
 !         processor owns an element and Noff is an elemental value
-!         The way around is to take the minimum of (Noff, 1) as 
+!         The way around is to take the minimum of (Noff, 1) as
 !         NOFF is supposed to be either 0 or 1.
 !
 !        jgf48.4642 Modified syntax to operate directly on NOFF array
@@ -3845,18 +3845,18 @@ C        jgf49.35 Values of 67 and 68 are used for testing and cause the
 C        program to exit immediately after writing the hotstart file.
          NPX = NP_G
          NEX = NE_G
-         if ((MNPROC.eq.1) .or. 
+         if ((MNPROC.eq.1) .or.
      &      (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN
             NPX = NP
             NEX = NE
          endif
          IF ((MYPROC.eq.0).or.
-     &         (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN 
+     &         (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN
 
             OPEN(hss % lun ,FILE=TRIM(HOTSTARTDIR)//'/'//hss % filename,
      $      ACCESS='DIRECT',STATUS='REPLACE',RECL=8)
             IHOTSTP=1
-            WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion 
+            WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion
             IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) IM   ; IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) TimeLoc ; IHOTSTP = IHOTSTP + 1
@@ -3867,7 +3867,7 @@ C        program to exit immediately after writing the hotstart file.
             WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
          ENDIF
          IF ((MNPROC.gt.1).and.(MYPROC.eq.0).and.
-     &         (WRITE_LOCAL_HOT_START_FILES.eqv..FALSE.)) THEN 
+     &         (WRITE_LOCAL_HOT_START_FILES.eqv..FALSE.)) THEN
             DO I=1, Elev1Descript % num_fd_records
                WRITE(hss % lun,REC=IHOTSTP) Elev1Descript % array_g(I)
                IHOTSTP=IHOTSTP+1
@@ -3942,7 +3942,7 @@ C        program to exit immediately after writing the hotstart file.
          ENDIF
 C
          IF ((MYPROC.eq.0).or.
-     &            (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN 
+     &            (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN
             WRITE(hss % lun,REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) IVSTP   ; IHOTSTP = IHOTSTP + 1
@@ -3979,9 +3979,9 @@ C...
             CALL logMessage(INFO,"Writing 3D hotstart information.")
             CALL HSTART3D_OUT(IT) ! -> see vsmy.F
          ENDIF
-C...  
+C...
 C...  IF APPROPRIATE ADD HARMONIC ANALYSIS INFORMATION TO HOT START FILE
-C...  
+C...
          IF((IHARIND.EQ.1).AND.(IT.GT.ITHAS)) THEN
             IF ((MNPROC.eq.1).or.WRITE_LOCAL_HOT_START_FILES) THEN
                NSTAEX = NSTAE
@@ -4171,7 +4171,7 @@ C
                ENDIF
                IF(NHAGV.ne.0) THEN
                   DO I=1,NP_G
-                     WRITE(hss % lun,REC=IHOTSTP) 
+                     WRITE(hss % lun,REC=IHOTSTP)
      &                  XVELAVDescript % array_g(i)
                      IHOTSTP=IHOTSTP+1
                      WRITE(hss % lun,REC=IHOTSTP)
@@ -4187,16 +4187,16 @@ C
                ENDIF
             ENDIF
          endif                   !  charmv
-C        
+C
          IF ((MYPROC.eq.0).or.
-     &         (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN 
+     &         (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN
             CLOSE(hss%lun)
          ENDIF
-        
-      CASE(2,267,268) ! ascii hotstart file, only used for debugging 
-C 
+
+      CASE(2,267,268) ! ascii hotstart file, only used for debugging
+C
 C        jgf49.35 write both subdomain and fulldomain hotstart files,
-C        just to have them, since this is just for debugging purposes 
+C        just to have them, since this is just for debugging purposes
 C        (i.e., to check the values written to hotstart files in other
 C        formats) anyway.
          OPEN(hss%lun,FILE=TRIM(INPUTDIR)//'/'//hss % filename,
@@ -4207,7 +4207,7 @@ C        formats) anyway.
          WRITE(hss%lun,*) "IT = ",IT
          WRITE(hss%lun,*) "NP = ",NP
          WRITE(hss%lun,*) "NE = ",NE
-         WRITE(hss%lun,*) "Elev1:"         
+         WRITE(hss%lun,*) "Elev1:"
          DO I=1, Elev1Descript % num_records_this
             WRITE(hss%lun,*) i," ",Elev1Descript % array(I)
          ENDDO
@@ -4271,7 +4271,7 @@ C
             WRITE(hss%lun,*) "IT = ",IT
             WRITE(hss%lun,*) "NP = ",NP_G
             WRITE(hss%lun,*) "NE = ",NE_G
-            WRITE(hss%lun,*) "Elev1:"         
+            WRITE(hss%lun,*) "Elev1:"
             DO I=1, Elev1Descript % num_fd_records
                WRITE(hss%lun,*) i," ",Elev1Descript % array_g(I)
             ENDDO
@@ -4326,10 +4326,10 @@ C
             CLOSE(hss%lun)
          ENDIF
 C
-C        TODO: 3D data in ascii 
+C        TODO: 3D data in ascii
 C        TODO: harmonic analysis data in ascii
 C
-      CASE(3,367,368) ! netcdf 
+      CASE(3,367,368) ! netcdf
 
 #ifdef NETCDF
          IF (myProc.eq.0) THEN
@@ -4347,7 +4347,7 @@ C
      &            ELAVDescript, ELVADescript, XVELAVDescript,
      &            YVELAVDescript, XVELVADescript, YVELVADescript)
             ENDIF
-         ENDIF 
+         ENDIF
          IF (C3D.eqv..true.) THEN
             CALL HSTART3D_OUT(IT) ! -> see vsmy.F
          ENDIF
@@ -4360,20 +4360,20 @@ C
 
       END SELECT
 
-      write(scratchMessage,24541) hss % lun,IT,TimeLoc       
+      write(scratchMessage,24541) hss % lun,IT,TimeLoc
       call allMessage(INFO,scratchMessage)
 24541 FORMAT(1X,'HOT START OUTPUT WRITTEN TO UNIT ',I2,
      &    ' AT TIME STEP = ',I9,' TIME = ',E15.8)
       TEST_HOTSTART = .FALSE.
       IF(hss % lun.EQ.67) THEN
-C        jgf45.07 added option to stop ADCIRC after writing hot start file. 
+C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          IF ((NHSTAR.EQ.67).OR.(NHSTAR.EQ.267).OR.(NHSTAR.EQ.367)) THEN
             call allMessage(INFO,"NHSTAR.EQ.67; ADCIRC stopping.")
             TEST_HOTSTART = .TRUE.
          ENDIF
          hss % lun      = 68
          IF((NHSTAR.EQ.1).OR.(NHSTAR.EQ.2)) THEN
-            hss % filename = 'fort.68' 
+            hss % filename = 'fort.68'
          ENDIF
       ELSE
          IF ((NHSTAR.EQ.68).OR.(NHSTAR.EQ.268).OR.(NHSTAR.EQ.368)) THEN
@@ -4388,7 +4388,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
       IF (TEST_HOTSTART.eqv..true.) THEN
 #ifdef CMPI
           CALL MSG_FINI()
-#endif               
+#endif
          STOP
       ENDIF
 
@@ -4407,7 +4407,7 @@ C
 C     jgf46.10 Subroutine write an elevation file to fort.69 if any
 C     elevation exceeds the WarnElev and the user has set WarnElevDump
 C     to .True. (1 in the fort.15 input file). Terminate the run
-C     if the number of dumps to the fort.69 file exceeds the user's 
+C     if the number of dumps to the fort.69 file exceeds the user's
 C     limit of WarnElevDumpLimit.
 C
 C-----------------------------------------------------------------------
@@ -4420,7 +4420,7 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
       REAL(8), intent(in) :: TimeLoc
       INTEGER, intent(in) :: it
-C      
+C
       INTEGER I ! node loop counter
 C
 C     Open the file and write the header on the first warning. Format
@@ -4454,7 +4454,7 @@ C     If we have exceeded the user's limit, terminate the run.
  5000    FORMAT('ERROR: WarnElevDumpLimit Exceeded on MyPROC=',i4)
 #ifdef CMPI
          CALL MSG_FINI()
-#endif               
+#endif
          STOP
       ENDIF
 C
