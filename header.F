@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.69   - 04/16/2012 - jgf - Applied fix from Kendra Dresback for 
+C             erroneous format in writeOutHarmonicArrays() subroutine
+C             that was causing phase values to be off by a factor of 10. 
 C  v50.68   - 04/15/2012 - jgf - Removed water surface elevation smoother
 C             nodal attribute. 
 C  v50.67   - 04/15/2012 - zc - Corrected the elemental slope limiter to 

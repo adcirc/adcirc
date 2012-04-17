@@ -1769,8 +1769,8 @@ C
       END SELECT
 
  2    FORMAT(I2)
- 6635 format(2x,1pE16.8E3,1x,f11.4)
- 6636 format(2x,1pE16.8E3,1x,f11.4,2x,1pE16.8E3,1x,f11.4)
+ 6635 format(2x,1pE16.8E3,1x,0pf11.4)
+ 6636 format(2x,1pE16.8E3,1x,0pf11.4,2x,1pE16.8E3,1x,0pf11.4)
  3679 format(1x,e20.10,1x,f10.7,1x,f12.8,1x,a10)
 #ifdef WRITE_OUTPUT_TRACE
       call screen(DEBUG,"Return.")
