@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.70   - 04/22/2012 - zc - Allowed the values from ESLNodes.63 to 
+C             be used in a hotstart run to reactivate slope limiter at
+C             previously active nodes. Fix hot start allocation issues.
 C  v50.69   - 04/16/2012 - jgf - Applied fix from Kendra Dresback for 
 C             erroneous format in writeOutHarmonicArrays() subroutine
 C             that was causing phase values to be off by a factor of 10. 

@@ -1664,7 +1664,7 @@ C
 C----------------------------------------------------------------------
       SUBROUTINE readMinMax(minMaxFN,array)
       USE SIZES , ONLY : SZ, MNPROC, GLOBALDIR
-      USE GLOBAL , ONLY : NSCREEN, ScreenUnit, MyProc
+      USE GLOBAL , ONLY : NSCREEN, ScreenUnit, MyProc, scratchMessage
       IMPLICIT NONE
       CHARACTER(*) :: minMaxFN ! name of min/max file to read
       REAL(SZ), dimension(:), target :: array ! min/max array
@@ -1708,10 +1708,10 @@ C     The file exists and is open, so read the data.
      &         //trim(minMaxFN)//".")
       ENDIF
       CLOSE(963)
-C
- 450  FORMAT(/,'Finished reading ',(I8),' lines from the ',
-     &   (A12),' file.')
- 3333 FORMAT('Values from ',(A12),
+
+ 450  FORMAT('Finished reading ',I8,' lines from the ',
+     &   A20,' file.')
+ 3333 FORMAT('Values from ',(A20),
      &       ' will not reflect the solution prior to this hotstart.')
 C-----------------------------------------------------------------------
       END SUBROUTINE readMinMax

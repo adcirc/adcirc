@@ -42,6 +42,9 @@ C
      &    q20_g, l_g, SigT_g, Sal_g, Temp_g, iy
 C
       USE SIZES
+#ifdef CMPI
+      USE MESSENGER,ONLY:COMM,IERR
+#endif      
       USE HARM, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV,
      &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
      &                 checkHAHotstart
@@ -61,12 +64,17 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &     nolibf, nwp, tau0, cf, eslm,
      &     LoadDirEffRLen, LoadCanopyCoef,
      &     ApplyDirectionalWindReduction, ApplyCanopyCoefficient,
-     &     OutputTau0 !jgf47.06
+     &     OutputTau0, LoadEleSlopeLim, elemental_slope_limiter_active
       IMPLICIT NONE
-
+#ifdef CMPI       
+#ifndef HAVE_MPI_MOD
+                  include 'mpif.h'
+#endif
+#endif
       INTEGER IT
       INTEGER I, J, NH, N              !local loop counters
       INTEGER NCyc, NA, InputFileFmtVn
+      INTEGER sd_node_number,fd_node_number
 
 C   kmd48.33bc - add variable for timestep change
       INTEGER NTHS
@@ -3034,6 +3042,12 @@ C
 C     jgf48.4635 If the maxele.63 (etc) files are present, we need to
 C     load them up, to preserve high water marks across hotstarts.
 C     If they are not present, thats okay too.
+      
+      IF(LoadEleSlopeLim)THEN
+        IF(MNPROC.GT.1)ALLOCATE(HOT_ESLONOFF_G(NP_G))
+        ALLOCATE(HOT_ESLONOFF(NP))
+      ENDIF  
+      
       if ((MNPROC.gt.1).and.(MyProc.eq.0)
      &     .and.(.not.WRITE_LOCAL_FILES)) then
          ALLOCATE(HOT_ETAMAX_G(NP_G))
@@ -3051,6 +3065,10 @@ C     If they are not present, thats okay too.
          ALLOCATE(HOT_RSNMAX_G(NP_G))
          HOT_RSNMAX_G(:) = 0.d0  ! initialize the value
          CALL readMinMax('maxrs.63',HOT_RSNMAX_G)
+         IF(LoadEleSlopeLim)THEN
+            HOT_ESLONOFF_G(:) = 0.d0 ! initialize the value
+            CALL readMinMax('ESLNodes.63',HOT_ESLONOFF_G)
+         ENDIF   
       endif
       if ( (MNPROC.eq.1).or.(WRITE_LOCAL_FILES) ) then
          ALLOCATE(HOT_ETAMAX(NP))
@@ -3068,7 +3086,45 @@ C     If they are not present, thats okay too.
          ALLOCATE(HOT_RSNMAX(NP))
          HOT_RSNMAX(:) = 0.d0  ! initialize the value
          CALL readMinMax('maxrs.63',HOT_RSNMAX)
+         IF(LoadEleSlopeLim)THEN
+            HOT_ESLONOFF(:) = 0.d0 ! initialize the value
+            CALL readMinMax('ESLNodes.63',HOT_ESLONOFF)
+         ENDIF   
       endif
+
+C...SEND THE VALUES FROM THE PREVIOUS ELEMENTAL SLOPE LIMITER RUN
+C   TO THE OTHER PROCESSORS AND PROCESS TO THE SUBDOMAINS
+      IF(LoadEleSlopeLim)THEN
+        IF(MNPROC.GT.1)THEN
+#ifdef CMPI
+            CALL MPI_BCAST( HOT_ESLONOFF_G, NP_G, REALTYPE, 0, COMM, 
+     &          IERR )
+#endif
+            DO sd_node_number = 1,NP
+                fd_node_number = ABS(NODES_LG(sd_node_number))
+                HOT_ESLONOFF(sd_node_number) = 
+     &              HOT_ESLONOFF_G(fd_node_number)
+                IF(HOT_ESLONOFF(sd_node_number).EQ.1D0)THEN
+                    elemental_slope_limiter_active(sd_node_number) = 
+     &                  .TRUE.
+                ELSE
+                    elemental_slope_limiter_active(sd_node_number) = 
+     &                  .FALSE.
+                ENDIF  
+            ENDDO
+        ELSEIF(MNPROC.EQ.0)THEN
+            DO I = 1,NP
+                IF(HOT_ESLONOFF(sd_node_number).EQ.1D0)THEN
+                    elemental_slope_limiter_active(sd_node_number) = 
+     &                  .TRUE.
+                ELSE
+                    elemental_slope_limiter_active(sd_node_number) =
+     &                  .FALSE.               
+                ENDIF  
+            ENDDO    
+        ENDIF
+      ENDIF  
+
 C
  1112 FORMAT(/,1X,79('_'))
  1197 FORMAT(/,1X,'THE E29 MET GRID INTERPOLATING FACTORS ARE ',

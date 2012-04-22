@@ -2790,12 +2790,15 @@ C              proceed and turn on the limiter.
                  ! screen the first time the gradient is exceeded
                  IF(elemental_slope_limiter_grad_max(NM(IE,I))
      &               .GE.0D0)THEN
-                    IF(.NOT.elemental_slope_limiter_active(NM(IE,I)))
-     &               THEN
+                    IF(.NOT.elemental_slope_limiter_active(NM(IE,I))
+     &                 .AND.elemental_slope_limiter_grad_max(NM(IE,I))
+     &                  .GT.0D0)THEN
+                        
                         WRITE(screenUnit,1983) IT,NumItr,TimeLoc,
      &                      dEta2Mag,NM1,MyProc
                         WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,
      &                      MyProc
+                    
                     ENDIF
                     ESLONOFF(NM(IE,I)) = 1 ! for output file
                     elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
