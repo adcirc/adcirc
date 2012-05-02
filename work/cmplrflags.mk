@@ -11,7 +11,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #
 #compiler=gnu
 #compiler=g95
-compiler=intel
+#compiler=intel
 compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=cray_xt3
@@ -128,7 +128,7 @@ ifeq ($(compiler),intel-ND)
   PPFC            :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O3 -FI -assume byterecl -132 -i-dynamic -assume buffered_io
+  FFLAGS1       :=  $(INCDIRS) -O3 -FI -assume byterecl -132 -i-dynamic -assume buffered_io -xSSE4.2
   ifeq ($(DEBUG),full)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug -check all -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
@@ -141,9 +141,9 @@ ifeq ($(compiler),intel-ND)
      DPRE          := $(DPRE) -DADCSWAN
   endif
   IMODS         :=  -I
-  CC            := gcc
+  CC            := icc
   CCBE          := $(CC)
-  CFLAGS        := $(INCDIRS) -O2 -march=k8 -m64 -mcmodel=medium -DLINUX
+  CFLAGS        := $(INCDIRS) -O3 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
   ifeq ($(DEBUG),full)
      CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
   endif

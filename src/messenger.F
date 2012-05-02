@@ -836,9 +836,8 @@ C------------------------------------------------------------------------------
 
       lsum = 0.0D0
       do i = 1,n
-         if (RESNODE(i)) then
-            lsum = lsum  + sx(i)*sy(i)
-         endif
+         if(.NOT.RESNODE(i))CYCLE
+         lsum = lsum  + sx(i)*sy(i)
       enddo
 
       kount = 1
@@ -850,84 +849,76 @@ C------------------------------------------------------------------------------
 
 
       subroutine ps2dots( n, sd, sdt ,dot3rray)
+      implicit none
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-      integer n, i, idx
+      integer,intent(in) :: n
+      real(sz),intent(in) :: sd(n),sdt(n)
+      real(sz),intent(inout) :: dot3rray(3)
+      integer i
       real(8) lsum(2),gsum(2)
-      real(sz) sd(*),sdt(*)
-      real(sz) dot3rray(*)
       integer kount             !jgf46.00 added
 C------------------------------------------------------------------------------
 C  Parallel version of 2-SDOTs for ITPACKV module
 C  jbr  6/17/00
+C  zc   5/01/12 performance enhancements
 C------------------------------------------------------------------------------
 
-      dot3rray(1) = 0.0
-      dot3rray(2) = 0.0
-      dot3rray(3) = 0.0
+      dot3rray(1:3) = 0.0D0
       if (n.le.0) return
 
-      lsum(1) = 0.0D0
-      lsum(2) = 0.0D0
+      lsum(1:2) = 0.0D0
 
       do i = 1,n
-         if (RESNODE(i)) lsum(1) = lsum(1)  + sd(i)*sd(i)
-      enddo
-      do i = 1,n
-         if (RESNODE(i)) lsum(2) = lsum(2)  + sd(i)*sdt(i)
-      enddo
+          if(.not.RESNODE(I))cycle
+          lsum(1) = lsum(1)  + sd(i)*sd(i)   
+          lsum(2) = lsum(2)  + sd(i)*sdt(i)
+      enddo    
 
       kount=2
       call MPI_ALLREDUCE( lsum, gsum, kount, DBLETYPE,
      &     MPI_SUM, COMM, ierr)
 
-      dot3rray(1) = gsum(1)
-      dot3rray(2) = gsum(2)
-      dot3rray(3) = 1.0
+      dot3rray(1:2) = gsum(1:2)
+      dot3rray(3) = 1.0D0
       return
       end subroutine ps2dots
 
-      subroutine ps3dots( n, sd, sdt ,su,dot3rray)
+      subroutine ps3dots( n, sd, sdt ,su, dot3rray)
+      implicit none
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-      integer n, i, idx
-      real(8) lsum(3),gsum(3)
-      real(sz) sd(*),sdt(*),su(*)
-      real(sz) dot3rray(*)
+      integer,intent(in)     :: n
+      real(sz),intent(in)    :: sd(n),sdt(n),su(n)
+      real(sz),intent(inout) :: dot3rray(3)
+      real(sz)               :: gsum(3)
+      integer i
+      real(8) lsum(3)
       integer kount             ! jgf46.00 added
 C------------------------------------------------------------------------------
 C  Parallel version of 3-SDOTs for ITPACKV module
 C  jbr  6/17/00
+C  zc   5/01/12 performance enhancements
 C------------------------------------------------------------------------------
 
-      dot3rray(1) = 0.0
-      dot3rray(2) = 0.0
-      dot3rray(3) = 0.0
+      dot3rray(1:3) = 0D0
       if (n.le.0) return
 
-      lsum(1) = 0.0D0
-      lsum(2) = 0.0D0
-      lsum(3) = 0.0D0
+      lsum(1:3) = 0D0
 
       do i = 1,n
-         if (RESNODE(i)) lsum(1) = lsum(1)  + sd(i)*sd(i)
-      enddo
-      do i = 1,n
-         if (RESNODE(i)) lsum(2) = lsum(2)  + sd(i)*sdt(i)
-      enddo
-      do i = 1,n
-         if (RESNODE(i)) lsum(3) = lsum(3)  + su(i)*su(i)
-      enddo
+          if(.not.RESNODE(i))cycle
+          lsum(1) = lsum(1)  + sd(i)*sd(i)
+          lsum(2) = lsum(2)  + sd(i)*sdt(i)
+          lsum(3) = lsum(3)  + su(i)*su(i)
+      enddo    
 
       kount=3
       call MPI_ALLREDUCE( lsum, gsum, kount, DBLETYPE,
      &     MPI_SUM, COMM, ierr)
-
-      dot3rray(1) = gsum(1)
-      dot3rray(2) = gsum(2)
-      dot3rray(3) = gsum(3)
+      dot3rray(1:3) = gsum(1:3)
       return
       end subroutine ps3dots
 

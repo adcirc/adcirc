@@ -3006,7 +3006,8 @@ C
      &     LoadGeoidOffset, GeoidOffset, EVM,
      &     TAU0VAR, HighResTimeVaryingTau0, FullDomainTimeVaryingTau0,
      &     CalculateTimeVaryingTau0,
-     &     LoadEleSlopeLim,elemental_slope_limiter_active
+     &     LoadEleSlopeLim,elemental_slope_limiter_active,
+     &     LoadAdvectionState
 #ifdef CMPI
       USE MESSENGER
 #endif
@@ -3528,7 +3529,7 @@ C...  Assemble the GWCE RHS except for the boundary integral terms
 C...     Set nodal values for each element
 
 Corbitt 120322: Localized Advection
-         Call ADVECTLOCAL(IE)
+         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -4086,7 +4087,10 @@ C...  JCG ITERATIVE MATRIX SOLVER
 C     UPDATE ELEVATIONS
 
 #ifdef CMPI
-      CALL UPDATER(ETA2,DUMY1,DUMY2,1)
+C      CALL UPDATER(ETA2,DUMY1,DUMY2,1) !...ZC - Commented out, we don't
+C                                       !        need to update ETA2
+C                                       !        twice, do it only after
+C                                       !        slope limiter routine
 #endif
 
 C       ELEMENTAL SLOPE LIMITER
@@ -4120,12 +4124,20 @@ C
             Eta2 = elevSum / TotalArea
          END WHERE
 
+C - ZC - Commented out below, update elevations only once after slope limiter
+C        is applied
 C     if elemental slope limiter is active in parallel, call updater
-#ifdef CMPI
-         ! update boundaries with smoothed and/or slope limited elevations
-         CALL UPDATER(ETA2,DUMY1,DUMY2,1)
-#endif
+C#ifdef CMPI
+C         ! update boundaries with smoothed and/or slope limited elevations
+C         CALL UPDATER(ETA2,DUMY1,DUMY2,1)
+C#endif
+C
       ENDIF
+
+#ifdef CMPI
+      CALL UPDATER(ETA2,DUMY1,DUMY2,1)
+#endif      
+      
 
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -4157,7 +4169,7 @@ C*******************************************************************************
 C
       USE GLOBAL
       USE WIND
-      USE NodalAttributes, ONLY: EVM
+      USE NodalAttributes, ONLY: EVM,LoadAdvectionState
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -4237,7 +4249,7 @@ C...  SET NODAL VALUES FOR EACH ELEMENT
 
 
 Corbitt 120322: Localized Advection
-         Call ADVECTLOCAL(IE)
+         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -4792,7 +4804,7 @@ C*******************************************************************************
 C
       USE GLOBAL
       USE WIND
-      USE NodalAttributes, ONLY: EVM
+      USE NodalAttributes, ONLY: EVM,LoadAdvectionState
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -4872,7 +4884,7 @@ C...  SET NODAL VALUES FOR EACH ELEMENT
 
 
 Corbitt 120322: Localized Advection
-         Call ADVECTLOCAL(IE)
+         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -5512,7 +5524,7 @@ C*******************************************************************************
 C
       USE GLOBAL
       USE WIND
-      USE NodalAttributes, ONLY: EVM
+      USE NodalAttributes, ONLY: EVM,LoadAdvectionState
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -5592,7 +5604,7 @@ C...  SET NODAL VALUES FOR EACH ELEMENT
 
 
 Corbitt 120322: Localized Advection
-         Call ADVECTLOCAL(IE)
+         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -6274,7 +6286,7 @@ C
       USE WIND
       USE ITPACKV
       USE NodalAttributes, ONLY : FRIC, Tau0Var, HBREAK, FTHETA, FGAMMA,
-     &     IFLINBF, IFNLBF, IFHYBF, EVM
+     &     IFLINBF, IFNLBF, IFHYBF, EVM, LoadAdvectionState
 #ifdef CMPI
       USE MESSENGER
 #endif
@@ -6608,7 +6620,7 @@ ckmd
 
 
 Corbitt 120322: Localized Advection
-         Call ADVECTLOCAL(IE)
+         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -7240,7 +7252,7 @@ C*******************************************************************************
 C
       USE GLOBAL
       USE WIND
-      USE NodalAttributes, ONLY: EVM
+      USE NodalAttributes, ONLY: EVM,LoadAdvectionState
 
       IMPLICIT NONE
 
@@ -7330,7 +7342,7 @@ C...  SET NODAL VALUES FOR EACH ELEMENT
 
 
 Corbitt 120322: Localized Advection
-         Call ADVECTLOCAL(IE)
+         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -8717,7 +8729,7 @@ C*************************************************************************
 
       USE SIZES, ONLY : SZ
       USE GLOBAL
-      USE NodalAttributes, ONLY : LoadAdvectionState, AdvectionState
+      USE NodalAttributes, ONLY : AdvectionState
 
       Implicit None
 
@@ -8727,17 +8739,14 @@ C*************************************************************************
       NM2=NM(IE,2)
       NM3=NM(IE,3)
 
-      IF (LoadAdvectionState) Then
-
-         IF ((DP(NM1).GE.AdvectionState(NM1)).AND.
-     &       (DP(NM2).GE.AdvectionState(NM2)).AND.
-     &       (DP(NM3).GE.AdvectionState(NM3))) THEN
+      IF ((DP(NM1).GE.AdvectionState(NM1)).AND.
+     &    (DP(NM2).GE.AdvectionState(NM2)).AND.
+     &    (DP(NM3).GE.AdvectionState(NM3))) THEN
              IFNLCT = IFNLCTE
              IFNLCAT = IFNLCATE
-         ELSE
-            IFNLCT = 0
-            IFNLCAT = 0
-         ENDIF
+      ELSE
+         IFNLCT = 0
+         IFNLCAT = 0
       ENDIF
 
 C***********************************************************************

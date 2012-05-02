@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.71   - 05/01/2012 - zc - Reorganized ps2dots and ps3dots routines
+C             to improve code performance. Changed ADVECTLOCAL to only
+C             be called when advection is turned on, which improves code
+C             speed. Moved call to updater to after slope limiter
+C             routine to avoid calling it twice.
 C  v50.70   - 04/22/2012 - zc - Allowed the values from ESLNodes.63 to 
 C             be used in a hotstart run to reactivate slope limiter at
 C             previously active nodes. Fix hot start allocation issues.
