@@ -227,12 +227,23 @@ C
       LOGICAL FOUND
       CHARACTER*60 GRID,RUNINFO
       CHARACTER(len=80) skipped !jgf46.00 data that we want to skip
+c....tcm v50.66.02 additions for time varying bathymetry
+      INTEGER NDDT
+      REAL(8) BTIMINC,BCHGTIMINC
+      INTEGER :: ios_nddt
+      logical :: found_tbc_nml   !flag to determine if the timebathycontrol namelist was present
+      NAMELIST /TimeBathyControl/ nddt,BTIMINC,BCHGTIMINC
 
 #ifdef ADCNETCDF
       NETCDF_AVAIL = .true.
 #else
       NETCDF_AVAIL = .false.
 #endif
+
+C    tcm v50.66.02 -- additions for time varying bathymetry
+      NDDT = 0
+      IOS_NDDT = 0
+      FOUND_TBC_NML = .FALSE.
 
 C
 C...OPEN AND PROCESS THE UNIT 14 ADCIRC GRID FILE TO DETERMINE SIZES
@@ -411,6 +422,47 @@ C
       ENDIF
  132  WRITE(*,1011) RUNINFO
       OPEN(15,FILE=RUNINFO)
+
+
+
+c...  tcm v50.66.02 Addtions for Time Varying Bathymetry
+c...  read through the fort.15 file for the namelist (TimeBathyControl) for
+c...  the time varying bathymetry.  This namelist must be at the bottom of the
+c...  fort.15 file. If found, then set the appropriate values (btiminc,bchgtiminc,
+c...  and nddt).  If the namelist is not there, then the time varying bathymetry
+c...  will not be used. 
+C...
+C...  After this search and read, we will close the file and then reopen it
+c...  for further processing the traditional non-namelist components.
+C...
+      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
+
+      IF (IOS_NDDT < 0) THEN
+c.....   it is possible for the namelist to be present in the file and occuring at the end 
+c.....   of the file with no line breaks after the ending "\" which causes the iostat to 
+c.....   return a negative value.  By checking to be sure a namelist variable was set to
+c....    a non-default value we can determine this was the case.
+         IF (NDDT.NE.0) THEN
+!            WRITE(*,*) 'NAMELIST PRESENT, BUT AT THE END OF FILE WITH',
+!     &                 ' NO ADVANCING CHARACTER'
+            found_tbc_nml = .true.
+         ELSE
+!            WRITE(*,*) 'NAMELIST NOT PRESENT'
+         ENDIF
+      ELSEIF (IOS_NDDT == 0) THEN
+!         WRITE(*,*) 'NAME LIST PRESENT AND CORRECT'
+         found_tbc_nml = .true.
+      ELSE
+         found_tbc_nml = .true.
+!         WRITE(*,*) 'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST'
+!         WRITE(*,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.'
+         stop
+      ENDIF
+C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
+      REWIND(15)
+C
+
+
 C
 C  Initialize all runtime option logicals to false
 C

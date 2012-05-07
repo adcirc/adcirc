@@ -66,6 +66,12 @@ Casey 100205: Enable hot-start file generation by SWAN.
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       INTEGER :: commentStart            ! location of fort.15 comment start
       INTEGER :: ios                     ! i/o status of read operation
+
+!   tcm v50.66.02 -- added timebathycontrol namelist related variables
+      INTEGER :: ios_nddt
+      logical :: found_tbc_nml = .false.   !flag to determine if the timebathycontrol namelist was present
+      NAMELIST /timebathycontrol/ NDDT,BTIMINC,BCHGTIMINC
+
 #ifdef ADCNETCDF
       LOGICAL, PARAMETER :: NETCDF_AVAIL = .true.
 #else
@@ -82,6 +88,10 @@ C     Module.
 C
 C     jgf50.32: Initialize default values in wind module.
       CALL initWindModule()
+
+c     tcm v50.66.01 addition for time varying bathymetry
+      NDDT = 0  !set the default value for time varying bathymetry e.g. no changes
+      ios_nddt = 0
 C
 C...
 C...  OPEN UNIT 14 AND 15 INPUT FILES
@@ -95,6 +105,8 @@ C...
       IF (ios.gt.0) THEN
          CALL ADCIRC_Terminate()
       ENDIF
+
+
 C
 C...GENERAL PURPOSE FORMAT STATEMENTS
 C...
@@ -161,6 +173,50 @@ C...
 
       WRITE(16,*) '      - CODE WILL USE JCG ITERATIVE GWCE SOLVER'
       WRITE(16,1112)
+
+
+c...  tcm v50.66.02 Addtions for Time Varying Bathymetry
+c...  read through the fort.15 file for the namelist (TimeBathyControl) for
+c...  the time varying bathymetry.  This namelist must be at the bottom of the
+c...  fort.15 file. If found, then set the appropriate values (btiminc,bchgtiminc,
+c...  and nddt).  If the namelist is not there, then the time varying bathymetry
+c...  will not be used. 
+C...
+C...  After this search and read, we will close the file and then reopen it
+c...  for further processing the traditional non-namelist components.
+C...
+      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
+
+      IF (IOS_NDDT < 0) THEN
+c.....   it is possible for the namelist to be present in the file and occuring at the end 
+c.....   of the file with no line breaks after the ending "\" which causes the iostat to 
+c.....   return a negative value.  By checking to be sure a namelist variable was set to
+c....    a non-default value we can determine this was the case.
+         IF (NDDT.NE.0) THEN
+!            WRITE(*,*) 'NAMELIST PRESENT, BUT AT THE END OF FILE WITH',
+!     &                 ' NO ADVANCING CHARACTER'
+            found_tbc_nml = .true.
+         ELSE
+!            WRITE(*,*) 'NAMELIST NOT PRESENT'
+         ENDIF
+      ELSEIF (IOS_NDDT == 0) THEN
+!         WRITE(*,*) 'NAME LIST PRESENT AND CORRECT'
+         found_tbc_nml = .true.
+      ELSE
+         found_tbc_nml = .true.
+         WRITE(ScreenUnit,*) 'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST'
+         WRITE(16,*) 'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST'
+         WRITE(ScreenUnit,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.'
+         WRITE(16,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.'
+         CALL ADCIRC_TERMINATE()
+      ENDIF
+      CLOSE(UNIT=15)          
+
+c.....REOPEN THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
+      CALL openFileForRead(15,TRIM(INPUTDIR)//'/'//'fort.15',ios)
+      IF (ios.gt.0) THEN
+         CALL ADCIRC_Terminate()
+      ENDIF
 
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
@@ -1500,6 +1556,86 @@ C
 C------------------ END ICE CONCENTRATION ------------------------------C
 C
 
+C... tcm v50.66.02 addition for time varying bathymetry
+C
+C------------------ BEGIN TIME VARYING BATHY---------------------------C
+C
+C   The value of NDDT is set in the TimeBathyControl Namelist if present
+C
+      IF ( (ABS(NDDT).NE.0).AND.(abs(NDDT).NE.1)
+     &                     .AND.(abs(NDDT).NE.2) ) THEN
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+            WRITE(ScreenUnit,9972)
+            WRITE(ScreenUnit,*) 'NDDT = ',NDDT
+            WRITE(ScreenUnit,9814)
+            WRITE(ScreenUnit,9973)
+         ENDIF
+         WRITE(16,9972)
+         WRITE(16,*) 'NDDT =',NDDT
+         WRITE(16,9812)
+         WRITE(16,9973)
+ 9814    FORMAT(/,1X,'Your selection of NDDT (a UNIT 15 input ',
+     &        'parameter) is not an allowable value')
+         CALL ADCIRC_Terminate()
+      ENDIF
+      IF(NDDT.EQ.0) THEN
+         WRITE(16,837) NDDT
+ 837     FORMAT(/,5X,'NDDT = ',I2,/,9X,
+     &        'A TIME VARYING BATHYMETRY IS NOT USED DURING',
+     &        ' THE COMPUTATION')
+      ENDIF
+      IF(NDDT.EQ.1) THEN
+         WRITE(16,838) NDDT
+ 838     FORMAT(/,5X,'NDDT = ',I2,
+     &        /,9X,'A TIME VARYING BATHYMETRY IS USED DURING',
+     &             ' THE COMPUTATION',
+     &    /,9X,'NEW BATHYMETRY VALUES ARE READ AT ALL',
+     &    /,9X,'ADCIRC GRID NODES FROM A UNIT 141.',
+     &    /,9X,'THE UNIT 141 FILE BEGINS AT TIME=STATIM+BTIMINC.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE BATHYMETRY ',
+     &    /,9X,'DATA WITH THE MODEL TIME STEP.')
+      ENDIF
+      IF(NDDT.EQ.-1) THEN
+         WRITE(16,839) NDDT
+ 839     FORMAT(/,5X,'NDDT = ',I2,
+     &        /,9X,'A TIME VARYING BATHYMETRY IS USED DURING',
+     &             ' THE COMPUTATION',
+     &    /,9X,'NEW BATHYMETRY VALUES ARE READ AT ALL',
+     &    /,9X,'ADCIRC GRID NODES FROM A UNIT 141.',
+     &    /,9X,'THE UNIT 141 FILE BEGINS AT THE TIME OF THE HOT START',
+     &    /,9X,'PLUS BTIMINC.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE BATHYMETRY ',
+     &    /,9X,'DATA WITH THE MODEL TIME STEP.')
+      ENDIF
+      IF(NDDT.EQ.2) THEN
+         WRITE(16,840) NDDT
+ 840     FORMAT(/,5X,'NDDT = ',I2,
+     &        /,9X,'A TIME VARYING BATHYMETRY IS USED DURING',
+     &             ' THE COMPUTATION',
+     &    /,9X,'NEW BATHYMETRY VALUES ARE READ AT SELECTED',
+     &    /,9X,'ADCIRC GRID NODES FROM A UNIT 141.',
+     &    /,9X,'THE UNIT 141 FILE BEGINS AT TIME=STATIM+BTIMINC.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE BATHYMETRY ',
+     &    /,9X,'DATA WITH THE MODEL TIME STEP.')
+      ENDIF
+      IF(NDDT.EQ.-2) THEN
+         WRITE(16,841) NDDT
+ 841     FORMAT(/,5X,'NDDT = ',I2,
+     &        /,9X,'A TIME VARYING BATHYMETRY IS USED DURING',
+     &             ' THE COMPUTATION',
+     &    /,9X,'NEW BATHYMETRY VALUES ARE READ AT SELECTED',
+     &    /,9X,'ADCIRC GRID NODES FROM A UNIT 141.',
+     &    /,9X,'THE UNIT 141 FILE BEGINS AT THE TIME OF THE HOT START',
+     &    /,9X,'PLUS BTIMINC.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE BATHYMETRY ',
+     &    /,9X,'DATA WITH THE MODEL TIME STEP.')
+      ENDIF
+C...
+C...
+C
+C------------------ END TIME VARYING BATHY ------------------------------C
+C
+
 C...
 C...  READ AND PROCESS NRAMP - WHETHER A RAMP FUNCTION WILL BE USED
 C...
@@ -1808,6 +1944,54 @@ C... TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
       IF(NCICE.NE.0) WRITE(16,1119) CICE_TIMINC
  1119 FORMAT(5X,'ICE CONCENTRATION FIELD TIME INCREMENT (SEC) = ',
      &         F10.2,/)
+
+
+C... tcm v50.66.02 -- addition for time varying bathymetry
+C...
+C... PROCESS BTIMINC, BCHGTIMINC if NDDT .NE. 0
+C...
+C   The value of NDDT,BTIMINC, and BCHGTIMINC are all
+C   set in the TimeBathyControl Namelist if present
+
+      IF (ABS(NDDT).NE.0) THEN
+c...     !READ(15,*) BTIMINC,BCHGTIMINC  !read from namelist
+         if (btiminc.lt.abs(dtdp)) then
+            write(16,*) 'BATHYMETRY FIELD RECORD TIME LENGTH ',
+     &      btiminc,'MUST BE GREATER THAN TIME STEP SIZE ',abs(dtdp) 
+            CALL ADCIRC_Terminate()
+         endif
+         if (BCHGTIMINC.gt.btiminc) then
+            write(16,*) 'BATHYMETRY TRANSITION LENGTH MUST',
+     &         ' BE NO GREATER THAN BATHYMETRY FIELD RECORD',
+     &         ' LENGTHS.  RESETTING.'
+            BCHGTIMINC = btiminc
+         endif
+         if (BCHGTIMINC.lt.abs(dtdp)) then
+            write(16,*) 'BATHYMETRY TRANSITION LENGTH MUST',
+     &         ' BE NO SMALLER THAN THE TIME STEP SIZE.  RESETTING.'
+            BCHGTIMINC = ABS(DTDP)
+         ENDIF
+
+C....... MAKE SURE THAT BATHYMETRY TRANSITION LENGTH IS AN INTEGER MULTIPLE OF THE TIMESTEP SIZE
+         IF ( BCHGTIMINC/ABS(DTDP) - REAL(INT(BCHGTIMINC/ABS(DTDP))) .NE. 0.D0 ) THEN
+            WRITE(16,*) 'BATHYMETRY TRANSITION LENGTH MUST',
+     &         ' BE AN INTEGER MULTIPLE OF THE TIME STEP SIZE.  RESETTING.'
+            BCHGTIMINC = ABS(DTDP)*REAL(INT(BCHGTIMINC/ABS(DTDP) + 0.5D0))
+            DO WHILE ((BCHGTIMINC.GT.BTIMINC).AND.(BCHGTIMINC.GE.ABS(DTDP)) )
+               BCHGTIMINC = ABS(DTDP)*REAL(INT(BCHGTIMINC/ABS(DTDP) + 0.5D0)-1)
+            ENDDO
+         ENDIF
+      ELSE
+         BTIMINC = 0.d0
+         BCHGTIMINC = abs(dtdp)
+      ENDIF
+      IF (ABS(NDDT).NE.0) WRITE(16,1120) BTIMINC,BCHGTIMINC
+ 1120 FORMAT(5X,'BATHYMETRY FIELD TIME INCREMENT (SEC) = ',
+     &         F10.2,/,
+     &       5X,'BATHYMETRY TRANSITIONING LENGTH (SEC) = ',
+     &         F10.2/)
+
+
 C...
 C...  READ AND PROCESS RNDAY - SIMULATION DURATION IN DAYS
 C...
@@ -4984,6 +5168,11 @@ C...  INITIALIZE NIBNODECODE(I)
       DO I=1,NP
          NIBNODECODE(I)=0
       END DO
+
+C - tcm v50.66.02 -- additions for time varying bathymetry
+C - allocate global arrays for time varying bathymetry
+      if (abs(nddt).ne.0) call ALLOC_MAIN13()
+
 
 C - allocate arrays dealing with wind forcing
 

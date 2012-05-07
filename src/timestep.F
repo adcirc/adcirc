@@ -225,6 +225,10 @@ C   kmd48.33bc - added in the heat flux variables
 C   TCM V49.64.01 -- ADDED FOR ICE CONCENTRATION FIELDS
       REAL(SZ) PIC,CICE_TRatio  !ICE VARIABLES
 
+C   TCM v50.66.02 -- Added for Time Varying Bathymetry
+      INTEGER :: IJK
+      REAL(SZ) ETA2TMP,DPTMP,BTRATIO  !tcm v50.66.01 bathymetry changes
+
       call setMessageSource("timestep")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -325,6 +329,143 @@ C     TIP..Tidal potential forcing
          endif
 
       END DO
+
+C...TCM V50.66.01 -- ADDING TIME DEPENDENT BATHYMETRY
+C... so that total water column height is unchanged
+C
+C  DP is linearly interpolated between DP1 and DP2
+C  during the time interval btime1 and btime_end.
+C  After btime_end, DP is equal to DP2
+C
+C      DP1                         DP2
+C    btime1                      btime2      btime2 = btime1 + btiminc
+C       |---------x-----------------|        btime_end = btime1 + btime_end < btime2
+C              btime_end
+C
+
+      IF(abs(NDDT).EQ.1) THEN
+!        Get a new bathymetry from file if time to do so
+         IF(TimeLoc.GT.BTIME2) THEN !determine if bathy file time incr. is exceeded
+            BTIME1=BTIME2  !new starting time for this record
+            BTIME2=BTIME2+BTIMINC  !new ending time for this record
+            BTIME_END = BTIME1 + BCHGTIMINC  !ending time for bathymetry changes during the btiminc interval
+
+            DO I=1,NP
+               dp1(I) = dp2(I)  ! move current data to old
+            END DO
+!!!        go get new record for all nodes
+            DO I=1,NP
+               READ(141,*) IJK,DP2(IJK)
+            ENDDO
+C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+C...     DEPTHS ARE > OR = TO H0.
+            IF ((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
+               DO I=1,NP
+                  IF (DP2(I).LT.H0) DP2(I) = H0
+               ENDDO
+            ENDIF
+#ifdef CMPI
+            IF (MYPROC.EQ.0) then
+               WRITE(ScreenUnit,'(A36,1X,E15.8,1X,A5)') 'BATHYMETRY RECORDS UPDATED AT TIME =',TIMELOC,'(SEC)'
+               WRITE(16,'(A36,1X,E15.8,1X,A5)') 'BATHYMETRY RECORDS UPDATED AT TIME =',TIMELOC,'(SEC)'       
+            ENDIF
+#else
+            WRITE(ScreenUnit,'(A36,1X,E15.8,1X,A5)') 'BATHYMETRY RECORDS UPDATED AT TIME =',TIMELOC,'(SEC)'
+            WRITE(16,'(A36,1X,E15.8,1X,A5)') 'BATHYMETRY RECORDS UPDATED AT TIME =',TIMELOC,'(SEC)'        
+#endif   
+         ENDIF  !test for updating bathymetry records
+C.......If time is during the bathymetry change interval, then update bathymetry
+         IF(timeloc.LE.BTIME_END) THEN
+            bTRatio=(TimeLoc-bTIME1)/BCHGTIMINC ! interpolate
+            DO I=1,NP
+               DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry
+               DP(I) = DP1(I) + DPTMP           !updating bathymetry
+               ETA2TMP = ETA2(I)-DPTMP   !subtracting elevation by incremental amount
+               ETA2(I) = ETA2TMP        !updating elevation
+            ENDDO !I
+         ENDIF
+         IF(timeloc.EQ.BTIME_END) THEN
+#ifdef CMPI
+            IF (MYPROC.EQ.0) then
+               WRITE(ScreenUnit,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'
+               WRITE(16,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'
+            ENDIF
+#else
+            WRITE(ScreenUnit,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'
+            WRITE(16,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'   
+#endif  
+            DO I=1,NP
+               DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be
+               DP(I) = DP2(I)         !updating bathymetry to final value
+               ETA2TMP = ETA2(I)-DPTMP !subtracting elevation by incremental amount
+               ETA2(I) = ETA2TMP       !updating elevation
+            ENDDO !I
+         ENDIF
+
+      ENDIF  !NDDT = 1
+
+      IF(abs(NDDT).EQ.2) THEN
+!        Get a new bathymetry from file if time to do so
+         IF(TimeLoc.GT.BTIME2) THEN !determine if bathy file time incr. is exceeded
+            BTIME1=BTIME2  !new starting time for this record
+            BTIME2=BTIME2+BTIMINC  !new ending time for this record
+            BTIME_END = BTIME1 + BCHGTIMINC  !ending time for bathymetry changes during the btiminc interval
+            DO I=1,NP
+               dp1(I) = dp2(I)  ! move current data to old
+            END DO
+
+!!!        go get new record for only some nodes, all
+!!!        other nodes keep their current value
+            CALL NDDT2GET( 141,DP2(:),-99999.d0 )
+C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+C...     DEPTHS ARE > OR = TO H0.
+            IF ((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
+               DO I=1,NP
+                  IF (DP2(I).LT.H0) DP2(I) = H0
+               ENDDO
+            ENDIF
+
+#ifdef CMPI
+            IF (MYPROC.EQ.0) then
+               WRITE(ScreenUnit,'(A36,1X,E15.8,1X,A5)') 'BATHYMETRY RECORDS UPDATED AT TIME =',TIMELOC,'(SEC)'
+               WRITE(16,'(A36,1X,E15.8,1X,A5)') 'BATHYMETRY RECORDS UPDATED AT TIME =',TIMELOC,'(SEC)'       
+            ENDIF
+#else
+            WRITE(ScreenUnit,'(A36,1X,E15.8,1X,A5)') 'BATHYMETRY RECORDS UPDATED AT TIME =',TIMELOC,'(SEC)'
+            WRITE(16,'(A36,1X,E15.8,1X,A5)') 'BATHYMETRY RECORDS UPDATED AT TIME =',TIMELOC,'(SEC)'    
+#endif               
+         ENDIF  !test for updating bathymetry records
+
+C.......If time is during the bathymetry change interval, then update bathymetry
+         IF(timeloc.LE.BTIME_END) THEN
+            bTRatio=(TimeLoc-bTIME1)/BCHGTIMINC ! interpolate
+            DO I=1,NP
+               DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry
+               DP(I) = DP1(I) + DPTMP           !updating bathymetry
+               ETA2TMP = ETA2(I)-DPTMP   !subtracting elevation by incremental amount
+               ETA2(I) = ETA2TMP        !updating elevation
+            ENDDO !I
+         ENDIF
+         IF(timeloc.EQ.BTIME_END) THEN
+#ifdef CMPI
+            IF (MYPROC.EQ.0) then
+               WRITE(ScreenUnit,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'
+               WRITE(16,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'
+            ENDIF
+#else
+            WRITE(ScreenUnit,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'
+            WRITE(16,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'   
+#endif    
+            DO I=1,NP
+               DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be
+               DP(I) = DP2(I)         !updating bathymetry to final value
+               ETA2TMP = ETA2(I)-DPTMP !subtracting elevation by incremental amount
+               ETA2(I) = ETA2TMP       !updating elevation
+            ENDDO !I
+         ENDIF
+
+      ENDIF  !NDDT = 2
+
 
 C     2DDI.For the 2DDI version of the code
       if(C2DDI) then
@@ -2279,6 +2420,244 @@ C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 #ifdef CMPI
          CALL UPDATEI(NNODECODE,NIBCNT,2)
 #endif
+
+
+Cwet...
+CWET... ELEMENTAL WETTING CRITERIA WETBATHYCHANGE
+C*******************************************************************************************
+C tcm v50.66.01 -- This is an additional test for wetting only when time varying 
+C                  bathymetry is used and is only performed during the period of 
+C                  bathymetry evolution.
+C
+         IF ((NDDT.NE.0).AND.(IT.LE.BTIME_END+1) ) THEN
+            DO I=1,NE
+               NM1=NM(I,1)
+               NM2=NM(I,2)
+               NM3=NM(I,3)
+               NCTOT=NODECODE(NM1)+NODECODE(NM2)+NODECODE(NM3)
+               IF(NCTOT.lt.3) THEN   !If not wet from previous time step
+                  NCTOT=NNODECODE(NM1)+NNODECODE(NM2)+NNODECODE(NM3)
+                  if(NCTOT.lt.3) then !if not alreay made wet for this time step
+                     ETAN1=ETA2(NM1)
+                     ETAN2=ETA2(NM2)
+                     ETAN3=ETA2(NM3)
+                     HTOTN1=DP(NM1)+ETA2(NM1)
+                     HTOTN2=DP(NM2)+ETA2(NM2)
+                     HTOTN3=DP(NM3)+ETA2(NM3)
+
+!                    if all nodes have a depth greater than or equal to 
+!                    hoff = 1.2*H0, then make the element wet
+                     IF( (HTOTN1.GE.HOFF).AND.(HTOTN2.GE.HOFF).AND.
+     &                   (HTOTN3.GE.HOFF) ) THEN
+                     !THE ELEMENT SHOULD BE WET, SO WET THE DRY NODES
+                        !  Make Node 1 Wet and set parameters
+                        IF(NNODECODE(NM1).NE.1) THEN  !node 1
+                           NNODECODE(NM1)=1
+                           NM123 = NM1
+                           IF(C2DDI)THEN
+C<<                           Convert Manning's N to Cd, if necessary.
+                              IF (LoadManningsN) THEN
+                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
+     &                              /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                                               **(1.d0/3.d0) )
+                                 IF(FRIC(NM123).LT.BFCdLLimit) THEN
+                                    FRIC(NM123) = BFCdLLimit
+                                 ENDIF
+                              ENDIF
+                           ENDIF
+                           VEL=VELMIN
+                           H1 = HTOTN1
+                           IF(C2DDI)THEN
+                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+     &                          (IFNLBF+IFHYBF*
+     &                          (1.D0+(HBREAK/H1)**FTHETA)**
+     &                          (FGAMMA/FTHETA)))
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+                              TKXX(NM123) = TK(NM123)
+                              TKYY(NM123) = TK(NM123)
+                              TKXY(NM123) = 0.D0
+#endif
+#endif
+                           ELSEIF(C3D)THEN
+                              IF(ISLIP.EQ.0)THEN
+                                 DUDS=(Q(NM123,2)-Q(NM123,1))
+     &                              /(SIGMA(2)-SIGMA(1))
+                                 BSX1(NM123)=EVTOT(1)*REAL(DUDS)
+                                 BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
+                                 BSX1(NM3)=EVTOT(1)*REAL(DUDS)
+                                 BSY1(NM3)=EVTOT(1)*AIMAG(DUDS)
+                              ENDIF
+                              IF(ISLIP.NE.0)THEN
+                                 IF(ISLIP.EQ.1)THEN
+                                    KSLIP=KP
+                                 ENDIF
+                                 IF(ISLIP.EQ.2)THEN
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                               LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
+     &                                  (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                       +Z0B1)
+     &                                       / (Z0B1) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                     IF(KSLIP.GT.1.D0*ABS(Q(NM123,1)))
+     &                                  KSLIP=1.D0* ABS(Q(NM123,1))
+                                     IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
+     &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
+                                 ENDIF
+                                 BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
+                                 BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
+                                 BSX1(NM3)=KSLIP*REAL(Q(NM123,1))
+                                 BSY1(NM3)=KSLIP*AIMAG(Q(NM123,1))
+                              ENDIF
+                           ENDIF
+                        ENDIF  !end node 1
+
+                        !  Make Node 2 Wet and set parameters
+                        IF (NNODECODE(NM2).NE.1) THEN
+                           NNODECODE(NM2) = 1
+                           NM123=NM2
+                           IF(C2DDI)THEN
+C<<                        Convert Manning's N to Cd, if necessary.
+                              IF (LoadManningsN) THEN
+                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
+     &                            /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                                               **(1.d0/3.d0) )
+                                 IF(FRIC(NM123).LT.BFCdLLimit) THEN
+                                    FRIC(NM123) = BFCdLLimit
+                                 ENDIF
+                              ENDIF
+                           ENDIF
+                           VEL = VELMIN
+                           H1 = HTOTN2
+                           IF(C2DDI)THEN
+                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+     &                          (IFNLBF+IFHYBF*
+     &                          (1.D0+(HBREAK/H1)**FTHETA)**
+     &                          (FGAMMA/FTHETA)))
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+                              TKXX(NM123) = TK(NM123)
+                              TKYY(NM123) = TK(NM123)
+                              TKXY(NM123) = 0.D0
+#endif
+#endif
+                           ELSEIF(C3D)THEN
+                              IF(ISLIP.EQ.0)THEN
+                                 DUDS=(Q(NM123,2)-Q(NM123,1))
+     &                              /(SIGMA(2)-SIGMA(1))
+                                 BSX1(NM123)=EVTOT(1)*REAL(DUDS)
+                                 BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
+                                 BSX1(NM1)=EVTOT(1)*REAL(DUDS)
+                                 BSY1(NM1)=EVTOT(1)*AIMAG(DUDS)
+                              ENDIF
+                              IF(ISLIP.NE.0)THEN
+                                 IF(ISLIP.EQ.1)THEN
+                                    KSLIP=KP
+                                 ENDIF
+                                 IF(ISLIP.EQ.2)THEN
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                               LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
+     &                                 (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                       +Z0B1)
+     &                                       / (Z0B1) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                    IF(KSLIP.GT.1.D0*ABS(Q(NM123,1)))
+     &                                  KSLIP=1.D0* ABS(Q(NM123,1))
+                                    IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
+     &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
+                                 ENDIF
+                                 BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
+                                 BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
+                                 BSX1(NM1)=KSLIP*REAL(Q(NM123,1))
+                                 BSY1(NM1)=KSLIP*AIMAG(Q(NM123,1))
+                              ENDIF
+                           ENDIF
+                        ENDIF  !node 2
+
+                        !  Make Node 3 Wet and set parameters
+                        IF(NNODECODE(NM3).NE.1) THEN
+                           NNODECODE(NM3)=1
+                           NM123 = NM3
+                           IF(C2DDI)THEN
+C<<                         Convert Manning's N to Cd, if necessary.
+                              IF (LoadManningsN) THEN
+                                 FRIC(NM123)=g*ManningsN(NM123)**2.d0
+     &                           /( ( DP(NM123)+IFNLFA*ETA2(NM123) )
+     &                                               **(1.d0/3.d0) )
+                                 IF(FRIC(NM123).LT.BFCdLLimit) THEN
+                                    FRIC(NM123) = BFCdLLimit
+                                 ENDIF
+                              ENDIF
+                           ENDIF
+                           VEL=VELMIN
+                           H1 = HTOTN3
+                           IF(C2DDI)THEN
+                              TK(NM123)=FRIC(NM123)*(IFLINBF+(VEL/H1)*
+     &                           (IFNLBF+IFHYBF*
+     &                           (1.D0+(HBREAK/H1)**FTHETA)**
+     &                           (FGAMMA/FTHETA)))
+#ifdef CSWAN
+#ifdef CSWANFRIC
+Casey 091020: Adopt Ethan's/Joannes's modified friction.
+                              TKXX(NM123) = TK(NM123)
+                              TKYY(NM123) = TK(NM123)
+                              TKXY(NM123) = 0.D0
+#endif
+#endif
+                           ELSEIF(C3D)THEN
+                              IF(ISLIP.EQ.0)THEN
+                                 DUDS=(Q(NM123,2)-Q(NM123,1))
+     &                             /(SIGMA(2)-SIGMA(1))
+                                 BSX1(NM123)=EVTOT(1)*REAL(DUDS)
+                                 BSY1(NM123)=EVTOT(1)*AIMAG(DUDS)
+                                 BSX1(NM2)=EVTOT(1)*REAL(DUDS)
+                                 BSY1(NM2)=EVTOT(1)*AIMAG(DUDS)
+                              ENDIF
+                              IF(ISLIP.NE.0)THEN
+                                 IF(ISLIP.EQ.1)THEN
+                                    KSLIP=KP
+                                 ENDIF
+                                 IF(ISLIP.EQ.2)THEN
+                                     KSLIP = (1.D0 /
+     &                                     ( (1.D0/0.41D0) *
+     &                               LOG((ABS(((SIGMA(2)-SIGMA(1))/(A-B))*
+     &                                  (DP(NM123)+IFNLFA*ETA2(NM123)))
+     &                                       +Z0B1)
+     &                                       / (Z0B1) ) ) )**2.D0
+     &                                     * ABS(Q(NM123,1))
+                                     IF(KSLIP.GT.1.D0*ABS(Q(NM123,1)))
+     &                                  KSLIP=1.D0* ABS(Q(NM123,1))
+                                     IF(KSLIP.LT.0.0025D0*ABS(Q(NM123,1)))
+     &                                  KSLIP=0.0025D0*ABS(Q(NM123,1))
+                                 ENDIF
+                                 BSX1(NM123)=KSLIP*REAL(Q(NM123,1))
+                                 BSY1(NM123)=KSLIP*AIMAG(Q(NM123,1))
+                                 BSX1(NM2)=KSLIP*REAL(Q(NM123,1))
+                                 BSY1(NM2)=KSLIP*AIMAG(Q(NM123,1))
+                              ENDIF
+                           ENDIF
+                        ENDIF !node3
+
+                     ENDIF  !ALL DEPTHS GREATER THAN HOFF
+                  ENDIF  !IF NNODECODE SUM LESS THAN 3
+               ENDIF   ! IF NODECODE SUM LESS THAN 3
+            ENDDO  !LOOP OVER ELEMENTS
+
+C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
+#ifdef CMPI
+            CALL UPDATEI(NNODECODE,NIBCNT,2)
+#endif
+C
+         ENDIF !IT TIME VARYING BATHYMETRY AND WITHIN CHANGE TIME
+C
+C.... END OF ADDITIONAL WETTING FOR TIME VARYING BATHYMETRY
+CWET..
+CWET... ELEMENTAL WETTING CRITERIA WETBATHYCHANGE
+C*******************************************************************************************
 
 CWET...
 CWET...Nodal Wetting Criteria W2b

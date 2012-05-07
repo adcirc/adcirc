@@ -76,6 +76,8 @@ C
       type(OutputDataDescript_t), SAVE :: RSMaxDescript
       type(OutputDataDescript_t), SAVE :: SpongeDescript
       type(OutputDataDescript_t), SAVE :: ESLDescript
+      type(OutputDataDescript_t), SAVE :: BathyDescript   !tcm v50.66.01 added time varying bathy
+      type(OutputDataDescript_t), SAVE :: BathyStaDescript !tcm v50.66.01 added time varying bathy stations
 #ifdef CSWAN
 Casey 090302: Added this type for output of radiation stress gradients.
       type(OutputDataDescript_t), SAVE :: RSDescript
@@ -102,6 +104,9 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNMAX_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: sponge_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ESLONOFF_G(:) !zc added for ESL On/Off output
+      REAL(SZ), SAVE, Allocatable, Target :: DPOut_g(:)    !tcm v50.66.01 added time varying bathy
+      REAL(SZ), SAVE, Allocatable, Target :: DP00_g(:)  !tcm v50.66.01 added time varying bathy
+
 #ifdef CSWAN
 Casey 090302: Added these arrays for output of radiation stress gradients.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNXOut_g(:)
@@ -308,6 +313,51 @@ C         write(16,*) 'Allocating WindVelDescript' !jgfdebug48.03
          WindVelDescript % ConsiderWetDry       = .FALSE.
          WindVelDescript % alternate_value      = 0.0
          WindVelDescript % field_name           = 'WindVel'
+
+         ! fort.75  !tcm v50.66.01 Added for Time Varying Bathymetry
+C         write(16,*) 'Allocating BathyStaDescript'
+         IF (NDDT.NE.0 ) then
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               ALLOCATE(DP00_g(NSTAE_G))
+            ENDIF
+            BathyStaDescript % specifier            = NOUTE
+            BathyStaDescript % initial_value        = 0.0
+            BathyStaDescript % num_items_per_record = 1
+            BathyStaDescript % num_fd_records       = NSTAE_G
+            BathyStaDescript % num_records_this     = NSTAE
+            BathyStaDescript % imap                 => IMAP_STAE_LG
+            BathyStaDescript % array                => DP00
+            BathyStaDescript % array_g              => DP00_g
+            BathyStaDescript % ConsiderWetDry       = .FALSE.
+            BathyStaDescript % alternate_value      = 0.d0
+            BathyStaDescript % field_name           = 'BathySta'
+            IF (ICS.eq.2) THEN
+               BathyStaDescript % x_coord           => SLEL
+               BathyStaDescript % y_coord           => SFEL
+            ELSE
+               BathyStaDescript % x_coord           => XEL
+               BathyStaDescript % y_coord           => YEL
+            ENDIF
+         ENDIF
+
+         ! fort.76  !tcm v50.66.01  Added for Time Varying Bathymetry
+C         write(16,*) 'Allocating BathyDescript'
+         IF (NDDT.NE.0) then
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               ALLOCATE(DPOUT_g(NP_G))
+            ENDIF
+            BathyDescript % specifier            = NOUTGE
+            BathyDescript % initial_value        = 0.0
+            BathyDescript % num_items_per_record = 1
+            BathyDescript % num_fd_records       = NP_G
+            BathyDescript % num_records_this     = NP
+            BathyDescript % imap                 => NODES_LG
+            BathyDescript % array                => DP
+            BathyDescript % array_g              => DPOut_g
+            BathyDescript % ConsiderWetDry       = .FALSE.
+            BathyDescript % alternate_value      = 0.0
+            BathyDescript % field_name           = 'Bathy'
+         ENDIF
 
          ! fort.93
 C         write(16,*) 'Allocating IceDescript' !tcm v49.64.01 added for ice
@@ -574,6 +624,21 @@ Casey 090302: Added file name.
      &                         packOne, unpackOne, IESTP,
      &                         'fort.61        ')
 
+c.....     tcm v50.66.01 added for time varying bathymetry
+c.....     save bathymetry recording station data to file
+            IF (NDDT.NE.0) THEN
+               DO I=1,NSTAE
+                  EE1=DP(NM(NNE(I),1))
+                  EE2=DP(NM(NNE(I),2))
+                  EE3=DP(NM(NNE(I),3))
+                  DP00(I)=EE1*STAIE1(I)+EE2*STAIE2(I)
+     &                                 +EE3*STAIE3(I)
+               ENDDO
+               CALL writeOutArray(75,TimeLoc,IT,BathyStaDescript,
+     &                         packOne, unpackOne, IBSTP,
+     &                         'fort.75        ')
+            ENDIF
+
 C            write(16,*) 'Finished with fort.61 output routine.' !jgfdebug48.03
             NSCOUE=0
             NCCOUE=NSCOUE
@@ -747,21 +812,43 @@ Casey 090302: Changed descript to ElevDescript.
                      CALL WRITE_GBL_FILE_THROUGH_WRITER
      $              (TRIM(GLOBALDIR)//'/'//'fort.63',ElevDescript,TimeLoc,it,
      $                 writer_store63, -99999.D0)
+
+                     !tcm v50.66.01 added for time varying bathymetry
+                   if (nddt.ne.0) call WRITE_GBL_FILE_THROUGH_WRITER
+     $              (TRIM(GLOBALDIR)//'/'//'fort.76',BathyDescript,TimeLoc,it,
+     $                 writer_storeOne, 0.D0)
+
                   ELSE
                      CALL writeOutArray(63, TimeLoc, IT, ElevDescript,
      &                            pack63, unpackOne, IGEP,
      &                            'fort.63        ')
+                     !tcm v50.66.01 added for time varying bathymetry
+                     if (nddt.ne.0) CALL writeOutArray(76, TimeLoc, IT,
+     &                      BathyDescript,packOne, unpackOne, IGBP,
+     &                            'fort.76        ')
+
                   ENDIF
 #else
                   CALL writeOutArray(63, TimeLoc, IT, ElevDescript,
      &                            pack63, unpackOne, IGEP,
      &                            'fort.63        ')
+
+                  !tcm v50.66.01 added for time varying bathymetry
+                  if (nddt.ne.0) CALL writeOutArray(76, TimeLoc, IT,
+     &                   BathyDescript,packOne, unpackOne, IGBP,
+     &                            'fort.76        ')
 #endif
                else
 Casey 090302: Added file name.
                   CALL writeOutArray(63, TimeLoc, IT, ElevDescript,
      &                            pack63, unpackOne, IGEP,
      &                            'fort.63        ')
+
+                  !tcm v50.66.01 added for time varying bathymetry
+                  if (nddt.ne.0) CALL writeOutArray(76, TimeLoc, IT,
+     &                   BathyDescript,packOne, unpackOne, IGBP,
+     &                            'fort.76        ')
+
                endif
 C
 C              jgf47.06: Write out tau0 if it is time varying and the user has
@@ -794,17 +881,39 @@ Casey 090302: Changed descript to ElevDescript.
                  CALL WRITE_GBL_FILE_THROUGH_WRITER
      $              (TRIM(GLOBALDIR)//'/'//'fort.63',ElevDescript,TimeLoc,it,
      $                 writer_store63, -99999.D0)
+
+                  !tcm v50.66.01 added for time varying bathymetry
+                  !this will be a full record not compact
+                 if (nddt.ne.0) CALL WRITE_GBL_FILE_THROUGH_WRITER
+     $              (TRIM(GLOBALDIR)//'/'//'fort.76',BathyDescript,TimeLoc,it,
+     $                 writer_storeOne, 0.D0)
+
               ELSE
                  CALL WRITE_GBL_63_SKIP_DRYNODE  ! sb 11/10/2006
      $                (63, TRIM(GLOBALDIR)//'/'//'fort.63',
      $                 ElevDescript, TimeLoc,it, store63)
+
+                  !tcm v50.66.01 added for time varying bathymetry
+                  ! note that this will be a full record not compact
+                  IF (NDDT.NE.0) CALL writeOutArray(76, TimeLoc, IT,
+     &                   BathyDescript,packOne, unpackOne, IGBP,
+     &                         'fort.76        ')
+
               ENDIF
 #else
               CALL WRITE_GBL_63_SKIP_DRYNODE  ! sb 11/10/2006
      $            (63, TRIM(GLOBALDIR)//'/'//'fort.63',
      &               ElevDescript, TimeLoc,it, store63)
+
+              !tcm v50.66.01 added for time varying bathymetry
+              ! note that this will be a full record not compact
+              IF (NDDT.NE.0) CALL writeOutArray(76, TimeLoc, IT,
+     &                BathyDescript,packOne, unpackOne, IGBP,
+     &                      'fort.76        ')
+
 #endif
               IGEP=IGEP+1+NP
+              IGBP=IGBP+1+NP
            ENDIF
 C           write(16,*) 'Finished with fort.63 output routine.' !jgfdebug48.03
            NSCOUGE=0

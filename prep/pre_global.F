@@ -122,6 +122,7 @@ C
       CHARACTER*80,ALLOCATABLE :: ALPHA1(:),ALPHA2(:),FREQMSG(:),
      &  QNMSG(:,:)
       CHARACTER*80,ALLOCATABLE :: AMIGMSG(:),EMOMSG(:,:),TPKMSG(:)
+
 C
 C     PARM15-3DVS section
       INTEGER :: ISLIP,ICG,NFEN,IEVC
@@ -232,7 +233,15 @@ C     INPUT15D section
       REAL(SZ)   DT
       REAL(8)    STATIM,REFTIM,WTIMINC
       REAL(8),ALLOCATABLE ::   AMIG(:),AMIGT(:),FAMIG(:)
-      REAL(8)    CICE_TIMINC   ! tcm v49.64.01 addition for ice
+      REAL(8)  CICE_TIMINC   ! tcm v49.64.01 addition for ice
+
+c.... tcm v50.66.02 added for time varying bathymetry
+      INTEGER  NDDT   !tcm v50.66.02 added for time varying bathymetry
+      REAL(8)  BTIMINC ! TIME INCREMENT (SECONDS) FOR BATHYMETRY CHANGES USED FOR TIME VARYING BATHYMETRY
+      REAL(8) :: BCHGTIMINC ! time increment (seconds) over which bathymetry changes during a btimeinc interval
+      LOGICAL :: FOUND_TBC_NML   !flag to determine if the timebathycontrol namelist was present
+      NAMELIST /TimeBathyControl/ NDDT,BTIMINC,BCHGTIMINC
+
 C
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX

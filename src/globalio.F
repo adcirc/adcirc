@@ -1717,7 +1717,40 @@ C-----------------------------------------------------------------------
       END SUBROUTINE readMinMax
 C-----------------------------------------------------------------------
 
+C----------------------------------------------------------------------
+C       S U B R O U T I N E   N D D T 2 R E A D
+C----------------------------------------------------------------------
+C
+C     tcm v50.66.02 Subroutine to read in new bathymetry values.
+C        Time records are separated by a # symbol located in 
+C        column 2.  This format is similar to those for NWS = 4
+C       
+C----------------------------------------------------------------------
+      SUBROUTINE NDDT2GET(lun,RVAL,defval)
+      USE SIZES
+      IMPLICIT NONE
+      INTEGER IJK
+      INTEGER, intent(in) :: lun
+      REAL(SZ), intent(in) :: defval
+      REAL(SZ),intent(inout) ::  rval(*)
+      REAL(SZ) :: tmpval
+      CHARACTER*80 cdum80
+C
 
+C...  go get new record for only some nodes, all
+C...  other nodes keep their current value
+ 170  READ(lun,'(A80)') CDUM80
+      IF(CDUM80(2:2).EQ.'#') GOTO 170
+ 171  READ(CDUM80,'(I8,E13.5)') IJK,tmpval    
+      if (tmpval.ne.defval) RVAL(IJK) = tmpval  !this allows us to exclude values included for record separation purposes in the parallel version
+      READ(lun,'(A80)',end=172) CDUM80
+      IF(CDUM80(2:2).NE.'#') GOTO 171
+ 172  CONTINUE
+      
+      RETURN
+C----------------------------------------------------------------------
+      END SUBROUTINE NDDT2GET
+C----------------------------------------------------------------------
 
 
       !--------------------------------------------------------------

@@ -138,6 +138,10 @@ C
 C     tcm v49.64.01 -- ADDED variables for Ice concentration fields
       REAL(SZ) PIC,CICE_TRatio  !ICE VARIABLES
 C
+C     tcm v50.66.01 added variables for time varying bathymetry
+      real(sz) DPTMP,BTRatio
+      integer IJK
+C
 C     jgf49.1001 Added for blending NWS19 and NWS12 (from NAM) met data
       REAL(SZ) bf ! blending factor for the two wind data types
 
@@ -1210,6 +1214,183 @@ C.............RESET INFORMATION FOR K TIME LEVEL
       ENDIF
 cjjwm001 - end add
 
+C-------------------TIME VARYING BATHYMETRY FIELDS-------------------------
+C... update the time varying bathymetry if used
+C... tcm v50.66.01 added this section
+C
+
+C     time varying bathymetry values are read in at all grid nodes
+C     at a time interval that does not equal the model time
+C     step. Interpolation in time is used to synchronize the 
+C     bathymetry information with the model time step.
+      IF(Nddt.EQ.1) THEN
+         OPEN(141,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
+         bTIME1 = STATIM*86400.D0
+         bTIME2 = bTIME1 + bTIMINC
+         BTIME_END = BTIME1 + BCHGTIMINC  !ending time for bathymetry changes during the btiminc interval
+         DP1(:) = DP(:)
+         DP2(:) = DP(:)
+         READ(141,*) (IJK,dp2(IJK),I=1,NP)
+C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+C...     DEPTHS ARE > OR = TO H0.
+         IF ((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
+            DO I=1,NP
+               IF (DP2(I).LT.H0) DP2(I) = H0
+            ENDDO
+         ENDIF
+         DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            IF(TIMEIT.GT.bTIME2) THEN
+               bTIME1=bTIME2
+               bTIME2=bTIME2+bTIMINC
+               BTIME_END = BTIME1 + BCHGTIMINC
+               dp1(:) = dp2(:)
+               DO I=1,NP
+                  READ(141,*) IJK,DP2(IJK)
+               END DO
+C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+C...     DEPTHS ARE > OR = TO H0.
+               IF ((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
+                  DO I=1,NP
+                     IF (DP2(I).LT.H0) DP2(I) = H0
+                  ENDDO
+               ENDIF
+            ENDIF  !timeit
+         END DO  !IT
+
+C.......If time is during the bathymetry change interval, then update bathymetry
+         IF(TIMEloc.LE.BTIME_END) THEN
+            bTRatio=(TIMEloc-bTIME1)/BCHGTIMINC ! interpolate
+            DO I=1,NP
+               DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry
+               DP(I) = DP1(I) + DPTMP           !updating bathymetry
+            ENDDO !I
+         ENDIF
+         IF(TIMEloc.EQ.BTIME_END) THEN
+            DO I=1,NP
+               DP(I) = DP2(I)         !updating bathymetry to final value
+            ENDDO !I
+         ENDIF
+      ENDIF
+
+      IF(NDDT.EQ.-1) THEN
+         OPEN(141,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
+         bTIME1 = timeLoc
+         bTIME2 = bTIME1 + bTIMINC
+         BTIME_END = BTIME1 + BCHGTIMINC
+         DP1(:) = DP(:)
+         DP2(:) = DP(:)
+         READ(141,*) (IJK,DP2(IJK),I=1,NP)
+C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+C...     DEPTHS ARE > OR = TO H0.
+         IF ((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
+            DO I=1,NP
+               IF (DP2(I).LT.H0) DP2(I) = H0
+            ENDDO
+         ENDIF
+C.......If time is during the bathymetry change interval, then update bathymetry 
+         IF(TIMEloc.LE.BTIME_END) THEN
+            bTRatio=(Timeloc-bTIME1)/BCHGTIMINC ! interpolate
+            DO I=1,NP
+               DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry
+               DP(I) = DP1(I) + DPTMP           !updating bathymetry
+            ENDDO !I
+         endif
+         IF(TIMEloc.EQ.BTIME_END) THEN
+            DO I=1,NP
+               DP(I) = DP2(I)         !updating bathymetry to final value
+            ENDDO !I
+         ENDIF
+      ENDIF
+
+      IF(NDDT.EQ.2) THEN
+         OPEN(141,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
+         bTIME1 = STATIM*86400.D0
+         bTIME2 = bTIME1 + bTIMINC
+         BTIME_END = BTIME1 + BCHGTIMINC  !ending time for bathymetry changes during the btiminc interval
+         DP1(:) = DP(:)
+         DP2(:) = DP(:)
+
+!!!     go get first record for only some nodes, all
+!!!     other nodes keep their current value
+        CALL NDDT2GET(141,DP2(:),-99999.d0 )
+C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+C...     DEPTHS ARE > OR = TO H0.
+        IF ((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
+           DO I=1,NP
+              IF (DP2(I).LT.H0) DP2(I) = H0
+           ENDDO
+        ENDIF
+
+         DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            IF(TIMEIT.GT.bTIME2) THEN
+               bTIME1=bTIME2
+               bTIME2=bTIME2+bTIMINC
+               BTIME_END = BTIME1 + BCHGTIMINC
+               DP1(:) = DP2(:)
+!!!            go get next record for only some nodes, all
+!!!            other nodes keep their current value
+               CALL NDDT2GET(141,DP2(:),-99999.d0 )
+C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+C...     DEPTHS ARE > OR = TO H0.
+               IF ((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
+                  DO I=1,NP
+                     IF (DP2(I).LT.H0) DP2(I) = H0
+                  ENDDO
+               ENDIF
+            ENDIF
+         END DO  !IT
+
+C.......If time is during the bathymetry change interval, then update bathymetry
+         IF(TIMEloc.LE.BTIME_END) THEN
+         bTRatio=(Timeloc-bTIME1)/BCHGTIMINC ! interpolate
+            DO I=1,NP
+               DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry
+               DP(I) = DP1(I) + DPTMP           !updating bathymetry
+            ENDDO !I
+         ENDIF
+         IF(timeloc.EQ.BTIME_END) THEN
+            DO I=1,NP
+               DP(I) = DP2(I)         !updating bathymetry to final value
+            ENDDO !I
+         ENDIF
+      ENDIF
+
+      IF(NDDT.EQ.-2) THEN
+         OPEN(141,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
+         bTIME1 = timeLoc
+         bTIME2 = bTIME1 + bTIMINC
+         BTIME_END = BTIME1 + BCHGTIMINC
+         DP1(:) = DP(:)
+         DP2(:) = DP(:)
+
+!!!     go get first record for only some nodes, all
+!!!     other nodes keep their current value
+        CALL NDDT2GET(141,DP2(:),-99999.d0 )
+C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+C...     DEPTHS ARE > OR = TO H0.
+         IF ((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
+            DO I=1,NP
+               IF (DP2(I).LT.H0) DP2(I) = H0
+            ENDDO
+         ENDIF
+C.......If time is during the bathymetry change interval, then update bathymetry
+         IF(TIMEloc.LE.BTIME_END) THEN
+            bTRatio=(Timeloc-bTIME1)/BCHGTIMINC ! interpolate
+            DO I=1,NP
+               DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry
+               DP(I) = DP1(I) + DPTMP           !updating bathymetry
+            ENDDO !I
+         endif
+         IF(TIMEloc.EQ.BTIME_END) THEN
+            DO I=1,NP
+               DP(I) = DP2(I)         !updating bathymetry to final value
+            ENDDO !I
+         ENDIF
+      ENDIF
+
+
 C------------------------ICE FIELDS----------------------------------------
 C...  UPDATE THE ICE CONCENTRATION FIELDS FROM UNIT 25, 225, 227
 c...  TCM V49.64.01 ADDED THE ICE FIELDS SECTION
@@ -2179,6 +2360,14 @@ C...
       IF(NBYTE.EQ.4) ITEMPSTP=20
       IF(NBYTE.EQ.8) ITEMPSTP=10
 
+C.... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
+C.... SET THE BATHY VARIABLES EQUAL TO THE ELVATION VALUES
+C.... FOR USE LATER ON
+      NTCYSB = NTCYSE
+      NTCYFB = NTCYFE
+      NSCOUB = NSCOUE
+      IBSTP = IESTP
+
 C...
 C....IF RESTARTING THE ELEVATION STATION OUTPUT FILE, GO TO THE PROPER PLACE
 C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
@@ -2553,6 +2742,83 @@ c         WRITE(72,REC=ITMEPSTP+1) NTRSPM
         ENDIF
       ENDIF
 
+
+C... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
+C... THIS FILE IS CONTROLLED BY THE ELEVATION STATION DATA
+C...
+C....IF RESTARTING THE BATHYMETRY STATION OUTPUT FILE, GO TO THE PROPER PLACE
+C....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
+C...
+
+      IF (NDDT.NE.0) WRITE(16,1035) IBSTP,NSCOUB
+ 1035 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN BATHYMETRY ',
+     &                'STATION FILE BY THE TIME OF THE HOT START',
+     &           /,8X,'SPOOL COUNTER = ',I6)
+
+      IF ((NDDT.NE.0).AND.(NOUTE.LT.0)) THEN
+        IBSTP=0
+        NSCOUB=0
+        IF((NTCYSB.LT.ITHS).AND.(NSPOOLE.GT.0)) THEN
+          NTCYSB=NTCYSB+((REAL(ITHS)-REAL(NTCYSB))/
+     &           REAL(NSPOOLE))*REAL(NSPOOLE)
+          IF(NTCYSB.LT.ITHS) NTCYSB=NTCYSB+NSPOOLE
+          IF(NSPOOLE.NE.0) NTRSPB=(NTCYFB-NTCYSB)/NSPOOLE
+        ENDIF
+        WRITE(16,1036)
+ 1036   FORMAT(//,' A NEW BATHYMETRY STATION FILE WILL BE STARTED')
+      ENDIF
+      IF(NOUTE.EQ.-2) THEN
+        OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
+     &                      ACCESS='DIRECT',RECL=NBYTE)
+        IF(NBYTE.EQ.4) THEN
+          DO I=1,8
+            WRITE(75,REC=IBSTP+I) RDES4(I)
+          ENDDO
+          IBSTP=IBSTP+8
+          DO I=1,6
+            WRITE(75,REC=IBSTP+I) RID4(I)
+          ENDDO
+          IBSTP=IBSTP+6
+          DO I=1,6
+            WRITE(75,REC=IBSTP+I) AID4(I)
+          ENDDO
+          IBSTP=IBSTP+6
+        ENDIF
+        IF(NBYTE.EQ.8) THEN
+          DO I=1,4
+            WRITE(75,REC=IBSTP+I) RDES8(I)
+          ENDDO
+          IBSTP=IBSTP+4
+          DO I=1,3
+            WRITE(75,REC=IBSTP+I) RID8(I)
+          ENDDO
+          IBSTP=IBSTP+3
+          DO I=1,3
+            WRITE(75,REC=IBSTP+I) AID8(I)
+          ENDDO
+          IBSTP=IBSTP+3
+        ENDIF
+        WRITE(75,REC=IBSTP+1) NTRSPB
+        WRITE(75,REC=IBSTP+2) NSTAE
+        WRITE(75,REC=IBSTP+3) DT*NSPOOLE
+        WRITE(75,REC=IBSTP+4) NSPOOLE
+        WRITE(75,REC=IBSTP+5) 1
+        IBSTP=IBSTP+5
+        CLOSE(75)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+      ENDIF
+      IF(NOUTE.EQ.-1) THEN
+        CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75',
+     $    NSTAE_G, NSTAE, HEADER61)
+        IESTP=2
+      ENDIF
+
+      IF ((NDDT.NE.0).AND.(NOUTE.EQ.2)) THEN
+        OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
+     &                      ACCESS='DIRECT',RECL=NBYTE)
+c       WRITE(75,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+        CLOSE(75)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+      ENDIF
+
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL ELEVATION OUTPUT FILE
 C...
@@ -2560,6 +2826,13 @@ C...
  1046   FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
      &                  'ELEVATION FILE BY THE TIME OF THE HOT START',
      &          /,8X,'SPOOL COUNTER =',I8)
+
+C....   TCM V50.66.01 ADDITIONS FOR TIME VARYING BATYMETRY
+C....   SET THESE VARIABLES FOR USE LATER 
+        IGBP = IGEP
+        NTCYSGB = NTCYSGE
+        NTCYFGB = NTCYFGE
+        NSCOUGB = NSCOUGE
 
         IF(NOUTGE.LT.0) THEN
           IGEP=0
@@ -3038,6 +3311,88 @@ c         WRITE(93,REC=ITempStp+1) ndsetsw  ! ALLOW ADDITIONAL OUTPUT DATA TO BE
              CLOSE(93)                      ! DO THIS TO FLUSH THE WRITE BUFFER
           ENDIF
         ENDIF
+
+C... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
+C... THIS FILE IS CONTROLED BY THE ELEVATION OUTPUT OPTIONS
+C....GO TO THE PROPER PLACE IN THE GLOBAL BATHYMETRY OUTPUT FILE
+C...
+        IF (NDDT.NE.0) WRITE(16,1051) IGBP,NSCOUGB
+ 1051   FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ',
+     &                  'BATHYMETRY FILE BY THE TIME OF THE HOT START',
+     &          /,8X,'SPOOL COUNTER =',I8)
+
+        IF ((NDDT.NE.0).AND.(NOUTGE.LT.0)) THEN
+           IGBP=0
+           NSCOUGB=0
+           IF((NTCYSGB.LT.ITHS).AND.(NSPOOLGE.GT.0)) THEN
+              NTCYSGB=NTCYSGB+((REAL(ITHS)-REAL(NTCYSGB))/
+     &               REAL(NSPOOLGE))*REAL(NSPOOLGE)
+              IF(NTCYSGB.LT.ITHS) NTCYSGB=NTCYSGB+NSPOOLGE
+              IF(DTDP.NE.DTDPHS) THEN
+                 NDSETSB=((NTCYFGB*DTDP)-(NTCYSGB*DTDPHS))/
+     &                (NSPOOLGE*DTDP)
+              ELSE
+                 NDSETSB=(NTCYFGB-NTCYSGB)/NSPOOLGE
+              ENDIF
+           ENDIF
+           WRITE(16,1052)
+ 1052      FORMAT(//,' A NEW GLOBAL BATHYMETRY FILE WILL BE STARTED')
+        ENDIF
+
+        IF ((NDDT.NE.0).AND.(NOUTGE.EQ.-2)) THEN
+           OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+           IF(NBYTE.EQ.4) THEN
+              DO I=1,8
+                WRITE(76,REC=IGBP+I) RDES4(I)
+              ENDDO
+              IGBP=IGBP+8
+              DO I=1,6
+                 WRITE(76,REC=IGBP+I) RID4(I)
+              ENDDO
+              IGBP=IGBP+6
+              DO I=1,6
+                 WRITE(76,REC=IGBP+I) AID4(I)
+              ENDDO
+              IGBP=IGBP+6
+           ENDIF
+           IF(NBYTE.EQ.8) THEN
+              DO I=1,4
+                 WRITE(76,REC=IGBP+I) RDES8(I)
+              ENDDO
+              IGBP=IGBP+4
+              DO I=1,3
+                 WRITE(76,REC=IGBP+I) RID8(I)
+              ENDDO
+              IGBP=IGBP+3
+              DO I=1,3
+                 WRITE(76,REC=IGBP+I) AID8(I)
+              ENDDO
+              IGBP=IGBP+3
+           ENDIF
+           WRITE(76,REC=IGBP+1) NDSETSE
+           WRITE(76,REC=IGBP+2) NP
+           WRITE(76,REC=IGBP+3) DT*NSPOOLGE
+           WRITE(76,REC=IGBP+4) NSPOOLGE
+           WRITE(76,REC=IGBP+5) 1
+           IGBP=IGBP+5
+           CLOSE(76)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+        ENDIF
+
+        IF ((NDDT.NE.0).AND.
+     &            ((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4))) THEN
+           CALL OPEN_GBL_FILE(76, TRIM(GLOBALDIR)//'/'//'fort.76',
+     &         NP_G, NP, HEADER63)
+           IGBP=2
+        ENDIF
+        IF ((NDDT.NE.0).AND.(NOUTGE.EQ.2)) THEN
+           OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+           CLOSE(76)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+        ENDIF
+
+
 C
 C     jgf48.4635 If the maxele.63 (etc) files are present, we need to
 C     load them up, to preserve high water marks across hotstarts.

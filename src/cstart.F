@@ -28,7 +28,7 @@ C
 
       IMPLICIT NONE
 
-      INTEGER I, J
+      INTEGER I, J,IOS, IJK
       INTEGER NM1, NM2, NM3
       INTEGER NC1, NC2, NC3, NCELE
 
@@ -43,6 +43,9 @@ C     jgf48.4628 Add capability to turn off solution if only met output
 C     was requested.
       LOGICAL metOutputOn     ! .true. if met output was requested
       LOGICAL nonMetOutputOff ! .true. no other output was requested
+
+c.... tcm v50.66.02 additions for time varying bathymetry
+      CHARACTER(80) :: CDUM80
 C
       call setMessageSource("coldstart")
 #if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
@@ -50,6 +53,57 @@ C
 #endif
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
+
+C------------------------------------------------------------------------------
+C... tcm v50.66.01 Time Varying Bathymetry
+C------------------------------------------------------------------------------
+C
+      IF (NDDT.NE.0) then
+C...    Set the first two bathymetry values, these arrays are
+C...    allocated in alloc_main13 called during read_input
+         DP1(:) = DP(:)  !set dp1 to initial depth from fort.14 grid
+         DP2(:) = DP(:)  !set dp2 to the same values
+
+         BTIME1 = STATIM*86400.D0
+         BTIME2=BTIME2+BTIMINC  !new ending time for this record
+         BTIME_END = BTIME1 + BCHGTIMINC  
+
+C...    read in the second depth dp2 for btime2
+         IOS = 0
+         CALL openFileForRead(141,TRIM(INPUTDIR)//'/'//'fort.141',IOS)
+         IF (IOS.GT.0) THEN
+            CALL ADCIRC_Terminate()
+         ENDIF
+
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
+         WRITE(16,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1976)
+         WRITE(16,1976)
+ 1976    FORMAT(/,1X,'TIME VARYING BATHYMETRY INFORMATION ',
+     &        'READ FROM UNIT 141',/)
+
+         IF (ABS(NDDT).EQ.1) THEN
+            DO I=1,NP
+               READ(141,*) IJK,DP2(IJK)
+            ENDDO
+         ENDIF
+         IF (ABS(NDDT).EQ.2) THEN
+!!!        go get new record for only some nodes, all
+!!!        other nodes keep their current value
+            CALL NDDT2GET(141,DP2(:),-99999.d0)
+         ENDIF
+
+C...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+C...     DEPTHS ARE > OR = TO H0.
+         IF ((NOLIFA.EQ.0).OR.(NOLIFA.EQ.1)) THEN
+            DO I=1,NP
+               IF (DP2(I).LT.H0) DP2(I) = H0
+            ENDDO
+         ENDIF
+      ENDIF  !end test for time varying bathymetry
+C
+C------------------------------------------------------------------------------
+C
 
 ! kmd - Evan's updates for rivers above MSL
 ! open the fort.88 files if needed
@@ -788,6 +842,65 @@ C...
             CLOSE(91)
          ENDIF
       ENDIF
+
+C....tcm v50.66.01 Addition for time varying bathymetry
+C...
+C....INITIALIZE BATHYMETRY STATION SPOOL COUNTER
+C....THESE WILL BE SAVED AT THE SAME LOCATIONS AS ELEVATION STATIONS 
+C....AND ARE CONTROLLED BY THE ELEVATION STATION CONTROLS
+C....OPEN BATHYMETRY STATION OUTPUT FILE
+C....WRITE OUT HEADER INFORMATION INCLUDING NTRSPE (NO. OF DATA PTS. AT EACH
+C....BATHYMETRY STATION), NSTAE, DT*NSPOOLE, NSPOOLE, IRTYPE
+C...
+      NSCOUB=0
+      IBSTP=0
+
+      IF ((NDDT.NE.0).AND.(ABS(NOUTE).EQ.1)) THEN
+         CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75',
+     &    NSTAE_G, NSTAE, HEADER61)  !no need to create a header75
+         IBSTP=2
+      ENDIF
+
+      IF ((NDDT.NE.0).AND.(ABS(NOUTE).EQ.2)) THEN
+         OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
+     &           ACCESS='DIRECT',RECL=NBYTE)
+         IF(NBYTE.EQ.4) THEN
+            DO I=1,8
+               WRITE(75,REC=IBSTP+I) RDES4(I)
+            ENDDO
+            IBSTP=IBSTP+8
+            DO I=1,6
+               WRITE(75,REC=IBSTP+I) RID4(I)
+            ENDDO
+            IBSTP=IBSTP+6
+            DO I=1,6
+               WRITE(75,REC=IBSTP+I) AID4(I)
+            ENDDO
+            IBSTP=IBSTP+6
+         ENDIF
+         IF(NBYTE.EQ.8) THEN
+            DO I=1,4
+               WRITE(75,REC=IBSTP+I) RDES8(I)
+            ENDDO
+            IBSTP=IBSTP+4
+            DO I=1,3
+               WRITE(75,REC=IBSTP+I) RID8(I)
+            ENDDO
+            IBSTP=IBSTP+3
+            DO I=1,3
+               WRITE(75,REC=IBSTP+I) AID8(I)
+            ENDDO
+            IBSTP=IBSTP+3
+         ENDIF
+         WRITE(75,REC=IBSTP+1) NTRSPE
+         WRITE(75,REC=IBSTP+2) NSTAE
+         WRITE(75,REC=IBSTP+3) DT*NSPOOLE
+         WRITE(75,REC=IBSTP+4) NSPOOLE
+         WRITE(75,REC=IBSTP+5) 1
+         IBSTP=IBSTP+5
+         CLOSE(75)
+      ENDIF
+
 C...
 C....INITIALIZE GLOBAL ELEVATION SPOOL COUNTER
 C....OPEN GLOBAL ELEVATION OUTPUT FILE
@@ -1139,6 +1252,67 @@ C...
 C
  1112 FORMAT(/,1X,79('_'))
  9883 FORMAT(' !!! NODE ',I6,' DRIED (LANDLOCKING)')
+
+
+C... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
+C... THESE FILES ARE CONTROLED BY THE GLOBAL ELEVATION
+C...
+C....INITIALIZE GLOBAL BATHYMETRY SPOOL COUNTER
+C....OPEN GLOBAL BATHYMETRY OUTPUT FILE
+C....WRITE OUT HEADER INFORMATION INCLUDING NDSETSE
+C....(NO. OF GLOBAL BATHYMETRY DATA SETS TO BE SPOOLED),
+C....NP, DT*NSPOOLGE, NSPOOLGE, IRTYPE
+C...
+      NSCOUGB=0
+      IGBP=0
+      
+      IF ((NDDT.NE.0).AND.
+     &       ((ABS(NOUTGE).EQ.1).OR.(ABS(NOUTGE).EQ.4))) THEN
+         CALL OPEN_GBL_FILE(76, TRIM(GLOBALDIR)//'/'//'fort.76',
+     &    NP_G, NP, HEADER63)  !NO NEED TO CREATE HEADER76
+         IGBP=2
+      ENDIF
+
+      IF ((NDDT.NE.0).AND.(ABS(NOUTGE).EQ.2)) THEN
+         OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76',
+     &           ACCESS='DIRECT',RECL=NBYTE)
+         IF(NBYTE.EQ.4) THEN
+            DO I=1,8
+               WRITE(76,REC=IGBP+I) RDES4(I)
+               ENDDO
+            IGBP=IGBP+8
+            DO I=1,6
+               WRITE(76,REC=IGBP+I) RID4(I)
+               ENDDO
+            IGBP=IGBP+6
+            DO I=1,6
+               WRITE(76,REC=IGBP+I) AID4(I)
+               ENDDO
+            IGBP=IGBP+6
+         ENDIF
+         IF(NBYTE.EQ.8) THEN
+            DO I=1,4
+               WRITE(76,REC=IGBP+I) RDES8(I)
+               ENDDO
+            IGBP=IGBP+4
+            DO I=1,3
+               WRITE(76,REC=IGBP+I) RID8(I)
+               ENDDO
+            IGBP=IGBP+3
+            DO I=1,3
+               WRITE(76,REC=IGBP+I) AID8(I)
+               ENDDO
+            IGBP=IGBP+3
+         ENDIF
+         WRITE(76,REC=IGBP+1) NDSETSE
+         WRITE(76,REC=IGBP+2) NP
+         WRITE(76,REC=IGBP+3) DT*NSPOOLGE
+         WRITE(76,REC=IGBP+4) NSPOOLGE
+         WRITE(76,REC=IGBP+5) 1
+         IGBP=IGBP+5
+         CLOSE(76)
+      ENDIF
+
 
 C...
 C......INITIALIZE 3D SOLUTION

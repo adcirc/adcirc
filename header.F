@@ -2,6 +2,15 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.72   - 05/07/2012 - tcm - Incorporated time varying bathymetry changes
+C             into ADCIRC. These came from the time_varying_bathy branch.
+C             If time varying bathymetry is not used, then no changes to the 
+C             fort.15 occur.  To use time varying bathymetry, then add the
+C             "timebathycontrol" namelist at the end of the fort.15 file.
+C             Time varying bathymetry uses a fort.141 file to supply the
+C             different bathymetry values and as output writes a fort.75
+C             (station) and fort.76 (global) that are controled by the
+C             fort.61 and fort.63 file options.
 C  v50.71   - 05/01/2012 - zc - Reorganized ps2dots and ps3dots routines
 C             to improve code performance. Changed ADVECTLOCAL to only
 C             be called when advection is turned on, which improves code

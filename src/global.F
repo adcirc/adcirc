@@ -1,6 +1,8 @@
 C******************************************************************************
 C PADCIRC VERSION 45.12 03/17/2006                                            *
 C  last changes in this file VERSION 45.08                                    *
+C... TCM V50.66.01 --ADDING TIME DEPENDENT BATHYMETRY                         *
+C                 ADDED NDDT,BTIMINC,DP1,DP2,BTIME1,BTIME2                    *
 C                                                                             *
 C This module declares all global variables that are not exclusive to the 3D  *
 C routines.  The 3D exclusive variables are declared in global_3DVS           *
@@ -158,6 +160,8 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax_G(:)
 #endif
 
+      REAL(SZ),ALLOCATABLE, TARGET ::  DP(:)  !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
+
 #ifdef CSWAN
 Casey 090302: Added the following arrays for output of radiation stress gradients.
       REAL(SZ),ALLOCATABLE, TARGET :: RSNXOUT(:), RSNYOUT(:)
@@ -173,7 +177,9 @@ C..ZC Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE ::   QX1(:),QX2(:),QY1(:),QY2(:)
       REAL(SZ),ALLOCATABLE ::   QX0(:),QY0(:)
       REAL(SZ),ALLOCATABLE ::   TK0(:),TK2(:)
-      REAL(SZ),ALLOCATABLE ::   DP(:),SFAC(:)
+!      REAL(SZ),ALLOCATABLE ::   DP(:),SFAC(:)  !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
+      REAL(SZ),ALLOCATABLE :: SFAC(:)
+      REAL(SZ),ALLOCATABLE ::  DP1(:),DP2(:) !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
       REAL(SZ),ALLOCATABLE ::   MOM_LV_X(:),MOM_LV_Y(:),GWCE_LV(:)
       REAL(SZ),ALLOCATABLE ::   CORIF(:)
       REAL(SZ),ALLOCATABLE ::   TPK(:),FFT(:)
@@ -518,6 +524,16 @@ C    kmd48.33bc - added variables for 3D boundary conditions
 ! TCM v49.64.01 Addition for Ice Concentration Fields
       INTEGER :: NCICE,IGIP,IICESTP
       REAL(8) :: CICE_TIMINC,CICE_TIME1,CICE_TIME2
+
+! TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
+      INTEGER :: NDDT  !FLAG TO USE TIME VARYING BATHYMETRY
+      REAL(8) :: BTIME1,BTIME2  !TIMES FOR TIME VARYING BATHYMETRY Records
+      REAL(8) :: BTIME_END  !time that 
+      INTEGER :: IGBP,NDSETSB,NTCYFGB,NTCYSGB,NSCOUGB,NTRSPB  !variables related to global bathymetry output file
+      INTEGER :: NTCYSB,NTCYFB,NSCOUB,IBSTP            !variables realted to station bathymetry output file
+      REAL(8) :: BTIMINC ! TIME INCREMENT (SECONDS) FOR BATHYMETRY CHANGES USED FOR TIME VARYING BATHYMETRY
+      REAL(8) :: BCHGTIMINC ! time increment (seconds) over which bathymetry changes during a btimeinc interval
+      REAL(SZ),ALLOCATABLE, TARGET ::  DP00(:)
 
 C     jgf48.03 Arrays for mapping subdomain nodes and elements to full
 C     domain ... used in globalio module but allocated and populated
@@ -1725,6 +1741,9 @@ C
       ALLOCATE ( NNE(MNSTAE),ET00(MNSTAE))
       ALLOCATE ( STAIE1(MNSTAE),STAIE2(MNSTAE),STAIE3(MNSTAE))
       ALLOCATE ( XEL(MNSTAE),YEL(MNSTAE),SLEL(MNSTAE),SFEL(MNSTAE))
+
+c...  tcm v50.66.01 added for time varying bathymetry
+      IF (NDDT.NE.0) ALLOCATE (DP00(MNSTAE) )
 C
       RETURN
       END SUBROUTINE ALLOC_MAIN7
@@ -1851,6 +1870,19 @@ Casey 090302: Added the next line for output of radiation stress gradients.
 C
       RETURN
       END SUBROUTINE ALLOC_MAIN12
+
+! TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY (ALLOC_MAIN13)
+C...
+C...Allocate space for TIME VARYING BATHYMETRY
+C...
+      SUBROUTINE ALLOC_MAIN13
+      IMPLICIT NONE
+      
+      ALLOCATE ( DP1(MNP), DP2(MNP) )
+      DP1(:) = 0.D0
+      DP2(:) = 0.D0
+
+      END SUBROUTINE ALLOC_MAIN13
 
 C-------------------------------------------------------------------
 

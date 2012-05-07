@@ -1545,6 +1545,15 @@ C     jgf48.03 Write netCDF metadata, if necessary
          ELSE
             write(*,*) 'not writing netcdf metadata' ! jgfdebug
          ENDIF
+
+c...     tcm v50.66.02 additions for time varying bathymetry
+         IF (FOUND_TBC_NML) then  !If there was a namelist in the original fort.15 put it in the decomp 15's
+!         IF (NDDT.NE.0) THEN
+            write(15,*) '! -- Begin Time Varying Bathymetry Inputs --'
+            write(15,TimeBathyControl)
+            write(15,*) '! -- End Time Varying Bathymetry Inputs --'
+         ENDIF
+C
          CLOSE(15)
 C
  1000 CONTINUE
@@ -2486,6 +2495,179 @@ C
 
  99   RETURN
       END
+
+
+C---------------------------------------------------------------------------
+C                S U B R O U T I N E   P R E P 141
+C---------------------------------------------------------------------------
+C
+C                     (  Serial Version  4/13/12  )                         C
+C  This routine reads a global external bathymetry file when NDDT=+-1,+-2.  C
+C  In each case it wites a local bathymetry file of the same                C
+C  format for each subdomain using the domain decomposition of the ADCIRC   C
+C  grid created by the routine DECOMP.                                      C
+C                                                                           C
+C  The Decomposition Variables are defined in the include file adcprep.inc  C
+C  This version is compatible with ADCIRC version 50.66                     C
+C                                                                           C
+C  TCM -v 50.66.03 Addition for time varying Bathymetry                     C
+C          This routine adopted/modified from the prep22 subroutine.        C
+C                                                                           C
+C---------------------------------------------------------------------------
+      SUBROUTINE PREP141()
+C---------------------------------------------------------------------------
+      USE PRE_GLOBAL
+      use memory_usage
+      IMPLICIT NONE
+      integer :: nbytes = 0
+      LOGICAL FOUND,DONE
+      INTEGER I,J,IPROC,IPROC2,ILNODE,INDX,NHG,LINDEX
+      CHARACTER*80 PBLJAGF
+      INTEGER SDU(NPROC)  ! subdomain unit numbers
+      LOGICAL Success     ! .true. if all files open without error
+      INTEGER,ALLOCATABLE  :: NG(:)
+      REAL(SZ),ALLOCATABLE :: DPG(:)  !global array
+      REAL(SZ),ALLOCATABLE :: DPL(:)  !local array
+      REAL(SZ) DPTMP
+C     jgf48.47 Do the decomposition for a max of 256 subdomains at a
+C     time ... some platforms/compilers limit the number of files that
+C     can be open at any one time.
+      INTEGER, PARAMETER :: maxOpenFiles = 256
+      INTEGER startProc
+      INTEGER endProc
+      INTEGER deltaProc
+C
+C     Allocate local work arrays
+C
+      ALLOCATE ( NG(MNP) )
+      nbytes = 4*mnp
+      call memory_alloc(nbytes)
+      ALLOCATE ( DPG(MNP) )   !global
+      nbytes = 8*mnp
+      call memory_alloc(nbytes)
+      ALLOCATE ( DPL(MNP) )   !local
+      nbytes = 8*mnp
+      call memory_alloc(nbytes)
+C
+C     Perform decomposition over a range of subdomains.
+      startProc = 1
+      DO WHILE ( startProc .lt. nproc )
+         deltaProc = nproc - startProc
+         IF ( deltaProc .gt. maxOpenFiles ) deltaProc = maxOpenFiles
+         endProc = startProc + deltaProc
+
+C        Open full domain and all subdomain fort.141 files
+         CALL OpenPrepFiles(141, 'bathymetry information        ',
+     &      startProc, endProc, sdu, success)
+
+         IF (.not.success) THEN
+           WRITE(*,*) 'WARNING: Unit 141 files not preprocessed.'
+           RETURN ! note early return
+         ENDIF
+C
+C--Branch to Appropriate Code
+C
+         SELECT CASE(ABS(NDDT))
+C        -------------
+         CASE(1)
+C        -------------
+C
+C     MAIN LOOP FOR NWS = +-1
+C     (1)  Read a record from Global Bathymetry File
+C     (2)  Use Decomp arrarys to Localize record to a subdomain
+C     (3)  Write Local Bathymetry record in same format
+           DO                     ! loop forever (or until file ends)
+              READ(141,*,END=9999)
+     &           (NG(I),DPG(I),I=1,NNODG)
+              DO IPROC = STARTPROC, ENDPROC
+                 DO I=1, NNODP(IPROC)
+                    INDX = IMAP_NOD_LG(I,IPROC)
+                    DPL(I) = DPG(INDX)
+                 ENDDO
+                 DO I=1, NNODP(IPROC)
+                    WRITE(SDU(IPROC),*)  I,DPL(I)
+                 ENDDO
+              ENDDO
+           ENDDO
+C
+C        -------
+         CASE(2)
+C        -------
+C        MAIN LOOP FOR NWS = +- 2  ( PBL Format )
+C        (1)  Read a record from Global Bathymetry File
+C        (2)  Use Decomp arrarys to Localize record to a subdomain
+C        (3)  Write out in PBL Format on subdomain
+C
+C--Read a bathymetry field record from the global input file
+C--- during the decomp phase, after each time record indicator is written (#)
+C--- we write a single entry (1,-99999.d0) to ensure that there will be no
+C--- empty records.  When this file is read by ADCIRC using nddt2get, the
+C--- extra entry (1,-99999.d0) will be ignored, and if node 1 actually is
+C--- changed then it will be read regardless if it appears twice.
+C
+         DO
+            READ(141,'(A80)',END=9999) PBLJAGF
+            IF(PBLJAGF(2:2).EQ.'#') THEN
+               DO IPROC =  STARTPROC,ENDPROC
+                  WRITE(SDU(IPROC),1101)
+!  write a default value to ensure that no empty records
+!  are produced during the decomp phase (default values will be ignored by ADCIRC)
+                  WRITE(SDU(IPROC),1100) 1,-99999.d0
+               ENDDO
+            ELSE
+
+               READ(PBLJAGF,*,END=9999) NHG,DPTMP
+               DO J=1, ITOTPROC(NHG)
+                  IPROC  = IMAP_NOD_GL2(2*(J-1)+1,NHG)
+                  LINDEX = IMAP_NOD_GL2(2*(J-1)+2,NHG)
+                  WRITE(SDU(IPROC),1100) LINDEX,DPTMP
+               ENDDO
+            ENDIF
+         END DO
+C
+
+C        ------------
+         CASE DEFAULT
+C        ------------
+         WRITE(*,*) "NDDT = ",NDDT," has incorrect value in PREP141"
+         RETURN
+
+         END SELECT
+
+C
+C--Close Global file and all the Local Files
+C
+ 9999    CLOSE (141)
+         DO IPROC=STARTPROC, ENDPROC
+            CLOSE (SDU(IPROC))
+         ENDDO
+         startProc=endProc+1
+      ENDDO
+
+
+      DEALLOCATE ( NG,  DPG )
+      DEALLOCATE ( DPL )
+      nbytes = 20*mnp
+      call memory_dealloc(nbytes)
+      call memory_status()
+      RETURN
+!  60  FORMAT(A60)
+! 170  FORMAT(A170)
+ !270  FORMAT(A270)
+ !1010 FORMAT(' File ',A60,/,' WAS NOT FOUND!  Try again',/)
+ !1011 FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
+ 1100 FORMAT(I8,E13.5)
+ 1101 FORMAT(' #')
+c----------------------------------------------------------------------------
+      END SUBROUTINE PREP141
+c----------------------------------------------------------------------------
+
+
+
+
+
+
+
 
 C   kmd48.33bc add in prep subroutines for 3D boundary condition files
       SUBROUTINE PREP35()
@@ -5446,7 +5628,8 @@ C
 C     jgf45.12 This subroutine will open the full domain file and each
 C     of the subdomain files in the range of subdomains provided in the
 C     arguments. It assumes that all unit numbers are between 10 and 99.
-C
+C     
+C     tcm v50.66.03 -- incrased unit numbers to include 10 - 999.
 C---------------------------------------------------------------------------
       SUBROUTINE OpenPrepFiles(UnitNumber, Description,
      &     startProc, endProc, SDU, Success)
@@ -5461,10 +5644,10 @@ C---------------------------------------------------------------------------
       LOGICAL, intent(out):: Success     ! .true. if files opened w/o errors
       LOGICAL Found               !.true. if the full domain file exists
       CHARACTER(len=80) FileName   ! name of full domain file
-      CHARACTER(len=7) DefaultName! default name of full domain file
+      CHARACTER(len=8) DefaultName! default name of full domain file  !increased from 7 to 8 tcm v50.66.03
       INTEGER ErrorIO             ! zero if file opened successfully
       INTEGER iproc               ! subdomain index
-      CHARACTER(len=14) sdFileName     ! subdomain file name
+      CHARACTER(len=15) sdFileName     ! subdomain file name   !increased from 14 to 15 tcm v50.66.03
       CHARACTER(len=4) skipstring ! indicates user wants to skip this file
 
       Found = .false.
@@ -5473,12 +5656,17 @@ C---------------------------------------------------------------------------
       skipstring = 'skip'
 
       DefaultName(1:5) = 'fort.'
-      WRITE(DefaultName(6:7),2) UnitNumber
+c.....tcm v50.66.03 increased unit number to 100's places
+      if (UnitNumber < 100) then
+         WRITE(DefaultName(6:7),2) UnitNumber
+      else
+         WRITE(DefaultName(6:8),3) UnitNumber
+      endif
 
 C
 C     Determine the name of the file; if found, open it
  31   IF (USE_DEFAULT) THEN
-         FileName = DefaultName
+         FileName = trim(DefaultName)   !tcm v50.66.03 added trim
 Casey 120402: Avoid an endless loop.  If the default file does not exist,
 C             then give the user a chance to specify the file name or skip.
 C     ELSE
@@ -5523,7 +5711,12 @@ C     Open each of the subdomain files
       DO iproc = startProc, endProc
          sdu(iproc) = 105 + (iproc-1)
          sdFileName(1:7) = 'PE0000/'
-         sdFileName(8:14) = DefaultName
+c........tcm v50.66.03 increased unit number to 100's places
+         if (UnitNumber < 100 ) then
+            sdFileName(8:14) = DefaultName(1:7)
+         else
+            sdFileName(8:15) = DefaultName
+         endif
 #ifdef ADCSWAN
          sdFileName = 'PE0000/'//FileName
 #endif
@@ -5538,12 +5731,13 @@ C     Open each of the subdomain files
       ENDDO
 
  2    FORMAT(I2)
+ 3    FORMAT(I3)
  30   FORMAT(A30)
  850  FORMAT(/,'Type ''skip'' to bypass preprocessing or')
  900  FORMAT('Enter the name of the ',A30)
  910  FORMAT('file (unit ',I3,'): ')
- 1010 FORMAT('File ',A7,/,' WAS NOT FOUND! Try again or type "skip"',/)
- 1011 FORMAT('File ',A7,/,' WAS FOUND!  Opening & Processing file.',/)
+ 1010 FORMAT('File ',A8,/,' WAS NOT FOUND! Try again or type "skip"',/)  !increased A7 to A8  tcm v50.66.03
+ 1011 FORMAT('File ',A8,/,' WAS FOUND!  Opening & Processing file.',/)   !increased A7 to A8
       RETURN
 C---------------------------------------------------------------------------
       END SUBROUTINE OpenPrepFiles

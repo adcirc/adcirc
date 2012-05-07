@@ -83,6 +83,7 @@ C   fort.67    Global Hot Start file
 C   fort.68    Global Hot Start file
 C   fort.150   METIS input information
 C   fort.151   METIS output information
+C   fort.141   Global Time-Variant Bathymetry
 C
 C  When a parallel ADCIRC job is run, each PExxxx takes its input from its
 C  subdirectory PExxxx and writes local output files to the same directory.
@@ -586,6 +587,17 @@ C
       IF (PREP_ALL) THEN
          IF(NRS.EQ.1) CALL PREP23()
       ENDIF
+
+C... tcm v50.66.03 Added for time varying bathymetry (fort.141)
+C
+C-- If required write a Local Time Bathymetry file for each PE
+C
+      IF (PREP_ALL) THEN
+         IF ((ABS(NDDT).EQ.1).OR.(ABS(NDDT).EQ.2)) THEN
+            CALL PREP141()
+         ENDIF
+      ENDIF
+
 
 C  kmd48.33bc add information for 3D baroclinic simulations
       IF (PREP_ALL) THEN

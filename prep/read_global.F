@@ -351,6 +351,12 @@ Casey 090825: Added dummy variables.
 ! kmd - add a variable for boundary conditions
       INTEGER ITYPE
 C
+!   tcm v50.66.02 -- added timebathycontrol namelist related variables
+      INTEGER :: ios_nddt
+
+      found_tbc_nml = .false.   !flag to determine if the timebathycontrol namelist was present
+
+C
       call setMessageSource("read15")
 #ifdef READ_GLOBAL_TRACE
       call screen(DEBUG,"Enter.")
@@ -360,6 +366,44 @@ C--The Run Info file was opened in SIZEUP, performed a rewind, and is ready here
 C
 C--Run Description and Run Identification
 C
+
+c...  tcm v50.66.02 Addtions for Time Varying Bathymetry
+c...  read through the fort.15 file for the namelist (TimeBathyControl) for
+c...  the time varying bathymetry.  This namelist must be at the bottom of the
+c...  fort.15 file. If found, then set the appropriate values (btiminc,bchgtiminc,
+c...  and nddt).  If the namelist is not there, then the time varying bathymetry
+c...  will not be used. 
+C...
+C...  After this search and read, we will close the file and then reopen it
+c...  for further processing the traditional non-namelist components.
+C...
+      NDDT = 0  !Set default value to be no time varying bathymetry
+      READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
+
+      IF (IOS_NDDT < 0) THEN
+c.....   it is possible for the namelist to be present in the file and occuring at the end 
+c.....   of the file with no line breaks after the ending "\" which causes the iostat to 
+c.....   return a negative value.  By checking to be sure a namelist variable was set to
+c....    a non-default value we can determine this was the case.
+         IF (NDDT.NE.0) THEN
+!            WRITE(*,*) 'NAMELIST PRESENT, BUT AT THE END OF FILE WITH',
+!     &                 ' NO ADVANCING CHARACTER'
+            found_tbc_nml = .true.
+         ELSE
+!            WRITE(*,*) 'NAMELIST NOT PRESENT'
+         ENDIF
+      ELSEIF (IOS_NDDT == 0) THEN
+!         WRITE(*,*) 'NAME LIST PRESENT AND CORRECT'
+         found_tbc_nml = .true.
+      ELSE
+         found_tbc_nml = .true.
+         WRITE(*,*) 'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST'
+         WRITE(*,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.'
+         STOP   !THERE IS a STOP HERE
+      ENDIF
+
+      REWIND(15)  !Return to the top of the fort.15 file (instead of closing then opening)
+c..        
 
       READ(15,80) RUNDES
 C
