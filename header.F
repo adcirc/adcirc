@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.73   - 05/08/2012 - tcm - Removed use of reserved work (scale) from the
+C             file diffmerge.F.
 C  v50.72   - 05/07/2012 - tcm - Incorporated time varying bathymetry changes
 C             into ADCIRC. These came from the time_varying_bathy branch.
 C             If time varying bathymetry is not used, then no changes to the 
