@@ -3,6 +3,8 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
 C
+C  v49.82.19  05/08/2012 - tcm - Removed reserved word (scale) from the 
+C             diffmerge.F file.
 C  v49.82.18  04/16/2012 - jgf - Applied fix from Kendra Dresback for 
 C             erroneous format in writeOutHarmonicArrays() subroutine
 C             that was causing phase values to be off by a factor of 10. 

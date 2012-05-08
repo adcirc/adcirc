@@ -2,7 +2,7 @@ C
 C   Version 1.1  vjp  5/04/99
 C
 
-      SUBROUTINE DIFFMERGE63(DIR1,DIR2,SCALE)
+      SUBROUTINE DIFFMERGE63(DIR1,DIR2,SCALEFAC)
 C
 C---------------------------------------------------------------------------C
 C                     (  Serial Version  3/15/99  )                         C 
@@ -14,7 +14,7 @@ C  Input Parameters:                                                        C
 C                                                                           C
 C    DIR1  =  pathname of first directory                                   C
 C    DIR2  =  pathname of second directory                                  C
-C    SCALE =  user supplied scale factor for difference                     C
+C    SCALEFAC =  user supplied scale factor for difference                  C
 C                                                                           C
 C---------------------------------------------------------------------------C
 C
@@ -27,7 +27,7 @@ C
       INTEGER ITE1,ITE2
       INTEGER IREC1,IREC2
       INTEGER LEN1,LEN2
-      REAL(SZ) DTE1,DTE2,SCALE
+      REAL(SZ) DTE1,DTE2,SCALEFAC
       REAL(8) TIMEOUTE1,TIMEOUTE2
       CHARACTER*80  DIR1,DIR2,FNAME1,FNAME2,FNAME3
       CHARACTER*85  INLINE
@@ -135,7 +135,7 @@ C
          DO I=1, NNODG
             READ(53,*) IDUM,ETA1(I)
             READ(63,*) IDUM,ETA2(I)
-            WRITE(73,2453) I,SCALE*(ETA1(I)-ETA2(I))
+            WRITE(73,2453) I,SCALEFAC*(ETA1(I)-ETA2(I))
          ENDDO
 C
       ENDDO                 
@@ -272,7 +272,7 @@ C
          DO I=1, NNODG
             READ(53,REC=IREC1+I) ETA1(I)
             READ(63,REC=IREC2+I) ETA2(I)
-            WRITE(73,REC=IREC1+I)  I,SCALE*(ETA1(I)-ETA2(I))
+            WRITE(73,REC=IREC1+I)  I,SCALEFAC*(ETA1(I)-ETA2(I))
          ENDDO
          IREC1 = IREC1 + NNODG
          IREC2 = IREC2 + NNODG
@@ -292,9 +292,9 @@ C
  3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
 C
       RETURN
-      END
+      END SUBROUTINE DIFFMERGE63
 
-      SUBROUTINE DIFFMERGE64(DIR1,DIR2,SCALE)
+      SUBROUTINE DIFFMERGE64(DIR1,DIR2,SCALEFAC)
 C
 C---------------------------------------------------------------------------C
 C                     (  Serial Version  3/15/99  )                         C 
@@ -306,7 +306,7 @@ C  Input Parameters:                                                        C
 C                                                                           C
 C    DIR1  =  pathname of first directory                                   C
 C    DIR2  =  pathname of second directory                                  C
-C    SCALE =  user supplied scale factor for difference                     C
+C    SCALEFAC =  user supplied scale factor for difference                  C
 C                                                                           C
 C---------------------------------------------------------------------------C
 C
@@ -319,7 +319,7 @@ C
       INTEGER NP1,NP2 
       INTEGER IREC1,IREC2
       INTEGER LEN1,LEN2
-      REAL(SZ) DTV1,DTV2,SCALE
+      REAL(SZ) DTV1,DTV2,SCALEFAC
       REAL(8) TIMEOUTV1,TIMEOUTV2
       CHARACTER*80  DIR1,DIR2,FNAME1,FNAME2,FNAME3
       CHARACTER*85  INLINE
@@ -429,8 +429,8 @@ C
          DO I=1, NNODG
             READ(54,*) IDUM,UU1(I),VV1(I)
             READ(64,*) IDUM,UU2(I),VV2(I)
-            WRITE(74,2454) I,SCALE*(UU1(I)-UU2(I)),
-     &          SCALE*(VV1(I)-VV2(I))
+            WRITE(74,2454) I,SCALEFAC*(UU1(I)-UU2(I)),
+     &          SCALEFAC*(VV1(I)-VV2(I))
          ENDDO
 C
       ENDDO                 
@@ -567,8 +567,8 @@ C
             READ(54,REC=IREC1+2*I)   VV1(I)
             READ(64,REC=IREC2+2*I-1) UU2(I)
             READ(64,REC=IREC2+2*I)   VV2(I)
-            WRITE(74,REC=IREC1+2*I-1) SCALE*(UU1(I)-UU2(I))
-            WRITE(74,REC=IREC1+2*I)   SCALE*(VV1(I)-VV2(I))
+            WRITE(74,REC=IREC1+2*I-1) SCALEFAC*(UU1(I)-UU2(I))
+            WRITE(74,REC=IREC1+2*I)   SCALEFAC*(VV1(I)-VV2(I))
          ENDDO
          IREC1 = IREC1 + 2*NNODG
          IREC2 = IREC2 + 2*NNODG
@@ -588,4 +588,4 @@ C
  3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
 C
       RETURN
-      END
+      END SUBROUTINE DIFFMERGE64
