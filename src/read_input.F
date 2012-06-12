@@ -59,13 +59,21 @@ Casey 100205: Enable hot-start file generation by SWAN.
 !     multiple values like element radius and areas, etc...
       REAL(SZ) X2MX1,X3MX2,X1MX3,Y2MY1,Y3MY2,Y1MY3
       REAL(SZ) LENED1,LENED2,LENED3
+C
+#if defined CSWAN || defined ADCSWAN
+      ! jgf50.60.09: Namelist for turning SWAN output files on or off
+      NAMELIST /SWANOutputControl/ SWAN_OutputHS, SWAN_OutputDIR,
+     &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
+     &    SWAN_OutputTM02, SWAN_OutputTMM10
+#endif
+!
 ! kmd - variables for river boundary condition in baroclinic simulation
       INTEGER riverval, BCRiver
-      NAMELIST /metControl/ nws,WindDragLimit,DragLawString,rhoAir
+      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       INTEGER :: commentStart            ! location of fort.15 comment start
-      INTEGER :: ios                     ! i/o status of read operation
+      INTEGER :: ios = 0                 ! i/o status of read operation
 
 !   tcm v50.66.02 -- added timebathycontrol namelist related variables
       INTEGER :: ios_nddt
@@ -218,6 +226,41 @@ c.....REOPEN THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          CALL ADCIRC_Terminate()
       ENDIF
 
+#if defined CSWAN || defined ADCSWAN
+      ! jgf50.60.08: Add a namelist for the user to turn SWAN output
+      ! on and off. Similar to tcm's timevaryingbathy namelist.
+      READ(UNIT=15,NML=SWANOutputControl,IOSTAT=IOS)
+      IF (IOS.gt.0) THEN
+         call logMessage(INFO,
+     &      "The SWANOutputControl namelist was not found.")
+         call logMessage(INFO,
+     &    "The default values for SWANOutputControl will be used.")
+      ENDIF
+      call logMessage(ECHO,
+     &    "The values of SWANOutputControl are as follows:")
+      write(scratchMessage,*) "SWAN_OutputHS=",SWAN_OutputHS,
+     &    " SWAN_OutputDIR=",SWAN_OutputDIR,
+     &    " SWAN_OutputTM01=",SWAN_OutputTM01, 
+     &    " SWAN_OutputTPS=",SWAN_OutputTPS, 
+     &    " SWAN_OutputWIND=",SWAN_OutputWIND,
+     &    " SWAN_OutputTM02=",SWAN_OutputTM02, 
+     &    " SWAN_OutputTMM10=",SWAN_OutputTMM10
+      call logMessage(ECHO,trim(scratchMessage))
+      REWIND(15)
+#endif
+      ! jgf50.60.13: Add a namelist for the user to control met forcing.
+      ! Similar to tcm's timevaryingbathy namelist.
+      READ(UNIT=15,NML=metControl,IOSTAT=IOS)
+      IF (IOS.gt.0) THEN
+         call logMessage(INFO,
+     &      "The metControl namelist was not found.")
+         call logMessage(INFO,
+     &    "The default values for metControl will be used.")     
+      ENDIF
+      write(scratchMessage,*) "WindDragLimit=",WindDragLimit,
+     & " DragLawString=",DragLawString, "rhoAir=",rhoAir
+      call logMessage(ECHO,trim(scratchMessage))
+      REWIND(15)
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
 C...  IDENTIFICATION
@@ -1067,49 +1110,7 @@ C     tcm v49.46 Added NWS = 4xx for tight coupling with STWAVE
 C     tcm v49.64.01 Added NWS = 1xxx's for ice concentration
       NCICE = 0  !set ice type to be 0
 C
-C     jgf50.32: Added code to read the NWS line as a namelist, so that
-C     the drag formulation and wind drag limit can be read from the fort.15
-C     file if they are present.
-      READ(15,'(A160)') origLine
-      CALL logMessage(DEBUG,'Reading'//origLine)
-      commentStart = scan(origLine,'!') ! to trim off existing comment, if any
-      IF (commentStart.eq.0) THEN
-         ! there is no comment in this line
-         commentStart = len(origLine)
-      ENDIF
-      ! reformat this line as a namelist: add the name of the namelist
-      ! we are reading, left justify the original line, provide the keyword
-      ! for the NWS value that is already present, trim off trailing comments
-      ! and spaces, and add a terminator character.
-      modifiedLine = '&metControl nws='//
-     &   adjustl(trim(origLine(1:commentStart-1)))//" /"
-      CALL logMessage(DEBUG,'modifiedLine='//modifiedLine)
-      ios=0
-      open(99,file=trim(localdir)//'/namelist.scratch',
-     &     iostat=ios,status='replace',err=34,action='write')
-      write(99,'(A)') trim(modifiedLine)
-      close(99,err=34,status='keep')
-34    if ( ios.gt.0 ) then
-         CALL allMessage(ERROR,"I/O error reading NWS line.")
-         CALL ADCIRC_Terminate()
-      endif
-      call openFileForRead(99,trim(localdir)//'/namelist.scratch',ios)
-      IF (ios.eq.0) THEN
-         read(99,NML=metControl,END=32,ERR=2,IOSTAT=ios)
- 2       IF (ios.gt.0) THEN
-            CALL allMessage(ERROR,"I/O error reading NWS line.")
-            CALL ADCIRC_Terminate()
-         ENDIF
- 32      IF (ios.gt.0) THEN
-            CALL allMessage(ERROR,"END of NWS line reached.")
-            CALL ADCIRC_Terminate()
-         ENDIF
-      ENDIF
-       write(scratchMessage,*) 'nws=',nws,
-     &   ' WindDragLimit=',WindDragLimit,
-     &   ' DragLawString=',DragLawString,' rhoAir=',rhoAir
-      CALL logMessage(ECHO,scratchMessage)
-      close(99)
+      READ(15,FMT=*,END=99998,ERR=99999) NWS
 C
 C.... BREAK OUT THE ICE CONCENTRATION FLAG FROM NWS/NRS
       IF (NWS.EQ.0) THEN
@@ -1122,7 +1123,8 @@ C.... BREAK OUT THE ICE CONCENTRATION FLAG FROM NWS/NRS
       ENDIF
       nwsOK = .false.
       do i=0,4
-         if ( any(abs(nws).eq.(allowable_nws + i*100)) ) then
+         if ( any(nws.eq.(allowable_nws + i*100)).or.
+     &        any(nws.eq.(-1*(allowable_nws + i*100))) ) then
             nwsOK = .true.
             exit
          endif
@@ -3276,12 +3278,12 @@ C     continue processing flow boundary information
      &               'that set the velocity',/,
      &            7X,'gradient normal to the boundary equal to zero ',
      &               'in the Galerkin sense.',/)
-        ENDIF
-        IF(IBTYPE(K).EQ.52) THEN
-           NFLUXF=1
-           IBTYPE52=.TRUE.
-           WRITE(16,6532)
- 6532      FORMAT(5X,'This segment uses a specified periodic normal ',
+         ENDIF
+         IF(IBTYPE(K).EQ.52) THEN
+            NFLUXF=1
+            IBTYPE52=.TRUE.
+            WRITE(16,6532)
+ 6532       FORMAT(5X,'This segment uses a specified periodic normal ',
      &          'flux as a natural b.c. combined with outward ',
      &          7X,'radiating boundary. The GWCE is forced with the ,'
      &          'total normal flux computed by adding the',/,
@@ -3292,7 +3294,7 @@ C     continue processing flow boundary information
      &          7X,'The momentum equations are used to compute the',/,
      &          7X,'velocity field the same as for a nonboundary ',
      &          'node.',/)
-        ENDIF
+         ENDIF
 
 C...  For NON BARRIER type boundaries, read the node numbers for the Kth
 C...  boundary segment
@@ -3301,23 +3303,23 @@ C...  boundary segment
      &      (IBTYPE(K).NE.23).AND.
      &      (IBTYPE(K).NE. 4).AND.(IBTYPE(K).NE.24).AND.
      &      (IBTYPE(K).NE. 5).AND.(IBTYPE(K).NE.25)) THEN
-           DO I=1,NVELL(K)
-             READ(14,*) NBVV(K,I)
+            DO I=1,NVELL(K)
+               READ(14,*) NBVV(K,I)
 ! kmd - add information for river boundary condition
-             IF ((IBTYPE(K).EQ.2).OR.(IBTYPE(K).EQ.12).OR.
+               IF ((IBTYPE(K).EQ.2).OR.(IBTYPE(K).EQ.12).OR.
      &           (IBTYPE(K).EQ.22).OR.
      &           (IBTYPE(K).EQ.52)) THEN
-                 IF (BCRiver.EQ.1) THEN
+                  IF (BCRiver.EQ.1) THEN
                     totalbcrivernodes=totalbcrivernodes+1
                     riverval=riverval+1
                     BCRNBVV(bcriversec,riverval)=NBVV(K,I)
-                 END IF
-             END IF
-           END DO
-           NPRBI=1
-           NPIPE=0
-           BCRiver=0  !  kmd - reset river boundary value
-           ENDIF
+                  END IF
+               END IF
+            END DO
+            NPRBI=1
+            NPIPE=0
+            BCRiver=0  !  kmd - reset river boundary value
+         ENDIF
 
 C...  For EXTERNAL BARRIER type boundaries, read the node number, the
 C...  barrier elevation above the Geoid and the coefficient of free
@@ -3326,12 +3328,12 @@ C...  segment.
 
          IF((IBTYPE(K).EQ.3).OR.(IBTYPE(K).EQ.13).OR.
      &         (IBTYPE(K).EQ.23)) THEN
-           DO I=1,NVELL(K)
-             READ(14,*) NBVV(K,I),BARLANHTR(I),BARLANCFSPR(I)
-             END DO
-           NPRBI=1
-           NPIPE=0
-           ENDIF
+            DO I=1,NVELL(K)
+               READ(14,*) NBVV(K,I),BARLANHTR(I),BARLANCFSPR(I)
+            END DO
+            NPRBI=1
+            NPIPE=0
+         ENDIF
 
 C...  For INTERNAL BARRIER type boundaries, read the node number, the
 C...  paired node number, the barrier elevation above the Geoid and the
@@ -3356,9 +3358,9 @@ C...  in the Kth boundary segment.
 
          IF((IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
             DO I=1,NVELL(K)
-         READ(14,*) NBVV(K,I),IBCONNR(I),BARINHTR(I),BARINCFSBR(I),
+               READ(14,*)NBVV(K,I),IBCONNR(I),BARINHTR(I),BARINCFSBR(I),
      &             BARINCFSPR(I),PIPEHTR(I),PIPECOEFR(I),
-     &              PIPEDIAMR(I)
+     &             PIPEDIAMR(I)
             END DO
             NPRBI=2
             NPIPE=1

@@ -20,17 +20,17 @@ C     PARM14 section
       INTEGER NELG,NNODG
       INTEGER NOPE, NETA, NETA_MAX
       INTEGER NBOU  ! Number of Global Land Boundary Segments
-      INTEGER NVEL  ! Total Number of Global Land Boundary Nodes 
+      INTEGER NVEL  ! Total Number of Global Land Boundary Nodes
       INTEGER,ALLOCATABLE::NNEG(:,:)
       INTEGER,ALLOCATABLE::NVDLL(:)
       INTEGER,ALLOCATABLE::NBDV(:,:)
-      INTEGER,ALLOCATABLE::NVELL(:)  ! NVELL(K) Number of Global Land Boundary 
+      INTEGER,ALLOCATABLE::NVELL(:)  ! NVELL(K) Number of Global Land Boundary
                                      ! Nodes of Segment K
-      INTEGER,ALLOCATABLE::NBVV(:,:) ! NBVV(K,I) Global Node Number of 
+      INTEGER,ALLOCATABLE::NBVV(:,:) ! NBVV(K,I) Global Node Number of
 C                                    ! I-th Node on Land Boundary Segment K
-      INTEGER,ALLOCATABLE::IBTYPE(:) ! Type of discharge boundary segment K 
+      INTEGER,ALLOCATABLE::IBTYPE(:) ! Type of discharge boundary segment K
 
-      INTEGER,ALLOCATABLE::IBTYPEE(:) ! Type of elevation boundary segment K 
+      INTEGER,ALLOCATABLE::IBTYPEE(:) ! Type of elevation boundary segment K
       INTEGER,ALLOCATABLE::IBCONNR(:,:)
       INTEGER,ALLOCATABLE::LBCODE(:) ! LBCODE(I) Boundary Type of Land Boundary
                                      ! Node I
@@ -39,20 +39,20 @@ C                                    ! I-th Node on Land Boundary Segment K
 
 C     METIS interface section
       INTEGER,ALLOCATABLE ::  PROC(:)
-C     
+C
 C     GRID14 section
       REAL(8)  ,ALLOCATABLE ::    X(:),Y(:),SLAM(:),SFEA(:)
       REAL(SZ) ,ALLOCATABLE ::   DP(:)
       REAL(8) SL0,SF0            ! center of cpp projection, in radians
-      REAL(8), ALLOCATABLE :: SL1(:),SF1(:) ! nodal coordinates, in radians   
+      REAL(8), ALLOCATABLE :: SL1(:),SF1(:) ! nodal coordinates, in radians
 C
 C     BARRIER14 section
       REAL(SZ) ,ALLOCATABLE ::  BAR1(:,:),BAR2(:,:),BAR3(:,:)
- 
+
 C     FLOWBC section
       INTEGER NFLBN    ! NFLBN Number of Global Flow Boundary Nodes
       INTEGER NFLBNP   ! NFLBNP(PE) Number of Flow boundary Nodes on PE
-      INTEGER,ALLOCATABLE::FLBN(:)  ! FLBN(I) Global Node number of 
+      INTEGER,ALLOCATABLE::FLBN(:)  ! FLBN(I) Global Node number of
 C                                   ! Ith Flow Boundary Node
       INTEGER,ALLOCATABLE::FLBNX(:) ! FLBNX(I) Index of Ith Flow Boundary Node
       INTEGER,ALLOCATABLE::FLBNXP(:)! FLBNXP(I) Index of Ith Flow Boundary Node
@@ -149,8 +149,7 @@ C     PARM15-3DVS section
       CHARACTER*132,ALLOCATABLE :: STA3DDLOC(:),STA3DVLOC(:),
      &   STA3DTLOC(:)
       INTEGER,ALLOCATABLE ::   NNS3DDG(:),NNS3DVG(:),NNS3DTG(:)
-      REAL(SZ),ALLOCATABLE :: Sigma(:) !(NFEN) User specified vertical grid
-      REAL(SZ),ALLOCATABLE :: EVTot(:) !(NFEN) Vertical eddy viscosity 
+      REAL(SZ),ALLOCATABLE :: EVTot(:) !(NFEN) Vertical eddy viscosity
       INTEGER IGC                      ! vertical grid code in fort.15
 
 C   kmd48.33bc variables for 3D baroclinic and hot start
@@ -172,11 +171,11 @@ C   kmd48.33bc variables for 3D baroclinic and hot start
 C     jgf45.12 Terms added for the transport parameters
 C     diffusion coefficients for the salinity field
       REAL(SZ) :: NLSD, NVSD
-C     diffusion coefficients for the temperature field 
+C     diffusion coefficients for the temperature field
       REAL(SZ) :: NLTD, NVTD
 c     time weighting coefficient for the vertical diffusion term in the
 c     transport equation
-      REAL(SZ) :: Alp4          
+      REAL(SZ) :: Alp4
 C     Flag for the top boundary condition for the temperature field in
 C     the transport equation
 !      INTEGER :: NTF ! kmd48.33bc took out with new evaluation of boundary condition
@@ -278,25 +277,25 @@ C
 C--Local Map Variable Declarations
 C
 C     LOCALI section
-      INTEGER NPROC,MSHAR,NWEIR 
+      INTEGER NPROC,MSHAR,NWEIR
       INTEGER,ALLOCATABLE::NELP(:), NNODP(:), NNEP(:,:,:)
       INTEGER,ALLOCATABLE::NOD_RES_TOT(:),NSTACP(:), NSTAMP(:)
       INTEGER,ALLOCATABLE::NWEIRP(:),NSTAEP(:),NSTAVP(:)
       INTEGER,ALLOCATABLE::NOPEP(:),NETAP(:),NVDLLP(:)
       INTEGER,ALLOCATABLE::NBDVP(:,:)
-      INTEGER,ALLOCATABLE::NBOUP(:)    ! NBOUP(PE) Number of Land Boundary 
+      INTEGER,ALLOCATABLE::NBOUP(:)    ! NBOUP(PE) Number of Land Boundary
 C                                      ! Segments on PE
-      INTEGER,ALLOCATABLE::NVELLP(:)   ! NVELLP(K) Number of Land Boundary 
+      INTEGER,ALLOCATABLE::NVELLP(:)   ! NVELLP(K) Number of Land Boundary
 C                                      ! Nodes of Segment K on PE
-      INTEGER,ALLOCATABLE::NVELP(:)    ! NVELP(PE) Total Number of Land 
+      INTEGER,ALLOCATABLE::NVELP(:)    ! NVELP(PE) Total Number of Land
 C                                      ! Boundary Nodes on PE
-      INTEGER,ALLOCATABLE::NBVVP(:,:)  ! NBVVP(K,I) Local Node Number of I-th 
+      INTEGER,ALLOCATABLE::NBVVP(:,:)  ! NBVVP(K,I) Local Node Number of I-th
 C                                      ! Node on Land Boundary Segment K on PE
-      INTEGER,ALLOCATABLE::IBTYPEP(:,:)! IBTYPEP(K,PE) Type Land Boundary 
+      INTEGER,ALLOCATABLE::IBTYPEP(:,:)! IBTYPEP(K,PE) Type Land Boundary
 C                                      ! Segment K on PE (0=mainland,1=island)
-      INTEGER,ALLOCATABLE::IBTYPEEP(:,:)! IBTYPEEP(K,PE) Type Elev Boundary 
-C                                      ! Segment K on PE 
-      INTEGER,ALLOCATABLE::LBCODEP(:,:)! LBCODEP(I,PE) Boundary Type of Land 
+      INTEGER,ALLOCATABLE::IBTYPEEP(:,:)! IBTYPEEP(K,PE) Type Elev Boundary
+C                                      ! Segment K on PE
+      INTEGER,ALLOCATABLE::LBCODEP(:,:)! LBCODEP(I,PE) Boundary Type of Land
 C                                      ! Boundary Node I on PE
       INTEGER,ALLOCATABLE::NFLUXFP(:)
       INTEGER,ALLOCATABLE::IBCONNRP(:,:)
@@ -384,7 +383,7 @@ C
       nbytes = nbytes + 4*mnp
       ALLOCATE ( X(MNP),Y(MNP),DP(MNP),SLAM(MNP),SFEA(MNP) )
       nbytes = nbytes + 40*mnp
-      ALLOCATE ( SL1(MNP),SF1(MNP)) 
+      ALLOCATE ( SL1(MNP),SF1(MNP))
       nbytes = nbytes + 16*mnp
       ALLOCATE ( NNEG(3,MNE) )
       nbytes = nbytes + 12*mne
@@ -423,7 +422,7 @@ C
       ALLOCATE ( XEM(MNSTAM),YEM(MNSTAM),SLEM(MNSTAM),SFEM(MNSTAM) )
       nbytes = nbytes + 12*mnstam
       ALLOCATE ( FF(MNBFR),FACE(MNBFR) )
-      nbytes = nbytes + 8*mnbfr 
+      nbytes = nbytes + 8*mnbfr
       ALLOCATE ( EMO(MNBFR,MNETA),EFA(MNBFR,MNETA) )
       nbytes = nbytes + 8*mnbfr*mneta
       ALLOCATE ( TPK(MNTIF),ETRF(MNTIF),FFT(MNTIF),FACET(MNTIF) )
@@ -467,7 +466,7 @@ C
       ALLOCATE ( WEIRDP_LG(MNVEL,MNPROC) )
       nbytes = nbytes + 4*mnvel*mnproc
       ALLOCATE ( LBINDEX_LG(MNBOU,MNVEL) )
-      nbytes = nbytes + 4*mnbou*mnvel 
+      nbytes = nbytes + 4*mnbou*mnvel
       ALLOCATE ( IMAP_NOD_GL(2,MNP),IMAP_NOD_GL2(2*MNEI,MNP) )
       nbytes = nbytes + 8*mnp + 8*mnei*mnp
       ALLOCATE ( NUM_COMM_PE(MNPROC), COMM_PE_NUM(MNPROC,MNPROC) )
@@ -475,7 +474,7 @@ C
       ALLOCATE ( IRECV_TOT(MNPROC,MNPROC),IRECV(MNP) )
       ALLOCATE ( ISEND_TOT(MNPROC,MNPROC),ISEND(MNP) )
       nbytes = nbytes + 8*(mnp + mnproc*mnproc)
-      ALLOCATE ( STAE_SHARE(MNSTAE), STAV_SHARE(MNSTAV), 
+      ALLOCATE ( STAE_SHARE(MNSTAE), STAV_SHARE(MNSTAV),
      &    STAM_SHARE(MNSTAM))
       ALLOCATE ( STAC_SHARE(MNSTAC))
       nbytes = nbytes + 4*(mnstae+mnstav+mnstac+mnstam)
@@ -549,7 +548,7 @@ C   ITOTPROC(I)          = Number of PEs assigned to Global Node I
 C
 C   NNEG(3,I)            = Three Nodes of Global Element I
 C   NNEP(3,I,PE)         = Three Nodes of Element I on PE
-C 
+C
 C   IMAP_NOD_GL(1,I)     = PE assigned to Global Node I
 C   IMAP_NOD_GL(2,I)     = Local Node Number of Global Node I
 C
@@ -561,32 +560,32 @@ C   IMAP_NOD_GL2(2(PE-1)+2,I)  = Local Node Number of Global Node I on PE
 C
 C Open Boundary Nodes and Segment Definitions:
 C
-C   NETA                 = Number of Global Open Boundary Nodes 
+C   NETA                 = Number of Global Open Boundary Nodes
 C   NETAP(PE)            = Number of Open Boundary Nodes on PE
 C
-C   NOPE                 = Number of Global Open Boundary Segments 
+C   NOPE                 = Number of Global Open Boundary Segments
 C   NOPEP(PE)            = Number of Open Boundary Segments on PE
 C
-C   NVDLL(K)             = Number of Nodes on Global Open Boundary Segment K 
+C   NVDLL(K)             = Number of Nodes on Global Open Boundary Segment K
 C   NVDLLP(K)            = Number of Nodes on Open Boundary Segment K on PE
 C
 C   NBDV(K,I)            = Global Node Number of I-th Node on Open Boundary
 C                          Segment K
-C   NBDVP(K,I)           = Local Node Number of I-th Node on Open Boundary 
+C   NBDVP(K,I)           = Local Node Number of I-th Node on Open Boundary
 C                          Segment K on PE
 C
 C   OBNODE_LG(I,PE)      = Global Open Boundary Node Number of Local
 C                          Open Boundary Node I on PE
-C 
+C
 Cvjp modified array to drop last dimension to save memory space
 C   LBINDEX_LG(K,I,PE)   = Global Index of I-th Node on Land Boundary Segment
-C                          K on PE 
+C                          K on PE
 C
-C   NWEIR                = Total Number of Global Weir Land Boundary Pairs 
+C   NWEIR                = Total Number of Global Weir Land Boundary Pairs
 C   NWEIRP(PE)           = Total Number of Land Boundary Nodes on PE
 C
-C   WEIRP_LG(I,PE)       = Global Node Number of I-th Weir Node on PE       
-C   WEIRDP_LG(I,PE)      = Global Node Number of I-th Dual Weir Node on PE    
+C   WEIRP_LG(I,PE)       = Global Node Number of I-th Weir Node on PE
+C   WEIRDP_LG(I,PE)      = Global Node Number of I-th Dual Weir Node on PE
 C
 C Elevation Station Definitions:
 C
@@ -620,4 +619,4 @@ C
 C   PROC_SV(PE)          = Surface-to-Volume Ratio on PE
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
-      END MODULE PRE_GLOBAL 
+      END MODULE PRE_GLOBAL

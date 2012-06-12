@@ -783,6 +783,10 @@ C
             SLAM(I) = R*(SL1(I)-SL0)*COS(SF0)
             SFEA(I) = R*SF1(I)
          ENDDO
+      ELSE
+         ! jgf: Need these to be populated for ICS=1 for NetCDF file
+         SL1 = SLAM
+         SF1 = SFEA 
       ENDIF
 
 
@@ -1123,7 +1127,7 @@ c...tcm v49.48.01 replace with new call to kdtsearch
 !      CALL CoordToEle(XEV,YEV,NNSVG,NSTAV,
 !     &     'Velocity recording station    ')
       call kdtsearch(XEV,YEV,NNSVG,NSTAV,
-     &     'Velocity recording station   ')
+     &     'Velocity recording station    ')
 
 C
 C     If Passive Transport is indicated, then read Concentration Station Info
@@ -1472,7 +1476,8 @@ C---------------------------------------------------------------------
       SUBROUTINE READ15_3DVS()
       USE PRE_GLOBAL
       USE GLOBAL, ONLY : parse, a2f, SNAMLEN
-      USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET
+      USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET, SIGMA,
+     &    FEGRIDS
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
@@ -1481,6 +1486,8 @@ C---------------------------------------------------------------------
       CHARACTER(50) LVAR(3)
       REAL(8) :: STATIME
       REAL(8), PARAMETER :: day2sec=24.d0*3600.d0
+      REAL(sz) :: HH1 ! domain averaged depth
+      INTEGER :: NH   ! horizontal node counter
 C
 C     jgf49.43.19: Moved memory allocation for number of 3D stations
 C     on each subdomain to here and made it unconditional.
@@ -1559,14 +1566,24 @@ C... READ IN IGC & NFEN: F.E. GRID CODE & # NODES IN F.E. GRID
 
 C     jgf45.12 Add code to read in nondimensional thicknesses of
 C     vertical layers.
+      ALLOCATE ( Sigma(NFEN) )
+      nbytes = 8*nfen
+      call memory_alloc(nbytes)
       IF(IGC.EQ.0) THEN
-         ALLOCATE ( Sigma(NFEN) )
-         nbytes = 8*nfen
-         call memory_alloc(nbytes)
          DO N=1,NFEN
             READ(15,*) Sigma(N)
          ENDDO
+      ELSE  ! jgf50.60.10 Populate sigma() for netcdf output files
+         HH1=0.d0
+         DO NH=1,MNP
+            HH1=HH1+DP(NH)
+         ENDDO
+         HH1=HH1/MNP                        !domain averaged depth
+         CALL FEGRIDS(IGC,HH1)
       ENDIF
+
+
+
 C... SPECIFY TYPE OF EDDY VISCOSITY PROFILE
       READ(15,80) EVCMSG
       READ(EVCMSG,*) IEVC,EVMIN,EVCON

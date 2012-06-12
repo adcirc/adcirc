@@ -166,7 +166,18 @@ c.
 Casey 090302: Added the following arrays for output of radiation stress gradients.
       REAL(SZ),ALLOCATABLE, TARGET :: RSNXOUT(:), RSNYOUT(:)
 #endif
-C..ZC Added the following for output of ESL at end of run
+#if defined CSWAN || defined ADCSWAN      
+Cobell 20120510: Added logicals for turning on/off swan output files   
+      LOGICAL                      :: SWAN_OutputHS = .TRUE.
+      LOGICAL                      :: SWAN_OutputDIR = .TRUE.
+      LOGICAL                      :: SWAN_OutputTM01 = .FALSE.
+      LOGICAL                      :: SWAN_OutputTPS = .TRUE.
+      LOGICAL                      :: SWAN_OutputWIND = .FALSE.
+      LOGICAL                      :: SWAN_OutputTM02 = .FALSE.
+      LOGICAL                      :: SWAN_OutputTMM10 = .TRUE.
+      LOGICAL                      :: SWAN_OutputAgg(7)
+#endif
+Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE, TARGET :: ESLONOFF(:),HOT_ESLONOFF(:),HOT_ESLONOFF_G(:)
 
       REAL(SZ),ALLOCATABLE, TARGET ::  CC00(:)
@@ -588,6 +599,7 @@ C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements t
         REAL(SZ), pointer :: hotstart(:) ! from hotstart (used by min max)
         REAL(SZ), pointer :: hotstart_g(:) ! from hotstart (used by min max)
       end type OutputDataDescript_t
+
       INTEGER ITAU0P ! position in tau0 output file for variable tau0
 C
 C     jgf48.03 Variables shared between messenger and writer modules
@@ -1859,7 +1871,6 @@ C
 Casey 090302: Added the next line for output of radiation stress gradients.
       ALLOCATE ( RSNXOUT(MNP),RSNYOUT(MNP) )
 #endif
-
       ALLOCATE ( PrMin(MNP)) ! v46.50 sb 11/11/2006
       PrMin(:) = 99999.d0
       ALLOCATE ( WVNOUTMax(MNP)) ! v46.50 sb 11/11/2006

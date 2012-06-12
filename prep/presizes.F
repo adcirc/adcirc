@@ -92,6 +92,14 @@ C  46.44 vjp added code for prep13-only command
 C----------------------------------------------------------------------------
 
       MODULE PRESIZES
+#ifdef ADCSWAN
+      USE GLOBAL, ONLY :
+     &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
+     &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
+     &                   SWAN_OutputTMM10
+#endif
+      USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
+     &                  initWindModule
 C
       IMPLICIT NONE
 C
@@ -186,6 +194,14 @@ C Logicals added for adcprep paths
       LOGICAL :: useNetCDF = .false.  !jgf48.07
       INTEGER, ALLOCATABLE :: NM(:,:) !jgf48.08
 
+
+#if defined CSWAN || defined ADCSWAN
+      ! jgf50.60.09: Namelist for turning SWAN output files on or off
+      NAMELIST /SWANOutputControl/ SWAN_OutputHS, SWAN_OutputDIR,
+     &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
+     &    SWAN_OutputTM02, SWAN_OutputTMM10
+#endif
+      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir
       LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in
 
 C---------------------end of data declarations--------------------------------C
@@ -227,12 +243,14 @@ C
       LOGICAL FOUND
       CHARACTER*60 GRID,RUNINFO
       CHARACTER(len=80) skipped !jgf46.00 data that we want to skip
+
 c....tcm v50.66.02 additions for time varying bathymetry
       INTEGER NDDT
       REAL(8) BTIMINC,BCHGTIMINC
       INTEGER :: ios_nddt
       logical :: found_tbc_nml   !flag to determine if the timebathycontrol namelist was present
       NAMELIST /TimeBathyControl/ nddt,BTIMINC,BCHGTIMINC
+      INTEGER :: ios  ! return value of i/o operation
 
 #ifdef ADCNETCDF
       NETCDF_AVAIL = .true.
@@ -423,8 +441,6 @@ C
  132  WRITE(*,1011) RUNINFO
       OPEN(15,FILE=RUNINFO)
 
-
-
 c...  tcm v50.66.02 Addtions for Time Varying Bathymetry
 c...  read through the fort.15 file for the namelist (TimeBathyControl) for
 c...  the time varying bathymetry.  This namelist must be at the bottom of the
@@ -460,9 +476,25 @@ c....    a non-default value we can determine this was the case.
       ENDIF
 C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       REWIND(15)
+
+#if defined CSWAN || defined ADCSWAN
+      ! jgf50.60.08: Add a namelist for the user to turn SWAN output
+      ! on and off. Similar to tcm's timevaryingbathy namelist.
+      READ(UNIT=15,NML=SWANOutputControl,IOSTAT=IOS)
+      IF (IOS.gt.0) THEN
+         write(*,*)"INFO: The SWANOutputControl namelist was not found."
+      ENDIF
+      REWIND(15)
+#endif
+      ! jgf50.60.13: Add a namelist for the user to control met forcing.
+      ! Similar to tcm's timevaryingbathy namelist.
+      call initWindModule()
+      READ(UNIT=15,NML=metControl,IOSTAT=IOS)
+      IF (IOS.gt.0) THEN
+         write(*,*) "INFO: The metControl namelist was not found."
+      ENDIF
+      REWIND(15)
 C
-
-
 C
 C  Initialize all runtime option logicals to false
 C
@@ -854,7 +886,6 @@ C      PRINT *, "Made it to LUMP definition"
 C
 C--Read in 3D info
 C
-C      PRINT *, "Made it to 3D information"
       IF(C3DVS) THEN  !3DVS
 c     jgf45.10 removed IDIAG
          READ(15,*) IDUM                               !Skip IDEN
@@ -902,7 +933,6 @@ C     jgf45.12 add code to handle user specified vertical eddy viscosity.
          READ(15,*) IDUM,RDUM,RDUM,IDUM                !Skip 3D global turbulence output
 
 !kmd48.33bc - added this information for the boundary conditions
-C         PRINT *, "Made it to baroclinic boundary information"
          IF (CBAROCLINIC) THEN
            READ(15,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP    !Process RES_BC_FLAG
            IF ((RES_BC_FLAG.LT.0).OR.(RES_BC_FLAG.EQ.1)) THEN

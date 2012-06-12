@@ -147,7 +147,7 @@ C...  DECLARE 3D GLOBAL SCALARS
       INTEGER  :: IGC                  !vertical grid code
       REAL(SZ) :: KP                   !3D bottom friction coefficient
       REAL(SZ) :: EVMin, EVCon         !minimum vertical eddy viscosity and vertical eddy viscosity constant
-      REAL(SZ) :: Z0S, Z0B             !surface and bottom roughnesses
+      REAL(SZ) :: Z0S, Z0B             !surface and bottom roughnesses 
       REAL(SZ) :: Alp1,Alp2,Alp3       !time stepping coefficients
       REAL(SZ) :: DTALP2, DT1MALP2     !DelT*alpha2, DelT*(1-alpha2)
       REAL(SZ) :: DTALP3, DT1MALP3     !DelT*alpha3, DelT*(1-alpha3)
@@ -399,6 +399,198 @@ C
      &         SLET(MNSTA3DT),SFET(MNSTA3DT))
       RETURN
       END SUBROUTINE ALLOC_3DST
+
+c***********************************************************************
+c                                                                      *
+C     SUBROUTINE TO SET UP THE VERTICAL FINITE ELEMENT GRID            *
+c                                                                      *
+c                           6/16/2005                                  *
+c***********************************************************************
+c
+      SUBROUTINE FEGRIDS(IGC,H)
+      USE GLOBAL, ONLY : ScreenUnit
+
+      IMPLICIT NONE
+      INTEGER :: IGC,N,NFEN2,IANS,NUM,I,NH
+      REAL(SZ) :: H,DETA,SSTAR,DENOM,SIG0,SS,SB,RP,AVAL,EPS
+C
+      call setMessageSource("fegrids")
+#if defined(GLOBAL_3DVS_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      select case(igc)
+c
+c     igc = 0 - Read in grid from UNIT 15 in subroutine READ_INPUT_3DVS
+c
+
+c
+c     igc = 1 - Evenly spaced grid
+c
+      case(1)
+         if(nfen.le.1) nfen = 2
+         deta = (a-b)/(nfen-1)
+         sigma(1) = b
+         do n=2,nfen-1
+            sigma(n) = b + deta*(n-1)
+         end do
+         nfen2 = nfen/2
+         if(2*nfen2.ne.nfen) sigma(nfen2+1) = 0.d0
+         sigma(nfen) = a
+c
+c     igc = 2 - logarithmically grid  (after Davies 1991)
+c
+      case(2)
+         write(screenunit,*) '   '
+         write(screenunit,*) '********** Depth = ',H,' ***********'
+         write(screenunit,*) '********** So = ',Z0B,' *********'
+         Sb = Z0B
+c     write(screenunit,*) '********** Enter So from the keyboard ***********'
+c     write(screenunit,*) '   '
+c     read(*,*) Sb
+         if(nfen.le.1) nfen = 2
+         deta = 1.d0/(nfen-1)
+         sigma(1) = b
+         do n=2,nfen-1
+            sigma(n) = b + (a-b)*Sb/H*(((H+Sb)/Sb)**(deta*(n-1))-1.d0)
+         enddo
+         sigma(nfen) = a
+c
+c     igc = 3 - log-linear grid  (after Davies 1991)
+c
+      case(3)
+         write(screenunit,*) '   '
+         write(screenunit,*) '********** Depth = ',H,' ***********'
+         write(screenunit,*) '********** So = ',Z0B,' ****'
+         write(screenunit,*) '********** S* = ',-H-Sb,' **********'
+         Sb = Z0B
+         Sstar = -H-Sb
+         write(screenunit,*)
+     &      '******** Enter So from the keyboard *******'
+         write(screenunit,*) '   '
+         read(*,*) Sb
+         write(screenunit,*)
+     &      '******** Enter S* from the keyboard *******'
+         write(screenunit,*) '   '
+         read(*,*) Sstar
+         if(nfen.le.1) nfen = 2
+         deta = 1.d0/(nfen-1)
+         denom = log((H+Sb)/Sb) + H/Sstar
+         sigma(1) = b
+         do n=2,nfen-1
+            sig0 = b + (a-b)*deta*(n-1)
+ 10         sigma(n)= b - (a-b)*Sstar/H*(log(1.d0+H/Sb*(sig0-b)/(a-b))
+     +           -denom*deta*(n-1))
+            if(abs(sigma(n)-sig0).ge.1.d-8)then
+               sig0 = sigma(n)
+               goto 10
+            endif
+         enddo
+         sigma(nfen) = a
+c
+c     igc = 4 - Double logarithmic grid
+c
+      case(4)
+         write(screenunit,*) '   '
+         write(screenunit,*) '********** Depth = ',H,' ***********'
+         write(screenunit,*)
+     &       '********** So bottom = ',Z0B,' ***********'
+         Sb = Z0B
+         write(screenunit,*)
+     &       '********** So surface = ',Z0S,' ***********'
+         Ss = Z0S
+c
+c     write(screenunit,*) '******* Enter So bottom from the keyboard ********'
+c     write(screenunit,*) '   '
+c     read(*,*) Sb
+c     write(screenunit,*) '******* Enter So surface from the keyboard *******'
+c     write(screenunit,*) '   '
+c     read(*,*) Ss
+c
+         write(screenunit,*) '   '
+         if(mod(nfen,2).eq.0) then
+            write(screenunit,*)
+     &         '**********************************WARNING*****',
+     &         '******************************'
+            write(screenunit,*)
+     &         '**** You have specified a double log grid with',
+     &           ' an even number of nodes. ****'
+            write(screenunit,*)
+     &           '**** Much better results are obtained using an',
+     &           ' an odd number of nodes.  ****'
+            write(screenunit,*)
+     &           '**** Do you want to terminate now or continue?',
+     &           '  0=Terminate/1=continue. ****'
+            write(screenunit,*) '  '
+            read(*,*) ians
+            if(ians.ne.1) stop
+            num = nfen/2
+         else
+            num=(nfen-1)/2
+            sigma(num+1)=(a+b)/2.
+         endif
+         deta = 2.d0/(nfen-1)
+         sigma(1) = b
+         sigma(nfen) = a
+         do n=2,num
+            sigma(n)
+     &        = b + 0.5d0*(a-b)*Sb/H*(((H+Sb)/Sb)**(deta*(n-1))-1.d0)
+            sigma(nfen+1-n) = a - 0.5d0*(a-b)*Ss/H*(((H+Ss)/Ss)**
+     &           (deta*(n-1))-1.d0)
+         enddo
+c
+c     igc = 5 - "P-grid" after Fortunato and Baptista (IJNMF submitted 12/1994)
+c     optimal p value of 0.25 may be used as default for tidal flow problems
+c     note: p = 1 - uniform, p<1 makes fine grid near bottom,p>1 makes
+c     fine grid near sfc
+c     sigma converted to range from -1 to 1 in ADCIRC
+c
+      case(5)
+         if(nfen.le.1) nfen = 2
+         write(screenunit,*)
+         write(screenunit,*)' Enter P value for P - grid'
+         write(screenunit,*)
+         read(*,*)rp
+         do i = 1,nfen
+            sigma(i) = -1.d0 + 2.d0
+     &          *(1.d0+((1.d0-i)/(1.d0-nfen))**(1.d0/rp) - 1.d0)
+         end do
+c
+c     igc = 6 - "sine grid" after Naimie,Lynch
+c     Value of A determines stretching at ends, check in unit 18
+c     sigma converted to range from -1 to 1 in ADCIRC
+c
+      case(6)
+         if(nfen.le.1) nfen = 2
+         write(screenunit,*)
+         write(screenunit,*)' Enter A value for sine grid'
+         write(screenunit,*)
+         read(*,*)aval
+         do i = 1,nfen
+            eps = float(i-1)/float(nfen-1)
+            sigma(i) = -1.d0
+     &         + (2.d0/H)*(eps*H-aval*sin(2.d0*3.14159d0*eps))
+         end do
+      case default
+         write(screenunit,4321) igc
+4321     format('The value of igc=',I2,' is not valid. There are seven',
+     &   /,'choices for specifying the vertical grid spacing in 3D.',
+     &   /,'Please specify a value for igc from 0 to 6.',
+     &   /,'**ADCIRC run terminated due to bad value for igc.**')
+         stop
+
+      end select
+
+#if defined(GLOBAL_3DVS_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+
+c******************************************************************************
+      END SUBROUTINE FEGRIDS
+c******************************************************************************
+
 
 
       END MODULE GLOBAL_3DVS

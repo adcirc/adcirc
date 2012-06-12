@@ -1,8 +1,12 @@
-
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       MODULE Couple2Swan
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
 
-      USE SIZES,   ONLY: SZ
-
+      USE SIZES,  ONLY: SZ
+      USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
+     &          setMessageSource, unsetMessageSource, allMessage
 #ifdef CSWAN
 
       USE SWCOMM1, ONLY: NMOVAR
@@ -83,9 +87,24 @@ C             0 wherever ice reaches/exceeds a threshold value
       INTEGER,ALLOCATABLE :: ICY(:)
       REAL(SZ),ALLOCATABLE :: SWAN_CICE2(:,:)
 
+Cobell 20120510:  Moved variables for SWAN Output here
+C          Added the rest of the local SWAN arrays
+      REAL(SZ),ALLOCATABLE, TARGET :: SW_HSOut(:), SW_DIROut(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: SW_TM01Out(:), SW_TPSOut(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: SW_WindXOut(:), SW_WindYOut(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: SW_TM02Out(:), SW_TMM10Out(:)
+
+
+C-----------------------------------------------------------------------
       CONTAINS
+C-----------------------------------------------------------------------
 
 
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C       C O M P U T E  M O D I F I E D  W A V E  F R I C T I O N
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
 #ifdef CSWANFRIC
 !Casey 091020: Adopt Ethan's/Joannes's modified friction.
       SUBROUTINE ComputeModifiedWaveFriction(TK)
@@ -136,6 +155,12 @@ C             0 wherever ice reaches/exceeds a threshold value
       REAL(SZ)               :: WDYY
       REAL(SZ)               :: Y_WAVE
 
+      call setMessageSource("ComputeModifiedWaveFriction")
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+
       DO IP=1,NP
          H1 = DP(IP) + IFNLFA*ETA2(IP)
          TKXX(IP) = TK(IP)
@@ -175,12 +200,22 @@ C... Compute the modified friction factors due to waves.
             TKXY(IP) = FRIC(IP)*(IFLINBF + WDXY/H1*CHYBR)
          ENDIF
       ENDDO
-
-      END SUBROUTINE
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+C-----------------------------------------------------------------------
+      END SUBROUTINE ComputeModifiedWaveFriction
+C-----------------------------------------------------------------------
 #endif
 
 
-
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C       C O M P U T E  R A D I A T I O N  S T R E S S E S
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE ComputeRadiationStresses(AC2,SPCDIR,SPCSIG)
 
 !Casey 090616: On Jade, there was a problem with getting water depths
@@ -202,6 +237,11 @@ C... Compute the modified friction factors due to waves.
       INTEGER :: I, ID, IERR, IS
       REAL(4) :: DEPLOC
       REAL(4) :: WK(MSC), CG(MSC), NE(MSC), NED(MSC)
+
+      call setMessageSource("ComputeRadiationStresses")
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
 !... (Re)allocate the arrays.
       IF(.NOT.ALLOCATED(ADCIRC_SXX))THEN
@@ -270,10 +310,20 @@ C... Compute the modified friction factors due to waves.
 !... End loop over wet nodes.  The radiation stresses are ready for ADCIRC.
       ENDDO
 
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+C-----------------------------------------------------------------------
       END SUBROUTINE ComputeRadiationStresses
+C-----------------------------------------------------------------------
 
-
-
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C       C O M P U T E  W A V E  D R I V E N  F O R C E S
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE ComputeWaveDrivenForces
 
       USE GLOBAL, ONLY: AREAS, NBDV, NBOU, NBVV, NE, NEITABELE,
@@ -306,6 +356,11 @@ C... Compute the modified friction factors due to waves.
       REAL(SZ),ALLOCATABLE :: TEMP_SYY(:)
 
       REAL(SZ) :: TOTALAREA
+
+      call setMessageSource("ComputeWaveDrivenForces")
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
 !... Check whether radiation stresses have already been computed.
 !... If not, then apply forces of zero.
@@ -485,19 +540,28 @@ C... Compute the modified friction factors due to waves.
 
       ENDIF
 
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
-
+C-----------------------------------------------------------------------
       END SUBROUTINE ComputeWaveDrivenForces
+C-----------------------------------------------------------------------
 
 
-
-#ifdef CSWANFRIC
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C       C O M P U T E  W A V E  F R I C T I O N  P R O P E R T I E S
+C-----------------------------------------------------------------------
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
 Casey 091021: Copy the format of this routine from the SwanOutput
 C             routine earlier in this file.  We want to interact
 C             with the SWAN output routines so that they will
 C             compute the wave heights, periods and directions.
 C             we need for the modified friction.
+C-----------------------------------------------------------------------
+#ifdef CSWANFRIC
       SUBROUTINE ComputeWaveFrictionProperties
 
       USE Couple2Adcirc,ONLY: COMPDA
@@ -554,6 +618,11 @@ C             we need for the modified friction.
       REAL(4)                       :: SWAN_WK(MSC)
       REAL(4)                       :: XC(NP)
       REAL(4)                       :: YC(NP)
+
+      call setMessageSource("ComputeWaveFrictionProperties")
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
 !... Initialize the Swan output variables.
       DO IO=1,NMOVAR
@@ -658,16 +727,24 @@ C             we need for the modified friction.
       IF(ALLOCATED(IGSW))     DEALLOCATE(IGSW)
       IF(ALLOCATED(SWAN_VOQ)) DEALLOCATE(SWAN_VOQ)
 
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
-
-      END SUBROUTINE
+C-----------------------------------------------------------------------
+      END SUBROUTINE ComputeWaveFrictionProperties
+C-----------------------------------------------------------------------
 #endif
 
 
-
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E  M A N N I N G  2  M A D S E N
+C-----------------------------------------------------------------------
 Casey 091216: This routine will convert the ADCIRC Manning's n values
 C             into roughness lengths that can be used with the Madsen
 C             friction formulation inside SWAN.
+C-----------------------------------------------------------------------
       SUBROUTINE Manning2Madsen
 
       USE GLOBAL,         ONLY: DP,
@@ -683,6 +760,11 @@ C             friction formulation inside SWAN.
       REAL(SZ) :: K = 0.4D0
       REAL(SZ) :: N
       REAL(SZ) :: Z0
+
+      call setMessageSource("Manning2Madsen")
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       DO IN=1,NP
 
@@ -704,10 +786,19 @@ Casey 091216: If we get a junk number, then use the default value.
 
       ENDDO
 
-      END SUBROUTINE
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE Manning2Madsen
+C-----------------------------------------------------------------------
 
 
-
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E    S W A N  O U T P U T
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE SwanOutput(ITIME, IT)
 
       USE Couple2Adcirc,ONLY: COMPDA
@@ -731,6 +822,17 @@ Casey 091216: If we get a junk number, then use the default value.
      &                        RID4,
      &                        UU2,
      &                        VV2
+#ifdef CSWAN
+     &                        ,SWAN_OutputHS,
+     &                        SWAN_OutputDIR,
+     &                        SWAN_OutputTM01,
+     &                        SWAN_OutputTPS,
+     &                        SWAN_OutputWIND,
+     &                        SWAN_OutputTM02,
+     &                        SWAN_OutputTMM10,
+     &                        SWAN_OutputAgg
+#endif
+
       USE GLOBAL_IO,    ONLY: Header73,
      &                        Header74,
      &                        HEADER_MAX,
@@ -752,7 +854,8 @@ Casey 091216: If we get a junk number, then use the default value.
      &                        MNPROC,
      &                        MNWPROC,
      &                        NBYTE,
-     &                        SZ
+     &                        SZ,
+     &                        MYPROC
       USE SwanGriddata, ONLY: nverts,
      &                        xcugrd,
      &                        ycugrd
@@ -773,9 +876,13 @@ Casey 091216: If we get a junk number, then use the default value.
      &                        WRITE_GBL_FILE_THROUGH_WRITER,
      &                        Writer_StoreOne,
      &                        Writer_StoreTwo
-      USE MESSENGER,   ONLY : MSG_FINI      !st3 100708: check writer buffer
+      USE MESSENGER,   ONLY : MSG_FINI,      !st3 100708: check writer buffer
+     &                        MSG_LBCAST
 #endif
 
+#ifdef ADCNETCDF
+      USE NETCDFIO,    ONLY : initNetCDFOutputFile
+#endif
       IMPLICIT NONE
 
       INTRINSIC                     :: ALLOCATED
@@ -803,6 +910,9 @@ Casey 091216: If we get a junk number, then use the default value.
       INTEGER                       :: UpdateMax(NP)
 
       LOGICAL                       :: CROSS(4,NP)
+#ifdef ADCNETCDF
+      LOGICAL                       :: NETCDF_ERROR(8)
+#endif
 
 !Casey 090820: Sapphire doesn't like it if these variables
 !              are declared as only REAL.  They must be declared
@@ -816,15 +926,38 @@ Casey 091216: If we get a junk number, then use the default value.
       REAL(4)                       :: SWAN_NED(MSC)
       REAL(4),ALLOCATABLE           :: SWAN_VOQ(:,:)
       REAL(4)                       :: SWAN_WK(MSC)
-      REAL(SZ),TARGET               :: SwanOut(NP)
-      REAL(SZ),TARGET               :: SwanOut2(NP)
-      REAL(SZ),TARGET               :: SwanOut_g(NP_G)
-      REAL(SZ),TARGET               :: SwanOut2_g(NP_G)
+      REAL(SZ),POINTER              :: SwanOut(:)
+      REAL(SZ),POINTER              :: SwanOut2(:)
+C      REAL(SZ),TARGET               :: SwanOut_g(NP_G)
+C      REAL(SZ),TARGET               :: SwanOut2_g(NP_G)
       REAL(4)                       :: XC(NP)
       REAL(4)                       :: YC(NP)
 
-      TYPE(OutputDataDescript_t)    :: SwanDescript
+      TYPE(OutputDataDescript_t),POINTER    :: SwanDescript
       TYPE(OutputDataDescript_t)    :: SwanDescriptMax
+
+Cobell 20120510: Added complete list of SWAN Output arrays
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanHSDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanDIRDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTM01Descript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTPSDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanWindDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTM02Descript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTMM10Descript
+Cobell 20120510: Added the global arrays used for SWAN globalio
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: SW_HSOut_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: SW_DIROut_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: SW_TM01Out_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: SW_TPSOut_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: SW_WINDXOut_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: SW_WINDYOut_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: SW_TM02Out_g(:)
+      REAL(SZ), SAVE, ALLOCATABLE, TARGET :: SW_TMM10Out_g(:)
+
+      call setMessageSource("swanoutput")
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
 !... Initialize the Swan output variables.
       DO IO=1,NMOVAR
@@ -886,10 +1019,156 @@ Casey 091216: If we get a junk number, then use the default value.
       FileName(6) = "swan_"//TRIM(Names(6))//".63"//"       "
       FileName(7) = "swan_"//TRIM(Names(7))//".63"//"       "
       IF(.NOT.Processed26)THEN
+
+
+Cobell 20120510: At first pass, we set up the output data arrays
+C.....Arrange on/off for output into array
+        SWAN_OutputAgg(1) = SWAN_OutputHS
+        SWAN_OutputAgg(2) = SWAN_OutputDIR
+        SWAN_OutputAgg(3) = SWAN_OutputTM01
+        SWAN_OutputAgg(4) = SWAN_OutputTPS
+        SWAN_OutputAgg(5) = SWAN_OutputWIND
+        SWAN_OutputAgg(6) = SWAN_OutputTM02
+        SWAN_OutputAgg(7) = SWAN_OutputTMM10
+
+C.......Allocate what we need
+        IF(SWAN_OutputHS)ALLOCATE(SW_HSOut(NP))
+        IF(SWAN_OutputDIR)ALLOCATE(SW_DIROut(NP))
+        IF(SWAN_OutputTM01)ALLOCATE(SW_TM01Out(NP))
+        IF(SWAN_OutputTPS)ALLOCATE(SW_TPSOut(NP))
+        IF(SWAN_OutputWIND)ALLOCATE(SW_WindXOut(NP), SW_WindYOut(NP))
+        IF(SWAN_OutputTM02)ALLOCATE(SW_TM02Out(NP))
+        IF(SWAN_OutputTMM10)ALLOCATE(SW_TMM10Out(NP))
+
+C.......Processor 0 gets the global arrays
+        IF( (MNPROC.GT.1).AND.(MYPROC.EQ.0))THEN
+            IF(SWAN_OutputHS)ALLOCATE(SW_HSOut_g(NP_G))
+            IF(SWAN_OutputDIR)ALLOCATE(SW_DIROut_g(NP_G))
+            IF(SWAN_OutputTPS)ALLOCATE(SW_TPSOut_g(NP_G))
+            IF(SWAN_OutputTM01)ALLOCATE(SW_TM01Out_g(NP_G))
+            IF(SWAN_OutputWIND)ALLOCATE(SW_WindXOut_g(NP_G), SW_WindYOut_g(NP_G))
+            IF(SWAN_OutputTM02)ALLOCATE(SW_TM02Out_g(NP_G))
+            IF(SWAN_OutputTMM10)ALLOCATE(SW_TMM10Out_g(NP_G))
+        ENDIF
+
+C.......Now prepare the descript arrays on all procs
+
+        IF(SWAN_OutputHS)THEN
+C........Significant Wave Height
+            SwanHSDescript % specifier            = NOUTGW
+            SwanHSDescript % initial_value        = 0.0
+            SwanHSDescript % num_items_per_record = 1
+            SwanHSDescript % num_fd_records       = NP_G
+            SwanHSDescript % num_records_this     = NP
+            SwanHSDescript % imap                 => NODES_LG
+            SwanHSDescript % array                => SW_HSOut
+            SwanHSDescript % array_g              => SW_HSOut_g
+            SwanHSDescript % ConsiderWetDry       = .FALSE.
+            SwanHSDescript % alternate_value      = -99999.0
+            SwanHSDescript % field_name           = "swan_HS"
+            SwanHSDescript % file_name            = "swan_HS.63"
+         ENDIF
+
+         IF(SWAN_OutputDIR)THEN
+C.........Mean Wave Direction
+            SwanDIRDescript % specifier            = NOUTGW
+            SwanDIRDescript % initial_value        = 0.0
+            SwanDIRDescript % num_items_per_record = 1
+            SwanDIRDescript % num_fd_records       = NP_G
+            SwanDIRDescript % num_records_this     = NP
+            SwanDIRDescript % imap                 => NODES_LG
+            SwanDIRDescript % array                => SW_DIROut
+            SwanDIRDescript % array_g              => SW_DIROut_g
+            SwanDIRDescript % ConsiderWetDry       = .FALSE.
+            SwanDIRDescript % alternate_value      = -99999.0
+            SwanDIRDescript % field_name           = "swan_DIR"
+            SwanDIRDescript % file_name            = "swan_DIR.63"
+        ENDIF
+
+        IF(SWAN_OutputTM01)THEN
+C.........Mean Wave Period (TM01)
+           SwanTM01Descript % specifier            = NOUTGW
+           SwanTM01Descript % initial_value        = 0.0
+           SwanTM01Descript % num_items_per_record = 1
+           SwanTM01Descript % num_fd_records       = NP_G
+           SwanTM01Descript % num_records_this     = NP
+           SwanTM01Descript % imap                 => NODES_LG
+           SwanTM01Descript % array                => SW_TM01Out
+           SwanTM01Descript % array_g              => SW_TM01Out_g
+           SwanTM01Descript % ConsiderWetDry       = .FALSE.
+           SwanTM01Descript % alternate_value      = -99999.0
+           SwanTM01Descript % field_name           = "swan_TM01"
+           SwanTM01Descript % file_name            = "swan_TM01.63"
+         ENDIF
+
+         IF(SWAN_OutputTPS)THEN
+C.........Peak Wave Period (TPS)
+            SwanTPSDescript % specifier            = NOUTGW
+            SwanTPSDescript % initial_value        = 0.0
+            SwanTPSDescript % num_items_per_record = 1
+            SwanTPSDescript % num_fd_records       = NP_G
+            SwanTPSDescript % num_records_this     = NP
+            SwanTPSDescript % imap                 => NODES_LG
+            SwanTPSDescript % array                => SW_TPSOut
+            SwanTPSDescript % array_g              => SW_TPSOut_g
+            SwanTPSDescript % ConsiderWetDry       = .FALSE.
+            SwanTPSDescript % alternate_value      = -99999.0
+            SwanTPSDescript % field_name           = "swan_TPS"
+            SwanTPSDescript % file_name            = "swan_TPS.63"
+         ENDIF
+
+         IF(SWAN_OutputWIND)THEN
+C.........SWAN Wind Values (WINDX,WINDY)
+            SwanWindDescript % specifier            = NOUTGW
+            SwanWindDescript % initial_value        = 0.0
+            SwanWindDescript % num_items_per_record = 2
+            SwanWindDescript % num_fd_records       = NP_G
+            SwanWindDescript % num_records_this     = NP
+            SwanWindDescript % imap                 => NODES_LG
+            SwanWindDescript % array                => SW_WindXOut
+            SwanWindDescript % array_g              => SW_WindXOut_g
+            SwanWindDescript % array2               => SW_WindYOut
+            SwanWindDescript % array2_g             => SW_WindYOut_g
+            SwanWindDescript % ConsiderWetDry       = .FALSE.
+            SwanWindDescript % alternate_value      = -99999.0
+            SwanWindDescript % field_name           = "swan_WIND"
+            SwanWindDescript % file_name            = "swan_WIND.64"
+         ENDIF
+
+         IF(SWAN_OutputTM02)THEN
+C.........Mean Wave Period (TM02)
+            SwanTM02Descript % specifier            = NOUTGW
+            SwanTM02Descript % initial_value        = 0.0
+            SwanTM02Descript % num_items_per_record = 1
+            SwanTM02Descript % num_fd_records       = NP_G
+            SwanTM02Descript % num_records_this     = NP
+            SwanTM02Descript % imap                 => NODES_LG
+            SwanTM02Descript % array                => SW_TM02Out
+            SwanTM02Descript % array_g              => SW_TM02Out_g
+            SwanTM02Descript % ConsiderWetDry       = .FALSE.
+            SwanTM02Descript % alternate_value      = -99999.0
+            SwanTM02Descript % field_name           = "swan_TM02"
+            SwanTM02Descript % file_name            = "swan_TM02.63"
+         ENDIF
+
+         IF(SWAN_OutputTMM10)THEN
+C.........Mean Wave Period (TMM10)
+            SwanTMM10Descript % specifier            = NOUTGW
+            SwanTMM10Descript % initial_value        = 0.0
+            SwanTMM10Descript % num_items_per_record = 1
+            SwanTMM10Descript % num_fd_records       = NP_G
+            SwanTMM10Descript % num_records_this     = NP
+            SwanTMM10Descript % imap                 => NODES_LG
+            SwanTMM10Descript % array                => SW_TMM10Out
+            SwanTMM10Descript % array_g              => SW_TMM10Out_g
+            SwanTMM10Descript % ConsiderWetDry       = .FALSE.
+            SwanTMM10Descript % alternate_value      = -99999.0
+            SwanTMM10Descript % field_name           = "swan_TMM10"
+            SwanTMM10Descript % file_name            = "swan_TMM10.63"
+         ENDIF
+
          DO IW=1,NumSwanOutput
-            IF((IW.EQ.3).OR.(IW.EQ.5).OR.(IW.EQ.6))THEN
-               CYCLE
-            ENDIF
+            IF(.NOT.SWAN_OutputAgg(IW))CYCLE
             UnitNumber = 300 + IW
 !... Copy code from cstart.F about initializing the output file.
             IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.4))THEN
@@ -943,6 +1222,50 @@ Casey 091216: If we get a junk number, then use the default value.
                IGSW(IW) = IGSW(IW) + 5
                CLOSE(UnitNumber)
             ENDIF
+Cobell 20120510: Added for NetCDF SWAN output processing
+#ifdef ADCNETCDF
+            IF (myProc.eq.0) THEN ! jgf50.60.10: Only proc0 in parallel
+               IF((ABS(NOUTGW).EQ.3).OR.(ABS(NOUTGW).EQ.5))THEN
+                   NETCDF_ERROR(:) = .FALSE.
+                   SELECT CASE(IW)
+                   CASE(1)
+                       CALL initNetCDFOutputFile(UnitNumber,
+     &                  SwanHSDescript,NETCDF_ERROR(1))
+                   CASE(2)
+                       CALL initNetCDFOutputFile(UnitNumber,
+     &                  SwanDIRDescript,NETCDF_ERROR(2))
+                   CASE(3)
+                       CALL initNetCDFOutputFile(UnitNumber,
+     &                  SwanTM01Descript,NETCDF_ERROR(3))
+                   CASE(4)
+                       CALL initNetCDFOutputFile(UnitNumber,
+     &                  SwanTPSDescript,NETCDF_ERROR(4))
+                   CASE(5)
+                       CALL initNetCDFOutputFile(UnitNumber,
+     &                  SwanWINDDescript,NETCDF_ERROR(5))
+                   CASE(6)
+                       CALL initNetCDFOutputFile(UnitNumber,
+     &                  SwanTM02Descript,NETCDF_ERROR(6))
+                   CASE(7)
+                       CALL initNetCDFOutputFile(UnitNumber,
+     &                  SwanTMM10Descript,NETCDF_ERROR(7))
+                   CASE DEFAULT
+                       !...Should not be reachable
+                   END SELECT
+#ifdef CMPI
+                   CALL MSG_LBCAST(NETCDF_ERROR(:),7)
+#endif
+                   DO I=1,7
+                       IF(NETCDF_ERROR(I))THEN
+#ifdef CMPI
+                           CALL MSG_FINI()
+#endif
+                           STOP
+                       ENDIF
+                   ENDDO
+               ENDIF
+            ENDIF
+#endif
          ENDDO
          SWAN_MTC = MTC
          Processed26 = .TRUE.
@@ -1022,25 +1345,26 @@ Casey 091216: If we get a junk number, then use the default value.
       UpdateMax = 0
       IFileCounter = 0        !st3 100708: counter of file number
       DO IW=1,NumSwanOutput
-         IF((IW.EQ.3).OR.(IW.EQ.5).OR.(IW.EQ.6))THEN
-            CYCLE
-         ENDIF
-         UnitNumber = 300 + NumSwanOutput
+         IF(.NOT.SWAN_OutputAgg(IW))CYCLE
+         UnitNumber = 300 + IW
 !... Copy code from write_output.F to initialize data type.
-         SwanDescript % specifier            = NOUTGW
-         SwanDescript % initial_value        = 0.
-         IF(IW.NE.5)THEN
-            SwanDescript % num_items_per_record = 1
-         ELSE
-            SwanDescript % num_items_per_record = 2
-         ENDIF
-         SwanDescript % num_fd_records       = NP_G
-         SwanDescript % num_records_this     = NP
-         SwanDescript % imap                 => NODES_LG
-         SwanDescript % array                => SwanOut
-         SwanDescript % array_g              => SwanOut_g
-         SwanDescript % array2               => SwanOut2
-         SwanDescript % array2_g             => SwanOut2_g
+Cobell 20120510: Removed this section, since it only needs to be done once
+C        Now done for all SWAN arrays found in write_output.F
+C
+C         SwanDescript % specifier            = NOUTGW
+C         SwanDescript % initial_value        = 0.
+C         IF(IW.NE.5)THEN
+C            SwanDescript % num_items_per_record = 1
+C         ELSE
+C            SwanDescript % num_items_per_record = 2
+C         ENDIF
+C         SwanDescript % num_fd_records       = NP_G
+C         SwanDescript % num_records_this     = NP
+C         SwanDescript % imap                 => NODES_LG
+C         SwanDescript % array                => SwanOut
+C         SwanDescript % array_g              => SwanOut_g
+C         SwanDescript % array2               => SwanOut2
+C         SwanDescript % array2_g             => SwanOut2_g
 !... Assign the output variable to our data structure.
          IF(IW.EQ.1) IVTYPE=10
          IF(IW.EQ.2) IVTYPE=13
@@ -1052,20 +1376,86 @@ Casey 091216: If we get a junk number, then use the default value.
          DO IP=1,NP
 !Casey 090615: On Ranger, this information was not being assigned correctly.
 !              Force it to assign by writing it to a temporary string.
-            SwanOut(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
+Cobell 20120510: Remove the use of SWANOUT and use the newly developed
+C     SWAN specific arrays
+C     To make the rest of the previously used code function
+C     smoothly, SwanDescript is set as a pointer. This pointer
+C     will point to the correct OutputDataDescript_t array
+C     for the swan variable we are in the loop for. Done to avoid
+C     making the code complex for no reason.
+C
+C
+C            SwanOut(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
+C            WRITE(UNIT=TempC,FMT=*) SwanOut(IP)
+C            IF(IW.EQ.5)THEN
+C               SwanOut2(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)+1))
+C               WRITE(UNIT=TempC,FMT=*) SwanOut2(IP)
+C            ENDIF
+
+            SELECT CASE(IW)
+                CASE(1)
+                    SW_HSOut(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
+                    SwanOut => SW_HSOut
+                    SwanDescript => SwanHSDescript
+                CASE(2)
+                    SW_DIROut(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
+                    SwanOut => SW_DIROut
+                    SwanDescript => SwanDIRDescript
+                CASE(3)
+                    SW_TM01Out(IP) =
+     &                  DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
+                    SwanOut => SW_TM01Out
+                    SwanDescript => SwanTM01Descript
+                CASE(4)
+                    SW_TPSOut(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
+                    SwanOut => SW_TPSOut
+                    SwanDescript => SwanTPSDescript
+                CASE(5)
+                    SW_WindXOut(IP) =
+     &                  DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
+                    SW_WindYOut(IP) =
+     &                  DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)+1)) !jgfdebug
+                    SwanOut => SW_WindXOut
+                    SwanOut2 => SW_WindYOut
+                    SwanDescript => SwanWindDescript
+                CASE(6)
+                    SW_TM02Out(IP) =
+     &                  DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
+                    SwanOut => SW_TM02Out
+                    SwanDescript => SwanTM02Descript
+                CASE(7)
+                    SW_TMM10Out(IP) =
+     &                  DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
+                    SwanOut => SW_TMM10Out
+                    SwanDescript => SwanTMM10Descript
+                CASE DEFAULT
+                    !...Huh? I shouldn't be here...
+            END SELECT
+
+Cobell 20120510: Preserve Ranger behavior problem fix if desired
+
+#if 1
             WRITE(UNIT=TempC,FMT=*) SwanOut(IP)
-            IF(IW.EQ.5)THEN
-               SwanOut2(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)+1))
-               WRITE(UNIT=TempC,FMT=*) SwanOut2(IP)
-            ENDIF
+            IF(IW.EQ.5)WRITE(UNIT=TempC,FMT=*) SwanOut2(IP)
+#endif
+
+Cobell 20120510: To make the rest of the previously used code function
+C          smoothly, SwanDescript is set as a pointer. This pointer
+C          will point to the correct OutputDataDescript_t array
+C          for the swan variable we are in the loop for.
+
+
             IF(IW.NE.5)THEN
 !Casey 110518: Ensure that dry nodes are written with default values.
-               IF((NODECODE(IP).EQ.1).AND.(SwanOut(IP).GT.SWAN_MAX(IP,IW)))THEN
+!Casey 120522: Correct logic for the files that don't contain significant wave heights.
+               IF(NODECODE(IP).EQ.1)THEN
                   IF(IW.EQ.1)THEN
-                     UpdateMax(IP) = 1
-                     SWAN_MAX(IP,IW) = SwanOut(IP)
+                     IF(SwanOut(IP).GT.SWAN_MAX(IP,IW))THEN
+                        UpdateMax(IP) = 1
+                        SWAN_MAX(IP,IW) = SwanOut(IP)
+                     ENDIF
                   ELSEIF(UpdateMax(IP).EQ.1)THEN
-                      SWAN_MAX(IP,IW) = SwanOut(IP)
+                     SWAN_MAX(IP,IW) = SwanOut(IP)
                   ENDIF
                ENDIF
             ELSE
@@ -1082,10 +1472,11 @@ Casey 091216: If we get a junk number, then use the default value.
             IF((ITIME.GT.NTCYSGW).AND.(ITIME.LE.NTCYFGW))THEN
                IF((NSCOUGW.EQ.0 .OR. IT.EQ.SWAN_MTC).AND.IT.NE.0)THEN
                   IF(IW.NE.5)THEN
-                     IF(ABS(NOUTGW).EQ.1.OR.ABS(NOUTGW).EQ.2)THEN
+                     SELECT CASE(ABS(NOUTGW))
+                     CASE(1,2,3,5) !...ASCII,Binary,NetCDF
                         CALL WriteOutArray(UnitNumber,DT*ITIME,ITIME,SwanDescript,
      &                                      PackOne,UnPackOne,IGSW(IW),FileName(IW))
-                     ELSEIF(ABS(NOUTGW).EQ.4)THEN
+                     CASE(4)       !...Sparse / Sparse through writer
 #ifdef CMPI
                         IF(MNWPROC.GT.0) THEN
                            IFileCounter = IFileCounter + 1               !st3 100708: writer buffer check
@@ -1109,12 +1500,13 @@ Casey 091216: If we get a junk number, then use the default value.
      &                     (UnitNumber,TRIM(GLOBALDIR)//'/'//TRIM(FileName(IW)),
      &                      SwanDescript,DT*ITIME,ITIME,StoreOne,DBLE(OVEXCV(IVTYPE)))
 #endif
-                     ENDIF
+                     END SELECT
                   ELSE
-                     IF(ABS(NOUTGW).EQ.1.OR.ABS(NOUTGW).EQ.2)THEN
+                     SELECT CASE(ABS(NOUTGW))
+                     CASE(1,2,3,5)
                         CALL WriteOutArray(UnitNumber,DT*ITIME,ITIME,SwanDescript,
      &                                     PackTwo,UnPackTwo,IGSW(IW),FileName(IW))
-                     ELSEIF(ABS(NOUTGW).EQ.4)THEN
+                     CASE(4)
 #ifdef CMPI
                         IF(MNWPROC.GT.0) THEN
                            CALL WRITE_GBL_FILE_THROUGH_WRITER
@@ -1131,7 +1523,7 @@ Casey 091216: If we get a junk number, then use the default value.
      &                     (UnitNumber,TRIM(GLOBALDIR)//'/'//TRIM(FileName(IW)),
      &                      SwanDescript,DT*ITIME,ITIME,StoreTwo,DBLE(OVEXCV(IVTYPE)))
 #endif
-                     ENDIF
+                     END SELECT
                   ENDIF
                ENDIF
             ENDIF
@@ -1173,12 +1565,20 @@ Casey 091216: If we get a junk number, then use the default value.
       IF(ALLOCATED(Names))    DEALLOCATE(Names)
       IF(ALLOCATED(SWAN_VOQ)) DEALLOCATE(SWAN_VOQ)
 
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
-
+C-----------------------------------------------------------------------
       END SUBROUTINE SwanOutput
+C-----------------------------------------------------------------------
 
 
-
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E    P A D C S W A N _ I N I T
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE PADCSWAN_INIT
 
       USE GLOBAL,   ONLY: DT,
@@ -1204,6 +1604,11 @@ CTGA 111003:  Adding ability to read in ice info from fort.26 file
       INTRINSIC :: ALLOCATED
 
       INTEGER   :: IN  ! Node counter.
+
+      call setMessageSource("padcswan_init")
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
 Casey 090302: Allocate memory for the ADCIRC values that may be
 C             passed to SWAN.
@@ -1324,10 +1729,19 @@ Casey 090302: Compute the coupling interval as equivalent
 C             to the SWAN time step.
       CouplingInterval = SWAN_DT / DT
 
-      END SUBROUTINE
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE PADCSWAN_INIT
+C-----------------------------------------------------------------------
 
 
-
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E    P A D C S W A N _ R U N
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE PADCSWAN_RUN(ITIME)
 
       USE GLOBAL,   ONLY: DP,
@@ -1363,6 +1777,11 @@ Casey 120302: Merging ice changes from Taylor Asher.
 CTGA 110912:  Full SWAN ice implementation.  Adding variables.
       REAL(SZ)             :: SWAN_PIC
       REAL(SZ)             :: ICETIMEFRAC
+
+      call setMessageSource("padcswan_run")
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       DO IN=1,NP
 Casey 090302: Move the 'old' values into the first columns.
@@ -1447,15 +1866,28 @@ C             so that we do not lose them during the ADCIRC time stepping.
          SWAN_WY2(IN,1) = SWAN_WY2(IN,2)
       ENDDO
 
-      END SUBROUTINE
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE PADCSWAN_RUN
+C-----------------------------------------------------------------------
 
 
-
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E    P A D C S W A N _ F I N A L
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE PADCSWAN_FINAL
-
       IMPLICIT NONE
 
-      CALL SWEXITMPI
+      call setMessageSource("padcswan_final")
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      CALL SWEXITMPI()
 
       IF(ALLOCATED(SWAN_ETA2)) DEALLOCATE(SWAN_ETA2)
       IF(ALLOCATED(SWAN_UU2))  DEALLOCATE(SWAN_UU2)
@@ -1487,9 +1919,17 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       IF(ALLOCATED(WAVE_T2)) DEALLOCATE(WAVE_T2)
 #endif
 
-      END SUBROUTINE
-
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE PADCSWAN_FINAL
+C-----------------------------------------------------------------------
 #endif
 
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       END MODULE Couple2Swan
-
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------

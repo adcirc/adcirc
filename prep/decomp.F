@@ -10,13 +10,13 @@ C                     current for ADCIRC v43.03   5/20/2003
 C----------------------------------------------------------------------------
 C
       SUBROUTINE DECOMP()
-      USE pre_global 
+      USE pre_global
 C
 C---------------------------------------------------------------------------C
-C                     (  Serial Version 1.1  5/04/99  )                     C 
+C                     (  Serial Version 1.1  5/04/99  )                     C
 C                                                                           C
 C  Decomposes the ADCIRC grid into NPROC subdomains.                        C
-C  The Decomposition Variables are defined in the include file adcprep.inc  C 
+C  The Decomposition Variables are defined in the include file adcprep.inc  C
 C  This version is compatible with ADCIRC version 34.03                     C
 C                                                                           C
 C  12/14/98 vjp  Added interface to METIS 4.0                               C
@@ -32,7 +32,8 @@ C
       INTEGER I1,DISC,BBN,IBP,NCOUNT
       INTEGER INDX,INDX2, KK
       INTEGER,ALLOCATABLE :: ITVECT(:)
-      CHARACTER PE*6,GLOBAL*6
+      CHARACTER PE*6
+      CHARACTER(6), PARAMETER :: STRINGGLOBAL = "GLOBAL"
 C
       VTMAX = 24*MNP
       ALLOCATE ( ITVECT(VTMAX) )
@@ -41,7 +42,7 @@ C   STEP 1:
 C-- Use Partition of nodes to compute the number of Resident Nodes
 C   to be assigned to each processor.
 C-- Then construct Local-to-Global and Global-to-Local Node maps
-C   for resident nodes: IMAP_NOD_LG(I,PE),  IMAP_NOD_GL(1:2,I) 
+C   for resident nodes: IMAP_NOD_LG(I,PE),  IMAP_NOD_GL(1:2,I)
 
       DO I=1, NPROC             ! Use METIS 4.0  Partition
          NOD_RES_TOT(I) = 0
@@ -60,7 +61,7 @@ C     ENDDO
 C STEP 2:
 C  Construct Local-to-Global Element Map: IMAP_EL_LG(:,PE)
 C  Add an element to the map if it has an resident node
- 
+
       DO I = 1,NPROC
          NELP(I) = 0
          DO K = 1,NELG
@@ -92,7 +93,7 @@ C
                ITVECT(ITOT) = NNEG(M,IEL)
             ENDDO
          ENDDO
-         ITEMP = ITOT     
+         ITEMP = ITOT
          IF (ITOT.GT.VTMAX) stop 'step3 decomp'
          CALL SORT(ITEMP,ITVECT) ! Sort and remove multiple occurrences
          ITOT = 1
@@ -163,7 +164,7 @@ C        then make it and its dual a local Weir-node pair
              CALL SORT(ITEMP,ITVECT)
              ITOT=1
              INDX = ITVECT(1)
-             WEIRP_LG(ITOT,I)  = WEIR(INDX)       
+             WEIRP_LG(ITOT,I)  = WEIR(INDX)
              WEIRDP_LG(ITOT,I) = WEIRD(INDX)
              DO J = 2,ITEMP
                 IF (ITVECT(J).NE.INDX) THEN
@@ -187,14 +188,14 @@ c    &           " = ",NWEIRP(I)
 c          print *, "decomp: Number of WEIR node-pairs on PE",I-1,
 c    &              " = ",NWEIRP(I)
         ENDDO
-      ENDIF 
+      ENDIF
 
 C STEP 5:
 C--If there are any global Weir-node pairs,
 C  Re-construct Local-to-Global Element Map: IMAP_EL_LG(:,PE)
-C  Rule:  Add an element if it has an resident node or 
+C  Rule:  Add an element if it has an resident node or
 C         has the dual Weir node of a resident or ghost node
- 
+
       IF (NWEIR.GT.0) THEN
         DO I = 1,NPROC
            NELP(I) = 0
@@ -225,7 +226,7 @@ c          print *, J, IMAP_EL_LG(J,I)
 c       ENDDO
         ENDDO
       ENDIF
- 
+
 C STEP 6:
 C--Using Local-to-Global Element map
 C  Construct Local-to-Global Node map:  IMAP_NOD_LG(I,PE)
@@ -240,7 +241,7 @@ C
                ITVECT(ITOT) = NNEG(M,IEL)
             ENDDO
          ENDDO
-         ITEMP = ITOT     
+         ITEMP = ITOT
          IF (ITOT.GT.VTMAX) stop 'step6 decomp'
          CALL SORT(ITEMP,ITVECT) ! Sort and remove multiple occurrences
          ITOT = 1
@@ -298,7 +299,7 @@ C
                    NNEP(M,J,I) = K
                  ELSEIF (IMAP_NOD_LG(K+1,I).EQ.IG1) THEN
                    NNEP(M,J,I) = K+1
-                 ELSE 
+                 ELSE
                    STOP 'ERROR IN IMAP_NOD_LG'
                  ENDIF
                ENDIF
@@ -307,7 +308,7 @@ C
       ENDDO
 
 C STEP 8:
-C--Compute the number of communicating PEs and their 
+C--Compute the number of communicating PEs and their
 C  list for each PE:  NUMM_COMM_PE(PE) and COMM_PE_NUM(IPE,PE)
 C
       DO I = 1,NPROC
@@ -371,7 +372,7 @@ C  It works for both resident and ghost nodes
             IF (ITOTPROC(INDX).GT.MNPROC)THEN
               WRITE(6,*)'Some nodes belong to more processors',
      $                  ' than MNPROC'
-              STOP 
+              STOP
             ENDIF
             ITEMP = (ITOTPROC(INDX)-1)*2 + 1
             IMAP_NOD_GL2(ITEMP,INDX) = I
@@ -382,15 +383,14 @@ c     print *, "Global Nodes assigned to more than one PE"
 c     do J=1, NNODG
 c        if (ITOTPROC(J).GT.1) print *, J, ITOTPROC(J)
 c     enddo
- 
+
 C STEP 10:
 C--Print Summary of Decomposition
 C
       print *, "Decomposition Data"
       print *, "DOMAIN  RES_NODES  GHOST_NODES  TOT_NODES  ELEMENTS"
       print *, "------  ---------  -----------  ---------  --------"
-      GLOBAL = "GLOBAL"
-      WRITE(*,90) GLOBAL,NNODG,NELG      
+      WRITE(*,90) STRINGGLOBAL,NNODG,NELG
       DO I=1, NPROC
          PE(1:6) = 'PE0000'
          CALL IWRITE(PE,3,6,I-1)
@@ -405,13 +405,13 @@ C
 
 
       SUBROUTINE DOMSIZE()
-      USE pre_global 
+      USE pre_global
 C
 C---------------------------------------------------------------------------C
-C                   (  Serial Version 1.0  12/20/99 vjp )                   C 
+C                   (  Serial Version 1.0  12/20/99 vjp )                   C
 C                                                                           C
 C  Takes dry run through the domain decomp to determine the max number of   C
-C  nodes and elements assigned to any subdomain to determine MNPP and MNEP. C 
+C  nodes and elements assigned to any subdomain to determine MNPP and MNEP. C
 C                                                                           C
 C---------------------------------------------------------------------------C
 C
@@ -449,14 +449,14 @@ C-- Then construct Local-to-Global and Global-to-Local Node maps
 C   for resident nodes
 C
 C
-      DO J=1, MNP   
+      DO J=1, MNP
          NODE_GL1(J) = 0
          NODE_GL2(J) = 0
          LWEIR_LG(J) = 0
          LWEIRD_LG(J) = 0
       ENDDO
 C
-      DO J=1, MNE   
+      DO J=1, MNE
          ELEM_LG(J) = 0
       ENDDO
 C
@@ -477,7 +477,7 @@ C     ENDDO
 C STEP 2:
 C  Construct Local-to-Global Element Map
 C  Add an element to the map if it has an resident node
- 
+
       NELEM   = 0
       DO K = 1,NELG
          N1 = NNEG(1,K)
@@ -498,14 +498,14 @@ C  reconstruct Local-to-Global Node map
 C  and Global-to-Local map for resident nodes
 C
       ITOT = 0
-      DO J = 1,NELEM  
+      DO J = 1,NELEM
          IEL = ELEM_LG(J)
          DO M=1, 3
             ITOT = ITOT + 1
             ITVECT(ITOT) = NNEG(M,IEL)
          ENDDO
       ENDDO
-      ITEMP = ITOT     
+      ITEMP = ITOT
       IF (ITOT.GT.VTMAX) stop 'step3 decomp'
       CALL SORT(ITEMP,ITVECT) ! Sort and remove multiple occurrences
       ITOT = 1
@@ -545,8 +545,8 @@ C        then make it and its dual a local Weir-node pair
               ENDIF
            ENDDO
         ENDDO
-           
-!Seizo 2008.07.14       DO J = 1,NODES    
+
+!Seizo 2008.07.14       DO J = 1,NODES
 !Seizo 2008.07.14          CALL SEARCH(WEIR,NWEIR,NODE_LG(J),INDX)
 !Seizo 2008.07.14          IF (INDX.NE.0) THEN
 !Seizo 2008.07.14            ITOT = ITOT+1
@@ -565,7 +565,7 @@ C        then make it and its dual a local Weir-node pair
           CALL SORT(ITEMP,ITVECT)
           ITOT=1
           INDX = ITVECT(1)
-          LWEIR_LG(ITOT)  = WEIR(INDX)       
+          LWEIR_LG(ITOT)  = WEIR(INDX)
           LWEIRD_LG(ITOT) = WEIRD(INDX)
           DO J = 2,ITEMP
              IF (ITVECT(J).NE.INDX) THEN
@@ -579,7 +579,7 @@ C        then make it and its dual a local Weir-node pair
         ENDIF
       ELSE
           NLWEIR = 0
-      ENDIF 
+      ENDIF
 c     print *, "domsize: Number of WEIR node-pairs on PE",IPROC-1,
 c    &         " = ",NLWEIR
       IF (NLWEIR.GT.NWEIR) THEN
@@ -591,10 +591,10 @@ c    &         " = ",NLWEIR
 C STEP 5:
 C--If there are any global Weir-node pairs,
 C  Re-construct Local-to-Global Element Map: IMAP_EL_LG(:,PE)
-C  Rule:  Add an element if it has an resident node or 
+C  Rule:  Add an element if it has an resident node or
 C         has the dual Weir node of a resident or ghost node
 
-      ONELEM = NELEM     ! Save NELEM for PEs with no WEIR-pairs 
+      ONELEM = NELEM     ! Save NELEM for PEs with no WEIR-pairs
       NELEM  = 0
       IF (NLWEIR.GT.0) THEN
         DO K = 1,NELG
@@ -614,20 +614,20 @@ C         has the dual Weir node of a resident or ghost node
         ENDDO
 C
       ENDIF
- 
+
 C STEP 6:
 C--Using Local-to-Global Element map, reconstruct Local-to-Global Node map
 C
       IF (NELEM.EQ.0) NELEM = ONELEM   ! if necessary restore old nelem
       ITOT = 0
-      DO J = 1,NELEM   
+      DO J = 1,NELEM
          IEL = ELEM_LG(J)
          DO M=1, 3
             ITOT = ITOT + 1
             ITVECT(ITOT) = NNEG(M,IEL)
          ENDDO
       ENDDO
-      ITEMP = ITOT     
+      ITEMP = ITOT
       IF (ITOT.GT.VTMAX) stop 'step6 decomp'
       CALL SORT(ITEMP,ITVECT) ! Sort and remove multiple occurrences
       ITOT = 1
@@ -641,13 +641,13 @@ C
 C
       NODES = ITOT
       IF (NODES.GT.MNPP) MNPP = NODES
-c     print *, "Number of nodes on PE",IPROC-1," = ",NODES  
+c     print *, "Number of nodes on PE",IPROC-1," = ",NODES
       IF (NELEM.GT.MNEP) MNEP = NELEM
-c     print *, "Number of elements on PE",IPROC-1," = ",NELEM  
+c     print *, "Number of elements on PE",IPROC-1," = ",NELEM
 
 1000  CONTINUE
 C
-      DEALLOCATE ( ITVECT,NODE_LG,NODE_GL1,NODE_GL2,ELEM_LG, 
+      DEALLOCATE ( ITVECT,NODE_LG,NODE_GL1,NODE_GL2,ELEM_LG,
      &             LWEIR_LG,LWEIRD_LG )
 C
       print *, " Setting MNPP = ",MNPP
@@ -665,12 +665,12 @@ C
       IMPLICIT NONE
       INTEGER N, L, IR, RRA, I, J
       INTEGER RA(N)
-C 
-C---------------------------------------------------------------------------        
+C
+C---------------------------------------------------------------------------
 C  Sorts array RA of length N into ascending order using Heapsort algorithm.
 C  N is input; RA is replaced on its output by its sorted rearrangement.
 C  Ref: Numerical Recipes
-C--------------------------------------------------------------------------- 
+C---------------------------------------------------------------------------
 C
       L = N/2 + 1
       IR = N
@@ -712,7 +712,7 @@ C
 C
 C--Given an array XX of length N, and given a value X, returns a value J
 C--such that X is between XX(J) and XX(J+1). XX must be monotonic, either
-C--increasing or decreasing. J=0 or J=N is returned to indicate that X is out 
+C--increasing or decreasing. J=0 or J=N is returned to indicate that X is out
 C--of range.
 C--
 C--NUMERICAL RECIPES - The Art of Scientific Computing [FORTRAN Version]
@@ -721,7 +721,7 @@ C--Initialize lower and upper limits
          JL = 0
          JU = N+1
 C
-C--If we are not done yet, compute a mid-point, and replace either the lower 
+C--If we are not done yet, compute a mid-point, and replace either the lower
 C--limit or the upper limit, as appropriate.
 C
 10       IF(JU-JL.GT.1)THEN

@@ -193,7 +193,6 @@ C     The following variables are inputs from the unit 15 model param. file
       REAL(SZ) Tau0   ! primitive continuity eqn. weight
       REAL(SZ) Tau    ! linear friction coefficient (1/sec)
       REAL(SZ) CF     ! 2DDI bottom fric. coef., effect varies based on NoLiBF
-      REAL(SZ) Z0B    ! 3D bottom roughness length
       REAL(SZ) HBreak ! break depth for NOLIBF .eq. 2
       REAL(SZ) FTheta ! dimless param. for NOLIBF .eq. 2
       REAL(SZ) FGamma ! dimless param. for NOLIBF .eq.
@@ -243,7 +242,7 @@ C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(SZ), ALLOCATABLE :: EVM(:)
       REAL(SZ), ALLOCATABLE :: EVC(:)
       REAL(SZ), ALLOCATABLE :: Tau0MinMax(:,:)  ! (node,i); i=1(min), i=2(max)
-      REAL(SZ), ALLOCATABLE :: Z0b_var(:)  ! patially varyuing 3D bottom roughness length
+      REAL(SZ), ALLOCATABLE :: Z0b_var(:)  ! patially varying 3D bottom roughness length
       REAL(SZ), ALLOCATABLE :: elemental_slope_limiter_grad_max(:)
 C
       INTEGER i        ! node loop counter
@@ -968,6 +967,7 @@ C     ----------------------------------------------------------------
       SUBROUTINE InitNodalAttr(DP, NP, G, NScreen, ScreenUnit,
      &     MyProc, NAbOut)
       USE GLOBAL, ONLY : C3D, C2DDI
+      USE GLOBAL_3DVS, ONLY : Z0B
       IMPLICIT NONE
       INTEGER, intent(in) :: NP ! number of nodes in the grid file
       REAL(SZ), intent(in), dimension(NP) :: DP ! array of bathymetric depths
@@ -1463,6 +1463,7 @@ C     ----------------------------------------------------------------
       SUBROUTINE Apply3DBottomFriction(Q, SIGMA, DP, ETA2, G,
      &     IFNLFA, NP, TK, NFEN)
       USE SIZES
+      USE GLOBAL_3DVS, ONLY : Z0B
       IMPLICIT NONE
       INTEGER, intent(in) :: NP, NFEN             ! number of nodes in grid Horizontal and Vertical
       COMPLEX(SZ), intent(in), dimension(NP,NFEN) :: Q  ! x-dir velocities
@@ -1496,10 +1497,10 @@ C or as read in from nodal attributes
          ELSE
             Z0B1 = Z0B
          ENDIF
+
          FRIC(NH)= (1.D0 / ( (1.D0/0.41D0) *
-     &       LOG( (ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
-     &             *(H1) ) + Z0B1 )
-     &           / Z0B1 ) ) )**2.D0
+     &   LOG((ABS( ( ( SIGMA(2)-SIGMA(1) )/2.d0 ) *(H1) ) + Z0B1 )/Z0B1) 
+     &       ) )**2.D0
 
          TK(NH)= FRIC(NH) * ABS(Q(NH,1))
 

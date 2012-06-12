@@ -1,19 +1,21 @@
 C******************************************************************************
 C MODULE WRITER
-C  This module is for writer processors which receives values from compute 
+C  This module is for writer processors which receives values from compute
 C  processors and writes them out asynchronously.
 C                                                              05 Feb 2007, sb
 C******************************************************************************
-C 
+C
       MODULE WRITER
       USE SIZES
       USE GLOBAL, ONLY: C3D, COMM,
-     &     BUFSIZE_MAX, BUF, resultBuf, OutputDataDescript_t, float_type
+     &     BUFSIZE_MAX, BUF, resultBuf, OutputDataDescript_t, float_type,
+     &     DEBUG, ECHO, INFO, WARNING, ERROR, logMessage, allMessage,
+     &     setMessageSource, unsetMessageSource
       USE MESSENGER, ONLY: TAG, COMM_WRITER, WRITER_ID,
      &     SIG_VAL, SIG_WRITE, SIG_TERM, SIG_PAUSE,
      &     MSG_FINI, REALTYPE, DBLETYPE
 #ifdef HAVE_MPI_MOD
-      use mpi  
+      use mpi
       IMPLICIT NONE
 #else
       IMPLICIT NONE
@@ -31,7 +33,7 @@ C  variables
       CHARACTER(256)  :: WFILENAMES(NUM_BUF_MAX)
       INTEGER :: BUFID, WCOMMID
       LOGICAL :: NEED_FLUSH
-      
+
       REAL(SZ), SAVE, POINTER :: RESGBUF(:,:)
       REAL(SZ), ALLOCATABLE, TARGET :: RESGBUF1(:,:),RESGBUF2(:,:)
       REAL(SZ), ALLOCATABLE, TARGET :: RESGBUF3(:,:),RESGBUF4(:,:)
@@ -45,29 +47,55 @@ C  variables
 C---------------------end of data declarations--------------------------------C
 
 
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   W R I T E R  _  I N I T
+C-----------------------------------------------------------------------
+C     Initializes round robin chamber; clears mpi communicator id for
+C     this processor; clears flush flag.
+C-----------------------------------------------------------------------
       SUBROUTINE WRITER_INIT ()
+      IMPLICIT NONE
+      call setMessageSource("writer_init")
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       WCOMMID = 0
       NEED_FLUSH = .FALSE.
       ALLOCATE ( NWLOADED(1:MNWPROC) )   !st3 100708: Allocate Round Robin Chamber
       NWLOADED(1:MNWPROC) = 0            !st3 100708: Zeroc    Round Robin Chamber
 
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
+C-----------------------------------------------------------------------
       END SUBROUTINE WRITER_INIT
+C-----------------------------------------------------------------------
 
 
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   W R I T E R  _  M A I N
+C-----------------------------------------------------------------------
+C     Writer processor goes into an infinite loop where it waits for
+C     either a signal to receive data, or a signal to write output.
+C     When it receives a signal, it performs the specified action,
+C     then goes back to waiting for another signal.
+C-----------------------------------------------------------------------
       SUBROUTINE WRITER_MAIN ()
-
       USE GLOBAL,ONLY : ScreenUnit
       IMPLICIT NONE
-
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-
       INTEGER :: SIG,IERR
       INTEGER :: STAT(MPI_STATUS_SIZE)
-
+C
+      call setMessageSource("writer_main")
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 C...  Initializing
       BUFID = 0
 
@@ -103,10 +131,20 @@ C...  Main loop
 ! tcm commented out v49.52.01
 !      CALL MSG_FINI()
 !      STOP
-
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
       END SUBROUTINE WRITER_MAIN
+C-----------------------------------------------------------------------
 
-
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   W R I T E R  _  P A U S E
+C-----------------------------------------------------------------------
+C     Sends a signal to all writer processors to pause, which just
+C     means that they exit their infinite loop and return.
+C-----------------------------------------------------------------------
       subroutine WRITER_PAUSE()
       use global
       use messenger
@@ -115,15 +153,34 @@ C...  Main loop
       include 'mpif.h'
 #endif
       integer i
-
+C
+      call setMessageSource("writer_pause")
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+C
+C
       DO I=1,MNWPROC
          CALL MPI_SEND( SIG_PAUSE, 1, MPI_INTEGER, MNPROC,
      &                  TAG,COMM_WRITER(I), IERR)
       ENDDO
-
+C
+C
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
+C-----------------------------------------------------------------------
       end subroutine WRITER_PAUSE
- 
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C        W R I T E _ G B L _ F I L E _ T H R O U G H _ W R I T E R
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       subroutine WRITE_GBL_FILE_THROUGH_WRITER
      &     (filename, descript, TimeLoc, it, store_cmd, default_val)
       use global
@@ -131,7 +188,6 @@ C...  Main loop
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-
       external store_cmd
       integer      :: num
       integer      :: ierr
@@ -146,10 +202,13 @@ C...  Main loop
       real(sz)     :: REBUF(2)
       integer      :: wcomm
       type (OutputDataDescript_t) :: descript
-
+C
+      call setMessageSource("write_gbl_file_through_writer")
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       NEED_FLUSH = .TRUE.
-
       CALL WRITER_GET_NEXT_WRITER_COMM(WCOMM)
 
 #ifdef WRITER_DEBUG
@@ -159,43 +218,43 @@ C...  Main loop
 C...  Proc 0 does some special things
       if (myproc == 0) then
 
-C...    Send SIG_VAL to a writer to get it ready to receive values.
-        CALL MPI_SEND(SIG_VAL,1,MPI_INTEGER,MNPROC,TAG,
+C...     Send SIG_VAL to a writer to get it ready to receive values.
+         CALL MPI_SEND(SIG_VAL,1,MPI_INTEGER,MNPROC,TAG,
      &       wcomm,IERR)
 
-C...    Send some parameters associated to this file
-C....   tcm v50.27 added for full/compact record
-        FULLREC = 1  !full record output
-        IF (ABS(descript % specifier) == 4) THEN
-           !compact record
-           FULLREC = 0
-        ENDIF
+C...     Send some parameters associated to this file
+C....    tcm v50.27 added for full/compact record
+         FULLREC = 1  !full record output
+         IF (ABS(descript % specifier) == 4) THEN
+            !compact record
+            FULLREC = 0
+         ENDIF
 C
-        INTBUF(1) = NP_G
-        INTBUF(2) = descript % num_items_per_record
-        INTBUF(3) = IT
-        INTBUF(4) = FULLREC   !tcm v50.27 added
-        CALL MPI_SEND(INTBUF,4,MPI_INTEGER,MNPROC,TAG,
+         INTBUF(1) = NP_G
+         INTBUF(2) = descript % num_items_per_record
+         INTBUF(3) = IT
+         INTBUF(4) = FULLREC   !tcm v50.27 added
+         CALL MPI_SEND(INTBUF,4,MPI_INTEGER,MNPROC,TAG,
      &       WCOMM,IERR)
 
-        REBUF(1) = default_val
-        REBUF(2) = TimeLoc
-        CALL MPI_SEND(REBUF,2,REALTYPE,MNPROC,TAG,
+         REBUF(1) = default_val
+         REBUF(2) = TimeLoc
+         CALL MPI_SEND(REBUF,2,REALTYPE,MNPROC,TAG,
      &       WCOMM,IERR)
 
-        if(len_trim(filename).ge.256) then
-          stop 'FILE NAME LENGTH MUST BE LESS THAN 256'
-        endif
+         if(len_trim(filename).ge.256) then
+           stop 'FILE NAME LENGTH MUST BE LESS THAN 256'
+         endif
 
-        filenamebuf = ""
-        filenamebuf(1:len_trim(filename))=filename(1:len_trim(filename))
+         filenamebuf = ""
+         filenamebuf(1:len_trim(filename))=filename(1:len_trim(filename))
 
-        CALL MPI_SEND(filenamebuf,256,MPI_CHARACTER,MNPROC,TAG,
+         CALL MPI_SEND(filenamebuf,256,MPI_CHARACTER,MNPROC,TAG,
      &       WCOMM,IERR)
       endif
 
 C...  Compute the buffer size and others
-      bufsize = min(BUFSIZE_MAX, 
+      bufsize = min(BUFSIZE_MAX,
      &    descript % num_items_per_record * descript % num_fd_records)
       num     = bufsize / descript % num_items_per_record
       iend    = num
@@ -203,37 +262,44 @@ C...  Compute the buffer size and others
 
       do while (istart < iend)
 
-        !------------------------------------------------------------
-        ! Initialize
-        !------------------------------------------------------------
-        buf(:)  = descript % initial_value
-
-        call store_cmd(descript, istart, iend)
+         !------------------------------------------------------------
+         ! Initialize
+         !------------------------------------------------------------
+         buf(:)  = descript % initial_value
+         call store_cmd(descript, istart, iend)
 
 #ifdef WRITER_DEBUG
-        PRINT *, 'PROC ', MYPROC, ' IS SENDING FOR ',
+         PRINT *, 'PROC ', MYPROC, ' IS SENDING FOR ',
      &       TRIM(filename)
 #endif
 
-C...    The following mpi_reduce sends array values to rank MNPROC,
-C...    which is a writer proc.
-C...    Note that ranks from 0 to (MNPROC-1) are compute procs, and 
-C...    rank MNPROC of writer communicators is always a writer proc.
-        call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
-     &    MNPROC, WCOMM, ierr)
+C...     The following mpi_reduce sends array values to rank MNPROC,
+C...     which is a writer proc.
+C...     Note that ranks from 0 to (MNPROC-1) are compute procs, and
+C...     rank MNPROC of writer communicators is always a writer proc.
+         call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
+     &     MNPROC, WCOMM, ierr)
 
-        istart = iend + 1
-        iend   = min(istart + num - 1, descript % num_fd_records)
-        num    = iend - istart + 1
+         istart = iend + 1
+         iend   = min(istart + num - 1, descript % num_fd_records)
+         num    = iend - istart + 1
       end do
-
+C
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
+C-----------------------------------------------------------------------
       end subroutine WRITE_GBL_FILE_THROUGH_WRITER
+C-----------------------------------------------------------------------
 
-C...
-C...  SUBROUTINE WRITER_STOREONE
-C...  Partly adopted from globalio.F      
-C...
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E     W R I T E R _ S T O R E   O N E
+C-----------------------------------------------------------------------
+C...  Partly adopted from globalio.F
+C-----------------------------------------------------------------------
       subroutine Writer_storeOne(descript, istart, iend)
       use global
       implicit none
@@ -241,6 +307,12 @@ C...
       type (OutputDataDescript_t) :: descript
       integer :: i, istart, iend, iglobal
       integer :: ioffset
+
+      call setMessageSource("writer_storeone")
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
 
       ioffset = istart - 1
       do i = 1, descript % num_records_this
@@ -250,13 +322,22 @@ C...
         end if
       end do
 
-      return
-      end subroutine Writer_storeOne
 
-C...
-C...  SUBROUTINE WRITER_STORETWO
-C...  Partly adopted from globalio.F      
-C...
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+C-----------------------------------------------------------------------
+      end subroutine Writer_storeOne
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E     W R I T E R _ S T O R E   T W O
+C-----------------------------------------------------------------------
+C...  Partly adopted from globalio.F
+C-----------------------------------------------------------------------
       subroutine Writer_storeTwo(descript, istart, iend)
       use global
       implicit none
@@ -264,23 +345,38 @@ C...
       type (OutputDataDescript_t) :: descript
       integer :: i, istart, iend, iglobal
       integer :: ioffset, j
+C
+      call setMessageSource("writer_storetwo")
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       ioffset = istart - 1
       do i = 1, descript % num_records_this
-        iglobal = descript % imap(i)
-        if (istart <= iglobal .and. iglobal <= iend) then
-          j = 2*(iglobal - ioffset) - 1 
-          buf(j)     = descript % array(i)
-          buf(j + 1) = descript % array2(i)
-        end if
+         iglobal = descript % imap(i)
+         if (istart <= iglobal .and. iglobal <= iend) then
+            j = 2*(iglobal - ioffset) - 1
+            buf(j)     = descript % array(i)
+            buf(j + 1) = descript % array2(i)
+         end if
       end do
-      return
-      end subroutine Writer_storeTwo
 
-C...
-C...  SUBROUTINE WRITER_STORE63
-C...  Partly adopted from globalio.F      
-C...
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+C-----------------------------------------------------------------------
+      end subroutine Writer_storeTwo
+C-----------------------------------------------------------------------
+
+
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E     W R I T E R _ S T O R E   6 3
+C-----------------------------------------------------------------------
+C...  Partly adopted from globalio.F
+C-----------------------------------------------------------------------
       subroutine Writer_store63(descript, istart, iend)
       use global
       implicit none
@@ -289,19 +385,34 @@ C...
       integer :: i, istart, iend, iglobal
       integer :: ioffset
 
+      call setMessageSource("writer_store63")
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
       ioffset = istart - 1
       do i = 1, np
-        iglobal = descript % imap(i)
-        if (istart <= iglobal .and. iglobal <= iend) then
-          if (nodecode(i) == 1) buf(iglobal - ioffset ) = eta2(i)
-          if (nodecode(i) == 0) buf(iglobal - ioffset ) = -99999.0
-        end if
+         iglobal = descript % imap(i)
+         if (istart <= iglobal .and. iglobal <= iend) then
+            if (nodecode(i) == 1) buf(iglobal - ioffset ) = eta2(i)
+            if (nodecode(i) == 0) buf(iglobal - ioffset ) = -99999.0
+         end if
       end do
 
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
+C-----------------------------------------------------------------------
       end subroutine Writer_store63
+C-----------------------------------------------------------------------
 
 
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E     W R I T E R _ R E C V _ V A L U E S
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       subroutine WRITER_RECV_VALUES()
       use global
       implicit none
@@ -318,6 +429,11 @@ C...
       integer      :: wcomm
       INTEGER      :: STAT(MPI_STATUS_SIZE)
       character(len=8) :: cdigit              !st3 100708: split file
+
+      call setMessageSource("writer_recv_values")
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
 C...  BUFID determines the buffer to store values in.
       BUFID = BUFID + 1
@@ -341,7 +457,7 @@ C...  Receive some parameters necessary to write a file
 
       IF((NUM_ITEMS_PER_RECORD(BUFID).NE.1).AND.
      &   (NUM_ITEMS_PER_RECORD(BUFID).NE.2)) THEN
-        STOP 'WRITER: NUM_ITEMS_PER_RECORD MUST BE 1 OR 2'
+         STOP 'WRITER: NUM_ITEMS_PER_RECORD MUST BE 1 OR 2'
       ENDIF
 
       CALL MPI_RECV(REBUF,2,REALTYPE,0,TAG,
@@ -358,10 +474,10 @@ C...  Receive some parameters necessary to write a file
 #ifdef WRITER_DEBUG
       print *, 'RECEIVED FILENAME = ',TRIM(filenamebuf)
 #endif
-      if( isplit /= 0 ) then                                   !st3 100708: split file
-        write(cdigit,'(i8.8)') NINT(TIMES(BUFID))              !st3 split files are named
-        filenamebuf = trim(adjustl(filenamebuf)) //'.'//cdigit !st3 by integer part of
-      endif                                                    !st3 simulation time 
+      if( isplit /= 0 ) then                                    !st3 100708: split file
+         write(cdigit,'(i8.8)') NINT(TIMES(BUFID))              !st3 split files are named
+         filenamebuf = trim(adjustl(filenamebuf)) //'.'//cdigit !st3 by integer part of
+      endif                                                     !st3 simulation time
       WFILENAMES(BUFID) = ""
       WFILENAMES(BUFID)(1:LEN_TRIM(filenamebuf))
      &     = filenamebuf(1:LEN_TRIM(filenamebuf))
@@ -370,7 +486,7 @@ C...  Prepare buffer to store receiving values
       CALL WRITER_SET_RESGBUF(BUFID,.TRUE.)
 
 C...  Compute the buffer size and others
-      bufsize = min(BUFSIZE_MAX, 
+      bufsize = min(BUFSIZE_MAX,
      &    num_items_per_record(BUFID) * NNOD_GLOBAL(BUFID))
       num     = bufsize / num_items_per_record(BUFID)
       iend    = num
@@ -382,123 +498,149 @@ C...  Compute the buffer size and others
 c        PRINT *, 'PROC ', MYPROC, ' IS RECEIVING FOR ',
 C     &       TRIM(WFILENAMES(BUFID))
 #endif
-        buf(:)  = 0.D0
+         buf(:)  = 0.D0
 
-C...    The following mpi_reduce sends array values to rank MNPROC,
-C...    which is a writer proc.
-C...    Note that ranks from 0 to (MNPROC-1) are compute procs, and 
-C...    rank MNPROC of writer communicators is always a writer proc.
-        call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
-     &    MNPROC, wcomm, ierr)
+C...     The following mpi_reduce sends array values to rank MNPROC,
+C...     which is a writer proc.
+C...     Note that ranks from 0 to (MNPROC-1) are compute procs, and
+C...     rank MNPROC of writer communicators is always a writer proc.
+         call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
+     &     MNPROC, wcomm, ierr)
 
-        j = 1
-        do i = istart, iend
-          resgbuf(1,i) = resultBuf(j)
-          j = j+1
-
-          if(NUM_ITEMS_PER_RECORD(BUFID).EQ.2) then
-            resgbuf(2,i) = resultBuf(j)
+         j = 1
+         do i = istart, iend
+            resgbuf(1,i) = resultBuf(j)
             j = j+1
-          endif
-        end do
 
-        istart = iend + 1
-        iend   = min(istart + num - 1, NNOD_GLOBAL(BUFID))
-        num    = iend - istart + 1
+            if(NUM_ITEMS_PER_RECORD(BUFID).EQ.2) then
+               resgbuf(2,i) = resultBuf(j)
+               j = j+1
+            endif
+         end do
+
+         istart = iend + 1
+         iend   = min(istart + num - 1, NNOD_GLOBAL(BUFID))
+         num    = iend - istart + 1
       end do
 
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      return
+C-----------------------------------------------------------------------
       end subroutine WRITER_RECV_VALUES
+C-----------------------------------------------------------------------
 
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E     W R I T E R _ S E T _ R E S G B U F
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE WRITER_SET_RESGBUF(ID_BUF,DO_ALLOCATION)
-
+      IMPLICIT NONE
       INTEGER ID_BUF
       LOGICAL DO_ALLOCATION
 
+      call setMessageSource("writer_set_resgbuf")
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
       IF(ID_BUF.EQ.1) THEN
-        IF(.NOT.ALLOCATED(RESGBUF1)) THEN
-          IF(DO_ALLOCATION) THEN
-            ALLOCATE(RESGBUF1(2,NNOD_GLOBAL(ID_BUF)))
-          ELSE
-            GOTO 999
-          ENDIF
-        ENDIF
-        RESGBUF => RESGBUF1
+         IF(.NOT.ALLOCATED(RESGBUF1)) THEN
+            IF(DO_ALLOCATION) THEN
+               ALLOCATE(RESGBUF1(2,NNOD_GLOBAL(ID_BUF)))
+            ELSE
+               GOTO 999
+            ENDIF
+         ENDIF
+         RESGBUF => RESGBUF1
 
       ELSE IF(ID_BUF.EQ.2) THEN
-        IF(.NOT.ALLOCATED(RESGBUF2)) THEN
-          IF(DO_ALLOCATION) THEN
-            ALLOCATE(RESGBUF2(2,NNOD_GLOBAL(ID_BUF)))
-          ELSE
-            GOTO 999
-          ENDIF
-        ENDIF
-        RESGBUF => RESGBUF2
+         IF(.NOT.ALLOCATED(RESGBUF2)) THEN
+            IF(DO_ALLOCATION) THEN
+               ALLOCATE(RESGBUF2(2,NNOD_GLOBAL(ID_BUF)))
+            ELSE
+               GOTO 999
+            ENDIF
+         ENDIF
+         RESGBUF => RESGBUF2
 
       ELSE IF(ID_BUF.EQ.3) THEN
-        IF(.NOT.ALLOCATED(RESGBUF3)) THEN
-          IF(DO_ALLOCATION) THEN
-            ALLOCATE(RESGBUF3(2,NNOD_GLOBAL(ID_BUF)))
-          ELSE
-            GOTO 999
-          ENDIF
-        ENDIF
-        RESGBUF => RESGBUF3
+         IF(.NOT.ALLOCATED(RESGBUF3)) THEN
+            IF(DO_ALLOCATION) THEN
+               ALLOCATE(RESGBUF3(2,NNOD_GLOBAL(ID_BUF)))
+            ELSE
+               GOTO 999
+            ENDIF
+         ENDIF
+         RESGBUF => RESGBUF3
 
       ELSE IF(ID_BUF.EQ.4) THEN
-        IF(.NOT.ALLOCATED(RESGBUF4)) THEN
-          IF(DO_ALLOCATION) THEN
-            ALLOCATE(RESGBUF4(2,NNOD_GLOBAL(ID_BUF)))
-          ELSE
-            GOTO 999
-          ENDIF
-        ENDIF
-        RESGBUF => RESGBUF4
+         IF(.NOT.ALLOCATED(RESGBUF4)) THEN
+            IF(DO_ALLOCATION) THEN
+               ALLOCATE(RESGBUF4(2,NNOD_GLOBAL(ID_BUF)))
+            ELSE
+               GOTO 999
+            ENDIF
+         ENDIF
+         RESGBUF => RESGBUF4
 
 !st3 100708: Increase for SWAN OUTPUT
 #ifdef CSWAN
       ELSE IF(ID_BUF.EQ.5) THEN
-        IF(.NOT.ALLOCATED(RESGBUF5)) THEN
-          IF(DO_ALLOCATION) THEN
-            ALLOCATE(RESGBUF5(2,NNOD_GLOBAL(ID_BUF)))
-          ELSE
-            GOTO 999
-          ENDIF
-        ENDIF
-        RESGBUF => RESGBUF5
+         IF(.NOT.ALLOCATED(RESGBUF5)) THEN
+            IF(DO_ALLOCATION) THEN
+               ALLOCATE(RESGBUF5(2,NNOD_GLOBAL(ID_BUF)))
+            ELSE
+               GOTO 999
+            ENDIF
+         ENDIF
+         RESGBUF => RESGBUF5
 
       ELSE IF(ID_BUF.EQ.6) THEN
-        IF(.NOT.ALLOCATED(RESGBUF6)) THEN
-          IF(DO_ALLOCATION) THEN
-            ALLOCATE(RESGBUF6(2,NNOD_GLOBAL(ID_BUF)))
-          ELSE
-            GOTO 999
-          ENDIF
-        ENDIF
-        RESGBUF => RESGBUF6
+         IF(.NOT.ALLOCATED(RESGBUF6)) THEN
+            IF(DO_ALLOCATION) THEN
+               ALLOCATE(RESGBUF6(2,NNOD_GLOBAL(ID_BUF)))
+            ELSE
+               GOTO 999
+            ENDIF
+         ENDIF
+         RESGBUF => RESGBUF6
 
       ELSE IF(ID_BUF.EQ.7) THEN
-        IF(.NOT.ALLOCATED(RESGBUF7)) THEN
-          IF(DO_ALLOCATION) THEN
-            ALLOCATE(RESGBUF7(2,NNOD_GLOBAL(ID_BUF)))
-          ELSE
-            GOTO 999
-          ENDIF
-        ENDIF
-        RESGBUF => RESGBUF7
+         IF(.NOT.ALLOCATED(RESGBUF7)) THEN
+            IF(DO_ALLOCATION) THEN
+               ALLOCATE(RESGBUF7(2,NNOD_GLOBAL(ID_BUF)))
+            ELSE
+               GOTO 999
+            ENDIF
+         ENDIF
+         RESGBUF => RESGBUF7
 #endif
 
       ELSE
-        STOP 'ID_BUF MUST BE 1-7.'
-
+         STOP 'ID_BUF MUST BE 1-7.'
       ENDIF
 
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
 
  999  CONTINUE
       STOP 'WRITER.F: REQUESTED RESGBUF IS NOT ALLOCATED.'
-
+C-----------------------------------------------------------------------
       END SUBROUTINE WRITER_SET_RESGBUF
+C-----------------------------------------------------------------------
 
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E     F L U S H _ W R I T E R S
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE FLUSH_WRITERS()
       use global
       implicit none
@@ -507,48 +649,72 @@ C...    rank MNPROC of writer communicators is always a writer proc.
 #endif
       INTEGER I,IERR
 
-      IF(.NOT.NEED_FLUSH) RETURN
+      call setMessageSource("flush_writers")
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      IF(.NOT.NEED_FLUSH) THEN
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         RETURN
+      ENDIF
 
 !st3 100708: If split option is off, load the blank cartridge to all chamber.
-      IF( ISPLIT == 0 ) THEN 
+      IF( ISPLIT == 0 ) THEN
          NWLOADED(1:MNWPROC) = 1
       ENDIF
       IF(MYPROC.eq.0) THEN
-        DO I=1,MNWPROC
+         DO I=1,MNWPROC
 !st3 100708: Flash only loaded chamber
-          IF( NWLOADED(I) == 1 ) then    !st3 NWLOADED()=0:unloaded, 1:loaded
-            WRITE(ScreenUnit,*) 'PROC ',MYPROC,
+            IF( NWLOADED(I) == 1 ) then    !st3 NWLOADED()=0:unloaded, 1:loaded
+               WRITE(ScreenUnit,*) 'PROC ',MYPROC,
      &           ' IS SENDING SIG_WRITE TO WRITER ',I
-            CALL MPI_SEND(SIG_WRITE,1,MPI_INTEGER,MNPROC,
-     &           TAG,COMM_WRITER(I),IERR)
-          ENDIF
-          NWLOADED(I) = 0
-        ENDDO
-
+               CALL MPI_SEND(SIG_WRITE,1,MPI_INTEGER,MNPROC,
+     &              TAG,COMM_WRITER(I),IERR)
+            ENDIF
+            NWLOADED(I) = 0
+         ENDDO
       ENDIF
-      
+
       NEED_FLUSH = .FALSE.
 
 Casey 100125: Per Seizo's suggestion, comment out this line to allow
 C             the cycling of writer cores.
 C     WCOMMID = 0
-
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
+C-----------------------------------------------------------------------
       END SUBROUTINE FLUSH_WRITERS
+C-----------------------------------------------------------------------
 
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E     W R I T E R _ W R I T E
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE WRITER_WRITE()
       use global
       implicit none
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-
       INTEGER :: WCOMM
       INTEGER :: IBUF,INOD
       INTEGER :: nNonDefVal
       INTEGER :: FULLREC  !tcm v50.27 added
       INTEGER, PARAMETER :: FID = 100
       REAL(SZ) :: VAL1,VAL2,DEFAULT_VAL
+
+      call setMessageSource("writer_write")
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       WCOMM = COMM_WRITER(WRITER_ID)
 
@@ -558,98 +724,93 @@ C     WCOMMID = 0
 
       DO IBUF=1,BUFID
 
-C...    Validity check
-        IF((NUM_ITEMS_PER_RECORD(IBUF).NE.1).AND.
+C...     Validity check
+         IF((NUM_ITEMS_PER_RECORD(IBUF).NE.1).AND.
      &       (NUM_ITEMS_PER_RECORD(IBUF).NE.2)) THEN
-          WRITE(ScreenUnit, *) 'WRITER.F : NUM_ITEMS_PER_NODE ',
+            WRITE(ScreenUnit, *) 'WRITER.F : NUM_ITEMS_PER_NODE ',
      &         'MUST BE EITHER ONE OR TWO :', NUM_ITEMS_PER_RECORD(IBUF)
-          STOP
-        ENDIF
+            STOP
+         ENDIF
 
-        DEFAULT_VAL = DEFAULT_VALUES(IBUF)
+         DEFAULT_VAL = DEFAULT_VALUES(IBUF)
+         FULLREC = FULLREC_SWITCH(IBUF)
 
-        FULLREC = FULLREC_SWITCH(IBUF)
+C...     Retrieve a RESGBUF corresponding to BUFID
+         CALL WRITER_SET_RESGBUF(IBUF, .FALSE.)
 
-C...    Retrieve a RESGBUF corresponding to BUFID
-        CALL WRITER_SET_RESGBUF(IBUF, .FALSE.)
-
-C...    Open file
-        if(isplit == 0 ) then             !Not Split               !st3  split file 100708
-        OPEN(FID, FILE=WFILENAMES(IBUF), ACCESS='SEQUENTIAL',
+C...     Open file
+         if(isplit == 0 ) then             !Not Split               !st3  split file 100708
+         OPEN(FID, FILE=WFILENAMES(IBUF), ACCESS='SEQUENTIAL',
      &       POSITION='APPEND')
-        else                              !Split                   !st3  split file 100708
-          OPEN(FID, FILE=WFILENAMES(IBUF), STATUS='REPLACE',       !st3  split file 100708
+         else                              !Split                   !st3  split file 100708
+            OPEN(FID, FILE=WFILENAMES(IBUF), STATUS='REPLACE',       !st3  split file 100708
      &         ACTION='WRITE')                                     !st3  split file 100708
-        endif
+         endif
 
-c... tcm v50.27 added full record writing options        
-        IF(FULLREC == 1) THEN
-           nNonDefVal = NNOD_GLOBAL(IBUF)
-        ELSE
+c... tcm v50.27 added full record writing options
+         IF(FULLREC == 1) THEN
+            nNonDefVal = NNOD_GLOBAL(IBUF)
+         ELSE
 C...    Count non-default values
            nNonDefVal = 0
 C....   Scalar data
-           IF(NUM_ITEMS_PER_RECORD(IBUF) == 1) THEN
-             DO INOD=1,NNOD_GLOBAL(IBUF)
+            IF(NUM_ITEMS_PER_RECORD(IBUF) == 1) THEN
+               DO INOD=1,NNOD_GLOBAL(IBUF)
+                  VAL1 = RESGBUF(1,INOD)
+                  IF(VAL1 == DEFAULT_VAL) CYCLE
+                  nNonDefVal = nNonDefVal + 1
+               ENDDO
+C....   Vector data
+            ELSE IF(NUM_ITEMS_PER_RECORD(IBUF) == 2) THEN
+               DO INOD=1,NNOD_GLOBAL(IBUF)
+                  VAL1 = RESGBUF(1,INOD)
+                  VAL2 = RESGBUF(2,INOD)
+
+                  IF((VAL1 == DEFAULT_VAL).AND.
+     &               (VAL2 == DEFAULT_VAL)) CYCLE
+
+                  nNonDefVal = nNonDefVal + 1
+               ENDDO
+            ENDIF
+         ENDIF
+
+C...     Writes a time stamp
+c.       tcm v50.27 added for full record option
+         IF (FULLREC == 0) THEN
+            WRITE(FID, 100) TIMES(IBUF), ITS(IBUF), nNonDefVal, DEFAULT_VAL
+         ELSE
+            WRITE(FID, 110) TIMES(IBUF), ITS(IBUF)
+         ENDIF
+ 100     FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)  !changed formats to match those in globalio.F
+ 110     FORMAT(2x,1pE20.10E3,5X,I10)  !tcm v50.27 added for full record
+
+C...     Write data
+C....    Scalar data
+         IF(NUM_ITEMS_PER_RECORD(IBUF) == 1) THEN
+            DO INOD=1,NNOD_GLOBAL(IBUF)
                VAL1 = RESGBUF(1,INOD)
 
-               IF(VAL1 == DEFAULT_VAL) CYCLE
+               IF((FULLREC==0).AND.(VAL1 == DEFAULT_VAL)) CYCLE
 
-               nNonDefVal = nNonDefVal + 1
-             ENDDO
-
-C....   Vector data
-           ELSE IF(NUM_ITEMS_PER_RECORD(IBUF) == 2) THEN
-              DO INOD=1,NNOD_GLOBAL(IBUF)
-                 VAL1 = RESGBUF(1,INOD)
-                 VAL2 = RESGBUF(2,INOD)
-
-                 IF((VAL1 == DEFAULT_VAL).AND.
-     &              (VAL2 == DEFAULT_VAL)) CYCLE
-
-                 nNonDefVal = nNonDefVal + 1
-              ENDDO
-
-           ENDIF
-        ENDIF
-        
-C...    Writes a time stamp
-c.      tcm v50.27 added for full record option
-        IF (FULLREC == 0) THEN
-           WRITE(FID, 100) TIMES(IBUF), ITS(IBUF), nNonDefVal, DEFAULT_VAL
-        ELSE
-           WRITE(FID, 110) TIMES(IBUF), ITS(IBUF)
-        ENDIF
- 100    FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)  !changed formats to match those in globalio.F
- 110    FORMAT(2x,1pE20.10E3,5X,I10)  !tcm v50.27 added for full record
-
-C...    Write data
-C....   Scalar data
-        IF(NUM_ITEMS_PER_RECORD(IBUF) == 1) THEN
-           DO INOD=1,NNOD_GLOBAL(IBUF)
-              VAL1 = RESGBUF(1,INOD)
-
-              IF((FULLREC==0).AND.(VAL1 == DEFAULT_VAL)) CYCLE
-
-              WRITE(FID,1000) INOD, VAL1
-           ENDDO
+               WRITE(FID,1000) INOD, VAL1
+            ENDDO
 
 C....   Vector data
-        ELSE IF(NUM_ITEMS_PER_RECORD(IBUF) == 2) THEN
-           DO INOD=1,NNOD_GLOBAL(IBUF)
-              VAL1 = RESGBUF(1,INOD)
-              VAL2 = RESGBUF(2,INOD)
+         ELSE IF(NUM_ITEMS_PER_RECORD(IBUF) == 2) THEN
+            DO INOD=1,NNOD_GLOBAL(IBUF)
+               VAL1 = RESGBUF(1,INOD)
+               VAL2 = RESGBUF(2,INOD)
 
-              IF((FULLREC==0).AND.((VAL1 == DEFAULT_VAL).AND.
+               IF((FULLREC==0).AND.((VAL1 == DEFAULT_VAL).AND.
      &           (VAL2 == DEFAULT_VAL))) CYCLE
 
-              WRITE(FID,2000) INOD, VAL1, VAL2
-           ENDDO
+               WRITE(FID,2000) INOD, VAL1, VAL2
+            ENDDO
 
-        ENDIF
-        
-C...    Close file
-        CLOSE(FID)
+         ENDIF
+
+C...     Close file
+         CLOSE(FID)
       ENDDO
 
       BUFID = 0
@@ -657,17 +818,34 @@ C...    Close file
       print *, 'WRITER ',WRITER_ID,' FINISHED WRITING'
 #endif
 
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
 C.... tcm v50.27 changed formats to match those in globalio.F
  1000 FORMAT(2X,I8, 2X, 1PE20.10E3) !format(i8, 1x, 1pE20.10)
  2000 FORMAT(2X,I8, 2X, 1PE20.10E3, 1PE20.10E3) !format(i8, 1x, 1pE20.10, 1pE20.10)
-
+C-----------------------------------------------------------------------
       END SUBROUTINE WRITER_WRITE
+C-----------------------------------------------------------------------
 
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C         W R I T E R _ G E T _ N E X T _ W R I T E R _ C O M M
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE WRITER_GET_NEXT_WRITER_COMM(NEXT_WCOMM)
+      IMPLICIT NONE
       INTEGER :: NEXT_WCOMM
       INTEGER :: NEXT_WCOMMID
-      
+
+      call setMessageSource("writer_get_next_writer_comm")
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
       IF(WCOMMID >= MNWPROC) THEN
         WCOMMID = 0
       ENDIF
@@ -677,10 +855,21 @@ C.... tcm v50.27 changed formats to match those in globalio.F
       NEXT_WCOMM = COMM_WRITER(NEXT_WCOMMID)
       NWLOADED(NEXT_WCOMMID) = 1                    !st3 100708: Load the bullet to Round Robin Chamber
 
+#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+C-----------------------------------------------------------------------
       END SUBROUTINE WRITER_GET_NEXT_WRITER_COMM
+C-----------------------------------------------------------------------
 
+
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       END MODULE WRITER
-!
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
 !
 !
 !
@@ -689,14 +878,14 @@ C_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 C MODULE HSWRITER  !st3
 C  This module is for writer processors for hotstart files based on S.Bunya's
 C_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-C 
+C
       MODULE HSWRITER
         USE SIZES
         USE GLOBAL
         USE MESSENGER, ONLY: TAG, COMM_WRITEH, COMM_HSLEEP, WRITER_ID,
      &       SIG_WRITE, SIG_TERM, SIG_PAUSE, MSG_FINI
 #ifdef HAVE_MPI_MOD
-        use mpi  
+        use mpi
 #endif
       IMPLICIT NONE
       INTEGER :: WCOMMID, WCOMM
@@ -771,7 +960,7 @@ C...  Main loop
 !
 !------------------------------------------------------------
 
-C 
+C
 C-----------------------------------------------------------------------
 C     SUBROUTINE BASED ON "WRITEHOTSTART"
 C-----------------------------------------------------------------------
@@ -789,7 +978,7 @@ C-----------------------------------------------------------------------
 !     &    collectFullDomainArray, collectFullDomainIntArray
       USE MESSENGER
 !
-      IMPLICIT NONE  
+      IMPLICIT NONE
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
@@ -804,13 +993,13 @@ C-----------------------------------------------------------------------
       character(len=2048) ::     cjunk1  !st3
       character(len=10) ::       cjunk2  !st3
 !
-      type(OutputDataDescript_t) :: descript 
+      type(OutputDataDescript_t) :: descript
       INTEGER npx, nex
 
       type(OutputDataDescript_t), SAVE :: Elev1Descript
-      type(OutputDataDescript_t), SAVE :: Elev2Descript 
+      type(OutputDataDescript_t), SAVE :: Elev2Descript
       type(OutputDataDescript_t), SAVE :: VelDescript
-      type(OutputDataDescript_t), SAVE :: CH1Descript  
+      type(OutputDataDescript_t), SAVE :: CH1Descript
       type(OutputDataDescript_t), SAVE :: EtaDiscDescript
       type(OutputDataDescript_t), SAVE :: NodeCodeDescript
       type(OutputDataDescript_t), SAVE :: NOFFDescript
@@ -821,7 +1010,7 @@ C-----------------------------------------------------------------------
         CALL GET_NEXT_HSWRITER_COMM(WCOMM)
       endif
 !
-      iit = 0 
+      iit = 0
       ttime=0.0d0
 !
       if( myproc==0 ) then
@@ -914,7 +1103,7 @@ C-----------------------------------------------------------------------
       WRITE(16,*) "NHSTAR = ", NHSTAR
       WRITE(16,*) "FirstCall = ", FirstCall
       IF (FirstCall) THEN
-         write(16,*) 'Allocating Elev1Descript' 
+         write(16,*) 'Allocating Elev1Descript'
          IF ( WRITER_ID /= 0  ) THEN
             IF (.not.ALLOCATED(ETA1_g)) THEN
               ALLOCATE(ETA1_g(NP_G))
@@ -931,7 +1120,7 @@ C-----------------------------------------------------------------------
 
          IF ( WRITER_ID /= 0 ) THEN
             IF (.not.ALLOCATED(ETA2_g)) THEN
-               write(16,*) 'Allocating Elev2Descript' 
+               write(16,*) 'Allocating Elev2Descript'
                ALLOCATE(ETA2_g(NP_G))
             ENDIF
          ENDIF
@@ -946,9 +1135,9 @@ C-----------------------------------------------------------------------
 
          IF ( WRITER_ID /= 0 ) THEN
             IF (.not.ALLOCATED(UU2_g)) THEN
-               write(16,*) 'Allocating VelDescript' 
+               write(16,*) 'Allocating VelDescript'
                ALLOCATE(UU2_g(NP_G))
-               ALLOCATE(VV2_g(NP_G)) 
+               ALLOCATE(VV2_g(NP_G))
             ENDIF
          ENDIF
          VelDescript % specifier            = NHSTAR
@@ -963,7 +1152,7 @@ C-----------------------------------------------------------------------
          VelDescript % array2_g             => VV2_g
 
          IF (IM.eq.10) THEN
-            write(16,*) 'Allocating CH1Descript' 
+            write(16,*) 'Allocating CH1Descript'
             IF ( WRITER_ID /= 0 ) THEN
                ALLOCATE(EtaDisc_g(NP_G))
             ENDIF
@@ -975,10 +1164,10 @@ C-----------------------------------------------------------------------
             CH1Descript % imap                 => NODES_LG
             CH1Descript % array                => CH1
             CH1Descript % array_g              => CH1_g
-         ENDIF        
- 
+         ENDIF
+
          IF ( WRITER_ID /= 0 ) THEN
-            write(16,*) 'Allocating EtaDiscDescript' 
+            write(16,*) 'Allocating EtaDiscDescript'
             ALLOCATE(EtaDisc_g(NP_G))
          ENDIF
          EtaDiscDescript % specifier            = NHSTAR
@@ -989,9 +1178,9 @@ C-----------------------------------------------------------------------
          EtaDiscDescript % imap                 => NODES_LG
          EtaDiscDescript % array                => EtaDisc
          EtaDiscDescript % array_g              => EtaDisc_g
-         
+
          IF ( WRITER_ID /= 0 ) THEN
-            write(16,*) 'Allocating NodeCodeDescript' 
+            write(16,*) 'Allocating NodeCodeDescript'
             ALLOCATE(NodeCode_g(NP_G))
          ENDIF
          NodeCodeDescript % specifier            = NHSTAR
@@ -1004,7 +1193,7 @@ C-----------------------------------------------------------------------
          NodeCodeDescript % iarray_g             => NODECODE_g
 
          IF ( WRITER_ID /= 0 ) THEN
-            write(16,*) 'Allocating NOFFDescript' 
+            write(16,*) 'Allocating NOFFDescript'
             ALLOCATE(NOFF_g(NE_G))
          ENDIF
          NOFFDescript % specifier            = NHSTAR
@@ -1038,11 +1227,11 @@ C     collect up the data from subdomains if running in parallel
       CASE(1) ! nonportable binary (1 for backwards compatibility)
          NPX = NP_G
          NEX = NE_G
-         IF ((WRITER_ID /= 0)) THEN 
+         IF ((WRITER_ID /= 0)) THEN
             OPEN(hss % lun ,FILE=TRIM(adjustl(HOTSTARTDIR))//'/'//trim(adjustl(hss%filename)),
      $      ACCESS='DIRECT',RECL=8)
             IHOTSTP=1
-            WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion 
+            WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion
             IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) IM   ; IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) ttime; IHOTSTP = IHOTSTP + 1 !st3
@@ -1052,7 +1241,7 @@ C     collect up the data from subdomains if running in parallel
             WRITE(hss % lun,REC=IHOTSTP) NPX  ; IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) NEX  ; IHOTSTP = IHOTSTP + 1
          ENDIF
-         IF ( WRITER_ID /= 0 ) THEN 
+         IF ( WRITER_ID /= 0 ) THEN
             DO I=1, Elev1Descript % num_fd_records
                WRITE(hss % lun,REC=IHOTSTP) Elev1Descript % array_g(I)
                IHOTSTP=IHOTSTP+1
@@ -1089,7 +1278,7 @@ C     collect up the data from subdomains if running in parallel
             ENDDO
          ENDIF
 C
-         IF (WRITER_ID /= 0) THEN 
+         IF (WRITER_ID /= 0) THEN
             WRITE(hss % lun,REC=IHOTSTP) IESTP   ; IHOTSTP = IHOTSTP + 1
             WRITE(hss % lun,REC=IHOTSTP) NSCOUE  ; IHOTSTP = IHOTSTP + 1
 
@@ -1119,7 +1308,7 @@ C
       CASE(2) ! ascii?
          write(16,*) 'ASCII Hotstart file not implemented yet.'
 
-      CASE(3) ! netcdf 
+      CASE(3) ! netcdf
          write(16,*) 'NetCDF Hotstart undergoing testing.'
 
       CASE DEFAULT
@@ -1127,22 +1316,22 @@ C
          write(ScreenUnit,*) 'is not supported.'
          write(ScreenUnit,*) 'Hotstart file not written.'
       END SELECT
-C...    
+C...
 C...    CLOSE THE HOT START OUTPUT FILE
-C...    
+C...
       IF(NHSTAR.EQ.1) THEN                                              ! added by mcf 7/14/08
       if (WRITER_ID /= 0) CLOSE(hss % lun)
-      ENDIF                                                             ! end NHSTAR=1 
-        
+      ENDIF                                                             ! end NHSTAR=1
+
       IF(NSCREEN.NE.0.AND. WRITER_ID /= 0 ) THEN
          WRITE(ScreenUnit,24541) hss % lun, WRITER_ID, IT,TimeLoc
-      ELSE 
+      ELSE
          WRITE(16,24541) hss % lun,WRITER_ID,IT,TimeLoc
       ENDIF
 24541 FORMAT(1X,'HOT START OUTPUT WRITTEN TO UNIT ',I2,'  HSWriter:',i2
      &    ' AT TIME STEP = ',I9,' TIME = ',E15.8)
       IF(hss % lun.EQ.67) THEN
-C        jgf45.07 added option to stop ADCIRC after writing hot start file. 
+C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          IF (NHSTAR.EQ.67) THEN
             WRITE(ScreenUnit,*) 'NHSTAR.EQ.67; ADCIRC stopping.'
             WRITE(16,*) 'NHSTAR.EQ.67; ADCIRC stopping.'
@@ -1233,7 +1422,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          iend   = min(istart + num - 1, descript % num_fd_records)
          num    = iend - istart + 1
       end do
-#endif   
+#endif
 !     !--------------------------------------------------------------
       end subroutine collectFullDomainArrayw
 !     !--------------------------------------------------------------
@@ -1294,7 +1483,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          iend   = min(istart + num - 1, descript % num_fd_records)
          num    = iend - istart + 1
       end do
-#endif   
+#endif
 C! CMPI
 !     !--------------------------------------------------------------
       end subroutine collectFullDomainIntArrayw

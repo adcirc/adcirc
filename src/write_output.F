@@ -37,7 +37,7 @@ C RJW added MYPROC, MNPROC
       USE MESSENGER, ONLY : msg_fini, msg_lbcast
 #endif
 #ifdef ADCNETCDF
-      USE NETCDFIO, ONLY : allocNetCDFArrays
+      USE NETCDFIO, ONLY : initNetCDFOutputFile
 #endif
 
       IMPLICIT NONE
@@ -112,7 +112,7 @@ Casey 090302: Added these arrays for output of radiation stress gradients.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNXOut_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNYOut_g(:)
 #endif
-      LOGICAL, dimension(8) :: netcdf_error
+      LOGICAL, dimension(14) :: netcdf_error
       LOGICAL, SAVE :: FirstCall = .true.
 
       IF (FirstCall) THEN
@@ -133,13 +133,8 @@ C         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
          ElevStaDescript % ConsiderWetDry       = .TRUE.
          ElevStaDescript % alternate_value      = -99999.0
          ElevStaDescript % field_name           = 'ElevSta'
-         IF (ICS.eq.2) THEN
-            ElevStaDescript % x_coord           => SLEL
-            ElevStaDescript % y_coord           => SFEL
-         ELSE
-            ElevStaDescript % x_coord           => XEL
-            ElevStaDescript % y_coord           => YEL
-         ENDIF
+         ElevStaDescript % x_coord              => XEL ! use orig coord
+         ElevStaDescript % y_coord              => YEL
 
          ! fort.62
 C         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
@@ -160,13 +155,8 @@ C         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
          VelStaDescript % ConsiderWetDry       = .FALSE.
          VelStaDescript % alternate_value      = 0.0
          VelStaDescript % field_name           = 'VelSta'
-         IF (ICS.eq.2) THEN
-            VelStaDescript % x_coord           => SLEV
-            VelStaDescript % y_coord           => SFEV
-         ELSE
-            VelStaDescript % x_coord           => XEV
-            VelStaDescript % y_coord           => YEV
-         ENDIF
+         VelStaDescript % x_coord              => XEV ! use orig coord
+         VelStaDescript % y_coord              => YEV
 
          ! fort.63
          ElevDescript % specifier            = NOUTGE
@@ -242,13 +232,8 @@ C         write(16,*) 'Allocating PrStaDescript' !jgfdebug48.03
          PrStaDescript % ConsiderWetDry       = .FALSE.
          PrStaDescript % alternate_value      = 0.0
          PrStaDescript % field_name           = 'PrSta'
-         IF (ICS.eq.2) THEN
-            PrStaDescript % x_coord           => SLEM
-            PrStaDescript % y_coord           => SFEM
-         ELSE
-            PrStaDescript % x_coord           => XEM
-            PrStaDescript % y_coord           => YEM
-         ENDIF
+         PrStaDescript % x_coord           => XEM ! use orig coord
+         PrStaDescript % y_coord           => YEM ! use orig coord
 
          ! fort.72
 C         write(16,*) 'Allocating WindVelStaDescript' !jgfdebug48.03
@@ -269,13 +254,8 @@ C         write(16,*) 'Allocating WindVelStaDescript' !jgfdebug48.03
          WindVelStaDescript % ConsiderWetDry       = .FALSE.
          WindVelStaDescript % alternate_value      = 0.0
          WindVelStaDescript % field_name           = 'WindVelSta'
-         IF (ICS.eq.2) THEN
-            WindVelStaDescript % x_coord           => SLEM
-            WindVelStaDescript % y_coord           => SFEM
-         ELSE
-            WindVelStaDescript % x_coord           => XEM
-            WindVelStaDescript % y_coord           => YEM
-         ENDIF
+         WindVelStaDescript % x_coord           => XEM ! use orig coord
+         WindVelStaDescript % y_coord           => YEM ! use orig coord
 
          ! fort.73
 C         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
@@ -393,22 +373,18 @@ C         write(16,*) 'Allocating IceStaDescript'
          IceStaDescript % ConsiderWetDry       = .FALSE.
          IceStaDescript % alternate_value      = 0.0
          IceStaDescript % field_name           = 'IceSta'
-         IF (ICS.eq.2) THEN
-            IceStaDescript % x_coord           => SLEM
-            IceStaDescript % y_coord           => SFEM
-         ELSE
-            IceStaDescript % x_coord           => XEM
-            IceStaDescript % y_coord           => YEM
-         ENDIF
+         IceStaDescript % x_coord           => XEM ! use orig coord
+         IceStaDescript % y_coord           => YEM
 
 #ifdef CSWAN
 Casey 090302: Copied these lines for the rads.64 file.
          ! rads.64
-         write(16,*) 'Allocating RSDescript' !jgfdebug48.03
+C         write(16,*) 'Allocating RSDescript' !jgfdebug48.03
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(RSNXOUT_g(NP_G))
             ALLOCATE(RSNYOUT_g(NP_G))
          ENDIF
+C........Radiation Stress
          RSDescript % specifier            = NOUTGW
          RSDescript % initial_value        = 0.0
          RSDescript % num_items_per_record = 2
@@ -419,6 +395,9 @@ Casey 090302: Copied these lines for the rads.64 file.
          RSDescript % array_g              => RSNXOUT_g
          RSDescript % array2               => RSNYOUT
          RSDescript % array2_g             => RSNYOUT_g
+         RSDescript % alternate_value      = -99999.0
+         RSDescript % field_name           = 'RadStress'
+         RSDescript % file_name            = "rads.64"
 #endif
 
          ! fort.81
@@ -459,7 +438,7 @@ C        maxele.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(ETAMAX_g(NP_G))
          ENDIF
-         EtaMaxDescript % specifier            = 1
+         EtaMaxDescript % specifier            = NOUTGE
          EtaMaxDescript % initial_value        = 0.0
          EtaMaxDescript % num_items_per_record = 1
          EtaMaxDescript % num_fd_records       = NP_G
@@ -477,7 +456,7 @@ C        maxvel.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(UMAX_g(NP_G))
          ENDIF
-         UMaxDescript % specifier              = 1
+         UMaxDescript % specifier              = NOUTGV
          UMaxDescript % initial_value          = 0.0
          UMaxDescript % num_items_per_record   = 1
          UMaxDescript % num_fd_records         = NP_G
@@ -495,7 +474,7 @@ C        prmin.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(PRMIN_g(NP_G))
          ENDIF
-         PrMinDescript % specifier             = 1
+         PrMinDescript % specifier             = NOUTGW
          PrMinDescript % initial_value         = 0.0
          PrMinDescript % num_items_per_record  = 1
          PrMinDescript % num_fd_records        = NP_G
@@ -513,7 +492,7 @@ C        maxwvel.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(WVNOUTMAX_g(NP_G))
          ENDIF
-         WVMaxDescript % specifier             = 1
+         WVMaxDescript % specifier             = NOUTGW
          WVMaxDescript % initial_value         = 0.0
          WVMaxDescript % num_items_per_record  = 1
          WVMaxDescript % num_fd_records        = NP_G
@@ -531,7 +510,7 @@ C        maxrs.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(RSNMAX_g(NP_G))
          ENDIF
-         RSMaxDescript % specifier             = 1
+         RSMaxDescript % specifier             = NOUTGW
          RSMaxDescript % initial_value         = 0.0
          RSMaxDescript % num_items_per_record  = 1
          RSMaxDescript % num_fd_records        = NP_G
@@ -571,19 +550,27 @@ C
          ! jgf49.43.11: if netcdf is not required for a particular output file,
          ! the associated subroutine call will do nothing and just return
          IF (myProc.eq.0) THEN
-            CALL allocNetCDFArrays(61,ElevStaDescript, netcdf_error(1))
-            CALL allocNetCDFArrays(62,VelStaDescript, netcdf_error(2))
-            CALL allocNetCDFArrays(63,ElevDescript, netcdf_error(3))
-            CALL allocNetCDFArrays(64,VelDescript, netcdf_error(4))
-            CALL allocNetCDFArrays(71,PrStaDescript, netcdf_error(5))
-            CALL allocNetCDFArrays(72,WindVelStaDescript,
+            CALL initNetCDFOutputFile(61,ElevStaDescript, netcdf_error(1))
+            CALL initNetCDFOutputFile(62,VelStaDescript, netcdf_error(2))
+            CALL initNetCDFOutputFile(63,ElevDescript, netcdf_error(3))
+            CALL initNetCDFOutputFile(64,VelDescript, netcdf_error(4))
+            CALL initNetCDFOutputFile(71,PrStaDescript, netcdf_error(5))
+            CALL initNetCDFOutputFile(72,WindVelStaDescript,
      &                                netcdf_error(6))
-            CALL allocNetCDFArrays(73,PrDescript, netcdf_error(7))
-            CALL allocNetCDFArrays(74,WindVelDescript, netcdf_error(8))
+            CALL initNetCDFOutputFile(73,PrDescript, netcdf_error(7))
+            CALL initNetCDFOutputFile(74,WindVelDescript, netcdf_error(8))
+            CALL initNetCDFOutputFile(311,EtaMaxDescript,netcdf_error(10))
+            CALL initNetCDFOutputFile(312,UMaxDescript,netcdf_error(11))
+            CALL initNetCDFOutputFile(313,PrMinDescript,netcdf_error(12))
+            CALL initNetCDFOutputFile(314,WVMaxDescript,netcdf_error(13))
+            CALL initNetCDFOutputFile(315,RSMaxDescript,netcdf_error(14))
+#ifdef CSWAN
+            CALL initNetCDFOutputFile(164,RSDescript, netcdf_error(9))
+#endif
          ENDIF
 #ifdef CMPI
-         CALL msg_lbcast(netcdf_error,8)
-         DO i=1,8
+         CALL msg_lbcast(netcdf_error,14)
+         DO i=1,14
             IF (netcdf_error(i).eqv..true.) THEN
                CALL msg_fini()
                STOP
@@ -786,10 +773,6 @@ C...   OUTPUT GLOBAL ELEVATION DATA IF NOUTGE<>0 AND THE
 C.... TIME STEP FALLS WITHIN THE SPECIFIED WINDOW
 C...
       IF(NOUTGE.NE.0) THEN
-!         IF(MYPROC.EQ.0) PRINT *, "W: NSCOUGE = ", NSCOUGE
-!         IF(MYPROC.EQ.0) PRINT *, "W: NSPOOLGE = ", NSPOOLGE
-!         IF(MYPROC.EQ.0) PRINT *, "W: NTCYSGE = ", NTCYSGE
-!         IF(MYPROC.EQ.0) PRINT *, "W: NTCYFGE = ", NTCYFGE
          IF((IT.GT.NTCYSGE).AND.(IT.LE.NTCYFGE)) THEN
             NSCOUGE=NSCOUGE+1
             NCCOUGE=NSCOUGE
@@ -1195,7 +1178,7 @@ C           jgf48.03 TODO: add the proper processingi (see below).
 Casey 090302: Added file name.
             CALL writeOutArray(83, TimeLoc, IT, ConcDescript,
      &                         pack83, unpackOne, IGCP,
-     &                         'fort.83       ')
+     &                         'fort.83        ')
 C               DO I=1,NP
 C                  H2=DP(I)+IFNLFA*ETA2(I)
 C                  C1=CH1(I)/H2
@@ -1221,20 +1204,20 @@ C     jgf48.4636 Updated to newer data structure, so that we can
 C     compare with values from hot start, so that mins and maxes
 C     can be preserved across hot starts.
       IF(IT.EQ.NT) THEN
-         CALL writeOutArrayMinMax(963, TimeLoc, IT, EtaMaxDescript,
+         CALL writeOutArrayMinMax(311, TimeLoc, IT, EtaMaxDescript,
      &        packOne, unpackOne)
-         CALL writeOutArrayMinMax(963, TimeLoc, IT, UMaxDescript,
+         CALL writeOutArrayMinMax(312, TimeLoc, IT, UMaxDescript,
      &        packOne, unpackOne)
-         CALL writeOutArrayMinMax(963, TimeLoc, IT, PrMinDescript,
+         CALL writeOutArrayMinMax(313, TimeLoc, IT, PrMinDescript,
      &        packOne, unpackOne)
-         CALL writeOutArrayMinMax(963, TimeLoc, IT, WVMaxDescript,
+         CALL writeOutArrayMinMax(314, TimeLoc, IT, WVMaxDescript,
      &        packOne, unpackOne)
-         CALL writeOutArrayMinMax(963, TimeLoc, IT, RSMaxDescript,
+         CALL writeOutArrayMinMax(315, TimeLoc, IT, RSMaxDescript,
      &        packOne, unpackOne)
 C       OUTPUT THE NODES WHERE THE ELEMENTAL SLOPE LIMITER HAS BEEN
 C       TURNED ON DURING THE RUN
          IF(LoadEleSlopeLim)THEN
-            CALL writeOutArrayMinMax(963, TimeLoc, IT, ESLDescript,
+            CALL writeOutArrayMinMax(323, TimeLoc, IT, ESLDescript,
      &               packOne, unpackOne)
          ENDIF
       ENDIF
@@ -2095,8 +2078,8 @@ C RJW added MYPROC
 #ifdef ADCNETCDF
        USE NodalAttributes, ONLY :
      &     nolibf, nwp, tau0, cf, eslm
-       USE NetCDFIO, ONLY : allocNetCDFArrays, allocNetCDFArrays3D,
-     &     writeOutArrayNetCDF, writeOutArrayNetCDF3D
+       USE NetCDFIO, ONLY : initNetCDFOutputFile,
+     &     writeOutArrayNetCDF
 #endif
 #ifdef CMPI
        USE MESSENGER, ONLY : msg_lbcast, msg_fini
@@ -2114,7 +2097,7 @@ C RJW added MYPROC
       REAL(SZ) U11, U22, U33
       REAL(SZ) V11, V22, V33
       LOGICAL, SAVE :: FirstCall = .true.
-      LOGICAL, dimension(8) :: netcdf_error
+      LOGICAL, dimension(14) :: netcdf_error
 C
       type(OutputDataDescript_t), save :: SigTStaDescript
       type(OutputDataDescript_t), save :: SalStaDescript
@@ -2165,10 +2148,10 @@ C
 1100  FORMAT(1X,E17.10,1X,I10,32000(2X,E13.6))
 1104  FORMAT(9X,I6,4X,32000(E13.6,2X))
 1105  FORMAT(2X,I8,2X,1pE20.10E3)
-C
+C 
       IF (FirstCall.eqv..true.) THEN
          ALLOCATE(rp(NP,NFEN),ip(NP,NFEN))
-         ALLOCATE(rpSta(NSTA3DV,NFEN),ipSta(NSTA3DV,NFEN))
+         ALLOCATE(rpSta(MNSTA3DV,NFEN),ipSta(MNSTA3DV,NFEN))
 C
          SigTStaDescript % specifier            =  I3DSD
          SigTStaDescript % initial_value        =  0.0
@@ -2181,13 +2164,8 @@ C
          SigTStaDescript % considerWetDry       = .FALSE.
          SigTStaDescript % alternate_value      = -99999.0
          SigTStaDescript % field_name           = 'SigmaTStations'
-         IF (ICS.eq.2) THEN
-            SigTStaDescript % x_coord           => SLED
-            SigTStaDescript % y_coord           => SFED
-         ELSE
-            SigTStaDescript % x_coord           => XED
-            SigTStaDescript % y_coord           => YED
-         ENDIF
+         SigTStaDescript % x_coord           => XED  ! use orig coord
+         SigTStaDescript % y_coord           => YED  ! use orig coord
 
          SalStaDescript % specifier            =  I3DSD
          SalStaDescript % initial_value        =  0.0
@@ -2200,13 +2178,8 @@ C
          SalStaDescript % considerWetDry       = .FALSE.
          SalStaDescript % alternate_value      = -99999.0
          SalStaDescript % field_name           = 'SalinityStations'
-         IF (ICS.eq.2) THEN
-            SalStaDescript % x_coord           => SLED
-            SalStaDescript % y_coord           => SFED
-         ELSE
-            SalStaDescript % x_coord           => XED
-            SalStaDescript % y_coord           => YED
-         ENDIF
+         SalStaDescript % x_coord           => XED ! use orig coord
+         SalStaDescript % y_coord           => YED ! use orig coord
 
          TempStaDescript % specifier            =  I3DSD
          TempStaDescript % initial_value        =  0.0
@@ -2219,13 +2192,8 @@ C
          TempStaDescript % considerWetDry       = .FALSE.
          TempStaDescript % alternate_value      = -99999.0
          TempStaDescript % field_name           = 'TemperatureStations'
-         IF (ICS.eq.2) THEN
-            TempStaDescript % x_coord           => SLED
-            TempStaDescript % y_coord           => SFED
-         ELSE
-            TempStaDescript % x_coord           => XED
-            TempStaDescript % y_coord           => YED
-         ENDIF
+         TempStaDescript % x_coord           => XED ! use orig coord
+         TempStaDescript % y_coord           => YED
 
          RealQStaDescript % specifier            =  I3DSV
          RealQStaDescript % initial_value        =  0.0
@@ -2238,13 +2206,8 @@ C
          RealQStaDescript % considerWetDry       = .FALSE.
          RealQStaDescript % alternate_value      = -99999.0
          RealQStaDescript % field_name           = 'RealQStations'
-         IF (ICS.eq.2) THEN
-            RealQStaDescript % x_coord           => SLE3DV
-            RealQStaDescript % y_coord           => SFE3DV
-         ELSE
-            RealQStaDescript % x_coord           => XE3DV
-            RealQStaDescript % y_coord           => YE3DV
-         ENDIF
+         RealQStaDescript % x_coord           => XE3DV ! use orig coord
+         RealQStaDescript % y_coord           => YE3DV
 
          ImaginaryQStaDescript % specifier            =  I3DSV
          ImaginaryQStaDescript % initial_value        =  0.0
@@ -2257,13 +2220,8 @@ C
          ImaginaryQStaDescript % considerWetDry       = .FALSE.
          ImaginaryQStaDescript % alternate_value      = -99999.0
          ImaginaryQStaDescript % field_name      ='ImaginaryQStations'
-         IF (ICS.eq.2) THEN
-            ImaginaryQStaDescript % x_coord           => SLE3DV
-            ImaginaryQStaDescript % y_coord           => SFE3DV
-         ELSE
-            ImaginaryQStaDescript % x_coord           => XE3DV
-            ImaginaryQStaDescript % y_coord           => YE3DV
-         ENDIF
+         ImaginaryQStaDescript % x_coord           => XE3DV ! use orig coord
+         ImaginaryQStaDescript % y_coord           => YE3DV
 
          WZStaDescript % specifier            =  I3DSV
          WZStaDescript % initial_value        =  0.0
@@ -2276,13 +2234,8 @@ C
          WZStaDescript % considerWetDry       = .FALSE.
          WZStaDescript % alternate_value      = -99999.0
          WZStaDescript % field_name           = 'WZStations'
-         IF (ICS.eq.2) THEN
-            WZStaDescript % x_coord           => SLE3DV
-            WZStaDescript % y_coord           => SFE3DV
-         ELSE
-            WZStaDescript % x_coord           => XE3DV
-            WZStaDescript % y_coord           => YE3DV
-         ENDIF
+         WZStaDescript % x_coord           => XE3DV  ! use orig coord
+         WZStaDescript % y_coord           => YE3DV
 
          Q20StaDescript % specifier            =  I3DST
          Q20StaDescript % initial_value        =  0.0
@@ -2295,13 +2248,8 @@ C
          Q20StaDescript % considerWetDry       = .FALSE.
          Q20StaDescript % alternate_value      = -99999.0
          Q20StaDescript % field_name           = 'q20Stations'
-         IF (ICS.eq.2) THEN
-            Q20StaDescript % x_coord           => SLET
-            Q20StaDescript % y_coord           => SFET
-         ELSE
-            Q20StaDescript % x_coord           => XET
-            Q20StaDescript % y_coord           => YET
-         ENDIF
+         Q20StaDescript % x_coord           => XET  ! use orig coord
+         Q20StaDescript % y_coord           => YET  ! use orig coord
 
          LStaDescript % specifier        =  I3DST
          LStaDescript % initial_value        =  0.0
@@ -2314,13 +2262,8 @@ C
          LStaDescript % considerWetDry       = .FALSE.
          LStaDescript % alternate_value      = -99999.0
          LStaDescript % field_name           = 'LStations'
-         IF (ICS.eq.2) THEN
-            LStaDescript % x_coord           => SLET
-            LStaDescript % y_coord           => SFET
-         ELSE
-            LStaDescript % x_coord           => XET
-            LStaDescript % y_coord           => YET
-         ENDIF
+         LStaDescript % x_coord           => XET  ! use orig coord
+         LStaDescript % y_coord           => YET
 
          EVStaDescript % specifier            =  I3DST
          EVStaDescript % initial_value        =  0.0
@@ -2333,13 +2276,8 @@ C
          EVStaDescript % considerWetDry       = .FALSE.
          EVStaDescript % alternate_value      = -99999.0
          EVStaDescript % field_name           = 'EVStations'
-         IF (ICS.eq.2) THEN
-            EVStaDescript % x_coord           => SLET
-            EVStaDescript % y_coord           => SFET
-         ELSE
-            EVStaDescript % x_coord           => XET
-            EVStaDescript % y_coord           => YET
-         ENDIF
+         EVStaDescript % x_coord           => XET ! use orig coord
+         EVStaDescript % y_coord           => YET
 
          QSurfKp1Descript % specifier            =  I3DGD
          QSurfKp1Descript % initial_value        =  0.0
@@ -2466,24 +2404,24 @@ C
          ! jgf49.48.01: if netcdf is not required for a particular output file,
          ! the associated subroutine call will do nothing and just return
          IF (myProc.eq.0) THEN
-            CALL allocNetCDFArrays3D(41, SigTStaDescript,
-     &           SalStaDescript, TempStaDescript, netcdf_error(1))
-            CALL allocNetCDFArrays3D(42, RealQStaDescript,
-     &           ImaginaryQStaDescript, WZStaDescript, netcdf_error(1))
-            CALL allocNetCDFArrays3D(43, Q20StaDescript,
-     &           LStaDescript, EVStaDescript, netcdf_error(1))
-            CALL allocNetCDFArrays3D(44, SigTDescript,
-     &           SalDescript, TempDescript, netcdf_error(1))
-            CALL allocNetCDFArrays3D(45, RealQDescript,
-     &           ImaginaryQDescript, WZDescript, netcdf_error(1))
-            CALL allocNetCDFArrays3D(46, Q20Descript,
-     &           LDescript, EVDescript, netcdf_error(1))
-            CALL allocNetCDFArrays(47, QSurfKp1Descript,
-     &           netcdf_error(1))
+            CALL initNetCDFOutputFile(41, SigTStaDescript,
+     &           netcdf_error(1), SalStaDescript, TempStaDescript)
+            CALL initNetCDFOutputFile(42, RealQStaDescript,
+     &           netcdf_error(2), ImaginaryQStaDescript, WZStaDescript)
+            CALL initNetCDFOutputFile(43, Q20StaDescript,
+     &           netcdf_error(3), LStaDescript, EVStaDescript)
+            CALL initNetCDFOutputFile(44, SigTDescript,
+     &           netcdf_error(4), SalDescript, TempDescript)
+            CALL initNetCDFOutputFile(45, RealQDescript,
+     &           netcdf_error(5), ImaginaryQDescript, WZDescript)
+            CALL initNetCDFOutputFile(46, Q20Descript,
+     &           netcdf_error(6), LDescript, EVDescript)
+            CALL initNetCDFOutputFile(47, QSurfKp1Descript,
+     &           netcdf_error(7))
          ENDIF
 #ifdef CMPI
-         CALL msg_lbcast(netcdf_error,8)
-         DO i=1,8
+         CALL msg_lbcast(netcdf_error,7)
+         DO i=1,7
             IF (netcdf_error(i).eqv..true.) THEN
                CALL msg_fini()
                STOP
@@ -2683,7 +2621,7 @@ C              Write station output
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF3D(41, TimeLoc, it,
+                  CALL writeOutArrayNetCDF(41, TimeLoc, it,
      &             SigTStaDescript, SalStaDescript, TempStaDescript)
                ENDIF
 #endif
@@ -2743,8 +2681,12 @@ C              Interpolate to station locations
                   ImaginaryQStaDescript % array2D_g => ipSta_g
                   WZStaDescript % array2D_g => WZSta_g
                ENDIF
-               rpSta = real(qSta)
-               ipSta = aimag(qSta)
+               DO NN=1,NSta3DV
+                  DO k=1,NFEN
+                     rpSta(nn,k) = real(qSta(nn,k))
+                     ipSta(nn,k) = aimag(qSta(nn,k))
+                  END DO
+               END DO
                CALL collectFullDomainArray(RealQStaDescript,
      &                     packNPbyM, unpackNPbyM)
                CALL collectFullDomainArray(ImaginaryQStaDescript,
@@ -2804,7 +2746,7 @@ C                 Write time header into file
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF3D(42, TimeLoc, it,
+                  CALL writeOutArrayNetCDF(42, TimeLoc, it,
      &               RealQStaDescript,ImaginaryQStaDescript,
      &               WZStaDescript)
                ENDIF
@@ -2914,7 +2856,7 @@ C                 Write time header into file
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF3D(43, TimeLoc, it,
+                  CALL writeOutArrayNetCDF(43, TimeLoc, it,
      &               Q20StaDescript,LStaDescript,EVStaDescript)
                ENDIF
 #endif
@@ -3168,7 +3110,7 @@ C        Check to see if it is time to generate 3D fulldomain density output.
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF3D(44, TimeLoc, it,
+                  CALL writeOutArrayNetCDF(44, TimeLoc, it,
      &               SigTDescript,SalDescript,TempDescript)
                ENDIF
 #endif
@@ -3209,7 +3151,9 @@ C kmd48.33bc changed to NE from GT
          IF ((IT.GT.NTO3DGVS).AND.(IT.LE.NTO3DGVF)) N3DGV=N3DGV+1
 C        Check to see if it is time to generate 3D fulldomain velocity output.
          IF (N3DGV.EQ.NSpo3DGV) THEN
-            IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
+            rp = real(q)
+            ip = aimag(q)
+            IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN ! parallel
                IF (myProc.eq.0) THEN
                   ALLOCATE(rp_g(NP_G,NFEN),ip_g(NP_G,NFEN),
      &               WZ_g(NP_G,NFEN))
@@ -3217,8 +3161,6 @@ C        Check to see if it is time to generate 3D fulldomain velocity output.
                   ImaginaryQDescript % array2D_g => ip_g
                   WZDescript % array2D_g => WZ_g
                ENDIF
-               rp = real(q)
-               ip = aimag(q)
                CALL collectFullDomainArray(RealQDescript,
      &            packNPbyM, unpackNPbyM)
                CALL collectFullDomainArray(ImaginaryQDescript,
@@ -3277,7 +3219,7 @@ C                 Write time header into file
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF3D(45, TimeLoc, it,
+                  CALL writeOutArrayNetCDF(45, TimeLoc, it,
      &               RealQDescript,ImaginaryQDescript,WZDescript)
                ENDIF
 #endif
@@ -3288,9 +3230,8 @@ C                 Write time header into file
             N3DGV=0
             IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.).and.
      &          (myProc.eq.0)) THEN
-                  DEALLOCATE(rp_g,ip_g,WZ_g)
+               DEALLOCATE(rp_g,ip_g,WZ_g)
             ENDIF
-
          ENDIF
       ENDIF
 
@@ -3367,7 +3308,7 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
 #ifdef ADCNETCDF
             CASE(3,5) ! netcdf
                IF (myProc.eq.0) THEN
-                  CALL writeOutArrayNetCDF3D(46, TimeLoc, it,
+                  CALL writeOutArrayNetCDF(46, TimeLoc, it,
      &               Q20Descript,LDescript,EVDescript)
                ENDIF
 #endif
@@ -3587,7 +3528,11 @@ C-----------------------------------------------------------------------
       USE GLOBAL
       USE GLOBAL_IO, ONLY : collectFullDomainArray, HEADER_MAX,
      &                      open_minmax_file
+#ifdef ADCNETCDF
+      USE NetCDFIO, ONLY :  writeOutArrayNetCDF
+#endif
       IMPLICIT NONE
+
 C     args
       INTEGER, intent(in) :: lun ! logical unit number of file to write to
       REAL(8), intent(in) :: TimeLoc ! seconds since cold start
@@ -3606,7 +3551,7 @@ C     collect up the data from subdomains if running in parallel
 C     write data in ascii text only (other output formats are not supported)
       SELECT CASE (ABS(descript % specifier))
 
-      CASE(1) !ascii text
+      CASE(0,1,2,4) !ascii text
          CALL OPEN_MINMAX_FILE(lun, TRIM(GLOBALDIR)//'/'
      &           // descript%file_name, NP_G, NP, HEADER_MAX)
          IF ((MNPROC.gt.1).and.(MyProc.eq.0).and.
@@ -3655,10 +3600,15 @@ C     write data in ascii text only (other output formats are not supported)
                ENDDO
             ENDIF
          ENDIF
-C#ifdef ADCNETCDF
-C      CASE(3,5) ! netcdf3 and netcdf4 formatting (classic data model)
-C        CALL writeMinMaxNetCDF(lun, timeloc, it, descript)
-C#endif
+#ifdef ADCNETCDF
+      CASE(3,5) !netcdf (portable)
+         IF (MYPROC.EQ.0) THEN
+             CALL writeOutArrayNetCDF(lun, TimeLoc, it, descript)
+         ENDIF
+#else
+         WRITE(ScreenUnit,*) 'ERROR: NetCDF is not available.'
+         WRITE(16,*) 'ERROR: NetCDF is not available.'
+#endif
       CASE DEFAULT
          WRITE(ScreenUnit,*) 'ERROR: Invalid output specifier.'
       END SELECT
@@ -3690,8 +3640,7 @@ C-----------------------------------------------------------------------
       USE MESSENGER
 #endif
 #ifdef ADCNETCDF
-       USE NETCDFIO, ONLY : initNetCDFHotstart, allocateNetCDFHotstart,
-     &                      allocateNetCDFHotstartHarmonic,
+       USE NETCDFIO, ONLY : initNetCDFHotstart,
      &                      writeNetCDFHotstart,
      &                      initNetCDFHotstartHarmonic,
      &                      initNetCDFHotstartHarmonicMeansVariances,
@@ -3929,6 +3878,8 @@ C
 #ifdef ADCNETCDF
          IF ((NHSTAR.eq.3).or.(NHSTAR.eq.367).or.(NHSTAR.eq.368).or.
      &       (NHSTAR.eq.5).or.(NHSTAR.eq.567).or.(NHSTAR.eq.568)) THEN
+            ! jgf49.41: In parallel, we don't need to create the hotstart file, it was
+            ! created by adcprep.
             IF (MNPROC.eq.1) THEN  ! serial
 C              jgf49.35 TODO: Allocate arrays to write 3D data
                CALL initNetCDFHotstart(hss%lun, Elev1Descript,
@@ -3977,19 +3928,6 @@ C              jgf49.35 TODO: Allocate arrays to write 3D data
      &                     XVELVADescript, YVELVADescript, ncerror)
                         IF ( ncerror.eqv..true. ) CALL ADCIRC_Terminate()
                      ENDIF
-                  ENDIF
-               ENDIF
-            ELSE ! parallel
-               ! jgf49.41: We don't need to create the hotstart file, it was
-               ! created by adcprep. All we need to do is allocate memory for
-               ! the netcdf arrays that will be written to the netcdf file.
-               IF (myProc.eq.0) THEN
-                  CALL allocateNetCDFHotstart(67)
-                  CALL allocateNetCDFHotstart(68)
-                  IF (IHARIND.eq.1) THEN
-                     ! jgf49.43.14: this includes means and variance allocation
-                     CALL allocateNetCDFHotstartHarmonic(67)
-                     CALL allocateNetCDFHotstartHarmonic(68)
                   ENDIF
                ENDIF
             ENDIF

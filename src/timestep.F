@@ -2117,6 +2117,8 @@ CWET...
                      DELDIST=SQRT((y(NM3)-y(NM123))**2.D0
      &                    +(X(NM3)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM3)
+                     ! jgf50.60.18: Prevent numerical problems if DELETA is negative
+                     IF (DELETA.lt.0.d0) DELETA = 0.d0
                      H1=ETA2(NM123)+DP(NM123)
 c. RJW merged from Casey 071219: Added the following logic for 3D friction.
 c. RJW modified the following for 3D friction
@@ -2218,6 +2220,8 @@ C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                      DELDIST=SQRT((Y(NM1)-Y(NM123))**2.D0
      &                    +(X(NM1)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM1)
+                     ! jgf50.60.18: Prevent numerical problems if DELETA is negative
+                     IF (DELETA.lt.0.d0) DELETA = 0.d0
                      H1=ETA2(NM123)+DP(NM123)
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction.
                      IF(C2DDI)THEN
@@ -2316,6 +2320,8 @@ C!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                      DELDIST=SQRT((Y(NM2)-Y(NM123))**2.D0
      &                     +(X(NM2)-X(NM123))**2.D0)
                      DELETA=ETA2(NM123)-ETA2(NM2)
+                     ! jgf50.60.18: Prevent numerical problems if DELETA is negative
+                     IF (DELETA.lt.0.d0) DELETA = 0.d0
                      H1=ETA2(NM123)+DP(NM123)
 c. RJW merged 08/26/2008 Casey 071219: Added the following logic for 3D friction.
                      IF(C2DDI)THEN
@@ -3131,8 +3137,8 @@ C             everything is up-to-date.
 #endif
       ENDIF
 
-C...  CHECK IF THE LOCAL GRADIENT FOR ELEMENTS IS EXCEEDED AND TRIGGER THE
-C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY - ZC (original routine by Crystal Fulcher)
+Cobell  CHECK IF THE LOCAL GRADIENT FOR ELEMENTS IS EXCEEDED AND TRIGGER THE
+C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
       IF (LoadEleSlopeLim) THEN
          DO IE=1,NE
             NM1=NM(IE,1)
@@ -4463,15 +4469,6 @@ C...  JCG ITERATIVE MATRIX SOLVER
          END DO
       ENDIF
 
-C     UPDATE ELEVATIONS
-
-#ifdef CMPI
-C      CALL UPDATER(ETA2,DUMY1,DUMY2,1) !...ZC - Commented out, we don't
-C                                       !        need to update ETA2
-C                                       !        twice, do it only after
-C                                       !        slope limiter routine
-#endif
-
 C       ELEMENTAL SLOPE LIMITER
 C
 C        CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
@@ -4498,19 +4495,13 @@ C
             elevSum(NM3)=elevSum(NM3)+AreaEle*EtaN123
          ENDDO
 
+Cobell   CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
+C        TIME STEP AND APPLY SMOOTHING IF DESIRED. THIS ROUTINE PARALLELS THE
+C        ABOVE ROUTINE. 
          WHERE ((elemental_slope_limiter_active.eqv..true.).and.
-     &      (TotalArea.ne.0.d0))
-            Eta2 = elevSum / TotalArea
+     &         (TotalArea.ne.0.d0))
+               Eta2 = elevSum / TotalArea
          END WHERE
-
-C - ZC - Commented out below, update elevations only once after slope limiter
-C        is applied
-C     if elemental slope limiter is active in parallel, call updater
-C#ifdef CMPI
-C         ! update boundaries with smoothed and/or slope limited elevations
-C         CALL UPDATER(ETA2,DUMY1,DUMY2,1)
-C#endif
-C
       ENDIF
 
 #ifdef CMPI

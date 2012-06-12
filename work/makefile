@@ -431,10 +431,10 @@ else
    adccmp:  $(O_DIR)
 
 ifeq ($(NETCDF),enable)
-   adcprep ::  $(NC_MOBJ) $(METIS_OBJ) $(KDTREE_MOBJ) $(PREP_OBJ) 
+   adcprep ::  $(NC_MOBJ) $(METIS_OBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) 
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 else
-   adcprep ::  $(METIS_OBJ) $(KDTREE_MOBJ) $(PREP_OBJ) 
+   adcprep ::  $(METIS_OBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) 
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 endif
 ifeq ($(NETCDF),enable)
@@ -474,7 +474,7 @@ else
 endif
    padcswan :: $(O_DIR)
    padcswan ::  $(NA_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
-	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS)
+	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS) 
 
    p15     ::  $(P15_OBJ) 
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)
@@ -515,7 +515,7 @@ clean:
 	rm -f odir*/*.o  odir*/*.mod sizes.o
 clobber:
 	rm -r -f odir* 
-	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 \
+	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 aswip \
            build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp
 help:
 	@echo "This makefile supports the following:"
@@ -561,7 +561,7 @@ cvstag:
 #  adcprep modules
 
 $(O_DIR)version.o     :  version.F
-$(O_DIR)presize.o     :  presize.F
+$(O_DIR)presizes.o     :  presizes.F $(ADC_MOBJ) $(WIND_MOBJ)
 $(O_DIR)kdtree2.o     :  kdtree2.F $(O_DIR)sizes.o
 $(O_DIR)pre_global.o  :  pre_global.F  $(KDTREE_MOBJ) $(PREP_MOBJ) $(O_DIR)version.o
 #  adcprep
@@ -626,7 +626,7 @@ $(O_DIR)hstart.o      : hstart.F
 $(O_DIR)timestep.o    : timestep.F
 $(O_DIR)write_output.o: write_output.F  
 ifeq ($(NETCDF),enable)
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(NC_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ)
 else
 $(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ)
 endif

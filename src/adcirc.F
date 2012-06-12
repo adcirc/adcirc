@@ -153,8 +153,13 @@ C...  Special instructions for writer processors
       call openLogFile()     ! jgf50.65: open subdomain log files (fort.16)
       CALL WRITER_INIT()     ! Initialize WRITER module
       CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
-      if(((mnwproh > 0).or.(mnwproc > 0)) .and. MYPROC >= MNPROC) return
-
+      if(((mnwproh > 0).or.(mnwproc > 0)) .and. MYPROC >= MNPROC) then
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()     
+         return
+      endif
 !      CALL WRITER_INIT()     ! Initialize WRITER module
 !      CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
 ! tcm v49.52.01 moved make_dirname up a level

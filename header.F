@@ -2,6 +2,122 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.74   - 06/11/2012 - jgf - Merged f90_netcdf branch revisions 764:806 
+C             and resolved conflicts. Fixed two previously undetected 
+C             minor issues: (a) SL1 and SF1 arrays were not populated in 
+C             read_global.F for ICS=1, but they are required for netcdf; and
+C             (b) subdomain to fulldomain station mappings were using wrong
+C             dimensions during decomposition of harmonic means and variances
+C             when hotstarting from a netcdf hotstart file. 
+C     v50.60.21  05/24/2012 - jgf - Fixed a floating point exception when
+C                writing 3D velocity stations in parallel. 
+C     v50.60.20  05/24/2012 - jgf - Fixed two issues with the new metControl
+C                and SWANOutputControl namelists so that (a) they are not 
+C                required in the fort.15, and (b) so that the metControl 
+C                namelist is written with the draglawstring properly enclosed 
+C                in single quotes by adcprep upon write to subdomain fort.15s 
+C                so that padcirc can read it successfully.  
+C     v50.60.19  05/22/2012 - casey - Corrected a bug with the output of the
+C                SWAN max files.
+C     v50.60.18  05/22/2012 - jgf - Fixed dependence of presizes.F on wind
+C                module; made changes to support gfortran without underscoring;
+C                fixed issue with 3D bottom roughness lengths, where Z0B
+C                was declared in both nodalattr.F and global_3dvs.F, resulting
+C                in Z0B being used uninitialized in the apply3DBottomFriction()
+C                subroutine; fixed numerical issue in wetting and drying 
+C                due to DELETA sometimes being negative; fixed issue so that
+C                maxrs.63 file is still produced, even without compiling in
+C                SWAN coupling (purely to match past behavior); replaced some
+C                stray f77-style subroutines in netcdf module; fixed
+C                numerical issue with translation speed calculation in 
+C                symmetric vortex (NWS8) subroutine.
+C     v50.60.17  05/17/2012 - corbitt - Fixed the vector max netcdf output so
+C                it was outputing scalar magnitudes instead of vectors.
+C     v50.60.16  05/17/2012 - jgf - Added tracing to writer.F and 
+C                couple2swan.F; removed references to netcdff library from
+C                makefile in favor of adding -lnetcdff to FLIBS in
+C                cmplrflags.mk for platforms that require it; fixed 
+C                array out-of-bounds in netcdf_error array by increasing
+C                array length to 14. 
+C     v50.60.15  05/17/2012 - corbitt - Added netcdf output for maxele.63,
+C                maxvel.63, minpr.63, maxrs.63, maxwvel.63. Format is dependent
+C                on NOUTGE, NOUTGV, NOUTGW, so max files will be formatted same
+C                as fort.63,64,73,and 74. If NOUTGE, NOUTGV, NOUTGW are set
+C                to 0, standard ascii is output. Population of maxes from
+C                hotstarts are still dependent on ascii format. In addition, 
+C                made the 2D baroclinic and swan netcdf output CF compliant.
+C                Also preliminary set up netcdf max files for swan output.
+C     v50.60.14  05/15/2012 - jgf - Fixed typo that was causing array 
+C                out-of-bounds when writing fort.45 in netcdf format.
+C     v50.60.13  05/15/2012 - jgf - Moved metControl namelist for specification
+C                of air density, drag law, and wind drag limit to end of 
+C                fort.15, instead of reconstructing the NWS line; this 
+C                brings this data structure into line with the 
+C                TimeBathyControl and SWANOutputControl namelists. Also fixed
+C                an issue in checking NWS values that was rejecting negative
+C                values of NWS. 
+C     v50.60.12  05/14/2012 - jgf - Fixed issue with compiler flags on 
+C                blueridge at RENCI to use the path to netcdf4.1 (required
+C                when using NETCDF4=enable).  
+C     v50.60.11  05/14/2012 - jgf - Fixed issue in makefile to resolve
+C                reference to global.F in presizes.F.
+C     v50.60.10  05/14/2012 - jgf - Added code to prep.F to calculate and
+C                save sigma coordinates to 3D netcdf file; moved FEGRIDS
+C                subroutine from vsmy.F to global_3dvs.F so that it could
+C                be used by adcprep; added an IF statement in couple2swan.F
+C                so that only processor 0 would make the subroutine calls
+C                to initialize the SWAN-related netcdf output files; also
+C                changed SWAN_VOQR(IVTYPE+1) to SWAN_VOQR(IVTYPE)+1 in
+C                couple2swan.F to remedy an array-out-of-bounds issue
+C                (this appeared to be a typo). 
+C     v50.60.09  05/12/2012 - jgf - Added autocompression for netcdf4 
+C                formatted SWAN output files; fixed issue that was causing
+C                station coordinates to be reported in CPP rather than 
+C                geographic projection in netcdf output files; added optional
+C                namelist to bottom of fort.15 for reading zc's logical
+C                variables for turning SWAN output on and off; fixed an 
+C                issue in adcprep that was trying to open the SWAN command 
+C                file twice if the SWAN command file was named fort.26;
+C                removed assumptions in symmetric vortex model (nws=8) about
+C                northern and western hemispheres so it can now simulate
+C                storms in eastern and southern hemispheres; fixed file
+C                reading issue in symmetric vortex model where it was 
+C                trying to read subdomain fort.22 files; removed stop
+C                keyword from symmetric vortex subroutine that could
+C                cause problems in parallel operation.
+C     v50.60.08  05/10/2012 - zc - Added netcdf output to SWAN output files
+C                and rads.64. The swan output files are now turned on and off
+C                using logicals in the global.F file. Output files are set
+C                to the defaults that were previously hardwired.
+C     v50.60.07  05/06/2012 - jgf - Corrected issue with writing 3D fulldomain
+C                velocity files in netcdf in serial; added storage of sigma
+C                array to 3D netcdf files.  
+C     v50.60.06  05/05/2012 - jgf - Fixed issues in netcdfio.F related to 
+C                setting vertical dimension when initializing and writing 3D 
+C                station and 3D fulldomain output files in netcdf format. 
+C     v50.60.05  05/04/2012 - jgf - Simplified structure of netcdfio.F 
+C                to reduce complexity and take advantage of commonalities
+C                in the i/o of the various station and full domain files.
+C                Tested netcdf output in serial and in parallel, including 
+C                serial and parallel hotstarting with netcdf hotstart files
+C                on 2D quarter annulus case. All smoke tests pass at this
+C                point; a few more tests are required. 
+C     v50.60.04  05/03/2012 - jgf - Eliminated memory allocation and copying of
+C                3D data and 3D hotstart data in netcdfio.F that is no longer
+C                required when using f90-style subroutine calls. Added code
+C                that pulls 3D data from netcdf hotstart files directly into
+C                adcirc variables in serial and in parallel. This code 
+C                compiles; next step is testing.  
+C     v50.60.03  05/02/2012 - jgf - Fixed an incomplete implementation of 
+C                hotstarting in parallel with netcdf that was uncovered 
+C                in testing previously committed changes. Applied logging
+C                fix from trunk (v50.65). 
+C     v50.60.02  05/01/2012 - jgf - Migration of adcirc netcdfio module 
+C                to f90-style subroutine calls is complete. It now compiles too.
+C                The next step is to make corresponding changes to 
+C                write_output.F.
+C     v50.60.01  04/29/2012 - jgf - Halfway through changing the subroutine
+C                calls in netcdfio.F to f90-style. This is a work in progress.
 C  v50.73   - 05/08/2012 - tcm - Removed use of reserved work (scale) from the
 C             file diffmerge.F.
 C  v50.72   - 05/07/2012 - tcm - Incorporated time varying bathymetry changes

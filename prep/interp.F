@@ -81,7 +81,7 @@ C
       INTEGER ISTAT
       REAL*8 WTIMED,RAD2DEG,PI,DEG2RAD
 C      DIMENSION X(*),Y(*),SLAM(*),SFEA(*),WVNX(*),WVNY(*) !jgf46.00 comm. out
-      DIMENSION WVNX(*),WVNY(*) 
+      DIMENSION WVNX(*),WVNY(*)
 C RAWMET
       REAL(SZ),ALLOCATABLE :: WVXFN(:,:),WVYFN(:,:),PRN(:,:)
 C     jgf46.00 Explicitly declared the following variables
@@ -119,7 +119,7 @@ C     jgf46.00 Explicitly declared the following variables
       REAL(8) WVNX
       REAL(8) WVNY
       INTRINSIC :: SIN, COS
-C      
+C
       PI=3.141592653589793D0
       RAD2DEG = 180.D0/PI
       DEG2RAD = PI/180.D0
@@ -246,7 +246,7 @@ C     WVNX(NHG)=WVNX(NHG)*1.04d0*0.5144d0  !CONVERT 30-MIN WINDS IN
 C     WVNY(NHG)=WVNY(NHG)*1.04d0*0.5144d0  !KNOTS TO 10-MIN WIND IN M/S
 C     jgf46.02 Added the following two lines.
       WVNX(NHG)=WVNX(NHG)*0.5144d0         !CONVERT KNOTS TO M/S
-      WVNY(NHG)=WVNY(NHG)*0.5144d0 
+      WVNY(NHG)=WVNY(NHG)*0.5144d0
       PRN(NHG)=100.d0*PRN(NHG)/RHOWATG   !CONVERT MILLIBARS TO M OF WATER
       READ(22,'(A80)',END=9999) PBLJAGF
 C
@@ -285,7 +285,7 @@ C                           R.L. 4/18/96                               *
 C***********************************************************************
 
       SUBROUTINE NWS10GET(NWSGGWI,FLON,FLAT,ULL,VLL,PLL,NP,RHOWAT,G,
-     &                    LONB,LATB,GLOBAL,FOUND)
+     &                    LONB,LATB,GBL,FOUND)
       USE PRESIZES
 C
       IMPLICIT NONE
@@ -301,7 +301,7 @@ C      DIMENSION ULL(*),VLL(*),PLL(*) !jgf46.00 comm. out
 C
 Cvjp Return the Filename of the Global Wind Stress file
 C
-      CHARACTER*8 GLOBAL
+      CHARACTER*8 GBL
       EQUIVALENCE (FNAME1,FNAME2)
 C
 Cvjp  Modified Logic to return if file not found
@@ -345,7 +345,7 @@ C     jgf46.00 Explicitly declared the following variables:
       REAL(SZ) V2
       REAL(SZ) V3
       REAL(SZ) V4
-      REAL(SZ) RHOWATG 
+      REAL(SZ) RHOWATG
 C
       RHOWATG=RHOWAT*G !jgf46.00 this implicitly declared and not initialized??
 C
@@ -398,15 +398,15 @@ C...Enter, locate and open the GRIB format data file
 
       INQUIRE(FILE=FNAME1,EXIST=FOUND)
       IF(FOUND) GOTO 32
-      GLOBAL(1:8) = FNAME1
+      GBL(1:8) = FNAME1
 C
-C--if file not found return logical FOUND to caller 
+C--if file not found return logical FOUND to caller
 C
-      GLOBAL(1:8) = FNAME1
+      GBL(1:8) = FNAME1
       RETURN
 C
   32  WRITE(*,1011) FNAME1
-      GLOBAL(1:8) = FNAME1
+      GBL(1:8) = FNAME1
       OPEN(IEXT,FILE=FNAME1,status='old',access='sequential',
      &     form='unformatted',iostat=kerr)
 
@@ -496,7 +496,7 @@ C     jgf46.00 Explicitly declare the following variables.
       INTEGER LGGHAF
       INTEGER K
       INTEGER ITER
-C      
+C
       EPS=1.E-6
 C     EPS=1.E-12
 C     PRINT 101
@@ -775,7 +775,7 @@ C                           R.L. 1/11/97                               *
 C***********************************************************************
 
       SUBROUTINE NWS11GET(NWSEGWI,IDSETFLG,FLON,FLAT,ULL,VLL,PLL,NP,
-     &   NWLON,NWLAT,RHOWAT,G,GLOBAL,FOUND)
+     &   NWLON,NWLAT,RHOWAT,G,GBL,FOUND)
       USE PRESIZES
 C
       IMPLICIT NONE
@@ -786,7 +786,7 @@ C
 C      DIMENSION FLAT(*),FLON(*)      !jgf46.00 commented out
 C      DIMENSION ULL(*),VLL(*),PLL(*) !jgf46.00 commented out
       CHARACTER*1 FNAME2(8)
-      CHARACTER*8 FNAME1,GLOBAL
+      CHARACTER*8 FNAME1,GBL
       EQUIVALENCE (FNAME1,FNAME2)
       LOGICAL FOUND
 C     jgf46.00 Explicitly declared the following variables.
@@ -880,11 +880,11 @@ C...If appropriate, enter, locate and open the met data file
 C
 C--if not found return logical FOUND to caller
 C
-      GLOBAL(1:8) = FNAME1
+      GBL(1:8) = FNAME1
       RETURN
 c
   32  CONTINUE
-      GLOBAL(1:8) = FNAME1
+      GBL(1:8) = FNAME1
       IF ((NWSEGWI.EQ.0).OR.(IDSETFLG.EQ.1)) THEN
         WRITE(*,1011) FNAME1
         OPEN(IEXT,FILE=FNAME1,status='old',access='sequential',
@@ -1057,7 +1057,7 @@ c     compute the coordinates of the closest Eta29 grid node
       call e29calc(i,j,lamda,phi,n)
 
 c     compute the coordinates of neighbor node "a" (located SW of closest node)
-        
+
       if((i.eq.1).and.(mod(j,2).eq.0)) then
         ia=i
         ja=j-2
@@ -1412,8 +1412,8 @@ C***********************************************************************
      &       rdphi,a,rlamar,phiarg,rlamda,dgtora
       real(8) lamda,phi
 C     jgf46.00 Explicitly declared the following variables
-      integer nwlon, nwlat, jm2, im2, j, i1, i, i2, n, i1p1, i1m1, j1 
-      real(sz) phii, dlon, dlat, dlnt, arg, betau1 
+      integer nwlon, nwlat, jm2, im2, j, i1, i, i2, n, i1p1, i1m1, j1
+      real(sz) phii, dlon, dlat, dlnt, arg, betau1
       intrinsic :: mod, sin, cos, sqrt, asin
 
       nwlon=181
@@ -1476,7 +1476,7 @@ C     jgf46.00 Explicitly declared the following variables
       integer i1, i1p1, i1m1, n, i2, i2p1, i2m1, j2, i3, i3p1
       integer i3m1, j3, j1
       real(sz) dgtora, dlon, dlat, dlnt, arg, betau1, betau2, betau3
-      real(sz) betau, dd1, dd2, dd3 
+      real(sz) betau, dd1, dd2, dd3
       intrinsic :: asin
 
 

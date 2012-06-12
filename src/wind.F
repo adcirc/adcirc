@@ -10,7 +10,8 @@ C
      &    screen, logMessage, unsetMessageSource, DEBUG, ECHO, INFO,
      &    WARNING, ERROR, scratchMessage,
      &    Rearth, pi, deg2rad, rad2deg, e, PRBCKGRND, g, rhoWat0,
-     &    sphericalDistance, rhoAir, one2ten, windReduction
+     &    sphericalDistance, rhoAir, one2ten, windReduction,
+     &    openFileForRead
 #ifdef CMPI
       use messenger, only : msg_fini
 #endif
@@ -2291,6 +2292,7 @@ C
       SUBROUTINE GetHollandStormData(LatOut,LonOut,CPressOut,SpdOut,
      &     RRPOut,RMWOut,TVXOut,TVYOut,TIMELOC,NScreen,ScreenUnit)
       USE SIZES, ONLY : MyProc, GBLINPUTDIR
+      USE VORTEX, ONLY : uvtrans
       IMPLICIT NONE
       REAL(SZ),intent(in) :: TIMELOC
       INTEGER,intent(in) :: nscreen, screenunit
@@ -2299,6 +2301,7 @@ C
 C
       INTEGER, ALLOCATABLE, SAVE :: iYear(:),iMth(:),iDay(:),iHr(:)
       INTEGER, ALLOCATABLE, SAVE :: iLat(:),iLon(:)
+      CHARACTER(1), ALLOCATABLE, SAVE :: ns(:), ew(:)
       INTEGER, ALLOCATABLE, SAVE :: iSpd(:),iCPress(:),iRRP(:),iRMW(:)
       REAL(SZ), ALLOCATABLE, SAVE :: Lat(:),Lon(:),Spd(:)
       REAL(SZ), ALLOCATABLE, SAVE :: CPress(:),RRP(:),RMW(:)
@@ -2313,14 +2316,8 @@ C
       INTEGER,SAVE :: i  ! Current array counter for fort.22 file
       INTEGER,SAVE :: nl ! Number of lines in the fort.22 file
       INTEGER,SAVE :: pl ! populated length of Holland Data array
-      REAL(8), PARAMETER :: re=6378206.4d0
-      REAL(8) :: pi
-      REAL(8) :: mperdeg,DEG2RAD
-
-      pi = 4.0d0 * atan(1.0d0)
-      mperdeg  = re * pi / 180.0d0
-      DEG2RAD = pi / 180.0d0
-
+      INTEGER :: j ! loop counter
+      INTEGER :: ios ! return code for an i/o operation
 C     ------------------------------------------------------
 C     BEGIN Code executed upon first call to this subroutine
 C     ------------------------------------------------------
@@ -2328,27 +2325,34 @@ C     ------------------------------------------------------
 C
 C     Determine the number of lines in the file.
          nl=0
-         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+         call openFileForRead(22,TRIM(GBLINPUTDIR)//'/'//'fort.22',ios)
+         if ( ios.gt.0 ) then
+            call allMessage(ERROR,
+     &       "The symmetric vortex parameter file was not found. "
+     &       //"ADCIRC terminating.")
+            call windTerminate()
+         endif
+
          DO
             READ(UNIT=22,FMT='(A170)',END=8888)
             nl=nl+1
          ENDDO
- 8888    CLOSE(22)
+ 8888    REWIND(22)
 C
 C     Dimension the arrays according to the number of lines in the file,
 C     this will be greater than or equal to the size of the array we need
 C     (probably greater because of the repeated lines that we throw away)
          ALLOCATE(iYear(nl),iMth(nl),iDay(nl),iHr(nl),iLat(nl),iLon(nl),
      &        iSpd(nl),iCpress(nl),iRRP(nl),iRMW(nl),iFcstInc(nl))
+         ALLOCATE(ns(nl),ew(nl))
          ALLOCATE(Lat(nl),Lon(nl),Spd(nl),CPress(nl),RRP(nl),RMW(nl),
      &        FcstInc(nl),TVX(nl),TVY(nl))
          ALLOCATE(CastType(nl))
          ALLOCATE(CastTime(nl))
 C
-C     Now reopen the file and read the data into the arrays. The first
+C     Now read the data into the arrays. The first
 C     line must be a hindcast/nowcast.
          i=1
-         OPEN(22,FILE=TRIM(LOCALDIR)//'/'//'fort.22')
 C
          DO
 C     Get another line of data from the file and check to see if the
@@ -2359,13 +2363,19 @@ C     quadrant-by-quadrant wind data. Repeated time data occur in the
 C     forecast because the time data is just the time that the forecast
 C     was made. The important parameter in the forecast file is the
 C     forecast increment.
-            READ(UNIT=22,FMT=14,END=9999)
+            READ(UNIT=22,FMT=228,END=9999)
      &           iYear(i),iMth(i),iDay(i),iHr(i),
-     &           CastType(i),iFcstInc(i),iLat(i),iLon(i),iSpd(i),
-     &           iCPress(i),iRRP(i),iRMW(i)
+     &           CastType(i),iFcstInc(i),iLat(i),ns(i),iLon(i),ew(i),
+     &           iSpd(i),iCPress(i),iRRP(i),iRMW(i)
+
+C                yr,mo,dy,hr, ,type, inc,  lat,NS,  lon,EW,  spd,   pc,
+ 228        format(8x,i4,i2,i2,i2,6x,a4,2x,i3,1x,i4,a1,2x,i4,a1,2x,i3,2x,i4,
+     &     47x,i3,2x,i3)
+C              RRP,  RMW
+
 C
 C
-            SELECT CASE(CastType(i))
+            SELECT CASE(trim(CastType(i)))
 C           ------------
             CASE("BEST")     ! nowcast/hindcast
 C           ------------
@@ -2466,7 +2476,12 @@ C
 C     Convert units.
             Lat(i) = Lat(i) / 10.d0 ! convert 10ths of degs to degs
             Lon(i) = Lon(i) / 10.d0 ! convert 10ths of degs to degs
-            Lon(i) = -1.d0 * Lon(i) ! negative b/c WEST longitude
+            if ( ew(i).eq.'W' ) then
+               Lon(i) = -1.d0 * Lon(i) ! negative b/c WEST longitude
+            endif
+            if ( ns(i).eq.'S' ) then
+               Lat(i) = -1.d0 * Lat(i) ! negative b/c SOUTH latitude
+            endif
             CPress(i) = CPress(i) * 100.d0 ! convert mbar to Pa
             RRP(i) = RRP(i) * 1.852000003180799d0 * 1000.0d0 ! convert nm to m
             RMW(i) = RMW(i) * 1.852000003180799d0 ! convert nm to km
@@ -2500,28 +2515,24 @@ C
 C
 C     Calculate storm translation velocities based on change in position, then
 C     convert degrees/time to m/s
+         ! initialize storm translation speeds
+         TVX = 0.0
+         TVY = 0.0
          DO i=2, pl
-C RJW  05.08.2009
-C     use the formula haversine formula for distances along a sphere.
-C         dist(i)=re*(2*ASIN(sqrt(sin(DY(I)/2)**2+
-C     &  cos(lat*DEG2RAD)*cos(YCOOR(i)*DEG2RAD)*sin(DX(I)/2)**2) ) )
-
 C     Calculate storm translation velocities based on change in position,
-
-            TVX(i)=SIGN( (re*(2.0d0*ASIN(sqrt(cos(LAT(I)*DEG2RAD)
-     & * cos(LAT(I-1)*DEG2RAD)
-     & * sin((LON(I)*DEG2RAD-LON(I-1)*DEG2RAD)/2.0d0)**2.0d0) ) ) )
-     &              /(CastTime(i)-CastTime(i-1))
-     & ,(Lon(i)-Lon(i-1))  )  ! get correct sign
-c
-            TVY(i)=SIGN( (re*(2.0d0*ASIN(sqrt(
-     &  sin( (LAT(I)*DEG2RAD-LAT(I-1)*DEG2RAD)/2.0d0)**2.0d0))) )
-     &              /(CastTime(i)-CastTime(i-1))
-     & ,(Lat(i)-Lat(i-1))  )  ! get correct sign
-
+            ! approximate u and v translation velocities
+            call uvTrans(lat(i-1),lon(i-1),
+     &                    lat(i),lon(i),
+     &                    CastTime(i-1),CastTime(i),
+     &                    tvx(i),tvy(i))
+     
          ENDDO
-         TVX(1)=TVX(2)
-         TVY(1)=TVY(2)
+         ! extrapolate later storm translation speeds back to the
+         ! first storm position
+         IF ( pl.ge.2 ) THEN
+            TVX(1) = TVX(2)
+            TVY(1) = TVY(2)
+         ENDIF
 C
 C     Determine the correspondence between the current simulation time and
 C     the fort.22 file.
@@ -2532,21 +2543,15 @@ C     the fort.22 file.
             ELSE
                i=i+1
                IF (i.gt.pl) THEN
-                  WRITE(16,1000) ! unit 22 Holland Storm File
-                  WRITE(16,1051)
-                  WRITE(16,1061)
- 1051             FORMAT('Does not contain times/dates that correspond')
- 1061             FORMAT('to the ADCIRC current model time.')
-                  IF (NScreen.ne.0.and.MyProc.eq.0) THEN
-                     WRITE(ScreenUnit,1000) ! unit 22 Holland Storm File
-                     WRITE(ScreenUnit,1051)
-                     WRITE(ScreenUnit,1061)
-                  ENDIF
-                  STOP
+                  call allMessage(ERROR,
+     &             "The Storm Hindcast/Forecast Input File (unit 22) "
+     &             //"does not contain times/dates that correspond "
+     &             //"to the ADCIRC current model time. "
+     &             //" ADCIRC terminating.")
+                  call windTerminate()
                ENDIF
             ENDIF
          ENDDO
-C
          FIRSTCALL = .False.
       ENDIF
 C     ----------------------------------------------------------

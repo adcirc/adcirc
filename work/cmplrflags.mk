@@ -108,7 +108,8 @@ ifeq ($(compiler),intel)
      ifeq ($(MACHINENAME),blueridge)
         FLIBS       := $(FLIBS) -L$(HDF5HOME) -lhdf5  
 #        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.1-gcc4.1-ifort
-        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.0.1-icc-ifort
+        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.2-gcc4.1-ifort
+        FLIBS          := $(FLIBS) -lnetcdff
      else
         FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
      endif
@@ -128,7 +129,7 @@ ifeq ($(compiler),intel-ND)
   PPFC            :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O3 -FI -assume byterecl -132 -i-dynamic -assume buffered_io -xSSE4.2
+  FFLAGS1       :=  $(INCDIRS) -w -O3 -FI -assume byterecl -132 -i-dynamic -assume buffered_io
   ifeq ($(DEBUG),full)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug -check all -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
@@ -144,11 +145,15 @@ ifeq ($(compiler),intel-ND)
   CC            := icc
   CCBE          := $(CC)
   CFLAGS        := $(INCDIRS) -O3 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+  FLIBS          :=
   ifeq ($(DEBUG),full)
      CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
   endif
+  ifeq ($(NETCDF),enable)
+     HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
+     FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
+  endif   
   CLIBS         :=
-  FLIBS          :=
   MSGLIBS       :=
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
@@ -156,7 +161,7 @@ ifeq ($(compiler),intel-ND)
   else
      MULTIPLE := TRUE
   endif
-  #NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/scilib/netcdf/4.1.2/intel-12.0/inst
+  NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/scilib/netcdf/4.1.2/intel-12.0/inst
 endif
 #
 # sb46.50.02 These flags work on the UT Austin Lonstar cluster.
@@ -544,11 +549,14 @@ ifeq ($(compiler),gnu)
   PFC		:=  mpif90
   FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132
   ifeq ($(DEBUG),full)
-     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DWRITER_DEBUG
       # g95 environment variables to set for enhanced debugging:
       # G95_UNBUFFERED_ALL, G95_ABORT, G95_FPU_DENORMAL, G95_FPU_INVALID,
       # G95_FPU_ZERODIV, G95_FPU_OVERFLOW, G95_FPU_UNDERFLOW,
       # G95_FPU_EXCEPTIONS
+  endif
+  ifeq ($(DEBUG),netcdf)
+     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DNETCDF_TRACE -DFLUSH_MESSAGES -DFULL_STACK
   endif
   ifeq ($(DEBUG),valgrind)
      FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 
@@ -594,9 +602,15 @@ ifeq ($(compiler),gfortran)
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none -fno-underscoring
+  FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none 
   ifeq ($(DEBUG),full)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fno-underscoring -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,underflow,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,underflow,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
+  ifeq ($(DEBUG),full-not-fpe)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
+  ifneq ($(MACHINENAME),jason-desktop)
+     FFLAGS1 := $(FFLAGS1) -fno-underscoring
   endif
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
@@ -605,6 +619,13 @@ ifeq ($(compiler),gfortran)
   DPRE		:=  -DREAL8 -DLINUX
   ifeq ($(SWAN),enable)
      DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
+  endif
+  FLIBS         :=
+  ifeq ($(NETCDF),enable)
+     ifeq ($(MACHINENAME),jason-desktop)
+        NETCDFHOME := /usr
+     endif
+     FLIBS      := -lnetcdff # must specify this on the cmd line for some reason for gfortran
   endif
   IMODS 	:=  -I
   CC		:= gcc

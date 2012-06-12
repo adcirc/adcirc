@@ -57,7 +57,10 @@ C---------------------end of data declarations--------------------------------C
 
       CONTAINS
 
-
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   M A K E _ D I R N A M E
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE MAKE_DIRNAME()
       IMPLICIT NONE
       INTEGER :: LNAME, IARGC, ARGCOUNT, I, iprefix
@@ -227,8 +230,16 @@ C     jgf49.17.01 Summarize and log results.
          endif
       endif
       RETURN
+C-----------------------------------------------------------------------
       END SUBROUTINE MAKE_DIRNAME
+C-----------------------------------------------------------------------
 
+
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E   G E T _ N U M  W R I T E R S
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       SUBROUTINE GET_NUMWRITERS
       IMPLICIT NONE
       INTEGER :: IARGC, ARGCOUNT, I
@@ -238,38 +249,45 @@ C     jgf49.17.01 Summarize and log results.
       isplit = 0 !st3 100708:split file
 
       if (ARGCOUNT > 0) then
-        i = 0
-        do while (i < ARGCOUNT)
-          i = i + 1
-          call getarg(i, CMDLINEARG)
-          if (cmdlinearg(1:2) == "-W") then
-            if( cmdlinearg(1:3) == "-Ws" ) then  !st3 100708: split file
-               isplit = 1                        !st3 100708: split file
-            endif                                !st3 100708: split file
+         i = 0
+         do while (i < ARGCOUNT)
             i = i + 1
-            call getarg(i,cmdlinearg)
-            read(cmdlinearg,*) MNWPROC
-          endif
-        end do
+            call getarg(i, CMDLINEARG)
+            if (cmdlinearg(1:2) == "-W") then
+               if( cmdlinearg(1:3) == "-Ws" ) then  !st3 100708: split file
+                  isplit = 1                        !st3 100708: split file
+               endif                                !st3 100708: split file
+               i = i + 1
+               call getarg(i,cmdlinearg)
+               read(cmdlinearg,*) MNWPROC
+            endif
+         end do
       end if
 !
       MNWPROH = 0  !st3 100711 for hsfile
       if (ARGCOUNT > 0) then
-        i = 0
-        do while (i < ARGCOUNT)
-          i = i + 1
-          call getarg(i, CMDLINEARG)
-          if (cmdlinearg(1:2) == "-H") then
+         i = 0
+         do while (i < ARGCOUNT)
             i = i + 1
-            call getarg(i,cmdlinearg)
-            read(cmdlinearg,*) MNWPROH
-          endif
-        end do
+            call getarg(i, CMDLINEARG)
+            if (cmdlinearg(1:2) == "-H") then
+               i = i + 1
+               call getarg(i,cmdlinearg)
+               read(cmdlinearg,*) MNWPROH
+            endif
+         end do
       end if
 
 C.....Default root working directory
 
       RETURN
+C-----------------------------------------------------------------------
       END SUBROUTINE GET_NUMWRITERS
+C-----------------------------------------------------------------------
 
+
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
       END MODULE SIZES
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
