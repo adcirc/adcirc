@@ -1365,17 +1365,20 @@ C             in time using the same logic as above.
                RSY = RampWRad*(RSNY1(I) + RStRatio*(RSNY2(I)-RSNY1(I)))
                WSX2(I) = WSX2(I) + RSX
                WSY2(I) = WSY2(I) + RSY
-#ifdef CSWAN
+!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+!#ifdef CSWAN
 Casey 090302: Added these lines for output to the rads.64 file.
-               RSNXOUT(I) = RSX
-               RSNYOUT(I) = RSY
+               IF(ABS(NRS).EQ.3) then
+                  RSNXOUT(I) = RSX
+                  RSNYOUT(I) = RSY
+               ENDIF
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
                WAVE_A(I) = WAVE_A1(I) + RSTRATIO*(WAVE_A2(I)-WAVE_A1(I))
                WAVE_H(I) = WAVE_H1(I) + RSTRATIO*(WAVE_H2(I)-WAVE_H1(I))
                WAVE_T(I) = WAVE_T1(I) + RSTRATIO*(WAVE_T2(I)-WAVE_T1(I))
 #endif
-#endif
+!#endif
             ENDDO
 #ifdef CSWAN
 #ifdef CSWANFRIC
@@ -1401,6 +1404,9 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                RSY = RampWRad*RSNY2(I)
                WSX2(I) = WSX2(I) + RSX
                WSY2(I) = WSY2(I) + RSY
+               !  tcm v50.75 added for use whenever nrs=3 or nrs=4
+               RSNXOUT(I) = RSX
+               RSNYOUT(I) = RSY
             END DO
          ENDIF !(NRS = 4)
 

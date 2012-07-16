@@ -162,10 +162,12 @@ c.
 
       REAL(SZ),ALLOCATABLE, TARGET ::  DP(:)  !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
 
-#ifdef CSWAN
+!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+!#ifdef CSWAN
 Casey 090302: Added the following arrays for output of radiation stress gradients.
       REAL(SZ),ALLOCATABLE, TARGET :: RSNXOUT(:), RSNYOUT(:)
-#endif
+!#endif
+
 #if defined CSWAN || defined ADCSWAN      
 Cobell 20120510: Added logicals for turning on/off swan output files   
       LOGICAL                      :: SWAN_OutputHS = .TRUE.
@@ -429,10 +431,11 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  NCChange !jgf45.06 flag indicating wetting / drying has occurred
       INTEGER  NDSETSE, NDSETSV, NDSETSW, NEle
       INTEGER  NHSINC, NHSTAR
-#ifdef CSWAN
+!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+!#ifdef CSWAN 
 Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER  IGRadS
-#endif
+!#endif
 
       INTEGER  NNBB, NNBB1, NNBB2
       INTEGER  NNBB1R, NNBB1L, NNBB2R, NNBB2L ! sb46.28.sb05.05 11/01/2006
@@ -1867,10 +1870,15 @@ C
          CICE2(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
          CICEOUT(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
       ENDIF
-#ifdef CSWAN
+!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4)) then
+!#ifdef CSWAN
 Casey 090302: Added the next line for output of radiation stress gradients.
-      ALLOCATE ( RSNXOUT(MNP),RSNYOUT(MNP) )
-#endif
+         ALLOCATE ( RSNXOUT(MNP),RSNYOUT(MNP) )
+         RSNXOUT(:) = 0.d0  !tcm v50.75 added initialization to zero
+         RSNYOUT(:) = 0.d0
+      ENDIF
+!#endif
       ALLOCATE ( PrMin(MNP)) ! v46.50 sb 11/11/2006
       PrMin(:) = 99999.d0
       ALLOCATE ( WVNOUTMax(MNP)) ! v46.50 sb 11/11/2006

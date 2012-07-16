@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.75   - 07/16/2012 - tcm - Implemented Casey's writing of rads.64 file
+C             whenever nrs = 3 or nrs = 4.  Removed the ifdef cswan and in
+C             most cases replaced with testing of nrs values.
 C  v50.74   - 06/11/2012 - jgf - Merged f90_netcdf branch revisions 764:806 
 C             and resolved conflicts. Fixed two previously undetected 
 C             minor issues: (a) SL1 and SF1 arrays were not populated in 

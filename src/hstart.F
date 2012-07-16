@@ -2296,8 +2296,8 @@ C          END IF
           DO I=1,NP
             WSX2(I) = WSX2(I)+RampWRad2*RSNX1(I)
             WSY2(I) = WSY2(I)+RampWRad2*RSNY1(I)
-            END DO
-          ENDIF
+          END DO
+        ENDIF
 
        if (CTIP) then
 Cjromo 11-01-00  Initialize TIP2 for HOTSTART
@@ -3243,56 +3243,59 @@ Casey 090310: Added the possibility for NOUTGW = -4.
           ENDIF
         ENDIF
 
-#ifdef CSWAN
+! tcm v50.75 removed ifdef cswan and added test for nrs=3 or 4
+        IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
+!#ifdef CSWAN
 Casey 090310: Added the output of radiation stress gradients.
-        IF(NOUTGW.LT.0)THEN
-          IGRadS=0
+           IF(NOUTGW.LT.0)THEN
+              IGRadS=0
+           ENDIF
+           IF(NOUTGW.EQ.-2)THEN
+              OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
+     &            ACCESS='DIRECT',RECL=NBYTE)
+              IF(NBYTE.EQ.4) THEN
+                 DO I=1,8
+                    WRITE(164,REC=IGRadS+I) RDES4(I)
+                 ENDDO
+                 IGRadS=IGRadS+8
+                 DO I=1,6
+                    WRITE(164,REC=IGRadS+I) RID4(I)
+                 ENDDO
+                 IGRadS=IGRadS+6
+                 DO I=1,6
+                    WRITE(164,REC=IGRadS+I) AID4(I)
+                 ENDDO
+                 IGRadS=IGRadS+6
+              ENDIF
+              IF(NBYTE.EQ.8) THEN
+                 DO I=1,4
+                    WRITE(164,REC=IGRadS+I) RDES8(I)
+                 ENDDO
+                 IGRadS=IGRadS+4
+                 DO I=1,3
+                    WRITE(164,REC=IGRadS+I) RID8(I)
+                 ENDDO
+                 IGRadS=IGRadS+3
+                 DO I=1,3
+                    WRITE(164,REC=IGRadS+I) AID8(I)
+                 ENDDO
+                 IGRadS=IGRadS+3
+              ENDIF
+              WRITE(164,REC=IGRadS+1) NDSETSW
+              WRITE(164,REC=IGRadS+2) NP
+              WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
+              WRITE(164,REC=IGRadS+4) NSPOOLGW
+              WRITE(164,REC=IGRadS+5) 2
+              IGRadS=IGRadS+5
+              CLOSE(164)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+           ENDIF
+           IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
+              CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
+     &            NP_G, NP, HEADER74)
+              IGRadS=2
+           ENDIF
         ENDIF
-        IF(NOUTGW.EQ.-2)THEN
-          OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
-     &          ACCESS='DIRECT',RECL=NBYTE)
-          IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-              WRITE(164,REC=IGRadS+I) RDES4(I)
-              ENDDO
-            IGRadS=IGRadS+8
-            DO I=1,6
-              WRITE(164,REC=IGRadS+I) RID4(I)
-              ENDDO
-            IGRadS=IGRadS+6
-            DO I=1,6
-              WRITE(164,REC=IGRadS+I) AID4(I)
-              ENDDO
-            IGRadS=IGRadS+6
-            ENDIF
-          IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-              WRITE(164,REC=IGRadS+I) RDES8(I)
-              ENDDO
-            IGRadS=IGRadS+4
-            DO I=1,3
-              WRITE(164,REC=IGRadS+I) RID8(I)
-              ENDDO
-            IGRadS=IGRadS+3
-            DO I=1,3
-              WRITE(164,REC=IGRadS+I) AID8(I)
-              ENDDO
-            IGRadS=IGRadS+3
-            ENDIF
-          WRITE(164,REC=IGRadS+1) NDSETSW
-          WRITE(164,REC=IGRadS+2) NP
-          WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
-          WRITE(164,REC=IGRadS+4) NSPOOLGW
-          WRITE(164,REC=IGRadS+5) 2
-          IGRadS=IGRadS+5
-          CLOSE(164)                    ! DO THIS TO FLUSH THE WRITE BUFFER
-        ENDIF
-        IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
-          CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
-     $      NP_G, NP, HEADER74)
-          IGRadS=2
-        ENDIF
-#endif
+!#endif
 
         IF(NOUTGW.EQ.2) THEN
           open(73,file=TRIM(LOCALDIR)//'/'//'fort.73',

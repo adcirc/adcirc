@@ -6328,6 +6328,11 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: PrMinDescript      ! minpr.63
       type(OutputDataDescript_t), SAVE :: WVMaxDescript      ! maxwvel.63
       type(OutputDataDescript_t), SAVE :: RSMaxDescript    
+
+!      tcm v50.75 moved RSDescript outside of the ifdef adcswan for use with 
+!      nrs = 3 or nrs= 4
+      type(OutputDataDescript_t), SAVE :: RSDescript
+
 #ifdef ADCSWAN
 Cobell 20120510: SWAN Output Data
       type(OutputDataDescript_t), SAVE :: SwanHSDescript
@@ -6337,7 +6342,7 @@ Cobell 20120510: SWAN Output Data
       type(OutputDataDescript_t), SAVE :: SwanWindDescript
       type(OutputDataDescript_t), SAVE :: SwanTM02Descript
       type(OutputDataDescript_t), SAVE :: SwanTMM10Descript
-      type(OutputDataDescript_t), SAVE :: RSDescript
+!      type(OutputDataDescript_t), SAVE :: RSDescript   ! tcm v50.75 moved
       type(OutputDataDescript_t), SAVE :: SwanHSMaxDescript
       type(OutputDataDescript_t), SAVE :: SwanDIRMaxDescript
       type(OutputDataDescript_t), SAVE :: SwanTM01MaxDescript
@@ -6557,8 +6562,8 @@ C     maxwvel.63
       RSMaxDescript % field_name           = "RSMax"
       RSMaxDescript % file_name            = "maxrs.63"         
 
-
-#ifdef ADCSWAN
+!  tcm v50.75 removed ifdef adcswan to allow for use whenever nrs=3 or nrs=4
+!#ifdef ADCSWAN
 Cobell 20120510: SWAN Output Data
 C........Radiation Stress Gradients
          RSDescript % specifier            = NOUTGW
@@ -6571,7 +6576,8 @@ C........Radiation Stress Gradients
          RSDescript % field_name           = "rads"
          RSDescript % file_name            = "rads.64"
 
-
+! tcm v50.75 moved the ifdef adcswan down past the RSDescript
+#ifdef ADCSWAN
 C........Significant Wave Height (HS)
          SwanHSDescript % specifier            = NOUTGW
          SwanHSDescript % initial_value        = 0.0
@@ -7047,11 +7053,19 @@ C     was specified.
       CALL initNetCDFOutputFile(312, UMaxDescript, reterr)
       CALL initNetCDFOutputFile(313, PrMinDescript, reterr)
       CALL initNetCDFOutputFile(314, WVMaxDescript, reterr)      
-      CALL initNetCDFOutputFile(315,RSMaxDescript,reterr)      
+      CALL initNetCDFOutputFile(315,RSMaxDescript,reterr)
+ 
+! tcm v50.75 moved ifdef adcswan below RSDescript only to allow
+!  for use whenever nrs=3 or nrs=4     
+!#ifdef ADCSWAN
+Cobell 20120510: Added for SWAN NetCDF
+      IF ((NRS.EQ.3).OR.NRS.EQ.4)) THEN
+        CALL initNetCDFOutputFile(164,RSDescript,reterr)
+      ENDIF
+! tcm v50.75 moved ifdef adcswan to here
 #ifdef ADCSWAN
 Cobell 20120510: Added for SWAN NetCDF
       IF(NRS.EQ.3)THEN
-        CALL initNetCDFOutputFile(164,RSDescript,reterr)
         IF(SWAN_OutputHS)THEN
             CALL initNetCDFOutputFile(301,SwanHSDescript,reterr)
             CALL initNetCDFOutputFile(316,SwanHSMaxDescript,reterr)

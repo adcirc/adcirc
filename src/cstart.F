@@ -1144,54 +1144,59 @@ C...
             CLOSE(93)
          ENDIF
       ENDIF
-#ifdef CSWAN
+
+!  tcm v50.75 changed ifdef cwan to output for nrs=3 or 4
+      IF ((ABS(NRS).EQ.3).or.(ABS(NRS).eq.4)) then
+!#ifdef CSWAN  tcm temp
 Casey 090302: Added the output of radiation stress gradients.
-      IGRadS=0
-      IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.4)) THEN
-         CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
-     $     NP_G, NP, HEADER74)
-         IGRadS=2
-      ENDIF
-      IF(ABS(NOUTGW).EQ.2) THEN
-         OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
-     &           ACCESS='DIRECT',RECL=NByte)
-         IF(NBYTE.EQ.4) THEN
-            DO I=1,8
-               WRITE(164,REC=IGRadS+I) RDES4(I)
-               ENDDO
-            IGRadS=IGRadS+8
-            DO I=1,6
-               WRITE(164,REC=IGRadS+I) RID4(I)
-               ENDDO
-            IGRadS=IGRadS+6
-            DO I=1,6
-               WRITE(164,REC=IGRadS+I) AID4(I)
-               ENDDO
-            IGRadS=IGRadS+6
-            ENDIF
-         IF(NBYTE.EQ.8) THEN
-            DO I=1,4
-               WRITE(164,REC=IGRadS+I) RDES8(I)
-               ENDDO
-            IGRadS=IGRadS+4
-            DO I=1,3
-               WRITE(164,REC=IGRadS+I) RID8(I)
-               ENDDO
-            IGRadS=IGRadS+3
-            DO I=1,3
-               WRITE(164,REC=IGRadS+I) AID8(I)
-               ENDDO
-            IGRadS=IGRadS+3
-            ENDIF
-         WRITE(164,REC=IGRadS+1) NDSETSW
-         WRITE(164,REC=IGRadS+2) NP
-         WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
-         WRITE(164,REC=IGRadS+4) NSPOOLGW
-         WRITE(164,REC=IGRadS+5) 2
-         IGRadS=IGRadS+5
-         CLOSE(164)
+         IGRadS=0
+         IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.4)) THEN
+            CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
+     &          NP_G, NP, HEADER74)
+            IGRadS=2
          ENDIF
-#endif
+         IF(ABS(NOUTGW).EQ.2) THEN
+            OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64',
+     &              ACCESS='DIRECT',RECL=NByte)
+            IF(NBYTE.EQ.4) THEN
+               DO I=1,8
+                  WRITE(164,REC=IGRadS+I) RDES4(I)
+                  ENDDO
+               IGRadS=IGRadS+8
+               DO I=1,6
+                  WRITE(164,REC=IGRadS+I) RID4(I)
+                  ENDDO
+               IGRadS=IGRadS+6
+               DO I=1,6
+                  WRITE(164,REC=IGRadS+I) AID4(I)
+               ENDDO
+               IGRadS=IGRadS+6
+            ENDIF
+            IF(NBYTE.EQ.8) THEN
+               DO I=1,4
+                  WRITE(164,REC=IGRadS+I) RDES8(I)
+               ENDDO
+               IGRadS=IGRadS+4
+               DO I=1,3
+                  WRITE(164,REC=IGRadS+I) RID8(I)
+               ENDDO
+               IGRadS=IGRadS+3
+               DO I=1,3
+                  WRITE(164,REC=IGRadS+I) AID8(I)
+               ENDDO
+               IGRadS=IGRadS+3
+            ENDIF
+            WRITE(164,REC=IGRadS+1) NDSETSW
+            WRITE(164,REC=IGRadS+2) NP
+            WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
+            WRITE(164,REC=IGRadS+4) NSPOOLGW
+            WRITE(164,REC=IGRadS+5) 2
+            IGRadS=IGRadS+5
+            CLOSE(164)
+         ENDIF
+      endif
+!#endif
+
 C...
 C....INITIALIZE GLOBAL CONCENTRATION SPOOL COUNTER
 C....OPEN GLOBAL CONCENTRATION OUTPUT FILE

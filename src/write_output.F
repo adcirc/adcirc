@@ -78,10 +78,11 @@ C
       type(OutputDataDescript_t), SAVE :: ESLDescript
       type(OutputDataDescript_t), SAVE :: BathyDescript   !tcm v50.66.01 added time varying bathy
       type(OutputDataDescript_t), SAVE :: BathyStaDescript !tcm v50.66.01 added time varying bathy stations
-#ifdef CSWAN
+!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+!#ifdef CSWAN
 Casey 090302: Added this type for output of radiation stress gradients.
       type(OutputDataDescript_t), SAVE :: RSDescript
-#endif
+!#endif
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ET00_g(:)
@@ -106,12 +107,12 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ESLONOFF_G(:) !zc added for ESL On/Off output
       REAL(SZ), SAVE, Allocatable, Target :: DPOut_g(:)    !tcm v50.66.01 added time varying bathy
       REAL(SZ), SAVE, Allocatable, Target :: DP00_g(:)  !tcm v50.66.01 added time varying bathy
-
-#ifdef CSWAN
+!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+!#ifdef CSWAN
 Casey 090302: Added these arrays for output of radiation stress gradients.
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNXOut_g(:)
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: RSNYOut_g(:)
-#endif
+!#endif
       LOGICAL, dimension(14) :: netcdf_error
       LOGICAL, SAVE :: FirstCall = .true.
 
@@ -376,29 +377,32 @@ C         write(16,*) 'Allocating IceStaDescript'
          IceStaDescript % x_coord           => XEM ! use orig coord
          IceStaDescript % y_coord           => YEM
 
-#ifdef CSWAN
+!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+         IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
+!#ifdef CSWAN   !tcm
 Casey 090302: Copied these lines for the rads.64 file.
          ! rads.64
 C         write(16,*) 'Allocating RSDescript' !jgfdebug48.03
-         IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            ALLOCATE(RSNXOUT_g(NP_G))
-            ALLOCATE(RSNYOUT_g(NP_G))
-         ENDIF
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+               ALLOCATE(RSNXOUT_g(NP_G))
+               ALLOCATE(RSNYOUT_g(NP_G))
+            ENDIF
 C........Radiation Stress
-         RSDescript % specifier            = NOUTGW
-         RSDescript % initial_value        = 0.0
-         RSDescript % num_items_per_record = 2
-         RSDescript % num_fd_records       = NP_G
-         RSDescript % num_records_this     = NP
-         RSDescript % imap                 => NODES_LG
-         RSDescript % array                => RSNXOUT
-         RSDescript % array_g              => RSNXOUT_g
-         RSDescript % array2               => RSNYOUT
-         RSDescript % array2_g             => RSNYOUT_g
-         RSDescript % alternate_value      = -99999.0
-         RSDescript % field_name           = 'RadStress'
-         RSDescript % file_name            = "rads.64"
-#endif
+            RSDescript % specifier            = NOUTGW
+            RSDescript % initial_value        = 0.0
+            RSDescript % num_items_per_record = 2
+            RSDescript % num_fd_records       = NP_G
+            RSDescript % num_records_this     = NP
+            RSDescript % imap                 => NODES_LG
+            RSDescript % array                => RSNXOUT
+            RSDescript % array_g              => RSNXOUT_g
+            RSDescript % array2               => RSNYOUT
+            RSDescript % array2_g             => RSNYOUT_g
+            RSDescript % alternate_value      = -99999.0
+            RSDescript % field_name           = 'RadStress'
+            RSDescript % file_name            = "rads.64"
+         ENDIF
+!#endif
 
          ! fort.81
 C         write(16,*) 'Allocating ConcStaDescript' !jgfdebug48.03
@@ -1001,11 +1005,14 @@ Casey 090302: Changed descript to VelDescript.
      $                       (TRIM(GLOBALDIR)//'/'//'fort.93',
      $                       IceDescript,TimeLoc,it,writer_storeOne, 0.D0)
                      ENDIF
-#ifdef CSWAN
-                     CALL WRITE_GBL_FILE_THROUGH_WRITER
-     &                   (TRIM(GLOBALDIR)//'/'//'rads.64',RSDescript,
-     &                    TimeLoc,it,writer_storeTwo, 0.D0)
-#endif
+!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+                     IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
+!#ifdef CSWAN
+                        CALL WRITE_GBL_FILE_THROUGH_WRITER
+     &                      (TRIM(GLOBALDIR)//'/'//'rads.64',RSDescript,
+     &                       TimeLoc,it,writer_storeTwo, 0.D0)
+                     ENDIF
+!#endif
 
                   ELSE  !no writer processors
 
@@ -1024,12 +1031,15 @@ C           save global ICE data to file
      &                         packOne, unpackOne, IGIP,
      &                         'fort.93        ')
                      ENDIF
-#ifdef CSWAN
+!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+                     IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
+!#ifdef CSWAN
 Casey 090302: Added these lines for output of radiation stresses.
-                     CALL writeOutArray(164,TimeLoc, IT, RSDescript,
+                        CALL writeOutArray(164,TimeLoc, IT, RSDescript,
      &                             packTwo, unpackTwo, IGRadS,
      &                            'rads.64        ')
-#endif
+                     ENDIF
+!#endif
                   ENDIF  !test for writer processors
 
 #else
@@ -1049,12 +1059,15 @@ C           save global ICE data to file
      &                         packOne, unpackOne, IGIP,
      &                         'fort.93        ')
                   ENDIF
-#ifdef CSWAN
+!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+                  IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
+!#ifdef CSWAN
 Casey 090302: Added these lines for output of radiation stresses.
-                  CALL writeOutArray(164,TimeLoc, IT, RSDescript,
+                     CALL writeOutArray(164,TimeLoc, IT, RSDescript,
      &                               packTwo, unpackTwo, IGRadS,
      &                               'rads.64        ')
-#endif
+                  ENDIF
+!#endif
 
 #endif
                ELSE  ! abs(noutgw) == 2 or 3
@@ -1075,12 +1088,15 @@ C           save global ICE data to file
      &                         packOne, unpackOne, IGIP,
      &                         'fort.93        ')
                   ENDIF
-#ifdef CSWAN
+!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+                  IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
+!#ifdef CSWAN
 Casey 090302: Added these lines for output of radiation stresses.
-                  CALL writeOutArray(164,TimeLoc, IT, RSDescript,
+                     CALL writeOutArray(164,TimeLoc, IT, RSDescript,
      &                            packTwo, unpackTwo, IGRadS,
      &                            'rads.64        ')
-#endif
+                  ENDIF
+!#endif
                ENDIF  !test for abs(noutgw) == 1
 
 C           jgf48.03 TODO: Make this globalio compliant.
@@ -1141,25 +1157,28 @@ C           jgf48.03 TODO: Make this globalio compliant.
      $               IceDescript, TimeLoc, it, storeOne,0.d0)
 #endif
                ENDIF
-#ifdef CSWAN
+!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
+               IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
+!#ifdef CSWAN
 Casey 090302: Added these lines for output of radiation stresses.
 #ifdef CMPI
                   IF(MNWPROC.GT.0) THEN
-                    CALL WRITE_GBL_FILE_THROUGH_WRITER
-     &                   (TRIM(GLOBALDIR)//'/'//'rads.64',
-     &                   RSDescript,TimeLoc,it,
-     &                   writer_storeTwo, 0.D0)
+                     CALL WRITE_GBL_FILE_THROUGH_WRITER
+     &                 (TRIM(GLOBALDIR)//'/'//'rads.64',
+     &                 RSDescript,TimeLoc,it,
+     &                 writer_storeTwo, 0.D0)
                   ELSE
-                    CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     &                   (164, TRIM(GLOBALDIR)//'/'//'rads.64',
-     &                   RSDescript, TimeLoc, it, storeTwo, 0.D0)
+                     CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     &                 (164, TRIM(GLOBALDIR)//'/'//'rads.64',
+     &                 RSDescript, TimeLoc, it, storeTwo, 0.D0)
                   ENDIF
 #else
                   CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     &                 (164, TRIM(GLOBALDIR)//'/'//'rads.64',
-     &                 RSDescript, TimeLoc, it, storeTwo, 0.D0)
+     &              (164, TRIM(GLOBALDIR)//'/'//'rads.64',
+     &              RSDescript, TimeLoc, it, storeTwo, 0.D0)
 #endif
-#endif
+!#endif           
+               ENDIF
             ENDIF
             NSCOUGW=0
             NCCOUGW=NSCOUGW
