@@ -7059,7 +7059,7 @@ C     was specified.
 !  for use whenever nrs=3 or nrs=4     
 !#ifdef ADCSWAN
 Cobell 20120510: Added for SWAN NetCDF
-      IF ((NRS.EQ.3).OR.NRS.EQ.4)) THEN
+      IF ((NRS.EQ.3).OR.(NRS.EQ.4)) THEN
         CALL initNetCDFOutputFile(164,RSDescript,reterr)
       ENDIF
 ! tcm v50.75 moved ifdef adcswan to here

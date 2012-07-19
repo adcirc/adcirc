@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.76   - 07/19/2012 - jgf - Fixed missing parenthesis on line 
+C             7062 in prepNetCDF() where the code was checking if 
+C             NRS eq 3 or 4; this issue was preventing compilation.
 C  v50.75   - 07/16/2012 - tcm - Implemented Casey's writing of rads.64 file
 C             whenever nrs = 3 or nrs = 4.  Removed the ifdef cswan and in
 C             most cases replaced with testing of nrs values.
