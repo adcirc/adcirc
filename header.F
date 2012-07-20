@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.78   - 07/20/2012 - tcm - Changed real*8 to real(8) to remove
+C             warning messages.
 C  v50.77   - 07/20/2012 - tcm - Fixed a bug in prep.F where the default
 C             filename was not initialized to blanks for certain compilers
 C             and therefore could have extra characters that were not a part

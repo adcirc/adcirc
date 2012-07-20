@@ -24,7 +24,7 @@ C***********************************************************************
       SUBROUTINE TIMECONV(IYR,IMO,IDAY,IHR,IMIN,SEC,TIMESEC)
       USE PRESIZES, ONLY : SZ
       IMPLICIT NONE
-      REAL*8 TIMESEC
+      REAL(8) TIMESEC
 C     jgf46.00 Explicitly declared the following variables
       INTEGER IDAY
       INTEGER IHR
@@ -79,7 +79,7 @@ C***********************************************************************
 C
       IMPLICIT NONE
       INTEGER ISTAT
-      REAL*8 WTIMED,RAD2DEG,PI,DEG2RAD
+      REAL(8) WTIMED,RAD2DEG,PI,DEG2RAD
 C      DIMENSION X(*),Y(*),SLAM(*),SFEA(*),WVNX(*),WVNY(*) !jgf46.00 comm. out
       DIMENSION WVNX(*),WVNY(*)
 C RAWMET
@@ -948,7 +948,7 @@ C***********************************************************************
       subroutine e29search(node,FLON,FLAT,NN1,NN2,NN3,DD1,DD2,DD3,betau)
       use presizes, only : sz
       implicit none
-      real*8 lamda0,phi0,rphi0,cphi0,sphi0,tphi0,dlamda,dphi,rdlamda,
+      real(8) lamda0,phi0,rphi0,cphi0,sphi0,tphi0,dlamda,dphi,rdlamda,
      &       rdphi,rflat,tflat,sflat,cflat,a,rlamar,cphiicrlamda,phiarg,
      &       rphii,rlamda,ri1,ri2,rj,dgtora
       real(8) lamda,lamdaa,lamdab,lamdac,lamdad,lamdae,lamdag
@@ -1408,7 +1408,7 @@ C***********************************************************************
       subroutine e29calc(i,j,lamda,phi,n)
       use presizes, only : sz
       implicit none
-      real*8 lamda0,phi0,rphi0,cphi0,sphi0,tphi0,dlamda,dphi,rdlamda,
+      real(8) lamda0,phi0,rphi0,cphi0,sphi0,tphi0,dlamda,dphi,rdlamda,
      &       rdphi,a,rlamar,phiarg,rlamda,dgtora
       real(8) lamda,phi
 C     jgf46.00 Explicitly declared the following variables
