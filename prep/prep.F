@@ -5650,6 +5650,7 @@ C---------------------------------------------------------------------------
       LOGICAL Found               !.true. if the full domain file exists
       CHARACTER(len=80) FileName   ! name of full domain file
       CHARACTER(len=8) DefaultName! default name of full domain file  !increased from 7 to 8 tcm v50.66.03
+      INTEGER :: dnlen  !length of defaultname (7 or 8)
       INTEGER ErrorIO             ! zero if file opened successfully
       INTEGER iproc               ! subdomain index
       CHARACTER(len=15) sdFileName     ! subdomain file name   !increased from 14 to 15 tcm v50.66.03
@@ -5659,21 +5660,25 @@ C---------------------------------------------------------------------------
       Success = .false.
       ErrorIO = 1
       skipstring = 'skip'
-
+      DefaultName(:) = ' '  !initialize to all blanks !tcm v50.77
+  
       DefaultName(1:5) = 'fort.'
+
 c.....tcm v50.66.03 increased unit number to 100's places
       if (UnitNumber < 100) then
          WRITE(DefaultName(6:7),2) UnitNumber
+         dnlen = 7
       else
          WRITE(DefaultName(6:8),3) UnitNumber
+         dnlen = 8
       endif
 
 C
 C     Determine the name of the file; if found, open it
  31   IF (USE_DEFAULT) THEN
-         FileName = trim(DefaultName)   !tcm v50.66.03 added trim
+         FileName = trim(DefaultName(1:dnlen))   !tcm v50.66.03 added trim !tcm v50.77 added 1:dnlen
 Casey 120402: Avoid an endless loop.  If the default file does not exist,
-C             then give the user a chance to specify the file name or skip.
+C             then give the user a chance to specify the file name or skip.a
 C     ELSE
          GOTO 33
       ENDIF

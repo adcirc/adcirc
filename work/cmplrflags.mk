@@ -21,6 +21,7 @@ compiler=intel-ND
 #compiler=pgi-ranger
 #compiler=diamond
 #compiler=kraken
+#compiler=utils
 #
 #
 # Compiler Flags for gfortran and gcc
@@ -306,6 +307,7 @@ ifeq ($(compiler),cray_xt5)
   endif
 endif
 #
+
 # Portland Group
 ifeq ($(compiler),pgi)
   PPFC		:=  pgf90
@@ -332,6 +334,51 @@ ifeq ($(compiler),pgi)
   endif
 endif
 #
+# Utility Server (e.g. US@ERDC) using standard compilers, added by jgf48.4607
+ifeq ($(compiler),utils)
+  PPFC          :=  pgf90
+  FC            :=  pgf90
+  PFC           :=  mpif90
+  CC            :=  pgcc
+  CCBE          :=  pgcc
+  FFLAGS1       :=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse
+  ifeq ($(DEBUG),full)
+     FFLAGS1    :=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+  endif
+  FFLAGS2       :=  $(FFLAGS1)
+  FFLAGS3       :=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics
+  DA            :=  -DREAL8 -DLINUX -DCSCA
+  DP            :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA
+  DPRE          :=  -DREAL8 -DLINUX
+  ifeq ($(SWAN),enable)
+     DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
+  endif
+  CFLAGS        :=  -c89 $(INCDIRS) -DLINUX
+  ifeq ($(DEBUG),full)
+     CFLAGS     :=  -c89 $(INCDIRS) -DLINUX -g -O0
+  endif
+  IMODS         :=  -module
+  FLIBS         :=
+# When compiling with netCDF support, the HDF5 libraries must also
+# be linked in, so the user must specify HDF5HOME on the command line.
+# On Jade, HDF5 was compiled with szip compression, so this library is
+# required as well.
+# jgf20101102: on Jade, NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.0.1-serial
+# jgf20101102: on Jade, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.4-serial/lib
+# jgf20101103: on Jade, SZIPHOME=/usr/local/usp/PETtools/CE/pkgs/szip-2.1/lib
+# jgf20110728: on Garnet, NETCDFHOME=/opt/cray/netcdf/4.1.1.0/netcdf-pgi
+  ifeq ($(NETCDF),enable)
+     FLIBS          := $(FLIBS) -L$(HDF5HOME) -L$(SZIPHOME) -lhdf5_fortran -lhdf5_hl -lhdf5 -lsz -lz
+  endif
+  MSGLIBS       :=
+  BACKEND_EXEC  := metis_be adcprep_be
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
+     MULTIPLE := TRUE
+  endif
+endif
 # Portland Group on TU Ranger (AMD Opteron 8356, Barcelona Core)  Seizo
 ifeq ($(compiler),pgi-ranger)
   PPFC          :=  pgf95

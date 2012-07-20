@@ -2,6 +2,14 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.77   - 07/20/2012 - tcm - Fixed a bug in prep.F where the default
+C             filename was not initialized to blanks for certain compilers
+C             and therefore could have extra characters that were not a part
+C             of the acutal name, for example a file name might have been
+C             fort.13(.  This error happened when default name lengths 
+C             changed from 7 to 8 characters to allow for larger unit 
+C             numbers.  Added the Utility Server (utils) compiler options
+C              back to the cmplrflags.mk file.
 C  v50.76   - 07/19/2012 - jgf - Fixed missing parenthesis on line 
 C             7062 in prepNetCDF() where the code was checking if 
 C             NRS eq 3 or 4; this issue was preventing compilation.
