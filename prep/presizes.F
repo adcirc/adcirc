@@ -251,6 +251,10 @@ c....tcm v50.66.02 additions for time varying bathymetry
       logical :: found_tbc_nml   !flag to determine if the timebathycontrol namelist was present
       NAMELIST /TimeBathyControl/ nddt,BTIMINC,BCHGTIMINC
       INTEGER :: ios  ! return value of i/o operation
+c...
+c... tcm v50.79 addition for metControl namelist
+      logical :: found_metCon_nml  !flag to determine if the metControl namelist was present
+
 
 #ifdef ADCNETCDF
       NETCDF_AVAIL = .true.
@@ -262,6 +266,9 @@ C    tcm v50.66.02 -- additions for time varying bathymetry
       NDDT = 0
       IOS_NDDT = 0
       FOUND_TBC_NML = .FALSE.
+
+c    tcm v50.79 -- addition for metControl namelist
+      FOUND_metCon_NML = .FALSE.
 
 C
 C...OPEN AND PROCESS THE UNIT 14 ADCIRC GRID FILE TO DETERMINE SIZES
@@ -492,6 +499,8 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       READ(UNIT=15,NML=metControl,IOSTAT=IOS)
       IF (IOS.gt.0) THEN
          write(*,*) "INFO: The metControl namelist was not found."
+      ELSE
+         found_metCon_nml = .true.  !tcm v50.79 added
       ENDIF
       REWIND(15)
 C

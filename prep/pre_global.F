@@ -241,6 +241,8 @@ c.... tcm v50.66.02 added for time varying bathymetry
       LOGICAL :: FOUND_TBC_NML   !flag to determine if the timebathycontrol namelist was present
       NAMELIST /TimeBathyControl/ NDDT,BTIMINC,BCHGTIMINC
 
+      ! tcm v50.79 added for metControl namelist
+      LOGICAL :: FOUND_METCON_NML  !flag to determine if the metControl namelist was present
 C
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX

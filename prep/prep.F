@@ -1559,10 +1559,26 @@ C
          write(15,SWANOutputControl)
          write(15,*) '! -- End SWAN Output Control Namelist --'
 #endif
-         write(15,*) '! -- Begin Met Control Namelist --'
-            write(15,*) "&metControl WindDragLimit=",WindDragLimit,
-     &         " DragLawString='",DragLawString,"' rhoAir=",rhoAir," /"
-         write(15,*) '! -- End Met Control Namelist --'
+
+! tcm v50.79 Changed so that metControl namelist is only written if it was found in the
+! original fort.15 file.  Also changed the single line write, which is missing some commas
+! to a multiple line write.  The single line write was causing problems on
+! some compilers because the character DragLawString could end up being written
+! on multiple lines and this caused issues.  This section
+! should only be written if there was a namelist in the original fort.15.
+!
+         if (found_metCon_nml) then  !metControl namelist was found so write it in the parsed files
+            write(15,*) '! -- Begin Met Control Namelist --'
+!         write(15,*) "&metControl WindDragLimit=",WindDragLimit,
+!     &         " DragLawString='",DragLawString,"' rhoAir=",rhoAir," /"
+
+            write(15,*) "&metControl "
+            write(15,*) "    WindDragLimit=",Winddraglimit,","
+            write(15,*) "    DragLawString='",Draglawstring,"',"
+            write(15,*) "    rhoAir=",rhoAir
+            write(15,*) "/"
+            write(15,*) '! -- End Met Control Namelist --'
+         endif
 
          CLOSE(15)
 C

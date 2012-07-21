@@ -2,6 +2,14 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.79   - 07/20/2012 - tcm - There was a bug in the prep.F routine in the
+C             writing of the metControl namelist that was causing it to not
+C             be written correctly with default values.  The writing of this
+C             namelist was corrected to remove the bugs.  Then logic was 
+C             added so that the metControl namelist is only written in the
+C             partitioned fort.15 files if it was present in the global
+C             fort.15.  Changed some float() to real(,kind=sz) to remove
+C             warning messages.
 C  v50.78   - 07/20/2012 - tcm - Changed real*8 to real(8) to remove
 C             warning messages.
 C  v50.77   - 07/20/2012 - tcm - Fixed a bug in prep.F where the default

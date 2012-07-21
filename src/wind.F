@@ -137,6 +137,7 @@ C     ----------------------------------------------------------------
       ! it will remain 'default'; this will cause 'Garratt' to be used
       ! in FUNCTION WindDrag, and 'IceCube' to be used in
       ! FUNCTION WindIceDrag.
+      
       DragLawString = 'default'
 #ifdef POWELL
       ! jgf50.32 Provide backward compatibility with hardcoded POWELL
@@ -1183,7 +1184,7 @@ C
       Y2=X
       DO 1 I=2,N
          G=X*Y2
-         Y3=G-Y1+G-(G-Y1)/FLOAT(I)
+         Y3=G-Y1+G-(G-Y1)/REAL(I,KIND=SZ)
          Y1=Y2
          Y2=Y3
  1    CONTINUE
@@ -1208,9 +1209,9 @@ C***********************************************************************
       IMPLICIT NONE
       INTEGER,SAVE :: ICALL = 0
       INTEGER NP,N,I,LONB,LATB,NLAT,NLON,LON,LONP1,LAT,LATP1
-      REAL*8 DLAT,DLON,FLONWORK,COLAT,DDLAT,XLAT,DFLAT,DFLAT1,
+      REAL(8) DLAT,DLON,FLONWORK,COLAT,DDLAT,XLAT,DFLAT,DFLAT1,
      &     DDLON,XLON,DFLON,DFLON1
-      REAL*8 FLAT(*),FLON(*)
+      REAL(8) FLAT(*),FLON(*)
       REAL(SZ) GCLAT(*),GCLON(*)
       INTEGER  N00(*),N10(*),N11(*),N01(*)
       REAL(SZ) D00(*),D10(*),D11(*),D01(*)
@@ -1224,8 +1225,8 @@ C...Compute estimated DLAT, true DLON for Gaussian grid
 
          NLAT=LATB
          NLON=LONB
-         DLAT=PI/FLOAT(NLAT-1)
-         DLON=TWOPI/FLOAT(NLON)
+         DLAT=PI/REAL(NLAT-1,KIND=SZ)
+         DLON=TWOPI/REAL(NLON,KIND=SZ)
          N=0
 
 C...Loop through all the nodes in the grid to be interpolated onto and
@@ -1978,13 +1979,13 @@ c
       jm2=(nwlat+1)/2
       im2=nwlon*2
 c
-      phii=rdphi*float(j-jm2)
+      phii=rdphi*real(j-jm2,kind=8)
       i1=2*i-1
       i2=2*i
       if(mod(j,2).ne.0) then
-         rlamda=rdlamda*float(i2-nwlon)
+         rlamda=rdlamda*real(i2-nwlon,kind=8)
       else
-         rlamda=rdlamda*float(i1-nwlon)
+         rlamda=rdlamda*real(i1-nwlon,kind=8)
       endif
       phiarg= sin(phii)*cphi0+cos(phii)*sphi0*cos(rlamda)
       if(phiarg.gt.1.0d0) phiarg=1.0d0

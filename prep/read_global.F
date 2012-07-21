@@ -353,8 +353,10 @@ Casey 090825: Added dummy variables.
 C
 !   tcm v50.66.02 -- added timebathycontrol namelist related variables
       INTEGER :: ios_nddt
+      INTEGER :: ios_metCon
 
       found_tbc_nml = .false.   !flag to determine if the timebathycontrol namelist was present
+      found_metCon_nml = .false.   !flag to determine if the metControl namelist was present
 
 C
       call setMessageSource("read15")
@@ -404,6 +406,14 @@ c....    a non-default value we can determine this was the case.
 
       REWIND(15)  !Return to the top of the fort.15 file (instead of closing then opening)
 c..        
+
+c... tcm v50.79 added
+      READ(UNIT = 15, NML = metControl,IOSTAT = ios_metCon)
+      if ( ios_metCon.ge.0) then
+         found_metCon_nml = .true.
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
+
 
       READ(15,80) RUNDES
 C
