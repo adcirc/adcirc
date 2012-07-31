@@ -8009,10 +8009,10 @@ C        NBVV
       endif
 !Corbitt: Define ADCIRC-Mesh Attributes
          iret = nf90_put_att(ncid, myMesh%mesh_id, 'long_name',
-     &                      'mesh topology')
+     &                      'mesh_topology')
          CALL check_err(iret)
          iret = nf90_put_att(ncid, myMesh%mesh_id, 'standard_name',
-     &                      'mesh topology')
+     &                      'mesh_topology')
          CALL check_err(iret)
          iret = nf90_put_att(ncid, myMesh%mesh_id, 'dimension',
      &                      2)

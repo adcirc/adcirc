@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.80   - 07/31/2012 - jgf - Added underscore to mesh topology attribute
+C             in netcdf files for NcML compliance.
 C  v50.79   - 07/20/2012 - tcm - There was a bug in the prep.F routine in the
 C             writing of the metControl namelist that was causing it to not
 C             be written correctly with default values.  The writing of this
