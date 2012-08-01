@@ -76,7 +76,7 @@ C     jgf46.08 Fine grained ramp functions (jgf46.21 split flux b.c.s)
       REAL(SZ) RampTip,DRampTip      ! Ramp for tidal potential
       REAL(SZ) RampMete,DRampMete    ! Ramp for wind and atmospheric pressure
       REAL(SZ) RampWRad,DRampWRad    ! Ramp for wave radiation stress
-Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+Corbitt 1203022: Added Zachs Fix for Assigning a Start Time to Mete Ramping
       REAL(SZ) DUnRampMete           ! Time to not have ramped Mete
 C
 C     jgf46.10 user-controlled warning, dump and error levels on elevations
@@ -88,6 +88,9 @@ C     jgf46.10 user-controlled warning, dump and error levels on elevations
       REAL(SZ) ErrorElev      ! ADCIRC terminates if this elev is exceeded
 C
       INTEGER :: screenUnit = 6 ! jgf46.19 I/O unit where screen output is sent
+
+      INTEGER :: Terminate_LocalProc = 0 ! zc - allow a single processor to initiate code shutdown
+
 C
 C     Variables related to hotstarting.
       type HOTSTART_t

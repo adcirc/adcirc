@@ -476,6 +476,53 @@ C
       call unsetMessageSource()
       END SUBROUTINE ADCIRC_Terminate
 
+C*****************************************************************************
+C  ADCIRC Local Terminate Routine and corresponding collection routine
+C  zc50.81 In the case where there is an error on a single processor, allow
+C          everyone to check if we need to bomb out. For example, mesh errors
+C          might only occur on a single processor and hang the code. Care
+C          must be taken not to inadvertantly hang the code by allowing for
+C          cases where not all compute processors pass through the same call
+C          to this routine.
+C*****************************************************************************
+#ifdef CMPI
+      SUBROUTINE ADCIRC_LocalTerminate()
+        USE GLOBAL,ONLY:TERMINATE_LOCALPROC
+        IMPLICIT NONE
+        !...Set the local terminator and then go wait for the rest of
+        !   the compute processors to check in
+        TERMINATE_LOCALPROC = 1
+        CALL ADCIRC_CheckLocalTerminate()
+      END SUBROUTINE
+
+      SUBROUTINE ADCIRC_CheckLocalTerminate()
+        USE MESSENGER
+        USE GLOBAL,ONLY:TERMINATE_LOCALPROC
+#ifdef HAVE_MPI_MOD
+        USE MPI
+#endif        
+        IMPLICIT NONE
+        INTEGER :: TERM_LOCAL(2)
+        INTEGER :: TERM_GLOBAL(2)
+#ifndef HAVE_MPI_MOD
+        INCLUDE 'mpif.h'
+#endif
+        TERM_LOCAL(1) = TERMINATE_LOCALPROC
+        TERM_LOCAL(2) = MYPROC
+        CALL MPI_ALLREDUCE(TERM_LOCAL,TERM_GLOBAL,1,
+     &      MPI_2INTEGER,MPI_MAXLOC,COMM,IERR)
+        IF(TERM_GLOBAL(2).NE.0)THEN
+            IF(MYPROC.EQ.0)THEN
+                WRITE(ScreenUnit,'(A,I5)') "ERROR: ADCIRC Terminating "//
+     &          "from error originating from MYPROC = ",TERM_GLOBAL(2)
+                WRITE(ScreenUnit,'(A)')    "       Check the local PE "//
+     &          "fort.16 output file for details."
+            ENDIF
+            CALL ADCIRC_TERMINATE()
+        ENDIF
+      END SUBROUTINE   
+#endif
+
 C******************************************************************************
 C******************************************************************************
       END MODULE ADCIRC_Mod

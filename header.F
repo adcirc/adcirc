@@ -2,6 +2,15 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.81   - 08/01/2012 - zc - Added routines so a single processor can
+C             initiate code exit. ADCIRC_LOCALTERMINATE and
+C             ADCIRC_CHECKLOCALTERMINATE. All processors use the check routine
+C             and the processor with the error uses LOCALTERMINATE and waits
+C             until the others catch up. Added this for error checking in
+C             read_input.F where mesh or fort.15 errors that apply to a single
+C             processor only will hang the code since other processors have
+C             no knowledge of the error and hang. Readily extendable to 
+C             other areas of the code as needed.
 C  v50.80   - 07/31/2012 - jgf - Added underscore to mesh topology attribute
 C             in netcdf files for NcML compliance.
 C  v50.79   - 07/20/2012 - tcm - There was a bug in the prep.F routine in the

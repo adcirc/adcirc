@@ -130,7 +130,7 @@ ifeq ($(compiler),intel-ND)
   PPFC            :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -w -O3 -FI -assume byterecl -132 -i-dynamic -assume buffered_io
+  FFLAGS1       :=  $(INCDIRS) -w -O3 -xSSE4.2 -assume byterecl -132 -i-dynamic -assume buffered_io 
   ifeq ($(DEBUG),full)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug -check all -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
@@ -151,7 +151,7 @@ ifeq ($(compiler),intel-ND)
      CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
   endif
   ifeq ($(NETCDF),enable)
-     HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
+  #   HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
      FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
   endif   
   CLIBS         :=

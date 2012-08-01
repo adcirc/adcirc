@@ -27,7 +27,12 @@ C-----------------------------------------------------------------------
       USE HARM
       USE WIND
       USE ITPACKV
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+#ifdef CMPI      
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate,ADCIRC_LOCALTERMINATE,
+     &  ADCIRC_CHECKLOCALTERMINATE
+#else
+      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate    
+#endif     
       USE VERSION
 !     jgf46.00
       USE NodalAttributes, ONLY :
@@ -3771,7 +3776,7 @@ C...........CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS
                      ENDIF
                      WRITE(16,9973)
 #ifdef CMPI
-                     call msg_fini()
+                     CALL ADCIRC_LOCALTERMINATE()
 #endif
                      STOP
                   ENDIF
@@ -3798,7 +3803,10 @@ C...........CHECK INTERNAL BARRIER HEIGHTS AGAINST DEPTHS
                         WRITE(ScreenUnit,9973)
                      ENDIF
                      WRITE(16,9973)
-                     CALL ADCIRC_Terminate()
+#ifdef CMPI                     
+                     CALL ADCIRC_LOCALTERMINATE()
+#endif                     
+                     STOP
                   ENDIF
                ENDIF
 
@@ -3825,7 +3833,7 @@ C...........CHECK INTERNAL BARRIER WITH PIPES BARRIER HEIGHTS AGAINST DEPTHS
                      ENDIF
                      WRITE(16,9973)
 #ifdef CMPI
-                     call msg_fini()
+                     CALL ADCIRC_LOCALTERMINATE()
 #endif
                      STOP
                   ENDIF
@@ -3853,7 +3861,7 @@ C...  CHECK INTERNAL BARRIER WITH PIPES PIPE HEIGHTS AGAINST DEPTHS
                      ENDIF
                      WRITE(16,9973)
 #ifdef CMPI
-                     call msg_fini()
+                     CALL ADCIRC_LOCALTERMINATE()
 #endif
                      STOP
                   ENDIF
@@ -3962,7 +3970,7 @@ C...  SURE THAT JGW LE MNVEL.  NOTE, JME MUST BE < JGW.
         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
           WRITE(16,9973)
 #ifdef CMPI
-          call msg_fini()
+          CALL ADCIRC_LOCALTERMINATE()
 #endif
           STOP
         ENDIF
@@ -4969,7 +4977,7 @@ C     allocate harmonic analysis arrays
      &        'PLEASE CHECK YOUR INPUT',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
 #ifdef CMPI
-         call msg_fini()
+         CALL ADCIRC_LOCALTERMINATE()
 #endif
          STOP
       ENDIF
@@ -5119,7 +5127,7 @@ C     read in and check matrix solver parameters
             IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
             WRITE(16,9973)
 #ifdef CMPI
-            call msg_fini()
+            CALL ADCIRC_Terminate()
 #endif
             STOP
          ENDIF
@@ -5310,6 +5318,13 @@ C...  CLOSE FILES FORT.14 and FORT.15
 C...
       CLOSE(14)
       CLOSE(15)
+
+C... zc50.80 - All compute processors pass through here and check if anyone
+C              encountered an error while reading the input files.
+#ifdef CMPI      
+      CALL ADCIRC_CHECKLOCALTERMINATE()
+#endif
+
 C...
 c.RJW merged 09/02/2008 Casey 071219: Added the following subroutine call to compute the RESELEM array.
 C             The subroutine is located at the begining of the file 'massbal.F.'
@@ -5334,7 +5349,11 @@ C     reading a file.
      &       'The value of the i/o error flag was ',ios,'.'
          call allMessage(ERROR,scratchMessage)
       endif
+#ifdef CMPI
+      CALL ADCIRC_LOCALTERMINATE()
+#else      
       CALL ADCIRC_Terminate()
+#endif      
 C
 c******************************************************************************
       END SUBROUTINE READ_INPUT
