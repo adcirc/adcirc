@@ -462,13 +462,14 @@ C
       call allMessage(INFO,"ADCIRC Terminating.")
 
 #ifdef CMPI
+      subdomainFatalError = .true.
       IF (PRESENT(NO_MPI_FINALIZE)) THEN
         CALL MSG_FINI(NO_MPI_FINALIZE)
       ELSE
         CALL MSG_FINI()
       ENDIF
 #endif
-      STOP
+      STOP 
 C
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.") ! should be unreachable

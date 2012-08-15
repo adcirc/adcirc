@@ -92,7 +92,7 @@ C
       MODULE HARM
 C
       USE SIZES, ONLY : SZ, MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR
-      USE GLOBAL, ONLY : screen, logMessage, DEBUG, ECHO, INFO,
+      USE GLOBAL, ONLY : screenMessage, logMessage, DEBUG, ECHO, INFO,
      &                   WARNING, ERROR, setMessageSource,
      &                   unsetMessageSource, allMessage, scratchMessage
 C

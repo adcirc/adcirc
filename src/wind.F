@@ -7,8 +7,8 @@ C
        MODULE WIND
        USE SIZES, ONLY : SZ, LOCALDIR
        USE GLOBAL, ONLY : ScreenUnit, setMessageSource, allMessage,
-     &    screen, logMessage, unsetMessageSource, DEBUG, ECHO, INFO,
-     &    WARNING, ERROR, scratchMessage,
+     &    screenMessage, logMessage, unsetMessageSource, 
+     &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage,
      &    Rearth, pi, deg2rad, rad2deg, e, PRBCKGRND, g, rhoWat0,
      &    sphericalDistance, rhoAir, one2ten, windReduction,
      &    openFileForRead

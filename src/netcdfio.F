@@ -36,7 +36,7 @@
       MODULE NETCDFIO
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
-     &     screen, logMessage, allMessage, setMessageSource,
+     &     screenMessage, logMessage, allMessage, setMessageSource,
      &     unsetMessageSource, scratchMessage
       USE NETCDF        ! enables the fortran 90 interface to netcdf
       IMPLICIT NONE
@@ -2763,7 +2763,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE createNetCDFOutputFile(ncid, myFile, lun, myTime,
      &                                  descript, ret_error)
       USE GLOBAL, ONLY : OutputDataDescript_t, IHOT, DEBUG, ERROR,
-     &                   screen, screenUnit, allMessage, scratchMessage
+     &                   screenUnit, allMessage, scratchMessage
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -2819,11 +2819,11 @@ C     upon to create them.
          ! these lines are executed to create netcdf hotstart files
 #ifdef CMPI
          IF (myFile%fileFound.eqv..true.) THEN
-            call screen(DEBUG,"Hotstart file was created by adcprep.")
+            call screenMessage(DEBUG,"Hotstart file was created by adcprep.")
             myFile%createFile = .false.
          ELSE
-             call screen(ERROR,"Hotstart file is missing.")
-             call screen(ERROR,
+             call screenMessage(ERROR,"Hotstart file is missing.")
+             call screenMessage(ERROR,
      &          "It should have been created by adcprep.")
              ret_error = .true.
          ENDIF

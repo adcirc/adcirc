@@ -8,7 +8,11 @@ C
      &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,
      &    COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID, SIG_VAL,
      &    SIG_WRITE, SIG_TERM, SIG_PAUSE, FLOAT_TYPE, REALTYPE,
-     &    DBLETYPE
+     &    DBLETYPE,
+     &    DEBUG, ECHO, INFO, WARNING, ERROR,
+     &    screenMessage, logMessage, allMessage, setMessageSource,
+     &    unsetMessageSource, scratchMessage     
+     
 #ifdef HAVE_MPI_MOD
       USE MPI
 #endif
@@ -47,7 +51,8 @@ C  Message-Passing Array space
       INTEGER, ALLOCATABLE :: REQ_C3D(:), STAT_C3D(:,:)
       INTEGER, ALLOCATABLE :: INDX(:)
       REAL(SZ),ALLOCATABLE :: SENDBUF(:,:), RECVBUF(:,:)
-
+      !jgf50.82: Create a flag for unrecoverable issue on a subdomain
+      LOGICAL :: subdomainFatalError ! true if mpi_abort should be called
 C
 C
       CONTAINS
@@ -55,8 +60,9 @@ C
 C---------------------end of data declarations--------------------------------C
 
 
-      SUBROUTINE MSG_INIT (MPI_COMM)
-C--------------------------------------------------------------------------
+C----------------------------------------------------------------------
+C   S U B R O U T I N E    M S G _ I N I T 
+C----------------------------------------------------------------------
 C  Routine performs following steps:
 C   (1)  define mpi data types to be used
 C   (2)  initialize MPI,
@@ -64,21 +70,25 @@ C   (3)  get number of processors,
 C   (4)  get MPI rank of processor
 C   (5)  initialize adcirc COMM communicator MPI_COMM_WORLD
 C  vjp  10/3/2006
-C--------------------------------------------------------------------------
+C----------------------------------------------------------------------
+      SUBROUTINE MSG_INIT (MPI_COMM)
       IMPLICIT NONE
-
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-
       INTEGER, OPTIONAL :: MPI_COMM
       INTEGER :: I
       INTEGER, ALLOCATABLE :: RANKS(:)
       INTEGER :: SENDBUF, RECVBUF
       INTEGER :: IRANK_SLEEP(2)        !st3 100711  for hsfile
-
-
-#ifdef  REAL4
+C
+      call setMessageSource("msg_init")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call screen(DEBUG,"Enter.") ! log to screen; don't have log dirname
+#endif
+C
+      subdomainFatalError = .false.
+#ifdef REAL4
       REALTYPE = MPI_REAL
       DBLETYPE = MPI_DOUBLE_PRECISION
       float_type = REALTYPE                    ! used in globalio
@@ -87,7 +97,6 @@ C--------------------------------------------------------------------------
       DBLETYPE = MPI_DOUBLE_PRECISION
       float_type = REALTYPE                    ! used in globalio
 #endif
-
       IF (PRESENT(MPI_COMM)) THEN
 C.......Duplicate communicator passed from outside
         CALL MPI_COMM_DUP (MPI_COMM,MPI_COMM_ADCIRC,IERR)
@@ -167,16 +176,27 @@ C...  Create communicators for global file writings
           ENDIF
         ENDDO
       ENDIF
-
-
       DEALLOCATE(RANKS)
-
       COMM = COMM_COMP
 
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
+C---------------------------------------------------------------------      
       END SUBROUTINE MSG_INIT
+C---------------------------------------------------------------------
 
 
+
+
+C---------------------------------------------------------------------
+C      S U B R O U T I N E   M S G _ F I N I 
+C---------------------------------------------------------------------
+C  Delete MPI resources and Shutdown MPI library.
+C  vjp  8/29/1999
+C---------------------------------------------------------------------
       SUBROUTINE MSG_FINI (NO_MPI_FINALIZE)
       IMPLICIT NONE
 #ifndef HAVE_MPI_MOD
@@ -184,10 +204,12 @@ C...  Create communicators for global file writings
 #endif
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
       INTEGER I
-C--------------------------------------------------------------------------
-C  Delete MPI resources and Shutdown MPI library.
-C  vjp  8/29/1999
-C--------------------------------------------------------------------------
+C
+      call setMessageSource("msg_fini")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C
       IF(MNWPROC > 0) THEN
         IF(MYPROC.eq.0) THEN
           DO I=1,MNWPROC
@@ -210,6 +232,12 @@ C--------------------------------------------------------------------------
           ENDDO
         ENDIF
       ENDIF
+      
+      IF (subdomainFatalError.eqv..true.) THEN
+         ! jgf50.82: Return the rank of the offending processor
+         ! as the error code        
+         CALL MPI_ABORT(MPI_COMM_ADCIRC,MYPROC,IERR)
+      ENDIF
 
       IF (PRESENT(NO_MPI_FINALIZE)) THEN
          IF (.NOT.NO_MPI_FINALIZE) THEN
@@ -223,25 +251,18 @@ C--------------------------------------------------------------------------
      &   PRINT *, "MPI terminated with Status = ",IERR
       ENDIF
 
-      RETURN
-      END SUBROUTINE MSG_FINI
-
-
-
-      SUBROUTINE MSG_TABLE ()
-      USE GLOBAL
-      USE GLOBAL_3DVS, ONLY : NSTA3DD, NSTA3DV, NSTA3DT,
-     &                        NSTA3DD_G, NSTA3DV_G, NSTA3DT_G,
-     &  IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG
-#ifndef HAVE_MPI_MOD
-      include 'mpif.h'
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
-      INTEGER :: IDPROC, NLOCAL, I, J, jdumy_loc
-      INTEGER :: jdumy,jdumy_G,jdumy_max, inputFileFmtVn
-      CHARACTER(10) :: BlkName
-      LOGICAL FileFound
-C
-C--------------------------------------------------------------------------
+      call unsetMessageSource()
+      RETURN
+C---------------------------------------------------------------------      
+      END SUBROUTINE MSG_FINI
+C---------------------------------------------------------------------
+
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   M S G _ T A B L E
+C---------------------------------------------------------------------
 C  Routine preforms following steps:
 C
 C   (1) Read Message-Passing Information from file "fort.18"
@@ -255,8 +276,25 @@ C   (8) Read Message-Passing Send List
 C  vjp  10/13/2006
 C
 C  tcm v50.21 20110610 -- Changed I8 to I12 formats
-C--------------------------------------------------------------------------
-
+C---------------------------------------------------------------------
+      SUBROUTINE MSG_TABLE ()
+      USE GLOBAL
+      USE GLOBAL_3DVS, ONLY : NSTA3DD, NSTA3DV, NSTA3DT,
+     &                        NSTA3DD_G, NSTA3DV_G, NSTA3DT_G,
+     &  IMAP_STA3DD_LG, IMAP_STA3DV_LG, IMAP_STA3DT_LG
+#ifndef HAVE_MPI_MOD
+      include 'mpif.h'
+#endif
+      INTEGER :: IDPROC, NLOCAL, I, J, jdumy_loc
+      INTEGER :: jdumy,jdumy_G,jdumy_max, inputFileFmtVn
+      CHARACTER(10) :: BlkName
+      LOGICAL FileFound
+C
+      call setMessageSource("msg_table")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C
       FileFound = .FALSE.
       INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.18',EXIST=FileFound)
       IF (FileFound.eqv..FALSE.) THEN
@@ -407,25 +445,38 @@ C     jgf49.43.18: Add 3D station mappings if appropriate. Used by globalio.
 C
 C
       CLOSE(18)
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
 1130  FORMAT(8X,6I12)
 3010  FORMAT(8X,2I12)
 3015  FORMAT(8X,3I12)
 3020  format(a8,I12)
 9973  FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
+C---------------------------------------------------------------------
       END SUBROUTINE MSG_TABLE
+C---------------------------------------------------------------------
 
-
-
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   M S G _ S T A R T 
+C---------------------------------------------------------------------
+C  Routine allocates message-passing space
+C  vjp  10/01/2006
+C---------------------------------------------------------------------
       SUBROUTINE MSG_START ()
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-C--------------------------------------------------------------------------
-C  Routine allocates message-passing space
-C  vjp  10/01/2006
-C--------------------------------------------------------------------------
       INTEGER :: J
+C
+      call setMessageSource("msg_start")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C      
+      
       ALLOCATE ( ISENDBUF(MNP,NEIGHPROC), IRECVBUF(MNP,NEIGHPROC) )
       ALLOCATE ( REQ_I1(RDIM),REQ_I2(RDIM) )
       ALLOCATE ( REQ_R1(RDIM),REQ_R2(RDIM),REQ_R3(RDIM) )
@@ -446,10 +497,24 @@ C--------------------------------------------------------------------------
          ALLOCATE ( SENDBUF(MNP,NEIGHPROC) )
          ALLOCATE ( RECVBUF(MNP,NEIGHPROC) )
       ENDIF
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       RETURN
+C---------------------------------------------------------------------      
       END SUBROUTINE MSG_START
+C---------------------------------------------------------------------
 
 
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   U P D A T E  I 
+C---------------------------------------------------------------------
+C  Update 1 or 2 Integer Arrays's Ghost Cells using asynchronous
+C  and persistent message-passing.
+C
+C  vjp  8/06/1999
+C---------------------------------------------------------------------
       SUBROUTINE UPDATEI( IVEC1, IVEC2, NMSG )
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
@@ -457,12 +522,12 @@ C--------------------------------------------------------------------------
       INTEGER,   INTENT(IN) :: NMSG
       INTEGER,   INTENT(INOUT) :: IVEC1(*),IVEC2(*)
       INTEGER :: N,I,J,NCOUNT,NFINI,TOT
-C--------------------------------------------------------------------------
-C  Update 1 or 2 Integer Arrays's Ghost Cells using asynchronous
-C  and persistent message-passing.
 C
-C  vjp  8/06/1999
-C--------------------------------------------------------------------------
+      call setMessageSource("updatei")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C 
                              !..Pack 1 or 2 Messages
       DO J=1,NEIGHPROC
          NCOUNT = 0
@@ -541,10 +606,24 @@ C--------------------------------------------------------------------------
            ENDDO
         ENDDO
       ENDIF
- 999  RETURN
+ 999  CONTINUE
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
+      RETURN
+C---------------------------------------------------------------------
       END SUBROUTINE UPDATEI
+C---------------------------------------------------------------------
 
-
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   U P D A T E R
+C---------------------------------------------------------------------
+C  Update 1, 2, or 3 Integer Arrays's Ghost Cells using asynchronous
+C  and persistent message-passing.
+C
+C  vjp  8/06/1999
+C---------------------------------------------------------------------
       SUBROUTINE UPDATER( VEC1, VEC2, VEC3, NMSG )
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
@@ -552,13 +631,12 @@ C--------------------------------------------------------------------------
       INTEGER,  INTENT(IN) ::  NMSG
       REAL(SZ), INTENT(INOUT) ::  VEC1(*),VEC2(*),VEC3(*)
       INTEGER :: N,I,J,NCOUNT,NFINI,TOT
-C--------------------------------------------------------------------------
-C  Update 1, 2, or 3 Integer Arrays's Ghost Cells using asynchronous
-C  and persistent message-passing.
 C
-C  vjp  8/06/1999
-C--------------------------------------------------------------------------
-
+      call setMessageSource("updater")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C 
       DO J=1,NEIGHPROC
          NCOUNT = 0
          DO I=1,NNODSEND(J)
@@ -683,23 +761,38 @@ cdebug     print *, myproc, tot,nfini,INDX(1),INDX(2)
         GOTO 999
       ENDIF
 
- 999  RETURN
+ 999  CONTINUE
+ 
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+C--------------------------------------------------------------------- 
       END SUBROUTINE UPDATER
+C---------------------------------------------------------------------
 
 
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   U P D A T E R 3 D 
+C---------------------------------------------------------------------
+C  Update 1 Three-dimensional Real Arrays's Ghost Cells using asynchronous
+C  and persistent message-passing.
+C
+C  tjc  6/24/2002
+C---------------------------------------------------------------------
       SUBROUTINE UPDATER3D( VEC )
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
       REAL(SZ), INTENT(INOUT) ::  VEC(MNP,MNFEN)
       INTEGER :: N,I,J,K,NCOUNT,NFINI,TOT
-C--------------------------------------------------------------------------
-C  Update 1 Three-dimensional Real Arrays's Ghost Cells using asynchronous
-C  and persistent message-passing.
 C
-C  tjc  6/24/2002
-C--------------------------------------------------------------------------
-
+      call setMessageSource("updater3d")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C       
                              !..Pack Messages
       DO J=1,NEIGHPROC
          NCOUNT = 0
@@ -741,22 +834,34 @@ C--------------------------------------------------------------------------
             ENDIF
          ENDDO
       ENDDO
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       RETURN
+C---------------------------------------------------------------------
       END SUBROUTINE UPDATER3D
+C---------------------------------------------------------------------
 
-
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   U P D A T E C  3 D 
+C---------------------------------------------------------------------
+C  Update 1 Three-dimensional Complex Arrays' Ghost Cells using asynchronous
+C  and persistent message-passing.
+C  tjc  6/24/2002
+C---------------------------------------------------------------------
       SUBROUTINE UPDATEC3D( VEC )
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
       COMPLEX(SZ), INTENT(INOUT) ::  VEC(MNP,MNFEN)
       INTEGER :: N,I,J,K,NCOUNT,NFINI,TOT
-C--------------------------------------------------------------------------
-C  Update 1 Three-dimensional Complex Arrays' Ghost Cells using asynchronous
-C  and persistent message-passing.
-C  tjc  6/24/2002
-C--------------------------------------------------------------------------
-
+C
+      call setMessageSource("updatec3d")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C       
                              !..Pack Messages
       DO J=1,NEIGHPROC
          NCOUNT = 0
@@ -814,11 +919,21 @@ C     &        REALTYPE,IPROC(J), TAG, COMM, REQ_C3D(J+NEIGHPROC),IERR)
          ENDDO
       ENDDO
 C
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
+C---------------------------------------------------------------------
       END SUBROUTINE UPDATEC3D
+C---------------------------------------------------------------------
 
 
-
+C---------------------------------------------------------------------
+C     F U N C T I O N   P S D O T
+C---------------------------------------------------------------------
+C  Parallel version of SDOT for ITPACKV module
+C---------------------------------------------------------------------
       function psdot( n, sx, sy ) result(gsum)
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
@@ -827,12 +942,20 @@ C
       real(8) lsum,gsum
       real(sz) sx(*),sy(*)
       integer kount !jgf46.00 added
-C------------------------------------------------------------------------------
-C  Parallel version of SDOT for ITPACKV module
-C------------------------------------------------------------------------------
-
+C
+      call setMessageSource("psdot")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C 
       gsum = 0.0d0
-      if (n.le.0) return
+      if (n.le.0) then
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()    
+         return
+      endif
 
       lsum = 0.0D0
       do i = 1,n
@@ -844,10 +967,22 @@ C------------------------------------------------------------------------------
       call MPI_ALLREDUCE( lsum, gsum, kount, DBLETYPE,
      &     MPI_SUM, COMM, ierr)
 
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
+C---------------------------------------------------------------------      
       end function psdot
+C---------------------------------------------------------------------
 
-
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   P S 2 D O T S
+C---------------------------------------------------------------------
+C  Parallel version of 2-SDOTs for ITPACKV module
+C  jbr  6/17/00
+C  zc   5/01/12 performance enhancements
+C---------------------------------------------------------------------
       subroutine ps2dots( n, sd, sdt ,dot3rray)
       implicit none
 #ifndef HAVE_MPI_MOD
@@ -859,14 +994,20 @@ C------------------------------------------------------------------------------
       integer i
       real(8) lsum(2),gsum(2)
       integer kount             !jgf46.00 added
-C------------------------------------------------------------------------------
-C  Parallel version of 2-SDOTs for ITPACKV module
-C  jbr  6/17/00
-C  zc   5/01/12 performance enhancements
-C------------------------------------------------------------------------------
-
+C
+      call setMessageSource("ps2dots")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C 
       dot3rray(1:3) = 0.0D0
-      if (n.le.0) return
+      if (n.le.0) then 
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()      
+         return
+      endif
 
       lsum(1:2) = 0.0D0
 
@@ -882,9 +1023,23 @@ C------------------------------------------------------------------------------
 
       dot3rray(1:2) = gsum(1:2)
       dot3rray(3) = 1.0D0
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       return
+C---------------------------------------------------------------------      
       end subroutine ps2dots
-
+C---------------------------------------------------------------------      
+      
+      
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   P S 3 D O T S
+C---------------------------------------------------------------------
+C     Parallel version of 3-SDOTs for ITPACKV module
+C     jbr  6/17/00
+C     zc   5/01/12 performance enhancements
+C---------------------------------------------------------------------
       subroutine ps3dots( n, sd, sdt ,su, dot3rray)
       implicit none
 #ifndef HAVE_MPI_MOD
@@ -897,14 +1052,20 @@ C------------------------------------------------------------------------------
       integer i
       real(8) lsum(3)
       integer kount             ! jgf46.00 added
-C------------------------------------------------------------------------------
-C  Parallel version of 3-SDOTs for ITPACKV module
-C  jbr  6/17/00
-C  zc   5/01/12 performance enhancements
-C------------------------------------------------------------------------------
-
+C
+      call setMessageSource("ps3dots")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C 
       dot3rray(1:3) = 0D0
-      if (n.le.0) return
+      if (n.le.0) then 
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()      
+         return
+      endif
 
       lsum(1:3) = 0D0
 
@@ -919,10 +1080,21 @@ C------------------------------------------------------------------------------
       call MPI_ALLREDUCE( lsum, gsum, kount, DBLETYPE,
      &     MPI_SUM, COMM, ierr)
       dot3rray(1:3) = gsum(1:3)
+C      
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       return
+C---------------------------------------------------------------------      
       end subroutine ps3dots
+C---------------------------------------------------------------------
 
-
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   A L L N O D E S
+C---------------------------------------------------------------------
+C  Compute Number of nodes in entire domain.
+C---------------------------------------------------------------------
       SUBROUTINE ALLNODES( TOTNODES )
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
@@ -930,10 +1102,12 @@ C------------------------------------------------------------------------------
       INTEGER I
       INTEGER LNODES,TOTNODES
       INTEGER kount !jgf46.00 added
-C------------------------------------------------------------------------------
-C  Compute Number of nodes in entire domain.
-C------------------------------------------------------------------------------
-
+C
+      call setMessageSource("allnodes")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C       
       LNODES = 0
       DO I=1,MNP
          IF (RESNODE(I)) LNODES = LNODES + 1
@@ -942,8 +1116,14 @@ C------------------------------------------------------------------------------
       kount=1
       CALL MPI_ALLREDUCE(LNODES,TOTNODES,kount,MPI_INTEGER,MPI_SUM,
      &                   COMM,IERR)
+C
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C---------------------------------------------------------------------
       END SUBROUTINE ALLNODES
-
+C---------------------------------------------------------------------
 
 C------------------------------------------------------------------------------
 C               S U B R O U T I N E   W E T D R Y S U M
@@ -967,14 +1147,26 @@ C
       INTEGER NCCHANGE    !input flag,=1 if this subdomain has wetted or dried
       INTEGER SumNCChange !sum total of all flags from all subdomains
       INTEGER kount       !jgf46.00 to avoid compiler bug on certain platforms
-
+C
+      call setMessageSource("wetdrysum")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C 
       SumNCChange = 0
       kount=1
       call MPI_ALLREDUCE( NCCHANGE, SumNCChange, kount, MPI_INTEGER,
      &     MPI_SUM, COMM, ierr)
       NCCHANGE = SumNCChange!resets GWCE for all subdomains if any s.d. resets
+C
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
+C---------------------------------------------------------------------      
       END SUBROUTINE WetDrySum
+C---------------------------------------------------------------------
 
 
 C------------------------------------------------------------------------------
@@ -991,75 +1183,150 @@ C------------------------------------------------------------------------------
       INTEGER WarnElevExceeded !=1 if this subdomain has exceeded warning elev
       INTEGER SumWarnElevExceeded !sum total of all flags from all subdomains
       INTEGER kount       ! to avoid compiler bug on certain platforms
-
+C
+      call setMessageSource("warnelevsum")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C 
       SumWarnElevExceeded = 0
       kount=1
       call MPI_ALLREDUCE( WarnElevExceeded, SumWarnElevExceeded, kount,
      &     MPI_INTEGER, MPI_SUM, COMM, ierr)
       WarnElevExceeded = SumWarnElevExceeded
+C
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C------------------------------------------------------------------------------
       END SUBROUTINE WarnElevSum
 C------------------------------------------------------------------------------
 
+
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   M S G _ I B C A S T
+C---------------------------------------------------------------------
+C  Broadcast integer array from processor 0.
+C  vjp  9/26/2006
+C---------------------------------------------------------------------
       SUBROUTINE MSG_IBCAST( array, n)
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
       INTEGER :: n, array(:)
-C------------------------------------------------------------------------------
-C  Broadcast integer array from processor 0.
-C  vjp  9/26/2006
-C------------------------------------------------------------------------------
 C
+      call setMessageSource("msg_ibcast")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C       
       CALL MPI_BCAST(array, n, mpi_integer,0,comm,ierr)
+C
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource() 
       RETURN
+C---------------------------------------------------------------------      
       END SUBROUTINE MSG_IBCAST
+C---------------------------------------------------------------------
 
 
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   M S G _ L B C A S T
+C---------------------------------------------------------------------
+C---------------------------------------------------------------------
       SUBROUTINE MSG_LBCAST(array, n)
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
       INTEGER :: n
       LOGICAL :: array(:)
+C
+      call setMessageSource("msg_lbcast")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C       
       CALL MPI_BCAST(array, n, mpi_logical, 0, comm, ierr)
+C
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
+C---------------------------------------------------------------------      
       END SUBROUTINE MSG_LBCAST
+C---------------------------------------------------------------------
 
 
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   M S G _ C B C A S T
+C---------------------------------------------------------------------
+C  Broadcast integer array from processor 0.
+C  vjp  9/26/2006
+C---------------------------------------------------------------------
       SUBROUTINE MSG_CBCAST( msg, n)
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
       INTEGER n
       CHARACTER(*) :: msg
-C------------------------------------------------------------------------------
+C
+      call setMessageSource("msg_cbcast")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C       
+      CALL MPI_BCAST(msg, n, mpi_character, 0, comm, ierr)
+
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+C---------------------------------------------------------------------      
+      END SUBROUTINE MSG_CBCAST
+C---------------------------------------------------------------------
+
+
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   M S G _ R B C A S T
+C---------------------------------------------------------------------
 C  Broadcast integer array from processor 0.
 C  vjp  9/26/2006
-C------------------------------------------------------------------------------
-C
-      CALL MPI_BCAST(msg, n, mpi_character, 0, comm, ierr)
-      RETURN
-      END SUBROUTINE MSG_CBCAST
-
-
+C---------------------------------------------------------------------
       SUBROUTINE MSG_RBCAST( array, n)
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
       INTEGER n
       REAL(sz) array(:,:,:)
-C------------------------------------------------------------------------------
-C  Broadcast integer array from processor 0.
-C  vjp  9/26/2006
-C------------------------------------------------------------------------------
 C
+      call setMessageSource("msg_rbcast")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C       
       CALL MPI_BCAST(array, n, realtype,0,comm,ierr)
+      
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       RETURN
+C---------------------------------------------------------------------      
       END SUBROUTINE MSG_RBCAST
+C---------------------------------------------------------------------
 
+
+C---------------------------------------------------------------------
+C     S U B R O U T I N E   M S G _ R B C A S T D
+C---------------------------------------------------------------------
 Casey 090327: Implement Seizo's buffering of radiation stress broadcasts.
 !=====Seizo Dividing Messenger
+C---------------------------------------------------------------------
       SUBROUTINE MSG_RBCASTD( array, in, jn, kn)
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
@@ -1070,6 +1337,12 @@ Casey 090327: Implement Seizo's buffering of radiation stress broadcasts.
       REAL(sz), ALLOCATABLE :: buffer(:)
       INTEGER, ALLOCATABLE :: nbox(:)
       INTEGER, Parameter :: limit_buff=1000000
+C
+      call setMessageSource("msg_rbcastd")
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.") 
+#endif
+C 
       allocate( buffer(in*jn*kn) )
 !
       ntimes = in*jn*kn / limit_buff
@@ -1108,9 +1381,19 @@ c
          enddo
       enddo
       deallocate( buffer, nbox )
+      
+#if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       RETURN
+C---------------------------------------------------------------------      
       END SUBROUTINE MSG_RBCASTD
+C---------------------------------------------------------------------
 
+C---------------------------------------------------------------------
+C---------------------------------------------------------------------
+C---------------------------------------------------------------------
       subroutine MSG_BARRIER()
 C      use messenger
 #ifndef HAVE_MPI_MOD
@@ -1118,7 +1401,10 @@ C      use messenger
 #endif
       integer myerr
       call mpi_barrier(comm,myerr)
+      
+C---------------------------------------------------------------------      
       end subroutine MSG_BARRIER
+C---------------------------------------------------------------------      
 !=============================================================================
 
       END MODULE MESSENGER

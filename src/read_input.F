@@ -27,12 +27,12 @@ C-----------------------------------------------------------------------
       USE HARM
       USE WIND
       USE ITPACKV
-#ifdef CMPI      
-      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate,ADCIRC_LOCALTERMINATE,
-     &  ADCIRC_CHECKLOCALTERMINATE
-#else
+C#ifdef CMPI      
+C      USE ADCIRC_MOD, ONLY : ADCIRC_Terminate,ADCIRC_LOCALTERMINATE,
+C     &  ADCIRC_CHECKLOCALTERMINATE
+C#else
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate    
-#endif     
+C#endif     
       USE VERSION
 !     jgf46.00
       USE NodalAttributes, ONLY :
@@ -3775,9 +3775,10 @@ C...........CHECK EXTERNAL BARRIER HEIGHTS AGAINST DEPTHS
                         WRITE(ScreenUnit,9973)
                      ENDIF
                      WRITE(16,9973)
-#ifdef CMPI
-                     CALL ADCIRC_LOCALTERMINATE()
-#endif
+                     CALL ADCIRC_Terminate()
+C#ifdef CMPI
+C                     CALL ADCIRC_LOCALTERMINATE()
+C#endif
                      STOP
                   ENDIF
                ENDIF
@@ -3803,9 +3804,10 @@ C...........CHECK INTERNAL BARRIER HEIGHTS AGAINST DEPTHS
                         WRITE(ScreenUnit,9973)
                      ENDIF
                      WRITE(16,9973)
-#ifdef CMPI                     
-                     CALL ADCIRC_LOCALTERMINATE()
-#endif                     
+                     CALL ADCIRC_Terminate()
+Ci#ifdef CMPI                     
+C                     CALL ADCIRC_LOCALTERMINATE()
+C#endif                     
                      STOP
                   ENDIF
                ENDIF
@@ -3832,9 +3834,10 @@ C...........CHECK INTERNAL BARRIER WITH PIPES BARRIER HEIGHTS AGAINST DEPTHS
                         WRITE(ScreenUnit,9973)
                      ENDIF
                      WRITE(16,9973)
-#ifdef CMPI
-                     CALL ADCIRC_LOCALTERMINATE()
-#endif
+                     CALL ADCIRC_Terminate()
+C#ifdef CMPI
+C                     CALL ADCIRC_LOCALTERMINATE()
+C#endif
                      STOP
                   ENDIF
                ENDIF
@@ -3860,9 +3863,10 @@ C...  CHECK INTERNAL BARRIER WITH PIPES PIPE HEIGHTS AGAINST DEPTHS
                         WRITE(ScreenUnit,9973)
                      ENDIF
                      WRITE(16,9973)
-#ifdef CMPI
-                     CALL ADCIRC_LOCALTERMINATE()
-#endif
+                     CALL ADCIRC_Terminate()
+C#ifdef CMPI
+C                     CALL ADCIRC_LOCALTERMINATE()
+C#endif
                      STOP
                   ENDIF
                ENDIF
@@ -3969,9 +3973,10 @@ C...  SURE THAT JGW LE MNVEL.  NOTE, JME MUST BE < JGW.
      &    /,1X,'FROM ALL THE SPECIFIED FLOW SEGMENTS COMBINED',/)
         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9973)
           WRITE(16,9973)
-#ifdef CMPI
-          CALL ADCIRC_LOCALTERMINATE()
-#endif
+          CALL ADCIRC_Terminate()
+C#ifdef CMPI
+C          CALL ADCIRC_LOCALTERMINATE()
+C#endif
           STOP
         ENDIF
 
@@ -4976,9 +4981,10 @@ C     allocate harmonic analysis arrays
      &        ,'INPUT PARAMETER) IS NOT AN ALLOWABLE VALUE',/,1X,
      &        'PLEASE CHECK YOUR INPUT',
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-#ifdef CMPI
-         CALL ADCIRC_LOCALTERMINATE()
-#endif
+         CALL ADCIRC_Terminate()
+C#ifdef CMPI
+C         CALL ADCIRC_LOCALTERMINATE()
+Cendif
          STOP
       ENDIF
       IF(NFREQ.GT.0) WRITE(16,2330)
@@ -5321,9 +5327,9 @@ C...
 
 C... zc50.80 - All compute processors pass through here and check if anyone
 C              encountered an error while reading the input files.
-#ifdef CMPI      
-      CALL ADCIRC_CHECKLOCALTERMINATE()
-#endif
+C#ifdef CMPI      
+C      CALL ADCIRC_CHECKLOCALTERMINATE()
+C#endif
 
 C...
 c.RJW merged 09/02/2008 Casey 071219: Added the following subroutine call to compute the RESELEM array.
@@ -5349,11 +5355,11 @@ C     reading a file.
      &       'The value of the i/o error flag was ',ios,'.'
          call allMessage(ERROR,scratchMessage)
       endif
-#ifdef CMPI
-      CALL ADCIRC_LOCALTERMINATE()
-#else      
+C#ifdef CMPI
+C      CALL ADCIRC_LOCALTERMINATE()
+C#else      
       CALL ADCIRC_Terminate()
-#endif      
+C#endif      
 C
 c******************************************************************************
       END SUBROUTINE READ_INPUT
@@ -5380,7 +5386,7 @@ C    kmd48.33bc - added the variables from Global
      &                  TTBCTIMEINC, SPONGEDIST, NBD, Sponge,
      &                  scratchMessage, INFO, DEBUG, ERROR, allMessage,
      &                  setMessageSource, logMessage, unsetMessageSource,
-     &                  OUTPUTSPONGE, NOPE, screen, ECHO
+     &                  OUTPUTSPONGE, NOPE, screenMessage, ECHO
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE GLOBAL_3DVS
       USE NodalAttributes, ONLY : Z0b_var
@@ -6126,7 +6132,7 @@ C-----------------------------------------------------------------------
      &   tsCounter, recCounter)
       USE GLOBAL, ONLY : scratchMessage, ECHO, INFO, WARNING, ERROR,
      &   DTDP, Day2Sec, NT, setMessageSource, logMessage, allMessage,
-     &   unsetMessageSource, DEBUG, screen, useNetCDF
+     &   unsetMessageSource, DEBUG, screenMessage, useNetCDF
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
@@ -6274,7 +6280,7 @@ C-----------------------------------------------------------------------
      &                        lat, lon, sta1, sta2, sta3,Description)
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, SLAM0, SFEA0, ICS, parse,
-     &   a2f, DEBUG, screen, setMessageSource, unsetMessageSource
+     &   a2f, DEBUG, screenMessage, setMessageSource, unsetMessageSource
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
       INTEGER num_stations
@@ -6355,7 +6361,8 @@ C-----------------------------------------------------------------------
 
       use sizes, only : sz, MyProc
       use global, only : NE,NM,X,Y,Areas,NFOver,NScreen, ScreenUnit,
-     &                   rmax,bcxy,kdresults,srchdp,tree, DEBUG,screen,
+     &                   rmax,bcxy,kdresults,srchdp,tree, DEBUG,
+     &                   screenMessage,
      &                   setMessageSource, unsetMessageSource
       use adcirc_mod, only : adcirc_terminate
       use kdtree2_module
@@ -6495,7 +6502,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE CoordinateToElement(InputXCoordinate, InputYCoordinate,
      &     OutputElement, StationNumber, Description)
       USE SIZES, ONLY : SZ, MyProc
-      USE GLOBAL, ONLY: NE, NM, X, Y, Areas, NFOver, NScreen, screen,
+      USE GLOBAL, ONLY: NE, NM, X, Y, Areas, NFOver, NScreen, 
+     & screenMessage,
      & DEBUG, ScreenUnit, setMessageSource, unsetMessageSource
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
@@ -6604,7 +6612,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE ComputeInterpolatingFactors(InputXCoordinate,
      &     InputYCoordinate, InputElement, Factor1, Factor2, Factor3)
 
-      USE GLOBAL, ONLY : NM, X, Y, Areas, DEBUG, screen,
+      USE GLOBAL, ONLY : NM, X, Y, Areas, DEBUG, screenMessage,
      &    setMessageSource, unsetMessageSource
       IMPLICIT NONE
       REAL(8), intent(in) :: InputXCoordinate                  ! cartesian

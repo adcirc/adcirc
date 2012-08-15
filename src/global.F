@@ -713,7 +713,7 @@ C     the setMessageSource subroutine must be called at the beginning
 C     of the subroutine that calls this one, and unsetMessageSource
 C     must be called at the end.
 C--------------------------------------------------------------------
-      SUBROUTINE screen(level, message)
+      SUBROUTINE screenMessage(level, message)
       IMPLICIT NONE
       INTEGER, intent(in) :: level
       CHARACTER(*), intent(in) :: message
@@ -741,7 +741,7 @@ C
 332   FORMAT(": ",A)
 333   FORMAT(A,": ",A,": ",A)
 C--------------------------------------------------------------------
-      END SUBROUTINE screen
+      END SUBROUTINE screenMessage
 C--------------------------------------------------------------------
 
 
@@ -796,7 +796,7 @@ C--------------------------------------------------------------------
       CHARACTER(*), intent(in) :: message
 C
       call logMessage(level, message)
-      call screen(level, message)
+      call screenMessage(level, message)
 C--------------------------------------------------------------------
       END SUBROUTINE allMessage
 C--------------------------------------------------------------------

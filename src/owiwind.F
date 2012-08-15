@@ -7,7 +7,7 @@ C
 C
       USE SIZES,ONLY : SZ,MYPROC
       USE GLOBAL,ONLY : NSCREEN, ScreenUnit, DEBUG, ECHO, INFO,
-     &   WARNING, ERROR, screen, logMessage, allMessage,
+     &   WARNING, ERROR, screenMessage, logMessage, allMessage,
      &   setMessageSource, unsetMessageSource, scratchMessage,
      &   openFileForRead
 #ifdef CMPI

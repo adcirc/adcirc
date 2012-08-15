@@ -1265,7 +1265,7 @@ C removed from global  myProc, MNPROC,
      &                   NOUTE, NSTAE, IMAP_STAE_LG, ICS, SLEL,
      &                   XEL, SFEL, YEL, NSTAV_G, NSTAV,  MNP,
      &                   IMAP_STAV_LG, SLEV, XEV, SFEV,
-     &                   YEV, NP_G, NP, NODES_LG, screen, DEBUG,
+     &                   YEV, NP_G, NP, NODES_LG, screenMessage, DEBUG,
      &                   setMessageSource, unsetMessageSource
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE GLOBAL_IO, ONLY:
@@ -1792,7 +1792,7 @@ C-----------------------------------------------------------------------
       USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, LOCALDIR, GLOBALDIR,
      & MYPROC
       USE HARM, ONLY : nf, nfreq, hafreq, haff, haface, namefr
-      USE GLOBAL, ONLY : OutputDataDescript_t, screen,
+      USE GLOBAL, ONLY : OutputDataDescript_t, screenMessage,
      &                   DEBUG, setMessageSource, unsetMessageSource
 c     & ,myproc
       IMPLICIT NONE
@@ -2088,7 +2088,7 @@ C-----------------------------------------------------------------------
      &    WRITE_LOCAL_FILES, MNPROC, GLOBALDIR, MYPROC
 C RJW added MYPROC
       USE GLOBAL, ONLY : ScreenUnit, BCFLAG_TEMP, scratchMessage,
-     &    DEBUG, INFO, WARNING, ERROR, screen, setMessageSource,
+     &    DEBUG, INFO, WARNING, ERROR, screenMessage, setMessageSource,
      &    unsetMessageSource, allMessage, OutputDataDescript_t,
      &    NP_G, NODES_LG
       USE GLOBAL_3DVS
@@ -2160,7 +2160,7 @@ C
 C
       call setMessageSource("writeoutput3D")
 #ifdef WRITE_OUTPUT_TRACE
-      call screen(DEBUG,"Enter.")
+      call allMessage(DEBUG,"Enter.")
 #endif
 C
 1099  FORMAT(2X,1pE20.10E3,5X,I10)
@@ -3244,7 +3244,7 @@ C                 Write time header into file
 #endif
             CASE DEFAULT
                write(scratchMessage,'("Invalid I3DGV: ",I2)') ABS(I3DGV)
-               CALL screen(ERROR, scratchMessage)
+               CALL allMessage(ERROR, scratchMessage)
             END SELECT
             N3DGV=0
             IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.).and.
@@ -3333,7 +3333,7 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
 #endif
             CASE DEFAULT
                write(scratchMessage,'("Invalid I3DGT: ",I2)') ABS(I3DGT)
-               CALL screen(ERROR, scratchMessage)
+               CALL allMessage(ERROR, scratchMessage)
             END SELECT
             N3DGT=0
             IF ((MNPROC.GT.1).and.(WRITE_LOCAL_FILES.eqv..false.).and.
@@ -3345,7 +3345,7 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
       ENDIF
 
 #ifdef WRITE_OUTPUT_TRACE
-      call screen(DEBUG,"Return.")
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       RETURN

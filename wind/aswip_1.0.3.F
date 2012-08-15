@@ -11,7 +11,7 @@ C-----------------------------------------------------------------------
      &                   nws, windReduction, sphericalDistance,
      &                   DEBUG, WARNING, ERROR, INFO, screenunit,
      &                   setMessageSource, allMessage, openFileForRead,
-     &                   screen, initLogging, scratchMessage
+     &                   screenMessage, initLogging, scratchMessage
          ! Import asymmetric hurricane vortex class
          USE vortex
          USE wind, only : writeFullCircleRmaxes, vortexLon,
@@ -121,7 +121,7 @@ C     jgf49.30 Check to see if the fort.22 file is there and if not, emit error
 C     message and terminate.
       call openFileForRead(22,infile,errorIO)
       if (errorIO.ne.0) then
-         call screen(ERROR,"aswip: Could not open file.")
+         call screenMessage(ERROR,"aswip: Could not open file.")
          stop
       endif
 
@@ -204,11 +204,11 @@ C
          ! check/set central pressure
          if (icpress(ient).eq.0) then
             if ( ient.eq.1 ) then
-               call screen(ERROR,
+               call screenMessage(ERROR,
      &           "aswip: Central pressure set to zero on first line.")
                stop
             else
-               call screen(WARNING,
+               call screenMessage(WARNING,
      &        "aswip: Central pressure persisted from previous value.")
                icpress(ient) = icpress(ient-1)
             endif
@@ -1425,7 +1425,7 @@ C     jgf49.30 Initialize to reasonable defaults.
                CALL GETARG(I,CMDLINEARG)
                write(scratchMessage,*) "Processing '",
      &            trim(CMDLINEOPTION)," ",trim(CMDLINEARG),"'."
-               call screen(INFO,scratchMessage)
+               call screenMessage(INFO,scratchMessage)
                infile = trim(CMDLINEARG)
             CASE DEFAULT
                write(screenunit,*) "WARNING: The command line option '",

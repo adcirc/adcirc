@@ -2,6 +2,14 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.82   - 08/15/2012 - jgf - Adjusted routines related to a single 
+C             subdomain initiating code exit: if a subdomain experiences
+C             a fatal error, it calls adcirc_terminate() as usual, and 
+C             sets a flag that causes mpi_abort() to be called in msg_fini()
+C             (after writer processors have been shut down); also added
+C             execution tracing to messenger.F and fixed a conflict between
+C             ADCIRC and SWAN by renaming ADCIRC's screen() subroutine to 
+C             screenMessage().
 C  v50.81   - 08/01/2012 - zc - Added routines so a single processor can
 C             initiate code exit. ADCIRC_LOCALTERMINATE and
 C             ADCIRC_CHECKLOCALTERMINATE. All processors use the check routine

@@ -3525,8 +3525,8 @@ C   kmd48.33bc - variable information needed from the global.F file
      &                   TTBCTIME2, TTBCSTATIM, TTBCTIMEINC,
      &                   q_heat1, q_heat2, HFLUX, TTBCRATIO,
      &                   setMessageSource, unsetMessageSource,
-     &                   DEBUG, ECHO, INFO, WARNING, ERROR, screen,
-     &                   NP_G, allMessage,
+     &                   DEBUG, ECHO, INFO, WARNING, ERROR, 
+     &                   NP_G, allMessage, screenMessage,
      &                   NBD, RIVBCTIMINC, RIVBCTIME1,RIVBCTIME2,
      &                   totalbcrivernodes, BCRivRATIO, NOPE,
      &                   RIVBCSTATIM
@@ -4030,7 +4030,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE setOutputTiming(tsCounter, recCounter,
      &   startTS, endTS, tsPeriod, nSets, iths, dtdphs)
       USE GLOBAL, ONLY : DTDP, setMessageSource, unsetMessageSource,
-     &   screen, DEBUG, allMessage
+     &   screenMessage, DEBUG, allMessage
       IMPLICIT NONE
       INTEGER, intent(out) :: tsCounter  ! time step counter btw outputs
       INTEGER, intent(out) :: recCounter ! counts lines in the output file
