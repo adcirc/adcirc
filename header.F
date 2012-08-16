@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.84   - 08/16/2012 - jgf - Fixed aswip compilation dependencies to enable
+C             the building of aswip on garnet at ERDC.
 C  v50.83   - 08/16/2012 - jgf - Fixed (removed or changed) stray references 
 C             to screen() subroutine in ADCIRC code. 
 C  v50.82   - 08/15/2012 - jgf - Adjusted routines related to a single 
