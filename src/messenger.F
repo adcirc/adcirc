@@ -84,7 +84,7 @@ C----------------------------------------------------------------------
 C
       call setMessageSource("msg_init")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Enter.") ! log to screen; don't have log dirname
+      call screenMessage(DEBUG,"Enter.") ! log to screen; don't have log dirname
 #endif
 C
       subdomainFatalError = .false.

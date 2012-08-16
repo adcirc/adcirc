@@ -3709,7 +3709,7 @@ C
 C
       call setMessageSource("writeHotstart")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Enter.")
+      call allMessage(DEBUG,"Enter.")
 #endif
       ncerror = .false.
 C

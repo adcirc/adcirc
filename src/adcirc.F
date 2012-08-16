@@ -114,7 +114,7 @@ C
       call initLogging()
       call setMessageSource("ADCIRC_Init")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Enter.") ! log to screen; don't have log dirname
+      call screenMessage(DEBUG,"Enter.") ! log to screen; don't have log dirname
 #endif
       IF (PRESENT(ROOTD)) THEN
         ROOTDIR = TRIM(ROOTD)

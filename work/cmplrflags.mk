@@ -457,12 +457,12 @@ ifeq ($(compiler),garnet)
   PFC	        :=  ftn
   CC		:=  pgcc
   CCBE		:=  cc
-  FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -O2 -fastsse
+  FFLAGS1	:=  $(INCDIRS) -Mextend -Minform,inform -tp=shanghai-64 -fast
   ifeq ($(DEBUG),full)
-     FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+     FFLAGS1	:=  $(INCDIRS) -Mextend -g -O0 -traceback -Mbounds -Mchkfpstk -Mchkptr -Mchkstk -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -tp=shanghai-64
   endif
   FFLAGS2	:=  $(FFLAGS1)
-  FFLAGS3	:=  $(FFLAGS1) -r8 -Mr8 -Mr8intrinsics
+  FFLAGS3	:=  $(FFLAGS1) #-r8 -Mr8 -Mr8intrinsics
   DA  	        :=  -DREAL8 -DLINUX -DCSCA
   DP  	        :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA
   DPRE	        :=  -DREAL8 -DLINUX
@@ -478,6 +478,8 @@ ifeq ($(compiler),garnet)
 # jgf20110728: on Garnet, NETCDFHOME=/opt/cray/netcdf/4.1.1.0/netcdf-pgi
 # jgf20110815: on Garnet, HDF5HOME=/opt/cray/hdf5/default/hdf5-pgi
   ifeq ($(NETCDF),enable)
+     NETCDFHOME=/opt/cray/netcdf/4.1.1.0/netcdf-pgi
+     HDF5HOME=/opt/cray/hdf5/1.8.5.0/hdf5-pgi
      FLIBS          := $(FLIBS) -lnetcdff -L$(HDF5HOME)/lib -L$(NETCDFHOME) -lnetcdf -lhdf5_hl -lhdf5 -lhdf5_fortran -lz
   endif
   MSGLIBS	:=

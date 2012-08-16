@@ -5416,7 +5416,7 @@ C    kmd48.33bc - additional variables for sponge layers
 C
       call setMessageSource("read_input_3D")
 #if defined(READ_INPUT_TRACE) || defined (ALL_TRACE)
-      call screen(DEBUG,"Enter.")
+      call allMessage(DEBUG,"Enter.")
 #endif
 C
       ios = 0
@@ -6093,7 +6093,7 @@ C                new information being used.
 
       endif
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Return.")
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       RETURN
@@ -6152,7 +6152,7 @@ C-----------------------------------------------------------------------
 C
       call setMessageSource("checkAndFillIOParameters")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Enter.")
+      call allMessage(DEBUG,"Enter.")
 #endif
 C
       tsCounter = 0  ! init
@@ -6258,7 +6258,7 @@ C        is later than the end of the simulation.
          nSets = (endTS-startTS)/tsPeriod
       ENDIF
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Return.")
+      call screenMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       RETURN
@@ -6280,7 +6280,7 @@ C-----------------------------------------------------------------------
      &                        lat, lon, sta1, sta2, sta3,Description)
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, SLAM0, SFEA0, ICS, parse,
-     &   a2f, DEBUG, screenMessage, setMessageSource, unsetMessageSource
+     &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
       INTEGER num_stations
@@ -6299,7 +6299,7 @@ C-----------------------------------------------------------------------
 C
       call setMessageSource("readStations")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Enter.")
+      call allMessage(DEBUG,"Enter.")
 #endif
 C
       DO I=1,num_stations
@@ -6337,7 +6337,7 @@ C....PRE-COMPUTE INFORMATION REQUIRED TO INTERPOLATE AT VEL. RECORDING STATIONS
 1880  FORMAT(8X,I3,6X,I7,2(2X,F14.2))
 1883  FORMAT(6X,I3,4X,I7,2(2X,F13.8),2X,2(1X,F13.2))
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Return.")
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C-----------------------------------------------------------------------
@@ -6362,7 +6362,7 @@ C-----------------------------------------------------------------------
       use sizes, only : sz, MyProc
       use global, only : NE,NM,X,Y,Areas,NFOver,NScreen, ScreenUnit,
      &                   rmax,bcxy,kdresults,srchdp,tree, DEBUG,
-     &                   screenMessage,
+     &                   screenMessage, allMessage,
      &                   setMessageSource, unsetMessageSource
       use adcirc_mod, only : adcirc_terminate
       use kdtree2_module
@@ -6388,7 +6388,7 @@ C-----------------------------------------------------------------------
 C
       call setMessageSource("kdtsearch")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Enter.")
+      call allMessage(DEBUG,"Enter.")
 #endif
       ElementFound = .false.
 
@@ -6485,7 +6485,7 @@ C...             the next element
      &     //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',
      &     //)
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Return.")
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       END SUBROUTINE KDTSEARCH
@@ -6503,7 +6503,7 @@ C-----------------------------------------------------------------------
      &     OutputElement, StationNumber, Description)
       USE SIZES, ONLY : SZ, MyProc
       USE GLOBAL, ONLY: NE, NM, X, Y, Areas, NFOver, NScreen, 
-     & screenMessage,
+     & screenMessage, allMessage,
      & DEBUG, ScreenUnit, setMessageSource, unsetMessageSource
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
 #ifdef CMPI
@@ -6526,7 +6526,7 @@ C-----------------------------------------------------------------------
 C
       call setMessageSource("CoordinateToElement")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Enter.")
+      call allMessage(DEBUG,"Enter.")
 #endif
 
       ElementFound = .false.
@@ -6592,7 +6592,7 @@ C
      &     //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',
      &     //)
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Return.")
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       RETURN
@@ -6613,7 +6613,7 @@ C-----------------------------------------------------------------------
      &     InputYCoordinate, InputElement, Factor1, Factor2, Factor3)
 
       USE GLOBAL, ONLY : NM, X, Y, Areas, DEBUG, screenMessage,
-     &    setMessageSource, unsetMessageSource
+     &    setMessageSource, unsetMessageSource, allMessage
       IMPLICIT NONE
       REAL(8), intent(in) :: InputXCoordinate                  ! cartesian
       REAL(8), intent(in) :: InputYCoordinate                  ! cartesian
@@ -6624,7 +6624,7 @@ C-----------------------------------------------------------------------
 C
       call setMessageSource("ComputeInterpolatingFactors")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Enter.")
+      call allMessage(DEBUG,"Enter.")
 #endif
       X1=X(NM(InputElement,1))
       X2=X(NM(InputElement,2))
@@ -6640,7 +6640,7 @@ C
       Factor3=(-(X4-X1)*(Y2-Y1)+(Y4-Y1)*(X2-X1))/Areas(InputElement)
 C
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Return.")
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
       RETURN
