@@ -62,11 +62,19 @@ C     S U B R O U T I N E   M A K E _ D I R N A M E
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE MAKE_DIRNAME()
+!tcm v50.85 added for windows builds
+#ifdef CMPI      
+#ifdef WINDOWS
+      USE IFPORT
+#endif
+#endif
+      
       IMPLICIT NONE
-      INTEGER :: LNAME, IARGC, ARGCOUNT, I, iprefix
+      INTEGER :: LNAME, IARGC, ARGCOUNT, I, iprefix, res
       CHARACTER(2048) :: CMDLINEARG
       CHARACTER(8)    :: PREFIX(2) = (/ '/PE0000 ', '/DOM0000' /)
       logical         :: fileFound
+      logical(4) :: dir_result
 
       INPUTDIR  = ""
       GLOBALDIR = ""
@@ -201,7 +209,8 @@ C
 
 C... tcm v49.67 -- additions for Windows based PC compilations
 #ifdef WINDOWS
-      call system('mkdir '//trim(LOCALDIR))
+      !call system('mkdir '//trim(LOCALDIR))  !tcm v50.85 this no longer works for INTEL MPI
+       dir_result = makedirqq(trim(localdir)) !tcm v50.85 added
 #else
       call MAKEDIR(trim(LOCALDIR))
 #endif

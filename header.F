@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.85   - 09/11/2012 - tcm - Added a few changes related to compiling
+C              on Windows PC using MS Studio and Intel MPI.
 C  v50.84   - 08/16/2012 - jgf - Fixed aswip compilation dependencies to enable
 C             the building of aswip on garnet at ERDC.
 C  v50.83   - 08/16/2012 - jgf - Fixed (removed or changed) stray references 

@@ -5616,8 +5616,8 @@ C...  SPECIFY TYPE OF EDDY VISCOSITY PROFILE
       ENDIF
       IF((IEVC.EQ.50).or.(IEVC.EQ.51)) THEN
          READ(15,*,err=99999,end=99998,iostat=ios) Theta1,Theta2
-         WRITE(scratchMessage,'("theta1=",E15.9," theta2=",E15.9,".")')
-     &      theta1, theta2
+         WRITE(scratchMessage,'("theta1=",E15.8," theta2=",E15.8,".")')
+     &      theta1, theta2   !tcm v50.85 20120829 changed E15.9 to E15.8 
       CALL logMessage(ECHO,scratchMessage)
       ENDIF
 

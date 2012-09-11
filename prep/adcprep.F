@@ -294,6 +294,10 @@ C---------------------------------------------------------------------------
 C
       SUBROUTINE PREPINPUT()
       USE PRE_GLOBAL
+!tcm v50.85
+#ifdef WINDOWS
+      USE IFPORT
+#endif            
       IMPLICIT NONE
 
       INTEGER I           ! loop counter for nodes, elements
@@ -301,6 +305,10 @@ C
       CHARACTER CMD*6     ! string to hold shell command
       CHARACTER PENUM*6   ! string to hold directory name
       CHARACTER DIRCMD*72 ! string to hold complete shell command line
+#ifdef WINDOWS      
+      logical(4) :: dir_result  !tcm v50.85
+      INTEGER :: dir_error   !tcm v50.85 
+#endif
 
 C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
       if (PREP_13) then
@@ -456,8 +464,25 @@ C
          PENUM  = 'PE0000'
          CALL IWRITE(PENUM,3,6,PE)
          !tcm 20110510 v50.05 adding support for windows
-#ifdef PC_DIG_FORT
-         call  system('mkdir '//PENUM)
+#ifdef WINDOWS
+         dir_result = makedirqq(PENUM) !tcm v50.85 added
+         if (dir_result.eqv..false) then
+            dir_error = getlasterrorqq()
+            SELECT CASE (dir_error)
+            CASE(2)
+               print *, "Error Creating ",PENUM,
+     &               ". The file or path specified was not found."
+               stop
+            CASE(13)
+               print *, "Error Creating ",PENUM,".  Access Denied."
+               stop
+            CASE(17) 
+               print *, PENUM," already exists."
+            CASE DEFAULT
+            END SELECT
+         ENDIF
+#elif PC_DIG_FORT
+         call  system('mkdir '//PENUM)  !tcm v50.85 this no longer works for INTEL MPI
 #else
          CALL MAKEDIR(PENUM)
 #endif

@@ -1,8 +1,10 @@
 C
 C--Machine dependent code for adcprep
 C
+C... TCM v50.85 -- Added WINDOWS
+C#ifdef PC_DIG_FORT
+#if defined(PC_DIG_FORT) || defined(WINDOWS)
 
-#ifdef PC_DIG_FORT
       SUBROUTINE  IREAD(STRING,INTVAR)
       INTEGER INTVAR
       CHARACTER*4   STRING
