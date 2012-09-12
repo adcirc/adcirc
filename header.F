@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.86   - 09/12/2012 - tcm - Adding an empty directory "windows" where
+C              MS Visual Studio projects for building metis/adcprep/adcirc/
+C              and padcirc can be stored.
 C  v50.85   - 09/11/2012 - tcm - Added a few changes related to compiling
 C              on Windows PC using MS Studio and Intel MPI.
 C  v50.84   - 08/16/2012 - jgf - Fixed aswip compilation dependencies to enable
