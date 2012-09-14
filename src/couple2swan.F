@@ -911,7 +911,7 @@ C-----------------------------------------------------------------------
 
       LOGICAL                       :: CROSS(4,NP)
 #ifdef ADCNETCDF
-      LOGICAL                       :: NETCDF_ERROR(8)
+      LOGICAL                       :: NETCDF_ERROR(7)
 #endif
 
 !Casey 090820: Sapphire doesn't like it if these variables

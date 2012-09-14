@@ -151,7 +151,7 @@ ifeq ($(compiler),intel-ND)
      CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
   endif
   ifeq ($(NETCDF),enable)
-  #   HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
+     HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
      FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
   endif   
   CLIBS         :=

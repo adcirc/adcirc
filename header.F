@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.87   - 09/14/2012 - zc - Corrected the size of the netcdf_error array
+C              in couple2swan.F to prevent message passing errors.
 C  v50.86   - 09/12/2012 - tcm - Adding an empty directory "windows" where
 C              MS Visual Studio projects for building metis/adcprep/adcirc/
 C              and padcirc can be stored.
