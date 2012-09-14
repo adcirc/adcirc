@@ -803,7 +803,7 @@ C-----------------------------------------------------------------------
 
       USE Couple2Adcirc,ONLY: COMPDA
       USE GLOBAL,       ONLY: AID4,
-     &                        DP,
+     &                       DP,
      &                        DT,
      &                        ETA2,
      &                        NDSETSW,
@@ -876,8 +876,8 @@ C-----------------------------------------------------------------------
      &                        WRITE_GBL_FILE_THROUGH_WRITER,
      &                        Writer_StoreOne,
      &                        Writer_StoreTwo
-      USE MESSENGER,   ONLY : MSG_FINI,      !st3 100708: check writer buffer
-     &                        MSG_LBCAST
+      USE MESSENGER,   ONLY : MSG_FINI,       !st3 100708: check writer buffer
+     &                        subDomainFatalError
 #endif
 
 #ifdef ADCNETCDF
@@ -1252,14 +1252,13 @@ Cobell 20120510: Added for NetCDF SWAN output processing
                    CASE DEFAULT
                        !...Should not be reachable
                    END SELECT
-#ifdef CMPI
-                   CALL MSG_LBCAST(NETCDF_ERROR(:),7)
-#endif
+                   
                    DO I=1,7
                        IF(NETCDF_ERROR(I))THEN
 #ifdef CMPI
+                           subDomainFatalError=.TRUE.
                            CALL MSG_FINI()
-#endif
+#endif                           
                            STOP
                        ENDIF
                    ENDDO
@@ -1483,6 +1482,7 @@ C          for the swan variable we are in the loop for.
                            IF( IFileCounter > MNWPROC*NUM_BUF_MAX ) THEN !st3 100708: writer buffer check
                              WRITE(6,*) ' ***** WRITER BUFFER ERROR ***' !st3 100708: writer buffer check
                              WRITE(6,*) '     You need more Writer Core' !st3 100708: writer buffer check
+                             subDomainFatalError=.TRUE.
                              CALL MSG_FINI()
                              STOP
                            ENDIF

@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.88   - 09/14/2012 - zc - Corrected a single processor arriving at
+C              LBCAST in couple2swan.F. Made a simliar change for
+C              consistency in write_output.F, but using ADCIRC_TERMINATE().
 C  v50.87   - 09/14/2012 - zc - Corrected the size of the netcdf_error array
 C              in couple2swan.F to prevent message passing errors.
 C  v50.86   - 09/12/2012 - tcm - Adding an empty directory "windows" where

@@ -21,6 +21,7 @@ C     including hotstart and harmonic analysis.
 C
 C----------------------------------------------------------------------
       SUBROUTINE WRITE_OUTPUT_2D (IT,TimeLoc)
+      USE ADCIRC_MOD,ONLY: ADCIRC_TERMINATE
       USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC
 C RJW added MYPROC, MNPROC
       USE GLOBAL
@@ -572,15 +573,14 @@ C
             CALL initNetCDFOutputFile(164,RSDescript, netcdf_error(9))
 #endif
          ENDIF
-#ifdef CMPI
-         CALL msg_lbcast(netcdf_error,14)
+Cobell - We no longer need this bcast if we set subdomainFatalError first
+C        CALL msg_lbcast(netcdf_error,14)
          DO i=1,14
             IF (netcdf_error(i).eqv..true.) THEN
-               CALL msg_fini()
+               CALL ADCIRC_TERMINATE()               
                STOP
             ENDIF
          ENDDO
-#endif
 #endif
 C
          FirstCall = .false.
