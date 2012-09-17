@@ -33,7 +33,7 @@ C  Message-Passing Array space
       INTEGER ::  NEIGHPROC, RDIM, IERR
       INTEGER ::  TAG = 100
       INTEGER ::  COMM_COMP                           ! COMMUNICATOR FOR COMPUTATION
-      INTEGER ::  GROUP_WORLD, GROUP_COMP
+      INTEGER ::  GROUP_WORLD, GROUP_COMP, GROUP_WRITER_ONLY
       INTEGER, ALLOCATABLE ::  GROUP_WRITER(:)        ! GROUPS FOR GLOBAL FILE WRITING
       INTEGER, ALLOCATABLE ::  GROUP_WRITEH(:)        ! GROUPS FOR HOTSTART FILE WRITING !st3 100711
       INTEGER, ALLOCATABLE ::  GROUP_HSLEEP(:)        ! GROUPS FOR HOTSTART FILE WRITING !st3 100711
@@ -78,7 +78,7 @@ C----------------------------------------------------------------------
 #endif
       INTEGER, OPTIONAL :: MPI_COMM
       INTEGER :: I
-      INTEGER, ALLOCATABLE :: RANKS(:)
+      INTEGER, ALLOCATABLE :: RANKS(:),WRANKS(:)
       INTEGER :: SENDBUF, RECVBUF
       INTEGER :: IRANK_SLEEP(2)        !st3 100711  for hsfile
 C
@@ -129,6 +129,7 @@ C...  Create a communicator for computation
 
       IF(MNWPROC > 0) THEN
 C...  Allocate memory for groups and communicators
+        ALLOCATE(WRANKS(MNWPROC))
         ALLOCATE(GROUP_WRITER(MNWPROC),COMM_WRITER(MNWPROC))
 
 C...  Create communicators for global file writings
@@ -138,7 +139,7 @@ C...  Create communicators for global file writings
           CALL MPI_GROUP_INCL(GROUP_WORLD,MNPROC+1,RANKS,
      &                        GROUP_WRITER(I),IERR)
           CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_WRITER(I),
-     &                         COMM_WRITER(I),IERR)
+     &                        COMM_WRITER(I),IERR)
 
           IF(MYPROC == MNPROC - 1 + I) THEN
             WRITER_ID = I
@@ -163,13 +164,13 @@ C...  Create communicators for global file writings
           CALL MPI_GROUP_INCL(GROUP_WORLD,MNPROC+1,RANKS,
      &                        GROUP_WRITEH(I),IERR)
           CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_WRITEH(I),
-     &                         COMM_WRITEH(I),IERR)
+     &                        COMM_WRITEH(I),IERR)
 
           IRANK_SLEEP(2) = MNPROC + MNWPROC - 1 + I
           CALL MPI_GROUP_INCL(GROUP_WORLD,2,IRANK_SLEEP,
      &                        GROUP_HSLEEP(I),IERR)
           CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_HSLEEP(I),
-     &                         COMM_HSLEEP(I),IERR)
+     &                        COMM_HSLEEP(I),IERR)
 
           IF(MYPROC == MNPROC + MNWPROC - 1 + I) THEN
             WRITER_ID = I

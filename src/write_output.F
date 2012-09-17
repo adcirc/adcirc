@@ -569,9 +569,9 @@ C
             CALL initNetCDFOutputFile(313,PrMinDescript,netcdf_error(12))
             CALL initNetCDFOutputFile(314,WVMaxDescript,netcdf_error(13))
             CALL initNetCDFOutputFile(315,RSMaxDescript,netcdf_error(14))
-#ifdef CSWAN
-            CALL initNetCDFOutputFile(164,RSDescript, netcdf_error(9))
-#endif
+            IF(ABS(NRS).EQ.3.OR.ABS(NRS).EQ.4)THEN
+                CALL initNetCDFOutputFile(164,RSDescript, netcdf_error(9))
+            ENDIF    
          ENDIF
 Cobell - We no longer need this bcast if we set subdomainFatalError first
 C        CALL msg_lbcast(netcdf_error,14)
@@ -792,17 +792,18 @@ Casey 090302: Added outer IF statement.
 C           save fulldomain elevation data to file
 
 C....tcm v50.27 added using writer processors for full domain output
-               if(ABS(NOUTGE).eq.1) then
+               if(ABS(NOUTGE).eq.1.OR.ABS(NOUTGE).EQ.3.OR.
+     &            ABS(NOUTGE).EQ.5) then
 #ifdef CMPI
 Casey 090302: Changed descript to ElevDescript.
                   IF(MNWPROC.GT.0) THEN
                      CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $              (TRIM(GLOBALDIR)//'/'//'fort.63',ElevDescript,TimeLoc,it,
+     $              (63,TRIM(GLOBALDIR)//'/'//'fort.63',ElevDescript,TimeLoc,it,
      $                 writer_store63, -99999.D0)
 
                      !tcm v50.66.01 added for time varying bathymetry
                    if (nddt.ne.0) call WRITE_GBL_FILE_THROUGH_WRITER
-     $              (TRIM(GLOBALDIR)//'/'//'fort.76',BathyDescript,TimeLoc,it,
+     $              (76,TRIM(GLOBALDIR)//'/'//'fort.76',BathyDescript,TimeLoc,it,
      $                 writer_storeOne, 0.D0)
 
                   ELSE
@@ -866,13 +867,13 @@ C              kmd - updated
 Casey 090302: Changed descript to ElevDescript.
               IF(MNWPROC.GT.0) THEN
                  CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $              (TRIM(GLOBALDIR)//'/'//'fort.63',ElevDescript,TimeLoc,it,
+     $              (63,TRIM(GLOBALDIR)//'/'//'fort.63',ElevDescript,TimeLoc,it,
      $                 writer_store63, -99999.D0)
 
                   !tcm v50.66.01 added for time varying bathymetry
                   !this will be a full record not compact
                  if (nddt.ne.0) CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $              (TRIM(GLOBALDIR)//'/'//'fort.76',BathyDescript,TimeLoc,it,
+     $              (63,TRIM(GLOBALDIR)//'/'//'fort.76',BathyDescript,TimeLoc,it,
      $                 writer_storeOne, 0.D0)
 
               ELSE
@@ -925,12 +926,13 @@ Casey 090302: Added outer IF statement.
      &         (ABS(NOUTGV).EQ.3)) THEN
 
 C....tcm v50.27 added using writer processors for full domain output
-               if(ABS(NOUTGV).eq.1) then
+               if(ABS(NOUTGV).eq.1.OR.ABS(NOUTGV).eq.3.OR.
+     &            ABS(NOUTGV).EQ.5) then
 #ifdef CMPI
 Casey 090302: Changed descript to VelDescript.
                   IF(MNWPROC.GT.0) THEN
                      CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                (TRIM(GLOBALDIR)//'/'//'fort.64',VelDescript,TimeLoc,it,
+     $                (64,TRIM(GLOBALDIR)//'/'//'fort.64',VelDescript,TimeLoc,it,
      $                 writer_storeTwo, 0.D0)
                   ELSE
                      CALL writeOutArray(64, TimeLoc, IT, VelDescript,
@@ -955,7 +957,7 @@ Casey 090302: Added file name.
 Casey 090302: Changed descript to VelDescript.
                   IF(MNWPROC.GT.0) THEN
                     CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                (TRIM(GLOBALDIR)//'/'//'fort.64',VelDescript,TimeLoc,it,
+     $                (64,TRIM(GLOBALDIR)//'/'//'fort.64',VelDescript,TimeLoc,it,
      $                 writer_storeTwo, 0.D0)
                   ELSE
                     CALL WRITE_GBL_FILE_SKIP_DEFAULT ! sb 11/10/2006
@@ -990,30 +992,30 @@ Casey 090302: Added outer IF statement.
      &         (ABS(NOUTGW).EQ.3)) THEN
 C           save atmospheric pressure recording station data to file
 C....tcm v50.27 added using writer processors for full domain output
-               IF(ABS(NOUTGW).eq.1) then
+               IF(ABS(NOUTGW).eq.1.OR.ABS(NOUTGW).EQ.3.OR.
+     &            ABS(NOUTGW).EQ.5) then
 #ifdef CMPI
 Casey 090302: Changed descript to VelDescript.
                   IF(MNWPROC.GT.0) THEN
                      CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                  (TRIM(GLOBALDIR)//'/'//'fort.73',PrDescript,TimeLoc,
+     $                  (73,TRIM(GLOBALDIR)//'/'//'fort.73',PrDescript,TimeLoc,
      $                   it,writer_storeOne, 0.D0)
                      CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                   (TRIM(GLOBALDIR)//'/'//'fort.74',
+     $                   (74,TRIM(GLOBALDIR)//'/'//'fort.74',
      &                   WindVelDescript,TimeLoc,it,writer_storeTwo, 0.D0)
                      IF(NCICE.NE.0) then
                         CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                       (TRIM(GLOBALDIR)//'/'//'fort.93',
+     $                       (93,TRIM(GLOBALDIR)//'/'//'fort.93',
      $                       IceDescript,TimeLoc,it,writer_storeOne, 0.D0)
                      ENDIF
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
                      IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
 !#ifdef CSWAN
                         CALL WRITE_GBL_FILE_THROUGH_WRITER
-     &                      (TRIM(GLOBALDIR)//'/'//'rads.64',RSDescript,
+     &                      (164,TRIM(GLOBALDIR)//'/'//'rads.64',RSDescript,
      &                       TimeLoc,it,writer_storeTwo, 0.D0)
                      ENDIF
 !#endif
-
                   ELSE  !no writer processors
 
                      CALL writeOutArray(73, TimeLoc, IT, PrDescript,
@@ -1105,7 +1107,7 @@ C           jgf48.03 TODO: Make this globalio compliant.
 Casey 090302: Changed descript to PrDescript
                IF(MNWPROC.GT.0) THEN
                  CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $             (TRIM(GLOBALDIR)//'/'//'fort.73',PrDescript,TimeLoc,it,
+     $             (73,TRIM(GLOBALDIR)//'/'//'fort.73',PrDescript,TimeLoc,it,
      $              writer_storeOne, 0.D0)
                ELSE
                  CALL WRITE_GBL_FILE_SKIP_DEFAULT
@@ -1124,7 +1126,7 @@ C           IF (ABS(NOUTGW).EQ.4) THEN
 Casey 090302: Changed descript to WindVelDescript
                IF(MNWPROC.GT.0) THEN
                  CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                   (TRIM(GLOBALDIR)//'/'//'fort.74',
+     $                   (74,TRIM(GLOBALDIR)//'/'//'fort.74',
      &                   WindVelDescript,TimeLoc,it,
      $                   writer_storeTwo, 0.D0)
                ELSE
@@ -1144,7 +1146,7 @@ C           jgf48.03 TODO: Make this globalio compliant.
 #ifdef CMPI
                   IF(MNWPROC.GT.0) THEN
                     CALL WRITE_GBL_FILE_THROUGH_WRITER
-     $                (TRIM(GLOBALDIR)//'/'//'fort.93',
+     $                (93,TRIM(GLOBALDIR)//'/'//'fort.93',
      $                IceDescript,TimeLoc,it,writer_storeOne, 0.D0)
                   ELSE
                      CALL WRITE_GBL_FILE_SKIP_DEFAULT
@@ -1163,10 +1165,10 @@ C           jgf48.03 TODO: Make this globalio compliant.
 Casey 090302: Added these lines for output of radiation stresses.
 #ifdef CMPI
                   IF(MNWPROC.GT.0) THEN
-                     CALL WRITE_GBL_FILE_THROUGH_WRITER
-     &                 (TRIM(GLOBALDIR)//'/'//'rads.64',
-     &                 RSDescript,TimeLoc,it,
-     &                 writer_storeTwo, 0.D0)
+                    CALL WRITE_GBL_FILE_THROUGH_WRITER
+     &                   (164,TRIM(GLOBALDIR)//'/'//'rads.64',
+     &                   RSDescript,TimeLoc,it,
+     &                   writer_storeTwo, 0.D0)
                   ELSE
                      CALL WRITE_GBL_FILE_SKIP_DEFAULT
      &                 (164, TRIM(GLOBALDIR)//'/'//'rads.64',

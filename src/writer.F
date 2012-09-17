@@ -28,6 +28,8 @@ C  variables
       INTEGER  :: NUM_ITEMS_PER_RECORD(NUM_BUF_MAX)
       INTEGER  :: ITS(NUM_BUF_MAX)
       INTEGER  :: FULLREC_SWITCH(NUM_BUF_MAX)  ! tcm v50.27 added for full record option
+      INTEGER  :: NETCDF_SWITCH(NUM_BUF_MAX)   ! cobell ... for netcdf
+      INTEGER  :: LUN(NUM_BUF_MAX)
       REAL(SZ) :: DEFAULT_VALUES(NUM_BUF_MAX)
       REAL(SZ) :: TIMES(NUM_BUF_MAX)
       CHARACTER(256)  :: WFILENAMES(NUM_BUF_MAX)
@@ -103,7 +105,6 @@ C...  Main loop
       DO WHILE(.TRUE.)
         CALL MPI_RECV(SIG, 1, MPI_INTEGER, 0, TAG,
      &       COMM_WRITER(WRITER_ID),STAT,IERR)
-
         IF(SIG == SIG_VAL) THEN
           WRITE(ScreenUnit,*) 'WRITER PROC ',WRITER_ID,
      &         ' RECEIVED SIG_VAL'
@@ -182,23 +183,25 @@ C        W R I T E _ G B L _ F I L E _ T H R O U G H _ W R I T E R
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       subroutine WRITE_GBL_FILE_THROUGH_WRITER
-     &     (filename, descript, TimeLoc, it, store_cmd, default_val)
+     &     (tlun, filename, descript, TimeLoc, it, store_cmd, default_val)
       use global
       implicit none
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
       external store_cmd
+      integer      :: tlun !...Cobell-For Netcdf unit numbers
       integer      :: num
       integer      :: ierr
       integer      :: bufsize
       integer      :: istart, iend, it
       integer      :: fullrec   !1 = true, 0 = false   tcm v50.27 added
+      integer      :: w_netcdf
       real(8)      :: TimeLoc
       character(*) :: filename
       character(256) :: filenamebuf
       real(sz)     :: default_val
-      integer      :: INTBUF(4)  !tcm v50.27 increased size from 3 to 4
+      integer      :: INTBUF(6)  !tcm v50.27 increased size from 3 to 4, cobell increase to 6
       real(sz)     :: REBUF(2)
       integer      :: wcomm
       type (OutputDataDescript_t) :: descript
@@ -225,16 +228,24 @@ C...     Send SIG_VAL to a writer to get it ready to receive values.
 C...     Send some parameters associated to this file
 C....    tcm v50.27 added for full/compact record
          FULLREC = 1  !full record output
+         W_NETCDF = 0
          IF (ABS(descript % specifier) == 4) THEN
             !compact record
             FULLREC = 0
+Cobell - Allow writer processors to output netcdf data            
+         ELSEIF ( ABS(descript % specifier) == 3 .OR. 
+     &            ABS(descript % specifier) == 5 ) THEN 
+            W_NETCDF = 1
          ENDIF
+
 C
          INTBUF(1) = NP_G
          INTBUF(2) = descript % num_items_per_record
          INTBUF(3) = IT
          INTBUF(4) = FULLREC   !tcm v50.27 added
-         CALL MPI_SEND(INTBUF,4,MPI_INTEGER,MNPROC,TAG,
+         INTBUF(5) = W_NETCDF  !cobell added
+         INTBUF(6) = tlun
+         CALL MPI_SEND(INTBUF,6,MPI_INTEGER,MNPROC,TAG,
      &       WCOMM,IERR)
 
          REBUF(1) = default_val
@@ -279,7 +290,6 @@ C...     Note that ranks from 0 to (MNPROC-1) are compute procs, and
 C...     rank MNPROC of writer communicators is always a writer proc.
          call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM,
      &     MNPROC, WCOMM, ierr)
-
          istart = iend + 1
          iend   = min(istart + num - 1, descript % num_fd_records)
          num    = iend - istart + 1
@@ -424,7 +434,7 @@ C-----------------------------------------------------------------------
       integer      :: bufsize
       integer      :: istart, iend
       character(256) :: filenamebuf
-      integer      :: intbuf(4)  !tcm v50.27 increased size from 3 to 4
+      integer      :: intbuf(6)  !tcm v50.27 increased size from 3 to 4, cobell to 6
       real(sz)     :: rebuf(2)
       integer      :: wcomm
       INTEGER      :: STAT(MPI_STATUS_SIZE)
@@ -442,12 +452,14 @@ C...  Writers use their own communicator
       wcomm = comm_writer(writer_id)
 
 C...  Receive some parameters necessary to write a file
-      CALL MPI_RECV(INTBUF,4,MPI_INTEGER,0,TAG,
+      CALL MPI_RECV(INTBUF,6,MPI_INTEGER,0,TAG,
      &     WCOMM,STAT,IERR)
       NNOD_GLOBAL(BUFID) = INTBUF(1)
       NUM_ITEMS_PER_RECORD(BUFID) = INTBUF(2)
       ITS(BUFID) = INTBUF(3)
       FULLREC_SWITCH(BUFID) = INTBUF(4)  !tcm v50.27 added
+      NETCDF_SWITCH(BUFID) = INTBUF(5)   !cobell added for netcdf
+      LUN(BUFID) = INTBUF(6)
 
 #ifdef WRITER_DEBUG
       print *, 'RECEIVED NNOD_GLOBAL = ',NNOD_GLOBAL(BUFID)
@@ -700,14 +712,19 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE WRITER_WRITE()
       use global
+#ifdef ADCNETCDF
+      use NETCDFIO,only:writeOutArrayNetCDFWriter
+#endif      
       implicit none
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-      INTEGER :: WCOMM
-      INTEGER :: IBUF,INOD
+      INTEGER :: WCOMM,IERR
+      INTEGER :: IBUF,INOD,I,J
+      INTEGER :: MYRECORD,MYLUN
       INTEGER :: nNonDefVal
       INTEGER :: FULLREC  !tcm v50.27 added
+      INTEGER :: W_NETCDF
       INTEGER, PARAMETER :: FID = 100
       REAL(SZ) :: VAL1,VAL2,DEFAULT_VAL
 
@@ -715,7 +732,7 @@ C-----------------------------------------------------------------------
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-
+      
       WCOMM = COMM_WRITER(WRITER_ID)
 
 #ifdef WRITER_DEBUG
@@ -734,83 +751,105 @@ C...     Validity check
 
          DEFAULT_VAL = DEFAULT_VALUES(IBUF)
          FULLREC = FULLREC_SWITCH(IBUF)
+         W_NETCDF = NETCDF_SWITCH(IBUF) 
 
 C...     Retrieve a RESGBUF corresponding to BUFID
          CALL WRITER_SET_RESGBUF(IBUF, .FALSE.)
 
 C...     Open file
-         if(isplit == 0 ) then             !Not Split               !st3  split file 100708
-         OPEN(FID, FILE=WFILENAMES(IBUF), ACCESS='SEQUENTIAL',
+         IF(W_NETCDF.NE.1)THEN
+            if(isplit == 0 ) then             !Not Split               !st3  split file 100708
+            OPEN(FID, FILE=WFILENAMES(IBUF), ACCESS='SEQUENTIAL',
      &       POSITION='APPEND')
-         else                              !Split                   !st3  split file 100708
-            OPEN(FID, FILE=WFILENAMES(IBUF), STATUS='REPLACE',       !st3  split file 100708
-     &         ACTION='WRITE')                                     !st3  split file 100708
-         endif
+            else                              !Split                   !st3  split file 100708
+                OPEN(FID, FILE=WFILENAMES(IBUF), STATUS='REPLACE',       !st3  split file 100708
+     &              ACTION='WRITE')                                     !st3  split file 100708
+            endif
+         ENDIF   
 
+         IF(W_NETCDF.NE.1)THEN
 c... tcm v50.27 added full record writing options
-         IF(FULLREC == 1) THEN
-            nNonDefVal = NNOD_GLOBAL(IBUF)
-         ELSE
-C...    Count non-default values
-           nNonDefVal = 0
-C....   Scalar data
+            IF(FULLREC == 1) THEN
+                nNonDefVal = NNOD_GLOBAL(IBUF)
+            ELSE
+C...        Count non-default values
+                nNonDefVal = 0
+C....       Scalar data
+                IF(NUM_ITEMS_PER_RECORD(IBUF) == 1) THEN
+                    DO INOD=1,NNOD_GLOBAL(IBUF)
+                        VAL1 = RESGBUF(1,INOD)
+                        IF(VAL1 == DEFAULT_VAL) CYCLE
+                        nNonDefVal = nNonDefVal + 1
+                    ENDDO
+C....   Vector data
+                ELSE IF(NUM_ITEMS_PER_RECORD(IBUF) == 2) THEN
+                    DO INOD=1,NNOD_GLOBAL(IBUF)
+                        VAL1 = RESGBUF(1,INOD)
+                        VAL2 = RESGBUF(2,INOD)
+
+                        IF((VAL1 == DEFAULT_VAL).AND.
+     &                  (VAL2 == DEFAULT_VAL)) CYCLE
+
+                        nNonDefVal = nNonDefVal + 1
+                    ENDDO
+                ENDIF
+            ENDIF
+
+C...        Writes a time stamp
+c.          tcm v50.27 added for full record option
+            IF (FULLREC == 0) THEN
+                WRITE(FID, 100) TIMES(IBUF), ITS(IBUF), nNonDefVal, DEFAULT_VAL
+            ELSE
+                WRITE(FID, 110) TIMES(IBUF), ITS(IBUF)
+            ENDIF
+ 100        FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)  !changed formats to match those in globalio.F
+ 110        FORMAT(2x,1pE20.10E3,5X,I10)  !tcm v50.27 added for full record
+
+C...        Write data
+C....       Scalar data
             IF(NUM_ITEMS_PER_RECORD(IBUF) == 1) THEN
-               DO INOD=1,NNOD_GLOBAL(IBUF)
-                  VAL1 = RESGBUF(1,INOD)
-                  IF(VAL1 == DEFAULT_VAL) CYCLE
-                  nNonDefVal = nNonDefVal + 1
-               ENDDO
+                DO INOD=1,NNOD_GLOBAL(IBUF)
+                    VAL1 = RESGBUF(1,INOD)
+
+                    IF((FULLREC==0).AND.(VAL1 == DEFAULT_VAL)) CYCLE
+
+                    WRITE(FID,1000) INOD, VAL1
+                ENDDO
+
 C....   Vector data
             ELSE IF(NUM_ITEMS_PER_RECORD(IBUF) == 2) THEN
-               DO INOD=1,NNOD_GLOBAL(IBUF)
-                  VAL1 = RESGBUF(1,INOD)
-                  VAL2 = RESGBUF(2,INOD)
+                DO INOD=1,NNOD_GLOBAL(IBUF)
+                    VAL1 = RESGBUF(1,INOD)
+                    VAL2 = RESGBUF(2,INOD)
 
-                  IF((VAL1 == DEFAULT_VAL).AND.
-     &               (VAL2 == DEFAULT_VAL)) CYCLE
+                    IF((FULLREC==0).AND.((VAL1 == DEFAULT_VAL).AND.
+     &                  (VAL2 == DEFAULT_VAL))) CYCLE
 
-                  nNonDefVal = nNonDefVal + 1
-               ENDDO
+                    WRITE(FID,2000) INOD, VAL1, VAL2
+                ENDDO
+
             ENDIF
-         ENDIF
 
-C...     Writes a time stamp
-c.       tcm v50.27 added for full record option
-         IF (FULLREC == 0) THEN
-            WRITE(FID, 100) TIMES(IBUF), ITS(IBUF), nNonDefVal, DEFAULT_VAL
+C...        Close file
+            CLOSE(FID)
          ELSE
-            WRITE(FID, 110) TIMES(IBUF), ITS(IBUF)
+Cobell ... Added to allow writer core to write NetCDF output without
+C          needing access to the entire descript array which would have
+C          required extra message passing steps.
+#ifdef ADCNETCDF         
+            IF(NUM_ITEMS_PER_RECORD(IBUF).EQ.1)THEN
+                CALL writeOutArrayNetCDFWriter(lun(ibuf), times(ibuf), 
+     &              its(ibuf),1,default_values(ibuf),RESGBUF(1,:) )
+            ELSEIF(NUM_ITEMS_PER_RECORD(IBUF).EQ.2)THEN
+                CALL writeOutArrayNetCDFWriter(lun(ibuf), times(ibuf),
+     &              its(ibuf),2,default_values(ibuf),RESGBUF(1,:),
+     &              RESGBUF(2,:) )
+            ENDIF
+#else
+         WRITE(ScreenUnit,'(A)') "ERROR: NetCDF is not available. "//
+     &                           "No output has been written."    
+#endif         
          ENDIF
- 100     FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)  !changed formats to match those in globalio.F
- 110     FORMAT(2x,1pE20.10E3,5X,I10)  !tcm v50.27 added for full record
-
-C...     Write data
-C....    Scalar data
-         IF(NUM_ITEMS_PER_RECORD(IBUF) == 1) THEN
-            DO INOD=1,NNOD_GLOBAL(IBUF)
-               VAL1 = RESGBUF(1,INOD)
-
-               IF((FULLREC==0).AND.(VAL1 == DEFAULT_VAL)) CYCLE
-
-               WRITE(FID,1000) INOD, VAL1
-            ENDDO
-
-C....   Vector data
-         ELSE IF(NUM_ITEMS_PER_RECORD(IBUF) == 2) THEN
-            DO INOD=1,NNOD_GLOBAL(IBUF)
-               VAL1 = RESGBUF(1,INOD)
-               VAL2 = RESGBUF(2,INOD)
-
-               IF((FULLREC==0).AND.((VAL1 == DEFAULT_VAL).AND.
-     &           (VAL2 == DEFAULT_VAL))) CYCLE
-
-               WRITE(FID,2000) INOD, VAL1, VAL2
-            ENDDO
-
-         ENDIF
-
-C...     Close file
-         CLOSE(FID)
       ENDDO
 
       BUFID = 0

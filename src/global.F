@@ -569,6 +569,11 @@ C     globalio and writer modules
       real(sz) :: resultBuf(BUFSIZE_MAX)
       integer :: integerBuffer(BUFSIZE_MAX)
       integer :: integerResultBuffer(BUFSIZE_MAX)
+#ifdef ADCNETCDF      
+      logical :: writerReadMetaData=.FALSE. !...variable to allow writers to read 
+                                            !   NetCDF metadata from ADCPREP processed
+                                            !   files on first pass
+#endif                                    
 C
 C     jgf48.03 the following data structure is used to describe
 C     the size and shape of the output data.

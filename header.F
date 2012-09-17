@@ -2,8 +2,32 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.89    - 09/16/20120 - zc - Merging netcdf_writer branch into trunk,
+C              revisions 808:836 and resolved conflicts. Ensured that 
+C              rads.64.nc could be created without CSWAN flag.
+C     v50.74.06   09/12/2012 - zc - Corrected SWAN output for max wind
+C                 velocities in netcdf to scalar format.
+C     v50.74.05   09/12/2012 - zc - Corrected a bug in the SWAN output
+C                 when not using NetCDF writers. Allow the writer
+C                 processors to read metadata from ADCPREP created
+C                 output files during first pass since they do not read
+C                 fort.15. Tested for NETCDF3 and NETCDF4. Also, corrected
+C                 SWAN max files in NetCDF which were still writing in
+C                 ASCII.
+C     v50.74.04   07/01/2012 - zc - Removing unused variables added for
+C                 original implementation of NetCDF writer cores
+C     v50.74.03   06/29/2012 - zc - Remove now unused MPI_COMM for 
+C                 inter-writer only communication. Adjust makefile
+C                 for correct dependencies for netcdfio.F and writer.F
+C     v50.74.02   06/29/2012 - zc - NetCDF writers seem to be working
+C                 properly for ADCIRC and SWAN. Continued testing needed 
+C                 before merge to main trunk. 
+C     v50.74.01   06/20/2012 - zc - Initial edits for NetCDF writer cores.
+C                 Writer cores are recognized under ADCIRC writes only
+C                 at this point. Need to ensure that writer cores have 
+C                 knowledge of all NetCDF record numbers.
 C  v50.88   - 09/14/2012 - zc - Corrected a single processor arriving at
-C              LBCAST in couple2swan.F. Made a simliar change for
+C              LBCAST in couple2swan.F. Made a similar change for
 C              consistency in write_output.F, but using ADCIRC_TERMINATE().
 C  v50.87   - 09/14/2012 - zc - Corrected the size of the netcdf_error array
 C              in couple2swan.F to prevent message passing errors.

@@ -6586,7 +6586,7 @@ C     maxwvel.63
 !  tcm v50.75 removed ifdef adcswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef ADCSWAN
 Cobell 20120510: SWAN Output Data
-C........Radiation Stress Gradients
+C........Radiation Stress
          RSDescript % specifier            = NOUTGW
          RSDescript % initial_value        = 0.0
          RSDescript % num_items_per_record = 2
@@ -6696,13 +6696,13 @@ C........SWAN Wind Values (WINDX,WINDY)
 
          SwanWindMaxDescript % specifier            = NOUTGW
          SwanWindMaxDescript % initial_value        = 0.0
-         SwanWindMaxDescript % num_items_per_record = 2
+         SwanWindMaxDescript % num_items_per_record = 1
          SwanWindMaxDescript % num_fd_records       = MNP
          SwanWindMaxDescript % num_records_this     = MNP
          SwanWindMaxDescript % ConsiderWetDry       = .FALSE.
          SwanWindMaxDescript % alternate_value      = -99999.0
          SwanWindMaxDescript % field_name           = "swan_WIND_max"
-         SwanWindMaxDescript % file_name            = "swan_WIND_max.64"
+         SwanWindMaxDescript % file_name            = "swan_WIND_max.63"
 
 C........Mean Wave Period (TM02)
          SwanTM02Descript % specifier            = NOUTGW
