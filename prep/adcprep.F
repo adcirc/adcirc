@@ -466,7 +466,7 @@ C
          !tcm 20110510 v50.05 adding support for windows
 #ifdef WINDOWS
          dir_result = makedirqq(PENUM) !tcm v50.85 added
-         if (dir_result.eqv..false) then
+         if (dir_result.eqv..false.) then
             dir_error = getlasterrorqq()
             SELECT CASE (dir_error)
             CASE(2)

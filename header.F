@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.90    - 09/18/2012 - tcm  Fixed a typo bug in adcprep.F for the windows
+C                 builds.
 C  v50.89    - 09/16/20120 - zc - Merging netcdf_writer branch into trunk,
 C              revisions 808:836 and resolved conflicts. Ensured that 
 C              rads.64.nc could be created without CSWAN flag.
