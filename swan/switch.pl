@@ -11,6 +11,7 @@ $sgi = "FALSE";
 $imp = "FALSE";
 $cvi = "FALSE";
 $adc = "FALSE";
+$mv4 = "FALSE";
 while ( $ARGV[0]=~/-.*/ )
    {
    if ($ARGV[0]=~/-esmf/) {$esmf="TRUE";shift;}
@@ -25,6 +26,7 @@ while ( $ARGV[0]=~/-.*/ )
    if ($ARGV[0]=~/-impi/) {$imp="TRUE";shift;}
    if ($ARGV[0]=~/-cvis/) {$cvi="TRUE";shift;}
    if ($ARGV[0]=~/-adcirc/) {$adc="TRUE";shift;}
+   if ($ARGV[0]=~/-matl4/) {$mv4="TRUE";shift;}
    }
 
 # --- make a list of all files
@@ -64,6 +66,7 @@ foreach $file (@files)
       if ($tim=~/TRUE/) {$newline=~s/^!TIMG//;}
       if ($mpi=~/TRUE/) {$newline=~s/^!MPI//;}
       if ($pun=~/TRUE/) {$newline=~s/^!PUN//;}
+      if ($pun=~/FALSE/) {$newline=~s/^!NPUN//;}
       if ($f95=~/TRUE/) {$newline=~s/^!F95//;}
       if ($dos=~/TRUE/) {$newline=~s/^!DOS//;}
       if ($unx=~/TRUE/) {$newline=~s/^!UNIX//;}
@@ -73,6 +76,8 @@ foreach $file (@files)
       if ($cvi=~/TRUE/) {$newline=~s/^!CVIS//;}
       if ($adc=~/TRUE/) {$newline=~s/^!ADC//;}
       if ($adc=~/FALSE/) {$newline=~s/^!NADC//;}
+      if ($mv4=~/TRUE/) {$newline=~s/^!MatL4//;}
+      if ($mv4=~/FALSE/) {$newline=~s/^!MatL5//;}
       print OUTFILE $newline;
     }
     close file;

@@ -43,7 +43,9 @@
 !               \ SERIES 'fname2' /  [idla] [nhedf] ([nhedt]) (nhedvec])    &
 !        FREE | FORMAT 'form' | [idfm] | UNFORMATTED
 !
-!   WIND  [vel] [dir]
+!                              | -> WU
+!   WIND  [vel] [dir]   DRAG  <  FIT
+!                              | SWELL
 !
 !                       |  JONswap  [gamma]  |
 !   BOUNd SHAPespec     |  PM                |
@@ -111,8 +113,11 @@
 !        | -> CON [alpha] [gamma]                                      |
 !        |                                                             |
 !        |    VAR [alpha] [gammin] [gammax] [gamneg] [coeff1] [coeff2] |
-!   BRE <                                                               > &
-!        |    RUE [alpha] [a] [b]                                      |
+!        |                                                             |
+!   BRE <     RUE [alpha] [a] [b]                                       > &
+!        |                                                             |
+!        |    NKD [alpha] [gamma0] [alpha0] [beta1] [beta2] [delta1] & |
+!        |        [delta2] [n_low] [n_high] [R_low] [R_high] [a]       |
 !        |                                                             |
 !        |    TG  [alpha] [gamma] [pown]                               |
 !
@@ -127,7 +132,7 @@
 !              |
 !              |    MADsen  [kn]
 !
-!   TRIad   [trfac] [cutfr] [urcrit] [urslim]
+!   TRIad   [itriad] [trfac] [cutfr] [urcrit] [urslim]
 !
 !   VEGEtation  < [height] [diamtr] [nstems] [drag] >
 !
@@ -169,6 +174,10 @@
 !              | -> SIGIMpl [css] [eps2] [outp] [niter]
 !           ( <                                                 )           &
 !              |    SIGEXpl [css] [cfl]
+!
+!           ( CTheta [cfl]                                      )           &
+!
+!           ( CSigma [cfl]                                      )           &
 !
 !           ( SETUP [eps2] [outp] [niter]                       )
 !

@@ -84,6 +84,7 @@ SwanComputeForce.$(EXTO) \
 SwanIntgratSpc.$(EXTO) \
 SwanBndStruc.$(EXTO) \
 SwanReadfort18.$(EXTO) \
+SwanPunCollect.$(EXTO) \
 SwanSumOverNodes.$(EXTO) \
 SwanMinOverNodes.$(EXTO) \
 SwanMaxOverNodes.$(EXTO) \
@@ -101,6 +102,9 @@ $(O_DIR)global.$(EXTO) \
 $(O_DIR)global_3dvs.$(EXTO) \
 $(O_DIR)version.$(EXTO) \
 $(O_DIR)messenger.$(EXTO)
+
+UNHCAT_EXE = unhcat.exe
+UNHCAT_OBJS = HottifySWAN.$(EXTO)
 
 .SUFFIXES: .f .for .f90
 
@@ -129,14 +133,12 @@ ser:
 	$(MAKE) FOR=$(F90_SER) FFLAGS="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER)" \
 	        FFLAGS90="$(FLAGS_OPT) $(FLAGS90_MSC) $(FLAGS_SER)" \
                 INCS="$(INCS_SER)" LIBS="$(LIBS_SER)" OBJS="$(SWAN_OBJS)" $(SWAN_EXE)
-	$(MAKE) hcat
 
 omp:
 	@perl switch.pl $(swch) *.ftn *.ftn90
 	$(MAKE) FOR=$(F90_OMP) FFLAGS="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_OMP)" \
 	        FFLAGS90="$(FLAGS_OPT) $(FLAGS90_MSC) $(FLAGS_OMP)" \
                 INCS="$(INCS_OMP)" LIBS="$(LIBS_OMP)" OBJS="$(SWAN_OBJS)" $(SWAN_EXE)
-	$(MAKE) hcat
 
 mpi:
 	@perl switch.pl $(swch) -mpi *.ftn *.ftn90
@@ -151,12 +153,17 @@ punswan:
                 FFLAGS90="$(FLAGS_OPT) $(FLAGS90_MSC) $(FLAGS_MPI)" \
                 INCS="$(INCS_MPI) -I$(O_DIR)" LIBS="$(LIBS_MPI)" \
                 OBJS="$(MSG_OBJS) $(SWAN_OBJS)" $(SWAN_EXE)
-	$(MAKE) hcat
+	$(MAKE) unhcat
 
 hcat:
 	@perl switch.pl $(swch) swanhcat.ftn
 	$(MAKE) FOR=$(F90_SER) FFLAGS="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER)" \
 	        FFLAGS90="$(FLAGS_OPT) $(FLAGS90_MSC) $(FLAGS_SER)" $(HCAT_EXE)
+
+unhcat:
+	@perl switch.pl $(swch) HottifySWAN.ftn90
+	$(MAKE) FOR=$(F90_SER) FFLAGS="$(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER)" \
+	        FFLAGS90="$(FLAGS_OPT) $(FLAGS90_MSC) $(FLAGS_SER)" $(UNHCAT_EXE)
 
 doc:
 	$(MAKE) -f Makefile.latex TARGET=swanuse doc
@@ -167,6 +174,9 @@ doc:
 
 $(HCAT_EXE): $(HCAT_OBJS)
 	$(FOR) $(HCAT_OBJS) $(FFLAGS) $(OUT)$(HCAT_EXE)
+
+$(UNHCAT_EXE): $(UNHCAT_OBJS)
+	$(FOR) $(UNHCAT_OBJS) $(FFLAGS) $(OUT)$(UNHCAT_EXE)
 
 $(SWAN_EXE): $(SWAN_OBJS)
 	$(FOR) $(OBJS) $(FFLAGS) $(OUT)$(SWAN_EXE) $(INCS) $(LIBS)
@@ -190,10 +200,10 @@ clean:
 	$(RM) *.$(EXTO) *.mod
 
 clobber:
-	$(RM) *.$(EXTO) *.mod *.f *.for *.f90 $(SWAN_EXE) $(HCAT_EXE)
+	$(RM) *.$(EXTO) *.mod *.f *.for *.f90 $(SWAN_EXE) $(HCAT_EXE) $(UNHCAT_EXE)
 
 allclean:
-	$(RM) *.$(EXTO) *.mod *.f *.for *.f90 $(SWAN_EXE) $(HCAT_EXE)
+	$(RM) *.$(EXTO) *.mod *.f *.for *.f90 $(SWAN_EXE) $(HCAT_EXE) $(UNHCAT_EXE)
 
 cleandoc:
 	$(MAKE) -f Makefile.latex TARGET=swanuse cleandoc

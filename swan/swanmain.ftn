@@ -212,6 +212,7 @@
 !     40.80: Marcel Zijlema
 !     40.95: Marcel Zijlema
 !     41.20: Casey Dietrich
+!     41.36: Marcel Zijlema
 !
 !  1. Updates
 !
@@ -252,6 +253,7 @@
 !     40.80, Jun. 07: extension to unstructured grids
 !     40.95, Jun. 08: parallelization of unSWAN using MESSENGER of ADCIRC
 !     41.20, Mar. 10: extension to tightly coupled ADCIRC+SWAN model
+!     41.36, Jun. 12: collecting data for PunSWAN
 !
 !  2. Purpose
 !
@@ -387,6 +389,7 @@
       MAXERR=1                                                            34.01
       ITRACE=0                                                            40.23
       INERR =0                                                            40.31
+      ISTAT =0
 
 !TIMG      CALL SWTSTA(2)                                                      40.23
       CALL SWINIT (INERR)                                                 40.31 34.01
@@ -716,6 +719,19 @@
             DEALLOCATE(BLKNDC)                                            40.41 40.30
          END IF                                                           40.30
       END IF                                                              40.30
+!PUN      !
+!PUN      IF ( MNPROC>1 ) THEN                                                41.36
+!PUN         IF ( IAMMASTER ) THEN                                            41.36
+!PUN            ALLOCATE(BLKNDC(nvertsg))                                     41.36
+!PUN            BLKNDC = 0.                                                   41.36
+!PUN         ENDIF                                                            41.36
+!PUN         CALL SwanPunCollect ( BLKNDC )                                   41.36
+!PUN         IF (STPNOW()) RETURN                                             41.36
+!PUN         IF ( IAMMASTER ) THEN                                            41.36
+!PUN            CALL SWCOLOUT ( OURQT, BLKNDC )                               41.36
+!PUN            DEALLOCATE(BLKNDC)                                            41.36
+!PUN         ENDIF                                                            41.36
+!PUN      ENDIF                                                               41.36
 !TIMG      CALL SWTSTO(9)                                                      40.30
 !
 !TIMG      CALL SWPRTI                                                         40.23
@@ -1362,7 +1378,8 @@
       JHSIBC = 25                                                         40.00
       JHS    = 26                                                         40.13
       JURSEL = 27                                                         40.13
-      MCMVAR = 27                                                         40.65 40.61 40.51 40.13
+      JBOTLV = 28                                                         41.38 40.65
+      MCMVAR = 28                                                         41.38 40.65 40.61 40.51 40.13
 !     subarray sequence number 1 is used only for unused subarrays        40.13
       JFRC2 = 1                                                           40.00
       JFRC3 = 1                                                           40.00
@@ -1376,6 +1393,8 @@
 !     added for number of plants per square meter                         40.55
       JNPLA2= 1                                                           40.55
       JNPLA3= 1                                                           40.55
+      JGAMMA = 1                                                          41.38
+      JRESPL = 1                                                          41.38
 !
 !     *** added for wave setup ***                                        32.01
 !
@@ -1385,7 +1404,6 @@
 !     --- added for output purposes                                       40.65
 !
       JPBOT  = 1                                                          40.65 40.51
-      JBOTLV = 1                                                          40.65
       JDSXB  = 1                                                          40.65 40.61
       JDSXS  = 1                                                          40.65 40.61
       JDSXW  = 1                                                          40.65 40.61
@@ -1513,7 +1531,7 @@
       IVTYPE = 6
       OVKEYW(IVTYPE) = 'UBOT'                                             40.00
       OVSNAM(IVTYPE) = 'Ubot'
-      OVLNAM(IVTYPE) = 'RMS of orbital velocity amplitude at the bottom'
+      OVLNAM(IVTYPE)='RMS of maxima of orbital velocity near the bottom'
       OVUNIT(IVTYPE) = UV
       OVSVTY(IVTYPE) = 1
       OVLLIM(IVTYPE) = 0.
@@ -1849,7 +1867,7 @@
       IVTYPE = 34                                                         20.67
       OVKEYW(IVTYPE) = 'URMS'                                             40.00
       OVSNAM(IVTYPE) = 'Urms'
-      OVLNAM(IVTYPE) = 'RMS of orbital velocity at the bottom'
+      OVLNAM(IVTYPE) = 'RMS of orbital velocity near the bottom'
       OVUNIT(IVTYPE) = UV
       OVSVTY(IVTYPE) = 1
       OVLLIM(IVTYPE) = 0.
@@ -3490,6 +3508,12 @@
 !     --- initialize UBOT and TMBOT                                       40.94
       COMPDA(:,JUBOT) = 0.                                                40.94
       IF (JPBOT.GT.1) COMPDA(:,JPBOT) = 0.                                40.94
+!
+!     --- initialize GAMBR and RESPL                                      41.38
+      IF (ISURF.EQ.6) THEN
+         COMPDA(:,JGAMMA) = PSURF( 2)
+         COMPDA(:,JRESPL) = PSURF(13)*COMPDA(:,JDP2)
+      ENDIF
 !
       RETURN
 ! * end of subroutine SWRBC *
@@ -5483,7 +5507,7 @@
 !     WWDATE, WWTIME       time code in WaveWatch                         40.05
 !
       REAL      TIMF1, TIMF2, UFAC, W1, BDEPTH, DUM_A, RFAC               40.05
-      REAL      XLON, XLAT, XDATE, EMEAN, THQ, FMEAN, USNEW, THWNEW
+      REAL      XLON, XLAT, XDATE, EMEAN, THQ, FMEAN
 !
 !     TIMF1     time of reading old boundary condition
 !     TIMF2     time of reading new boundary condition
@@ -5495,8 +5519,6 @@
 !     EMEAN     coefficient read from WAM file, ignored
 !     THQ       coefficient read from WAM file, ignored
 !     FMEAN     coefficient read from WAM file, ignored
-!     USNEW     coefficient read from WAM file, ignored
-!     THWNEW    coefficient read from WAM file, ignored
 !     DUM_A     dummy local variable (not used in any calculation)
 !     BDEPTH    depth of the boundary points
 !
@@ -5708,13 +5730,13 @@
                   CALL DTRETI (TIMSTR, BFILED(6), TIMF2)                  40.03 40.05
                 ELSE IF (BTYPE.EQ.'WAMC') THEN
                   READ(NDSD, END=380, ERR=920) XLON, XLAT, XDATE,
-     &                EMEAN, THQ, FMEAN, USNEW, THWNEW
+     &                EMEAN, THQ, FMEAN
                   WRITE (TIMSTR,'(F11.0,9X)') XDATE
 !                 convert time string to time in seconds
                   CALL DTRETI (TIMSTR, BFILED(6), TIMF2)                  40.03 40.05
                 ELSE IF (BTYPE.EQ.'WAMF') THEN
                   READ(NDSD,*, END=380, ERR=920) XLON, XLAT, DDATE,
-     &              EMEAN, THQ, FMEAN, USNEW, THWNEW
+     &              EMEAN, THQ, FMEAN
                   WRITE (TIMSTR,'(F11.0,9X)') DDATE
 !                 convert time string to time in seconds
                   CALL DTRETI (TIMSTR, BFILED(6), TIMF2)                  40.03 40.05
@@ -5754,7 +5776,7 @@
 !                 read HEDLIN replaced because data are sometimes written 40.13
 !                 on two subsequent lines                                 40.13
                   READ(NDSD,*, END=380, ERR=920) XLON, XLAT, DDATE,       40.13
-     &              EMEAN, THQ, FMEAN, USNEW, THWNEW
+     &              EMEAN, THQ, FMEAN
                 ELSE
                   READ (NDSD, '(A)', END=380, ERR=920) HEDLIN
                   IF (ITEST.GE.100) WRITE (PRINTF, 212) HEDLIN
@@ -7156,6 +7178,7 @@
 !
       IF (ALLOCATED(xcugrd))   DEALLOCATE(xcugrd)
       IF (ALLOCATED(ycugrd))   DEALLOCATE(ycugrd)
+      IF (ALLOCATED(ivertg))   DEALLOCATE(ivertg)
       IF (ALLOCATED( vmark))   DEALLOCATE( vmark)
       IF (ALLOCATED( vlist))   DEALLOCATE( vlist)
       IF (ALLOCATED( blist))   DEALLOCATE( blist)

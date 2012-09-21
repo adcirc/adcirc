@@ -159,7 +159,7 @@ elsif ($os =~ /Linux/i) {
   {
     system 'rm ifort';
     print OUTFILE "##############################################################################\n";
-    print OUTFILE "# IA32_Intel/x86-64_Intel:	Intel Pentium with Linux using Intel compiler 9.1.\n";
+    print OUTFILE "# IA32_Intel/x86-64_Intel:	Intel Pentium with Linux using Intel compiler 11.\n";
     print OUTFILE "##############################################################################\n";
     print OUTFILE "F90_SER = ifort\n";
     print OUTFILE "F90_OMP = ifort\n";
@@ -173,7 +173,8 @@ elsif ($os =~ /Linux/i) {
 #    else {
       print OUTFILE "FLAGS_OPT = -O2\n";
 #    }
-    print OUTFILE "FLAGS_MSC = -W0 -assume byterecl -traceback\n";
+#    print OUTFILE "FLAGS_MSC = -W0 -assume byterecl -traceback -diag-disable remark\n";
+    print OUTFILE "FLAGS_MSC = -W0 -assume byterecl -traceback -diag-disable 8291 -diag-disable 8293\n";
     print OUTFILE "FLAGS90_MSC = \$(FLAGS_MSC)\n";
     print OUTFILE "FLAGS_SER =\n";
     print OUTFILE "FLAGS_OMP = -openmp\n";
@@ -387,7 +388,7 @@ elsif ($os =~ /Linux/i) {
     print OUTFILE "EXTO = o\n";
     print OUTFILE "MAKE = make\n";
     print OUTFILE "RM = rm -f\n";
-    print OUTFILE "swch = -unix\n";
+    print OUTFILE "swch = -unix -matl4\n";
   }
   else
   {
@@ -402,17 +403,18 @@ elsif ($os =~ /WindowsNT/i || $os =~ /MSWin32/i) {
   print OUTFILE "F90_OMP = ifort\n";
   print OUTFILE "F90_MPI = ifort\n";
   print OUTFILE "FLAGS_OPT = /optimize:2\n";
-  print OUTFILE "FLAGS_MSC = /assume:byterecl /traceback /nowarn /nologo\n";
+#  print OUTFILE "FLAGS_MSC = /assume:byterecl /traceback /nowarn /nologo /Qdiag-disable:remark\n";
+  print OUTFILE "FLAGS_MSC = /assume:byterecl /traceback /nowarn /nologo /Qdiag-disable:8291 /Qdiag-disable:8293\n";
   print OUTFILE "FLAGS90_MSC = \$(FLAGS_MSC)\n";
   print OUTFILE "FLAGS_SER =\n";
   print OUTFILE "FLAGS_OMP = /Qopenmp /Qopenmp-link:static\n";
   print OUTFILE "FLAGS_MPI =\n";
   print OUTFILE "INCS_SER =\n";
   print OUTFILE "INCS_OMP =\n";
-  print OUTFILE "INCS_MPI = /include:\"c:\\\progra~1\\\MPICH\\\SDK\\\include\"\n";
+  print OUTFILE "INCS_MPI = /include:\"C:\\\PROGRA~1\\\MPICH2\\\include\"\n";
   print OUTFILE "LIBS_SER =\n";
   print OUTFILE "LIBS_OMP =\n";
-  print OUTFILE "LIBS_MPI = c:\\\progra~1\\\MPICH\\\SDK\\\llib\\\mpe.lib c:\\\progra~1\\\MPICH\\\SDK\\\llib\\\mpich.lib\n";
+  print OUTFILE "LIBS_MPI = C:\\\PROGRA~1\\\MPICH2\\\llib\\\lfmpich2.lib\n";
   print OUTFILE "O_DIR =\n";
   print OUTFILE "OUT = /exe:\n";
   print OUTFILE "EXTO = obj\n";

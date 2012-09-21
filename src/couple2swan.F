@@ -701,7 +701,7 @@ C-----------------------------------------------------------------------
 
 !... Call the Swan subroutine to interpolate internal Swan quantities.
       CALL SWOEXD(SWAN_OQPROC, NP, XC, YC, SWAN_VOQR,
-     &            SWAN_VOQ, COMPDA, KGRPNT, FORCE, CROSS, IONOD)
+     &            SWAN_VOQ, COMPDA, KGRPNT, FORCE, CROSS, IONOD, -999)
 
 !... Call the Swan subroutine to compute the output quantities.
       CALL SWOEXA(SWAN_OQPROC, SWAN_BKC, NP, XC, YC,
@@ -1499,7 +1499,7 @@ Cobell 20120510: Added for NetCDF SWAN output processing
 
 !... Call the Swan subroutine to interpolate internal Swan quantities.
       CALL SWOEXD(SWAN_OQPROC, nverts, XC, YC, SWAN_VOQR,
-     &            SWAN_VOQ, COMPDA, KGRPNT, FORCE, CROSS, IONOD)
+     &            SWAN_VOQ, COMPDA, KGRPNT, FORCE, CROSS, IONOD, -999)
 
 !... Call the Swan subroutine to compute the output quantities.
       CALL SWOEXA(SWAN_OQPROC, SWAN_BKC, nverts, XC, YC,

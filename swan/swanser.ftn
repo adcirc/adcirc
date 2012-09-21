@@ -31,6 +31,8 @@
 !     NUMSTR                                                              40.23
 !     SWCOPI                                                              40.23
 !     SWCOPR                                                              40.23
+!MatL4!     SWI2B                                                               40.30
+!MatL4!     SWR2B                                                               40.30
 !
 !  functions:
 !  ----------
@@ -66,7 +68,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -200,7 +202,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -327,7 +329,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -426,7 +428,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -580,7 +582,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -757,7 +759,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -828,7 +830,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1058,7 +1060,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1399,7 +1401,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1587,7 +1589,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1802,7 +1804,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1954,7 +1956,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2076,7 +2078,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2292,7 +2294,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2491,7 +2493,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2708,7 +2710,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2994,7 +2996,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3486,7 +3488,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3834,7 +3836,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4266,7 +4268,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4668,7 +4670,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4793,7 +4795,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4891,7 +4893,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4991,7 +4993,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -5179,7 +5181,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -5485,7 +5487,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -5621,7 +5623,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -5737,7 +5739,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -5906,7 +5908,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -6069,7 +6071,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -6415,7 +6417,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -6517,7 +6519,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -6609,7 +6611,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -6691,7 +6693,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -6806,7 +6808,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -6899,3 +6901,400 @@
 
       RETURN
       END
+!MatL4!****************************************************************
+!MatL4!
+!MatL4      SUBROUTINE SWI2B ( IVAL, BVAL )
+!MatL4!
+!MatL4!****************************************************************
+!MatL4!
+!MatL4      USE OCPCOMM4                                                        40.41
+!MatL4!
+!MatL4      IMPLICIT NONE
+!MatL4!
+!
+!   --|-----------------------------------------------------------|--
+!     | Delft University of Technology                            |
+!     | Faculty of Civil Engineering and Geosciences              |
+!     | Environmental Fluid Mechanics Section                     |
+!     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
+!     |                                                           |
+!     | Programmer: Marcel Zijlema                                |
+!   --|-----------------------------------------------------------|--
+!
+!
+!     SWAN (Simulating WAves Nearshore); a third generation wave model
+!     Copyright (C) 1993-2012  Delft University of Technology
+!
+!     This program is free software; you can redistribute it and/or
+!     modify it under the terms of the GNU General Public License as
+!     published by the Free Software Foundation; either version 2 of
+!     the License, or (at your option) any later version.
+!
+!     This program is distributed in the hope that it will be useful,
+!     but WITHOUT ANY WARRANTY; without even the implied warranty of
+!     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+!     GNU General Public License for more details.
+!
+!     A copy of the GNU General Public License is available at
+!     http://www.gnu.org/copyleft/gpl.html#SEC3
+!     or by writing to the Free Software Foundation, Inc.,
+!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!
+!MatL4!
+!MatL4!  0. Authors
+!MatL4!
+!MatL4!     40.30: Marcel Zijlema
+!MatL4!     40.41: Marcel Zijlema
+!MatL4!
+!MatL4!  1. Updates
+!MatL4!
+!MatL4!     40.30, May 03: New subroutine
+!MatL4!     40.41, Oct. 04: common blocks replaced by modules, include files removed
+!MatL4!
+!MatL4!  2. Purpose
+!MatL4!
+!MatL4!     Calculates 32-bit representation of an integer number
+!MatL4!
+!MatL4!  3. Method
+!MatL4!
+!MatL4!     The representation of an integer number is divided into 4 parts
+!MatL4!     of 8 bits each, resulting in 32-bit word in memory. Generally,
+!MatL4!     storage words are represented with bits counted from the right,
+!MatL4!     making bit 0 the lower-order bit and bit 31 the high-order bit,
+!MatL4!     which is also the sign bit.
+!MatL4!
+!MatL4!     The integer number is always an exact representation of an
+!MatL4!     integer of value positive, negative, or zero. Each bit, except
+!MatL4!     the leftmost bit, corresponds to the actual exponent as power
+!MatL4!     of two.
+!MatL4!
+!MatL4!     For representing negative numbers, the method called
+!MatL4!     "excess 2**(m - 1)" is used, which represents an m-bit number by
+!MatL4!     storing it as the sum of itself and 2**(m - 1). For a 32-bit
+!MatL4!     machine, m = 32. This results in a positive number, so the
+!MatL4!     leftmost bit need to be reversed. This method is identical to the
+!MatL4!     two's complement method.
+!MatL4!
+!MatL4!     An example:
+!MatL4!
+!MatL4!        the 32-bit representation of 5693 is
+!MatL4!
+!MatL4!        decimal    :     0        0       22       61
+!MatL4!        hexidecimal:     0        0       16       3D
+!MatL4!        binary     : 00000000 00000000 00010110 00111101
+!MatL4!
+!MatL4!        since,
+!MatL4!
+!MatL4!        5693 = 2^12 + 2^10 + 2^9 + 2^5 + 2^4 + 2^3 + 2^2 + 2^0
+!MatL4!
+!MatL4!  4. Argument variables
+!MatL4!
+!MatL4!     BVAL        a byte value as a part of the representation of
+!MatL4!                 integer number
+!MatL4!     IVAL        integer number
+!MatL4!
+!MatL4      INTEGER BVAL(4), IVAL
+!MatL4!
+!MatL4!  6. Local variables
+!MatL4!
+!MatL4!     I     :     loop counter
+!MatL4!     IENT  :     number of entries
+!MatL4!     IQUOT :     auxiliary integer with quotient
+!MatL4!     M     :     maximal exponent number possible (for 32-bit machine, m=32)
+!MatL4!
+!MatL4      INTEGER I, IENT, IQUOT, M
+!MatL4!
+!MatL4! 12. Structure
+!MatL4!
+!MatL4!     initialise 4 parts of the representation
+!MatL4!     if integer < 0, increased it by 2**(m-1)
+!MatL4!     compute the actual part of the representation
+!MatL4!     determine the sign bit
+!MatL4!
+!MatL4! 13. Source text
+!MatL4!
+!MatL4      SAVE IENT
+!MatL4      DATA IENT/0/, M/32/
+!MatL4      IF (LTRACE) CALL STRACE (IENT,'SWI2B')
+!MatL4
+!MatL4!     --- initialise 4 parts of the representation
+!MatL4
+!MatL4      DO 10 I = 1, 4
+!MatL4         BVAL(I) = 0
+!MatL4 10   CONTINUE
+!MatL4
+!MatL4      IQUOT = IVAL
+!MatL4
+!MatL4!     --- if integer < 0, increased it by 2*(m-1)
+!MatL4
+!MatL4      IF ( IVAL.LT.0 ) IQUOT = IQUOT + 2**(M-1)
+!MatL4
+!MatL4!     --- compute the actual part of the representation
+!MatL4
+!MatL4      DO 20 I = 4, 1, -1
+!MatL4         BVAL(I) = MOD(IQUOT,256)
+!MatL4         IQUOT = INT(IQUOT/256)
+!MatL4 20   CONTINUE
+!MatL4
+!MatL4!     --- determine the sign bit
+!MatL4
+!MatL4      IF ( IVAL.LT.0 ) BVAL(1) = BVAL(1) + 128
+!MatL4
+!MatL4      RETURN
+!MatL4      END
+!MatL4!****************************************************************
+!MatL4!
+!MatL4      SUBROUTINE SWR2B ( RVAL, BVAL )
+!MatL4!
+!MatL4!****************************************************************
+!MatL4!
+!MatL4      USE OCPCOMM4                                                        40.41
+!MatL4!
+!MatL4      IMPLICIT NONE
+!MatL4!
+!
+!   --|-----------------------------------------------------------|--
+!     | Delft University of Technology                            |
+!     | Faculty of Civil Engineering and Geosciences              |
+!     | Environmental Fluid Mechanics Section                     |
+!     | P.O. Box 5048, 2600 GA  Delft, The Netherlands            |
+!     |                                                           |
+!     | Programmer: Marcel Zijlema                                |
+!   --|-----------------------------------------------------------|--
+!
+!
+!     SWAN (Simulating WAves Nearshore); a third generation wave model
+!     Copyright (C) 1993-2012  Delft University of Technology
+!
+!     This program is free software; you can redistribute it and/or
+!     modify it under the terms of the GNU General Public License as
+!     published by the Free Software Foundation; either version 2 of
+!     the License, or (at your option) any later version.
+!
+!     This program is distributed in the hope that it will be useful,
+!     but WITHOUT ANY WARRANTY; without even the implied warranty of
+!     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+!     GNU General Public License for more details.
+!
+!     A copy of the GNU General Public License is available at
+!     http://www.gnu.org/copyleft/gpl.html#SEC3
+!     or by writing to the Free Software Foundation, Inc.,
+!     59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+!
+!MatL4!
+!MatL4!  0. Authors
+!MatL4!
+!MatL4!     40.30: Marcel Zijlema
+!MatL4!     40.41: Marcel Zijlema
+!MatL4!
+!MatL4!  1. Updates
+!MatL4!
+!MatL4!     40.30, May 03: New subroutine
+!MatL4!     40.41, Oct. 04: common blocks replaced by modules, include files removed
+!MatL4!
+!MatL4!  2. Purpose
+!MatL4!
+!MatL4!     Calculates 32-bit representation of a floating-point number
+!MatL4!
+!MatL4!  3. Method
+!MatL4!
+!MatL4!     The representation of a floating-point number is divided into 4
+!MatL4!     parts of 8 bits each, resulting in 32-bit word in memory.
+!MatL4!     Generally, storage words are represented with bits counted from
+!MatL4!     the right, making bit 0 the lower-order bit and bit 31 the
+!MatL4!     high-order bit, which is also the sign bit.
+!MatL4!
+!MatL4!     The floating-point number is a processor approximation. Its format
+!MatL4!     has an 8-bit biased exponent and a 23-bit fraction or mantissa. The
+!MatL4!     leftmost bit is the sign bit which is zero for plus and 1 for
+!MatL4!     minus. The biased exponent equals the bias and the actual exponent
+!MatL4!     (power of two) of the number. For a 32-bit machine, bias=127.
+!MatL4!
+!MatL4!     Furthermore, the floating-point number is usually stored in the
+!MatL4!     normalized form, i.e. it has a binary point to the left of the
+!MatL4!     mantissa and an implied leading 1 to the left of the binary point.
+!MatL4!     Thus, if X is a floating-point number, then it is calculated as
+!MatL4!     follows:
+!MatL4!
+!MatL4!         X = (-1)**sign bit 1.fraction * 2**(biased exponent-bias)
+!MatL4!
+!MatL4!     There are several exceptions. Let a fraction, biased exponent
+!MatL4!     and sign bit be denoted as F, E and S, respectively. The following
+!MatL4!     formats adhere to IEEE standard:
+!MatL4!
+!MatL4!     S = 0, E = 00000000 and F  = 00 ... 0 : X = 0
+!MatL4!     S = 0, E = 00000000 and F <> 00 ... 0 : X = +0.fraction * 2**(1-bias)
+!MatL4!     S = 1, E = 00000000 and F <> 00 ... 0 : X = -0.fraction * 2**(1-bias)
+!MatL4!     S = 0, E = 11111111 and F  = 00 ... 0 : X = +Inf
+!MatL4!     S = 1, E = 11111111 and F  = 00 ... 0 : X = -Inf
+!MatL4!     S = 0, E = 11111111 and F <> 00 ... 0 : X = NaN
+!MatL4!
+!MatL4!     A NaN (Not a Number) is a value reserved for signalling an
+!MatL4!     attempted invalid operation, like 0/0. Its representation
+!MatL4!     equals the representation of +Inf plus 1, i.e. 2**31 - 2**23 + 1
+!MatL4!
+!MatL4!     An example:
+!MatL4!
+!MatL4!        the 32-bit representation of 23.1 is
+!MatL4!
+!MatL4!        decimal    :    65      184      204      205
+!MatL4!        hexidecimal:    41       B8       CC       CD
+!MatL4!        binary     : 01000001 10111000 11001100 11001101
+!MatL4!
+!MatL4!        since,
+!MatL4!
+!MatL4!        23.1 = 2^4 + 2^2 + 2^1 + 2^0 + 2^-4 + 2^-5 + 2^-8 + 2^-9 +
+!MatL4!               2^-12 + 2^-13 + 2^-16 + 2^-17 + 2^-19
+!MatL4!
+!MatL4!        so that the biased exponent = 4 + 127 = 131 = 10000011 = E
+!MatL4!        and the sign bit = 0 = S. The remaining of the 32-bit word is
+!MatL4!        the fraction, which is
+!MatL4!
+!MatL4!    3 2 1 0 -1 -2 -3 -4 -5 -6 -7 -8 -9 -10 -11 -12 -13 -14 -15 -16 -17 -18 -19
+!MatL4!
+!MatL4! F= 0 1 1 1  0  0  0  1  1  0  0  1  1   0   0   1   1   0   0   1   1   0   1
+!MatL4!
+!MatL4!  4. Argument variables
+!MatL4!
+!MatL4!     BVAL        a byte value as a part of the representation of
+!MatL4!                 floating-point number
+!MatL4!     RVAL        floating-point number
+!MatL4!
+!MatL4      INTEGER BVAL(4)
+!MatL4      REAL    RVAL
+!MatL4!
+!MatL4!  6. Local variables
+!MatL4!
+!MatL4!     ACTEXP:     actual exponent in the representation
+!MatL4!     BEXPO :     biased exponent
+!MatL4!     BIAS  :     bias (for 32-bit machine, bias=127)
+!MatL4!     EXPO  :     calculated exponent of floating-point number
+!MatL4!     FRAC  :     fraction of floating-point number
+!MatL4!     I     :     loop counter
+!MatL4!     IENT  :     number of entries
+!MatL4!     IPART :     i-the part of the representation
+!MatL4!     IQUOT :     auxiliary integer with quotient
+!MatL4!     LEADNR:     leading number of floating-point number
+!MatL4!     LFRAC :     length of fraction in representation
+!MatL4!           :     (for 32-bit machine, lfrac=23)
+!MatL4!     RFRAC :     auxiliary real with fraction
+!MatL4!
+!MatL4      INTEGER ACTEXP, EXPO, I, IENT, IPART, LFRAC, BIAS, BEXPO,
+!MatL4     &        LEADNR, IQUOT
+!MatL4      REAL FRAC, RFRAC
+!MatL4!
+!MatL4! 12. Structure
+!MatL4!
+!MatL4!     initialise 4 parts of the representation and biased exponent
+!MatL4!     determine leading number and fraction
+!MatL4!     do while leading number >= 1
+!MatL4!        calculate positive exponent as power of two
+!MatL4!     or while fraction > 0
+!MatL4!        calculate negative exponent as power of two
+!MatL4!     end do
+!MatL4!     compute the actual part of the representation
+!MatL4!
+!MatL4! 13. Source text
+!MatL4!
+!MatL4      SAVE IENT
+!MatL4      DATA IENT/0/, LFRAC/23/, BIAS/127/
+!MatL4      IF (LTRACE) CALL STRACE (IENT,'SWR2B')
+!MatL4
+!MatL4!     --- initialise 4 parts of the representation and biased exponent
+!MatL4
+!MatL4      DO 10 I = 1, 4
+!MatL4         BVAL(I) = 0
+!MatL4 10   CONTINUE
+!MatL4      BEXPO  = -1
+!MatL4
+!MatL4!     --- determine leading number and fraction
+!MatL4
+!MatL4      IF ( ABS(RVAL).LT.1.E-7 ) THEN
+!MatL4         LEADNR = 0
+!MatL4         FRAC   = 0.
+!MatL4      ELSE
+!MatL4         LEADNR = INT(ABS(RVAL))
+!MatL4         FRAC   = ABS(RVAL) - REAL(LEADNR)
+!MatL4      END IF
+!MatL4
+!MatL4 20   IF ( LEADNR.GE.1 ) THEN
+!MatL4
+!MatL4!        --- calculate positive exponent as power of two
+!MatL4
+!MatL4         EXPO  = 0
+!MatL4         IQUOT = LEADNR
+!MatL4 30      IF ( IQUOT.GE.2 ) THEN
+!MatL4
+!MatL4              IQUOT = INT(IQUOT/2)
+!MatL4              EXPO  = EXPO + 1
+!MatL4
+!MatL4         GOTO 30
+!MatL4         END IF
+!MatL4
+!MatL4      ELSE IF ( FRAC.GT.0. ) THEN
+!MatL4
+!MatL4!        --- calculate negative exponent as power of two
+!MatL4
+!MatL4         EXPO = 0
+!MatL4         RFRAC = FRAC
+!MatL4 40      IF ( RFRAC.LT.1. ) THEN
+!MatL4
+!MatL4              RFRAC = RFRAC * 2.
+!MatL4              EXPO  = EXPO - 1
+!MatL4
+!MatL4         GOTO 40
+!MatL4         END IF
+!MatL4
+!MatL4      ELSE
+!MatL4
+!MatL4         GOTO 50
+!MatL4
+!MatL4      END IF
+!MatL4
+!MatL4!     --- compute the actual part of the representation
+!MatL4
+!MatL4      IF ( BEXPO.EQ.-1 ) THEN
+!MatL4
+!MatL4!        --- determine biased exponent
+!MatL4
+!MatL4         BEXPO = EXPO + BIAS
+!MatL4
+!MatL4!        --- the first seven bits of biased exponent belong
+!MatL4!            to first part of the representation
+!MatL4
+!MatL4         BVAL(1) = INT(BEXPO/2)
+!MatL4
+!MatL4!        --- determine the sign bit
+!MatL4
+!MatL4         IF ( RVAL.LT.0. ) BVAL(1) = BVAL(1) + 128
+!MatL4
+!MatL4!        --- the eighth bit of biased component is the leftmost
+!MatL4!            bit of second part of the representation
+!MatL4
+!MatL4         BVAL(2) = MOD(BEXPO,2)*2**7
+!MatL4         IPART = 2
+!MatL4
+!MatL4      ELSE
+!MatL4
+!MatL4!        --- compute the actual exponent of bit 1 in i-th part of
+!MatL4!            the representation
+!MatL4
+!MatL4         ACTEXP = (IPART-2)*8 + 7 - BEXPO + BIAS + EXPO
+!MatL4         IF ( ACTEXP.LT.0 ) THEN
+!MatL4            ACTEXP = ACTEXP + 8
+!MatL4            IPART = IPART + 1
+!MatL4            IF ( IPART.GT.4 ) GOTO 50
+!MatL4         END IF
+!MatL4         BVAL(IPART) = BVAL(IPART) + 2**ACTEXP
+!MatL4
+!MatL4      END IF
+!MatL4
+!MatL4      IF ( EXPO.LT.(BEXPO-BIAS-LFRAC) ) GOTO 50
+!MatL4      LEADNR = LEADNR - 2.**EXPO
+!MatL4      IF ( EXPO.LT.0 ) FRAC = FRAC - 2.**EXPO
+!MatL4
+!MatL4      GOTO 20
+!MatL4 50   CONTINUE
+!MatL4
+!MatL4      RETURN
+!MatL4      END

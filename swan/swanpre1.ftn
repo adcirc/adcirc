@@ -1997,10 +1997,9 @@
          GOTO 100
       ENDIF
 !
-!Casey 120113: Changes from Taylor Asher.
 !CTGA 111003:  Full SWAN ice implementation, and giving SWAN the ability
-!             to recognize and read in the ice parameters from the
-!             control file (traditionally fort.26 for PADCSWAN).
+!              to recognize and read in the ice parameters from the
+!              control file (traditionally fort.26 for PADCSWAN).
 !
 !     ------------------------------------------------------------------
 !
@@ -2035,9 +2034,11 @@
 !           |    VARiable [alpha] [gammin] [gammax] [gamneg] [coeff1] [coeff2] |
 ! BREaking <                                                                    > &
 !           |    RUEssink [alpha] [a] [b]                                      |
+!           |
+!           |    NKD [alpha] [gamma0] [alpha0] [beta1] [beta2] [delta1]  &     |
+!           |        [delta2] [n_low] [n_high] [R_low] [R_high] [a]            |
 !           |                                                                  |
-!           |    TG       [alpha] [gamma] [pown]                               |
-!
+!           |    TG [alpha] [gamma] [pown]                                     |
 !
 !       ( FREQDep [power] [fmin] [fmax] ) (fmin and fmax not documented)
 !
@@ -2065,16 +2066,35 @@
         ELSE IF (KEYWIS('TG')) THEN                                       41.03
           ISURF = 4
           CALL INREAL ('ALPHA',  PSURF(1), 'STA', 1.0)
-          CALL INREAL ('GAMMA',  PSURF(2), 'STA', 0.42)
-          CALL INREAL ('POWN' ,  PSURF(4), 'STA', 4.0)
+          CALL INREAL ('GAMMA',  PSURF(4), 'STA', 0.42)
+          CALL INREAL ('POWN' ,  PSURF(5), 'STA', 4.0)
+        ELSE IF (KEYWIS('NKD')) THEN                                      41.38
+          ISURF = 6                                                       41.38
+          CALL INREAL ('ALPHA' , PSURF(1) ,'STA', 1.0)                    41.38
+          CALL INREAL ('GAMMA0', PSURF(4) ,'STA', 0.49)                   41.38
+          CALL INREAL ('ALPHA0', PSURF(5) ,'STA', 1.0)                    41.38
+          CALL INREAL ('BETA1' , PSURF(6) ,'STA', 10.0)                   41.38
+          CALL INREAL ('BETA2' , PSURF(7) ,'STA', 7.98)                   41.38
+          CALL INREAL ('DELTA1', PSURF(8) ,'STA', 0.26)                   41.38
+          CALL INREAL ('DELTA2', PSURF(9) ,'STA', 750.0)                  41.38
+          CALL INREAL ('N_LOW' , PSURF(10),'STA', 2.0)                    41.38
+          CALL INREAL ('N_HIGH', PSURF(11),'STA', 20.0)                   41.38
+          CALL INREAL ('R_LOW' , PSURF(12),'STA', 1.E-6)                  41.38
+          CALL INREAL ('R_HIGH', PSURF(13),'STA', 50.0)                   41.38
+          CALL INREAL ('A'     , PSURF(14),'STA', 0.86)                   41.38
+!
+          JGAMMA = MCMVAR+1                                               41.38
+          JRESPL = MCMVAR+2                                               41.38
+          MCMVAR = MCMVAR+2                                               41.38
+          ALOCMP = .TRUE.                                                 41.38
         ENDIF
 !
         CALL INKEYW ('STA', '  ')                                         41.06
         IF (KEYWIS ('FREQD')) THEN                                        41.06
            IFRSRF = 1                                                     41.06
-           CALL INREAL ('POWER', PSURF(11), 'STA', 2.0)                   41.06
-           CALL INREAL ('FMIN' , PSURF(12), 'STA', 0.0)                   41.06
-           CALL INREAL ('FMAX' , PSURF(13), 'STA', 1000.)                 41.06
+           CALL INREAL ('POWER', PSURF(16), 'STA', 2.0)                   41.06
+           CALL INREAL ('FMIN' , PSURF(17), 'STA', 0.0)                   41.06
+           CALL INREAL ('FMAX' , PSURF(18), 'STA', 1000.)                 41.06
         END IF                                                            41.06
         GOTO 100
       ENDIF
@@ -2272,7 +2292,7 @@
 !
 ! ==========================================================
 !
-!   WIND  [vel]  [dir]  [astd]  DRAG  WU|FIT                              41.33 40.03
+!   WIND  [vel]  [dir]  [astd]  DRAG  WU|FIT|SWELL                        41.33 40.03
 !
 ! ==========================================================
 !
@@ -2293,10 +2313,12 @@
         CALL INKEYW ('STA','  ')                                          41.33
         IF ( KEYWIS('DRAG') ) THEN                                        41.33
           CALL INKEYW ('STA','WU')                                        41.33
-          IF (KEYWIS ('FIT')) THEN                                        41.33
-             IDRAG = 2                                                    41.33
-          ELSE IF (KEYWIS ('WU')) THEN                                    41.33
+          IF (KEYWIS ('WU')) THEN                                         41.33
              IDRAG = 1                                                    41.33
+          ELSE IF (KEYWIS ('FIT')) THEN                                   41.33
+             IDRAG = 2                                                    41.33
+          ELSE IF (KEYWIS ('SWELL')) THEN                                 41.33
+             IDRAG = 3                                                    41.33
           ENDIF                                                           41.33
         ENDIF                                                             41.33
 !
@@ -2622,14 +2644,19 @@
 !
 ! ============================================================
 !
-!  TRIad [trfac] [cutfr] [urcrit] [urslim]                                40.56
+!  TRIad [itriad] [trfac] [cutfr] [urcrit] [urslim]                       40.56
 !
 ! ============================================================
 !
       IF (KEYWIS ('TRI')) THEN
-        ITRIAD = 1                                                        20.81
-        CALL INREAL ('TRFAC', PTRIAD(1), 'UNC', 0.0)
-        CALL INREAL ('CUTFR', PTRIAD(2), 'STA', 2.5)                      40.61 40.56 30.82
+        CALL ININTG ('ITRIAD', ITRIAD, 'STA', 1)
+        IF (ITRIAD.EQ.5) THEN
+           CALL INREAL ('TRFAC', PTRIAD(1), 'STA', 0.13)
+           CALL INREAL ('CUTFR', PTRIAD(2), 'STA', 1.33333333)
+        ELSE
+           CALL INREAL ('TRFAC', PTRIAD(1), 'UNC', 0.0)
+           CALL INREAL ('CUTFR', PTRIAD(2), 'STA', 2.5)                   40.61 40.56 30.82
+        ENDIF
         CALL INREAL ('URCRIT', PTRIAD(4), 'UNC', 0.0)                     40.13
         CALL INREAL ('URSLIM', PTRIAD(5), 'STA', 0.01)                    40.41 40.23 40.13
         GOTO 100
@@ -4031,6 +4058,7 @@
 
 !TIMG      CALL SWTSTO(212)                                                    40.31
 
+      ISTAT = 0
       IF(.NOT.ALLOCATED(AC2)) ALLOCATE(AC2(MDC,MSC,MCGRD),STAT=ISTAT)     40.41 40.31
       IF ( ISTAT.NE.0 ) THEN                                              40.41
          CHARS(1) = NUMSTR(ISTAT,RNAN,'(I6)')                             40.41

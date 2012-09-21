@@ -335,6 +335,7 @@ SwanTranspAc.f90 SwanTranspX.f90 SwanDiffPar.f90 SwanGSECorr.f90 SwanInterpolate
 SwanInterpolateAc.f90 SwanInterpolateOutput.f90 SwanConvAccur.f90 SwanConvStopc.f90 \
 SwanFindObstacles.f90 SwanCrossObstacle.f90 \
 SwanComputeForce.f90 SwanIntgratSpc.f90 SwanBndStruc.f90 SwanReadfort18.f90 \
+SwanPunCollect.f90 \
 SwanSumOverNodes.f90 SwanMinOverNodes.f90 SwanMaxOverNodes.f90 \
 ocpids.f ocpcre.f ocpmix.f
 

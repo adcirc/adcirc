@@ -16,7 +16,7 @@
 !     hcat.nml file.
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -38,7 +38,7 @@
       program HotConcat
 
       implicit none
-      character(256) RLINE
+      character(1024) RLINE
       character*128 arg_str, basefile, tmp
       integer ios,i,j,k,l,numfiles, sum, halo,haloindex, mxc, myc
       integer prevsource,freq,cdir, version

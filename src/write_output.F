@@ -3621,8 +3621,9 @@ C     write data in ascii text only (other output formats are not supported)
                ENDDO
             ENDIF
          ENDIF
-#ifdef ADCNETCDF
+Casey 120830: Reversed the next two lines.
       CASE(3,5) !netcdf (portable)
+#ifdef ADCNETCDF
          IF (MYPROC.EQ.0) THEN
              CALL writeOutArrayNetCDF(lun, TimeLoc, it, descript)
          ENDIF

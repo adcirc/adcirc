@@ -2,21 +2,20 @@
 # IA32_PGF:		Intel Pentium with Linux using Portland Group compiler
 # Note: -lpgc is required for OpenMP.
 ##############################################################################
-F90_SER = pgf90
-F90_OMP = pgf90
-F90_MPI = ftn
+F90_SER = ifort
+F90_OMP = ifort
+F90_MPI = mpif90
 FLAGS_OPT =
 FLAGS_MSC = 
 FLAGS_SER = -fast
 FLAGS_OMP = -mp
-FLAGS_MPI = -fast -tp barcelona-64 
+FLAGS_MPI = -xT -axT
 INCS_SER =
 INCS_OMP =
 INCS_MPI =
 LIBS_SER =
 LIBS_OMP = -lpgc
 LIBS_MPI = 
-O_DIR = ../work/odir4/
 O_DIR = ../work/odir4/
 OUT = -o 
 EXTO = o

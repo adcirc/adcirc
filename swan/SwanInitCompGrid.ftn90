@@ -11,7 +11,7 @@ subroutine SwanInitCompGrid ( logcom )
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -121,6 +121,7 @@ subroutine SwanInitCompGrid ( logcom )
     XCLEN = XCGMAX - XCGMIN
     YCLEN = YCGMAX - YCGMIN
     !
+    istat = 0
     if(.not.allocated(ac2)) allocate(ac2(MDC,MSC,nverts), stat = istat)
     if ( istat /= 0 ) then
        call msgerr ( 4, 'Allocation problem in SwanInitCompGrid: array ac2 ' )
@@ -145,6 +146,8 @@ subroutine SwanInitCompGrid ( logcom )
     ! for sake of convenience, set MCGRD to nverts (for allocating AC1 and COMPDA)
     !
     MCGRD   = nverts
-    MCGRDGL = nverts
+    MCGRDGL = nvertsg
+    MXCGL   = nvertsg
+    MYCGL   = 1
     !
 end subroutine SwanInitCompGrid

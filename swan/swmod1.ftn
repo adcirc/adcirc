@@ -1653,7 +1653,7 @@
 !     MSETUP [   2] dimension of array PSETUP
 !     MSHAPE [   5] dimension of array PSHAPE
 !     MSPPAR [   5] dimension of array SPPARM
-!     MSURF  [  15] dimension of array PSURF                              41.06
+!     MSURF  [  20] dimension of array PSURF                              41.38 41.06
 !     MTRNP  [   3] dimension for propagation arrays                      40.85
 !     MTRIAD [  10] dimension of array PTRIAD
 !     MWCAP  [  15] dimension of array PWCAP
@@ -1679,7 +1679,7 @@
       PARAMETER           (MSETUP =  2)
       PARAMETER           (MSHAPE =  5)
       PARAMETER           (MSPPAR =  5)
-      PARAMETER           (MSURF  = 15)                                   41.06
+      PARAMETER           (MSURF  = 20)                                   41.38 41.06
       PARAMETER           (MTRIAD = 10)
       PARAMETER           (MWCAP  = 15)
       PARAMETER           (MWIND  = 40)
@@ -1693,8 +1693,7 @@
 ! JAOLD  [ 8+2*MDISP] within array SWMATR
 ! JASTD2 [  1] new air-sea temp. diff. within array COMPDA
 ! JASTD3 [  1] last read air-sea temp. diff. within array COMPDA
-! JBOTLV [  1] bottom level within array COMPDA
-!              set by command TABLE/BLOCK
+! JBOTLV [ 28] bottom level within array COMPDA
 ! JCDRAG [  1] drag coefficient within array COMPDA,
 !              set by command WCAP JANS ...
 ! JDHS   [  6] wave height correction within array COMPDA
@@ -1720,6 +1719,8 @@
 !              set by command READ FR ...
 ! JFRC3  [  1] friction coefficient within array COMPDA
 !              set by command READ FR ...
+! JGAMMA [  1] breaker parameter within array COMPDA,
+!              set by command BREAK NKD ...
 ! JGEN0  [   ] within array SWMATR
 ! JGEN1  [   ] within array SWMATR
 ! JGENR  [  1] total generation within array COMPDA
@@ -1761,6 +1762,8 @@
 !              set by command TABLE/BLOCK
 ! JRSXT  [  1] triads within array COMPDA
 !              set by command TABLE/BLOCK
+! JRESPL [  1] response length within array COMPDA,
+!              set by command BREAK NKD ...
 ! JSETUP [  1] setup values within array COMPDA
 ! JSTP   [  5] steepness within array COMPDA
 ! JTAUW  [  1] TauW within array COMPDA,
@@ -1794,12 +1797,11 @@
 ! JWY3   [ 19] y of last read wind velocity within array COMPDA
 ! JZEL   [  1] roughness within array COMPDA,
 !              set by command WCAP JANS ...
-! MCMVAR [ 27] within array COMPDA,
+! MCMVAR [ 28] within array COMPDA,
 !              =MCMVAR+2, for command READ FR ... (add JFRC2, JFRC3)
-!              =MCMVAR+4, for command WCAP JANS ... (add JCDRAG, JTAUW,
-!               JUSTAR, JZEL)
+!              =MCMVAR+4, for command WCAP JANS ... (add JCDRAG, JTAUW, JUSTAR, JZEL)
+!              =MCMVAR+2, for command BREA NKD ... (add JGAMMA, JRESPL)
 !              =MCMVAR+1, for command TABLE/BLOCK TMBOT (add JPBOT)
-!              =MCMVAR+1, for command TABLE/BLOCK BOTLEV (add JBOTLV)
 !              =MCMVAR+1, for command TABLE/BLOCK DISB (add JDSXB)
 !              =MCMVAR+1, for command TABLE/BLOCK DISSU (add JDSXS)
 !              =MCMVAR+1, for command TABLE/BLOCK DISW (add JDSXW)
@@ -1819,7 +1821,7 @@
 ! MTSVAR [  9] within array TESTDA
 !
       INTEGER             JABIN,       JABLK,       JAOLD
-      INTEGER             JASTD2,      JASTD3
+      INTEGER             JASTD2,      JASTD3,      JGAMMA,      JRESPL
       INTEGER             JCDRAG,      JDHS,        JDIS0
       INTEGER             JDIS1,       JDISS,       JDPSAV,      JDP1
       INTEGER             JDP2
@@ -2000,6 +2002,7 @@
 ! IDRAG  [     1] indicates formulation for wind drag coefficient         41.33
 !                 1=Wu (1982)                                             41.33
 !                 2=2nd order polynomial fit (see CE publication, 2012)   41.33
+!                 3=Cd based on cross swell                               41.33
 ! IFRSRF [     0] indicates frequency dependent surf breaking             41.06
 !                 0=no frequency dependency                               41.06
 !                 1=frequency dependency                                  41.06
@@ -2007,7 +2010,6 @@
 !                 =1; for command GEN1 ...,
 !                 =2; for command GEN2 ...,
 !                 =3; for command GEN3 ...,
-!Casey 120113: Changes from Taylor Asher.
 !CTGA 111003:  Full ice implementation.  Parameter read in swanpre1.ftn
 ! IICE   [      ] indicates how ice is to be handled within the model
 !                 =1; for undefined command
@@ -2379,7 +2381,6 @@
 !                 =gamma; set by command BOU STAT ... JON [gamma]
 ! U10    [    0.] wind velocity
 !                 =vel; set by command WIND [vel] ...
-!Casey 120113: Changes from Taylor Asher.
 !CTGA 111003:  Full ice implementation.  Parameter read in swanpre1.ftn
 ! WBICETH[  70.0] Minimum ice concentration (percentage out of 100.0)
 !                 necessary to trigger wave blocking.
@@ -2399,7 +2400,6 @@
       INTEGER             IDIFFR                                          40.21
       INTEGER             IVEG                                            40.55
       INTEGER             IFRSRF                                          41.06
-!Casey 120113: Changes from Taylor Asher.
 !CTGA 111003:  Full ice implementation.  Parameter read in swanpre1.ftn
       INTEGER             IICE
       REAL                DEPMIN,      PBOT(MBOT),  PNUMS(MNUMS)
@@ -2412,7 +2412,6 @@
       REAL                PQUAD(MQUAD)
       REAL                RCOMPT(50,5)
       REAL                PDIFFR(MDIFFR)                                  40.21
-!Casey 120113: Changes from Taylor Asher.
 !CTGA 111003:  Full ice implementation.  Parameter read in swanpre1.ftn
       REAL                WBICETH
       LOGICAL             ACUPDA

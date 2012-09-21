@@ -28,7 +28,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -245,29 +245,31 @@
 !
 !       write initialisation file
 !
-        OPEN  (12, FILE=INIFIL, STATUS='UNKNOWN', FORM='FORMATTED',       40.00
-     &           ERR=950)
-        WRITE (12, 210) INIVER, 'version of initialisation file'          10.16
-        WRITE (12, 220) INST,   'name of institute'
-        WRITE (12, 210) INPUTF, 'command file ref. number'
-        WRITE (12, 220) INPFO,  'command file name'
-        WRITE (12, 210) PRINTF, 'print file ref. number'
-        WRITE (12, 220) OUTFO,  'print file name'                         40.30
-        WRITE (12, 210) PRTEST, 'test file ref. number'
-        WRITE (12, 220) TSTFO,  'test file name'                          40.30
-        WRITE (12, 210) SCREEN, 'screen ref. number'
-        WRITE (12, 210) IUNMAX, 'highest file ref. number'
-        WRITE (12, 230) COMID,  'comment identifier'
-        WRITE (12, 230) TABC,   'TAB character'
-        WRITE (12, 230) DIRCH1, 'dir sep char in input file'
-        WRITE (12, 230) DIRCH2, 'dir sep char replacing previous one'     40.00
-        WRITE (12, 210) ITMOPT, 'default time coding option'
-        IF (PARLL) THEN
-           DO II = 1, NPROC
-              WRITE (12, 240) IWEIG(II), 'speed of processor ',II
-           END DO
-        END IF
-        CLOSE (12)
+        IF ( IAMMASTER ) THEN
+           OPEN  (12, FILE=INIFIL, STATUS='UNKNOWN', FORM='FORMATTED',    40.00
+     &                ERR=950)
+           WRITE (12, 210) INIVER, 'version of initialisation file'       10.16
+           WRITE (12, 220) INST,   'name of institute'
+           WRITE (12, 210) INPUTF, 'command file ref. number'
+           WRITE (12, 220) INPFO,  'command file name'
+           WRITE (12, 210) PRINTF, 'print file ref. number'
+           WRITE (12, 220) OUTFO,  'print file name'                      40.30
+           WRITE (12, 210) PRTEST, 'test file ref. number'
+           WRITE (12, 220) TSTFO,  'test file name'                       40.30
+           WRITE (12, 210) SCREEN, 'screen ref. number'
+           WRITE (12, 210) IUNMAX, 'highest file ref. number'
+           WRITE (12, 230) COMID,  'comment identifier'
+           WRITE (12, 230) TABC,   'TAB character'
+           WRITE (12, 230) DIRCH1, 'dir sep char in input file'
+           WRITE (12, 230) DIRCH2, 'dir sep char replacing previous one'  40.00
+           WRITE (12, 210) ITMOPT, 'default time coding option'
+           IF (PARLL) THEN
+              DO II = 1, NPROC
+                 WRITE (12, 240) IWEIG(II), 'speed of processor ',II
+              END DO
+           END IF
+           CLOSE (12)
+        ENDIF
   210   FORMAT (I5, T41, A)
   220   FORMAT (A40, A)
   230   FORMAT (A1, T41, A)
@@ -354,7 +356,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -453,7 +455,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -474,7 +476,7 @@
 !     Updates
 !
 !       ver 30.70, Sep 1997 by N.Booij: adaptation in view year 2000
-!       40.89, Nico Booij: integer Jumpyear introduced to prevent porblems
+!       40.89, Nico Booij: integer Jumpyear introduced to prevent problems
 !                          with 2-digit year code
 !
 !     Function:
@@ -503,7 +505,8 @@
 !
       INTEGER :: JUMPYEAR = 30     ! Used in interpretation of 2-digit year code
       INTEGER    IOPT, DTTIME(6)
-      CHARACTER  TIMSTR *24, MONC(12) *3, MONCI *3
+      CHARACTER    MONC(12) *3, MONCI *3
+      CHARACTER(*) TIMSTR
       DATA MONC /'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL',
      &           'AUG', 'SEP', 'OCT', 'NOV', 'DEC'/
 !
@@ -577,7 +580,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2011  Delft University of Technology
+!     Copyright (C) 1993-2012  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as

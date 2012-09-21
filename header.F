@@ -2,6 +2,7 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.91    - 09/21/2012 - jcd - Merged the swan40.91 branch into the trunk.
 C  v50.90    - 09/18/2012 - tcm  Fixed a typo bug in adcprep.F for the windows
 C                 builds.
 C  v50.89    - 09/16/20120 - zc - Merging netcdf_writer branch into trunk,
@@ -38,6 +39,16 @@ C              MS Visual Studio projects for building metis/adcprep/adcirc/
 C              and padcirc can be stored.
 C  v50.85   - 09/11/2012 - tcm - Added a few changes related to compiling
 C              on Windows PC using MS Studio and Intel MPI.
+C     v50.84.05   - 09/11/2012 - jcd - Corrected the use of MPI_COMM_WORLD
+C                   when it should instead have been COMM in SwanPunCollect.
+C     v50.84.04   - 09/09/2012 - jcd - Two small changes to the existing files
+C                   for src/couple2swan.F and work/makefile.
+C     v50.84.03   - 09/09/2012 - jcd - Added the newest release version 40.91
+C                   in the swan sub-directory.  Carried forward our macros.inc
+C                   files with the compiler flags for different machines.
+C     v50.84.02   - 09/09/2012 - jcd - Trying to delete the existing SWAN.
+C     v50.84.01   - 09/09/2012 - jcd - Fixed a small bug in write_output.F with
+C                   the writing of the new NetCDF output files.
 C  v50.84   - 08/16/2012 - jgf - Fixed aswip compilation dependencies to enable
 C             the building of aswip on garnet at ERDC.
 C  v50.83   - 08/16/2012 - jgf - Fixed (removed or changed) stray references 
