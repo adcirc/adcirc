@@ -10,6 +10,7 @@ C                     current for ADCIRC v46.34   09/20/2006
 C----------------------------------------------------------------------------
 
       MODULE PRE_GLOBAL
+      USE GLOBAL_3DVS, ONLY: NFEN
       USE PRESIZES
       USE VERSION
       IMPLICIT NONE
@@ -125,7 +126,7 @@ C
 
 C
 C     PARM15-3DVS section
-      INTEGER :: ISLIP,ICG,NFEN,IEVC
+      INTEGER :: ISLIP,ICG,IEVC
       INTEGER :: I3DSD,NSPO3DSD       ! NSTA3DD is in presizes
       INTEGER :: I3DSV,NSPO3DSV       ! NSTA3DV is in presizes
       INTEGER :: I3DST,NSPO3DST       ! NSTA3DT is in presizes

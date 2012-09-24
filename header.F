@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.92    - 09/24/2012 - jcd - Fixed a bug in the NetCDF output of the sigma
+C              layers in 3D.  The variable NFEN was declared in pre_global.F,
+C              and thus was not available to the FEGRIDS routine within the
+C              global_3dvs.F module.  Changed pre_global.F to use the NFEN
+C              declared within the global_3dvs.F module.
 C  v50.91    - 09/21/2012 - jcd - Merged the swan40.91 branch into the trunk.
 C  v50.90    - 09/18/2012 - tcm  Fixed a typo bug in adcprep.F for the windows
 C                 builds.
