@@ -6870,6 +6870,7 @@ C     Read in model parameters to ADCIRC variables
       CALL check_err(iret)
 C
       DEALLOCATE(hs%myTime%timenc)
+      hs%myTime%initialized = .false. !..zc50.93 - reinitilize if we write a hot start later
 C
 C     now close the netcdf file
       iret = nf90_close(hs%ncid)

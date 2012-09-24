@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.93    - 09/24/2012 - zc - Fixed a bug when both writing and reading
+C              netcdf hot start files where timenc was deallocated but not 
+C              marked for reinitialization later.
 C  v50.92    - 09/24/2012 - jcd - Fixed a bug in the NetCDF output of the sigma
 C              layers in 3D.  The variable NFEN was declared in pre_global.F,
 C              and thus was not available to the FEGRIDS routine within the
