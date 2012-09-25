@@ -568,7 +568,7 @@ C
 C-----------------------------------------------------------------------
       module diagnosticOutput
 
-      use sizes, only : sz
+      use sizes, only : sz, globaldir
       use global, only : slam, sfea, wvnx2, wvny2, prn2, np, ics, nws,
      &   deg2rad, rad2deg, ten2one, g, rhowat0, openFileForRead,
      &   mnp, ihot
@@ -714,11 +714,11 @@ C     initialize azimuth values in quadrants
       !
       ! if we are analyzing just the cycle times
       if ( defaultOutputIncrement.eqv..true. ) then
-         outputSecs(:) = cycleTime(:)
+         outputSecs(:) = cycleSecs(:)
          if ( abs(nws).eq.19 ) then
-            outputLons(:) = rlon(:)
-            outputLats(:) = rlat(:)
-            outputDirs(:) = h_dir(:)
+            outputLons(:) = cycleLons(:)
+            outputLats(:) = cycleLats(:)
+            outputDirs(:) = cycleDirs(:)
          endif
       else
          !
@@ -767,6 +767,7 @@ C     initialize azimuth values in quadrants
       call allocPseudoMeshArrays()
       if (abs(nws).eq.15) then
          mnp = np
+         globaldir="." ! nws15init will open globaldir/fort.22 
          call nws15init(timeOffset)
       endif
       call initializeDiagnosticOutput()
@@ -780,6 +781,8 @@ C     initialize azimuth values in quadrants
          if ( abs(nws).eq.15 ) then
             ! call this just to get the updated position of the
             ! storm's center so we can radiate out from that location
+            slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
+            sfea(:) = 34.0d0*deg2rad
             call nws15get(wvnx2, wvny2, prn2, outputSecs(iout))
             outputLats(iout) = EyeLatR(3)
             outputLons(iout) = EyeLonR(3)
@@ -867,6 +870,7 @@ C     initialize azimuth values in quadrants
       call allocPseudoMeshArrays()
       if (abs(nws).eq.15) then
          mnp = np
+         globaldir="." ! nws15init will open globaldir/fort.22
          call nws15init(timeOffset)
       endif
       call initializeDiagnosticOutput()
@@ -880,6 +884,8 @@ C     initialize azimuth values in quadrants
          if ( abs(nws).eq.15 ) then
             ! call this just to get the updated position of the
             ! storm's center so we can form a mesh at that location
+            slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
+            sfea(:) = 34.0d0*deg2rad
             call nws15get(wvnx2, wvny2, prn2, outputSecs(iout))
             outputLats(iout) = EyeLatR(3)
             outputLons(iout) = EyeLonR(3)
@@ -996,6 +1002,7 @@ C     initialize azimuth values in quadrants
       call allocPseudoMeshArrays()
       if (abs(nws).eq.15) then
          mnp = np
+         globaldir="."
          call nws15init(timeOffset)
       endif
       call initializeDiagnosticOutput()
@@ -1009,6 +1016,8 @@ C     initialize azimuth values in quadrants
          if ( abs(nws).eq.15 ) then
             ! call this just to get the updated position of the
             ! storm's center so we can form a mesh at that location
+            slam(:) = -79.0d0*deg2rad ! initialize to avoid spurious error messages
+            sfea(:) = 34.0d0*deg2rad
             call nws15get(wvnx2, wvny2, prn2, outputSecs(iout))
             outputLats(iout) = EyeLatR(3)
             outputLons(iout) = EyeLonR(3)

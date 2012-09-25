@@ -3471,7 +3471,7 @@ C         f. sequential hwind snapshots will not be evenly spaced in time
 C         g. hwind data do not contain barometric pressure information
 C***********************************************************************
       subroutine NWS15GET(wvnx, wvny, press, timeloc)
-      use global, only : slam, sfea, mb2pa, np, dp, m2nm, nm2m
+      use global, only : slam, sfea, mb2pa, np, dp, m2nm, nm2m, mnp
       implicit none
       real(sz), intent(out) :: wvnx(:)  ! wind u-velocity (m/s)
       real(sz), intent(out) :: wvny(:)  ! wind v-velocity (m/s)
@@ -3755,7 +3755,7 @@ C
          call logMessage(ECHO,scratchMessage)
          ! we won't need the actual coordinates
          currentLine = currentLine + 1
-         read(220,'(6F8.4)')
+         read(220,'(6F13.4)',end=246,err=248,iostat=errorio)
      &      (throwAwayCoordinate,j=1,hWindFiles(cn)%nh)
       end do
       !
@@ -3848,7 +3848,7 @@ C     We jump to this section if there was an error reading a file.
      &    dataset, trim(hWindFiles(cn)%file_name)
          call allMessage(ERROR,scratchMessage)
       endif
-      write(scratchMessage,'(A,I3,A)')
+      write(scratchMessage,'(A,I5,A)')
      &       'The value of the i/o error flag was ',errorio,'.'
       call allMessage(ERROR,scratchMessage)
       CALL windTerminate()

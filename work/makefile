@@ -212,7 +212,7 @@ endif
 ifeq ($(BUILDTYPE),hstime)
   CF:= $(PPFC)
   O_DIR:=odir12/
-  FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
+  FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(DA)
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   endif
@@ -230,7 +230,7 @@ endif
 ifeq ($(BUILDTYPE),aswip)
   CF:= $(PPFC)
   O_DIR:=odir3/
-  FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
+  FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(DA)
   VPATH :=  $(SRCDIR)/wind
   MSG_MOBJ:=
 endif
@@ -238,7 +238,7 @@ endif
 ifeq ($(BUILDTYPE),adccmp)
   CF:= $(PPFC)
   O_DIR:=odir17/
-  FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
+  FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(DA)
   VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
 endif

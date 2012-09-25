@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.94    - 09/24/2012 - jgf - Added DA compiler flags (-DREAL8 etc) to
+C              compile hstime, aswip, and adccmp; fixed read format issues in 
+C              nws15get; fixed cycle time dimension issue, globaldir
+C              initialization issue, and lat/lon initialization in aswip
+C              (these issues only affect post storm analysis for hwind). 
 C  v50.93    - 09/24/2012 - zc - Fixed a bug when both writing and reading
 C              netcdf hot start files where timenc was deallocated but not 
 C              marked for reinitialization later.
