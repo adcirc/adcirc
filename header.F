@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.96    - 09/27/2012 - jgf - Removed stray debugging messages from 
+C              netcdfio.F that were causing segfault upon hotstart with netcdf
+C              files. 
 C  v50.95    - 09/27/2012 - zc - Added SwanMaxDescript%Specifier = NOUTGW to
 C              ensure NetCDF format is written for SWAN max files. 
 C              Corrected SWAN output routines to always use writer processors

@@ -7174,14 +7174,6 @@ C     velocity station dimension
             end forall
          ENDIF
       ENDIF
-               !jgfdebug
-         write(*,*) "size(fullDomainVelocityStationList)=",
-     &    size(fullDomainVelocityStationList)," on proc ",myproc
-         do i=1,size(fullDomainVelocityStationList)
-            write(*,*) "fullDomainVelocityStationList(",i,")=",
-     &       fullDomainVelocityStationList(i)," on proc ",myproc
-         end do 
-
 C
 C     Point to the hotstart file we want to work on.
       IF (lun.eq.67) THEN
