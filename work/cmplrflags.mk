@@ -130,7 +130,7 @@ ifeq ($(compiler),intel-ND)
   PPFC            :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -w -O3 -xSSE4.2 -assume byterecl -132 -i-dynamic -assume buffered_io 
+  FFLAGS1       :=  $(INCDIRS) -w -O3 -xSSE4.2 -assume byterecl -132 -i-dynamic -assume buffered_io
   ifeq ($(DEBUG),full)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug -check all -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif

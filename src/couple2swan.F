@@ -1637,85 +1637,84 @@ C          for the swan variable we are in the loop for.
             IF((ITIME.GT.NTCYSGW).AND.(ITIME.LE.NTCYFGW))THEN
                IF((NSCOUGW.EQ.0 .OR. IT.EQ.SWAN_MTC).AND.IT.NE.0)THEN
                   IF(IW.NE.5)THEN
-                     SELECT CASE(ABS(NOUTGW))
-                     CASE(1,2) !...ASCII,Binary
-                        CALL WriteOutArray(UnitNumber,DT*ITIME,ITIME,SwanDescript,
-     &                                      PackOne,UnPackOne,IGSW(IW),FileName(IW))
-                     CASE(3,4,5)       !...Sparse / Sparse through writer / NetCDF
 #ifdef CMPI
-                        IF(MNWPROC.GT.0) THEN
-                           IFileCounter = IFileCounter + 1               !st3 100708: writer buffer check
-                           IF( IFileCounter > MNWPROC*NUM_BUF_MAX ) THEN !st3 100708: writer buffer check
-                             WRITE(6,*) ' ***** WRITER BUFFER ERROR ***' !st3 100708: writer buffer check
-                             WRITE(6,*) '     You need more Writer Core' !st3 100708: writer buffer check
-                             subDomainFatalError=.TRUE.
-                             CALL MSG_FINI()
-                             STOP
-                           ENDIF
-                           CALL WRITE_GBL_FILE_THROUGH_WRITER
-     &                        (UnitNumber,TRIM(GLOBALDIR)//'/'//
-     &                         TRIM(FileName(IW)),SwanDescript,
-     &                         DT*ITIME,ITIME,
-     &                         Writer_StoreOne, DBLE(OVEXCV(IVTYPE)))
-                        ELSE
-                           SELECT CASE(ABS(NOUTGW))
-                           CASE(3,5)
-                              CALL WriteOutArray(UnitNumber,DT*ITIME,ITIME,SwanDescript,
-     &                          PackOne,UnPackOne,IGSW(IW),FileName(IW))
-                           CASE DEFAULT
-                              CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     &                          (UnitNumber,TRIM(GLOBALDIR)//'/'//TRIM(FileName(IW)),
-     &                          SwanDescript,DT*ITIME,ITIME,StoreOne,DBLE(OVEXCV(IVTYPE)))
-                           END SELECT  
-                        ENDIF
+                    IF(MNWPROC.GT.0) THEN
+                       IFileCounter = IFileCounter + 1               !st3 100708: writer buffer check
+                       IF( IFileCounter > MNWPROC*NUM_BUF_MAX ) THEN !st3 100708: writer buffer check
+                         WRITE(6,*) ' ***** WRITER BUFFER ERROR ***' !st3 100708: writer buffer check
+                         WRITE(6,*) '     You need more Writer Core' !st3 100708: writer buffer check
+                         subDomainFatalError=.TRUE.
+                         CALL MSG_FINI()
+                         STOP
+                       ENDIF
+                       !...Writer processor will make determination on format
+                       !   (ASCII,Binary,NetCDF,NetCDF4)
+                       CALL WRITE_GBL_FILE_THROUGH_WRITER
+     &                    (UnitNumber,TRIM(GLOBALDIR)//'/'//
+     &                     TRIM(FileName(IW)),SwanDescript,
+     &                     DT*ITIME,ITIME,
+     &                     Writer_StoreOne, DBLE(OVEXCV(IVTYPE)))
+                    ELSE
+                      SELECT CASE(ABS(NOUTGW))
+                       CASE(4)  !...ASCII Sparse (4)
+                          CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     &                      (UnitNumber,TRIM(GLOBALDIR)//'/'//TRIM(FileName(IW)),
+     &                      SwanDescript,DT*ITIME,ITIME,StoreOne,DBLE(OVEXCV(IVTYPE)))
+                       CASE DEFAULT  !...Full/Binary/NetCDF/NetCDF4 (1,2,3,5)
+                          CALL WriteOutArray(UnitNumber,DT*ITIME,ITIME,SwanDescript,
+     &                      PackOne,UnPackOne,IGSW(IW),FileName(IW))
+                       END SELECT  
+                    ENDIF
 #else
-                        SELECT CASE(ABS(NOUTGW))
-                        CASE(3,5)
-                            CALL WriteOutArray(UnitNumber,DT*ITIME,ITIME,SwanDescript,
-     &                          PackOne,UnPackOne,IGSW(IW),FileName(IW))
-                        CASE DEFAULT
-                            CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     &                          (UnitNumber,TRIM(GLOBALDIR)//'/'//TRIM(FileName(IW)),
-     &                          SwanDescript,DT*ITIME,ITIME,StoreOne,DBLE(OVEXCV(IVTYPE)))
-                        END SELECT
+                    SELECT CASE(ABS(NOUTGW))
+                    CASE(4) !...ASCII Sparse
+                        CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     &                      (UnitNumber,TRIM(GLOBALDIR)//'/'//TRIM(FileName(IW)),
+     &                      SwanDescript,DT*ITIME,ITIME,StoreOne,DBLE(OVEXCV(IVTYPE)))
+                    CASE DEFAULT !...Full/Binary/NetCDF/NetCDF4
+                        CALL WriteOutArray(UnitNumber,DT*ITIME,ITIME,SwanDescript,
+     &                      PackOne,UnPackOne,IGSW(IW),FileName(IW))
+                    END SELECT
 #endif
-                     END SELECT
                   ELSE
-                     SELECT CASE(ABS(NOUTGW))
-                     CASE(1,2)
-                        CALL WriteOutArray(UnitNumber,DT*ITIME,ITIME,SwanDescript,
-     &                                     PackTwo,UnPackTwo,IGSW(IW),FileName(IW))
-                     CASE(3,4,5)
 #ifdef CMPI
-                        IF(MNWPROC.GT.0) THEN
-                           CALL WRITE_GBL_FILE_THROUGH_WRITER
-     &                        (UnitNumber,TRIM(GLOBALDIR)//'/'//
-     &                         TRIM(FileName(IW)),SwanDescript,
-     &                         DT*ITIME,ITIME,
-     &                         Writer_StoreTwo, DBLE(OVEXCV(IVTYPE)))
-                        ELSE
-                           SELECT CASE(ABS(NOUTGW))
-                           CASE(3,5)
-                                CALL WriteOutArray(UnitNumber,DT*ITIME,ITIME,SwanDescript,
-     &                              PackTwo,UnPackTwo,IGSW(IW),FileName(IW))
-                           CASE DEFAULT
-                                CALL WRITE_GBL_FILE_SKIP_DEFAULT
-     &                              (UnitNumber,TRIM(GLOBALDIR)//'/'//TRIM(FileName(IW)),
-     &                              SwanDescript,DT*ITIME,ITIME,StoreTwo,DBLE(OVEXCV(IVTYPE)))
-                           END SELECT
-                        ENDIF
-#else
-                        SELECT CASE(ABS(NOUTGW))
-                        CASE(3,5)
-                            CALL WriteOutArray(UnitNumber,DT*ITIME,ITIME,SwanDescript,
-     &                          PackTwo,UnPackTwo,IGSW(IW),FileName(IW))
-                        CASE DEFAULT
+                    IF(MNWPROC.GT.0) THEN
+                       IFileCounter = IFileCounter + 1               !st3 100708: writer buffer check
+                       IF( IFileCounter > MNWPROC*NUM_BUF_MAX ) THEN !st3 100708: writer buffer check
+                         WRITE(6,*) ' ***** WRITER BUFFER ERROR ***' !st3 100708: writer buffer check
+                         WRITE(6,*) '     You need more Writer Core' !st3 100708: writer buffer check
+                         subDomainFatalError=.TRUE.
+                         CALL MSG_FINI()
+                         STOP
+                       ENDIF  
+                       !...Let writer processor determinate format
+                       CALL WRITE_GBL_FILE_THROUGH_WRITER
+     &                    (UnitNumber,TRIM(GLOBALDIR)//'/'//
+     &                     TRIM(FileName(IW)),SwanDescript,
+     &                     DT*ITIME,ITIME,
+     &                     Writer_StoreTwo, DBLE(OVEXCV(IVTYPE)))
+                    ELSE
+                       SELECT CASE(ABS(NOUTGW))
+                       CASE(4) !...ASCII Sparse    
                             CALL WRITE_GBL_FILE_SKIP_DEFAULT
      &                          (UnitNumber,TRIM(GLOBALDIR)//'/'//TRIM(FileName(IW)),
      &                          SwanDescript,DT*ITIME,ITIME,StoreTwo,DBLE(OVEXCV(IVTYPE)))
-                        END SELECT
+                       CASE DEFAULT !...ASCII Full, Binary, NetCDF, NetCDF4
+                            CALL WriteOutArray(UnitNumber,DT*ITIME,ITIME,SwanDescript,
+     &                       PackTwo,UnPackTwo,IGSW(IW),FileName(IW))
+                       END SELECT
+                    ENDIF
+#else
+                    SELECT CASE(ABS(NOUTGW))
+                    CASE(4) !...ASCII Sparse 
+                        CALL WRITE_GBL_FILE_SKIP_DEFAULT
+     &                      (UnitNumber,TRIM(GLOBALDIR)//'/'//TRIM(FileName(IW)),
+     &                      SwanDescript,DT*ITIME,ITIME,StoreTwo,DBLE(OVEXCV(IVTYPE)))
+                    CASE DEFAULT !...ASCII full, Binary, NetCDF, NetCDF4
+                        CALL WriteOutArray(UnitNumber,DT*ITIME,ITIME,SwanDescript,
+     &                      PackTwo,UnPackTwo,IGSW(IW),FileName(IW))
+                    END SELECT
 #endif
-                     END SELECT
                   ENDIF
                ENDIF
             ENDIF
@@ -1764,6 +1763,7 @@ C          for the swan variable we are in the loop for.
             END SELECT        
             SELECT CASE(NOUTGW) 
             CASE(3,5)
+                SwanDescriptMax%Specifier = NOUTGW
                 CALL writeOutArrayMinMax(UnitNumber,DT*ITIME,ITIME,
      &              SwanDescriptMax,PackOne,UnpackOne)
             CASE DEFAULT
