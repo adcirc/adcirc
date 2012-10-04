@@ -1761,7 +1761,7 @@ C          for the swan variable we are in the loop for.
                 CASE DEFAULT
                     !...Can't get here
             END SELECT        
-            SELECT CASE(NOUTGW) 
+            SELECT CASE(ABS(NOUTGW)) 
             CASE(3,5)
                 SwanDescriptMax%Specifier = NOUTGW
                 CALL writeOutArrayMinMax(UnitNumber,DT*ITIME,ITIME,

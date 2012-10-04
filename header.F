@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.97    - 09/28/2012 - zc - Corrected how the element array is written
+C              to NetCDF files to prevent unnecessary screen output for some
+C              builds of NetCDF. Also made sure negative values are treated
+C              correctly in couple2swan max file writing.
 C  v50.96    - 09/27/2012 - jgf - Removed stray debugging messages from 
 C              netcdfio.F that were causing segfault upon hotstart with netcdf
 C              files. 
