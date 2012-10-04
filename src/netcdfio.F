@@ -5908,6 +5908,7 @@ C
 C     Write the nodal data to the netcdf file
       IF (MNPROC.eq.1) THEN
          IF (NHAGE.ne.0) THEN
+            kount(2)=hs%myMesh%num_nodes  ! for nodal data
             iret = nf90_put_var(hs%ncid, hs%gloelv%nodal_data_id,
      &          GLOELVDescript%array2D, start, kount)
             CALL check_err(iret)
@@ -5919,6 +5920,7 @@ C     Write the nodal data to the netcdf file
             CALL check_err(iret)
          ENDIF
          IF (NHAGV.ne.0) THEN
+            kount(2)=hs%myMesh%num_nodes  ! for nodal data
             iret = nf90_put_var(hs%ncid, hs%glovellv%u_nodal_data_id,
      &          GLOULVDescript%array2D, start, kount)
             CALL check_err(iret)
@@ -5937,6 +5939,7 @@ C     Write the nodal data to the netcdf file
          ENDIF
       ELSE
          IF (NHAGE.ne.0) THEN
+            kount(2)=hs%myMesh%num_nodes  ! for nodal data
             iret = nf90_put_var(hs%ncid, hs%gloelv%nodal_data_id,
      &          GLOELVDescript%array2D_g, start, kount)
             CALL check_err(iret)
@@ -5948,6 +5951,7 @@ C     Write the nodal data to the netcdf file
             CALL check_err(iret)
          ENDIF
          IF (NHAGV.ne.0) THEN
+            kount(2)=hs%myMesh%num_nodes  ! for nodal data
             iret = nf90_put_var(hs%ncid, hs%glovellv%u_nodal_data_id,
      &          GLOULVDescript%array2D_g, start, kount)
             CALL check_err(iret)
@@ -6964,7 +6968,7 @@ C
       iret = nf90_get_var(ncid, data_id, work_reals)
       call check_err(iret)
       do i=1,size(subdomain_reals(1,:))
-         subdomain_reals(:,i) = work_reals(:,i)
+         subdomain_reals(:,i) = work_reals(:,fullDomainIndexList(i))
       end do
       deallocate(work_reals)
 C

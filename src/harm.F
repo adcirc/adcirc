@@ -345,6 +345,47 @@ C--------------------------------------------------------------------
 C--------------------------------------------------------------------
 
 C--------------------------------------------------------------------
+C     S U B R O U T I N E   W R I T E   H A 
+C--------------------------------------------------------------------
+C     jgf50.97: Writes LHS matrix to a file for use in debugging.
+C--------------------------------------------------------------------
+      SUBROUTINE writeHA(timesec, it)
+      USE GLOBAL, ONLY : myproc, globaldir
+      IMPLICIT NONE     
+      REAL(8) :: timesec ! time in seconds since cold start
+      INTEGER :: it      ! current adcirc time step number
+      INTEGER :: i, j    ! loop counters
+C
+      call setMessageSource("writeHA")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      IF (myproc.eq.0) THEN
+         OPEN(56,FILE=TRIM(GLOBALDIR)//'/'//'fort.56',
+     &      STATUS='UNKNOWN',ACCESS='SEQUENTIAL',ACTION='WRITE',
+     &      POSITION='APPEND')
+         WRITE(56,2120) timesec, it 
+         DO i=1,2*MNHARF
+            DO j=1,2*MNHARF
+               write(56,2130) i, j, ha(i,j)
+            END DO
+         END DO
+         CLOSE(56)
+      ENDIF
+
+ 2120 FORMAT(2X,1pE20.10E3,5X,I10)
+ 2130 FORMAT('ha(',I2,',',I2,')=',1pE20.10E3)
+
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE writeHA
+C--------------------------------------------------------------------
+
+
+C--------------------------------------------------------------------
 C     S U B R O U T I N E  C H E C K   H A R M O N I C   P A R A M E T E R S
 C--------------------------------------------------------------------
 C     jgf50.41: Checks harmonic analysis settings.
@@ -538,6 +579,7 @@ C
       REAL(SZ) :: EE1, EE2, EE3    ! nodal elevations around an element
       REAL(SZ) :: U11, U22, U33    ! nodal u velocities around an element
       REAL(SZ) :: V11, V22, V33    ! nodal v velocities around an element
+      INTEGER :: n                 ! loop counter
 C
       call setMessageSource("updateHarmonicAnalysis")
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
@@ -612,6 +654,8 @@ C...  LINES TO COMPUTE MEANS AND VARIANCES
 
 
       ENDIF
+
+
 
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -1598,7 +1642,7 @@ C--------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, intent(in) :: lun          ! i/o logical unit number
       INTEGER, intent(inout) :: counter   ! i/o record
-      INTEGER :: i, n                     ! loop counters
+      INTEGER :: i, j, n                  ! loop counters
       INTEGER :: num_elev_sta   ! number of elevation stations to read
       INTEGER :: num_vel_sta    ! number of velocity stations to read
       INTEGER :: num_nodes      ! number of nodes to read
@@ -1685,7 +1729,17 @@ c
 c
 c     Read in LHS Matrix
       counter = counter + 1
-      CALL binaryRead3D(HA, mm, mm, lun, counter)
+      
+      ! jgf50.96: do not use binaryRead3D(HA, mm, mm, lun, counter)
+      ! b/c HA is written with an inner j loop while binaryRead3D is
+      ! written with an inner i loop
+      do i=1,mm
+         do j=1,mm
+            READ(lun,REC=counter) HA(I,J)
+            counter = counter + 1
+         end do
+      end do
+C
 C
 c     Read in Station Elevation LHS load vector
       IF (NHASE.EQ.1) THEN
@@ -1758,8 +1812,10 @@ C     Map data from fulldomain to subdomain in parallel
             DO subdomainStation=1,NSTAV
                fulldomainStation = ABS(IMAP_STAV_LG(subdomainStation))
                DO i=1,mm
-                  STAELV(i,subdomainStation) =
-     &               STAELV_g(i,fulldomainStation)
+                  STAULV(i,subdomainStation) =
+     &               STAULV_g(i,fulldomainStation)
+                  STAVLV(i,subdomainStation) =
+     &               STAVLV_g(i,fulldomainStation)
                END DO
             END DO
          ENDIF
@@ -1768,11 +1824,19 @@ C     Map data from fulldomain to subdomain in parallel
                fulldomainNode = ABS(NODES_LG(subdomainNode))
                DO i=1,mm
                   GLOELV(i,subdomainNode) = GLOELV_g(i,fulldomainNode)
+               ENDDO
+            ENDDO
+         ENDIF
+         IF (NHAGV.EQ.1) THEN
+            DO subdomainNode=1,NP
+               fulldomainNode = ABS(NODES_LG(subdomainNode))
+               DO i=1,mm
                   GLOULV(i,subdomainNode) = GLOULV_g(i,fulldomainNode)
                   GLOVLV(i,subdomainNode) = GLOVLV_g(i,fulldomainNode)
                ENDDO
             ENDDO
          ENDIF
+         
 C..      Map Means and Squares
          IF (CHARMV.eqv..true.) THEN
             IF ((FMV.NE.0.).AND.(ITHS.GT.ITMV)) THEN

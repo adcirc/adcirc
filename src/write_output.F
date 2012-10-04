@@ -1872,7 +1872,7 @@ C
             ENDDO
             CLOSE(lun)
          ENDIF
-      CASE(3)
+      CASE(3,5)
          write(*,*)
      & "ERROR: Harmonic analysis output is not yet available in NetCDF."
       CASE DEFAULT

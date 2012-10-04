@@ -2,6 +2,15 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.98    - 10/04/2012 - jgf - Added subroutine to write LHS of harmonic
+C              analysis matrix for debugging purposes; fixed issue in the 
+C              way that the LHS matrix is read from the binary hotstart 
+C              file; fixed issue with the way that harmonic analysis
+C              load vectors are written to the netcdf hotstart file; fixed
+C              an issue with the on-the-fly decomposition of harmonic 
+C              analysis load vectors from netcdf hotstart files; fixed 
+C              issue with reading harmonic analysis load vectors for 
+C              station velocity harmonics from binary hotstart file.
 C  v50.97    - 09/28/2012 - zc - Corrected how the element array is written
 C              to NetCDF files to prevent unnecessary screen output for some
 C              builds of NetCDF. Also made sure negative values are treated
