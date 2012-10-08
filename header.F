@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99    - 10/08/2012 - jgf - Added if/then statements so that minpr.63
+C              and maxwvel.63 won't be written if there was no wind forcing;
+C              also, so that maxrs.63 won't be written unless there was 
+C              wave forcing. 
 C  v50.98    - 10/04/2012 - jgf - Added subroutine to write LHS of harmonic
 C              analysis matrix for debugging purposes; fixed issue in the 
 C              way that the LHS matrix is read from the binary hotstart 

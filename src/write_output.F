@@ -1229,12 +1229,16 @@ C     can be preserved across hot starts.
      &        packOne, unpackOne)
          CALL writeOutArrayMinMax(312, TimeLoc, IT, UMaxDescript,
      &        packOne, unpackOne)
-         CALL writeOutArrayMinMax(313, TimeLoc, IT, PrMinDescript,
-     &        packOne, unpackOne)
-         CALL writeOutArrayMinMax(314, TimeLoc, IT, WVMaxDescript,
-     &        packOne, unpackOne)
-         CALL writeOutArrayMinMax(315, TimeLoc, IT, RSMaxDescript,
-     &        packOne, unpackOne)
+         IF (NWS.NE.0) THEN
+            CALL writeOutArrayMinMax(313, TimeLoc, IT, PrMinDescript,
+     &           packOne, unpackOne)
+            CALL writeOutArrayMinMax(314, TimeLoc, IT, WVMaxDescript,
+     &           packOne, unpackOne)
+            IF (NRS.NE.0) THEN
+               CALL writeOutArrayMinMax(315, TimeLoc, IT, RSMaxDescript,
+     &              packOne, unpackOne)
+            ENDIF
+         ENDIF
 C       OUTPUT THE NODES WHERE THE ELEMENTAL SLOPE LIMITER HAS BEEN
 C       TURNED ON DURING THE RUN
          IF(LoadEleSlopeLim)THEN
