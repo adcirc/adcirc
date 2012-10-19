@@ -6793,7 +6793,7 @@ C     Read in model parameters to ADCIRC variables
       iret = nf90_get_var(hs%ncid, tempid, imhs)
       CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"iths", tempid)
-      CALL check_err(iret)
+      CALL check_err(iret)     
       iret = nf90_get_var(hs%ncid, tempid, iths)
       CALL check_err(iret)
       iret = nf90_inq_varid(hs%ncid,"iestp", tempid)

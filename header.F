@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.00    - 10/19/2012 - jgf - Extended the code for a hotstarting a run with
+C              a time step size that is different from the time step size
+C              in the hot start file to all run types (not just 3D baroclinic);
+C              also cleaned up some stray debug statements. 
 C  v50.99    - 10/08/2012 - jgf - Added if/then statements so that minpr.63
 C              and maxwvel.63 won't be written if there was no wind forcing;
 C              also, so that maxrs.63 won't be written unless there was 

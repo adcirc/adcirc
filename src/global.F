@@ -390,6 +390,9 @@ C     jgf45.07 The definitions of many of these are in timestep.F
       LOGICAL :: CME_AreaInt_Corr    = .FALSE.
       LOGICAL :: CTIP                = .FALSE.
 C    kmd48.33bc  - logical statement for hot start using different time step
+      ! This is .true. if the time step size of the current run is
+      ! different from the time step size in the hotstart file; also
+      ! true for IDEN=1, 3D baroclinic runs 
       LOGICAL :: CHOTHS              = .FALSE.
 ! kmd - logical statement for rivers in baroclinic simulation
       LOGICAL :: BndBCRiver          = .FALSE.

@@ -127,6 +127,8 @@ C     kmd48.33bc - add variables for heat flux
       REAL(SZ),ALLOCATABLE :: RealQ_Tmp(:,:)
       REAL(SZ),ALLOCATABLE :: ImQ_Tmp(:,:)
       INTEGER :: IDenHS
+      REAL(8) :: dtChange ! difference in time step size (sec) between 
+                          ! current run and the one we're hotstarting from
 C
 C     jgf49.44: Add variables for reading fulldomain binary hotstart file
 C     in parallel.
@@ -174,8 +176,6 @@ C      kmd49.49 - redo case(67,68) for initial conditions or ascii
 C                 format for hot start.
 C...
 C...     READ IN 2DDI HOT START INITIAL CONDITION OVER WHOLE DOMAIN
-C...     THIS FILE ALWAYS HAS A RECL=8 BECAUSE IT IS ASSUMED THAT THE HARMONIC
-C...     ANALYSIS IS ALWAYS DONE IN 64 BITS, EVEN ON A WORKSTATION
 C...
 C        Determine if the hot start file exists.
          fileFound=.False.
@@ -205,8 +205,8 @@ C
          ENDIF
 C        start reading ascii initial conditions file
          WRITE(16,1740)
- 1740     FORMAT(/,9X,'Initial condition or ascii hot start
-     &        file was found.',
+ 1740    FORMAT(/,9X,
+     &    'Initial condition or ascii hot start file was found.',
      &     ' Opening file.')
 
          IF ((MNPROC.eq.1).or.
@@ -244,41 +244,10 @@ C        Now read the readable initial condition or hot start file.
          moderbin=2
          IHOTSTP=1
          READ(IHOT,*) gridinfo
-!         if (.not.
-!     &     CMP_VERSION_NUMBERS(InputFileFmtVn,FileFmtVersion))then
-!            WRITE(16, 1001)
-!            write(16, 1012)
-!            write(16, 9973)
-!            if (NScreen /= 0 .and. myproc == 0) then
-!               WRITE(ScreenUnit, 1001)
-!               write(ScreenUnit, 1012)
-!               write(ScreenUnit, 9973)
-!            endif
-!#ifdef CMPI
-!            call msg_fini()
-!#endif
-!            stop
-!         endif
          READ(IHOT,*) IMHS
          READ(IHOT,*) TimeLoc
          READ(IHOT,*) ITHS
-!kmd - added in these lines for 3D and baroclinic
-         IF ((IDEN.GE.1).AND.(C3D).AND.(CBAROCLINIC)) THEN
-            CHOTHS=.TRUE.
-         END IF
-         IF (CHOTHS) THEN
-            DTDPHS=TimeLoc/ITHS ! Set up time step information for hotstart file
-            IF (DTDPHS.NE.DTDP) THEN
-               RNDAYHS=TimeLoc/86400.D0
-               NTHS=INT((RNDAY-RNDAYHS)*(86400.D0/DTDP)+0.5d0)
-               NT=ITHS+NTHS
-               WRITE(16,*) "The number of time steps has been reset
-     &            due to a chnage in the timestep interval"
-               WRITE(16,*) "It has been changed to ", NT
-            END IF
-         ELSE
-            DTDPHS=DTDP
-         END IF
+
          READ(IHOT,*) NP_G_IN
          READ(IHOT,*) NE_G_IN
          READ(IHOT,*) NP_A_IN
@@ -297,14 +266,6 @@ C        jgf46.34 Added support for IBTYPE=52.
          ENDIF
          CALL readAndMapToSubdomainInt2D(NNODECODE, IHOT, IHOTSTP, moderbin)
          CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
-
-!kmd - see if results are same between versions
-         !IF (MYPROC.EQ.0) PRINT *, "W: ETA1(397887) = ",ETA1(10)
-         !IF (MYPROC.EQ.0) PRINT *, "W: ETA2(397887) = ",ETA2(10)
-         !IF (MYPROC.EQ.0) PRINT *, "W: UU2(397887) = ",UU2(10)
-         !IF (MYPROC.EQ.0) PRINT *, "W: VV2(397887) = ",VV2(10)
-         !IF (MYPROC.EQ.0) PRINT *, "W: NODECODE(397887) = ",NNODECODE(10)
-         !IF (MYPROC.EQ.0) PRINT *, "W: NOFF(286649) = ",NOFF(10)
 C
          READ(IHOT,*) IESTP
          READ(IHOT,*) NSCOUE
@@ -368,10 +329,6 @@ C           kmd48.33bc - changed to format used in global IO, layer output
 C           kmd48.33bc - need to determine if IDEN parameter in hotstart
 C           is different than IDEN from fort.15 file. If so, determine which
 C           one should be used in the simulation.
-            !IF (MYPROC.EQ.0) THEN
-            !   PRINT *, "IDEN = ", IDEN
-            !   PRINT *, "IDENHS = ", IDENHS
-            !END IF
             IF (IDenHS.NE.IDEN) THEN
                IF ((CBAROCLINIC).AND.(RES_BC_FLAG.GE.1)) THEN
                   ! IDEN value from fort.15 should be used
@@ -400,17 +357,6 @@ C           one should be used in the simulation.
      &             " but the valid range is +/- 0 to 4.")
             END SELECT
          ENDIF  ! C3D
-         !IF (MYPROC.EQ.0) PRINT *, "W: DUU(397887) = ",DUU(10)
-         !IF (MYPROC.EQ.0) PRINT *, "W: DUV(397887) = ",DUV(10)
-         !IF (MYPROC.EQ.0) PRINT *, "W: DVV(397887) = ",DVV(10)
-         !IF (MYPROC.EQ.0) PRINT *, "W: UU(397887) = ",UU(10)
-         !IF (MYPROC.EQ.0) PRINT *, "W: VV(397887) = ",VV(10)
-         !IF (MYPROC.EQ.0) PRINT *, "W: Q(397887,1) = ",Q(10,1)
-         !IF (MYPROC.EQ.0) PRINT *, "W: WZ(397887,1) = ",WZ(10,1)
-         !IF (MYPROC.EQ.0) PRINT *, "W: q20(397887,1) = ",q20(10,1)
-         !IF (MYPROC.EQ.0) PRINT *, "W: l(397887,1) = ",l(10,1)
-         !IF (MYPROC.EQ.0) PRINT *, "W: Sal(397887,1) = ",Sal(10,1)
-         !IF (MYPROC.EQ.0) PRINT *, "W: Temp(397887,1) = ",Temp(10,1)
 C...
 C......  HOT START INFORMATION FOR HARMONIC ANALYSIS
 C...
@@ -713,28 +659,37 @@ C
 C     I N I T I A L I Z E   H O T S T A R T   R U N
 C
 C     ---------------------------------------------
-C     kmd48.33bc - implemented a varying Dt for 3D baroclinic
-      IF((IDEN.GE.1).AND.(C3D).AND.(CBAROCLINIC)) THEN
+      !jgf51.01: Determine if there is a difference between the time 
+      ! step size in the hotstart file, and the time step size for this
+      ! run (i.e, in the fort.15 file) ... if so, this affects any 
+      ! calculation of time in seconds since cold start, and any 
+      ! feature that counts time steps since cold start
+      DTDPHS=TimeLoc/ITHS  ! Set up time step information for hotstart file.
+      dtChange = DTDPHS - DTDP
+      ! we don't use .ne. for dtChange b/c of the limitations in machine precision
+      IF ( (abs(dtChange).gt.1.0e-10).OR.
+     &     ( (IDEN.GE.1).AND.
+     &       (C3D.eqv..true.).AND.
+     &       (CBAROCLINIC.eqv..true.) ) ) THEN
          CHOTHS=.TRUE.
-      END IF
-      IF (CHOTHS) THEN
-         DTDPHS=TimeLoc/ITHS  ! Set up time step information for hotstart file.
          IF (DTDPHS.NE.DTDP) THEN
+            ! must recalculate the ending time step number
             RNDAYHS=TimeLoc/86400.d0
             NTHS=INT((RNDAY-RNDAYHS)*(86400.d0/DTDP)+0.5d0)
             NT=ITHS+NTHS
-            Write(16,*) "The number of time steps has been reset
-     &             due to a change in the timestep interval"
-            WRITE(16,*) "It has been changed to ", NT
+            call logMessage(INFO,"The time step size is different "//
+     &        "from the time step size listed in the hotstart file. "//
+     &        "The total number of time steps in this "//
+     &        "run has been recalculated accordingly.")
+            WRITE(scratchMessage,
+     &          '("The ending time step number is now",I9,".")') NT
+            call logMessage(INFO,scratchMessage)
+            DO I=1,NP
+               ETA1(I)=ETA2(I) + DTDP*((ETA1(I)-ETA2(I))/DTDPHS)
+            END DO
          END IF
-      ELSE
-        DTDPHS=DTDP
       END IF
-      IF (DTDP.NE.DTDPHS) THEN
-         DO I=1,NP
-            ETA1(I)=ETA2(I) + DTDP*((ETA1(I)-ETA2(I))/DTDPHS)
-         END DO
-      END IF
+
 C     kmd48.33bc - added time and time step to be passed to the hotstart file
       IF(C3D) THEN
         CALL HOTSTART_3D(TimeLoc,ITHS)
@@ -799,17 +754,11 @@ C     momentum equations
          IF ( (NOUTM.NE.0) .OR. (NOUTGW.NE.0) ) THEN
             metOutputOn = .TRUE.
          ENDIF
-         IF ( metOutputOn .AND. nonMetOutputOff ) THEN
-            IF ((NSCREEN.NE.0).AND.MYPROC.EQ.0) THEN
-               WRITE(ScreenUnit,*)
-     &      'INFO: Only meterological output was requested. ADCIRC'
-               WRITE(ScreenUnit,*)
-     &      'will not solve the GWCE or momentum equations.'
-             ENDIF
-             WRITE(16,*)
-     &      'INFO: Only meterological output was requested. ADCIRC'
-             WRITE(16,*)
-     &      'will not solve the GWCE or momentum equations.'
+         IF ( (metOutputOn.eqv..true.) .AND. 
+     &        (nonMetOutputOff.eqv..true.) ) THEN
+            call allMessage(INFO,'Only meterological output was '//
+     &       'requested. ADCIRC will not solve the GWCE or '//
+     &       'momentum equations.')
              METONLY = .TRUE. ! set flag
          ENDIF
       ENDIF
@@ -3563,11 +3512,7 @@ C.. RJW bug fix in format 498 (kendra found this)
  496  FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE BINARY')
 
 C  kmd48.33bc - restart boundary condtions for baroclinic simulations
-      !IF (MYPROC.EQ.0) THEN
-      !  PRINT *, "RES_BC_FLAG = ", RES_BC_FLAG
-      !  PRINT *, "BCFLAG_LNM = ", BCFLAG_LNM
-      !END IF
-      IF((RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
+       IF((RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
          IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
             IF (BCFLAG_LNM.EQ.1) THEN
               OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
@@ -3824,10 +3769,7 @@ C  kmd48.33bc - restart boundary condtions for baroclinic simulations
             DO NumofBCNodes=1,NETA
                IINDX=NBD(NumofBCNodes)
                LNM_BC(NumofBCNodes)=ETA2(IINDX)
-         !IF((MYPROC.EQ.23).AND.(IINDX.EQ.15785)) THEN
-         !    PRINT *, "ETA2(346562) = ", ETA2(15785)
-         !END IF
-            END DO
+             END DO
          END IF
       END IF
 
@@ -4030,7 +3972,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE setOutputTiming(tsCounter, recCounter,
      &   startTS, endTS, tsPeriod, nSets, iths, dtdphs)
       USE GLOBAL, ONLY : DTDP, setMessageSource, unsetMessageSource,
-     &   screenMessage, DEBUG, allMessage
+     &   screenMessage, DEBUG, allMessage, CHOTHS
       IMPLICIT NONE
       INTEGER, intent(out) :: tsCounter  ! time step counter btw outputs
       INTEGER, intent(out) :: recCounter ! counts lines in the output file
@@ -4051,7 +3993,7 @@ C
          startTS=startTS+((REAL(ITHS)-REAL(startTS))/
      &           REAL(tsPeriod))*REAL(tsPeriod)
          IF (startTS.LT.ITHS) startTS=startTS+tsPeriod
-         IF (DTDP.NE.DTDPHS) THEN
+         IF (CHOTHS.eqv..true.) THEN
             nSets=((endTS*DTDP)-(startTS*DTDPHS))/
      &                (tsPeriod*DTDP)
          ELSE

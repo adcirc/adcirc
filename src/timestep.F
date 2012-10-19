@@ -241,13 +241,13 @@ C.... convert background pressure from millibars to meters of water
 C    kmd48.33bc - changed for timestep changes in the hot start files
 C     jgf46.21 Combined flux/radiation b.c. for rivers
 #ifdef IBM
-      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
+      IF (CHOTHS.eqv..true.) THEN
         FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS,KIND(0.0D0))
       ELSE
         FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP,KIND(0.0D0))
       END IF
 #else
-      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
+      IF (CHOTHS.eqv..true.) THEN
         FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS)
       ELSE
         FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP)
@@ -259,7 +259,7 @@ C...  THE MODEL RUN
 C...
       TimeLoc=IT*DTDP + StaTim*86400.D0
 C    kmd48.33bc - added for the changes in the timestep in the hot start files
-      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
+      IF (CHOTHS.eqv..true.) THEN
          IF ((ITHS+1).EQ.IT) THEN
            StaTimHS=((IT-1)*DTDPHS)/86400.D0
            RefTimHS=((IT-1)*DTDP)/86400.D0
@@ -273,7 +273,7 @@ C...  BE FOR A TIME OTHER THAN THE MODEL STARTING TIME.
 C...
       TimeH=IT*DTDP + (StaTim - RefTim)*86400.D0
 !kmd - added this for the cases where the timestep changes from hot start timestep
-      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
+      IF (CHOTHS.eqv..true.) THEN
          IF ((ITHS+1).EQ.IT) THEN
            StaTimHS=((IT-1)*DTDPHS)/86400.D0
            StaTim=((IT-1)*DTDP)/86400.D0
@@ -512,18 +512,8 @@ C     jgf46.21 Modify to match behavior of 46.02
          RampMete=1.0D0
          RampWRad=1.0D0
 Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
-      CASE(1,2,3,4,5,6,7,8)
-         Ramp=TANH((2.D0*IT*DTDP/86400.D0)/DRamp)
-         RampExtFlux=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampExtFlux)
-         RampIntFlux=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampIntFlux)
-         RampElev=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampElev)
-         RampTip=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampTip)
-Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
-         RampMete=TANH((2.D0*((IT)*DTDP/86400.D0-DUnRampMete))/DRampMete)
-         RampWRad=TANH((2.D0*(IT)*DTDP/86400.D0)/DRampWRad)
-      END SELECT
 C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
-      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS).AND.(NRAMP.NE.0)) THEN
+      CASE(1,2,3,4,5,6,7,8)
          Ramp=TANH((2.D0*TimeLoc/86400.D0)/DRamp)
          RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampExtFlux)
          RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampIntFlux)
@@ -532,8 +522,8 @@ C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
 Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
          RampMete=TANH((2.D0*(TimeLoc/86400.D0-DUnRampMete))/DRampMete)
          RampWRad=TANH((2.D0*TimeLoc/86400.D0)/DRampWRad)
-      END IF
-
+      END SELECT
+C
 C     jgf46.21 If there is an external flux (i.e. river) boundary, turn
 C     off all forcings except the river flux forcing for the duration of
 C     the FluxSettlingTime. When the FluxSettlingTime has ended, turn
