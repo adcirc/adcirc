@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.01    - 10/19/2012 - jcd - Added a WaveWindMultiplier to allow the user
+C              to adjust the wind speeds before they are passed to the wave model.
+C              The conversion factor has a default value of 1.0, but it can be
+C              adjusted in the fort.15 file with a command like:
+C                 &waveCoupling WaveWindMultiplier=1.09 /
 C  v51.00    - 10/19/2012 - jgf - Extended the code for a hotstarting a run with
 C              a time step size that is different from the time step size
 C              in the hot start file to all run types (not just 3D baroclinic);
