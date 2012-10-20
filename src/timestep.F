@@ -682,9 +682,10 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             WVNYOUT(I)=RampMete*WindY
 #ifdef CSWAN
 Casey 090302: Added these lines for coupling winds to SWAN.
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
             IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX
-               SWAN_WY2(I,2) = WindY
+               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
+               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
             ENDIF
 #endif
          END DO
@@ -740,9 +741,10 @@ C  tcm v49.16 20100617
             WVNYOUT(I)=RampMete*WindY
 #ifdef CSWAN
 Casey 090302: Added these lines for coupling winds to SWAN.
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
             IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX
-               SWAN_WY2(I,2) = WindY
+               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
+               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
             ENDIF
 #endif
          END DO
@@ -797,9 +799,10 @@ C  tcm v49.16 20100617
             WVNYOUT(I)=RampMete*WindY
 #ifdef CSWAN
 Casey 090302: Added these lines for coupling winds to SWAN.
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
             IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX
-               SWAN_WY2(I,2) = WindY
+               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
+               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
             ENDIF
 #endif
          END DO
@@ -859,9 +862,10 @@ C  tcm v49.16 20100617
             WVNYOUT(I)=RampMete*WindY
 #ifdef CSWAN
 Casey 090302: Added these lines for coupling winds to SWAN.
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
             IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX
-               SWAN_WY2(I,2) = WindY
+               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
+               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
             ENDIF
 #endif
          END DO
@@ -938,9 +942,10 @@ C  tcm v49.16 20100617
             WVNYOUT(I)=RampMete*WindY
 #ifdef CSWAN
 Casey 090302: Added these lines for coupling winds to SWAN.
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
             IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX
-               SWAN_WY2(I,2) = WindY
+               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
+               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
             ENDIF
 #endif
          ENDDO
@@ -999,9 +1004,10 @@ C  tcm v49.16 20100617
             WVNYOUT(I)=RampMete*WindY
 #ifdef CSWAN
 Casey 090302: Added these lines for coupling winds to SWAN.
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
             IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX
-               SWAN_WY2(I,2) = WindY
+               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
+               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
             ENDIF
 #endif
          END DO
@@ -1066,9 +1072,10 @@ C  tcm v49.16 20100617
             WVNYOUT(I)=RampMete*WindY
 #ifdef CSWAN
 Casey 090302: Added these lines for coupling winds to SWAN.
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
             IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX
-               SWAN_WY2(I,2) = WindY
+               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
+               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
             ENDIF
 #endif
          END DO
@@ -1120,9 +1127,10 @@ C  tcm v49.16 20100617
             WVNYOUT(I)=RampMete*WINDY
 #ifdef CSWAN
 Casey 090302: Added these lines for coupling winds to SWAN.
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
             IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX/WindMultiplier
-               SWAN_WY2(I,2) = WindY/WindMultiplier
+               SWAN_WX2(I,2) = WindX / WindMultiplier * WaveWindMultiplier
+               SWAN_WY2(I,2) = WindY / WindMultiplier * WaveWindMultiplier
             ENDIF
 #endif
           END DO
@@ -1162,9 +1170,10 @@ C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
             WVNYOUT(I)=RampMete*WindY
 #ifdef CSWAN
 Casey 090302: Added these lines for coupling winds to SWAN.
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
             IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX
-               SWAN_WY2(I,2) = WindY
+               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
+               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
             ENDIF
 #endif
          END DO
@@ -1227,9 +1236,10 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
             WVNYOUT(I)=bf*RampMete*WindY+(1.0d0-bf)*WVNYOUT(I)
 #ifdef CSWAN
 Casey 090302: Added these lines for coupling winds to SWAN.
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
             IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX
-               SWAN_WY2(I,2) = WindY
+               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
+               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
             ENDIF
 #endif
          END DO
@@ -1264,9 +1274,10 @@ Casey 090302: Added these lines for coupling winds to SWAN.
              WVNXOUT(I)=RampMete*WINDX
              WVNYOUT(I)=RampMete*WINDY
 #ifdef CSWAN
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
             IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX
-               SWAN_WY2(I,2) = WindY
+               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
+               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
             ENDIF
 #endif
           END DO

@@ -97,6 +97,10 @@ C----------------------------------------------------------------------------
      &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
      &                   SWAN_OutputTMM10
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+     &                  ,WaveWindMultiplier
+#else
+      USE GLOBAL, ONLY : WaveWindMultiplier
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
      &                  initWindModule
@@ -203,6 +207,8 @@ C Logicals added for adcprep paths
 #endif
       NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir
       LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      NAMELIST /waveCoupling/ WaveWindMultiplier
 
 C---------------------end of data declarations--------------------------------C
 
@@ -254,6 +260,8 @@ c....tcm v50.66.02 additions for time varying bathymetry
 c...
 c... tcm v50.79 addition for metControl namelist
       logical :: found_metCon_nml  !flag to determine if the metControl namelist was present
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      LOGICAL :: FOUND_WC_NML
 
 
 #ifdef ADCNETCDF
@@ -501,6 +509,15 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          write(*,*) "INFO: The metControl namelist was not found."
       ELSE
          found_metCon_nml = .true.  !tcm v50.79 added
+      ENDIF
+      REWIND(15)
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      READ(UNIT=15,NML=waveCoupling,IOSTAT=IOS)
+      IF(IOS.GT.0)THEN
+         WRITE(*,*) "INFO: The waveCoupling namelist was not found."
+         FOUND_WC_NML = .FALSE.
+      ELSE
+         FOUND_WC_NML = .TRUE.
       ENDIF
       REWIND(15)
 C

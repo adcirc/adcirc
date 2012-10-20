@@ -1580,6 +1580,13 @@ C
             write(15,*) '! -- End Met Control Namelist --'
          endif
 
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+         IF(FOUND_WC_NML)THEN
+            WRITE(15,*) '! -- Begin Wave Coupling Namelist --'
+            WRITE(15,waveCoupling)
+            WRITE(15,*) '! -- End Wave Coupling Namelist --'
+         ENDIF
+
          CLOSE(15)
 C
  1000 CONTINUE

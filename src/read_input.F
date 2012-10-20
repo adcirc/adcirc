@@ -85,6 +85,9 @@ C
       logical :: found_tbc_nml = .false.   !flag to determine if the timebathycontrol namelist was present
       NAMELIST /timebathycontrol/ NDDT,BTIMINC,BCHGTIMINC
 
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      NAMELIST /waveCoupling/ WaveWindMultiplier
+
 #ifdef ADCNETCDF
       LOGICAL, PARAMETER :: NETCDF_AVAIL = .true.
 #else
@@ -265,6 +268,17 @@ c.....REOPEN THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       write(scratchMessage,*) "WindDragLimit=",WindDragLimit,
      & " DragLawString=",DragLawString, "rhoAir=",rhoAir
       call logMessage(ECHO,trim(scratchMessage))
+      REWIND(15)
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      READ(UNIT=15,NML=waveCoupling,IOSTAT=IOS)
+      IF(IOS.gt.0)THEN
+         CALL logMessage(INFO,
+     &      "The waveCoupling namelist was not found.")
+         CALL logMessage(INFO,
+     &    "The default values for waveCoupling will be used.")
+      ENDIF
+      WRITE(scratchMessage,*) "WaveWindMultiplier=",WaveWindMultiplier
+      CALL logMessage(ECHO,TRIM(scratchMessage))
       REWIND(15)
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN

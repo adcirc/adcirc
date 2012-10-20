@@ -244,6 +244,10 @@ c.... tcm v50.66.02 added for time varying bathymetry
 
       ! tcm v50.79 added for metControl namelist
       LOGICAL :: FOUND_METCON_NML  !flag to determine if the metControl namelist was present
+
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      LOGICAL :: FOUND_WC_NML
+
 C
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX

@@ -354,9 +354,13 @@ C
 !   tcm v50.66.02 -- added timebathycontrol namelist related variables
       INTEGER :: ios_nddt
       INTEGER :: ios_metCon
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      INTEGER :: IOS_WC
 
       found_tbc_nml = .false.   !flag to determine if the timebathycontrol namelist was present
       found_metCon_nml = .false.   !flag to determine if the metControl namelist was present
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      FOUND_WC_NML = .FALSE.
 
 C
       call setMessageSource("read15")
@@ -414,6 +418,12 @@ c... tcm v50.79 added
       endif
       rewind(15)  !Return to the top of the fort.15 file
 
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      READ(UNIT=15,NML=waveCoupling,IOSTAT=IOS_WC)
+      IF(IOS_WC.EQ.0)THEN
+         FOUND_WC_NML = .TRUE.
+      ENDIF
+      REWIND(15)
 
       READ(15,80) RUNDES
 C

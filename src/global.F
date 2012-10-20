@@ -35,6 +35,9 @@ C.....Background Atmospheric Pressure in mb
       REAL(8) :: one2ten = 0.8928d0
       REAL(8) :: ten2one = 1.d0/0.8928d0
 
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      REAL(SZ) :: WaveWindMultiplier = 1.D0
+
 C.....PI etc
       REAL(8), PARAMETER ::  PI=3.141592653589793D0
       REAL(8), PARAMETER ::  DEG2RAD = PI/180.D0  ! degrees to radians
