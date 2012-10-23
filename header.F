@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.02    - 10/23/2012 - zc - Reversing change from 9/28/2012. This is 
+C              actually a leftover debugging statement in NetCDF and is 
+C              corrected in versions > 4.2. Also, this seemed to cause 
+C              segfaults under some compilers 
 C  v51.01    - 10/19/2012 - jcd - Added a WaveWindMultiplier to allow the user
 C              to adjust the wind speeds before they are passed to the wave model.
 C              The conversion factor has a default value of 1.0, but it can be
