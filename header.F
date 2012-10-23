@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99.01 - 10/23/2012 - zc - Reversing change from 9/28/2012. This is
+C              actually a leftover debugging statement in NetCDF and is corrected
+C              in versions > 4.2. Also, this seemed to cause segfaults under
+C              some compilers.
 C  v50.99    - 10/08/2012 - jgf - Added if/then statements so that minpr.63
 C              and maxwvel.63 won't be written if there was no wind forcing;
 C              also, so that maxrs.63 won't be written unless there was 

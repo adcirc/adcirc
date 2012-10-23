@@ -8300,20 +8300,9 @@ C
       start(1)=1
       start(2)=1
       
-C.....Changed to put one column at a time instead of 
-C     all at once since certain versions of NetCDF were
-C     printing screen messages when the array was
-C     written at once cobell50.97
-      iret=nf90_put_var(ncid, myMesh%ele_id, 
-     &  myMesh%element(1,:),(/1,1/),(/1,kount(2)/))
+      iret=nf90_put_var(ncid, myMesh%ele_id,
+     &  myMesh%element,start,kount)
       call check_err(iret)
-      iret=nf90_put_var(ncid, myMesh%ele_id, 
-     &  myMesh%element(2,:),(/2,1/),(/1,kount(2)/))
-      call check_err(iret)
-      iret=nf90_put_var(ncid, myMesh%ele_id, 
-     &  myMesh%element(3,:),(/3,1/),(/1,kount(2)/))
-      call check_err(iret)
-
 
 !     Store elevation boundary information
       if(myMesh%nopenc.ne.0) then
