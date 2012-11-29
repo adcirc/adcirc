@@ -3671,7 +3671,7 @@ C
       ! convert from 1 minute avg winds to 10 minute averaged winds
       ! TODO: confirm that HWind data are 1 minute averaged winds
       wvnx = wvnx * one2ten
-      wvnx = wvnx * one2ten
+      wvny = wvny * one2ten
 C
 #if defined(WIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99.02 - 11/29/2012 - jgf - Corrected a typo in HWind (NWS15) processing
+C              that prevented the y-component of the wind speed from being
+C              converted from 1 minute to 10 minute winds. 
 C  v50.99.01 - 10/23/2012 - zc - Reversing change from 9/28/2012. This is
 C              actually a leftover debugging statement in NetCDF and is corrected
 C              in versions > 4.2. Also, this seemed to cause segfaults under
