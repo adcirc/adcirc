@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99.03 - 01/10/2013 - zc - Correcting bug that would cause error if
+C              elemental_slope_limiter was not last attribute in fort.13.
+C              Added check for FoundEleSlopeLim and LoadEleSlopeLim as well.
 C  v50.99.02 - 11/29/2012 - jgf - Corrected a typo in HWind (NWS15) processing
 C              that prevented the y-component of the wind speed from being
 C              converted from 1 minute to 10 minute winds. 

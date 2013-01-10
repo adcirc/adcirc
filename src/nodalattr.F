@@ -653,6 +653,7 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
      &   ((LoadSwanWaveRefrac).and.(.not.FoundSwanWaveRefrac)).or.
 Corbitt 120321: Allow advection to be turned on locally instead of globally
      &   ((LoadAdvectionState).and.(.not.FoundAdvectionState)).or.
+     &   ((LoadEleSlopeLim).and.(.not.FoundEleSlopeLim)).or.
      &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax))) THEN
          WRITE(16,1111)
  1111    FORMAT('ERROR: Nodal Attributes file (unit 13) does '
@@ -820,6 +821,8 @@ Corbitt 120321: Allow Advection to be handled locally instead of globally.
                 CALL LoadAttrVec(elemental_slope_limiter_grad_max,
      &              EleSlopeLimDefVal, NumNodesNotDefault, NScreen,
      &              MyProc, NAbOut)
+            ELSE
+                SkipDataSet = .True.
             ENDIF
          CASE DEFAULT
             SkipDataSet = .True.
