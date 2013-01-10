@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.03    - 01/10/2013 - zc - Correcting bug that would cause error if
+C              elemental_slope_limiter was not last attribute in fort.13.
+C              Added check for FoundEleSlopeLim and LoadEleSlopeLim as well.
 C  v51.02    - 10/23/2012 - zc - Reversing change from 9/28/2012. This is 
 C              actually a leftover debugging statement in NetCDF and is 
 C              corrected in versions > 4.2. Also, this seemed to cause 
