@@ -650,13 +650,7 @@ C     Variables for recording domain extents
       meshFileReadComplete=.false.
       frame=0
       ics = 2
-C     initialize azimuth values in quadrants
-      azimuth = 45.d0
-      do i=1,4
-         quadrantAngles(i) = deg2rad*azimuth
-         azimuth = azimuth - 90.d0
-      end do
-
+C
       select case(nws)
       case(8)
          ! open the file we just wrote, so NWS8 can access it
@@ -1442,6 +1436,13 @@ C     jgf49.30 Initialize to reasonable defaults.
             END SELECT
          END DO
       ENDIF
+C
+C     initialize azimuth values in quadrants
+      azimuth = 45.d0
+      do i=1,4
+         quadrantAngles(i) = deg2rad*azimuth
+         azimuth = azimuth - 90.d0
+      end do
 C
       if (abs(nws).eq.19) then
          call processAsymmetricTrackFile(infile)
