@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99.04 - 01/16/2013 - jgf - Fixed issue found by JieGao in initialization
+C              of quadrant angles that affected Vr calculations and caused
+C              differences between calculated quadrant wind speeds and isotach 
+C              values from the track file. 
 C  v50.99.03 - 01/10/2013 - zc - Correcting bug that would cause error if
 C              elemental_slope_limiter was not last attribute in fort.13.
 C              Added check for FoundEleSlopeLim and LoadEleSlopeLim as well.
