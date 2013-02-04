@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.05    - 02/03/2013 - zc - Corrected variable FoundEye not being set in 
+C              NWS15GET, so wind drag always defaulted to Garratt formulation.
 C  v51.04    - 01/16/2013 - jgf - Fixed issue found by JieGao in initialization
 C              of quadrant angles that affected Vr calculations and caused
 C              differences between calculated quadrant wind speeds and isotach 

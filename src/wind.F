@@ -3546,6 +3546,7 @@ C
          EyeLonR(2) = EyeLonR(3)
          EyeLatR(3) = cLatNow
          EyeLonR(3) = cLonNow
+         FoundEye = .TRUE.
       endif
       !write(scratchMessage,*) "EyeLatR: ",(EyeLatR(i),i=1,3) !jgfdebug
       !call logMessage(DEBUG,scratchMessage) !jgfdebug
