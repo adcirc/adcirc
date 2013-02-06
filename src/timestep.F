@@ -1203,6 +1203,14 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
             WDragCo = WindDrag(WindMag, I)
+
+            !...zc51.06 - Make sure SWAN sees blended winds
+#ifdef CSWAN
+            IF(COUPWIND)THEN
+                SWAN_WX2(I,2) = WindX
+                SWAN_WY2(I,2) = WindY
+            ENDIF    
+#endif
             ! jgf49.1001 NAM winds already contain wind reduction
             IF (LoadCanopyCoef)
      &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
@@ -1237,9 +1245,12 @@ C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
 #ifdef CSWAN
 Casey 090302: Added these lines for coupling winds to SWAN.
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+            !zc...make sure swan sees blended winds
             IF(COUPWIND)THEN
-               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
-               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
+               SWAN_WX2(I,2) = ((WindX*bf)+(1d0-bf)*SWAN_WX2(I,2)) 
+     &              * WaveWindMultiplier
+               SWAN_WY2(I,2) = ((WindY*bf)+(1d0-bf)*SWAN_WY2(I,2)) 
+     &              * WaveWindMultiplier
             ENDIF
 #endif
          END DO
