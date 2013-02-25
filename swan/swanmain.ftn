@@ -119,7 +119,7 @@
 
 !     --- start SWAN run
 
-      CALL SWMAIN                                                         40.31 34.01
+!NADC      CALL SWMAIN                                                         40.31 34.01
 
 999   CONTINUE
 

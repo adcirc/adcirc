@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.07    - 02/25/2013 - zc - Correcting loading of ESL on hot start
+C              in serial. Corrected SwanMain to have one call to SWMAN 
+C              commented out (using NADC) if compiling with ADCIRC so 
+C              subroutine call not detected as missing arguments by some
+C              compilers. Without ADCIRC, this is left uncommented.
 C  v51.06    - 02/06/2013 - zc - Ensuring that SWAN is sent blended winds for 
 C              NWS=+/-29. Previously it only saw vortex generated winds.
 C  v51.05    - 02/03/2013 - zc - Corrected variable FoundEye not being set in 

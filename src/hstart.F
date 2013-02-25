@@ -3420,7 +3420,7 @@ C   TO THE OTHER PROCESSORS AND PROCESS TO THE SUBDOMAINS
                 ENDIF  
             ENDDO
         ELSEIF(MNPROC.EQ.0)THEN
-            DO I = 1,NP
+            DO sd_node_number = 1,NP
                 IF(HOT_ESLONOFF(sd_node_number).EQ.1D0)THEN
                     elemental_slope_limiter_active(sd_node_number) = 
      &                  .TRUE.
