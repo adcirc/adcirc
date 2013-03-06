@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.08    - 03/05/2013 - jcd - Small change to the SWAN Makefile to include
+C              the kdtree2 module, in case it is needed by some compilers.
 C  v51.07    - 02/25/2013 - zc - Correcting loading of ESL on hot start
 C              in serial. Corrected SwanMain to have one call to SWMAN 
 C              commented out (using NADC) if compiling with ADCIRC so 
