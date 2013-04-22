@@ -136,7 +136,7 @@ C     &       ": Processing command line options."
                if (myProc.eq.0) then
                   write(*,*) "INFO: Processing '-R'."
                endif
-            case("-W")
+            case("-W","-H") !tcm v51.09 added test for -H (Hot start writers)
                i = i + 1
                ! this is the number of writer processors, and will
                ! be parsed in a later call to GET_NUMWRITERS

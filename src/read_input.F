@@ -5223,8 +5223,10 @@ C - allocate arrays dealing with wind forcing
       endif
 
 C     write table of ADCIRC parameter sizes
-      WRITE(16,4010)MNPROC,MNWPROC,MNE,MNP,MNei,MNOPE,MNETA,MNBOU,MNVEL,
-     & MNTIF,MNBFR,MNSTAE,MNSTAV,MNSTAC,MNSTAM,NWLAT,NWLON,MNHARF,MNFFR
+C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
+      WRITE(16,4010)MNPROC,MNWPROC,MNWPROH,MNE,MNP,MNei,MNOPE,MNETA,
+     & MNBOU,MNVEL,MNTIF,MNBFR,MNSTAE,MNSTAV,MNSTAC,MNSTAM,NWLAT,NWLON,
+     & MNHARF,MNFFR
       IF(NWS.EQ.0) WRITE(16,4011)
       IF(NWS.EQ.1) WRITE(16,4012)
       IF(ABS(NWS).EQ.2) WRITE(16,4013)
@@ -5250,12 +5252,14 @@ C     write table of ADCIRC parameter sizes
       WRITE(16,4105)
       WRITE(16,4108)
 C
+C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
  4010 FORMAT(' *****************************************************',/,
      &       ' *   Based on information extracted from the ADCIRC  *',/,
      &       ' *   UNIT 14 and 15 (grid and horiz run info) files  *',/,
      &       ' *   the following paramter values will be set:      *',/,
      &       ' *                                                   *',/,
-     &       ' *       MNPROC = ',I5,'     MWPROC = ',I5,'         *',/,
+     &       ' *       MNPROC = ',I5,1x,'     MWPROC = ',I5,7x,'   *',/,
+     &       ' *       MWPROH = ',I5,4x,'                          *',/,
      &       ' *       MNE = ',I8,1X,'     MNP  = ',I8,1X,'        *',/,
      &       ' *       MNEI = ',I7,2X,'                            *',/,
      &       ' *       MNOPE = ',I6,3X,'   MNETA = ',I6,3X,'       *',/,
