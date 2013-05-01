@@ -2,7 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
-C  v50.99.06 - 05/02/2013 - tcm -- Added kdtree2 module to swan Makefile, which
+C  v50.99.07 - 05/01/2013 - jgf - Added a comma to a write statement in
+C              hstime.F to avoid a syntax error when NetCDF is not enabled.
+C  v50.99.06 - 05/01/2013 - tcm -- Added kdtree2 module to swan Makefile, which
 C              is the same fix that Casey added to the trunk.
 C  v50.99.05 - 02/03/2013 - zc - Corrected variable FoundEye not being set in 
 C              NWS15GET, so wind drag always defaulted to Garratt formulation.
