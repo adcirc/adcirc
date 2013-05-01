@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99.06 - 05/02/2013 - tcm -- Added kdtree2 module to swan Makefile, which
+C              is the same fix that Casey added to the trunk.
 C  v50.99.05 - 02/03/2013 - zc - Corrected variable FoundEye not being set in 
 C              NWS15GET, so wind drag always defaulted to Garratt formulation.
 C  v50.99.04 - 01/16/2013 - jgf - Fixed issue found by JieGao in initialization
