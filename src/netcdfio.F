@@ -295,6 +295,11 @@ C
 C
       CHARACTER(1024) :: att_text ! scratch variable for attribute text
 C
+C     ZCobell:
+      logical :: writerReadMetaData=.FALSE. !...variable to allow writers to read 
+                                            !   NetCDF metadata from ADCPREP processed
+                                            !   files on first pass
+
       private initStationFile, initNodalDataFile,createNetCDFOutputFile,
      &   updateMetaData, initNetCDFCoord, defineMeshVariables,
      &   putMeshVariables, setNetCDFFileName, writeStationData,
@@ -1172,7 +1177,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE initNodalDataFile(dat, lun, descript1, reterr,
      &   descript2, descript3)
       USE GLOBAL, ONLY : OutputDataDescript_t, ICS, NWS, NE_G, C3D,IDEN,
-     &                   writerReadMetaData,MNWPROC 
+     &                    MNWPROC 
       USE GLOBAL_3DVS, ONLY : NFEN
       IMPLICIT NONE
 C
@@ -1213,7 +1218,8 @@ C     if we didn't need to create a file, update metadata and return
 Cobell...The writers don't read the fort.15, so they need to 
 C        assume ADCPREP has placed the correct info on the first
 C        pass, then call updateMetaData. 
-            IF((MNWPROC.GT.0).AND.(.NOT.writerReadMetaData))THEN
+            IF ((MNWPROC.GT.0).AND.
+     &           (writerReadMetaData.eqv..false.)) THEN
                 CALL ReadMetaData(dat%ncid,dat%myFile)
                 writerReadMetaData=.TRUE.
             ENDIF    
