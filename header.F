@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99.08 - 05/06/2013 - jgf - Moved the logical variable writerReadMetaData
+C              from global.F to netcdfio.F to avoid compilation issue on IBM
+C              Power7 (AIX 6.1).
 C  v50.99.07 - 05/06/2013 - jgf - Updated developers documentation to include
 C              instructions for building ADCIRC (no code changes).
 C  v50.99.07 - 05/01/2013 - jgf - Added a comma to a write statement in
