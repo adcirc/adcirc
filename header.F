@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99.07 - 05/06/2013 - jgf - Updated developers documentation to include
+C              instructions for building ADCIRC (no code changes).
 C  v50.99.07 - 05/01/2013 - jgf - Added a comma to a write statement in
 C              hstime.F to avoid a syntax error when NetCDF is not enabled.
 C  v50.99.06 - 05/01/2013 - tcm -- Added kdtree2 module to swan Makefile, which
