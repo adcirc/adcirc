@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.09    - 05/06/2013 - jgf - Updated developers documentation to include
+C              instructions for building ADCIRC (no code changes). 
 C  v51.09    - 04/22/2013 - tcm - Added message to fort.16 file on the number
 C              of hotstart writers.  Also, fixed bug were "-H" on the command
 C              line first showed up as an invalid option during the first
