@@ -246,7 +246,7 @@ ifeq ($(compiler),cray_xt4)
   ifeq ($(SWAN),enable)
      DPRE	        :=  -DREAL8 -DLINUX -DADCSWAN
   endif
-  CFLAGS	:=  -c89 $(INCDIRS) -DLINUX
+  CFLAGS	:=  $(INCDIRS) -DLINUX
   ifeq ($(DEBUG),full)
      CFLAGS	:=  -c89 $(INCDIRS) -DLINUX -g -O0
   endif

@@ -2716,7 +2716,7 @@ C...
         WRITE(16,1036)
  1036   FORMAT(//,' A NEW BATHYMETRY STATION FILE WILL BE STARTED')
       ENDIF
-      IF(NOUTE.EQ.-2) THEN
+      IF ((NDDT.NE.0).AND.(NOUTE.EQ.-2)) THEN
         OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75',
      &                      ACCESS='DIRECT',RECL=NBYTE)
         IF(NBYTE.EQ.4) THEN
@@ -2755,7 +2755,7 @@ C...
         IBSTP=IBSTP+5
         CLOSE(75)                    ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
-      IF(NOUTE.EQ.-1) THEN
+      IF ((NDDT.NE.0).AND.(NOUTE.EQ.-1)) THEN
         CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75',
      $    NSTAE_G, NSTAE, HEADER61)
         IESTP=2
