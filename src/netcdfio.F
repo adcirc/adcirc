@@ -7741,13 +7741,13 @@ C
          CALL check_err(iret)
       ELSE
          call mapFullDomainToSubdomainNPByM(hs%ncid,
-     &      nfen, hs%myMesh%num_nodes, hs%density3D%u_nodal_data_id,
+     &      nfen, hs%myMesh%num_nodes, hs%velocity3D%u_nodal_data_id,
      &      subdomain_reals=rp)
          call mapFullDomainToSubdomainNPByM(hs%ncid,
-     &      nfen, hs%myMesh%num_nodes, hs%density3D%v_nodal_data_id,
+     &      nfen, hs%myMesh%num_nodes, hs%velocity3D%v_nodal_data_id,
      &      subdomain_reals=ip)
          call mapFullDomainToSubdomainNPByM(hs%ncid,
-     &      nfen, hs%myMesh%num_nodes, hs%density3D%w_nodal_data_id,
+     &      nfen, hs%myMesh%num_nodes, hs%velocity3D%w_nodal_data_id,
      &      subdomain_reals=wz)
       ENDIF
       q(:,:) = rp(:,:) + iy*ip(:,:) ! construct q from real and imaginary
@@ -7770,7 +7770,7 @@ C
      &      nfen, hs%myMesh%num_nodes, hs%turbulence3D%u_nodal_data_id,
      &      subdomain_reals=q20)
          call mapFullDomainToSubdomainNPByM(hs%ncid,
-     &      nfen, hs%myMesh%num_nodes, hs%density3D%v_nodal_data_id,
+     &      nfen, hs%myMesh%num_nodes, hs%turbulence3D%v_nodal_data_id,
      &      subdomain_reals=l)
       ENDIF
 C

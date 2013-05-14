@@ -12,7 +12,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=gnu
 #compiler=g95
 #compiler=intel
-compiler=intel-ND
+#compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=cray_xt3
 #compiler=cray_xt4
@@ -107,10 +107,11 @@ ifeq ($(compiler),intel)
   MSGLIBS       :=
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),blueridge)
-        FLIBS       := $(FLIBS) -L$(HDF5HOME) -lhdf5  
-#        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.1-gcc4.1-ifort
-        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.2-gcc4.1-ifort
-        FLIBS          := $(FLIBS) -lnetcdff
+        FLIBS       := $(FLIBS) -L/projects/ncfs/apps/netcdf/netcdf-fortran-4.2/lib -lnetcdff  -lnetcdf -lnetcdf
+        NETCDFHOME    :=/projects/ncfs/apps/netcdf/netcdf-fortran-4.2
+        FFLAGS1       :=$(FFLAGS1) -I/projects/ncfs/apps/netcdf/netcdf-fortran-4.2/include
+        FFLAGS2       :=$(FFLAGS1)
+        FFLAGS3       :=$(FFLAGS1)
      else
         FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
      endif

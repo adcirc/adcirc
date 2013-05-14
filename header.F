@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99.09 - 05/14/2013 - jgf - Corrected 3D netcdf hotstart issue in
+C              parallel where typos in netcdfio.F were causing density3D to be
+C              read erroneously in place of velocity3D and turbulence3D data.
 C  v50.99.08 - 05/06/2013 - jgf - Moved the logical variable writerReadMetaData
 C              from global.F to netcdfio.F to avoid compilation issue on IBM
 C              Power7 (AIX 6.1).
