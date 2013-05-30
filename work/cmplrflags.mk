@@ -460,7 +460,12 @@ ifeq ($(compiler),diamond)
 # jgf20101103: on Diamond, NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.0.1-serial
 # jgf20101103: on Diamond, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.4-serial/lib
   ifeq ($(NETCDF),enable)
-     FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5_hl -lhdf5 -lhdf5_fortran -lz
+     NETCDFHOME     :=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.2.1.1-intel-serial
+     FFLAGS1        :=$(FFLAGS1) -I/usr/local/usp/PETtools/CE/pkgs/netcdf-4.2.1.1-intel-serial/include
+     FFLAGS2        :=$(FFLAGS1)
+     FFLAGS3        :=$(FFLAGS1)
+     #HDF5HOME       :=/usr/local/usp/PETtools/CE/pkgs/hdf5-1.8.8-serial/lib
+     FLIBS          := $(FLIBS) -L/usr/local/usp/PETtools/CE/pkgs/netcdf-4.2.1.1-intel-serial/lib -lnetcdff -lnetcdf   #-L$(HDF5HOME) -lhdf5_hl -lhdf5 -lhdf5_fortran -lz
   endif
   MSGLIBS       := -lmpi
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)

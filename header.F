@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.13    - 05/30/2013 - jgf - Updated compiler flags for compiling with
+C              netcdf support on Diamond at ERDC.
 C  v51.12    - 05/14/2013 - jgf - Corrected 3D netcdf hotstart issue in
 C              parallel where typos in netcdfio.F were causing density3D to be
 C              read erroneously in place of velocity3D and turbulence3D data.

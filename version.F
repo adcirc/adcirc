@@ -1,5 +1,5 @@
       module version
-      character(80), parameter :: ADC_VERSION = "51.12"
+      character(80), parameter :: ADC_VERSION = "51.13"
       integer, save       :: FileFmtMajor = 1
       integer, save       :: FileFmtMinor = 2
       integer, save       :: FileFmtRev   = 0
