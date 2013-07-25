@@ -505,6 +505,17 @@ C    kmd48.33bc - added variables for 3D boundary conditions
 
       REAL(8)  RNP_GLOBAL
       REAL(8)  REFSEC   ! required to run in either 32-bit or 64-bit
+      ! 
+      ! jgf50.99.10: Moved the parameters that control output timing 
+      ! from read_input.F to here so that they can be used to recalculate
+      ! starting and ending time step for output when the time step
+      ! size has changed after a hotstart. 
+      REAL(SZ) TOUTSC
+      REAL(SZ) TOUTSE,TOUTFE
+      REAL(SZ) TOUTSV,TOUTFV
+      REAL(SZ) TOUTFGC, TOUTFGE, TOUTFGV, TOUTFGW
+      REAL(SZ) TOUTFM, TOUTSGC, TOUTSGE, TOUTSGV, TOUTSGW, TOUTSM
+
 
       LOGICAL :: useNetCDF = .false.
 ! CF Start addition for NETCDF I/O 6/21/06

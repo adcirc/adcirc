@@ -2,6 +2,14 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99.10 - 07/25/2013 - jgf - Corrected a bug in NWS8 (symmetric holland)
+C              where the background pressure was being erroneously applied in 
+C              mb whereas NWS8 requires Pa; fixed met-only mode by forcing
+C              a recalculation of starting and ending timesteps for output
+C              whenever the ADCIRC timestep has changed after a hotstart;
+C              fixed issue where variable time step after hotstart was 
+C              restricted to 3D baroclinic situations; fixed bug that was 
+C              causing NWS8 to run out of met data one met time step too early. 
 C  v50.99.09 - 05/14/2013 - jgf - Corrected 3D netcdf hotstart issue in
 C              parallel where typos in netcdfio.F were causing density3D to be
 C              read erroneously in place of velocity3D and turbulence3D data.

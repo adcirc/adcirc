@@ -241,13 +241,13 @@ C.... convert background pressure from millibars to meters of water
 C    kmd48.33bc - changed for timestep changes in the hot start files
 C     jgf46.21 Combined flux/radiation b.c. for rivers
 #ifdef IBM
-      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
+      IF (CHOTHS.EQV..TRUE.) THEN
         FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS,KIND(0.0D0))
       ELSE
         FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP,KIND(0.0D0))
       END IF
 #else
-      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
+      IF (CHOTHS.EQV..TRUE.) THEN
         FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS)
       ELSE
         FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDP)
@@ -258,8 +258,8 @@ C...  COMPUTE MASTER TIME WHICH IS REFERENCED TO THE BEGINNING TIME OF
 C...  THE MODEL RUN
 C...
       TimeLoc=IT*DTDP + StaTim*86400.D0
-C    kmd48.33bc - added for the changes in the timestep in the hot start files
-      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
+C     kmd48.33bc - added for the changes in the timestep in the hot start files
+      IF (CHOTHS.EQV..TRUE.) THEN
          IF ((ITHS+1).EQ.IT) THEN
            StaTimHS=((IT-1)*DTDPHS)/86400.D0
            RefTimHS=((IT-1)*DTDP)/86400.D0
@@ -273,7 +273,7 @@ C...  BE FOR A TIME OTHER THAN THE MODEL STARTING TIME.
 C...
       TimeH=IT*DTDP + (StaTim - RefTim)*86400.D0
 !kmd - added this for the cases where the timestep changes from hot start timestep
-      IF ((CHOTHS).AND.(DTDP.NE.DTDPHS)) THEN
+      IF (CHOTHS.EQV..TRUE.) THEN
          IF ((ITHS+1).EQ.IT) THEN
            StaTimHS=((IT-1)*DTDPHS)/86400.D0
            StaTim=((IT-1)*DTDP)/86400.D0
