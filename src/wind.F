@@ -2176,7 +2176,10 @@ C
 C     Calculate and limit central pressure deficit; some track files
 C     (e.g., Charley 2004) may have a central pressure greater than the
 C     ambient pressure that this subroutine assumes
-      centralPressureDeficit = PRBCKGRND - cpress
+
+C     jgf51.14: Apply a factor of 100.0 to convert PRBCKGRND from
+C     mb to pa for use in this subroutine.
+      centralPressureDeficit = PRBCKGRND * 100.d0 - cpress
       IF ( centralPressureDeficit .lt. 100.d0 ) THEN
          centralPressureDeficit = 100.d0
       ENDIF
@@ -2566,8 +2569,15 @@ C     ----------------------------------------------------------
 C
 C     If time exceeds the next hindcast/nowcast/forecast time, increment the
 C     array counter.
-      IF (TIMELOC.ge.CastTime(i)) THEN
+      IF (TIMELOC.gt.CastTime(i)) THEN
          i=i+1
+C         jgf51.14: Check to see that we haven't gone off the end of 
+C         meteorological data.
+          IF (i.gt.pl) THEN
+             call allMessage(ERROR,'The simulation time has extended '//
+     &          'beyond the end of the meteorological dataset.')
+             call windTerminate()
+          ENDIF
       ENDIF
 C
 C     Interpolate w.r.t. time

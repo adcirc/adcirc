@@ -2,6 +2,13 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.14    - 07/25/2013 - jgf - Corrected a bug in NWS8 (symmetric holland)
+C              where the background pressure was being erroneously applied in 
+C              mb whereas NWS8 requires Pa; fixed met-only mode by forcing
+C              a recalculation of starting and ending timesteps for output
+C              whenever the ADCIRC timestep has changed after a hotstart;
+C              fixed bug that was causing NWS8 to run out of met data one 
+C              met time step too early.
 C  v51.13    - 05/30/2013 - jgf - Updated compiler flags for compiling with
 C              netcdf support on Diamond at ERDC.
 C  v51.12    - 05/14/2013 - jgf - Corrected 3D netcdf hotstart issue in

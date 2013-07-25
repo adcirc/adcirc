@@ -29,7 +29,7 @@ ifeq ($(compiler),gnu)
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-132 -march=k8 -m64
+  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-none -march=k8 -m64
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
@@ -130,9 +130,11 @@ ifeq ($(compiler),intel)
         # NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.2-gcc4.1-ifort
         #FLIBS          :=$(FLIBS) -L/usr/lib64 -lnetcdff
 #        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.1-gcc4.1-ifort
-        #NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.2-gcc4.1-ifort
-        #FLIBS          := $(FLIBS) -lnetcdff
-     else
+        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.2-gcc4.1-ifort
+     endif
+     ifeq ($(MACHINENAME),killdevil)
+        HDF5HOME       :=/nas02/apps/hdf5-1.8.5/lib
+        NETCDFHOME     :=/nas02/apps/netcdf-4.1.1
         FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
      endif
   endif
@@ -624,7 +626,7 @@ ifeq ($(compiler),gnu)
   PFC		:=  mpif90
   FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132
   ifeq ($(DEBUG),full)
-     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DWRITER_DEBUG
+     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DWRITER_DEBUG -DDEBUG_HOLLAND
       # g95 environment variables to set for enhanced debugging:
       # G95_UNBUFFERED_ALL, G95_ABORT, G95_FPU_DENORMAL, G95_FPU_INVALID,
       # G95_FPU_ZERODIV, G95_FPU_OVERFLOW, G95_FPU_UNDERFLOW,
@@ -679,10 +681,10 @@ ifeq ($(compiler),gfortran)
   PFC		:=  mpif90
   FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none 
   ifeq ($(DEBUG),full)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,underflow,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,underflow,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
   endif
   ifeq ($(DEBUG),full-not-fpe)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
   endif
   ifneq ($(MACHINENAME),jason-desktop)
      FFLAGS1 := $(FFLAGS1) -fno-underscoring

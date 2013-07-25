@@ -53,11 +53,6 @@ Casey 100205: Enable hot-start file generation by SWAN.
       INTEGER IMDig1,IMDig2,IMDig3,IMDig4,IMDig5,IMDig6
       REAL(SZ) RampVal
       REAL(SZ) ZNGFicNodeDist,ZNGFicNodeDistTemp
-      REAL(SZ) TOUTSC
-      REAL(SZ) TOUTSE,TOUTFE
-      REAL(SZ) TOUTSV,TOUTFV
-      REAL(SZ) TOUTFGC, TOUTFGE, TOUTFGV, TOUTFGW
-      REAL(SZ) TOUTFM, TOUTSGC, TOUTSGE, TOUTSGV, TOUTSGW, TOUTSM
       CHARACTER(len=80) :: CDUM80
       LOGICAL fileFound
 !     v49.48.02 tcm added these local variable for computing
@@ -1770,6 +1765,7 @@ ckmd   order to turn on the predictor-corrector algorithm.
       END IF
       WRITE(16,9) DTDP
     9 FORMAT(5X,'TIME STEP =',F12.6,5X,'SECONDS',/)
+      DTDPHS = DTDP ! jgf51.14: Initialize; may be changed in hstart()     
 
 C...
 C...  READ AND PROCESS STATIM - SIMULATION STARTING TIME
@@ -4898,7 +4894,7 @@ C...  BE BINARY
      &           //,5X,'NOUTGW = ',I2)
 
 C...  CHECK INPUT PARAMETER NOUTGW
-         SELECT CASE(ABS(NOUTM))
+         SELECT CASE(ABS(NOUTGW))
             CASE(0)
                CALL logMessage(INFO,
      &         'NO GLOBAL METEOROLOGICAL OUTPUT WILL BE SPOOLED.')
@@ -4922,7 +4918,7 @@ C...  CHECK INPUT PARAMETER NOUTGW
      &         'UNIT 73 AND 74 FORMATS WILL BE NETCDF CLASSIC MODEL'
      &         //' / NETCDF4 (HDF5) FORMAT.')
             CASE(6:)
-               call allMessage(ERROR,"This NOUTM value is invalid.")
+               call allMessage(ERROR,"This NOUTGW value is invalid.")
                call ADCIRC_Terminate()
             CASE DEFAULT
                ! do nothing, the other cases handled below

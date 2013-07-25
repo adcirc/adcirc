@@ -684,6 +684,20 @@ C     ---------------------------------------------
             WRITE(scratchMessage,
      &          '("The ending time step number is now",I9,".")') NT
             call logMessage(INFO,scratchMessage)
+C           jgf51.14: Need to recalculate the starting and ending
+C           times for output if time step size has changed
+            call recalculateStartingAndEndingTimestepsForOutput(
+     &         TOUTSE,TOUTFE,NTCYSE,NTCYFE) 
+            call recalculateStartingAndEndingTimestepsForOutput(
+     &         TOUTSV,TOUTFV,NTCYSV,NTCYFV)
+            call recalculateStartingAndEndingTimestepsForOutput(
+     &         TOUTSM,TOUTFM,NTCYSM,NTCYFM)
+            call recalculateStartingAndEndingTimestepsForOutput(
+     &         TOUTSGE,TOUTFGE,NTCYSGE,NTCYFGE)
+            call recalculateStartingAndEndingTimestepsForOutput(
+     &         TOUTSGV,TOUTFGV,NTCYSGV,NTCYFGV)
+            call recalculateStartingAndEndingTimestepsForOutput(
+     &         TOUTSGW,TOUTFGW,NTCYSGW,NTCYFGW)
             DO I=1,NP
                ETA1(I)=ETA2(I) + DTDP*((ETA1(I)-ETA2(I))/DTDPHS)
             END DO
@@ -1829,7 +1843,7 @@ C  tcm v49.16 20100617
 C     jgf46.02 New option to read in hurricane locations and generate
 C     generate hurricane winds from the Holland Wind Model.
       IF(ABS(NWS).EQ.8) THEN
-         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+         !OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
          HollandTime = TimeLoc
          CALL HollandGet(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,
      &        ICS,RHOWAT0,G,HollandTime,NSCREEN,ScreenUnit)
@@ -4007,3 +4021,95 @@ C
 C----------------------------------------------------------------------
       END SUBROUTINE setOutputTiming
 C----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C                  S U B R O U T I N E   
+C       R E C A L C U L A T E   S T A R T I N G   A N D   E N D I N G 
+C                T I M E S T E P S   F O R   O U T P U T
+C-----------------------------------------------------------------------
+C     jgf51.14 For runs where the hotstarted run has a different 
+C     time step than the hotstarted run, we need to recalculate the 
+C     starting and ending timesteps for output that were originally
+C     calculated in read_input.F, taking into account the different time
+C     step sizes.
+C-----------------------------------------------------------------------
+      SUBROUTINE recalculateStartingAndEndingTimestepsForOutput(
+     &   outputStartDay, outputEndDay, 
+     &   outputStartTimeStep, OutputEndTimeStep )
+      USE GLOBAL, ONLY : DTDPHS, ITHS, STATIM, setMessageSource, 
+     &    unsetMessageSource, screenMessage, DEBUG, allMessage, INFO,
+     &    logMessage
+      IMPLICIT NONE
+      REAL(8), intent(in) :: outputStartDay 
+      REAL(8), intent(in) :: outputEndDay 
+      INTEGER, intent(out) :: outputStartTimeStep
+      INTEGER, intent(out) :: outputEndTimeStep
+C
+      REAL(8) secElapsed           ! prior to hotstart
+      REAL(8) outputStartSec       
+      REAL(8) outputEndSec
+C
+      call setMessageSource(
+     &  'recalculateStartingAndEndingTimestepsForOutput')
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      secElapsed = DTDPHS * ITHS - STATIM * 86400.0d0
+      outputStartSec = (outputStartDay - STATIM) * 86400.0d0     
+      if (outputStartSec.gt.secElapsed) then
+         call calcTS(secElapsed, outputStartSec, outputStartTimeStep)
+      endif
+      outputEndSec = (outputEndDay - STATIM) * 86400.0d0
+      if (outputEndSec.gt.secElapsed) then   
+         call calcTS(secElapsed, outputEndSec, outputEndTimeStep)
+      endif
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C----------------------------------------------------------------------
+      END SUBROUTINE recalculateStartingAndEndingTimestepsForOutput
+C----------------------------------------------------------------------
+
+C     ----------------------------------------------------------------
+C      S U B R O U T I N E   C A L C   T S 
+C     ----------------------------------------------------------------
+C
+C     jgf51.14 Function to calculate the time step on which input
+C     or output should occur. 
+C
+C     ----------------------------------------------------------------
+      SUBROUTINE calcTS(elapsed, outputtime, ts)
+      USE GLOBAL, ONLY: iths, dtdp, setMessageSource, allMessage,
+     &   DEBUG, unsetMessageSource
+C
+      REAL(8), intent(in) :: elapsed    ! time (sec) that has elapsed so far
+      REAL(8), intent(in) :: outputtime ! time (sec) at which output should start or end   
+      INTEGER, intent(out) :: ts       ! new number of time steps
+C
+      INTEGER :: remainingTimeSteps ! number of steps to take at new 
+                                     ! time step size
+C
+      call setMessageSource('calcTS')
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif           
+      
+#ifdef IBM
+      remainingTimeSteps = INT((outputtime - elapsed + 0.5d0) 
+     &                            / DTDP, KIND(0.0d0))
+#else
+      remainingTimeSteps = INT((outputtime - elapsed + 0.5d0)
+     &                            / DTDP, KIND(0.0d0))
+#endif
+      ts = ITHS + remainingTimeSteps
+C
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C----------------------------------------------------------------------
+      END SUBROUTINE calcTS
+C----------------------------------------------------------------------
+

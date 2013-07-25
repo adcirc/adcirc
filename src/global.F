@@ -406,7 +406,16 @@ C     jgf48.4627 When only meteorological output is requested, skip past
 C     the GWCE and Momentum equations, so that ADCIRC runs faster and
 C     only calculates the requested quantities.
       LOGICAL :: METONLY             = .FALSE.
-
+C
+C     jgf51.14: Moved the parameters that control output timing 
+C     from read_input.F to here so that they can be used to recalculate
+C     starting and ending time step for output when the time step
+C     size has changed after a hotstart. 
+      REAL(SZ) TOUTSC
+      REAL(SZ) TOUTSE,TOUTFE
+      REAL(SZ) TOUTSV,TOUTFV
+      REAL(SZ) TOUTFGC, TOUTFGE, TOUTFGV, TOUTFGW
+      REAL(SZ) TOUTFM, TOUTSGC, TOUTSGE, TOUTSGV, TOUTSGW, TOUTSM
 C...
 C...EXPLICITLY DECLARE ADDITIONAL VARIABLES
 C...
