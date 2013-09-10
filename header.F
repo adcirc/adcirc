@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.15    - 09/10/2013 - jgf, tcm, jcd - Fixed an issue caused by 
+C              boundaries that are only two nodes long, causing
+C              a floating point exception in read_input.F when dividing by
+C              the distance between nodes (division by zero). 
 C  v51.14    - 07/25/2013 - jgf - Corrected a bug in NWS8 (symmetric holland)
 C              where the background pressure was being erroneously applied in 
 C              mb whereas NWS8 requires Pa; fixed met-only mode by forcing

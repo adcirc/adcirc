@@ -75,6 +75,10 @@ C
       INTEGER :: commentStart            ! location of fort.15 comment start
       INTEGER :: ios = 0                 ! i/o status of read operation
 
+      LOGICAL :: FLG_IBLEN2   ! TCM V51.15 20130906 ADDED for special case of
+                               ! interior boundaries of length 2 in parallel jobs
+      LOGICAL :: calcTheta    ! .true. if theta is to be calculated at a flux boundary node
+
 !   tcm v50.66.02 -- added timebathycontrol namelist related variables
       INTEGER :: ios_nddt
       logical :: found_tbc_nml = .false.   !flag to determine if the timebathycontrol namelist was present
@@ -2879,20 +2883,20 @@ C...  array.
 C...
       JNMM=0
       DO K=1,NOPE
-        READ(14,*) NVDLL(K)
-        IBTYPEE(K) = 0 ! jgf49.32 for some reason this is not read in,
+         READ(14,*) NVDLL(K)
+         IBTYPEE(K) = 0 ! jgf49.32 for some reason this is not read in,
                        ! even though it is in the documentation
-        WRITE(16,281) K,NVDLL(K)
- 281    FORMAT(//,5X,'TOTAL NUMBER OF NODES ON ELEVATION SPECIFIED ',
-     &               'BOUNDARY SEGMENT ',2X,I2,2X,'=',1X,I5,/)
-        DO I=1,NVDLL(K)
-          READ(14,*) NBDV(K,I)
-          WRITE(16,1855) NBDV(K,I)
- 1855     FORMAT(7X,I7)
-          NBD(JNMM+I)=NBDV(K,I)
-          ENDDO
-        JNMM=JNMM+NVDLL(K)
-        ENDDO
+         WRITE(16,281) K,NVDLL(K)
+ 281     FORMAT(//,5X,'TOTAL NUMBER OF NODES ON ELEVATION SPECIFIED',
+     &              ' BOUNDARY SEGMENT ',2X,I2,2X,'=',1X,I5,/)
+         DO I=1,NVDLL(K)
+            READ(14,*) NBDV(K,I)
+            WRITE(16,1855) NBDV(K,I)
+ 1855       FORMAT(7X,I7)
+            NBD(JNMM+I)=NBDV(K,I)
+         END DO
+         JNMM=JNMM+NVDLL(K)
+      END DO !k=1,nope
 
 C...
 C...  CHECK TO MAKE SURE THAT JNMM EQUALS NETA
@@ -3405,7 +3409,8 @@ C...  IS ALSO RESET
                      BTRAN7(I)=PIPECOEFR(I)
                      BTRAN8(I)=PIPEDIAMR(I)
                   ENDIF
-               END DO
+               END DO  !I=1,NVELL(K)
+
                DO I=1,NVELL(K)
                   NBVV(K,I)=NTRAN2(NVELL(K)+1-I)
                   IBCONNR(I)=NTRAN1(NVELL(K)+1-I)
@@ -3417,7 +3422,7 @@ C...  IS ALSO RESET
                      PIPECOEFR(I)=BTRAN7(NVELL(K)+1-I)
                      PIPEDIAMR(I)=BTRAN8(NVELL(K)+1-I)
                   ENDIF
-               END DO
+               END DO  !I=1,NVELL(K)
             ENDIF
 
 C...  WRITE OUT ADDITIONAL HEADER FOR INTERNAL BARRIER BOUNDARIES
@@ -3455,12 +3460,19 @@ C...  WRITE OUT GENERAL HEADER FOR BOUNDARY INFORMATION
 
 C...  COMPLETE THE BOUNDARY ARRAY FOR THE Kth FLOW BOUNDARY SEGMENT
 
+            FLG_IBLEN2 = .FALSE.   !ADDED TCM V51.15 20130906 
             NBVV(K,0)=NBVV(K,1) !UNCLOSED EXTERNAL
             IF((IBTYPE(K).EQ.1).OR.(IBTYPE(K).EQ.11).OR.
      &            (IBTYPE(K).EQ.21)) THEN
                IF(NBVV(K,NVELL(K)).NE.NBVV(K,1)) THEN !CLOSE AN UNCLOSED INTERNAL
+
+                  IF (NVELL(K).EQ.2) FLG_IBLEN2 = .TRUE.   !ADDED TCM V51.15 20130906 
+
                   NVELL(K)=NVELL(K)+1
                   NBVV(K,NVELL(K))=NBVV(K,1)
+                  !tcm 20130906 -- Closing can be problematic for parallel jobs
+                  ! where it is possible that only part of the internal boundary
+                  ! is in the domain
                ENDIF
             ENDIF
             IF(NBVV(K,NVELL(K)).EQ.NBVV(K,1)) THEN !CLOSED EXTERNAL OR INTERNAL
@@ -3540,38 +3552,49 @@ C...  NOTE: INTERIOR ANGLE AT ENDS OF BOUNDARIES MUST BE EQUAL, EITHER:
 C...  A FICTITIOUSLY LARGE VALUE IF THE BOUNDARY IS NOT CLOSED OR A TRUE
 C...  VALUE IF THE BOUNDARY IS CLOSED
 
-               THETA=0.d0
-               IF((I.EQ.1).AND.(NBVV(K,I).EQ.NBVV(K,I-1))) THEN
-                  THETA1=-9999999.d0
-                  THETA=THETA1
-                  COSTHETA1=COSTSET
-                  COSTHETA=COSTHETA1
-                  CROSS1=0.d0
-                  CROSS=CROSS1
+               calcTheta = .true.
+               ! jgf51.15: special treatment at the start and
+               ! end of the boundary
+               IF (I.eq.1) THEN ! start of boundary
+                  ! jgf51.15: if ADCIRC previously had to close an 
+                  ! unclosed external boundary 
+                  IF (NBVV(K,1).EQ.NBVV(K,0)) THEN
+                     THETA=-9999999.d0    ! set to a fictitiously large val
+                     CROSS=0.d0
+                     COSTHETA=COSTSET     !COSTSET = COS(ANGINN*DEG2RAD)
+                     calcTheta = .false.
+                  ENDIF
                ENDIF
-               IF(I.EQ.NVELL(K)) THEN
+               IF (I.eq.NVELL(K)) THEN ! end of boundary
+                  ! set properties equal to those from start of boundary
                   THETA=THETA1
-                  COSTHETA=COSTHETA1
                   CROSS=CROSS1
+                  COSTHETA=COSTHETA1
+                  calcTheta = .false.
                ENDIF
-               IF(THETA.EQ.0.) THEN
+               IF (calcTheta.eqv..true.) THEN
+                  ! jgf51.15: calculate the properties of the interior
+                  ! angle of the boundary
                   VL1X=XL1-XL0
                   VL1Y=YL1-YL0
                   VL2X=XL2-XL0
                   VL2Y=YL2-YL0
                   DOTVEC=VL1X*VL2X+VL1Y*VL2Y
-               VECNORM=(SQRT(VL1X**2+VL1Y**2))*(SQRT(VL2X**2+VL2Y**2))
+                  VECNORM=(SQRT(VL1X**2 + VL1Y**2))*
+     &                    (SQRT(VL2X**2 + VL2Y**2))
                   COSTHETA=DOTVEC/VECNORM
                   IF(COSTHETA.GT.1.0d0) COSTHETA=1.0d0
                   IF(COSTHETA.LT.-1.0d0) COSTHETA=-1.0d0
                   THETA=RAD2DEG*ACOS(COSTHETA)
                   CROSS=-VL1X*VL2Y+VL2X*VL1Y
                   IF(CROSS.LT.0) THETA=360.d0-THETA
-                  IF(I.EQ.1) THEN
-                     THETA1=THETA
-                     COSTHETA1=COSTHETA
-                     CROSS1=CROSS
-                  ENDIF
+               ENDIF
+               IF (I.eq.1) THEN
+                  ! jgf51.15: record the properties at the
+                  ! start of the boundary, for re-use at the end 
+                  THETA1=THETA 
+                  CROSS1=CROSS
+                  COSTHETA1=COSTHETA
                ENDIF
 
 C...  CHECK WHETHER ANGLE IS LESS THAN MINIMUM ANGLE, IF SO CHANGE THE
@@ -3596,6 +3619,12 @@ C...  COMPUTE COS AND SIN OF OUTWARD NORMAL REGARDLESS OF BOUNDARY TYPE
                X2=X(NBVV(K,I+1))
                Y1=Y(NBVV(K,I-1))
                Y2=Y(NBVV(K,I+1))
+               ! TCM V51.15 20130906 ADDED TEST TO HANDLE SPECIAL CASE WHEN THE ORIGINAL
+               ! INTERIOR BOUNDARY HAD LENGTH 2 AND IBTYPE=1,11, OR 21 AND WAS FORCED CLOSED
+               IF (FLG_IBLEN2 .EQV. .TRUE.) THEN
+                  X2=X(NBVV(K,I))
+                  Y2=Y(NBVV(K,I))
+               ENDIF
                XL=SQRT((X1-X2)**2+(Y1-Y2)**2)
                CSII(JGW)=SFAC(NBVV(K,I))*(Y2-Y1)/XL
                SIII(JGW)=(X1-X2)/XL
@@ -3606,16 +3635,22 @@ C...  (type 40)
 
                IF(IBType(K).EQ.40) Then
                   ZNGFicNodeDist=0.d0
+
                   DO N=2,NNeigh(NBVI)
-                  ZNGFicNodeDistTemp=SQRT((X(NeiTab(NBVI,N))-X(NBVI))**2
-     &                    +(Y(NeiTab(NBVI,N))-Y(NBVI))**2)
+                     ZNGFicNodeDistTemp=SQRT( 
+     &                     (X(NeiTab(NBVI,N))-X(NBVI))**2
+     &                    +(Y(NeiTab(NBVI,N))-Y(NBVI))**2 )
+
                      IF(ZNGFicNodeDist.LT.ZNGFicNodeDistTemp)
      &                    ZNGFicNodeDist=ZNGFicNodeDistTemp
-                  ENDDO
+
+                  ENDDO  !N=2,NNeigh(NBVI)
+
                   ZNGFicNodeDist=1.001d0*ZNGFicNodeDist
                   X4=X(NBVI)-ZNGFicNodeDist*CSII(JGW)
                   Y4=Y(NBVI)-ZNGFicNodeDist*SIII(JGW)
                   AEMIN=1.0E+25
+
                   DO N=1,NE
                      N1=NM(N,1)
                      N2=NM(N,2)
@@ -3635,10 +3670,12 @@ C...  (type 40)
                         AEMIN=AE
                         NEleZNG(JGW)=N
                      ENDIF
-                  ENDDO
+                  ENDDO  !N=1,NE
 
                   IF(AEMIN.GT.1.0E-5) THEN
-          if (NSCREEN.ne.0.and.myproc.eq.0)WRITE(ScreenUnit,9770) NBVI
+                     if (NSCREEN.ne.0.and.myproc.eq.0) then
+                        WRITE(ScreenUnit,9770) NBVI
+                     endif
                      WRITE(16,9770) NBVI
  9770                FORMAT(///,1X,'!!!!!!!!!!  ERROR !!!!!!!!!',//,
      &                1X,'Zero Normal Velocity Gradient Boundary Node ',
@@ -3887,7 +3924,9 @@ C...  APPROPRIATE ACTION
                IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24).OR.
      &              (IBTYPE(K).EQ.5)
      &              .OR.(IBTYPE(K).EQ.25)) THEN
+
                   DO ICK=1,NVELEXT
+
 C...  CHECK IF OVERLAP EXISTS
                      IF(NBV(ICK).EQ.NBV(JGW)) THEN
 C...  CHECK FOR ILLEGAL OVERLAPS
@@ -3964,12 +4003,13 @@ C...  CODE ON THE EXTERNAL BOUNDARY
                            LBCODEI(ICK)=0
                         ENDIF
                      ENDIF
-                  END DO
+                  END DO  !ICK=1,NVELEXT
+
                ENDIF
 
-            END DO
-         END DO
-      END DO
+            END DO  ! I = 1,NVELL(K)
+         END DO  !IPRBI=1,NPRBI
+      END DO   ! K=1,NBOU
 
 C...  ONCE ALL FLOW BOUNDARY NODES HAVE BEEN PROCESSED, CHECK TO MAKE
 C...  SURE THAT JGW LE MNVEL.  NOTE, JME MUST BE < JGW.
