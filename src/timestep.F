@@ -3222,13 +3222,13 @@ C              proceed and turn on the limiter.
       ENDIF
 1983  FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &       5X,'TIME = ',E15.8,
-     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE',I7,
+     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE ',I8,
      &       2X,'ON MYPROC = ',I5,
      &       3X,'** WARNING: ELEMENTAL SLOPE LIMITER TURNED ON **')
 
 1984  FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &       5X,'TIME = ',E15.8,
-     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE',I7,
+     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE ',I8,
      &       2X,'ON MYPROC = ',I5,
      &       3X,'** WARNING: MAXIMUM ALLOWED GRADIENT EXCEEDED **')
 C...  END CHECKING ELEMENT GRADIENTS
@@ -3283,8 +3283,8 @@ C     the screen.
             ENDIF
  1991       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE',I7,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE',I7,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
      &           2X,'ON MYPROC = ',I4)
          ENDIF
          WarnElevExceeded = 0
@@ -3296,8 +3296,8 @@ C     the screen.
      &           KVMAX,MYPROC
  1993       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE',I7,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE',I7,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
      &           2X,'ON MYPROC = ',I4,
      &           3X,'** WARNING: Elevation.gt.WarnElev **')
             IF (WarnElevDump) WarnElevExceeded=1
@@ -3317,8 +3317,8 @@ C     the screen.
      &           KVMAX,MYPROC
  1995       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE',I7,
-     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE',I7,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
      &           2X,'ON MYPROC = ',I4,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev,',
      &           ' ADCIRC stopping. **')
@@ -3340,8 +3340,8 @@ C     the screen.
             ENDIF
  1992       FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', E11.4,' AT NODE',I7,
-     &           2X,'SPEEDMAX = ',E11.4,' AT NODE',I7)
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8)
          ENDIF
          IF(ELMAX.GT.WarnElev) THEN
             WRITE(ScreenUnit,1994)
@@ -3349,8 +3349,8 @@ C     the screen.
             WRITE(16,1994) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1994       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', E11.4,' AT NODE',I7,
-     &           2X,'SPEEDMAX = ',E11.4,' AT NODE',I7,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,
      &           2X,'** WARNING: Elevation.gt.WarnElev **')
 #ifdef DEBUG_WARN_ELEV
             IF (WarnElevDump) CALL WriteWarnElev(TimeLoc, IT)
@@ -3362,8 +3362,8 @@ C     the screen.
             WRITE(16,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
  1996       FORMAT(1X,'TIME STEP =',I8,6X,'ITERATIONS =',I5,
      &           5X,'TIME = ',E15.8,
-     &           /,2X,'ELMAX = ', E11.4,' AT NODE',I7,
-     &           2X,'SPEEDMAX = ',E11.4,' AT NODE',I7,/,
+     &           /,2X,'ELMAX = ', 1pE12.4E3,' AT NODE ',I8,
+     &           2X,'SPEEDMAX = ',1pE12.4E3,' AT NODE ',I8,/,
      &           2X,'** ERROR: Elevation.gt.ErrorElev, '
      &           'ADCIRC stopping. **')
             CALL ADCIRC_Terminate()

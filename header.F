@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.16    - 10/11/2013 - tcm - Enlarged the integer format width for 
+C              node numbers being written on the run status updates in
+C              timestep.F that report maximum elevation and maximum
+C              velocity for the grid for that time step. Width increased
+C              from I7 to I8.
 C  v51.15    - 09/10/2013 - jgf, tcm, jcd - Fixed an issue caused by 
 C              boundaries that are only two nodes long, causing
 C              a floating point exception in read_input.F when dividing by
