@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99.11 - 11/01/2013 - tcm - Corrected a bug in adcprep for nws=2 where
+C              wtiminc was not being correctly read from the fort.15 file.
 C  v50.99.10 - 07/25/2013 - jgf - Corrected a bug in NWS8 (symmetric holland)
 C              where the background pressure was being erroneously applied in 
 C              mb whereas NWS8 requires Pa; fixed met-only mode by forcing
