@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.17    - 11/01/2013 - tcm - Corrected a bug in adcprep for nws=2 where
+C              wtiminc was not being correctly read from the fort.15 file.
 C  v51.16    - 10/11/2013 - tcm - Enlarged the integer format width for 
 C              node numbers being written on the run status updates in
 C              timestep.F that report maximum elevation and maximum

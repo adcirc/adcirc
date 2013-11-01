@@ -707,11 +707,14 @@ C     jgf46.16 Merged:
 C     cf & cm Added NWS=9: asymmetric hurricane wind model
 C     rjw Added NWS=19: asymmetric hurricane wind model v2.0
 C     sb46.28sb01 added NWS=12: OWI format
+C
 C....TCM V49.64.01 ADDITIONS FOR ICE, broke nws=2 out
       IF(ABS(NWS).EQ.2) THEN
+         READ(15,80) WSMSG1  !tcm v51.17 -- added to correct bug
          IF(NRS.EQ.0) READ(WSMSG1,*) WTIMINC
          IF(NRS.GE.1) READ(WSMSG1,*) WTIMINC,RSTIMINC ! sb46.28sb03
       ENDIF
+     
       IF((ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(ABS(NWS).EQ.8).OR.
      &         (ABS(NWS).EQ.9).OR.(ABS(NWS).EQ.12)
