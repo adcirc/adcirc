@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99.12 - 11/11/2013 - jgf - Fixed f90 compilation rule and arguments to 
+C              switch.pl (replacing -unix -f95 with swch) for compiling adcswan
+C              and padcswan targets.
 C  v50.99.11 - 11/01/2013 - tcm - Corrected a bug in adcprep for nws=2 where
 C              wtiminc was not being correctly read from the fort.15 file.
 C  v50.99.10 - 07/25/2013 - jgf - Corrected a bug in NWS8 (symmetric holland)
