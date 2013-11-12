@@ -2,6 +2,7 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.19    - 11/12/2013 - pck - Update CF-UGRID Compliance to v.0.9.0
 C  v51.18    - 11/11/2013 - jgf - Fixed f90 compilation rule and arguments to 
 C              switch.pl (replacing -unix -f95 with swch) for compiling adcswan
 C              and padcswan targets.

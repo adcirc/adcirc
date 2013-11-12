@@ -8063,7 +8063,11 @@ C     the value of ICS
 !     Define Element Attributes (Corbitt)
       iret = nf90_put_att(ncid, myMesh%ELE_id,'long_name', 'element')
       CALL check_err(iret)      
-      iret = nf90_put_att(ncid, myMesh%ELE_id,'standard_name',
+!Corbitt 11/12/13 - Obsolete CF-UGRID Convention
+!      iret = nf90_put_att(ncid, myMesh%ELE_id,'standard_name',
+!     & 'face_node_connectivity')
+!      CALL check_err(iret)
+      iret = nf90_put_att(ncid, myMesh%ELE_id,'cf_role',
      & 'face_node_connectivity')
       CALL check_err(iret)
       iret = nf90_put_att(ncid, myMesh%ELE_id,'start_index',1)
@@ -8167,10 +8171,17 @@ C        NBVV
          iret = nf90_put_att(ncid, myMesh%mesh_id, 'long_name',
      &                      'mesh_topology')
          CALL check_err(iret)
-         iret = nf90_put_att(ncid, myMesh%mesh_id, 'standard_name',
+         iret = nf90_put_att(ncid, myMesh%mesh_id, 'cf_role',
      &                      'mesh_topology')
          CALL check_err(iret)
-         iret = nf90_put_att(ncid, myMesh%mesh_id, 'dimension',
+!Corbitt: 11/12/13 - Obsolete CF-UGRID Convention 
+!         iret = nf90_put_att(ncid, myMesh%mesh_id, 'standard_name',
+!     &                      'mesh_topology')
+!         CALL check_err(iret)
+!         iret = nf90_put_att(ncid, myMesh%mesh_id, 'dimension',
+!     &                      2)
+!         CALL check_err(iret)
+         iret = nf90_put_att(ncid, myMesh%mesh_id, 'topology_dimension',
      &                      2)
          CALL check_err(iret)
          iret = nf90_put_att(ncid, myMesh%mesh_id, 'node_coordinates',
@@ -8460,6 +8471,9 @@ C     back to degrees to write them back out
       CALL check_err(iret)
       iret = nf90_put_att(ncid, NF_GLOBAL, 'convention',
      &       trim(adjustl(convention)))
+      CALL check_err(iret)
+      iret = nf90_put_att(ncid, NF_GLOBAL, 'Conventions',
+     &       'UGRID-0.9.0')
       CALL check_err(iret)
       iret = nf90_put_att(ncid, NF_GLOBAL, 'contact',
      &       trim(adjustl(contact)))

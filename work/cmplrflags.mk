@@ -12,7 +12,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=gnu
 #compiler=g95
 #compiler=intel
-#compiler=intel-ND
+compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=cray_xt3
 #compiler=cray_xt4
@@ -29,7 +29,7 @@ ifeq ($(compiler),gnu)
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-none -march=k8 -m64
+  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-132 -march=k8 -m64
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
@@ -42,20 +42,6 @@ ifeq ($(compiler),gnu)
   CLIBS	:=
   LIBS		:=
   MSGLIBS	:=
-  ifeq ($(NETCDF),enable)
-     ifeq ($(MACHINENAME),blueridge)
-        # FLIBS       := $(FLIBS) -L$(HDF5HOME) -lhdf5  
-        NETCDFHOME    :=/usr
-        FFLAGS1       :=$(FFLAGS1) -I/usr/lib64/gfortran/modules
-        FFLAGS2       :=$(FFLAGS1)
-        FFLAGS3       :=$(FFLAGS1)
-        # NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.1-gcc4.1-ifort
-        # NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.2-gcc4.1-ifort
-        FLIBS          :=$(FLIBS) -L/usr/lib64 -lnetcdff
-     else
-        FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
-     endif
-  endif
   $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)
      FOUND := TRUE
@@ -121,20 +107,11 @@ ifeq ($(compiler),intel)
   MSGLIBS       :=
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),blueridge)
-        FLIBS       := $(FLIBS) -L/projects/ncfs/apps/netcdf/netcdf-fortran-4.2/lib -lnetcdff  -lnetcdf -lnetcdf 
-        NETCDFHOME    :=/projects/ncfs/apps/netcdf/netcdf-fortran-4.2
-        FFLAGS1       :=$(FFLAGS1) -I/projects/ncfs/apps/netcdf/netcdf-fortran-4.2/include 
-        FFLAGS2       :=$(FFLAGS1)
-        FFLAGS3       :=$(FFLAGS1)
-        # NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.1-gcc4.1-ifort
-        # NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.2-gcc4.1-ifort
-        #FLIBS          :=$(FLIBS) -L/usr/lib64 -lnetcdff
+        FLIBS       := $(FLIBS) -L$(HDF5HOME) -lhdf5  
 #        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.1-gcc4.1-ifort
         NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.2-gcc4.1-ifort
-     endif
-     ifeq ($(MACHINENAME),killdevil)
-        HDF5HOME       :=/nas02/apps/hdf5-1.8.5/lib
-        NETCDFHOME     :=/nas02/apps/netcdf-4.1.1
+        FLIBS          := $(FLIBS) -lnetcdff
+     else
         FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
      endif
   endif
@@ -153,7 +130,7 @@ ifeq ($(compiler),intel-ND)
   PPFC            :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -w -O3 -xSSE4.2 -assume byterecl -132 -i-dynamic -assume buffered_io
+  FFLAGS1       :=  $(INCDIRS) -w -O3 -assume byterecl -132 -i-dynamic -assume buffered_io
   ifeq ($(DEBUG),full)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug -check all -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
@@ -168,13 +145,13 @@ ifeq ($(compiler),intel-ND)
   IMODS         :=  -I
   CC            := icc
   CCBE          := $(CC)
-  CFLAGS        := $(INCDIRS) -O3 -xSSE4.2 -m64 -mcmodel=medium -DLINUX
+  CFLAGS        := $(INCDIRS) -O3 -m64 -mcmodel=medium -DLINUX
   FLIBS          :=
   ifeq ($(DEBUG),full)
      CFLAGS        := $(INCDIRS) -g -O0 -march=k8 -m64 -mcmodel=medium -DLINUX
   endif
   ifeq ($(NETCDF),enable)
-     #HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
+     HDF5HOME=/afs/crc.nd.edu/x86_64_linux/hdf/hdf5-1.8.6-linux-x86_64-static/lib
      FLIBS      := $(FLIBS) -lnetcdff -L$(HDF5HOME) 
   endif   
   CLIBS         :=
@@ -185,6 +162,7 @@ ifeq ($(compiler),intel-ND)
   else
      MULTIPLE := TRUE
   endif
+  NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/netcdf/rhel6/4.1.3/intel-12.0/
   #NETCDFHOME=/afs/crc.nd.edu/x86_64_linux/scilib/netcdf/4.1.2/intel-12.0/inst
 endif
 #
@@ -269,7 +247,7 @@ ifeq ($(compiler),cray_xt4)
   ifeq ($(SWAN),enable)
      DPRE	        :=  -DREAL8 -DLINUX -DADCSWAN
   endif
-  CFLAGS	:=  $(INCDIRS) -DLINUX
+  CFLAGS	:=  -c89 $(INCDIRS) -DLINUX
   ifeq ($(DEBUG),full)
      CFLAGS	:=  -c89 $(INCDIRS) -DLINUX -g -O0
   endif
@@ -462,12 +440,7 @@ ifeq ($(compiler),diamond)
 # jgf20101103: on Diamond, NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.0.1-serial
 # jgf20101103: on Diamond, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.4-serial/lib
   ifeq ($(NETCDF),enable)
-     NETCDFHOME     :=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.2.1.1-intel-serial
-     FFLAGS1        :=$(FFLAGS1) -I/usr/local/usp/PETtools/CE/pkgs/netcdf-4.2.1.1-intel-serial/include
-     FFLAGS2        :=$(FFLAGS1)
-     FFLAGS3        :=$(FFLAGS1)
-     #HDF5HOME       :=/usr/local/usp/PETtools/CE/pkgs/hdf5-1.8.8-serial/lib
-     FLIBS          := $(FLIBS) -L/usr/local/usp/PETtools/CE/pkgs/netcdf-4.2.1.1-intel-serial/lib -lnetcdff -lnetcdf   #-L$(HDF5HOME) -lhdf5_hl -lhdf5 -lhdf5_fortran -lz
+     FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5_hl -lhdf5 -lhdf5_fortran -lz
   endif
   MSGLIBS       := -lmpi
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
@@ -626,7 +599,7 @@ ifeq ($(compiler),gnu)
   PFC		:=  mpif90
   FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-132
   ifeq ($(DEBUG),full)
-     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DWRITER_DEBUG -DDEBUG_HOLLAND
+     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-132 -ftrace=full -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DWRITER_DEBUG
       # g95 environment variables to set for enhanced debugging:
       # G95_UNBUFFERED_ALL, G95_ABORT, G95_FPU_DENORMAL, G95_FPU_INVALID,
       # G95_FPU_ZERODIV, G95_FPU_OVERFLOW, G95_FPU_UNDERFLOW,
@@ -681,10 +654,10 @@ ifeq ($(compiler),gfortran)
   PFC		:=  mpif90
   FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none 
   ifeq ($(DEBUG),full)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,underflow,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,underflow,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
   endif
   ifeq ($(DEBUG),full-not-fpe)
-    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
   endif
   ifneq ($(MACHINENAME),jason-desktop)
      FFLAGS1 := $(FFLAGS1) -fno-underscoring

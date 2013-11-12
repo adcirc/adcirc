@@ -1125,6 +1125,10 @@ C  tcm v49.16 20100617
             PR2(I) = PRBCKGRND_MH2O + PRDIFF
             WVNXOUT(I)=RampMete*WINDX
             WVNYOUT(I)=RampMete*WINDY
+CORBITT (TO OUTPUT WIND STRESS UNCOMMENT BELOW)
+C            WVNXOUT(I)=WSX2(I)
+C            WVNYOUT(I)=WSY2(I)
+
 #ifdef CSWAN
 Casey 090302: Added these lines for coupling winds to SWAN.
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
@@ -1473,6 +1477,7 @@ C...
             ARGT=AMIGT(J)*(timeh-NCYC*PERT(J))+FACET(J)
             TPMUL=RampTip*ETRF(J)*TPK(J)*FFT(J)
             SALTMUL=RampTip*FFT(J)
+
 #ifdef IBM
             NA=NINT(0.00014/AMIGT(J),KIND(0.0d0))
 #else
