@@ -1297,9 +1297,59 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #endif
           END DO
        ENDIF
-
-
-
+C.... tcm v51.06.02 added for GFDL Met Data
+        IF(ABS(NWS).EQ.16) THEN
+          IF(TimeLoc.GT.WTIME2) THEN
+            WTIME1=WTIME2
+            WTIME2=WTIME2+WTIMINC
+            DO I=1,NP
+              WVNX1(I)=WVNX2(I)
+              WVNY1(I)=WVNY2(I)
+              PRN1(I)=PRN2(I)
+            END DO
+            CALL NWS16GET(timeloc,WVNX2,WVNY2,PRN2)
+          ENDIF
+          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+          DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            !Casey 110518: Enable Mark Powell's sector-based wind drag.
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+              CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &             WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+              WindMag = SQRT(WindX*WindX+WindY*WindY)
+              !Casey 110518: Enable Mark Powell's sector-based wind drag.
+              WDragCo = WindDrag(WindMag,I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC)
+               CICEOUT(I) = PIC
+            ENDIF
+            WSX2(I) = RampMete*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PRDIFF = RampMete*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                          -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete*WINDX
+            WVNYOUT(I)=RampMete*WINDY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+            IF(COUPWIND)THEN
+               SWAN_WX2(I,2) = WindX / WindMultiplier * WaveWindMultiplier
+               SWAN_WY2(I,2) = WindY / WindMultiplier * WaveWindMultiplier
+            ENDIF
+#endif
+          END DO
+        ENDIF
+C
 C    kmd48.33bc - added in information for the sponge layer
        IF ((C3D).AND.(RES_BC_FLAG.GT.0).AND.(NWS.NE.0)) THEN
          DO I=1,NP

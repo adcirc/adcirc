@@ -454,6 +454,13 @@ C.....sb46.28sb01 NWS=-12 and 12 was added to deal with raw OWI files.  09/xx/20
          CALL NWS15INIT(STATIM*86400.0)
       ENDIF
 
+C     
+C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
+      IF (ABS(NWS).EQ.16) THEN
+         CALL INIT_GFDL(STATIM*86400.0)
+      ENDIF
+
+
 C...INPUT RADIATION STRESS INFORMATION FROM UNIT 23
 C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
 

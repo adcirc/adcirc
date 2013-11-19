@@ -2,9 +2,33 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.20      - 11/19/2013 - tcm - Merging changes from the trunk into this
+C               branch ahead of re-integration.
+C    v51.06.10 - 08/01/2013 - tcm - Added insertion of blank wind/pressure
+C               snaps when wind files start after the beginning of the 
+C               simulation or not enough wind files to complete the 
+C               simulation for NWS=16 GFDL wind file formats.
+C    v51.06.09 - 05/09/2013 - tcm - Corrected bug in hstart.F where
+C               fort.75 files were errornously being opened.
+C    v51.06.08 - 05/08/2013 - tcm - Added setMessageSource and
+C               unsetMessageSource to writer.F and wind.F for GFDL.
+C    v51.06.07 - 05/08/2013 - tcm - Changed GFDL ASCII for read, this format
+C               is still in flux.
+C    v51.06.06 - 04/01/2013 - tcm - Fixed a bug in GFDL interpolation.
+C    v51.06.05 - 04/01/2013 - tcm - Updated GFDL interpolation to perform a
+C              check to make sure points aren't too far away from the grid.
+C              If GFDL_max_extrap_dist = -99999.d0 in the fort.22 file, then
+C              an estimated maximum distance is computed to be 6*grid cell
+C              spacing in the GFDL grid.
+C    v51.06.04 - 02/25/2013 - tcm - Added pressure conversion from mb to
+C              MH20 for nws = 16, GFDL wind/pressure
+C    v51.06.03 - 02/21/2013 - tcm - Fixed bugs in nws=16 option.
+C    v51.06.02 - 02/20/2013 - tcm - Added nws=+-16 (GFDL Met Data)
+C    v51.06.01 - 02/08/2013 - tcm - Added a subroutine for reading and  
+C              interpolating GFDL winds/pressures onto ADCIRC nodes.
 C  v51.19    - 11/12/2013 - pck - Update CF-UGRID Compliance to v.0.9.0. Also
-               decreased lower limit from 0.03 to 0.02 for Manning's n seen by
-               SWAN (per Hope et al. 2013 validation of Hurricane Ike). 
+C               decreased lower limit from 0.03 to 0.02 for Manning's n seen by
+C               SWAN (per Hope et al. 2013 validation of Hurricane Ike).
 C  v51.18    - 11/11/2013 - jgf - Fixed f90 compilation rule and arguments to 
 C              switch.pl (replacing -unix -f95 with swch) for compiling adcswan
 C              and padcswan targets.

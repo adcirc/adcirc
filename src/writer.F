@@ -945,6 +945,8 @@ C
 #endif
         INTEGER :: SIG,IERR
         INTEGER :: STAT(MPI_STATUS_SIZE)
+
+        call setMessageSource("HSWRITER_MAIN")
 !
         WCOMMID=WRITER_ID
         WCOMM=COMM_WRITEH(WCOMMID)
@@ -975,6 +977,8 @@ C...  Main loop
 !      CALL MSG_FINI()
 !      STOP
 
+      call  unsetMessageSource()
+      
       END SUBROUTINE HSWRITER_MAIN
 !
 !------------------------------------------------------------
@@ -1044,6 +1048,8 @@ C-----------------------------------------------------------------------
       type(OutputDataDescript_t), SAVE :: NOFFDescript
       LOGICAL,  SAVE :: FirstCall = .true.
 !
+
+      call setMessageSource("writeHotstart_through_HSwriter")
 
       if( myproc <= MNPROC-1 ) then
         CALL GET_NEXT_HSWRITER_COMM(WCOMM)
@@ -1385,6 +1391,9 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          hss % lun=67
          IF(NHSTAR.EQ.1) hss % filename = 'fort.67'                     ! added by mcf 7/14/08
       ENDIF
+      
+      call unsetMessageSource()
+      
       END SUBROUTINE writeHotstart_through_HSwriter
 !
       SUBROUTINE GET_NEXT_HSWRITER_COMM(NEXT_WCOMM)

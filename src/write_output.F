@@ -22,7 +22,8 @@ C
 C----------------------------------------------------------------------
       SUBROUTINE WRITE_OUTPUT_2D (IT,TimeLoc)
       USE ADCIRC_MOD,ONLY: ADCIRC_TERMINATE
-      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC
+      USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
+     &                  GLOBALDIR
 C RJW added MYPROC, MNPROC
       USE GLOBAL
       USE GLOBAL_IO, ONLY: storeOne, storeTwo, store63, HEADER_MAX,
@@ -3407,6 +3408,7 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
 C         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
          IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
      &        .and.(.not.WRITE_LOCAL_FILES)) THEN
+
             OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//fn,
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
             WRITE(lun,2120) TimeLoc,IT

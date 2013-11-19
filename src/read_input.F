@@ -1403,6 +1403,40 @@ C.....sb46_28sb01 added for NWS=-12,12 09/xx/2006
      &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE WIND DATA ',
      &    /,9X,'WITH THE MODEL TIME STEP.')
       ENDIF
+C
+      IF(NWS.EQ.16) THEN
+         WRITE(16,12374) NWS
+12374    FORMAT(/,5X,'NWS = ',I3,
+     &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
+     &    /,9X,' THE COMPUTATION',
+     &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ FROM RAW ',
+     &    /,9X,'GFDL MET DATA FILES (UNIT 220).',
+     &    /,9X,'META DATA IS READ FROM UNIT 22.',
+     &    /,9X,'INTERPOLATION IN SPACE IS DONE WITH A WEIGHTED ',
+     &    /,9x,'DISTANCE NEAREST NEIGHBOR METHOD.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE WIND DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.',
+     &    /,9X,'THE UNIT 22 FILE BEGINS AT TIME=STATIM.',
+     &    /,9X,'WIND SPEEDS ARE CONVERTED TO STRESS USING THE GARRET ',
+     &         'DRAG LAW.')
+      ENDIF
+      IF(NWS.EQ.-16) THEN
+         WRITE(16,12379) NWS
+12379    FORMAT(/,5X,'NWS = ',I3,
+     &    /,9X,'WIND STRESS AND SURFACE PRESSURE ARE USED TO FORCE',
+     &    /,9X,' THE COMPUTATION',
+     &    /,9X,'WIND VELOCITY AND PRESSURE VALUES ARE READ FROM RAW ',
+     &    /,9X,'GFDL MET DATA FILES (UNIT 220).',
+     &    /,9X,'META DATA IS READ FROM UNIT 22.',
+     &    /,9X,'INTERPOLATION IN SPACE IS DONE WITH A WEIGHTED ',
+     &    /,9x,'DISTANCE NEAREST NEIGHBOR METHOD.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE WIND DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.',
+     &    /,9X,'THE UNIT 22 FILE BEGINS AT THE TIME OF THE HOT START.',
+     &    /,9X,'WIND SPEEDS ARE CONVERTED TO STRESS USING THE GARRET ',
+     &         'DRAG LAW.')
+      ENDIF
+C
 C     rjw added nws = 19: asymmetric hurricane winds v2.0
       IF(NWS.EQ.19) THEN
          WRITE(16,2400) NWS
@@ -1954,6 +1988,16 @@ C     an OWI basin scale met field derived from NAM winds.
          IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,
      &                                                 CICE_TIMINC
          IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC, ! sb46.28sb03
+     &                                                 CICE_TIMINC
+      ENDIF
+
+      ! TCM 51.06.02: Added capability to use gfdl met data.
+      IF(ABS(NWS).EQ.16) THEN
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
+         IF((NCICE.EQ.0).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC
+         IF((NCICE.GE.1).AND.(NRS.EQ.0)) READ(15,*) WTIMINC,
+     &                                                 CICE_TIMINC
+         IF((NCICE.GE.1).AND.(NRS.GE.1)) READ(15,*) WTIMINC,RSTIMINC,
      &                                                 CICE_TIMINC
       ENDIF
 
@@ -5275,6 +5319,7 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
       IF(NWS.EQ.10) WRITE(16,4016)
       IF(NWS.EQ.11) WRITE(16,4017)
       IF(ABS(NWS).EQ.12) WRITE(16,4032) ! sb46.28sb01 Added NWS=12 (OWI format)
+      IF(ABS(NWS).EQ.16) WRITE(16,4026) ! tcm v51.06.02  !gfdl met data
       IF(NWS.EQ.19) WRITE(16,4018)      !rjw added nws = 19
       IF(NWS.EQ.19) WRITE(16,4019)      !rjw added nws = 19
       IF((NFREQ.EQ.0).OR.(FMV.EQ.0.)) WRITE(16,4021)
@@ -5311,6 +5356,7 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
  4013 FORMAT(' *   Also, Semi-standard wind forcing will be used,  *')
  4014 FORMAT(' *   Also, Fleet numeric wind forcing will be used,  *')
  4015 FORMAT(' *   Also, PBL/JAG wind forcing will be used,        *')
+ 4026 FORMAT(' *   Also, GFDL Met Data wind and pres will be used, *')
  4115 FORMAT(' *   Also, Standard wind vel and pres will be used,  *')
  1236 FORMAT(' *   Also, surface stress forcing will be used,      *')
  4016 FORMAT(' *   Also, AVN wind & pressure forcing will be used, *')

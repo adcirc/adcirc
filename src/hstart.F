@@ -2231,8 +2231,87 @@ C  tcm v49.16 20100617
              WVNYOUT(I)=RampMete2*WINDY
           END DO
        ENDIF
-
-
+C
+C.....tcm v51.06.02 NWS=16,-16 were added to deal with GFDL Met files.
+      IF(NWS.EQ.16) THEN
+          WTIME1 = STATIM*86400.D0
+          WTIME2 = WTIME1 + WTIMINC
+          CALL INIT_GFDL(wtime1)  !this will read in the two time series
+          DO IT=1,ITHS
+             TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+             IF(TIMEIT.GT.WTIME2) THEN
+                WTIME1=WTIME2
+                WTIME2=WTIME2+WTIMINC
+                DO I=1,NP
+                   WVNX1(I)=WVNX2(I)
+                   WVNY1(I)=WVNY2(I)
+                   PRN1(I)=PRN2(I)
+                 END DO
+                 CALL NWS16GET(wtime2,WVNX2,WVNY2,PRN2)
+              ENDIF
+          END DO
+          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+          DO I=1,NP
+             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+             WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+             WDragCo = WindDrag(WindMag, I)
+             IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+             ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+             PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+     &                           -PRBCKGRND_MH2O)
+             PR2(I) = PRBCKGRND_MH2O + PRDIFF
+             WVNXOUT(I)=RampMete2*WINDX
+             WVNYOUT(I)=RampMete2*WINDY
+          END DO
+       ENDIF
+C
+       IF(NWS.EQ.-16) THEN
+          WTIME1 = TimeLoc
+          WTIME2 = WTIME1 + WTIMINC
+          call INIT_GFDL(wtime1)  !this reads in the first two time series values
+          DO I=1,NP
+             WINDX = WVNX1(I)
+             WINDY = WVNY1(I)
+             WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+             WDragCo = WindDrag(WindMag, I)
+             IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+             ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+             WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+             WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+             PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+             PR2(I) = PRBCKGRND_MH2O + PRDIFF
+             WVNXOUT(I)=RampMete2*WINDX  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+             WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+          END DO
+       ENDIF
+C
 C
 C--------------------END MET FORCING---------------------------------------
 

@@ -706,6 +706,7 @@ C.... tcm v48.4641 additions for ice
       IF((ABS(NWS).EQ.4).OR.(ABS(NWS).eq.5)
      &     .OR.(ABS(NWS).EQ.45).OR.(NWS.EQ.8)
      &     .OR.(ABS(NWS).EQ.15)  !jgf50.38.05: Added NWS=15 for HWind.
+     &     .OR.(ABS(NWS).EQ.16)  !tcm v51.06.02 added for nws=16 GFDL Met
      &     .OR.(ABS(NWS).EQ.12).OR. (NWS.EQ.19)) THEN
         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) READ(15,*) WTIMINC
         IF((NCICE.EQ.0).AND.((NRS.EQ.1).OR.(NRS.EQ.2).OR.(NRS.EQ.4)))
@@ -1012,6 +1013,7 @@ C
 C     sb46.28sb01 added NWS=12: OWI format
       IF(ABS(NWS).EQ.12) WRITE(*,3023)
       IF(ABS(NWS).EQ.19) WRITE(*,3219)
+      IF(ABS(NWS).EQ.16) WRITE(*,3026)
       IF(NCICE.GE.1) WRITE(*,3220)  !tcm v49.64.01
       IF(ABS(NWS).EQ.29) WRITE(*,3223)
       IF((NHARF.EQ.0).OR.(FMV.EQ.0.)) WRITE(*,3021)
@@ -1055,6 +1057,7 @@ C
  3217 FORMAT(' *   Also, NWS=+-8 Holland wind forcing is used,     *')
  3219 FORMAT(' *   Also, NWS=+-19 Asymmetric Holland wind v2.0     *',/,
      &       ' *                 forcing is used,                  *')
+ 3026 FORMAT(' *   Also, NWS=+-16 GFDL Met Data is used            *')
  3220 FORMAT(' *   Also, ABS(NWS)>=1000 ice concentration are used,*')
  3223 FORMAT(' *   Also, NWS=+-29 VortexOWI met forcing is used,   *')
  3018 FORMAT(' *   Also, ABS(NWS)>=100 wave stress forcing is used,*')

@@ -585,9 +585,11 @@ C
 C     sb46.28sb01 NWS=12 doesn't need fort.22 decomposition
 C     tcm_v49.04 NWS=3 and NWS=6 no longer need fort.22 decomposition
 C     jgf49.0804 NWS=29 does not need fort.22 decomposition.
+C     tcm v51.06.02 added NWS=16 GFDL Met Data
 !         IF (NWS.NE.0.AND.ABS(NWS).NE.12)  THEN
          IF ((NWS.NE.0).AND.(ABS(NWS).NE.3).AND.
      &      (ABS(NWS).NE.6).AND.(ABS(NWS).NE.12)
+     &      .AND.(ABS(NWS).NE.16)
      &      .AND.(ABS(NWS).NE.29))  THEN
             print *, "Ready to Write Local UNIT 22 File for each PE"
 C     jgf46.00 Added NWS=7

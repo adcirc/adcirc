@@ -15,8 +15,8 @@ C
 #ifdef CMPI
       use messenger, only : msg_fini
 #endif
-      integer, parameter :: allowable_nws(15)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,19,29/)
+      integer, parameter :: allowable_nws(16)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,29/)
       logical nwsOK     ! true if NWS value in fort.15 is allowed
 
 Casey 110518: Added for Mark Powell's sectorial wind drag.
@@ -101,6 +101,24 @@ C
                                             ! applicable hwind file
       real(sz)              :: angleNow     ! +CCW from east (degrees) from storm center rmaxNow
                                             ! (deg) used by aswip to analyze radial vel
+
+      ! tcm 51.06.02: used to keep track of GFDL Met files and data
+      type gfdl_Data_t
+         ! input data from fort.22
+         character(1024)   :: file_name    ! full path to GFDL met files
+         real(sz)          :: cycleTime    ! time (sec) relative to ADCIRC cold start or REFTIM
+         real(sz)          :: rampVal          ! ramping multiplier for this dataset
+         real(sz)          :: max_extrap_dist  ! maximum distance for extrapolating values (meters)
+         integer           :: numFiles         !total number of GFDL met Files to be read
+         ! input data from gfdl met files themselves
+         integer           :: nh           ! number of grid points
+         ! derived data
+         logical           :: loaded       ! .true. if we have loaded the data from file
+      end type gfdl_Data_t
+      type(gfdl_Data_t), allocatable, target :: gfdl_Files(:) ! array of info about GFDL Met files
+      real(sz) :: GFDL_max_extrap_dist     ! maximum distance for extrapolating values (meters)
+      real(sz) :: GFDL_WindMultiplier      ! all GFDL wind u,v's multiplied by this
+
 
 C------------------------end of data declarations-----------------------
       CONTAINS
@@ -3962,6 +3980,576 @@ C     ----------------------------------------------------------------
       end subroutine hWindInterpolateVelocity
 C     ----------------------------------------------------------------
 
+C
+C ---------------------------------------------------------------------
+C  subroutine to initalize GFDL inputs    
+C       Written By:  Chris Massey, USACE-ERDC-CHL, Vicksburg, MS
+C       Date:  2/7/2013
+C ---------------------------------------------------------------------
+C    Opens the fort.22 file
+C          Line 1 -- ASCII Text Header
+C          Line 2 -- Windmultiplier Value (real number)
+C          Lines 3-end -- cycleTime, filename
+C
+
+       subroutine init_gfdl(timeloc)
+       use sizes, only : globaldir, sz
+       use global, only : ihot, nws, nabout, openFileForRead,np,x,y,
+     &                setMessageSource,unsetMessageSource,allMessage,
+     &                logMessage,scratchMessage,DEBUG,ECHO,INFO,
+     &                ERROR,WARNING,PRBCKGRND,RHOWAT0,G,
+     &                slam0,sfea0,wvnx1,wvny1,prn1,wvnx2,wvny2,prn2
+       implicit none
+
+      real(sz), intent(in) :: timeloc ! adcirc time in seconds since coldstart
+C
+      logical :: fileFound   ! true if the file could be found
+      integer :: errorio     ! .gt. 1 if there was an i/o error
+      integer :: currentLine ! line from fort.22 being processed, used in error msgs
+      logical :: cycleTimeFound ! true if the adcirc time falls into one
+                                ! of the gfdl time intervals
+      integer :: i           ! loop counter
+
+C
+      call setMessageSource("gfdl_init")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      errorio = 0
+      call openFileForRead(22,trim(globaldir)//"/fort.22",errorio)
+      if (errorio.gt.0) call windTerminate()
+      !
+      ! read fort.22 to determine how many GFDL files there are
+      currentLine = 1
+      do i=1,3
+         ! throw header away this time
+         read(22,'(A)',end=246,err=248,iostat=errorio) scratchMessage
+         currentLine = currentLine + 1
+      end do
+      numFiles = 0      
+      do   ! loop until we run out of data, just counting the files this time
+         read(22,'(A)',end=123,err=248,iostat=errorio) scratchMessage
+         currentLine = currentLine + 1
+         numFiles = numFiles + 1
+      end do
+ 123  continue ! jump to here when we've run out of lines in the fort.22
+      allocate( gfdl_files(numFiles) )
+
+      !
+      ! now go back to the beginning of the file and read in the data
+      rewind(22)
+      currentLine = 1
+      read(22,'(A)',end=246,err=248,iostat=errorio) metComment
+      call logMessage(ECHO,"metComment: "//trim(metComment))
+      currentLine = currentLine + 1
+      read(22,*,end=246,err=248,iostat=errorio) GFDL_WindMultiplier
+      currentLine = currentLine + 1
+      write(scratchMessage,'("WindMultiplier=",E15.8)') GFDL_WindMultiplier
+      call logMessage(ECHO,scratchMessage)
+      read(22,*,end=246,err=248,iostat=errorio) GFDL_max_extrap_dist
+      currentLine = currentLine + 1
+      write(scratchMessage,'("GFDL Maximum Extrapolation Distance=",E15.8)') GFDL_max_extrap_dist
+      call logMessage(ECHO,scratchMessage)
+
+      do i=1,numFiles
+         read(22,*,end=246,err=248,iostat=errorio)
+     &     GFDL_Files(i)%cycleTime,
+     &     GFDL_Files(i)%rampVal,
+     &     GFDL_Files(i)%file_name
+
+         GFDL_Files(i)%max_extrap_dist = GFDL_max_extrap_dist
+         GFDL_Files(i)%numFiles = numFiles
+         write(scratchMessage,
+     &   '("time=",E15.8," ramp=",E15.8," file_name=",A)')
+     &       GFDL_Files(i)%cycleTime, 
+     &       GFDL_Files(i)%rampVal, trim(GFDL_Files(i)%file_name)
+         call logMessage(ECHO,scratchMessage)
+         currentLine = currentLine + 1
+      end do
+      close(22)
+ 
+      ! log the number of GFDL Met files that were specified
+      write(scratchMessage,
+     &    '("There were ",I3," GFDL Met files specified.")') numFiles
+      call logMessage(INFO,scratchMessage)
+      !
+      ! need at least 2 files so we have something to interpolate between
+      ! in time
+      if (numFiles.lt.2) then
+         call allMessage(ERROR,"Only one GFDL Met file was specified.")
+         call allMessage(ERROR,
+     &    "ADCIRC requires at least two GFDL Met files for interpolation.")
+         call windTerminate()
+      endif
+      !
+      ! check to make sure that the cycleTimes are
+      ! monotonically increasing
+      do i=1,numFiles-1
+         if (GFDL_Files(i)%cycleTime.ge.GFDL_Files(i+1)%cycleTime) then
+            write(scratchMessage,
+     &    '("Cycle time ",I3," must be less cycle time ",I3,".")')i,i+1
+            call allMessage(ERROR,scratchMessage)
+            call windTerminate()
+         endif
+      end do
+
+      !
+      ! check to make sure that all the GFDL met files are actually there;
+      ! we assume that the file names contain the full path to the file;
+      ! if the file name contains forward slashes, it must be surrounded
+      ! by quotation marks
+      do i=1,numFiles-1
+         fileFound = .false.
+         inquire(file=GFDL_Files(i)%file_name,exist=fileFound)
+         if (fileFound.eqv..false.) then
+            call allMessage(ERROR,"The GFDL Met file "//
+     &          trim(GFDL_Files(i)%file_name)//" was not found.")
+            call windTerminate()
+         endif
+      GFDL_Files(i)%loaded = .false.
+      end do
+
+      write(scratchMessage,'("All specified GFDL Met Files were found.")')
+      call logMessage(INFO,scratchMessage)
+      GFDL_Files(:)%loaded = .false.
+
+      !
+      ! relate timing in the files to current ADCIRC time
+      GFDL_Files(:)%cycleTime = GFDL_Files(:)%cycleTime * 3600.d0 ! convert hours to seconds
+      if  ((nws.lt.0).and.(ihot.ne.0)) then
+         ! if times are relative to hotstart time, add the hotstart time
+         ! so that we can consider the times relative to the coldstart
+         ! time from here on
+         GFDL_Files(:)%cycleTime = GFDL_Files(:)%cycleTime + timeloc
+      endif
+
+      !
+      ! locate the cycle that is relevant to current ADCIRC time
+      cycleTimeFound = .false.
+      do i=1,numFiles-1
+         if (( GFDL_Files(i)%cycleTime.le.timeloc).and.
+     &        (GFDL_Files(i+1)%cycleTime.gt.timeloc) ) then
+            cycleTimeFound = .true.
+            exit
+         endif
+      end do
+
+      currentCycle = i
+
+      ! if we couldn't find a relevant time interval, then insert a blank wind field
+      if (cycleTimeFound.eqv. .false.) then
+         if ( timeloc.lt.GFDL_Files(1)%cycleTime ) then
+
+! ... tcm 20130801 v51.06.10 replaced error exiting with insertion of blank snaps
+            write(scratchMessage,'("The current ADCIRC time ",E15.8,
+     &        " (days) is earlier than the first GFDL Met file time: ",
+     &        E15.8, " (days). Inserting a blank wind snap.")')
+     &        timeloc/86400.d0,GFDL_Files(1)%cycleTime/86400.d0
+            call logMessage(WARNING,scratchMessage)
+            currentCycle = 1
+         endif
+
+         if ( timeloc.gt.GFDL_Files(numFiles)%cycleTime ) then
+
+            write(scratchMessage,'("The current ADCIRC time ",
+     &        E15.8," (days) is later than the last GFDL Met file time: ",
+     &        E15.8, " (days). Inserting a blank wind snap.")')
+     &         timeloc/86400.d0,GFDL_Files(numFiles)%cycleTime/86400.d0
+            call logMessage(WARNING,scratchMessage)
+            currentCycle = numFiles-1
+         endif
+
+      endif
+
+      if (cycleTimeFound.eqv. .true.) then
+      ! load up the data for this time interval
+         call GET_GFDL(NP,WVNX1,WVNY1,PRN1,x,y,
+     &                GFDL_Files(currentCycle)%file_name,
+     &                SLAM0,SFEA0,
+     &                GFDL_Files(currentCycle)%max_extrap_dist)
+         call GET_GFDL(NP,WVNX2,WVNY2,PRN2,x,y,
+     &                GFDL_Files(currentCycle+1)%file_name,
+     &                SLAM0,SFEA0,
+     &                GFDL_Files(currentCycle)%max_extrap_dist)
+      else
+         WVNX1(:) = 0.d0
+         WVNY1(:) = 0.d0
+         PRN1(:) = PRBCKGRND*100.D0/(RHOWAT0*G)  !SET TO BACKGROUND PRESSURE 1013.0D0 ADJUSTED for ADCIRC units
+      endif
+
+      !If no errors then return now
+
+      !cleans up the setMessageSource set at the beginning of the subroutine
+      call unsetMessageSource()
+       
+      return
+
+C
+C     We jump to this section if there was an error reading a file.
+246   call allMessage(ERROR,"Unexpectedly reached end-of-file.") ! END jumps here
+248   call allMessage(ERROR,"I/O error during file access.") !  ERR jumps here
+      call allMessage(INFO,
+     &   "Check the fort.16 file for more information.")
+      if (nabout.gt.0) then
+         call allMessage(INFO,
+     &  "Reducing the value of NABOUT to 0"
+     &  //" will maximize the information written to the fort.16 file,"
+     &  //" which may aid in troubleshooting this issue.")
+      endif
+      write(scratchMessage,'("Could not read line ",I2," of fort.22.")')
+     &  currentLine
+      call allMessage(ERROR,scratchMessage)
+      write(scratchMessage,'(A,I3,A)')
+     &       'The value of the i/o error flag was ',errorio,'.'
+      call allMessage(ERROR,scratchMessage)
+      CALL windTerminate()
+      call unsetMessageSource()
+      
+      end subroutine init_gfdl
+C ---------------------------------------------------------------------
+C
+
+
+C
+C ---------------------------------------------------------------------
+C    subroutine to read in an ascii GFDL met file and interpolate
+C       u-,v- winds and pressure onto the adcirc mesh.
+C       Written By:  Chris Massey, USACE-ERDC-CHL, Vicksburg, MS
+C       Date:  2/7/2013
+C ---------------------------------------------------------------------
+C
+C   Each ASCII GFDL met file contains one or more nested grid data
+C   where the nested grids are allowed to change in time.  Course grid
+C   data is not stored where finer nest data is given.
+C   Format of the file:
+C   Line 1:  Number of grid cells (f10.4) NCELLS
+C   Lines 2-NCELLS+1:  Have ten columns of data formatted as 10f10.4
+C         1. u (m/sec)
+C         2. v (m/sec)
+C         3. Temperature  (K)
+C         4. mixing ratio(kg/kg)
+C         5. storm accum precipitation (cm)
+C         6. sea level pressure (hPa)
+C         7. longitude (decimal deg)
+C         8. latitude (decimal deg)
+C         9. hurricane hour
+C        10. nest number (this is not always present)
+C
+       SUBROUTINE GET_GFDL(NADCPTS,ADC_U_WIND,ADC_V_WIND,ADC_PRESS,
+     &                     ADC_X,ADC_Y,FNAME,SLAM0,SFEA0,
+     &                     MAX_INTERP_DIST)
+       USE SIZES
+       USE GLOBAL, ONLY : DEG2RAD,PRBCKGRND,G,RHOWAT0,
+     &        setMessageSource,unsetMessageSource,allMessage,
+     &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR
+       USE KDTREE2_MODULE     ! USED FOR FAST SEARCHING
+       
+       IMPLICIT NONE
+       REAL(SZ), ALLOCATABLE :: XY_GFDL(:,:),XLOC(:)
+       REAL(SZ), ALLOCATABLE :: PRESS_GFDL(:)
+       REAL(SZ), ALLOCATABLE :: U_WIND_GFDL(:),V_WIND_GFDL(:)
+       REAL(SZ), ALLOCATABLE :: WTS(:)
+       INTEGER, ALLOCATABLE :: LOCS(:),II2(:)
+
+       REAL(SZ) :: LON_GFDL,LAT_GFDL,TOL,DIST
+       REAL(SZ) :: RPTS_GFDL,UTMP,VTMP,TTMP,MTMP,SPTMP,PTMP
+       REAL(SZ) :: LONGTMP,LATTMP,HTMP,NTMP,XSTA,YSTA,MAXDIST
+       REAL(SZ), INTENT(IN) :: SLAM0,SFEA0
+       REAL(SZ), INTENT(IN) :: MAX_INTERP_DIST
+       REAL(SZ), INTENT(OUT) :: ADC_U_WIND(NADCPTS),ADC_V_WIND(NADCPTS)
+       REAL(SZ), INTENT(OUT) :: ADC_PRESS(NADCPTS)
+       REAL(SZ), INTENT(IN)  :: ADC_X(NADCPTS),ADC_Y(NADCPTS)
+!       REAL(SZ), PARAMETER ::  PI=3.141592653589793D0
+!       REAL(SZ), PARAMETER ::  DEG2RAD = PI/180.D0  ! DEGREES TO RADIANS
+
+       INTEGER :: NPTS_GFDL,SRCHDP,LUN,ERRORIO,ITC,I,IEK,IP,INCELL
+       INTEGER, INTENT(IN) :: NADCPTS
+       CHARACTER(240),INTENT(IN) :: FNAME
+       TYPE(KDTREE2), POINTER :: TREE
+       TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
+
+
+       SRCHDP = 6  !THE NUMBER OF NEAREST NEIGHBORS TO FIND
+       TOL = 1.0D-6  !TOLERANCE FOR ESTIMATING ZERO DISTANCE BETWEEN POINTS
+       IP = 3        !POWER VALUE USED IN THE INVERESE WEIGHTED DISTANCE FORMULA
+       LUN = 287  !FILE UNIT NUMBER TO OPEN FOR THE GFDL FILE
+
+C     INVERSE WEIGHTED DISTANCE FORMULA
+C     P_I = SUM( {J=1 TO SRCHDP} (P_J/(D_I_J)^IP) )/SUM( {J=1 TO SRCHDP} (1/(D_I_J)^IP ) )
+C Where
+C   P_J IS THE VALUE AT LOCATION J
+C   D_I_J - DISTANCE BETWEEN POINT I AND POINT J
+C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS HAVE)
+
+
+       call setMessageSource("get_GFDL")
+       call logMessage(INFO,"Loading the GFDL Met file '"
+     &                     //trim(fname)//"'.")
+       call openFileForRead(lun,trim(fname), errorio)
+       if (errorio.gt.0) then
+          call windTerminate()
+       endif
+
+!       OPEN(LUN,FILE=TRIM(FNAME),STATUS='OLD',ACTION='READ',
+!     &            IOSTAT=ERRORIO)
+!       IF (ERRORIO.NE.0) THEN
+!          WRITE(*,25) TRIM(FNAME)
+!       ENDIF
+!25      FORMAT("COULD NOT OPEN THE FILE '",A,"'.")
+
+
+       ! READ THE FIRST LINE OF THE GFDL OUTPUT WHICH IS THE NUMBER OF POINTS IN THIS RECORD
+!       READ(LUN,'(F10.4)') RPTS_GFDL  
+!       NPTS_GFDL = INT(RPTS_GFDL)
+        read(LUN,'(I10)') NPTS_GFDL
+        rpts_gfdl = real(npts_gfdl,sz)
+
+!       tcm 20130507 -- changed the read above due to changes in GFDL ASCII files
+
+       ALLOCATE( XY_GFDL(2,NPTS_GFDL) )
+       ALLOCATE( PRESS_GFDL(NPTS_GFDL) )
+       ALLOCATE( U_WIND_GFDL(NPTS_GFDL), V_WIND_GFDL(NPTS_GFDL) )
+
+! READ IN EACH GFDL POINT LOCATION INFORMATION
+       DO I=1,NPTS_GFDL
+!          READ(LUN,'(10F10.4)') UTMP,VTMP,TTMP,MTMP,SPTMP,PTMP,
+!     &                      LONGTMP,LATTMP,HTMP,NTMP
+          READ(LUN,'(9F10.4)') UTMP,VTMP,TTMP,MTMP,SPTMP,PTMP,
+     &                      LONGTMP,LATTMP,HTMP
+          LON_GFDL = LONGTMP*DEG2RAD !CONVERT TO RADIANS
+          LAT_GFDL = LATTMP*DEG2RAD  !CONVERT TO RADIANS
+          U_WIND_GFDL(I) = UTMP
+          V_WIND_GFDL(I) = VTMP
+          PRESS_GFDL(I) = PTMP
+          CALL CPP(XY_GFDL(1,I),XY_GFDL(2,I),LON_GFDL,LAT_GFDL,
+     &             SLAM0,SFEA0)
+
+       ENDDO !I
+         
+       CLOSE(LUN)  !CLOSE THIS GFDL DATA FILE
+
+       write(scratchMessage,'("Read ",I8," GFDL Met Points.")')
+     &    NPTS_GFDL
+      call logMessage(ECHO,scratchMessage)
+
+!     IF A MAXIMUM DISTANCE ISN'T SPECIFIED, THEN DETERMINE AN ESTIMATE
+!     TO GFDL GRID SPACING IN ORDER TO USE FOR MAXIMUM DISTANCE (maxdist = 6*cell spacing)
+      IF (MAX_INTERP_DIST == -99999.D0 ) THEN
+          ALLOCATE( XLOC(NPTS_GFDL),II2(NPTS_GFDL) )
+
+          MAXDIST = MINVAL(XY_GFDL(1,:))  !MINIMUM X VALUE
+          XLOC(:) = XY_GFDL(1,:)
+          II2(:) = 0
+          WHERE( ABS(XLOC-MAXDIST) < TOL ) II2 = 1
+          INCELL = MAX(SUM(II2)-1,1)
+          MAXDIST = (MAXVAL(XY_GFDL(2,:))-MINVAL(XY_GFDL(2,:)))/REAL(INCELL)  !ESTIMATED CELL SPACING
+          MAXDIST = 6.0D0*MAXDIST  !MAXIMUM DISTANCE TO LOOK AWAY
+                   
+          DEALLOCATE(XLOC)
+          DEALLOCATE(II2)
+       ELSE
+          MAXDIST = MAX_INTERP_DIST
+       ENDIF
+       
+       write(scratchMessage,'("Maximum GFDL Interpolation Distance = ",e24.16)'),maxdist
+       call logMessage(ECHO,scratchMessage)
+
+       
+C... ALLOCATE SPACE FOR KDTREE SEARCH
+C...  BE SURE THE MAXIMUM SEARCH DEPTH IS NOT LARGER THAN
+C...  THE NUMBER OF ELEMENTS BEING KEPT
+        IF (NADCPTS.LT.SRCHDP) SRCHDP = NADCPTS
+
+C...  CREATE THE SEARCH TREE
+      TREE => KDTREE2_CREATE(XY_GFDL,REARRANGE=.TRUE.,SORT=.TRUE.)
+
+
+C...  ALLOCATE SPACE FOR THE SEARCH RESULTS FROM THE TREE
+C...  THIS SPACE WILL BE DEALLOCATED LATER IN THE SUBROUTINE
+      ALLOCATE(KDRESULTS(SRCHDP))
+
+      ALLOCATE (WTS(SRCHDP) )
+      ALLOCATE (LOCS(SRCHDP) )
+
+! INITIALIZE ADCIRC VARIABLES
+      ADC_PRESS(:) = PRBCKGRND  !SET TO BACKGROUND PRESSURE 1013.0D0
+      ADC_U_WIND(:) = 0.D0
+      ADC_V_WIND(:) = 0.D0
+
+!     LOOP OVER EACH ADCIRC NODE
+      DO I=1,NADCPTS      
+         XSTA = ADC_X(I)  !ADCIRC NODE X-COORDINATE
+         YSTA = ADC_Y(I)  !ADCIRC NODE Y-COORDIANTE
+
+!        FIND THE SRCHDP CLOSEST POINTS TO THIS NODE
+         CALL KDTREE2_N_NEAREST(TP=TREE,QV=(/XSTA,YSTA/),
+     &                  NN=SRCHDP,RESULTS=KDRESULTS)
+
+!
+!     FOR SIMPLE NEAREST NEIGHBOR INTERPOLATION
+!         ITC = 1
+!         IEK = KDRESULTS(ITC)%IDX  !LOCATION OF CLOSEST POINT
+!         ADC_PRESS(I) = PRESS_GFDL(IEK)
+!         ADC_U_WIND(I) = U_WIND_GFDL(IEK)
+!         ADC_V_WIND(I) = V_WIND_GFDL(IEK)
+
+!     FOR INVERSE WEIGHTED INTERPOLATION
+         !DETERMINE THE WEIGHTS
+         DO ITC = 1,SRCHDP
+            IEK = KDRESULTS(ITC)%IDX  !LOCATION OF ITC CLOSEST POINT
+            DIST = SQRT(KDRESULTS(ITC)%DIS) !DISTANCE FROM THIS POINT TO THE LOCATION OF THE NODE
+            IF (DIST > TOL) THEN  !CHECK TO SEE HOW FAR AWAY
+               IF (DIST <= MAXDIST) THEN
+                  WTS(ITC) = 1.D0/(DIST**IP)
+               ELSE  !POINT IS TOO FAR AWAY TO BE USED
+                  WTS(ITC) = -99999.D0
+               ENDIF   
+            ELSE  !POINT IS CLOSE ENOUGH TO USE AS DIRECT VALUE
+               WTS(ITC) = -1.0D0
+            ENDIF
+            LOCS(ITC) = IEK
+         ENDDO  !ITC
+
+         !COMPUTED THE INVERSE DISTANCE WEIGHTED AVERAGE         
+         UTMP = 0.D0
+         VTMP = 0.D0
+         PTMP = 0.D0
+         TTMP = 0.D0
+         ITC = 1;
+         DO WHILE (ITC <= SRCHDP)
+            ! IF POINT IS LOCATED AT AN ORIGINAL GFDL GRID THEN USE THAT VALUE ONLY
+            IF (WTS(ITC) == -1.D0) THEN
+               UTMP = U_WIND_GFDL(LOCS(ITC))
+               VTMP = V_WIND_GFDL(LOCS(ITC))
+               PTMP = PRESS_GFDL(LOCS(ITC))
+               TTMP = 1.0D0
+               ITC = SRCHDP + 20
+            ELSEIF (WTS(ITC) == -99999.D0 ) THEN  !THIS LOCATION IS TOO FAR AWAY TO USE
+               ITC = ITC + 1  
+            ELSE  !COMPUTE INVERSE WEIGHTED AVERAGING
+               UTMP = UTMP + U_WIND_GFDL(LOCS(ITC))*WTS(ITC)
+               VTMP = VTMP + V_WIND_GFDL(LOCS(ITC))*WTS(ITC)
+               PTMP = PTMP + PRESS_GFDL(LOCS(ITC))*WTS(ITC)  !SUM OF THE VALUES/WEIGHTS
+               TTMP = TTMP + WTS(ITC)     ! SUM OF THE WEIGHTS
+               ITC = ITC + 1
+            ENDIF
+         ENDDO  !ITC
+
+         !SET THE NODAL VALUES TO THE WEIGHTED AVERAGE
+         IF (TTMP.NE.0.D0) THEN
+            ADC_U_WIND(I) = UTMP/TTMP
+            ADC_V_WIND(I) = VTMP/TTMP
+            ADC_PRESS(I) = (PTMP/TTMP)*100.D0/(RHOWAT0*G)   !CONVERT MILLIBARS TO METERS OF WATER
+         ELSE  !NO POINT WAS CLOSE ENOUGH TO INTERPOLATE
+            ADC_U_WIND(I) = 0.D0
+            ADC_V_WIND(I) = 0.D0
+            ADC_PRESS(I) = PRBCKGRND*100.D0/(RHOWAT0*G)
+         ENDIF
+         
+      ENDDO !I LOOP OVER ADCIRC NODES
+
+! CLEAN UP MEMORY
+      DEALLOCATE(KDRESULTS)
+      DEALLOCATE(U_WIND_GFDL)
+      DEALLOCATE(V_WIND_GFDL)
+      DEALLOCATE(PRESS_GFDL)
+      DEALLOCATE(XY_GFDL)
+      DEALLOCATE(WTS)
+      DEALLOCATE(LOCS)
+
+       !cleans up the setMessageSource set at the beginning of the subroutine
+       call unsetMessageSource()
+
+       RETURN            
+       END SUBROUTINE GET_GFDL
+
+C********************************************************************
+
+C ---------------------------------------------------------------------
+C
+      subroutine nws16get(timeloc,wvnx,wvny,press)
+      use global, only : slam0,sfea0,x,y,np,
+     &        setMessageSource,unsetMessageSource,allMessage,
+     &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR,
+     &        WARNING,PRBCKGRND,RHOWAT0,G
+
+      implicit none
+      integer :: i,numFiles,currentCycle
+      logical :: cycleTimeFound
+      real(8), intent(in) :: timeloc   ! adcirc time, seconds since coldstart
+      real(sz), intent(out) :: wvnx(:)  ! wind u-velocity (m/s)
+      real(sz), intent(out) :: wvny(:)  ! wind v-velocity (m/s)
+      real(sz), intent(out) :: press(:)  !barometric pressure (mH20)
+
+
+      call setMessageSource("nws16get")
+
+      numFiles = GFDL_Files(1)%numFiles  !This is total number of files
+
+      !
+      ! locate the cycle that is relevant to current ADCIRC time
+      cycleTimeFound = .false.
+      do i=1,numFiles-1
+         if (( GFDL_Files(i)%cycleTime.le.timeloc).and.
+     &        (GFDL_Files(i+1)%cycleTime.gt.timeloc) ) then
+            cycleTimeFound = .true.
+            exit
+         endif
+      end do
+      currentCycle = i
+
+      if (cycleTimeFound.eqv. .false.) then
+         if ( timeloc.lt.GFDL_Files(1)%cycleTime ) then
+
+! ... tcm 20130801 v51.06.10 replaced error exiting with insertion of blank snaps
+            write(scratchMessage,'("The current ADCIRC time ",
+     &        E15.8," (days) is earlier than the first GFDL Met file time: ",
+     &        E15.8, " (days). Inserting a blank wind snap.")')
+     &        timeloc/86400.d0,GFDL_Files(1)%cycleTime/86400.d0
+            call logMessage(WARNING,scratchMessage)
+            currentCycle = 1
+         endif
+
+         if ( timeloc.gt.GFDL_Files(numFiles)%cycleTime ) then
+
+            write(scratchMessage,'("The current ADCIRC time ",
+     &        E15.8, " (days) is later than the last GFDL Met file time: ",
+     &        E15.8, " (days). Inserting a blank wind snap.")')
+     &         timeloc/86400.d0,GFDL_Files(numFiles)%cycleTime/86400.d0
+            call logMessage(WARNING,scratchMessage)
+            currentCycle = numFiles-1
+         endif
+
+      endif
+
+
+      if (cycleTimeFound.eqv. .true.) then
+         ! load up the data for this time interval
+
+         write(scratchMessage,'("At ADCIRC time: ",
+     &      E15.8," (days), ready to read next GFDL Met File with time: ",
+     &      E15.8," (days).")') timeloc/86400.d0,
+     &         GFDL_Files(currentCycle)%cycleTime/86400.d0
+
+         call logMessage(INFO,scratchMessage)
+
+         call GET_GFDL(NP,WVNX,WVNY,PRess,x,y,
+     &                GFDL_Files(currentCycle)%file_name,
+     &                SLAM0,SFEA0,
+     &                GFDL_Files(currentCycle)%max_extrap_dist)
+      else
+         WVNX(:) = 0.d0
+         WVNY(:) = 0.d0
+         PRess(:) = PRBCKGRND*100.D0/(RHOWAT0*G)  !SET TO BACKGROUND PRESSURE 1013.0D0 ADJUSTED for ADCIRC units
+      endif
+
+        !cleans up the setMessageSource set at the beginning of the subroutine
+        call unsetMessageSource()
+      
+        return
+        end subroutine nws16get
+C
+C ---------------------------------------------------------------------
 
 
 C***********************************************************************
