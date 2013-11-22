@@ -8768,9 +8768,9 @@ C
 #endif
 C
       if (G.LT.11.D0) then
-          iret = nf90_put_att(ncid, var_id, 'units', 'metric')
+          iret = nf90_put_att(ncid, var_id, 'units', metric)
       else
-          iret = nf90_put_att(ncid, var_id, 'units', 'english')
+          iret = nf90_put_att(ncid, var_id, 'units', english)
       endif
       CALL check_err(iret)
 
