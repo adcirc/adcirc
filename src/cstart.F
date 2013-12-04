@@ -222,14 +222,16 @@ C
          DO J=1,NVEL
             QNIN1(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22))
-     &           READ(20,*) QNIN1(J)
+     &          .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
+               READ(20,*) QNIN1(J)
+            ENDIF
          END DO
          DO J=1,NVEL
             QNIN2(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22))
-     &           READ(20,*) QNIN2(J)
+     &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
+               READ(20,*) QNIN2(J)
+            ENDIF
          END DO
          QTIME1 = STATIM*86400.D0
          QTIME2 = QTIME1 + FTIMINC

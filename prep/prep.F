@@ -1008,22 +1008,18 @@ C     jgf46.21 Added support for IBTYPE=52.
             IF (ABS(ITYPE/100).EQ.1) THEN
                ITYPE = (ABS(ITYPE)-100)*(ITYPE/ABS(ITYPE))
             END IF
-            IF ((ITYPE.EQ.2).OR.(ITYPE.EQ.12).OR.(ITYPE.EQ.22).OR.
-     &           (ITYPE.EQ.52)) THEN
+            ! jgf50.21: Added support for IBTYPE=32 and replaced
+            ! if/then statements with a select statement.
+            select case(ITYPE)
+            case(2,12,22,32,52)
               DISC = DISC + NVELLP(K)
-            ENDIF
-            IF ((ITYPE.EQ.3).OR.(ITYPE.EQ.13).OR.(ITYPE.EQ.23)) THEN
+            case(3,13,23)
               BBN = BBN + NVELLP(K)
-            ENDIF
-            IF ((ITYPE.EQ.4).OR.(ITYPE.EQ.24)) THEN
+            case(4,24)
               IBP = IBP + NVELLP(K)
-            ENDIF
-            IF ((ITYPE.NE.2).AND.(ITYPE.NE.12).AND.(ITYPE.NE.22).AND.
-     &           (ITYPE.NE.52).AND.
-     &           (ITYPE.NE.3).AND.(ITYPE.NE.13).AND.(ITYPE.NE.23).AND.
-     &           (ITYPE.NE.4).AND.(ITYPE.NE.24)) THEN
+            case default
                ITEMP = ITEMP + NVELLP(K)
-            ENDIF
+            end select
             I1 = 0
             DO I=1,NVELLP(K)
                IF ((ITYPE.EQ.1).OR.(ITYPE.EQ.11).OR.
@@ -1069,6 +1065,7 @@ C
                  ITYPE = (ABS(ITYPE)-100)*(ITYPE/ABS(ITYPE))
               END IF
               IF ((ITYPE.EQ.2).OR.(ITYPE.EQ.12)
+     &            .OR.(ITYPE.EQ.32)
      &            .OR.(ITYPE.EQ.22).OR.(ITYPE.EQ.52)) THEN
                 NFLUXFP(IPROC) = 1
               ENDIF

@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99.13 - 12/04/2013 - jgf - Fixed incorrect station coordinates
+C              in all station netcdf files, 2D and 3D, serial and parallel,
+C              where Cartesian coordinates were erroneously being written
+C              to station netcdf files, coordinates are now correctly 
+C              written in degrees latitude and longitude.
 C  v50.99.12 - 11/11/2013 - jgf - Fixed f90 compilation rule and arguments to 
 C              switch.pl (replacing -unix -f95 with swch) for compiling adcswan
 C              and padcswan targets.

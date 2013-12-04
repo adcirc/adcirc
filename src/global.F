@@ -219,7 +219,7 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(8), ALLOCATABLE, TARGET :: SFEV(:)! latitudes of current vel sta
 
       REAL(SZ),ALLOCATABLE ::   STAIV1(:),STAIV2(:),STAIV3(:)
-      REAL(8), ALLOCATABLE ::   XEC(:),YEC(:),SLEC(:),SFEC(:)
+      REAL(8), ALLOCATABLE, TARGET ::   XEC(:),YEC(:),SLEC(:),SFEC(:)
       REAL(SZ),ALLOCATABLE ::   STAIC1(:),STAIC2(:),STAIC3(:)
       REAL(8), ALLOCATABLE, TARGET :: XEM(:) ! x coords of met stations
       REAL(8), ALLOCATABLE, TARGET :: YEM(:) ! y coords of met stations

@@ -895,13 +895,13 @@ C......FILE IF IT IS REQUIRED
          DO J=1,NVEL
             QNIN1(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22))
+     &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32))
      &           READ(20,*) QNIN1(J)
          END DO
          DO J=1,NVEL
             QNIN2(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22))
+     &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32))
      &           READ(20,*) QNIN2(J)
          END DO
          DO IT=1,ITHS-1
@@ -911,7 +911,7 @@ C......FILE IF IT IS REQUIRED
                QTIME2=QTIME2+FTIMINC
                DO J=1,NVEL
                   IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &                 .OR.(LBCODEI(J).EQ.22)) THEN
+     &                 .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
                      QNIN1(J)=QNIN2(J)
                      READ(20,*) QNIN2(J)
                   ENDIF
@@ -927,7 +927,7 @@ C......FILE IF IT IS REQUIRED
             QTIME2=QTIME1+FTIMINC
             DO J=1,NVEL
                IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &              .OR.(LBCODEI(J).EQ.22)) THEN
+     &              .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
                   QNIN1(J)=QNIN2(J)
                   READ(20,*) QNIN2(J)
                ENDIF
@@ -956,13 +956,13 @@ C         END IF
          DO J=1,NVEL
             QNIN1(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22))
+     &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32))
      &           READ(20,*) QNIN1(J)
          END DO
          DO J=1,NVEL
             QNIN2(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &           .OR.(LBCODEI(J).EQ.22))
+     &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32))
      &           READ(20,*) QNIN2(J)
          END DO
          QTRATIO=(TIMEIT-QTIME1)/FTIMINC
@@ -974,7 +974,7 @@ C         END IF
             QTIME2=QTIME1+FTIMINC
             DO J=1,NVEL
                IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
-     &              .OR.(LBCODEI(J).EQ.22)) THEN
+     &              .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
                   QNIN1(J)=QNIN2(J)
                   READ(20,*) QNIN2(J)
                ENDIF

@@ -135,8 +135,13 @@ C         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
          ElevStaDescript % ConsiderWetDry       = .TRUE.
          ElevStaDescript % alternate_value      = -99999.0
          ElevStaDescript % field_name           = 'ElevSta'
-         ElevStaDescript % x_coord              => XEL ! use orig coord
-         ElevStaDescript % y_coord              => YEL
+         IF (ICS.eq.1) THEN
+            ElevStaDescript % x_coord              => XEL ! use orig coord
+            ElevStaDescript % y_coord              => YEL
+         ELSE
+            ElevStaDescript % x_coord              => SLEL ! radians
+            ElevStaDescript % y_coord              => SFEL
+         ENDIF
 
          ! fort.62
 C         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
@@ -157,8 +162,13 @@ C         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
          VelStaDescript % ConsiderWetDry       = .FALSE.
          VelStaDescript % alternate_value      = 0.0
          VelStaDescript % field_name           = 'VelSta'
-         VelStaDescript % x_coord              => XEV ! use orig coord
-         VelStaDescript % y_coord              => YEV
+         IF (ICS.eq.1) THEN
+            VelStaDescript % x_coord              => XEV ! use orig coord
+            VelStaDescript % y_coord              => YEV
+         ELSE
+            VelStaDescript % x_coord              => SLEV ! radians
+            VelStaDescript % y_coord              => SFEV
+         ENDIF
 
          ! fort.63
          ElevDescript % specifier            = NOUTGE
@@ -234,8 +244,13 @@ C         write(16,*) 'Allocating PrStaDescript' !jgfdebug48.03
          PrStaDescript % ConsiderWetDry       = .FALSE.
          PrStaDescript % alternate_value      = 0.0
          PrStaDescript % field_name           = 'PrSta'
-         PrStaDescript % x_coord           => XEM ! use orig coord
-         PrStaDescript % y_coord           => YEM ! use orig coord
+         IF (ICS.eq.1) THEN
+            PrStaDescript % x_coord           => XEM ! use orig coord
+            PrStaDescript % y_coord           => YEM ! use orig coord
+         ELSE
+            PrStaDescript % x_coord           => SLEM ! radians
+            PrStaDescript % y_coord           => SFEM 
+         ENDIF
 
          ! fort.72
 C         write(16,*) 'Allocating WindVelStaDescript' !jgfdebug48.03
@@ -256,8 +271,6 @@ C         write(16,*) 'Allocating WindVelStaDescript' !jgfdebug48.03
          WindVelStaDescript % ConsiderWetDry       = .FALSE.
          WindVelStaDescript % alternate_value      = 0.0
          WindVelStaDescript % field_name           = 'WindVelSta'
-         WindVelStaDescript % x_coord           => XEM ! use orig coord
-         WindVelStaDescript % y_coord           => YEM ! use orig coord
 
          ! fort.73
 C         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
@@ -275,6 +288,13 @@ C         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
          PrDescript % ConsiderWetDry       = .FALSE.
          PrDescript % alternate_value      = 0.0
          PrDescript % field_name           = 'Pr'
+         IF (ICS.eq.1) THEN
+            WindVelStaDescript % x_coord           => XEM ! use orig coord
+            WindVelStaDescript % y_coord           => YEM ! use orig coord
+         ELSE
+            WindVelStaDescript % x_coord           => SLEM ! use orig coord
+            WindVelStaDescript % y_coord           => SFEM ! use orig coord
+         ENDIF
 
          ! fort.74
 C         write(16,*) 'Allocating WindVelDescript' !jgfdebug48.03
@@ -375,8 +395,13 @@ C         write(16,*) 'Allocating IceStaDescript'
          IceStaDescript % ConsiderWetDry       = .FALSE.
          IceStaDescript % alternate_value      = 0.0
          IceStaDescript % field_name           = 'IceSta'
-         IceStaDescript % x_coord           => XEM ! use orig coord
-         IceStaDescript % y_coord           => YEM
+         IF (ICS.eq.1) THEN
+            IceStaDescript % x_coord           => XEM ! use orig coord
+            IceStaDescript % y_coord           => YEM
+         ELSE
+            IceStaDescript % x_coord           => SLEM ! radians
+            IceStaDescript % y_coord           => SFEM
+         ENDIF
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
          IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
@@ -421,6 +446,13 @@ C         write(16,*) 'Allocating ConcStaDescript' !jgfdebug48.03
          ConcStaDescript % ConsiderWetDry       = .FALSE.
          ConcStaDescript % alternate_value      = 0.0
          ConcStaDescript % field_name           = 'ConcSta'
+         IF (ICS.eq.1) THEN
+            ConcStaDescript % x_coord           => XEC ! use orig coord
+            ConcStaDescript % y_coord           => YEC
+         ELSE
+            ConcStaDescript % x_coord           => SLEC ! radians
+            ConcStaDescript % y_coord           => SFEC
+         ENDIF
 
          ! fort.83
 C         write(16,*) 'Allocating ConcDescript' !jgfdebug48.03
@@ -2189,8 +2221,13 @@ C
          SigTStaDescript % considerWetDry       = .FALSE.
          SigTStaDescript % alternate_value      = -99999.0
          SigTStaDescript % field_name           = 'SigmaTStations'
-         SigTStaDescript % x_coord           => XED  ! use orig coord
-         SigTStaDescript % y_coord           => YED  ! use orig coord
+         IF (ICS.eq.1) THEN
+            SigTStaDescript % x_coord           => XED  ! use orig coord
+            SigTStaDescript % y_coord           => YED  ! use orig coord
+         ELSE
+            SigTStaDescript % x_coord           => SLED  ! radians
+            SigTStaDescript % y_coord           => SFED           
+         ENDIF
 
          SalStaDescript % specifier            =  I3DSD
          SalStaDescript % initial_value        =  0.0
@@ -2203,8 +2240,13 @@ C
          SalStaDescript % considerWetDry       = .FALSE.
          SalStaDescript % alternate_value      = -99999.0
          SalStaDescript % field_name           = 'SalinityStations'
-         SalStaDescript % x_coord           => XED ! use orig coord
-         SalStaDescript % y_coord           => YED ! use orig coord
+         IF (ICS.eq.1) THEN
+            SalStaDescript % x_coord           => XED ! use orig coord
+            SalStaDescript % y_coord           => YED ! use orig coord
+         ELSE
+            SalStaDescript % x_coord           => SLED  ! radians
+            SalStaDescript % y_coord           => SFED           
+         ENDIF
 
          TempStaDescript % specifier            =  I3DSD
          TempStaDescript % initial_value        =  0.0
@@ -2217,8 +2259,13 @@ C
          TempStaDescript % considerWetDry       = .FALSE.
          TempStaDescript % alternate_value      = -99999.0
          TempStaDescript % field_name           = 'TemperatureStations'
-         TempStaDescript % x_coord           => XED ! use orig coord
-         TempStaDescript % y_coord           => YED
+         IF (ICS.eq.1) THEN
+            TempStaDescript % x_coord           => XED ! use orig coord
+            TempStaDescript % y_coord           => YED
+         ELSE
+            TempStaDescript % x_coord           => SLED ! radians
+            TempStaDescript % y_coord           => SFED
+         ENDIF
 
          RealQStaDescript % specifier            =  I3DSV
          RealQStaDescript % initial_value        =  0.0
@@ -2231,8 +2278,13 @@ C
          RealQStaDescript % considerWetDry       = .FALSE.
          RealQStaDescript % alternate_value      = -99999.0
          RealQStaDescript % field_name           = 'RealQStations'
-         RealQStaDescript % x_coord           => XE3DV ! use orig coord
-         RealQStaDescript % y_coord           => YE3DV
+         IF (ICS.eq.1) THEN
+            RealQStaDescript % x_coord           => XE3DV ! use orig coord
+            RealQStaDescript % y_coord           => YE3DV
+         ELSE
+            RealQStaDescript % x_coord           => SLE3DV ! use orig coord
+            RealQStaDescript % y_coord           => SFE3DV
+         ENDIF
 
          ImaginaryQStaDescript % specifier            =  I3DSV
          ImaginaryQStaDescript % initial_value        =  0.0
@@ -2245,8 +2297,13 @@ C
          ImaginaryQStaDescript % considerWetDry       = .FALSE.
          ImaginaryQStaDescript % alternate_value      = -99999.0
          ImaginaryQStaDescript % field_name      ='ImaginaryQStations'
-         ImaginaryQStaDescript % x_coord           => XE3DV ! use orig coord
-         ImaginaryQStaDescript % y_coord           => YE3DV
+         IF (ICS.eq.1) THEN
+            ImaginaryQStaDescript % x_coord           => XE3DV ! use orig coord
+            ImaginaryQStaDescript % y_coord           => YE3DV
+         ELSE
+            ImaginaryQStaDescript % x_coord           => SLE3DV ! radians
+            ImaginaryQStaDescript % y_coord           => SFE3DV
+         ENDIF
 
          WZStaDescript % specifier            =  I3DSV
          WZStaDescript % initial_value        =  0.0
@@ -2259,8 +2316,13 @@ C
          WZStaDescript % considerWetDry       = .FALSE.
          WZStaDescript % alternate_value      = -99999.0
          WZStaDescript % field_name           = 'WZStations'
-         WZStaDescript % x_coord           => XE3DV  ! use orig coord
-         WZStaDescript % y_coord           => YE3DV
+         IF (ICS.eq.1) THEN
+            WZStaDescript % x_coord           => XE3DV  ! use orig coord
+            WZStaDescript % y_coord           => YE3DV
+         ELSE
+            WZStaDescript % x_coord           => SLE3DV  ! radians
+            WZStaDescript % y_coord           => SFE3DV         
+         ENDIF
 
          Q20StaDescript % specifier            =  I3DST
          Q20StaDescript % initial_value        =  0.0
@@ -2273,8 +2335,13 @@ C
          Q20StaDescript % considerWetDry       = .FALSE.
          Q20StaDescript % alternate_value      = -99999.0
          Q20StaDescript % field_name           = 'q20Stations'
-         Q20StaDescript % x_coord           => XET  ! use orig coord
-         Q20StaDescript % y_coord           => YET  ! use orig coord
+         IF (ICS.eq.1) THEN
+            Q20StaDescript % x_coord           => XET  ! use orig coord
+            Q20StaDescript % y_coord           => YET  ! use orig coord
+         ELSE
+            Q20StaDescript % x_coord           => SLET  ! radians
+            Q20StaDescript % y_coord           => SFET  ! 
+         ENDIF
 
          LStaDescript % specifier        =  I3DST
          LStaDescript % initial_value        =  0.0
@@ -2287,8 +2354,13 @@ C
          LStaDescript % considerWetDry       = .FALSE.
          LStaDescript % alternate_value      = -99999.0
          LStaDescript % field_name           = 'LStations'
-         LStaDescript % x_coord           => XET  ! use orig coord
-         LStaDescript % y_coord           => YET
+         IF (ICS.eq.1) THEN
+            LStaDescript % x_coord           => XET  ! use orig coord
+            LStaDescript % y_coord           => YET
+         ELSE
+            LStaDescript % x_coord           => SLET  ! radians
+            LStaDescript % y_coord           => SFET
+         ENDIF
 
          EVStaDescript % specifier            =  I3DST
          EVStaDescript % initial_value        =  0.0
@@ -2301,8 +2373,13 @@ C
          EVStaDescript % considerWetDry       = .FALSE.
          EVStaDescript % alternate_value      = -99999.0
          EVStaDescript % field_name           = 'EVStations'
-         EVStaDescript % x_coord           => XET ! use orig coord
-         EVStaDescript % y_coord           => YET
+         IF (ICS.eq.1) THEN
+            EVStaDescript % x_coord           => XET ! use orig coord
+            EVStaDescript % y_coord           => YET
+         ELSE
+            EVStaDescript % x_coord           => SLET ! use orig coord
+            EVStaDescript % y_coord           => SFET
+         ENDIF
 
          QSurfKp1Descript % specifier            =  I3DGD
          QSurfKp1Descript % initial_value        =  0.0
