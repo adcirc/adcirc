@@ -163,52 +163,33 @@ C
             J = J+1
             LBCODE(J) = ITYPE
          ENDDO
-C
-C     jgf46.21 Added support for IBTYPE=52.
-         IF   ((ITYPE.NE.0).AND.(ITYPE.NE.10).AND.(ITYPE.NE.20)
-     &    .AND.(ITYPE.NE.1).AND.(ITYPE.NE.11).AND.(ITYPE.NE.21)
-     &    .AND.(ITYPE.NE.2).AND.(ITYPE.NE.12).AND.(ITYPE.NE.22)
-     &    .AND.(ITYPE.NE.52)
-     &    .AND.(ITYPE.NE.3).AND.(ITYPE.NE.13).AND.(ITYPE.NE.23)
-     &    .AND.(ITYPE.NE.4).AND.                  (ITYPE.NE.24)
-     &    .AND.(ITYPE.NE.5).AND.                  (ITYPE.NE.25)
-     &    .AND.                 (ITYPE.NE.30).AND.(ITYPE.NE.32)
-     &    .AND.                 (ITYPE.NE.40).AND.(ITYPE.NE.41)) THEN
-            print *, "IBTYPE not set correctly for segment ",K
+         !
+         ! jgf51.21: Cleaned up reading of boundary arrays by replacing
+         ! a complex set of if/thens with a simple select case.
+         select case(ITYPE)
+         case(0,10,20,30,40,1,11,21,41)
+            DO I=1,NVELL(K)
+               READ(14,*) NBVV(K,I)
+               IBCONNR(K,I) = 0
+            ENDDO
+         case(3,13,23)
+            DO I=1,NVELL(K)
+               READ(14,*) NBVV(K,I),BAR1(K,I),BAR2(K,I)
+               IBCONNR(K,I) = 0
+            ENDDO
+         case(4,24)
+            DO I=1,NVELL(K)
+               READ(14,*) NBVV(K,I),IBCONNR(K,I),
+     &                    BAR1(K,I),BAR2(K,I),BAR3(K,I)
+               !--Construct List of WEIR nodes and their duals
+               NWEIR = NWEIR+1
+               WEIR(NWEIR) = NBVV(K,I)
+               WEIRD(NWEIR) = IBCONNR(K,I)
+            ENDDO
+         case(5,25)
+            print *, 'ERROR: IBTYPE 5 and 25 not supported by adcprep.'
             stop
-         ENDIF
-C
-         IF ((ITYPE.NE.3).AND.(ITYPE.NE.13).AND.(ITYPE.NE.23).AND.
-     &     (ITYPE.NE.4).AND.(ITYPE.NE.24) .AND.
-     &     (ITYPE.NE.52).AND.
-     &     (ITYPE.NE.2).AND.(ITYPE.NE.12).AND.(ITYPE.NE.22)) THEN!jgf45.06
-           DO I=1,NVELL(K)
-              READ(14,*) NBVV(K,I)
-              IBCONNR(K,I) = 0
-           ENDDO
-         ENDIF
-C
-         IF ((ITYPE.EQ.3).OR.(ITYPE.EQ.13).OR.(ITYPE.EQ.23)) THEN
-           DO I=1,NVELL(K)
-              READ(14,*) NBVV(K,I),BAR1(K,I),BAR2(K,I)
-              IBCONNR(K,I) = 0
-           ENDDO
-         ENDIF
-C
-         IF ((ITYPE.EQ.4).OR.(ITYPE.EQ.24)) THEN
-           DO I=1,NVELL(K)
-              READ(14,*) NBVV(K,I),IBCONNR(K,I),
-     &                   BAR1(K,I),BAR2(K,I),BAR3(K,I)
-C
-C--Construct List of WEIR nodes and their duals
-C
-              NWEIR = NWEIR+1
-              WEIR(NWEIR) = NBVV(K,I)
-              WEIRD(NWEIR) = IBCONNR(K,I)
-           ENDDO
-         ENDIF
-         IF ((ITYPE.EQ.2).OR.(ITYPE.EQ.12).OR.(ITYPE.EQ.22).OR.
-     &        (ITYPE.EQ.52)) THEN !jgf45.06
+         case(2,12,22,32,52)
            DO I=1,NVELL(K)
               EXIST_FLUX = EXIST_FLUX + 1
               READ(14,*) NBVV(K,I)
@@ -219,8 +200,10 @@ C
               END IF
            ENDDO
            BndBCRiver=.FALSE.
-         ENDIF
-C
+         case default
+            print *, "IBTYPE not set correctly for segment ",K
+            stop
+         end select
       ENDDO
 
 C     jgf45.06 added the following section
@@ -264,9 +247,9 @@ c
                   DITYPE=(ABS(DITYPE)-100)*(DITYPE/ABS(DITYPE))
                END IF
             END IF
-C     jgf46.21 Ad
-            IF ((DITYPE.EQ.2).OR.(DITYPE.EQ.12).OR.(DITYPE.EQ.22).OR.
-     &           (DITYPE.EQ.52)) THEN
+            ! jgf50.21 Use select case and add IBTYPE 32.
+            select case(DITYPE)
+            case(2,12,22,32,52)
                DO I=1, DNVELL(K)
                   EXIST_FLUX = EXIST_FLUX + 1
                   READ(14,*) DNBVV(K,I)
@@ -280,11 +263,11 @@ C     jgf46.21 Ad
                      River_above_MSL=.TRUE.  ! kmd - Evan's changes for rivers above MSL
                   END IF
                ENDDO
-            ELSE
+            case default
                DO I=1, DNVELL(K)
                   READ(14,*) DNBVV(K,I)
                ENDDO
-            ENDIF
+            end select
             BC_Rivers = .FALSE.  ! kmd - reset logic for next river boundary segment
          ENDDO
          DEALLOCATE ( DNVELL,DNBVV,DIBTYPE )
@@ -341,7 +324,6 @@ C    ===================================================================
       INTEGER I,J,K,M
       INTEGER IG1,IG2,IG3,IL1,IL2,IL3
       REAL(8) X1, X2, X3, X4, Y1, Y2, Y3, Y4, A1, A2, A3
-      REAL(8) SL1Sta,SF1Sta
       REAL(8) AE, AEMIN, AREASK, AA
       INTEGER NBV(MNVEL)
       INTEGER ios  ! status of read operations, 0=success
@@ -1036,11 +1018,11 @@ C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
              ENDIF
 
 
-            SL1Sta=DEG2RAD*SLEL(I)
-            SF1Sta=DEG2RAD*SFEL(I)
+            SLEL(I)=DEG2RAD*SLEL(I)
+            SFEL(I)=DEG2RAD*SFEL(I)
 c           CALL CPP(XEL(I),YEL(I),SL1,SF1,SL0,SF0)
-            XEL(I) = R*(SL1Sta-SL0)*COS(SF0)
-            YEL(I) = R*SF1Sta
+            XEL(I) = R*(SLEL(I)-SL0)*COS(SF0)
+            YEL(I) = R*SFEL(I)
          ENDIF
       ENDDO
  9911            FORMAT(F12.3,2X,F12.3, 6X, A50)
@@ -1135,11 +1117,11 @@ C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
 
 
-           SL1Sta=DEG2RAD*SLEV(I)
-           SF1Sta=DEG2RAD*SFEV(I)
+           SLEV(I)=DEG2RAD*SLEV(I)
+           SFEV(I)=DEG2RAD*SFEV(I)
 C          CALL CPP(XEV(I),YEV(I),SL1,SF1,SL0,SF0)
-           XEV(I) = R*(SL1Sta-SL0)*COS(SF0)
-           YEV(I) = R*SF1Sta
+           XEV(I) = R*(SLEV(I)-SL0)*COS(SF0)
+           YEV(I) = R*SFEV(I)
         ENDDO
       ENDIF
 C
@@ -1179,11 +1161,11 @@ C
            ELSE
              READ(15,'(A132)') STACLOC(I)
              READ(STACLOC(I),*) SLEC(I),SFEC(I)
-             SL1Sta=DEG2RAD*SLEC(I)
-             SF1Sta=DEG2RAD*SFEC(I)
+             SLEC(I)=DEG2RAD*SLEC(I)
+             SFEC(I)=DEG2RAD*SFEC(I)
 c            CALL CPP(XEC(I),YEC(I),SL1,SF1,SL0,SF0)
-             XEC(I) = R*(SL1Sta-SL0)*COS(SF0)
-             YEC(I) = R*SF1Sta
+             XEC(I) = R*(SLEC(I)-SL0)*COS(SF0)
+             YEC(I) = R*SFEC(I)
            ENDIF
         ENDDO
 C
@@ -1270,11 +1252,11 @@ C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
 
-               SL1Sta=DEG2RAD*SLEM(I)
-               SF1Sta=DEG2RAD*SFEM(I)
+               SLEM(I)=DEG2RAD*SLEM(I)
+               SFEM(I)=DEG2RAD*SFEM(I)
 c     CALL CPP(XEM(I),YEM(I),SL1,SF1,SL0,SF0)
-               XEM(I) = R*(SL1Sta-SL0)*COS(SF0)
-               YEM(I) = R*SF1Sta
+               XEM(I) = R*(SLEM(I)-SL0)*COS(SF0)
+               YEM(I) = R*SFEM(I)
             ENDIF
          ENDDO
 
@@ -1504,7 +1486,6 @@ C---------------------------------------------------------------------
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
-      REAL(8) SL1Sta,SF1Sta
       INTEGER I,J,K,M,N                                        ! loop counters
       CHARACTER(50) LVAR(3)
       REAL(8) :: STATIME
@@ -1683,10 +1664,10 @@ C  kmd48.33bc changed to -2 and I3DSD not equal to 0
             ELSE
                SL3DD(I)=a2f(LVAR(1))
                SF3DD(I)=a2f(LVAR(2))
-               SL1Sta=DEG2RAD*SL3DD(I)
-               SF1Sta=DEG2RAD*SF3DD(I)
-               X3DD(I) = R*(SL1Sta-SL0)*COS(SF0)
-               Y3DD(I) = R*SF1Sta
+               SL3DD(I)=DEG2RAD*SL3DD(I)
+               SF3DD(I)=DEG2RAD*SF3DD(I)
+               X3DD(I) = R*(SL3DD(I)-SL0)*COS(SF0)
+               Y3DD(I) = R*SF3DD(I)
             ENDIF
          ENDDO
 C
@@ -1745,10 +1726,10 @@ C  kmd48.33 changed to -2
             ELSE
                SL3DV(I)=a2f(LVAR(1))
                SF3DV(I)=a2f(LVAR(2))
-               SL1Sta=DEG2RAD*SL3DV(I)
-               SF1Sta=DEG2RAD*SF3DV(I)
-               X3DV(I) = R*(SL1Sta-SL0)*COS(SF0)
-               Y3DV(I) = R*SF1Sta
+               SL3DV(I)=DEG2RAD*SL3DV(I)
+               SF3DV(I)=DEG2RAD*SF3DV(I)
+               X3DV(I) = R*(SL3DV(I)-SL0)*COS(SF0)
+               Y3DV(I) = R*SF3DV(I)
             ENDIF
          ENDDO
 C     jgf45.11 For each 3D velocity station, find the full-domain index of
@@ -1800,10 +1781,10 @@ C  kmd48.33 changed to -2
             ELSE
                SL3DT(I)=a2f(LVAR(1))
                SF3DT(I)=a2f(LVAR(2))
-               SL1Sta=DEG2RAD*SL3DT(I)
-               SF1Sta=DEG2RAD*SF3DT(I)
-               X3DT(I) = R*(SL1Sta-SL0)*COS(SF0)
-               Y3DT(I) = R*SF1Sta
+               SL3DT(I)=DEG2RAD*SL3DT(I)
+               SF3DT(I)=DEG2RAD*SF3DT(I)
+               X3DT(I) = R*(SL3DT(I)-SL0)*COS(SF0)
+               Y3DT(I) = R*SF3DT(I)
             ENDIF
          ENDDO
 

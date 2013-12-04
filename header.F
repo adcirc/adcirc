@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.21      - 12/04/2013 - jgf - Fixed incorrect station coordinates
+C                in all station netcdf files, 2D and 3D, serial and parallel,
+C                where Cartesian coordinates were erroneously being written
+C                to station netcdf files, coordinates are now correctly 
+C                written in degrees latitude and longitude.
 C  v51.20      - 11/19/2013 - tcm - Merging changes from the trunk into this
 C               branch ahead of re-integration.
 C    v51.06.10 - 08/01/2013 - tcm - Added insertion of blank wind/pressure
