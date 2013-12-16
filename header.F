@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.22    - 12/16/2013 - jgf - Added compiler flags for compiling padcswan
+C              on garnet at ERDC.
 C  v51.21      - 12/04/2013 - jgf - Fixed incorrect station coordinates
 C                in all station netcdf files, 2D and 3D, serial and parallel,
 C                where Cartesian coordinates were erroneously being written

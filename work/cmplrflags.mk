@@ -481,7 +481,7 @@ endif
 #
 # Cray-XE6 (e.g., Garnet at ERDC) using standard compilers, added by jgf50.29
 ifeq ($(compiler),garnet)
-  PPFC	        :=  pgf90
+  PPFC	        :=  ftn
   FC	        :=  ftn
   PFC	        :=  ftn
   CC		:=  pgcc
@@ -503,14 +503,15 @@ ifeq ($(compiler),garnet)
      CFLAGS	:=  $(INCDIRS) -DLINUX -g -O0
   endif
   IMODS		:=  -module
-  FLIBS  	:=
+  FLIBS         := 
 # jgf20110728: on Garnet, NETCDFHOME=/opt/cray/netcdf/4.1.1.0/netcdf-pgi
 # jgf20110815: on Garnet, HDF5HOME=/opt/cray/hdf5/default/hdf5-pgi
+# jgf20130815: on Garnet, load module cray-netcdf, with the path to the
+#              installation being /opt/cray/netcdf/4.3.0
   ifeq ($(NETCDF),enable)
-     NETCDFHOME=/opt/cray/netcdf/4.1.1.0/netcdf-pgi
-     HDF5HOME=/opt/cray/hdf5/1.8.5.0/hdf5-pgi
-     FLIBS          := $(FLIBS) -lnetcdff -L$(HDF5HOME)/lib -L$(NETCDFHOME) -lnetcdf -lhdf5_hl -lhdf5 -lhdf5_fortran -lz
+     FLIBS          := $(FLIBS) -lnetcdff
   endif
+  FLIBS  	:= $(FLIBS)
   MSGLIBS	:=
   BACKEND_EXEC  := metis_be adcprep_be
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
