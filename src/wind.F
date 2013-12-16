@@ -4239,7 +4239,7 @@ C
      &                     ADC_X,ADC_Y,FNAME,SLAM0,SFEA0,
      &                     MAX_INTERP_DIST)
        USE SIZES
-       USE GLOBAL, ONLY : DEG2RAD,PRBCKGRND,G,RHOWAT0,
+       USE GLOBAL, ONLY : DEG2RAD,PRBCKGRND,G,RHOWAT0, CPP,
      &        setMessageSource,unsetMessageSource,allMessage,
      &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR
        USE KDTREE2_MODULE     ! USED FOR FAST SEARCHING

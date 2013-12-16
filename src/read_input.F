@@ -6379,7 +6379,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE readStations(names, num_stations, nnv, xcoord, ycoord,
      &                        lat, lon, sta1, sta2, sta3,Description)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, SLAM0, SFEA0, ICS, parse,
+      USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, SLAM0, SFEA0, ICS, parse, CPP,
      &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)

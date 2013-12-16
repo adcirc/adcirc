@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.23    - 12/16/2013 - jgf - Moved CPP subroutine from adcirc module to
+C              global module, making it available to the get_gfdl subroutine 
+C              thereby fixing an issue with compilation of aswip.
 C  v51.22    - 12/16/2013 - jgf - Added compiler flags for compiling padcswan
 C              on garnet at ERDC.
 C  v51.21      - 12/04/2013 - jgf - Fixed incorrect station coordinates

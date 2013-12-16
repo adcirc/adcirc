@@ -786,24 +786,6 @@ C
       STOP
       END
 
-
-C******************************************************************************
-C                                                                             *
-C    Transform from lon,lat (lamda,phi) coordinates into CPP coordinates.     *
-C    Lon,Lat must be in radians.                                              *
-C                                                                             *
-C******************************************************************************
-
-      SUBROUTINE CPP(X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0)
-      IMPLICIT NONE
-      REAL*8 X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0,R
-      R=6378206.4d0
-      X=R*(RLAMBDA-RLAMBDA0)*COS(PHI0)
-      Y=PHI*R
-      RETURN
-      END
-
-
 C******************************************************************************
 C                                                                             *
 C    Transform from CPP coordinates to lon,lat (lamda,phi) coordinates        *
