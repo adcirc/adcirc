@@ -235,7 +235,6 @@ C...
 C...Default beginning and ending time steps
 
       ITIME_BGN = ITHS+1
-      IF(dtChanged)ITIME_BGN=ITHS2+1
       ITIME_END = NT  !NT is set in read_input.F
 
 C...Determine the number of active elements (MJU), the total number of

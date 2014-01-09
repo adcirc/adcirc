@@ -664,7 +664,6 @@ C     ---------------------------------------------
       ! run (i.e, in the fort.15 file) ... if so, this affects any 
       ! calculation of time in seconds since cold start, and any 
       ! feature that counts time steps since cold start
-      dtChanged = .FALSE.
       DTDPHS=TimeLoc/ITHS  ! Set up time step information for hotstart file.
       dtChange = DTDPHS - DTDP
       ! we don't use .ne. for dtChange b/c of the limitations in machine precision
@@ -675,18 +674,13 @@ C     ---------------------------------------------
          CHOTHS=.TRUE.
          IF (DTDPHS.NE.DTDP) THEN
             ! must recalculate the ending time step number
-            dtChanged = .TRUE.
             RNDAYHS=TimeLoc/86400.d0
             NTHS=INT((RNDAY-RNDAYHS)*(86400.d0/DTDP)+0.5d0)
-            ITHS2 = INT((ITHS*(DTDPHS/DTDP))+0.5d0) !...Cobell - calculate new iteration number
-            NT=ITHS2+NTHS
+            NT=ITHS+NTHS
             call logMessage(INFO,"The time step size is different "//
      &        "from the time step size listed in the hotstart file. "//
      &        "The total number of time steps in this "//
      &        "run has been recalculated accordingly.")
-            WRITE(scratchMessage,
-     &          '("The starting time step number is now",I9,".")')ITHS2
-            call logMessage(INFO,scratchMessage)
             WRITE(scratchMessage,
      &          '("The ending time step number is now",I9,".")') NT
             call logMessage(INFO,scratchMessage)
