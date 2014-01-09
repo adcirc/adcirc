@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.24    - 01/09/2014 - zc - When the time step changed after a hot
+C              start, the new iteration number was not being calculated. ITHS2
+C              contains the updated iteration count and is passed to
+C              ITIME_BGN before calling TIMESTEP for the first time.
 C  v51.23    - 12/16/2013 - jgf - Moved CPP subroutine from adcirc module to
 C              global module, making it available to the get_gfdl subroutine 
 C              thereby fixing an issue with compilation of aswip.

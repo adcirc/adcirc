@@ -441,7 +441,7 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  IHOTSTP, ILUMP, IMHS, IPSTP
       INTEGER  IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN, ISLDIA
       INTEGER  ITIME, ITEMPSTP, ITEST
-      INTEGER  ITHS, ITITER, ITMAX, IVSTP, IWSTP, IWTIME, IWTIMEP
+      INTEGER  ITHS, ITHS2, ITITER, ITMAX, IVSTP, IWSTP, IWTIME, IWTIMEP
       INTEGER  IWYR, J12, J13, J21, J23, J31, J32
       INTEGER  JJ, KEMAX, KVMAX, LRC, LUMPT
       INTEGER  MBW, MDF, NBDJ, NBNCTOT, NBW
@@ -522,6 +522,7 @@ C    kmd48.33bc - added variables for 3D boundary conditions
       REAL(8)  REFSEC   ! required to run in either 32-bit or 64-bit
 
       LOGICAL :: useNetCDF = .false.
+      LOGICAL :: dtChanged
 ! CF Start addition for NETCDF I/O 6/21/06
 !     -----------------
 !     Attribute general
@@ -679,7 +680,7 @@ C******************************************************************************
       X=R*(RLAMBDA-RLAMBDA0)*COS(PHI0)
       Y=PHI*R
       RETURN
-      END
+      END SUBROUTINE CPP
 
 C--------------------------------------------------------------------
 C     S U B R O U T I N E    I N I T   L O G G I N G
