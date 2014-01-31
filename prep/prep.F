@@ -2196,6 +2196,10 @@ C     the ADCIRC grid created by the routine DECOMP.
 C
 C     - added as part of Evan's changes for rivers above MSL.
 C
+C     TCM v50.99.14 -- Added the decomposition for a max of 256 subdomains
+C     at a time ... some platforms/compilers limit the number of files that
+C     can be open at any one time.
+C
 C---------------------------------------------------------------------------
 
       SUBROUTINE PREP88()
@@ -2210,29 +2214,57 @@ C
       INTEGER :: NODP
       CHARACTER*80 :: et_tempsWSE
       CHARACTER*80,ALLOCATABLE :: et_SWSE(:)
+      INTEGER, PARAMETER :: maxOpenFiles = 256
+      INTEGER startProc
+      INTEGER endProc
+      INTEGER deltaProc
 C
-      CALL OpenPrepFiles(88, '  river elevation data  ',
-     &     1, nproc, SDU, Success)
-      IF (.not.Success) THEN
-         WRITE(*,*) 'WARNING: Unit 88 files not preprocessed.'
-         RETURN ! note early return
-      ENDIF
+C     Perform decomposition over range of subdomains.
+      startProc = 1
+      DO WHILE ( startProc .lt. nproc )
+         deltaProc = nproc - startProc
+         IF ( deltaProc .gt. maxOpenFiles ) deltaProc = maxOpenFiles
+         endProc = startProc + deltaProc
 
-      ALLOCATE(et_SWSE(NNODG))
-      DO I=1, NNODG
+C        Open full domain and subdomain fort.88 files.      
+         CALL OpenPrepFiles(88, '  river elevation data  ',
+     &     startProc, endProc, SDU, Success)
+     
+         IF (.not.Success) THEN
+            WRITE(*,*) 'WARNING: Unit 88 files not preprocessed.'
+            RETURN ! note early return
+         ENDIF
+
+         ALLOCATE(et_SWSE(NNODG))
+         DO I=1, NNODG
             READ(88,80,END=9999) et_SWSE(I)
-      END DO
+         END DO
 
-      DO IPROC=1,NPROC
+         DO IPROC=startProc,endProc
             DO I=1, NNODP(IPROC)
-                  NODP=IMAP_NOD_LG(I,IPROC)
-                  et_tempsWSE=et_SWSE(NODP)
-                  WRITE(SDU(IPROC),80) et_tempsWSE
+               NODP=IMAP_NOD_LG(I,IPROC)
+               et_tempsWSE=et_SWSE(NODP)
+               WRITE(SDU(IPROC),80) et_tempsWSE
             END DO
-      END DO
+         END DO
+
+C        Close full domain and subdomain files
+         CLOSE (88)
+         DO iproc=startProc, endProc
+            CLOSE(sdu(iproc))
+         ENDDO
+         startProc = endProc + 1
+         
+         DEALLOCATE(et_SWSE)         
+         
+         WRITE(6,'(A25,A80)') '     Finished processing ',
+     &    'river elevation data'
+	 WRITE(6,*) 'for processor range ',startProc,' to ',endProc
+
+      END DO  !Loop over Procs
  80   FORMAT(A80)
 9999  CLOSE(88)
-      END
+      END SUBROUTINE PREP88
 C  End SUBROUTINE PREP88
 
 

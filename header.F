@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99.14 - 01/31/2014 - tcm - Fixed bug in processing fort.88 file in 
+C              prep.F by using a maximum of 256 subdomains open at a time.
 C  v50.99.13 - 12/04/2013 - jgf - Fixed incorrect station coordinates
 C              in all station netcdf files, 2D and 3D, serial and parallel,
 C              where Cartesian coordinates were erroneously being written
