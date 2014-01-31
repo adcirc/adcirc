@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v51.24    - 01/31/2014 - tcm - Fixed bug in processing fort.88 file in 
+C              prep.F by using a maximum of 256 subdomains open at a time.
 C  v51.23    - 12/16/2013 - jgf - Moved CPP subroutine from adcirc module to
 C              global module, making it available to the get_gfdl subroutine 
 C              thereby fixing an issue with compilation of aswip.
