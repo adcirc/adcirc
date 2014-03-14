@@ -79,6 +79,16 @@ C
                                ! interior boundaries of length 2 in parallel jobs
       LOGICAL :: calcTheta    ! .true. if theta is to be calculated at a flux boundary node
 
+
+      !tcm v51.20.04 Additions for External Station Location File
+      INTEGER :: IOS_STATIONS = 0
+      INTEGER :: STAT_LUN = 15  !station unit number fort.15 file be default
+      INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2      
+      LOGICAL :: USE_ELEV_STAT_FILE = .false.    !.true. only if an elevation station file exists
+      LOGICAL :: USE_VEL_STAT_FILE = .false.     !.true. only if a velocity station file exists
+      LOGICAL :: USE_CONC_STAT_FILE = .false.    !.true. only if a concentration station file exists
+      LOGICAL :: USE_MET_STAT_FILE = .false.     !.true. only  if a met station file exists
+
 !   tcm v50.66.02 -- added timebathycontrol namelist related variables
       INTEGER :: ios_nddt
       logical :: found_tbc_nml = .false.   !flag to determine if the timebathycontrol namelist was present
@@ -4367,12 +4377,45 @@ C......WRITE TOUTSE,TOUTFE,NTCYSE,NTCYFE,NSPOOLE TO UNIT 16
 C....REGARDLESS OF WHETHER NOUTE=0, READ IN THE NUMBER OF ELEVATION
 C....RECORDING STATIONS
 
-
+C.... tcm v51.20.04 - additions for external specification of 
+C       elevation station locations
       READ(15,*) NSTAE
-      WRITE(16,3007) NSTAE
+      STAT_LUN = 15
+      IF (NSTAE < 0) THEN
+         USE_ELEV_STAT_FILE = .TRUE.
+         IOS_STATIONS = 0
+         STAT_LUN = 151
+         NSTAE = ABS(NSTAE) !SET TO POSITIVE
+         WRITE(16,*) '    ELEVATION RECORDING STATIONS WILL BE READ FROM',
+     &               ' AN EXTERNAL FILE.'
+         NSTAE2 = 0
+         OPEN(unit=stat_lun,file=TRIM(INPUTDIR)//'/'//'elev_stat.151',
+     &        status='old',err=7690,iostat=ios_stations)
+         READ(151,*) NSTAE2
+         IF (ABS(NSTAE2).NE. ABS(NSTAE)) THEN
+            NSTAE = ABS(NSTAE2)  !RESET THE VALUE TO WHAT'S IN THE FILE
+         ENDIF
+         WRITE(16,3007) NSTAE
+7690     IF (IOS_STATIONS .NE. 0) THEN
+            WRITE(16,*) "ERROR IN READING ELEVATION STATION FILE: elev_stat.151"
+            WRITE(16,*) " Stopping Execution"
+            call allMessage(ERROR,"Problem Reading Elevation Station File.")
+            call ADCIRC_Terminate()
+#ifdef CMPI
+            call msg_fini()
+#endif
+            stop  ! there is a stop here
+         ENDIF                  
+      ELSE         
+         WRITE(16,3007) NSTAE
+         IF (NSTAE.NE.0) THEN
+            WRITE(16,*) "ELEVATION STATION LOCATIONS WILL BE READ FROM FORT.15"
+         ENDIF
+      ENDIF
  3007 FORMAT(///,5X,'NUMBER OF INPUT ELEVATION RECORDING STATIONS = ',
      &              I5)
-
+C
+C
       IF(NSTAE.GT.0) THEN
          IF(ICS.EQ.1) WRITE(16,3008)
  3008     FORMAT(/,7X,'STATION #   ELEMENT',9X,'X',13X,'Y',/)
@@ -4385,14 +4428,15 @@ C....RECORDING STATIONS
 
 C  Allocate arrays dimensioned by MNSTAE
       call alloc_main7()
-
-
+C
 C....INPUT COORDINATES OF ELEVATION RECORDING STATIONS THEN COMPUTE
 C....THE ELEMENT NO. THE STATION LIES IN
       ALLOCATE(STATNAME(MNSTAE))
       CALL readStations(STATNAME, NSTAE, NNE, XEL, YEL, SLEL, SFEL,
-     &                  STAIE1, STAIE2, STAIE3,
+     &                  STAIE1, STAIE2, STAIE3,STAT_LUN,
      &                  'ELEVATION RECORDING STATION   ')
+      !tcm v51.20.04 addition for external station file
+      IF ((USE_ELEV_STAT_FILE).AND.(STAT_LUN ==151)) CLOSE(STAT_LUN)
  9911 FORMAT(F12.3,2X,F12.3, 6X, A50)
  9111 FORMAT(F8.3,2X,F8.3, 6X, A50)
 C...
@@ -4473,7 +4517,38 @@ C....REGARDLESS OF WHETHER NOUTV=0, READ IN THE NUMBER OF VELOCITY
 C....RECORDING STATIONS
 
       READ(15,*) NSTAV
-      WRITE(16,3107) NSTAV
+      STAT_LUN = 15
+      IF (NSTAV < 0) THEN
+         USE_VEL_STAT_FILE = .TRUE.
+         ios_stations = 0
+         stat_lun = 151
+         NSTAV = ABS(NSTAV) !SET TO POSITIVE
+         WRITE(16,*) '   VELOCITY RECORDING STATIONS WILL BE READ FROM',
+     &               ' AN EXTERNAL FILE.'
+         NSTAV2 = 0
+         OPEN(unit=stat_lun,file=TRIM(INPUTDIR)//'/'//'vel_stat.151',
+     &        status='old', err=7691,iostat=ios_stations)
+         READ(151,*) NSTAV2
+         IF (ABS(NSTAV2).NE. ABS(NSTAV)) THEN
+            NSTAV = ABS(NSTAV2)  !RESET THE VALUE TO WHAT'S IN THE FILE
+         ENDIF
+         WRITE(16,3107) NSTAV
+7691     IF (IOS_STATIONS .NE. 0) THEN
+            WRITE(16,*) "ERROR IN READING VELOCITY STATION FILE: vel_stat.151"
+            WRITE(16,*) " STOPPING EXECUTION"
+            call allMessage(ERROR,"Problem Reading Velocity Station File.")
+            call ADCIRC_Terminate()
+#ifdef CMPI
+            call msg_fini()
+#endif
+            stop  ! there is a stop here
+         ENDIF                  
+      ELSE         
+         WRITE(16,3107) NSTAV
+         IF (NSTAV.NE.0) THEN
+            WRITE(16,*) "VELOCITY STATION LOCATIONS WILL BE READ FROM FORT.15"
+         ENDIF
+      ENDIF
  3107 FORMAT(////,5X,'NUMBER OF INPUT VELOCITY RECORDING STATIONS = ',
      &            I5)
 
@@ -4494,8 +4569,12 @@ C....INPUT COORDINATES OF VELOCITY RECORDING STATIONS
 C....THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
       ALLOCATE(STATNAMEV(MNSTAV))
       CALL readStations(STATNAMEV, NSTAV, NNV, XEV, YEV, SLEV, SFEV,
-     &                  STAIV1, STAIV2, STAIV3,
+     &                  STAIV1, STAIV2, STAIV3,STAT_LUN,
      &                 'VELOCITY RECORDING STATION    ' )
+      !tcm v51.20.04 addition for external station file
+      IF ((USE_VEL_STAT_FILE).AND.(STAT_LUN ==151)) CLOSE(STAT_LUN)
+
+C...
 C...
 C...  IF TRANSPORT IS INCLUDED IN THE RUN, INPUT INFORMATION FOR CONCENTRATION
 C...  RECORDING STATIONS
@@ -4581,7 +4660,38 @@ C...  REGARDLESS OF WHETHER NOUTC=0, READ IN THE NUMBER OF CONCENTRATION
 C...  RECORDING STATIONS
 
          READ(15,*) NSTAC
-         WRITE(16,3207) NSTAC
+         STAT_LUN = 15
+         IF (NSTAC < 0) THEN
+            USE_CONC_STAT_FILE = .TRUE.
+            IOS_STATIONS = 0
+            STAT_LUN = 151
+            NSTAC = ABS(NSTAC) !SET TO POSITIVE
+            WRITE(16,*) 'CONCENTRATION RECORDING STATIONS WILL BE READ FROM',
+     &               ' AN EXTERNAL FILE.'
+            NSTAC2 = 0
+            OPEN(unit=stat_lun,file=TRIM(INPUTDIR)//'/'//'conc_stat.151',
+     &           status='old',err=7692,iostat=ios_stations)
+            READ(151,*) NSTAC2
+            IF (ABS(NSTAC2).NE. ABS(NSTAC)) THEN
+               NSTAC = ABS(NSTAC2)  !RESET THE VALUE TO WHAT'S IN THE FILE
+            ENDIF
+            WRITE(16,3207) NSTAC
+7692        IF (IOS_STATIONS .NE. 0) THEN
+               WRITE(16,*) "ERROR IN READING CONCENTRATION STATION FILE: conc_stat.151"
+               WRITE(16,*) " Stopping Execution"
+               call allMessage(ERROR,"Problem Reading Concentration Station File.")
+               call ADCIRC_Terminate()
+#ifdef CMPI
+               call msg_fini()
+#endif
+               stop  ! there is a stop here
+            ENDIF                  
+         ELSE         
+            WRITE(16,3207) NSTAC
+            IF (NSTAC.NE.0) THEN
+               WRITE(16,*) "CONC. STATION LOCATIONS WILL BE READ FROM FORT.15"
+            ENDIF
+         ENDIF
  3207    FORMAT(///,5X,'NUMBER OF INPUT CONCENTRATION RECORDING ',
      &        'STATIONS = ',I5)
 
@@ -4603,8 +4713,10 @@ C...  INPUT COORDINATES OF CONCENTRATION RECORDING STATIONS
 C...  THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
          ALLOCATE(STATNAMEC(NSTAC))
          CALL readStations(STATNAMEC, NSTAC, NNC, XEC, YEC, SLEC, SFEC,
-     &                  STAIC1, STAIC2, STAIC3,
+     &                  STAIC1, STAIC2, STAIC3,STAT_LUN,
      &                  'CONCENTRATION REC. STATION    ')
+         !tcm v51.20.04 addition for external station file
+         IF ((USE_CONC_STAT_FILE).AND.(STAT_LUN ==151)) CLOSE(STAT_LUN)
       ENDIF
 
 C...  IF METEOROLOICAL FORCING IS INCLUDED IN THE RUN, INPUT
@@ -4697,7 +4809,38 @@ C...  REGARDLESS OF WHETHER NOUTM=0, READ IN THE NUMBER OF METEOROLOGICAL
 C...  RECORDING STATIONS
 
          READ(15,*) NSTAM
-         WRITE(16,3217) NSTAM
+         STAT_LUN = 15
+         IF (NSTAM < 0) THEN
+            USE_MET_STAT_FILE = .TRUE.
+            IOS_STATIONS = 0
+            STAT_LUN = 151
+            NSTAM = ABS(NSTAM) !SET TO POSITIVE
+            WRITE(16,*) 'MET RECORDING STATIONS WILL BE READ FROM',
+     &               ' AN EXTERNAL FILE.'
+            NSTAM2 = 0
+            OPEN(unit=stat_lun,file=TRIM(INPUTDIR)//'/'//'met_stat.151',
+     &       status='old',err=7693,iostat=ios_stations)
+            READ(151,*) NSTAM2
+            IF (ABS(NSTAM2).NE. ABS(NSTAM)) THEN
+               NSTAM = ABS(NSTAM2)  !RESET THE VALUE TO WHAT'S IN THE FILE
+            ENDIF
+            WRITE(16,3217) NSTAM
+7693        IF (IOS_STATIONS .NE. 0) THEN
+               WRITE(16,*) "ERROR IN READING MET STATION FILE: elev_stat.151"
+               WRITE(16,*) " Stopping Execution"
+               call allMessage(ERROR,"Problem Reading Met Station File.")
+               call ADCIRC_Terminate()
+#ifdef CMPI
+               call msg_fini()
+#endif
+               stop  ! there is a stop here
+            ENDIF                  
+         ELSE         
+            WRITE(16,3217) NSTAM
+            IF (NSTAM.NE.0) THEN
+               WRITE(16,*) "MET STATION LOCATIONS WILL BE READ FROM FORT.15"
+            ENDIF
+         ENDIF
  3217    FORMAT(///,5X,'NUMBER OF INPUT METEOROLOGICAL RECORDING ',
      &        'STATIONS = ',I5)
 
@@ -4718,10 +4861,11 @@ C...  INPUT COORDINATES OF METEOROLOGICAL RECORDING STATIONS
 C...  THEN COMPUTE ELEMENT NO. WITHIN WHICH STATION LIES
          ALLOCATE(STATNAMEM(MNSTAM))
          CALL readStations(STATNAMEM, NSTAM, NNM, XEM, YEM, SLEM, SFEM,
-     &                     STAIM1, STAIM2, STAIM3,
+     &                     STAIM1, STAIM2, STAIM3,STAT_LUN,
      &                      'METEOROLOGICAL REC. STATION   ')
+         !tcm v51.20.04 addition for external station file
+         IF ((USE_MET_STAT_FILE).AND.(STAT_LUN ==151)) CLOSE(STAT_LUN)
       ENDIF
-
 
 C...
 C...  INPUT INFORMATION ABOUT GLOBAL ELEVATION DATA OUTPUT
@@ -5331,6 +5475,10 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
       IF(IM.EQ.1) WRITE(16,4102)
       IF(IM.EQ.2) WRITE(16,4103)
       WRITE(16,4105)
+      IF(USE_ELEV_STAT_FILE) WRITE(16,3180)  !tcm v51.20.05
+      IF(USE_VEL_STAT_FILE) WRITE(16,3181)   !tcm v51.20.05 
+      IF(USE_MET_STAT_FILE) WRITE(16,3182)   !tcm v51.20.05 
+      IF(USE_CONC_STAT_FILE) WRITE(16,3183)  !tcm v51.20.05 
       WRITE(16,4108)
 C
 C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
@@ -5373,6 +5521,10 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
  4102 FORMAT(' *   the model will be set up for a 3D-VS run,       *')
  4103 FORMAT(' *   the model will be set up for a 3D-DSS run,      *')
  4105 FORMAT(' *   and an iterative solver will be used            *')
+ 3180 FORMAT(' *   An external elevation station file is used      *')  !tcm v51.20.05
+ 3181 FORMAT(' *   An external velocity station file is used       *')  !tcm v51.20.05
+ 3182 FORMAT(' *   An external met. station file is used           *')  !tcm v51.20.05
+ 3183 FORMAT(' *   An external concentration station file is used  *')  !tcm v51.20.05
  4108 FORMAT(' *****************************************************',/)
 C
 
@@ -5800,7 +5952,7 @@ C.... Input the coordinates of the density output stations
 C.... and then compute the element # containing each station
       IF(NSta3DD.GT.0) THEN
          CALL readStations(STATNAMED, NSta3DD, NE3DD, XED, YED,
-     &         SLED, SFED, StaI3DD1, StaI3DD2, StaI3DD3,
+     &         SLED, SFED, StaI3DD1, StaI3DD2, StaI3DD3,15,
      &                      '3D DENSITY RECORDING STATION  ')
       ENDIF
 C
@@ -5845,7 +5997,7 @@ C....Input the coordinates of the velocity output stations
 C....and then compute the element # containing each station
       IF(NSta3DV.GT.0) THEN
          CALL readStations(STATNAMEV3D, NSta3DV, NE3DV, XE3DV, YE3DV,
-     &         SLE3DV, SFE3DV, StaI3DV1, StaI3DV2, StaI3DV3,
+     &         SLE3DV, SFE3DV, StaI3DV1, StaI3DV2, StaI3DV3,15,
      &                      '3D VELOCITY RECORDING STATION ')
       ENDIF
 C
@@ -5888,7 +6040,7 @@ C....Input the coordinates of the turbulence output stations
 C....and then compute the element # containing each station
       IF(NSta3DT.GT.0) THEN
          CALL readStations(STATNAMET, NSta3DT, NE3DT, XET, YET,
-     &         SLET, SFET, StaI3DT1, StaI3DT2, StaI3DT3,
+     &         SLET, SFET, StaI3DT1, StaI3DT2, StaI3DT3,15,
      &                      '3D TURBULENCE REC. STATION    ')
       ENDIF
 C
@@ -6375,15 +6527,19 @@ C     determine the element that the station falls in, and compute
 C     interpolating factors.
 C     tcm v49.48.01 -- added the description variable for correct
 C     referencing of the type of station.
+C     tcm v51.20.04 -- added stat_lun to specify the unit number
+C     to read the station information from.  The default stat_lun = 15
+C     but for external files it is stat_lun = 151.
 C-----------------------------------------------------------------------
       SUBROUTINE readStations(names, num_stations, nnv, xcoord, ycoord,
-     &                        lat, lon, sta1, sta2, sta3,Description)
+     &                        lat, lon, sta1, sta2, sta3, stat_lun,
+     &                        Description)
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : DEG2RAD, RAD2DEG, SLAM0, SFEA0, ICS, parse, CPP,
      &   a2f, DEBUG, allMessage, setMessageSource, unsetMessageSource
       IMPLICIT NONE
       CHARACTER(50) :: names(num_stations)
-      INTEGER num_stations
+      INTEGER num_stations, stat_lun
       INTEGER, dimension(num_stations) :: nnv
       REAL(SZ), dimension(num_stations) :: xcoord
       REAL(SZ), dimension(num_stations) :: ycoord
@@ -6404,7 +6560,7 @@ C
 C
       DO I=1,num_stations
          NNV(I)=0
-         READ(15,'(A132)') STATLINE
+         READ(stat_lun,'(A132)') STATLINE
          call parse(STATLINE, LVAR)
          names(I)=LVAR(3)
          IF(ICS.EQ.1) THEN

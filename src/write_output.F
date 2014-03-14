@@ -137,8 +137,8 @@ C         write(16,*) 'Allocating ElevStaDescript' !jgfdebug48.03
          ElevStaDescript % alternate_value      = -99999.0
          ElevStaDescript % field_name           = 'ElevSta'
          IF (ICS.eq.1) THEN
-            ElevStaDescript % x_coord              => XEL ! use orig coord
-            ElevStaDescript % y_coord              => YEL
+         ElevStaDescript % x_coord              => XEL ! use orig coord
+         ElevStaDescript % y_coord              => YEL
          ELSE
             ElevStaDescript % x_coord              => SLEL ! radians
             ElevStaDescript % y_coord              => SFEL
@@ -164,8 +164,8 @@ C         write(16,*) 'Allocating VelStaDescript' !jgfdebug48.03
          VelStaDescript % alternate_value      = 0.0
          VelStaDescript % field_name           = 'VelSta'
          IF (ICS.eq.1) THEN
-            VelStaDescript % x_coord              => XEV ! use orig coord
-            VelStaDescript % y_coord              => YEV
+         VelStaDescript % x_coord              => XEV ! use orig coord
+         VelStaDescript % y_coord              => YEV
          ELSE
             VelStaDescript % x_coord              => SLEV ! radians
             VelStaDescript % y_coord              => SFEV
@@ -246,8 +246,8 @@ C         write(16,*) 'Allocating PrStaDescript' !jgfdebug48.03
          PrStaDescript % alternate_value      = 0.0
          PrStaDescript % field_name           = 'PrSta'
          IF (ICS.eq.1) THEN
-            PrStaDescript % x_coord           => XEM ! use orig coord
-            PrStaDescript % y_coord           => YEM ! use orig coord
+         PrStaDescript % x_coord           => XEM ! use orig coord
+         PrStaDescript % y_coord           => YEM ! use orig coord
          ELSE
             PrStaDescript % x_coord           => SLEM ! radians
             PrStaDescript % y_coord           => SFEM 
@@ -397,8 +397,8 @@ C         write(16,*) 'Allocating IceStaDescript'
          IceStaDescript % alternate_value      = 0.0
          IceStaDescript % field_name           = 'IceSta'
          IF (ICS.eq.1) THEN
-            IceStaDescript % x_coord           => XEM ! use orig coord
-            IceStaDescript % y_coord           => YEM
+         IceStaDescript % x_coord           => XEM ! use orig coord
+         IceStaDescript % y_coord           => YEM
          ELSE
             IceStaDescript % x_coord           => SLEM ! radians
             IceStaDescript % y_coord           => SFEM
@@ -475,17 +475,20 @@ C         write(16,*) 'Allocating ConcDescript' !jgfdebug48.03
 C        maxele.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(ETAMAX_g(NP_G))
+            ALLOCATE (ETAMAX_Time_G(NP_G))
          ENDIF
          EtaMaxDescript % specifier            = NOUTGE
          EtaMaxDescript % initial_value        = 0.0
-         EtaMaxDescript % num_items_per_record = 1
+         EtaMaxDescript % num_items_per_record = 2   !overloading this value to account for time stamps along with values
          EtaMaxDescript % num_fd_records       = NP_G
          EtaMaxDescript % num_records_this     = NP
          EtaMaxDescript % imap                 => NODES_LG
          EtaMaxDescript % array                => ETAMAX
          EtaMaxDescript % array_g              => ETAMAX_G
-         EtaMaxDescript % hotstart             => HOT_ETAMAX
-         EtaMaxDescript % hotstart_g           => HOT_ETAMAX_G
+!         EtaMaxDescript % hotstart             => HOT_ETAMAX
+!         EtaMaxDescript % hotstart_g           => HOT_ETAMAX_G
+         EtaMaxDescript % array2               => ETAMAX_Time
+         EtaMaxDescript % array2_g             => ETAMAX_Time_G
          EtaMaxDescript % ConsiderWetDry       = .FALSE.
          EtaMaxDescript % alternate_value      = 0.0
          EtaMaxDescript % field_name           = 'EtaMax'
@@ -493,17 +496,20 @@ C        maxele.63
 C        maxvel.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(UMAX_g(NP_G))
+            ALLOCATE (UMAX_Time_G(NP_G))
          ENDIF
          UMaxDescript % specifier              = NOUTGV
          UMaxDescript % initial_value          = 0.0
-         UMaxDescript % num_items_per_record   = 1
+         UMaxDescript % num_items_per_record   = 2
          UMaxDescript % num_fd_records         = NP_G
          UMaxDescript % num_records_this       = NP
          UMaxDescript % imap                   => NODES_LG
          UMaxDescript % array                  => UMAX
          UMaxDescript % array_g                => UMAX_G
-         UMaxDescript % hotstart               => HOT_UMAX
-         UMaxDescript % hotstart_g             => HOT_UMAX_G
+!         UMaxDescript % hotstart               => HOT_UMAX
+!         UMaxDescript % hotstart_g             => HOT_UMAX_G
+         UMaxDescript % array2                 => UMAX_Time
+         UMaxDescript % array2_g               => UMAX_Time_G
          UMaxDescript % ConsiderWetDry         = .FALSE.
          UMaxDescript % alternate_value        = 0.0
          UMaxDescript % field_name             = 'UMax'
@@ -511,17 +517,20 @@ C        maxvel.63
 C        prmin.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(PRMIN_g(NP_G))
+            ALLOCATE (PRMIN_Time_G(NP_G))
          ENDIF
          PrMinDescript % specifier             = NOUTGW
          PrMinDescript % initial_value         = 0.0
-         PrMinDescript % num_items_per_record  = 1
+         PrMinDescript % num_items_per_record  = 2
          PrMinDescript % num_fd_records        = NP_G
          PrMinDescript % num_records_this      = NP
          PrMinDescript % imap                  => NODES_LG
          PrMinDescript % array                 => PRMIN
          PrMinDescript % array_g               => PRMIN_G
-         PrMinDescript % hotstart              => HOT_PRMIN
-         PrMinDescript % hotstart_g            => HOT_PRMIN_G
+!         PrMinDescript % hotstart              => HOT_PRMIN
+!         PrMinDescript % hotstart_g            => HOT_PRMIN_G
+         PrMinDescript % array2                => PRMIN_Time
+         PrMinDescript % array2_g              => PRMIN_Time_G
          PrMinDescript % ConsiderWetDry        = .FALSE.
          PrMinDescript % alternate_value       = 0.0
          PrMinDescript % field_name            = 'PrMin'
@@ -529,17 +538,20 @@ C        prmin.63
 C        maxwvel.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(WVNOUTMAX_g(NP_G))
+            ALLOCATE (WVNOUTMAX_Time_G(NP_G))
          ENDIF
          WVMaxDescript % specifier             = NOUTGW
          WVMaxDescript % initial_value         = 0.0
-         WVMaxDescript % num_items_per_record  = 1
+         WVMaxDescript % num_items_per_record  = 2
          WVMaxDescript % num_fd_records        = NP_G
          WVMaxDescript % num_records_this      = NP
          WVMaxDescript % imap                  => NODES_LG
          WVMaxDescript % array                 => WVNOUTMAX
          WVMaxDescript % array_g               => WVNOUTMAX_G
-         WVMaxDescript % hotstart              => HOT_WVNOUTMAX
-         WVMaxDescript % hotstart_g            => HOT_WVNOUTMAX_G
+!         WVMaxDescript % hotstart              => HOT_WVNOUTMAX
+!         WVMaxDescript % hotstart_g            => HOT_WVNOUTMAX_G
+         WVMaxDescript % array2                => WVNOUTMAX_Time
+         WVMaxDescript % array2_g              => WVNOUTMAX_Time_G
          WVMaxDescript % ConsiderWetDry        = .FALSE.
          WVMaxDescript % alternate_value       = 0.0
          WVMaxDescript % field_name            = 'WVMax'
@@ -547,17 +559,20 @@ C        maxwvel.63
 C        maxrs.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(RSNMAX_g(NP_G))
+            ALLOCATE (RSNMAX_Time_G(NP_G))
          ENDIF
          RSMaxDescript % specifier             = NOUTGW
          RSMaxDescript % initial_value         = 0.0
-         RSMaxDescript % num_items_per_record  = 1
+         RSMaxDescript % num_items_per_record  = 2
          RSMaxDescript % num_fd_records        = NP_G
          RSMaxDescript % num_records_this      = NP
          RSMaxDescript % imap                  => NODES_LG
          RSMaxDescript % array                 => RSNMAX
          RSMaxDescript % array_g               => RSNMAX_G
-         RSMaxDescript % hotstart              => HOT_RSNMAX
-         RSMaxDescript % hotstart_g            => HOT_RSNMAX_G
+!         RSMaxDescript % hotstart              => HOT_RSNMAX
+!         RSMaxDescript % hotstart_g            => HOT_RSNMAX_G
+         RSMaxDescript % array2                => RSNMAX_Time
+         RSMaxDescript % array2_g              => RSNMAX_Time_G
          RSMaxDescript % ConsiderWetDry        = .FALSE.
          RSMaxDescript % alternate_value       = 0.0
          RSMaxDescript % field_name            = 'RSMax'
@@ -575,8 +590,8 @@ C        ESLNodes.63
             ESLDescript % imap                 => NODES_LG
             ESLDescript % array                => ESLONOFF
             ESLDescript % array_g              => ESLONOFF_G
-            ESLDescript % hotstart             => HOT_ESLONOFF
-            ESLDescript % hotstart_g           => HOT_ESLONOFF_G
+!            ESLDescript % hotstart             => HOT_ESLONOFF
+!            ESLDescript % hotstart_g           => HOT_ESLONOFF_G
             ESLDescript % ConsiderWetDry       = .FALSE.
             ESLDescript % alternate_value      = 0.0
             ESLDescript % field_name           = 'ESLActive'
@@ -1257,26 +1272,29 @@ C...
 C     jgf48.4636 Updated to newer data structure, so that we can
 C     compare with values from hot start, so that mins and maxes
 C     can be preserved across hot starts.
+C     tcmv51.20.01 Changed from pack/unpack one to pack/unpack two
+C       as max/min are now initialized from file during hotstart
+C       for all processors, not just myproc=0.
       IF(IT.EQ.NT) THEN
-         CALL writeOutArrayMinMax(311, TimeLoc, IT, EtaMaxDescript,
-     &        packOne, unpackOne)
-         CALL writeOutArrayMinMax(312, TimeLoc, IT, UMaxDescript,
-     &        packOne, unpackOne)
+         CALL writeOutArrayMinMax(311, TimeLoc, IT, 2, EtaMaxDescript,
+     &        packTwo, unpackTwo)
+         CALL writeOutArrayMinMax(312, TimeLoc, IT, 2, UMaxDescript,
+     &        packTwo, unpackTwo)
          IF (NWS.NE.0) THEN
-            CALL writeOutArrayMinMax(313, TimeLoc, IT, PrMinDescript,
-     &           packOne, unpackOne)
-            CALL writeOutArrayMinMax(314, TimeLoc, IT, WVMaxDescript,
-     &           packOne, unpackOne)
+            CALL writeOutArrayMinMax(313, TimeLoc, IT, 2, PrMinDescript,
+     &           packTwo, unpackTwo)
+            CALL writeOutArrayMinMax(314, TimeLoc, IT, 2, WVMaxDescript,
+     &           packTwo, unpackTwo)
             IF (NRS.NE.0) THEN
-               CALL writeOutArrayMinMax(315, TimeLoc, IT, RSMaxDescript,
-     &              packOne, unpackOne)
+               CALL writeOutArrayMinMax(315, TimeLoc, IT, 2, RSMaxDescript,
+     &              packTwo, unpackTwo)
             ENDIF
          ENDIF
 C       OUTPUT THE NODES WHERE THE ELEMENTAL SLOPE LIMITER HAS BEEN
 C       TURNED ON DURING THE RUN
          IF(LoadEleSlopeLim)THEN
-            CALL writeOutArrayMinMax(323, TimeLoc, IT, ESLDescript,
-     &               packOne, unpackOne)
+            CALL writeOutArrayMinMax(323, TimeLoc, IT, 1, ESLDescript,
+     &               packOne, unpackOne)  !no time stamps so only one pack/unpack
          ENDIF
       ENDIF
 
@@ -2223,8 +2241,8 @@ C
          SigTStaDescript % alternate_value      = -99999.0
          SigTStaDescript % field_name           = 'SigmaTStations'
          IF (ICS.eq.1) THEN
-            SigTStaDescript % x_coord           => XED  ! use orig coord
-            SigTStaDescript % y_coord           => YED  ! use orig coord
+         SigTStaDescript % x_coord           => XED  ! use orig coord
+         SigTStaDescript % y_coord           => YED  ! use orig coord
          ELSE
             SigTStaDescript % x_coord           => SLED  ! radians
             SigTStaDescript % y_coord           => SFED           
@@ -2242,8 +2260,8 @@ C
          SalStaDescript % alternate_value      = -99999.0
          SalStaDescript % field_name           = 'SalinityStations'
          IF (ICS.eq.1) THEN
-            SalStaDescript % x_coord           => XED ! use orig coord
-            SalStaDescript % y_coord           => YED ! use orig coord
+         SalStaDescript % x_coord           => XED ! use orig coord
+         SalStaDescript % y_coord           => YED ! use orig coord
          ELSE
             SalStaDescript % x_coord           => SLED  ! radians
             SalStaDescript % y_coord           => SFED           
@@ -2261,8 +2279,8 @@ C
          TempStaDescript % alternate_value      = -99999.0
          TempStaDescript % field_name           = 'TemperatureStations'
          IF (ICS.eq.1) THEN
-            TempStaDescript % x_coord           => XED ! use orig coord
-            TempStaDescript % y_coord           => YED
+         TempStaDescript % x_coord           => XED ! use orig coord
+         TempStaDescript % y_coord           => YED
          ELSE
             TempStaDescript % x_coord           => SLED ! radians
             TempStaDescript % y_coord           => SFED
@@ -2280,8 +2298,8 @@ C
          RealQStaDescript % alternate_value      = -99999.0
          RealQStaDescript % field_name           = 'RealQStations'
          IF (ICS.eq.1) THEN
-            RealQStaDescript % x_coord           => XE3DV ! use orig coord
-            RealQStaDescript % y_coord           => YE3DV
+         RealQStaDescript % x_coord           => XE3DV ! use orig coord
+         RealQStaDescript % y_coord           => YE3DV
          ELSE
             RealQStaDescript % x_coord           => SLE3DV ! use orig coord
             RealQStaDescript % y_coord           => SFE3DV
@@ -2299,8 +2317,8 @@ C
          ImaginaryQStaDescript % alternate_value      = -99999.0
          ImaginaryQStaDescript % field_name      ='ImaginaryQStations'
          IF (ICS.eq.1) THEN
-            ImaginaryQStaDescript % x_coord           => XE3DV ! use orig coord
-            ImaginaryQStaDescript % y_coord           => YE3DV
+         ImaginaryQStaDescript % x_coord           => XE3DV ! use orig coord
+         ImaginaryQStaDescript % y_coord           => YE3DV
          ELSE
             ImaginaryQStaDescript % x_coord           => SLE3DV ! radians
             ImaginaryQStaDescript % y_coord           => SFE3DV
@@ -2318,8 +2336,8 @@ C
          WZStaDescript % alternate_value      = -99999.0
          WZStaDescript % field_name           = 'WZStations'
          IF (ICS.eq.1) THEN
-            WZStaDescript % x_coord           => XE3DV  ! use orig coord
-            WZStaDescript % y_coord           => YE3DV
+         WZStaDescript % x_coord           => XE3DV  ! use orig coord
+         WZStaDescript % y_coord           => YE3DV
          ELSE
             WZStaDescript % x_coord           => SLE3DV  ! radians
             WZStaDescript % y_coord           => SFE3DV         
@@ -2337,8 +2355,8 @@ C
          Q20StaDescript % alternate_value      = -99999.0
          Q20StaDescript % field_name           = 'q20Stations'
          IF (ICS.eq.1) THEN
-            Q20StaDescript % x_coord           => XET  ! use orig coord
-            Q20StaDescript % y_coord           => YET  ! use orig coord
+         Q20StaDescript % x_coord           => XET  ! use orig coord
+         Q20StaDescript % y_coord           => YET  ! use orig coord
          ELSE
             Q20StaDescript % x_coord           => SLET  ! radians
             Q20StaDescript % y_coord           => SFET  ! 
@@ -2356,8 +2374,8 @@ C
          LStaDescript % alternate_value      = -99999.0
          LStaDescript % field_name           = 'LStations'
          IF (ICS.eq.1) THEN
-            LStaDescript % x_coord           => XET  ! use orig coord
-            LStaDescript % y_coord           => YET
+         LStaDescript % x_coord           => XET  ! use orig coord
+         LStaDescript % y_coord           => YET
          ELSE
             LStaDescript % x_coord           => SLET  ! radians
             LStaDescript % y_coord           => SFET
@@ -2375,8 +2393,8 @@ C
          EVStaDescript % alternate_value      = -99999.0
          EVStaDescript % field_name           = 'EVStations'
          IF (ICS.eq.1) THEN
-            EVStaDescript % x_coord           => XET ! use orig coord
-            EVStaDescript % y_coord           => YET
+         EVStaDescript % x_coord           => XET ! use orig coord
+         EVStaDescript % y_coord           => YET
          ELSE
             EVStaDescript % x_coord           => SLET ! use orig coord
             EVStaDescript % y_coord           => SFET
@@ -3625,8 +3643,8 @@ C     vector (i.e., nodal data such as water surface elevation or
 C     pressure) to a file, for quantities whose min or max values
 C     have been stored over the course of the run.
 C-----------------------------------------------------------------------
-      SUBROUTINE writeOutArrayMinMax(lun, TimeLoc, it, descript, pack_cmd,
-     &                         unpack_cmd)
+      SUBROUTINE writeOutArrayMinMax(lun, TimeLoc, it, nrecs_this,
+     &                                descript, pack_cmd, unpack_cmd)
 
       USE SIZES
       USE GLOBAL
@@ -3641,6 +3659,7 @@ C     args
       INTEGER, intent(in) :: lun ! logical unit number of file to write to
       REAL(8), intent(in) :: TimeLoc ! seconds since cold start
       INTEGER, intent(in) :: it   ! number of time steps since cold start
+      INTEGER, intent(in) :: nrecs_this  !number of records to write tcm v51.20.06 
       type(OutputDataDescript_t), intent(in) :: descript !describes output data
       EXTERNAL :: pack_cmd   ! subroutine used to pack data on subdomain
       EXTERNAL :: unpack_cmd ! subroutine used to unpack data on proc 0
@@ -3657,52 +3676,70 @@ C     write data in ascii text only (other output formats are not supported)
 
       CASE(0,1,2,4) !ascii text
          CALL OPEN_MINMAX_FILE(lun, TRIM(GLOBALDIR)//'/'
-     &           // descript%file_name, NP_G, NP, HEADER_MAX)
+     &           // descript%file_name, NP_G, NP, nrecs_this,HEADER_MAX)
          IF ((MNPROC.gt.1).and.(MyProc.eq.0).and.
      &        (.not.WRITE_LOCAL_FILES)) THEN
             OPEN(lun,
      &           FILE=TRIM(GLOBALDIR)//'/'//TRIM(descript%file_name),
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
             WRITE(lun,2120) TimeLoc,IT
-            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
+!            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
                DO I=1, descript % num_fd_records
                   WRITE(lun,2453) I, descript % array_g(I)
                ENDDO
-            ELSE IF ( descript%file_name.eq."minpr.63" ) THEN
-                   DO I=1, descript % num_fd_records
-                     WRITE(lun,2453) I, MIN(descript % array_g(I),
-     &                   descript % hotstart_g(I))
-                  ENDDO
-            ELSE
+!            ELSE IF ( descript%file_name.eq."minpr.63" ) THEN
+!                   DO I=1, descript % num_fd_records
+!                     WRITE(lun,2453) I, MIN(descript % array_g(I),
+!     &                   descript % hotstart_g(I))
+!                  ENDDO
+!            ELSE
+!               DO I=1, descript % num_fd_records
+!                  WRITE(lun,2453) I, MAX(descript % array_g(I),
+!     &                descript % hotstart_g(I))
+!               ENDDO
+!            ENDIF
+
+            !tcm v51.20.01 additions for time stamp output
+            if (descript%file_name.ne."ESLNodes.63") then
+               WRITE(lun,2120) TimeLoc,IT
                DO I=1, descript % num_fd_records
-                  WRITE(lun,2453) I, MAX(descript % array_g(I),
-     &                descript % hotstart_g(I))
+                  WRITE(lun,2453) I, descript % array2_g(I)
                ENDDO
-            ENDIF
+            endif
+
             CLOSE(lun)
          ENDIF
 
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES)) THEN
             CALL OPEN_MINMAX_FILE(lun, TRIM(LOCALDIR)//'/'
-     &           // descript%file_name, NP_G, NP, HEADER_MAX)
+     &           // descript%file_name, NP_G, NP, nrecs_this, HEADER_MAX)
             OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//TRIM(descript%file_name),
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
             WRITE(lun,2120) TimeLoc,IT
-            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
+!            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
                DO I=1, descript % num_records_this
                   WRITE(lun,2453) I, descript % array(I)
                ENDDO
-            ELSE IF ( descript%file_name.eq."minpr.63" ) THEN
+!            ELSE IF ( descript%file_name.eq."minpr.63" ) THEN
+!               DO I=1, descript % num_records_this
+!                  WRITE(lun,2453) I, MIN(descript % array(I),
+!     &                descript % hotstart(I))
+!               ENDDO
+!            ELSE
+!               DO I=1, descript % num_records_this
+!                  WRITE(lun,2453) I, MAX(descript % array(I),
+!     &                descript % hotstart(I))
+!               ENDDO
+!            ENDIF
+            !tcm v51.20.01 additions for time stamp output
+            if (descript%file_name.ne."ESLNodes.63") then
+               WRITE(lun,2120) TimeLoc,IT
                DO I=1, descript % num_records_this
-                  WRITE(lun,2453) I, MIN(descript % array(I),
-     &                descript % hotstart(I))
+                  WRITE(lun,2453) I, descript % array2(I)
                ENDDO
-            ELSE
-               DO I=1, descript % num_records_this
-                  WRITE(lun,2453) I, MAX(descript % array(I),
-     &                descript % hotstart(I))
-               ENDDO
-            ENDIF
+            endif
+
+            close(lun)  !tcm v51.20.01 added close 
          ENDIF
 Casey 120830: Reversed the next two lines.
       CASE(3,5) !netcdf (portable)

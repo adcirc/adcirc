@@ -3447,84 +3447,38 @@ C     If they are not present, thats okay too.
         IF(MNPROC.GT.1)ALLOCATE(HOT_ESLONOFF_G(NP_G))
         ALLOCATE(HOT_ESLONOFF(NP))
       ENDIF  
-      
-      if ((MNPROC.gt.1).and.(MyProc.eq.0)
-     &     .and.(.not.WRITE_LOCAL_FILES)) then
-         ALLOCATE(HOT_ETAMAX_G(NP_G))
-         HOT_ETAMAX_G(:) = -99999.d0  ! initialize the value
-         CALL readMinMax('maxele.63',HOT_ETAMAX_G)
-         ALLOCATE(HOT_UMAX_G(NP_G))
-         HOT_UMAX_G(:) = 0.d0  ! initialize the value
-         CALL readMinMax('maxvel.63',HOT_UMAX_G)
-         ALLOCATE(HOT_WVNOUTMAX_G(NP_G))
-         HOT_WVNOUTMAX_G(:) = 0.d0  ! initialize the value
-         CALL readMinMax('maxwvel.63',HOT_WVNOUTMAX_G)
-         ALLOCATE(HOT_PrMin_G(NP_G))
-         HOT_PrMin_G(:) = 99999.d0  ! initialize the value
-         CALL readMinMax('minpr.63',HOT_PrMin_G)
-         ALLOCATE(HOT_RSNMAX_G(NP_G))
-         HOT_RSNMAX_G(:) = 0.d0  ! initialize the value
-         CALL readMinMax('maxrs.63',HOT_RSNMAX_G)
-         IF(LoadEleSlopeLim)THEN
-            HOT_ESLONOFF_G(:) = 0.d0 ! initialize the value
-            CALL readMinMax('ESLNodes.63',HOT_ESLONOFF_G)
-         ENDIF   
-      endif
-      if ( (MNPROC.eq.1).or.(WRITE_LOCAL_FILES) ) then
-         ALLOCATE(HOT_ETAMAX(NP))
-         HOT_ETAMAX(:) = -99999.d0    ! initialize the value
-         CALL readMinMax('maxele.63',HOT_ETAMAX)
-         ALLOCATE(HOT_UMAX(NP))
-         HOT_UMAX(:) = 0.d0  ! initialize the value
-         CALL readMinMax('maxvel.63',HOT_UMAX)
-         ALLOCATE(HOT_WVNOUTMAX(NP))
-         HOT_WVNOUTMAX(:) = 0.d0  ! initialize the value
-         CALL readMinMax('maxwvel.63',HOT_WVNOUTMAX)
-         ALLOCATE(HOT_PrMin(NP))
-         HOT_PrMin(:) = 99999.d0  ! initialize the value
-         CALL readMinMax('minpr.63',HOT_PrMin)
-         ALLOCATE(HOT_RSNMAX(NP))
-         HOT_RSNMAX(:) = 0.d0  ! initialize the value
-         CALL readMinMax('maxrs.63',HOT_RSNMAX)
-         IF(LoadEleSlopeLim)THEN
-            HOT_ESLONOFF(:) = 0.d0 ! initialize the value
-            CALL readMinMax('ESLNodes.63',HOT_ESLONOFF)
-         ENDIF   
-      endif
 
-C...SEND THE VALUES FROM THE PREVIOUS ELEMENTAL SLOPE LIMITER RUN
-C   TO THE OTHER PROCESSORS AND PROCESS TO THE SUBDOMAINS
-      IF(LoadEleSlopeLim)THEN
-        IF(MNPROC.GT.1)THEN
-#ifdef CMPI
-            CALL MPI_BCAST( HOT_ESLONOFF_G, NP_G, REALTYPE, 0, COMM, 
-     &          IERR )
-#endif
-            DO sd_node_number = 1,NP
-                fd_node_number = ABS(NODES_LG(sd_node_number))
-                HOT_ESLONOFF(sd_node_number) = 
-     &              HOT_ESLONOFF_G(fd_node_number)
-                IF(HOT_ESLONOFF(sd_node_number).EQ.1D0)THEN
-                    elemental_slope_limiter_active(sd_node_number) = 
-     &                  .TRUE.
-                ELSE
-                    elemental_slope_limiter_active(sd_node_number) = 
-     &                  .FALSE.
-                ENDIF  
-            ENDDO
-        ELSEIF(MNPROC.EQ.0)THEN
-            DO sd_node_number = 1,NP
-                IF(HOT_ESLONOFF(sd_node_number).EQ.1D0)THEN
-                    elemental_slope_limiter_active(sd_node_number) = 
-     &                  .TRUE.
-                ELSE
-                    elemental_slope_limiter_active(sd_node_number) =
-     &                  .FALSE.               
-                ENDIF  
-            ENDDO    
-        ENDIF
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+C  Begin TCM v51.20.01 Mods for MaxMin Files to local Variables
+C      Including reading time stamp for max/min when available
+C
+      ! Note:  Global initalizes the TimeStamp Values to 0.0d0
+      !   If timestamp values are not found, then they will return
+      !   with an initial value of -99999.d0 to begin the hstart runs.
+      !   this includes the case of the max/min files not being present
+
+      CALL readAndMapToSubdomainMaxMin('maxele.63',EtaMax,EtaMax_Time) !,0,2)
+      CALL readAndMapToSubdomainMaxMin('maxvel.63',UMax,UMax_Time)
+      CALL readAndMapToSubdomainMaxMin('maxwvel.63',WVNOutmax,WVNOutMax_Time)
+      CALL readAndMapToSubdomainMaxMin('minpr.63',PrMin,PrMin_Time)
+      CALL readAndMapToSubdomainMaxMin('maxrs.63',RSNMax,RSNMax_Time)
+
+      IF (LoadEleSlopeLim) THEN
+!         HOT_ESLONOFF(:) = 0.d0 ! initialize the value
+!         CALL readMinMax('ESLNodes.63',HOT_ESLONOFF)
+         CALL readAndMapToSubdomainMaxMin('ESLNodes.63',ESLONOFF)
+         !must set the elemental slope limiter active values as well
+         DO I = 1,NP
+            if (ESLONOFF(I).eq.1.d0) then
+               elemental_slope_limiter_active(I) = .true.
+            else
+               elemental_slope_limiter_active(I) = .false.
+            endif
+         ENDDO
       ENDIF  
-
+C
+C  End  TCM v51.20.01 Mods for MaxMin Files to Local Variables
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 C
  1112 FORMAT(/,1X,79('_'))
  1197 FORMAT(/,1X,'THE E29 MET GRID INTERPOLATING FACTORS ARE ',

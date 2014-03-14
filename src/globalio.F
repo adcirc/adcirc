@@ -630,13 +630,14 @@ C
       !                   the file.
       !--------------------------------------------------------------
       subroutine open_minmax_file(lun, filename, size_g, size_this,
-     &                          write_header)
+     &                          nrecs_this,write_header)
       USE SIZES
       USE GLOBAL
       implicit none
 
       external write_header ! subroutine used to actually write the header
       integer      :: lun, size_this, size_g, szz
+      integer      :: nrecs_this  !tcm v51.20.06
       character(*) :: filename
 
       szz = size_g
@@ -644,7 +645,7 @@ C
 
       if (myproc == 0 .or. WRITE_LOCAL_FILES) then
         open(lun, file=filename, status='REPLACE')
-        call write_header(lun,szz)
+        call write_header(lun,szz,nrecs_this)
         close(lun)
       end if
       return
@@ -1295,14 +1296,16 @@ C! CMPI
       !--------------------------------------------------------------
       ! Maximum elevation for all nodes: fort.63
       !--------------------------------------------------------------
-      subroutine header_max(lun, size_this)
+      subroutine header_max(lun, size_this,nrecs_this)
       USE SIZES
       USE GLOBAL
       implicit none
       integer :: lun, size_this
+      integer :: nrecs_this  !tcm v51.20.06
 
       write(lun, 1000) rundes, runid, agrid
-      write(lun, 1010) 1, size_this, 1.d0, 1, 1, FileFmtVersion
+      !tcm v51.20.06 Changed number of records from 1 to nrecs_this (1 or 2)
+      write(lun, 1010) nrecs_this, size_this, 1.d0, 1, 1, FileFmtVersion
 
  1000 FORMAT(1X,A32,2X,A24,2X,A24)
  1010 FORMAT(1X,I10,1X,I10,1X,E15.7E3,1X,I8,1X,I5,1X,
@@ -1659,15 +1662,17 @@ C       S U B R O U T I N E   R E A D  M I N  M A X
 C----------------------------------------------------------------------
 C
 C     jgf48.4636 Subroutine to read in continuous min and max files,
-C     if they are present.
+C     if they are present.  ASCII Min/Max file are NOT stored
+C     in compact format
 C
 C----------------------------------------------------------------------
-      SUBROUTINE readMinMax(minMaxFN,array)
+      SUBROUTINE readMinMax(minMaxFN,array,array2)
       USE SIZES , ONLY : SZ, MNPROC, GLOBALDIR
       USE GLOBAL , ONLY : NSCREEN, ScreenUnit, MyProc, scratchMessage
       IMPLICIT NONE
       CHARACTER(*) :: minMaxFN ! name of min/max file to read
       REAL(SZ), dimension(:), target :: array ! min/max array
+      real(sz), optional, dimension(:), target :: array2 !timestamp for min/max array
       INTEGER node               ! node number of the min/max data
       CHARACTER(len=80) skipline ! dummy variable for min/max header data
       INTEGER rawNode            ! node number, as read from file
@@ -1675,11 +1680,17 @@ C----------------------------------------------------------------------
       INTEGER numLinesInMinMaxFile ! count the lines to report to log file
       LOGICAL tooFewMinMaxLines  ! true if couldn't read enough lines from file
       INTEGER ErrorIO      ! zero if file opened successfully
-      INTEGER I
+      INTEGER I, lun_maxmin
+      integer :: ndsetmax,size_this,nspoolmax,irtype,ffv
+      real(sz) :: time_this
+      character(20) :: dmstr
+
+      lun_maxmin = 763  !tcm v51.20.01 changed unit number from 963 to 763 to avoid conflicts with STWAVE
 C
-      CALL openFileForRead(963,TRIM(GLOBALDIR)//'/'//trim(minMaxFN),
+      CALL openFileForRead(lun_maxmin,TRIM(GLOBALDIR)//'/'//trim(minMaxFN),
      &                     errorIO)
       IF ( errorIO.gt.0 ) THEN
+         if (present(array2)) array2 = -99999.d0  !tcm v51.20.06
          write(scratchMessage,3333) trim(minMaxFN)
          call allMessage(WARNING,scratchMessage)
          RETURN  ! early return
@@ -1687,11 +1698,16 @@ C
 C
 C     The file exists and is open, so read the data.
       numLinesInMinMaxFile = 0
-      READ(963,*,END=3990,ERR=3990) skipline   ! 1st header line
-      READ(963,*,END=3990,ERR=3990) skipline   ! 2nd header line
-      READ(963,*,END=3990,ERR=3990) skipline   ! TIME and IT line
+      ! Process Header Lines
+      READ(lun_maxmin,*,END=3990,ERR=3990) skipline   ! 1st header line
+!      READ(lun_maxmin,*,END=3990,ERR=3990) skipline   ! 2nd header line
+      READ(lun_maxmin,*,END=3990,ERR=3990) ndsetmax,size_this,
+     &                       time_this,nspoolmax,irtype,dmstr,ffv   !tcm v51.20.01 added specific reading of this header
+      READ(lun_maxmin,*,END=3990,ERR=3990) skipline   ! TIME and IT line
+
+
       DO I=1, size(array)
-         READ(963,*,END=3990,ERR=3990) rawNode, rawDatum
+         READ(lun_maxmin,*,END=3990,ERR=3990) rawNode, rawDatum
          IF ((rawNode.ge.1).and.(rawNode.le.size(array))) THEN
             node = rawNode
             array(node) = rawDatum
@@ -1700,19 +1716,66 @@ C     The file exists and is open, so read the data.
          ENDIF
          numLinesInMinMaxFile = numLinesInMinMaxFile + 1
       ENDDO
- 3990 CONTINUE ! jump to here when end of file is reached
+
+      ! If this max/min file has two time records then the second
+      ! record contains the time stamp (sec) relative to cold start 
+      ! at which the max/min was recorded
+
+      IF ((NDSETMAX.GT.1).AND.(PRESENT(ARRAY2))) THEN  !In file and asking for them
+
+         READ(lun_maxmin,*,END=3990,ERR=3990) skipline   ! TIME and IT line
+          WRITE(SCRATCHMESSAGE,*) 'Max/min timestamps found in file and being used.'
+          CALL logMessage(INFO,scratchMessage)
+
+         DO I=1, size(array2)
+            READ(lun_maxmin,*,END=3990,ERR=3990) rawNode, rawDatum
+            IF ((rawNode.ge.1).and.(rawNode.le.size(array2))) THEN
+               node = rawNode
+               array2(node) = rawDatum
+            ELSE
+               EXIT ! jump out of loop if node number is out of bounds
+            ENDIF
+            !numLinesInMinMaxFile = numLinesInMinMaxFile + 1
+         ENDDO
+
+      ELSEIF ((NDSETMAX.GT.1).AND.(.NOT.PRESENT(ARRAY2))) THEN  !In file but not asking for them
+
+          WRITE(SCRATCHMESSAGE,*) 'Max/min timestamps present in file, but NOT used.',
+     &              ' Setting time stamps to -99999.d0 to initalize.'
+          CALL logMessage(INFO,scratchMessage)
+
+      ELSEIF ((NDSETMAX.EQ.1).AND.(PRESENT(ARRAY2))) THEN  !Not in File but asking for them anyway
+
+          WRITE(SCRATCHMESSAGE,*) 'Max/min time stamps not present in file.',
+     &                            ' Setting time stamps to -99999.d0 to initalize'
+          CALL logMessage(INFO,scratchMessage)
+          array2(:) = -99999.d0
+
+      ELSEIF ((NDSETMAX.EQ.1).AND.(.NOT.PRESENT(ARRAY2))) THEN !Not in File and not asking for them
+
+          WRITE(SCRATCHMESSAGE,*) 'Max/min time stamps not present in file.',
+     &                            ' Setting time stamps to -99999.d0 to initalize.'
+          CALL logMessage(INFO,scratchMessage)
+
+      ELSE
+
+      ENDIF
+
+ 3990 CONTINUE ! jump to here if end of file is reached
       WRITE(scratchMessage,450) numLinesInMinMaxFile, trim(minMaxFN)
       CALL logMessage(INFO,scratchMessage)
       IF (numLinesInMinMaxFile.lt.size(array)) THEN
           call allMessage(ERROR,"Not enough data in "
      &         //trim(minMaxFN)//".")
       ENDIF
-      CLOSE(963)
+
+      CLOSE(lun_maxmin)  !close the max/min file
 
  450  FORMAT('Finished reading ',I8,' lines from the ',
      &   A20,' file.')
  3333 FORMAT('Values from ',(A20),
      &       ' will not reflect the solution prior to this hotstart.')
+
 C-----------------------------------------------------------------------
       END SUBROUTINE readMinMax
 C-----------------------------------------------------------------------
@@ -1751,6 +1814,129 @@ C...  other nodes keep their current value
 C----------------------------------------------------------------------
       END SUBROUTINE NDDT2GET
 C----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C            R E A D  A N D  M A P  T O  S U B D O M A I N  2 D
+C                M A X  A N D  M I N 
+C-----------------------------------------------------------------------
+C     TCM v51.20.01 Reads a fulldomain array in ascii format and maps
+C     to a subdomain array.  Modeled after readAndMapToSubdomain2D
+C     
+C-----------------------------------------------------------------------
+      subroutine readAndMapToSubdomainMaxMin(minMaxFN,sd_array,sd_array2)
+      USE SIZES, ONLY : SZ, MNPROC,READ_LOCAL_HOT_START_FILES
+
+      IMPLICIT NONE
+C
+      REAL(SZ), intent(out), dimension(:) :: sd_array ! subdomain array for values
+      REAL(SZ), optional, intent(out), dimension(:) :: sd_array2 !subdomain array for timestamps
+      INTEGER :: sd_node_number
+      INTEGER :: fd_node_number
+      CHARACTER(*) :: minMaxFN ! name of min/max file to read
+      LOGICAL :: include_times
+C
+      REAL(SZ), allocatable, dimension(:) :: fd_array ! full domain array values
+      REAL(SZ), allocatable, dimension(:) :: fd_array2  !full domain array timestamps
+
+!......TCM v51.20.06 These variables were part of the original "readAndMapToSubdomain2D"
+!......              routine used to create this routine.  However, the max/min files
+!......              were never a part of that original routine, therefore they
+!......              have been removed from the input variable list and hardwired.
+      INTEGER :: counter, method
+!      INTEGER, intent(inout) :: counter ! i/o position in the file
+!      INTEGER, intent(in) :: method  ! logical to determine binary or real
+
+C
+      COUNTER = 0 !hardwired counter to 0
+      METHOD = 2  !hardwired method to 2
+      include_times = .false.
+
+      if (present(sd_array2)) include_times = .true.
+
+      call setMessageSource("readAndMapToSubdomainMaxMin")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      ! serial or reading local hot start files
+      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+         IF (method.EQ.1) THEN  !tcm v51.20.02 -- not supported at this time
+            !CALL binaryRead2D(sd_array, NP, lun, counter)
+            !CALL readMinMax(minMaxFN,sd_array)
+         ELSE IF (method.EQ.2) THEN
+            !CALL realRead2D(sd_array, NP, lun)
+            if (include_times.eqv..true.) then
+               CALL readMinMax(minMaxFN,sd_array,sd_array2)
+            else
+               CALL readMinMax(minMaxFN,sd_array)
+            endif
+         ELSE
+            call allMessage(ERROR,
+     &          "Passing of binary or real information incorrect")
+            STOP
+         END IF
+      ! parallel
+      ELSE
+         IF (method.EQ.1) THEN  !tcm v51.20.02 -- not supported at this time
+            allocate(fd_array(NP_G))
+            if (include_times.eqv..true.) allocate(fd_array2(NP_G))
+            !CALL binaryRead2D(fd_array, NP_G, lun, counter)
+              if (include_times.eqv..true.) then
+                 !call readMinMax(minMaxFN,fd_array,fd_array2)  !place holder for binary file
+              else
+                 !call readMinMax(minMaxFN,fd_array)      !place holder for binary file
+              endif
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number) = fd_array(fd_node_number)
+               if (include_times.eqv..true.) then
+                  sd_array2(sd_node_number) = fd_array2(fd_node_number)
+               endif
+            END DO
+            deallocate(fd_array)
+            if (include_times.eqv..true.) deallocate(fd_array2)
+
+         ELSE IF (method.EQ.2) THEN  !ascii files
+            allocate(fd_array(NP_G))
+            if (include_times.eqv..true.) then
+               allocate(fd_array2(NP_G))
+               CALL readMinMax(minMaxFN,fd_array,fd_array2)
+            else
+               CALL readMinMax(minMaxFN,fd_array)
+            endif             
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number) = fd_array(fd_node_number)
+               if (include_times.eqv..true.) then
+                  sd_array2(sd_node_number) = fd_array2(fd_node_number)
+               endif
+            END DO
+            deallocate(fd_array)
+            if (include_times.eqv..true.) deallocate(fd_array2)
+
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ENDIF
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readAndMapToSubdomainMaxMin
+C-----------------------------------------------------------------------
 
 
       !--------------------------------------------------------------

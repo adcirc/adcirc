@@ -178,6 +178,12 @@ C     Solver Type:
       LOGICAL BndBCRiver ! .TRUE. if 3D, baroclinc and includes rivers in the simulation
       INTEGER NRIVBCN    ! number of river nodes to be evaluate for salinity and temperature
 
+! tcm v51.20.03 additions for station files outside the fort.15
+      LOGICAL USE_ELEV_STAT_FILE    !.true. if an elevation station file exists
+      LOGICAL USE_VEL_STAT_FILE     !.true. if a velocity station file exists
+      LOGICAL USE_CONC_STAT_FILE    !.true. if a concentration station file exists
+      LOGICAL USE_MET_STAT_FILE     !.true. if a met station file exists
+
 C
 C For Definition of Working Directory
 C
@@ -263,6 +269,9 @@ c... tcm v50.79 addition for metControl namelist
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       LOGICAL :: FOUND_WC_NML
 
+C.... tcm v51.20.04 additions for station location file
+      integer ::  ios_stations
+      integer :: MNSTAE2,MNSTAV2,MNSTAC2,MNSTAM2
 
 #ifdef ADCNETCDF
       NETCDF_AVAIL = .true.
@@ -819,40 +828,137 @@ C.... tcm v49.64.01 additions for ice
           ENDDO
         ENDDO
       IF((MNFFR.EQ.0).OR.(MNFFR.EQ.-1)) MNFFR=1
+C
+C..... ELEVATION STATIONS
+C
       MNSTAE=0
+      MNSTAE2=0
       READ(15,*)  IDUM                              !SKIP OVER NOUTE, TOUTSE...
       IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
       READ(15,*) MNSTAE                             !PROCESS MNSTAE
-      DO IL=1,MNSTAE
-         READ(15,*) RDUM                            !SKIP OVER STA COORDS
-      ENDDO
+      ! tcm v51.20.03 -- added negative mnstae to signal use of external station file elev_stat.151 
+      if (MNSTAE < 0) then
+         write(*,*) "External File Used for Elevation Station Locations"
+         USE_ELEV_STAT_FILE = .TRUE.
+         MNSTAE = abs(MNSTAE)  !reset to a positive value
+         ! need to open the elev station file and read the number of points
+         open(unit=151,file='elev_stat.151',status='old',err=7690,iostat=ios_stations)
+         read(151,*) MNSTAE2
+         if (abs(MNSTAE2).ne. abs(MNSTAE)) then
+            MNSTAE = abs(MNSTAE2)  !reset the value to what's in the file
+         endif
+7690     if (ios_stations .ne. 0) then
+            write(*,*) "Error in Reading Elevation Station File: elev_stat.151"
+            stop  ! there is a stop here
+         endif 
+         close(151)                 
+      ELSE
+         write(*,*) "Elevation Station Locations contained in fort.15"
+         USE_ELEV_STAT_FILE = .FALSE.
+         DO IL=1,MNSTAE
+            READ(15,*) RDUM                            !SKIP OVER STA COORDS
+         ENDDO
+      endif
       IF(MNSTAE.EQ.0) MNSTAE=1
+C
+C..... VELOCITY STATIONS
+C
       MNSTAV=0
+      MNSTAV2=0
       READ(15,*) IDUM                               !SKIP OVER NOUTV, TOUTSV...
       IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
       READ(15,*) MNSTAV                             !PROCESS MNSTAV
-      DO IL=1,MNSTAV
-         READ(15,*) RDUM                            !SKIP OVER STA COORDS
-      ENDDO
+      ! tcm v51.20.03 -- added negative mnstav to signal use of external station file vel_stat.151
+      if (MNSTAV < 0 ) then
+         write(*,*) "External File Used for Velocity Station Locations"
+         USE_VEL_STAT_FILE = .true.
+         MNSTAV = abs(MNSTAV) !reset to a positive value
+         ios_stations = 0
+         open(unit=151,file='vel_stat.151',status='old',err=7691,iostat=ios_stations)
+         read(151,*) MNSTAV2
+         if (abs(MNSTAV2).ne. abs(MNSTAV)) then
+            MNSTAV = abs(MNSTAV2)  !reset the value to what's in the file
+         endif
+7691     if (ios_stations .ne. 0) then
+            write(*,*) "Error in Reading Velocity Station File: vel_stat.151"
+            stop  ! there is a stop here
+         endif
+         close(151)                  
+      else 
+         write(*,*) "Velocity Station Locations Contained in fort.15"
+         USE_VEL_STAT_FILE = .false.
+         DO IL=1,MNSTAV
+            READ(15,*) RDUM                            !SKIP OVER STA COORDS
+         ENDDO
+      endif
       IF(MNSTAV.EQ.0) MNSTAV=1
+C
+C..... CONCENTRATION STATIONS
+C
       MNSTAC=0
+      MNSTAC2=0
       IF(IM.EQ.10) THEN
          READ(15,*) IDUM                            !SKIP OVER NOUTC, TOUTSC...
          IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
          READ(15,*) MNSTAC                          !PROCESS MNSTAC
-         DO IL=1,MNSTAC
-            READ(15,*) RDUM                         !SKIP OVER STA COORDS
-         ENDDO
+         !tcm v51.20.03 -- added negative mnstac to signal use of external station file conc_stat.151
+         if (MNSTAC < 0) then
+            write(*,*) "External File Used for Concentration Station Locations"
+            USE_CONC_STAT_FILE = .true.
+            MNSTAC = abs(MNSTAC) !reset to a positive value
+            ios_stations = 0
+            open(unit=151,file='conc_stat.151',status='old',err=7692,iostat=ios_stations)
+            read(151,*) MNSTAC2
+            if (abs(MNSTAC2).ne. abs(MNSTAC)) then
+               MNSTAC = abs(MNSTAC2)  !reset the value to what's in the file
+            endif
+7692        if (ios_stations .ne. 0) then
+               write(*,*) "Error in Reading Concentration Station File: conc_stat.151"
+               stop  ! there is a stop here
+            endif
+            close(151)                  
+         else 
+            write(*,*) "Concentration Station Locations Contained in fort.15"
+            USE_CONC_STAT_FILE = .false.
+            DO IL=1,MNSTAC
+               READ(15,*) RDUM                         !SKIP OVER STA COORDS
+            ENDDO
+         endif
       ENDIF
       IF(MNSTAC.EQ.0) MNSTAC=1
+C
+C..... MET STATIONS
+C
       MNSTAM=0
+      MNSTAM2=0
       IF(NWS.NE.0) THEN
         READ(15,*) IDUM                           !SKIP OVER NOUTM, TOUTSM...
         IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
         READ(15,*) MNSTAM                         !PROCESS MNSTAM
-        DO IL=1,MNSTAM
-           READ(15,*) RDUM                        !SKIP OVER STA COORDS
-        END DO
+        !tcm v51.20.03 -- added negative mnstam to signal use of external station file met_stat.151
+        if (MNSTAM < 0 ) then
+           write(*,*) "External File Used for MET Station Locations"
+           USE_MET_STAT_FILE = .true.
+           MNSTAM = ABS(MNSTAM)  !reset to a positive number
+           ios_stations = 0
+           open(unit=151,file='met_stat.151',status='old',
+     &           err=7693,iostat=ios_stations)
+           read(151,*) MNSTAM2
+           if (abs(MNSTAM2).ne. abs(MNSTAM)) then
+              MNSTAM = abs(MNSTAM2)  !reset the value to what's in the file
+           endif
+7693       if (ios_stations .ne. 0) then
+              write(*,*) "Error in Reading MET Station File: met_stat.151"
+              stop  ! there is a stop here
+           endif
+           close(151)
+        else 
+           write(*,*) "MET Station Locations Contained in fort.15"
+           USE_MET_STAT_FILE = .false.
+           DO IL=1,MNSTAM
+              READ(15,*) RDUM                        !SKIP OVER STA COORDS
+           END DO
+        endif
       ENDIF
       IF(MNSTAM.EQ.0) MNSTAM=1
 C
@@ -1027,6 +1133,10 @@ C     sb46.28sb01 added NWS=12: OWI format
       IF(ITITER.EQ.0) WRITE(*,3104)
       IF(ITITER.GT.0) WRITE(*,3105)
       IF(ITITER.LT.0) WRITE(*,3106)
+      IF(USE_ELEV_STAT_FILE) WRITE(*,3180)  !tcm v51.20.03 
+      IF(USE_VEL_STAT_FILE) WRITE(*,3181)   !tcm v51.20.03 
+      IF(USE_MET_STAT_FILE) WRITE(*,3182)   !tcm v51.20.03 
+      IF(USE_CONC_STAT_FILE) WRITE(*,3183)  !tcm v51.20.03 
       WRITE(*,3108)
 C
  3000 FORMAT(' *****************************************************',/,
@@ -1075,6 +1185,10 @@ C
  3104 FORMAT(' *   and the direct band solver will be used.        *')
  3105 FORMAT(' *   and an iterative solver will be used            *')
  3106 FORMAT(' *   and no external solver will be used             *')
+ 3180 FORMAT(' *   An external elevation station file is used      *')  !tcm v51.20.03
+ 3181 FORMAT(' *   An external velocity station file is used       *')  !tcm v51.20.03
+ 3182 FORMAT(' *   An external met. station file is used           *')  !tcm v51.20.03
+ 3183 FORMAT(' *   An external concentration station file is used  *') !tcm v51.20.03
  3108 FORMAT(' *****************************************************',/)
 C
   60  FORMAT(A60)

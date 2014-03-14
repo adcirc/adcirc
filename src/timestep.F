@@ -229,6 +229,9 @@ C   TCM v50.66.02 -- Added for Time Varying Bathymetry
       INTEGER :: IJK
       REAL(SZ) ETA2TMP,DPTMP,BTRATIO  !tcm v50.66.01 bathymetry changes
 
+C   TCM v51.20.01 -- Added dummy real variable for computing velocity magnitudes
+      REAL(SZ) tmpmag
+
       call setMessageSource("timestep")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -3146,21 +3149,29 @@ C...  jgf50.44: Collect time that min/max occurs as well.
       do i=1,np
          if(nodecode(i).eq.1.and.etamax(i).lt.eta2(i)) then
             etamax(i) = eta2(i)
+            etamax_time(i) = TimeLoc  !tcm v51.20.01
          endif
-         if((umax(i)*umax(i)).lt.(uu2(i)*uu2(i)+vv2(i)*vv2(i))) then
-            umax(i) = sqrt(uu2(i)*uu2(i)+vv2(i)*vv2(i))
+         !tcm v51.20.01 added temporary variable storage to remove repeated computation
+         tmpmag = uu2(i)*uu2(i)+vv2(i)*vv2(i)
+         if((umax(i)*umax(i)).lt.(tmpmag)) then
+            umax(i) = sqrt(tmpmag)
+            umax_time(i) = TimeLoc   !tcm v51.20.01
          endif
          if(prmin(i).gt.pr2(i)) then
             prmin(i) = pr2(i)
+            prmin_time(i) = TimeLoc   !tcm v51.20.01
          endif
-         if((wvnoutmax(i)*wvnoutmax(i)).lt.
-     &        (wvnxout(i)*wvnxout(i)+wvnyout(i)*wvnyout(i))) then
-            wvnoutmax(i)
-     &          = sqrt(wvnxout(i)*wvnxout(i)+wvnyout(i)*wvnyout(i))
+         !tcm v51.20.01 added temporary variable storage to remove repeated computation
+         tmpmag = wvnxout(i)*wvnxout(i)+wvnyout(i)*wvnyout(i)
+         if((wvnoutmax(i)*wvnoutmax(i)).lt.tmpmag) then
+            wvnoutmax(i) = sqrt(tmpmag)
+            wvnoutmax_time(i) = TimeLoc   !tcm v51.20.01
          endif
-         if((rsnmax(i)*rsnmax(i)).lt.
-     &        (rsnx2(i)*rsnx2(i)+rsny2(i)*rsny2(i))) then
-            rsnmax(i) = sqrt(rsnx2(i)*rsnx2(i)+rsny2(i)*rsny2(i))
+         !tcm v51.20.01 added temporary variable storage to remove repeated computation
+         tmpmag = rsnx2(i)*rsnx2(i)+rsny2(i)*rsny2(i)
+         if((rsnmax(i)*rsnmax(i)).lt.tmpmag) then
+            rsnmax(i) = sqrt(tmpmag)
+            rsnmax_time(i) = TimeLoc   !tcm v51.20.01
          endif
       enddo
 C

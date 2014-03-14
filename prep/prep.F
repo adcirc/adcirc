@@ -1218,9 +1218,9 @@ C---------------------------------------------------------------------------C
       USE HARM, ONLY : NAMEFR
       IMPLICIT NONE
       integer :: nbytes = 0
-      INTEGER I,J,K,M,JG,JP,KK
+      INTEGER I,J,K,M,JG,JP,KK, ios_stations
       INTEGER INDX,ITOT,ILNODE,IPROC,IPROC2,ITYPE,NUMS(10)
-      CHARACTER LOCFN*14,PE*6
+      CHARACTER LOCFN*14,PE*6,LOCSTATFN*20
       CHARACTER*80 OUTMSG
 C
 C--Write a Local Input file ( fort.15 ) for each PE
@@ -1367,27 +1367,49 @@ C     WRITE(15,80) STAEMSG !jgf45.07 we may have changed NOUTE in adcprep
          WRITE(15,*) NOUTE,TOUTSE,TOUTFE,NSPOOLE
 C
          NSTAEP(IPROC) = 0
-         DO K = 1,NSTAE
-            DO J=1,NELP(IPROC)
-               INDX = abs(IMAP_EL_LG(J,IPROC))
-               IF (INDX.EQ.NNSEG(K)) THEN
+         DO K = 1,abs(NSTAE)                          !tcm -- added the comments below
+            DO J=1,NELP(IPROC)                        !nelp(iproc) lists the number of elements from processor iproc
+               INDX = abs(IMAP_EL_LG(J,IPROC))        ! global element number
+               IF (INDX.EQ.NNSEG(K)) THEN             !nnseg(k) contains the element number station k resides in
                   NSTAEP(IPROC) = NSTAEP(IPROC) + 1
                   KK = K
                   if (STAE_SHARE(K) > -1) KK = -K
                   IMAP_STAE_LG(NSTAEP(IPROC),IPROC) = KK
-                  STAE_SHARE(K) = IPROC
+                  STAE_SHARE(K) = IPROC  
+                  ! tcm v51.20.03 once found exit the element loop
+                  exit
                ENDIF
             ENDDO
          ENDDO
          NSTAE_MAX = MAX(NSTAEP(IPROC),NSTAE_MAX)
 C
-         CALL INSERT(NSTAEMSG,OUTMSG,NSTAEP(IPROC),1)
-         WRITE(15,80) OUTMSG
+C...     update the number of stations for this proc's domain
+
+         if (use_elev_stat_file ) then  !tcm v51.20.03
+            CALL INSERT(NSTAEMSG,OUTMSG,-NSTAEP(IPROC),1)  !keep the negative sign for fort.15
+            write(15,80) OUTMSG
+            CALL INSERT(NSTAEMSG,OUTMSG,NSTAEP(IPROC),1)
+            LOCSTATFN(1:20) = 'PE0000/elev_stat.151'
+            CALL IWRITE(LOCstatFN,3,6,IPROC-1)
+            ios_stations = 0
+            open(unit=151,file=locstatfn,
+     &                    status='unknown',iostat=ios_stations)
+            write(151,80) OUTMSG 
+         else
+            CALL INSERT(NSTAEMSG,OUTMSG,NSTAEP(IPROC),1)
+            write(15,80) OUTMSG
+         endif         
 C
+C...     write the stations located in this proc's domain
          DO K=1,NSTAEP(IPROC)
             INDX = abs(IMAP_STAE_LG(K,IPROC))
-            WRITE(15,80) STAELOC(INDX)
+            if (use_elev_stat_file) then
+               write(151,80) STAELOC(INDX)
+            else
+               WRITE(15,80) STAELOC(INDX)
+            endif
          ENDDO
+         if (use_elev_stat_file ) close(151)
 C
 C--Write Local Velocity Station Info:
 C--Create Local-to-Global element "ownership" of an velocity station
@@ -1395,7 +1417,7 @@ C
          WRITE(15,*) NOUTV,TOUTSV,TOUTFV,NSPOOLV
 C
          NSTAVP(IPROC) = 0
-         DO K = 1,NSTAV
+         DO K = 1,abs(NSTAV)
             DO J=1,NELP(IPROC)
                INDX = abs(IMAP_EL_LG(J,IPROC))
                IF (INDX.EQ.NNSVG(K)) THEN
@@ -1404,18 +1426,38 @@ C
                   if (STAV_SHARE(K) > -1) KK = -K
                   IMAP_STAV_LG(NSTAVP(IPROC),IPROC) = KK
                   STAV_SHARE(K) = IPROC
+                  ! tcm v51.20.03 once found exit the element loop
+                  exit                  
                ENDIF
             ENDDO
          ENDDO
          NSTAV_MAX = MAX(NSTAVP(IPROC),NSTAV_MAX)
 C
-         CALL INSERT(NSTAVMSG,OUTMSG,NSTAVP(IPROC),1)
-         WRITE(15,80) OUTMSG
+         if (use_vel_stat_file ) then  !tcm v51.20.03
+            CALL INSERT(NSTAVMSG,OUTMSG,-NSTAVP(IPROC),1)  !keep the negative sign for fort.15
+            write(15,80) OUTMSG
+            CALL INSERT(NSTAVMSG,OUTMSG,NSTAVP(IPROC),1)
+            LOCSTATFN(1:19) = 'PE0000/vel_stat.151'
+            CALL IWRITE(LOCstatFN,3,6,IPROC-1)
+            ios_stations = 0
+            open(unit=151,file=locstatfn(1:19),
+     &                    status='unknown',iostat=ios_stations)
+            write(151,80) OUTMSG 
+         else
+            CALL INSERT(NSTAVMSG,OUTMSG,NSTAVP(IPROC),1)
+            write(15,80) OUTMSG
+         endif         
+
 C
          DO K=1,NSTAVP(IPROC)
             INDX = abs(IMAP_STAV_LG(K,IPROC))
-            WRITE(15,80) STAVLOC(INDX)
+            if (use_vel_stat_file ) then
+               WRITE(151,80) STAVLOC(INDX)
+            else
+               WRITE(15,80) STAVLOC(INDX)
+            endif
          ENDDO
+         if (use_vel_stat_file  ) close(151)
 C
 C--If IM=10 Write Concentration Station Info:
 C--Create Local-to-Global element "ownership" of an concentration station
@@ -1426,7 +1468,7 @@ C
 C     WRITE(15,80) STACMSG   !jgf45.07 we may have changed NOUTC in adcprep
             WRITE(15,*) NOUTC,TOUTSC,TOUTFC,NSPOOLC
 C
-            DO K = 1,NSTAC
+            DO K = 1,abs(NSTAC)
                DO J=1,NELP(IPROC)
                   INDX = abs(IMAP_EL_LG(J,IPROC))
                   IF (INDX.EQ.NNSCG(K)) THEN
@@ -1435,18 +1477,38 @@ C
                      if (STAC_SHARE(K) > -1) KK = -K
                      IMAP_STAC_LG(NSTACP(IPROC),IPROC) = KK
                      STAC_SHARE(K) = IPROC
+                     ! tcm v51.20.03 once found exit the element loop
+                     exit                     
                   ENDIF
                ENDDO
             ENDDO
             NSTAC_MAX = MAX(NSTACP(IPROC),NSTAC_MAX)
 C
+C...     update the number of stations for this proc's domain
+         if (use_conc_stat_file ) then  !tcm v51.20.03
+            CALL INSERT(NSTACMSG,OUTMSG,-NSTACP(IPROC),1)  !keep the negative sign for fort.15
+            write(15,80) OUTMSG
             CALL INSERT(NSTACMSG,OUTMSG,NSTACP(IPROC),1)
-            WRITE(15,80) OUTMSG
-C
+            LOCSTATFN(1:20) = 'PE0000/conc_stat.151'
+            CALL IWRITE(LOCstatFN,3,6,IPROC-1)
+            ios_stations = 0
+            open(unit=151,file=locstatfn,
+     &                    status='unknown',iostat=ios_stations)
+            write(151,80) OUTMSG 
+         else
+            CALL INSERT(NSTACMSG,OUTMSG,NSTACP(IPROC),1)
+            write(15,80) OUTMSG
+         endif         
+C ... write the stations located in this proc's domain
             DO K=1,NSTACP(IPROC)
                INDX = abs(IMAP_STAC_LG(K,IPROC))
-               WRITE(15,80) STACLOC(INDX)
+               IF (use_conc_stat_file) then
+                  write(151,80) STACLOC(INDX)
+               ELSE
+                  WRITE(15,80) STACLOC(INDX)
+               ENDIF
             ENDDO
+            IF (use_conc_stat_file) close(151)
 C
          ENDIF
 C
@@ -1456,7 +1518,7 @@ C
          NSTAMP(IPROC) = 0
          IF (NWS.NE.0) THEN
             WRITE(15,*) NOUTM,TOUTSM,TOUTFM,NSPOOLM
-            DO K = 1,NSTAM
+            DO K = 1,abs(NSTAM)
                DO J=1,NELP(IPROC)
                   INDX = abs(IMAP_EL_LG(J,IPROC))
                   IF (INDX.EQ.NNSMG(K)) THEN
@@ -1465,18 +1527,39 @@ C
                      if (STAM_SHARE(K) > -1) KK = -K
                      IMAP_STAM_LG(NSTAMP(IPROC),IPROC) = KK
                      STAM_SHARE(K) = IPROC
+                     ! tcm v51.20.03 once found exit the element loop
+                     exit                     
                   ENDIF
                ENDDO
             ENDDO
             NSTAM_MAX = MAX(NSTAMP(IPROC),NSTAM_MAX)
 C
+C...        update the number of stations for this proc's domain
+         if (use_met_stat_file ) then  !tcm v51.20.03
+            CALL INSERT(NSTAMMSG,OUTMSG,-NSTAMP(IPROC),1)  !keep the negative sign for fort.15
+            write(15,80) OUTMSG
             CALL INSERT(NSTAMMSG,OUTMSG,NSTAMP(IPROC),1)
-            WRITE(15,80) OUTMSG
+            LOCSTATFN(1:19) = 'PE0000/met_stat.151'
+            CALL IWRITE(LOCstatFN,3,6,IPROC-1)
+            ios_stations = 0
+            open(unit=151,file=locstatfn(1:19),
+     &                    status='unknown',iostat=ios_stations)
+            write(151,80) OUTMSG 
+         else
+            CALL INSERT(NSTAMMSG,OUTMSG,NSTAMP(IPROC),1)
+            write(15,80) OUTMSG
+         endif         
 C
+C...        write the stations located in this proc's domain
             DO K=1,NSTAMP(IPROC)
                INDX = abs(IMAP_STAM_LG(K,IPROC))
-               WRITE(15,80) STAMLOC(INDX)
+               IF (use_met_stat_file) then
+                  WRITE(151,80) STAMLOC(INDX)
+               ELSE
+                  WRITE(15,80) STAMLOC(INDX)
+               ENDIF
             ENDDO
+            IF (use_met_stat_file) CLOSE(151)
          ENDIF
 
 C
@@ -1602,7 +1685,8 @@ C
       print *, " "
       print *, "Station Data"
       print *, "DOMAIN      NSTAE   NSTAV    NSTAC    NSTAM"
-      WRITE(*,92)  "GLOBAL",NSTAE,NSTAV,NSTAC,NSTAM
+      WRITE(*,92)  "GLOBAL",abs(NSTAE),abs(NSTAV),
+     &                      abs(NSTAC),abs(NSTAM)
       DO IPROC=1, NPROC
          PE(1:6) = 'PE0000'
          CALL IWRITE(PE,3,6,IPROC-1)
@@ -1872,7 +1956,7 @@ C--Write the Global indexes of all Elevation Stations in local node order
 C  write global index as positive if a resident node and negative
 C  if a ghost node
 
-         WRITE(18,3004) NSTAE, NSTAE_MAX, NSTAEP(I) ! number of Global Elevation Stations
+         WRITE(18,3004) abs(NSTAE), NSTAE_MAX, NSTAEP(I) ! number of Global Elevation Stations
          DO J = 1,NSTAEP(I)
             INDX = IMAP_STAE_LG(J,I)
             WRITE(18,'(I12)') INDX           ! Global station number
@@ -1882,7 +1966,7 @@ C--Write the Global indexes of all Velocity Stations in local node order
 C  write global index as positive if a resident node and negative
 C  if a ghost node
 
-         WRITE(18,3005) NSTAV, NSTAV_MAX, NSTAVP(I) ! number of Global Velocity Stations
+         WRITE(18,3005) abs(NSTAV), NSTAV_MAX, NSTAVP(I) ! number of Global Velocity Stations
          DO J = 1,NSTAVP(I)
             INDX = IMAP_STAV_LG(J,I)
             WRITE(18,'(I12)') INDX           ! Global station number
@@ -1892,7 +1976,7 @@ C--Write the Global indexes of all Elevation Stations in local node order
 C  write global index as positive if a resident node and negative
 C  if a ghost node
 
-         WRITE(18,3006) NSTAM, NSTAM_MAX, NSTAMP(I) ! number of Global Meteorlogical Stations
+         WRITE(18,3006) abs(NSTAM), NSTAM_MAX, NSTAMP(I) ! number of Global Meteorlogical Stations
          DO J = 1,NSTAMP(I)
             INDX = IMAP_STAM_LG(J,I)
             WRITE(18,'(I12)') INDX           ! Global station number
@@ -1902,7 +1986,7 @@ C--Write the Global indexes of all Concentration Stations in local node order
 C  write global index as positive if a resident node and negative
 C  if a ghost node
 
-         WRITE(18,3007) NSTAC, NSTAC_MAX, NSTACP(I) ! number of Global Concentration Stations
+         WRITE(18,3007) abs(NSTAC), NSTAC_MAX, NSTACP(I) ! number of Global Concentration Stations
          DO J = 1,NSTACP(I)
             INDX = IMAP_STAC_LG(J,I)
             WRITE(18,'(I12)') INDX           ! Global station number
@@ -2241,13 +2325,13 @@ C        Open full domain and subdomain fort.88 files.
      
          IF (.not.Success) THEN
             WRITE(*,*) 'WARNING: Unit 88 files not preprocessed.'
-            RETURN ! note early return
-         ENDIF
+         RETURN ! note early return
+      ENDIF
 
-         ALLOCATE(et_SWSE(NNODG))
-         DO I=1, NNODG
+      ALLOCATE(et_SWSE(NNODG))
+      DO I=1, NNODG
             READ(88,80,END=9999) et_SWSE(I)
-         END DO
+      END DO
 
          DO IPROC=startProc,endProc
             DO I=1, NNODP(IPROC)
@@ -6003,13 +6087,13 @@ C
       WRITE(80,'(I8,24x,A)') MNEP,'! Max elements on any processor'!jgf45.07
       WRITE(80,'(I8,24x,A)') IM,'! IM, run type'         !jgf46.02
       WRITE(80,'(I8,24x,A)') NWS,'! NWS, wind data type' !jgf46.02
-      WRITE(80,'(I8,24x,A)') NSTAE,'! NSTAE'
-      WRITE(80,'(I8,24x,A)') NSTAV,'! NSTAV'
+      WRITE(80,'(I8,24x,A)') abs(NSTAE),'! NSTAE'
+      WRITE(80,'(I8,24x,A)') abs(NSTAV),'! NSTAV'
       IF (IM.EQ.10) THEN
-         WRITE(80,'(I8,24x,A)') NSTAC,' ! NSTAC' !jgf46.02
+         WRITE(80,'(I8,24x,A)') abs(NSTAC),' ! NSTAC' !jgf46.02
       ENDIF
       IF (NWS.NE.0) THEN
-         WRITE(80,'(I8,24x,A)') NSTAM,'! NSTAM' !jgf46.02
+         WRITE(80,'(I8,24x,A)') abs(NSTAM),'! NSTAM' !jgf46.02
       ENDIF
       WRITE(80,'(I8,24x,A)') MNHARF,'! MNHARF'
       WRITE(80,'(2I8,16x,A)') MNWLAT,MNWLON,'! NWLON, NWLAT'
@@ -6467,8 +6551,8 @@ C     fort.61
       ElevStaDescript % specifier            = NOUTE
       ElevStaDescript % initial_value        = 0.0
       ElevStaDescript % num_items_per_record = 1
-      ElevStaDescript % num_fd_records       = NSTAE
-      ElevStaDescript % num_records_this     = NSTAE
+      ElevStaDescript % num_fd_records       = abs(NSTAE)
+      ElevStaDescript % num_records_this     = abs(NSTAE)
       ElevStaDescript % ConsiderWetDry       = .TRUE.
       ElevStaDescript % alternate_value      = -99999.0
       ElevStaDescript % field_name           = 'ElevSta'
@@ -6484,8 +6568,8 @@ C     fort.62
       VelStaDescript % specifier            = NOUTV
       VelStaDescript % initial_value        = 0.0
       VelStaDescript % num_items_per_record = 2
-      VelStaDescript % num_fd_records       = NSTAV
-      VelStaDescript % num_records_this     = NSTAV
+      VelStaDescript % num_fd_records       = abs(NSTAV)
+      VelStaDescript % num_records_this     = abs(NSTAV)
       VelStaDescript % ConsiderWetDry       = .FALSE.
       VelStaDescript % alternate_value      = 0.0
       VelStaDescript % field_name           = 'VelSta'
@@ -6541,8 +6625,8 @@ C     fort.71
       PrStaDescript % specifier            = NOUTM
       PrStaDescript % initial_value        = 0.0
       PrStaDescript % num_items_per_record = 1
-      PrStaDescript % num_fd_records       = NSTAM
-      PrStaDescript % num_records_this     = NSTAM
+      PrStaDescript % num_fd_records       = abs(NSTAM)
+      PrStaDescript % num_records_this     = abs(NSTAM)
       PrStaDescript % ConsiderWetDry       = .FALSE.
       PrStaDescript % alternate_value      = 0.0
       PrStaDescript % field_name           = 'PrSta'
@@ -6558,8 +6642,8 @@ C     fort.72
       WindVelStaDescript % specifier            = NOUTM
       WindVelStaDescript % initial_value        = 0.0
       WindVelStaDescript % num_items_per_record = 2
-      WindVelStaDescript % num_fd_records       = NSTAM
-      WindVelStaDescript % num_records_this     = NSTAM
+      WindVelStaDescript % num_fd_records       = abs(NSTAM)
+      WindVelStaDescript % num_records_this     = abs(NSTAM)
       WindVelStaDescript % ConsiderWetDry       = .FALSE.
       WindVelStaDescript % alternate_value      = 0.0
       WindVelStaDescript % field_name           = 'WindVelSta'
@@ -7036,7 +7120,7 @@ C     hotstart harmonic analysis
       HarmElevFDLVDescript % num_fd_records       = MNP
       HarmElevSLVDescript % specifier            = NHSTAR
       HarmElevSLVDescript % initial_value        = 0.0
-      HarmElevSLVDescript % num_fd_records       = NSTAE
+      HarmElevSLVDescript % num_fd_records       = abs(NSTAE)
       HarmUVelFDLVDescript % specifier            = NHSTAR
       HarmUVelFDLVDescript % initial_value        = 0.0
       HarmUVelFDLVDescript % num_fd_records       = MNP
@@ -7045,10 +7129,10 @@ C     hotstart harmonic analysis
       HarmVVelFDLVDescript % num_fd_records       = MNP
       HarmUvelSLVDescript % specifier            = NHSTAR
       HarmUVelSLVDescript % initial_value        = 0.0
-      HarmUVelSLVDescript % num_fd_records       = NSTAV
+      HarmUVelSLVDescript % num_fd_records       = abs(NSTAV)
       HarmVVelSLVDescript % specifier            = NHSTAR
       HarmVVelSLVDescript % initial_value        = 0.0
-      HarmVVelSLVDescript % num_fd_records       = NSTAV
+      HarmVVelSLVDescript % num_fd_records       = abs(NSTAV)
 C     hotstart means and variance calculations
       ELAVDescript % specifier            = NHSTAR
       ELAVDescript % initial_value        = 0.0
@@ -7092,7 +7176,7 @@ C     we collected in read_global.F and stored in pre_global.F.
      &   ics, nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
      &   reftim, rnday, dramp, a00, b00, c00, h0, cori, ntif, nbfr,
      &   myProc, screenUnit, nolibf, nwp, tau0, cf, eslm,
-     &   nstae, nstav, nstam, neta, nabout, nscreen,
+     &   abs(nstae), abs(nstav), abs(nstam), neta, nabout, nscreen,
      &   nfen, iden, islip, kp, z0s, z0b, theta1, theta2,
      &   ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd,
      &   nvtd, alp4, C3D)

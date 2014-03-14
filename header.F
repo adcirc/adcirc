@@ -2,6 +2,52 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.25    - 03/14/2014 - tcm -- Merging the v51.20.01-07 changes
+C                into the trunk.
+C    v51.20.07 - 03/07/2014 - tcm - Adding trunk updates to this branch
+C                prior to reintegration.
+C    v51.20.06 - 03/07/2014 - tcm - Finished additions for max/min records
+C                where the time the max/min occurs is also recorded.  The
+C                max/min files now have two "time records" instead of one.
+C                The first "time record" records the actual max/min value
+C                and the second "time record" records the time in seconds
+C                when the max/min occurred.  The NetCDF files for the max/min
+C                for ADCIRC information has also been updated and includes a
+C                new set of variables that prefix to the original names with
+C                time_of_oldvariable name.  NetCDF files are still not
+C                used to initialize the max/min values at hotstart which
+C                was a capability to start with.  However, if the ascii max/min
+C                files are present then the max/min values and their associated
+C                times will be initialized from the file.  If a legacy max/min
+C                file is encountered without the times data, then the times
+C                associated with the max/min is set to -99999.d0 to flag
+C                unknown.
+C    v51.20.05 - 02/28/2014 - tcm -Finished adding the use of external files
+C                for specifying recording stations locations.  Also added 
+C                some debugging checks for reading fort.18 files during
+C                parallel execution.
+C    v51.20.04 - 02/28/2014 - tcm - Adding the use of external files for
+C                specifying recording stations into the ADCIRC/PADCIRC
+C                codes.
+C    v51.20.03 - 02/27/2014 - tcm - Adding the use of external files for 
+C                specifying recording station (elev, vel, conc, met) locations
+C                Updated the adcprep routines at this time.  Triggered by a 
+C                negative value for (NSTAE,NSTAV,NSTAC, or NSTAM) in the
+C                fort.15 file.  External station files are named:
+C                elev_stat.151, vel_stat.151, conc_stat.151, met_stat.151.
+C                The first line of this file contains the number of stations
+C                the remaining lines of the file are the same format as the
+C                stations are listed in the fort.15 now.  Not that the actual
+C                value of the NSTAE etc in the fort.15 is reset if the value
+C                in the external file is different.
+C    v51.20.02 - 01/24/2014 - tcm - Continued adding capability to track the
+C                time step number that a max/min value occurs at.  Updated
+C                how max/min files are read at hstart so that now every proc
+C                has the max/min value at hot start time.  Write the values
+C                and the time stamp in the max/min files now.  Still not
+C                finished.
+C    v51.20.01 - 11/19/2013 - tcm - Begin adding capability to track the
+C                time step number that a max/min value occurs at.
 C  v51.24    - 01/31/2014 - tcm - Fixed bug in processing fort.88 file in 
 C              prep.F by using a maximum of 256 subdomains open at a time.
 C  v51.23    - 12/16/2013 - jgf - Moved CPP subroutine from adcirc module to

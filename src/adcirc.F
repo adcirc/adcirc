@@ -332,6 +332,7 @@ C
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
+
       RETURN
       END SUBROUTINE ADCIRC_Init
 

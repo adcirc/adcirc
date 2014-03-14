@@ -170,12 +170,12 @@ C
          case(0,10,20,30,40,1,11,21,41)
             DO I=1,NVELL(K)
                READ(14,*) NBVV(K,I)
-               IBCONNR(K,I) = 0
+              IBCONNR(K,I) = 0
             ENDDO
          case(3,13,23)
             DO I=1,NVELL(K)
                READ(14,*) NBVV(K,I),BAR1(K,I),BAR2(K,I)
-               IBCONNR(K,I) = 0
+              IBCONNR(K,I) = 0
             ENDDO
          case(4,24)
             DO I=1,NVELL(K)
@@ -338,7 +338,18 @@ C
       INTEGER :: ios_metCon
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       INTEGER :: IOS_WC
+C...tcm v51.20.03 Local variables for external station location files
+      INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
+      INTEGER :: IOS_STATIONS
 
+c.....tcm v51.20.03 initialize external station location specifications
+C..... to false, meaning if locations are supplied they are in the fort.15 
+C..... file.
+      USE_ELEV_STAT_FILE = .FALSE.
+      USE_VEL_STAT_FILE = .FALSE.
+      USE_MET_STAT_FILE = .FALSE.
+      USE_CONC_STAT_FILE = .FALSE.
+C
       found_tbc_nml = .false.   !flag to determine if the timebathycontrol namelist was present
       found_metCon_nml = .false.   !flag to determine if the metControl namelist was present
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
@@ -963,8 +974,27 @@ C...
 C
       READ(15,80) NSTAEMSG
       READ(NSTAEMSG,*) NSTAE
-      IF (NSTAE.GT.MNSTAE) THEN
-         print *, "NSTAE = ",NSTAE, " exceeds parameter MNSTAE = ",
+      !tcm v51.20.03 -- addition for external elevation station file
+      if (NSTAE < 0 ) then
+         WRITE(*,*) "External File Used for Elevation Station Locations"
+         USE_ELEV_STAT_FILE = .TRUE.
+         IOS_STATIONS = 0
+         NSTAE = abs(NSTAE)  !reset to positive
+         NSTAE2 = 0
+         OPEN(unit=151,file='elev_stat.151',status='old',err=7690,iostat=ios_stations)
+         READ(151,*) NSTAE2
+         IF (ABS(NSTAE2).NE. ABS(NSTAE)) THEN
+            NSTAE = ABS(NSTAE2)  !RESET THE VALUE TO WHAT'S IN THE FILE
+         ENDIF
+7690     IF (IOS_STATIONS .NE. 0) THEN
+            WRITE(*,*) "Error in Reading Elevation Station File: elev_stat.151"
+            stop  ! there is a stop here
+         ENDIF                  
+      ELSE 
+         WRITE(*,*) "Elevation Station Locations contained in fort.15"
+      ENDIF
+      IF (ABS(NSTAE).GT.MNSTAE) THEN
+         print *, "NSTAE = ",abs(NSTAE), " exceeds parameter MNSTAE = ",
      &              MNSTAE
           stop
       ENDIF
@@ -973,49 +1003,53 @@ C
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
-!      IF(.NOT. ALLOCATED(STATNUMB))ALLOCATE(STATNUMB(NSTAE,SNUMLEN))
-      IF(.NOT. ALLOCATED(STATNAME))ALLOCATE(STATNAME(NSTAE))
+!      IF(.NOT. ALLOCATED(STATNUMB))ALLOCATE(STATNUMB(abs(NSTAE),SNUMLEN))
+      IF(.NOT. ALLOCATED(STATNAME))ALLOCATE(STATNAME(abs(NSTAE)))
 C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
 #endif
-      DO I=1,NSTAE
-         READ(15,'(A132)') STAELOC(I)
-         IF(ICS.EQ.1) THEN
+      DO I=1,ABS(NSTAE)
+         IF (USE_ELEV_STAT_FILE ) then  !read from external file
+            READ(151,'(A132)') STAELOC(I)
+         ELSE
+            READ(15,'(A132)') STAELOC(I)
+         ENDIF
+            IF(ICS.EQ.1) THEN
 
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
-              IF((abs(NOUTE).NE.3).AND.(abs(NOUTE).NE.5))THEN
-                 READ(STAELOC(I),*) XEL(I),YEL(I)
-              ELSE
-#ifdef ADCNETCDF
-!               READ(15,'(A132)') STATLINE
-!               call parse(STATLINE, LVAR)
-                call parse(STAELOC(I), LVAR)
-                XEL(I)=a2f(LVAR(1))
-                YEL(I)=a2f(LVAR(2))
-                STATNAME(I)=LVAR(3)
-C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
-#endif
-              ENDIF
-
-         ELSE
-              IF((abs(NOUTE).NE.3).AND.(abs(NOUTE).NE.5))THEN
-
-                 READ(STAELOC(I),*) SLEL(I),SFEL(I)
-              ELSE
+               IF((abs(NOUTE).NE.3).AND.(abs(NOUTE).NE.5))THEN
+                  READ(STAELOC(I),*) XEL(I),YEL(I)
+               ELSE
 #ifdef ADCNETCDF
 !                READ(15,'(A132)') STATLINE
 !                call parse(STATLINE, LVAR)
                  call parse(STAELOC(I), LVAR)
-                 SLEL(I)=a2f(LVAR(1))
-                 SFEL(I)=a2f(LVAR(2))
+                 XEL(I)=a2f(LVAR(1))
+                 YEL(I)=a2f(LVAR(2))
                  STATNAME(I)=LVAR(3)
+C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
+#endif
+               ENDIF
+
+            ELSE
+               IF((abs(NOUTE).NE.3).AND.(abs(NOUTE).NE.5))THEN
+
+                  READ(STAELOC(I),*) SLEL(I),SFEL(I)
+               ELSE
+#ifdef ADCNETCDF
+!                 READ(15,'(A132)') STATLINE
+!                 call parse(STATLINE, LVAR)
+                  call parse(STAELOC(I), LVAR)
+                  SLEL(I)=a2f(LVAR(1))
+                  SFEL(I)=a2f(LVAR(2))
+                  STATNAME(I)=LVAR(3)
 !                 WRITE(6,*)"parsed stations"
 !                 WRITE(6,9911) SLEL(I),SFEL(I), STATNAME(I,SNAMLEN)
 #endif
-             ENDIF
+               ENDIF
 
 
             SLEL(I)=DEG2RAD*SLEL(I)
@@ -1024,15 +1058,9 @@ c           CALL CPP(XEL(I),YEL(I),SL1,SF1,SL0,SF0)
             XEL(I) = R*(SLEL(I)-SL0)*COS(SF0)
             YEL(I) = R*SFEL(I)
          ENDIF
-      ENDDO
- 9911            FORMAT(F12.3,2X,F12.3, 6X, A50)
-
-!      DO I=1,NSTAE
-!      WRITE(6,*)" XEL ===", XEL(I),YEL(I)
-!      END DO
-!      DO I=1,NSTAE
-!      WRITE(6,*)" SLEL(I),SFEL(I) ===",SLEL(I),SFEL(I)
-!      END DO
+         ENDDO !loop over elevation stations
+         if (USE_ELEV_STAT_FILE) CLOSE(151) !close external file if one was used
+ 9911    FORMAT(F12.3,2X,F12.3, 6X, A50)
 
 C
 C--For Each Elevation Station:
@@ -1042,7 +1070,7 @@ c...tcm v49.48.01 replace with new call to kdtsearch
 !      CALL CoordToEle(XEL,YEL,NNSEG,NSTAE,
 !     &     'Elevation recording station   ')
       call setup_kdt_search()
-      call kdtsearch(XEL,YEL,NNSEG,NSTAE,
+      call kdtsearch(XEL,YEL,NNSEG,abs(NSTAE),
      &     'Elevation recording station   ')
 C
 C--Read Velocity Recording Stations
@@ -1056,8 +1084,28 @@ C
 C
       READ(15,80) NSTAVMSG
       READ(NSTAVMSG,*) NSTAV
-      IF (NSTAV.GT.MNSTAV) THEN
-        print *, "NSTAV = ",NSTAV, " exceeds parameter MNSTAV = ",
+      !tcm v51.20.03 -- addition for external velocity station location file vel_stat.151
+      IF (NSTAV < 0 ) then
+         WRITE(*,*) "External File Used for Velocity Station Locations"
+         USE_VEL_STAT_FILE = .TRUE.
+         IOS_STATIONS = 0
+         NSTAV = ABS(NSTAV) ! reset to positive value
+         NSTAV2 = 0
+         OPEN(unit=151,file='vel_stat.151',status='old',err=7691,iostat=ios_stations)
+         READ(151,*) NSTAV2
+         IF (ABS(NSTAV2).NE. ABS(NSTAV)) THEN
+            NSTAV = ABS(NSTAV2)  !RESET THE VALUE TO WHAT'S IN THE FILE
+         ENDIF
+7691     IF (IOS_STATIONS .NE. 0) THEN
+            WRITE(*,*) "Error in Reading Velocity Station File: vel_stat.151"
+            stop  ! there is a stop here
+         ENDIF                  
+      ELSE 
+         WRITE(*,*) "Velocity Station Locations Contained in fort.15"
+      ENDIF
+      
+      IF (ABS(NSTAV).GT.MNSTAV) THEN
+        print *, "NSTAV = ",abs(NSTAV), " exceeds parameter MNSTAV = ",
      &             MNSTAV
         stop
       ENDIF
@@ -1066,52 +1114,52 @@ C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
 !      IF(.NOT. ALLOCATED(STATNUMBV))ALLOCATE(STATNUMBV(NSTAV,SNUMLEN))
-      IF(.NOT. ALLOCATED(STATNAMEV))ALLOCATE(STATNAMEV(NSTAV))
+      IF(.NOT. ALLOCATED(STATNAMEV))ALLOCATE(STATNAMEV(abs(NSTAV)))
 C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
 C
 #endif
-      IF (ICS.EQ.1) THEN
 
-
-        DO I=1,NSTAV
-           READ(15,'(A132)') STAVLOC(I)
+      DO I=1,ABS(NSTAV)
+         if (USE_VEL_STAT_FILE ) then !read from external file
+            READ(151,'(A132)') STAVLOC(I)
+         else
+            READ(15,'(A132)') STAVLOC(I)
+         ENDIF
+         IF (ICS.eq.1) then
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
-           IF((abs(NOUTV).NE.3).AND.(abs(NOUTV).NE.5)) THEN
-              READ(STAVLOC(I),*) XEV(I),YEV(I)
-           ELSE
+            IF((abs(NOUTV).NE.3).AND.(abs(NOUTV).NE.5)) THEN
+               READ(STAVLOC(I),*) XEV(I),YEV(I)
+            ELSE
 #ifdef ADCNETCDF
-              call parse(STAVLOC(I), LVAR)
-              XEV(I)=a2f(LVAR(1))
-              YEV(I)=a2f(LVAR(2))
-              STATNAMEV(I)=LVAR(3)
+               call parse(STAVLOC(I), LVAR)
+               XEV(I)=a2f(LVAR(1))
+               YEV(I)=a2f(LVAR(2))
+               STATNAMEV(I)=LVAR(3)
 C              WRITE(6,9911) XEV(I), YEV(I), STATNAMEV(I)
 #endif
-           ENDIF
+            ENDIF
 
-        ENDDO
-
-      ELSE
-        DO I=1,NSTAV
-           READ(15,'(A132)') STAVLOC(I)
-           IF((abs(NOUTV).NE.3).AND.(abs(NOUTV).NE.5)) THEN
+         ELSE
+         
+            IF((abs(NOUTV).NE.3).AND.(abs(NOUTV).NE.5)) THEN
                READ(STAVLOC(I),*) SLEV(I),SFEV(I)
 
-           ELSE
+            ELSE
 #ifdef ADCNETCDF
-              call parse(STAVLOC(I), LVAR)
-              SLEV(I)=a2f(LVAR(1))
-              SFEV(I)=a2f(LVAR(2))
-              STATNAMEV(I)=LVAR(3)
+               call parse(STAVLOC(I), LVAR)
+               SLEV(I)=a2f(LVAR(1))
+               SFEV(I)=a2f(LVAR(2))
+               STATNAMEV(I)=LVAR(3)
 !              WRITE(6,*)"parsed stations"
 !              WRITE(6,9911) SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
 !              WRITE(6,*)"STATION INFO - AFTER *************",
 !     &           SLEV(I),SFEV(I), STATNAMEV(I,SNAMLEN)
 #endif
-         ENDIF
+            ENDIF
 C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
@@ -1122,8 +1170,9 @@ C     ==================================================================
 C          CALL CPP(XEV(I),YEV(I),SL1,SF1,SL0,SF0)
            XEV(I) = R*(SLEV(I)-SL0)*COS(SF0)
            YEV(I) = R*SFEV(I)
-        ENDDO
-      ENDIF
+         ENDIF  !test for ICS
+      ENDDO !loop over velocity stations
+      IF (USE_VEL_STAT_FILE) CLOSE(151) !close external file if one was used
 C
 C--For Each Velocity Station:
 C  Find the Global Index of the element it lies in.
@@ -1131,7 +1180,7 @@ C
 c...tcm v49.48.01 replace with new call to kdtsearch
 !      CALL CoordToEle(XEV,YEV,NNSVG,NSTAV,
 !     &     'Velocity recording station    ')
-      call kdtsearch(XEV,YEV,NNSVG,NSTAV,
+      call kdtsearch(XEV,YEV,NNSVG,abs(NSTAV),
      &     'Velocity recording station    ')
 
 C
@@ -1148,26 +1197,50 @@ C
 C
         READ(15,80) NSTACMSG
         READ(NSTACMSG,*) NSTAC
-        IF (NSTAC.GT.MNSTAC) THEN
-          print *, "NSTAC = ",NSTAC, " exceeds parameter MNSTAC = ",
+       !tcm v51.20.03 -- addition for external Concentration station file
+        if (NSTAC < 0 ) then
+           WRITE(*,*) "External File Used for Concentration Station Locations"
+           USE_CONC_STAT_FILE = .TRUE.
+           IOS_STATIONS = 0
+           NSTAC = ABS(NSTAC) !RESET TO POSITIVE
+           NSTAC2 = 0 !INITIALIZE
+           OPEN(unit=151,file='conc_stat.151',status='old',err=7692,iostat=ios_stations)
+           READ(151,*) NSTAC2
+           IF (ABS(NSTAC2).NE. ABS(NSTAC)) THEN
+              NSTAC = ABS(NSTAC2)  !RESET THE VALUE TO WHAT'S IN THE FILE
+           ENDIF
+7692       IF (IOS_STATIONS .NE. 0) THEN
+              WRITE(*,*) "Error in Reading Concentration Station File: conc_stat.151"
+              STOP  ! THERE IS A STOP HERE
+           ENDIF                  
+        ELSE 
+           WRITE(*,*) "Concentration Station Locations Contained in fort.15"
+        ENDIF
+        
+        IF (ABS(NSTAC).GT.MNSTAC) THEN
+          print *, "NSTAC = ",abs(NSTAC), " exceeds parameter MNSTAC = ",
      &              MNSTAC
           stop
         ENDIF
 C
-        DO I=1,NSTAC
+        DO I=1,ABS(NSTAC)
+           IF (USE_CONC_STAT_FILE) THEN !READ FROM EXTERNAL FILE
+              READ(151,'(A132)') STACLOC(I)
+           ELSE
+              READ(15,'(A132)') STACLOC(I)
+           ENDIF
            IF (ICS.EQ.1) THEN
-             READ(15,'(A132)') STACLOC(I)
              READ(STACLOC(I),*) XEC(I),YEC(I)
            ELSE
-             READ(15,'(A132)') STACLOC(I)
              READ(STACLOC(I),*) SLEC(I),SFEC(I)
              SLEC(I)=DEG2RAD*SLEC(I)
              SFEC(I)=DEG2RAD*SFEC(I)
 c            CALL CPP(XEC(I),YEC(I),SL1,SF1,SL0,SF0)
              XEC(I) = R*(SLEC(I)-SL0)*COS(SF0)
              YEC(I) = R*SFEC(I)
-           ENDIF
-        ENDDO
+           ENDIF !test for ICS
+        ENDDO  !loop over stations
+        IF (USE_CONC_STAT_FILE) CLOSE(151) !CLOSE EXTERNAL FILE IF ONE WAS USED
 C
 C--For Each Concentration Recording Station:
 C  Find the Global Index of the element it lies in.
@@ -1175,7 +1248,7 @@ C
 c...tcm v49.48.01 replace with new call to kdtsearch
 !         CALL CoordToEle(XEC,YEC,NNSCG,NSTAC,
 !     &        'Concentration station         ')
-         call kdtsearch(XEC,YEC,NNSCG,NSTAC,
+         call kdtsearch(XEC,YEC,NNSCG,abs(NSTAC),
      &        'Concentration station         ')
 C
       ENDIF
@@ -1194,8 +1267,29 @@ C
 C
          READ(15,80) NSTAMMSG
          READ(NSTAMMSG,*) NSTAM
-         IF (NSTAM.GT.MNSTAM) THEN
-            print *, "NSTAM = ",NSTAM, " exceeds parameter MNSTAM = ",
+         !tcm v51.20.03 -- addition for external met station file
+         IF (NSTAM < 0 ) THEN
+            WRITE(*,*) "External File Used for MET Station Locations"
+            USE_MET_STAT_FILE = .TRUE.
+            IOS_STATIONS = 0
+            NSTAM = ABS(NSTAM) !RESET TO POSITIVE VALUE
+            NSTAM2 = 0 !INITIALIZE
+            OPEN(unit=151,file='met_stat.151',status='old',
+     &           err=7693,iostat=ios_stations)
+            READ(151,*) NSTAM2
+            IF (ABS(NSTAM2).NE. ABS(NSTAM)) THEN
+               NSTAM = ABS(NSTAM2)  !RESET THE VALUE TO WHAT'S IN THE FILE
+            ENDIF
+7693        IF (IOS_STATIONS .NE. 0) THEN
+               WRITE(*,*) "Error in Reading MET Station File: met_stat.151"
+               STOP  ! THERE IS A STOP HERE
+            ENDIF                  
+         ELSE 
+            WRITE(*,*) "MET Station Locations Contained in fort.15"
+         ENDIF
+
+         IF (ABS(NSTAM).GT.MNSTAM) THEN
+            print *, "NSTAM = ",abs(NSTAM), " exceeds parameter MNSTAM = ",
      &           MNSTAM
             stop
          ENDIF
@@ -1203,17 +1297,21 @@ C
 C     ==================================================================
 C     START ADDITION BY MCF FOR NETCDF OPTION
 C
+
 !         IF(.NOT.ALLOCATED(STATNUMBM))ALLOCATE(STATNUMBM(NSTAM,SNUMLEN))
-         IF(.NOT.ALLOCATED(STATNAMEM))ALLOCATE(STATNAMEM(NSTAM))
+         IF(.NOT.ALLOCATED(STATNAMEM))ALLOCATE(STATNAMEM(abs(NSTAM)))
 C
 C     END ADDITION BY MCF FOR NETCDF OPTION
 C     ==================================================================
 C
 #endif
-         DO I=1,NSTAM
-            READ(15,'(A132)') STAMLOC(I)
-!            READ(15,'(A132)') STAMLOC(I)
-!            WRITE(6,*)"STAMLOC(I) ================",I,STAMLOC(I)
+         DO I=1,ABS(NSTAM)
+            IF (USE_MET_STAT_FILE) THEN !READ FROM EXTERNAL FILE
+               READ(151,'(A132)') STAMLOC(I)
+            ELSE
+               READ(15,'(A132)') STAMLOC(I)
+            ENDIF
+C
             IF (ICS.EQ.1) THEN
 
 C     ==================================================================
@@ -1237,7 +1335,6 @@ C                 WRITE(6,9911) XEM(I), YEM(I), STATNAMEM(I)
                   READ(STAMLOC(I),*) SLEM(I),SFEM(I)
                ELSE
 #ifdef ADCNETCDF
-
                   call parse(STAMLOC(I), LVAR)
                   SLEM(I)=a2f(LVAR(1))
                   SFEM(I)=a2f(LVAR(2))
@@ -1257,8 +1354,9 @@ C     ==================================================================
 c     CALL CPP(XEM(I),YEM(I),SL1,SF1,SL0,SF0)
                XEM(I) = R*(SLEM(I)-SL0)*COS(SF0)
                YEM(I) = R*SFEM(I)
-            ENDIF
-         ENDDO
+            ENDIF  !test for ICS
+         ENDDO  !loop over stations
+         IF (USE_MET_STAT_FILE) CLOSE(151) !CLOSE EXTERNAL FILE IF ONE WAS USED        
 
 C
 C--For Each Meterological Recording Station:
@@ -1267,7 +1365,7 @@ C
 c...tcm v49.48.01 replace with new call to kdtsearch
 !         CALL CoordToEle(XEM,YEM,NNSMG,NSTAM,
 !     &        'Meteorological station        ')
-          call kdtsearch(XEM,YEM,NNSMG,NSTAM,
+         call kdtsearch(XEM,YEM,NNSMG,abs(NSTAM),
      &         'Meteorological station        ')
 C
       ENDIF

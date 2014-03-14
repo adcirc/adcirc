@@ -842,6 +842,7 @@ C-----------------------------------------------------------------------
      &                        Header74,
      &                        HEADER_MAX,
      &                        OPEN_GBL_FILE,
+     &                        OPEN_MINMAX_FILE,
      &                        PackOne,
      &                        PackTwo,
      &                        StoreOne,
@@ -1764,13 +1765,14 @@ C          for the swan variable we are in the loop for.
             SELECT CASE(ABS(NOUTGW)) 
             CASE(3,5)
                 SwanDescriptMax%Specifier = NOUTGW
-                CALL writeOutArrayMinMax(UnitNumber,DT*ITIME,ITIME,
+                CALL writeOutArrayMinMax(UnitNumber,DT*ITIME,ITIME,1,
      &              SwanDescriptMax,PackOne,UnpackOne)
             CASE DEFAULT
+                !tcm v51.20.01 changed unit number from 963 to 763 to avoid conflicts with STWAVE
                 FileNameMax = "swan_"//TRIM(Names(IW))//"_max.63"
-                CALL OPEN_GBL_FILE(963, TRIM(GLOBALDIR)//'/'//TRIM(FileNameMax),
-     &              NP_G, NP, HEADER_MAX)
-                CALL WRITE_GBL_FILE(963, TRIM(GLOBALDIR)//'/'//TRIM(FileNameMax),
+                CALL OPEN_MINMAX_FILE(763, TRIM(GLOBALDIR)//'/'//TRIM(FileNameMax),
+     &              NP_G, NP, 1, HEADER_MAX)
+                CALL WRITE_GBL_FILE(763, TRIM(GLOBALDIR)//'/'//TRIM(FileNameMax),
      &              SwanDescriptMax, DT*ITIME, ITIME, StoreOne)
             END SELECT    
          ENDDO

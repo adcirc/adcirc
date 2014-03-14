@@ -339,7 +339,12 @@ C  Just read past it.
       ENDDO
 
 C Read Global indexes of Elevation Station nodes ( used by module global_io )
-      READ(18,3015) NSTAE_G
+      READ(18,3015) NSTAE_G,jdumy_max,jdumy_loc    !tcm v51.20.05
+      IF (NSTAE .ne. jdumy_loc ) then
+         call allMessage(ERROR,"Elevation Station Dimensioning Error in fort.18")
+         CALL MSG_FINI()
+         STOP
+      ENDIF
       IF (NSTAE > 0) THEN
         ALLOCATE ( IMAP_STAE_LG(NSTAE) )
         DO I=1,NSTAE
@@ -348,7 +353,12 @@ C Read Global indexes of Elevation Station nodes ( used by module global_io )
       ENDIF
 
 C Read Global indexes of Velocity  Station nodes ( used by module global_io )
-      READ(18,3015) NSTAV_G
+      READ(18,3015) NSTAV_G,jdumy_max,jdumy_loc    !tcm v51.20.05
+      IF (NSTAV .ne. jdumy_loc ) then
+         call allMessage(ERROR,"Velocity Station Dimensioning Error in fort.18")
+         CALL MSG_FINI()
+         STOP
+      ENDIF
       IF (NSTAV > 0) THEN
         ALLOCATE ( IMAP_STAV_LG(NSTAV) )
         DO I=1,NSTAV
@@ -357,7 +367,12 @@ C Read Global indexes of Velocity  Station nodes ( used by module global_io )
       ENDIF
 
 C Read Global indexes of Meteorlogical Station nodes ( used by module global_io )
-      READ(18,3015) NSTAM_G
+      READ(18,3015) NSTAM_G,jdumy_max,jdumy_loc    !tcm v51.20.05
+      IF (NSTAM .ne. jdumy_loc ) then
+         call allMessage(ERROR,"Met. Station Dimensioning Error in fort.18")
+         CALL MSG_FINI()
+         STOP
+      ENDIF
       IF (NSTAM > 0) THEN
         ALLOCATE ( IMAP_STAM_LG(NSTAM) )
         DO I=1,NSTAM
@@ -366,7 +381,12 @@ C Read Global indexes of Meteorlogical Station nodes ( used by module global_io 
       ENDIF
 
 C Read Global indexes of Concentration Station nodes ( used by module global_io )
-      READ(18,3015) NSTAC_G
+      READ(18,3015) NSTAC_G,jdumy_max,jdumy_loc    !tcm v51.20.05
+      IF (NSTAC .ne. jdumy_loc ) then
+         call allMessage(ERROR,"Conc. Station Dimensioning Error in fort.18")
+         CALL MSG_FINI()
+         STOP
+      ENDIF
       IF (NSTAC > 0) THEN
         ALLOCATE ( IMAP_STAC_LG(NSTAC) )
         DO I=1,NSTAC

@@ -147,10 +147,14 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX_Time(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
+      REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX_Time_G(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
 #ifndef NUVMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  UMAX(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  UMAX_Time(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
+      REAL(SZ),ALLOCATABLE, TARGET ::  UMAX_Time_G(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
 #endif
       REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
@@ -160,10 +164,14 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  PrMin_Time(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
+      REAL(SZ),ALLOCATABLE, TARGET ::  PrMin_Time_G(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
 #ifndef NWVMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax_Time(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
+      REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax_Time_G(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
 #endif
 
       REAL(SZ),ALLOCATABLE, TARGET ::  DP(:)  !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
@@ -243,6 +251,8 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax(:)
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
+      REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time_G(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
 
       REAL(SZ),ALLOCATABLE :: TK(:)
       REAL(8),ALLOCATABLE :: EMO(:,:),EFA(:,:)
@@ -588,6 +598,8 @@ C
 C     jgf48.03 the following data structure is used to describe
 C     the size and shape of the output data.
 C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements to the structure
+C     TCMv51.20.01 removed hotstart and hotstart_g and replaced with maxmin_time and maxmin_time_g
+
       type OutputDataDescript_t
         CHARACTER(12)     :: file_name ! name of output file
         character(20)     :: field_name !Name of the field associated with the data structure
@@ -617,8 +629,8 @@ C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements t
         REAL(SZ), pointer :: array2_g(:) ! full domain 2nd vec component
         REAL(SZ), pointer :: array3_g(:) ! full domain 3rd vec component
         REAL(SZ), pointer :: array2D_g(:,:) ! fulldomain matrix
-        REAL(SZ), pointer :: hotstart(:) ! from hotstart (used by min max)
-        REAL(SZ), pointer :: hotstart_g(:) ! from hotstart (used by min max)
+!        REAL(SZ), pointer :: hotstart(:) ! from hotstart (used by min max)  !tcm v51.20.01 this no longer needed
+!        REAL(SZ), pointer :: hotstart_g(:) ! from hotstart (used by min max) !tcm v51.20.01 this no longer needed
       end type OutputDataDescript_t
 
       INTEGER ITAU0P ! position in tau0 output file for variable tau0
@@ -1296,6 +1308,8 @@ C-----------------------------------------------------------------------
       END SUBROUTINE readAndMapToSubdomainInt2D
 C-----------------------------------------------------------------------
 
+
+
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E
 C            R E A D  A N D  M A P  E L E
@@ -1576,7 +1590,9 @@ C
       ALLOCATE ( ETA1(MNP),ETA2(MNP), EtaDisc(MNP))
 
       ALLOCATE ( ETAMAX(MNP)) ! v46.50 sb 11/11/2006
+      ALLOCATE ( ETAMAX_Time(MNP)) ! tcm v51.20.01 
       ALLOCATE ( UMAX(MNP)) ! v46.50 sb 11/11/2006
+      ALLOCATE ( UMAX_Time(MNP)) ! tcm v51.20.01 
 
       ALLOCATE ( CORIF(MNP))
       ALLOCATE ( MOM_LV_X(MNP),MOM_LV_Y(MNP))
@@ -1599,6 +1615,7 @@ C    kmd48.33bc - arrays for baroclinic
 
 C    Allocate arrays for ESL output
       ALLOCATE (ESLONOFF(MNP))
+      ESLONOFF(:) = 0.d0  !tcm v51.20.01 added initalization
 
 
 #ifdef CMPI
@@ -1627,9 +1644,11 @@ C     the non-C3D case.
       EtaDisc(:) = 0.0d0
 #ifndef NELMAX
       ETAMAX(:) = -99999.d0 ! v46.50 sb 11/11/2006
+      ETAMAX_Time(:) = 0.d0 ! tcm v51.20.01
 #endif
 #ifndef NUVMAX
       UMAX(:) = 0.d0 ! v46.50 sb 11/11/2006
+      UMAX_Time(:) = 0.d0 ! tcm v51.20.01
 #endif
 
 C... v49.48.02 tcm -- Variables related to kdtree searches
@@ -1912,12 +1931,22 @@ Casey 090302: Added the next line for output of radiation stress gradients.
          RSNYOUT(:) = 0.d0
       ENDIF
 !#endif
+
+C... Allocate and initialize Max/Min Met. and Surface Radiation Stress Variables
       ALLOCATE ( PrMin(MNP)) ! v46.50 sb 11/11/2006
       PrMin(:) = 99999.d0
+      ALLOCATE (PrMin_Time(MNP) ) !tcm v51.20.01
+      PrMin_Time(:) = 0.d0
+
       ALLOCATE ( WVNOUTMax(MNP)) ! v46.50 sb 11/11/2006
       WVNOUTMAX(:) = 0.d0
+      ALLOCATE (WVNOutMax_Time(MNP) ) !tcm v51.20.01
+      WVNOutMax_Time(:) = 0.d0
+
       ALLOCATE ( RSNMax(MNP))               ! v46.50 sb 11/11/2006
       RSNMax(:) = 0.d0
+      ALLOCATE (RSNMax_Time(MNP) ) !tcm v51.20.01
+      RSNMax_Time(:) = 0.d0
 
 C
       RETURN
