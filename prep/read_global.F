@@ -1482,8 +1482,8 @@ C     hot start file. This is used to test hot starting capabilities.
 C     jgf49.41: Added new options for hotstart file format indicator: 2, 3,
 C     367, 368. Not sure we need to check the validity of NHSTAR values in
 C     adcprep though.
-      SELECT CASE(NHSTAR)
-      CASE(0,1,2,3,5,67,68,367,368,567,568)
+      SELECT CASE(NHSTAR)  !tcm v51.26 mods for binary time-stamped hotstart file generation NHSTAR=-1
+      CASE(0,-1,1,2,3,5,67,68,367,368,567,568)
          ! do nothing, these are allowable values
       CASE DEFAULT
         print *, "WARNING: NHSTAR=",NHSTAR," is not valid."

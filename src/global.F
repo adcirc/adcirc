@@ -97,7 +97,7 @@ C
 C
 C     Variables related to hotstarting.
       type HOTSTART_t
-        character(10)     :: filename
+        character(20)     :: filename  !tcm v51.26 changed from 10 to 20 to allow for time-stamped names
         integer           :: lun
       end type HOTSTART_t
 

@@ -5308,6 +5308,9 @@ C
       CASE(1,67,68)
          CALL logMessage(INFO,'HOT START OUTPUT WILL BE GENERATED'
      &        //' IN NON-PORTABLE BINARY FORMAT.')
+      CASE(-1)  !tcm v51.26 added for time-stamped hotstart files
+         CALL logMessage(INFO,'HOT START OUTPUT WILL BE GENERATED'
+     &        //' IN NON-PORTABLE BINARY FORMAT IN TIME-STAMPED FILES.')
       CASE(3,367,368)
          useNetCDF = .true.
          CALL logMessage(INFO,'HOT START OUTPUT WILL BE GENERATED'

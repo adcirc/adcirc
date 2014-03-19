@@ -1032,12 +1032,14 @@ C-----------------------------------------------------------------------
       INTEGER, intent(in) :: IT
 !
       double precision :: ttime, dpack(1)  !st3
-      integer          :: iit,   ipack(25)  !st3
+      integer          :: iit,   ipack(26)  !st3
       character(len=2048) ::     cjunk1  !st3
-      character(len=10) ::       cjunk2  !st3
+      character(len=20) ::       cjunk2  !st3  tcm v51.26 changed from 10 to 20
+      integer :: iNHSINC  !tcm v51.26
 !
       type(OutputDataDescript_t) :: descript
       INTEGER npx, nex
+      CHARACTER*9 :: itstr  !tcm v51.26 added for time-stamped hot start file name adjustments
 
       type(OutputDataDescript_t), SAVE :: Elev1Descript
       type(OutputDataDescript_t), SAVE :: Elev2Descript
@@ -1086,26 +1088,27 @@ C-----------------------------------------------------------------------
         ipack(23) = IGPP
         ipack(24) = IGWP
         ipack(25) = NSCOUGW
+        ipack(26) = NHSINC  !tcm v51.26
 
         dpack(1) = TimeLoc
         cjunk1 = trim(adjustl(HOTSTARTDIR))
         cjunk2 = trim(adjustl(hss%filename))
 
-        CALL MPI_SEND(ipack,25,MPI_INTEGER,MNPROC,TAG,WCOMM,IERR)
+        CALL MPI_SEND(ipack,26,MPI_INTEGER,MNPROC,TAG,WCOMM,IERR)
         CALL MPI_SEND(dpack,1,MPI_DOUBLE_PRECISION,MNPROC,TAG,WCOMM,IERR)
         CALL MPI_SEND(WRITE_LOCAL_HOT_START_FILES,1,MPI_LOGICAL,
      &                MNPROC,TAG,WCOMM,IERR)
         CALL MPI_SEND(cjunk1,2048,MPI_CHARACTER,MNPROC,TAG,WCOMM,IERR)
-        CALL MPI_SEND(cjunk2,  10,MPI_CHARACTER,MNPROC,TAG,WCOMM,IERR)
+        CALL MPI_SEND(cjunk2,  20,MPI_CHARACTER,MNPROC,TAG,WCOMM,IERR)  !tcm v51.26 changed to length 20
       endif
 
       if( WRITER_ID /= 0 ) then
-        CALL MPI_RECV(ipack,25,MPI_INTEGER,0,TAG,WCOMM,STAT,IERR)
+        CALL MPI_RECV(ipack,26,MPI_INTEGER,0,TAG,WCOMM,STAT,IERR)
         CALL MPI_RECV(dpack,1,MPI_DOUBLE_PRECISION,0,TAG,WCOMM,STAT,IERR)
         CALL MPI_RECV(WRITE_LOCAL_HOT_START_FILES,1,MPI_LOGICAL,
      &                0, TAG,WCOMM,STAT,IERR)
         CALL MPI_RECV(cjunk1,2048,MPI_CHARACTER,0,TAG,WCOMM,STAT,IERR)
-        CALL MPI_RECV(cjunk2,  10,MPI_CHARACTER,0,TAG,WCOMM,STAT,IERR)
+        CALL MPI_RECV(cjunk2,  20,MPI_CHARACTER,0,TAG,WCOMM,STAT,IERR)  !tcm v51.26 changed from 10 to 20
         iit            = ipack( 1)
         NHSTAR         = ipack( 2)
         IM             = ipack( 3)
@@ -1131,6 +1134,8 @@ C-----------------------------------------------------------------------
         IGPP           = ipack(23)
         IGWP           = ipack(24)
         NSCOUGW        = ipack(25)
+        iNHSINC        = ipack(26) !tcm v51.26
+        
         ttime  = dpack(1)
         HOTSTARTDIR =trim(adjustl(cjunk1))
         hss%filename=trim(adjustl(cjunk2))
@@ -1148,9 +1153,9 @@ C-----------------------------------------------------------------------
       WRITE(16,*) "NHSTAR = ", NHSTAR
       WRITE(16,*) "FirstCall = ", FirstCall
       IF (FirstCall) THEN
-         write(16,*) 'Allocating Elev1Descript'
          IF ( WRITER_ID /= 0  ) THEN
             IF (.not.ALLOCATED(ETA1_g)) THEN
+              write(16,*) 'Allocating Elev1Descript'
               ALLOCATE(ETA1_g(NP_G))
             ENDIF
          ENDIF
@@ -1197,9 +1202,9 @@ C-----------------------------------------------------------------------
          VelDescript % array2_g             => VV2_g
 
          IF (IM.eq.10) THEN
-            write(16,*) 'Allocating CH1Descript'
             IF ( WRITER_ID /= 0 ) THEN
-               ALLOCATE(EtaDisc_g(NP_G))
+               write(16,*) 'Allocating CH1Descript'
+               ALLOCATE(CH1_g(NP_G))
             ENDIF
             CH1Descript % specifier            = NHSTAR
             CH1Descript % initial_value        = 0.0
@@ -1269,10 +1274,19 @@ C     collect up the data from subdomains if running in parallel
 !
          WRITE(16,*) "FINISH collectFullDomainArray"
       SELECT CASE (NHSTAR)
-      CASE(1) ! nonportable binary (1 for backwards compatibility)
+      !tcm v51.26 added nhstar=-1 for time-stamped hot starts
+      CASE(-1,1) ! nonportable binary (1 for backwards compatibility)
          NPX = NP_G
          NEX = NE_G
          IF ((WRITER_ID /= 0)) THEN
+            !tcm v51.26 mod for time-stamped hot start files nhstar=-1
+            IF (NHSTAR.eq.-1) THEN
+               hss % filename(:) = ' '
+               hss % filename = 'fort.68_'
+               itstr(:) = ' '
+               WRITE(itstr,'(I9.9)') IIT  !note that IIT is the correct value and not IT for writers
+               hss % filename(9:17) = itstr
+            ENDIF
             OPEN(hss % lun ,FILE=TRIM(adjustl(HOTSTARTDIR))//'/'//trim(adjustl(hss%filename)),
      $      ACCESS='DIRECT',RECL=8)
             IHOTSTP=1
@@ -1364,12 +1378,13 @@ C
 C...
 C...    CLOSE THE HOT START OUTPUT FILE
 C...
-      IF(NHSTAR.EQ.1) THEN                                              ! added by mcf 7/14/08
-      if (WRITER_ID /= 0) CLOSE(hss % lun)
+      IF(ABS(NHSTAR).EQ.1) THEN                                              ! added by mcf 7/14/08 tcm v51.26 added abs(nhstar)
+         if (WRITER_ID /= 0) CLOSE(hss % lun)
       ENDIF                                                             ! end NHSTAR=1
 
       IF(NSCREEN.NE.0.AND. WRITER_ID /= 0 ) THEN
-         WRITE(ScreenUnit,24541) hss % lun, WRITER_ID, IT,TimeLoc
+         WRITE(ScreenUnit,24541) hss % lun, WRITER_ID, IIT, ttime  !tcm v51.26 changed IT to IIT and TimeLoc to ttime since
+         WRITE(16,24541) hss % lun, WRITER_ID, IIT, ttime !IT and TimeLoc are not known by writer processor id /=0  (echoing to writer file)
       ELSE
          WRITE(16,24541) hss % lun,WRITER_ID,IT,TimeLoc
       ENDIF
@@ -1382,14 +1397,38 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
             WRITE(16,*) 'NHSTAR.EQ.67; ADCIRC stopping.'
          ENDIF
          hss % lun      = 68
-         IF(NHSTAR.EQ.1) hss % filename = 'fort.68'                     ! added by mcf 7/14/08
+         IF(NHSTAR.EQ.1) THEN
+            hss % filename(:) = ' '
+            hss % filename = 'fort.68'                     ! added by mcf 7/14/08
+         ENDIF
+         !tcm v51.26 mod for time-stamped nhstar=-1  This section is just a failsafe
+         IF (NHSTAR.eq.-1) THEN
+            hss % filename(:) = ' '
+            hss % filename = 'fort.68_'
+            itstr(:) = ' '
+            WRITE(itstr,'(I9.9)') IIT+iNHSINC  !setting the name for the next hot start file
+            hss % filename(9:17) = itstr
+         ENDIF         
+         
       ELSE
          IF (NHSTAR.EQ.68) THEN
             WRITE(ScreenUnit,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
             WRITE(16,*) 'NHSTAR.EQ.68; ADCIRC stopping.'
          ENDIF
          hss % lun=67
-         IF(NHSTAR.EQ.1) hss % filename = 'fort.67'                     ! added by mcf 7/14/08
+         IF(NHSTAR.EQ.1) THEN
+            hss % filename(:) = ' '
+            hss % filename = 'fort.67'                     ! added by mcf 7/14/08
+         ENDIF
+         !tcm v51.26 mod for time-stamped nhstar=-1  This section is just a failsafe
+         IF (NHSTAR.eq.-1) THEN
+            hss % filename(:) = ' '
+            hss % filename = 'fort.68_'
+            itstr(:) = ' '
+            WRITE(itstr,'(I9.9)') IIT+iNHSINC  !setting the name for the next hot start file
+            hss % filename(9:17) = itstr
+         ENDIF         
+         
       ENDIF
       
       call unsetMessageSource()

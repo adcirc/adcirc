@@ -3144,7 +3144,7 @@ C     kmd48.33bc write out results in global IO format
 
       SELECT CASE (NHSTAR)
 
-      CASE(1,67,68) ! non-portable binary
+      CASE(-1,1,67,68) ! non-portable binary  !tcm v51.26 mod for time-stamped
 
          IF((MYPROC.eq.0).or.
      &      (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
@@ -3222,7 +3222,7 @@ C     3 D  V E L O C I T Y
       ENDIF
 
       SELECT CASE(NHSTAR)
-         CASE(1,67,68) ! non-portable binary
+         CASE(-1,1,67,68) ! non-portable binary   !tcm v51.26 mod for time-stamped
             IF ((MNPROC.eq.1).or.
      &         (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
                DO N=1,NFEN
@@ -3286,7 +3286,7 @@ C     3 D  T U R B U L E N C E
      &      packNPbyM, unpackNPbyM)
       ENDIF
       SELECT CASE(NHSTAR)
-         CASE(1,67,68) ! non-portable binary
+         CASE(-1,1,67,68) ! non-portable binary  !tcm v51.26 mod for time-stamped hotstarts (-1)
             IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
                DO N=1,NFEN
                   CALL binaryWrite2D(q20(:,N), np, hss%lun, ihotstp)
@@ -3352,7 +3352,7 @@ C     3 D  D E N S I T Y
       ENDIF
 C
       SELECT CASE(NHSTAR)
-         CASE(1,67,68) ! non-portable binary
+         CASE(-1,1,67,68) ! non-portable binary  !tcm v51.26 mod for time-stamped 
             IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
                IF (ABS(IDEN).EQ.1) THEN
                   DO N=1,NFEN

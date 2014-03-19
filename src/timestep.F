@@ -3199,7 +3199,7 @@ C...
 
 !     IF(myproc.eq.0) PRINT *, " ITEST **********", ITEST
 
-      if ((NHSTAR > 0 .and. ITEST == IT) .or. (-IHOT == IT)) then
+      if ((ABS(NHSTAR) > 0 .and. ITEST == IT) .or. (-IHOT == IT)) then  !tcm v51.26 added abs(nhstar) to handle when nhstar = -1
          if( (MNWPROH > 0) ) then   !Writer for HSfile
             if( (.not.C3D) ) then                     !Writer for HSfile
 #ifdef CMPI

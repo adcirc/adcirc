@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.26    - 03/18/2014 - tcm -- Added NHSTAR=-1 option which generates
+C                individual binary hot-start files named fort.68_######### 
+C                where ######### is the time step iteration pre-padded with 0.
+C                Also, corrected some bugs in the hot start writer through
+C                hs-writers related to fort.16 and screen output information.
 C    v51.25    - 03/14/2014 - tcm -- Merging the v51.20.01-07 changes
 C                into the trunk.
 C    v51.20.07 - 03/07/2014 - tcm - Adding trunk updates to this branch

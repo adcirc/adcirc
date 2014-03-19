@@ -3799,6 +3799,7 @@ C-----------------------------------------------------------------------
       type(OutputDataDescript_t) :: descript
       LOGICAL TEST_HOTSTART     !jgf45.07 used for testing hot start capability
       INTEGER npx, nex
+      CHARACTER*9 :: itstr  !tcm v51.26 added for time-stamped hot start file name adjustments
 C
       type(OutputDataDescript_t), SAVE :: Elev1Descript
       type(OutputDataDescript_t), SAVE :: Elev2Descript
@@ -4160,7 +4161,8 @@ C        Collect timeseries reconstruction data if needed.
 C
       SELECT CASE (NHSTAR)
 C
-      CASE(1,67,68) ! 1=nonportable binary
+      !tcm v51.26 mod for time-stamped nhstar=-1
+      CASE(-1,1,67,68) ! 1=nonportable binary  
 C        jgf49.35 Values of 67 and 68 are used for testing and cause the
 C        program to exit immediately after writing the hotstart file.
          NPX = NP_G
@@ -4172,8 +4174,15 @@ C        program to exit immediately after writing the hotstart file.
          endif
          IF ((MYPROC.eq.0).or.
      &         (WRITE_LOCAL_HOT_START_FILES.eqv..TRUE.)) THEN
-
-            OPEN(hss % lun ,FILE=TRIM(HOTSTARTDIR)//'/'//hss % filename,
+            !tcm v51.26 mod for time-stamped nhstar=-1
+            IF (NHSTAR.eq.-1) THEN
+               hss % filename(:) = ' '
+               hss % filename = 'fort.68_'
+               itstr(:) = ' '
+               WRITE(itstr,'(I9.9)') IT
+               hss % filename(9:17) = itstr
+            ENDIF
+            OPEN(hss % lun ,FILE=TRIM(HOTSTARTDIR)//'/'//trim(hss % filename),
      $      ACCESS='DIRECT',STATUS='REPLACE',RECL=8)
             IHOTSTP=1
             WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion
@@ -4519,7 +4528,7 @@ C        jgf49.35 write both subdomain and fulldomain hotstart files,
 C        just to have them, since this is just for debugging purposes
 C        (i.e., to check the values written to hotstart files in other
 C        formats) anyway.
-         OPEN(hss%lun,FILE=TRIM(INPUTDIR)//'/'//hss % filename,
+         OPEN(hss%lun,FILE=TRIM(INPUTDIR)//'/'//trim(hss % filename),
      &      STATUS='REPLACE')
          WRITE(hss%lun,*) "FileFmtVersion = ",FileFmtVersion
          WRITE(hss%lun,*) "IM = ",IM
@@ -4583,7 +4592,7 @@ C        formats) anyway.
 C
 C
          IF ((MNPROC.gt.1).and.(MYPROC.eq.0)) THEN
-            OPEN(hss%lun,FILE=TRIM(GBLINPUTDIR)//'/'//hss % filename,
+            OPEN(hss%lun,FILE=TRIM(GBLINPUTDIR)//'/'//trim(hss % filename),
      &         STATUS='REPLACE')
             WRITE(hss%lun,*) "FileFmtVersion = ",FileFmtVersion
             WRITE(hss%lun,*) "IM = ",IM
@@ -4694,8 +4703,17 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          ENDIF
          hss % lun      = 68
          IF((NHSTAR.EQ.1).OR.(NHSTAR.EQ.2)) THEN
+            hss % filename(:) = ' '
             hss % filename = 'fort.68'
          ENDIF
+         !tcm v51.26 mod for time-stamped nhstar=-1  This section is just a failsafe
+         IF (NHSTAR.eq.-1) THEN
+            hss % filename(:) = ' '
+            hss % filename = 'fort.68_'
+            itstr(:) = ' '
+            WRITE(itstr,'(I9.9)') IT+NHSINC  !setting the name for the next hot start file
+            hss % filename(9:17) = itstr
+         ENDIF         
       ELSE
          IF ((NHSTAR.EQ.68).OR.(NHSTAR.EQ.268).OR.(NHSTAR.EQ.368).OR.
      &       (NHSTAR.EQ.568)) THEN
@@ -4704,8 +4722,17 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          ENDIF
          hss % lun=67
          IF((NHSTAR.EQ.1).OR.(NHSTAR.EQ.2)) THEN
+            hss % filename(:) = ' '
             hss % filename = 'fort.67'
          ENDIF
+         !tcm v51.26 mod for time-stamped nhstar=-1
+         IF (NHSTAR.eq.-1) THEN
+            hss % filename(:) = ' '
+            hss % filename = 'fort.68_'
+            itstr(:) = ' '
+            WRITE(itstr,'(I9.9)') IT+NHSINC  !setting the name for the next hot start file
+            hss % filename(9:17) = itstr
+         ENDIF         
       ENDIF
       IF (TEST_HOTSTART.eqv..true.) THEN
 #ifdef CMPI
