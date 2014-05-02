@@ -127,7 +127,7 @@ C
       HOT_LOCAL   = .FALSE.
       HOT_GLOBAL  = .FALSE.
       PREP_20 = .FALSE.
-      PREP_88 = .FALSE.
+      !PREP_88 = .FALSE.
       MNPROC = 0
 C
 C--Init Memory Usage
@@ -155,8 +155,8 @@ C     having to do a prep all and without having to add menu items).
                PREP_15 = .TRUE.
             CASE("--prep20")
                PREP_20 = .TRUE.
-            CASE("--prep88")
-               PREP_88 = .TRUE.
+!            CASE("--prep88")
+!               PREP_88 = .TRUE.
             CASE("--np")
                I = I + 1
                CALL GETARG(I,CMDLINEARG)
@@ -372,17 +372,18 @@ C   -- initially read in within the READ14() subroutine.
 C
 Ca    IF ONLY decomposing a fort.88 (river elev init) file.
 !        kmd - Evan's changes for rivers above MSL
-      IF (PREP_88.eqv..true.) THEN
-         IF ((EXIST_FLUX.NE.0).AND.(River_above_MSL)) THEN
-            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
-               WRITE(*,*)
-     &            "INFO: Decomposing fort.88 (river init) file."
-               CALL RELOCALIZE()
-               CALL PREP88()
-               GOTO 9999
-            END IF
-         END IF
-      END IF
+!    tcmv51.27 commneted out, fort.88 was replaced with nodal attribute
+!      IF (PREP_88.eqv..true.) THEN
+!         IF ((EXIST_FLUX.NE.0).AND.(River_above_MSL)) THEN
+!            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
+!               WRITE(*,*)
+!     &            "INFO: Decomposing fort.88 (river init) file."
+!               CALL RELOCALIZE()
+!               CALL PREP88()
+!               GOTO 9999
+!            END IF
+!         END IF
+!      END IF
 C
 C-- Partition Nodes with METIS 4.0 Graph Partition Library
 C
@@ -571,13 +572,14 @@ C
          endif
       ENDIF
 ! kmd - Evan's changes for rivers above MSL
-      IF (PREP_ALL) THEN
-         IF ((EXIST_FLUX.NE.0).AND.(River_above_MSL)) THEN
-            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
-               CALL PREP88()
-            END IF
-         END IF
-      END IF
+! tcm v51.27 fort.88 was replaced by nodal attribute
+!      IF (PREP_ALL) THEN
+!         IF ((EXIST_FLUX.NE.0).AND.(River_above_MSL)) THEN
+!            IF ((IHOT.EQ.0).OR.(IHOT.EQ.17)) THEN
+!               CALL PREP88()
+!            END IF
+!         END IF
+!      END IF
 C
 C-- If required write a Local Wind Stress file for each PE
 C

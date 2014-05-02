@@ -2,6 +2,21 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.27    - 05/02/2014 - tcm -- FUNCTIONALITY CHANGE ALERT 
+C                Removed the use of fort.88 files for initializing river
+C                elevations at the time of cold start.  Initial river
+C                elevations are now specified as a nodal attribute in the 
+C                fort.13 file with the attribute name of 
+C                initial_river_elevation. In addition to removing the fort.88
+C                file from the adcirc and adcprep stages, how initial river
+C                elevations values are set has also changed.  Previously if
+C                initial river elevation values and GeoidOffSet values were
+C                both used, then the larger of the two values was used provided
+C                initial river elevations were greater than zero.  This has
+C                now changed so that initial river elevations and GeoidOffSet
+C                values are now added together (provided initial river elevations
+C                are greater than zero, otherwise only the GeoidOffSet value
+C                is used.).
 C    v51.26    - 03/18/2014 - tcm -- Added NHSTAR=-1 option which generates
 C                individual binary hot-start files named fort.68_######### 
 C                where ######### is the time step iteration pre-padded with 0.

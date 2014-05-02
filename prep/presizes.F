@@ -199,7 +199,7 @@ C Logicals added for adcprep paths
       LOGICAL HOT_LOCAL    ! .true. if only hotstart file is to be localized
       LOGICAL HOT_GLOBAL   ! .true. if only hotstart files is to be globalized
       LOGICAL :: PREP_20  ! .true. if user specified --prep20 cmd line option
-      LOGICAL :: PREP_88  ! .true. if user specified --prep88 cmd line option
+      !LOGICAL :: PREP_88  ! .true. if user specified --prep88 cmd line option !commented out by tcm v51.27
 
       LOGICAL :: useNetCDF = .false.  !jgf48.07
       INTEGER, ALLOCATABLE :: NM(:,:) !jgf48.08

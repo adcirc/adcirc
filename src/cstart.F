@@ -24,7 +24,7 @@ C
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
       USE NodalAttributes, ONLY :
      &         STARTDRY, GeoidOffset, LoadGeoidOffset,
-     &         OutputTau0 !jgf47.06
+     &         OutputTau0, LoadRiver_et_WSE, River_et_WSE !jgf47.06
 
       IMPLICIT NONE
 
@@ -36,7 +36,7 @@ C
       REAL(SZ) HollandTime, AsymmetricTime
       REAL(SZ) :: PRBCKGRND_MH2O  !tcm v49.16 20100617
 !kmd - Evan's updates for rivers above MSL
-      REAL(SZ),ALLOCATABLE :: et_WSE(:)
+!      REAL(SZ),ALLOCATABLE :: et_WSE(:)
       LOGICAL FOUND
 
 C     jgf48.4628 Add capability to turn off solution if only met output
@@ -107,15 +107,41 @@ C
 
 ! kmd - Evan's updates for rivers above MSL
 ! open the fort.88 files if needed
+!      INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.88',EXIST=FOUND)
+!      IF (FOUND) THEN
+!         ALLOCATE (et_WSE(NP) )
+!         OPEN (88, FILE=TRIM(INPUTDIR)//'/'//'fort.88')
+!         DO I=1,NP
+!            READ(88,*) et_WSE(i)
+!         END DO
+!         River_above_MSL=.TRUE.
+!      END IF
+
+! tcm v51.27 20140502 Changed from using a fort.88 file
+! to a nodal attribute
+      IF (LoadRiver_et_WSE) then
+         River_above_MSL=.TRUE.
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
+         WRITE(16,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,2788)
+         WRITE(16,2788)
+ 2788    FORMAT(/,1X,'INITIAL RIVER ELEVATIONS WERE SPECIFIED AS A NODAL',
+     &        /,1x,'ATTRIBUTE AND WILL BE USED.',/)         
+      ENDIF
+
+      ! tcm v51.27 Check to see if a fort.88 file is supplied
+      ! if so issue a warning.      
       INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.88',EXIST=FOUND)
       IF (FOUND) THEN
-         ALLOCATE (et_WSE(NP) )
-         OPEN (88, FILE=TRIM(INPUTDIR)//'/'//'fort.88')
-         DO I=1,NP
-            READ(88,*) et_WSE(i)
-         END DO
-         River_above_MSL=.TRUE.
-      END IF
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
+         WRITE(16,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,2789)
+         WRITE(16,2789)
+ 2789    FORMAT(/,1X,'--------WARNING--WARNING--WARNING---------',
+     &         /,1x,'A FORT.88 FILE WAS FOUND BUT IS NO LONGER SUPPORTED.',
+     &        /,1x,'INITIAL RIVER ELEVATIONS MUST BE SET AS A NODAL ATTRIBUTE.',/)
+      ENDIF
+
 C
 C.... tcm v49.16 20100617
 C.... convert background pressure from millibars to meters of water
@@ -144,17 +170,29 @@ C     jgf46.01 Added the ability to include steric effects.
 ! kmd - Evan's updates for rivers above MSL
 ! It is only necessary to read in and reset the ETA2 values
 ! in this case for the cold start conditions.
-         IF (River_above_MSL) THEN
-            IF (LoadGeoidOffset) THEN
-               IF (et_WSE(i).GT.GeoidOffset(I)) THEN
-                  ETA2(I)=et_WSE(i)
-               END IF
-            ELSE
-               IF (et_WSE(i).GT.0.d0) THEN
-                  ETA2(I)=et_WSE(i)
-               END IF
-            END IF
-         END IF
+!         IF (River_above_MSL) THEN
+!            IF (LoadGeoidOffset) THEN
+!               IF (et_WSE(i).GT.GeoidOffset(I)) THEN
+!                  ETA2(I)=et_WSE(i)
+!               END IF
+!            ELSE
+!               IF (et_WSE(i).GT.0.d0) THEN
+!                  ETA2(I)=et_WSE(i)
+!               END IF
+!            END IF
+!         END IF
+! tcm v51.27 20140502 Made the GeoidOffset and Initial
+!            River Elevation an additive quantitiy 
+!            instead of the max of the two         
+         IF (River_above_MSL) then
+           IF (LoadGeoidOffSet) then
+              IF (River_et_WSE(I).GT.0.d0)
+     &                ETA2(I) = River_et_WSE(I) + GeoidOffset(I)
+           ELSE
+              IF (River_et_WSE(I).GT.0.d0) ETA2(I) = River_et_WSE(I)
+           ENDIF
+         ENDIF
+
 
          NNODECODE(I)=1
          IF(NOLIFA.EQ.2) THEN
@@ -1344,6 +1382,14 @@ c     if (C3DDSS) then
 c       CALL DSSSTUP(DT,NT)
 c     endif
 C...
+      ! tcmv51.27 20140502 Added to remove this nodal attribute
+      ! as it is only used at Cold Start
+      IF (LoadRiver_et_WSE) THEN
+         IF (ALLOCATED (River_et_WSE) ) THEN
+            DEALLOCATE (River_et_WSE)
+         ENDIF
+      ENDIF
+
 #if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif

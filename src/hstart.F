@@ -64,7 +64,8 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &     nolibf, nwp, tau0, cf, eslm,
      &     LoadDirEffRLen, LoadCanopyCoef,
      &     ApplyDirectionalWindReduction, ApplyCanopyCoefficient,
-     &     OutputTau0, LoadEleSlopeLim, elemental_slope_limiter_active
+     &     OutputTau0, LoadEleSlopeLim, elemental_slope_limiter_active,
+     &     LoadRiver_et_WSE, River_et_WSE
       IMPLICIT NONE
 #ifdef CMPI       
 #ifndef HAVE_MPI_MOD
@@ -3480,6 +3481,16 @@ C
 C  End  TCM v51.20.01 Mods for MaxMin Files to Local Variables
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 C
+
+      ! tcmv51.27 20140502 Added to remove this nodal attribute
+      ! as it is only used at Cold Start but read at hot start as well
+      IF (LoadRiver_et_WSE) THEN
+         IF (ALLOCATED (River_et_WSE) ) THEN
+            DEALLOCATE (River_et_WSE)
+         ENDIF
+      ENDIF
+
+
  1112 FORMAT(/,1X,79('_'))
  1197 FORMAT(/,1X,'THE E29 MET GRID INTERPOLATING FACTORS ARE ',
      &                'BEING COMPUTED ')

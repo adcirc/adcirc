@@ -73,6 +73,7 @@ C      GeoidOffset           "sea_surface_height_above_geoid"
 C      EVM        "average_horizontal_eddy_viscosity_in_sea_water_wrt_depth"
 C      EVC        "average_horizontal_eddy_diffusivity_in_sea_water_wrt_depth"
 C      Tao0MinMax "min_and_max_primitive_weighting_in_continuity_equation"
+C      River_et_WSE "initial_river_elevation"
 C
 C-----------------------------------------------------------------------
       MODULE NodalAttributes
@@ -115,6 +116,7 @@ C     required for the run, according to the unit 15 control file
       LOGICAL LoadTau0MinMax
       LOGICAL LoadZ0b_var
       LOGICAL LoadEleSlopeLim ! zc: elemental slope limiter
+      LOGICAL LoadRiver_et_WSE  ! tcm 20140502 v51.27
 C
 C     The following flags are .true. if there are data with the
 C     corresponding label in the unit 13 file.
@@ -132,6 +134,7 @@ C     corresponding label in the unit 13 file.
       LOGICAL FoundTau0MinMax
       LOGICAL FoundZ0b_var
       LOGICAL FoundEleSlopeLim
+      LOGICAL FoundRiver_et_WSE ! tcm 20140502 v51.27
 C
 C     These variables hold the strings which describe the attribute's
 C     units. These data are loaded from the file, but not used as of
@@ -150,6 +153,7 @@ C     v46.00.
       CHARACTER(len=80) Tau0MinMaxUnits
       CHARACTER(len=80) Z0b_varUnits
       CHARACTER(len=80) EleSlopeLimUnits
+      CHARACTER(len=80) River_et_WSEUnits ! tcm 20140502 v51.27
 C
 C     These variables hold the number of values per node for each
 C     attribute.
@@ -167,6 +171,7 @@ C     attribute.
       INTEGER Tau0MinMaxNoOfVals
       INTEGER Z0b_varNoOfVals
       INTEGER EleSlopeLimNoofVals
+      INTEGER River_et_WSENoOfVals  ! tcm 20140502 v51.27
 C
 C     These variables hold the default values for each attribute.
       REAL(SZ) Tau0DefVal
@@ -183,6 +188,7 @@ C     These variables hold the default values for each attribute.
       REAL(SZ) Tau0MinMaxDefVal(2)
       REAL(SZ) Z0b_varDefVal
       REAL(SZ) EleSlopeLimDefVal
+      REAL(SZ) River_et_WSEDefVal ! tcm 20140502 v51.27
 C
       INTEGER NumOfNodes    ! number of nodes listed in unit 13 file, cf. NP
       INTEGER NAttr         ! number of nodal attributes in the unit 13 file
@@ -244,6 +250,7 @@ C     The following attribute contains BK(I),BALPHA(I),BDELX(I), and POAN(I)
       REAL(SZ), ALLOCATABLE :: Tau0MinMax(:,:)  ! (node,i); i=1(min), i=2(max)
       REAL(SZ), ALLOCATABLE :: Z0b_var(:)  ! patially varying 3D bottom roughness length
       REAL(SZ), ALLOCATABLE :: elemental_slope_limiter_grad_max(:)
+      REAL(SZ), ALLOCATABLE :: River_et_WSE(:)  ! tcm 20140502 v51.27
 C
       INTEGER i        ! node loop counter
       INTEGER j        ! attribute values loop counter
@@ -289,6 +296,7 @@ C
       LoadTau0MinMax     = .False.
       LoadZ0b_var        = .False.
       LoadEleSlopeLim    = .False.
+      LoadRiver_et_WSE     = .False.
 C
       FoundTau0           = .False.
       FoundStartDry       = .False.
@@ -304,6 +312,7 @@ C
       FoundTau0MinMax     = .False.
       FoundZ0b_var        = .False.
       FoundEleSlopeLim    = .False.
+      FoundRiver_et_WSE     = .False.
 C
 C
       Tau0NoOfVals          = 1
@@ -320,6 +329,7 @@ C
       Tau0MinMaxNoOfVals    = 2
       Z0b_varNoOfVals       = 1
       EleSlopeLimNoOfVals   = 1
+      River_et_WSENoOfVals    = 1
 C
       Tau0DefVal             = 0.0
       StartDryDefVal         = 0.0
@@ -341,6 +351,7 @@ C
       END DO
       Z0b_varDefVal          = 0.001
       EleSlopeLimDefVal      = 0D0
+      River_et_WSEDefVal       = 0.d0
 C
       HighResTimeVaryingTau0     = .False.
       FullDomainTimeVaryingTau0  = .False.
@@ -489,6 +500,8 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
             LoadAdvectionState = .True.
          CASE("elemental_slope_limiter")
             LoadEleSlopeLim = .TRUE.
+         CASE("initial_river_elevation")  ! tcm 20140502 v51.27
+            LoadRiver_et_WSE = .TRUE.
          CASE DEFAULT
             WRITE(16,1000)          ! unit 15 Model Parameter file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -616,6 +629,11 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
             READ(13,'(A80)') EleSlopeLimUnits
             READ(13,*) EleSlopeLimNoOfVals
             READ(13,*) EleSlopeLimDefVal
+          CASE("initial_river_elevation")  ! tcm 20140502 v51.27
+            FoundRiver_et_WSE = .TRUE.
+            READ(13,'(A80)') River_et_WSEUnits
+            READ(13,*) River_et_WSENoOfVals
+            READ(13,*) River_et_WSEDefVal
          CASE DEFAULT
             WRITE(16,1001)          ! Nodal Attributes file
             WRITE(16,1021) AttrName ! contains invalid name
@@ -654,6 +672,7 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
 Corbitt 120321: Allow advection to be turned on locally instead of globally
      &   ((LoadAdvectionState).and.(.not.FoundAdvectionState)).or.
      &   ((LoadEleSlopeLim).and.(.not.FoundEleSlopeLim)).or.
+     &   ((LoadRiver_et_WSE).and.(.not.FoundRiver_et_WSE)).or.
      &   ((LoadTau0MinMax).and.(.not.FoundTau0MinMax))) THEN
          WRITE(16,1111)
  1111    FORMAT('ERROR: Nodal Attributes file (unit 13) does '
@@ -685,6 +704,7 @@ Casey 100210: Allow SWAN to handle wave refraction as a nodal attribute.
       ALLOCATE(SwanWaveRefrac(NumOfNodes))
 Corbitt 120321: Allow advection to be turned on locally instead of globally
       ALLOCATE(AdvectionState(NumOfNodes))
+      ALLOCATE(River_et_WSE(NumOfNodes))  ! tcm 20140502 v51.27
       ALLOCATE(elemental_slope_limiter_grad_max(NumOfNodes))
       ALLOCATE(elemental_slope_limiter_active(NumOfNodes))
       ALLOCATE(elemental_slope_limiter_max_exceeded(NumOfNodes))
@@ -820,6 +840,14 @@ Corbitt 120321: Allow Advection to be handled locally instead of globally.
             IF( LoadEleSlopeLim ) THEN
                 CALL LoadAttrVec(elemental_slope_limiter_grad_max,
      &              EleSlopeLimDefVal, NumNodesNotDefault, NScreen,
+     &              MyProc, NAbOut)
+            ELSE
+                SkipDataSet = .TRUE.
+            ENDIF
+         CASE("initial_river_elevation")   ! tcm 20140502 v51.27
+            IF( LoadRiver_et_WSE ) THEN
+                CALL LoadAttrVec(River_et_WSE,
+     &              River_et_WSEDefVal, NumNodesNotDefault, NScreen,
      &              MyProc, NAbOut)
             ELSE
                 SkipDataSet = .TRUE.
@@ -1621,7 +1649,6 @@ C     ----------------------------------------------------------------
       END SUBROUTINE ApplyDirectionalWindReduction
 C     ----------------------------------------------------------------
 
-
 C     ----------------------------------------------------------------
 C     S U B R O U T I N E
 C     A P P L Y   C A N O P Y   C O E F F I C I E N T
@@ -1774,7 +1801,6 @@ C
 C     ----------------------------------------------------------------
       END SUBROUTINE ReadLegacyBottomFrictionFile
 C     ----------------------------------------------------------------
-
 
 C-----------------------------------------------------------------------
       END MODULE NodalAttributes
