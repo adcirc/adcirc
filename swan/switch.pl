@@ -11,6 +11,7 @@ $sgi = "FALSE";
 $imp = "FALSE";
 $cvi = "FALSE";
 $adc = "FALSE";
+$ncf = "FALSE";
 $mv4 = "FALSE";
 while ( $ARGV[0]=~/-.*/ )
    {
@@ -26,6 +27,7 @@ while ( $ARGV[0]=~/-.*/ )
    if ($ARGV[0]=~/-impi/) {$imp="TRUE";shift;}
    if ($ARGV[0]=~/-cvis/) {$cvi="TRUE";shift;}
    if ($ARGV[0]=~/-adcirc/) {$adc="TRUE";shift;}
+   if ($ARGV[0]=~/-netcdf/) {$ncf="TRUE";shift;}
    if ($ARGV[0]=~/-matl4/) {$mv4="TRUE";shift;}
    }
 
@@ -76,6 +78,8 @@ foreach $file (@files)
       if ($cvi=~/TRUE/) {$newline=~s/^!CVIS//;}
       if ($adc=~/TRUE/) {$newline=~s/^!ADC//;}
       if ($adc=~/FALSE/) {$newline=~s/^!NADC//;}
+      if ($ncf=~/TRUE/) {$newline=~s/^!NCF//;}
+      if ($ncf=~/FALSE/){$newline=~s/^!NNCF//;}
       if ($mv4=~/TRUE/) {$newline=~s/^!MatL4//;}
       if ($mv4=~/FALSE/) {$newline=~s/^!MatL5//;}
       print OUTFILE $newline;

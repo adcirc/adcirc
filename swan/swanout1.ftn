@@ -48,7 +48,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -415,8 +415,9 @@
              CALL SWBLKP ( CORQ%OQI, CORQ%IVTYP, MXK, MYK, VOQR,          40.31
      &                     VOQ(1), IONOD )                                40.51 40.31
           ELSE                                                            40.31
-             CALL SWBLOK ( RTYPE, CORQ%OQI, CORQ%IVTYP, CORQ%FAC,         40.31
-     &                     SNAME, MXK, MYK, IRQ, VOQR, VOQ(1) )           40.51 40.31
+             CALL SWBLOK ( RTYPE, CORQ%OQI, CORQ%OQR, CORQ%IVTYP,         41.40 40.31
+     &                     CORQ%FAC, SNAME, MXK, MYK, IRQ, VOQR,          40.51 40.31
+     &                     VOQ(1) )                                       40.51 40.31
           END IF                                                          40.31
           IF (STPNOW()) RETURN                                            34.01
           GOTO 68                                                         40.00
@@ -437,9 +438,9 @@
           ELSE
              ALLOCATE(AUX1(3*MSC))                                        40.31
           ENDIF
-          CALL SWSPEC ( RTYPE, CORQ%OQI, MIP, VOQR, VOQ(1), AC2, AUX1,    40.31
-     &                  SPCSIG, SPCDIR, COMPDA(1,JDP2), KGRPNT, CROSS,    40.90 40.31
-     &                  IONOD )                                           40.31
+          CALL SWSPEC ( RTYPE, CORQ%OQI, CORQ%OQR, MIP, VOQR, VOQ(1),     41.40 40.31
+     &                  AC2, AUX1, SPCSIG, SPCDIR, COMPDA(1,JDP2),        40.90 40.31
+     &                  KGRPNT, CROSS, IONOD )                            40.31
           IF (STPNOW()) RETURN                                            34.01
           DEALLOCATE(AUX1)                                                40.31
           GOTO 68                                                         40.00
@@ -467,10 +468,12 @@
 !***********************************************************************
 !
       USE TIMECOMM                                                        40.41
+!NCF      USE OCPCOMM2                                                        41.40
       USE OCPCOMM4                                                        40.41
       USE SWCOMM1                                                         40.41
       USE SWCOMM3                                                         40.41
       USE SWCOMM4                                                         40.41
+!NCF      USE OUTP_DATA                                                       41.40
       USE M_PARALL                                                        40.31
 !
 !
@@ -486,7 +489,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -604,6 +607,7 @@
       REAL       OUTR(*)                                                  30.00
       REAL       OURQT                                                    40.51
       LOGICAL    OQPROC(NMOVAR), LOGACT                                   30.00
+!NCF      LOGICAL    NCF                                                      41.40
       CHARACTER  PSNAME *(*), RTYPE *(*)                                  40.31 30.81
       SAVE IENT
       DATA IENT /0/                                                       40.31 30.81
@@ -621,6 +625,7 @@
            TNEXT = OUTR(1)
         ENDIF
         IF ( PARLL.AND.OURQT.EQ.-9999.) OURQT = OUTR(1)                   40.51 40.30
+!PUN        IF ( OURQT.EQ.-9999.) OURQT = OUTR(1)
         IF (ITEST.GE.60) WRITE (PRTEST, *) ' output times ', TNEXT,
      &        OUTR(2), DT, TFINC, TIMCO
         IF (ABS(DIF).LT.0.5*DT .AND. OUTR(2).LT.0.) THEN                  40.00
@@ -761,6 +766,26 @@
           NVOQP     = NVOQP+2
         ENDIF
       ENDIF                                                               20.28
+!NCF!
+!NCF!     add significant wave height and wind to any netCDF file             41.40
+!NCF!
+!NCF      FILENM = OUTP_FILES(OUTI(2))                                        41.40
+!NCF      NCF    = INDEX( FILENM, '.NC' ).NE.0 .OR.
+!NCF     &         INDEX (FILENM, '.nc' ).NE.0
+!NCF      IF ( NCF ) THEN                                                     41.40
+!NCF!        significant wave height must be added
+!NCF         IF (.NOT.OQPROC(10)) THEN
+!NCF            NVOQP = NVOQP + 1
+!NCF            VOQR(10) = NVOQP
+!NCF            OQPROC(10)=.TRUE.
+!NCF         ENDIF
+!NCF!        wind must be added
+!NCF         IF (.NOT.OQPROC(26)) THEN
+!NCF            NVOQP = NVOQP + 2
+!NCF            VOQR(26) = NVOQP-1
+!NCF            OQPROC(26)=.TRUE.
+!NCF         ENDIF
+!NCF      ENDIF
 !
       RETURN
 !*    end of subroutine SWORDC   **
@@ -792,7 +817,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1061,7 +1086,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1388,7 +1413,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1777,6 +1802,60 @@
         ENDIF
       ENDIF
 !
+!     turbulent dissipation
+!
+      IF (OQPROC(72)) THEN                                                40.35
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 72,
+     &  VOQR(72), JDSXT
+        IF (JDSXT.GT.1) THEN                                              40.35
+           IF (OPTG.NE.5) THEN                                            40.35
+              CALL SWIPOL(COMPDA(1,JDSXT),OVEXCV(72),XC, YC, MIP, CROSS,  40.35
+     &                    VOQ(1,VOQR(72)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE                                                           40.35
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(72)), VOQ(1,1),     40.35
+     &                                     VOQ(1,2), COMPDA(1,JDSXT),     40.35
+     &                                     MIP, KVERT, OVEXCV(72) )       40.35
+           ENDIF                                                          40.35
+        ELSE
+           DO IP = 1, MIP                                                 40.35
+             VOQ(IP,VOQR(72)) = OVEXCV(72)                                40.35
+           ENDDO                                                          40.35
+        ENDIF
+        IF (INRHOG.EQ.1) THEN
+          DO IP = 1, MIP
+            F1 = VOQ(IP,VOQR(72))
+            IF (.NOT.EQREAL(F1,OVEXCV(72))) VOQ(IP,VOQR(72))=F1*RHO*GRAV
+          END DO
+        ENDIF
+      ENDIF
+!
+!     fluid mud dissipation
+!
+      IF (OQPROC(74)) THEN                                                40.61
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 74,
+     &  VOQR(74), JDSXM
+        IF (JDSXM.GT.1) THEN                                              40.65
+           IF (OPTG.NE.5) THEN                                            40.80
+              CALL SWIPOL(COMPDA(1,JDSXM),OVEXCV(74),XC, YC, MIP, CROSS,  40.86
+     &                    VOQ(1,VOQR(74)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE                                                           40.80
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(74)), VOQ(1,1),     40.80
+     &                                     VOQ(1,2), COMPDA(1,JDSXM),     40.80
+     &                                     MIP, KVERT, OVEXCV(74) )       40.80
+           ENDIF                                                          40.80
+        ELSE
+           DO IP = 1, MIP                                                 40.65
+             VOQ(IP,VOQR(74)) = OVEXCV(74)                                40.65
+           ENDDO                                                          40.65
+        ENDIF
+        IF (INRHOG.EQ.1) THEN
+          DO IP = 1, MIP
+            F1 = VOQ(IP,VOQR(74))
+            IF (.NOT.EQREAL(F1,OVEXCV(74))) VOQ(IP,VOQR(74))=F1*RHO*GRAV
+          END DO
+        ENDIF
+      ENDIF
+!
 !     energy generation
 !
       IF (OQPROC(60)) THEN                                                40.85
@@ -2049,7 +2128,7 @@
 !
 !     number of plants per square meter
 !
-      IF (OQPROC(70)) THEN                                              ! 41.12
+      IF (OQPROC(70)) THEN                                                41.12
         IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 70,
      &  VOQR(70), JNPLA2
         IF (JNPLA2.GT.1) THEN
@@ -2064,6 +2143,27 @@
         ELSE
            DO IP = 1, MIP
              VOQ(IP,VOQR(70)) = OVEXCV(70)
+           ENDDO
+        ENDIF
+      ENDIF
+!
+!     turbulent viscosity
+!
+      IF (OQPROC(73)) THEN                                                40.35
+        IF (ITEST.GE.50 .OR. IOUTES .GE. 10) WRITE (PRTEST, 121) 73,
+     &  VOQR(73), JTURB2
+        IF (JTURB2.GT.1) THEN
+           IF (OPTG.NE.5) THEN
+              CALL SWIPOL(COMPDA(1,JTURB2),OVEXCV(73),XC,YC, MIP, CROSS,
+     &                    VOQ(1,VOQR(73)) ,KGRPNT, COMPDA(1,JDP2))
+           ELSE
+              CALL SwanInterpolateOutput ( VOQ(1,VOQR(73)), VOQ(1,1),
+     &                                     VOQ(1,2), COMPDA(1,JTURB2),
+     &                                     MIP, KVERT, OVEXCV(73) )
+           ENDIF
+        ELSE
+           DO IP = 1, MIP
+             VOQ(IP,VOQR(73)) = OVEXCV(73)
            ENDDO
         ENDIF
       ENDIF
@@ -2381,6 +2481,7 @@
             IF (IBOT.EQ.1) F1 = PBOT(3)
             IF (IBOT.EQ.2) F1 = PBOT(2)
             IF (IBOT.EQ.3) F1 = PBOT(5)
+            IF (IBOT.EQ.5) F1 = PBOT(7)                                   41.51
             DO IP = 1, MIP
                IF (.NOT.EQREAL(F1,OVEXCV(27))) VOQ(IP,VOQR(27))=F1
             END DO
@@ -2484,10 +2585,12 @@
 !PUN!
 !PUN      NOWNV = 0
 !PUN      DO IP = 1, MIP
-!PUN         IVERTP = ivertg(KVERT(IP))
-!PUN         IF ( KVERT(IP).GT.0 .AND. IVERTP.GT.0 ) THEN
-!PUN            NOWNV = NOWNV + 1
-!PUN            IONOD(IP) = MYPROC
+!PUN         IF ( KVERT(IP).GT.0 ) THEN
+!PUN            IVERTP = ivertg(KVERT(IP))
+!PUN            IF ( IVERTP.GT.0 ) THEN
+!PUN               NOWNV = NOWNV + 1
+!PUN               IONOD(IP) = MYPROC
+!PUN            ENDIF
 !PUN         ENDIF
 !PUN      ENDDO
 !PUN!
@@ -2495,12 +2598,16 @@
 !PUN         NREF   =  0
 !PUN         IOSTAT = -1
 !PUN         FILENM = TRIM(LOCALDIR)//DIRCH2//'output.set'
-!PUN         CALL FOR (NREF, FILENM, 'UF', IOSTAT)
+!PUN         CALL FOR (NREF, FILENM, 'UU', IOSTAT)
 !PUN         IF (STPNOW()) RETURN
-!PUN         WRITE(NREF,'(2I8)') IRQ, NOWNV
+!PUN         WRITE(NREF) IRQ, NOWNV
 !PUN         DO IP = 1, MIP
-!PUN            IVERTP = ivertg(KVERT(IP))
-!PUN            IF ( IONOD(IP).EQ.MYPROC ) WRITE(NREF,'(2I8)') IP, IVERTP
+!PUN            IF ( KVERT(IP).GT.0 ) THEN
+!PUN               IVERTP = ivertg(KVERT(IP))
+!PUN            ELSE
+!PUN               IVERTP = -1
+!PUN            ENDIF
+!PUN            IF ( IONOD(IP).EQ.MYPROC ) WRITE(NREF) IP, IVERTP
 !PUN         ENDDO
 !PUN         IF (IRQ.EQ.NREOQ) CLOSE(NREF)
 !PUN      ENDIF
@@ -2532,7 +2639,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2656,8 +2763,8 @@
       LOGICAL OUTSID
       INTEGER  KGRPNT(MXC,MYC)                                            30.21
 !
-      REAL :: WW(1:4)    ! Interpolation weights for the 4 corners        40.86
-      REAL :: SUMWW      ! sum of the weights                             40.86
+      REAL*8 :: WW(1:4)  ! Interpolation weights for the 4 corners        40.86
+      REAL*8 :: SUMWW    ! sum of the weights                             40.86
       INTEGER :: JX(1:4), JY(1:4) ! grid counters for the 4 corners       40.86
       INTEGER :: INDX(1:4)     ! grid counters for the 4 corners          40.86
       INTEGER :: JC            ! corner counter                           40.86
@@ -2796,7 +2903,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4325,7 +4432,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4545,7 +4652,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as

@@ -13,7 +13,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=g95
 #compiler=intel
 #compiler=intel-ND
-#compiler=intel-lonestar
+compiler=intel-lonestar
 #compiler=cray_xt3
 #compiler=cray_xt4
 #compiler=cray_xt5
@@ -200,7 +200,7 @@ ifeq ($(compiler),intel-lonestar)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
   DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE          :=  -DREAL8 -DLINUX
+  DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
   IMODS         :=  -I
   CC            := icc
   CCBE		:= $(CC)
@@ -213,6 +213,11 @@ ifeq ($(compiler),intel-lonestar)
      FOUND := TRUE
   else
      MULTIPLE := TRUE
+  endif
+  NETCDFHOME=/opt/apps/intel11_1/netcdf/4.2.1.1/
+  HDF5HOME=/opt/apps/intel11_1/hdf5/1.8.5/
+  ifeq ($(NETCDF),enable)
+     FLIBS      := $(FLIBS) -I${TACC_NETCDF_INC} -L${TACC_NETCDF_LIB} -lnetcdf -lnetcdff -L${TACC_HDF5_LIB} -lhdf5_hl -lhdf5 -lz -lm
   endif
 endif
 #

@@ -53,7 +53,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -568,7 +568,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -901,6 +901,14 @@
 !       *** determine U friction in case predictor is obtained ***
 !       *** with second genaration wave model                  ***
 !
+!Casey 140506: Added the default option to use the ADCIRC drag formulation.
+!ADC        IF ( IDRAG.EQ.0 ) THEN
+!ADC           IF ( WIND10 .GT. 7.5 ) THEN
+!ADC             CDRAG = WindDrag(DBLE(WIND10),NodeNumber)
+!ADC           ELSE
+!ADC             CDRAG = 0.0012873
+!ADC           ENDIF
+!ADC        END IF
         IF ( IDRAG.EQ.1 ) THEN
            IF ( WIND10 .GT. 7.5 ) THEN
              CDRAG = ( 0.8 + 0.065 * WIND10 ) * 0.001
@@ -974,11 +982,20 @@
 !       *** according to Wu (1982)                ***
 !       *** apply cd-cap if appropriate           ***
 !
+!Casey 140506: Added the default option to use the ADCIRC drag formulation.
+!ADC        IF ( IDRAG.EQ.0 ) THEN
+!ADC           IF ( WIND10 .GT. 7.5 ) THEN
+!ADC             CDRAG = WindDrag(DBLE(WIND10),NodeNumber)
+!ADC           ELSE
+!ADC             CDRAG = 0.0012873
+!ADC           ENDIF
+!ADC        END IF
         IF ( IDRAG.EQ.1 ) THEN
            IF ( WIND10 .GT. 7.5 ) THEN
              CDRAG = ( 0.8 + 0.065 * WIND10 ) * 0.001
              CDRAG = MIN ( CDCAP, CDRAG )
-!ADC             CDRAG = WindDrag(DBLE(WIND10),NodeNumber)
+!Casey 140506: This call is deprecated.
+!ADC!            CDRAG = WindDrag(DBLE(WIND10),NodeNumber)
            ELSE
              CDRAG = 0.0012873
            ENDIF
@@ -1090,7 +1107,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1323,7 +1340,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1500,7 +1517,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1739,7 +1756,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1972,7 +1989,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2517,7 +2534,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as

@@ -3,7 +3,7 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
                           kwave , cgo   , spcsig, idcmin, &
                           idcmax, ecos  , esin  , coscos, &
                           sincos, sinsin, rdx   , rdy   , &
-                          jc    )
+                          mudl2 , jc    )
 !
 !   --|-----------------------------------------------------------|--
 !     | Delft University of Technology                            |
@@ -16,7 +16,7 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -36,6 +36,7 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
 !
 !   Authors
 !
+!   40.59: Erick Rogers
 !   40.80: Marcel Zijlema
 !   41.02: Marcel Zijlema
 !   41.06: Gerbrant van Vledder
@@ -45,6 +46,7 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
 !   Updates
 !
 !   40.80,     July 2007: New subroutine
+!   40.59,   August 2007: muddy bottom included
 !   41.02, February 2009: adaption of velocities in case of diffraction
 !   41.06,    March 2009: add option of limitation of velocity in theta-direction
 !   41.07,   August 2009: add option of alternative formula for computation of
@@ -88,6 +90,7 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
     real, dimension(MDC), intent(in)           :: ecos   ! help array containing cosine of spectral directions
     real, dimension(MDC), intent(in)           :: esin   ! help array containing sine of spectral directions
     real, dimension(MSC,ICMAX), intent(in)     :: kwave  ! wave number
+    real, dimension(nverts), intent(in)        :: mudl2  ! mud layer at current time level
     real, dimension(MDC), intent(in)           :: sincos ! help array containing sine * cosine of spectral directions
     real, dimension(MDC), intent(in)           :: sinsin ! help array containing sine to power 2 of spectral directions
     real, dimension(nverts), intent(in)        :: ux2    ! ambient velocity in x-direction at current time level
@@ -121,6 +124,7 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
     real                                  :: dhdym    ! derivative of dep2 to y in sweep below considered sweep
     real                                  :: dhdyp    ! derivative of dep2 to y in sweep above considered sweep
     real, dimension(3)                    :: dloc     ! local depth at vertices
+    real, dimension(3)                    :: dm       ! local mud layer at vertices
     real                                  :: duxdx    ! derivative of ux2 to x in considered sweep
     real                                  :: duxdxm   ! derivative of ux2 to x in sweep below considered sweep
     real                                  :: duxdxp   ! derivative of ux2 to x in sweep above considered sweep
@@ -231,6 +235,24 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
        call KSCIP1 (MSC, spcsig, dloc(2), kloc(1,2), arr, arr, arr)
        call KSCIP1 (MSC, spcsig, dloc(3), kloc(1,3), arr, arr, arr)
        !
+       if ( IMUD == 1 ) then
+          !
+          if (VARMUD) then
+             dm(1) = mudl2(iv1)
+             dm(2) = mudl2(iv2)
+             dm(3) = mudl2(iv3)
+          else
+             dm(1) = PMUD(1)
+             dm(2) = PMUD(1)
+             dm(3) = PMUD(1)
+          endif
+          !
+          call KSCIP2 (MSC, spcsig, dloc(1), kloc(1,1), arr, arr, arr, arr, dm(1))
+          call KSCIP2 (MSC, spcsig, dloc(2), kloc(1,2), arr, arr, arr, arr, dm(2))
+          call KSCIP2 (MSC, spcsig, dloc(3), kloc(1,3), arr, arr, arr, arr, dm(3))
+          !
+       endif
+       !
        dkdx(:) = rdx(1) * (kloc(:,1)-kloc(:,2)) + rdx(2) * (kloc(:,1)-kloc(:,3))
        dkdy(:) = rdy(1) * (kloc(:,1)-kloc(:,2)) + rdy(2) * (kloc(:,1)-kloc(:,3))
        !
@@ -331,6 +353,21 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
           call KSCIP1 (MSC, spcsig, dloc(2), kloc(1,2), arr, arr, arr)
           call KSCIP1 (MSC, spcsig, dloc(3), kloc(1,3), arr, arr, arr)
           !
+          if ( IMUD == 1 ) then
+             !
+             if (VARMUD) then
+                dm(2) = mudl2(iv2)
+                dm(3) = mudl2(iv3)
+             else
+                dm(2) = PMUD(1)
+                dm(3) = PMUD(1)
+             endif
+             !
+             call KSCIP2 (MSC, spcsig, dloc(2), kloc(1,2), arr, arr, arr, arr, dm(2))
+             call KSCIP2 (MSC, spcsig, dloc(3), kloc(1,3), arr, arr, arr, arr, dm(3))
+             !
+          endif
+          !
           ! compute the derivatives of the wave number in cell below considered sweep
           !
           dkdxm(:) = rdxl(1) * (kloc(:,1)-kloc(:,2)) + rdxl(2) * (kloc(:,1)-kloc(:,3))
@@ -412,6 +449,21 @@ subroutine SwanPropvelS ( cad   , cas   , ux2   , uy2   , &
           !
           call KSCIP1 (MSC, spcsig, dloc(2), kloc(1,2), arr, arr, arr)
           call KSCIP1 (MSC, spcsig, dloc(3), kloc(1,3), arr, arr, arr)
+          !
+          if ( IMUD == 1 ) then
+             !
+             if (VARMUD) then
+                dm(2) = mudl2(iv2)
+                dm(3) = mudl2(iv3)
+             else
+                dm(2) = PMUD(1)
+                dm(3) = PMUD(1)
+             endif
+             !
+             call KSCIP2 (MSC, spcsig, dloc(2), kloc(1,2), arr, arr, arr, arr, dm(2))
+             call KSCIP2 (MSC, spcsig, dloc(3), kloc(1,3), arr, arr, arr, arr, dm(3))
+             !
+          endif
           !
           ! compute the derivatives of the wave number in cell above considered sweep
           !

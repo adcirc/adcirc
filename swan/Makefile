@@ -34,6 +34,7 @@ mod_xnl4v5.$(EXTO) \
 SwanGriddata.$(EXTO) \
 SwanGridobjects.$(EXTO) \
 SwanCompdata.$(EXTO) \
+$(NCF_OBJS) \
 swanmain.$(EXTO) \
 swanpre1.$(EXTO) \
 swanpre2.$(EXTO) \
@@ -101,7 +102,6 @@ $(O_DIR)sizes.$(EXTO) \
 $(O_DIR)global.$(EXTO) \
 $(O_DIR)global_3dvs.$(EXTO) \
 $(O_DIR)version.$(EXTO) \
-$(O_DIR)kdtree2.$(EXTO) \
 $(O_DIR)messenger.$(EXTO)
 
 UNHCAT_EXE = unhcat.exe

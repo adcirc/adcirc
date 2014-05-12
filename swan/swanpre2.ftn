@@ -36,7 +36,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -202,7 +202,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1042,7 +1042,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1154,7 +1154,8 @@
 !             FRCOEFF/WIND/DISSIP/QB/TRANSP/FORCE/UBOT/URMS/WLEN/STEEPNESS/  &
 !             DHSIGN/DRTM01/LEAK/TSEC/XP/YP/DIST/SETUP/TMM10/RTMM10/         &
 !             TMBOT/QP/BFI/WATLEV/BOTLEV/TPS/DISBOT/DISSURF/DISWCAP/         &
-!             GENE/GENW/REDI/REDQ/REDT/PROPA/PROPX/PROPT/PROPS/RADS|LWAVP >  &
+!             GENE/GENW/REDI/REDQ/REDT/PROPA/PROPX/PROPT/PROPS/RADS|LWAVP/   &
+!             DISTUR/TURB >                                                  &
 !             ([unit]) (OUTPUT [tbegblk] [deltblk] SEC/MIN/HR/DAY)
 !   --------------------------------------------------------------------------
 !   BLO   block type output
@@ -1220,7 +1221,9 @@
           IF (KEYWIS('LAY')) THEN
             CALL ININTG ('IDLA', IDLAO, 'REQ', 0)
             CALL INKEYW ('REQ', ' ')
-            IF (IDLAO.NE.1 .AND. IDLAO.NE.3 .AND. IDLAO.NE.4)
+            IF (IDLAO.NE.1 .AND. IDLAO.NE.3 .AND. IDLAO.NE.4
+!NCF     &          .AND. IDLAO.NE.5
+     &         )
      &        CALL MSGERR (2, 'Illegal value for IDLA')
           ENDIF
           ORQTMP%OQR(1) = -1.                                             40.31
@@ -1332,9 +1335,20 @@
                    JRADS  = MCMVAR                                        40.85
                    ALOCMP = .TRUE.                                        40.97
                 ENDIF                                                     40.85
+                IF (IVTYPE.EQ.72 .AND. JDSXT.LE.1) THEN                   40.35
+                   MCMVAR = MCMVAR+1                                      40.35
+                   JDSXT  = MCMVAR                                        40.35
+                   ALOCMP = .TRUE.                                        40.35
+                ENDIF                                                     40.35
+                IF (IVTYPE.EQ.74 .AND. JDSXM.LE.1) THEN                   40.65
+                   MCMVAR = MCMVAR+1                                      40.65
+                   JDSXM  = MCMVAR                                        40.65
+                   ALOCMP = .TRUE.                                        40.97
+                ENDIF                                                     40.65
                 IF (IVTYPE.EQ.7  .OR. IVTYPE.EQ.9  .OR.                   40.85
      &              IVTYPE.EQ.54 .OR. IVTYPE.EQ.55 .OR.                   40.85
-     &              IVTYPE.EQ.56 .OR. IVTYPE.GE.60 ) LADDS = .TRUE.       40.85
+     &              IVTYPE.EQ.56 .OR. IVTYPE.EQ.57 .OR.                   40.85
+     &              IVTYPE.GE.60 ) LADDS = .TRUE.                         40.85
              ENDIF
              GOTO 70
           ENDIF
@@ -1377,7 +1391,8 @@
 !             FRCOEFF/WIND/DISSIP/QB/TRANSP/FORCE/UBOT/URMS/WLEN/STEEPNESS/  &
 !             DHSIGN/DRTM01/LEAK/TIME/TSEC/XP/YP/DIST/SETUP/TMM10/RTMM10/    &
 !             TMBOT/QP/BFI/WATLEV/BOTLEV/TPS/DISBOT/DISSURF/DISWCAP/         &
-!             GENE/GENW/REDI/REDQ/REDT/PROPA/PROPX/PROPT/PROPS/RADS|LWAVP >  &
+!             GENE/GENW/REDI/REDQ/REDT/PROPA/PROPX/PROPT/PROPS/RADS|LWAVP/   &
+!             DISTUR/TURB >                                                  &
 !             ([unit]) (OUTPUT [tbegtbl] [delttbl] SEC/MIN/HR/DAY)
 !   --------------------------------------------------------------------------
 !   TABLE   output in the form of a table
@@ -1525,9 +1540,20 @@
                JRADS  = MCMVAR                                            40.85
                ALOCMP = .TRUE.                                            40.97
             ENDIF                                                         40.85
+            IF (IVTYPE.EQ.72 .AND. JDSXT.LE.1) THEN                       40.35
+               MCMVAR = MCMVAR+1                                          40.35
+               JDSXT  = MCMVAR                                            40.35
+               ALOCMP = .TRUE.                                            40.35
+            ENDIF                                                         40.35
+            IF (IVTYPE.EQ.74 .AND. JDSXM.LE.1) THEN                       40.65
+               MCMVAR = MCMVAR+1                                          40.65
+               JDSXM  = MCMVAR                                            40.65
+               ALOCMP = .TRUE.                                            40.97
+            ENDIF                                                         40.65
             IF (IVTYPE.EQ.7  .OR. IVTYPE.EQ.9  .OR.                       40.85
      &          IVTYPE.EQ.54 .OR. IVTYPE.EQ.55 .OR.                       40.85
-     &          IVTYPE.EQ.56 .OR. IVTYPE.GE.60 ) LADDS = .TRUE.           40.85
+     &          IVTYPE.EQ.56 .OR. IVTYPE.EQ.57 .OR.                       40.85
+     &          IVTYPE.GE.60 ) LADDS = .TRUE.                             40.85
             CALL INKEYW ('STA', ' ')                                      40.00
             IF (KEYWIS('UNIT')) THEN
               CALL MSGERR (1, 'UNIT is ignored in this version')          40.00
@@ -1577,7 +1603,8 @@
 !
 !   --------------------------------------------------------------------------
 !   SPECout 'sname'  SPEC1D/SPEC2D  ABS/REL   'fname'                       &
-!             (OUTPUT [tbegspc] [deltspc] SEC/MIN/HR/DAY)
+!NCF!                    (MONth  ESCAle MDGRID COMPress) (NOT documented)       &
+!                    (OUTPUT [tbegspc] [deltspc] SEC/MIN/HR/DAY)
 !   --------------------------------------------------------------------------
 !   SPEC   output of spectra
 
@@ -1622,6 +1649,27 @@
         ORQTMP%OQI(1) = NREF                                              40.31
         ORQTMP%OQI(2) = NREOQ                                             40.31
         OUTP_FILES(NREOQ) = FILENM                                        40.31 40.13
+!NCF!
+!NCF        CALL INKEYW ('STA', ' ')                                          41.40
+!NCF!       declare monthly netCDF file                                       41.40
+!NCF!       store in oqi(4) differ from idla of block!                        41.40
+!NCF        ORQTMP%OQI(4) = 0                                                 41.40
+!NCF        IF (KEYWIS('MON')) THEN                                           41.40
+!NCF           ORQTMP%OQI(4) = ORQTMP%OQI(4) + 1                              41.40
+!NCF        ENDIF                                                             41.40
+!NCF        CALL INKEYW ('STA', ' ')                                          41.40
+!NCF        IF (KEYWIS('ESCA')) THEN                                          41.40
+!NCF           ORQTMP%OQI(4) = ORQTMP%OQI(4) + 2                              41.40
+!NCF        ENDIF                                                             41.40
+!NCF        CALL INKEYW ('STA', ' ')
+!NCF        IF (KEYWIS('COMP')) THEN
+!NCF           ORQTMP%OQI(4) = ORQTMP%OQI(4) + 4
+!NCF        ENDIF
+!NCF        CALL INKEYW ('STA', ' ')
+!NCF        IF (KEYWIS('MDGRID')) THEN
+!NCF           ORQTMP%OQI(4) = ORQTMP%OQI(4) + 8
+!NCF        ENDIF
+!NCF        CALL INKEYW ('STA', ' ')
 !
         NVAR = 0                                                          40.31
         ORQTMP%OQI(3) = NVAR                                              40.31
@@ -1760,7 +1808,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1930,7 +1978,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2048,7 +2096,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2180,7 +2228,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2395,7 +2443,7 @@
 !
 !                      |  JONswap  [gamma]  |
 !                      |                    |    | -> PEAK |
-!  BOUNdspec  SHAPe   <   PM                 >  <           >   &
+!  BOUndspec  SHAPe   <   PM                 >  <           >   &
 !                      |                    |    | MEAN    |
 !                      |  GAUSs  [sigfr]    |
 !                      |                    |
@@ -2450,7 +2498,7 @@
 !                                    | UNFormatted <          > |
 !                                    |              | WKstat |  |
 !                                    |                          |
-!       BOUNdnest2  WAMNest 'fname' <                            > [xgc] [ygc] [lwdate]
+!       BOUndnest2  WAMNest 'fname' <                            > [xgc] [ygc] [lwdate]
 !                                    |                          |
 !                                    | FREE                     |
 !
@@ -2494,7 +2542,7 @@
 !
 !      =======================================================================
 !                                 | -> CLOS |
-!       BOUNdnest2  WWIII 'fname'  <          > [xgc] [ygc]               40.02
+!       BOUndnest3  WWIII 'fname'  <          > [xgc] [ygc]               40.02
 !                                 |  OPEN   |
 !      =======================================================================
 !
@@ -2551,7 +2599,7 @@
 !       Nesting SWAN model in larger SWAN model
 ! ==========================================
 !                                | -> CLOS |                              40.05
-!     BOUNdnest1  NEST 'fname'  <           >
+!     BOUndnest1  NEst 'fname'  <           >
 !                                |  OPEN   |                              40.05
 ! ==========================================
 !
@@ -2612,7 +2660,7 @@
 !                 |           | SE    |          | CLOCKWise  |    |
 !                 |           | East  |                            |
 !                 |           | NE    |                            |
-!       BOUNdary <                                                  >    &
+!       BOUndary <                                                  >    &
 !                 |           | -> XY  < [x] [y] >           |     |
 !                 | SEGment  <                                >    |
 !                             |    IJ  < [i] [j] > | < [k] > |
@@ -2702,13 +2750,15 @@
                  ENDIF                                                    40.80
               ENDIF                                                       40.80
             ELSE
-              CALL ININTG ('I' , IX2, 'REP', -1)                          40.03
-              IF (IX2 .LT. 0) GOTO 42                                     40.00
               IF (OPTG.NE.5) THEN                                         40.80
+                 CALL ININTG ('I' , IX2, 'REP', -1)                       40.03
+                 IF (IX2 .LT. 0) GOTO 42                                  40.00
                  CALL ININTG ('J' , IY2, 'REQ',  0)                       40.03
                  IX2 = IX2 + 1                                            40.00
                  IY2 = IY2 + 1
               ELSE                                                        40.80
+                 CALL ININTG ('K' , IX2, 'REP', -1)                       40.03
+                 IF (IX2 .LT. 0) GOTO 42                                  40.00
                  IF (IX2.LE.0 .OR. IX2.GT.nverts) THEN                    40.80
                     WRITE (MSGSTR,'(I4,A)') IX2,                          40.80
      &                                    ' is not a valid vertex index'  40.80
@@ -3424,7 +3474,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3915,7 +3965,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4505,7 +4555,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4966,7 +5016,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -5286,7 +5336,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -5450,7 +5500,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2012  Delft University of Technology
+!     Copyright (C) 1993-2014  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -5745,7 +5795,7 @@
            ENDDO                                                          40.80
         ENDIF                                                             40.80
  106    FORMAT (2(1X,F12.2))
-        WRITE (IFPAR, 132) 9                                              40.55 40.00
+        WRITE (IFPAR, 132) 11                                             40.32 40.55 40.00
  132    FORMAT ('QUANT', /, I6, T41, 'number of quantities in table')     40.00
         WRITE (IFPAR, 102) OVSNAM(10), OVLNAM(10)                         40.00
         WRITE (IFPAR, 102) OVUNIT(10), 'unit'                             40.00
@@ -5766,6 +5816,12 @@
         WRITE (IFPAR, 102) 'Svege',  'vegetation dissipation'             40.55
         WRITE (IFPAR, 102) 'm2/s',   'unit'                               40.55
         WRITE (IFPAR, 104) OVEXCV(7),'exception value'                    40.55
+        WRITE (IFPAR, 102) 'Sturb',  'turbulent dissipation'              40.35
+        WRITE (IFPAR, 102) 'm2/s',   'unit'                               40.35
+        WRITE (IFPAR, 104) OVEXCV(7),'exception value'                    40.35
+        WRITE (IFPAR, 102) 'Smud',  'fluid mud dissipation'               40.59
+        WRITE (IFPAR, 102) 'm2/s',   'unit'                               40.59
+        WRITE (IFPAR, 104) OVEXCV(7),'exception value'                    40.59
         WRITE (IFPAR, 102) 'Ssurf',  'surf breaking dissipation'          40.00
         WRITE (IFPAR, 102) 'm2/s',   'unit'                               40.00
         WRITE (IFPAR, 104) OVEXCV(7),'exception value'                    40.00
@@ -5832,7 +5888,7 @@
           WRITE (IFS1D, 214) SPCSIG(IS)/PI2                               40.00
  214      FORMAT (F10.4)                                                  40.00
  220    CONTINUE                                                          40.00
-        WRITE (IFS1D, 132) 8                                              40.55
+        WRITE (IFS1D, 132) 10                                             40.55
         WRITE (IFS1D, 102) 'VaDens', 'variance densities'                 40.00
         WRITE (IFS1D, 102) 'm2/Hz',  'unit'                               40.00
         WRITE (IFS1D, 104) 0.,       'exception value'                    40.00
@@ -5848,6 +5904,12 @@
         WRITE (IFS1D, 102) 'Svege',  'vegetation dissipation'             40.55
         WRITE (IFS1D, 102) 'm2',     'unit'                               40.55
         WRITE (IFS1D, 104) OVEXCV(7),'exception value'                    40.55
+        WRITE (IFS1D, 102) 'Sturb',  'turbulent dissipation'              40.35
+        WRITE (IFS1D, 102) 'm2',     'unit'                               40.35
+        WRITE (IFS1D, 104) OVEXCV(7),'exception value'                    40.35
+        WRITE (IFS1D, 102) 'Smud',  'fluid mud dissipation'               40.59
+        WRITE (IFS1D, 102) 'm2',     'unit'                               40.59
+        WRITE (IFS1D, 104) OVEXCV(7),'exception value'                    40.59
         WRITE (IFS1D, 102) 'Ssurf',  'surf breaking dissipation'          40.00
         WRITE (IFS1D, 102) 'm2',     'unit'                               40.00
         WRITE (IFS1D, 104) OVEXCV(7),'exception value'                    40.00
@@ -5919,7 +5981,7 @@
           WRITE (IFS2D, 324) SPCDIR(ID,1)*180./PI                         30.82
  324      FORMAT (F10.4)                                                  40.00
  330    CONTINUE                                                          40.00
-        WRITE (IFS2D, 132) 8                                              40.55
+        WRITE (IFS2D, 132) 10                                             40.55
         WRITE (IFS2D, 102) 'VaDens', 'variance densities'                 40.00
         WRITE (IFS2D, 102) 'm2/Hz/degr', 'unit'                           40.00
         WRITE (IFS2D, 104) 0.,       'exception value'                    40.00
@@ -5935,6 +5997,12 @@
         WRITE (IFS2D, 102) 'Svege',  'vegetation dissipation'             40.55
         WRITE (IFS2D, 102) 'm2/degr','unit'                               40.55
         WRITE (IFS2D, 104) OVEXCV(7),'exception value'                    40.55
+        WRITE (IFS2D, 102) 'Sturb',  'turbulent dissipation'              40.35
+        WRITE (IFS2D, 102) 'm2/degr','unit'                               40.35
+        WRITE (IFS2D, 104) OVEXCV(7),'exception value'                    40.35
+        WRITE (IFS2D, 102) 'Smud',  'fluid mud dissipation'               40.59
+        WRITE (IFS2D, 102) 'm2/degr','unit'                               40.59
+        WRITE (IFS2D, 104) OVEXCV(7),'exception value'                    40.59
         WRITE (IFS2D, 102) 'Ssurf',  'surf breaking dissipation'          40.00
         WRITE (IFS2D, 102) 'm2/degr','unit'                               40.00
         WRITE (IFS2D, 104) OVEXCV(7),'exception value'                    40.00

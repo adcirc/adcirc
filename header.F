@@ -2,6 +2,12 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.28    - 05/12/2014 - jcd -- Merging swan4101 branch into trunk.
+C    v51.27.02 - 05/11/2014 - jcd -- Removing our old hack to limit infinite
+C                sweeping on some meshes.  SWAN no longer needs it.
+C    v51.27.01 - 05/07/2014 - jcd -- Added the latest SWAN release version 41.01
+C                to the ADCIRC code.  Initial testing confirms it gives identical
+C                results to the previous version.
 C    v51.27    - 05/02/2014 - tcm -- FUNCTIONALITY CHANGE ALERT 
 C                Removed the use of fort.88 files for initializing river
 C                elevations at the time of cold start.  Initial river
