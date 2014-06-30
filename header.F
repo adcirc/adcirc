@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.29    - 06/30/2014 - jgf - Updated compiler flags for lonestar 
+C                machine at TACC.
 C    v51.28    - 05/12/2014 - jcd -- Merging swan4101 branch into trunk.
 C    v51.27.02 - 05/11/2014 - jcd -- Removing our old hack to limit infinite
 C                sweeping on some meshes.  SWAN no longer needs it.

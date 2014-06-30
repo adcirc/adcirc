@@ -195,7 +195,7 @@ ifeq ($(compiler),intel-lonestar)
   FC            :=  ifort
   PFC           :=  mpif90
 #  FFLAGS1       :=  $(INCDIRS) -O3 -xT -132 -DNUVMAX -DNPRMAX -DNWVMAX
-  FFLAGS1       :=  $(INCDIRS) -O3 -xT -132
+  FFLAGS1       :=  $(INCDIRS) -O3 -xT -132 -i-dynamic
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
@@ -215,9 +215,12 @@ ifeq ($(compiler),intel-lonestar)
      MULTIPLE := TRUE
   endif
   NETCDFHOME=/opt/apps/intel11_1/netcdf/4.2.1.1/
-  HDF5HOME=/opt/apps/intel11_1/hdf5/1.8.5/
+  HDF5HOME=/opt/apps/intel11_1/hdf5/1.8.8/
+  TACC_NETCDF_INC=${NETCDFHOME}include
+  TACC_NETCDF_LIB=${NETCDFHOME}lib
+  TACC_HDF5_LIB=${HDF5HOME}lib
   ifeq ($(NETCDF),enable)
-     FLIBS      := $(FLIBS) -I${TACC_NETCDF_INC} -L${TACC_NETCDF_LIB} -lnetcdf -lnetcdff -L${TACC_HDF5_LIB} -lhdf5_hl -lhdf5 -lz -lm
+     FLIBS      := $(FLIBS) -I${TACC_NETCDF_INC} -L${TACC_NETCDF_LIB} -lnetcdf -lnetcdff -L${TACC_HDF5_LIB} -lhdf5 -lhdf5 -lz -lm
   endif
 endif
 #
