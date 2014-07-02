@@ -3458,16 +3458,24 @@ C
       !   with an initial value of -99999.d0 to begin the hstart runs.
       !   this includes the case of the max/min files not being present
 
-      CALL readAndMapToSubdomainMaxMin('maxele.63',EtaMax,EtaMax_Time) !,0,2)
-      CALL readAndMapToSubdomainMaxMin('maxvel.63',UMax,UMax_Time)
-      CALL readAndMapToSubdomainMaxMin('maxwvel.63',WVNOutmax,WVNOutMax_Time)
-      CALL readAndMapToSubdomainMaxMin('minpr.63',PrMin,PrMin_Time)
-      CALL readAndMapToSubdomainMaxMin('maxrs.63',RSNMax,RSNMax_Time)
+      write(*,*) 'maxele b/4 = ',maxval(EtaMax)
+      CALL readAndMapToSubdomainMaxMin('maxele.63',EtaMax,
+     &                                  -99999.d0,EtaMax_Time) !,0,2)
+      write(*,*) 'maxele aft = ',maxval(EtaMax)
+      CALL readAndMapToSubdomainMaxMin('maxvel.63',UMax,
+     &                                  0.d0,UMax_Time)
+      CALL readAndMapToSubdomainMaxMin('maxwvel.63',WVNOutmax,
+     &                                  0.d0,WVNOutMax_Time)
+      CALL readAndMapToSubdomainMaxMin('minpr.63',PrMin,
+     &                                  99999.d0,PrMin_Time)
+      CALL readAndMapToSubdomainMaxMin('maxrs.63',RSNMax,
+     &                                  0.d0,RSNMax_Time)
 
       IF (LoadEleSlopeLim) THEN
 !         HOT_ESLONOFF(:) = 0.d0 ! initialize the value
 !         CALL readMinMax('ESLNodes.63',HOT_ESLONOFF)
-         CALL readAndMapToSubdomainMaxMin('ESLNodes.63',ESLONOFF)
+         CALL readAndMapToSubdomainMaxMin('ESLNodes.63',ESLONOFF,
+     &                              0.d0)
          !must set the elemental slope limiter active values as well
          DO I = 1,NP
             if (ESLONOFF(I).eq.1.d0) then

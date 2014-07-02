@@ -1824,12 +1824,14 @@ C     TCM v51.20.01 Reads a fulldomain array in ascii format and maps
 C     to a subdomain array.  Modeled after readAndMapToSubdomain2D
 C     
 C-----------------------------------------------------------------------
-      subroutine readAndMapToSubdomainMaxMin(minMaxFN,sd_array,sd_array2)
+      subroutine readAndMapToSubdomainMaxMin(minMaxFN,sd_array,sddefval,
+     &                                       sd_array2)
       USE SIZES, ONLY : SZ, MNPROC,READ_LOCAL_HOT_START_FILES
 
       IMPLICIT NONE
 C
       REAL(SZ), intent(out), dimension(:) :: sd_array ! subdomain array for values
+      REAL(SZ), intent(in) :: sddefval
       REAL(SZ), optional, intent(out), dimension(:) :: sd_array2 !subdomain array for timestamps
       INTEGER :: sd_node_number
       INTEGER :: fd_node_number
@@ -1853,6 +1855,10 @@ C
       include_times = .false.
 
       if (present(sd_array2)) include_times = .true.
+
+      !initialize local arrays to default values
+      sd_array(:) = sddefval
+      if (present(sd_array2) ) sd_array2(:) = 0.d0
 
       call setMessageSource("readAndMapToSubdomainMaxMin")
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
@@ -1880,7 +1886,11 @@ C
       ELSE
          IF (method.EQ.1) THEN  !tcm v51.20.02 -- not supported at this time
             allocate(fd_array(NP_G))
-            if (include_times.eqv..true.) allocate(fd_array2(NP_G))
+            fd_array(:) = sddefval !set to default value
+            if (include_times.eqv..true.) then 
+               allocate(fd_array2(NP_G))
+               fd_array2(:) = 0.d0
+            endif
             !CALL binaryRead2D(fd_array, NP_G, lun, counter)
               if (include_times.eqv..true.) then
                  !call readMinMax(minMaxFN,fd_array,fd_array2)  !place holder for binary file
@@ -1903,8 +1913,10 @@ C
 
          ELSE IF (method.EQ.2) THEN  !ascii files
             allocate(fd_array(NP_G))
+            fd_array(:) = sddefval !set to default value
             if (include_times.eqv..true.) then
                allocate(fd_array2(NP_G))
+               fd_array2(:) = 0.d0
                CALL readMinMax(minMaxFN,fd_array,fd_array2)
             else
                CALL readMinMax(minMaxFN,fd_array)

@@ -149,13 +149,12 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX_G(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX_Time(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
       REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX_Time_G(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
-#ifndef NUVMAX
       REAL(SZ),ALLOCATABLE, TARGET ::  UMAX(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX_G(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  UMAX_Time(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
       REAL(SZ),ALLOCATABLE, TARGET ::  UMAX_Time_G(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
-#endif
+
       REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMICE00(:), CICEOUT(:) !v49.64.01 tcm -added for ice concentration
@@ -166,13 +165,12 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin_G(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin_Time(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin_Time_G(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
-#ifndef NWVMAX
+
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax_G(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax_Time(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax_Time_G(:) !tcm v51.20.01 added variable for time of max (time is referenced off TimeLoc)
-#endif
 
       REAL(SZ),ALLOCATABLE, TARGET ::  DP(:)  !TCM V50.66.01 FOR TIME VARYING BATHYMETRY
 
@@ -1642,14 +1640,10 @@ C     the non-C3D case.
       ENDIF
 
       EtaDisc(:) = 0.0d0
-#ifndef NELMAX
       ETAMAX(:) = -99999.d0 ! v46.50 sb 11/11/2006
       ETAMAX_Time(:) = 0.d0 ! tcm v51.20.01
-#endif
-#ifndef NUVMAX
       UMAX(:) = 0.d0 ! v46.50 sb 11/11/2006
       UMAX_Time(:) = 0.d0 ! tcm v51.20.01
-#endif
 
 C... v49.48.02 tcm -- Variables related to kdtree searches
 C...    which are deallocated at the end of read_input.F

@@ -194,7 +194,7 @@ ifeq ($(compiler),intel-lonestar)
   PPFC            :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-#  FFLAGS1       :=  $(INCDIRS) -O3 -xT -132 -DNUVMAX -DNPRMAX -DNWVMAX
+#  FFLAGS1       :=  $(INCDIRS) -O3 -xT -132 
   FFLAGS1       :=  $(INCDIRS) -O3 -xT -132 -i-dynamic
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
@@ -851,8 +851,8 @@ ifeq ($(IBM),p5)
   FFLAGS2       := $(FFLAGS0) -qhot -qstrict
   FFLAGS3       := $(FFLAGS0) -O3 -qinitauto
   DA            := -WF,"-DREAL8,-DIBM,-DCSCA"
-  DP            := -tF -WF,"-DREAL8,-DIBM,-DCSCA,-DCMPI,-DNUVMAX,-DNPRMAX,-DNWVMAX"
-  DPRE          := -tF -WF,"-DREAL8,-DIBM,-DNUVMAX,-DNPRMAX,-DNWVMAX"
+  DP            := -tF -WF,"-DREAL8,-DIBM,-DCSCA,-DCMPI"
+  DPRE          := -tF -WF,"-DREAL8,-DIBM"
   IMODS         := -I
   CFLAGS        := $(INCDIRS) -O2 -DIBM
   ARFLAGS	:= -X64 rv
@@ -1171,7 +1171,6 @@ ifneq (,$(findstring powerpc-darwin,$(MACHINE)-$(OS)))
   PFC	        := mpif77
   FFLAGS1	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -f fixed -W132 -I . -DLINUX
   FFLAGS2	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -N11 -f fixed -W132 -I .
-#  FFLAGS3	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -N11 -f fixed -W132 -I . -DNELMAX -DNUVMAX -DNPRMAX -DNWVMAX -DNRSMAX
   FFLAGS3	:=  $(INCDIRS) -w -O3 -m64 -cpu:g5 -N11 -f fixed -W132 -I .
   DA  	   	:=  -DREAL8 -DCSCA -DLINUX
   DP  	   	:=  -DREAL8 -DCSCA -DCMPI -DLINUX

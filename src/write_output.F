@@ -476,6 +476,8 @@ C        maxele.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(ETAMAX_g(NP_G))
             ALLOCATE (ETAMAX_Time_G(NP_G))
+            ETAMAX_g(:) = -99999.d0
+            ETAMAX_Time_G(:) = 0.d0
          ENDIF
          EtaMaxDescript % specifier            = NOUTGE
          EtaMaxDescript % initial_value        = 0.0
@@ -497,6 +499,8 @@ C        maxvel.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(UMAX_g(NP_G))
             ALLOCATE (UMAX_Time_G(NP_G))
+            UMAX_g(:) = 0.d0
+            UMAX_Time_G(:) = 0.d0
          ENDIF
          UMaxDescript % specifier              = NOUTGV
          UMaxDescript % initial_value          = 0.0
@@ -518,6 +522,8 @@ C        prmin.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(PRMIN_g(NP_G))
             ALLOCATE (PRMIN_Time_G(NP_G))
+            PRMIN_g(:) = 99999.d0
+            PRMIN_Time_G(:) = 0.d0
          ENDIF
          PrMinDescript % specifier             = NOUTGW
          PrMinDescript % initial_value         = 0.0
@@ -539,6 +545,8 @@ C        maxwvel.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(WVNOUTMAX_g(NP_G))
             ALLOCATE (WVNOUTMAX_Time_G(NP_G))
+            WVNOUTMAX_g(:) = 0.d0
+            WVNOUTMAX_Time_G(:) = 0.d0
          ENDIF
          WVMaxDescript % specifier             = NOUTGW
          WVMaxDescript % initial_value         = 0.0
@@ -560,6 +568,8 @@ C        maxrs.63
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
             ALLOCATE(RSNMAX_g(NP_G))
             ALLOCATE (RSNMAX_Time_G(NP_G))
+            RSNMAX_g(:) = 0.d0
+            RSNMAX_Time_G(:) = 0.d0
          ENDIF
          RSMaxDescript % specifier             = NOUTGW
          RSMaxDescript % initial_value         = 0.0

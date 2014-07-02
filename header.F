@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.30    - 07/02/2014 - tcm - Removed the conditional pre-processor
+C                flags related to max/min file generation (-DNELMAX -DNUVMAX
+C               -DNPRMAX -DNWVMAX  -DNRSMAX).  Added initialization of 
+C                max/min variables to handle an issue with a compiler that
+C                didn't initalize them to zero.
 C    v51.29    - 06/30/2014 - jgf - Updated compiler flags for lonestar 
 C                machine at TACC.
 C    v51.28    - 05/12/2014 - jcd -- Merging swan4101 branch into trunk.
