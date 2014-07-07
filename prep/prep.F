@@ -2752,6 +2752,7 @@ C--- extra entry (1,-99999.d0) will be ignored, and if node 1 actually is
 C--- changed then it will be read regardless if it appears twice.
 C
          DO
+            PBLJAGF(:) = ' '
             READ(141,'(A80)',END=9999) PBLJAGF
             IF(PBLJAGF(2:2).EQ.'#') THEN
                DO IPROC =  STARTPROC,ENDPROC
@@ -2761,12 +2762,14 @@ C
                   WRITE(SDU(IPROC),1100) 1,-99999.d0
                ENDDO
             ELSE
-
                READ(PBLJAGF,*,END=9999) NHG,DPTMP
                DO J=1, ITOTPROC(NHG)
                   IPROC  = IMAP_NOD_GL2(2*(J-1)+1,NHG)
                   LINDEX = IMAP_NOD_GL2(2*(J-1)+2,NHG)
-                  WRITE(SDU(IPROC),1100) LINDEX,DPTMP
+                  IF ( (IPROC.GE.STARTPROC).AND.
+     &                 (IPROC.LE.ENDPROC) ) THEN
+                     WRITE(SDU(IPROC),1100) LINDEX,DPTMP
+                  endif
                ENDDO
             ENDIF
          END DO
@@ -2787,6 +2790,8 @@ C
          DO IPROC=STARTPROC, ENDPROC
             CLOSE (SDU(IPROC))
          ENDDO
+         write(*,*) "     Finished processing fort.141 file"
+         write(*,*) "for processor range ",startproc," to ",endproc
          startProc=endProc+1
       ENDDO
 
@@ -5860,7 +5865,8 @@ C
 C
 C     Open each of the subdomain files
       DO iproc = startProc, endProc
-         sdu(iproc) = 105 + (iproc-1)
+         sdFileName(:) = ' '
+         sdu(iproc) = 505 + (iproc-1)  !tcm v51.31 changed 105 to 505 to avoid conflicts with fort.141 file
          sdFileName(1:7) = 'PE0000/'
 c........tcm v50.66.03 increased unit number to 100's places
          if (UnitNumber < 100 ) then
@@ -5872,7 +5878,7 @@ c........tcm v50.66.03 increased unit number to 100's places
          sdFileName = 'PE0000/'//FileName
 #endif
          CALL IWRITE(sdFileName, 3, 6, iproc-1)
-         OPEN (UNIT=SDU(iproc), FILE=sdFileName, IOSTAT=ErrorIO)
+         OPEN (UNIT=SDU(iproc), FILE=trim(sdFileName), IOSTAT=ErrorIO)
          Success = .true.
          IF ( ErrorIO .GT. 0 ) THEN
             WRITE(*,*) "ERROR: Subdomain file cannot be opened."

@@ -2,6 +2,12 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.31    - 07/07/2014 - tcm - Fixed a bug in prepping fort.141 files
+C                that was caused by only adding 105 to the processor number
+C                to create a unit number, since 141 would be used for both
+C                a local unit number and a global unit number. Now addes 505
+C                to the processor number, so that local PE####/fort.141 will
+C                have unit numbers from 505 to 760.
 C    v51.30    - 07/02/2014 - tcm - Removed the conditional pre-processor
 C                flags related to max/min file generation (-DNELMAX -DNUVMAX
 C               -DNPRMAX -DNWVMAX  -DNRSMAX).  Added initialization of 
