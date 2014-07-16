@@ -445,7 +445,8 @@ ifeq ($(compiler),diamond)
   PPFC          :=  ifort
   FC            :=  ifort
   PFC           :=  ifort
-  FFLAGS1       :=  $(INCDIRS) -O3 -xT -132
+#  FFLAGS1       :=  $(INCDIRS) -O3 -xT -132
+  FFLAGS1       := -O3 -132 -xSSSE3
   ifeq ($(DEBUG),full)
      FFLAGS1	:=  $(INCDIRS) -g -O0 -debug -fpe0 -132 -traceback -check all -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK
   endif
@@ -460,7 +461,8 @@ ifeq ($(compiler),diamond)
   IMODS         :=  -I
   CC            := icc
   CCBE          := $(CC)
-  CFLAGS        := $(INCDIRS) -O3 -xT
+#  CFLAGS        := $(INCDIRS) -O3 -xT
+  CFLAGS        := $(INCDIRS) -O3 -SSSE3
   ifeq ($(DEBUG),full)
      CFLAGS        := $(INCDIRS) -g -O0
   endif

@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.33    - 07/16/2014 - tcm - Updated compiler flags for diamond,
+C                to replace no longer supported options -xT with
+C                -xSSSE3.  While diamond has been removed from service,
+C                another SGI Spirit is still in service.
 C    v51.32    - 07/16/2014 - tcm - Added a feature that will kill all MPI
 C                processes when an elevation greater than error elevation is
 C                encountered during a coupled ADCIRC+STWAVE simulation,
