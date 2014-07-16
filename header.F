@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.32    - 07/16/2014 - tcm - Added a feature that will kill all MPI
+C                processes when an elevation greater than error elevation is
+C                encountered during a coupled ADCIRC+STWAVE simulation,
+C                NRS=4. This is needed to stop all MPI processes, not just
+C                the ones that ADCIRC owns.
 C    v51.31    - 07/07/2014 - tcm - Fixed a bug in prepping fort.141 files
 C                that was caused by only adding 105 to the processor number
 C                to create a unit number, since 141 would be used for both

@@ -1547,6 +1547,7 @@ Casey 090302: Added the following lines.
 
 C     NWS=4xx added for STWAVE tighly coupled run  (v49.46 tcm)
       IF(NRS.EQ.4) THEN
+         CPL2STWAVE = .TRUE.  !flag indicating coupling with STWAVE 
          WRITE(16,2394) NRS
  2394    FORMAT(/,5X,'NRS = ',I2,
      &    /,9X,'WAVE RADIATION STRESS IS USED TO FORCE THE COMPUTATION',

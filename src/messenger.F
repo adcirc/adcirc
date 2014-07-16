@@ -8,7 +8,7 @@ C
      &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,
      &    COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID, SIG_VAL,
      &    SIG_WRITE, SIG_TERM, SIG_PAUSE, FLOAT_TYPE, REALTYPE,
-     &    DBLETYPE,
+     &    DBLETYPE,CPL2STWAVE,Flag_ElevError,
      &    DEBUG, ECHO, INFO, WARNING, ERROR,
      &    screenMessage, logMessage, allMessage, setMessageSource,
      &    unsetMessageSource, scratchMessage     
@@ -239,6 +239,17 @@ C
          ! as the error code        
          CALL MPI_ABORT(MPI_COMM_ADCIRC,MYPROC,IERR)
       ENDIF
+
+      ! tcm v51.32  added a "go nuclear" option for killing
+      ! all MPI processes when Elevation Greater than Error 
+      ! elevation is exceeded, not just the mpi processes owned
+      ! by ADCIRC when coupled with STWAVE via CSTORM-MS
+      ! Note: mpi_comm_world is defined in mpich.f
+      IF (CPL2STWAVE.eqv..true.) then
+         IF (Flag_ElevError.eqv..true.) then
+            call mpi_abort(mpi_comm_world,myproc,ierr)
+         endif
+      endif
 
       IF (PRESENT(NO_MPI_FINALIZE)) THEN
          IF (.NOT.NO_MPI_FINALIZE) THEN

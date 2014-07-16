@@ -69,6 +69,8 @@ C     jgf46.21 Added support for IBTYPE=52.
 C... v49.48 tcm -- added for coupling with STWAVE (NRS=4)
       REAL(8)  :: STARTWAVE   ! Start of Wave Service
       REAL(8)  :: ENDWAVE     ! End of Wave Service
+      LOGICAL  :: CPL2STWAVE = .FALSE.  !Coupled to STWAVE (NRS=4)
+      LOGICAL  :: Flag_ElevError = .FALSE.  
 
 C      real(sz) rampriver,drampriver,rampriver1,rampriver2
 

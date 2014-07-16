@@ -3392,6 +3392,7 @@ C     the screen.
          ENDIF
          call WarnElevSum(ErrorElevExceeded)  ! Clint's Zombie Slayer 2010.08.07
          IF( ErrorElevExceeded /= 0 ) THEN    !  Finalize MPI Environment,
+           Flag_ElevError = .true. 
            CALL MSG_FINI()                    !  if there are Error Elvation nodes.
            STOP                               !
          ENDIF                                !st3
@@ -3423,6 +3424,7 @@ C     the screen.
 #endif
          ENDIF
          IF(ELMAX.GT.ErrorElev) THEN
+            Flag_ElevError = .true.
             WRITE(ScreenUnit,1996)
      &           IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
             WRITE(16,1996) IT,NUMITR,TimeLoc,ETA2(KEMAX),KEMAX,VELMAX,KVMAX
