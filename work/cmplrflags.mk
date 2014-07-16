@@ -462,7 +462,7 @@ ifeq ($(compiler),diamond)
   CC            := icc
   CCBE          := $(CC)
 #  CFLAGS        := $(INCDIRS) -O3 -xT
-  CFLAGS        := $(INCDIRS) -O3 -SSSE3
+  CFLAGS        := $(INCDIRS) -O3 -xSSSE3
   ifeq ($(DEBUG),full)
      CFLAGS        := $(INCDIRS) -g -O0
   endif
