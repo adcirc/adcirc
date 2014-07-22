@@ -54,7 +54,9 @@
       !                          the storm parameters.  Changed this code
       !                          to read in that input file and use the values
       !                          found there
-      !
+      !    02/2013      Jie Gao, UNC-IMS
+      !                          wrote subroutines and functions for
+      !                          the Generalized Asymmetric Holland Model (GAHM)
       !
       !=================================================================
       MODULE vortex
@@ -66,7 +68,7 @@
       SAVE
 
       PUBLIC :: newVortex, calcRmaxes, fitRmaxes,
-     &          Rmw, uvp, uvtrans,
+     &          Rmw, uvp, uvtrans, fang,
      &          latlon2xy, xy2latlon,
      &          getShapeParameter   ,
      &          setShapeParameter   ,
@@ -75,18 +77,24 @@
      &          getUseQuadrantVr    , getRmaxes,
      &          setUseQuadrantVr    , setRmaxes,
      &          setIsotachWindSpeed ,
-     &          setIsotachWindSpeeds, setIsotachRadii
-
+     &          getShapeParameters  , getPhiFactors,
+     &          setIsotachWindSpeeds, setIsotachRadii,
+     &          setVortex, spInterp,interpR,
+     &          setUseVmaxesBL,
+     &          getVmaxesBL, setVmaxesBL,
+     &          fitRmaxes4,calcRmaxesFull,
+     &          uvpr,newVortexFull,
+     &          Rmaxes4, QuadFlag4, QuadIr4, Bs4, VmBL4 !jgfdebug
 
       PRIVATE
 
       INTEGER, PARAMETER :: nQuads  = 4       ! Number of quadrants for
                                                  ! which wind radii are
                                                  ! provided
-      INTEGER, PARAMETER :: nPoints = nQuads+2! Number of (theta, Rmax)
+      INTEGER, PARAMETER :: nPoints = nQuads+2   ! Number of (theta, Rmax)
                                                  ! points for curve fit
-      REAL(sz), DIMENSION(nPoints) :: Rmaxes    ! Radius of maximum winds
-                                                 ! (nautical miles)
+      REAL(sz), DIMENSION(nPoints) :: Rmaxes     ! Radius of maximum winds
+      REAL(sz), DIMENSION(nPoints,4) :: Rmaxes4  ! (nautical miles)
       REAL(sz) :: Pn                          ! Ambient surface pressure (mb)
       REAL(sz) :: Pc                          ! Surface pressure at center of
                                               ! storm (mb)
@@ -99,6 +107,15 @@
       REAL(sz) :: B                           ! Exponential shape parameter
       REAL(sz) :: corio                       ! Coriolis force (1/s)
       REAL(sz) :: Vr                          ! Velocity @ wind radii (knots)
+      REAL(sz) :: Phi
+      REAL(sz), DIMENSION(nPoints) :: Bs        
+      REAL(sz), DIMENSION(nPoints) :: Phis    ! Correction factor to B and Vh
+      REAL(sz), DIMENSION(nPoints) :: VmBL
+      REAL(sz), DIMENSION(nPoints,4) :: Bs4        
+      REAL(sz), DIMENSION(nPoints,4) :: Phis4    ! Correction factor to B and Vh
+      REAL(sz), DIMENSION(nPoints,4) :: VmBL4
+      INTEGER,  DIMENSION(nPoints,4) :: QuadFlag4  
+      REAL(sz), DIMENSION(nPoints,4) :: QuadIr4        
       REAL(sz), DIMENSION(nQuads) :: VrQuadrant
       REAL(sz), DIMENSION(nQuads) :: radius   ! Wind radii - the distance
                                               ! winds of velocity Vr extend
@@ -112,7 +129,7 @@
                                               ! calculated node w.r.t. the
                                               ! storm location
       LOGICAL :: useQuadrantVr
-
+      LOGICAL :: useVmaxesBL
       CONTAINS
 
       !=================
@@ -151,6 +168,59 @@
       B = MAX( MIN(B,2.5d0), 1.0d0) ! limit B to range 1.0->2.5
 
       END SUBROUTINE newVortex
+
+      ! A new vortex is created for the full gradient wind balance
+      SUBROUTINE newVortexFull(pinf, p0, lat, lon, vm)
+      REAL(sz), INTENT(IN) :: Pinf
+      REAL(sz), INTENT(IN) :: P0
+      REAL(sz), INTENT(IN) :: lat
+      REAL(sz), INTENT(IN) :: lon
+      REAL(sz), INTENT(IN) :: vm
+      ! set instance variables
+      Pn = pinf
+      Pc = p0
+      cLat = lat
+      cLon = lon
+      Vmax = vm
+      ! evaluate basic physical params
+      corio = 2.0d0 * omega * SIN(deg2rad*cLat)
+      B = (Vmax*kt2ms)**2 * RhoAir * EXP(1.d0)
+     &             / ((Pn - Pc) * mb2pa)
+      Phi=1.d0
+      Bs(1:6)=B
+      Phis(1:6)=Phi
+      VmBL(1:6)=Vmax
+      ! Jie 2013.01 
+      ! B = MAX( MIN(B,2.5d0), 1.0d0) ! limit B to range 1.0->2.5
+
+      END SUBROUTINE newVortexFull
+
+      !=================================================================
+      ! Set basic parameter for a new Vortex object.
+      !
+      ! On input:
+      !    Pn           Ambient surface pressure (mb)
+      !    Pc           Surface pressure at center of storm (mb)
+      !    cLat         Latitude  of storm center (degrees north)
+      !    cLon         Longitude of storm center (degrees east )
+      !
+      ! On output:
+      !    Aim is to define Pn, Pc, and corio
+      !=================================================================
+      SUBROUTINE setVortex(pinf, p0, lat, lon)
+      REAL(sz), INTENT(IN) :: Pinf
+      REAL(sz), INTENT(IN) :: P0
+      REAL(sz), INTENT(IN) :: lat
+      REAL(sz), INTENT(IN) :: lon
+      ! set instance variables
+      Pn = pinf
+      Pc = p0
+      cLat = lat
+      cLon = lon
+      ! evaluate basic physical params
+      corio = 2.0d0 * omega * SIN(deg2rad*cLat)
+      END SUBROUTINE setVortex
+
 
       !===============================================================
       ! Calculate the radius of maximum winds for all storm quadrants.
@@ -192,7 +262,7 @@
          ! determine if Rmax is actually in the vicinity of the
          ! isotach radius that we are using to solve for Rmax,
          ! and if so, take another shot at finding the
-         ! Rmax using the gradient wind equation that neglects
+         ! Rmax using the gradient wind balance that neglects
          ! coriolis (and is appropriate in the vicinity of Rmax)
          vicinity = abs(root-radius(quad))/root
          if ( (root.lt.0.d0).or.(vicinity.le.0.1d0)) then
@@ -210,6 +280,178 @@
       END DO
 
       END SUBROUTINE calcRmaxes
+
+      !===============================================================
+      ! Calculate the radius of maximum winds for all storm quadrants.
+      ! Solving the full gradient wind equation without the assumption
+      ! of cyclostrohpic balance.
+      !
+      ! On input:
+      !    none
+      !
+      ! On output:
+      !    Rmax    radius of maximum winds (nm) in all quadrants, plus
+      !            2 extra values to tie down circular periodicity
+      !
+      ! Jie 2013.02 added looping procedures to calculate Bs and Phis
+      !===============================================================
+      SUBROUTINE calcRmaxesFull()
+!              REAL(sz), EXTERNAL  :: func
+      REAL(sz)            :: root        ! Radius of maximum winds
+      REAL(sz), PARAMETER :: innerRadius = 1.d0
+      REAL(sz), PARAMETER :: outerRadius = 500.d0
+      REAL(sz), PARAMETER :: accuracy    = 0.0001d0
+      REAL(sz), PARAMETER :: zoom        = 0.01d0
+      INTEGER , PARAMETER :: itmax = 3
+      REAL(sz)            :: r1,r2, r3,r4, dr
+      INTEGER             :: n, iter, i, norootflg
+      REAL(sz) :: vicinity
+      REAL(sz) :: B_new, B_new1
+      REAL(sz) :: Phi_new
+      INTEGER , PARAMETER :: cont = 400 ! Max # of iterations
+      INTEGER :: icont,ibcont                        ! iteration counter
+ 211  FORMAT(a7,x,i2,x,a38)
+      !-----------------------------
+      ! Loop over quadrants of storm
+      !-----------------------------
+      DO n = 1, nQuads
+         norootflg=0
+      ! initialize B and Phi values for each quadrant
+         B = Bs(n+1)
+         Phi = Phis(n+1)
+         Vmax = VmBL(n+1)
+      ! Loop the root-solving process to converge B, for in the
+      ! new wind formulation, B is a function of Rmax, Vmax, f, and Phi 
+      DO icont = 1, cont ! logical expre. is at the end to exit the loop
+         norootflg=0
+         quad = n
+         root = -1.d0
+         r1 = innerRadius
+         r2 = outerRadius
+         dr = 1.d0
+         DO iter = 1, itmax
+            root = findRoot(VhWithCoriFull, r1,r2, dr, r3,r4)
+            r1 = r3
+            r2 = r4
+            dr = dr * zoom
+         END DO
+         ! avoid invalid B value when root is not found        
+         if (root.lt.0.d0) then
+         !   r1 = innerRadius
+         !   r2 = outerRadius
+         !   dr = 1.d0
+         !   DO iter = 1, itmax
+         !      root = findRoot(VhNoCori, r1,r2, dr, r3,r4)
+         !      r1 = r3
+         !      r2 = r4
+         !      dr = dr * zoom
+         !   END DO
+         root=1.0*radius(quad)
+         norootflg=1
+         endif
+         Rmaxes(n+1) = root  
+                
+         ! Jie 2013.02
+         ! determine if B converges, if yes, break loop and assign 
+         ! values to Rmaxes, if not, continue the loop to re-calculate 
+         ! root and re-evaluate Bs
+         Phi_new = 1+Vmax*kt2ms*root*nm2m*corio/
+     &       (B*((Vmax*kt2ms)**2+Vmax*kt2ms*root*nm2m*corio))
+         B_new = ((Vmax*kt2ms)**2+Vmax*kt2ms*root*nm2m*corio)
+     &       *RhoAir*EXP(Phi_new)/(Phi_new*(Pn-Pc)* mb2pa)
+         do ibcont = 1, cont
+           B_new1 = B_new
+           Phi_new = 1+Vmax*kt2ms*root*nm2m*corio/
+     &       (B_new*((Vmax*kt2ms)**2+Vmax*kt2ms*root*nm2m*corio))
+           B_new = ((Vmax*kt2ms)**2+Vmax*kt2ms*root*nm2m*corio)
+     &       *RhoAir*EXP(Phi_new)/(Phi_new*(Pn-Pc)* mb2pa)
+           if (abs(B_new-B_new1).le.0.01d0) then
+              EXIT
+           endif
+         end do
+!  debug with aswip          
+!         if (ibcont.ge.cont) then
+!           write(1111,211) 
+!     &       "iquad=",n,  
+!     &       "B_new did not fully converge, procede"
+!         endif
+!  end debug with aswip         
+         if (abs(B-B_new).le.0.01d0) then
+              EXIT
+         endif
+         ! update B and Phi for next iteration
+         ! warning: modifications made here also affect other subroutines
+         B=B_new
+         Phi=Phi_new
+      END DO !icont = 1, cont 
+         ! update to the latest values for aswip output
+         Bs(n+1)=B_new
+         Phis(n+1)=Phi_new
+!  debug with aswip         
+!         if (icont.ge.cont) then
+!           write(1111,211) 
+!     &       "iquad=",n,  
+!     &       "B did not fully converge, procede"
+!         endif
+!  end debug with aswip 
+         ! determine if Rmax is actually in the vicinity of the
+         ! isotach radius that we are using to solve for Rmax,
+         ! and if so, take another shot at finding the
+         ! Rmax using the gradient wind equation that neglects
+         ! coriolis (and is appropriate in the vicinity of Rmax)
+         ! Jie 2013.01
+         !vicinity = abs(root-radius(quad))/root
+         if (norootflg==1) then
+            write(*,*)
+     &      "iquad=",n,
+     &      "No root found, return dist. to Isotach"  
+         endif
+ 
+      END DO  !n = 1, nQuads
+
+      END SUBROUTINE calcRmaxesFull
+      
+      !====================================================
+      ! External function f(x) = 0 for which a root is
+      ! sought using Brent's root-finding method.
+      !
+      ! On input:
+      !    x       iterative values which converge to root
+      !
+      ! On output:
+      !    func    f(x)
+      !
+      ! Internal parameters:
+      !    vortex instance variables via accessor functions
+      !
+      ! Jie 2013.02 Modified to use the full gradient wind eq.
+      !====================================================
+      FUNCTION VhWithCoriFull(testRmax)
+
+      REAL(sz), INTENT(IN) :: testRmax
+      REAL(sz) :: VhWithCoriFull
+      REAL(sz) :: thisVr ! the radial wind speed we've been given
+      REAL(sz) :: Vh
+      !-------------------------
+      ! func(x = Rmax) = Vh - Vr
+      !-------------------------
+      if ( getUseQuadrantVr().eqv..true. ) then
+         thisVr = VrQuadrant(quad)
+      else
+         thisVr = Vr
+      endif
+      ! Jie 2013.02
+      Vh = ms2kt * ( SQRT(
+     &            ((Vmax*kt2ms)**2.d0+Vmax*kt2ms*testRmax*nm2m*corio) 
+     &                   * (testRmax/radius(quad))**B
+     &                   * EXP(Phi*(1.0d0-(testRmax/radius(quad))**B))
+     &            + (nm2m*radius(quad)*corio/2.d0)**2.d0)
+     &            - nm2m*radius(quad)*corio/2.d0 )
+      VhWithCoriFull = Vh - thisVr
+      END FUNCTION VhWithCoriFull
+      !===============================================================
+      
+      
 
       !====================================================
       ! External function f(x) = 0 for which a root is
@@ -479,6 +721,274 @@
       END SUBROUTINE uvp
 
       !=================================================================
+      ! Calculate (u,v) wind components and surface pressure from an
+      ! asymmetric hurricane wind model.
+      !
+      ! On input:
+      !    pinf         hurricane ambient pressure
+      !    p0           hurricane central pressure
+      !    idist        dist to hurricane center in nautical mile
+      !    irmx         RMW
+      !    iangle       Azimuth Angle
+      !    iB           Holland B parameter
+      !    iVm          vortex maximum velocity at upper boundary
+      !    iPhi       vortex correction factor
+      !    uTrans        x component of translational velocity (kts)
+      !    vTrans        y component of translational velocity (kts)
+      !
+      ! On output:
+      !    u           x component of wind velocity at nodal point (m/s)
+      !    v           y component of wind velocity at nodal point (m/s)
+      !    p           Surface pressure at nodal point (Pa)
+      !
+      ! Internal parameters:
+      !    dampRadii   How far out (# of Rmax radii) to begin damping
+      !                out the translational velocity
+      !
+      ! Note:
+      !    Subroutine directly accesses global class instance variables
+      !=================================================================
+      
+      SUBROUTINE uvpr(idist,iangle,irmx,irmx_true,iB,iVm,iPhi,
+     &                uTrans,vTrans, u,v,p)
+      REAL(sz), INTENT(IN)  :: idist
+      REAL(sz), INTENT(IN)  :: iangle
+      REAL(sz), INTENT(IN)  :: irmx
+      REAL(sz), INTENT(IN)  :: irmx_true
+      REAL(sz), INTENT(IN)  :: iB
+      REAL(sz), INTENT(IN)  :: iVm
+      REAL(sz), INTENT(IN)  :: iPhi
+      REAL(sz), INTENT(IN)  :: uTrans
+      REAL(sz), INTENT(IN)  :: vTrans
+
+      REAL(sz), INTENT(OUT) :: u
+      REAL(sz), INTENT(OUT) :: v
+      REAL(sz), INTENT(OUT) :: p
+
+      REAL(sz) :: TransSpdX  !NWS8-style translation speed
+      REAL(sz) :: TransSpdY  !NWS8-style translation speed
+      REAL(sz) :: rmx
+      REAL(sz) :: avgLat
+      REAL(sz) :: speed
+      REAL(sz) :: uf
+      REAL(sz) :: vf
+      REAL(sz) :: damp
+      REAL(sz) :: percentCoriolis
+      INTEGER :: i
+      
+      rmx=irmx
+      B=iB
+      Vmax=iVm
+      Phi=iPhi
+      !----------------------------------------
+      ! Handle special case at eye of hurricane
+      !----------------------------------------
+      ! in eye velocity is zero not translational velocity
+      !----------------------------------------
+      IF (idist < 1.d0) THEN
+         u = 0.0d0
+         v = 0.0d0
+         p = Pc * mb2pa
+         RETURN
+      END IF
+
+      !---------------------------------------------------
+      ! Compute (u,v) wind velocity components from the
+      ! asymmetric hurricane vortex.
+      !
+      ! Note: the vortex winds are valid at the top of the
+      ! surface layer, so reduce the winds to the surface.
+      ! Also convert the winds from max sustained 1-minute
+      ! averages to 10-minute averages for the storm surge
+      ! model.
+      !---------------------------------------------------
+      percentCoriolis=1.0d0
+      ! Jie 2013.02
+      speed = SQRT(
+     &           ((Vmax*kt2ms)**2.d0+Vmax*kt2ms*rmx*nm2m
+     &             *percentCoriolis*corio) 
+     &                  * (rmx/idist)**B
+     &                  * EXP(Phi*(1.d0-(rmx/idist)**B))
+     &            + (nm2m*idist*percentCoriolis
+     &                           *corio/2.d0)**2.d0)
+     &            - nm2m*idist*percentCoriolis*corio/2.d0
+
+      ! jgf20111007: Calculate NWS8-like translation speed
+      TransSpdX = (abs(speed/(Vmax*kt2ms)))*uTrans*kt2ms
+      TransSpdY = (abs(speed/(Vmax*kt2ms)))*vTrans*kt2ms
+
+      ! now reduce the wind speed to the surface
+      speed = speed * windReduction
+
+      u = -speed * COS(deg2rad*iangle)
+      v =  speed * SIN(deg2rad*iangle)
+      !
+      ! Alter wind direction by adding a frictional inflow angle
+      CALL rotate(u,v, fang(idist,irmx_true), cLat, uf,vf)
+      u = uf
+      v = vf
+      !
+      ! jgf20111007: Add in the translation velocity
+      u = u + TransSpdX
+      v = v + TransSpdY
+      !
+      ! convert from 1 minute averaged winds to 10 minute averaged
+      ! winds for use in ADCIRC
+      u = u * one2ten
+      v = v * one2ten
+
+      ! Compute surface pressure from asymmetric hurricane vortex
+      p = mb2pa * (Pc + (Pn - Pc) * EXP(-Phi*(rmx/idist)**B))
+
+      ! cut off the vortex field after 401nm
+      !
+      ! TODO: 401nm should be replaced with something less
+      ! arbitrary ... and find a better way to blend this
+      !if ( dist.gt.401.d0 ) then
+      !   u = 0.0d0
+      !   v = 0.0d0
+      !   p = mb2pa * Pn
+      !endif
+
+      END SUBROUTINE uvpr
+      
+      !=================================================================
+      ! Spatial Interpolation function based on angle and r.
+      !
+      ! On input:
+      !    angle        Azimuthal angle (degrees)
+      !    r            Distnace to storm Center (nm)
+      !
+      ! On output:
+      !    interpolated value for Rmax/Vmax/B          
+      !
+      ! INTEGER valid_Isot is used as a marker to indicate how many isotachs
+      ! are available in a certain quadrant
+      ! select case(valid_Isot)
+      ! case(1): 1 situation
+      ! case(2): 3 situations
+      ! case(3): 4 situations
+      ! case(4): 5 situations                    
+      !=================================================================
+      REAL(sz) FUNCTION spInterp(angle,dist,opt)
+      REAL(sz), INTENT(IN) :: angle,dist  
+      INTEGER, INTENT(IN)  :: opt
+      REAL(sz), DIMENSION(nPoints,4) :: param 
+      REAL(sz) :: temp1, temp2  
+      REAL(sz) :: delta_angle
+      INTEGER  :: iquad
+
+      if (opt == 1) then
+         param = Rmaxes4
+      else if (opt == 2) then
+         param = Bs4
+      else if (opt == 3) then
+         param = VmBL4    
+      end if   
+      
+      if (angle.le.45.0d0) then
+         iquad = 5
+         delta_angle = 45.d0 + angle
+      else if (angle.le.135.d0) then
+         iquad = 2
+         delta_angle = angle - 45.d0
+      else if (angle.le.225.d0) then
+         iquad = 3
+         delta_angle = angle - 135.d0
+      else if (angle.le.315.d0) then
+         iquad = 4
+         delta_angle = angle - 225.d0
+      else if (angle.gt.315.d0) then
+         iquad = 5
+         delta_angle = angle - 315.d0
+      endif
+
+      ! nearest neighbor weighted interpolation     
+         if ( delta_angle.lt.1.d0 ) then
+             spInterp=interpR(param, iquad, dist)
+         else if (delta_angle.gt.89.d0) then
+             spInterp=interpR(param, iquad+1, dist)
+         else
+             temp1= interpR(param, iquad, dist)
+             temp2= interpR(param, iquad+1, dist)
+             spInterp = ( temp1/delta_angle**2.d0
+     &             + temp2/(90.0-delta_angle)**2.d0 )
+     &             / ( 1.d0/delta_angle**2.d0
+     &              + 1.d0/(90.d0-delta_angle)**2.d0 )
+         end if
+
+      END FUNCTION spInterp
+      
+      
+      REAL(sz)  FUNCTION interpR(val,quad,r)
+      REAL(sz), DIMENSION(nPoints,4),INTENT(IN) :: val 
+      INTEGER, INTENT(IN) :: quad
+      REAL(sz), INTENT(IN) :: r 
+      REAL(sz) :: fac
+      INTEGER  :: total_Isot
+      
+      total_Isot=sum(QuadFlag4(quad,:))
+         select case(total_Isot)
+         case(1)
+           interpR = val(quad,maxloc(QuadFlag4(quad,:),1)) 
+         case(2)
+            if (r > QuadIr4(quad,1)) then
+               interpR = val(quad,1)
+            else if (r > QuadIr4(quad,2)) then
+               fac = (r-QuadIr4(quad,2))/
+     &               (QuadIr4(quad,1)-QuadIr4(quad,2))
+               interpR = val(quad,1)* fac+
+     &         val(quad,2)* (1-fac)
+            else
+               interpR = val(quad,2)
+            end if
+         case(3)
+            if (r > QuadIr4(quad,1)) then
+               interpR = val(quad,1)
+            else if (r > QuadIr4(quad,2)) then
+               fac = (r-QuadIr4(quad,2))/
+     &               (QuadIr4(quad,1)-QuadIr4(quad,2))
+               interpR = val(quad,1)* fac+
+     &         val(quad,2)* (1-fac)
+            else if (r > QuadIr4(quad,3)) then
+               fac = (r-QuadIr4(quad,3))/
+     &               (QuadIr4(quad,2)-QuadIr4(quad,3))
+               interpR = val(quad,2)* fac+
+     &         val(quad,3)* (1-fac)
+            else
+               interpR = val(quad,3)
+            end if
+         case(4)
+            if (r > QuadIr4(quad,1)) then
+               interpR = val(quad,1)
+            else if (r > QuadIr4(quad,2)) then
+               fac = (r-QuadIr4(quad,2))/
+     &               (QuadIr4(quad,1)-QuadIr4(quad,2))
+               interpR = val(quad,1)* fac+
+     &         val(quad,2)* (1-fac)
+            else if (r > QuadIr4(quad,3)) then
+               fac = (r-QuadIr4(quad,3))/
+     &               (QuadIr4(quad,2)-QuadIr4(quad,3))
+               interpR = val(quad,2)* fac+
+     &         val(quad,3)* (1-fac)
+            else if (r > QuadIr4(quad,4)) then
+               fac = (r-QuadIr4(quad,4))/
+     &               (QuadIr4(quad,3)-QuadIr4(quad,4))
+               interpR = val(quad,3)* fac+
+     &         val(quad,4)* (1-fac)
+            else
+               interpR = val(quad,4)
+            end if         
+         case default
+         ! For whatever reason if our algorithm fails, add the following
+         ! line to avoid run-time errors
+            interpR = val(quad,maxloc(QuadFlag4(quad,:),1)) 
+            write(*,*) "ERROR: interpR failed in nws20get."
+         end select  
+         
+         END function interpR
+
+      !=================================================================
       ! calculate the radius of maximum winds.
       !
       ! On input:
@@ -697,6 +1207,32 @@ C
 
       END SUBROUTINE fitRmaxes
 
+      SUBROUTINE fitRmaxes4()
+      REAL(sz)            :: root        ! Radius of maximum winds
+      INTEGER             :: n, iter,i
+      !
+      ! Generate 2 additional points for curve-fit
+       
+      QuadFlag4(1,1:4) = QuadFlag4(5,1:4)
+      QuadFlag4(6,1:4) = QuadFlag4(2,1:4)
+      
+      QuadIr4(1,1:4) = QuadIr4(5,1:4)
+      QuadIr4(6,1:4) = QuadIr4(2,1:4)
+            
+      Rmaxes4(1,1:4) = Rmaxes4(5,1:4)
+      Rmaxes4(6,1:4) = Rmaxes4(2,1:4)
+      
+      Bs4(1,1:4) = Bs4(5,1:4)
+      Bs4(6,1:4) = Bs4(2,1:4)
+      
+      Phis4(1,1:4) = Phis4(5,1:4)
+      Phis4(6,1:4) = Phis4(2,1:4)  
+      
+      VmBL4(1,1:4) = VmBL4(5,1:4)
+      VmBL4(6,1:4) = VmBL4(2,1:4) 
+ 
+      END SUBROUTINE fitRmaxes4
+
 
       SUBROUTINE setUseQuadrantVr(u)
          LOGICAL, INTENT(IN) :: u
@@ -754,5 +1290,43 @@ C
       LOGICAL FUNCTION getUseQuadrantVr()
          getUseQuadrantVr = useQuadrantVr
       END FUNCTION getUseQuadrantVr
+      
+      !Jie 2013.02
+      SUBROUTINE setUseVmaxesBL(u)
+         LOGICAL, INTENT(IN) :: u
+         useVmaxesBL = u
+      END SUBROUTINE setUseVmaxesBL
+      
+      SUBROUTINE getVmaxesBL(vmaxw)
+         REAL(sz), DIMENSION(4), INTENT(OUT) :: vmaxw
+         INTEGER :: i
+         do i=1,4
+            vmaxw(i) = VmBL(i+1)
+         end do
+      END SUBROUTINE getVmaxesBL
+
+      SUBROUTINE setVmaxesBL(vmaxw)
+         REAL(sz), DIMENSION(4), INTENT(IN) :: vmaxw
+         INTEGER :: i
+         do i=1,4
+            VmBL(i+1) = vmaxw(i)
+         end do
+      END SUBROUTINE setVmaxesBL  
+      
+      FUNCTION getShapeParameters()
+         REAL(sz),DIMENSION(4) :: getShapeParameters
+         INTEGER :: i
+         do i=1,4
+            getShapeParameters(i) = Bs(i+1)
+         end do
+      END FUNCTION getShapeParameters   
+      
+      FUNCTION getPhiFactors()
+         REAL(sz),DIMENSION(4) :: getPhiFactors
+         INTEGER :: i
+         do i=1,4
+            getPhiFactors(i) = Phis(i+1)
+         end do
+      END FUNCTION getPhiFactors      
 
       END MODULE vortex

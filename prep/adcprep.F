@@ -40,6 +40,7 @@ C   Add prep15 ONLY command      ( V. Parr 10/2006 )
 C   Add prephot ONLY command     ( V. Parr 10/2006 )
 C   Added NWS=19 asymmetric holland v2.0 ( R. Weaver 07/2009)
 c   Removed NWS=3 and NWS=6      (T.C. Massey 11/2009)
+C   Add NWS=20 generalized asymmetric hurricane vortex (Jie 5/2013)
 C
 C----------------------------------------------------------------------------
 C
@@ -599,7 +600,8 @@ C     jgfdebug46.02 Added NWS=45
 C     jgf46.02 Added NWS=8
 C     jgf46.16 Merged:
 C     cf & cm added NWS=9: asymmetric hurricane wind model
-C     rjw added NWS=9: asymmetric hurricane wind model v2.0
+C     rjw added NWS=19: asymmetric hurricane wind model v2.0
+C     jie added NWS=20: generalized asymmetric vortex model
 c     tcm_v49.04 NWS=3 and NWS=6 no longer need fort.22 decomposition
             IF((NWS.EQ.1).OR.(ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.
      &           (ABS(NWS).EQ.5).OR.(NWS.EQ.7).OR.

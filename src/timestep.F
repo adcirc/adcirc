@@ -211,7 +211,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(8) FDX1O2A, FDX2O2A, FDX3O2A, FDY1O2A, FDY2O2A, FDY3O2A
       REAL(8) TimeLoc, TimeH
       INTEGER WarnElevExceeded, ErrorElevExceeded
-      REAL(SZ) HollandTime, AsymmetricTime !for parametric hurricane models
+      REAL(SZ) HollandTime, AsymmetricTime, GeneralAsymTime !for parametric hurricane models
       ! jgf49.1001 factor used to blend vortex and background winds for NWS29:
       REAL(SZ) bf ! blending factor, 0.0 to 1.0
 C   kmd48.33bc - added in the heat flux variables
@@ -1186,6 +1186,48 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          END DO
       ENDIF
 C
+C     jie added nws = 20: generalized asymmetric vortex model
+      GeneralAsymTime = TimeLoc
+      IF(NWS.EQ.20) THEN
+         CALL NWS20GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,GeneralAsymTime,ICS)
+         DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC)
+               CICEOUT(I) = PIC
+            ENDIF
+!            PR2(I)=RampMete*PRN2(I)
+            PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete*WindX
+            WVNYOUT(I)=RampMete*WindY
+#ifdef CSWAN
+Casey 090302: Added these lines for coupling winds to SWAN.
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+            IF(COUPWIND)THEN
+               SWAN_WX2(I,2) = WindX * WaveWindMultiplier
+               SWAN_WY2(I,2) = WindY * WaveWindMultiplier
+            ENDIF
+#endif
+         END DO
+      ENDIF    
+C      
 C     jgf49.1001 Added NWS29 for embedding an asymmetric vortex from
 C     NWS19 into an OWI basin scale met field from NWS12 (derived from NAM).
       IF(ABS(NWS).EQ.29) THEN
