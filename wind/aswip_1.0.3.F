@@ -17,7 +17,8 @@ C-----------------------------------------------------------------------
          USE wind, only : writeFullCircleRmaxes, vortexLon,
      &                 vortexLat, writeRadialVandP,
      &                 writeSpatialVandP, nws19get, windDrag, nws20get,
-     &                 writeSpatialuvp, writeNodaluvp
+     &                 writeSpatialuvp, writeNodaluvp,
+     &                 geostrophic_switch, geofactor
          integer :: num_entry, num_cycles
          integer ,dimension(:),allocatable :: advr
          integer,dimension(:),allocatable :: iFcstInc ! hours between forecasts
@@ -101,7 +102,7 @@ C-----------------------------------------------------------------------
          REAL(sz) :: stormMotionV ! V portion of Vmax attributable to storm motion
          REAL(sz) :: U_Vr
          REAL(sz) :: V_Vr
-         REAL(sz) :: temp
+         REAL(sz) :: temp  
 
       !-------------------------------------------------------------
       contains
@@ -608,7 +609,11 @@ C        if ivr was zero.
          call setIsotachWindSpeeds(quadrantVr)
          call setIsotachRadii(r)
          call setVmaxesBL(VmwBL)
-         call calcRmaxesFull()
+         if (geostrophic_switch .eqv. .true.) then
+             call calcRmaxesFull()
+         else
+             call calcRmaxes()
+         endif    
          call getRmaxes(rmaxw(ient,:)) 
      
         case(2) !An updated approach: assume quadrantVr has an 
@@ -720,7 +725,11 @@ C        if ivr was zero.
            call setIsotachWindSpeeds(quadrantVr)
            call setIsotachRadii(r)
            call setVmaxesBL(VmwBL)
-           call calcRmaxesFull()
+           if (geostrophic_switch .eqv. .true.) then
+               call calcRmaxesFull()
+           else
+               call calcRmaxes()
+           endif
            call getRmaxes(rmaxw(ient,:))
            ! add deterministic statement to exit the loop when conditions met
           if (k==1) rmaxwHighIso(:) = rmaxw(ient,:)
@@ -950,9 +959,13 @@ C     !-------------------------------------
       if (nwswrite == 19) then
         OPEN(222,file="NWS_19_fort.22",status="replace")
       else if (nwswrite == 20) then
-        OPEN(222,file="NWS_20_fort.22",status="replace")
-        OPEN(6666,file="PhiFactors.6666",status="replace")    
-116     FORMAT(4(f5.2,x))
+         if (geostrophic_switch .eqv. .true.) then
+             OPEN(222,file="NWS_20_fort.22",status="replace")
+         else
+             OPEN(222,file="NWS_20_cyclostr_fort.22",status="replace")
+         endif
+         OPEN(6666,file="PhiFactors.6666",status="replace")    
+116      FORMAT(4(f5.2,x))
       end if
       
       DO ient=1,num_entry
@@ -980,7 +993,7 @@ C     !-------------------------------------
      &         i4,",",i4,a1,",",i5,a1,",",i4,",",i5,",",3x,",",i4,",",
      &       " NEQ,",5(i5,","),5x,",",i4,", ",5(4x,","),i3,", ",i3,",",
      &         a10," ",1x,",",i4,",",i5,",",1x, 4(i1,",",1x),2x,
-     &         4(f6.1,",",1x),1x, 9(f8.4,",",1x))     
+     &         4(f6.1,",",1x),1x, 8(f8.4,",",1x), f8.4)     
 
          ! jgf49.30: Modify the Rmax as specified on the command line.
          IF (constantRmax.eqv..true.) THEN
@@ -1050,7 +1063,7 @@ C-----------------------------------------------------------------------
       use wind, only : hWindData_t, hWindFiles, nws15init, nws19get,
      &   writeFullCircleRmaxes, writeRadialVandP, writeSpatialVandP,
      &   nws15get, eyeLatR, eyeLonR, nws20get,writeSpatialuvp,
-     &   writeNodaluvp, moving_grid
+     &   writeNodaluvp, moving_grid, geostrophic_switch, geofactor
       use vortex, only : xy2latlon, latlon2xy, fang
       use asymmetricVortexProcessing, only :
      &  cycleTime, rlat, rlon, quadrantAngles, cycle_num, h_dir,
@@ -1176,7 +1189,11 @@ C
          if (errorIO.ne.0) stop
       case(20)
          ! open the file we just wrote, so NWS20 can access it
-         call openFileForRead(22,'NWS_20_fort.22',errorIO)
+         if (geostrophic_switch .eqv. .true.) then
+             call openFileForRead(22,'NWS_20_fort.22',errorIO)
+         else
+             call openFileForRead(22,'NWS_20_cyclostr_fort.22',errorIO)
+         endif
          if (errorIO.ne.0) stop
       case default
          write(*,*) "ERROR: aswip: -n ",nws,
@@ -2695,6 +2712,16 @@ C     jgf49.30 Initialize to reasonable defaults.
                write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
      &            " ",trim(CMDLINEARG),"'."
                READ(CMDLINEARG,*) frame
+            CASE("-G","-g")  ! selecting geostrophic or cyclostrophic
+               I=I+1
+               CALL GETARG(I,CMDLINEARG)
+               write(screenunit,*) "INFO: Processing '",CMDLINEOPTION,
+     &            " ",trim(CMDLINEARG),"'."
+               READ(CMDLINEARG,*) geofactor
+               IF ( geofactor.NE.1 ) THEN
+                  geostrophic_switch = .false.
+                  geofactor = 0
+               ENDIF
             CASE("-I","-i")  ! input fort.14 file containing mesh locations
                I=I+1
                CALL GETARG(I,CMDLINEARG)
@@ -2817,6 +2844,7 @@ C
       if (writeNodaluvp.eqv..true.) then
          call nodaluvp()
       endif
+      
 C----------------------------------------------------------------------
       end program aswip
 C----------------------------------------------------------------------

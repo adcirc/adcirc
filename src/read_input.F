@@ -2006,19 +2006,23 @@ c     &        WindRefTime, MyProc, NScreen, ScreenUnit)
       ENDIF
 
 C     jie added nws = 20: generalized asymmetric vortex model
+C     2014.07 read in the geofactor, which controls the on or off
+C     of the Coriolis term in the geostrophic balance
+
       IF(ABS(NWS).EQ.20) THEN
 C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
          IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
-            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &          GEOFACTOR       
          ELSEIF ((NCICE.EQ.0).AND.(NRS.GE.1)) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
-     &           RSTIMINC
+     &           GEOFACTOR,RSTIMINC
          ELSEIF ((NCICE.GE.1).AND.(NRS.EQ.0)) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
-     &           CICE_TIMINC
+     &           GEOFACTOR,CICE_TIMINC
          ELSEIF ((NCICE.GE.1).AND.(NRS.GE.1)) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
-     &           RSTIMINC,CICE_TIMINC
+     &           GEOFACTOR,RSTIMINC,CICE_TIMINC
          ELSE
          ENDIF
 C LETS not use this now but have the option to i nthe future

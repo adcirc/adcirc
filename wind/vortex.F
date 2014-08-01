@@ -166,6 +166,9 @@
       B = (Vmax*kt2ms)**2 * RhoAir * EXP(1.d0)
      &             / ((Pn - Pc) * mb2pa)
       B = MAX( MIN(B,2.5d0), 1.0d0) ! limit B to range 1.0->2.5
+      ! added for compatibility of calcRmaxes to use with simplified nws20
+      Bs(1:6)=B
+      VmBL(1:6)=Vmax
 
       END SUBROUTINE newVortex
 
@@ -231,6 +234,8 @@
       ! On output:
       !    Rmax    radius of maximum winds (nm) in all quadrants, plus
       !            2 extra values to tie down circular periodicity
+      ! Jie 2014.07 Modified with quadrant-varying VmBL, which not only
+      ! works for nws19 but for the simplified nws20
       !===============================================================
       SUBROUTINE calcRmaxes()
 !              REAL(sz), EXTERNAL  :: func
@@ -248,6 +253,12 @@
       ! Loop over quadrants of storm
       !-----------------------------
       DO n = 1, nQuads
+         ! set B and Vmax values for each quadrant
+         ! for nws19, B and Vmax are constant
+         ! for simplified nws20, B is constant, while Vmax is not
+         B = Bs(n+1)
+         Vmax = VmBL(n+1)
+
          quad = n
          root = -1.d0
          r1 = innerRadius
@@ -750,7 +761,7 @@
       !=================================================================
       
       SUBROUTINE uvpr(idist,iangle,irmx,irmx_true,iB,iVm,iPhi,
-     &                uTrans,vTrans, u,v,p)
+     &                uTrans,vTrans,geof, u,v,p)
       REAL(sz), INTENT(IN)  :: idist
       REAL(sz), INTENT(IN)  :: iangle
       REAL(sz), INTENT(IN)  :: irmx
@@ -760,6 +771,7 @@
       REAL(sz), INTENT(IN)  :: iPhi
       REAL(sz), INTENT(IN)  :: uTrans
       REAL(sz), INTENT(IN)  :: vTrans
+      INTEGER , INTENT(IN)  :: geof
 
       REAL(sz), INTENT(OUT) :: u
       REAL(sz), INTENT(OUT) :: v
@@ -803,8 +815,9 @@
       ! model.
       !---------------------------------------------------
       percentCoriolis=1.0d0
-      ! Jie 2013.02
-      speed = SQRT(
+      ! Jie 2014.07
+      IF (geof == 1) THEN
+         speed = SQRT(
      &           ((Vmax*kt2ms)**2.d0+Vmax*kt2ms*rmx*nm2m
      &             *percentCoriolis*corio) 
      &                  * (rmx/idist)**B
@@ -812,7 +825,14 @@
      &            + (nm2m*idist*percentCoriolis
      &                           *corio/2.d0)**2.d0)
      &            - nm2m*idist*percentCoriolis*corio/2.d0
-
+      ELSE 
+         speed = SQRT(
+     &           (Vmax*kt2ms)**2.d0 * (rmx/idist)**B
+     &            * EXP(1.d0-(rmx/idist)**B)
+     &            + (nm2m*idist*percentCoriolis
+     &            *corio/2.d0)**2.d0)
+     &            - nm2m*idist*percentCoriolis*corio/2.d0      
+      ENDIF
       ! jgf20111007: Calculate NWS8-like translation speed
       TransSpdX = (abs(speed/(Vmax*kt2ms)))*uTrans*kt2ms
       TransSpdY = (abs(speed/(Vmax*kt2ms)))*vTrans*kt2ms
@@ -838,8 +858,11 @@
       v = v * one2ten
 
       ! Compute surface pressure from asymmetric hurricane vortex
-      p = mb2pa * (Pc + (Pn - Pc) * EXP(-Phi*(rmx/idist)**B))
-
+      IF (geof == 1) THEN
+         p = mb2pa * (Pc + (Pn - Pc) * EXP(-Phi*(rmx/idist)**B))
+      ELSE
+         p = mb2pa * (Pc + (Pn - Pc) * EXP(-(rmx/idist)**B))
+      ENDIF
       ! cut off the vortex field after 401nm
       !
       ! TODO: 401nm should be replaced with something less

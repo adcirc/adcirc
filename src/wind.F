@@ -60,7 +60,13 @@ C
       LOGICAL :: writeSpatialuvp = .false.
       LOGICAL :: writeNodaluvp = .false.
       LOGICAL :: moving_grid = .false.
-
+      
+      !switch to turn on or off geostrophic balance in GAHM
+      ! on (default): Coriolis term included, phifactors will be calculated before being used 
+      ! off:parameter is set to 'true', phifactors will be set to constant 1
+      LOGICAL :: geostrophic_switch = .true.
+      INTEGER :: geofactor = 1  !turn on or off gostrophic balance
+      
       ! jgf50.38.05: used to keep track of HWind files and data
       type hWindData_t
          ! input data from fort.22
@@ -3543,7 +3549,7 @@ C***********************************************************************
 27       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
      &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
      &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
-     &         2x, 4(i1,2x),2x, 4(f6.1,2x),1x, 9(f8.4,2x)) !,2(2x,f10.4))
+     &         2x, 4(i1,2x),2x, 4(f6.1,2x),1x, 8(f8.4,2x), f8.4)
 
          ient = 1
 
@@ -3883,8 +3889,8 @@ C     we are running off the end of the data.
 
       DO i=1,np
          CALL uvpr(dist(i),aziangle(i),crmaxw(i),crmaxwTrue(i),
-     &        cHollBs(i),cVmwBL(i),cPhiFactor(i),
-     &        stormMotionU,stormMotionV,wvnx(i),wvny(i), press(i))
+     &        cHollBs(i),cVmwBL(i),cPhiFactor(i),stormMotionU,
+     &        stormMotionV,geofactor,wvnx(i),wvny(i),press(i))
          !-------------------------------------------
          ! Convert atmospheric pressure (Pascals) to
          ! atmospheric pressure-induced water surface
@@ -3893,6 +3899,7 @@ C     we are running off the end of the data.
          press(i) = press(i) / RhoWatG
 
       END DO
+
       !-----------------------------------
       ! NHC advisory best-track i/o format
       !-----------------------------------
