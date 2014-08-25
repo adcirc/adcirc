@@ -39,6 +39,8 @@ C-----------------------------------------------------------------------
          real(sz) :: vmax !,speedmax,rmax,rmaxmax
          real(sz) :: vr,speedmax2
          real(sz) :: vmax_pseudo
+         real(sz), dimension(4) ::rmaxw_temp
+         real(sz), dimension(4) ::vmaxesbl_temp
          real(sz), dimension(4) :: r
          real(sz) ,dimension(:),allocatable :: uTrans, vTrans
          real(sz) ,dimension(:),allocatable :: uTrans2, vTrans2
@@ -408,7 +410,8 @@ C
          call setIsotachWindSpeeds(quadrantVr)
          call setIsotachRadii(r)
          call calcRmaxes()
-         call getRmaxes(rmaxw(ient,:))
+         call getRmaxes(rmaxw_temp) 
+         rmaxw(ient,:)=rmaxw_temp(:)
          HollB(ient) = getShapeParameter()
 
 C        reset rmax to zero if there was a zero radius to the isotach for all
@@ -435,7 +438,7 @@ C        if ivr was zero.
 !            last_entry = sum(isotachs_per_cycle(1:icyc))
 !            first_entry = last_entry-(isotachs_per_cycle(icyc)-1)
           ient= last_entry+1-k
-          write(*,*) "Start    processing ient = ", ient
+!          write(*,*) "Start    processing ient = ", ient
          !
          ! transform variables from integers
          ! to real numbers for hurricane vortex calcualtions.
@@ -614,7 +617,8 @@ C        if ivr was zero.
          else
              call calcRmaxes()
          endif    
-         call getRmaxes(rmaxw(ient,:)) 
+         call getRmaxes(rmaxw_temp) 
+         rmaxw(ient,:)=rmaxw_temp(:)
      
         case(2) !An updated approach: assume quadrantVr has an 
               ! additional inward angnel quadRotateAngle, and Vr angle is not known
@@ -730,7 +734,9 @@ C        if ivr was zero.
            else
                call calcRmaxes()
            endif
-           call getRmaxes(rmaxw(ient,:))
+           call getRmaxes(rmaxw_temp)
+           rmaxw(ient,:)=rmaxw_temp(:)
+           
            ! add deterministic statement to exit the loop when conditions met
           if (k==1) rmaxwHighIso(:) = rmaxw(ient,:)
           do i = 1, 4
@@ -766,7 +772,8 @@ C        if ivr was zero.
           write(*,*) "Wrong approach #, must be 1 or 2"
        end select  
        
-         call getVmaxesBL(VmaxesBL(ient,:))
+         call getVmaxesBL(vmaxesbl_temp)
+         VmaxesBL(ient,:) = vmaxesbl_temp(:)
          HollBs(ient,1:4) = getShapeParameters()
          PhiFactors(ient,1:4)=getPhiFactors()
 
@@ -964,8 +971,8 @@ C     !-------------------------------------
          else
              OPEN(222,file="NWS_20_cyclostr_fort.22",status="replace")
          endif
-         OPEN(6666,file="PhiFactors.6666",status="replace")    
-116      FORMAT(4(f5.2,x))
+!         OPEN(6666,file="PhiFactors.6666",status="replace")    
+!116      FORMAT(4(f5.2,x))
       end if
       
       DO ient=1,num_entry
@@ -1032,13 +1039,13 @@ C
      &         HollB(ient),(HollBs(ient,i),i=1,4),
      &         (VmaxesBL(ient,i),i=1,4)
 
-           WRITE(6666,116)  ! Jie 2013.02
-     &        (PhiFactors(ient,i),i=1,4)
+!           WRITE(6666,116)  ! Jie 2013.02
+!     &        (PhiFactors(ient,i),i=1,4)
          case default
          end select
       ENDDO
       close(222)
-      if (abs(nws)==20) close(6666)
+!      if (abs(nws)==20) close(6666)
       !-------------------------------------------------------------
        end subroutine writeAsymmetricInputFile
       !-------------------------------------------------------------
@@ -1295,7 +1302,7 @@ C
  
          if (abs(nws).eq.12) then
             do iout=2,num_outputs
-             icyc = (iout - 1) * owi_output_factor + 1 
+             icyc = int((iout - 1) * owi_output_factor) + 1 
              outputSecs(iout) = cycleSecs(icyc)
              outputLons(iout) = cycleLons(icyc)
              outputLats(iout) = cycleLats(icyc)
@@ -1453,7 +1460,7 @@ C
                if (iout.eq.1) then
                   call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
                else  
-                  do j=1, owi_output_factor
+                  do j=1, int(owi_output_factor)
                      call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
                   end do
                endif
@@ -1663,7 +1670,7 @@ C
             if (iout.eq.1) then
               call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
             else  
-              do j=1, owi_output_factor
+              do j=1, int(owi_output_factor)
                  call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
               end do
              endif  
@@ -2299,7 +2306,7 @@ C
             if (iout.eq.1) then
               call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
             else  
-              do j=1, owi_output_factor
+              do j=1, int(owi_output_factor)
                  call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
               end do
             endif           
@@ -2515,7 +2522,7 @@ C                  write(*,*) "lon=", dx, "  lat=", dy
             if (iout.eq.1) then
               call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
             else  
-              do j=1, owi_output_factor
+              do j=1, int(owi_output_factor)
                  call nws12get(wvnx2, wvny2, prn2, np, RhoWat0, g) 
               end do
              endif 
