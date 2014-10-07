@@ -3458,10 +3458,8 @@ C
       !   with an initial value of -99999.d0 to begin the hstart runs.
       !   this includes the case of the max/min files not being present
 
-      write(*,*) 'maxele b/4 = ',maxval(EtaMax)
       CALL readAndMapToSubdomainMaxMin('maxele.63',EtaMax,
      &                                  -99999.d0,EtaMax_Time) !,0,2)
-      write(*,*) 'maxele aft = ',maxval(EtaMax)
       CALL readAndMapToSubdomainMaxMin('maxvel.63',UMax,
      &                                  0.d0,UMax_Time)
       CALL readAndMapToSubdomainMaxMin('maxwvel.63',WVNOutmax,

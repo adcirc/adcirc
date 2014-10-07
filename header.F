@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.34    - 10/07/2014 - tcm - Removed two debugging write statement that
+C                were inadvertently left in hstart.F related to maxele hot
+C                starting.
 C    v51.33    - 07/16/2014 - tcm - Updated compiler flags for diamond,
 C                to replace no longer supported options -xT with
 C                -xSSSE3.  While diamond has been removed from service,
