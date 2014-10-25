@@ -19,17 +19,25 @@ c  version 1.3 ral 10/10/01 revisions
 C  version 1.6 meb 3/03 & ral 5/21/03
 C  version 1.7 meb 4/04 added by jgf
 C
-      SUBROUTINE READ14()
-      USE PRE_GLOBAL
-      use memory_usage
-      IMPLICIT NONE
 C
+C----------------------------------------------------------------------
+C         S U B R O U T I N E     P R E P   R E A D   1 4
 C----------------------------------------------------------------------
 C     Reads the global ADCIRC grid data file for data decomposition
 C     program ADCPP.  This version compatible with ADCIRC_v34.03
 C     vjp  2/28/98
 C---------------------------------------------------------------------
-C
+      subroutine prepRead14()
+      use pre_global, only : x, y, dp, nneg, ibtypee, nvdllmsg, nvdll,
+     &   nbdv, nvellmsg, nvell, lbcode, ibtype, nbvv, ibconnr,
+     &   bar1, bar2, bar3, weir, weird, flux14_ary, bcts14_ary, agrid,
+     &   aperiodic_bc_ts, bndbcriver, exist_bc_ts, exist_flux, iden,
+     &   mnbou, mnvel, nbou, nboumsg, nelg, neta, netamsg, nfover, 
+     &   nnodg, nope, nopemsg, nvel, nvelmsg, nweir, river_above_msl
+      
+      use memory_usage
+      implicit none
+
       integer :: nbytes = 0
       INTEGER I,J,JW,K,ITEMP,ITYPE
       INTEGER DISC,BBN,IBP,I1
@@ -120,7 +128,7 @@ C
       IF (NETA.NE.J) THEN
          print *, "Total Number of Boundary Nodes = ",J
          print *, "This exceeds NETA = ",NETA
-         IF (NFOVER.EQ.1) THEN
+         IF (NFOVER.EQ.1) THEN  !jgf51.21.27: Has NFOVER been read at this point?
             NETA = J
             print *, "ADCPP corrected this error"
          ELSE
@@ -284,11 +292,96 @@ C
       CLOSE(14)
       call memory_status()
 C
- 80   FORMAT(A80)
-C
-      RETURN
-      END SUBROUTINE READ14
+ 80   format(a80)
+c
+      return
+C----------------------------------------------------------------------
+      end subroutine prepRead14
+C----------------------------------------------------------------------
 
+C----------------------------------------------------------------------
+C                        S U B R O U T I N E   
+C            G E T   M E S H   P A R A M E T E R S   X D M F
+C----------------------------------------------------------------------
+C     jgf51.21.29: If the mesh file is in XDMF format, the adcirc module
+C     mesh.F is used to read the data. In order to get the data into the
+C     pre_global module, this subroutine is required. Someday, adcprep 
+C     will no longer use pre_global, and will just rely on the adcirc 
+C     global model, and we will be able to remove this subroutine.  
+C----------------------------------------------------------------------
+      subroutine getMeshParametersXDMF()
+      use memory_usage
+      use presizes, only : fluxBoundary, mne, mnp, mnei, mneta, mnope,
+     &   skipNeta
+      use pre_global, only : x, y, dp, nneg, ibtypee, nvdllmsg, nvdll,
+     &   nbdv, nvellmsg, nvell, lbcode, ibtype, nbvv, ibconnr,
+     &   bar1, bar2, bar3, weir, weird, flux14_ary, bcts14_ary, agrid,
+     &   aperiodic_bc_ts, bndbcriver, exist_bc_ts, exist_flux, iden,
+     &   mnbou, mnvel, nbou, nboumsg, nelg, neta, netamsg, nfover, 
+     &   nnodg, nope, nopemsg, nvel, nvelmsg, nweir, river_above_msl,
+     &   alloc_main1
+      use mesh, only : getMeshSizesForPrep, getMeshForPrep, nm
+      use boundaries, only : getBoundarySizesForPrep, 
+     &    getBoundariesForPrep
+      implicit none
+      integer, allocatable :: nneigh(:)
+      integer :: i, j, k, nbytes
+      !
+      ! 
+      call getMeshSizesForPrep(nnodg, nelg)
+      call getBoundarySizesForPrep(nbou, nvel, neta, nope, 
+     &   nweir, exist_flux)
+      write(netamsg,'(i0)') neta
+      write(nopemsg,'(i0)') nope
+      write(nboumsg,'(i0)') nbou
+      write(nvelmsg,'(i0)') nvel
+      mne = nelg
+      mnp = nnodg
+      mnope = nope
+      mneta = neta
+      skipNeta = neta
+      mnbou = nbou
+      mnvel = 2*nvel
+      if (exist_flux.ne.0) then
+         fluxBoundary = .true.
+      endif
+      write(*,'(a,i0)') "neta =", neta      
+      call alloc_main1()
+      !
+      ! get the element table
+      do i=1,3
+         nneg(i,:) = nm(:,i)
+      end do
+      !
+      ! get mesh parameters
+      call getMeshForPrep(agrid, x, y, dp) 
+      call getBoundariesForPrep(nvdll, nvell, ibtypee, nbdv, lbcode, ibtype, nbvv, 
+     &   ibconnr, bar1, bar2, bar3, weir, weird, iden, nfover,  
+     &   exist_flux, flux14_ary)     
+      do k=1,nope
+         write(nvdllmsg(k),'(i0)') nvdll(k)
+      end do
+      do k=1,nbou
+         write(nvellmsg(k),'(i0)') nvell(k)
+      end do
+      !
+      ! compute number of neighbors of each node
+      allocate (nneigh(mnp))                      
+      nbytes = 4*mnp
+      call memory_alloc(nbytes)
+      NNeigh(:) = 0
+      DO I=1,nelg
+        NNeigh(nneg(1,i))=NNeigh(nneg(1,i))+1
+        NNeigh(nneg(2,i))=NNeigh(nneg(2,i))+1
+        NNeigh(nneg(3,i))=NNeigh(nneg(3,i))+1
+      ENDDO
+C     determine the maximum NNeigh
+      mnei=maxval(nneigh)
+      mnei = mnei+1
+      deallocate(nneigh)
+C----------------------------------------------------------------------
+      end subroutine getMeshParametersXDMF
+C----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
 C     Reads the global ADCIRC Input Data File for data decomposition
@@ -497,11 +590,11 @@ C
       READ(15,80) NWPMSG
       READ(NWPMSG,*) NWP
       IF (NWP.gt.0) THEN !jgf46.00 read nodal attribute labels
-         ALLOCATE(NodalAttributes(NWP))
+         ALLOCATE(useNodalAttrNames(NWP))
          nbytes = 4*nwp
          call memory_alloc(nbytes)
          DO I=1, NWP
-            READ(15,80) NodalAttributes(I)
+            READ(15,80) useNodalAttrNames(I)
          ENDDO
       ENDIF
 C
@@ -1375,7 +1468,7 @@ C--Read Global Elevation Data Output
 C
       READ(15,80) OUTGEMSG
       READ(OUTGEMSG,*) NOUTGE,TOUTSGE,TOUTFGE,NSPOOLGE
-      IF (ABS(NOUTGE).GT.5) THEN
+      IF (ABS(NOUTGE).GT.7) THEN
          print *, "NOUTGE does not have an allowable value"
          stop
       ENDIF
@@ -1384,7 +1477,7 @@ C--Read Global Velocity Data Output
 C
       READ(15,80) OUTGVMSG
       READ(OUTGVMSG,*) NOUTGV,TOUTSGV,TOUTFGV,NSPOOLGV
-      IF (ABS(NOUTGV).GT.5) THEN
+      IF (ABS(NOUTGV).GT.7) THEN
         print *, "NOUTGV does not have an allowable value"
         stop
       ENDIF
@@ -1404,7 +1497,7 @@ C
         READ(15,80) OUTGWMSG
         READ(OUTGWMSG,*) NOUTGW,TOUTSGW,TOUTFGW,NSPOOLGW
 Casey 090302: Changed the following line for ABS(NOUTGW).EQ.4
-        IF (ABS(NOUTGW).GT.5) THEN
+        IF (ABS(NOUTGW).GT.7) THEN
           print *, "NOUTGW does not have an allowable value"
           stop
         ENDIF

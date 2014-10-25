@@ -26,13 +26,6 @@ C...
 
       USE GLOBAL,
      &     ONLY :
-     &       X, Y,                         !X(MNP),Y(MNP) = nodal coordinates
-     &       DP,                           !DP(MNP) = still water depth
-     &       NM,                           !NM(MNE,3) = nodal table for each element
-     &       NNeigh,                       !NNeigh(MNP) = number of neighboring nodes for each node
-     &       NEITAB,                       !NeiTab(MNP,MNEI) = table of neighbor nodes for each node
-     &       NEITABELE,                    !NeiTabEle(MNP,MNei) = table of neighboring elements for each node
-     &       AREAS,                        !AREAS(MNE) = 2*Element Area
      &       WSX1, WSY1,                   !WSX1(MNP),WSY1(MNP) = Wind stress components at time level s
      &       WSX2, WSY2,                   !WSX2(MNP),WSY2(MNP) = Wind stress components at time level s+1
      &       BSX => BSX1, BSY => BSY1,     !BSX(MNP),BSY(MNP) = bottom stress computed after velocity solution
@@ -43,13 +36,7 @@ C...
      &       ETA1, ETA2,                   !ETA1(MNP),ETA2(MNP) = water surf elev at time levels s, s+1
      &       CORIF,                        !CORIF(MNP) = nodal values of Coriolis parameter
      &       BTP => MOM_LV_X,              !BTP(MNP) = barotropic pressure (incl TP & wl) at time levels s+1/2
-     &       LBARRAY_POINTER,              !LBARRAY_POINTER(MNP) = pointer into array of land or flux boundary
-     &       LBCODEI,                      !LBCODEI(MNVel) = array of land or flux boundary codes
-     &       CSII, SIII,                   !CSII(MNVel),SIII(MNVel) = cosine and sine of normal flux boundary node
      &       QNORMSP1 => QN2,              !QNORMSP1(MNVel) = specified normal flux boundary condition at time level s+1
-     &       ICS,
-     &       NP,                           !number of horizontal nodes
-     &       NE,                           !number of horizontal elements
      &       IFNLCT,                       !nonlinear advection flag (1=yes, 0=no) (jgf45.11)
 Corbitt 120328: Apply Advection Locally
      &       IFNLCTE,                      !Global nonlinear advection flag (1=yes, 0=no)
@@ -63,17 +50,10 @@ Corbitt 120328: Apply Advection Locally
      &       RhoWat0, SigT0, G,
      &       RUNDES, RDES4, RDES8,
      &       RUNID, RID4, RID8,
-     &       AGRID, AID4, AID8,
      &       CBaroclinic,
      &       C3DVS,
      &       DelT => DTDP,                 !DelT = altername for timestep real(8)
      &       DTDP,                         !DTDP = timestep declared as real(8)
-     &       SLAM0, SFEA0,                 !center point of CPP spherical projection
-     &       Deg2Rad, Rad2Deg,
-     &       Day2Sec, Sec2Day,
-     &       NETA,                          ! number of ocean boundary
-     &       NVEL,                          ! number of land boundary for river information
-     &       BndBCRiver,                    ! logic flag for rivers - baroclinic
      &       allMessage, logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
      &       setMessageSource, unsetMessageSource
       SAVE

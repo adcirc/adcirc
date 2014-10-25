@@ -77,6 +77,7 @@ C******************************************************************************
 C******************************************************************************
 C
       USE GLOBAL
+      USE MESH, ONLY : NE, NP, NM
       USE GLOBAL_3DVS, ONLY : GORho, GORhoOAMB, AMB
       USE VERSION
 #ifdef CMPI
@@ -98,18 +99,15 @@ C******************************************************************************
 C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
+      USE MESH, ONLY : Areas, TotalArea, totalAreaCalc
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
      &                 initHarmonicParameters
+      USE GLOBAL_IO, ONLY : allocateFullDomainIOArrays
+      USE WRITE_OUTPUT, ONLY : initOutput2D
       IMPLICIT NONE
 C
       INTEGER, OPTIONAL :: COMM
       CHARACTER(*), OPTIONAL :: ROOTD
-C
-      INTEGER IE, I, J, N    ! local loop counter
-      INTEGER NM1, NM2, NM3  ! local node numbers
-      INTEGER NCELE          ! local node code indicator
-      REAL(8) AreaEle
-C
 C
       call initLogging()
       call setMessageSource("ADCIRC_Init")
@@ -239,36 +237,11 @@ C...Default beginning and ending time steps
 
 C...Determine the number of active elements (MJU), the total number of
 C...elements (NODELE) and the total area of elements (TotalArea) attached to each node
+      call totalAreaCalc()
 
-      DO I=1,NP
-         MJU(I)=0
-         NODELE(I)=0
-         TotalArea(I)=0.d0
-         NODECODE(I)=NNODECODE(I)
-      END DO
-
-      DO IE=1,NE
-         NM1=NM(IE,1)
-         NM2=NM(IE,2)
-         NM3=NM(IE,3)
-         NCELE=NODECODE(NM1)*NODECODE(NM2)*NODECODE(NM3)*NOFF(IE)
-         MJU(NM1)=MJU(NM1)+NCELE
-         MJU(NM2)=MJU(NM2)+NCELE
-         MJU(NM3)=MJU(NM3)+NCELE
-         NODELE(NM1)=NODELE(NM1)+1
-         NODELE(NM2)=NODELE(NM2)+1
-         NODELE(NM3)=NODELE(NM3)+1
-         AreaEle=NCEle*Areas(IE)/2.d0
-         TotalArea(NM1)=TotalArea(NM1)+AreaEle
-         TotalArea(NM2)=TotalArea(NM2)+AreaEle
-         TotalArea(NM3)=TotalArea(NM3)+AreaEle
-      END DO
-
-      DO I=1,NP
-         IF(MJU(I).EQ.0) MJU(I)=1
-      END DO
-
-
+C
+C     jgf51.21.24: Initialize output.
+      call initOutput2D()
 C...
 C...************* SET FLAGS AND COEFFICIENTS USED IN TIME STEPPING ***********
 C...
@@ -332,7 +305,6 @@ C
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-
       RETURN
       END SUBROUTINE ADCIRC_Init
 
@@ -354,15 +326,15 @@ C
 
 !TCM v49.52.01 added this ifdef (brought in from adcirc_init()
 #ifdef CMPI
-      IF (((MNWPROH > 0).OR.(MNWPROC > 0)) .AND. MYPROC >= MNPROC) THEN
-         IF( MYPROC < MNPROC+MNWPROC ) THEN   !st3
-            CALL WRITER_MAIN()
-            RETURN
-         ELSE
-            CALL HSWRITER_MAIN()
-            RETURN
-         ENDIF
-      ENDIF
+      if (((mnwproh > 0).or.(mnwproc > 0)) .and. myproc >= mnproc) then
+         if( myproc < mnproc+mnwproc ) then   !st3
+            call writer_main()
+            return
+         else
+            call hswriter_main()
+            return
+         endif
+      endif
 #endif
 
       call setMessageSource("ADCIRC_Run")
@@ -412,6 +384,7 @@ C*    ADCIRC finalize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Final(NO_MPI_FINALIZE)
       USE HARM, ONLY : solveHarmonicAnalysis
+      USE WRITE_OUTPUT, ONLY : writeHarmonicAnalysisOutput
       IMPLICIT NONE
 C
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
@@ -531,277 +504,3 @@ C******************************************************************************
 C******************************************************************************
 C******************************************************************************
 
-
-C******************************************************************************
-C******************************************************************************
-C*    SUPPORTING SUBROUTINES (not contained in the module)
-C******************************************************************************
-C******************************************************************************
-
-C******************************************************************************
-C                                                                             *
-C      Subroutine to generate neighbor tables from a connectivity table.      *
-C                                                                             *
-C      NOTES                                                                  *
-C      a node neighbor table is generated with the node itself is listed as   *
-C         neighbor #1 and all other neighbors are sorted and placed in cw     *
-C         order from east                                                     *
-C      a neighbor element table is generated with:                            *
-C         entry 1 = element # defined by neighbors 1,2,3                      *
-C         entry 2 = element # defined by neighbors 1,3,4                      *
-C         entry 3 = element # defined by neighbors 1,4,5                      *
-C          .......                                                            *
-C         entry last = element # defined by neighbors 1,nneigh,2              *
-C         a zero area means that the defined triangle lies outside the domain *
-C                                                                             *
-C                                                                             *
-C    v1.0   R.L.   6/29/99  used in 3D code                                   *
-C    v2.0   R.L.   5/23/02  adapted to provide neighbor el table              *
-C******************************************************************************
-C                                                                             *
-C     -  PARAMETERS WHICH MUST BE SET TO CONTROL THE DIMENSIONING OF ARRAYS   *
-C           ARE AS FOLLOWS:                                                   *
-C                                                                             *
-C          MNP = MAXIMUM NUMBER OF NODAL POINTS                               *
-C          MNE = MAXIMUM NUMBER OF ELEMENTS                                   *
-C          MNEI= 1+MAXIMUM NUMBER OF NODES CONNECTED TO ANY ONE NODE IN THE   *
-C                   FINITE ELEMENT GRID                                       *
-C                                                                             *
-C******************************************************************************
-C                                                                             *
-C    VARIABLE DEFINITIONS:                                                    *
-C       NE - NUMBER OF ELEMENTS                                               *
-C       NP - NUMBER OF NODES                                                  *
-C       NM(MNE,3) - NODE NUMBERS ASSOCIATED WITH EACH ELEMENT                 *
-C       NNeigh(MNP) NUMBER OF NEIGHBORS FOR EACH NODE                         *
-C       NeiTab(MNP,NEIMAX) 2D ARRAY OF NEIGHBORS FOR EACH NODE                *
-C       NeiTabEle(MNP,NEIMAX) 2D ARRAY OF NEIGHBOR ELEMENTS FOR EACH NODE     *
-C       NEIMIN - 1+MINIMUM NUMBER OF NEIGHBORS FOR ANY NODE                   *
-C       NEIMAX - 1+MAXIMUM NUMBER OF NEIGHBORS FOR ANY NODE                   *
-C                                                                             *
-C******************************************************************************
-C
-
-      SUBROUTINE NEIGHB(NE,NP,NM,NNeigh,NeiTab,NeiTabEle,NEIMIN,NEIMAX,
-     &     X,Y,NSCREEN,ScreenUnit)
-
-      USE SIZES
-      IMPLICIT NONE
-      INTEGER :: NP,NE,NEIMIN,NEIMAX,NSCREEN,N,NN,I,J,JJ,K,JLOW
-      INTEGER :: ScreenUnit
-      INTEGER :: NN1,NN2,NN3,NE1,NE2,NE3
-      INTEGER :: NeiTab(MNP,MNEI), NNeigh(MNP), NeiTabEle(MNP,MNEI)
-      INTEGER :: NM(MNE,3)
-      REAL(8) :: X(MNP),Y(MNP),DELX,DELY,DIST
-      REAL(8) :: ANGLELOW,ANGLEMORE,RAD2DEG
-      REAL(8), ALLOCATABLE :: ANGLE(:)
-      INTEGER, ALLOCATABLE :: NEITEM(:)
-      INTEGER, ALLOCATABLE :: NNEIGHELE(:)
-
-C
-      ALLOCATE ( ANGLE(MNEI) )
-      ALLOCATE ( NEITEM(MNP) )
-      ALLOCATE ( NNeighEle(MNP) )
-C
-      RAD2DEG=45.0d0/ATAN(1.0d0)
-C
-      DO N=1,NP
-         NNeigh(N)=0
-         NNeighEle(N)=0
-         DO NN=1,MNEI
-            NeiTab(N,NN)=0
-            NeiTabEle(N,NN)=0
-         END DO
-      END DO
-
-      DO 10 N=1,NE
-         NN1 = NM(N,1)
-         NN2 = NM(N,2)
-         NN3 = NM(N,3)
-
-         NNeighEle(NN1)=NNeighEle(NN1)+1
-         NNeighEle(NN2)=NNeighEle(NN2)+1
-         NNeighEle(NN3)=NNeighEle(NN3)+1
-         NeiTabEle(NN1,NNeighEle(NN1))=N
-         NeiTabEle(NN2,NNeighEle(NN2))=N
-         NeiTabEle(NN3,NNeighEle(NN3))=N
-
-         DO J=1,NNeigh(NN1)
-            IF(NN2.EQ.NeiTab(NN1,J)) GOTO 25
-         END DO
-         NNeigh(NN1)=NNeigh(NN1)+1
-         NNeigh(NN2)=NNeigh(NN2)+1
-         IF((NNeigh(NN1).GT.MNEI-1).OR.(NNeigh(NN2).GT.MNEI-1)) GOTO 999
-         NeiTab(NN1,NNeigh(NN1))=NN2
-         NeiTab(NN2,NNeigh(NN2))=NN1
-
- 25      CONTINUE
-         DO J=1,NNeigh(NN1)
-            IF(NN3.EQ.NeiTab(NN1,J)) GOTO 35
-         END DO
-         NNeigh(NN1)=NNeigh(NN1)+1
-         NNeigh(NN3)=NNeigh(NN3)+1
-         IF((NNeigh(NN1).GT.MNEI-1).OR.(NNeigh(NN3).GT.MNEI-1)) GOTO 999
-         NeiTab(NN1,NNeigh(NN1))=NN3
-         NeiTab(NN3,NNeigh(NN3))=NN1
-
- 35      CONTINUE
-         DO J=1,NNeigh(NN2)
-            IF(NN3.EQ.NeiTab(NN2,J)) GOTO 10
-         END DO
-         NNeigh(NN2)=NNeigh(NN2)+1
-         NNeigh(NN3)=NNeigh(NN3)+1
-         IF((NNeigh(NN2).GT.MNEI-1).OR.(NNeigh(NN3).GT.MNEI-1)) GOTO 999
-         NeiTab(NN2,NNeigh(NN2))=NN3
-         NeiTab(NN3,NNeigh(NN3))=NN2
-
- 10   CONTINUE
-
-C
-C     INSERT NODE ITSELF IN PLACE #1 and SORT other NEIGHBORS by
-C     increasing cw angle from East
-C
-      DO I=1,NP
-         DO J=1,NNeigh(I)
-            NEITEM(J)=NeiTab(I,J)
-            DELX=X(NEITEM(J))-X(I)
-            DELY=Y(NEITEM(J))-Y(I)
-            DIST=SQRT(DELX*DELX+DELY*DELY)
-            IF(DIST.EQ.0.0d0) GOTO 998
-            IF(DELY.NE.0.0d0) THEN
-               ANGLE(J)=RAD2DEG*ACOS(DELX/DIST)
-               IF(DELY.GT.0.0) ANGLE(J)=360.0d0-ANGLE(J)
-            ENDIF
-            IF(DELY.EQ.0.0d0) THEN
-               IF(DELX.GT.0.0d0) ANGLE(J)=0.0d0
-               IF(DELX.LT.0.d0) ANGLE(J)=180.0d0
-            ENDIF
-         END DO
-         ANGLEMORE=-1.d0
-         DO JJ=1,NNeigh(I)
-            ANGLELOW=400.d0
-            DO J=1,NNeigh(I)
-               IF((ANGLE(J).LT.ANGLELOW).AND.
-     &              (ANGLE(J).GT.ANGLEMORE)) THEN
-                  ANGLELOW=ANGLE(J)
-                  JLOW=J
-               ENDIF
-            END DO
-            NeiTab(I,JJ+1)=NEITEM(JLOW)
-            ANGLEMORE=ANGLELOW
-         END DO
-         NeiTab(I,1)=I
-         NNeigh(I)=NNeigh(I)+1
-      ENDDO
-C
-C     MATCH EACH SET OF 3 NODES WITH CORRESPONDING ELEMENT AND REORDER
-C     ELEMENTS ACCORDINGLY
-C
-      DO I=1,NP
-         DO K=1,NNeighEle(I)
-            NEITEM(K)=NeiTabEle(I,K)
-            NeiTabEle(I,K)=0
-         END DO
-         DO J=2,NNeigh(I)
-            NN1=NeiTab(I,1)
-            NN3=NeiTab(I,J)
-            IF(J.NE.NNeigh(I)) NN2=NeiTab(I,J+1)
-            IF(J.EQ.NNeigh(I)) NN2=NeiTab(I,2)
-            DO K=1,NNeighEle(I)
-               IF(NEITEM(K).NE.0) THEN
-                  IF(NM(NEITEM(K),1).EQ.NN1) THEN
-                     NE1=NM(NEITEM(K),1)
-                     NE2=NM(NEITEM(K),2)
-                     NE3=NM(NEITEM(K),3)
-                  ENDIF
-                  IF(NM(NEITEM(K),2).EQ.NN1) THEN
-                     NE1=NM(NEITEM(K),2)
-                     NE2=NM(NEITEM(K),3)
-                     NE3=NM(NEITEM(K),1)
-                  ENDIF
-                  IF(NM(NEITEM(K),3).EQ.NN1) THEN
-                     NE1=NM(NEITEM(K),3)
-                     NE2=NM(NEITEM(K),1)
-                     NE3=NM(NEITEM(K),2)
-                  ENDIF
-                  IF((NE2.EQ.NN2).AND.(NE3.EQ.NN3)) THEN
-                     NeiTabEle(I,J-1)=NEITEM(K)
-                     NEITEM(K)=0
-                  ENDIF
-               ENDIF
-            END DO
-         END DO
-      END DO
-
-C
-C  DETERMINE THE MAXIMUM AND MINIMUM NUMBER OF NEIGHBORS
-C
-      NEIMAX = 0
-      NEIMIN = 1000
-      DO N=1,NP
-         IF(NNeigh(N).LT.NEIMIN) NEIMIN=NNeigh(N)
-         IF(NNeigh(N).GT.NEIMAX) NEIMAX=NNeigh(N)
-      END DO
-
-C
-C  WRITE OUT DIAGNOSTIC OUTPUT
-C
-C     OPEN(333,file='fort.333')
-C     DO N=1,NP
-C       WRITE(333,331) (NEIGH(N,J),J=1,NNEIGH(N))
-C       WRITE(333,331) N,(NEIGHELE(N,J),J=1,NNEIGH(N)-1)
-C       WRITE(333,*) ' '
-C331    FORMAT(15(1X,I7))
-C       END DO
-C     CLOSE (333)
-
-C  Deallocate local work arrays
-
-      DEALLOCATE ( ANGLE )
-      DEALLOCATE ( NEITEM )
-      DEALLOCATE ( NNEIGHELE )
-
-C  DONE
-
-      RETURN
-C
-C  TERMINATE PROGRAM IF MAXIMUM NUMBER OF NEIGHBORS SET TOO SMALL
-C
- 999  CONTINUE
-      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,99311)
-      WRITE(16,99311)
-99311 FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
-     &      //,1X,'THE DIMENSIONING PARAMETER MNEI IS TOO SMALL',
-     &     /,1X,'THERE IS A PROBLEM WITH THE DYNAMIC MEMORY ALLOCATION',
-     &     //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-      STOP
-
- 998  CONTINUE
-      IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-         WRITE(ScreenUnit,99312) I,NEITEM(J)
-      ENDIF
-      WRITE(16,99312) I,NEITEM(J)
-99312 FORMAT(////,1X,'!!!!!!!!!!  WARNING - FATAL ERROR !!!!!!!!!',
-     &      //,1X,'NODES ',I7,' AND ',I7,' HAVE THE SAME COORDINATES'
-     &     //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
-      STOP
-      END
-
-C******************************************************************************
-C                                                                             *
-C    Transform from CPP coordinates to lon,lat (lamda,phi) coordinates        *
-C    Lon,Lat is in radians.                                                   *
-C                                                                             *
-C******************************************************************************
-
-      SUBROUTINE INVCP(XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0)
-      IMPLICIT NONE
-      REAL*8 XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0,R
-      R=6378206.4d0
-      RLAMBDA=RLAMBDA0+XXCP/(R*COS(PHI0))
-      PHI=YYCP/R
-      RETURN
-      END
-
-C******************************************************************************
-C******************************************************************************

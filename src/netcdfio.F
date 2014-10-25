@@ -39,7 +39,8 @@
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
      &     screenMessage, logMessage, allMessage, setMessageSource,
-     &     unsetMessageSource, scratchMessage
+     &     unsetMessageSource, scratchMessage, OFF, ASCII, BINARY,
+     &     SPARSE_ASCII, NETCDF3, NETCDF4, XDMF
       USE NETCDF        ! enables the fortran 90 interface to netcdf
       IMPLICIT NONE
       include 'netcdf.inc' ! enables the fortran 77 interface to netcdf
@@ -123,12 +124,10 @@ C
       type(meshStructure), private, save, target :: adcircMesh
 
       TYPE, PRIVATE :: fileData
-         INTEGER record_counter
-         INTEGER ncformat   ! netcdf file format to create
-         LOGICAL createFile ! .true. if a new netCDF file must be created p
-         CHARACTER*20 FILEFORT
-         CHARACTER*24 FILENAME
-         CHARACTER*3 FILEEXT
+         INTEGER :: record_counter
+         INTEGER :: ncformat   ! netcdf file format to create
+         LOGICAL :: createFile ! .true. if a new netCDF file must be created p
+         CHARACTER(len=1024) :: filename
          LOGICAL fileFound  ! .true. if the netCDF file is present
       END Type fileData
 
@@ -199,6 +198,7 @@ C
       type(nodalData), private, save :: pr         ! for fort.73
       type(nodalData), private, save :: currentVel ! for fort.64
       type(nodalData), private, save :: windVel    ! for fort.74
+      type(nodalData), private, save :: tau0nc     ! for fort.90
       type(nodalData), private, save :: EtaMax     ! for maxele.63
       type(nodalData), private, save :: PrMin      ! for minpr.63
       type(nodalData), private, save :: UMax       ! for maxvel.63
@@ -305,7 +305,7 @@ C     ZCobell:
 
       private initStationFile, initNodalDataFile,createNetCDFOutputFile,
      &   updateMetaData, initNetCDFCoord, defineMeshVariables,
-     &   putMeshVariables, setNetCDFFileName, writeStationData,
+     &   putMeshVariables, writeStationData,
      &   writeNodalData, setRecordCounterAndStoreTime,
      &   defineCoordinateAttributes, defineMetaData,
      &   defineTimeAttributes, getDimensions,
@@ -324,14 +324,13 @@ C     S U B R O U T I N E   I N I T   N E T C D F  O U T P U T  F I L E
 C-----------------------------------------------------------------------
 C     jgf49.17.02 Allocates memory for NetCDF operations.
 C-----------------------------------------------------------------------
-      SUBROUTINE initNetCDFOutputFile(lun, descript1, reterr, descript2,
+      SUBROUTINE initNetCDFOutputFile(descript1, reterr, descript2,
      &   descript3)
       USE GLOBAL, ONLY : OutputDataDescript_t
 #ifdef CMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
       IMPLICIT NONE
-      INTEGER, intent(in) :: lun
       TYPE(OutputDataDescript_t) :: descript1
       TYPE(OutputDataDescript_t), OPTIONAL :: descript2
       TYPE(OutputDataDescript_t), OPTIONAL :: descript3
@@ -344,8 +343,8 @@ C
 C
       ! don't allocate or initialize anything if this output type is not
       ! using netcdf
-      IF ((ABS(descript1 % specifier).ne.3).and.
-     &    (ABS(descript1 % specifier).ne.5) ) THEN
+      IF ((ABS(descript1 % specifier).ne.NETCDF3).and.
+     &    (ABS(descript1 % specifier).ne.NETCDF4) ) THEN
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
 #endif
@@ -354,91 +353,93 @@ C
       ENDIF
 C
       reterr = .false.
-      SELECT CASE(lun)
+      SELECT CASE(descript1 % lun)
          CASE(41)
             CALL initStationFile(densityStations3D,
-     &           lun, descript1, reterr)
+     &           descript1, reterr)
          CASE(42)
-            CALL initStationFile(velocityStations3D, lun,
+            CALL initStationFile(velocityStations3D, 
      &           descript1, reterr)
          CASE(43)
-            CALL initStationFile(turbulenceStations3D, lun,
+            CALL initStationFile(turbulenceStations3D,
      &           descript1, reterr)
          CASE(44)
-            CALL initNodalDataFile(density3D, lun,
+            CALL initNodalDataFile(density3D, 
      &           descript1, reterr, descript2, descript3)
          CASE(45)
-            CALL initNodalDataFile(velocity3D, lun,
+            CALL initNodalDataFile(velocity3D, 
      &           descript1, reterr, descript2, descript3)
          CASE(46)
-            CALL initNodalDataFile(turbulence3D, lun,
+            CALL initNodalDataFile(turbulence3D, 
      &           descript1, reterr, descript2, descript3)
          CASE(47)
             CALL initNodalDataFile(futureSurfaceTemperature,
-     &           lun, descript1, reterr)
+     &           descript1, reterr)
          CASE(61)
-            CALL initStationFile(elevSta, lun, descript1, reterr)
+            CALL initStationFile(elevSta, descript1, reterr)
          CASE(62)
-            CALL initStationFile(velSta, lun, descript1, reterr)
+            CALL initStationFile(velSta, descript1, reterr)
          CASE(63)
-            CALL initNodalDataFile(elev, lun, descript1, reterr)
+            CALL initNodalDataFile(elev, descript1, reterr)
          CASE(64)
-            CALL initNodalDataFile(currentVel, lun, descript1, reterr)
+            CALL initNodalDataFile(currentVel, descript1, reterr)
          CASE(71)
-            CALL initStationFile(prSta, lun, descript1, reterr)
+            CALL initStationFile(prSta, descript1, reterr)
          CASE(72)
-            CALL initStationFile(wVelSta, lun, descript1, reterr)
+            CALL initStationFile(wVelSta, descript1, reterr)
          CASE(73)
-            CALL initNodalDataFile(pr, lun, descript1, reterr)
+            CALL initNodalDataFile(pr, descript1, reterr)
          CASE(74)
-            CALL initNodalDataFile(windVel, lun, descript1, reterr)
+            CALL initNodalDataFile(windVel, descript1, reterr)
+         CASE(90)
+            CALL initNodalDataFile(tau0nc, descript1, reterr)
 #if defined CSWAN || defined ADCSWAN
          CASE(164)
-            CALL initNodalDataFile(rads, lun, descript1, reterr)
+            CALL initNodalDataFile(rads, descript1, reterr)
          CASE(301)
-            CALL initNodalDataFile(sw_hs, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_hs, descript1, reterr)
          CASE(302)
-            CALL initNodalDataFile(sw_dir, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_dir, descript1, reterr)
          CASE(303)
-            CALL initNodalDataFile(sw_tm01, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tm01, descript1, reterr)
          CASE(304)
-            CALL initNodalDataFile(sw_tps, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tps, descript1, reterr)
          CASE(305)
-            CALL initNodalDataFile(sw_wind, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_wind, descript1, reterr)
          CASE(306)
-            CALL initNodalDataFile(sw_tm02, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tm02, descript1, reterr)
          CASE(307)
-            CALL initNodalDataFile(sw_tmm10, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tmm10, descript1, reterr)
 #endif
          CASE(311)
-            CALL initNodalDataFile(EtaMax, lun, descript1, reterr)
+            CALL initNodalDataFile(EtaMax, descript1, reterr)
          CASE(312)
-            CALL initNodalDataFile(UMax, lun, descript1, reterr)
+            CALL initNodalDataFile(UMax, descript1, reterr)
          CASE(313)
-            CALL initNodalDataFile(PrMin, lun, descript1, reterr)
+            CALL initNodalDataFile(PrMin, descript1, reterr)
          CASE(314)
-            CALL initNodalDataFile(WVMax, lun, descript1, reterr)
+            CALL initNodalDataFile(WVMax, descript1, reterr)
          CASE(315)
-            CALL initNodalDataFile(RSMax, lun, descript1, reterr)
+            CALL initNodalDataFile(RSMax, descript1, reterr)
 #if defined CSWAN || defined ADCSWAN
          CASE(316)
-            CALL initNodalDataFile(sw_hs_max, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_hs_max, descript1, reterr)
          CASE(317)
-            CALL initNodalDataFile(sw_dir_max, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_dir_max, descript1, reterr)
          CASE(318)
-            CALL initNodalDataFile(sw_tm01_max, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tm01_max, descript1, reterr)
          CASE(319)
-            CALL initNodalDataFile(sw_tps_max, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tps_max, descript1, reterr)
          CASE(320)
-            CALL initNodalDataFile(sw_wind_max, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_wind_max, descript1, reterr)
          CASE(321)
-            CALL initNodalDataFile(sw_tm02_max, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tm02_max, descript1, reterr)
          CASE(322)
-            CALL initNodalDataFile(sw_tmm10_max, lun, descript1, reterr)
+            CALL initNodalDataFile(sw_tmm10_max, descript1, reterr)
 #endif
          CASE DEFAULT
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for files with unit number ",i0,".")') descript1 % lun
             call allMessage(ERROR,scratchMessage)
       END SELECT
 C
@@ -457,18 +458,18 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Sets up netCDF variables and allocates memory for a
 C     station.
 C-----------------------------------------------------------------------
-      SUBROUTINE initStationFile(sta, lun, descript1, reterr)
-      USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t, ICS, RAD2DEG,
+      SUBROUTINE initStationFile(sta, descript1, reterr)
+      USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t, RAD2DEG,
      &                   IHOT, NWS, STATNAME, STATNAMEV,
      &                   STATNAMEM, IDEN
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET
+      USE MESH, ONLY : ICS
 #ifdef NCMPI
       USE MESSENGER, ONLY : msg_fini
 #endif
       IMPLICIT NONE
 C
       type(stationData), intent(inout) :: sta
-      INTEGER, intent(in) :: lun
       type(OutputDataDescript_t), intent(inout) :: descript1
 C
       INTEGER i,j
@@ -481,6 +482,7 @@ C
       character big_ben*10
       character zone*5
       integer values(8)
+      integer :: stationLuns3D(3) = (/ 41, 42, 43 /)
 C
       call setMessageSource("initStationFile")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -501,7 +503,7 @@ C
       sta % num_stations = descript1 % num_fd_records
       ALLOCATE(sta%myTime%timenc(sta%myTime%timenc_len))
 C
-      IF ((lun.eq.41).or.(lun.eq.42).or.(lun.eq.43)) THEN
+      if (any(stationLuns3D.eq.descript1 % lun)) then 
          sta%num_v_nodes = descript1 % num_items_per_record
       ENDIF
 C
@@ -510,7 +512,7 @@ C     Memory allocation for the station
       ALLOCATE(sta%y(sta%num_stations))
 C
 C     Initialize netCDF output file, creating a new one if necessary.
-      CALL createNetCDFOutputFile(sta%ncid, sta%myFile, lun, sta%myTime,
+      CALL createNetCDFOutputFile(sta%ncid, sta%myFile, sta%myTime,
      &                            descript1, reterr)
 C
 C     if we didn't need to create a file, update metadata and return
@@ -541,7 +543,7 @@ C     Create station dimension and station name dimension
       CALL check_err(iret)
       iret = nf90_def_dim(sta%ncid, 'namelen', SNAMLEN, sta%slen_dim_id)
       CALL check_err(iret)
-      IF ((lun.eq.41).or.(lun.eq.42).or.(lun.eq.43)) THEN
+      IF (any(stationLuns3D.eq.descript1%lun)) THEN
          iret = nf90_def_dim(sta%ncid, 'num_v_nodes', sta%num_v_nodes,
      &       sta%num_v_nodes_dim_id)
          sta%station_data_dims_3D(1) = sta%num_sta_dim_id
@@ -577,7 +579,7 @@ C     different types of data in the station files. The labels and
 C     units will also vary according to the coordinate system ADCIRC
 C     is using (spherical or cartesian, according to the value of ICS)
 C     as well as the units system (english or si according to the value of g).
-      SELECT CASE(lun)
+      SELECT CASE(descript1 % lun)
          CASE(41) !       F O R T . 4 1
             iret = nf90_def_var(sta%ncid, 'sigmat', NF90_DOUBLE,
      &             sta%station_data_dims_3D, sta%u_station_data_id)
@@ -1065,7 +1067,7 @@ C
 
          CASE DEFAULT
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for station files with unit number ",i0,".")') descript1 % lun
             call allMessage(ERROR,scratchMessage)
       END SELECT
       iret = nf90_put_att(sta%ncid,sta%u_station_data_id,
@@ -1091,7 +1093,7 @@ C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
 #ifdef NETCDF_CAN_DEFLATE
       IF (abs(descript1%specifier).eq.5) THEN
-         SELECT CASE(lun)
+         SELECT CASE(descript1 % lun)
          CASE(41)
             iret = nf_def_var_deflate(sta%ncid, sta%u_station_data_id,
      &          1, 1, 2)
@@ -1129,7 +1131,7 @@ C     netcdf4 file format.
             CALL check_err(iret)
          CASE DEFAULT ! should be unreachable
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for station files with unit number ",i0,".")') descript1 % lun
             call allMessage(ERROR,scratchMessage)
          END SELECT
       ENDIF
@@ -1177,15 +1179,14 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Sets up netCDF variables and allocates memory for
 C     full domain data.
 C-----------------------------------------------------------------------
-      SUBROUTINE initNodalDataFile(dat, lun, descript1, reterr,
+      SUBROUTINE initNodalDataFile(dat, descript1, reterr,
      &   descript2, descript3)
-      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, NWS, NE_G, C3D,IDEN,
-     &                    MNWPROC 
+      USE GLOBAL, ONLY : OutputDataDescript_t, NWS, C3D, IDEN, MNWPROC, NE_G 
       USE GLOBAL_3DVS, ONLY : NFEN
+      USE MESH, ONLY : ICS
       IMPLICIT NONE
 C
       type(nodalData), intent(inout) :: dat
-      INTEGER, intent(in) :: lun
       type(OutputDataDescript_t), intent(inout) :: descript1
       type(OutputDataDescript_t), intent(inout), optional :: descript2
       type(OutputDataDescript_t), intent(inout), optional :: descript3
@@ -1212,7 +1213,7 @@ C
       ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
 C
 C     Initialize netCDF output file, creating a new one if necessary.
-      CALL createNetCDFOutputFile(dat%ncid, dat%myFile, lun, dat%myTime,
+      CALL createNetCDFOutputFile(dat%ncid, dat%myFile, dat%myTime,
      &                            descript1, reterr)
 C
 C     if we didn't need to create a file, update metadata and return
@@ -1240,7 +1241,7 @@ C
       ENDIF
       CALL defineMeshVariables(dat%ncid, dat%myMesh, dat%myFile)
 c
-      SELECT CASE(lun)
+      SELECT CASE(descript1 % lun)
 C
          CASE(44)
             dat%nodal_data_dims_3D(1) = dat%myMesh%num_nodes_dim_id
@@ -1499,6 +1500,35 @@ C
             CALL check_err(iret)            
             CALL putUnitsAttribute(dat%ncid, dat%nodal_data_id,
      &           'm', 'ft')
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', doubleval)
+            CALL check_err(iret)
+C
+         CASE(90)
+C
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
+            dat%varnames(1) = 'tau0'
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &         NF90_DOUBLE, dat%nodal_data_dims, dat%nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'long_name', 'primitive weighting in continuity equation')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'standard_name', 'primitive_weighting_in_continuity_equation')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'coordinates', 'time y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)            
+            CALL putUnitsAttribute(dat%ncid, dat%nodal_data_id,
+     &           '1', '1')
             iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
      &             '_FillValue', doubleval)
             CALL check_err(iret)
@@ -2750,7 +2780,7 @@ C
 #endif
          CASE DEFAULT
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for files with unit number ",i0,".")') descript1 % lun
             call allMessage(ERROR,scratchMessage)
       END SELECT
 
@@ -2769,8 +2799,8 @@ C
 C     jgf50.44: Automatically turn on compression if we are using the
 C     netcdf4 file format.
 #ifdef NETCDF_CAN_DEFLATE
-      IF (abs(descript1%specifier).eq.5) THEN
-         SELECT CASE(lun)
+      IF (abs(descript1%specifier).eq.NETCDF4) THEN
+         SELECT CASE(descript1 % lun)
          CASE(44)
             iret = nf_def_var_deflate(dat%ncid, dat%u_nodal_data_id,
      &          1, 1, 2)
@@ -2795,7 +2825,7 @@ C     netcdf4 file format.
             iret = nf_def_var_deflate(dat%ncid, dat%w_nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
-         CASE(47,63,73,301:304,306,307)
+         CASE(47,63,73,90,301:304,306,307)
             iret = nf_def_var_deflate(dat%ncid, dat%nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
@@ -2819,7 +2849,7 @@ C     netcdf4 file format.
             CALL check_err(iret)
          CASE DEFAULT ! should be unreachable
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for files with unit number ",i0,".")') descript1 % lun
             call allMessage(ERROR,scratchMessage)
          END SELECT
       ENDIF
@@ -2852,104 +2882,15 @@ C-----------------------------------------------------------------------
       END SUBROUTINE initNodalDataFile
 C-----------------------------------------------------------------------
 
-C-----------------------------------------------------------------------
-C     S U B R O U T I N E  S E T  N E T C D F  F I L E  N A M E
-C-----------------------------------------------------------------------
-C     jgf49.41 Sets the name of the netcdf file.
-C-----------------------------------------------------------------------
-      SUBROUTINE setNetCDFFileName(lun, myFile)
-      IMPLICIT NONE
-      INTEGER, intent(in) :: lun ! logical unit number
-      INTEGER             :: dlun ! dummy logical unit number
-      INTEGER             :: dlen ! length of char
-      TYPE(fileData) :: myFile
-C
-      call setMessageSource("setNetCDFFileName")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-      IF(lun.EQ.164)THEN
-        myFile%FILEFORT = 'rads.'
-        dlun=64
-      ELSEIF(lun.EQ.301)THEN
-        myFile%FILEFORT = 'swan_HS.'
-        dlun=63
-      ELSEIF(lun.EQ.302)THEN
-        myFile%FILEFORT = 'swan_DIR.'
-        dlun=63
-      ELSEIF(lun.EQ.303)THEN
-        myFile%FILEFORT = 'swan_TM01.'
-        dlun=63
-      ELSEIF(lun.EQ.304)THEN
-        myFile%FILEFORT = 'swan_TPS.'
-        dlun=63
-      ELSEIF(lun.EQ.305)THEN
-        myFile%FILEFORT = 'swan_WIND.'
-        dlun=64
-      ELSEIF(lun.EQ.306)THEN
-        myFile%FILEFORT = 'swan_TM02.'
-        dlun=63
-      ELSEIF(lun.EQ.307)THEN
-        myFile%FILEFORT = 'swan_TMM10.'
-        dlun=63
-      ELSEIF(lun.EQ.311)THEN
-        myFile%FILEFORT = 'maxele.'
-        dlun=63
-      ELSEIF(lun.EQ.312)THEN
-        myFile%FILEFORT = 'maxvel.'
-        dlun=63
-      ELSEIF(lun.EQ.313)THEN
-        myFile%FILEFORT = 'minpr.'
-        dlun=63
-      ELSEIF(lun.EQ.314)THEN
-        myFile%FILEFORT = 'maxwvel.'
-        dlun=63
-      ELSEIF(lun.EQ.315)THEN
-        myFile%FILEFORT = 'maxrs.'
-        dlun=63
-      ELSEIF(lun.EQ.316)THEN
-        myFile%FILEFORT = 'swan_HS_max.'
-        dlun=63
-      ELSEIF(lun.EQ.317)THEN
-        myFile%FILEFORT = 'swan_DIR_max.'
-        dlun=63
-      ELSEIF(lun.EQ.318)THEN
-        myFile%FILEFORT = 'swan_TM01_max.'
-        dlun=63
-      ELSEIF(lun.EQ.319)THEN
-        myFile%FILEFORT = 'swan_TPS_max.'
-        dlun=63
-      ELSEIF(lun.EQ.320)THEN
-        myFile%FILEFORT = 'swan_WIND_max.'
-        dlun=63
-      ELSEIF(lun.EQ.321)THEN
-        myFile%FILEFORT = 'swan_TM02_max.'
-        dlun=63
-      ELSEIF(lun.EQ.322)THEN
-        myFile%FILEFORT = 'swan_TMM10_max.'
-        dlun=63
-      ELSE
-        myFile%FILEFORT = 'fort.'
-        dlun=lun
-      ENDIF
-      myFile%FILEEXT = '.nc'
-      WRITE(myFile%FILENAME,'(A,I2,A3)')
-     &      TRIM(myFile%FILEFORT), dlun, myFile%FILEEXT
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C-----------------------------------------------------------------------
-      END SUBROUTINE setNetCDFFileName
-C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E  C R E A T E  N E T C D F  O U T P U T  F I L E
 C-----------------------------------------------------------------------
 C     jgf49.22 Creates a new netcdf output file if needed.
 C-----------------------------------------------------------------------
-      SUBROUTINE createNetCDFOutputFile(ncid, myFile, lun, myTime,
+      SUBROUTINE createNetCDFOutputFile(ncid, myFile, myTime,
      &                                  descript, ret_error)
+      USE SIZES, ONLY : globaldir
       USE GLOBAL, ONLY : OutputDataDescript_t, IHOT, DEBUG, ERROR,
      &                   screenUnit, allMessage, scratchMessage
 #ifdef CMPI
@@ -2958,12 +2899,12 @@ C-----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, intent(out) :: ncid
       TYPE(fileData), intent(inout) :: myFile
-      INTEGER, intent(in) :: lun
       TYPE(timeData), intent(inout) :: myTime
       TYPE(OutputDataDescript_t), intent(inout) :: descript
       LOGICAL, intent(out) :: ret_error
 C
       INTEGER iret
+      CHARACTER(len=10) :: fext
 C
       call setMessageSource("createNetCDFOutputFile")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -2972,7 +2913,16 @@ C
       ret_error = .false.
       myFile%createFile = .false.
       myFile%fileFound = .false.
-      CALL setNetCDFFileName(lun,myFile)
+      
+      ! create file name 
+      select case(descript%lun)
+      case(67)
+         myFile%filename = 'fort.67.nc'
+      case(68)
+         myFile%filename = 'fort.68.nc'
+      case default
+         myFile%filename = trim(descript%file_name) // '.nc'
+      end select
 C
 C     jgf49.17.02: Simplified the criteria for creating a new netCDF
 C     output file: coldstart, overwrite upon hotstart, or output
@@ -2980,7 +2930,7 @@ C     that does not already exist. These criteria do not apply to
 C     netcdf hotstart files; we will always write those when called
 C     upon to create them.
       INQUIRE(FILE=myFile%FILENAME,EXIST=myFile%fileFound)
-      IF ((lun.ne.67).and.(lun.ne.68)) THEN
+      IF ((descript%lun.ne.67).and.(descript%lun.ne.68)) THEN
          IF ((IHOT.EQ.0).OR.(descript%specifier.lt.0).OR.
      &      (myFile%fileFound.eqv..false.)) THEN
 #ifdef CMPI
@@ -3091,9 +3041,11 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Initializes NetCDF coordinates.
 C-----------------------------------------------------------------------
       SUBROUTINE initNetCDFCoord(myMesh)
-      USE GLOBAL, ONLY : RAD2DEG, NBOU, NVEL, NOPE, NP_G, SLAM0, SFEA0,
-     &                   NBVV, NVDLL, NBDV, NVELL, NETA, X, Y, SLAM,
-     &                   SFEA, ICS, IBTYPEE, IBTYPE, NM, NE_G
+      USE GLOBAL, ONLY : NP_G, NE_G, RAD2DEG
+      USE MESH, ONLY : X, Y, SLAM, SFEA, ICS, NM, 
+     &  SLAM0, SFEA0
+      USE BOUNDARIES, ONLY : NBOU, NVEL, NOPE, NBVV, NVDLL, NBDV, NVELL, 
+     &  NETA, IBTYPEE, IBTYPE
       IMPLICIT NONE
       type(meshStructure), intent(inout) :: myMesh
       INTEGER :: i, j, k  ! array indices
@@ -3243,6 +3195,8 @@ C
             CALL writeNodalData(pr, lun, descript1, timesec)
          CASE(74)
             CALL writeNodalData(windVel, lun, descript1, timesec)
+         CASE(90)
+            CALL writeNodalData(tau0nc, lun, descript1, timesec)
 #ifdef CSWAN
          CASE(164)
             CALL writeNodalData(rads, lun, descript1, timesec)
@@ -3289,7 +3243,7 @@ C
 #endif
          CASE DEFAULT
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for files with unit number ",i0,".")') lun
             call allMessage(ERROR,scratchMessage)         
       END SELECT
 C
@@ -3301,148 +3255,6 @@ C
 C-----------------------------------------------------------------------
       END SUBROUTINE writeOutArrayNetCDF
 C-----------------------------------------------------------------------
-
-Cobell - This routine is reached through writer.F. A dummy descript is
-C        Assembled so that old routines can be used.
-C----------------------------------------------------------------------------------
-C     S U B R O U T I N E   W R I T E  O U T  A R R A Y  N E T C D F   W R I T E R
-C----------------------------------------------------------------------------------
-      SUBROUTINE writeOutArrayNetCDFWriter(lun, timesec, it, 
-     &  items_per_record, alternate_value, values1, values2)
-      USE GLOBAL, ONLY : OutputDataDescript_t,ScreenUnit,SZ
-C
-      IMPLICIT NONE
-C     args
-      INTEGER, intent(in) :: lun ! logical unit number of file to write to
-      REAL(SZ), intent(in) :: timesec ! seconds since cold start
-      INTEGER, intent(in) :: it   ! number of time steps since cold start
-      INTEGER, intent(in) :: items_per_record
-      REAL(SZ), intent(in), target :: values1(:)
-      REAL(SZ), intent(in), optional, target :: values2(:)
-      REAL(SZ), intent(in) :: alternate_value
-      LOGICAL,SAVE :: FirstCall63 = .TRUE.
-      LOGICAL,SAVE :: FirstCall64 = .TRUE.
-      LOGICAL,SAVE :: FirstCall73 = .TRUE.
-      LOGICAL,SAVE :: FirstCall74 = .TRUE.
-      LOGICAL,SAVE :: FirstCall164 = .TRUE.
-      LOGICAL,SAVE :: FirstCall301 = .TRUE.
-      LOGICAL,SAVE :: FirstCall302 = .TRUE.
-      LOGICAL,SAVE :: FirstCall303 = .TRUE.
-      LOGICAL,SAVE :: FirstCall304 = .TRUE.
-      LOGICAL,SAVE :: FirstCall305 = .TRUE.
-      LOGICAL,SAVE :: FirstCall306 = .TRUE.
-      LOGICAL,SAVE :: FirstCall307 = .TRUE.
-      LOGICAL :: reterr
-      INTEGER :: I
-      TYPE(OutputDataDescript_t) :: descript1
-
-      call setMessageSource("writeOutArrayNetCDFWriter")
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE) || defined(WRITER_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
-C
-
-Cobell ... Assemble a dummy OutputDataDescript_t variable to appease
-C          the routines that follow. Only parallel case is considered.
-      Descript1%alternate_value = alternate_value
-      Descript1%array_g => values1
-      Descript1%num_fd_records = SIZE(values1)
-      IF(items_per_record.eq.2)THEN
-        Descript1%array2_g => values2
-      ENDIF
-
-      SELECT CASE(lun)
-         CASE(63)
-            IF(FirstCall63)THEN
-                CALL initNodalDataFile(elev, lun, descript1, reterr)
-                FirstCall63 = .FALSE.
-            ENDIF   
-                CALL writeNodalData(elev, lun, descript1, timesec)
-         CASE(64)
-            IF(FirstCall64)THEN
-                CALL initNodalDataFile(currentVel, lun, descript1, reterr)
-                FirstCall64 = .FALSE.
-            ENDIF
-            CALL writeNodalData(currentVel, lun, descript1, timesec)
-         CASE(73)
-            IF(FirstCall73)THEN
-                CALL initNodalDataFile(pr, lun, descript1, reterr)
-                FirstCall73 = .FALSE.
-            ENDIF
-            CALL writeNodalData(pr, lun, descript1, timesec)
-         CASE(74)
-            IF(FirstCall74)THEN
-                CALL initNodalDataFile(windVel, lun, descript1, reterr)
-                FirstCall74 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(windVel, lun, descript1, timesec)
-         CASE(164)
-            IF(FirstCall164)THEN
-                CALL initNodalDataFile(rads, lun, descript1, reterr)
-                FirstCall164 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(rads, lun, descript1, timesec)
-#ifdef CSWAN            
-         CASE(301)
-            IF(FirstCall301)THEN
-                CALL initNodalDataFile(sw_hs, lun, descript1, reterr)
-                FirstCall301 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(sw_hs, lun, descript1, timesec)
-         CASE(302)
-            IF(FirstCall302)THEN
-                CALL initNodalDataFile(sw_dir, lun, descript1, reterr)
-                FirstCall302 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(sw_dir, lun, descript1, timesec)
-         CASE(303)
-            IF(FirstCall303)THEN
-                CALL initNodalDataFile(sw_tm01, lun, descript1, reterr)
-                FirstCall303 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(sw_tm01, lun, descript1, timesec)
-         CASE(304)
-            IF(FirstCall304)THEN
-                CALL initNodalDataFile(sw_tps, lun, descript1, reterr)
-                FirstCall304 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(sw_tps, lun, descript1, timesec)
-         CASE(305)
-            IF(FirstCall305)THEN
-                CALL initNodalDataFile(sw_wind, lun, descript1, reterr)
-                FirstCall305 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(sw_wind, lun, descript1, timesec)
-         CASE(306)
-            IF(FirstCall306)THEN
-                CALL initNodalDataFile(sw_tm02, lun, descript1, reterr)
-                FirstCall306 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(sw_tm02, lun, descript1, timesec)
-         CASE(307)
-            IF(FirstCall307)THEN
-                CALL initNodalDataFile(sw_tmm10, lun, descript1, reterr)
-                FirstCall307 = .FALSE.
-            ENDIF 
-            CALL writeNodalData(sw_tmm10, lun, descript1, timesec)
-#endif
-         CASE DEFAULT
-            write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
-            call allMessage(ERROR,scratchMessage)         
-      END SELECT
-C
-
-#if defined(NETCDF_TRACE) || defined(ALL_TRACE) || defined(WRITER_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
-C-----------------------------------------------------------------------
-      END SUBROUTINE writeOutArrayNetCDFWriter
-C-----------------------------------------------------------------------
-
-
-
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E    W R I T E  S T A T I O N  D A T A
@@ -3675,7 +3487,7 @@ C
 
       CASE DEFAULT
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for station files with unit number ",i0,".")') lun
             call allMessage(ERROR,scratchMessage)               
       END SELECT
 !
@@ -3723,7 +3535,6 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 C
-      
       iret = nf90_open(dat%myFile%FILENAME, NF_WRITE, dat%ncid)
       CALL check_err(iret)
       dat%myTime%timenc(dat%myTime%timenc_len)=timesec
@@ -3819,6 +3630,9 @@ C
          iret=nf90_inq_varid(dat%ncid,"windx",dat%u_nodal_data_id)
          CALL check_err(iret)
          iret=nf90_inq_varid(dat%ncid,"windy",dat%v_nodal_data_id)
+         CALL check_err(iret)
+      CASE(90)
+         iret=nf90_inq_varid(dat%ncid, "tau0", dat%nodal_data_id)
          CALL check_err(iret)
       CASE(164)
         iret=nf90_inq_varid(dat%ncid, "radstress_x",dat%u_nodal_data_id)
@@ -3916,7 +3730,7 @@ C
 #endif
       CASE DEFAULT
          write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for files with unit number ",i0,".")') lun
          call allMessage(ERROR,scratchMessage)                     
       END SELECT
 C
@@ -4036,7 +3850,7 @@ C     Write the array values
      &            descript1%array_g)
             CALL check_err(iret)
          ENDIF         
-      CASE(47,63,73,301,302,303,304,306,307)
+      CASE(47,63,73,90,301,302,303,304,306,307)
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
                iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
@@ -4086,7 +3900,7 @@ C     Write the array values
          ENDIF
       CASE DEFAULT
             write(scratchMessage,
-     &       '("No netCDF for files with unit number ",I3,".")') lun
+     &       '("No netCDF for files with unit number ",i0,".")') lun
             call allMessage(ERROR,scratchMessage)                     
       END SELECT
 !
@@ -4212,8 +4026,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE initNetCDFHotstart(lun, Elev1Descript,
      &   Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &   NodeCodeDescript, NOFFDescript, ncerror)
-      USE GLOBAL, ONLY : OutputDataDescript_t, ICS, G, IM, NE_G, NP_G,
-     &   IMHS, C3D
+      USE GLOBAL, ONLY : OutputDataDescript_t, G, IM, IMHS, C3D, NE_G, NP_G
+      USE MESH, ONLY : ICS
       IMPLICIT NONE
 C
       INTEGER, intent(in) :: lun
@@ -4255,7 +4069,8 @@ C     Point to the hotstart file we want to work on.
       ENDIF
 C
 C     Initialize netCDF hotstart file, creating a new one
-      CALL createNetCDFOutputFile(hs%ncid, hs%myFile, lun, hs%myTime,
+      Elev1Descript % lun = lun
+      CALL createNetCDFOutputFile(hs%ncid, hs%myFile, hs%myTime,
      &                            Elev1Descript, ncerror)
       ! return an error flag to the calling routine if something went
       ! wrong when we tried to create the netcdf file
@@ -5813,6 +5628,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE writeNetCDFHotstart(lun, Elev1Descript,
      &        Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &        NodeCodeDescript, NOFFDescript, timesec, it)
+      USE SIZES, ONLY : globaldir
       USE GLOBAL, ONLY : OutputDataDescript_t, MNPROC,
      &                   im, iestp, nscoue, ivstp, imhs,
      &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
@@ -5837,6 +5653,7 @@ C
       INTEGER elekount(2) ! for elementally based data
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
+      CHARACTER(len=10) :: fext
 C
       call setMessageSource("writeNetCDFHotstart")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -5851,7 +5668,10 @@ C     Point to the hotstart file we want to work on
       ENDIF
       hs%myMesh => adcircMesh
 C
-      CALL setNetCDFFileName(lun, hs%myFile)
+      ! create file name
+      write(fext,'(i0)') lun
+      hs%myFile%filename = trim(globaldir) // 
+     &             '/' // 'fort' // '.' // trim(fext) // '.nc'
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -6061,7 +5881,7 @@ C-----------------------------------------------------------------------
      &            GLOELVDescript, STAELVDescript,
      &            GLOULVDescript, GLOVLVDescript,
      &            STAULVDescript, STAVLVDescript)
-      USE SIZES, ONLY : MNHARF, MNPROC
+      USE SIZES, ONLY : MNHARF, MNPROC, globaldir
       USE GLOBAL, ONLY : OutputDataDescript_t, NSTAE_G, NSTAV_G
       USE HARM, ONLY : nz, nf, mm, nhase, nhasv, nhage, nhagv, icall,
      &                 nfreq, timeud, itud, namefr, hafreq, haff,
@@ -6081,6 +5901,7 @@ C
       INTEGER hakount(2), hastart(2) ! for lhs
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
+      CHARACTER(len=10) :: fext
 C
       call setMessageSource("writeNetCDFHotstartHarmonic")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -6094,7 +5915,10 @@ C     Point to the hotstart file we want to work on
          hs => hs68
       ENDIF
 C
-      CALL setNetCDFFileName(lun, hs%myFile)
+      ! create file name
+      !write(fext,'(i0)') lun
+      !hs%myFile%filename = trim(globaldir) // 
+      !&            '/' // 'fort' // '.' // trim(fext) // '.nc'
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -6346,7 +6170,7 @@ C-----------------------------------------------------------------------
      &            ELAVDescript, ELVADescript,
      &            XVELAVDescript, YVELAVDescript,
      &            XVELVADescript, YVELVADescript)
-      USE SIZES, ONLY : MNHARF, MNPROC
+      USE SIZES, ONLY : MNHARF, MNPROC, globaldir
       USE GLOBAL, ONLY : OutputDataDescript_t, NSTAE_G, NSTAV_G
       USE HARM, ONLY : nhase, nhasv, nhage, nhagv, ntsteps
       IMPLICIT NONE
@@ -6363,6 +6187,7 @@ C
       INTEGER kount(2), start(2) ! for nodally based data
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
+      CHARACTER(len=10) :: fext
 C
       call setMessageSource("writeNetCDFHotstartHarmonicMeansVariances")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -6376,7 +6201,10 @@ C     Point to the hotstart file we want to work on
          hs => hs68
       ENDIF
 C
-      CALL setNetCDFFileName(lun, hs%myFile)
+      ! create file name
+      !write(fext,'(i0)') lun
+      !hs%myFile%filename = trim(globaldir) // 
+      !&            '/' // 'fort' // '.' // trim(fext) // '.nc'      
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -6497,7 +6325,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE writeNetCDFHotstart3D(lun,DUUDescript,
      &      DUVDescript, DVVDescript, UUDescript, VVDescript,
      &      BSXDescript, BSYDescript)
-      USE SIZES, ONLY : MNPROC
+      USE SIZES, ONLY : MNPROC, globaldir
       USE GLOBAL, ONLY : OutputDataDescript_t
       USE GLOBAL_3DVS, ONLY : n3dsd, i3dsdrec, n3dsv, i3dsvrec,
      &   n3dst, i3dstrec, n3dgd, i3dgdrec, n3dgv, i3dgvrec,
@@ -6517,6 +6345,7 @@ C
       INTEGER kount(2), start(2) ! for nodally based data
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
+      CHARACTER(len=10) :: fext
 C
       call setMessageSource("writeNetCDFHotstart3D")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -6530,7 +6359,10 @@ C     Point to the hotstart file we want to work on
          hs => hs68
       ENDIF
 C
-      CALL setNetCDFFileName(lun, hs%myFile)
+      ! create file name
+      !write(fext,'(i0)') lun
+      !hs%myFile%filename = trim(globaldir) // 
+      !&            '/' // 'fort' // '.' // trim(fext) // '.nc'
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -6685,7 +6517,7 @@ C     jgf49.49.02 Writes 3D data to hotstart file for a single variable
 C     of rank 2.
 C-----------------------------------------------------------------------
       SUBROUTINE writeNetCDFHotstart3DVar(lun, descript)
-      USE SIZES, ONLY : MNPROC
+      USE SIZES, ONLY : MNPROC, globaldir
       USE GLOBAL, ONLY : OutputDataDescript_t
       IMPLICIT NONE
 C
@@ -6696,6 +6528,7 @@ C
       INTEGER kount(3), start(3) ! for nodally based data
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
+      CHARACTER(len=10) :: fext
 C
       call setMessageSource("writeNetCDFHotstart3DVar")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -6709,7 +6542,10 @@ C     Point to the hotstart file we want to work on
          hs => hs68
       ENDIF
 C
-      CALL setNetCDFFileName(lun, hs%myFile)
+      ! create file name
+      !write(fext,'(i0)') lun
+      !hs%myFile%filename = trim(globaldir) // 
+      !&            '/' // 'fort' // '.' // trim(fext) // '.nc'
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -6864,14 +6700,15 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Reads data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstart(lun, timeLoc)
+      USE SIZES, ONLY : globaldir
       USE GLOBAL, ONLY : OutputDataDescript_t, FileFmtRev, FileFmtMinor,
      &                   FileFmtMajor, imhs, iths, iestp, nscoue, ivstp,
      &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
      &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
      &                   igpp, igwp, nscougw, ETA1, ETA2, EtaDisc,
-     &                   UU2, VV2, NNODECODE, NOFF, NODES_LG,
-     &                   IMAP_EL_LG, MNPROC, MYPROC, NE, NP, IM,
-     &                   NP_G, NE_G
+     &                   UU2, VV2, NNODECODE, NOFF, 
+     &                   MNPROC, MYPROC, IM, NP_G, NE_G, NODES_LG, IMAP_EL_LG
+      USE MESH, ONLY : NE, NP
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -6888,6 +6725,7 @@ C
 
       INTEGER :: sd_node_number    ! subdomain index to map
       INTEGER :: sd_element_number ! subdomain index to map
+      CHARACTER(len=10) :: fext
 C
       call setMessageSource("readNetCDFHotstart")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -6903,13 +6741,18 @@ C     Point to the hotstart file we want to work on
 C
       hs%myMesh => adcircMesh
       hs%myFile%fileFound = .false.
-      CALL setNetCDFFileName(lun,hs%myFile)
+      ! create file name
+      write(fext,'(i0)') lun
+      hs%myFile%filename = trim(globaldir) // 
+     &            '/' // 'fort' // '.' // trim(fext) // '.nc'
 C
 C     Open fulldomain file
       INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
       IF (hs%myFile%fileFound.eqv..false.) THEN
-         WRITE(*,*) "ERROR: The file ",hs%myFile%FILENAME,
-     &      " was not found; ADCIRC terminating."
+         write(scratchMessage,'(a,a,a)') 'The file ',
+     &       trim(adjustl(hs%myFile%FILENAME)),
+     &       ' was not found; ADCIRC terminating.'
+         call allMessage(ERROR,scratchMessage)
 #ifdef CMPI
             CALL MSG_FINI()
 #endif
@@ -7332,14 +7175,15 @@ C-----------------------------------------------------------------------
 C     jgf49.44.11 Reads harmonic analysis data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstartHarmonic(lun)
-      USE SIZES, ONLY : MNPROC
-      USE GLOBAL, ONLY : OutputDataDescript_t, NP, NODES_LG,
+      USE SIZES, ONLY : MNPROC, globaldir
+      USE GLOBAL, ONLY : OutputDataDescript_t, NODES_LG,
      &                   IMAP_STAE_LG, NSTAE, IMAP_STAV_LG, NSTAV,MYPROC
       USE HARM, ONLY : GLOELV, STAELV, GLOULV, GLOVLV, STAULV, STAVLV,
      &                 NHASE, NHASV, NHAGE, NHAGV, MNHARF, ICHA, INZ,
      &                 INZ, INF, IMM, INSTAE, INSTAV, INHASE, INHASV,
      &                 INHASE, INHAGE, INHAGV, ICALL, INFREQ, TIMEUD,
      &                 ITUD, HA, INAMEFR, INP, IFF, IFACE, IFREQ
+      USE MESH, ONLY : NP
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -7354,6 +7198,8 @@ C
       INTEGER sd_station_number
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
+      type(OutputDataDescript_t) :: descript
+      CHARACTER(len=10) :: fext
 C
       call setMessageSource("readNetCDFHotstartHarmonic")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -7369,7 +7215,11 @@ C     Point to the hotstart file we want to work on
 C
       hs%myMesh => adcircMesh
       hs%myFile%fileFound = .false.
-      CALL setNetCDFFileName(lun,hs%myFile)
+
+      ! create file name
+      !write(fext,'(i0)') lun
+      !hs%myFile%filename = trim(globaldir) // 
+      !&            '/' // 'fort' // '.' // trim(fext) // '.nc'
 C
 C     Open fulldomain file
       INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
@@ -7653,10 +7503,11 @@ C-----------------------------------------------------------------------
 C     jgf49.44.11 Reads harmonic analysis data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstartHarmonicMeansVariances(lun)
-      USE SIZES, ONLY : MNPROC
-      USE GLOBAL, ONLY : OutputDataDescript_t, NP, NODES_LG
+      USE SIZES, ONLY : MNPROC, globaldir
+      USE GLOBAL, ONLY : OutputDataDescript_t, NODES_LG
       USE HARM, ONLY : ELAV, ELVA, XVELAV, YVELAV, XVELVA, YVELVA,
      &                 NTSTEPS, NHAGE, NHAGV
+      USE MESH, ONLY : NP
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -7668,6 +7519,8 @@ C
       INTEGER kount(2), start(2)
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
+      type(OutputDataDescript_t) :: descript
+      CHARACTER(len=10) :: fext
 C
       call setMessageSource("readNetCDFHotstartHarmonicMeansVariances")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -7683,7 +7536,10 @@ C     Point to the hotstart file we want to work on
 C
       hs%myMesh => adcircMesh
       hs%myFile%fileFound = .false.
-      CALL setNetCDFFileName(lun,hs%myFile)
+      ! create file name
+      ! write(fext,'(i0)') lun
+      !hs%myFile%filename = trim(globaldir) // 
+      !&            '/' // 'fort' // '.' // trim(fext) // '.nc'
 C
 C     Open fulldomain file
       INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
@@ -7788,12 +7644,13 @@ C-----------------------------------------------------------------------
 C     jgf49.48.03 Reads 3D data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstart3D(lun)
-      USE SIZES, ONLY : MNPROC
-      USE GLOBAL, ONLY : OutputDataDescript_t, NP, NP_G, IDEN,
-     &   duu1, duv1, dvv1, uu2, vv2, bsx1, bsy1
+      USE SIZES, ONLY : MNPROC, globaldir
+      USE GLOBAL, ONLY : OutputDataDescript_t, IDEN,
+     &   duu1, duv1, dvv1, uu2, vv2, bsx1, bsy1, NP_G
       USE GLOBAL_3DVS, ONLY : q, iy, nfen, sigt, sal, temp, wz, q20,
      &   l, n3dsd, i3dsdrec, n3dsv, i3dsvrec, n3dst, i3dstrec, n3dgd,
      &   i3dgdrec, n3dgv, i3dgvrec, n3dgt, i3dgtrec
+      USE MESH, ONLY : NP
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI
 #endif
@@ -7810,6 +7667,7 @@ C
       REAL(SZ), ALLOCATABLE :: ip(:,:) ! imag part of Q (subdomain), i.e. v-vel
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
+      CHARACTER(len=10) :: fext
 C
       call setMessageSource("readNetCDFHotstart3D")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -7825,7 +7683,10 @@ C     Point to the hotstart file we want to work on
 C
       hs%myMesh => adcircMesh
       hs%myFile%fileFound = .false.
-      CALL setNetCDFFileName(lun,hs%myFile)
+      ! create file name
+      ! write(fext,'(i0)') lun
+      ! hs%myFile%filename = trim(globaldir) // 
+      !&            '/' // 'fort' // '.' // trim(fext) // '.nc'
 C
 C     Open fulldomain file
       INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
@@ -8090,8 +7951,8 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Defines data that are common to all netCDF files.
 C-----------------------------------------------------------------------
       subroutine defineMeshVariables(ncid, myMesh, myFile)
-      USE GLOBAL, ONLY : RAD2DEG, SLAM0, SFEA0, C3D, AGRID,
-     &                    scratchMessage
+      USE GLOBAL, ONLY : RAD2DEG, C3D, scratchMessage
+      USE MESH, ONLY : SLAM0, SFEA0, AGRID
       USE GLOBAL_3DVS, ONLY : NFEN
       USE SIZES, ONLY : SZ
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
@@ -8456,7 +8317,7 @@ C     either x and y in Cartesian length (feet or meters) or latitude
 C     and longitude depending on the value of ICS.
 C-----------------------------------------------------------------------
       subroutine defineCoordinateAttributes(ncid, xid, yid)
-      USE GLOBAL, ONLY : ICS
+      USE MESH, ONLY : ICS
       IMPLICIT NONE
       INTEGER ncid
       INTEGER xid
@@ -8527,7 +8388,8 @@ C     to the specified file.
 C-----------------------------------------------------------------------
       subroutine putMeshVariables(ncid, myMesh)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : DP, C3D
+      USE MESH, ONLY : DP
+      USE GLOBAL, ONLY : C3D
       USE GLOBAL_3DVS, ONLY : SIGMA
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
       USE VERSION
@@ -8645,13 +8507,14 @@ C     to the specified file.
 C-----------------------------------------------------------------------
       subroutine defineMetaData(ncid)
       USE VERSION
-      USE GLOBAL, ONLY : RUNDES, AGRID, title, institution, source,
+      USE MESH, ONLY : ICS, AGRID, SLAM0, SFEA0
+      USE GLOBAL, ONLY : RUNDES, title, institution, source,
      &                   history, references, comments, host,
      &                   convention, contact, dtdp, ihot,
-     &                   ics, nolifa, nolica, nolicat,
+     &                   nolifa, nolica, nolicat,
      &                   ncor, ntip, nws, nramp, statim,
      &                   reftim, rnday, dramp, a00, b00, c00, h0,
-     &                   cori, ntif, nbfr, RAD2DEG, SLAM0, SFEA0, C3D
+     &                   cori, ntif, nbfr, RAD2DEG, C3D
       USE GLOBAL_3DVS, ONLY : iden, islip, kp, z0s, z0b, theta1, theta2,
      &   ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd,
      &   nvtd, alp4
@@ -9112,19 +8975,20 @@ C-----------------------------------------------------------------------
      &   nfen_p,iden_p, islip_p, kp_p, z0s_p, z0b_p, theta1_p, theta2_p,
      &   ievc_p, evmin_p, evcon_p, alp1_p, alp2_p, alp3_p, igc_p,nlsd_p,
      &   nvsd_p, nltd_p, nvtd_p, alp4_p, C3D_p)
-      USE GLOBAL, ONLY :
-     &   base_date, NE_G, NBOU,
-     &   NVEL, NOPE, NP_G, SLAM0, SFEA0, NBVV, NVDLL, NBDV, NVELL, X, Y,
-     &   IBTYPE, IBTYPEE,
-     &   SLAM, SFEA, SNAMLEN, RAD2DEG, NODECODE, G, FileFmtRev,
+      USE MESH, ONLY : X, Y, SLAM, SFEA, NM, DP, ICS,
+     &   SLAM0, SFEA0, AGRID
+      USE BOUNDARIES, ONLY : NBOU, NVEL, NOPE, NBVV, NVDLL, NBDV, NVELL, 
+     &   IBTYPE, IBTYPEE, NETA
+      USE GLOBAL, ONLY : base_date, SNAMLEN, RAD2DEG, NODECODE, G, 
+     &   FileFmtRev, NP_G, NE_G, 
      &   FileFmtMinor, FileFmtMajor, im, iestp, nscoue, ivstp, nscouv,
      &   icstp, nscouc, ipstp, iwstp, nscoum, igep, nscouge, igvp,
-     &   nscougv, igcp, nscougc, igpp, igwp, nscougw, NM,
-     &   DP, RUNDES, AGRID, title, institution, source, history,
+     &   nscougv, igcp, nscougc, igpp, igwp, nscougw,
+     &   RUNDES, title, institution, source, history,
      &   references, comments, host, convention, contact, dtdp, ihot,
-     &   ics, nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
+     &   nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
      &   reftim, rnday, dramp, a00, b00, c00, h0, cori, ntif, nbfr,
-     &   myProc, screenUnit, neta, nabout, nscreen, C3D
+     &   myProc, screenUnit, nabout, nscreen, C3D
       USE GLOBAL_3DVS, ONLY :
      &   nfen, n3dsd, i3dsdrec, n3dsv, i3dsvrec,
      &   n3dst, i3dstrec, n3dgd, i3dgdrec, n3dgv, i3dgvrec,

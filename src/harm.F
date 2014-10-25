@@ -309,10 +309,10 @@ C                    S U B R O U T I N E
 C     A L L O C A T E   F U L L   D O M A I N   H A   I O   A R R A Y S
 C--------------------------------------------------------------------
 C     jgf49.44: Allocates memory for the full domain arrays for i/o
-C     purposes.
+C     purposes when executing in parallel.
 C--------------------------------------------------------------------
       SUBROUTINE allocateFullDomainHAIOArrays()
-      USE GLOBAL, ONLY : NP_G, NSTAE_G, NSTAV_G
+      USE GLOBAL, ONLY : NSTAE_G, NSTAV_G, NP_G
       IMPLICIT NONE
 C
       call setMessageSource("allocateFullDomainHAIOArrays")
@@ -335,7 +335,6 @@ C
          ALLOCATE(XVELVA_g(NP_G))
          ALLOCATE(YVELVA_g(NP_G))
       ENDIF
-
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -468,7 +467,8 @@ C     Based on HACOLDS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE initHarmonicParameters()
       USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES
-      USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, NP, myProc, MNPROC
+      USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, myProc, MNPROC
+      USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER :: i, j, n           ! loop counters
 C
@@ -570,7 +570,8 @@ C--------------------------------------------------------------------
       SUBROUTINE updateHarmonicAnalysis(it, timeh)
       USE GLOBAL, ONLY : ET00, UU00, VV00, ETA2, UU2, VV2,
      &                   STAIE1, STAIE2, STAIE3, STAIV1, STAIV2, STAIV3,
-     &                   NP, NSTAE, NSTAV, NNE, NNV, NM
+     &                   NSTAE, NSTAV, NNE, NNV
+      USE MESH, ONLY : NP, NM
       IMPLICIT NONE
       INTEGER, intent(in) :: it    ! current ADCIRC timestep
       REAL(8), intent(in) :: timeh ! time (sec) incl. STATIM and REFTIM
@@ -973,7 +974,8 @@ C     stations as specified. Also finishes time series reconstruction
 C     if necessary.
 C--------------------------------------------------------------------
       SUBROUTINE solveHarmonicAnalysis(ITIME)
-      USE GLOBAL, ONLY : NP, STATIM, REFTIM, DTDP, LOCALDIR
+      USE GLOBAL, ONLY : STATIM, REFTIM, DTDP, LOCALDIR
+      USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER, intent(in) :: ITIME
       INTEGER :: I
@@ -1636,9 +1638,10 @@ C     file. Based on HAHOTS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE readBinaryHAHotstart(lun, counter)
       USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
-      USE GLOBAL, ONLY : NP, NP_G, NSTAE, NSTAE_G, NSTAV, NSTAV_G,
-     &                   binaryRead3D, ITHS, NODES_LG, IMAP_STAE_LG,
+      USE GLOBAL, ONLY : NSTAE, NSTAE_G, NSTAV, NSTAV_G,
+     &                   ITHS, IMAP_STAE_LG, NP_G, NODES_LG,
      &                   IMAP_STAV_LG
+      USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER, intent(in) :: lun          ! i/o logical unit number
       INTEGER, intent(inout) :: counter   ! i/o record
@@ -1876,8 +1879,8 @@ C     by comparing with parameters read from the fort.15.
 C     Based on HAHOTS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE checkHAHotstart()
-      USE GLOBAL, ONLY : NP_G, NSTAE_G, NSTAV_G, MYPROC,
-     &                   NSCREEN, SCREENUNIT
+      USE GLOBAL, ONLY : NSTAE_G, NSTAV_G, MYPROC,
+     &                   NSCREEN, SCREENUNIT, NP_G
       IMPLICIT NONE
       INTEGER :: i    ! loop counter
       REAL(SZ) FDIFF  ! difference between frequencies btw hotstart and fort.15
@@ -2077,6 +2080,47 @@ C
 C----------------------------------------------------------------------
       END SUBROUTINE harmonicTerminate
 C----------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      B I N A R Y   R E A D   3 D
+C--------------------------------------------------------------------
+C     jgf49.44: Same as binaryRead2D except it reads data with
+C     both horizontal and vertical lengths. Also used for reading
+C     harmonic analysis arrays from binary hotstart file.
+C--------------------------------------------------------------------
+      SUBROUTINE binaryRead3D(array, iLength, jLength, lun,
+     &                        counter)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG
+      IMPLICIT NONE
+      REAL(SZ), intent(out), dimension(ilength,jlength) :: array ! data to read from the hotstart file
+      INTEGER, intent(in) :: iLength  ! the number of horiz values to read
+      INTEGER, intent(in) :: jLength  ! the number of layers
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+C
+      INTEGER i,j      ! array indices
+C
+      call setMessageSource("binaryRead3D")
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+       DO j=1, jLength
+          DO i=1, iLength
+            READ(lun,REC=counter) array(i,j)
+            counter = counter + 1
+          END DO
+       END DO
+C
+#if defined(HARM_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE binaryRead3D
+C--------------------------------------------------------------------
+
 
 C--------------------------------------------------------------
       END MODULE HARM

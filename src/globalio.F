@@ -9,6 +9,7 @@
       use SIZES
       use VERSION
       use GLOBAL
+      use MESH, ONLY : NP, AGRID
 C      use GLOBAL, ONLY: NP, NODES_LG, IMAP_EL_LG,
 C     &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,
 C     &    BUFSIZE_MAX, buf, resultBuf, float_type, OutputDataDescript_t,
@@ -19,6 +20,42 @@ C     &    COMM, nodecode
 #endif
 #endif
       contains
+
+C--------------------------------------------------------------------
+C                    S U B R O U T I N E
+C     A L L O C A T E   F U L L   D O M A I N   I O   A R R A Y S
+C--------------------------------------------------------------------
+C     jgf49.44: Allocates memory for the full domain arrays for i/o
+C     purposes; these arrays are both read from and written to hotstart
+C     files. Arrays that are only written are allocated in the
+C     subroutine that does the writing.
+C--------------------------------------------------------------------
+      SUBROUTINE allocateFullDomainIOArrays()
+      IMPLICIT NONE
+C
+      call setMessageSource("allocateFullDomainIOArrays")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ALLOCATE(ETA1_g(NP_G))
+      ALLOCATE(ETA2_g(NP_G))
+      ALLOCATE(UU2_g(NP_G))
+      ALLOCATE(VV2_g(NP_G))
+      IF (IM.eq.10) THEN
+         ALLOCATE(CH1_g(NP_G))
+      ENDIF
+      ALLOCATE(EtaDisc_g(NP_G))
+      ALLOCATE(NodeCode_g(NP_G))
+      ALLOCATE(NOFF_g(NE_G))
+      ALLOCATE(NNodeCode_g(NP_G))
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE allocateFullDomainIOArrays
+C--------------------------------------------------------------------
 
       !--------------------------------------------------------------
       !                  S U B R O U T I N E
@@ -219,13 +256,21 @@ C! CMPI
       integer :: i, j, istart, iend, iglobal
       integer :: ioffset
 
+      ! jgf51.21.24: Updated and generalized to take into account wet/dry
+      ! if needed
 #ifdef CMPI
       ioffset = istart - 1
       do i = 1, descript % num_records_this
-        iglobal = descript % imap(i)
-        if (istart <= iglobal .and. iglobal <= iend) then
-          buf(iglobal-ioffset) = descript % array(i)
-        end if
+         iglobal = descript % imap(i)
+         if (istart <= iglobal .and. iglobal <= iend) then
+            buf(iglobal - ioffset ) = descript % array(i) 
+            !jgf51.21.24: Updated and generalized to take into account wet/dry     
+            if ( descript % considerWetDry.eqv..true. ) then
+               if ( nodecode(i).eq.0 ) then
+                  buf(iglobal-ioffset) = descript % alternate_value
+               endif
+            endif
+         endif
       end do
 #endif
 
@@ -776,149 +821,111 @@ C! CMPI
 
 
       !--------------------------------------------------------------
-      !      S U B R O U T I N E
-      !      W R I T E _ G B L _ 6 3 _ S K I P _ D R Y N O D E
+      !      S U B R O U T I N E  W R I T E   S P A R S E
       !--------------------------------------------------------------
-      ! Write Global File Skip Default : sb 11/10/2006
-      !      File writing subroutine for fort.63
-      !      It opens the file.
-      !      On uniproc machines it calls the "write_cmd"
-      !      routine to write the record out.
-      !
-      !      On parallel machine it performs a bucket
-      !      brigade by copying a block of data to proc 0
-      !      which it writes out.
-      !
-      !      The specified default values will not be written
-      !      out.
+      ! jgf51.21.24: Writes sparse ascii format.
       !--------------------------------------------------------------
-
-      subroutine write_gbl_63_skip_drynode
-     &           (lun, filename, descript, TimeLoc, it, write_cmd)
+      subroutine writeSparse(descript, TimeLoc, it, write_cmd)
       USE SIZES
       USE GLOBAL
       implicit none
+      type (OutputDataDescript_t) :: descript
+      real(8), intent(in) :: TimeLoc
+      integer, intent(in) :: it
+      external write_cmd   
 #ifdef CMPI
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-#endif
-
-      external write_cmd
-      integer      :: num, i, j, k
-#ifdef CMPI
       integer      :: ierr, status(MPI_STATUS_SIZE), request
-#endif
-      integer, save:: tagbase = 6000
-      integer      :: lun, iproc
-      integer      :: bufsize, ibucket
-      integer      :: istart, iend, it, tag
-#ifdef CMPI
       integer      :: nLWetNodes, nGWetNodes
       integer      :: iglobal
 #endif
-      real(8)      :: TimeLoc
-      character(*) :: filename
-      type (OutputDataDescript_t) :: descript
+      integer      :: num, i, j, k
+      integer, save:: tagbase = 6000
+      integer      :: iproc
+      integer      :: bufsize, ibucket
+      integer      :: istart, iend, tag
 
-
-      if(descript%num_records_this.ne.np) then
-        stop 'FATAL ERROR: descript%num_records_this.ne.np'
-      endif
-
-#ifndef CMPI
-C     !-----IF CMPI IS NOT DEFINED -----
-      open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-      write(lun, 1100) TimeLoc, it
-
-      call write_cmd(lun, descript, 1, descript % num_records_this)
-      close(lun)
-      return
-
-#else
-C    !-----IF CMPI IS DEFINED -----
-
-      if (WRITE_LOCAL_FILES) then
-        open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-        write(lun, 1100) TimeLoc, it
-        call write_cmd(lun, descript, 1, descript % num_records_this)
-        close(lun)
-
-        return !---THERE IS A RETURN STATEMENT HERE---
-
-      end if
-
-      ! Count the number of wet nodes
-      nLWetNodes = 0
-      do i=1,np
-        iglobal = descript%imap(i)
-        if(iglobal.le.0) cycle ! cycle if node i is ghost
-
-        if(nodecode(i) == 0) cycle ! cycle if node i is dry
-
-        nLWetNodes=nLWetNodes+1
-      enddo
-
-      call mpi_reduce(nLWetNodes, nGWetNodes, 1, MPI_INTEGER,
-     &     MPI_SUM, 0, comm, ierr)
-
-      if (myproc == 0) then
-        open(lun, file=filename, access='SEQUENTIAL', position='APPEND')
-        write(lun, 1101) TimeLoc, it, nGWetNodes, -99999.d0
-      endif
-
-      bufsize = min(BUFSIZE_MAX,
-     &    descript % num_items_per_record * descript % num_fd_records)
-      num     = bufsize / descript % num_items_per_record
-      iend    = num
-      istart  = 1
-
-      if (tagbase == 5000) then
-        tagbase = 6000
+      ! serial or writing local files
+      if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
+         open(descript%lun, file=trim(descript%file_name), 
+     &       access='SEQUENTIAL', position='APPEND')
+         write(descript%lun, 1100) TimeLoc, it
+         call write_cmd(descript % lun, descript, 1, descript % num_records_this)
+         close(descript % lun)
+         return
       else
-        tagbase = 5000
-      endif
-      ibucket = 0
-
-      do while (istart < iend)
-
-        !------------------------------------------------------------
-        ! Initialize
-        !------------------------------------------------------------
-        buf(:)  = descript % initial_value
-        ibucket = ibucket + 1
-        tag     = tagbase + mod(ibucket, 8)
-
-        call write_cmd(lun, descript, istart, iend)
-        call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM, 0,
-     &    COMM, ierr)
-        if (myproc == 0) then
-          do i = istart, iend
-            j = 1 + (i-istart)*descript % num_items_per_record
-
-            !If values are eqaul to the default value, skip this node
-            if(resultBuf(j) == -99999.0) cycle
-
-            write(lun, 1000) i, (resultBuf(k), k = j, j +
-     &        descript % num_items_per_record - 1)
-          end do
-        end if
-
-        istart = iend + 1
-        iend   = min(istart + num - 1, descript % num_fd_records)
-        num    = iend - istart + 1
-      end do
-      if (myproc == 0) then
-        close(lun)
-      endif
+#ifdef CMPI
+      ! Count the number of wet nodes
+         nLWetNodes = 0
+         do i=1,np
+            iglobal = descript%imap(i)
+            if(iglobal.le.0) cycle ! cycle if node i is ghost
+            if(nodecode(i) == 0) cycle ! cycle if node i is dry
+            nLWetNodes=nLWetNodes+1
+         enddo
+         call mpi_reduce(nLWetNodes, nGWetNodes, 1, MPI_INTEGER,
+     &        MPI_SUM, 0, comm, ierr)
+   
+         if (myproc == 0) then
+           open(descript%lun, file=trim(descript%file_name), 
+     &         access='SEQUENTIAL', position='APPEND')
+           write(descript%lun, 1101) TimeLoc, it, nGWetNodes, descript%alternate_value
+         endif
+   
+         bufsize = min(BUFSIZE_MAX,
+     &       descript % num_items_per_record * descript % num_fd_records)
+         num     = bufsize / descript % num_items_per_record
+         iend    = num
+         istart  = 1
+   
+         if (tagbase == 5000) then
+           tagbase = 6000
+         else
+           tagbase = 5000
+         endif
+         ibucket = 0
+   
+         do while (istart < iend)
+   
+           !------------------------------------------------------------
+           ! Initialize
+           !------------------------------------------------------------
+           buf(:)  = descript % initial_value
+           ibucket = ibucket + 1
+           tag     = tagbase + mod(ibucket, 8)
+   
+           call write_cmd(descript%lun, descript, istart, iend)
+           call mpi_reduce(buf, resultBuf, bufsize, float_type, MPI_SUM, 0,
+     &       COMM, ierr)
+           if (myproc == 0) then
+             do i = istart, iend
+               j = 1 + (i-istart)*descript % num_items_per_record
+   
+               !If values are eqaul to the default value, skip this node
+               if(resultBuf(j).eq.descript % alternate_value) cycle
+   
+               write(descript % lun, 1000) i, (resultBuf(k), k = j, j +
+     &           descript % num_items_per_record - 1)
+             end do
+           end if
+   
+           istart = iend + 1
+           iend   = min(istart + num - 1, descript % num_fd_records)
+           num    = iend - istart + 1
+         end do
+         if (myproc == 0) then
+           close(descript%lun)
+         endif
 #endif
-C! CMPI
+      endif
 
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  1100 FORMAT(2x,1pE20.10E3,5X,I10)
  1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)
       !--------------------------------------------------------------
-      end subroutine write_gbl_63_skip_drynode
+      end subroutine writeSparse
       !--------------------------------------------------------------
 
 

@@ -100,7 +100,7 @@ C----------------------------------------------------------------------------
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
      &                  ,WaveWindMultiplier
 #else
-      USE GLOBAL, ONLY : WaveWindMultiplier
+      USE GLOBAL, ONLY : WaveWindMultiplier 
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
      &                  initWindModule
@@ -177,7 +177,9 @@ C     Solver Type:
 ! kmd - added for baroclinic portion of rivers
       LOGICAL BndBCRiver ! .TRUE. if 3D, baroclinc and includes rivers in the simulation
       INTEGER NRIVBCN    ! number of river nodes to be evaluate for salinity and temperature
-
+      INTEGER :: NDISC
+      INTEGER :: skipNETA ! avoid collision with NETA in pre_global module
+      LOGICAL :: fluxBoundary = .false. ! avoid collision with NFLUXF in pre_global module
 ! tcm v51.20.03 additions for station files outside the fort.15
       LOGICAL USE_ELEV_STAT_FILE    !.true. if an elevation station file exists
       LOGICAL USE_VEL_STAT_FILE     !.true. if a velocity station file exists
@@ -202,6 +204,7 @@ C Logicals added for adcprep paths
       !LOGICAL :: PREP_88  ! .true. if user specified --prep88 cmd line option !commented out by tcm v51.27
 
       LOGICAL :: useNetCDF = .false.  !jgf48.07
+      LOGICAL :: useXDMF = .false.    !jgf51.27 trigger metadata read from fort.15
       INTEGER, ALLOCATABLE :: NM(:,:) !jgf48.08
 
 
@@ -213,6 +216,7 @@ C Logicals added for adcprep paths
 #endif
       NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir
       LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in
+      LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       NAMELIST /waveCoupling/ WaveWindMultiplier
 
@@ -231,62 +235,32 @@ C rl  10/10/01                                                                C
 C
 C-----------------------------------------------------------------------------C
 C
-      SUBROUTINE SIZEUP()
+C     jgf51.21.27: Broke the sizeup routine into two pieces, one for 
+C     reading the fort.14 and one for reading the fort.15. This enables
+C     the reading of mesh files in different formats without affecting
+C     the reading of the fort.15 file. 
+      SUBROUTINE SIZEUP14()
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
       INTEGER, ALLOCATABLE :: NNEIGH(:)
-      INTEGER  I,IL,IDUM,N,N1,N2,N3,NDIF1,NDIF2,NDIF3,NETA,NBN,NVEL,
-     &  IK,IBN,NDISC,NBBN,NFLUXB,NFLUXI,NFLUXF,NIBP,IBTYPE,IBN1,IM,NWP,
-     &  NCOR,NTIP,NWS,NRAMP,IREFYR,NTIF,IL1,Il2,NHARF,NHAINC,IDUM2,
-     &  ITITER,ILUMP,IHOT
-     &  , NHSTAR                                                        !for netCDF
-      INTEGER IGC  ! 3DVS vertical grid code
-      INTEGER NFEN ! 3DVS number of nodes in the vertical grid
-      INTEGER NRS
-      INTEGER NCICE !tcm v49.64.01 -- added for ice
-      REAL(8) RSTIMINC,DT,STATIM,REFTIM,WTIMINC
-      REAL(8) CICE_TIMINC !tcm v49.64.01 -- added for ice
-      REAL(SZ) GRAVITY,TAU0,RDUM,A00,B00,C00,THAS,THAF,FMV
-      INTEGER IEVC,I3DSD,I3DSV,I3DST
+      INTEGER  I,IL,IDUM,N,N1,N2,N3,NDIF1,NDIF2,NDIF3,NBN,NVEL,
+     &  IK,IBN,NBBN,NFLUXB,NFLUXI,NIBP,IBTYPE,IBN1,NETA
       CHARACTER*95 LINEI
       CHARACTER*1 CHARI(95)
       EQUIVALENCE (LINEI,CHARI(1))
       LOGICAL FOUND
       CHARACTER*60 GRID,RUNINFO
       CHARACTER(len=80) skipped !jgf46.00 data that we want to skip
-
-c....tcm v50.66.02 additions for time varying bathymetry
-      INTEGER NDDT
-      REAL(8) BTIMINC,BCHGTIMINC
-      INTEGER :: ios_nddt
-      logical :: found_tbc_nml   !flag to determine if the timebathycontrol namelist was present
-      NAMELIST /TimeBathyControl/ nddt,BTIMINC,BCHGTIMINC
       INTEGER :: ios  ! return value of i/o operation
-c...
-c... tcm v50.79 addition for metControl namelist
-      logical :: found_metCon_nml  !flag to determine if the metControl namelist was present
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      LOGICAL :: FOUND_WC_NML
 
-C.... tcm v51.20.04 additions for station location file
-      integer ::  ios_stations
-      integer :: MNSTAE2,MNSTAV2,MNSTAC2,MNSTAM2
+
 
 #ifdef ADCNETCDF
       NETCDF_AVAIL = .true.
 #else
       NETCDF_AVAIL = .false.
 #endif
-
-C    tcm v50.66.02 -- additions for time varying bathymetry
-      NDDT = 0
-      IOS_NDDT = 0
-      FOUND_TBC_NML = .FALSE.
-
-c    tcm v50.79 -- addition for metControl namelist
-      FOUND_metCon_NML = .FALSE.
-
 C
 C...OPEN AND PROCESS THE UNIT 14 ADCIRC GRID FILE TO DETERMINE SIZES
 C
@@ -302,7 +276,7 @@ C
         ENDIF
       ELSE
   31    WRITE(*,*) 'Enter the name of the ADCIRC UNIT 14 (Grid) file:'
-        READ(*,60) GRID
+        READ(*,'(a60)') GRID
         INQUIRE(FILE=trim(GRID),EXIST=FOUND)
         IF(FOUND) THEN
           GOTO 32
@@ -313,10 +287,10 @@ C
   32  WRITE(*,1011) trim(GRID)
       OPEN(14,FILE=trim(GRID))
 
- 33   READ(14,80) LINEI                             !SKIP OVER AGRID
+ 33   READ(14,'(a80)') LINEI                       !SKIP OVER AGRID
       DO I=1,95
          IF(CHARI(I).NE.' ') GOTO 34
-         END DO
+      END DO
       GOTO 33
  34   READ(14,*) MNE,MNP                            !PROCESS MNE,MNP
 C
@@ -362,6 +336,7 @@ C
          ENDDO
       ENDDO
       NETA = MNETA
+      skipNETA = MNETA
       IF(MNOPE.EQ.0) MNOPE=1
       IF(MNETA.EQ.0) MNETA=1
 C
@@ -371,7 +346,7 @@ C
       NFLUXB=0                          !SPECIFIED MAINLAND BARRIER BC
       NIBP=0                            !NO. OF INTERNAL BARRIER BOUNDARY PAIRS
       NFLUXI=0                          !SPECIFIED INTERNAL BARRIER BC
-      NFLUXF=0                          !SPECIFIED FLUX BC
+      fluxBoundary=.false.             !SPECIFIED FLUX BC
 C
       READ(14,*) MNBOU                  !Land Boundary Segments
       READ(14,*) MNVEL                  !Land Boundary Nodes
@@ -388,7 +363,7 @@ C     jgf46.21 Added support for IBTYPE=52.
 ! kmd - continue on with the normal dividing of the land boundaries
          IF((IBTYPE.EQ.2).OR.(IBTYPE.EQ.12).OR.(IBTYPE.EQ.22).OR.
      &        (IBTYPE.EQ.32).OR.(IBTYPE.EQ.52)) THEN
-            NFLUXF=1
+            fluxBoundary = .true.
             NDISC=NDISC+NBN
          ENDIF
          IF((IBTYPE.EQ.3).OR.(IBTYPE.EQ.13).OR.(IBTYPE.EQ.23)) THEN
@@ -432,10 +407,97 @@ C
 C if ONLY partitioning mesh using metis or a prephot
       IF (PARTITION .or. HOT_LOCAL .or. HOT_GLOBAL) THEN
          CLOSE(14)
-         GO TO 9999
+         return
       ELSE
          REWIND(14)         ! performing full prep
       ENDIF
+      !
+      ! jgf51.21.27: This subroutine rewinds unit 14 but leaves the
+      ! file open as it will be read again in read_global.F 
+      ! (subroutine read14)
+      return
+1011  FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
+C-----------------------------------------------------------------------------C      
+      end subroutine sizeup14
+C-----------------------------------------------------------------------------C      
+
+
+
+
+C-----------------------------------------------------------------------------C
+C  SUBROUTINE SIZEUP
+C  Determine sizes of full domain arrays for ADCIRC.                          C
+C                                                                             C
+C  Determine runtime option logicals
+C                                                                             C
+C vjp 12/08/99                                                                C
+C rl  10/10/01                                                                C
+C
+C-----------------------------------------------------------------------------C
+C
+      ! jgf51.21.27: This subroutine was created out of the second half
+      ! of the original sizeup() subroutine to separate the reading of
+      ! the control file from the reading of the mesh file. This 
+      ! enables different subroutines to be called for reading the mesh
+      ! file, depending on the format. 
+      SUBROUTINE SIZEUP15()
+      use memory_usage
+
+      IMPLICIT NONE
+      integer :: nbytes = 0
+      INTEGER  I,IL,IDUM,N,N1,N2,N3,NDIF1,NDIF2,NDIF3,
+     &  IM,NWP,NCOR,NTIP,NWS,NRAMP,IREFYR,NTIF,IL1,Il2,NHARF,NHAINC,IDUM2,
+     &  ITITER,ILUMP,IHOT
+     &  , NHSTAR                                                        !for netCDF
+      INTEGER IGC  ! 3DVS vertical grid code
+      INTEGER NFEN ! 3DVS number of nodes in the vertical grid
+      INTEGER NRS
+      INTEGER NCICE !tcm v49.64.01 -- added for ice
+      REAL(8) RSTIMINC,DT,STATIM,REFTIM,WTIMINC
+      REAL(8) CICE_TIMINC !tcm v49.64.01 -- added for ice
+      REAL(SZ) GRAVITY,TAU0,RDUM,A00,B00,C00,THAS,THAF,FMV
+      INTEGER IEVC,I3DSD,I3DSV,I3DST
+      CHARACTER*95 LINEI
+      CHARACTER*1 CHARI(95)
+      EQUIVALENCE (LINEI,CHARI(1))
+      LOGICAL FOUND
+      CHARACTER*60 GRID,RUNINFO
+      CHARACTER(len=80) skipped !jgf46.00 data that we want to skip
+
+c....tcm v50.66.02 additions for time varying bathymetry
+      INTEGER NDDT
+      REAL(8) BTIMINC,BCHGTIMINC
+      INTEGER :: ios_nddt
+      logical :: found_tbc_nml   !flag to determine if the timebathycontrol namelist was present
+      NAMELIST /TimeBathyControl/ nddt,BTIMINC,BCHGTIMINC
+      INTEGER :: ios  ! return value of i/o operation
+c...
+c... tcm v50.79 addition for metControl namelist
+      logical :: found_metCon_nml  !flag to determine if the metControl namelist was present
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+      LOGICAL :: FOUND_WC_NML
+C.... tcm v51.20.04 additions for station location file
+      integer ::  ios_stations
+      integer :: MNSTAE2,MNSTAV2,MNSTAC2,MNSTAM2
+
+#ifdef ADCNETCDF
+      NETCDF_AVAIL = .true.
+#else
+      NETCDF_AVAIL = .false.
+#endif
+#ifdef ADCXDMF
+      XDMF_AVAIL = .true.
+#else
+      XDMF_AVAIL = .false.
+#endif
+C
+C     tcm v50.66.02 -- additions for time varying bathymetry
+      NDDT = 0
+      IOS_NDDT = 0
+      FOUND_TBC_NML = .FALSE.
+C
+C     tcm v50.79 -- addition for metControl namelist
+      FOUND_metCon_NML = .FALSE.
 C
 C...OPEN AND PROCESS THE UNIT 15 ADCIRC EXTERNAL MODE (2DDI)
 C...HORIZONTAL RUN INFORMATION FILE
@@ -549,7 +611,7 @@ C
  23   READ(15,80) LINEI                             !SKIP OVER RUNDES
       DO I=1,95
          IF(CHARI(I).NE.' ') GOTO 24
-         END DO
+      END DO
       GOTO 23
  24   READ(15,80) LINEI                             !SKIP OVER RUNID
       DO I=1,95
@@ -769,64 +831,66 @@ C.... tcm v49.64.01 additions for ice
       ENDIF
 
       DO IL=1,2                                    !SKIP OVER RNDAY,DRAMP
-        READ(15,*) RDUM
-        ENDDO
+         READ(15,*) RDUM
+      ENDDO
       READ(15,*) A00,B00,C00                       !READ IN GWCE TIME WEIGHTING COEFFS
       DO IL=1,5                                    !SKIP OVER H0 - CORI
-        READ(15,*) RDUM
-        ENDDO
+         READ(15,*) RDUM
+      ENDDO
       READ(15,*) NTIF                              !PROCESS NTIF
       DO IL=1,NTIF                                 !SKIP OVER TIPOTAG & TPK, AMIGT,etc.
- 26     READ(15,80) LINEI
-        DO I=1,95
-          IF(CHARI(I).NE.' ') GOTO 27
-          ENDDO
-        GOTO 26
+ 26      READ(15,80) LINEI
+         DO I=1,95
+            IF(CHARI(I).NE.' ') GOTO 27
+         ENDDO
+         GOTO 26
  27     READ(15,*) RDUM
-        ENDDO
+      ENDDO
       MNTIF=NTIF
       IF(NTIF.EQ.0) MNTIF=1
       READ(15,*) MNBFR                             !PROCESS MNBFR
       DO IL=1,MNBFR                                !SKIP OVER BOUNTAG, & AMIG, FF,etc.
- 28     READ(15,80) LINEI
-        DO I=1,95
-          IF(CHARI(I).NE.' ') GOTO 29
-          ENDDO
-        GOTO 28
- 29     READ(15,*) RDUM
-        ENDDO
+ 28      READ(15,80) LINEI
+         DO I=1,95
+            IF(CHARI(I).NE.' ') GOTO 29
+         ENDDO
+         GOTO 28
+ 29      READ(15,*) RDUM
+
+      ENDDO
       DO IL1=1,MNBFR
- 40     READ(15,80) LINEI                          !SKIP OVER ALPHA
-        DO I=1,95
-          IF(CHARI(I).NE.' ') GOTO 41
-          END DO
-        GOTO 40
- 41     DO IL2=1,NETA
-          READ(15,*) RDUM                          !SKIP OVER BOUNDARY FORCINGS
-          ENDDO
-        ENDDO
+ 40      READ(15,80) LINEI                          !SKIP OVER ALPHA
+         DO I=1,95
+            IF(CHARI(I).NE.' ') GOTO 41
+         END DO
+         GOTO 40
+ 41      DO IL2=1,skipNETA
+            READ(15,*) RDUM                          !SKIP OVER BOUNDARY FORCINGS
+         ENDDO
+      ENDDO
       IF(MNBFR.EQ.0) MNBFR=1
       READ(15,*)  RDUM                             !SKIP OVER ANGIN
       MNFFR=0
-      IF(NFLUXF.EQ.1) READ(15,*) MNFFR             !# FREQ IN NORMAL FLUX B.C.
+      IF (fluxBoundary.eqv..true.) READ(15,*) MNFFR   !# FREQ IN NORMAL FLUX B.C.
+
       DO IL=1,MNFFR                                !SKIP OVER BOUNTAG, & AMIG, FF,etc.
- 42     READ(15,80) LINEI
-        DO I=1,95
-          IF(CHARI(I).NE.' ') GOTO 43
-          ENDDO
-        GOTO 42
- 43     READ(15,*) RDUM
-        ENDDO
+ 42      READ(15,80) LINEI
+         DO I=1,95
+            IF(CHARI(I).NE.' ') GOTO 43
+         ENDDO
+         GOTO 42
+ 43      READ(15,*) RDUM
+      ENDDO
       DO IL1=1,MNFFR
- 44     READ(15,80) LINEI                          !SKIP OVER ALPHA
-        DO I=1,95
-          IF(CHARI(I).NE.' ') GOTO 45
-          ENDDO
-        GOTO 44
- 45     DO IL2=1,NDISC
-          READ(15,*) RDUM                          !SKIP OVER BOUNDARY FORCINGS
-          ENDDO
-        ENDDO
+ 44      READ(15,80) LINEI                          !SKIP OVER ALPHA
+         DO I=1,95
+            IF(CHARI(I).NE.' ') GOTO 45
+         ENDDO
+         GOTO 44
+ 45      DO IL2=1,NDISC
+            READ(15,*) RDUM                          !SKIP OVER BOUNDARY FORCINGS
+         ENDDO
+      ENDDO
       IF((MNFFR.EQ.0).OR.(MNFFR.EQ.-1)) MNFFR=1
 C
 C..... ELEVATION STATIONS
@@ -834,7 +898,8 @@ C
       MNSTAE=0
       MNSTAE2=0
       READ(15,*)  IDUM                              !SKIP OVER NOUTE, TOUTSE...
-      IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
+      call setFormatUsage(idum)
+
       READ(15,*) MNSTAE                             !PROCESS MNSTAE
       ! tcm v51.20.03 -- added negative mnstae to signal use of external station file elev_stat.151 
       if (MNSTAE < 0) then
@@ -866,7 +931,8 @@ C
       MNSTAV=0
       MNSTAV2=0
       READ(15,*) IDUM                               !SKIP OVER NOUTV, TOUTSV...
-      IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
+      call setFormatUsage(idum)
+
       READ(15,*) MNSTAV                             !PROCESS MNSTAV
       ! tcm v51.20.03 -- added negative mnstav to signal use of external station file vel_stat.151
       if (MNSTAV < 0 ) then
@@ -899,7 +965,8 @@ C
       MNSTAC2=0
       IF(IM.EQ.10) THEN
          READ(15,*) IDUM                            !SKIP OVER NOUTC, TOUTSC...
-         IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
+         call setFormatUsage(idum)
+
          READ(15,*) MNSTAC                          !PROCESS MNSTAC
          !tcm v51.20.03 -- added negative mnstac to signal use of external station file conc_stat.151
          if (MNSTAC < 0) then
@@ -933,7 +1000,8 @@ C
       MNSTAM2=0
       IF(NWS.NE.0) THEN
         READ(15,*) IDUM                           !SKIP OVER NOUTM, TOUTSM...
-        IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
+        call setFormatUsage(idum)
+
         READ(15,*) MNSTAM                         !PROCESS MNSTAM
         !tcm v51.20.03 -- added negative mnstam to signal use of external station file met_stat.151
         if (MNSTAM < 0 ) then
@@ -963,16 +1031,18 @@ C
       IF(MNSTAM.EQ.0) MNSTAM=1
 C
       READ(15,*) IDUM                            !SKIP OVER NOUTGE, TOUTSGE...
-      IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
+      call setFormatUsage(idum)
+
       READ(15,*) IDUM                            !SKIP OVER NOUTGV, TOUTSGV...
-      IF ((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5)) useNetCDF = .true.
-      IF (IM.EQ.10) READ(15,*) IDUM               !SKIP OVER NOUTGC, TOUTSGC...
-      IF ((IM.EQ.10).AND.((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5))) THEN
-         useNetCDF = .true.
+      call setFormatUsage(idum)
+      
+      IF (IM.EQ.10) THEN 
+         READ(15,*) IDUM               !SKIP OVER NOUTGC, TOUTSGC...
+         call setFormatUsage(idum)
       ENDIF
-      IF (NWS.NE.0) READ(15,*) IDUM               !SKIP OVER NOUTGW, TOUTSGW...
-      IF ((NWS.NE.0).AND.((ABS(IDUM).EQ.3).OR.(ABS(IDUM).EQ.5))) THEN
-         useNetCDF = .true.
+      IF (NWS.NE.0) THEN
+         READ(15,*) IDUM               !SKIP OVER NOUTGW, TOUTSGW...
+         call setFormatUsage(idum)
       ENDIF
       READ(15,*) NHARF                           !PROCESS MNHARF
       DO IL1=1,NHARF
@@ -994,10 +1064,16 @@ C
      &    .OR.(ABS(NHSTAR).EQ.568) ) THEN
           useNetCDF = .true.                          !for netCDF
       ENDIF
-      IF ( (useNetCDF).AND.(.NOT.(NETCDF_AVAIL)) ) THEN
+      IF ( (useNetCDF.eqv..true.).AND.(NETCDF_AVAIL.eqv..false.) ) THEN
          WRITE(*,*)'ERROR: NetCDF input or output files were specified.'
          WRITE(*,*) 'but adcprep was not compiled with NetCDF support.'
          WRITE(*,*) 'Please recompile adcprep with NetCDF libraries.'
+         STOP
+      ENDIF
+      IF ( (useXDMF.eqv..true.).AND.(XDMF_AVAIL.eqv..false.) ) THEN
+         WRITE(*,*)'ERROR: XDMF output files were specified.'
+         WRITE(*,*) 'but adcprep was not compiled with XDMF support.'
+         WRITE(*,*) 'Please recompile adcprep with XDMF libraries.'
          STOP
       ENDIF
 C
@@ -1198,8 +1274,38 @@ C
 1011  FORMAT(' File ',A60,/,' WAS FOUND!  Opening & Processing file',/)
 C
 C
-9999  CONTINUE
       RETURN
-      END SUBROUTINE SIZEUP
+      !-----------------------------------------------------------------
+      END SUBROUTINE SIZEUP15
+      !-----------------------------------------------------------------
 
+
+      !-----------------------------------------------------------------
+      !  S U B R O U T I N E   S E T   F O R M A T   U S A G E
+      !-----------------------------------------------------------------
+      ! If netCDF or XDMF file formats are used, the reading of extra
+      ! metadata from the fort.15 file is triggered. 
+      !-----------------------------------------------------------------
+      subroutine setFormatUsage(idum)
+      use global, only : NETCDF3, NETCDF4, XDMF
+      implicit none
+      integer, intent(in) :: idum
+      
+         select case(abs(idum))
+         case(NETCDF3,NETCDF4)
+            useNetCDF = .true.
+         case(XDMF)
+            useXDMF = .true.
+         case default
+            ! don't trigger the reading of metadata in fort.15
+         end select
+
+      !-----------------------------------------------------------------
+      end subroutine setFormatUsage
+      !-----------------------------------------------------------------
+
+
+      !-----------------------------------------------------------------
+      !-----------------------------------------------------------------
       END MODULE PRESIZES
+      !-----------------------------------------------------------------      !-----------------------------------------------------------------

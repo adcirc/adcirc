@@ -179,9 +179,8 @@ C
 C     ----------------------------------------------------------------
       REAL(SZ) FUNCTION WindDrag(WindSpeed, NodeNumber)
       !Casey 110518: Added variables for Mark Powell's sector-based wind drag.
-      USE GLOBAL, ONLY: DEG2RAD,
-     &                  SFEA,
-     &                  SLAM
+      USE GLOBAL, ONLY: DEG2RAD
+      USE MESH, ONLY : SFEA, SLAM
       REAL(SZ) WindSpeed
       ! jgf50.32: Even if present, NodeNumber is ignored by Garratt formulation
       INTEGER,OPTIONAL :: NodeNumber
@@ -3499,7 +3498,9 @@ C         f. sequential hwind snapshots will not be evenly spaced in time
 C         g. hwind data do not contain barometric pressure information
 C***********************************************************************
       subroutine NWS15GET(wvnx, wvny, press, timeloc)
-      use global, only : slam, sfea, mb2pa, np, dp, m2nm, nm2m, mnp
+      use sizes, only : mnp
+      use global, only : mb2pa, m2nm, nm2m
+      use mesh, only : slam, sfea, np, dp
       implicit none
       real(sz), intent(out) :: wvnx(:)  ! wind u-velocity (m/s)
       real(sz), intent(out) :: wvny(:)  ! wind v-velocity (m/s)
@@ -3897,7 +3898,7 @@ C     space and time onto an adcirc mesh.
 C
 C     ----------------------------------------------------------------
       subroutine hWindInterpolateVelocity(wvnx, wvny, cn, rv, tw)
-      use global, only : np
+      use mesh, only : np
       implicit none
       real(sz), intent(out) :: wvnx(:) ! wind u-velocity
       real(sz), intent(out) :: wvny(:) ! wind v-velocity
@@ -3994,12 +3995,13 @@ C
 
        subroutine init_gfdl(timeloc)
        use sizes, only : globaldir, sz
-       use global, only : ihot, nws, nabout, openFileForRead,np,x,y,
+       use global, only : ihot, nws, nabout, openFileForRead,
      &                setMessageSource,unsetMessageSource,allMessage,
      &                logMessage,scratchMessage,DEBUG,ECHO,INFO,
      &                ERROR,WARNING,PRBCKGRND,RHOWAT0,G,
-     &                slam0,sfea0,wvnx1,wvny1,prn1,wvnx2,wvny2,prn2
-       implicit none
+     &                wvnx1,wvny1,prn1,wvnx2,wvny2,prn2
+      use mesh, only : np, x, y, slam0, sfea0
+      implicit none
 
       real(sz), intent(in) :: timeloc ! adcirc time in seconds since coldstart
 C
@@ -4239,7 +4241,8 @@ C
      &                     ADC_X,ADC_Y,FNAME,SLAM0,SFEA0,
      &                     MAX_INTERP_DIST)
        USE SIZES
-       USE GLOBAL, ONLY : DEG2RAD,PRBCKGRND,G,RHOWAT0, CPP,
+       USE MESH, ONLY : CPP
+       USE GLOBAL, ONLY : DEG2RAD,PRBCKGRND,G,RHOWAT0,
      &        setMessageSource,unsetMessageSource,allMessage,
      &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR
        USE KDTREE2_MODULE     ! USED FOR FAST SEARCHING
@@ -4468,8 +4471,8 @@ C********************************************************************
 C ---------------------------------------------------------------------
 C
       subroutine nws16get(timeloc,wvnx,wvny,press)
-      use global, only : slam0,sfea0,x,y,np,
-     &        setMessageSource,unsetMessageSource,allMessage,
+      use mesh, only : x,y,np,slam0,sfea0
+      use global, only : setMessageSource,unsetMessageSource,allMessage,
      &        logMessage,scratchMessage,DEBUG,ECHO,INFO,ERROR,
      &        WARNING,PRBCKGRND,RHOWAT0,G
 

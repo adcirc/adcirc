@@ -12,12 +12,15 @@ C******************************************************************************
 C
       SUBROUTINE COLDSTART()
 C
+      USE SIZES
       USE GLOBAL
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT
-      USE SIZES
+      USE MESH, ONLY : NE, NP, X, Y, SLAM, SFEA, ICS, DP, NM, MJU, AID4
+      USE BOUNDARIES, ONLY : NETA, NFLUXF, NOPE, NVEL, LBCODEI
       USE HARM
       USE WIND
       USE GLOBAL_IO
+
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE OWIWIND,ONLY : NWS12INIT,NWS12GET    ! sb added 09/xx/2006
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
@@ -1408,18 +1411,22 @@ c******************************************************************************
 
       SUBROUTINE COLDSTART_3D()
       USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, GLOBALDIR
+      USE WRITE_OUTPUT, ONLY : initOutput3D
       USE GLOBAL_3DVS
       USE GLOBAL, ONLY : BCFLAG_TEMP, RES_BC_FLAG, BCFLAG_LNM,
      &                   RBCTIME1, BCSTATIM, RBCTIME2,
-     &                   RBCTIMEINC, NBD, SBCTIME1,
+     &                   RBCTIMEINC, SBCTIME1,
      &                   SBCTIME2, SBCSTATIM, TTBCTIME1,
      &                   TTBCTIME2, TBCSTATIM, SBCTIMEINC,
      &                   TBCTIMEINC, TTBCTIMEINC, TTBCSTATIM,
-     &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2, NP_G,
+     &                   TBCTIME1, TBCTIME2, q_heat1, q_heat2, 
      &                   LNM_BC, LNM_BC1, LNM_BC2, RIVBCTIMINC,
-     &                   RIVBCTIME1, RIVBCTIME2, totalbcrivernodes,
-     &                   NOPE, RIVBCSTATIM, DEBUG, setMessageSource,
-     &                   unsetMessageSource, allMessage
+     &                   RIVBCTIME1, RIVBCTIME2, 
+     &                   RIVBCSTATIM, DEBUG, setMessageSource,
+     &                   unsetMessageSource, allMessage, NP_G
+      USE MESH, ONLY : NP, AGRID
+      USE BOUNDARIES, ONLY : NETA, NOPE, NBD,
+     &  totalbcrivernodes, bndbcriver
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       IMPLICIT NONE
 

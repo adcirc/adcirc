@@ -1,24 +1,24 @@
 ##############################################################################
-# IA32_PGF:		Intel Pentium with Linux using Portland Group compiler
-# Note: -lpgc is required for OpenMP.
+# IA32_GNU:		Intel Pentium with Linux using GNU compiler gfortran.
 ##############################################################################
-F90_SER = ifort
-F90_OMP = ifort
+F90_SER = gfortran
+F90_OMP = gfortran
 F90_MPI = mpif90
-FLAGS_OPT =
-FLAGS_MSC = 
-FLAGS_SER = -fast
-FLAGS_OMP = -mp
-FLAGS_MPI = -xT -axT
+FLAGS_OPT = -O
+FLAGS_MSC = -w -fno-second-underscore -ffree-line-length-none
+FLAGS90_MSC = $(FLAGS_MSC) -ffree-line-length-none
+FLAGS_SER =
+FLAGS_OMP = -fopenmp
+FLAGS_MPI =
 INCS_SER =
 INCS_OMP =
 INCS_MPI =
 LIBS_SER =
-LIBS_OMP = -lpgc
-LIBS_MPI = 
+LIBS_OMP = -static-libgcc
+LIBS_MPI =
 O_DIR = ../work/odir4/
 OUT = -o 
 EXTO = o
 MAKE = make
 RM = rm -f
-swch = -unix -impi
+swch = -unix

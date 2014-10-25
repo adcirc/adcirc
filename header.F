@@ -1,7 +1,165 @@
-C******************************************************************************
-C           This file contains a log of changes made to (P)ADCIRC.            *
-C                                                                             *
-C  mod history                                                                *
+C***********************************************************************
+C           This file contains a log of changes made to (P)ADCIRC.      
+C                                                                       
+C  mod history                                                          
+C  v51.35    - 10/25/2014 - jgf - Merged all xdmf2 developments (v51.21.xx)
+C              to trunk.
+C  v51.21.42 - 10/24/2014 - jgf - Merged latest fix from trunk v51.34:
+C    v51.34    - 10/07/2014 - tcm - Removed two debugging write statement that
+C                were inadvertently left in hstart.F related to maxele hot
+C                starting.
+C  v51.21.41 - 10/16/2014 - jgf - Continuing to fix issues discovered in
+C              automated testing with ASGS: fixed issues related to constructing
+C              file names when using dedicated writer processors to write
+C              netcdf files; fixed log messages created by dedicated writer
+C              processors so the messages will go into the subdomain 
+C              fort.16 files associated with those processors; added 
+C              capability for the code to echo the command line that was
+C              used to execute it to document the associated command line
+C              options (e.g., the number of writer processors).  
+C  v51.21.40 - 10/13/2014 - jgf - Fixed issue with dedicated writers when
+C              there are many writers: the writers_write signal was not 
+C              being honored unless all writers had received some data.
+C  v51.21.39 - 10/10/2014 - jgf - Fixed issue in adcprep for generation
+C              of netcdf hotstart files containing harmonic analysis
+C              info for means and variances calculations. 
+C  v51.21.38 - 10/03/2014 - jgf - Fixes related to merge: prevented 
+C              netcdf files from being initialized twice in parallel (once
+C              in adcprep and once in padcirc --- now only in adcprep); 
+C              fixed issue where fort.90.nc was not being initialized in
+C              adcprep.
+C  v51.21.37 - 10/02/2014 - jgf - Improvements to makefile statements that
+C              record the compiler flags that were used to compile each
+C              executable; fixes that allow fort.90 (tau0 output) file to
+C              be written in netcdf if the fort.63 was set to write in netcdf;
+C              fixes for adcprep to repair the setup of netcdf files (was 
+C              broken by the merge of the trunk and branch but is now fixed).
+C  v51.21.36 - 09/29/2014 - jgf - Fixes from functional testing: fixed
+C              initialization of netcdf min/max files.
+C  v51.21.35 - 09/26/2014 - jgf - Fixes uncovered during functional testing:
+C              fixed memory allocation for time of max variable in min/max
+C              output files; fixed naming of netcdf files including min/max
+C              netcdf files; added code to makefile to record the actual 
+C              compiler flags to a file for later use in determining e.g.
+C              whether the code was compiled with debugging turned on. 
+C  v51.21.34 - 09/24/2014 - jgf - Fixes to merged and updated branch for
+C              compiling without XDMF support.
+C  v51.21.33 - 09/23/2014 - jgf - Merging changes that have been made 
+C              in the trunk from v51.21 (trunk revision 936) to the 
+C              latest trunk v51.33 (trunk revision 1016) into this 
+C              xdmf2 branch.
+C  v51.21.32 - 03/25/2014 - jgf - Added control.F and xdmfio.F to version 
+C              control, since they were overlooked in previous commits.
+C  v51.21.31 - 03/25/2014 - jgf - Fixes resulting from compliance testing.
+C  v51.21.30 - 03/21/2014 - jgf - Fixes from testing and preparations for
+C              merging back to trunk.
+C  v51.21.29 - 03/14/2014 - jgf - Fixes to dedicated writer code for 
+C              initializing and writing XDMF output files. 
+C  v51.21.28 - 03/13/2014 - jgf - Refactored XDMF output routines into their
+C              own module so they can be called from write_output.F as well as
+C              writer.F for use with dedicated writers. 
+C  v51.21.27 - 03/13/2014 - jgf - Updated adcirc2xdmf to convert only a
+C              limited range of datasets if desired; significantly refactored
+C              and simplified the dedicated writer code in writer.F for 
+C              reliability and expandability; modified adcprep to enable it
+C              to read mesh data in a variety of formats. 
+C  v51.21.26 - 03/05/2014 - jgf - Had to rearrange some variables between
+C              mesh module and messenger module to avoid circular dependencies;
+C              updated makefile so that all executables build and link
+C              properly; updated couple2swan module to reflect the changes
+C              (improvements) in the write_output module. 
+C  v51.21.25 - 02/24/2014 - jgf - Made corrections to nodal attribute 
+C              conversion utilities xdmf2adcirc and adcirc2xdmf; completed
+C              merge of xdmf nodal attribute reading routines into adcirc.
+C  v51.21.24 - 02/23/2014 - jgf - Significant enhancements to write_output.F,
+C              including promoting it to a module; completed merge of XDMF
+C              output capabilities into write_output.F; merge of nodal 
+C              attributes XDMF capabilities into nodalattr.F in process. 
+C  v51.21.23 - 02/20/2014 - jgf - Placed mesh and boundaries modules in their
+C              own source files and updated makefile accordingly. Builds and
+C              runs successfully.
+C  v51.21.22 - 02/20/2014 - jgf - ADCIRC successfully reads and runs with 
+C              an XDMF formatted mesh as well as a conventional ADCIRC ascii
+C              mesh.  
+C  v51.21.21 - 02/19/2014 - jgf - All adcirc2xdmf and xdmf2adcirc tests pass.
+C  v51.21.20 - 02/19/2014 - jgf - Added spatial grid collection for visualizing
+C              levee boundaries.
+C  v51.21.19 - 02/17/2014 - jgf - Refactored adcmesh.f90 code so that memory 
+C              allocation for mesh data and boundaries is performed using a 
+C              single set of subroutines, regardless of the file format of 
+C              the mesh data (ascii, xdmf or other). 
+C  v51.21.18 - 02/16/2014 - jgf - The xdmf2adcirc utility now successfully reads
+C              the attributes of internal barrier boundaries and internal 
+C              barrier boundaries with cross barrier pipes correctly. 
+C  v51.21.17 - 02/14/2014 - jgf - The xdmf2adcirc utility now writes the mesh 
+C              and boundaries to the ascii adcirc fort.14 file correctly.
+C  v51.21.16 - 02/12/2014 - jgf - Fixed data types for writing boundary data to
+C              XDMF; added code for reading mesh and boundaries from XDMF for
+C              use in xdmf2adcirc utility as well as reading data into ADCIRC
+C              and adcprep.
+C  v51.21.15 - 02/07/2014 - jgf - Additional progress on xdmf2adcirc utility;
+C              added makefile for utility compilation.
+C  v51.21.14 - 02/06/2014 - jgf - Added control.f90 for reading and writing
+C              control file (fort.15) as metadata (or for any other purpose);
+C              added code for reading and writing nodal attribute data to/from
+C              xdmf; added beginnings of code to read XDMF data for
+C              xdmf2adcirc.f90 utility. 
+C  v51.21.13 - 01/27/2014 - jgf - Tested and subsequently slightly rearranged
+C              memory allocation and the initialization of the node table,
+C              element table, and boundaries for self consistency; verified
+C              that the refactored code runs properly and gives the right
+C              answers in serial.  
+C  v51.21.12 - 01/24/2014 - jgf - Propagated the changes in the mesh and
+C              boundary modules throughout the code; checked to make sure
+C              that the code compiles and links successfully. 
+C  v51.21.11 - 01/23/2014 - jgf - Refactored all remaining mesh related
+C              and boundary related data and subroutines from the global 
+C              module into the new mesh and boundary modules; wrote a new
+C              subroutine for readin ascii fort.14 file sans initialization;
+C              created stub subroutine for reading mesh file in XDMF format;
+C              added support for specifying the name and file format of 
+C              and ADCIRC mesh file through command line options; moved
+C              mesh-related and boundary related initialization to separate
+C              subroutine that can be used regardless of the original file
+C              format of the mesh data. This refactoring paves the way for 
+C              expansion and diversification in the way ADCIRC reads mesh 
+C              data, e.g., it is now much easier to support the reading
+C              of mesh files in NetCDF format, or the reading of files
+C              originally developed for use with other unstructured coastal
+C              ocean models.  
+C  v51.21.10 - 01/03/2014 - jgf - Refactored the arrays nneigh, neitab,
+C              neitabele, mju, nodele, areas, totalarea, nodes_lg, and
+C              imap_el_lg out of the global module and into the new mesh 
+C              module along with the variables slam0 and sfea0 and the 
+C              subroutines allocmain1b, neighb, and invcp; created a new 
+C              subroutine totalAreaCalc() to encapsulate the calculation 
+C              of total area around each node from code previously located 
+C              in adcirc_init(); added code for new boundaries module. 
+C  v51.21.09 - 01/02/2014 - jgf - Refactored the variables ne, np, ne_g,
+C              np_g, nm, x, y, slam, sfea, dp, and ics as well as the 
+C              associated memory allocation and the cpp subroutine into
+C              the new mesh module. 
+C  v51.21.08 - 12/26/2013 - jgf - Added new mesh module, currently placed
+C              in global.F source file, for holding data and subroutines
+C              related to ADCIRC mesh.
+C  v51.21.07 - 12/22/2013 - jgf - Finished testing code to write control 
+C              metadata to XDMF xml file.
+C  v51.21.06 - 12/21/2013 - jgf - Finished code for writing fort.15 control
+C              metadata to XDMF xml file.
+C  v51.21.05 - 12/19/2013 - jgf - Finished testing and fixing code for 
+C              reading ascii fort.15 for use in construction of metadata.
+C  v51.21.04 - 12/18/2013 - jgf - Finished code for reading ascii fort.15
+C              for use in xml metadata; added code for writing ascii fort.15
+C              for use in troubleshooting as well as conversion from xdmf
+C              to adcirc ascii format.
+C  v51.21.03 - 12/13/2013 - jgf - Added variables and initial code to read 
+C              fort.15 file for use in creating metadata for xml file. 
+C  v51.21.02 - 12/13/2013 - jgf - Added grid collection to hold a time series
+C              of output data; refactored the storage of boundaries to its own
+C              subroutine; added code to save variable-specific metadata to
+C              xml files. 
+C  v51.21.01 - 12/11/2013 - jgf - Added adcirc2xdmf.f90 code to util subdir.
+C
 C    v51.34    - 10/07/2014 - tcm - Removed two debugging write statement that
 C                were inadvertently left in hstart.F related to maxele hot
 C                starting.

@@ -13,7 +13,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=g95
 #compiler=intel
 #compiler=intel-ND
-compiler=intel-lonestar
+#compiler=intel-lonestar
 #compiler=cray_xt3
 #compiler=cray_xt4
 #compiler=cray_xt5
@@ -688,10 +688,17 @@ endif
 #
 # gfortran
 ifeq ($(compiler),gfortran)
+  ifeq ($(MACHINENAME),jason-desktop)
+     XDMFPATH    := /home/jason/projects/XDMF/Code/latestCode
+     XDMFLIBPATH := /home/jason/projects/XDMF/Code/testLatest
+  endif
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90
   FFLAGS1	:=  $(INCDIRS) -O2 -ffixed-line-length-none 
+  ifeq ($(PROFILE),enable)
+    FFLAGS1	:=  $(INCDIRS) -pg -O0 -fprofile-arcs -ftest-coverage -ffixed-line-length-none 
+  endif
   ifeq ($(DEBUG),full)
     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,underflow,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
   endif
@@ -709,12 +716,12 @@ ifeq ($(compiler),gfortran)
   ifeq ($(SWAN),enable)
      DPRE               :=  -DREAL8 -DLINUX -DADCSWAN
   endif
-  FLIBS         :=
+  FLIBS         := 
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),jason-desktop)
         NETCDFHOME := /usr
      endif
-     FLIBS      := -lnetcdff # must specify this on the cmd line for some reason for gfortran
+     FLIBS      := $(FLIBS) -lnetcdff 
   endif
   IMODS 	:=  -I
   CC		:= gcc
@@ -724,7 +731,6 @@ ifeq ($(compiler),gfortran)
      CFLAGS     := $(INCDIRS) -g -O0 -DLINUX
   endif
   CLIBS	:=
-  FLIBS		:=
   MSGLIBS	:=
   $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
   ifneq ($(FOUND),TRUE)

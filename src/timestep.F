@@ -88,6 +88,13 @@ C
 C
       USE SIZES, ONLY : SZ
       USE GLOBAL
+      USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart
+      USE MESH, ONLY : NE, NP, DP, NM, X, Y, SLAM, SFEA, ICS, TotalArea,
+     &                  MJU, Areas, SFAC
+      USE BOUNDARIES, ONLY : NOPE, NETA, NBOU, NVEL, LBCODEI, NBV, SIII,
+     &    NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, NFLUXIBP, NFLUXRBC, CSII,
+     &    BARLANHT, BARLANCFSP, NVELL, IBCONN, BARINHT, BARINCFSP,
+     &    BARINCFSB, PIPEHT, PIPECOEF, PIPEDIAM
       USE GLOBAL_IO
       USE HARM, ONLY : updateHarmonicAnalysis
       USE WIND
@@ -3178,7 +3185,7 @@ C
 C...
 C...  WRITE OUTPUT
 C...
-      CALL WRITE_OUTPUT_2D (IT,TimeLoc) ! =>see write_output.F
+      CALL writeOutput2D(IT,TimeLoc) ! =>see write_output.F
 C
 C
 C     jgf49.44: If harmonic analysis was requested and the current time
@@ -3468,8 +3475,12 @@ C******************************************************************************
 
       SUBROUTINE GWCE_New(IT,TimeLoc,TimeH)
 C
-      USE GLOBAL
       USE SIZES
+      USE GLOBAL
+      USE MESH, ONLY : NE, NP, NM, X, Y, DP, NNeigh, NeiTab, TotalArea,
+     &                  Areas, NEIMAX, SFAC
+      USE BOUNDARIES, ONLY : NETA, NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, 
+     &   NFLUXRBC, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3 
       USE WIND
       USE ITPACKV
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
@@ -3616,8 +3627,6 @@ Casey 091022: Adopt Ethan's/Joannes's modified friction.
 #endif
             CALL CalculateTimeVaryingTau0(TK, NNeigh, NeiTab, NP)
          ENDIF
-
-
 
          !jgf48.4619: Added Seizo's handling of Lumping vs non-Lumping
          IF ( ILump.eq.0 ) THEN ! default case: fully consistent LHS
@@ -4625,6 +4634,10 @@ C*******************************************************************************
 C
       USE GLOBAL
       USE WIND
+      USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, MJU, 
+     &                  NEITAB, NEITABELE, NNEIGH, SFAC
+      USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
+     &   CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState
 #ifdef CSWAN
 #ifdef CSWANFRIC
@@ -5260,6 +5273,10 @@ C*******************************************************************************
 C
       USE GLOBAL
       USE WIND
+      USE MESH, ONLY : NE, NP, NM, DP, X, Y, Areas, TotalArea, 
+     &                  NNeigh, NeiTab, NeiTabEle, MJU, SFAC
+      USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
+     &    CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3                 
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState
 #ifdef CSWAN
 #ifdef CSWANFRIC
@@ -5979,6 +5996,10 @@ C*******************************************************************************
       SUBROUTINE Mom_Eqs_New_Conserv()
 C
       USE GLOBAL
+      USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
+     &                  NEITAB, NEITABELE, NNEIGH, SFAC 
+      USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI, 
+     &   CSII, SIII, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE WIND
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState
 #ifdef CSWAN
@@ -6737,8 +6758,12 @@ C*******************************************************************************
 
       SUBROUTINE GWCE_new_pc(IT,TimeLoc,TimeH)
 C
-      USE GLOBAL
       USE SIZES
+      USE GLOBAL
+      USE MESH, ONLY : NE, NP, NM, DP, X, Y, TotalArea, Areas, NeiTab,
+     &                  NNEIGH, SFAC
+      USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXGBC, NFLUXRBC,
+     &   NFLUXIB, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3
       USE WIND
       USE ITPACKV
       USE NodalAttributes, ONLY : FRIC, Tau0Var, HBREAK, FTHETA, FGAMMA,
@@ -7707,6 +7732,10 @@ C*******************************************************************************
       SUBROUTINE Mom_Eqs_Non_Conserv_pc()
 C
       USE GLOBAL
+      USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, TotalArea, MJU,
+     &                  NEITAB, NEITABELE, NNEIGH, SFAC
+      USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
+     &   CSII, SIII, ME2GW, NBV, LBCODEI, NEleZNG, ZNGIF1, ZNGIF2, ZNGIF3
       USE WIND
       USE NodalAttributes, ONLY: EVM,LoadAdvectionState
 
@@ -8410,6 +8439,7 @@ C
       SUBROUTINE SCALAR_TRANS_2D (IT,TimeLoc)
 
       USE GLOBAL
+      USE MESH, ONLY : NE, NP, NM, DP, X, Y, AREAS, SFAC
       USE NodalAttributes, ONLY: EVC
 #ifdef CMPI
       USE MESSENGER
@@ -8781,11 +8811,13 @@ c******************************************************************************
 Casey: Added the following variable declarations from GLOBAL.
 C
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY: IFNLFA, IFNLCT, NODELE, NM,
-     &      NEITABELE, NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
-     &      SFAC, setMessageSource, unsetMessageSource, allMessage,
+      USE GLOBAL, ONLY: IFNLFA, IFNLCT,
+     &      NODECODE, NOFF, VIDBCPDXOH, VIDBCPDYOH,
+     &      setMessageSource, unsetMessageSource, allMessage,
      &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
-     &      DP, ETA2, NEITAB, NNEIGH, AREAS, X, Y, NP, SIGT0
+     &      ETA2, SIGT0
+      USE MESH, ONLY : NM, X, Y, NP, DP, AREAS, NODELE, 
+     &      NEITABELE, NEITAB, NNEIGH, SFAC
       USE GLOBAL_3DVS, ONLY : BCP, BPG, NFEN, SIGT, SIGMA, IDEN,
      &      GORhoOAMB, AMB, B, IY
 #ifdef CMPI
@@ -9185,6 +9217,7 @@ C*************************************************************************
 
       USE SIZES, ONLY : SZ
       USE GLOBAL
+      USE MESH, ONLY : NM, DP
       USE NodalAttributes, ONLY : AdvectionState
 
       Implicit None

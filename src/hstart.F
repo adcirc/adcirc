@@ -23,7 +23,7 @@ C  v40.02m002 - 12/22 - jjw/vjp - Vic suggested to avoid compiler conflicts   *
 C  v40.02m001 - 12/21 - jjw - add cross barrier pipes cjjwm001                *
 C                                                                             *
 C******************************************************************************
-C
+
       SUBROUTINE HOTSTART()
 C
 C**************************************************************************
@@ -33,6 +33,11 @@ C
 C**************************************************************************
 C
       USE GLOBAL
+      USE MESH, ONLY : DP, ICS, X, Y, SLAM, SFEA, AID4
+      USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXIB, NFLUXIBP,
+     &    NOPE, NVEL, BndBCRiver, LBCODEI, NBV, BARLANHT, BARLANCFSP,
+     &    IBCONN, BARINHT, BARINCFSP, BARINCFSB, PIPEHT, PIPECOEF,
+     &    PIPEDIAM
       USE GLOBAL_IO
       USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT,
      &    qsurf, NFEN, DUU, DUV, DVV, UU, VV, BSX, BSY, Q, WZ, q20, l,
@@ -72,6 +77,15 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
                   include 'mpif.h'
 #endif
 #endif
+      interface
+         SUBROUTINE binaryRead2D(array, length, lun, counter)
+         USE SIZES, ONLY : SZ
+         REAL(SZ), intent(out) :: array(:) ! the data to read from the hotstart file
+         INTEGER, intent(in) :: length  ! the number of values to read
+         INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+         INTEGER, intent(inout) :: counter ! i/o position in the file
+         end subroutine
+      end interface
       INTEGER IT
       INTEGER I, J, NH, N              !local loop counters
       INTEGER NCyc, NA, InputFileFmtVn
@@ -153,6 +167,7 @@ C     kmd -- Added variables for initial conditions
 
       INTEGER :: moderbin ! determines whether in binary or real
       INTEGER :: ncHundreds ! hundreds place of IHOT, used for netcdf hs file
+
 
       call setMessageSource("hotstart")
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
@@ -3524,7 +3539,10 @@ c******************************************************************************
 
       SUBROUTINE HOTSTART_3D(TimeLoc,ITHS)
       USE GLOBAL_3DVS
-
+      USE MESH, ONLY : NP, AGRID
+      USE WRITE_OUTPUT, ONLY : initOutput3D
+      USE BOUNDARIES, ONLY : NOPE, NETA, NBD, totalbcrivernodes, 
+     &   BndBCRiver 
 C   kmd48.33bc - variable information needed from the global.F file
 ! kmd - added variables for river information
       USE GLOBAL, ONLY : RES_BC_FLAG, RBCTIME1, RBCTIME2,
@@ -3539,13 +3557,10 @@ C   kmd48.33bc - variable information needed from the global.F file
      &                   q_heat1, q_heat2, HFLUX, TTBCRATIO,
      &                   setMessageSource, unsetMessageSource,
      &                   DEBUG, ECHO, INFO, WARNING, ERROR, 
-     &                   NP_G, allMessage, screenMessage,
-     &                   NBD, RIVBCTIMINC, RIVBCTIME1,RIVBCTIME2,
-     &                   totalbcrivernodes, BCRivRATIO, NOPE,
-     &                   RIVBCSTATIM
-
+     &                   allMessage, screenMessage,
+     &                   RIVBCTIMINC, RIVBCTIME1,RIVBCTIME2,
+     &                   BCRivRATIO, RIVBCSTATIM, NP_G     
       IMPLICIT NONE
-
       INTEGER :: IRType                  !number of fields in output file
       INTEGER :: NH, N                   !horizontal & vertical loop counters
 !      REAL(SZ) :: RealPartOfQ
@@ -4163,3 +4178,508 @@ C----------------------------------------------------------------------
       END SUBROUTINE calcTS
 C----------------------------------------------------------------------
 
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      B I N A R Y   R E A D   2 D
+C--------------------------------------------------------------------
+C     jgf49.44: Reads a real(sz) array with the specified length
+C     from a binary hotstart file; takes the file counter as an
+C     input argument and returns the new value of the file counter
+C     at the end of the read. Its called "2D" even though it reads
+C     a 1D fortran array because the array represents a 2D physical
+C     quantity in an unstructured mesh.
+C--------------------------------------------------------------------
+      SUBROUTINE binaryRead2D(array, length, lun, counter)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG
+      IMPLICIT NONE
+      INTEGER, intent(in) :: length
+      REAL(SZ), intent(out) :: array(length) ! the data to read from the hotstart file
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+C
+      INTEGER i      ! array index
+C
+      call setMessageSource("binaryRead2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+       DO i=1, length
+          READ(lun,REC=counter) array(i)
+          counter = counter + 1
+       END DO
+C
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE binaryRead2D
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      R E A L   R E A D   2 D
+C--------------------------------------------------------------------
+C     kmd: Reads a real(sz) array with the specified length
+C     from an initial condition file in ascii format; it has the
+C     same format as the binary version but does not require the
+C     file counter.
+C--------------------------------------------------------------------
+      SUBROUTINE realRead2D(array, length, lun )
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG
+      IMPLICIT NONE
+      REAL(SZ), intent(out), dimension(length) :: array ! the data to read from the hotstart file
+      INTEGER, intent(in) :: length  ! the number of values to read
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+C
+      INTEGER i      ! array index
+C
+      call setMessageSource("realRead2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+       DO i=1, length
+          READ(lun,*) array(i)
+       END DO
+C
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE realRead2D
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      B I N A R Y   I N T   R E A D   2 D
+C--------------------------------------------------------------------
+C     jgf49.44: Same as binaryRead2D except it reads an integer.
+C--------------------------------------------------------------------
+      SUBROUTINE binaryIntRead2D(array, length, lun, counter)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG
+      IMPLICIT NONE
+      INTEGER, intent(out), dimension(length) :: array ! the data to read from the hotstart file
+      INTEGER, intent(in) :: length  ! the number of values to read
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+C
+      INTEGER i      ! array index
+C
+      call setMessageSource("binaryIntRead2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+C
+       DO i=1, length
+          READ(lun,REC=counter) array(i)
+          counter = counter + 1
+       END DO
+C
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE binaryIntRead2D
+C--------------------------------------------------------------------
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      R E A L   I N T   R E A D   2 D
+C--------------------------------------------------------------------
+C     kmd: Same as realRead2D except it reads an integer.
+C--------------------------------------------------------------------
+      SUBROUTINE realIntRead2D(array, length, lun)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG
+      IMPLICIT NONE
+      INTEGER, intent(out), dimension(length) :: array ! the data to read from the hotstart file
+      INTEGER, intent(in) :: length  ! the number of values to read
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+C
+      INTEGER i      ! array index
+C
+      call setMessageSource("realIntRead2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+C
+       DO i=1, length
+          READ(lun,*) array(i)
+       END DO
+C
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE realIntRead2D
+C--------------------------------------------------------------------
+
+
+C--------------------------------------------------------------------
+C     S U B R O U T I N E      R E A L   R E A D   3 D
+C--------------------------------------------------------------------
+C     kmd: Same as realRead2D except it reads data with
+C     both horizontal and vertical lengths.
+C--------------------------------------------------------------------
+      SUBROUTINE realRead3D(array, iLength, jLength, lun)
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG
+      IMPLICIT NONE
+      REAL(SZ), intent(out), dimension(ilength,jlength) :: array ! data to read from the hotstart file
+      INTEGER, intent(in) :: iLength  ! the number of horiz values to read
+      INTEGER, intent(in) :: jLength  ! the number of layers
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+C
+      INTEGER i,j      ! array indices
+C
+      call setMessageSource("realRead3D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+       DO j=1, jLength
+          DO i=1, iLength
+            READ(lun,*) array(i,j)
+          END DO
+       END DO
+C
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C--------------------------------------------------------------------
+      END SUBROUTINE realRead3D
+C--------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C            R E A D  A N D  M A P  T O  S U B D O M A I N  2 D
+C-----------------------------------------------------------------------
+C     jgf49.48.04 Reads a fulldomain array in binary format and maps
+C     to a subdomain array.
+C     kmd: Updated to include a real format option
+C-----------------------------------------------------------------------
+      subroutine readAndMapToSubdomain2D(sd_array, lun, counter, method)
+      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
+      USE GLOBAL, ONLY : ERROR, setMessageSource, allMessage,
+     &                    unsetMessageSource, DEBUG, NP_G, NODES_LG
+      USE MESH, ONLY : NP
+      IMPLICIT NONE
+C
+      REAL(SZ), intent(out), dimension(np) :: sd_array ! subdomain array
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+      INTEGER, intent(in) :: method  ! logical to determine binary or real
+      INTEGER :: sd_node_number
+      INTEGER :: fd_node_number
+C
+      REAL(SZ), allocatable, dimension(:) :: fd_array ! full domain array
+C
+      call setMessageSource("readAndMapToSubdomain2D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! serial
+      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+         IF (method.EQ.1) THEN
+            CALL binaryRead2D(sd_array, NP, lun, counter)
+         ELSE IF (method.EQ.2) THEN
+            CALL realRead2D(sd_array, NP, lun)
+         ELSE
+            call allMessage(ERROR,
+     &          "Passing of binary or real information incorrect")
+            STOP
+         END IF
+      ! parallel
+      ELSE
+         IF (method.EQ.1) THEN
+            allocate(fd_array(NP_G))
+            CALL binaryRead2D(fd_array, NP_G, lun, counter)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+         ELSE IF (method.EQ.2) THEN
+            allocate(fd_array(NP_G))
+            CALL realRead2D(fd_array, NP_G, lun)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ENDIF
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readAndMapToSubdomain2D
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C            R E A D  A N D  M A P  T O  S U B D O M A I N  I N T  2 D
+C-----------------------------------------------------------------------
+C     jgf49.48.04 Reads a fulldomain array in binary format and maps
+C     to a subdomain array.
+C     kmd: Updated to include real format option
+C-----------------------------------------------------------------------
+      subroutine readAndMapToSubdomainInt2D(sd_array, lun, counter, method)
+      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG, NP_G, NODES_LG
+      USE MESH, ONLY : NP
+      IMPLICIT NONE
+C
+      INTEGER, intent(out), dimension(np) :: sd_array ! subdomain array
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+      INTEGER, intent(in) :: method ! logical to determine binary or real
+      INTEGER :: sd_node_number
+      INTEGER :: fd_node_number
+C
+      INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
+C
+      call setMessageSource("readAndMapToSubdomainInt2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! serial
+      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+         IF (method.EQ.1) THEN
+           CALL binaryIntRead2D(sd_array, NP, lun, counter)
+         ELSE IF (method.EQ.2) THEN
+           CALL realIntRead2D(sd_array, NP, lun)
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ! parallel
+      ELSE
+         IF (method.EQ.1) THEN
+            allocate(fd_array(NP_G))
+            CALL binaryIntRead2D(fd_array, NP_G, lun, counter)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+         ELSE IF (method.EQ.2) THEN
+            allocate(fd_array(NP_G))
+            CALL realIntRead2D(fd_array, NP_G, lun)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ENDIF
+C
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readAndMapToSubdomainInt2D
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C            R E A D  A N D  M A P  E L E
+C                 T O  S U B D O M A I N  I N T  2 D
+C-----------------------------------------------------------------------
+C     jgf49.48.04 Reads a fulldomain array in binary format and maps
+C     to a subdomain array (for elemental mappings as opposed to node
+C     mapping).
+C     kmd : Updated to include a real format option
+C-----------------------------------------------------------------------
+      subroutine readAndMapEleToSubdomainInt2D(sd_array, lun, counter,method)
+      USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG, NE_G, IMAP_EL_LG
+      USE MESH, ONLY : NE
+      IMPLICIT NONE
+C
+      INTEGER, intent(out), dimension(ne) :: sd_array ! subdomain array
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+      INTEGER, intent(in) :: method ! logical to determine binary or real
+      INTEGER :: sd_ele_number
+      INTEGER :: fd_ele_number
+C
+      INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
+C
+      call setMessageSource("readAndMapEleToSubdomainInt2D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! serial
+      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+         IF (method.EQ.1) THEN
+            CALL binaryIntRead2D(sd_array, NE, lun, counter)
+         ELSE IF (method.EQ.2) THEN
+            CALL realIntRead2D(sd_array, NE, lun)
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ! parallel
+      ELSE
+         IF (method.EQ.1) THEN
+            allocate(fd_array(NE_G))
+            CALL binaryIntRead2D(fd_array, NE_G, lun, counter)
+            ! loop over subdomain nodes
+            DO sd_ele_number=1,ne
+               ! get the corresponding fulldomain ele number
+               fd_ele_number = ABS(IMAP_EL_LG(sd_ele_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_ele_number) = fd_array(fd_ele_number)
+            END DO
+            deallocate(fd_array)
+         ELSE IF (method.EQ.2) THEN
+            allocate(fd_array(NE_G))
+            CALL realIntRead2D(fd_array, NE_G, lun)
+            ! loop over subdomain nodes
+            DO sd_ele_number=1,ne
+               ! get the corresponding fulldomain ele number
+               fd_ele_number = ABS(IMAP_EL_LG(sd_ele_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_ele_number) = fd_array(fd_ele_number)
+            END DO
+            deallocate(fd_array)
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ENDIF
+C
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readAndMapEleToSubdomainInt2D
+C-----------------------------------------------------------------------
+
+
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C            R E A D  A N D  M A P  T O  S U B D O M A I N  3 D
+C-----------------------------------------------------------------------
+C     jgf49.48.04 Reads a fulldomain array in binary format and maps
+C     to a subdomain array.
+C     kmd : Updated to include a real format option
+C-----------------------------------------------------------------------
+      subroutine readAndMapToSubdomain3D(sd_array, nfen, lun, counter,method)
+      USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, 
+     &                    allMessage, DEBUG, NP_G, NODES_LG
+      USE MESH, ONLY : NP
+      USE HARM, ONLY : binaryRead3D
+      IMPLICIT NONE
+C
+      REAL(SZ), intent(out), dimension(np,nfen) :: sd_array ! subdomain array
+      INTEGER, intent(in) :: nfen    ! number of vertical layers
+      INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+      INTEGER, intent(inout) :: counter ! i/o position in the file
+      INTEGER, intent(in) :: method ! logical to determine binary or real
+      INTEGER :: sd_node_number
+      INTEGER :: fd_node_number
+C
+      REAL(SZ), allocatable, dimension(:,:) :: fd_array ! full domain array
+C
+      call setMessageSource("readAndMapToSubdomain3D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      ! serial
+      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
+         IF (method.EQ.1) THEN
+            CALL binaryRead3D(sd_array, NP, NFEN, lun, counter)
+         ELSE IF (method.EQ.2) THEN
+            CALL realRead3D(sd_array, NP, NFEN, lun)
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ! parallel
+      ELSE
+         IF (method.EQ.1) THEN
+            allocate(fd_array(NP_G,NFEN))
+            CALL binaryRead3D(fd_array, NP_G, NFEN, lun, counter)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number,:) = fd_array(fd_node_number,:)
+            END DO
+            deallocate(fd_array)
+         ELSE IF (method.EQ.2) THEN
+            allocate(fd_array(NP_G,NFEN))
+            CALL realRead3D(fd_array, NP_G, NFEN, lun)
+            ! loop over subdomain nodes
+            DO sd_node_number=1,np
+               ! get the corresponding fulldomain node number
+               fd_node_number = ABS(NODES_LG(sd_node_number))
+               ! fill in the subdomain arrays with the corresponding
+               ! fulldomain values
+               sd_array(sd_node_number,:) = fd_array(fd_node_number,:)
+            END DO
+            deallocate(fd_array)
+         ELSE
+            WRITE(16,*) "Passing of binary or real
+     &         information incorrect"
+            STOP
+         END IF
+      ENDIF
+C
+
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      END SUBROUTINE readAndMapToSubdomain3D
+C-----------------------------------------------------------------------

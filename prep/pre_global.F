@@ -99,7 +99,7 @@ C     PARM15  section
       INTEGER,ALLOCATABLE ::   NNSEG(:),NNSVG(:),NNSCG(:),NNSMG(:)
 C
 C     jgf46.00 Nodal attributes section.
-      CHARACTER(len=80), ALLOCATABLE :: NodalAttributes(:) ! labels
+      CHARACTER(len=80), ALLOCATABLE :: useNodalAttrNames(:) ! labels
 C
 C     STRING15 section
 C
