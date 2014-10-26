@@ -15,6 +15,7 @@ C******************************************************************************
 C 
       MODULE RS2
       USE SIZES
+
       USE GLOBAL,ONLY : NSCREEN, ScreenUnit
 #ifdef CMPI
       use messenger, only : msg_fini
@@ -400,7 +401,8 @@ C***********************************************************************
 
       subroutine rs2init_type2(rsnx,rsny,np)
       use sizes
-      use global,only : slam,sfea,rad2deg
+      use global,only : rad2deg
+      use mesh, only : slam, sfea
       implicit none
       integer,intent(in) :: np
       real(sz),intent(out) :: rsnx(:),rsny(:)

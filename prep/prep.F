@@ -508,21 +508,18 @@ C     OPENING TOO MANY FILES ON CERTAIN PLATFORMS. THIS NUMBER CAN BE
 C     CONTROLLED BY THE PARAMETER MAXOPENFILES.
 C
 C---------------------------------------------------------------------------
-      SUBROUTINE PREP13()
+      subroutine prep13()
 C---------------------------------------------------------------------------
-      USE PRE_GLOBAL
+      use pre_global, only : useNodalAttrNames, nnodg, nnodp, nproc
       use memory_usage
+      use nodalattributes
       IMPLICIT NONE
 C
       integer :: nbytes = 0
-      INTEGER i              ! node loop counter
-      INTEGER k              ! attribute loop counter
       INTEGER ll             ! line loop counter
       INTEGER m              ! attribute default value counter
       INTEGER iproc          ! subdomain loop counter
       INTEGER sdu(nproc)     ! subdomain unit number for unit 13 files
-      INTEGER NumOfNodes     ! must match the no. of nodes in grid (unit 14)
-      INTEGER NAttr          ! number of nodal attributes in the file
       INTEGER NumNotDefault  ! number of nodes specified in the file
       CHARACTER(len=80) header   ! header comments in unit 13 files
       CHARACTER(len=80) AttrName ! label for attribute
@@ -608,7 +605,7 @@ C        nodes in each SubDomain for each nodal attribute
 C        We need to figure out how many nodes go into each subdomain
 C        for each attribute.
          CALL processNodalAttr(NAttr, 0, sdu, SDNumND,
-     &      startProc, endProc)
+     &      startProc, endProc, naType)
 C
 C     Now rewind and advance to the beginning of the data again
          REWIND(13)
@@ -624,7 +621,7 @@ C
 C        Now read each of the nodal attributes and transcribe them to the
 C        appropriate subdomain.
          CALL processNodalAttr(NAttr, 1, sdu, SDNumND,
-     &      startProc, endProc)
+     &      startProc, endProc, naType)
          DEALLOCATE(SDNumND)
          nbytes = 8*nproc*nattr
          call memory_dealloc(nbytes)
@@ -637,8 +634,8 @@ C        Close full domain and subdomain files
          startProc = endProc + 1
       END DO
 C
-      if (allocated(NodalAttributes)) then
-         DEALLOCATE(NodalAttributes)
+      if (allocated(useNodalAttrNames)) then
+         DEALLOCATE(useNodalAttrNames)
          nbytes = 4*nwp
          call memory_dealloc(nbytes)
       endif
@@ -664,10 +661,12 @@ C     this information cannot be known until we have processed the
 C     entire fulldomain file.
 C
 C     ----------------------------------------------------------------
-      SUBROUTINE ProcessNodalAttr(NAttr, mode, sdu, SDNumND,
-     &   startProc, endProc)
-      USE PRE_GLOBAL
-      IMPLICIT NONE
+      subroutine processNodalAttr(NAttr, mode, sdu, SDNumND,
+     &   startProc, endProc, naType)
+      use pre_global
+      use sizes, only : ASCII, XDMF
+      use nodalattributes, only : na
+      implicit none
 C
       INTEGER,intent(in) :: NAttr  ! number of attributes in the file
       INTEGER,intent(in) :: Mode   !=0 to count and return, =1 to write
@@ -675,6 +674,7 @@ C
       INTEGER,intent(inout),dimension(nproc,NAttr) :: SDNumND
       INTEGER,intent(in) :: startProc
       INTEGER,intent(in) :: endProc
+      INTEGER,intent(in) :: naType ! ascii and xdmf are supported
       INTEGER NumNotDefault      ! number of nodes specified in the file
       INTEGER NumCol             ! number of values per node for an attr
       INTEGER NodeNum            ! full domain node number
@@ -687,10 +687,20 @@ C
       INTEGER iproc2             ! mapped subdomain
       CHARACTER(len=80) AttrName ! label for attribute
       REAL(SZ), ALLOCATABLE :: AttrData(:)  ! attribute data
+
       CHARACTER(len=80) Skipped  ! data we want to skip over
 C
       DO k=1, NAttr
-         READ(13,*) AttrName
+         select case(naType)
+         case(ASCII)
+            read(13,*) AttrName
+         case(XDMF)
+            attrName = trim(adjustl(na(k)%attrName))
+         case default
+            write(6,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
+     &         ' is not supported by adcprep.'
+           stop
+         end select
          IF (Mode.eq.1) THEN
             DO iproc=startProc,endProc
                WRITE(sdu(iproc),'(A80)') AttrName
@@ -748,15 +758,34 @@ Corbitt 120328: Allow local advection as a nodal attribute.
                WRITE(6,1031) AttrName ! Process 1st column only
             ENDIF
          END SELECT
-         ALLOCATE(AttrData(NumCol))
-         READ(13,*) NumNotDefault
+         ALLOCATE(attrData(numCol))
+         select case(naType) 
+         case(ASCII)
+            read(13,*) numNotDefault
+         case(XDMF)
+            numNotDefault = na(k) % numNodesNotDefault
+         case default
+            write(6,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
+     &         ' is not supported by adcprep.'
+           stop
+         end select
          IF (Mode.eq.1) THEN
             DO iproc=startProc,endProc
                WRITE(sdu(iproc),*) SDNumND(iproc,k)
             END DO
          ENDIF
          DO i=1, NumNotDefault
-            READ(13,*) NodeNum, (AttrData(j),j=1,NumCol)
+            select case(naType)
+            case(ASCII)
+               READ(13,*) nodeNum, (AttrData(j),j=1,NumCol)
+            case(XDMF)
+               nodeNum = na(k) % nonDefaultNodes(i)
+               attrData(:) = na(k) % nonDefaultVals(:,nodeNum)
+            case default
+               write(6,'(a,i0,a)') 'ERROR: Nodal attribute file format ',naType,
+     &         ' is not supported by adcprep.'
+               stop
+            end select
             IF (ITOTPROC(NodeNum).eq.1) THEN
                iproc = IMAP_NOD_GL(1,NodeNum)
                IF ( (iproc.lt.startProc) .or. (iproc.gt.endProc) ) THEN
@@ -802,6 +831,158 @@ C
 C     ----------------------------------------------------------------
       END SUBROUTINE ProcessNodalAttr
 C     ----------------------------------------------------------------
+
+
+C---------------------------------------------------------------------------
+      subroutine prep13XDMF()
+C---------------------------------------------------------------------------
+      use pre_global, only : useNodalAttrNames, nnodg, nnodp, nproc
+      use memory_usage
+      use nodalattributes
+      use sizes, only : naFileName
+      implicit none
+
+      integer :: nbytes = 0
+      integer :: iproc          ! subdomain loop counter
+      integer :: sdu(nproc)     ! subdomain unit number for unit 13 files
+      integer :: Mode           !=0 to count, =1 to write
+      logical :: success        ! .true. if all files opened successfully
+      character(len=15) sdFileName     ! subdomain file name   !increased from 14 to 15 tcm v50.66.03
+      integer, allocatable :: SDNumND(:,:)  ! subdomain # of nodes not default
+C     jgf48.47 Do the decomposition for a max of 256 subdomains at a
+C     time ... some platforms/compilers limit the number of files that
+C     can be open at any one time.
+      integer, parameter :: maxOpenFiles = 256
+      integer :: startProc
+      integer :: endProc
+      integer :: deltaProc 
+      integer :: errorIO
+      real(sz), allocatable :: diff(:) ! difference between nodal value and default value
+      logical, allocatable :: areDefaultValues(:)
+      integer :: nonDefaultCount
+C
+      call readNodalAttrXDMF()
+      !
+      ! we need to compute the number of nondefault values and 
+      ! create a list of nodes with nondefault values
+      do i=1,nAttr
+         if (na(i)%numVals.eq.1) then
+            ! machine precision prevents us from simply checking whether the 
+            ! value .ne. the default value
+            diff = abs(na(i)%xdmfArray - na(i)%defaultVals(1))
+            na(i)%numNodesNotDefault = count(diff.gt.1.e-6)        
+            ! now allocate space for the non default values and populate them
+            allocate(na(i)%nonDefaultVals(1,na(i)%numNodesNotDefault))
+            allocate(na(i)%nonDefaultNodes(na(i)%numNodesNotDefault))
+            ! now record the node number and value where the values are not
+            ! the default
+            nonDefaultCount = 1
+            do j=1,nnodg
+               if (diff(j).gt.1.e-6) then
+                  na(i)%nonDefaultNodes(nonDefaultCount) = j
+                  na(i)%nonDefaultVals(1,nonDefaultCount) = na(i)%xdmfArray(j)
+                  nonDefaultCount = nonDefaultCount + 1
+               endif
+            end do
+         else
+            ! determine the number of nondefault values
+            areDefaultValues = .true.
+            do j=1,nnodg
+               do k=1,na(i)%numVals
+                  if (abs(na(i)%xdmfMatrix(k,j)-na(i)%defaultVals(k)).gt.1.e-6) then
+                     areDefaultValues(j) = .false.
+                  endif
+               enddo
+            enddo
+            ! now allocate space for the non default values and populate them
+            na(i)%numNodesNotDefault = count(areDefaultValues.eqv..false.) 
+            allocate(na(i)%nonDefaultVals(na(i)%numVals,na(i)%numNodesNotDefault))
+            allocate(na(i)%nonDefaultNodes(na(i)%numNodesNotDefault))
+            nonDefaultCount = 1
+            do j=1,nnodg
+               if (areDefaultValues(j).eqv..false.) then
+                  na(i)%nonDefaultNodes(nonDefaultCount) = j
+                  do k=1,na(i)%numVals
+                     na(i)%nonDefaultVals(k,nonDefaultCount) = 
+     &                   na(i)%xdmfMatrix(k,j)
+                  end do
+                  nonDefaultCount = nonDefaultCount + 1
+               endif
+            end do 
+         endif
+      end do
+C
+C     Perform decomposition over range of subdomains.
+      startProc = 1
+      do while ( startProc .lt. nproc )
+         deltaProc = nproc - startProc
+         if ( deltaProc .gt. maxOpenFiles ) deltaProc = maxOpenFiles
+         endProc = startProc + deltaProc
+         ! Open each of the subdomain files
+         do iproc = startProc, endProc
+            sdu(iproc) = 105 + (iproc-1)
+            sdFileName = 'PE0000/fort.13'
+            call iwrite(sdFileName, 3, 6, iproc-1)
+            open(unit=sdu(iproc), file=sdFileName, iostat=ErrorIO)
+            Success = .true.
+            IF ( ErrorIO .GT. 0 ) THEN
+               write(6,'(a,a,a)') "ERROR: Subdomain file " 
+     &             // trim(sdFileName) // " cannot be opened."
+               Success = .false.
+               stop
+            endif
+         enddo
+C
+C        Transcribe header information into subdomain unit 13 files
+         do iproc = startProc, endProc
+            write(sdu(iproc),'(a)') trim(adjustl(nodalAttributesComment))
+            write(sdu(iproc),*) NNODP(iproc)
+            write(sdu(iproc),*) NAttr
+            do i=1,nAttr
+               write(sdu(iproc),'(a)') trim(adjustl(na(i)%attrName))
+               write(sdu(iproc),'(a)') trim(adjustl(na(i)%units))
+               write(sdu(iproc),'(99(i0))') na(i)%numVals
+               write(sdu(iproc),'(99(F15.7))') (na(i)%defaultVals(j), j=1,na(i)%numVals)
+            end do
+         end do
+C
+C        Allocate and initialize the matrix for the number of Non Default
+C        nodes in each SubDomain for each nodal attribute
+         ALLOCATE(SDNumND(nproc,nAttr))
+         nbytes = 8*nproc*nattr
+         call memory_alloc(nbytes)
+         SDNumND(:,:)=0
+C        We need to figure out how many nodes go into each subdomain
+C        for each attribute.
+         CALL processNodalAttr(NAttr, 0, sdu, SDNumND,
+     &      startProc, endProc, naType)
+C
+C        Now read each of the nodal attributes and transcribe them to the
+C        appropriate subdomain.
+         CALL processNodalAttr(NAttr, 1, sdu, SDNumND,
+     &      startProc, endProc, naType)
+         DEALLOCATE(SDNumND)
+         nbytes = 8*nproc*nattr
+         call memory_dealloc(nbytes)
+C
+C        Close subdomain files
+         DO iproc=startProc, endProc
+            CLOSE(sdu(iproc))
+         ENDDO
+         startProc = endProc + 1
+      END DO
+C
+      if (allocated(useNodalAttrNames)) then
+         DEALLOCATE(useNodalAttrNames)
+         nbytes = 4*nwp
+         call memory_dealloc(nbytes)
+      endif
+C
+      call memory_status()
+C---------------------------------------------------------------------------
+      end subroutine prep13XDMF
+C---------------------------------------------------------------------------
+
 
 
       SUBROUTINE PREP14()
@@ -1254,7 +1435,7 @@ C
          WRITE(15,80) NWPMSG
          IF (NWP.gt.0) THEN !jgf46.00 write nodal attributes
             DO I=1, NWP
-               WRITE(15,80) NodalAttributes(I)
+               WRITE(15,80) useNodalAttrNames(I)
             ENDDO
          ENDIF
          WRITE(15,80) NCORMSG
@@ -6452,7 +6633,6 @@ C---------------------------------------------------------------------------
      &    initNetCDFHotstartHarmonic,
      &    initNetCDFHotstartHarmonicMeansVariances,
      &    freeNetCDFCoord
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc
 #ifdef ADCSWAN
       USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc,
      &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
@@ -6472,6 +6652,7 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: ElevStaDescript    ! fort.61
       type(OutputDataDescript_t), SAVE :: VelStaDescript     ! fort.62
       type(OutputDataDescript_t), SAVE :: ElevDescript       ! fort.63
+      type(OutputDataDescript_t), SAVE :: Tau0Descript       ! fort.90
       type(OutputDataDescript_t), SAVE :: VelDescript        ! fort.64
       type(OutputDataDescript_t), SAVE :: PrStaDescript      ! fort.71
       type(OutputDataDescript_t), SAVE :: WindVelStaDescript ! fort.72
@@ -6557,9 +6738,11 @@ C     for hotstart harmoinc analysis means and variance calculations
 C
       INTEGER numHotstartWrites ! number writes to hot start files
       INTEGER nextLun           ! next LUN to write to, after initial write
+
 C
 C     fort.61
       ElevStaDescript % specifier            = NOUTE
+      ElevStaDescript % lun                  = 61
       ElevStaDescript % initial_value        = 0.0
       ElevStaDescript % num_items_per_record = 1
       ElevStaDescript % num_fd_records       = abs(NSTAE)
@@ -6574,9 +6757,13 @@ C     fort.61
          ElevStaDescript % x_coord           => XEL
          ElevStaDescript % y_coord           => YEL
       ENDIF
+      ElevStaDescript % file_extension       = 61
+      ElevStaDescript % file_basename        = 'fort'
+      call makeFileName(ElevStaDescript)
 C
 C     fort.62
       VelStaDescript % specifier            = NOUTV
+      VelStaDescript % lun                  = 62
       VelStaDescript % initial_value        = 0.0
       VelStaDescript % num_items_per_record = 2
       VelStaDescript % num_fd_records       = abs(NSTAV)
@@ -6591,9 +6778,13 @@ C     fort.62
          VelStaDescript % x_coord           => XEV
          VelStaDescript % y_coord           => YEV
       ENDIF
+      VelStaDescript % file_extension       = 62
+      VelStaDescript % file_basename        = 'fort'
+      call makeFileName(VelStaDescript)
 C
 C     fort.63
       ElevDescript % specifier            = NOUTGE
+      ElevDescript % lun                  = 63
       ElevDescript % initial_value        = 0.0
       ElevDescript % num_items_per_record = 1
       ElevDescript % num_fd_records       = MNP
@@ -6601,9 +6792,26 @@ C     fort.63
       ElevDescript % ConsiderWetDry       = .TRUE.
       ElevDescript % alternate_value      = -99999.0
       ElevDescript % field_name           = 'Elev'
+      ElevDescript % file_extension       = 63 
+      ElevDescript % file_basename        = 'fort'
+      call makeFileName(ElevDescript)
+C      
+      ! fort.90 (tau0)
+      Tau0Descript % lun                  = 90  
+      Tau0Descript % specifier            = NOUTGE
+      Tau0Descript % initial_value        = 0.d0
+      Tau0Descript % num_fd_records       = MNP
+      Tau0Descript % num_records_this     = MNP
+      Tau0Descript % ConsiderWetDry       = .false.
+      Tau0Descript % alternate_value      = -99999.0
+      Tau0Descript % field_name           = 'Tau0'
+      Tau0Descript % file_extension       = 90
+      Tau0Descript % file_basename        = 'fort'
+      call makeFileName(Tau0Descript)
 C
 C     fort.64
       VelDescript % specifier            = NOUTGV
+      VelDescript % lun                  = 64
       VelDescript % initial_value        = 0.0
       VelDescript % num_items_per_record = 2
       VelDescript % num_fd_records       = MNP
@@ -6611,9 +6819,13 @@ C     fort.64
       VelDescript % ConsiderWetDry       = .FALSE.
       VelDescript % alternate_value      = 0.0
       VelDescript % field_name           = 'Vel'
+      VelDescript % file_extension       = 64 
+      VelDescript % file_basename        = 'fort'
+      call makeFileName(VelDescript)
 C
 C     maxele.63
       EtaMaxDescript % specifier            = NOUTGE
+      EtaMaxDescript % lun                  = 311
       EtaMaxDescript % initial_value        = 0.0
       EtaMaxDescript % num_items_per_record = 1
       EtaMaxDescript % num_fd_records       = MNP
@@ -6621,9 +6833,13 @@ C     maxele.63
       EtaMaxDescript % ConsiderWetDry       = .FALSE.
       EtaMaxDescript % alternate_value      = 0.0
       EtaMaxDescript % field_name           = 'EtaMax'
+      EtaMaxDescript % file_extension       = 63
+      EtaMaxDescript % file_basename        = 'maxele'
+      call makeFileName(EtaMaxDescript)
 C
 C     maxvel.63
       UMaxDescript % specifier            = NOUTGV
+      UMaxDescript % lun                  = 312
       UMaxDescript % initial_value        = 0.0
       UMaxDescript % num_items_per_record = 2
       UMaxDescript % num_fd_records       = MNP
@@ -6631,9 +6847,13 @@ C     maxvel.63
       UMaxDescript % ConsiderWetDry       = .FALSE.
       UMaxDescript % alternate_value      = 0.0
       UMaxDescript % field_name           = 'UMax'      
+      UMaxDescript % file_extension       = 63
+      UMaxDescript % file_basename        = 'maxvel'
+      call makeFileName(UMaxDescript)
 C
 C     fort.71
       PrStaDescript % specifier            = NOUTM
+      PrStaDescript % lun                  = 71
       PrStaDescript % initial_value        = 0.0
       PrStaDescript % num_items_per_record = 1
       PrStaDescript % num_fd_records       = abs(NSTAM)
@@ -6648,9 +6868,13 @@ C     fort.71
          PrStaDescript % x_coord           => XEM
          PrStaDescript % y_coord           => YEM
       ENDIF
+      PrStaDescript % file_extension       = 71
+      PrStaDescript % file_basename        = 'fort'
+      call makeFileName(PrStaDescript)
 C
 C     fort.72
       WindVelStaDescript % specifier            = NOUTM
+      WindVelStaDescript % lun                  = 72
       WindVelStaDescript % initial_value        = 0.0
       WindVelStaDescript % num_items_per_record = 2
       WindVelStaDescript % num_fd_records       = abs(NSTAM)
@@ -6665,9 +6889,13 @@ C     fort.72
          WindVelStaDescript % x_coord           => XEM
          WindVelStaDescript % y_coord           => YEM
       ENDIF
+      WindVelStaDescript % file_extension       = 72
+      WindVelStaDescript % file_basename        = 'fort'
+      call makeFileName(WindVelStaDescript)
 C
 C     fort.73
       PrDescript % specifier            = NOUTGW
+      PrDescript % lun                  = 73
       PrDescript % initial_value        = 0.0
       PrDescript % num_items_per_record = 1
       PrDescript % num_fd_records       = MNP
@@ -6675,9 +6903,13 @@ C     fort.73
       PrDescript % ConsiderWetDry       = .FALSE.
       PrDescript % alternate_value      = 0.0
       PrDescript % field_name           = 'Pr'
+      PrDescript % file_extension       = 73
+      PrDescript % file_basename        = 'fort'
+      call makeFileName(PrDescript)
 C
 C     fort.74
       WindVelDescript % specifier            = NOUTGW
+      WindVelDescript % lun                  = 74
       WindVelDescript % initial_value        = 0.0
       WindVelDescript % num_items_per_record = 2
       WindVelDescript % num_fd_records       = MNP
@@ -6685,9 +6917,13 @@ C     fort.74
       WindVelDescript % ConsiderWetDry       = .FALSE.
       WindVelDescript % alternate_value      = 0.0
       WindVelDescript % field_name           = 'WindVel'
+      WindVelDescript % file_extension       = 74
+      WindVelDescript % file_basename        = 'fort'
+      call makeFileName(WindVelDescript)
 C
 C     minpr.63
       PrMinDescript % specifier            = NOUTGW
+      PrMinDescript % lun                  = 313
       PrMinDescript % initial_value        = 0.0
       PrMinDescript % num_items_per_record = 1
       PrMinDescript % num_fd_records       = MNP
@@ -6695,9 +6931,13 @@ C     minpr.63
       PrMinDescript % ConsiderWetDry       = .FALSE.
       PrMinDescript % alternate_value      = 0.0
       PrMinDescript % field_name           = 'PrMin'
+      PrMinDescript % file_extension       = 63
+      PrMinDescript % file_basename        = 'minpr'
+      call makeFileName(PrMinDescript)
 C
 C     maxwvel.63
       WVMaxDescript % specifier            = NOUTGW
+      WVMaxDescript % lun                  = 314
       WVMaxDescript % initial_value        = 0.0
       WVMaxDescript % num_items_per_record = 2
       WVMaxDescript % num_fd_records       = MNP
@@ -6705,8 +6945,12 @@ C     maxwvel.63
       WVMaxDescript % ConsiderWetDry       = .FALSE.
       WVMaxDescript % alternate_value      = 0.0
       WVMaxDescript % field_name           = 'WVMax'
+      WVMaxDescript % file_extension       = 63
+      WVMaxDescript % file_basename        = 'maxwvel'
+      call makeFileName(WVMaxDescript)
 
       RSMaxDescript % specifier            = NOUTGW
+      RSMaxDescript % lun                  = 315
       RSMaxDescript % initial_value        = 0.0
       RSMaxDescript % num_items_per_record = 2
       RSMaxDescript % num_fd_records       = MNP
@@ -6715,12 +6959,16 @@ C     maxwvel.63
       RSMaxDescript % alternate_value      = 0.0
       RSMaxDescript % field_name           = "RSMax"
       RSMaxDescript % file_name            = "maxrs.63"         
+      RSMaxDescript % file_extension       = 63
+      RSMaxDescript % file_basename        = 'maxrs'
+      call makeFileName(RSMaxDescript)
 
 !  tcm v50.75 removed ifdef adcswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef ADCSWAN
 Cobell 20120510: SWAN Output Data
 C........Radiation Stress
          RSDescript % specifier            = NOUTGW
+         RSDescript % lun                  = 164
          RSDescript % initial_value        = 0.0
          RSDescript % num_items_per_record = 2
          RSDescript % num_fd_records       = MNP
@@ -6729,11 +6977,15 @@ C........Radiation Stress
          RSDescript % alternate_value      = -99999.0
          RSDescript % field_name           = "rads"
          RSDescript % file_name            = "rads.64"
+         RSDescript % file_extension       = 64
+         RSDescript % file_basename        = 'rads'
+         call makeFileName(RSDescript)
 
 ! tcm v50.75 moved the ifdef adcswan down past the RSDescript
 #ifdef ADCSWAN
 C........Significant Wave Height (HS)
          SwanHSDescript % specifier            = NOUTGW
+         SwanHSDescript % lun                  = 301
          SwanHSDescript % initial_value        = 0.0
          SwanHSDescript % num_items_per_record = 1
          SwanHSDescript % num_fd_records       = MNP
@@ -6742,8 +6994,12 @@ C........Significant Wave Height (HS)
          SwanHSDescript % alternate_value      = -99999.0
          SwanHSDescript % field_name           = "swan_HS"
          SwanHSDescript % file_name            = "swan_HS.63"
+         SwanHSDescript % file_extension       = 63 
+         SwanHSDescript % file_basename        = 'swan_HS'
+         call makeFileName(SwanHSDescript)
 
          SwanHSMaxDescript % specifier            = NOUTGW
+         SwanHSMaxDescript % lun                  = 316
          SwanHSMaxDescript % initial_value        = 0.0
          SwanHSMaxDescript % num_items_per_record = 1
          SwanHSMaxDescript % num_fd_records       = MNP
@@ -6752,9 +7008,13 @@ C........Significant Wave Height (HS)
          SwanHSMaxDescript % alternate_value      = -99999.0
          SwanHSMaxDescript % field_name           = "swan_HS_max"
          SwanHSMaxDescript % file_name            = "swan_HS_max.63"
+         SwanHSMaxDescript % file_extension       = 63
+         SwanHSMaxDescript % file_basename        = 'swan_HS_max'
+         call makeFileName(SwanHSMaxDescript)
 
 C........Mean Wave Direction (DIR)
          SwanDIRDescript % specifier            = NOUTGW
+         SwanDIRDescript % lun                  = 302
          SwanDIRDescript % initial_value        = 0.0
          SwanDIRDescript % num_items_per_record = 1
          SwanDIRDescript % num_fd_records       = MNP
@@ -6763,8 +7023,12 @@ C........Mean Wave Direction (DIR)
          SwanDIRDescript % alternate_value      = -99999.0
          SwanDIRDescript % field_name           = "swan_DIR"
          SwanDIRDescript % file_name            = "swan_DIR.63"
+         SwanDIRDescript % file_extension       = 63
+         SwanDIRDescript % file_basename        = 'swan_DIR'
+         call makeFileName(SwanDIRDescript)
 
          SwanDIRMaxDescript % specifier            = NOUTGW
+         SwanDIRMaxDescript % lun                  = 317
          SwanDIRMaxDescript % initial_value        = 0.0
          SwanDIRMaxDescript % num_items_per_record = 1
          SwanDIRMaxDescript % num_fd_records       = MNP
@@ -6773,9 +7037,13 @@ C........Mean Wave Direction (DIR)
          SwanDIRMaxDescript % alternate_value      = -99999.0
          SwanDIRMaxDescript % field_name           = "swan_DIR_max"
          SwanDIRMaxDescript % file_name            = "swan_DIR_max.63"
+         SwanDIRMaxDescript % file_extension       = 63
+         SwanDIRMaxDescript % file_basename        = 'swan_DIR_max'
+         call makeFileName(SwanDIRMaxDescript)
 
 C........Mean Wave Period (TM01)
          SwanTM01Descript % specifier            = NOUTGW
+         SwanTM01Descript % lun                  = 303
          SwanTM01Descript % initial_value        = 0.0
          SwanTM01Descript % num_items_per_record = 1
          SwanTM01Descript % num_fd_records       = MNP
@@ -6784,8 +7052,12 @@ C........Mean Wave Period (TM01)
          SwanTM01Descript % alternate_value      = -99999.0
          SwanTM01Descript % field_name           = "swan_TM01"
          SwanTM01Descript % file_name            = "swan_TM01.63"
+         SwanTM01Descript % file_extension       = 63
+         SwanTM01Descript % file_basename        = 'swan_TM01'
+         call makeFileName(SwanTM01Descript)
 
          SwanTM01MaxDescript % specifier            = NOUTGW
+         SwanTM01MaxDescript % lun                  = 318
          SwanTM01MaxDescript % initial_value        = 0.0
          SwanTM01MaxDescript % num_items_per_record = 1
          SwanTM01MaxDescript % num_fd_records       = MNP
@@ -6794,9 +7066,13 @@ C........Mean Wave Period (TM01)
          SwanTM01MaxDescript % alternate_value      = -99999.0
          SwanTM01MaxDescript % field_name           = "swan_TM01_max"
          SwanTM01MaxDescript % file_name            = "swan_TM01_max.63"
+         SwanTM01MaxDescript % file_extension       = 63
+         SwanTM01MaxDescript % file_basename        = 'swan_TM01_max'
+         call makeFileName(SwanTM01MaxDescript)
 
 C........Peak Wave Period (TPS)
          SwanTPSDescript % specifier            = NOUTGW
+         SwanTPSDescript % lun                  = 304
          SwanTPSDescript % initial_value        = 0.0
          SwanTPSDescript % num_items_per_record = 1
          SwanTPSDescript % num_fd_records       = MNP
@@ -6805,8 +7081,12 @@ C........Peak Wave Period (TPS)
          SwanTPSDescript % alternate_value      = -99999.0
          SwanTPSDescript % field_name           = "Swan_TPS"
          SwanTPSDescript % file_name            = "swan_TPS.63"
+         SwanTPSDescript % file_extension       = 63
+         SwanTPSDescript % file_basename        = 'swan_TPS'
+         call makeFileName(SwanTPSDescript)
 
          SwanTPSMaxDescript % specifier            = NOUTGW
+         SwanTPSMaxDescript % lun                  = 319
          SwanTPSMaxDescript % initial_value        = 0.0
          SwanTPSMaxDescript % num_items_per_record = 1
          SwanTPSMaxDescript % num_fd_records       = MNP
@@ -6815,9 +7095,13 @@ C........Peak Wave Period (TPS)
          SwanTPSMaxDescript % alternate_value      = -99999.0
          SwanTPSMaxDescript % field_name           = "Swan_TPS_max"
          SwanTPSMaxDescript % file_name            = "swan_TPS_max.63"
+         SwanTPSMaxDescript % file_extension       = 63
+         SwanTPSMaxDescript % file_basename        = 'swan_TPS_max'
+         call makeFileName(SwanTPSMaxDescript)
 
 C........SWAN Wind Values (WINDX,WINDY)
          SwanWindDescript % specifier            = NOUTGW
+         SwanWindDescript % lun                  = 305
          SwanWindDescript % initial_value        = 0.0
          SwanWindDescript % num_items_per_record = 2
          SwanWindDescript % num_fd_records       = MNP
@@ -6826,8 +7110,12 @@ C........SWAN Wind Values (WINDX,WINDY)
          SwanWindDescript % alternate_value      = -99999.0
          SwanWindDescript % field_name           = "swan_WIND"
          SwanWindDescript % file_name            = "swan_WIND.64"
+         SwanWindDescript % file_extension       = 64
+         SwanWindDescript % file_basename        = 'swan_WIND'
+         call makeFileName(SwanWindDescript)
 
          SwanWindMaxDescript % specifier            = NOUTGW
+         SwanWindMaxDescript % lun                  = 320
          SwanWindMaxDescript % initial_value        = 0.0
          SwanWindMaxDescript % num_items_per_record = 1
          SwanWindMaxDescript % num_fd_records       = MNP
@@ -6836,9 +7124,13 @@ C........SWAN Wind Values (WINDX,WINDY)
          SwanWindMaxDescript % alternate_value      = -99999.0
          SwanWindMaxDescript % field_name           = "swan_WIND_max"
          SwanWindMaxDescript % file_name            = "swan_WIND_max.63"
+         SwanWindMaxDescript % file_extension       = 63
+         SwanWindMaxDescript % file_basename        = 'swan_WIND_max'
+         call makeFileName(SwanWindMaxDescript)
 
 C........Mean Wave Period (TM02)
          SwanTM02Descript % specifier            = NOUTGW
+         SwanTM02Descript % lun                  = 306
          SwanTM02Descript % initial_value        = 0.0
          SwanTM02Descript % num_items_per_record = 1
          SwanTM02Descript % num_fd_records       = MNP
@@ -6847,8 +7139,12 @@ C........Mean Wave Period (TM02)
          SwanTM02Descript % alternate_value      = -99999.0
          SwanTM02Descript % field_name           = "swan_TM02"
          SwanTM02Descript % file_name            = "swan_TM02.63"
+         SwanTM02Descript % file_extension       = 63 
+         SwanTM02Descript % file_basename        = 'swan_TM02'
+         call makeFileName(SwanTM02Descript)
 
          SwanTM02MaxDescript % specifier            = NOUTGW
+         SwanTM02MaxDescript % lun                  = 321
          SwanTM02MaxDescript % initial_value        = 0.0
          SwanTM02MaxDescript % num_items_per_record = 1
          SwanTM02MaxDescript % num_fd_records       = MNP
@@ -6857,9 +7153,13 @@ C........Mean Wave Period (TM02)
          SwanTM02MaxDescript % alternate_value      = -99999.0
          SwanTM02MaxDescript % field_name           = "swan_TM02_max"
          SwanTM02MaxDescript % file_name            = "swan_TM02_max.63"
+         SwanTM02MaxDescript % file_extension       = 63
+         SwanTM02MaxDescript % file_basename        = 'swan_TM02_max'
+         call makeFileName(SwanTM02MaxDescript)
 
 C........Mean Wave Period (TMM10)
          SwanTMM10Descript % specifier            = NOUTGW
+         SwanTMM10Descript % lun                  = 307
          SwanTMM10Descript % initial_value        = 0.0
          SwanTMM10Descript % num_items_per_record = 1
          SwanTMM10Descript % num_fd_records       = MNP
@@ -6868,8 +7168,12 @@ C........Mean Wave Period (TMM10)
          SwanTMM10Descript % alternate_value      = -99999.0
          SwanTMM10Descript % field_name           = "swan_TMM10"
          SwanTMM10Descript % file_name            = "swan_TMM10.63"
+         SwanTMM10Descript % file_extension       = 63
+         SwanTMM10Descript % file_basename        = 'swan_TMM10'
+         call makeFileName(SwanTMM10Descript)
 
          SwanTMM10MaxDescript % specifier            = NOUTGW
+         SwanTMM10MaxDescript % lun                  = 322
          SwanTMM10MaxDescript % initial_value        = 0.0
          SwanTMM10MaxDescript % num_items_per_record = 1
          SwanTMM10MaxDescript % num_fd_records       = MNP
@@ -6878,11 +7182,15 @@ C........Mean Wave Period (TMM10)
          SwanTMM10MaxDescript % alternate_value      = -99999.0
          SwanTMM10MaxDescript % field_name           = "swan_TMM10_max"
          SwanTMM10MaxDescript % file_name          = "swan_TMM10_max.63"
+         SwanTMM10MaxDescript % file_extension       = 63
+         SwanTMM10MaxDescript % file_basename        = 'swan_TMM10_max'
+         call makeFileName(SwanTMM10MaxDescript)
 
 #endif
 C     3D data
 C     fort.41
       SigTStaDescript % specifier            = I3DSD
+      SigTStaDescript % lun                  = 41
       SigTStaDescript % initial_value        = 0.0
       SigTStaDescript % num_items_per_record = NFEN
       SigTStaDescript % num_fd_records       = NSTA3DD
@@ -6895,8 +7203,12 @@ C     fort.41
          SigTStaDescript % x_coord           => X3DD
          SigTStaDescript % y_coord           => Y3DD
       ENDIF
+      SigTStaDescript % file_extension       = 41
+      SigTStaDescript % file_basename        = 'fort'
+      call makeFileName(SigTStaDescript)
 
       SalStaDescript % specifier            = I3DSD
+      SalStaDescript % lun                  = 41
       SalStaDescript % initial_value        = 0.0
       SalStaDescript % num_items_per_record = NFEN
       SalStaDescript % num_fd_records       = NSTA3DD
@@ -6911,6 +7223,7 @@ C     fort.41
       ENDIF
 
       TempStaDescript % specifier            = I3DSD
+      TempStaDescript % lun                  = 41
       TempStaDescript % initial_value        = 0.0
       TempStaDescript % num_items_per_record = NFEN
       TempStaDescript % num_fd_records       = NSTA3DD
@@ -6926,6 +7239,7 @@ C     fort.41
 C
 C     fort.42
       RealQStaDescript % specifier            =  I3DSV
+      RealQStaDescript % lun                  =  42
       RealQStaDescript % initial_value        =  0.0
       RealQStaDescript % num_items_per_record =  NFEN
       RealQStaDescript % num_fd_records       =  NSta3DV
@@ -6938,7 +7252,12 @@ C     fort.42
          RealQStaDescript % x_coord           => X3DV
          RealQStaDescript % y_coord           => Y3DV
       ENDIF
+      RealQStaDescript % file_extension       = 42
+      RealQStaDescript % file_basename        = 'fort'
+      call makeFileName(RealQStaDescript)
+
       ImaginaryQStaDescript % specifier            =  I3DSV
+      ImaginaryQStaDescript % lun                  =  42
       ImaginaryQStaDescript % initial_value        =  0.0
       ImaginaryQStaDescript % num_items_per_record =  NFEN
       ImaginaryQStaDescript % num_fd_records       =  NSTA3DV
@@ -6951,7 +7270,9 @@ C     fort.42
          ImaginaryQStaDescript % x_coord           => X3DV
          ImaginaryQStaDescript % y_coord           => Y3DV
       ENDIF
+
       WZStaDescript % specifier            =  I3DSV
+      WZStaDescript % lun                  =  42
       WZStaDescript % initial_value        =  0.0
       WZStaDescript % num_items_per_record =  NFEN
       WZStaDescript % num_fd_records       =  NSTA3DV
@@ -6967,6 +7288,7 @@ C     fort.42
 C
 C     fort.43
       Q20StaDescript % specifier            =  I3DST
+      Q20StaDescript % lun                  =  43
       Q20StaDescript % initial_value        =  0.0
       Q20StaDescript % num_items_per_record =  NFEN
       Q20StaDescript % num_fd_records       =  NSta3DT
@@ -6979,8 +7301,12 @@ C     fort.43
          Q20StaDescript % x_coord           => X3DT
          Q20StaDescript % y_coord           => Y3DT
       ENDIF
+      Q20StaDescript % file_extension       = 43
+      Q20StaDescript % file_basename        = 'fort'
+      call makeFileName(Q20StaDescript)
 
-      LStaDescript % specifier        =  I3DST
+      LStaDescript % specifier            =  I3DST
+      LStaDescript % lun                  =  43
       LStaDescript % initial_value        =  0.0
       LStaDescript % num_items_per_record =  NFEN
       LStaDescript % num_fd_records       =  NSTA3DT
@@ -6995,6 +7321,7 @@ C     fort.43
       ENDIF
 
       EVStaDescript % specifier            =  I3DST
+      EVStaDescript % lun                  =  43
       EVStaDescript % initial_value        =  0.0
       EVStaDescript % num_items_per_record =  NFEN
       EVStaDescript % num_fd_records       =  NSTA3DT
@@ -7010,18 +7337,25 @@ C     fort.43
 C
 C     fort.44
       SigTDescript % specifier            =  I3DGD
+      SigTDescript % lun                  =  44
       SigTDescript % initial_value        =  0.0
       SigTDescript % num_items_per_record =  NFEN
       SigTDescript % num_fd_records        =  MNP
       SigTDescript % num_records_this     =  MNP
       SigTDescript % field_name           = 'SigmaT'
+      SigTDescript % file_extension       = 44
+      SigTDescript % file_basename        = 'fort'
+      call makeFileName(SigTDescript)
+
       SalDescript % specifier            =  I3DGD
+      SalDescript % lun                  =  44
       SalDescript % initial_value        =  0.0
       SalDescript % num_items_per_record =  NFEN
       SalDescript % num_fd_records       =  MNP
       SalDescript % num_records_this     =  MNP
       SalDescript % field_name           = 'Salinity'
       TempDescript % specifier            =  I3DGD
+      TempDescript % lun                  =  44
       TempDescript % initial_value        =  0.0
       TempDescript % num_items_per_record =  NFEN
       TempDescript % num_fd_records       =  MNP
@@ -7030,18 +7364,25 @@ C     fort.44
 C
 C     fort.45
       RealQDescript % specifier            =  I3DGV
+      RealQDescript % lun                  =  45
       RealQdescript % initial_value        =  0.0
       RealQDescript % num_items_per_record =  NFEN
       RealQDescript % num_fd_records       =  MNP
       RealQDescript % num_records_this     =  MNP
       RealQDescript % field_name           = 'RealQ'
+      RealQDescript % file_extension       = 45
+      RealQDescript % file_basename        = 'fort'
+      call makeFileName(RealQDescript)
+
       ImaginaryQDescript % specifier            =  I3DGV
+      ImaginaryQDescript % lun                  =  45
       ImaginaryQDescript % initial_value        =  0.0
       ImaginaryQDescript % num_items_per_record =  NFEN
       ImaginaryQDescript % num_fd_records       =  MNP
       ImaginaryQDescript % num_records_this     =  MNP
       ImaginaryQDescript % field_name           = 'ImaginaryQ'
       WZDescript % specifier            =  I3DGV
+      WZDescript % lun                  =  45
       WZDescript % initial_value        =  0.0
       WZDescript % num_items_per_record =  NFEN
       WZDescript % num_fd_records       =  MNP
@@ -7050,18 +7391,25 @@ C     fort.45
 C
 C     fort.46
       Q20Descript % specifier            =  I3DGT
+      Q20Descript % lun                  =  46
       Q20Descript % initial_value        =  0.0
       Q20Descript % num_items_per_record =  NFEN
       Q20Descript % num_fd_records       =  MNP
       Q20Descript % num_records_this     =  MNP
       Q20Descript % field_name           = 'q20'
+      Q20Descript % file_extension       = 46
+      Q20Descript % file_basename        = 'fort'
+      call makeFileName(Q20Descript)
+
       LDescript % specifier            =  I3DGT
+      LDescript % lun                  =  46
       LDescript % initial_value        =  0.0
       LDescript % num_items_per_record =  NFEN
       LDescript % num_fd_records       =  MNP
       LDescript % num_records_this     =  MNP
       LDescript % field_name           = 'L'
       EVDescript % specifier            =  I3DGT
+      EVDescript % lun                  =  46
       EVDescript % initial_value        =  0.0
       EVDescript % num_items_per_record =  NFEN
       EVDescript % num_fd_records       =  MNP
@@ -7070,11 +7418,13 @@ C     fort.46
 C
 C     fort.47
       QSurfKp1Descript % specifier            =  I3DGD
+      QSurfKp1Descript % lun                  =  47
       QSurfKp1Descript % initial_value        =  0.0
       QSurfKp1Descript % num_items_per_record =  1
       QSurfKp1Descript % num_fd_records     =  MNP
       QSurfKp1Descript % num_records_this   =  MNP
       QSurfKp1Descript % field_name           = 'qsurfkp1'
+      call makeFileName(QSurfKp1Descript)
 C
 C     fort.67 and fort.68
       Elev1Descript % specifier            = NHSTAR
@@ -7195,77 +7545,78 @@ C
 C     Create NetCDF output files for those output files where NetCDF
 C     was specified.
       reterr = .false.
-      CALL initNetCDFOutputFile(61, ElevStaDescript, reterr)
-      CALL initNetCDFOutputFile(62, VelStaDescript, reterr)
-      CALL initNetCDFOutputFile(63, ElevDescript, reterr)
-      CALL initNetCDFOutputFile(64, VelDescript, reterr)
-      CALL initNetCDFOutputFile(71, PrStaDescript, reterr)
-      CALL initNetCDFOutputFile(72, WindVelStaDescript, reterr)
-      CALL initNetCDFOutputFile(73, PrDescript, reterr)
-      CALL initNetCDFOutputFile(74, WindVelDescript, reterr)
-      CALL initNetCDFOutputFile(311, EtaMaxDescript, reterr)
-      CALL initNetCDFOutputFile(312, UMaxDescript, reterr)
-      CALL initNetCDFOutputFile(313, PrMinDescript, reterr)
-      CALL initNetCDFOutputFile(314, WVMaxDescript, reterr)      
-      CALL initNetCDFOutputFile(315,RSMaxDescript,reterr)
+      CALL initNetCDFOutputFile(ElevStaDescript, reterr)
+      CALL initNetCDFOutputFile(VelStaDescript, reterr)
+      CALL initNetCDFOutputFile(ElevDescript, reterr)
+      CALL initNetCDFOutputFile(Tau0Descript, reterr)
+      CALL initNetCDFOutputFile(VelDescript, reterr)
+      CALL initNetCDFOutputFile(PrStaDescript, reterr)
+      CALL initNetCDFOutputFile(WindVelStaDescript, reterr)
+      CALL initNetCDFOutputFile(PrDescript, reterr)
+      CALL initNetCDFOutputFile(WindVelDescript, reterr)
+      CALL initNetCDFOutputFile(EtaMaxDescript, reterr)
+      CALL initNetCDFOutputFile(UMaxDescript, reterr)
+      CALL initNetCDFOutputFile(PrMinDescript, reterr)
+      CALL initNetCDFOutputFile(WVMaxDescript, reterr)      
+      CALL initNetCDFOutputFile(RSMaxDescript,reterr)
  
 ! tcm v50.75 moved ifdef adcswan below RSDescript only to allow
 !  for use whenever nrs=3 or nrs=4     
 !#ifdef ADCSWAN
 Cobell 20120510: Added for SWAN NetCDF
       IF ((NRS.EQ.3).OR.(NRS.EQ.4)) THEN
-        CALL initNetCDFOutputFile(164,RSDescript,reterr)
+        CALL initNetCDFOutputFile(RSDescript,reterr)
       ENDIF
 ! tcm v50.75 moved ifdef adcswan to here
 #ifdef ADCSWAN
 Cobell 20120510: Added for SWAN NetCDF
       IF(NRS.EQ.3)THEN
         IF(SWAN_OutputHS)THEN
-            CALL initNetCDFOutputFile(301,SwanHSDescript,reterr)
-            CALL initNetCDFOutputFile(316,SwanHSMaxDescript,reterr)
+            CALL initNetCDFOutputFile(SwanHSDescript,reterr)
+            CALL initNetCDFOutputFile(SwanHSMaxDescript,reterr)
         ENDIF
         IF(SWAN_OutputDIR)THEN
-            CALL initNetCDFOutputFile(302,SwanDIRDescript,reterr)
-            CALL initNetCDFOutputFile(317,SwanDIRMaxDescript,reterr)
+            CALL initNetCDFOutputFile(SwanDIRDescript,reterr)
+            CALL initNetCDFOutputFile(SwanDIRMaxDescript,reterr)
         ENDIF
         IF(SWAN_OutputTM01)THEN
-            CALL initNetCDFOutputFile(303,SwanTM01Descript,reterr)
-            CALL initNetCDFOutputFile(318,SwanTM01MaxDescript,reterr)
+            CALL initNetCDFOutputFile(SwanTM01Descript,reterr)
+            CALL initNetCDFOutputFile(SwanTM01MaxDescript,reterr)
         ENDIF
         IF(SWAN_OutputTPS)THEN
-            CALL initNetCDFOutputFile(304,SwanTPSDescript,reterr)
-            CALL initNetCDFOutputFile(319,SwanTPSMaxDescript,reterr)
+            CALL initNetCDFOutputFile(SwanTPSDescript,reterr)
+            CALL initNetCDFOutputFile(SwanTPSMaxDescript,reterr)
         ENDIF
         IF(SWAN_OutputWIND)THEN
-            CALL initNetCDFOutputFile(305,SwanWINDDescript,reterr)
-            CALL initNetCDFOutputFile(320,SwanWINDMaxDescript,reterr)
+            CALL initNetCDFOutputFile(SwanWINDDescript,reterr)
+            CALL initNetCDFOutputFile(SwanWINDMaxDescript,reterr)
         ENDIF
         IF(SWAN_OutputTM02)THEN
-            CALL initNetCDFOutputFile(306,SwanTM02Descript,reterr)
-            CALL initNetCDFOutputFile(321,SwanTM02MaxDescript,reterr)
+            CALL initNetCDFOutputFile(SwanTM02Descript,reterr)
+            CALL initNetCDFOutputFile(SwanTM02MaxDescript,reterr)
         ENDIF
         IF(SWAN_OutputTMM10)THEN
-            CALL initNetCDFOutputFile(307,SwanTMM10Descript,reterr)
-            CALL initNetCDFOutputFile(322,SwanTMM10MaxDescript,reterr)
+            CALL initNetCDFOutputFile(SwanTMM10Descript,reterr)
+            CALL initNetCDFOutputFile(SwanTMM10MaxDescript,reterr)
         ENDIF
       ENDIF
 #endif
 
 C
       IF (C3D.eqv..true.) THEN
-         CALL initNetCDFOutputFile(41, SigTStaDescript, reterr,
+         CALL initNetCDFOutputFile(SigTStaDescript, reterr,
      &       SalStaDescript, TempStaDescript)
-         CALL initNetCDFOutputFile(42, RealQStaDescript, reterr,
+         CALL initNetCDFOutputFile(RealQStaDescript, reterr,
      &      ImaginaryQStaDescript, WZStaDescript)
-         CALL initNetCDFOutputFile(43, Q20StaDescript, reterr,
+         CALL initNetCDFOutputFile(Q20StaDescript, reterr,
      &      LStaDescript, EVStaDescript)
-         CALL initNetCDFOutputFile(44, SigTDescript, reterr,
+         CALL initNetCDFOutputFile(SigTDescript, reterr,
      &      SalDescript, TempDescript)
-         CALL initNetCDFOutputFile(45, RealQDescript, reterr,
+         CALL initNetCDFOutputFile(RealQDescript, reterr,
      &      ImaginaryQDescript, WZDescript)
-         CALL initNetCDFOutputFile(46, Q20Descript, reterr,
+         CALL initNetCDFOutputFile(Q20Descript, reterr,
      &      LDescript, EVDescript)
-         CALL initNetCDFOutputFile(47, QSurfKp1Descript, reterr)
+         CALL initNetCDFOutputFile(QSurfKp1Descript, reterr)
       ENDIF
 C
 C     Create NetCDF hotstart files if NetCDF was specified.
@@ -7296,7 +7647,7 @@ C     Create NetCDF hotstart files if NetCDF was specified.
      &            HarmUVelFDLVDescript, HarmVVelFDLVDescript,
      &            HarmUVelSLVDescript, HarmVVelSLVDescript, reterr)
             ENDIF
-            IF (IHOT.ne.368) THEN
+            IF ((IHOT.ne.368).and.(IHOT.ne.568)) THEN
                CALL initNetCDFHotstartHarmonic(68,
      &            HarmElevFDLVDescript, HarmElevSLVDescript,
      &            HarmUVelFDLVDescript, HarmVVelFDLVDescript,
@@ -7324,3 +7675,25 @@ C     Create NetCDF hotstart files if NetCDF was specified.
 c----------------------------------------------------------------------------
       END SUBROUTINE prepNetCDF
 c----------------------------------------------------------------------------
+
+C---------------------------------------------------------------------------
+C                S U B R O U T I N E   M A K E   F I L E   N A M E 
+C---------------------------------------------------------------------------
+C     jgf51.21.41 A little subroutine to make the file name from the 
+C     base name and the file extension. When the write_output module
+C     is integrated into adcprep, this subroutine will be redundant.
+C---------------------------------------------------------------------------
+      subroutine makeFileName(descript)
+      use global, only : OutputDataDescript_t
+      implicit none
+      type(OutputDataDescript_t), intent(inout) :: descript
+      character(len=10) :: extString
+      
+      write(extString,'(i0)') descript % file_extension
+      descript % file_name = trim(descript % file_basename) // 
+     &         '.' // trim(extString)
+c----------------------------------------------------------------------------
+      end subroutine makeFileName
+c----------------------------------------------------------------------------
+     
+      

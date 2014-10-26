@@ -5,14 +5,15 @@ C
 C-----------------------------------------------------------------------
       module asymmetricVortexProcessing
          use sizes, only : sz
-         use global, only : np, ne, slam, sfea, wvnx2, wvny2, prn2,
-     &                   nm, nhy, g, rhowat0, ics, slam0, sfea0,
+         use global, only : wvnx2, wvny2, prn2,
+     &                   nhy, g, rhowat0,
      &                   deg2rad, rad2deg, ms2kt, ten2one,
      &                   nws, windReduction, sphericalDistance,
      &                   DEBUG, WARNING, ERROR, INFO, screenunit,
      &                   setMessageSource, allMessage, openFileForRead,
      &                   screenMessage, initLogging, scratchMessage
          ! Import asymmetric hurricane vortex class
+         use mesh, only : np, ne, nm, slam, sfea, ics, slam0, sfea0
          USE vortex
          USE wind, only : writeFullCircleRmaxes, vortexLon,
      &                 vortexLat, writeRadialVandP,
@@ -1062,11 +1063,12 @@ C
 C-----------------------------------------------------------------------
       module diagnosticOutput
 
-      use sizes, only : sz, globaldir, GBLINPUTDIR
-      use global, only : slam, sfea, wvnx2, wvny2, prn2, np, ics, nws,
+      use sizes, only : sz, globaldir, mnp
+      use global, only : wvnx2, wvny2, prn2, nws,
      &   deg2rad, rad2deg, ten2one, g, rhowat0, openFileForRead,
      &   mnp, ihot, wtime1, wtime2, wtiminc,
      &   m2nm, sphericaldistance  ! Jie 09/2013
+      use mesh, only : slam, sfea, np, ics
       use wind, only : hWindData_t, hWindFiles, nws15init, nws19get,
      &   writeFullCircleRmaxes, writeRadialVandP, writeSpatialVandP,
      &   nws15get, eyeLatR, eyeLonR, nws20get,writeSpatialuvp,
@@ -1340,6 +1342,7 @@ C
       ! S U B R O U T I N E   F U L L   C I R C L E   R M A X E S
       !-------------------------------------------------------------
       subroutine fullCircleRmaxes()
+      use sizes, only : gblinputdir
       use wind, only : draglawstring
       implicit none
       integer :: i, j, npp
@@ -1540,6 +1543,7 @@ C
       ! S U B R O U T I N E    R A D I A L   V   A N D   P
       !-------------------------------------------------------------
       subroutine radialVandP()
+      use sizes, only : gblinputdir
       use wind, only : angleNow, draglawstring
       implicit none
       integer :: i, j
@@ -1720,7 +1724,8 @@ C
       ! S U B R O U T I N E   S P A T I A L   V   A N D   P
       !-------------------------------------------------------------
       subroutine spatialVandP()
-      use global, only : nm, ne, nhy, slam0, sfea0
+      use global, only : nhy
+      use mesh, only : nm, ne, slam0, sfea0
       implicit none
       integer :: i,j
       integer :: errorio
@@ -2015,7 +2020,9 @@ C
       ! Added NWS=12 option       Jie 10/2013
       !-------------------------------------------------------------
       subroutine spatialuvp()
-      use global, only : nm, ne, nhy, slam0, sfea0
+      use sizes, only : gblinputdir
+      use global, only : nhy
+      use mesh, only : nm, ne, slam0, sfea0
       use wind, only : draglawstring
       implicit none
       integer :: i,j
@@ -2380,7 +2387,9 @@ C
       ! Added NWS=12 option       Jie 10/2013
       !-------------------------------------------------------------
       subroutine nodaluvp()
-      use global, only : nm, ne, nhy, slam0, sfea0
+      use sizes, only : gblinputdir
+      use global, only : nhy
+      use mesh, only : nm, ne, slam0, sfea0
       use wind, only : draglawstring
       implicit none
       integer :: i,j

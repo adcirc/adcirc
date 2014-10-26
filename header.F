@@ -1,7 +1,17 @@
 C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
-C  mod history                                                                *
+C  mod history           
+C    v51.33.04 - 10/26/2014 - jgf - Updated this file by adding entries for
+C                each commit that has been made on this branch; merged trunk
+C                changes that occurred from r1014 through r1031; minor fixes
+C                to USE statements in aswip.F to allow the aswip executable
+C                to compile; tested and confirmed that all executables
+C                compile successfully.
+C    v51.33.03 - 08/25/2014 - gjie - Fixed arrays.
+C    v51.33.02 - 08/01/2014 - gjie - Added geofactor to control the geostrophic
+C                balance.
+C    v51.33.01 - 07/21/2014 - gjie - Added GAHM vortex wind model with NWS=20. 
 C    v51.33    - 07/16/2014 - tcm - Updated compiler flags for diamond,
 C                to replace no longer supported options -xT with
 C                -xSSSE3.  While diamond has been removed from service,

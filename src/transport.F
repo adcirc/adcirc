@@ -31,11 +31,14 @@ C                     boundary conditions on the ocean boundary.
 C
 C  kmd48.33bc add variables from global for boundary conditions and
 C             removed ScreenUnit
-      USE GLOBAL, ONLY: NODELE, NODECODE, NOFF, NBD, NETA,
-     &                  HFLUX, sponge, TTBCTIME1, TTBCTIME2,TTBCRATIO,
-     &                  q_heat1, q_heat2, TTBCTIMEINC, BCFLAG_TEMP, SFAC,
-     &                  NOPE, NVDLL, NBDV, bcriversec, BCRNVELL, BCRNBVV
+      USE GLOBAL, ONLY: NODECODE, NOFF, 
+     &                  HFLUX, sponge, TTBCTIME1, TTBCTIME2, TTBCRATIO,
+     &                  q_heat1, q_heat2, TTBCTIMEINC, BCFLAG_TEMP
       USE GLOBAL_3DVS
+      USE MESH, ONLY : NP, X, Y, DP, NM, AREAS, SFAC, LBARRAY_POINTER,
+     &                  NODELE, NEITABELE, NEITAB, NNEIGH
+      USE BOUNDARIES, ONLY : NOPE, NETA, NVDLL, NBDV, NBD, LBCODEI,
+     &               BndBCRiver, bcriversec, BCRNVELL, BCRNBVV
 Corbitt 120328: Apply Advection Locally
       USE NodalAttributes, ONLY : LoadAdvectionState, AdvectionState
 C  kmd48.33bc add implicit none if not in parallel

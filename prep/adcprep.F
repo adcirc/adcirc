@@ -92,7 +92,12 @@ C
 C----------------------------------------------------------------------------
 C
       PROGRAM ADCPREP
-      USE GLOBAL, ONLY : screenUnit, myProc, initLogging
+      USE GLOBAL, ONLY : screenUnit, myProc, initLogging, Rearth, deg2rad,
+     &   rad2deg
+      USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType, 
+     &  ASCII, XDMF, naFileNameSpecified, naFileName, naType, controlFileName,
+     &  controlType, controlFileNameSpecified, globaldir
+ 
       USE PRE_GLOBAL
       USE VERSION
       use memory_usage
@@ -104,18 +109,19 @@ C
       INTEGER :: I        ! loop counter for command line arguments
       CHARACTER(2048) :: CMDLINEARG ! content of cmd line arg
 
+C
+      ! set the names of the log levels for use in log messages
+      call initLogging()
+      ! set the present working directory as the directory containing 
+      ! the fulldomain input files as the
+      globaldir = '.'
+
 C  Define File Format Version
 
       FileFmtVersion = VERSION_NUMBER(FileFmtMajor,
      &                                FileFmtMinor,
      &                                FileFmtRev)
 
-C
-C     Initialize constants for case ICS = 2 inputs.
-C
-      R  =  6378206.4D0
-      DEG2RAD = 3.141592653589793D0/180.0D0
-      RAD2DEG = 180.0D0/3.141592653589793D0
 C
 C     Initialize flags.
 C
@@ -130,6 +136,18 @@ C
       PREP_20 = .FALSE.
       !PREP_88 = .FALSE.
       MNPROC = 0
+C
+      ! jgf51.21.27: Add defaults for file types now that we support the
+      ! loading of different file types.
+      naType = ASCII
+      naFileNameSpecified = .false. 
+      naFileName = 'fort.13'
+      meshType = ASCII
+      meshFileNameSpecified = .false.
+      meshFileName = 'fort.14'
+      controlType = ASCII
+      controlFileNameSpecified = .false. 
+      controlFileName = 'fort.15'
 C
 C--Init Memory Usage
 C
@@ -162,10 +180,47 @@ C     having to do a prep all and without having to add menu items).
                I = I + 1
                CALL GETARG(I,CMDLINEARG)
                READ(CMDLINEARG,*) MNPROC
-            CASE DEFAULT
-               WRITE(*,*) "WARNING: Command line argument '",
-     &            TRIM(CMDLINEARG),"' was not recognized."
-            END SELECT
+            ! jgf51.21.27: Added options related to the mesh file 
+            case("-MFT","-mft","--MFT","--mft") ! mesh file type 
+                  i = i + 1
+                  call getarg(i, CMDLINEARG)
+                  select case(trim(cmdlinearg))
+                  case("ASCII","Ascii","ascii")
+                     meshType = ASCII ! this is the default anyway
+                  case("XDMF","Xdmf","xdmf")
+                     meshType = XDMF
+                  case default
+                     write(*,*) "WARNING: The mesh file type '",
+     &                   trim(cmdlinearg),
+     &               "' is not valid. Valid types are ascii and xdmf."
+                  end select
+            case("-MFN","-mfn","--MFN","--mfn") ! mesh file name
+               meshFileNameSpecified = .true.
+               i = i + 1
+               call getarg(i,meshFileName)                                 
+            ! jgf51.21.27: Added options related to the nodal attributes file
+            case("-NFT","-nft","--NFT","--nft") ! nodal attributes file type 
+                  i = i + 1
+                  call getarg(i, CMDLINEARG)
+                  select case(trim(cmdlinearg))
+                  case("ASCII","Ascii","ascii")
+                     naType = ASCII ! this is the default anyway
+                  case("XDMF","Xdmf","xdmf")
+                     naType = XDMF
+                  case default
+                     write(*,*) 
+     &                   "WARNING: The nodal attributes file type '",
+     &                   trim(cmdlinearg),
+     &               "' is not valid. Valid types are ascii and xdmf."
+                  end select
+            case("--NFN","--nfn") ! nodal attributes file name
+                  naFileNameSpecified = .true.
+                  i = i + 1
+                  call getarg(i,naFileName)                                 
+            case default
+                  write(*,*) "WARNING: The command line option '",
+     &                  trim(cmdlinearg),"' is not valid and will be ignored."
+            end select
          END DO
          ! Conk out if MNPROC was not specified
          IF (MNPROC.EQ.0) THEN
@@ -295,6 +350,9 @@ C---------------------------------------------------------------------------
 C
       SUBROUTINE PREPINPUT()
       USE PRE_GLOBAL
+      use sizes, only : naType, meshType, controlType, ASCII, XDMF,
+     &   naFileName, meshFileName, controlFileName, formatString
+      use mesh, only : readMeshXDMF
 !tcm v50.85
 #ifdef WINDOWS
       USE IFPORT
@@ -323,33 +381,70 @@ C-- If ONLY localizing Nodal-Attributes File ( fort.13 )
 
 C-- If ONLY processing hotstart File(s) ( fort.67-68 )
       if (HOT_LOCAL .or. HOT_GLOBAL) then
-        write(*,'(/)')
-        write(*,*) 'Writing subdomain hotstart file for each subdomain'
-        CALL RELOCALIZE()
-        if (HOT_LOCAL)  CALL HOTLOCALIZE()
-        if (HOT_GLOBAL) CALL HOTGLOBALIZE()
-        GO TO 9999
+         write(*,'(/)')
+         write(*,*) 'Writing subdomain hotstart file for each subdomain'
+         CALL RELOCALIZE()
+         if (HOT_LOCAL)  CALL HOTLOCALIZE()
+         if (HOT_GLOBAL) CALL HOTGLOBALIZE()
+         GO TO 9999
+      endif
+C
+C--   Read the Global Grid File ( Unit 14 )
+C
+      select case(meshType)
+      case(ASCII)
+         call sizeup14()
+         if ( (partition.eqv..false.) .and. 
+     &        (hot_local.eqv..false.) .and. 
+     &        (hot_global.eqv..false.) ) then
+            call sizeup15()
+         endif
+         call alloc_main1()
+         call prepRead14()  ! use the existing read14 from prep/read_global.f
+      case(XDMF)
+         call readMeshXDMF() ! from src/mesh.F
+         ! copy mesh parameters from mesh module into pre_global module
+         call getMeshParametersXDMF() ! defined in prep/read_global.F
+         call sizeup15()
+      case default
+         write(6,'(a,i0,a)') 'ERROR: The mesh type ',meshType,
+     &     ' is invalid'
+         stop
+      end select
+      print *, 'Global Grid file read successfully.'
+      !
+      ! if XDMF output format was indicated for any file, then write
+      ! the names of the fulldomain input files for later use by
+      ! XDMF output routines
+      if (useXDMF.eqv..true.) then
+         open(unit=30,file='fulldomainInputFiles',
+     &       status='replace',action='write')
+         write(30,'(a)') 'naType'
+         write(30,'(a)') trim(formatString(naType))
+         write(30,'(a)') 'naFileName'
+         write(30,'(a)') trim(naFileName)
+         write(30,'(a)') 'meshType'
+         write(30,'(a)') trim(formatString(meshType))
+         write(30,'(a)') 'meshFileName'
+         write(30,'(a)') trim(meshFileName)
+         write(30,'(a)') 'controlType'
+         write(30,'(a)') trim(formatString(controlType))
+         write(30,'(a)') 'controlFileName'
+         write(30,'(a)') trim(controlFileName)
+         close(30)      
       endif
 
-      CALL SIZEUP()
-      CALL ALLOC_MAIN1()
-C
-C-- Read the Global Grid File ( Unit 14 )
-C
-      CALL READ14()
-      print *, 'Global Grid file read successfully.'
-
-C-- If ONLY localizing Run Info File ( fort.15 )
+C--   If ONLY localizing Run Info File ( fort.15 )
       if (PREP_15) then
-        CALL READ15()
-        print *, 'Global Run Info file read successfully.'
-        CALL RELOCALIZE()
-        CALL PREP15()
-        !jgf48.07 Initialize netCDF output files
-        IF (useNetCDF) THEN
-           write(*,*) "INFO: Initializing the netCDF output files."
-           ! call netCDF module
-           CALL PREPNETCDF()
+         CALL READ15()
+         print *, 'Global Run Info file read successfully.'
+         CALL RELOCALIZE()
+         CALL PREP15()
+         !jgf48.07 Initialize netCDF output files
+         IF (useNetCDF) THEN
+            write(*,*) "INFO: Initializing the netCDF output files."
+            ! call netCDF module
+            CALL PREPNETCDF()
          ENDIF
          GO TO 9999
       endif

@@ -676,7 +676,8 @@ C
 C***********************************************************************
 
       SUBROUTINE NWS12INTERP_BASIN(NP)
-      USE GLOBAL,ONLY : SLAM,SFEA,RAD2DEG
+      USE GLOBAL, ONLY : RAD2DEG
+      USE MESH, ONLY : SLAM, SFEA
 
       IMPLICIT NONE
 
@@ -780,7 +781,8 @@ C
 C***********************************************************************
 
       SUBROUTINE NWS12INTERP_REGION(NP)
-      USE GLOBAL,ONLY : SLAM,SFEA,RAD2DEG
+      USE GLOBAL, ONLY : RAD2DEG
+      USE MESH, ONLY : SLAM, SFEA
       IMPLICIT NONE
 
       INTEGER   NP,I,J,K,XI,YI

@@ -4,12 +4,11 @@ C******************************************************************************
 C
       MODULE MESSENGER
       USE SIZES
-      USE GLOBAL, ONLY: C3D, COMM, NODES_LG, IMAP_EL_LG,
+      USE GLOBAL, ONLY: C3D, COMM,
      &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,
-     &    COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID, SIG_VAL,
-     &    SIG_WRITE, SIG_TERM, SIG_PAUSE, FLOAT_TYPE, REALTYPE,
-     &    DBLETYPE,CPL2STWAVE,Flag_ElevError,
-     &    DEBUG, ECHO, INFO, WARNING, ERROR,
+     &    COMM_WRITER, COMM_WRITEH, COMM_HSLEEP, WRITER_ID, 
+     &    SIG_TERM, FLOAT_TYPE, REALTYPE, DBLETYPE,
+     &    DEBUG, ECHO, INFO, WARNING, ERROR, CPL2STWAVE,Flag_ElevError,
      &    screenMessage, logMessage, allMessage, setMessageSource,
      &    unsetMessageSource, scratchMessage     
      
@@ -53,6 +52,7 @@ C  Message-Passing Array space
       REAL(SZ),ALLOCATABLE :: SENDBUF(:,:), RECVBUF(:,:)
       !jgf50.82: Create a flag for unrecoverable issue on a subdomain
       LOGICAL :: subdomainFatalError ! true if mpi_abort should be called
+
 C
 C
       CONTAINS
@@ -78,7 +78,7 @@ C----------------------------------------------------------------------
 #endif
       INTEGER, OPTIONAL :: MPI_COMM
       INTEGER :: I
-      INTEGER, ALLOCATABLE :: RANKS(:),WRANKS(:)
+      INTEGER, ALLOCATABLE :: RANKS(:)  ! array of mpi ranks for compute processors
       INTEGER :: SENDBUF, RECVBUF
       INTEGER :: IRANK_SLEEP(2)        !st3 100711  for hsfile
 C
@@ -118,34 +118,38 @@ C.......Duplicate communicator
 
 C...  Create a communicator for computation
       DO I=1,MNPROC
-        RANKS(I) = I-1
+         RANKS(I) = I-1
       ENDDO
-
+      !
+      ! jgf51.21.27: Create group and communicator consisting
+      ! only of compute processors
       CALL MPI_COMM_GROUP(MPI_COMM_ADCIRC,GROUP_WORLD,IERR)
       CALL MPI_GROUP_INCL(GROUP_WORLD,MNPROC,RANKS,GROUP_COMP,IERR)
       CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_COMP,COMM_COMP,IERR)
-
       WRITER_ID = 0
-
+      !
+      ! if we have dedicated writer processors, then for each one
+      ! create a group and communicator that includes
+      ! that one dedicated writer processor and all the compute 
+      ! processors ... so if we have 4 dedicated writer processors
+      ! there will be 4 writer communicators and 4 writer groups
+      ! ... in each one of these the writer is the highest rank processor
+      ! in the group (the writer will be of rank mnproc)
       IF(MNWPROC > 0) THEN
-C...  Allocate memory for groups and communicators
-        ALLOCATE(WRANKS(MNWPROC))
-        ALLOCATE(GROUP_WRITER(MNWPROC),COMM_WRITER(MNWPROC))
-
-C...  Create communicators for global file writings
-        DO I=1,MNWPROC
-          RANKS(MNPROC+1) = MNPROC - 1 + I
-
-          CALL MPI_GROUP_INCL(GROUP_WORLD,MNPROC+1,RANKS,
+C...     Allocate memory for groups and communicators
+         ALLOCATE(GROUP_WRITER(MNWPROC),COMM_WRITER(MNWPROC))
+C...     Create communicators for global file writings
+         DO I=1,MNWPROC
+            RANKS(MNPROC+1) = MNPROC - 1 + I
+            CALL MPI_GROUP_INCL(GROUP_WORLD,MNPROC+1,RANKS,
      &                        GROUP_WRITER(I),IERR)
-          CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_WRITER(I),
+            CALL MPI_COMM_CREATE(MPI_COMM_ADCIRC,GROUP_WRITER(I),
      &                        COMM_WRITER(I),IERR)
 
-          IF(MYPROC == MNPROC - 1 + I) THEN
-            WRITER_ID = I
-          ENDIF
-        ENDDO
-
+            IF(MYPROC == MNPROC - 1 + I) THEN
+               WRITER_ID = I
+            ENDIF
+         ENDDO
       ENDIF
 !st3 for hsfile 05.14.2010
 #ifdef ADCNETCDF
@@ -188,8 +192,6 @@ C...  Create communicators for global file writings
 C---------------------------------------------------------------------      
       END SUBROUTINE MSG_INIT
 C---------------------------------------------------------------------
-
-
 
 
 C---------------------------------------------------------------------
