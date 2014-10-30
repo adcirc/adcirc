@@ -79,7 +79,7 @@ C  If ICS=2 Will Convert later in read15
 C
       NUMLINES=2
       DO I = 1,NNODG
-         READ(14,*) J,X(J),Y(J),DP(J)
+         READ(14,*) J,X(I),Y(I),DP(I)
          IF (J.NE.I) THEN
             print *, I,J
             STOP 'Node Numbering not in Sequential Order'
@@ -89,7 +89,7 @@ C
 C--Read Element Connectivity Table
 C
        DO I = 1,NELG
-          READ(14,*) J,ITEMP,NNEG(1,J),NNEG(2,J),NNEG(3,J)
+          READ(14,*) J,ITEMP,NNEG(1,I),NNEG(2,I),NNEG(3,I)
           IF (J.NE.I) THEN
             print *, I,J
             STOP 'Element Numbering not Sequential'
@@ -307,7 +307,7 @@ C     jgf51.21.29: If the mesh file is in XDMF format, the adcirc module
 C     mesh.F is used to read the data. In order to get the data into the
 C     pre_global module, this subroutine is required. Someday, adcprep 
 C     will no longer use pre_global, and will just rely on the adcirc 
-C     global model, and we will be able to remove this subroutine.  
+C     global module, and we will be able to remove this subroutine.  
 C----------------------------------------------------------------------
       subroutine getMeshParametersXDMF()
       use memory_usage
@@ -390,9 +390,10 @@ C     vjp  3/28/98
 C---------------------------------------------------------------------
       SUBROUTINE READ15()
       USE PRE_GLOBAL
+      USE MESH, ONLY : CPP
       USE GLOBAL, ONLY : MNHARF, parse, a2f, hss, screenUnit, STATNAME,
      &                   STATNAMEV, STATNAMEM, STATNAMEC, ERROR, DEBUG,
-     &                   allMessage, setMessageSource,
+     &                   allMessage, setMessageSource, deg2rad,
      &                   unsetMessageSource
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
@@ -893,16 +894,13 @@ C
          DO I = 1,NNODG
             SL1(I) = DEG2RAD*SLAM(I)
             SF1(I) = DEG2RAD*SFEA(I)
-            SLAM(I) = R*(SL1(I)-SL0)*COS(SF0)
-            SFEA(I) = R*SF1(I)
+            call cpp(slam(i),sfea(i),sl1(i),sf1(i),sl0,sf0)
          ENDDO
       ELSE
          ! jgf: Need these to be populated for ICS=1 for NetCDF file
          SL1 = SLAM
          SF1 = SFEA 
       ENDIF
-
-
 C
       READ(15,80) TAUMSG
       IF (NOLIBF.EQ.0) THEN
@@ -923,8 +921,6 @@ C
       READ(15,80) CORIMSG
       READ(CORIMSG,*) CORI
 C
-
-
       READ(15,80) NTIFMSG
       READ(NTIFMSG,*) NTIF
       IF (NTIF.GT.MNTIF) THEN
@@ -1151,9 +1147,7 @@ C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
 
             SLEL(I)=DEG2RAD*SLEL(I)
             SFEL(I)=DEG2RAD*SFEL(I)
-c           CALL CPP(XEL(I),YEL(I),SL1,SF1,SL0,SF0)
-            XEL(I) = R*(SLEL(I)-SL0)*COS(SF0)
-            YEL(I) = R*SFEL(I)
+            CALL CPP(XEL(I),YEL(I),SLEL(i),SFEL(i),SL0,SF0)
          ENDIF
          ENDDO !loop over elevation stations
          if (USE_ELEV_STAT_FILE) CLOSE(151) !close external file if one was used
@@ -1264,9 +1258,7 @@ C     ==================================================================
 
            SLEV(I)=DEG2RAD*SLEV(I)
            SFEV(I)=DEG2RAD*SFEV(I)
-C          CALL CPP(XEV(I),YEV(I),SL1,SF1,SL0,SF0)
-           XEV(I) = R*(SLEV(I)-SL0)*COS(SF0)
-           YEV(I) = R*SFEV(I)
+           CALL CPP(XEV(I),YEV(I),SLEV(i),SFEV(i),SL0,SF0)
          ENDIF  !test for ICS
       ENDDO !loop over velocity stations
       IF (USE_VEL_STAT_FILE) CLOSE(151) !close external file if one was used
@@ -1332,9 +1324,7 @@ C
              READ(STACLOC(I),*) SLEC(I),SFEC(I)
              SLEC(I)=DEG2RAD*SLEC(I)
              SFEC(I)=DEG2RAD*SFEC(I)
-c            CALL CPP(XEC(I),YEC(I),SL1,SF1,SL0,SF0)
-             XEC(I) = R*(SLEC(I)-SL0)*COS(SF0)
-             YEC(I) = R*SFEC(I)
+             CALL CPP(XEC(I),YEC(I),SLEC(i),SFEC(i),SL0,SF0)
            ENDIF !test for ICS
         ENDDO  !loop over stations
         IF (USE_CONC_STAT_FILE) CLOSE(151) !CLOSE EXTERNAL FILE IF ONE WAS USED
@@ -1448,9 +1438,7 @@ C     ==================================================================
 
                SLEM(I)=DEG2RAD*SLEM(I)
                SFEM(I)=DEG2RAD*SFEM(I)
-c     CALL CPP(XEM(I),YEM(I),SL1,SF1,SL0,SF0)
-               XEM(I) = R*(SLEM(I)-SL0)*COS(SF0)
-               YEM(I) = R*SFEM(I)
+               CALL CPP(XEM(I),YEM(I),SLEM(i),SFEM(i),SL0,SF0)
             ENDIF  !test for ICS
          ENDDO  !loop over stations
          IF (USE_MET_STAT_FILE) CLOSE(151) !CLOSE EXTERNAL FILE IF ONE WAS USED        
@@ -1675,16 +1663,16 @@ C     tjc  6/24/02
 C---------------------------------------------------------------------
       SUBROUTINE READ15_3DVS()
       USE PRE_GLOBAL
-      USE GLOBAL, ONLY : parse, a2f, SNAMLEN
+      USE GLOBAL, ONLY : parse, a2f, SNAMLEN, deg2rad, day2sec
       USE GLOBAL_3DVS, ONLY : STATNAMED, STATNAMEV3D, STATNAMET, SIGMA,
      &    FEGRIDS
+      USE MESH, only : cpp
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
       INTEGER I,J,K,M,N                                        ! loop counters
       CHARACTER(50) LVAR(3)
       REAL(8) :: STATIME
-      REAL(8), PARAMETER :: day2sec=24.d0*3600.d0
       REAL(sz) :: HH1 ! domain averaged depth
       INTEGER :: NH   ! horizontal node counter
 C
@@ -1706,9 +1694,6 @@ C     written to the fort.18 message passing file.
       NNSTA3DVP = 0
       NNSTA3DTP = 0
 C
-      SL0=DEG2RAD*SLAM0 !jgf45.12
-      SF0=DEG2RAD*SFEA0
-
 C
  350  FORMAT(//,2X,'***** INVALID INPUT IN THE PRIMARY VERTICAL INPUT',
      &          ' FILE (UNIT 15) ****',/,'****** RUN TERMINATED ******')
@@ -1858,11 +1843,10 @@ C  kmd48.33bc changed to -2 and I3DSD not equal to 0
                Y3DD(I)=a2f(LVAR(2))
             ELSE
                SL3DD(I)=a2f(LVAR(1))
-               SF3DD(I)=a2f(LVAR(2))
+               SF3DD(I)=a2f(LVAR(2))              
                SL3DD(I)=DEG2RAD*SL3DD(I)
                SF3DD(I)=DEG2RAD*SF3DD(I)
-               X3DD(I) = R*(SL3DD(I)-SL0)*COS(SF0)
-               Y3DD(I) = R*SF3DD(I)
+               call cpp(x3dd(i),y3dd(i),sl3dd(i),sf3dd(i),sl0,sf0)
             ENDIF
          ENDDO
 C
@@ -1923,8 +1907,7 @@ C  kmd48.33 changed to -2
                SF3DV(I)=a2f(LVAR(2))
                SL3DV(I)=DEG2RAD*SL3DV(I)
                SF3DV(I)=DEG2RAD*SF3DV(I)
-               X3DV(I) = R*(SL3DV(I)-SL0)*COS(SF0)
-               Y3DV(I) = R*SF3DV(I)
+               call cpp(x3dv(i),y3dv(i),sl3dv(i),sf3dv(i),sl0,sf0)
             ENDIF
          ENDDO
 C     jgf45.11 For each 3D velocity station, find the full-domain index of
@@ -1978,8 +1961,7 @@ C  kmd48.33 changed to -2
                SF3DT(I)=a2f(LVAR(2))
                SL3DT(I)=DEG2RAD*SL3DT(I)
                SF3DT(I)=DEG2RAD*SF3DT(I)
-               X3DT(I) = R*(SL3DT(I)-SL0)*COS(SF0)
-               Y3DT(I) = R*SF3DT(I)
+               call cpp(x3dt(i),y3dt(i),sl3dt(i),sf3dt(i),sl0,sf0)
             ENDIF
          ENDDO
 
@@ -2099,44 +2081,9 @@ C     Temperature boundary condition file type, if necessary
       RETURN
 C
  80   FORMAT(A80)
-      END SUBROUTINE
-
-*******************************************************************************
-C                                                                             *
-C    Transform from lon,lat (lamda,phi) coordinates into CPP coordinates.     *
-C    Lon,Lat must be in radians.                                              *
-C                                                                             *
-C******************************************************************************
-
-      SUBROUTINE CPP(X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0)
-      IMPLICIT NONE
-      REAL(8) X, Y, PHI, RLAMBDA
-      REAL(8) RLAMBDA0, PHI0, R
-C
-      R=6378206.4
-      X=R*(RLAMBDA-RLAMBDA0)*COS(PHI0)
-      Y=PHI*R
-      RETURN
-      END
-
-
-C******************************************************************************
-C                                                                             *
-C    Transform from CPP coordinates to lon,lat (lamda,phi) coordinates        *
-C    Lon,Lat is in radians.                                                   *
-C                                                                             *
-C******************************************************************************
-
-      SUBROUTINE INVCP(XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0)
-      IMPLICIT NONE
-      REAL(8) XXCP, YYCP, PHI, RLAMBDA
-      REAL(8) RLAMBDA0, PHI0, R
-C
-      R=6378206.4
-      RLAMBDA=RLAMBDA0+XXCP/(R*COS(PHI0))
-      PHI=YYCP/R
-      RETURN
-      END
+C---------------------------------------------------------------------- 
+      END SUBROUTINE READ15_3DVS
+C----------------------------------------------------------------------      
 
 C----------------------------------------------------------------------
 C         S U B R O U T I N E    S E T U P K D T S E A R C H
@@ -2151,12 +2098,10 @@ C----------------------------------------------------------------------
       subroutine setup_kdt_search
       use pre_global, only : SLAM,SFEA,NNEG,RMAX,BCXY,NELG
 
-
       implicit none
       integer :: i
       integer :: ielm(3)
       real(8) :: xelm(3),yelm(3),shplocal(7)
-
 
       do i=1,NELG
          ielm(:) = NNEG((/1,2,3/),i)  !element's node numbers
@@ -2187,8 +2132,9 @@ C----------------------------------------------------------------------
        enddo !i
 
       return
+C----------------------------------------------------------------------
       end subroutine setup_kdt_search
-
+C----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
 C         S U B R O U T I N E    K D T S E A R C H

@@ -2,6 +2,14 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C    v51.33.05 - Fixed issue with adcprep: mesh coordinates were
+C                not suitably initialized, causing floating point exception
+C                problems in the setup_kdt_search subroutine; eliminated
+C                redundant specification of deg2rad, rad2deg, and Rearth
+C                parameters as well as CPP projection sub between adcprep and 
+C                adcirc, including CPP projection of station coordinates; 
+C                removed INVCPP subroutine from adcprep since it was not 
+C                called from anywhere. 
 C    v51.33.04 - 10/26/2014 - jgf - Updated this file by adding entries for
 C                each commit that has been made on this branch; merged trunk
 C                changes that occurred from r1014 through r1031; minor fixes

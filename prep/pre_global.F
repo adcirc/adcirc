@@ -255,9 +255,6 @@ C     SOLVER  section
 C
 C--Degress-to-Radians and Radians-to-Degrees
 C
-C     CONVERT section
-      REAL(8) DEG2RAD,RAD2DEG,R
-C
 C     jgf48.03 netCDF metadata
       CHARACTER(80) title
       CHARACTER(80) institution
