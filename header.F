@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C    v51.33.06 - Fixes to enable compilation with intel14 compilers on
+C                hatteras at RENCI.
 C    v51.33.05 - Fixed issue with adcprep: mesh coordinates were
 C                not suitably initialized, causing floating point exception
 C                problems in the setup_kdt_search subroutine; eliminated

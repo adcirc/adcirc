@@ -3267,7 +3267,9 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
 #endif
       call unsetMessageSource()
       RETURN
-      END
+C-----------------------------------------------------------------------
+      end subroutine writeOutput3D
+C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E   W R I T E  O U T  A R R A Y
