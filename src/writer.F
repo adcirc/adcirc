@@ -6,7 +6,9 @@ C                                                              05 Feb 2007, sb
 C******************************************************************************
 C
       module writer
-      use sizes
+      use sizes, only : sz, mnproc, mnwproc, OFF, ASCII, SPARSE_ASCII,
+     &     NETCDF3, NETCDF4, XDMF, iSplit, globalDir, meshType, 
+     &     controlType, meshFileName_g, controlFileName_g
       use global, only: c3d, comm,
      &     bufsize_max, buf, resultbuf, outputdatadescript_t, float_type,
      &     debug, echo, info, warning, error, logmessage, allmessage,
@@ -15,7 +17,7 @@ C
      &     sig_val, sig_write, sig_pause, comm_writer, writer_id,
      &     sig_term, realtype, dbletype, sig_mesh
       use messenger, only: tag, msg_fini
-#ifdef have_mpi_mod
+#ifdef HAVE_MPI_MOD
       use mpi
       implicit none
 #else
@@ -299,7 +301,6 @@ C     before receiving the actual output data. The data are not actually
 C     written in this subroutine.
 C-----------------------------------------------------------------------
       subroutine writer_recv_values()
-      use global
       implicit none
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
@@ -308,7 +309,7 @@ C-----------------------------------------------------------------------
       integer :: ierr
       integer :: bufsize
       integer :: istart, iend
-      integer :: mpistat(mpi_status_size)
+      integer :: mpistat(MPI_STATUS_SIZE)
       logical :: descriptFound ! true if we found the particular buffer we need
       character(len=8) :: cdigit  !st3 100708: split file
 

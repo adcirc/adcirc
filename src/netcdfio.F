@@ -36,11 +36,12 @@
       !
       !=================================================================
       MODULE NETCDFIO
-      USE SIZES, ONLY : SZ
+      USE SIZES, ONLY : SZ, OFF, ASCII, BINARY, SPARSE_ASCII, NETCDF3,
+     &   NETCDF4, XDMF
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
-     &     screenMessage, logMessage, allMessage, setMessageSource,
-     &     unsetMessageSource, scratchMessage, OFF, ASCII, BINARY,
-     &     SPARSE_ASCII, NETCDF3, NETCDF4, XDMF
+     &   screenMessage, logMessage, allMessage, setMessageSource,
+     &   unsetMessageSource, scratchMessage
+     &     
       USE NETCDF        ! enables the fortran 90 interface to netcdf
       IMPLICIT NONE
       include 'netcdf.inc' ! enables the fortran 77 interface to netcdf
@@ -1181,7 +1182,8 @@ C     full domain data.
 C-----------------------------------------------------------------------
       SUBROUTINE initNodalDataFile(dat, descript1, reterr,
      &   descript2, descript3)
-      USE GLOBAL, ONLY : OutputDataDescript_t, NWS, C3D, IDEN, MNWPROC, NE_G 
+      USE SIZES, ONLY : MNWPROC
+      USE GLOBAL, ONLY : OutputDataDescript_t, NWS, C3D, IDEN, NE_G 
       USE GLOBAL_3DVS, ONLY : NFEN
       USE MESH, ONLY : ICS
       IMPLICIT NONE
@@ -5628,8 +5630,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE writeNetCDFHotstart(lun, Elev1Descript,
      &        Elev2Descript, VelDescript, CH1Descript, EtaDiscDescript,
      &        NodeCodeDescript, NOFFDescript, timesec, it)
-      USE SIZES, ONLY : globaldir
-      USE GLOBAL, ONLY : OutputDataDescript_t, MNPROC,
+      USE SIZES, ONLY : globaldir, mnproc
+      USE GLOBAL, ONLY : OutputDataDescript_t,
      &                   im, iestp, nscoue, ivstp, imhs,
      &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
      &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
@@ -6700,14 +6702,14 @@ C-----------------------------------------------------------------------
 C     jgf49.17.02 Reads data from the hotstart file.
 C-----------------------------------------------------------------------
       SUBROUTINE readNetCDFHotstart(lun, timeLoc)
-      USE SIZES, ONLY : globaldir
+      USE SIZES, ONLY : globaldir, mnproc
       USE GLOBAL, ONLY : OutputDataDescript_t, FileFmtRev, FileFmtMinor,
      &                   FileFmtMajor, imhs, iths, iestp, nscoue, ivstp,
      &                   nscouv, icstp, nscouc, ipstp, iwstp, nscoum,
      &                   igep, nscouge, igvp, nscougv, igcp, nscougc,
      &                   igpp, igwp, nscougw, ETA1, ETA2, EtaDisc,
      &                   UU2, VV2, NNODECODE, NOFF, 
-     &                   MNPROC, MYPROC, IM, NP_G, NE_G, NODES_LG, IMAP_EL_LG
+     &                   MYPROC, IM, NP_G, NE_G, NODES_LG, IMAP_EL_LG
       USE MESH, ONLY : NE, NP
 #ifdef CMPI
       USE MESSENGER, ONLY : MSG_FINI

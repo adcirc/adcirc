@@ -1,24 +1,25 @@
 ##############################################################################
-# IA32_Intel/x86-64_Intel:	Intel Pentium with Linux using Intel compiler 11.
+# IA32_PGF:		Intel Pentium with Linux using Portland Group compiler
+# Note: -lpgc is required for OpenMP.
 ##############################################################################
-F90_SER = gfortran
-F90_OMP = gfortran
-F90_MPI = mpif90
-FLAGS_OPT = -O2
-FLAGS_MSC = -W0 -assume byterecl -traceback -diag-disable 8291 -diag-disable 8293
-FLAGS90_MSC = $(FLAGS_MSC)
-FLAGS_SER =
-FLAGS_OMP = -openmp
-FLAGS_MPI =
+F90_SER = pgf90
+F90_OMP = pgf90
+F90_MPI = ftn
+FLAGS_OPT =
+FLAGS_MSC = 
+FLAGS_SER = -fast
+FLAGS_OMP = -mp
+FLAGS_MPI = -fast -tp barcelona-64 
 INCS_SER =
 INCS_OMP =
 INCS_MPI =
 LIBS_SER =
-LIBS_OMP =
-LIBS_MPI =
+LIBS_OMP = -lpgc
+LIBS_MPI = 
+O_DIR = ../work/odir4/
 O_DIR = ../work/odir4/
 OUT = -o 
 EXTO = o
 MAKE = make
 RM = rm -f
-swch = -unix
+swch = -unix -impi

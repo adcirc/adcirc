@@ -13,7 +13,8 @@ C----------------------------------------------------------------------
       MODULE WRITE_OUTPUT
 C----------------------------------------------------------------------
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : OutputDataDescript_t
+      USE GLOBAL, ONLY : OutputDataDescript_t, setMessageSource, 
+     &  unsetMessageSource
 
       !
       !    2 D   D A T A
@@ -207,8 +208,31 @@ C     jgf51.21.24: Initialize 2D output data structures.
 C----------------------------------------------------------------------
       SUBROUTINE initOutput2D()
       USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
-     &                  GLOBALDIR
-      USE GLOBAL
+     &                  GLOBALDIR, OFF, ASCII, NETCDF3, NETCDF4, XDMF, 
+     &                  numFormats, write_local_files, localdir
+      USE GLOBAL, ONLY : imap_stae_lg, imap_stav_lg, et00, eta2,
+     &   nscoue, iestp, nne, staie1, staie2, staie3, xel, yel, 
+     &   slel, sfel, uu00, vv00, uu2, vv2, nscouv, ivstp, nnv,
+     &   staiv1, staiv2, staiv3, xev, yev, slev, sfev, nscouge,
+     &   igep, nodes_lg, eta2_g, nscougt, itau0p, nscougs, igsp,
+     &   sponge, nscougv, igvp, uu2_g, vv2_g, imap_stam_lg, rmp00,
+     &   pr2, nscoum, ipstp, nnm, staim1, staim2, staim3,
+     &   xem, yem, slem, sfem, rmu00, rmv00, wvnxout, wvnyout, 
+     &   iwstp, nscougw, igpp, igwp, dp00, ibstp, igbp, igip, 
+     &   ciceout, rmice00, iicestp, igrads, rsnxout, rsnyout, 
+     &   imap_stac_lg, cc00, ch1, xec, yec, slec, sfec, ch1_g,
+     &   nscougc, igcp, ch1, ch1_g, etamax_time_g, etamax, 
+     &   etamax_time, umax_time_g, umax, umax_time, prmin_time_g,
+     &   prmin, wvnoutmax_time_g, wvnoutmax_time, rsnmax_time_g,
+     &   rsnmax_time, eslonoff, prmin_time, wvnoutmax, rsnmax, 
+     &   hot_eslonoff, hot_eslonoff_g, nstae_g, noute, nstae, 
+     &   ntcyse, ntcyfe, nspoole, nstav_g, noutv, nstav, ntcysv, 
+     &   ntcyfv, nspoolv, noutge, ntcysge, ntcyfge, nspoolge, 
+     &   np_g, outputsponge, noutgv, ntcysgv, nspoolgv, nstam_g,
+     &   noutm, nstam, ntcyfgv, ntcysm, ntcyfm, nspoolm, nws, 
+     &   noutgw, ntcysgw, ntcyfgw, nspoolgw, nddt, ncice, nrs, 
+     &   noutc, nstac_g, nstac, im, noutgc, ntcyfgc, ntcysgc,
+     &   nspoolgc, INFO, scratchMessage, allMessage
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim
 #ifdef ADCNETCDF
@@ -221,9 +245,16 @@ C----------------------------------------------------------------------
       USE WRITER, ONLY : sendInitWriterXDMF
 #endif
 #endif
+      implicit none
 C
       character(len=20) :: extString ! string version of integer file extension
       logical:: nerr
+      integer :: i 
+C
+      call setMessageSource("initOutput2D")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
       !
       ! jgf52.21.24: Create an array of pointers to all the 2D output 
       ! data structures, which enables us to iterate over them; this
@@ -910,7 +941,7 @@ C        maxrs.63
                   write(scratchMessage,'(a,a,a)') 'Output file ',
      &               trim(ptr(i) % descript2D % file_name),
      &             ' will be written via dedicated writer processor(s).'
-                  call allMessage(INFO,scratchMessage)                    
+                  call allMessage(INFO,scratchMessage)
                endif
             endif
          end do
@@ -957,6 +988,10 @@ C        maxrs.63
             endif
          end do
       endif
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C----------------------------------------------------------------------
       end subroutine initOutput2D
 C----------------------------------------------------------------------
@@ -971,10 +1006,11 @@ C
 C----------------------------------------------------------------------
       SUBROUTINE writeOutput2D(IT,TimeLoc)
       USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
-     &                  GLOBALDIR
+     &                  GLOBALDIR, OFF
       USE GLOBAL
       USE MESH, ONLY : NP, NE, DP, NM, ICS
-      USE GLOBAL_IO, ONLY: storeOne, storeTwo, write_gbl_file_skip_default, 
+      USE GLOBAL_IO, ONLY: storeOne, storeTwo,
+     &    write_gbl_file_skip_default, 
      &    packOne, unpackOne, packTwo, unpackTwo
       USE NodalAttributes, ONLY : LoadEleSlopeLim
 #ifdef CMPI
@@ -985,6 +1021,10 @@ C----------------------------------------------------------------------
       REAL(8), intent(in) :: TimeLoc
       INTEGER :: i
 
+      call setMessageSource("writeOutput2D")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
       do i=1,numOutputDescript2D
          !
          ! if these data should not be written at all, due to circumstances
@@ -1100,6 +1140,11 @@ C       TURNED ON DURING THE RUN
      &               packOne, unpackOne)  !no time stamps so only one pack/unpack
          ENDIF
       ENDIF
+
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
  2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
@@ -1121,12 +1166,22 @@ C-----------------------------------------------------------------------
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
       
+      call setMessageSource("stationDataInterp")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
+
       call stationArrayInterp(descript, descript % interped_array,
      &       descript % array)    
       if ( descript % num_items_per_record .eq. 2 ) then
          call stationArrayInterp(descript, descript % interped_array2,
      &         descript % array2)
       endif
+
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C-----------------------------------------------------------------------
       end subroutine stationDataInterp
 C-----------------------------------------------------------------------         
@@ -1135,11 +1190,12 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------         
 C      S U B R O U T I N E   S T A T I O N   A R R A Y   I N T E R P
 C-----------------------------------------------------------------------         
-C      jgf51.21.24: Performs spatial interpolation on a single array.
+C     jgf51.21.24: Performs station interpolations on a single array.
 C-----------------------------------------------------------------------            
       subroutine stationArrayInterp(descript, fromArray, toArray)
       use sizes, only : sz
-      use global, only : nodecode, OutputDataDescript_t, IFNLFA, ETA2, NOFF
+      use global, only : nodecode, OutputDataDescript_t, IFNLFA, ETA2,
+     &    NOFF
       use mesh, only : dp, nm
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
@@ -1150,6 +1206,11 @@ C-----------------------------------------------------------------------
       real(sz) :: H2N1, H2N2, H2N3
       integer :: ncele
       integer :: i, j
+
+      call setMessageSource("stationArrayInterp")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
 
       do j=1, descript % num_records_this
          e = descript % elements(j)
@@ -1183,6 +1244,11 @@ C-----------------------------------------------------------------------
          endif
         
       end do
+
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C----------------------------------------------------------------------      
       end subroutine stationArrayInterp
 C----------------------------------------------------------------------
@@ -1206,7 +1272,8 @@ C removed from global  myProc, MNPROC,
      &                   XEL, SFEL, YEL, NSTAV_G, NSTAV,
      &                   IMAP_STAV_LG, SLEV, XEV, SFEV,
      &                   YEV, screenMessage, DEBUG,
-     &                   setMessageSource, unsetMessageSource, NE_G, NP_G, NODES_LG
+     &                   setMessageSource, unsetMessageSource,
+     &                   NE_G, NP_G, NODES_LG
       USE MESH, ONLY : NP, NE, ICS
       USE GLOBAL_IO, ONLY:
      &    open_gbl_file, write_gbl_file, collectFullDomainArray,
@@ -1231,15 +1298,15 @@ C
       LOGICAL, SAVE :: FirstCall = .true.
 C
       call setMessageSource("writeHarmonicAnalysisOutput")
-#ifdef WRITE_OUTPUT_TRACE
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call screen(DEBUG,"Enter.")
 #endif
       ! JUST RETURN if harmonic analysis was not specified
       ! tcm v49.64.02 -added itime le ithas to be
       ! consistent with what is in solveHarmonicAnalysis
       IF ((IHARIND.eq.0).or.(ITIME.LE.ITHAS)) THEN
-#ifdef WRITE_OUTPUT_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
          RETURN
       ENDIF
@@ -1663,7 +1730,7 @@ C     Means and variance calculations, if specified (fort.55).
       ENDIF
 
  7637 format(2x,3(1pE16.8E3,1x),2x,3(1pE16.8E3,1x))
-#ifdef WRITE_OUTPUT_TRACE
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call screen(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
@@ -1699,8 +1766,8 @@ C     local vars
       CHARACTER(7) :: fn     ! outfile name (valid for lun between 10 and 99)
 C
       call setMessageSource("writeOutHarmonicArrays")
-#ifdef WRITE_OUTPUT_TRACE
-      call screen(DEBUG,"Enter.")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
 #endif
 C
 C     initialize output file name
@@ -1774,8 +1841,8 @@ C
  6635 format(2x,1pE16.8E3,1x,0pf11.4)
  6636 format(2x,1pE16.8E3,1x,0pf11.4,2x,1pE16.8E3,1x,0pf11.4)
  3679 format(1x,e20.10,1x,f10.7,1x,f12.8,1x,a10)
-#ifdef WRITE_OUTPUT_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C-----------------------------------------------------------------------
@@ -1814,6 +1881,11 @@ C
       CHARACTER(len=7) :: fn ! file name of 3D output file
       INTEGER :: N ! loop counter
       INTEGER :: ios ! i/o status, 0 indicates success
+C
+      call setMessageSource("initOutput3D")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
 C
       ios=0
 C
@@ -1949,6 +2021,10 @@ C
       ENDIF
 C
 
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
  499  FORMAT(1X,A32,2X,A24,2X,A24)
 C..RJW bug fix in 498 (kendra found this)
  498  FORMAT(1X,I10,1X,I10,1X,1pE15.7E3,1X,I10,1X,I10,1X,I3)
@@ -1982,7 +2058,8 @@ C-----------------------------------------------------------------------
 C RJW added MYPROC
       USE GLOBAL, ONLY : ScreenUnit, BCFLAG_TEMP, scratchMessage,
      &    DEBUG, INFO, WARNING, ERROR, screenMessage, setMessageSource,
-     &    unsetMessageSource, allMessage, OutputDataDescript_t, NP_G, NODES_LG
+     &    unsetMessageSource, allMessage, OutputDataDescript_t, NP_G,
+     &    NODES_LG
       USE MESH, ONLY : NP, ICS, NM
       USE GLOBAL_3DVS
       USE GLOBAL_IO, ONLY: packNPbyM, unpackNPbyM,
@@ -2012,8 +2089,8 @@ C RJW added MYPROC
       LOGICAL, dimension(14) :: netcdf_error
 C
 C
-      call setMessageSource("writeoutput3D")
-#ifdef WRITE_OUTPUT_TRACE
+      call setMessageSource("writeOutput3D")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 C
@@ -3262,7 +3339,7 @@ C        Check to see if it is time to generate 3D fulldomain turbulence output.
          ENDIF
       ENDIF
 
-#ifdef WRITE_OUTPUT_TRACE
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
@@ -3296,10 +3373,15 @@ C-----------------------------------------------------------------------
 C     args
       REAL(8), intent(in) :: TimeLoc ! seconds since cold start
       INTEGER, intent(in) :: it   ! number of time steps since cold start
-      type(OutputDataDescript_t), intent(in) :: descript !describes output data
+      type(OutputDataDescript_t), intent(inout) :: descript !describes output data
       EXTERNAL :: pack_cmd   ! subroutine used to pack data on subdomain
       EXTERNAL :: unpack_cmd ! subroutine used to unpack data on proc 0
       INTEGER :: I           ! loop counter
+
+      call setMessageSource("writeOutArray")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
 
 C     collect up the data from subdomains if running in parallel
       IF ((MNPROC.gt.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
@@ -3342,9 +3424,10 @@ C         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
                IF (descript % ConsiderWetDry .EQV. .TRUE.) THEN
                   DO I=1, descript % num_records_this
                      if(NODECODE(I).EQ.1) THEN
-                        WRITE(descript % lun,2453) I, descript % array(I)
+                        WRITE(descript % lun,2453) I,descript % array(I)
                      ELSE
-                        WRITE(descript % lun,2453) I, descript % alternate_value  !-99999.0 for dry nodes
+                        WRITE(descript % lun,2453) I,
+     &                     descript % alternate_value  !-99999.0 for dry nodes
                      ENDIF
                   END DO
                ELSE
@@ -3361,7 +3444,8 @@ C         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
             ENDIF
             CLOSE(descript % lun)
          ENDIF
-         descript % filepos = descript % filepos + 1 + descript % num_records_this
+         descript % filepos = descript % filepos + 1
+     &                        + descript % num_records_this
 
       CASE(BINARY) ! nonportable
 
@@ -3374,13 +3458,16 @@ C         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
             descript%filepos = descript%filepos + 2
             IF ( descript % num_items_per_record .eq. 1 ) THEN
                DO I=1, descript % num_fd_records
-                  WRITE(descript % lun,REC=descript % filepos+I) descript % array_g(I)
+                  WRITE(descript % lun,REC=descript % filepos+I)
+     &               descript % array_g(I)
                END DO
             ENDIF
             IF ( descript % num_items_per_record .eq. 2 ) THEN
                DO I=1, descript % num_fd_records
-                  WRITE(descript % lun,REC=descript % filepos+2*I-1) descript % array_g(I)
-                  WRITE(descript % lun,REC=descript % filepos+2*I)   descript % array2_g(I)
+                  WRITE(descript % lun,REC=descript % filepos+2*I-1)
+     &                descript % array_g(I)
+                  WRITE(descript % lun,REC=descript % filepos+2*I)
+     &                descript % array2_g(I)
                END DO
             ENDIF
             CLOSE(descript%lun)
@@ -3431,7 +3518,8 @@ C         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
          ENDIF
 #else
          call allMessage(ERROR, 'NetCDF was specified.')
-         call allMessage(ERROR, 'This executable was not compiled with NetCDF support.')
+         call allMessage(ERROR,
+     &   'This executable was not compiled with NetCDF support.')
          call terminate()
 #endif
 
@@ -3447,6 +3535,10 @@ C         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
          call allMessage(ERROR, scratchMessage)
       END SELECT
 
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
  2    FORMAT(I2)
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
  2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
@@ -3487,7 +3579,11 @@ C     args
       CHARACTER(len=3) :: cmp ! comparison to make vs hotstart val ('min' or 'max')
       LOGICAL :: nerr       ! error code from netcdf initialization
       INTEGER :: I          ! loop counter
-
+C
+      call setMessageSource("writeOutArrayMinMax")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
 C     collect up the data from subdomains if running in parallel
       IF ((MNPROC.gt.1).and.(.not.WRITE_LOCAL_FILES)) THEN
          CALL collectFullDomainArray(descript, pack_cmd, unpack_cmd)
@@ -3558,6 +3654,10 @@ Casey 120830: Reversed the next two lines.
          call allMessage(ERROR, scratchMessage)
       END SELECT
 
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
  2    FORMAT(I2)
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
  2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
@@ -4525,8 +4625,8 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
          STOP
       ENDIF
 
-#ifdef WRITE_OUTPUT_TRACE
-      call screen(DEBUG,"Return.")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C-----------------------------------------------------------------------
@@ -4560,6 +4660,11 @@ C
       INTEGER I ! node loop counter
       type(OutputDataDescript_t), SAVE :: DebugElevDescript
       REAL(SZ), SAVE, ALLOCATABLE, TARGET :: ETA_DEBUG_g(:)
+
+      call setMessageSource("writeWarnElev")
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif 
 C
 C     Open the file and write the header on the first warning. Format
 C     the actual header data to make it look more or less like a fort.63
@@ -4637,6 +4742,11 @@ C     If we have exceeded the user's limit, terminate the run.
          STOP
       ENDIF
 C
+#if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE WriteWarnElev
@@ -4646,8 +4756,8 @@ C-----------------------------------------------------------------------
 #ifdef CMPI
       USE MESSENGER
 #endif
-      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, allMessage,
-     &   DEBUG, ECHO, INFO, WARNING, ERROR  
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
+     &   allMessage, DEBUG, ECHO, INFO, WARNING, ERROR  
       IMPLICIT NONE 
       LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
 C

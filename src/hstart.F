@@ -32,6 +32,7 @@ C     HOT START PROGRAM SETUP ROUTINE
 C
 C**************************************************************************
 C
+      USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE GLOBAL
       USE MESH, ONLY : DP, ICS, X, Y, SLAM, SFEA, AID4
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXIB, NFLUXIBP,
@@ -46,7 +47,6 @@ C
      &    DUU_g, DUV_g, DVV_g, UU_g, VV_g, BSX_g, BSY_g, Q_g, WZ_g,
      &    q20_g, l_g, SigT_g, Sal_g, Temp_g, iy
 C
-      USE SIZES
 #ifdef CMPI
       USE MESSENGER,ONLY:COMM,IERR
 #endif      
@@ -168,7 +168,6 @@ C     kmd -- Added variables for initial conditions
       INTEGER :: moderbin ! determines whether in binary or real
       INTEGER :: ncHundreds ! hundreds place of IHOT, used for netcdf hs file
 
-
       call setMessageSource("hotstart")
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -200,8 +199,7 @@ C        Determine if the hot start file exists.
          ENDIF
          IF ((MNPROC.eq.1).or.
      &       (READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-            INQUIRE(FILE=TRIM(INPUTDIR)//'/'//hsfn,
-     &         EXIST=fileFound)
+            INQUIRE(FILE=trim(inputDir)//'/'//hsfn, EXIST=fileFound)
          ELSE
             ! look for fulldomain hotstart file
             INQUIRE(FILE=TRIM(GBLINPUTDIR)//'/'//hsfn,

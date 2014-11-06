@@ -806,6 +806,8 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE SwanOutput(ITIME, IT)
 
+      USE SIZES, ONLY : OFF, ASCII, SPARSE_ASCII, BINARY, NETCDF3,
+     &   NETCDF4, XDMF
       USE Couple2Adcirc,ONLY: COMPDA
       USE MESH, ONLY : DP, NP, AID4
       USE GLOBAL,       ONLY:
@@ -825,9 +827,7 @@ C-----------------------------------------------------------------------
      &                        RDES4,
      &                        RID4,
      &                        UU2,
-     &                        VV2,
-     &                        OFF, ASCII, BINARY, SPARSE_ASCII, NETCDF3,
-     &                        NETCDF4, XDMF
+     &                        VV2
 #ifdef CSWAN
      &                        ,SWAN_OutputHS,
      &                        SWAN_OutputDIR,

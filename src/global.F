@@ -11,8 +11,9 @@ C******************************************************************************
 
 C
       MODULE GLOBAL
-      USE SIZES
       USE VERSION
+      USE SIZES, ONLY : SZ, MNP, MNE, MNBFR, MNETA, MNSTAE, MNSTAV, 
+     &   MNEI, MNTIF, MNVEL, MYPROC, MNFFR, MNSTAC, MNSTAM
       USE KDTREE2_MODULE   !v49.48.01 tcm fast search algorithm
       IMPLICIT NONE
       SAVE
@@ -727,6 +728,7 @@ C     jgf50.65: Open the log file; this must be called after make dirname
 C     so that we know where to put this log file.
 C--------------------------------------------------------------------
       SUBROUTINE openLogFile()
+      use sizes, only : localDir
       IMPLICIT NONE
 C...
 C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
