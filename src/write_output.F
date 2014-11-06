@@ -14,7 +14,7 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : OutputDataDescript_t, setMessageSource, 
-     &  unsetMessageSource
+     &  unsetMessageSource, DEBUG, allMessage, screenMessage
 
       !
       !    2 D   D A T A
@@ -1299,7 +1299,7 @@ C
 C
       call setMessageSource("writeHarmonicAnalysisOutput")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Enter.")
+      call allMessage(DEBUG,"Enter.")
 #endif
       ! JUST RETURN if harmonic analysis was not specified
       ! tcm v49.64.02 -added itime le ithas to be
@@ -1731,7 +1731,7 @@ C     Means and variance calculations, if specified (fort.55).
 
  7637 format(2x,3(1pE16.8E3,1x),2x,3(1pE16.8E3,1x))
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
-      call screen(DEBUG,"Return.")
+      call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
 C-----------------------------------------------------------------------

@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C    v51.33.08 - Fixes to enable compilation in debug mode with ftn compilers
+C                on garnet at ERDC.
 C    v51.33.07 - Fixes to enable compilation with ftn compilers on garnet
 C                at ERDC; added execution tracing to write_output module.
 C    v51.33.06 - Fixes to enable compilation with intel14 compilers on
