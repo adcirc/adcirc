@@ -2,6 +2,11 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history                                                          
+C  v51.36    - 11/07/2014 - zc - Adjusting makefile for adcprep missing 
+C              dependencies. Removing R,DEG2RAD,RAD2DEG from pre_global.F
+C              so that global.F versions are used. Renaming R in 
+C              read_global.F throughout REarth. Fixing bugs in mesh.F and
+C              write_output.F
 C  v51.35    - 10/25/2014 - jgf - Merged all xdmf2 developments (v51.21.xx)
 C              to trunk.
 C  v51.21.42 - 10/24/2014 - jgf - Merged latest fix from trunk v51.34:

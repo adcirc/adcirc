@@ -889,8 +889,8 @@ C
          DO I = 1,NNODG
             SL1(I) = DEG2RAD*SLAM(I)
             SF1(I) = DEG2RAD*SFEA(I)
-            SLAM(I) = R*(SL1(I)-SL0)*COS(SF0)
-            SFEA(I) = R*SF1(I)
+            SLAM(I) = REarth*(SL1(I)-SL0)*COS(SF0)
+            SFEA(I) = REarth*SF1(I)
          ENDDO
       ELSE
          ! jgf: Need these to be populated for ICS=1 for NetCDF file
@@ -1148,8 +1148,8 @@ C                WRITE(6,9911) XEL(I), YEL(I), STATNAME(I)
             SLEL(I)=DEG2RAD*SLEL(I)
             SFEL(I)=DEG2RAD*SFEL(I)
 c           CALL CPP(XEL(I),YEL(I),SL1,SF1,SL0,SF0)
-            XEL(I) = R*(SLEL(I)-SL0)*COS(SF0)
-            YEL(I) = R*SFEL(I)
+            XEL(I) = REarth*(SLEL(I)-SL0)*COS(SF0)
+            YEL(I) = REarth*SFEL(I)
          ENDIF
          ENDDO !loop over elevation stations
          if (USE_ELEV_STAT_FILE) CLOSE(151) !close external file if one was used
@@ -1261,8 +1261,8 @@ C     ==================================================================
            SLEV(I)=DEG2RAD*SLEV(I)
            SFEV(I)=DEG2RAD*SFEV(I)
 C          CALL CPP(XEV(I),YEV(I),SL1,SF1,SL0,SF0)
-           XEV(I) = R*(SLEV(I)-SL0)*COS(SF0)
-           YEV(I) = R*SFEV(I)
+           XEV(I) = REarth*(SLEV(I)-SL0)*COS(SF0)
+           YEV(I) = REarth*SFEV(I)
          ENDIF  !test for ICS
       ENDDO !loop over velocity stations
       IF (USE_VEL_STAT_FILE) CLOSE(151) !close external file if one was used
@@ -1329,8 +1329,8 @@ C
              SLEC(I)=DEG2RAD*SLEC(I)
              SFEC(I)=DEG2RAD*SFEC(I)
 c            CALL CPP(XEC(I),YEC(I),SL1,SF1,SL0,SF0)
-             XEC(I) = R*(SLEC(I)-SL0)*COS(SF0)
-             YEC(I) = R*SFEC(I)
+             XEC(I) = REarth*(SLEC(I)-SL0)*COS(SF0)
+             YEC(I) = REarth*SFEC(I)
            ENDIF !test for ICS
         ENDDO  !loop over stations
         IF (USE_CONC_STAT_FILE) CLOSE(151) !CLOSE EXTERNAL FILE IF ONE WAS USED
@@ -1445,8 +1445,8 @@ C     ==================================================================
                SLEM(I)=DEG2RAD*SLEM(I)
                SFEM(I)=DEG2RAD*SFEM(I)
 c     CALL CPP(XEM(I),YEM(I),SL1,SF1,SL0,SF0)
-               XEM(I) = R*(SLEM(I)-SL0)*COS(SF0)
-               YEM(I) = R*SFEM(I)
+               XEM(I) = REarth*(SLEM(I)-SL0)*COS(SF0)
+               YEM(I) = REarth*SFEM(I)
             ENDIF  !test for ICS
          ENDDO  !loop over stations
          IF (USE_MET_STAT_FILE) CLOSE(151) !CLOSE EXTERNAL FILE IF ONE WAS USED        
@@ -1857,8 +1857,8 @@ C  kmd48.33bc changed to -2 and I3DSD not equal to 0
                SF3DD(I)=a2f(LVAR(2))
                SL3DD(I)=DEG2RAD*SL3DD(I)
                SF3DD(I)=DEG2RAD*SF3DD(I)
-               X3DD(I) = R*(SL3DD(I)-SL0)*COS(SF0)
-               Y3DD(I) = R*SF3DD(I)
+               X3DD(I) = REarth*(SL3DD(I)-SL0)*COS(SF0)
+               Y3DD(I) = REarth*SF3DD(I)
             ENDIF
          ENDDO
 C
@@ -1919,8 +1919,8 @@ C  kmd48.33 changed to -2
                SF3DV(I)=a2f(LVAR(2))
                SL3DV(I)=DEG2RAD*SL3DV(I)
                SF3DV(I)=DEG2RAD*SF3DV(I)
-               X3DV(I) = R*(SL3DV(I)-SL0)*COS(SF0)
-               Y3DV(I) = R*SF3DV(I)
+               X3DV(I) = REarth*(SL3DV(I)-SL0)*COS(SF0)
+               Y3DV(I) = REarth*SF3DV(I)
             ENDIF
          ENDDO
 C     jgf45.11 For each 3D velocity station, find the full-domain index of
@@ -1974,8 +1974,8 @@ C  kmd48.33 changed to -2
                SF3DT(I)=a2f(LVAR(2))
                SL3DT(I)=DEG2RAD*SL3DT(I)
                SF3DT(I)=DEG2RAD*SF3DT(I)
-               X3DT(I) = R*(SL3DT(I)-SL0)*COS(SF0)
-               Y3DT(I) = R*SF3DT(I)
+               X3DT(I) = REarth*(SL3DT(I)-SL0)*COS(SF0)
+               Y3DT(I) = REarth*SF3DT(I)
             ENDIF
          ENDDO
 

@@ -10,6 +10,7 @@ C                     current for ADCIRC v46.34   09/20/2006
 C----------------------------------------------------------------------------
 
       MODULE PRE_GLOBAL
+      USE GLOBAL,ONLY: REarth,DEG2RAD,RAD2DEG
       USE GLOBAL_3DVS, ONLY: NFEN
       USE PRESIZES
       USE VERSION
@@ -252,11 +253,6 @@ C
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
       REAL(SZ) CONVCR
-C
-C--Degress-to-Radians and Radians-to-Degrees
-C
-C     CONVERT section
-      REAL(8) DEG2RAD,RAD2DEG,R
 C
 C     jgf48.03 netCDF metadata
       CHARACTER(80) title
