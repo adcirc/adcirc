@@ -1502,7 +1502,7 @@ Cobell 20120510: Added for NetCDF SWAN output processing
                    END SELECT
                    DO I=1,7
                        IF (NETCDF_ERROR(I)) THEN
-                          call adcirc_terminate()
+                          call terminate()
                        ENDIF
                    ENDDO
                ENDIF

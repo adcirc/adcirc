@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C    v51.33.10 - Corrected stray subroutine call from adcirc_terminate() to 
+C                terminate().
 C    v51.33.09 - Added option to compile with debugging to cmplrflags.mk for
 C                intel-lonestar; also added SWAN=enable option on the make 
 C                command line for same (instead of hardcoding -DADCSWAN into
