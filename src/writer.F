@@ -690,7 +690,7 @@ C          required extra message passing steps.
      &         writer_descripts(ibuf) ) 
 #else
             write(scratchMessage,'(a)') 
-               'NetCDF is not available. No output has been written.'
+     &          'NetCDF is not available. No output has been written.'
             call allMessage(ERROR, scratchMessage)
 #endif         
          !

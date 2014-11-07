@@ -2,6 +2,15 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C    v51.33.09 - Added option to compile with debugging to cmplrflags.mk for
+C                intel-lonestar; also added SWAN=enable option on the make 
+C                command line for same (instead of hardcoding -DADCSWAN into
+C                the DPRE flags); added dependency of wind module on mesh module
+C                into makefile; fixed misplaced END SELECT in couple2swan
+C                that was erroneously inside #ifdef causing compilation issue
+C                if compiled without netcdf support; fixes to enable 
+C                compilation with debugging using intel11 compilers on lonestar
+C                at TACC.
 C    v51.33.08 - Fixes to enable compilation in debug mode with ftn compilers
 C                on garnet at ERDC.
 C    v51.33.07 - Fixes to enable compilation with ftn compilers on garnet

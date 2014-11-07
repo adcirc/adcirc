@@ -204,17 +204,25 @@ ifeq ($(compiler),intel-lonestar)
   PPFC            :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-#  FFLAGS1       :=  $(INCDIRS) -O3 -xT -132 
   FFLAGS1       :=  $(INCDIRS) -O3 -xT -132 -i-dynamic
+  ifeq ($(DEBUG),full)
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug -check all -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+  endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
   DP            :=  -DREAL8 -DLINUX -DCSCA -DCMPI
-  DPRE          :=  -DREAL8 -DLINUX -DADCSWAN
+  DPRE          :=  -DREAL8 -DLINUX
+  ifeq ($(SWAN),enable)
+     DPRE          := $(DPRE) -DADCSWAN
+  endif
   IMODS         :=  -I
   CC            := icc
   CCBE		:= $(CC)
   CFLAGS        := $(INCDIRS) -O3 -xT
+  ifeq ($(DEBUG),full)
+     CFLAGS        := $(INCDIRS) -g -O0 
+  endif
   CLIBS         :=
   FLIBS          :=
   MSGLIBS       :=

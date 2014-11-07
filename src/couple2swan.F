@@ -5,8 +5,10 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
       USE SIZES,  ONLY: SZ
+      USE WRITE_OUTPUT, ONLY : terminate
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
-     &          setMessageSource, unsetMessageSource, allMessage
+     &          setMessageSource, unsetMessageSource, allMessage,
+     &          scratchMessage
 #ifdef CSWAN
 
       USE SWCOMM1, ONLY: NMOVAR
@@ -1403,7 +1405,7 @@ C.........Mean Wave Period (TMM10)
             SwanTMM10MaxDescript % array_g           => SW_TMM10MaxOut_g
             SwanTMM10MaxDescript % ConsiderWetDry       = .FALSE.
             SwanTMM10MaxDescript % alternate_value      = -99999.0
-            SwanTMM10MaxDescript % file_basename         = "swan_TMM10_max"
+            SwanTMM10MaxDescript % file_basename     = "swan_TMM10_max"
             SwanTMM10MaxDescript % file_extension        = 63
             SwanTMM10MaxDescript % field_name         = "swan_TMM10_max"
             write(fileExt,'(i0)') SwanTMM10MaxDescript % file_extension
@@ -1499,17 +1501,19 @@ Cobell 20120510: Added for NetCDF SWAN output processing
                        !...Should not be reachable
                    END SELECT
                    DO I=1,7
-                       IF(NETCDF_ERROR(I))THEN
-#ifdef CMPI
-                           subDomainFatalError=.TRUE.
-                           CALL MSG_FINI()
-#endif                           
-                           STOP
+                       IF (NETCDF_ERROR(I)) THEN
+                          call adcirc_terminate()
                        ENDIF
                    ENDDO
                ENDIF
-            END SELECT
 #endif
+            CASE DEFAULT
+               write(scratchMessage,'(a,i0,a)')
+     &         'SWAN output format was specified as ',abs(noutgw),
+     &         ' but ADCIRC+SWAN cannot produce output in this format.'
+               call allMessage(ERROR,scratchMessage)
+               call terminate()
+            END SELECT
          ENDDO
          SWAN_MTC = MTC
          Processed26 = .TRUE.
