@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C    v51.33.11 - Decided to adjust compiler flags for debugging to remove 
+C                trapping on underflow floating point exceptions, since 
+C                default compiler behavior is likely to handle such exceptions
+C                correctly (flush to zero) during production. 
 C    v51.33.10 - Corrected stray subroutine call from adcirc_terminate() to 
 C                terminate().
 C    v51.33.09 - Added option to compile with debugging to cmplrflags.mk for
