@@ -183,6 +183,11 @@ C! CMPI
       integer      :: num
       integer      :: i, j, k
 
+      call setMessageSource("collectFullDomainIntArray")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
+
       bufsize = min(BUFSIZE_MAX,
      &    descript % num_items_per_record * descript % num_fd_records)
 C     num will be less than the number of full domain records if the
@@ -235,6 +240,11 @@ C        or to the end of the full domain array, whichever is less
 #endif
 C! CMPI
 
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  1100 FORMAT(2x,1pE20.10E3,5X,I10)
       !--------------------------------------------------------------
@@ -256,6 +266,11 @@ C! CMPI
       integer :: i, j, istart, iend, iglobal
       integer :: ioffset
 
+      call setMessageSource("packOne")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
+
       ! jgf51.21.24: Updated and generalized to take into account wet/dry
       ! if needed
 #ifdef CMPI
@@ -273,6 +288,11 @@ C! CMPI
          endif
       end do
 #endif
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
 
       return
       !--------------------------------------------------------------
@@ -294,6 +314,11 @@ C! CMPI
       integer :: i, j, istart, iend, iglobal
       integer :: ioffset
 
+      call setMessageSource("packOneInt")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
+
 #ifdef CMPI
       ioffset = istart - 1
       do i = 1, descript % num_records_this
@@ -303,6 +328,11 @@ C! CMPI
         end if
       end do
 #endif
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
 
       return
       !--------------------------------------------------------------
@@ -323,6 +353,11 @@ C! CMPI
       type (OutputDataDescript_t) :: descript
       integer :: i, istart, iend, iglobal
       integer :: ioffset
+      
+      call setMessageSource("pack63")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
 
 #ifdef CMPI
       ioffset = istart - 1
@@ -337,6 +372,11 @@ C! CMPI
          endif
       end do
 #endif
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
 
       return
  1000 format(2x, i8, 2x, 1pE20.10E3)
@@ -358,6 +398,11 @@ C! CMPI
       type (OutputDataDescript_t) :: descript
       integer :: i, istart, iend, iglobal
       integer :: ioffset
+      
+      call setMessageSource("pack83")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
 
 #ifdef CMPI
       ioffset = istart - 1
@@ -372,6 +417,11 @@ C! CMPI
          endif
       end do
 #endif
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
 
       return
  1000 format(2x, i8, 2x, 1pE20.10E3)
@@ -393,12 +443,23 @@ C! CMPI
       type (OutputDataDescript_t) :: descript
       integer :: i, j, istart, iend, iglobal
       integer :: ioffset
+      
+      call setMessageSource("unpackOne")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
 
        j = 1
        do i = istart, iend
           descript % array_g(i) = resultBuf(j)
           j = j + 1
       end do
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
       return
       !--------------------------------------------------------------
       end subroutine unpackOne
@@ -418,12 +479,23 @@ C! CMPI
       type (OutputDataDescript_t) :: descript
       integer :: i, j, istart, iend, iglobal
       integer :: ioffset
+      
+      call setMessageSource("unpackOneInt")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
 
        j = 1
        do i = istart, iend
           descript % iarray_g(i) = integerResultBuffer(j)
           j = j + 1
       end do
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
       return
       !--------------------------------------------------------------
       end subroutine unpackOneInt
@@ -443,6 +515,11 @@ C! CMPI
       type (OutputDataDescript_t) :: descript
       integer :: i, istart, iend, iglobal
       integer :: ioffset, j
+      
+      call setMessageSource("packTwo")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
 
       ioffset = istart - 1
       do i = 1, descript % num_records_this
@@ -453,6 +530,12 @@ C! CMPI
           buf(j + 1) = descript % array2(i)
         end if
       end do
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
       return
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3)
       !--------------------------------------------------------------
@@ -472,6 +555,11 @@ C! CMPI
 
       type (OutputDataDescript_t) :: descript
       integer :: i, j, istart, iend
+      
+      call setMessageSource("unpackTwo")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
 
       j = 1
       do i = istart, iend
@@ -479,6 +567,12 @@ C! CMPI
          descript % array2_g(i) = resultBuf(j+1)
          j = j + 2
       end do
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+      
       return
       !--------------------------------------------------------------
       end subroutine unpackTwo
@@ -654,6 +748,11 @@ C
       integer      :: lun, size_this, size_g, szz
       character(*) :: filename
 
+      call setMessageSource("open_gbl_file")
+#ifdef GLOBALIO_TRACE 
+      call allMessage(DEBUG,"Enter")
+#endif 
+
       szz = size_g
       if (mnproc == 1 .or. WRITE_LOCAL_FILES) szz = size_this
 
@@ -662,6 +761,12 @@ C
         call write_header(lun,szz)
         close(lun)
       end if
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
       return
       !--------------------------------------------------------------
       end subroutine open_gbl_file
@@ -685,6 +790,11 @@ C
       integer      :: nrecs_this  !tcm v51.20.06
       character(*) :: filename
 
+      call setMessageSource("open_minmax_file")
+#ifdef GLOBALIO_TRACE 
+      call allMessage(DEBUG,"Enter")
+#endif
+
       szz = size_g
       if (mnproc == 1 .or. WRITE_LOCAL_FILES) szz = size_this
 
@@ -693,6 +803,12 @@ C
         call write_header(lun,szz,nrecs_this)
         close(lun)
       end if
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
       return
       !--------------------------------------------------------------
       end subroutine open_minmax_file
@@ -741,6 +857,11 @@ C
       ! number of vector tuples in the buffer
       integer      :: num
       integer      :: i, j, k
+      
+      call setMessageSource("write_gbl_file")
+#ifdef GLOBALIO_TRACE 
+      call allMessage(DEBUG,"Enter")
+#endif
 
 C      write(16,*) 'About to open file.' !jgfdebug48.03
       if (myproc == 0 .or. WRITE_LOCAL_FILES) then
@@ -752,6 +873,10 @@ C      write(16,*) 'About to open file.' !jgfdebug48.03
       if (WRITE_LOCAL_FILES) then
          call write_cmd(lun, descript, 1, descript % num_records_this)
          close(lun)
+#ifdef GLOBALIO_TRACE
+         call allMessage(DEBUG,"Return")
+#endif
+         call unsetMessageSource()
          return
       end if
 
@@ -811,6 +936,12 @@ C        or to the end of the full domain array, whichever is less
          close(lun)
       endif
 #endif
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
 C! CMPI
 
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
@@ -847,6 +978,11 @@ C! CMPI
       integer      :: bufsize, ibucket
       integer      :: istart, iend, tag
 
+      call setMessageSource("writeSparse")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
+
       ! serial or writing local files
       if ((mnproc.eq.1).or.(WRITE_LOCAL_FILES)) then
          open(descript%lun, file=trim(descript%file_name), 
@@ -854,6 +990,10 @@ C! CMPI
          write(descript%lun, 1100) TimeLoc, it
          call write_cmd(descript % lun, descript, 1, descript % num_records_this)
          close(descript % lun)
+#ifdef GLOBALIO_TRACE
+         call allMessage(DEBUG,"Return")
+#endif
+         call unsetMessageSource()
          return
       else
 #ifdef CMPI
@@ -921,6 +1061,11 @@ C! CMPI
 #endif
       endif
 
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
+
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  1100 FORMAT(2x,1pE20.10E3,5X,I10)
  1101 FORMAT(2x,1pE20.10E3,5X,I10,5X,I10,5X,1pE20.10E3)
@@ -975,6 +1120,11 @@ C! CMPI
       character(*) :: filename
       type (OutputDataDescript_t) :: descript
 
+      call setMessageSource("write_gbl_file_skip_default")
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
+
       if(descript%num_records_this.ne.np) then
         stop 'FATAL ERROR: descript%num_records_this.ne.np'
       endif
@@ -997,6 +1147,10 @@ C     !-----IF CMPI IS DEFINED -----
         call write_cmd(lun, descript, 1, descript % num_records_this)
         close(lun)
 
+#ifdef GLOBALIO_TRACE
+        call allMessage(DEBUG,"Return")
+#endif
+        call unsetMessageSource()
         return !---THERE IS A RETURN STATEMENT HERE---
 
       end if
@@ -1076,6 +1230,11 @@ C     !-----IF CMPI IS DEFINED -----
       endif
 #endif
 C! CMPI
+
+#ifdef GLOBALIO_TRACE
+      call allMessage(DEBUG,"Return")
+#endif
+      call unsetMessageSource()
 
  1000 format(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  1100 FORMAT(2x,1pE20.10E3,5X,I10)

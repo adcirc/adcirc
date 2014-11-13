@@ -2,6 +2,19 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history                                                          
+C  v51.37    - 11/11/2014 - zc - Fixing allocation of mpistat in 
+C              writer_main subroutine. Setting ESLDescript % writeFlag
+C              flag to false so code does not attempt to write
+C              except at end of simulation. Adding commands to clean
+C              SWAN directory temporary fortran files when 'make clean'
+C              or 'make clobber' is run. Adding attribute to
+C              OutputDataDescript_t to flag writing of min/max file 
+C              ascii time stamp. Reorganizing SWAN output routines in 
+C              SwanOutput subroutine within couple2swan.F into 
+C              writeOutput2D so they use Jason`s pointer structure for 
+C              output variables and two sets of output routines are no 
+C              longer carried. This also allows Swan output to occur even 
+C              during non-coupling time steps.
 C  v51.36    - 11/07/2014 - zc - Adjusting makefile for adcprep missing 
 C              dependencies. Removing R,DEG2RAD,RAD2DEG from pre_global.F
 C              so that global.F versions are used. Renaming R in 

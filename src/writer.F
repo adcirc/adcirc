@@ -121,7 +121,7 @@ C-----------------------------------------------------------------------
       include 'mpif.h'
 #endif
       integer :: sig,ierr
-      integer :: mpistat
+      integer :: mpistat(mpi_status_size)
 C
       call setMessageSource("writer_main")
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
@@ -689,7 +689,7 @@ C          required extra message passing steps.
      &         writer_descripts(ibuf) ) 
 #else
             write(scratchMessage,'(a)') 
-               'NetCDF is not available. No output has been written.'
+     &         'NetCDF is not available. No output has been written.'
             call allMessage(ERROR, scratchMessage)
 #endif         
          !

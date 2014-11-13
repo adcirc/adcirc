@@ -560,10 +560,12 @@ endif
 
 clean:
 	rm -f odir*/*.o  odir*/*.mod sizes.o
+	rm -f  ../swan/*.f ../swan/*.for ../swan/*.f90
 clobber:
 	rm -r -f odir* 
 	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 aswip \
            build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp
+	rm -f  ../swan/*.f ../swan/*.for ../swan/*.f90
 help:
 	@echo "This makefile supports the following:"
 	@echo "make all        - makes all seven targets"
