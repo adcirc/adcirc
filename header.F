@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C    v51.33.12 - Added comma to hstime.F to fix syntax when not compiling
+C                with NETCDF support.
 C    v51.33.11 - Decided to adjust compiler flags for debugging to remove 
 C                trapping on underflow floating point exceptions, since 
 C                default compiler behavior is likely to handle such exceptions

@@ -40,8 +40,8 @@ C
          CASE("-n") 
             netCDFFormat = .true.
 #ifndef ADCNETCDF
-            WRITE(*,*) "ERROR: hstime: NetCDF hotstart format was ",
-     &     " specified but hstime was not compiled with NetCDF support."
+            WRITE(*,*) "ERROR: hstime: NetCDF hotstart format was " //
+     &     " specified but hstime was not compiled with NetCDF support." //
      &     " You must recompile hstime with NetCDF support." 
             STOP
 #endif
