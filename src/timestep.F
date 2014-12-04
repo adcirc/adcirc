@@ -3258,10 +3258,10 @@ C              proceed and turn on the limiter.
                  ! limiting otherwise just print gradient warnings to
                  ! screen the first time the gradient is exceeded
                  IF(elemental_slope_limiter_grad_max(NM(IE,I))
-     &               .GE.0D0)THEN
+     &               .GE.0.0D0) THEN
                     IF(.NOT.elemental_slope_limiter_active(NM(IE,I))
      &                 .AND.elemental_slope_limiter_grad_max(NM(IE,I))
-     &                  .GT.0D0)THEN
+     &                  .GT.0.0D0) THEN
                         
                         WRITE(screenUnit,1983) IT,NumItr,TimeLoc,
      &                      dEta2Mag,NM1,MyProc

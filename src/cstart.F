@@ -24,7 +24,8 @@ C
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
       USE NodalAttributes, ONLY :
      &         STARTDRY, GeoidOffset, LoadGeoidOffset,
-     &         OutputTau0, LoadRiver_et_WSE, River_et_WSE !jgf47.06
+     &         OutputTau0, LoadRiver_et_WSE, River_et_WSE, !jgf47.06
+     &         LoadEleSlopeLim  !tcm v51.33.01 20141204
 
       IMPLICIT NONE
 
@@ -141,6 +142,18 @@ C
      &         /,1x,'A FORT.88 FILE WAS FOUND BUT IS NO LONGER SUPPORTED.',
      &        /,1x,'INITIAL RIVER ELEVATIONS MUST BE SET AS A NODAL ATTRIBUTE.',/)
       ENDIF
+
+! tcm v51.33.01 20141204 added for Slope Limiters
+      IF (LoadEleSlopeLim) then
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
+         WRITE(16,1112)
+         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,2790)
+         WRITE(16,2790)
+ 2790    FORMAT(/,1X,'ELEMENTAL SLOPE LIMITERS WERE SPECIFIED AS A ',
+     &        /,1x,'NODAL ATTRIBUTE AND WILL BE USED.',/)
+      ENDIF
+
+
 
 C
 C.... tcm v49.16 20100617

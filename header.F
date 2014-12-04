@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.34.01 - 12/04/2014 - tcm - Added write statements about elemental
+C                slope limiter and fixed integer/real syntax in two places.
 C    v51.34    - 10/07/2014 - tcm - Removed two debugging write statement that
 C                were inadvertently left in hstart.F related to maxele hot
 C                starting.
