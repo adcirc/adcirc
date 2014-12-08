@@ -2067,9 +2067,11 @@ C...  If running in parallel, update velocities & fluxes on all processors
 #endif
          CALL GWCE_New_pc(IT,TimeLoc,TimeH)
       ENDIF
+C
       IF(CGWCE_New) THEN
          CALL GWCE_New(IT,TimeLoc,TimeH)
       ENDIF
+
 
 CWET...
 CWET...THE FOLLOWING LINES ARE FOR WETTING AND DRYING
@@ -3223,82 +3225,88 @@ C             everything is up-to-date.
 
 Cobell  CHECK IF THE LOCAL GRADIENT FOR ELEMENTS IS EXCEEDED AND TRIGGER THE
 C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
-      IF (LoadEleSlopeLim) THEN
-         DO IE=1,NE
-            NM1=NM(IE,1)
-            NM2=NM(IE,2)
-            NM3=NM(IE,3)
-            NC1=NODECODE(NM1)
-            NC2=NODECODE(NM2)
-            NC3=NODECODE(NM3)
-            NCEle=NC1*NC2*NC3*NOFF(IE)
-            IF(NCEle.EQ.0)THEN
-               CYCLE  ! this element is dry, go to the next one
-            ENDIF
-            SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
-            AreaIE2=Areas(IE)
-            FDX1=(Y(NM2)-Y(NM3))*SFacAvg
-            FDX2=(Y(NM3)-Y(NM1))*SFacAvg
-            FDX3=(Y(NM1)-Y(NM2))*SFacAvg
-            FDY1=X(NM3)-X(NM2)
-            FDY2=X(NM1)-X(NM3)
-            FDY3=X(NM2)-X(NM1)
-            dEta2Dx  = (Eta2(NM1)*FDX1+Eta2(NM2)*FDX2+Eta2(NM3)*FDX3)
-     &                 /AreaIE2
-            dEta2Dy  = (Eta2(NM1)*FDY1+Eta2(NM2)*FDY2+Eta2(NM3)*FDY3)
-     &                 /AreaIE2
-            dEta2Mag = sqrt(dEta2Dx**2.d0+dEta2Dy**2.d0)
-            DO I=1,3
-C              check if the limiter is on and allow a zero gradient to
-C              proceed and turn on the limiter.
-               IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
-               IF (dEta2Mag.GE.
-     &           ABS(elemental_slope_limiter_grad_max(NM(IE,I))))THEN
-                 ! zc - if gradmax is positive or zero, apply slope
-                 ! limiting otherwise just print gradient warnings to
-                 ! screen the first time the gradient is exceeded
-                 IF(elemental_slope_limiter_grad_max(NM(IE,I))
-     &               .GE.0.0D0) THEN
-                    IF(.NOT.elemental_slope_limiter_active(NM(IE,I))
-     &                 .AND.elemental_slope_limiter_grad_max(NM(IE,I))
-     &                  .GT.0.0D0) THEN
-                        
-                        WRITE(screenUnit,1983) IT,NumItr,TimeLoc,
-     &                      dEta2Mag,NM1,MyProc
-                        WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,
-     &                      MyProc
-                    
-                    ENDIF
-                    ESLONOFF(NM(IE,I)) = 1 ! for output file
-                    elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
-                 ELSE
-                    IF(.NOT.
-     &               elemental_slope_limiter_max_exceeded(NM(IE,I)))THEN
-                        WRITE(screenUnit,1984) IT,NumItr,TimeLoc,
-     &                      dEta2Mag,NM1,MyProc
-                        WRITE(16,1984) IT,NumItr,TimeLoc,dEta2Mag,NM1,
-     &                      MyProc
-                        elemental_slope_limiter_max_exceeded(NM(IE,I)) =
-     &                      .TRUE.
-                    ENDIF
-                 ENDIF
-               ENDIF
-            ENDDO ! loop around nodes of an element
-         ENDDO ! loop over the elements
-      ENDIF
-1983  FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &       5X,'TIME = ',E15.8,
-     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE ',I8,
-     &       2X,'ON MYPROC = ',I5,
-     &       3X,'** WARNING: ELEMENTAL SLOPE LIMITER TURNED ON **')
 
-1984  FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &       5X,'TIME = ',E15.8,
-     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE ',I8,
-     &       2X,'ON MYPROC = ',I5,
-     &       3X,'** WARNING: MAXIMUM ALLOWED GRADIENT EXCEEDED **')
-C...  END CHECKING ELEMENT GRADIENTS
-C...
+C... TCM 20141209 -- Made into a subrouine
+      IF (LoadEleSlopeLim) THEN
+         call check_slopes(it,TimeLoc)
+      ENDIF
+
+!      IF (LoadEleSlopeLim) THEN
+!         DO IE=1,NE
+!            NM1=NM(IE,1)
+!            NM2=NM(IE,2)
+!            NM3=NM(IE,3)
+!            NC1=NODECODE(NM1)
+!            NC2=NODECODE(NM2)
+!            NC3=NODECODE(NM3)
+!            NCEle=NC1*NC2*NC3*NOFF(IE)
+!            IF(NCEle.EQ.0)THEN
+!               CYCLE  ! this element is dry, go to the next one
+!            ENDIF
+!            SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
+!            AreaIE2=Areas(IE)
+!            FDX1=(Y(NM2)-Y(NM3))*SFacAvg
+!            FDX2=(Y(NM3)-Y(NM1))*SFacAvg
+!            FDX3=(Y(NM1)-Y(NM2))*SFacAvg
+!            FDY1=X(NM3)-X(NM2)
+!            FDY2=X(NM1)-X(NM3)
+!            FDY3=X(NM2)-X(NM1)
+!            dEta2Dx  = (Eta2(NM1)*FDX1+Eta2(NM2)*FDX2+Eta2(NM3)*FDX3)
+!     &                 /AreaIE2
+!            dEta2Dy  = (Eta2(NM1)*FDY1+Eta2(NM2)*FDY2+Eta2(NM3)*FDY3)
+!     &                 /AreaIE2
+!            dEta2Mag = sqrt(dEta2Dx**2.d0+dEta2Dy**2.d0)
+!            DO I=1,3
+!C              check if the limiter is on and allow a zero gradient to
+!C              proceed and turn on the limiter.
+!               IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
+!               IF (dEta2Mag.GE.
+!     &           ABS(elemental_slope_limiter_grad_max(NM(IE,I))))THEN
+!                 ! zc - if gradmax is positive or zero, apply slope
+!                 ! limiting otherwise just print gradient warnings to
+!                 ! screen the first time the gradient is exceeded
+!                 IF(elemental_slope_limiter_grad_max(NM(IE,I))
+!     &               .GE.0.0D0) THEN
+!                    IF(.NOT.elemental_slope_limiter_active(NM(IE,I))
+!     &                 .AND.elemental_slope_limiter_grad_max(NM(IE,I))
+!     &                  .GT.0.0D0) THEN
+!                        
+!                        WRITE(screenUnit,1983) IT,NumItr,TimeLoc,
+!     &                      dEta2Mag,NM1,MyProc
+!                        WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,
+!     &                      MyProc
+!                    
+!                    ENDIF
+!                    ESLONOFF(NM(IE,I)) = 1 ! for output file
+!                    elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
+!                 ELSE
+!                    IF(.NOT.
+!     &               elemental_slope_limiter_max_exceeded(NM(IE,I)))THEN
+!                        WRITE(screenUnit,1984) IT,NumItr,TimeLoc,
+!     &                      dEta2Mag,NM1,MyProc
+!                        WRITE(16,1984) IT,NumItr,TimeLoc,dEta2Mag,NM1,
+!     &                      MyProc
+!                        elemental_slope_limiter_max_exceeded(NM(IE,I)) =
+!     &                      .TRUE.
+!                    ENDIF
+!                 ENDIF
+!               ENDIF
+!            ENDDO ! loop around nodes of an element
+!         ENDDO ! loop over the elements
+!      ENDIF
+!1983  FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+!     &       5X,'TIME = ',E15.8,
+!     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE ',I8,
+!     &       2X,'ON MYPROC = ',I5,
+!     &       3X,'** WARNING: ELEMENTAL SLOPE LIMITER TURNED ON **')
+!
+!1984  FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+!     &       5X,'TIME = ',E15.8,
+!     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE ',I8,
+!     &       2X,'ON MYPROC = ',I5,
+!     &       3X,'** WARNING: MAXIMUM ALLOWED GRADIENT EXCEEDED **')
+!C...  END CHECKING ELEMENT GRADIENTS
+!C...
 
 
 C...
@@ -3542,8 +3550,9 @@ C
 C     jgf50.44: Added water surface elevation smoothing
       REAL(sz) :: EtaN1, ETaN2, EtaN3, AreaEle, EtaN123
       INTEGER :: IT_SmoothTime
-      REAL(sz), ALLOCATABLE, SAVE :: elevSum(:) ! used if elemental slope limiter is active
-      LOGICAL, SAVE :: firstCall = .true.
+!      moved to subroutine -- tcm 20141208
+!      REAL(sz), ALLOCATABLE, SAVE :: elevSum(:) ! used if elemental slope limiter is active
+!      LOGICAL, SAVE :: firstCall = .true.
 C
       REAL(SZ) HH1 !jgf46.02 Added for Katrina.
       REAL(SZ) RDIAG ! jgf48.4619 Seizo parameter for fully explicit mode
@@ -3553,12 +3562,16 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 C
-      IF (LoadEleSlopeLim.eqv..true.) THEN
-         IF (firstCall.eqv..true.) THEN
-            allocate(elevSum(mnp))
-            firstCall = .false.
-         ENDIF
-      ENDIF
+!   tcm 20141208 -- moved to subroutine
+!      IF (LoadEleSlopeLim.eqv..true.) THEN
+!         IF (firstCall.eqv..true.) THEN
+!            allocate(elevSum(mnp))
+!            firstCall = .false.
+!         ENDIF
+!      ENDIF
+
+
+
 
 Casey 050711 : Added for averaged variable Tau0.
 C      REAL(SZ) :: CaseySum
@@ -4561,34 +4574,39 @@ C        CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
 C        TIME STEP AND APPLY SMOOTHING IF DESIRED. -ZC
 
       IF (LoadEleSlopeLim.eqv..true.) THEN
-C
-         elevSum(:) = 0.d0
-         DO IE=1,NE
-            NM1=NM(IE,1)
-            NM2=NM(IE,2)
-            NM3=NM(IE,3)
-            NC1=NODECODE(NM1)
-            NC2=NODECODE(NM2)
-            NC3=NODECODE(NM3)
-            NCEle=NC1*NC2*NC3*NOFF(IE)
-            EtaN1=IFNLFA*Eta2(NM1)
-            EtaN2=IFNLFA*Eta2(NM2)
-            EtaN3=IFNLFA*Eta2(NM3)
-            AreaEle=NCEle*Areas(IE)/2.d0
-            EtaN123=(EtaN1+EtaN2+EtaN3)/3.d0
-            elevSum(NM1)=elevSum(NM1)+AreaEle*EtaN123
-            elevSum(NM2)=elevSum(NM2)+AreaEle*EtaN123
-            elevSum(NM3)=elevSum(NM3)+AreaEle*EtaN123
-         ENDDO
-
-Cobell   CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
-C        TIME STEP AND APPLY SMOOTHING IF DESIRED. THIS ROUTINE PARALLELS THE
-C        ABOVE ROUTINE. 
-         WHERE ((elemental_slope_limiter_active.eqv..true.).and.
-     &         (TotalArea.ne.0.d0))
-               Eta2 = elevSum / TotalArea
-         END WHERE
+         call apply_slope_limits(ETA2,MNP)
       ENDIF
+C ... tcm 20141208 --  replaced with a subroutine function
+C
+!         elevSum(:) = 0.d0
+!         DO IE=1,NE
+!            NM1=NM(IE,1)
+!            NM2=NM(IE,2)
+!            NM3=NM(IE,3)
+!            NC1=NODECODE(NM1)
+!            NC2=NODECODE(NM2)
+!            NC3=NODECODE(NM3)
+!            NCEle=NC1*NC2*NC3*NOFF(IE)
+!            EtaN1=IFNLFA*Eta2(NM1)
+!            EtaN2=IFNLFA*Eta2(NM2)
+!            EtaN3=IFNLFA*Eta2(NM3)
+!            AreaEle=NCEle*Areas(IE)/2.d0
+!            EtaN123=(EtaN1+EtaN2+EtaN3)/3.d0
+!            elevSum(NM1)=elevSum(NM1)+AreaEle*EtaN123
+!            elevSum(NM2)=elevSum(NM2)+AreaEle*EtaN123
+!            elevSum(NM3)=elevSum(NM3)+AreaEle*EtaN123
+!         ENDDO
+!
+!Cobell   CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
+!C        TIME STEP AND APPLY SMOOTHING IF DESIRED. THIS ROUTINE PARALLELS THE
+!C        ABOVE ROUTINE. 
+!         WHERE ((elemental_slope_limiter_active.eqv..true.).and.
+!     &         (TotalArea.ne.0.d0))
+!               Eta2 = elevSum / TotalArea
+!         END WHERE
+!      ENDIF
+
+
 
 #ifdef CMPI
       CALL UPDATER(ETA2,DUMY1,DUMY2,1)
@@ -9207,5 +9225,190 @@ C*************************************************************************
 
 C***********************************************************************
       END SUBROUTINE ADVECTLOCAL
+C***********************************************************************
+
+
+C*************************************************************************
+C   Subroutine to check if elemental slope limiting is needed
+C       Chris Massey, USACE-ERDC-CHL Dec. 8, 2014 -- Removed this
+C         section from timestep subroutine and put it in its own
+C         subroutine.
+C*************************************************************************
+      subroutine check_slopes(it,TimeLoc)
+      USE SIZES, ONLY : SZ
+      use global, only : eta2,nodecode,NOFF,NM,X,Y,Areas,SFAC,
+     &                   NE,ESLONOFF,screenUnit,MyProc,NumItr
+      use NodalAttributes, ONLY : LoadEleSlopeLim,
+     &     elemental_slope_limiter_active,
+     &     elemental_slope_limiter_grad_max,
+     &     elemental_slope_limiter_max_exceeded
+      implicit none
+      INTEGER, intent(in) :: IT
+      INTEGER IE,I
+      INTEGER NM1, NM2, NM3, NM123
+      INTEGER NC1, NC2, NC3, NCEle, NCI
+      REAL(SZ) DEta2DX,DEta2DY,DEta2Mag,SFacAvg
+      REAL(SZ) FDX1,FDX2,FDX3,FDY1,FDY2,FDY3
+      REAL(8) :: AreaIE2
+      Real(8), intent(in) :: TimeLoc
+     
+     
+Cobell  CHECK IF THE LOCAL GRADIENT FOR ELEMENTS IS EXCEEDED AND TRIGGER THE
+C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
+      IF (LoadEleSlopeLim) THEN
+         DO IE=1,NE
+            NM1=NM(IE,1)
+            NM2=NM(IE,2)
+            NM3=NM(IE,3)
+            NC1=NODECODE(NM1)
+            NC2=NODECODE(NM2)
+            NC3=NODECODE(NM3)
+            NCEle=NC1*NC2*NC3*NOFF(IE)
+            IF(NCEle.EQ.0)THEN
+               CYCLE  ! this element is dry, go to the next one
+            ENDIF
+            SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
+            AreaIE2=Areas(IE)
+            FDX1=(Y(NM2)-Y(NM3))*SFacAvg
+            FDX2=(Y(NM3)-Y(NM1))*SFacAvg
+            FDX3=(Y(NM1)-Y(NM2))*SFacAvg
+            FDY1=X(NM3)-X(NM2)
+            FDY2=X(NM1)-X(NM3)
+            FDY3=X(NM2)-X(NM1)
+            dEta2Dx  = (Eta2(NM1)*FDX1+Eta2(NM2)*FDX2+Eta2(NM3)*FDX3)
+     &                 /AreaIE2
+            dEta2Dy  = (Eta2(NM1)*FDY1+Eta2(NM2)*FDY2+Eta2(NM3)*FDY3)
+     &                 /AreaIE2
+            dEta2Mag = sqrt(dEta2Dx*dEta2Dx + dEta2Dy*dEta2Dy)
+            DO I=1,3
+C              check if the limiter is on and allow a zero gradient to
+C              proceed and turn on the limiter.
+               IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
+               IF (dEta2Mag.GE.
+     &           ABS(elemental_slope_limiter_grad_max(NM(IE,I))))THEN
+                 ! zc - if gradmax is positive or zero, apply slope
+                 ! limiting otherwise just print gradient warnings to
+                 ! screen the first time the gradient is exceeded
+                 IF(elemental_slope_limiter_grad_max(NM(IE,I))
+     &               .GE.0.0D0) THEN
+                    IF(.NOT.elemental_slope_limiter_active(NM(IE,I))
+     &                 .AND.elemental_slope_limiter_grad_max(NM(IE,I))
+     &                  .GE.0.0D0) THEN
+                        WRITE(screenUnit,1983) IT,NumItr,TimeLoc,
+     &                      dEta2Mag,NM1,MyProc
+                        WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,
+     &                      MyProc
+                    ENDIF
+                    ESLONOFF(NM(IE,I)) = 1 ! for output file
+                    elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
+                 ELSE
+                    IF(.NOT.
+     &               elemental_slope_limiter_max_exceeded(NM(IE,I)))THEN
+                        WRITE(screenUnit,1984) IT,NumItr,TimeLoc,
+     &                      dEta2Mag,NM1,MyProc
+                        WRITE(16,1984) IT,NumItr,TimeLoc,dEta2Mag,NM1,
+     &                      MyProc
+                        elemental_slope_limiter_max_exceeded(NM(IE,I)) =
+     &                      .TRUE.
+                    ENDIF
+                 ENDIF
+               ENDIF
+            ENDDO ! loop around nodes of an element
+         ENDDO ! loop over the elements
+      ENDIF
+1983  FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &       5X,'TIME = ',E15.8,
+     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE ',I8,
+     &       2X,'ON MYPROC = ',I5,
+     &       3X,'** WARNING: ELEMENTAL SLOPE LIMITER TURNED ON **')
+
+1984  FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
+     &       5X,'TIME = ',E15.8,
+     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE ',I8,
+     &       2X,'ON MYPROC = ',I5,
+     &       3X,'** WARNING: MAXIMUM ALLOWED GRADIENT EXCEEDED **')
+C...  END CHECKING ELEMENT GRADIENTS
+
+      RETURN
+      
+      END SUBROUTINE CHECK_SLOPES
+C
+C***********************************************************************
+
+C***********************************************************************
+C  Apply Elemental Slope Limiter 
+C    Chris Massey, USACE-ERDC-CHL, Dec. 8, 2014 
+C       Made into a subroutine
+C
+C***********************************************************************
+C
+      SUBROUTINE APPLY_SLOPE_LIMITS(ETA2Lim,LocNP)
+      USE SIZES, ONLY : SZ
+      use global, only : nodecode,NOFF,NM,Areas,
+     &                   NE,IFNLFA,TotalArea
+      use NodalAttributes, ONLY : LoadEleSlopeLim,
+     &     elemental_slope_limiter_active
+      implicit none
+      integer :: IE,NM1,NM2,NM3,NC1,NC2,NC3,NCEle
+      integer, intent(in) :: LocNP
+      REAL(SZ) :: EtaN1,EtaN2,EtaN3,EtaN123
+      real(sz), intent(inout) :: Eta2lim(LocNP)
+      REAL(8) :: AreaEle
+      REAL(sz), ALLOCATABLE, SAVE :: elevSum(:) ! used if elemental slope limiter is active
+      LOGICAL, SAVE :: firstCall = .true.
+
+      IF (LoadEleSlopeLim.eqv..true.) THEN
+         IF (firstCall.eqv..true.) THEN
+            allocate(elevSum(LocNP))
+            firstCall = .false.
+            elevSum(:) = 0.d0
+         ENDIF
+      ENDIF
+
+
+C       ELEMENTAL SLOPE LIMITER
+C
+C        CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
+C        TIME STEP AND APPLY SMOOTHING IF DESIRED. -ZC
+
+      IF (LoadEleSlopeLim.eqv..true.) THEN
+C
+         elevSum(:) = 0.d0
+         DO IE=1,NE
+            NM1=NM(IE,1)
+            NM2=NM(IE,2)
+            NM3=NM(IE,3)
+            NC1=NODECODE(NM1)
+            NC2=NODECODE(NM2)
+            NC3=NODECODE(NM3)
+            NCEle=NC1*NC2*NC3*NOFF(IE)
+            EtaN1=IFNLFA*Eta2Lim(NM1)
+            EtaN2=IFNLFA*Eta2Lim(NM2)
+            EtaN3=IFNLFA*Eta2Lim(NM3)
+            AreaEle=NCEle*Areas(IE)/2.d0
+            EtaN123=(EtaN1+EtaN2+EtaN3)/3.d0
+            elevSum(NM1)=elevSum(NM1)+AreaEle*EtaN123
+            elevSum(NM2)=elevSum(NM2)+AreaEle*EtaN123
+            elevSum(NM3)=elevSum(NM3)+AreaEle*EtaN123
+         ENDDO
+
+Cobell   CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
+C        TIME STEP AND APPLY SMOOTHING IF DESIRED. THIS ROUTINE PARALLELS THE
+C        ABOVE ROUTINE.
+         WHERE ((elemental_slope_limiter_active.eqv..true.).and.
+     &         (TotalArea.ne.0.d0))
+               Eta2Lim = elevSum / TotalArea
+         END WHERE
+      ENDIF
+
+C... Will apply the updating outside the subroutine
+!#ifdef CMPI
+!      CALL UPDATER(ETA2Lim,DUMY1,DUMY2,1)
+!#endif
+
+      RETURN
+
+      END SUBROUTINE APPLY_SLOPE_LIMITS
+
 C***********************************************************************
 
