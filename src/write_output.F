@@ -18,8 +18,12 @@ C----------------------------------------------------------------------
 
       !
       !    2 D   D A T A
-      ! 
+      !
+#ifdef CSWAN
+      integer, parameter :: numOutputDescript2D = 37
+#else
       integer, parameter :: numOutputDescript2D = 23
+#endif      
       type descript2D_ptr_t
          type(OutputDataDescript_t), pointer :: descript2D
       end type descript2D_ptr_t
@@ -56,6 +60,7 @@ C----------------------------------------------------------------------
 Casey 090302: Added this type for output of radiation stress gradients.
       type(OutputDataDescript_t), target :: RSDescript
 !#endif
+
 C     jgf48.03 Full domain arrays used when writing globalio output.
       real(sz), allocatable, target :: et00_g(:)
       real(sz), allocatable, target :: uu00_g(:)
@@ -196,7 +201,43 @@ C
       type(OutputDataDescript_t) :: YVELAVDescript
       type(OutputDataDescript_t) :: XVELVADescript
       type(OutputDataDescript_t) :: YVELVADescript
-
+      !
+      !  S W A N  O U T P U T  D A T A
+      !
+#ifdef CSWAN
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanHSDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanDIRDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTM01Descript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTPSDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanWindDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTM02Descript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTMM10Descript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanHSMaxDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanDIRMaxDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTM01MaxDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTPSMaxDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanWindMaxDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTM02MaxDescript
+      type(OutputDataDescript_t), SAVE, TARGET :: SwanTMM10MaxDescript
+      !...Spool Counters
+      INTEGER, TARGET                          :: SWAN_HS_SPOOL,
+     &                                            SWAN_TPS_SPOOL,
+     &                                            SWAN_DIR_SPOOL,
+     &                                            SWAN_TM01_SPOOL,
+     &                                            SWAN_TM02_SPOOL,
+     &                                            SWAN_TMM10_SPOOL,
+     &                                            SWAN_WIND_SPOOL   
+      !...File position
+      INTEGER, TARGET                          :: SWAN_HS_POS,
+     &                                            SWAN_TPS_POS,
+     &                                            SWAN_DIR_POS,
+     &                                            SWAN_TM01_POS,
+     &                                            SWAN_TM02_POS,
+     &                                            SWAN_TMM10_POS,
+     &                                            SWAN_WIND_POS  
+           
+#endif
+      
 C     ---------
       CONTAINS
 C     ---------
@@ -232,7 +273,8 @@ C----------------------------------------------------------------------
      &   noutm, nstam, ntcyfgv, ntcysm, ntcyfm, nspoolm, nws, 
      &   noutgw, ntcysgw, ntcyfgw, nspoolgw, nddt, ncice, nrs, 
      &   noutc, nstac_g, nstac, im, noutgc, ntcyfgc, ntcysgc,
-     &   nspoolgc, INFO, scratchMessage, allMessage
+     &   nspoolgc, INFO, scratchMessage, allMessage, nscougi, nscougp,
+     &   nscours
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim
 #ifdef ADCNETCDF
@@ -283,7 +325,26 @@ C
       ptr(20)%descript2D => ESLDescript
       ptr(21)%descript2D => BathyDescript
       ptr(22)%descript2D => BathyStaDescript
-      ptr(23)%descript2D => RSDescript    
+      ptr(23)%descript2D => RSDescript 
+
+!... For SWAN, there are additional output arrays
+#ifdef CSWAN
+      ptr(24)%descript2D => SwanHSDescript 
+      ptr(25)%descript2D => SwanHSMaxDescript
+      ptr(26)%descript2D => SwanDIRDescript
+      ptr(27)%descript2D => SwanDIRMaxDescript
+      ptr(28)%descript2D => SwanTM01Descript
+      ptr(29)%descript2D => SwanTM01MaxDescript
+      ptr(30)%descript2D => SwanTPSDescript
+      ptr(31)%descript2D => SwanTPSMaxDescript
+      ptr(32)%descript2D => SwanWindDescript
+      ptr(33)%descript2D => SwanWindMaxDescript
+      ptr(34)%descript2D => SwanTM02Descript
+      ptr(35)%descript2D => SwanTM02MaxDescript
+      ptr(36)%descript2D => SwanTMM10Descript
+      ptr(37)%descript2D => SwanTMM10MaxDescript
+#endif
+
       ! 
       ! jgf51.21.24: Set some defaults
       do i=1,numOutputDescript2D
@@ -301,6 +362,7 @@ C
          ptr(i) % descript2D % file_extension = -99999
          ptr(i) % descript2D % file_basename = 'fort'
          ptr(i) % descript2D % initialized = .false.
+         ptr(i) % descript2D % minmax_timestamp = .false.
       end do
 
       ! fort.61
@@ -519,7 +581,7 @@ C         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
       PrDescript % startTimeStep           = NTCYSGW 
       PrDescript % endTimeStep             = NTCYFGW
       PrDescript % outputTimeStepIncrement = NSPOOLGW
-      PrDescript % spoolCounter            => NSCOUGW
+      PrDescript % spoolCounter            => NSCOUGP
       PrDescript % filepos                 => IGPP
       PrDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
       PrDescript % num_fd_records       = NP_G
@@ -629,7 +691,7 @@ C         write(16,*) 'Allocating IceDescript' !tcm v49.64.01 added for ice
       IceDescript % startTimeStep           = NTCYSGW 
       IceDescript % endTimeStep             = NTCYFGW
       IceDescript % outputTimeStepIncrement = NSPOOLGW
-      IceDescript % spoolCounter            => NSCOUGW
+      IceDescript % spoolCounter            => NSCOUGI
       IceDescript % filepos                 => IGIP
       IceDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
       IceDescript % num_fd_records       = NP_G
@@ -690,7 +752,7 @@ C... v49.64.01 tcm -- added for ice stations
       RSDescript % startTimeStep           = NTCYSGW 
       RSDescript % endTimeStep             = NTCYFGW
       RSDescript % outputTimeStepIncrement = NSPOOLGW
-      RSDescript % spoolCounter            => NSCOUGW
+      RSDescript % spoolCounter            => NSCOURS
       RSDescript % filepos                 => IGRadS
       RSDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
       RSDescript % num_items_per_record = 2
@@ -779,6 +841,7 @@ C        maxele.63
       EtaMaxDescript % file_basename        = 'maxele'
       EtaMaxDescript % file_extension       = 63
       EtaMaxDescript % writeFlag            = .false.
+      EtaMaxDescript % minmax_timestamp     = .true.
       if ( EtaMaxDescript % specifier .eq. XDMF ) then
          EtaMaxDescript % specifier = ASCII
       endif
@@ -804,6 +867,7 @@ C        maxvel.63
       UMaxDescript % file_basename          = 'maxvel'
       UMaxDescript % file_extension         = 63
       UMaxDescript % writeFlag              = .false.
+      UMaxDescript % minmax_timestamp       = .true.
       if ( UMaxDescript % specifier .eq. XDMF ) then
          UMaxDescript % specifier = ASCII
       endif
@@ -828,7 +892,8 @@ C     prmin.63
       PrMinDescript % field_name            = 'PrMin'
       PrMinDescript % file_basename         = 'minpr'
       PrMinDescript % file_extension        = 63
-      PrMinDescript % writeFlag            = .false.
+      PrMinDescript % writeFlag             = .false.
+      PrMinDescript % minmax_timestamp      = .true.
       if ( PrMinDescript % specifier .eq. XDMF ) then
          PrMinDescript % specifier = ASCII
       endif
@@ -853,7 +918,8 @@ C     maxwvel.63
       WVMaxDescript % field_name            = 'WVMax'
       WVMaxDescript % file_basename         = 'maxwvel'
       WVMaxDescript % file_extension        = 63
-      WVMaxDescript % writeFlag            = .false.
+      WVMaxDescript % writeFlag             = .false.
+      WVMaxDescript % minmax_timestamp      = .true.
       if ( WVMaxDescript % specifier .eq. XDMF ) then
          WVMaxDescript % specifier = ASCII
       endif
@@ -879,6 +945,7 @@ C        maxrs.63
       RSMaxDescript % file_basename         = 'maxrs'
       RSMaxDescript % file_extension        = 63
       RSMaxDescript % writeFlag             = .false.
+      RSMaxDescript % minmax_timestamp      = .true.
       if ( RSMaxDescript % specifier .eq. XDMF ) then
          RSMaxDescript % specifier = ASCII
       endif
@@ -898,7 +965,11 @@ C        maxrs.63
       ESLDescript % field_name           = 'ESLActive'
       ESLDescript % file_basename        = 'ESLNodes'
       ESLDescript % file_extension       = 63
-      ESLDescript % writeFlag            = loadEleSlopeLim
+      ESLDescript % writeFlag            = .false.       
+
+#ifdef CSWAN      
+      CALL initSwanOutput() !...couple2swan.F --> performs same process as above
+#endif
       !
       ! create file names
       do i=1, numOutputDescript2D
@@ -1020,6 +1091,11 @@ C----------------------------------------------------------------------
       INTEGER, intent(in) :: IT
       REAL(8), intent(in) :: TimeLoc
       INTEGER :: i
+ 
+      call setMessageSource("writeOutput2D")
+#ifdef WRITE_OUTPUT_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
 
       call setMessageSource("writeOutput2D")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -1139,12 +1215,31 @@ C       TURNED ON DURING THE RUN
             CALL writeOutArrayMinMax(323, TimeLoc, IT, 1, ESLDescript,
      &               packOne, unpackOne)  !no time stamps so only one pack/unpack
          ENDIF
+
+C       OUTPUT THE SWAN MAXIMUM FILES         
+#ifdef CSWAN
+        IF(Swan_OutputHS)
+     &      CALL writeOutArrayMinMax(316,TimeLoc,IT,1,SwanHSMaxDescript,packOne,unpackOne)
+        IF(Swan_OutputDIR)
+     &      CALL writeOutArrayMinMax(317,TimeLoc,IT,1,SwanDIRMaxDescript,packOne,unpackOne)
+        IF(Swan_OutputTM01)
+     &      CALL writeOutArrayMinMax(318,TimeLoc,IT,1,SwanTM01MaxDescript,packOne,unpackOne)
+        IF(Swan_OutputTM02)
+     &      CALL writeOutArrayMinMax(321,TimeLoc,IT,1,SwanTM02MaxDescript,packOne,unpackOne)
+        IF(Swan_OutputTMM10)
+     &      CALL writeOutArrayMinMax(322,TimeLoc,IT,1,SwanTMM10MaxDescript,packOne,unpackOne)
+        IF(Swan_OutputTPS)
+     &      CALL writeOutArrayMinMax(319,TimeLoc,IT,1,SwanTPSMaxDescript,packOne,unpackOne)
+        IF(Swan_OutputWind)
+     &      CALL writeOutArrayMinMax(320,TimeLoc,IT,1,SwanWindMaxDescript,packTwo,unpackTwo)
+#endif
       ENDIF
 
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
+
       RETURN
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
  2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
@@ -1165,7 +1260,12 @@ C-----------------------------------------------------------------------
       use global
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
-      
+
+      call setMessageSource("stationDataInterp")
+#ifdef WRITE_OUTPUT_TRACE
+      call allMessage(DEBUG,"Enter")
+#endif
+
       call setMessageSource("stationDataInterp")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -1182,6 +1282,7 @@ C-----------------------------------------------------------------------
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
+
 C-----------------------------------------------------------------------
       end subroutine stationDataInterp
 C-----------------------------------------------------------------------         
@@ -1194,8 +1295,8 @@ C     jgf51.21.24: Performs station interpolations on a single array.
 C-----------------------------------------------------------------------            
       subroutine stationArrayInterp(descript, fromArray, toArray)
       use sizes, only : sz
-      use global, only : nodecode, OutputDataDescript_t, IFNLFA, ETA2,
-     &    NOFF
+      use global, only : nodecode, OutputDataDescript_t, IFNLFA, ETA2, NOFF,
+     &                   allMessage, DEBUG, setMessageSource, unsetMessageSource 
       use mesh, only : dp, nm
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
@@ -1249,6 +1350,7 @@ C-----------------------------------------------------------------------
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
+
 C----------------------------------------------------------------------      
       end subroutine stationArrayInterp
 C----------------------------------------------------------------------
@@ -1300,6 +1402,7 @@ C
       call setMessageSource("writeHarmonicAnalysisOutput")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
+
 #endif
       ! JUST RETURN if harmonic analysis was not specified
       ! tcm v49.64.02 -added itime le ithas to be
@@ -1751,7 +1854,8 @@ C-----------------------------------------------------------------------
      & MYPROC
       USE HARM, ONLY : nf, nfreq, hafreq, haff, haface, namefr
       USE GLOBAL, ONLY : OutputDataDescript_t, screenMessage,
-     &                   DEBUG, setMessageSource, unsetMessageSource
+     &                   DEBUG, setMessageSource, unsetMessageSource,
+     &                   allMessage
 c     & ,myproc
       IMPLICIT NONE
       INTEGER, intent(in) :: lun  ! adcirc logical unit number for i/o
@@ -1766,6 +1870,7 @@ C     local vars
       CHARACTER(7) :: fn     ! outfile name (valid for lun between 10 and 99)
 C
       call setMessageSource("writeOutHarmonicArrays")
+
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
@@ -1841,6 +1946,7 @@ C
  6635 format(2x,1pE16.8E3,1x,0pf11.4)
  6636 format(2x,1pE16.8E3,1x,0pf11.4,2x,1pE16.8E3,1x,0pf11.4)
  3679 format(1x,e20.10,1x,f10.7,1x,f12.8,1x,a10)
+
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -3381,6 +3487,7 @@ C     args
       call setMessageSource("writeOutArray")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
+      call allMessage(DEBUG,TRIM(descript%file_name))
 #endif 
 
 C     collect up the data from subdomains if running in parallel
@@ -3394,7 +3501,7 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
 
       CASE(ASCII) 
 
-C         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
+         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
          IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
      &        .and.(.not.WRITE_LOCAL_FILES)) THEN
 
@@ -3508,7 +3615,7 @@ C         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
          ENDIF
          descript % filepos = descript % filepos + descript % num_records_this
 
-      CASE(SPARSE_ASCII) 
+      CASE(SPARSE_ASCII)
          CALL writeSparse(descript, timeLoc, it, storeOne) 
 
       CASE(NETCDF3, NETCDF4) ! (portable)
@@ -3539,6 +3646,7 @@ C         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
+
  2    FORMAT(I2)
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
  2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
@@ -3606,7 +3714,7 @@ C     write data in ascii text only (other output formats are not supported)
             ENDDO
 
             !tcm v51.20.01 additions for time stamp output
-            if (descript%file_name.ne."ESLNodes.63") then
+            if (descript%minmax_timestamp) then
                WRITE(lun,2120) TimeLoc,IT
                DO I=1, descript % num_fd_records
                   WRITE(lun,2453) I, descript % array2_g(I)
@@ -3626,7 +3734,7 @@ C     write data in ascii text only (other output formats are not supported)
                WRITE(lun,2453) I, descript % array(I)
             ENDDO
             !tcm v51.20.01 additions for time stamp output
-            if (descript%file_name.ne."ESLNodes.63") then
+            if (descript%minmax_timestamp) then
                WRITE(lun,2120) TimeLoc,IT
                DO I=1, descript % num_records_this
                   WRITE(lun,2453) I, descript % array2(I)
@@ -4784,6 +4892,414 @@ C
       call unsetMessageSource()
       END SUBROUTINE terminate
 
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E  i n i t S w a n O u t p u t
+C-----------------------------------------------------------------------
+C THIS ROUTINE WILL PERFORM THE ASSIGNMENT AND ALLOCATIONS FOR THE 
+C SWAN OUTPUT VARIABLES USED IN WRITE_OUTPUT.F
+C-----------------------------------------------------------------------
+#ifdef CSWAN
+      SUBROUTINE initSwanOutput()
+          USE SIZES, ONLY : MNPROC, OFF, ASCII, BINARY, NETCDF3, 
+     &                       NETCDF4, XDMF
+          USE GLOBAL
+          USE MESH 
+          IMPLICIT NONE
+
+C.....Allocate SWAN specific local/global arrays if that output is selected 
+      IF(SWAN_OutputHS)THEN
+        IF(MYPROC.EQ.0.AND.MNPROC.GT.1)THEN
+            ALLOCATE(SWAN_HSOut_g(1:NP_G))
+            ALLOCATE(SWAN_HSMaxOut_g(1:NP_G))
+        ENDIF
+        ALLOCATE(SWAN_HSOut(NP))
+        ALLOCATE(SWAN_HSMaxOut(NP))
+        SWAN_HSMaxOut(:) = -99999D0
+      ENDIF
+      IF(SWAN_OutputDIR)THEN
+        IF(MYPROC.EQ.0.AND.MNPROC.GT.1)THEN
+            ALLOCATE(SWAN_DIROut_g(NP_G))
+            ALLOCATE(SWAN_DIRMaxOut_g(NP_G))
+        ENDIF
+        ALLOCATE(SWAN_DIROut(NP))
+        ALLOCATE(SWAN_DIRMaxOut(NP))
+        SWAN_DIRMaxOut(:) = -99999D0
+      ENDIF
+      IF(SWAN_OutputTM01)THEN
+        IF(MYPROC.EQ.0.AND.MNPROC.GT.1)THEN
+            ALLOCATE(SWAN_TM01Out_g(NP_G))
+            ALLOCATE(SWAN_TM01MaxOut_g(NP_G))
+        ENDIF
+        ALLOCATE(SWAN_TM01Out(NP))
+        ALLOCATE(SWAN_TM01MaxOut(NP))
+        SWAN_TM01MaxOut(:) = -99999D0
+      ENDIF
+      IF(SWAN_OutputTPS)THEN
+        IF(MYPROC.EQ.0.AND.MNPROC.GT.1)THEN
+            ALLOCATE(SWAN_TPSOut_g(NP_G))
+            ALLOCATE(SWAN_TPSMaxOut_g(NP_G))
+        ENDIF
+        ALLOCATE(SWAN_TPSOut(NP))
+        ALLOCATE(SWAN_TPSMaxOut(NP))
+        SWAN_TPSMaxOut(:) = -99999D0
+      ENDIF
+      IF(SWAN_OutputTM02)THEN
+        IF(MYPROC.EQ.0.AND.MNPROC.GT.1)THEN
+            ALLOCATE(SWAN_TM02Out_g(NP_G))
+            ALLOCATE(SWAN_TM02MaxOut_g(NP_G))
+        ENDIF
+        ALLOCATE(SWAN_TM02Out(NP))
+        ALLOCATE(SWAN_TM02MaxOut(NP))
+        SWAN_TM02MaxOut(:) = -99999D0
+      ENDIF
+      IF(SWAN_OutputTMM10)THEN
+        IF(MYPROC.EQ.0.AND.MNPROC.GT.1)THEN
+            ALLOCATE(SWAN_TMM10Out_g(NP_G))
+            ALLOCATE(SWAN_TMM10MaxOut_g(NP_G))
+        ENDIF
+        ALLOCATE(SWAN_TMM10Out(NP))
+        ALLOCATE(SWAN_TMM10MaxOut(NP))
+        SWAN_TMM10MaxOut(:) = -99999D0
+      ENDIF
+      IF(SWAN_OutputWind)THEN
+        IF(MYPROC.EQ.0.AND.MNPROC.GT.1)THEN
+            ALLOCATE(Swan_WindXOut_g(NP_G),Swan_WindYOut_g(NP_G))
+            ALLOCATE(Swan_WindMaxOut_g(NP_G))
+        ENDIF
+        ALLOCATE(SWAN_WindXOut(NP),SWAN_WindYOut(NP))
+        ALLOCATE(SWAN_WindMaxOut(NP))
+        SWAN_WindMaxOut(:) = -99999D0
+      ENDIF
+C.....Significant Wave Height
+      IF(SWAN_OutputHS)THEN
+          SwanHSDescript % specifier        = NOUTGW
+      ELSE
+          SwanHSDescript % specifier        = OFF
+      ENDIF    
+      SwanHSDescript % lun                  = 301
+      SwanHSDescript % filepos              => SWAN_HS_POS
+      SwanHSDescript % initial_value        = 0.0
+      SwanHSDescript % num_items_per_record = 1
+      SwanHSDescript % num_fd_records       = NP_G
+      SwanHSDescript % num_records_this     = NP
+      SwanHSDescript % imap                 => NODES_LG
+      SwanHSDescript % array                => SWAN_HSOut
+      SwanHSDescript % array_g              => SWAN_HSOut_g
+      SwanHSDescript % ConsiderWetDry       = .FALSE.
+      SwanHSDescript % alternate_value      = -99999.0
+      SwanHSDescript % field_name           = "swan_HS"
+      SwanHSDescript % file_basename        = "swan_HS"
+      SwanHSDescript % file_extension       = 63
+      SwanHSDescript % startTimeStep        = NTCYSGW
+      SwanHSDescript % endTimeStep          = NTCYFGW
+      SwanHSDescript % outputTimeStepIncrement = NSPOOLGW
+      SwanHSDescript % spoolCounter         => SWAN_HS_SPOOL
+      SwanHSDescript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+          
+      IF(Swan_OutputHS)THEN
+          SwanHSMaxDescript % specifier        = NOUTGW
+      ELSE
+          SwanHSMaxDescript % specifier        = OFF
+      ENDIF
+      SwanHSMaxDescript % lun                  = 316
+      SwanHSMaxDescript % initial_value        = 0.0
+      SwanHSMaxDescript % num_items_per_record = 1
+      SwanHSMaxDescript % num_fd_records       = NP_G
+      SwanHSMaxDescript % num_records_this     = NP
+      SwanHSMaxDescript % imap                 => NODES_LG
+      SwanHSMaxDescript % array                => SWAN_HSMaxOut
+      SwanHSMaxDescript % array_g              => SWAN_HSMaxOut_g
+      SwanHSMaxDescript % ConsiderWetDry       = .FALSE.
+      SwanHSMaxDescript % alternate_value      = -99999.0
+      SwanHSMaxDescript % field_name           = "swan_HS_max"
+      SwanHSMaxDescript % file_basename        = "swan_HS_max"
+      SwanHSMaxDescript % file_extension       = 63
+      SwanHSMaxDescript % writeFlag            = .false.
+      
+C.....Mean Wave Direction
+      IF(SWAN_OutputDIR)THEN
+          SwanDIRDescript % specifier        = NOUTGW
+      ELSE
+          SwanDIRDescript % specifier        = OFF
+      ENDIF
+      SwanDIRDescript % lun                  = 302
+      SwanDIRDescript % filepos              => SWAN_DIR_POS
+      SwanDIRDescript % initial_value        = 0.0
+      SwanDIRDescript % num_items_per_record = 1
+      SwanDIRDescript % num_fd_records       = NP_G
+      SwanDIRDescript % num_records_this     = NP
+      SwanDIRDescript % imap                 => NODES_LG
+      SwanDIRDescript % array                => SWAN_DIROut
+      SwanDIRDescript % array_g              => SWAN_DIROut_g
+      SwanDIRDescript % ConsiderWetDry       = .FALSE.
+      SwanDIRDescript % alternate_value      = -99999.0
+      SwanDIRDescript % file_basename        = "swan_DIR"
+      SwanDIRDescript % file_extension       = 63
+      SwanDIRDescript % field_name           = "swan_DIR"
+      SwanDIRDescript % startTimeStep        = NTCYSGW
+      SwanDIRDescript % endTimeStep          = NTCYFGW
+      SwanDIRDescript % outputTimeStepIncrement = NSPOOLGW
+      SwanDIRDescript % spoolCounter         => SWAN_DIR_SPOOL
+      SwanDIRDescript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      
+      IF(SWAN_OutputDir)THEN
+          SwanDIRMaxDescript % specifier        = NOUTGW
+      ELSE
+          SwanDIRMaxDescript % specifier        = OFF
+      ENDIF
+      SwanDIRMaxDescript % lun                  = 317
+      SwanDIRMaxDescript % initial_value        = 0.0
+      SwanDIRMaxDescript % num_items_per_record = 1
+      SwanDIRMaxDescript % num_fd_records       = NP_G
+      SwanDIRMaxDescript % num_records_this     = NP
+      SwanDIRMaxDescript % imap                 => NODES_LG
+      SwanDIRMaxDescript % array                => SWAN_DIRMaxOut
+      SwanDIRMaxDescript % array_g              => SWAN_DIRMaxOut_g
+      SwanDIRMaxDescript % ConsiderWetDry       = .FALSE.
+      SwanDIRMaxDescript % alternate_value      = -99999.0
+      SwanDIRMaxDescript % file_basename        = "swan_DIR_max"
+      SwanDIRMaxDescript % file_extension       = 63
+      SwanDIRMaxDescript % field_name           = "swan_DIR_max"
+      SwanDIRMaxDescript % writeFlag            = .false.
+
+C.....Mean Wave Period (TM01)
+      IF(SWAN_OutputTM01)THEN
+          SwanTM01Descript % specifier        = NOUTGW
+      ELSE
+          SwanTM01Descript % specifier        = OFF
+      ENDIF
+      SwanTM01Descript % lun                  = 303
+      SwanTM01Descript % filepos              => SWAN_TM01_POS
+      SwanTM01Descript % initial_value        = 0.0
+      SwanTM01Descript % num_items_per_record = 1
+      SwanTM01Descript % num_fd_records       = NP_G
+      SwanTM01Descript % num_records_this     = NP
+      SwanTM01Descript % imap                 => NODES_LG
+      SwanTM01Descript % array                => SWAN_TM01Out
+      SwanTM01Descript % array_g              => SWAN_TM01Out_g
+      SwanTM01Descript % ConsiderWetDry       = .FALSE.
+      SwanTM01Descript % alternate_value      = -99999.0
+      SwanTM01Descript % file_basename        = "swan_TM01"
+      SwanTM01Descript % file_extension       = 63
+      SwanTM01Descript % field_name           = "swan_TM01"
+      SwanTM01Descript % startTimeStep        = NTCYSGW
+      SwanTM01Descript % endTimeStep          = NTCYFGW
+      SwanTM01Descript % outputTimeStepIncrement = NSPOOLGW
+      SwanTM01Descript % spoolCounter         => SWAN_TM01_SPOOL
+      SwanTM01Descript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+     
+      IF(SWAN_OutputTM01)THEN
+          SwanTM01MaxDescript % specifier        = NOUTGW
+      ELSE
+          SwanTM01MaxDescript % specifier        = OFF
+      ENDIF
+      SwanTM01MaxDescript % lun                  = 318
+      SwanTM01MaxDescript % initial_value        = 0.0
+      SwanTM01MaxDescript % num_items_per_record = 1
+      SwanTM01MaxDescript % num_fd_records       = NP_G
+      SwanTM01MaxDescript % num_records_this     = NP
+      SwanTM01MaxDescript % imap                 => NODES_LG
+      SwanTM01MaxDescript % array                => SWAN_TM01MaxOut
+      SwanTM01MaxDescript % array_g              => SWAN_TM01MaxOut_g
+      SwanTM01MaxDescript % ConsiderWetDry       = .FALSE.
+      SwanTM01MaxDescript % alternate_value      = -99999.0
+      SwanTM01MaxDescript % file_basename        = "swan_TM01_max"
+      SwanTM01MaxDescript % file_extension       = 63
+      SwanTM01MaxDescript % field_name           = "swan_TM01_max"
+      SwanTM01MaxDescript % writeFlag            = .false.
+
+C.....Peak Wave Period (TPS)
+      IF(SWAN_OutputTPS)THEN
+          SwanTPSDescript % specifier        = NOUTGW
+      ELSE
+          SwanTPSDescript % specifier        = OFF
+      ENDIF
+      SwanTPSDescript % lun                  = 304
+      SwanTPSDescript % filepos              => SWAN_TPS_POS
+      SwanTPSDescript % initial_value        = 0.0
+      SwanTPSDescript % num_items_per_record = 1
+      SwanTPSDescript % num_fd_records       = NP_G
+      SwanTPSDescript % num_records_this     = NP
+      SwanTPSDescript % imap                 => NODES_LG
+      SwanTPSDescript % array                => SWAN_TPSOut
+      SwanTPSDescript % array_g              => SWAN_TPSOut_g
+      SwanTPSDescript % ConsiderWetDry       = .FALSE.
+      SwanTPSDescript % alternate_value      = -99999.0
+      SwanTPSDescript % file_basename        = "swan_TPS"
+      SwanTPSDescript % file_extension       = 63
+      SwanTPSDescript % field_name           = "swan_TPS"
+      SwanTPSDescript % startTimeStep        = NTCYSGW
+      SwanTPSDescript % endTimeStep          = NTCYFGW
+      SwanTPSDescript % outputTimeStepIncrement = NSPOOLGW
+      SwanTPSDescript % spoolCounter         => SWAN_TPS_SPOOL
+      SwanTPSDescript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      
+      IF(SWAN_OutputTPS)THEN
+          SwanTPSMaxDescript % specifier        = NOUTGW
+      ELSE
+          SwanTPSMaxDescript % specifier        = OFF
+      ENDIF
+      SwanTPSMaxDescript % lun                  = 319
+      SwanTPSMaxDescript % initial_value        = 0.0
+      SwanTPSMaxDescript % num_items_per_record = 1
+      SwanTPSMaxDescript % num_fd_records       = NP_G
+      SwanTPSMaxDescript % num_records_this     = NP
+      SwanTPSMaxDescript % imap                 => NODES_LG
+      SwanTPSMaxDescript % array                => SWAN_TPSMaxOut
+      SwanTPSMaxDescript % array_g              => SWAN_TPSMaxOut_g
+      SwanTPSMaxDescript % ConsiderWetDry       = .FALSE.
+      SwanTPSMaxDescript % alternate_value      = -99999.0
+      SwanTPSMaxDescript % file_basename        = "swan_TPS_max"
+      SwanTPSMaxDescript % file_extension       = 63
+      SwanTPSMaxDescript % field_name           = "swan_TPS_max"
+      SwanTPSMaxDescript % writeFlag            = .false.
+
+C.....SWAN Wind Values (WINDX,WINDY)
+      IF(SWAN_OutputWind)THEN
+          SwanWindDescript % specifier        = NOUTGW
+      ELSE
+          SwanWindDescript % specifier        = OFF
+      ENDIF
+      SwanWindDescript % lun                  = 305
+      SwanWindDescript % filepos              => SWAN_WIND_POS
+      SwanWindDescript % initial_value        = 0.0
+      SwanWindDescript % num_items_per_record = 2
+      SwanWindDescript % num_fd_records       = NP_G
+      SwanWindDescript % num_records_this     = NP
+      SwanWindDescript % imap                 => NODES_LG
+      SwanWindDescript % array                => SWAN_WindXOut
+      SwanWindDescript % array_g              => SWAN_WindXOut_g
+      SwanWindDescript % array2               => SWAN_WindYOut
+      SwanWindDescript % array2_g             => SWAN_WindYOut_g
+      SwanWindDescript % ConsiderWetDry       = .FALSE.
+      SwanWindDescript % alternate_value      = -99999.0
+      SwanWindDescript % file_basename        = "swan_WIND"
+      SwanWindDescript % file_extension       = 64
+      SwanWindDescript % field_name           = "swan_WIND"
+      SwanWindDescript % startTimeStep        = NTCYSGW
+      SwanWindDescript % endTimeStep          = NTCYFGW
+      SwanWindDescript % outputTimeStepIncrement = NSPOOLGW
+      SwanWindDescript % spoolCounter         => SWAN_WIND_SPOOL
+      SwanWindDescript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      
+      IF(SWAN_OutputWind)THEN
+          SwanWindMaxDescript % specifier        = NOUTGW
+      ELSE
+          SwanWindMaxDescript % specifier        = OFF
+      ENDIF
+      SwanWindMaxDescript % lun                  = 320
+      SwanWindMaxDescript % initial_value        = 0.0
+      SwanWindMaxDescript % num_items_per_record = 1
+      SwanWindMaxDescript % num_fd_records       = NP_G
+      SwanWindMaxDescript % num_records_this     = NP
+      SwanWindMaxDescript % imap                 => NODES_LG
+      SwanWindMaxDescript % array                => SWAN_WindMaxOut
+      SwanWindMaxDescript % array_g             => SWAN_WindMaxOut_g
+      SwanWindMaxDescript % ConsiderWetDry       = .FALSE.
+      SwanWindMaxDescript % alternate_value      = -99999.0
+      SwanWindMaxDescript % file_basename        = "swan_WIND_max"
+      SwanWindMaxDescript % file_extension       = 63
+      SwanWindMaxDescript % field_name           = "swan_WIND_max"
+      SwanWindMaxDescript % writeFlag            = .false.
+
+C.....Mean Wave Period (TM02)
+      IF(SWAN_OutputTM02)THEN
+          SwanTM02Descript % specifier        = NOUTGW
+      ELSE
+          SwanTM02Descript % specifier        = OFF
+      ENDIF
+      SwanTM02Descript % lun                  = 306
+      SwanTM02Descript % filepos              => SWAN_TM02_POS
+      SwanTM02Descript % initial_value        = 0.0
+      SwanTM02Descript % num_items_per_record = 1
+      SwanTM02Descript % num_fd_records       = NP_G
+      SwanTM02Descript % num_records_this     = NP
+      SwanTM02Descript % imap                 => NODES_LG
+      SwanTM02Descript % array                => SWAN_TM02Out
+      SwanTM02Descript % array_g              => SWAN_TM02Out_g
+      SwanTM02Descript % ConsiderWetDry       = .FALSE.
+      SwanTM02Descript % alternate_value      = -99999.0
+      SwanTM02Descript % file_basename        = "swan_TM02"
+      SwanTM02Descript % file_extension       = 63
+      SwanTM02Descript % field_name           = "swan_TM02"
+      SwanTM02Descript % startTimeStep        = NTCYSGW
+      SwanTM02Descript % endTimeStep          = NTCYFGW
+      SwanTM02Descript % outputTimeStepIncrement = NSPOOLGW
+      SwanTM02Descript % spoolCounter         => SWAN_TM02_SPOOL
+      SwanTM02Descript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      
+      IF(SWAN_OutputTM02)THEN
+          SwanTM02MaxDescript % specifier        = NOUTGW
+      ELSE
+          SwanTM02MaxDescript % specifier        = OFF
+      ENDIF
+      SwanTM02MaxDescript % lun                  = 321
+      SwanTM02MaxDescript % initial_value        = 0.0
+      SwanTM02MaxDescript % num_items_per_record = 1
+      SwanTM02MaxDescript % num_fd_records       = NP_G
+      SwanTM02MaxDescript % num_records_this     = NP
+      SwanTM02MaxDescript % imap                 => NODES_LG
+      SwanTM02MaxDescript % array                => SWAN_TM02MaxOut
+      SwanTM02MaxDescript % array_g             => SWAN_TM02MaxOut_g
+      SwanTM02MaxDescript % ConsiderWetDry       = .FALSE.
+      SwanTM02MaxDescript % alternate_value      = -99999.0
+      SwanTM02MaxDescript % file_basename        = "swan_TM02_max"
+      SwanTM02MaxDescript % file_extension       = 63
+      SwanTM02MaxDescript % field_name           = "swan_TM02_max"
+      SwanTM02MaxDescript % writeFlag            = .false.
+
+C.....Mean Wave Period (TMM10)
+      IF(SWAN_OutputTMM10)THEN
+          SwanTMM10Descript % specifier        = NOUTGW
+      ELSE
+          SwanTMM10Descript % specifier        = OFF
+      ENDIF
+      SwanTMM10Descript % lun                  = 307
+      SwanTMM10Descript % filepos              => SWAN_TMM10_POS
+      SwanTMM10Descript % initial_value        = 0.0
+      SwanTMM10Descript % num_items_per_record = 1
+      SwanTMM10Descript % num_fd_records       = NP_G
+      SwanTMM10Descript % num_records_this     = NP
+      SwanTMM10Descript % imap                 => NODES_LG
+      SwanTMM10Descript % array                => SWAN_TMM10Out
+      SwanTMM10Descript % array_g              => SWAN_TMM10Out_g
+      SwanTMM10Descript % ConsiderWetDry       = .FALSE.
+      SwanTMM10Descript % alternate_value      = -99999.0
+      SwanTMM10Descript % file_basename        = "swan_TMM10"
+      SwanTMM10Descript % file_extension       = 63
+      SwanTMM10Descript % field_name           = "swan_TMM10"
+      SwanTMM10Descript % startTimeStep        = NTCYSGW
+      SwanTMM10Descript % endTimeStep          = NTCYFGW
+      SwanTMM10Descript % outputTimeStepIncrement = NSPOOLGW
+      SwanTMM10Descript % spoolCounter         => SWAN_TMM10_SPOOL
+      SwanTMM10Descript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      
+      IF(SWAN_OutputTMM10)THEN
+          SwanTMM10MaxDescript % specifier        = NOUTGW
+      ELSE
+          SwanTMM10MaxDescript % specifier        = OFF
+      ENDIF
+      SwanTMM10MaxDescript % lun                  = 322
+      SwanTMM10MaxDescript % initial_value        = 0.0
+      SwanTMM10MaxDescript % num_items_per_record = 1
+      SwanTMM10MaxDescript % num_fd_records       = NP_G
+      SwanTMM10MaxDescript % num_records_this     = NP
+      SwanTMM10MaxDescript % imap                 => NODES_LG
+      SwanTMM10MaxDescript % array               => SWAN_TMM10MaxOut
+      SwanTMM10MaxDescript % array_g             => SWAN_TMM10MaxOut_g
+      SwanTMM10MaxDescript % ConsiderWetDry       = .FALSE.
+      SwanTMM10MaxDescript % alternate_value      = -99999.0
+      SwanTMM10MaxDescript % file_basename        = "swan_TMM10_max"
+      SwanTMM10MaxDescript % file_extension       = 63
+      SwanTMM10MaxDescript % field_name           = "swan_TMM10_max"
+      SwanTMM10MaxDescript % writeFlag            = .false.
+
+
+      RETURN
+C-----------------------------------------------------------------------
+      END SUBROUTINE initSwanOutput
+C-----------------------------------------------------------------------
+#endif
 
       !-----------------------------------------------------------------
       end module write_output

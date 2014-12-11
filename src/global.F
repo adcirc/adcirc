@@ -143,6 +143,26 @@ C     for writing fulldomain hotstart files.
       REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax_g(:)
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time(:) 
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time_G(:) 
+     
+#ifdef CSWAN
+      !...Global SWAN Arrays
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIROut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01Out_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDXOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDYOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02Out_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10Out_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSMaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIRMaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01MaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSMaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDMaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02MaxOut_g(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10MaxOut_g(:)
+#endif
+      
       ! mappings from subdomain to fulldomain for stations
       integer,allocatable,target :: imap_stae_lg(:)
       integer,allocatable,target :: imap_stav_lg(:)
@@ -206,6 +226,25 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax(:)
+      
+#ifdef CSWAN      
+      !...Local SWAN Arrays
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIROut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01Out(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDXOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDYOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02Out(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10Out(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSMaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIRMaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01MaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TPSMaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WINDMaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM02MaxOut(:)
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TMM10MaxOut(:)
+#endif      
 
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN
@@ -475,7 +514,8 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER  NNBB1WN, NNBB2WN               ! sb46.28.sb05.05 WN stands for wet neighbors 11/01/2006
       INTEGER  NOUTGC, NOUTGE, NOUTGV, NOUTGW, NOUTM
       INTEGER, TARGET :: NSCOUC, NSCOUE, NSCOUGC, NSCOUGE, NSCOUGV ! output spool counters
-      INTEGER, TARGET :: NSCOUGW, NSCOUM, NSCOUV, NSCOUGT, NSCOUGS  ! output spool counters
+      INTEGER, TARGET :: NSCOUGW, NSCOURS, NSCOUGP, NSCOUM, NSCOUV ! output spool counters
+      INTEGER, TARGET :: NSCOUGI, NSCOUGT, NSCOUGS  ! output spool counters
       INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments
       INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM ! output increments
       INTEGER  NSTAC, NSTAM, NTCYFC, NTCYFGC, NTCYFGE
@@ -672,6 +712,7 @@ C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements t
         real(sz), pointer :: interp_fac2(:) ! array of interp. factors for stations        
         real(sz), pointer :: interp_fac3(:) ! array of interp. factors for stations
         logical :: initialized ! .true. if initialization has occurred (netcdf, xdmf)
+        logical :: minmax_timestamp ! .true. if a time stamp will be written to a max file
         type(xdmfMetaData_t) :: xdmfMD ! used if this data will be written to XDMF
         type(writerData_t) :: wMD ! used if this data will be written by dedicated writer
       end type OutputDataDescript_t

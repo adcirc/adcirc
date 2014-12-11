@@ -2,31 +2,35 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
-C    v51.33.12 - Added comma to hstime.F to fix syntax when not compiling
-C                with NETCDF support.
-C    v51.33.11 - Decided to adjust compiler flags for debugging to remove 
-C                trapping on underflow floating point exceptions, since 
-C                default compiler behavior is likely to handle such exceptions
-C                correctly (flush to zero) during production. 
-C    v51.33.10 - Corrected stray subroutine call from adcirc_terminate() to 
-C                terminate().
-C    v51.33.09 - Added option to compile with debugging to cmplrflags.mk for
-C                intel-lonestar; also added SWAN=enable option on the make 
-C                command line for same (instead of hardcoding -DADCSWAN into
-C                the DPRE flags); added dependency of wind module on mesh module
-C                into makefile; fixed misplaced END SELECT in couple2swan
-C                that was erroneously inside #ifdef causing compilation issue
-C                if compiled without netcdf support; fixes to enable 
-C                compilation with debugging using intel11 compilers on lonestar
-C                at TACC.
-C    v51.33.08 - Fixes to enable compilation in debug mode with ftn compilers
-C                on garnet at ERDC.
-C    v51.33.07 - Fixes to enable compilation with ftn compilers on garnet
-C                at ERDC; added execution tracing to write_output module.
-C    v51.33.06 - Fixes to enable compilation with intel14 compilers on
-C                hatteras at RENCI.
-C    v51.33.05 - Fixed issue with adcprep: mesh coordinates were
-C                not suitably initialized, causing floating point exception
+C    v51.33.13 - 12/09/2014 - jgf - Merged trunk changes r1032:1050; fixed some
+C                issues related to the move of output type identifiers like
+C                OFF, ASCII, BINARY, etc from global.F to sizes.F.
+C    v51.33.12 - 11/18/2014 - jgf - Added comma to hstime.F to fix syntax when
+C                not compiling with NETCDF support.
+C    v51.33.11 - 11/12/2014 - Decided to adjust compiler flags for debugging
+C                to remove trapping on underflow floating point exceptions,
+C                since default compiler behavior is likely to handle such
+C                exceptions correctly (flush to zero) during production. 
+C    v51.33.10 - 11/07/2014 - jgf - Corrected stray subroutine call from
+C                adcirc_terminate() to terminate().
+C    v51.33.09 - 11/07/2014 - jgf - Added option to compile with debugging to
+C                cmplrflags.mk for intel-lonestar; also added SWAN=enable
+C                option on the make command line for same (instead of 
+C                hardcoding -DADCSWAN into the DPRE flags); added dependency
+C                of wind module on mesh module into makefile; fixed misplaced
+C                END SELECT in couple2swan that was erroneously inside #ifdef
+C                causing compilation issue if compiled without netcdf support;
+C                fixes to enable compilation with debugging using intel11
+C                compilers on lonestar at TACC.
+C    v51.33.08 - 11/06/2014 - jgf - Fixes to enable compilation in debug mode
+C                with ftn compilers on garnet at ERDC.
+C    v51.33.07 - 11/06/2014 - jgf - Fixes to enable compilation with ftn 
+C                compilers on garnet at ERDC; added execution tracing to
+C                write_output module.
+C    v51.33.06 - 10/31/2014 - jgf - Fixes to enable compilation with intel14 
+C                compilers on hatteras at RENCI.
+C    v51.33.05 - 10/30/2014 - jgf - Fixed issue with adcprep: mesh coordinates 
+C                were not suitably initialized, causing floating point exception
 C                problems in the setup_kdt_search subroutine; eliminated
 C                redundant specification of deg2rad, rad2deg, and Rearth
 C                parameters as well as CPP projection sub between adcprep and 

@@ -25,7 +25,7 @@ C
 #endif
       !tcm v50.27 increased size from 3 to 4, cobell increase to 6,
       ! jgf51.21.27 decreased size of intbuf to 5
-      ! jgf51.21.29 increased size of intbug to 6 for XDMF
+      ! jgf51.21.29 increased size of intbuf to 6 for XDMF
       integer, parameter :: numIntMetadata = 6
       integer :: intBuf(numIntMetadata)  ! used to transmit pieces of descript via mpi
       integer, parameter :: numRealMetadata = 2
@@ -123,7 +123,7 @@ C-----------------------------------------------------------------------
       include 'mpif.h'
 #endif
       integer :: sig,ierr
-      integer :: mpistat
+      integer :: mpistat(mpi_status_size)
 C
       call setMessageSource("writer_main")
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)

@@ -185,9 +185,8 @@ C     ------------------------------------------------------------------
             write(6,'("NVEL (specified number of land boundary nodes) = ",i0,".")') nvel
             write(6,'("Counted number of land boundary nodes = ",i0,".")') nvel_count
             do k=1,nbou
-               write(6,'("ibtype(",i0,")=",i0,", nvell(",i0,")=",i0,
-     &         ", total=",i0,
-     &         ".")') k, ibtype_orig(k), k, nvell(k), sum(nvell(1:k))
+               write(6,'("ibtype(",i0,")=",i0,", nvell(",i0,")=",i0,", total=",i0,".")') 
+     &             k, ibtype_orig(k), k, nvell(k), sum(nvell(1:k))
             end do
          endif
       endif
