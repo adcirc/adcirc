@@ -2,6 +2,7 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C    v51.33.14 - 12/12/2014 - jgf - Fixed duplicate execution tracing calls.
 C    v51.33.13 - 12/09/2014 - jgf - Merged trunk changes r1032:1050; fixed some
 C                issues related to the move of output type identifiers like
 C                OFF, ASCII, BINARY, etc from global.F to sizes.F.

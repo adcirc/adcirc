@@ -1091,11 +1091,6 @@ C----------------------------------------------------------------------
       INTEGER, intent(in) :: IT
       REAL(8), intent(in) :: TimeLoc
       INTEGER :: i
- 
-      call setMessageSource("writeOutput2D")
-#ifdef WRITE_OUTPUT_TRACE
-      call allMessage(DEBUG,"Enter")
-#endif
 
       call setMessageSource("writeOutput2D")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -1260,11 +1255,6 @@ C-----------------------------------------------------------------------
       use global
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
-
-      call setMessageSource("stationDataInterp")
-#ifdef WRITE_OUTPUT_TRACE
-      call allMessage(DEBUG,"Enter")
-#endif
 
       call setMessageSource("stationDataInterp")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
