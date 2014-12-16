@@ -2,6 +2,9 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history                                                          
+C  v51.37.01 - 12/16/2014 - jgf - Added ONLY keyword to each USE statement
+C              in GWCE_New() and Mom_Eqs_New_NC() subroutines in order to
+C              clarify data dependencies. 
 C  v51.37    - 11/11/2014 - zc - Fixing allocation of mpistat in 
 C              writer_main subroutine. Setting ESLDescript % writeFlag
 C              flag to false so code does not attempt to write

@@ -3470,19 +3470,36 @@ C                                                                             *
 C    Subroutine to compute the elevation using the GWCE formluation           *
 C    Re-written to conform to the ADCIRC Theory Report                        *
 C                                                                             *
-C                            r.l.  06/22/2005                                 *
+C                            r.l.  06/22/2005 
+C
+C    jgf51.37.01: Added ONLY keyword to all USE statements in order to 
+C    clarify data dependencies.
 C******************************************************************************
 
       SUBROUTINE GWCE_New(IT,TimeLoc,TimeH)
-C
-      USE SIZES
-      USE GLOBAL
+      USE SIZES, ONLY : SZ, MNP, MNEI, MYPROC
+      USE GLOBAL, ONLY : ETA2, COEF, COEFD, OBCCoef, LSXX, LSXY, LSYX, 
+     &   LSYY, GWCE_LV, ETAS, ETA1, ETAS0, ETA0, ESBIN1, ESBIN2, IPARM,
+     &   A00, B00, C00, ARG, ARGJ, C2DDI, C3D, CBAROCLINIC, CELERITY,
+     &   CGWCE_Advec_C2, CGWCE_LS_2PartV, CGWCE_LS_2PartSV, ETIME1, 
+     &   CGWCE_Advec_C1, CGWCE_Advec_NC, CGWCE_LS_2PartQ, CGWCE_LS_2PartSQ,
+     &   CGWCE_LS_KGQ, CPRECOR, CSmag_Eh, CTIP, DT, DT2, EP,ETIME2, 
+     &   ETIMINC, FluxSettlingIT, IER, IFNLCAT, IFNLCT, IFNLFA, ILUMP,
+     &   ITMAX, IWKSP, J12, J13, J21, J23, J31, J32, ETRATIO, NBDJ, 
+     &   NBFR, NCCHANGE, NRS, NSCREEN, NUMITR, NW, NWS, QFORCEI, QFORCEJ,
+     &   RAMPELEV, RES_BC_FLAG, RFF, RPARM, WKSP, TK, NODECODE, NOFF,
+     &   UU1, VV1, QX1, QY1, PR1, TiP1, BSX1, BSY1, DUV1, DVV1, CORIF,
+     &   WSX1, WSY1, VIDBCPDXOH, VIDBCPDYOH, PER, FACE, FF, EFA, EMO,
+     &   LNM_BC, QN1, DUU1, AMIG, QN0, EN1, ELEVDISC, QN2, EN0, G,
+     &   SCREENUNIT, setMessageSource, unsetMessageSource, RNP_GLOBAL
+#ifdef CMPI
+     &   , dumy1, dumy2
+#endif
       USE MESH, ONLY : NE, NP, NM, X, Y, DP, NNeigh, NeiTab, TotalArea,
-     &                  Areas, NEIMAX, SFAC
+     &                  Areas, NEIMAX, SFAC 
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, 
      &   NFLUXRBC, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3 
-      USE WIND
-      USE ITPACKV
+      USE ITPACKV, ONLY : JCG
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE NodalAttributes, ONLY :
      &     LoadGeoidOffset, GeoidOffset, EVM,
@@ -3491,7 +3508,7 @@ C
      &     LoadEleSlopeLim,elemental_slope_limiter_active,
      &     LoadAdvectionState
 #ifdef CMPI
-      USE MESSENGER
+      USE MESSENGER, ONLY : UPDATER, PSDOT
 #endif
 #ifdef CSWAN
 #ifdef CSWANFRIC
@@ -5266,13 +5283,23 @@ C                                                                              *
 C   This subroutine follows the naming convention and formulation in the new   *
 C   ADCIRC theory report.                                                      *
 C                                                                              *
-C                            r.l.  06/22/2005                                  *
+C                            r.l.  06/22/2005            
+C
+C   jgf51.37.01: Added ONLY keyword to each USE statement in order to 
+C   clarify data dependencies.
 C*******************************************************************************
 
       SUBROUTINE Mom_Eqs_New_NC()
 C
-      USE GLOBAL
-      USE WIND
+      USE SIZES, ONLY : SZ
+      USE GLOBAL, ONLY : ETA2, MOM_LV_X, MOM_LV_Y, AUV11, AUV12, AUV22,
+     &   AUV21, CBAROCLINIC, CME_AreaInt_Corr, CME_AreaInt_Orig,
+     &   CME_LS_IBPQ, CME_LS_IBPSQ, CME_LS_IBPSV, CME_LS_IBPV,
+     &   CSmag_Eh, CTIP, DT, DTo2, Go2, IFNLCT, IFNLFA, IFWIND, 
+     &   NELE, NWS, NRS, NODECODE, NOFF, UU1, VV1, ETA1, QX1, QY1,
+     &   UU2, VV2, QX2, QY2, PR1, PR2, TiP1, TiP2, WSX1, WSX2, WSY1, 
+     &   WSY2, TK, CORIF, VIDBCPDXOH, VIDBCPDYOH, QN2,
+     &   setMessageSource, unsetMessageSource
       USE MESH, ONLY : NE, NP, NM, DP, X, Y, Areas, TotalArea, 
      &                  NNeigh, NeiTab, NeiTabEle, MJU, SFAC
       USE BOUNDARIES, ONLY : NFLUXGBC, NVELME, ME2GW, NBV, LBCODEI,
