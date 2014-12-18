@@ -3465,6 +3465,664 @@ C******************************************************************************
       END SUBROUTINE TIMESTEP
 C******************************************************************************
 
+      !-----------------------------------------------------------------
+      !                    S U B R O U T I N E   
+      !         G W C E  L U M P E D   L H S   M I N I M A L 
+      !-----------------------------------------------------------------
+      ! jgf51.37.02: Sets up the lumped GWCE Left Hand Side matrix. The
+      ! LHS matrix must be computed at the first time step.
+      ! 
+      ! This minimal version of the mass matrix construction assumes 
+      ! the following:
+      ! a. There is no wetting or drying.
+      ! b. There are no elevation specified boundary conditions.
+      ! c. The tau0 value is a constant 0.005 everywhere.
+      ! d. All data must be passed in on the subroutine call, instead of
+      !    USE statements.
+      !-----------------------------------------------------------------      
+      subroutine gwceLumpedLHSMinimal(coefd, ne, nm, sfac, dt, areas)
+      implicit none
+      integer, parameter :: sz = 8
+      real(sz), intent(inout) :: coefd(:)  ! diagonal coefficients of mass matrix
+      integer, intent(in) :: ne           ! number of elements
+      integer, intent(in) :: nm(:,:)      ! element table
+      real(sz), intent(in) :: sfac(:)     ! vec. correction to CPP projection
+      real(sz), intent(in) :: dt           ! time step size (seconds)
+      real(sz), intent(in) :: areas(:)     ! 2x the element areas
+      !
+      real(sz), parameter :: tau0avg = 0.005d0
+      real(sz), parameter :: OnDiag = 4.d0  ! on diagonal coefficient
+      !
+      real(sz) :: SFacAvg ! average of the SFac vector on an element
+      real(sz) :: MsFacLOnDiag
+      !
+      integer :: ie  ! loop counter
+      !
+      ! Zero out the diagonal elements
+      Coefd(:)=0.0d0   
+      !
+      ! jgf48.4619: Add Seizo's construction of Lumped LHS matrix.
+      ! Loop over elements and determine their contributions to the
+      ! nodes that they contain. 
+      DO IE=1,NE 
+         !
+         ! Compute average SFac value across the element (used to 
+         ! adjust equations to the CPP projection).
+         SFacAvg = ( SFac(NM(IE,1)) + SFac(NM(IE,2)) + SFac(NM(IE,3)) ) 
+     &      / 3.d0
+         !
+         MsFacLOnDiag = OnDiag * (Areas(IE)/2.d0) 
+     &      * (1.d0/DT + Tau0Avg/2.d0) / DT / 12.d0
+
+         Coefd(NM(IE,1)) = Coefd(NM(IE,1)) + MsFacLOnDiag 
+         Coefd(NM(IE,2)) = Coefd(NM(IE,2)) + MsFacLOnDiag
+         Coefd(NM(IE,3)) = Coefd(NM(IE,3)) + MsFacLOnDiag
+      ENDDO
+
+      !End of GWCE matrix setup    
+      !-----------------------------------------------------------------      
+      end subroutine gwceLumpedLHSMinimal
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !                    S U B R O U T I N E   
+      !  G W C E  C O M P U T E  L O A D   V E C T O R   M I N I M A L 
+      !-----------------------------------------------------------------
+      ! jgf51.37.02: Computes the GWCE Load Vector. This subroutine
+      ! assumes:
+      ! a. There is no wetting or drying.
+      ! b. There is external forcing or boundary conditions, 
+      ! c. The tau0 value is 0.005 everywhere. 
+      ! d. ADCIRC's default formulations are used. 
+      ! e. The mass matrix (i.e., LHS) is lumped.
+      ! f. EVM (lateral viscosity) is constant and not spatially varying.
+      ! g. The equations are 2D depth integrated. 
+      ! h. Barotropic equations are used (constant density). 
+      ! i. Scalar computer formulation is used (not vector).
+      ! j. The subroutine is executed in serial.
+      ! k. All data must be passed in via the subroutine call, instead of
+      !    USE statements.
+      ! l. The coefficent of bottom friction is a constant.
+      ! m. Nonlinear advection is turned on.
+      ! n. Memory allocation is not used in this subroutine, so even
+      !    local arrays (e.g., bsx and bsy) that require memory allocation
+      !    must be passed in as arguments in the subroutine call.
+      !-----------------------------------------------------------------      
+      subroutine gwceComputeLoadVectorMinimal(gwce_lv, coefd,  
+     &  eta1, eta2, etas, uu1, vv1, bsx, bsy, qx1, qy1, tk, x, y, dp,
+     &  ne, np, nm, sfac, dt, areas, g)
+      implicit none
+      integer, parameter :: sz = 8
+      real(sz), intent(out) :: gwce_lv(:) ! forcing vector (RHS)
+      real(sz), intent(in) :: coefd(:)  ! diagonal coefficients of mass matrix
+      ! 1 subscript denotes previous time level, 2 denotes current time level
+      real(sz), intent(in) :: eta1(:) ! nodal water surface elev
+      real(sz), intent(in) :: eta2(:) ! nodal wse
+      real(sz), intent(in) :: etas(:) ! nodal wse difference between time levels      
+      real(sz), intent(in) :: uu1(:)     ! u velocity at nodes
+      real(sz), intent(in) :: vv1(:)     ! v velocity at nodes
+      real(sz), intent(out) :: bsx(:) ! u bottom stress
+      real(sz), intent(out) :: bsy(:) ! v bottom stress
+      real(sz), intent(in) :: qx1(:)     ! u flux at nodes
+      real(sz), intent(in) :: qy1(:)     ! v flux at nodes
+      real(sz), intent(out) :: tk(:)  ! bottom friction at nodes
+      real(sz), intent(in) :: x(:)  ! x nodal coordinates
+      real(sz), intent(in) :: y(:)  ! y nodal coordinates
+      real(sz), intent(in) :: dp(:)      ! bathymetric depth at nodes      
+      integer, intent(in) :: ne           ! number of elements
+      integer, intent(in) :: np           ! number of nodes
+      integer, intent(in) :: nm(:,:)      ! element table
+      real(sz), intent(in) :: sfac(:)     ! vec. correction to CPP projection
+      real(sz), intent(in) :: dt           ! time step size (seconds)
+      real(sz), intent(in) :: areas(:)     ! 2x the element areas
+      real(sz), intent(in) :: g            ! gravitational acceleration
+      !
+      real(sz), parameter :: fricAvg = 0.005  ! quadratic friction coefficent
+      real(sz), parameter :: evmAvg = 10.d0   ! lateral viscosity
+      real(sz), parameter :: tau0avg = 0.005d0
+      real(sz), parameter :: OnDiag = 4.d0  ! on diagonal coefficient
+      real(sz), parameter :: a00 = 0.d0 ! first time weighting factor
+      real(sz), parameter :: b00 = 1.d0 ! second time weighting factor
+      real(sz), parameter :: c00 = 0.d0 ! third time weighting factor
+      !
+      real(sz) :: SFacAvg ! average of the SFac vector on an element
+      real(sz) :: MsFacLOnDiag
+      real(sz) :: mx, my ! lateral stresses
+      real(sz) :: BSXAvg ! average bottom stress across element in x dir
+      real(sz) :: BSYAvg ! average bottom stress across element in y dir
+      real(sz) :: DPAvg  ! average bathymetric depth in the element
+      real(sz) :: E0XGrad2A ! x elevation gradient at prev time lvl * 2 * area
+      real(sz) :: E0YGrad2A ! y elevation gradient at prev time lvl * 2 * area      
+      real(sz) :: E1XGrad2A ! x elevation gradient at this time lvl * 2 * area
+      real(sz) :: E1YGrad2A ! y elevation gradient at this time lvl * 2 * area
+      real(sz) :: ESAvg ! average elevation change across element btw ts       
+      real(sz) :: fdx1, fdx2, fdx3, fdy1, fdy2, fdy3
+      real(sz) :: EVMXGrad ! lateral viscosity gradient in x dir
+      real(sz) :: EVMYGrad ! lateral viscosity gradient in y dir
+      real(sz) :: h1 ! total water depth (bathymetric depth + wse)
+      real(sz) :: HAvg ! average total water depth across the element
+      real(sz) :: JXAvg ! average J_x term in x direction 
+      real(sz) :: JYAvg ! average J_y term in y direction
+      real(sz) :: QX1Avg ! average flux over element in x direction
+      real(sz) :: QY1Avg ! average flux over element in y direction
+      real(sz) :: Tau0SpaVar ! spatially varying tau0 term
+      real(sz) :: Tau0XGrad2A ! tau0 gradient in x dir* 2 * Area
+      real(sz) :: Tau0YGrad2A ! tau0 gradient in y dir * 2 * Area      
+      real(sz) :: uv1 ! velocity magnitude
+      real(sz) :: V1Avg ! average v velocity at previous time level
+      real(sz) :: U1Avg ! average u velocity at previous time level
+      !
+      integer :: i, ie  ! loop counters
+      !
+      ! zero out the load vector
+      gwce_lv(:) = 0.d0
+      !   
+      ! Compute friction (tk) based on velocity at the node and the 
+      ! quadratic friction coefficent, which is assumed to be a constant
+      ! for the purposes of this minimal subroutine.
+      do i=1, np
+         ! compute current speed
+         uv1 = sqrt(uu1(i)*uu1(i)+vv1(i)*vv1(i))
+         ! compute total depth of the water column
+         h1= dp(i) + eta2(i)
+         ! compute friction 
+         tk(i)= fricAvg * (uv1/h1) 
+      end do
+      !
+      ! loop over elements to construct load vector
+      do ie=1,ne
+      
+         ! compute 2D bottom stress
+         bsx(nm(ie,1)) = tk(nm(ie,1)) * qx1(nm(ie,1))
+         bsy(nm(ie,1)) = tk(nm(ie,1)) * qy1(nm(ie,1))
+         bsx(nm(ie,2)) = tk(nm(ie,2)) * qx1(nm(ie,2))
+         bsy(nm(ie,2)) = tk(nm(ie,2)) * qy1(nm(ie,2))
+         bsx(nm(ie,3)) = tk(nm(ie,3)) * qx1(nm(ie,3))
+         bsy(nm(ie,3)) = tk(nm(ie,3)) * qy1(nm(ie,3))
+
+         ! Compute average SFac value across the element (used to 
+         ! adjust equations to the CPP projection).
+         SFacAvg = ( SFac(NM(IE,1)) + SFac(NM(IE,2)) + SFac(NM(IE,3)) ) 
+     &      / 3.d0
+
+         fdx1 = (y(nm(ie,2))-y(nm(ie,3)))*sfacavg !b1 = 2*area*dphi1/dx
+         fdx2 = (y(nm(ie,3))-y(nm(ie,1)))*sfacavg !b2 = 2*area*dphi2/dx
+         fdx3 = (y(nm(ie,1))-y(nm(ie,2)))*sfacavg !b3 = 2*area*dphi3/dx
+         fdy1 = x(nm(ie,3))-x(nm(ie,2))           !a1 = 2*area*dphi1/dy
+         fdy2 = x(nm(ie,1))-x(nm(ie,3))           !a2 = 2*area*dphi2/dy
+         fdy3 = x(nm(ie,2))-x(nm(ie,1))           !a3 = 2*area*dphi3/dy
+
+C...     Compute part of several spatial gradients for use below
+
+         E0XGrad2A = 0.0d0
+         E0YGrad2A = 0.0d0
+         !
+         ! 2*Area*deta1/dx : elevation gradient in x direction * 2x Area
+         E1XGrad2A = Eta1(nm(ie,1))*FDX1 + Eta1(nm(ie,2))*FDX2
+     &             + Eta1(nm(ie,3))*FDX3        
+         ! 2*Area*deta1/dy : elevation gradient in y direction * 2x Area
+         E1YGrad2A = Eta1(nm(ie,1))*FDY1 + Eta1(nm(ie,2))*FDY2 
+     &             + Eta1(nm(ie,3))*FDY3
+         !       
+         ! 2*Area*dTau0/dx (all tau0 values are the same)  
+         Tau0XGrad2A = tau0avg * (FDX1 + FDX2 + FDX3)      
+         ! 2*Area*dTau0/dy (all tau0 values are the same)
+         Tau0YGrad2A = tau0avg * (FDY1 + FDY2 + FDY3)      
+
+C...     Compute the Kolar & Gray lateral stress term (evm is a constant)
+
+         EVMXGrad = evmAvg * (FDX1 + FDX2 + FDX3) / areas(ie)
+         EVMYGrad = evmAvg * (FDY1 + FDY2 + FDY3) / areas(ie)
+         MX = ( EVMXGrad*(qx1(nm(ie,1))*fdx1 
+     &                  + qx1(nm(ie,2))*fdx2 + qx1(nm(ie,3))*fdx3)
+     &      +   EVMYgrad*(qy1(nm(ie,1))*fdx1 
+     &                  + qy1(nm(ie,2))*fdx2 + qy1(nm(ie,3))*fdx3)
+     &      -  (evmAvg / dt) * (etas(nm(ie,1))*fdx1 + etas(nm(ie,2))*fdx2   
+     &                         + etas(nm(ie,3))*fdx3 )
+     &         ) / areas(ie)
+         MY = ( EVMXgrad*(qx1(nm(ie,1))*fdy1 
+     &                  + qx1(nm(ie,2))*fdy2 + qx1(nm(ie,3))*fdy3)
+     &      +   EVMYgrad*(qy1(nm(ie,1))*fdy1 + 
+     &                    qy1(nm(ie,2))*fdy2 + qy1(nm(ie,3))*fdy3)
+     &      -   (evmAvg / dt)*(etas(nm(ie,1))*fdy1 
+     &                  + etas(nm(ie,2))*fdy2 + etas(nm(ie,1))*fdy3)
+     &         ) / areas(ie)
+
+C...     Compute elemental averages
+
+         ! average bottom stress in the x direction
+         BSXAvg = ( bsx(nm(ie,1)) + bsx(nm(ie,2)) + bsx(nm(ie,3)) ) /3.d0
+         ! average bottom stress in the y direction
+         BSYAvg = ( bsy(nm(ie,1)) + bsy(nm(ie,2)) + bsy(nm(ie,3)) ) / 3.d0
+         ! average flux in x direction
+         QX1Avg = ( qx1(nm(ie,1)) + qx1(nm(ie,2)) + qx1(nm(ie,3)) ) /3.d0
+         ! average flux in y direction
+         QY1Avg = ( qy1(nm(ie,1)) + qy1(nm(ie,2)) + qy1(nm(ie,3)) ) /3.d0
+         ! average u velocity
+         U1Avg = ( uu1(nm(ie,1)) + uu1(nm(ie,2)) + uu1(nm(ie,3)) ) / 3.d0
+         ! average v velocity
+         V1Avg = ( vv1(nm(ie,1)) + vv1(nm(ie,2)) + vv1(nm(ie,3)) ) / 3.d0
+         ! average change in water surface elevation
+         ESAvg = (etas(nm(ie,1)) + etas(nm(ie,2)) + etas(nm(ie,3))) /3.d0
+         ! average bathymetric depth
+         DPAvg = ( dp(nm(ie,1)) + dp(nm(ie,2)) + dp(nm(ie,3)) ) / 3.d0
+        
+         ! average total water depth
+         HAvg = ( dp(nm(ie,1)) + eta2(nm(ie,1)) 
+     &          + dp(nm(ie,2)) + eta2(nm(ie,2))
+     &          + dp(nm(ie,3)) + eta2(nm(ie,2)) ) / 3.d0
+
+C...     spatially varying tau0 term
+
+         Tau0SpaVar=(QX1Avg*Tau0XGrad2A+QY1Avg*Tau0YGrad2A)/6.d0
+
+C...     Compute the JX, JY terms less the advection terms
+
+         JXAvg = -(g/(areas(ie)*2.d0)) * 
+     &      ( fdx1*eta2(nm(ie,1))**2 
+     &      + fdx2*eta2(nm(ie,2))**2
+     &      + fdx3*eta2(nm(ie,3))**2 )         
+     &      - BSXAvg + MX + tau0Avg*QX1Avg
+
+         JYAvg = -(g/(areas(ie)*2.d0)) * 
+     &      ( fdy1*eta2(nm(ie,1))**2 
+     &      + fdy2*eta2(nm(ie,2))**2
+     &      + fdy3*eta2(nm(ie,3))**2 )
+     &      - BSYAvg + MY + tau0Avg*QY1Avg
+
+C...     Complete the JX, JY terms depending on the advection formulation
+         ! nonconservative advection
+         JXAvg = JXAvg - ( QX1Avg 
+     &                      * (uu1(nm(ie,1))*FDX1 
+     &                       + uu1(nm(ie,2))*FDX2 
+     &                       + uu1(nm(ie,3))*FDX3 )
+     &                   + QY1Avg 
+     &                      * (uu1(nm(ie,1))*FDY1 
+     &                       + uu1(nm(ie,2))*FDY2 
+     &                       + uu1(nm(ie,3))*FDY3 )
+     &                   ) / areas(ie) + U1Avg * ESAvg / dt
+         JYAvg = JYAvg - (  QX1Avg 
+     &                      * (vv1(nm(ie,1))*FDX1 
+     &                       + vv1(nm(ie,2))*FDX2 
+     &                       + vv1(nm(ie,3))*FDX3 )
+     &                   + QY1Avg 
+     &                      * (vv1(nm(ie,1))*FDY1 
+     &                       + vv1(nm(ie,2))*FDY2 
+     &                       + vv1(nm(ie,3))*FDY3 )
+     &                   ) / areas(ie) + V1Avg * ESAvg / dt
+
+C...     Assemble forcing for node NM1 (local index j=1)
+
+         gwce_lv(nm(ie,1)) = gwce_lv(nm(ie,1)) +
+C...     Transient and Tau0 terms from LHS
+     &          OnDiag*Etas(nm(ie,1))  
+C...     Free surface terms from LHS (time levels s-1 & s)
+     &        - (G*DPAvg/(2.d0*areas(ie))) 
+     &          * ( C00 *(FDX1*E0XGrad2A + FDY1*E0YGrad2A)
+     &            + (A00+B00)*(FDX1*E1XGrad2A + FDY1*E1YGrad2A) )
+C...     Terms from momentum eqs.
+     &        + ( JXAvg*FDX1 + JYAvg*FDY1 ) / 2.d0
+C...     Spatially varying Tau0 terms
+     &        + Tau0SpaVar 
+
+C...     Assemble forcing for node NM2 (local index j=2)
+
+         gwce_lv(nm(ie,2)) = gwce_lv(nm(ie,2)) +
+C...     Transient and Tau0 terms from LHS
+     &          OnDiag*Etas(nm(ie,2))  
+C...     Free surface terms from LHS (time levels s-1 & s)
+     &        - (G*DPAvg/(2.d0*areas(ie))) 
+     &          * ( C00 *(FDX2*E0XGrad2A + FDY2*E0YGrad2A)
+     &            + (A00+B00)*(FDX2*E1XGrad2A + FDY2*E1YGrad2A) )
+C...     Terms from momentum eqs.
+     &        + ( JXAvg*FDX2 + JYAvg*FDY2 ) / 2.d0
+C...     Spatially varying Tau0 terms
+     &        + Tau0SpaVar
+
+C...     Assemble forcing for node NM3 (local index j=3)
+
+         gwce_lv(nm(ie,3)) = gwce_lv(nm(ie,3)) +
+C...     Transient and Tau0 terms from LHS
+     &          OnDiag*Etas(nm(ie,3))  
+C...     Free surface terms from LHS (time levels s-1 & s)
+     &        - (G*DPAvg/(2.d0*areas(ie))) 
+     &          * ( C00 *(FDX3*E0XGrad2A + FDY3*E0YGrad2A)
+     &            + (A00+B00)*(FDX3*E1XGrad2A + FDY3*E1YGrad2A) )
+C...     Terms from momentum eqs.
+     &        + ( JXAvg*FDX3 + JYAvg*FDY3 ) / 2.d0
+C...     Spatially varying Tau0 terms
+     &        + Tau0SpaVar
+
+      end do        !End of elemental loop
+      !-----------------------------------------------------------------      
+      end subroutine gwceComputeLoadVectorMinimal
+      !-----------------------------------------------------------------
+
+
+      !-----------------------------------------------------------------
+      !    S U B R O U T I N E   G W C E  S O L V E   L U M P E D  
+      !-----------------------------------------------------------------
+      ! jgf51.37.02: "Solves" the lumped GWCE. The solution process 
+      ! consists of dividing the rhs by the diagonal.  
+      !-----------------------------------------------------------------      
+      subroutine gwceSolveLumped(coefd, eta1, eta2, etas, gwce_lv, np)
+      implicit none
+      integer, parameter :: sz = 8
+      real(sz), intent(in) :: coefd(:) ! diagonal elements of lumped mass matrix
+      real(sz), intent(inout) :: eta1(:) ! water surface elevation, previous time level
+      real(sz), intent(inout) :: eta2(:) ! water surface elevation, this time level
+      real(sz), intent(inout) :: etas(:) ! water surface elevation difference
+      real(sz), intent(in) :: gwce_lv(:) ! load vector (forcing)
+      integer, intent(in) :: np
+      !
+      real(sz) :: rdiag ! reciprocal of the diagonal
+      integer :: i ! loop counter
+
+C...  Save the elevation at the past time step into Eta1 and zero out Eta2
+      Eta1(:) = Eta2(:)
+      Eta2(:) = 0.d0
+
+      ! now solve for updated elevations
+      do i = 1, np
+         if (coefd(i).eq.0.0d0) then
+           rdiag = 0.0d0
+         else
+            rdiag = 1.0d0 / coefd(i)
+         endif
+         etas(i) = gwce_lv(i) * rdiag
+      enddo
+      do i=1,np
+         eta2(i) = etas(i) + eta1(i) !compute new elevations
+      end do
+      !-----------------------------------------------------------------      
+      end subroutine gwceSolveLumped
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !    S U B R O U T I N E   G W C E  L U M P E D   L H S 
+      !-----------------------------------------------------------------
+      ! jgf51.37.02: Sets up the lumped GWCE Left Hand Side matrix. The
+      ! LHS matrix must be computed at the first time step or if any
+      ! wetting or drying has occurred on the previous time step.
+      !
+      ! Before calling this subroutine, if time/space varying tau0 has 
+      ! been specified, the value of tau0 must be computed. 
+      !-----------------------------------------------------------------      
+      subroutine gwceLumpedLHS(coefd, ne, np, nm, sfac, tau0var, 
+     &   nodecode, noff, neta, nbd, dt, areas)
+      implicit none
+      integer, parameter :: sz = 8
+      real(sz), intent(inout) :: coefd(:)  ! diagonal coefficients of mass matrix
+      integer, intent(in) :: ne           ! number of elements
+      integer, intent(in) :: np           ! number of nodes
+      integer, intent(in) :: nm(:,:)      ! element table
+      real(sz), intent(in) :: sfac(:)     ! vec. correction to CPP projection
+      real(sz), intent(in) :: tau0var(:)  ! tau0 at every node
+      integer, intent(in) :: nodecode(:)  ! wet/dry state of nodes
+      integer, intent(in) :: noff(:)      ! wet/dry state of elements
+      integer, intent(in) :: neta         ! num. elev. spec. bdry nodes
+      integer, intent(in) :: nbd(:)       ! node nums on elev. spec. bdry nodes
+      real(sz), intent(in) :: dt           ! time step size (seconds)
+      real(sz), intent(in) :: areas(:)     ! 2x the element areas
+      !
+      real(sz), parameter :: OnDiag = 4.d0  ! on diagonal coefficient
+      !
+      real(sz) :: SFacAvg ! average of the SFac vector on an element
+      real(sz) :: Tau0Avg ! average of tau0 across an element
+      real(sz) :: MsFacLOnDiag
+      real(sz) :: ep      ! scaling factor for the equations
+      integer :: ncele    ! wet/dry state considering nodes and element
+      !
+      integer :: i, ie  ! loop counters
+      !
+      ! Zero out the diagonal elements
+      Coefd(:)=0.0d0   
+      !
+      ! jgf48.4619: Add Seizo's construction of Lumped LHS matrix.
+      ! Loop over elements and determine their contributions to the
+      ! nodes that they contain. 
+      DO IE=1,NE 
+         !
+         ! Determine whether or not element is active.
+         NCEle = NodeCode(NM(IE,1)) * NodeCode(NM(IE,2)) * 
+     &      NodeCode(NM(IE,3)) * NOFF(IE)
+         if (ncele.eq.0) then
+            cycle ! this element contributes nothing if it is inactive
+         endif
+         !
+         ! Compute average SFac value across the element (used to 
+         ! adjust equations to the CPP projection).
+         SFacAvg = ( SFac(NM(IE,1)) + SFac(NM(IE,2)) + SFac(NM(IE,3)) ) 
+     &      / 3.d0
+         !
+         ! Compute the average tau0 value on the element.
+         Tau0Avg = ( Tau0Var(NM(IE,1)) + Tau0Var(NM(IE,2)) 
+     &      + Tau0Var(NM(IE,3)) ) / 3.d0    
+         !
+         !
+         MsFacLOnDiag = OnDiag * (Areas(IE)/2.d0) 
+     &      * (1.d0/DT + Tau0Avg/2.d0) / DT / 12.d0
+
+         Coefd(NM(IE,1)) = Coefd(NM(IE,1)) + MsFacLOnDiag 
+         Coefd(NM(IE,2)) = Coefd(NM(IE,2)) + MsFacLOnDiag
+         Coefd(NM(IE,3)) = Coefd(NM(IE,3)) + MsFacLOnDiag
+      ENDDO
+
+C...  Modify the matrix "COEF" by imposing the elevation specified
+C...  boundary conditions while maintaining the symmetry of the system
+
+      ! jgf48.4619: include Seizo's changes for lumped LHS
+      ! Seizo: Explicit scheme can solve locally. (the efect is small?)
+      ! Compute the value of EP, a scaling factor for the system of
+      ! equations.
+      EP=0.0D0
+      DO I=1,NP
+         EP = EP + Coefd(I) * Coefd(I)
+      ENDDO
+      EP = SQRT(EP/NP)
+      !
+      ! Set diagonal element to EP for nodes that appear on elevation 
+      ! specified boundaries.
+      DO I=1,NETA
+         Coefd(NBD(I))=EP
+      ENDDO
+      !
+      ! If any diagonal element is zero, set the value to EP.
+      where (coefd.eq.0.d0) 
+         coefd = ep
+      end where
+      !
+      ! Check that all the diagonal elements in "COEFD" are >= 0.
+      if (any(coefd.lt.0.d0)) then
+         write(*,*) 'The matrix diagonal contains negative element(s).'
+         stop  !jgftodo: not sufficient in parallel
+      endif
+      !End of GWCE matrix setup    
+      !-----------------------------------------------------------------      
+      end subroutine gwceLumpedLHS
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !   S U B R O U T I N E   G W C E  C O N S I S T E N T   L H S 
+      !-----------------------------------------------------------------
+      ! jgf51.37.02: Sets up the fully consistent GWCE Left Hand Side 
+      ! matrix.
+      !
+      ! The LHS matrix must be computed at the first time step or if any
+      ! wetting or drying has occurred on the previous time step.
+      !
+      ! Before calling this subroutine, if time/space varying tau0 has 
+      ! been specified, the value of tau0 must be computed. 
+      !-----------------------------------------------------------------      
+      subroutine gwceConsistentLHS(coef, obccoef, ne, np, nm, 
+     &    nodecode, noff, nneigh, neitab, neta, nbd, dt, 
+     &    areas, dp, g, a00, x, y, tau0var, sfac, neimax)
+      implicit none
+      integer, parameter :: sz = 8
+      real(sz), intent(inout) :: coef(:,:) ! coefficients of mass matrix
+      real(sz), intent(out) :: obccoef(:,:) ! off-row boundary coefficients
+      integer, intent(in) :: ne           ! number of elements
+      integer, intent(in) :: np           ! number of nodes
+      integer, intent(in) :: nm(:,:)      ! element table
+      integer, intent(in) :: nodecode(:)  ! wet/dry state of nodes
+      integer, intent(in) :: noff(:)      ! wet/dry state of elements
+      integer, intent(in) :: nneigh(:)    ! number of neighbors for each node
+      integer, intent(in) :: neitab(:,:)  ! neighbor table for nodes
+      integer, intent(in) :: neta         ! num. elev. spec. bdry nodes
+      integer, intent(in) :: nbd(:)       ! node nums on elev. spec. bdry nodes
+      real(sz), intent(in) :: dt           ! time step size (seconds)
+      real(sz), intent(in) :: areas(:)     ! 2x the element areas
+      real(sz), intent(in) :: dp(:)        ! bathymetric depth
+      real(sz), intent(in) :: g            ! gravitational acceleration
+      real(sz), intent(in) :: a00          ! first time weighting coefficient 
+      real(sz), intent(in) :: x(:)         ! x coord of nodes
+      real(sz), intent(in) :: y(:)         ! y coord of nodes
+      real(sz), intent(in) :: tau0var(:)   ! tau0 at nodes
+      real(sz), intent(in) :: sfac(:)      ! cpp vec at nodes
+      integer, intent(in) :: neimax        ! max num. neighbors for any node
+      !
+      real(sz), parameter :: OnDiag = 2.d0  ! diagonal coefficient
+      real(sz), parameter :: OffDiag = 1.d0 ! off diagonal coefficient
+      !
+      real(sz) :: SFacAvg ! average of the SFac vector on an element
+      real(sz) :: Tau0Avg ! average of tau0 across an element
+      real(sz) :: DPAvg   ! average bathymetric depth across the element
+      real(sz) :: MsFacLOnDiag
+      real(sz) :: MsFacLOffDiag
+      real(sz) :: ep      ! scaling factor for the equations
+      integer :: ncele   ! wet/dry state considering nodes and element
+      !
+      ! temp values for computing a1, a2, a3, b1, b2, b3 (see theory report)
+      real(sz) :: fdx1,fdx2,fdx3,fdy1,fdy2,fdy3 
+      ! temp values representing neighbor indices of nodes on element
+      integer :: j12, j13, j21, j23, j31, j32
+      !
+      integer :: i, j, ij, ie, jn  ! loop counters     
+      !
+      ! Zero out all elements in the matrix.
+      Coef(:,:)=0.0d0
+      !
+      ! Construct the fully consistent LHS matrix by looping over
+      ! elements and determining their contribution to each of their nodes.
+      DO IE=1,NE
+         !
+         ! Determine whether or not element is active.
+         NCEle = NodeCode(NM(IE,1)) * NodeCode(NM(IE,2)) * 
+     &      NodeCode(NM(IE,3)) * NOFF(IE)
+         if (ncele.eq.0) then
+            cycle ! this element contributes nothing if it is inactive
+         endif
+         !
+         ! Compute average value of SFac on element (used to adjust for
+         ! CPP projection).
+         SFacAvg = ( SFac(NM(IE,1)) + SFac(NM(IE,2)) + SFac(NM(IE,3)) )
+     &      / 3.d0
+         !
+         fdx1 = (y(nm(ie,2))-y(nm(ie,3)))*sfacavg !b1 = 2*area*dphi1/dx
+         fdx2 = (y(nm(ie,3))-y(nm(ie,1)))*sfacavg !b2 = 2*area*dphi2/dx
+         fdx3 = (y(nm(ie,1))-y(nm(ie,2)))*sfacavg !b3 = 2*area*dphi3/dx
+         fdy1 = x(nm(ie,3))-x(nm(ie,2))           !a1 = 2*area*dphi1/dy
+         fdy2 = x(nm(ie,1))-x(nm(ie,3))           !a2 = 2*area*dphi2/dy
+         fdy3 = x(nm(ie,2))-x(nm(ie,1))           !a3 = 2*area*dphi3/dy
+         !
+         ! Compute average bathymetric depth.
+         DPAvg = ( DP(NM(IE,1)) + DP(NM(IE,2)) + DP(NM(IE,3)) ) / 3.d0
+         !
+         ! Compute average tau0.
+         Tau0Avg = (Tau0Var(NM(IE,1)) + Tau0Var(NM(IE,2)) 
+     &      + Tau0Var(NM(IE,3)))/3.d0
+         
+         MsFacLOnDiag = OnDiag * (Areas(IE)/2.d0) 
+     &      * (1.d0/DT + Tau0Avg/2.d0) / DT / 12.d0
+         MsFacLOffDiag = OffDiag * (Areas(IE)/2.d0)  
+     &      * (1.d0/DT + Tau0Avg/2.d0) / DT / 12.d0
+         !
+         ! Determine the neighbor number of each node on this element
+         DO JN=2,NEIMAX
+            IF(NeiTab(NM(IE,1),JN).EQ.NM(IE,2)) J12=JN
+            IF(NeiTab(NM(IE,1),JN).EQ.NM(IE,3)) J13=JN
+            IF(NeiTab(NM(IE,2),JN).EQ.NM(IE,1)) J21=JN
+            IF(NeiTab(NM(IE,2),JN).EQ.NM(IE,3)) J23=JN
+            IF(NeiTab(NM(IE,3),JN).EQ.NM(IE,1)) J31=JN
+            IF(NeiTab(NM(IE,3),JN).EQ.NM(IE,2)) J32=JN
+         END DO
+         ! 
+         ! Add contribution to the diagonal entry for each node of this element.    
+         Coef(NM(IE,1),1) = Coef(NM(IE,1),1) + MsFacLOnDiag
+     &      + (G * A00 * DPAvg / (Areas(IE)*2.d0))*(FDX1*FDX1+FDY1*FDY1)
+         Coef(NM(IE,2),1) = Coef(NM(IE,2),1) + MsFacLOnDiag
+     &      + (G * A00 * DPAvg / (Areas(IE)*2.d0))*(FDX2*FDX2+FDY2*FDY2)
+         Coef(NM(IE,3),1) = Coef(NM(IE,3),1) + MsFacLOnDiag
+     &      + (G * A00 * DPAvg / (Areas(IE)*2.d0))*(FDX3*FDX3+FDY3*FDY3)
+         !
+         ! Add contributions to off diagonal entries for each node of this element.
+         Coef(NM(IE,1),J12) = Coef(NM(IE,1),J12) + MsFacLOffDiag
+     &      + (G * A00 * DPAvg / (Areas(IE)*2.d0))*(FDX1*FDX2+FDY1*FDY2)
+         Coef(NM(IE,1),J13) = Coef(NM(IE,1),J13) + MsFacLOffDiag
+     &      + (G * A00 * DPAvg / (Areas(IE)*2.d0))*(FDX1*FDX3+FDY1*FDY3)
+  
+         Coef(NM(IE,2),J21) = Coef(NM(IE,2),J21) + MsFacLOffDiag
+     &      + (G * A00 * DPAvg / (Areas(IE)*2.d0))*(FDX2*FDX1+FDY2*FDY1)
+         Coef(NM(IE,2),J23) = Coef(NM(IE,2),J23) + MsFacLOffDiag
+     &      + (G * A00 * DPAvg / (Areas(IE)*2.d0))*(FDX2*FDX3+FDY2*FDY3)
+  
+         Coef(NM(IE,3),J31) = Coef(NM(IE,3),J31) + MsFacLOffDiag
+     &      + (G * A00 * DPAvg / (Areas(IE)*2.d0))*(FDX3*FDX1+FDY3*FDY1)
+         Coef(NM(IE,3),J32) = Coef(NM(IE,3),J32) + MsFacLOffDiag
+     &      + (G * A00 * DPAvg / (Areas(IE)*2.d0))*(FDX3*FDX2+FDY3*FDY2)
+    
+      ENDDO
+
+C...  Modify the matrix "COEF" by imposing the elevation specified
+C...  boundary conditions while maintaining the symmetry of the system
+
+#ifdef CMPI
+      ! Compute EP for the full domain in parallel.
+      ep = psdot(np,coef(1,1),coef(1,1))
+      ep = sqrt(rnp_global*ep)
+#else
+      ! Compute EP in serial.
+      ep=0.0d0
+      do i=1,np
+         ep = ep + coef(i,1) * coef(i,1)
+      enddo
+      ep=sqrt(ep/np)
+#endif
+c...  for each elevation specified boundary node, zero all off diagonal
+c...  terms on the row and set diagonal term to EP.
+      do i=1,neta
+         coef(nbd(i),1) = ep
+         do j=2,nneigh(nbd(i))
+            coef(nbd(i),j) = 0.0d0
+         enddo
+      enddo
+c...  for each elevation specified boundary node, zero all off diagonal
+c...  terms on the column but save these to be multiplied by the
+c...  boundary value and subtracted from the RHS
+      do i=1,neta
+         do j=2,nneigh(nbd(i))
+            do ij=2,nneigh(neitab(nbd(i),j))
+               if(nbd(i).eq.neitab(neitab(nbd(i),j),ij)) then
+                  obccoef(i,j-1) = coef(neitab(nbd(i),j),ij)
+                  coef(neitab(nbd(i),j),ij) = 0.0d0
+               endif
+            enddo
+         enddo
+      enddo
+C.....Check that all the diagonal elements in "COEF" are > 0.
+      do i=1,np
+         if(coef(i,1).eq.0.d0) coef(i,1)=ep
+         if(coef(i,1).lt.0.d0) then
+            write(*,*)'The matrix diagonal contains negative element(s).'
+            stop ! jgfdebug: not sufficient in parallel
+         endif
+      enddo
+      !End of GWCE matrix setup    
+      !-----------------------------------------------------------------      
+      end subroutine gwceConsistentLHS
+      !-----------------------------------------------------------------
+
+
 C******************************************************************************
 C                                                                             *
 C    Subroutine to compute the elevation using the GWCE formluation           *

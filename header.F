@@ -2,6 +2,16 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history                                                          
+C  v51.37.02 - 12/18/2014 - jgf - Created 5 new subroutines as simplified 
+C              illustration of the operations used in the GWCE solve; 
+C              two new subroutines for constructing the mass matrix (LHS)
+C              (one using lumped and the other fully consistent formulation); a
+C              subroutine that constructs the load vector using simplfying
+C              assumptions, a separate lumped GWCE solution subroutine, 
+C              and a subroutine that constructs a lumped left hand side
+C              without regard for wetting, drying, or boundary conditions.
+C              All of the new subroutines have all required data passed in
+C              as arguments to the subroutine call. 
 C  v51.37.01 - 12/16/2014 - jgf - Added ONLY keyword to each USE statement
 C              in GWCE_New() and Mom_Eqs_New_NC() subroutines in order to
 C              clarify data dependencies. 
