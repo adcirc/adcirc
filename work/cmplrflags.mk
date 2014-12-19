@@ -346,10 +346,10 @@ ifeq ($(compiler),xtintel)
   PFC           :=  ftn
   CC            :=  cc -O2 -no-ipo
   CCBE          :=  cc -O2 -no-ipo
-  FFLAGS1       :=  $(INCDIRS) -fixed -extend-source 132 -O2 -default64 -finline-limit=1000 -real-size 64 -no-ipo -assume buffered_io -assume buffered_stdout
+  FFLAGS1       :=  $(INCDIRS) -fixed -extend-source 132 -O2 -default64 -finline-limit=1000 -real-size 64 -no-ipo -assume buffered_io 
 #  FFLAGS1      :=  $(INCDIRS) -Mextend -g -O0 -traceback
   FFLAGS2       :=  $(FFLAGS1)
-  FFLAGS3       :=  $(FFLAGS1)
+  FFLAGS3       :=  $(FFLAGS1) -assume buffered_stdout
   DA            :=  -DREAL8 -DLINUX -DCSCA
   DP            :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA
   DPRE          :=  -DREAL8 -DLINUX

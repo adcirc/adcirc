@@ -2,7 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
-C    v51.34.02 - 12/08/2015 - tcm - Made the elemental slope limiter 
+C    v51.34.03 - 12/19/2014 - tcm - mved the buffered_stdout to only be
+C                   on the backend programs.
+C    v51.34.02 - 12/08/2014 - tcm - Made the elemental slope limiter 
 C                finding and using as two subroutines (inside timestep.F)
 C                in order to allow them to be called at different locations
 C                within the time step loop.
