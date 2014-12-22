@@ -2365,7 +2365,13 @@ C     ------------------------------------------------------------------
       SUBROUTINE CPP(X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0)
       USE GLOBAL, ONLY : Rearth
       IMPLICIT NONE
-      REAL*8 X,Y,RLAMBDA,PHI,RLAMBDA0,PHI0
+      REAL*8, intent(in) :: RLAMBDA   ! longitude in radians
+      REAL*8, intent(in) :: PHI       ! latitude in radians
+      REAL*8, intent(in) :: RLAMBDA0  ! longitude at center of projection (radians)
+      REAL*8, intent(in) :: PHI0      ! latitude at center of projection (radians)
+      REAL*8, intent(out) :: X        ! projected longitude (m)
+      REAL*8, intent(out) :: Y        ! projected latitude (m)
+      
       X=Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)
       Y=PHI*Rearth
 C     ------------------------------------------------------------------

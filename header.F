@@ -1,7 +1,54 @@
-C***********************************************************************
-C           This file contains a log of changes made to (P)ADCIRC.      
-C                                                                       
-C  mod history                                                          
+C******************************************************************************
+C           This file contains a log of changes made to (P)ADCIRC.            *
+C                                                                             *
+C  mod history           
+C  v51.38    - 12/22/2014 - jgf - Merged GAHM_jie branch (v51.33.x). 
+C    v51.33.14 - 12/12/2014 - jgf - Fixed duplicate execution tracing calls.
+C    v51.33.13 - 12/09/2014 - jgf - Merged trunk changes r1032:1050; fixed some
+C                issues related to the move of output type identifiers like
+C                OFF, ASCII, BINARY, etc from global.F to sizes.F.
+C    v51.33.12 - 11/18/2014 - jgf - Added comma to hstime.F to fix syntax when
+C                not compiling with NETCDF support.
+C    v51.33.11 - 11/12/2014 - Decided to adjust compiler flags for debugging
+C                to remove trapping on underflow floating point exceptions,
+C                since default compiler behavior is likely to handle such
+C                exceptions correctly (flush to zero) during production. 
+C    v51.33.10 - 11/07/2014 - jgf - Corrected stray subroutine call from
+C                adcirc_terminate() to terminate().
+C    v51.33.09 - 11/07/2014 - jgf - Added option to compile with debugging to
+C                cmplrflags.mk for intel-lonestar; also added SWAN=enable
+C                option on the make command line for same (instead of 
+C                hardcoding -DADCSWAN into the DPRE flags); added dependency
+C                of wind module on mesh module into makefile; fixed misplaced
+C                END SELECT in couple2swan that was erroneously inside #ifdef
+C                causing compilation issue if compiled without netcdf support;
+C                fixes to enable compilation with debugging using intel11
+C                compilers on lonestar at TACC.
+C    v51.33.08 - 11/06/2014 - jgf - Fixes to enable compilation in debug mode
+C                with ftn compilers on garnet at ERDC.
+C    v51.33.07 - 11/06/2014 - jgf - Fixes to enable compilation with ftn 
+C                compilers on garnet at ERDC; added execution tracing to
+C                write_output module.
+C    v51.33.06 - 10/31/2014 - jgf - Fixes to enable compilation with intel14 
+C                compilers on hatteras at RENCI.
+C    v51.33.05 - 10/30/2014 - jgf - Fixed issue with adcprep: mesh coordinates 
+C                were not suitably initialized, causing floating point exception
+C                problems in the setup_kdt_search subroutine; eliminated
+C                redundant specification of deg2rad, rad2deg, and Rearth
+C                parameters as well as CPP projection sub between adcprep and 
+C                adcirc, including CPP projection of station coordinates; 
+C                removed INVCPP subroutine from adcprep since it was not 
+C                called from anywhere. 
+C    v51.33.04 - 10/26/2014 - jgf - Updated this file by adding entries for
+C                each commit that has been made on this branch; merged trunk
+C                changes that occurred from r1014 through r1031; minor fixes
+C                to USE statements in aswip.F to allow the aswip executable
+C                to compile; tested and confirmed that all executables
+C                compile successfully.
+C    v51.33.03 - 08/25/2014 - gjie - Fixed arrays.
+C    v51.33.02 - 08/01/2014 - gjie - Added geofactor to control the geostrophic
+C                balance.
+C    v51.33.01 - 07/21/2014 - gjie - Added GAHM vortex wind model with NWS=20. 
 C  v51.37    - 11/11/2014 - zc - Fixing allocation of mpistat in 
 C              writer_main subroutine. Setting ESLDescript % writeFlag
 C              flag to false so code does not attempt to write
@@ -22,10 +69,6 @@ C              read_global.F throughout REarth. Fixing bugs in mesh.F and
 C              write_output.F
 C  v51.35    - 10/25/2014 - jgf - Merged all xdmf2 developments (v51.21.xx)
 C              to trunk.
-C  v51.21.42 - 10/24/2014 - jgf - Merged latest fix from trunk v51.34:
-C    v51.34    - 10/07/2014 - tcm - Removed two debugging write statement that
-C                were inadvertently left in hstart.F related to maxele hot
-C                starting.
 C  v51.21.41 - 10/16/2014 - jgf - Continuing to fix issues discovered in
 C              automated testing with ASGS: fixed issues related to constructing
 C              file names when using dedicated writer processors to write
@@ -178,38 +221,81 @@ C              subroutine; added code to save variable-specific metadata to
 C              xml files. 
 C  v51.21.01 - 12/11/2013 - jgf - Added adcirc2xdmf.f90 code to util subdir.
 C
-C    v51.34    - 10/07/2014 - tcm - Removed two debugging write statement that
-C                were inadvertently left in hstart.F related to maxele hot
-C                starting.
-C    v51.33    - 07/16/2014 - tcm - Updated compiler flags for diamond,
+C    v51.33.14 - 12/12/2014 - jgf - Fixed duplicate execution tracing calls.
+C    v51.33.13 - 12/09/2014 - jgf - Merged trunk changes r1032:1050; fixed some
+C                issues related to the move of output type identifiers like
+C                OFF, ASCII, BINARY, etc from global.F to sizes.F.
+C    v51.33.12 - 11/18/2014 - jgf - Added comma to hstime.F to fix syntax when
+C                not compiling with NETCDF support.
+C    v51.33.11 - 11/12/2014 - Decided to adjust compiler flags for debugging
+C                to remove trapping on underflow floating point exceptions,
+C                since default compiler behavior is likely to handle such
+C                exceptions correctly (flush to zero) during production. 
+C    v51.33.10 - 11/07/2014 - jgf - Corrected stray subroutine call from
+C                adcirc_terminate() to terminate().
+C    v51.33.09 - 11/07/2014 - jgf - Added option to compile with debugging to
+C                cmplrflags.mk for intel-lonestar; also added SWAN=enable
+C                option on the make command line for same (instead of 
+C                hardcoding -DADCSWAN into the DPRE flags); added dependency
+C                of wind module on mesh module into makefile; fixed misplaced
+C                END SELECT in couple2swan that was erroneously inside #ifdef
+C                causing compilation issue if compiled without netcdf support;
+C                fixes to enable compilation with debugging using intel11
+C                compilers on lonestar at TACC.
+C    v51.33.08 - 11/06/2014 - jgf - Fixes to enable compilation in debug mode
+C                with ftn compilers on garnet at ERDC.
+C    v51.33.07 - 11/06/2014 - jgf - Fixes to enable compilation with ftn 
+C                compilers on garnet at ERDC; added execution tracing to
+C                write_output module.
+C    v51.33.06 - 10/31/2014 - jgf - Fixes to enable compilation with intel14 
+C                compilers on hatteras at RENCI.
+C    v51.33.05 - 10/30/2014 - jgf - Fixed issue with adcprep: mesh coordinates 
+C                were not suitably initialized, causing floating point exception
+C                problems in the setup_kdt_search subroutine; eliminated
+C                redundant specification of deg2rad, rad2deg, and Rearth
+C                parameters as well as CPP projection sub between adcprep and 
+C                adcirc, including CPP projection of station coordinates; 
+C                removed INVCPP subroutine from adcprep since it was not 
+C                called from anywhere. 
+C    v51.33.04 - 10/26/2014 - jgf - Updated this file by adding entries for
+C                each commit that has been made on this branch; merged trunk
+C                changes that occurred from r1014 through r1031; minor fixes
+C                to USE statements in aswip.F to allow the aswip executable
+C                to compile; tested and confirmed that all executables
+C                compile successfully.
+C    v51.33.03 - 08/25/2014 - gjie - Fixed arrays.
+C    v51.33.02 - 08/01/2014 - gjie - Added geofactor to control the geostrophic
+C                balance.
+C    v51.33.01 - 07/21/2014 - gjie - Added GAHM vortex wind model with NWS=20. 
+C  v51.33      - 07/16/2014 - tcm - Updated compiler flags for diamond,
 C                to replace no longer supported options -xT with
 C                -xSSSE3.  While diamond has been removed from service,
 C                another SGI Spirit is still in service.
-C    v51.32    - 07/16/2014 - tcm - Added a feature that will kill all MPI
+C  v51.32      - 07/16/2014 - tcm - Added a feature that will kill all MPI
 C                processes when an elevation greater than error elevation is
 C                encountered during a coupled ADCIRC+STWAVE simulation,
 C                NRS=4. This is needed to stop all MPI processes, not just
 C                the ones that ADCIRC owns.
-C    v51.31    - 07/07/2014 - tcm - Fixed a bug in prepping fort.141 files
+C  v51.31      - 07/07/2014 - tcm - Fixed a bug in prepping fort.141 files
 C                that was caused by only adding 105 to the processor number
 C                to create a unit number, since 141 would be used for both
 C                a local unit number and a global unit number. Now addes 505
 C                to the processor number, so that local PE####/fort.141 will
 C                have unit numbers from 505 to 760.
-C    v51.30    - 07/02/2014 - tcm - Removed the conditional pre-processor
+C  v51.30      - 07/02/2014 - tcm - Removed the conditional pre-processor
 C                flags related to max/min file generation (-DNELMAX -DNUVMAX
 C               -DNPRMAX -DNWVMAX  -DNRSMAX).  Added initialization of 
 C                max/min variables to handle an issue with a compiler that
 C                didn't initalize them to zero.
-C    v51.29    - 06/30/2014 - jgf - Updated compiler flags for lonestar 
+C  v51.29      - 06/30/2014 - jgf - Updated compiler flags for lonestar 
 C                machine at TACC.
-C    v51.28    - 05/12/2014 - jcd -- Merging swan4101 branch into trunk.
+C  v51.28      - 05/12/2014 - jcd -- Merging swan4101 branch into trunk.
 C    v51.27.02 - 05/11/2014 - jcd -- Removing our old hack to limit infinite
 C                sweeping on some meshes.  SWAN no longer needs it.
 C    v51.27.01 - 05/07/2014 - jcd -- Added the latest SWAN release version 41.01
-C                to the ADCIRC code.  Initial testing confirms it gives identical
-C                results to the previous version.
-C    v51.27    - 05/02/2014 - tcm -- FUNCTIONALITY CHANGE ALERT 
+C                to the ADCIRC code.  Initial testing confirms it gives
+C                identical results to the previous version.
+C  v51.27      - 05/02/2014 - tcm -- FUNCTIONALITY CHANGE ALERT 
 C                Removed the use of fort.88 files for initializing river
 C                elevations at the time of cold start.  Initial river
 C                elevations are now specified as a nodal attribute in the 
@@ -224,12 +310,12 @@ C                now changed so that initial river elevations and GeoidOffSet
 C                values are now added together (provided initial river elevations
 C                are greater than zero, otherwise only the GeoidOffSet value
 C                is used.).
-C    v51.26    - 03/18/2014 - tcm -- Added NHSTAR=-1 option which generates
+C  v51.26      - 03/18/2014 - tcm -- Added NHSTAR=-1 option which generates
 C                individual binary hot-start files named fort.68_######### 
 C                where ######### is the time step iteration pre-padded with 0.
 C                Also, corrected some bugs in the hot start writer through
 C                hs-writers related to fort.16 and screen output information.
-C    v51.25    - 03/14/2014 - tcm -- Merging the v51.20.01-07 changes
+C  v51.25      - 03/14/2014 - tcm -- Merging the v51.20.01-07 changes
 C                into the trunk.
 C    v51.20.07 - 03/07/2014 - tcm - Adding trunk updates to this branch
 C                prior to reintegration.

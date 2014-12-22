@@ -36,7 +36,7 @@ C
       INTEGER NC1, NC2, NC3, NCELE
 
       REAL(SZ) HTOT
-      REAL(SZ) HollandTime, AsymmetricTime
+      REAL(SZ) HollandTime, AsymmetricTime, GeneralAsymTime
       REAL(SZ) :: PRBCKGRND_MH2O  !tcm v49.16 20100617
 !kmd - Evan's updates for rivers above MSL
 !      REAL(SZ),ALLOCATABLE :: et_WSE(:)
@@ -433,6 +433,13 @@ C     RJW Merged:
          OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
         CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,AsymmetricTime,ICS)
       ENDIF
+      
+!    jie added nws = 20: generalized asymmetric vortex model
+      IF(NWS.EQ.20) THEN
+         GeneralAsymTime = STATIM*86400.D0
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+        CALL NWS20GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,GeneralAsymTime,ICS)
+      ENDIF      
 
       ! jgf49.1001 Added NWS=29, asymmetric vortex wind (NWS19) embedded in
       ! OWI (NWS12) basin scale wind field.

@@ -15,8 +15,8 @@ C
 #ifdef CMPI
       use messenger, only : msg_fini
 #endif
-      integer, parameter :: allowable_nws(16)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,29/)
+      integer, parameter :: allowable_nws(17)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,20,29/)
       logical nwsOK     ! true if NWS value in fort.15 is allowed
 
 Casey 110518: Added for Mark Powell's sectorial wind drag.
@@ -53,11 +53,20 @@ C
       REAL(SZ) :: WindDragLimit          ! maximum wind drag value
       CHARACTER(len=10) :: DragLawString ! controls wind drag formulation
 
-      ! used for vis/diagnostics on nws19
+      ! used for vis/diagnostics on nws19 and nws20
       LOGICAL :: writeFullCircleRmaxes = .false.
       LOGICAL :: writeRadialVandP = .false.
       LOGICAL :: writeSpatialVandP = .false.
-
+      LOGICAL :: writeSpatialuvp = .false.
+      LOGICAL :: writeNodaluvp = .false.
+      LOGICAL :: moving_grid = .false.
+      
+      !switch to turn on or off geostrophic balance in GAHM
+      ! on (default): Coriolis term included, phifactors will be calculated before being used 
+      ! off:parameter is set to 'true', phifactors will be set to constant 1
+      LOGICAL :: geostrophic_switch = .true.
+      INTEGER :: geofactor = 1  !turn on or off gostrophic balance
+      
       ! jgf50.38.05: used to keep track of HWind files and data
       type hWindData_t
          ! input data from fort.22
@@ -3255,6 +3264,656 @@ C     we are running off the end of the data.
 C***********************************************************************
       END SUBROUTINE NWS19GET
 C***********************************************************************
+
+
+
+
+      !=================================================================
+      !=================================================================
+      !=================================================================
+      !      =====                                           =====
+      !      =====            SUBROUTINE NWS20GET            =====
+      !      =====                                           =====
+      !=================================================================
+      !=================================================================
+      !=================================================================
+
+      !=================================================================
+      ! This subroutine takes a wind file in best track format
+      ! that has been preprocessed by the ASWIP program and
+      ! filled out forecast increments from the intended start of the simulation
+      ! creates an asymmetric hurricane vortex, returning a wind field
+      ! (wvnx,wvny) and atmospheric pressure-induced water surface
+      ! elevation (press) on-the-fly for each model time step.
+      !
+      ! On input:
+      !    slam     Longitude at model nodal points (radians)
+      !    sfea     Latitude  at model nodal points (radians)
+      !    np       Number of nodal points in model grid
+      !    TIMELOC     Model time (seconds)
+      !    ics      Coordinate system selection parameter
+      !                ics = 1: cartesian coordinates
+      !                ics = 2: spherical coordinates
+      !                Note: Subroutine valid only for ics = 2
+      !
+      ! On output:
+      !    wvnx     x component of wind velocity at nodal points (m/s)
+      !    wvny     y component of wind velocity at nodal points (m/s)
+      !    press    Atmospheric pressure-induced water surface
+      !             elevation at nodal points (m)
+      !
+      ! Revision history:
+      !    Date         Programmer                 Description of change
+      !    ----         ----------                 ---------------------
+      !    06/19/06     Cristina Forbes, UNC-CEP   Wrote original code
+      !    07/09/06     Craig  Mattocks, UNC-CEP   Code clean up
+      !    07/20/06     Jason G. Fleming UNC-IMS   Add into v46.16
+      !    07/20/06     Cristina Forbes  (wrote)   v46.16: comment out debug
+      !                 Jason G. Fleming (merged)  msg, check for all 4 radii
+      !    08/15/06     Cristina Forbes, UNC-CEP   if missing values or radii
+      !                                            = 0 -> set winds = 0  and
+      !                                            press = P0, comment out
+      !                                            fort.300 output
+      !    08/25/06     Cristina Forbes, UNC-CEP   Implemented hotstart
+      !                                            capability
+      !    08/25/06     Craig  Mattocks, UNC-CEP   Applied wind reduction:
+      !                                            top of SFC layer --> SFC
+      !    09/12/06     Craig  Mattocks, UNC-CEP   Subtracted translational
+      !                                            wind speed from Vmax.
+      !    07/05/07     Jason G. Fleming           Merged into v47.04, added
+      !                                            ScreenUnit
+      !    12/12/08     Cristina Forbes, UNC-IMS   Comment out debug statements
+      !    04/21/08     Cristina Forbes, UNC-IMS   Added capability to compute
+      !                                            winds in all hemispheres
+      !    05/12/09     Robert Weaver, UNC-IMS     Modified damping of translational
+      !                                            velocity based on ratio of V/Vmax
+      !    05/19/09     Cristina Forbes, UNC-IMS   Implemented old bug fix: units conversion
+      !    05/22/09     Cristina Forbes, UNC-IMS   Reverted damping of translational
+      !                                            velocity back to the original formulation
+      !                                            developed by Craig Mattocks
+      !    05/26/09    Cristina Forbes, UNC-IMS    Fixed implementation of Rick Luettich
+      !                                            V/Vmax tapering formulation (as in NWS=8)
+      !                                            for future experimentation - not activated
+      !    7/8/09      Robert Weaver               rewrite to accept new input file w/ rmax
+      !                                            and Holland B
+      !    7/21/09     Robert Weaver               Modify to let user choose which isotach to use
+      !                                            when submitting Rmax
+      !                                            NWS=19
+      !    5/20/13     Jie Gao, UNC-IMS            Added nws=20 option to use quadrant-varying Holland B, 
+      !                                            and PhiFactor, and occasionally 
+      !                                            Vpseudo=Vr if violations occur when taking out 
+      !                                            translational speed; 
+      !                                            use full gradient wind equation
+      !                                            introduce a linear-weighted combination method to use
+      !                                            multiple isotachs 
+      !                                             
+      !
+      !
+      ! Reference:
+      !
+      !     This NWS=19 option is based on the work of
+      !     the following publications:
+      !
+      !     Mattocks, C. and C. Forbes (2008): A real-time, event-triggered
+      !     storm surge forecasting system for the State of North Carolina,
+      !     Ocean Modelling, 25, pp. 95-119, 10.1016/j.ocemod.2008.06.008
+      !
+      !     Mattocks, C., C. Forbes and L. Ran (2006) Design and implementation
+      !     of a real-time storm surge and flood forecasting capability for the
+      !     State of North Carolina. UNC-CEP Technical Report, November 30, 2006, 103 pp.
+      !
+      !     http://www.unc.edu/~cmattock/ncfs/NCFSreport.pdf
+      !=================================================================
+      SUBROUTINE NWS20GET(slam,sfea, wvnx,wvny, press, np, TIMELOC, ics)
+      USE VORTEX, ONLY : setVortex, fitRmaxes4,  uvpr, spInterp,
+     &                   Rmaxes4, QuadFlag4, QuadIr4, Bs4, VmBL4  ! jgfdebug
+      USE GLOBAL, ONLY : kt2ms, nm2m,deg2rad,omega, Rearth, m2nm
+      IMPLICIT NONE
+
+      INTEGER  :: np, ics
+      INTEGER  :: ient,itpc
+      INTEGER  :: i, nwi,j
+      INTEGER  :: num_entry
+      REAL(sz) :: TIMELOC, time1, wtratio
+      REAL( 8), SAVE, ALLOCATABLE :: xcoor(:),ycoor(:)
+      REAL( 8) :: slam(np),sfea(np)
+      REAL( 8) :: wvnx(np),wvny(np), press(np)
+      REAL(sz) :: RhoWatG
+      REAL(sz) :: corio                       ! Coriolis force (1/s)
+
+      REAL,DIMENSION(:),ALLOCATABLE,SAVE::lat,lon
+      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::ilat,ilon,atcfRMW
+      INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ilat1,ilon1,atcfRMW1
+      INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd,icpress
+      INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ispd1,icpress1
+      INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: iyear,imth,iday,ihr
+      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE ::iyear1,imth1,iday1,ihr1
+      REAL(sz), SAVE ::  lat1, lon1,  spd1,  cpress1,  rmw1
+      REAL(sz), SAVE ::  dt, told, cLat1, cLon1
+      CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE, SAVE:: type! hindcast/nowcast or forecast?
+      CHARACTER(LEN=4),DIMENSION(:),ALLOCATABLE, SAVE:: type1 !hindcast/nowcast or forecast?
+      INTEGER,DIMENSION(:),ALLOCATABLE,SAVE::iFcstInc1, iFcstInc ! hours between forecasts
+      INTEGER , SAVE :: firstCall = 0
+      LOGICAL , SAVE :: firstTime = .TRUE.
+      REAL(sz),DIMENSION(:),ALLOCATABLE,SAVE :: HollB,HollB1
+      REAL(sz),DIMENSION(:,:),ALLOCATABLE,SAVE :: VmaxesBL1,HollBs1
+      REAL(sz),DIMENSION(:,:,:),ALLOCATABLE,SAVE :: HollBs,VmaxesBL
+      INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: advr,advr1
+      REAL(sz), SAVE :: Vmax
+      REAL(sz), SAVE :: Vr
+      REAL(sz), SAVE, DIMENSION(4) :: r
+      REAL(sz), SAVE :: Pn
+      REAL(sz), SAVE :: Pc
+      REAL(sz), SAVE :: cLat
+      REAL(sz), SAVE :: cLon
+      REAL(sz), SAVE :: cHollB
+      ! save parameters for each node 
+      ! change them to allocatable, save Aug. 2013, Jie
+      REAL(sz), ALLOCATABLE, SAVE :: cHollBs1(:), cHollBs2(:)
+      REAL(sz), ALLOCATABLE, SAVE :: cPhiFactor1(:), cPhiFactor2(:)
+      REAL(sz), ALLOCATABLE, SAVE :: cVmwBL1(:), cVmwBL2(:)
+      REAL(sz), ALLOCATABLE, SAVE :: crmaxw1(:), crmaxw2(:)
+      REAL(sz), ALLOCATABLE, SAVE :: crmaxwTrue1(:), crmaxwTrue2(:)
+      REAL(sz), ALLOCATABLE, SAVE :: cHollBs(:)
+      REAL(sz), ALLOCATABLE, SAVE :: cPhiFactor(:)
+      REAL(sz), ALLOCATABLE, SAVE :: cVmwBL(:)
+      REAL(sz), ALLOCATABLE, SAVE :: crmaxw(:)
+      REAL(sz), ALLOCATABLE, SAVE :: crmaxwTrue(:)
+      REAL(sz), ALLOCATABLE, SAVE :: aziangle(:), dist(:)
+      REAL(sz), SAVE :: timeOffset
+!-------------------------------
+      INTEGER,SAVE :: icyc
+      INTEGER,SAVE :: isot
+!------------------------------
+      INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: cycle_num
+      INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: isotachs_per_cycle
+      INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: isotachs_per_cycle1
+      INTEGER ,DIMENSION(:),ALLOCATABLE, SAVE :: ipn,ipn1,cycle_num1
+
+      REAL(sz) , DIMENSION(:,:), ALLOCATABLE,SAVE :: rmaxw1
+      REAL(sz) , DIMENSION(:,:,:), ALLOCATABLE,SAVE :: rmaxw
+      REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::CycleTime,CycleTime1
+      REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::uTrans1,uTrans
+      REAL(sz) , DIMENSION(:), ALLOCATABLE,SAVE::vTrans1,vTrans
+      REAL(sz), DIMENSION(:), ALLOCATABLE, SAVE :: h_speed
+      INTEGER , DIMENSION(:,:), ALLOCATABLE,SAVE::quadflag1
+      INTEGER , DIMENSION(:,:,:), ALLOCATABLE,SAVE::quadflag
+      INTEGER ,DIMENSION(:),ALLOCATABLE,SAVE :: ivr, dir,speed
+      REAL(sz), SAVE :: dx,dy
+      REAL(sz) :: VmaxBL
+      REAL(sz) :: stormMotionU
+      REAL(sz) :: stormMotionV
+      REAL(sz) :: stormMotion
+      INTEGER,DIMENSION(:),ALLOCATABLE, SAVE :: ivr1, dir1, speed1
+      INTEGER , DIMENSION(:,:),ALLOCATABLE, SAVE :: ir1
+      INTEGER , DIMENSION(:,:,:),ALLOCATABLE, SAVE :: ir
+      CHARACTER(LEN = 10),DIMENSION(:),ALLOCATABLE,SAVE::name,name1
+      REAL(sz),SAVE :: timeOld,timeNew
+      REAL(sz) :: uTransNow, vTransNow ! time-interpolated overland speed, kts
+      REAL(sz) :: dirNow ! Jie
+      CHARACTER(1) ew,ns
+      INTEGER, SAVE :: num_cycles ! num unique date/times in the fort.22
+      
+      call setMessageSource("nws20get")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      timeNew = TIMELOC
+      rhoWatG = rhoWat0 * g
+      !----------------------------------------
+      ! Read (lon,lat) at nodal points and
+      ! transform them from radians --> degrees
+      !----------------------------------------
+      IF (firstTime) THEN
+         firstTime = .FALSE.
+         ALLOCATE (xcoor(np), ycoor(np))
+         ALLOCATE (cHollBs1(np), cHollBs2(np))
+         ALLOCATE (cPhiFactor1(np), cPhiFactor2(np))
+         ALLOCATE (cVmwBL1(np), cVmwBL2(np))
+         ALLOCATE (crmaxw1(np), crmaxw2(np))
+         ALLOCATE (crmaxwTrue1(np), crmaxwTrue2(np))
+         ALLOCATE (cHollBs(np))
+         ALLOCATE (cPhiFactor(np))
+         ALLOCATE (cVmwBL(np))
+         ALLOCATE (crmaxw(np))
+         ALLOCATE (crmaxwTrue(np))
+         ALLOCATE (aziangle(np), dist(np))
+
+         DO i=1,np
+            xcoor(i) = slam(i) * rad2deg
+            ycoor(i) = sfea(i) * rad2deg
+         END DO
+         timeOffset=TIMELOC
+      END IF   ! end of first Time data allocations and such
+      !
+      ! the mesh changes at each time step if we are writing out
+      ! the full circle Rmaxes
+      if ((writeFullCircleRmaxes.eqv..true.).or.
+     &           (writeRadialVandP.eqv..true.).or.
+     &           (writeSpatialVandP.eqv..true.).or.
+     &           (writeSpatialuvp.eqv..true.)) then
+         xcoor(:) = slam(:) * rad2deg
+         ycoor(:) = sfea(:) * rad2deg
+      endif
+      !---------------
+      ! Initialization
+      ! it's the first time the routine is called so read
+      ! in all variables and set the desired radii and
+      ! such
+      ! jgf49.10: Replaced opening and closing of fort.22 file with
+      ! rewind, since opening is already done in the calling routine;
+      ! this also makes it easier to vary the file name (needed
+      ! for NWS29).
+      !---------------
+      IF (firstCall .EQ. 0) THEN  ! first time the routine is called
+         i=0
+         DO      ! determine the number of entries in the file
+            READ(22,*,END=992)
+            i=i+1
+         ENDDO
+992      continue
+         num_entry=i
+         rewind(22)
+         i=num_entry
+
+         allocate(advr1(i),iyear1(i),imth1(i),iday1(i),ihr1(i),type1(i))
+         allocate(advr(i),iyear(i),imth(i),iday(i),ihr(i),type(i))
+         allocate(iFcstInc1(i),ilat1(i),ilon1(i), ispd1(i))
+         allocate(iFcstInc(i) ,ilat(i) ,ilon(i) , ispd(i))
+         allocate(lat(i),lon(i))
+         allocate(icpress1(i), ivr1(i),ir1(i,4), rmaxw1(i,4), ipn1(i))
+         allocate(icpress(i), ivr(i) ,ir(i,4,4) , rmaxw(i,4,4) , ipn(i))
+         allocate(dir1(i),speed1(i),cycle_num1(i))
+         allocate(dir(i) ,speed(i) ,cycle_num(i))
+         allocate(isotachs_per_cycle1(i),CycleTime1(i))
+         allocate(isotachs_per_cycle(i) ,CycleTime(i))
+         allocate(quadflag1(i,4),name1(i))
+         allocate(quadflag(i,4,4),name(i))
+         allocate(uTrans1(i), vTrans1(i),HollB1(i),atcfRMW1(i) )
+         allocate(uTrans(i) , vTrans(i) ,HollB(i) ,atcfRMW(i) )
+         allocate(HollBs1(i,4)) 
+         allocate(HollBs(i,4,4)) 
+         allocate(h_speed(i))
+         allocate(VmaxesBL1(i,4), VmaxesBL(i,4,4))
+
+         ! jgf: initialize arrays to zero
+         ir = 0.0d0
+         rmaxw = 0.0d0
+         quadflag = 0 
+         HollBs = 0.0d0
+         VmaxesBL = 0.0d0
+         
+         ! Read parsed NHC advisory in modified best-track format
+
+27       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
+     &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
+     &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
+     &         2x, 4(i1,2x),2x, 4(f6.1,2x),1x, 8(f8.4,2x), f8.4)
+
+         ient = 1
+
+         READ(22,27) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
+     &    ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
+     &    ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
+     &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
+     &    dir1(ient),speed1(ient), name1(ient),
+     &    cycle_num1(ient),isotachs_per_cycle1(ient),
+     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
+     &    (HollBs1(ient,i),i=1,4),(VmaxesBL1(ient,i),i=1,4)
+
+         icyc=1
+         isot=1
+         isotachs_per_cycle(icyc) = isotachs_per_cycle1(ient)
+         advr(icyc)  =  advr1(ient)
+         iyear(icyc) =  iyear1(ient)
+         imth(icyc)  =  imth1(ient)
+         iday(icyc)  =  iday1(ient)
+         ihr(icyc)   =  ihr1(ient)
+         type(icyc)  =  type1(ient)
+         iFcstInc(icyc)= iFcstInc1(ient)
+         ilat(icyc)  =  ilat1(ient)
+         ilon(icyc)  =  ilon1(ient)
+         ispd(icyc)  =  ispd1(ient)
+         icpress(icyc) =  icpress1(ient)
+         ivr(icyc)   =  ivr1(ient)
+         ipn(icyc)   =  ipn1(ient)
+         atcfRMW(icyc) = atcfRMW1(ient)
+         !    dir(icyc)   =  dir1(ient)
+         h_speed(icyc) =  real(speed1(ient))
+         name(icyc)  =  name1(ient)
+         cycle_num(icyc) = cycle_num1(ient)
+         HollB(icyc) = HollB1(ient)
+
+         ! switch sin and cos b/c these are compass directions
+         uTrans(icyc) = sin(dir1(ient)*deg2rad)*speed1(ient)
+         vTrans(icyc) = cos(dir1(ient)*deg2rad)*speed1(ient)
+
+         CycleTime(icyc) =  iFcstInc1(ient) * 3600.d0 + timeOffset
+!         The logic for the code is set for W and N so if E or S
+!         multiply lats and lons by -1
+!
+         IF(ew.EQ.'E')THEN
+            ilon(icyc)=(-1)*ilon(icyc)
+         ENDIF
+         IF(ns.EQ.'S')THEN
+            ilat(icyc)=(-1)*ilat(icyc)
+         ENDIF
+         lon(icyc) = (-1.0d0) * ilon(icyc) * 0.1d0
+         lat(icyc)=ilat(icyc) * 0.1d0
+
+         ! PICK OUT THE CYCLE DATA THAT THE USER WANTS TO USE
+         do i=1,4  ! loop quads
+           if (quadflag1(ient,i)==1) then
+              ir(icyc,i, isot) = ir1(ient,i)
+              rmaxw(icyc,i,isot) = rmaxw1(ient,i)
+              quadflag(icyc,i,isot) = quadflag1(ient,i)
+              HollBs(icyc,i,isot) = HollBs1(ient,i)
+              VmaxesBL(icyc,i,isot) = VmaxesBL1(ient,i)
+           endif
+         enddo
+         
+! ---------------------------------------------------------------------------
+         DO ient=2,num_entry  ! LOOP through entris (lines) in input file
+
+         READ(22,27) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
+     &    ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
+     &    ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
+     &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
+     &    dir1(ient),speed1(ient), name1(ient),
+     &    cycle_num1(ient),isotachs_per_cycle1(ient),
+     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
+     &    (HollBs1(ient,i),i=1,4),(VmaxesBL1(ient,i),i=1,4)
+     
+            if ( cycle_num1(ient) == cycle_num1(ient-1)) then
+                isot=isot+1 ! same icyc, next isotach   
+            else
+                isot=1 ! initialize isotach #
+               IF ( iFcstInc1(ient) == 0 .AND. iFcstInc(icyc) == 0) then
+                  icyc = icyc
+               ELSE
+                  icyc = icyc+1
+               ENDIF
+               isotachs_per_cycle(icyc) = isotachs_per_cycle1(ient)
+
+               advr(icyc)  =  advr1(ient)
+               iyear(icyc) =  iyear1(ient)
+               imth(icyc)  =  imth1(ient)
+               iday(icyc)  =  iday1(ient)
+               ihr(icyc)   =  ihr1(ient)
+               type(icyc)  =  type1(ient)
+               iFcstInc(icyc)= iFcstInc1(ient)
+               ilat(icyc)  =  ilat1(ient)
+               ilon(icyc)  =  ilon1(ient)
+               ispd(icyc)  =  ispd1(ient)
+               icpress(icyc) =  icpress1(ient)
+               ivr(icyc)   =  ivr1(ient)
+               ipn(icyc)   =  ipn1(ient)
+               atcfRMW(icyc) = atcfRMW1(ient)
+               dir(icyc)   =  dir1(ient)
+               h_speed(icyc) =  speed1(ient)
+               name(icyc)  =  name1(ient)
+               cycle_num(icyc) = cycle_num1(ient)
+               HollB(icyc) = HollB1(ient)           
+
+              ! switch sin and cos b/c these are compass directions
+              uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
+              vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
+
+               CycleTime(icyc) =  iFcstInc(icyc) * 3600.d0 + timeOffset
+
+!              The logic for the code is set for W and N so if E or S
+!              multiply lats and lons by -1
+               IF(ew.EQ.'E')THEN
+                  ilon(icyc)=(-1)*ilon(icyc)
+               ENDIF
+               IF(ns.EQ.'S')THEN
+                  ilat(icyc)=(-1)*ilat(icyc)
+               ENDIF
+               lon(icyc) = (-1.0d0) * ilon(icyc) * 0.1d0
+               lat(icyc) = ilat(icyc) * 0.1d0
+
+            endif
+
+            ! PICK OUT THE CYCLE DATA THAT THE USER WANTS TO USE
+            do i=1,4 ! loop through quads
+              if (quadflag1(ient,i)==1) then
+                ir(icyc,i, isot) = ir1(ient,i)
+                rmaxw(icyc,i,isot) = rmaxw1(ient,i)
+                quadflag(icyc,i,isot) = quadflag1(ient,i)
+                HollBs(icyc,i,isot) = HollBs1(ient,i)
+                VmaxesBL(icyc,i,isot) = VmaxesBL1(ient,i)
+              endif
+            enddo ! loop through quads
+
+         ENDDO ! loop through entries (lines ) in input file
+         write(scratchMessage,13) icyc
+ 13      format('There are ',i2,' cycles in the fort.22 input file')
+         CALL logMessage(INFO,scratchMessage)
+         num_cycles = icyc
+         icyc=2
+      END IF   ! (firstCall .EQ. 0)
+
+      !--------------------------------------
+      !
+      ! This part of code executes each time step
+      !
+      !--------------------------------------
+
+C     If time exceeds the next hindcast/nowcast/forecast time, increment the
+C     array counter.
+C     jgf50.30 Changed .ge. to .gt. so that we wouldn't start looking at the
+C     next cycle until we are in it ... this should prevent problems when
+C     the ADCIRC run ends right at the end of the fort.22 ... otherwise,
+C     we are running off the end of the data.
+      
+      IF (TIMELOC.gt.CycleTime(icyc)) THEN
+         IF (icyc.gt.num_cycles) THEN
+            CALL allMessage(WARNING,
+     & "ADCIRC simulation time is later than the last data in fort.22.")
+            CALL allMessage(WARNING,
+     &      "The simulation has run out of meteorological data.")
+         ELSE
+         icyc=icyc+1
+         ENDIF
+      ENDIF
+
+      ! Interpolate NHC forecast interval in
+      ! time to obtain values at model time.
+      ! obtain the latest hurricane center location
+      wtratio=(TIMELOC-CycleTime(icyc-1))/
+     &                  (CycleTime(icyc)-CycleTime(icyc-1))
+      cLat   = lat(icyc-1)  +
+     &                         wtratio * (lat(icyc)-lat(icyc-1))
+      cLon  =  lon(icyc-1)  +
+     &                         wtratio * (lon(icyc)-lon(icyc-1))
+      ! locate each node based on the latest hurricane center location   
+         do i=1,np
+              dx = deg2rad * Rearth * (xcoor(i) - cLon)*COS(deg2rad*cLat)
+              dy = deg2rad * Rearth * (ycoor(i) - cLat)
+              dist(i) = SQRT(dx*dx + dy*dy)* m2nm
+              aziangle(i) = 360.0d0 + rad2deg * ATAN2(dx,dy)
+            IF (aziangle(i) > 360.d0) aziangle(i) = aziangle(i) - 360.d0
+         enddo 
+         
+ ! set parameters at icyc-1
+ !        call setQuadFlag4(reshape(quadflag(icyc-1,:,:),(/4,4/)))
+ !        call setQuadIr4(reshape(ir(icyc-1,:,:),(/4,4/)))
+ !        call setRmaxes4(reshape(rmaxw(icyc-1,:,:),(/4,4/)))
+ !        call setShapeParameters4(reshape(HollBs(icyc-1,:,:),(/4,4/)))
+ !        call setVmaxesBL4(reshape(VmaxesBL(icyc-1,:,:),(/4,4/)))
+ 
+         QuadFlag4(2:5,1:4) = quadflag(icyc-1,1:4,1:4)
+         QuadIr4(2:5,1:4) = real(ir(icyc-1,1:4,1:4))
+         Rmaxes4(2:5,1:4) = rmaxw(icyc-1,1:4,1:4)
+         Bs4(2:5,1:4) = HollBs(icyc-1,1:4,1:4)
+         VmBL4(2:5,1:4) = VmaxesBL(icyc-1,1:4,1:4)
+         
+         call fitRmaxes4()
+!699      FORMAT(5(f8.4,2x)) 
+!700      FORMAT(a25, 2x, 3(f12.2,2x))
+ !Jie debug GAHM         
+ !        WRITE(16,*) 'Previous: Spatially-interpolated storm parameters',
+ !    &                   ' at icyc-1= ', icyc-1, 
+ !    &                   ' CycleTime=', CycleTime(icyc-1) 
+         do i=1,np
+             crmaxw1(i) = spInterp(aziangle(i),dist(i),1)
+             crmaxwTrue1(i) = spInterp(aziangle(i),1.d0,1) 
+             !an artificial number 1.0 is chosen to ensure only
+             !rmax from the highest isotach is picked
+             cHollBs1(i)= spInterp(aziangle(i),dist(i),2)
+             cVmwBL1(i) = spInterp(aziangle(i),dist(i),3)
+ !Jie debug GAHM       
+ !            WRITE(16,699) crmaxw1(i),  crmaxwTrue1(i),
+ !    &                   cHollBs1(i) ,cVmwBL1(i)
+         end do
+         
+         
+         ! set parameters at icyc
+!         call setVortex(ipn(icyc),icpress(icyc),cLat,cLon
+!     $                  ,isotachs_per_cycle(icyc))
+!         call setQuadFlag4(reshape(quadflag(icyc,:,:),(/4,4/)))
+!         call setQuadIr4(reshape(ir(icyc,:,:),(/4,4/)))
+!         call setRmaxes4(reshape(rmaxw(icyc,:,:),(/4,4/)))
+!         call setShapeParameters4(reshape(HollBs(icyc,:,:),(/4,4/)))
+!         call setVmaxesBL4(reshape(VmaxesBL(icyc,:,:),(/4,4/)))  
+      
+         QuadFlag4(2:5,1:4) = quadflag(icyc,1:4,1:4)
+         QuadIr4(2:5,1:4) = real(ir(icyc,1:4,1:4))
+         Rmaxes4(2:5,1:4) = rmaxw(icyc,1:4,1:4)
+         Bs4(2:5,1:4) = HollBs(icyc,1:4,1:4)
+         VmBL4(2:5,1:4) = VmaxesBL(icyc,1:4,1:4)
+         call fitRmaxes4()
+ !Jie debug GAHM         
+ !        WRITE(16,*) 'After: Spatially-interpolated storm parameters',
+ !    &                   ' at icyc= ', icyc, 
+ !    &                   ' CycleTime=', CycleTime(icyc)          
+         do i=1,np
+             crmaxw2(i) = spInterp(aziangle(i),dist(i),1)
+             crmaxwTrue2(i) = spInterp(aziangle(i),1.d0,1) 
+             !an artificial number 1.0 is chosen to ensure only
+             !rmax from the highest isotach is picked             
+             cHollBs2(i)= spInterp(aziangle(i),dist(i),2)
+             cVmwBL2(i) = spInterp(aziangle(i),dist(i),3)
+              !Jie debug GAHM       
+  !           WRITE(16,699) crmaxw2(i),  crmaxwTrue2(i),
+  !   &                   cHollBs2(i) ,cVmwBL2(i)
+         end do
+      ! Perform time interpolation, transform variables from integers
+      ! to real numbers for hurricane vortex calcualtions.
+
+      Pn    =  1.d0*(ipn(icyc-1)  +
+     &                         wtratio*(ipn(icyc)-ipn(icyc-1)))
+      Pc    =  1.d0*(icpress(icyc-1) +
+     &                         wtratio*(icpress(icyc)-icpress(icyc-1)))
+      crmaxw   =  crmaxw1(:) +
+     &                         wtratio*(crmaxw2(:)-crmaxw1(:))
+      crmaxwTrue   =  crmaxwTrue1(:) +
+     &                         wtratio*(crmaxwTrue2(:)-crmaxwTrue1(:))
+      cHollBs  =  cHollBs1(:) +
+     &                         wtratio*(cHollBs2(:)-cHollBs1(:))
+      cVmwBL   =  cVmwBL1(:) +
+     &                         wtratio*(cVmwBL2(:)-cVmwBL1(:))
+      corio = 2.0d0 * omega * SIN(deg2rad*cLat)
+      
+!Jie debug GAHM         
+!         WRITE(16,700) 'Temporal interpolation:',
+!     &           CycleTime(icyc-1), TIMELOC, CycleTime(icyc) 
+     
+      do i=1,np
+      cPhiFactor(i) =  1 + 
+     &                       cVmwBL(i)*kt2ms*crmaxw(i)*nm2m*corio/
+     &                       (cHollBs(i)*((cVmwBL(i)*kt2ms)**2+
+     &                       cVmwBL(i)*kt2ms*crmaxw(i)*nm2m*corio))
+!Jie debug GAHM       
+!             WRITE(16,699) crmaxw(i),  crmaxwTrue(i),
+!     &                   cHollBs(i) ,cVmwBL(i), cPhiFactor(i)
+      enddo
+      
+
+     
+     
+      uTransNow = uTrans(icyc-1) + wtratio
+     &                  * (uTrans(icyc)-utrans(icyc-1))
+      vTransNow = vTrans(icyc-1) + wtratio
+     &                  * (vTrans(icyc)-vTrans(icyc-1))
+     
+      if (writeFullCircleRmaxes.eqv..true.) then
+            do i=1,np
+              write(444,*)  crmaxw(i), aziangle(i),dist(i)
+            end do
+      endif     
+      ! jgf49.0803 Make the current Rmax and center location
+      ! available at the module level for use in NWS29
+      vortexLat = cLat
+      vortexLon = cLon
+      vortexRMW = 0.0d0
+      !jgf50.32: For sector-based wind drag, record the center
+      !of the storm.
+      IF ((cLat.ne.EyeLatR(3)).or.(cLon.ne.EyeLonR(3))) THEN
+         EyeLatR(1) = EyeLatR(2)
+         EyeLonR(1) = EyeLonR(2)
+         EyeLatR(2) = EyeLatR(3)
+         EyeLonR(2) = EyeLonR(3)
+         EyeLatR(3) = cLat
+         EyeLonR(3) = cLon
+         FoundEye = .true.
+      ENDIF
+
+      ! arithmetic mean of the Rmax in the 4 storm quadrants
+      !do i=1,4
+      !   vortexRMW = vortexRMW + 0.25d0*crmaxw(i)
+      !end do
+
+      !-------------------------------
+      ! Create a new asymmetric hurricane vortex.
+      !
+      ! Note: Subtract translational speed from Vmax, then
+      ! scale (Vmax - Vt) and Vr up to the top of the surface,
+      ! where the cylcostrophic wind balance is valid.
+      !-------------------------------------------------------
+      !-------------------------------------------------------------
+      ! Calculate wind and pressure fields at model nodal points.
+      !
+      ! Note: the asymmetric vortex wind speed is reduced from the
+      ! top of the surface layer to the surface, then converted from
+      ! a 1-minute (max sustained) to a 10-minute average prior to
+      ! adding the translational velocity in subroutine uvp.
+      !-------------------------------------------------------------
+      stormMotion = 1.5d0*(SQRT(uTransNow**2.d0+vTransNow**2.d0))**0.63d0
+      dirNow = rad2deg * ATAN2(uTransNow, vTransNow)
+      if (dirNow .lt. 0.d0) dirNow = dirNow + 360.d0
+      stormMotionU = sin(dirNow/rad2deg)*stormMotion
+      stormMotionV = cos(dirNow/rad2deg)*stormMotion
+      call setVortex(Pn,Pc,cLat,cLon)
+
+      DO i=1,np
+         CALL uvpr(dist(i),aziangle(i),crmaxw(i),crmaxwTrue(i),
+     &        cHollBs(i),cVmwBL(i),cPhiFactor(i),stormMotionU,
+     &        stormMotionV,geofactor,wvnx(i),wvny(i),press(i))
+         !-------------------------------------------
+         ! Convert atmospheric pressure (Pascals) to
+         ! atmospheric pressure-induced water surface
+         ! elevation (meters).
+         !-------------------------------------------
+         press(i) = press(i) / RhoWatG
+
+      END DO
+
+      !-----------------------------------
+      ! NHC advisory best-track i/o format
+      !-----------------------------------
+      firstCall = 1
+      told=TIMELOC
+
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+999   RETURN
+C***********************************************************************
+      END SUBROUTINE NWS20GET
+C***********************************************************************
+
 
 
 C     ----------------------------------------------------------------

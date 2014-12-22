@@ -539,11 +539,11 @@ C     ------------------------------------------------------------------
            
       if (nope.ne.0) then
          p_nvdll = nvdll
+         p_nbdv = nbdv
       endif
-      write(*,'(a,i0)') 'size(nvell)=',size(nvell) ! jgfdebug
-      write(*,'(a,i0)') 'size(p_nvell)=',size(p_nvell) ! jgfdebug
       if (nbou.ne.0) then
          p_nvell = nvell
+         P_nbvv = nbvv
       endif
       p_ibtypee = ibtypee    
       p_ibtype = ibtype

@@ -349,7 +349,8 @@ C--------------------------------------------------------------------
 C     jgf50.97: Writes LHS matrix to a file for use in debugging.
 C--------------------------------------------------------------------
       SUBROUTINE writeHA(timesec, it)
-      USE GLOBAL, ONLY : myproc, globaldir
+      USE SIZES, ONLY : globaldir
+      USE GLOBAL, ONLY : myproc
       IMPLICIT NONE     
       REAL(8) :: timesec ! time in seconds since cold start
       INTEGER :: it      ! current adcirc time step number
@@ -466,8 +467,8 @@ C     jgf49.44: Initializes harmonic analysis arrays and parameters.
 C     Based on HACOLDS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE initHarmonicParameters()
-      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES
-      USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, myProc, MNPROC
+      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MNPROC
+      USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, myProc
       USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER :: i, j, n           ! loop counters
@@ -974,7 +975,8 @@ C     stations as specified. Also finishes time series reconstruction
 C     if necessary.
 C--------------------------------------------------------------------
       SUBROUTINE solveHarmonicAnalysis(ITIME)
-      USE GLOBAL, ONLY : STATIM, REFTIM, DTDP, LOCALDIR
+      USE SIZES, ONLY : LOCALDIR
+      USE GLOBAL, ONLY : STATIM, REFTIM, DTDP
       USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER, intent(in) :: ITIME

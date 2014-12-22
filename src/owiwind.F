@@ -93,6 +93,12 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 
+      ! Allocate and create matrices  Jie 09/2013
+      if(allocated(swpointsB))    deallocate(swpointsB)
+      if(allocated(swpointsR))    deallocate(swpointsR)
+      if(allocated(wB))           deallocate(wB)
+      if(allocated(wR))           deallocate(wR)
+
       allocate(swpointsB(NP,2),wB(NP,4))
       allocate(swpointsR(NP,2),wR(NP,4))
       errorIO = 0
@@ -247,7 +253,8 @@ C***********************************************************************
       USE WIND, ONLY: EyeLatR,
      &                EyeLonR,
      &                FoundEye,
-     &                DragLawString
+     &                DragLawString,
+     &                moving_grid
 
       IMPLICIT NONE
 
@@ -261,7 +268,7 @@ C***********************************************************************
       INTEGER  :: EyeLonI
       REAL(SZ) :: EyeLatTemp
       REAL(SZ) :: EyeLonTemp
-      REAL(SZ) :: EyePressure
+      REAL(SZ) :: EyePressure      
       FoundEye = .FALSE.
 C
       call setMessageSource("nws12get")
@@ -330,6 +337,9 @@ C
           updateB = 0
         endif
       endif
+
+      ! for a moving grid,update it every time  Jie 09/2013
+      if (moving_grid) updateB = 1
 
       iCYMDHB = iCYMDHp
       iMinB = iMinp
@@ -443,6 +453,9 @@ C
 
       endif
 
+      ! for a moving grid,update it every time  Jie 09/2013
+      if (moving_grid) updateR = 1
+      
       iCYMDHR = iCYMDHp
       iMinR = iMinp
 

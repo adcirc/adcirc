@@ -5,8 +5,10 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 
       USE SIZES,  ONLY: SZ
+      USE WRITE_OUTPUT, ONLY : terminate
       USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR,
-     &          setMessageSource, unsetMessageSource, allMessage
+     &          setMessageSource, unsetMessageSource, allMessage,
+     &          scratchMessage
 #ifdef CSWAN
 
       USE SWCOMM1, ONLY: NMOVAR
@@ -795,6 +797,8 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE SwanOutput(ITIME, IT)
 
+      USE SIZES, ONLY : OFF, ASCII, SPARSE_ASCII, BINARY, NETCDF3,
+     &   NETCDF4, XDMF
       USE Couple2Adcirc,ONLY: COMPDA
       USE MESH, ONLY : DP, NP, AID4
       USE GLOBAL,       ONLY:
@@ -816,8 +820,7 @@ C-----------------------------------------------------------------------
      &                        RID4,
      &                        UU2,
      &                        VV2,
-     &                        OFF, ASCII, BINARY, SPARSE_ASCII, NETCDF3,
-     &                        NETCDF4, XDMF, DTDP, StaTim
+     &                        DTDP, StaTim
 #ifdef CSWAN
      &                        ,SWAN_OutputHS,
      &                        SWAN_OutputDIR,
@@ -1040,6 +1043,7 @@ C.....Arrange on/off for output into array
          DO IW=1,NumSwanOutput
             IF(.NOT.SWAN_OutputAgg(IW))CYCLE
             UnitNumber = 300 + IW
+
             IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.4))THEN
                 IF(IW.NE.5)THEN
                     CALL OPEN_GBL_FILE(UnitNumber,TRIM(GLOBALDIR)//'/'//TRIM(FileName(IW)),

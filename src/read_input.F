@@ -1108,6 +1108,7 @@ C     jgf46.03 Added NWS=8 (Holland wind model)
 C     jgf46.16 Merged:
 C     cf & cm  Added NWS=9 (asymmetric hurricane winds)
 C     rjw      Added NWS=19(asymmetric hurricane winds v2.0)
+C     jie      ADDed NWS=20(generalized asymmetric vortex winds)
 C     sb46.28sb01 Added NWS=12 (OWI format) 09/xx/2006
 C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
 C     tcm v49.46 Added NWS = 4xx for tight coupling with STWAVE
@@ -1440,6 +1441,32 @@ C     rjw added nws = 19: asymmetric hurricane winds v2.0
          WRITE(16,2401) NWS
  2401    FORMAT(/,5X,'NWS = ',I3,
      &    /,9X,'HURRICANE PARAMETERS AND THE ASYMMETRIC WIND MODEL',
+     &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
+     &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
+     &    /,9X,
+     &    'WHICH IS CREATED FROM TEH ATCF FILE USING THE ASWIP PROGRAM',
+     &    /,9X,'THE UNIT 22 FILE BEGINS AT THE TIME OF THE HOT START',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.')
+      ENDIF
+
+C     jie added nws = 20: generalized asymmetric wind model
+      IF(NWS.EQ.20) THEN
+         WRITE(16,2404) NWS
+ 2404    FORMAT(/,5X,'NWS = ',I3,
+     &    /,9X,'THE GENERALIZED ASYMMETRIC VORTEX MODEL',
+     &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
+     &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
+     &    /,9X,
+     &    'WHICH IS CREATED FROM TEH ATCF FILE USING THE ASWIP PROGRAM',
+     &    /,9X,'THE UNIT 22 FILE BEGINS AT TIME=STATIM.',
+     &    /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE STORM DATA ',
+     &    /,9X,'WITH THE MODEL TIME STEP.')
+      ENDIF
+      IF(NWS.EQ.-20) THEN
+         WRITE(16,2405) NWS
+ 2405    FORMAT(/,5X,'NWS = ',I3,
+     &    /,9X,'HTHE GENERALIZED ASYMMETRIC VORTEX MODEL',
      &    /,9X,'  ARE USED TO FORCE THE COMPUTATION',
      &    /,9X,'VALUES ARE READ IN FOR THE STORM FROM UNIT 22',
      &    /,9X,
@@ -1944,6 +1971,34 @@ C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
          ELSEIF ((NCICE.GE.1).AND.(NRS.GE.1)) THEN
             READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
      &           RSTIMINC,CICE_TIMINC
+         ELSE
+         ENDIF
+C LETS not use this now but have the option to i nthe future
+c            WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
+c 6112       FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
+c     &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
+c         CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
+c     &        WindRefTime, MyProc, NScreen, ScreenUnit)
+      ENDIF
+
+C     jie added nws = 20: generalized asymmetric vortex model
+C     2014.07 read in the geofactor, which controls the on or off
+C     of the Coriolis term in the geostrophic balance
+
+      IF(ABS(NWS).EQ.20) THEN
+C...     TCM V49.64.01 ADDITIONS FOR ICE CONCENTRATION
+         IF((NCICE.EQ.0).AND.(NRS.EQ.0)) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &          GEOFACTOR       
+         ELSEIF ((NCICE.EQ.0).AND.(NRS.GE.1)) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &           GEOFACTOR,RSTIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.EQ.0)) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &           GEOFACTOR,CICE_TIMINC
+         ELSEIF ((NCICE.GE.1).AND.(NRS.GE.1)) THEN
+            READ(15,*) IREFYR,IREFMO,IREFDAY,IREFHR,StormNumber,BLAdj,
+     &           GEOFACTOR,RSTIMINC,CICE_TIMINC
          ELSE
          ENDIF
 C LETS not use this now but have the option to i nthe future
@@ -3986,6 +4041,7 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
       IF(ABS(NWS).EQ.16) WRITE(16,4026) ! tcm v51.06.02  !gfdl met data
       IF(NWS.EQ.19) WRITE(16,4018)      !rjw added nws = 19
       IF(NWS.EQ.19) WRITE(16,4019)      !rjw added nws = 19
+      IF(NWS.EQ.20) WRITE(16,4020)      !jie added nws = 20
       IF((NFREQ.EQ.0).OR.(FMV.EQ.0.)) WRITE(16,4021)
       IF((NFREQ.GE.1).AND.(FMV.NE.0.)) WRITE(16,4022)
       IF(ILUMP.EQ.0) WRITE(16,4031)
@@ -4032,6 +4088,7 @@ C tcm v51.09 added output for MNWPROH -- Number of Hot Start Writer Procs
  4033 FORMAT(' *   Also, OWI format wind vel and pres will be used,*')
  4018 FORMAT(' *   Asymmetric hurricane wind and pressure forcing  *')
  4019 FORMAT(' *              will be used,                        *')
+ 4020 FORMAT(' *   Generalized Asymmetric Vortex Model forcing     *')
  4021 FORMAT(' *   means and variance calculation will NOT be made,*')
  4022 FORMAT(' *   means and variance calculation will be made,    *')
  4031 FORMAT(' *   the GWCE matrix will be left in consistent form *')

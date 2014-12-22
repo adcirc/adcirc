@@ -99,6 +99,8 @@ C******************************************************************************
 C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
+      USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc,
+     &   read_local_hot_start_files, make_dirname
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
      &                 initHarmonicParameters
@@ -323,7 +325,10 @@ Casey 090302: We need the following information to couple to unstructured SWAN.
 C
       INTEGER, OPTIONAL :: NTIME_STP
 C
-
+      call setMessageSource("ADCIRC_Run")
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 !TCM v49.52.01 added this ifdef (brought in from adcirc_init()
 #ifdef CMPI
       if (((mnwproh > 0).or.(mnwproc > 0)) .and. myproc >= mnproc) then
@@ -337,10 +342,6 @@ C
       endif
 #endif
 
-      call setMessageSource("ADCIRC_Run")
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Enter.")
-#endif
       IF (PRESENT(NTIME_STP)) THEN
         ITIME_END = ITIME_BGN+NTIME_STP-1
       ENDIF
@@ -362,10 +363,6 @@ C
         ITIME_BGN = ITIME_END+1
       ENDIF
 C
-#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
-      call allMessage(DEBUG,"Return.")
-#endif
-      call unsetMessageSource()
 
 !TCM v49.52.01 added the following ifdef to pause writer processors
 ! before exiting adcirc_run phase.  This is to allow them to be
@@ -375,6 +372,10 @@ C
       IF (MYPROC == 0 .and. MNWPROH > 0) CALL HSWRITER_PAUSE()
 #endif
 
+#if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       RETURN
       END SUBROUTINE ADCIRC_Run
 

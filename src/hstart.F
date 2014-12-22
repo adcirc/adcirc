@@ -32,6 +32,7 @@ C     HOT START PROGRAM SETUP ROUTINE
 C
 C**************************************************************************
 C
+      USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE GLOBAL
       USE MESH, ONLY : DP, ICS, X, Y, SLAM, SFEA, AID4
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXIB, NFLUXIBP,
@@ -46,7 +47,6 @@ C
      &    DUU_g, DUV_g, DVV_g, UU_g, VV_g, BSX_g, BSY_g, Q_g, WZ_g,
      &    q20_g, l_g, SigT_g, Sal_g, Temp_g, iy
 C
-      USE SIZES
 #ifdef CMPI
       USE MESSENGER,ONLY:COMM,IERR
 #endif      
@@ -168,7 +168,6 @@ C     kmd -- Added variables for initial conditions
       INTEGER :: moderbin ! determines whether in binary or real
       INTEGER :: ncHundreds ! hundreds place of IHOT, used for netcdf hs file
 
-
       call setMessageSource("hotstart")
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -200,8 +199,7 @@ C        Determine if the hot start file exists.
          ENDIF
          IF ((MNPROC.eq.1).or.
      &       (READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-            INQUIRE(FILE=TRIM(INPUTDIR)//'/'//hsfn,
-     &         EXIST=fileFound)
+            INQUIRE(FILE=trim(inputDir)//'/'//hsfn, EXIST=fileFound)
          ELSE
             ! look for fulldomain hotstart file
             INQUIRE(FILE=TRIM(GBLINPUTDIR)//'/'//hsfn,
@@ -1927,6 +1925,41 @@ C  tcm v49.16 20100617
             WVNYOUT(I)=RampMete2*WindY
          ENDDO
       ENDIF
+      
+!     jie added nws = 20: generalized asymmetric vortex model
+
+      IF(ABS(NWS).EQ.20) THEN
+         OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+             CALL NWS20GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)
+         DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+               CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef)
+     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
+C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE.NE.0) THEN
+               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+               WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
+C  tcm v49.16 20100617
+!            PR2(I)=RampMete2*PRN2(I)
+            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WindX
+            WVNYOUT(I)=RampMete2*WindY
+         ENDDO
+      ENDIF            
 C
 C     jgf49.1001 Added NWS29, asymmetric vortex winds (NWS19)
 C     embedded in an OWI basin scale gridded met field (NWS12)
