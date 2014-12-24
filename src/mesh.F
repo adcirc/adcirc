@@ -62,12 +62,24 @@ C     ------------------------------------------------------------------
       subroutine readMesh()
       use sizes
       implicit none
+
+      call setMessageSource("readMesh")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif       
+      
       select case(meshType)
       case(ASCII)
          call read14()
       case(XDMF)
          call readMeshXDMF()
       end select
+      
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      
 C     ------------------------------------------------------------------ 
       end subroutine readMesh
 C     ------------------------------------------------------------------
@@ -88,6 +100,11 @@ C     ------------------------------------------------------------------
       integer :: neta_count, nvel_count
       integer :: nvell_max, nvdll_max
       integer, parameter :: iunit = 14
+
+      call setMessageSource("read14FindDims")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif       
       !
       ! initializations
       lineNum = 1
@@ -99,8 +116,8 @@ C     ------------------------------------------------------------------
       ! reading the file
       read(iunit,'(A80)',err=10,end=20,iostat=ios) agrid
       lineNum = lineNum + 1
-      write(6,'(A)') "INFO: Mesh file comment line: "//trim(agrid)
-      write(6,'(A)') "INFO: Reading mesh file dimensions."
+      call logMessage(INFO,"Mesh file comment line: "//trim(agrid))
+      call logMessage(INFO,"Reading mesh file dimensions.")
       read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) ne, np
       mne = ne
       mnp = np
@@ -108,16 +125,22 @@ C     ------------------------------------------------------------------
          read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) i
          lineNum = lineNum + 1
          if (i.ne.k) then
-            write(6,'("ERROR: Attempted to read node number ",i0," but found node number ",i0," instead.")') k, i
-            stop
+            write(scratchMessage,1000) k, i
+1000       format('Attempted to read node number ',i0,
+     &        ' but found node number ',i0,' instead.')
+            call allMessage(ERROR, scratchMessage)            
+            call terminate()
          endif
       enddo
       do k = 1, ne
          read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) i
          lineNum = lineNum + 1
          if (i.ne.k) then
-            write(6,'("ERROR: Attempted to read element number ",i0," but found element number ",i0," instead.")') k, i
-            stop
+            write(scratchMessage,1010) k, i
+1010        format('Attempted to read element number ',i0,
+     &            ' but found element number ',i0,' instead.') 
+            call allMessage(ERROR, scratchMessage)
+            call terminate()
          endif 
       enddo
       read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nope  ! total number of elevation boundaries
@@ -141,7 +164,10 @@ C     ------------------------------------------------------------------
          enddo
       enddo
       if ( neta_count.ne.neta ) then
-         write(6,'("WARNING: Number of open boundary nodes was set to ",I6," but ",I6," were found.")') neta, neta_count
+         write(scratchMessage,1020) neta, neta_count
+1020    format('Number of open boundary nodes was set to ',
+     &           i0,' but ',i0,' were found.')
+         call allMessage(WARNING,scratchMessage)
       endif
       read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nbou ! total number of flux boundaries
       lineNum = lineNum + 1
@@ -154,7 +180,8 @@ C     ------------------------------------------------------------------
       nvel_count = 0
       nvell_max = 0
       do k = 1, nbou
-         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvell(k), ibtype_orig(k)  ! number of nodes and type of kth flux boundary 
+         read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) 
+     &       nvell(k), ibtype_orig(k)  ! number of nodes and type of kth flux boundary 
          lineNum = lineNum + 1
          nvell_max = max(nvell_max,nvell(k))
          do j = 1, nvell(k)
@@ -174,33 +201,56 @@ C     ------------------------------------------------------------------
          case(5,25)
              numInternalFluxBoundariesWithPipes = numInternalFluxBoundariesWithPipes + 1
          case default
-             write(6,'("ERROR: The boundary type ",i0," was found in the file but is not valid.")') ibtype_orig(k)
-             stop
+             write(scratchMessage, 1030) ibtype_orig(k)
+1030        format('The boundary type ',i0,
+     &           ' was found in the file but is not valid.') 
+             call allMessage(ERROR, scratchMessage)
+             call terminate()
          end select
       enddo
       if ( nvel_count.ne.nvel) then
-         write(6,'("WARNING: Number of land boundary nodes was set to ",I6," but ",I6," were found.")') nvel, nvel_count
-         if (nabout.eq.-1) then
-            write(6,*) 'WARNING: Here is the summary of land boundary node information:'
-            write(6,'("NVEL (specified number of land boundary nodes) = ",i0,".")') nvel
-            write(6,'("Counted number of land boundary nodes = ",i0,".")') nvel_count
+         write(scratchMessage, 1040) nvel, nvel_count
+1040     format('Number of land boundary nodes was set to ',i0,' but ',
+     &      i0,' were found.') 
+         call allMessage(WARNING, scratchMessage)         
+         call logMessage(DEBUG,
+     &      'Here is the summary of land boundary node information:')
+         write(scratchMessage,1050) nvel, nvel_count
+1050     format('NVEL (specified number of land boundary nodes) = ',
+     &       i0,'. Counted number of land boundary nodes = ',i0,'.')
+         call logMessage(DEBUG,scratchMessage)
+         if (nabout.eq.DEBUG) then
             do k=1,nbou
-               write(6,'("ibtype(",i0,")=",i0,", nvell(",i0,")=",i0,", total=",i0,".")') 
-     &             k, ibtype_orig(k), k, nvell(k), sum(nvell(1:k))
+               write(scratchMessage,1060) k, ibtype_orig(k), k, 
+     &            nvell(k), sum(nvell(1:k))
+                             
+1060          format('ibtype(',i0,')=',i0,', nvell(',i0,')=',i0,
+     &                ', total=',i0,'.') 
+               call logMessage(DEBUG,scratchMessage)
             end do
          endif
       endif
       rewind(iunit)
-      write(6,'(A)') 'INFO: Finished reading mesh file dimensions.'
+      call logMessage(INFO,'Finished reading mesh file dimensions.')
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
          !
          ! jump to here on error and end conditions during read   
- 10   write(6,'("ERROR: Reading line ",i0," gave the following error code: ",i0,".")')         lineNum, ios
-         close(iunit)
-         stop
- 20   write(6,'("ERROR: Reached premature end of file on line ",i0,".")') lineNum
-         close(iunit)
-         stop
+ 10   write(scratchMessage,1070) lineNum, ios
+1070  format('Reading line ',i0,' gave the following error code: ',
+     &   i0,'.')
+      call allMessage(ERROR, scratchMessage)
+      close(iunit)
+      call terminate()
+ 20   write(scratchMessage,1080) lineNum
+1080  format('Reached premature end of file on line ',i0,'.') 
+      call allMessage(ERROR,scratchMessage)
+      close(iunit)
+      call terminate()
       !-----+---------+---------+---------+---------+---------+---------+
       end subroutine read14_findDims
       !-----+---------+---------+---------+---------+---------+---------+
@@ -218,6 +268,11 @@ C     ------------------------------------------------------------------
       integer, parameter :: iunit = 14
       integer :: ios     ! i/o status
       integer :: lineNum ! line number currently being read
+
+      call setMessageSource("read14")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif       
       !
       ! initialization
       nfluxf = 0 
@@ -374,6 +429,11 @@ C     ------------------------------------------------------------------
       call populateADCIRCNativeArrays()
       !
       write(6,'(A)') 'INFO: Finished reading mesh file coordinates, connectivity, and boundary data.'
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       return
        !
       ! jump to here on error condition during read   
@@ -408,6 +468,12 @@ C     ------------------------------------------------------------------
       use global, only : nabout
       use boundaries
       implicit none
+
+      call setMessageSource("readMeshXDMF")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
 #ifndef ADCXDMF      
       call allMessage(ERROR,"An XMDF mesh file was specified.")
       call allMessage(ERROR,"This ADCIRC executable was not compiled with XDMF support.")
@@ -908,6 +974,10 @@ C     ------------------------------------------------------------------
       ! populate the adcirc arrays that are used during execution
       call populateADCIRCNativeArrays()
 #endif
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       !----------------------------------------------------------------------
       end subroutine readMeshXDMF
       !----------------------------------------------------------------------
@@ -926,6 +996,12 @@ C     ------------------------------------------------------------------
       integer :: elevCount
       integer :: fluxCount
       integer :: i, j, k, riverval
+
+      call setMessageSource("populateADCIRCNativeArrays")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
       ! populate adcirc-native arrays
       do elevCount=1,nope
          nbdv(elevCount,1:nvdll(elevCount)) = elevationBoundaries(elevCount)%nodes
@@ -1031,6 +1107,10 @@ C     ------------------------------------------------------------------
          end select
       end do
 
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       !-----------------------------------------------------------------
       end subroutine populateADCIRCNativeArrays
       !-----------------------------------------------------------------
@@ -1059,6 +1139,11 @@ C     ------------------------------------------------------------------
       real(sz) x2mx1,x3mx2,x1mx3,y2my1,y3my2,y1my3
       real(sz) lened1,lened2,lened3
       integer :: i, j
+
+      call setMessageSource("initializeMesh")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       ! jgf51.21.11: Initialize the comment line data for use in 
       ! non portable binary output files.
@@ -1225,6 +1310,10 @@ C     counter clockwise around the elements
             call terminate()
          endif
       end do
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C     ------------------------------------------------------------------
       end subroutine initializeMesh
 C     ------------------------------------------------------------------
@@ -1260,6 +1349,11 @@ C     ------------------------------------------------------------------
       real(sz) :: ZNGFicNodeDist,ZNGFicNodeDistTemp
       logical :: ibtype52 = .false.
       real(8) delx,dely
+
+      call setMessageSource("initializeBoundaries")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       !
       ! initialization
@@ -2276,6 +2370,11 @@ C...GENERAL PURPOSE FORMAT STATEMENTS for subtly expressed error messages
 C...
  1112 FORMAT(/,1X,79('_'))
  9973 FORMAT('!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!')
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C     ------------------------------------------------------------------
       end subroutine initializeBoundaries
 C     ------------------------------------------------------------------
@@ -2291,6 +2390,12 @@ C     ------------------------------------------------------------------
       subroutine allocateNodalAndElementalArrays()
       use sizes, only : mnp, mne
       implicit none
+
+      call setMessageSource("allocateNodalAndElementalArrays")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
       allocate ( slam(mnp),sfea(mnp),x(mnp),y(mnp))
       allocate ( dp(mnp) )
       allocate ( nm(mne,3))
@@ -2322,6 +2427,11 @@ C...  which are deallocated at the end of read_input.F
       sii = -99999.d0
       bcxy = -99999.d0
       rmax = -99999.d0
+      
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C     ------------------------------------------------------------------
       end subroutine allocateNodalAndElementalArrays
 C     ------------------------------------------------------------------
@@ -2335,8 +2445,19 @@ C     ------------------------------------------------------------------
       subroutine allocateNeighborArrays()
       use sizes, only : mnp, mnei
       implicit none
+
+      call setMessageSource("allocateNeighborArrays")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
       allocate ( neitab(mnp,mnei))
       allocate ( neitabele(mnp,mnei))
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 c     ------------------------------------------------------------------
       end subroutine allocateNeighborArrays
 C     ------------------------------------------------------------------
@@ -2349,8 +2470,19 @@ C     has been read.
 C     ------------------------------------------------------------------
       subroutine freeMesh()
       implicit none
+
+      call setMessageSource("freeMesh")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
       deallocate(rmax)
       deallocate(bcxy)
+      
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 c     ------------------------------------------------------------------
       end subroutine freeMesh
 C     ------------------------------------------------------------------
@@ -2371,9 +2503,19 @@ C     ------------------------------------------------------------------
       REAL*8, intent(in) :: PHI0      ! latitude at center of projection (radians)
       REAL*8, intent(out) :: X        ! projected longitude (m)
       REAL*8, intent(out) :: Y        ! projected latitude (m)
+
+      call setMessageSource("cpp")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
       
       X=Rearth*(RLAMBDA-RLAMBDA0)*COS(PHI0)
       Y=PHI*Rearth
+      
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
 C     ------------------------------------------------------------------
       END SUBROUTINE CPP
 C     ------------------------------------------------------------------      
@@ -2430,6 +2572,11 @@ C     ------------------------------------------------------------------
       INTEGER, ALLOCATABLE :: NEITEM(:)
       INTEGER, ALLOCATABLE :: NNEIGHELE(:)
 C
+      call setMessageSource("neighb")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
       ALLOCATE ( ANGLE(MNEI) )
       ALLOCATE ( NEITEM(MNP) )
       ALLOCATE ( NNeighEle(MNP) )
@@ -2589,6 +2736,11 @@ C     Deallocate local work arrays
       DEALLOCATE ( NEITEM )
       DEALLOCATE ( NNEIGHELE )
 
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
       RETURN
 C
 C     TERMINATE PROGRAM IF MAXIMUM NUMBER OF NEIGHBORS SET TOO SMALL
@@ -2634,6 +2786,11 @@ C     ------------------------------------------------------------------
       integer ncele          ! wet/dry indicator (zero if dry)
       integer :: i           ! node loop counter
       integer :: ie          ! element loop counter
+
+      call setMessageSource("totalAreaCalc")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
       !
       ! initialize values 
       mju(:)=0
@@ -2662,6 +2819,11 @@ C     ------------------------------------------------------------------
       do i=1,np
          if(mju(i).eq.0) mju(i)=1
       end do
+      
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
 C     ------------------------------------------------------------------
       end subroutine totalAreaCalc
 C     ------------------------------------------------------------------
@@ -2676,8 +2838,19 @@ C     ------------------------------------------------------------------
       USE GLOBAL, ONLY : Rearth
       IMPLICIT NONE
       REAL*8 XXCP,YYCP,RLAMBDA,PHI,RLAMBDA0,PHI0
+
+      call setMessageSource("invcp")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
       RLAMBDA=RLAMBDA0+XXCP/(Rearth*COS(PHI0))
       PHI=YYCP/Rearth
+      
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
 C     ------------------------------------------------------------------
       END SUBROUTINE INVCP
 C     ------------------------------------------------------------------
@@ -2700,6 +2873,11 @@ C     ------------------------------------------------------------------
       integer :: typeHolder
       character(len=256) :: logString
       !
+      call setMessageSource("getAttributeCharacteristicsXDMF")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
       call xdmfRetrieveAttributeType(xdmfFortranObj, attributeIndex, typeHolder)
       call createAttributeTypeString(typeHolder, logString) 
       write(6,'("DEBUG: The Attribute type is ",a,".")') trim(logString)
@@ -2715,6 +2893,10 @@ C     ------------------------------------------------------------------
       call xdmfRetrieveAttributeSize(xdmfFortranObj, attributeIndex, typeHolder)
       write(6,'("DEBUG: The Attribute consists of ",i0," values.")') typeHolder
 #endif
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       !----------------------------------------------------------------------
       end subroutine getAttributeCharacteristicsXDMF
       !----------------------------------------------------------------------
@@ -2736,12 +2918,22 @@ C     ------------------------------------------------------------------
       real(sz), intent(out) :: prepX(:)
       real(sz), intent(out) :: prepY(:)
       real(sz), intent(out) :: prepDP(:)
+
+      call setMessageSource("getMeshForPrep")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
                   
       prepAgrid = agrid
       prepX = X
       prepY = Y
       prepDP = dp
 
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
       !-----------------------------------------------------------------
       end subroutine getMeshForPrep
       !-----------------------------------------------------------------
@@ -2758,8 +2950,19 @@ C     ------------------------------------------------------------------
       implicit none
       integer, intent(out) :: prepNP
       integer, intent(out) :: prepNE
+
+      call setMessageSource("getMeshSizesForPrep")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
       prepNP = np
       prepNE = ne
+      
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       !-----------------------------------------------------------------
       end subroutine getMeshSizesForPrep
       !-----------------------------------------------------------------
@@ -2783,6 +2986,12 @@ C     ------------------------------------------------------------------
       implicit none
       integer :: nullCharLocation
       character(len=*), intent(inout) :: myString
+
+      call setMessageSource("replaceNullsWithSpaces")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
       do 
          nullCharLocation = index(myString,char(0)) 
          if (nullCharLocation.ne.0) then
@@ -2791,6 +3000,11 @@ C     ------------------------------------------------------------------
             exit ! there are no more null characters
          endif
       end do
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       !----------------------------------------------------------------------
       end subroutine replaceNullsWithSpaces
       !----------------------------------------------------------------------
@@ -2806,6 +3020,12 @@ C     ------------------------------------------------------------------
       implicit none
       integer, intent(in) :: typeHolder
       character(len=256), intent(out) :: typeString
+
+      call setMessageSource("createAttributeTypeString")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
       !
       select case(typeHolder)
       case(200)
@@ -2825,6 +3045,11 @@ C     ------------------------------------------------------------------
       case default
          write(6,'("WARNING: Unrecognized attribute type ",i0,".")') trim(typeString)
       end select
+
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       !----------------------------------------------------------------------
       end subroutine createAttributeTypeString
       !----------------------------------------------------------------------
@@ -2841,6 +3066,11 @@ C     ------------------------------------------------------------------
       integer, intent(in) :: typeHolder
       character(len=256), intent(out) :: typeString
       !
+      call setMessageSource("createSetTypeString")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
+      
       select case(typeHolder)
       case(601)
          typeString = 'XDMF_SET_TYPE_NODE'
@@ -2853,6 +3083,11 @@ C     ------------------------------------------------------------------
       case default
          write(6,'("WARNING: Unrecognized set type ",i0,".")') typeHolder
       end select
+      
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       !----------------------------------------------------------------------
       end subroutine createSetTypeString
       !----------------------------------------------------------------------
@@ -2868,6 +3103,11 @@ C     ------------------------------------------------------------------
       implicit none
       integer, intent(in) :: typeHolder
       character(len=256), intent(out) :: typeString
+
+      call setMessageSource("createAttributeCenterString")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
       !
       select case(typeHolder)
       case(100)
@@ -2883,6 +3123,11 @@ C     ------------------------------------------------------------------
       case default
          write(6,'("WARNING: Unrecognized attribute center ",i0,".")') trim(typeString)
       end select
+      
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       !----------------------------------------------------------------------
       end subroutine createAttributeCenterString
       !----------------------------------------------------------------------
@@ -2896,6 +3141,11 @@ C     ------------------------------------------------------------------
       implicit none
       integer, intent(in) :: typeHolder
       character(len=256), intent(out) :: typeString
+
+      call setMessageSource("createDataTypeString")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
       !
       select case(typeHolder)
       case(0)
@@ -2919,6 +3169,11 @@ C     ------------------------------------------------------------------
       case default
          write(6,'("WARNING: Unrecognized data type ",i0,".")') trim(typeString)
       end select
+      
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       !----------------------------------------------------------------------
       end subroutine createDataTypeString
       !----------------------------------------------------------------------
@@ -2934,6 +3189,11 @@ C     ------------------------------------------------------------------
       implicit none
       integer, intent(in) :: typeHolder
       character(len=256), intent(out) :: typeString
+
+      call setMessageSource("createTopologyTypeString")
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif      
       !
       select case(typeHolder)
       case(500)
@@ -2963,6 +3223,10 @@ C     ------------------------------------------------------------------
       case default
          write(6,'("WARNING: Unrecognized topology type ",i0,".")') typeHolder
       end select
+#if defined(MESH_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       !----------------------------------------------------------------------
       end subroutine createTopologyTypeString
       !----------------------------------------------------------------------

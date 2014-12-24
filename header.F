@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.39    - 12/24/2014 - jgf - Added execution tracing to mesh.F module.
+C              corrected log message routing in mesh module to reduce the 
+C              messages it prints to the screen, particularly in parllel. 
 C  v51.38    - 12/22/2014 - jgf - Merged GAHM_jie branch (v51.33.x). 
 C    v51.33.14 - 12/12/2014 - jgf - Fixed duplicate execution tracing calls.
 C    v51.33.13 - 12/09/2014 - jgf - Merged trunk changes r1032:1050; fixed some
