@@ -625,6 +625,7 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
             ENDIF
             READ(13,'(A80)') Skipped  ! skip the Units for the invalid name
             READ(13,'(A80)') Skipped  ! skip the NoOfVals for invalid name
+            READ(13,'(A80)') Skipped  ! jgf50.99.14: skip the default values
          END SELECT
       END DO
 C

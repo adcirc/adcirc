@@ -107,12 +107,27 @@ ifeq ($(compiler),intel)
   MSGLIBS       :=
   ifeq ($(NETCDF),enable)
      ifeq ($(MACHINENAME),blueridge)
-        FLIBS       := $(FLIBS) -L/projects/ncfs/apps/netcdf/netcdf-fortran-4.2/lib -lnetcdff  -lnetcdf -lnetcdf
+        FLIBS       := $(FLIBS) -L/projects/ncfs/apps/netcdf/netcdf-fortran-4.2/lib -lnetcdff  -lnetcdf -lnetcdf 
         NETCDFHOME    :=/projects/ncfs/apps/netcdf/netcdf-fortran-4.2
-        FFLAGS1       :=$(FFLAGS1) -I/projects/ncfs/apps/netcdf/netcdf-fortran-4.2/include
+        FFLAGS1       :=$(FFLAGS1) -I/projects/ncfs/apps/netcdf/netcdf-fortran-4.2/include 
         FFLAGS2       :=$(FFLAGS1)
         FFLAGS3       :=$(FFLAGS1)
-     else
+        # NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.1-gcc4.1-ifort
+        # NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.2-gcc4.1-ifort
+        #FLIBS          :=$(FLIBS) -L/usr/lib64 -lnetcdff
+#        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.1-gcc4.1-ifort
+        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.2-gcc4.1-ifort
+     endif
+     ifeq ($(MACHINENAME),hatteras)
+        FLIBS       := $(FLIBS) -L/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3/lib -lnetcdff -lnetcdf
+        NETCDFHOME    :=/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3
+        FFLAGS1       :=$(FFLAGS1) -I/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3/include
+        FFLAGS2       :=$(FFLAGS1)
+        FFLAGS3       :=$(FFLAGS1)
+     endif
+     ifeq ($(MACHINENAME),killdevil)
+        HDF5HOME       :=/nas02/apps/hdf5-1.8.5/lib
+        NETCDFHOME     :=/nas02/apps/netcdf-4.1.1
         FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
      endif
   endif

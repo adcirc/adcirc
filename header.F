@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C  v50.99.15 - 12/29/2014 - jgf - Fixed issue in parsing header of nodal
+C              attributes file where the reading of the default value of an
+C              unrecognized nodal attribute was not being skipped as
+C              expected. 
 C  v50.99.14 - 01/31/2014 - tcm - Fixed bug in processing fort.88 file in 
 C              prep.F by using a maximum of 256 subdomains open at a time.
 C  v50.99.13 - 12/04/2013 - jgf - Fixed incorrect station coordinates
