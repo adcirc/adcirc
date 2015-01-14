@@ -2058,6 +2058,13 @@ C...
 ckmd    Changed to include the predictor-corrector algorithm
       IF(CPRECOR) THEN
          CALL GWCE_New(IT,TimeLoc,TimeH)
+         IF (LoadEleSlopeLim) THEN
+            call check_slopes(it,TimeLoc)
+            call apply_slope_limits(ETA2,MNP)
+#ifdef CMPI
+            CALL UPDATER(ETA2,DUMY1,DUMY2,1)
+#endif
+         ENDIF
          CALL Mom_Eqs_New_NC()
 C...  If running in parallel, update velocities & fluxes on all processors
 
@@ -2066,10 +2073,24 @@ C...  If running in parallel, update velocities & fluxes on all processors
          CALL UPDATER(QX2,QY2,DUMY1,2)
 #endif
          CALL GWCE_New_pc(IT,TimeLoc,TimeH)
+         IF (LoadEleSlopeLim) THEN
+            call check_slopes(it,TimeLoc)
+            call apply_slope_limits(ETA2,MNP)
+#ifdef CMPI
+            CALL UPDATER(ETA2,DUMY1,DUMY2,1)
+#endif
+         ENDIF
       ENDIF
 C
       IF(CGWCE_New) THEN
          CALL GWCE_New(IT,TimeLoc,TimeH)
+         IF (LoadEleSlopeLim) THEN
+            call check_slopes(it,TimeLoc)
+            call apply_slope_limits(ETA2,MNP)
+#ifdef CMPI
+            CALL UPDATER(ETA2,DUMY1,DUMY2,1)
+#endif
+         ENDIF
       ENDIF
 
 
@@ -3227,9 +3248,9 @@ Cobell  CHECK IF THE LOCAL GRADIENT FOR ELEMENTS IS EXCEEDED AND TRIGGER THE
 C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
 
 C... TCM 20141209 -- Made into a subrouine
-      IF (LoadEleSlopeLim) THEN
-         call check_slopes(it,TimeLoc)
-      ENDIF
+!      IF (LoadEleSlopeLim) THEN
+!         call check_slopes(it,TimeLoc)
+!      ENDIF
 
 !      IF (LoadEleSlopeLim) THEN
 !         DO IE=1,NE
@@ -3727,7 +3748,7 @@ C...  boundary conditions while maintaining the symmetry of the system
 
          IF (ILump.eq.0) THEN
 #ifdef CMPI
-            EP = PSDOT(NP,Coef(1,1),Coef(1,1))
+            EP = PSDOT(NP,Coef(:,1),Coef(:,1))    !tcm 20141210 changed from PSDOT(NP,Coef(1,1),Coef(1,1))
             EP = SQRT(RNP_GLOBAL*EP)
 #else
             EP=0.0D0
@@ -4340,7 +4361,7 @@ ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
             Eta0(I)=Eta1(I)
          END IF
          Eta1(I)=Eta2(I)
-         Eta2(I)=0.0d0
+         Eta2(I)=0.0d0       
       END DO
 
 C...  At elevation boundary condition nodes, determine the elevation at
@@ -4538,7 +4559,7 @@ C...  UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
 #ifdef CMPI
 C...UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
-         CALL UPDATER(GWCE_LV,COEF(1,1),DUMY1,2)
+         CALL UPDATER(GWCE_LV,COEF(:,1),DUMY1,2)    !tcm 20141210 changed this from  UPDATER(GWCE_LV,COEF(1,1),DUMY1,2)
       ELSE  ! lumped LHS
          CALL UPDATER(GWCE_LV,COEFD,DUMY1,2)
       ENDIF
@@ -4548,6 +4569,15 @@ C...  JCG ITERATIVE MATRIX SOLVER
          IPARM(1)=ITMAX
          CALL JCG(NP,MNP,MNEI,NEITAB,COEF,GWCE_LV,ETAS,
      &        IWKSP,NW,WKSP,IPARM,RPARM,IER)
+
+
+!TCM test solution limiter
+!         IF(maxval(ABS(ETAS)).GT.2.d0) then
+!            write(16,*) 'WARNING: ETAS > 2.0 at IT=',IT
+!            do I=1,NP
+!               if (ETAS(I).gt.2.d0) ETAS(I) = 2.d0
+!            enddo
+!         endif
 
          NUMITR=IPARM(1)
          DO I=1,NP
@@ -4573,9 +4603,9 @@ C
 C        CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
 C        TIME STEP AND APPLY SMOOTHING IF DESIRED. -ZC
 
-      IF (LoadEleSlopeLim.eqv..true.) THEN
-         call apply_slope_limits(ETA2,MNP)
-      ENDIF
+!      IF (LoadEleSlopeLim.eqv..true.) THEN
+!         call apply_slope_limits(ETA2,MNP)
+!      ENDIF
 C ... tcm 20141208 --  replaced with a subroutine function
 C
 !         elevSum(:) = 0.d0
@@ -5324,6 +5354,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(SZ) VIDBCPDX, VIDBCPDY
       REAL(SZ) WSX, WSY
       REAL(SZ) ZNGLHS,ZNGRHS1,ZNGRHS2
+      REAL(SZ) RNCI,RIFNLFA,RIFWIND
 
       REAL(8) AreaIE, AreaIE2
       REAL(8) FDX1, FDX2, FDX3, FDY1, FDY2, FDY3
@@ -5352,13 +5383,18 @@ C...        THE TIME STEPPING LOOP.
 
 C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
 
+! .... TCM 20141208 -- Added a real variable version
+!      of IFNLFA to avoid mixed mode arthimetic
+       RIFNLFA = REAL(IFNLFA,SZ)
+       RIFWIND = REAL(IFWIND,SZ)
+
       DO IE=1,NE
 
 C...  SET NODAL VALUES FOR EACH ELEMENT
 
 
 Corbitt 120322: Localized Advection
-         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
+         IF(LoadAdvectionState) CALL ADVECTLOCAL(IE)
 
          NM1=NM(IE,1)
          NM2=NM(IE,2)
@@ -5373,12 +5409,12 @@ Corbitt 120322: Localized Advection
          V1N1=VV1(NM1)
          V1N2=VV1(NM2)
          V1N3=VV1(NM3)
-         H1N1=DP(NM1)+IFNLFA*ETA1(NM1)
-         H1N2=DP(NM2)+IFNLFA*ETA1(NM2)
-         H1N3=DP(NM3)+IFNLFA*ETA1(NM3)
-         H2N1=DP(NM1)+IFNLFA*ETA2(NM1)
-         H2N2=DP(NM2)+IFNLFA*ETA2(NM2)
-         H2N3=DP(NM3)+IFNLFA*ETA2(NM3)
+         H1N1=DP(NM1)+RIFNLFA*ETA1(NM1)
+         H1N2=DP(NM2)+RIFNLFA*ETA1(NM2)
+         H1N3=DP(NM3)+RIFNLFA*ETA1(NM3)
+         H2N1=DP(NM1)+RIFNLFA*ETA2(NM1)
+         H2N2=DP(NM2)+RIFNLFA*ETA2(NM2)
+         H2N3=DP(NM3)+RIFNLFA*ETA2(NM3)
          QX1N1=QX1(NM1)
          QX1N2=QX1(NM2)
          QX1N3=QX1(NM3)
@@ -5432,7 +5468,7 @@ C.......If using atm pressure add it into the barotropic pressure
             BTP2N2=BTP2N2+PR2(NM2)
             BTP1N3=BTP1N3+PR1(NM3)
             BTP2N3=BTP2N3+PR2(NM3)
-            ENDIF
+         ENDIF
 
 C.......If using tidal potential terms, add these into the barotropic pressure
 
@@ -5443,7 +5479,7 @@ C.......If using tidal potential terms, add these into the barotropic pressure
             BTP2N2=BTP2N2-TiP2(NM2)
             BTP1N3=BTP1N3-TiP1(NM3)
             BTP2N3=BTP2N3-TiP2(NM3)
-            ENDIF
+         ENDIF
 
 C...  Compute the barotropic pressure gradient x area for the element
 
@@ -5663,7 +5699,7 @@ C           AND QUV ON A SCALAR COMPUTER USING THE TEMPORARY VECTORS
          MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B3
 #endif
 
-         ENDDO
+      ENDDO
 
 
 C     LINES TO RUN ON A VECTOR COMPUTER
@@ -5684,7 +5720,7 @@ C           AND AUV
          MOM_LV_Y(NM1)=MOM_LV_Y(NM1)+TEMP_LV_B(IE,1)
          MOM_LV_Y(NM2)=MOM_LV_Y(NM2)+TEMP_LV_B(IE,2)
          MOM_LV_Y(NM3)=MOM_LV_Y(NM3)+TEMP_LV_B(IE,3)
-         END DO
+      END DO
 #endif
 
 C...  Update the momentum equation LHS coefficients and load vectors at each
@@ -5697,6 +5733,7 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
       VIDBCPDY=0.D0
       DO I=1,NP
          NCI=NODECODE(I)
+         RNCI=REAL(NCI,SZ)
          IF(TotalArea(I).ne.0.d0) THEN
             IF (CME_AreaInt_Corr) THEN       !Correct area integration
                MOM_LV_X(I)=MOM_LV_X(I)/TotalArea(I)
@@ -5707,11 +5744,27 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
                MOM_LV_Y(I)=MOM_LV_Y(I)/MJU(I)
             ENDIF
          ENDIF
-         H1=DP(I)+IFNLFA*ETA1(I)
-         H2=DP(I)+IFNLFA*ETA2(I)
+         H1=DP(I)+RIFNLFA*ETA1(I)
+         H2=DP(I)+RIFNLFA*ETA2(I)
          IF((NWS.NE.0).OR.(NRS.NE.0)) THEN
-            WSX=DTO2*IFWIND*(WSX1(I)/H1+WSX2(I)/H2)
-            WSY=DTO2*IFWIND*(WSY1(I)/H1+WSY2(I)/H2)
+            ! tcm 20141210 -- added test for division by zero (H1 and H2)
+            IF (H1.NE.0.d0) then
+               IF (H2.NE.0.d0) then
+                  WSX=DTO2*RIFWIND*(WSX1(I)/H1+WSX2(I)/H2)
+                  WSY=DTO2*RIFWIND*(WSY1(I)/H1+WSY2(I)/H2)
+               else
+                  WSX=DTO2*RIFWIND*(WSX1(I)/H1+0.d0)
+                  WSY=DTO2*RIFWIND*(WSY1(I)/H1+0.d0)
+               endif
+            else
+               if (H2.NE.0.d0 ) then
+                  WSX=DTO2*RIFWIND*(0.d0+WSX2(I)/H2)
+                  WSY=DTO2*RIFWIND*(0.d0+WSY2(I)/H2)
+               else
+                  WSX = 0.d0
+                  WSY = 0.d0
+               endif
+            ENDIF
          ENDIF
          VCoef1=DTO2*TK(I)                     !TK = Kslip/H
          VCoef2=DTO2*CORIF(I)
@@ -5732,35 +5785,35 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
-         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*UU1(I)-VCOEFXY*VV1(I)-VIDBCPDX)
-         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*VV1(I)-VCOEFYX*UU1(I)-VIDBCPDX)
+         MOM_LV_X(I)=RNCI*(MOM_LV_X(I)+WSX+(1.D0-VCOEFXX)*UU1(I)-VCOEFXY*VV1(I)-VIDBCPDX)
+         MOM_LV_Y(I)=RNCI*(MOM_LV_Y(I)+WSY+(1.D0-VCOEFYY)*VV1(I)-VCOEFYX*UU1(I)-VIDBCPDX)
 #else
-         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
+         MOM_LV_X(I)=RNCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
      &                                     +VCoef2*VV1(I)-VIDBCPDX)
-         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
+         MOM_LV_Y(I)=RNCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
      &                                     -VCoef2*UU1(I)-VIDBCPDY)
 #endif
 #else
-         MOM_LV_X(I)=NCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
+         MOM_LV_X(I)=RNCI*(MOM_LV_X(I)+WSX+(1.D0-VCoef1)*UU1(I)
      &                                     +VCoef2*VV1(I)-VIDBCPDX)
-         MOM_LV_Y(I)=NCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
+         MOM_LV_Y(I)=RNCI*(MOM_LV_Y(I)+WSY+(1.D0-VCoef1)*VV1(I)
      &                                     -VCoef2*UU1(I)-VIDBCPDY)
 #endif
 
-         AUV11(I)=1.D0+VCoef1*NCI
-         AUV12(I)=-VCoef2*NCI
+         AUV11(I)=1.D0+VCoef1*RNCI
+         AUV12(I)=-VCoef2*RNCI
 
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
-         AUVXX(I) = 1.D0 + VCOEFXX*NCI
-         AUVYY(I) = 1.D0 + VCOEFYY*NCI
-         AUVXY(I) = VCOEFXY*NCI
-         AUVYX(I) = VCOEFXY*NCI
+         AUVXX(I) = 1.D0 + VCOEFXX*RNCI
+         AUVYY(I) = 1.D0 + VCOEFYY*RNCI
+         AUVXY(I) = VCOEFXY*RNCI
+         AUVYX(I) = VCOEFXY*RNCI
 #endif
 #endif
 
-         END DO
+      END DO
 
 C...  Modify the momentum equations to impose velocity boundary
 C...  conditions In each case the equations are manipulated to
@@ -5770,20 +5823,25 @@ C...  AUV12=-AUV21)
       DO J=1,NVELME
          I=ME2GW(J)
          NBDI=NBV(I)
-         H2=DP(NBDI)+IFNLFA*ETA2(NBDI)
+         H2=DP(NBDI)+RIFNLFA*ETA2(NBDI)
          NCI=NODECODE(NBDI)
+         RNCI=REAL(NCI,SZ)
 
 C      Specified essential normal flow and free tangential slip
 
          IF((LBCODEI(I).GE.0).AND.(LBCODEI(I).LE.9)) THEN
-            VelNorm=-QN2(I)/H2
+            IF (H2.NE.0.d0) then  !tcm 20141210 added test for zero
+               VelNorm=-QN2(I)/H2
+            ELSE
+               VelNorm=0.d0
+            ENDIF
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
             MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
      &                     -CSII(I)*MOM_LV_Y(NBDI)
-     &                     -VelNorm*AUVXY(NBDI))*NCI !Tangential Eqn RHS
-            MOM_LV_Y(NBDI)=VelNorm*AUVXX(NBDI)*NCI   !Normal Eqn RHS
+     &                     -VelNorm*AUVXY(NBDI))*RNCI !Tangential Eqn RHS
+            MOM_LV_Y(NBDI)=VelNorm*AUVXX(NBDI)*RNCI   !Normal Eqn RHS
             AUVXX(NBDI) = AUVXX(NBDI)*SIII(I) - AUVXY(NBDI)*CSII(I)
             AUVXY(NBDI) = AUVXY(NBDI)*SIII(I) - AUVYY(NBDI)*CSII(I)
             AUVYX(NBDI) = CSII(I)
@@ -5791,28 +5849,32 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
 #else
             MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
      &                     -CSII(I)*MOM_LV_Y(NBDI)
-     &                     -VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
-            MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*NCI   !Normal Eqn RHS
+     &                     -VelNorm*AUV12(NBDI))*RNCI !Tangential Eqn RHS
+            MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*RNCI   !Normal Eqn RHS
             AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
             AUV11(NBDI)=SIII(I)*AUV11(NBDI)
 #endif
 #else
             MOM_LV_X(NBDI)=(SIII(I)*MOM_LV_X(NBDI)
      &                     -CSII(I)*MOM_LV_Y(NBDI)
-     &                     -VelNorm*AUV12(NBDI))*NCI !Tangential Eqn RHS
-            MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*NCI   !Normal Eqn RHS
+     &                     -VelNorm*AUV12(NBDI))*RNCI !Tangential Eqn RHS
+            MOM_LV_Y(NBDI)=VelNorm*AUV11(NBDI)*RNCI   !Normal Eqn RHS
             AUV12(NBDI)=-CSII(I)*AUV11(NBDI)
             AUV11(NBDI)=SIII(I)*AUV11(NBDI)
 #endif
-            ENDIF
+         ENDIF
 
 C     Specified essential normal flow and no tangential slip
 
          IF((LBCODEI(I).GE.10).AND.(LBCODEI(I).LE.19)) THEN
-            VelNorm=-QN2(I)/H2
+            IF (H2.NE.0.d0) then  !tcm 20141210 added test for zero
+               VelNorm=-QN2(I)/H2
+            ELSE
+               VelNorm=0.d0
+            ENDIF
             VelTan=0.D0
-            MOM_LV_X(NBDI)=VelTan*NCI !Tangential Eqn RHS
-            MOM_LV_Y(NBDI)=VelNorm*NCI !Normal Eqn RHS
+            MOM_LV_X(NBDI)=VelTan*RNCI !Tangential Eqn RHS
+            MOM_LV_Y(NBDI)=VelNorm*RNCI !Normal Eqn RHS
             AUV11(NBDI)=SIII(I)
             AUV12(NBDI)=-CSII(I)
 #ifdef CSWAN
@@ -5824,7 +5886,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
             AUVYY(NBDI) = SIII(I)
 #endif
 #endif
-            ENDIF
+         ENDIF
 
 C     Zero normal velocity gradient using a Galerkin approximation to
 C     the normal derivatives. Note: this is fully explicit and therefore
@@ -5856,8 +5918,8 @@ C     velocities at the previous time step.
                   ZNGRHS2=ZNGRHS2-(CSII(I)*FDX2+SIII(I)*FDY2)*VV1(NM2)
      &                           -(CSII(I)*FDX3+SIII(I)*FDY3)*VV1(NM3)
                   ZNGLHS =ZNGLHS  +  CSII(I)*FDX1+SIII(I)*FDY1
-                  ENDIF
-               END DO
+               ENDIF
+            END DO
             NM3=NM2          !wrap back to beginning to get final contribution
             NM2=NNFirst
             SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
@@ -5875,18 +5937,24 @@ C     velocities at the previous time step.
                ZNGRHS2=ZNGRHS2-(CSII(I)*FDX2+SIII(I)*FDY2)*VV1(NM2)
      &                        -(CSII(I)*FDX3+SIII(I)*FDY3)*VV1(NM3)
                ZNGLHS =ZNGLHS + CSII(I)*FDX1+SIII(I)*FDY1
-               ENDIF
+            ENDIF
             IF(NCI.EQ.0) THEN
                AUV11(NBDI)=1.d0
                AUV12(NBDI)=0.d0
                MOM_LV_X(NBDI)=0.d0
                MOM_LV_Y(NBDI)=0.d0
-               ELSE
+            ELSE
                AUV11(NBDI)=1.d0
                AUV12(NBDI)=0.d0
-               MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
-               MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
+               ! tcm 20141210 -- test for division by zero
+               IF (ZNGLHS.ne.0.d0) then
+                  MOM_LV_X(NBDI)=ZNGRHS1/ZNGLHS
+                  MOM_LV_Y(NBDI)=ZNGRHS2/ZNGLHS
+               else
+                  MOM_LV_X(NBDI)=0.d0  !tcm is this correct?
+                  MOM_LV_Y(NBDI)=0.d0
                ENDIF
+            ENDIF
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
@@ -5894,9 +5962,9 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
             AUVXY(NBDI)=0.D0
 #endif
 #endif
-            ENDIF
+         ENDIF
 
-         ENDDO
+      ENDDO
 C...
 C...  SOLVE FOR VELOCITY AT NEW LEVEL  (s+1)
 C...
@@ -5910,16 +5978,29 @@ C.....interface nodes.
          AUV22=AUV11(I)
          AUV21=-AUV12(I)
          DDU=AUV11(I)*AUV22-AUV12(I)*AUV21
-         UU2(I)=(MOM_LV_X(I)*AUV22-MOM_LV_Y(I)*AUV12(I))/DDU
-         VV2(I)=(MOM_LV_Y(I)*AUV11(I)-MOM_LV_X(I)*AUV21)/DDU
+         ! TCM 20141208 -- test for DDU ~=0 before dividing
+         IF (ABS(DDU).GT.0.d0) then
+            UU2(I)=(MOM_LV_X(I)*AUV22-MOM_LV_Y(I)*AUV12(I))/DDU
+            VV2(I)=(MOM_LV_Y(I)*AUV11(I)-MOM_LV_X(I)*AUV21)/DDU
+         else
+            UU2(I) = 0.d0
+            VV2(I) = 0.d0
+         endif
+
 #ifdef CSWAN
 #ifdef CSWANFRIC
 Casey 091020: Adopt Ethan's/Joannes's modified friction.
          AUVYY(I)= AUVXX(I)
          AUVYX(I)= - AUVXY(I)
          DDU = AUVXX(I)*AUVYY(I)-AUVXY(I)*AUVYX(I)
-         UU2(I)=(MOM_LV_X(I)*AUVYY(I)-MOM_LV_Y(I)*AUVXY(I))/DDU
-         VV2(I)=(MOM_LV_Y(I)*AUVXX(I)-MOM_LV_X(I)*AUVYX(I))/DDU
+         ! TCM 20141208 -- test for DDU ~=0 before dividing
+         IF (ABS(DDU).GT.0.d0) then
+            UU2(I)=(MOM_LV_X(I)*AUVYY(I)-MOM_LV_Y(I)*AUVXY(I))/DDU
+            VV2(I)=(MOM_LV_Y(I)*AUVXX(I)-MOM_LV_X(I)*AUVYX(I))/DDU
+         else
+            UU2(I) = 0.d0
+            VV2(I) = 0.d0
+         endif
 #endif
 #endif
 c        IF(MJU(I).NE.NODELE(I)) THEN !uncomment for essential
@@ -5949,18 +6030,20 @@ C...
                NC2=NODECODE(NM2)
                NC3=NODECODE(NM3)
                NCEle=NC1*NC2*NC3*NOFF(NEleZNG(I))
-               UU2(NBDI)=NCEle*(UU2(NM1)*ZNGIF1(I)+UU2(NM2)*ZNGIF2(I)
-     &                                            +UU2(NM3)*ZNGIF3(I))
-               VV2(NBDI)=NCEle*(VV2(NM1)*ZNGIF1(I)+VV2(NM2)*ZNGIF2(I)
-     &                                            +VV2(NM3)*ZNGIF3(I))
-               ENDIF
-            ENDDO
-         ENDIF
+               UU2(NBDI)=REAL(NCEle,sz)*(UU2(NM1)*ZNGIF1(I)
+     &                                  + UU2(NM2)*ZNGIF2(I)
+     &                                  + UU2(NM3)*ZNGIF3(I))
+               VV2(NBDI)=REAL(NCEle,SZ)*(VV2(NM1)*ZNGIF1(I)
+     &                                  + VV2(NM2)*ZNGIF2(I)
+     &                                  + VV2(NM3)*ZNGIF3(I))
+            ENDIF
+         ENDDO
+      ENDIF
 
 C...  Compute fluxes
 
       DO I=1,NP
-         H2=DP(I)+IFNLFA*ETA2(I)
+         H2=DP(I)+RIFNLFA*ETA2(I)
          QX2(I)=UU2(I)*H2
          QY2(I)=VV2(I)*H2
       ENDDO

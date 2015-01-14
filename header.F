@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.34.04 - 01/14/2015 - tcm - Moved where slope limiter was applied
+C                and cleaned up some mixed mode arthimetic and added some
+C                test to try and prevent division by zero.
 C    v51.34.03 - 12/19/2014 - tcm - mved the buffered_stdout to only be
 C                   on the backend programs.
 C    v51.34.02 - 12/08/2014 - tcm - Made the elemental slope limiter 
