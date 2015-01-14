@@ -2,6 +2,12 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    V51.34.05 - 01/14/2015 - tcm - Testing a new limiter:
+C        If the maximum value of ETAS is greater than 2 then reduce it to 2
+C        2 meters of change in a single time step is a lot
+C        this is a one-off for testing to a solution to a blow-up scenario
+C        instead of slope limiting which in it's current form doesn't eliminate
+C        sudden spikes in the solution
 C    v51.34.04 - 01/14/2015 - tcm - Moved where slope limiter was applied
 C                and cleaned up some mixed mode arthimetic and added some
 C                test to try and prevent division by zero.

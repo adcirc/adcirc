@@ -4571,13 +4571,21 @@ C...  JCG ITERATIVE MATRIX SOLVER
      &        IWKSP,NW,WKSP,IPARM,RPARM,IER)
 
 
-!TCM test solution limiter
-!         IF(maxval(ABS(ETAS)).GT.2.d0) then
-!            write(16,*) 'WARNING: ETAS > 2.0 at IT=',IT
-!            do I=1,NP
-!               if (ETAS(I).gt.2.d0) ETAS(I) = 2.d0
-!            enddo
-!         endif
+!TCM v51.34.05 20150114 - testing solution limiter
+!        If the maximum value of ETAS is greater than 2 then reduce it to 2
+!        2 meters of change in a single time step is a lot
+!        this is a one-off for testing to a solution to a blow-up scenario
+!        instead of slope limiting which in it's current form doesn't eliminate
+!        sudden spikes in the solution
+
+         IF(maxval(ABS(ETAS)).GT.2.d0) then
+            write(16,*) 'WARNING: ETAS > 2.0 at IT=',IT
+            do I=1,NP
+               if (ETAS(I).gt.2.d0) ETAS(I) = 2.d0
+            enddo
+         endif
+
+
 
          NUMITR=IPARM(1)
          DO I=1,NP
