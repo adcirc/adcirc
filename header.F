@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.41 - 01/21/2014 - jgf - Added more error checking to hstime
+C           utility to detect netcdf hotstart files that have a mesh 
+C           but no data.
 C  v51.40 - 12/29/2014 - jgf - Fixed issue in parsing header of nodal
 C           attributes file where the reading of the default value of an
 C           unrecognized nodal attribute was not being skipped as expected. 
