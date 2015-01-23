@@ -2,6 +2,10 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history                                                          
+C  v51.37.03 - 01/23/2014 - jgf - Created two new subroutines including
+C              minimal momentum equation solver and minimal time stepping
+C              loop. All the required data are passed into these routines
+C              via subroutine arguments. 
 C  v51.37.02 - 12/18/2014 - jgf - Created 5 new subroutines as simplified 
 C              illustration of the operations used in the GWCE solve; 
 C              two new subroutines for constructing the mass matrix (LHS)

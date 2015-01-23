@@ -3466,6 +3466,197 @@ C******************************************************************************
 C******************************************************************************
 
       !-----------------------------------------------------------------
+      !    S U B R O U T I N E    T I M E S T E P   M I N I M A L 
+      !-----------------------------------------------------------------
+      ! jgf51.37.03: This minimal timestepping loop calls the minimal
+      ! versions of the GWCE and momentum equation solvers. It assumes
+      ! that there is no meterological, wave, or tidal forcing; it calls
+      ! routines that assume (among other things) that there is no 
+      ! wetting or drying or elevation specified boundary conditions.
+      !-----------------------------------------------------------------
+      subroutine timestepMinimal(it, coefd, ne, nm, sfac, dt, areas,
+     &  gwce_lv, eta1, eta2, etas, uu1, vv1, bsx, bsy, qx1, qy1, 
+     &  tk, x, y, dp, np, mom_lv_x, mom_lv_y, g,
+     &  auv11, auv12, auv22, auv21, uu2, vv2, qx2, qy2,  
+     &  TotalArea, NNeigh, NeiTab, NeiTabEle, mju)
+      implicit none
+      integer, parameter :: sz = 8
+      real(sz), intent(inout) :: coefd(:)  ! diagonal coefficients of mass matrix
+      integer, intent(in) :: ne           ! number of elements
+      integer, intent(in) :: nm(:,:)      ! element table
+      real(sz), intent(in) :: sfac(:)     ! vec. correction to CPP projection
+      real(sz), intent(in) :: dt           ! time step size (seconds)
+      real(sz), intent(in) :: areas(:)     ! 2x the element areas
+      real(sz), intent(out) :: gwce_lv(:) ! forcing vector (RHS)
+      ! 1 subscript denotes previous time level, 2 denotes current time level
+      real(sz), intent(inout) :: eta1(:) ! nodal water surface elev
+      real(sz), intent(inout) :: eta2(:) ! nodal wse
+      real(sz), intent(inout) :: etas(:) ! nodal wse difference between time levels      
+      real(sz), intent(inout) :: uu1(:)     ! u velocity at nodes
+      real(sz), intent(inout) :: vv1(:)     ! v velocity at nodes
+      real(sz), intent(out) :: bsx(:) ! u bottom stress
+      real(sz), intent(out) :: bsy(:) ! v bottom stress
+      real(sz), intent(inout) :: qx1(:)     ! u flux at nodes
+      real(sz), intent(inout) :: qy1(:)     ! v flux at nodes
+      real(sz), intent(out) :: tk(:)  ! bottom friction at nodes
+      real(sz), intent(in) :: x(:)  ! x nodal coordinates
+      real(sz), intent(in) :: y(:)  ! y nodal coordinates
+      real(sz), intent(in) :: dp(:)      ! bathymetric depth at nodes      
+      integer, intent(in) :: np           ! number of nodes
+      real(sz), intent(in) :: g            ! gravitational acceleration
+      real(sz), intent(inout) :: mom_lv_x(:) ! momentum load vector (rhs) in x direction
+      real(sz), intent(inout) :: mom_lv_y(:) ! momentum load vector (rhs) in x direction
+      real(sz), intent(inout) :: auv11(:)   
+      real(sz), intent(inout) :: auv12(:)
+      real(sz), intent(inout) :: auv22(:)
+      real(sz), intent(inout) :: auv21(:)
+      integer, intent(inout) :: mju(:)   ! number of active elements around a node
+      real(sz), intent(out) :: uu2(:)  ! u vel at current time level
+      real(sz), intent(out) :: vv2(:)  ! v vel at current time level
+      real(sz), intent(out) :: qx2(:)  ! u flux at current time level
+      real(sz), intent(out) :: qy2(:)  ! v flux at current time level 
+      real(sz), intent(in) :: TotalArea(:) ! total element area surrounding a node
+      integer, intent(in) :: NNeigh(:)    ! number of neighbors for each node
+      integer, intent(in) :: NeiTab(:,:)    ! neighbor table
+      integer, intent(in) :: NeiTabEle(:)   ! element table            
+      integer, intent(in) :: it
+      
+      logical, save :: gwceSetup = .false.
+      integer :: i
+
+      interface
+         subroutine gwceLumpedLHSMinimal(coefd, ne, nm, sfac, dt, areas)
+         integer, parameter :: sz = 8
+         real(sz), intent(inout) :: coefd(:)  ! diagonal coefficients of mass matrix
+         integer, intent(in) :: ne           ! number of elements
+         integer, intent(in) :: nm(:,:)      ! element table
+         real(sz), intent(in) :: sfac(:)     ! vec. correction to CPP projection
+         real(sz), intent(in) :: dt           ! time step size (seconds)
+         real(sz), intent(in) :: areas(:)     ! 2x the element areas
+         end subroutine gwceLumpedLHSMinimal
+      end interface
+      interface 
+         subroutine gwceComputeLoadVectorMinimal(gwce_lv, coefd,  
+     &   eta1, eta2, etas, uu1, vv1, bsx, bsy, qx1, qy1, tk, x, y, dp,
+     &   ne, np, nm, sfac, dt, areas, g)
+         integer, parameter :: sz = 8
+         real(sz), intent(out) :: gwce_lv(:) ! forcing vector (RHS)
+         real(sz), intent(in) :: coefd(:)  ! diagonal coefficients of mass matrix
+         real(sz), intent(in) :: eta1(:) ! nodal water surface elev
+         real(sz), intent(in) :: eta2(:) ! nodal wse
+         real(sz), intent(in) :: etas(:) ! nodal wse difference between time levels      
+         real(sz), intent(in) :: uu1(:)     ! u velocity at nodes
+         real(sz), intent(in) :: vv1(:)     ! v velocity at nodes
+         real(sz), intent(out) :: bsx(:) ! u bottom stress
+         real(sz), intent(out) :: bsy(:) ! v bottom stress
+         real(sz), intent(in) :: qx1(:)     ! u flux at nodes
+         real(sz), intent(in) :: qy1(:)     ! v flux at nodes
+         real(sz), intent(out) :: tk(:)  ! bottom friction at nodes
+         real(sz), intent(in) :: x(:)  ! x nodal coordinates
+         real(sz), intent(in) :: y(:)  ! y nodal coordinates
+         real(sz), intent(in) :: dp(:)      ! bathymetric depth at nodes      
+         integer, intent(in) :: ne           ! number of elements
+         integer, intent(in) :: np           ! number of nodes
+         integer, intent(in) :: nm(:,:)      ! element table
+         real(sz), intent(in) :: sfac(:)     ! vec. correction to CPP projection
+         real(sz), intent(in) :: dt           ! time step size (seconds)
+         real(sz), intent(in) :: areas(:)     ! 2x the element areas
+         real(sz), intent(in) :: g            ! gravitational acceleration
+         end subroutine gwceComputeLoadVectorMinimal
+      end interface
+
+      interface 
+         subroutine gwceSolveLumped(coefd, eta1, eta2, etas, gwce_lv, np)
+         integer, parameter :: sz = 8
+         real(sz), intent(in) :: coefd(:) ! diagonal elements of lumped mass matrix
+         real(sz), intent(inout) :: eta1(:) ! water surface elevation, previous time level
+         real(sz), intent(inout) :: eta2(:) ! water surface elevation, this time level
+         real(sz), intent(inout) :: etas(:) ! water surface elevation difference
+         real(sz), intent(in) :: gwce_lv(:) ! load vector (forcing)
+         integer, intent(in) :: np
+         end subroutine gwceSolveLumped
+      end interface 
+
+      interface
+         subroutine momentumEquationsMinimal(eta2, mom_lv_x, mom_lv_y, 
+     &   auv11, auv12, auv22, auv21, dt, uu1, vv1, eta1, g,
+     &   qx1, qy1, uu2, vv2, qx2, qy2, tk, ne, np, nm, dp, x, y, 
+     &   Areas, TotalArea, NNeigh, NeiTab, NeiTabEle, mju, sfac)
+         integer, parameter :: sz = 8
+         real(sz), intent(in) :: eta2(:)  ! wse at k+1 time level
+         real(sz), intent(inout) :: mom_lv_x(:) ! momentum load vector (rhs) in x direction
+         real(sz), intent(inout) :: mom_lv_y(:) ! momentum load vector (rhs) in x direction
+         real(sz), intent(inout) :: auv11(:)   
+         real(sz), intent(inout) :: auv12(:)
+         real(sz), intent(inout) :: auv22(:)
+         real(sz), intent(inout) :: auv21(:)
+         integer :: mju(:)   ! number of active elements around a node
+         real(sz), intent(in) :: dt       ! time step (seconds)
+         real(sz), intent(in) :: uu1(:) ! u velocity at prev time level
+         real(sz), intent(in) :: vv1(:) ! u velocity at prev time level
+         real(sz), intent(in) :: eta1(:) ! wse at prev time levl
+         real(sz), intent(in) :: qx1(:)  ! u flux at prev time level
+         real(sz), intent(in) :: qy1(:)  ! v flux at prev time level
+         real(sz), intent(out) :: uu2(:)  ! u vel at current time level
+         real(sz), intent(out) :: vv2(:)  ! v vel at current time level
+         real(sz), intent(out) :: qx2(:)  ! u flux at current time level
+         real(sz), intent(out) :: qy2(:)  ! v flux at current time level 
+         real(sz), intent(in) :: tk(:)   ! friction 
+         integer, intent(in) :: ne      ! number of elements
+         integer, intent(in) :: np      ! number of nodes
+         integer, intent(in) :: nm(:,:) ! element table
+         real(sz), intent(in) :: dp(:)   ! depth
+         real(sz), intent(in) :: x(:)    ! x coordinate
+         real(sz), intent(in) :: y(:)    ! y coordinate
+         real(sz), intent(in) :: Areas(:)  ! 2*area of elements
+         real(sz), intent(in) :: TotalArea(:) ! total element area surrounding a node
+         integer, intent(in) :: NNeigh(:)    ! number of neighbors for each node
+         integer, intent(in) :: NeiTab(:,:)    ! neighbor table
+         integer, intent(in) :: NeiTabEle(:)   ! element table 
+         real(sz), intent(in) :: sfac(:)        ! coordinate system correction vector
+         real(sz), intent(in) :: g ! gravitational acceleration
+         end subroutine momentumEquationsMinimal
+      end interface
+      
+
+      ! Shift the flux per unit width, depth averaged velocities to 
+      ! previous time step. Zero out the new forcing terms and 
+      ! load vectors.
+      do i=1,np
+         qx1(i)=qx2(i)
+         qy1(i)=qy2(i)
+         uu1(i)=uu2(i)
+         vv1(i)=vv2(i)
+         gwce_lv(i) =0.d0
+         mom_lv_x(i)=0.d0
+         mom_lv_y(i)=0.d0
+      end do 
+      !
+      ! Compute the water surface elevation from the GWCE form of
+      ! the 2DDI equations.
+      if (gwceSetup.eqv..false.) then
+         call gwceLumpedLHSMinimal(coefd, ne, nm, sfac, dt, areas)
+         gwceSetup = .true.
+      endif
+
+      call gwceComputeLoadVectorMinimal(gwce_lv, coefd,  
+     &  eta1, eta2, etas, uu1, vv1, bsx, bsy, qx1, qy1, tk, x, y, dp,
+     &  ne, np, nm, sfac, dt, areas, g)
+
+      call gwceSolveLumped(coefd, eta1, eta2, etas, gwce_lv, np)
+      !
+      ! Solve the 2DDI Momentum equation
+      call momentumEquationsMinimal(eta2, mom_lv_x, mom_lv_y, 
+     &   auv11, auv12, auv22, auv21, dt, uu1, vv1, eta1, g,
+     &   qx1, qy1, uu2, vv2, qx2, qy2, tk, ne, np, nm, dp, x, y, 
+     &   Areas, TotalArea, NNeigh, NeiTab, NeiTabEle, mju, sfac)
+    
+      return
+      !-----------------------------------------------------------------      
+      end subroutine timestepMinimal
+      !-----------------------------------------------------------------
+      
+      !-----------------------------------------------------------------
       !                    S U B R O U T I N E   
       !         G W C E  L U M P E D   L H S   M I N I M A L 
       !-----------------------------------------------------------------
@@ -3693,7 +3884,7 @@ C...     Compute elemental averages
          ! average bottom stress in the x direction
          BSXAvg = ( bsx(nm(ie,1)) + bsx(nm(ie,2)) + bsx(nm(ie,3)) ) /3.d0
          ! average bottom stress in the y direction
-         BSYAvg = ( bsy(nm(ie,1)) + bsy(nm(ie,2)) + bsy(nm(ie,3)) ) / 3.d0
+         BSYAvg = ( bsy(nm(ie,1)) + bsy(nm(ie,2)) + bsy(nm(ie,3)) ) /3.d0
          ! average flux in x direction
          QX1Avg = ( qx1(nm(ie,1)) + qx1(nm(ie,2)) + qx1(nm(ie,3)) ) /3.d0
          ! average flux in y direction
@@ -3836,6 +4027,286 @@ C...  Save the elevation at the past time step into Eta1 and zero out Eta2
       end do
       !-----------------------------------------------------------------      
       end subroutine gwceSolveLumped
+      !-----------------------------------------------------------------
+
+
+C****************************************************************
+C   Subroutine to compute the velocity and from that the flux/unit width using 
+C   a 2DDI non conservative momentum equation.   
+C
+C   jgf51.37.03: Added ONLY keyword to each USE statement in order to 
+C   clarify data dependencies.
+C****************************************************************
+
+      !-----------------------------------------------------------------
+      !                S U B R O U T I N E 
+      !    M O M E N T U M  E Q U A T I O N S  M I N I M A L
+      !-----------------------------------------------------------------
+      ! jgf51.37.03: Solves momentum equations with the following 
+      ! simplifying assumptions:
+      ! a. No wetting or drying.
+      ! b. Spatially and temporally constant eddy viscosity.
+      !  
+      !----------------------------------------------------------------- 
+      subroutine momentumEquationsMinimal(eta2, mom_lv_x, mom_lv_y, 
+     &   auv11, auv12, auv22, auv21, dt, uu1, vv1, eta1, g,
+     &   qx1, qy1, uu2, vv2, qx2, qy2, tk, ne, np, nm, dp, x, y, 
+     &   Areas, TotalArea, NNeigh, NeiTab, NeiTabEle, mju, sfac)
+      implicit none
+      integer, parameter :: sz = 8
+      real(sz), intent(in) :: eta2(:)  ! wse at k+1 time level
+      real(sz), intent(inout) :: mom_lv_x(:) ! momentum load vector (rhs) in x direction
+      real(sz), intent(inout) :: mom_lv_y(:) ! momentum load vector (rhs) in x direction
+      real(sz), intent(inout) :: auv11(:)   
+      real(sz), intent(inout) :: auv12(:)
+      real(sz), intent(inout) :: auv22(:)
+      real(sz), intent(inout) :: auv21(:)
+      integer :: mju(:)   ! number of active elements around a node
+      real(sz), intent(in) :: dt       ! time step (seconds)
+      real(sz), intent(in) :: uu1(:) ! u velocity at prev time level
+      real(sz), intent(in) :: vv1(:) ! u velocity at prev time level
+      real(sz), intent(in) :: eta1(:) ! wse at prev time levl
+      real(sz), intent(in) :: qx1(:)  ! u flux at prev time level
+      real(sz), intent(in) :: qy1(:)  ! v flux at prev time level
+      real(sz), intent(out) :: uu2(:)  ! u vel at current time level
+      real(sz), intent(out) :: vv2(:)  ! v vel at current time level
+      real(sz), intent(out) :: qx2(:)  ! u flux at current time level
+      real(sz), intent(out) :: qy2(:)  ! v flux at current time level 
+      real(sz), intent(in) :: tk(:)   ! friction 
+      integer, intent(in) :: ne      ! number of elements
+      integer, intent(in) :: np      ! number of nodes
+      integer, intent(in) :: nm(:,:) ! element table
+      real(sz), intent(in) :: dp(:)   ! depth
+      real(sz), intent(in) :: x(:)    ! x coordinate
+      real(sz), intent(in) :: y(:)    ! y coordinate
+      real(sz), intent(in) :: Areas(:)  ! 2*area of elements
+      real(sz), intent(in) :: TotalArea(:) ! total element area surrounding a node
+      integer, intent(in) :: NNeigh(:)    ! number of neighbors for each node
+      integer, intent(in) :: NeiTab(:,:)    ! neighbor table
+      integer, intent(in) :: NeiTabEle(:)   ! element table 
+      real(sz), intent(in) :: sfac(:)        ! coordinate system correction vector
+      real(sz), intent(in) :: g ! gravitational acceleration
+      real(sz) :: sfacAvg        ! avg coordinate system correction vector
+      real(sz) :: U1Avg          ! avg u velocity 
+      real(sz) :: V1Avg          ! avg v velocity
+      ! lateral stresses
+      real(sz) :: LSXXN1, LSXXN2, LSXXN3, LSXYN1, LSXYN2, LSXYN3
+      real(sz) :: LSYXN1, LSYXN2, LSYXN3, LSYYN1, LSYYN2, LSYYN3
+      real(sz) :: dBTPdXA   ! barotropic pressure gradient in x dir
+      real(sz) :: dBTPdYA   ! barotropic pressure gradient in y dir
+      real(sz) :: ddu 
+      real(sz) :: du1dxa !  u velocity gradient in x dir
+      real(sz) :: du1dya !  u velocity gradient in y dir
+      real(sz) :: dv1dxa !  v velocity gradient in x dir
+      real(sz) :: dv1dya !  v velocity gradient in y dir
+
+      real(sz), parameter :: EvmEle = 10.d0
+
+      real(sz) :: fdx1, fdx2, fdx3, fdy1, fdy2, fdy3
+      integer :: i, ie
+C...
+C...  UPDATE LOAD VECTOR MOM_LV_X(I) AND MOM_LV_Y(I)
+
+C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
+
+      DO IE=1,NE
+
+         SFacAvg=(sfac(nm(ie,1))+sfac(nm(ie,2))+sfac(nm(ie,3)))/3.d0
+         fdx1 = (y(nm(ie,2))-y(nm(ie,3)))*sfacavg !b1 = 2*area*dphi1/dx
+         fdx2 = (y(nm(ie,3))-y(nm(ie,1)))*sfacavg !b2 = 2*area*dphi2/dx
+         fdx3 = (y(nm(ie,1))-y(nm(ie,2)))*sfacavg !b3 = 2*area*dphi3/dx
+         fdy1 = x(nm(ie,3))-x(nm(ie,2))           !a1 = 2*area*dphi1/dy
+         fdy2 = x(nm(ie,1))-x(nm(ie,3))           !a2 = 2*area*dphi2/dy
+         fdy3 = x(nm(ie,2))-x(nm(ie,1))           !a3 = 2*area*dphi3/dy
+
+         ! element averaged quantities
+
+         ! average u velocity
+         U1Avg = ( uu1(nm(ie,1)) + uu1(nm(ie,2)) + uu1(nm(ie,3)) ) / 3.d0
+         ! average v velocity
+         V1Avg = ( vv1(nm(ie,1)) + vv1(nm(ie,2)) + vv1(nm(ie,3)) ) / 3.d0
+
+         du1dxa = ( uu1(nm(ie,1))*fdx1 
+     &            + uu1(nm(ie,2))*fdx2 + uu1(nm(ie,3))*fdx3 ) / 2.d0
+         du1dya = ( uu1(nm(ie,1))*fdy1 
+     &            + uu1(nm(ie,2))*fdy2 + uu1(nm(ie,3))*fdy3 ) / 2.d0
+         dv1dxa = ( vv1(nm(ie,1))*fdx1 
+     &            + vv1(nm(ie,2))*fdx2 + vv1(nm(ie,3))*fdx3 ) / 2.d0
+         dv1dya = ( vv1(nm(ie,1))*fdy1
+     &            + vv1(nm(ie,2))*fdy2 + vv1(nm(ie,3))*fdy3 ) / 2.d0
+
+C...  Compute the barotropic pressure gradient x area for the element
+
+         dbtpdxa = ( ( eta1(nm(ie,1))*fdx1 
+     &               + eta1(nm(ie,2))*fdx2 
+     &               + eta1(nm(ie,3))*fdx3 )
+     &             + ( eta2(nm(ie,1))*fdx1 
+     &               + eta2(nm(ie,2))*fdx2
+     &               + eta2(nm(ie,3))*fdx3) ) / 2.d0
+         dbtpdya = ( ( eta1(nm(ie,1))*fdy1 
+     &               + eta1(nm(ie,2))*fdy2 
+     &               + eta1(nm(ie,3))*fdy3 )
+     &             + ( eta2(nm(ie,1))*fdy1 
+     &               + eta2(nm(ie,2))*fdy2
+     &               + eta2(nm(ie,3))*fdy3) ) / 2.d0
+
+C...  Compute the lateral viscous terms for the element (velocity formulation)
+
+         LSXXN1 = EVMEle * ( Eta1(nm(ie,1))+DP(nm(ie,1)) )
+     &                     * DU1DXA/(areas(ie)/2.d0)
+         LSXXN2 = EVMEle * ( Eta1(nm(ie,2))+DP(nm(ie,2)) )
+     &                     * DU1DXA/(areas(ie)/2.d0)
+         LSXXN3 = EVMEle * ( Eta1(nm(ie,3))+DP(nm(ie,3)) )
+     &                     * DU1DXA/(areas(ie)/2.d0)
+
+         LSXYN1 = EVMEle * ( Eta1(nm(ie,1))+DP(nm(ie,1)) ) 
+     &                     * DU1DYA/(areas(ie)/2.d0)
+         LSXYN2 = EVMEle * ( Eta1(nm(ie,2))+DP(nm(ie,2)) ) 
+     &                     * DU1DYA/(areas(ie)/2.d0)
+         LSXYN3 = EVMEle * ( Eta1(nm(ie,3))+DP(nm(ie,3)) ) 
+     &                     * DU1DYA/(areas(ie)/2.d0)
+
+         LSYXN1 = EVMEle * ( Eta1(nm(ie,1))+DP(nm(ie,1)) )
+     &                     * DV1DXA/(areas(ie)/2.d0)
+         LSYXN2 = EVMEle * ( Eta1(nm(ie,2))+DP(nm(ie,2)) )
+     &                     * DV1DXA/(areas(ie)/2.d0)
+         LSYXN3 = EVMEle * ( Eta1(nm(ie,3))+DP(nm(ie,3)) )
+     &                     * DV1DXA/(areas(ie)/2.d0)
+
+         LSYYN1 = EVMEle * ( Eta1(nm(ie,1))+DP(nm(ie,1)) )
+     &                     * DV1DYA/(areas(ie)/2.d0)
+         LSYYN2 = EVMEle * ( Eta1(nm(ie,2))+DP(nm(ie,2)) )
+     &                     * DV1DYA/(areas(ie)/2.d0)
+         LSYYN3 = EVMEle * ( Eta1(nm(ie,3))+DP(nm(ie,3)) ) 
+     &                     * DV1DYA/(areas(ie)/2.d0)
+
+C
+C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
+C...  TEMP_LV_A VECTOR FOR NODE NM1
+         mom_lv_x(nm(ie,1)) = mom_lv_x(nm(ie,1)) + DT * (
+C...  ADVECTIVE TERMS
+     &             -1.d0*(U1Avg * DU1DXA + V1Avg * DU1DYA)
+C...  BAROTROPIC PRESSURE GRADIENT
+     &             -(g/2.d0) * DBTPDXA
+C...  LATERAL VISCOUS TERMS
+     &             -1.5d0*(LSXXN1*FDX1+LSXYN1*FDY1) / 
+     &                 ( eta1(nm(ie,1)) + dp(nm(ie,1)) )
+C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
+     &             )
+
+C...
+C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
+C...  TEMP_LV_A VECTOR FOR NODE NM2
+C...
+         mom_lv_x(nm(ie,2)) = mom_lv_x(nm(ie,2)) + DT * (
+C...  ADVECTIVE TERMS
+     &             -1.d0*(U1Avg * DU1DXA + V1Avg * DU1DYA)
+C...  BAROTROPIC PRESSURE GRADIENT
+     &             - (g/2.d0) * DBTPDXA
+C...  LATERAL VISCOUS TERMS
+     &             -1.5d0*(LSXXN2*FDX2+LSXYN2*FDY2) / 
+     &                 ( eta1(nm(ie,2)) + dp(nm(ie,2)) )
+C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
+     &             )
+
+C...
+C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR X-MOMENTUM EQUATION INTO
+C...  TEMP_LV_A VECTOR FOR NODE NM3
+C...
+         mom_lv_x(nm(ie,3)) = mom_lv_x(nm(ie,3)) + DT * (
+C...  ADVECTIVE TERMS
+     &             -1.d0*(U1Avg * DU1DXA+V1Avg * DU1DYA)
+C...  BAROTROPIC PRESSURE GRADIENT
+     &             -(g/2.d0) * DBTPDXA
+C...  LATERAL VISCOUS TERMS
+     &             -1.5d0*(LSXXN3*FDX3+LSXYN3*FDY3) / 
+     &                  ( eta1(nm(ie,2)) + dp(nm(ie,2)) )
+C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
+     &             )
+
+C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
+C...  TEMP_LV_B VECTOR FOR NODE NM1
+
+         mom_lv_y(nm(ie,1)) = mom_lv_y(nm(ie,1)) + DT * (
+C...  ADVECTIVE TERMS
+     &             -1.d0*(U1Avg*DV1DXA + V1Avg*DV1DYA)
+C...  BAROTROPIC PRESSURE GRADIENT
+     &             -(g/2.d0) * DBTPDYA
+C...  LATERAL VISCOUS TERMS
+     &             -1.5d0*(LSYXN1*FDX1+LSYYN1*FDY1) / 
+     &                  ( eta1(nm(ie,1)) + dp(nm(ie,1)) )
+C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
+     &             )
+
+C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
+C...  TEMP_LV_B VECTOR FOR NODE NM2
+
+         mom_lv_y(nm(ie,2)) = mom_lv_y(nm(ie,2)) + DT * (
+C...  ADVECTIVE TERMS
+     &             -1.d0*(U1Avg*DV1DXA + V1Avg*DV1DYA)
+C...  BAROTROPIC PRESSURE GRADIENT
+     &             -(g/2.d0) * DBTPDYA
+C...  LATERAL VISCOUS TERMS
+     &             -1.5d0*(LSYXN2*FDX2+LSYYN2*FDY2) /
+     &                  ( eta1(nm(ie,2)) + dp(nm(ie,2)) )
+C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
+     &             )
+
+C...  LOAD NON-LUMPED ELEMENTAL COMPONENTS FOR Y-MOMENTUM EQUATION INTO
+C...  TEMP_LV_B VECTOR FOR NODE NM3
+
+         mom_lv_y(nm(ie,3)) = mom_lv_y(nm(ie,3)) + DT * (         
+C...  ADVECTIVE TERMS
+     &             -1.d0*(U1Avg*DV1DXA + V1Avg*DV1DYA)
+C...  BAROTROPIC PRESSURE GRADIENT
+     &             -(g/2.d0) * DBTPDYA
+C...  LATERAL VISCOUS TERMS
+     &             -1.5d0*(LSYXN3*FDX3+LSYYN3*FDY3) / 
+     &                  ( eta1(nm(ie,3)) + dp(nm(ie,3)) )
+C...  STILL NEED TO DIVIDE BY TOTAL AREA AROUND A NODE
+     &             )
+
+
+      ENDDO
+
+C...  Update the momentum equation LHS coefficients and load vectors at each
+C...  node by dividing by the area of all active elements attached to the node
+C...  and adding in the lumped terms, bottom friction and boundary conditions
+
+      DO I=1,NP
+         IF (TotalArea(I).ne.0.d0) THEN
+            mom_lv_x(i) = mom_lv_x(i) / TotalArea(i)
+            mom_lv_y(i) = mom_lv_y(i) / TotalArea(i)
+         ENDIF
+         mom_lv_x(i) = mom_lv_x(i) + (1.d0 - (tk(i)*dt/2.d0) )*uu1(i)   
+         mom_lv_y(i) = mom_lv_y(i) + (1.d0 - (tk(i)*dt/2.d0) )*vv1(i)
+         AUV11(I) = 1.D0 + (tk(i)*dt/2.d0)
+         AUV12(I) = 0.d0
+      END DO
+
+C...
+C...  SOLVE FOR VELOCITY AT NEW LEVEL  (s+1)
+C...
+
+C.....Note: This includes the comparison between MJU and NODELE to
+C.....determine if the node is an interface node.  If MJU < NODELE the
+C.....velocity can be zeroed out to obtain an essential zero velocity at
+C.....interface nodes.
+      do i=1,np
+         auv22(i)=auv11(i)
+         auv21(i)=-auv12(i)
+         ddu=auv11(i)*auv22(i)-auv12(i)*auv21(i)
+         uu2(i)=(mom_lv_x(i)*auv22(i)-mom_lv_y(i)*auv12(i))/ddu
+         vv2(i)=(mom_lv_y(i)*auv11(i)-mom_lv_x(i)*auv21(i))/ddu
+      end do
+
+C...  Compute fluxes
+      do i=1,np
+         qx2(i) = uu2(i) * ( dp(i) + eta2(i) )
+         qy2(i) = vv2(i) * ( dp(i) + eta2(i) )
+      enddo
+      !-----------------------------------------------------------------
+      end subroutine momentumEquationsMinimal
       !-----------------------------------------------------------------
 
       !-----------------------------------------------------------------
