@@ -119,7 +119,9 @@ C.....sb46.28sb03 added 09/xx/2006
      &     LoadEleSlopeLim, elemental_slope_limiter_active,
      &     elemental_slope_limiter_grad_max,
      &     elemental_slope_limiter_max_exceeded
-
+      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, NOutGS, enforceWDOB,
+     &    writeFort066, writeFort067, writeFort065, readFort020,
+     &    readFort021, readFort019, enforceWDCB
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
 Cjgfdebug      USE GLOBAL_3DVS, ONLY:
 Cjgfdebug     &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA
@@ -2100,6 +2102,10 @@ C..................INWARD SUBMERGED DISCHARGE -> CASE 6
          END DO
       ENDIF
 
+      if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)    ! NCSU Subdomain
+      if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)    ! NCSU Subdomain
+      if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)    ! NCSU Subdomain
+
 C...
 C...  Compute the water surface elevation from the GWCE form of the 2D continuity eq.
 C...
@@ -2547,6 +2553,9 @@ CWET...
 
          ENDDO
 
+         if (subdomainOn.and.enforceBN.eq.1) call enforceWDcb() ! NCSU Subdomain
+         if (subdomainOn.and.enforceBN.eq.2) call enforceWDob() ! NCSU Subdomain
+
 C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 #ifdef CMPI
          CALL UPDATEI(NNODECODE,NIBCNT,2)
@@ -2777,6 +2786,9 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
                   ENDIF  !IF NNODECODE SUM LESS THAN 3
                ENDIF   ! IF NODECODE SUM LESS THAN 3
             ENDDO  !LOOP OVER ELEMENTS
+
+            if (subdomainOn.and.enforceBN.eq.1) call enforceWDcb() ! NCSU Subdomain
+            if (subdomainOn.and.enforceBN.eq.2) call enforceWDob() ! NCSU Subdomain
 
 C     Use Message-Passing to update nnodecode and nibcnt at ghost nodes
 #ifdef CMPI
@@ -3037,6 +3049,10 @@ C     WET...
 
 cjjwnote - may have to pass TotalArea and mju as well
 
+         if (subdomainOn.and.enforceBN.eq.1) call enforceWDcb() ! NCSU Subdomain
+         if (subdomainOn.and.enforceBN.eq.2) call enforceWDob() ! NCSU Subdomain
+
+
 C     Use Message-Passing to update nnodecode at ghost nodes
 #ifdef CMPI
          CALL UPDATEI(NNODECODE,IDUMY,1)
@@ -3229,6 +3245,9 @@ C...  WRITE OUTPUT
 C...
       CALL writeOutput2D(IT,TimeLoc) ! =>see write_output.F
 C
+      if (subdomainOn.and.NOUTGS.eq.1) call writeFort065(it) ! NCSU Subdomain Modeling   
+      if (subdomainOn.and.NOUTGS.eq.2) call writeFort066(it) ! NCSU Subdomain Modeling   
+      if (subdomainOn.and.NOUTGS.eq.2) call writeFort067(it) ! NCSU Subdomain Modeling   
 C
 C     jgf49.44: If harmonic analysis was requested and the current time
 C     is within the harmonic analysis period, update the left hand side
@@ -3543,6 +3562,8 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
      &                       TKYY
 #endif
 #endif
+      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceECB, 
+     &  checkChange, enforceEOB, enforceEIB, enforceGWCELVOB
 
       IMPLICIT NONE
 
@@ -3612,6 +3633,8 @@ C
             firstCall = .false.
          ENDIF
       ENDIF
+
+      if (subdomainOn.and.enforceBN.eq.2) call checkChange()    ! NCSU Subdomain
 
 Casey 050711 : Added for averaged variable Tau0.
 C      REAL(SZ) :: CaseySum
@@ -4407,22 +4430,27 @@ C...  For periodic elevation boundary conditions
 
 C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
 
-      IF((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
-         IF(TimeLoc.GT.ETIME2) THEN
-            ETIME1=ETIME2
-            ETIME2=ETIME1+ETIMINC
-            DO J=1,NETA
-               ESBIN1(J)=ESBIN2(J)
-               READ(19,*) ESBIN2(J)
+      if (subdomainOn) then                     ! NCSU Subdomain
+          if(enforceBN.eq.1) call enforceEcb()  ! NCSU Subdomain
+      else                                      ! NCSU Subdomain
+
+         IF((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
+            IF(TimeLoc.GT.ETIME2) THEN
+               ETIME1=ETIME2
+               ETIME2=ETIME1+ETIMINC
+               DO J=1,NETA
+                  ESBIN1(J)=ESBIN2(J)
+                  READ(19,*) ESBIN2(J)
+               END DO
+            ENDIF
+            ETRATIO=(TimeLoc-ETIME1)/ETIMINC
+            DO I=1,NETA
+               NBDI=NBD(I)
+               Eta2(NBDI)=RampElev
+     &           *(ESBIN1(I)+ETRATIO*(ESBIN2(I)-ESBIN1(I)))
             END DO
          ENDIF
-         ETRATIO=(TimeLoc-ETIME1)/ETIMINC
-         DO I=1,NETA
-            NBDI=NBD(I)
-            Eta2(NBDI)=RampElev
-     &           *(ESBIN1(I)+ETRATIO*(ESBIN2(I)-ESBIN1(I)))
-         END DO
-      ENDIF
+      endif                                   ! NCSU Subdomain
 C
 C     jgf46.02 Added the ability to include geoid offset on the boundary.
       IF (LoadGeoidOffset) THEN
@@ -4581,6 +4609,11 @@ C...UPDATE LOAD VECTOR INITIAL GUESS and DIAGONAL FOR GWCE SOLVE
          CALL UPDATER(GWCE_LV,COEFD,DUMY1,2)
       ENDIF
 #endif
+
+      if (subdomainOn.and.enforceBN.eq.2) call enforceEob() ! NCSU Subdomain
+      if (subdomainOn.and.enforceBN.eq.2) call enforceEib() ! NCSU Subdomain
+      if (subdomainOn.and.enforceBN.eq.2) call enforceGWCELVob() ! NCSU Subdomain
+
       IF (ILump.eq.0) THEN ! default, fully consistent LHS
 C...  JCG ITERATIVE MATRIX SOLVER
          IPARM(1)=ITMAX
@@ -5328,6 +5361,8 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
      &                       TKYY
 #endif
 #endif
+      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, enforceUVOB, 
+     &                       enforceUVCB
 
       IMPLICIT NONE
 
@@ -5969,6 +6004,8 @@ c           VBAR2(I)=0.D0    !on wet/dry interface nodes
 c           ENDIF
       END DO
 
+      if(subdomainOn.and.enforceBN.eq.1) call enforceUVcb() ! NCSU Subdomain
+      if(subdomainOn.and.enforceBN.eq.2) call enforceUVob() ! NCSU Subdomain
 C...
 C...  Impose a zero normal velocity gradient based on interpolating the
 C...  velocity at a fictitious point in the interior of the domain,

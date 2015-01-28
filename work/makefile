@@ -281,6 +281,8 @@ $(O_DIR):
 
 
 ################# Module Source, Object, & Mod Files ######################
+SUBD_MSRC  =  subdomain.F
+SUBP_MSRC  =  subprep.F
 CONT_MSRC  =  control.F
 MESH_MSRC  =  mesh.F
 BND_MSRC   =  boundaries.F
@@ -302,6 +304,8 @@ COUP_MSRC  =  couple2swan.F
 KDTREE_MSRC = kdtree2.F
 XDMF_MSRC = xdmfio.F
 
+SUBD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBD_MSRC) )
+SUBP_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBP_MSRC) )
 CONT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CONT_MSRC) )
 XDMF_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(XDMF_MSRC) )
 WRIT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WRIT_MSRC) )
@@ -475,10 +479,10 @@ else
    adccmp:  $(O_DIR)
 
 ifeq ($(NETCDF),enable)
-   adcprep ::  $(NC_MOBJ) $(METIS_OBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ)
+   adcprep ::  $(NC_MOBJ) $(METIS_OBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 else
-   adcprep ::  $(METIS_OBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ)
+   adcprep ::  $(METIS_OBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(PREP_OBJ) $(MESH_MOBJ) $(NA_MOBJ) $(SUBP_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 endif
 ifeq ($(NETCDF),enable)
@@ -610,15 +614,16 @@ cvstag:
 #  adcprep modules
 
 $(O_DIR)version.o     :  version.F
-$(O_DIR)presizes.o     :  presizes.F $(ADC_MOBJ) $(WIND_MOBJ)
+$(O_DIR)presizes.o    :  presizes.F $(ADC_MOBJ) $(WIND_MOBJ)
 $(O_DIR)kdtree2.o     :  kdtree2.F $(O_DIR)sizes.o
 $(O_DIR)pre_global.o  :  pre_global.F  $(O_DIR)mesh.o $(KDTREE_MOBJ) $(PREP_MOBJ)
 $(O_DIR)mesh.o        :  mesh.F $(O_DIR)version.o $(O_DIR)global.o $(O_DIR)boundaries.o 
 $(O_DIR)boundaries.o  :  boundaries.F $(O_DIR)sizes.o
+$(O_DIR)subprep.o     :  subprep.F $(O_DIR)subprep.o
 
 #  adcprep
 
-$(O_DIR)adcprep.o     :  adcprep.F  $(PGLO_MOBJ) $(PMSG_OBJ) $(ADC_MOBJ)
+$(O_DIR)adcprep.o     :  adcprep.F  $(PGLO_MOBJ) $(PMSG_OBJ) $(ADC_MOBJ) $(SUBP_MOBJ)
 $(O_DIR)decomp.o      :  decomp.F   $(PGLO_MOBJ)
 $(O_DIR)read_global.o :  read_global.F  $(PGLO_MOBJ) $(KDTREE_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
 ifeq ($(NETCDF),enable)
@@ -694,10 +699,11 @@ $(O_DIR)write_output.o : $(WRITE_OUTPUT_DEP)
 # jgf51.21.28: made xdmf support routines into a module
 $(O_DIR)xdmfio.o      : xdmfio.F $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)control.o
 $(O_DIR)control.o     : control.F 
+$(O_DIR)subdomain.o   : subdomain.F 
 
 #  adcirc & $(PARALLEL_ADCIRC)
 
-$(O_DIR)read_input.o  : read_input.F 
+$(O_DIR)read_input.o  : read_input.F $(SUBD_MOBJ)
 $(O_DIR)transport.o   : transport.F  
 $(O_DIR)cstart.o      : cstart.F    
 $(O_DIR)hstart.o      : hstart.F  
@@ -810,7 +816,6 @@ $(O_DIR)SwanMaxOverNodes.o      : SwanMaxOverNodes.f90
 $(O_DIR)ocpids.o                : ocpids.f
 $(O_DIR)ocpcre.o                : ocpcre.f
 $(O_DIR)ocpmix.o                : ocpmix.f
-
 
 # jgf51.35: Write a file containing the actual compiler flags that were
 # used so we can go back and verify later.

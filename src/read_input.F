@@ -29,6 +29,7 @@ C-----------------------------------------------------------------------
       USE GLOBAL_3DVS, ONLY: C3D_PTrans, NSTA3DD, NSTA3DV, NSTA3DT,
      &    I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT, NSTA3DD_G, NSTA3DV_G,
      &    NSTA3DT_G
+      USE SUBDOMAIN, ONLY : subdomainOn
       USE HARM
       USE WIND
       USE ITPACKV
@@ -61,7 +62,9 @@ C
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
-      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir
+      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir      
+      NAMELIST /subdomainModeling/ subdomainOn
+      
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       INTEGER :: commentStart            ! location of fort.15 comment start
@@ -259,6 +262,22 @@ c.....REOPEN THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
       call logMessage(ECHO,trim(scratchMessage))
       REWIND(15)
 #endif
+      !
+      ! jgf51.42: Add a namelist for the user to control subdomain
+      ! modeling. 
+      READ(UNIT=15,NML=subdomainModeling,IOSTAT=IOS)
+      IF (IOS.gt.0) THEN
+         call logMessage(INFO,
+     &      "The subdomainModeling namelist was not found.")
+      ENDIF
+      IF ((ios.gt.0).or.(subdomainOn.eqv..false.)) THEN
+         call logMessage(INFO,
+     &    "The subdomainModeling capability is not active.")     
+      ENDIF
+      write(scratchMessage,*) "subdomainOn=",subdomainOn
+      call logMessage(ECHO,trim(scratchMessage))
+      REWIND(15)
+      !
       ! jgf50.60.13: Add a namelist for the user to control met forcing.
       ! Similar to tcm's timevaryingbathy namelist.
       READ(UNIT=15,NML=metControl,IOSTAT=IOS)

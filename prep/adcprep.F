@@ -97,7 +97,7 @@ C
       USE SIZES, ONLY : meshFileName, meshFileNameSpecified, meshType, 
      &  ASCII, XDMF, naFileNameSpecified, naFileName, naType, controlFileName,
      &  controlType, controlFileNameSpecified, globaldir
- 
+      USE SUBPREP, ONLY : readFort015prep
       USE PRE_GLOBAL
       USE VERSION
       use memory_usage
@@ -108,13 +108,15 @@ C
       INTEGER :: IARGC    ! function to return command line arguments
       INTEGER :: I        ! loop counter for command line arguments
       CHARACTER(2048) :: CMDLINEARG ! content of cmd line arg
-
 C
       ! set the names of the log levels for use in log messages
       call initLogging()
       ! set the present working directory as the directory containing 
       ! the fulldomain input files as the
       globaldir = '.'
+
+      !jgf51.42: NCSU Subdomain Modeling
+      call readFort015prep()
 
 C  Define File Format Version
 
@@ -353,6 +355,8 @@ C
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
       use mesh, only : readMeshXDMF
+      use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
+     &   subPrep019
 !tcm v50.85
 #ifdef WINDOWS
       USE IFPORT
@@ -647,16 +651,22 @@ C
         write(*,*) 'file for each PE.'
         CALL PREP13()
       endif
-
 C
 C-- If required write a Local fort.19 file for each PE
 C
-      IF (PREP_ALL) THEN
-         IF ((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
-            print *, "Ready to Write Local UNIT 19 File for each PE"
-            CALL PREP19()
+
+      if (subdomainOn) then                     ! NCSU Subdomain
+          if (enforceBN.eq.1) call subprep019() ! NCSU Subdomain
+          if (enforceBN.eq.2) call subprep020() ! NCSU Subdomain
+          if (enforceBN.eq.2) call subprep021() ! NCSU Subdomain
+      else                                       ! NCSU Subdomain
+         IF (PREP_ALL) THEN
+            IF ((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
+               print *, "Ready to Write Local UNIT 19 File for each PE"
+               CALL PREP19()
+            ENDIF
          ENDIF
-      ENDIF
+      endif ! NCSU Subdomain
 C
 C-- Write a Local Flux File ( fort.20 ) for each PE if needed
 C   -- EXIST_FLUX and other variables are set when the fort.14 is

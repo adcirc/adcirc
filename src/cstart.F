@@ -20,7 +20,7 @@ C
       USE HARM
       USE WIND
       USE GLOBAL_IO
-
+      USE SUBDOMAIN, ONLY : subdomainOn, readFort015
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
       USE OWIWIND,ONLY : NWS12INIT,NWS12GET    ! sb added 09/xx/2006
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
@@ -57,6 +57,10 @@ C
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
 
+      if (subdomainOn) then
+         call readFort015() ! NCSU Subdomain Modeling
+      endif
+      
 C------------------------------------------------------------------------------
 C... tcm v50.66.01 Time Varying Bathymetry
 C------------------------------------------------------------------------------
@@ -141,8 +145,8 @@ C
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,2789)
          WRITE(16,2789)
  2789    FORMAT(/,1X,'--------WARNING--WARNING--WARNING---------',
-     &         /,1x,'A FORT.88 FILE WAS FOUND BUT IS NO LONGER SUPPORTED.',
-     &        /,1x,'INITIAL RIVER ELEVATIONS MUST BE SET AS A NODAL ATTRIBUTE.',/)
+     &   /,1x,'A FORT.88 FILE WAS FOUND BUT IS NO LONGER SUPPORTED.',
+     &   1x,'INITIAL RIVER ELEVATIONS MUST BE SET AS A NODAL ATTRIBUTE.',/)
       ENDIF
 
 C
@@ -232,16 +236,19 @@ C...
          WRITE(16,1977)
  1977    FORMAT(/,1X,'ELEVATION SPECIFIED INFORMATION READ FROM UNIT ',
      &        '19',/)
-         OPEN(19,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
-         READ(19,*) ETIMINC
-         DO J=1,NETA
-            READ(19,*) ESBIN1(J)
-         END DO
-         DO J=1,NETA
-            READ(19,*) ESBIN2(J)
-         END DO
-         ETIME1 = STATIM*86400.D0
-         ETIME2 = ETIME1 + ETIMINC
+         ! NCSU Subdomain Modeling
+         if (subdomainOn.eqv..false.) then
+            OPEN(19,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
+            READ(19,*) ETIMINC
+            DO J=1,NETA
+               READ(19,*) ESBIN1(J)
+            END DO
+            DO J=1,NETA
+               READ(19,*) ESBIN2(J)
+            END DO
+            ETIME1 = STATIM*86400.D0
+            ETIME2 = ETIME1 + ETIMINC
+         endif
       ENDIF
 C
 C....INITIALIZE THE NORMAL FLOW BOUNDARY CONDITION

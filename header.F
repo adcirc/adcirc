@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.42 - 01/28/2014 - jgf - Merged subdomain modeling capability; the 
+C           changes to existing source code are minimal and limited to a few
+C           additional subroutine calls; nearly all the code to support the
+C           new feature is contained in the new modules subprep.F (for
+C           adcprep) and subdomain.F (for adcirc/padcirc/padcswan). 
 C  v51.41 - 01/21/2014 - jgf - Added more error checking to hstime
 C           utility to detect netcdf hotstart files that have a mesh 
 C           but no data.

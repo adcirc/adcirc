@@ -46,7 +46,8 @@ C
      &    I3DSTRec, N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec,
      &    DUU_g, DUV_g, DVV_g, UU_g, VV_g, BSX_g, BSY_g, Q_g, WZ_g,
      &    q20_g, l_g, SigT_g, Sal_g, Temp_g, iy
-C
+      USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015, 
+     &                       openFort019h
 #ifdef CMPI
       USE MESSENGER,ONLY:COMM,IERR
 #endif      
@@ -175,6 +176,10 @@ C     kmd -- Added variables for initial conditions
 C
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
+
+      if (subdomainOn) then
+         call readFort015() ! NCSU Subdomain Modeling
+      endif
 C
 C     -----------------------------------
 C
@@ -811,6 +816,10 @@ C......INITIALLY, ZERO OUT THE NORMAL FLOW ON ALL BOUNDARIES
 C.... FIND THE PROPER PLACE IN THE APERIODIC ELEVATION SPECIFIED
 C.... BOUNDARY CONDITION FILE IF IT IS REQURIED.
 
+       if(subdomainOn.and.enforceBN.eq.1) then ! NCSU Subdomain
+           call openFort019H(TimeLoc)          ! NCSU Subdomain
+       endif                                   ! NCSU Subdomain
+
       IF((NOPE.GT.0).AND.(NBFR.EQ.0)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
          WRITE(16,1112)
@@ -818,19 +827,30 @@ C.... BOUNDARY CONDITION FILE IF IT IS REQURIED.
          WRITE(16,1976)
  1976    FORMAT(/,1X,'LOCATING ELEVATION SPECIFIED INFORMATION IN ',
      &        'UNIT 19',/)
-         OPEN(19,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
-         READ(19,*) ETIMINC
-         ETIME1=STATIM*86400.D0
-         ETIME2=ETIME1+ETIMINC
-         DO J=1,NETA
-            READ(19,*) ESBIN1(J)
-         END DO
-         DO J=1,NETA
-            READ(19,*) ESBIN2(J)
-         END DO
-         DO IT=1,ITHS-1
-            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
-            IF(TIMEIT.GT.ETIME2) THEN
+
+         if ((subdomainOn.eqv..false.).or.(enforceBN.ne.1)) then ! NCSU Subdomain
+            OPEN(19,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
+            READ(19,*) ETIMINC
+            ETIME1=STATIM*86400.D0
+            ETIME2=ETIME1+ETIMINC
+            DO J=1,NETA
+               READ(19,*) ESBIN1(J)
+            END DO
+            DO J=1,NETA
+               READ(19,*) ESBIN2(J)
+            END DO
+            DO IT=1,ITHS-1
+               TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
+               IF(TIMEIT.GT.ETIME2) THEN
+                  ETIME1=ETIME2
+                  ETIME2=ETIME1+ETIMINC
+                  DO J=1,NETA
+                     ESBIN1(J)=ESBIN2(J)
+                     READ(19,*) ESBIN2(J)
+                  END DO
+               ENDIF
+            END DO
+            IF(TimeLoc.GT.ETIME2) THEN
                ETIME1=ETIME2
                ETIME2=ETIME1+ETIMINC
                DO J=1,NETA
@@ -838,16 +858,8 @@ C.... BOUNDARY CONDITION FILE IF IT IS REQURIED.
                   READ(19,*) ESBIN2(J)
                END DO
             ENDIF
-         END DO
-         IF(TimeLoc.GT.ETIME2) THEN
-            ETIME1=ETIME2
-            ETIME2=ETIME1+ETIMINC
-            DO J=1,NETA
-               ESBIN1(J)=ESBIN2(J)
-               READ(19,*) ESBIN2(J)
-            END DO
+            ETRATIO=(TIMEIT-ETIME1)/ETIMINC
          ENDIF
-         ETRATIO=(TIMEIT-ETIME1)/ETIMINC
       ENDIF
 
 C......FIND PROPER PLACE IN THE APERIODIC NORMAL FLOW BOUNDARY CONDITION
