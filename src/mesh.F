@@ -18,7 +18,8 @@ C     ------------------------------------------------------------------
       use sizes, only : sz
       use global, only : DEBUG, INFO, ECHO, WARNING, ERROR,
      &   scratchMessage, logMessage, screenMessage, allMessage,
-     &   setMessageSource, openFileForRead, unsetMessageSource
+     &   setMessageSource, openFileForRead, unsetMessageSource,
+     &   scratchFormat
       implicit none
       character(len=80) :: agrid
       character(4)              :: aid4(20)
@@ -280,12 +281,39 @@ C     ------------------------------------------------------------------
       call openFileForRead(iunit,trim(meshFileName),ios)
       call read14_findDims ()
       !
-      if (nabout.eq.-1) then 
-         write(6,'("Number of elevation specified boundaries (nope): ",i0,".")') nope
-         write(6,'("Number of simple flux specified boundaries (0,1,2,etc): ",i0,".")') numSimpleFluxBoundaries
-         write(6,'("Number of external flux boundaries (3,etc): ",i0,".")') numExternalFluxBoundaries         
-         write(6,'("Number of internal flux boundaries (4,etc): ",i0,".")') numInternalFluxBoundaries
-         write(6,'("Number of internal flux boundaries with pipes (5,etc): ",i0,".")') numInternalFluxBoundariesWithPipes
+      ! Write a summary of the different boundary types if the logging
+      ! level is set to DEBUG.
+      if (nabout.eq.DEBUG) then 
+         ! 
+         ! ocean boundaries
+         scratchFormat = '("Number of elevation specified boundaries '
+     &    // '(nope): ",i0,".")'
+         write(scratchMessage,scratchFormat) nope
+         call logMessage(DEBUG,trim(scratchMessage))
+         !
+         ! land boundaries
+         scratchFormat = '("Number of simple flux specified boundaries '
+     &     // '(0,1,2,etc): ",i0,".")'
+         write(scratchMessage,scratchFormat) numSimpleFluxBoundaries
+         call logMessage(DEBUG,trim(scratchMessage))
+         !
+         ! external over flow (land) boundaries
+         scratchFormat = '("Number of external flux boundaries (3,etc):'
+     &      // ' ",i0,".")' 
+         write(scratchMessage,scratchFormat) numExternalFluxBoundaries
+         call logMessage(DEBUG,trim(scratchMessage))
+         !
+         ! levee boundaries
+         scratchFormat = '("Number of internal flux boundaries (4,etc):'
+     &      // ' ",i0,".")' 
+         write(scratchMessage,scratchFormat) numInternalFluxBoundaries            
+         call logMessage(DEBUG,trim(scratchMessage))
+         !
+         ! levee boundaries with culverts
+         scratchFormat = '("Number of internal flux boundaries with '
+     &      // 'pipes (5,etc): ",i0,".")'
+         write(scratchMessage,scratchFormat) numInternalFluxBoundariesWithPipes
+         call logMessage(DEBUG,trim(scratchMessage))         
       endif
       !
       call allocateNodalAndElementalArrays()
@@ -295,7 +323,9 @@ C     ------------------------------------------------------------------
       !
       !  N O D E   T A B L E
       !
-      write(6,'(A)') 'INFO: Reading mesh file coordinates, connectivity, and boundary data.'
+      
+      call logMessage(INFO,'Reading mesh file coordinates, '
+     &   // ' connectivity, and boundary data.')
       lineNum = 1
       read(unit=iunit,fmt='(a80)',err=10,end=20,iostat=ios) agrid
       lineNum = lineNum + 1
@@ -419,8 +449,10 @@ C     ------------------------------------------------------------------
             end do
             ifwpCount = ifwpCount + 1
          case default
-            write(6,*) 'ERROR: IBTYPE ',ibtype_orig(k),' is not allowed.'
-            stop
+            scratchFormat = '("IBTYPE ",i0," is not allowed.")'
+            write(scratchMessage, scratchFormat) ibtype_orig(k)
+            call allMessage(ERROR,scratchFormat)
+            call terminate()
          end select
       end do
       close(14)
@@ -428,7 +460,8 @@ C     ------------------------------------------------------------------
       ! populate the adcirc arrays that are used during execution
       call populateADCIRCNativeArrays()
       !
-      write(6,'(A)') 'INFO: Finished reading mesh file coordinates, connectivity, and boundary data.'
+      call logMessage(INFO,'Finished reading mesh file coordinates, '
+     & // 'connectivity, and boundary data.')
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -475,8 +508,9 @@ C     ------------------------------------------------------------------
 #endif
 
 #ifndef ADCXDMF      
-      call allMessage(ERROR,"An XMDF mesh file was specified.")
-      call allMessage(ERROR,"This ADCIRC executable was not compiled with XDMF support.")
+      call allMessage(ERROR,'An XMDF mesh file was specified.')
+      call allMessage(ERROR,'This ADCIRC executable was not compiled '
+     & // 'with XDMF support.')
       call terminate()
 #else
       include 'adcirc_Xdmf.f'
@@ -559,8 +593,8 @@ C     ------------------------------------------------------------------
          call allMessage(ERROR,"The file " // trim(adjustl(meshFileName)) // " was not found.")
          call terminate()
       endif
-      write(6,'(a)') 'INFO: Reading mesh data from the "' // 
-     &  trim(adjustl(meshFileName)) // '" XDMF file.'
+      call logMessage(INFO,'Reading mesh data from the ' // 
+     &  trim(adjustl(meshFileName)) // ' XDMF file.')
       call xdmfInit(xdmfFortranObj)
       call xdmfRead(xdmfFortranObj, trim(adjustl(meshFileName))//char(0))
       !
@@ -576,9 +610,13 @@ C     ------------------------------------------------------------------
       !  S I Z E S 
       !
       call xdmfRetrieveGeometryNumPoints(xdmfFortranObj, np)
-      write(6,'("INFO: The Geometry contains ",i0," points (nodes).")') np
+      scratchFormat = '("The Geometry contains ",i0," points (nodes).")'
+      write(scratchMessage,scratchFormat) np
+      call logMessage(INFO,trim(scratchMessage))
       call xdmfRetrieveTopologyNumElements(xdmfFortranObj, ne)
-      write(6,'("INFO: The Topology contains ",i0," elements.")') ne
+      scratchFormat = '("The Topology contains ",i0," elements.")'
+      write(scratchMessage,scratchFormat) ne
+      call logMessage(INFO,trim(scratchMessage))
       !
       mnp = np
       mne = ne
@@ -593,7 +631,9 @@ C     ------------------------------------------------------------------
       case(302)
          geometryTypeString = 'XDMF_GEOMETRY_TYPE_XY'   
       case default
-         write(6,'("WARNING: Unrecognized geometry type ",i0,".")') geometryType
+         scratchFormat = '("Unrecognized geometry type ",i0,".")')
+         write(scratchMessage,scratchFormat) geometryType
+         call allMessage(WARNING,trim(scratchMessage))
       end select
       !
       call xdmfRetrieveGeometryValueType(xdmfFortranObj, geometryDataType)
@@ -603,7 +643,7 @@ C     ------------------------------------------------------------------
       !
       allocate(tempCoord(2,np))
       tempCoord = -99999.d0
-      write(6,'(a)') 'INFO: Reading nodal table.'
+      call logMessage(INFO,'Reading nodal table.')
       call xdmfRetrieveGeometryValues(xdmfFortranObj, tempCoord,  
      &    geometryDataType, 2*np, startIndex, arrayStride, valueStride)
       !
@@ -613,12 +653,16 @@ C     ------------------------------------------------------------------
       !
       ! depth
       call xdmfRetrieveNumAttributes(xdmfFortranObj, numAttributes)
-      write(6,'("INFO: Grid ",i0," contains ",i0," attributes.")') gridIndex, numAttributes
+      scratchFormat = '("Grid ",i0," contains ",i0," attributes.")'
+      write(scratchMessage,scratchFormat) gridIndex, numAttributes
+      call logMessage(INFO,trim(scratchMessage))      
       do attributeIndex=0, numAttributes - 1
          call xdmfRetrieveAttributeName(xdmfFortranObj, attributeIndex,   
      &       itemName, nameLength)
          call replaceNullsWithSpaces(itemName)
-         write(6,'("INFO: Grid ",i0," Attribute ",i0," is named ",a)') gridIndex, attributeIndex, trim(itemName)
+         scratchFormat = '("Grid ",i0," Attribute ",i0," is named ",a)'
+         write(scratchMessage,scratchFormat) gridIndex, attributeIndex, trim(itemName)
+         call logMessage(INFO,trim(scratchMessage))
          select case(trim(itemName))
          case("depth")
             call xdmfRetrieveAttributeValues(xdmfFortranObj, attributeIndex, 
@@ -628,31 +672,37 @@ C     ------------------------------------------------------------------
          end select
       end do
       !
-      if (nabout.eq.-1) then
+      if (nabout.eq.DEBUG) then
+         scratchFormat = 
+     &    '("node=",i0," x=",f15.7," y=",f15.7," depth=",f8.3)' 
          do i=1,np
-            write(6,
-     &        '("ECHO: node=",i0," x=",f15.7," y=",f15.7," depth=",f8.3)') 
-     &         i, slam(i), sfea(i), dp(i)
+            write(scratchMessage,scratchFormat) i, slam(i), sfea(i), dp(i)   
+            call logMessage(ECHO,trim(scratchMessage))
          end do
       end if
       ! 
       !  E L E M E N T   T A B L E
       !
-      write(6,'(a)') 'INFO: Reading element table.'
+      call logMessage(INFO,'Reading element table.')
       call xdmfRetrieveTopologyType(xdmfFortranObj, topologyType)
       ! XDMF supports other topology types, but these are unlikely to
       ! be found in ADCIRC output files
       call createTopologyTypeString(topologyType, topologyTypeString)
-      !write(6,'("INFO: The topology type is ",a,".")') trim(topologyTypeString)
+      scratchFormat = '("The topology type is ",a,".")'
+      write(scratchMessage,scratchFormat) trim(topologyTypeString)
+      call logMessage(DEBUG,scratchMessage)      
       !
       call xdmfRetrieveTopologyValueType(xdmfFortranObj, topologyDataType)
       call createDataTypeString(topologyDataType, topologyDataTypeString)
-      !write(6,'(a)') 'INFO: The data type of the topology is ' // trim(topologyDataTypeString) // '.'
+      scratchFormat = '("The data type of the topology is ",a,".")'
+      write(scratchMessage,scratchFormat) trim(topologyDataTypeString) 
+      call logMessage(DEBUG,scratchMessage)
       !
       call xdmfRetrieveTopologySize(xdmfFortranObj, numElementValues)
       allocate(xdmf_nm(3,ne))
       call xdmfRetrieveTopologyValues(xdmfFortranObj, xdmf_nm, 
-     &    XDMF_ARRAY_TYPE_INT32, numElementValues, startIndex, arrayStride, valueStride) 
+     &    XDMF_ARRAY_TYPE_INT32, numElementValues, startIndex, 
+     &    arrayStride, valueStride) 
       !
       ! need to add 1 since XDMF stores arrays as 0 offset but ADCIRC reads
       ! them as 1 offset
@@ -664,20 +714,22 @@ C     ------------------------------------------------------------------
       end do
       deallocate(xdmf_nm)
       !
-      if (nabout.eq.-1) then
+      if (nabout.eq.DEBUG) then
+         scratchFormat = '("Element ",i0," nodes ",i0," ",i0," ",i0)'
          do i=1,ne
-            write(6,
-     &        '("ECHO: element ",i0," nodes ",i0," ",i0," ",i0)') 
-     &        i, (nm(i,j), j=1,3)
+            write(scratchMessage, scratchFormat) i, (nm(i,j), j=1,3)
+            call logMessage(ECHO,scratchMessage)
          end do
       endif
       !
       ! B O U N D A R I E S
       !
       ! boundaries are saved as sets and attributes
-      write(6,'(a)') 'INFO: Reading boundaries.'
+      call logMessage(INFO,'Reading boundaries.')
       CALL xdmfRetrieveNumSets(xdmfFortranObj, numSets)
-      write(6,'("INFO: The Grid contains ",i0," boundaries.")') numSets
+      scratchFormat = '("The Grid contains ",i0," boundaries.")') 
+      write(scratchMessage,scratchFormat) numSets
+      call logMessage(INFO,scratchMessage)
       !
       ! allocate xdmf-specific arrays to hold boundary parameters
       allocate(elevationBoundary(0:numSets-1))
@@ -687,7 +739,7 @@ C     ------------------------------------------------------------------
       !
       ! count the different types of boundaries for use in memory allocation
       !
-      !write(6,'("DEBUG: Counting the various boundary types.")') 
+      call logMessage(DEBUG,'Counting the various boundary types.') 
       numSimpleFluxBoundaries = 0
       numExternalFluxBoundaries = 0
       numInternalFluxBoundaries = 0
@@ -700,34 +752,46 @@ C     ------------------------------------------------------------------
       do setIndex=0, numSets-1
          call xdmfRetrieveNumAttributes(xdmfFortranObj, numAttributes)
          firstSetAttributeIndex(setIndex) = numAttributes
-         !write(6,'("INFO: Opening set ",i0,".")') setIndex
-         call xdmfOpenSet(xdmfFortranObj, setIndex, openAttributes, openInformations) 
+         scratchFormat = '("Opening set ",i0,".")') setIndex
+         write(scratchMessage,scratchFormat) setIndex
+         call logMessage(DEBUG,scratchMessage)
+         call xdmfOpenSet(xdmfFortranObj, setIndex, openAttributes, 
+     &         openInformations) 
          !
          ! get the boundary type
          call xdmfRetrieveNumInformation(xdmfFortranObj, numInformations)
-         call xdmfRetrieveInformation(xdmfFortranObj, numInformations-1, itemKey,  
-     &       keyLength, itemValue, valueLength)
+         call xdmfRetrieveInformation(xdmfFortranObj, numInformations-1,   
+     &       itemKey, keyLength, itemValue, valueLength)
          call replaceNullsWithSpaces(itemValue)
          read(itemValue,*) boundaryTypes(setIndex) ! value of either ibtype_orig or ibtypee
          !
          ! determine the number of nodes on this boundary
          call xdmfRetrieveSetSize(xdmfFortranObj, setSize(setIndex), setIndex)
-         !write(6,'("INFO: Set ",i0," contains ",i0," values.")') setIndex, setSize(setIndex)
+         scratchFormat = '("Set ",i0," contains ",i0," values.")'
+         write(scratchMessage,scratchFormat) setIndex, setSize(setIndex)
+         call logMessage(DEBUG,scratchMessage)
          !            
          call xdmfRetrieveSetNumProperties(xdmfFortranObj, setIndex, numSetProperties)
          do setPropertyIndex=0, numSetProperties-1
-            call xdmfRetrieveSetProperty(xdmfFortranObj, setIndex, setPropertyIndex, itemKey, keyLength, itemValue, valueLength)
+            call xdmfRetrieveSetProperty(xdmfFortranObj, setIndex, 
+     &           setPropertyIndex, itemKey, keyLength, itemValue, valueLength)
             call replaceNullsWithSpaces(itemValue)
             select case(trim(itemValue))
             case("elevation_specified_boundary ")
-               !write(6,'("ECHO: The set property is ",a,".")') '"' // trim(itemValue) // '"'
-               !write(6,'("DEBUG: Found one elevation specified boundary.")')
+               scratchFormat = '("The set property is ",a,a,a,".")') 
+               write(scratchMessage,scratchFormat)'"',trim(itemValue),'"'
+               call logMessage(ECHO,scratchMessage)
+               call logMessage(DEBUG,
+     &              'Found one elevation specified boundary.')
                nope = nope + 1
                neta = neta + setSize(setIndex)
                elevationBoundary(setIndex) = .true.
             case("flux_specified_boundary")
-               !write(6,'("ECHO: The set property is ",a,".")') '"' // trim(itemValue) // '"'
-               !write(6,'("DEBUG: Found one flux specified boundary.")')
+               scratchFormat = '("The set property is ",a,a,a,".")') 
+               write(scratchMessage,scratchFormat)'"',trim(itemValue),'"'
+               call logMessage(ECHO,scratchMessage)
+               call logMessage(DEBUG,
+     &              'Found one flux specified boundary.')
                nbou = nbou + 1
                nvel = nvel + setSize(setIndex)
                select case(boundaryTypes(setIndex))
@@ -740,13 +804,19 @@ C     ------------------------------------------------------------------
                case(5,25)
                   numInternalFluxBoundariesWithPipes = numInternalFluxBoundariesWithPipes + 1
                case default
-                  write(6,'("ERROR: File contains IBTYPE=",i0," which is not a valid flux boundary type.")'), boundaryTypes(setIndex)
+                  scratchFormat = 'Mesh file contains IBTYPE=",i0," '
+     &               // 'which is not a valid flux boundary type.")')
+                  write(scratchMessage,scratchFormat) boundaryTypes(setIndex)
+                  call allMessage(ERROR,scratchMessage)
+                  call terminate()
                end select         
             case("Node")
                ! do nothing, this property simply indicates that the boundaries
                ! are defined by lists of nodes
             case default
-               write(6,'("WARNING: Unrecognized set property ",a,".")') trim(itemValue)
+               scratchFormat = '("Unrecognized set property ",a,".")'
+               write(scratchMessage,scratchFormat) trim(itemValue)
+               call allMessage(WARNING,scratchMessage)
             end select
          end do
       end do     
@@ -754,17 +824,32 @@ C     ------------------------------------------------------------------
       ! Now that we know how many of each boundary type we have, we can 
       ! allocate memory to hold the data/parameters for each boundary of 
       ! each type
-      write(6,'("INFO: Number of elevation boundaries : ",i0)') nope
-      write(6,'("INFO: Number of elevation boundary nodes : ",i0)') neta
-      write(6,'("INFO: Total number of flux boundaries : ",i0)') nbou
-      write(6,'("INFO: Total number of flux boundary nodes : ",i0)') nvel
-      
-      write(6,'("INFO: Number of simple flux boundaries : ",i0)') numSimpleFluxBoundaries   
-      write(6,'("INFO: Number of external flux boundaries : ",i0)') numExternalFluxBoundaries   
-      write(6,'("INFO: Number of internal flux boundaries : ",i0)') numInternalFluxBoundaries
-      write(6, 
-     &  '("INFO: Num. int. flux bnd. with cross barrier pipes : ",i0)') 
-     &  numInternalFluxBoundariesWithPipes  
+      scratchFormat = '("Number of elevation boundaries : ",i0,".")') 
+      write(scratchMessage,scratchFormat) nope
+      call logMessage(INFO,scratchMessage)
+      scratchFormat = '("Number of elevation boundary nodes : ",i0,".")') 
+      write(scratchMessage,scratchFormat) neta
+      call logMessage(INFO,scratchMessage)      
+      scratchFormat = '("Total number of flux boundaries : ",i0,".")') 
+      write(scratchMessage,scratchFormat) nbou
+      call logMessage(INFO,scratchMessage)
+      scratchFormat = '("Total number of flux boundary nodes : ",i0,".")') 
+      write(scratchMessage,scratchFormat) nvel
+      call logMessage(INFO,scratchMessage)
+            
+      scratchFormat = '("Number of simple flux boundaries : ",i0,".")')    
+      write(scratchMessage,scratchFormat) numSimpleFluxBoundaries
+      call logMessage(INFO,scratchMessage)
+      scratchFormat = '("Number of external flux boundaries : ",i0,".")')    
+      write(scratchMessage,scratchFormat) numExternalFluxBoundaries
+      call logMessage(INFO,scratchMessage)
+      scratchFormat = '("Number of internal flux boundaries : ",i0,".")') 
+      write(scratchMessage,scratchFormat) numInternalFluxBoundaries
+      call logMessage(INFO,scratchMessage)
+      scratchFormat = '("Num. int. flux bnd. with cross barrier pipes '
+     &                 // ' : ",i0,".")')  
+      write(scratchMessage,scratchFormat) numInternalFluxBoundariesWithPipes
+      call logMessage(INFO,scratchMessage)
       !
       ! populate nvdll (adcirc array representing number of nodes on each 
       ! elevation boundary segment) and nvell (adcirc array representing
@@ -817,11 +902,12 @@ C     ------------------------------------------------------------------
             ! get the node numbers on the boundary
             elevationBoundaries(elevCount)%indexNum = elevCount
             call xdmfRetrieveSetValues(xdmfFortranObj, setIndex,  
-     &          elevationBoundaries(elevCount)%xdmf_nodes, setDataType, setSize(setIndex), 
-     &          startIndex, arrayStride, valueStride)
+     &          elevationBoundaries(elevCount)%xdmf_nodes, setDataType,  
+     &          setSize(setIndex), startIndex, arrayStride, valueStride)
             ! convert node numbers from 0 starting index (xdmf-style) to 
             ! 1 starting index (fortran-style)
-            elevationBoundaries(elevCount)%nodes = elevationBoundaries(elevCount)%xdmf_nodes + 1
+            elevationBoundaries(elevCount)%nodes = 
+     &          elevationBoundaries(elevCount)%xdmf_nodes + 1
             elevCount = elevCount + 1
          else
             !
@@ -831,24 +917,26 @@ C     ------------------------------------------------------------------
                simpleFluxBoundaries(sfCount)%indexNum = fluxCount
                ! get node numbers on the boundary
                call xdmfRetrieveSetValues(xdmfFortranObj, setIndex,  
-     &             simpleFluxBoundaries(sfCount)%xdmf_nodes, setDataType, setSize(setIndex), 
-     &             startIndex, arrayStride, valueStride)
+     &             simpleFluxBoundaries(sfCount)%xdmf_nodes, setDataType,  
+     &             setSize(setIndex), startIndex, arrayStride, valueStride)
                ! convert node numbers from 0 starting index (xdmf-style) to 
                ! 1 starting index (fortran-style)
-               simpleFluxBoundaries(sfCount)%nodes = simpleFluxBoundaries(sfCount)%xdmf_nodes + 1
+               simpleFluxBoundaries(sfCount)%nodes = 
+     &              simpleFluxBoundaries(sfCount)%xdmf_nodes + 1
                sfCount = sfCount + 1           
             case(3,13,23)
                externalFluxBoundaries(efCount)%indexNum = fluxCount
                ! get the node numbers on the boundary
                call xdmfRetrieveSetValues(xdmfFortranObj, setIndex, 
-     &             externalFluxBoundaries(efCount)%xdmf_nodes, setDataType, setSize(setIndex), 
-     &             startIndex, arrayStride, valueStride)
+     &             externalFluxBoundaries(efCount)%xdmf_nodes, setDataType, 
+     &             setSize(setIndex),startIndex, arrayStride, valueStride)
                ! convert node numbers from 0 starting index (xdmf-style) to 
                ! 1 starting index (fortran-style)
                externalFluxBoundaries(efCount)%nodes = 
      &             externalFluxBoundaries(efCount)%xdmf_nodes + 1
                do i=attStart,attStart+1 
-                  call xdmfRetrieveAttributeName(xdmfFortranObj, i, itemName, nameLength)
+                  call xdmfRetrieveAttributeName(xdmfFortranObj, i, 
+     &                 itemName, nameLength)
                   call replaceNullsWithSpaces(itemName)
                   select case(trim(itemName))
                   case("BARLANHT")   ! barrier height at each node
@@ -860,8 +948,10 @@ C     ------------------------------------------------------------------
      &                   externalFluxBoundaries(efCount)%barlancfsp, XDMF_ARRAY_TYPE_FLOAT64, 
      &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
                   case default
-                     write(6,
-     &             '("ERROR: Unrecognized boundary attribute : ",a,".")') trim(itemName)
+                     scratchFormat = 
+     &                 '("Unrecognized boundary attribute : ",a,".")' 
+                     write(scratchMessage,scratchFormat) trim(itemName)
+                     call allMessage(ERROR,scratchMessage)
                   end select
                end do
                efCount = efCount + 1
@@ -896,8 +986,10 @@ C     ------------------------------------------------------------------
      &                   internalFluxBoundaries(ifCount)%barincfsp, XDMF_ARRAY_TYPE_FLOAT64, 
      &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
                   case default
-                     write(6,
-     &         '("ERROR: Unrecognized boundary attribute : ",a,".")') trim(itemName)
+                     scratchFormat = 
+     &                '("Unrecognized boundary attribute : ",a,".")') 
+                     write(scratchMessage,scratchFormat) trim(itemName)
+                     call allMessage(ERROR,scratchMessage)
                   end select
                end do
                internalFluxBoundaries(ifCount)%ibconn = 
@@ -914,7 +1006,6 @@ C     ------------------------------------------------------------------
                ! 1 starting index (fortran-style)
                internalFluxBoundariesWithPipes(ifwpCount)%nodes = 
      &             internalFluxBoundaries(ifwpCount)%xdmf_nodes + 1
-               !write(6,'("DEBUG: Attributes of this boundary:")')
                do i=attStart,attStart+6
                   call xdmfRetrieveAttributeName(xdmfFortranObj, i, itemName, nameLength)
                   call replaceNullsWithSpaces(itemName)
@@ -955,17 +1046,21 @@ C     ------------------------------------------------------------------
      &                   XDMF_ARRAY_TYPE_FLOAT64, 
      &                   nvell(fluxCount), startIndex, arrayStride, valueStride)
                   case default
-                     write(6,
-     &            '("ERROR: Unrecognized boundary attribute : ",a,".")') trim(itemName)
+                     scratchFormat = 
+     &                '("Unrecognized boundary attribute : ",a,".")') 
+                     write(scratchMessage,scratchFormat) trim(itemName)
+                     call allMessage(ERROR,scratchMessage)
                   end select
                end do
                internalFluxBoundariesWithPipes(ifwpCount)%ibconn = 
      &             internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn + 1
                ifwpCount = ifwpCount + 1            
             case default
-                write(6,'(a,i0,a)') 'ERROR: The boundary type ',ibtype_orig(fluxCount),
-     &            ' was found in the files but is not valid.'
-                stop
+                scratchFormat = '("The boundary type ",i0," '
+     &                 // 'was found in the files but is not valid.")'
+                write(scratchMessage,scratchFormat) ibtype_orig(fluxCount)
+                call allMessage(ERROR,scratchMessage)            
+                call terminate()
             end select
             fluxCount = fluxCount + 1
          endif
@@ -1359,12 +1454,15 @@ C     ------------------------------------------------------------------
       ! initialization
       write(exeTerm9973,9973)
       ! 
-      WRITE(16,1852) NOPE
-1852  FORMAT(///,5X,'TOTAL NUMBER OF ELEVATION BOUNDARY FORCING',
-     &         ' SEGMENTS ',' = ',I5)
-      WRITE(16,1854) NETA
- 1854 FORMAT(/,5X,'TOTAL NUMBER OF ELEVATION SPECIFIED BOUNDARY NODES ='
-     &        ,I6)
+      write(scratchMessage,1852) nope
+1852  format('Total number of elevation boundary forcing segments :',
+     &          i0,'.')
+      call logMessage(ECHO,scratchMessage)
+      
+      write(scratchMessage,1854) neta
+1854  format('Total number of elevation specified boundary nodes :',
+     &        i0,'.')
+      call logMessage(ECHO,scratchMessage)
 C...
 C...  NODE NUMBERS ON EACH ELEVATION BOUNDARY FORCING SEGMENT
 C...  NOTE: In the future, if a boundary type is included for each
@@ -1373,9 +1471,10 @@ C...  periodic and aperiodic B.C.s This would require another NBD type
 C...  array.
       JNMM=0
       DO K=1,NOPE
-         WRITE(16,281) K,NVDLL(K)
- 281     FORMAT(//,5X,'TOTAL NUMBER OF NODES ON ELEVATION SPECIFIED',
-     &              ' BOUNDARY SEGMENT ',2X,I2,2X,'=',1X,I5,/)
+         write(scratchMessage,281) k,nvdll(k)
+ 281     format('Total number of nodes on elevation specified',
+     &              ' boundary segment ',2x,i0,2x,'=',1x,i0)
+         call logMessage(ECHO,scratchMessage)
          DO I=1,NVDLL(K)
             WRITE(16,1855) NBDV(K,I)
  1855      FORMAT(7X,I7)
@@ -1387,13 +1486,14 @@ C...
 C...  SET UP TO READ IN TIME SERIES ELEVATION SPECIFIED BOUNDARY
 C...  CONDITIONS IF APPROPRIATE
 C...
-      IF((NBFR.EQ.0).AND.(NOPE.GT.0)) THEN
-         WRITE(16,1871)
- 1871    FORMAT(/,5X,'TIME SERIES ELEVATION SPECIFIED VALUES ',
-     &          'WILL BE READ FROM UNIT 19',
-     &          /,9X,'INTERPOLATION IN TIME IS DONE TO SYNC THE ',
-     &          /,9X,'ELEVATION DATA WITH THE MODEL TIME STEP.')
-      ENDIF
+      if((nbfr.eq.0).and.(nope.gt.0)) then
+         write(scratchmessage,1871)
+         call logMessage(INFO,scratchMessage)
+ 1871    format('Time series elevation specified values ',
+     &          'will be read from unit 19.',
+     &          ' Interpolation in time is done to sync the ',
+     &          'elevation data with the model time step.')
+      endif
 C...
 C...  FLOW BOUNDARY OUTPUT TO UNIT 16
 C...
@@ -1408,11 +1508,11 @@ C...  TOTAL NUMBER OF FLOW BOUNDARY SEGMENTS
       WRITE(16,1878)
 1878  FORMAT(//,1X,'FLOW BOUNDARY INFORMATION ',/)
       WRITE(16,1879) NBOU
- 1879 FORMAT(//,5X,'THE TOTAL NUMBER OF FLOW BOUNDARY SEGMENTS = ',I5)
+ 1879 FORMAT(//,5X,'THE TOTAL NUMBER OF FLOW BOUNDARY SEGMENTS = ',i0)
 
 C.....INPUT THE TOTAL NUMBER OF FLOW BOUNDARY NODES
       WRITE(16,1881) NVEL
-1881  FORMAT(/,5X,'THE TOTAL NUMBER OF FLOW BOUNDARY NODES = ',I8)
+1881  FORMAT(/,5X,'THE TOTAL NUMBER OF FLOW BOUNDARY NODES = ',i0)
 
       JGW=0
       JME=0
@@ -1431,13 +1531,13 @@ C        write out flow boundary information to unit 16
          IF((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
             WRITE(16,28) K,NVELL(K),K,2*NVELL(K)
  28         FORMAT(///,5X,'TOTAL NUMBER OF PAIRS FOR FLOW BOUNDARY',
-     &           ' SEGMENT',2X,I4,2X,'=',2X,I5,
+     &           ' SEGMENT',2X,i0,2X,'=',2X,i0,
      &           /,5X,'TOTAL NUMBER OF NODES FOR FLOW BOUNDARY',
-     &           ' SEGMENT',2X,I4,2X,'=',2X,I5)
+     &           ' SEGMENT',2X,i0,2X,'=',2X,i0)
          ELSE
             WRITE(16,128) K,NVELL(K)
  128        FORMAT(///,5X,'TOTAL NUMBER OF NODES FOR FLOW BOUNDARY',
-     &           ' SEGMENT',2X,I4,2X,'=',2X,I5)
+     &           ' SEGMENT',2X,i0,2X,'=',2X,i0)
          ENDIF
 C        continue processing flow boundary information
          SELECT CASE(IBTYPE(K))
@@ -1891,7 +1991,7 @@ C...           BOUNDARY CODE TO ZERO TANGENTIAL VELOCITIES
                   IF(IBTYPE(K).EQ.3) LBCODEI(JGW)=13
                   IF((IBTYPE(K).GE.0).AND.(IBTYPE(K).LE.3)) THEN
                      WRITE(16,1856) NBVV(K,I),THETA
- 1856                FORMAT(2X,I7,4X,'THE INNER ANGLE = ',F8.2,1X,
+ 1856                FORMAT(2X,i0,4X,'THE INNER ANGLE = ',F8.2,1X,
      &                    'TANGENTIAL SLIP WILL BE ZEROED')
                   ENDIF
                ENDIF
@@ -2195,12 +2295,12 @@ C...  CODE ON THE EXTERNAL BOUNDARY
      &                       .AND.(LBCODEI(ICK).EQ.0))) THEN
                            WRITE(16,8568) JGW,ICK,ICK
  8568                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
-     &               'BOUNDARY NODE',I7,' (WHICH IS AN ESSENTIAL INTER'
+     &               'BOUNDARY NODE',i0,' (WHICH IS AN ESSENTIAL INTER'
      &               ,'NAL BARRIER BOUNDARY NODE)', /,2X,
-     &               'AND BOUNDARY NODE',I7,' (WHICH IS AN ESSENTIAL ',
+     &               'AND BOUNDARY NODE',i0,' (WHICH IS AN ESSENTIAL ',
      &               'EXTERNAL NO NORMAL FLOW WITH SLIP BOUNDARY',
      &               ' NODE),',/,2X,
-     &               'THE BOUNDARY TYPE FOR BOUNDARY NODE ',I7,
+     &               'THE BOUNDARY TYPE FOR BOUNDARY NODE ',i0,
      &               ' IS BEING RESET TO IBTYPE=20',/,2X,
      &               '(NATURAL NO NORMAL FLOW WITH SLIP BOUNDARY) ')
                            LBCODEI(ICK)=20
@@ -2210,12 +2310,12 @@ C...  CODE ON THE EXTERNAL BOUNDARY
      &                       .AND.(LBCODEI(ICK).EQ.10))) THEN
                            WRITE(16,8569) JGW,ICK,ICK
  8569                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
-     &               'BOUNDARY NODE ',I7,' (WHICH IS AN ESSENTIAL INTER'
+     &               'BOUNDARY NODE ',i0,' (WHICH IS AN ESSENTIAL INTER'
      &               ,'NAL BARRIER BOUNDARY NODE)', /,2X,
-     &               'AND BOUNDARY NODE',I7,' (WHICH IS AN ESSENTIAL ',
+     &               'AND BOUNDARY NODE',i0,' (WHICH IS AN ESSENTIAL ',
      &               'EXTERNAL NO NORMAL FLOW WITH NO SLIP BOUNDARY',
      &               ' NODE),',/,2X,
-     &               'THE BOUNDARY TYPE FOR BOUNDARY NODE ',I7,
+     &               'THE BOUNDARY TYPE FOR BOUNDARY NODE ',i0,
      &               ' IS BEING RESET TO IBTYPE=20',/,2X,
      &               '(NATURAL NO NORMAL FLOW WITH SLIP BOUNDARY) ')
                            LBCODEI(ICK)=20
@@ -2225,12 +2325,12 @@ C...  CODE ON THE EXTERNAL BOUNDARY
      &                       .AND.(LBCODEI(ICK).EQ.10))) THEN
                            WRITE(16,8570) JGW,ICK,ICK
  8570                      FORMAT(1X,'DUE TO LEGAL OVERLAPPING OF ',
-     &               'BOUNDARY NODE',I7,' (WHICH IS A NATURAL INTERNAL'
+     &               'BOUNDARY NODE',i0,' (WHICH IS A NATURAL INTERNAL'
      &               ,' BARRIER BOUNDARY NODE)', /,2X,
-     &              'AND BOUNDARY NODE',I7,' (WHICH IS AN ESSENTIAL ',
+     &              'AND BOUNDARY NODE',i0,' (WHICH IS AN ESSENTIAL ',
      &              'EXTERNAL NO NORMAL FLOW WITH NO SLIP BOUNDARY',
      &              ' NODE),',/,2X,
-     &              'THE BOUNDARY TYPE FOR BOUNDARY NODE',I7,
+     &              'THE BOUNDARY TYPE FOR BOUNDARY NODE',i0,
      &                   ' IS BEING RESET TO IBTYPE=0',/,2X,
      &               '(ESSENTIAL NO NORMAL FLOW WITH SLIP BOUNDARY) ')
                            LBCODEI(ICK)=0
@@ -2293,7 +2393,7 @@ C........DESIGNATED EXTERNAL BARRIER BOUNDARY NODES TO UNIT 16
             IF((LBCODEI(J).EQ.3).OR.(LBCODEI(J).EQ.13)
      &         .OR.(LBCODEI(J).EQ.23)) THEN
                WRITE(16,2225) NBV(J),BARLANHT(J),BARLANCFSP(J)
- 2225         FORMAT(5X,I8,6X,F14.5,15X,F12.3)
+ 2225         FORMAT(5X,i0,6X,F14.5,15X,F12.3)
             ENDIF
          END DO
       ENDIF
@@ -2320,7 +2420,7 @@ C........FILE WITH BOUNDARY NODE INFORMATION)
             IF((LBCODEI(J).EQ.4).OR.(LBCODEI(J).EQ.24)) THEN
                WRITE(16,2325) NBV(J),IBCONN(J),BARINHT(J),
      &                       BARINCFSB(J),BARINCFSP(J)
- 2325         FORMAT(5X,I8,7X,I8,6X,F14.5,12X,F12.3,17X,F12.3)
+ 2325         FORMAT(5X,i0,7X,i0,6X,F14.5,12X,F12.3,17X,F12.3)
             ENDIF
          END DO
       ENDIF
@@ -2356,7 +2456,7 @@ C........BOUNDARY NODE INFORMATION)
                WRITE(16,2328) NBV(J),IBCONN(J),BARINHT(J),
      &                     BARINCFSB(J),BARINCFSP(J),
      &                     PIPEHT(J),PIPECOEF(J),PIPEDIAM(J)
- 2328         FORMAT(3X,I8,5X,I8,4X,F14.5,8X,F12.3,12X,F12.3,
+ 2328         FORMAT(3X,i0,5X,i0,4X,F14.5,8X,F12.3,12X,F12.3,
      &              2X,F10.5,2X,F10.5,2X,F10.5)
             ENDIF
          END DO
@@ -2879,19 +2979,26 @@ C     ------------------------------------------------------------------
 #endif
 
       call xdmfRetrieveAttributeType(xdmfFortranObj, attributeIndex, typeHolder)
-      call createAttributeTypeString(typeHolder, logString) 
-      write(6,'("DEBUG: The Attribute type is ",a,".")') trim(logString)
+      call createAttributeTypeString(typeHolder, logString)
+      scratchFormat = '("The Attribute type is ",a,".")'
+      write(scratchMessage,scratchFormat) trim(logString)
       !
       call xdmfRetrieveAttributeCenter(xdmfFortranObj, attributeIndex, typeHolder)
       call createAttributeCenterString(typeHolder, logString)
-      write(6,'("DEBUG: The Attribute Center is ",a,".")') trim(logString)
+      scratchFormat = '("The Attribute Center is ",a,".")'
+      write(scratchMessage,scratchFormat) trim(logString)
+      call logMessage(DEBUG,scratchMessage)      
       !
       call xdmfRetrieveAttributeValueType(xdmfFortranObj, attributeIndex, typeHolder)
       call createDataTypeString(typeHolder, logString)
-      write(6,'("DEBUG: The Attribute data type is ",a,".")') trim(logString)
+      scratchFormat = '("The Attribute data type is ",a,".")'
+      write(scratchMessage,scratchFormat) trim(logString)
+      call logMessage(DEBUG,scratchMessage)
       !
       call xdmfRetrieveAttributeSize(xdmfFortranObj, attributeIndex, typeHolder)
-      write(6,'("DEBUG: The Attribute consists of ",i0," values.")') typeHolder
+      scratchFormat = '("The Attribute consists of ",i0," values.")') 
+      write(scratchMessage,scratchFormat) typeHolder
+      call logMessage(DEBUG,scratchMessage)      
 #endif
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -3043,7 +3150,9 @@ C     ------------------------------------------------------------------
       case(206)
          typeString = 'XDMF_ATTRIBUTE_TYPE_NOTYPE'
       case default
-         write(6,'("WARNING: Unrecognized attribute type ",i0,".")') trim(typeString)
+         scratchFormat = '("Unrecognized attribute type ",i0,".")'
+         write(scratchMessage,scratchFormat) trim(typeString)
+         call allMessage(WARNING,scratchMessage)
       end select
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -3081,7 +3190,9 @@ C     ------------------------------------------------------------------
       case(604)
          typeString = 'XDMF_SET_TYPE_EDGE'      
       case default
-         write(6,'("WARNING: Unrecognized set type ",i0,".")') typeHolder
+         scratchFormat = '("Unrecognized set type ",i0,".")'
+         write(scratchMessage,scratchFormat) typeHolder
+         call allMessage(WARNING,scratchMessage)
       end select
       
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -3121,7 +3232,9 @@ C     ------------------------------------------------------------------
       case(104)
          typeString = 'XDMF_ATTRIBUTE_CENTER_NODE'
       case default
-         write(6,'("WARNING: Unrecognized attribute center ",i0,".")') trim(typeString)
+         scratchFormat = '("Unrecognized attribute center ",i0,".")'
+         write(scratchMessage,scratchFormat) trim(typeString)
+         call allMessage(WARNING,scratchMessage)
       end select
       
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -3167,7 +3280,9 @@ C     ------------------------------------------------------------------
       case(8)
          typeString = 'XDMF_ARRAY_TYPE_FLOAT64'
       case default
-         write(6,'("WARNING: Unrecognized data type ",i0,".")') trim(typeString)
+         scratchFormat = '("Unrecognized data type ",i0,".")'
+         write(scratchMessage,scratchFormat) trim(typeString)
+         call allMessage(WARNING,scratchMessage)
       end select
       
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -3221,7 +3336,9 @@ C     ------------------------------------------------------------------
       case(516)
          typeString = 'XDMF_TOPOLOGY_TYPE_WEDGE_18'
       case default
-         write(6,'("WARNING: Unrecognized topology type ",i0,".")') typeHolder
+         scratchFormat = '("Unrecognized topology type ",i0,".")'
+         write(scratchMessage,scratchFormat) typeHolder
+         call logMessage(WARNING,scratchMessage)
       end select
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

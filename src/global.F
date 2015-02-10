@@ -731,6 +731,7 @@ C
       CHARACTER(len=10), dimension(5) :: logLevelNames
       CHARACTER(len=50), dimension(50) :: messageSources ! subroutine names
       CHARACTER(len=1024) :: scratchMessage ! used for formatted messages
+      CHARACTER(len=1024) :: scratchFormat  ! used for Fortran format strings
       INTEGER :: sourceNumber ! index into messageSources for current sub
 
 C     v49.48.01 tcm 20110126 Variables related to kdtree searches

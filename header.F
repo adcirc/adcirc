@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.43 - 02/10/2014 - jgf - Fixed log messages in mesh.F because each of
+C           the subdomains was dumping its chatter to the screen in parallel;
+C           fixed the splash header (with version and copyright info) so that
+C           it appears at the very top of the fort.16; removed erroneous
+C           log message about the JCG solver.
 C  v51.42 - 01/28/2014 - jgf - Merged subdomain modeling capability; the 
 C           changes to existing source code are minimal and limited to a few
 C           additional subroutine calls; nearly all the code to support the

@@ -97,48 +97,6 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-C
-C     jgf46.00 Zero out all the variables in the Nodal Attributes
-C     Module.
-      CALL initNAModule()
-C
-C     jgf50.32: Initialize default values in wind module.
-      CALL initWindModule()
-
-c     tcm v50.66.01 addition for time varying bathymetry
-      NDDT = 0  !set the default value for time varying bathymetry e.g. no changes
-      ios_nddt = 0
-C
-      fileFound = .false.
-C
-C     jgf51.12.11: moved the reading of the mesh and boundaries file
-C     (called fort.14 by default) to the mesh module. Also added the
-C     capability to read different formats and use nondefault filenames
-C     via command line options in sizes.F.
-      call readMesh()
-C
-C     ALLOCATE ARRAYS Dimensioned by MNP and MNE
-      call alloc_main1a()
-      ! jgf51.21.13: Allocate boundary condition arrays dimensioned by
-      ! mnope and mneta
-      call alloc_main2()
-      ! jgf51.21.13: Allocate boundary condition arrays dimensioned by
-      ! mnvel 
-      call alloc_main3()
-C...
-C...  OPEN UNIT 15 INPUT FILE (control parameters and periodic boundary conditions)
-C...
-      CALL openFileForRead(15,TRIM(INPUTDIR)//'/'//'fort.15',ios)
-      IF (ios.gt.0) THEN
-         CALL ADCIRC_Terminate()
-      ENDIF
-C
-C...GENERAL PURPOSE FORMAT STATEMENTS for subtly expressed error messages
-C...
- 1112 FORMAT(/,1X,79('_'))
- 9972 FORMAT(////,1X,'!!!!!!!!!! INPUT ERROR !!!!!!!!!',/)
- 9973 FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
- 9974 FORMAT(/,1X,'!!!!!! EXECUTION WILL CONTINUE !!!!!!!!',//)
 C...
 C...PRINT OUT HEADER FOR OUTPUT INCLUDING VERSION NUMBER AND COPYRIGHT
 C...
@@ -193,9 +151,50 @@ C...
 #ifdef CSCA
       WRITE(16,*) '      - CODE OPTIMIZED FOR A SCALAR COMPUTER'
 #endif
+      write(16,1112) 
+C
+C     jgf46.00 Zero out all the variables in the Nodal Attributes
+C     Module.
+      CALL initNAModule()
+C
+C     jgf50.32: Initialize default values in wind module.
+      CALL initWindModule()
 
-      WRITE(16,*) '      - CODE WILL USE JCG ITERATIVE GWCE SOLVER'
-      WRITE(16,1112)
+c     tcm v50.66.01 addition for time varying bathymetry
+      NDDT = 0  !set the default value for time varying bathymetry e.g. no changes
+      ios_nddt = 0
+C
+      fileFound = .false.
+C
+C     jgf51.12.11: moved the reading of the mesh and boundaries file
+C     (called fort.14 by default) to the mesh module. Also added the
+C     capability to read different formats and use nondefault filenames
+C     via command line options in sizes.F.
+      call readMesh()
+C
+C     ALLOCATE ARRAYS Dimensioned by MNP and MNE
+      call alloc_main1a()
+      ! jgf51.21.13: Allocate boundary condition arrays dimensioned by
+      ! mnope and mneta
+      call alloc_main2()
+      ! jgf51.21.13: Allocate boundary condition arrays dimensioned by
+      ! mnvel 
+      call alloc_main3()
+C...
+C...  OPEN UNIT 15 INPUT FILE (control parameters and periodic boundary conditions)
+C...
+      CALL openFileForRead(15,TRIM(INPUTDIR)//'/'//'fort.15',ios)
+      IF (ios.gt.0) THEN
+         CALL ADCIRC_Terminate()
+      ENDIF
+C
+C...GENERAL PURPOSE FORMAT STATEMENTS for subtly expressed error messages
+C...
+ 1112 FORMAT(/,1X,79('_'))
+ 9972 FORMAT(////,1X,'!!!!!!!!!! INPUT ERROR !!!!!!!!!',/)
+ 9973 FORMAT(/,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
+ 9974 FORMAT(/,1X,'!!!!!! EXECUTION WILL CONTINUE !!!!!!!!',//)
+
 
 c...  tcm v50.66.02 Addtions for Time Varying Bathymetry
 c...  read through the fort.15 file for the namelist (TimeBathyControl) for
@@ -232,13 +231,7 @@ c....    a non-default value we can determine this was the case.
          WRITE(16,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.'
          CALL ADCIRC_TERMINATE()
       ENDIF
-      CLOSE(UNIT=15)          
-
-c.....REOPEN THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
-      CALL openFileForRead(15,TRIM(INPUTDIR)//'/'//'fort.15',ios)
-      IF (ios.gt.0) THEN
-         CALL ADCIRC_Terminate()
-      ENDIF
+      REWIND(15)
 
 #if defined CSWAN || defined ADCSWAN
       ! jgf50.60.08: Add a namelist for the user to turn SWAN output
