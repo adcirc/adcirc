@@ -205,6 +205,21 @@ C
          WindDrag = 0.001d0*(0.75d0+0.067d0*WindSpeed)
          IF(WindDrag.gt.WindDragLimit) WindDrag=WindDragLimit
 C
+C TCM 20150220:  Added a Modified Garratt formula that was
+C        used in the Texas FEMA work
+      CASE("TXFEMA","txfema","TXFema","TxFEMA")
+         IF (WindSpeed .le. 18.75d0) then
+            WindDrag = 0.001d0*(0.75d0+0.067d0*WindSpeed)
+         elseif ((WindSpeed .gt. 18.75d0).and.(WindSpeed .LE. 35.d0)) then
+            WindDrag = 0.002d0
+         elseif ((WindSpeed .gt. 35.d0).and.(WindSpeed .LE. 45.0d0)) then
+            WindDrag = 0.001d0*(2.0d0 + 0.10d0*(WindSpeed - 35.d0))
+         else
+            WindDrag = 0.003d0
+         endif
+         IF (WindDrag.gt.WindDragLimit) WindDrag=WindDragLimit
+
+C
 Casey 110518: Added Mark Powell's sector-based wind drag.
       CASE("Powell","POWELL","powell")
 C.. Check whether we have previously found the eye.

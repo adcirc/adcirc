@@ -2,7 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
-C    V51.34.05 - 01/14/2015 - tcm - Testing a new limiter:
+C    v51.34.06 - 02/20/2015 - tcm - Added a modified Garratt wind drag formula
+C        that was used in the TX FEMA work.
+C    v51.34.05 - 01/14/2015 - tcm - Testing a new limiter:
 C        If the maximum value of ETAS is greater than 2 then reduce it to 2
 C        2 meters of change in a single time step is a lot
 C        this is a one-off for testing to a solution to a blow-up scenario
