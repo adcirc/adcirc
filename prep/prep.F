@@ -1399,6 +1399,7 @@ C---------------------------------------------------------------------------C
       USE PRE_GLOBAL
       use memory_usage
       USE HARM, ONLY : NAMEFR
+      use subprep, only : subdomainOn, found_sm_nml ! NCSU Subdomain Modeling
       IMPLICIT NONE
       integer :: nbytes = 0
       INTEGER I,J,K,M,JG,JP,KK, ios_stations
@@ -1853,6 +1854,11 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
             WRITE(15,waveCoupling)
             WRITE(15,*) '! -- End Wave Coupling Namelist --'
          ENDIF
+
+! NCSU Subdomain Modeling
+         if (FOUND_SM_NML) then
+            WRITE(15,*) "&subdomainModeling subdomainOn=",subdomainOn," /"
+         endif
 
          CLOSE(15)
 C

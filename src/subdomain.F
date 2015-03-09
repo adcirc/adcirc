@@ -96,6 +96,8 @@ C    ========================================================================
          read(1015,*) NSPOOLGS
          read(1015,*) enforceBN
          select case(noutgs)
+         case(0)
+            ! subdomain run (no b.c. recording)
          case(1)
             ! open ocean boundary nodes:
             read(1015,*) ncbnr
@@ -123,6 +125,8 @@ C    ========================================================================
 #ifdef CMPI
          ! localize global record-node arrays:
          select case(noutgs)
+         case(0)
+            ! subdomain run (no b.c. recording)
          case(1)
             ! open ocean boundary nodes:
             localncbnr = 0
@@ -419,19 +423,7 @@ C     | finds the proper place in the b.c. file.
          do i=1,ncbn
              read (1019,*) n,ecbn2(i),ucbn2(i)
              read (1019,*) vcbn2(i),wdcbn2(i)
-         enddo
-
-         itread = iths/sbtiminc
-         do it=1,itread
-             read (1019,*) n
-             do i=1,ncbn
-                 ecbn1(i) = ecbn2(i)
-                 ucbn1(i) = ucbn2(i)
-                 vcbn1(i) = vcbn2(i)
-                 wdcbn1(i) = wdcbn2(i)
-                 read (1019,*) n,ecbn2(i),ucbn2(i)
-                 read (1019,*) vcbn2(i),wdcbn2(i)
-             enddo
+             wdcbn1(i)=wdcbn2(i) !ensure that the wet nodes begin wet
          enddo
 
       END SUBROUTINE openFort019H

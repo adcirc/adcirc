@@ -29,7 +29,7 @@ C   NCSU Subdomain Modeling variables:
        integer,allocatable :: pobn(:),pnobnp(:) 
        integer,allocatable :: pibn(:),pnibnp(:) 
        integer :: pwdbn
-
+       logical :: found_sm_nml
 
       contains
 
@@ -37,9 +37,11 @@ C   NCSU Subdomain Modeling variables:
       SUBROUTINE readFort015prep()
 
          implicit none
-         integer :: dummy, enforceBN
+         integer :: dummy
          integer :: ioerror  ! zero if the fort.15 file was opened
          namelist /subdomainModeling/ subdomainOn
+
+         FOUND_SM_NML = .false.
 
       call setMessageSource("readFort015prep")
 #if defined(SUBPREP_TRACE) || defined(ALL_TRACE)
@@ -62,6 +64,8 @@ C   NCSU Subdomain Modeling variables:
          IF (ioerror.gt.0) THEN
             call logMessage(INFO,
      &         'The subdomainModeling namelist was not found.')
+         else if(ioerror.eq.0) then
+               FOUND_SM_NML = .true.
          endif
          if ((ioerror.gt.0).or.(subdomainOn.eqv..false.)) then
             call logMessage(INFO,
@@ -73,7 +77,7 @@ C   NCSU Subdomain Modeling variables:
                 
          if (subdomainOn) then
             call openFileForRead(1015,'fort.015',ioerror)
-            if (ioerror.ne.0) then
+            if (ioerror.eq.0) then
                print *, "Subdomain Active"
                open(1015, file='fort.015')
                read(1015,*) dummy

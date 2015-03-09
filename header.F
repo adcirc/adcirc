@@ -2,6 +2,7 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.45 - 03/09/2015 - jgf - Merged aa's latest fixes for subdomain modeling.
 C  v51.44 - 03/09/2015 - jgf - Merged cs/kd changes to support writing and
 C           post processing subdomain harmonic analysis output files as well
 C           as corrections for writing harmonic analysis data to subdomain
