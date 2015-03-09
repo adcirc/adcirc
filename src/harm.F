@@ -91,12 +91,12 @@ c***********************************************************************
 C
       MODULE HARM
 C
-      USE SIZES, ONLY : SZ, MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR
+      USE SIZES, ONLY : SZ, MNP, MNHARF, MNSTAE, MNSTAV, LOCALDIR,
+     &                   WRITE_LOCAL_HARM_FILES
       USE GLOBAL, ONLY : screenMessage, logMessage, DEBUG, ECHO, INFO,
-     &                   WARNING, ERROR, setMessageSource,
+     &                   WARNING, ERROR, setMessageSource, pi,
      &                   unsetMessageSource, allMessage, scratchMessage
 C
-      REAL(8),PRIVATE,PARAMETER :: PI=3.141592653589793D0
 C
       ! jgf49.44: parameters describing the harmonic constituents to be
       ! included in the harmonic analysis of model results
@@ -467,8 +467,10 @@ C     jgf49.44: Initializes harmonic analysis arrays and parameters.
 C     Based on HACOLDS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE initHarmonicParameters()
-      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MNPROC
-      USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, myProc
+      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES, MNPROC,
+     &                   WRITE_LOCAL_HARM_FILES, 
+     &                   WRITE_LOCAL_HOT_START_FILES
+      USE GLOBAL, ONLY : ITHS, NSTAE, NSTAV, myProc, NHSTAR
       USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER :: i, j, n           ! loop counters
@@ -485,6 +487,35 @@ C
          call unsetMessageSource()
          RETURN ! EARLY RETURN if harmonic analysis is not part of this run
       ENDIF
+      ! 
+      ! jgf51.44: If subdomain harmonic analysis files will be written
+      ! in parallel, subdomain hotstart files are also required for
+      ! saving the load vectors and rhs of the harmonic analysis problem.
+      if ( (mnproc.gt.1).and.
+     &     (write_local_harm_files.eqv..true.) ) then
+         call logMessage(INFO,'Subdomain harmonic analysis files '
+     &                // 'were specified with -m on the command line.')
+         if ( (NHSTAR.ne.0).and.
+     &        (write_local_hot_start_files.eqv..false.) ) then  
+            call logMessage(INFO,'Fulldomain hotstart files will be '
+     &                            // 'created by default.')
+            call allMessage(ERROR,'Fulldomain hotstart output files '
+     &       // 'cannot be used in combination with subdomain harmonic '
+     &       // 'analysis output files. '
+     &       // 'The -s argument can be used on the ADCIRC command '
+     &       // 'line to specify that hotstart files should be written '
+     &       // 'for each subdomain; this is required for the writing '
+     &       // 'of harmonic analysis output (fort.51 etc) '
+     &       // ' to subdomains.') 
+             call harmonicTerminate()
+         endif
+         if ( (NHSTAR.ne.0).and. 
+     &        (write_local_hot_start_files.eqv..true.) ) then
+            call logMessage(INFO,'Subdomain hotstart files will '
+     &       // 'contain subdomain harmonic analysis data.')
+         endif
+      endif
+      
       IHABEG = ITHAS + NHAINC
       ICHA=0
       icall=0
@@ -528,25 +559,26 @@ C
 C     jgf49.44: Initialize all the full domain i/o arrays to zero, if
 C     they will be used (i.e., if we are in serial or if we might be
 C     reading or writing full domain arrays in parallel).
-      IF ( (MNPROC.gt.1).and.
-     &   ( (myProc.eq.0)
-     &          .or.(READ_LOCAL_HOT_START_FILES.eqv..false.) ) ) THEN
-         GLOELV_g(:,:) = 0.d0
-         STAELV_g(:,:) = 0.d0
-         GLOULV_g(:,:) = 0.d0
-         GLOVLV_g(:,:) = 0.d0
-         STAULV_g(:,:) = 0.d0
-         STAVLV_g(:,:) = 0.d0
-         IF (CHARMV.eqv..true.) THEN
-            ELAV_g(:) = 0.d0
-            ELVA_g(:) = 0.d0
-            XVELAV_g(:) = 0.d0
-            YVELAV_g(:) = 0.d0
-            XVELVA_g(:) = 0.d0
-            YVELVA_g(:) = 0.d0
+      if (WRITE_LOCAL_HARM_FILES.eqv..false.) then
+         IF ( (MNPROC.gt.1).and.
+     &      ( (myProc.eq.0)
+     &           .or.(READ_LOCAL_HOT_START_FILES.eqv..false.) ) ) THEN
+            GLOELV_g(:,:) = 0.d0
+            STAELV_g(:,:) = 0.d0
+            GLOULV_g(:,:) = 0.d0
+            GLOVLV_g(:,:) = 0.d0
+            STAULV_g(:,:) = 0.d0
+            STAVLV_g(:,:) = 0.d0
+            IF (CHARMV.eqv..true.) THEN
+               ELAV_g(:) = 0.d0
+               ELVA_g(:) = 0.d0
+               XVELAV_g(:) = 0.d0
+               YVELAV_g(:) = 0.d0
+               XVELVA_g(:) = 0.d0
+               YVELVA_g(:) = 0.d0
+            ENDIF
          ENDIF
-      ENDIF
-
+      endif
 #if defined(HARM_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -1881,8 +1913,10 @@ C     by comparing with parameters read from the fort.15.
 C     Based on HAHOTS, written by rl.
 C--------------------------------------------------------------------
       SUBROUTINE checkHAHotstart()
-      USE GLOBAL, ONLY : NSTAE_G, NSTAV_G, MYPROC,
+      USE SIZES, ONLY : READ_LOCAL_HOT_START_FILES
+      USE GLOBAL, ONLY : NSTAE_G, NSTAV_G, MYPROC, NSTAE, NSTAV,
      &                   NSCREEN, SCREENUNIT, NP_G
+      USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER :: i    ! loop counter
       REAL(SZ) FDIFF  ! difference between frequencies btw hotstart and fort.15
@@ -1899,10 +1933,14 @@ C
       if(nz.ne.inz) iflag=1
       if(nf.ne.inf) iflag=1
       if(mm.ne.imm) iflag=1
-      if (myProc.eq.0) then
+      if ((myProc.eq.0).and.(read_local_hot_start_files.eqv..false.)) then
          if(np_g.ne.inp) iflag=1
          if(nstae_g.ne.instae) iflag=1
          if(nstav_g.ne.instav) iflag=1
+      else if (READ_LOCAL_HOT_START_FILES.eqv..true.) then
+         if(np.ne.inp) iflag=1
+         if(nstae.ne.instae) iflag=1
+         if(nstav.ne.instav) iflag=1
       endif
       if(nhase.ne.inhase) iflag=1
       if(nhasv.ne.inhasv) iflag=1

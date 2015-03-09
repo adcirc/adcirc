@@ -775,11 +775,15 @@ C--------------------------------------------------------------------
 C...
 C...  OPEN STATEMENT FOR UNIT 16 OUTPUT FILE (ADCIRC LOG FILE)
 C...
+C     cms51.06: moved fort.33 file from read_input.F to here
 #ifdef CMPI
       OPEN(16,FILE=trim(localdir)//'/'//'fort.16', ACTION='WRITE',
      &    STATUS='REPLACE')
+      OPEN(33,FILE=trim(localdir)//'/'//'fort.33', ACTION='WRITE',
+     &    STATUS='REPLACE')
 #else
       OPEN(16,FILE='fort.16', ACTION='WRITE', STATUS='REPLACE')
+      OPEN(33,FILE='fort.33', ACTION='WRITE', STATUS='REPLACE')
 #endif
 C--------------------------------------------------------------------
       END SUBROUTINE openLogFile

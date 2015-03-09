@@ -100,7 +100,7 @@ C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
       USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc,
-     &   read_local_hot_start_files, make_dirname
+     &   read_local_hot_start_files, make_dirname, write_local_harm_files
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
      &                 initHarmonicParameters
@@ -189,6 +189,9 @@ C...  Special instructions for writer processors
      &        ( (myProc.eq.0)
      &          .or.(READ_LOCAL_HOT_START_FILES.eqv..false.) ) ) THEN
           CALL allocateFullDomainIOArrays()
+      ENDIF
+      IF ( (MNPROC.gt.1).and.(myProc.eq.0).and.
+     &     (WRITE_LOCAL_HARM_FILES.eqv..false.) ) THEN
           CALL allocateFullDomainHAIOArrays()
       ENDIF
 

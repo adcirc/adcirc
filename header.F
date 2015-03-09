@@ -2,6 +2,13 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.44 - 03/09/2015 - jgf - Merged cs/kd changes to support writing and
+C           post processing subdomain harmonic analysis output files as well
+C           as corrections for writing harmonic analysis data to subdomain
+C           hotstart files. These changes enable ADCIRC to perform harmonic
+C           analysis for a larger number of harmonic constituents (e.g., 
+C           more than 30) while executing in parallel by avoiding the 
+C           i/o memory demand associated with globalio for harmonics.
 C  v51.43 - 02/10/2014 - jgf - Fixed log messages in mesh.F because each of
 C           the subdomains was dumping its chatter to the screen in parallel;
 C           fixed the splash header (with version and copyright info) so that

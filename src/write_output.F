@@ -106,7 +106,6 @@ Casey 090302: Added these arrays for output of radiation stress gradients.
       type(OutputDataDescript_t) :: HAVelUPhaseDescript
       type(OutputDataDescript_t) :: HAVelVPhaseDescript
       type(OutputDataDescript_t) :: MVDescript
-      type(OutputDataDescript_t) :: dummyDescript
 C
 C     Fulldomain Stations in parallel:
       REAL(SZ), ALLOCATABLE, TARGET :: EMAG_g(:,:)    ! elevation magnitudes
@@ -1356,7 +1355,8 @@ C     in serial or in parallel using globalio.
 C----------------------------------------------------------------------
       SUBROUTINE writeHarmonicAnalysisOutput(ITIME)
       USE SIZES, ONLY : SZ, MNHARF, LOCALDIR, GLOBALDIR,
-     &                  WRITE_LOCAL_FILES, MNPROC, MYPROC, MNP
+     &                  WRITE_LOCAL_FILES, MNPROC, MYPROC, MNP,
+     &                  WRITE_LOCAL_HARM_FILES
 C RJW added MNPROC and MYPROC
 C removed from global  myProc, MNPROC,
       USE GLOBAL, ONLY : OutputDataDescript_t, NSTAE_G,
@@ -1409,11 +1409,12 @@ C     a check of FirstCall is not necessary. However, we'll still do it, in
 C     case the subroutine is ever called more than once in some future
 C     scenario.
       IF (FirstCall) THEN
+         !
+         ! Chris S. 05/08/14 Add explicit filename to each magnitude 
+         ! (only do for u magnitude for velocity) descriptor
+         ! instead of building fn within writeOutHarmonicArrays() subroutine     
          IF (NHASE.ne.0) THEN
             ! fort.51 magnitude
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-              ALLOCATE(EMAG_g(MNHARF,NSTAE_G))
-            ENDIF
             HAElevStaMagDescript % specifier            = NHASE
             HAElevStaMagDescript % initial_value        = 0.0
             HAElevStaMagDescript % num_items_per_record = MNHARF
@@ -1421,9 +1422,16 @@ C     scenario.
             HAElevStaMagDescript % num_records_this     = NSTAE
             HAElevStaMagDescript % imap                 => IMAP_STAE_LG
             HAElevStaMagDescript % array2D              => EMAG
-            HAElevStaMagDescript % array2D_g            => EMAG_g
             HAElevStaMagDescript % ConsiderWetDry       = .FALSE.
+            HAElevStaMagDescript % file_name            = 'fort.51'
             HAElevStaMagDescript % field_name           = 'HAElevStaMag'
+            HAElevStaMagDescript % array2D_g            => null()            
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(EMAG_g(MNHARF,NSTAE_G))
+               ENDIF
+               HAElevStaMagDescript % array2D_g         => EMAG_g
+            ENDIF            
             IF (ICS.eq.2) THEN
                HAElevStaMagDescript % x_coord           => SLEL
                HAElevStaMagDescript % y_coord           => SFEL
@@ -1432,9 +1440,6 @@ C     scenario.
                HAElevStaMagDescript % y_coord           => YEL
             ENDIF
             ! fort.51 phase
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(PHASEDE_g(MNHARF,NSTAE_G))
-            ENDIF
             HAElevStaPhaseDescript % specifier            = NHASE
             HAElevStaPhaseDescript % initial_value        = 0.0
             HAElevStaPhaseDescript % num_items_per_record = MNHARF
@@ -1442,9 +1447,15 @@ C     scenario.
             HAElevStaPhaseDescript % num_records_this     = NSTAE
             HAElevStaPhaseDescript % imap                => IMAP_STAE_LG
             HAElevStaPhaseDescript % array2D              => PHASEDE
-            HAElevStaPhaseDescript % array2D_g            => PHASEDE_g
+            HAElevStaPhaseDescript % array2D_g            => null()
             HAElevStaPhaseDescript % ConsiderWetDry       = .FALSE.
             HAElevStaPhaseDescript % field_name     = 'HAElevStaPhase'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(PHASEDE_g(MNHARF,NSTAE_G))
+               ENDIF
+               HAElevStaPhaseDescript % array2D_g         => PHASEDE_g
+            ENDIF
             IF (ICS.eq.2) THEN
                HAElevStaPhaseDescript % x_coord           => SLEL
                HAElevStaPhaseDescript % y_coord           => SFEL
@@ -1457,9 +1468,6 @@ C
 C
          IF (NHASV.ne.0) THEN
             ! fort.52 u velocity magnitude
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(UMAG_g(MNHARF,NSTAV_G))
-            ENDIF
             HAVelStaUMagDescript % specifier            = NHASV
             HAVelStaUMagDescript % initial_value        = 0.0
             HAVelStaUMagDescript % num_items_per_record = MNHARF
@@ -1467,10 +1475,17 @@ C
             HAVelStaUMagDescript % num_records_this     = NSTAV
             HAVelStaUMagDescript % imap                 => IMAP_STAV_LG
             HAVelStaUMagDescript % array2D              => UMAG
-            HAVelStaUMagDescript % array2D_g            => UMAG_g
+            HAVelStaUMagDescript % array2D_g            => null()
             HAVelStaUMagDescript % ConsiderWetDry       = .FALSE.
             HAVelStaUMagDescript % alternate_value      = 0.0
             HAVelStaUMagDescript % field_name           = 'HAVelStaUMag'
+            HAVelStaUMagDescript % file_name            = 'fort.52'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(UMAG_g(MNHARF,NSTAV_G))
+               ENDIF
+               HAVelStaUMagDescript % array2D_g            => UMAG_g
+            ENDIF
             IF (ICS.eq.2) THEN
                HAVelStaUMagDescript % x_coord           => SLEV
                HAVelStaUMagDescript % y_coord           => SFEV
@@ -1479,9 +1494,6 @@ C
                HAVelStaUMagDescript % y_coord           => YEV
             ENDIF
             ! fort.52 v velocity magnitude
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(VMAG_g(MNHARF,NSTAV_G))
-            ENDIF
             HAVelStaVMagDescript % specifier            = NHASV
             HAVelStaVMagDescript % initial_value        = 0.0
             HAVelStaVMagDescript % num_items_per_record = MNHARF
@@ -1489,10 +1501,16 @@ C
             HAVelStaVMagDescript % num_records_this     = NSTAV
             HAVelStaVMagDescript % imap                 => IMAP_STAV_LG
             HAVelStaVMagDescript % array2D              => VMAG
-            HAVelStaVMagDescript % array2D_g            => VMAG_g
+            HAVelStaVMagDescript % array2D_g            => null()
             HAVelStaVMagDescript % ConsiderWetDry       = .FALSE.
             HAVelStaVMagDescript % alternate_value      = 0.0
             HAVelStaVMagDescript % field_name           = 'HAVelStaVMag'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(VMAG_g(MNHARF,NSTAV_G))
+               ENDIF
+               HAVelStaVMagDescript % array2D_g            => VMAG_g
+            ENDIF
             IF (ICS.eq.2) THEN
                HAVelStaVMagDescript % x_coord           => SLEV
                HAVelStaVMagDescript % y_coord           => SFEV
@@ -1501,9 +1519,6 @@ C
                HAVelStaVMagDescript % y_coord           => YEV
             ENDIF
             ! fort.52 u velocity phase
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(PHASEDU_g(MNHARF,NSTAV_G))
-            ENDIF
             HAVelStaUPhaseDescript % specifier            = NHASV
             HAVelStaUPhaseDescript % initial_value        = 0.0
             HAVelStaUPhaseDescript % num_items_per_record = MNHARF
@@ -1511,10 +1526,16 @@ C
             HAVelStaUPhaseDescript % num_records_this     = NSTAV
             HAVelStaUPhaseDescript % imap         => IMAP_STAV_LG
             HAVelStaUPhaseDescript % array2D              => PHASEDU
-            HAVelStaUPhaseDescript % array2D_g            => PHASEDU_g
+            HAVelStaUPhaseDescript % array2D_g            => null()
             HAVelStaUPhaseDescript % ConsiderWetDry       = .FALSE.
             HAVelStaUPhaseDescript % alternate_value      = 0.0
             HAVelStaUPhaseDescript % field_name   = 'HAVelStaUPhase'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(PHASEDU_g(MNHARF,NSTAV_G))
+               ENDIF
+               HAVelStaUPhaseDescript % array2D_g            => PHASEDU_g
+            ENDIF
             IF (ICS.eq.2) THEN
                HAVelStaUPhaseDescript % x_coord           => SLEV
                HAVelStaUPhaseDescript % y_coord           => SFEV
@@ -1523,9 +1544,6 @@ C
                HAVelStaUPhaseDescript % y_coord           => YEV
             ENDIF
             ! fort.52 v velocity phase
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(PHASEDV_g(MNHARF,NSTAV_G))
-            ENDIF
             HAVelStaVPhaseDescript % specifier            = NHASV
             HAVelStaVPhaseDescript % initial_value        = 0.0
             HAVelStaVPhaseDescript % num_items_per_record = MNHARF
@@ -1533,10 +1551,16 @@ C
             HAVelStaVPhaseDescript % num_records_this     = NSTAV
             HAVelStaVPhaseDescript % imap            => IMAP_STAV_LG
             HAVelStaVPhaseDescript % array2D              => PHASEDV
-            HAVelStaVPhaseDescript % array2D_g            => PHASEDV_g
+            HAVelStaVPhaseDescript % array2D_g            => null()
             HAVelStaVPhaseDescript % ConsiderWetDry       = .FALSE.
             HAVelStaVPhaseDescript % alternate_value      = 0.0
             HAVelStaVPhaseDescript % field_name      = 'HAVelStaVPhase'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(PHASEDV_g(MNHARF,NSTAV_G))
+               ENDIF
+               HAVelStaVPhaseDescript % array2D_g            => PHASEDV_g
+            ENDIF
             IF (ICS.eq.2) THEN
                HAVelStaVPhaseDescript % x_coord           => SLEV
                HAVelStaVPhaseDescript % y_coord           => SFEV
@@ -1550,9 +1574,6 @@ C
 C
          IF (NHAGE.ne.0) THEN
             ! fort.53 Full Domain Elevation Magnitude
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(EMAGT_g(MNHARF,NP_G))
-            ENDIF
             HAElevMagDescript % specifier            = NHAGE
             HAElevMagDescript % initial_value        = 0.0
             HAElevMagDescript % num_items_per_record = MNHARF
@@ -1560,10 +1581,17 @@ C
             HAElevMagDescript % num_records_this     = NP
             HAElevMagDescript % imap                 => NODES_LG
             HAElevMagDescript % array2D              => EMAGT
-            HAElevMagDescript % array2D_g            => EMAGT_g
+            HAElevMagDescript % array2D_g            => null()
             HAElevMagDescript % ConsiderWetDry       = .FALSE.
             HAElevMagDescript % alternate_value      = -99999.0
             HAElevMagDescript % field_name           = 'HAElevMag'
+            HAElevMagDescript % file_name            = 'fort.53'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(EMAGT_g(MNHARF,NP_G))
+               ENDIF
+               HAElevMagDescript % array2D_g            => EMAGT_g
+            ENDIF
             ! fort.53 Full Domain Elevation Phase
             IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
                ALLOCATE(PHASEDEN_g(MNHARF,NP_G))
@@ -1575,19 +1603,22 @@ C
             HAElevPhaseDescript % num_records_this     = NP
             HAElevPhaseDescript % imap                 => NODES_LG
             HAElevPhaseDescript % array2D              => PHASEDEN
-            HAElevPhaseDescript % array2D_g            => PHASEDEN_g
+            HAElevPhaseDescript % array2D_g            => null()
             HAElevPhaseDescript % ConsiderWetDry       = .FALSE.
             HAElevPhaseDescript % alternate_value      = -99999.0
             HAElevPhaseDescript % field_name           = 'HAElevPhase'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(PHASEDEN_g(MNHARF,NP_G))
+               ENDIF
+               HAElevPhaseDescript % array2D_g            => PHASEDEN_g
+            ENDIF
 
          ENDIF
 C
 C
          IF (NHAGV.ne.0) THEN
             ! fort.54 Full Domain U Velocity Magnitude
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(UMAGT_g(MNHARF,NP_G))
-            ENDIF
             HAVelUMagDescript % specifier            = NHAGV
             HAVelUMagDescript % initial_value        = 0.0
             HAVelUMagDescript % num_items_per_record = MNHARF
@@ -1595,14 +1626,18 @@ C
             HAVelUMagDescript % num_records_this     = NP
             HAVelUMagDescript % imap                 => NODES_LG
             HAVelUMagDescript % array2D              => UMAGT
-            HAVelUMagDescript % array2D_g            => UMAGT_g
+            HAVelUMagDescript % array2D_g            => null()
             HAVelUMagDescript % ConsiderWetDry       = .FALSE.
             HAVelUMagDescript % alternate_value      = -99999.0
             HAVelUMagDescript % field_name           = 'HAVelUMag'
+            HAVelUMagDescript % file_name            = 'fort.54'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(UMAGT_g(MNHARF,NP_G))
+               ENDIF
+               HAVelUMagDescript % array2D_g            => UMAGT_g
+            ENDIF            
             ! fort.54 Full Domain V Velocity Magnitude
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(VMAGT_g(MNHARF,NP_G))
-            ENDIF
             HAVelVMagDescript % specifier            = NHAGV
             HAVelVMagDescript % initial_value        = 0.0
             HAVelVMagDescript % num_items_per_record = MNHARF
@@ -1610,14 +1645,17 @@ C
             HAVelVMagDescript % num_records_this     = NP
             HAVelVMagDescript % imap                 => NODES_LG
             HAVelVMagDescript % array2D              => VMAGT
-            HAVelVMagDescript % array2D_g            => VMAGT_g
+            HAVelVMagDescript % array2D_g            => null()
             HAVelVMagDescript % ConsiderWetDry       = .FALSE.
             HAVelVMagDescript % alternate_value      = -99999.0
             HAVelVMagDescript % field_name           = 'HAVelVMag'
-            ! fort.54 Full Domain U Velocity Phase
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(PHASEDUT_g(MNHARF,NP_G))
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(VMAGT_g(MNHARF,NP_G))
+               ENDIF
+               HAVelVMagDescript % array2D_g            => VMAGT_g
             ENDIF
+            ! fort.54 Full Domain U Velocity Phase
             HAVelUPhaseDescript % specifier            = NHAGV
             HAVelUPhaseDescript % initial_value        = 0.0
             HAVelUPhaseDescript % num_items_per_record = MNHARF
@@ -1625,14 +1663,17 @@ C
             HAVelUPhaseDescript % num_records_this     = NP
             HAVelUPhaseDescript % imap                 => NODES_LG
             HAVelUPhaseDescript % array2D              => PHASEDUT
-            HAVelUPhaseDescript % array2D_g            => PHASEDUT_g
+            HAVelUPhaseDescript % array2D_g            => null()
             HAVelUPhaseDescript % ConsiderWetDry       = .FALSE.
             HAVelUPhaseDescript % alternate_value      = -99999.0
             HAVelUPhaseDescript % field_name           = 'HAVelUPhase'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(PHASEDUT_g(MNHARF,NP_G))
+               ENDIF
+               HAVelUPhaseDescript % array2D_g            => PHASEDUT_g
+            ENDIF            
             ! fort.54 Full Domain V Velocity Phase
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(PHASEDVT_g(MNHARF,NP_G))
-            ENDIF
             HAVelVPhaseDescript % specifier            = NHAGV
             HAVelVPhaseDescript % initial_value        = 0.0
             HAVelVPhaseDescript % num_items_per_record = MNHARF
@@ -1640,10 +1681,16 @@ C
             HAVelVPhaseDescript % num_records_this     = NP
             HAVelVPhaseDescript % imap                 => NODES_LG
             HAVelVPhaseDescript % array2D              => PHASEDVT
-            HAVelVPhaseDescript % array2D_g            => PHASEDVT_g
+            HAVelVPhaseDescript % array2D_g            => null()
             HAVelVPhaseDescript % ConsiderWetDry       = .FALSE.
             HAVelVPhaseDescript % alternate_value      = -99999.0
             HAVelVPhaseDescript % field_name           = 'HAVelVPhase'
+            IF ((MNPROC.gt.1).AND.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+               IF (MyProc.eq.0) THEN
+                  ALLOCATE(PHASEDVT_g(MNHARF,NP_G))
+               ENDIF
+               HAVelVPhaseDescript % array2D_g            => PHASEDVT_g
+            ENDIF
          ENDIF
 C
 C        ! fort.55 means and variance calculations
@@ -1651,14 +1698,7 @@ C        ! fort.55 means and variance calculations
 C        ! fort.55 will use the same output format (ascii, netcdf, etc)
 C        ! as the full domain elevation harmonic analysis file (fort.53)
          IF (CHARMV.eqv..true.) THEN
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(eav_g(NP_g),eavdif_g(NP_G),
-     &                  esq_g(NP_G),evadif_g(NP_G))
-               ALLOCATE(uav_g(NP_g),uavdif_g(NP_G),
-     &                  usq_g(NP_G),uvadif_g(NP_G))
-               ALLOCATE(vav_g(NP_g),vavdif_g(NP_G),
-     &                  vsq_g(NP_G),vvadif_g(NP_G))
-            ENDIF
+
             ! MVDescript is used over and over for different arrays
             MVDescript % specifier            = NHAGE
             MVDescript % initial_value        = 0.0
@@ -1667,115 +1707,128 @@ C        ! as the full domain elevation harmonic analysis file (fort.53)
             MVDescript % num_records_this     = NP
             MVDescript % imap                 => NODES_LG
             MVDescript % array                => ELAV
-            MVDescript % array_g              => ELAV_g
+            MVDescript % array_g              => null()
             MVDescript % ConsiderWetDry       = .false.
             MVDescript % alternate_value      = -99999.0
             MVDescript % field_name           = 'HAMeansVariances'
+            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) .and. 
+     &         WRITE_LOCAL_HARM_FILES.eqv..false. ) THEN
+               ALLOCATE(eav_g(NP_g),eavdif_g(NP_G),
+     &                  esq_g(NP_G),evadif_g(NP_G))
+               ALLOCATE(uav_g(NP_g),uavdif_g(NP_G),
+     &                  usq_g(NP_G),uvadif_g(NP_G))
+               ALLOCATE(vav_g(NP_g),vavdif_g(NP_G),
+     &                  vsq_g(NP_G),vvadif_g(NP_G))
+               MVDescript % array_g              => ELAV_g
+            ENDIF
          ENDIF
       ENDIF  ! firstcall
 C
-C     Collect fulldomain data if running in parallel.
+C     Collect fulldomain data if running in parallel, and we are not
+C     writing subdomain harmonic analysis output files. 
 #ifdef CMPI
-      IF (NHASE.ne.0) THEN
-         CALL collectFullDomainArray(HAElevStaMagDescript,
+      if (write_local_harm_files.eqv..false.) then
+         IF (NHASE.ne.0) THEN
+            CALL collectFullDomainArray(HAElevStaMagDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAElevStaPhaseDescript,
+            CALL collectFullDomainArray(HAElevStaPhaseDescript,
      &             packMbyNP, unpackMbyNP)
-      ENDIF
-      IF (NHASV.ne.0) THEN
-         CALL collectFullDomainArray(HAVelStaUMagDescript,
+         ENDIF
+         IF (NHASV.ne.0) THEN
+            CALL collectFullDomainArray(HAVelStaUMagDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAVelStaVMagDescript,
+            CALL collectFullDomainArray(HAVelStaVMagDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAVelStaUPhaseDescript,
+            CALL collectFullDomainArray(HAVelStaUPhaseDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAVelStaVPhaseDescript,
+            CALL collectFullDomainArray(HAVelStaVPhaseDescript,
      &             packMbyNP, unpackMbyNP)
-      ENDIF
-      IF (NHAGE.ne.0) THEN
-         CALL collectFullDomainArray(HAElevMagDescript,
+         ENDIF
+         IF (NHAGE.ne.0) THEN
+            CALL collectFullDomainArray(HAElevMagDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAElevPhaseDescript,
+            CALL collectFullDomainArray(HAElevPhaseDescript,
      &             packMbyNP, unpackMbyNP)
-      ENDIF
-      IF (NHAGV.ne.0) THEN
-         CALL collectFullDomainArray(HAVelUMagDescript,
+         ENDIF
+         IF (NHAGV.ne.0) THEN
+            CALL collectFullDomainArray(HAVelUMagDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAVelVMagDescript,
+            CALL collectFullDomainArray(HAVelVMagDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAVelUPhaseDescript,
+            CALL collectFullDomainArray(HAVelUPhaseDescript,
      &             packMbyNP, unpackMbyNP)
-         CALL collectFullDomainArray(HAVelVPhaseDescript,
+            CALL collectFullDomainArray(HAVelVPhaseDescript,
      &             packMbyNP, unpackMbyNP)
-      ENDIF
-      IF (CHARMV.eqv..true.) THEN
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => eav
-         MVDescript%array_g => eav_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => eavdif
-         MVDescript%array_g => eavdif_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => elva
-         MVDescript%array_g => elva_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => esq
-         MVDescript%array_g => esq_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => evadif
-         MVDescript%array_g => evadif_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => xvelav
-         MVDescript%array_g => xvelav_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => uav
-         MVDescript%array_g => uav_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => uavdif
-         MVDescript%array_g => uavdif_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => xvelva
-         MVDescript%array_g => xvelva_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => usq
-         MVDescript%array_g => usq_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => uvadif
-         MVDescript%array_g => uvadif_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => yvelav
-         MVDescript%array_g => yvelav_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => vav
-         MVDescript%array_g => vav_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => vavdif
-         MVDescript%array_g => vavdif_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => yvelva
-         MVDescript%array_g => yvelva_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => vsq
-         MVDescript%array_g => vsq_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-         MVDescript%array => vvadif
-         MVDescript%array_g => vvadif_g
-         CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
-      ENDIF
+         ENDIF
+         IF (CHARMV.eqv..true.) THEN
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => eav
+            MVDescript%array_g => eav_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => eavdif
+            MVDescript%array_g => eavdif_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => elva
+            MVDescript%array_g => elva_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => esq
+            MVDescript%array_g => esq_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => evadif
+            MVDescript%array_g => evadif_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => xvelav
+            MVDescript%array_g => xvelav_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => uav
+            MVDescript%array_g => uav_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => uavdif
+            MVDescript%array_g => uavdif_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => xvelva
+            MVDescript%array_g => xvelva_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => usq
+            MVDescript%array_g => usq_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => uvadif
+            MVDescript%array_g => uvadif_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => yvelav
+            MVDescript%array_g => yvelav_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => vav
+            MVDescript%array_g => vav_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => vavdif
+            MVDescript%array_g => vavdif_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => yvelva
+            MVDescript%array_g => yvelva_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => vsq
+            MVDescript%array_g => vsq_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+            MVDescript%array => vvadif
+            MVDescript%array_g => vvadif_g
+            CALL collectFullDomainArray(MVDescript, packOne, unpackOne)
+         ENDIF
+      endif
 #endif
 c
 c     Now write data to file; format according to the file type specifier.
 C
 c     Harmonic analysis at elevation stations (fort.51).
       call writeOutHarmonicArrays(51, 1, HAElevStaMagDescript,
-     &        HAElevStaPhaseDescript, dummyDescript, dummyDescript)
+     &        HAElevStaPhaseDescript)
 C     Harmonic analysis at velocity stations (fort.52).
       call writeOutHarmonicArrays(52, 2, HAVelStaUMagDescript,
      &        HAVelStaUPhaseDescript, HAVelStaVMagDescript,
      &        HAVelStaVPhaseDescript)
 C     Harmonic analysis at all nodes for elevation (fort.53).
       call writeOutHarmonicArrays(53, 1, HAElevMagDescript,
-     &        HAElevPhaseDescript, dummyDescript, dummyDescript)
+     &        HAElevPhaseDescript)
 C     Harmonic analysis at all nodes for velocity (fort.54).
       call writeOutHarmonicArrays(54, 2,HAVelUMagDescript,
      &        HAVelUPhaseDescript, HAVelVMagDescript,
@@ -1784,7 +1837,7 @@ C
 C     Means and variance calculations, if specified (fort.55).
       if ((CHARMV.eqv..true.).and.(FMV.gt.1.0d-3)) then
          IF ((MNPROC.gt.1).and.(MyProc.eq.0)
-     &        .and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
+     &        .and.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
             OPEN(55,FILE=TRIM(GLOBALDIR)//'/'//'fort.55',
      &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
             WRITE(55,*) NP_G
@@ -1802,7 +1855,7 @@ C     Means and variance calculations, if specified (fort.55).
             END DO
             CLOSE(55)
          ENDIF
-         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
+         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_HARM_FILES.eqv..true.)) THEN
             OPEN(55,FILE=TRIM(LOCALDIR)//'/'//'fort.55',
      &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
             WRITE(55,*) NP
@@ -1841,23 +1894,21 @@ C     format. Only ascii is supported at this point.
 C-----------------------------------------------------------------------
       SUBROUTINE writeOutHarmonicArrays(lun, sets, mag1, ph1, mag2, ph2)
       USE SIZES, ONLY : WRITE_LOCAL_FILES, MNPROC, LOCALDIR, GLOBALDIR,
-     & MYPROC
+     & MYPROC, HARMDIR, WRITE_LOCAL_HARM_FILES
       USE HARM, ONLY : nf, nfreq, hafreq, haff, haface, namefr
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenMessage,
+      USE GLOBAL, ONLY : OutputDataDescript_t, screenMessage, ERROR,
      &                   DEBUG, setMessageSource, unsetMessageSource,
-     &                   allMessage
-c     & ,myproc
+     &                   allMessage, scratchMessage
       IMPLICIT NONE
       INTEGER, intent(in) :: lun  ! adcirc logical unit number for i/o
       INTEGER, intent(in) :: sets ! how many sets of mags/phases to write
       type(OutputDataDescript_t), intent(in) :: mag1
       type(OutputDataDescript_t), intent(in) :: ph1
-      type(OutputDataDescript_t), intent(in) :: mag2
-      type(OutputDataDescript_t), intent(in) :: ph2
+      ! jgf51.44: The following two arguments will be present if nsets=2
+      type(OutputDataDescript_t), optional, intent(in) :: mag2
+      type(OutputDataDescript_t), optional, intent(in) :: ph2
 C
       INTEGER :: i,j,n           ! loop counters
-C     local vars
-      CHARACTER(7) :: fn     ! outfile name (valid for lun between 10 and 99)
 C
       call setMessageSource("writeOutHarmonicArrays")
 
@@ -1865,18 +1916,14 @@ C
       call allMessage(DEBUG,"Enter.")
 #endif
 C
-C     initialize output file name
-      fn(1:5) = 'fort.'
-      WRITE(fn(6:7),2) lun
-
 C     write data according to format specifier from fort.15 (e.g., NHASE)
       SELECT CASE (mag1%specifier)
       CASE(0) ! no output; do nothing
       CASE(1) ! ascii text
          IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
-     &        .and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
-            OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//fn, STATUS='REPLACE',
-     &           ACCESS='SEQUENTIAL',ACTION='WRITE')
+     &        .and.(WRITE_LOCAL_HARM_FILES.eqv..false.)) THEN
+            OPEN(lun,FILE=TRIM(GLOBALDIR)//'/'//trim(mag1%file_name), 
+     &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
             write(lun,*) nfreq+nf
             do j=1,nfreq+nf
                write(lun,3679) hafreq(j),HAFF(j),HAFACE(j),namefr(j)
@@ -1899,9 +1946,9 @@ C     write data according to format specifier from fort.15 (e.g., NHASE)
             CLOSE(lun)
          ENDIF
 C
-         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES.eqv..true.)) THEN
-            OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//fn,STATUS='REPLACE',
-     &           ACCESS='SEQUENTIAL',ACTION='WRITE')
+         IF ((MNPROC.eq.1).or.(WRITE_LOCAL_HARM_FILES.eqv..true.)) THEN
+            OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//trim(mag1%file_name),
+     &         STATUS='REPLACE',ACCESS='SEQUENTIAL',ACTION='WRITE')
             write(lun,*) nfreq+nf
             do j=1,nfreq+nf
                write(lun,3679) hafreq(j),HAFF(j),HAFACE(j),namefr(j)
@@ -1924,12 +1971,12 @@ C
             CLOSE(lun)
          ENDIF
       CASE(3,5)
-         write(*,*)
-     & "ERROR: Harmonic analysis output is not yet available in NetCDF."
+         call allMessage(ERROR,
+     & 'ERROR: Harmonic analysis output is not yet available in NetCDF.')
       CASE DEFAULT
-        write(*,*)
-     &     "ERROR: Invalid harmonic analysis format specifier: ",
-     &     mag1%specifier
+         write(scratchMessage,'(a,i0,a)') 
+     &  'Invalid harmonic analysis format specifier: ',mag1%specifier,'.'
+         call allMessage(ERROR,scratchMessage)
       END SELECT
 
  2    FORMAT(I2)
@@ -4294,14 +4341,19 @@ C...
 C...  IF APPROPRIATE ADD HARMONIC ANALYSIS INFORMATION TO HOT START FILE
 C...
          IF((IHARIND.EQ.1).AND.(IT.GT.ITHAS)) THEN
-            IF ((MNPROC.eq.1).or.WRITE_LOCAL_HOT_START_FILES) THEN
+            IF ((MNPROC.eq.1).or.(WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
                NSTAEX = NSTAE
                NSTAVX = NSTAV
             ELSE
                NSTAEX = NSTAE_G
                NSTAVX = NSTAV_G
             ENDIF
-            IF ((MyPROC.eq.0).or.WRITE_LOCAL_HOT_START_FILES) THEN
+            !
+            ! In serial (or in parallel with a fulldomain hotstart file)
+            ! only processor 0 will write these data to the hotstart file. 
+            ! In parallel, with subdomain hotstart files, all processors
+            ! will write these data to subdomain hotstart files.  
+            IF ((MyPROC.eq.0).or.(WRITE_LOCAL_HOT_START_FILES.eqv..true.)) THEN
                WRITE(hss % lun,REC=IHOTSTP) ICHA
                WRITE(hss % lun,REC=IHOTSTP+1) NZ
                WRITE(hss % lun,REC=IHOTSTP+2) NF
@@ -4342,9 +4394,13 @@ c
                      IHOTSTP = IHOTSTP + 1
                   END DO
                END DO
-C
-C              In serial, write load vectors to hotstart file.
-#ifndef CMPI
+            ENDIF
+            ! 
+            ! In serial, or in parallel with subdomain hotstart files,
+            ! write load vectors to hotstart file(s).
+            !
+            if ( (mnproc.eq.1).or.
+     &            (write_local_hot_start_files.eqv..true.) ) then
                IF(NHASE.ne.0) THEN
                   do n=1,NSTAE
                      do i=1,mm
@@ -4353,7 +4409,6 @@ C              In serial, write load vectors to hotstart file.
                      end do
                   end do
                ENDIF
-C
                IF(NHASV.ne.0) THEN
                   do N=1,NSTAV
                      do i=1,mm
@@ -4364,7 +4419,6 @@ C
                      end do
                   end do
                ENDIF
-C
                IF(NHAGE.ne.0) THEN
                   do n=1,np
                      do i=1,mm
@@ -4373,7 +4427,6 @@ C
                      end do
                   end do
                ENDIF
-C
                IF(NHAGV.ne.0) THEN
                   do n=1,np
                      do i=1,mm
@@ -4384,63 +4437,62 @@ C
                      end do
                   end do
                ENDIF
-#else
-C
-C              In parallel, write the full domain load vectors to hotstart
-C              file.
+            endif
+            !
+            ! In parallel, if fulldomain hotstart files are required,
+            ! processor 0 will write the full domain load vectors to the 
+            ! fulldomain hotstart file.
+            IF ( (mnproc.gt.1).and.
+     &           (write_local_hot_start_files.eqv..false.).and.
+     &           (myproc.eq.0)) THEN
                IF(NHASE.ne.0) THEN
                   do n=1,NSTAE_G
                      do i=1,mm
                         WRITE(hss % lun,REC=IHOTSTP)
-     &                           HarmElevSLVDescript % array2D_g(i,n)
+     &                        HarmElevSLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
                ENDIF
-C
                IF(NHASV.ne.0) THEN
                   do N=1,NSTAV_G
                      do i=1,mm
                         WRITE(hss % lun,REC=IHOTSTP)
-     &                              HarmUVelSLVDescript % array2D_g(i,n)
+     &                           HarmUVelSLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                         WRITE(hss % lun,REC=IHOTSTP)
-     &                              HarmVVelSLVDescript % array2D_g(i,n)
+     &                           HarmVVelSLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
                ENDIF
-C
                IF(NHAGE.ne.0) THEN
                   do n=1,np_g
                      do i=1,mm
                         WRITE(hss % lun,REC=IHOTSTP)
-     &                            HarmElevFDLVDescript % array2D_g(i,n)
+     &                        HarmElevFDLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
                ENDIF
-C
                IF(NHAGV.ne.0) THEN
                   do n=1,np_g
                      do i=1,mm
                         WRITE(hss % lun,REC=IHOTSTP)
-     &                          HarmUVelFDLVDescript % array2D_g(i,n)
+     &                       HarmUVelFDLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                         WRITE(hss % lun,REC=IHOTSTP)
-     &                           HarmVVelFDLVDescript % array2D_g(i,n)
+     &                       HarmVVelFDLVDescript % array2D_g(i,n)
                         IHOTSTP=IHOTSTP+1
                      end do
                   end do
                ENDIF
-#endif
-            ENDIF ! myProc.eq.0 .or. write_local_hotstart_files
+            ENDIF
          ENDIF  ! IHARIND
 C
-         if (CHARMV.and.
-     &           ((MNPROC.eq.1).or.WRITE_LOCAL_HOT_START_FILES)) then
-            IF((IHARIND.EQ.1).AND.(IT.GT.ITMV)) THEN
-
+         if ((CHARMV.eqv..true.).and.(IHARIND.eq.1).and.(IT.gt.ITMV)) then
+            if ( (MNPROC.eq.1).or.
+     &           (WRITE_LOCAL_HOT_START_FILES.eqv..true.)) then
                WRITE(hss % lun,REC=IHOTSTP) NTSTEPS
                IHOTSTP=IHOTSTP+1
                IF(NHAGE.ne.0) THEN
@@ -4464,10 +4516,10 @@ C
                   END DO
                ENDIF
             ENDIF
-         endif                   !  charmv
-C
-         if (CHARMV.and.(MNPROC.gt.1).and.(MYPROC.eq.0)) then
-            IF((IHARIND.EQ.1).AND.(IT.GT.ITMV)) THEN
+C 
+            IF ((MNPROC.gt.1).and.
+     &           (write_local_hot_start_files.eqv..false.).and.
+     &           (MYPROC.eq.0)) then
                WRITE(hss % lun,REC=IHOTSTP) NTSTEPS
                IHOTSTP=IHOTSTP+1
                IF(NHAGE.ne.0) THEN

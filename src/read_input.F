@@ -3975,7 +3975,7 @@ C        initialize parameter arrays needed by iterative solver
          CALL DFAULT(IPARM,RPARM)
          IPARM(1)=ITMAX
          IPARM(2)=ISLDIA
-         OPEN(33,FILE=TRIM(LOCALDIR)//'/'//'fort.33',STATUS='REPLACE')
+         !cms51.06: moved opening of fort.33 to openLogFile sub in global.F
          IPARM(4)=33
          RPARM(1)=CONVCR
          NW = 4*NP + 4*ITMAX

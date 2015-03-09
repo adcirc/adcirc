@@ -47,9 +47,14 @@ C
       LOGICAL      :: WRITE_LOCAL_HOT_START_FILES
       ! jgf49.44: Make it an option to read local binary hotstart files
       LOGICAL      :: READ_LOCAL_HOT_START_FILES
+      ! kmd51: Trying to make harmonic files write to local directory
+      LOGICAL      :: WRITE_LOCAL_HARM_FILES
 
       CHARACTER(256) :: ROOTDIR
-      CHARACTER(2048), TARGET :: INPUTDIR, GLOBALDIR, LOCALDIR
+      CHARACTER(2048), TARGET :: INPUTDIR  ! directory containing input files
+      CHARACTER(2048), TARGET :: GLOBALDIR ! directory for fulldomain files
+      CHARACTER(2048), TARGET :: LOCALDIR  ! directory for subdomain files
+      CHARACTER(2048), TARGET :: HARMDIR   ! directory where harmonic analysis file are written
       CHARACTER(2048) :: GBLINPUTDIR, HOTSTARTDIR
       !
       ! file formats
@@ -125,6 +130,7 @@ C-----------------------------------------------------------------------
       WRITE_LOCAL_HOT_START_FILES = .FALSE.
       READ_LOCAL_HOT_START_FILES = .FALSE.
       WRITE_LOCAL_FILES = .FALSE.
+      WRITE_LOCAL_HARM_FILES = .FALSE.
       !
       ! defaults
       meshType = ASCII 
@@ -155,6 +161,7 @@ Cobell 110518: Add compiler flag for local hot start.
          WRITE_LOCAL_FILES = .TRUE.
          WRITE_LOCAL_HOT_START_FILES = .TRUE.
          READ_LOCAL_HOT_START_FILES = .TRUE.
+         WRITE_LOCAL_HARM_FILES = .TRUE.
       ENDIF
 
 
@@ -239,6 +246,15 @@ Cobell 110518: Add compiler flag for local hot start.
                   i = i + 1
                   call getarg(i,meshFileName)                                 
                case default
+                  ! jgf51.44: -m by itself triggers subdomain harmonic
+                  ! analysis output files. 
+                  if ( len(trim(cmdlinearg)).eq.2 ) then
+                     WRITE_LOCAL_HARM_FILES = .TRUE.
+                     if (myProc.eq.0) then
+                        write(*,'(a,a,a)') "INFO: Processing "
+     &                    // cmdlinearg(1:2) // "."
+                     endif
+                  endif
                   if (myProc.eq.0) then
                      write(*,*) "WARNING: The command line option '",
      &                  cmdlinearg(1:4),"' is not valid and will be ignored."
@@ -376,6 +392,10 @@ C     jgf49.17.01 Summarize and log results.
      &                            .AND.(MNPROC.GT.1)) then
             write(*,*)
      &         "INFO: ADCIRC will write subdomain hotstart files."
+         endif
+         if ((WRITE_LOCAL_HARM_FILES.eqv..TRUE.).AND.(MNPROC.GT.1)) then 
+            write(*,*) 'INFO: ADCIRC will write '
+     &                    //  'subdomain harmonic analysis files.'
          endif
       endif
       RETURN

@@ -1290,7 +1290,7 @@ C
            WRITE(51,'(A80)') NFREQMSG
            DO I=1, NFREQ  
              READ(LOC2(IPROC),'(A80)') HEADER(I)
-             WRITE(51,'(A80)') HEADER(I)
+             WRITE(51,*) trim(HEADER(I))
            ENDDO
            READ(LOC2(IPROC),*) NUMSTNS
            WRITE(51,*) NSTAE
@@ -1328,7 +1328,7 @@ C
           DO IFREQ=1, NFREQ
              IREC = IFREQ + (J-1)*NFREQ
              READ(8,REC=IREC) HARDAT(IFREQ)
-             WRITE(51,'(A80)') HARDAT(IFREQ)
+             WRITE(51,*) trim(HARDAT(IFREQ))
           ENDDO
       ENDDO        
 C
@@ -1514,10 +1514,10 @@ C
          IF (IPROC.EQ.1) THEN
            READ(LOC2(IPROC),'(A80)')  NFREQMSG
            READ(NFREQMSG,*) NFREQ 
-           WRITE(53,'(A80)') NFREQMSG
+           WRITE(53,*) trim(NFREQMSG)
            DO I=1, NFREQ  
              READ(LOC2(IPROC),'(A80)') HEADER(I)
-             WRITE(53,'(A80)') HEADER(I)
+             WRITE(53,*) trim(HEADER(I))
            ENDDO
            READ(LOC2(IPROC),*) NP1
            WRITE(53,*) NNODG
@@ -1559,7 +1559,7 @@ C
          DO IFREQ=1, NFREQ 
             IREC = IFREQ + (J-1)*NFREQ
             READ(8,REC=IREC) HARDAT(IFREQ)    
-            WRITE(53,'(A80)') HARDAT(IFREQ)
+            WRITE(53,*) trim(HARDAT(IFREQ))
          ENDDO
       ENDDO        
 C
@@ -1630,10 +1630,10 @@ C
          IF (IPROC.EQ.1) THEN
            READ(LOC2(IPROC),'(A80)')  NFREQMSG
            READ(NFREQMSG,*) NFREQ 
-           WRITE(54,'(A80)') NFREQMSG
+           WRITE(54,*) trim(NFREQMSG)
            DO I=1, NFREQ  
              READ(LOC2(IPROC),'(A80)') HEADER(I)
-             WRITE(54,'(A80)') HEADER(I)
+             WRITE(54,*) trim(HEADER(I))
            ENDDO
            READ(LOC2(IPROC),*) NP1
            WRITE(54,*) NNODG
@@ -1675,7 +1675,7 @@ C
          DO IFREQ=1, NFREQ 
             IREC = IFREQ + (J-1)*NFREQ
             READ(8,REC=IREC) HARDAT(IFREQ)    
-            WRITE(54,'(A80)') HARDAT(IFREQ)
+            WRITE(54,*) trim(HARDAT(IFREQ))
          ENDDO
       ENDDO        
 C
@@ -3772,6 +3772,154 @@ C  kmd48.33bc add in the 3D barotropic and baroclinic information
                CLOSE(LOCHSF)
             END DO
          END IF
+
+c kmd 50 update to include harmonics in hotstart files
+
+         IF ((IHARIND.EQ.1).AND.(IT.GT.ITHAS)) THEN 
+            DO IPROC=1,NPROC
+               IF(IHOT.EQ.67) LOCFN(1:14) = 'PE0000/fort.67'
+               IF(IHOT.EQ.68) LOCFN(1:14) = 'PE0000/fort.68'
+               LOCHSF=LOC2(IPROC)
+               WRITE(LOCFN(3:6),'(I4.4)') (IPROC-1)
+               OPEN (LOCHSF,FILE=LOCFN,ACCESS='DIRECT',RECL=8)
+               IF ((IM.EQ.10).AND.((IM.EQ.1).OR.(IM.EQ.2).OR. 
+     &             (IM.EQ.11).OR.(IM.EQ.21).OR.(IM.EQ.31))) THEN
+                  IHOTSTP=8+(NNODP(IPROC)*7)+(NELP(IPROC)*1)+31+
+     &                    (NNODP(IPROC)*7)+(NNODP(IPROC)*NFEN*5)
+               ELSE IF ((IM.EQ.10).AND.((IM.NE.1).OR.(IM.NE.2).OR.
+     &                  (IM.NE.11).OR.(IM.NE.21).OR.(IM.NE.31))) THEN 
+                  IHOTSTP=8+(NNODP(IPROC)*7)+(NELP(IPROC)*1)+31
+               ELSE IF ((IM.NE.10).AND.((IM.EQ.1).OR.(IM.EQ.2).OR. 
+     &             (IM.EQ.11).OR.(IM.EQ.21).OR.(IM.EQ.31))) THEN
+                  IHOTSTP=8+(NNODP(IPROC)*6)+(NELP(IPROC)*1)+31+
+     &                    (NNODP(IPROC)*7)+(NNODP(IPROC)*NFEN*5)
+               ELSE IF ((IM.NE.10).AND.((IM.NE.1).OR.(IM.NE.2).OR.
+     &                  (IM.NE.11).OR.(IM.NE.21).OR.(IM.NE.31))) THEN 
+                  IHOTSTP=8+(NNODP(IPROC)*6)+(NELP(IPROC)*1)+31
+               END IF
+               IF ((IDEN.EQ.1).OR.(IDEN.EQ.2).OR.
+     &             (IDEN.EQ.3)) THEN 
+                  IHOTSTP=IHOTSTP+(NNODP(IPROC)*NFEN*1)
+               ELSE IF (IDEN.EQ.4) THEN 
+                  IHOTSTP=IHOTSTP+(NNODP(IPROC)*NFEN*2) 
+               END IF 
+               IHOTSTP=IHOTSTP+1
+               READ(LOCHSF,REC=IHOTSTP) ICHA
+               READ(LOCHSF,REC=IHOTSTP+1) NZ 
+               READ(LOCHSF,REC=IHOTSTP+2) NF 
+               READ(LOCHSF,REC=IHOTSTP+3) MM 
+               READ(LOCHSF,REC=IHOTSTP+4) NPX 
+               READ(LOCHSF,REC=IHOTSTP+5) NSTAEX 
+               READ(LOCHSF,REC=IHOTSTP+6) NSTAVX
+               READ(LOCHSF,REC=IHOTSTP+7) NHASE
+               READ(LOCHSF,REC=IHOTSTP+8) NHASV 
+               READ(LOCHSF,REC=IHOTSTP+9) NHAGE
+               READ(LOCHSF,REC=IHOTSTP+10) NHAGV 
+               READ(LOCHSF,REC=IHOTSTP+11) ICALL 
+               READ(LOCHSF,REC=IHOTSTP+12) NFREQ 
+               IHOTSTP = IHOTSTP + 12
+            
+               DO I=1,NFREQ+NF
+                  FNAME=NAMEFR(I) 
+                  READ(LOCHSF,REC=IHOTSTP+1) FNAM8(1)
+                  READ(LOCHSF,REC=IHOTSTP+2) FNAM8(2)
+                  IHOTSTP = IHOTSTP + 2 
+                  READ(LOCHSF,REC=IHOTSTP+1) HAFREQ(I)
+                  READ(LOCHSF,REC=IHOTSTP+2) HAFF(I)
+                  READ(LOCHSF,REC=IHOTSTP+3) HAFACE(I)
+                  IHOTSTP=IHOTSTP+3
+               END DO 
+
+C --       Write out time of most recent H.A. update
+
+               READ(LOCHSF,REC=IHOTSTP+1) TIMEUD
+               READ(LOCHSF,REC=IHOTSTP+2) ITUD
+               IHOTSTP=IHOTSTP+2
+ 
+C --       Write out LHS Matrix 
+
+               IHOTSTP=IHOTSTP+1
+               DO I=1,MM
+                  DO J=1,MM
+                     READ(LOCHSF,REC=IHOTSTP) HA(I,J)
+                     IHOTSTP=IHOTSTP+1 
+                  END DO 
+               END DO 
+
+C --      Read in load vectors to hotstart file.
+               IF (NHASE.NE.0) THEN 
+                 DO N=1,NSTAEX 
+                    DO I=1,MM
+                       READ(LOCHSF,REC=IHOTSTP) STAELV(I,N)
+                       IHOTSTP=IHOTSTP+1
+                    END DO 
+                 END DO 
+               END IF 
+
+               IF (NHASV.NE.0) THEN 
+                 DO N=1,NSTAVX 
+                    DO I=1,MM
+                       READ(LOCHSF,REC=IHOTSTP) STAULV(I,N)
+                       IHOTSTP=IHOTSTP+1
+                       READ(LOCHSF,REC=IHOTSTP) STAVLV(I,N)
+                       IHOTSTP=IHOTSTP+1
+                    END DO 
+                 END DO 
+               END IF 
+
+               IF (NHAGE.NE.0) THEN 
+                 DO N=1,NNODP(IPROC)
+                    DO I=1,MM
+                       INDX=IMAP_NOD_LG(I,IPROC) 
+                       READ(LOCHSF,REC=IHOTSTP) GLOELV(I,INDX)
+                       IHOTSTP=IHOTSTP+1
+                    END DO 
+                 END DO 
+               END IF 
+
+               IF (NHAGV.NE.0) THEN 
+                 DO N=1,NNODP(IPROC) 
+                    DO I=1,MM
+                       INDX=IMAP_NOD_LG(I,PROC)
+                       READ(LOCHSF,REC=IHOTSTP) GLOULV(I,INDX)
+                       IHOTSTP=IHOTSTP+1
+                       READ(LOCHSF,REC=IHOTSTP) GLOVLV(I,INDX)
+                       IHOTSTP=IHOTSTP+1
+                    END DO 
+                 END DO 
+               END IF 
+
+               IF (CHARMV) THEN 
+                 IF ((IHARIND.EQ.1).AND.(IT.GT.ITMV)) THEN 
+                  READ(LOCHSF,REC=IHOTSTP) NTSTEPS
+                  IHOTSTP=IHOTSTP+1
+                  IF (NHAGE.NE.0) THEN 
+                     DO I=1,NNODP(IPROC)
+                        INDX=IMAP_NOD_LG(I,IPROC)
+                        READ(LOCHSF,REC=IHOTSTP) ELAV(INDX)
+                        IHOTSTP=IHOTSTP+1
+                        READ(LOCHSF,REC=IHOTSTP) ELVA(INDX)
+                        IHOTSTP=IHOTSTP+1
+                     END DO 
+                  END IF 
+                  IF (NHAGV.NE.0) THEN 
+                     DO I=1,NNODP(IPROC)
+                        INDX=IMAP_NOD_LG(I,IPROC)
+                        READ(LOCHSF,REC=IHOTSTP) XELAV(INDX)
+                        IHOTSTP=IHOTSTP+1
+                        READ(LOCHSF,REC=IHOTSTP) YELAV(INDX)
+                        IHOTSTP=IHOTSTP+1
+                        READ(LOCHSF,REC=IHOTSTP) XELVA(INDX)
+                        IHOTSTP=IHOTSTP+1
+                        READ(LOCHSF,REC=IHOTSTP) YELVA(INDX)
+                        IHOTSTP=IHOTSTP+1
+                     END DO 
+                  END IF 
+                 END IF 
+               END IF 
+               CLOSE(LOCHSF)
+            END DO 
+         END IF 
 
 
 C--Open Appropriate Hot Start File based on the value of IHOT from the fort.15 file 
