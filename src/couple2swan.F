@@ -820,7 +820,8 @@ C-----------------------------------------------------------------------
      &                        RID4,
      &                        UU2,
      &                        VV2,
-     &                        DTDP, StaTim
+     &                        DTDP, StaTim,
+     &                        h0
 #ifdef CSWAN
      &                        ,SWAN_OutputHS,
      &                        SWAN_OutputDIR,
@@ -1090,6 +1091,14 @@ C.....Arrange on/off for output into array
          SWAN_OQPROC(4) = .TRUE.
          SWAN_VOQR(4) = 5
          SWAN_VOQ(IP,SWAN_VOQR(4)) = REAL(DP(IP)) + REAL(ETA2(IP))
+         !
+         ! jgf51.46: Fix from Casey to eliminate floating point 
+         ! exception in SWAN (swanser.F lines 703 and 726) when depths 
+         ! are negative. 
+         IF (SWAN_VOQ(IP,SWAN_VOQR(4)).LT.REAL(H0)) THEN
+            SWAN_VOQ(IP,SWAN_VOQR(4)) = REAL(H0)
+         ENDIF
+
 !... Water current velocities.
          SWAN_OQPROC(5) = .TRUE.
          SWAN_VOQR(5) = 6
@@ -1216,6 +1225,7 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
       SUBROUTINE PADCSWAN_INIT
 
+      !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE GLOBAL,   ONLY: DT,
      &                    ETA2,
      &                    WVNX1,

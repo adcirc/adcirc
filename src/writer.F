@@ -76,11 +76,11 @@ C-----------------------------------------------------------------------
       implicit none
       integer i
 
-#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-      nabout = -1 !FIXME: Have padcirc send the actual value of nabout
-#else 
-      nabout = 0
-#endif
+!#if defined(WRITER_TRACE) || defined(ALL_TRACE)
+!      nabout = -1 !FIXME: Have padcirc send the actual value of nabout
+!#else 
+!      nabout = 0
+!#endif
 
       call setMessageSource("writer_init")
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)

@@ -2,6 +2,17 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.46 - 03/12/2015 - jgf - Fixed the allocation/initialization of wave
+C           radiation stress arrays in global.F, hstart.F, and cstart.F
+C           to prevent NaNs from uninitialized values at hotstart from 
+C           creeping into the solution for water surface elevation and
+C           causing SWAN coupled simulations to terminate immediately;
+C           applied a fix from Casey to eliminate a floating point 
+C           exception in SWAN when total water depth in ADCIRC is negative; 
+C           changed allocation and initialization of ESLONOFF array so that
+C           memory is not allocated twice and so that the slope limiter 
+C           at a node is only activated at hotstart if the current value
+C           of the nodal attribute at that node would allow it.
 C  v51.45 - 03/09/2015 - jgf - Merged aa's latest fixes for subdomain modeling.
 C  v51.44 - 03/09/2015 - jgf - Merged cs/kd changes to support writing and
 C           post processing subdomain harmonic analysis output files as well

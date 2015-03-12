@@ -265,7 +265,7 @@ C----------------------------------------------------------------------
      &   etamax_time, umax_time_g, umax, umax_time, prmin_time_g,
      &   prmin, wvnoutmax_time_g, wvnoutmax_time, rsnmax_time_g,
      &   rsnmax_time, eslonoff, prmin_time, wvnoutmax, rsnmax, 
-     &   hot_eslonoff, hot_eslonoff_g, nstae_g, noute, nstae, 
+     &   nstae_g, noute, nstae, 
      &   ntcyse, ntcyfe, nspoole, nstav_g, noutv, nstav, ntcysv, 
      &   ntcyfv, nspoolv, noutge, ntcysge, ntcyfge, nspoolge, 
      &   np_g, outputsponge, noutgv, ntcysgv, nspoolgv, nstam_g,
@@ -949,9 +949,6 @@ C        maxrs.63
          RSMaxDescript % specifier = ASCII
       endif
 !     ESLNodes.63
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-          ALLOCATE(ESLONOFF_G(NP_G))
-      ENDIF
       ESLDescript % lun                  = 323
       ESLDescript % specifier            = ASCII
       ESLDescript % num_fd_records       = NP_G
@@ -959,8 +956,6 @@ C        maxrs.63
       ESLDescript % imap                 => NODES_LG
       ESLDescript % array                => ESLONOFF
       ESLDescript % array_g              => ESLONOFF_G
-      ESLDescript % hotstart             => HOT_ESLONOFF
-      ESLDescript % hotstart_g           => HOT_ESLONOFF_G
       ESLDescript % field_name           = 'ESLActive'
       ESLDescript % file_basename        = 'ESLNodes'
       ESLDescript % file_extension       = 63

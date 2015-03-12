@@ -545,21 +545,6 @@ C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
            CALL RS2GET(RSNX1,RSNY1,NP)
            CALL RS2GET(RSNX2,RSNY2,NP)
          ENDIF
-#ifdef CSWAN
-Casey 090302: Added this call to initialize the radiation stress gradients.
-         IF(NRS.EQ.3) THEN
-           IF(.NOT.ALLOCATED(RSNX1)) ALLOCATE(RSNX1(1:NP))
-           IF(.NOT.ALLOCATED(RSNX2)) ALLOCATE(RSNX2(1:NP))
-           IF(.NOT.ALLOCATED(RSNY1)) ALLOCATE(RSNY1(1:NP))
-           IF(.NOT.ALLOCATED(RSNY2)) ALLOCATE(RSNY2(1:NP))
-           DO I=1,NP
-             RSNX1(I) = 0.D0
-             RSNX2(I) = 0.D0
-             RSNY1(I) = 0.D0
-             RSNY2(I) = 0.D0
-           ENDDO
-         ENDIF
-#endif
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
          WRITE(16,1112)
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1981)

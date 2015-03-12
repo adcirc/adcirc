@@ -86,6 +86,7 @@ C******************************************************************************
 C
       SUBROUTINE TIMESTEP(IT)
 C
+      USE, INTRINSIC :: IEEE_ARITHMETIC
       USE SIZES, ONLY : SZ
       USE GLOBAL
       USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart
@@ -123,8 +124,6 @@ C.....sb46.28sb03 added 09/xx/2006
      &    writeFort066, writeFort067, writeFort065, readFort020,
      &    readFort021, readFort019, enforceWDCB
 c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D wet/dry.
-Cjgfdebug      USE GLOBAL_3DVS, ONLY:
-Cjgfdebug     &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA
       USE GLOBAL_3DVS, ONLY:
      &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA, Z0B,NFEN
 
@@ -332,7 +331,7 @@ C...  Wind (& wave radiation stress if used)
             PR1(I)=PR2(I)
 !            PR2(I)=0.D0   !tcm v49.16 20100617
             PR2(I) = PRBCKGRND_MH2O  !tcm v49.16 20100617 added
-            ENDIF
+         ENDIF
 
 C     TIP..Tidal potential forcing
          if(CTIP) then
@@ -341,6 +340,7 @@ C     TIP..Tidal potential forcing
          endif
 
       END DO
+
 
 C...TCM V50.66.01 -- ADDING TIME DEPENDENT BATHYMETRY
 C... so that total water column height is unchanged
@@ -2102,12 +2102,14 @@ C..................INWARD SUBMERGED DISCHARGE -> CASE 6
          END DO
       ENDIF
 
-      if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)    ! NCSU Subdomain
-      if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)    ! NCSU Subdomain
-      if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)    ! NCSU Subdomain
+      if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)  ! NCSU Subdomain
+      if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
+      if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
+
 
 C...
-C...  Compute the water surface elevation from the GWCE form of the 2D continuity eq.
+C...  Compute the water surface elevation from the GWCE form of the 2D
+C...  continuity eq.
 C...
 
 ckmd    Changed to include the predictor-corrector algorithm
@@ -2200,7 +2202,6 @@ CWET...
 CWET...WET/DRY - PART 1 - NODAL DRYING CRITERIA D1
 CWET....Drying Criteria D1: this depends on NODECODE and updates NODECODE
 CWET...
-
          DO I=1,NP
             IF(NODECODE(I).EQ.1) THEN
                HTOT=DP(I)+ETA2(I)
@@ -3536,6 +3537,7 @@ C******************************************************************************
 
       SUBROUTINE GWCE_New(IT,TimeLoc,TimeH)
 C
+      USE, INTRINSIC :: IEEE_ARITHMETIC
       USE SIZES
       USE GLOBAL
       USE MESH, ONLY : NE, NP, NM, X, Y, DP, NNeigh, NeiTab, TotalArea,
@@ -4238,6 +4240,7 @@ C...     Compute elemental averages
             WSXAvg=(WSX1(NM1)+WSX1(NM2)+WSX1(NM3))/3.d0
             WSYAvg=(WSY1(NM1)+WSY1(NM2)+WSY1(NM3))/3.d0
          ENDIF
+
          IF (C3D) THEN                !3D velocity dispersion
             DispXAvg=IFNLCT*DispX
             DispYAvg=IFNLCT*DispY
@@ -4361,7 +4364,6 @@ C...     Terms from momentum eqs.
 
 C...     Spatially varying Tau0 terms
      &        +Tau0SpaVar
-
 
 C...     Put these partial products into further elemental storage for a vector computer
 C...     These will be put into nodal storage outside of the elemental loop

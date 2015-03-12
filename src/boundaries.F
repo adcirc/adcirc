@@ -318,7 +318,7 @@ C     ---------
       ifwpCount = 1      
       do i=1,nbou
          if (nabout.eq.-1) then
-            write(6,'("i=",i0)') i
+            !write(6,'("i=",i0)') i !jgfdebug
          endif
          select case(ibtype_orig(i))
          case(0,1,2,10,11,12,20,21,22,30,52)

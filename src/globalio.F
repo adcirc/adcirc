@@ -10,10 +10,6 @@
       use VERSION
       use GLOBAL
       use MESH, ONLY : NP, AGRID
-C      use GLOBAL, ONLY: NP, NODES_LG, IMAP_EL_LG,
-C     &    IMAP_STAE_LG, IMAP_STAV_LG, IMAP_STAM_LG, IMAP_STAC_LG,
-C     &    BUFSIZE_MAX, buf, resultBuf, float_type, OutputDataDescript_t,
-C     &    COMM, nodecode
 #ifdef CMPI
 #ifdef HAVE_MPI_MOD
       use mpi
@@ -29,6 +25,15 @@ C     jgf49.44: Allocates memory for the full domain arrays for i/o
 C     purposes; these arrays are both read from and written to hotstart
 C     files. Arrays that are only written are allocated in the
 C     subroutine that does the writing.
+C 
+C     jgf51.46: Just to clarify, these arrays are needed during 
+C     hotstart initialization, to read in the previous state of the
+C     fulldomain simulation.a So, they need to be allocated prior
+C     to hotstart initialization. These arrays may also be needed
+C     to write fulldomain output, but care should be taken so they
+C     are not allocated more than once, i.e., in write_output.F 
+C     or global.F. 
+C 
 C--------------------------------------------------------------------
       SUBROUTINE allocateFullDomainIOArrays()
       IMPLICIT NONE
@@ -48,6 +53,11 @@ C
       ALLOCATE(NodeCode_g(NP_G))
       ALLOCATE(NOFF_g(NE_G))
       ALLOCATE(NNodeCode_g(NP_G))
+      !
+      !jgf51.46: Moved this allocation here from hstart.F
+      allocate(ESLONOFF_G(NP_G))
+
+
 C
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

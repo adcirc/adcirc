@@ -99,8 +99,9 @@ C******************************************************************************
 C*    ADCIRC initialize routine
 C******************************************************************************
       SUBROUTINE ADCIRC_Init(COMM, ROOTD)
+      !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc,
-     &   read_local_hot_start_files, make_dirname, write_local_harm_files
+     &  read_local_hot_start_files, make_dirname, write_local_harm_files
       USE MESH, ONLY : Areas, TotalArea, totalAreaCalc
       USE HARM, ONLY : allocateFullDomainHAIOArrays,
      &                 initHarmonicParameters
@@ -112,6 +113,7 @@ C
       CHARACTER(*), OPTIONAL :: ROOTD
 C
       call initLogging()
+      nabout = 1 !jgf51.46: Initialize log level to INFO
       call setMessageSource("ADCIRC_Init")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call screenMessage(DEBUG,"Enter.") ! log to screen; don't have log dirname
@@ -129,26 +131,6 @@ C
       ELSE
         CALL MSG_INIT()      ! Init MPI and get MPI-rank of this cpu
       ENDIF
-
-C... TCM v49.52.01 --commented out the next section and replaced with
-C  if(((mnwproh > 0).or.(mnwproc > 0)) .and. MYPROC >= MNPROC)
-
-C...  Special instructions for writer processors
-!       IF(MYPROC >= MNPROC) THEN
-! C...    02/07/2007 - sb - Writer processors will enter "WRITER_MAIN" subroutine
-! C...    and will be terminated before they exit this subroutine.  For this reason,
-! C...    The "STOP" statement in the next line to "CALL WRITER_MAIN()" will NOT
-! C...    have any effect, but it is placed there to make it apparent that
-! C...    writer processors will not execute the rest in this source file (adcirc.F).
-!         IF( MYPROC < MNPROC+MNWPROC ) THEN   !st3
-!           CALL WRITER_MAIN()
-!           STOP
-!         ELSE
-!           CALL HSWRITER_MAIN()   !st3 for hstart
-!           STOP
-!         ENDIF
-!       ENDIF
-
       CALL MAKE_DIRNAME()    ! Establish Working Directory Name
       call openLogFile()     ! jgf50.65: open subdomain log files (fort.16)
       CALL WRITER_INIT()     ! Initialize WRITER module
@@ -160,10 +142,6 @@ C...  Special instructions for writer processors
          call unsetMessageSource()     
          return
       endif
-!      CALL WRITER_INIT()     ! Initialize WRITER module
-!      CALL HSWRITER_INIT()   ! Initialize HSWRITER module  !st3 for hstart  100711
-! tcm v49.52.01 moved make_dirname up a level
-!      CALL MAKE_DIRNAME()    ! Establish Working Directory Name
       CALL READ_INPUT()      ! Establish sizes by reading fort.14 and fort.15
       CALL MSG_TABLE()       ! Read Message-Passing Tables
       CALL MSG_START()       ! Startup message passing
@@ -220,6 +198,7 @@ C     kmd 48.33bc - include a new initial condition file for baroclinic
 C...
 C...******************** PROGRAM SETUP SECTION ************************
 C...
+
       SELECT CASE(IHOT)
          CASE(0)
             CALL COLDSTART()
@@ -240,10 +219,10 @@ C...Default beginning and ending time steps
       ITIME_BGN = ITHS+1
       ITIME_END = NT  !NT is set in read_input.F
 
-C...Determine the number of active elements (MJU), the total number of
-C...elements (NODELE) and the total area of elements (TotalArea) attached to each node
+C...  Determine the number of active elements (MJU), the total number of
+C...  elements (NODELE) and the total area of elements (TotalArea) 
+C...  attached to each node
       call totalAreaCalc()
-
 C
 C     jgf51.21.24: Initialize output.
       call initOutput2D()

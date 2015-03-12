@@ -264,7 +264,7 @@ Cobell 20120510: Added logicals for turning on/off swan output files
       LOGICAL                      :: SWAN_OutputAgg(7)
 #endif
 Cobell -  Added the following for output of ESL at end of run
-      REAL(SZ),ALLOCATABLE, TARGET :: ESLONOFF(:),HOT_ESLONOFF(:),HOT_ESLONOFF_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: ESLONOFF(:),ESLONOFF_G(:)
 
       REAL(SZ),ALLOCATABLE, TARGET ::  CC00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  EtaDisc(:) ! vjp 9/2006 added for hotstart file
@@ -1028,26 +1028,34 @@ C...
       SUBROUTINE ALLOC_MAIN1a()
       IMPLICIT NONE
 C  
+      !jgfdebug TODO: rationalize initialization of these variables
       ALLOCATE ( ETAS(MNP))
       ALLOCATE ( GWCE_LV(MNP))
       ALLOCATE ( UU1(MNP),VV1(MNP))
+      uu1(:) = 0.d0
+      vv1(:) = 0.d0
       ALLOCATE ( QX1(MNP),QY1(MNP))
+      qx1(:) = 0.d0
+      qy1(:) = 0.d0
       ALLOCATE ( NNODECODE(MNP))
+      nnodecode(:) = 0
       ALLOCATE ( NOFF(MNE),NOFFOLD(MNE))
-
+      noff(:) = 0
+      noffold(:) = 0
       ALLOCATE ( NIBNODECODE(MNP))
       ALLOCATE ( CH1(MNP),TRANS_LV_B(MNP),TRANS_LV_A(MNP))
       ALLOCATE ( SOURSIN(MNP))
       ALLOCATE ( TK(MNP))
 
       ALLOCATE ( UU2(MNP),VV2(MNP))
+      uu2(:) = 0.d0
+      vv2(:) = 0.d0
       ALLOCATE ( QX2(MNP),QY2(MNP))
-      ALLOCATE ( ETA1(MNP),ETA2(MNP), EtaDisc(MNP))
-
-      ALLOCATE ( ETAMAX(MNP)) ! v46.50 sb 11/11/2006
-      ALLOCATE ( ETAMAX_TIME(MNP)) ! tcm v51.20.01 
-      ALLOCATE ( UMAX(MNP)) ! v46.50 sb 11/11/2006
-      ALLOCATE ( UMAX_TIME(MNP)) ! tcm v51.20.01 
+      qx2(:) = 0.d0
+      qy2(:) = 0.d0
+      ALLOCATE ( ETA1(MNP),ETA2(MNP))
+      eta1(:) = 0.d0
+      eta2(:) = 0.d0
 
       ALLOCATE ( CORIF(MNP))
       ALLOCATE ( MOM_LV_X(MNP),MOM_LV_Y(MNP))
@@ -1067,9 +1075,10 @@ C    kmd48.33bc - arrays for baroclinic
       ALLOCATE (q_heat1(MNP), q_heat2(MNP), HFLUX(MNP) )
       ALLOCATE (sponge(MNP) )
 
-C    Allocate arrays for ESL output
+C    Allocate array for ESL i/o - only needed if
+C    loadEleSlopeLim.eqv..true
       ALLOCATE (ESLONOFF(MNP))
-
+      ESLONOFF = 0.d0
 
 #ifdef CMPI
       ALLOCATE ( IDUMY(1), DUMY1(1), DUMY2(1) )
@@ -1094,13 +1103,17 @@ C     the non-C3D case.
      &        BSX1(MNP),BSY1(MNP))
       ENDIF
 
+      ALLOCATE(EtaDisc(MNP))
       EtaDisc(:) = 0.0d0
+
+      ALLOCATE ( ETAMAX(MNP)) ! v46.50 sb 11/11/2006
+      ALLOCATE ( ETAMAX_TIME(MNP)) ! tcm v51.20.01 
+      ALLOCATE ( UMAX(MNP)) ! v46.50 sb 11/11/2006
+      ALLOCATE ( UMAX_TIME(MNP)) ! tcm v51.20.01 
       ETAMAX(:) = -99999.d0 ! v46.50 sb 11/11/2006
       EtaMax_Time(:) = 0.d0
       UMAX(:) = 0.d0 ! v46.50 sb 11/11/2006
       UMax_Time(:) = 0.d0
-
-
 
       RETURN
       END SUBROUTINE ALLOC_MAIN1a
@@ -1316,27 +1329,31 @@ C
       ALLOCATE ( WSX2(MNP),WSY2(MNP),PR2(MNP) )
       ALLOCATE ( WVNX1(MNP),WVNY1(MNP),PRN1(MNP) )
       ALLOCATE ( WVNX2(MNP),WVNY2(MNP),PRN2(MNP) )
-      ALLOCATE ( RSNX1(MNP),RSNY1(MNP),RSNX2(MNP),RSNY2(MNP) )
-      if (NCICE.NE.0) then
-         ALLOCATE ( CICE1(MNP),CICE2(MNP),CICEOUT(MNP) ) !tcm v49.64.01 added
-                                                         ! for ice concentration
-      ENDIF
-      ALLOCATE ( WVNXOUT(MNP),WVNYOUT(MNP) )
       WSX1(:) = 0.0d0
       WSY1(:) = 0.0d0
       PR1(:) = 0.0d0
       WSX2(:) = 0.0d0
       WSY2(:) = 0.0d0
       PR2(:) = 0.0d0
+
+      ALLOCATE ( RSNX1(MNP),RSNY1(MNP),RSNX2(MNP),RSNY2(MNP) )
+      RSNX1(:) = 0.0d0 !jgf51.46: Added initialization of RSNX1, RSNY1
+      RSNY1(:) = 0.0d0
       RSNX2(:) = 0.d0
       RSNY2(:) = 0.d0
-      WVNXOUT(:) = 0.d0
-      WVNYOUT(:) = 0.d0
-      IF (NCICE.NE.0) then
+
+      if (NCICE.NE.0) then
+         ALLOCATE ( CICE1(MNP),CICE2(MNP),CICEOUT(MNP) ) !tcm v49.64.01 added
+                                                        ! for ice concentration
          CICE1(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
          CICE2(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
          CICEOUT(:) = 0.0d0 !tcm v49.64.01 added for ice concentration
       ENDIF
+
+      ALLOCATE ( WVNXOUT(MNP),WVNYOUT(MNP) )
+      WVNXOUT(:) = 0.d0
+      WVNYOUT(:) = 0.d0
+
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
       IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4)) then
 !#ifdef CSWAN

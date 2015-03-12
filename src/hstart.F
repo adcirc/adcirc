@@ -32,6 +32,7 @@ C     HOT START PROGRAM SETUP ROUTINE
 C
 C**************************************************************************
 C
+      !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE GLOBAL
       USE MESH, ONLY : DP, ICS, X, Y, SLAM, SFEA, AID4
@@ -71,6 +72,7 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &     LoadDirEffRLen, LoadCanopyCoef,
      &     ApplyDirectionalWindReduction, ApplyCanopyCoefficient,
      &     OutputTau0, LoadEleSlopeLim, elemental_slope_limiter_active,
+     &     elemental_slope_limiter_grad_max,
      &     LoadRiver_et_WSE, River_et_WSE
       IMPLICIT NONE
 #ifdef CMPI       
@@ -2377,30 +2379,57 @@ C
 C--------------------END MET FORCING---------------------------------------
 
 C......RESTART THE WAVE RADIATION STRESS
-
+        
+        ! jgf51.46: Fixed initialization issue due to mishandling the 
+        ! cases where NRS.eq.3 (SWAN coupling) or NRS.eq.4 (STWAVE
+        ! coupling). The code was adding the wave radiation stresses
+        ! to wind stresses whenever NRS.gt.0, but in the case of 
+        ! NRS.eq.3 or NRS.eq.4, the wave radiation stresses were 
+        ! uninitialized. This resulted in NaNs getting into the solution
+        ! upon hotstarting. I fixed this by initializing RSNX1 and
+        ! RSNY1 to 0.0 immediately after the arrays are allocated. 
         IF(NRS.GE.1) THEN ! sb46.28sb03
-          RSTIME1 = TimeLoc
-          RSTIME2 = RSTIME1 + RSTIMINC
-C          IF (MYPROC.EQ.0) THEN
-C             PRINT *, "Made it to the radiation stress"
-C             PRINT *, TIMELOC, RSTIME2, NRS
-C          END IF
-          ! NRS=2 was added. sb46.28sb03 09/xx/2006
-          IF(NRS.EQ.1) THEN
-            OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
-            CALL RSGET(RSNX1,RSNY1,NP)
-            CALL RSGET(RSNX2,RSNY2,NP)
-          ENDIF
-          IF(NRS.EQ.2) THEN
-            CALL RS2INIT(RSNX1,RSNY1,NP)
-            CALL RS2GET(RSNX1,RSNY1,NP)
-            CALL RS2GET(RSNX2,RSNY2,NP)
-          ENDIF
-          DO I=1,NP
-            WSX2(I) = WSX2(I)+RampWRad2*RSNX1(I)
-            WSY2(I) = WSY2(I)+RampWRad2*RSNY1(I)
-          END DO
+           RSTIME1 = TimeLoc
+           RSTIME2 = RSTIME1 + RSTIMINC
+           SELECT CASE(NRS)
+           CASE(1)           
+              OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
+              CALL RSGET(RSNX1,RSNY1,NP)
+              CALL RSGET(RSNX2,RSNY2,NP)
+           CASE(2)
+              ! NRS=2 was added. sb46.28sb03 09/xx/2006
+              CALL RS2INIT(RSNX1,RSNY1,NP)
+              CALL RS2GET(RSNX1,RSNY1,NP)
+              CALL RS2GET(RSNX2,RSNY2,NP)
+           CASE(3,4)
+              ! do nothing, initialization takes place in timestep.F
+           CASE DEFAULT
+              write(scratchMessage,'(a,i0,a)') 
+     &        'The NRS parameter cannot have the value ',NRS,'.' 
+              call allMessage(ERROR,scratchMessage)           
+           END SELECT
+           ! 
+           ! Add wave radiation stress to the wind stress. RSNX1 and
+           ! RSNY1 were initialized to 0.0 for NRS.eq.3 and NRS.eq.4.
+           WSX2(:) = WSX2(:) + RampWRad2 * RSNX1(:)
+           WSY2(:) = WSY2(:) + RampWRad2 * RSNY1(:)
         ENDIF
+
+!           IF(NRS.EQ.1) THEN
+!              OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
+!              CALL RSGET(RSNX1,RSNY1,NP)
+!              CALL RSGET(RSNX2,RSNY2,NP)
+!          ENDIF
+!          IF(NRS.EQ.2) THEN
+!            ! NRS=2 was added. sb46.28sb03 09/xx/2006
+!            CALL RS2INIT(RSNX1,RSNY1,NP)
+!            CALL RS2GET(RSNX1,RSNY1,NP)
+!            CALL RS2GET(RSNX2,RSNY2,NP)
+!          ENDIF
+!          DO I=1,NP
+!            WSX2(I) = WSX2(I)+RampWRad2*RSNX1(I)
+!            WSY2(I) = WSY2(I)+RampWRad2*RSNY1(I)
+!          END DO
 
        if (CTIP) then
 Cjromo 11-01-00  Initialize TIP2 for HOTSTART
@@ -2454,7 +2483,6 @@ cjjw/vjpm002 - modified/added the following 5 lines
            END DO
          ENDIF
       endif     !   CTIP
-
 
 C...
 C....SET UP TO RESTART TIMESERIES OUTPUT FILES
@@ -3498,16 +3526,10 @@ c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO B
            CLOSE(76)                         ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
-
 C
 C     jgf48.4635 If the maxele.63 (etc) files are present, we need to
 C     load them up, to preserve high water marks across hotstarts.
 C     If they are not present, thats okay too.
-      
-      IF(LoadEleSlopeLim)THEN
-        IF(MNPROC.GT.1)ALLOCATE(HOT_ESLONOFF_G(NP_G))
-        ALLOCATE(HOT_ESLONOFF(NP))
-      ENDIF  
 
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 C  Begin TCM v51.20.01 Mods for MaxMin Files to local Variables
@@ -3530,13 +3552,26 @@ C
      &                                  0.d0,RSNMax_Time)
 
       IF (LoadEleSlopeLim) THEN
-!         HOT_ESLONOFF(:) = 0.d0 ! initialize the value
-!         CALL readMinMax('ESLNodes.63',HOT_ESLONOFF)
          CALL readAndMapToSubdomainMaxMin('ESLNodes.63',ESLONOFF,
      &                              0.d0)
-         !must set the elemental slope limiter active values as well
+         ! must set the elemental slope limiter active values as well
+         !
+         ! jgf51.46: Reall should only turn on the slope limiter if
+         ! the slope limiter was turned on in the run that produced
+         ! these values (as opposed to just recording the places
+         ! where the slope was exceeded). However, this isn't really
+         ! practical because it would require knowledge of the 
+         ! elemental_slope_limiter nodal attribute from the 
+         ! previous simulation. We don't have access to that. 
+         !
+         ! Also, we don't want to turn the slope limiter on in places 
+         ! where the analyst does not want it to be turned on, and only 
+         ! wants to record the places where the slope is exceeded. So
+         ! I am adding a check for positive values of the nodal
+         ! attribute, and only turning on the slope limiter there. 
          DO I = 1,NP
-            if (ESLONOFF(I).eq.1.d0) then
+            if ( (ESLONOFF(I).eq.1.d0).and.
+     &         (elemental_slope_limiter_grad_max(i).ge.0.d0) ) then
                elemental_slope_limiter_active(I) = .true.
             else
                elemental_slope_limiter_active(I) = .false.
@@ -3555,7 +3590,6 @@ C
             DEALLOCATE (River_et_WSE)
          ENDIF
       ENDIF
-
 
  1112 FORMAT(/,1X,79('_'))
  1197 FORMAT(/,1X,'THE E29 MET GRID INTERPOLATING FACTORS ARE ',
