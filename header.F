@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.47 - 03/13/2015 - jgf - Consolidated the elemental slope limiter
+C           into a single block of code at the end of GWCE_New() to
+C           prevent non-limited slopes from being used in the momentum 
+C           equation solution.
 C  v51.46 - 03/12/2015 - jgf - Fixed the allocation/initialization of wave
 C           radiation stress arrays in global.F, hstart.F, and cstart.F
 C           to prevent NaNs from uninitialized values at hotstart from 
