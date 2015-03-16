@@ -4382,13 +4382,21 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
             END DO
          ENDIF
       endif                                   ! NCSU Subdomain
-C
-C     jgf46.02 Added the ability to include geoid offset on the boundary.
-      IF (LoadGeoidOffset) THEN
-         DO I=1,NETA
-            ETA2(NBD(I))=ETA2(NBD(I))+GeoidOffset(NBD(I))
-         END DO
-      ENDIF
+      ! 
+      ! jgf46.02 Added the ability to include geoid offset on the boundary.
+      !
+      ! aaltuntas51.48: Deactivated geoidOffset for subdomain boundary 
+      ! conditions.
+      if (subdomainOn.and.enforceBN.eq.1) then  ! NCSU Subdomain
+         continue                                ! NCSU Subdomain
+      else 
+         IF (LoadGeoidOffset) THEN
+            DO I=1,NETA
+               ETA2(NBD(I))=ETA2(NBD(I))+GeoidOffset(NBD(I))
+            END DO
+         ENDIF
+      endif                                      ! NCSU Subdomain
+      
 C
 C     jgf48.04 Added an inverted barometer boundary condition so that
 C     low pressure systems can cross the boundary without creating an

@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.48 - 03/16/2015 - jgf - Merged aaltuntas' fix on r1072 of the
+C           ncsu-subdomain branch to deactivate geoidOffset for subdomain 
+C           boundary conditions.
 C  v51.47 - 03/13/2015 - jgf - Consolidated the elemental slope limiter
 C           into a single block of code at the end of GWCE_New() to
 C           prevent non-limited slopes from being used in the momentum 
