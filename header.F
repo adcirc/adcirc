@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.49 - 03/16/2015 - tcm - Modifications to make slope limiting a callable
+C           subroutine.
 C  v51.48 - 03/16/2015 - jgf - Merged aaltuntas' fix on r1072 of the
 C           ncsu-subdomain branch to deactivate geoidOffset for subdomain 
 C           boundary conditions.
