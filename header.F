@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.50 - 03/21/2015 - jgf - Added back the clearing of the slope
+C           limiter flag for all nodes at each time step prior to 
+C           re-evaluating whether to activate it again; adjusted the USE
+C           statements at the top of the new slope limiter subroutines
+C           to refer to the mesh module. 
 C  v51.49 - 03/16/2015 - tcm - Modifications to make slope limiting a callable
 C           subroutine.
 C  v51.48 - 03/16/2015 - jgf - Merged aaltuntas' fix on r1072 of the

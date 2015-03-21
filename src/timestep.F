@@ -116,6 +116,7 @@ C.....sb46.28sb03 added 09/xx/2006
      &     LoadDirEffRLen,
      &     ApplyCanopyCoefficient,
      &     LoadCanopyCoef,
+     &     LoadEleSlopeLim,
      &     ManningsN, LoadManningsN, !sb46.28sb02
      &     Z0b_var, LoadZ0B_var,!Rjw IOOS 2010
      &     BFCdLLimit !sb46.28sb02/jgf47.04 lower limit of Cd for bot. friction
@@ -9380,10 +9381,10 @@ C         subroutine.
 C*************************************************************************
       subroutine check_slopes(it,TimeLoc)
       USE SIZES, ONLY : SZ
-      use global, only : eta2,nodecode,NOFF,NM,X,Y,Areas,SFAC,
-     &                   NE,ESLONOFF,screenUnit,MyProc,NumItr,
-     &      setMessageSource, unsetMessageSource, allMessage,
-     &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR     
+      use global, only : eta2,nodecode,NOFF,ESLONOFF,screenUnit,
+     &      MyProc,NumItr,setMessageSource, unsetMessageSource, 
+     &      allMessage,logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
+      use mesh, only : x, y, nm, ne, areas, sfac
       use NodalAttributes, ONLY : LoadEleSlopeLim,
      &     elemental_slope_limiter_active,
      &     elemental_slope_limiter_grad_max,
@@ -9403,13 +9404,18 @@ C*************************************************************************
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
+      IF (LoadEleSlopeLim) THEN
+         ! jgf51.47: Per Rick's specification, start off by deactivating
+         ! any slope limitation triggered in the previous time step;
+         ! we have a fresh start each time step in determining whether
+         ! to activate slope limiting at each node. 
+         ! jgf51.50: Added this back to the subroutine version of the
+         ! slope limiter. 
+         elemental_slope_limiter_active(:) = .false.
 
-
-     
-     
 Cobell  CHECK IF THE LOCAL GRADIENT FOR ELEMENTS IS EXCEEDED AND TRIGGER THE
 C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
-      IF (LoadEleSlopeLim) THEN
+
          DO IE=1,NE
             NM1=NM(IE,1)
             NM2=NM(IE,2)
@@ -9505,10 +9511,10 @@ C***********************************************************************
 C
       SUBROUTINE APPLY_SLOPE_LIMITS(ETA2Lim,LocNP)
       USE SIZES, ONLY : SZ
-      use global, only : nodecode,NOFF,NM,Areas,
-     &      NE,IFNLFA,TotalArea,
+      use global, only : nodecode,NOFF,IFNLFA,
      &      setMessageSource, unsetMessageSource, allMessage,
      &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
+      use mesh, only : ne, nm, areas, totalArea
       use NodalAttributes, ONLY : LoadEleSlopeLim,
      &     elemental_slope_limiter_active
       implicit none
