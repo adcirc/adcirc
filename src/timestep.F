@@ -4605,128 +4605,6 @@ C...  JCG ITERATIVE MATRIX SOLVER
          END DO
       ENDIF
 
-! --- tcm replaced with subroutine which is called upon exit from this subroutine
-!C       ELEMENTAL SLOPE LIMITER
-!C
-!C        CHECK TO SEE IF A HIGH GRADIENT HAS BEEN DETECTED IN THE PREVIOUS
-!C        TIME STEP AND APPLY SMOOTHING IF DESIRED. -ZC
-!
-!      IF (LoadEleSlopeLim.eqv..true.) THEN
-!C
-!         ! jgf51.47: Per Rick's specification, start off by deactivating
-!         ! any slope limitation triggered in the previous time step;
-!         ! we have a fresh start each time step in determining whether
-!         ! to activate slope limiting at each node. 
-!         elemental_slope_limiter_active(:) = .false.
-!      
-!Cobell  CHECK IF THE LOCAL GRADIENT FOR ELEMENTS IS EXCEEDED AND TRIGGER THE
-!C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
-!
-!         DO IE=1,NE
-!            NM1=NM(IE,1)
-!            NM2=NM(IE,2)
-!            NM3=NM(IE,3)
-!            NC1=NODECODE(NM1)
-!            NC2=NODECODE(NM2)
-!            NC3=NODECODE(NM3)
-!            NCEle=NC1*NC2*NC3*NOFF(IE)
-!            IF(NCEle.EQ.0)THEN
-!               CYCLE  ! this element is dry, go to the next one
-!            ENDIF
-!            SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
-!            AreaIE2=Areas(IE)
-!            FDX1=(Y(NM2)-Y(NM3))*SFacAvg
-!            FDX2=(Y(NM3)-Y(NM1))*SFacAvg
-!            FDX3=(Y(NM1)-Y(NM2))*SFacAvg
-!            FDY1=X(NM3)-X(NM2)
-!            FDY2=X(NM1)-X(NM3)
-!            FDY3=X(NM2)-X(NM1)
-!            dEta2Dx  = (Eta2(NM1)*FDX1+Eta2(NM2)*FDX2+Eta2(NM3)*FDX3)
-!     &                 /AreaIE2
-!            dEta2Dy  = (Eta2(NM1)*FDY1+Eta2(NM2)*FDY2+Eta2(NM3)*FDY3)
-!     &                 /AreaIE2
-!            dEta2Mag = sqrt(dEta2Dx**2.d0+dEta2Dy**2.d0)
-!            DO I=1,3
-!C              check if the limiter is on and allow a zero gradient to
-!C              proceed and turn on the limiter.
-!               IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
-!               IF (dEta2Mag.GE.
-!     &           ABS(elemental_slope_limiter_grad_max(NM(IE,I))))THEN
-!                 ! zc - if gradmax is positive or zero, apply slope
-!                 ! limiting otherwise just print gradient warnings to
-!                 ! screen the first time the gradient is exceeded
-!                 IF(elemental_slope_limiter_grad_max(NM(IE,I))
-!     &               .GE.0D0)THEN
-!                    IF(.NOT.elemental_slope_limiter_active(NM(IE,I))
-!     &                 .AND.elemental_slope_limiter_grad_max(NM(IE,I))
-!     &                  .GT.0D0)THEN
-!                        
-!                        WRITE(screenUnit,1983) IT,NumItr,TimeLoc,
-!     &                      dEta2Mag,NM1,MyProc
-!                        WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,
-!     &                      MyProc
-!                    
-!                    ENDIF
-!                    ESLONOFF(NM(IE,I)) = 1 ! for output file
-!                    elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
-!                 ELSE
-!                    IF(.NOT.
-!     &               elemental_slope_limiter_max_exceeded(NM(IE,I)))THEN
-!                        WRITE(screenUnit,1984) IT,NumItr,TimeLoc,
-!     &                      dEta2Mag,NM1,MyProc
-!                        WRITE(16,1984) IT,NumItr,TimeLoc,dEta2Mag,NM1,
-!     &                      MyProc
-!                        elemental_slope_limiter_max_exceeded(NM(IE,I)) =
-!     &                      .TRUE.
-!                    ENDIF
-!                 ENDIF
-!               ENDIF
-!            ENDDO ! loop around nodes of an element
-!         ENDDO ! loop over the elements
-!
-!         !
-!         ! jgf51.46: Per Rick's specification, limit the slopes here
-!         ! before any non-limited slopes can get into the momentum 
-!         ! equation solver. 
-!         elevSum(:) = 0.d0
-!         DO IE=1,NE
-!            NM1=NM(IE,1)
-!            NM2=NM(IE,2)
-!            NM3=NM(IE,3)
-!            NC1=NODECODE(NM1)
-!            NC2=NODECODE(NM2)
-!            NC3=NODECODE(NM3)
-!            NCEle=NC1*NC2*NC3*NOFF(IE)
-!            EtaN1=IFNLFA*Eta2(NM1)
-!            EtaN2=IFNLFA*Eta2(NM2)
-!            EtaN3=IFNLFA*Eta2(NM3)
-!            AreaEle=NCEle*Areas(IE)/2.d0
-!            EtaN123=(EtaN1+EtaN2+EtaN3)/3.d0
-!            elevSum(NM1)=elevSum(NM1)+AreaEle*EtaN123
-!            elevSum(NM2)=elevSum(NM2)+AreaEle*EtaN123
-!            elevSum(NM3)=elevSum(NM3)+AreaEle*EtaN123
-!         ENDDO
-!
-!         WHERE ((elemental_slope_limiter_active.eqv..true.).and.
-!     &         (TotalArea.ne.0.d0))
-!               Eta2 = elevSum / TotalArea
-!         END WHERE
-!      ENDIF
-!
-!1983  FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-!     &       5X,'TIME = ',E15.8,
-!     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE ',I8,
-!     &       2X,'ON MYPROC = ',I5,
-!     &       3X,'** WARNING: ELEMENTAL SLOPE LIMITER TURNED ON **')
-!
-!1984  FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-!     &       5X,'TIME = ',E15.8,
-!     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE ',I8,
-!     &       2X,'ON MYPROC = ',I5,
-!     &       3X,'** WARNING: MAXIMUM ALLOWED GRADIENT EXCEEDED **')
-!C...  END CHECKING ELEMENT GRADIENTS
-!C...
-
 #ifdef CMPI
       CALL UPDATER(ETA2,DUMY1,DUMY2,1)
 #endif      
@@ -9380,10 +9258,11 @@ C         section from timestep subroutine and put it in its own
 C         subroutine.
 C*************************************************************************
       subroutine check_slopes(it,TimeLoc)
-      USE SIZES, ONLY : SZ
+      USE SIZES, ONLY : SZ, mnproc
       use global, only : eta2,nodecode,NOFF,ESLONOFF,screenUnit,
-     &      MyProc,NumItr,setMessageSource, unsetMessageSource, 
-     &      allMessage,logMessage, DEBUG, ECHO, INFO, WARNING, ERROR
+     &      MyProc,setMessageSource, unsetMessageSource, scratchMessage,
+     &      allMessage,logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
+     &      nodes_lg
       use mesh, only : x, y, nm, ne, areas, sfac
       use NodalAttributes, ONLY : LoadEleSlopeLim,
      &     elemental_slope_limiter_active,
@@ -9391,114 +9270,123 @@ C*************************************************************************
      &     elemental_slope_limiter_max_exceeded
       implicit none
       INTEGER, intent(in) :: IT
+      Real(8), intent(in) :: TimeLoc
       INTEGER IE,I
       INTEGER NM1, NM2, NM3, NM123
       INTEGER NC1, NC2, NC3, NCEle, NCI
       REAL(SZ) DEta2DX,DEta2DY,DEta2Mag,SFacAvg
       REAL(SZ) FDX1,FDX2,FDX3,FDY1,FDY2,FDY3
       REAL(8) :: AreaIE2
-      Real(8), intent(in) :: TimeLoc
-
+      integer nodeNumber ! fulldomain node number where wse slope is exceeded
+      
 
       call setMessageSource("check_slopes")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-      IF (LoadEleSlopeLim) THEN
-         ! jgf51.47: Per Rick's specification, start off by deactivating
-         ! any slope limitation triggered in the previous time step;
-         ! we have a fresh start each time step in determining whether
-         ! to activate slope limiting at each node. 
-         ! jgf51.50: Added this back to the subroutine version of the
-         ! slope limiter. 
-         elemental_slope_limiter_active(:) = .false.
+      ! jgf51.47: Per Rick's specification, start off by deactivating
+      ! any slope limitation triggered in the previous time step;
+      ! we have a fresh start each time step in determining whether
+      ! to activate slope limiting at each node. 
+      ! jgf51.50: Added this back to the subroutine version of the
+      ! slope limiter. 
+      elemental_slope_limiter_active(:) = .false.
 
 Cobell  CHECK IF THE LOCAL GRADIENT FOR ELEMENTS IS EXCEEDED AND TRIGGER THE
 C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
 
-         DO IE=1,NE
-            NM1=NM(IE,1)
-            NM2=NM(IE,2)
-            NM3=NM(IE,3)
-            NC1=NODECODE(NM1)
-            NC2=NODECODE(NM2)
-            NC3=NODECODE(NM3)
-            NCEle=NC1*NC2*NC3*NOFF(IE)
-            IF(NCEle.EQ.0)THEN
-               CYCLE  ! this element is dry, go to the next one
-            ENDIF
-            SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
-            AreaIE2=Areas(IE)
-            FDX1=(Y(NM2)-Y(NM3))*SFacAvg
-            FDX2=(Y(NM3)-Y(NM1))*SFacAvg
-            FDX3=(Y(NM1)-Y(NM2))*SFacAvg
-            FDY1=X(NM3)-X(NM2)
-            FDY2=X(NM1)-X(NM3)
-            FDY3=X(NM2)-X(NM1)
-            dEta2Dx  = (Eta2(NM1)*FDX1+Eta2(NM2)*FDX2+Eta2(NM3)*FDX3)
+      DO IE=1,NE
+         NM1=NM(IE,1)
+         NM2=NM(IE,2)
+         NM3=NM(IE,3)
+         NC1=NODECODE(NM1)
+         NC2=NODECODE(NM2)
+         NC3=NODECODE(NM3)
+         NCEle=NC1*NC2*NC3*NOFF(IE)
+         IF(NCEle.EQ.0)THEN
+            CYCLE  ! this element is dry, go to the next one
+         ENDIF
+         SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
+         AreaIE2=Areas(IE)
+         FDX1=(Y(NM2)-Y(NM3))*SFacAvg
+         FDX2=(Y(NM3)-Y(NM1))*SFacAvg
+         FDX3=(Y(NM1)-Y(NM2))*SFacAvg
+         FDY1=X(NM3)-X(NM2)
+         FDY2=X(NM1)-X(NM3)
+         FDY3=X(NM2)-X(NM1)
+         dEta2Dx  = (Eta2(NM1)*FDX1+Eta2(NM2)*FDX2+Eta2(NM3)*FDX3)
      &                 /AreaIE2
-            dEta2Dy  = (Eta2(NM1)*FDY1+Eta2(NM2)*FDY2+Eta2(NM3)*FDY3)
+         dEta2Dy  = (Eta2(NM1)*FDY1+Eta2(NM2)*FDY2+Eta2(NM3)*FDY3)
      &                 /AreaIE2
-            dEta2Mag = sqrt(dEta2Dx*dEta2Dx + dEta2Dy*dEta2Dy)
-            DO I=1,3
-C              check if the limiter is on and allow a zero gradient to
-C              proceed and turn on the limiter.
-               IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
-               IF (dEta2Mag.GE.
-     &           ABS(elemental_slope_limiter_grad_max(NM(IE,I))))THEN
-                 ! zc - if gradmax is positive or zero, apply slope
-                 ! limiting otherwise just print gradient warnings to
-                 ! screen the first time the gradient is exceeded
-                 IF(elemental_slope_limiter_grad_max(NM(IE,I))
-     &               .GE.0.0D0) THEN
-                    IF(.NOT.elemental_slope_limiter_active(NM(IE,I))
-     &                 .AND.elemental_slope_limiter_grad_max(NM(IE,I))
-     &                  .GE.0.0D0) THEN
-                        WRITE(screenUnit,1983) IT,NumItr,TimeLoc,
-     &                      dEta2Mag,NM1,MyProc
-                        WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,
-     &                      MyProc
-                    ENDIF
-                    ESLONOFF(NM(IE,I)) = 1 ! for output file
-                    elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
-                 ELSE
-                    IF(.NOT.
-     &               elemental_slope_limiter_max_exceeded(NM(IE,I)))THEN
-                        WRITE(screenUnit,1984) IT,NumItr,TimeLoc,
-     &                      dEta2Mag,NM1,MyProc
-                        WRITE(16,1984) IT,NumItr,TimeLoc,dEta2Mag,NM1,
-     &                      MyProc
-                        elemental_slope_limiter_max_exceeded(NM(IE,I)) =
-     &                      .TRUE.
-                    ENDIF
-                 ENDIF
-               ENDIF
-            ENDDO ! loop around nodes of an element
-         ENDDO ! loop over the elements
-      ENDIF
-1983  FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &       5X,'TIME = ',E15.8,
-     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE ',I8,
-     &       2X,'ON MYPROC = ',I5,
-     &       3X,'** WARNING: ELEMENTAL SLOPE LIMITER TURNED ON **')
+         dEta2Mag = sqrt(dEta2Dx*dEta2Dx + dEta2Dy*dEta2Dy)
+         !
+         ! jgf51.51: Now that the slope limiter gets reset at 
+         ! every time step, I had to rewrite the logging so that
+         ! a log message is only written the first time the slope
+         ! limiter is activated at a node during a particular run.
+         DO I=1,3
+            ! If the limiter is on already, go to the next node. 
+            IF (elemental_slope_limiter_active(NM(IE,I))) CYCLE
+            ! Compare the elemental slope to the maximum elemental gradient.
+            IF (dEta2Mag.GE.
+     &           ABS(elemental_slope_limiter_grad_max(NM(IE,I)))) THEN
+               ! jgf51.51: Log the fulldomain node number.
+               nodeNumber = nm(ie,i)
+               if (mnproc.gt.1) then
+                  nodeNumber = nodes_lg(nm(ie,i))
+               endif
+               ! zc - If gradmax is positive or zero, activate slope
+               ! limiting. 
+               if (elemental_slope_limiter_grad_max(nm(ie,i))
+     &               .ge.0.0d0) then
+                  ! If it is the first time that the slope limiter
+                  ! has been activated at this node, write a log 
+                  ! message. 
+                  if (eslonoff(nm(ie,i)).eq.0) then
+                     write(scratchMessage,1983) nodeNumber,dEta2Mag, 
+     &                     elemental_slope_limiter_grad_max(NM(IE,I)),
+     &                     it, timeLoc
+                     call allMessage(INFO,scratchMessage)
+                     eslonoff(nm(ie,i)) = 1 ! for output file
+                  endif
+                  elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
+               else
+                  ! Just print log message the first time the 
+                  ! gradient is exceeded. 
+                  IF (elemental_slope_limiter_max_exceeded(NM(IE,I))
+     &                  .eqv..false.) THEN
+                     write(scratchMessage,1984) nodeNumber,dEta2Mag, 
+     &                     elemental_slope_limiter_grad_max(NM(IE,I)),
+     &                     it, timeLoc
+                     call allMessage(INFO,scratchMessage)
+                     elemental_slope_limiter_max_exceeded(NM(IE,I)) =
+     &                      .true.
+                  endif
+               endif
+            endif
+         enddo ! loop around nodes of an element
+      enddo ! loop over the elements
 
-1984  FORMAT(1X,'TIME STEP =',I8,5X,'ITERATIONS =',I5,
-     &       5X,'TIME = ',E15.8,
-     &       /,2X,'GRADMAX = ', 1pE12.4E3,' at NODE ',I8,
-     &       2X,'ON MYPROC = ',I5,
-     &       3X,'** WARNING: MAXIMUM ALLOWED GRADIENT EXCEEDED **')
+
+1983  format('Elemental slope limiter turned on at fulldomain node ',i0,
+     &  ' where the elemental slope is ',1pE12.4E3,
+     &  ' and the maximum elemental slope is ',1pE12.4E3,
+     &  ' on time step ',i0,' and time = ',e15.8,'.')
+
+1984  format('Maximum elemental slope exceeded at fulldomain node ',i0,
+     &  ' where the elemental slope is ',1pE12.4E3,
+     &  ' and the maximum elemental slope is ',1pE12.4E3,
+     &  ' on time step ',i0,' and time = ',e15.8,'.')
+     
 C...  END CHECKING ELEMENT GRADIENTS
-
 
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-
-
-      RETURN
-      
+      !-----------------------------------------------------------------
       END SUBROUTINE CHECK_SLOPES
+      !-----------------------------------------------------------------   
 C
 C***********************************************************************
 

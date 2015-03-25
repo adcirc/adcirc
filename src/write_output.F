@@ -273,7 +273,7 @@ C----------------------------------------------------------------------
      &   noutgw, ntcysgw, ntcyfgw, nspoolgw, nddt, ncice, nrs, 
      &   noutc, nstac_g, nstac, im, noutgc, ntcyfgc, ntcysgc,
      &   nspoolgc, INFO, scratchMessage, allMessage, nscougi, nscougp,
-     &   nscours
+     &   nscours, nscoub, nscougb, nscoui, nscoup
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim
 #ifdef ADCNETCDF
@@ -342,8 +342,7 @@ C
       ptr(35)%descript2D => SwanTM02MaxDescript
       ptr(36)%descript2D => SwanTMM10Descript
       ptr(37)%descript2D => SwanTMM10MaxDescript
-#endif
-
+#endif    
       ! 
       ! jgf51.21.24: Set some defaults
       do i=1,numOutputDescript2D
@@ -508,6 +507,7 @@ C
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
          ALLOCATE(RMP00_g(NSTAM_G))
       ENDIF
+      NSCOUP = NSCOUM ! jgf51.51: So we don't share a spool counter.
       PrStaDescript % lun                  = 71
       PrStaDescript % specifier            = NOUTM
       PrStaDescript % num_fd_records       = NSTAM_G
@@ -521,7 +521,7 @@ C
       PrStaDescript % startTimeStep           = NTCYSM
       PrStaDescript % endTimeStep             = NTCYFM
       PrStaDescript % outputTimeStepIncrement = NSPOOLM
-      PrStaDescript % spoolCounter            => NSCOUM
+      PrStaDescript % spoolCounter            => NSCOUP
       PrStaDescript % filepos                 => IPSTP
       PrStaDescript % elements                => NNM
       PrStaDescript % interp_fac1             => STAIM1 
@@ -571,7 +571,6 @@ C
       endif
 
       ! fort.73
-C         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
          ALLOCATE(Pr2_g(NP_G))
       ENDIF
@@ -623,6 +622,7 @@ C         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
          ALLOCATE(DP00_g(NSTAE_G))
       ENDIF
+      NSCOUB = NSCOUE ! jgf51.51: So we don't share a spool counter.
       BathyStaDescript % lun                  = 75
       BathyStaDescript % specifier            = NOUTE
       BathyStaDescript % num_fd_records       = NSTAE_G
@@ -636,7 +636,7 @@ C         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
       BathyStaDescript % startTimeStep           = NTCYSE
       BathyStaDescript % endTimeStep             = NTCYFE
       BathyStaDescript % outputTimeStepIncrement = NSPOOLE
-      BathyStaDescript % spoolCounter            => NSCOUE
+      BathyStaDescript % spoolCounter            => NSCOUB
       BathyStaDescript % filepos                 => IBSTP
       BathyStaDescript % elements                => NNE
       BathyStaDescript % interp_fac1             => STAIE1 
@@ -657,12 +657,13 @@ C         write(16,*) 'Allocating PrDescript' !jgfdebug48.03
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
          ALLOCATE(DPOUT_g(NP_G))
       ENDIF
+      NSCOUGB = NSCOUGE !jgf51.51: So we don't share a spool counter. 
       BathyDescript % lun                  = 76
       BathyDescript % specifier            = NOUTGE
       BathyDescript % startTimeStep           = NTCYSGE 
       BathyDescript % endTimeStep             = NTCYFGE
       BathyDescript % outputTimeStepIncrement = NSPOOLGE
-      BathyDescript % spoolCounter            => NSCOUGE
+      BathyDescript % spoolCounter            => NSCOUGB
       BathyDescript % filepos                 => IGBP
       BathyDescript % num_fd_records       = NP_G
       BathyDescript % num_records_this     = NP
@@ -708,6 +709,7 @@ C... v49.64.01 tcm -- added for ice stations
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
          ALLOCATE(RMICE00_g(NSTAM_G))
       ENDIF
+      NSCOUI = NSCOUM !jgf51.51: So we don't share a spool counter.
       IceStaDescript % lun                  = 91
       IceStaDescript % specifier            = NOUTM
       IceStaDescript % num_fd_records       = NSTAM_G
@@ -720,7 +722,7 @@ C... v49.64.01 tcm -- added for ice stations
       IceStaDescript % startTimeStep           = NTCYSM
       IceStaDescript % endTimeStep             = NTCYFM
       IceStaDescript % outputTimeStepIncrement = NSPOOLM
-      IceStaDescript % spoolCounter            => NSCOUM
+      IceStaDescript % spoolCounter            => NSCOUI
       IceStaDescript % filepos                 => IICESTP
       IceStaDescript % elements                => NNM
       IceStaDescript % interp_fac1             => STAIM1 
@@ -1021,12 +1023,10 @@ C        maxrs.63
                select case(abs(ptr(i) % descript2D % specifier))
                case(NETCDF3, NETCDF4)
 #ifdef ADCNETCDF
-#ifdef CMPI
                   call initNetCDFOutputFile(ptr(i) % descript2D, nerr)
                   if (nerr.eqv..true.) then
                      call terminate()               
                   endif
-#endif
                   ptr(i) % descript2D % initialized = .true.
 #endif
                ! jgf51.21.24: Initialize XDMF output files
@@ -1162,6 +1162,7 @@ C----------------------------------------------------------------------
          if ( ptr(i) % descript2D % lun .eq. 92 ) then ! sponge only outputs once
             ptr(i) % descript2D % writeFlag = .false.
          endif
+
       end do
 
 
@@ -3524,7 +3525,6 @@ C     args
 
 C     collect up the data from subdomains if running in parallel
       IF ((MNPROC.gt.1).and.(WRITE_LOCAL_FILES.eqv..false.)) THEN
-C         write(16,*) 'About to collectFullDomainArray' !jgfdebug48.03
          CALL collectFullDomainArray(descript, pack_cmd, unpack_cmd)
       ENDIF
 
@@ -3533,7 +3533,6 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
 
       CASE(ASCII) 
 
-         write(16,*) 'About to open globalio text file.' !jgfdebug48.03
          IF ( (MNPROC.gt.1).and.(MyProc.eq.0)
      &        .and.(.not.WRITE_LOCAL_FILES)) THEN
 
@@ -4105,7 +4104,6 @@ C
       ENDIF
 
 C     collect up the data from subdomains if running in parallel
-ckmd48.33bc - changed the NOFF and NodeCode calls
 #ifdef CMPI
       IF (WRITE_LOCAL_HOT_START_FILES.eqv..FALSE.) THEN
          CALL collectFullDomainArray(Elev1Descript, packOne, unpackOne)
@@ -4117,9 +4115,9 @@ ckmd48.33bc - changed the NOFF and NodeCode calls
          CALL collectFullDomainArray(EtaDiscDescript,
      &             packOne, unpackOne)
          CALL collectFullDomainIntArray(NodeCodeDescript,
-     &             packOneInt, unpackOneInt, 1)
+     &             packOneInt, unpackOneInt)
          CALL collectFullDomainIntArray(NOFFDescript,
-     &             packOneInt, unpackOneInt, 2)
+     &             packOneInt, unpackOneInt)
 !         TCM v48.4638 20090902 -- NOFF could have the wrong
 !         values after globalizing because there are no rules for which
 !         processor owns an element and Noff is an elemental value

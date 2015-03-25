@@ -516,6 +516,9 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER, TARGET :: NSCOUC, NSCOUE, NSCOUGC, NSCOUGE, NSCOUGV ! output spool counters
       INTEGER, TARGET :: NSCOUGW, NSCOURS, NSCOUGP, NSCOUM, NSCOUV ! output spool counters
       INTEGER, TARGET :: NSCOUGI, NSCOUGT, NSCOUGS  ! output spool counters
+      INTEGER, TARGET :: NSCOUP ! output spool counter for fort.71 (bar. press. sta.)
+      INTEGER, TARGET :: NSCOUI ! output spool counter for fort.91 (ice sta.)     
+      
       INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments
       INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM ! output increments
       INTEGER  NSTAC, NSTAM, NTCYFC, NTCYFGC, NTCYFGE
@@ -618,9 +621,11 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       REAL(8) :: BTIME_END  !time that 
       !variables related to global bathymetry output file
       INTEGER, TARGET :: IGBP ! position in global bathy output file
-      INTEGER :: NDSETSB,NTCYFGB,NTCYSGB,NSCOUGB,NTRSPB  
+      INTEGER :: NDSETSB,NTCYFGB,NTCYSGB,NTRSPB
+      INTEGER, TARGET :: NSCOUGB
       !variables related to station bathymetry output file
-      INTEGER :: NTCYSB,NTCYFB,NSCOUB
+      INTEGER :: NTCYSB,NTCYFB
+      INTEGER, TARGET :: NSCOUB
       INTEGER, TARGET :: IBSTP  ! position in station bathy output file      
       REAL(8) :: BTIMINC ! TIME INCREMENT (SECONDS) FOR BATHYMETRY CHANGES USED FOR TIME VARYING BATHYMETRY
       REAL(8) :: BCHGTIMINC ! time increment (seconds) over which bathymetry changes during a btimeinc interval

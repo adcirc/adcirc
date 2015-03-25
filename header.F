@@ -2,6 +2,16 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.51 - 03/25/2015 - jgf - In globalio module, added a check for 
+C           remainder if the maximum buffer size is not evenly divisible
+C           by the rank of the globalized array; removed NOFF=2 handling 
+C           from globalio since it is already present in the calling routine;
+C           fixed excessive logging for slope limiter now that the slope 
+C           limiter activity is reset every time step; added individual
+C           spool counters for output types in write_output module that 
+C           previously shared spool counters, which caused them to interfere
+C           with each other (e.g., the fort.72 was being written but not the
+C           fort.71).   
 C  v51.50 - 03/21/2015 - jgf - Added back the clearing of the slope
 C           limiter flag for all nodes at each time step prior to 
 C           re-evaluating whether to activate it again; adjusted the USE

@@ -112,8 +112,6 @@ C
          INTEGER, ALLOCATABLE ::  nbdvnc(:,:) ! boundary array
          INTEGER, ALLOCATABLE ::  nvellnc(:)  ! boundary array
          INTEGER, ALLOCATABLE ::  nvdllnc(:)  ! boundary array
-         INTEGER, ALLOCATABLE ::  nodecodenc(:)
-         INTEGER, ALLOCATABLE ::  noffnc(:)
          INTEGER, ALLOCATABLE ::  ibtypenc(:)     ! boundary array
          INTEGER, ALLOCATABLE ::  ibtypeenc(:)
          INTEGER, ALLOCATABLE ::  nmnc(:,:)
@@ -1183,7 +1181,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE initNodalDataFile(dat, descript1, reterr,
      &   descript2, descript3)
       USE SIZES, ONLY : MNWPROC
-      USE GLOBAL, ONLY : OutputDataDescript_t, NWS, C3D, IDEN, NE_G 
+      USE GLOBAL, ONLY : OutputDataDescript_t, NWS, C3D, IDEN, NE_G, NP_G
       USE GLOBAL_3DVS, ONLY : NFEN
       USE MESH, ONLY : ICS
       IMPLICIT NONE
@@ -1205,7 +1203,7 @@ C
       reterr = .false.
       dat%myMesh => adcircMesh
       IF (dat%myMesh%initialized .eqv..false.) THEN
-         dat%myMesh%num_nodes = descript1 % num_fd_records
+         dat%myMesh%num_nodes = NP_G
          dat%myMesh%num_elems = NE_G
          IF (C3D.eqv..true.) THEN
             dat%myMesh%num_v_nodes = NFEN
@@ -4265,11 +4263,11 @@ C     N O F F
       CALL check_err(iret)
       att_text = "wet or dry state of element where 1 indicates that"
      & //" the element is wet and 0 indicates that it is dry"
-      iret = nf90_put_att(hs%ncid, hs%nodecodenc%nodal_data_id,
+      iret = nf90_put_att(hs%ncid, hs%noffnc%nodal_data_id,
      &      'long_name', trim(att_text))
       CALL check_err(iret)
       att_text = "element_wet_or_dry"
-      iret = nf90_put_att(hs%ncid, hs%nodecodenc%nodal_data_id,
+      iret = nf90_put_att(hs%ncid, hs%noffnc%nodal_data_id,
      &      'standard_name', trim(att_text))
       CALL check_err(iret)
 C

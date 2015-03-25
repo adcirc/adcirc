@@ -56,8 +56,6 @@ C
       !
       !jgf51.46: Moved this allocation here from hstart.F
       allocate(ESLONOFF_G(NP_G))
-
-
 C
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -92,6 +90,7 @@ C--------------------------------------------------------------------
       integer      :: iproc
       integer      :: bufsize
       integer      :: ibucket
+      integer      :: iremainder ! after dividing bufsize by array rank      
       integer      :: istart     ! vector tuple to start with
       integer      :: iend       ! vector tuple to end on
       integer      :: tag
@@ -109,7 +108,12 @@ C     num will be less than the number of full domain records if the
 C     buffer is too small to hold all the records in the full domain,
 C     in this case it is the number of records passed back to proc 0
 C     on each iteration of the while loop below
-      num     = bufsize / descript % num_items_per_record
+      !
+      ! jgf51.50: What if the bufsize is not evenly divisible by the
+      ! number of items per record? Need to check the remainder.
+      iremainder = modulo(bufsize, descript % num_items_per_record)
+      num = ( bufsize - iremainder ) / descript % num_items_per_record
+
       iend    = num
       istart  = 1
 
@@ -166,7 +170,7 @@ C! CMPI
       ! jgf48.17 Collects integer array data from each subdomain.
       !--------------------------------------------------------------
       subroutine collectFullDomainIntArray(descript,
-     &                                    pack_cmd, unpack_cmd,variable)
+     &                                    pack_cmd, unpack_cmd)
       USE SIZES
       USE GLOBAL
       implicit none
@@ -178,13 +182,13 @@ C! CMPI
       type (OutputDataDescript_t) :: descript
       external pack_cmd
       external unpack_cmd
-      integer :: variable
 #ifdef CMPI
       ! the subroutine used to write the file
       integer      :: ierr, status(MPI_STATUS_SIZE), request
       integer, save:: tagbase = 6000
       integer      :: iproc
       integer      :: bufsize
+      integer      :: iremainder ! after dividing bufsize by array rank
       integer      :: ibucket
       integer      :: istart     ! vector tuple to start with
       integer      :: iend       ! vector tuple to end on
@@ -204,7 +208,12 @@ C     num will be less than the number of full domain records if the
 C     buffer is too small to hold all the records in the full domain,
 C     in this case it is the number of records passed back to proc 0
 C     on each iteration of the while loop below
-      num     = bufsize / descript % num_items_per_record
+      !
+      ! jgf51.50: What if the bufsize is not evenly divisible by the
+      ! number of items per record? Need to check the remainder.
+      iremainder = modulo(bufsize, descript % num_items_per_record)
+      num = ( bufsize - iremainder ) / descript % num_items_per_record
+      
       iend    = num
       istart  = 1
       if (tagbase == 5000) then
@@ -226,14 +235,9 @@ C     on each iteration of the while loop below
 C        now pack the buffer
          call pack_cmd(descript, istart, iend)
 C        now send data to processor 0
-ckmd48.33bc - changed this to eliminate problems with NOFF=2.
-         IF (variable.EQ.1) THEN
-           call mpi_reduce(integerBuffer, integerResultBuffer, bufsize,
+
+         call mpi_reduce(integerBuffer, integerResultBuffer, bufsize,
      &                 MPI_INTEGER, MPI_SUM, 0, COMM, ierr)
-         ELSE IF (variable.eq.2) THEN
-           call mpi_reduce(integerBuffer, integerResultBuffer, bufsize,
-     &                 MPI_INTEGER, MPI_MAX, 0, COMM, ierr)
-         END IF
 
          if (myproc == 0) then
             call unpack_cmd(descript, istart, iend)
