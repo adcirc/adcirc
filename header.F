@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.52 - 03/28/2015 - jgf - Updated comments, log message integer formatting
+C           (i0 instead of ix) and execution tracing for GFDL. 
 C  v51.51 - 03/25/2015 - jgf - In globalio module, added a check for 
 C           remainder if the maximum buffer size is not evenly divisible
 C           by the rank of the globalized array; removed NOFF=2 handling 

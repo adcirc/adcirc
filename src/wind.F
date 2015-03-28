@@ -4649,7 +4649,8 @@ C ---------------------------------------------------------------------
 C    Opens the fort.22 file
 C          Line 1 -- ASCII Text Header
 C          Line 2 -- Windmultiplier Value (real number)
-C          Lines 3-end -- cycleTime, filename
+C          Line 3 -- Maximum Extrapolation distance
+C          Lines 4-end -- cycleTime  rampValue  filename
 C
 
        subroutine init_gfdl(timeloc)
@@ -4709,7 +4710,8 @@ C
       call logMessage(ECHO,scratchMessage)
       read(22,*,end=246,err=248,iostat=errorio) GFDL_max_extrap_dist
       currentLine = currentLine + 1
-      write(scratchMessage,'("GFDL Maximum Extrapolation Distance=",E15.8)') GFDL_max_extrap_dist
+      write(scratchMessage,
+     &  '("GFDL Maximum Extrapolation Distance=",E15.8)') GFDL_max_extrap_dist
       call logMessage(ECHO,scratchMessage)
 
       do i=1,numFiles
@@ -4731,7 +4733,7 @@ C
  
       ! log the number of GFDL Met files that were specified
       write(scratchMessage,
-     &    '("There were ",I3," GFDL Met files specified.")') numFiles
+     &    '("There were ",i0," GFDL Met files specified.")') numFiles
       call logMessage(INFO,scratchMessage)
       !
       ! need at least 2 files so we have something to interpolate between
@@ -4748,7 +4750,7 @@ C
       do i=1,numFiles-1
          if (GFDL_Files(i)%cycleTime.ge.GFDL_Files(i+1)%cycleTime) then
             write(scratchMessage,
-     &    '("Cycle time ",I3," must be less cycle time ",I3,".")')i,i+1
+     &  '("Cycle time ",i0," must be less cycle time ",i0,".")')i,i+1
             call allMessage(ERROR,scratchMessage)
             call windTerminate()
          endif
@@ -4840,6 +4842,9 @@ C
 
       !If no errors then return now
 
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
       !cleans up the setMessageSource set at the beginning of the subroutine
       call unsetMessageSource()
        
@@ -4857,19 +4862,18 @@ C     We jump to this section if there was an error reading a file.
      &  //" will maximize the information written to the fort.16 file,"
      &  //" which may aid in troubleshooting this issue.")
       endif
-      write(scratchMessage,'("Could not read line ",I2," of fort.22.")')
+      write(scratchMessage,'("Could not read line ",i0," of fort.22.")')
      &  currentLine
       call allMessage(ERROR,scratchMessage)
-      write(scratchMessage,'(A,I3,A)')
+      write(scratchMessage,'(A,i0,A)')
      &       'The value of the i/o error flag was ',errorio,'.'
       call allMessage(ERROR,scratchMessage)
       CALL windTerminate()
       call unsetMessageSource()
-      
+C ---------------------------------------------------------------------      
       end subroutine init_gfdl
 C ---------------------------------------------------------------------
 C
-
 
 C
 C ---------------------------------------------------------------------
@@ -4880,7 +4884,7 @@ C       Date:  2/7/2013
 C ---------------------------------------------------------------------
 C
 C   Each ASCII GFDL met file contains one or more nested grid data
-C   where the nested grids are allowed to change in time.  Course grid
+C   where the nested grids are allowed to change in time.  Coarse grid
 C   data is not stored where finer nest data is given.
 C   Format of the file:
 C   Line 1:  Number of grid cells (f10.4) NCELLS
@@ -4930,6 +4934,10 @@ C
        TYPE(KDTREE2), POINTER :: TREE
        TYPE(KDTREE2_RESULT), ALLOCATABLE :: KDRESULTS(:)
 
+      call setMessageSource("get_gfdl")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
        SRCHDP = 6  !THE NUMBER OF NEAREST NEIGHBORS TO FIND
        TOL = 1.0D-6  !TOLERANCE FOR ESTIMATING ZERO DISTANCE BETWEEN POINTS
@@ -4943,9 +4951,7 @@ C   P_J IS THE VALUE AT LOCATION J
 C   D_I_J - DISTANCE BETWEEN POINT I AND POINT J
 C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS HAVE)
 
-
-       call setMessageSource("get_GFDL")
-       call logMessage(INFO,"Loading the GFDL Met file '"
+        call logMessage(INFO,"Loading the GFDL Met file '"
      &                     //trim(fname)//"'.")
        call openFileForRead(lun,trim(fname), errorio)
        if (errorio.gt.0) then
@@ -4990,7 +4996,7 @@ C   IP = POWER TO RAISE DISTANCE (THE LARGER IP THE MORE INFLUENCE CLOSER POINTS
          
        CLOSE(LUN)  !CLOSE THIS GFDL DATA FILE
 
-       write(scratchMessage,'("Read ",I8," GFDL Met Points.")')
+       write(scratchMessage,'("Read ",i0," GFDL Met Points.")')
      &    NPTS_GFDL
       call logMessage(ECHO,scratchMessage)
 
@@ -5119,11 +5125,16 @@ C...  THIS SPACE WILL BE DEALLOCATED LATER IN THE SUBROUTINE
       DEALLOCATE(WTS)
       DEALLOCATE(LOCS)
 
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
        !cleans up the setMessageSource set at the beginning of the subroutine
        call unsetMessageSource()
 
        RETURN            
+C ---------------------------------------------------------------------
        END SUBROUTINE GET_GFDL
+C ---------------------------------------------------------------------
 
 C********************************************************************
 
@@ -5143,8 +5154,10 @@ C
       real(sz), intent(out) :: wvny(:)  ! wind v-velocity (m/s)
       real(sz), intent(out) :: press(:)  !barometric pressure (mH20)
 
-
       call setMessageSource("nws16get")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
       numFiles = GFDL_Files(1)%numFiles  !This is total number of files
 
@@ -5205,6 +5218,9 @@ C
          PRess(:) = PRBCKGRND*100.D0/(RHOWAT0*G)  !SET TO BACKGROUND PRESSURE 1013.0D0 ADJUSTED for ADCIRC units
       endif
 
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
         !cleans up the setMessageSource set at the beginning of the subroutine
         call unsetMessageSource()
       
