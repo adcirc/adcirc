@@ -91,7 +91,8 @@ C
 #endif
       USE SIZES, ONLY : SZ
       USE GLOBAL
-      USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart
+      USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart,
+     &                          writeWarnElev
       USE MESH, ONLY : NE, NP, DP, NM, X, Y, SLAM, SFEA, ICS, TotalArea,
      &                  MJU, Areas, SFAC
       USE BOUNDARIES, ONLY : NOPE, NETA, NBOU, NVEL, LBCODEI, NBV, SIII,

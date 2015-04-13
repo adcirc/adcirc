@@ -253,7 +253,7 @@ ifeq ($(BUILDTYPE),adcpost)
   CF:= $(PPFC)
   O_DIR:=odir13/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
-  VPATH :=  $(SRCDIR)/prep 
+  VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)  
 endif
 #                                      aswip
 ifeq ($(BUILDTYPE),aswip)
@@ -492,7 +492,7 @@ else
    adcprep_be ::  $(METIS_OBJ) $(KDTREE_MOBJ) $(PREP_OBJ) 
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 endif
-   adcpost ::  $(POST_OBJ)
+   adcpost ::  $(POST_OBJ) $(HARM_MOBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
 ADCIRC_DEP := $(KDTREE_MOBJ) $(ADC_OBJ) $(O_DIR)driver.o
@@ -642,8 +642,8 @@ $(O_DIR)post_global.o :  post_global.F $(POST_MOBJ)
 
 #  adcpost
 
-$(O_DIR)adcpost.o     :  adcpost.F $(POST_MOBJ)
-$(O_DIR)post.o        :  post.F  $(POST_MOBJ)
+$(O_DIR)adcpost.o     :  adcpost.F $(POST_MOBJ) 
+$(O_DIR)post.o        :  post.F  $(POST_MOBJ) $(HARM_MOBJ)
 $(O_DIR)compare.o     :  compare.F
 $(O_DIR)diffmerge.o   :  diffmerge.F
 

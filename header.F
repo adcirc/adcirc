@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v52.00   - 04/13/2015 - jgf - Merged r1083:1086 of branches/v51release
+C           to trunk: fixed compilation issue when compiling with
+C           DEBUG_WARN_ELEV flag; fixed compilation issue with harmonic 
+C           analysis data post processing in subdomain hotstart files 
+C           in adcpost. 
 C  v51.52 - 03/28/2015 - jgf - Updated comments, log message integer formatting
 C           (i0 instead of ix) and execution tracing for GFDL. 
 C  v51.51 - 03/25/2015 - jgf - In globalio module, added a check for 
