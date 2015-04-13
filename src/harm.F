@@ -224,6 +224,13 @@ C
       REAL(SZ), ALLOCATABLE, TARGET :: VAVDIF(:)
       REAL(SZ), ALLOCATABLE, TARGET :: VVADIF(:)
 
+      !jgf51.52.01: Variables used in adcpost.
+      REAL(SZ), ALLOCATABLE,TARGET :: XELAV(:)
+      REAL(SZ), ALLOCATABLE,TARGET :: YELAV(:)
+      REAL(SZ), ALLOCATABLE,TARGET :: XELVA(:)
+      REAL(SZ), ALLOCATABLE,TARGET :: YELVA(:)
+     
+
 C-----------------END OF DECLARATIONS---------------------------------------
 
       CONTAINS

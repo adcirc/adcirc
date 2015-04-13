@@ -3421,6 +3421,11 @@ C  jgf Updated for v45.06 09/07/2005                                        C
 C                                                                           C
 C---------------------------------------------------------------------------C
 C
+      USE HARM, ONLY : FNAM8, HAFREQ, HAFF, HAFACE, HA, STAELV, STAULV,
+     &                  STAVLV, GLOELV, GLOULV, GLOVLV, ELAV, ELVA, 
+     &                  CHARMV, ICHA, IHARIND, ITHAS, MM, XELAV, YELAV,
+     &                  XELVA, YELVA, ICALL, ITMV, ITUD, NF, NFREQ, NZ,
+     &                  TIMEUD, NAMEFR, NTSTEPS
       IMPLICIT NONE
       LOGICAL FOUND
 C     LOGICAL CHARMV
@@ -3441,14 +3446,15 @@ C  kmd48.33bc updates for 3d output of hotstart information
       REAL(SZ),ALLOCATABLE :: SAL(:,:),TEMP(:,:)
 
       REAL(8) TIMEHSF
+      INTEGER :: NSTAEX, NSTAVX
 
 C  kmd48.33bc updates for 3d output of hotstart information
       INTEGER InputFileFmtVn,K
       INTEGER N3DSD,I3DSDRec,N3DSV,I3DSVRec,N3DST,I3DSTRec,N3DGD,
      &        I3DGDRec,N3DGV,I3DGVRec,N3DGT,I3DGTRec
       INTEGER NPX,NEX,NPG,NEG
-
-
+      !
+      INTEGER :: N
 C
 C Allocate local work arrays
 C
@@ -3775,7 +3781,7 @@ C  kmd48.33bc add in the 3D barotropic and baroclinic information
 
 c kmd 50 update to include harmonics in hotstart files
 
-         IF ((IHARIND.EQ.1).AND.(IT.GT.ITHAS)) THEN 
+         IF ((IHARIND.EQ.1).AND.(ITHSF.GT.ITHAS)) THEN 
             DO IPROC=1,NPROC
                IF(IHOT.EQ.67) LOCFN(1:14) = 'PE0000/fort.67'
                IF(IHOT.EQ.68) LOCFN(1:14) = 'PE0000/fort.68'
@@ -3840,8 +3846,8 @@ C --       Write out LHS Matrix
 
                IHOTSTP=IHOTSTP+1
                DO I=1,MM
-                  DO J=1,MM
-                     READ(LOCHSF,REC=IHOTSTP) HA(I,J)
+                  DO K=1,MM
+                     READ(LOCHSF,REC=IHOTSTP) HA(I,K)
                      IHOTSTP=IHOTSTP+1 
                   END DO 
                END DO 
@@ -3880,7 +3886,7 @@ C --      Read in load vectors to hotstart file.
                IF (NHAGV.NE.0) THEN 
                  DO N=1,NNODP(IPROC) 
                     DO I=1,MM
-                       INDX=IMAP_NOD_LG(I,PROC)
+                       INDX=IMAP_NOD_LG(I,IPROC)
                        READ(LOCHSF,REC=IHOTSTP) GLOULV(I,INDX)
                        IHOTSTP=IHOTSTP+1
                        READ(LOCHSF,REC=IHOTSTP) GLOVLV(I,INDX)
@@ -3890,7 +3896,7 @@ C --      Read in load vectors to hotstart file.
                END IF 
 
                IF (CHARMV) THEN 
-                 IF ((IHARIND.EQ.1).AND.(IT.GT.ITMV)) THEN 
+                 IF ((IHARIND.EQ.1).AND.(ITHSF.GT.ITMV)) THEN 
                   READ(LOCHSF,REC=IHOTSTP) NTSTEPS
                   IHOTSTP=IHOTSTP+1
                   IF (NHAGE.NE.0) THEN 
