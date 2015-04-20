@@ -2,9 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
-C v51.52.02 - 04/13/2014 - jgf - Fixed compilation issue when compiling with
+C v51.52.03 - 04/20/2015 - jgf - Added compiler flags for LONI queenbee. 
+C v51.52.02 - 04/13/2015 - jgf - Fixed compilation issue when compiling with
 C           DEBUG_WARN_ELEV flag. 
-C v51.52.01 - 04/13/2014 - jgf - Fixed compilation issue with harmonic analysis
+C v51.52.01 - 04/13/2015 - jgf - Fixed compilation issue with harmonic analysis
 C           data post processing in subdomain hotstart files in adcpost. 
 C  v51.52 - 03/28/2015 - jgf - Updated comments, log message integer formatting
 C           (i0 instead of ix) and execution tracing for GFDL. 
