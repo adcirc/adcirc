@@ -148,6 +148,13 @@ ifeq ($(compiler),intel)
         FLIBS       := $(FLIBS) -L/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/lib -lnetcdff -lnetcdf
         NETCDFHOME    :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0
      endif
+     # jgf20150420 mike requires that the analyst add netcdf to the softenv
+     # with the following on the command line 
+     # soft add +netcdf-4.1.3-Intel-13.0.0
+     ifeq ($(MACHINENAME),mike)
+        FLIBS       := $(FLIBS) -L/usr/local/packages/netcdf/4.1.3/Intel-13.0.0/lib -lnetcdff -lnetcdf
+        NETCDFHOME    :=/usr/local/packages/netcdf/4.1.3/Intel-13.0.0
+     endif
      ifeq ($(MACHINENAME),killdevil)
         HDF5HOME       :=/nas02/apps/hdf5-1.8.5/lib
         NETCDFHOME     :=/nas02/apps/netcdf-4.1.1

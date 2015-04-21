@@ -2,6 +2,7 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.04 - 04/31/2015 - jgf - Added compiler flags for LSU supermike2.
 C v51.52.03 - 04/20/2015 - jgf - Added compiler flags for LONI queenbee. 
 C v51.52.02 - 04/13/2015 - jgf - Fixed compilation issue when compiling with
 C           DEBUG_WARN_ELEV flag. 
