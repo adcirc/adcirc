@@ -2,7 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
-C v51.52.04 - 04/31/2015 - jgf - Added compiler flags for LSU supermike2.
+C v51.52.05 - 04/21/2015 - jgf - Fixed issue with NWS=12 (OWI) where barometric
+C           pressure at nodes outside both met grids was set to zero instead
+C           of the background pressure of 1013mb; the issue did not affect
+C           situations where the OWI grid completely covered the ADCIRC mesh. 
+C v51.52.04 - 04/21/2015 - jgf - Added compiler flags for LSU supermike2.
 C v51.52.03 - 04/20/2015 - jgf - Added compiler flags for LONI queenbee. 
 C v51.52.02 - 04/13/2015 - jgf - Fixed compilation issue when compiling with
 C           DEBUG_WARN_ELEV flag. 

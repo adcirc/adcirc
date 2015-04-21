@@ -269,12 +269,16 @@ C***********************************************************************
       REAL(SZ) :: EyeLatTemp
       REAL(SZ) :: EyeLonTemp
       REAL(SZ) :: EyePressure      
-      FoundEye = .FALSE.
+
+      !jgf51.52.05: Used to detect mesh nodes outside both met grids
+      ! and set those nodes to zero wind velocity and to background pressure.
+      LOGICAL :: uvpHasBeenSet 
 C
       call setMessageSource("nws12get")
 #if defined(OWIWIND_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
+      FoundEye = .FALSE.
       RHOWATG=RHOWAT0*G
 
 ! Read basin data  ---------------------------------------------------------
@@ -560,73 +564,78 @@ c      end if
 
       do i=1,NP
 
-        uu=-9999.9D0
+         ! jgf51.52.05: Fixed an issue with floating point .eq. that
+         ! was used to determine whether the value of uu had been set. 
+         ! Replaced floating point comparison with a logical variable.
+         uvpHasBeenSet = .false.
 
-        ! BASIN ---------------------------------------------------------
+         ! BASIN ---------------------------------------------------------
 
-        if (swpointsB(i,1).gt.0) then
-          xi = swpointsB(i,1)
-          yi = swpointsB(i,2)
+         if (swpointsB(i,1).gt.0) then
+            xi = swpointsB(i,1)
+            yi = swpointsB(i,2)
 
-          w1=wB(i,1)
-          w2=wB(i,2)
-          w3=wB(i,3)
-          w4=wB(i,4)
+            w1=wB(i,1)
+            w2=wB(i,2)
+            w3=wB(i,3)
+            w4=wB(i,4)
 
-          uu=w1*uB(xi,yi)+w2*uB(xi+1,yi)+w3*
+            uu=w1*uB(xi,yi)+w2*uB(xi+1,yi)+w3*
      &         uB(xi+1,yi+1)+w4*uB(xi,yi+1)
-          vv=w1*vB(xi,yi)+w2*vB(xi+1,yi)+w3*
+            vv=w1*vB(xi,yi)+w2*vB(xi+1,yi)+w3*
      &         vB(xi+1,yi+1)+w4*vB(xi,yi+1)
-          PP=w1*pB(xi,yi)+w2*pB(xi+1,yi)+w3*
+            PP=w1*pB(xi,yi)+w2*pB(xi+1,yi)+w3*
      &         pB(xi+1,yi+1)+w4*pB(xi,yi+1)
 
-        endif
+            uvpHasBeenSet = .true.
+         endif
 
-        ! REGION ---------------------------------------------------------
-        ! uu, vv and PP will be overwritten if region data exist.
+         ! REGION ---------------------------------------------------------
+         ! uu, vv and PP will be overwritten if region data exist.
 
-        if ((regionExists).and.(swpointsR(i,1).gt.0)) then
-          xi = swpointsR(i,1)
-          yi = swpointsR(i,2)
+         if ((regionExists).and.(swpointsR(i,1).gt.0)) then
+            xi = swpointsR(i,1)
+            yi = swpointsR(i,2)
 
-          w1=wR(i,1)
-          w2=wR(i,2)
-          w3=wR(i,3)
-          w4=wR(i,4)
+            w1=wR(i,1)
+            w2=wR(i,2)
+            w3=wR(i,3)
+            w4=wR(i,4)
 
-          uu=w1*uR(xi,yi)+w2*uR(xi+1,yi)+
+            uu=w1*uR(xi,yi)+w2*uR(xi+1,yi)+
      &         w3*uR(xi+1,yi+1)+w4*uR(xi,yi+1)
-          vv=w1*vR(xi,yi)+w2*vR(xi+1,yi)+
+            vv=w1*vR(xi,yi)+w2*vR(xi+1,yi)+
      &         w3*vR(xi+1,yi+1)+w4*vR(xi,yi+1)
-          PP=w1*pR(xi,yi)+w2*pR(xi+1,yi)+
+            PP=w1*pR(xi,yi)+w2*pR(xi+1,yi)+
      &         w3*pR(xi+1,yi+1)+w4*pR(xi,yi+1)
 
+            uvpHasBeenSet = .true.
         endif
 
         ! COPY TO ARRAYS ---------------------------------------------------
 
-        if(uu.eq.-9999.9D0) then
-          WVNX(I)=0.d0
-          WVNY(I)=0.d0
-          PRN(I)=101300.d0/RHOWATG
-        else
-          if (rampfrac<36) then
-            uu=uu*ramp
-            vv=vv*ramp
-            PP=Penv-(Penv-PP)*ramp
-          endif
+         if (uvpHasBeenSet.eqv..false.) then
+            WVNX(I)=0.d0
+            WVNY(I)=0.d0
+            PRN(I)=101300.d0/RHOWATG
+         else
+            if (rampfrac<36) then
+               uu=uu*ramp
+               vv=vv*ramp
+               PP=Penv-(Penv-PP)*ramp
+            endif
 
-          !CONVERT MILLIBARS TO M OF WATER
-          PRN(i)  = 100.d0*PP/RHOWATG
+            !CONVERT MILLIBARS TO M OF WATER
+            PRN(i)  = 100.d0*PP/RHOWATG
 
-          ! Apply wind velocity multiplier
-          uu = uu * windMultiplier
-          vv = vv * windMultiplier
+            ! Apply wind velocity multiplier
+            uu = uu * windMultiplier
+            vv = vv * windMultiplier
 
-          WVNX(i) = uu
-          WVNY(i) = vv
+            WVNX(i) = uu
+            WVNY(i) = vv
 
-        end if
+         endif
 
       enddo
 
