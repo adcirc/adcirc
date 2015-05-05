@@ -264,7 +264,7 @@ Cobell 20120510: Added logicals for turning on/off swan output files
       LOGICAL                      :: SWAN_OutputAgg(7)
 #endif
 Cobell -  Added the following for output of ESL at end of run
-      REAL(SZ),ALLOCATABLE, TARGET :: ESLONOFF(:),ESLONOFF_G(:)
+      REAL(SZ),ALLOCATABLE, TARGET :: ESLONOFF(:)
 
       REAL(SZ),ALLOCATABLE, TARGET ::  CC00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  EtaDisc(:) ! vjp 9/2006 added for hotstart file

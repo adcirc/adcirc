@@ -53,9 +53,6 @@ C
       ALLOCATE(NodeCode_g(NP_G))
       ALLOCATE(NOFF_g(NE_G))
       ALLOCATE(NNodeCode_g(NP_G))
-      !
-      !jgf51.46: Moved this allocation here from hstart.F
-      allocate(ESLONOFF_G(NP_G))
 C
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

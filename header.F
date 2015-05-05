@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C
+C v51.52.06 - 05/05/2015 - jgf - Fixed memory allocation issue when performing
+C           globalio in parallel for ESLNodes.63 file. 
 C v51.52.05 - 04/21/2015 - jgf - Fixed issue with NWS=12 (OWI) where barometric
 C           pressure at nodes outside both met grids was set to zero instead
 C           of the background pressure of 1013mb; the issue did not affect

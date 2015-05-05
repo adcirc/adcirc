@@ -951,6 +951,10 @@ C        maxrs.63
          RSMaxDescript % specifier = ASCII
       endif
 !     ESLNodes.63
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(ESLONOFF_g(NP_G))
+         ESLONOFF_g(:) = 0.d0
+      ENDIF
       ESLDescript % lun                  = 323
       ESLDescript % specifier            = ASCII
       ESLDescript % num_fd_records       = NP_G
