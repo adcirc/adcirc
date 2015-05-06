@@ -566,24 +566,23 @@ C
 C     jgf49.44: Initialize all the full domain i/o arrays to zero, if
 C     they will be used (i.e., if we are in serial or if we might be
 C     reading or writing full domain arrays in parallel).
-      if (WRITE_LOCAL_HARM_FILES.eqv..false.) then
-         IF ( (MNPROC.gt.1).and.
-     &      ( (myProc.eq.0)
-     &           .or.(READ_LOCAL_HOT_START_FILES.eqv..false.) ) ) THEN
-            GLOELV_g(:,:) = 0.d0
-            STAELV_g(:,:) = 0.d0
-            GLOULV_g(:,:) = 0.d0
-            GLOVLV_g(:,:) = 0.d0
-            STAULV_g(:,:) = 0.d0
-            STAVLV_g(:,:) = 0.d0
-            IF (CHARMV.eqv..true.) THEN
-               ELAV_g(:) = 0.d0
-               ELVA_g(:) = 0.d0
-               XVELAV_g(:) = 0.d0
-               YVELAV_g(:) = 0.d0
-               XVELVA_g(:) = 0.d0
-               YVELVA_g(:) = 0.d0
-            ENDIF
+      if ( (WRITE_LOCAL_HARM_FILES.eqv..false.).and.
+     &     (READ_LOCAL_HOT_START_FILES.eqv..false.).and.
+     &     (MNPROC.gt.1).and.
+     &     (myProc.eq.0) ) then
+         GLOELV_g(:,:) = 0.d0
+         STAELV_g(:,:) = 0.d0
+         GLOULV_g(:,:) = 0.d0
+         GLOVLV_g(:,:) = 0.d0
+         STAULV_g(:,:) = 0.d0
+         STAVLV_g(:,:) = 0.d0
+         IF (CHARMV.eqv..true.) THEN
+            ELAV_g(:) = 0.d0
+            ELVA_g(:) = 0.d0
+            XVELAV_g(:) = 0.d0
+            YVELAV_g(:) = 0.d0
+            XVELVA_g(:) = 0.d0
+            YVELVA_g(:) = 0.d0
          ENDIF
       endif
 #if defined(HARM_TRACE) || defined(ALL_TRACE)

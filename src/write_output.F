@@ -1593,9 +1593,6 @@ C
                HAElevMagDescript % array2D_g            => EMAGT_g
             ENDIF
             ! fort.53 Full Domain Elevation Phase
-            IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-               ALLOCATE(PHASEDEN_g(MNHARF,NP_G))
-            ENDIF
             HAElevPhaseDescript % specifier            = NHAGE
             HAElevPhaseDescript % initial_value        = 0.0
             HAElevPhaseDescript % num_items_per_record = MNHARF

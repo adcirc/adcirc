@@ -3,6 +3,9 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
 C
+C v51.52.07 - 05/06/2015 - jgf - Fixed two memory allocation issues for harmonic
+C           analysis i/o in parallel; added command line option to direct
+C           ADCIRC to simply report version number and exit. 
 C v51.52.06 - 05/05/2015 - jgf - Fixed memory allocation issue when performing
 C           globalio in parallel for ESLNodes.63 file. 
 C v51.52.05 - 04/21/2015 - jgf - Fixed issue with NWS=12 (OWI) where barometric
