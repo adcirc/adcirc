@@ -142,6 +142,13 @@ ifeq ($(compiler),intel)
         FFLAGS2       :=$(FFLAGS1)
         FFLAGS3       :=$(FFLAGS1)
      endif
+     # jgf20150420 mike requires that the analyst add netcdf to the softenv
+     # with the following on the command line 
+     # soft add +netcdf-4.1.3-Intel-13.0.0
+     ifeq ($(MACHINENAME),mike)
+        FLIBS       := $(FLIBS) -L/usr/local/packages/netcdf/4.1.3/Intel-13.0.0/lib -lnetcdff -lnetcdf
+        NETCDFHOME    :=/usr/local/packages/netcdf/4.1.3/Intel-13.0.0
+     endif
      ifeq ($(MACHINENAME),killdevil)
         HDF5HOME       :=/nas02/apps/hdf5-1.8.5/lib
         NETCDFHOME     :=/nas02/apps/netcdf-4.1.1
@@ -719,6 +726,9 @@ ifeq ($(compiler),gfortran)
   endif
   ifeq ($(DEBUG),full)
     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND -DDEBUG_WARN_ELEV
+  endif
+  ifeq ($(DEBUG),full-not-warnelev)
+    FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -ffpe-trap=zero,invalid,overflow,denormal -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND 
   endif
   ifeq ($(DEBUG),full-not-fpe)
     FFLAGS1	:=  $(INCDIRS) -g -O0 -ffixed-line-length-none -fbacktrace -fbounds-check -DALL_TRACE -DFLUSH_MESSAGES -DFULL_STACK -DDEBUG_HOLLAND
