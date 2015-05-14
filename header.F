@@ -2,11 +2,23 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.01 - 05/14/2015 - jgf - Merged r1088:1095 of branches/v51release
+C           (v51.52.03 to v51.52.07) to trunk. Changes include: 
+C           fixed two memory allocation issues for harmonic analysis i/o in 
+C           parallel; added command line option to direct ADCIRC to simply
+C           report version number and exit; fixed memory allocation issue 
+C           when performing globalio in parallel for ESLNodes.63 file;
+C           fixed issue with NWS=12 (OWI) where barometric pressure at nodes
+C           outside both met grids was set to zero instead of the background
+C           pressure of 1013mb; the issue did not affect situations where the
+C           OWI grid completely covered the ADCIRC mesh; added compiler flags
+C           for LSU supermike2; added compiler flags for LONI queenbee.
 C  v52.00   - 04/13/2015 - jgf - Merged r1083:1086 of branches/v51release
 C           to trunk: fixed compilation issue when compiling with
 C           DEBUG_WARN_ELEV flag; fixed compilation issue with harmonic 
 C           analysis data post processing in subdomain hotstart files 
-C           in adcpost. 
+C           in adcpost (same changes as v51.52.01 and v51.52.02).
+C
 C  v51.52 - 03/28/2015 - jgf - Updated comments, log message integer formatting
 C           (i0 instead of ix) and execution tracing for GFDL. 
 C  v51.51 - 03/25/2015 - jgf - In globalio module, added a check for 

@@ -3993,7 +3993,7 @@ C     counter based on this relationship.
             write(scratchMessage,123) trim(f%FILENAME), t%timenc(1)
             CALL allMessage(INFO,scratchMessage)
  123        format('Overwriting pre-existing data in netcdf file ',A,
-     &         ' for time=',F15.8,
+     &         ' for time=',F21.15,
      &         '. Subsequent data in the netcdf file remain unchanged.')
             f%record_counter = i
          ENDIF

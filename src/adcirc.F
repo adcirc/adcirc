@@ -111,7 +111,34 @@ C******************************************************************************
 C
       INTEGER, OPTIONAL :: COMM
       CHARACTER(*), OPTIONAL :: ROOTD
-C
+      INTEGER :: iargc    ! function to return the number of command line arguments
+      INTEGER :: argcount ! number of command line arguments
+      CHARACTER(2048) :: cmdlinearg ! a single command line argument
+      INTEGER :: i        ! command line argument counter
+      !
+      ! jgf51.52.07: Added command line option to just write out
+      ! the ADCIRC version number and exit. This is to allow 
+      ! external applications to query the version number so that
+      ! they can behave in version-appropriate ways. 
+      argcount  = iargc()  ! get number of command line arguments
+      if ((argcount.gt.0).and.(myproc.eq.0)) then
+         i = 0
+         do while (i.lt.argcount)
+            i = i + 1
+            call getarg(i, cmdlinearg)
+            select case(cmdlinearg(1:2))
+            case("-V","-v") 
+               ! write the version number string ... actually it is
+               ! a series of two or three numbers with two digits 
+               ! separated by dots, e.g., 51.02 or 51.52.07
+               write(6,'(a)') trim(adc_version)                 
+               stop
+            case default
+               ! do nothing, this is some other command line argument
+            end select
+         end do
+      endif
+      !
       call initLogging()
       nabout = 1 !jgf51.46: Initialize log level to INFO
       call setMessageSource("ADCIRC_Init")
