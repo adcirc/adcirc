@@ -8823,11 +8823,11 @@ C-----------------------------------------------------------------------
       SUBROUTINE ReadMetaData(ncid,myFile)
 C-----------------------------------------------------------------------
         USE SIZES,ONLY:SZ
-        USE GLOBAL,ONLY:ihot,nramp,rnday,dramp,a00,b00,c00,h0
+        USE GLOBAL,ONLY:ihot,nramp,rnday,dramp,a00,b00,c00,h0,np_g,ne_g
         USE NodalAttributes,ONLY:nwp,nolibf,tau0,cf,eslm
         USE VERSION
         IMPLICIT NONE
-        INTEGER :: NCID
+        INTEGER :: NCID,dimid_node,dimid_nele
         TYPE(fileData),INTENT(INOUT) :: myFile
         INTEGER :: iret
 
@@ -8847,6 +8847,10 @@ C-----------------------------------------------------------------------
         CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'h0',h0))
         CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'cf',cf))
         CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'eslm',eslm))
+        CALL CHECK_ERR(nf90_inq_dimid(NCID,"node",dimid_node))
+        CALL CHECK_ERR(nf90_inq_dimid(NCID,"nele",dimid_nele))
+        CALL CHECK_ERR(nf90_inquire_dimension(ncid,dimid_node,len=NP_G))
+        CALL CHECK_ERR(nf90_inquire_dimension(ncid,dimid_nele,len=NE_G))
         CALL CHECK_ERR(nf90_close(NCID))
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
         CALL allMessage(DEBUG,"Enter.")

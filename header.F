@@ -3,6 +3,10 @@ C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
 C
+C v51.52.08 - 05/14/2015 - zc - Fixed netCDF writer processor which did not
+C                               have knowledge of NP_G and NE_G during
+C                               initialization. This is now read during the 
+C                               readMetadata routine.
 C v51.52.07 - 05/06/2015 - jgf - Fixed two memory allocation issues for harmonic
 C           analysis i/o in parallel; added command line option to direct
 C           ADCIRC to simply report version number and exit. 
