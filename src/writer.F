@@ -856,6 +856,7 @@ C-----------------------------------------------------------------------
       subroutine writerReadMesh()
       use global
       use mesh, only : readMesh, x, y, slam, sfea
+      use sizes, only: MESHFILENAME,CONTROLFILENAME
 
 #ifdef ADCXDMF
       use xdmfio, only : meshInitialized
