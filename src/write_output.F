@@ -249,7 +249,8 @@ C----------------------------------------------------------------------
       SUBROUTINE initOutput2D()
       USE SIZES, ONLY : SZ, INPUTDIR, NBYTE, MNWPROC, MYPROC, MNPROC,
      &                  GLOBALDIR, OFF, ASCII, NETCDF3, NETCDF4, XDMF, 
-     &                  numFormats, write_local_files, localdir
+     &                  numFormats, write_local_files, localdir, 
+     &                  controlFileName
       USE GLOBAL, ONLY : imap_stae_lg, imap_stav_lg, et00, eta2,
      &   nscoue, iestp, nne, staie1, staie2, staie3, xel, yel, 
      &   slel, sfel, uu00, vv00, uu2, vv2, nscouv, ivstp, nnv,
