@@ -2,7 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
-C  v51.01 - 05/14/2015 - jgf - Merged r1088:1095 of branches/v51release
+C  v51.02 - 05/14/2015 - zc - Fixed netCDF writer processor which did not
+C           have knowledge of NP_G and NE_G during initialization. 
+C           This is now read during the readMetadata routine from 
+C           branches/v51release r1098 (51.52.08)
+C  v52.01 - 05/14/2015 - jgf - Merged r1088:1095 of branches/v51release
 C           (v51.52.03 to v51.52.07) to trunk. Changes include: 
 C           fixed two memory allocation issues for harmonic analysis i/o in 
 C           parallel; added command line option to direct ADCIRC to simply
