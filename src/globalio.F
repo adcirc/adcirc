@@ -334,6 +334,24 @@ C! CMPI
       ioffset = istart - 1
       do i = 1, descript % num_records_this
         iglobal = descript % imap(i)
+        ! jgf51.52.08: The local-to-global (a.k.a.
+        ! subdomain-to-fulldomain) element mapping, IMAP_EL_LG may contain
+        ! many fulldomain element numbers with negative values that do 
+        ! not correspond to status as a "resident" or "ghost" element on
+        ! a particular subdomain. As a result, we will use the absolute
+        ! value of the fulldomain element number. However, the use of 
+        ! MPI_SUM in collectFullDomainIntArray() will sum up multiple
+        ! values on boundary nodes. This is handled in write_output.F
+        ! by limiting the NOFF array to 1 anywhere that it exceeds 1.
+        !
+        ! In contrast, the node mapping, NODES_EL_LG,
+        ! lists nodal values on a particular subdomain with positive
+        ! full domain node numbers if they are resident nodes and
+        ! negative numbers if they are ghost nodes. Summation of 
+        ! values from neighboring subdomains is therefore not an issue.  
+        if ( descript % isElemental .eqv..true. ) then
+           iglobal = abs(iglobal)
+        endif
         if (istart <= iglobal .and. iglobal <= iend) then
           integerBuffer(iglobal-ioffset) = descript % iarray(i)
         end if

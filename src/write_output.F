@@ -362,6 +362,7 @@ C
          ptr(i) % descript2D % file_basename = 'fort'
          ptr(i) % descript2D % initialized = .false.
          ptr(i) % descript2D % minmax_timestamp = .false.
+         ptr(i) % descript2D % isElemental = .false.
       end do
 
       ! fort.61
@@ -3923,13 +3924,14 @@ C
          NodeCodeDescript % iarray_g             => NODECODE_g
 
          NOFFDescript % specifier            = NHSTAR
-         NOFFDescript % int_initial_value        = 0
+         NOFFDescript % int_initial_value    = 0
          NOFFDescript % num_items_per_record = 1
          NOFFDescript % num_fd_records       = NE_G
          NOFFDescript % num_records_this     = NE
          NOFFDescript % imap                 => IMAP_EL_LG
          NOFFDescript % iarray               => NOFF
          NOFFDescript % iarray_g             => NOFF_g
+         NOFFDescript % isElemental          = .true.
 C
          IF (IHARIND.eq.1) THEN
             HarmElevFDLVDescript % specifier            = NHSTAR

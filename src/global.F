@@ -703,6 +703,7 @@ C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements t
         logical :: divideByDepth ! .true. if the solution must be divided by depth b/f output
         integer, allocatable :: writerFormats(:) ! formats that dedicated writers can write
         logical :: useWriter ! .true. if a dedicated writer should be used to write these data
+        logical :: isElemental ! .true. for elemental vals (e.g. NOFF)
         integer :: file_extension  ! end of the file name       
         character(len=32) :: file_basename  ! usually 'fort' but sometimes 'rads' etc
         real(sz), pointer :: interped_array(:) ! array that stations spatially interpolate

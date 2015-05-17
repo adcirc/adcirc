@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.10 - 05/17/2015 - jgf - Fix for globalizing NOFF array that takes
+C           the absolute value of the fulldomain element number when 
+C           retrieving it from the IMAP_EL_LG mapping array. This fixes
+C           the issue where all, or nearly all, NOFF values were found
+C           to be zero in the fulldomain hotstart file. 
 C v51.52.09 - 05/14/2015 - zc - Bug fixes for compiling with XDMF libraries
 C v51.52.08 - 05/14/2015 - zc - Fixed netCDF writer processor which did not
 C                               have knowledge of NP_G and NE_G during
