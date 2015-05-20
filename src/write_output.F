@@ -4847,6 +4847,7 @@ C     file.
          DebugElevDescript % useWriter            = .false.
          DebugElevDescript % file_extension       = 69
          DebugElevDescript % file_basename        = 'fort'
+         DebugELevDescript % file_name            = 'fort.69'
 
          OPEN(69,FILE=TRIM(GLOBALDIR)//'/'//'fort.69')
          WRITE(69,'(A80)') TRIM(RUNDES)
