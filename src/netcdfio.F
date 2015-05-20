@@ -1226,6 +1226,8 @@ C        pass, then call updateMetaData.
      &           (writerReadMetaData.eqv..false.)) THEN
                 CALL ReadMetaData(dat%ncid,dat%myFile)
                 writerReadMetaData=.TRUE.
+                dat%myMesh%num_nodes = NP_G
+                dat%myMesh%num_elems = NE_G
             ENDIF    
             CALL updateMetaData(dat%ncid,dat%myFile)
          ENDIF
