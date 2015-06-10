@@ -508,7 +508,7 @@ C
       ALLOCATE ( IMAP_NOD_LG(MNPP,MNPROC),IMAP_EL_LG(MNEP,MNPROC) )
       ALLOCATE ( NNEP(3,MNEP,MNPROC) )
       nbytes = nbytes + 4*mnpp*mnproc + 4*mnep*mnproc + 12*mnep*mnproc
-      ALLOCATE(EL_SHARE(MNEP))
+      ALLOCATE(EL_SHARE(NELG))
       EL_SHARE(:)   = -1
       nbytes = nbytes + mnep
       call memory_alloc(nbytes)

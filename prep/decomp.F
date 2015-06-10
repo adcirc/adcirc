@@ -195,7 +195,7 @@ C--If there are any global Weir-node pairs,
 C  Re-construct Local-to-Global Element Map: IMAP_EL_LG(:,PE)
 C  Rule:  Add an element if it has an resident node or
 C         has the dual Weir node of a resident or ghost node
-
+      EL_SHARE(:) = -1
       IF (NWEIR.GT.0) THEN
         DO I = 1,NPROC
            NELP(I) = 0
@@ -213,18 +213,47 @@ c          print *, "PE = ",I-1
      &          .OR.(INDX.NE.0).OR.(INDX2.NE.0)) THEN
 c                print *, K, PE1,PE2,PE3,INDX,INDX2
                 NELP(I) = NELP(I) + 1
-                KK = K
-                if (EL_SHARE(NELP(I)) > -1) KK = -K
-                IMAP_EL_LG(NELP(I),I) = KK
-                EL_SHARE(NELP(I))     = I
+                ! jgf51.52.12: Add the fulldomain element number to the mapping;
+                ! make it negative if some other subdomain has already
+                ! listed it as a resident element (the first subdomain
+                ! that has an element that maps to a fulldomain element
+                ! claims it as a resident; the next subdomain(s) that
+                ! have an element that maps to this fulldomain element
+                ! will have that element number listed as negative, 
+                ! or "ghost" in their mapping tables (first come, first
+                ! served)
+                IF (EL_SHARE(K) > -1) THEN
+                   IMAP_EL_LG(NELP(I),I) = -K
+                ELSE
+                   IMAP_EL_LG(NELP(I),I) = K
+                ENDIF
+                ! in any case, record the fact that a subdomain has already
+                ! claimed this element as a resident 
+                EL_SHARE(K) = I
               ENDIF
            ENDDO
-         IF (NELP(I).GT.MNEP) STOP 'NELP(I) > MNEP'
+           IF (NELP(I).GT.MNEP) STOP 'NELP(I) > MNEP'
 c       print *, "Number of elements on PE",I-1," = ",NELP(I)
 c       DO J = 1, NELP(I)
 c          print *, J, IMAP_EL_LG(J,I)
 c       ENDDO
         ENDDO
+      ELSE
+         ! jgf51.52.12: If there are no weirs, then go back through the element
+         ! mapping and leave the first subdomain element that maps to a 
+         ! particular fulldomain element as a "resident" with a positive
+         ! fulldomain element number in IMAP_EL_LG, while giving subsequent 
+         ! subdomain elements that map to that same fulldomain element  
+         ! a negative value in IMAP_EL_LG (marking them as "ghosts").
+         DO I=1,NPROC
+            DO J=1,NELP(I)
+               K = IMAP_EL_LG(J,I)
+               IF (EL_SHARE(K).gt.-1) THEN
+                  IMAP_EL_LG(J,I) = -IMAP_EL_LG(J,I)
+               ENDIF
+               EL_SHARE(K) = I
+            END DO
+         END DO
       ENDIF
 
 C STEP 6:

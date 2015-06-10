@@ -2,6 +2,16 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.12 - 06/10/2015 - jgf - Fixed issue in adcprep where the EL_SHARE
+C           array was dimensioned incorrectly, resulting in nearly all element
+C           indices in the IMAP_EL_LG() mapping array being negative 
+C           (i.e., represented as ghost elements); the fix assigns a 
+C           positive element index in the mapping for the first subdomain
+C           that contains the element, and a negative element index for
+C           any subsequent subdomain that contains the element. This 
+C           fix will resolve issues with globalization of the NOFF array
+C           for fulldomain hotstart files, which have been associated with 
+C           otherwise inexplicable numerical issues in prior versions. 
 C v51.52.11 - 05/20/2015 - zc - Further fixes for multiple netCDF writer cores
 C           and writing the fort.69 debug file.
 C v51.52.10 - 05/17/2015 - jgf - Fix for globalizing NOFF array that takes
