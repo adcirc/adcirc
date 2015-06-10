@@ -89,7 +89,6 @@ ifeq ($(compiler),g95)
   endif
 endif
 #
-# jgf45.12 These flags work on the UNC Topsail Cluster.
 # jgf: The -i-dynamic flag defers the inclusion of the library with 
 # feupdateenv until run time, thus avoiding the error message:
 # "feupdateenv is not implemented and will always fail"
@@ -126,16 +125,9 @@ ifeq ($(compiler),intel)
         FFLAGS1       :=$(FFLAGS1) -I/projects/ncfs/apps/netcdf/netcdf-fortran-4.2/include 
         FFLAGS2       :=$(FFLAGS1)
         FFLAGS3       :=$(FFLAGS1)
-        # NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.1-gcc4.1-ifort
-        # NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.2-gcc4.1-ifort
-        #FLIBS          :=$(FLIBS) -L/usr/lib64 -lnetcdff
-#        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.1-gcc4.1-ifort
         NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.2-gcc4.1-ifort
      endif
      ifeq ($(MACHINENAME),hatteras)
-        #FLIBS       := $(FLIBS) -L/projects/ncfs/apps/croatan/netcdf/lib -lnetcdff -lnetcdf
-        #NETCDFHOME    :=/projects/ncfs/apps/croatan/netcdf
-        #FFLAGS1       :=$(FFLAGS1) -I/projects/ncfs/apps/croatan/netcdf/include
         FLIBS       := $(FLIBS) -L/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3/lib -lnetcdff -lnetcdf
         NETCDFHOME    :=/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3
         FFLAGS1       :=$(FFLAGS1) -I/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3/include
@@ -147,6 +139,10 @@ ifeq ($(compiler),intel)
      ifeq ($(MACHINENAME),queenbee)
         FLIBS       := $(FLIBS) -L/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/lib -lnetcdff -lnetcdf
         NETCDFHOME    :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0
+     endif
+     ifeq ($(MACHINENAME),stampede) 
+        NETCDFHOME :=/opt/apps/intel13/netcdf/4.3.2/x86_64
+        FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
      endif
      # jgf20150420 mike requires that the analyst add netcdf to the softenv
      # with the following on the command line 
