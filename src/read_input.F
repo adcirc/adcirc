@@ -915,33 +915,35 @@ C...
      &        'parameter) is not an allowable value')
          CALL ADCIRC_Terminate()
       ENDIF
-
-      IF((NOLIFA.GE.1).AND.(NOLICAT.EQ.0)) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
-            WRITE(ScreenUnit,9972)
-            WRITE(ScreenUnit,*) 'NOLICAT =',NOLICAT
-            WRITE(ScreenUnit,9726)
-            IF(NFOVER.EQ.1) THEN
-               WRITE(ScreenUnit,9974)
-            ELSE
-               WRITE(ScreenUnit,9973)
-            ENDIF
-         ENDIF
-         WRITE(16,9972)
-         WRITE(16,*) 'NOLICAT =',NOLICAT
-         WRITE(16,9726)
-         WRITE(16,9974)
- 9726    FORMAT(/,1X,'Your selection of NOLICAT (a UNIT 15 input ',
-     &        'parameter) is inconsistent with your ',
-     &        /,1X,'selection of NOLIFA and may lead to mass ',
-     &        'balance problems')
-         IF(NFOVER.EQ.1) THEN
-            if (myproc == 0) WRITE(ScreenUnit,9974)
-         ELSE
-            if (myproc == 0) WRITE(ScreenUnit,9973)
-            call ADCIRC_Terminate()
-         ENDIF
-      ENDIF
+      !
+      ! jgf52.05: Removed this error message because it is alarming
+      ! and because it contradicts common practice. 
+C      IF((NOLIFA.GE.1).AND.(NOLICAT.EQ.0)) THEN
+C         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
+C            WRITE(ScreenUnit,9972)
+C            WRITE(ScreenUnit,*) 'NOLICAT =',NOLICAT
+C            WRITE(ScreenUnit,9726)
+C            IF(NFOVER.EQ.1) THEN
+C               WRITE(ScreenUnit,9974)
+C            ELSE
+C               WRITE(ScreenUnit,9973)
+C            ENDIF
+C         ENDIF
+C         WRITE(16,9972)
+C         WRITE(16,*) 'NOLICAT =',NOLICAT
+C         WRITE(16,9726)
+C         WRITE(16,9974)
+C 9726    FORMAT(/,1X,'Your selection of NOLICAT (a UNIT 15 input ',
+C     &        'parameter) is inconsistent with your ',
+C     &        /,1X,'selection of NOLIFA and may lead to mass ',
+C     &        'balance problems')
+C         IF(NFOVER.EQ.1) THEN
+C            if (myproc == 0) WRITE(ScreenUnit,9974)
+C         ELSE
+C            if (myproc == 0) WRITE(ScreenUnit,9973)
+C            call ADCIRC_Terminate()
+C         ENDIF
+C      ENDIF
 
       IF((NOLIFA.EQ.0).AND.(NOLICAT.EQ.1)) THEN
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN

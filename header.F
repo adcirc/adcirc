@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v52.05 - 06/12/2015 - jgf - Removed error message emitted by
+C           adcprep and adcirc when NOLIFA=2 and NOLICAT=0 because it is 
+C           alarming and because it contradicts common practice.
 C  v52.04 - 05/20/2015 - zc - Further fixes for multiple netCDF writer cores 
 C           and writing the fort.69 debug file. (v51release branch 
 C           v51.52.11, svn rev 1105)
