@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.14 - 06/12/2015 - jgf - Removed error message emitted by
+C           adcprep and adcirc when NOLIFA=2 and NOLICAT=0 because it is
+C           alarming and because it contradicts common practice.
 C v51.52.13 - 06/10/2015 - jgf - Added compiler flags for stampede at TACC.
 C v51.52.12 - 06/10/2015 - jgf - Fixed issue in adcprep where the EL_SHARE
 C           array was dimensioned incorrectly, resulting in nearly all element

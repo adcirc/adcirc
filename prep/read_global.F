@@ -579,15 +579,18 @@ C
          print *, "Value for NOLICAT not allowed"
          stop
       ENDIF
-      IF ((NOLIFA.GE.1).AND.(NOLICAT.EQ.0)) THEN
-         print *, "NOLIFA and NOLICAT are inconsistent"
-         print *, "May lead to mass balance problems"
-         IF(NFOVER.EQ.1) THEN
-            print *, "Since NFOVER=1, Program will continue"
-         ELSE
-            stop
-         ENDIF
-      ENDIF
+      !
+      ! jgf51.52.14: Removed this error message because it is alarming
+      ! and because it contradicts common practice.
+C      IF ((NOLIFA.GE.1).AND.(NOLICAT.EQ.0)) THEN
+C         print *, "NOLIFA and NOLICAT are inconsistent"
+C         print *, "May lead to mass balance problems"
+C         IF(NFOVER.EQ.1) THEN
+C            print *, "Since NFOVER=1, Program will continue"
+C         ELSE
+C            stop
+C         ENDIF
+C      ENDIF
 C
       READ(15,80) NWPMSG
       READ(NWPMSG,*) NWP
