@@ -157,14 +157,6 @@ Cobell 110518: Add compiler flag for local hot start.
       WRITE_LOCAL_HOT_START_FILES = .FALSE.
 #endif
 
-      IF ( MNPROC.EQ.1 ) THEN
-         WRITE_LOCAL_FILES = .TRUE.
-         WRITE_LOCAL_HOT_START_FILES = .TRUE.
-         READ_LOCAL_HOT_START_FILES = .TRUE.
-         WRITE_LOCAL_HARM_FILES = .TRUE.
-      ENDIF
-
-
       if (ARGCOUNT > 0) then
          !
          ! jgf51.21.41: Echo the entire command line that was used to 

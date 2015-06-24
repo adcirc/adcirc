@@ -2,8 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v52.07 - 06/24/2015 - jgf - Fixed issue with serial execution by removing
+C           code that set WRITE_LOCAL_FILES (etc) equal to .true. for
+C           serial execution. 
 C  v52.06 - 06/23/2015 - jgf - Merged wetdryout branch (r1107:1115) to trunk
-C              including the changes described below as v52.04.xx.
+C           including the changes described below as v52.04.xx.
 C  v52.04.03 - 06/09/2015 - jgf - Added parsing of command line options to
 C              adcpost; added mergeSubdomainFiles() subroutine to adcpost
 C              to process integer and elementally-based output; added 
