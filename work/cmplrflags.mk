@@ -142,6 +142,16 @@ ifeq ($(compiler),intel)
         FFLAGS2       :=$(FFLAGS1)
         FFLAGS3       :=$(FFLAGS1)
      endif
+     # jgf20150417 queenbee requires that the analyst load the netcdf and
+     # netcdf_fortran modules prior to compiling or executing ADCIRC
+     ifeq ($(MACHINENAME),queenbee)
+        FLIBS       := $(FLIBS) -L/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0/lib -lnetcdff -lnetcdf
+        NETCDFHOME    :=/usr/local/packages/netcdf/4.2.1.1/INTEL-140-MVAPICH2-2.0
+     endif
+     ifeq ($(MACHINENAME),stampede)
+        NETCDFHOME :=/opt/apps/intel13/netcdf/4.3.2/x86_64
+        FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
+     endif
      # jgf20150420 mike requires that the analyst add netcdf to the softenv
      # with the following on the command line 
      # soft add +netcdf-4.1.3-Intel-13.0.0

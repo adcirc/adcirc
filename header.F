@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v52.08 - 06/24/2015 - jgf - Added compiler flags and swan macros.inc
+C           for stampede at TACC.
 C  v52.07 - 06/24/2015 - jgf - Fixed issue with serial execution by removing
 C           code that set WRITE_LOCAL_FILES (etc) equal to .true. for
 C           serial execution. 
