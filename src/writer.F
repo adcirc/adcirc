@@ -1073,9 +1073,8 @@ C-----------------------------------------------------------------------
       USE SIZES
       USE GLOBAL
       USE MESH, ONLY : NE, NP
-      USE GLOBAL_IO, ONLY: packOne, unpackOne, packOneInt, unpackOneInt,
+      USE GLOBAL_IO, ONLY: packOne, unpackOne, 
      &    packTwo, unpackTwo, HEADER_MAX
-!     &    collectFullDomainArray, collectFullDomainIntArray
       USE MESSENGER
 !
       IMPLICIT NONE
@@ -1148,7 +1147,7 @@ C-----------------------------------------------------------------------
         ipack(26) = NHSINC  !tcm v51.26
 
         dpack(1) = TimeLoc
-        cjunk1 = trim(adjustl(HOTSTARTDIR))
+        cjunk1 = trim(adjustl(GLOBALDIR))
         cjunk2 = trim(adjustl(hss%filename))
 
         CALL MPI_SEND(ipack,26,MPI_INTEGER,MNPROC,TAG,WCOMM,IERR)
@@ -1194,7 +1193,7 @@ C-----------------------------------------------------------------------
         iNHSINC        = ipack(26) !tcm v51.26
         
         ttime  = dpack(1)
-        HOTSTARTDIR =trim(adjustl(cjunk1))
+        GLOBALDIR=trim(adjustl(cjunk1))
         hss%filename=trim(adjustl(cjunk2))
         NP = 0
         NE = 0
@@ -1291,7 +1290,7 @@ C-----------------------------------------------------------------------
             ALLOCATE(NodeCode_g(NP_G))
          ENDIF
          NodeCodeDescript % specifier            = NHSTAR
-         NodeCodeDescript % int_initial_value        = 0
+         NodeCodeDescript % initial_value        = 0.d0
          NodeCodeDescript % num_items_per_record = 1
          NodeCodeDescript % num_fd_records       = NP_G
          NodeCodeDescript % num_records_this     = NP
@@ -1304,7 +1303,7 @@ C-----------------------------------------------------------------------
             ALLOCATE(NOFF_g(NE_G))
          ENDIF
          NOFFDescript % specifier            = NHSTAR
-         NOFFDescript % int_initial_value        = 0
+         NOFFDescript % initial_value        = 0.d0
          NOFFDescript % num_items_per_record = 1
          NOFFDescript % num_fd_records       = NE_G
          NOFFDescript % num_records_this     = NE
@@ -1323,8 +1322,8 @@ C     collect up the data from subdomains if running in parallel
             CALL collectFullDomainArrayw(CH1Descript, packOne, unpackOne)
          ENDIF
          CALL collectFullDomainArrayw(EtaDiscDescript, packOne, unpackOne)
-         CALL collectFullDomainIntArrayw(NodeCodeDescript, packOneInt, unpackOneInt)
-         CALL collectFullDomainIntArrayw(NOFFDescript, packOneInt, unpackOneInt)
+         CALL collectFullDomainIntArrayw(NodeCodeDescript, packOne, unpackOne)
+         CALL collectFullDomainIntArrayw(NOFFDescript, packOne, unpackOne)
 
 ! tcm v49.54 -- changed noff to noff_g to fix an allocation bug in hot start writer
          WHERE (NOFF_G.gt.1) NOFF_g = 1
@@ -1344,7 +1343,7 @@ C     collect up the data from subdomains if running in parallel
                WRITE(itstr,'(I9.9)') IIT  !note that IIT is the correct value and not IT for writers
                hss % filename(9:17) = itstr
             ENDIF
-            OPEN(hss % lun ,FILE=TRIM(adjustl(HOTSTARTDIR))//'/'//trim(adjustl(hss%filename)),
+            OPEN(hss % lun ,FILE=TRIM(adjustl(GLOBALDIR))//'/'//trim(adjustl(hss%filename)),
      $      ACCESS='DIRECT',RECL=8)
             IHOTSTP=1
             WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion
@@ -1612,7 +1611,7 @@ C        jgf45.07 added option to stop ADCIRC after writing hot start file.
 
       do while (istart < iend)
 !      ! Initialize
-         integerBuffer(:)  = descript % int_initial_value
+         integerBuffer(:)  = int(descript % initial_value)
          ibucket = ibucket + 1
          tag     = tagbase + mod(ibucket, 8)
 

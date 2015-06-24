@@ -14,15 +14,15 @@ C----------------------------------------------------------------------
 C----------------------------------------------------------------------
       USE SIZES, ONLY : SZ
       USE GLOBAL, ONLY : OutputDataDescript_t, setMessageSource, 
-     &  unsetMessageSource, DEBUG, allMessage, screenMessage
+     &  unsetMessageSource, DEBUG, allMessage, screenMessage, ERROR
 
       !
       !    2 D   D A T A
       !
 #ifdef CSWAN
-      integer, parameter :: numOutputDescript2D = 37
+      integer, parameter :: numOutputDescript2D = 39
 #else
-      integer, parameter :: numOutputDescript2D = 23
+      integer, parameter :: numOutputDescript2D = 25
 #endif      
       type descript2D_ptr_t
          type(OutputDataDescript_t), pointer :: descript2D
@@ -55,11 +55,12 @@ C----------------------------------------------------------------------
       type(OutputDataDescript_t), target :: BathyDescript   
       !tcm v50.66.01 added time varying bathy stations
       type(OutputDataDescript_t), target :: BathyStaDescript 
-!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-!#ifdef CSWAN
-Casey 090302: Added this type for output of radiation stress gradients.
+      ! Casey 090302: Added this type for output of radiation stress gradients.
+      ! tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
       type(OutputDataDescript_t), target :: RSDescript
-!#endif
+      !jgf52.05: Added for regular output of wet/dry quantities.
+      type(OutputDataDescript_t), target :: noffOutDescript
+      type(OutputDataDescript_t), target :: nodeCodeOutDescript 
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
       real(sz), allocatable, target :: et00_g(:)
@@ -84,12 +85,15 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       real(sz), allocatable, target :: eslonoff_g(:) !zc added for esl on/off output
       real(sz), allocatable, target :: dpout_g(:)    !tcm v50.66.01 added time varying bathy
       real(sz), allocatable, target :: dp00_g(:)  !tcm v50.66.01 added time varying bathy
-!  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
-!#ifdef CSWAN
-Casey 090302: Added these arrays for output of radiation stress gradients.
+      ! Casey 090302: Added these arrays for output of radiation stress gradients.
+      ! tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
       real(sz), allocatable, target :: rsnxout_g(:)
       real(sz), allocatable, target :: rsnyout_g(:)
-!#endif
+
+      !jgf52.05: Added for normal output of wet/dry quantities.
+      integer, allocatable, target :: nodecode_out_g(:)
+      integer, allocatable, target :: noff_out_g(:)
+
       !
       !  H A R M O N I C   A N A L Y S I S   D A T A 
       !
@@ -234,8 +238,11 @@ C
      &                                            SWAN_TM02_POS,
      &                                            SWAN_TMM10_POS,
      &                                            SWAN_WIND_POS  
-           
 #endif
+   
+      ! jgf52.05: Set via fort.15 namelist in read_input.F.
+      logical :: outputNodeCode = .false.
+      logical :: outputNOFF = .false.           
       
 C     ---------
       CONTAINS
@@ -274,7 +281,9 @@ C----------------------------------------------------------------------
      &   noutgw, ntcysgw, ntcyfgw, nspoolgw, nddt, ncice, nrs, 
      &   noutc, nstac_g, nstac, im, noutgc, ntcyfgc, ntcysgc,
      &   nspoolgc, INFO, scratchMessage, allMessage, nscougi, nscougp,
-     &   nscours, nscoub, nscougb, nscoui, nscoup
+     &   nscours, nscoub, nscougb, nscoui, nscoup,
+     &   nodeCodeOutSpoolCounter, noffOutSpoolCounter, noffOutFilePos,
+     &   nodeCodeOutFilePos, NE_G, IMAP_EL_LG, nodecode, noff
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim
 #ifdef ADCNETCDF
@@ -326,23 +335,26 @@ C
       ptr(21)%descript2D => BathyDescript
       ptr(22)%descript2D => BathyStaDescript
       ptr(23)%descript2D => RSDescript 
+      ptr(24)%descript2D => nodeCodeOutDescript 
+      ptr(25)%descript2D => noffOutDescript
+      
 
 !... For SWAN, there are additional output arrays
 #ifdef CSWAN
-      ptr(24)%descript2D => SwanHSDescript 
-      ptr(25)%descript2D => SwanHSMaxDescript
-      ptr(26)%descript2D => SwanDIRDescript
-      ptr(27)%descript2D => SwanDIRMaxDescript
-      ptr(28)%descript2D => SwanTM01Descript
-      ptr(29)%descript2D => SwanTM01MaxDescript
-      ptr(30)%descript2D => SwanTPSDescript
-      ptr(31)%descript2D => SwanTPSMaxDescript
-      ptr(32)%descript2D => SwanWindDescript
-      ptr(33)%descript2D => SwanWindMaxDescript
-      ptr(34)%descript2D => SwanTM02Descript
-      ptr(35)%descript2D => SwanTM02MaxDescript
-      ptr(36)%descript2D => SwanTMM10Descript
-      ptr(37)%descript2D => SwanTMM10MaxDescript
+      ptr(26)%descript2D => SwanHSDescript 
+      ptr(27)%descript2D => SwanHSMaxDescript
+      ptr(28)%descript2D => SwanDIRDescript
+      ptr(29)%descript2D => SwanDIRMaxDescript
+      ptr(30)%descript2D => SwanTM01Descript
+      ptr(31)%descript2D => SwanTM01MaxDescript
+      ptr(32)%descript2D => SwanTPSDescript
+      ptr(33)%descript2D => SwanTPSMaxDescript
+      ptr(34)%descript2D => SwanWindDescript
+      ptr(35)%descript2D => SwanWindMaxDescript
+      ptr(36)%descript2D => SwanTM02Descript
+      ptr(37)%descript2D => SwanTM02MaxDescript
+      ptr(38)%descript2D => SwanTMM10Descript
+      ptr(39)%descript2D => SwanTMM10MaxDescript
 #endif    
       ! 
       ! jgf51.21.24: Set some defaults
@@ -362,6 +374,7 @@ C
          ptr(i) % descript2D % file_basename = 'fort'
          ptr(i) % descript2D % initialized = .false.
          ptr(i) % descript2D % minmax_timestamp = .false.
+         ptr(i) % descript2D % isInteger = .false.
       end do
 
       ! fort.61
@@ -484,6 +497,54 @@ C
       SpongeDescript % array                => sponge
       SpongeDescript % array_g              => sponge_g
       SpongeDescript % writeFlag            = outputsponge
+ 
+      ! NodeCode output
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(NodeCode_out_g(NP_G))
+      ENDIF
+      nodeCodeOutDescript % lun                     = 101
+      if ( NOUTGE.ne.0 ) then       
+         nodeCodeOutDescript % specifier            = ASCII
+      endif
+      nodeCodeOutDescript % startTimeStep           = NTCYSGE 
+      nodeCodeOutDescript % endTimeStep             = NTCYFGE
+      nodeCodeOutDescript % outputTimeStepIncrement = NSPOOLGE
+      nodeCodeOutDescript % spoolCounter    => nodeCodeOutSpoolCounter
+      nodeCodeOutDescript % filepos         => nodeCodeOutFilePos
+      nodeCodeOutDescript % num_fd_records       = NP_G
+      nodeCodeOutDescript % num_records_this     = NP
+      nodeCodeOutDescript % imap                 => NODES_LG
+      nodeCodeOutDescript % iarray               => NODECODE
+      nodeCodeOutDescript % iarray_g             => NodeCode_out_g
+      nodeCodeOutDescript % field_name           = 'NodeCode'
+      nodeCodeOutDescript % file_basename        = 'nodecode'
+      nodeCodeOutDescript % file_extension       = 63
+      nodeCodeOutDescript % writeFlag            = outputNodeCode
+      nodeCodeOutDescript % isInteger            = .true.
+
+      ! NOFF output
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(NOFF_out_g(NE_G))
+      ENDIF
+      noffOutDescript % lun                  = 102
+      if ( NOUTGE.ne.0 ) then       
+         noffOutDescript % specifier            = ASCII
+      endif
+      noffOutDescript % startTimeStep           = NTCYSGE 
+      noffOutDescript % endTimeStep             = NTCYFGE
+      noffOutDescript % outputTimeStepIncrement = NSPOOLGE
+      noffOutDescript % spoolCounter            => noffOutSpoolCounter
+      noffOutDescript % filepos                 => noffOutFilePos
+      noffOutDescript % num_fd_records       = NE_G
+      noffOutDescript % num_records_this     = NE
+      noffOutDescript % imap                 => IMAP_EL_LG
+      noffOutDescript % iarray                => NOFF
+      noffOutDescript % iarray_g              => noff_out_g
+      noffOutDescript % field_name           = 'NOFF'
+      noffOutDescript % file_basename        = 'noff'
+      noffOutDescript % file_extension       = 100
+      noffOutDescript % writeFlag            = outputNOFF
+      noffOutDescript % isInteger            = .true.
 
       ! fort.64
       VelDescript % lun                  = 64
@@ -1003,7 +1064,7 @@ C        maxrs.63
       ! of data
       if (mnwproc.gt.0) then
          do i=1, numOutputDescript2D
-            ! if the output chosen output format is supported by 
+            ! if the chosen output format is supported by 
             ! writer processors, then use writer processors for 
             ! this output type
             if ( ptr(i) % descript2D % writeFlag .eqv. .true.) then
@@ -1019,18 +1080,20 @@ C        maxrs.63
          end do
       endif
       !
-      nerr = .false.
       ! jgf49.43.11: if netcdf is not required for a particular output file,
       ! the associated subroutine call will do nothing and just return
       if (myProc.eq.0) then
          do i=1, numOutputDescript2D
+            nerr = .false.
             if ( ptr(i) % descript2D % writeFlag .eqv. .true.) then
                select case(abs(ptr(i) % descript2D % specifier))
                case(NETCDF3, NETCDF4)
 #ifdef ADCNETCDF
                   call initNetCDFOutputFile(ptr(i) % descript2D, nerr)
                   if (nerr.eqv..true.) then
-                     call terminate()               
+                     call allMessage(ERROR,
+     &             'There was an issue with NetCDF file initialization.')
+                     call terminate()         
                   endif
                   ptr(i) % descript2D % initialized = .true.
 #endif
@@ -1080,7 +1143,6 @@ C----------------------------------------------------------------------
       USE GLOBAL
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE GLOBAL_IO, ONLY: storeOne, storeTwo,
-     &    write_gbl_file_skip_default, 
      &    packOne, unpackOne, packTwo, unpackTwo
       USE NodalAttributes, ONLY : LoadEleSlopeLim
 #ifdef CMPI
@@ -1152,8 +1214,8 @@ C----------------------------------------------------------------------
             !  W R I T E   U S I N G   P R O C E S S O R   0
             ! 
             if ( ptr(i) % descript2D % num_items_per_record .eq. 1 ) then
-               call writeOutArray(TimeLoc, IT, ptr(i) % descript2D,
-     &                            packOne, unpackOne)
+                  call writeOutArray(TimeLoc, IT, ptr(i) % descript2D,
+     &                               packOne, unpackOne)
             else
                call writeOutArray(TimeLoc, IT, ptr(i) % descript2D,
      &                            packTwo, unpackTwo)
@@ -1326,9 +1388,11 @@ C-----------------------------------------------------------------------
          ! 
          ! if the station output should have a special value in a 
          ! dry element, apply the special value if necessary
+         ! jgf52.04.03: Removed NOFF from consideration when 
+         ! determining wet/dry state for station interpolation purposes.
          if (descript % considerWetDry .eqv..true. ) then
             ncele = nodecode(nm(e,1)) * nodecode(nm(e,2)) * 
-     &             nodecode(nm(e,3)) * noff(e)
+     &             nodecode(nm(e,3)) 
             if (ncele.eq.0) then
                toArray(j) = descript % alternate_value
             endif
@@ -1369,7 +1433,7 @@ C removed from global  myProc, MNPROC,
      &                   NE_G, NP_G, NODES_LG
       USE MESH, ONLY : NP, NE, ICS
       USE GLOBAL_IO, ONLY:
-     &    open_gbl_file, write_gbl_file, collectFullDomainArray,
+     &    open_gbl_file, collectFullDomainArray,
      &    packOne, unpackOne, packTwo, unpackTwo, packMbyNP, unpackMbyNP
       USE HARM, ONLY :
      &    emag, phasede, umag, vmag, phasedu, phasedv, emagt, phaseden,
@@ -3543,7 +3607,11 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
             WRITE(descript % lun,2120) TimeLoc,IT
             IF (descript % num_items_per_record .eq. 1) THEN
                DO I=1, descript % num_fd_records
-                  WRITE(descript % lun,2453) I, descript % array_g(I)
+                  if ( descript % isInteger .eqv. .true. ) then 
+                     write(descript % lun,2452) I, descript % iarray_g(I)
+                  else
+                     write(descript % lun,2453) I, descript % array_g(I)
+                  endif
                ENDDO
             ENDIF
             IF (descript % num_items_per_record .eq. 2) THEN
@@ -3564,15 +3632,30 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
                IF (descript % ConsiderWetDry .EQV. .TRUE.) THEN
                   DO I=1, descript % num_records_this
                      if(NODECODE(I).EQ.1) THEN
-                        WRITE(descript % lun,2453) I,descript % array(I)
+                        if ( descript % isInteger .eqv. .true. ) then 
+                           write(descript % lun,2452) I, descript % iarray(I)
+                        else
+                           write(descript % lun,2453) I, descript % array(I)
+                        endif
                      ELSE
-                        WRITE(descript % lun,2453) I,
-     &                     descript % alternate_value  !-99999.0 for dry nodes
+                        if ( descript % isInteger .eqv. .true. ) then 
+                           write(descript % lun,2452) I, 
+     &                      int( descript % alternate_value )
+                        else
+                           write(descript % lun,2453) I, 
+     &                      descript % alternate_value  !-99999.0 for dry nodes
+                        endif
                      ENDIF
                   END DO
                ELSE
                   DO I=1, descript % num_records_this
-                     WRITE(descript % lun,2453) I, descript % array(I)
+                     if ( descript % isInteger .eqv. .true. ) then 
+                        !write(16,*) 'writing ',descript%iarray(i),' to subdomain output' !jgfdebug
+                        !write(16,2452) I, descript % iarray(I)
+                        write(descript % lun,2452) I, descript % iarray(I)
+                     else
+                        write(descript % lun,2453) I, descript % array(I)
+                     endif
                   END DO
                ENDIF
             ENDIF
@@ -3682,6 +3765,7 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
 
  2    FORMAT(I2)
  2120 FORMAT(2X,1pE20.10E3,5X,I10)
+ 2452 FORMAT(2x, i8, 2x, i8, 2x, i8, 2x, i8)
  2453 FORMAT(2x, i8, 2x, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3, 1pE20.10E3)
  2454 FORMAT(2X,I8,2(2X,1pE20.10E3))
 C-----------------------------------------------------------------------
@@ -3734,12 +3818,12 @@ C     write data in ascii text only (other output formats are not supported)
       SELECT CASE (ABS(descript % specifier))
 
       CASE(OFF,ASCII,BINARY,SPARSE_ASCII) ! just write ascii text
-         CALL OPEN_MINMAX_FILE(lun, TRIM(GLOBALDIR)//'/'
-     &           // descript%file_name, NP_G, NP, nrecs_this,HEADER_MAX)
+
          IF ((MNPROC.gt.1).and.(MyProc.eq.0).and.
      &        (.not.WRITE_LOCAL_FILES)) THEN
-            OPEN(lun,
-     &           FILE=TRIM(GLOBALDIR)//'/'//TRIM(descript%file_name),
+            CALL OPEN_MINMAX_FILE(lun, descript%file_name, 
+     &                             NP_G, NP, nrecs_this,HEADER_MAX)
+            OPEN(lun,FILE=TRIM(descript%file_name),
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
             WRITE(lun,2120) TimeLoc,IT
             DO I=1, descript % num_fd_records
@@ -3758,9 +3842,12 @@ C     write data in ascii text only (other output formats are not supported)
          ENDIF
 
          IF ((MNPROC.eq.1).or.(WRITE_LOCAL_FILES)) THEN
-            CALL OPEN_MINMAX_FILE(lun, TRIM(LOCALDIR)//'/'
-     &           // descript%file_name, NP_G, NP, nrecs_this, HEADER_MAX)
-            OPEN(lun,FILE=TRIM(LOCALDIR)//'/'//TRIM(descript%file_name),
+            call logMessage(INFO,'Opening min/max file "'//
+     &          trim(localdir)//'/'//trim(descript%file_name)//
+     &          '" for writing.')
+            CALL OPEN_MINMAX_FILE(lun, descript%file_name, NP_G, NP, 
+     &           nrecs_this, HEADER_MAX)
+            OPEN(lun,FILE=TRIM(descript%file_name),
      &           ACCESS='SEQUENTIAL',POSITION='APPEND')
             WRITE(lun,2120) TimeLoc,IT
             DO I=1, descript % num_records_this
@@ -3818,9 +3905,9 @@ C-----------------------------------------------------------------------
       USE SIZES
       USE GLOBAL
       USE HARM
-      USE GLOBAL_IO, ONLY: packOne, unpackOne, packOneInt, unpackOneInt,
+      USE GLOBAL_IO, ONLY: packOne, unpackOne, 
      &    packTwo, unpackTwo, packMbyNP, unpackMbyNP, HEADER_MAX,
-     &    collectFullDomainArray, collectFullDomainIntArray
+     &    collectFullDomainArray
       USE MESH, ONLY : NP, NE
 #ifdef CMPI
       USE MESSENGER
@@ -3914,22 +4001,24 @@ C
          EtaDiscDescript % array_g              => EtaDisc_g
 
          NodeCodeDescript % specifier            = NHSTAR
-         NodeCodeDescript % int_initial_value        = 0
+         NodeCodeDescript % initial_value        = 0.d0
          NodeCodeDescript % num_items_per_record = 1
          NodeCodeDescript % num_fd_records       = NP_G
          NodeCodeDescript % num_records_this     = NP
          NodeCodeDescript % imap                 => NODES_LG
          NodeCodeDescript % iarray               => NODECODE
          NodeCodeDescript % iarray_g             => NODECODE_g
+         NodeCodeDescript % isInteger            = .true.
 
          NOFFDescript % specifier            = NHSTAR
-         NOFFDescript % int_initial_value        = 0
+         NOFFDescript % initial_value        = 0.d0
          NOFFDescript % num_items_per_record = 1
          NOFFDescript % num_fd_records       = NE_G
          NOFFDescript % num_records_this     = NE
          NOFFDescript % imap                 => IMAP_EL_LG
          NOFFDescript % iarray               => NOFF
          NOFFDescript % iarray_g             => NOFF_g
+         NOFFDescript % isInteger            = .true.
 C
          IF (IHARIND.eq.1) THEN
             HarmElevFDLVDescript % specifier            = NHSTAR
@@ -4116,26 +4205,17 @@ C     collect up the data from subdomains if running in parallel
          ENDIF
          CALL collectFullDomainArray(EtaDiscDescript,
      &             packOne, unpackOne)
-         CALL collectFullDomainIntArray(NodeCodeDescript,
-     &             packOneInt, unpackOneInt)
-         CALL collectFullDomainIntArray(NOFFDescript,
-     &             packOneInt, unpackOneInt)
-!         TCM v48.4638 20090902 -- NOFF could have the wrong
-!         values after globalizing because there are no rules for which
-!         processor owns an element and Noff is an elemental value
-!         The way around is to take the minimum of (Noff, 1) as
-!         NOFF is supposed to be either 0 or 1.
-!
-!        jgf48.4642 Modified syntax to operate directly on NOFF array
-!        instead of the pointer to the NOFF array (i.e.
-!        NOFFDescript%iarray) b/c g95 choked on the original syntax.
-!         WHERE (NOFF.gt.1) NOFF = 1
+         CALL collectFullDomainArray(NodeCodeDescript,
+     &             packOne, unpackOne)
+         CALL collectFullDomainArray(NOFFDescript,
+     &             packOne, unpackOne)
 
-!         TCM49.14 20100604 -- Neither of the previous fixes for NOFF
-!             worked.  The correct way is to fix NOFF_G
-!             the Global list which is owned only by MyProc = 0
          IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
-            WHERE (NOFF_G.gt.1) NOFF_G = 1
+            if (any(NOFF_G.gt.1)) then
+               call allMessage(ERROR,
+     &            'Some values of NOFF are greater than 1.')
+               call terminate()
+            endif
          endif
 C
 C        Collect harmonic analysis data if needed.
@@ -4206,7 +4286,7 @@ C        program to exit immediately after writing the hotstart file.
                WRITE(itstr,'(I9.9)') IT
                hss % filename(9:17) = itstr
             ENDIF
-            OPEN(hss % lun ,FILE=TRIM(HOTSTARTDIR)//'/'//trim(hss % filename),
+            OPEN(hss % lun ,FILE=TRIM(LOCALDIR)//'/'//trim(hss % filename),
      $      ACCESS='DIRECT',STATUS='REPLACE',RECL=8)
             IHOTSTP=1
             WRITE(hss % lun,REC=IHOTSTP) FileFmtVersion
@@ -4792,7 +4872,7 @@ C-----------------------------------------------------------------------
       SUBROUTINE WriteWarnElev(TimeLoc, it)
       USE SIZES
       USE GLOBAL
-      USE GLOBAL_IO, ONLY: collectFullDomainArray, unpackOne, pack63
+      USE GLOBAL_IO, ONLY: collectFullDomainArray, unpackOne
       USE MESH, ONLY : NP
       USE GLOBAL_IO, ONLY: packOne, unpackOne
 #ifdef CMPI

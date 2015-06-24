@@ -848,9 +848,7 @@ C-----------------------------------------------------------------------
      &                        StoreOne,
      &                        StoreTwo,
      &                        UnPackOne,
-     &                        UnPackTwo,
-     &                        WRITE_GBL_FILE,
-     &                        WRITE_GBL_FILE_SKIP_DEFAULT
+     &                        UnPackTwo
       USE M_GENARR,     ONLY: AC2,
      &                        KGRPNT,
      &                        SPCDIR,

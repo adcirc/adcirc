@@ -28,6 +28,7 @@ C
       USE NodalAttributes, ONLY :
      &         STARTDRY, GeoidOffset, LoadGeoidOffset,
      &         OutputTau0, LoadRiver_et_WSE, River_et_WSE !jgf47.06
+      USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF
 
       IMPLICIT NONE
 
@@ -623,8 +624,13 @@ C...
  3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
 
       IF(ABS(NOUTE).EQ.1) THEN
-         CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
-     &    NSTAE_G, NSTAE, HEADER61)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
+     &       NSTAE_G, NSTAE, HEADER61)
+         else 
+            CALL OPEN_GBL_FILE(61, TRIM(LOCALDIR)//'/'//'fort.61',
+     &       NSTAE_G, NSTAE, HEADER61)
+         endif
          IESTP=2
       ENDIF
 
@@ -678,8 +684,13 @@ C...
       IVSTP=0
 
       IF(ABS(NOUTV).EQ.1) THEN
-         CALL OPEN_GBL_FILE(62, TRIM(GLOBALDIR)//'/'//'fort.62',
-     $    NSTAV_G, NSTAV, HEADER62)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(62, TRIM(GLOBALDIR)//'/'//'fort.62',
+     &          NSTAV_G, NSTAV, HEADER62)
+         else
+            CALL OPEN_GBL_FILE(62, TRIM(LOCALDIR)//'/'//'fort.62',
+     &          NSTAV_G, NSTAV, HEADER62)         
+         endif
          IVSTP=2
       ENDIF
 
@@ -733,8 +744,13 @@ C...
       ICSTP=0
 
       IF(ABS(NOUTC).EQ.1) THEN
-         CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81',
-     $    NSTAC_G, NSTAC, HEADER81)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81',
+     &          NSTAC_G, NSTAC, HEADER81)
+         else
+            CALL OPEN_GBL_FILE(81, TRIM(LOCALDIR)//'/'//'fort.81',
+     &          NSTAC_G, NSTAC, HEADER81)
+         endif 
          ICSTP=2
       ENDIF
 
@@ -790,18 +806,33 @@ C...
       IICESTP = 0  ! v49.64.01 tcm -added ice stations
 
       IF(ABS(NOUTM).EQ.1) THEN
-         CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71',
-     $    NSTAM_G, NSTAM, HEADER71)
-         IPSTP=2
-         CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72',
-     $     NSTAM_G, NSTAM, HEADER72)
-         IWSTP=2
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71',
+     &          NSTAM_G, NSTAM, HEADER71)
+            IPSTP=2
+            CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72',
+     &         NSTAM_G, NSTAM, HEADER72)
+            IWSTP=2
 ! V49.64.01 TCM -ADDED ICE STATIONS
-         IF(NCICE.NE.0) THEN
-            CALL OPEN_GBL_FILE(91, TRIM(GLOBALDIR)//'/'//'fort.91',
-     $     NSTAM_G, NSTAM, HEADER91)
-            IICESTP=2
-         ENDIF
+            IF(NCICE.NE.0) THEN
+               CALL OPEN_GBL_FILE(91, TRIM(GLOBALDIR)//'/'//'fort.91',
+     &             NSTAM_G, NSTAM, HEADER91)
+                IICESTP=2
+            ENDIF
+         else
+            CALL OPEN_GBL_FILE(71, TRIM(LOCALDIR)//'/'//'fort.71',
+     &          NSTAM_G, NSTAM, HEADER71)
+            IPSTP=2
+            CALL OPEN_GBL_FILE(72, TRIM(LOCALDIR)//'/'//'fort.72',
+     &         NSTAM_G, NSTAM, HEADER72)
+            IWSTP=2
+! V49.64.01 TCM -ADDED ICE STATIONS
+            IF(NCICE.NE.0) THEN
+               CALL OPEN_GBL_FILE(91, TRIM(LOCALDIR)//'/'//'fort.91',
+     &             NSTAM_G, NSTAM, HEADER91)
+                IICESTP=2
+            ENDIF
+         endif 
       ENDIF
 
       IF(ABS(NOUTM).EQ.2) THEN
@@ -905,8 +936,13 @@ C...
       IBSTP=0
 
       IF ((NDDT.NE.0).AND.(ABS(NOUTE).EQ.1)) THEN
-         CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75',
-     &    NSTAE_G, NSTAE, HEADER61)  !no need to create a header75
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75',
+     &         NSTAE_G, NSTAE, HEADER61)  !no need to create a header75
+         else
+            CALL OPEN_GBL_FILE(75, TRIM(LOCALDIR)//'/'//'fort.75',
+     &         NSTAE_G, NSTAE, HEADER61)  !no need to create a header75
+         endif       
          IBSTP=2
       ENDIF
 
@@ -961,26 +997,70 @@ C...
       IGEP=0
 
       IF((ABS(NOUTGE).EQ.1).OR.(ABS(NOUTGE).EQ.4)) THEN
-         CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
-     $    NP_G, NP, HEADER63)
-
-C   kmd48.33 add the ability to output the sponge layer
-          IF (OUTPUTSPONGE) THEN
-           CALL writeDomainHeader(92,
-     &          TRIM(GLOBALDIR)//'/'//'fort.92',
-     $           NP_G, NP, 'sponge     ')
-          END IF
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
+     &       NP_G, NP, HEADER63)
+C            kmd48.33 add the ability to output the sponge layer
+             IF (OUTPUTSPONGE) THEN
+                 CALL writeDomainHeader(92,
+     &             TRIM(GLOBALDIR)//'/'//'fort.92',
+     &             NP_G, NP, 'sponge     ')
+             END IF
 C
-C        jgf47.06 Tau0 output is produced on the same schedule as
-C        global elevation
-         IF (OutputTau0) THEN
+C           jgf47.06 Tau0 output is produced on the same schedule as
+C           global elevation
+            IF (OutputTau0) THEN
 Casey 090302: Corrected the unit number from 10 to 90.
-            CALL writeDomainHeader(90,
-     &           TRIM(GLOBALDIR)//'/'//'fort.tau0',
-     $           NP_G, NP, 'Tau0      ')
-         ENDIF
+               CALL writeDomainHeader(90,
+     &              TRIM(GLOBALDIR)//'/'//'fort.tau0',
+     &              NP_G, NP, 'Tau0      ')
+            ENDIF
+         else
+
+            CALL OPEN_GBL_FILE(63, TRIM(LOCALDIR)//'/'//'fort.63',
+     &       NP_G, NP, HEADER63)
+C            kmd48.33 add the ability to output the sponge layer
+             IF (OUTPUTSPONGE) THEN
+                 CALL writeDomainHeader(92,
+     &             TRIM(LOCALDIR)//'/'//'fort.92',
+     &             NP_G, NP, 'sponge     ')
+             END IF
+C
+C           jgf47.06 Tau0 output is produced on the same schedule as
+C           global elevation
+            IF (OutputTau0) THEN
+Casey 090302: Corrected the unit number from 10 to 90.
+               CALL writeDomainHeader(90,
+     &              TRIM(LOCALDIR)//'/'//'fort.tau0',
+     &              NP_G, NP, 'Tau0      ')
+            ENDIF
+           
+         endif
          IGEP=2
       ENDIF
+
+      ! jgf52.04.03: Create files for nodecode and noff output 
+      ! (wet/dry state of nodes and wet/dry state of elements)      
+      IF (ABS(NOUTGE).NE.0) then
+         if (outputNodeCode.eqv..true.) then
+            if (write_local_files.eqv..true.) then
+               call writeDomainHeader(101,trim(localdir)//'/'//
+     &            'nodecode.63',NP_G, NP, 'nodecode    ')
+            else
+               call writeDomainHeader(101,trim(globaldir)//'/'//
+     &            'nodecode.63',NP_G, NP, 'nodecode    ')
+            endif
+         endif
+         if (outputNOFF.eqv..true.) then
+            if (write_local_files.eqv..true.) then
+               call writeDomainHeader(102,trim(localdir)//'/'//
+     &            'noff.100',NE_G, NE, 'noff       ')
+            else
+               call writeDomainHeader(102,trim(globaldir)//'/'//
+     &            'noff.100',NE_G, NE, 'noff       ')
+            endif
+         endif
+      endif
 
       IF(ABS(NOUTGE).EQ.2) THEN
          OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
@@ -1034,10 +1114,15 @@ C...
 !kmd - changed for -4 option      IF((ABS(NOUTGV).EQ.1)) THEN
 !Casey 090828: Added the possibility of NOUTGV = +/- 4.
       IF((ABS(NOUTGV).EQ.1).OR.(ABS(NOUTGV).EQ.4)) THEN
-         CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
-     $    NP_G, NP, HEADER64)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
+     &        NP_G, NP, HEADER64)
+         else
+            CALL OPEN_GBL_FILE(64, TRIM(LOCALDIR)//'/'//'fort.64',
+     &        NP_G, NP, HEADER64)
+         endif
          IGVP=2
-         ENDIF
+      ENDIF
 
       IF(ABS(NOUTGV).EQ.2) THEN
          OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
@@ -1093,18 +1178,35 @@ C...
 !Casey 090302: Added the possibility of NOUTGW = +/- 4.
 !kmd - changed for -4 option      IF((ABS(NOUTGW).EQ.1)) THEN
       IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.4)) THEN
-         CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
-     $    NP_G, NP, HEADER73)
-         IGPP=2
-         CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
-     $     NP_G, NP, HEADER74)
-         IGWP=2
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
+     &         NP_G, NP, HEADER73)
+            IGPP=2
+            CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
+     $        NP_G, NP, HEADER74)
+            IGWP=2
 ! tcm v49.64.01 added for ice
-         IF(NCICE.NE.0) then
-            CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93',
-     $        NP_G, NP, HEADER93)
-            IGIP=2
-         ENDIF
+            IF(NCICE.NE.0) then
+               CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93',
+     $           NP_G, NP, HEADER93)
+               IGIP=2
+            ENDIF
+         else
+         
+            CALL OPEN_GBL_FILE(73, TRIM(LOCALDIR)//'/'//'fort.73',
+     &            NP_G, NP, HEADER73)
+            IGPP=2
+            CALL OPEN_GBL_FILE(74, TRIM(LOCALDIR)//'/'//'fort.74',
+     $        NP_G, NP, HEADER74)
+            IGWP=2
+! tcm v49.64.01 added for ice
+            IF(NCICE.NE.0) then
+               CALL OPEN_GBL_FILE(93, TRIM(LOCALDIR)//'/'//'fort.93',
+     $           NP_G, NP, HEADER93)
+               IGIP=2
+            ENDIF
+         
+         endif
       ENDIF
 
       IF(ABS(NOUTGW).EQ.2) THEN
@@ -1200,8 +1302,13 @@ C...
 Casey 090302: Added the output of radiation stress gradients.
          IGRadS=0
          IF((ABS(NOUTGW).EQ.1).OR.(ABS(NOUTGW).EQ.4)) THEN
-            CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
-     &          NP_G, NP, HEADER74)
+            if (write_local_files.eqv..false.) then
+               CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
+     &             NP_G, NP, HEADER74)
+            else
+               CALL OPEN_GBL_FILE(164, TRIM(LOCALDIR)//'/'//'rads.64',
+     &             NP_G, NP, HEADER74)
+            endif
             IGRadS=2
          ENDIF
          IF(ABS(NOUTGW).EQ.2) THEN
@@ -1322,8 +1429,13 @@ C...
       
       IF ((NDDT.NE.0).AND.
      &       ((ABS(NOUTGE).EQ.1).OR.(ABS(NOUTGE).EQ.4))) THEN
-         CALL OPEN_GBL_FILE(76, TRIM(GLOBALDIR)//'/'//'fort.76',
-     &    NP_G, NP, HEADER63)  !NO NEED TO CREATE HEADER76
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(76, TRIM(GLOBALDIR)//'/'//'fort.76',
+     &       NP_G, NP, HEADER63)  !NO NEED TO CREATE HEADER76
+         else
+            CALL OPEN_GBL_FILE(76, TRIM(LOCALDIR)//'/'//'fort.76',
+     &       NP_G, NP, HEADER63)  !NO NEED TO CREATE HEADER76 
+         endif 
          IGBP=2
       ENDIF
 

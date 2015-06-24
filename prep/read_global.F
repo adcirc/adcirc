@@ -437,6 +437,9 @@ C...tcm v51.20.03 Local variables for external station location files
       INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
       INTEGER :: IOS_STATIONS
 
+      integer :: ios_wetDry
+      namelist /wetDryControl/ outputNodeCode, outputNOFF
+
 c.....tcm v51.20.03 initialize external station location specifications
 C..... to false, meaning if locations are supplied they are in the fort.15 
 C..... file.
@@ -512,6 +515,12 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          FOUND_WC_NML = .TRUE.
       ENDIF
       REWIND(15)
+ 
+      READ(UNIT = 15, NML = wetDryControl,IOSTAT = ios_wetDry)
+      if ( ios_wetDry.ge.0) then
+         foundWetDryControlNameList = .true.
+      endif
+      rewind(15)  !Return to the top of the fort.15 file
 
       READ(15,80) RUNDES
 C

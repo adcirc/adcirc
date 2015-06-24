@@ -2,6 +2,36 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v52.06 - 06/23/2015 - jgf - Merged wetdryout branch (r1107:1115) to trunk
+C              including the changes described below as v52.04.xx.
+C  v52.04.03 - 06/09/2015 - jgf - Added parsing of command line options to
+C              adcpost; added mergeSubdomainFiles() subroutine to adcpost
+C              to process integer and elementally-based output; added 
+C              noff and nodecode as regular output types; created capability
+C              to specify the production of fulldomain or subdomain output
+C              files separately from fulldomain or subdomain hotstart files
+C              (to write only the output files to subdomains, use the 
+C              -u command line option); fixed references to localdir and
+C              globaldir during file initialization instead of just setting
+C              globaldir=localdir when WRITE_LOCAL_FILES is set.
+C  v52.04.02 - 05/21/2015 - jgf - Removed abs() from uses of IMAP_EL_LG;
+C              replaced resetting of NOFF_G to 1 (if it exceeds 1) with 
+C              a check for NOFF_G.gt.1 and an error message if it does; 
+C              redimensioned EL_SHARE in adcprep to NELG rather than MNEP;
+C              added explanatory comments to decomp.F; fixed the check for
+C              shared elements in decomp.F for domains with weirs so that
+C              it uses fulldomain element numbers instead of erroneously
+C              using subdomain element numbers and so that it writes the
+C              first mapping of an element in IMAP_EL_LG with a positive 
+C              index and subsequent mappings to that element with a negative
+C              index; fixed element indices in IMAP_EL_LG for domains
+C              without weirs to also follow this scheme for positive and
+C              negative values rather than erroneously writing all element
+C              numbers with positive values; added warning message in decomp.F 
+C              where the code checks to see if subdomain A has subdomain B 
+C              listed as a neighbor but not vice versa. 
+C  v52.04.01 - 05/21/2015 - jgf - Added code for writing out nodecode and noff
+C              (wet/dry state arrays) as regular output files. 
 C  v52.05 - 06/12/2015 - jgf - Removed error message emitted by
 C           adcprep and adcirc when NOLIFA=2 and NOLICAT=0 because it is 
 C           alarming and because it contradicts common practice.

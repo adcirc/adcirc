@@ -333,13 +333,14 @@ C-----------------------------------------------------------------------
       TYPE(OutputDataDescript_t) :: descript1
       TYPE(OutputDataDescript_t), OPTIONAL :: descript2
       TYPE(OutputDataDescript_t), OPTIONAL :: descript3
-      LOGICAL reterr
+      LOGICAL, intent(out) :: reterr
 C
       call setMessageSource("initNetCDFOutputFile")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
 C
+      reterr = .false.
       ! don't allocate or initialize anything if this output type is not
       ! using netcdf
       IF ((ABS(descript1 % specifier).ne.NETCDF3).and.
@@ -351,7 +352,6 @@ C
          RETURN
       ENDIF
 C
-      reterr = .false.
       SELECT CASE(descript1 % lun)
          CASE(41)
             CALL initStationFile(densityStations3D,
@@ -470,10 +470,11 @@ C-----------------------------------------------------------------------
 C
       type(stationData), intent(inout) :: sta
       type(OutputDataDescript_t), intent(inout) :: descript1
+      LOGICAL, intent(out) :: reterr
 C
       INTEGER i,j
       INTEGER iret  ! success or failure of the netcdf call
-      LOGICAL reterr
+
 C
 !     date_string variables for time attribute
       character date_string*40
@@ -1190,7 +1191,7 @@ C
       type(OutputDataDescript_t), intent(inout) :: descript1
       type(OutputDataDescript_t), intent(inout), optional :: descript2
       type(OutputDataDescript_t), intent(inout), optional :: descript3
-      LOGICAL :: reterr
+      LOGICAL, intent(out) :: reterr
 C
       INTEGER n    ! node counter
       INTEGER iret ! success or failure of netcdf call
@@ -2906,7 +2907,6 @@ C-----------------------------------------------------------------------
       LOGICAL, intent(out) :: ret_error
 C
       INTEGER iret
-      CHARACTER(len=10) :: fext
 C
       call setMessageSource("createNetCDFOutputFile")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -2919,11 +2919,12 @@ C
       ! create file name 
       select case(descript%lun)
       case(67)
-         myFile%filename = 'fort.67.nc'
+         myFile%filename = trim(globaldir)//'/fort.67.nc'
       case(68)
-         myFile%filename = 'fort.68.nc'
+         myFile%filename = trim(globaldir)//'/fort.68.nc'
       case default
-         myFile%filename = trim(descript%file_name) // '.nc'
+         myFile%filename = trim(globaldir)//'/'//
+     &                     trim(descript%file_name) // '.nc'
       end select
 C
 C     jgf49.17.02: Simplified the criteria for creating a new netCDF
@@ -2943,11 +2944,11 @@ C     upon to create them.
             ! access to the full domain mesh and control files, whose
             ! data must also be stored in the netcdf output file
             IF (myFile%fileFound.eqv..false.) THEN
-               write(screenUnit,'(3A)')
-     &           "ERROR: The NetCDF output file '",TRIM(myFile%FILENAME),
-     &     "' was not found. It should have been created by adcprep."
-               write(screenUnit,'(A)') 
-     &          "ERROR: ADCIRC execution terminated."
+               write(scratchMessage,'(a,a,a)')
+     &            "The NetCDF output file '",TRIM(myFile%FILENAME),
+     &            "' was not found. "//
+     &            "It should have been created by adcprep."
+               call allMessage(ERROR,scratchMessage)
                ret_error = .true.
             ENDIF
 #else
@@ -2960,7 +2961,8 @@ C     upon to create them.
          ! these lines are executed to create netcdf hotstart files
 #ifdef CMPI
          IF (myFile%fileFound.eqv..true.) THEN
-            call screenMessage(DEBUG,"Hotstart file was created by adcprep.")
+            call screenMessage(DEBUG,
+     &      "Hotstart file was created by adcprep.")
             myFile%createFile = .false.
          ELSE
              call screenMessage(ERROR,"Hotstart file is missing.")
@@ -5672,8 +5674,9 @@ C     Point to the hotstart file we want to work on
 C
       ! create file name
       write(fext,'(i0)') lun
-      hs%myFile%filename = trim(globaldir) // 
-     &             '/' // 'fort' // '.' // trim(fext) // '.nc'
+      hs%myFile%filename = trim(globaldir)//'/fort.'//trim(fext)//'.nc'
+      call logMessage(INFO,'Opening hotstart file "'
+     &    //trim(hs%myFile%filename)//'" for writing.')
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -5903,7 +5906,6 @@ C
       INTEGER hakount(2), hastart(2) ! for lhs
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
-      CHARACTER(len=10) :: fext
 C
       call setMessageSource("writeNetCDFHotstartHarmonic")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -5916,11 +5918,6 @@ C     Point to the hotstart file we want to work on
       ELSE
          hs => hs68
       ENDIF
-C
-      ! create file name
-      !write(fext,'(i0)') lun
-      !hs%myFile%filename = trim(globaldir) // 
-      !&            '/' // 'fort' // '.' // trim(fext) // '.nc'
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -6189,7 +6186,6 @@ C
       INTEGER kount(2), start(2) ! for nodally based data
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
-      CHARACTER(len=10) :: fext
 C
       call setMessageSource("writeNetCDFHotstartHarmonicMeansVariances")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -6202,11 +6198,6 @@ C     Point to the hotstart file we want to work on
       ELSE
          hs => hs68
       ENDIF
-C
-      ! create file name
-      !write(fext,'(i0)') lun
-      !hs%myFile%filename = trim(globaldir) // 
-      !&            '/' // 'fort' // '.' // trim(fext) // '.nc'      
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -6347,7 +6338,6 @@ C
       INTEGER kount(2), start(2) ! for nodally based data
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
-      CHARACTER(len=10) :: fext
 C
       call setMessageSource("writeNetCDFHotstart3D")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -6360,11 +6350,6 @@ C     Point to the hotstart file we want to work on
       ELSE
          hs => hs68
       ENDIF
-C
-      ! create file name
-      !write(fext,'(i0)') lun
-      !hs%myFile%filename = trim(globaldir) // 
-      !&            '/' // 'fort' // '.' // trim(fext) // '.nc'
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -6530,7 +6515,6 @@ C
       INTEGER kount(3), start(3) ! for nodally based data
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
-      CHARACTER(len=10) :: fext
 C
       call setMessageSource("writeNetCDFHotstart3DVar")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -6543,11 +6527,6 @@ C     Point to the hotstart file we want to work on
       ELSE
          hs => hs68
       ENDIF
-C
-      ! create file name
-      !write(fext,'(i0)') lun
-      !hs%myFile%filename = trim(globaldir) // 
-      !&            '/' // 'fort' // '.' // trim(fext) // '.nc'
 C
       iret = nf90_open(hs%myFile%FILENAME, NF_WRITE, hs%ncid)
       CALL check_err(iret)
@@ -6745,8 +6724,9 @@ C
       hs%myFile%fileFound = .false.
       ! create file name
       write(fext,'(i0)') lun
-      hs%myFile%filename = trim(globaldir) // 
-     &            '/' // 'fort' // '.' // trim(fext) // '.nc'
+      hs%myFile%filename = trim(globaldir)//'/fort.'//trim(fext)//'.nc'
+      call logMessage(INFO,'Opening hot start file "'
+     &               //trim(hs%myFile%filename)//'" for reading.')
 C
 C     Open fulldomain file
       INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
@@ -6863,7 +6843,7 @@ C
          forall (sd_element_number=1:ne)
             ! get the corresponding fulldomain indexes
             fullDomainElementList(sd_element_number)
-     &         = ABS(imap_el_lg(sd_element_number))
+     &         = imap_el_lg(sd_element_number)
          end forall
          !
          ! get fulldomain data and map the data to this subdomain
@@ -7201,7 +7181,6 @@ C
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
       type(OutputDataDescript_t) :: descript
-      CHARACTER(len=10) :: fext
 C
       call setMessageSource("readNetCDFHotstartHarmonic")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -7217,11 +7196,6 @@ C     Point to the hotstart file we want to work on
 C
       hs%myMesh => adcircMesh
       hs%myFile%fileFound = .false.
-
-      ! create file name
-      !write(fext,'(i0)') lun
-      !hs%myFile%filename = trim(globaldir) // 
-      !&            '/' // 'fort' // '.' // trim(fext) // '.nc'
 C
 C     Open fulldomain file
       INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
@@ -7522,7 +7496,6 @@ C
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
       type(OutputDataDescript_t) :: descript
-      CHARACTER(len=10) :: fext
 C
       call setMessageSource("readNetCDFHotstartHarmonicMeansVariances")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -7538,10 +7511,6 @@ C     Point to the hotstart file we want to work on
 C
       hs%myMesh => adcircMesh
       hs%myFile%fileFound = .false.
-      ! create file name
-      ! write(fext,'(i0)') lun
-      !hs%myFile%filename = trim(globaldir) // 
-      !&            '/' // 'fort' // '.' // trim(fext) // '.nc'
 C
 C     Open fulldomain file
       INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)
@@ -7669,7 +7638,6 @@ C
       REAL(SZ), ALLOCATABLE :: ip(:,:) ! imag part of Q (subdomain), i.e. v-vel
       INTEGER iret ! success or failure of the netcdf call
       INTEGER tempid
-      CHARACTER(len=10) :: fext
 C
       call setMessageSource("readNetCDFHotstart3D")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -7685,10 +7653,6 @@ C     Point to the hotstart file we want to work on
 C
       hs%myMesh => adcircMesh
       hs%myFile%fileFound = .false.
-      ! create file name
-      ! write(fext,'(i0)') lun
-      ! hs%myFile%filename = trim(globaldir) // 
-      !&            '/' // 'fort' // '.' // trim(fext) // '.nc'
 C
 C     Open fulldomain file
       INQUIRE(FILE=hs%myFile%FILENAME,EXIST=hs%myFile%fileFound)

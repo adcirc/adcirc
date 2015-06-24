@@ -30,6 +30,7 @@ C-----------------------------------------------------------------------
      &    I3DSD,I3DSV,I3DST,I3DGD,I3DGV,I3DGT, NSTA3DD_G, NSTA3DV_G,
      &    NSTA3DT_G
       USE SUBDOMAIN, ONLY : subdomainOn
+      USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
       USE HARM
       USE WIND
       USE ITPACKV
@@ -64,12 +65,12 @@ C
 #endif
       NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir      
       NAMELIST /subdomainModeling/ subdomainOn
+      NAMELIST /wetDryControl/ outputNodeCode, outputNOFF
       
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
       INTEGER :: commentStart            ! location of fort.15 comment start
       INTEGER :: ios = 0                 ! i/o status of read operation
-
 
       !tcm v51.20.04 Additions for External Station Location File
       INTEGER :: IOS_STATIONS = 0
@@ -295,6 +296,21 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       WRITE(scratchMessage,*) "WaveWindMultiplier=",WaveWindMultiplier
       CALL logMessage(ECHO,TRIM(scratchMessage))
       REWIND(15)
+
+      ! jgf52.05: Add a namelist for the user to control
+      ! output of NODECODE and NOFF.
+      READ(UNIT=15,NML=wetDryControl,IOSTAT=IOS)
+      IF (IOS.gt.0) THEN
+         call logMessage(INFO,
+     &      "The wetDryControl namelist was not found.")
+      ELSE
+         write(scratchMessage,'(a,l)') "outputNodeCode=",outputNodeCode
+         call logMessage(ECHO,trim(scratchMessage))
+         write(scratchMessage,'(a,l)') "outputNOFF=",outputNOFF
+         call logMessage(ECHO,trim(scratchMessage))
+      ENDIF
+      REWIND(15)
+
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
 C...  IDENTIFICATION
@@ -933,10 +949,10 @@ C         WRITE(16,9972)
 C         WRITE(16,*) 'NOLICAT =',NOLICAT
 C         WRITE(16,9726)
 C         WRITE(16,9974)
-C 9726    FORMAT(/,1X,'Your selection of NOLICAT (a UNIT 15 input ',
-C     &        'parameter) is inconsistent with your ',
-C     &        /,1X,'selection of NOLIFA and may lead to mass ',
-C     &        'balance problems')
+ 9726    FORMAT(/,1X,'Your selection of NOLICAT (a UNIT 15 input ',
+     &        'parameter) is inconsistent with your ',
+     &        /,1X,'selection of NOLIFA and may lead to mass ',
+     &        'balance problems')
 C         IF(NFOVER.EQ.1) THEN
 C            if (myproc == 0) WRITE(ScreenUnit,9974)
 C         ELSE
@@ -958,7 +974,7 @@ C      ENDIF
          ENDIF
          WRITE(16,9972)
          WRITE(16,*) 'NOLICAT =',NOLICAT
-         WRITE(16,9726)
+         WRITE(16,9727)
          WRITE(16,9974)
          IF(NFOVER.EQ.1) THEN
             if (myproc == 0) WRITE(ScreenUnit,9974)
@@ -972,7 +988,7 @@ C      ENDIF
          IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) THEN
             WRITE(ScreenUnit,9972)
             WRITE(ScreenUnit,*) 'NOLICAT =',NOLICAT
-            WRITE(ScreenUnit,9727)
+            WRITE(ScreenUnit,9726)
             IF(NFOVER.EQ.1) THEN
                WRITE(ScreenUnit,9974)
             ELSE
@@ -2906,10 +2922,12 @@ C....CHECK INPUT PARAMETER NOUTE
             CALL logMessage(INFO,'UNIT 61 FORMAT WILL BE BINARY.')
          CASE(3)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &       'UNIT 61 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
          CASE(5)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &  'UNIT 61 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
          CASE(4,6:)
@@ -3046,10 +3064,12 @@ C....CHECK INPUT PARAMETER NOUTV
             CALL logMessage(INFO,'UNIT 62 FORMAT WILL BE BINARY.')
          CASE(3)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &       'UNIT 62 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
          CASE(5)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &  'UNIT 62 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
          CASE(4,6:)
@@ -3185,10 +3205,12 @@ C...     CHECK INPUT PARAMETER NOUTC
                CALL logMessage(INFO,'UNIT 81 FORMAT WILL BE BINARY.')
             CASE(3)
                useNetCDF = .true.
+               useNetCDFOutput = .true.
                CALL logMessage(INFO,
      &       'UNIT 81 WILL BE NETCDF CLASSIC MODEL / NETCDF3 FORMAT.')
             CASE(5)
                useNetCDF = .true.
+               useNetCDFOutput = .true.
                CALL logMessage(INFO,
      &  'UNIT 81 WILL BE NETCDF CLASSIC MODEL / NETCDF4 (HDF5) FORMAT.')
             CASE(4,6:)
@@ -3332,11 +3354,13 @@ C...     CHECK INPUT PARAMETER NOUTM
      &          'UNIT 71 AND 72 FORMATS WILL BE BINARY.')
             CASE(3)
                useNetCDF = .true.
+               useNetCDFOutput = .true.
                CALL logMessage(INFO,
      &          'UNIT 71 AND 72 FORMATS WILL BE NETCDF CLASSIC MODEL'
      &           //' / NETCDF3 FORMAT.')
             CASE(5)
                useNetCDF = .true.
+               useNetCDFOutput = .true.
                CALL logMessage(INFO,
      &         'UNIT 71 AND 72 FORMATS WILL BE NETCDF CLASSIC MODEL'
      &         //' / NETCDF4 (HDF5) FORMAT.')
@@ -3474,6 +3498,7 @@ C...  CHECK INPUT PARAMETER NOUTGE
             CALL logMessage(INFO,'UNIT 63 FORMAT WILL BE BINARY.')
          CASE(3)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &          'UNIT 63 FORMAT WILL BE NETCDF CLASSIC MODEL'
      &           //' / NETCDF3 FORMAT.')
@@ -3482,6 +3507,7 @@ C...  CHECK INPUT PARAMETER NOUTGE
      &       'UNIT 63 FORMAT WILL BE COMPACT ASCII.')
          CASE(5)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &         'UNIT 63 FORMAT WILL BE NETCDF CLASSIC MODEL'
      &         //' / NETCDF4 (HDF5) FORMAT.')
@@ -3558,6 +3584,7 @@ C...  CHECK INPUT PARAMETER NOUTGV
             CALL logMessage(INFO,'UNIT 64 FORMAT WILL BE BINARY.')
          CASE(3)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &          'UNIT 64 FORMAT WILL BE NETCDF CLASSIC MODEL'
      &           //' / NETCDF3 FORMAT.')
@@ -3566,6 +3593,7 @@ C...  CHECK INPUT PARAMETER NOUTGV
      &       'UNIT 64 FORMAT WILL BE COMPACT ASCII.')
          CASE(5)
             useNetCDF = .true.
+            useNetCDFOutput = .true.
             CALL logMessage(INFO,
      &         'UNIT 64 FORMAT WILL BE NETCDF CLASSIC MODEL'
      &         //' / NETCDF4 (HDF5) FORMAT.')
@@ -3721,6 +3749,7 @@ C...  CHECK INPUT PARAMETER NOUTGW
      &          'UNIT 73 AND 74 FORMATS WILL BE BINARY.')
             CASE(3)
                useNetCDF = .true.
+               useNetCDFOutput = .true.
                CALL logMessage(INFO,
      &          'UNIT 73 AND 74 FORMATS WILL BE NETCDF CLASSIC MODEL'
      &           //' / NETCDF3 FORMAT.')
@@ -3729,6 +3758,7 @@ C...  CHECK INPUT PARAMETER NOUTGW
      &          'UNIT 73 AND 74 FORMATS WILL BE COMPACT ASCII.')
             CASE(5)
                useNetCDF = .true.
+               useNetCDFOutput = .true.
                CALL logMessage(INFO,
      &         'UNIT 73 AND 74 FORMATS WILL BE NETCDF CLASSIC MODEL'
      &         //' / NETCDF4 (HDF5) FORMAT.')
@@ -4127,6 +4157,24 @@ C
      &     //" libraries in order to enable NetCDF input or output.")
          CALL ADCIRC_Terminate()
       ENDIF
+      
+      if ((useNetCDFOutput.eqv..true.).and.
+     &    (WRITE_LOCAL_FILES.eqv..true.)) then
+         call allMessage(ERROR,'Some of the output file format '
+     &      //'specifications in the fort.15 were for NetCDF format. '
+     &      //'However, the command line option -L was also used to '
+     &      //'specify local (subdomain) output files. The problem is '
+     &      //'that ADCIRC cannot produce subdomain output files in '
+     &      //'NetCDF format. '
+     &      //'Please change output file formats to ASCII in the ' 
+     &      //'fort.15 so the output files can be written '
+     &      //'as subdomain output files. ' 
+     &      //'Alternatively, remove the -L command line '
+     &      //'option so that fulldomain output files are produced '
+     &      //'in NetCDF format.')
+         call adcirc_terminate()
+      endif
+         
 
       IF (useNetCDF.eqv..true.) THEN
          CALL logMessage(INFO,"Now reading metadata from fort.15 file"

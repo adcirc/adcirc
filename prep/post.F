@@ -5252,3 +5252,268 @@ C---------------------------------------------------------------------------
 C     End of subroutine post47
 C---------------------------------------------------------------------------
 
+      !------------------------------------------------------------------
+      !  S U B R O U T I N E   M E R G E   S U B D O M A I N   F I L E S
+      !------------------------------------------------------------------
+      ! jgf52.04.03: Merge subdomain output files back into a fulldomain
+      ! output file. Developed to handle nodecode and noff and to 
+      ! analyze whether ghost and resident values really are the 
+      ! same in all cases.
+      !------------------------------------------------------------------
+      subroutine mergeSubdomainFiles(filename)
+      use post_global
+      implicit none
+      character(len=2048), intent(in) :: filename ! e.g. "fort.63" 
+      integer, parameter :: NODE = 1         ! nodally based data
+      integer, parameter :: ELEMENT = 2      ! elementally based data
+      integer, parameter :: INTEGERTYPE = 1  ! for integer data
+      integer, parameter :: REALTYPE = 2     ! for real(8) data
+      integer :: dataType     ! set to INTEGERTYPE or REALTYPE
+      integer :: dataLocation ! set to NODE or ELEMENT
+  
+      real(8) :: dataVal(3)  ! real values read from subdomain
+      integer :: iRawValue  ! integer value read from subdomain
+      integer :: ite        ! time step associated with dataset
+      real(8) :: timeoute    ! time associated with dataset
+      real(8) :: timeInc     ! time increment at which datasets were written 
+      integer :: tsInc      ! time step increment at which datasets were written 
+      integer :: numFullDomainValues
+      integer :: numSubDomainValues
+      integer :: numSets  ! number of time dependent datasets
+      integer :: numVals  ! number of values in the subdomain file
+      integer :: irtype   ! physical dimensionality of data (1, 2, or 3)
+      real(8), allocatable :: fullDomainReal(:,:) ! dim (irtype,fdVals)
+      integer, allocatable :: fullDomainInteger(:) ! dim (fdvals)
+      integer :: fdLocation  ! fulldomain node or element number
+      logical, allocatable :: setYet(:) ! .true. if the fulldomain value has been set
+      logical, allocatable :: ambiguous(:) ! .true. if resident val != ghost val
+      logical :: initialized ! .true. if data arrays have been allocated
+      logical :: found       ! .true. if the subdomain file was found
+      integer, allocatable  ::  loc2(:)
+      character(len=2048), allocatable  ::  locname(:)
+      character(len=2048) ::  outputFmt ! format string
+      character(len=85) :: inline ! file metadata header
+     
+      integer :: i, j, k, n, iproc ! loop counters
+      integer :: idum              ! toss the subdomain node number
+      !
+      ! allocate memory for arrays dimensioned by number of subdomains 
+      allocate (loc2(mnproc))
+      allocate (locname(mnproc))    
+      ! set default datatype
+      dataType = REALTYPE
+      ! noff is the only data type that is elementally based
+      if ((trim(filename).eq.'noff.100').or.
+     &    (trim(filename).eq.'nodecode.63')) then
+         dataType = INTEGERTYPE
+      endif
+      initialized = .false.
+      ! 
+      ! Loop over subdomains; find and open subdomain output files.
+      do iproc = 1,nproc
+         ! find and open subdomain output files.
+         locname(iproc) = 'PE0000/'//trim(filename)
+         write(locname(iproc)(3:6),'(i4.4)') (iproc-1)
+         loc2(iproc) = 105 + (iproc-1)
+         inquire(file=locname(iproc),exist=found)
+         if (found) then
+           open(loc2(iproc),file=locname(iproc))
+         else
+           write(*,'(a)') 'ERROR: Could not find "'//
+     &        trim(locname(iproc))//
+     &        '". Subdomain files of this type will not be merged.'
+           return
+         endif
+      end do      
+      ! 
+      ! Loop over subdomains; read off header lines and initialize 
+      ! arrays based on the characteristics of the file
+      do iproc = 1,nproc
+         ! read metadata header
+         read(loc2(iproc),'(a85)')  inline
+         ! read file characteristics header
+         read(loc2(iproc),*)  numSets, numVals, timeInc, tsInc, irtype
+         !
+         ! Determine if this is a nodal or elemental quantity and 
+         ! allocate fulldomain arrays to hold the data
+         if ( (numVals.ne.nnodp(iproc)) .and. 
+     &           (numVals.ne.nelp(iproc)) ) then
+            write(*,'(a,i0,a,i0,a,i0,a)') 
+     &      'ERROR: The number of values per data set in the file "'//
+     &       trim(locname(iproc))//
+     &      '" does not match the number of nodes or elements '//
+     &      'in the subdomain; numVals=',numVals,
+     &      ' number of nodes=',nnodp(iproc),
+     &      ' number of elements=',nelp(iproc),'.'
+            stop
+         endif
+         ! allocate data for fulldomain arrays
+         if (initialized.eqv..false.) then
+            if (numVals.eq.nnodp(iproc)) then
+               dataLocation = NODE
+               numFullDomainValues = nnodg
+            endif
+            if (numVals.eq.nelp(iproc)) then
+               dataLocation = ELEMENT
+               numFullDomainValues = nelg
+            endif         
+             if (dataType.eq.REALTYPE) then
+               allocate(fulldomainReal(irtype,numFullDomainValues))
+            endif
+            if (dataType.eq.INTEGERTYPE) then
+               allocate(fulldomainInteger(numFullDomainValues))
+            endif
+            allocate(setYet(numFullDomainValues))
+            allocate(ambiguous(numFullDomainValues))
+            setYet(:) = .false.
+            ambiguous(:) = .false.
+            initialized = .true.
+         endif
+      enddo
+      !
+      ! open fulldomain file and write header
+      open(unit=100,file=trim(filename))
+      write(100,'(a85)') inline
+      write(100,3645) numSets,numFullDomainValues,timeInc,tsInc,irtype
+3645  format(1x,i0,1x,i0,1x,e15.7,1x,i0,1x,i0)
+C
+C     jgf46.00 The loop over data sets is an infinite loop because the
+C     number of data sets at the top of the file will be wrong if the
+C     run was hot started.
+C
+      do ! loop infinitely over time dependent data sets
+         !
+         ! loop over subdomains
+         do iproc=1,nproc
+            ! read time and timestep
+            read(loc2(iproc),fmt=2120,end=9999) timeoute,ite
+            ! determine the number of lines in the dataset
+            select case(dataLocation)          
+            case(NODE) 
+               numSubdomainValues = nnodp(iproc)
+            case(ELEMENT)
+               numSubdomainValues = nelp(iproc)
+            case default
+               write(*,'(a)') 'ERROR: Unrecognized data location.'
+               stop
+            end select
+            !
+            ! read all the datavalues in this subdomain, mapping them
+            ! to their fulldomain positions 
+            do k = 1,numSubdomainValues
+               !
+               ! Read the data according to its type
+               if (dataType.eq.REALTYPE) then
+                  read(loc2(iproc),fmt=*,end=9999) idum,
+     &                 (dataVal(j),j=1,irtype)
+               endif
+               if (dataType.eq.INTEGERTYPE) then
+                  read(loc2(iproc),fmt=*,end=9999) idum, iRawValue
+               endif
+               !
+               ! Map the data according to its location.
+               if (dataLocation.eq.NODE) then
+                  ! look up fulldomain node number
+                  fdLocation = imap_nod_lg(k,iproc)
+               endif
+               if (dataLocation.eq.ELEMENT) then
+                  ! look up fulldomain element number, taking absolute
+                  ! value so we can also process "ghost" elements
+                  fdLocation = abs(imap_el_lg(k,iproc))
+               endif
+               !
+               ! Check/set the data (resident and ghost values should match)
+               if (setYet(fdLocation).eqv..true.) then
+                  ! check to ensure that the value we've read from the 
+                  ! subdomain for this fulldomain location matches the 
+                  ! value we've already written to that fulldomain location
+                  if (dataType.eq.REALTYPE) then
+                     do j=1,irtype
+                        ! this .ne. is subject to round off error
+                        if (dataVal(j).ne.fullDomainReal(j,fdLocation)) then
+                           write(*,*) 'ERROR: Differing values for '//
+     &     'full domain location ',fdLocation,'. Subdomain ',iproc,
+     &     ' has the value(s) ',(dataVal(n),n=1,irtype),' whereas '//
+     &     'the value(s) ',(fullDomainReal(n,fdLocation),n=1,irtype),
+     &     ' were already mapped.'
+                           ambiguous(fdLocation) = .true.
+                           exit ! break out of the irtype loop
+                        endif 
+                     end do
+                  endif
+                  if (dataType.eq.INTEGERTYPE) then
+                     if ( iRawValue.ne.fullDomainInteger(fdLocation) ) then
+                        outputFmt = '("ERROR: fd ",i0," Subdomain ",i0,"'//
+     &                   ' sd value ",i0," vs  fd val ",i0).'
+                        write(*,fmt=outputFmt) fdLocation, iproc, 
+     &                   iRawValue, fullDomainInteger(fdLocation)
+                        ambiguous(fdLocation) = .true.
+                     endif
+                  endif
+               endif
+               if (dataType.eq.REALTYPE) then
+                  fullDomainReal(:,fdLocation) = dataVal(:)
+               endif
+               if (dataType.eq.INTEGERTYPE) then
+                  fullDomainInteger(fdLocation) = iRawValue
+               endif
+               setYet(fdLocation) = .true.
+            enddo ! next subdomain value
+
+         enddo ! next subdomain
+         ! all the subdomain values for this dataset have been mapped 
+         ! 
+         ! check to see if there were any fulldomain values that did not
+         ! get set???
+         do i=1, numFullDomainValues
+            if (setYet(i).eqv..false.) then
+               write(*,'(a,i0,a)') 'ERROR: Fulldomain location ',i,
+     &            ' was never mapped.'
+            endif
+         end do
+         !
+         ! where the value at the resident location did not match the 
+         ! value at the ghost location, set the ambiguous flag
+         do i = 1,numFullDomainValues
+            if (ambiguous(i).eqv..true.) then
+               if (dataType.eq.REALTYPE) then
+                  fullDomainReal(1:3,i) = -16384.d0
+               endif
+               if (dataType.eq.INTEGERTYPE) then
+                  fullDomainInteger(i) = -1
+               endif
+            endif
+         end do 
+         !
+         ! write this time dependent dataset header into the full domain file 
+         write(100,2120) timeoute,ite
+         ! write the mapped values for all subdomains into the fulldomain file
+         ! for this dataset
+         do i = 1,numFullDomainValues
+            if (dataType.eq.REALTYPE) then
+               write(100,'(2x,i8,3(2x,e15.8))') 
+     &             i,(fullDomainReal(j,i),j=1,irtype)
+            endif
+            if (dataType.eq.INTEGERTYPE) then
+               write(100,'(2x,i8,2x,i0)') i, fullDomainInteger(i)
+            endif
+         enddo 
+         !              
+         ! clear flags for the next dataset
+         setYet(:) = .false. 
+         ambiguous(:) = .false.
+         fullDomainInteger(:) = -99  
+      enddo ! next time dependent dataset
+
+9999  close(100) ! jump to here when we run out of time dependent data
+      do iproc = 1,nproc
+         close(loc2(iproc))
+      enddo
+C
+ 2120 format(2x,e20.10,5x,i10)
+ 2453 format(2x,i8,3(2x,e15.8))
+c
+      return
+      !------------------------------------------------------------------
+      end subroutine mergeSubdomainFiles
+      !------------------------------------------------------------------

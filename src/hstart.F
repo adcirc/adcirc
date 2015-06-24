@@ -2560,8 +2560,13 @@ C...
         CLOSE(61)                    ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
       IF(NOUTE.EQ.-1) THEN
-        CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
-     $    NSTAE_G, NSTAE, HEADER61)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61',
+     $        NSTAE_G, NSTAE, HEADER61)
+         else
+            CALL OPEN_GBL_FILE(61, TRIM(LOCALDIR)//'/'//'fort.61',
+     $        NSTAE_G, NSTAE, HEADER61)
+         endif
         IESTP=2
       ENDIF
 
@@ -2633,8 +2638,13 @@ C...
         CLOSE(62)                    ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
       IF(NOUTV.EQ.-1) THEN
-        CALL OPEN_GBL_FILE(62, TRIM(GLOBALDIR)//'/'//'fort.62',
-     $    NSTAV_G, NSTAV, HEADER62)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(62, TRIM(GLOBALDIR)//'/'//'fort.62',
+     $         NSTAV_G, NSTAV, HEADER62)
+         else
+            CALL OPEN_GBL_FILE(62, TRIM(LOCALDIR)//'/'//'fort.62',
+     $         NSTAV_G, NSTAV, HEADER62)
+         endif
         IVSTP=2
       ENDIF
       IF(NOUTV.EQ.2) THEN
@@ -2704,8 +2714,13 @@ C...
         CLOSE(81)                    ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
       IF(NOUTC.EQ.-1) THEN
-        CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81',
-     $    NSTAC_G, NSTAC, HEADER81)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81',
+     $       NSTAC_G, NSTAC, HEADER81)
+         else 
+            CALL OPEN_GBL_FILE(81, TRIM(LOCALDIR)//'/'//'fort.81',
+     $       NSTAC_G, NSTAC, HEADER81)
+         endif
         ICSTP=2
         CLOSE(81)
       ENDIF
@@ -2843,18 +2858,36 @@ C
         ENDIF
       ENDIF
       IF(NOUTM.EQ.-1) THEN
-        CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71',
-     $    NSTAM_G, NSTAM, HEADER71)
-        IPSTP=2
-        CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72',
-     $    NSTAM_G, NSTAM, HEADER72)
-        IWSTP=2
-!       v49.64.01 tcm added ice station support
-        IF(NCICE.NE.0) THEN
-           CALL OPEN_GBL_FILE(91, TRIM(GLOBALDIR)//'/'//'fort.91',
-     $       NSTAM_G, NSTAM, HEADER91)
-           IICESTP=2
-        ENDIF
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71',
+     $         NSTAM_G, NSTAM, HEADER71)
+            IPSTP=2
+            CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72',
+     $         NSTAM_G, NSTAM, HEADER72)
+            IWSTP=2
+!           v49.64.01 tcm added ice station support
+            IF(NCICE.NE.0) THEN
+               CALL OPEN_GBL_FILE(91, TRIM(GLOBALDIR)//'/'//'fort.91',
+     $            NSTAM_G, NSTAM, HEADER91)
+               IICESTP=2
+            ENDIF
+
+         else
+         
+            CALL OPEN_GBL_FILE(71, TRIM(LOCALDIR)//'/'//'fort.71',
+     $         NSTAM_G, NSTAM, HEADER71)
+            IPSTP=2
+            CALL OPEN_GBL_FILE(72, TRIM(LOCALDIR)//'/'//'fort.72',
+     $         NSTAM_G, NSTAM, HEADER72)
+            IWSTP=2
+!           v49.64.01 tcm added ice station support
+            IF(NCICE.NE.0) THEN
+               CALL OPEN_GBL_FILE(91, TRIM(LOCALDIR)//'/'//'fort.91',
+     $            NSTAM_G, NSTAM, HEADER91)
+               IICESTP=2
+            ENDIF
+         
+         endif
       ENDIF
       IF(NOUTM.EQ.2) THEN
         OPEN(71,FILE=TRIM(LOCALDIR)//'/'//'fort.71',
@@ -2938,8 +2971,13 @@ C...
         CLOSE(75)                    ! DO THIS TO FLUSH THE WRITE BUFFER
       ENDIF
       IF ((NDDT.NE.0).AND.(NOUTE.EQ.-1)) THEN
-        CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75',
-     $    NSTAE_G, NSTAE, HEADER61)
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75',
+     $         NSTAE_G, NSTAE, HEADER61)
+         else
+            CALL OPEN_GBL_FILE(75, TRIM(LOCALDIR)//'/'//'fort.75',
+     $         NSTAE_G, NSTAE, HEADER61)         
+         endif 
         IESTP=2
       ENDIF
 
@@ -3025,34 +3063,53 @@ C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
         ENDIF
 
 Casey 090310: Added the possibility for NOUTGE = -4.
-        IF((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4)) THEN
-           CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
-     $         NP_G, NP, HEADER63)
-C
-C        jgf47.06 Tau0 output is produced on the same schedule as
-C        global elevation
-           IF (OUTPUTTAU0) THEN
+      IF((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4)) THEN
+         if (write_local_files.eqv..false.) then
+            CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
+     $            NP_G, NP, HEADER63)
+C             jgf47.06 Tau0 output is produced on the same schedule as
+C              global elevation
+            IF (OUTPUTTAU0) THEN
 Casey 090310: Corrected the unit number from 10 to 90.
                CALL writeDomainHeader(90,
-     &              TRIM(GLOBALDIR)//'/'//'fort.tau0',
-     $               NP_G, NP, 'Tau0      ')
-           ENDIF
-
+     &                 TRIM(GLOBALDIR)//'/'//'fort.tau0',
+     $                  NP_G, NP, 'Tau0      ')
+            ENDIF
 C kmd48.33bc - information for writing out the sponge layer
-           IF(OUTPUTSPONGE) THEN
-              CALL writeDomainHeader(92,
-     &             TRIM(GLOBALDIR)//'/'//'fort.92',
-     $             NP_G, NP, 'sponge      ')
-           END IF
+            IF(OUTPUTSPONGE) THEN
+               CALL writeDomainHeader(92,
+     &                TRIM(GLOBALDIR)//'/'//'fort.92',
+     $                NP_G, NP, 'sponge      ')
+            END IF
+          
+         else
+          
+            CALL OPEN_GBL_FILE(63, TRIM(LOCALDIR)//'/'//'fort.63',
+     $            NP_G, NP, HEADER63)
+C             jgf47.06 Tau0 output is produced on the same schedule as
+C              global elevation
+            IF (OUTPUTTAU0) THEN
+Casey 090310: Corrected the unit number from 10 to 90.
+                  CALL writeDomainHeader(90,
+     &                 TRIM(LOCALDIR)//'/'//'fort.tau0',
+     $                  NP_G, NP, 'Tau0      ')
+            ENDIF
+C kmd48.33bc - information for writing out the sponge layer
+            IF(OUTPUTSPONGE) THEN
+               CALL writeDomainHeader(92,
+     &                TRIM(LOCALDIR)//'/'//'fort.92',
+     $                NP_G, NP, 'sponge      ')
+            END IF
 
+         endif
            IGEP=2
-        ENDIF
-        IF(NOUTGE.EQ.2) THEN
+      ENDIF
+      IF(NOUTGE.EQ.2) THEN
           OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
      &          ACCESS='DIRECT',RECL=NBYTE)
 c         WRITE(63,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
           CLOSE(63)                         ! DO THIS TO FLUSH THE WRITE BUFFER
-        ENDIF
+      ENDIF
 
 C...
 C....GO TO THE PROPER PLACE IN THE GLOBAL VELOCITY OUTPUT FILE
@@ -3119,11 +3176,16 @@ C  kmd48.33bc - change the NDSETSV for the change in the DTDP
           IGVP=IGVP+5
           CLOSE(64)                    ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
-        IF((NOUTGV.EQ.-1).OR.(NOUTGV.EQ.-4)) THEN
-          CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
-     $      NP_G, NP, HEADER64)
-          IGVP=2
-        ENDIF
+      IF((NOUTGV.EQ.-1).OR.(NOUTGV.EQ.-4)) THEN
+         if (write_local_files.eqv..false.) then 
+            CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64',
+     $         NP_G, NP, HEADER64)
+         else
+            CALL OPEN_GBL_FILE(64, TRIM(LOCALDIR)//'/'//'fort.64',
+     $         NP_G, NP, HEADER64)
+         endif
+      IGVP=2
+      ENDIF
         IF(NOUTGV.EQ.2) THEN
           OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64',
      &          ACCESS='DIRECT',RECL=NBYTE)
@@ -3359,20 +3421,37 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
         ENDIF
 
 Casey 090310: Added the possibility for NOUTGW = -4.
-        IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
-          CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
-     $      NP_G, NP, HEADER73)
-          IGPP=2
-          CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
-     $      NP_G, NP, HEADER74)
-          IGWP=2
+      IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
+         if (write_local_files.eqv..false.) then  
+            CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73',
+     $         NP_G, NP, HEADER73)
+            IGPP=2
+            CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74',
+     $        NP_G, NP, HEADER74)
+            IGWP=2
 ! TCM V49.64.01 -- ADDED ICE SUPPORT
-          IF (NCICE.NE.0) THEN
-            CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93',
-     $        NP_G, NP, HEADER93)
-            IGIP=2
-          ENDIF
-        ENDIF
+            IF (NCICE.NE.0) THEN
+               CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93',
+     $           NP_G, NP, HEADER93)
+               IGIP=2
+            ENDIF
+            
+         else
+            CALL OPEN_GBL_FILE(73, TRIM(LOCALDIR)//'/'//'fort.73',
+     $         NP_G, NP, HEADER73)
+            IGPP=2
+            CALL OPEN_GBL_FILE(74, TRIM(LOCALDIR)//'/'//'fort.74',
+     $        NP_G, NP, HEADER74)
+            IGWP=2
+! TCM V49.64.01 -- ADDED ICE SUPPORT
+            IF (NCICE.NE.0) THEN
+               CALL OPEN_GBL_FILE(93, TRIM(LOCALDIR)//'/'//'fort.93',
+     $           NP_G, NP, HEADER93)
+               IGIP=2
+            ENDIF
+         endif
+            
+      ENDIF
 
 ! tcm v50.75 removed ifdef cswan and added test for nrs=3 or 4
         IF ((ABS(NRS).EQ.3).OR.(ABS(NRS).EQ.4)) THEN
@@ -3421,8 +3500,13 @@ Casey 090310: Added the output of radiation stress gradients.
               CLOSE(164)                    ! DO THIS TO FLUSH THE WRITE BUFFER
            ENDIF
            IF((NOUTGW.EQ.-1).OR.(NOUTGW.EQ.-4)) THEN
-              CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
-     &            NP_G, NP, HEADER74)
+              if (write_local_files.eqv..false.) then
+                 CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64',
+     &               NP_G, NP, HEADER74)
+              else
+                 CALL OPEN_GBL_FILE(164, TRIM(LOCALDIR)//'/'//'rads.64',
+     &               NP_G, NP, HEADER74)
+              endif
               IGRadS=2
            ENDIF
         ENDIF
@@ -3515,8 +3599,13 @@ C...
 
         IF ((NDDT.NE.0).AND.
      &            ((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4))) THEN
-           CALL OPEN_GBL_FILE(76, TRIM(GLOBALDIR)//'/'//'fort.76',
-     &         NP_G, NP, HEADER63)
+           if (write_local_files.eqv..false.) then
+              CALL OPEN_GBL_FILE(76, TRIM(GLOBALDIR)//'/'//'fort.76',
+     &            NP_G, NP, HEADER63)
+           else
+              CALL OPEN_GBL_FILE(76, TRIM(LOCALDIR)//'/'//'fort.76',
+     &            NP_G, NP, HEADER63)
+           endif
            IGBP=2
         ENDIF
         IF ((NDDT.NE.0).AND.(NOUTGE.EQ.2)) THEN
@@ -4646,7 +4735,7 @@ C
             ! loop over subdomain nodes
             DO sd_ele_number=1,ne
                ! get the corresponding fulldomain ele number
-               fd_ele_number = ABS(IMAP_EL_LG(sd_ele_number))
+               fd_ele_number = IMAP_EL_LG(sd_ele_number)
                ! fill in the subdomain arrays with the corresponding
                ! fulldomain values
                sd_array(sd_ele_number) = fd_array(fd_ele_number)
@@ -4658,7 +4747,7 @@ C
             ! loop over subdomain nodes
             DO sd_ele_number=1,ne
                ! get the corresponding fulldomain ele number
-               fd_ele_number = ABS(IMAP_EL_LG(sd_ele_number))
+               fd_ele_number = IMAP_EL_LG(sd_ele_number)
                ! fill in the subdomain arrays with the corresponding
                ! fulldomain values
                sd_array(sd_ele_number) = fd_array(fd_ele_number)

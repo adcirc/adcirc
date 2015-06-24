@@ -55,7 +55,7 @@ C
       CHARACTER(2048), TARGET :: GLOBALDIR ! directory for fulldomain files
       CHARACTER(2048), TARGET :: LOCALDIR  ! directory for subdomain files
       CHARACTER(2048), TARGET :: HARMDIR   ! directory where harmonic analysis file are written
-      CHARACTER(2048) :: GBLINPUTDIR, HOTSTARTDIR
+      CHARACTER(2048) :: GBLINPUTDIR
       !
       ! file formats
       integer, parameter :: numFormats = 7
@@ -205,6 +205,11 @@ Cobell 110518: Add compiler flag for local hot start.
             case("-L","-l")
                WRITE_LOCAL_FILES = .TRUE.
                WRITE_LOCAL_HOT_START_FILES = .TRUE.
+               if (myProc.eq.0) then
+                  write(*,*) "INFO: Processing '",cmdlinearg(1:2),"."
+               endif
+            case("-U","-u")
+               WRITE_LOCAL_FILES = .TRUE.
                if (myProc.eq.0) then
                   write(*,*) "INFO: Processing '",cmdlinearg(1:2),"."
                endif
@@ -366,8 +371,6 @@ C... tcm v49.67 -- additions for Windows based PC compilations
 #else
       WRITE(LOCALDIR,'(A)') TRIM(ROOTDIR)
 #endif
-      if (WRITE_LOCAL_FILES) GLOBALDIR = LOCALDIR
-      HOTSTARTDIR = LOCALDIR
       ! 
       ! jgf51.21.27: Form mesh file name and nodal attributes file name.
       if (meshFileNameSpecified.eqv..false.) then
@@ -384,7 +387,6 @@ C     jgf49.17.01 Summarize and log results.
          write(*,*) "INFO: The GBLINPUTDIR is '",trim(GBLINPUTDIR),"'."
          write(*,*) "INFO: The GLOBALDIR is '",trim(GLOBALDIR),"'."
          write(*,*) "INFO: The LOCALDIR is '",trim(LOCALDIR),"'."
-         write(*,*) "INFO: The HOTSTARTDIR is '",trim(HOTSTARTDIR),"'."
          if ((WRITE_LOCAL_FILES.eqv..TRUE.).AND.(MNPROC.GT.1)) then
             write(*,*) "INFO: ADCIRC will write subdomain output files."
          endif

@@ -1860,6 +1860,14 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
             WRITE(15,*) "&subdomainModeling subdomainOn=",subdomainOn," /"
          endif
 
+         ! wet dry control
+         if (foundWetDryControlNameList) then
+            WRITE(15,'(a,l,a,l,a)') 
+     &         "&wetDryControl outputNodeCode=",outputNodeCode,
+     &         " outputNOFF=",outputNOFF," /"
+         endif
+
+
          CLOSE(15)
 C
  1000 CONTINUE
@@ -2198,13 +2206,27 @@ C
 C
 C--Write the Receive List
 C
+         ! loop over this subdomain's neighbors
          DO J = 1,NUM_COMM_PE(I)
+            ! get the subdomain number of the Jth neighbor 
+            ! of this subdomain 
             IPR = COMM_PE_NUM(J,I)
+            ! zero out the total number of ghost nodes on this 
+            ! subdomain that are residents on the Jth neighbor
+            ! of this subdomain
             IRECV_TOT(J,I) = 0
+            ! loop over nodes in this subdomain
             DO K = 1,NNODP(I)
+               ! get corresponding fulldomain node number
                INDX = IMAP_NOD_LG(K,I)
+               ! if the fulldomain node is a ghost and is a resident
+               ! of the Jth neighbor of this subdomain
                IF (IMAP_NOD_GL(1,INDX).EQ.IPR) THEN
+                  ! increment the total number of ghost nodes that
+                  ! are residents of the Jth neighbor subdomain
                   IRECV_TOT(J,I) = IRECV_TOT(J,I) + 1
+                  ! record the local node number of this subdomain
+                  ! that will receive data
                   IRECV(IRECV_TOT(J,I)) = K
 c uncomment next line and comment preceding line for debugging
 c                 IRECV(IRECV_TOT(J,I)) = INDX
@@ -2216,13 +2238,23 @@ c                 IRECV(IRECV_TOT(J,I)) = INDX
 C
 C--write the send list
 C
+        ! loop over this subdomain's neighbors
          DO J = 1,NUM_COMM_PE(I)
+            ! get the subdomain number of the Jth neighbor 
+            ! of this subdomain 
             IPR = COMM_PE_NUM(J,I)
             ISEND_TOT(J,I) = 0
+            ! loop over nodes in the Jth neighbor subdomain
             DO K = 1,NNODP(IPR)
+               ! get the fulldomain node number in the Jth neighbor subdomain
                INDX = IMAP_NOD_LG(K,IPR)
+               ! if the node is a resident of this subdomain
                IF (IMAP_NOD_GL(1,INDX).EQ.I) THEN
+                  ! increment the total number of nodes on this subdomain
+                  ! that are ghosts on the Jth neighbor
                   ISEND_TOT(J,I) = ISEND_TOT(J,I) + 1
+                  ! record the local node number on this subdomain
+                  ! that will send data
                   ISEND(ISEND_TOT(J,I)) = IMAP_NOD_GL(2,INDX)
 c uncomment next line and comment preceding line for debugging
 c                 ISEND(ISEND_TOT(J,I)) = INDX
@@ -7442,9 +7474,9 @@ C     fort.67 and fort.68
       EtaDiscDescript % specifier            = NHSTAR
       EtaDiscDescript % initial_value        = 0.0
       NodeCodeDescript % specifier            = NHSTAR
-      NodeCodeDescript % int_initial_value        = 0
+      NodeCodeDescript % initial_value        = 0.d0
       NOFFDescript % specifier            = NHSTAR
-      NOFFDescript % int_initial_value        = 0
+      NOFFDescript % initial_value        = 0.d0
 C     hotstart 3D
       Duudescript % specifier            =  NHSTAR
       Duudescript % initial_value        =  0.0

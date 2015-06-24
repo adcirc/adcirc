@@ -249,6 +249,10 @@ c.... tcm v50.66.02 added for time varying bathymetry
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       LOGICAL :: FOUND_WC_NML
 
+      logical :: foundWetDryControlNamelist = .false. ! for namelist 
+      logical :: outputNodeCode = .false.
+      logical :: outputNOFF = .false.
+
 C
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX
@@ -508,7 +512,7 @@ C
       ALLOCATE ( IMAP_NOD_LG(MNPP,MNPROC),IMAP_EL_LG(MNEP,MNPROC) )
       ALLOCATE ( NNEP(3,MNEP,MNPROC) )
       nbytes = nbytes + 4*mnpp*mnproc + 4*mnep*mnproc + 12*mnep*mnproc
-      ALLOCATE(EL_SHARE(MNEP))
+      ALLOCATE(EL_SHARE(NELG))
       EL_SHARE(:)   = -1
       nbytes = nbytes + mnep
       call memory_alloc(nbytes)

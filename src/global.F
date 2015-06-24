@@ -490,6 +490,8 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       integer, target :: iwstp ! file position in wind velocity station file
       integer, target :: ipstp ! position in barometric pressure station file
       integer, target :: iestp ! file position in station elevation file 
+      integer, target :: nodeCodeOutFilePos
+      integer, target :: noffOutFilePos
 
       INTEGER  IHOTSTP, ILUMP, IMHS
       INTEGER  IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN, ISLDIA
@@ -518,6 +520,8 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER, TARGET :: NSCOUGI, NSCOUGT, NSCOUGS  ! output spool counters
       INTEGER, TARGET :: NSCOUP ! output spool counter for fort.71 (bar. press. sta.)
       INTEGER, TARGET :: NSCOUI ! output spool counter for fort.91 (ice sta.)     
+      integer, target :: nodeCodeOutSpoolCounter
+      integer, target :: noffOutSpoolCounter
       
       INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments
       INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM ! output increments
@@ -576,7 +580,8 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       REAL(8)  RNP_GLOBAL
       REAL(8)  REFSEC   ! required to run in either 32-bit or 64-bit
 
-      LOGICAL :: useNetCDF = .false.
+      LOGICAL :: useNetCDF = .false. ! .true. if netcdf is used at all
+      LOGICAL :: useNetCDFOutput = .false. ! only for output, not hotstart
       LOGICAL :: useXDMF = .false.
 ! CF Start addition for NETCDF I/O 6/21/06
 !     -----------------
@@ -667,12 +672,11 @@ C     jgf48.03 the following data structure is used to describe
 C     the size and shape of the output data.
 C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements to the structure
       type OutputDataDescript_t
-        integer            :: lun
-        CHARACTER(1024)     :: file_name ! name of output file
+        integer           :: lun
+        CHARACTER(1024)   :: file_name ! name of output file
         character(20)     :: field_name !Name of the field associated with the data structure
         integer           :: specifier  ! output format from fort.15 (NOUTE,etc)
         REAL(SZ)          :: initial_value
-        integer           :: int_initial_value
         logical           :: ConsiderWetDry ! Flag for considering nodes wet/dry status
         real(sz)          :: alternate_value  ! Value that can be used as an alternate value
         REAL(SZ), pointer :: x_coord(:) ! x-coord or longitude (station or mesh)
@@ -691,6 +695,7 @@ C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements t
         REAL(SZ), pointer :: array2(:) ! 2nd component of vector
         REAL(SZ), pointer :: array3(:) ! 3rd component of vector
         REAL(SZ), pointer :: array2D(:,:) ! subdomain matrix
+        logical :: isInteger ! .true. if this is an integer array
         INTEGER, pointer  :: iarray_g(:) ! full domain integer
         REAL(SZ), pointer :: array_g(:)  ! full domain data scalar etc
         REAL(SZ), pointer :: array2_g(:) ! full domain 2nd vec component
@@ -824,16 +829,16 @@ C
             IF (level.ge.NABOUT) THEN
 #ifdef FULL_STACK
                write(screenUnit,331,advance="no")
-     7             trim(logLevelNames(level+2)),
+     &             trim(logLevelNames(level+2)),
      &             (trim(messageSources(j)),j=1,sourceNumber)
                write(screenUnit,332) trim(message)
 #else
                write(screenUnit,333) trim(logLevelNames(level+2)),
      &             trim(messageSources(sourceNumber)), trim(message)
 #endif
-#ifdef FLUSH_MESSAGES
+!#ifdef FLUSH_MESSAGES
                flush(screenUnit)
-#endif
+!#endif
             ENDIF
          ENDIF
       ENDIF
@@ -873,9 +878,9 @@ C
          write(16,333) trim(logLevelNames(level+2)),
      &       trim(messageSources(sourceNumber)), trim(message)
 #endif
-#ifdef FLUSH_MESSAGES
+!#ifdef FLUSH_MESSAGES
                flush(16)
-#endif
+!#endif
       ENDIF
 331   FORMAT(A,": ",A,50(:,"->",A))
 332   FORMAT(": ",A)
@@ -895,8 +900,9 @@ C--------------------------------------------------------------------
       INTEGER, intent(in) :: level
       CHARACTER(*), intent(in) :: message
 C
-      call logMessage(level, message)
       call screenMessage(level, message)
+      call logMessage(level, message)
+
 C--------------------------------------------------------------------
       END SUBROUTINE allMessage
 C--------------------------------------------------------------------
