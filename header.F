@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.16 - 07/12/2015 - jgf - Uncommented format statement that had
+C           been accidentally commented out causing compilation issue.
 C v51.52.15 - 07/12/2015 - jgf - Removed consideration of noff value when 
 C           determining wet/dry status of a station for output purposes.
 C v51.52.14 - 06/12/2015 - jgf - Removed error message emitted by

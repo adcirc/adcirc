@@ -933,10 +933,10 @@ C         WRITE(16,9972)
 C         WRITE(16,*) 'NOLICAT =',NOLICAT
 C         WRITE(16,9726)
 C         WRITE(16,9974)
-C 9726    FORMAT(/,1X,'Your selection of NOLICAT (a UNIT 15 input ',
-C     &        'parameter) is inconsistent with your ',
-C     &        /,1X,'selection of NOLIFA and may lead to mass ',
-C     &        'balance problems')
+ 9726    FORMAT(/,1X,'Your selection of NOLICAT (a UNIT 15 input ',
+     &        'parameter) is inconsistent with your ',
+     &        /,1X,'selection of NOLIFA and may lead to mass ',
+     &        'balance problems')
 C        IF(NFOVER.EQ.1) THEN
 C           if (myproc == 0) WRITE(ScreenUnit,9974)
 C        ELSE
