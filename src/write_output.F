@@ -1329,7 +1329,7 @@ C-----------------------------------------------------------------------
          ! dry element, apply the special value if necessary
          if (descript % considerWetDry .eqv..true. ) then
             ncele = nodecode(nm(e,1)) * nodecode(nm(e,2)) * 
-     &             nodecode(nm(e,3)) * noff(e)
+     &             nodecode(nm(e,3))
             if (ncele.eq.0) then
                toArray(j) = descript % alternate_value
             endif
