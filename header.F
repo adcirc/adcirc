@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.17 - 07/16/2015 - tcm - Fixed bug in time varying bathymetry 
+C        implementation, where the wrong amount of bathymetry change was being
+C        used for adjusting the eta2 variable.
 C v51.52.16 - 07/12/2015 - jgf - Uncommented format statement that had
 C           been accidentally commented out causing compilation issue.
 C v51.52.15 - 07/12/2015 - jgf - Removed consideration of noff value when 
