@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.34.07 - 07/16/2015 - tcm - Fixed bug in time varying bathymetry 
+C        implementation, where the wrong amount of bathymetry change was being
+C        used for adjusting the eta2 variable.
 C    v51.34.06 - 02/20/2015 - tcm - Added a modified Garratt wind drag formula
 C        that was used in the TX FEMA work.
 C    v51.34.05 - 01/14/2015 - tcm - Testing a new limiter:
