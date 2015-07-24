@@ -11,6 +11,7 @@ program adcirc2xdmf
 !---------------------------------------------------------------------
 use netcdf
 use adcmesh
+use asgsio
 use nodalattr
 use control
 implicit none
@@ -68,11 +69,8 @@ type(xdmfMetaData_t) :: md  ! holds the metadata for whatever data we are writin
 real(8), allocatable :: data_array1(:)
 real(8), allocatable :: data_array3(:,:)
 !
-character(1024) :: cmdlinearg
-character(1024) :: cmdlineopt
 character(80) :: line ! a line of data from the ascii file
 character(80) :: topcomment ! comment line at the top of ascii file
-integer :: argcount
 integer :: i, j, n 
 !
 ! initializations
@@ -95,7 +93,7 @@ i=0
 !
 ! process command line options
 argcount = iargc() ! count up command line options
-write(6,'("There are ",i0," command line options.")') argcount
+write(6,'("INFO: There are ",i0," command line arguments.")') argcount
 do while (i.lt.argcount)
    i = i + 1
    call getarg(i, cmdlineopt)
@@ -103,6 +101,9 @@ do while (i.lt.argcount)
    case("--verbose")
       write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // "."
       verbose = .true.
+   case("--nodalattributes")
+      write(6,'(a)') "INFO: Processing " // trim(cmdlineopt) // "."
+      convertOutputData = .false.
    case("--meshfile")
       i = i + 1
       call getarg(i, cmdlinearg)
@@ -143,6 +144,7 @@ do while (i.lt.argcount)
    end select
 end do
 ! read ADCIRC mesh from ascii file
+write(6,'(a)') 'INFO: Preparing to read mesh file "'//trim(meshFileName),'".'
 call read14()
 call constructFluxBoundaryTypesArray() ! create LBCODEI array
 !
@@ -189,13 +191,13 @@ call XdmfInit(xdmfFortranObj)
 ! object, the name of the HDF5 file, and whether to release memory after write 
 write(6,'(A)') 'INFO: Initializing HDF5 file.'
 convertedFileName = dataFileName
-if (trim(adjustl(dataFileName)).eq."none") then
+select case(trim(adjustl(dataFileName)))
+case ("none") 
    convertedFileName = meshFileName
    convertOutputData = .false.
-endif
-if (trim(adjustl(dataFileName)).eq."fort.13") then
+case("fort.13")
    convertOutputData = .false.
-endif
+end select
 !
 call XdmfInitHDF5(xdmfFortranObj, trim(convertedFileName)//'.h5'//char(0), release)
 !
@@ -295,15 +297,14 @@ case('fort.93')
    md%standard_name = 'ice_pressure_at_sea_level'
    md%coordinates = 'time y x'
    md%units = 'percent'
-case('fort.13')
-   convertOutputData = .false.
-   call readNodalAttributesFile(dataFileName)
-   call writeNodalAttributesXDMF(xdmfFortranObj)
-case('none')
-   convertOutputData = .false.
-case default
-   write(6,'(A)') 'ERROR: adcirc2xdmf cannot convert ' // trim(dataFileName) // ' files.'
-   stop
+case default  ! includes fort.13 and none
+   if (convertOutputData.eqv..false.) then
+      call readNodalAttributesFile(dataFileName)
+      call writeNodalAttributesXDMF(xdmfFortranObj)
+   else
+      write(6,'(A)') 'ERROR: adcirc2xdmf cannot convert ' // trim(dataFileName) // ' files.'
+      stop
+   endif
 end select
 !
 ! if we are writing plain old ADCIRC data
@@ -473,7 +474,7 @@ call XdmfInit(xdmfFortranObj)
 ! call the initHDF5 method; arguments include the ref to the XdmfFortran
 ! object, the name of the HDF5 file, and whether to release memory after write 
 write(6,'(A)') 'INFO: Initializing HDF5 file.'
-convertedFileName = 'viz_boundaries'
+convertedFileName = trim(adjustl(dataFileName))//'_viz_boundaries'
 !
 call XdmfInitHDF5(xdmfFortranObj, trim(convertedFileName)//'.h5'//char(0), release)
 !

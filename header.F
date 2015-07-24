@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v52.10 - 07/24/2015 - jgf - Updated adcirc2xdmf to keep it in sync with 
+C           the utilities in the ASGS trunk; adcirc2xdmf is a valuable tool
+C           for aiding 3D visualization of levee boundaries in Paraview. 
 C  v52.09 - 07/20/2015 - tcm - Added compiler flags for Cray XC30/XC40 using
 C           Intel compilers with (ftn) as default instead of ifort.  These
 C           basic compiler options work on Armstrong@NAVO, Lightning@AFRL,

@@ -212,6 +212,7 @@ contains !   C O N T A I N S
 ! S U B R O U T I N E     R E A D   C O N T R O L  F I L E
 !---------------------------------------------------------------------
 subroutine readControlFile(controlFileName, verbose)
+use asgsio, only : openFileForRead
 implicit none
 character(len=1024), intent(in) :: controlFileName
 logical, intent(in) :: verbose
