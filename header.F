@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v52.11 - 07/28/2015 - tcm - Fixed bug in time varying bathymetry 
+C           implementation, where the wrong amount of bathymetry
+C           change was being used for adjusting the eta2 variable.
 C  v52.10 - 07/24/2015 - jgf - Updated adcirc2xdmf to keep it in sync with 
 C           the utilities in the ASGS trunk; adcirc2xdmf is a valuable tool
 C           for aiding 3D visualization of levee boundaries in Paraview. 

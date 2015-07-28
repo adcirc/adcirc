@@ -236,7 +236,7 @@ C   TCM V49.64.01 -- ADDED FOR ICE CONCENTRATION FIELDS
 
 C   TCM v50.66.02 -- Added for Time Varying Bathymetry
       INTEGER :: IJK
-      REAL(SZ) ETA2TMP,DPTMP,BTRATIO  !tcm v50.66.01 bathymetry changes
+      REAL(SZ) ETA2TMP,DPTMP,DPTMP2,BTRATIO  !tcm v50.66.01 bathymetry changes
 
 C   TCM v51.20.01 -- Added dummy real variable for computing velocity magnitudes
       REAL(SZ) tmpmag
@@ -388,12 +388,14 @@ C...     DEPTHS ARE > OR = TO H0.
 #endif   
          ENDIF  !test for updating bathymetry records
 C.......If time is during the bathymetry change interval, then update bathymetry
-         IF(timeloc.LE.BTIME_END) THEN
+         IF(timeloc.LT.BTIME_END) THEN  tcm 20150728 changed .LE. to .LT.
             bTRatio=(TimeLoc-bTIME1)/BCHGTIMINC ! interpolate
             DO I=1,NP
-               DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry
-               DP(I) = DP1(I) + DPTMP           !updating bathymetry
-               ETA2TMP = ETA2(I)-DPTMP   !subtracting elevation by incremental amount
+               DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry from DP1
+               DPTMP2 = DP1(I) + DPTMP  !this is what will be the new bathymetry to use
+               DPTMP = DP(I)-DPTMP2  !this is now the adjustment in bathymetry for this timestep (how much to adjust eta2 by)
+               DP(I) = DPTMP2           !updating bathymetry to new value
+               ETA2TMP = ETA2(I)-DPTMP   !subtracting elevation by incremental amount from one step step
                ETA2(I) = ETA2TMP        !updating elevation
             ENDDO !I
          ENDIF
@@ -408,7 +410,7 @@ C.......If time is during the bathymetry change interval, then update bathymetry
             WRITE(16,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'   
 #endif  
             DO I=1,NP
-               DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be
+               DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be to get to the final bathy value
                DP(I) = DP2(I)         !updating bathymetry to final value
                ETA2TMP = ETA2(I)-DPTMP !subtracting elevation by incremental amount
                ETA2(I) = ETA2TMP       !updating elevation
@@ -450,15 +452,18 @@ C...     DEPTHS ARE > OR = TO H0.
          ENDIF  !test for updating bathymetry records
 
 C.......If time is during the bathymetry change interval, then update bathymetry
-         IF(timeloc.LE.BTIME_END) THEN
+         IF(timeloc.LT.BTIME_END) THEN !tcm 20150728 changed .LE. to .LT.
             bTRatio=(TimeLoc-bTIME1)/BCHGTIMINC ! interpolate
             DO I=1,NP
-               DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry
-               DP(I) = DP1(I) + DPTMP           !updating bathymetry
-               ETA2TMP = ETA2(I)-DPTMP   !subtracting elevation by incremental amount
+               DPTMP =  btratio*(DP2(I)-DP1(I)) !Determine incremental amount to adjust bathymetry from DP1
+               DPTMP2 = DP1(I) + DPTMP  !this is what will be the new bathymetry to use
+               DPTMP = DP(I)-DPTMP2  !this is now the adjustment in bathymetry for this timestep (how much to adjust eta2 by)
+               DP(I) = DPTMP2 !updating bathymetry to new value
+               ETA2TMP = ETA2(I)-DPTMP   !subtracting elevation by incremental amount from one step step
                ETA2(I) = ETA2TMP        !updating elevation
             ENDDO !I
          ENDIF
+C         
          IF(timeloc.EQ.BTIME_END) THEN
 #ifdef CMPI
             IF (MYPROC.EQ.0) then
@@ -470,8 +475,8 @@ C.......If time is during the bathymetry change interval, then update bathymetry
             WRITE(16,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'   
 #endif    
             DO I=1,NP
-               DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be
-               DP(I) = DP2(I)         !updating bathymetry to final value
+               DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be to get to the final bathy value
+               DP(I) = DP2(I)         !updating bathymetry to final value 
                ETA2TMP = ETA2(I)-DPTMP !subtracting elevation by incremental amount
                ETA2(I) = ETA2TMP       !updating elevation
             ENDDO !I
