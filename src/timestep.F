@@ -388,7 +388,7 @@ C...     DEPTHS ARE > OR = TO H0.
 #endif   
          ENDIF  !test for updating bathymetry records
 C.......If time is during the bathymetry change interval, then update bathymetry
-         IF(timeloc.LT.BTIME_END) THEN  tcm 20150728 changed .LE. to .LT.
+         IF(timeloc.LT.BTIME_END) THEN  !tcm 20150728 changed .LE. to .LT.
             bTRatio=(TimeLoc-bTIME1)/BCHGTIMINC ! interpolate
             DO I=1,NP
                DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry from DP1

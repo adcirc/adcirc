@@ -628,6 +628,13 @@ C
       WindVelStaDescript % interp_fac1             => STAIM1 
       WindVelStaDescript % interp_fac2             => STAIM2
       WindVelStaDescript % interp_fac3             => STAIM3
+      IF (ICS.eq.1) THEN
+         WindVelStaDescript % x_coord           => XEM ! use orig coord
+         WindVelStaDescript % y_coord           => YEM ! use orig coord
+      ELSE
+         WindVelStaDescript % x_coord           => SLEM ! radians
+         WindVelStaDescript % y_coord           => SFEM 
+      ENDIF
       if (nws.eq.0) then
          WindVelStaDescript % writeFlag         = .false. 
       endif
