@@ -5120,6 +5120,7 @@ C.....Significant Wave Height
       SwanHSDescript % outputTimeStepIncrement = NSPOOLGW
       SwanHSDescript % spoolCounter         => SWAN_HS_SPOOL
       SwanHSDescript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      SwanHSDescript % writeFlag            = .true.
           
       IF(Swan_OutputHS)THEN
           SwanHSMaxDescript % specifier        = NOUTGW
@@ -5166,6 +5167,7 @@ C.....Mean Wave Direction
       SwanDIRDescript % outputTimeStepIncrement = NSPOOLGW
       SwanDIRDescript % spoolCounter         => SWAN_DIR_SPOOL
       SwanDIRDescript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      SwanDIRDescript % writeFlag            = .true.
       
       IF(SWAN_OutputDir)THEN
           SwanDIRMaxDescript % specifier        = NOUTGW
@@ -5212,6 +5214,7 @@ C.....Mean Wave Period (TM01)
       SwanTM01Descript % outputTimeStepIncrement = NSPOOLGW
       SwanTM01Descript % spoolCounter         => SWAN_TM01_SPOOL
       SwanTM01Descript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      SwanTM01Descript % writeFlag            = .true.
      
       IF(SWAN_OutputTM01)THEN
           SwanTM01MaxDescript % specifier        = NOUTGW
@@ -5258,6 +5261,7 @@ C.....Peak Wave Period (TPS)
       SwanTPSDescript % outputTimeStepIncrement = NSPOOLGW
       SwanTPSDescript % spoolCounter         => SWAN_TPS_SPOOL
       SwanTPSDescript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      SwanTPSDescript % writeFlag            = .true.
       
       IF(SWAN_OutputTPS)THEN
           SwanTPSMaxDescript % specifier        = NOUTGW
@@ -5306,6 +5310,7 @@ C.....SWAN Wind Values (WINDX,WINDY)
       SwanWindDescript % outputTimeStepIncrement = NSPOOLGW
       SwanWindDescript % spoolCounter         => SWAN_WIND_SPOOL
       SwanWindDescript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      SwanWindDescript % writeFlag            = .true.
       
       IF(SWAN_OutputWind)THEN
           SwanWindMaxDescript % specifier        = NOUTGW
@@ -5352,6 +5357,7 @@ C.....Mean Wave Period (TM02)
       SwanTM02Descript % outputTimeStepIncrement = NSPOOLGW
       SwanTM02Descript % spoolCounter         => SWAN_TM02_SPOOL
       SwanTM02Descript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      SwanTM02Descript % writeFlag            = .true.
       
       IF(SWAN_OutputTM02)THEN
           SwanTM02MaxDescript % specifier        = NOUTGW
@@ -5398,6 +5404,7 @@ C.....Mean Wave Period (TMM10)
       SwanTMM10Descript % outputTimeStepIncrement = NSPOOLGW
       SwanTMM10Descript % spoolCounter         => SWAN_TMM10_SPOOL
       SwanTMM10Descript % writerFormats(1:4)   = (/ 1, 3, 4, 5 /)
+      SwanTMM10Descript % writeFlag            = .true.
       
       IF(SWAN_OutputTMM10)THEN
           SwanTMM10MaxDescript % specifier        = NOUTGW

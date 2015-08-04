@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v52.13 - 08/04/2015 - zc - Fixing bug that caused serial adcswan to not 
+C           write output files. descript % writeFlag was never set to .true.
 C  v52.12 - 08/02/2015 - zc - Fixing bug in writing netCDF stations using
 C           serial adcirc. Pointers to station coordinates were not defined. 
 C  v52.11 - 07/28/2015 - tcm - Fixed bug in time varying bathymetry 
