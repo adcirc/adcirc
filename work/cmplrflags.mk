@@ -12,7 +12,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=gnu
 #compiler=g95
 #compiler=intel
-#compiler=intel-ND
+compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=cray_xt3
 #compiler=cray_xt4
