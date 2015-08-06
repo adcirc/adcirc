@@ -2374,6 +2374,19 @@ C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
              WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
           END DO
        ENDIF
+      !
+      ! jgf51.52.18: Implementing Casey's fix for uninitialized
+      ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
+      ! by the parametric vortex meteorological models but are used in
+      ! the padcswan_init() subroutine to initialize the SWAN wind 
+      ! velocities. Failure to initialize them causes NaNs in the 
+      ! solution. 
+      if ( (abs(nws).eq.8).or.(abs(nws).eq.19).or.(abs(nws).eq.20)) then 
+         WVNX1 = WVNX2
+         WVNY1 = WVNY2
+      endif
+
+
 C
 C
 C--------------------END MET FORCING---------------------------------------

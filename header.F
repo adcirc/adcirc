@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.20 - 08/06/2015 - jgf - Fix to prevent NaNs in output files
+C           in runs that use SWAN coupling with a vortex meteorological
+C           model. This issue was a result of the parametric vortex
+C           models not initializing the WVNX1 and WVNY1 arrays because
+C           they do not use them but SWAN does. 
 C v51.52.19 - 08/04/2015 - zc - Fixing bug that caused serial adcswan to not
 C           write output files. descript % writeFlag was never set to .true.
 C v51.52.18 - 08/02/2015 - zc - Fixing bug in writing netCDF stations using

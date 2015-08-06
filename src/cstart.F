@@ -516,7 +516,17 @@ C....tcm v51.06.02: Added NWS=16,-16 for reading ASCII GFDL Met data
       IF (ABS(NWS).EQ.16) THEN
          CALL INIT_GFDL(STATIM*86400.0)
       ENDIF
-
+      !
+      ! jgf51.52.18: Implementing Casey's fix for uninitialized
+      ! wvnx1 and wvny1 arrays; they are not used/needed/initialized
+      ! by the parametric vortex meteorological models but are used in
+      ! the padcswan_init() subroutine to initialize the SWAN wind 
+      ! velocities. Failure to initialize them causes NaNs in the 
+      ! solution. 
+      if ( (abs(nws).eq.8).or.(abs(nws).eq.19).or.(abs(nws).eq.20)) then
+         WVNX1 = WVNX2
+         WVNY1 = WVNY2
+      endif
 
 C...INPUT RADIATION STRESS INFORMATION FROM UNIT 23
 C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
