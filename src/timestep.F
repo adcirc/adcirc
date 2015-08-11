@@ -2066,7 +2066,7 @@ ckmd    Changed to include the predictor-corrector algorithm
          CALL GWCE_New(IT,TimeLoc,TimeH)
          IF (LoadEleSlopeLim) THEN
             call check_slopes(it,TimeLoc)
-            call apply_slope_limits(ETA2,MNP)
+            call apply_slope_limits(ETA2,NP)
 #ifdef CMPI
             CALL UPDATER(ETA2,DUMY1,DUMY2,1)
 #endif
@@ -2081,7 +2081,7 @@ C...  If running in parallel, update velocities & fluxes on all processors
          CALL GWCE_New_pc(IT,TimeLoc,TimeH)
          IF (LoadEleSlopeLim) THEN
             call check_slopes(it,TimeLoc)
-            call apply_slope_limits(ETA2,MNP)
+            call apply_slope_limits(ETA2,NP)
 #ifdef CMPI
             CALL UPDATER(ETA2,DUMY1,DUMY2,1)
 #endif
@@ -2092,7 +2092,7 @@ C
          CALL GWCE_New(IT,TimeLoc,TimeH)
          IF (LoadEleSlopeLim) THEN
             call check_slopes(it,TimeLoc)
-            call apply_slope_limits(ETA2,MNP)
+            call apply_slope_limits(ETA2,NP)
 #ifdef CMPI
             CALL UPDATER(ETA2,DUMY1,DUMY2,1)
 #endif
@@ -9348,7 +9348,16 @@ C*************************************************************************
       REAL(SZ) FDX1,FDX2,FDX3,FDY1,FDY2,FDY3
       REAL(8) :: AreaIE2
       Real(8), intent(in) :: TimeLoc
-     
+
+      ! jgf51.47: Per Rick's specification, start off by deactivating
+      ! any slope limitation triggered in the previous time step;
+      ! we have a fresh start each time step in determining whether
+      ! to activate slope limiting at each node. 
+      ! jgf51.50: Added this back to the subroutine version of the
+      ! slope limiter. 
+      elemental_slope_limiter_active(:) = .false.
+
+          
      
 Cobell  CHECK IF THE LOCAL GRADIENT FOR ELEMENTS IS EXCEEDED AND TRIGGER THE
 C...  ELEMENTAL SLOPE LIMITER ACCORDINGLY (original routine by Crystal Fulcher)
@@ -9388,26 +9397,26 @@ C              proceed and turn on the limiter.
                  ! screen the first time the gradient is exceeded
                  IF(elemental_slope_limiter_grad_max(NM(IE,I))
      &               .GE.0.0D0) THEN
-                    IF(.NOT.elemental_slope_limiter_active(NM(IE,I))
-     &                 .AND.elemental_slope_limiter_grad_max(NM(IE,I))
-     &                  .GE.0.0D0) THEN
-                        WRITE(screenUnit,1983) IT,NumItr,TimeLoc,
-     &                      dEta2Mag,NM1,MyProc
-                        WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,
-     &                      MyProc
-                    ENDIF
+!                    IF(.NOT.elemental_slope_limiter_active(NM(IE,I))
+!     &                 .AND.elemental_slope_limiter_grad_max(NM(IE,I))
+!     &                  .GE.0.0D0) THEN
+!                        WRITE(screenUnit,1983) IT,NumItr,TimeLoc,
+!     &                      dEta2Mag,NM1,MyProc
+!                        WRITE(16,1983) IT,NumItr,TimeLoc,dEta2Mag,NM1,
+!     &                      MyProc
+!                    ENDIF
                     ESLONOFF(NM(IE,I)) = 1 ! for output file
                     elemental_slope_limiter_active(NM(IE,I)) = .TRUE.
                  ELSE
-                    IF(.NOT.
-     &               elemental_slope_limiter_max_exceeded(NM(IE,I)))THEN
-                        WRITE(screenUnit,1984) IT,NumItr,TimeLoc,
-     &                      dEta2Mag,NM1,MyProc
-                        WRITE(16,1984) IT,NumItr,TimeLoc,dEta2Mag,NM1,
-     &                      MyProc
-                        elemental_slope_limiter_max_exceeded(NM(IE,I)) =
-     &                      .TRUE.
-                    ENDIF
+!                    IF(.NOT.
+!     &               elemental_slope_limiter_max_exceeded(NM(IE,I)))THEN
+!                        WRITE(screenUnit,1984) IT,NumItr,TimeLoc,
+!     &                      dEta2Mag,NM1,MyProc
+!                        WRITE(16,1984) IT,NumItr,TimeLoc,dEta2Mag,NM1,
+!     &                      MyProc
+!                        elemental_slope_limiter_max_exceeded(NM(IE,I)) =
+!     &                      .TRUE.
+!                    ENDIF
                  ENDIF
                ENDIF
             ENDDO ! loop around nodes of an element
@@ -9455,11 +9464,15 @@ C
       LOGICAL, SAVE :: firstCall = .true.
 
       IF (LoadEleSlopeLim.eqv..true.) THEN
-         IF (firstCall.eqv..true.) THEN
+!         IF (firstCall.eqv..true.) THEN
+!            allocate(elevSum(LocNP))
+!            firstCall = .false.
+!            elevSum(:) = 0.d0
+!         ENDIF
+         if (.not.allocated(elevSum) ) then
             allocate(elevSum(LocNP))
-            firstCall = .false.
             elevSum(:) = 0.d0
-         ENDIF
+         endif
       ENDIF
 
 
