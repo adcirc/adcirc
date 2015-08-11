@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.34.08 - 08/11/2015 - tcm - Adjusted the slope limiting so that it 
+C        is turned on/off with each time step instead of being turned on and
+C        left on.  Temporarily commented out the slope limiting messaging
+C        to standard out.
 C    v51.34.07 - 07/16/2015 - tcm - Fixed bug in time varying bathymetry 
 C        implementation, where the wrong amount of bathymetry change was being
 C        used for adjusting the eta2 variable.
