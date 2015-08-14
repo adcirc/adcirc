@@ -525,7 +525,7 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER  NTCYFGV, NTCYFGW
       INTEGER  NTCYFM, NTCYSC, NTCYSGC, NTCYSGE
       INTEGER  NTCYSGV, NTCYSGW, NTCYSM
-      INTEGER  NTRSPC, NTRSPM, NUMITR, NW, NWET, NWSEGWI, NWSGGWI
+      INTEGER  NTRSPC, NTRSPM, NUMITR, NW, NWSEGWI
       INTEGER  NP_GLOBAL
 C     kmd48.33bc - added variables for 3D boundary conditions
       INTEGER  RES_BC_FLAG  ! boundary condition flag for salinity and temperature
@@ -956,7 +956,7 @@ C
 C
 C     Check to see if file exists
       write(scratchMessage,21) lun
-  21  format("Searching for file to open on unit ",I5,"...")
+  21  format("Searching for file to open on unit ",i0,"...")
       call logMessage(INFO,trim(scratchMessage))
       inquire(FILE=trim(filename),EXIST=fileFound)
       if (fileFound.eqv..false.) then

@@ -127,7 +127,21 @@ C
       type(gfdl_Data_t), allocatable, target :: gfdl_Files(:) ! array of info about GFDL Met files
       real(sz) :: GFDL_max_extrap_dist     ! maximum distance for extrapolating values (meters)
       real(sz) :: GFDL_WindMultiplier      ! all GFDL wind u,v's multiplied by this
-
+      !
+      ! jgf52.51.21: Fixes for NWS10. Changed from NWLAT and NWLON to 
+      ! latb and lonb and moved from read_input() to wind module and 
+      ! gave them parameter status. 
+      integer, parameter :: latb = 1536 !190 change to gfs t1534 grid
+      integer, parameter :: lonb = 3072 !384 change to gfs t1534 grid
+      ! numerical values at four corners of gaussian grid
+      integer, allocatable ::  n00(:),n10(:),n11(:),n01(:)
+      ! interpolation factors from mesh vertex to four corners of 
+      ! gaussian grid
+      real(sz), allocatable :: d00(:),d10(:),d11(:),d01(:)
+      real(sz), allocatable :: colrab(:),dummy(:),gclat(:),gclon(:)
+      ! met values on gaussian grid vertices
+      real(sz), allocatable ::  ug(:),vg(:),pg(:)
+      integer :: nws10DatasetCounter ! indicates which dataset to read
 
 C------------------------end of data declarations-----------------------
       CONTAINS
@@ -964,8 +978,171 @@ C
 C     ----------------------------------------------------------------
       END SUBROUTINE NWS7GET
 C     ----------------------------------------------------------------
+   
 
+      !----------------------------------------------------------------
+      !         S U B R O U T I N E   N W S  1 0  I N I T
+      !----------------------------------------------------------------
+      ! jgf52.51.21: Decoupled the NWS10 initialization from the 
+      ! rest of the subroutine to correct numerical issues associated
+      ! with uninitialized variables.
+      !----------------------------------------------------------------
+      subroutine nws10Init(flon,flat)
+      use global, only : ihot
+      use mesh, only : np
+      implicit none
+      real(sz), intent(in) :: flon(:) ! adcirc mesh longitudes (rad)
+      real(sz), intent(in) :: flat(:) ! adcirc mesh latitudes (rad)
+      real(sz) :: gdlon
+      integer :: j, jj ! loop counters
+      !
+      ! gaussian met values 
+      allocate ( ug(latb*lonb),vg(latb*lonb),pg(latb*lonb) )
+      ! four corner met values in grid cell associated with each adcirc mesh vertex 
+      allocate ( n00(np),n10(np),n11(np),n01(np) )
+      ! four interpolating factors associated with each adcirc mesh vertex
+      allocate ( d00(np),d10(np),d11(np),d01(np) )
+      ! 
+      allocate ( colrab(latb),dummy(latb),gclat(latb),gclon(lonb) )
+C
+C...  Set up the Gaussian grid and determine the interpolating factors 
+C     for the ADCIRC grid.
+      call glats(latb/2,colrab,dummy,dummy,dummy)
+      do j=1,latb/2 
+         gclat(j)=colrab(j)
+         jj=latb-j+1
+         gclat(jj)=pi-colrab(j)
+      enddo
+      gdlon=twopi/lonb
+      do j=1,lonb
+         gclon(j)=gdlon*(j-1)
+      end do
+      call g2rini(flon,flat)
+      !
+      ! Set the counter value. According to the ADCIRC documentation,
+      ! fort.200 is read upon hotstart, but not at coldstart. 
+      if (ihot.eq.0) then
+         nws10DatasetCounter = 1
+      else
+         nws10DatasetCounter = 0
+      endif
+         
+      !----------------------------------------------------------------
+      end subroutine nws10Init
+      !----------------------------------------------------------------
 
+C***********************************************************************
+C  Subroutine to compute the factors to interpolate from a global      *
+C  Gaussian Lat/Lon grid with T126 resolution (GRIB Grid type 126)     *
+C  onto another grid.                                                  *
+C                                                                      *
+C  The new grid is a series of longitude and latitude points contained *
+C  in the FLON and FLAT arrays with a total number of points NP        *
+C                                                                      *
+C       modified from the original G2RINI by R.L. 4/17/96              *
+C    
+C     jgf51.52.21: Removed duplicate variables; moved grid locations
+C     and interpolating factors from subroutine arguments to module
+C     variables; brought log messages up to date with current code.
+C
+C***********************************************************************
+      subroutine g2rini(flon,flat)
+
+      use mesh, only : np
+      implicit none
+      real(8), intent(in) :: flat(:),flon(:) ! adcirc mesh coordinates
+      integer :: N,I,LON,LONP1,LAT,LATP1
+      real(8) :: DLAT,DLON,FLONWORK,COLAT,DDLAT,XLAT,DFLAT,DFLAT1,
+     &     DDLON,XLON,DFLON,DFLON1
+C
+C...Compute estimated DLAT, true DLON for Gaussian grid
+      DLAT=PI/REAL(LATB-1,KIND=SZ)
+      DLON=TWOPI/REAL(LONB,KIND=SZ)
+      N=0
+
+C...Loop through all the nodes in the grid to be interpolated onto and
+C.....compute the interpolating factors.
+
+      DO I=1,NP
+C.....   Compute initial guess of which lon value FLON(I) is in the Gaussian file
+C......  Check that this value is reasonable.
+         flonwork=flon(i)
+         if(flonwork.lt.0.) flonwork=flonwork+twopi
+         lon=flonwork/dlon + 1
+         lonp1=lon+1
+         if(lon.eq.lonb) lonp1=1 !circle condition
+         if((lon.lt.1).or.(lon.gt.lonb)) then
+            call allMessage(ERROR,'Mesh node outside gaussian grid.')
+            write(scratchMessage,
+     &       '("i=",i0," lon=",f15.8," dlon=",f15.8," flon(i)=",f15.8)')
+     &       i, lon, dlon, flon(i)
+            call allMessage(ERROR, scratchMessage)
+            call windTerminate()
+         endif
+
+C.....   Compute initial guess of which lat value FLAT(I) is in the Gaussian file
+C....... Check that this value is reasonable.
+         colat=hfpi-flat(i)
+         lat=colat/dlat + 1
+         if(lat.eq.latb) lat=lat-1
+         latp1=lat+1
+         if((lat.lt.1).or.(lat.gt.latb)) then
+            call allMessage(ERROR,'Mesh node outside gaussian grid.')
+            write(scratchMessage,
+     &       '("i=",i0," lat=",f15.8," dlat=",f15.8," flat(i)=",f15.8)')
+     &       i, lat, dlat, flat(i)
+            call allMessage(ERROR, scratchMessage)
+            call windTerminate()
+         endif
+
+5        CONTINUE
+         IF((COLAT.GE.GCLAT(LAT)).AND.(COLAT.LE.GCLAT(LATP1))) GO TO 9
+         IF(COLAT.LT.GCLAT(LAT)) THEN
+            LATP1=LAT
+            LAT=LAT-1
+            IF(LAT.LE.0) THEN
+               LAT=1
+               LATP1=2
+               GOTO 9
+            ENDIF
+            GOTO 5
+         ENDIF
+         IF(COLAT.GT.GCLAT(LATP1)) THEN
+            LAT=LAT+1
+            LATP1=LAT+1
+            IF(LAT.GE.LATB ) THEN
+               LAT=LATB-1
+               LATP1=LATB
+               GOTO 9
+            ENDIF
+            GOTO 5
+         ENDIF
+
+ 9       CONTINUE
+         DDLAT=GCLAT(LATP1)-GCLAT(LAT)
+         XLAT=GCLAT(LAT)
+         DFLAT1=(COLAT-XLAT)/DDLAT
+         IF(LAT.EQ.1) DFLAT1=MAX(0.d0,DFLAT1) !MODIFY THIS FOR POLAR POINTS
+         IF(LATP1.EQ.LATB) DFLAT1=MIN(1.d0,DFLAT1) !MODIFY THIS FOR POLAR POINTS
+         DFLAT=1.d0-DFLAT1
+         DDLON=DLON
+         XLON=GCLON(LON)
+         DFLON1=(FLONWORK-XLON)/DDLON
+         DFLON=1.d0-DFLON1
+         N=N+1
+         D00(N)=DFLON*DFLAT
+         D10(N)=DFLON1*DFLAT
+         D11(N)=DFLON1*DFLAT1
+         D01(N)=DFLON*DFLAT1
+         N00(N)=LON+(LAT-1)*LONB
+         N10(N)=LONP1+(LAT-1)*LONB
+         N11(N)=LONP1+(LATP1-1)*LONB
+         N01(N)=LON+(LATP1-1)*LONB
+
+      END DO
+      !----------------------------------------------------------------
+      end subroutine g2rini
+      !----------------------------------------------------------------
 
 
 C***********************************************************************
@@ -994,144 +1171,80 @@ C                                                                      *
 C                           R.L. 4/14/99                               *
 C                           R.L.09/04/00 added RHOWAT0 to call         *
 C   R.L. 4/2/01  changed MNWLAT,MNWLON in ALLOCATE statement to        *
-C                LATB,LONB; elminiated MNWP as a dimension             *
+C                LATB,LONB; eliminated MNWP as a dimension             *
 C***********************************************************************
-
-      SUBROUTINE NWS10GET(NWSGGWI,FLON,FLAT,ULL,VLL,PLL,NP,RHOWAT0,G,
-     &     LONB,LATB,WTIMINC)
-      USE SIZES
-      IMPLICIT NONE
-      INTEGER, SAVE :: FIRSTCALL = 0
-      INTEGER N,NP,NWSGGWI,LONB,LATB,I,J,JJ,IEXT,IDIG1,IDIG2,
-     &     IDIG3,KERR
-      REAL*8 WTIMINC
-      REAL*8 FLAT(*),FLON(*)
-      REAL(SZ)  ULL(*),VLL(*),PLL(*)
-      REAL(SZ) RHOWAT0,RHOWATG,G,GDLON,P1,P2,P3,P4,U1,U2,U3,U4,
-     &     V1,V2,V3,V4
-      INTEGER KGDS(200)
-      INTEGER,SAVE,ALLOCATABLE ::  N00(:),N10(:),N11(:),N01(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: D00(:),D10(:),D11(:),D01(:)
-      REAL(SZ),SAVE,ALLOCATABLE :: COLRAB(:),DUMMY(:),
-     &     GCLAT(:),GCLON(:)
-      REAL(SZ),SAVE,ALLOCATABLE ::  UG(:),VG(:),PG(:)
-      CHARACTER*1 PDS(50),FNAME2(8)
-      CHARACTER*8 FNAME1
-      EQUIVALENCE (FNAME1,FNAME2)
-      LOGICAL FOUND
+      subroutine nws10get(flon,flat,ull,vll,pll)
+      use sizes, only : gblinputdir
+      use global, only : wtiminc
+      use mesh, only : np
+      implicit none
+      REAL(sz), intent(in) :: flat(:) ! mesh latitudes (radians)
+      REAL(sz), intent(in) :: flon(:) ! mesh longitudes (radians)
+      real(sz), intent(out) :: ull(:),vll(:),pll(:) ! mesh met values
+      !
+      real(sz) :: rhowatg ! density of water * gravitational acceleration
+      real(sz) :: p1,p2,p3,p4 ! pressure at 4 corners of gaussian grid cell 
+      real(sz) :: u1,u2,u3,u4 ! east velocity at 4 corners of gaussian grid cell
+      real(sz) :: v1,v2,v3,v4 ! north velocity at 4 corners of gaussian grid cell
+      character(len=8) :: fname1 ! name of GFS file to read
+      integer :: iext        ! numerical extension to file name
+      integer :: ios = 0     ! i/o status for opening the fort.xxx files
+      integer :: i, n        ! loop counters
 C
-      IF (FIRSTCALL.EQ.0) THEN
-         FIRSTCALL = 1
-         ALLOCATE ( UG(LATB*LONB),VG(LATB*LONB),
-     &        PG(LATB*LONB) )
-         ALLOCATE ( N00(MNP),N10(MNP),N11(MNP),N01(MNP) )
-         ALLOCATE ( D00(MNP),D10(MNP),D11(MNP),D01(MNP) )
-         ALLOCATE ( COLRAB(LATB),DUMMY(LATB),GCLAT(LATB),
-     &        GCLON(LONB) )
-      ENDIF
+      rhowatg=rhowat0*g
+      ! 
+      ! Check to be sure that wtiminc is evenly divisible.
+      if (modulo(int(wtiminc),3600).ne.0) then
+         call allMessage(ERROR,
+     &      'For NWS=10, WTIMINC must be evenly divisible by 3600.')
+         call windTerminate()
+      endif
+      ! 
+      ! Form the data file name.
+      iext = 200 + nws10DatasetCounter * int(wtiminc/3600.d0) 
+      write(fname1,'("fort.",i3)') iext    
+      !
+      ! jgf51.52.21: Fixed name of met file with full path for use in 
+      ! parallel operation.  
+      call openFileForRead(iext,trim(gblinputdir)//'/'//trim(fname1),ios)
+      if (ios.ne.0) then
+         call windTerminate()
+      endif
 C
-      RHOWATG=RHOWAT0*G
+C...  Read the ASCII data file
+      do i=1,lonb*latb
+         read(iext,*) pg(i),ug(i),vg(i)
+      enddo
+      close(iext)
 C
-C...  The first time the subroutine is called, setup the Gaussian grid and
-C...  determine the interpolating factors for the ADCIRC grid.
-C
-      IF (NWSGGWI.EQ.-1) THEN
-         CALL GLATS(LATB/2,COLRAB,DUMMY,DUMMY,DUMMY)
-         DO J=1,LATB/2
-            GCLAT(J)=COLRAB(J)
-            JJ=LATB-J+1
-            GCLAT(JJ)=PI-COLRAB(J)
-         ENDDO
-         GDLON=TWOPI/LONB
-         DO J=1,LONB
-            GCLON(J)=GDLON*(J-1)
-         END DO
-         CALL G2RINI(GCLON,GCLAT,FLON,FLAT,N00,N10,N11,N01,D00,D10,D11,
-     &        D01,NP,LONB,LATB)
-         RETURN
-      ENDIF
-
-C...  Figure out the data file name
-
-      FNAME1='fort.   '
-      IEXT=200 + NWSGGWI*(WTIMINC/3600)
-      IDIG1=IEXT/100
-      IDIG2=(IEXT-100*IDIG1)/10
-      IDIG3=(IEXT-100*IDIG1-10*IDIG2)
-      FNAME2(6)=CHAR(IDIG1+48)
-      FNAME2(7)=CHAR(IDIG2+48)
-      FNAME2(8)=CHAR(IDIG3+48)
-
-
-C...  Enter, locate and open the data file
-
- 1010 FORMAT(' File ',A8,' WAS NOT FOUND!  FATAL ERROR',/)
- 1011 FORMAT(' File ',A8,' WAS FOUND!  Opening & Processing file',/)
-
-      if (myproc == 0) WRITE(screenunit,*) '  '
-      INQUIRE(FILE=FNAME1,EXIST=FOUND)
-      IF(FOUND) GOTO 32
-      if (myproc == 0) WRITE(screenunit,1010) FNAME1
-      WRITE(16,1010) FNAME1
-#ifdef CMPI
-      call msg_fini()
-#endif
-      STOP
- 32   WRITE(screenunit,1011) FNAME1
-
-C...Open and read the GRIB BINARY data file
-c     OPEN(IEXT,FILE=FNAME1,status='old',access='sequential',
-c    &     form='unformatted',iostat=kerr)
-c     READ(IEXT,END=1100) LENPDS,LENKGDS,NWORDS
-c     IF(LENPDS.GT.0) READ(IEXT,END=1100) (pds(j),j=1,lenpds)
-c     IF(LENKGDS.GT.0) READ(IEXT,END=1100) (kgds(j),j=1,lenkgds)
-c     IF(NWORDS.GT.0) READ(IEXT,END=1100) (UG(J),J=1,NWORDS)
-c
-c     READ(IEXT,END=1100) LENPDS,LENKGDS,NWORDS
-c     IF(LENPDS.GT.0) READ(IEXT,END=1100) (pds(j),j=1,lenpds)
-c     IF(LENKGDS.GT.0) READ(IEXT,END=1100) (kgds(j),j=1,lenkgds)
-c     IF(NWORDS.GT.0) READ(IEXT,END=1100) (VG(J),J=1,NWORDS)
-c
-c     READ(IEXT,END=1100) LENPDS,LENKGDS,NWORDS
-c     IF(LENPDS.GT.0) READ(IEXT,END=1100) (pds(j),j=1,lenpds)
-c     IF(LENKGDS.GT.0) READ(IEXT,END=1100) (kgds(j),j=1,lenkgds)
-c     IF(NWORDS.GT.0) READ(IEXT,END=1100) (PG(J),J=1,NWORDS)
-
-C...Open and read the ASCII data file
-
-      OPEN(IEXT,FILE=FNAME1,status='old',iostat=kerr)
-      DO I=1,LONB*LATB
-         READ(IEXT,*) PG(I),UG(I),VG(I)
-      ENDDO
-
- 1100 CLOSE(IEXT)
-
-
 C.....Go from the Gaussian grid to the ADCIRC grid
 C.....Convert pressure from N/M^2 to M of H20
-
-      DO N=1,NP
-         P1=PG(N00(N))
-         P2=PG(N10(N))
-         P3=PG(N11(N))
-         P4=PG(N01(N))
-         U1=UG(N00(N))
-         U2=UG(N10(N))
-         U3=UG(N11(N))
-         U4=UG(N01(N))
-         V1=VG(N00(N))
-         V2=VG(N10(N))
-         V3=VG(N11(N))
-         V4=VG(N01(N))
-         PLL(N)=P1*D00(N)+P2*D10(N)+P3*D11(N)+P4*D01(N)
-         ULL(N)=U1*D00(N)+U2*D10(N)+U3*D11(N)+U4*D01(N)
-         VLL(N)=V1*D00(N)+V2*D10(N)+V3*D11(N)+V4*D01(N)
-         PLL(N)=PLL(N)/RHOWATG
-      END DO
+      do n=1,np
+         ! grab the numerical values at the 4 corners of the grid 
+         ! cell containing this mesh node
+         p1=pg(n00(n))
+         p2=pg(n10(n))
+         p3=pg(n11(n))
+         p4=pg(n01(n))
+         u1=ug(n00(n))
+         u2=ug(n10(n))
+         u3=ug(n11(n))
+         u4=ug(n01(n))
+         v1=vg(n00(n))
+         v2=vg(n10(n))
+         v3=vg(n11(n))
+         v4=vg(n01(n))
+         ! spatially interpolate from the 4 values to the mesh vertex
+         pll(n)=p1*d00(n)+p2*d10(n)+p3*d11(n)+p4*d01(n)
+         ull(n)=u1*d00(n)+u2*d10(n)+u3*d11(n)+u4*d01(n)
+         vll(n)=v1*d00(n)+v2*d10(n)+v3*d11(n)+v4*d01(n)
+         pll(n)=pll(n)/rhowatg
+      end do
 C
-      RETURN
-      END SUBROUTINE
-
+      nws10DatasetCounter = nws10DatasetCounter + 1
+      !----------------------------------------------------------------      
+      end subroutine nws10get
+      !----------------------------------------------------------------
 
 C***********************************************************************
 C  Subroutine to compute the latutudes in a Global Gaussian Lat/Lon    *
@@ -1139,7 +1252,6 @@ C  grid with T126 resolution (GRIB Grid type 126).                     *
 C                                                                      *
 C       modified from the original GLATS by R.L. 4/24/96               *
 C***********************************************************************
-
       SUBROUTINE GLATS(LGGHAF,COLRAD,WGT,WGTCS,RCS2)
       USE SIZES
       IMPLICIT NONE
@@ -1192,7 +1304,7 @@ C     102  FORMAT(1H ,I2,2X,F6.2,2X,F10.7,2X,E13.7,2X,E13.7,2X,I4,2X,D13.7)
 c     PRINT 100,LGGHAF
 c     100  FORMAT(1H ,'SHALOM FROM 0.0 GLATS FOR ',I3)
       RETURN
-      END SUBROUTINE
+      END SUBROUTINE GLATS
 
 
 C***********************************************************************
@@ -1216,144 +1328,7 @@ C
  1    CONTINUE
       P=Y3
       RETURN
-      END SUBROUTINE
-
-C***********************************************************************
-C  Subroutine to compute the factors to interpolate from a global      *
-C  Gaussian Lat/Lon grid with T126 resolution (GRIB Grid type 126)     *
-C  onto another grid.                                                  *
-C                                                                      *
-C  The new grid is a series of longitude and latitude points contained *
-C  in the FLON and FLAT arrays with a total number of points NP        *
-C                                                                      *
-C       modified from the original G2RINI by R.L. 4/17/96              *
-C***********************************************************************
-
-      SUBROUTINE G2RINI(GCLON,GCLAT,FLON,FLAT,N00,N10,N11,N01,D00,D10,
-     &     D11,D01,NP,LONB,LATB)
-      USE SIZES
-      IMPLICIT NONE
-      INTEGER,SAVE :: ICALL = 0
-      INTEGER NP,N,I,LONB,LATB,NLAT,NLON,LON,LONP1,LAT,LATP1
-      REAL(8) DLAT,DLON,FLONWORK,COLAT,DDLAT,XLAT,DFLAT,DFLAT1,
-     &     DDLON,XLON,DFLON,DFLON1
-      REAL(8) FLAT(*),FLON(*)
-      REAL(SZ) GCLAT(*),GCLON(*)
-      INTEGER  N00(*),N10(*),N11(*),N01(*)
-      REAL(SZ) D00(*),D10(*),D11(*),D01(*)
-C
-      IF( ICALL .EQ. 0 ) THEN
-         ICALL = 1
-c       PRINT 1234
-c1234   FORMAT(' = IN ROUTINE G2RINI FOR HORIZONTAL INTERPOLATION = ')
-
-C...Compute estimated DLAT, true DLON for Gaussian grid
-
-         NLAT=LATB
-         NLON=LONB
-         DLAT=PI/REAL(NLAT-1,KIND=SZ)
-         DLON=TWOPI/REAL(NLON,KIND=SZ)
-         N=0
-
-C...Loop through all the nodes in the grid to be interpolated onto and
-C.....compute the interpolating factors.
-
-         DO I=1,NP
-
-C.....Compute initial guess of which lon value FLON(I) is in the Gaussian file
-C.......Check that this value is reasonable.
-
-            FLONWORK=FLON(I)
-            IF(FLONWORK.LT.0.) FLONWORK=FLONWORK+TWOPI
-            LON=FLONWORK/DLON + 1
-            LONP1=LON+1
-            IF(LON.EQ.NLON) LONP1=1 !Circle condition
-            IF((LON.LT.1).OR.(LON.GT.NLON)) THEN
-               PRINT *,' ***** ERROR IN LON ****'
-               PRINT *,' I ',I
-               PRINT *,' LON ',LON
-               PRINT *,' DLON ',DLON
-               PRINT *,' FLON ',FLON(I)
-#ifdef CMPI
-               call msg_fini()
-#endif
-               STOP
-            ENDIF
-
-C.....Compute initial guess of which lat value FLAT(I) is in the Gaussian file
-C.......Check that this value is reasonable.
-
-            COLAT=HFPI-FLAT(I)
-            LAT=COLAT/DLAT + 1
-            IF(LAT.EQ.NLAT) LAT=LAT-1
-            LATP1=LAT+1
-            IF((LAT.LT.1).OR.(LAT.GT.NLAT)) THEN
-               PRINT *,' ***** ERROR IN LAT ****'
-               PRINT *,' I ',I
-               PRINT *,' LAT ',LAT
-               PRINT *,' DLAT ',DLAT
-               PRINT *,' FLAT ',FLAT(I)
-#ifdef CMPI
-               call msg_fini()
-#endif
-               STOP
-            ENDIF
-
- 5          CONTINUE
-        IF((COLAT.GE.GCLAT(LAT)).AND.(COLAT.LE.GCLAT(LATP1))) GO TO 9
-            IF(COLAT.LT.GCLAT(LAT)) THEN
-               LATP1=LAT
-               LAT=LAT-1
-               IF(LAT.LE.0) THEN
-                  LAT=1
-                  LATP1=2
-                  GOTO 9
-               ENDIF
-               GOTO 5
-            ENDIF
-            IF(COLAT.GT.GCLAT(LATP1)) THEN
-               LAT=LAT+1
-               LATP1=LAT+1
-               IF(LAT.GE.NLAT ) THEN
-                  LAT=NLAT-1
-                  LATP1=NLAT
-                  GOTO 9
-               ENDIF
-               GOTO 5
-            ENDIF
-
- 9          CONTINUE
-            DDLAT=GCLAT(LATP1)-GCLAT(LAT)
-            XLAT=GCLAT(LAT)
-            DFLAT1=(COLAT-XLAT)/DDLAT
-            IF(LAT.EQ.1) DFLAT1=MAX(0.d0,DFLAT1) !MODIFY THIS FOR POLAR POINTS
-            IF(LATP1.EQ.NLAT) DFLAT1=MIN(1.d0,DFLAT1) !MODIFY THIS FOR POLAR POINTS
-            DFLAT=1.d0-DFLAT1
-            DDLON=DLON
-            XLON=GCLON(LON)
-            DFLON1=(FLONWORK-XLON)/DDLON
-            DFLON=1.d0-DFLON1
-            N=N+1
-            D00(N)=DFLON*DFLAT
-            D10(N)=DFLON1*DFLAT
-            D11(N)=DFLON1*DFLAT1
-            D01(N)=DFLON*DFLAT1
-            N00(N)=LON+(LAT-1)*NLON
-            N10(N)=LONP1+(LAT-1)*NLON
-            N11(N)=LONP1+(LATP1-1)*NLON
-            N01(N)=LON+(LATP1-1)*NLON
-
-         END DO
-c        if (myproc == 0)
-c    &     WRITE(screenunit,*) ' D00 TO D11 SHOULD BE ALL POSITIVE.'
-
-      ELSE
-c        if (myproc == 0)
-c          WRITE(screenunit,*) ' G2RINI ALREADY CALLED '
-      ENDIF
-
-      RETURN
-      END SUBROUTINE
+      END SUBROUTINE POLY
 
 
 C***********************************************************************

@@ -531,7 +531,26 @@ C     jgf46.21 Modify to match behavior of 46.02
          RampWRad=1.0D0
 Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
 C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
-      CASE(1,2,3,4,5,6,7,8)
+      CASE(1)
+         !jgf51.51.21: Fixed the case where nramp=1 but dramp=0.0d0.
+         if (dramp.lt.1.0e-6) then
+            Ramp=1.0d0
+            RampExtFlux=1.0D0
+            RampIntFlux=1.0D0
+            RampElev=1.0D0
+            RampTip=1.0D0
+            RampMete=1.0D0
+            RampWRad=1.0D0
+         else
+            ramp=tanh((2.d0*timeloc/86400.d0)/dramp)
+            RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampElev=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampTip=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampMete=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampWRad=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+         endif
+      CASE(2,3,4,5,6,7,8)
          Ramp=TANH((2.D0*TimeLoc/86400.D0)/DRamp)
          RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampExtFlux)
          RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampIntFlux)
@@ -583,7 +602,6 @@ Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
          !jgf49.44: Cover the case where the ramp length is zero.
          IF (DRamp.lt.1.0e-6) Ramp = 1.0d0
       ENDIF
-
 C
 C------------------------ICE FIELDS----------------------------------------
 C...  UPDATE THE ICE CONCENTRATION FIELDS FROM UNIT 25,225,227
@@ -842,7 +860,6 @@ C     wind velocity.
                WVNY1(I)=WVNY2(I)
                PRN1(I)=PRN2(I)
             END DO
-            NWSGGWI=NWSGGWI+1
             CALL NWS6GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT,
      &           WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
          ENDIF
@@ -984,9 +1001,8 @@ C     formula is used to compute wind stress from the wind velocity.
                WVNY1(I)=WVNY2(I)
                PRN1(I)=PRN2(I)
             END DO
-            NWSGGWI=NWSGGWI+1
-            CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,RHOWAT0,
-     &           G,NWLON,NWLAT,WTIMINC)
+            ! jgf51.52.21: Fixed NWS10 and cleaned up interface.
+            call nws10get(slam,sfea,wvnx2,wvny2,prn2)
          ENDIF
          WTRatio=(TimeLoc-WTIME1)/WTIMINC
          DO I=1,NP

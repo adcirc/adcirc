@@ -2078,15 +2078,14 @@ C     formula is used to compute wind stress from the wind velocity.
       IF(NWS.EQ.10) THEN
          WTIME1=TimeLoc
          WTIME2=WTIME1+WTIMINC
-         NWSGGWI=-1
-         CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,RHOWAT0,G,
-     &        NWLON,NWLAT,WTIMINC)
-         NWSGGWI=0
-         CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,RHOWAT0,G,
-     &        NWLON,NWLAT,WTIMINC)
-         NWSGGWI=1
-         CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,RHOWAT0,G,
-     &        NWLON,NWLAT,WTIMINC)
+         !
+         ! jgf51.52.21: Fixed NWS10 and cleaned up interface.
+         call nws10init(slam,sfea)
+         ! read from fort.200 and spatially interpolate onto adcirc mesh
+         call nws10get(slam,sfea,wvnx1,wvny1,prn1)          
+         ! read from first file after fort.200 and spatially interpolate onto adcirc mesh
+         call nws10get(slam,sfea,wvnx2,wvny2,prn2)
+         !
          WTRATIO=(TimeLoc-WTIME1)/WTIMINC
          DO I=1,NP
             WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))

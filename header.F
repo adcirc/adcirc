@@ -2,6 +2,15 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.21 - 08/14/2015 - jgf - Fixed NWS10 (NOAA GFS) meteorological input 
+C           subroutines so that they function properly in serial and parallel;
+C           previously, there was no accommodation for NWS10 in adcprep, whereas
+C           now adcprep recognizes this as a valid value; subroutines in 
+C           adcirc were nonfunctional due to outdated parameters and code
+C           strucutre; adcirc code for NWS10GET was fixed and made functional 
+C           by bringing it in line with the overall structure of the wind
+C           module; also fixed an issue with ramp value initialization when
+C           nramp=1 and dramp=0.0.
 C v51.52.20 - 08/06/2015 - jgf - Fix to prevent NaNs in output files
 C           in runs that use SWAN coupling with a vortex meteorological
 C           model. This issue was a result of the parametric vortex

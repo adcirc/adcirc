@@ -464,16 +464,18 @@ C     RJW Merged:
          CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2,
      &                 NP,AsymmetricTime,ICS)
       ENDIF
-
+      !
+      ! jgf51.52.21: Fixed NWS10 and cleaned up interface.
       IF(NWS.EQ.10) THEN
-         WTIME1=STATIM*86400.D0
-         WTIME2=WTIME1+WTIMINC
-         NWSGGWI=-1
-         CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,RHOWAT0,G,
-     &        NWLON,NWLAT,WTIMINC) !JUST COMPUTE INTERPOLATING FACTORS
-         NWSGGWI=1
-         CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,RHOWAT0,G,
-     &        NWLON,NWLAT,WTIMINC) !NOW INTERPOLATE 1st WIND FIELD
+         wtime1=statim*86400.d0
+         wtime2=wtime1+wtiminc
+         call nws10init(slam,sfea)
+         wvnx1(:) = 0.d0
+         wvny1(:) = 0.d0
+         prn1(:) = prbckgrnd * mb2pa / ( rhowat0 * g)
+         ! read from first available file (not fort.200) and spatially
+         ! interpolate onto adcirc mesh
+         call nws10get(slam,sfea,wvnx2,wvny2,prn2) 
       ENDIF
 
       IF(NWS.EQ.11) THEN

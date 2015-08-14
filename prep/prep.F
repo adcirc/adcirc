@@ -1473,8 +1473,9 @@ C     tcm v51.06.02 added NWS=16: GFDL Met Data
      &        (ABS(NWS).EQ.5).OR.(ABS(NWS).EQ.6).OR.(ABS(NWS).EQ.8)
      &        .OR.(ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.15)
      &        .OR.(ABS(NWS).EQ.16)
-     &         .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29).OR.
-     &          (ABS(NWS).EQ.20))THEN
+     &         .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29)
+     &        .OR.(NWS.EQ.10) !yf added to nws=10 GFS Met
+     &         .OR.(ABS(NWS).EQ.20))THEN
             WRITE(15,80) WSMSG1
          ENDIF
          IF (NWS.EQ.3) THEN
