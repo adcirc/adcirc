@@ -548,7 +548,9 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER  NTCYFGV, NTCYFGW
       INTEGER  NTCYFM, NTCYSC, NTCYSGC, NTCYSGE
       INTEGER  NTCYSGV, NTCYSGW, NTCYSM
-      INTEGER  NTRSPC, NTRSPM
+
+      INTEGER  NTRSPC, NTRSPM, NUMITR, NW, NWSEGWI
+
       INTEGER  NP_GLOBAL
 C     kmd48.33bc - added variables for 3D boundary conditions
       INTEGER  RES_BC_FLAG  ! boundary condition flag for salinity and temperature

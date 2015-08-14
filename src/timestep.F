@@ -438,7 +438,26 @@ C     jgf46.21 Modify to match behavior of 46.02
          RampWRad=1.0D0
 Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
 C    kmd48.33bc - ramp changes with baroclinic when timestep is changed
-      CASE(1,2,3,4,5,6,7,8)
+      CASE(1)
+         !jgf51.51.21: Fixed the case where nramp=1 but dramp=0.0d0.
+         if (dramp.lt.1.0e-6) then
+            Ramp=1.0d0
+            RampExtFlux=1.0D0
+            RampIntFlux=1.0D0
+            RampElev=1.0D0
+            RampTip=1.0D0
+            RampMete=1.0D0
+            RampWRad=1.0D0
+         else
+            ramp=tanh((2.d0*timeloc/86400.d0)/dramp)
+            RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampElev=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampTip=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampMete=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+            RampWRad=TANH((2.D0*TimeLoc/86400.D0)/dramp)
+         endif
+      CASE(2,3,4,5,6,7,8)
          Ramp=TANH((2.D0*TimeLoc/86400.D0)/DRamp)
          RampExtFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampExtFlux)
          RampIntFlux=TANH((2.D0*TimeLoc/86400.D0)/DRampIntFlux)
@@ -587,6 +606,7 @@ C             into RSNX1/RSNY1, and then load the future forces into RSNX2/RSNY2
                  ENDDO
                ENDIF
 #endif
+
             ENDIF
             RStRatio=(TimeLoc-RSTIME1)/RSTIMINC
             DO I=1,NP
