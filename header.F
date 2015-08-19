@@ -2,6 +2,7 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.22 - 08/17/2015 - jgf - Added compiler flags for spirit at AFRL.
 C v51.52.21 - 08/14/2015 - jgf - Fixed NWS10 (NOAA GFS) meteorological input 
 C           subroutines so that they function properly in serial and parallel;
 C           previously, there was no accommodation for NWS10 in adcprep, whereas

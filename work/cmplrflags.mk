@@ -144,6 +144,13 @@ ifeq ($(compiler),intel)
         NETCDFHOME :=/opt/apps/intel13/netcdf/4.3.2/x86_64
         FLIBS      := $(FLIBS) -L$(NETCDFHOME)/lib -lnetcdff -lnetcdf
      endif
+     # jgf20150817: Adding support for spirit.afrl.hpc.mil;
+     # load the following modules: netcdf-fortran/intel/4.4.2
+     # and hdf5/intel/1.8.12 and hdf5-mpi/intel/sgimpt/1.8.12
+     ifeq ($(MACHINENAME),spirit) 
+        NETCDFHOME :=/app/wpostool/COST/netcdf-fortran-4.4.2/intel
+        FLIBS      := $(FLIBS) -L/app/wpostool/COST/netcdf-c-4.3.1.1/intel/lib -L$(NETCDFHOME)/lib -L/app/wpostool/COST/hdf5-mpi/1.8.12/intel/sgimpt/lib -lnetcdff -lnetcdf
+     endif
      # jgf20150420 mike requires that the analyst add netcdf to the softenv
      # with the following on the command line 
      # soft add +netcdf-4.1.3-Intel-13.0.0
