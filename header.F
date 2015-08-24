@@ -2,6 +2,11 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.23 - 08/23/2015 - jgf - Fixed adcprep issues with array extents for
+C           external flux boundaries and the LBCODE array for boundary 
+C           types at nodes in adcprep; the issues manifested as 
+C           too many flux values read from fort.15 for periodic river
+C           flux boundary conditions. 
 C v51.52.22 - 08/17/2015 - jgf - Added compiler flags for spirit at AFRL.
 C v51.52.21 - 08/14/2015 - jgf - Fixed NWS10 (NOAA GFS) meteorological input 
 C           subroutines so that they function properly in serial and parallel;

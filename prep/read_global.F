@@ -33,7 +33,8 @@ C---------------------------------------------------------------------
      &   bar1, bar2, bar3, weir, weird, flux14_ary, bcts14_ary, agrid,
      &   aperiodic_bc_ts, bndbcriver, exist_bc_ts, exist_flux, iden,
      &   mnbou, mnvel, nbou, nboumsg, nelg, neta, netamsg, nfover, 
-     &   nnodg, nope, nopemsg, nvel, nvelmsg, nweir, river_above_msl
+     &   nnodg, nope, nopemsg, nvel, nvelmsg, nweir, river_above_msl,
+     &   numLBCodeValues, nfluxf
       
       use memory_usage
       implicit none
@@ -151,6 +152,11 @@ C  and construct LBCODE array for read15 routine
 C
       J=0
       NWEIR = 0
+      ! jgf51.52.23: The LBCODE array is dimensioned by MNVEL which is 
+      ! larger than the number of values in the LBCODE array. So we
+      ! need to initialize to a value that will hopefully cause obvious 
+      ! isses if an initialized value is accidentally used.
+      LBCODE(:) = -99
       DO K = 1,NBOU
 C
          READ(14,80) NVELLMSG(K)
@@ -198,6 +204,7 @@ C
             print *, 'ERROR: IBTYPE 5 and 25 not supported by adcprep.'
             stop
          case(2,12,22,32,52)
+           NFLUXF=1 !jgf51.52.23
            DO I=1,NVELL(K)
               EXIST_FLUX = EXIST_FLUX + 1
               READ(14,*) NBVV(K,I)
@@ -213,6 +220,10 @@ C
             stop
          end select
       ENDDO
+      !jgf51.52.23: Record the actual number of values stored in the
+      !LBCODE array.
+      numLBCodeValues = J
+
 
 C     jgf45.06 added the following section
 C MEB --------------------------------------------------
@@ -974,36 +985,19 @@ C
 C
       READ(15,80) ANGMSG
       READ(ANGMSG,*) ANGINN
+      !
+      ! jgf51.52.23: There was code here to detemine if there are
+      ! external flux boundaries in the mesh file, but this info
+      ! was already determined in read14() above, so this redundant
+      ! code was removed.
+      ! Also, the number of external flux boundary nodes was already
+      ! determined in read14() above, so the loop through the LBCODE
+      ! array was not necessary. Also, the loop that was removed was
+      ! bounded by NVEL, which is larger than the number of values
+      ! in the LBCODE array, causing uninitialized values to be 
+      ! examined in the loop. 
 C
-C--Determine whether there are any normal flow boundaries.
-C
-C     jgf46.21 Added support for IBTYPE=52.
-      NFLUXF = 0
-      DO K=1, NBOU
-C         PRINT *, "IBTYPE(K) = ", IBTYPE(K)
-! kmd - changed due to river additions for baroclinic simulation
-         IF (ABS(IBTYPE(K))/100.EQ.1) THEN
-            ITYPE=(ABS(IBTYPE(K))-100)*(IBTYPE(K)/ABS(IBTYPE(K)))
-            IF ((ITYPE.EQ.2).OR.(ITYPE.EQ.12)
-     &        .OR.(ITYPE.EQ.22).OR.(ITYPE.EQ.32)
-     &        .OR.(ITYPE.EQ.52)) THEN
-              NFLUXF = 1
-            END IF
-         ELSE
-            IF ((IBTYPE(K).EQ.2).OR.(IBTYPE(K).EQ.12)
-     &        .OR.(IBTYPE(K).EQ.22).OR.(IBTYPE(K).EQ.32)
-     &        .OR.(IBTYPE(K).EQ.52)) THEN
-              NFLUXF = 1
-            END IF
-         ENDIF
-      ENDDO
-C      PRINT *, "NFLUXF = ", NFLUXF
-C
-C--If so, read the number of frequencies present and other info.
-C  Use LBCODE array constructed in read14.
-C
-Ckmd Added in information for processing fort.15 information if
-C    NFFR=-1 so the river information does not have to start at
+Ckmd Added NFFR=-1 so the river information does not have to start at
 C    time=0.
       IF (NFLUXF.EQ.1) THEN
          READ(15,80) NFFRMSG
@@ -1021,13 +1015,13 @@ C
             ENDDO
             DO I=1,NFFR
                READ(15,80) ALPHA2(I)
-               DO J=1,NVEL
-                  IF ((LBCODE(J).EQ.2).OR.(LBCODE(J).EQ.12)
-     &                 .OR.(LBCODE(J).EQ.22).OR.(LBCODE(J).EQ.52)) THEN
-                     READ(15,80) QNMSG(I,J)
-                     READ(QNMSG(I,J),*) QNAM(I,J),QNPH(I,J)
+               ! jgf51.52.23: Changed the loop extent from NVEL to 
+               ! EXIST_FLUX and removed reexamination of the LBCODE
+               ! array.
+               DO J=1, EXIST_FLUX 
+                  READ(15,80) QNMSG(I,J)
+                  READ(QNMSG(I,J),*) QNAM(I,J),QNPH(I,J)
 c     dbug             print *, "disc lbnode index = ",J
-                  ENDIF
                ENDDO
             ENDDO
 
@@ -1047,7 +1041,9 @@ C
             ENDDO
 C
             NFLBN = 0
-            DO J=1,NVEL
+            ! jgf51.52.23: Changed the loop extent from NVEL to 
+            ! numLBCodeValues.
+            DO J=1,numLBCodeValues
                IF ((LBCODE(J).EQ.2).OR.(LBCODE(J).EQ.12)
      &              .OR.(LBCODE(J).EQ.22).OR.(LBCODE(J).EQ.52)) THEN
                   NFLBN = NFLBN+1
