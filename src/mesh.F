@@ -199,8 +199,12 @@ C     ------------------------------------------------------------------
              numExternalFluxBoundaries = numExternalFluxBoundaries + 1 
          case(4,24)
              numInternalFluxBoundaries = numInternalFluxBoundaries + 1 
+             ! jgf51.52.24: added nvell(k) for boundaries with backside
+             ! nodes, since these are to be included in nvel.
+             nvel_count = nvel_count + nvell(k)          
          case(5,25)
              numInternalFluxBoundariesWithPipes = numInternalFluxBoundariesWithPipes + 1
+             nvel_count = nvel_count + nvell(k)          
          case default
              write(scratchMessage, 1030) ibtype_orig(k)
 1030        format('The boundary type ',i0,

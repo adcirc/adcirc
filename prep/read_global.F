@@ -1016,12 +1016,14 @@ C
             DO I=1,NFFR
                READ(15,80) ALPHA2(I)
                ! jgf51.52.23: Changed the loop extent from NVEL to 
-               ! EXIST_FLUX and removed reexamination of the LBCODE
-               ! array.
-               DO J=1, EXIST_FLUX 
-                  READ(15,80) QNMSG(I,J)
-                  READ(QNMSG(I,J),*) QNAM(I,J),QNPH(I,J)
+               ! numLBCodeValues
+               DO J=1,numLBCodeValues
+                  IF ((LBCODE(J).EQ.2).OR.(LBCODE(J).EQ.12)
+     &                 .OR.(LBCODE(J).EQ.22).OR.(LBCODE(J).EQ.52)) THEN
+                     READ(15,80) QNMSG(I,J)
+                     READ(QNMSG(I,J),*) QNAM(I,J),QNPH(I,J)
 c     dbug             print *, "disc lbnode index = ",J
+                  ENDIF
                ENDDO
             ENDDO
 

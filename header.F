@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.24 - 08/24/2015 - jgf - Modified loop extents from previous
+C           change such that the QNMSG array is populated at indices
+C           that correspond to the position in the LBCODE array where
+C           the flux boundary conditions are specified. 
 C v51.52.23 - 08/23/2015 - jgf - Fixed adcprep issues with array extents for
 C           external flux boundaries and the LBCODE array for boundary 
 C           types at nodes in adcprep; the issues manifested as 
