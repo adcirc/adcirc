@@ -297,6 +297,8 @@ case('fort.93')
    md%standard_name = 'ice_pressure_at_sea_level'
    md%coordinates = 'time y x'
    md%units = 'percent'
+case('none')
+   ! do nothing
 case default  ! includes fort.13 and none
    if (convertOutputData.eqv..false.) then
       call readNodalAttributesFile(dataFileName)
@@ -474,7 +476,11 @@ call XdmfInit(xdmfFortranObj)
 ! call the initHDF5 method; arguments include the ref to the XdmfFortran
 ! object, the name of the HDF5 file, and whether to release memory after write 
 write(6,'(A)') 'INFO: Initializing HDF5 file.'
-convertedFileName = trim(adjustl(dataFileName))//'_viz_boundaries'
+if (trim(adjustl(dataFileName)).eq.'none') then
+   convertedFileName = trim(adjustl(meshFileName))//'_viz_boundaries'
+else
+   convertedFileName = trim(adjustl(dataFileName))//'_viz_boundaries'
+endif
 !
 call XdmfInitHDF5(xdmfFortranObj, trim(convertedFileName)//'.h5'//char(0), release)
 !

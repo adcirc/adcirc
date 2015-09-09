@@ -1138,6 +1138,10 @@ C  Subroutine to compute the latutudes in a Global Gaussian Lat/Lon    *
 C  grid with T126 resolution (GRIB Grid type 126).                     *
 C                                                                      *
 C       modified from the original GLATS by R.L. 4/24/96               *
+C       modified from T126 to T1534 by Y.F 9/1/2015       
+C
+C      yf51.52.25: Please read the wiki link:
+C      https://en.wikipedia.org/wiki/Gaussian_grid
 C***********************************************************************
 
       SUBROUTINE GLATS(LGGHAF,COLRAD,WGT,WGTCS,RCS2)
@@ -1145,7 +1149,9 @@ C***********************************************************************
       IMPLICIT NONE
       REAL(SZ) COLRAD(*),WGT(*),WGTCS(*),RCS2(*)
       INTEGER LGGHAF,L2,K,K1,ITER
-      REAL(SZ) SI,SCALEVAL,RL2,DRAD,DRADZ,RAD,P1,P2,EPS,PHI,X,W,SN,RC
+      REAL(SZ) SI,SCALEVAL,RL2,DRAD,RAD,P1,P2,EPS,PHI,X,W,SN,RC
+      real(sz) :: dradz ! initial guess that represents a distance between gridpoints (radian)
+      integer :: multiple ! yf51.52.25: reduce initial guess for DRAD for T1534 grid  
 C
       EPS=1.d-6
 C     EPS=1.d-12
@@ -1158,7 +1164,15 @@ C
       RL2=L2
       SCALEVAL = 2.0d0/(RL2*RL2)
       K1=L2-1
-      DRADZ = PI / 360.d0
+      !yf51.52.25 DRADZ = PI / 360.d0
+      !yf51.52.25: In equation L2/(190+2), L2 (1536) is a number of 
+      ! latitude from T1534 grid and 190 is ones from the original 
+      ! T126 grid. +2 is polar points which didn't include in T126 grid.
+      ! The reason why I used the equation and the integer "multiple" 
+      ! are I want to use the original T126 latitudinal number (as the
+      ! base number) for the future update of GFS.
+      multiple = L2/(190+2)
+      dradz = pi/(multiple*360.d0)
       RAD = 0.0
       DO 1000 K=1,LGGHAF
          ITER=0
@@ -1196,9 +1210,10 @@ c     100  FORMAT(1H ,'SHALOM FROM 0.0 GLATS FOR ',I3)
 
 
 C***********************************************************************
-C  Subroutine used by GLATS.                                           *
+C  Subroutine used by GLATS.                 
+C     yf51.52.25: The subroutine POLY calculates the polynomial used in
+C     Gaussian quadrature.
 C***********************************************************************
-
       SUBROUTINE POLY(N,RAD,P)
       USE SIZES
       IMPLICIT NONE

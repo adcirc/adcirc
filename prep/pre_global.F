@@ -36,6 +36,7 @@ C                                    ! I-th Node on Land Boundary Segment K
       INTEGER,ALLOCATABLE::IBCONNR(:,:)
       INTEGER,ALLOCATABLE::LBCODE(:) ! LBCODE(I) Boundary Type of Land Boundary
                                      ! Node I
+      INTEGER :: numLBCodeValues ! number of values in LBCODE array
       INTEGER,ALLOCATABLE::WEIR(:)
       INTEGER,ALLOCATABLE::WEIRD(:)
 

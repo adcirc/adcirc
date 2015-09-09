@@ -2,11 +2,36 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.15 - 09/09/2015 - jgf - Merged fixes from the v51release branch, 
+C           specifically v51.52.21 through v51.52.25 (svn revision numbers
+C           1140:1148) as described below:
+C     v51.52.25 - 09/04/2015 - yf/jgf - Fixed initial guess for dradz in 
+C           subroutine glats() (for NWS10, i.e., GFS input) reducing it by a
+C           factor of 8. 
+C     v51.52.24 - 08/24/2015 - jgf - Modified loop extents from previous
+C           change such that the QNMSG array is populated at indices
+C           that correspond to the position in the LBCODE array where
+C           the flux boundary conditions are specified. 
+C     v51.52.23 - 08/23/2015 - jgf - Fixed adcprep issues with array extents for
+C           external flux boundaries and the LBCODE array for boundary 
+C           types at nodes in adcprep; the issues manifested as 
+C           too many flux values read from fort.15 for periodic river
+C           flux boundary conditions. 
+C     v51.52.22 - 08/17/2015 - jgf - Added compiler flags for spirit at AFRL.
+C     v51.52.21 - 08/14/2015 - jgf - Fixed NWS10 (NOAA GFS) meteorological
+C           input subroutines so that they function properly in serial and
+C           parallel; previously, there was no accommodation for NWS10 in 
+C           adcprep, whereas now adcprep recognizes this as a valid value; 
+C           subroutines in adcirc were nonfunctional due to outdated parameters
+C           and code structure; adcirc code for NWS10GET was fixed and made
+C           functional by bringing it in line with the overall structure of the
+C           wind module; also fixed an issue with ramp value initialization
+C           when nramp=1 and dramp=0.0.
 C  v52.14 - 08/06/2015 - jgf - Fix to prevent NaNs in output files
 C           in runs that use SWAN coupling with a vortex meteorological
 C           model. This issue was a result of the parametric vortex
 C           models not initializing the WVNX1 and WVNY1 arrays because
-C           they do not use them but SWAN does. 
+C           they do not use them but SWAN does (v51.52.20)
 C  v52.13 - 08/04/2015 - zc - Fixing bug that caused serial adcswan to not 
 C           write output files. descript % writeFlag was never set to .true.
 C  v52.12 - 08/02/2015 - zc - Fixing bug in writing netCDF stations using
@@ -27,7 +52,8 @@ C  v52.07 - 06/24/2015 - jgf - Fixed issue with serial execution by removing
 C           code that set WRITE_LOCAL_FILES (etc) equal to .true. for
 C           serial execution. 
 C  v52.06 - 06/23/2015 - jgf - Merged wetdryout branch (r1107:1115) to trunk
-C           including the changes described below as v52.04.xx.
+C           including the changes described below as v52.04.xx. The bug fixes
+C           contained in this merge were backported to v51.52.12. 
 C  v52.04.03 - 06/09/2015 - jgf - Added parsing of command line options to
 C              adcpost; added mergeSubdomainFiles() subroutine to adcpost
 C              to process integer and elementally-based output; added 
@@ -58,7 +84,8 @@ C  v52.04.01 - 05/21/2015 - jgf - Added code for writing out nodecode and noff
 C              (wet/dry state arrays) as regular output files. 
 C  v52.05 - 06/12/2015 - jgf - Removed error message emitted by
 C           adcprep and adcirc when NOLIFA=2 and NOLICAT=0 because it is 
-C           alarming and because it contradicts common practice.
+C           alarming and because it contradicts common practice (same change
+C           as v51.52.14). 
 C  v52.04 - 05/20/2015 - zc - Further fixes for multiple netCDF writer cores 
 C           and writing the fort.69 debug file. (v51release branch 
 C           v51.52.11, svn rev 1105)
