@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.26 - 09/09/2015 - jgf - Removed stray debugging statements from 
+C           couple2swan.F and tweaked comments for NWS10GET. 
 C v51.52.25 - 09/04/2015 - yf/jgf - Fixed initial guess for dradz in subroutine
 C           glats() (for NWS10, i.e., GFS input) reducing it by a factor of 8. 
 C v51.52.24 - 08/24/2015 - jgf - Modified loop extents from previous

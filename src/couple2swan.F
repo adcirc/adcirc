@@ -283,9 +283,6 @@ C-----------------------------------------------------------------------
 !... Loop over all sigma and theta.
          DO ID=1,MDC
             DO IS=1,MSC
-            !jgfdebug
-            write(numMDCChar,'(i0)') id
-            write(numMSCChar,'(i0)') is
 !... Sum contributions to radiation stresses.
                ADCIRC_SXX(I,2) = ADCIRC_SXX(I,2)
      &                   + (NE(IS) * SPCDIR(ID,4) + NE(IS) - 0.5)
