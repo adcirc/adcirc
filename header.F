@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v51.16 - 09/09/2015 - jgf - Merged v51.52.26 from v51 release branch
+C           (svn revision numbers 1148:1152) as described below:
+C     v51.52.26 - 09/09/2015 - jgf - Removed stray debugging statements from 
+C           couple2swan.F and tweaked comments for NWS10GET. 
 C  v51.15 - 09/09/2015 - jgf - Merged fixes from the v51release branch, 
 C           specifically v51.52.21 through v51.52.25 (svn revision numbers
 C           1140:1148) as described below:

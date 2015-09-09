@@ -1137,11 +1137,10 @@ C***********************************************************************
 C  Subroutine to compute the latutudes in a Global Gaussian Lat/Lon    *
 C  grid with T126 resolution (GRIB Grid type 126).                     *
 C                                                                      *
-C       modified from the original GLATS by R.L. 4/24/96               *
-C       modified from T126 to T1534 by Y.F 9/1/2015       
+C      modified from the original GLATS by R.L. 4/24/96                *
+C      modified from T126 to T1534 by Y.F 9/1/2015       
 C
-C      yf51.52.25: Please read the wiki link:
-C      https://en.wikipedia.org/wiki/Gaussian_grid
+C      yf51.52.25: Wiki link: https://en.wikipedia.org/wiki/Gaussian_grid
 C***********************************************************************
 
       SUBROUTINE GLATS(LGGHAF,COLRAD,WGT,WGTCS,RCS2)
