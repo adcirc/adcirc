@@ -5864,6 +5864,11 @@ C
 C     now close the netcdf file
       iret = nf90_close(hs%ncid)
       CALL check_err(iret)
+      !
+      ! jgf51.52.27: If we started with this hotstart file, the 
+      ! metadata still reflects the fort.15 from the previous run, 
+      ! instead of this one, so we need to update it. 
+      CALL updateMetaData(hs%ncid,hs%myFile)
 C
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")

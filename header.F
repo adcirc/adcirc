@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.27 - 09/16/2015 - jgf - Added call to subroutine updateMetaData()
+C           at end of subroutine writeNetCDFHotstartFile() to ensure that 
+C           netcdf metadata is updated in netcdf hotstart files when new 
+C           hotstart data are written to them.
 C v51.52.26 - 09/09/2015 - jgf - Removed stray debugging statements from 
 C           couple2swan.F and tweaked comments for NWS10GET. 
 C v51.52.25 - 09/04/2015 - yf/jgf - Fixed initial guess for dradz in subroutine
@@ -21,7 +25,7 @@ C           subroutines so that they function properly in serial and parallel;
 C           previously, there was no accommodation for NWS10 in adcprep, whereas
 C           now adcprep recognizes this as a valid value; subroutines in 
 C           adcirc were nonfunctional due to outdated parameters and code
-C           strucutre; adcirc code for NWS10GET was fixed and made functional 
+C           structure; adcirc code for NWS10GET was fixed and made functional 
 C           by bringing it in line with the overall structure of the wind
 C           module; also fixed an issue with ramp value initialization when
 C           nramp=1 and dramp=0.0.
