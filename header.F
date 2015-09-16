@@ -2,11 +2,16 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
-C  v51.16 - 09/09/2015 - jgf - Merged v51.52.26 from v51 release branch
+C  v52.17 - 09/16/2015 - jgf - Added call to subroutine updateMetaData()
+C           at end of subroutine writeNetCDFHotstartFile() to ensure that 
+C           netcdf metadata is updated in netcdf hotstart files when new 
+C           hotstart data are written to them. Same fix was applied to 
+C           v51release branch as v51.52.27.
+C  v52.16 - 09/09/2015 - jgf - Merged v51.52.26 from v51 release branch
 C           (svn revision numbers 1148:1152) as described below:
 C     v51.52.26 - 09/09/2015 - jgf - Removed stray debugging statements from 
 C           couple2swan.F and tweaked comments for NWS10GET. 
-C  v51.15 - 09/09/2015 - jgf - Merged fixes from the v51release branch, 
+C  v52.15 - 09/09/2015 - jgf - Merged fixes from the v51release branch, 
 C           specifically v51.52.21 through v51.52.25 (svn revision numbers
 C           1140:1148) as described below:
 C     v51.52.25 - 09/04/2015 - yf/jgf - Fixed initial guess for dradz in 
