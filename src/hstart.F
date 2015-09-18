@@ -2407,8 +2407,8 @@ C......RESTART THE WAVE RADIATION STRESS
            SELECT CASE(NRS)
            CASE(1)           
               OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
-              CALL RSGET(RSNX1,RSNY1,NP)
-              CALL RSGET(RSNX2,RSNY2,NP)
+              CALL RSGET(RSNX1,RSNY1)
+              CALL RSGET(RSNX2,RSNY2)
            CASE(2)
               ! NRS=2 was added. sb46.28sb03 09/xx/2006
               CALL RS2INIT(RSNX1,RSNY1,NP)
