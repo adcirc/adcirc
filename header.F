@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.29 - 09/18/2015 - jgf - Fixed parsing and i/o error checking in
+C           subroutine rsget (for reading fort.23). 
 C v51.52.28 - 09/18/2015 - jgf - Fixed check that compares number of nodes
 C           in mesh to number of nodes in fort.13 so that it occurs 
 C           immediately when fort.13 header is read. 

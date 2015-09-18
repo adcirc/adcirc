@@ -1456,7 +1456,7 @@ c...             include NRS=4
                   RSNY1(I)=RSNY2(I)
                END DO
                IF(NRS.EQ.1) THEN
-                 CALL RSGET(RSNX2,RSNY2,NP)
+                 CALL RSGET(RSNX2,RSNY2)
                ENDIF
                IF(NRS.EQ.2) THEN
                  CALL RS2GET(RSNX2,RSNY2,NP)

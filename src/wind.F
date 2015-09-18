@@ -5226,35 +5226,82 @@ C                                                                      *
 C***********************************************************************
 
 
+C----------------------------------------------------------------------
+C                S U B R O U T I N E   R S G E T
 C***********************************************************************
-C                                                                      *
 C   Read onto the ADCIRC grid radiation stress fields in the PBL-JAG   *
 C   (hurricane) model format.                                          *
-C                                                                      *
-C                                                                      *
 C                           R.L.05/12/99                               *
+C     jgf51.52.29: Added error checking and reporting as well as 
+C     execution tracing. 
 C***********************************************************************
-
-      SUBROUTINE RSGET(RSNX,RSNY,NP)
-      USE SIZES
-      IMPLICIT NONE
-      INTEGER NP,I,NHG
-      REAL(SZ) RSNX(*),RSNY(*)
-      CHARACTER*80 PBLJAGF
+      subroutine rsget(rsnx,rsny)
+      use global, only : nabout
+      use mesh, only : np
+      implicit none
+      real(sz), intent(out), dimension(np) :: rsnx
+      real(sz), intent(out), dimension(np) :: rsny
+      integer :: nhg
+      integer, save :: lineNum = 0
+      real(sz) :: rsnxRaw, rsnyRaw
+      character*80 pbljagf
+      integer :: errorio
 C
-      DO I=1,NP
-         RSNX(I)=0.d0
-         RSNY(I)=0.d0
-      END DO
- 170  READ(23,'(A80)') PBLJAGF
-      IF(PBLJAGF(2:2).EQ.'#') GOTO 170
- 171  READ(PBLJAGF,'(I8,5E13.5)') NHG,RSNX(NHG),RSNY(NHG)
-      READ(23,'(A80)') PBLJAGF
-      IF(PBLJAGF(2:2).NE.'#') GOTO 171
-C
-      RETURN
-      END SUBROUTINE
+      call setMessageSource("rsget")
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      rsnx(1:np) = 0.d0
+      rsny(1:np) = 0.d0
+C      
+      lineNum = lineNum + 1
+ 170  read(23,'(a80)',end=500,err=600,iostat=errorio) pbljagf
+      if (pbljagf(1:1).eq.'#') then
+         call allMessage(ERROR,'Found "#" in column 1 of fort.23.')
+         call windTerminate()
+      endif
+      if(pbljagf(2:2).eq.'#') goto 170
 
+      lineNum = lineNum + 1
+ 171  read(pbljagf,'(i8,5e13.5)',end=500,err=600,iostat=errorio) 
+     &      nhg, rsnxRaw, rsnyRaw
+      rsnx(nhg) = rsnxRaw
+      rsny(nhg) = rsnyRaw
+      lineNum = lineNum + 1      
+      read(23,'(a80)') pbljagf
+      if (pbljagf(1:1).eq.'#') then
+         call allMessage(ERROR,'Found "#" in column 1 of fort.23; '//
+     &      ' this character should only appear in column 2.')
+         call windTerminate()
+      endif      
+      if(pbljagf(2:2).ne.'#') goto 171
+
+#if defined(WIND_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      !cleans up the setMessageSource set at the beginning of the subroutine
+      call unsetMessageSource()
+      return
+C
+C     We jump to this section if there was an error reading a file.
+500   call allMessage(ERROR,'Unexpectedly reached end-of-file.') ! END jumps here
+600   call allMessage(ERROR,'I/O error during file access.') !  ERR jumps here
+      write(scratchMessage,'(a,i0,a)') 'Failed to read line ',lineNum,'.' 
+      call allMessage(ERROR,scratchMessage) 
+      call allMessage(ERROR,
+     &                  'Check the fort.16 file for more information.')
+      if (nabout.gt.0) then
+         call allMessage(INFO,'Reducing the value of NABOUT to 0'
+     &  //' will maximize the information written to the fort.16 file,'
+     &  //' which may aid in troubleshooting this issue.')
+      endif
+      write(scratchMessage,'(a,i0,a)')
+     &       'The value of the i/o error flag was ',errorio,'.'
+      call allMessage(ERROR,scratchMessage)
+      CALL windTerminate()
+C----------------------------------------------------------------------
+      end subroutine rsget
+C----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
 C...  jgf50.38.05: Subroutine to terminate the run cleanly.
