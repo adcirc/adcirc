@@ -408,7 +408,7 @@ C     ----------------------------------------------------------------
      & 'An XDMF formatted nodal attributes (fort.13) file was specified.')
       call allMessage(ERROR,
      & 'This ADCIRC executable was not compiled with XDMF support.')
-      call terminate()
+      call na_terminate()
 #else
       include 'adcirc_Xdmf.f'
       integer*8 :: xdmfFortranObj ! object that receives the data
@@ -457,7 +457,7 @@ C
          write(scratchMessage,'(a)') 'The XDMF nodal attributes file' //
      &       trim(naFileName)//'was not found.'
          call allMessage(ERROR, scratchMessage)
-         call terminate()
+         call na_terminate()
       ENDIF
 
       write(6,'(a)') 'INFO: Reading data from the "' 
@@ -741,7 +741,7 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
      &        'not contain all the attributes listed in the '
      &        /,'model parameter file (unit 15).')
          call allMessage(ERROR, scratchMessage)
-         call terminate()
+         call na_terminate()
       ENDIF
 C     ----------------------------------------------------------------
       end subroutine checkForMissingNodalAttributes
@@ -790,6 +790,7 @@ C     jgf46.00 Subroutine to read the nodal attributes file (unit 13).
 C
 C     ----------------------------------------------------------------
       SUBROUTINE ReadNodalAttr(NScreen, ScreenUnit, MyProc, NAbOut)
+      USE MESH, ONLY : NP
       IMPLICIT NONE
       INTEGER, intent(in) :: NScreen ! nonzero for debug info to screen
       INTEGER, intent(in) :: ScreenUnit ! i/o for screen
@@ -947,7 +948,25 @@ C     Read each attribute name, units, number of values, and default value
       WRITE(16,250)
  250  FORMAT(/,9X,'User comment line from unit 13:')
       WRITE(16,'(14X,A80,/)') header
-      READ(13,*) NumOfNodes     ! number of nodes according to unit 13
+      READ(13,*) NumOfNodes     ! number of nodes according to unit 13     
+C      
+C     ERROR CHECK: If a nodal attributes file is being used, check to
+C     see that the number of nodes in the nodal attribute file is the
+C     same as the number of nodes in the grid file.
+C     jgf52.18: Make this check immediately so execution can 
+C     be stopped immediately if this is not the right nodal attributes
+C     file for this mesh.
+      if ( (nwp.ne.0).and.(numOfNodes.ne.np) ) then
+         write(scratchMessage,9901) np, numOfNodes
+         call allMessage(ERROR,scratchMessage)
+         call na_terminate()
+ 9901   format('The number of nodes in the mesh file (unit 14) is ',i0,
+     &  'while the number of nodes listed on the 2nd line of the '//
+     &  'nodal attributes file (unit 13) is ',i0,'.'//
+     &  'These numbers must match. '//
+     &  'Is this the right nodal attributes file for this mesh file?')
+      endif
+C      
       READ(13,*) NAttr          ! number of attributes in the unit 13 file
       DO k=1, NAttr
          READ(13,*) AttrName
@@ -2159,8 +2178,12 @@ C     ----------------------------------------------------------------
 C     ----------------------------------------------------------------
 
 
-
-      SUBROUTINE terminate(NO_MPI_FINALIZE)
+C     ----------------------------------------------------------------
+C        S U B R O U T I N E   N A _ T E R M I N A T E
+C     ----------------------------------------------------------------
+C     Provide clean termination when an error occurs.
+C     ----------------------------------------------------------------
+      SUBROUTINE na_terminate(NO_MPI_FINALIZE)
 #ifdef CMPI
       USE MESSENGER
 #endif
@@ -2190,7 +2213,9 @@ C
       call allMessage(DEBUG,"Return.") ! should be unreachable
 #endif
       call unsetMessageSource()
-      END SUBROUTINE terminate
+C     ----------------------------------------------------------------
+      END SUBROUTINE na_terminate
+C     ----------------------------------------------------------------
 
 
 C-----------------------------------------------------------------------

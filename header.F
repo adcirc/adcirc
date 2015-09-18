@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C  v52.18 - 09/18/2015 - jgf - Fixed check that compares number of nodes
+C           in mesh to number of nodes in fort.13 so that it occurs 
+C           immediately when fort.13 header is read.
 C  v52.17 - 09/16/2015 - jgf - Added call to subroutine updateMetaData()
 C           at end of subroutine writeNetCDFHotstartFile() to ensure that 
 C           netcdf metadata is updated in netcdf hotstart files when new 
