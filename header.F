@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history                                                                *
+C    v51.34.09 -- 10/21/2015 -- tcm -- Added compiler flag options for SGI
+C        ICE X using default Intel compilers (topaz@erdc.hpc.mil)
 C    v51.34.08 - 08/11/2015 - tcm - Adjusted the slope limiting so that it 
 C        is turned on/off with each time step instead of being turned on and
 C        left on.  Temporarily commented out the slope limiting messaging
