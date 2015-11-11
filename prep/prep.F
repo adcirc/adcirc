@@ -1400,6 +1400,7 @@ C---------------------------------------------------------------------------C
       use memory_usage
       USE HARM, ONLY : NAMEFR
       use subprep, only : subdomainOn, found_sm_nml ! NCSU Subdomain Modeling
+      use nodalattributes, only : outputTau0
       IMPLICIT NONE
       integer :: nbytes = 0
       INTEGER I,J,K,M,JG,JP,KK, ios_stations
@@ -1450,10 +1451,12 @@ C     jgfdebug46.02 Added check for NWS=45 to write NWS=5
          WRITE(15,80) RAMPMSG
          WRITE(15,80) GMSG
          WRITE(15,80) TAU0MSG
+
 C        jgf47.11 Added writing of limits for time varying tau0
          IF ( (TAU0.le.-5.d0).AND.(TAU0.gt.-6.d0) ) THEN
              WRITE(15,80) TAU0LIMMSG
          ENDIF
+
          WRITE(15,80) DTMSG
          WRITE(15,80) STATMSG
          WRITE(15,80) REFTMSG
@@ -6635,6 +6638,7 @@ C---------------------------------------------------------------------------
      &    theta2, ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd,
      &    nvsd, nltd, nvtd, alp4, C3D, X3DD, Y3DD, SL3DD, SF3DD,
      &    X3DV, Y3DV, SL3DV, SF3DV, X3DT, Y3DT, SL3DT, SF3DT, C3D
+      USE NODALATTRIBUTES, ONLY : outputTau0
       USE NETCDFIO, ONLY : setADCIRCParameters, initNetCDFOutputFile,
      &    initNetCDFHotstart3D, initNetCDFHotstart,
      &    initNetCDFHotstartHarmonic,
@@ -7555,7 +7559,9 @@ C     was specified.
       CALL initNetCDFOutputFile(ElevStaDescript, reterr)
       CALL initNetCDFOutputFile(VelStaDescript, reterr)
       CALL initNetCDFOutputFile(ElevDescript, reterr)
-      CALL initNetCDFOutputFile(Tau0Descript, reterr)
+      if (outputTau0.eqv..true.) then
+         CALL initNetCDFOutputFile(Tau0Descript, reterr)
+      endif
       CALL initNetCDFOutputFile(VelDescript, reterr)
       CALL initNetCDFOutputFile(PrStaDescript, reterr)
       CALL initNetCDFOutputFile(WindVelStaDescript, reterr)

@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.30 - 11/11/2015 - jgf - Fixed output of time varying tau0 so that
+C           ascii fort.90 files have a proper header; fort.90 and fort.90.nc
+C           files are only written when tau0=-x.1 in fort.15.
 C v51.52.29 - 09/18/2015 - jgf - Fixed parsing and i/o error checking in
 C           subroutine rsget (for reading fort.23). 
 C v51.52.28 - 09/18/2015 - jgf - Fixed check that compares number of nodes

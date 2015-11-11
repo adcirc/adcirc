@@ -455,7 +455,7 @@ C
          ALLOCATE(TAU0VAR_g(NP_G))
       ENDIF
       Tau0Descript % lun                  = 90  
-      Tau0Descript % specifier            = NOUTGE
+      Tau0Descript % specifier            = NOUTGE      
       Tau0Descript % startTimeStep           = NTCYSGE 
       Tau0Descript % endTimeStep             = NTCYFGE
       Tau0Descript % outputTimeStepIncrement = NSPOOLGE
@@ -467,6 +467,9 @@ C
       Tau0Descript % array                => TAU0VAR
       Tau0Descript % array_g              => TAU0VAR_g
       Tau0Descript % field_name           = 'Tau0'
+      ! jgf51.52.30: Fixing the writing of tau0 so it only occurs 
+      ! when tau0=-x.1
+      Tau0Descript % writeFlag            = OutputTau0
 
       ! sponge layer fort.92
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
