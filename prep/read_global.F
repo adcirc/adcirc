@@ -411,6 +411,7 @@ C---------------------------------------------------------------------
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
      &                 IHARIND, ALLOC_MAIN14, CHARMV
       USE PRESIZES, ONLY : SZ
+      USE NODALATTRIBUTES, ONLY : outputTau0
       use memory_usage
       IMPLICIT NONE
 
@@ -775,10 +776,18 @@ C     jgf47.11 Allow the limits of time varying tau0 to be read in from
 C     the fort.15 file
       READ(15,80) TAU0MSG
       READ(TAU0MSG,*) TAU0
+      if ( abs((int(tau0)-tau0-0.1d0)).lt.1d-6 ) then
+         outputTau0 = .true.
+      else
+         outputTau0 = .false.
+      endif
+      !jgfdebug
+      write(6,*) 'tau0=',tau0,' outputTau0=',outputTau0
       IF ( (TAU0.LE.-5.d0).AND.(TAU0.GT.-6.d0) ) THEN
          READ(15,80) TAU0LIMMSG
          READ(TAU0LIMMSG,*) Tau0FullDomainMin, Tau0FullDomainMax
       ENDIF
+
 
 C
       READ(15,80) DTMSG

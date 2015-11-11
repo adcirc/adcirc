@@ -1022,29 +1022,28 @@ C           global elevation
             IF (OutputTau0) THEN
 Casey 090302: Corrected the unit number from 10 to 90.
                CALL writeDomainHeader(90,
-     &              TRIM(GLOBALDIR)//'/'//'fort.tau0',
+     &              TRIM(GLOBALDIR)//'/'//'fort.90',
      &              NP_G, NP, 'Tau0      ')
             ENDIF
          else
 
             CALL OPEN_GBL_FILE(63, TRIM(LOCALDIR)//'/'//'fort.63',
-     &       NP_G, NP, HEADER63)
-C            kmd48.33 add the ability to output the sponge layer
-             IF (OUTPUTSPONGE) THEN
-                 CALL writeDomainHeader(92,
-     &             TRIM(LOCALDIR)//'/'//'fort.92',
-     &             NP_G, NP, 'sponge     ')
-             END IF
+     &         NP_G, NP, HEADER63)
+C              kmd48.33 add the ability to output the sponge layer
+            IF (OUTPUTSPONGE) THEN
+               CALL writeDomainHeader(92,
+     &           TRIM(LOCALDIR)//'/'//'fort.92',
+     &           NP_G, NP, 'sponge     ')
+            END IF
 C
 C           jgf47.06 Tau0 output is produced on the same schedule as
 C           global elevation
-            IF (OutputTau0) THEN
+            IF (OutputTau0.eqv..true.) THEN
 Casey 090302: Corrected the unit number from 10 to 90.
                CALL writeDomainHeader(90,
-     &              TRIM(LOCALDIR)//'/'//'fort.tau0',
-     &              NP_G, NP, 'Tau0      ')
+     &           TRIM(GLOBALDIR)//'/'//'fort.90',
+     $           NP_G, NP, 'Tau0      ')
             ENDIF
-           
          endif
          IGEP=2
       ENDIF

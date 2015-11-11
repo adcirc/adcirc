@@ -739,7 +739,7 @@ Corbitt 120321: Allow advection to be turned on locally instead of globally
          WRITE(scratchMessage,1111)
  1111   FORMAT('Nodal Attributes file (unit 13) does '
      &        'not contain all the attributes listed in the '
-     &        /,'model parameter file (unit 15).')
+     &        'model parameter file (unit 15).')
          call allMessage(ERROR, scratchMessage)
          call na_terminate()
       ENDIF

@@ -3077,17 +3077,19 @@ C     kmd48.33bc - changed NDSETSE for use of new DTDPHS
 
 Casey 090310: Added the possibility for NOUTGE = -4.
       IF((NOUTGE.EQ.-1).OR.(NOUTGE.EQ.-4)) THEN
-         if (write_local_files.eqv..false.) then
-            CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
-     $            NP_G, NP, HEADER63)
-C             jgf47.06 Tau0 output is produced on the same schedule as
-C              global elevation
-            IF (OUTPUTTAU0) THEN
+         if (write_local_files.eqv..false.) then      
+           CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63',
+     $         NP_G, NP, HEADER63)
+C
+C        jgf47.06 Tau0 output is produced on the same schedule as
+C        global elevation
+            IF (outputTau0.eqv..true.) THEN
 Casey 090310: Corrected the unit number from 10 to 90.
-               CALL writeDomainHeader(90,
-     &                 TRIM(GLOBALDIR)//'/'//'fort.tau0',
-     $                  NP_G, NP, 'Tau0      ')
+                CALL writeDomainHeader(90,
+     &              TRIM(GLOBALDIR)//'/'//'fort.90',
+     $               NP_G, NP, 'Tau0      ')
             ENDIF
+
 C kmd48.33bc - information for writing out the sponge layer
             IF(OUTPUTSPONGE) THEN
                CALL writeDomainHeader(92,
@@ -3103,8 +3105,8 @@ C             jgf47.06 Tau0 output is produced on the same schedule as
 C              global elevation
             IF (OUTPUTTAU0) THEN
 Casey 090310: Corrected the unit number from 10 to 90.
-                  CALL writeDomainHeader(90,
-     &                 TRIM(LOCALDIR)//'/'//'fort.tau0',
+               CALL writeDomainHeader(90,
+     &                 TRIM(LOCALDIR)//'/'//'fort.90',
      $                  NP_G, NP, 'Tau0      ')
             ENDIF
 C kmd48.33bc - information for writing out the sponge layer
@@ -3115,7 +3117,7 @@ C kmd48.33bc - information for writing out the sponge layer
             END IF
 
          endif
-           IGEP=2
+         IGEP=2
       ENDIF
       IF(NOUTGE.EQ.2) THEN
           OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63',
