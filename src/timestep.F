@@ -3290,7 +3290,8 @@ C
 C...
 C...  WRITE OUTPUT
 C...
-      CALL writeOutput2D(IT,TimeLoc) ! =>see write_output.F
+      !CALL writeOutput2D(IT,TimeLoc) ! =>zc - moved to adcirc.F so that SWAN writes 
+                                      !        correctly
 C
       if (subdomainOn.and.NOUTGS.eq.1) call writeFort065(it) ! NCSU Subdomain Modeling   
       if (subdomainOn.and.NOUTGS.eq.2) call writeFort066(it) ! NCSU Subdomain Modeling   
