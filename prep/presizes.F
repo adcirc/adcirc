@@ -96,10 +96,12 @@ C----------------------------------------------------------------------------
       USE GLOBAL, ONLY :
      &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
-     &                   SWAN_OutputTMM10
-Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-     &                  ,WaveWindMultiplier
+     &                   SWAN_OutputTMM10,USE_TVW,TVW_FILE,NOUT_TVW,
+     &                   TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,WaveWindMultiplier
 #else
+      USE GLOBAL, ONLY : USE_TVW,TVW_FILE,NOUT_TVW,
+     &                   TOUTS_TVW,TOUTF_TVW,NSPOOL_TVW,WaveWindMultiplier 
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       USE GLOBAL, ONLY : WaveWindMultiplier 
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
@@ -215,6 +217,8 @@ C Logicals added for adcprep paths
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
       NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir
+      NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
+     &    TOUTF_TVW,NSPOOL_TVW
       LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in
       LOGICAL :: XDMF_AVAIL ! true if XDMF was compiled in
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
@@ -254,7 +258,11 @@ C     the reading of the fort.15 file.
       CHARACTER(len=80) skipped !jgf46.00 data that we want to skip
       INTEGER :: ios  ! return value of i/o operation
 
-
+Cobell - Added for found time varying weir namelist
+      LOGICAL :: found_tvw_nml
+C.... tcm v51.20.04 additions for station location file
+      integer ::  ios_stations
+      integer :: MNSTAE2,MNSTAV2,MNSTAC2,MNSTAM2
 
 #ifdef ADCNETCDF
       NETCDF_AVAIL = .true.
@@ -476,6 +484,7 @@ c... tcm v50.79 addition for metControl namelist
       logical :: found_metCon_nml  !flag to determine if the metControl namelist was present
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       LOGICAL :: FOUND_WC_NML
+      LOGICAL :: found_tvw_nml
 C.... tcm v51.20.04 additions for station location file
       integer ::  ios_stations
       integer :: MNSTAE2,MNSTAV2,MNSTAC2,MNSTAM2
@@ -582,6 +591,20 @@ C.....REWIND THE FORT.15 FILE IN ORDER TO PROCESS THE REMAINING PIECES
          found_metCon_nml = .true.  !tcm v50.79 added
       ENDIF
       REWIND(15)
+      
+      ! zc: Add namelist for user to control time varying weirs
+      READ(UNIT=15,NML=TVWControl,IOSTAT=IOS)
+      IF(IOS.GT.0)THEN
+         WRITE(*,'(2A)') "INFO: The time varying weir control namelist",
+     &      " was not found."
+         found_tvw_nml = .FALSE.
+      ELSE
+         WRITE(*,'(2A)') "INFO: The time varying weir control namelist",
+     &      " was found."
+         found_tvw_nml = .TRUE.
+      ENDIF
+      REWIND(15)
+
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       READ(UNIT=15,NML=waveCoupling,IOSTAT=IOS)
       IF(IOS.GT.0)THEN
@@ -591,6 +614,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
          FOUND_WC_NML = .TRUE.
       ENDIF
       REWIND(15)
+
 C
 C
 C  Initialize all runtime option logicals to false

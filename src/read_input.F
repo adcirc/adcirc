@@ -32,6 +32,8 @@ C-----------------------------------------------------------------------
       USE SUBDOMAIN, ONLY : subdomainOn
       USE WRITE_OUTPUT, ONLY : outputNodeCode, outputNOFF
       USE HARM
+      USE WEIR
+      USE TIME_VARYING_WEIR_BOUNDARY
       USE WIND
       USE ITPACKV
       USE ADCIRC_MOD, ONLY : ADCIRC_Terminate    
@@ -50,6 +52,7 @@ Casey 100205: Enable hot-start file generation by SWAN.
 #endif
       IMPLICIT NONE
       INTEGER NIBP,IBN1,IK,NDISC,NBBN,NVEL2
+      INTEGER NTimeVaryingWeir
       INTEGER IDUM80
       INTEGER IMDig1,IMDig2,IMDig3,IMDig4,IMDig5,IMDig6
       REAL(SZ) RampVal
@@ -63,12 +66,16 @@ C
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
+      
       NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir      
       NAMELIST /subdomainModeling/ subdomainOn
+      NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
+     &                      TOUTF_TVW,NSPOOL_TVW
       NAMELIST /wetDryControl/ outputNodeCode, outputNOFF
       
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
+      CHARACTER(len=2000) :: origLineTVW
       INTEGER :: commentStart            ! location of fort.15 comment start
       INTEGER :: ios = 0                 ! i/o status of read operation
 
@@ -285,6 +292,36 @@ c....    a non-default value we can determine this was the case.
      & " DragLawString=",DragLawString, "rhoAir=",rhoAir
       call logMessage(ECHO,trim(scratchMessage))
       REWIND(15)
+
+      !...Read in time varying weir control from fort.15
+      NOUT_TVW = -99999
+      TOUTS_TVW = -99999
+      TOUTF_TVW = -99999
+      NSPOOL_TVW = -99999
+      READ(UNIT=15,NML=TVWControl,IOSTAT=IOS)
+      IF(IOS.NE.0)THEN
+        CALL logMessage(INFO,"The tvwControl namelist was not found.")
+        found_tvw_nml = .FALSE.
+      ELSE
+        CALL logMessage(INFO,"The tvwControl namelist was found.")
+        found_tvw_nml = .TRUE.
+        IF(USE_TVW)THEN
+            IF(NOUT_TVW.EQ.-99999D0)THEN
+                NOUT_TVW=NOUTGE
+                IF(TOUTS_TVW.EQ.-99999D0)TOUTS_TVW=TOUTSGE
+                IF(TOUTF_TVW.EQ.-99999D0)TOUTF_TVW=TOUTFGE
+                IF(NSPOOL_TVW.EQ.-99999D0)NSPOOL_TVW=NSPOOLGE
+            ELSE
+                IF(TOUTS_TVW.EQ.-99999D0)TOUTS_TVW=TOUTSGE
+                IF(TOUTF_TVW.EQ.-99999D0)TOUTF_TVW=TOUTFGE
+                IF(NSPOOL_TVW.EQ.-99999D0)NSPOOL_TVW=NSPOOLGE
+            ENDIF    
+        ELSE
+            NOUT_TVW = 0
+        ENDIF   
+      ENDIF
+      REWIND(15)
+
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       READ(UNIT=15,NML=waveCoupling,IOSTAT=IOS)
       IF(IOS.gt.0)THEN
@@ -3646,6 +3683,36 @@ C...  WRITE NOUTGV,TOUTSGV,TOUTFGV,NTCYSGV,NTCYFGV,NSPOOLGV TO UNIT 16
 
        ENDIF
 
+
+
+C...  COMPUTE PARAMETERS FOR TIME VARIABLE WEIR OUTPUT
+      IF(USE_TVW.AND.NOUT_TVW.NE.0)THEN
+        ALLOCATE(TVW(1:MNP))
+        TVW(:) = 0D0
+#ifdef IBM      
+        NTCYS_TVW=INT((TOUTS_TVW-STATIM)*(86400.D0/DTDP) + 0.5d0,
+     &      KIND(0.0d0))
+        NTCYF_TVW=INT((TOUTF_TVW-STATIM)*(86400.D0/DTDP) + 0.5d0,
+     &      KIND(0.0d0))   
+#else
+        NTCYS_TVW=INT((TOUTS_TVW-STATIM)*(86400.D0/DTDP) + 0.5d0)
+        NTCYF_TVW=INT((TOUTF_TVW-STATIM)*(86400.D0/DTDP) + 0.5d0)
+#endif        
+        IF(NTCYF_TVW.GT.NT)NTCYF_TVW=NT
+        IF(NSPOOL_TVW.EQ.0)THEN
+            NDSETS_TVW = 0
+        ELSE
+#ifdef IBM       
+             NDSETS_TVW=INT((NTCYF_TVW-NTCYS_TVW)/NSPOOL_TVW,KIND(0D0))
+#else
+             NDSETS_TVW=INT((NTCYF_TVW-NTCYS_TVW)/NSPOOL_TVW)
+#endif             
+        ENDIF
+      ENDIF
+
+
+             
+
 C...
 C...  IF TRANSPORT IS INCLUDED IN THE RUN, INPUT INFORMATION ABOUT GLOBAL
 C...  CONCENTRATION DATA OUTPUT
@@ -4028,18 +4095,8 @@ C     in from unit 14 file.
 C     RJW IOOS move until after ZOB definition
       CALL InitNodalAttr(DP, NP, G, NScreen, ScreenUnit, MyProc, NAbOut)
 CS
-C...  INITIALIZE AVERAGING FOR INTERNAL BARRIER WATER LEVELS
-C...  BARAVGWT=0.000 -> NO AVERAGING PERFORMED
-cjjwm001 changed one line
-      BARAVGWT=0.000D0
-      IBSTART=0
-      DO I=1,NVEL
-         RBARWL1AVG(I)=0.D0
-         RBARWL2AVG(I)=0.D0
-      END DO
 
 C...  INITIALIZE NIBNODECODE(I)
-
       DO I=1,NP
          NIBNODECODE(I)=0
       END DO

@@ -1,7 +1,41 @@
-C******************************************************************************
-C           This file contains a log of changes made to (P)ADCIRC.            *
-C                                                                             *
-C  mod history           
+C***********************************************************************
+C           This file contains a log of changes made to (P)ADCIRC.      
+C                                                                       
+C  mod history
+C  v52.21 - 11/15/2015 - zc - Merging TimeVaryingWeirs branch into trunk
+C       v52.20.17 - 11/13/2015 - zc - Merging changes up to trunk revision 1171 
+C                                     and fixing bugs
+C       v52.20.16 - 06/09/2015 - zc - Merging changes up to trunk revision 1109 
+C       v52.20.15 - 05/06/2015 - zc - Fixing bug when compling adcprep
+C       v52.20.14 - 05/06/2015 - zc - Bringing time varying weirs branch into
+C                                     sync with trunk revision 1092 and
+C                                     resolving conflicts
+C       v52.20.13 - 05/06/2015 - zc - Adding LUN and File_Extension to output
+C                                     variable for fort.77
+C       v52.20.12 - 11/12/2014 - zc - Merging trunk changes to branch
+C                                     up to revision 1044
+C       v52.20.11 - 11/07/2014 - zc - Merging trunk changes to branch
+C                                     up to revision 1041
+C       v52.20.10 - 10/28/2014 - zc - Changes to integrate adcprep into branch.  
+C                                     Adding mesh.F to makefile for adcprep. 
+C                                     Changing mesh.F for line length limitations 
+C                                     under intel compilers.
+C       v52.20.09 - 10/27/2014 - zc - Merging in changes from xdmf that were 
+C                                     brought into trunk
+C       v52.20.08 - 10/22/2014 - zc - Small changes for clarity
+C       v52.20.07 - 10/14/2014 - zc - Merging branch up to revision 1026
+C       v52.20.06 - 10/03/2014 - zc - Adding support for type 5/25 boundaries
+C                 to ADCPREP
+C       v52.20.05 - 06/15/2014 - zc - Merging branch up to svn revision 1003
+C       v52.20.04 - 06/15/2014 - zc - Fixing bug where FailureDurationSec was not
+C                read from input file and various output file bugs
+C       v52.20.03 - 05/01/2013 - zc - Correcting bug for TimeVaryingWeirs
+C                and prep15 option. Fixed another bug under serial
+C                runs. (v51.02.03)
+C       v52.20.02 - 03/30/2013 - zc - Corrected bug for certain boudary
+C                conditions during adcprep (v51.02.02)
+C       v52.20.01 - 01/04/2013 - zc - Created TimeVaryingWeir branch and
+C                Adding first set of changes for time varying weirs. (v51.02.01)
 C  v51.20 - 11/11/2015 - jgf - Fixed output of time varying tau0 so that
 C           ascii fort.90 files have a proper header; fort.90 and fort.90.nc
 C           files are only written when tau0=-x.1 in fort.15.
@@ -259,6 +293,10 @@ C              read_global.F throughout REarth. Fixing bugs in mesh.F and
 C              write_output.F
 C  v51.35    - 10/25/2014 - jgf - Merged all xdmf2 developments (v51.21.xx)
 C              to trunk.
+C  v51.21.42 - 10/24/2014 - jgf - Merged latest fix from trunk v51.34:
+C  v51.34    - 10/07/2014 - tcm - Removed two debugging write statement that
+C                were inadvertently left in hstart.F related to maxele hot
+C                starting.
 C  v51.21.41 - 10/16/2014 - jgf - Continuing to fix issues discovered in
 C              automated testing with ASGS: fixed issues related to constructing
 C              file names when using dedicated writer processors to write
@@ -483,6 +521,9 @@ C  v51.28      - 05/12/2014 - jcd -- Merging swan4101 branch into trunk.
 C    v51.27.02 - 05/11/2014 - jcd -- Removing our old hack to limit infinite
 C                sweeping on some meshes.  SWAN no longer needs it.
 C    v51.27.01 - 05/07/2014 - jcd -- Added the latest SWAN release version 41.01
+C       v51.27.02 - 05/11/2014 - jcd -- Removing our old hack to limit infinite
+C                sweeping on some meshes.  SWAN no longer needs it.
+C       v51.27.01 - 05/07/2014 - jcd -- Added the latest SWAN release version 41.01
 C                to the ADCIRC code.  Initial testing confirms it gives
 C                identical results to the previous version.
 C  v51.27      - 05/02/2014 - tcm -- FUNCTIONALITY CHANGE ALERT 

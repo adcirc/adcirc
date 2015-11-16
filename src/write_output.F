@@ -20,9 +20,9 @@ C----------------------------------------------------------------------
       !    2 D   D A T A
       !
 #ifdef CSWAN
-      integer, parameter :: numOutputDescript2D = 39
+      integer, parameter :: numOutputDescript2D = 40
 #else
-      integer, parameter :: numOutputDescript2D = 25
+      integer, parameter :: numOutputDescript2D = 26
 #endif      
       type descript2D_ptr_t
          type(OutputDataDescript_t), pointer :: descript2D
@@ -61,6 +61,9 @@ C----------------------------------------------------------------------
       !jgf52.05: Added for regular output of wet/dry quantities.
       type(OutputDataDescript_t), target :: noffOutDescript
       type(OutputDataDescript_t), target :: nodeCodeOutDescript 
+
+Cobell Added a descript for time varying weir tracking
+      type(OutputDataDescript_t), target :: weirElevDescript
 
 C     jgf48.03 Full domain arrays used when writing globalio output.
       real(sz), allocatable, target :: et00_g(:)
@@ -182,6 +185,7 @@ C
       REAL(SZ), ALLOCATABLE, TARGET :: SalSta_g(:,:)
       REAL(SZ), ALLOCATABLE, TARGET :: TempSta_g(:,:)
       REAL(SZ), ALLOCATABLE, TARGET :: WZSta_g(:,:)
+      REAL(SZ), ALLOCATABLE, TARGET :: TVW_g(:)
       !
       !  H O T S T A R T   D A T A 
       !
@@ -281,7 +285,9 @@ C----------------------------------------------------------------------
      &   noutgw, ntcysgw, ntcyfgw, nspoolgw, nddt, ncice, nrs, 
      &   noutc, nstac_g, nstac, im, noutgc, ntcyfgc, ntcysgc,
      &   nspoolgc, INFO, scratchMessage, allMessage, nscougi, nscougp,
-     &   nscours, nscoub, nscougb, nscoui, nscoup,
+     &   nscours, nscoub, nscougb, nscoui, nscoup, 
+     &   use_tvw, nout_tvw, ntcys_tvw, ntcyf_tvw, ig_tvw, tvw, 
+     &   nspool_tvw, nscou_tvw,
      &   nodeCodeOutSpoolCounter, noffOutSpoolCounter, noffOutFilePos,
      &   nodeCodeOutFilePos, NE_G, IMAP_EL_LG, nodecode, noff
       USE MESH, ONLY : NP, NE, DP, NM, ICS
@@ -334,27 +340,27 @@ C
       ptr(20)%descript2D => ESLDescript
       ptr(21)%descript2D => BathyDescript
       ptr(22)%descript2D => BathyStaDescript
-      ptr(23)%descript2D => RSDescript 
-      ptr(24)%descript2D => nodeCodeOutDescript 
-      ptr(25)%descript2D => noffOutDescript
-      
+      ptr(23)%descript2D => RSDescript   
+      ptr(24)%descript2D => weirElevDescript
+      ptr(25)%descript2D => nodeCodeOutDescript 
+      ptr(26)%descript2D => noffOutDescript
 
 !... For SWAN, there are additional output arrays
 #ifdef CSWAN
-      ptr(26)%descript2D => SwanHSDescript 
-      ptr(27)%descript2D => SwanHSMaxDescript
-      ptr(28)%descript2D => SwanDIRDescript
-      ptr(29)%descript2D => SwanDIRMaxDescript
-      ptr(30)%descript2D => SwanTM01Descript
-      ptr(31)%descript2D => SwanTM01MaxDescript
-      ptr(32)%descript2D => SwanTPSDescript
-      ptr(33)%descript2D => SwanTPSMaxDescript
-      ptr(34)%descript2D => SwanWindDescript
-      ptr(35)%descript2D => SwanWindMaxDescript
-      ptr(36)%descript2D => SwanTM02Descript
-      ptr(37)%descript2D => SwanTM02MaxDescript
-      ptr(38)%descript2D => SwanTMM10Descript
-      ptr(39)%descript2D => SwanTMM10MaxDescript
+      ptr(27)%descript2D => SwanHSDescript 
+      ptr(28)%descript2D => SwanHSMaxDescript
+      ptr(29)%descript2D => SwanDIRDescript
+      ptr(30)%descript2D => SwanDIRMaxDescript
+      ptr(31)%descript2D => SwanTM01Descript
+      ptr(32)%descript2D => SwanTM01MaxDescript
+      ptr(33)%descript2D => SwanTPSDescript
+      ptr(34)%descript2D => SwanTPSMaxDescript
+      ptr(35)%descript2D => SwanWindDescript
+      ptr(36)%descript2D => SwanWindMaxDescript
+      ptr(37)%descript2D => SwanTM02Descript
+      ptr(38)%descript2D => SwanTM02MaxDescript
+      ptr(39)%descript2D => SwanTMM10Descript
+      ptr(40)%descript2D => SwanTMM10MaxDescript
 #endif    
       ! 
       ! jgf51.21.24: Set some defaults
@@ -752,6 +758,28 @@ C
       if ((abs(noutge).eq.4).or.(abs(noutge).eq.7)) then
          BathyDescript % specifier         = ASCII
       endif
+
+      IF(USE_TVW)THEN
+         IF((MNPROC.GT.1).AND.(MYPROC.EQ.0))THEN
+             ALLOCATE(TVW_G(NP_G))
+         ENDIF
+         weirElevDescript % lun                    = 77
+         weirElevDescript % Specifier              = NOUT_TVW
+         weirELevDescript % startTimeStep          = NTCYS_TVW 
+         weirElevDescript % endTimeStep            = NTCYF_TVW
+         weirElevDescript % outputTimeStepIncrement = NSPOOL_TVW
+         weirElevDescript % spoolCounter           => NSCOU_TVW
+         weirElevDescript % filepos                => IG_TVW
+         weirElevDescript % num_fd_records         = NP_G
+         weirElevDescript % num_records_this       = NP
+         weirElevDescript % imap                   => NODES_LG
+         weirElevDescript % array                  => TVW
+         weirElevDescript % array_g                => TVW_G
+         weirElevDescript % ConsiderWetDry         = .FALSE.
+         weirElevDescript % field_name             = 'weir_dz'
+         weirElevDescript % writerFormats(1:4)     = (/ 1, 3, 4, 5 /)
+         weirElevDescript % alternate_value        = 0.0D0
+      ENDIF   
 
       ! fort.93
 C         write(16,*) 'Allocating IceDescript' !tcm v49.64.01 added for ice
@@ -1241,7 +1269,6 @@ C----------------------------------------------------------------------
          endif
 
       end do
-
 
 #ifdef CMPI
 Csb 02/09/2007

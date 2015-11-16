@@ -197,6 +197,7 @@ C
       type(nodalData), private, save :: pr         ! for fort.73
       type(nodalData), private, save :: currentVel ! for fort.64
       type(nodalData), private, save :: windVel    ! for fort.74
+      type(nodalData), private, save :: weirElev   ! for fort.77
       type(nodalData), private, save :: tau0nc     ! for fort.90
       type(nodalData), private, save :: EtaMax     ! for maxele.63
       type(nodalData), private, save :: PrMin      ! for minpr.63
@@ -392,6 +393,8 @@ C
             CALL initNodalDataFile(windVel, descript1, reterr)
          CASE(90)
             CALL initNodalDataFile(tau0nc, descript1, reterr)
+         CASE(77)
+            CALL initNodalDataFile(weirElev, descript1, reterr)
 #if defined CSWAN || defined ADCSWAN
          CASE(164)
             CALL initNodalDataFile(rads, descript1, reterr)
@@ -2162,6 +2165,34 @@ C
      &             'mesh', 'adcirc_mesh')
             CALL check_err(iret)
 
+        CASE(77)
+            dat%varnames(1) = 'weir_dz'
+            dat%nodal_data_dims_max(1) = dat%myMesh%num_nodes_dim_id
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &        NF90_DOUBLE,dat%nodal_data_dims_max,dat%nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &           'long_name',
+     &           'elevation change in weir boundary condition')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &           'standard_name','weir_elevation_change')
+            CALL check_err(iret)
+            CALL putUnitsAttribute(dat%ncid, dat%nodal_data_id,
+     &           'm', 'ft')
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &           'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'coordinates', 'y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', 0.0d0)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)
+
 #if defined CSWAN || defined ADCSWAN
 C
          CASE(164)
@@ -2828,7 +2859,7 @@ C     netcdf4 file format.
             iret = nf_def_var_deflate(dat%ncid, dat%w_nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
-         CASE(47,63,73,90,301:304,306,307)
+         CASE(47,63,73,77,90,301:304,306,307)
             iret = nf_def_var_deflate(dat%ncid, dat%nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
@@ -3199,6 +3230,8 @@ C
             CALL writeNodalData(pr, lun, descript1, timesec)
          CASE(74)
             CALL writeNodalData(windVel, lun, descript1, timesec)
+         CASE(77)
+            CALL writeNodalData(weirElev, lun, descript1, timesec)
          CASE(90)
             CALL writeNodalData(tau0nc, lun, descript1, timesec)
 #ifdef CSWAN
@@ -3635,6 +3668,9 @@ C
          CALL check_err(iret)
          iret=nf90_inq_varid(dat%ncid,"windy",dat%v_nodal_data_id)
          CALL check_err(iret)
+      CASE(77)
+         iret=nf90_inq_varid(dat%ncid,"weir_dz",dat%nodal_data_id)
+         CALL check_err(iret)
       CASE(90)
          iret=nf90_inq_varid(dat%ncid, "tau0", dat%nodal_data_id)
          CALL check_err(iret)
@@ -3854,7 +3890,7 @@ C     Write the array values
      &            descript1%array_g)
             CALL check_err(iret)
          ENDIF         
-      CASE(47,63,73,90,301,302,303,304,306,307)
+      CASE(47,63,73,77,90,301,302,303,304,306,307)
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
                iret = nf90_put_var(dat%ncid, dat%nodal_data_id,

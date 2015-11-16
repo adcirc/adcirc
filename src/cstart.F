@@ -28,6 +28,7 @@ C
       USE NodalAttributes, ONLY :
      &         STARTDRY, GeoidOffset, LoadGeoidOffset,
      &         OutputTau0, LoadRiver_et_WSE, River_et_WSE !jgf47.06
+      USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
       USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF
 
       IMPLICIT NONE
@@ -57,6 +58,9 @@ C
 #endif
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
+
+C SET UP TIME VARYING WEIRS IF NECESSARY
+       CALL WEIR_SETUP()
 
       if (subdomainOn) then
          call readFort015() ! NCSU Subdomain Modeling
@@ -1172,6 +1176,58 @@ C...
          IGVP=IGVP+5
          CLOSE(64)
          ENDIF
+
+
+Cobell - Open the fort.77 (weir elevation change) file
+         IF(USE_TVW)THEN
+            NSCOU_TVW = 0
+            IG_TVW = 0
+            IF((ABS(NOUT_TVW).EQ.1).OR.(ABS(NOUT_TVW).EQ.4))THEN
+                CALL OPEN_GBL_FILE(77,TRIM(GLOBALDIR)//'/'//'fort.77',
+     &              NP_G,NP,HEADER77)
+                IG_TVW = 2
+            ENDIF   
+            IF(ABS(NOUT_TVW).EQ.2)THEN
+                OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
+     &              ACCESS='DIRECT',RECL=NBYTE)
+                IF(NBYTE.EQ.4) THEN
+                    DO I=1,8
+                        WRITE(77,REC=IG_TVW+I) RDES4(I)
+                    ENDDO
+                    IG_TVW=IG_TVW+8
+                    DO I=1,6
+                        WRITE(77,REC=IG_TVW+I) RID4(I)
+                    ENDDO
+                    IG_TVW=IG_TVW+6
+                    DO I=1,6
+                        WRITE(77,REC=IG_TVW+I) AID4(I)
+                    ENDDO
+                    IG_TVW=IG_TVW+6
+                ENDIF
+                IF(NBYTE.EQ.8) THEN
+                    DO I=1,4
+                        WRITE(77,REC=IG_TVW+I) RDES8(I)
+                    ENDDO
+                    IG_TVW=IG_TVW+4
+                    DO I=1,3
+                        WRITE(77,REC=IG_TVW+I) RID8(I)
+                    ENDDO
+                    IG_TVW=IG_TVW+3
+                    DO I=1,3
+                        WRITE(77,REC=IG_TVW+I) AID8(I)
+                    ENDDO
+                    IG_TVW=IG_TVW+3
+                ENDIF
+                WRITE(77,REC=IG_TVW+1) NDSETS_TVW
+                WRITE(77,REC=IG_TVW+2) NP
+                WRITE(77,REC=IG_TVW+3) DT*NSPOOL_TVW
+                WRITE(77,REC=IG_TVW+4) NSPOOL_TVW
+                WRITE(77,REC=IG_TVW+5) 2
+                IG_TVW=IG_TVW+5
+                CLOSE(77)
+            ENDIF    
+         ENDIF    
+            
 C...
 C....INITIALIZE GLOBAL WIND and pressure SPOOL COUNTER
 C....OPEN GLOBAL WIND and pressure OUTPUT FILEs

@@ -331,8 +331,8 @@ KDTREE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(KDTREE_MSRC) )
 #meb 04/20/2004 - added machdep.F onto POST_SRC
 
 METIS_SRC  =  metis.F
-PREP_SRC   =  adcprep.F decomp.F read_global.F prep.F interp.F machdep.F
-ADC_SRC    =  adcirc.F read_input.F cstart.F hstart.F timestep.F vsmy.F transport.F
+PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F machdep.F
+ADC_SRC    =  adcirc.F weir_boundary.F read_input.F cstart.F hstart.F timestep.F vsmy.F transport.F
 POST_SRC   =  adcpost.F post.F compare.F diffmerge.F machdep.F
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F

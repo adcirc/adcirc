@@ -74,10 +74,11 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &     OutputTau0, LoadEleSlopeLim, elemental_slope_limiter_active,
      &     elemental_slope_limiter_grad_max,
      &     LoadRiver_et_WSE, River_et_WSE
+      USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
       IMPLICIT NONE
 #ifdef CMPI       
 #ifndef HAVE_MPI_MOD
-                  include 'mpif.h'
+      include 'mpif.h'
 #endif
 #endif
       interface
@@ -178,6 +179,9 @@ C     kmd -- Added variables for initial conditions
 C
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
+
+C.....SETUP POSSIBILITY OF TIME VARIABLE WEIRS
+      CALL WEIR_SETUP()
 
       if (subdomainOn) then
          call readFort015() ! NCSU Subdomain Modeling
@@ -3206,6 +3210,78 @@ C  kmd48.33bc - change the NDSETSV for the change in the DTDP
      &          ACCESS='DIRECT',RECL=NBYTE)
 c         WRITE(64,REC=ITEMPSTP+1) NDSETSV  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
           CLOSE(64)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+        ENDIF
+
+
+
+Cobell - Open the fort.77 (weir elevation change) if necessary
+        IF(NOUT_TVW.LT.0.AND.USE_TVW) THEN
+          IG_TVW=0
+          NSCOU_TVW=0
+          IF((NTCYS_TVW.LT.ITHS).AND.(NSPOOL_TVW.GT.0)) THEN
+            NTCYS_TVW=NTCYS_TVW+((REAL(ITHS)-REAL(NTCYS_TVW))/
+     &              REAL(NSPOOL_TVW))*REAL(NSPOOL_TVW)
+            IF(NTCYS_TVW.LT.ITHS) NTCYS_TVW=NTCYS_TVW+NSPOOL_TVW
+            IF(DTDP.NE.DTDPHS) THEN
+              NDSETS_TVW=((NTCYF_TVW*DTDP)-(NTCYS_TVW*DTDPHS))/
+     &                (NSPOOL_TVW*DTDP)
+            ELSE
+              NDSETS_TVW=(NTCYF_TVW-NTCYS_TVW)/NSPOOL_TVW
+            ENDIF
+          ENDIF
+          WRITE(16,1057)
+ 1057     FORMAT(//,' A NEW WEIR ELEVATION FILE WILL BE STARTED')
+        ENDIF
+
+        IF(NOUT_TVW.EQ.-2) THEN
+          OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+          IF(NBYTE.EQ.4) THEN
+            DO I=1,8
+              WRITE(77,REC=IG_TVW+I) RDES4(I)
+              ENDDO
+            IG_TVW=IG_TVW+8
+            DO I=1,6
+              WRITE(77,REC=IG_TVW+I) RID4(I)
+              ENDDO
+            IG_TVW=IG_TVW+6
+            DO I=1,6
+              WRITE(77,REC=IG_TVW+I) AID4(I)
+            ENDDO
+            IG_TVW=IG_TVW+6
+          ENDIF
+          IF(NBYTE.EQ.8) THEN
+            DO I=1,4
+              WRITE(77,REC=IG_TVW+I) RDES8(I)
+            ENDDO
+            IG_TVW=IG_TVW+4
+            DO I=1,3
+              WRITE(77,REC=IG_TVW+I) RID8(I)
+            ENDDO
+            IG_TVW=IG_TVW+3
+            DO I=1,3
+              WRITE(77,REC=IG_TVW+I) AID8(I)
+            ENDDO
+            IG_TVW=IG_TVW+3
+          ENDIF
+          WRITE(77,REC=IG_TVW+1) NDSETS_TVW
+          WRITE(77,REC=IG_TVW+2) NP
+          WRITE(77,REC=IG_TVW+3) DT*NSPOOL_TVW
+          WRITE(77,REC=IG_TVW+4) NSPOOL_TVW
+          WRITE(77,REC=IG_TVW+5) 1
+          IG_TVW=IG_TVW+5
+          CLOSE(77)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+        ENDIF
+        IF((NOUT_TVW.EQ.-1).OR.(NOUT_TVW.EQ.-4)) THEN
+           CALL OPEN_GBL_FILE(77, TRIM(GLOBALDIR)//'/'//'fort.77',
+     $         NP_G, NP, HEADER77)
+           IG_TVW=2
+        ENDIF
+        IF(NOUT_TVW.EQ.2) THEN
+          OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77',
+     &          ACCESS='DIRECT',RECL=NBYTE)
+c         WRITE(77,REC=ITEMPSTP+1) NDSETS_TVW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+          CLOSE(77)                           ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
 C...

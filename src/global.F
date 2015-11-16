@@ -49,8 +49,6 @@ C.....Days to seconds conversion
       REAL(8), PARAMETER :: ms2kt = 1.d0 / kt2ms ! m/s to knots
       REAL(8), PARAMETER :: omega = 2.0d0*pi / 86164.2d0
       REAL(8), PARAMETER :: mb2pa = 100.d0
-C.....parameters used in barrier overflow
-      REAL(SZ), PARAMETER ::  BARMIN=0.04D0
 C     jgf46.21 Added support for IBTYPE=52.
       REAL(SZ),ALLOCATABLE, TARGET ::   ElevDisc(:)
       REAL(SZ) FluxSettlingTime
@@ -263,6 +261,13 @@ Cobell 20120510: Added logicals for turning on/off swan output files
       LOGICAL                      :: SWAN_OutputTMM10 = .TRUE.
       LOGICAL                      :: SWAN_OutputAgg(7)
 #endif
+
+Cobell - Added for Time Varying Weirs, Set to default values
+      LOGICAL                      :: USE_TVW = .FALSE.     !..From namelist, used time varying weirs
+      CHARACTER(80)                :: TVW_FILE = 'fort.tvw' !..From namelist, file for time varying weirs
+      REAL(SZ),ALLOCATABLE,TARGET  :: TVW(:)                !..Current elevation of weirs, for output
+
+
 Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE, TARGET :: ESLONOFF(:)
 
@@ -457,8 +462,8 @@ C     size has changed after a hotstart.
       REAL(SZ) TOUTSC
       REAL(SZ) TOUTSE,TOUTFE
       REAL(SZ) TOUTSV,TOUTFV
-      REAL(SZ) TOUTFGC, TOUTFGE, TOUTFGV, TOUTFGW
-      REAL(SZ) TOUTFM, TOUTSGC, TOUTSGE, TOUTSGV, TOUTSGW, TOUTSM
+      REAL(SZ) TOUTFGC, TOUTFGE, TOUTFGV, TOUTFGW, TOUTF_TVW
+      REAL(SZ) TOUTFM, TOUTSGC, TOUTSGE, TOUTSGV, TOUTSGW, TOUTSM, TOUTS_TVW
 
       REAL(SZ),ALLOCATABLE ::   RPIPEWL1AVG(:),RPIPEWL2AVG(:)
       INTEGER  NODEDRYMIN,NODEWETMIN
@@ -469,8 +474,9 @@ C     size has changed after a hotstart.
       INTEGER  NOUTE,NSPOOLE,NOUTV,NSPOOLV
       INTEGER  NRAMP,NRS,NSTAE,NSTARTDRY,NSTAV,NT,NTCYFE
       INTEGER  NTCYFV,NTCYSE,NTCYSV,NTIF,NTIP,NTRSPE,NTRSPV
+      INTEGER  NTCYS_TVW,NTCYF_TVW
       INTEGER  NWLAT,NWLON,NWS
-      INTEGER  IBSTART, ICSTP, IDSETFLG, IER
+      INTEGER  ICSTP, IDSETFLG, IER
 
 Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  IFNLCAT, IFNLCT, IFNLFA, IFNLCTE, IFNLCATE
@@ -490,6 +496,7 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       integer, target :: iwstp ! file position in wind velocity station file
       integer, target :: ipstp ! position in barometric pressure station file
       integer, target :: iestp ! file position in station elevation file 
+      integer, target :: ig_tvw ! file position in weir elevation file
       integer, target :: nodeCodeOutFilePos
       integer, target :: noffOutFilePos
 
@@ -504,7 +511,7 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  MBW, MDF, NBDJ, NBNCTOT, NBW
       INTEGER  NCBND, NCTOT, NDRY, NDSETSC
       INTEGER  NCChange !jgf45.06 flag indicating wetting / drying has occurred
-      INTEGER  NDSETSE, NDSETSV, NDSETSW, NEle
+      INTEGER  NDSETSE, NDSETSV, NDSETSW, NDSETS_TVW,NEle
       INTEGER  NHSINC, NHSTAR
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef CSWAN 
@@ -514,17 +521,18 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER  NNBB, NNBB1, NNBB2
       INTEGER  NNBB1R, NNBB1L, NNBB2R, NNBB2L ! sb46.28.sb05.05 11/01/2006
       INTEGER  NNBB1WN, NNBB2WN               ! sb46.28.sb05.05 WN stands for wet neighbors 11/01/2006
-      INTEGER  NOUTGC, NOUTGE, NOUTGV, NOUTGW, NOUTM
+      INTEGER  NOUTGC, NOUTGE, NOUTGV, NOUTGW, NOUTM, NOUT_TVW
       INTEGER, TARGET :: NSCOUC, NSCOUE, NSCOUGC, NSCOUGE, NSCOUGV ! output spool counters
       INTEGER, TARGET :: NSCOUGW, NSCOURS, NSCOUGP, NSCOUM, NSCOUV ! output spool counters
       INTEGER, TARGET :: NSCOUGI, NSCOUGT, NSCOUGS  ! output spool counters
+      INTEGER, TARGET :: NSCOU_TVW ! output spool counters
       INTEGER, TARGET :: NSCOUP ! output spool counter for fort.71 (bar. press. sta.)
       INTEGER, TARGET :: NSCOUI ! output spool counter for fort.91 (ice sta.)     
       integer, target :: nodeCodeOutSpoolCounter
       integer, target :: noffOutSpoolCounter
       
       INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments
-      INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM ! output increments
+      INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM, NSPOOL_TVW ! output increments
       INTEGER  NSTAC, NSTAM, NTCYFC, NTCYFGC, NTCYFGE
       INTEGER  NTCYFGV, NTCYFGW
       INTEGER  NTCYFM, NTCYSC, NTCYSGC, NTCYSGE
@@ -552,7 +560,7 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       REAL(SZ) ADVECX, ADVECY, ARG
       REAL(SZ) ARG1, ARG2, ARGJ, ARGJ1, ARGJ2
       REAL(SZ) AUV21, AUV22
-      REAL(SZ) BARAVGWT, BEDSTR, BNDLEN2O3NC
+      REAL(SZ) BEDSTR, BNDLEN2O3NC
       REAL(SZ) CELERITY, COND, CONVCR
       REAL(SZ) DT2, DTO2, DTOHPP
       REAL(SZ) ETIME1, ETIME2, ETRATIO
@@ -560,7 +568,6 @@ C     kmd48.33bc - added variables for 3D boundary conditions
 
       REAL(SZ) P11, P22, P33
       REAL(SZ) QFORCEI, QFORCEJ
-      REAL(SZ),ALLOCATABLE ::   RBARWL1AVG(:),RBARWL2AVG(:)
       REAL(SZ) QUNORM, QUTemp, QVNORM, RAMP, RAMP1, RAMP2, RBARWL
       REAL(SZ) RBARWL1,RBARWL1F, RBARWL2, RBARWL2F, RFF, RFF1, RFF2
       REAL(SZ) SADVDTO3
@@ -1161,8 +1168,6 @@ C
       ALLOCATE ( QN0(MNVEL),QN1(MNVEL),QN2(MNVEL))
       ALLOCATE ( EN0(MNVEL),EN1(MNVEL),EN2(MNVEL))
       ALLOCATE ( ENIN1(MNVEL),ENIN2(MNVEL))
-      ALLOCATE ( RBARWL1AVG(MNVEL),RBARWL2AVG(MNVEL))
-      ALLOCATE ( RPIPEWL1AVG(MNVEL),RPIPEWL2AVG(MNVEL))
       ALLOCATE ( QNIN1(MNVEL),QNIN2(MNVEL))
 C
 C     jgf46.21 Added support for IBTYPE=52.

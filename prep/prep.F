@@ -309,13 +309,15 @@ C---------------------------------------------------------------------------
       SUBROUTINE RELOCALIZE()
 C---------------------------------------------------------------------------
       USE PRE_GLOBAL
+      USE PREP_WEIR,ONLY:NWEIRBNDRY 
       use memory_usage
       IMPLICIT NONE
       integer :: nbytes = 0
-      INTEGER I, J, IPROC, INDX, ITEMP, idumy
+      INTEGER I, J, K, IPROC, INDX, ITEMP, idumy
       CHARACTER(14) LOCFN
       CHARACTER(80) skipped
       INTEGER,ALLOCATABLE :: LUNP(:)
+      LOGICAL,ALLOCATABLE :: ISWEIR(:)
 C
       print *, "entering relocalize"
 !      print *, "nproc = ", nproc
@@ -482,6 +484,34 @@ C  This section for prep15
             ENDIF
          ENDDO
       ENDDO
+      !zc...If we're using time varying weirs, we need to 
+      !     find out which processors have weir (4,24) boundaries
+      !     in the case that we're not passing through PREP14
+      IF(USE_TVW)THEN
+        ALLOCATE(ISWEIR(1:NNODG))
+        ISWEIR(:) = .FALSE.
+        DO K=1,NBOU
+            SELECT CASE(IBTYPE(K))
+                CASE(4,24,5,25)
+                    DO J=1,NVELL(K)
+                        ISWEIR(NBVV(K,J))=.TRUE.
+                        ISWEIR(IBCONNR(K,J))=.TRUE.
+                    ENDDO
+                CASE(3,13,23)
+                    DO J=1,NVELL(K)
+                        ISWEIR(NBVV(K,J))=.TRUE.
+                    ENDDO    
+                CASE DEFAULT
+                    I=I+NVELL(K)
+            END SELECT
+        ENDDO    
+        DO IPROC=1,NPROC
+            DO J=1,NNODP(IPROC)
+                INDX=IMAP_NOD_LG(J,IPROC)
+                IF(ISWEIR(INDX))NWEIRBNDRY(IPROC)=1
+            ENDDO    
+        ENDDO    
+      ENDIF  
       call memory_status()
       print *, "leaving relocalize"
       RETURN
@@ -987,6 +1017,7 @@ C---------------------------------------------------------------------------
 
       SUBROUTINE PREP14()
       USE PRE_GLOBAL
+      USE PREP_WEIR,ONLY:NWEIRBNDRY
 C
 C---------------------------------------------------------------------------C
 C                     (  Serial Version  2/28/98  )                         C
@@ -1081,7 +1112,8 @@ C--Weir Land Boundary Node-Pair Case
 Cmod vjp 3/8/99
 C  mod to allow that each of Weir-node pair might be ghosts nodes
 C
-            IF ((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24)) THEN
+            IF ((IBTYPE(K).EQ.4).OR.(IBTYPE(K).EQ.24).OR.
+     &          (IBTYPE(K).EQ.5).OR.(IBTYPE(K).EQ.25)) THEN
                DO I = 1,NVELL(K)
                   INDX = NBVV(K,I)
                   INDEX2 = IBCONNR(K,I)
@@ -1338,23 +1370,33 @@ C             boundary segment.
 C
                 IF ((ITYPE.NE.3).AND.(ITYPE.NE.13).AND.
      &             (ITYPE.NE.23).AND.(ITYPE.NE.4).AND.
-     &             (ITYPE.NE.24)) THEN
+     &             (ITYPE.NE.24).AND.(ITYPE.NE.5).AND.
+     &             (ITYPE.NE.25)) THEN
                   DO I = 1,NVELLP(K)
                      WRITE(14,'(I8)') NBVVP(K,I)
                   ENDDO
                 ELSEIF ((ITYPE.EQ.3).OR.(ITYPE.EQ.13).OR.
      &                  (ITYPE.EQ.23)) THEN
+                  IF(USE_TVW)NWEIRBNDRY(IPROC) = 1
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
                      WRITE(14,81) NBVVP(K,I),BAR1(K,INDX),BAR2(K,INDX)
                   ENDDO
 C
                 ELSEIF ((ITYPE.EQ.4).OR.(ITYPE.EQ.24)) THEN
+                  IF(USE_TVW)NWEIRBNDRY(IPROC) = 1
                   DO I = 1,NVELLP(K)
                      INDX = LBINDEX_LG(K,I)
                      WRITE(14,82) NBVVP(K,I),IBCONNRP(K,I),
      &                        BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX)
                   ENDDO
+                ELSEIF ((ITYPE.EQ.5).OR.(ITYPE.EQ.25)) THEN
+                    DO I = 1,NVELLP(K)
+                        INDX = LBINDEX_LG(K,I)
+                        WRITE(14,83) NBVVP(K,I),IBCONNRP(K,I),
+     &                      BAR1(K,INDX),BAR2(K,INDX),BAR3(K,INDX), 
+     &                      BAR4(K,INDX),BAR5(K,INDX),BAR6(K,INDX)
+                    ENDDO
                 ENDIF
              ENDIF
           ENDDO
@@ -1379,6 +1421,7 @@ C
   80  FORMAT(A80)
   81  FORMAT(I8,2X,E13.6,2X,E13.6)
   82  FORMAT(I8,2X,I8,2X,E13.6,2X,E13.6,2X,E13.6)
+  83  FORMAT(I8,2X,I8,6(2X,E13.6))
   90  FORMAT(1X,A6,5I8)
 C
       RETURN
@@ -1398,6 +1441,7 @@ C---------------------------------------------------------------------------C
       SUBROUTINE PREP15()
       USE PRE_GLOBAL
       use memory_usage
+      USE PREP_WEIR
       USE HARM, ONLY : NAMEFR
       use subprep, only : subdomainOn, found_sm_nml ! NCSU Subdomain Modeling
       use nodalattributes, only : outputTau0
@@ -1405,7 +1449,8 @@ C---------------------------------------------------------------------------C
       integer :: nbytes = 0
       INTEGER I,J,K,M,JG,JP,KK, ios_stations
       INTEGER INDX,ITOT,ILNODE,IPROC,IPROC2,ITYPE,NUMS(10)
-      CHARACTER LOCFN*14,PE*6,LOCSTATFN*20
+      CHARACTER LOCFN*80,PE*6,LOCSTATFN*20
+      INTEGER,ALLOCATABLE :: NTIMEVARYINGWEIRP(:)
       CHARACTER*80 OUTMSG
 C
 C--Write a Local Input file ( fort.15 ) for each PE
@@ -1413,11 +1458,16 @@ C
       ! max number of stations in any subdomain
       NSTAE_MAX = 0; NSTAV_MAX = 0; NSTAM_MAX = 0; NSTAC_MAX = 0
 C
+
+      ALLOCATE(NTIMEVARYINGWEIRP(NPROC))
+      NTIMEVARYINGWEIRP(:)=0
+
       DO 1000 IPROC = 1,NPROC
 C
-         LOCFN(1:14) = 'PE0000/fort.15'
+
+         LOCFN = 'PE0000/fort.15'
          CALL IWRITE(LOCFN,3,6,IPROC-1)
-         OPEN (15,FILE=LOCFN)
+         OPEN (15,FILE=TRIM(LOCFN))
 C
          WRITE(15,80) RUNDES
          WRITE(15,80) RUNID
@@ -1548,6 +1598,50 @@ cdebug               print *, "PE=",IPROC," FLUXNODE=",FLBNXP(J)
             ENDIF
 C
          ENDIF
+
+Cobell
+C--IF THERE ARE INTERNAL/EXTERNAL TIME VARYING FLUX BOUNDARIES, PARSE TO PEs
+C
+        IF(USE_TVW)THEN
+            IF(ALLOCATED(NWEIRBNDRY).AND.NTIMEVARYINGWEIR.GT.0)THEN
+                IF(NWEIRBNDRY(IPROC).EQ.1)THEN
+                !...If this processor has Time varying weirs, count them
+                    NTIMEVARYINGWEIRP(IPROC) = 0
+                    DO I=1,NNODP(IPROC)
+                        INDX = IMAP_NOD_LG(I,IPROC)
+                        DO J = 1,NTIMEVARYINGWEIR
+                            IF(INDX.EQ.NODES_TVW(J))THEN
+                                NTIMEVARYINGWEIRP(IPROC) = 
+     &                              NTIMEVARYINGWEIRP(IPROC) + 1
+                            ENDIF
+                        ENDDO
+                    ENDDO
+                ENDIF
+                !...Open the local PE fort.tvw
+                LOCFN = 'PE0000/'//TRIM(tvw_file)
+                CALL IWRITE(LOCFN,3,6,IPROC-1)
+                OPEN(FILE=TRIM(LOCFN),UNIT=98,ACTION="WRITE")
+                IF(NTIMEVARYINGWEIRP(IPROC).GT.0)THEN
+                    !...Write fort.tvw namelist file for the
+                    !   local PE
+                    WRITE(98,*) NTIMEVARYINGWEIRP(IPROC)
+                    DO I=1,NNODP(IPROC)
+                        INDX = IMAP_NOD_LG(I,IPROC)
+                        DO J = 1,NTIMEVARYINGWEIR
+                            IF(INDX.EQ.NODES_TVW(J))THEN
+                                WRITE(98,'(A)') 
+     &                              TRIM(ADJUSTL(TIMEVARYINGWEIRMSSG(J)))
+                            ENDIF
+                        ENDDO
+                    ENDDO    
+                ELSE
+                    !...Write an empty fort.tvw to avoid old files from
+                    !   previous decompositions
+                    WRITE(98,*) 0
+                ENDIF
+                CLOSE(98)
+            ENDIF
+        ENDIF
 C
 C--Write Local Elevation Station Info:
 C--Create Local-to-Global element "ownership" of an elevation station
@@ -1849,6 +1943,19 @@ C
             write(15,*) "    rhoAir=",rhoAir
             write(15,*) "/"
             write(15,*) '! -- End Met Control Namelist --'
+         endif
+
+         if (found_tvw_nml) then
+             write(15,*) '! -- Begin TVW Control Namelist --'
+             write(15,*) "&TVWControl "
+             write(15,*) "    USE_TVW=",USE_TVW,","
+             write(15,*) "    TVW_FILE='",TRIM(ADJUSTL(TVW_FILE)),"',"
+             write(15,*) "    NOUT_TVW=",NOUT_TVW,","
+             write(15,*) "    TOUTS_TVW=",TOUTS_TVW,","
+             write(15,*) "    TOUTF_TVW=",TOUTF_TVW,","
+             write(15,*) "    NSPOOL_TVW=",NSPOOL_TVW
+             write(15,*) "/"
+             write(15,*) '! -- End TVW Control Namelist --'
          endif
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
@@ -6679,9 +6786,10 @@ C---------------------------------------------------------------------------
       USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc,
      &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
-     &                   SWAN_OutputTMM10
+     &                   SWAN_OutputTMM10,NOUT_TVW
 #else
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc
+      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc, 
+     &                   NOUT_TVW                       
 #endif
 C
       IMPLICIT NONE
@@ -6700,12 +6808,12 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: WindVelStaDescript ! fort.72
       type(OutputDataDescript_t), SAVE :: PrDescript         ! fort.73
       type(OutputDataDescript_t), SAVE :: WindVelDescript    ! fort.74
+      type(OutputDataDescript_t), SAVE :: weirElevDescript   ! fort.77
       type(OutputDataDescript_t), SAVE :: EtaMaxDescript     ! maxele.63
       type(OutputDataDescript_t), SAVE :: UMaxDescript       ! maxvel.63
       type(OutputDataDescript_t), SAVE :: PrMinDescript      ! minpr.63
       type(OutputDataDescript_t), SAVE :: WVMaxDescript      ! maxwvel.63
-      type(OutputDataDescript_t), SAVE :: RSMaxDescript    
-
+      type(OutputDataDescript_t), SAVE :: RSMaxDescript      ! 
 !      tcm v50.75 moved RSDescript outside of the ifdef adcswan for use with 
 !      nrs = 3 or nrs= 4
       type(OutputDataDescript_t), SAVE :: RSDescript
@@ -6962,6 +7070,21 @@ C     fort.74
       WindVelDescript % file_extension       = 74
       WindVelDescript % file_basename        = 'fort'
       call makeFileName(WindVelDescript)
+
+C     fort.77
+      WeirElevDescript % specifier            = NOUT_TVW
+      WeirElevDescript % lun                  = 77
+      WeirElevDescript % initial_value        = 0.0
+      WeirElevDescript % num_items_per_record = 1
+      WeirElevDescript % num_fd_records       = MNP
+      WeirElevDescript % num_records_this     = MNP
+      WeirElevDescript % ConsiderWetDry       = .FALSE.
+      WeirElevDescript % alternate_value      = 0.0
+      WeirElevDescript % field_name           = 'weir_dz'
+      WeirElevDescript % file_extension       = 77
+      WeirElevDescript % file_basename        = 'fort'
+      call makeFileName(weirElevDescript)
+
 C
 C     minpr.63
       PrMinDescript % specifier            = NOUTGW
@@ -7022,6 +7145,16 @@ C........Radiation Stress
          RSDescript % file_extension       = 64
          RSDescript % file_basename        = 'rads'
          call makeFileName(RSDescript)
+
+         weirElevDescript % specifier            = NOUT_TVW
+         weirElevDescript % initial_value        = 0D0
+         weirElevDescript % num_items_per_record = 1
+         weirElevDescript % num_fd_records       = MNP
+         weirElevDescript % num_records_this     = MNP
+         weirElevDescript % ConsiderWetDry       = .FALSE.
+         weirElevDescript % alternate_value      = 0D0
+         weirElevDescript % field_name           = "weir_dz"
+         weirElevDescript % file_name            = "fort.77"
 
 ! tcm v50.75 moved the ifdef adcswan down past the RSDescript
 #ifdef ADCSWAN
@@ -7598,6 +7731,7 @@ C     was specified.
       CALL initNetCDFOutputFile(WindVelStaDescript, reterr)
       CALL initNetCDFOutputFile(PrDescript, reterr)
       CALL initNetCDFOutputFile(WindVelDescript, reterr)
+      CALL initNetCDFOutputFile(WeirElevDescript, reterr)
       CALL initNetCDFOutputFile(EtaMaxDescript, reterr)
       CALL initNetCDFOutputFile(UMaxDescript, reterr)
       CALL initNetCDFOutputFile(PrMinDescript, reterr)

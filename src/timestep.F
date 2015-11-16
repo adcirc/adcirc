@@ -132,7 +132,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       USE MESSENGER
       USE HSWRITER, ONLY: writeHotstart_through_HSwriter  !st3 100711 for hsfile
 #endif
-
+      
 #ifdef CSWAN
 Casey 090302: We need these values from other places.
       USE OWIWIND,     ONLY: WindMultiplier
@@ -162,7 +162,7 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
      &                       WAVE_T2
 #endif
 #endif
-
+      USE WEIR_FLUX
 
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
@@ -193,6 +193,7 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) CCSFEA
       REAL(SZ) ElMax
       REAL(SZ) Fr, FricBP               !for bridge pilings
+      REAL(SZ) PIPE_FLUX
       REAL(SZ) Z0B1                     !for varying roughness
       REAL(SZ) H1
       REAL(SZ) H2, H2N1, H2N2, H2N3
@@ -1822,20 +1823,13 @@ C...
 C...
 C...  COMPUTE SUPERCRITICAL OUTWARD NORMAL FLOW OVER SPECIFIED
 C.... EXTERNAL BARRIER BOUNDARY NODES
-C...
+C...  COBELL - MOVED TO WEIR_BOUNDARY.F
         IF(NFLUXB.EQ.1) THEN
           DO I=1,NVEL
-            IF((LBCODEI(I).EQ.3).OR.(LBCODEI(I).EQ.13).OR.
-     &        (LBCODEI(I).EQ.23)) THEN
-              NNBB=NBV(I)
-              RBARWL=2.D0*(ETA2(NNBB)-BARLANHT(I))/3.D0
-              IF(RBARWL.GT.BARMIN) THEN
-                QN2(I)=-RampIntFlux
-     &                *BARLANCFSP(I)*RBARWL*(RBARWL*G)**0.5D0
-              ELSE
-                QN2(I)=0.0D0
-              ENDIF
-            ENDIF
+            SELECT CASE(LBCODEI(I))
+            CASE(3,13,23)
+                CALL COMPUTE_EXTERNAL_BOUNDARY_FLUX(I,TIMELOC,QN2(I))
+            END SELECT 
           END DO
         ENDIF
 
@@ -1862,152 +1856,29 @@ C     above the levee for flow to occur. It is a parameter and is set to
 C     0.04 in global.F.
 C
 C
+C...ZC - SIMPLIFIED THIS SECTION, MOVED FLUX COMPUTATION TO WEIR_BOUNDARY.F
+C   USE THE COMPILER FLAGS TO CHANGE IMPLEMENTATION:
+C        -DORIGWEIR - JOANNES WESTERINK ET AL IMPLEMENTATION (ORIGINAL)
+C                     THIS DOES NOT APPEAR TO HAVE BEEN USED IN QUITE 
+C                     SOME TIME
+C         DEFAULT   - SHINTARO BUNYA/SEIZO TANAKA IMPLEMENTATION FOR 
+C                     CHECKING FOR A WET EDGE BEFORE PASSING FLOW
+C                     ACROSS A WEIR
       IF(NFLUXIB.EQ.1) THEN
-         DO I=1,NP
-            NIBNODECODE(I)=0
-         END DO
-         I = 0                          !Seizo 05/06/2008
-         NBOU_LOOP_K: DO K = 1, NBOU    !Seizo 05/06/2008
-            IE = 1                      !Seizo 05/06/2008
-            IF ( (LBCODEI(I+1)==4) .OR. (LBCODEI(I+1)==24)        !Seizo 05/06/2008
-     &      .OR. (LBCODEI(I+1)==5) .OR. (LBCODEI(I+1)==25) ) then !Seizo 05/06/2008
-               IE = 2                   !Seizo 05/06/2008
-            ENDIF                       !Seizo 05/06/2008
-            IF( IE /= 2 ) then          !Seizo 05/06/2008
-               I = I + NVELL(K)         !Seizo 05/06/2008
-            ELSE                        !Seizo 05/06/2008
-            NVELL_LOOP_J: DO J = 1, NVELL(K) * IE   !Seizo 05/06/2008
-               I = I + 1                            !Seizo 05/06/2008
-               NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
-               NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
-#if 1
-               NNBB1WN = 0      ! COUNT NUMBER OF WET NEIGHBORS sb46.28.sb05.05 11/01/2006
-               NNBB2WN = 0      ! COUNT NUMBER OF WET NEIGHBORS sb46.28.sb05.05 11/01/2006
-               IF( (J==1).OR.(J==NVELL(K)+1) ) THEN !Seizo 05/06/2008
-                            NNBB1WN = NNBB1WN + NODECODE(NBV(I+1))     ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
-                            NNBB2WN = NNBB2WN + NODECODE(IBCONN(I+1))  ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
-               ELSE                                 !Seizo 05/06/2008
-                    IF( (J==NVELL(K)).OR.(J==NVELL(K)*IE) ) THEN       !                            !Seizo 05/06/2008
-                            NNBB1WN = NNBB1WN + NODECODE(NBV(I-1))     ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
-                            NNBB2WN = NNBB2WN + NODECODE(IBCONN(I-1))  ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
-                    ELSE                            !Seizo 05/06/2008
-                            NNBB1WN = NNBB1WN + NODECODE(NBV(I-1))     ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
-                            NNBB1WN = NNBB1WN + NODECODE(NBV(I+1))     ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
-                            NNBB2WN = NNBB2WN + NODECODE(IBCONN(I+1))  ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
-                            NNBB2WN = NNBB2WN + NODECODE(IBCONN(I-1))  ! sb46.28.sb05.05 11/01/2006 !Seizo 05/06/2008
-                    ENDIF                           !Seizo 05/06/2008
-               ENDIF                                !Seizo 05/06/2008
-#endif
-               IF(IBSTART.EQ.0)THEN
-                  RBARWL1AVG(I)=ETA2(NNBB1)-BARINHT(I)
-                  RBARWL2AVG(I)=ETA2(NNBB2)-BARINHT(I)
-                  IBSTART=1
-               ELSE
-                  RBARWL1AVG(I)=(ETA2(NNBB1)-BARINHT(I)+BARAVGWT
-     &                 *RBARWL1AVG(I))/(1.D0+BARAVGWT)
-                  RBARWL2AVG(I)=(ETA2(NNBB2)-BARINHT(I)+BARAVGWT
-     &                 *RBARWL2AVG(I))/(1.D0+BARAVGWT)
-               ENDIF
-               RBARWL1=RBARWL1AVG(I)
-               RBARWL2=RBARWL2AVG(I)
-               RBARWL1F=2.D0*RBARWL1/3.D0
-               RBARWL2F=2.D0*RBARWL2/3.D0
-               QN2(I)=0.D0
-               IF((RBARWL1.LT.0.D0).AND.(RBARWL2.LT.0.D0)) THEN
-C...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW BARRIER -> CASE 1
-                  QN2(I)=0.D0
-                  GOTO 1034
-               ENDIF
-               IF(ABS(RBARWL1-RBARWL2).LT.0.01D0) THEN
-cjjw               IF(ABS(RBARWL1-RBARWL2).LT.BARMIN) THEN
-C...............WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
-C................TO WITHIN TOLERANCE BARMIN -> CASE 2
-                  QN2(I)=0.D0
-                  GOTO 1034
-               ENDIF
-               IF((RBARWL1.GT.RBARWL2).AND.(RBARWL1.GT.BARMIN)) THEN
-C...............WATER LEVEL GREATER ON THIS SIDE OF THE BARRIER AND IS SUCH
-C................THAT OVERTOPPING IS OCCURING
-C................THUS THIS SIDE IS THE SOURCE SIDE OF THE FLOW ACROSS THE BARRIER
-C................NOTE THAT WE DO NOT FORCE THE SOURCE SIDE OF THE BARRIER TO
-C................REMAIN WET. ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
-C................BARRIER HAS BEEN DRIED. IF IT HAS WE SHUT DOWN THE FLOW ACROSS
-C................THE BARRIER
-C................ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE BARRIER HAS AT
-C................LEAST ONE WET EDGE. IF NOT, WE SHUT DOWN THE FLOW ACROSS
-C................THE BARRIER. shintaro v46.28.sb05.05 11/01/2006
-                  IF(RBARWL2.GT.RBARWL1F) THEN
-C..................OUTWARD SUBCRITICAL FLOW -> CASE 3
-#if 1
-                     IF(NODECODE(NNBB1).EQ.0.OR.NNBB1WN.EQ.0) THEN ! sb46.28.sb05.05 11/01/2006
-#else
-                     IF(NODECODE(NNBB1).EQ.0) THEN ! sb46.28.sb05.05 11/01/2006
-#endif
-                        QN2(I)=0.0D0
-                     ELSE
-                        QN2(I)=-RampIntFlux*RBARWL2*BARINCFSB(I)*
-     &                     (2.D0*G*(RBARWL1-RBARWL2))**0.5D0
-                     ENDIF
-                  ELSE
-C..................OUTWARD SUPERCRITICAL FLOW -> CASE 4
-#if 1
-                     IF(NODECODE(NNBB1).EQ.0.OR.NNBB1WN.EQ.0) THEN ! sb46.28.sb05.05 11/01/2006
-#else
-                     IF(NODECODE(NNBB1).EQ.0) THEN ! sb46.28.sb05.05 11/01/2006
-#endif
-                        QN2(I)=0.0D0
-                     ELSE
-                        QN2(I)=-RampIntFlux*BARINCFSP(I)*RBARWL1F*
-     &                    (RBARWL1F*G)**0.5D0
-                     ENDIF
-                  ENDIF
-                  GOTO 1034
-               ENDIF
-               IF((RBARWL2.GT.RBARWL1).AND.(RBARWL2.GT.BARMIN)) THEN
-C...............WATER LEVEL LOWER ON THIS SIDE OF BARRIER AND IS SUCH
-C................THAT OVERTOPPING IS OCCURING
-C................THUS THIS IS THE RECEIVING SIDE OF THE FLOW ACROSS THE BARRIER
-C................NOTE THAT WE DO FORCE THE RECEIVING SIDE OF THE BARRIER TO
-C................REMAIN WET WHEN THERE IS FLOW ACROSS THE BARRIER.
-C................ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
-C................BARRIER HAS BEEN DRIED. IF IT HAS, WE SHUT DOWN THE FLOW ACROSS
-C................THE BARRIER
-C................ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE BARRIER HAS AT
-C................LEAST ONE WET EDGE. IF NOT, WE SHUT DOWN THE FLOW ACROSS
-C................THE BARRIER. shintaro v46.28.sb05.05 11/01/2006
-                  IF(RBARWL1.GT.RBARWL2F) THEN
-C..................INWARD SUBCRITICAL FLOW -> CASE 5
-#if 1
-                     IF(NODECODE(NNBB2).EQ.0.OR.NNBB2WN.EQ.0) THEN ! sb46.28.sb05.05 11/01/2006
-#else
-                     IF(NODECODE(NNBB2).EQ.0) THEN ! sb46.28.sb05.05 11/01/2006
-#endif
-                        QN2(I)=0.0D0
-                     ELSE
-                        QN2(I)=RampIntFlux*RBARWL1*BARINCFSB(I)*
-     &                     (2.0D0*G*(RBARWL2-RBARWL1))**0.5D0
-                        NIBNODECODE(NNBB1)=1
-                     ENDIF
-                  ELSE
-C..................INWARD SUPERCRITICAL FLOW -> CASE 6
-#if 1
-                     IF(NODECODE(NNBB2).EQ.0.OR.NNBB2WN.EQ.0) THEN ! sb46.28.sb05.05 11/01/2006
-#else
-                     IF(NODECODE(NNBB2).EQ.0) THEN ! sb46.28.sb05.05 11/01/2006
-#endif
-                        QN2(I)=0.0D0
-                     ELSE
-                        QN2(I)=RampIntFlux*BARINCFSP(I)*RBARWL2F*
-     &                     (RBARWL2F*G)**0.5D0
-                        NIBNODECODE(NNBB1)=1
-                     ENDIF
-                  ENDIF
-                  GOTO 1034
-               ENDIF
- 1034          CONTINUE
-               END DO NVELL_LOOP_J
-            ENDIF
-         END DO NBOU_LOOP_K
+         NIBNODECODE(:) = 0
+         I = 0                         
+         DO K = 1, NBOU  
+            SELECT CASE(LBCODEI(I+1))
+                CASE(4,24,5,25)
+                    DO J = 1,NVELL(K)*2
+                        I = I + 1
+                        CALL COMPUTE_INTERNAL_BOUNDARY_FLUX(I,J,K,
+     &                      TIMELOC,QN2(I))
+                    ENDDO
+                CASE DEFAULT
+                    I = I + NVELL(K)
+            END SELECT    
+         ENDDO 
       ENDIF
 
 C...
@@ -2018,95 +1889,17 @@ C...
       IF(NFLUXIBP.EQ.1) THEN
          DO I=1,NVEL
             IF((LBCODEI(I).EQ.5).OR.(LBCODEI(I).EQ.25)) THEN
-               NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
-               NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
-               IF(IBSTART.EQ.0)THEN
-                  RPIPEWL1AVG(I)=ETA2(NNBB1)-PIPEHT(I)
-                  RPIPEWL2AVG(I)=ETA2(NNBB2)-PIPEHT(I)
-                  IBSTART=1
-               ELSE
-                  RPIPEWL1AVG(I)=(ETA2(NNBB1)-PIPEHT(I)+BARAVGWT
-     &                 *RPIPEWL1AVG(I))/(1.D0+BARAVGWT)
-                  RPIPEWL2AVG(I)=(ETA2(NNBB2)-PIPEHT(I)+BARAVGWT
-     &                 *RPIPEWL2AVG(I))/(1.D0+BARAVGWT)
-               ENDIF
-               RBARWL1=RPIPEWL1AVG(I)
-               RBARWL2=RPIPEWL2AVG(I)
-               IF((RBARWL1.LT.0.D0).AND.(RBARWL2.LT.0.D0)) THEN
-C...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW PIPE -> CASE 1
-                  QN2(I)=QN2(I)+0.D0
-                  GOTO 1036
-               ENDIF
-               IF(ABS(RBARWL1-RBARWL2).LT.BARMIN) THEN
-C...............WATER LEVEL EQUAL ON BOTH SIDES OF PIPE -> CASE 2
-                  QN2(I)=QN2(I)+0.D0
-                  GOTO 1036
-               ENDIF
-               IF((RBARWL1.GT.RBARWL2).AND.(RBARWL1.GT.BARMIN)) THEN
-C...............WATER LEVEL GREATER ON THIS SIDE OF THE PIPE AND IS SUCH
-C................THAT OUTWARD DISCHARGE IS OCCURING
-C................THUS THIS SIDE IS THE SOURCE SIDE OF THE FLOW THROUGH THE PIPE
-C................NOTE THAT WE DO NOT FORCE THE SOURCE SIDE OF THE PIPE TO
-C................REMAIN WET. ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
-C................PIPE HAS BEEN DRIED. IF IT HAS, WE SHUT DOWN THE FLOW ACROSS
-C................THE PIPE
-                  IF(RBARWL2.LE.0.D0) THEN
-C..................OUTWARD FREE DISCHARGE -> CASE 3
-                     IF(NODECODE(NNBB1).EQ.0) THEN
-                        QN2(I)=QN2(I)+0.0D0
-                     ELSE
-                        QN2(I)=QN2(I)-RampIntFlux
-     &                       *0.25D0*PI*(PIPEDIAM(I))**2
-     &                       *(2.D0*G*RBARWL1/(1.D0+PIPECOEF(I)))**0.5D0
-                     ENDIF
-                  ELSE
-C..................OUTWARD SUBMERGED DISCHARGE -> CASE 4
-                     IF(NODECODE(NNBB1).EQ.0) THEN
-                        QN2(I)=QN2(I)+0.0D0
-                     ELSE
-                        QN2(I)=QN2(I)-RampIntFlux
-     &                       *0.25D0*PI*(PIPEDIAM(I))**2
-     &                    *(2.D0*G*(RBARWL1-RBARWL2)/PIPECOEF(I))**0.5D0
-                     ENDIF
-                     GOTO 1036
-                  ENDIF
-               ENDIF
-               IF((RBARWL2.GT.RBARWL1).AND.(RBARWL2.GT.BARMIN)) THEN
-C...............WATER LEVEL LOWER ON THIS SIDE OF PIPE AND IS SUCH
-C................THAT INWARD DISCHARGE IS OCCURING
-C................THUS THIS IS THE RECEIVING SIDE OF THE FLOW THROUGH THE  PIPE
-C................NOTE THAT WE DO FORCE THE RECEIVING SIDE OF THE PIPE TO
-C................REMAIN WET WHEN THERE IS FLOW ACROSS THE PIPE.
-C................ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
-C................PIPE HAS BEEN DRIED. IF IT HAS, WE SHUT DOWN THE FLOW THROUGH
-C................THE PIPE
-                  IF(RBARWL1.LE.0) THEN
-C..................INWARD FREE DISCHARGE -> CASE 5
-                     IF(NODECODE(NNBB2).EQ.0) THEN
-                        QN2(I)=QN2(I)+0.0D0
-                     ELSE
-                        QN2(I)=QN2(I)+RampIntFlux
-     &                       *0.25D0*PI*(PIPEDIAM(I))**2
-     &                       *(2.D0*G*RBARWL2/(1.D0+PIPECOEF(I)))**0.5D0
-                        NIBNODECODE(NNBB1)=1
-                     ENDIF
-                  ELSE
-C..................INWARD SUBMERGED DISCHARGE -> CASE 6
-                     IF(NODECODE(NNBB2).EQ.0) THEN
-                        QN2(I)=0.0D0
-                     ELSE
-                        QN2(I)=QN2(I)+RampIntFlux
-     &                       *0.25D0*PI*(PIPEDIAM(I))**2
-     &                   *(2.D0*G*(RBARWL2-RBARWL1)/PIPECOEF(I))**0.5D0
-                        NIBNODECODE(NNBB1)=1
-                     ENDIF
-                  ENDIF
-                  GOTO 1036
-               ENDIF
- 1036          CONTINUE
+                PIPE_FLUX = 0D0
+                CALL COMPUTE_CROSS_BARRIER_PIPE_FLUX(I,TIMELOC,PIPE_FLUX)
+                QN2(I) = QN2(I) + PIPE_FLUX
             ENDIF
-         END DO
-      ENDIF
+         ENDDO
+      ENDIF 
+
+      if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)  ! NCSU Subdomain
+      if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
+      if(subdomainOn.and.enforceBN.eq.2) call readFort021(it)  ! NCSU Subdomain
+
 
       if(subdomainOn.and.enforceBN.eq.1) call readFort019(it)  ! NCSU Subdomain
       if(subdomainOn.and.enforceBN.eq.2) call readFort020(it)  ! NCSU Subdomain
@@ -3321,6 +3114,14 @@ C             everything is up-to-date.
       ENDIF
 
 
+
+C...  SAVE THE CURRENT TIME LEVEL OF BARRIER INTO THE PREVIOUS TIME LEVEL
+      IF(NFLUXIB.EQ.1)THEN
+        BARINHT1(:)=BARINHT2(:)
+      ENDIF
+      IF(NFLUXB.EQ.1)THEN
+        BARLANHT1(:)=BARLANHT2(:)
+      ENDIF  
 
 C...
 c...  find and print to unit 6, the maximum elevation, the maximum

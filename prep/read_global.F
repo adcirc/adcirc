@@ -30,12 +30,12 @@ C---------------------------------------------------------------------
       subroutine prepRead14()
       use pre_global, only : x, y, dp, nneg, ibtypee, nvdllmsg, nvdll,
      &   nbdv, nvellmsg, nvell, lbcode, ibtype, nbvv, ibconnr,
-     &   bar1, bar2, bar3, weir, weird, flux14_ary, bcts14_ary, agrid,
-     &   aperiodic_bc_ts, bndbcriver, exist_bc_ts, exist_flux, iden,
-     &   mnbou, mnvel, nbou, nboumsg, nelg, neta, netamsg, nfover, 
-     &   nnodg, nope, nopemsg, nvel, nvelmsg, nweir, river_above_msl,
-     &   numLBCodeValues, nfluxf
-      
+     &   bar1, bar2, bar3, bar4, bar5, bar6, weir, weird, flux14_ary, 
+     &   bcts14_ary, agrid, aperiodic_bc_ts, bndbcriver, exist_bc_ts, 
+     &   exist_flux, iden, mnbou, mnvel, nbou, nboumsg, nelg, neta, 
+     &   netamsg, nfover, nnodg, nope, nopemsg, nvel, nvelmsg, nweir, 
+     &   river_above_msl, numLBCodeValues, nfluxf
+
       use memory_usage
       implicit none
 
@@ -201,8 +201,15 @@ C
                WEIRD(NWEIR) = IBCONNR(K,I)
             ENDDO
          case(5,25)
-            print *, 'ERROR: IBTYPE 5 and 25 not supported by adcprep.'
-            stop
+            DO I =1,NVELL(K)
+               READ(14,*) NBVV(K,I),IBCONNR(K,I),
+     &                   BAR1(K,I),BAR2(K,I),BAR3(K,I),
+     &                   BAR4(K,I),BAR5(K,I),BAR6(K,I)
+               !--Construct List of WEIR nodes and their duals
+               NWEIR = NWEIR+1
+               WEIR(NWEIR) = NBVV(K,I)
+               WEIRD(NWEIR) = IBCONNR(K,I)
+            ENDDO    
          case(2,12,22,32,52)
            NFLUXF=1 !jgf51.52.23
            DO I=1,NVELL(K)
@@ -411,6 +418,7 @@ C---------------------------------------------------------------------
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
      &                 IHARIND, ALLOC_MAIN14, CHARMV
       USE PRESIZES, ONLY : SZ
+      USE PREP_WEIR
       USE NODALATTRIBUTES, ONLY : outputTau0
       use memory_usage
       IMPLICIT NONE
@@ -443,12 +451,12 @@ C
 !   tcm v50.66.02 -- added timebathycontrol namelist related variables
       INTEGER :: ios_nddt
       INTEGER :: ios_metCon
+      INTEGER :: ios_tvw
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       INTEGER :: IOS_WC
 C...tcm v51.20.03 Local variables for external station location files
       INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
       INTEGER :: IOS_STATIONS
-
       integer :: ios_wetDry
       namelist /wetDryControl/ outputNodeCode, outputNOFF
 
@@ -462,6 +470,7 @@ C..... file.
 C
       found_tbc_nml = .false.   !flag to determine if the timebathycontrol namelist was present
       found_metCon_nml = .false.   !flag to determine if the metControl namelist was present
+      found_tvw_nml = .false.
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       FOUND_WC_NML = .FALSE.
 
@@ -520,6 +529,15 @@ c... tcm v50.79 added
          found_metCon_nml = .true.
       endif
       rewind(15)  !Return to the top of the fort.15 file
+
+Cobell - Added TVW Namelist
+      READ(15,NML=tvwControl,IOSTAT=IOS_TVW)
+      IF(IOS_TVW.GE.0)THEN
+        FOUND_TVW_NML = .TRUE.
+      ELSE
+        FOUND_TVW_NML = .FALSE.
+      ENDIF
+      REWIND(15)
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       READ(UNIT=15,NML=waveCoupling,IOSTAT=IOS_WC)
@@ -1074,6 +1092,26 @@ C
          ENDIF
       ENDIF
 C      PRINT *, "APERIODIC_FLOW_BC = ", APERIODIC_FLOW_BC
+
+
+Cobell...READING TIME VARYING BOUNDARY CONDITIONS
+C........CHECK FOR WEIR FLUX BOUNDARIES
+      NFLUXB = 0
+      NFLUXIB = 0
+      NFLUXIBP = 0
+      DO I = 1,NVEL
+        SELECT CASE(LBCODE(I))
+            CASE(3,13,23)
+                NFLUXB = 1
+            CASE(4,24)
+                NFLUXIB = 1
+            CASE(5,25)
+                NFLUXIBP = 1
+        END SELECT
+      ENDDO
+      IF((NFLUXIB.EQ.1) .OR. (NFLUXIBP.EQ.1) .OR. (NFLUXB.EQ.1) )THEN
+        IF(USE_TVW)CALL PARSE_TIME_VARYING_WEIR_INFO()
+      ENDIF
 
 C
 C--Read Elevation Recording Stations

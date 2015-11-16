@@ -51,6 +51,7 @@ C     GRID14 section
 C
 C     BARRIER14 section
       REAL(SZ) ,ALLOCATABLE ::  BAR1(:,:),BAR2(:,:),BAR3(:,:)
+      REAL(SZ) ,ALLOCATABLE ::  BAR4(:,:),BAR5(:,:),BAR6(:,:)
 
 C     FLOWBC section
       INTEGER NFLBN    ! NFLBN Number of Global Flow Boundary Nodes
@@ -97,7 +98,7 @@ C     PARM15  section
       INTEGER  NHARFR,NHSINC
       INTEGER  NHSTAR
       INTEGER  IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN
-      INTEGER  NWLAT,NWLON,NFLUXF
+      INTEGER  NWLAT,NWLON,NFLUXF,NFLUXIB,NFLUXIBP,NFLUXB
       INTEGER,ALLOCATABLE ::   NNSEG(:),NNSVG(:),NNSCG(:),NNSMG(:)
 C
 C     jgf46.00 Nodal attributes section.
@@ -246,6 +247,9 @@ c.... tcm v50.66.02 added for time varying bathymetry
 
       ! tcm v50.79 added for metControl namelist
       LOGICAL :: FOUND_METCON_NML  !flag to determine if the metControl namelist was present
+
+      ! zc - added for tvw namelist
+      LOGICAL :: FOUND_TVW_NML
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       LOGICAL :: FOUND_WC_NML
@@ -404,6 +408,8 @@ C
       ALLOCATE ( WEIR(MNVEL),WEIRD(MNVEL) )
       nbytes = nbytes + 8*mnvel
       ALLOCATE ( BAR1(MNBOU,MNVEL),BAR2(MNBOU,MNVEL),BAR3(MNBOU,MNVEL) )
+      nbytes = nbytes + 12*mnbou*mnvel
+      ALLOCATE ( BAR4(MNBOU,MNVEL),BAR5(MNBOU,MNVEL),BAR6(MNBOU,MNVEL) )
       nbytes = nbytes + 12*mnbou*mnvel
       ALLOCATE ( FLBN(MNVEL),FLBNX(MNVEL),FLBNXP(MNVEL) )
       nbytes = nbytes + 12*mnvel
