@@ -2,7 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
-C  v52.22 - 11/15/2015 - zc - Fixing bug where SWAN was writing the previous
+C v51.52.32 - 11/17/2015 - jgf - Remove stray debugging statement from adcprep.
+C v51.52.31 - 11/15/2015 - zc - Fixing bug where SWAN was writing the previous
 C           time snap instead of the current by moving 
 C           writeOutput2D call out of timestep.F and into 
 C           adcirc.F after the SWAN time step has taken place
