@@ -180,9 +180,6 @@ C
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
 
-C.....SETUP POSSIBILITY OF TIME VARIABLE WEIRS
-      CALL WEIR_SETUP()
-
       if (subdomainOn) then
          call readFort015() ! NCSU Subdomain Modeling
       endif
@@ -801,7 +798,11 @@ C     momentum equations
              METONLY = .TRUE. ! set flag
          ENDIF
       ENDIF
+
+C.....SETUP POSSIBILITY OF TIME VARIABLE WEIRS
+      CALL WEIR_SETUP()
 C
+
 C.... SET POSITIONS IN BOUNDARY CONDITION, WIND AND OUTPUT FILES
 C
       WRITE(16,1112)

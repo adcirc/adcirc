@@ -1015,7 +1015,7 @@ C  ERRORS DURING THE SIMULATION.
 C-----------------------------------------------------------------------
             SUBROUTINE PARSE_TIME_VARYING_WEIR_INFO()
 
-                USE GLOBAL,ONLY: ITHS,DT,IHOT,
+                USE GLOBAL,ONLY: ITHS,DTDP,IHOT,
      &              tvw_file,openFileForRead
                 USE SIZES,ONLY: INPUTDIR
                 USE BOUNDARIES,ONLY: LBCODEI,NBV,IBCONN
@@ -1146,8 +1146,9 @@ C...................READ IN NAMELIST LINE
      &                           TimeStartHour*3600D0 + 
      &                           TimeStartMin*60D0    + 
      &                           TimeStartSec
-                    ENDIF             
-                        
+                    ELSE
+                        OFFSET = 0D0
+                    ENDIF
 
 
 C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
@@ -1156,8 +1157,10 @@ C...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
                         IF(ISNULL(I=HOT).OR.(HOT.EQ.0))THEN
                             HOTADD = 0D0
                         ELSEIF(HOT.EQ.1)THEN
-                            HOTADD = DT*ITHS
+                            HOTADD = DTDP*ITHS
                             OFFSET = OFFSET + HOTADD
+                            WRITE(*,*) DTDP,ITHS
+                            WRITE(*,*) HOTADD,OFFSET
                         ELSE
                             CALL allMessage(ERROR,
      &                       "INCORRECT"//

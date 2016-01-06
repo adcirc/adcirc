@@ -2,6 +2,8 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.23 - 01/05/2016 - zc - Fixing bug where time varying weirs were not 
+C                             initialized correctly during hot starts
 C  v52.22 - 11/15/2015 - zc - Fixing bug where SWAN was writing the previous
 C                             time snap instead of the current by moving 
 C                             writeOutput2D call out of timestep.F and into 
