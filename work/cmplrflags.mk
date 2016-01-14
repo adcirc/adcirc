@@ -14,6 +14,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=intel
 #compiler=intel-ND
 #compiler=intel-lonestar
+#compiler=intel-sgi
 #compiler=cray_xt3
 #compiler=cray_xt4
 #compiler=cray_xt5
@@ -255,6 +256,40 @@ ifeq ($(compiler),intel-lonestar)
   TACC_HDF5_LIB=${HDF5HOME}lib
   ifeq ($(NETCDF),enable)
      FLIBS      := $(FLIBS) -I${TACC_NETCDF_INC} -L${TACC_NETCDF_LIB} -lnetcdf -lnetcdff -L${TACC_HDF5_LIB} -lhdf5 -lhdf5 -lz -lm
+  endif
+endif
+#
+# SGI ICE X (e.g. topaz@ERDC) using Intel compilers, added by TCM
+ifeq ($(compiler),intel-sgi)
+  PPFC          :=  ifort
+  FC            :=  ifort
+  PFC           :=  mpif90
+  CC            :=  icc -O2 -no-ipo
+  CCBE          :=  icc -O2 -no-ipo
+  FFLAGS1       :=  $(INCDIRS) -fixed -extend-source 132 -O2 -finline-limit=1000 -real-size 64 -no-ipo -assume buffered_io
+#  FFLAGS1      :=  $(INCDIRS) -Mextend -g -O0 -traceback
+  FFLAGS2       :=  $(FFLAGS1)
+  FFLAGS3       :=  $(FFLAGS1) -assume buffered_stdout
+  DA            :=  -DREAL8 -DLINUX -DCSCA
+  DP            :=  -DREAL8 -DLINUX -DCMPI -DHAVE_MPI_MOD -DCSCA
+  DPRE          :=  -DREAL8 -DLINUX
+  CFLAGS        :=  $(INCDIRS) -DLINUX
+  IMODS         :=  -module
+  FLIBS         :=
+# When compiling with netCDF support, the HDF5 libraries must also
+# be linked in, so the user must specify HDF5HOME on the command line.
+# jgf20090518: on Jade, NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.0
+# jgf20090518: on Jade, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.2/lib
+  ifeq ($(NETCDF),enable)
+     FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
+  endif
+  MSGLIBS       :=
+  BACKEND_EXEC  := metis_be adcprep_be
+  $(warning (INFO) Corresponding machine found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
+     MULTIPLE := TRUE
   endif
 endif
 #
