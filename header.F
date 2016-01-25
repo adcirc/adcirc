@@ -2,6 +2,13 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.34 - 01/25/2016 - jgf - Fixed issue where nodecode was being tested
+C           on output arrays where wet/dry state should be considered, but
+C           this test was being erroneously applied to stations by looking up
+C           the nodecode on the station number itself, rather than the
+C           nodes in the element containing the station; checking the 
+C           wet/dry state of a station was already being correctly handled
+C           in subroutine stationArrayInterp(). 
 C v51.52.33 - 01/14/2016 - tcm - Added compiler flags for Topaz, SGI ICE X.
 C v51.52.32 - 11/17/2015 - jgf - Remove stray debugging statement from adcprep.
 C v51.52.31 - 11/15/2015 - zc - Fixing bug where SWAN was writing the previous

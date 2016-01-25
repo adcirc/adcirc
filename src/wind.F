@@ -4758,7 +4758,7 @@ C
      &          trim(GFDL_Files(i)%file_name)//" was not found.")
             call windTerminate()
          endif
-      GFDL_Files(i)%loaded = .false.
+         GFDL_Files(i)%loaded = .false.
       end do
 
       write(scratchMessage,'("All specified GFDL Met Files were found.")')

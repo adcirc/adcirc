@@ -290,10 +290,16 @@ C! CMPI
          iglobal = descript % imap(i)
          if (istart <= iglobal .and. iglobal <= iend) then
             buf(iglobal - ioffset ) = descript % array(i) 
-            !jgf51.21.24: Updated and generalized to take into account wet/dry     
+            ! jgf51.21.24: Updated and generalized to take into account wet/dry
+            ! jgf51.52.34: Station data that should take wet dry state
+            ! into account have already done so in subroutine stationArrayInterp()
+            ! in module write_output.F. For stations, it doesn't make 
+            ! sense to check the nodecode.
             if ( descript % considerWetDry.eqv..true. ) then
-               if ( nodecode(i).eq.0 ) then
-                  buf(iglobal-ioffset) = descript % alternate_value
+               if ( descript % isStation.eqv..false. ) then
+                  if ( nodecode(i).eq.0 ) then
+                     buf(iglobal-ioffset) = descript % alternate_value
+                  endif
                endif
             endif
          endif
