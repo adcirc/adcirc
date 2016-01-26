@@ -1189,7 +1189,7 @@ C----------------------------------------------------------------------
       IMPLICIT NONE
       INTEGER, intent(in) :: IT
       REAL(8), intent(in) :: TimeLoc
-      INTEGER :: i
+      INTEGER :: i,j
 
       call setMessageSource("writeOutput2D")
 #if defined(WRITE_OUTPUT_TRACE) || defined(ALL_TRACE)
@@ -3668,27 +3668,26 @@ C     write data according to format specifier from fort.15 (e.g., NOUTE)
 !......TCM - v48.4618 -- Fixed dry node output for serial run case
                IF (descript % ConsiderWetDry .EQV. .TRUE.) THEN
                   DO I=1, descript % num_records_this
-                     if(NODECODE(I).EQ.1) THEN
+                     ! jgf52.25: Station data that should take wet dry state
+                     ! into account have already done so in subroutine stationArrayInterp()
+                     ! above. For stations, it doesn't make sense to check the nodecode.
+                     if ( (descript%isStation.eqv..false.).and.(NODECODE(I).EQ.0)) then
                         if ( descript % isInteger .eqv. .true. ) then 
-                           write(descript % lun,2452) I, descript % iarray(I)
+                           write(descript % lun,2452) I, int(descript % alternate_value)
                         else
-                           write(descript % lun,2453) I, descript % array(I)
+                           write(descript % lun,2453) I, descript % alternate_value
                         endif
-                     ELSE
+                     else
                         if ( descript % isInteger .eqv. .true. ) then 
-                           write(descript % lun,2452) I, 
-     &                      int( descript % alternate_value )
+                           write(descript % lun,2452) I, descript % iarray(i)
                         else
-                           write(descript % lun,2453) I, 
-     &                      descript % alternate_value  !-99999.0 for dry nodes
+                           write(descript % lun,2453) I, descript % array(i)
                         endif
-                     ENDIF
-                  END DO
-               ELSE
+                     endif
+                  end do
+               else
                   DO I=1, descript % num_records_this
                      if ( descript % isInteger .eqv. .true. ) then 
-                        !write(16,*) 'writing ',descript%iarray(i),' to subdomain output' !jgfdebug
-                        !write(16,2452) I, descript % iarray(I)
                         write(descript % lun,2452) I, descript % iarray(I)
                      else
                         write(descript % lun,2453) I, descript % array(I)

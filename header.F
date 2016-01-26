@@ -2,6 +2,16 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.25 - 01/25/2016 - jgf - Merged revisions 1176:1183 from v51release
+C         branch (v51.52.33 and v51.52.34) as follows: 
+C     v51.52.34 - 01/25/2016 - jgf - Fixed issue where nodecode was being tested
+C           on output arrays where wet/dry state should be considered, but
+C           this test was being erroneously applied to stations by looking up
+C           the nodecode on the station number itself, rather than the
+C           nodes in the element containing the station; checking the 
+C           wet/dry state of a station was already being correctly handled
+C           in subroutine stationArrayInterp(). 
+C     v51.52.33 - 01/14/2016 - tcm - Added compiler flags for Topaz, SGI ICE X.
 C  v52.24 - 01/26/2016 - jgf - Fixed adcirc2xdmf utility to recognize
 C         the .13 extension for processing nodal attributes files;
 C         also updated the build system to synchronize with 
