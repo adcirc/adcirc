@@ -799,8 +799,6 @@ C     the fort.15 file
       else
          outputTau0 = .false.
       endif
-      !jgfdebug
-      write(6,*) 'tau0=',tau0,' outputTau0=',outputTau0
       IF ( (TAU0.LE.-5.d0).AND.(TAU0.GT.-6.d0) ) THEN
          READ(15,80) TAU0LIMMSG
          READ(TAU0LIMMSG,*) Tau0FullDomainMin, Tau0FullDomainMax

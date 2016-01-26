@@ -50,11 +50,14 @@ integer :: timeStepID
 character(len=256) :: timeStepString
 integer :: startingDataset  ! first dataset to convert
 integer :: endingDataset    ! last dataset to convert
+logical :: meshonly ! .true. if only the mesh is to be converted
 !
 ! levees and boundaries for visualization
 integer :: leveeDimensions(3)
 integer :: leveeDimensionsID
 integer :: leveeGeometryID
+integer :: boundaryID
+integer, allocatable :: ibtypeGeom(:)
 integer :: b
 integer :: numCoord
 integer :: ind
@@ -69,6 +72,10 @@ type(xdmfMetaData_t) :: md  ! holds the metadata for whatever data we are writin
 real(8), allocatable :: data_array1(:)
 real(8), allocatable :: data_array3(:,:)
 !
+integer :: lastSlashPosition ! used for trimming full path from a filename
+integer :: lastDotPosition ! to determine file extension
+character(2048) :: dataFileExtension ! something like 13, 14, 15, 63, 222 etc
+
 character(80) :: line ! a line of data from the ascii file
 character(80) :: topcomment ! comment line at the top of ascii file
 integer :: i, j, n 
@@ -84,6 +91,7 @@ convertOutputData = .true.
 verbose = .false.
 release = .true.
 writeToHDF5 = .true.
+meshonly = .false.
 lightDataLimit = 10
 unitNumber = 90
 ss=1  ! initialize the dataset counter
@@ -144,7 +152,7 @@ do while (i.lt.argcount)
    end select
 end do
 ! read ADCIRC mesh from ascii file
-write(6,'(a)') 'INFO: Preparing to read mesh file "'//trim(meshFileName),'".'
+write(6,'(a,a)') 'INFO: Preparing to read mesh file "'//trim(meshFileName),'".'
 call read14()
 call constructFluxBoundaryTypesArray() ! create LBCODEI array
 !
@@ -190,15 +198,39 @@ call XdmfInit(xdmfFortranObj)
 ! call the initHDF5 method; arguments include the ref to the XdmfFortran
 ! object, the name of the HDF5 file, and whether to release memory after write 
 write(6,'(A)') 'INFO: Initializing HDF5 file.'
-convertedFileName = dataFileName
-select case(trim(adjustl(dataFileName)))
-case ("none") 
-   convertedFileName = meshFileName
-   convertOutputData = .false.
-case("fort.13")
-   convertOutputData = .false.
-end select
 !
+! read ADCIRC control data from ascii file unless otherwise specified
+if (trim(adjustl(dataFileName)).eq."none") then
+   meshonly = .true.
+endif
+!
+! If the full path to the file was given, the path to the file must 
+! trimmed off, leaving just the file name. This way the converted files
+! will be written to the directory where the command was executed rather
+! than the directory where the file to be converted is located (if these
+! locations are different.
+lastSlashPosition = index(trim(dataFileName),"/",.true.)
+if (meshonly.eqv..true.) then
+   lastSlashPosition = index(trim(meshFileName),"/",.true.)
+   convertedFileName = trim(meshFileName(lastSlashPosition+1:))
+   convertOutputData = .false.
+else
+   lastSlashPosition = index(trim(dataFileName),"/",.true.)
+   convertedFileName = trim(dataFileName(lastSlashPosition+1:))
+   lastDotPosition = index(trim(convertedFileName),'.',.true.)
+   dataFileExtension = trim(convertedFileName(lastDotPosition+1:))
+   !write(6,'("DEBUG: Data file extension is ",a,".")') trim(dataFileExtension) !jgfdebug
+   !
+   ! Check to see if the data file is a nodal attributes file (with a
+   ! .13 extension)
+   if (trim(dataFileExtension).eq.'13') then
+      write(6,'(a)') 'INFO: The data file to be converted is a nodal attributes input file.'
+      convertOutputData = .false.
+   endif
+endif
+!
+!
+write(6,'(a,a,a,a,a)') 'DEBUG: The names of the converted files will be ',trim(convertedFileName),'.h5 and ',trim(convertedFileName),'.xmf.'
 call XdmfInitHDF5(xdmfFortranObj, trim(convertedFileName)//'.h5'//char(0), release)
 !
 ! name the temporal grid collection for time varying output data
@@ -257,56 +289,56 @@ write(6,'(a)') 'INFO: Finished writing bathy/topo to XDMF file.'
 md%createdIDs = .false.
 md%positive = 'null'
 md%ndset = 0 ! unknown number of data sets
-select case(trim(dataFileName))
-case('fort.63','fort.69')
-   md%variable_name = 'zeta'
-   md%long_name = 'water surface elevation above geoid'
-   md%standard_name = 'water_surface_elevation'
-   md%coordinates = 'time y x'
-   md%units = 'm'
-case('maxele.63')
-   md%variable_name = 'zeta_max'
-   md%long_name = 'max water surface elevation above geoid'
-   md%standard_name = 'max_water_surface_elevation'
-   md%coordinates = 'y x'
-   md%units = 'm'   
-   md%ndset = 1 ! just one data set
-case('fort.64')
+select case(trim(dataFileExtension))
+case('63','69')
+   if (trim(dataFileName).eq.'maxele.63') then
+      md%variable_name = 'zeta_max'
+      md%long_name = 'max water surface elevation above geoid'
+      md%standard_name = 'max_water_surface_elevation'
+      md%coordinates = 'y x'
+      md%units = 'm'   
+      md%ndset = 1 ! TODO: fix to also handle min/max files with time of occurrence
+   else 
+      md%variable_name = 'zeta'
+      md%long_name = 'water surface elevation above geoid'
+      md%standard_name = 'water_surface_elevation'
+      md%coordinates = 'time y x'
+      md%units = 'm'
+   endif
+case('64')
    md%variable_name = 'vel'
    md%long_name = 'water column vertically averaged velocity'
    md%standard_name = 'water_velocity'
    md%coordinates = 'time y x'
    md%units = 'm s-1'
    md%positive = 'north/east'
-case('fort.73')
+case('73')
    md%variable_name = 'pressure'
    md%long_name = 'air pressure at sea level'
    md%standard_name = 'air_pressure_at_sea_level'
    md%coordinates = 'time y x'
    md%units = 'meters of water'
-case('fort.74')
+case('74')
    md%variable_name = 'wvel'
    md%long_name = 'wind_velocity'
    md%standard_name = 'wind'
    md%coordinates = 'time x y'
    md%units = 'm s-1'
    md%positive = 'north/east'
-case('fort.93')
+case('93')
    md%variable_name = 'ice'
    md%long_name = 'ice coverage at at sea surface'
    md%standard_name = 'ice_pressure_at_sea_level'
    md%coordinates = 'time y x'
    md%units = 'percent'
 case('none')
-   ! do nothing
+   ! do nothing, we are just converting a mesh file
+case('13')
+   call readNodalAttributesFile(dataFileName)
+   call writeNodalAttributesXDMF(xdmfFortranObj)
 case default  ! includes fort.13 and none
-   if (convertOutputData.eqv..false.) then
-      call readNodalAttributesFile(dataFileName)
-      call writeNodalAttributesXDMF(xdmfFortranObj)
-   else
-      write(6,'(A)') 'ERROR: adcirc2xdmf cannot convert ' // trim(dataFileName) // ' files.'
-      stop
-   endif
+   write(6,'(A)') 'ERROR: adcirc2xdmf cannot convert ' // trim(dataFileName) // ' files.'
+   stop
 end select
 !
 ! if we are writing plain old ADCIRC data
@@ -487,6 +519,52 @@ call XdmfInitHDF5(xdmfFortranObj, trim(convertedFileName)//'.h5'//char(0), relea
 ! create a grid collection for visualizing spatial data     
 call xdmfAddGridCollection(xdmfFortranObj, "Levees and Boundaries"//CHAR(0), &
     XDMF_GRID_COLLECTION_TYPE_SPATIAL)   
+
+
+!
+! simple flux boundaries (mainland, island, river)
+do b = 1, numSimpleFluxBoundaries
+   n = size(simpleFluxBoundaries(b)%nodes)
+   leveeDimensions(1) = 2 ! front base, top front face (no back face)
+   leveeDimensions(2) = n ! length of boundary
+   leveeDimensions(3) = 1 ! has no thickness
+   numCoord = 3*product(leveeDimensions)
+   allocate(simpleFluxBoundaries(b)%bGeom(numCoord))
+   simpleFluxBoundaries(b)%bGeom = 0.0d0
+   ind = 1
+   do i=1,n
+      nodeNum = simpleFluxBoundaries(b)%nodes(i) + 1
+      simpleFluxBoundaries(b)%bGeom(ind)   = xyd(1,nodeNum) ! x 
+      simpleFluxBoundaries(b)%bGeom(ind+1) = xyd(2,nodeNum) ! y
+      simpleFluxBoundaries(b)%bGeom(ind+2) = - xyd(3,nodeNum) ! depth
+      ind = ind + 3
+   end do
+   do i=1,n
+      ! height
+      nodeNum = simpleFluxBoundaries(b)%nodes(i) + 1
+      simpleFluxBoundaries(b)%bGeom(ind)   = xyd(1,nodeNum) ! x 
+      simpleFluxBoundaries(b)%bGeom(ind+1) = xyd(2,nodeNum) ! y
+      simpleFluxBoundaries(b)%bGeom(ind+2) = 1.d0 ! hard code to 1m arbitrarily 
+      ind = ind + 3
+   end do
+   leveeDimensionsID = xdmfSetDimensions(xdmfFortranObj, 3, XDMF_ARRAY_TYPE_INT32, leveeDimensions)
+   leveeGeometryID = xdmfSetGeometry(xdmfFortranObj, XDMF_GEOMETRY_TYPE_XYZ, numCoord, &
+      XDMF_ARRAY_TYPE_FLOAT64, simpleFluxBoundaries(b)%bGeom)
+
+   !allocate(ibtypeGeom(2*product(leveeDimensions)))
+   !ibtypeGeom(:) = ibtype_orig(simpleFluxBoundaries(b)%indexNum)  
+   !boundaryID = xdmfAddAttribute(xdmfFortranObj, 'ibtype'//CHAR(0), &
+   !   XDMF_ATTRIBUTE_CENTER_NODE, XDMF_ATTRIBUTE_TYPE_SCALAR, 2*product(leveeDimensions), &
+   !   XDMF_ARRAY_TYPE_INT32, ibtypeGeom ) 
+   !deallocate(ibtypeGeom)
+          
+   write(boundaryName,'("fluxBoundary",i0,"_ibtype",i0)') &
+      simpleFluxBoundaries(b)%indexNum, ibtype_orig(simpleFluxBoundaries(b)%indexNum)  
+      
+   call xdmfAddGridCurvilinear(xdmfFortranObj,trim(boundaryName)//char(0), writeToHDF5)
+end do
+
+
 !
 ! external flux boundaries (overflow out of the domain)
 do b = 1, numExternalFluxBoundaries
