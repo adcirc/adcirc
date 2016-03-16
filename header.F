@@ -2,6 +2,10 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.26 - 03/16/2016 - jgf - Applied fix from zc to take the absolute
+C           value of the element number when decomposing the fulldomain
+C           elementally-based arrays (e.g., the NOFF array) from hotstart
+C           files in parallel. 
 C  v52.25 - 01/25/2016 - jgf - Merged revisions 1176:1183 from v51release
 C         branch (v51.52.33 and v51.52.34) as follows: 
 C     v51.52.34 - 01/25/2016 - jgf - Fixed issue where nodecode was being tested

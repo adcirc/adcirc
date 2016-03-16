@@ -4827,7 +4827,7 @@ C
             ! loop over subdomain nodes
             DO sd_ele_number=1,ne
                ! get the corresponding fulldomain ele number
-               fd_ele_number = IMAP_EL_LG(sd_ele_number)
+               fd_ele_number = abs(IMAP_EL_LG(sd_ele_number))
                ! fill in the subdomain arrays with the corresponding
                ! fulldomain values
                sd_array(sd_ele_number) = fd_array(fd_ele_number)
@@ -4839,7 +4839,7 @@ C
             ! loop over subdomain nodes
             DO sd_ele_number=1,ne
                ! get the corresponding fulldomain ele number
-               fd_ele_number = IMAP_EL_LG(sd_ele_number)
+               fd_ele_number = abs(IMAP_EL_LG(sd_ele_number))
                ! fill in the subdomain arrays with the corresponding
                ! fulldomain values
                sd_array(sd_ele_number) = fd_array(fd_ele_number)

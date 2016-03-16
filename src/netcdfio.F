@@ -6885,7 +6885,7 @@ C
          forall (sd_element_number=1:ne)
             ! get the corresponding fulldomain indexes
             fullDomainElementList(sd_element_number)
-     &         = imap_el_lg(sd_element_number)
+     &         = abs(imap_el_lg(sd_element_number))
          end forall
          !
          ! get fulldomain data and map the data to this subdomain

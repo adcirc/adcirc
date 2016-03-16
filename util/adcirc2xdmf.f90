@@ -202,6 +202,7 @@ write(6,'(A)') 'INFO: Initializing HDF5 file.'
 ! read ADCIRC control data from ascii file unless otherwise specified
 if (trim(adjustl(dataFileName)).eq."none") then
    meshonly = .true.
+   convertOutputData = .false.
 endif
 !
 ! If the full path to the file was given, the path to the file must 
@@ -214,6 +215,7 @@ if (meshonly.eqv..true.) then
    lastSlashPosition = index(trim(meshFileName),"/",.true.)
    convertedFileName = trim(meshFileName(lastSlashPosition+1:))
    convertOutputData = .false.
+   dataFileExtension = 'none'
 else
    lastSlashPosition = index(trim(dataFileName),"/",.true.)
    convertedFileName = trim(dataFileName(lastSlashPosition+1:))
