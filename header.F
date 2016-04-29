@@ -2,6 +2,12 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.27 - 04/29/2016 - jgf - Fixed NetCDF metadata for velocity units 
+C           (wind, water current, max wind and water current, and swan wind);
+C           fixed reading of IDEN to make it consistent between the 2D section
+C           of the fort.15 file and the 3D section. These fixes were made
+C           as revisions 1193:1194 on v51release branch, adcirc version
+C           v51.52.35.
 C  v52.26 - 03/16/2016 - jgf - Applied fix from zc to take the absolute
 C           value of the element number when decomposing the fulldomain
 C           elementally-based arrays (e.g., the NOFF array) from hotstart

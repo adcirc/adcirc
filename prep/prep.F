@@ -7715,7 +7715,7 @@ C     we collected in read_global.F and stored in pre_global.F.
      &   abs(nstae), abs(nstav), abs(nstam), neta, nabout, nscreen,
      &   nfen, iden, islip, kp, z0s, z0b, theta1, theta2,
      &   ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd,
-     &   nvtd, alp4, C3D)
+     &   nvtd, alp4, C3D, runid)
 C
 C     Create NetCDF output files for those output files where NetCDF
 C     was specified.

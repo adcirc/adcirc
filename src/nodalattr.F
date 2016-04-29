@@ -1587,24 +1587,24 @@ C     I N I T   B O T T O M   F R I C T I O N
 C
 C     Initialize bottom friction if it was not loaded from unit 13.
       IF(C2DDI) THEN
-        IF((.not.LoadQuadraticFric).and.(.not.LoadManningsN).and.
+         IF((.not.LoadQuadraticFric).and.(.not.LoadManningsN).and.
      &     (.not.LoadChezy)) THEN
-         IF (NoLiBF.eq.0) CF=Tau
+            IF (NoLiBF.eq.0) CF=Tau
 C     If a nodal attributes file was read, FRIC was allocated there.
-         IF (NWP.eq.0) THEN
-            ALLOCATE(FRIC(NP))
+            IF (NWP.eq.0) THEN
+               ALLOCATE(FRIC(NP))
+            ENDIF
+            DO I=1,NP
+               FRIC(I)=CF
+            END DO
          ENDIF
-         DO I=1,NP
-            FRIC(I)=CF
-         END DO
-        ENDIF
 C
-C     jgf47.04 If a depth-dependent friction parameterization is used,
-C     the value from the fort.15 file is used as a floor for the
-C     minimum equivalent quadratic friction value.
-        IF (LoadManningsN) THEN
-           BFCdLLimit = CF
-        ENDIF
+C        jgf47.04 If a depth-dependent friction parameterization is used,
+C        the value from the fort.15 file is used as a floor for the
+C        minimum equivalent quadratic friction value.
+         IF (LoadManningsN) THEN
+            BFCdLLimit = CF
+         ENDIF
       ENDIF
 C
       IF(C3D) THEN
