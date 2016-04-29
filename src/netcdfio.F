@@ -746,11 +746,11 @@ C
                CALL check_err(iret)
             endif
             CALL putUnitsAttribute(sta%ncid,sta%u_station_data_id,
-     &      'm s-2', 'ft s-1')
+     &      'm s-1', 'ft s-1')
             CALL putUnitsAttribute(sta%ncid,sta%v_station_data_id,
-     &      'm s-2','ft s-1')
+     &      'm s-1','ft s-1')
             CALL putUnitsAttribute(sta%ncid,sta%w_station_data_id,
-     &      'm s-2','ft s-1')
+     &      'm s-1','ft s-1')
             sta%statnames => STATNAMEV3D
 
          CASE(43) !       F O R T . 4 3
@@ -802,7 +802,7 @@ C
      &            trim(att_text))
                CALL check_err(iret)
 C            CALL putUnitsAttribute(sta%ncid,sta%u_station_data_id,
-C     &      'm s-2', 'ft s-1') !TODO: jgf49.48.01: units for q20??
+C     &      'm s-1', 'ft s-1') !TODO: jgf49.48.01: units for q20??
             CALL putUnitsAttribute(sta%ncid,sta%v_station_data_id,
      &      "meters","n/a")
             CALL putUnitsAttribute(sta%ncid,sta%w_station_data_id,
@@ -900,7 +900,7 @@ C     &      'm s-2', 'ft s-1') !TODO: jgf49.48.01: units for q20??
             endif
 
             CALL putUnitsAttribute(sta%ncid, sta%u_station_data_id,
-     &      'm s-2', 'ft s-1')
+     &      'm s-1', 'ft s-1')
             iret = nf90_put_att(sta%ncid, sta%u_station_data_id,
      &             '_FillValue', doubleval)
             CALL check_err(iret)
@@ -908,7 +908,7 @@ C     &      'm s-2', 'ft s-1') !TODO: jgf49.48.01: units for q20??
      &             'dry_Value', doubleval)
             CALL check_err(iret)
             CALL putUnitsAttribute(sta%ncid, sta%v_station_data_id,
-     &      'm s-2','ft s-1')
+     &      'm s-1','ft s-1')
             iret = nf90_put_att(sta%ncid, sta%v_station_data_id,
      &      '_FillValue', doubleval)
             CALL check_err(iret)
@@ -1046,9 +1046,9 @@ C
 
             if (abs(nws).gt.2.and.abs(nws).lt.100) then
                call putUnitsAttribute(sta%ncid, sta%u_station_data_id,
-     &              'm s-2', 'ft s-1')
+     &              'm s-1', 'ft s-1')
                call putUnitsAttribute(sta%ncid, sta%v_station_data_id,
-     &              'm s-2', 'ft s-1')
+     &              'm s-1', 'ft s-1')
             else
                call putUnitsAttribute(sta%ncid, sta%u_station_data_id,
      &              'm2 s-2', 'ft s-2')
@@ -1397,11 +1397,11 @@ C
                CALL check_err(iret)
             endif
             CALL putUnitsAttribute(dat%ncid,dat%u_nodal_data_id,
-     &         'm s-2', 'ft s-1')
+     &         'm s-1', 'ft s-1')
             CALL putUnitsAttribute(dat%ncid,dat%v_nodal_data_id,
-     &         'm s-2', 'ft s-1')
+     &         'm s-1', 'ft s-1')
             CALL putUnitsAttribute(dat%ncid,dat%w_nodal_data_id,
-     &         'm s-2', 'ft s-1')
+     &         'm s-1', 'ft s-1')
 
          CASE(46) !       F O R T . 4 6
             dat%nodal_data_dims_3D(1) = dat%myMesh%num_nodes_dim_id
@@ -1650,9 +1650,9 @@ C
                CALL check_err(iret)
             endif
             CALL putUnitsAttribute(dat%ncid, dat%u_nodal_data_id,
-     &           'm s-2', 'ft s-1')
+     &           'm s-1', 'ft s-1')
             CALL putUnitsAttribute(dat%ncid, dat%v_nodal_data_id,
-     &           'm s-2', 'ft s-1')
+     &           'm s-1', 'ft s-1')
             iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
      &           '_FillValue',  doubleval)
             CALL check_err(iret)
@@ -1733,7 +1733,7 @@ C
                CALL check_err(iret)
             endif            
             CALL putUnitsAttribute(dat%ncid, dat%max_nodal_data_id,
-     &           'm s-2', 'ft s-1')
+     &           'm s-1', 'ft s-1')
             CALL putUnitsAttribute(dat%ncid, dat%time_max_nodal_data_id,
      &           'sec', 'sec')
             iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
@@ -1960,14 +1960,14 @@ C
             select case(abs(nws))
                case(1,2)
                call putUnitsAttribute(dat%ncid, dat%u_nodal_data_id,
-     &              'm2 s-2', 'ft s-2')
+     &              'm2 s-2', 'lbf s-2')
                call putUnitsAttribute(dat%ncid, dat%v_nodal_data_id,
-     &              'm2 s-2', 'ft s-2')
+     &              'm2 s-2', 'lbf s-2')
                case default
                call putUnitsAttribute(dat%ncid, dat%u_nodal_data_id,
-     &              'm s-2', 'ft s-1')
+     &              'm s-1', 'ft s-1')
                call putUnitsAttribute(dat%ncid, dat%v_nodal_data_id,
-     &              'm s-2', 'ft s-1')
+     &              'm s-1', 'ft s-1')
             end select
             iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
      &             '_FillValue', doubleval)
@@ -2073,12 +2073,12 @@ C
             select case(abs(nws))
                case(1,2)
                call putUnitsAttribute(dat%ncid, dat%max_nodal_data_id,
-     &              'm2 s-2', 'ft s-2')
+     &              'm2 s-2', 'lbf ft-2')
                call putUnitsAttribute(dat%ncid, dat%time_max_nodal_data_id,
      &              'sec', 'sec')
                case default
                call putUnitsAttribute(dat%ncid, dat%max_nodal_data_id,
-     &              'm s-2', 'ft s-1')
+     &              'm s-1', 'ft s-1')
                call putUnitsAttribute(dat%ncid, dat%time_max_nodal_data_id,
      &              'sec', 'sec')
             end select
@@ -2133,7 +2133,7 @@ C
      &             'standard_name', 'time_of_maximum_radiation_stress')
             CALL check_err(iret)
             CALL putUnitsAttribute(dat%ncid, dat%max_nodal_data_id,
-     &           'm-2 s-2', 'ft-2 s-2')
+     &           'm-2 s-2', 'lbf ft-2')
             CALL putUnitsAttribute(dat%ncid, dat%time_max_nodal_data_id,
      &           'sec', 'sec')
             iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
@@ -2563,9 +2563,9 @@ C
      &                 'm2 s-2', 'ft s-2')
                case default
                call putUnitsAttribute(dat%ncid, dat%u_nodal_data_id,
-     &                 'm s-2', 'ft s-1')
+     &                 'm s-1', 'ft s-1')
                call putUnitsAttribute(dat%ncid, dat%v_nodal_data_id,
-     &                 'm s-2', 'ft s-1')
+     &                 'm s-1', 'ft s-1')
             end select
             iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
      &             '_FillValue', doubleval)
@@ -2642,7 +2642,7 @@ C
      &                 'm2 s-2', 'ft s-2')
                case default
                call putUnitsAttribute(dat%ncid, dat%max_nodal_data_id,
-     &                 'm s-2', 'ft s-1')
+     &                 'm s-1', 'ft s-1')
             end select
             iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
      &             '_FillValue', doubleval)
@@ -4183,7 +4183,7 @@ C     U V E L
      &       'standard_name', 'u_velocity')
       CALL check_err(iret)
       CALL putUnitsAttribute(hs%ncid, hs%vel%u_nodal_data_id,
-     &        'm s-2', 'ft s-1')
+     &        'm s-1', 'ft s-1')
       CALL check_err(iret)
       iret = nf90_put_att(hs%ncid, hs%vel%u_nodal_data_id,
      &        '_FillValue', doubleval)
@@ -4214,7 +4214,7 @@ C     V V E L
      &            'standard_name','v_velocity')
       CALL check_err(iret)
       CALL putUnitsAttribute(hs%ncid, hs%vel%v_nodal_data_id,
-     &        'm s-2', 'ft s-1')
+     &        'm s-1', 'ft s-1')
       CALL check_err(iret)
       iret = nf90_put_att(hs%ncid, hs%vel%v_nodal_data_id,
      &            '_FillValue', doubleval)
@@ -8521,7 +8521,7 @@ C-----------------------------------------------------------------------
      &                   nolifa, nolica, nolicat,
      &                   ncor, ntip, nws, nramp, statim,
      &                   reftim, rnday, dramp, a00, b00, c00, h0,
-     &                   cori, ntif, nbfr, RAD2DEG, C3D
+     &                   cori, ntif, nbfr, RAD2DEG, C3D, rundes, runid
       USE GLOBAL_3DVS, ONLY : iden, islip, kp, z0s, z0b, theta1, theta2,
      &   ievc, evmin, evcon, alp1, alp2, alp3, igc, nlsd, nvsd, nltd,
      &   nvtd, alp4
@@ -8565,6 +8565,12 @@ C     back to degrees to write them back out
       iret = nf90_put_att(ncid, NF_GLOBAL, 'agrid',
      &        trim(adjustl(agrid)))
       CALL check_err(iret)
+      iret = nf90_put_att(ncid, NF_GLOBAL, 'rundes',
+     &       trim(adjustl(rundes)))
+      CALL check_err(iret)
+      iret = nf90_put_att(ncid, NF_GLOBAL, 'runid',
+     &       trim(adjustl(runid)))
+      CALL check_err(iret)      
       iret = nf90_put_att(ncid, NF_GLOBAL, 'title',
      &        trim(adjustl(title)))
       CALL check_err(iret)
@@ -8753,7 +8759,8 @@ C     in the specified file.
 C-----------------------------------------------------------------------
       subroutine updateMetaData(ncid,myFile)
       USE SIZES, ONLY : SZ
-      USE GLOBAL, ONLY : ihot, nramp, rnday, dramp, a00, b00, c00, h0
+      USE GLOBAL, ONLY : ihot, nramp, rnday, dramp, a00, b00, c00, h0,
+     &                    rundes, runid
       USE NodalAttributes, ONLY : nwp, nolibf, tau0, cf, eslm
       USE VERSION
       IMPLICIT NONE
@@ -8777,6 +8784,10 @@ C     Open existing NetCDF file
       CALL check_err(iret)
 C
       iret = nf90_redef (ncid)
+      CALL check_err(iret)
+      iret = nf90_put_att(ncid, NCGLOBAL, 'rundes', trim(adjustl(rundes)))
+      CALL check_err(iret)
+      iret = nf90_put_att(ncid, NCGLOBAL, 'runid', trim(adjustl(runid)))
       CALL check_err(iret)
       iret = nf90_put_att(ncid, NCGLOBAL, 'ihot', ihot)
       CALL check_err(iret)
@@ -8830,7 +8841,8 @@ C-----------------------------------------------------------------------
       SUBROUTINE ReadMetaData(ncid,myFile)
 C-----------------------------------------------------------------------
         USE SIZES,ONLY:SZ
-        USE GLOBAL,ONLY:ihot,nramp,rnday,dramp,a00,b00,c00,h0,np_g,ne_g
+        USE GLOBAL,ONLY:ihot,nramp,rnday,dramp,a00,b00,c00,h0,np_g,ne_g,
+     &                   rundes,runid
         USE NodalAttributes,ONLY:nwp,nolibf,tau0,cf,eslm
         USE VERSION
         IMPLICIT NONE
@@ -8843,6 +8855,8 @@ C-----------------------------------------------------------------------
         call allMessage(DEBUG,"Enter.")
 #endif
         CALL CHECK_ERR(nf90_open(myFile%FILENAME,NF_NOWRITE,NCID))
+        CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'rundes',rundes))
+        CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'runid',runid))
         CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'ihot',ihot))
         CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'nramp',nramp))
         CALL CHECK_ERR(nf90_get_att(NCID,NCGLOBAL,'tau0',tau0))
@@ -8970,7 +8984,7 @@ C-----------------------------------------------------------------------
      &   base_date_p, NE_G_p,
      &   NBOU_p, NVEL_p, NOPE_p, NP_G_p, SLAM0_p, SFEA0_p, NBVV_p,
      &   NVDLL_p, NBDV_p, NVELL_p, X_p, Y_p,
-     &   IBTYPE_p, IBTYPEE_p, SLAM_p, SFEA_p,
+     &   IBTYPE_p, IBTYPEE_p, SLAM_p, SFEA_p, 
      &   NODECODE_p, G_p, FileFmtRev_p, FileFmtMinor_p,
      &   FileFmtMajor_p, im_p, iestp_p, nscoue_p, ivstp_p, nscouv_p,
      &   icstp_p, nscouc_p, ipstp_p, iwstp_p, nscoum_p, igep_p,
@@ -8985,7 +8999,7 @@ C-----------------------------------------------------------------------
      &   nabout_p, nscreen_p,
      &   nfen_p,iden_p, islip_p, kp_p, z0s_p, z0b_p, theta1_p, theta2_p,
      &   ievc_p, evmin_p, evcon_p, alp1_p, alp2_p, alp3_p, igc_p,nlsd_p,
-     &   nvsd_p, nltd_p, nvtd_p, alp4_p, C3D_p)
+     &   nvsd_p, nltd_p, nvtd_p, alp4_p, C3D_p, RUNID_p)
       USE MESH, ONLY : X, Y, SLAM, SFEA, NM, DP, ICS,
      &   SLAM0, SFEA0, AGRID
       USE BOUNDARIES, ONLY : NBOU, NVEL, NOPE, NBVV, NVDLL, NBDV, NVELL, 
@@ -8999,7 +9013,7 @@ C-----------------------------------------------------------------------
      &   references, comments, host, convention, contact, dtdp, ihot,
      &   nolifa, nolica, nolicat, ncor, ntip, nws, nramp, statim,
      &   reftim, rnday, dramp, a00, b00, c00, h0, cori, ntif, nbfr,
-     &   myProc, screenUnit, nabout, nscreen, C3D
+     &   myProc, screenUnit, nabout, nscreen, C3D, runid
       USE GLOBAL_3DVS, ONLY :
      &   nfen, n3dsd, i3dsdrec, n3dsv, i3dsvrec,
      &   n3dst, i3dstrec, n3dgd, i3dgdrec, n3dgv, i3dgvrec,
@@ -9057,6 +9071,7 @@ C     Declare the argument variables coming in from adcprep.
       INTEGER, intent(in) :: NM_p(:,:)
       REAL(SZ), intent(in) :: DP_p(:)
       CHARACTER(80), intent(in) :: RUNDES_p
+      CHARACTER(80), intent(in) :: RUNID_p
       CHARACTER(80), intent(in) :: AGRID_p
       CHARACTER(80), intent(in) :: title_p
       CHARACTER(80), intent(in) :: institution_p
@@ -9187,6 +9202,7 @@ C
       ALLOCATE(DP(NP_G_p))
       DP = DP_p
       RUNDES = RUNDES_p
+      RUNID = RUNID_p
       AGRID = AGRID_p
       title = title_p
       institution = institution_p

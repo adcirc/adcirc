@@ -70,6 +70,10 @@ C
       INTEGER :: commentStart            ! location of fort.15 comment start
       INTEGER :: ios = 0                 ! i/o status of read operation
 
+      !jgf51.52.35: for log messages about IDEN
+      character(len=100) :: densityRunType ! diagnostic or prognostic
+      character(len=100) :: densityDimensions ! 2DDI or 3D
+      character(len=100) :: densityForcingType ! sigmaT, salinity, etc
 
       !tcm v51.20.04 Additions for External Station Location File
       INTEGER :: IOS_STATIONS = 0
@@ -714,39 +718,47 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
          CALL ADCIRC_Terminate()
       ENDIF
 
-
       IDEN=0
       IF (CBaroclinic) READ(15,*) IDEN
-      IF (IDEN.EQ.0) THEN
-      ELSEIF (IDEN.EQ.1) THEN
-         C2D_BTrans    = .TRUE.
-         WRITE(16,*) '    2DDI Prognostic Baroclinic ADCIRC run with ',
-     &               'SigmaT forcing'
-      ELSEIF (IDEN.EQ.-1) THEN
-         WRITE(16,*) '    2DDI Diagnostic Baroclinic ADCIRC run with ',
-     &               'SigmaT forcing'
-      ELSEIF (IDEN.EQ.2) THEN
-         C2D_BTrans    = .TRUE.
-         WRITE(16,*) '    2DDI Prognostic Baroclinic ADCIRC run with ',
-     &               'Salinity forcing'
-      ELSEIF (IDEN.EQ.-2) THEN
-         WRITE(16,*) '    2DDI Diagnostic Baroclinic ADCIRC run with ',
-     &               'Salinity forcing'
-      ELSEIF (IDEN.EQ.3) THEN
-         C2D_BTrans    = .TRUE.
-         WRITE(16,*) '    2DDI Prognostic Baroclinic ADCIRC run with ',
-     &               'Temperature forcing'
-      ELSEIF (IDEN.EQ.-3) THEN
-         WRITE(16,*) '    2DDI Diagnostic Baroclinic ADCIRC run with ',
-     &               'Temperature forcing'
-      ELSEIF (IDEN.EQ.4) THEN
-         C2D_BTrans    = .TRUE.
-         WRITE(16,*) '    2DDI Prognostic Baroclinic ADCIRC run with ',
-     &               'Salinity and Temperature forcing'
-      ELSEIF (IDEN.EQ.-4) THEN
-         WRITE(16,*) '    2DDI Diagnostic Baroclinic ADCIRC run with ',
-     &               'Salinity and Temperature forcing'
-      ENDIF
+      ! jgf51.52.35: Removed 0 as a valid choice for IDEN because the
+      ! choice between baroclinic and barotropic is specified by IM; 
+      ! also removed "2DDI" from the log messages because the choice 
+      ! between 2DDI and 3D is specified by IM.  
+      write(scratchMessage,'("IDEN is set to ",i0,".")') IDEN
+      call logMessage(ECHO,scratchMessage)
+      !
+      densityRunType = ' diagnostic '
+      if (iden.lt.0) then
+         densityRunType = ' prognostic '
+      endif
+      !
+            
+      densityDimensions = ' 2DDI '
+      if (C3D.eqv..true.) then
+         densityDimensions = ' 3D '
+      endif
+      !
+      select case(abs(iden))
+      case(1)
+         densityForcingType = ' sigmaT '       
+      case(2)
+         densityForcingType = ' salinity '
+      case(3)
+         densityForcingType = ' temperature '
+      case(4)
+         densityForcingType = ' salinity and temperature '         
+      case default
+         call allMessage(ERROR,
+     &    'The absolute value of IDEN must be 1, 2, 3, or 4.')
+         call adcirc_terminate()
+      end select
+      call logMessage(INFO,'This run will be'//trim(densityDimensions)
+     &    //trim(densityRunType)//'baroclinic with'
+     &    //trim(densityForcingType)//'forcing.')
+      !
+      if ( (C2DDI.eqv..true.).and.(CBaroclinic.eqv..true.) ) then
+         C2D_BTrans = .true.
+      endif
 
 
       WRITE(16,*) ' '
@@ -4252,6 +4264,7 @@ C    kmd48.33bc - additional variables for sponge layers
       REAL(SZ),ALLOCATABLE :: compdist(:)
       INTEGER :: BCnode, counter
       INTEGER, ALLOCATABLE :: nodedist(:)
+      INTEGER :: IDen3D ! second instance of IDEN in the fort.15 file
       INTEGER :: ios   ! i/o status of read operation
 C
       call setMessageSource("read_input_3D")
@@ -4273,23 +4286,18 @@ C...
  300  FORMAT(//,1X,'3D SOLUTION INFORMATION',/)
 
 C...  SPECIFY WHETHER A BAROTROPIC OR BAROCLINIC RUN
-
-      READ(15,*) IDen
-      WRITE(16,421) IDen
- 421  FORMAT(/,5X,'IDen = ',I3)
-      IF(ABS(IDen).GT.4) THEN
-        IF((NScreen.NE.0).AND.(MyProc.EQ.0)) THEN
-          WRITE(screenunit,350)
-          WRITE(screenunit,423)
-        ENDIF
-        WRITE(16,350)
-        WRITE(16,423)
- 423    FORMAT(/,2X,'    IDen MUST = -4, -3, -2, -1, 0, 1, 2, 3, 4')
-        CALL ADCIRC_Terminate()
-      ENDIF
-
-      IF(IDen.NE.0) CBaroclinic = .TRUE.
-      IF(IDen.GT.0) C3D_BTrans  = .TRUE.
+      !
+      ! jgf51.52.35: Made this consistent with the previous read of IDEN.
+      ! Not sure why we read IDEN twice, but need to keep this for backward
+      ! compatibility. 
+      READ(15,*) IDen3D
+      if (IDen3D.ne.IDEN) then
+         call allMessage(ERROR,'Both IDEN values must be the same.')
+         call adcirc_terminate()
+      endif
+      if (IDen.GT.0) then
+         C3D_BTrans  = .TRUE.
+      endif
 
 C...  READ IN THE TYPE OF BOTTOM BOUNDARY CONDITION AND THE SLIP COEFFICIENTS
 
@@ -4702,78 +4710,86 @@ C    kmd48.33bc - added in the information of the 3D boundary conditions
 C                 these boundary conditions are the level of no motion,
 C                 salinity and temperature forcings.
       IF (CBAROCLINIC) THEN
-        READ(15,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP !bc flags for elevation and temperature
-        WRITE(16,429) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
- 429  FORMAT(/,5x,'RES_BC_FLAG = ',I3,5X,'BCFLAG_LNM = ',I3,5X,
+         READ(15,*) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP !bc flags for elevation and temperature
+         WRITE(16,429) RES_BC_FLAG, BCFLAG_LNM, BCFLAG_TEMP
+ 429     FORMAT(/,5x,'RES_BC_FLAG = ',I3,5X,'BCFLAG_LNM = ',I3,5X,
      &    'BCFLAG_TEMP = ',I3)
-       IF ((RES_BC_FLAG.LT.0)) THEN  ! Diagnostic
-         IF (ABS(RES_BC_FLAG).GE.1) THEN ! only have one set of values to read
-           IF (NOPE.GT.0) THEN
-             READ(15,*) RBCTIMEINC
-             READ(15,*) BCSTATIM
-             WRITE(16,430) RBCTIMEINC
-           END IF
-         END IF
-       ELSE IF ((RES_BC_FLAG.GT.0)) THEN
-         IF (ABS(RES_BC_FLAG).EQ.1) THEN ! only read in the elevation changes
-           IF (NOPE.GT.0) THEN
-             READ(15,*) RBCTIMEINC
-             READ(15,*) BCSTATIM
-             WRITE(16,430) RBCTIMEINC
- 430         FORMAT(/,5X,'Read in elevation boundary conditions
+         !
+         !jgf51.52.35: Make sure the RES_BC_FLAG value matches the IDEN value.
+         if (RES_BC_FLAG.ne.IDEN) then
+            call allMessage(ERROR,
+     & 'The value of RES_BC_FLAG must be the same as the value of IDEN.')
+            call adcirc_terminate()
+         endif         
+         ! 
+         IF ((RES_BC_FLAG.LT.0)) THEN  ! Diagnostic
+            IF (ABS(RES_BC_FLAG).GE.1) THEN ! only have one set of values to read
+               IF (NOPE.GT.0) THEN
+                  READ(15,*) RBCTIMEINC
+                  READ(15,*) BCSTATIM
+                  WRITE(16,430) RBCTIMEINC
+               END IF
+            END IF
+         ELSE IF ((RES_BC_FLAG.GT.0)) THEN
+            IF (ABS(RES_BC_FLAG).EQ.1) THEN ! only read in the elevation changes
+               IF (NOPE.GT.0) THEN
+                  READ(15,*) RBCTIMEINC
+                  READ(15,*) BCSTATIM
+                  WRITE(16,430) RBCTIMEINC
+ 430             FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds')
-           END IF
-         ELSE IF ((ABS(RES_BC_FLAG).EQ.2)) THEN
-           IF (NOPE.GT.0) THEN
-             READ(15,*) RBCTIMEINC, SBCTIMEINC
-             READ(15,*) BCSTATIM, SBCSTATIM
-             WRITE(16,431) RBCTIMEINC, SBCTIMEINC
- 431         FORMAT(/,5X,'Read in elevation boundary conditions
+               END IF
+            ELSE IF ((ABS(RES_BC_FLAG).EQ.2)) THEN
+               IF (NOPE.GT.0) THEN
+                  READ(15,*) RBCTIMEINC, SBCTIMEINC
+                  READ(15,*) BCSTATIM, SBCSTATIM
+                  WRITE(16,431) RBCTIMEINC, SBCTIMEINC
+ 431              FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds and salinity
      &                boundary conditions every', E9.2,
      &                'seconds')
-           END IF
-         ELSE IF ((ABS(RES_BC_FLAG).EQ.3)) THEN
-           IF (NOPE.GT.0) THEN
-             READ(15,*) RBCTIMEINC, TBCTIMEINC
-             READ(15,*) BCSTATIM, TBCSTATIM
-             WRITE(16,432) RBCTIMEINC, TBCTIMEINC
- 432         FORMAT(/,5X,'Read in elevation boundary conditions
+               END IF
+            ELSE IF ((ABS(RES_BC_FLAG).EQ.3)) THEN
+               IF (NOPE.GT.0) THEN
+                  READ(15,*) RBCTIMEINC, TBCTIMEINC
+                  READ(15,*) BCSTATIM, TBCSTATIM
+                  WRITE(16,432) RBCTIMEINC, TBCTIMEINC
+ 432              FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds and temperature
      &                boundary conditions every', E9.2,
      &                'seconds')
-             IF (BCFLAG_TEMP.NE.0) THEN
-                 READ(15,*) TTBCTIMEINC, TTBCSTATIM
-                 WRITE(16,434) TTBCTIMEINC
- 434             FORMAT(/,5X,'Read in the top temperature
+                  IF (BCFLAG_TEMP.NE.0) THEN
+                     READ(15,*) TTBCTIMEINC, TTBCSTATIM
+                     WRITE(16,434) TTBCTIMEINC
+ 434                 FORMAT(/,5X,'Read in the top temperature
      &                   boundary condition every', E9.2 ,'
      &                   seconds.')
-             END IF
-           END IF
-         ELSE IF ((ABS(RES_BC_FLAG).EQ.4)) THEN
-           IF (NOPE.GT.0) THEN
-             READ(15,*) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
-             READ(15,*) BCSTATIM, SBCSTATIM, TBCSTATIM
-             WRITE(16,433) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
- 433         FORMAT(/,5X,'Read in elevation boundary conditions
+                  END IF
+               END IF
+            ELSE IF ((ABS(RES_BC_FLAG).EQ.4)) THEN
+               IF (NOPE.GT.0) THEN
+                  READ(15,*) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
+                  READ(15,*) BCSTATIM, SBCSTATIM, TBCSTATIM
+                  WRITE(16,433) RBCTIMEINC, SBCTIMEINC, TBCTIMEINC
+ 433              FORMAT(/,5X,'Read in elevation boundary conditions
      &                every', E9.2 ,'seconds and salinity
      &                boundary conditions every', E9.2,
      &                'seconds and temperature boundary conditions
      &                every', E9.2, 'seconds')
-             IF (BCFLAG_TEMP.NE.0) THEN
-                 READ(15,*) TTBCTIMEINC, TTBCSTATIM
-                 WRITE(16,434) TTBCTIMEINC
-             END IF
-           END IF
-         ELSE
-             WRITE(16,350)
-             WRITE(16,*) 'RES_BC_FLAG = ',RES_BC_FLAG
-             WRITE(16,9722)
- 9722    FORMAT(/,1X,'Your selection of RES_BC_FLAG (a UNIT 15 input ',
+                  IF (BCFLAG_TEMP.NE.0) THEN
+                     READ(15,*) TTBCTIMEINC, TTBCSTATIM
+                     WRITE(16,434) TTBCTIMEINC
+                 END IF
+               END IF
+            ELSE
+               WRITE(16,350)
+               WRITE(16,*) 'RES_BC_FLAG = ',RES_BC_FLAG
+               WRITE(16,9722)
+ 9722         FORMAT(/,1X,'Your selection of RES_BC_FLAG (a UNIT 15 input ',
      &        'parameter) is not an allowable value')
-             CALL ADCIRC_Terminate()
+               CALL ADCIRC_Terminate()
+            END IF
          END IF
-       END IF
       END IF
 
 C    kmd48.33bc - added distance information for the sponge layer.

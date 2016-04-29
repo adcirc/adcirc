@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.35 - 04/29/2016 - jgf - Fixed NetCDF metadata for velocity units 
+C           (wind, water current, max wind and water current, and swan wind);
+C           fixed reading of IDEN to make it consistent between the 2D section
+C           of the fort.15 file and the 3D section. 
 C v51.52.34 - 01/25/2016 - jgf - Fixed issue where nodecode was being tested
 C           on output arrays where wet/dry state should be considered, but
 C           this test was being erroneously applied to stations by looking up
