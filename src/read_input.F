@@ -773,45 +773,46 @@ c     - - - - - - - - - - - - - - - - - - - - - - - -
       ENDIF
 
       IDEN=0
-      IF (CBaroclinic) READ(15,*) IDEN
-      ! jgf51.52.35: Removed 0 as a valid choice for IDEN because the
-      ! choice between baroclinic and barotropic is specified by IM; 
-      ! also removed "2DDI" from the log messages because the choice 
-      ! between 2DDI and 3D is specified by IM.  
-      write(scratchMessage,'("IDEN is set to ",i0,".")') IDEN
-      call logMessage(ECHO,scratchMessage)
-      !
-      densityRunType = ' diagnostic '
-      if (iden.lt.0) then
-         densityRunType = ' prognostic '
-      endif
-      !
-            
-      densityDimensions = ' 2DDI '
-      if (C3D.eqv..true.) then
-         densityDimensions = ' 3D '
-      endif
-      !
-      select case(abs(iden))
-      case(1)
-         densityForcingType = ' sigmaT '       
-      case(2)
-         densityForcingType = ' salinity '
-      case(3)
-         densityForcingType = ' temperature '
-      case(4)
-         densityForcingType = ' salinity and temperature '         
-      case default
-         call allMessage(ERROR,
-     &    'The absolute value of IDEN must be 1, 2, 3, or 4.')
-         call adcirc_terminate()
-      end select
-      call logMessage(INFO,'This run will be'//trim(densityDimensions)
+      if (CBaroclinic.eqv..true.) then
+         READ(15,*) IDEN
+         ! jgf51.52.35: Removed 0 as a valid choice for IDEN because the
+         ! choice between baroclinic and barotropic is specified by IM; 
+         ! also removed "2DDI" from the log messages because the choice 
+         ! between 2DDI and 3D is specified by IM.  
+         write(scratchMessage,'("IDEN is set to ",i0,".")') IDEN
+         call logMessage(ECHO,scratchMessage)
+         !
+         densityRunType = ' diagnostic '
+         if (iden.lt.0) then
+            densityRunType = ' prognostic '
+         endif
+         !        
+         densityDimensions = ' 2DDI '
+         if (C3D.eqv..true.) then
+            densityDimensions = ' 3D '
+         endif
+         !
+         select case(abs(iden))
+         case(1)
+            densityForcingType = ' sigmaT '       
+         case(2)
+            densityForcingType = ' salinity '
+         case(3)
+            densityForcingType = ' temperature '
+         case(4)
+            densityForcingType = ' salinity and temperature '         
+         case default
+            call allMessage(ERROR,
+     &       'The absolute value of IDEN must be 1, 2, 3, or 4.')
+            call adcirc_terminate()
+         end select
+        call logMessage(INFO,'This run will be'//trim(densityDimensions)
      &    //trim(densityRunType)//'baroclinic with'
      &    //trim(densityForcingType)//'forcing.')
-      !
-      if ( (C2DDI.eqv..true.).and.(CBaroclinic.eqv..true.) ) then
-         C2D_BTrans = .true.
+         !
+         if ( (C2DDI.eqv..true.).and.(CBaroclinic.eqv..true.) ) then
+            C2D_BTrans = .true.
+         endif 
       endif
 
 
