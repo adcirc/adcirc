@@ -2,6 +2,8 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.36 - 04/30/2016 - jgf - Fixed issue in reading IDEN in fort.15
+C           introduced in previous commit. 
 C v51.52.35 - 04/29/2016 - jgf - Fixed NetCDF metadata for velocity units 
 C           (wind, water current, max wind and water current, and swan wind);
 C           fixed reading of IDEN to make it consistent between the 2D section
