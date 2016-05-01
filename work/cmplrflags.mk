@@ -285,12 +285,12 @@ ifeq ($(compiler),intel-sgi)
   CFLAGS        :=  $(INCDIRS) -DLINUX
   IMODS         :=  -module
   FLIBS         :=
-# When compiling with netCDF support, the HDF5 libraries must also
-# be linked in, so the user must specify HDF5HOME on the command line.
-# jgf20090518: on Jade, NETCDFHOME=/usr/local/usp/PETtools/CE/pkgs/netcdf-4.0
-# jgf20090518: on Jade, HDF5HOME=${PET_HOME}/pkgs/hdf5-1.8.2/lib
   ifeq ($(NETCDF),enable)
-     FLIBS          := $(FLIBS) -L$(HDF5HOME) -lhdf5 -lhdf5_fortran
+     ifeq ($(MACHINENAME),topaz)
+        NETCDFHOME  :=/apps/unsupported/netcdf/4.3.3.1-intel-15.0.3
+     endif
+     # for platforms other than topaz, specify NETCDFHOME on the command line
+     FLIBS       := $(FLIBS) -lnetcdff
   endif
   MSGLIBS       :=
   BACKEND_EXEC  := metis_be adcprep_be
