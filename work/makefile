@@ -258,13 +258,16 @@ endif
 #                                      aswip
 ifeq ($(BUILDTYPE),aswip)
   CF:= $(PPFC)
-  O_DIR:=odir3/
+  O_DIR:=odir14/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(DA)
+  VPATH := $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+  ifeq ($(NETCDF),enable)
+    LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
+  endif
   ifeq ($(XDMF),enable)
      FLIBS    :=  -L$(XDMFLIBPATH) -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
-  VPATH :=  $(SRCDIR)/wind
-  MSG_MOBJ:=
+  MSG_MOBJ:= $(O_DIR)globalio.o
 endif
 #                                      adccmp
 ifeq ($(BUILDTYPE),adccmp)
@@ -551,8 +554,8 @@ endif
    hstime ::  $(HST_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 
-   aswip ::  $(ASW_OBJ)
-	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(WIND_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(FLIBS)
+   aswip ::   $(ADCIRC_DEP) $(ASW_OBJ)
+	$(CF) $(FFLAGS) -o $@ $(ADC_MOBJ) $(WIND_MOBJ) $(PREC_MOBJ) $(CONS_MOBJ) $(VORT_MOBJ) $(LSQ_MOBJ) $(FITP_MOBJ) $(ASW_OBJ) $(KDTREE_MOBJ) $(MESH_MOBJ) $(BND_MOBJ) $(LIBS) $(LDFLAGS)
 
    adccmp :  $(O_DIR) $(CMP_OBJ)
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o)

@@ -2,6 +2,9 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.37 - 05/01/2016 - jgf - Added compiler flags for compiling with NetCDF
+C           support on Topaz at ERDC; modified makefile to support building 
+C           aswip in its own subdirectory.
 C v51.52.36 - 04/30/2016 - jgf - Fixed issue in reading IDEN in fort.15
 C           introduced in previous commit. 
 C v51.52.35 - 04/29/2016 - jgf - Fixed NetCDF metadata for velocity units 
