@@ -103,6 +103,12 @@ ifeq ($(compiler),intel)
   ifeq ($(DEBUG),full)
      FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -ftrapuv -fpe0  -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
+  ifeq ($(DEBUG),trace)
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+  endif
+  ifeq ($(DEBUG),netcdf_trace)
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -i-dynamic -FI -assume byterecl -132 -DNETCDF_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+  endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)
   DA            :=  -DREAL8 -DLINUX -DCSCA
@@ -122,22 +128,7 @@ ifeq ($(compiler),intel)
   FLIBS          :=
   MSGLIBS       :=
   ifeq ($(NETCDF),enable)
-     ifeq ($(MACHINENAME),blueridge)
-        FLIBS       := $(FLIBS) -L/projects/ncfs/apps/netcdf/netcdf-fortran-4.2/lib -lnetcdff  -lnetcdf -lnetcdf 
-        NETCDFHOME    :=/projects/ncfs/apps/netcdf/netcdf-fortran-4.2
-        FFLAGS1       :=$(FFLAGS1) -I/projects/ncfs/apps/netcdf/netcdf-fortran-4.2/include 
-        FFLAGS2       :=$(FFLAGS1)
-        FFLAGS3       :=$(FFLAGS1)
-        # NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.1-gcc4.1-ifort
-        # NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.2-gcc4.1-ifort
-        #FLIBS          :=$(FLIBS) -L/usr/lib64 -lnetcdff
-#        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.1-gcc4.1-ifort
-        NETCDFHOME  :=/shared/apps/RHEL-5/x86_64/NetCDF/netcdf-4.1.2-gcc4.1-ifort
-     endif
      ifeq ($(MACHINENAME),hatteras)
-        #FLIBS       := $(FLIBS) -L/projects/ncfs/apps/croatan/netcdf/lib -lnetcdff -lnetcdf
-        #NETCDFHOME    :=/projects/ncfs/apps/croatan/netcdf
-        #FFLAGS1       :=$(FFLAGS1) -I/projects/ncfs/apps/croatan/netcdf/include
         FLIBS       := $(FLIBS) -L/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3/lib -lnetcdff -lnetcdf
         NETCDFHOME    :=/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3
         FFLAGS1       :=$(FFLAGS1) -I/usr/share/Modules/software/RHEL-6.5/netcdf/netcdf-4.1.3_intel-14.0.3/include

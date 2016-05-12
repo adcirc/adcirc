@@ -25,11 +25,10 @@ C
       USE OWIWIND,ONLY : NWS12INIT,NWS12GET    ! sb added 09/xx/2006
       USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
       USE RS2,ONLY : RS2INIT,RS2GET            ! sb added 09/xx/2006
-      USE NodalAttributes, ONLY :
-     &         STARTDRY, GeoidOffset, LoadGeoidOffset,
-     &         OutputTau0, LoadRiver_et_WSE, River_et_WSE !jgf47.06
+      USE NODALATTRIBUTES, ONLY : outputTau0
+      USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF,
+     &    initInundationOutput
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
-      USE WRITE_OUTPUT, only : outputNodeCode, outputNOFF
 
       IMPLICIT NONE
 
@@ -52,6 +51,7 @@ C     was requested.
 c.... tcm v50.66.02 additions for time varying bathymetry
       CHARACTER(80) :: CDUM80
 C
+
       call setMessageSource("coldstart")
 #if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -116,45 +116,6 @@ C...     DEPTHS ARE > OR = TO H0.
 C
 C------------------------------------------------------------------------------
 C
-
-! kmd - Evan's updates for rivers above MSL
-! open the fort.88 files if needed
-!      INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.88',EXIST=FOUND)
-!      IF (FOUND) THEN
-!         ALLOCATE (et_WSE(NP) )
-!         OPEN (88, FILE=TRIM(INPUTDIR)//'/'//'fort.88')
-!         DO I=1,NP
-!            READ(88,*) et_WSE(i)
-!         END DO
-!         River_above_MSL=.TRUE.
-!      END IF
-
-! tcm v51.27 20140502 Changed from using a fort.88 file
-! to a nodal attribute
-      IF (LoadRiver_et_WSE) then
-         River_above_MSL=.TRUE.
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,2788)
-         WRITE(16,2788)
- 2788    FORMAT(/,1X,'INITIAL RIVER ELEVATIONS WERE SPECIFIED AS A NODAL',
-     &        /,1x,'ATTRIBUTE AND WILL BE USED.',/)         
-      ENDIF
-
-      ! tcm v51.27 Check to see if a fort.88 file is supplied
-      ! if so issue a warning.      
-      INQUIRE(FILE=TRIM(INPUTDIR)//'/'//'fort.88',EXIST=FOUND)
-      IF (FOUND) THEN
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,1112)
-         WRITE(16,1112)
-         IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,2789)
-         WRITE(16,2789)
- 2789    FORMAT(/,1X,'--------WARNING--WARNING--WARNING---------',
-     &   /,1x,'A FORT.88 FILE WAS FOUND BUT IS NO LONGER SUPPORTED.',
-     &   1x,'INITIAL RIVER ELEVATIONS MUST BE SET AS A NODAL ATTRIBUTE.',/)
-      ENDIF
-
-C
 C.... tcm v49.16 20100617
 C.... convert background pressure from millibars to meters of water
       PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
@@ -164,71 +125,28 @@ C...  SET AT REST INITIAL CONDITION OVER WHOLE DOMAIN
 C...  IF BOTTOM IS ABOVE THE GEIOD -> DRY NODE
 C...  IF BOTTOM IS INITIALLY BELOW THE GEOID AND STARTDRY=1 -> DRY NODE
 C...
-      DO I=1,NP
-         UU1(I) =0.D0
-         VV1(I) =0.D0
-         UU2(I) =0.D0
-         VV2(I) =0.D0
-         QX1(I) =0.D0
-         QY1(I) =0.D0
-         QX2(I) =0.D0
-         QY2(I) =0.D0
-C     jgf46.01 Added the ability to include steric effects.
-         IF (LoadGeoidOffset) THEN
-            ETA2(I)=GeoidOffset(I)
-         ELSE
-            ETA2(I)=0.D0
-         ENDIF
-! kmd - Evan's updates for rivers above MSL
-! It is only necessary to read in and reset the ETA2 values
-! in this case for the cold start conditions.
-!         IF (River_above_MSL) THEN
-!            IF (LoadGeoidOffset) THEN
-!               IF (et_WSE(i).GT.GeoidOffset(I)) THEN
-!                  ETA2(I)=et_WSE(i)
-!               END IF
-!            ELSE
-!               IF (et_WSE(i).GT.0.d0) THEN
-!                  ETA2(I)=et_WSE(i)
-!               END IF
-!            END IF
-!         END IF
-! tcm v51.27 20140502 Made the GeoidOffset and Initial
-!            River Elevation an additive quantitiy 
-!            instead of the max of the two         
-         IF (River_above_MSL) then
-           IF (LoadGeoidOffSet) then
-              IF (River_et_WSE(I).GT.0.d0)
-     &                ETA2(I) = River_et_WSE(I) + GeoidOffset(I)
-           ELSE
-              IF (River_et_WSE(I).GT.0.d0) ETA2(I) = River_et_WSE(I)
-           ENDIF
-         ENDIF
-
-
-         NNODECODE(I)=1
-         IF(NOLIFA.EQ.2) THEN
-            HTOT=DP(I)+ETA2(I)
-            IF(HTOT.LE.H0) THEN
-               NNODECODE(I)=0
-               ETA2(I)=H0-DP(I)
-            ELSE
-               IF(STARTDRY(I).EQ.1) THEN
-                  NNODECODE(I)=0
-                  ETA2(I)=H0-DP(I)
-               ENDIF
-            ENDIF
-         ENDIF
-         ETA1(I)=ETA2(I)
-         ETAS(I)=0.D0
-         CH1(I)=0.d0
-      END DO
-C...
-C...  INITIALIZE DRY ELEMENT CODE
-C...
-      DO I=1,NE
-         NOFF(I)=1
-      END DO
+      UU1(:) = 0.D0
+      VV1(:) = 0.D0
+      UU2(:) = 0.D0
+      VV2(:) = 0.D0
+      QX1(:) = 0.D0
+      QY1(:) = 0.D0
+      QX2(:) = 0.D0
+      QY2(:) = 0.D0
+      ETA2(:) = 0.D0
+      ETAS(:) = 0.D0
+      CH1(:) = 0.d0
+      !
+      ! Set the initial wet/dry state and water surface elevation
+      call setColdWetDryStateAndWaterSurfaceElevation()  
+      !
+      ! jgf52.08.01: Initialize inundation arrays if necessary. This
+      ! can only be called after nnodecode has been set via 
+      ! setColdWetDryState() in coldstart() or hstart().
+      if (inundationOutput.eqv..true.) then
+         call initInundationOutput()
+      endif
+         
 C...
 C...  INITIALIZE THE ELEVATION SPECIFIED BOUNDARY CONDITION IF IT
 C...  REQUIRES THE USE OF THE UNIT 19 FILE.
@@ -596,35 +514,6 @@ C...
             TIP2(I)=0.0
          END DO
       endif
-CWET...
-CWET...THE FOLLOWING LINES ARE FOR WETTING AND DRYING
-CWET...Dry any landlocked nodes by checking that they are connected to at
-CWET...least 1 functioning element.
-CWET...
-      IF(NOLIFA.EQ.2) THEN
-         DO I=1,NP
-            MJU(I)=0
-         ENDDO
-         DO I=1,NE
-            NM1=NM(I,1)
-            NM2=NM(I,2)
-            NM3=NM(I,3)
-            NC1=NNODECODE(NM1)
-            NC2=NNODECODE(NM2)
-            NC3=NNODECODE(NM3)
-            NCELE=NC1*NC2*NC3*NOFF(I)
-            MJU(NM1)=MJU(NM1)+NCELE
-            MJU(NM2)=MJU(NM2)+NCELE
-            MJU(NM3)=MJU(NM3)+NCELE
-         ENDDO
-         DO I=1,NP
-            IF((NNODECODE(I).EQ.1).AND.(MJU(I).EQ.0)) THEN
-               NNODECODE(I)=0
-               IF(NSCREEN.NE.0.AND.MYPROC.EQ.0) WRITE(ScreenUnit,9883) I
-               WRITE(16,9883) I
-            ENDIF
-         ENDDO
-      ENDIF
 
 C....INITIALIZE ELEVATION STATION SPOOL COUNTER
 C....OPEN ELEVATION STATION OUTPUT FILE
@@ -1477,7 +1366,7 @@ C...
       ENDIF
 C
  1112 FORMAT(/,1X,79('_'))
- 9883 FORMAT(' !!! NODE ',I6,' DRIED (LANDLOCKING)')
+
 
 
 C... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
@@ -1561,13 +1450,6 @@ c     if (C3DDSS) then
 c       CALL DSSSTUP(DT,NT)
 c     endif
 C...
-      ! tcmv51.27 20140502 Added to remove this nodal attribute
-      ! as it is only used at Cold Start
-      IF (LoadRiver_et_WSE) THEN
-         IF (ALLOCATED (River_et_WSE) ) THEN
-            DEALLOCATE (River_et_WSE)
-         ENDIF
-      ENDIF
 
 #if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -1960,5 +1842,179 @@ C.... Set up a few final odds and ends for a 3D run
       RETURN
 C----------------------------------------------------------------------
       END SUBROUTINE COLDSTART_3D
+C----------------------------------------------------------------------
+
+C----------------------------------------------------------------------
+C                      S U B R O U T I N E     
+C           S E T   C O L D   W E T   D R Y   S T A T E
+C       A N D   W A T E R   S U R F A C E   E L E V A T I O N 
+C----------------------------------------------------------------------
+C     jgf52.08.01: Sets value of nnodecode at cold start. The values
+C     of nnodecode are copied to the nodecode array in totalAreaCalc().
+C     This is called from subroutine hotstart() for use in producing 
+C     detailed inundation output only. When called from hotstart(),
+C     the hotstart wet/dry state and water surface elevation ends up
+C     overwriting the values computed here. 
+C----------------------------------------------------------------------
+      subroutine setColdWetDryStateAndWaterSurfaceElevation()
+      use sizes, only : inputdir
+      use mesh, only : dp, np, mju, ne, nm
+      use global, only : eta2, nnodecode, noff, logMessage, allMessage,
+     &   scratchMessage, INFO, h0, setMessageSource, unsetMessageSource,
+     &   DEBUG, WARNING, INFO, scratchMessage, eta1, nolifa, River_above_MSL
+      use nodalattributes, only : loadStartDry, STARTDRY, GeoidOffset, 
+     &   LoadGeoidOffset, OutputTau0, LoadRiver_et_WSE, River_et_WSE !jgf47.06
+      implicit none
+      integer :: nm1, nm2, nm3  ! node numbers around the element
+      integer :: nc1, nc2, nc3  ! nodecodes around the element
+      integer :: ncele          ! wet dry state of the element
+      integer :: i 
+      ! jgf52.08.24: Investigate reasons why a node was dried by the
+      ! setColdWetDryState() subroutine.  
+      character(len=1000), allocatable :: dryReason(:)
+      logical, allocatable :: dryReasonInitialized(:)
+      logical :: found ! .true. if obsolete init river elevation file was found
+      !
+      call setMessageSource(
+     &   "setColdWetDryStateAndWaterSurfaceElevation")
+#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      !
+      ! tcm v51.27 20140502 Changed from using a fort.88 file
+      ! to a nodal attribute
+      IF (LoadRiver_et_WSE.eqv..true.) then
+         River_above_MSL=.true.
+         call allMessage(INFO,
+     &      'Initial river elevations were specified as a nodal '
+     &       //'attribute and will be used.')
+      ENDIF
+      !
+      ! tcm v51.27 Check to see if a fort.88 file is supplied
+      ! if so issue a warning.      
+      inquire(file=trim(inputdir)//'/'//'fort.88',exist=found)
+      if (found.eqv..true.) then
+         call allMessage(WARNING,
+     &    'A fort.88 file was found but is no longer supported. '
+     &   //'Initial river elevations must be set as a nodal attribute.')
+      endif
+      !
+      ! jgf46.01 Added the ability to include steric effects.
+      if (LoadGeoidOffset.eqv..true.) then
+         ETA2(:)=GeoidOffset(:)
+      endif
+      !
+      ! tcm v51.27 20140502 Made the GeoidOffset and Initial River Elevation
+      ! an additive quantity instead of the max of the two.
+      !
+      ! jgf52.08.01: Simplified to just adding the initial river elevation to 
+      ! eta2 wherever the initial river elevation is greater than zero.
+      if (LoadRiver_et_WSE.eqv..true.) then
+         where (River_et_WSE.GT.0.d0) 
+            eta2 = eta2 + River_et_WSE 
+         end where
+         ! tcmv51.27 20140502 Added to remove this nodal attribute
+         ! as it is only used at Cold Start
+         deallocate (River_et_WSE)
+      endif
+      !
+      ! Set all nodes to wet by default.
+      nnodecode(:)=1
+      ! set all elements to wet by default.
+      noff(:)=1        
+      !
+      ! If wetting and drying is active, set the nodal wet dry state
+      if (nolifa.eq.2) then
+         !
+         ! jgf52.08.23: Collect, store, and report the reasons why each
+         ! node was dried. 
+         allocate(dryReason(np))
+         allocate(dryReasonInitialized(np))
+         dryReasonInitialized = .false.
+         do i=1,np      
+            ! set dry areas based on eta2
+            if (dp(i)+eta2(i).le.h0) then
+               nnodecode(i) = 0
+               write(dryReason(i),'("node=",i0)') i
+               write(scratchMessage,
+     &            '(" dp+eta2<=h0: ",f10.3," + ",f10.3," <= ",f6.3)') 
+     &            dp(i), eta2(i), h0
+               dryReason(i) = trim(dryReason(i)) // trim(scratchMessage)
+               dryReasonInitialized(i) = .true.
+            endif
+            if ((loadStartDry.eqv..true.).and.(startDry(i).eq.1)) then
+               nnodecode(i) = 0
+               if (dryReasonInitialized(i).eqv..false.) then
+                  write(dryReason(i),'("node=",i0)') i
+                  dryReasonInitialized(i) = .true.
+               else
+                  dryReason(i) = trim(dryReason(i)) // ", "
+               endif
+               dryReason(i) = trim(dryReason(i)) // "startDry=1"
+            endif       
+         end do
+         !
+         ! Dry any landlocked nodes by checking that they are connected to at
+         ! least 1 functioning element.
+         mju(:)=0
+         do i=1,ne
+            nm1=nm(i,1)
+            nm2=nm(i,2)
+            nm3=nm(i,3)
+            nc1=nnodecode(nm1)
+            nc2=nnodecode(nm2)
+            nc3=nnodecode(nm3)
+            ncele=nc1*nc2*nc3*noff(i)
+            mju(nm1)=mju(nm1)+ncele
+            mju(nm2)=mju(nm2)+ncele
+            mju(nm3)=mju(nm3)+ncele
+         enddo
+         do i=1,np
+            if((nnodecode(i).eq.1).and.(mju(i).eq.0)) then
+               nnodecode(i)=0
+               write(scratchMessage,9883) I
+               call allMessage(INFO,scratchMessage)
+               if (dryReasonInitialized(i).eqv..false.) then
+                  write(dryReason(i),'("node=",i0)') i
+                  dryReasonInitialized(i) = .true.
+               else
+                  dryReason(i) = trim(dryReason(i)) // ", "
+               endif
+               dryReason(i) = trim(dryReason(i)) // " landlocked"
+            endif
+         enddo
+ 9883    format('Node ',i0,' dried (landlocking).')
+         !
+         !jgf52.08.23: Report the reasons why a node was initially dried.
+         call logMessage(DEBUG,
+     &      "Nodes were set to an initially dry state "
+     &      // "for the following reasons:")
+         do i=1,np
+            if (nnodecode(i).eq.0) then
+               if (dryReasonInitialized(i).eqv..false.) then
+                  write(dryReason(i),
+     &            '("node=",i0," This node is dry for no good reason.")') i
+                  dryReasonInitialized(i) = .true.
+               endif
+               call logMessage(DEBUG,trim(dryReason(i)))
+            endif
+         end do 
+         ! release memory 
+         deallocate(dryReason)
+         deallocate(dryReasonInitialized)
+         !
+         ! Finish initializing water surface elevation (eta2 and eta1)
+         where (nnodecode.eq.0) 
+            eta2=h0-dp
+         end where
+      endif
+      eta1(:) = eta2(:) 
+
+#if defined(COLDSTART_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C----------------------------------------------------------------------
+      end subroutine setColdWetDryStateAndWaterSurfaceElevation
 C----------------------------------------------------------------------
 

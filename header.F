@@ -2,6 +2,151 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.30 - 05/11/2016 - Resolved minor conflicts (mainly confined to 
+C           USE statements) when merging the txout branch r1120:1202 
+C           to trunk. Changes in the too-long txout branch are as
+C           follows:
+C
+C  v52.08.30 - 05/01/2016 - Applied same fix as trunk version v52.29 (r1199:1201):
+C              Added compiler flags for compiling with NetCDF support on Topaz
+C              at ERDC; modified makefile to support building aswip in its own 
+C              subdirectory.
+C  v52.08.29 - 04/30/2016 - Applied same fix as trunk version 
+C              v52.28 (issue in reading IDEN in fort.15).
+C  v52.08.28 - 04/29/2016 - jgf - Fixed NetCDF metadata for velocity units 
+C              (wind, water current, max wind and water current, and swan 
+C              wind); fixed reading of IDEN to make it consistent between 
+C              the 2D section of the fort.15 file and the 3D section. These 
+C              fixes were made as revisions 1193:1195 on adcirc trunk 
+C              version v52.27.
+C  v52.08.27 - 03/08/2016 - jgf - Merged trunk v52.26 (svn revisions 1185:1191) 
+C  v52.08.26 - 03/08/2016 - jgf - Merged trunk v52.21 to v52.25 (svn revisions
+C              1171:1189).
+C  v52.08.25 - 03/01/2016 - jgf - Fixed issue where netcdf min/max metadata
+C              were erroneously updated when netcdf min/max file should
+C              only be read because it will be written in a different format;
+C              fixed issue where writer processors were either calling
+C              subroutine initNetCDFOutputFile() either multiple times or 
+C              not at all for a particular files; corrected writeFlag
+C              on initialization of endrisinginun.63 so that it is not 
+C              initialized unless inundationOutput is .true.; fixed issue
+C              where NABOUT was not being set on writer processors, resulting
+C              in lack of control over logging verbosity; fixed issue in 
+C              harmonic analysis of velocity components where the magnitude
+C              and phase for station harmonic output was erroneously 
+C              dimensioned according to the number of elevation stations 
+C              instead of the number of velocity stations; also fixed typo
+C              in harmonic analysis where the phase angle for fulldomain
+C              velocity erroneously included the phase angle from station
+C              velocity harmonic analysis.
+C  v52.08.24 - 01/22/2016 - jgf - Added log messages when setting cold
+C              wet/dry state to record the rationale for a node being
+C              dried.
+C  v52.08.23 - 01/18/2016 - jgf - Fixed issue where the cold wet/dry state was
+C              not being initialized properly for writing initiallydry.63 file
+C              when hotstarting. 
+C  v52.08.22 - 01/18/2016 - jgf - Fixed issue where processor 0 could
+C              potentially open a min/max file for writing (to update metadata)
+C              at the same time that other processors were opening the file
+C              read-only to read min/max data.
+C  v52.08.21 - 12/31/2015 - jgf - Corrected issue where min/max netcdf files
+C              were being read even though they contained no data. 
+C  v52.08.20 - 12/28/2015 - jgf - Changed the time dataset in inundationtime.63
+C              file to represent time of first onset of inundation above the
+C              threshold rather than last time at which inundation was present;
+C              added an initialization feature to check the adcirc time that
+C              min/max files and inundation files were written to prevent
+C              the reading of data (at hotstart) that are actually later than
+C              the hotstart time; added a temp variable to subroutine
+C              collectMinMaxData() to reduce the creation of temporary 
+C              arrays by the compiler; fixed typo issues in subroutine
+C              readAndMapToSubdomainMaxMinNetCDF() where the netcdf 
+C              hotstart file handle was used rather than the netcdf min/max
+C              file handle.
+C  v52.08.19 - 12/18/2015 - jgf - Added DEBUG=netcdf_trace to options
+C              for Intel compilers; initialized hotstart file names in 
+C              subroutine prepNetCDF(). 
+C  v52.08.18 - 12/09/2015 - jgf - Removed writeFlag=.false. from initialization
+C              of endrisinginun.63.nc file in write_output.F to fix issue
+C              with uninitialized netcdf file name for that file; added 
+C              DEBUG=trace option to compiler flags for hatteras; removed
+C              blueridge compiler flags.  
+C  v52.08.17 - 11/17/2015 - jgf - Fixes to everdried.63.nc variable
+C              naming and reading/writing of everdried.63.nc file.
+C  v52.08.16 - 11/11/2015 - jgf - Merged trunk changes v52.17 through 
+C              v52.20 (svn revisions 1153:1170); fixed issue where  
+C              endRisingInun.63.nc file was being initialized in initOutput2D()
+C              even with inundation output turned off when running in parallel.
+C  v52.08.15 - 11/10/2015 - jgf - Added everdried.63 capability to inundation
+C              output files in netcdf and ascii formats; this min/max file
+C              is written at the end of the simulation and contains -99999
+C              at nodes that dried during the runtime, even for a single
+C              time step; whereas always wet nodes have a value of 1; this new
+C              output file is valuable for harmonic analysis calculations. 
+C  v52.08.14 - 10/26/2015 - jgf - Fixed issue where adcprep was failing
+C              when attemping to initialize minpr.63.nc file for a run
+C              that did not use meteorological forcing.
+C  v52.08.13 - 09/24/2015 - tcm - added some conditional #ifdef ADCNETCDF
+C              to insulate netcdf calls when not build with the netcdf
+C              options. Also added unsetmessagesource in the calls to
+C              writer_main within adcirc.F.  Not unsetting the source during
+C              coupled simulations caused the source counter to quickly grow
+C              beyond the size limit on the source counter (50). In the
+C              coupled simulations, when adcirc_run is done, the writers
+C              need to relinquish their status as well.
+C  v52.08.12 - 09/24/2015 - jgf - Fixed issue with dry values in
+C              maxele.63.nc being set to 0.0 instead of -99999.0 by
+C              initializing the zeta_max array in the netcdf file to -99999
+C              in adcprep.  
+C  v52.08.11 - 09/15/2015 - jgf - Fixed issue with initialization of max/min
+C              files in netcdf format so that they don't have -99999 values
+C              that will later be read in for a hotstart, squared and 
+C              compared with the sum of the squares of vector quantities
+C              during execution. 
+C  v52.08.10 - 09/09/2015 - jgf - Merged trunk changes v52.09 to v52.16  
+C              (svn revisions 1128:1153). 
+C  v52.08.09 - 09/09/2015 - jgf - Added capability to deactivate noff
+C              (i.e. noff is always 1) using wetDryControl namelist in fort.15
+C              file. 
+C  v52.08.08 - 09/04/2015 - jgf - Added writing of header for nodecode.63
+C              and noff.100 files to hstart.F.
+C  v52.08.07 - 08/21/2015 - jgf - Fixed segfault in subroutine 
+C              readAndMapToSubdomainMaxMinNetCDF() where the pointer to 
+C              adcircMesh was getting set after the call to getDimensions()
+C              so these operations were reversed; fixed logging of early
+C              return in subroutine readAndMapToSubdomainMaxMin(). 
+C  v52.08.06 - 08/21/2015 - jgf - Fixed issue in initOutput2D() where netcdf
+C              min/max files were erroneously being initialized by all
+C              subdomains in parallel.
+C  v52.08.05 - 08/20/2015 - jgf - Fixed issue in initInundationOutput()
+C              subroutine where all procs were calling initNetCDFOutputFile()
+C              on initiallydry.63.nc; fixed so only proc0 calls it.
+C  v52.08.04 - 08/19/2015 - jgf - Fixed issue in initInundationOutput()
+C              subroutine by taking the abs() of the file format specifier in
+C              the select case statement.
+C  v52.08.03 - 07/12/2015 - jgf - Added initialization of inundation
+C              output in netcdf format to adcprep; added new field to 
+C              OutputDataDescript_t to enable reading of min/max files
+C              upon hotstart; moved the code that reads min/max files from
+C              hotstart() to initOutput2D() in write_output module; 
+C              added new capability to read min/max files in netcdf format
+C              (up until now the code would only read in min/max files in 
+C              ascii format); reworked existing code to read min/max files
+C              to accommodate formats other than ascii; after lengthy 
+C              test/fix cycling, new and revised code passes all 
+C              relevant tests. 
+C  v52.08.02 - 07/06/2015 - jgf - Upgraded hstart.F to read inundation
+C              output files upon hotstart; added category to write header
+C              for initallydry.63 file; added general subroutine to 
+C              read_input() to report i/o status after reading any namelist;
+C              added reading/writing of inundationOutputControl namelist to
+C              adcprep. 
+C  v52.08.01 - 06/30/2015 - jgf - Added output file types for detailed
+C              inundation output in the txout branch, including time span
+C              of inundation, maximum inundation depth, locations of initially
+C              dry areas (i.e., at cold start), and whether inundation 
+C              is still increasing at the end of the simulation. 
+C
 C  v52.29 - 05/01/2016 - Applied same fix as v51release branch version
 C           v51.52.37 (r1199:1200):  Added compiler flags for compiling with 
 C           NetCDF support on Topaz at ERDC; modified makefile to support 
@@ -133,6 +278,133 @@ C  v52.09 - 07/20/2015 - tcm - Added compiler flags for Cray XC30/XC40 using
 C           Intel compilers with (ftn) as default instead of ifort.  These
 C           basic compiler options work on Armstrong@NAVO, Lightning@AFRL,
 C           Shephard@NAVO and Gordon@NAVO
+C  v52.27 - 04/29/2016 - jgf - Fixed NetCDF metadata for velocity units 
+C           (wind, water current, max wind and water current, and swan wind);
+C           fixed reading of IDEN to make it consistent between the 2D section
+C           of the fort.15 file and the 3D section. These fixes were made
+C           as revisions 1193:1194 on v51release branch, adcirc version
+C           v51.52.35.
+C  v52.26 - 03/16/2016 - jgf - Applied fix from zc to take the absolute
+C           value of the element number when decomposing the fulldomain
+C           elementally-based arrays (e.g., the NOFF array) from hotstart
+C           files in parallel. 
+C  v52.25 - 01/25/2016 - jgf - Merged revisions 1176:1183 from v51release
+C         branch (v51.52.33 and v51.52.34) as follows: 
+C     v51.52.34 - 01/25/2016 - jgf - Fixed issue where nodecode was being tested
+C           on output arrays where wet/dry state should be considered, but
+C           this test was being erroneously applied to stations by looking up
+C           the nodecode on the station number itself, rather than the
+C           nodes in the element containing the station; checking the 
+C           wet/dry state of a station was already being correctly handled
+C           in subroutine stationArrayInterp(). 
+C     v51.52.33 - 01/14/2016 - tcm - Added compiler flags for Topaz, SGI ICE X.
+C  v52.24 - 01/26/2016 - jgf - Fixed adcirc2xdmf utility to recognize
+C         the .13 extension for processing nodal attributes files;
+C         also updated the build system to synchronize with 
+C         changes in the modules adcirc2xdmf depends on.   
+C  v52.23 - 01/05/2016 - zc - Fixing bug where time varying weirs were not 
+C                             initialized correctly during hot starts
+C  v52.22 - 11/15/2015 - zc - Fixing bug where SWAN was writing the previous
+C                             time snap instead of the current by moving 
+C                             writeOutput2D call out of timestep.F and into 
+C                             adcirc.F after the SWAN time step has taken place
+C  v52.21 - 11/15/2015 - zc - Merging TimeVaryingWeirs branch into trunk
+C       v52.20.17 - 11/13/2015 - zc - Merging changes up to trunk revision 1171 
+C                                     and fixing bugs
+C       v52.20.16 - 06/09/2015 - zc - Merging changes up to trunk revision 1109 
+C       v52.20.15 - 05/06/2015 - zc - Fixing bug when compling adcprep
+C       v52.20.14 - 05/06/2015 - zc - Bringing time varying weirs branch into
+C                                     sync with trunk revision 1092 and
+C                                     resolving conflicts
+C       v52.20.13 - 05/06/2015 - zc - Adding LUN and File_Extension to output
+C                                     variable for fort.77
+C       v52.20.12 - 11/12/2014 - zc - Merging trunk changes to branch
+C                                     up to revision 1044
+C       v52.20.11 - 11/07/2014 - zc - Merging trunk changes to branch
+C                                     up to revision 1041
+C       v52.20.10 - 10/28/2014 - zc - Changes to integrate adcprep into branch.  
+C                                     Adding mesh.F to makefile for adcprep. 
+C                                     Changing mesh.F for line length limitations 
+C                                     under intel compilers.
+C       v52.20.09 - 10/27/2014 - zc - Merging in changes from xdmf that were 
+C                                     brought into trunk
+C       v52.20.08 - 10/22/2014 - zc - Small changes for clarity
+C       v52.20.07 - 10/14/2014 - zc - Merging branch up to revision 1026
+C       v52.20.06 - 10/03/2014 - zc - Adding support for type 5/25 boundaries
+C                 to ADCPREP
+C       v52.20.05 - 06/15/2014 - zc - Merging branch up to svn revision 1003
+C       v52.20.04 - 06/15/2014 - zc - Fixing bug where FailureDurationSec was not
+C                read from input file and various output file bugs
+C       v52.20.03 - 05/01/2013 - zc - Correcting bug for TimeVaryingWeirs
+C                and prep15 option. Fixed another bug under serial
+C                runs. (v51.02.03)
+C       v52.20.02 - 03/30/2013 - zc - Corrected bug for certain boudary
+C                conditions during adcprep (v51.02.02)
+C       v52.20.01 - 01/04/2013 - zc - Created TimeVaryingWeir branch and
+C                Adding first set of changes for time varying weirs. (v51.02.01)
+C  v51.20 - 11/11/2015 - jgf - Fixed output of time varying tau0 so that
+C           ascii fort.90 files have a proper header; fort.90 and fort.90.nc
+C           files are only written when tau0=-x.1 in fort.15.
+C  v52.19 - 09/18/2015 - jgf - Fixed parsing and i/o error checking in
+C           subroutine rsget (for reading fort.23).
+C  v52.18 - 09/18/2015 - jgf - Fixed check that compares number of nodes
+C           in mesh to number of nodes in fort.13 so that it occurs 
+C           immediately when fort.13 header is read.
+C  v52.17 - 09/16/2015 - jgf - Added call to subroutine updateMetaData()
+C           at end of subroutine writeNetCDFHotstartFile() to ensure that 
+C           netcdf metadata is updated in netcdf hotstart files when new 
+C           hotstart data are written to them. Same fix was applied to 
+C           v51release branch as v51.52.27.
+C  v52.16 - 09/09/2015 - jgf - Merged v51.52.26 from v51 release branch
+C           (svn revision numbers 1148:1152) as described below:
+C     v51.52.26 - 09/09/2015 - jgf - Removed stray debugging statements from 
+C           couple2swan.F and tweaked comments for NWS10GET. 
+C  v52.15 - 09/09/2015 - jgf - Merged fixes from the v51release branch, 
+C           specifically v51.52.21 through v51.52.25 (svn revision numbers
+C           1140:1148) as described below:
+C     v51.52.25 - 09/04/2015 - yf/jgf - Fixed initial guess for dradz in 
+C           subroutine glats() (for NWS10, i.e., GFS input) reducing it by a
+C           factor of 8. 
+C     v51.52.24 - 08/24/2015 - jgf - Modified loop extents from previous
+C           change such that the QNMSG array is populated at indices
+C           that correspond to the position in the LBCODE array where
+C           the flux boundary conditions are specified. 
+C     v51.52.23 - 08/23/2015 - jgf - Fixed adcprep issues with array extents for
+C           external flux boundaries and the LBCODE array for boundary 
+C           types at nodes in adcprep; the issues manifested as 
+C           too many flux values read from fort.15 for periodic river
+C           flux boundary conditions. 
+C     v51.52.22 - 08/17/2015 - jgf - Added compiler flags for spirit at AFRL.
+C     v51.52.21 - 08/14/2015 - jgf - Fixed NWS10 (NOAA GFS) meteorological
+C           input subroutines so that they function properly in serial and
+C           parallel; previously, there was no accommodation for NWS10 in 
+C           adcprep, whereas now adcprep recognizes this as a valid value; 
+C           subroutines in adcirc were nonfunctional due to outdated parameters
+C           and code structure; adcirc code for NWS10GET was fixed and made
+C           functional by bringing it in line with the overall structure of the
+C           wind module; also fixed an issue with ramp value initialization
+C           when nramp=1 and dramp=0.0.
+C  v52.14 - 08/06/2015 - jgf - Fix to prevent NaNs in output files
+C           in runs that use SWAN coupling with a vortex meteorological
+C           model. This issue was a result of the parametric vortex
+C           models not initializing the WVNX1 and WVNY1 arrays because
+C           they do not use them but SWAN does (v51.52.20)
+C  v52.13 - 08/04/2015 - zc - Fixing bug that caused serial adcswan to not 
+C           write output files. descript % writeFlag was never set to .true.
+C  v52.12 - 08/02/2015 - zc - Fixing bug in writing netCDF stations using
+C           serial adcirc. Pointers to station coordinates were not defined. 
+C  v52.11 - 07/28/2015 - tcm - Fixed bug in time varying bathymetry 
+C           implementation, where the wrong amount of bathymetry
+C           change was being used for adjusting the eta2 variable.
+C  v52.10 - 07/24/2015 - jgf - Updated adcirc2xdmf to keep it in sync with 
+C           the utilities in the ASGS trunk; adcirc2xdmf is a valuable tool
+C           for aiding 3D visualization of levee boundaries in Paraview. 
+C  v52.09 - 07/20/2015 - tcm - Added compiler flags for Cray XC30/XC40 using
+C           Intel compilers with (ftn) as default instead of ifort.  These
+C           basic compiler options work on Armstrong@NAVO, Lightning@AFRL,
+C           Shephard@NAVO and Gordon@NAVO
+>>>>>>> .merge-right.r1195
+>>>>>>> .merge-right.r1202
 C  v52.08 - 06/24/2015 - jgf - Added compiler flags and swan macros.inc
 C           for stampede at TACC.
 C  v52.07 - 06/24/2015 - jgf - Fixed issue with serial execution by removing

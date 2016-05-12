@@ -111,6 +111,9 @@ C******************************************************************************
 C
       INTEGER, OPTIONAL :: COMM
       CHARACTER(*), OPTIONAL :: ROOTD
+      REAL(SZ) :: StaTimHS
+      REAL(SZ) :: RefTimHS
+      REAL(SZ) :: TimeLoc
       INTEGER :: iargc    ! function to return the number of command line arguments
       INTEGER :: argcount ! number of command line arguments
       CHARACTER(2048) :: cmdlinearg ! a single command line argument
@@ -140,7 +143,10 @@ C
       endif
       !
       call initLogging()
-      nabout = 1 !jgf51.46: Initialize log level to INFO
+      nabout = 0 !jgf52.08.01: Initialize log level to ECHO.
+#ifdef DEBUG
+      nabout = -1 !jgf52.08.01: Initialize log level to DEBUG if so compiled
+#endif
       call setMessageSource("ADCIRC_Init")
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
       call screenMessage(DEBUG,"Enter.") ! log to screen; don't have log dirname
@@ -207,7 +213,6 @@ C
       CALL ABRUPT_UNDERFLOW() ! Abrupt underflow for Sun computers
 #endif
 
-
 C...Compute the reciprocal of the number of nodes in the entire domain
 
 #ifdef CMPI
@@ -250,9 +255,23 @@ C...  Determine the number of active elements (MJU), the total number of
 C...  elements (NODELE) and the total area of elements (TotalArea) 
 C...  attached to each node
       call totalAreaCalc()
+      !
+      !
+      ! jgf52.08.20: Compute master time which is referenced to the beginning 
+      ! time of the model run. This is needed here only because we need to 
+      ! determine whether to load min/max files in subroutine initOutput2D().
+      ! If the time in the min/max file is later than the current time
+      ! in ADCIRC, we don't load the min/max files. TODO: This is computed
+      ! again in subroutine timestep().
+      TimeLoc=ITIME_BGN*DTDP + StaTim*86400.D0
+      IF (CHOTHS.eqv..true.) THEN
+         StaTimHS=((ITIME_BGN-1)*DTDPHS)/86400.D0
+         RefTimHS=((ITIME_BGN-1)*DTDP)/86400.D0
+         TimeLoc=ITIME_BGN*DTDP + (StaTimHS - RefTimHS)*86400.D0
+      END IF
 C
 C     jgf51.21.24: Initialize output.
-      call initOutput2D()
+      call initOutput2D(timeloc)
 C...
 C...************* SET FLAGS AND COEFFICIENTS USED IN TIME STEPPING ***********
 C...
@@ -316,6 +335,7 @@ C
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
+      
       RETURN
       END SUBROUTINE ADCIRC_Init
 
@@ -344,9 +364,11 @@ C
       if (((mnwproh > 0).or.(mnwproc > 0)) .and. myproc >= mnproc) then
          if( myproc < mnproc+mnwproc ) then   !st3
             call writer_main()
+            call unsetMessageSource()  !tcm 20150924 -- added
             return
          else
             call hswriter_main()
+            call unsetMessageSource()  !tcm 20150924 -- added
             return
          endif
       endif
@@ -390,6 +412,7 @@ C
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
+      
       RETURN
       END SUBROUTINE ADCIRC_Run
 

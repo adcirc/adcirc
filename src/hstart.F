@@ -35,7 +35,7 @@ C
       !USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
       USE SIZES, ONLY : inputDir, globalDir, mnproc
       USE GLOBAL
-      USE MESH, ONLY : DP, ICS, X, Y, SLAM, SFEA, AID4
+      USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4
       USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXIB, NFLUXIBP,
      &    NOPE, NVEL, BndBCRiver, LBCODEI, NBV, BARLANHT, BARLANCFSP,
      &    IBCONN, BARINHT, BARINCFSP, BARINCFSB, PIPEHT, PIPECOEF,
@@ -50,7 +50,7 @@ C
       USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015, 
      &                       openFort019h
 #ifdef CMPI
-      USE MESSENGER,ONLY:COMM,IERR
+      USE MESSENGER,ONLY: COMM, IERR, UPDATER
 #endif      
       USE HARM, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV,
      &                 NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart,
@@ -68,13 +68,15 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
      &                     readNetCDFHotstartHarmonicMeansVariances
 #endif
       USE NodalAttributes, ONLY :
-     &     nolibf, nwp, tau0, cf, eslm,
-     &     LoadDirEffRLen, LoadCanopyCoef,
+     &     nolibf, nwp, tau0, cf, eslm, GeoidOffset, 
+     &     LoadDirEffRLen, LoadCanopyCoef, LoadGeoidOffset,
      &     ApplyDirectionalWindReduction, ApplyCanopyCoefficient,
-     &     OutputTau0, LoadEleSlopeLim, elemental_slope_limiter_active,
-     &     elemental_slope_limiter_grad_max,
+     &     OutputTau0, 
      &     LoadRiver_et_WSE, River_et_WSE
       USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
+      USE WRITE_OUTPUT, ONLY : initInundationOutput,
+     &   inundationTime, inundationTime_onset, maxInunDepth, 
+     &   maxInunDepth_time, outputNodeCode, outputNOFF
       IMPLICIT NONE
 #ifdef CMPI       
 #ifndef HAVE_MPI_MOD
@@ -176,12 +178,24 @@ C     kmd -- Added variables for initial conditions
 #if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-C
+      !
       metOutputOn = .FALSE.
       nonMetOutputOff = .FALSE.
-
+      !
+      ! In order to produce inundation output, we need to compute the
+      ! areas that were initially dry at cold start. 
+      if (inundationOutput.eqv..true.) then
+         call setColdWetDryStateAndWaterSurfaceElevation()
+         !
+         ! jgf52.08.01: This can only be called after nnodecode has been set
+         ! via setColdWetDryState().
+         call initInundationOutput()
+      endif
+      !
+      !
+      ! NCSU Subdomain Modeling
       if (subdomainOn) then
-         call readFort015() ! NCSU Subdomain Modeling
+         call readFort015() 
       endif
 C
 C     -----------------------------------
@@ -287,6 +301,8 @@ C        jgf46.34 Added support for IBTYPE=52.
             CALL readAndMapToSubdomain2D(CH1, IHOT, IHOTSTP, moderbin)
          ENDIF
          CALL readAndMapToSubdomainInt2D(NNODECODE, IHOT, IHOTSTP, moderbin)
+         ! jgf52.08.01: subroutine timestep() uses nodecode. Set it here.
+         nodecode(:) = nnodecode(:)
          CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
 C
          READ(IHOT,*) IESTP
@@ -398,7 +414,6 @@ C...
          CLOSE(IHOT)  ! close portable ascii hotstart file
 C
 C
-
       CASE(67,68) ! non-portable binary file format
 
 C...
@@ -513,6 +528,8 @@ C        jgf46.34 Added support for IBTYPE=52.
             CALL readAndMapToSubdomain2D(CH1, IHOT, IHOTSTP, moderbin)
          ENDIF
          CALL readAndMapToSubdomainInt2D(NNODECODE, IHOT, IHOTSTP, moderbin)
+         !jgf52.08.01: Subroutine timestep() uses nodecode. Set it here.
+         nodecode(:) = nnodecode(:)
          CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
 C
          READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
@@ -3707,62 +3724,33 @@ c          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO B
            CLOSE(76)                         ! DO THIS TO FLUSH THE WRITE BUFFER
         ENDIF
 
-C
-C     jgf48.4635 If the maxele.63 (etc) files are present, we need to
-C     load them up, to preserve high water marks across hotstarts.
-C     If they are not present, thats okay too.
 
-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-C  Begin TCM v51.20.01 Mods for MaxMin Files to local Variables
-C      Including reading time stamp for max/min when available
-C
-      ! Note:  Global initalizes the TimeStamp Values to 0.0d0
-      !   If timestamp values are not found, then they will return
-      !   with an initial value of -99999.d0 to begin the hstart runs.
-      !   this includes the case of the max/min files not being present
-
-      CALL readAndMapToSubdomainMaxMin('maxele.63',EtaMax,
-     &                                  -99999.d0,EtaMax_Time) !,0,2)
-      CALL readAndMapToSubdomainMaxMin('maxvel.63',UMax,
-     &                                  0.d0,UMax_Time)
-      CALL readAndMapToSubdomainMaxMin('maxwvel.63',WVNOutmax,
-     &                                  0.d0,WVNOutMax_Time)
-      CALL readAndMapToSubdomainMaxMin('minpr.63',PrMin,
-     &                                  99999.d0,PrMin_Time)
-      CALL readAndMapToSubdomainMaxMin('maxrs.63',RSNMax,
-     &                                  0.d0,RSNMax_Time)
-
-      IF (LoadEleSlopeLim) THEN
-         CALL readAndMapToSubdomainMaxMin('ESLNodes.63',ESLONOFF,
-     &                              0.d0)
-         ! must set the elemental slope limiter active values as well
-         !
-         ! jgf51.46: Reall should only turn on the slope limiter if
-         ! the slope limiter was turned on in the run that produced
-         ! these values (as opposed to just recording the places
-         ! where the slope was exceeded). However, this isn't really
-         ! practical because it would require knowledge of the 
-         ! elemental_slope_limiter nodal attribute from the 
-         ! previous simulation. We don't have access to that. 
-         !
-         ! Also, we don't want to turn the slope limiter on in places 
-         ! where the analyst does not want it to be turned on, and only 
-         ! wants to record the places where the slope is exceeded. So
-         ! I am adding a check for positive values of the nodal
-         ! attribute, and only turning on the slope limiter there. 
-         DO I = 1,NP
-            if ( (ESLONOFF(I).eq.1.d0).and.
-     &         (elemental_slope_limiter_grad_max(i).ge.0.d0) ) then
-               elemental_slope_limiter_active(I) = .true.
+      ! jgf52.08.08: Create files for nodecode and noff output 
+      ! (wet/dry state of nodes and wet/dry state of elements)      
+      IF (ABS(NOUTGE).NE.0) then
+         if (outputNodeCode.eqv..true.) then
+            if (write_local_files.eqv..true.) then
+               call writeDomainHeader(101,trim(localdir)//'/'//
+     &            'nodecode.63',NP_G, NP, 'nodecode    ')
             else
-               elemental_slope_limiter_active(I) = .false.
+               call writeDomainHeader(101,trim(globaldir)//'/'//
+     &            'nodecode.63',NP_G, NP, 'nodecode    ')
             endif
-         ENDDO
-      ENDIF  
-C
-C  End  TCM v51.20.01 Mods for MaxMin Files to Local Variables
-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-C
+         endif
+         if (outputNOFF.eqv..true.) then
+            if (write_local_files.eqv..true.) then
+               call writeDomainHeader(102,trim(localdir)//'/'//
+     &            'noff.100',NE_G, NE, 'noff       ')
+            else
+               call writeDomainHeader(102,trim(globaldir)//'/'//
+     &            'noff.100',NE_G, NE, 'noff       ')
+            endif
+         endif
+      endif
+
+      ! jgf52.08.03: Reading of min/max data moved to initOutput2D()
+      ! subroutine in write_output module. 
+      
 
       ! tcmv51.27 20140502 Added to remove this nodal attribute
       ! as it is only used at Cold Start but read at hot start as well

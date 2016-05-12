@@ -261,8 +261,8 @@ C
       ALLOCATE ( INAMEFR(MNHARF) )
 C
       ALLOCATE ( EMAG(MNHARF,MNSTAE), PHASEDE(MNHARF,MNSTAE) )
-      ALLOCATE ( UMAG(MNHARF,MNSTAE), PHASEDU(MNHARF,MNSTAE) )
-      ALLOCATE ( VMAG(MNHARF,MNSTAE), PHASEDV(MNHARF,MNSTAE) )
+      ALLOCATE ( UMAG(MNHARF,MNSTAV), PHASEDU(MNHARF,MNSTAV) )
+      ALLOCATE ( VMAG(MNHARF,MNSTAV), PHASEDV(MNHARF,MNSTAV) )
       ALLOCATE ( EMAGT(MNHARF,MNP), PHASEDEN(MNHARF,MNP) )
       ALLOCATE ( UMAGT(MNHARF,MNP), PHASEDUT(MNHARF,MNP) )
       ALLOCATE ( VMAGT(MNHARF,MNP), PHASEDVT(MNHARF,MNP) )
@@ -1543,7 +1543,7 @@ c
             if(phasedut(i,n).ge.360.d0) phasedut(i,n)=phasedut(i,n)-360.d0
             phasedvt(i,n)=convrd*phasevg(i)+haface(i)
             if(phasedvt(i,n).lt.0.) phasedvt(i,n)=phasedvt(i,n)+360.d0
-            if(phasedvt(i,n).ge.360.d0) phasedv(i,n)=phasedvt(i,n)-360.d0
+            if(phasedvt(i,n).ge.360.d0) phasedvt(i,n)=phasedvt(i,n)-360.d0
  6636       format(2x,e16.8,1x,f11.4,2x,e16.8,1x,f11.4)
          end do
 

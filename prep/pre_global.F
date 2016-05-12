@@ -257,7 +257,14 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       logical :: foundWetDryControlNamelist = .false. ! for namelist 
       logical :: outputNodeCode = .false.
       logical :: outputNOFF = .false.
+      logical :: noffActive = .true.
 
+      ! jgf52.08.02: For inundation output control. Wanted to just
+      ! use the variables of the same name from the write_output module,
+      ! but this must wait until build dependencies are resolved. 
+      logical :: foundInundationOutputControlNamelist = .false.
+      logical :: inundationOutput = .false.
+      real(sz) :: inunThresh = 0.6d0
 C
 C     SOLVER  section
       INTEGER ITITER,ISLDIA,ITMAX

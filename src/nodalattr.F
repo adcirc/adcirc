@@ -1382,6 +1382,7 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
       INTEGER Tau0Dig1  ! determines the tau0 scheme
       INTEGER Tau0Dig2  ! determines whether tau0 is being output
+      LOGICAL :: invalidCanopyCoefficient ! .true. if any value is neither 0 nor 1
 
       IF (Tau0.lt.0) THEN
          Tau0Dig1 = INT(Tau0)   ! jgf47.30 truncate the fractional part
@@ -1436,6 +1437,22 @@ C     from nodal attributes file.
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
          STOP                   ! We're toast.
       ENDIF
+C
+C     ERROR CHECK: The canopy coefficient value should be either 0 or 1;
+C     log a warning message if any other values were read.
+      if ( loadCanopyCoef.eqv..true. ) then
+         invalidCanopyCoefficient = .false.
+         do i=1,np
+            if ( (vcanopy(i).ne.0.d0).and.(vcanopy(i).ne.1.d0 ) ) then
+               invalidCanopyCoefficient = .true.
+               exit
+            endif
+         end do
+         if ( invalidCanopyCoefficient.eqv..true. ) then 
+            call allMessage(WARNING,'Some surface canopy coefficient '//
+     &        'nodal attribute data are neither 0 nor 1.')        
+         endif
+      endif
 C
 C     I N I T    S T A R T D R Y
  

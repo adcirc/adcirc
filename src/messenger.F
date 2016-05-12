@@ -28,11 +28,14 @@ C--------------------------------------------------------------------------
 
 C  Message-Passing Array space
 
-      INTEGER ::  MPI_COMM_ADCIRC                     ! Local communicator
-      INTEGER ::  NEIGHPROC, RDIM, IERR
-      INTEGER ::  TAG = 100
-      INTEGER ::  COMM_COMP                           ! COMMUNICATOR FOR COMPUTATION
-      INTEGER ::  GROUP_WORLD, GROUP_COMP, GROUP_WRITER_ONLY
+      INTEGER :: MPI_COMM_ADCIRC ! Local communicator
+      INTEGER :: NEIGHPROC  ! number of subdomains neighboring this one
+      INTEGER :: RDIM  ! total send/recieve requests when passing info 
+                        ! between subdomain neighbors, =2*neighproc
+      INTEGER :: IERR  ! error status of mpi subroutine call
+      INTEGER :: TAG = 100
+      INTEGER :: COMM_COMP                           ! COMMUNICATOR FOR COMPUTATION
+      INTEGER :: GROUP_WORLD, GROUP_COMP, GROUP_WRITER_ONLY
       INTEGER, ALLOCATABLE ::  GROUP_WRITER(:)        ! GROUPS FOR GLOBAL FILE WRITING
       INTEGER, ALLOCATABLE ::  GROUP_WRITEH(:)        ! GROUPS FOR HOTSTART FILE WRITING !st3 100711
       INTEGER, ALLOCATABLE ::  GROUP_HSLEEP(:)        ! GROUPS FOR HOTSTART FILE WRITING !st3 100711
@@ -662,19 +665,28 @@ C---------------------------------------------------------------------
 #ifndef HAVE_MPI_MOD
       include 'mpif.h'
 #endif
-      INTEGER,  INTENT(IN) ::  NMSG
+      INTEGER,  INTENT(IN) ::  NMSG ! number of arrays to pass
       REAL(SZ), INTENT(INOUT) ::  VEC1(*),VEC2(*),VEC3(*)
-      INTEGER :: N,I,J,NCOUNT,NFINI,TOT
+      integer :: j  ! loop counter for neighboring subdomains
+      integer :: i  ! loop counter for nodes shared with a neighboring subdomain
+      integer :: nfini ! number of just-completed requests
+      integer :: n     ! loop counter for just-completed requests
+      integer :: tot   ! total number of completed requests
+      integer :: ncount ! num values passed to a particular subdomain neighbor
 C
       call setMessageSource("updater")
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.") 
 #endif
 C 
+      ! 
+      ! loop over neighboring subdomains
       DO J=1,NEIGHPROC
          NCOUNT = 0
+         ! loop over nodes shared as ghost nodes with this neighboring subdomain
          DO I=1,NNODSEND(J)
             NCOUNT = NCOUNT+1
+            ! store the array values in the send buffer            
             SENDBUF(NCOUNT,J)=VEC1(ISENDLOC(I,J))
          ENDDO
          IF (NMSG.GT.1) THEN
@@ -690,7 +702,9 @@ C
            ENDDO
          ENDIF
       ENDDO
-
+      !
+      ! receive and send data to each neighboring subdomain, populating
+      ! the request handler array
       IF (NMSG.EQ.1) THEN
         DO J=1,NEIGHPROC
            CALL MPI_IRECV( RECVBUF(1,J), NNODRECV(J),
@@ -714,29 +728,39 @@ C
         ENDDO
       ENDIF
 
-      IF (NMSG.EQ.1) THEN
-        TOT = 0
-        DO WHILE (TOT.LT.RDIM)
-           DO N=1, RDIM
-              INDX(N) = 0
-           ENDDO
-           CALL MPI_WAITSOME( RDIM,REQ_R1,NFINI,INDX,STAT_R1,IERR )
-           TOT = TOT + NFINI
-           DO N=1, NFINI
-              IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
-                IF (INDX(N).LE.NEIGHPROC) THEN
-                  J = INDX(N)
-                  NCOUNT = 0
-                  DO I=1,NNODRECV(J)
-                     NCOUNT = NCOUNT+1
-                     VEC1(IRECVLOC(I,J)) = RECVBUF(NCOUNT,J)
-                  ENDDO
-                ENDIF
-              ENDIF
-           ENDDO
-        ENDDO
-        GOTO 999
-      ELSEIF (NMSG.EQ.2) THEN
+      SELECT CASE(NMSG)
+      CASE(1)
+         TOT = 0
+         ! keep looping until the total number of completed communications 
+         ! equals the total number that were requested
+         DO WHILE (TOT.LT.RDIM)
+            DO N=1, RDIM
+               INDX(N) = 0 ! zero out the array of just-completed requests
+            ENDDO
+            CALL MPI_WAITSOME( RDIM,REQ_R1,NFINI,INDX,STAT_R1,IERR )
+            ! add the number of just-completed requests to the total
+            TOT = TOT + NFINI
+            ! loop over the just-completed requests
+            DO N=1, NFINI
+               ! if the request has just completed (TODO: I don't see how
+               ! indx(n) can be greater than rdim
+               IF (INDX(N).GT.0.AND.INDX(N).LE.RDIM)  THEN
+                  ! if the request that just completed is a receive
+                  IF (INDX(N).LE.NEIGHPROC) THEN
+                     ! j = subdomain neighbor number that sent this data
+                     J = INDX(N)
+                     NCOUNT = 0
+                     DO I=1,NNODRECV(J)
+                        NCOUNT = NCOUNT+1
+                        ! update this subdomain's ghost value with the real 
+                        ! value from the other subdomain
+                        VEC1(IRECVLOC(I,J)) = RECVBUF(NCOUNT,J)
+                     ENDDO
+                  ENDIF
+               ENDIF
+            ENDDO
+         ENDDO
+      CASE(2)
         TOT = 0
         DO WHILE (TOT.LT.RDIM)
            DO N=1, RDIM
@@ -761,8 +785,7 @@ C
               ENDIF
            ENDDO
         ENDDO
-        GOTO 999
-      ELSE
+      CASE DEFAULT
         TOT = 0
         DO WHILE (TOT.LT.RDIM)
            DO N=1, RDIM
@@ -792,10 +815,7 @@ cdebug     print *, myproc, tot,nfini,INDX(1),INDX(2)
               ENDIF
            ENDDO
         ENDDO
-        GOTO 999
-      ENDIF
-
- 999  CONTINUE
+      END SELECT
  
 #if defined(MESSENGER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -805,7 +825,6 @@ cdebug     print *, myproc, tot,nfini,INDX(1),INDX(2)
 C--------------------------------------------------------------------- 
       END SUBROUTINE UPDATER
 C---------------------------------------------------------------------
-
 
 C---------------------------------------------------------------------
 C     S U B R O U T I N E   U P D A T E R 3 D 

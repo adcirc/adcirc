@@ -91,8 +91,8 @@ C
 #endif
       USE SIZES, ONLY : SZ
       USE GLOBAL
-      USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart,
-     &                          writeWarnElev
+      USE WRITE_OUTPUT, ONLY : writeOutput2D, writeHotStart, 
+     &    writeWarnElev, collectInundationData, collectMinMaxData
       USE MESH, ONLY : NE, NP, DP, NM, X, Y, SLAM, SFEA, ICS, TotalArea,
      &                  MJU, Areas, SFAC
       USE BOUNDARIES, ONLY : NOPE, NETA, NBOU, NVEL, LBCODEI, NBV, SIII,
@@ -239,8 +239,6 @@ C   TCM v50.66.02 -- Added for Time Varying Bathymetry
       INTEGER :: IJK
       REAL(SZ) ETA2TMP,DPTMP,DPTMP2,BTRATIO  !tcm v50.66.01 bathymetry changes
 
-C   TCM v51.20.01 -- Added dummy real variable for computing velocity magnitudes
-      REAL(SZ) tmpmag
 
       call setMessageSource("timestep")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -2678,65 +2676,73 @@ C...Find the heighest point on the bed in the element.  sb v46.28.sb05.06 11/01/
                ENDIF
 #endif
 #ifndef SB_WETDRY
+               ! jgf52.08.08: Analyst can eliminate noff from
+               ! consideration in fort.15 file. 
+               if (noffActive.eqv..true.) then
 C...ABC pattern
-               IF((ETAN1.GE.ETAN2).AND.(ETAN2.GT.ETAN3)) THEN
-                 IF((HTOTN1.LT.HOFF).OR.(HTOTN2.LT.HOFF)) NOFF(I)=0
-               ENDIF
-               IF((ETAN2.GE.ETAN3).AND.(ETAN3.GT.ETAN1)) THEN
-                 IF((HTOTN2.LT.HOFF).OR.(HTOTN3.LT.HOFF)) NOFF(I)=0
-               ENDIF
-               IF((ETAN3.GE.ETAN1).AND.(ETAN1.GT.ETAN2)) THEN
-                 IF((HTOTN3.LT.HOFF).OR.(HTOTN1.LT.HOFF)) NOFF(I)=0
-               ENDIF
+                  IF((ETAN1.GE.ETAN2).AND.(ETAN2.GT.ETAN3)) THEN
+                    IF((HTOTN1.LT.HOFF).OR.(HTOTN2.LT.HOFF)) NOFF(I)=0
+                  ENDIF
+                  IF((ETAN2.GE.ETAN3).AND.(ETAN3.GT.ETAN1)) THEN
+                    IF((HTOTN2.LT.HOFF).OR.(HTOTN3.LT.HOFF)) NOFF(I)=0
+                  ENDIF
+                  IF((ETAN3.GE.ETAN1).AND.(ETAN1.GT.ETAN2)) THEN
+                     IF((HTOTN3.LT.HOFF).OR.(HTOTN1.LT.HOFF)) NOFF(I)=0
+                  ENDIF
 C...ACB pattern
-               IF((ETAN1.GE.ETAN3).AND.(ETAN3.GT.ETAN2)) THEN
-                 IF((HTOTN1.LT.HOFF).OR.(HTOTN3.LT.HOFF)) NOFF(I)=0
-               ENDIF
-               IF((ETAN2.GE.ETAN1).AND.(ETAN1.GT.ETAN3)) THEN
-                 IF((HTOTN2.LT.HOFF).OR.(HTOTN1.LT.HOFF)) NOFF(I)=0
-               ENDIF
-               IF((ETAN3.GE.ETAN2).AND.(ETAN2.GT.ETAN1)) THEN
-                 IF((HTOTN3.LT.HOFF).OR.(HTOTN2.LT.HOFF)) NOFF(I)=0
-               ENDIF
+                  IF((ETAN1.GE.ETAN3).AND.(ETAN3.GT.ETAN2)) THEN
+                    IF((HTOTN1.LT.HOFF).OR.(HTOTN3.LT.HOFF)) NOFF(I)=0
+                  ENDIF
+                  IF((ETAN2.GE.ETAN1).AND.(ETAN1.GT.ETAN3)) THEN
+                    IF((HTOTN2.LT.HOFF).OR.(HTOTN1.LT.HOFF)) NOFF(I)=0
+                  ENDIF
+                  IF((ETAN3.GE.ETAN2).AND.(ETAN2.GT.ETAN1)) THEN
+                    IF((HTOTN3.LT.HOFF).OR.(HTOTN2.LT.HOFF)) NOFF(I)=0
+                  ENDIF
+               endif
 #else
+               ! jgf52.08.08: Analyst can eliminate noff from
+               ! consideration in fort.15 file. 
+               if (noffActive.eqv..true.) then
 C...ABC pattern
-               IF((ETAN1.GE.ETAN2).AND.(ETAN2.GT.ETAN3)) THEN
-                 IF((HTOTN1.LT.HOFF)) NOFF(I)=0
-                 IF((ETAN1-ETAN2).LT.(ETAN2-ETAN3)) THEN
-                   IF(HTOTN2.LT.HOFF) NOFF(I)=0
-                 ENDIF
-               ENDIF
-               IF((ETAN2.GE.ETAN3).AND.(ETAN3.GT.ETAN1)) THEN
-                 IF((HTOTN2.LT.HOFF)) NOFF(I)=0
-                 IF((ETAN2-ETAN3).LT.(ETAN3-ETAN1)) THEN
-                   IF(HTOTN3.LT.HOFF) NOFF(I)=0
-                 ENDIF
-               ENDIF
-               IF((ETAN3.GE.ETAN1).AND.(ETAN1.GT.ETAN2)) THEN
-                 IF((HTOTN3.LT.HOFF)) NOFF(I)=0
-                 IF((ETAN3-ETAN1).LT.(ETAN1-ETAN2)) THEN
-                   IF(HTOTN1.LT.HOFF) NOFF(I)=0
-                 ENDIF
-               ENDIF
+                  IF((ETAN1.GE.ETAN2).AND.(ETAN2.GT.ETAN3)) THEN
+                     IF((HTOTN1.LT.HOFF)) NOFF(I)=0
+                     IF((ETAN1-ETAN2).LT.(ETAN2-ETAN3)) THEN
+                        IF(HTOTN2.LT.HOFF) NOFF(I)=0
+                     ENDIF
+                  ENDIF
+                  IF((ETAN2.GE.ETAN3).AND.(ETAN3.GT.ETAN1)) THEN
+                     IF((HTOTN2.LT.HOFF)) NOFF(I)=0
+                     IF((ETAN2-ETAN3).LT.(ETAN3-ETAN1)) THEN
+                        IF(HTOTN3.LT.HOFF) NOFF(I)=0
+                     ENDIF
+                  ENDIF
+                  IF((ETAN3.GE.ETAN1).AND.(ETAN1.GT.ETAN2)) THEN
+                     IF((HTOTN3.LT.HOFF)) NOFF(I)=0
+                     IF((ETAN3-ETAN1).LT.(ETAN1-ETAN2)) THEN
+                        IF(HTOTN1.LT.HOFF) NOFF(I)=0
+                     ENDIF
+                  ENDIF
 C...ACB pattern
-               IF((ETAN1.GE.ETAN3).AND.(ETAN3.GT.ETAN2)) THEN
-                 IF((HTOTN1.LT.HOFF)) NOFF(I)=0
-                 IF((ETAN1-ETAN3).LT.(ETAN3-ETAN2)) THEN
-                   IF(HTOTN3.LT.HOFF) NOFF(I)=0
-                 ENDIF
-               ENDIF
-               IF((ETAN2.GE.ETAN1).AND.(ETAN1.GT.ETAN3)) THEN
-                 IF((HTOTN2.LT.HOFF)) NOFF(I)=0
-                 IF((ETAN2-ETAN1).LT.(ETAN1-ETAN3)) THEN
-                   IF(HTOTN1.LT.HOFF) NOFF(I)=0
-                 ENDIF
-               ENDIF
-               IF((ETAN3.GE.ETAN2).AND.(ETAN2.GT.ETAN1)) THEN
-                 IF((HTOTN3.LT.HOFF)) NOFF(I)=0
-                 IF((ETAN3-ETAN2).LT.(ETAN2-ETAN1)) THEN
-                   IF(HTOTN2.LT.HOFF) NOFF(I)=0
-                 ENDIF
-               ENDIF
+                  IF((ETAN1.GE.ETAN3).AND.(ETAN3.GT.ETAN2)) THEN
+                     IF((HTOTN1.LT.HOFF)) NOFF(I)=0
+                     IF((ETAN1-ETAN3).LT.(ETAN3-ETAN2)) THEN
+                        IF(HTOTN3.LT.HOFF) NOFF(I)=0
+                     ENDIF
+                  ENDIF
+                  IF((ETAN2.GE.ETAN1).AND.(ETAN1.GT.ETAN3)) THEN
+                     IF((HTOTN2.LT.HOFF)) NOFF(I)=0
+                     IF((ETAN2-ETAN1).LT.(ETAN1-ETAN3)) THEN
+                        IF(HTOTN1.LT.HOFF) NOFF(I)=0
+                     ENDIF
+                  ENDIF
+                  IF((ETAN3.GE.ETAN2).AND.(ETAN2.GT.ETAN1)) THEN
+                     IF((HTOTN3.LT.HOFF)) NOFF(I)=0
+                     IF((ETAN3-ETAN2).LT.(ETAN2-ETAN1)) THEN
+                        IF(HTOTN2.LT.HOFF) NOFF(I)=0
+                     ENDIF
+                  ENDIF
+               endif !noffActive.eqv..true.
 #endif
 
 #ifdef SB_WETDRY
@@ -2749,19 +2755,20 @@ C...This is applied only when NOFF flag of the element at the previous time step
 C...is 0, which means that this logic works to prevent an element from
 C...re-wetting.
 C...sb v46.52.03
-               IF(NOFFOLD(I).EQ.0) THEN
-                 IF(HTOTN1.GE.HTOTN2.AND.HTOTN1.GE.HTOTN3) THEN
-                    IF(ETAN1.LT.(-DPMIN+H0)) NOFF(I) = 0
+               if (noffActive.eqv..true.) then 
+                  IF(NOFFOLD(I).EQ.0) THEN
+                     IF(HTOTN1.GE.HTOTN2.AND.HTOTN1.GE.HTOTN3) THEN
+                        IF(ETAN1.LT.(-DPMIN+H0)) NOFF(I) = 0
+                     ENDIF
+                     IF(HTOTN2.GE.HTOTN3.AND.HTOTN2.GE.HTOTN1) THEN
+                        IF(ETAN2.LT.(-DPMIN+H0)) NOFF(I) = 0
+                     ENDIF
+                     IF(HTOTN3.GE.HTOTN1.AND.HTOTN3.GE.HTOTN2) THEN
+                        IF(ETAN3.LT.(-DPMIN+H0)) NOFF(I) = 0
+                     ENDIF
                  ENDIF
-                 IF(HTOTN2.GE.HTOTN3.AND.HTOTN2.GE.HTOTN1) THEN
-                    IF(ETAN2.LT.(-DPMIN+H0)) NOFF(I) = 0
-                 ENDIF
-                 IF(HTOTN3.GE.HTOTN1.AND.HTOTN3.GE.HTOTN2) THEN
-                    IF(ETAN3.LT.(-DPMIN+H0)) NOFF(I) = 0
-                 ENDIF
-              ENDIF
+              endif
 #endif
-
             ENDIF
          ENDDO
 
@@ -2927,38 +2934,7 @@ CWET...END WET/DRY SECTION - PART 6
 CWET...
       ENDIF                     !  This is started in Part 1 of CWET
 c.....
-c. RJW merged 08/26/2008 Casey 071219: Added these output lines for wet/dry visualization.
-!      IF(NOUTGE.NE.0)THEN
-!         IF((IT.GT.NTCYSGE).AND.(IT.LE.NTCYFGE))THEN
-!            IF(NSCOUGE.EQ.(NSPOOLGE-1))THEN
-!               CLOSE(123)
-!#ifdef CMPI
-!               WRITE(TEMPDIRNAME,'(A2,I4.4)') 'PE',MYPROC
-!               OPEN(123,FILE=TEMPDIRNAME//'/'//'fort.123',
-!     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
-!#else
-!               OPEN(123,FILE='fort.123',
-!     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
-!#endif
-!               DO I=1,NP
-!                  WRITE(123,*) NODECODE(I)
-!               ENDDO
-!               CLOSE(124)
-!#ifdef CMPI
-!               OPEN(124,FILE=TEMPDIRNAME//'/'//'fort.124',
-!     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
-!#else
-!               OPEN(124,FILE='fort.124',
-!     &            ACCESS='SEQUENTIAL',POSITION='APPEND')
-!#endif
-!               DO IE=1,NE
-!                  WRITE(124,*) NOFF(IE)
-!               ENDDO
-!            ENDIF
-!         ENDIF
-!      ENDIF
 
-c.end rjw merge vis....
 C...
 C...  2DDI Momentum Equation Solution
 C...
@@ -2989,8 +2965,6 @@ C...
 C     C2DDI....END OF 2DDI MOMENTUM EQUATION SOLUTION
 C...
 
-
-
 C...
 C...  3DVS Momentum Equation Solution
 C...
@@ -3017,7 +2991,6 @@ C...
 C...  End of 3DVS Momentum Equation Solution
 C...
 
-
 C...
 C...  IF 2D TRANSPORT IS INCLUDED SOLVE FOR THE CONCENTRATION
 C...
@@ -3034,35 +3007,13 @@ C     meteorological output is requested.
 9999  CONTINUE
 C...
 C...  Collect maximum values of variables   v46.50 sb 11/11/2006
-C...  jgf50.44: Collect time that min/max occurs as well.
-      do i=1,np
-         if(nodecode(i).eq.1.and.etamax(i).lt.eta2(i)) then
-            etamax(i) = eta2(i)
-            etamax_time(i) = TimeLoc  !tcm v51.20.01
-         endif
-         !tcm v51.20.01 added temporary variable storage to remove repeated computation
-         tmpmag = uu2(i)*uu2(i)+vv2(i)*vv2(i)
-         if((umax(i)*umax(i)).lt.(tmpmag)) then
-            umax(i) = sqrt(tmpmag)
-            umax_time(i) = TimeLoc   !tcm v51.20.01
-         endif
-         if(prmin(i).gt.pr2(i)) then
-            prmin(i) = pr2(i)
-            prmin_time(i) = TimeLoc   !tcm v51.20.01
-         endif
-         !tcm v51.20.01 added temporary variable storage to remove repeated computation
-         tmpmag = wvnxout(i)*wvnxout(i)+wvnyout(i)*wvnyout(i)
-         if((wvnoutmax(i)*wvnoutmax(i)).lt.tmpmag) then
-            wvnoutmax(i) = sqrt(tmpmag)
-            wvnoutmax_time(i) = TimeLoc   !tcm v51.20.01
-         endif
-         !tcm v51.20.01 added temporary variable storage to remove repeated computation
-         tmpmag = rsnx2(i)*rsnx2(i)+rsny2(i)*rsny2(i)
-         if((rsnmax(i)*rsnmax(i)).lt.tmpmag) then
-            rsnmax(i) = sqrt(tmpmag)
-            rsnmax_time(i) = TimeLoc   !tcm v51.20.01
-         endif
-      enddo
+      call collectMinMaxData(timeloc)
+      !
+      ! jgf52.08.01: If detailed inundation output was requested, 
+      ! collect detailed inundation data. 
+      if (inundationOutput.eqv..true.) then
+         call collectInundationData(timeloc, it)
+      endif
 C
 C...
 C...  WRITE OUTPUT
@@ -3070,9 +3021,10 @@ C...
       !CALL writeOutput2D(IT,TimeLoc) ! =>zc - moved to adcirc.F so that SWAN writes 
                                       !        correctly
 C
-      if (subdomainOn.and.NOUTGS.eq.1) call writeFort065(it) ! NCSU Subdomain Modeling   
-      if (subdomainOn.and.NOUTGS.eq.2) call writeFort066(it) ! NCSU Subdomain Modeling   
-      if (subdomainOn.and.NOUTGS.eq.2) call writeFort067(it) ! NCSU Subdomain Modeling   
+      ! NCSU Subdomain Modeling   
+      if (subdomainOn.and.NOUTGS.eq.1) call writeFort065(it) 
+      if (subdomainOn.and.NOUTGS.eq.2) call writeFort066(it) 
+      if (subdomainOn.and.NOUTGS.eq.2) call writeFort067(it) 
 C
 C     jgf49.44: If harmonic analysis was requested and the current time
 C     is within the harmonic analysis period, update the left hand side
@@ -3087,7 +3039,6 @@ C...  NOTE: THE HOT START FILES USE A RECORD LENGTH OF 8 ON BOTH 32 BIT
 C.... WORKSTATIONS AND THE 64 BIT CRAY.  THIS IS BECAUSE THE HARMONIC
 C.... ANALYSIS IS DONE IN DOUBLE PRECISION (64 BITS) ON WORKSTATIONS.
 C...
-
       ITEST=(IT/NHSINC)*NHSINC
 
 !     IF(myproc.eq.0) PRINT *, " ITEST **********", ITEST

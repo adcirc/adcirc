@@ -2,7 +2,7 @@ NETCDFPATH  := /usr
 XDMFPATH    := /home/jason/projects/XDMF/Code/latestCode
 XDMFLIBPATH := /home/jason/projects/XDMF/Code/testLatest
 HDF5PATH    := /home/jason/projects/XDMF/Code/hdf5-1.8.11/hdf5
-ASGSPATH    := /home/jason/asgs/trunk
+ASGSPATH    := /home/jason/asgs/master
 LIBS        := -L$(XDMFLIBPATH) -L$(NETCDFPATH)/lib -L$(HDF5PATH)/lib
 INCLUDES    := -I$(XDMFPATH)/utils -I$(ASGSPATH)/output -I$(NETCDFPATH)/include
 LDFLAGS     := -lXdmfCore -lXdmfUtils -lXdmf -lnetcdff -Wl,-rpath=$(HDF5PATH)/lib

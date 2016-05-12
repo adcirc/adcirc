@@ -23,10 +23,11 @@ C
 #else
       implicit none
 #endif
-      !tcm v50.27 increased size from 3 to 4, cobell increase to 6,
+      ! tcm v50.27 increased size from 3 to 4, cobell increase to 6,
       ! jgf51.21.27 decreased size of intbuf to 5
       ! jgf51.21.29 increased size of intbuf to 6 for XDMF
-      integer, parameter :: numIntMetadata = 6
+      ! jgf52.08.25: increased intbuf to 7 to transmit nabout
+      integer, parameter :: numIntMetadata = 7
       integer :: intBuf(numIntMetadata)  ! used to transmit pieces of descript via mpi
       integer, parameter :: numRealMetadata = 2
       real(sz) :: reBuf(numRealMetadata) ! used to transmit pieces of descript via mpi
@@ -76,12 +77,6 @@ C-----------------------------------------------------------------------
       implicit none
       integer i
 
-!#if defined(WRITER_TRACE) || defined(ALL_TRACE)
-!      nabout = -1 !FIXME: Have padcirc send the actual value of nabout
-!#else 
-!      nabout = 0
-!#endif
-
       call setMessageSource("writer_init")
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -92,10 +87,18 @@ C-----------------------------------------------------------------------
       nwloaded(1:mnwproc) = .false.    !st3 100708: zeroc    round robin chamber
       allocate(writer_descripts(num_buf_max))
       do i=1,num_buf_max
+         writer_descripts(i) % initialized = .false.
+         writer_descripts(i) % num_fd_records = 0
+         writer_descripts(i) % num_items_per_record = 0
+         writer_descripts(i) % specifier = 0
+         writer_descripts(i) % lun = 0
+         writer_descripts(i) % outputTimeStepIncrement = 0
+         writer_descripts(i) % alternate_value = -99999.d0
          writer_descripts(i) % wMD % bufferInitialized = .false.
          writer_descripts(i) % wMD % bufferLoaded = .false.
+         writer_descripts(i) % wMD % myTimeStep = 0
+         writer_descripts(i) % wMD % myTime = 0.d0
       end do
-
       
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
@@ -169,7 +172,6 @@ C
          end select
       end do
 
-
 #if defined(WRITER_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
@@ -237,12 +239,13 @@ Cobell - Allow writer processors to output netcdf data
          INTBUF(4) = descript % lun
          INTBUF(5) = descript % outputTimeStepIncrement
          INTBUF(6) = it
-         call mpi_send(intbuf, 6, mpi_integer, mnproc, tag, 
+         INTBUF(7) = nabout ! jgf52.08.25: need logging level
+         call mpi_send(intbuf, numIntMetaData, mpi_integer, mnproc, tag, 
      &      comm_writer(wcommID),ierr)
          REBUF(1) = descript % alternate_value
          REBUF(2) = timeLoc
          ! send dry value and time in seconds
-         call mpi_send(rebuf, 2, realtype, mnproc, tag, 
+         call mpi_send(rebuf, numRealMetaData, realtype, mnproc, tag, 
      &      comm_writer(wcommID),ierr)
          ! send file name
          call mpi_send(descript % file_name, 1024, mpi_character, 
@@ -319,38 +322,34 @@ C-----------------------------------------------------------------------
 #endif
       !
       ! Receive minimal set of metadata required to write the file
-      call mpi_recv(intbuf, 6, mpi_integer, 0, tag, 
+      call mpi_recv(intbuf, numIntMetaData, mpi_integer, 0, tag, 
      &   comm_writer(writer_id), mpistat, ierr)
       !
-      ! if the file format is XDMF, we need to use the logical unit number
-      ! (lun) to match up the incoming data with the data structure where
-      ! it belongs
+      ! Select the writer buffer that will receive the values. 
       descriptFound = .false.
-      if (abs(intbuf(3)).eq.XDMF) then
+      do i=1,num_buf_max
+         ! look for the descript that is already set up to write this data
+         if (writer_descripts(i) % lun .eq. intbuf(4)) then
+            bufID = i
+            descriptFound = .true.
+            exit
+         endif
+      end do
+      ! If this writer has not written this type of output file
+      ! yet, then find a buffer that has not been used yet.
+      ! NetCDF and XDMF data files get initialized only once on each writer, 
+      ! so on each writer, we'll reuse the same buffer each time we 
+      ! write to these files. For ascii files it doesn't actually matter
+      ! whether we use the same or different buffers each time, but 
+      ! treating all the output types the same keeps things simple.
+      if (descriptFound.eqv..false.) then
          do i=1,num_buf_max
-            ! look for the descript that is already set up to write this data
-            if (writer_descripts(i) % lun .eq. intbuf(4)) then
+            if ( writer_descripts(i)%lun.eq.0 ) then
                bufID = i
                descriptFound = .true.
                exit
             endif
-         end do
-      end if
-      ! either we are not using XDMF or we don't yet have a descript
-      ! set up to write this data in XDMF
-      if (descriptFound.eqv..false.) then
-         !write(6,'(a)') 'DEBUG: Writer did not find a buffer associated with this data.'
-         ! just use one the first one that has not already been filled 
-         ! since the last flush
-         do i=1,num_buf_max
-            if (writer_descripts(i) % wMD % bufferLoaded .eqv..false.) 
-     &         then
-               bufID = i
-               exit
-            endif
-         end do
-      else
-         !write(6,'(a)') 'DEBUG: Writer found a suitable buffer.'
+          end do
       endif
       ! 
       ! place the metadata into the selected buffer           
@@ -360,10 +359,11 @@ C-----------------------------------------------------------------------
       writer_descripts(bufid) % lun = intbuf(4)
       writer_descripts(bufid) % outputTimeStepIncrement = intbuf(5)
       writer_descripts(bufid) % wMD % myTimeStep = intbuf(6)
+      nabout = intbuf(7)
       !
       ! receive "dry" data value and current simulation time
-      call mpi_recv(rebuf, 2, realtype, 0, tag, comm_writer(writer_id),
-     &   mpistat, ierr)
+      call mpi_recv(rebuf, numRealMetaData, realtype, 0, tag, 
+     &   comm_writer(writer_id), mpistat, ierr)
       writer_descripts(bufid) % alternate_value = rebuf(1)
       writer_descripts(bufid) % wMD % myTime = rebuf(2)
       ! 

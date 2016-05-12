@@ -66,12 +66,13 @@ C
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
-      
+      CHARACTER(len=1000) namelistSpecifier ! used in log messages
       NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir      
       NAMELIST /subdomainModeling/ subdomainOn
+      NAMELIST /wetDryControl/ outputNodeCode, outputNOFF, noffActive
+      NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &                      TOUTF_TVW,NSPOOL_TVW
-      NAMELIST /wetDryControl/ outputNodeCode, outputNOFF
       
       CHARACTER(len=160) :: origLine     ! raw line of input from fort.15
       CHARACTER(len=200) :: modifiedLine ! converted to namelist
@@ -101,11 +102,6 @@ C
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       NAMELIST /waveCoupling/ WaveWindMultiplier
 
-#ifdef ADCNETCDF
-      LOGICAL, PARAMETER :: NETCDF_AVAIL = .true.
-#else
-      LOGICAL, PARAMETER :: NETCDF_AVAIL = .false.
-#endif
       call setMessageSource("read_input")
 #if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
@@ -219,43 +215,43 @@ C...
 C...  After this search and read, we will close the file and then reopen it
 c...  for further processing the traditional non-namelist components.
 C...
+      namelistSpecifier = 'TimeBatyhControl'
       READ(UNIT = 15,NML = TimeBathyControl,IOSTAT = IOS_NDDT) 
-
-      IF (IOS_NDDT < 0) THEN
-c.....   it is possible for the namelist to be present in the file and occuring at the end 
-c.....   of the file with no line breaks after the ending "\" which causes the iostat to 
-c.....   return a negative value.  By checking to be sure a namelist variable was set to
-c....    a non-default value we can determine this was the case.
-         IF (NDDT.NE.0) THEN
-!            WRITE(*,*) 'NAMELIST PRESENT, BUT AT THE END OF FILE WITH',
-!     &                 ' NO ADVANCING CHARACTER'
+      call logNamelistReadStatus(namelistSpecifier, ios_nddt)     
+c     it is possible for the namelist to be present in the file and 
+C     occuring at the end of the file with no line breaks after the 
+C     ending "\" which causes the iostat to return a negative value.
+C     By checking to be sure a namelist variable was set to
+c     a non-default value we can determine this was the case.
+      select case(ios_nddt)
+      case(:-1) 
+         if (nddt.ne.0) then
+            call allMessage(WARNING,
+     &        'TimeBathyControl NAMELIST PRESENT, BUT AT THE '
+     &     // 'END OF FILE WITH NO ADVANCING CHARACTER.')
             found_tbc_nml = .true.
-         ELSE
-!            WRITE(*,*) 'NAMELIST NOT PRESENT'
-         ENDIF
-      ELSEIF (IOS_NDDT == 0) THEN
-!         WRITE(*,*) 'NAME LIST PRESENT AND CORRECT'
+         endif
+      case(0)
          found_tbc_nml = .true.
-      ELSE
+      case(1:)
          found_tbc_nml = .true.
-         WRITE(ScreenUnit,*) 'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST'
-         WRITE(16,*) 'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST'
-         WRITE(ScreenUnit,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.'
-         WRITE(16,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.'
-         CALL ADCIRC_TERMINATE()
-      ENDIF
-      REWIND(15)
+         call allMessage(ERROR,
+     &   'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST '
+     &    //'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.')
+         call adcirc_terminate()
+      end select     
+      write(scratchMessage,'(a,l,a,i0,a,e15.8,a,e15.8)') 
+     &  'found_tbc_nml=',found_tbc_nml,
+     &  ' nddt=',nddt,' btiminc=',btiminc,' bchgtiminc=',bchgtiminc
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
 
 #if defined CSWAN || defined ADCSWAN
       ! jgf50.60.08: Add a namelist for the user to turn SWAN output
       ! on and off. Similar to tcm's timevaryingbathy namelist.
-      READ(UNIT=15,NML=SWANOutputControl,IOSTAT=IOS)
-      IF (IOS.gt.0) THEN
-         call logMessage(INFO,
-     &      "The SWANOutputControl namelist was not found.")
-         call logMessage(INFO,
-     &    "The default values for SWANOutputControl will be used.")
-      ENDIF
+      namelistSpecifier = 'SWANOutputControl'
+      read(unit=15,nml=SWANOutputControl,iostat=ios)
+      call logNamelistReadStatus(namelistSpecifier, ios)     
       call logMessage(ECHO,
      &    "The values of SWANOutputControl are as follows:")
       write(scratchMessage,*) "SWAN_OutputHS=",SWAN_OutputHS,
@@ -266,37 +262,27 @@ c....    a non-default value we can determine this was the case.
      &    " SWAN_OutputTM02=",SWAN_OutputTM02, 
      &    " SWAN_OutputTMM10=",SWAN_OutputTMM10
       call logMessage(ECHO,trim(scratchMessage))
-      REWIND(15)
+      rewind(15)
 #endif
       !
       ! jgf51.42: Add a namelist for the user to control subdomain
       ! modeling. 
-      READ(UNIT=15,NML=subdomainModeling,IOSTAT=IOS)
-      IF (IOS.gt.0) THEN
-         call logMessage(INFO,
-     &      "The subdomainModeling namelist was not found.")
-      ENDIF
-      IF ((ios.gt.0).or.(subdomainOn.eqv..false.)) THEN
-         call logMessage(INFO,
-     &    "The subdomainModeling capability is not active.")     
-      ENDIF
+      namelistSpecifier = 'subdomainModeling'
+      read(unit=15,nml=subdomainModeling,iostat=ios)
+      call logNamelistReadStatus(namelistSpecifier, ios)
       write(scratchMessage,*) "subdomainOn=",subdomainOn
       call logMessage(ECHO,trim(scratchMessage))
-      REWIND(15)
+      rewind(15)
       !
       ! jgf50.60.13: Add a namelist for the user to control met forcing.
       ! Similar to tcm's timevaryingbathy namelist.
-      READ(UNIT=15,NML=metControl,IOSTAT=IOS)
-      IF (IOS.gt.0) THEN
-         call logMessage(INFO,
-     &      "The metControl namelist was not found.")
-         call logMessage(INFO,
-     &    "The default values for metControl will be used.")     
-      ENDIF
+      namelistSpecifier = 'metControl'
+      read(unit=15,nml=metControl,iostat=ios)
+      call logNamelistReadStatus(namelistSpecifier, ios)
       write(scratchMessage,*) "WindDragLimit=",WindDragLimit,
      & " DragLawString=",DragLawString, "rhoAir=",rhoAir
       call logMessage(ECHO,trim(scratchMessage))
-      REWIND(15)
+      rewind(15)
 
       !...Read in time varying weir control from fort.15
       NOUT_TVW = -99999
@@ -328,31 +314,36 @@ c....    a non-default value we can determine this was the case.
       REWIND(15)
 
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-      READ(UNIT=15,NML=waveCoupling,IOSTAT=IOS)
-      IF(IOS.gt.0)THEN
-         CALL logMessage(INFO,
-     &      "The waveCoupling namelist was not found.")
-         CALL logMessage(INFO,
-     &    "The default values for waveCoupling will be used.")
-      ENDIF
-      WRITE(scratchMessage,*) "WaveWindMultiplier=",WaveWindMultiplier
-      CALL logMessage(ECHO,TRIM(scratchMessage))
-      REWIND(15)
-
+      namelistSpecifier = 'waveCoupling'
+      read(unit=15,nml=waveCoupling,iostat=ios)
+      call logNamelistReadStatus(namelistSpecifier,ios)
+      write(scratchMessage,*) "WaveWindMultiplier=",WaveWindMultiplier
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+      !
       ! jgf52.05: Add a namelist for the user to control
       ! output of NODECODE and NOFF.
-      READ(UNIT=15,NML=wetDryControl,IOSTAT=IOS)
-      IF (IOS.gt.0) THEN
-         call logMessage(INFO,
-     &      "The wetDryControl namelist was not found.")
-      ELSE
-         write(scratchMessage,'(a,l)') "outputNodeCode=",outputNodeCode
-         call logMessage(ECHO,trim(scratchMessage))
-         write(scratchMessage,'(a,l)') "outputNOFF=",outputNOFF
-         call logMessage(ECHO,trim(scratchMessage))
-      ENDIF
-      REWIND(15)
+      namelistSpecifier = 'wetDryControl'
+      read(unit=15,nml=wetDryControl,iostat=IOS)
+      call logNameListReadStatus(namelistSpecifier,ios)
+      write(scratchMessage,'(a,l)') "outputNodeCode=",outputNodeCode
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "outputNOFF=",outputNOFF
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,l)') "noffActive=",noffActive
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
 
+      ! jgf52.08.01: Add a namelist for the user to control
+      ! output of detailed inundation data. 
+      namelistSpecifier = 'inundationOutputControl'
+      READ(UNIT=15,NML=inundationOutputControl,IOSTAT=IOS)
+      call logNamelistReadStatus(namelistSpecifier,ios)
+      write(scratchMessage,'(a,l)') "inundationOutput=",inundationOutput
+      call logMessage(ECHO,trim(scratchMessage))
+      write(scratchMessage,'(a,e15.8)') "inunThresh=",inunThresh
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
 C...  IDENTIFICATION
@@ -504,7 +495,7 @@ C     its own file name based on the unit number, and ignores hss%filename.
             useNetCDF = .true.
          ENDIF
       CASE DEFAULT
-         write(scratchMessage,'("IHOT=",I3," is not valid.")') IHOT
+         write(scratchMessage,'("IHOT=",i0," is not valid.")') IHOT
          call allMessage(ERROR,scratchMessage)
          call ADCIRC_Terminate()
       END SELECT
@@ -2510,7 +2501,7 @@ C
      &     '  SLAM0 = ',F9.4,' DEGREES',
      &     /,5X,'LATITUDE  ABOUT WHICH CPP PROJECTION IS CENTERED',
      &     '  SFEA0 = ',F9.4,' DEGREES',/)
-      IF(NABOUT.NE.1) THEN
+      IF(NABOUT.LT.1) THEN
          WRITE(16,24)
  24      FORMAT(/,1X,'NODAL COORDINATES AND BATHYMETRY :')
          IF(ICS.EQ.1) THEN
@@ -2538,7 +2529,7 @@ C
             DO I=1,NP
                WRITE (16,9228) I,SLAM(I)*RAD2DEG,SFEA(I)*RAD2DEG,
      &              X(I),Y(I),DP(I)
- 9228          FORMAT(1X,I6,2(1X,F14.8),2(1X,F15.1),1X,F10.2)
+ 9228          FORMAT(1X,i0,2(1X,F14.8),2(1X,F15.1),1X,F10.2)
             END DO
          ENDIF
       ELSE
@@ -5616,5 +5607,53 @@ C
       RETURN
 C-----------------------------------------------------------------------
       END SUBROUTINE ComputeInterpolatingFactors
+C-----------------------------------------------------------------------
+
+C-----------------------------------------------------------------------
+C                    S U B R O U T I N E   
+C          L O G   N A M E L I S T   R E A D   S T A T U S
+C-----------------------------------------------------------------------
+C     jgf52.08.02: Record the i/o status associated with reading the
+C     namelist using the negative, zero, or positive value of ios. 
+C-----------------------------------------------------------------------
+      subroutine logNamelistReadStatus(nmlname, ios)
+      use global, only : logMessage, scratchMessage, DEBUG, ECHO, INFO,
+     &   WARNING, ERROR, setMessageSource, unsetMessageSource,
+     &   allMessage
+      implicit none
+      character(len=1000), intent(in) :: nmlname
+      integer, intent(in) :: ios
+
+      call setMessageSource("logNameListReadStatus")
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      
+      select case(ios)
+      ! negative value indicates that we reached the end of the file
+      ! before reading the namelist (not an error, since namelists
+      ! are generally used for optional input)
+      case(:-1) 
+         call logMessage(INFO,
+     &      'End-of-file when searching for '//trim(nmlName)//'.')
+      ! zero indicates success
+      case(0)
+         call logMessage(INFO,
+     &      'The '//trim(nmlName)//' namelist was found.')
+      ! positive values indicate some sort of i/o error, other than
+      ! reaching the end-file before finding the namelist
+      case(1:)
+         write(scratchMessage,'(a,i0,a)')
+     &      'Could not read '//trim(nmlName)//
+     &     ' namelist. The Fortran i/o error code was ',ios,'.'
+         call allMessage(ERROR,scratchMessage)
+      end select    
+      
+#if defined(READ_INPUT_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+C-----------------------------------------------------------------------
+      end subroutine logNamelistReadStatus
 C-----------------------------------------------------------------------
 
