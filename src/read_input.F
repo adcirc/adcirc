@@ -100,6 +100,12 @@ C
       logical :: found_tbc_nml = .false.   !flag to determine if the timebathycontrol namelist was present
       NAMELIST /timebathycontrol/ NDDT,BTIMINC,BCHGTIMINC
 
+!   tcm v52.30.01 -- added Smag_Control Namelist related variables  (Smagorinsky)
+      INTEGER :: ios_smag
+      logical :: found_smag_nml = .false.  !flag to determine if the Smag_Control namelist was present in fort.15
+      !These variables are set in global.F  by default we will not be using Smagorinsky subgrid scale eddy viscosity
+      NAMELIST /Smag_Control/ SMAG_COMP_FLAG,SMAG_UPPER_LIM, SMAG_LOWER_LIM
+
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       NAMELIST /waveCoupling/ WaveWindMultiplier
 
@@ -347,6 +353,55 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       write(scratchMessage,'(a,e15.8)') "inunThresh=",inunThresh
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
+
+c...  tcm v52.30.01 Addtions for Using Smagorinsky Namelist Options
+c...  read through the fort.15 file for the namelist (Smag_Control) for
+c...  the namelist options for using Smagorinsky.  This namelist must be at the 
+C...  bottom of the fort.15 file. If found, then set the appropriate values
+C...  (SMAG_COMP_FLAG,SMAG_UPPER_LIM,SMAG_LOWER_LIM).  If the namelist is not
+C...  found, then the Smagorinsky eddy viscosity options will not be used.
+C...
+C...  After this search and read, we will close the file and then reopen it
+c...  for further processing the traditional non-namelist components.
+C...
+      namelistSpecifier = 'Smag_Control'
+      IOS_Smag = 0
+      READ(UNIT = 15,NML = Smag_Control,IOSTAT = IOS_Smag)
+      call logNamelistReadStatus(namelistSpecifier, ios_Smag)
+c
+c     it is possible for the namelist to be present in the file and
+C     occuring at the end of the file with no line breaks after the
+C     ending "\" which causes the iostat to return a negative value.
+C     By checking to be sure a namelist variable was set to
+c     a non-default value we can determine this was the case.
+C
+      select case(ios_Smag)
+      case(:-1)
+         if (SMAG_COMP_FLAG .eqv. .TRUE.) then
+            call allMessage(WARNING,
+     &        'Smag_Control NAMELIST PRESENT, BUT AT THE '
+     &     // 'END OF FILE WITH NO ADVANCING CHARACTER.')
+            found_smag_nml = .true.
+         endif
+      case(0)
+         found_smag_nml = .true.
+      case(1:)
+         found_smag_nml = .true.
+         call allMessage(ERROR,
+     &   'THERE WAS A PROBLEM PROCESSING THE Smag_Control NAMELIST '
+     &    //'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.')
+         call adcirc_terminate()
+      end select
+      write(scratchMessage,'(a,l,a,l,a,e15.8,a,e15.8)')
+     &  ' FOUND_SMAG_NML=',found_smag_nml,
+     &  ' SMAG_COMP_FLAG=',SMAG_COMP_FLAG,
+     &  ' SMAG_UPPER_LIM=',SMAG_UPPER_LIM,
+     &  ' SMAG_LOWER_LIM=',SMAG_LOWER_LIM
+      call logMessage(ECHO,trim(scratchMessage))
+      rewind(15)
+
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+
 C...
 C...  INPUT FROM UNIT 15 AND OUTPUT TO UNIT 16 RUN DESCRIPTION AND RUN
 C...  IDENTIFICATION

@@ -245,6 +245,14 @@ c.... tcm v50.66.02 added for time varying bathymetry
       LOGICAL :: FOUND_TBC_NML   !flag to determine if the timebathycontrol namelist was present
       NAMELIST /TimeBathyControl/ NDDT,BTIMINC,BCHGTIMINC
 
+c.... !tcm v52.30.01 added for forced use of Smagorinski Eddy Viscosity
+      REAL(8) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
+      REAL(8) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
+      LOGICAL :: SMAG_COMP_FLAG = .FALSE.   !BY DEFAULT DO NOT USE SMAG
+      LOGICAL :: FOUND_Smag_NML  ! flag to determine if the Smag_Control namelist was present
+      NAMELIST /Smag_Control/ SMAG_UPPER_LIM,SMAG_LOWER_LIM,SMAG_COMP_FLAG
+
+
       ! tcm v50.79 added for metControl namelist
       LOGICAL :: FOUND_METCON_NML  !flag to determine if the metControl namelist was present
 
