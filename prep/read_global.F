@@ -461,6 +461,9 @@ C...tcm v51.20.03 Local variables for external station location files
       namelist /wetDryControl/ outputNodeCode, outputNOFF, noffActive
       ! jgf52.08.02 : For inundation output files. 
       namelist /inundationOutputControl/ inundationOutput, inunThresh
+C
+C.....tcm v52.30.01 added for Smag_Control
+      INTEGER :: IOS_Smag = 0
 
 c.....tcm v51.20.03 initialize external station location specifications
 C..... to false, meaning if locations are supplied they are in the fort.15 
@@ -582,6 +585,49 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       endif
            
       rewind(15)  !Return to the top of the fort.15 file
+
+c...  tcm v52.30.01 Addtions for Smagorinski Limits
+c...  read through the fort.15 file for the namelist (Smag_Control) for
+c...  the inputs for Smagorinski eddy viscosity limits.  This namelist must be 
+c...  at the bottom of the fort.15 file. If found, then set the appropriate
+c...  values (SMAG_COMP_FLAG,SMAG_UPPER_LIM,SMAG_LOWER_LIM) 
+c...  If the namelist is not there, then the Smagorinski Limits 
+c...  will not be used.
+C...
+C...  After this search and read, we will close the file and then reopen it
+c...  for further processing the traditional non-namelist components.
+C...
+      READ(UNIT = 15,NML = Smag_Control,IOSTAT = IOS_Smag)
+
+      IF (IOS_SMAG < 0) THEN
+c.....   it is possible for the namelist to be present in the file and occuring at the end
+c.....   of the file with no line breaks after the ending "\" which causes the iostat to
+c.....   return a negative value.  By checking to be sure a namelist variable was set to
+c....    a non-default value we can determine this was the case.
+         IF (SMAG_COMP_FLAG .eqv. .TRUE.) THEN
+!            WRITE(*,*) 'NAMELIST PRESENT, BUT AT THE END OF FILE WITH',
+!     &                 ' NO ADVANCING CHARACTER'
+            found_smag_nml = .true.
+         ELSE
+            call logMessage(INFO,
+     &         'The Smag_Control namelist was not found.')
+         ENDIF
+      ELSEIF (IOS_SMAG == 0) THEN
+!         WRITE(*,*) 'NAME LIST PRESENT AND CORRECT'
+         found_smag_nml = .true.
+      ELSE
+         found_smag_nml = .true.
+         WRITE(*,*)
+     & 'THERE WAS A PROBLEM PROCESSING THE Smag_Control NAMELIST'
+         WRITE(*,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCPREP NOW.'
+         STOP   !THERE IS a STOP HERE
+      ENDIF
+
+      REWIND(15)  !Return to the top of the fort.15 file (instead of closing then opening)
+c..
+
+
+
 
 
       READ(15,80) RUNDES

@@ -652,6 +652,11 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       REAL(8) :: BTIMINC ! TIME INCREMENT (SECONDS) FOR BATHYMETRY CHANGES USED FOR TIME VARYING BATHYMETRY
       REAL(8) :: BCHGTIMINC ! time increment (seconds) over which bathymetry changes during a btimeinc interval
       REAL(SZ),ALLOCATABLE, TARGET ::  DP00(:)
+
+! TCM v52.30.01 ADDITIONS FOR USING SMAGORINSKY eddy MODEL OPTIONS
+      REAL(SZ) :: SMAG_UPPER_LIM = 100.d0  ! m^2/s (default upper limit)
+      REAL(SZ) :: SMAG_LOWER_LIM = 1.0d-8  ! m^2/s (default lower limit)
+      LOGICAL :: SMAG_COMP_FLAG = .FALSE.   !BY DEFAULT DO NOT USE SMAG
       ! 
       ! all info needed for self describing dataset in XDMF
       type xdmfMetaData_t

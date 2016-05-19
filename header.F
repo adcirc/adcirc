@@ -2,6 +2,20 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.30.01 -- 05/19/2016 - tcm - Added a new namelist to the fort.15
+C               file called Smag_Control.  This namelist has three variables
+C               associated with it 1) SMAG_COMP_FLAG (T/F),
+C               2) SMAG_UPPER_LIM (real) and 3) SMAG_LOWER_LIM (real)
+C               If SMAG_COMP_FLAG = .true. then Smagorinski Eddy Viscosity
+C               is computed and it's value tested against the user supplied
+C               Upper and Lower Limits.  This new flag will override the
+C               existing Smagorinski flags that were triggered within the
+C               ADCIRC read_input.F but was not allowed for use in several
+C               of the Momentum EQ formulations for some reason.
+C               Namelist Default Values are as follows
+C               SMAG_UPPER_LIM = 100.d0 m^2/sec 
+C               SMAG_LOWER_LIM = 1.0d-8 m^2/sec
+C               SMAG_COMP_FLAG = .FALSE.
 C  v52.30 - 05/11/2016 - Resolved minor conflicts (mainly confined to 
 C           USE statements) when merging the txout branch r1120:1202 
 C           to trunk. Changes in the too-long txout branch are as
