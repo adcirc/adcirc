@@ -413,7 +413,7 @@ C---------------------------------------------------------------------
       USE GLOBAL, ONLY : parse, a2f, hss, screenUnit, STATNAME,
      &                   STATNAMEV, STATNAMEM, STATNAMEC, ERROR, DEBUG,
      &                   allMessage, setMessageSource, deg2rad,
-     &                   unsetMessageSource
+     &                   unsetMessageSource, INFO, logMessage
       USE HARM, ONLY : NHAINC, ALLOC_HA, NAMEFR, HAFREQ, HAFF, HAFACE,
      &                 THAS, THAF, FMV, NHASE, NHASV, NHAGE, NHAGV,
      &                 IHARIND, ALLOC_MAIN14, CHARMV
@@ -458,7 +458,9 @@ C...tcm v51.20.03 Local variables for external station location files
       INTEGER :: NSTAE2,NSTAV2,NSTAC2,NSTAM2
       INTEGER :: IOS_STATIONS
       integer :: ios_wetDry
-      namelist /wetDryControl/ outputNodeCode, outputNOFF
+      namelist /wetDryControl/ outputNodeCode, outputNOFF, noffActive
+      ! jgf52.08.02 : For inundation output files. 
+      namelist /inundationOutputControl/ inundationOutput, inunThresh
 
 c.....tcm v51.20.03 initialize external station location specifications
 C..... to false, meaning if locations are supplied they are in the fort.15 
@@ -508,14 +510,16 @@ c....    a non-default value we can determine this was the case.
 !     &                 ' NO ADVANCING CHARACTER'
             found_tbc_nml = .true.
          ELSE
-!            WRITE(*,*) 'NAMELIST NOT PRESENT'
+            call logMessage(INFO,
+     &         'The timeBathyControl namelist was not found.')
          ENDIF
       ELSEIF (IOS_NDDT == 0) THEN
 !         WRITE(*,*) 'NAME LIST PRESENT AND CORRECT'
          found_tbc_nml = .true.
       ELSE
          found_tbc_nml = .true.
-         WRITE(*,*) 'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST'
+         WRITE(*,*) 
+     & 'THERE WAS A PROBLEM PROCESSING THE TimeBathyControl NAMELIST'
          WRITE(*,*) 'IN THE FORT.15 FILE.  SHUTTING DOWN ADCIRC NOW.'
          STOP   !THERE IS a STOP HERE
       ENDIF
@@ -527,6 +531,11 @@ c... tcm v50.79 added
       READ(UNIT = 15, NML = metControl,IOSTAT = ios_metCon)
       if ( ios_metCon.ge.0) then
          found_metCon_nml = .true.
+         call logMessage(INFO,
+     &         'The metControl namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The metControl namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
 
@@ -543,14 +552,37 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       READ(UNIT=15,NML=waveCoupling,IOSTAT=IOS_WC)
       IF(IOS_WC.EQ.0)THEN
          FOUND_WC_NML = .TRUE.
+         call logMessage(INFO,
+     &         'The waveCoupling namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The waveCoupling namelist was not found.')
       ENDIF
       REWIND(15)
  
       READ(UNIT = 15, NML = wetDryControl,IOSTAT = ios_wetDry)
       if ( ios_wetDry.ge.0) then
          foundWetDryControlNameList = .true.
+         call logMessage(INFO,
+     &         'The wetDryControl namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The wetDryControl namelist was not found.')
       endif
       rewind(15)  !Return to the top of the fort.15 file
+
+      read(unit=15,nml=inundationOutputControl,iostat=ios)
+      if ( ios.ge.0) then
+         foundInundationOutputControlNamelist = .true.
+         call logMessage(INFO,
+     &         'The inundationOutput namelist was found.')
+      else
+         call logMessage(INFO,
+     &         'The inundationOutput namelist was not found.')
+      endif
+           
+      rewind(15)  !Return to the top of the fort.15 file
+
 
       READ(15,80) RUNDES
 C
@@ -690,20 +722,6 @@ C
       NCICE = 0  !tcm v49.64.01 -- added for ice
       READ(15,80) NWSMSG
       READ(NWSMSG,*) NWS
-!       IF(ABS(NWS/100).EQ.1) THEN ! sb46.28sb03
-!          NRS=1
-!          NWS=(ABS(NWS)-100)*(NWS/ABS(NWS))
-!       ENDIF
-! C     sb46.28sb03 Added NWS=2xx for STWAVE output direct read 09/xx/2006
-!       IF(ABS(NWS/100).EQ.2) THEN
-!          NRS=2
-!          NWS=(ABS(NWS)-200)*(NWS/ABS(NWS))
-!       ENDIF
-! Casey 090302: Added NWS=3xx for coupling to SWAN.
-!       IF(ABS(NWS/100).EQ.3) THEN
-!         NRS=3
-!         NWS=(ABS(NWS)-300)*(NWS/ABS(NWS))
-!       ENDIF
 
 C....tcm v49.46 -- added logic to handle multiple NRS types (100's place)
 C.....tcm v49.64.01 Additions for ice
@@ -803,7 +821,6 @@ C     the fort.15 file
          READ(15,80) TAU0LIMMSG
          READ(TAU0LIMMSG,*) Tau0FullDomainMin, Tau0FullDomainMax
       ENDIF
-
 
 C
       READ(15,80) DTMSG

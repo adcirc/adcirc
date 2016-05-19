@@ -1253,6 +1253,8 @@ C     Open the file
       case("nodecode")
           write(lun, 1010) 1, nodes, dtdp*nspoolge,
      &                 nspoolge, 1, FileFmtVersion
+      case("initDry")
+          write(lun, 1010) 1, nodes, 0.d0, 0, 1, FileFmtVersion
       case default
           write(ScreenUnit,*)
      &         'ERROR: Full domain header type unrecongnized.'
@@ -1276,121 +1278,169 @@ C----------------------------------------------------------------------
 C
 C     jgf48.4636 Subroutine to read in continuous min and max files,
 C     if they are present.  ASCII Min/Max file are NOT stored
-C     in compact format
+C     in compact format.
 C
 C----------------------------------------------------------------------
-      SUBROUTINE readMinMax(minMaxFN,array,array2)
-      USE SIZES , ONLY : SZ, MNPROC, GLOBALDIR
-      USE GLOBAL , ONLY : NSCREEN, ScreenUnit, MyProc, scratchMessage
+      subroutine readMinMax(descript, timeloc)
       IMPLICIT NONE
-      CHARACTER(*) :: minMaxFN ! name of min/max file to read
-      REAL(SZ), dimension(:), target :: array ! min/max array
-      real(sz), optional, dimension(:), target :: array2 !timestamp for min/max array
-      INTEGER node               ! node number of the min/max data
-      CHARACTER(len=80) skipline ! dummy variable for min/max header data
-      INTEGER rawNode            ! node number, as read from file
-      REAL(SZ) rawDatum          ! array member value at node, as read from file
-      INTEGER numLinesInMinMaxFile ! count the lines to report to log file
-      LOGICAL tooFewMinMaxLines  ! true if couldn't read enough lines from file
-      INTEGER ErrorIO      ! zero if file opened successfully
-      INTEGER I, lun_maxmin
+      type(OutputDataDescript_t), intent(inout) :: descript
+      real(8), intent(in) :: timeloc  ! adcirc time in seconds
+      integer :: node                 ! node number of the min/max data
+      character(len=80) :: skipline  ! dummy variable for min/max header data
+      integer :: rawNode              ! node number, as read from file
+      real(sz) :: rawDatum            ! array member value at node, as read from file
+      integer :: irawDatum            ! array member value at node, as read from file
+      integer :: numLinesInMinMaxFile ! count the lines to report to log file
+      logical :: tooFewMinMaxLines    ! true if couldn't read enough lines from file
+      integer :: ErrorIO              ! zero if file opened successfully
+      integer :: i
       integer :: ndsetmax,size_this,nspoolmax,irtype,ffv
       real(sz) :: time_this
       character(20) :: dmstr
+      integer, pointer :: idata(:)
+      real(sz), pointer :: rdata(:)
+      real(8) :: TimeMM ! timestamp of the min/max data in seconds since cold start
+      integer :: ITMM ! time step of the min/max data in seconds since cold start
 
-      lun_maxmin = 763  !tcm v51.20.01 changed unit number from 963 to 763 to avoid conflicts with STWAVE
-C
-      CALL openFileForRead(lun_maxmin,TRIM(GLOBALDIR)//'/'//trim(minMaxFN),
-     &                     errorIO)
-      IF ( errorIO.gt.0 ) THEN
-         if (present(array2)) array2 = -99999.d0  !tcm v51.20.06
-         write(scratchMessage,3333) trim(minMaxFN)
-         call allMessage(WARNING,scratchMessage)
-         RETURN  ! early return
-      ENDIF
-C
-C     The file exists and is open, so read the data.
-      numLinesInMinMaxFile = 0
+      call setMessageSource("readMinMax")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      !
       ! Process Header Lines
-      READ(lun_maxmin,*,END=3990,ERR=3990) skipline   ! 1st header line
-!      READ(lun_maxmin,*,END=3990,ERR=3990) skipline   ! 2nd header line
-      READ(lun_maxmin,*,END=3990,ERR=3990) ndsetmax,size_this,
-     &                       time_this,nspoolmax,irtype,dmstr,ffv   !tcm v51.20.01 added specific reading of this header
-      READ(lun_maxmin,*,END=3990,ERR=3990) skipline   ! TIME and IT line
-
-
-      DO I=1, size(array)
-         READ(lun_maxmin,*,END=3990,ERR=3990) rawNode, rawDatum
-         IF ((rawNode.ge.1).and.(rawNode.le.size(array))) THEN
+      read(descript%lun,*,end=3990,err=3990) skipline   ! 1st header line
+      !tcm v51.20.01 added specific reading of 2nd header line
+      read(descript%lun,*,end=3990,err=3990) ndsetmax,size_this,
+     &                       time_this,nspoolmax,irtype,dmstr,ffv   
+      !
+      ! jgf52.08.20: Read time and timestep and reject min/max data that correspond
+      ! to a future time. This can happen when an analyst hotstarts a run,
+      ! allows it to complete, then makes some adjustments to the input and 
+      ! then tries to re-run it while forgetting to remove or replace the 
+      ! min/max file from the previous attempt. 
+      !
+      ! It is hard to imagine a scenario where someone would want to keep 
+      ! the min/max record from the previous attempt under these circumstances.
+      ! As a result, I am logging it as an error but allowing the run to 
+      ! continue if non-fatal override is enabled, since it would be 
+      ! annoying to have ADCIRC bomb out every time the analyst mistakenly
+      ! leaves a min/max file in place. 
+      read(descript%lun,*,end=3990,err=3990) TimeMM, ITMM   ! TIME and IT line
+      if (TimeMM.gt.TimeLoc) then
+         call allMessage(ERROR,'Max/min file '//trim(descript % file_name)//
+     &     ' contains data written after the hotstart time. '// 
+     &    ' It may have been produced using different input parameters, '//
+     &     ' perhaps during a previously attempted hot start run. '//
+     &     ' Its values will not be read.')
+         if (nfover.eq.0) then
+            call allMessage(ERROR,
+     &       'Execution terminated due to invalid '//
+     &        trim(descript % file_name)//' file.')
+             call globalioTerminate()
+         else
+            call allMessage(INFO,'The record for '//
+     &        trim(descript%file_name)//
+     &        ' will be started anew and exection will continue.')       
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+             call allMessage(DEBUG,"Return.")
+#endif
+             call unsetMessageSource()
+             CLOSE(descript%lun)  !close the max/min file
+             return ! EARLY RETURN
+         endif
+      endif
+      !
+      ! The file exists, it is open, and it doesn't correspond to a future
+      ! time period, so read the data.
+      numLinesInMinMaxFile = 0
+      ! set the number of records we expect to read as well as the array to
+      ! read data into 
+      rdata => descript % array
+      idata => descript % iarray
+      if (mnproc.gt.1) then
+         rdata => descript % array_g
+         idata => descript % iarray_g
+      endif      
+      !
+      !
+      do I=1, descript % num_fd_records
+         if (descript % isInteger.eqv..true.) then
+            read(descript%lun,*,end=3990,err=3990) rawNode, irawDatum !integer
+         else
+            read(descript%lun,*,end=3990,err=3990) rawNode, rawDatum  !float
+         endif
+         if ((rawNode.ge.1).and.(rawNode.le.descript%num_fd_records)) then
             node = rawNode
-            array(node) = rawDatum
-         ELSE
-            EXIT ! jump out of loop if node number is out of bounds
-         ENDIF
+            if (descript % isInteger.eqv..true.) then
+               idata(node) = irawDatum       ! integer
+            else
+               rdata(node) = rawDatum         ! float
+            endif
+         else
+            exit ! jump out of loop if node number is out of bounds
+         endif
          numLinesInMinMaxFile = numLinesInMinMaxFile + 1
-      ENDDO
-
+      enddo
+      !
       ! If this max/min file has two time records then the second
       ! record contains the time stamp (sec) relative to cold start 
       ! at which the max/min was recorded
-
-      IF ((NDSETMAX.GT.1).AND.(PRESENT(ARRAY2))) THEN  !In file and asking for them
-
-         READ(lun_maxmin,*,END=3990,ERR=3990) skipline   ! TIME and IT line
-          WRITE(SCRATCHMESSAGE,*) 'Max/min timestamps found in file and being used.'
-          CALL logMessage(INFO,scratchMessage)
-
-         DO I=1, size(array2)
-            READ(lun_maxmin,*,END=3990,ERR=3990) rawNode, rawDatum
-            IF ((rawNode.ge.1).and.(rawNode.le.size(array2))) THEN
+      if ((ndsetmax.gt.1).and.
+     &    (descript % minmax_timestamp.eqv..true.)) then  
+         ! In file and asking for them, set the arrays to read data into
+         rdata => descript % array2
+         if (mnproc.gt.1) then
+            rdata => descript % array2_g
+         endif
+         read(descript%lun,*,end=3990,err=3990) skipline   ! TIME and IT line
+         call logMessage(INFO,
+     &       'Max/min timestamps were found in '//trim(descript%file_name)//
+     &       ' and will be loaded and used.')
+         do i=1, descript % num_fd_records
+            read(descript%lun,*,end=3990,err=3990) rawNode, rawDatum
+            if ((rawNode.ge.1).and.(rawNode.le.descript%num_fd_records)) then
                node = rawNode
-               array2(node) = rawDatum
-            ELSE
-               EXIT ! jump out of loop if node number is out of bounds
-            ENDIF
-            !numLinesInMinMaxFile = numLinesInMinMaxFile + 1
-         ENDDO
-
-      ELSEIF ((NDSETMAX.GT.1).AND.(.NOT.PRESENT(ARRAY2))) THEN  !In file but not asking for them
-
-          WRITE(SCRATCHMESSAGE,*) 'Max/min timestamps present in file, but NOT used.',
-     &              ' Setting time stamps to -99999.d0 to initalize.'
-          CALL logMessage(INFO,scratchMessage)
-
-      ELSEIF ((NDSETMAX.EQ.1).AND.(PRESENT(ARRAY2))) THEN  !Not in File but asking for them anyway
-
-          WRITE(SCRATCHMESSAGE,*) 'Max/min time stamps not present in file.',
-     &                            ' Setting time stamps to -99999.d0 to initalize'
-          CALL logMessage(INFO,scratchMessage)
-          array2(:) = -99999.d0
-
-      ELSEIF ((NDSETMAX.EQ.1).AND.(.NOT.PRESENT(ARRAY2))) THEN !Not in File and not asking for them
-
-          WRITE(SCRATCHMESSAGE,*) 'Max/min time stamps not present in file.',
-     &                            ' Setting time stamps to -99999.d0 to initalize.'
-          CALL logMessage(INFO,scratchMessage)
-
-      ELSE
-
-      ENDIF
+               rdata(node) = rawDatum
+            else
+               exit ! jump out of loop if node number is out of bounds
+            endif
+         enddo
+      endif
+      !
+      ! time stamps not found in file but asking for them anyway
+      if ( (ndsetmax.eq.1).and.
+     &   (descript % minmax_timestamp.eqv..true.) ) then
+         call logMessage(WARNING,'Max/min time stamps not present in '//
+     &      trim(descript % file_name)//
+     &     '. Max/min time stamps will be set to -99999.d0 to initalize.')
+      endif
+      ! time stamps are found in file but not asking for them
+      if ( (ndsetmax.gt.1).and.
+     &      (descript % minmax_timestamp.eqv..false.) ) then  
+            call logMessage(INFO,'Max/min timestamps present in "'//
+     &      trim(descript % file_name)//' but not needed. ')
+      endif
 
  3990 CONTINUE ! jump to here if end of file is reached
-      WRITE(scratchMessage,450) numLinesInMinMaxFile, trim(minMaxFN)
+      WRITE(scratchMessage,450) numLinesInMinMaxFile, 
+     &   trim(descript % file_name)
       CALL logMessage(INFO,scratchMessage)
-      IF (numLinesInMinMaxFile.lt.size(array)) THEN
-          call allMessage(ERROR,"Not enough data in "
-     &         //trim(minMaxFN)//".")
+      IF (numLinesInMinMaxFile.lt.(descript % num_fd_records)) THEN
+          call allMessage(ERROR,'Not enough data in "'
+     &         //trim(descript % file_name)//'".')
       ENDIF
 
-      CLOSE(lun_maxmin)  !close the max/min file
+      CLOSE(descript%lun)  !close the max/min file
 
- 450  FORMAT('Finished reading ',I8,' lines from the ',
-     &   A20,' file.')
- 3333 FORMAT('Values from ',(A20),
-     &       ' will not reflect the solution prior to this hotstart.')
+ 450  format('Finished reading ',i0,' lines from the "',a,'" file.')
+
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
 
 C-----------------------------------------------------------------------
-      END SUBROUTINE readMinMax
+      end subroutine readMinMax
 C-----------------------------------------------------------------------
 
 C----------------------------------------------------------------------
@@ -1412,6 +1462,10 @@ C----------------------------------------------------------------------
       REAL(SZ) :: tmpval
       CHARACTER*80 cdum80
 C
+      call setMessageSource("nddt2get")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
 
 C...  go get new record for only some nodes, all
 C...  other nodes keep their current value
@@ -1422,6 +1476,11 @@ C...  other nodes keep their current value
       READ(lun,'(A80)',end=172) CDUM80
       IF(CDUM80(2:2).NE.'#') GOTO 171
  172  CONTINUE
+ 
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()      
       
       RETURN
 C----------------------------------------------------------------------
@@ -1435,135 +1494,112 @@ C                M A X  A N D  M I N
 C-----------------------------------------------------------------------
 C     TCM v51.20.01 Reads a fulldomain array in ascii format and maps
 C     to a subdomain array.  Modeled after readAndMapToSubdomain2D
-C     
+C     jgf52.08.03: Reduced subroutine arguments to OutputDataDescript_t
+C     and an indicator of whether the file was found; removed hardwired
+C     variables. 
 C-----------------------------------------------------------------------
-      subroutine readAndMapToSubdomainMaxMin(minMaxFN,sd_array,sddefval,
-     &                                       sd_array2)
-      USE SIZES, ONLY : SZ, MNPROC,READ_LOCAL_HOT_START_FILES
-
-      IMPLICIT NONE
+      subroutine readAndMapToSubdomainMaxMin(descript, timeloc, fileFound)     
+      implicit none
+      type(OutputDataDescript_t), intent(inout) :: descript
+      real(8), intent(in) :: timeloc ! adcirc time in seconds since cold start
+      logical, intent(out) :: fileFound ! .true. if file found and opened
+      integer :: fd_node_number
+      integer :: sd_node_number
+      integer :: ios  ! i/o status
 C
-      REAL(SZ), intent(out), dimension(:) :: sd_array ! subdomain array for values
-      REAL(SZ), intent(in) :: sddefval
-      REAL(SZ), optional, intent(out), dimension(:) :: sd_array2 !subdomain array for timestamps
-      INTEGER :: sd_node_number
-      INTEGER :: fd_node_number
-      CHARACTER(*) :: minMaxFN ! name of min/max file to read
-      LOGICAL :: include_times
-C
-      REAL(SZ), allocatable, dimension(:) :: fd_array ! full domain array values
-      REAL(SZ), allocatable, dimension(:) :: fd_array2  !full domain array timestamps
-
-!......TCM v51.20.06 These variables were part of the original "readAndMapToSubdomain2D"
-!......              routine used to create this routine.  However, the max/min files
-!......              were never a part of that original routine, therefore they
-!......              have been removed from the input variable list and hardwired.
-      INTEGER :: counter, method
-!      INTEGER, intent(inout) :: counter ! i/o position in the file
-!      INTEGER, intent(in) :: method  ! logical to determine binary or real
-
-C
-      COUNTER = 0 !hardwired counter to 0
-      METHOD = 2  !hardwired method to 2
-      include_times = .false.
-
-      if (present(sd_array2)) include_times = .true.
-
-      !initialize local arrays to default values
-      sd_array(:) = sddefval
-      if (present(sd_array2) ) sd_array2(:) = 0.d0
-
       call setMessageSource("readAndMapToSubdomainMaxMin")
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Enter.")
 #endif
-
-      ! serial or reading local hot start files
-      IF ((MNPROC.eq.1).or.(READ_LOCAL_HOT_START_FILES.eqv..true.)) THEN
-         IF (method.EQ.1) THEN  !tcm v51.20.02 -- not supported at this time
-            !CALL binaryRead2D(sd_array, NP, lun, counter)
-            !CALL readMinMax(minMaxFN,sd_array)
-         ELSE IF (method.EQ.2) THEN
-            !CALL realRead2D(sd_array, NP, lun)
-            if (include_times.eqv..true.) then
-               CALL readMinMax(minMaxFN,sd_array,sd_array2)
+      call openFileForRead(descript%lun,trim(descript%file_name), ios)
+      if ( ios.ne.0 ) then
+         fileFound = .false.
+         write(scratchMessage,3333) trim(descript % file_name)
+3333    format('Values from ',(a),
+     &       ' will not reflect the solution prior to this hotstart.')
+         call allMessage(INFO,scratchMessage)
+         if (descript % minmax_timestamp.eqv..true.) then 
+            descript % array2(:) = -99999.d0  !tcm v51.20.06
+         endif
+         close(descript%lun)
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+         call allMessage(DEBUG,"Return.")
+#endif
+         call unsetMessageSource()
+         return  ! early return
+      else
+         fileFound = .true.
+      endif
+      !
+      ! serial 
+      call readMinMax(descript, timeloc)      
+      if (mnproc.gt.1) then
+         ! loop over subdomain nodes
+         do sd_node_number=1,np
+            ! get the corresponding fulldomain node number
+            fd_node_number = ABS(descript % imap(sd_node_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+            if (descript % isInteger.eqv..true.) then
+               descript % iarray(sd_node_number) = 
+     &                descript % iarray_g(fd_node_number)
             else
-               CALL readMinMax(minMaxFN,sd_array)
+               descript % array(sd_node_number) = 
+     &                descript % array_g(fd_node_number)
+            endif                
+            if (descript % minmax_timestamp.eqv..true.) then
+               descript % array2(sd_node_number) = 
+     &             descript % array2_g(fd_node_number)          
             endif
-         ELSE
-            call allMessage(ERROR,
-     &          "Passing of binary or real information incorrect")
-            STOP
-         END IF
-      ! parallel
-      ELSE
-         IF (method.EQ.1) THEN  !tcm v51.20.02 -- not supported at this time
-            allocate(fd_array(NP_G))
-            fd_array(:) = sddefval !set to default value
-            if (include_times.eqv..true.) then 
-               allocate(fd_array2(NP_G))
-               fd_array2(:) = 0.d0
-            endif
-            !CALL binaryRead2D(fd_array, NP_G, lun, counter)
-              if (include_times.eqv..true.) then
-                 !call readMinMax(minMaxFN,fd_array,fd_array2)  !place holder for binary file
-              else
-                 !call readMinMax(minMaxFN,fd_array)      !place holder for binary file
-              endif
-            ! loop over subdomain nodes
-            DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number
-               fd_node_number = ABS(NODES_LG(sd_node_number))
-               ! fill in the subdomain arrays with the corresponding
-               ! fulldomain values
-               sd_array(sd_node_number) = fd_array(fd_node_number)
-               if (include_times.eqv..true.) then
-                  sd_array2(sd_node_number) = fd_array2(fd_node_number)
-               endif
-            END DO
-            deallocate(fd_array)
-            if (include_times.eqv..true.) deallocate(fd_array2)
-
-         ELSE IF (method.EQ.2) THEN  !ascii files
-            allocate(fd_array(NP_G))
-            fd_array(:) = sddefval !set to default value
-            if (include_times.eqv..true.) then
-               allocate(fd_array2(NP_G))
-               fd_array2(:) = 0.d0
-               CALL readMinMax(minMaxFN,fd_array,fd_array2)
-            else
-               CALL readMinMax(minMaxFN,fd_array)
-            endif             
-            ! loop over subdomain nodes
-            DO sd_node_number=1,np
-               ! get the corresponding fulldomain node number
-               fd_node_number = ABS(NODES_LG(sd_node_number))
-               ! fill in the subdomain arrays with the corresponding
-               ! fulldomain values
-               sd_array(sd_node_number) = fd_array(fd_node_number)
-               if (include_times.eqv..true.) then
-                  sd_array2(sd_node_number) = fd_array2(fd_node_number)
-               endif
-            END DO
-            deallocate(fd_array)
-            if (include_times.eqv..true.) deallocate(fd_array2)
-
-         ELSE
-            WRITE(16,*) "Passing of binary or real
-     &         information incorrect"
-            STOP
-         END IF
-      ENDIF
+         end do
+      endif
 C
-#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
-C-----------------------------------------------------------------------
-      END SUBROUTINE readAndMapToSubdomainMaxMin
-C-----------------------------------------------------------------------
+      !----------------------------------------------------------------
+      end subroutine readAndMapToSubdomainMaxMin
+      !----------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!     S U B R O U T I N E   G L O B A L I O   T E R M I N A T E
+!-----------------------------------------------------------------------
+      SUBROUTINE globalioTerminate(NO_MPI_FINALIZE)
+#ifdef CMPI
+      USE MESSENGER
+#endif
+      USE GLOBAL, ONLY : setMessageSource, unsetMessageSource,
+     &   allMessage, DEBUG, ECHO, INFO, WARNING, ERROR  
+      IMPLICIT NONE 
+      LOGICAL, OPTIONAL :: NO_MPI_FINALIZE
+C
+      call setMessageSource("globalioTerminate")
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+
+      call allMessage(INFO,"ADCIRC Terminating.")
+
+#ifdef CMPI
+      subdomainFatalError = .true.
+      IF (PRESENT(NO_MPI_FINALIZE)) THEN
+        CALL MSG_FINI(NO_MPI_FINALIZE)
+      ELSE
+        CALL MSG_FINI()
+      ENDIF
+#endif
+      STOP 
+C
+#if defined(GLOBALIO_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.") ! should be unreachable
+#endif
+      call unsetMessageSource()
+!-----------------------------------------------------------------------
+      END SUBROUTINE globalioTerminate
+!-----------------------------------------------------------------------
 
 
-      !--------------------------------------------------------------
+!-----------------------------------------------------------------------
       end module global_io
-      !--------------------------------------------------------------
+!-----------------------------------------------------------------------

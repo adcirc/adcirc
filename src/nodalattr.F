@@ -1382,6 +1382,7 @@ C     ----------------------------------------------------------------
       INTEGER, intent(in) :: NAbOut  ! 1 to abbrev. output to unit 16
       INTEGER Tau0Dig1  ! determines the tau0 scheme
       INTEGER Tau0Dig2  ! determines whether tau0 is being output
+      LOGICAL :: invalidCanopyCoefficient ! .true. if any value is neither 0 nor 1
 
       IF (Tau0.lt.0) THEN
          Tau0Dig1 = INT(Tau0)   ! jgf47.30 truncate the fractional part
@@ -1436,6 +1437,22 @@ C     from nodal attributes file.
      &        //,1X,'!!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!!',//)
          STOP                   ! We're toast.
       ENDIF
+C
+C     ERROR CHECK: The canopy coefficient value should be either 0 or 1;
+C     log a warning message if any other values were read.
+      if ( loadCanopyCoef.eqv..true. ) then
+         invalidCanopyCoefficient = .false.
+         do i=1,np
+            if ( (vcanopy(i).ne.0.d0).and.(vcanopy(i).ne.1.d0 ) ) then
+               invalidCanopyCoefficient = .true.
+               exit
+            endif
+         end do
+         if ( invalidCanopyCoefficient.eqv..true. ) then 
+            call allMessage(WARNING,'Some surface canopy coefficient '//
+     &        'nodal attribute data are neither 0 nor 1.')        
+         endif
+      endif
 C
 C     I N I T    S T A R T D R Y
  
@@ -1587,24 +1604,24 @@ C     I N I T   B O T T O M   F R I C T I O N
 C
 C     Initialize bottom friction if it was not loaded from unit 13.
       IF(C2DDI) THEN
-        IF((.not.LoadQuadraticFric).and.(.not.LoadManningsN).and.
+         IF((.not.LoadQuadraticFric).and.(.not.LoadManningsN).and.
      &     (.not.LoadChezy)) THEN
-         IF (NoLiBF.eq.0) CF=Tau
+            IF (NoLiBF.eq.0) CF=Tau
 C     If a nodal attributes file was read, FRIC was allocated there.
-         IF (NWP.eq.0) THEN
-            ALLOCATE(FRIC(NP))
+            IF (NWP.eq.0) THEN
+               ALLOCATE(FRIC(NP))
+            ENDIF
+            DO I=1,NP
+               FRIC(I)=CF
+            END DO
          ENDIF
-         DO I=1,NP
-            FRIC(I)=CF
-         END DO
-        ENDIF
 C
-C     jgf47.04 If a depth-dependent friction parameterization is used,
-C     the value from the fort.15 file is used as a floor for the
-C     minimum equivalent quadratic friction value.
-        IF (LoadManningsN) THEN
-           BFCdLLimit = CF
-        ENDIF
+C        jgf47.04 If a depth-dependent friction parameterization is used,
+C        the value from the fort.15 file is used as a floor for the
+C        minimum equivalent quadratic friction value.
+         IF (LoadManningsN) THEN
+            BFCdLLimit = CF
+         ENDIF
       ENDIF
 C
       IF(C3D) THEN

@@ -213,17 +213,13 @@ c.
       ! has occurred
       REAL(SZ),ALLOCATABLE, TARGET ::  ETA1(:), ETA2(:), UU2(:), VV2(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  ETAMAX(:) ! v46.50 sb 11/11/2006
-      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_ETAMAX(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  UMAX(:) ! v46.50 sb 11/11/2006
-      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_UMAX(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  ET00(:), UU00(:), VV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMP00(:), RMU00(:), RMV00(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  RMICE00(:), CICEOUT(:) !v49.64.01 tcm -added for ice concentration
       REAL(SZ),ALLOCATABLE, TARGET ::  Pr2(:), WVNXOut(:), WVNYOut(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
-      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
-      REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax(:)
       
 #ifdef CSWAN      
       !...Local SWAN Arrays
@@ -324,8 +320,6 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE ::   CICE1(:),CICE2(:)   !v49.64.01 tcm -- added
                                                     !for ice concentration
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax(:) ! v46.50 sb 11/11/2006
-      REAL(SZ),ALLOCATABLE, TARGET :: HOT_RSNMax(:)
-
 
       REAL(SZ),ALLOCATABLE :: TK(:)
       REAL(8),ALLOCATABLE :: EMO(:,:),EFA(:,:)
@@ -351,7 +345,10 @@ C    kmd48.33bc - added variables for the levels of no motion and top temperatur
       REAL(SZ),ALLOCATABLE ::   q_heat1(:), q_heat2(:), HFLUX(:)  ! top temperature
       REAL(SZ),ALLOCATABLE, TARGET :: Sponge(:)  ! sponge information for boundary conditions
       INTEGER,ALLOCATABLE, TARGET ::    NOFF(:), NODECODE(:)
-
+      ! jgf52.08.08: Enable analyst to remove NOFF from wetting and
+      ! drying algorithm; .true. by default to conform with prior
+      ! ADCIRC versions. 
+      LOGICAL :: noffActive = .true.
       INTEGER,ALLOCATABLE ::    NNODECODE(:)
       INTEGER,ALLOCATABLE ::    NOFFOLD(:)
       INTEGER,ALLOCATABLE ::    NIBCNT(:)
@@ -499,6 +496,12 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       integer, target :: ig_tvw ! file position in weir elevation file
       integer, target :: nodeCodeOutFilePos
       integer, target :: noffOutFilePos
+      ! jgf52.08.03: Some files (e.g., initiallydry.63 and endrisinginun.63)
+      ! are only written once, but are written using the same subroutines
+      ! that write time varying output files; the output subroutine increments
+      ! the file position counter; so we have to have a fake file position 
+      ! counter even for output files that are only written once.
+      integer, target :: fauxFilePosition 
 
       INTEGER  IHOTSTP, ILUMP, IMHS
       INTEGER  IREFYR,IREFMO,IREFDAY,IREFHR,IREFMIN, ISLDIA
@@ -530,6 +533,7 @@ Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER, TARGET :: NSCOUI ! output spool counter for fort.91 (ice sta.)     
       integer, target :: nodeCodeOutSpoolCounter
       integer, target :: noffOutSpoolCounter
+      integer, target :: initiallyDrySpoolCounter
       
       INTEGER :: NSPOOLC, NSPOOLGC, NSPOOLGE ! output increments
       INTEGER :: NSPOOLGV, NSPOOLGW, NSPOOLM, NSPOOL_TVW ! output increments
@@ -619,6 +623,12 @@ C     kmd48.33bc - added variables for 3D boundary conditions
       INTEGER NCCOUE,NCCOUM,NCCOUV,NCCOUW
       INTEGER NCCOUGE,NCCOUGW,NCCOUGV
 
+#ifdef ADCNETCDF
+      LOGICAL, PARAMETER :: netcdf_avail = .true. 
+#else
+      LOGICAL, PARAMETER :: netcdf_avail = .false. ! .true. if NetCDF support was compiled in
+#endif
+      
 ! CF Finish addition for NETCDF I/O
 
 ! TCM v49.64.01 Addition for Ice Concentration Fields
@@ -677,7 +687,8 @@ C     kmd48.33bc - added variables for 3D boundary conditions
 C
 C     jgf48.03 the following data structure is used to describe
 C     the size and shape of the output data.
-C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements to the structure
+C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name 
+C     elements to the structure
       type OutputDataDescript_t
         integer           :: lun
         CHARACTER(1024)   :: file_name ! name of output file
@@ -730,9 +741,17 @@ C     TCM48.4618 Added ConsiderWetDry, alternate_value and field_name elements t
         real(sz), pointer :: interp_fac3(:) ! array of interp. factors for stations
         logical :: initialized ! .true. if initialization has occurred (netcdf, xdmf)
         logical :: minmax_timestamp ! .true. if a time stamp will be written to a max file
+        logical :: readMaxMin ! .true. if max/min file should be read upon hotstart
         type(xdmfMetaData_t) :: xdmfMD ! used if this data will be written to XDMF
         type(writerData_t) :: wMD ! used if this data will be written by dedicated writer
       end type OutputDataDescript_t
+      !
+      ! inunThresh is used to set a minimum inundation depth for 
+      ! accumulating inundationTime for detailed inundation output
+      real(sz) :: inunThresh = 0.6d0
+      !
+      ! inundationOutput can be set to .true. in read_input()
+      logical :: inundationOutput = .false. 
 
 C
 C     jgf49.44: Log levels, in order from largest amount of log messages
@@ -968,13 +987,13 @@ C
 C
 C     Check to see if file exists
       write(scratchMessage,21) lun
-  21  format("Searching for file to open on unit ",I5,"...")
+  21  format("Searching for file to open on unit ",i0,"...")
       call logMessage(INFO,trim(scratchMessage))
       inquire(FILE=trim(filename),EXIST=fileFound)
       if (fileFound.eqv..false.) then
          write(scratchMessage,23) trim(filename)
   23     format("The file '",A,"' was not found.")
-         call allMessage(ERROR,scratchMessage)
+         call allMessage(INFO,scratchMessage)
          errorIO = 1
 #if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
          call allMessage(DEBUG,"Return.")
@@ -1132,6 +1151,10 @@ C     the non-C3D case.
       EtaMax_Time(:) = 0.d0
       UMAX(:) = 0.d0 ! v46.50 sb 11/11/2006
       UMax_Time(:) = 0.d0
+
+
+
+
 
       RETURN
       END SUBROUTINE ALLOC_MAIN1a
