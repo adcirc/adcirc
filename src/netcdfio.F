@@ -7372,7 +7372,7 @@ C     have to be writing that min/max data in netCDF. TODO: relax this
 C     limitation.  
 C-----------------------------------------------------------------------
       subroutine readAndMapToSubdomainMaxMinNetCDF(descript, timeloc)
-      use sizes, only : mnproc
+      use sizes, only : mnproc, myproc
       use global, only : OutputDataDescript_t, allMessage, logMessage, nfover
       implicit none
       type(OutputDataDescript_t), intent(inout) :: descript
@@ -7494,6 +7494,11 @@ C     nodes and elements
       CALL check_err(iret)
       starti(1)=1  ! min/max files have one element in the time array
       counti(1)=1
+      ! jgf52.30.01: Processor 0 already allocated memory to hold netcdf
+      ! data but the other compute cores have not.
+      if (myproc.ne.0) then
+         allocate(dat%myTime%timenc(dat%myTime%timenc_len))
+      endif
       iret = nf90_get_var(dat%ncid, dat%myTime%timenc_id,
      &    dat%myTime%timenc, starti, counti)
       CALL check_err(iret)

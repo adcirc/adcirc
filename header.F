@@ -2,6 +2,9 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.30.01 - 06/06/2016 - Fixed issue when reading min/max files in netCDF
+C           in parallel resulting from reading the ADCIRC time from the netCDF
+C           file into an unallocated array.
 C  v52.30 - 05/11/2016 - Resolved minor conflicts (mainly confined to 
 C           USE statements) when merging the txout branch r1120:1202 
 C           to trunk. Changes in the too-long txout branch are as
