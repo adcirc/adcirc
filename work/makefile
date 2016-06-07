@@ -174,8 +174,12 @@ endif
 #                                    libadc.a
 ifeq ($(BUILDTYPE),$(LIBADC)) 
   CF:= $(PFC)
+  O_DIR:=odircp
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
-  VPATH := $(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep 
+  VPATH := $(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+  ifeq ($(XDMF),enable)
+     FLIBS    :=  -L$(XDMFLIBPATH) -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
+  endif
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   endif
@@ -441,8 +445,8 @@ ifeq ($(MAKELEVEL),0)
 	@perl ../swan/switch.pl $(swch) -pun -adcirc ../swan/*.ftn ../swan/*.ftn90
 	$(MAKE) BUILDTYPE=padcswan CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
    $(LIBADC): 
-	@echo $(MAKE) LIBADC=$@ BUILDTYPE=$(LIBADC) $@
-	$(MAKE) LIBADC=$@ BUILDTYPE=$(LIBADC) $@
+	@echo $(MAKE) LIBADC=$@ BUILDTYPE=$(LIBADC) CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
+	$(MAKE) LIBADC=$@ BUILDTYPE=$(LIBADC) CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
    p15:
 	$(MAKE) BUILDTYPE=p15 $@ 
    owi22:

@@ -344,9 +344,11 @@ C
       if (((mnwproh > 0).or.(mnwproc > 0)) .and. myproc >= mnproc) then
          if( myproc < mnproc+mnwproc ) then   !st3
             call writer_main()
+            call unsetMessageSource()  !tcm 20160607 -- added
             return
          else
             call hswriter_main()
+            call unsetMessageSource()  !tcm 20160607 -- added
             return
          endif
       endif

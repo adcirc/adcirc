@@ -2,6 +2,10 @@ C******************************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.            *
 C                                                                             *
 C  mod history           
+C v51.52.38 - 06/07/2016 - tcm - Added unsetMessageSource calls after the 
+C           writer_main and hswriter_main calls in ADCIRC_Run, otherwise
+C           for coupled simulations where ADCIRC_Run is called multiple
+C           times, the Message number will run out of dimensions.
 C v51.52.37 - 05/01/2016 - jgf - Added compiler flags for compiling with NetCDF
 C           support on Topaz at ERDC; modified makefile to support building 
 C           aswip in its own subdirectory.
