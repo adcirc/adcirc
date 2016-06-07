@@ -414,9 +414,9 @@ C
             CALL initNodalDataFile(tau0nc, descript1, reterr)
          CASE(77)
             CALL initNodalDataFile(weirElev, descript1, reterr)
-#if defined CSWAN || defined ADCSWAN
          CASE(164)
             CALL initNodalDataFile(rads, descript1, reterr)
+#if defined CSWAN || defined ADCSWAN
          CASE(301)
             CALL initNodalDataFile(sw_hs, descript1, reterr)
          CASE(302)
@@ -2105,7 +2105,8 @@ C
      &                    'standard_name','maximum_surface_wind_stress')
                      CALL check_err(iret)
                      iret=nf90_put_att(dat%ncid,dat%time_max_nodal_data_id,
-     &                    'standard_name','time_of_maximum_surface_wind_stress')
+     &                    'standard_name',
+     &                    'time_of_maximum_surface_wind_stress')
                      CALL check_err(iret)
                   case default
                   iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
@@ -2176,7 +2177,8 @@ C
      &             'long_name', 'maximum radiation stress gradient')
             CALL check_err(iret)
             iret = nf90_put_att(dat%ncid, dat%time_max_nodal_data_id,
-     &             'long_name', 'time of maximum radiation stress gradient')
+     &             'long_name', 
+     &             'time of maximum radiation stress gradient')
             CALL check_err(iret)
             iret = nf90_put_att(dat%ncid, dat%max_nodal_data_id,
      &             'standard_name', 'maximum_radiation_stress')
@@ -2241,8 +2243,6 @@ C
      &             'mesh', 'adcirc_mesh')
             CALL check_err(iret)
 
-#if defined CSWAN || defined ADCSWAN
-C
          CASE(164)
 C
             dat%varnames(1) = 'radstress_x'
@@ -2295,6 +2295,9 @@ C
             iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
      &             'mesh', 'adcirc_mesh')
             CALL check_err(iret)
+C
+
+#if defined CSWAN || defined ADCSWAN
 C
 C
          CASE(301)
@@ -3535,9 +3538,9 @@ C
             CALL writeNodalData(weirElev, lun, descript1, timesec)
          CASE(90)
             CALL writeNodalData(tau0nc, lun, descript1, timesec)
-#ifdef CSWAN
          CASE(164)
             CALL writeNodalData(rads, lun, descript1, timesec)
+#ifdef CSWAN
          CASE(301)
             CALL writeNodalData(sw_hs, lun, descript1, timesec)
          CASE(302)
@@ -3582,7 +3585,7 @@ C
          CASE(400)
             CALL writeNodalData(inTime, lun, descript1, timesec)
          CASE(401)
-            CALL writeNodalData(maxInDep, lun, descript1, timesec)            
+            CALL writeNodalData(maxInDep, lun, descript1, timesec)
          CASE(402)
             CALL writeNodalData(coldDry, lun, descript1, timesec)
          CASE(403)
