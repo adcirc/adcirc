@@ -2,6 +2,9 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.30.03 - 06/11/2016 - Fixed issue in reading levee boundaries with
+C           cross barrier pipes (ibtypes 5 and 25) where the counter variable
+C           for these boundaries was not being incremented. 
 C  v52.30.02 - 06/07/2016 - Moved handling of rads.64 file outside of
 C           #ifdef CSWAN so that it could be written without SWAN coupling.
 C  v52.30.01 - 06/06/2016 - Fixed issue when reading min/max files in netCDF
