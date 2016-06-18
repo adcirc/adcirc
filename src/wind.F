@@ -128,6 +128,12 @@ C
       real(sz) :: GFDL_max_extrap_dist     ! maximum distance for extrapolating values (meters)
       real(sz) :: GFDL_WindMultiplier      ! all GFDL wind u,v's multiplied by this
 
+      ! jgf52.30.04: Allow the inverted barometer condition to be 
+      ! activated on elevation-specified boundaries so that low pressure
+      ! systems crossing the boundary won't trigger numerical instabilities.
+      ! This is normally .false. but can be set to .true. in the fort.15
+      ! in the metControl namelist. 
+      logical :: invertedBarometerOnElevationBoundary
 
 C------------------------end of data declarations-----------------------
       CONTAINS
@@ -171,6 +177,8 @@ C     ----------------------------------------------------------------
       ! support.
       DragLawString = 'Powell'
 #endif
+
+      invertedBarometerOnElevationBoundary = .false.
 
       RETURN
 C     ----------------------------------------------------------------

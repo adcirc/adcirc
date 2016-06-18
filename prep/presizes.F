@@ -105,6 +105,7 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
       USE GLOBAL, ONLY : WaveWindMultiplier 
 #endif
       USE WIND, ONLY :  WindDragLimit,DragLawString,rhoAir,
+     &                   invertedBarometerOnElevationBoundary,
      &                  initWindModule
 C
       IMPLICIT NONE
@@ -216,7 +217,8 @@ C Logicals added for adcprep paths
      &    SWAN_OutputTM01, SWAN_OutputTPS, SWAN_OutputWIND,
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
-      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir
+      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir,
+     &                       invertedBarometerOnElevationBoundary
       NAMELIST /TVWControl/ USE_TVW,TVW_FILE,NOUT_TVW,TOUTS_TVW,
      &    TOUTF_TVW,NSPOOL_TVW
       LOGICAL :: NETCDF_AVAIL ! true if netCDF was compiled in

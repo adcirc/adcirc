@@ -4182,19 +4182,23 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
             END DO
          ENDIF
       endif                                      ! NCSU Subdomain
-      
+C
 C
 C     jgf48.04 Added an inverted barometer boundary condition so that
 C     low pressure systems can cross the boundary without creating an
 C     elevation anomaly.
-C      DO I=1,NETA
-C         ETA2(NBD(I))=ETA2(NBD(I))
-C     &       + RampMete*(101300.d0/(RHOWAT0*G)) - PR2(NBD(I))
-C      END DO
+C     jgf52.30.04: Included a parameter from fort.15 to turn this 
+C     on and off according to analyst preference. 
+      if (invertedBarometerOnElevationBoundary.eqv..true.) then
+         DO I=1,NETA
+            ETA2(NBD(I))=ETA2(NBD(I))
+     &          + RampMete*(101300.d0/(RHOWAT0*G)) - PR2(NBD(I))
+         END DO
+      endif
 
 C   kmd48.33bc add information for the levels of no motion boundary conditions
 C              these are considered the steric adjustments.
-      IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic).AND.(NOPE.GT.0))  THEN
+      IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic).AND.(NOPE.GT.0))THEN
          DO I=1,NETA
            NBDI=NBD(I)
            ETA2(NBDI) = ETA2(NBDI) + LNM_BC(I)

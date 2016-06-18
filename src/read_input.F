@@ -67,7 +67,8 @@ C
      &    SWAN_OutputTM02, SWAN_OutputTMM10
 #endif
       CHARACTER(len=1000) namelistSpecifier ! used in log messages
-      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir      
+      NAMELIST /metControl/ WindDragLimit,DragLawString,rhoAir,
+     &  invertedBarometerOnElevationBoundary
       NAMELIST /subdomainModeling/ subdomainOn
       NAMELIST /wetDryControl/ outputNodeCode, outputNOFF, noffActive
       NAMELIST /inundationOutputControl/ inundationOutput, inunThresh
@@ -280,7 +281,9 @@ c     a non-default value we can determine this was the case.
       read(unit=15,nml=metControl,iostat=ios)
       call logNamelistReadStatus(namelistSpecifier, ios)
       write(scratchMessage,*) "WindDragLimit=",WindDragLimit,
-     & " DragLawString=",DragLawString, "rhoAir=",rhoAir
+     & " DragLawString=",DragLawString, " rhoAir=",rhoAir,
+     & ' invertedBarometerOnElevationBoundary=', 
+     &   invertedBarometerOnElevationBoundary 
       call logMessage(ECHO,trim(scratchMessage))
       rewind(15)
 

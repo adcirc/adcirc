@@ -2,6 +2,9 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.30.04 - 06/18/2016 - Enabled inverted barometer modification of 
+C           elevation specified boundaries using metControl namelist in 
+C           fort.15 with invertedBarometerOnElevationBoundary=.true.
 C  v52.30.03 - 06/11/2016 - Fixed issue in reading levee boundaries with
 C           cross barrier pipes (ibtypes 5 and 25) where the counter variable
 C           for these boundaries was not being incremented. 
