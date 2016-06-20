@@ -141,7 +141,8 @@ Casey 090302: We need these values from other places.
      &                       COUPWIND,
      &                       InterpoWeight,
      &                       SWAN_WX2,
-     &                       SWAN_WY2
+     &                       SWAN_WY2,
+     &                       ComputeWaveDependentWindStress !jie 08/2015
 Casey 100205: Add a variable for writing of SWAN hot-start files.
      &                      ,WriteSwanHotStart
 #ifdef CSWANFRIC
@@ -199,12 +200,14 @@ c. RJW merged 08/26/2008 from Casey 071219:Added the following variables for 3D 
       REAL(SZ) HTOT
       REAL(SZ) EtaN1,EtaN2,EtaN3,HTotN1,HTotN2,HTotN3
       REAL(SZ) QTRatio
-      REAL(SZ) RStRatio, RSX, RSY
+      REAL(SZ) RStRatio, RSX, RSY, InterpRatio
       REAL(SZ) SAltMul, S2SFEA
       REAL(SZ) SFacAvg
       REAL(SZ) TPMul
       REAL(SZ) WTRatio, WindX, WindY, WindMag, WDragCo
       REAL(SZ) DARhoMRho0N1,DARhoMRho0N2,DARhoMRho0N3
+      REAL(SZ) WStRatio, WSX, WSY, WSMag, WSAng, WindAng
+      REAL(SZ) WindMag_SWAN
 
       REAL(SZ) UN1
       REAL(SZ) UV0, UV1, UV2
@@ -236,7 +239,7 @@ C   TCM V49.64.01 -- ADDED FOR ICE CONCENTRATION FIELDS
 
 C   TCM v50.66.02 -- Added for Time Varying Bathymetry
       INTEGER :: IJK
-      REAL(SZ) ETA2TMP,DPTMP,DPTMP2,BTRATIO  !tcm v50.66.01 bathymetry changes
+      REAL(SZ) ETA2TMP,DPTMP,BTRATIO  !tcm v50.66.01 bathymetry changes
 
 C   TCM v51.20.01 -- Added dummy real variable for computing velocity magnitudes
       REAL(SZ) tmpmag
@@ -388,14 +391,12 @@ C...     DEPTHS ARE > OR = TO H0.
 #endif   
          ENDIF  !test for updating bathymetry records
 C.......If time is during the bathymetry change interval, then update bathymetry
-         IF(timeloc.LT.BTIME_END) THEN  !tcm 20150728 changed .LE. to .LT.
+         IF(timeloc.LE.BTIME_END) THEN
             bTRatio=(TimeLoc-bTIME1)/BCHGTIMINC ! interpolate
             DO I=1,NP
-               DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry from DP1
-               DPTMP2 = DP1(I) + DPTMP  !this is what will be the new bathymetry to use
-               DPTMP = DP(I)-DPTMP2  !this is now the adjustment in bathymetry for this timestep (how much to adjust eta2 by)
-               DP(I) = DPTMP2           !updating bathymetry to new value
-               ETA2TMP = ETA2(I)-DPTMP   !subtracting elevation by incremental amount from one step step
+               DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry
+               DP(I) = DP1(I) + DPTMP           !updating bathymetry
+               ETA2TMP = ETA2(I)-DPTMP   !subtracting elevation by incremental amount
                ETA2(I) = ETA2TMP        !updating elevation
             ENDDO !I
          ENDIF
@@ -410,7 +411,7 @@ C.......If time is during the bathymetry change interval, then update bathymetry
             WRITE(16,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'   
 #endif  
             DO I=1,NP
-               DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be to get to the final bathy value
+               DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be
                DP(I) = DP2(I)         !updating bathymetry to final value
                ETA2TMP = ETA2(I)-DPTMP !subtracting elevation by incremental amount
                ETA2(I) = ETA2TMP       !updating elevation
@@ -452,18 +453,15 @@ C...     DEPTHS ARE > OR = TO H0.
          ENDIF  !test for updating bathymetry records
 
 C.......If time is during the bathymetry change interval, then update bathymetry
-         IF(timeloc.LT.BTIME_END) THEN !tcm 20150728 changed .LE. to .LT.
+         IF(timeloc.LE.BTIME_END) THEN
             bTRatio=(TimeLoc-bTIME1)/BCHGTIMINC ! interpolate
             DO I=1,NP
-               DPTMP =  btratio*(DP2(I)-DP1(I)) !Determine incremental amount to adjust bathymetry from DP1
-               DPTMP2 = DP1(I) + DPTMP  !this is what will be the new bathymetry to use
-               DPTMP = DP(I)-DPTMP2  !this is now the adjustment in bathymetry for this timestep (how much to adjust eta2 by)
-               DP(I) = DPTMP2 !updating bathymetry to new value
-               ETA2TMP = ETA2(I)-DPTMP   !subtracting elevation by incremental amount from one step step
+               DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry
+               DP(I) = DP1(I) + DPTMP           !updating bathymetry
+               ETA2TMP = ETA2(I)-DPTMP   !subtracting elevation by incremental amount
                ETA2(I) = ETA2TMP        !updating elevation
             ENDDO !I
          ENDIF
-C         
          IF(timeloc.EQ.BTIME_END) THEN
 #ifdef CMPI
             IF (MYPROC.EQ.0) then
@@ -475,8 +473,8 @@ C
             WRITE(16,'(A42,1X,E15.8,1X,A5)') 'BATHYMETRY VALUES ARE NOW FIXED AT TIME =',TIMELOC,'(SEC)'   
 #endif    
             DO I=1,NP
-               DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be to get to the final bathy value
-               DP(I) = DP2(I)         !updating bathymetry to final value 
+               DPTMP = DP2(I)-DP(I)   !figuring what the incremental amount will be
+               DP(I) = DP2(I)         !updating bathymetry to final value
                ETA2TMP = ETA2(I)-DPTMP !subtracting elevation by incremental amount
                ETA2(I) = ETA2TMP       !updating elevation
             ENDDO !I
@@ -1200,47 +1198,254 @@ Casey 121019: Added multiplication factor to be used before sending winds to cou
 #endif
          END DO
       ENDIF
+      
 C
-C     jie added nws = 20: generalized asymmetric vortex model
+C     jie added nws = 20: generalized asymmetric vortex model 
+C     jie added wave-dependent wind stress options 08/2015
       GeneralAsymTime = TimeLoc
       IF(NWS.EQ.20) THEN
+         !jie debug 08/2015
+         WRITE(16,*) 'NWS=20 called at t = ', GeneralAsymTime
+         !WRITE(16,*) 'WindStressOption = ', WindStressOption
          CALL NWS20GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,GeneralAsymTime,ICS)
-         DO I=1,NP
-            WindX = WVNX2(I)
-            WindY = WVNY2(I)
-            WindMag = SQRT(WindX*WindX+WindY*WindY)
-            WDragCo = WindDrag(WindMag, I)
-            IF (LoadDirEffRLen) THEN
-               CALL ApplyDirectionalWindReduction(I, WDragCo,
-     &              WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
-               WindMag = SQRT(WindX*WindX+WindY*WindY)
-               WDragCo = WindDrag(WindMag, I)
-            ENDIF
-            IF (LoadCanopyCoef)
-     &         CALL ApplyCanopyCoefficient(I,WindX,WindY)
-            WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
-            WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+         !Determine which stress law to use 08/2015
+         !CALL GetStressOption(WindStressOption)
+#ifndef CSWAN         
+         !if swan if not coupled and wave-dependent stress law is selected,
+         !terminate ADCIRC immediately 
+         IF (WindStressOption.ne.0) THEN
+            WRITE(ScreenUnit,2015) WindStressOption
+            WRITE(16,2015) WindStressOption
+2015        FORMAT('**ERROR: WindStressOption = ',I2,2x 'is not allowed
+     &             when SWAN is not coupled to ADCIRC, choose the Garratt
+     &             /Powell drag law instead,',2x,'ADCIRC stopping. **')
+            CALL ADCIRC_Terminate()
+         ENDIF   
+#endif   
+!debug only
+!            WRITE(ScreenUnit,2017) WindStressOption
+!            WRITE(16,2017)  WindStressOption
+!2017        FORMAT('WindStressOption = ',I2, 
+!     &      ' *****************************
+!     &          Garratt/Powell = 0,
+!     &          RHG = 1, DCCM = 2, SWELL = 3,
+!     &          Wave Age = 4, Wave Steepness = 5
+!     &        *****************************' )
+              
+         !calculate drag coefficient
+         SELECT CASE(WindStressOption)
+         CASE(0,3,4,5)
+#ifdef CSWAN 
+          IF ( WindStressOption > 3) THEN
+            !update appropriate global variable for wso=4/5,possibly3
+            !no interpolation based on wave properties right now??? TBC
+            IF(GeneralAsymTime.gt.WSTIME2) THEN 
+              WSTIME1=WSTIME2
+              WSTIME2=WSTIME2+WSTIMINC
+
+              WRITE(16,*) 'wind stress option = '
+     &                  ,WindStressOption,'enter at t=',GeneralAsymTime
+              CALL ComputeWaveDependentWindStress(WindStressOption)
+!             !jie debug 08/2015
+              WRITE(16,*) 'wind stress option = '
+     &                  ,WindStressOption,'return at t=',GeneralAsymTime
+             ENDIF 
+         ENDIF         
+#endif         
+           DO I=1,NP
+              WindX = WVNX2(I)
+              WindY = WVNY2(I)
+              WindMag = SQRT(WindX*WindX+WindY*WindY)
+              WDragCo = WindDrag(WindMag, I)           
+              !wind-based stress: Cd is already calculated above via WindDrag func.
+              !below just add other modifications to the Cd     
+              IF (LoadDirEffRLen) THEN
+              CALL ApplyDirectionalWindReduction(I, WDragCo,
+     &             WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                   WindMag = SQRT(WindX*WindX+WindY*WindY)
+                   WDragCo = WindDrag(WindMag, I)
+              ENDIF
+              IF (LoadCanopyCoef)
+     &        CALL ApplyCanopyCoefficient(I,WindX,WindY)
 C  tcm v49.16 20100617C    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
-            IF(NCICE.NE.0) THEN
-               CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
-               PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
-               WDragCo = WindIceDrag(WDragCo,PIC)
-               CICEOUT(I) = PIC
-            ENDIF
-!            PR2(I)=RampMete*PRN2(I)
-            PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
-            PR2(I) = PRBCKGRND_MH2O + PRDIFF
-            WVNXOUT(I)=RampMete*WindX
-            WVNYOUT(I)=RampMete*WindY
+                !Jie Currently the ice effect only applies to Garret/default
+                !and doesn't work for Powell/RHG/DCCM (ADCIRC will terminate)
+              IF(NCICE.NE.0) THEN
+                   CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                   PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                   WDragCo = WindIceDrag(WDragCo,PIC)
+                   CICEOUT(I) = PIC
+              ENDIF                                  
+              ! Jie switched sequence 08/2015
+              WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+              WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+              !PR2(I)=RampMete*PRN2(I)
+              PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
+              PR2(I) = PRBCKGRND_MH2O + PRDIFF
+              WVNXOUT(I)=RampMete*WindX
+              WVNYOUT(I)=RampMete*WindY
+              !output Cd and misalignment angle between stress and wind
+              CDNOUT(I) = WDragCo
+              MISALIGN(I) = 0.d0
+              WSNXOUT(I) = WSX2(I)
+              WSNYOUT(I) = WSY2(I)
 #ifdef CSWAN
 Casey 090302: Added these lines for coupling winds to SWAN.
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
-            IF(COUPWIND)THEN
+             IF(COUPWIND)THEN
                SWAN_WX2(I,2) = WindX * WaveWindMultiplier
                SWAN_WY2(I,2) = WindY * WaveWindMultiplier
-            ENDIF
+             ENDIF
 #endif
-         END DO
+           END DO
+#ifdef CSWAN              
+        !calculate wave-dependent stresses  
+         CASE(1,2)
+            ! 1: RHG wave-dependent stress
+            ! 2: DCCM wave-dependent stress
+                        !jie debug 08/2015
+            !add loop to filter out low winds
+            !use garratt when option 1/2 fails to converge or
+            !cd is out of range [0.0005 0.005]
+            IF(GeneralAsymTime.gt.WSTIME2) THEN 
+              WSTIME1=WSTIME2
+              WSTIME2=WSTIME2+WSTIMINC
+              WSNX1=WSNX2
+              WSNY1=WSNY2
+              
+              !jie debug 08/2015
+              WRITE(16,*) 'Wind Stress Option = '
+     &                  ,WindStressOption,'Enter at t=',GeneralAsymTime
+              CALL ComputeWaveDependentWindStress(WindStressOption)
+!             !jie debug 08/2015
+              WRITE(16,*) 'Wind Stress Option = '
+     &                  ,WindStressOption,'Return at t=',GeneralAsymTime
+              !extrapolate forward, WSNX1 is the real latestly calculated
+              DO I=1,NP
+                 WSX=WSNX1(I)
+                 WSY=WSNY1(I)
+                 WSNX1(I)=WSNX2(I)
+                 WSNY1(I)=WSNY2(I)
+                 WSNX2(I)=WSNX2(I) + (WSNX2(I)-WSX)
+                 WSNY2(I)=WSNY2(I) + (WSNY2(I)-WSY)
+              END DO
+            ENDIF
+            !interpolation ???
+            WStRatio=0.d0 !(no extrapolation in time, use the latest wsnx1)
+            !WStRatio=(GeneralAsymTime-WSTIME1)/WSTIMINC
+            DO I=1,NP  
+               switch2Garratt=.false.   !!!!!each time reset to false
+               WindX = WVNX2(I)
+               WindY = WVNY2(I)
+               WindMag = SQRT(WindX*WindX+WindY*WindY)
+               !SWAN_WX2 is updated at latest swan timestep
+               WindMag_SWAN = SQRT(SWAN_WX2(I,1)**2.0d0 + SWAN_WY2(I,1)**2.0d0)
+               !return to Garratt formula if returned stress is zero due to
+               ! 1) wind<10 m/s or 
+               ! 2)RHG/DCCM fails to converge or cd out of range
+               !jie 06/2016 fixed, change filter from WSNX2 to WSNX1
+               WSMag = SQRT(WSNX1(I)*WSNX1(I)+WSNY1(I)*WSNY1(I))
+              IF ((isNaN(WSMag)).or.(WSMag<=0.0d0)) switch2Garratt=.true.
+               ! use swan wind (sw: at which the latest swan wave field is computed)
+               ! to filter: if 10<sw<= 12.5
+               ! Note: switch to Garratt when stress returned is invalid, including
+               ! situations when sw<=10, use ADCIRC timestep wind speed or sw???              
+              IF (switch2Garratt) THEN
+                   WDragCo = WindDrag(WindMag, I) !add nodal properties TBC
+                   !Note: use 1.28 convension, switch to 0.001293 in the end         
+                   !WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+                   !WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+                   WSX2(I) = RampMete*1.28d0*WDragCo*WindX*WindMag
+                   WSY2(I) = RampMete*1.28d0*WDragCo*WindY*WindMag
+              ELSEIF (WindMag_SWAN.LE.12.5d0) THEN
+                   interpRatio= (12.5d0 - WindMag_SWAN)/2.5d0
+                   WDragCo = WindDrag(WindMag, I)  !add nodal properties TBC
+                   WSX = RampMete*1.28d0*WDragCo*SWAN_WX2(I,1)*WindMag_SWAN
+                   WSY = RampMete*1.28d0*WDragCo*SWAN_WY2(I,1)*WindMag_SWAN
+                   WSX2(I) = RampMete*(WSNX1(I) + WStRatio*(WSNX2(I)-WSNX1(I)))
+                   WSY2(I) = RampMete*(WSNY1(I) + WStRatio*(WSNY2(I)-WSNY1(I)))
+                   !linearly interpolate between bulk and wave-dependent stress
+                   WSX2(I) = WSX * interpRatio + WSX2(I)*(1.0d0-interpRatio)
+                   WSY2(I) = WSY * interpRatio + WSY2(I)*(1.0d0-interpRatio)
+              ELSE
+                   ! based on air density of 1.28 kg/m^3   
+                   ! adjust to make consistent with stress used in ADCIRC             
+                   WSX2(I) = RampMete*(WSNX1(I) + WStRatio*(WSNX2(I)-WSNX1(I)))
+                   WSY2(I) = RampMete*(WSNY1(I) + WStRatio*(WSNY2(I)-WSNY1(I)))
+              ENDIF    
+               !debug only
+               !write(16,*) 'WSX2(I)=',WSX2(I),'WSY2(I)=',WSY2(I)  
+
+               ! compute Cd and misalignment angle between stress and wind
+               ! positive - stress turns clockwise relative to wind
+               ! negative - stress turns counter-clockwise relative to wind
+               WSMag = SQRT(WSX2(I)*WSX2(I)+WSY2(I)*WSY2(I))/RampMete
+               IF (WSMag.le.0.0d0) THEN
+                 CDNOUT(I) = 0.0d0  !!?
+                 MISALIGN(I) = 0.0d0
+               ELSE
+                 IF (WindMag_SWAN.le.10.0d0) THEN
+                  CDNOUT(I) = WDragCo
+                  MISALIGN(I) = 0.0d0
+                 ELSE
+                  !caution: if stress is extrapolated in time, then wind
+                  !magnitude should be the interpolated WindMag; if no stress
+                  !extrapolation is done, then the wind should be at swan time
+                  CDNOUT(I)  = WSMag/(1.28d0*WindMag_SWAN*WindMag_SWAN)
+                  !computes the angles of stress and wind separately in
+                  !compass coordinate, and use simple subtration
+                  WSAng = rad2deg*atan2(WSX2(I), WSY2(I))
+                  IF (WSAng .lt. 0d0) WSAng = WSAng + 360.d0
+                  WindAng = rad2deg*atan2(SWAN_WX2(I,1), SWAN_WY2(I,1))
+                  IF (WindAng .lt. 0d0) WindAng = WindAng + 360.d0
+                  MISALIGN(I) = WSAng - WindAng
+                  !adjust angle between two vectors within -180~180 range
+                  IF (MISALIGN(I)<-180.d0) MISALIGN(I) = MISALIGN(I)+360.d0
+                  IF (MISALIGN(I)>180.d0) MISALIGN(I) = MISALIGN(I)-360.d0
+                 ENDIF
+               ENDIF
+               
+               !apply modifying functions to wind/wind stress to be continued??
+               !including directional reduction/canopy effect/ice coverage
+!              PR2(I)=RampMete*PRN2(I)
+               PRDIFF = RampMete*(PRN2(I)-PRBCKGRND_MH2O)
+               PR2(I) = PRBCKGRND_MH2O + PRDIFF
+               WVNXOUT(I)=RampMete*WindX
+               WVNYOUT(I)=RampMete*WindY
+
+Casey 090302: Added these lines for coupling winds to SWAN.
+Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
+               IF(COUPWIND)THEN
+                 SWAN_WX2(I,2) = WindX * WaveWindMultiplier
+                 SWAN_WY2(I,2) = WindY * WaveWindMultiplier
+               ENDIF
+               
+! BEGIN test test test test test
+               ! for test purpose, output wave-dependent wind stress 
+               ! but still apply Garratt/Powell in whole domain to drive ADCIRC
+               !WDragCo = WindDrag(WindMag, I)           
+               !WSX2(I) = RampMete*0.001293d0*WDragCo*WindX*WindMag
+               !WSY2(I) = RampMete*0.001293d0*WDragCo*WindY*WindMag
+! END test test test test test           
+            END DO 
+            
+            !to use stress to force ADCIRC, modify accordingly
+            WSX2=WSX2*0.001293d0/1.28d0 !DAIR = PWIND(16)=1.28d0
+            WSY2=WSY2*0.001293d0/1.28d0 
+            WSNXOUT=WSX2 !consistent with what's used in ADCIRC
+            WSNYOUT=WSY2
+#endif              
+         CASE DEFAULT
+            WRITE(ScreenUnit,2016) WindStressOption
+            WRITE(16,2016) WindStressOption
+2016        FORMAT('**ERROR: WindStressOption = ',I2,2x 'is not allowed;
+     &              choose the Garrat/default drag law, or wave-dependent 
+     &              drag law instead,',2x,'ADCIRC stopping. **')
+            CALL ADCIRC_Terminate()           
+         END SELECT !stress options
+         !stress output
+         !WSNXOUT =  WSX2
+         !WSNYOUT =  WSY2
       ENDIF    
 C      
 C     jgf49.1001 Added NWS29 for embedding an asymmetric vortex from
@@ -1439,7 +1644,7 @@ c...             include NRS=4
                   RSNX1(I)=RSNX2(I)
                   RSNY1(I)=RSNY2(I)
                END DO
-               IF(NRS.EQ.1) THEN
+               IF(NRS.EQ.1) THEN 
                  CALL RSGET(RSNX2,RSNY2,NP)
                ENDIF
                IF(NRS.EQ.2) THEN

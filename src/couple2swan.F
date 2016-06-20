@@ -19,8 +19,11 @@ Casey 090302: The coupling interval controls how ADCIRC and SWAN
 C             take turns during the simulation.  It is set
 C             at the end of PADCSWAN_INIT.
       INTEGER :: CouplingInterval
-      INTEGER,SAVE :: SwanTimeStep ! Counter for SWAN time steps.
-
+      INTEGER,SAVE :: SwanTimeStep ! Counter for SWAN time steps. !jie not initialized?
+      REAL,SAVE :: TAUNX = 0.0  !temp stress in x
+      REAL,SAVE :: TAUNY = 0.0  !temp stress in y
+      REAL :: SWAN_WXI2, SWAN_WYI2  
+     
 Casey 090302: These logical variables will be reset to .TRUE.
 C             if the water levels in SWAN are coupled to ADCIRC.
       LOGICAL :: COUPCUR
@@ -52,7 +55,6 @@ C             that may be passed to SWAN.
       REAL(SZ),ALLOCATABLE :: SWAN_WY2(:,:)
 Casey 091216: Added another array.
       REAL(SZ),ALLOCATABLE :: SWAN_Z0(:,:)
-
 Casey 090302: These variables control SWAN output.
       ! jgf51.21.25: Added target attribute to file position counters
       ! so that they could be pointed to from the OutputDataDescript_t
@@ -84,6 +86,13 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       REAL(SZ),ALLOCATABLE :: WAVE_T1(:)
       REAL(SZ),ALLOCATABLE :: WAVE_T2(:)
 #endif
+!jie 08/2015: add variable for calculating wave-dependent stress 
+      REAL(SZ),ALLOCATABLE :: WAVE_TPS(:)
+!jie 06/2016: add variable for calculating waveage and wavestp drag 
+      REAL(SZ),ALLOCATABLE :: WAVE_HS(:)
+      !REAL(SZ),ALLOCATABLE :: WAVE_LP(:)
+
+      
 
 Casey 100205: Add variables for writing of SWAN hot-start files.
       INTEGER              :: SwanHotStartUnit
@@ -209,7 +218,410 @@ C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
 #endif
 
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C     COMPUTE WAVE DEPENDENT WIND STRESS
+C     Jie 08/2015: use swan info to compute wave dependent wind stress via
+C                  option 1 - RHG
+C                  option 2 - DCCM 
+C                  option 4 - Wave Age
+C                  option 5 - Wave Steepness
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
+      SUBROUTINE ComputeWaveDependentWindStress(WindStressOpt)
+ 
+      USE GLOBAL, ONLY        : ETA2, WSNX2, WSNY2, ZWND, RIB, KAPPA, !PI,
+     &                          WaveAge_Cd, WaveStp_Cd    
+      USE MESH, ONLY          : NP, DP
+      USE M_GENARR, ONLY      : DEPTH, AC2, SPCDIR, SPCSIG
+      USE SwanGridData, ONLY  : nverts
+      USE SWCOMM3, ONLY       : GRAV, DEPMIN, MDC, MSC !, MMCGR
+      USE W3FLD1MD ![, ONLY      : W3FLD1]
+      USE W3FLD2MD ![, ONLY      : W3FLD2]
+      
+      IMPLICIT NONE
+      
+      !the REAL variables must be size(4) to match SWAN.
+      INTEGER :: WindStressOpt
+      INTEGER :: I   ! Node counter.
+      INTEGER :: ID  ! Wave direction counter.
+      INTEGER :: IS  ! Wave frequency (wavenumber) counter.
+      INTEGER :: ITER ! Iteration to converge Z0
+      REAL :: DEPLOC !depth of water
+      !REAL(4) :: AC2(MDC,MSC,nverts) !swan wave action density spectrum
+      REAL :: ASPC(MDC*MSC) !2-d wave action spectrum remapped MMCGR=MDC*MSC
+      REAL :: UST ! magnitude of friction velocity (m/s) NOT not used
+      REAL :: UST_new ! magnitude of friction velocity (m/s) NOT not used
+      REAL :: USTD !direction of friction velocity (rad) not used
+      REAL :: Z0 !roughness height (m) NOT not used
+      REAL :: CD !temp dragco
+      REAL :: TPS ! peak period     
+      REAL :: FPI ! peak frequency
+      REAL :: KP !wave number of wave at the peak of wave spectrum  
+      REAL :: LP !wave length of wave at the peak of wave spectrum     
+      REAL :: CP ! phase speed of wave at the peak of wave spectrum 
+      REAL :: SWAN_WND_MAG !wind magnitude
+      REAL :: HS !significant wave height
+      REAL(4),ALLOCATABLE :: WN(:)
+      REAL(4),ALLOCATABLE :: CG(:)
+      
+      call setMessageSource("ComputeWaveDependentWindStress")
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      !jie debug 08/2015
+!      WRITE(16,*) 'ComputeWaveDependentWindStress: Enter.'
+!      WRITE(16,*) mdc,msc,mmcgr
 
+      !... Allocate arrays for wave-driven forces.
+      IF(.NOT.ALLOCATED(WN)) ALLOCATE(WN(1:MSC))
+      IF(.NOT.ALLOCATED(CG)) ALLOCATE(CG(1:MSC))
+
+      CALL ComputePeakPeriod !update WAVE_TPS (s) and HS
+      SELECT CASE (WindStressOpt)
+       CASE(4,5)
+         DO I = 1, NP
+            !looks like w3fld1/w3fld2 doesn't like wind magnitude being 
+            !zero, add ifelse statement to deal with it
+            SWAN_WXI2 = SWAN_WX2(I,1)
+            SWAN_WYI2 = SWAN_WY2(I,1)
+            SWAN_WND_MAG = sqrt(SWAN_WXI2*SWAN_WXI2 + SWAN_WYI2*SWAN_WYI2)
+            DEPLOC = DEPTH(I) + ETA2(I)
+            HS = WAVE_HS(I)
+            TPS = WAVE_TPS(I)
+            IF ((SWAN_WND_MAG.LE.0.1).or.(HS.LE.0.0).or.(DEPLOC.LE.DEPMIN)) THEN
+               WaveAge_Cd(I) = 0.0  
+               WaveStp_Cd(I) = 0.0
+!              WRITE(16,*) 'min not met, cycle at node:',I  !debug
+               CYCLE
+            ENDIF   
+            IF ((.not.isnan(TPS)).and.(TPS.GT.0.0)) THEN 
+               !avoid division by zero
+               FPI = 1.0/WAVE_TPS(I)  !frequency (Hz) 
+            ELSE
+               WaveAge_Cd(I) = 0.0  
+               WaveStp_Cd(I) = 0.0
+!              WRITE(16,*) 'INVALID peak period, cycle at node:',I  !debug
+               CYCLE
+            ENDIF
+            
+            CALL sig2wn(FPI*2.0*3.1415926,DEPLOC,KP) !dispersion
+            IF ((.not.isnan(KP)).and.(KP.GT.0.0))THEN  
+             SELECT CASE(WindStressOpt)
+               CASE(4)
+                 IF(SWAN_WND_MAG > 0.5) then 
+                  !Add iterations to calc z0
+                   CP = FPI*2.0*3.1415926/KP
+                   !UST = 0.0619 * SWAN_WND_MAG - 0.267
+                   UST = 0.0583 * SWAN_WND_MAG - 0.243
+                   DO ITER = 1,200
+                    Z0 = HS*3.35*(UST/CP)**3.4
+                    UST_new = SWAN_WND_MAG/(1.0/KAPPA*log(10.0/Z0))
+                    IF(abs(UST_new-UST)< 0.01) Exit
+                    UST = UST_new
+                   END DO
+                   IF (ITER < 200) THEN
+                     !debug
+                     WaveAge_Cd(I) = (1.0/KAPPA*log(10.0/Z0))**-2.0
+                   ELSE
+                     !debug
+                     !write(16,*) "BAD: UST doesn't converge at node:" , I
+                     !write(16,*) "UST=", UST, ", UST_new=",UST_new
+                     WaveAge_Cd(I) = 0.0
+                   ENDIF
+                 ELSE
+                     WaveAge_Cd(I) = 0.0
+                 ENDIF  
+               CASE(5)
+                   LP = 2.0*3.1415926/KP
+                   Z0 = HS*1200*(HS/LP)**4.5
+                   WaveStp_Cd(I) = (1.0/KAPPA*log(10.0/Z0))**-2.0
+               CASE DEFAULT
+             END SELECT
+            ELSE
+               WaveAge_Cd(I) = 0.0
+               WaveStp_Cd(I) = 0.0
+            ENDIF  
+         ENDDO   !I = 1, NP
+       CASE(1,2) 
+         DO I = 1, NP
+            !looks like w3fld1/w3fld2 doesn't like wind magnitude being 
+            !zero, add ifelse statement to deal with it
+            SWAN_WXI2 = SWAN_WX2(I,1)
+            SWAN_WYI2 = SWAN_WY2(I,1)
+            SWAN_WND_MAG = sqrt(SWAN_WXI2*SWAN_WXI2 + SWAN_WYI2*SWAN_WYI2)
+            DEPLOC = DEPTH(I) + ETA2(I)
+            TPS = WAVE_TPS(I)
+            IF ((SWAN_WND_MAG.LE.10.0).or.(DEPLOC.LE.DEPMIN)) THEN
+            ! only call stress subroutine when wind > 12.5, otherwise
+            ! return 0 and stress will be calculated using Garratt in 
+            ! timestep subroutine
+               WSNX2(I) = 0.0
+               WSNY2(I) = 0.0
+               !WRITE(16,*) 'DEBUG: wind magnitude = 0 at node:',I  !debug
+               CYCLE
+            ENDIF
+            IF ((.not.isnan(TPS)).and.(TPS.GT.0.0)) THEN 
+                !avoid division by zero
+                FPI = 1.0/WAVE_TPS(I)  !frequency (Hz) 
+            ELSE
+                WSNX2(I) = 0.0
+                WSNY2(I) = 0.0
+                !WRITE(16,*) 'DEBUG: peak freq = ',FPI, 'cycle at node:',I !debug
+                CYCLE 
+            ENDIF
+               !jie 11/2015 conduct Jacobian transformation to
+               ! convert frequency spectrum to wavenumber spectrum
+               ! E(k) = E(s)*ds/dk = E(s)*Cg
+               ! ***  calculate Jacobian, which is the wave group velocity ***
+               ! consider using frequency bandwidth/wavenumber bandwidth instead?
+            DO IS =1,MSC
+              call sig2wn(SPCSIG(IS),DEPLOC,WN(IS))
+              CG(IS) = GRAV/(2.0*SPCSIG(IS))*
+     &               (WN(IS)*DEPLOC+ tanh(WN(IS)*DEPLOC)- 
+     &                WN(IS)*DEPLOC*tanh(WN(IS)*DEPLOC)**2.0)
+            ENDDO
+            !remap wave action spectrum / consider changing dimension for efficiency
+
+            DO IS = 1, MSC
+              DO ID = 1, MDC
+                 ASPC(ID+(IS-1)*MDC) = AC2(ID,IS,I)*CG(IS) !*10.0**1.0 !test only
+              ENDDO 
+            ENDDO
+               !debug only
+               !write(16,*) "Cg = ", CG(1:MSC) 
+               !write(16,*) "ASPC = ", ASPC(1:MDC*MSC)
+               !write(16,*) "WN(1) = ", WN(1), "WN(MSC) = ", WN(MSC)
+               !call sig2wn(FPI*2.0*3.1415926,DEPLOC,WN(2))
+               !write(16,*) "FPI*2PI = ", FPI*2*3.1415926, "WN(FPI*2PI) = ", WN(2)
+               
+            SELECT CASE(WindStressOpt)
+              CASE(1)
+                !jie debug 08/2015
+                WRITE(16,*) 'W3FLD1: Enter.'
+                CALL W3FLD1( ASPC, FPI, SWAN_WXI2, SWAN_WYI2,
+     &               ZWND, DEPLOC, RIB, UST, USTD, Z0, TAUNX, TAUNY)
+                !jie debug 08/2015
+                WRITE(16,*) 'W3FLD1: Return.'
+              CASE(2)
+                !jie debug 08/2015
+                WRITE(16,*) 'W3FLD2: Enter.'
+                CALL W3FLD2( ASPC, FPI, SWAN_WXI2, SWAN_WYI2,
+     &               ZWND, DEPLOC, RIB, UST, USTD, Z0, TAUNX, TAUNY)
+                !jie debug 08/2015
+                WRITE(16,*) 'W3FLD2: Return.'
+              CASE DEFAULT
+                !wrong to end up here
+                WRITE(16,*) 'wrong wind stress option'               
+            END SELECT            
+            WSNX2(I) = TAUNX
+            WSNY2(I) = TAUNY  
+            WRITE(16,*) 'Return calculated stress at node:', I,
+     &                      TAUNX,TAUNY !debug
+         ENDDO !I
+       CASE DEFAULT
+        !wrong to end up here
+         WRITE(16,*) 'wrong wind stress option'               
+       END SELECT
+       
+       IF(ALLOCATED(WN))     DEALLOCATE(WN)
+       IF(ALLOCATED(CG))     DEALLOCATE(CG)
+        
+!jie debug 08/2015
+!      WRITE(16,*) 'ComputeWaveDependentWindStress: Return.'
+      
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
+      END SUBROUTINE ComputeWaveDependentWindStress
+ 
+      
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C       C O M P U T E  P E A K  P E R I O D
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
+      SUBROUTINE ComputePeakPeriod
+C     jie 09/2015      
+C     copied lines from ComputeWaveFrictionProperties      
+C     It computes WAVE_TPS so that the corresponding peak frequency
+C     can be used to calculate the wave-dependent wind stress 
+C     jie 06/2016 added compuatation of other wave properties
+
+      USE Couple2Adcirc,ONLY: COMPDA
+      USE GLOBAL,       ONLY: ETA2,
+     &                        PI,
+     &                        UU2,
+     &                        VV2
+      USE MESH, ONLY : NP, DP
+      USE M_GENARR,     ONLY: AC2,
+     &                        KGRPNT,
+     &                        SPCDIR,
+     &                        SPCSIG
+      USE SwanGriddata, ONLY: xcugrd,
+     &                        ycugrd
+      USE SWCOMM1,      ONLY: COSCQ,
+     &                        OVEXCV,
+     &                        SINCQ
+      USE SWCOMM2,      ONLY: XOFFS,
+     &                        YOFFS
+      USE SWCOMM3,      ONLY: MCGRD,
+     &                        MDC,
+     &                        MSC,
+     &                        MTC,
+     &                        MXC,
+     &                        MYC,
+     &                        DEPMIN
+
+      IMPLICIT NONE
+
+      INTRINSIC                     :: ALLOCATED
+      INTRINSIC                     :: INDEX
+      INTRINSIC                     :: TRIM
+
+      CHARACTER(LEN=30)             :: TempC
+
+      INTEGER                       :: I
+      INTEGER                       :: IO
+      INTEGER                       :: IONOD(NP)
+      INTEGER                       :: IP
+      INTEGER                       :: IS
+      INTEGER                       :: IVTYPE
+      INTEGER                       :: SWAN_BKC
+      INTEGER,SAVE                  :: SWAN_MTC
+
+      LOGICAL                       :: CROSS(4,NP)
+
+      REAL(4)                       :: ACLOC(MDC,MSC)
+      REAL(4)                       :: DEPXY(NP)
+      REAL(4)                       :: FORCE(NP,2)
+      REAL(4)                       :: SWAN_CG(MSC)
+      REAL(4)                       :: SWAN_NE(MSC)
+      REAL(4)                       :: SWAN_NED(MSC)
+      REAL(4),ALLOCATABLE           :: SWAN_VOQ(:,:)
+      REAL(4)                       :: SWAN_WK(MSC)
+      REAL(4)                       :: XC(NP)
+      REAL(4)                       :: YC(NP)
+
+      call setMessageSource("ComputePeakPeriod")
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+!jie debug 08/2015
+!      WRITE(16,*) 'ComputePeakPeriod: Enter.'
+!... Initialize the Swan output variables.
+      DO IO=1,NMOVAR
+         SWAN_OQPROC(IO) = .FALSE.
+      ENDDO
+      NumSwanOutput = 0
+      
+!... For significant wave heights (HS).
+      NumSwanOutput = NumSwanOutput + 1
+      OVEXCV(10) = -99999.
+      SWAN_OQPROC(10) = .TRUE.
+      SWAN_VOQR(10) = 7 + NumSwanOutput      
+!... For Peak Period (TPS).
+      NumSwanOutput = NumSwanOutput + 1
+      OVEXCV(53) = 0.
+      SWAN_OQPROC(53) = .TRUE.
+      SWAN_VOQR(53) = 7 + NumSwanOutput
+!
+      IF(.NOT.ALLOCATED(IGSW))  ALLOCATE(IGSW(1:NumSwanOutput))
+
+!... I don't know what BKC does.  Everything seems to work okay
+!... when it is set to two, though.
+      SWAN_BKC = 2
+!... If Swan needs these values for wave numbers, etc.,
+!... then maybe it solves for them inside SWOEXA.
+      DO IS=1,MSC
+         SWAN_CG(IS) = 0.
+         SWAN_NE(IS) = 0.
+         SWAN_NED(IS) = 0.
+         SWAN_WK(IS) = 0.
+      ENDDO
+!... Allocate VOQ and set up the first seven entries inside it.
+      IF(.NOT.ALLOCATED(SWAN_VOQ)) ALLOCATE(SWAN_VOQ(1:NP,1:(7+NumSwanOutput+1)))
+      DO IP=1,NP
+!... X,Y in problem coordinate system.
+         SWAN_OQPROC(1) = .TRUE.
+         SWAN_OQPROC(2) = .TRUE.
+         SWAN_VOQR(1) = 1
+         SWAN_VOQR(2) = 2
+         SWAN_VOQ(IP,SWAN_VOQR(1)) = xcugrd(IP)
+         SWAN_VOQ(IP,SWAN_VOQR(2)) = ycugrd(IP)
+!... X,Y in adjusted coordinate system.
+         SWAN_OQPROC(24) = .TRUE.
+         SWAN_OQPROC(25) = .TRUE.
+         SWAN_VOQR(24) = 3
+         SWAN_VOQR(25) = 4
+         SWAN_VOQ(IP,SWAN_VOQR(24)) = 0.
+         SWAN_VOQ(IP,SWAN_VOQR(25)) = 0.
+!... Depth of water.
+         SWAN_OQPROC(4) = .TRUE.
+         SWAN_VOQR(4) = 5
+         SWAN_VOQ(IP,SWAN_VOQR(4)) = REAL(DP(IP)) + REAL(ETA2(IP))
+         
+         !jie change H0 to DEPMIN
+         ! jgf51.46: Fix from Casey to eliminate floating point 
+         ! exception in SWAN (swanser.F lines 703 and 726) when depths 
+         ! are negative. 
+         IF (SWAN_VOQ(IP,SWAN_VOQR(4)).LT.REAL(DEPMIN)) THEN
+            SWAN_VOQ(IP,SWAN_VOQR(4)) = REAL(DEPMIN)
+         ENDIF
+         
+!... Water current velocities.
+         SWAN_OQPROC(5) = .TRUE.
+         SWAN_VOQR(5) = 6
+         SWAN_VOQ(IP,SWAN_VOQR(5))   = REAL(UU2(IP))
+         SWAN_VOQ(IP,SWAN_VOQR(5)+1) = REAL(VV2(IP))
+!... Assemble other arrays?
+         DEPXY(IP) = REAL(DP(IP)) + REAL(ETA2(IP))
+         XC(IP) = xcugrd(IP)
+         YC(IP) = ycugrd(IP)
+         FORCE(IP,1) = 0.
+         FORCE(IP,2) = 0.
+         IONOD(IP) = 0
+      ENDDO
+
+!... Call the Swan subroutine to interpolate internal Swan quantities.
+      CALL SWOEXD(SWAN_OQPROC, NP, XC, YC, SWAN_VOQR,
+     &            SWAN_VOQ, COMPDA, KGRPNT, FORCE, CROSS, IONOD, -999)
+
+!... Call the Swan subroutine to compute the output quantities.
+      CALL SWOEXA(SWAN_OQPROC, SWAN_BKC, NP, XC, YC,
+     &            SWAN_VOQR, SWAN_VOQ, AC2, ACLOC, SPCSIG,
+     &            SWAN_WK, SWAN_CG, SPCDIR, SWAN_NE, SWAN_NED,
+     &            KGRPNT, DEPXY, CROSS)
+
+!... Significant wave heights (HS).
+      IVTYPE = 10
+      DO IP=1,NP
+         WAVE_HS(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
+         WRITE(UNIT=TempC,FMT=*) WAVE_HS(IP)
+      ENDDO
+!
+!... For Peak Period (TPS).
+      IVTYPE = 53
+      DO IP=1,NP
+         WAVE_TPS(IP) = DBLE(SWAN_VOQ(IP,SWAN_VOQR(IVTYPE)))
+         WRITE(UNIT=TempC,FMT=*) WAVE_TPS(IP)
+      ENDDO
+      
+      IF(ALLOCATED(IGSW))     DEALLOCATE(IGSW)
+      IF(ALLOCATED(SWAN_VOQ)) DEALLOCATE(SWAN_VOQ)
+      
+!jie debug 08/2015
+!      WRITE(16,*) 'ComputePeakPeriod: Return.'
+
+#if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+      RETURN
+
+      END SUBROUTINE ComputePeakPeriod
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E
 C       C O M P U T E  R A D I A T I O N  S T R E S S E S
@@ -548,7 +960,30 @@ C-----------------------------------------------------------------------
       END SUBROUTINE ComputeWaveDrivenForces
 C-----------------------------------------------------------------------
 
+!MVB
+C-----------------------------------------------------------------------
+C     S U B R O U T I N E
+C       C O M P U T E  S W A N  W I N D  D R A G        
+C-----------------------------------------------------------------------
+C-----------------------------------------------------------------------
+      SUBROUTINE ComputeSwanWindDrag(CDRAG,NodeNumber)
 
+      USE GLOBAL, ONLY: NP_G, SWAN_WDragCo
+
+      IMPLICIT NONE
+
+      REAL                          :: CDRAG
+
+      INTEGER                       :: NodeNumber
+
+      IF(.NOT.ALLOCATED(SWAN_WDragCo))  ALLOCATE(SWAN_WDragCo(NP_G))
+
+      SWAN_WDragCo(NodeNumber) = CDRAG
+
+C-----------------------------------------------------------------------
+      END SUBROUTINE ComputeSwanWindDrag
+C-----------------------------------------------------------------------
+C
 C-----------------------------------------------------------------------
 C     S U B R O U T I N E
 C       C O M P U T E  W A V E  F R I C T I O N  P R O P E R T I E S
@@ -585,7 +1020,8 @@ C-----------------------------------------------------------------------
      &                        MSC,
      &                        MTC,
      &                        MXC,
-     &                        MYC
+     &                        MYC,
+     &                        DEPMIN
 
       IMPLICIT NONE
 
@@ -678,6 +1114,15 @@ C-----------------------------------------------------------------------
          SWAN_OQPROC(4) = .TRUE.
          SWAN_VOQR(4) = 5
          SWAN_VOQ(IP,SWAN_VOQR(4)) = REAL(DP(IP)) + REAL(ETA2(IP))
+         
+         ! jie
+         ! jgf51.46: Fix from Casey to eliminate floating point 
+         ! exception in SWAN (swanser.F lines 703 and 726) when depths 
+         ! are negative. 
+         IF (SWAN_VOQ(IP,SWAN_VOQR(4)).LT.REAL(DEPMIN)) THEN
+            SWAN_VOQ(IP,SWAN_VOQR(4)) = REAL(DEPMIN)
+         ENDIF
+         
 !... Water current velocities.
          SWAN_OQPROC(5) = .TRUE.
          SWAN_VOQR(5) = 6
@@ -1289,7 +1734,14 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       WAVE_T1 = 0.D0
       WAVE_T2 = 0.D0
 #endif
-
+!jie 08/2015: add allocation for calculating wave-dependent stress 
+!jie 06/2016: added HS and LP
+      IF(.NOT.ALLOCATED(WAVE_TPS))   ALLOCATE (WAVE_TPS(1:NP))
+      IF(.NOT.ALLOCATED(WAVE_HS))    ALLOCATE (WAVE_HS(1:NP))
+      !IF(.NOT.ALLOCATED(WAVE_LP))    ALLOCATE (WAVE_LP(1:NP))
+      WAVE_TPS = 0.D0
+      WAVE_HS  = 0.D0
+      !WAVE_LP  = 0.D0
 Casey 120302: Merging ice changes from Taylor Asher.
 CTGA 110912:  Full SWAN ice implementation.  Allocating ice arrays.
       IF(NCICE.NE.0) THEN
@@ -1560,6 +2012,11 @@ Casey 091020: Adopt Ethan's/Joannes's modified friction.
       IF(ALLOCATED(WAVE_T2)) DEALLOCATE(WAVE_T2)
 #endif
 
+!jie 08/2015
+      IF(ALLOCATED(WAVE_TPS)) DEALLOCATE(WAVE_TPS)
+      IF(ALLOCATED(WAVE_HS))  DEALLOCATE(WAVE_HS)
+      !IF(ALLOCATED(WAVE_LP))  DEALLOCATE(WAVE_LP)
+      
 #if defined(COUPLE2SWAN_TRACE) || defined(ALL_TRACE)
       call allMessage(DEBUG,"Return.")
 #endif

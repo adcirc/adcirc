@@ -226,9 +226,14 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_PrMin(:)
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  HOT_WVNOutMax(:)
+      REAL(SZ),ALLOCATABLE, TARGET ::  WSNXOut(:), WSNYOut(:) !jie wind stress output
+      REAL(SZ),ALLOCATABLE, TARGET ::  CDNOut(:),MISALIGN(:) !Cd and Misalignment angle in radian
       
 #ifdef CSWAN      
       !...Local SWAN Arrays
+      REAL(SZ), ALLOCATABLE, TARGET      :: WaveAge_Cd(:) !jie 
+      REAL(SZ), ALLOCATABLE, TARGET      :: WaveStp_Cd(:) !jie       
+      REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_WDragCo(:) !MVB 
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut(:)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIROut(:)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_TM01Out(:)
@@ -313,6 +318,9 @@ Cobell -  Added the following for output of ESL at end of run
       REAL(SZ),ALLOCATABLE ::   SOURSIN(:)
       REAL(SZ),ALLOCATABLE ::   WSX1(:),WSY1(:),PR1(:)
       REAL(SZ),ALLOCATABLE ::   WSX2(:),WSY2(:)
+      REAL(SZ),ALLOCATABLE ::   WSNX1(:),WSNY1(:) ! jie 08/15
+      REAL(SZ),ALLOCATABLE ::   WSNX2(:),WSNY2(:) ! jie 08/15
+      
       REAL(SZ),ALLOCATABLE ::   WVNX1(:),WVNY1(:),PRN1(:)
       REAL(SZ),ALLOCATABLE ::   WVNX2(:),WVNY2(:),PRN2(:)
       REAL(SZ),ALLOCATABLE ::   RSNX1(:),RSNY1(:),RSNX2(:),RSNY2(:)
@@ -381,6 +389,11 @@ C...
       REAL(8) STATIM,REFTIM,DTDP
       REAL(8) WREFTIM,WTIMED,WTIME2,WTIME1,WTIMINC,QTIME1,QTIME2
       REAL(8) FTIMINC,ETIMINC,RSTIME1,RSTIME2,RSTIMINC
+      REAL(8) WSTIME1,WSTIME2,WSTIMINC !jie 08/2015 wave-dependent wind stress
+      !jie modified for data type consistency
+      REAL :: RIB = 0.25  ! Bulk Richardson number in lower atm/0 for neutral wind
+      REAL :: ZWND = 10.0 ! Wind height.
+      REAL :: KAPPA = 0.4 ! von Kármán coefficient (0.4)/use pwind(14) instead 
 
       REAL(8) DIST,DELDIST,DELETA
       REAL(8),ALLOCATABLE :: AMIG(:),AMIGT(:),FAMIG(:)
@@ -471,6 +484,9 @@ C     size has changed after a hotstart.
       INTEGER  NTCYFV,NTCYSE,NTCYSV,NTIF,NTIP,NTRSPE,NTRSPV
       INTEGER  NWLAT,NWLON,NWS
       INTEGER  IBSTART, ICSTP, IDSETFLG, IER
+      INTEGER  WindStressOption  ! jie 08/2015 surface stress cal. methods 
+                                 ! 0: non-wave-dependent 1:RHG  2:DCCM
+                                 ! 3: Swell 4: Wave Age 5: Wave Steepness
 
 Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
       INTEGER  IFNLCAT, IFNLCT, IFNLFA, IFNLCTE, IFNLCATE
@@ -511,6 +527,9 @@ Corbitt 120322: Create Elemental Versions of IFNLCAT and IFNLCT
 Casey 090302: Added a variable for output of radiation stress gradients.
       INTEGER, TARGET :: IGRadS
 !#endif
+!jie 08/2015 added  for wind stress, Cd and misalignment angle
+      INTEGER, TARGET :: IGWS, IGCD, IGMIS
+      INTEGER, TARGET :: NSCOUWS, NSCOUCD, NSCOUMA
       INTEGER  NNBB, NNBB1, NNBB2
       INTEGER  NNBB1R, NNBB1L, NNBB2R, NNBB2L ! sb46.28.sb05.05 11/01/2006
       INTEGER  NNBB1WN, NNBB2WN               ! sb46.28.sb05.05 WN stands for wet neighbors 11/01/2006
@@ -1338,6 +1357,8 @@ C...
 C
       ALLOCATE ( WSX1(MNP),WSY1(MNP),PR1(MNP) )
       ALLOCATE ( WSX2(MNP),WSY2(MNP),PR2(MNP) )
+      ALLOCATE ( WSNX1(MNP),WSNY1(MNP) ) ! jie 08/15
+      ALLOCATE ( WSNX2(MNP),WSNY2(MNP) ) ! jie 08/15 
       ALLOCATE ( WVNX1(MNP),WVNY1(MNP),PRN1(MNP) )
       ALLOCATE ( WVNX2(MNP),WVNY2(MNP),PRN2(MNP) )
       WSX1(:) = 0.0d0
@@ -1346,6 +1367,19 @@ C
       WSX2(:) = 0.0d0
       WSY2(:) = 0.0d0
       PR2(:) = 0.0d0
+      
+      WSNX1(:) = 0.0d0
+      WSNY1(:) = 0.0d0
+      WSNX2(:) = 0.0d0
+      WSNY2(:) = 0.0d0
+      
+      ALLOCATE ( WSNXOUT(MNP),WSNYOUT(MNP) ) ! jie 08/15
+      ALLOCATE ( CDNOUT(MNP),MISALIGN(MNP) ) ! jie 08/15    
+      
+      WSNXOUT(:)  = 0.0d0
+      WSNYOUT(:)  = 0.0d0    
+      CDNOUT(:)   = 0.0d0
+      MISALIGN(:) = 0.0d0
 
       ALLOCATE ( RSNX1(MNP),RSNY1(MNP),RSNX2(MNP),RSNY2(MNP) )
       RSNX1(:) = 0.0d0 !jgf51.46: Added initialization of RSNX1, RSNY1
@@ -1364,7 +1398,14 @@ C
       ALLOCATE ( WVNXOUT(MNP),WVNYOUT(MNP) )
       WVNXOUT(:) = 0.d0
       WVNYOUT(:) = 0.d0
-
+#ifdef CSWAN
+      ALLOCATE ( SWAN_WDragCo(MNP) ) !MVB
+      ALLOCATE ( WaveAge_Cd(MNP) ) !jie 06/2016
+      ALLOCATE ( WaveStp_Cd(MNP) ) !jie 06/2016      
+      SWAN_WDragCo(:) = 0.0d0 !MVB
+      WaveAge_Cd(:) = 0.0d0 !jie 
+      WaveStp_Cd(:) = 0.0d0 !jie
+#endif
 !  tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
       IF ((ABS(NRS).EQ.3).or.(ABS(NRS).EQ.4)) then
 !#ifdef CSWAN

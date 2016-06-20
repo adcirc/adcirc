@@ -284,7 +284,11 @@ c....    a non-default value we can determine this was the case.
       write(scratchMessage,*) "WindDragLimit=",WindDragLimit,
      & " DragLawString=",DragLawString, "rhoAir=",rhoAir
       call logMessage(ECHO,trim(scratchMessage))
+      !jie debug 08/2015 why not echoed in fort.16 while ihot is
+      WRITE(16,*) trim(scratchMessage)
+      CALL setStressOption !!jie 08/15
       REWIND(15)
+
 Casey 121019: Added multiplication factor to be used before sending winds to coupled wave models.
       READ(UNIT=15,NML=waveCoupling,IOSTAT=IOS)
       IF(IOS.gt.0)THEN
@@ -1939,7 +1943,7 @@ C...     WHERE NRS=2, NRS=4 WERE NOT BEING INCLUDED
          ENDIF
          WRITE(16,6111) IREFMO,IREFDAY,IREFYR,IREFHR
  6111    FORMAT(5X,'WIND REFERENCE TIME FOR SIMULATION = ',
-     &           I2,'/',I2,'/',I2,'  ',I2,'H',/)
+     &           I2,'/',I2,'/',I4,'  ',I2,'H',/) !jie 10/2015
          CALL TIMECONV(IREFYR,IREFMO,IREFDAY,IREFHR,0,0.0d0,
      &        WindRefTime, MyProc, NScreen, ScreenUnit)
       ENDIF

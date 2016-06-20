@@ -19,10 +19,11 @@ C----------------------------------------------------------------------
       !
       !    2 D   D A T A
       !
+! jie added 3 more outputs for wind stress, cd and misalignment 
 #ifdef CSWAN
-      integer, parameter :: numOutputDescript2D = 39
+      integer, parameter :: numOutputDescript2D = 42 !39
 #else
-      integer, parameter :: numOutputDescript2D = 25
+      integer, parameter :: numOutputDescript2D = 28 !25
 #endif      
       type descript2D_ptr_t
          type(OutputDataDescript_t), pointer :: descript2D
@@ -58,6 +59,10 @@ C----------------------------------------------------------------------
       ! Casey 090302: Added this type for output of radiation stress gradients.
       ! tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
       type(OutputDataDescript_t), target :: RSDescript
+      !jie 08/2015 added output for wind stress, cd and misalignment angle
+      type(OutputDataDescript_t), target :: WSDescript
+      type(OutputDataDescript_t), target :: CdDescript
+      type(OutputDataDescript_t), target :: MisalignDescript
       !jgf52.05: Added for regular output of wet/dry quantities.
       type(OutputDataDescript_t), target :: noffOutDescript
       type(OutputDataDescript_t), target :: nodeCodeOutDescript 
@@ -89,6 +94,11 @@ C     jgf48.03 Full domain arrays used when writing globalio output.
       ! tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
       real(sz), allocatable, target :: rsnxout_g(:)
       real(sz), allocatable, target :: rsnyout_g(:)
+      !jie 08/2015 added for wind stress output, Cd and misalignment angle
+      real(sz), allocatable, target :: wsnxout_g(:)
+      real(sz), allocatable, target :: wsnyout_g(:)
+      real(sz), allocatable, target :: cdnout_g(:)
+      real(sz), allocatable, target :: misalign_g(:)      
 
       !jgf52.05: Added for normal output of wet/dry quantities.
       integer, allocatable, target :: nodecode_out_g(:)
@@ -283,7 +293,9 @@ C----------------------------------------------------------------------
      &   nspoolgc, INFO, scratchMessage, allMessage, nscougi, nscougp,
      &   nscours, nscoub, nscougb, nscoui, nscoup,
      &   nodeCodeOutSpoolCounter, noffOutSpoolCounter, noffOutFilePos,
-     &   nodeCodeOutFilePos, NE_G, IMAP_EL_LG, nodecode, noff
+     &   nodeCodeOutFilePos, NE_G, IMAP_EL_LG, nodecode, noff,
+     &   igws, igcd, igmis, wsnxout, wsnyout, cdnout, misalign, !jie 08/2015
+     &   nscouws, nscoucd, nscouma !jie 08/2015
       USE MESH, ONLY : NP, NE, DP, NM, ICS
       USE NodalAttributes, ONLY : OutputTau0, Tau0Var, LoadEleSlopeLim
 #ifdef ADCNETCDF
@@ -337,24 +349,28 @@ C
       ptr(23)%descript2D => RSDescript 
       ptr(24)%descript2D => nodeCodeOutDescript 
       ptr(25)%descript2D => noffOutDescript
-      
-
+ !jie 08/2015 added ws, cd and misalign to the list
+      ptr(26)%descript2D => WSDescript
+      ptr(27)%descript2D => CdDescript
+      ptr(28)%descript2D => MisalignDescript 
+            
 !... For SWAN, there are additional output arrays
 #ifdef CSWAN
-      ptr(26)%descript2D => SwanHSDescript 
-      ptr(27)%descript2D => SwanHSMaxDescript
-      ptr(28)%descript2D => SwanDIRDescript
-      ptr(29)%descript2D => SwanDIRMaxDescript
-      ptr(30)%descript2D => SwanTM01Descript
-      ptr(31)%descript2D => SwanTM01MaxDescript
-      ptr(32)%descript2D => SwanTPSDescript
-      ptr(33)%descript2D => SwanTPSMaxDescript
-      ptr(34)%descript2D => SwanWindDescript
-      ptr(35)%descript2D => SwanWindMaxDescript
-      ptr(36)%descript2D => SwanTM02Descript
-      ptr(37)%descript2D => SwanTM02MaxDescript
-      ptr(38)%descript2D => SwanTMM10Descript
-      ptr(39)%descript2D => SwanTMM10MaxDescript
+! jie 08/2015 changing the # in the following 
+      ptr(29)%descript2D => SwanHSDescript 
+      ptr(30)%descript2D => SwanHSMaxDescript
+      ptr(31)%descript2D => SwanDIRDescript
+      ptr(32)%descript2D => SwanDIRMaxDescript
+      ptr(33)%descript2D => SwanTM01Descript
+      ptr(34)%descript2D => SwanTM01MaxDescript
+      ptr(35)%descript2D => SwanTPSDescript
+      ptr(36)%descript2D => SwanTPSMaxDescript
+      ptr(37)%descript2D => SwanWindDescript
+      ptr(38)%descript2D => SwanWindMaxDescript
+      ptr(39)%descript2D => SwanTM02Descript
+      ptr(40)%descript2D => SwanTM02MaxDescript
+      ptr(41)%descript2D => SwanTMM10Descript
+      ptr(42)%descript2D => SwanTMM10MaxDescript
 #endif    
       ! 
       ! jgf51.21.24: Set some defaults
@@ -686,7 +702,83 @@ C
       if (nws.eq.0) then
          WindVelDescript % writeFlag         = .false. 
       endif
-
+      
+      !jie 08/2015 added for wind stress ws.74
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(WSNXOut_g(NP_G))
+         ALLOCATE(WSNYOut_g(NP_G))
+      ENDIF
+      WSDescript % lun                  = 174
+      WSDescript % specifier            = NOUTGW
+      WSDescript % startTimeStep           = NTCYSGW 
+      WSDescript % endTimeStep             = NTCYFGW
+      WSDescript % outputTimeStepIncrement = NSPOOLGW
+      WSDescript % spoolCounter            => NSCOUWS
+      WSDescript % filepos                 => IGWS
+      WSDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
+      WSDescript % num_items_per_record = 2
+      WSDescript % num_fd_records       = NP_G
+      WSDescript % num_records_this     = NP
+      WSDescript % imap                 => NODES_LG
+      WSDescript % array                => WSNXOut
+      WSDescript % array_g              => WSNXOut_g
+      WSDescript % array2               => WSNYOut
+      WSDescript % array2_g             => WSNYOut_g
+      WSDescript % field_name           = 'WindStress'
+      WSDescript % file_basename        = 'ws'
+      WSDescript % file_extension       = 74  
+      if (nws.eq.0) then
+         WSDescript % writeFlag         = .false. 
+      endif
+        
+      !jie 08/2015 added for Cd
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(CdNOut_g(NP_G))
+      ENDIF
+      CdDescript % lun                  = 173
+      CdDescript % specifier            = NOUTGW
+      CdDescript % startTimeStep           = NTCYSGW 
+      CdDescript % endTimeStep             = NTCYFGW
+      CdDescript % outputTimeStepIncrement = NSPOOLGW
+      CdDescript % spoolCounter            => NSCOUCD
+      CdDescript % filepos                 => IGCD
+      CdDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
+      CdDescript % num_fd_records       = NP_G
+      CdDescript % num_records_this     = NP
+      CdDescript % imap                 => NODES_LG
+      CdDescript % array                => CDNOut
+      CdDescript % array_g              => CDNOut_g
+      CdDescript % field_name           = 'CD'
+      CdDescript % file_basename        = 'cd'
+      CdDescript % file_extension       = 73  
+      if (nws.eq.0) then
+         CdDescript % writeFlag         = .false. 
+      endif
+      
+      !jie 08/2015 added for Misalignment Angle
+      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+         ALLOCATE(misalign_g(NP_G))
+      ENDIF
+      MisalignDescript % lun                  = 175
+      MisalignDescript % specifier            = NOUTGW
+      MisalignDescript % startTimeStep           = NTCYSGW 
+      MisalignDescript % endTimeStep             = NTCYFGW
+      MisalignDescript % outputTimeStepIncrement = NSPOOLGW
+      MisalignDescript % spoolCounter            => NSCOUMA
+      MisalignDescript % filepos                 => IGMIS
+      MisalignDescript % writerFormats(1:5)   = (/ 1, 3, 4, 5, 7 /)
+      MisalignDescript % num_fd_records       = NP_G
+      MisalignDescript % num_records_this     = NP
+      MisalignDescript % imap                 => NODES_LG
+      MisalignDescript % array                => MISALIGN
+      MisalignDescript % array_g              => misalign_g
+      MisalignDescript % field_name           = 'MISALIGN'
+      MisalignDescript % file_basename        = 'misalign'
+      MisalignDescript % file_extension       = 73  
+      if (nws.eq.0) then
+         MisalignDescript % writeFlag         = .false. 
+      endif
+      
       ! fort.75  !tcm v50.66.01 Added for Time Varying Bathymetry
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
          ALLOCATE(DP00_g(NSTAE_G))

@@ -553,7 +553,9 @@
       USE SWCOMM3                                                         40.41
       USE SWCOMM4                                                         40.41
 !ADC      USE WIND, ONLY: WindDrag                                            41.20
-!
+!MVB
+!ADC      USE Couple2Swan, ONLY: ComputeSwanWindDrag
+!ADC      USE global, ONLY: WindStressOption   !jie 06/2016
       IMPLICIT NONE
 !
 !
@@ -862,8 +864,8 @@
       ENDDO
 !
 !     --- determine directional spreading for cross swell
-!
-      IF ( IDRAG.EQ.3 ) THEN
+! jie 06/2016 added to use SWELL drag in ADCIRC
+      IF (( IDRAG.EQ.3 ).or.(WindStressOption.EQ.3)) THEN
          EEX   = 0.
          EEY   = 0.
          ETOTS = 0.
@@ -888,7 +890,61 @@
          ENDIF
          DSPR = DSPR * 180. / PI
       ENDIF
+      
+      !computes cdrag and call ComputeSwanWindDrag to update swell drag
+      !to use in ADCIRC, even though swell drag is not used in SWAN
+      IF (( IDRAG.NE.3 ).and.(WindStressOption.EQ.3)) THEN         
+         !jie 06/2016
+           UTL1  = WIND10/UREF1
+           UTL2  = WIND10/UREF2
 !
+           IF ( DSPR.NE.CS ) THEN
+!             no swell, opposing or following swell
+              A = NA
+              B = NB
+              C = NC
+              D = ND
+              E = NE
+              IF ( DSPR.GT.NSL1 .AND. DSPR.LT.CS ) THEN
+                 FAC = (DSPR-NSL1) / (CS-NSL1)
+                 A = A + FAC * (CA-NA)
+                 B = B + FAC * (CB-NB)
+                 C = C + FAC * (CC-NC)
+                 IF ( DSPR.GT.NSL2 ) THEN
+                    FAC = (DSPR-NSL2) / (CS-NSL2)
+                    D = D + FAC * (CD-ND)
+                    E = E + FAC * (CE-NE)
+                 ENDIF
+              ELSE IF ( DSPR.GT.CS .AND. DSPR.LT.NSH1 ) THEN
+                 FAC = (DSPR-NSH1) / (CS-NSH1)
+                 A = A + FAC * (CA-NA)
+                 B = B + FAC * (CB-NB)
+                 C = C + FAC * (CC-NC)
+                 IF ( DSPR.LT.NSH2 ) THEN
+                    FAC = (DSPR-NSH2) / (CS-NSH2)
+                    D = D + FAC * (CD-ND)
+                    E = E + FAC * (CE-NE)
+                 ENDIF
+              ENDIF
+           ELSE
+!             cross swell
+              A = CA
+              B = CB
+              C = CC
+              D = CD
+              E = CE
+           ENDIF
+!
+           CDRAG = MIN ( A+B*UTL1**C, D*(1-UTL2**E) )
+           CDRAG = MAX ( 0.7  , CDRAG )
+           CDRAG = CDRAG * 0.001
+           CDRAG = MIN ( CDCAP, CDRAG )
+!jie 06/2016 NodeNumber?? yes
+!MVB
+!ADC           CALL ComputeSwanWindDrag(CDRAG,NodeNumber)
+          
+      ENDIF
+      
 !     *** compute the Pierson Moskowitz frequency ***
 !
       IF ( IWIND .EQ. 1 .OR. IWIND .EQ. 2 ) THEN
@@ -1048,17 +1104,24 @@
            CDRAG = MAX ( 0.7  , CDRAG )
            CDRAG = CDRAG * 0.001
            CDRAG = MIN ( CDCAP, CDRAG )
+
+!jie 06/2016 NodeNumber, not KCGRD(1)?? yes
+!move inside of idrag=3 so that cdrag is always from swell
+!MVB
+!ADC      CALL ComputeSwanWindDrag(CDRAG,NodeNumber)
+
         END IF
 !
         UFRIC = SQRT ( CDRAG ) * WIND10
 !
 !       *** Wind friction velocity and PM-frequency ***
-!
+
         UFRIC = MAX ( 1.E-15 , UFRIC)
         FPM =  GRAV / ( 28.0 * UFRIC )
 
       END IF
-!
+
+
 !     *** test output ***
 !
       IF ( TESTFL .AND. ITEST .GE. 50 ) THEN

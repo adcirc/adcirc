@@ -11,7 +11,7 @@ C
      &    DEBUG, ECHO, INFO, WARNING, ERROR, scratchMessage,
      &    Rearth, pi, deg2rad, rad2deg, e, PRBCKGRND, g, rhoWat0,
      &    sphericalDistance, rhoAir, one2ten, windReduction,
-     &    openFileForRead
+     &    openFileForRead,WindStressOption !jie06/2016
 #ifdef CMPI
       use messenger, only : msg_fini
 #endif
@@ -52,7 +52,7 @@ C
 
       REAL(SZ) :: WindDragLimit          ! maximum wind drag value
       CHARACTER(len=10) :: DragLawString ! controls wind drag formulation
-
+      LOGICAL :: switch2Garratt = .false. !Jie 12/2015                                                                      
       ! used for vis/diagnostics on nws19 and nws20
       LOGICAL :: writeFullCircleRmaxes = .false.
       LOGICAL :: writeRadialVandP = .false.
@@ -171,12 +171,100 @@ C     ----------------------------------------------------------------
       ! support.
       DragLawString = 'Powell'
 #endif
-
+      WindStressOption = 0
       RETURN
 C     ----------------------------------------------------------------
       END SUBROUTINE initWindModule
 C     ----------------------------------------------------------------
 
+
+C     ----------------------------------------------------------------
+C      S U B R O U T I N E   G E T   S T R E S S   O P T I O N
+C     ----------------------------------------------------------------
+C
+C     jie 08/2015 Subroutine to determine the wind drag law being used 
+C                 from the draglawstring.
+C
+C     ----------------------------------------------------------------
+      SUBROUTINE GetStressOption(WindStressOpt)
+      
+      IMPLICIT NONE
+      INTEGER, intent(out) :: WindStressOpt 
+      
+      SELECT CASE(TRIM(DragLawString))
+      CASE("Garratt","GARRATT","garratt","default")
+         WindStressOpt = 0
+      CASE("Powell","POWELL","powell")
+         WindStressOpt = 0
+      CASE("RHG","Rhg","rhg")
+         WindStressOpt = 1
+      CASE("DCCM","Dccm","dccm")
+         WindStressOpt = 2
+      CASE("SWELL","Swell","swell") 
+         WindStressOpt = 3
+      CASE("WAVEAGE","WaveAge","waveage") 
+         WindStressOpt = 4
+      CASE("WAVESTP","WaveStp","wavestp") 
+         WindStressOpt = 5         
+      CASE DEFAULT   
+         WRITE(16,*) 'GetStressOption ERROR: Wind drag law not recognized:'
+         WRITE(16,'(A10)') DragLawString
+         WRITE(16,*) 'Execution will now be terminated.'
+#ifdef CMPI
+         call msg_fini()
+#endif
+         STOP
+C
+      END SELECT
+      
+      RETURN
+C     ----------------------------------------------------------------
+      END SUBROUTINE GetStressOption
+C     ----------------------------------------------------------------
+
+
+C     ----------------------------------------------------------------
+C      S U B R O U T I N E   S E T   S T R E S S   O P T I O N
+C     ----------------------------------------------------------------
+C
+C     jie 08/2015 Subroutine to set the stress option based on the wind  
+C                 drag law being used from the draglawstring.
+C
+C     ----------------------------------------------------------------
+      SUBROUTINE SetStressOption
+      
+      IMPLICIT NONE
+      
+      SELECT CASE(TRIM(DragLawString))
+      CASE("Garratt","GARRATT","garratt","default")
+         WindStressOption = 0
+      CASE("Powell","POWELL","powell")
+         WindStressOption = 0
+      CASE("RHG","Rhg","rhg")
+         WindStressOption = 1
+      CASE("DCCM","Dccm","dccm")
+         WindStressOption = 2
+      CASE("SWELL","Swell","swell")
+         WindStressOption = 3   
+      CASE("WAVEAGE","WaveAge","waveage") 
+         WindStressOption = 4
+      CASE("WAVESTP","WaveStp","wavestp") 
+         WindStressOption = 5         
+      CASE DEFAULT   
+         WRITE(16,*) 'SetStressOption ERROR: Wind drag law not recognized:'
+         WRITE(16,'(A10)') DragLawString
+         WRITE(16,*) 'Execution will now be terminated.'
+#ifdef CMPI
+         call msg_fini()
+#endif
+         STOP
+C
+      END SELECT
+      
+      RETURN
+C     ----------------------------------------------------------------
+      END SUBROUTINE SetStressOption
+C     ----------------------------------------------------------------
 
 C     ----------------------------------------------------------------
 C      F U N C T I O N   W I N D   D R A G
@@ -189,6 +277,10 @@ C     ----------------------------------------------------------------
       REAL(SZ) FUNCTION WindDrag(WindSpeed, NodeNumber)
       !Casey 110518: Added variables for Mark Powell's sector-based wind drag.
       USE GLOBAL, ONLY: DEG2RAD
+!Matt 131008: Added variables for SWAN's swell-based wind drag.
+#ifdef CSWAN
+     &                  ,SWAN_WDragCo, WaveAge_Cd, WaveStp_Cd
+#endif        
       USE MESH, ONLY : SFEA, SLAM
       REAL(SZ) WindSpeed
       ! jgf50.32: Even if present, NodeNumber is ignored by Garratt formulation
@@ -209,9 +301,24 @@ C
 C
       SELECT CASE(TRIM(DragLawString))
 C
-      CASE("Garratt","GARRATT","garratt","default")
+      !jie modify this to accomodate swan when it uses adcirc wind drag
+      !don't worry RHG/DCCM won't use this subroutine
+      CASE("Garratt","GARRATT","garratt","default","Rhg","RHG","rhg",
+     &      "Dccm","DCCM","dccm")
          WindDrag = 0.001d0*(0.75d0+0.067d0*WindSpeed)
          IF(WindDrag.gt.WindDragLimit) WindDrag=WindDragLimit
+C
+C Matt 131008: Added SWAN's swell-based wind drag.
+#ifdef CSWAN
+      CASE("Swell","SWELL","swell")
+         WindDrag = SWAN_WDragCo(NodeNumber)
+! jie 06/2016 added Drennan's wave age drag formula         
+      CASE("WaveAge","WAVEAGE","waveage")
+         WindDrag = WaveAge_Cd(NodeNumber)
+!jie 06/2016 added Taylor and Yelland's wave steepness drag formula 
+      CASE("WaveStp","WAVESTP","wavestp")
+         WindDrag = WaveStp_Cd(NodeNumber)
+#endif
 C
 Casey 110518: Added Mark Powell's sector-based wind drag.
       CASE("Powell","POWELL","powell")

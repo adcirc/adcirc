@@ -546,6 +546,10 @@ C....READ IN THE TIME LEVEL 1 AND LEVEL 2 FIELDS
          ENDIF
          RSTIME1 = STATIM*86400.D0
          RSTIME2 = RSTIME1+RSTIMINC
+         !jie wave-dependent wind stress
+         WSTIMINC = RSTIMINC
+         WSTIME1 = RSTIME1
+         WSTIME2 = RSTIME2         
          IF(NRS.EQ.1) THEN
            OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
            CALL RSGET(RSNX1,RSNY1,NP)
@@ -1184,6 +1188,9 @@ C...
       IGWP=0
       IGPP=0
       IGIP=0  !tcm v49.64.01 added for global ice concentration field
+      IGWS=0  !jie 08/2015 added for wind stess, cd and misalignment angle
+      IGCD=0
+      IGMIS=0
 
 !Casey 090302: Added the possibility of NOUTGW = +/- 4.
 !kmd - changed for -4 option      IF((ABS(NOUTGW).EQ.1)) THEN
@@ -1201,6 +1208,16 @@ C...
      $           NP_G, NP, HEADER93)
                IGIP=2
             ENDIF
+!jie 08/2015 added for wind stess, cd and misalignment angle
+            CALL OPEN_GBL_FILE(174, TRIM(GLOBALDIR)//'/'//'ws.74',
+     $        NP_G, NP, HEADER74)
+            IGWS=2
+            CALL OPEN_GBL_FILE(173, TRIM(GLOBALDIR)//'/'//'cd.73',
+     $        NP_G, NP, HEADER73)
+            IGCD=2 
+            CALL OPEN_GBL_FILE(175, TRIM(GLOBALDIR)//'/'//'misalign.73',
+     $        NP_G, NP, HEADER73)
+            IGMIS=2                                      
          else
          
             CALL OPEN_GBL_FILE(73, TRIM(LOCALDIR)//'/'//'fort.73',
@@ -1215,7 +1232,17 @@ C...
      $           NP_G, NP, HEADER93)
                IGIP=2
             ENDIF
-         
+!jie 08/2015 added for wind stess, cd and misalignment angle
+            CALL OPEN_GBL_FILE(174, TRIM(LOCALDIR)//'/'//'ws.74',
+     $        NP_G, NP, HEADER74)
+            IGWS=2
+            CALL OPEN_GBL_FILE(173, TRIM(LOCALDIR)//'/'//'cd.73',
+     $        NP_G, NP, HEADER73)
+            IGCD=2 
+            CALL OPEN_GBL_FILE(175, TRIM(LOCALDIR)//'/'//'misalign.73',
+     $        NP_G, NP, HEADER73)
+            IGMIS=2 
+                     
          endif
       ENDIF
 
@@ -1229,57 +1256,100 @@ C...
             OPEN(93,FILE=TRIM(LOCALDIR)//'/'//'fort.93',
      &           ACCESS='DIRECT',RECL=NByte)
          ENDIF
+!jie 08/2015 added for wind stess, cd and misalignment angle
+         OPEN(174,FILE=TRIM(LOCALDIR)//'/'//'ws.74',
+     $        ACCESS='DIRECT',RECL=NByte)
+         OPEN(173,FILE=TRIM(LOCALDIR)//'/'//'cd.73',
+     $        ACCESS='DIRECT',RECL=NByte)
+         OPEN(175,FILE=TRIM(LOCALDIR)//'/'//'misalign.73',
+     $        ACCESS='DIRECT',RECL=NByte)          
          IF(NBYTE.EQ.4) THEN
             DO I=1,8
                write(73,rec=igpp+i) rdes4(i)
                WRITE(74,REC=IGWP+I) RDES4(I)
                if(ncice.ne.0) write(93,rec=igip+i) rdes4(i)
+               WRITE(174,REC=IGWS+I) RDES4(I)
+               WRITE(173,REC=IGCD+I) RDES4(I)
+               WRITE(175,REC=IGMIS+I) RDES4(I)
             ENDDO
             igpp=igpp+8
             IGWP=IGWP+8
             if(ncice.ne.0) igip = igip+8
+            IGWS=IGWS+8
+            IGCD=IGCD+8
+            IGMIS=IGMIS+8
             DO I=1,6
                write(73,rec=igpp+i) rid4(i)
                WRITE(74,REC=IGWP+I) RID4(I)
                if(ncice.ne.0) write(93,rec=igip+i) rid4(i)
+               write(174,rec=igws+i) rid4(i)
+               write(173,rec=igcd+i) rid4(i)
+               write(175,rec=igmis+i) rid4(i)
             ENDDO
             igpp=igpp+6
             IGWP=IGWP+6
             if(ncice.ne.0) igip = igip+6
+            IGWS=IGWS+6
+            IGCD=IGCD+6
+            IGMIS=IGMIS+6            
             DO I=1,6
                write(73,rec=igpp+i) aid4(i)
                WRITE(74,REC=IGWP+I) AID4(I)
                if(ncice.ne.0) write(93,rec=igip+i) aid4(i)
+               write(174,rec=igws+i) aid4(i)
+               write(173,rec=igcd+i) aid4(i)
+               write(175,rec=igmis+i) aid4(i) 
             ENDDO
             igpp=igpp+6
             IGWP=IGWP+6
             if(ncice.ne.0) igip = igip+6
+            IGWS=IGWS+6
+            IGCD=IGCD+6
+            IGMIS=IGMIS+6                        
          ENDIF
          IF(NBYTE.EQ.8) THEN
             DO I=1,4
                write(73,rec=igpp+i) rdes8(i)
                WRITE(74,REC=IGWP+I) RDES8(I)
                if(ncice.ne.0) write(93,rec=igip+i) rdes8(i)
+               write(174,rec=igws+i) rdes8(i)
+               write(173,rec=igcd+i) rdes8(i)
+               write(175,rec=igmis+i) rdes8(i)
             ENDDO
             igpp=igpp+4
             IGWP=IGWP+4
             if(ncice.ne.0) igip = igip+4
+            IGWS=IGWS+4
+            IGCD=IGCD+4
+            IGMIS=IGMIS+4                        
             DO I=1,3
                write(73,rec=igpp+i) rid8(i)
                WRITE(74,REC=IGWP+I) RID8(I)
                if(ncice.ne.0) write(93,rec=igip+i) rid8(i)
+               write(174,rec=igws+i) rid8(i)
+               write(173,rec=igcd+i) rid8(i)
+               write(175,rec=igmis+i) rid8(i)
             ENDDO
             igpp=igpp+3
             IGWP=IGWP+3
             if(ncice.ne.0) igip = igip+3
+            IGWS=IGWS+3
+            IGCD=IGCD+3
+            IGMIS=IGMIS+3                        
             DO I=1,3
                write(73,rec=igpp+i) aid8(i)
                WRITE(74,REC=IGWP+I) AID8(I)
                if(ncice.ne.0) write(93,rec=igip+i) aid8(i)
+               write(174,rec=igws+i) aid8(i)
+               write(173,rec=igcd+i) aid8(i)
+               write(175,rec=igmis+i) aid8(i)
             ENDDO
             igpp=igpp+3
             IGWP=IGWP+3
             if(ncice.ne.0) igip = igip+3
+            IGWS=IGWS+3
+            IGCD=IGCD+3
+            IGMIS=IGMIS+3                                    
          ENDIF
          write(73,rec=igpp+1) ndsetsw
          write(73,rec=igpp+2) np
@@ -1304,6 +1374,27 @@ C...
             IGIP=IGIP+5
             CLOSE(93)
          ENDIF
+         WRITE(174,REC=IGWS+1) NDSETSW
+         WRITE(174,REC=IGWS+2) NP
+         WRITE(174,REC=IGWS+3) DT*NSPOOLGW
+         WRITE(174,REC=IGWS+4) NSPOOLGW
+         WRITE(174,REC=IGWS+5) 2
+         IGWS=IGWS+5
+         CLOSE(174)
+         WRITE(173,REC=IGCD+1) NDSETSW
+         WRITE(173,REC=IGCD+2) NP
+         WRITE(173,REC=IGCD+3) DT*NSPOOLGW
+         WRITE(173,REC=IGCD+4) NSPOOLGW
+         WRITE(173,REC=IGCD+5) 2
+         IGCD=IGCD+5
+         CLOSE(173)
+         WRITE(175,REC=IGMIS+1) NDSETSW
+         WRITE(175,REC=IGMIS+2) NP
+         WRITE(175,REC=IGMIS+3) DT*NSPOOLGW
+         WRITE(175,REC=IGMIS+4) NSPOOLGW
+         WRITE(175,REC=IGMIS+5) 2
+         IGMIS=IGMIS+5
+         CLOSE(175)
       ENDIF
 
 !  tcm v50.75 changed ifdef cwan to output for nrs=3 or 4

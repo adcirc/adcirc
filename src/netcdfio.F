@@ -204,6 +204,10 @@ C
       type(nodalData), private, save :: WVMax      ! for maxwvel.63
       type(nodalData), private, save :: RSMax      ! for rads_max.63
       type(nodalData), private, save :: rads       ! for rads.64
+! jie 08/2015
+      type(nodalData), private, save :: ws         ! for ws.74
+      type(nodalData), private, save :: cd         ! for cd.73
+      type(nodalData), private, save :: misalign   ! for misalign.73
 #if defined CSWAN || defined ADCSWAN
       type(nodalData), private, save :: sw_hs      ! for swan_HS.63
       type(nodalData), private, save :: sw_dir     ! for swan_DIR.63
@@ -392,6 +396,13 @@ C
             CALL initNodalDataFile(windVel, descript1, reterr)
          CASE(90)
             CALL initNodalDataFile(tau0nc, descript1, reterr)
+!jie 08/2015
+         CASE(174)
+            CALL initNodalDataFile(ws, descript1, reterr)
+         CASE(173)
+            CALL initNodalDataFile(cd, descript1, reterr)
+         CASE(175)
+            CALL initNodalDataFile(misalign, descript1, reterr)   
 #if defined CSWAN || defined ADCSWAN
          CASE(164)
             CALL initNodalDataFile(rads, descript1, reterr)
@@ -2162,6 +2173,123 @@ C
      &             'mesh', 'adcirc_mesh')
             CALL check_err(iret)
 
+!jie 08/2015
+         CASE(174)
+C
+            dat%varnames(1) = 'windstress_x'
+            dat%varnames(2) = 'windstress_y'
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &      NF90_DOUBLE, dat%nodal_data_dims, dat%u_nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(2)),
+     &             NF90_DOUBLE, dat%nodal_data_dims,dat%v_nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
+     &            'long_name', 'wind stress gradient x component')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
+     &            'long_name', 'wind stress gradient y component')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
+     &             'standard_name', 'wind_stress_gradient_x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
+     &             'standard_name', 'wind_stress_gradient_y')
+            CALL check_err(iret)
+            CALL putUnitsAttribute(dat%ncid, dat%u_nodal_data_id,
+     &           'm-2 s-2', 'ft-2 s-2')
+            CALL putUnitsAttribute(dat%ncid, dat%v_nodal_data_id,
+     &           'm-2 s-2', 'ft-2 s-2')
+            iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
+     &             '_FillValue', doubleval)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
+     &             '_FillValue', doubleval)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
+     &             'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
+     &             'coordinates', 'time y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
+     &             'coordinates', 'time y x')
+            CALL check_err(iret)            
+            iret = nf90_put_att(dat%ncid, dat%u_nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%v_nodal_data_id,
+     &             'mesh', 'adcirc_mesh')
+            CALL check_err(iret)
+C
+C
+         CASE(173)
+C
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
+            dat%varnames(1) = 'cd'
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &         NF90_DOUBLE, dat%nodal_data_dims, dat%nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'long_name', 'wind drag coefficient')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'standard_name',
+     &             'cd')
+            CALL check_err(iret)
+            CALL putUnitsAttribute(dat%ncid, dat%nodal_data_id,
+     &           'non-dim', 'non-dim')
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', doubleval)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'coordinates', 'time y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'mesh', 'adcirc_mesh')
+            CALL check_err(iret)            
+
+C
+        CASE(175)
+C
+            dat%nodal_data_dims(1) = dat%myMesh%num_nodes_dim_id
+            dat%nodal_data_dims(2) = dat%myTime%timenc_dim_id
+            dat%varnames(1) = 'misalign'
+            iret = nf90_def_var(dat%ncid,trim(dat%varnames(1)),
+     &         NF90_DOUBLE, dat%nodal_data_dims, dat%nodal_data_id)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'long_name', 'misalign angle between stress&wind')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             'standard_name',
+     &             'misalign')
+            CALL check_err(iret)
+            CALL putUnitsAttribute(dat%ncid, dat%nodal_data_id,
+     &           'deg', 'deg')
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &             '_FillValue', doubleval)
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'coordinates', 'time y x')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'location', 'node')
+            CALL check_err(iret)
+            iret = nf90_put_att(dat%ncid, dat%nodal_data_id,
+     &            'mesh', 'adcirc_mesh')
+            CALL check_err(iret)            
+
+C
 #if defined CSWAN || defined ADCSWAN
 C
          CASE(164)
@@ -2828,11 +2956,13 @@ C     netcdf4 file format.
             iret = nf_def_var_deflate(dat%ncid, dat%w_nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
-         CASE(47,63,73,90,301:304,306,307)
+         !jie added cd/misalign options   
+         CASE(47,63,73,173,175,90,301:304,306,307)
             iret = nf_def_var_deflate(dat%ncid, dat%nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
-         CASE(64,74,164,305)
+         !jie added wind stress options   
+         CASE(64,74,174,164,305)
             iret = nf_def_var_deflate(dat%ncid, dat%u_nodal_data_id,
      &             1, 1, 2)
             CALL check_err(iret)
@@ -3201,6 +3331,13 @@ C
             CALL writeNodalData(windVel, lun, descript1, timesec)
          CASE(90)
             CALL writeNodalData(tau0nc, lun, descript1, timesec)
+!jie 08.2015            
+         CASE(174)
+            CALL writeNodalData(ws, lun, descript1, timesec)
+         CASE(173)
+            CALL writeNodalData(cd, lun, descript1, timesec)
+         CASE(175)
+            CALL writeNodalData(misalign, lun, descript1, timesec)
 #ifdef CSWAN
          CASE(164)
             CALL writeNodalData(rads, lun, descript1, timesec)
@@ -3638,6 +3775,19 @@ C
       CASE(90)
          iret=nf90_inq_varid(dat%ncid, "tau0", dat%nodal_data_id)
          CALL check_err(iret)
+!jie 08/2015  
+      CASE(174)
+        iret=nf90_inq_varid(dat%ncid, "windstress_x",dat%u_nodal_data_id)
+        CALL check_err(iret)
+        iret=nf90_inq_varid(dat%ncid, "windstress_y",dat%v_nodal_data_id)
+        CALL check_err(iret)
+      CASE(173)
+        iret=nf90_inq_varid(dat%ncid, "cd",dat%nodal_data_id)
+        CALL check_err(iret)
+      CASE(175)
+        iret=nf90_inq_varid(dat%ncid, "misalign",dat%nodal_data_id)
+        CALL check_err(iret)  
+ 
       CASE(164)
         iret=nf90_inq_varid(dat%ncid, "radstress_x",dat%u_nodal_data_id)
         CALL check_err(iret)
@@ -3854,7 +4004,8 @@ C     Write the array values
      &            descript1%array_g)
             CALL check_err(iret)
          ENDIF         
-      CASE(47,63,73,90,301,302,303,304,306,307)
+      !jie 08/2015 added cd/misalign options   
+      CASE(47,63,73,173,175,90,301,302,303,304,306,307)
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
                iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
@@ -3871,8 +4022,9 @@ C     Write the array values
             iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
      &            descript1%array_g, start, kount)
             CALL check_err(iret)
-         ENDIF         
-      CASE(64,74,164,305)
+         ENDIF  
+      !jie 08/2015 added wind stress options        
+      CASE(64,74,174,164,305)
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
                iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,

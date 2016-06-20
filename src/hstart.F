@@ -1941,7 +1941,8 @@ C  tcm v49.16 20100617
       ENDIF
       
 !     jie added nws = 20: generalized asymmetric vortex model
-
+!     jie added wave-dependent wind stress options 08/2015
+!     to be continued
       IF(ABS(NWS).EQ.20) THEN
          OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
              CALL NWS20GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)
@@ -2404,6 +2405,10 @@ C......RESTART THE WAVE RADIATION STRESS
         IF(NRS.GE.1) THEN ! sb46.28sb03
            RSTIME1 = TimeLoc
            RSTIME2 = RSTIME1 + RSTIMINC
+           !jie wave-dependent wind stress
+           WSTIMINC = RSTIMINC
+           WSTIME1 = RSTIME1
+           WSTIME2 = RSTIME2          
            SELECT CASE(NRS)
            CASE(1)           
               OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
@@ -2416,6 +2421,7 @@ C......RESTART THE WAVE RADIATION STRESS
               CALL RS2GET(RSNX2,RSNY2,NP)
            CASE(3,4)
               ! do nothing, initialization takes place in timestep.F
+              !jie 08/2015 to be continued
            CASE DEFAULT
               write(scratchMessage,'(a,i0,a)') 
      &        'The NRS parameter cannot have the value ',NRS,'.' 
@@ -3320,6 +3326,9 @@ c
         IF(NOUTGW.LT.0) THEN
           IGPP=0
           IGWP=0
+          IGWS=0  !jie 08/2015 added for wind stess, cd and misalign
+          IGCD=0
+          IGMIS=0
           NSCOUGW=0
           IGIP=0
           IF((NTCYSGW.LT.ITHS).AND.(NSPOOLGW.GT.0)) THEN
@@ -3344,7 +3353,9 @@ C  kmd48.33bc - change the NDSETSC for the change in the DTDP
  1056     FORMAT(//,' NEW GLOBAL WIND & pressure FILEs WILL BE STARTED')
  2056   FORMAT(//,' NEW GLOBAL WIND & pressure & Ice FILEs WILL BE STARTED')
         ENDIF
-
+        !TO BE CONTINUED 
+        !jie 08/2015 to add for wind stess, cd and misalign
+        !so far not support merging to existing stess,cd and misalign files
         IF(NOUTGW.EQ.-2) THEN
           OPEN(73,file=trim(LOCALDIR)//'/'//'fort.73',
      &          access='DIRECT',recl=nbyte)
