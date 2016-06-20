@@ -94,13 +94,16 @@ endif
 # jgf: The -i-dynamic flag defers the inclusion of the library with 
 # feupdateenv until run time, thus avoiding the error message:
 # "feupdateenv is not implemented and will always fail"
+# jie 08/2015 removed -FI to support free-format compilation
 ifeq ($(compiler),intel)
   PPFC            :=  ifort
   FC            :=  ifort
   PFC           :=  mpif90
-  FFLAGS1       :=  $(INCDIRS) -O2 -FI -assume byterecl -132 -i-dynamic -xSSE4.2 -assume buffered_io
+# FFLAGS1       :=  $(INCDIRS) -O2 -FI -assume byterecl -132 -i-dynamic -xSSE4.2 -assume buffered_io
+  FFLAGS1       :=  $(INCDIRS) -O2 -assume byterecl -132 -i-dynamic -xSSE4.2 -assume buffered_io  
   ifeq ($(DEBUG),full)
-     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -ftrapuv -fpe0  -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+#    FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -ftrapuv -fpe0  -i-dynamic -FI -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
+     FFLAGS1       :=  $(INCDIRS) -g -O0 -traceback -debug all -check all -ftrapuv -fpe0  -i-dynamic -assume byterecl -132 -DALL_TRACE -DFULL_STACK -DFLUSH_MESSAGES
   endif
   FFLAGS2       :=  $(FFLAGS1)
   FFLAGS3       :=  $(FFLAGS1)

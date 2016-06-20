@@ -6675,9 +6675,11 @@ C---------------------------------------------------------------------------
       USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc,
      &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
-     &                   SWAN_OutputTMM10
+     &                   SWAN_OutputTMM10,
+     &                   WSNXOUT, WSNYOUT, CDNOUT, MISALIGN !jie 08/2015
 #else
-      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc
+      USE GLOBAL, ONLY : OutputDataDescript_t, screenUnit, myProc,
+     &                   WSNXOUT, WSNYOUT, CDNOUT, MISALIGN !jie 08/2015 
 #endif
 C
       IMPLICIT NONE
@@ -6701,7 +6703,11 @@ C     unfortunate cut-and-paste duplication unnecessary.
       type(OutputDataDescript_t), SAVE :: PrMinDescript      ! minpr.63
       type(OutputDataDescript_t), SAVE :: WVMaxDescript      ! maxwvel.63
       type(OutputDataDescript_t), SAVE :: RSMaxDescript    
-
+      !jie 08/2015 added to output wind stress, cd and misalignment angle
+      type(OutputDataDescript_t), SAVE :: WSDescript         ! ws.74
+      type(OutputDataDescript_t), SAVE :: CdDescript         ! cd.73
+      type(OutputDataDescript_t), SAVE :: MisalignDescript   ! misalign.73
+      
 !      tcm v50.75 moved RSDescript outside of the ifdef adcswan for use with 
 !      nrs = 3 or nrs= 4
       type(OutputDataDescript_t), SAVE :: RSDescript
@@ -7000,6 +7006,55 @@ C     maxwvel.63
       RSMaxDescript % file_extension       = 63
       RSMaxDescript % file_basename        = 'maxrs'
       call makeFileName(RSMaxDescript)
+      
+! jie 08/2015 added wind stress, cd and misalignment outputs
+! controled by global wind output option NOUTGW
+      
+      ! ws.74
+      WSDescript % specifier            = NOUTGW
+      WSDescript % lun                  = 174
+      WSDescript % initial_value        = 0.0
+      WSDescript % num_items_per_record = 2
+      WSDescript % num_fd_records       = MNP
+      WSDescript % num_records_this     = MNP
+      WSDescript % ConsiderWetDry       = .FALSE.
+      WSDescript % alternate_value      = -99999.0
+      WSDescript % field_name           = "WindStress"
+      WSDescript % file_name            = "ws.74"         
+      WSDescript % file_extension       = 74
+      WSDescript % file_basename        = 'ws'
+      call makeFileName(WSDescript)
+
+      !cd.73
+      CdDescript % specifier            = NOUTGW
+      CdDescript % lun                  = 173
+      CdDescript % initial_value        = 0.0
+      CdDescript % num_items_per_record = 1
+      CdDescript % num_fd_records       = MNP
+      CdDescript % num_records_this     = MNP
+      CdDescript % ConsiderWetDry       = .FALSE.
+      CdDescript % alternate_value      = -99999.0
+      CdDescript % field_name           = "CD"
+      CdDescript % file_name            = "cd.73"         
+      CdDescript % file_extension       = 73
+      CdDescript % file_basename        = 'cd'
+      call makeFileName(CdDescript)
+      
+      !misalign.73
+      MisalignDescript % specifier            = NOUTGW
+      MisalignDescript % lun                  = 175
+      MisalignDescript % initial_value        = 0.0
+      MisalignDescript % num_items_per_record = 1
+      MisalignDescript % num_fd_records       = MNP
+      MisalignDescript % num_records_this     = MNP
+      MisalignDescript % ConsiderWetDry       = .FALSE.
+      MisalignDescript % alternate_value      = -99999.0
+      MisalignDescript % field_name           = "MISALIGN"
+      MisalignDescript % file_name            = "misalign.73"         
+      MisalignDescript % file_extension       = 73
+      MisalignDescript % file_basename        = 'misalign'
+      call makeFileName(MisalignDescript)
+      
 
 !  tcm v50.75 removed ifdef adcswan to allow for use whenever nrs=3 or nrs=4
 !#ifdef ADCSWAN
@@ -7597,7 +7652,11 @@ C     was specified.
       CALL initNetCDFOutputFile(PrMinDescript, reterr)
       CALL initNetCDFOutputFile(WVMaxDescript, reterr)      
       CALL initNetCDFOutputFile(RSMaxDescript,reterr)
- 
+! jie 08/2015 create netcdf files for ws, cd, and misalign
+      CALL initNetCDFOutputFile(WSDescript,reterr)
+      CALL initNetCDFOutputFile(CdDescript,reterr)
+      CALL initNetCDFOutputFile(MisalignDescript,reterr)
+      
 ! tcm v50.75 moved ifdef adcswan below RSDescript only to allow
 !  for use whenever nrs=3 or nrs=4     
 !#ifdef ADCSWAN

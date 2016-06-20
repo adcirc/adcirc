@@ -11,6 +11,7 @@ SRCDIR?=..
 #  vjp 9/18/2006  made mods for Robert McLay's globalio module
 #  vjp 9/19/2006  made mods for Shintaro's winds and waves
 #  tcm 03/30/2011 added owi_ice module v49.64.01
+#  jie 08/2015    added wave-dependent wind stress modules
 
 ########################################################################
 #  Get Canonical Machine NAME from config.guess
@@ -298,6 +299,9 @@ NA_MSRC    =  nodalattr.F
 NC_MSRC    =  netcdfio.F
 GIO_MSRC   =  globalio.F
 WRIT_MSRC  =  write_output.F
+#jie 08/2015 added wave-dependent wind stress options
+WS1_MSRC   =  w3fld1md.F90
+WS2_MSRC   =  w3fld2md.F90
 #Casey 090302: Add file for coupling to unstructured SWAN.
 COUP_MSRC  =  couple2swan.F
 #tcm v49.48.01 Adding File for kdtree2 fast search algorithm
@@ -322,6 +326,9 @@ WIND_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WIND_MSRC)  )
 NA_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NA_MSRC)  )
 NC_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NC_MSRC)  )
 GIO_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(GIO_MSRC)  ) 
+#jie 08/2015 added rules for wave-dependent wind stress options
+WS1_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(WS1_MSRC)  )
+WS2_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(WS2_MSRC)  )
 #Casey 090302: Add rules for coupling to unstructured SWAN.
 COUP_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(COUP_MSRC)  )
 # tcm v49.48.01 Adding rule for kdtree2 fast search algorithm
@@ -329,10 +336,9 @@ KDTREE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(KDTREE_MSRC) )
 
 ############################# Source & Object Files ######################
 #meb 04/20/2004 - added machdep.F onto POST_SRC
-
 METIS_SRC  =  metis.F
 PREP_SRC   =  adcprep.F decomp.F read_global.F prep.F interp.F machdep.F
-ADC_SRC    =  adcirc.F read_input.F cstart.F hstart.F timestep.F vsmy.F transport.F
+ADC_SRC    =  adcirc.F read_input.F cstart.F hstart.F timestep.F vsmy.F transport.F 
 POST_SRC   =  adcpost.F post.F compare.F diffmerge.F machdep.F
 P15_SRC    =  p15.F
 OWI_SRC    =  owi22.F
@@ -396,7 +402,11 @@ $(O_DIR)%.o  : %.c
 $(O_DIR)%.o  : %.F
 	$(CF) -c $(FFLAGS) -o $@  $<
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
-
+# jie 08/2015
+$(O_DIR)%.o  : %.F90
+	$(CF) -c $(FFLAGS) -o $@  $<
+	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
+	
 # Casey 080106: Added the following rules for the unstructured SWAN.
 $(O_DIR)%.o  : %.f
 	$(CF) -c $(FLAGS_OPT) $(FLAGS_MSC) $(FLAGS_SER) $(IMODS) $(O_DIR) -o $@  $<
@@ -515,16 +525,16 @@ endif
 #Casey 080106: Added the following lines.
    adcswan :: $(O_DIR)
 ifeq ($(NETCDF),enable)
-   adcswan ::  $(NC_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+   adcswan ::  $(NC_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o $(WS1_MOBJ) $(WS2_MOBJ) #jie
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 else
-   adcswan :: $(SWAN_MOBJ)  $(KDTREE_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+   adcswan :: $(SWAN_MOBJ)  $(KDTREE_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o $(WS1_MOBJ) $(WS2_MOBJ) #jie
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(LDFLAGS)
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 endif
    padcswan :: $(O_DIR)
-   padcswan ::  $(NA_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o
+   padcswan ::  $(NA_MOBJ) $(MSG_MOBJ) $(SWAN_MOBJ) $(KDTREE_MOBJ) $(ADC_OBJ) $(SWAN_OBJ) $(O_DIR)driver.o $(WS1_MOBJ) $(WS2_MOBJ) #jie
 	$(CF) $(FFLAGS) -o $@ $(wildcard $(O_DIR)*.o) $(LIBS) $(MSGLIBS) 
 
    p15     ::  $(P15_OBJ) 
@@ -676,8 +686,11 @@ $(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ)
 $(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ) 
 $(O_DIR)itpackv.o     :  itpackv.F    $(ADC_MOBJ)
 $(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
-#Casey 090302: Added the next line.
-$(O_DIR)couple2swan.o :  couple2swan.F $(O_DIR)write_output.o
+#jie 08/2015 Added wave-dependent wind stress modules with dependencies to be continued
+$(O_DIR)w3fld1md.o    :  w3fld1md.F90 $(SWAN_MOBJ) 
+$(O_DIR)w3fld2md.o    :  w3fld2md.F90 $(SWAN_MOBJ) $(WS1_MOBJ) 
+#Casey 090302: Added the next line. jie 08/2015
+$(O_DIR)couple2swan.o :  couple2swan.F $(O_DIR)write_output.o $(WS1_MOBJ) $(WS2_MOBJ) #jie
 # tcm v49.48.01 added for fast search algorithm
 $(O_DIR)kdtree2.o : kdtree2.F
 # jgf51.21.22: modularized mesh and boundaries
@@ -708,10 +721,13 @@ $(O_DIR)transport.o   : transport.F
 $(O_DIR)cstart.o      : cstart.F    
 $(O_DIR)hstart.o      : hstart.F  
 $(O_DIR)timestep.o    : timestep.F
+#jie 08/2015 11/2015
+$(O_DIR)w3fld1md.o    : w3fld1md.F90
+$(O_DIR)w3fld2md.o    : w3fld2md.F90 $(WS1_MOBJ)
 ifeq ($(NETCDF),enable)
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ)  $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ)  $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(WS1_MOBJ) $(WS2_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
 else
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(WS1_MOBJ) $(WS2_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
 endif
 $(O_DIR)driver.o      : driver.F $(O_DIR)adcirc.o
 
@@ -754,7 +770,7 @@ $(O_DIR)swmod2.o                : swmod2.f
 $(O_DIR)m_constants.o           : m_constants.f90
 $(O_DIR)m_fileio.o              : m_fileio.f90
 $(O_DIR)serv_xnl4v5.o           : serv_xnl4v5.f90
-$(O_DIR)mod_xnl4v5.0            : mod_xnl4v5.f90
+$(O_DIR)mod_xnl4v5.o            : mod_xnl4v5.f90  #jie
 $(O_DIR)couple2adcirc.o         : couple2adcirc.f90
 $(O_DIR)SwanGriddata.o          : SwanGriddata.f90
 $(O_DIR)SwanGridobjects.o       : SwanGridobjects.f90
