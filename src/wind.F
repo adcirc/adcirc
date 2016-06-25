@@ -1106,13 +1106,15 @@ c     IF(LENKGDS.GT.0) READ(IEXT,END=1100) (kgds(j),j=1,lenkgds)
 c     IF(NWORDS.GT.0) READ(IEXT,END=1100) (PG(J),J=1,NWORDS)
 
 C...Open and read the ASCII data file
-
-      OPEN(IEXT,FILE=FNAME1,status='old',iostat=kerr)
+      !
+      ! jgf52.30.05: Always use the same i/o unit number to avoid collisions
+      ! with SWAN i/o unit numbers. 
+      OPEN(200,FILE=FNAME1,status='old',iostat=kerr)
       DO I=1,LONB*LATB
-         READ(IEXT,*) PG(I),UG(I),VG(I)
+         READ(200,*) PG(I),UG(I),VG(I)
       ENDDO
 
- 1100 CLOSE(IEXT)
+ 1100 CLOSE(200)
 
 
 C.....Go from the Gaussian grid to the ADCIRC grid

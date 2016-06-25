@@ -2,6 +2,12 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.30.05 - 06/25/2016 - Extended workaround for the issue where ADCIRC
+C           opens i/o unit numbers currently in use by SWAN so that it covers
+C           any/all i/o unit numbers that ADCIRC might use (this issue was
+C           causing mysterious hangs in parallel); changed GFS read routine
+C           (NWS10) so that it always uses the same unit number to avoid
+C           collisions with SWAN. 
 C  v52.30.04 - 06/18/2016 - Enabled inverted barometer modification of 
 C           elevation specified boundaries using metControl namelist in 
 C           fort.15 with invertedBarometerOnElevationBoundary=.true.
