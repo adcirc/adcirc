@@ -71,6 +71,7 @@ type(xdmfMetaData_t) :: md  ! holds the metadata for whatever data we are writin
 !
 real(8), allocatable :: data_array1(:)
 real(8), allocatable :: data_array3(:,:)
+real(8), allocatable :: depth(:)
 !
 integer :: lastSlashPosition ! used for trimming full path from a filename
 integer :: lastDotPosition ! to determine file extension
@@ -282,9 +283,12 @@ call writeMetaData(xdmfFortranObj, md)
 ! write projection info 
 md%variable_name_id = XdmfAddInformation(xdmfFortranObj, 'projection'//CHAR(0), &
    trim(projection)//CHAR(0))
+
+allocate(depth(1:np))
+depth(:) = xyd(3,:)
 depthID = XdmfAddAttribute(xdmfFortranObj, trim(md%variable_name)//CHAR(0), &
    XDMF_ATTRIBUTE_CENTER_NODE, XDMF_ATTRIBUTE_TYPE_SCALAR, np, &
-   XDMF_ARRAY_TYPE_FLOAT64, xyd(3,:))
+   XDMF_ARRAY_TYPE_FLOAT64, depth)
 write(6,'(a)') 'INFO: Finished writing bathy/topo to XDMF file.'
 !
 ! read the data from the adcirc data file and write datasets to xdmf

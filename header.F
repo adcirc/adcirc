@@ -2,6 +2,8 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.31 - 06/28/2016 - Fixing adcirc2xdmf.f90 segfault under intel compiler
+            by removing implicit array creation from function call
 C  v52.30 - 05/11/2016 - Resolved minor conflicts (mainly confined to 
 C           USE statements) when merging the txout branch r1120:1202 
 C           to trunk. Changes in the too-long txout branch are as

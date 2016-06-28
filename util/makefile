@@ -52,8 +52,8 @@ ifeq ($(NETCDF4_COMPRESSION),enable)
 endif
 #
 #
-OBJ := adcmesh.o control.o nodalattr.o asgsio.o adcircdata.o
-MODS := control.mod adcmesh.mod nodalattr.mod asgsio.mod adcircdata.mod
+OBJ := adcmesh.o control.o adcircdata.o nodalattr.o asgsio.o
+MODS := control.mod adcmesh.mod adcircdata.mod nodalattr.mod asgsio.mod
 #
 # targets
 all : adcirc2xdmf xdmf2adcirc
