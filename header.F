@@ -2,6 +2,8 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.30.06 - 07/14/2016 - Fixed issue in adcprep where the finding of the
+C           time varying weirs list was erroneously reported. 
 C  v52.30.05 - 06/25/2016 - Extended workaround for the issue where ADCIRC
 C           opens i/o unit numbers currently in use by SWAN so that it covers
 C           any/all i/o unit numbers that ADCIRC might use (this issue was
