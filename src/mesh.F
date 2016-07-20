@@ -37,6 +37,7 @@ C     ------------------------------------------------------------------
 
       integer, allocatable :: lbarray_pointer(:)
       integer, allocatable :: nneigh(:) !(MNP) number of neighboring nodes for each node
+      integer, allocatable :: nneighele(:)
       integer, allocatable :: mju(:)
       integer, allocatable :: nodele(:)
       integer, allocatable :: neitab(:,:) !(MNP,MNEI) table of neighbor nodes for each node
@@ -437,18 +438,18 @@ C     ------------------------------------------------------------------
             internalFluxBoundaries(ifwpCount)%indexNum = k
             do j = 1, nvell(k)
                read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) 
-     &                        internalFluxBoundariesWithPipes(ifCount)%nodes(j), 
-     &                        internalFluxBoundariesWithPipes(ifCount)%ibconn(j), 
-     &                        internalFluxBoundariesWithPipes(ifCount)%barinht(j), 
-     &                        internalFluxBoundariesWithPipes(ifCount)%barincfsb(j),
-     &                        internalFluxBoundariesWithPipes(ifCount)%barincfsp(j),
-     &                        internalFluxBoundariesWithPipes(ifCount)%pipeht(j),
-     &                        internalFluxBoundariesWithPipes(ifCount)%pipecoef(j),
-     &                        internalFluxBoundariesWithPipes(ifCount)%pipediam(j)
+     &                        internalFluxBoundariesWithPipes(ifwpCount)%nodes(j), 
+     &                        internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j), 
+     &                        internalFluxBoundariesWithPipes(ifwpCount)%barinht(j), 
+     &                        internalFluxBoundariesWithPipes(ifwpCount)%barincfsb(j),
+     &                        internalFluxBoundariesWithPipes(ifwpCount)%barincfsp(j),
+     &                        internalFluxBoundariesWithPipes(ifwpCount)%pipeht(j),
+     &                        internalFluxBoundariesWithPipes(ifwpCount)%pipecoef(j),
+     &                        internalFluxBoundariesWithPipes(ifwpCount)%pipediam(j)
                internalFluxBoundariesWithPipes(ifCount)%xdmf_nodes(j) = 
-     &                        internalFluxBoundariesWithPipes(ifCount)%nodes(j) - 1
+     &                        internalFluxBoundariesWithPipes(ifwpCount)%nodes(j) - 1
                internalFluxBoundariesWithPipes(ifCount)%xdmf_ibconn(j) = 
-     &                        internalFluxBoundariesWithPipes(ifCount)%ibconn(j) - 1
+     &                        internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j) - 1
                lineNum = lineNum + 1                                           
             end do
             ifwpCount = ifwpCount + 1
@@ -2675,7 +2676,7 @@ C     ------------------------------------------------------------------
       REAL(8) :: ANGLELOW,ANGLEMORE
       REAL(8), ALLOCATABLE :: ANGLE(:)
       INTEGER, ALLOCATABLE :: NEITEM(:)
-      INTEGER, ALLOCATABLE :: NNEIGHELE(:)
+
 C
       call setMessageSource("neighb")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
@@ -2823,7 +2824,6 @@ C
          IF(NNeigh(N).LT.NEIMIN) NEIMIN=NNeigh(N)
          IF(NNeigh(N).GT.NEIMAX) NEIMAX=NNeigh(N)
       END DO
-
 C
 C  WRITE OUT DIAGNOSTIC OUTPUT
 C

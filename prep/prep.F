@@ -1940,7 +1940,9 @@ C
             write(15,*) "&metControl "
             write(15,*) "    WindDragLimit=",Winddraglimit,","
             write(15,*) "    DragLawString='",Draglawstring,"',"
-            write(15,*) "    rhoAir=",rhoAir
+            write(15,*) "    rhoAir=",rhoAir,","
+            write(15,*) "    invertedBarometerOnElevationBoundary=",
+     &                        invertedBarometerOnElevationBoundary
             write(15,*) "/"
             write(15,*) '! -- End Met Control Namelist --'
          endif

@@ -541,7 +541,7 @@ c... tcm v50.79 added
 
 Cobell - Added TVW Namelist
       READ(15,NML=tvwControl,IOSTAT=IOS_TVW)
-      IF(IOS_TVW.GE.0)THEN
+      IF(IOS_TVW.EQ.0)THEN
         FOUND_TVW_NML = .TRUE.
       ELSE
         FOUND_TVW_NML = .FALSE.

@@ -128,6 +128,12 @@ C
       real(sz) :: GFDL_max_extrap_dist     ! maximum distance for extrapolating values (meters)
       real(sz) :: GFDL_WindMultiplier      ! all GFDL wind u,v's multiplied by this
 
+      ! jgf52.30.04: Allow the inverted barometer condition to be 
+      ! activated on elevation-specified boundaries so that low pressure
+      ! systems crossing the boundary won't trigger numerical instabilities.
+      ! This is normally .false. but can be set to .true. in the fort.15
+      ! in the metControl namelist. 
+      logical :: invertedBarometerOnElevationBoundary
 
 C------------------------end of data declarations-----------------------
       CONTAINS
@@ -171,6 +177,8 @@ C     ----------------------------------------------------------------
       ! support.
       DragLawString = 'Powell'
 #endif
+
+      invertedBarometerOnElevationBoundary = .false.
 
       RETURN
 C     ----------------------------------------------------------------
@@ -1098,13 +1106,15 @@ c     IF(LENKGDS.GT.0) READ(IEXT,END=1100) (kgds(j),j=1,lenkgds)
 c     IF(NWORDS.GT.0) READ(IEXT,END=1100) (PG(J),J=1,NWORDS)
 
 C...Open and read the ASCII data file
-
-      OPEN(IEXT,FILE=FNAME1,status='old',iostat=kerr)
+      !
+      ! jgf52.30.05: Always use the same i/o unit number to avoid collisions
+      ! with SWAN i/o unit numbers. 
+      OPEN(200,FILE=FNAME1,status='old',iostat=kerr)
       DO I=1,LONB*LATB
-         READ(IEXT,*) PG(I),UG(I),VG(I)
+         READ(200,*) PG(I),UG(I),VG(I)
       ENDDO
 
- 1100 CLOSE(IEXT)
+ 1100 CLOSE(200)
 
 
 C.....Go from the Gaussian grid to the ADCIRC grid

@@ -3248,7 +3248,7 @@ C
       USE SIZES
       USE GLOBAL
       USE MESH, ONLY : NE, NP, NM, X, Y, DP, NNeigh, NeiTab, TotalArea,
-     &                  Areas, NEIMAX, SFAC
+     &                  Areas, NEIMAX, SFAC, nneighele, neitabele
       USE BOUNDARIES, ONLY : NETA, NFLUXF, NFLUXB, NFLUXGBC, NFLUXIB, 
      &   NFLUXRBC, NOPE, NVEL, NBD, NBV, LBCODEI, BndLen2O3 
       USE WIND
@@ -3539,14 +3539,31 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
             DIE = .FALSE.
             DO I=1,NP
                IF(COEF(I,1).EQ.0.d0) COEF(I,1)=EP
-               IF(COEF(I,1).LT.0.d0) THEN
+               IF(COEF(I,1).LT.0.d0) THEN                  
                   IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
      &              WRITE(ScreenUnit,1019) I,COEF(I,1)
                   WRITE(16,1019) I,COEF(I,1)
                   DIE = .TRUE.
                ENDIF
             ENDDO
-            IF (DIE) CALL ADCIRC_Terminate()
+            IF (DIE) THEN
+               ! jgfdebug
+               open(899,file='debug.txt',status='replace',action='write')
+                  do i=1,np
+                     if (coef(i,1).lt.0.d0) then
+                        do j=2,nneighele(i)
+                           if (neitabele(i,j).ne.0) then
+                              write(6,
+     & '("Node ",i0," element ",i0," area=",f15.7)') i, j, 
+     &  areas(neitabele(i,j))
+                           endif
+                        enddo
+                     endif
+                  enddo
+               close(899)
+               ! end jgfdebug
+               CALL ADCIRC_Terminate()
+            ENDIF
 
          ELSE  ! jgf48.4619: include Seizo's changes for lumped LHS
 
@@ -4182,19 +4199,23 @@ C...  FOR APERIODIC ELEVATION BOUNDARY CONDITION
             END DO
          ENDIF
       endif                                      ! NCSU Subdomain
-      
+C
 C
 C     jgf48.04 Added an inverted barometer boundary condition so that
 C     low pressure systems can cross the boundary without creating an
 C     elevation anomaly.
-C      DO I=1,NETA
-C         ETA2(NBD(I))=ETA2(NBD(I))
-C     &       + RampMete*(101300.d0/(RHOWAT0*G)) - PR2(NBD(I))
-C      END DO
+C     jgf52.30.04: Included a parameter from fort.15 to turn this 
+C     on and off according to analyst preference. 
+      if (invertedBarometerOnElevationBoundary.eqv..true.) then
+         DO I=1,NETA
+            ETA2(NBD(I))=ETA2(NBD(I))
+     &          + RampMete*(101300.d0/(RHOWAT0*G)) - PR2(NBD(I))
+         END DO
+      endif
 
 C   kmd48.33bc add information for the levels of no motion boundary conditions
 C              these are considered the steric adjustments.
-      IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic).AND.(NOPE.GT.0))  THEN
+      IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic).AND.(NOPE.GT.0))THEN
          DO I=1,NETA
            NBDI=NBD(I)
            ETA2(NBDI) = ETA2(NBDI) + LNM_BC(I)

@@ -884,12 +884,16 @@ C... v49.64.01 tcm -- added for ice stations
       ! tcm v50.75 removed ifdef cswan to allow for use whenever nrs=3 or nrs=4
       ! rads.64
       ! Radiation Stress
-      IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
+      IF ( (MNPROC.gt.1).and.(MyProc.eq.0).and.(nrs.ne.0) ) THEN
          ALLOCATE(RSNXOUT_g(NP_G))
          ALLOCATE(RSNYOUT_g(NP_G))
       ENDIF
       RSDescript % lun                  = 164
-      RSDescript % specifier            = NOUTGW
+      if (nrs.eq.0) then
+         RSDescript % specifier            = OFF
+      else
+         RSDescript % specifier            = NOUTGW
+      endif
       RSDescript % startTimeStep           = NTCYSGW 
       RSDescript % endTimeStep             = NTCYFGW
       RSDescript % outputTimeStepIncrement = NSPOOLGW
@@ -906,9 +910,16 @@ C... v49.64.01 tcm -- added for ice stations
       RSDescript % field_name           = 'RadStress'
       RSDescript % file_basename            = 'rads'
       RSDescript % file_extension       = 64
-      if ((nrs.ne.3).and.(nrs.ne.4)) then
+      if (nrs.eq.0) then
          RSDescript % writeFlag         = .false.
       endif
+#ifndef CSWAN
+      ! jgf52.30.02: Turn off rads.64 if compiled without SWAN but
+      ! NRS erroneously set to 3. 
+      if (nrs.eq.3) then
+         RSDescript % writeFlag         = .false.
+      endif
+#endif
 
       ! fort.81
       IF ( (MNPROC.gt.1) .and. (MyProc.eq.0) ) THEN
