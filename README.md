@@ -76,6 +76,11 @@ git commit
 git push
 ```
 
+Note: In some cases you may need to be more specific with your checkout:
+```
+git checkout --track origin/myBranch
+```
+
 ### Introduction
 
 Git is a version control system. That is, it provides a means for many software developers to work on a  project while maintaining a historical record of changes to source code.
@@ -157,6 +162,11 @@ To checkout the GPGPU-CUDA branch, simply type:
 
 ```
 git checkout GPGPU-CUDA
+```
+
+Note: In some cases you may need to be more specific with your checkout:
+```
+git checkout --track origin/myBranch
 ```
 
 Branches can be created using the command:
