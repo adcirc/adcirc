@@ -37,6 +37,7 @@ C     ------------------------------------------------------------------
 
       integer, allocatable :: lbarray_pointer(:)
       integer, allocatable :: nneigh(:) !(MNP) number of neighboring nodes for each node
+      integer, allocatable :: nneighele(:)
       integer, allocatable :: mju(:)
       integer, allocatable :: nodele(:)
       integer, allocatable :: neitab(:,:) !(MNP,MNEI) table of neighbor nodes for each node
@@ -2675,7 +2676,7 @@ C     ------------------------------------------------------------------
       REAL(8) :: ANGLELOW,ANGLEMORE
       REAL(8), ALLOCATABLE :: ANGLE(:)
       INTEGER, ALLOCATABLE :: NEITEM(:)
-      INTEGER, ALLOCATABLE :: NNEIGHELE(:)
+
 C
       call setMessageSource("neighb")
 #if defined(MESH_TRACE) || defined(ALL_TRACE)

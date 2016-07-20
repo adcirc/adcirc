@@ -2,6 +2,13 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.30.07 - 07/20/2016 - Applied tcm fix that originally went into
+C           v51.52.38 r1210 of v51release branch and includes makefile
+C           fixes for building XDMF support into libadc.a as well as: 
+C           06/07/2016 - tcm - Added unsetMessageSource calls after the 
+C           writer_main and hswriter_main calls in ADCIRC_Run, otherwise
+C           for coupled simulations where ADCIRC_Run is called multiple
+C           times, the Message number will run out of dimensions.
 C  v52.30.06 - 07/14/2016 - Fixed issue in adcprep where the finding of the
 C           time varying weirs list was erroneously reported. 
 C  v52.30.05 - 06/25/2016 - Extended workaround for the issue where ADCIRC
