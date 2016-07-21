@@ -40,7 +40,7 @@
     NETCDF4, XDMF
     USE GLOBAL, ONLY : DEBUG, ECHO, INFO, WARNING, ERROR, &
     screenMessage, logMessage, allMessage, setMessageSource, &
-    unsetMessageSource, scratchMessage &
+    unsetMessageSource, scratchMessage 
 
     USE NETCDF        ! enables the fortran 90 interface to netcdf
     IMPLICIT NONE
@@ -367,7 +367,7 @@
     (descript1 % specifier == 0) ) then
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-    #endif
+#endif
         call unsetMessageSource()
         RETURN
     ENDIF
@@ -529,7 +529,7 @@
     IF ( descript1 % num_fd_records == 0 ) THEN
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-    #endif
+#endif
         call unsetMessageSource()
         RETURN
     ENDIF
@@ -558,7 +558,7 @@
         endif
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-    #endif
+#endif
         call unsetMessageSource()
         RETURN
     ENDIF
@@ -1282,7 +1282,7 @@
         ENDIF
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-    #endif
+#endif
         call unsetMessageSource()
         RETURN
     ENDIF
@@ -3264,7 +3264,7 @@
     IF ((descript%lun /= 67) .AND. (descript%lun /= 68)) THEN
         IF ((IHOT == 0) .OR. (descript%specifier < 0) .OR. &
         (myFile%fileFound.eqv. .FALSE. )) THEN
-        #ifdef CMPI
+#ifdef CMPI
         ! jgf49.31 when this subroutine is called by ADCIRC running in
         ! parallel, it should never create a new file, since that
         !  is the job of adcprep ... the file cannot be created
@@ -3279,7 +3279,7 @@
                 call allMessage(ERROR,scratchMessage)
                 ret_error = .TRUE. 
             ENDIF
-        #else
+#else
         ! these lines are executed by serial adcirc and adcprep
         
         ! jgf52.08.25: It may be a non-NetCDF min/max will be written,
@@ -3290,11 +3290,11 @@
                 myFile%createFile = .TRUE. 
                 myFile%record_counter = 0
             endif
-        #endif
+#endif
         ENDIF
     ELSE
     ! these lines are executed to create netcdf hotstart files
-    #ifdef CMPI
+#ifdef CMPI
         IF (myFile%fileFound.eqv. .TRUE. ) THEN
             call screenMessage(DEBUG, &
             "Hotstart file was created by adcprep.")
@@ -3305,17 +3305,17 @@
             "It should have been created by adcprep.")
             ret_error = .TRUE. 
         ENDIF
-    #else
+#else
         myFile%createFile = .TRUE. 
         myFile%record_counter = 0
-    #endif
+#endif
     ENDIF
 
 !     RETURN if we don't need to create a file.
     IF (myFile%createFile.eqv. .FALSE. ) THEN
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-    #endif
+#endif
         call unsetMessageSource()
         RETURN
     ENDIF
@@ -3645,7 +3645,7 @@
     IF ( descript1 % num_fd_records == 0 ) THEN
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-    #endif
+#endif
         call unsetMessageSource()
         RETURN
     ENDIF
@@ -4490,7 +4490,7 @@
     if ( ncerror.eqv. .TRUE. ) then
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-    #endif
+#endif
         call unsetMessageSource()
         return
     endif
@@ -7150,9 +7150,9 @@
         trim(adjustl(hs%myFile%FILENAME)), &
         ' was not found; ADCIRC terminating.'
         call allMessage(ERROR,scratchMessage)
-    #ifdef CMPI
+#ifdef CMPI
         CALL MSG_FINI()
-    #endif
+#endif
         STOP
     ELSE
         iret = nf90_open(hs%myFile%FILENAME, NF90_NOWRITE, hs%ncid)
@@ -7449,7 +7449,7 @@
         '" was not found.')
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-    #endif
+#endif
         call unsetMessageSource()
         RETURN ! RETURN RETURN
     else
@@ -7472,7 +7472,7 @@
         'so the min/max record will be started anew.')
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
         call allMessage(DEBUG,"Return.")
-    #endif
+#endif
         call unsetMessageSource()
     
     ! now close the netcdf file
@@ -7515,9 +7515,9 @@
             call allMessage(INFO,'The record for '// &
             trim(dat%myFile%filename)// &
             ' will be started anew and exection will continue.')
-    #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
+#if defined(NETCDF_TRACE) || defined(ALL_TRACE)
             call allMessage(DEBUG,"Return.")
-        #endif
+#endif
             call unsetMessageSource()
         
         ! now close the netcdf file
@@ -7895,9 +7895,9 @@
     IF (hs%myFile%fileFound.eqv. .FALSE. ) THEN
         WRITE(*,*) "ERROR: The file ",hs%myFile%FILENAME, &
         " was not found; ADCIRC terminating."
-    #ifdef CMPI
+#ifdef CMPI
         CALL MSG_FINI()
-    #endif
+#endif
         STOP
     ELSE
         iret = nf90_open(hs%myFile%FILENAME, NF_NOWRITE, hs%ncid)
@@ -8210,9 +8210,9 @@
     IF (hs%myFile%fileFound.eqv. .FALSE. ) THEN
         WRITE(*,*) "ERROR: The file ",hs%myFile%FILENAME, &
         " was not found; ADCIRC terminating."
-    #ifdef CMPI
+#ifdef CMPI
         CALL MSG_FINI()
-    #endif
+#endif
         STOP
     ELSE
         iret = nf90_open(hs%myFile%FILENAME, NF_NOWRITE, hs%ncid)
@@ -8352,9 +8352,9 @@
     IF (hs%myFile%fileFound.eqv. .FALSE. ) THEN
         WRITE(*,*) "ERROR: The file ",hs%myFile%FILENAME, &
         " was not found; ADCIRC terminating."
-    #ifdef CMPI
+#ifdef CMPI
         CALL MSG_FINI()
-    #endif
+#endif
         STOP
     ELSE
         iret = nf90_open(hs%myFile%FILENAME, NF_NOWRITE, hs%ncid)
@@ -8738,7 +8738,7 @@
         myMesh%nbdvnc_dims, myMesh%nbdvnc_id)
         CALL check_err(iret)
     ! jgf50.44: Turn on compression if this is a netcdf4 formatted file.
-    #ifdef NETCDF_CAN_DEFLATE
+#ifdef NETCDF_CAN_DEFLATE
         IF (myFile%ncformat == ior(NF_CLASSIC_MODEL,NF_NETCDF4)) THEN
             iret = nf90_def_var_deflate(ncid, myMesh%nvdllnc_id, &
             &              1, 1, 2)
@@ -8750,7 +8750,7 @@
             &              1, 1, 2)
             CALL check_err(iret)
         ENDIF
-    #endif
+#endif
     endif
 !     Define normal flow boundary information
     if (myMesh%nbounc /= 0) then
@@ -8775,7 +8775,7 @@
         myMesh%nbvvnc_dims, myMesh%nbvvnc_id)
         CALL check_err(iret)
     ! jgf50.44: Turn on compression if this is a netcdf4 formatted file.
-    #ifdef NETCDF_CAN_DEFLATE
+#ifdef NETCDF_CAN_DEFLATE
         IF (myFile%ncformat == ior(NF_CLASSIC_MODEL,NF_NETCDF4)) THEN
             iret = nf90_def_var_deflate(ncid, myMesh%nvellnc_id, &
             &              1, 1, 2)
@@ -8787,7 +8787,7 @@
             &              1, 1, 2)
             CALL check_err(iret)
         ENDIF
-    #endif
+#endif
     endif
 !     -------------------
 !     Define Z coordinate

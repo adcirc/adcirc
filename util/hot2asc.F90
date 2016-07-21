@@ -322,7 +322,7 @@
 
     implicit none
     integer :: in, out, irec, size, i
-    real :: (8) :: x
+    real(8) :: x
     character(*) :: varname
 
     write(out, 1000) trim(varname)

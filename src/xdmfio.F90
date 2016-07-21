@@ -24,7 +24,7 @@
     use mesh
     use sizes,only:XDMF
     implicit none
-    include 'adcirc_Xdmf.f'
+    include 'adcirc_Xdmf.f90'
     type(OutputDataDescript_t) :: descript
     integer :: informationID
     integer :: i, j
@@ -91,7 +91,7 @@
     use sizes,only: mnproc
     implicit none
 #ifdef ADCXDMF
-    include 'adcirc_Xdmf.f'
+    include 'adcirc_Xdmf.f90'
 #endif
     type(OutputDataDescript_t) :: descript
     real(8), intent(in) :: timeLoc
@@ -352,7 +352,7 @@
     use global, only : OutputDataDescript_t
     implicit none
 #ifdef ADCXDMF
-    include 'adcirc_Xdmf.f'
+    include 'adcirc_Xdmf.f90'
     type(OutputDataDescript_t) :: descript
 
 ! close this grid collection, writing it to the heavy data (HDF5) file
@@ -386,7 +386,7 @@
     use global
     implicit none
 #ifdef ADCXDMF
-    include 'adcirc_Xdmf.f'
+    include 'adcirc_Xdmf.f90'
 
     type(OutputDataDescript_t) :: descript
 
@@ -456,7 +456,7 @@
     use global, only : OutputDataDescript_t
     implicit none
 #ifdef ADCXDMF
-    include 'adcirc_Xdmf.f'
+    include 'adcirc_Xdmf.f90'
 
     type(OutputDataDescript_t) :: descript
     character(1024) :: fluxBoundaryType ! character represenation of IBTYPE
@@ -611,7 +611,7 @@
     use global, only : OutputDataDescript_t
     implicit none
 #ifdef ADCXDMF
-    include 'adcirc_Xdmf.f'
+    include 'adcirc_Xdmf.f90'
 
     type(OutputDataDescript_t) :: descript
     character(len=256) :: fluxBoundaryType
@@ -702,7 +702,7 @@
     use boundaries, only : neta, nvel, nfluxf, lbcodei
     use mesh, only : slam0, sfea0
     implicit none
-    include 'adcirc_Xdmf.f'
+    include 'adcirc_Xdmf.f90'
     integer*8, intent(in) :: xdmfFortranObj ! XDMF object to receive data
     character(len=80) :: wtimincLine
     character(len=80) :: rstimincLine
@@ -1157,7 +1157,7 @@
 !---------------------------------------------------------------------
     subroutine writeStationsXDMF(nsta, stax, stay, stationType, xdmfFortranObj)
     implicit none
-    include 'adcirc_Xdmf.f'
+    include 'adcirc_Xdmf.f90'
     integer, intent(in) :: nsta
     real(sz), intent(in) :: stax(:)
     real(sz), intent(in) :: stay(:)

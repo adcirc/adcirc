@@ -4838,9 +4838,9 @@ ENDIF
 
         if ( timeloc > GFDL_Files(numFiles)%cycleTime ) then
 
-            write(scratchMessage,'("The current ADCIRC time ", &
-            E15.8," (days) is later than the last GFDL Met file time: ", &
-            E15.8, " (days). Inserting a blank wind snap.")') &
+            write(scratchMessage,'("The current ADCIRC time ",'// &
+                'E15.8," (days) is later than the last GFDL Met file time: "'// &
+                'E15.8, " (days). Inserting a blank wind snap.")') &
             timeloc/86400.d0,GFDL_Files(numFiles)%cycleTime/86400.d0
             call logMessage(WARNING,scratchMessage)
             currentCycle = numFiles-1

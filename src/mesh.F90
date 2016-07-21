@@ -513,7 +513,7 @@
     // 'with XDMF support.')
     call terminate()
 #else
-    include 'adcirc_Xdmf.f'
+    include 'adcirc_Xdmf.f90'
     integer*8 :: xdmfFortranObj
     integer, allocatable :: xdmf_nm(:,:)   ! 0-offset connectivity array
     integer, allocatable :: setSize(:)
@@ -2969,7 +2969,7 @@ END DO   ! K=1,NBOU
     subroutine getAttributeCharacteristicsXDMF(xdmfFortranObj, attributeIndex)
 #ifdef ADCXDMF
     implicit none
-    include 'adcirc_Xdmf.f'
+    include 'adcirc_Xdmf.f90'
 #endif
     integer*8, intent(in) :: xdmfFortranObj
     integer, intent(in) :: attributeIndex

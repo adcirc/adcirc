@@ -413,7 +413,7 @@
     WRITE(*,*) '  ***  AFTER PCHIST  '
 
     STOP
-    END MODULE IHOUR
+    END PROGRAM P15
 
 
     SUBROUTINE ALLOC1()

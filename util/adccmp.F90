@@ -263,7 +263,7 @@
     character(*)  :: fname
     character(80) :: title
     integer :: nsteps, nsize, rectype
-    real :: (8)      :: dt
+    real(8)      :: dt
     integer :: lun, idummy
 
     call check_format(lun, fname, x % itype)

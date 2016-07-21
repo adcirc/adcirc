@@ -20,31 +20,31 @@
 ! ariables for a grid in Geophysical coordiantes
     integer :: np,ne
     character(len=100) :: geoGridFile
-    double precision ::,allocatable,dimension(:,:) :: xy
+    double precision,allocatable,dimension(:,:) :: xy
     integer,allocatable,dimension(:,:) :: nm
 
 ! ariables for a grid in state plane coordiantes
     integer :: spnp,spne
-    double precision ::,allocatable,dimension(:,:) :: spxy
+    double precision,allocatable,dimension(:,:) :: spxy
     integer,allocatable,dimension(:,:) :: spnm
 
 ! ariables for .sim files
     double precision :: x0,y0,azimuth
-    double precision ::,allocatable,dimension(:) :: x0s,y0s,azimuths
+    double precision,allocatable,dimension(:) :: x0s,y0s,azimuths
 
 ! ariables for stwave grid
     integer :: ni,nj
     integer,allocatable,dimension(:) :: nis,njs
     double precision :: dxinc,dyinc
-    double precision ::,allocatable,dimension(:) :: dxincs,dyincs
-    double precision ::,allocatable,dimension(:,:,:) :: stwxy,stwlonlat
+    double precision,allocatable,dimension(:) :: dxincs,dyincs
+    double precision,allocatable,dimension(:,:,:) :: stwxy,stwlonlat
 
 ! ariables for searching
     integer :: numElemInside
     integer,allocatable,dimension(:) :: elemInside
     integer,allocatable,dimension(:,:) :: elemInsideBins
     integer,allocatable,dimension(:) :: numElemInsideBins
-    double precision ::,allocatable,dimension(:) :: elemInsideBinPartition
+    double precision,allocatable,dimension(:) :: elemInsideBinPartition
     integer :: elem,n1,n2,n3
     double precision :: w1,w2,w3,x1,x2,x3,y1,y2,y3
     integer,parameter :: numBins = 600
@@ -55,7 +55,7 @@
 ! ariables for snaps
     integer,allocatable,dimension(:) :: endoffile
     integer :: ios,snapCnt,fid,spectrum_id
-    double precision ::,allocatable,dimension(:,:,:) :: wxyrs
+    double precision,allocatable,dimension(:,:,:) :: wxyrs
 
 
     write(*,*) ""
@@ -570,15 +570,15 @@
 
     integer,intent(in) :: np,ne
     integer,intent(in) :: nm(3,ne)
-    double precision ::,intent(in) :: x,y
-    double precision ::,intent(in) :: spxy(2,np)
+    double precision,intent(in) :: x,y
+    double precision,intent(in) :: spxy(2,np)
     integer,intent(in) :: numBins,numElemInside
-    double precision ::,intent(in) :: elemInsideBinPartition(numBins)
+    double precision,intent(in) :: elemInsideBinPartition(numBins)
     integer,intent(in) :: numElemInsideBins(numBins)
     integer,intent(in) :: elemInsideBins(numBins,numElemInside)
 
     integer,intent(out) :: elem
-    double precision ::,intent(out) :: w1,w2,w3
+    double precision,intent(out) :: w1,w2,w3
 
     integer :: i,k,e,n1,n2,n3
     double precision :: x1,x2,x3,y1,y2,y3,w
@@ -656,8 +656,8 @@
 
     integer,intent(in) :: ni,nj,np,ne
     integer,intent(in) :: nm(3,ne)
-    double precision ::,intent(in) :: stwxy(2,ni,nj)
-    double precision ::,intent(in) :: spxy(2,np)
+    double precision,intent(in) :: stwxy(2,ni,nj)
+    double precision,intent(in) :: spxy(2,np)
     integer,intent(out) :: numElemInside
     integer,intent(out) :: elemInside(ne)
 
@@ -696,9 +696,9 @@
 
     implicit none
 
-    double precision ::,intent(in) :: x0,y0,azimuth
+    double precision,intent(in) :: x0,y0,azimuth
     integer,intent(in) :: np
-    double precision ::,intent(in out) :: xy(2,np)
+    double precision,intent(in out) :: xy(2,np)
 
     integer :: i
     double precision :: x,y,angle,twopi,pi
