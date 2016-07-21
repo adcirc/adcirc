@@ -1,0 +1,718 @@
+    program buildstwave23
+
+    implicit none
+
+    integer :: i,j,k,e,s,idum,cnt
+    character(len=100) :: inputfile,outputfile,dummyc,title
+    double precision :: x,y,rdum
+
+! ariables for input file
+    integer :: type ! type of output file to produce, 1: include wave radiation
+!                                 2: does not include wave radiation
+    integer :: ns ! number of stwave grids
+    character(len=100),allocatable,dimension(:) :: simfiles ! names of .sim files
+    character(len=100),allocatable,dimension(:) :: radfiles ! names of .rad files
+    character(len=100),allocatable,dimension(:) :: spgfiles ! names of grid files in state plane coordinates
+    integer,allocatable,dimension(:)            :: fullplanes ! 0: half plane, 1: full plane
+    integer,allocatable,dimension(:)            :: nbs ! number of blank snaps
+    integer,allocatable,dimension(:)            :: rfids ! id of .rad files
+
+! ariables for a grid in Geophysical coordiantes
+    integer :: np,ne
+    character(len=100) :: geoGridFile
+    double precision ::,allocatable,dimension(:,:) :: xy
+    integer,allocatable,dimension(:,:) :: nm
+
+! ariables for a grid in state plane coordiantes
+    integer :: spnp,spne
+    double precision ::,allocatable,dimension(:,:) :: spxy
+    integer,allocatable,dimension(:,:) :: spnm
+
+! ariables for .sim files
+    double precision :: x0,y0,azimuth
+    double precision ::,allocatable,dimension(:) :: x0s,y0s,azimuths
+
+! ariables for stwave grid
+    integer :: ni,nj
+    integer,allocatable,dimension(:) :: nis,njs
+    double precision :: dxinc,dyinc
+    double precision ::,allocatable,dimension(:) :: dxincs,dyincs
+    double precision ::,allocatable,dimension(:,:,:) :: stwxy,stwlonlat
+
+! ariables for searching
+    integer :: numElemInside
+    integer,allocatable,dimension(:) :: elemInside
+    integer,allocatable,dimension(:,:) :: elemInsideBins
+    integer,allocatable,dimension(:) :: numElemInsideBins
+    double precision ::,allocatable,dimension(:) :: elemInsideBinPartition
+    integer :: elem,n1,n2,n3
+    double precision :: w1,w2,w3,x1,x2,x3,y1,y2,y3
+    integer,parameter :: numBins = 600
+    double precision :: stwminx,stwmaxx
+    real :: tol,exmax,exmin,p1,p2
+    integer :: i1,i2,j1,j2
+
+! ariables for snaps
+    integer,allocatable,dimension(:) :: endoffile
+    integer :: ios,snapCnt,fid,spectrum_id
+    double precision ::,allocatable,dimension(:,:,:) :: wxyrs
+
+
+    write(*,*) ""
+    write(*,'(A)',ADVANCE='NO') "enter name of input file: "
+    read(*,*) inputfile
+
+    write(*,*) ""
+    write(*,*) ""
+    write(*,'(A)',ADVANCE='NO') "enter name of output file: "
+    read(*,*) outputfile
+    write(*,*) ""
+    write(*,*) ""
+
+    open(1,file=inputfile,status="old",action="read")
+    open(2,file=outputfile,action="write")
+
+    read(1,*) type
+    if(type /= 1 .AND. type /= 2) then
+        print *, 'type must be 1 or 2.'
+        print *, 'program will be terminated.'
+    endif
+    read(1,*) geoGridFile
+    read(1,*) ns
+
+    write(2,'(i1,a)') type, &
+    ' ! 1: rad vecs included; 2: rad vecs not included'
+    write(2,'(i1,a)') ns, ' ! number of stwave grids'
+
+
+    allocate(simfiles(ns),radfiles(ns),spgfiles(ns))
+    allocate(fullplanes(ns),nbs(ns),rfids(ns))
+    allocate(nis(ns),njs(ns),dxincs(ns),dyincs(ns))
+    allocate(x0s(ns),y0s(ns),azimuths(ns))
+    allocate(endoffile(ns))
+
+    do i=1,ns
+        read(1,*)  ! skip a line
+        read(1,'(A100)') simfiles(i)
+        read(1,'(A100)') radfiles(i)
+        read(1,'(A100)') spgfiles(i)
+        read(1,*) fullplanes(i)
+        read(1,*) nbs(i)
+        if(type == 2) then
+            read(1, *) x0s(i), y0s(i), azimuths(i)
+            if(fullplanes(i) == 1) then
+                read (1,*) nis(i), njs(i), dxincs(i), dyincs(i)
+            else
+                read (1,*) nis(i), njs(i), dxincs(i)
+                dyincs(i) = dxincs(i)
+            endif
+        endif
+    enddo
+
+    close(1)
+
+! ead adcirc grid in geophysical coordinates
+    print *, 'reading adcirc grid :', geoGridFile
+    open(14,file=geoGridFile,status='old',action='read')
+    read(14,'(A80)') title
+    read(14,*) ne, np
+
+    print *, ' grid id = ', trim(title)
+    print *, ' np = ',np,', ne = ',ne
+        
+    allocate(xy(2,np),nm(3,ne))
+
+    do i=1,np
+        read(14,*) idum, xy(1,i), xy(2,i), rdum
+    enddo
+
+    do i=1,ne
+        read(14,*) idum, idum, nm(1,i), nm(2,i), nm(3,i)
+    enddo
+
+    close(14)
+
+    allocate(elemInside(ne))
+
+! rocess each stwave grid header info
+    do s=1,ns
+        write(*,*) ""
+        write(*,*) ""
+        print *, 'reading & producing header info of stwave grid ',s
+
+        if(type == 1) then
+        ! imfile
+            open(1,file=simfiles(s),status="old",action="read")
+            read (1, *) dummyc, x0, y0, azimuth
+
+            print *, ' stwave grid info'
+            print *, ' ID     = ', dummyc
+            print *, ' x0     = ', x0
+            print *, ' y0     = ', y0
+            print *, ' azimuth= ',azimuth
+
+            close(1)
+
+        ! adfile
+            rfids(s) = s+20
+            open(rfids(s),file=radfiles(s),status="old",action="read")
+            if(fullplanes(s) == 1) then
+                read (rfids(s),*) ni, nj, dxinc, dyinc
+            else
+                read (rfids(s),*) ni, nj, dxinc
+                dyinc = dxinc
+            endif
+
+            nis(s) = ni
+            njs(s) = nj
+        else
+            x0 = x0s(s)
+            y0 = y0s(s)
+            azimuth = azimuths(s)
+            ni = nis(s)
+            nj = njs(s)
+            dxinc = dxincs(s)
+            dyinc = dyincs(s)
+        endif
+
+        print *, ''
+        print *, ' ni = ',ni,', nj = ',nj,', dxinc = ',real(dxinc), &
+        ', dyinc = ',real(dyinc)
+
+        allocate(stwxy(2,ni,nj),stwlonlat(2,ni,nj))
+
+        print *, ""
+        print *, 'making stwave grid'
+
+        do j=1,nj
+            do i=1,ni
+                stwxy(1,i,j)=dxinc*(real(i)-0.5)
+                stwxy(2,i,j)=dyinc*(real(j)-0.5)
+            end do
+        end do
+
+    ! ead adcirc grid in state plane coordinates
+        print *, ''
+        print *, 'reading adcirc grid :', trim(spgfiles(s))
+
+        open(14,file=spgfiles(s),status='old',action='read')
+        read(14,'(A80)') title
+        read(14,*) spne, spnp
+
+        print *, ' grid id = ', trim(title)
+        print *, ' np = ',np,', ne = ',ne
+            
+        allocate(spxy(2,np),spnm(3,ne))
+                 
+        do i=1,np
+            read(14,*) idum, spxy(1,i), spxy(2,i), rdum
+        enddo
+
+        do i=1,ne
+            read(14,*) idum, idum, spnm(1,i), spnm(2,i), spnm(3,i)
+        enddo
+
+        close(14)
+            
+
+        if(spnp /= np) then
+            print *, ''
+            print *, ' number of nodes in state plane grid does not '// &
+            'match lat-lon grid.'
+            print *, ' program will be terminated.'
+            stop
+        endif
+
+        if(spne /= ne) then
+            print *, ''
+            print *, ' number of elements in state plane grid does '// &
+            'not match lat-lon grid.'
+            print *, ' program will be terminated.'
+            stop
+        endif
+
+        do j=1,ne
+            do i=1,3
+                if(nm(i,j) /= spnm(i,j)) then
+                    print *, ''
+                    print *, ' element-node map in state plane grid '// &
+                    'does not match lat-lon grid.'
+                    print *, ' program will be terminated.'
+                    stop
+                endif
+            enddo
+        enddo
+
+        print *, ''
+        print *, 'rotating state plane grid'
+        call rotate_adcirc_mesh(x0,y0,azimuth,spnp,spxy)
+
+        print *, ''
+        print *, 'initilizing search info'
+        call search_init(ni,nj,stwxy,np,ne,spxy,nm,numElemInside, &
+        elemInside)
+        print *, '  ', numElemInside,' elements found'
+
+        allocate(elemInsideBins(numBins,numElemInside))
+        allocate(numElemInsideBins(numBins))
+        allocate(elemInsideBinPartition(numBins+1))
+
+        stwminx = stwxy(1,1,1)
+        stwmaxx = stwxy(1,ni,nj)
+
+        elemInsideBinPartition(1) = stwminx
+        do i=1,numBins
+            elemInsideBinPartition(i+1) = stwminx + &
+            (stwmaxx-stwminx)*real(i)/real(numBins)
+            numElemInsideBins(i) = 0
+        enddo
+
+        print *, ''
+        print *, 'preparing searching bins'
+        tol = abs(elemInsideBinPartition(1)- &
+        elemInsideBinPartition(0))*0.01d0
+        do k=1,numBins
+            p1 = elemInsideBinPartition(k)
+            p2 = elemInsideBinPartition(k+1)
+
+            do j=1,numElemInside
+                e = elemInside(j)
+                exmax = spxy(1,nm(1,e))
+                if(exmax < spxy(1,nm(2,e))) exmax = spxy(1,nm(2,e))
+                if(exmax < spxy(1,nm(3,e))) exmax = spxy(1,nm(3,e))
+
+                exmin = spxy(1,nm(1,e))
+                if(exmin > spxy(1,nm(2,e))) exmin = spxy(1,nm(2,e))
+                if(exmin > spxy(1,nm(3,e))) exmin = spxy(1,nm(3,e))
+
+                if(exmax >= (p1-tol) .AND. exmin <= (p2+tol)) then
+                    numElemInsideBins(k) = numElemInsideBins(k) + 1
+                    elemInsideBins(k,numElemInsideBins(k)) = e
+                endif
+            enddo
+            print *, ' ',numElemInsideBins(k), &
+            ' elements were found in bin ',k
+        enddo
+
+        print *, ''
+        print *, 'searching'
+        cnt = 0
+        do j=1,nj
+            do i=1,ni
+                x = stwxy(1,i,j)
+                y = stwxy(2,i,j)
+                call search(x,y,np,ne,spxy,nm,numElemInside,numBins, &
+                elemInsideBinPartition,numElemInsideBins, &
+                elemInsideBins,elem,w1,w2,w3)
+
+                if(elem == -1) then
+                    cnt = cnt + 1
+                    stwlonlat(1,i,j) = 0
+                    stwlonlat(2,i,j) = 0
+                else
+                    n1 = nm(1,elem)
+                    n2 = nm(2,elem)
+                    n3 = nm(3,elem)
+                    x1 = xy(1,n1)
+                    x2 = xy(1,n2)
+                    x3 = xy(1,n3)
+                    y1 = xy(2,n1)
+                    y2 = xy(2,n2)
+                    y3 = xy(2,n3)
+                    stwlonlat(1,i,j) = w1*x1+w2*x2+w3*x3
+                    stwlonlat(2,i,j) = w1*y1+w2*y2+w3*y3
+                endif
+            enddo
+        enddo
+
+        print *, ''
+        print *, 'filling blank coordinates'
+        cnt = 0
+        do j=1,nj
+            do i=1,ni
+                x = stwlonlat(1,i,j)
+                y = stwlonlat(2,i,j)
+
+                if(x /= 0.d0 .OR. y /= 0.d0) cycle
+
+                do i1=i-1,1,-1
+                    if(stwlonlat(1,i1,j) /= 0.d0) exit
+                enddo
+                do i2=i+1,ni,+1
+                    if(stwlonlat(1,i2,j) /= 0.d0) exit
+                enddo
+                do j1=j-1,1,-1
+                    if(stwlonlat(1,i,j1) /= 0.d0) exit
+                enddo
+                do j2=j+1,nj,+1
+                    if(stwlonlat(1,i,j2) /= 0.d0) exit
+                enddo
+                if(i1 == 0 .AND. i2 == ni+1) exit
+                if(j1 == 0 .AND. j2 == ni+1) exit
+
+            ! nterpolation of x
+                if(i1 == 0) then
+                    if(i2 >= ni) then
+                        x = 0.d0
+                    else
+                        do i1=i2+1,ni,+1
+                            if(stwlonlat(1,i1,j) /= 0.d0) exit
+                        enddo
+                        if(i1 == ni+1) exit
+                        x = stwlonlat(1,i2,j) - &
+                        (stwlonlat(1,i1,j) - stwlonlat(1,i2,j))* &
+                        real(i2-i)/real(i1-i2)
+                    endif
+                    if(x > 0) print *, '1 x,y=',x,y,i,j
+                else if(i2 == (ni+1)) then
+                    if(i1 <= 0) then
+                        x = 0.d0
+                    else
+                        do i2=i1-1,1,-1
+                            if(stwlonlat(1,i2,j) /= 0.d0) exit
+                        enddo
+                        if(i1 == 0) exit
+                        x = stwlonlat(1,i1,j) + &
+                        (stwlonlat(1,i1,j) - stwlonlat(1,i2,j))* &
+                        real(i-i1)/real(i1-i2)
+                    endif
+                    if(x > 0) then
+                        write(0,*) '2 x,y=',x,y,i,j,stwlonlat(1,i1,j), &
+                        (stwlonlat(1,i1+1,j) - stwlonlat(1,i1,j))*(i-i1), &
+                        (stwlonlat(1,i1+1,j) - stwlonlat(1,i1,j)), (i-i1)
+                        stop
+                    endif
+                else if(i1 /= 0 .AND. i2 /= (ni+1)) then
+                    w1 = real(i2-i)/(i2-i1)
+                    w2 = real(i-i1)/(i2-i1)
+
+                    if(w1 < 0.d0) stop 'w1 < 0.d0 (x)'
+                    if(w2 < 0.d0) stop 'w2 < 0.d0 (x)'
+
+                    x = w1*stwlonlat(1,i1,j) + w2*stwlonlat(1,i2,j)
+                    if(x > 0) print *, '3 x,y=',x,y,i,j
+                else
+                    if(i1 == 0) exit
+                endif
+
+            ! nterpolation of y
+                if(j1 == 0) then
+                    if(j2 >= nj) then
+                        y = 0.d0
+                    else
+                        do j1=j2+1,nj,+1
+                            if(stwlonlat(2,i,j1) /= 0.d0) exit
+                        enddo
+                        if(j1 == nj+1) exit
+                        y = stwlonlat(2,i,j2) - &
+                        (stwlonlat(2,i,j1) - stwlonlat(2,i,j2))* &
+                        real(j2-j)/real(j1-j2)
+                    endif
+                else if(j2 == (nj+1)) then
+                    if(j1 <= 0) then
+                        y = 0.d0
+                    else
+                        do j2=j1-1,1,-1
+                            if(stwlonlat(2,i,j2) /= 0.d0) exit
+                        enddo
+                        if(j1 == 0) exit
+                        y = stwlonlat(2,i,j1) + &
+                        (stwlonlat(2,i,j1) - stwlonlat(2,i,j2))* &
+                        real(j-j1)/real(j1-j2)
+                    endif
+                else if(j1 /= 0 .AND. j2 /= (nj+1)) then
+                    w1 = real(j2-j)/(j2-j1)
+                    w2 = real(j-j1)/(j2-j1)
+
+                    if(w1 < 0.d0) stop 'w1 < 0.d0 (y)'
+                    if(w2 < 0.d0) stop 'w2 < 0.d0 (y)'
+
+                    y = w1*stwlonlat(2,i,j1) + w2*stwlonlat(2,i,j2)
+                else
+                    if(i1 == 0) exit
+                endif
+
+                if(x == 0 .OR. y == 0) then
+                    x = 0.d0
+                    y = 0.d0
+                endif
+
+                stwlonlat(1,i,j) = x
+                stwlonlat(2,i,j) = y
+
+            enddo
+        enddo
+
+        print *, ''
+        print *, 'writing header'
+
+        write(2,'(a,1x,i2)') '# grid ', s
+        if(type == 2) then
+            write(2,'(a)') trim(simfiles(s))
+            write(2,'(a)') trim(radfiles(s))
+            write(2,'(i2,1x,a)') nbs(s), &
+            ' ! number of blank snaps to be inserted at the beginning'
+            write(2,'(3(f14.4,1x),a)') real(x0s(s)), real(y0s(s)), &
+            real(azimuths(s)),'  !x0 y0 azimuths'
+        endif
+
+        write(2,'(i2,1x,a)') &
+        fullplanes(s), ' ! 0: half plane 1: full plane'
+
+        if(fullplanes(s) == 1) then
+            write(2,100) nis(s), njs(s), real(dxincs(s)), &
+            real(dyincs(s)),'  !ni nj dxinc dyinc'
+        else
+            write(2,101) nis(s), njs(s), real(dxincs(s)),' !ni nj dxinc'
+        endif
+
+        100 FORMAT(i6,i6,1x,f10.4,1x,f10.4,1x,a)
+        101 FORMAT(i6,i6,1x,f10.4,1x,a)
+
+        do j=1,nj
+            write(2,'(5E15.7)') ((stwlonlat(k,i,j), k=1,2), i=1,ni)
+        enddo
+
+        deallocate(stwxy)
+        deallocate(stwlonlat)
+        deallocate(spxy)
+        deallocate(spnm)
+        deallocate(elemInsideBins)
+        deallocate(numElemInsideBins)
+        deallocate(elemInsideBinPartition)
+    enddo
+
+! ype 2 format does not include actual wave radiation values
+    if(type == 2) goto 9999
+
+! ead and write snaps
+    print *, ''
+    print *, ' writing out snaps'
+
+    snapCnt = 0
+    endoffile(:) = 0
+    outer: do
+        snapCnt = snapCnt + 1
+        print *, ''
+        print *, ' snap ',snapCnt
+        write(2,*) '# snap ', snapCnt
+        do s=1,ns
+            write(2,*) '## grid ', s
+            if(nbs(s) > 0) then
+                nbs(s) = nbs(s) - 1
+                write(2,*) 0,'  !this snap is 0: inactive, 1: active'
+                cycle
+            endif
+
+            fid = rfids(s)
+
+            read (fid,*,iostat=ios) spectrum_id ! spectrum identifier
+
+            if(ios /= 0) then
+                if(endoffile(s) == 0) then
+                    print *, '  stwave grid ',s,' is done.'
+                endif
+                endoffile(s) = 1
+                write(2,*) 0,'  !this snap is 0: inactive, 1: active'
+                cycle
+            endif
+                           
+            write(2,*) 1,'  !this snap is 0: inactive, 1: active'
+
+            print *, '  spectrum id = ', spectrum_id, '(grid ',s,')'
+                        
+            ni = nis(s)
+            nj = njs(s)
+
+            allocate(wxyrs(2,ni,nj))
+
+            do j = nj, 1, -1
+                read (fid,*,iostat=ios) ((wxyrs(k,i,j),k=1,2),i=1,ni)
+                if(ios /= 0) then
+                    print *, ' .rad file is not complete.'
+                    print *, ' program will be terminated.'
+                    stop
+                endif
+                write(2,'(5E15.7)',iostat=ios) ((wxyrs(k,i,j),k=1,2),i=1,ni)
+                if(ios /= 0) then
+                    print *, ' error deteced in writing output file.'
+                    print *, ' program will be terminated.'
+                    stop
+                endif
+            enddo
+
+            deallocate(wxyrs)
+        enddo
+
+        do s=1,ns
+            if(endoffile(s) == 0) cycle outer
+        enddo
+
+        exit
+
+    enddo outer
+
+    9999 continue
+
+    close(2)
+
+    print *, ''
+    print *, 'done.'
+
+    stop
+    end program
+
+    subroutine search(x,y,np,ne,spxy,nm,numElemInside,numBins, &
+    elemInsideBinPartition, numElemInsideBins,elemInsideBins, &
+    elem,w1,w2,w3)
+
+    implicit none
+
+    integer,intent(in) :: np,ne
+    integer,intent(in) :: nm(3,ne)
+    double precision ::,intent(in) :: x,y
+    double precision ::,intent(in) :: spxy(2,np)
+    integer,intent(in) :: numBins,numElemInside
+    double precision ::,intent(in) :: elemInsideBinPartition(numBins)
+    integer,intent(in) :: numElemInsideBins(numBins)
+    integer,intent(in) :: elemInsideBins(numBins,numElemInside)
+
+    integer,intent(out) :: elem
+    double precision ::,intent(out) :: w1,w2,w3
+
+    integer :: i,k,e,n1,n2,n3
+    double precision :: x1,x2,x3,y1,y2,y3,w
+
+    integer :: min_rat_elem
+    double precision :: min_rat
+
+    elem = -1
+
+    min_rat = 1d10
+
+    do k=1,numBins
+        if((x >= elemInsideBinPartition(k)) .AND. &
+        (x <= elemInsideBinPartition(k+1))) exit
+    enddo
+
+    do i=1,numElemInsideBins(k)
+        e = elemInsideBins(k,i)
+        n1 = nm(1,e)
+        n2 = nm(2,e)
+        n3 = nm(3,e)
+
+        x1 = x
+        x2 = spxy(1,n2)
+        x3 = spxy(1,n3)
+        y1 = y
+        y2 = spxy(2,n2)
+        y3 = spxy(2,n3)
+        w1 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
+                 
+        x1 = spxy(1,n1)
+        x2 = x
+        x3 = spxy(1,n3)
+        y1 = spxy(2,n1)
+        y2 = y
+        y3 = spxy(2,n3)
+        w2 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
+                 
+        x1 = spxy(1,n1)
+        x2 = spxy(1,n2)
+        x3 = x
+        y1 = spxy(2,n1)
+        y2 = spxy(2,n2)
+        y3 = y
+        w3 = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
+
+        x1 = spxy(1,n1)
+        x2 = spxy(1,n2)
+        x3 = spxy(1,n3)
+        y1 = spxy(2,n1)
+        y2 = spxy(2,n2)
+        y3 = spxy(2,n3)
+        w  = abs((x2*y3-x3*y2)-(x1*y3-x3*y1)+(x1*y2-x2*y1))
+
+        if(min_rat > (w1+w2+w3)/w) then
+            min_rat = (w1+w2+w3)/w
+            min_rat_elem = e
+        endif
+
+        if((w1+w2+w3) <= (w*1.00001d0)) then
+            elem = e
+            w1 = w1/w
+            w2 = w2/w
+            w3 = w3/w
+            exit
+        endif
+
+    enddo
+
+    end subroutine
+
+    subroutine search_init(ni,nj,stwxy,np,ne,spxy,nm,numElemInside,elemInside)
+
+    implicit none
+
+    integer,intent(in) :: ni,nj,np,ne
+    integer,intent(in) :: nm(3,ne)
+    double precision ::,intent(in) :: stwxy(2,ni,nj)
+    double precision ::,intent(in) :: spxy(2,np)
+    integer,intent(out) :: numElemInside
+    integer,intent(out) :: elemInside(ne)
+
+    integer :: i,j,n
+    double precision :: stwminx,stwminy,stwmaxx,stwmaxy
+    double precision :: x,y
+
+    stwminx = stwxy(1,1,1)
+    stwminy = stwxy(2,1,1)
+    stwmaxx = stwxy(1,ni,nj)
+    stwmaxy = stwxy(2,ni,nj)
+
+    print *, '  stwave grid min x = ',real(stwminx),' max '// &
+    ' x = ',real(stwmaxx)
+    print *, '  stwave grid min y = ',real(stwminy),' max '// &
+    ' y = ',real(stwmaxy)
+
+    numElemInside = 0
+    do i=1,ne
+        do j=1,3
+            n = nm(j,i)
+            x = spxy(1,n)
+            y = spxy(2,n)
+
+            if((x >= stwminx) .AND. (x <= stwmaxx) .AND. &
+            (y >= stwminy) .AND. (y <= stwmaxy)) then
+                numElemInside = numElemInside + 1
+                elemInside(numElemInside) = i
+                exit
+            endif
+        enddo
+    enddo
+    end subroutine
+
+    subroutine rotate_adcirc_mesh(x0,y0,azimuth,np,xy)
+
+    implicit none
+
+    double precision ::,intent(in) :: x0,y0,azimuth
+    integer,intent(in) :: np
+    double precision ::,intent(in out) :: xy(2,np)
+
+    integer :: i
+    double precision :: x,y,angle,twopi,pi
+
+    twopi = 8.0d0*atan(1.0d0)
+    pi = 0.5d0*twopi
+    angle = (azimuth*pi)/180.0d0
+
+    do i=1,np
+        x = xy(1,i)
+        y = xy(2,i)
+
+        xy(1,i)=cos(angle)*(x-x0) + sin(angle)*(y-y0)
+        xy(2,i)=-sin(angle)*(x-x0 ) + cos(angle)*(y-y0)
+    end do
+
+    end subroutine

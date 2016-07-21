@@ -288,84 +288,84 @@ $(O_DIR):
 
 
 ################# Module Source, Object, & Mod Files ######################
-SUBD_MSRC  =  subdomain.F
-SUBP_MSRC  =  subprep.F
-CONT_MSRC  =  control.F
-MESH_MSRC  =  mesh.F
-BND_MSRC   =  boundaries.F
-PREP_MSRC  =  presizes.F 
-PGLO_MSRC  =  pre_global.F
-ADC_MSRC   =  version.F sizes.F global.F global_3dvs.F 
-POST_MSRC  =  post_global.F
-HARM_MSRC  =  harm.F  
-VORT_MSRC  =  vortex.F
-WIND_MSRC  =  wind.F owiwind.F rs2.F owi_ice.F
-SOLV_MSRC  =  itpackv.F
-NA_MSRC    =  nodalattr.F
-NC_MSRC    =  netcdfio.F
-GIO_MSRC   =  globalio.F
-WRIT_MSRC  =  write_output.F
+SUBD_MSRC  =  subdomain.F90
+SUBP_MSRC  =  subprep.F90
+CONT_MSRC  =  control.F90
+MESH_MSRC  =  mesh.F90
+BND_MSRC   =  boundaries.F90
+PREP_MSRC  =  presizes.F90 
+PGLO_MSRC  =  pre_global.F90
+ADC_MSRC   =  version.F90 sizes.F90 global.F90 global_3dvs.F90 
+POST_MSRC  =  post_global.F90
+HARM_MSRC  =  harm.F90  
+VORT_MSRC  =  vortex.F90
+WIND_MSRC  =  wind.F90 owiwind.F90 rs2.F90 owi_ice.F90
+SOLV_MSRC  =  itpackv.F90
+NA_MSRC    =  nodalattr.F90
+NC_MSRC    =  netcdfio.F90
+GIO_MSRC   =  globalio.F90
+WRIT_MSRC  =  write_output.F90
 #Casey 090302: Add file for coupling to unstructured SWAN.
-COUP_MSRC  =  couple2swan.F
+COUP_MSRC  =  couple2swan.F90
 #tcm v49.48.01 Adding File for kdtree2 fast search algorithm
-KDTREE_MSRC = kdtree2.F
-XDMF_MSRC = xdmfio.F
+KDTREE_MSRC = kdtree2.F90
+XDMF_MSRC = xdmfio.F90
 
-SUBD_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBD_MSRC) )
-SUBP_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SUBP_MSRC) )
-CONT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CONT_MSRC) )
-XDMF_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(XDMF_MSRC) )
-WRIT_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(WRIT_MSRC) )
-MESH_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(MESH_MSRC) )
-BND_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(BND_MSRC) )
-PREP_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PREP_MSRC) )
-POST_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(POST_MSRC) )
-PGLO_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PGLO_MSRC) )
-SOLV_MOBJ:= $(patsubst %.F, $(O_DIR)%.o, $(SOLV_MSRC) )
-ADC_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(ADC_MSRC)  )
-HARM_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(HARM_MSRC)  )
-VORT_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(VORT_MSRC)  )
-WIND_MOBJ := $(patsubst %.F, $(O_DIR)%.o, $(WIND_MSRC)  )
-NA_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NA_MSRC)  )
-NC_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(NC_MSRC)  )
-GIO_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(GIO_MSRC)  ) 
+SUBD_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(SUBD_MSRC) )
+SUBP_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(SUBP_MSRC) )
+CONT_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(CONT_MSRC) )
+XDMF_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(XDMF_MSRC) )
+WRIT_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(WRIT_MSRC) )
+MESH_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(MESH_MSRC) )
+BND_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(BND_MSRC) )
+PREP_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(PREP_MSRC) )
+POST_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(POST_MSRC) )
+PGLO_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(PGLO_MSRC) )
+SOLV_MOBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(SOLV_MSRC) )
+ADC_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(ADC_MSRC)  )
+HARM_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(HARM_MSRC)  )
+VORT_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(VORT_MSRC)  )
+WIND_MOBJ := $(patsubst %.F90, $(O_DIR)%.o, $(WIND_MSRC)  )
+NA_MOBJ  := $(patsubst %.F90, $(O_DIR)%.o, $(NA_MSRC)  )
+NC_MOBJ  := $(patsubst %.F90, $(O_DIR)%.o, $(NC_MSRC)  )
+GIO_MOBJ  := $(patsubst %.F90, $(O_DIR)%.o, $(GIO_MSRC)  ) 
 #Casey 090302: Add rules for coupling to unstructured SWAN.
-COUP_MOBJ  := $(patsubst %.F, $(O_DIR)%.o, $(COUP_MSRC)  )
+COUP_MOBJ  := $(patsubst %.F90, $(O_DIR)%.o, $(COUP_MSRC)  )
 # tcm v49.48.01 Adding rule for kdtree2 fast search algorithm
-KDTREE_MOBJ :=  $(patsubst %.F, $(O_DIR)%.o, $(KDTREE_MSRC) )
+KDTREE_MOBJ :=  $(patsubst %.F90, $(O_DIR)%.o, $(KDTREE_MSRC) )
 
 ############################# Source & Object Files ######################
-#meb 04/20/2004 - added machdep.F onto POST_SRC
+#meb 04/20/2004 - added machdep.F90 onto POST_SRC
 
-METIS_SRC  =  metis.F
-PREP_SRC   =  adcprep.F decomp.F prep_weir.F read_global.F prep.F interp.F machdep.F
-ADC_SRC    =  adcirc.F weir_boundary.F read_input.F cstart.F hstart.F timestep.F vsmy.F transport.F
-POST_SRC   =  adcpost.F post.F compare.F diffmerge.F machdep.F
-P15_SRC    =  p15.F
-OWI_SRC    =  owi22.F
-B13_SRC    =  build13.F
-B12_SRC    =  build12.F
-B23_SRC    =  buildstwave23.F
-H2A_SRC    =  hot2asc.F
-INF_SRC    =  inflate.F
-HST_SRC    =  hstime.F
-ASW_SRC    =  aswip_1.0.3.F
-CMP_SRC    =  adccmp.F
+METIS_SRC  =  metis.F90
+PREP_SRC   =  adcprep.F90 decomp.F90 prep_weir.F90 read_global.F90 prep.F90 interp.F90 machdep.F90
+ADC_SRC    =  adcirc.F90 weir_boundary.F90 read_input.F90 cstart.F90 hstart.F90 timestep.F90 vsmy.F90 transport.F90
+POST_SRC   =  adcpost.F90 post.F90 compare.F90 diffmerge.F90 machdep.F90
+P15_SRC    =  p15.F90
+OWI_SRC    =  owi22.F90
+B13_SRC    =  build13.F90
+B12_SRC    =  build12.F90
+B23_SRC    =  buildstwave23.F90
+H2A_SRC    =  hot2asc.F90
+INF_SRC    =  inflate.F90
+HST_SRC    =  hstime.F90
+ASW_SRC    =  aswip_1.0.3.F90
+CMP_SRC    =  adccmp.F90
 
-METIS_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(METIS_SRC) )
-PREP_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(PREP_SRC) ) $(O_DIR)mkdir.o
-POST_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(POST_SRC) ) 
-ADC_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(ADC_SRC) ) $(O_DIR)mkdir.o
-P15_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(P15_SRC) )
-OWI_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(OWI_SRC) )
-B13_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(B13_SRC) )
-B12_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(B12_SRC) )
-B23_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(B23_SRC) )
-H2A_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(H2A_SRC) )
-INF_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(INF_SRC) )
-HST_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(HST_SRC) )
-ASW_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(ASW_SRC) )
-CMP_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CMP_SRC) )
+METIS_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(METIS_SRC) )
+PREP_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(PREP_SRC) ) $(O_DIR)mkdir.o
+POST_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(POST_SRC) ) 
+ADC_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(ADC_SRC) ) $(O_DIR)mkdir.o
+P15_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(P15_SRC) )
+OWI_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(OWI_SRC) )
+B13_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(B13_SRC) )
+B12_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(B12_SRC) )
+B23_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(B23_SRC) )
+H2A_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(H2A_SRC) )
+INF_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(INF_SRC) )
+HST_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(HST_SRC) )
+ASW_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(ASW_SRC) )
+CMP_OBJ:= $(patsubst %.F90, $(O_DIR)%.o, $(CMP_SRC) )
 
 #################### SWAN Source & Object Files #########################
 # Casey 090302: Added this section for coupling to unstructured SWAN.
@@ -400,7 +400,7 @@ SWAN_OBJ:= $(patsubst %.f90, $(O_DIR)%.o, $(SWAN_OBJ) )
 
 $(O_DIR)%.o  : %.c
 	$(COMPILE.c) $< -o $@
-$(O_DIR)%.o  : %.F
+$(O_DIR)%.o  : %.F90
 	$(CF) -c $(FFLAGS) -o $@  $<
 	if [ "`echo *.mod`" != '*.mod' ]; then mv *.mod $(O_DIR); fi
 
@@ -604,11 +604,11 @@ echo:
 
 cvstag:
 	ifneq ($(TAG),)
-	  echo "      module version"                                        >  ../version.F; \
-	  echo '      character(80), parameter :: ADC_VERSION = "'$(VTAG)'"' >> ../version.F; \
-	  echo '      end module'                                            >> ../version.F; \
+	  echo "      module version"                                        >  ../version.F90; \
+	  echo '      character(80), parameter :: ADC_VERSION = "'$(VTAG)'"' >> ../version.F90; \
+	  echo '      end module'                                            >> ../version.F90; \
 	  cd ..;                                                                              \
-	  cvs ci -m'moving to TAG_VERSION $(VTAG)' version.F;                                 \
+	  cvs ci -m'moving to TAG_VERSION $(VTAG)' version.F90;                                 \
 	  cvs tag $(TAG_FLAGS) $(TAG)
 	else
 	  @echo "To cvs tag do: make cvstag TAG=V?_?"
@@ -620,54 +620,54 @@ cvstag:
 
 #  adcprep modules
 
-$(O_DIR)version.o     :  version.F
-$(O_DIR)presizes.o    :  presizes.F $(ADC_MOBJ) $(WIND_MOBJ)
-$(O_DIR)kdtree2.o     :  kdtree2.F $(O_DIR)sizes.o
-$(O_DIR)pre_global.o  :  pre_global.F  $(O_DIR)mesh.o $(KDTREE_MOBJ) $(PREP_MOBJ)
-$(O_DIR)mesh.o        :  mesh.F $(O_DIR)version.o $(O_DIR)global.o $(O_DIR)boundaries.o 
-$(O_DIR)boundaries.o  :  boundaries.F $(O_DIR)sizes.o
-$(O_DIR)subprep.o     :  subprep.F $(O_DIR)subprep.o
+$(O_DIR)version.o     :  version.F90
+$(O_DIR)presizes.o    :  presizes.F90 $(ADC_MOBJ) $(WIND_MOBJ)
+$(O_DIR)kdtree2.o     :  kdtree2.F90 $(O_DIR)sizes.o
+$(O_DIR)pre_global.o  :  pre_global.F90  $(O_DIR)mesh.o $(KDTREE_MOBJ) $(PREP_MOBJ)
+$(O_DIR)mesh.o        :  mesh.F90 $(O_DIR)version.o $(O_DIR)global.o $(O_DIR)boundaries.o 
+$(O_DIR)boundaries.o  :  boundaries.F90 $(O_DIR)sizes.o
+$(O_DIR)subprep.o     :  subprep.F90 $(O_DIR)subprep.o
 
 #  adcprep
 
-$(O_DIR)adcprep.o     :  adcprep.F  $(PGLO_MOBJ) $(PMSG_OBJ) $(ADC_MOBJ) $(SUBP_MOBJ)
-$(O_DIR)decomp.o      :  decomp.F   $(PGLO_MOBJ)
-$(O_DIR)read_global.o :  read_global.F  $(PGLO_MOBJ) $(KDTREE_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
+$(O_DIR)adcprep.o     :  adcprep.F90  $(PGLO_MOBJ) $(PMSG_OBJ) $(ADC_MOBJ) $(SUBP_MOBJ)
+$(O_DIR)decomp.o      :  decomp.F90   $(PGLO_MOBJ)
+$(O_DIR)read_global.o :  read_global.F90  $(PGLO_MOBJ) $(KDTREE_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
 ifeq ($(NETCDF),enable)
-$(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ) $(NC_MOBJ) $(HARM_MOBJ) $(NA_MOBJ)
+$(O_DIR)prep.o        :  prep.F90   $(PGLO_MOBJ) $(NC_MOBJ) $(HARM_MOBJ) $(NA_MOBJ)
 else
-$(O_DIR)prep.o        :  prep.F   $(PGLO_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(NA_MOBJ)
+$(O_DIR)prep.o        :  prep.F90   $(PGLO_MOBJ) $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ) $(NA_MOBJ)
 endif
-$(O_DIR)interp.o      :  interp.F  
-$(O_DIR)machdep.o     :  machdep.F
-$(O_DIR)metis.o       :  metis.F $(PGLO_MOBJ)
+$(O_DIR)interp.o      :  interp.F90  
+$(O_DIR)machdep.o     :  machdep.F90
+$(O_DIR)metis.o       :  metis.F90 $(PGLO_MOBJ)
 $(O_DIR)mkdir.o       :  mkdir.c cfi.h
 
 #  adcpost modules
 
-$(O_DIR)post_global.o :  post_global.F $(POST_MOBJ)
+$(O_DIR)post_global.o :  post_global.F90 $(POST_MOBJ)
 
 #  adcpost
 
-$(O_DIR)adcpost.o     :  adcpost.F $(POST_MOBJ) 
-$(O_DIR)post.o        :  post.F  $(POST_MOBJ) $(HARM_MOBJ)
-$(O_DIR)compare.o     :  compare.F
-$(O_DIR)diffmerge.o   :  diffmerge.F
+$(O_DIR)adcpost.o     :  adcpost.F90 $(POST_MOBJ) 
+$(O_DIR)post.o        :  post.F90  $(POST_MOBJ) $(HARM_MOBJ)
+$(O_DIR)compare.o     :  compare.F90
+$(O_DIR)diffmerge.o   :  diffmerge.F90
 
 #  asymmetric hurricane wind model
 
-$(O_DIR)vortex.o      :  vortex.F 
-$(O_DIR)aswip.o      :  aswip_1.0.3.F $(VORT_MOBJ) 
+$(O_DIR)vortex.o      :  vortex.F90 
+$(O_DIR)aswip.o      :  aswip_1.0.3.F90 $(VORT_MOBJ) 
 
 #  adcirc & $(PARALLEL_ADCIRC) modules
 
-$(O_DIR)version.o     :  version.F
-$(O_DIR)sizes.o       :  sizes.F
-$(O_DIR)global.o      :  global.F  $(O_DIR)sizes.o $(O_DIR)kdtree2.o
-$(O_DIR)nodalattr.o   :  nodalattr.F  $(ADC_MOBJ) $(MESH_MOBJ) 
-$(O_DIR)messenger.o   :  messenger.F  $(ADC_MOBJ)
-#!st3 100711: Added globalio.o to writer.F for HSWRITER MODULE
-WRITER_DEP := writer.F  $(O_DIR)messenger.o $(O_DIR)globalio.o
+$(O_DIR)version.o     :  version.F90
+$(O_DIR)sizes.o       :  sizes.F90
+$(O_DIR)global.o      :  global.F90  $(O_DIR)sizes.o $(O_DIR)kdtree2.o
+$(O_DIR)nodalattr.o   :  nodalattr.F90  $(ADC_MOBJ) $(MESH_MOBJ) 
+$(O_DIR)messenger.o   :  messenger.F90  $(ADC_MOBJ)
+#!st3 100711: Added globalio.o to writer.F90 for HSWRITER MODULE
+WRITER_DEP := writer.F90  $(O_DIR)messenger.o $(O_DIR)globalio.o
 ifeq ($(NETCDF),enable)
    WRITER_DEP := $(WRITER_DEP) $(O_DIR)netcdfio.o
 endif
@@ -675,27 +675,27 @@ ifeq ($(XDMF),enable)
    WRITER_DEP := $(WRITER_DEP) $(O_DIR)xdmfio.o
 endif
 $(O_DIR)writer.o      : $(WRITER_DEP)
-$(O_DIR)globalio.o    :  globalio.F  $(ADC_MOBJ) $(O_DIR)mesh.o
-$(O_DIR)harm.o        :  harm.F $(O_DIR)mesh.o
-$(O_DIR)wind.o        :  wind.F  $(VORT_MOBJ) $(MESH_MOBJ)
-$(O_DIR)owiwind.o     :  owiwind.F  $(VORT_MOBJ) 
-$(O_DIR)owi_ice.o     :  owi_ice.F  $(VORT_MOBJ) 
-$(O_DIR)rs2.o         :  rs2.F  $(VORT_MOBJ) 
-$(O_DIR)itpackv.o     :  itpackv.F    $(ADC_MOBJ)
-$(O_DIR)netcdfio.o    :  netcdfio.F  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
+$(O_DIR)globalio.o    :  globalio.F90  $(ADC_MOBJ) $(O_DIR)mesh.o
+$(O_DIR)harm.o        :  harm.F90 $(O_DIR)mesh.o
+$(O_DIR)wind.o        :  wind.F90  $(VORT_MOBJ) $(MESH_MOBJ)
+$(O_DIR)owiwind.o     :  owiwind.F90  $(VORT_MOBJ) 
+$(O_DIR)owi_ice.o     :  owi_ice.F90  $(VORT_MOBJ) 
+$(O_DIR)rs2.o         :  rs2.F90  $(VORT_MOBJ) 
+$(O_DIR)itpackv.o     :  itpackv.F90    $(ADC_MOBJ)
+$(O_DIR)netcdfio.o    :  netcdfio.F90  $(ADC_MOBJ) $(NA_MOBJ) $(HARM_MOBJ) $(WIND_MOBJ)
 #Casey 090302: Added the next line.
-$(O_DIR)couple2swan.o :  couple2swan.F $(O_DIR)write_output.o
+$(O_DIR)couple2swan.o :  couple2swan.F90 $(O_DIR)write_output.o
 # tcm v49.48.01 added for fast search algorithm
-$(O_DIR)kdtree2.o : kdtree2.F
+$(O_DIR)kdtree2.o : kdtree2.F90
 # jgf51.21.22: modularized mesh and boundaries
 ifeq ($(BUILDTYPE),$(filter $(BUILDTYPE),$(PARALLEL_ADCIRC) padcswan))
-$(O_DIR)mesh.o        :   mesh.F $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)messenger.o 
+$(O_DIR)mesh.o        :   mesh.F90 $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)messenger.o 
 else
-$(O_DIR)mesh.o        :  mesh.F $(O_DIR)global.o $(O_DIR)boundaries.o
+$(O_DIR)mesh.o        :  mesh.F90 $(O_DIR)global.o $(O_DIR)boundaries.o
 endif
-$(O_DIR)boundaries.o  :  boundaries.F $(O_DIR)sizes.o
+$(O_DIR)boundaries.o  :  boundaries.F90 $(O_DIR)sizes.o
 # jgf51.21.24: promoted write_output to a module
-WRITE_OUTPUT_DEP := write_output.F $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o
+WRITE_OUTPUT_DEP := write_output.F90 $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o
 ifeq ($(NETCDF),enable)
    WRITE_OUTPUT_DEP := $(WRITE_OUTPUT_DEP) $(O_DIR)netcdfio.o
 endif
@@ -704,56 +704,56 @@ ifeq ($(XDMF),enable)
 endif
 $(O_DIR)write_output.o : $(WRITE_OUTPUT_DEP)
 # jgf51.21.28: made xdmf support routines into a module
-$(O_DIR)xdmfio.o      : xdmfio.F $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)control.o
-$(O_DIR)control.o     : control.F 
-$(O_DIR)subdomain.o   : subdomain.F 
+$(O_DIR)xdmfio.o      : xdmfio.F90 $(O_DIR)mesh.o $(O_DIR)global.o $(O_DIR)boundaries.o $(O_DIR)control.o
+$(O_DIR)control.o     : control.F90 
+$(O_DIR)subdomain.o   : subdomain.F90 
 
 #  adcirc & $(PARALLEL_ADCIRC)
 
-$(O_DIR)read_input.o  : read_input.F $(SUBD_MOBJ)
-$(O_DIR)transport.o   : transport.F  
-$(O_DIR)cstart.o      : cstart.F    
-$(O_DIR)hstart.o      : hstart.F  
-$(O_DIR)timestep.o    : timestep.F
+$(O_DIR)read_input.o  : read_input.F90 $(SUBD_MOBJ)
+$(O_DIR)transport.o   : transport.F90  
+$(O_DIR)cstart.o      : cstart.F90    
+$(O_DIR)hstart.o      : hstart.F90  
+$(O_DIR)timestep.o    : timestep.F90
 ifeq ($(NETCDF),enable)
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ)  $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F90 $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ)  $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(NC_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
 else
-$(O_DIR)adcirc.o      : adcirc.F $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
+$(O_DIR)adcirc.o      : adcirc.F90 $(ADC_MOBJ) $(HARM_MOBJ) $(KDTREE_MOBJ) $(WIND_MOBJ) $(SOLV_MOBJ) $(NA_MOBJ) $(GIO_MOBJ) $(COUP_MOBJ) $(WRIT_MOBJ)
 endif
-$(O_DIR)driver.o      : driver.F $(O_DIR)adcirc.o
+$(O_DIR)driver.o      : driver.F90 $(O_DIR)adcirc.o
 
 # wind file generation
 
-$(O_DIR)p15.o         : p15.F
-$(O_DIR)owi22.o       : owi22.F
+$(O_DIR)p15.o         : p15.F90
+$(O_DIR)owi22.o       : owi22.F90
 
 # fort.13 file generator
 
-$(O_DIR)build13.o     : build13.F
+$(O_DIR)build13.o     : build13.F90
 
 # fort.12 file generator
 
-$(O_DIR)build12.o     : build12.F
+$(O_DIR)build12.o     : build12.F90
 
 # fort.23 file generator
 
-$(O_DIR)buildstwave23.o     : buildstwave23.F
+$(O_DIR)buildstwave23.o     : buildstwave23.F90
 
 # hotstart debug utility
 
-$(O_DIR)hot2asc.o     : hot2asc.F
+$(O_DIR)hot2asc.o     : hot2asc.F90
 
 # converter from v46.32 output format to v47 format
 
-$(O_DIR)inflate.o     : inflate.F
+$(O_DIR)inflate.o     : inflate.F90
 
 # hot start time examiner
 
-$(O_DIR)hstime.o     : hstime.F
+$(O_DIR)hstime.o     : hstime.F90
 
 # output file comparison utility
 
-$(O_DIR)adccmp.o      : adccmp.F
+$(O_DIR)adccmp.o      : adccmp.F90
 
 # Casey 090302: Added the following lines for SWAN.
 $(O_DIR)swmod1.o                : swmod1.f
