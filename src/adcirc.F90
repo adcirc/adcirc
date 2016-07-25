@@ -99,7 +99,7 @@
 !*    ADCIRC initialize routine
 !******************************************************************************
     SUBROUTINE ADCIRC_Init(COMM, ROOTD)
-! SE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
+!   USE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
     USE SIZES, ONLY : rootDir, mnproc, mnwproc, mnallproc, &
     read_local_hot_start_files, make_dirname, write_local_harm_files
     USE MESH, ONLY : Areas, TotalArea, totalAreaCalc
@@ -359,7 +359,7 @@
 #if defined(ADCIRC_TRACE) || defined(ALL_TRACE)
     call allMessage(DEBUG,"Enter.")
 #endif
-! CM v49.52.01 added this ifdef (brought in from adcirc_init()
+! TCM v49.52.01 added this ifdef (brought in from adcirc_init()
 #ifdef CMPI
     if (((mnwproh > 0) .OR. (mnwproc > 0)) .AND. myproc >= mnproc) then
         if( myproc < mnproc+mnwproc ) then   !st3
@@ -400,7 +400,7 @@
     ENDIF
 
 
-! CM v49.52.01 added the following ifdef to pause writer processors
+! TCM v49.52.01 added the following ifdef to pause writer processors
 ! before exiting adcirc_run phase.  This is to allow them to be
 ! used again if adcirc_run is called more than once.
 #ifdef CMPI
