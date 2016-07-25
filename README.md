@@ -239,17 +239,20 @@ The following are some tools available in the Git suite that are extremely usefu
 Git Bisect allows users to determine when a particular issue occurred. In its most basic form, it can track the origin of a bug very quickly using a binary search. To use it, do the following:
 
 1. Start the tool:
-```
-git bisect start
-```
+
+    ```
+    git bisect start
+    ```
 2. Inform the tool of the last time the code worked:
-```
-git bisect good [commit-id]
-```
+
+    ```
+    git bisect good [commit-id]
+    ```
 3. Inform the code of a version of the code that does not work:
-```
-git bisect bad [commit-id]
-```
+
+    ```
+    git bisect bad [commit-id]
+    ```
 4. Git will then check out revisions of the code and ask you to let it know if it works or does not work. When you've determined if a particular version works or does not work, type ```git bisect good``` or ```git bisect bad```. When Git has determined when the issue started, it will give you the details of that commit.
 
 [More Git Bisect Documentation](https://git-scm.com/docs/git-bisect)
