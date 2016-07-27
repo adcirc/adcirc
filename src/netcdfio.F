@@ -3194,6 +3194,7 @@ C     write mesh to netcdf file
       IF ( (dat%myFile%createFile.eqv..true.).and.
      &     (descript1%readMaxMin.eqv..true.)) THEN
           iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,defaultValue)
+          CALL check_err(iret)
       ENDIF
 C
 C     now close the initialized netcdf file
