@@ -1253,14 +1253,14 @@
       defaultValue(:) = descript1%initial_value
 
 !     Initialize netCDF output file, creating a new one if necessary.
-      CALL createNetCDFOutputFile(dat%ncid, dat%myFile, dat%myTime,
-     &                            descript1, reterr)
+      CALL createNetCDFOutputFile(dat%ncid, dat%myFile, dat%myTime,&
+                                  descript1, reterr)
       !
       ! if we didn't need to create a file, update metadata and return
       IF (dat%myFile%createFile.eqv..false.) THEN
-         IF ( (reterr.eqv..false.) .and.
-     &        ( (abs(descript1%specifier).eq.NETCDF3) .or.
-     &          (abs(descript1%specifier).eq.NETCDF4) ) ) then
+         IF ( (reterr.eqv..false.) .and.&
+              ( (abs(descript1%specifier).eq.NETCDF3) .or.&
+                (abs(descript1%specifier).eq.NETCDF4) ) ) then
             !
             ! jgf52.08.25: This subroutine is called in the case where 
             ! a non-NetCDF min/max file will be written, but a NetCDF min/max
@@ -1270,8 +1270,8 @@
 ! Cobell...   The writers don't read the fort.15, so they need to 
 !             assume ADCPREP has placed the correct info on the first
 !             pass, then call updateMetaData. 
-            IF ((MNWPROC.GT.0).AND.
-     &           (writerReadMetaData.eqv..false.)) THEN
+            IF ((MNWPROC.GT.0).AND.&
+                 (writerReadMetaData.eqv..false.)) THEN
                 CALL ReadMetaData(dat%ncid,dat%myFile)
                 writerReadMetaData= .TRUE. 
                 dat%myMesh%num_nodes = NP_G
@@ -3154,7 +3154,7 @@
             iret = nf_def_var_deflate(dat%ncid, dat%max_nodal_data_id,&
                    1, 1, 2)
             CALL check_err(iret)
-            iret = nf_def_var_deflate(dat%ncid, dat%time_max_nodal_data_id,
+            iret = nf_def_var_deflate(dat%ncid, dat%time_max_nodal_data_id,&
                    1, 1, 2)
             CALL check_err(iret)
          CASE(316:322)  !swan max/min values
@@ -4132,8 +4132,8 @@
              '("No netCDF for files with unit number ",i0,".")') lun
          call allMessage(ERROR,scratchMessage)                     
       END SELECT
-C
-C     Write the array values
+ 
+!     Write the array values
       SELECT CASE(lun)
       CASE(45,46)
          IF (MNPROC.eq.1) THEN
