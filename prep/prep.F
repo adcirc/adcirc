@@ -7174,7 +7174,7 @@ C........Radiation Stress
       RSDescript % file_name            = "rads.64"
       RSDescript % file_extension       = 64
       RSDescript % file_basename        = 'rads'
-      RSDescript % readMaxMin           = .true.
+      RSDescript % readMaxMin           = .false.
       call makeFileName(RSDescript)
       !
       !  D E T A I L E D    I N U N D A T I O N    O U T P U T
