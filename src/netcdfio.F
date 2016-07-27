@@ -1231,6 +1231,7 @@
 
     INTEGER :: n    ! node counter
     INTEGER :: iret ! success or failure of netcdf call
+    REAL(SZ),ALLOCATABLE :: defaultValue(:)
     CHARACTER(len=1024) :: att_text  ! metadata
 
     call setMessageSource("initNodalDataFile")
@@ -1245,30 +1246,32 @@
         IF (C3D.eqv. .TRUE. ) THEN
             dat%myMesh%num_v_nodes = NFEN
         ENDIF
-        dat%myMesh%nface_len = 3
-    ENDIF
-    ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
+         dat%myMesh%nface_len = 3
+      ENDIF
+      ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
+      ALLOCATE(defaultValue(dat%myMesh%num_nodes))
+      defaultValue(:) = descript1%initial_value
 
 !     Initialize netCDF output file, creating a new one if necessary.
-    CALL createNetCDFOutputFile(dat%ncid, dat%myFile, dat%myTime, &
-    descript1, reterr)
-
-! if we didn't need to create a file, update metadata and return
-    IF (dat%myFile%createFile.eqv. .FALSE. ) THEN
-        IF ( (reterr.eqv. .FALSE. ) .AND. &
-        ( (abs(descript1%specifier) == NETCDF3) .OR. &
-        (abs(descript1%specifier) == NETCDF4) ) ) then
-        
-        ! jgf52.08.25: This subroutine is called in the case where
-        ! a non-NetCDF min/max file will be written, but a NetCDF min/max
-        ! file will be read. If this is the case, then don't update metadata
-        ! in the netcdf file.
-        
-        ! bell...   The writers don't read the fort.15, so they need to
-        !           assume ADCPREP has placed the correct info on the first
-        !           pass, then call updateMetaData.
-            IF ((MNWPROC > 0) .AND. &
-            (writerReadMetaData.eqv. .FALSE. )) THEN
+      CALL createNetCDFOutputFile(dat%ncid, dat%myFile, dat%myTime,
+     &                            descript1, reterr)
+      !
+      ! if we didn't need to create a file, update metadata and return
+      IF (dat%myFile%createFile.eqv..false.) THEN
+         IF ( (reterr.eqv..false.) .and.
+     &        ( (abs(descript1%specifier).eq.NETCDF3) .or.
+     &          (abs(descript1%specifier).eq.NETCDF4) ) ) then
+            !
+            ! jgf52.08.25: This subroutine is called in the case where 
+            ! a non-NetCDF min/max file will be written, but a NetCDF min/max
+            ! file will be read. If this is the case, then don't update metadata
+            ! in the netcdf file.
+            !
+! Cobell...   The writers don't read the fort.15, so they need to 
+!             assume ADCPREP has placed the correct info on the first
+!             pass, then call updateMetaData. 
+            IF ((MNWPROC.GT.0).AND.
+     &           (writerReadMetaData.eqv..false.)) THEN
                 CALL ReadMetaData(dat%ncid,dat%myFile)
                 writerReadMetaData= .TRUE. 
                 dat%myMesh%num_nodes = NP_G
@@ -3110,96 +3113,96 @@
 !     jgf50.44: Automatically turn on compression if we are using the
 !     netcdf4 file format.
 #ifdef NETCDF_CAN_DEFLATE
-    IF (abs(descript1%specifier) == NETCDF4) THEN
-        SELECT CASE(descript1 % lun)
-        CASE(44)
-        iret = nf_def_var_deflate(dat%ncid, dat%u_nodal_data_id, &
-        &           1, 1, 2)
-        CALL check_err(iret)
-        IF ((IDEN == 2) .OR. (IDEN == 4)) THEN
-            iret = nf_def_var_deflate(dat%ncid, dat%v_nodal_data_id, &
-            &                 1, 1, 2)
+      IF (abs(descript1%specifier).eq.NETCDF4) THEN
+         SELECT CASE(descript1 % lun)
+         CASE(44)
+            iret = nf_def_var_deflate(dat%ncid, dat%u_nodal_data_id,&
+                1, 1, 2)
             CALL check_err(iret)
-        ENDIF
-        IF ((IDEN == 3) .OR. (IDEN == 4)) THEN
-            iret = nf_def_var_deflate(dat%ncid, dat%w_nodal_data_id, &
-            &                 1, 1, 2)
+            IF ((IDEN.eq.2).or.(IDEN.eq.4)) THEN
+               iret = nf_def_var_deflate(dat%ncid, dat%v_nodal_data_id,&
+                      1, 1, 2)
+               CALL check_err(iret)
+            ENDIF
+            IF ((IDEN.eq.3).or.(IDEN.eq.4)) THEN
+               iret = nf_def_var_deflate(dat%ncid, dat%w_nodal_data_id,&
+                      1, 1, 2)
+               CALL check_err(iret)
+            ENDIF
+         CASE(45,46)
+            iret = nf_def_var_deflate(dat%ncid, dat%u_nodal_data_id,&
+                1, 1, 2)
             CALL check_err(iret)
-        ENDIF
-        CASE(45,46)
-        iret = nf_def_var_deflate(dat%ncid, dat%u_nodal_data_id, &
-        &           1, 1, 2)
-        CALL check_err(iret)
-        iret = nf_def_var_deflate(dat%ncid, dat%v_nodal_data_id, &
-        &              1, 1, 2)
-        CALL check_err(iret)
-        iret = nf_def_var_deflate(dat%ncid, dat%w_nodal_data_id, &
-        &              1, 1, 2)
-        CALL check_err(iret)
-        CASE(47,63,73,77,90,301:304,306,307,402,403)
-        iret = nf_def_var_deflate(dat%ncid, dat%nodal_data_id, &
-        &              1, 1, 2)
-        CALL check_err(iret)
-        CASE(64,74,164,305)
-        iret = nf_def_var_deflate(dat%ncid, dat%u_nodal_data_id, &
-        &              1, 1, 2)
-        CALL check_err(iret)
-        iret = nf_def_var_deflate(dat%ncid, dat%v_nodal_data_id, &
-        &              1, 1, 2)
-        CALL check_err(iret)
-        CASE(311:315,400,401,404)  !adcirc max/min values
-        iret = nf_def_var_deflate(dat%ncid, dat%max_nodal_data_id, &
-        &              1, 1, 2)
-        CALL check_err(iret)
-        iret = nf_def_var_deflate(dat%ncid, dat%time_max_nodal_data_id, &
-        &              1, 1, 2)
-        CALL check_err(iret)
-        CASE(316:322)  !swan max/min values
-        iret = nf_def_var_deflate(dat%ncid, dat%max_nodal_data_id, &
-        &              1, 1, 2)
-        CALL check_err(iret)
-        CASE DEFAULT ! should be unreachable
-        write(scratchMessage, &
-        '("No netCDF for files with unit number ",i0,".")') descript1 % lun
-        call allMessage(ERROR,scratchMessage)
-        END SELECT
-    ENDIF
+            iret = nf_def_var_deflate(dat%ncid, dat%v_nodal_data_id,&
+                   1, 1, 2)
+            CALL check_err(iret)
+            iret = nf_def_var_deflate(dat%ncid, dat%w_nodal_data_id,&
+                   1, 1, 2)
+            CALL check_err(iret)
+         CASE(47,63,73,77,90,301:304,306,307,402,403)
+            iret = nf_def_var_deflate(dat%ncid, dat%nodal_data_id,&
+                   1, 1, 2)
+            CALL check_err(iret)
+         CASE(64,74,164,305)
+            iret = nf_def_var_deflate(dat%ncid, dat%u_nodal_data_id,&
+                   1, 1, 2)
+            CALL check_err(iret)
+            iret = nf_def_var_deflate(dat%ncid, dat%v_nodal_data_id,&
+                   1, 1, 2)
+            CALL check_err(iret)
+         CASE(311:315,400,401,404)  !adcirc max/min values
+            iret = nf_def_var_deflate(dat%ncid, dat%max_nodal_data_id,&
+                   1, 1, 2)
+            CALL check_err(iret)
+            iret = nf_def_var_deflate(dat%ncid, dat%time_max_nodal_data_id,
+                   1, 1, 2)
+            CALL check_err(iret)
+         CASE(316:322)  !swan max/min values
+            iret = nf_def_var_deflate(dat%ncid, dat%max_nodal_data_id,&
+                   1, 1, 2)
+            CALL check_err(iret)
+         CASE DEFAULT ! should be unreachable
+            write(scratchMessage,&
+             '("No netCDF for files with unit number ",i0,".")') descript1 % lun 
+            call allMessage(ERROR,scratchMessage)
+         END SELECT
+      ENDIF
 #endif
 
 !     RJW added 9/13/2010
 !     to include time atributes in global data files
 !     Define time attributes
-    CALL defineTimeAttributes(dat%ncid, dat%myTime)
+      CALL defineTimeAttributes(dat%ncid, dat%myTime)
 
 !     define metadata and selected fort.15 parameters in netcdf file
-    CALL defineMetaData(dat%ncid)
+      CALL defineMetaData(dat%ncid)
 
 !     Leave define mode
-    iret = nf90_enddef(dat%ncid)
-    CALL check_err(iret)
+      iret = nf90_enddef(dat%ncid)
+      CALL check_err(iret)
 
 !     write mesh to netcdf file
-    CALL putMeshVariables(dat%ncid,dat%myMesh)
-
-! jgf52.08.11: Initialize max/min values b/c they will be read in
-! at the start of a hotstart run. The square of the initialized
-! values will be compared with the sum of the squares of
-! vector values in the live running code. Uninitialized values
-! of -99999 become large and positive when squared, meaning that
-! we will never be able set a new peak in the running code if
-! we leave the max/min values uninitialized.
-    IF ( (dat%myFile%createFile.eqv. .TRUE. ) .AND. &
-    (descript1%readMaxMin.eqv. .TRUE. )) THEN
-        iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id, &
-        spread(descript1%initial_value,1,dat%myMesh%num_nodes))
-    ENDIF
+      CALL putMeshVariables(dat%ncid,dat%myMesh)
+      ! 
+      ! jgf52.08.11: Initialize max/min values b/c they will be read in
+      ! at the start of a hotstart run. The square of the initialized 
+      ! values will be compared with the sum of the squares of
+      ! vector values in the live running code. Uninitialized values
+      ! of -99999 become large and positive when squared, meaning that
+      ! we will never be able set a new peak in the running code if 
+      ! we leave the max/min values uninitialized.   
+      IF ( (dat%myFile%createFile.eqv..true.).and.&
+           (descript1%readMaxMin.eqv..true.)) THEN
+          iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,defaultValue)
+          CALL check_err(iret)
+      ENDIF
 
 !     now close the initialized netcdf file
-    iret = nf90_close(dat%ncid)
-    CALL check_err(iret)
-          
-    call logMessage(INFO,'Initialized "'//trim(dat%myFile%filename)// &
-    '" file.')
+      iret = nf90_close(dat%ncid)
+      CALL check_err(iret)
+      
+      call logMessage(INFO,'Initialized "'//trim(dat%myFile%filename)//&
+         '" file.') 
 
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
     call allMessage(DEBUG,"Return.")
@@ -3848,11 +3851,11 @@
     CALL check_err(iret)
 
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-    call allMessage(DEBUG,"Return.")
+      call allMessage(DEBUG,"Return.")
 #endif
-    call unsetMessageSource()
+      call unsetMessageSource()
 !-----------------------------------------------------------------------
-    end subroutine writeStationData
+      end subroutine writeStationData
 !-----------------------------------------------------------------------
 
 !-----------------------------------------------------------------------
@@ -3860,462 +3863,458 @@
 !-----------------------------------------------------------------------
 !     jgf49.17.02 Writes data to a full domain file.
 !-----------------------------------------------------------------------
-    SUBROUTINE writeNodalData(dat, lun, descript1, timesec, &
-    descript2, descript3 )
-    USE SIZES, ONLY : MNPROC, MYPROC
-    USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t, NODECODE, &
-    scratchMessage, IDEN
+      SUBROUTINE writeNodalData(dat, lun, descript1, timesec,&
+        descript2, descript3 )
+      USE SIZES, ONLY : MNPROC, MYPROC
+      USE GLOBAL, ONLY : SNAMLEN, OutputDataDescript_t, NODECODE,&
+                        scratchMessage, IDEN
 
-    IMPLICIT NONE
+      IMPLICIT NONE
 
-    type(nodalData), intent(inout) :: dat
-    INTEGER, intent(in) :: lun
-    type(OutputDataDescript_t), intent(in) :: descript1
-    type(OutputDataDescript_t), intent(in), optional :: descript2
-    type(OutputDataDescript_t), intent(in), optional :: descript3
-    REAL(8), intent(in) :: timesec
+      type(nodalData), intent(inout) :: dat
+      INTEGER, intent(in) :: lun
+      type(OutputDataDescript_t), intent(in) :: descript1
+      type(OutputDataDescript_t), intent(in), optional :: descript2
+      type(OutputDataDescript_t), intent(in), optional :: descript3
+      REAL(8), intent(in) :: timesec
 
-    INTEGER :: i,j
-    INTEGER :: counti(1), starti(1), n
-    INTEGER :: kount(2), start(2)
-    INTEGER :: kount3D(3), start3D(3)
-    INTEGER :: iret ! success or failure of the netcdf call
-    INTEGER :: num_values ! number of values in the array
+      INTEGER i,j
+      INTEGER counti(1), starti(1), n
+      INTEGER kount(2), start(2)
+      INTEGER kount3D(3), start3D(3)
+      INTEGER iret ! success or failure of the netcdf call
+      INTEGER num_values ! number of values in the array
+      INTEGER,ALLOCATABLE  :: tempIntArray(:)
+      REAL(SZ),ALLOCATABLE :: tempArray(:)
 
-    call setMessageSource("writeNodalData")
+      call setMessageSource("writeNodalData")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
-    call allMessage(DEBUG,"Enter.")
+      call allMessage(DEBUG,"Enter.")
 #endif
 
-    write(scratchMessage,'("Rank ",i0," writing to ",a,".")') myproc, &
-    trim(dat%myFile%filename)
-    call allMessage(DEBUG,scratchMessage)
+      write(scratchMessage,'("Rank ",i0," writing to ",a,".")') myproc,&
+         trim(dat%myFile%filename)
+      call allMessage(DEBUG,scratchMessage)
 
-    iret = nf90_open(dat%myFile%FILENAME, NF_WRITE, dat%ncid)
-    CALL check_err(iret)
-    dat%myTime%timenc(dat%myTime%timenc_len)=timesec
+      iret = nf90_open(dat%myFile%FILENAME, NF_WRITE, dat%ncid)
+      CALL check_err(iret)
+      dat%myTime%timenc(dat%myTime%timenc_len)=timesec
 
-    CALL setRecordCounterAndStoreTime(dat%ncid, dat%myFile, &
-    dat%myTime)
+      CALL setRecordCounterAndStoreTime(dat%ncid, dat%myFile,&
+         dat%myTime)
 
 !     Set up the 2D netcdf data extents
-    kount(1)=dat%myMesh%num_nodes
-    kount(2)=dat%myTime%timenc_len
-    start(1)=1
-    start(2)=dat%myFile%record_counter
+      kount(1)=dat%myMesh%num_nodes
+      kount(2)=dat%myTime%timenc_len
+      start(1)=1
+      start(2)=dat%myFile%record_counter
 
 
 !     Set up the 3D netcdf data extents
-    kount3D(1)=dat%myMesh%num_nodes
-    kount3D(2)=dat%myMesh%num_v_nodes
-    kount3D(3)=dat%myTime%timenc_len
-    start3D(1)=1
-    start3D(2)=1
-    start3D(3)=dat%myFile%record_counter
+      kount3D(1)=dat%myMesh%num_nodes
+      kount3D(2)=dat%myMesh%num_v_nodes
+      kount3D(3)=dat%myTime%timenc_len
+      start3D(1)=1
+      start3D(2)=1
+      start3D(3)=dat%myFile%record_counter
 
 !     Grab the data ids
-    SELECT CASE(lun)
+      SELECT CASE(lun)
 
-    CASE(44)
-    iret=nf90_inq_varid(dat%ncid, "sigmat", dat%u_nodal_data_id)
-    CALL check_err(iret)
-    IF (MNPROC == 1) THEN
-        iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id, &
-        descript1%array2D, start3D, kount3D)
-    ELSE
-        iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id, &
-        descript1%array2D_g, start3D, kount3D)
-    ENDIF
+      CASE(44)
+         iret=nf90_inq_varid(dat%ncid, "sigmat", dat%u_nodal_data_id)
+         CALL check_err(iret)
+         IF (MNPROC.eq.1) THEN
+            iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,&
+                descript1%array2D, start3D, kount3D)
+         ELSE
+            iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,&
+                descript1%array2D_g, start3D, kount3D)
+         ENDIF
 
-    CALL check_err(iret)
-    IF ((iden == 2) .OR. (iden == 4)) THEN
-        iret=nf90_inq_varid(dat%ncid, "salinity", &
-        dat%v_nodal_data_id)
+         CALL check_err(iret)
+         IF ((iden.eq.2).or.(iden.eq.4)) THEN
+            iret=nf90_inq_varid(dat%ncid, "salinity",&
+                dat%v_nodal_data_id)
+            CALL check_err(iret)
+            IF (MNPROC.eq.1) THEN
+               iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,&
+                   descript2%array2D, start3D, kount3D)
+            ELSE
+               iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,&
+                 descript2%array2D_g, start3D, kount3D)
+            ENDIF
+            CALL check_err(iret)
+         ENDIF
+         IF ((iden.eq.3).or.(iden.eq.4)) THEN
+            iret=nf90_inq_varid(dat%ncid, "temperature",&
+               dat%w_nodal_data_id)
+            CALL check_err(iret)
+            IF (MNPROC.eq.1) THEN
+               iret = nf90_put_var(dat%ncid, dat%w_nodal_data_id,&
+                  descript3%array2D, start3D, kount3D)
+            ELSE
+               iret = nf90_put_var(dat%ncid, dat%w_nodal_data_id,&
+                  descript3%array2D_g, start3D, kount3D)
+            ENDIF
+            CALL check_err(iret)
+         ENDIF
+      CASE(45)
+         iret=nf90_inq_varid(dat%ncid, "u-vel3D", dat%u_nodal_data_id)
+         CALL check_err(iret)
+         iret=nf90_inq_varid(dat%ncid, "v-vel3D", dat%v_nodal_data_id)
+         CALL check_err(iret)
+         iret=nf90_inq_varid(dat%ncid, "w-vel3D", dat%w_nodal_data_id)
+         CALL check_err(iret)
+      CASE(46)
+         iret=nf90_inq_varid(dat%ncid, "q20", dat%u_nodal_data_id)
+         CALL check_err(iret)
+         iret=nf90_inq_varid(dat%ncid, "l", dat%v_nodal_data_id)
+         CALL check_err(iret)
+         iret=nf90_inq_varid(dat%ncid, "ev", dat%w_nodal_data_id)
+         CALL check_err(iret)
+      CASE(47)
+         iret=nf90_inq_varid(dat%ncid,"qsurfkp1",dat%nodal_data_id)
+         CALL check_err(iret)
+      CASE(63)
+         iret=nf90_inq_varid(dat%ncid,"zeta",dat%nodal_data_id)
+         CALL check_err(iret)
+      CASE(64)
+         iret=nf90_inq_varid(dat%ncid, "u-vel", dat%u_nodal_data_id)
+         CALL check_err(iret)
+         iret=nf90_inq_varid(dat%ncid, "v-vel", dat%v_nodal_data_id)
+         CALL check_err(iret)
+      CASE(73)
+         iret=nf90_inq_varid(dat%ncid, "pressure", dat%nodal_data_id)
+         CALL check_err(iret)
+      CASE(74)
+         iret=nf90_inq_varid(dat%ncid,"windx",dat%u_nodal_data_id)
+         CALL check_err(iret)
+         iret=nf90_inq_varid(dat%ncid,"windy",dat%v_nodal_data_id)
+         CALL check_err(iret)
+      CASE(77)
+         iret=nf90_inq_varid(dat%ncid,"weir_dz",dat%nodal_data_id)
+         CALL check_err(iret)
+      CASE(90)
+         iret=nf90_inq_varid(dat%ncid, "tau0", dat%nodal_data_id)
+         CALL check_err(iret)
+      CASE(164)
+        iret=nf90_inq_varid(dat%ncid, "radstress_x",dat%u_nodal_data_id)
         CALL check_err(iret)
-        IF (MNPROC == 1) THEN
-            iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id, &
-            descript2%array2D, start3D, kount3D)
-        ELSE
-            iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id, &
-            descript2%array2D_g, start3D, kount3D)
-        ENDIF
+        iret=nf90_inq_varid(dat%ncid, "radstress_y",dat%v_nodal_data_id)
         CALL check_err(iret)
-    ENDIF
-    IF ((iden == 3) .OR. (iden == 4)) THEN
-        iret=nf90_inq_varid(dat%ncid, "temperature", &
-        dat%w_nodal_data_id)
+#ifdef CSWAN        
+      CASE(301)
+        iret=nf90_inq_varid(dat%ncid, "swan_HS", dat%nodal_data_id)
         CALL check_err(iret)
-        IF (MNPROC == 1) THEN
-            iret = nf90_put_var(dat%ncid, dat%w_nodal_data_id, &
-            descript3%array2D, start3D, kount3D)
-        ELSE
-            iret = nf90_put_var(dat%ncid, dat%w_nodal_data_id, &
-            descript3%array2D_g, start3D, kount3D)
-        ENDIF
+      CASE(302)
+        iret=nf90_inq_varid(dat%ncid, "swan_DIR", dat%nodal_data_id)
         CALL check_err(iret)
-    ENDIF
-    CASE(45)
-    iret=nf90_inq_varid(dat%ncid, "u-vel3D", dat%u_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid, "v-vel3D", dat%v_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid, "w-vel3D", dat%w_nodal_data_id)
-    CALL check_err(iret)
-    CASE(46)
-    iret=nf90_inq_varid(dat%ncid, "q20", dat%u_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid, "l", dat%v_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid, "ev", dat%w_nodal_data_id)
-    CALL check_err(iret)
-    CASE(47)
-    iret=nf90_inq_varid(dat%ncid,"qsurfkp1",dat%nodal_data_id)
-    CALL check_err(iret)
-    CASE(63)
-    iret=nf90_inq_varid(dat%ncid,"zeta",dat%nodal_data_id)
-    CALL check_err(iret)
-    CASE(64)
-    iret=nf90_inq_varid(dat%ncid, "u-vel", dat%u_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid, "v-vel", dat%v_nodal_data_id)
-    CALL check_err(iret)
-    CASE(73)
-    iret=nf90_inq_varid(dat%ncid, "pressure", dat%nodal_data_id)
-    CALL check_err(iret)
-    CASE(74)
-    iret=nf90_inq_varid(dat%ncid,"windx",dat%u_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid,"windy",dat%v_nodal_data_id)
-    CALL check_err(iret)
-    CASE(77)
-    iret=nf90_inq_varid(dat%ncid,"weir_dz",dat%nodal_data_id)
-    CALL check_err(iret)
-    CASE(90)
-    iret=nf90_inq_varid(dat%ncid, "tau0", dat%nodal_data_id)
-    CALL check_err(iret)
-    CASE(164)
-    iret=nf90_inq_varid(dat%ncid, "radstress_x",dat%u_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid, "radstress_y",dat%v_nodal_data_id)
-    CALL check_err(iret)
-#ifdef CSWAN
-    CASE(301)
-    iret=nf90_inq_varid(dat%ncid, "swan_HS", dat%nodal_data_id)
-    CALL check_err(iret)
-    CASE(302)
-    iret=nf90_inq_varid(dat%ncid, "swan_DIR", dat%nodal_data_id)
-    CALL check_err(iret)
-    CASE(303)
-    iret=nf90_inq_varid(dat%ncid, "swan_TM01", dat%nodal_data_id)
-    CALL check_err(iret)
-    CASE(304)
-    iret=nf90_inq_varid(dat%ncid, "swan_TPS", dat%nodal_data_id)
-    CALL check_err(iret)
-    CASE(305)
-    iret=nf90_inq_varid(dat%ncid, "swan_windx", dat%u_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid, "swan_windy", dat%v_nodal_data_id)
-    CALL check_err(iret)
-    CASE(306)
-    iret=nf90_inq_varid(dat%ncid, "swan_TM02", dat%nodal_data_id)
-    CALL check_err(iret)
-    CASE(307)
-    iret=nf90_inq_varid(dat%ncid, "swan_TMM10", dat%nodal_data_id)
-    CALL check_err(iret)
+      CASE(303)
+        iret=nf90_inq_varid(dat%ncid, "swan_TM01", dat%nodal_data_id)
+        CALL check_err(iret)
+      CASE(304)
+        iret=nf90_inq_varid(dat%ncid, "swan_TPS", dat%nodal_data_id)
+        CALL check_err(iret)
+      CASE(305)
+        iret=nf90_inq_varid(dat%ncid, "swan_windx", dat%u_nodal_data_id)
+        CALL check_err(iret)
+        iret=nf90_inq_varid(dat%ncid, "swan_windy", dat%v_nodal_data_id)
+        CALL check_err(iret)
+      CASE(306)
+        iret=nf90_inq_varid(dat%ncid, "swan_TM02", dat%nodal_data_id)
+        CALL check_err(iret)
+      CASE(307)
+        iret=nf90_inq_varid(dat%ncid, "swan_TMM10", dat%nodal_data_id)
+        CALL check_err(iret)
+#endif        
+
+      CASE(311)
+        iret=nf90_inq_varid(dat%ncid, "zeta_max", dat%max_nodal_data_id)
+        CALL check_err(iret)
+        iret=nf90_inq_varid(dat%ncid, "time_of_zeta_max",&
+              dat%time_max_nodal_data_id)
+        CALL check_err(iret)
+      CASE(312)
+        iret=nf90_inq_varid(dat%ncid, "vel_max",&
+                 dat%max_nodal_data_id)
+        CALL check_err(iret)
+        iret=nf90_inq_varid(dat%ncid, "time_of_vel_max",&
+                 dat%time_max_nodal_data_id)
+        CALL check_err(iret)
+      CASE(313)
+        iret=nf90_inq_varid(dat%ncid, "pressure_min",&
+                dat%max_nodal_data_id)
+        CALL check_err(iret)
+        iret=nf90_inq_varid(dat%ncid, "time_of_pressure_min",&
+                dat%time_max_nodal_data_id)
+        CALL check_err(iret)
+      CASE(314)
+        iret=nf90_inq_varid(dat%ncid, "wind_max",& 
+                dat%max_nodal_data_id)
+        CALL check_err(iret)
+        iret=nf90_inq_varid(dat%ncid, "time_of_wind_max",&
+                dat%time_max_nodal_data_id)
+        CALL check_err(iret)
+      CASE(315)
+        iret=nf90_inq_varid(dat%ncid,"radstress_max",&
+                 dat%max_nodal_data_id)
+        CALL check_err(iret)
+        iret=nf90_inq_varid(dat%ncid,"time_of_radstress_max",&
+                dat%time_max_nodal_data_id)
+        CALL check_err(iret)
+#ifdef CSWAN        
+      CASE(316)
+        iret=nf90_inq_varid(dat%ncid, "swan_HS_max",&
+        dat%max_nodal_data_id)
+        CALL check_err(iret)
+      CASE(317)
+        iret=nf90_inq_varid(dat%ncid, "swan_DIR_max",&
+       dat%max_nodal_data_id)
+        CALL check_err(iret)        
+      CASE(318)
+        iret=nf90_inq_varid(dat%ncid, "swan_TM01_max",&
+        dat%max_nodal_data_id)
+        CALL check_err(iret)        
+      CASE(319)
+        iret=nf90_inq_varid(dat%ncid, "swan_TPS_max",&
+        dat%max_nodal_data_id)
+        CALL check_err(iret)        
+      CASE(320)
+        iret=nf90_inq_varid(dat%ncid, "swan_wind_max",&
+        dat%max_nodal_data_id)
+        CALL check_err(iret)                
+      CASE(321)
+        iret=nf90_inq_varid(dat%ncid, "swan_TM02_max",&
+        dat%max_nodal_data_id)
+        CALL check_err(iret) 
+      CASE(322)
+        iret=nf90_inq_varid(dat%ncid, "swan_TMM10_max",&
+        dat%max_nodal_data_id)
+        CALL check_err(iret) 
 #endif
 
-    CASE(311)
-    iret=nf90_inq_varid(dat%ncid, "zeta_max", dat%max_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid, "time_of_zeta_max", &
-    dat%time_max_nodal_data_id)
-    CALL check_err(iret)
-    CASE(312)
-    iret=nf90_inq_varid(dat%ncid, "vel_max", &
-    dat%max_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid, "time_of_vel_max", &
-    dat%time_max_nodal_data_id)
-    CALL check_err(iret)
-    CASE(313)
-    iret=nf90_inq_varid(dat%ncid, "pressure_min", &
-    dat%max_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid, "time_of_pressure_min", &
-    dat%time_max_nodal_data_id)
-    CALL check_err(iret)
-    CASE(314)
-    iret=nf90_inq_varid(dat%ncid, "wind_max", &
-    dat%max_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid, "time_of_wind_max", &
-    dat%time_max_nodal_data_id)
-    CALL check_err(iret)
-    CASE(315)
-    iret=nf90_inq_varid(dat%ncid,"radstress_max", &
-    dat%max_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid,"time_of_radstress_max", &
-    dat%time_max_nodal_data_id)
-    CALL check_err(iret)
-#ifdef CSWAN
-    CASE(316)
-    iret=nf90_inq_varid(dat%ncid, "swan_HS_max", &
-    dat%max_nodal_data_id)
-    CALL check_err(iret)
-    CASE(317)
-    iret=nf90_inq_varid(dat%ncid, "swan_DIR_max", &
-    dat%max_nodal_data_id)
-    CALL check_err(iret)
-    CASE(318)
-    iret=nf90_inq_varid(dat%ncid, "swan_TM01_max", &
-    dat%max_nodal_data_id)
-    CALL check_err(iret)
-    CASE(319)
-    iret=nf90_inq_varid(dat%ncid, "swan_TPS_max", &
-    dat%max_nodal_data_id)
-    CALL check_err(iret)
-    CASE(320)
-    iret=nf90_inq_varid(dat%ncid, "swan_wind_max", &
-    dat%max_nodal_data_id)
-    CALL check_err(iret)
-    CASE(321)
-    iret=nf90_inq_varid(dat%ncid, "swan_TM02_max", &
-    dat%max_nodal_data_id)
-    CALL check_err(iret)
-    CASE(322)
-    iret=nf90_inq_varid(dat%ncid, "swan_TMM10_max", &
-    dat%max_nodal_data_id)
-    CALL check_err(iret)
-#endif
-
-! inundationtime.63
-    CASE(400)
-    iret=nf90_inq_varid(dat%ncid, "inun_time", &
-    dat%max_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid, "onset_inun_time", &
-    dat%time_max_nodal_data_id)
-    CALL check_err(iret)
-! maxinundepth.63
-    CASE(401)
-    iret=nf90_inq_varid(dat%ncid, "inun_max", &
-    dat%max_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid, "time_of_inun_max", &
-    dat%time_max_nodal_data_id)
-    CALL check_err(iret)
-! initiallydry.63
-    CASE(402)
-    iret=nf90_inq_varid(dat%ncid, "initiallydry",dat%nodal_data_id)
-    CALL check_err(iret)
-! endrisinginun.63
-    CASE(403)
-    iret=nf90_inq_varid(dat%ncid, "endrisinginun",dat%nodal_data_id)
-    CALL check_err(iret)
-    CASE(404)
-    iret=nf90_inq_varid(dat%ncid, "everdried", &
-    dat%max_nodal_data_id)
-    CALL check_err(iret)
-    iret=nf90_inq_varid(dat%ncid, "time_of_everdried", &
-    dat%time_max_nodal_data_id)
-    CALL check_err(iret)
+      ! inundationtime.63
+      CASE(400)
+        iret=nf90_inq_varid(dat%ncid, "inun_time",&
+                dat%max_nodal_data_id)
+        CALL check_err(iret)
+        iret=nf90_inq_varid(dat%ncid, "onset_inun_time",&
+                dat%time_max_nodal_data_id)
+        CALL check_err(iret)
+      ! maxinundepth.63
+      CASE(401)
+        iret=nf90_inq_varid(dat%ncid, "inun_max",&
+                dat%max_nodal_data_id)
+        CALL check_err(iret)
+        iret=nf90_inq_varid(dat%ncid, "time_of_inun_max",&
+                dat%time_max_nodal_data_id)
+        CALL check_err(iret)
+      ! initiallydry.63
+      CASE(402)
+        iret=nf90_inq_varid(dat%ncid, "initiallydry",dat%nodal_data_id)
+        CALL check_err(iret)         
+      ! endrisinginun.63
+      CASE(403)
+        iret=nf90_inq_varid(dat%ncid, "endrisinginun",dat%nodal_data_id)
+        CALL check_err(iret)
+      CASE(404)
+        iret=nf90_inq_varid(dat%ncid, "everdried",&
+                dat%max_nodal_data_id)
+        CALL check_err(iret)
+        iret=nf90_inq_varid(dat%ncid, "time_of_everdried",&
+               dat%time_max_nodal_data_id)
+        CALL check_err(iret)
 
 
-    CASE DEFAULT
-    write(scratchMessage, &
-    '("No netCDF for files with unit number ",i0,".")') lun
-    call allMessage(ERROR,scratchMessage)
-    END SELECT
-
-!     Write the array values
-    SELECT CASE(lun)
-    CASE(45,46)
-    IF (MNPROC == 1) THEN
-        iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id, &
-        descript1%array2D, start3D, kount3D)
-        CALL check_err(iret)
-        iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id, &
-        descript2%array2D, start3D, kount3D)
-        CALL check_err(iret)
-        iret = nf90_put_var(dat%ncid, dat%w_nodal_data_id, &
-        descript3%array2D, start3D, kount3D)
-        CALL check_err(iret)
-    ELSE
-        iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id, &
-        descript1%array2D_g, start3D, kount3D)
-        CALL check_err(iret)
-        iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id, &
-        descript2%array2D_g, start3D, kount3D)
-        CALL check_err(iret)
-        iret = nf90_put_var(dat%ncid, dat%w_nodal_data_id, &
-        descript3%array2D_g, start3D, kount3D)
-        CALL check_err(iret)
-    ENDIF
-    CASE(316,317,318,319,321,322)  !swan max/min
-    IF (MNPROC == 1) THEN ! SERIAL
-        IF ( descript1%ConsiderWetDry.eqv. .TRUE. ) THEN
-            iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id, &
-            merge(descript1%array, &
-            spread(descript1%alternate_value,1,kount(1)), &
-            nodecode > 0))
-        ELSE
-            iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id, &
-            descript1%array)
-        ENDIF
-        CALL check_err(iret)
-    ELSE
-        iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id, &
-        descript1%array_g)
-        CALL check_err(iret)
-    ENDIF
-    CASE(311,313)  !adcirc max/min only
-    IF (MNPROC == 1) THEN ! SERIAL
-        IF ( descript1%ConsiderWetDry.eqv. .TRUE. ) THEN
-            iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id, &
-            merge(descript1%array, &
-            spread(descript1%alternate_value,1,kount(1)), &
-            nodecode > 0))
+      CASE DEFAULT
+         write(scratchMessage,&
+             '("No netCDF for files with unit number ",i0,".")') lun
+         call allMessage(ERROR,scratchMessage)                     
+      END SELECT
+C
+C     Write the array values
+      SELECT CASE(lun)
+      CASE(45,46)
+         IF (MNPROC.eq.1) THEN
+            iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,&
+                descript1%array2D, start3D, kount3D)
             CALL check_err(iret)
-            iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id, &
-            merge(descript1%array2, &
-            spread(descript1%alternate_value,1,kount(1)), &
-            nodecode > 0))
+            iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,&
+                descript2%array2D, start3D, kount3D)
             CALL check_err(iret)
-        ELSE
-            iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id, &
-            descript1%array)
+            iret = nf90_put_var(dat%ncid, dat%w_nodal_data_id,&
+                descript3%array2D, start3D, kount3D)
             CALL check_err(iret)
-            iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id, &
-            descript1%array2)
+         ELSE
+            iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,&
+                descript1%array2D_g, start3D, kount3D)
             CALL check_err(iret)
-        ENDIF
-    ELSE
-        iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id, &
-        descript1%array_g)
-        CALL check_err(iret)
-        iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id, &
-        descript1%array2_g)
-        CALL check_err(iret)
-    ENDIF
-    CASE(312,314,315,400,401,404)  !adcirc max/min
-    IF (MNPROC == 1) THEN ! SERIAL
-        IF ( descript1%ConsiderWetDry.eqv. .TRUE. ) THEN
-            iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id, &
-            merge(descript1%array, &
-            spread(descript1%alternate_value,1,kount(1)), &
-            nodecode > 0))
+            iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,&
+                descript2%array2D_g, start3D, kount3D)
             CALL check_err(iret)
-            iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id, &
-            merge(descript1%array2, &
-            spread(descript1%alternate_value,1,kount(1)), &
-            nodecode > 0))
+            iret = nf90_put_var(dat%ncid, dat%w_nodal_data_id,&
+                descript3%array2D_g, start3D, kount3D)
             CALL check_err(iret)
-        ELSE
-            iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id, &
-            descript1%array)
+         ENDIF
+      CASE(316,317,318,319,321,322)  !swan max/min
+         IF (MNPROC.eq.1) THEN ! SERIAL
+            IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,&
+                    spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,tempArray)
+            ELSE
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,&
+                  descript1%array)
+            ENDIF
             CALL check_err(iret)
-            iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id, &
-            descript1%array2)
+         ELSE
+            iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,&
+                  descript1%array_g)
             CALL check_err(iret)
-        ENDIF
-    ELSE                  ! PARALLEL
-        iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id, &
-        descript1%array_g)
-        CALL check_err(iret)
-        iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id, &
-        descript1%array2_g)
-        CALL check_err(iret)
-    ENDIF
-    CASE(320)  !swan max/min
-    IF (MNPROC == 1) THEN ! SERIAL
-        IF ( descript1%ConsiderWetDry.eqv. .TRUE. ) THEN
-            iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id, &
-            merge(descript1%array, &
-            spread(descript1%alternate_value,1,kount(1)), &
-            nodecode > 0))
-        ELSE
-            iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id, &
-            descript1%array)
+         ENDIF
+      CASE(311,313)  !adcirc max/min only
+         IF (MNPROC.eq.1) THEN ! SERIAL
+            IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,&
+                    spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,tempArray)
+               CALL check_err(iret)
+               tempArray = merge(descript1%array2,&
+                    spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id,tempArray)
+               CALL check_err(iret)
+            ELSE
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,&
+                  descript1%array)
+               CALL check_err(iret)
+               iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id,&
+                  descript1%array2)
+               CALL check_err(iret)
+            ENDIF
+         ELSE
+            iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,&
+                  descript1%array_g)
             CALL check_err(iret)
-        ENDIF
-    ELSE                  ! PARALLEL
-        iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id, &
-        descript1%array_g)
-        CALL check_err(iret)
-    ENDIF
-    CASE(47,63,73,77,90,301,302,303,304,306,307)
-    IF (MNPROC == 1) THEN ! SERIAL
-        IF ( descript1%ConsiderWetDry.eqv. .TRUE. ) THEN
-            iret = nf90_put_var(dat%ncid, dat%nodal_data_id, &
-            merge(descript1%array, &
-            spread(descript1%alternate_value,1,kount(1)), &
-            nodecode > 0), &
-            start, kount)
-        ELSE
-            iret = nf90_put_var(dat%ncid, dat%nodal_data_id, &
-            descript1%array, start, kount)
-        ENDIF
-        CALL check_err(iret)
-    ELSE
-        iret = nf90_put_var(dat%ncid, dat%nodal_data_id, &
-        descript1%array_g, start, kount)
-        CALL check_err(iret)
-    ENDIF
-    CASE(64,74,164,305)
-    IF (MNPROC == 1) THEN ! SERIAL
-        IF ( descript1%ConsiderWetDry.eqv. .TRUE. ) THEN
-            iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id, &
-            merge(descript1%array, &
-            spread(descript1%alternate_value,1,kount(1)), &
-            nodecode > 0), &
-            start, kount)
-            iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id, &
-            merge(descript1%array2, &
-            spread(descript1%alternate_value,1,kount(1)), &
-            nodecode > 0), &
-            start, kount)
+            iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id,&
+                  descript1%array2_g)
             CALL check_err(iret)
-        ELSE
-            iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id, &
-            descript1%array, start, kount)
+         ENDIF
+      CASE(312,314,315,400,401,404)  !adcirc max/min
+         IF (MNPROC.eq.1) THEN ! SERIAL
+            IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,&
+                    spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,tempArray)
+               CALL check_err(iret)
+               tempArray = merge(descript1%array2,&
+                    spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id,tempArray)
+               CALL check_err(iret)
+            ELSE
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,&
+                   descript1%array)
+               CALL check_err(iret)
+               iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id,&
+                   descript1%array2)
+               CALL check_err(iret)
+            ENDIF
+         ELSE                  ! PARALLEL
+            iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,&
+                  descript1%array_g)
             CALL check_err(iret)
-            iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id, &
-            descript1%array2, start, kount)
+            iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id,&
+                  descript1%array2_g)
             CALL check_err(iret)
-        ENDIF
-    ELSE                  ! PARALLEL
-        iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id, &
-        descript1%array_g, start, kount)
-        CALL check_err(iret)
-        iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id, &
-        descript1%array2_g, start, kount)
-        CALL check_err(iret)
-    ENDIF
-    CASE(402,403)  ! integers at nodes (e.g., initiallydry.63, endrisinginun.63)
-    IF (MNPROC == 1) THEN ! SERIAL
-        IF ( descript1%ConsiderWetDry.eqv. .TRUE. ) THEN
-            iret = nf90_put_var(dat%ncid, dat%nodal_data_id, &
-            merge(descript1%iarray, &
-            spread(int(descript1%alternate_value),1,kount(1)), &
-            nodecode > 0), &
-            start, kount)
-        ELSE
-            iret = nf90_put_var(dat%ncid, dat%nodal_data_id, &
-            descript1%iarray, start, kount)
-        ENDIF
-        CALL check_err(iret)
-    ELSE
-        iret = nf90_put_var(dat%ncid, dat%nodal_data_id, &
-        descript1%iarray_g, start, kount)
-        CALL check_err(iret)
-    ENDIF
-    CASE DEFAULT
-    write(scratchMessage, &
-    '("No netCDF for files with unit number ",i0,".")') lun
-    call allMessage(ERROR,scratchMessage)
-    END SELECT
-
+         ENDIF
+      CASE(320)  !swan max/min
+         IF (MNPROC.eq.1) THEN ! SERIAL
+            IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,&
+                    spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,tempArray)
+               CALL check_err(iret)
+            ELSE
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,&
+                   descript1%array)
+               CALL check_err(iret)
+            ENDIF
+         ELSE                  ! PARALLEL
+            iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,&
+                  descript1%array_g)
+            CALL check_err(iret)
+         ENDIF         
+      CASE(47,63,73,77,90,301,302,303,304,306,307)
+         IF (MNPROC.eq.1) THEN ! SERIAL
+            IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,&
+                    spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,tempArray,start,kount)
+            ELSE
+               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,&
+                  descript1%array, start, kount)
+            ENDIF
+            CALL check_err(iret)
+         ELSE
+            iret = nf90_put_var(dat%ncid, dat%nodal_data_id,&
+                  descript1%array_g, start, kount)
+            CALL check_err(iret)
+         ENDIF         
+      CASE(64,74,164,305)
+         IF (MNPROC.eq.1) THEN ! SERIAL
+            IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,&
+                    spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,tempArray,start,kount)
+               CALL check_err(iret)
+               tempArray = merge(descript1%array2,&
+                    spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,tempArray,start,kount)
+               CALL check_err(iret)
+            ELSE
+               iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,&
+                   descript1%array, start, kount)
+               CALL check_err(iret)
+               iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,&
+                   descript1%array2, start, kount)
+               CALL check_err(iret)
+            ENDIF
+         ELSE                  ! PARALLEL
+            iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,&
+                  descript1%array_g, start, kount)
+            CALL check_err(iret)
+            iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,&
+                  descript1%array2_g, start, kount)
+            CALL check_err(iret)
+         ENDIF
+      CASE(402,403)  ! integers at nodes (e.g., initiallydry.63, endrisinginun.63)
+         IF (MNPROC.eq.1) THEN ! SERIAL
+            IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
+               allocate(tempIntArray(1:dat%myMesh%num_nodes))
+               tempIntArray = merge(descript1%iarray,&
+                    spread(int(descript1%alternate_value),1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,tempIntArray,start,kount)
+            ELSE
+               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,&
+                  descript1%iarray, start, kount)
+            ENDIF
+            CALL check_err(iret)
+         ELSE
+            iret = nf90_put_var(dat%ncid, dat%nodal_data_id,&
+                  descript1%iarray_g, start, kount)
+            CALL check_err(iret)
+         ENDIF         
+      CASE DEFAULT
+            write(scratchMessage,&
+             '("No netCDF for files with unit number ",i0,".")') lun
+            call allMessage(ERROR,scratchMessage)                     
+      END SELECT
 !     Close netCDF file
     9999 iret = nf90_close(dat%ncid)
     CALL check_err(iret)

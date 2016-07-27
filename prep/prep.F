@@ -7158,125 +7158,125 @@
     call makeFileName(RSMaxDescript)
 
 !  tcm v50.75 removed ifdef adcswan to allow for use whenever nrs=3 or nrs=4
-! ifdef ADCSWAN
-! bell 20120510: SWAN Output Data
+!#ifdef ADCSWAN
+! Cobell 20120510: SWAN Output Data
 !........Radiation Stress
-    RSDescript % specifier            = NOUTGW
-    RSDescript % lun                  = 164
-    RSDescript % initial_value        = 0.0
-    RSDescript % num_items_per_record = 2
-    RSDescript % num_fd_records       = MNP
-    RSDescript % num_records_this     = MNP
-    RSDescript % ConsiderWetDry       = .FALSE. 
-    RSDescript % alternate_value      = -99999.0
-    RSDescript % field_name           = "rads"
-    RSDescript % file_name            = "rads.64"
-    RSDescript % file_extension       = 64
-    RSDescript % file_basename        = 'rads'
-    RSDescript % readMaxMin           = .TRUE. 
-    call makeFileName(RSDescript)
+      RSDescript % specifier            = NOUTGW
+      RSDescript % lun                  = 164
+      RSDescript % initial_value        = 0.0
+      RSDescript % num_items_per_record = 2
+      RSDescript % num_fd_records       = MNP
+      RSDescript % num_records_this     = MNP
+      RSDescript % ConsiderWetDry       = .FALSE.
+      RSDescript % alternate_value      = -99999.0
+      RSDescript % field_name           = "rads"
+      RSDescript % file_name            = "rads.64"
+      RSDescript % file_extension       = 64
+      RSDescript % file_basename        = 'rads'
+      RSDescript % readMaxMin           = .false.
+      call makeFileName(RSDescript)
+      !
+      !  D E T A I L E D    I N U N D A T I O N    O U T P U T
+      !
+      ! inundationtime.63 (works like a min/max file)
+      InundationTimeDescript % lun                  = 400
+      InundationTimeDescript % specifier            = abs(NOUTGE)
+      InundationTimeDescript % num_items_per_record = 1
+      InundationTimeDescript % initial_value        = 0.0      
+      InundationTimeDescript % num_fd_records       = MNP
+      InundationTimeDescript % num_records_this     = MNP  
+      InundationTimeDescript % ConsiderWetDry       = .false.
+      InundationTimeDescript % alternate_value      = 0.0
+      InundationTimeDescript % field_name           = 'inundationTime'
+      InundationTimeDescript % file_basename        = 'inundationtime'
+      InundationTimeDescript % file_extension       = 63
+      InundationTimeDescript % readMaxMin           = .true.
+      if ( InundationTimeDescript % specifier .eq. XDMF ) then
+         InundationTimeDescript % specifier = ASCII
+      endif
+      call makeFileName(InundationTimeDescript)
+      !
+      ! maxinundepth.63 (works like a min/max file)
+      MaxInunDepthDescript % lun                  = 401
+      MaxInunDepthDescript % specifier            = abs(NOUTGE)
+      MaxInunDepthDescript % initial_value        = 0.0
+      MaxInunDepthDescript % num_fd_records       = MNP
+      MaxInunDepthDescript % num_records_this     = MNP 
+      MaxInunDepthDescript % ConsiderWetDry       = .false.
+      MaxInunDepthDescript % alternate_value      = 0.0 
+      MaxInunDepthDescript % num_items_per_record = 1   
+      MaxInunDepthDescript % field_name           = 'maxInunDepth'
+      MaxInunDepthDescript % file_basename        = 'maxinundepth'
+      MaxInunDepthDescript % file_extension       = 63
+      MaxInunDepthDescript % readMaxMin           = .true.      
+      if ( MaxInunDepthDescript % specifier .eq. XDMF ) then
+         MaxInunDepthDescript % specifier = ASCII
+      endif
+      call makeFileName(MaxInunDepthDescript)      
+      !
+      ! initiallydry.63 (nodes that are deemed dry upon cold start)
+      InitiallyDryDescript % lun                  = 402
+      InitiallyDryDescript % specifier            = NOUTGE
+      InitiallyDryDescript % initial_value        = 0.0
+      InitiallyDryDescript % num_fd_records       = MNP
+      InitiallyDryDescript % num_records_this     = MNP 
+      InitiallyDryDescript % ConsiderWetDry       = .false.
+      InitiallyDryDescript % alternate_value      = 0.0 
+      InitiallyDryDescript % num_items_per_record = 1   
+      InitiallyDryDescript % field_name           = 'initiallyDry'
+      InitiallyDryDescript % file_basename        = 'initiallydry'
+      InitiallyDryDescript % file_extension       = 63
+      InitiallyDryDescript % isInteger            = .true.
+      if ( InitiallyDryDescript % specifier .eq. XDMF ) then
+         InitiallyDryDescript % specifier = ASCII
+      endif
+      call makeFileName(InitiallyDryDescript)      
+      !
+      ! endrisinginun.63 (1 if water is rising at end of simulation)
+      EndRisingInunDescript % lun                  = 403
+      EndRisingInunDescript % specifier            = NOUTGE
+      EndRisingInunDescript % initial_value        = 0.0
+      EndRisingInunDescript % num_fd_records       = MNP
+      EndRisingInunDescript % num_records_this     = MNP 
+      EndRisingInunDescript % ConsiderWetDry       = .false.
+      EndRisingInunDescript % alternate_value      = 0.0 
+      EndRisingInunDescript % num_items_per_record = 1        
+      EndRisingInunDescript % field_name           = 'endRisingInun'
+      EndRisingInunDescript % file_basename        = 'endrisinginun'
+      EndRisingInunDescript % file_extension       = 63
+      EndRisingInunDescript % isInteger            = .true.
+      if ( EndRisingInunDescript % specifier .eq. XDMF ) then
+         EndRisingInunDescript % specifier = ASCII
+      endif
+      call makeFileName(EndRisingInunDescript)
+      ! 
+      ! everdried.63 (works like a min/max file)
+      EverDriedDescript % lun                  = 404
+      EverDriedDescript % specifier            = abs(NOUTGE)
+      EverDriedDescript % num_items_per_record = 1
+      EverDriedDescript % initial_value        = 0.0      
+      EverDriedDescript % num_fd_records       = MNP
+      EverDriedDescript % num_records_this     = MNP  
+      EverDriedDescript % ConsiderWetDry       = .false.
+      EverDriedDescript % alternate_value      = -99999.d0
+      EverDriedDescript % field_name           = 'EverDried'
+      EverDriedDescript % file_basename        = 'everdried'
+      EverDriedDescript % file_extension       = 63
+      EverDriedDescript % readMaxMin           = .true.
+      if ( EverDriedDescript % specifier .eq. XDMF ) then
+         EverDriedDescript % specifier = ASCII
+      endif
+      call makeFileName(EverDriedDescript)
 
-!  D E T A I L E D    I N U N D A T I O N    O U T P U T
-
-! inundationtime.63 (works like a min/max file)
-    InundationTimeDescript % lun                  = 400
-    InundationTimeDescript % specifier            = abs(NOUTGE)
-    InundationTimeDescript % num_items_per_record = 1
-    InundationTimeDescript % initial_value        = 0.0
-    InundationTimeDescript % num_fd_records       = MNP
-    InundationTimeDescript % num_records_this     = MNP
-    InundationTimeDescript % ConsiderWetDry       = .FALSE. 
-    InundationTimeDescript % alternate_value      = 0.0
-    InundationTimeDescript % field_name           = 'inundationTime'
-    InundationTimeDescript % file_basename        = 'inundationtime'
-    InundationTimeDescript % file_extension       = 63
-    InundationTimeDescript % readMaxMin           = .TRUE. 
-    if ( InundationTimeDescript % specifier == XDMF ) then
-        InundationTimeDescript % specifier = ASCII
-    endif
-    call makeFileName(InundationTimeDescript)
-
-! maxinundepth.63 (works like a min/max file)
-    MaxInunDepthDescript % lun                  = 401
-    MaxInunDepthDescript % specifier            = abs(NOUTGE)
-    MaxInunDepthDescript % initial_value        = 0.0
-    MaxInunDepthDescript % num_fd_records       = MNP
-    MaxInunDepthDescript % num_records_this     = MNP
-    MaxInunDepthDescript % ConsiderWetDry       = .FALSE. 
-    MaxInunDepthDescript % alternate_value      = 0.0
-    MaxInunDepthDescript % num_items_per_record = 1
-    MaxInunDepthDescript % field_name           = 'maxInunDepth'
-    MaxInunDepthDescript % file_basename        = 'maxinundepth'
-    MaxInunDepthDescript % file_extension       = 63
-    MaxInunDepthDescript % readMaxMin           = .TRUE. 
-    if ( MaxInunDepthDescript % specifier == XDMF ) then
-        MaxInunDepthDescript % specifier = ASCII
-    endif
-    call makeFileName(MaxInunDepthDescript)
-
-! initiallydry.63 (nodes that are deemed dry upon cold start)
-    InitiallyDryDescript % lun                  = 402
-    InitiallyDryDescript % specifier            = NOUTGE
-    InitiallyDryDescript % initial_value        = 0.0
-    InitiallyDryDescript % num_fd_records       = MNP
-    InitiallyDryDescript % num_records_this     = MNP
-    InitiallyDryDescript % ConsiderWetDry       = .FALSE. 
-    InitiallyDryDescript % alternate_value      = 0.0
-    InitiallyDryDescript % num_items_per_record = 1
-    InitiallyDryDescript % field_name           = 'initiallyDry'
-    InitiallyDryDescript % file_basename        = 'initiallydry'
-    InitiallyDryDescript % file_extension       = 63
-    InitiallyDryDescript % isInteger            = .TRUE. 
-    if ( InitiallyDryDescript % specifier == XDMF ) then
-        InitiallyDryDescript % specifier = ASCII
-    endif
-    call makeFileName(InitiallyDryDescript)
-
-! endrisinginun.63 (1 if water is rising at end of simulation)
-    EndRisingInunDescript % lun                  = 403
-    EndRisingInunDescript % specifier            = NOUTGE
-    EndRisingInunDescript % initial_value        = 0.0
-    EndRisingInunDescript % num_fd_records       = MNP
-    EndRisingInunDescript % num_records_this     = MNP
-    EndRisingInunDescript % ConsiderWetDry       = .FALSE. 
-    EndRisingInunDescript % alternate_value      = 0.0
-    EndRisingInunDescript % num_items_per_record = 1
-    EndRisingInunDescript % field_name           = 'endRisingInun'
-    EndRisingInunDescript % file_basename        = 'endrisinginun'
-    EndRisingInunDescript % file_extension       = 63
-    EndRisingInunDescript % isInteger            = .TRUE. 
-    if ( EndRisingInunDescript % specifier == XDMF ) then
-        EndRisingInunDescript % specifier = ASCII
-    endif
-    call makeFileName(EndRisingInunDescript)
-
-! everdried.63 (works like a min/max file)
-    EverDriedDescript % lun                  = 404
-    EverDriedDescript % specifier            = abs(NOUTGE)
-    EverDriedDescript % num_items_per_record = 1
-    EverDriedDescript % initial_value        = 0.0
-    EverDriedDescript % num_fd_records       = MNP
-    EverDriedDescript % num_records_this     = MNP
-    EverDriedDescript % ConsiderWetDry       = .FALSE. 
-    EverDriedDescript % alternate_value      = -99999.d0
-    EverDriedDescript % field_name           = 'EverDried'
-    EverDriedDescript % file_basename        = 'everdried'
-    EverDriedDescript % file_extension       = 63
-    EverDriedDescript % readMaxMin           = .TRUE. 
-    if ( EverDriedDescript % specifier == XDMF ) then
-        EverDriedDescript % specifier = ASCII
-    endif
-    call makeFileName(EverDriedDescript)
-
-    weirElevDescript % specifier            = NOUT_TVW
-    weirElevDescript % initial_value        = 0D0
-    weirElevDescript % num_items_per_record = 1
-    weirElevDescript % num_fd_records       = MNP
-    weirElevDescript % num_records_this     = MNP
-    weirElevDescript % ConsiderWetDry       = .FALSE. 
-    weirElevDescript % alternate_value      = 0D0
-    weirElevDescript % field_name           = "weir_dz"
-    weirElevDescript % file_name            = "fort.77"
+         weirElevDescript % specifier            = NOUT_TVW
+         weirElevDescript % initial_value        = 0D0
+         weirElevDescript % num_items_per_record = 1
+         weirElevDescript % num_fd_records       = MNP
+         weirElevDescript % num_records_this     = MNP
+         weirElevDescript % ConsiderWetDry       = .FALSE.
+         weirElevDescript % alternate_value      = 0D0
+         weirElevDescript % field_name           = "weir_dz"
+         weirElevDescript % file_name            = "fort.77"
 
 ! tcm v50.75 moved the ifdef adcswan down past the RSDescript
 #ifdef ADCSWAN
