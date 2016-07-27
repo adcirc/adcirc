@@ -1231,6 +1231,7 @@ C
 C
       INTEGER n    ! node counter
       INTEGER iret ! success or failure of netcdf call
+      REAL(SZ),ALLOCATABLE :: defaultValue(:)
       CHARACTER(len=1024) :: att_text  ! metadata
 C
       call setMessageSource("initNodalDataFile")
@@ -1248,6 +1249,8 @@ C
          dat%myMesh%nface_len = 3
       ENDIF
       ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
+      ALLOCATE(defaultValue(dat%myMesh%num_nodes))
+      defaultValue(:) = descript1%initial_value
 C
 C     Initialize netCDF output file, creating a new one if necessary.
       CALL createNetCDFOutputFile(dat%ncid, dat%myFile, dat%myTime,
@@ -3190,8 +3193,7 @@ C     write mesh to netcdf file
       ! we leave the max/min values uninitialized.   
       IF ( (dat%myFile%createFile.eqv..true.).and.
      &     (descript1%readMaxMin.eqv..true.)) THEN
-         iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
-     &          spread(descript1%initial_value,1,dat%myMesh%num_nodes))
+          iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,defaultValue)
       ENDIF
 C
 C     now close the initialized netcdf file
