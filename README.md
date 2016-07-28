@@ -59,6 +59,7 @@ And lastly, a small test suite should be included with each distribution and a m
 
 One time configuration steps:
 ```
+[create your own Fork of the repository]
 git clone https://github.com/YOUR_USERNAME/adcirc-cg.git
 git remote add upstream https://github.com/adcirc/adcirc-cg.git
 git config --global core.editor "vim"
@@ -91,6 +92,8 @@ A Git repository is a storehouse of code for a particular project. Git repositor
 
 Unlike other version control tools, Git creates commit numbers based upon a SHA1 hash. The SHA1 hash is a unique identifier that is completely unique to a specific commit as well as its history.
 
+Git is also a fully distributed verrsion control system. When a repository is cloned, not only is the latest checked out commit downloaded, but also the entire history of the repository. This allows users to use the repository fully without an internet connection.
+
 A commit ID looks like the following:
 
 ```
@@ -101,7 +104,7 @@ These IDs are so unique that generally you only need the first 7 characters to f
 ```
 04b3c1f
 ```
-Git calls these references "SHA-ish".
+Git calls these references "commitish".
 
 ### Commits
 
