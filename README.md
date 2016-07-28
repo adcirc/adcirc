@@ -218,11 +218,28 @@ git merge upstream/master
 
 ### Submitting Changes to the Upstream
 
-Changes are accepted into the ADCIRC repository via a Pull Request. From the Github webpage from your Forked repository, click the "Compare and Pull Request" button. You will be asked to select a ```base``` and a ```compare```. The base is the target for your changes, i.e. the master branch in the upstream repository. The compare is your local branch.
+Changes are accepted into the ADCIRC repository via a Pull Request. From the Github web page from your Forked repository, click the "Compare and Pull Request" button. You will be asked to select a ```base``` and a ```compare```. The base is the target for your changes, i.e. the master branch in the upstream repository. The compare is your local branch.
 
 Warning: Your local branch must contain all changes from the upstream master to be accepted!
 
 After clicking the pull request button, you will be given a section to describe your changes. Please describe what has been done throughly. The repository administrators will be given the option to merge your pull request into the upstream repository.
+
+### Continuous Integration (CI)
+
+Continuous Integration, or CI, involves testing each change made to the model against a known result. The ensures that as soon as a change (accidental or intentional) to the solution occurs, the developers are aware of it.
+
+The ADCIRC repository uses the CircleCI.com service to conduct these tests. When a pull request is submitted on Github, the CI server will do the following:
+1. Build the code without netCDF enabled
+2. Build the code with netCDF enabled
+3. Run the test suite found [here](https://github.com/zcobell/adcirc_autotest.git). The test suite consists of the following derived from examples found on ADCIRC.org:
+    1. Quarter Annular 2D example (serial and parallel)
+    2. Shinnecock Inlet example (serial and parallel)
+    3. Idealized Inlet example (serial and parallel)
+    4. APES Pamlico Sound example (serial and parallel)
+
+The CI server is controlled via the ```circle.yml``` file found in the root directory. It contains the instructions to prepare the build server. The actual test criteria is maintained directly in the test suite repository. Keeping the repositories separate is important so that the code repository does not become bloated.
+
+This suite sound be expanded in the future to include 3D, SWAN, XDMF, and other model features not currently exercised by this test suite. The ```gcov``` tool can be used to test for coverage of the test suite.
 
 ### General Policies
 
