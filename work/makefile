@@ -370,7 +370,7 @@ CMP_OBJ:= $(patsubst %.F, $(O_DIR)%.o, $(CMP_SRC) )
 #################### SWAN Source & Object Files #########################
 # Casey 090302: Added this section for coupling to unstructured SWAN.
 
-SWAN_MSRC  = swmod1.f swmod2.f m_constants.f90 m_fileio.f90 \
+SWAN_MSRC  = swmod1.f swmod2.f SwanSpectPart.f m_constants.f90 m_fileio.f90 \
 serv_xnl4v5.f90 mod_xnl4v5.f90 \
 SwanGriddata.f90 SwanGridobjects.f90 SwanCompdata.f90 \
 couple2adcirc.f90
@@ -385,7 +385,8 @@ SwanInitCompGrid.f90 SwanCheckGrid.f90 SwanCreateEdges.f90 SwanGridTopology.f90 
 SwanGridCell.f90 SwanGridFace.f90 SwanPrintGridInfo.f90 SwanFindPoint.f90 \
 SwanPointinMesh.f90 SwanBpntlist.f90 SwanPrepComp.f90 SwanVertlist.f90 SwanCompUnstruc.f90 \
 SwanDispParm.f90 SwanPropvelX.f90 SwanSweepSel.f90 SwanPropvelS.f90 \
-SwanTranspAc.f90 SwanTranspX.f90 SwanDiffPar.f90 SwanGSECorr.f90 SwanInterpolatePoint.f90 \
+SwanTranspAc.f90 SwanTranspX.f90 SwanDiffPar.f90 SwanGSECorr.f90 SwanGradDepthorK.f90 \
+SwanInterpolatePoint.f90 \
 SwanInterpolateAc.f90 SwanInterpolateOutput.f90 SwanConvAccur.f90 SwanConvStopc.f90 \
 SwanFindObstacles.f90 SwanCrossObstacle.f90 \
 SwanComputeForce.f90 SwanIntgratSpc.f90 SwanBndStruc.f90 SwanReadfort18.f90 \
@@ -758,6 +759,7 @@ $(O_DIR)adccmp.o      : adccmp.F
 # Casey 090302: Added the following lines for SWAN.
 $(O_DIR)swmod1.o                : swmod1.f
 $(O_DIR)swmod2.o                : swmod2.f
+$(O_DIR)SwanSpectPart.o         : SwanSpectPart.f
 $(O_DIR)m_constants.o           : m_constants.f90
 $(O_DIR)m_fileio.o              : m_fileio.f90
 $(O_DIR)serv_xnl4v5.o           : serv_xnl4v5.f90
@@ -804,6 +806,7 @@ $(O_DIR)SwanTranspAc.o          : SwanTranspAc.f90
 $(O_DIR)SwanTranspX.o           : SwanTranspX.f90
 $(O_DIR)SwanDiffPar.o           : SwanDiffPar.f90
 $(O_DIR)SwanGSECorr.o           : SwanGSECorr.f90
+$(O_DIR)SwanGradDepthorK.o      : SwanGradDepthorK.f90
 $(O_DIR)SwanInterpolatePoint.o  : SwanInterpolatePoint.f90
 $(O_DIR)SwanInterpolateAc.o     : SwanInterpolateAc.f90
 $(O_DIR)SwanInterpolateOutput.o : SwanInterpolateOutput.f90
