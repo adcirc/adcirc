@@ -3,7 +3,7 @@ general:
 
 checkout:
     post:
-        - git clone https://github.com/adcirc/adcirc-cg-testsuite.git /home/ubunttu/adcirc_autotest
+        - git clone https://github.com/adcirc/adcirc-cg-testsuite.git /home/ubuntu/adcirc-cg-testsuite
  
 dependencies:
     post: 
@@ -15,6 +15,6 @@ test:
         - make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12
         - make clean; make clobber
         - make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=/usr
-        - cd /home/ubuntu/adcirc_autotest; ./RunTests.sh /home/ubuntu/adcirc-cg/work:
+        - cd /home/ubuntu/adcirc-cg-testsuite; ./RunTests.sh /home/ubuntu/adcirc-cg/work:
             timeout: 7200
         
