@@ -144,7 +144,7 @@ This command would use the VIM editor, however, you can set it to any editor ins
 
 ### Branches
 
-Branches are core to the way Git functions and should be used whenever possible. For the purposes of this repository, no work should be done in the ```master``` branch. Instead, work will be conducted in Forks.
+Branches are core to the way Git functions and should be used whenever possible. For the purposes of this repository, no work should be done in the ```master``` branch. A small number of branches will be officially supported in the main repository, however most work should be conducted within Forks, which are explained later in this document.
 
 You can retrieve a list of branches currently configured in your repository:
 ```
@@ -214,6 +214,7 @@ To incorporate these changes into your repository, you can use:
 ```
 git merge upstream/master
 ```
+It is critically important that you make sure you are on the correct branch that you want to merge changes into when running the above command.
 [More Information about Syncing Forks](https://help.github.com/articles/syncing-a-fork/)
 
 ### Submitting Changes to the Upstream
@@ -239,8 +240,6 @@ The ADCIRC repository uses the CircleCI.com service to conduct these tests. When
     4. APES Pamlico Sound example (serial and parallel)
 
 The CI server is controlled via the ```circle.yml``` file found in the root directory. It contains the instructions to prepare the build server. The actual test criteria is maintained directly in the test suite repository. Keeping the repositories separate is important so that the code repository does not become bloated.
-
-This suite sound be expanded in the future to include 3D, SWAN, XDMF, and other model features not currently exercised by this test suite. The ```gcov``` tool can be used to test for coverage of the test suite.
 
 ### General Policies
 
