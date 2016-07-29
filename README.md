@@ -229,6 +229,7 @@ After clicking the pull request button, you will be given a section to describe 
 Continuous Integration, or CI, involves testing each change made to the model against a known result. The ensures that as soon as a change (accidental or intentional) to the solution occurs, the developers are aware of it.
 
 The ADCIRC repository uses the CircleCI.com service to conduct these tests. When a pull request is submitted on Github, the CI server will do the following:
+
 1. Build the code without netCDF enabled
 2. Build the code with netCDF enabled
 3. Run the test suite found [here](https://github.com/zcobell/adcirc_autotest.git). The test suite consists of the following derived from examples found on ADCIRC.org:
