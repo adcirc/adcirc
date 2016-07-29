@@ -3,7 +3,7 @@ general:
 
 checkout:
     post:
-        - git clone https://github.com/zcobell/adcirc_autotest.git /home/ubuntu/adcirc_autotest
+        - git clone https://github.com/adcirc/adcirc-cg-testsuite.git /home/ubunttu/adcirc_autotest
  
 dependencies:
     post: 
