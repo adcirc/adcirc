@@ -24,6 +24,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #compiler=kraken
 #compiler=utils
 #compiler=xtintel
+#compiler=circleci
 #
 #
 # Compiler Flags for gfortran and gcc
@@ -660,6 +661,37 @@ ifeq ($(compiler),kraken)
      MULTIPLE := TRUE
   endif
 endif
+#
+#
+# Compiler Flags for CircleCI Build Server
+ifeq ($(compiler),circleci)
+  PPFC		:=  gfortran
+  FC		:=  gfortran
+  PFC		:=  mpif90
+  FFLAGS1	:=  $(INCDIRS) -O2 -g -mcmodel=medium -ffixed-line-length-none -m64 -mtune=native -march=native --coverage
+  FFLAGS2	:=  $(FFLAGS1)
+  FFLAGS3	:=  $(FFLAGS1)
+  DA		:=  -DREAL8 -DLINUX -DCSCA
+  DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
+  DPRE		:=  -DREAL8 -DLINUX
+  IMODS 	:=  -I
+  CC		:= gcc
+  CCBE		:= $(CC)
+  CFLAGS	:= $(INCDIRS) -O2 -g -mcmodel=medium -DLINUX -m64 -mtune=native -march=native --coverage
+  CLIBS	:=
+  LIBS		:=
+  MSGLIBS	:=
+  ifeq ($(NETCDF),enable)
+     FLIBS          := $(FLIBS) -lnetcdff
+  endif
+  $(warning (INFO) Corresponding compilers and flags found in cmplrflags.mk.)
+  ifneq ($(FOUND),TRUE)
+     FOUND := TRUE
+  else
+     MULTIPLE := TRUE
+  endif
+endif
+#
 endif
 #$(MACHINE)
 ########################################################################
