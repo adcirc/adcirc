@@ -668,7 +668,7 @@ ifeq ($(compiler),circleci)
   PPFC		:=  gfortran
   FC		:=  gfortran
   PFC		:=  mpif90
-  FFLAGS1	:=  $(INCDIRS) -O2 -mcmodel=medium -ffixed-line-length-none -m64 -mtune=native -march=native 
+  FFLAGS1	:=  $(INCDIRS) -O2 -g -mcmodel=medium -ffixed-line-length-none -m64 -mtune=native -march=native --coverage
   FFLAGS2	:=  $(FFLAGS1)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
@@ -677,7 +677,7 @@ ifeq ($(compiler),circleci)
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
-  CFLAGS	:= $(INCDIRS) -O2 -mcmodel=medium -DLINUX -m64 -mtune=native -march=native
+  CFLAGS	:= $(INCDIRS) -O2 -g -mcmodel=medium -DLINUX -m64 -mtune=native -march=native --coverage
   CLIBS	:=
   LIBS		:=
   MSGLIBS	:=
