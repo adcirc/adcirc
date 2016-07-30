@@ -235,7 +235,7 @@ The ADCIRC repository uses the CircleCI.com service to conduct these tests. When
 
 1. Build the code without netCDF enabled
 2. Build the code with netCDF enabled
-3. Run the test suite found [here](https://github.com/zcobell/adcirc_autotest.git). The test suite consists of the following derived from examples found on ADCIRC.org:
+3. Run the test suite found [here](https://github.com/adcirc/adcirc-cg-testsuite). The test suite consists of the following derived from examples found on ADCIRC.org:
     1. Quarter Annular 2D example (serial and parallel)
     2. Shinnecock Inlet example (serial and parallel)
     3. Idealized Inlet example (serial and parallel)

@@ -8,7 +8,7 @@ checkout:
 dependencies:
     post: 
         - sudo apt-get update  -qq
-        - sudo apt-get install -qq libnetcdf-dev libopenmpi-dev libopenmpi-dbg
+        - sudo apt-get install -qq libnetcdf-dev libopenmpi-dev libopenmpi-dbg bc
 
 test:
     override:
