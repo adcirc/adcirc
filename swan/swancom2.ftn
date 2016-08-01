@@ -48,7 +48,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -552,6 +552,7 @@
 !
 !****************************************************************
 !
+      USE SWCOMM2
       USE SWCOMM3
       USE SWCOMM4
       USE OCPCOMM4
@@ -571,7 +572,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -753,8 +754,8 @@
       KD    = KMESPC * DEP2(KCGRD(1))
       IF ( KD.GT.10. ) RETURN
       C     = 3.*KMESPC*(COSH(KD))**3
-      SVEG1 = SQRT(2./PI) * GRAV**2 * (KMESPC/SMEBRK)**3 * SQRT(ETOT)
-     &                    * NPLA2(KCGRD(1)) / C
+      SVEG1 = SQRT(2./PI) * GRAV**2 * (KMESPC/SMEBRK)**3 * SQRT(ETOT)/ C
+      IF ( VARNPL ) SVEG1 = SVEG1 * NPLA2(KCGRD(1))
 
 !     --- compute dissipation factor for each layer and summed up
 
@@ -882,7 +883,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1029,7 +1030,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1162,7 +1163,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1362,7 +1363,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -1783,7 +1784,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2227,7 +2228,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2325,7 +2326,7 @@
       REAL, INTENT(INOUT)  :: RESPL(MCGRD)      ! response length         41.38
 !
 !     RDX, RDY:  coefficients to obtain spatial derivatives               40.22
-      REAL, INTENT(IN)  :: RDX(10), RDY(10)                               40.08
+      REAL, INTENT(IN)  :: RDX(MICMAX), RDY(MICMAX)                       40.08
       REAL, INTENT(IN)  :: KWAVE(MSC,MICMAX)                              41.03
       REAL, INTENT(IN)  :: FDIR ! represents first spectral direction     41.38
       INTEGER, INTENT(IN) :: IDDLOW, IDDTOP                               41.38
@@ -2616,7 +2617,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2895,7 +2896,7 @@
 !
         IF (IFS2D.GT.0) THEN
           IF (DEP2(INDX).LE.0.) THEN
-            DO LOOP = 1, 7
+            DO LOOP = 1, 10
               WRITE (IFS2D, 80) 'NODATA'                                  40.03
             ENDDO
           ELSE

@@ -11,7 +11,7 @@ module swn_outnc
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -113,7 +113,7 @@ contains
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -262,7 +262,7 @@ contains
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -357,6 +357,7 @@ contains
         spcaux%wndx    = OVEXCV(26)
         spcaux%wndy    = OVEXCV(26)
 
+        if (RTYPE(3:3) .eq. 'R') spcaux%relative = .true.
         if (RTYPE(4:4) .eq. 'C') then
             allocate(spcaux%E(MSC * MDC, MIP))
             spcaux%is2d = .true.
@@ -506,7 +507,7 @@ contains
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -898,7 +899,7 @@ contains
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -944,7 +945,7 @@ contains
                                              ncid
       character*256                       :: errmsg
       integer, save                       :: IENT=0
-      logical                             :: spc_as_map, wetnode_list
+      logical                             :: spc_as_map, wetnode_list, noaux
       type(spcaux_type), target           :: lspcaux
       type(spcaux_type), pointer          :: pspcaux
 
@@ -977,7 +978,7 @@ contains
       irq  = oqi(2)
       ncid = oqi(1) + ncoffset(irq)
 
-      call swn_outnc_spcflags(oqi(4), spc_as_map, wetnode_list, spcaux)
+      call swn_outnc_spcflags(oqi(4), spc_as_map, wetnode_list, spcaux, noaux=noaux)
 
 !
 ! Determine the index in the record axe
@@ -1044,21 +1045,23 @@ contains
 !
 !     hs is provided so that user can check his integration routines. His / hers
 !     hs should match the one computed by SWAN.
-      if ( spc_as_map ) then
-          call agnc_add_mapdata(ncid, 'depth', ri, pspcaux%depth, OVEXCV( 4), skip_range_error)
-          call agnc_add_mapdata(ncid, 'xcur',  ri, pspcaux%ux,    OVEXCV( 5), skip_range_error)
-          call agnc_add_mapdata(ncid, 'ycur',  ri, pspcaux%uy,    OVEXCV( 5), skip_range_error)
-          call agnc_add_mapdata(ncid, 'hs',    ri, pspcaux%hs,    OVEXCV(10), skip_range_error)
-          call agnc_add_mapdata(ncid, 'xwnd',  ri, pspcaux%wndx,  OVEXCV(26), skip_range_error)
-          call agnc_add_mapdata(ncid, 'ywnd',  ri, pspcaux%wndy,  OVEXCV(26), skip_range_error)
-      else
-          call agnc_add_pntdata(ncid, 'depth', ri, pspcaux%depth, OVEXCV( 4), skip_range_error)
-          call agnc_add_pntdata(ncid, 'xcur',  ri, pspcaux%ux,    OVEXCV( 5), skip_range_error)
-          call agnc_add_pntdata(ncid, 'ycur',  ri, pspcaux%uy,    OVEXCV( 5), skip_range_error)
-          call agnc_add_pntdata(ncid, 'hs',    ri, pspcaux%hs,    OVEXCV(10), skip_range_error)
-          call agnc_add_pntdata(ncid, 'xwnd',  ri, pspcaux%wndx,  OVEXCV(26), skip_range_error)
-          call agnc_add_pntdata(ncid, 'ywnd',  ri, pspcaux%wndy,  OVEXCV(26), skip_range_error)
-      end if
+      if ( .not.noaux ) then
+        if ( spc_as_map ) then
+            call agnc_add_mapdata(ncid, 'depth', ri, pspcaux%depth, OVEXCV( 4), skip_range_error)
+            call agnc_add_mapdata(ncid, 'xcur',  ri, pspcaux%ux,    OVEXCV( 5), skip_range_error)
+            call agnc_add_mapdata(ncid, 'ycur',  ri, pspcaux%uy,    OVEXCV( 5), skip_range_error)
+            call agnc_add_mapdata(ncid, 'hs',    ri, pspcaux%hs,    OVEXCV(10), skip_range_error)
+            call agnc_add_mapdata(ncid, 'xwnd',  ri, pspcaux%wndx,  OVEXCV(26), skip_range_error)
+            call agnc_add_mapdata(ncid, 'ywnd',  ri, pspcaux%wndy,  OVEXCV(26), skip_range_error)
+        else
+            call agnc_add_pntdata(ncid, 'depth', ri, pspcaux%depth, OVEXCV( 4), skip_range_error)
+            call agnc_add_pntdata(ncid, 'xcur',  ri, pspcaux%ux,    OVEXCV( 5), skip_range_error)
+            call agnc_add_pntdata(ncid, 'ycur',  ri, pspcaux%uy,    OVEXCV( 5), skip_range_error)
+            call agnc_add_pntdata(ncid, 'hs',    ri, pspcaux%hs,    OVEXCV(10), skip_range_error)
+            call agnc_add_pntdata(ncid, 'xwnd',  ri, pspcaux%wndx,  OVEXCV(26), skip_range_error)
+            call agnc_add_pntdata(ncid, 'ywnd',  ri, pspcaux%wndy,  OVEXCV(26), skip_range_error)
+        end if
+    end if
 
       ! garbage collect
       nullify(pspcaux)
@@ -1110,7 +1113,7 @@ contains
 !
         logical                               :: file_exists, nc_debug, &
                                                  Escale, monthly, spc_as_map, &
-                                                 wetnode_list, STPNOW
+                                                 wetnode_list, STPNOW, noaux
         integer                               :: ncid, xpctmp(2), i, irq
         type(spcgrid_type)                    :: spcgrid
         type(mapgrid_type)                    :: mapgrid
@@ -1124,7 +1127,7 @@ contains
 
         if (LTRACE) call STRACE (IENT,'swn_outnc_openspecfile')
 
-        call swn_outnc_spcflags(oqi(4), spc_as_map, wetnode_list, spcaux, Escale, monthly)
+        call swn_outnc_spcflags(oqi(4), spc_as_map, wetnode_list, spcaux, Escale, noaux, monthly)
         irq = OQI(2)
 
         if ( .not. stnames_initialized ) call stnames_init()
@@ -1279,7 +1282,7 @@ contains
 !
 ! 6.b) create variables
 !
-            call create_auxvariables(ncid, spc_as_map)
+            if ( .not.noaux ) call create_auxvariables(ncid, spc_as_map)
 
 
 ! 6.c) close define mode and reopen write
@@ -1318,40 +1321,53 @@ contains
 
     end subroutine swn_outnc_openspecfile
 
-    subroutine swn_outnc_spcflags(oqi, spc_as_map, wetnode_list, spcaux, Escale, monthly)
+    subroutine swn_outnc_spcflags(oqi, spc_as_map, wetnode_list, spcaux, Escale, noaux, monthly)
         integer,                intent(   in) :: oqi
         type(spcaux_type),      intent(   in) :: spcaux
         logical,                intent(  out) :: spc_as_map, wetnode_list
-        logical, optional,      intent(  out) :: Escale, monthly
+        logical, optional,      intent(  out) :: Escale, monthly, noaux
 
+        integer                               :: iocode
+
+        iocode       = oqi
         wetnode_list = .false.
         spc_as_map   = .false.
+        noaux        = .false.
+
+        if ( iocode >= 16 ) then
+            noaux  = .true.
+            iocode = iocode - 16
+        end if
 
         ! MDGRID is the special keyword to store spectra (including dry points) on the
         ! full geographic grid instead of along a pointlist
         ! On the other hand, when COMPGRID is requested on any grid but unstructured,
         ! store the point indices in the computational grid in the netcdf file
         if ( spcaux%mip == MCGRDGL-1 .or. spcaux%mip == (MXCGL * MYCGL) ) then
-            if (oqi >= 8 ) then
+            if (iocode >= 8 ) then
                 spc_as_map = .true.
-            elseif ( oqi >= 4 .and. OPTG /= 5  ) then
+                iocode     = iocode - 8
+            elseif ( iocode >= 4 .and. OPTG /= 5  ) then
                 ! request to remove dry points from COMPGRID pointlist, e.g., compress
                 wetnode_list = .true.
             end if
         end if
 
+        ! catch conflicting MDGRID + COMPRESS
+        iocode       = mod(iocode, 4)
+
         ! Enery scaling is of creating a new variable that stores a scale per timestep and point
         ! the energy itself is then stored as int16 instead of float
         if ( present( EScale) ) then
             Escale = .false.
-            if ( mod(oqi, 4) > 1) Escale = .true.
+            if ( iocode > 1) Escale = .true.
         end if
 
          ! By setting the keyword MONTH a netcdf file is created that has a time axis
         ! starting at the first of the month.
         if ( present( monthly ) ) then
             monthly = .false.
-            if ( mod(oqi,2) == 1 .and. NSTATM == 1) monthly = .true.
+            if ( mod(iocode,2) == 1 .and. NSTATM == 1) monthly = .true.
         end if
 
     end subroutine swn_outnc_spcflags
@@ -1366,6 +1382,7 @@ contains
                                                  xpctime, ilpos, ncid
         integer, save                         :: IENT=0
         if (LTRACE) call STRACE (IENT,'swn_outnc_appendblock')
+        if ( ivtype == 40 ) return
 
         ncid = nref + ncoffset(irq)
 
@@ -1504,8 +1521,8 @@ contains
                 recordaxe(irq)%nstatm     = .false.
             end if
 
-            if (OPTG == 5) then
-                ! unstructured mesh is a pointlist
+            if (myk == 1) then
+                ! unstructured mesh is a pointlist. TABLE output also uses this section
                 pntgrid%npoints = mxk
                 allocate (pntgrid%longitude(mxk))
                 allocate (pntgrid%latitude(mxk))

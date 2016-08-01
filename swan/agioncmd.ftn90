@@ -160,7 +160,7 @@
             character(len=10)                        :: lunit = 'degrees'
             integer                                  :: pnt_dimid, &
                                                         lon_varid, lat_varid, &
-                                                        npoints = 0, ips_varid, &
+                                                        npoints = 0, ips_varid = 0, &
                                                         xdimlen = 0, ydimlen = 0
         end type pntgrid_type
 
@@ -429,8 +429,11 @@
                             'multiply with scale_density') )
                 end if
 
-                if ( spcgrid%relative ) &
-                     call nccheck ( nf90_put_att( ncid, evarid, 'relative_to_current', 'true') )
+                if ( spcgrid%relative ) then
+                    call nccheck ( nf90_put_att( ncid, evarid, 'relative_to_current', 'true') )
+                else
+                    call nccheck ( nf90_put_att( ncid, evarid, 'relative_to_current', 'false') )
+                end if
 
                 !
                 ! scale_density
@@ -464,8 +467,11 @@
                 call nccheck ( nf90_put_att( ncid, evarid, 'units', 'm2 s') )
                 call nccheck ( nf90_put_att( ncid, evarid, 'standard_name', 'sea_surface_wave_variance_spectral_density') )
 
-                if ( spcgrid%relative ) &
-                     call nccheck ( nf90_put_att( ncid, evarid, 'relative_to_current', 'true') )
+                if ( spcgrid%relative ) then
+                    call nccheck ( nf90_put_att( ncid, evarid, 'relative_to_current', 'true') )
+                else
+                    call nccheck ( nf90_put_att( ncid, evarid, 'relative_to_current', 'false') )
+                end if
                 call agnc_add_coordinates_attribute(ncid, evarid)
 
                 !
@@ -1296,9 +1302,11 @@
             type(recordaxe_type)                            :: recordaxe
             logical                                         :: do_scale
             chunksize = 64
+            do_scale = .false.
 
             call agnc_get_griddef(ncid, spcgrid)
             call agnc_get_recordaxe(ncid, recordaxe)
+            call agnc_collect_spcmeta_2d(ncid, varid_density, varid_scale_density, fv_density)
 
             if ( spc_as_map ) then
                 call agnc_get_griddef(ncid, mapgrid)
@@ -1308,36 +1316,60 @@
                 msc = pntgrid%npoints
             end if
 
-            call agnc_collect_spcmeta_2d(ncid, varid_density, varid_scale_density, fv_density)
-
-            do_scale = .false.
-            if ( varid_scale_density > 0 ) do_scale = .true.
-
+            ! should I scale and write in a big chuncked loop over msc?
+            ! Allocating the density array creates a new copy for all 2D spectral points in the heap.
             allocate(density(spcgrid%ndir, spcgrid%nfreq, msc))
 
-            ! Note the assumption that AGNC_FILL_SHORT is negative
-            if ( do_scale ) then
-                where ( abs(e2d - AGNC_DUMMY) < epsilon(1.) ) e2d = AGNC_FILL_SHORT
+            !
+            ! - scale and/or replace energy dummies with _FillValue
+            ! - if scaling requested, write scale factors to netcdf
+            !
+            if ( varid_scale_density > 0 ) then
+                do_scale = .true.
                 allocate(scale_density(msc))
-                scale_density = maxval(e2d, 1) / (2**15-1)
-                where (scale_density < epsilon(1.) ) scale_density=epsilon(1.)
-            else
-                where ( abs(e2d - AGNC_DUMMY) < epsilon(1.) ) e2d = NF90_FILL_FLOAT
-            end if
 
-            do ip=1, msc
-                do ith=1, spcgrid%ndir
+                ! Note the assumption that AGNC_FILL_SHORT is negative
+                scale_density = maxval(e2d, 1) / (2**15-1)
+
+                do ip=1, msc
+                    if (scale_density(ip) < epsilon(1.) ) scale_density(ip) = epsilon(1.)
                     do ik=1, spcgrid%nfreq
-                        isp = ith + (ik - 1) * spcgrid%ndir
-                        if ( do_scale .and. abs(e2d(isp,ip) - AGNC_FILL_SHORT) > epsilon(1.) ) then
-                            density(ith,ik,ip) = nint(e2d(isp,ip) / scale_density(ip))
-                        else
-                            density(ith,ik,ip) = e2d(isp,ip)
-                        end if
+                        do ith=1, spcgrid%ndir
+                            isp = ith + (ik - 1) * spcgrid%ndir
+                            if ( abs(e2d(isp,ip) - AGNC_DUMMY) > epsilon(1.) ) then
+                                density(ith,ik,ip) = nint(e2d(isp,ip) / scale_density(ip))
+                            else
+                                density(ith,ik,ip) = AGNC_FILL_SHORT
+                            end if
+                        end do
                     end do
                 end do
-            end do
 
+                if ( spc_as_map ) then
+                    call nccheck ( nf90_put_var(ncid, varid_scale_density, &
+                                    reshape(scale_density, (/mapgrid%nx, mapgrid%ny, 1/)), (/1, 1, ti/)) )
+                else
+                    call nccheck ( nf90_put_var(ncid, varid_scale_density, scale_density, (/1, ti/)) )
+                end if
+            else
+                ! replace unscaled energy dummies with _FillValue
+                do ip=1, msc
+                    do ik=1, spcgrid%nfreq
+                        do ith=1, spcgrid%ndir
+                            isp = ith + (ik - 1) * spcgrid%ndir
+                            if ( abs(e2d(isp,ip) - AGNC_DUMMY) > epsilon(1.) ) then
+                                density(ith,ik,ip) = e2d(isp,ip)
+                            else
+                                density(ith,ik,ip) = NF90_FILL_FLOAT
+                            end if
+                        end do
+                    end do
+                end do
+            end if
+
+            !
+            ! chunked write to netcdf
+            !
             if ( spc_as_map ) then
                 allocate(edloc(spcgrid%ndir, spcgrid%nfreq, chunksize, chunksize))
 
@@ -1359,20 +1391,20 @@
                 end do
                 deallocate(edloc)
             else
-                call nccheck ( nf90_put_var(ncid, varid_density, density, (/1,1,1,ti/)) )
+                do ip=1,msc, chunksize**2
+                    ! abuse sx and cx for size and end index in pointlist
+                    sx = minval( (/chunksize**2, msc-ip+1/) )
+                    cx = ip + sx - 1
+
+                    call nccheck ( nf90_put_var(ncid, varid_density, density(:,:,ip:cx), &
+                                                                      (/1,1,ip,ti/),      &
+                                                                      (/spcgrid%ndir, spcgrid%nfreq, sx, 1/) ) )
+                end do
             end if
 
             deallocate(density)
 
-            if (do_scale) then
-                if ( spc_as_map ) then
-                    call nccheck ( nf90_put_var(ncid, varid_scale_density, &
-                                    reshape(scale_density, (/mapgrid%nx, mapgrid%ny, 1/)), (/1, 1, ti/)) )
-                else
-                    call nccheck ( nf90_put_var(ncid, varid_scale_density, scale_density, (/1, ti/)) )
-                end if
-                deallocate(scale_density)
-            end if
+            if (do_scale) deallocate(scale_density)
 
         end subroutine agnc_add_spcdata_density
 
@@ -1416,6 +1448,7 @@
             type(recordaxe_type)                                :: recordaxe
             logical                                             :: do_scale
             chunksize = 64
+            do_scale = .false.
 
             call agnc_get_griddef(ncid, spcgrid)
             call agnc_get_recordaxe(ncid, recordaxe)
@@ -1432,25 +1465,27 @@
                 msc = pntgrid%npoints
             end if
             if ( msc /= size(energy,2) ) then
-                write(6,*) '#points of this run and the netcdf file is different: ', msc, size(energy,2)
+                write(6,*) '#points of this run and the netcdf file is different'
                 STOP 2
             end if
 
-            do_scale = .false.
             if ( varid_scale_energy > 0 ) then
                 do_scale = .true.
 
                 allocate(scale_energy(msc))
 
-                where ( abs(energy - AGNC_DUMMY) <= epsilon(1.) ) energy = AGNC_FILL_SHORT
-
-                ! Note the assumption that AGNC_FILL_SHORT is negative
+                ! Note the assumption that AGNC_DUMMY is negative (or zero)
                 scale_energy = maxval(energy, 1) / (2**15-1)
-                where (scale_energy < epsilon(1.) ) scale_energy=epsilon(1.)
+
                 do ip=1, msc
+                    ! scale or replace energy dummies with _FillValue
+                    if (scale_energy(ip) < epsilon(1.) ) scale_energy(ip) = epsilon(1.)
                     do ik=1, spcgrid%nfreq
-                        if ( abs(energy(ik,ip) - AGNC_FILL_SHORT) > epsilon(1.)) &
-                        energy(ik,ip) = nint(energy(ik,ip) / scale_energy(ip))
+                        if ( abs(energy(ik,ip) - AGNC_DUMMY) > epsilon(1.)) then
+                            energy(ik,ip) = nint(energy(ik,ip) / scale_energy(ip))
+                        else
+                            energy(ik,ip) = AGNC_FILL_SHORT
+                        end if
                     end do
                 end do
 
@@ -1462,21 +1497,34 @@
                     call nccheck ( nf90_put_var(ncid, varid_scale_energy, scale_energy, (/1, ti/)) )
                 end if
             else
-                where ( abs(energy - AGNC_DUMMY) < epsilon(1.) ) energy = NF90_FILL_FLOAT
+                ! replace unscaled energy dummies with _FillValue
+                do ip=1, msc
+                    do ik=1, spcgrid%nfreq
+                        if ( abs(energy(ik,ip) - AGNC_DUMMY) < 2*epsilon(1.)) &
+                          energy(ik,ip) = NF90_FILL_FLOAT
+                    end do
+                end do
             end if
 
-            where ( abs(theta - AGNC_DUMMY) > epsilon(1.) )
-                theta = nint((theta - ao_theta) / sf_theta)
-            elsewhere
-                theta = AGNC_FILL_BYTE
-            end where
+            ! replace direction and spread dummies with _FillValue
+            do ip=1, msc
+                do ik=1, spcgrid%nfreq
+                    if ( abs(theta(ik,ip) - AGNC_DUMMY) > epsilon(1.) ) then
+                        theta(ik,ip) = nint((theta(ik,ip) - ao_theta) / sf_theta)
+                    else
+                        theta(ik,ip) = AGNC_FILL_BYTE
+                    end if
+                    if ( abs(spr(ik,ip) - AGNC_DUMMY) > epsilon(1.) ) then
+                        spr(ik,ip) = nint((spr(ik,ip) - ao_spr) / sf_spr)
+                    else
+                        spr(ik,ip) = AGNC_FILL_BYTE
+                    end if
+                end do
+            end do
 
-            where ( abs(spr - AGNC_DUMMY) > epsilon(1.) )
-                spr = nint((spr - ao_spr) / sf_spr)
-            elsewhere
-                spr = AGNC_FILL_BYTE
-            end where
-
+            !
+            ! chunked write to netcdf
+            !
             if ( spc_as_map ) then
                 allocate(eloc(spcgrid%nfreq, chunksize, chunksize))
                 allocate(tloc(spcgrid%nfreq, chunksize, chunksize))
@@ -1512,12 +1560,23 @@
                 deallocate(tloc)
                 deallocate(sloc)
             else
-                call nccheck ( nf90_put_var(ncid, varid_energy, energy, (/1,1,ti/)) )
-                call nccheck ( nf90_put_var(ncid, varid_theta, theta, (/1,1,ti/)) )
-                call nccheck ( nf90_put_var(ncid, varid_spr, spr, (/1,1,ti/)) )
+                do ip=1,msc, chunksize**2
+                    ! abuse sx and cx for size and end index in pointlist
+                    sx = minval( (/chunksize**2, msc-ip+1/) )
+                    cx = ip + sx - 1
+
+                    call nccheck ( nf90_put_var(ncid, varid_energy, energy(:,ip:cx), &
+                                                                     (/1,ip,ti/),    &
+                                                                     (/spcgrid%nfreq, sx,  1/) ))
+                    call nccheck ( nf90_put_var(ncid, varid_theta,  theta(:,ip:cx),  &
+                                                                     (/1,ip,ti/),    &
+                                                                     (/spcgrid%nfreq, sx,  1/) ))
+                    call nccheck ( nf90_put_var(ncid, varid_spr,    spr(:,ip:cx),    &
+                                                                     (/1,ip,ti/),    &
+                                                                     (/spcgrid%nfreq, sx,  1/) ))
+                end do
             end if
             if ( do_scale ) deallocate(scale_energy)
-
         end subroutine agnc_add_spcdata_2d
 
         subroutine agnc_add_pntdata1d_float(ncid, varname, ti, values, dummyvalue, skip_range_error)
