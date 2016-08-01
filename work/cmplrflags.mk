@@ -11,7 +11,7 @@ ifeq ($(MACHINE)-$(OS),x86_64-linux-gnu)
 #
 #compiler=gnu
 #compiler=g95
-compiler=intel
+#compiler=intel
 #compiler=intel-ND
 #compiler=intel-lonestar
 #compiler=intel-sgi
