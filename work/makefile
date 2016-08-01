@@ -1,5 +1,6 @@
-SHELL:=/bin/sh
-SRCDIR?=..
+SHELL:=/bin/bash
+PWD=$(shell pwd)
+SRCDIR?=$(shell dirname $(PWD))
 #
 #  Makefile to Build PADCIRC and its pre-processor 
 #  University of Texas's parallel version of the Hydrodynamics
@@ -22,11 +23,12 @@ LIST     := $(subst -, ,$(NAME))
 MACHINE  := $(word 1, $(LIST))
 VENDOR   := $(word 2, $(LIST))
 OS       := $(subst  $(MACHINE)-$(VENDOR)-,,$(strip $(NAME)))
-
+PWD      := $(shell pwd)
 VTAG     := $(shell echo $(TAG) | sed -e 's/_/./g' -e 's/V//')
 
 PARALLEL_ADCIRC   := padcirc
 $(warning (INFO) Name is $(NAME), Machine is $(MACHINE), Vendor is $(VENDOR), and OS is $(OS).)
+$(warning (INFO) The root directory for the build is $(SRCDIR))
 include cmplrflags.mk
 #Casey 090302: Include variables/flags from SWAN.
 include ../swan/macros.inc
@@ -84,7 +86,7 @@ endif
 #                                      adcprep   
 ifeq ($(BUILDTYPE),adcprep)
   CF:= $(PPFC)
-  O_DIR:=odir1/
+  O_DIR:=$(SRCDIR)/work/odir1/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
   VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/KDTREE2:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind 
   ifeq ($(XDMF),enable)
@@ -100,7 +102,7 @@ endif
 #                                      adcprep_be
 ifeq ($(BUILDTYPE),adcprep_be)
   CF:= $(FC)
-  O_DIR:=odir2/
+  O_DIR:=$(SRCDIR)/work/odir2/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
   VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/KDTREE2:$(SRCDIR)/src:$(SRCDIR):$(SRCDIR)/wind 
   ifeq ($(XDMF),enable)
@@ -116,7 +118,7 @@ endif
 #                                      adcirc   
 ifeq ($(BUILDTYPE),adcirc)
   CF:= $(FC)
-  O_DIR:=odir3/
+  O_DIR:=$(SRCDIR)/work/odir3/
   FFLAGS:= $(FFLAGS2) $(DA) $(IMODS) $(O_DIR)
   VPATH:=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
   ifeq ($(XDMF),enable)
@@ -131,7 +133,7 @@ endif
 #                                      adcswan
 ifeq ($(BUILDTYPE),adcswan)
   CF:= $(FC)
-  O_DIR:=odir33/
+  O_DIR:=$(SRCDIR)/work/odir33/
   FFLAGS:= $(FFLAGS2) -DCSWAN $(DA) $(IMODS) $(O_DIR)
   VPATH:=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
   ifeq ($(XDMF),enable)
@@ -145,7 +147,7 @@ endif
 #                                      $(PARALLEL_ADCIRC)   
 ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
   CF:= $(PFC)
-  O_DIR:=odir4/
+  O_DIR:=$(SRCDIR)/work/odir4/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
   VPATH :=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep 
   ifeq ($(XDMF),enable)
@@ -160,7 +162,7 @@ endif
 #                                      padcswan
 ifeq ($(BUILDTYPE),padcswan)
   CF:= $(PFC)
-  O_DIR:=odir44/
+  O_DIR:=$(SRCDIR)/work/odir44/
   FFLAGS:= $(FFLAGS3) -DCSWAN $(DP) $(IMODS) $(O_DIR)
   VPATH :=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
   ifeq ($(XDMF),enable)
@@ -174,7 +176,7 @@ endif
 #                                    libadc.a
 ifeq ($(BUILDTYPE),$(LIBADC)) 
   CF:= $(PFC)
-  O_DIR:=odircp
+  O_DIR:=$(SRCDIR)/work/odircp
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
   VPATH := $(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
   ifeq ($(XDMF),enable)
@@ -188,7 +190,7 @@ endif
 #                                      p15
 ifeq ($(BUILDTYPE),p15)
   CF:= $(PPFC)
-  O_DIR:=odir5/
+  O_DIR:=$(SRCDIR)/work/odir5/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
   VPATH :=  $(SRCDIR)/wind
   MSG_MOBJ:=
@@ -196,7 +198,7 @@ endif
 #                                      owi22
 ifeq ($(BUILDTYPE),owi22)
   CF:= $(PPFC)
-  O_DIR:=odir6/
+  O_DIR:=$(SRCDIR)/work/odir6/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
   VPATH :=  $(SRCDIR)/wind
   MSG_MOBJ:=
@@ -204,7 +206,7 @@ endif
 #                                      build13
 ifeq ($(BUILDTYPE),build13)
   CF:= $(PPFC)
-  O_DIR:=odir7/
+  O_DIR:=$(SRCDIR)/work/odir7/
    FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
   VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
@@ -212,7 +214,7 @@ endif
 #                                      build12
 ifeq ($(BUILDTYPE),build12)
   CF:= $(PPFC)
-  O_DIR:=odir8/
+  O_DIR:=$(SRCDIR)/work/odir8/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
   VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
@@ -220,7 +222,7 @@ endif
 #
 ifeq ($(BUILDTYPE),buildstwave23)
   CF:= $(PPFC)
-  O_DIR:=odir9/
+  O_DIR:=$(SRCDIR)/work/odir9/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR)
   VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
@@ -228,7 +230,7 @@ endif
 #                                      hot2asc      
 ifeq ($(BUILDTYPE),hot2asc)
   CF:= $(PPFC)
-  O_DIR:=odir10/
+  O_DIR:=$(SRCDIR)/work/odir10/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(LIBS)
   VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
@@ -236,7 +238,7 @@ endif
 #                                      inflate
 ifeq ($(BUILDTYPE),inflate)
   CF:= $(PPFC)
-  O_DIR:=odir11/
+  O_DIR:=$(SRCDIR)/work/odir11/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(LIBS)
   VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=
@@ -244,7 +246,7 @@ endif
 #                                      hstime
 ifeq ($(BUILDTYPE),hstime)
   CF:= $(PPFC)
-  O_DIR:=odir12/
+  O_DIR:=i$(SRCDIR)/work/odir12/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(DA)
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
@@ -255,14 +257,14 @@ endif
 #                                      adcpost (for 3D and harmonic)
 ifeq ($(BUILDTYPE),adcpost)
   CF:= $(PPFC)
-  O_DIR:=odir13/
+  O_DIR:=$(SRCDIR)/work/odir13/
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
   VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)  
 endif
 #                                      aswip
 ifeq ($(BUILDTYPE),aswip)
   CF:= $(PPFC)
-  O_DIR:=odir14/
+  O_DIR:=$(SRCDIR)/work/odir14/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(DA)
   VPATH := $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
   ifeq ($(NETCDF),enable)
@@ -276,7 +278,7 @@ endif
 #                                      adccmp
 ifeq ($(BUILDTYPE),adccmp)
   CF:= $(PPFC)
-  O_DIR:=odir17/
+  O_DIR:=$(SRCDIR)/work/odir17/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(DA)
   VPATH :=  $(SRCDIR)/util
   MSG_MOBJ:=

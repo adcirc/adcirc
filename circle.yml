@@ -1,0 +1,20 @@
+general:
+    build_dir: work
+
+checkout:
+    post:
+        - git clone https://github.com/adcirc/adcirc-cg-testsuite.git /home/ubuntu/adcirc-cg-testsuite
+ 
+dependencies:
+    post: 
+        - sudo apt-get update  -qq
+        - sudo apt-get install -qq libnetcdf-dev libopenmpi-dev libopenmpi-dbg bc
+
+test:
+    override:
+        - make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12
+        - make clean; make clobber
+        - make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=/usr
+        - cd /home/ubuntu/adcirc-cg-testsuite; ./RunTests.sh /home/ubuntu/adcirc-cg/work:
+            timeout: 7200
+        
