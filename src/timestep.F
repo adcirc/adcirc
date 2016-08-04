@@ -1205,6 +1205,9 @@ C     jie added nws = 20: generalized asymmetric vortex model
       IF(NWS.EQ.20) THEN
          CALL NWS20GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,GeneralAsymTime,ICS)
          DO I=1,NP
+#ifdef SKIP_DRY_VERTICES
+            IF(NODECODE(I).EQ.0) CYCLE
+#endif
             WindX = WVNX2(I)
             WindY = WVNY2(I)
             WindMag = SQRT(WindX*WindX+WindY*WindY)
@@ -3485,7 +3488,9 @@ Casey 091022: Adopt Ethan's/Joannes's modified friction.
                NC2=NodeCode(NMI2)
                NC3=NodeCode(NMI3)
                NCEle=NC1*NC2*NC3*NOFF(IE)
-
+#ifdef SKIP_DRY_VERTICES
+               IF(NCEle.EQ.0) CYCLE
+#endif
                SFacAvg=(SFac(NMI1)+SFac(NMI2)+SFac(NMI3))/3.d0
 
                AreaIE2=Areas(IE)
@@ -3570,6 +3575,9 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
             ! Seizo: Explicit scheme can solve localy. (the efect is small?)
             EP=0.0D0
             DO I=1,NP
+#ifdef SKIP_DRY_VERTICES
+               IF(NODECODE(I).EQ.0) CYCLE
+#endif
                EP=EP+Coefd(I)*Coefd(I)
             ENDDO
             EP=SQRT(EP/NP)
@@ -3582,6 +3590,9 @@ C.....      Check that all the diagonal elements in "COEF" are > 0.
 C.....      Check that all the diagonal elements in "COEFD" are > 0.
             DIE = .FALSE.
             DO I=1,NP
+#ifdef SKIP_DRY_VERTICES
+               IF(NODECODE(I).EQ.0) CYCLE
+#endif
                IF(COEFD(I).EQ.0.d0) COEFD(I)=EP
                IF(COEFD(I).LT.0.d0) THEN
                   IF(NSCREEN.NE.0.AND.MYPROC.EQ.0)
@@ -3656,6 +3667,9 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
             NC2=NODECODE(NM2)
             NC3=NODECODE(NM3)
             NCEle=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY_VERTICES
+            IF(NCEle.EQ.0) CYCLE
+#endif
             SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
             FDX1 = (Y(NM2)-Y(NM3))*SFacAvg               !b1
             FDX2 = (Y(NM3)-Y(NM1))*SFacAvg               !b2
@@ -3693,6 +3707,9 @@ C...  Compute the Lateral Stress Field using the 2 Part velocity approach (nonsy
          ENDDO
 
          DO I=1,NP
+#ifdef SKIP_DRY_VERTICES
+            IF(NODECODE(I).EQ.0) CYCLE
+#endif
             IF(TotalArea(I).NE.0.) THEN
                H2=DP(I)+IFNLFA*ETA2(I)
                H2OTotalArea=H2/TotalArea(I)
@@ -3737,6 +3754,9 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
             NC2=NODECODE(NM2)
             NC3=NODECODE(NM3)
             NCEle=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY_VERTICES
+            IF(NCEle.EQ.0) CYCLE
+#endif
             SFacAvg=(SFAC(NM1)+SFAC(NM2)+SFAC(NM3))/3.d0
             FDX1 = (Y(NM2)-Y(NM3))*SFacAvg               !b1
             FDX2 = (Y(NM3)-Y(NM1))*SFacAvg               !b2
@@ -3778,6 +3798,9 @@ C...  Compute the Lateral Stress Field using the 2 Part flux approach (nonsymmet
          ENDDO
 
          DO I=1,NP
+#ifdef SKIP_DRY_VERTICES
+            IF(NODECODE(I).EQ.0) CYCLE
+#endif
             IF(TotalArea(I).NE.0.) THEN
                IF (CGWCE_LS_2PartQ) THEN          !nonsymmetric
                   LSXX(I)=LSXX(I)/TotalArea(I)
@@ -3807,9 +3830,10 @@ C...  Assemble the GWCE RHS except for the boundary integral terms
 
 C...     Set nodal values for each element
 
+#ifndef SKIP_DRY_VERTICES
 Corbitt 120322: Localized Advection
          IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
-
+#endif
          NM1=NM(IE,1)
          NM2=NM(IE,2)
          NM3=NM(IE,3)
@@ -3817,6 +3841,10 @@ Corbitt 120322: Localized Advection
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
          NCELE=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY_VERTICES
+         IF(NCEle.EQ.0) CYCLE
+         IF(LoadAdvectionState) CALL ADVECTLOCAL(IE)
+#endif
          E0N1=ETA1(NM1)
          E0N2=ETA1(NM2)
          E0N3=ETA1(NM3)
@@ -4130,6 +4158,9 @@ C...  Save the elevation at the past time step into Eta1 and zero out Eta2
 ckmd  Need to save z(s-1) and etas(s-1) for the corrector loop
 
       DO I=1,NP
+#ifdef SKIP_DRY_VERTICES
+         IF(NODECODE(I).EQ.0) CYCLE
+#endif
          IF(CPRECOR) THEN
             ETAS0(I)=ETAS(I)
             Eta0(I)=Eta1(I)
@@ -4381,6 +4412,9 @@ C...  JCG ITERATIVE MATRIX SOLVER
          ENDDO
          NUMITR=0
          DO I=1,NP
+#ifdef SKIP_DRY_VERTICES
+            IF(NODECODE(I).EQ.0) CYCLE
+#endif
             ETA2(I)=NODECODE(I)*ETAS(I)+ETA1(I) !COMPUTE NEW ELEVATIONS
          END DO
       ENDIF
@@ -4500,7 +4534,6 @@ C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
       DO IE=1,NE
 
 C...  SET NODAL VALUES FOR EACH ELEMENT
-
 
 Corbitt 120322: Localized Advection
          IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
@@ -5142,10 +5175,10 @@ C.....FIRST TREAT THE NON-LUMPED PART OF THE EQUATIONS.
 
 C...  SET NODAL VALUES FOR EACH ELEMENT
 
-
+#ifndef SKIP_DRY_VERTICES
 Corbitt 120322: Localized Advection
          IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
-
+#endif
          NM1=NM(IE,1)
          NM2=NM(IE,2)
          NM3=NM(IE,3)
@@ -5153,6 +5186,10 @@ Corbitt 120322: Localized Advection
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
          NCELE=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY_VERTICES
+         IF(NCELE.EQ.0) CYCLE
+         IF(LoadAdvectionState)CALL ADVECTLOCAL(IE)
+#endif
          U1N1=UU1(NM1)
          U1N2=UU1(NM2)
          U1N3=UU1(NM3)
@@ -5464,6 +5501,9 @@ C           AND AUV
          NC2=NODECODE(NM2)
          NC3=NODECODE(NM3)
          NCEle=NC1*NC2*NC3*NOFF(IE)
+#ifdef SKIP_DRY_VERTICES
+         IF(NCEle.EQ.0) CYCLE
+#endif
          MOM_LV_X(NM1)=MOM_LV_X(NM1)+TEMP_LV_A(IE,1)
          MOM_LV_X(NM2)=MOM_LV_X(NM2)+TEMP_LV_A(IE,2)
          MOM_LV_X(NM3)=MOM_LV_X(NM3)+TEMP_LV_A(IE,3)
@@ -5483,6 +5523,9 @@ C...  and adding in the lumped terms, bottom friction and boundary conditions
       VIDBCPDY=0.D0
       DO I=1,NP
          NCI=NODECODE(I)
+#ifdef SKIP_DRY_VERTICES
+         IF(NCI.EQ.0) CYCLE
+#endif
          IF(TotalArea(I).ne.0.d0) THEN
             IF (CME_AreaInt_Corr) THEN       !Correct area integration
                MOM_LV_X(I)=MOM_LV_X(I)/TotalArea(I)
@@ -5558,6 +5601,9 @@ C...  AUV12=-AUV21)
          NBDI=NBV(I)
          H2=DP(NBDI)+IFNLFA*ETA2(NBDI)
          NCI=NODECODE(NBDI)
+#ifdef SKIP_DRY_VERTICES
+         IF(NCI.EQ.0) CYCLE
+#endif
 
 C      Specified essential normal flow and free tangential slip
 
@@ -5693,6 +5739,9 @@ C.....velocity can be zeroed out to obtain an essential zero velocity at
 C.....interface nodes.
 
       DO I=1,NP
+#ifdef SKIP_DRY_VERTICES
+         IF(NODECODE(I).EQ.0) CYCLE
+#endif
          AUV22=AUV11(I)
          AUV21=-AUV12(I)
          DDU=AUV11(I)*AUV22-AUV12(I)*AUV21
@@ -5737,6 +5786,9 @@ C...
                NC2=NODECODE(NM2)
                NC3=NODECODE(NM3)
                NCEle=NC1*NC2*NC3*NOFF(NEleZNG(I))
+#ifdef SKIP_DRY_VERTICES
+               IF(NCEle.EQ.0) CYCLE
+#endif
                UU2(NBDI)=NCEle*(UU2(NM1)*ZNGIF1(I)+UU2(NM2)*ZNGIF2(I)
      &                                            +UU2(NM3)*ZNGIF3(I))
                VV2(NBDI)=NCEle*(VV2(NM1)*ZNGIF1(I)+VV2(NM2)*ZNGIF2(I)
@@ -5748,6 +5800,9 @@ C...
 C...  Compute fluxes
 
       DO I=1,NP
+#ifdef SKIP_DRY_VERTICES
+         IF(NODECODE(I).EQ.0) CYCLE
+#endif
          H2=DP(I)+IFNLFA*ETA2(I)
          QX2(I)=UU2(I)*H2
          QY2(I)=VV2(I)*H2
