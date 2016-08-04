@@ -12,7 +12,7 @@ The ADCIRC development strategy consists of the maintenance of two separate vers
 
 At some point, the development version becomes stable. At that time, a stable branch is created from it, and then new features are added to the previously stable code, creating a new development version. A tag will be applied to the development version of the code in the form ```v49-dev```. Stable versions of the code will have a tag applied in the form ```v49.xx``` where ```xx``` represents the minor update revisions applied to fix bugs in the release versions.
 
-In prior development of the code, version.F was used to track versioning. However, this is no longer necessary. Version.F will reflect the current development state of the code in the development branch and the current stable version number of the code in the stable branch. There should be no editing necessary.
+In prior development of the code, ```version.F``` was used to track versioning. However, this is no longer necessary. ```version.F``` will reflect the current development state of the code in the development branch and the current stable version number of the code in the stable branch. There should be no editing necessary.
 
 Similarly, ```header.F``` is no longer needed as these Git will automatically track the version number and log message. The ```git log``` command will provide you with this information in a more understandable way. *Please see the section on providing descriptive commit messages.* Release packages of the code will contain this information generated from Git internally so that users can view the commit log.
 

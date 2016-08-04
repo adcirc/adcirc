@@ -26,7 +26,7 @@
 !
 !***********************************************************************
 !                                                                      *
-!NADC      PROGRAM SWAN
+!NADC!NCOH      PROGRAM SWAN
 !ADC      SUBROUTINE SWAN
 !                                                                      *
 !***********************************************************************
@@ -46,7 +46,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -119,7 +119,7 @@
 
 !     --- start SWAN run
 
-!Casey 140506: The main SWAN routine is called from the ADCIRC driver.
+!     the main SWAN routine is called from the ADCIRC driver
 !NADC      CALL SWMAIN                                                         40.31 34.01
 
 999   CONTINUE
@@ -173,7 +173,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -789,7 +789,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -836,6 +836,7 @@
 !     40.64: Marcel Zijlema
 !     40.80: Marcel Zijlema
 !     41.13: Nico Booij
+!     41.62: Andre van der Westhuysen
 !
 !  1. Updates
 !
@@ -897,6 +898,7 @@
 !     40.80, Jun. 07: extension to unstructured grids
 !     41.12, Apr. 10: output quantity NPL added
 !     41.13, Jul. 10: LWDATE introduced in view of nesting in WAM
+!     41.62, Nov. 15: included output quantities for wave partitioning
 !
 !  2. Purpose
 !
@@ -946,9 +948,10 @@
 ! 13. Source text
 !
       VERTXT = BLANK                                                      40.03
-      VERNUM = 41.01
+      VERNUM = 41.10
       WRITE (VERTXT, '(F5.2)') VERNUM                                     40.03
 !      CALL BUGFIX ('A')
+!      CALL BUGFIX ('B')
 !
       CALL OCPINI ('swaninit', .TRUE.,INERR)                              34.01
       IF (INERR.GT.0) RETURN                                              34.01
@@ -1057,8 +1060,9 @@
       FULCIR = .TRUE.
       SPDIR1 = 0.
       asort  = -999.                                                      41.48
+      CCURV  = .FALSE.                                                    41.53
 !     number of points needed in computational stencil:
-      ICMAX  = 3
+      ICMAX  = 5
 !     ***** numerical scheme *****
       NCOR   = 1
       NSTATM = -1                                                         40.00
@@ -1081,9 +1085,9 @@
       IREFR  = 1                                                          40.02
       ITFRE  = 1
       IWIND  = 0
-!Casey 140506: When coupled with ADCIRC, the default is to use ADCIRC's drag formulation.
+!     when coupled with ADCIRC, the default is to use ADCIRC drag formulation
 !NADC      IDRAG  = 2                                                          41.49 41.33
-!ADC      IDRAG  = 0                                                          41.49 41.33
+!ADC      IDRAG  = 0
       IGEN   = 3                                                          32.06
       IQUAD  = 2                                                          30.72
       IWCAP  = 1                                                          21/MAY
@@ -1281,7 +1285,7 @@
 !
 !     --- computation of Ctheta based on wave number
 !
-      PNUMS(32) = 0.                                                      41.07
+      PNUMS(32) = 1.                                                      41.07
 !
 !     --- parameters for limiting Csigma and Ctheta
 !
@@ -1333,13 +1337,20 @@
       PMUD(5)   = 1.3E-6                                                  40.59
 !
 !     triad interactions
-      PTRIAD(1)  = 0.65                                                   41.44 40.61 30.82
+      PTRIAD(1)  = 0.8                                                    41.44 40.61 30.82
       PTRIAD(2)  = 2.5                                                    40.61 40.56 30.82
       PTRIAD(3)  = 10.                                                    40.23
       PTRIAD(4)  = 0.2                                                    40.13
       PTRIAD(5)  = 0.01                                                   40.23
       PTRIAD(6)  = 0.95                                                   41.46
-      PTRIAD(7)  = -0.75                                                  41.46
+!     original value of B=-0.75 in SPB appears to be reasonable
+!     for unidirectional laboratory cases
+!     however, this choice may not be appropriate for true
+!     2D cases as it does not scale with the wave field
+!     thus, B = 0 (for now)
+!      PTRIAD(7)  = -0.75                                                  41.46
+      PTRIAD(7)  = 0.                                                     41.46
+      PTRIAD(8)  = 0.                                                     41.46
 !
 !     quadruplet interactions
       PQUAD(1) = 0.25                                                     34.00
@@ -2339,7 +2350,7 @@
       OVEXCV(IVTYPE) = -9.
 !
       IVTYPE = 70
-      OVKEYW(IVTYPE) = 'NPL'                                            ! 41.12
+      OVKEYW(IVTYPE) = 'NPL'                                              41.12
       OVSNAM(IVTYPE) = 'Nplant'
       OVLNAM(IVTYPE) = 'Plants per m2'
       OVUNIT(IVTYPE) = '1/m2'
@@ -2398,6 +2409,870 @@
       OVHEXP(IVTYPE) = 0.1
       OVEXCV(IVTYPE) = -9.
 !
+      IVTYPE = 100                                                        41.62
+      OVKEYW(IVTYPE) = 'PTHS'                                             41.62
+      OVSNAM(IVTYPE) = 'HsPT01'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave height of partition 01'                      41.62
+      OVUNIT(IVTYPE) = UH                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 100.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 10.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 101                                                        41.62
+      OVKEYW(IVTYPE) = 'PT02HS'                                           41.62
+      OVSNAM(IVTYPE) = 'HsPT02'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave height of partition 02'                      41.62
+      OVUNIT(IVTYPE) = UH                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 100.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 10.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 102                                                        41.62
+      OVKEYW(IVTYPE) = 'PT03HS'                                           41.62
+      OVSNAM(IVTYPE) = 'HsPT03'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave height of partition 03'                      41.62
+      OVUNIT(IVTYPE) = UH                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 100.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 10.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 103                                                        41.62
+      OVKEYW(IVTYPE) = 'PT04HS'                                           41.62
+      OVSNAM(IVTYPE) = 'HsPT04'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave height of partition 04'                      41.62
+      OVUNIT(IVTYPE) = UH                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 100.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 10.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 104                                                        41.62
+      OVKEYW(IVTYPE) = 'PT05HS'                                           41.62
+      OVSNAM(IVTYPE) = 'HsPT05'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave height of partition 05'                      41.62
+      OVUNIT(IVTYPE) = UH                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 100.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 10.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 105                                                        41.62
+      OVKEYW(IVTYPE) = 'PT06HS'                                           41.62
+      OVSNAM(IVTYPE) = 'HsPT06'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave height of partition 06'                      41.62
+      OVUNIT(IVTYPE) = UH                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 100.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 10.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 106                                                        41.62
+      OVKEYW(IVTYPE) = 'PT07HS'                                           41.62
+      OVSNAM(IVTYPE) = 'HsPT07'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave height of partition 07'                      41.62
+      OVUNIT(IVTYPE) = UH                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 100.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 10.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 107                                                        41.62
+      OVKEYW(IVTYPE) = 'PT08HS'                                           41.62
+      OVSNAM(IVTYPE) = 'HsPT08'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave height of partition 08'                      41.62
+      OVUNIT(IVTYPE) = UH                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 100.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 10.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 108                                                        41.62
+      OVKEYW(IVTYPE) = 'PT09HS'                                           41.62
+      OVSNAM(IVTYPE) = 'HsPT09'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave height of partition 09'                      41.62
+      OVUNIT(IVTYPE) = UH                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 100.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 10.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 109                                                        41.62
+      OVKEYW(IVTYPE) = 'PT10HS'                                           41.62
+      OVSNAM(IVTYPE) = 'HsPT10'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave height of partition 10'                      41.62
+      OVUNIT(IVTYPE) = UH                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 100.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 10.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 110                                                        41.62  !make sure these defs are SWAN-consistent!
+      OVKEYW(IVTYPE) = 'PTRTP'                                            41.62
+      OVSNAM(IVTYPE) = 'TpPT01'                                           41.62
+      OVLNAM(IVTYPE) = 'Relative peak period of partition 01'             41.62
+      OVUNIT(IVTYPE) = UT                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 100.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 111                                                        41.62
+      OVKEYW(IVTYPE) = 'PT02RTP'                                          41.62
+      OVSNAM(IVTYPE) = 'TpPT02'                                           41.62
+      OVLNAM(IVTYPE) = 'Relative peak period of partition 02'             41.62
+      OVUNIT(IVTYPE) = UT                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 100.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 112                                                        41.62
+      OVKEYW(IVTYPE) = 'PT03RTP'                                          41.62
+      OVSNAM(IVTYPE) = 'TpPT03'                                           41.62
+      OVLNAM(IVTYPE) = 'Relative peak period of partition 03'             41.62
+      OVUNIT(IVTYPE) = UT                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 100.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 113                                                        41.62
+      OVKEYW(IVTYPE) = 'PT04RTP'                                          41.62
+      OVSNAM(IVTYPE) = 'TpPT04'                                           41.62
+      OVLNAM(IVTYPE) = 'Relative peak period of partition 04'             41.62
+      OVUNIT(IVTYPE) = UT                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 100.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 114                                                        41.62
+      OVKEYW(IVTYPE) = 'PT05RTP'                                          41.62
+      OVSNAM(IVTYPE) = 'TpPT05'                                           41.62
+      OVLNAM(IVTYPE) = 'Relative peak period of partition 05'             41.62
+      OVUNIT(IVTYPE) = UT                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 100.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 115                                                        41.62
+      OVKEYW(IVTYPE) = 'PT06RTP'                                          41.62
+      OVSNAM(IVTYPE) = 'TpPT06'                                           41.62
+      OVLNAM(IVTYPE) = 'Relative peak period of partition 06'             41.62
+      OVUNIT(IVTYPE) = UT                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 100.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 116                                                        41.62
+      OVKEYW(IVTYPE) = 'PT07RTP'                                          41.62
+      OVSNAM(IVTYPE) = 'TpPT07'                                           41.62
+      OVLNAM(IVTYPE) = 'Relative peak period of partition 07'             41.62
+      OVUNIT(IVTYPE) = UT                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 100.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 117                                                        41.62
+      OVKEYW(IVTYPE) = 'PT08RTP'                                          41.62
+      OVSNAM(IVTYPE) = 'TpPT08'                                           41.62
+      OVLNAM(IVTYPE) = 'Relative peak period of partition 08'             41.62
+      OVUNIT(IVTYPE) = UT                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 100.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 118                                                        41.62
+      OVKEYW(IVTYPE) = 'PT09RTP'                                          41.62
+      OVSNAM(IVTYPE) = 'TpPT09'                                           41.62
+      OVLNAM(IVTYPE) = 'Relative peak period of partition 09'             41.62
+      OVUNIT(IVTYPE) = UT                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 100.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 119                                                        41.62
+      OVKEYW(IVTYPE) = 'PT10RTP'                                          41.62
+      OVSNAM(IVTYPE) = 'TpPT10'                                           41.62
+      OVLNAM(IVTYPE) = 'Relative peak period of partition 10'             41.62
+      OVUNIT(IVTYPE) = UT                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 100.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 120                                                        41.62
+      OVKEYW(IVTYPE) = 'PTWLEN'                                           41.62
+      OVSNAM(IVTYPE) = 'WlPT01'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave length of partition 01'              41.62
+      OVUNIT(IVTYPE) = UL                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 200.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 121                                                        41.62
+      OVKEYW(IVTYPE) = 'PT02WLEN'                                         41.62
+      OVSNAM(IVTYPE) = 'WlPT02'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave length of partition 02'              41.62
+      OVUNIT(IVTYPE) = UL                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 200.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 122                                                        41.62
+      OVKEYW(IVTYPE) = 'PT03WLEN'                                         41.62
+      OVSNAM(IVTYPE) = 'WlPT03'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave length of partition 03'              41.62
+      OVUNIT(IVTYPE) = UL                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 200.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 123                                                        41.62
+      OVKEYW(IVTYPE) = 'PT04WLEN'                                         41.62
+      OVSNAM(IVTYPE) = 'WlPT04'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave length of partition 04'              41.62
+      OVUNIT(IVTYPE) = UL                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 200.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 124                                                        41.62
+      OVKEYW(IVTYPE) = 'PT05WLEN'                                         41.62
+      OVSNAM(IVTYPE) = 'WlPT05'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave length of partition 05'              41.62
+      OVUNIT(IVTYPE) = UL                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 200.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 125                                                        41.62
+      OVKEYW(IVTYPE) = 'PT06WLEN'                                         41.62
+      OVSNAM(IVTYPE) = 'WlPT06'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave length of partition 06'              41.62
+      OVUNIT(IVTYPE) = UL                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 200.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 126                                                        41.62
+      OVKEYW(IVTYPE) = 'PT07WLEN'                                         41.62
+      OVSNAM(IVTYPE) = 'WlPT07'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave length of partition 07'              41.62
+      OVUNIT(IVTYPE) = UL                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 200.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 127                                                        41.62
+      OVKEYW(IVTYPE) = 'PT08WLEN'                                         41.62
+      OVSNAM(IVTYPE) = 'WlPT08'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave length of partition 08'              41.62
+      OVUNIT(IVTYPE) = UL                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 200.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 128                                                        41.62
+      OVKEYW(IVTYPE) = 'PT09WLEN'                                         41.62
+      OVSNAM(IVTYPE) = 'WlPT09'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave length of partition 09'              41.62
+      OVUNIT(IVTYPE) = UL                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 200.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 129                                                        41.62
+      OVKEYW(IVTYPE) = 'PT10WLEN'                                         41.62
+      OVSNAM(IVTYPE) = 'WlPT10'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave length of partition 10'              41.62
+      OVUNIT(IVTYPE) = UL                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1000.                                              41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 200.                                               41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 130                                                        41.62  !make sure these defs are SWAN-consistent!
+      OVKEYW(IVTYPE) = 'PTDIR'                                            41.62
+      OVSNAM(IVTYPE) = 'DrPT01'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave direction of partition 01'           41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 2                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 360.                                               41.62
+      OVEXCV(IVTYPE) = -999.                                              41.62
+!
+      IVTYPE = 131                                                        41.62
+      OVKEYW(IVTYPE) = 'PT02DIR'                                          41.62
+      OVSNAM(IVTYPE) = 'DrPT02'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave direction of partition 02'           41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 2                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 360.                                               41.62
+      OVEXCV(IVTYPE) = -999.                                              41.62
+!
+      IVTYPE = 132                                                        41.62
+      OVKEYW(IVTYPE) = 'PT03DIR'                                          41.62
+      OVSNAM(IVTYPE) = 'DrPT03'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave direction of partition 03'           41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 2                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 360.                                               41.62
+      OVEXCV(IVTYPE) = -999.                                              41.62
+!
+      IVTYPE = 133                                                        41.62
+      OVKEYW(IVTYPE) = 'PT04DIR'                                          41.62
+      OVSNAM(IVTYPE) = 'DrPT04'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave direction of partition 04'           41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 2                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 360.                                               41.62
+      OVEXCV(IVTYPE) = -999.                                              41.62
+!
+      IVTYPE = 134                                                        41.62
+      OVKEYW(IVTYPE) = 'PT05DIR'                                          41.62
+      OVSNAM(IVTYPE) = 'DrPT05'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave direction of partition 05'           41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 2                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 360.                                               41.62
+      OVEXCV(IVTYPE) = -999.                                              41.62
+!
+      IVTYPE = 135                                                        41.62
+      OVKEYW(IVTYPE) = 'PT06DIR'                                          41.62
+      OVSNAM(IVTYPE) = 'DrPT06'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave direction of partition 06'           41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 2                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 360.                                               41.62
+      OVEXCV(IVTYPE) = -999.                                              41.62
+!
+      IVTYPE = 136                                                        41.62
+      OVKEYW(IVTYPE) = 'PT07DIR'                                          41.62
+      OVSNAM(IVTYPE) = 'DrPT07'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave direction of partition 07'           41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 2                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 360.                                               41.62
+      OVEXCV(IVTYPE) = -999.                                              41.62
+!
+      IVTYPE = 137                                                        41.62
+      OVKEYW(IVTYPE) = 'PT08DIR'                                          41.62
+      OVSNAM(IVTYPE) = 'DrPT08'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave direction of partition 08'           41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 2                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 360.                                               41.62
+      OVEXCV(IVTYPE) = -999.                                              41.62
+!
+      IVTYPE = 138                                                        41.62
+      OVKEYW(IVTYPE) = 'PT09DIR'                                          41.62
+      OVSNAM(IVTYPE) = 'DrPT09'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave direction of partition 09'           41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 2                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 360.                                               41.62
+      OVEXCV(IVTYPE) = -999.                                              41.62
+!
+      IVTYPE = 139                                                        41.62
+      OVKEYW(IVTYPE) = 'PT10DIR'                                          41.62
+      OVSNAM(IVTYPE) = 'DrPT10'                                           41.62
+      OVLNAM(IVTYPE) = 'Average wave direction of partition 10'           41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 2                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 360.                                               41.62
+      OVEXCV(IVTYPE) = -999.                                              41.62
+!
+      IVTYPE = 140                                                        41.62  !make sure these defs are SWAN-consistent!
+      OVKEYW(IVTYPE) = 'PTDSPR'                                           41.62
+      OVSNAM(IVTYPE) = 'DsPT01'                                           41.62
+      OVLNAM(IVTYPE) = 'Directional spreading of partition 01'            41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 60.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 141                                                        41.62
+      OVKEYW(IVTYPE) = 'PT02DSPR'                                         41.62
+      OVSNAM(IVTYPE) = 'DsPT02'                                           41.62
+      OVLNAM(IVTYPE) = 'Directional spreading of partition 02'            41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 60.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 142                                                        41.62
+      OVKEYW(IVTYPE) = 'PT03DSPR'                                         41.62
+      OVSNAM(IVTYPE) = 'DsPT03'                                           41.62
+      OVLNAM(IVTYPE) = 'Directional spreading of partition 03'            41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 60.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 143                                                        41.62
+      OVKEYW(IVTYPE) = 'PT04DSPR'                                         41.62
+      OVSNAM(IVTYPE) = 'DsPT04'                                           41.62
+      OVLNAM(IVTYPE) = 'Directional spreading of partition 04'            41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 60.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 144                                                        41.62
+      OVKEYW(IVTYPE) = 'PT05DSPR'                                         41.62
+      OVSNAM(IVTYPE) = 'DsPT05'                                           41.62
+      OVLNAM(IVTYPE) = 'Directional spreading of partition 05'            41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 60.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 145                                                        41.62
+      OVKEYW(IVTYPE) = 'PT06DSPR'                                         41.62
+      OVSNAM(IVTYPE) = 'DsPT06'                                           41.62
+      OVLNAM(IVTYPE) = 'Directional spreading of partition 06'            41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 60.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 146                                                        41.62
+      OVKEYW(IVTYPE) = 'PT07DSPR'                                         41.62
+      OVSNAM(IVTYPE) = 'DsPT07'                                           41.62
+      OVLNAM(IVTYPE) = 'Directional spreading of partition 07'            41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 60.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 147                                                        41.62
+      OVKEYW(IVTYPE) = 'PT08DSPR'                                         41.62
+      OVSNAM(IVTYPE) = 'DsPT08'                                           41.62
+      OVLNAM(IVTYPE) = 'Directional spreading of partition 08'            41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 60.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 148                                                        41.62
+      OVKEYW(IVTYPE) = 'PT09DSPR'                                         41.62
+      OVSNAM(IVTYPE) = 'DsPT09'                                           41.62
+      OVLNAM(IVTYPE) = 'Directional spreading of partition 09'            41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 60.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 149                                                        41.62
+      OVKEYW(IVTYPE) = 'PT10DSPR'                                         41.62
+      OVSNAM(IVTYPE) = 'DsPT10'                                           41.62
+      OVLNAM(IVTYPE) = 'Directional spreading of partition 10'            41.62
+      OVUNIT(IVTYPE) = UDI                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 360.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 60.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 150                                                        41.62
+      OVKEYW(IVTYPE) = 'PTWFRAC'                                          41.62
+      OVSNAM(IVTYPE) = 'WfPT01'                                           41.62
+      OVLNAM(IVTYPE) = 'Wind fraction of partition 01'                    41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 1.                                                 41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 151                                                        41.62
+      OVKEYW(IVTYPE) = 'PT02WFRAC'                                        41.62
+      OVSNAM(IVTYPE) = 'WfPT02'                                           41.62
+      OVLNAM(IVTYPE) = 'Wind fraction of partition 02'                    41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 1.                                                 41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 152                                                        41.62
+      OVKEYW(IVTYPE) = 'PT03WFRAC'                                        41.62
+      OVSNAM(IVTYPE) = 'WfPT03'                                           41.62
+      OVLNAM(IVTYPE) = 'Wind fraction of partition 03'                    41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 1.                                                 41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 153                                                        41.62
+      OVKEYW(IVTYPE) = 'PT04WFRAC'                                        41.62
+      OVSNAM(IVTYPE) = 'WfPT04'                                           41.62
+      OVLNAM(IVTYPE) = 'Wind fraction of partition 04'                    41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 1.                                                 41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 154                                                        41.62
+      OVKEYW(IVTYPE) = 'PT05WFRAC'                                        41.62
+      OVSNAM(IVTYPE) = 'WfPT05'                                           41.62
+      OVLNAM(IVTYPE) = 'Wind fraction of partition 05'                    41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 1.                                                 41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 155                                                        41.62
+      OVKEYW(IVTYPE) = 'PT06WFRAC'                                        41.62
+      OVSNAM(IVTYPE) = 'WfPT06'                                           41.62
+      OVLNAM(IVTYPE) = 'Wind fraction of partition 06'                    41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 1.                                                 41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 156                                                        41.62
+      OVKEYW(IVTYPE) = 'PT07WFRAC'                                        41.62
+      OVSNAM(IVTYPE) = 'WfPT07'                                           41.62
+      OVLNAM(IVTYPE) = 'Wind fraction of partition 07'                    41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 1.                                                 41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 157                                                        41.62
+      OVKEYW(IVTYPE) = 'PT08WFRAC'                                        41.62
+      OVSNAM(IVTYPE) = 'WfPT08'                                           41.62
+      OVLNAM(IVTYPE) = 'Wind fraction of partition 08'                    41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 1.                                                 41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 158                                                        41.62
+      OVKEYW(IVTYPE) = 'PT09WFRAC'                                        41.62
+      OVSNAM(IVTYPE) = 'WfPT09'                                           41.62
+      OVLNAM(IVTYPE) = 'Wind fraction of partition 09'                    41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 1.                                                 41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 159                                                        41.62
+      OVKEYW(IVTYPE) = 'PT10WFRAC'                                        41.62
+      OVSNAM(IVTYPE) = 'WfPT10'                                           41.62
+      OVLNAM(IVTYPE) = 'Wind fraction of partition 10'                    41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 1.                                                 41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 160                                                        41.62
+      OVKEYW(IVTYPE) = 'PTSTEE'                                           41.62
+      OVSNAM(IVTYPE) = 'StPT01'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave steepness of partition 01'                   41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 0.1                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 161                                                        41.62
+      OVKEYW(IVTYPE) = 'PT02STEE'                                         41.62
+      OVSNAM(IVTYPE) = 'StPT02'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave steepness of partition 02'                   41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 0.1                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 162                                                        41.62
+      OVKEYW(IVTYPE) = 'PT03STEE'                                         41.62
+      OVSNAM(IVTYPE) = 'StPT03'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave steepness of partition 03'                   41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 0.1                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 163                                                        41.62
+      OVKEYW(IVTYPE) = 'PT04STEE'                                         41.62
+      OVSNAM(IVTYPE) = 'StPT04'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave steepness of partition 04'                   41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 0.1                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 164                                                        41.62
+      OVKEYW(IVTYPE) = 'PT05STEE'                                         41.62
+      OVSNAM(IVTYPE) = 'StPT05'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave steepness of partition 05'                   41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 0.1                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 165                                                        41.62
+      OVKEYW(IVTYPE) = 'PT06STEE'                                         41.62
+      OVSNAM(IVTYPE) = 'StPT06'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave steepness of partition 06'                   41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 0.1                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 166                                                        41.62
+      OVKEYW(IVTYPE) = 'PT07STEE'                                         41.62
+      OVSNAM(IVTYPE) = 'StPT07'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave steepness of partition 07'                   41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 0.1                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 167                                                        41.62
+      OVKEYW(IVTYPE) = 'PT08STEE'                                         41.62
+      OVSNAM(IVTYPE) = 'StPT08'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave steepness of partition 08'                   41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 0.1                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 168                                                        41.62
+      OVKEYW(IVTYPE) = 'PT09STEE'                                         41.62
+      OVSNAM(IVTYPE) = 'StPT09'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave steepness of partition 09'                   41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 0.1                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 169                                                        41.62
+      OVKEYW(IVTYPE) = 'PT10STEE'                                         41.62
+      OVSNAM(IVTYPE) = 'StPT10'                                           41.62
+      OVLNAM(IVTYPE) = 'Wave steepness of partition 10'                   41.62
+      OVUNIT(IVTYPE) = ' '                                                41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 1.                                                 41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 0.1                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 170                                                        41.62
+      OVKEYW(IVTYPE) = 'PARTIT'                                           41.62
+      OVSNAM(IVTYPE) = 'PARTIT'                                           41.62
+      OVLNAM(IVTYPE) = 'Spectral partions of all parameters'              41.62
+      OVUNIT(IVTYPE) = UH                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 100.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 10.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
+      IVTYPE = 171                                                        41.62
+      OVKEYW(IVTYPE) = 'NPART'                                            41.62
+      OVSNAM(IVTYPE) = 'Npart'                                            41.62
+      OVLNAM(IVTYPE) = 'Number of spectral partions'                      41.62
+      OVUNIT(IVTYPE) = UH                                                 41.62
+      OVSVTY(IVTYPE) = 1                                                  41.62
+      OVLLIM(IVTYPE) = 0.                                                 41.62
+      OVULIM(IVTYPE) = 100.                                               41.62
+      OVLEXP(IVTYPE) = 0.                                                 41.62
+      OVHEXP(IVTYPE) = 10.                                                41.62
+      OVEXCV(IVTYPE) = -9.                                                41.62
+!
 !     various parameters for computation of output quantities             40.00
 !
 !     reference time for TSEC
@@ -2453,7 +3328,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -2787,7 +3662,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3170,7 +4045,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -3691,7 +4566,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4094,7 +4969,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4223,7 +5098,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4353,7 +5228,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4528,7 +5403,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4627,7 +5502,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -4751,7 +5626,7 @@
 !
 !     *** Check formulation for whitecapping ***
 !
-      IF ( IWCAP.GT.7 ) THEN
+      IF ( IWCAP.GT.8 ) THEN
          WRITE (MSGSTR, '(A,I2,A)')
      &               'Unknown method for whitecapping (IWCAP=',IWCAP,')'
          CALL MSGERR( 1, TRIM(MSGSTR) )
@@ -4844,7 +5719,15 @@
 !     used in the CGRID command. This error should be corrected
 !     in the future
 !
-      IF (IWIND.EQ.3 .OR. IWIND.EQ.4) THEN                                30.60
+      IF (ICUR.NE.0 .AND. (IQUAD.EQ.1 .OR. IQUAD.EQ.2)) THEN              41.55
+         CALL MSGERR(1,'Quadruplets will be updated per iteration')       41.55
+         CALL MSGERR(1,'instead of per sweep. This will increase')        41.55
+         CALL MSGERR(1,'amount of internal memory with a factor 2')       41.55
+         IQUAD = 3                                                        41.55
+      ENDIF                                                               41.55
+!
+      IF (IWIND.EQ.3 .OR. IWIND.EQ.4
+     &                              ) THEN                                30.60
         IF (IQUAD .EQ. 0) THEN
           CALL MSGERR(2,'Quadruplets should be activated when SWAN  ')    30.60
           CALL MSGERR(2,'is running in a third generation mode and  ')    30.60
@@ -4969,7 +5852,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -5294,7 +6177,7 @@
 
 !     field 4: friction coeff.
       IF (IFLDYN(4) .EQ. 1) THEN
-        CALL FLFILE ( 4, 0, FRIC, 0.,                                     40.31
+        CALL FLFILE ( 4, 0, FRIC, (/0./),                                 40.31
      &               0, JFRC2, JFRC3, 0, 0, 0,
      &               1., 0.,                                              40.31 30.90
      &               COMPDA, XCGRID, YCGRID,
@@ -5321,7 +6204,7 @@
 
 !     field 7: water level
       IF (IFLDYN(7) .EQ. 1) THEN
-        CALL FLFILE ( 7, 0, WLEVL, 0.,                                    40.31
+        CALL FLFILE ( 7, 0, WLEVL, (/0./),                                40.31
      &               JWLV1, JWLV2, JWLV3, 0, 0, 0,
      &               1., 0.,                                              40.31 30.90
      &               COMPDA, XCGRID, YCGRID,
@@ -5471,7 +6354,7 @@
 
 !     field 11: field containing number of plants per square meter
       IF (IFLDYN(11) .EQ. 1) THEN
-        CALL FLFILE (11, 0, NPLAF, 0.,
+        CALL FLFILE (11, 0, NPLAF, (/0./),
      &               0, JNPLA2, JNPLA3, 0, 0, 0,
      &               1., 0.,
      &               COMPDA, XCGRID, YCGRID,
@@ -5498,7 +6381,7 @@
 
 !     field 12: field containing turbulent viscosity
       IF (IFLDYN(12) .EQ. 1) THEN
-        CALL FLFILE (12, 0, TURBF, 0.,
+        CALL FLFILE (12, 0, TURBF, (/0./),
      &               0, JTURB2, JTURB3, 0, 0, 0,
      &               1., 0.,
      &               COMPDA, XCGRID, YCGRID,
@@ -5525,7 +6408,7 @@
 
 !     field 13: field containing fluid mud layer
       IF (IFLDYN(13) .EQ. 1) THEN
-        CALL FLFILE (13, 0, MUDLF, 0.,
+        CALL FLFILE (13, 0, MUDLF, (/0./),
      &               JMUDL1, JMUDL2, JMUDL3, 0, 0, 0,
      &               1., 0.,
      &               COMPDA, XCGRID, YCGRID,
@@ -5583,7 +6466,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -6185,7 +7068,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -6314,8 +7197,8 @@
 !
 !  8. Subroutines used
 !
-!       GAMMA (in SWANSER)
-      REAL :: GAMMA                                                       40.03
+!       GAMMAF (in SWANSER)
+      REAL :: GAMMAF                                                      40.03
       LOGICAL EQREAL                                                      40.41
 !
 !  9. Subroutines calling
@@ -6426,7 +7309,7 @@
           IF (MS.GT.10.) THEN
             CTOT = SQRT(MS/(2.*PI)) * (1. + 0.25/MS)                      30.81 40.00
           ELSE
-            CTOT = 2.**MS * (GAMMA(1.+0.5*MS))**2 / (PI * GAMMA(1.+MS))   40.00
+            CTOT = 2.**MS * (GAMMAF(1.+0.5*MS))**2 / (PI*GAMMAF(1.+MS))   40.00
           ENDIF
           DSUM = 0.
           DO ID = 1, MDC
@@ -6617,7 +7500,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -6998,7 +7881,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -7274,6 +8157,7 @@
 !****************************************************************
 !
       USE M_WCAP
+      USE M_SNL4
       USE M_GENARR
       USE M_PARALL
       USE M_DIFFR
@@ -7294,7 +8178,7 @@
 !
 !
 !     SWAN (Simulating WAves Nearshore); a third generation wave model
-!     Copyright (C) 1993-2014  Delft University of Technology
+!     Copyright (C) 1993-2016  Delft University of Technology
 !
 !     This program is free software; you can redistribute it and/or
 !     modify it under the terms of the GNU General Public License as
@@ -7337,6 +8221,9 @@
 ! 13. Source text
 !
       IF (ALLOCATED(SIGPOW))   DEALLOCATE(SIGPOW)
+      IF (ALLOCATED(CNL4_1))   DEALLOCATE(CNL4_1)
+      IF (ALLOCATED(CNL4_2))   DEALLOCATE(CNL4_2)
+      IF (ALLOCATED(LAMBDA))   DEALLOCATE(LAMBDA)
       IF (ALLOCATED(KGRPNT))   DEALLOCATE(KGRPNT)
       IF (ALLOCATED(KGRBND))   DEALLOCATE(KGRBND)
       IF (ALLOCATED(XYTST ))   DEALLOCATE(XYTST )
