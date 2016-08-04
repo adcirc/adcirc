@@ -21,6 +21,11 @@ C
         INTEGER,ALLOCATABLE :: CO_NODES(:,:),NEDGES(:), NEDLOC(:)
         INTEGER,ALLOCATABLE :: NUMDUALS(:)
         EXTERNAL metis_partgraphkway,metis_estimatememory
+#ifdef CALL_METIS_TWICE
+        REAL(8) :: MinDepth = 0.1D0
+        INTEGER :: ITRY
+        INTEGER :: PROC_WD(MNP)
+#endif
 C
         ALLOCATE ( ITVECT(MNP),ITVECT2(MNP) )
         ALLOCATE ( NUMDUALS(MNP) )
@@ -215,11 +220,34 @@ C
       IF (.not. SYMMETRIC) THEN
          stop 'bad adjacency matrix: not symmetric!'
       ENDIF
+#ifdef CALL_METIS_TWICE
+        DO ITRY=1,2
+          PROC_WD(:) = 0
+#endif
 C
 C  COMPUTE WEIGHTS OF THE GRAPH VERTICES
 C
         DO INODE = 1,MNP   
+#ifndef CALL_METIS_TWICE
            VWGTS(INODE) = NEDGES(INODE)
+#else
+           VWGTS(INODE) = 0
+           IF((ITRY.EQ.1.AND.DP(INODE).GE.MinDepth).OR.
+     &        (ITRY.EQ.2.AND.DP(INODE).LT.MinDepth))THEN
+              GOTO 555
+           ELSE
+              DO J=1,NEDGES(INODE)
+                JNODE = CO_NODES(J,INODE)
+                IF((ITRY.EQ.1.AND.DP(JNODE).GE.MinDepth).OR.
+     &             (ITRY.EQ.2.AND.DP(JNODE).LT.MinDepth))THEN
+                   GOTO 555
+                ENDIF
+              ENDDO
+              GOTO 556
+           ENDIF
+ 555       VWGTS(INODE) = NEDGES(INODE)
+ 556       CONTINUE
+#endif
         ENDDO
 C
 C--COMPUTE ADJACENCY LIST OF GRAPH AND ITS EDGE WEIGHTS
@@ -231,14 +259,22 @@ C
            ITOT = ITOT + 1
            JNODE = CO_NODES(J,INODE)
            ADJNCY(ITOT) = JNODE
-           EWGTS(ITOT)  = (VWGTS(JNODE)+VWGTS(INODE))
+#ifndef CALL_METIS_TWICE
+           EWGTS(ITOT) = (VWGTS(JNODE)+VWGTS(INODE))
+#else
+           EWGTS(ITOT) = NEDGES(JNODE) + NEDGES(INODE)
+#endif
         ENDDO
         XADJ(INODE+1) = ITOT+1
         ENDDO
 C
 C Dump graph to a file for debugging
 C
+#ifndef CALL_METIS_TWICE
       IDUMP = 1
+#else
+      IDUMP = 0
+#endif
       IF (IDUMP.EQ.1) THEN
         OPEN(FILE='metis_graph.txt',UNIT=99)
         WRITE(99,100) MNP, NEDGETOT, 11, 1
@@ -255,7 +291,11 @@ C
         NUMFLAG  = 1
         NPARTS = MNPROC
         OPTIONS(1) = 1
+#ifndef CALL_METIS_TWICE
         OPTIONS(2) = 3
+#else
+        OPTIONS(2) = 2
+#endif
         OPTIONS(3) = 1
         OPTIONS(4) = 3   !  minimize number of co-domains
         OPTIONS(5) = 0
@@ -271,9 +311,24 @@ C
         print *, "METIS 4.0 will require approximately ",nbytes," bytes"
 C
         CALL metis_partgraphkway( MNP,XADJ,ADJNCY,VWGTS,EWGTS,
-     &      WEIGHTFLAG,NUMFLAG,NPARTS,OPTIONS,EDGECUT,PROC)
+     &      WEIGHTFLAG,NUMFLAG,NPARTS,OPTIONS,EDGECUT,
+#ifndef CALL_METIS_TWICE
+     &      PROC)
+#else
+     &      PROC_WD)
+#endif
 C
         print *, "Total Edges Cut = ",EDGECUT 
+
+#ifdef CALL_METIS_TWICE
+        DO INODE=1,MNP
+          IF((ITRY.EQ.1.AND.DP(INODE).GE.MinDepth).OR.
+     &       (ITRY.EQ.2.AND.DP(INODE).LT.MinDepth))THEN
+            PROC(INODE) = PROC_WD(INODE)
+          ENDIF
+        ENDDO
+        ENDDO
+#endif
 
         print *, "writing mesh partition to file: partmesh.txt"
         OPEN(990,FILE='partmesh.txt')
