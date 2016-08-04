@@ -1,20 +1,37 @@
 general:
     build_dir: work
 
-checkout:
-    post:
-        - git clone https://github.com/adcirc/adcirc-cg-testsuite.git /home/ubuntu/adcirc-cg-testsuite
- 
 dependencies:
-    post: 
+    post:
         - sudo apt-get update  -qq
-        - sudo apt-get install -qq libnetcdf-dev libopenmpi-dev libopenmpi-dbg bc
+        - sudo apt-get install -qq libopenmpi-dev libopenmpi-dbg bc cmake
+        - git clone https://github.com/adcirc/adcirc-cg-testsuite.git /home/ubuntu/adcirc-cg-testsuite
+        - mkdir depend
+        - wget http://www.hdfgroup.org/ftp/HDF5/current/src/hdf5-1.8.17.tar.gz ; tar -xvzf hdf5-1.8.17.tar.gz:
+            pwd: depend
+        - wget ftp://ftp.unidata.ucar.edu/pub/netcdf/netcdf-4.4.1.tar.gz; tar -xvzf netcdf-4.4.1.tar.gz:
+            pwd: depend
+        - wget ftp://ftp.unidata.ucar.edu/pub/netcdf/netcdf-fortran-4.4.4.tar.gz; tar -xvzf netcdf-fortran-4.4.4.tar.gz:
+            pwd: depend
+        - git clone https://gitlab.kitware.com/xdmf/xdmf.git:
+            pwd: depend
+        - ./configure --prefix=/usr ; make -j4 CFLAGS="-w"; sudo make install:
+            pwd: depend/hdf5-1.8.17
+        - ./configure --prefix=/usr --with-hdf5=/usr LDFLAGS="-I/usr/include -L/usr/lib" ; make V=0 ; sudo make install:
+            pwd: depend/netcdf-4.4.1
+        - ./configure --prefix=/usr LDFLAGS="-I/usr/include -L/usr/lib"; make V=0 ; sudo make install:
+            pwd: depend/netcdf-fortran-4.4.4
+        - mkdir depend/xdmf/build
+        - cmake -DCMAKE_BUILD_TYPE=Release -DXDMF_BUILD_UTILS=ON -DCMAKE_INSTALL_PREFIX=/usr -DXDMF_BUILD_FORTRAN=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_SHARED_LINKER_FLAGS=-fPIC -DCMAKE_CXX_FLAGS=-fPIC  ../ ; make ; sudo make install:
+            pwd: depend/xdmf/build
 
 test:
     override:
-        - make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12
+        - cp ../swan/macros.inc.gfortran ../swan/macros.inc
+        - make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan
         - make clean; make clobber
-        - make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=/usr
-        - cd /home/ubuntu/adcirc-cg-testsuite; ./RunTests.sh /home/ubuntu/adcirc-cg/work:
+        - make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=/usr
+        - make clean; make clobber
+        - make compiler=circleci adcirc padcirc adcprep adccmp inflate hot2asc hstime aswip p15 build13 build12 libadc adcswan padcswan NETCDF=enable NETCDF4=enable NETCDF4_COMPRESSION=enable NETCDFHOME=/usr XDMF=enable XDMFHOME=/usr
+        - cd /home/ubuntu/adcirc-cg-testsuite ; ./RunTests.sh /home/ubuntu/adcirc-cg/work:
             timeout: 7200
-        
