@@ -28,6 +28,7 @@ PWD      := $(shell pwd)
 VTAG     := $(shell echo $(TAG) | sed -e 's/_/./g' -e 's/V//')
 
 PARALLEL_ADCIRC   := padcirc
+LIBADC            := libadc.a
 $(warning (INFO) Name is $(NAME), Machine is $(MACHINE), Vendor is $(VENDOR), and OS is $(OS).)
 $(warning (INFO) The root directory for the build is $(SRCDIR))
 include cmplrflags.mk
@@ -73,13 +74,13 @@ ifeq ($(NETCDF4_COMPRESSION),enable)
 endif
 ifeq ($(XDMF),enable)
      $(warning (INFO) enabling xdmf lib ...)
-     PPFC    := $(PPFC) -DADCXDMF -I$(XDMFPATH)/utils
-     PFC     := $(PFC) -DADCXDMF -I$(XDMFPATH)/utils
-     FFLAGS1 := $(FFLAGS1) -DADCXDMF -I$(XDMFPATH)/utils
-     FFLAGS2 := $(FFLAGS2) -DADCXDMF -I$(XDMFPATH)/utils
-     FFLAGS3 := $(FFLAGS3) -DADCXDMF -I$(XDMFPATH)/utils
-     FFLAGS4 := $(FFLAGS4) -DADCXDMF -I$(XDMFPATH)/utils
-     $(warning (INFO) XDMF library path is $(XDMFLIBPATH), XDMF include path is $(XDMFPATH).)
+     PPFC    := $(PPFC) -DADCXDMF -I$(XDMFHOME)/include
+     PFC     := $(PFC) -DADCXDMF -I$(XDMFHOME)/include
+     FFLAGS1 := $(FFLAGS1) -DADCXDMF -I$(XDMFHOME)/include
+     FFLAGS2 := $(FFLAGS2) -DADCXDMF -I$(XDMFHOME)/include
+     FFLAGS3 := $(FFLAGS3) -DADCXDMF -I$(XDMFHOME)/include
+     FFLAGS4 := $(FFLAGS4) -DADCXDMF -I$(XDMFHOME)/include
+     $(warning (INFO) XDMF library path is $(XDMFHOME).)
 endif
 
 ####################### Target Specific Rules ###################################
@@ -91,7 +92,7 @@ ifeq ($(BUILDTYPE),adcprep)
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
   VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/KDTREE2:$(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/wind 
   ifeq ($(XDMF),enable)
-     FLIBS    :=  -L$(XDMFLIBPATH) -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
+     FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
     LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
@@ -107,7 +108,7 @@ ifeq ($(BUILDTYPE),adcprep_be)
   FFLAGS:= $(FFLAGS1) $(DPRE) $(IMODS) $(O_DIR) 
   VPATH :=  $(SRCDIR)/prep:$(SRCDIR)/KDTREE2:$(SRCDIR)/src:$(SRCDIR):$(SRCDIR)/wind 
   ifeq ($(XDMF),enable)
-     FLIBS    :=  -L$(XDMFLIBPATH) -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
+     FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
     LIBS  := -Lodir_metis -lmetis -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS) 
@@ -123,7 +124,7 @@ ifeq ($(BUILDTYPE),adcirc)
   FFLAGS:= $(FFLAGS2) $(DA) $(IMODS) $(O_DIR)
   VPATH:=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
   ifeq ($(XDMF),enable)
-     FLIBS    :=  -L$(XDMFLIBPATH) -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
+     FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
@@ -138,12 +139,21 @@ ifeq ($(BUILDTYPE),adcswan)
   FFLAGS:= $(FFLAGS2) -DCSWAN $(DA) $(IMODS) $(O_DIR)
   VPATH:=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
   ifeq ($(XDMF),enable)
-     FLIBS    :=  -L$(XDMFLIBPATH) -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
+     FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   endif
   MSG_MOBJ:= $(O_DIR)globalio.o
+  ifneq ($(wildcard $(SRCDIR)/work/.swanlastcompile),)
+    include $(SRCDIR)/work/.swanlastcompile
+    ifneq ($(SWANLASTCOMPILE),serial)
+        $(warning (WARNING) Removing prior parallel SWAN source files)
+        $(shell rm -f ../swan/*.f90 ../swan/*.f ../swan/*.for)
+    endif
+  endif
+  $(shell echo "SWANLASTCOMPILE := serial" > $(SRCDIR)/work/.swanlastcompile)
+  $(shell perl ../swan/switch.pl $(swch) -adcirc ../swan/*.ftn ../swan/*.ftn90)
 endif
 #                                      $(PARALLEL_ADCIRC)   
 ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
@@ -152,7 +162,7 @@ ifeq ($(BUILDTYPE),$(PARALLEL_ADCIRC))
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
   VPATH :=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep 
   ifeq ($(XDMF),enable)
-     FLIBS    :=  -L$(XDMFLIBPATH) -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
+     FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
@@ -167,21 +177,30 @@ ifeq ($(BUILDTYPE),padcswan)
   FFLAGS:= $(FFLAGS3) -DCSWAN $(DP) $(IMODS) $(O_DIR)
   VPATH :=  $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep:$(SRCDIR)/swan
   ifeq ($(XDMF),enable)
-     FLIBS    :=  -L$(XDMFLIBPATH) -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
+     FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif  
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
   endif
   MSG_MOBJ:= $(O_DIR)messenger.o $(O_DIR)writer.o
+  ifneq ($(wildcard $(SRCDIR)/work/.swanlastcompile),)
+    include $(SRCDIR)/work/.swanlastcompile
+    ifneq ($(SWANLASTCOMPILE),parallel)
+        $(warning (WARNING) Removing prior serial SWAN source files)
+        $(shell rm -f ../swan/*.f90 ../swan/*.f ../swan/*.for)
+    endif
+  endif
+  $(shell echo "SWANLASTCOMPILE := parallel" > $(SRCDIR)/work/.swanlastcompile)
+  $(shell perl ../swan/switch.pl $(swch) -pun -adcirc ../swan/*.ftn ../swan/*.ftn90)
 endif
 #                                    libadc.a
 ifeq ($(BUILDTYPE),$(LIBADC)) 
   CF:= $(PFC)
-  O_DIR:=$(SRCDIR)/work/odircp
+  O_DIR:=$(SRCDIR)/work/odircp/
   FFLAGS:= $(FFLAGS3) $(DP) $(IMODS) $(O_DIR)
   VPATH := $(SRCDIR):$(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
   ifeq ($(XDMF),enable)
-     FLIBS    :=  -L$(XDMFLIBPATH) -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
+     FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
@@ -247,7 +266,7 @@ endif
 #                                      hstime
 ifeq ($(BUILDTYPE),hstime)
   CF:= $(PPFC)
-  O_DIR:=i$(SRCDIR)/work/odir12/
+  O_DIR:=$(SRCDIR)/work/odir12/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(DA)
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
@@ -268,11 +287,11 @@ ifeq ($(BUILDTYPE),aswip)
   O_DIR:=$(SRCDIR)/work/odir14/
   FFLAGS:= $(FFLAGS2) $(IMODS) $(O_DIR) $(DA)
   VPATH := $(SRCDIR)/src:$(SRCDIR)/KDTREE2:$(SRCDIR)/wind:$(SRCDIR):$(SRCDIR)/prep
+  ifeq ($(XDMF),enable)
+     FLIBS    :=  -L$(XDMFHOME)/lib -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
+  endif
   ifeq ($(NETCDF),enable)
     LIBS  := -L$(NETCDFHOME)/lib -lnetcdf $(FLIBS)
-  endif
-  ifeq ($(XDMF),enable)
-     FLIBS    :=  -L$(XDMFLIBPATH) -lXdmfCore -lXdmfUtils -lXdmf $(FLIBS)
   endif
   MSG_MOBJ:= $(O_DIR)globalio.o
 endif
@@ -418,7 +437,7 @@ $(O_DIR)%.o  : %.f90
 
 ########################## Executable Targets ############################
 
-.PHONY: all metis metis_be adcprep adcprep_be adcpost adcirc $(PARALLEL_ADCIRC)  p15 owi22 build13 build12 buildstwave23 hot2asc inflate hstime aswip adccmp
+.PHONY: all libadc clean clobber metis metis_be adcprep adcprep_be adcpost adcirc $(PARALLEL_ADCIRC)  p15 owi22 build13 build12 buildstwave23 hot2asc inflate hstime aswip adccmp adcswan padcswan
 
 all :  metis adcprep $(BACKEND_EXEC) adcpost adcirc $(PARALLEL_ADCIRC)
 
@@ -443,11 +462,11 @@ ifeq ($(MAKELEVEL),0)
 	$(MAKE) BUILDTYPE=$(PARALLEL_ADCIRC) CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@ 
 #Casey 090302: Added the following lines for coupling to unstructured SWAN.
    adcswan:
-	@perl ../swan/switch.pl $(swch) -adcirc ../swan/*.ftn ../swan/*.ftn90
 	$(MAKE) BUILDTYPE=adcswan CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
    padcswan:
 	@perl ../swan/switch.pl $(swch) -pun -adcirc ../swan/*.ftn ../swan/*.ftn90
 	$(MAKE) BUILDTYPE=padcswan CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
+   libadc: $(LIBADC) 
    $(LIBADC): 
 	@echo $(MAKE) LIBADC=$@ BUILDTYPE=$(LIBADC) CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
 	$(MAKE) LIBADC=$@ BUILDTYPE=$(LIBADC) CC="$(CCBE)" CFLAGS="$(CFLAGS)" $@
@@ -579,8 +598,8 @@ clean:
 clobber:
 	rm -r -f odir* 
 	rm -f adcprep adcprep_be adcirc $(PARALLEL_ADCIRC) adcswan padcswan p15 owi22 build13 aswip \
-           build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp
-	rm -f  ../swan/*.f ../swan/*.for ../swan/*.f90
+           build12 buildstwave23 hot2asc inflate hstime sizes.o adcpost adccmp libadc.a
+	rm -f  ../swan/*.f ../swan/*.for ../swan/*.f90 .swanlastcompile
 help:
 	@echo "This makefile supports the following:"
 	@echo "make all        - makes all seven targets"
@@ -601,23 +620,6 @@ help:
 #Casey 091013: Add text for the SWAN+ADCIRC targets.
 	@echo "make adcswan     - makes the serial SWAN+ADCIRC executable"
 	@echo "make padcswan     - makes the parallel SWAN+ADCIRC executable"
-
-
-echo:
-	@echo VTAG: $(VTAG)
-
-cvstag:
-	ifneq ($(TAG),)
-	  echo "      module version"                                        >  ../version.F; \
-	  echo '      character(80), parameter :: ADC_VERSION = "'$(VTAG)'"' >> ../version.F; \
-	  echo '      end module'                                            >> ../version.F; \
-	  cd ..;                                                                              \
-	  cvs ci -m'moving to TAG_VERSION $(VTAG)' version.F;                                 \
-	  cvs tag $(TAG_FLAGS) $(TAG)
-	else
-	  @echo "To cvs tag do: make cvstag TAG=V?_?"
-	endif
-
 
 
 ########################## Defining the DAG  #################################
@@ -859,7 +861,7 @@ ifneq ($(BUILDTYPE),)
    $(shell echo 'NETCDF := $(NETCDF)' >> $(FLAGSFILE))
    $(shell echo 'NETCDF4 := $(NETCDF4)' >> $(FLAGSFILE))
    $(shell echo 'NETCDF4_COMPRESSION := $(NETCDF4_COMPRESSION)' >> $(FLAGSFILE))
-   $(shell echo 'XDMF := $(XDMF)' >> $(FLAGSFILE))
+   $(shell echo 'XDMF := $(XDMFHOME)' >> $(FLAGSFILE))
    # get the compiler version while we're at it
    $(shell $(FC) --version | head -n 1 >> $(FLAGSFILE))
    $(shell echo ---------------------------------- >> $(FLAGSFILE)) 

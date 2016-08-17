@@ -673,7 +673,7 @@ ifeq ($(compiler),circleci)
   FFLAGS3	:=  $(FFLAGS1)
   DA		:=  -DREAL8 -DLINUX -DCSCA
   DP		:=  -DREAL8 -DLINUX -DCSCA -DCMPI -DHAVE_MPI_MOD
-  DPRE		:=  -DREAL8 -DLINUX
+  DPRE		:=  -DREAL8 -DLINUX -DADCSWAN
   IMODS 	:=  -I
   CC		:= gcc
   CCBE		:= $(CC)
