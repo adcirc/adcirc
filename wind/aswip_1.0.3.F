@@ -183,7 +183,7 @@ C     message and terminate.
      &      (ir(ient,i),i=1,4), ipn(ient), atcfRMW(ient),
      &      dir(ient),speed(ient), stormname(ient)
 
-22       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 1x, i5,
+22       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(1x,i4),a1, 1x, i5,
      &         a1, 2x, i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
      &          27x, 2(i3,2x), a10)
 
@@ -980,7 +980,7 @@ C     !-------------------------------------
          !-----------------------------------
          ! NHC advisory best-track i/o format
          !-----------------------------------
-22          FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 1x, i5,
+22          FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(1x,i4),a1, 1x, i5,
      &         a1, 2x, i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
      &          27x, 2(i3,2x), a10)
          !-----------------------------------

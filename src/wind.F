@@ -134,6 +134,11 @@ C
       ! This is normally .false. but can be set to .true. in the fort.15
       ! in the metControl namelist. 
       logical :: invertedBarometerOnElevationBoundary
+      ! jgf52.30.09: Needed for vortex models with storm centers described
+      ! in positive degrees east longitude when mesh nodes end up being
+      ! defined in negative degrees east longitude
+      logical :: entireMeshIsWestOfGMT ! true if all longitudes are negative
+      
 
 C------------------------end of data declarations-----------------------
       CONTAINS
@@ -2186,6 +2191,7 @@ C     ----------------------------------------------------------------
       REAL(SZ) :: ts        ! storm translation speed, m/s
       REAL(SZ) :: WindMultiplier         ! for storm 2 in LPFS ensemble
       REAL(SZ) :: centralPressureDeficit ! difference btw ambient and cpress
+
 C
       REAL(8) :: omega, coriolis
       REAL(8) :: mperdeg
@@ -2205,6 +2211,13 @@ C     The subroutine only works for ICS=2 (spherical coordinates)
             XCOOR(I)=SLAM(I)*RAD2DEG
             YCOOR(I)=SFEA(I)*RAD2DEG
          END DO
+         ! jgf52.30.09: in case the mesh is defined with negative
+         ! longitudes but the storm center is described with positive
+         ! longitudes
+         entireMeshIsWestOfGMT = .true.
+         if (any(xcoor.gt.0.0)) then
+            entireMeshIsWestOfGMT = .false.
+         endif
       ENDIF
 C
 C     Get data for this time step.
@@ -2422,11 +2435,15 @@ C     forecast increment.
      &           CastType(i),iFcstInc(i),iLat(i),ns(i),iLon(i),ew(i),
      &           iSpd(i),iCPress(i),iRRP(i),iRMW(i)
 
-C                yr,mo,dy,hr, ,type, inc,  lat,NS,  lon,EW,  spd,   pc,
+C                      yr mo dy hr, ,type, inc,  lat,NS,  lon,EW,  spd,   pc,
  228        format(8x,i4,i2,i2,i2,6x,a4,2x,i3,1x,i4,a1,2x,i4,a1,2x,i3,2x,i4,
      &     47x,i3,2x,i3)
 C              RRP,  RMW
 
+27       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(1x,i4),a1, 1x, i5,a1, 2x,
+     &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
+     &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
+     &         2x, 4(i1,2x),2x, 4(f6.1,2x),1x, 8(f8.4,2x), f8.4)
 C
 C
             SELECT CASE(trim(CastType(i)))
@@ -2532,6 +2549,12 @@ C     Convert units.
             Lon(i) = Lon(i) / 10.d0 ! convert 10ths of degs to degs
             if ( ew(i).eq.'W' ) then
                Lon(i) = -1.d0 * Lon(i) ! negative b/c WEST longitude
+            else
+               ! jgf52.30.09: Make sure that the longitudes of the storm
+               ! center are in the same sense as the mesh longitudes.
+               if (entireMeshIsWestOfGMT.eqv..true.) then
+                  Lon(i) = -360.d0 + Lon(i)
+               endif
             endif
             if ( ns(i).eq.'S' ) then
                Lat(i) = -1.d0 * Lat(i) ! negative b/c SOUTH latitude
@@ -2982,6 +3005,14 @@ C
          xcoor(:) = slam(:) * rad2deg
          ycoor(:) = sfea(:) * rad2deg
       endif
+      ! jgf52.30.09: in case the mesh is defined with negative
+      ! longitudes but the storm center is described with positive
+      ! longitudes
+      entireMeshIsWestOfGMT = .true.
+      if (any(xcoor.gt.0.0)) then
+         entireMeshIsWestOfGMT = .false.
+      endif
+
       !---------------
       ! Initialization
       ! it's the first time the routine is called so read
@@ -3022,7 +3053,7 @@ C
 
          ! Read parsed NHC advisory in modified best-track format
 
-26       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
+26       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(1x,i4),a1, 1x, i5,a1, 2x,
      &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
      &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
      &         2x, 4(i1,2x),2x, 4(f6.1,2x), 2x, f8.4) !,2(2x,f10.4))
@@ -3076,7 +3107,15 @@ C
          ENDIF
          lon(icyc) = (-1.0d0) * ilon(icyc) * 0.1d0
          lat(icyc)=ilat(icyc) * 0.1d0
-
+         !
+         ! jgf52.30.09: Make sure that the longitudes of the storm
+         ! center are in the same sense as the mesh longitudes.
+         if (ew.eq.'E') then
+            if (entireMeshIsWestOfGMT.eqv..true.) then
+               lon(icyc) = -360.d0 + lon(icyc)
+            endif
+         endif
+         !
          ! PICK OUT THE CYCLE DATA THAT THE USER WANTS TO USE
          do i=1,4  ! loop quads
            if (quadflag1(ient,i)==1) then
@@ -3143,6 +3182,14 @@ C
                ENDIF
                lon(icyc) = (-1.0d0) * ilon(icyc) * 0.1d0
                lat(icyc) = ilat(icyc) * 0.1d0
+               !
+               ! jgf52.30.09: Make sure that the longitudes of the storm
+               ! center are in the same sense as the mesh longitudes.
+               if (ew.eq.'E') then
+                  if (entireMeshIsWestOfGMT.eqv..true.) then
+                     lon(icyc) = -360.d0 + lon(icyc)
+                  endif
+               endif
 
             endif
 
@@ -3519,6 +3566,14 @@ C***********************************************************************
          xcoor(:) = slam(:) * rad2deg
          ycoor(:) = sfea(:) * rad2deg
       endif
+      !
+      ! jgf52.30.09: in case the mesh is defined with negative
+      ! longitudes but the storm center is described with positive
+      ! longitudes
+      entireMeshIsWestOfGMT = .true.
+      if (any(xcoor.gt.0.0)) then
+         entireMeshIsWestOfGMT = .false.
+      endif
       !---------------
       ! Initialization
       ! it's the first time the routine is called so read
@@ -3569,7 +3624,7 @@ C***********************************************************************
          
          ! Read parsed NHC advisory in modified best-track format
 
-27       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(2x,i3),a1, 3x, i3,a1, 2x,
+27       FORMAT(3x, i3, 2x, i4, 3i2, 6x, a4, 2(1x,i4),a1, 1x, i5,a1, 2x,
      &         i3,2x, i4, 6x, i3, 7x, 4(i4,2x), i4, 8x, i3,
      &          27x, 2(i3,2x), a10, 2x, i4, 2x, i4,
      &         2x, 4(i1,2x),2x, 4(f6.1,2x),1x, 8(f8.4,2x), f8.4)
@@ -3577,13 +3632,13 @@ C***********************************************************************
          ient = 1
 
          READ(22,27) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
-     &    ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
-     &    ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
-     &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
-     &    dir1(ient),speed1(ient), name1(ient),
-     &    cycle_num1(ient),isotachs_per_cycle1(ient),
-     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
-     &    (HollBs1(ient,i),i=1,4),(VmaxesBL1(ient,i),i=1,4)
+     &      ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
+     &      ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
+     &      (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
+     &      dir1(ient),speed1(ient), name1(ient),
+     &      cycle_num1(ient),isotachs_per_cycle1(ient),
+     &      (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
+     &      (HollBs1(ient,i),i=1,4),(VmaxesBL1(ient,i),i=1,4)
 
          icyc=1
          isot=1
@@ -3624,34 +3679,42 @@ C***********************************************************************
          ENDIF
          lon(icyc) = (-1.0d0) * ilon(icyc) * 0.1d0
          lat(icyc)=ilat(icyc) * 0.1d0
+         !
+         ! jgf52.30.09: Make sure that the longitudes of the storm
+         ! center are in the same sense as the mesh longitudes.
+         if (ew.eq.'E') then
+            if (entireMeshIsWestOfGMT.eqv..true.) then
+               lon(icyc) = -360.d0 + lon(icyc)
+            endif
+         endif
 
          ! PICK OUT THE CYCLE DATA THAT THE USER WANTS TO USE
          do i=1,4  ! loop quads
-           if (quadflag1(ient,i)==1) then
-              ir(icyc,i, isot) = ir1(ient,i)
-              rmaxw(icyc,i,isot) = rmaxw1(ient,i)
-              quadflag(icyc,i,isot) = quadflag1(ient,i)
-              HollBs(icyc,i,isot) = HollBs1(ient,i)
-              VmaxesBL(icyc,i,isot) = VmaxesBL1(ient,i)
-           endif
+            if (quadflag1(ient,i)==1) then
+               ir(icyc,i, isot) = ir1(ient,i)
+               rmaxw(icyc,i,isot) = rmaxw1(ient,i)
+               quadflag(icyc,i,isot) = quadflag1(ient,i)
+               HollBs(icyc,i,isot) = HollBs1(ient,i)
+               VmaxesBL(icyc,i,isot) = VmaxesBL1(ient,i)
+            endif
          enddo
          
 ! ---------------------------------------------------------------------------
          DO ient=2,num_entry  ! LOOP through entris (lines) in input file
 
          READ(22,27) advr1(ient), iyear1(ient),imth1(ient),iday1(ient),
-     &    ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
-     &    ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
-     &    (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
-     &    dir1(ient),speed1(ient), name1(ient),
-     &    cycle_num1(ient),isotachs_per_cycle1(ient),
-     &    (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
-     &    (HollBs1(ient,i),i=1,4),(VmaxesBL1(ient,i),i=1,4)
+     &      ihr1(ient), type1(ient),iFcstInc1(ient), ilat1(ient),ns,
+     &      ilon1(ient),ew, ispd1(ient), icpress1(ient), ivr1(ient),
+     &      (ir1(ient,i),i=1,4), ipn1(ient), atcfRMW1(ient),
+     &      dir1(ient),speed1(ient), name1(ient),
+     &      cycle_num1(ient),isotachs_per_cycle1(ient),
+     &      (quadflag1(ient,i),i=1,4),(rmaxw1(ient,i),i=1,4),HollB1(ient),
+     &      (HollBs1(ient,i),i=1,4),(VmaxesBL1(ient,i),i=1,4)
      
             if ( cycle_num1(ient) == cycle_num1(ient-1)) then
-                isot=isot+1 ! same icyc, next isotach   
+               isot=isot+1 ! same icyc, next isotach   
             else
-                isot=1 ! initialize isotach #
+               isot=1 ! initialize isotach #
                IF ( iFcstInc1(ient) == 0 .AND. iFcstInc(icyc) == 0) then
                   icyc = icyc
                ELSE
@@ -3679,9 +3742,9 @@ C***********************************************************************
                cycle_num(icyc) = cycle_num1(ient)
                HollB(icyc) = HollB1(ient)           
 
-              ! switch sin and cos b/c these are compass directions
-              uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
-              vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
+               ! switch sin and cos b/c these are compass directions
+               uTrans(icyc)=sin(dir1(ient)*deg2rad)*speed1(ient)
+               vTrans(icyc)=cos(dir1(ient)*deg2rad)*speed1(ient)
 
                CycleTime(icyc) =  iFcstInc(icyc) * 3600.d0 + timeOffset
 
@@ -3695,18 +3758,26 @@ C***********************************************************************
                ENDIF
                lon(icyc) = (-1.0d0) * ilon(icyc) * 0.1d0
                lat(icyc) = ilat(icyc) * 0.1d0
+               !
+               ! jgf52.30.09: Make sure that the longitudes of the storm
+               ! center are in the same sense as the mesh longitudes.
+               if (ew.eq.'E') then
+                  if (entireMeshIsWestOfGMT.eqv..true.) then
+                     lon(icyc) = -360.d0 + lon(icyc)
+                  endif
+               endif
 
             endif
 
             ! PICK OUT THE CYCLE DATA THAT THE USER WANTS TO USE
             do i=1,4 ! loop through quads
-              if (quadflag1(ient,i)==1) then
-                ir(icyc,i, isot) = ir1(ient,i)
-                rmaxw(icyc,i,isot) = rmaxw1(ient,i)
-                quadflag(icyc,i,isot) = quadflag1(ient,i)
-                HollBs(icyc,i,isot) = HollBs1(ient,i)
-                VmaxesBL(icyc,i,isot) = VmaxesBL1(ient,i)
-              endif
+               if (quadflag1(ient,i)==1) then
+                  ir(icyc,i, isot) = ir1(ient,i)
+                  rmaxw(icyc,i,isot) = rmaxw1(ient,i)
+                  quadflag(icyc,i,isot) = quadflag1(ient,i)
+                  HollBs(icyc,i,isot) = HollBs1(ient,i)
+                  VmaxesBL(icyc,i,isot) = VmaxesBL1(ient,i)
+               endif
             enddo ! loop through quads
 
          ENDDO ! loop through entries (lines ) in input file
@@ -3751,13 +3822,13 @@ C     we are running off the end of the data.
       cLon  =  lon(icyc-1)  +
      &                         wtratio * (lon(icyc)-lon(icyc-1))
       ! locate each node based on the latest hurricane center location   
-         do i=1,np
-              dx = deg2rad * Rearth * (xcoor(i) - cLon)*COS(deg2rad*cLat)
-              dy = deg2rad * Rearth * (ycoor(i) - cLat)
-              dist(i) = SQRT(dx*dx + dy*dy)* m2nm
-              aziangle(i) = 360.0d0 + rad2deg * ATAN2(dx,dy)
-            IF (aziangle(i) > 360.d0) aziangle(i) = aziangle(i) - 360.d0
-         enddo 
+      do i=1,np
+         dx = deg2rad * Rearth * (xcoor(i) - cLon)*COS(deg2rad*cLat)
+         dy = deg2rad * Rearth * (ycoor(i) - cLat)
+         dist(i) = SQRT(dx*dx + dy*dy)* m2nm
+         aziangle(i) = 360.0d0 + rad2deg * ATAN2(dx,dy)
+         IF (aziangle(i) > 360.d0) aziangle(i) = aziangle(i) - 360.d0
+      enddo 
          
  ! set parameters at icyc-1
  !        call setQuadFlag4(reshape(quadflag(icyc-1,:,:),(/4,4/)))
@@ -3766,30 +3837,30 @@ C     we are running off the end of the data.
  !        call setShapeParameters4(reshape(HollBs(icyc-1,:,:),(/4,4/)))
  !        call setVmaxesBL4(reshape(VmaxesBL(icyc-1,:,:),(/4,4/)))
  
-         QuadFlag4(2:5,1:4) = quadflag(icyc-1,1:4,1:4)
-         QuadIr4(2:5,1:4) = real(ir(icyc-1,1:4,1:4))
-         Rmaxes4(2:5,1:4) = rmaxw(icyc-1,1:4,1:4)
-         Bs4(2:5,1:4) = HollBs(icyc-1,1:4,1:4)
-         VmBL4(2:5,1:4) = VmaxesBL(icyc-1,1:4,1:4)
-         
-         call fitRmaxes4()
+      QuadFlag4(2:5,1:4) = quadflag(icyc-1,1:4,1:4)
+      QuadIr4(2:5,1:4) = real(ir(icyc-1,1:4,1:4))
+      Rmaxes4(2:5,1:4) = rmaxw(icyc-1,1:4,1:4)
+      Bs4(2:5,1:4) = HollBs(icyc-1,1:4,1:4)
+      VmBL4(2:5,1:4) = VmaxesBL(icyc-1,1:4,1:4)
+      
+      call fitRmaxes4()
 !699      FORMAT(5(f8.4,2x)) 
 !700      FORMAT(a25, 2x, 3(f12.2,2x))
  !Jie debug GAHM         
  !        WRITE(16,*) 'Previous: Spatially-interpolated storm parameters',
  !    &                   ' at icyc-1= ', icyc-1, 
  !    &                   ' CycleTime=', CycleTime(icyc-1) 
-         do i=1,np
-             crmaxw1(i) = spInterp(aziangle(i),dist(i),1)
-             crmaxwTrue1(i) = spInterp(aziangle(i),1.d0,1) 
-             !an artificial number 1.0 is chosen to ensure only
-             !rmax from the highest isotach is picked
-             cHollBs1(i)= spInterp(aziangle(i),dist(i),2)
-             cVmwBL1(i) = spInterp(aziangle(i),dist(i),3)
+      do i=1,np
+          crmaxw1(i) = spInterp(aziangle(i),dist(i),1)
+          crmaxwTrue1(i) = spInterp(aziangle(i),1.d0,1) 
+          !an artificial number 1.0 is chosen to ensure only
+          !rmax from the highest isotach is picked
+          cHollBs1(i)= spInterp(aziangle(i),dist(i),2)
+          cVmwBL1(i) = spInterp(aziangle(i),dist(i),3)
  !Jie debug GAHM       
  !            WRITE(16,699) crmaxw1(i),  crmaxwTrue1(i),
  !    &                   cHollBs1(i) ,cVmwBL1(i)
-         end do
+      end do
          
          
          ! set parameters at icyc
@@ -3801,27 +3872,27 @@ C     we are running off the end of the data.
 !         call setShapeParameters4(reshape(HollBs(icyc,:,:),(/4,4/)))
 !         call setVmaxesBL4(reshape(VmaxesBL(icyc,:,:),(/4,4/)))  
       
-         QuadFlag4(2:5,1:4) = quadflag(icyc,1:4,1:4)
-         QuadIr4(2:5,1:4) = real(ir(icyc,1:4,1:4))
-         Rmaxes4(2:5,1:4) = rmaxw(icyc,1:4,1:4)
-         Bs4(2:5,1:4) = HollBs(icyc,1:4,1:4)
-         VmBL4(2:5,1:4) = VmaxesBL(icyc,1:4,1:4)
-         call fitRmaxes4()
+      QuadFlag4(2:5,1:4) = quadflag(icyc,1:4,1:4)
+      QuadIr4(2:5,1:4) = real(ir(icyc,1:4,1:4))
+      Rmaxes4(2:5,1:4) = rmaxw(icyc,1:4,1:4)
+      Bs4(2:5,1:4) = HollBs(icyc,1:4,1:4)
+      VmBL4(2:5,1:4) = VmaxesBL(icyc,1:4,1:4)
+      call fitRmaxes4()
  !Jie debug GAHM         
  !        WRITE(16,*) 'After: Spatially-interpolated storm parameters',
  !    &                   ' at icyc= ', icyc, 
  !    &                   ' CycleTime=', CycleTime(icyc)          
-         do i=1,np
-             crmaxw2(i) = spInterp(aziangle(i),dist(i),1)
-             crmaxwTrue2(i) = spInterp(aziangle(i),1.d0,1) 
-             !an artificial number 1.0 is chosen to ensure only
-             !rmax from the highest isotach is picked             
-             cHollBs2(i)= spInterp(aziangle(i),dist(i),2)
-             cVmwBL2(i) = spInterp(aziangle(i),dist(i),3)
-              !Jie debug GAHM       
+      do i=1,np
+         crmaxw2(i) = spInterp(aziangle(i),dist(i),1)
+         crmaxwTrue2(i) = spInterp(aziangle(i),1.d0,1) 
+         !an artificial number 1.0 is chosen to ensure only
+         !rmax from the highest isotach is picked             
+         cHollBs2(i)= spInterp(aziangle(i),dist(i),2)
+         cVmwBL2(i) = spInterp(aziangle(i),dist(i),3)
+         !Jie debug GAHM       
   !           WRITE(16,699) crmaxw2(i),  crmaxwTrue2(i),
   !   &                   cHollBs2(i) ,cVmwBL2(i)
-         end do
+      end do
       ! Perform time interpolation, transform variables from integers
       ! to real numbers for hurricane vortex calcualtions.
 
@@ -3844,17 +3915,14 @@ C     we are running off the end of the data.
 !     &           CycleTime(icyc-1), TIMELOC, CycleTime(icyc) 
      
       do i=1,np
-      cPhiFactor(i) =  1 + 
-     &                       cVmwBL(i)*kt2ms*crmaxw(i)*nm2m*corio/
-     &                       (cHollBs(i)*((cVmwBL(i)*kt2ms)**2+
-     &                       cVmwBL(i)*kt2ms*crmaxw(i)*nm2m*corio))
+         cPhiFactor(i) =  1 + 
+     &        cVmwBL(i)*kt2ms*crmaxw(i)*nm2m*corio/
+     &        (cHollBs(i)*((cVmwBL(i)*kt2ms)**2+
+     &        cVmwBL(i)*kt2ms*crmaxw(i)*nm2m*corio))
 !Jie debug GAHM       
 !             WRITE(16,699) crmaxw(i),  crmaxwTrue(i),
 !     &                   cHollBs(i) ,cVmwBL(i), cPhiFactor(i)
       enddo
-      
-
-     
      
       uTransNow = uTrans(icyc-1) + wtratio
      &                  * (uTrans(icyc)-utrans(icyc-1))
@@ -3862,9 +3930,9 @@ C     we are running off the end of the data.
      &                  * (vTrans(icyc)-vTrans(icyc-1))
      
       if (writeFullCircleRmaxes.eqv..true.) then
-            do i=1,np
-              write(444,*)  crmaxw(i), aziangle(i),dist(i)
-            end do
+         do i=1,np
+           write(444,*)  crmaxw(i), aziangle(i),dist(i)
+         end do
       endif     
       ! jgf49.0803 Make the current Rmax and center location
       ! available at the module level for use in NWS29
