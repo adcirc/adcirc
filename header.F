@@ -2,6 +2,8 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.30.09 - 09/08/2016 - Fixed handling of storms with centers in 
+C            degrees east longitude for the vortex models: nws=8,19,20. 
 C  v52.30.08 - 07/29/2016 - Added compiler flags for lonestar5 at TACC.
 C  v52.30.07 - 07/20/2016 - Applied tcm fix that originally went into
 C           v51.52.38 r1210 of v51release branch and includes makefile
