@@ -2,6 +2,8 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.30.11 - 09/15/2016 - Adding additional return logging to
+             weir_boundary.F
 C  v52.30.10 - 09/15/2016 - Fixing bugs identified relating to weir
 C            boundaries. Issue #25. 
 C  v52.30.09 - 09/08/2016 - Fixed handling of storms with centers in 
