@@ -227,6 +227,11 @@ C-----------------------------------------------------------------------
             SUBROUTINE WEIR_SETUP()
                 USE BOUNDARIES,ONLY:NFLUXIB,NFLUXIBP,NFLUXB
                 IMPLICIT NONE
+                
+                CALL setMessageSource("WEIR_SETUP")
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
+                CALL allMessage(DEBUG,"Enter")
+#endif                
                 IF((NFLUXIB.EQ.1).OR.(NFLUXIBP.EQ.1).OR.(NFLUXB.EQ.1))THEN
         
                     !...Allocate the new weir arrays at both time levels
@@ -239,6 +244,7 @@ C-----------------------------------------------------------------------
 
                 ENDIF
 
+                CALL unsetMessageSource()
                 RETURN
 
 C-----------------------------------------------------------------------
@@ -606,7 +612,7 @@ C...............GET OUT OF HERE AT THE FIRST OPPORTUNITY
                          CALL allMessage(DEBUG,"Return")
 #endif
                          CALL unsetMessageSource()
-                        RETURN
+                         RETURN
                     ENDIF
                 ENDIF
 
@@ -1668,6 +1674,13 @@ C  THIS SUBROUTINE WILL SET THE NAMELIST VARIABLES TO THEIR NULL VALUES
 C  SO THEY CAN BE CHECKED FOR MODIFICATION LATER
 C-----------------------------------------------------------------------
             SUBROUTINE NULLIFY_TVW_NML()
+                IMPLICIT NONE
+
+                CALL setMessageSource("NULLIFY_TVW_NML")
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
+                CALL allMessage(DEBUG,"Enter")
+#endif                
+
                 X1                         = -99999D0
                 X2                         = -99999D0
                 Y1                         = -99999D0
@@ -1691,6 +1704,8 @@ C-----------------------------------------------------------------------
                 LOOP                       = -99999
                 NLOOPS                     = -99999
                 ScheduleFile               = "NOFILE"
+
+                CALL unsetMessageSource()
                 RETURN
 C-----------------------------------------------------------------------
             END SUBROUTINE NULLIFY_TVW_NML
@@ -1770,6 +1785,7 @@ C-----------------------------------------------------------------------
                     NUNIQUE = 1
                     ALLOCATE(UNIQUE_LIST(1:SIZE(RAW_LIST)))
                     UNIQUE_LIST = RAW_LIST
+                    CALL unsetMessageSource()
                     RETURN
                 ENDIF    
 
@@ -1927,6 +1943,7 @@ C              THE DEFAULT FORMULATION
 #ifdef ORIGWEIR   
                CALL COMPUTE_INTERNAL_BOUNDARY_FLUX_ORIG(I,J,K,
      &              TIMELOC,FLUX)
+               CALL unsetMessageSource()
                RETURN
 #endif
 
@@ -2119,11 +2136,13 @@ C-----------------------------------------------------------------------
                 IF((RBARWL1.LT.0.D0).AND.(RBARWL2.LT.0.D0)) THEN
 C...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW PIPE -> CASE 1
                   FLUX=0.D0
+                  CALL unsetMessageSource()
                   RETURN
                 ENDIF
                 IF(ABS(RBARWL1-RBARWL2).LT.BARMIN) THEN
 C...............WATER LEVEL EQUAL ON BOTH SIDES OF PIPE -> CASE 2
                   FLUX=0.D0
+                  CALL unsetMessageSource()
                   RETURN 
                 ENDIF
                 IF((RBARWL1.GT.RBARWL2).AND.(RBARWL1.GT.BARMIN)) THEN
@@ -2152,6 +2171,7 @@ C..................OUTWARD SUBMERGED DISCHARGE -> CASE 4
      &                       *0.25D0*PI*(PIPEDIAM(IDX))**2
      &                    *(2.D0*G*(RBARWL1-RBARWL2)/PIPECOEF(IDX))**0.5D0
                      ENDIF
+                     CALL unsetMessageSource()
                      RETURN
                   ENDIF
                ENDIF
@@ -2185,6 +2205,7 @@ C..................INWARD SUBMERGED DISCHARGE -> CASE 6
                         NIBNODECODE(NNBB1)=1
                      ENDIF
                   ENDIF
+                  CALL unsetMessageSource()
                   RETURN
                ENDIF
 
@@ -2262,12 +2283,14 @@ C...............SIMPLIFY VARIABLES
                 IF((RBARWL1.LT.0.D0).AND.(RBARWL2.LT.0.D0)) THEN
 C...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW BARRIER -> CASE 1
                   FLUX=0.D0
+                  CALL unsetMessageSource()
                   RETURN
                 ENDIF
                 IF(ABS(RBARWL1-RBARWL2).LT.0.01D0) THEN
 C...............WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
 C................TO WITHIN TOLERANCE BARMIN -> CASE 2
                   FLUX=0.D0
+                  CALL unsetMessageSource()
                   RETURN
                 ENDIF
                 IF((RBARWL1.GT.RBARWL2).AND.(RBARWL1.GT.BARMIN)) THEN
@@ -2295,6 +2318,7 @@ C..................OUTWARD SUPERCRITICAL FLOW -> CASE 4
      &                    (RBARWL1F*G)**0.5D0
                      ENDIF
                   ENDIF
+                  CALL unsetMessageSource()
                   RETURN
                ENDIF
                IF((RBARWL2.GT.RBARWL1).AND.(RBARWL2.GT.BARMIN)) THEN
@@ -2332,7 +2356,7 @@ C..................INWARD SUPERCRITICAL FLOW -> CASE 6
 #endif
                CALL unsetMessageSource()
 
-                RETURN
+               RETURN
 
 
 C-----------------------------------------------------------------------

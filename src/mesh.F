@@ -435,7 +435,7 @@ C     ------------------------------------------------------------------
          ! pipe coefficient and the cross barrier pipe diameter for the nodes
          ! in the Kth boundary segment. 
          case(5,25)
-            internalFluxBoundaries(ifwpCount)%indexNum = k
+            internalFluxBoundariesWithPipes(ifwpCount)%indexNum = k
             do j = 1, nvell(k)
                read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) 
      &                        internalFluxBoundariesWithPipes(ifwpCount)%nodes(j), 
@@ -446,9 +446,9 @@ C     ------------------------------------------------------------------
      &                        internalFluxBoundariesWithPipes(ifwpCount)%pipeht(j),
      &                        internalFluxBoundariesWithPipes(ifwpCount)%pipecoef(j),
      &                        internalFluxBoundariesWithPipes(ifwpCount)%pipediam(j)
-               internalFluxBoundariesWithPipes(ifCount)%xdmf_nodes(j) = 
+               internalFluxBoundariesWithPipes(ifwpCount)%xdmf_nodes(j) = 
      &                        internalFluxBoundariesWithPipes(ifwpCount)%nodes(j) - 1
-               internalFluxBoundariesWithPipes(ifCount)%xdmf_ibconn(j) = 
+               internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(j) = 
      &                        internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j) - 1
                lineNum = lineNum + 1                                           
             end do
