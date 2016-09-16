@@ -37,7 +37,7 @@
     REAL(SZ),ALLOCATABLE     :: RBARWL1AVG(:),RBARWL2AVG(:)
     REAL(SZ),ALLOCATABLE     :: RPIPEWL1AVG(:),RPIPEWL2AVG(:)
     REAL(SZ),PARAMETER       :: BARAVGWT = 0.0D0
-    INTEGER ::                  :: IBSTART
+    INTEGER                  :: IBSTART
 #endif
                 
     LOGICAL                  :: EXT_TVW = .FALSE. !...If there are external barrier TVW present, avoids checking an unallocated array
@@ -145,8 +145,8 @@
 
 !...........CHARACTERIZES THE SCHEDULE. BASED ON NUMBER OF FILES
     TYPE BARRIER_SCHEDULE_T
-    INTEGER ::                         :: SID        !...Unique ID corresponding to this schedule
-    INTEGER ::                         :: NSECTIONS  !...Number of sections in the schedule
+    INTEGER                         :: SID        !...Unique ID corresponding to this schedule
+    INTEGER                         :: NSECTIONS  !...Number of sections in the schedule
     TYPE(BSCHED),ALLOCATABLE        :: SECTION(:) !...List of all the schedule sections
     END TYPE
 
@@ -154,11 +154,11 @@
 !           AND IS BASED UPON THE INDIVIDUAL BOUNDARY NODE
     TYPE BARRIER_SCHEDULE_P
     CHARACTER(1024),POINTER  :: MYFILE        !...File used for this schedule
-    INTEGER ::                  :: SID           !...SID that has a pointer back to SCHEDULE(:)
-    INTEGER ::                  :: MYSEC         !...The current section this node is operating in
-    INTEGER ::                  :: LOOP          !...Should this schedule loop?
-    INTEGER ::                  :: NLOOPS        !...How many times should it loop
-    INTEGER ::                  :: LOOPSCOMPLETE !...How many loops we've completed
+    INTEGER                  :: SID           !...SID that has a pointer back to SCHEDULE(:)
+    INTEGER                  :: MYSEC         !...The current section this node is operating in
+    INTEGER                  :: LOOP          !...Should this schedule loop?
+    INTEGER                  :: NLOOPS        !...How many times should it loop
+    INTEGER                  :: LOOPSCOMPLETE !...How many loops we've completed
     INTEGER,POINTER          :: NSECTIONS     !...How many sections are in the schedule
     REAL(SZ)                 :: PREVEND       !...Previous schedule end
     REAL(SZ)                 :: BARHT_START   !...Starting barrier height
@@ -166,8 +166,8 @@
     TYPE(BSCHED),POINTER     :: SECTION(:)    !...A section of the schedule containing a variation
     END TYPE
     TYPE(BARRIER_SCHEDULE_T),ALLOCATABLE,TARGET   :: SCHEDULE(:)
-    TYPE(BARRIER_SCHEDULE_P),ALLOCATABLE     :: BAR_SCHEDULE(:)
-    CHARACTER(1024),ALLOCATABLE,TARGET  :: SCHEDULE_LIST(:)
+    TYPE(BARRIER_SCHEDULE_P),ALLOCATABLE          :: BAR_SCHEDULE(:)
+    CHARACTER(1024),ALLOCATABLE,TARGET            :: SCHEDULE_LIST(:)
                 
 !...........THESE VARIABLES ARE PART OF THE NAMELIST THAT IS READ IN
     CHARACTER(200)   :: ScheduleFile
@@ -179,10 +179,10 @@
     REAL(SZ) :: FailureDurationDay,FailureDurationHour
     REAL(SZ) :: FailureDurationMin,FailureDurationSec
     REAL(SZ) :: HOTADD
-    INTEGER ::  :: VaryType,HOT
-    INTEGER ::  :: LOOP,NLOOPS
+    INTEGER  :: VaryType,HOT
+    INTEGER  :: LOOP,NLOOPS
 
-    INTEGER ::  :: NSCHEDULES
+    INTEGER  :: NSCHEDULES
 
 !...........THE TIME VARYING WEIR NAMELIST
     NAMELIST /TimeVaryingWeir/ &
@@ -802,8 +802,8 @@
     REAL(SZ)             :: PREVEND
     REAL(SZ)             :: BARHT_START
     REAL(SZ)             :: OFFSET
-    INTEGER ::              :: MYSEC
-    INTEGER ::              :: NNBB1,NNBB2
+    INTEGER              :: MYSEC
+    INTEGER              :: NNBB1,NNBB2
 
     CALL setMessageSource("COMPUTE_BARRIER_HEIGHT_SCHEDULE")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -1034,10 +1034,10 @@
     CHARACTER(2000)  :: InputString,modifiedString
     CHARACTER(1024),ALLOCATABLE :: SCHEDULE_LIST_RAW(:)
     REAL(SZ) :: OFFSET
-    INTEGER ::  :: IDX,IDX2
-    INTEGER ::  :: I,IOS
-    INTEGER ::  :: NTIMEVARYINGWEIRS
-    INTEGER ::  :: NSCHEDULES_RAW
+    INTEGER  :: IDX,IDX2
+    INTEGER  :: I,IOS
+    INTEGER  :: NTIMEVARYINGWEIRS
+    INTEGER  :: NSCHEDULES_RAW
 
 
     CALL setMessageSource("PARSE_TIME_VARYING_WEIR_INFO")
@@ -1163,23 +1163,23 @@
     !...................BEGIN SANITY CHECK ON WHAT HAS BEEN SPECIFIED IN NAMELIST
         SELECT CASE(IHOT)
         CASE(17,67,68,367,368,567,568)
-        IF(ISNULL(I=HOT) .OR. (HOT == 0))THEN
-            HOTADD = 0D0
-        ELSEIF(HOT == 1)THEN
-            HOTADD = DTDP*ITHS
-            OFFSET = OFFSET + HOTADD
-            WRITE(*,*) DTDP,ITHS
-            WRITE(*,*) HOTADD,OFFSET
-        ELSE
-            CALL allMessage(ERROR, &
-            "INCORRECT"// &
-            " HOT START VALUE SPECIFIED. HOT=1 OR "// &
-            "HOT=0 FOR HOT START RELATIVE TIME "// &
-            "VARYING WEIRS.")
-            CALL ADCIRC_TERMINATE()
-        ENDIF
+            IF(ISNULL(I=HOT) .OR. (HOT == 0))THEN
+                HOTADD = 0D0
+            ELSEIF(HOT == 1)THEN
+                HOTADD = DTDP*ITHS
+                OFFSET = OFFSET + HOTADD
+                WRITE(*,*) DTDP,ITHS
+                WRITE(*,*) HOTADD,OFFSET
+            ELSE
+                CALL allMessage(ERROR, &
+                "INCORRECT"// &
+                " HOT START VALUE SPECIFIED. HOT=1 OR "// &
+                "HOT=0 FOR HOT START RELATIVE TIME "// &
+                "VARYING WEIRS.")
+                CALL ADCIRC_TERMINATE()
+            ENDIF
         CASE DEFAULT
-        HOTADD = 0D0
+            HOTADD = 0D0
         END SELECT
         IF(ISNULL(I=VARYTYPE))THEN
             CALL allMessage(ERROR, &
@@ -1190,173 +1190,173 @@
         ENDIF
         SELECT CASE(VARYTYPE)
         CASE(1,2,3)
-        IF(VARYTYPE == 1)THEN
-            IF(ISNULL(X1) .OR. ISNULL(Y1) .OR. &
-            ISNULL(ZF))THEN
-                CALL allMessage(ERROR, &
-                "YOU MUST SPECIFY X1=, Y1=, and "// &
-                "ZF= ")
-                CALL ADCIRC_TERMINATE()
+            IF(VARYTYPE == 1)THEN
+                IF(ISNULL(X1) .OR. ISNULL(Y1) .OR. &
+                ISNULL(ZF))THEN
+                    CALL allMessage(ERROR, &
+                    "YOU MUST SPECIFY X1=, Y1=, and "// &
+                    "ZF= ")
+                    CALL ADCIRC_TERMINATE()
+                ENDIF
+                IF(ISNULL(TimeStartday) .AND. &
+                ISNULL(TimeStartHour) .AND. &
+                ISNULL(TimeStartSec))THEN
+                    CALL allMessage(ERROR, &
+                    "TIME VARYING BOUNDARY START TIME"// &
+                    " MUST BE SPECIFIED.")
+                    CALL ADCIRC_TERMINATE()
+                ENDIF
+                IF(ISNULL(TimeEndday) .AND. &
+                ISNULL(TimeEndHour) .AND. &
+                ISNULL(TimeEndSec))THEN
+                    CALL allMessage(ERROR, &
+                    "TIME VARYING BOUNDARY END TIME"// &
+                    " MUST BE SPECIFIED.")
+                    CALL ADCIRC_TERMINATE()
+                ENDIF
+                IF(ISNULL(TimeStartDay))TimeStartDay=0D0
+                IF(ISNULL(TimeStartHour))TimeStartHour=0D0
+                IF(ISNULL(TimeStartMin))TimeStartMin=0D0
+                IF(ISNULL(TimeStartSec))TimeStartSec=0D0
+                IF(ISNULL(TimeEndDay))TimeEndDay=0D0
+                IF(ISNULL(TimeEndHour))TimeEndHour=0D0
+                IF(ISNULL(TimeEndMin))TimeEndMin=0D0
+                IF(ISNULL(TimeEndSec))TimeEndSec=0D0
+            ELSEIF(VARYTYPE == 2)THEN
+                IF(ISNULL(X1) .OR. ISNULL(Y1) .OR. &
+                ISNULL(ZF))THEN
+                    CALL allMessage(ERROR, &
+                    "YOU MUST SPECIFY X1=, Y1=, "// &
+                    "and ZF= ")
+                    CALL ADCIRC_TERMINATE()
+                ENDIF
+                IF((ISNULL(FAILUREDURATIONDAY) .AND. &
+                ISNULL(FAILUREDURATIONHOUR) .AND. &
+                ISNULL(FAILUREDURATIONMIN) .AND. &
+                ISNULL(FAILUREDURATIONSEC)) .OR. &
+                ISNULL(ETA_MAX))THEN
+                    CALL allMessage(ERROR, &
+                    " YOU MUST SPECIFY A FAILURE"// &
+                    " DURATION AND MAXIMUM WATER"// &
+                    " SURFACE BEFORE ELEVATION"// &
+                    " CHANGE.")
+                    CALL ADCIRC_TERMINATE()
+                ENDIF
+                IF(ISNULL(FAILUREDURATIONDAY)) &
+                FAILUREDURATIONDAY=0D0
+                IF(ISNULL(FAILUREDURATIONHOUR)) &
+                FAILUREDURATIONHOUR=0D0
+                IF(ISNULL(FAILUREDURATIONMIN)) &
+                FAILUREDURATIONMIN=0D0
+                IF(ISNULL(FAILUREDURATIONSEC)) &
+                FAILUREDURATIONSEC=0D0
+            ELSEIF(VARYTYPE == 3)THEN
+                IF(ISNULL(X1) .OR. ISNULL(Y1))THEN
+                    CALL allMessage(ERROR, &
+                    "YOU MUST SPECIFY X1= and Y1=")
+                    CALL ADCIRC_TERMINATE()
+                ENDIF
+                IF(ISNULL(S=SCHEDULEFILE))THEN
+                    CALL allMessage(ERROR, &
+                    "YOU MUST SPECIFY SCHEDULEFILE= "// &
+                    "FOR VARYTYPE=3.")
+                    CALL ADCIRC_TERMINATE()
+                ENDIF
+                IF(ISNULL(TimeStartDay))TimeStartDay=0D0
+                IF(ISNULL(TimeStartHour))TimeStartHour=0D0
+                IF(ISNULL(TimeStartMin))TimeStartMin=0D0
+                IF(ISNULL(TimeStartSec))TimeStartSec=0D0
+                IF(ISNULL(TimeEndDay))TimeEndDay=0D0
+                IF(ISNULL(TimeEndHour))TimeEndHour=0D0
+                IF(ISNULL(TimeEndMin))TimeEndMin=0D0
+                IF(ISNULL(TimeEndSec))TimeEndSec=0D0
             ENDIF
-            IF(ISNULL(TimeStartday) .AND. &
-            ISNULL(TimeStartHour) .AND. &
-            ISNULL(TimeStartSec))THEN
+!...........END SANITY CHECK
+    
+!...........BEGIN ASSIGNING BOUNDARY CONDITIONS THEIR ATTRIBUTES
+            CALL FIND_BOUNDARY_NODES(X1,Y1,IDX)
+            IF(IDX == -1)CYCLE
+            SELECT CASE(LBCODEI(IDX))
+            CASE(3,13,23)
+!...............A ONE SIDED STYLE WEIR, WE DONT NEED X2 AND Y2
+                CALL ASSIGN_TVW_TIMING(VARYTYPE,IDX)
+                EXT_TVW = .TRUE. 
+                IF(VARYTYPE == 1)THEN
+                    IF(BAR_DEG_END(IDX) <= 0D0)THEN
+                        CALL allMessage(ERROR, &
+                        "TIME VARYING BOUNDARY END "// &
+                        "TIME MUST BE GREATER THAN "// &
+                        "ZERO.")
+                        CALL ADCIRC_TERMINATE()
+                    ENDIF
+                ELSEIF(VARYTYPE == 2)THEN
+                    IF(BAR_FAILURE_DURATION(IDX) <= 0D0)THEN
+                        CALL allMessage(ERROR, &
+                        "FAILURE_DURATION MUST BE "// &
+                        "GREATER THAN ZERO")
+                        CALL ADCIRC_TERMINATE()
+                    ENDIF
+                ELSEIF(VARYTYPE == 3)THEN
+                    BAR_SCHEDULE(IDX)%OFFSET = OFFSET
+                ENDIF
+    
+            CASE(4,24,5,25)
+!...............A TWO SIDED STYLE WEIR, WE NEED X2 AND Y2
+                CALL FIND_BOUNDARY_NODES(X2,Y2,IDX2)
+                IF(IDX2 == -1)THEN
+                    CALL allMessage(ERROR,"BOUNDARY CONDITION IMPROPERLY "// &
+                    "SPLIT INTO GHOST NODE SPACE!")
+                    CALL ADCIRC_TERMINATE()
+                ENDIF
+                INT_TVW = .TRUE. 
+        
+!...............WE NEED TO CHECK CONNECTIVITY ACCROSS WEIR TO
+!               MAKE SURE THIS PAIR IS VALID
+                IF(NBV(IDX) /= IBCONN(IDX2))THEN
+!.,,,,..............THIS IS NOT THE CONNECTIVITY WE EXPECTED, GOOD NIGHT
+                    WRITE(ScratchMessage,'(A)') &
+                    "CONNECTIVITY ACROSS INTERNAL"// &
+                    " TIME VARYING BOUNDARY IS INVALID."
+                    WRITE(ScratchMessage, &
+                    '(A,/,A,F0.9,A,F0.6,A,I0)') &
+                    TRIM(ScratchMessage),"  X1= ",X1, &
+                    " Y1=",Y1," LOCAL NODE=",NBV(IDX)
+                    WRITE(ScratchMessage, &
+                    '(A,/,A,F0.9,A,F0.6,A,I0)') &
+                    TRIM(ScratchMessage),"  X2= ",X2, &
+                    " Y2=",Y2," LOCAL NODE=",NBV(IDX2)
+                    CALL allMessage(ERROR,ScratchMessage)
+                    CALL ADCIRC_TERMINATE()
+                ENDIF
+                CALL ASSIGN_TVW_TIMING(VARYTYPE,IDX,IDX2)
+                IF(VARYTYPE == 1)THEN
+                    IF(BAR_DEG_START(IDX) > &
+                    BAR_DEG_END(IDX))THEN
+                        CALL allMessage(ERROR, &
+                        "INVALID BARRIER DEGREDATION"// &
+                        "TIME.")
+                        CALL ADCIRC_TERMINATE()
+                    ENDIF
+                ELSEIF(VARYTYPE == 2)THEN
+                    IF((BAR_FAILURE_DURATION(IDX) <= 0D0) &
+                     .OR. (BAR_FAILURE_DURATION(IDX2) <= &
+                    &                               0D0))THEN
+                        CALL allMessage(ERROR, &
+                        "FAILURE_DURATION MUST BE "// &
+                        "GREATER THAN ZERO.")
+                        CALL ADCIRC_TERMINATE()
+                    ENDIF
+                ELSEIF(VARYTYPE == 3)THEN
+                    BAR_SCHEDULE(IDX)%OFFSET = OFFSET
+                    BAR_SCHEDULE(IDX2)%OFFSET = OFFSET
+                ENDIF
+            CASE DEFAULT
+!...............WE SHOULD NOT BE HERE?
                 CALL allMessage(ERROR, &
-                "TIME VARYING BOUNDARY START TIME"// &
-                " MUST BE SPECIFIED.")
-                CALL ADCIRC_TERMINATE()
-            ENDIF
-            IF(ISNULL(TimeEndday) .AND. &
-            ISNULL(TimeEndHour) .AND. &
-            ISNULL(TimeEndSec))THEN
-                CALL allMessage(ERROR, &
-                "TIME VARYING BOUNDARY END TIME"// &
-                " MUST BE SPECIFIED.")
-                CALL ADCIRC_TERMINATE()
-            ENDIF
-            IF(ISNULL(TimeStartDay))TimeStartDay=0D0
-            IF(ISNULL(TimeStartHour))TimeStartHour=0D0
-            IF(ISNULL(TimeStartMin))TimeStartMin=0D0
-            IF(ISNULL(TimeStartSec))TimeStartSec=0D0
-            IF(ISNULL(TimeEndDay))TimeEndDay=0D0
-            IF(ISNULL(TimeEndHour))TimeEndHour=0D0
-            IF(ISNULL(TimeEndMin))TimeEndMin=0D0
-            IF(ISNULL(TimeEndSec))TimeEndSec=0D0
-        ELSEIF(VARYTYPE == 2)THEN
-            IF(ISNULL(X1) .OR. ISNULL(Y1) .OR. &
-            ISNULL(ZF))THEN
-                CALL allMessage(ERROR, &
-                "YOU MUST SPECIFY X1=, Y1=, "// &
-                "and ZF= ")
-                CALL ADCIRC_TERMINATE()
-            ENDIF
-            IF((ISNULL(FAILUREDURATIONDAY) .AND. &
-            ISNULL(FAILUREDURATIONHOUR) .AND. &
-            ISNULL(FAILUREDURATIONMIN) .AND. &
-            ISNULL(FAILUREDURATIONSEC)) .OR. &
-            ISNULL(ETA_MAX))THEN
-                CALL allMessage(ERROR, &
-                " YOU MUST SPECIFY A FAILURE"// &
-                " DURATION AND MAXIMUM WATER"// &
-                " SURFACE BEFORE ELEVATION"// &
-                " CHANGE.")
-                CALL ADCIRC_TERMINATE()
-            ENDIF
-            IF(ISNULL(FAILUREDURATIONDAY)) &
-            FAILUREDURATIONDAY=0D0
-            IF(ISNULL(FAILUREDURATIONHOUR)) &
-            FAILUREDURATIONHOUR=0D0
-            IF(ISNULL(FAILUREDURATIONMIN)) &
-            FAILUREDURATIONMIN=0D0
-            IF(ISNULL(FAILUREDURATIONSEC)) &
-            FAILUREDURATIONSEC=0D0
-        ELSEIF(VARYTYPE == 3)THEN
-            IF(ISNULL(X1) .OR. ISNULL(Y1))THEN
-                CALL allMessage(ERROR, &
-                "YOU MUST SPECIFY X1= and Y1=")
-                CALL ADCIRC_TERMINATE()
-            ENDIF
-            IF(ISNULL(S=SCHEDULEFILE))THEN
-                CALL allMessage(ERROR, &
-                "YOU MUST SPECIFY SCHEDULEFILE= "// &
-                "FOR VARYTYPE=3.")
-                CALL ADCIRC_TERMINATE()
-            ENDIF
-            IF(ISNULL(TimeStartDay))TimeStartDay=0D0
-            IF(ISNULL(TimeStartHour))TimeStartHour=0D0
-            IF(ISNULL(TimeStartMin))TimeStartMin=0D0
-            IF(ISNULL(TimeStartSec))TimeStartSec=0D0
-            IF(ISNULL(TimeEndDay))TimeEndDay=0D0
-            IF(ISNULL(TimeEndHour))TimeEndHour=0D0
-            IF(ISNULL(TimeEndMin))TimeEndMin=0D0
-            IF(ISNULL(TimeEndSec))TimeEndSec=0D0
-        ENDIF
-    !.......................END SANITY CHECK
-
-    !.......................BEGIN ASSIGNING BOUNDARY CONDITIONS THEIR ATTRIBUTES
-        CALL FIND_BOUNDARY_NODES(X1,Y1,IDX)
-        IF(IDX == -1)CYCLE
-        SELECT CASE(LBCODEI(IDX))
-        CASE(3,13,23)
-    !...........................A ONE SIDED STYLE WEIR, WE DONT NEED X2 AND Y2
-        CALL ASSIGN_TVW_TIMING(VARYTYPE,IDX)
-        EXT_TVW = .TRUE. 
-        IF(VARYTYPE == 1)THEN
-            IF(BAR_DEG_END(IDX) <= 0D0)THEN
-                CALL allMessage(ERROR, &
-                "TIME VARYING BOUNDARY END "// &
-                "TIME MUST BE GREATER THAN "// &
-                "ZERO.")
-                CALL ADCIRC_TERMINATE()
-            ENDIF
-        ELSEIF(VARYTYPE == 2)THEN
-            IF(BAR_FAILURE_DURATION(IDX) <= 0D0)THEN
-                CALL allMessage(ERROR, &
-                "FAILURE_DURATION MUST BE "// &
-                "GREATER THAN ZERO")
-                CALL ADCIRC_TERMINATE()
-            ENDIF
-        ELSEIF(VARYTYPE == 3)THEN
-            BAR_SCHEDULE(IDX)%OFFSET = OFFSET
-        ENDIF
-
-        CASE(4,24,5,25)
-    !...........................A TWO SIDED STYLE WEIR, WE NEED X2 AND Y2
-        CALL FIND_BOUNDARY_NODES(X2,Y2,IDX2)
-        IF(IDX2 == -1)THEN
-            CALL allMessage(ERROR,"BOUNDARY CONDITION IMPROPERLY "// &
-            "SPLIT INTO GHOST NODE SPACE!")
-            CALL ADCIRC_TERMINATE()
-        ENDIF
-        INT_TVW = .TRUE. 
-
-    !...........................WE NEED TO CHECK CONNECTIVITY ACCROSS WEIR TO
-    !                           MAKE SURE THIS PAIR IS VALID
-        IF(NBV(IDX) /= IBCONN(IDX2))THEN
-        !...............................THIS IS NOT THE CONNECTIVITY WE EXPECTED, GOOD NIGHT
-            WRITE(ScratchMessage,'(A)') &
-            "CONNECTIVITY ACROSS INTERNAL"// &
-            " TIME VARYING BOUNDARY IS INVALID."
-            WRITE(ScratchMessage, &
-            '(A,/,A,F0.9,A,F0.6,A,I0)') &
-            TRIM(ScratchMessage),"  X1= ",X1, &
-            " Y1=",Y1," LOCAL NODE=",NBV(IDX)
-            WRITE(ScratchMessage, &
-            '(A,/,A,F0.9,A,F0.6,A,I0)') &
-            TRIM(ScratchMessage),"  X2= ",X2, &
-            " Y2=",Y2," LOCAL NODE=",NBV(IDX2)
-            CALL allMessage(ERROR,ScratchMessage)
-            CALL ADCIRC_TERMINATE()
-        ENDIF
-        CALL ASSIGN_TVW_TIMING(VARYTYPE,IDX,IDX2)
-        IF(VARYTYPE == 1)THEN
-            IF(BAR_DEG_START(IDX) > &
-            BAR_DEG_END(IDX))THEN
-                CALL allMessage(ERROR, &
-                "INVALID BARRIER DEGREDATION"// &
-                "TIME.")
-                CALL ADCIRC_TERMINATE()
-            ENDIF
-        ELSEIF(VARYTYPE == 2)THEN
-            IF((BAR_FAILURE_DURATION(IDX) <= 0D0) &
-             .OR. (BAR_FAILURE_DURATION(IDX2) <= &
-            &                               0D0))THEN
-                CALL allMessage(ERROR, &
-                "FAILURE_DURATION MUST BE "// &
-                "GREATER THAN ZERO.")
-                CALL ADCIRC_TERMINATE()
-            ENDIF
-        ELSEIF(VARYTYPE == 3)THEN
-            BAR_SCHEDULE(IDX)%OFFSET = OFFSET
-            BAR_SCHEDULE(IDX2)%OFFSET = OFFSET
-        ENDIF
-        CASE DEFAULT
-    !...........................WE SHOULD NOT BE HERE?
-        CALL allMessage(ERROR, &
-        "INVALID BOUNDARY CONDITION DETECTED.")
-        CALL ADCIRC_TERMINATE()
-        END SELECT
-
+                    "INVALID BOUNDARY CONDITION DETECTED.")
+                    CALL ADCIRC_TERMINATE()
+            END SELECT
+    
         CASE DEFAULT
         CALL allMessage(ERROR,"INVALID WEIR VARIATION"// &
         "SPECIFIED.")
@@ -1365,7 +1365,7 @@
                         
     ENDDO
 
-!...............FREE THE MEMORY USED FOR THE KDTREE2
+!...FREE THE MEMORY USED FOR THE KDTREE2
     CALL KDTREE2_DESTROY(BARRIER_SEARCHTREE)
     DEALLOCATE(BAR_LOCATIONS)
 #ifdef CMPI
@@ -1382,7 +1382,7 @@
     VARYING WEIR FILE.")
     CALL ADCIRC_TERMINATE()
 
-!...............GENERAL MESSAGES FOR TIME VARYING WEIRS
+!...GENERAL MESSAGES FOR TIME VARYING WEIRS
     101 FORMAT("Time varying weir file was not found. All weirs" &
     ," will be static on MYPROC = ",I6)
     102 FORMAT("Time varying weir file was not found. All weirs" &
@@ -1418,7 +1418,7 @@
     CHARACTER(500) :: origLine,modLine
     REAL(SZ) :: BAR_DEG_START,BAR_DEG_END
     REAL(SZ) :: DELTA,HOTSEC
-    INTEGER ::  :: I
+    INTEGER  :: I
     LOGICAL  :: exists
 
     NAMELIST /SCHEDULE/ &
@@ -1531,7 +1531,7 @@
     INTEGER,INTENT(IN)          :: VAR
     INTEGER,INTENT(IN)          :: INDEX1
     INTEGER,INTENT(IN),OPTIONAL :: INDEX2
-    INTEGER ::                     :: I
+    INTEGER                     :: I
                     
     CALL setMessageSource("ASSIGN_TVW_TIMING")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -1642,7 +1642,7 @@
     REAL(SZ),INTENT(IN),OPTIONAL     :: R
     INTEGER,INTENT(IN),OPTIONAL      :: I
     CHARACTER(*),INTENT(IN),OPTIONAL :: S
-    REAL(SZ)            :: EPS
+    REAL(SZ)                         :: EPS
                     
     CALL setMessageSource("ISNULL")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -1736,8 +1736,8 @@
     SUBROUTINE ALPHABETIZE(MYCHAR)
     IMPLICIT NONE
     CHARACTER(*),INTENT(INOUT) :: MYCHAR(:)
-    CHARACTER(1024) :: A,B
-    INTEGER :: I,J,K
+    CHARACTER(1024)            :: A,B
+    INTEGER                    :: I,J,K
 
     CALL setMessageSource("ALPHABETIZE")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -1790,7 +1790,7 @@
     INTEGER,INTENT(OUT)                  :: NUNIQUE
 
     CHARACTER(1024)                      :: PREV,CURR
-    INTEGER ::                              :: I,J
+    INTEGER                              :: I,J
 
     CALL setMessageSource("UNIQUE_NAMES")
 #if defined(TVW_TRACE) || defined(ALL_TRACE)
@@ -1850,11 +1850,11 @@
 !-----------------------------------------------------------------------
     MODULE WEIR_FLUX
     USE GLOBAL,ONLY:G,ETA2,RAMPINTFLUX, &
-    setMessageSource,unsetMessageSource,DEBUG,allMessage
+        setMessageSource,unsetMessageSource,DEBUG,allMessage
     USE BOUNDARIES,ONLY: LBCODEI,NBV
     USE SIZES,ONLY:SZ
     USE TIME_VARYING_WEIR_BOUNDARY,ONLY:COMPUTE_BARRIER_HEIGHT, &
-    BAR_DEG
+        BAR_DEG
     USE WEIR
 
 !-----------------------------------------------------------------------
@@ -1869,13 +1869,13 @@
 !  TYPE 3,13,23 BOUNDARY CONDITIONS
 !-----------------------------------------------------------------------
     SUBROUTINE COMPUTE_EXTERNAL_BOUNDARY_FLUX( &
-    BARRIER_INDEX,TIMELOC,FLUX)
+                    BARRIER_INDEX,TIMELOC,FLUX)
 
     USE GLOBAL,ONLY:TVW
     USE BOUNDARIES,ONLY: BARLANCFSP,BARLANHT
     IMPLICIT NONE
     INTEGER,INTENT(IN)     :: BARRIER_INDEX
-    INTEGER ::                :: NNBB
+    INTEGER                :: NNBB
     REAL(SZ),INTENT(IN)    :: TIMELOC
     REAL(SZ),INTENT(OUT)   :: FLUX
     REAL(SZ)               :: RBARWL
@@ -1928,7 +1928,7 @@
     BARRIER_INDEX,BOUNDARYNODE,BOUNDARY,TIMELOC,FLUX)
 
     USE BOUNDARIES,ONLY:BARINCFSB,BARINCFSP, &
-    NVELL,IBCONN,BARINHT
+        NVELL,IBCONN,BARINHT
     USE GLOBAL,ONLY:NIBNODECODE,TVW,USE_TVW,NODECODE
     IMPLICIT NONE
     INTEGER,INTENT(IN),TARGET   :: BARRIER_INDEX
@@ -1937,9 +1937,9 @@
     REAL(SZ),INTENT(IN)         :: TIMELOC
     REAL(SZ),INTENT(OUT)        :: FLUX
 
-    INTEGER ::                     :: NNBB1,NNBB2
-    INTEGER ::                     :: NNBB1WN,NNBB2WN
-    INTEGER ::                     :: FLOWDIR
+    INTEGER                     :: NNBB1,NNBB2
+    INTEGER                     :: NNBB1WN,NNBB2WN
+    INTEGER                     :: FLOWDIR
     INTEGER,POINTER             :: I,J,K
     REAL(SZ)                    :: RBARWL1,RBARWL2
     REAL(SZ)                    :: RBARWL1F,RBARWL2F
@@ -1950,14 +1950,14 @@
 #endif
 
 
-!...............SIMPLIFY VARIABLES
+!...SIMPLIFY VARIABLES
     I => BARRIER_INDEX
     J => BOUNDARYNODE
     K => BOUNDARY
 
-!..............CALL THE ORIGINAL IMPLEMENTATION IF THE USER HAS REQUESTED
-!              IT VIA THE COMPILER FLAG -DORIGWEIR. IF NOT, PROCEED WITH
-!              THE DEFAULT FORMULATION
+!...CALL THE ORIGINAL IMPLEMENTATION IF THE USER HAS REQUESTED
+!   IT VIA THE COMPILER FLAG -DORIGWEIR. IF NOT, PROCEED WITH
+!   THE DEFAULT FORMULATION
 #ifdef ORIGWEIR
     CALL COMPUTE_INTERNAL_BOUNDARY_FLUX_ORIG(I,J,K, &
     TIMELOC,FLUX)
@@ -1974,7 +1974,7 @@
     NNBB2WN = 0      ! COUNT NUMBER OF WET NEIGHBORS
     FLOWDIR = 0      ! DIRECTION OF FLOW
 
-!...............CHECK TO SEE IF THERE IS A WET EDGE
+!...CHECK TO SEE IF THERE IS A WET EDGE
     IF( (J == 1) .OR. (J == NVELL(K)+1) )THEN
         NNBB1WN = NNBB1WN + NODECODE(NBV(I+1))
         NNBB2WN = NNBB2WN + NODECODE(IBCONN(I+1))
@@ -1990,7 +1990,7 @@
         ENDIF
     ENDIF
 
-!..............CHECK TO SEE IF THE BARRIER ELEVATION NEEDS UPDATING
+!...CHECK TO SEE IF THE BARRIER ELEVATION NEEDS UPDATING
     IF(INT_TVW)THEN
         IF(BAR_DEG(I))THEN
             CALL COMPUTE_BARRIER_HEIGHT(I,TIMELOC,BARINHT1(I) &
@@ -1999,12 +1999,12 @@
         TVW(NNBB1) = BARINHT2(I)-BARINHT(I)
     ENDIF
 
-!..............GET WATER LEVEL ABOVE WEIR ON EACH SIDE TO COMPUTE HEAD
-!              DEFINE COMPILER FLAG -DAVERAGEWEIRFLOW TO USE BARAVGWT,
-!              WHICH GENERALLY IS SET TO ZERO, AND IS HARD CODED
-!              TO ZERO HERE. READ_INPUT.F CONTAINS THE SPECIFICATION OF
-!              BARAVGWT. WITH BARAVGWT SET TO ZERO, THERE IS NO NEED FOR
-!              IBSTART EITHER.
+!...GET WATER LEVEL ABOVE WEIR ON EACH SIDE TO COMPUTE HEAD
+!   DEFINE COMPILER FLAG -DAVERAGEWEIRFLOW TO USE BARAVGWT,
+!   WHICH GENERALLY IS SET TO ZERO, AND IS HARD CODED
+!   TO ZERO HERE. READ_INPUT.F CONTAINS THE SPECIFICATION OF
+!   BARAVGWT. WITH BARAVGWT SET TO ZERO, THERE IS NO NEED FOR
+!   IBSTART EITHER.
 #if AVERAGEWEIRFLOW
     IF(IBSTART == 0)THEN
         RBARWL1AVG(I)=ETA2(NNBB1)-BARINHT2(I)
@@ -2019,7 +2019,7 @@
     RBARWL1=RBARWL1AVG(I)
     RBARWL2=RBARWL2AVG(I)
 #else
-!..............ZC - STREAMLINE THE PROCESS SINCE BARAVGWT IS ZERO BY DEFAULT
+!...ZC - STREAMLINE THE PROCESS SINCE BARAVGWT IS ZERO BY DEFAULT
     RBARWL1=ETA2(NNBB1)-BARINHT2(I)
     RBARWL2=ETA2(NNBB2)-BARINHT2(I)
 #endif
@@ -2028,25 +2028,25 @@
     FLUX=0.D0
        
     IF((RBARWL1 < 0.D0) .AND. (RBARWL2 < 0.D0)) THEN
-    !...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW BARRIER -> CASE 1
+!.......WATER LEVEL ON BOTH SIDES OF BARRIER BELOW BARRIER -> CASE 1
         FLUX=0.D0
     ELSEIF(ABS(RBARWL1-RBARWL2) < 0.01D0) THEN
-    !...............WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
-    !................TO WITHIN TOLERANCE BARMIN -> CASE 2
+!.......WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
+!.......TO WITHIN TOLERANCE BARMIN -> CASE 2
         FLUX=0.D0
     ELSEIF((RBARWL1 > RBARWL2) .AND. (RBARWL1 > BARMIN)) THEN
-    !...............WATER LEVEL GREATER ON THIS SIDE OF THE BARRIER AND IS SUCH
-    !................THAT OVERTOPPING IS OCCURING
-    !................THUS THIS SIDE IS THE SOURCE SIDE OF THE FLOW ACROSS THE BARRIER
-    !................NOTE THAT WE DO NOT FORCE THE SOURCE SIDE OF THE BARRIER TO
-    !................REMAIN WET. ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
-    !................BARRIER HAS BEEN DRIED. IF IT HAS WE SHUT DOWN THE FLOW ACROSS
-    !................THE BARRIER
-    !................ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE BARRIER HAS AT
-    !................LEAST ONE WET EDGE. IF NOT, WE SHUT DOWN THE FLOW ACROSS
-    !................THE BARRIER. shintaro v46.28.sb05.05 11/01/2006
+!.......WATER LEVEL GREATER ON THIS SIDE OF THE BARRIER AND IS SUCH
+!.......THAT OVERTOPPING IS OCCURING
+!.......THUS THIS SIDE IS THE SOURCE SIDE OF THE FLOW ACROSS THE BARRIER
+!.......NOTE THAT WE DO NOT FORCE THE SOURCE SIDE OF THE BARRIER TO
+!.......REMAIN WET. ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
+!.......BARRIER HAS BEEN DRIED. IF IT HAS WE SHUT DOWN THE FLOW ACROSS
+!.......THE BARRIER
+!.......ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE BARRIER HAS AT
+!.......LEAST ONE WET EDGE. IF NOT, WE SHUT DOWN THE FLOW ACROSS
+!.......THE BARRIER. shintaro v46.28.sb05.05 11/01/2006
         IF(RBARWL2 > RBARWL1F) THEN
-        !..................OUTWARD SUBCRITICAL FLOW -> CASE 3
+!...........OUTWARD SUBCRITICAL FLOW -> CASE 3
             IF(NODECODE(NNBB1) == 0 .OR. NNBB1WN == 0) THEN
                 FLUX=0.0D0
             ELSE
@@ -2054,7 +2054,7 @@
                 (2.D0*G*(RBARWL1-RBARWL2))**0.5D0
             ENDIF
         ELSE
-        !..................OUTWARD SUPERCRITICAL FLOW -> CASE 4
+!...........OUTWARD SUPERCRITICAL FLOW -> CASE 4
             IF(NODECODE(NNBB1) == 0 .OR. NNBB1WN == 0) THEN
                 FLUX=0.0D0
             ELSE
@@ -2063,19 +2063,19 @@
             ENDIF
         ENDIF
     ELSEIF((RBARWL2 > RBARWL1) .AND. (RBARWL2 > BARMIN)) THEN
-    !...............WATER LEVEL LOWER ON THIS SIDE OF BARRIER AND IS SUCH
-    !................THAT OVERTOPPING IS OCCURING
-    !................THUS THIS IS THE RECEIVING SIDE OF THE FLOW ACROSS THE BARRIER
-    !................NOTE THAT WE DO FORCE THE RECEIVING SIDE OF THE BARRIER TO
-    !................REMAIN WET WHEN THERE IS FLOW ACROSS THE BARRIER.
-    !................ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
-    !................BARRIER HAS BEEN DRIED. IF IT HAS, WE SHUT DOWN THE FLOW ACROSS
-    !................THE BARRIER
-    !................ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE BARRIER HAS AT
-    !................LEAST ONE WET EDGE. IF NOT, WE SHUT DOWN THE FLOW ACROSS
-    !................THE BARRIER. shintaro v46.28.sb05.05 11/01/2006
+!.......WATER LEVEL LOWER ON THIS SIDE OF BARRIER AND IS SUCH
+!.......THAT OVERTOPPING IS OCCURING
+!.......THUS THIS IS THE RECEIVING SIDE OF THE FLOW ACROSS THE BARRIER
+!.......NOTE THAT WE DO FORCE THE RECEIVING SIDE OF THE BARRIER TO
+!.......REMAIN WET WHEN THERE IS FLOW ACROSS THE BARRIER.
+!.......ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
+!.......BARRIER HAS BEEN DRIED. IF IT HAS, WE SHUT DOWN THE FLOW ACROSS
+!.......THE BARRIER
+!.......ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE BARRIER HAS AT
+!.......LEAST ONE WET EDGE. IF NOT, WE SHUT DOWN THE FLOW ACROSS
+!.......THE BARRIER. shintaro v46.28.sb05.05 11/01/2006
         IF(RBARWL1 > RBARWL2F) THEN
-        !..................INWARD SUBCRITICAL FLOW -> CASE 5
+!...........INWARD SUBCRITICAL FLOW -> CASE 5
             IF(NODECODE(NNBB2) == 0 .OR. NNBB2WN == 0) THEN
                 FLUX=0.0D0
             ELSE
@@ -2084,7 +2084,7 @@
                 NIBNODECODE(NNBB1)=1
             ENDIF
         ELSE
-        !..................INWARD SUPERCRITICAL FLOW -> CASE 6
+!...........INWARD SUPERCRITICAL FLOW -> CASE 6
             IF(NODECODE(NNBB2) == 0 .OR. NNBB2WN == 0) THEN
                 FLUX=0.0D0
             ELSE
@@ -2123,8 +2123,8 @@
     REAL(SZ),INTENT(IN)    :: TIMELOC
     REAL(SZ),INTENT(OUT)   :: FLUX
 
-    INTEGER ::                :: NNBB1
-    INTEGER ::                :: NNBB2
+    INTEGER                :: NNBB1
+    INTEGER                :: NNBB2
 
     REAL(SZ)               :: RBARWL1
     REAL(SZ)               :: RBARWL2
@@ -2155,7 +2155,7 @@
     RBARWL2=ETA2(NNBB2)-PIPEHT(IDX)
 #endif
     IF((RBARWL1 < 0.D0) .AND. (RBARWL2 < 0.D0)) THEN
-    !...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW PIPE -> CASE 1
+!.......WATER LEVEL ON BOTH SIDES OF BARRIER BELOW PIPE -> CASE 1
         FLUX=0.D0
 #if defined(WEIR_TRACE) || defined(ALL_TRACE)
         CALL allMessage(DEBUG,"Return")
@@ -2164,7 +2164,7 @@
         RETURN
     ENDIF
     IF(ABS(RBARWL1-RBARWL2) < BARMIN) THEN
-    !...............WATER LEVEL EQUAL ON BOTH SIDES OF PIPE -> CASE 2
+!.......WATER LEVEL EQUAL ON BOTH SIDES OF PIPE -> CASE 2
         FLUX=0.D0
 #if defined(WEIR_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
         CALL allMessage(DEBUG,"Return")
@@ -2173,15 +2173,15 @@
         RETURN
     ENDIF
     IF((RBARWL1 > RBARWL2) .AND. (RBARWL1 > BARMIN)) THEN
-    !...............WATER LEVEL GREATER ON THIS SIDE OF THE PIPE AND IS SUCH
-    !................THAT OUTWARD DISCHARGE IS OCCURING
-    !................THUS THIS SIDE IS THE SOURCE SIDE OF THE FLOW THROUGH THE PIPE
-    !................NOTE THAT WE DO NOT FORCE THE SOURCE SIDE OF THE PIPE TO
-    !................REMAIN WET. ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
-    !................PIPE HAS BEEN DRIED. IF IT HAS, WE SHUT DOWN THE FLOW ACROSS
-    !................THE PIPE
+!.......WATER LEVEL GREATER ON THIS SIDE OF THE PIPE AND IS SUCH
+!.......THAT OUTWARD DISCHARGE IS OCCURING
+!.......THUS THIS SIDE IS THE SOURCE SIDE OF THE FLOW THROUGH THE PIPE
+!.......NOTE THAT WE DO NOT FORCE THE SOURCE SIDE OF THE PIPE TO
+!.......REMAIN WET. ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
+!.......PIPE HAS BEEN DRIED. IF IT HAS, WE SHUT DOWN THE FLOW ACROSS
+!.......THE PIPE
         IF(RBARWL2 <= 0.D0) THEN
-        !..................OUTWARD FREE DISCHARGE -> CASE 3
+!...........OUTWARD FREE DISCHARGE -> CASE 3
             IF(NODECODE(NNBB1) == 0) THEN
                 FLUX=0.0D0
             ELSE
@@ -2190,7 +2190,7 @@
                 *(2.D0*G*RBARWL1/(1.D0+PIPECOEF(IDX)))**0.5D0
             ENDIF
         ELSE
-        !..................OUTWARD SUBMERGED DISCHARGE -> CASE 4
+!...........OUTWARD SUBMERGED DISCHARGE -> CASE 4
             IF(NODECODE(NNBB1) == 0) THEN
                 FLUX=0.0D0
             ELSE
@@ -2206,16 +2206,16 @@
         ENDIF
     ENDIF
     IF((RBARWL2 > RBARWL1) .AND. (RBARWL2 > BARMIN)) THEN
-    !...............WATER LEVEL LOWER ON THIS SIDE OF PIPE AND IS SUCH
-    !................THAT INWARD DISCHARGE IS OCCURING
-    !................THUS THIS IS THE RECEIVING SIDE OF THE FLOW THROUGH THE  PIPE
-    !................NOTE THAT WE DO FORCE THE RECEIVING SIDE OF THE PIPE TO
-    !................REMAIN WET WHEN THERE IS FLOW ACROSS THE PIPE.
-    !................ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
-    !................PIPE HAS BEEN DRIED. IF IT HAS, WE SHUT DOWN THE FLOW THROUGH
-    !................THE PIPE
+!.......WATER LEVEL LOWER ON THIS SIDE OF PIPE AND IS SUCH
+!.......THAT INWARD DISCHARGE IS OCCURING
+!.......THUS THIS IS THE RECEIVING SIDE OF THE FLOW THROUGH THE  PIPE
+!.......NOTE THAT WE DO FORCE THE RECEIVING SIDE OF THE PIPE TO
+!.......REMAIN WET WHEN THERE IS FLOW ACROSS THE PIPE.
+!.......ALSO WE CHECK TO SEE IF THE SOURCE SIDE OF THE
+!.......PIPE HAS BEEN DRIED. IF IT HAS, WE SHUT DOWN THE FLOW THROUGH
+!.......THE PIPE
         IF(RBARWL1 <= 0) THEN
-        !..................INWARD FREE DISCHARGE -> CASE 5
+!...........INWARD FREE DISCHARGE -> CASE 5
             IF(NODECODE(NNBB2) == 0) THEN
                 FLUX=0.0D0
             ELSE
@@ -2225,7 +2225,7 @@
                 NIBNODECODE(NNBB1)=1
             ENDIF
         ELSE
-        !..................INWARD SUBMERGED DISCHARGE -> CASE 6
+!...........INWARD SUBMERGED DISCHARGE -> CASE 6
             IF(NODECODE(NNBB2) == 0) THEN
                 FLUX=0.0D0
             ELSE
@@ -2271,9 +2271,9 @@
     REAL(SZ),INTENT(IN)         :: TIMELOC
     REAL(SZ),INTENT(OUT)        :: FLUX
 
-    INTEGER ::                     :: NNBB1,NNBB2
-    INTEGER ::                     :: NNBB1WN,NNBB2WN
-    INTEGER ::                     :: FLOWDIR
+    INTEGER                     :: NNBB1,NNBB2
+    INTEGER                     :: NNBB1WN,NNBB2WN
+    INTEGER                     :: FLOWDIR
     INTEGER,POINTER             :: I,J,K
     REAL(SZ)                    :: RBARWL1,RBARWL2
     REAL(SZ)                    :: RBARWL1F,RBARWL2F

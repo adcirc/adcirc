@@ -448,7 +448,7 @@
                             internalFluxBoundariesWithPipes(ifwpCount)%pipediam(j)
              internalFluxBoundariesWithPipes(ifwpCount)%xdmf_nodes(j) =              &
                             internalFluxBoundariesWithPipes(ifwpCount)%nodes(j) - 1
-             internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(j) = 
+             internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(j) =             & 
                             internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j) - 1
              lineNum = lineNum + 1                                           
           end do
