@@ -372,101 +372,101 @@
     sfCount = 1
     efCount = 1
     ifCount = 1
-    ifwpCount = 1
+    ifwpCount = 1      
     do k = 1, nbou
-        read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvell(k), ibtype_orig(k)
-        lineNum = lineNum + 1
-        select case(ibtype_orig(k))
-    ! flux boundaries (mainland, island, river)
-    ! For NON BARRIER type boundaries, read the node numbers for the Kth
-    ! boundary segment
-        case(0,1,2,10,11,12,20,21,22,30,52,102,112,122,152)
-        simpleFluxBoundaries(sfCount)%indexNum = k
-        do j = 1, nvell(k)
-            read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) &
-            simpleFluxBoundaries(sfCount)%nodes(j)
-            simpleFluxBoundaries(sfCount)%xdmf_nodes(j) = &
-            simpleFluxBoundaries(sfCount)%nodes(j) - 1
-            lineNum = lineNum + 1
-        end do
-        sfCount = sfCount + 1
-    ! For EXTERNAL BARRIER type boundaries, read the node number, the
-    ! barrier elevation above the Geoid and the coefficient of free
-    ! surface super-critical flow for the nodes in the Kth boundary
-    ! segment.
+       read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) nvell(k), ibtype_orig(k)
+       lineNum = lineNum + 1
+       select case(ibtype_orig(k))
+       ! flux boundaries (mainland, island, river)
+       ! For NON BARRIER type boundaries, read the node numbers for the Kth
+       ! boundary segment
+       case(0,1,2,10,11,12,20,21,22,30,52,102,112,122,152)
+          simpleFluxBoundaries(sfCount)%indexNum = k
+          do j = 1, nvell(k)
+             read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)   &
+                 simpleFluxBoundaries(sfCount)%nodes(j)
+                 simpleFluxBoundaries(sfCount)%xdmf_nodes(j) = &
+                      simpleFluxBoundaries(sfCount)%nodes(j) - 1
+             lineNum = lineNum + 1
+          end do
+          sfCount = sfCount + 1
+       ! For EXTERNAL BARRIER type boundaries, read the node number, the
+       ! barrier elevation above the Geoid and the coefficient of free
+       ! surface super-critical flow for the nodes in the Kth boundary
+       ! segment.
         case(3,13,23)
-        externalFluxBoundaries(efCount)%indexNum = k
-        do j = 1, nvell(k)
-            read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) &
-            externalFluxBoundaries(efCount)%nodes(j), &
-            externalFluxBoundaries(efCount)%barlanht(j), &
-            externalFluxBoundaries(efCount)%barlancfsp(j)
-            externalFluxBoundaries(efCount)%xdmf_nodes(j) = &
-            externalFluxBoundaries(efCount)%nodes(j) - 1
-            lineNum = lineNum + 1
-        end do
-        efCount = efCount + 1
-    
-    ! For INTERNAL BARRIER type boundaries, read the node number, the
-    ! paired node number, the barrier elevation above the Geoid and the
-    ! coefficients of supercritical and subcritical flow for the nodes
-    ! in the Kth boundary segment.
-        case(4,24)
-        internalFluxBoundaries(ifCount)%indexNum = k
-        do j = 1, nvell(k)
-            read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) &
-            internalFluxBoundaries(ifCount)%nodes(j), &
-            internalFluxBoundaries(ifCount)%ibconn(j), &
-            internalFluxBoundaries(ifCount)%barinht(j), &
-            internalFluxBoundaries(ifCount)%barincfsb(j), &
-            internalFluxBoundaries(ifCount)%barincfsp(j)
-            internalFluxBoundaries(ifCount)%xdmf_nodes(j) = &
-            internalFluxBoundaries(ifCount)%nodes(j) - 1
-            internalFluxBoundaries(ifCount)%xdmf_ibconn(j) = &
-            internalFluxBoundaries(ifCount)%ibconn(j) - 1
-            lineNum = lineNum + 1
-        end do
-        ifCount = ifCount + 1
-    
-    ! For INTERNAL BARRIER WITH CROSS BARRIER PIPES type boundaries,
-    ! read the node number, the paired node number, the barrier
-    ! elevation above the Geoid, the coefficients of supercritical and
-    ! subcritical flow, the cross barrier pipe height, the cross barrier
-    ! pipe coefficient and the cross barrier pipe diameter for the nodes
-    ! in the Kth boundary segment.
-        case(5,25)
-        internalFluxBoundaries(ifwpCount)%indexNum = k
-        do j = 1, nvell(k)
-            read(unit=iunit,fmt=*,err=10,end=20,iostat=ios) &
-            internalFluxBoundariesWithPipes(ifwpCount)%nodes(j), &
-            internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j), &
-            internalFluxBoundariesWithPipes(ifwpCount)%barinht(j), &
-            internalFluxBoundariesWithPipes(ifwpCount)%barincfsb(j), &
-            internalFluxBoundariesWithPipes(ifwpCount)%barincfsp(j), &
-            internalFluxBoundariesWithPipes(ifwpCount)%pipeht(j), &
-            internalFluxBoundariesWithPipes(ifwpCount)%pipecoef(j), &
-            internalFluxBoundariesWithPipes(ifwpCount)%pipediam(j)
-            internalFluxBoundariesWithPipes(ifCount)%xdmf_nodes(j) = &
-            internalFluxBoundariesWithPipes(ifwpCount)%nodes(j) - 1
-            internalFluxBoundariesWithPipes(ifCount)%xdmf_ibconn(j) = &
-            internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j) - 1
-            lineNum = lineNum + 1
-        end do
-        ifwpCount = ifwpCount + 1
-        case default
-        scratchFormat = '("IBTYPE ",i0," is not allowed.")'
-        write(scratchMessage, scratchFormat) ibtype_orig(k)
-        call allMessage(ERROR,scratchFormat)
-        call terminate()
-        end select
+          externalFluxBoundaries(efCount)%indexNum = k         
+          do j = 1, nvell(k)
+             read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)   &
+               externalFluxBoundaries(efCount)%nodes(j),       &
+               externalFluxBoundaries(efCount)%barlanht(j),    &
+               externalFluxBoundaries(efCount)%barlancfsp(j)
+               externalFluxBoundaries(efCount)%xdmf_nodes(j) = &
+                  externalFluxBoundaries(efCount)%nodes(j) - 1
+             lineNum = lineNum + 1
+          end do
+          efCount = efCount + 1
+       !  
+       ! For INTERNAL BARRIER type boundaries, read the node number, the
+       ! paired node number, the barrier elevation above the Geoid and the
+       ! coefficients of supercritical and subcritical flow for the nodes
+       ! in the Kth boundary segment.
+       case(4,24)
+          internalFluxBoundaries(ifCount)%indexNum = k
+          do j = 1, nvell(k)
+             read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)            & 
+                          internalFluxBoundaries(ifCount)%nodes(j),     &
+                          internalFluxBoundaries(ifCount)%ibconn(j),    &
+                          internalFluxBoundaries(ifCount)%barinht(j),   &
+                          internalFluxBoundaries(ifCount)%barincfsb(j), &
+                          internalFluxBoundaries(ifCount)%barincfsp(j)
+             internalFluxBoundaries(ifCount)%xdmf_nodes(j) =            &
+                 internalFluxBoundaries(ifCount)%nodes(j) - 1  
+             internalFluxBoundaries(ifCount)%xdmf_ibconn(j) =           &
+                internalFluxBoundaries(ifCount)%ibconn(j) - 1
+             lineNum = lineNum + 1
+          end do
+          ifCount = ifCount + 1
+       !  
+       ! For INTERNAL BARRIER WITH CROSS BARRIER PIPES type boundaries,
+       ! read the node number, the paired node number, the barrier
+       ! elevation above the Geoid, the coefficients of supercritical and
+       ! subcritical flow, the cross barrier pipe height, the cross barrier
+       ! pipe coefficient and the cross barrier pipe diameter for the nodes
+       ! in the Kth boundary segment. 
+       case(5,25)
+          internalFluxBoundariesWithPipes(ifwpCount)%indexNum = k
+          do j = 1, nvell(k)
+             read(unit=iunit,fmt=*,err=10,end=20,iostat=ios)                         &
+                            internalFluxBoundariesWithPipes(ifwpCount)%nodes(j),     &
+                            internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j),    &
+                            internalFluxBoundariesWithPipes(ifwpCount)%barinht(j),   &
+                            internalFluxBoundariesWithPipes(ifwpCount)%barincfsb(j), &
+                            internalFluxBoundariesWithPipes(ifwpCount)%barincfsp(j), &
+                            internalFluxBoundariesWithPipes(ifwpCount)%pipeht(j),    &
+                            internalFluxBoundariesWithPipes(ifwpCount)%pipecoef(j),  &
+                            internalFluxBoundariesWithPipes(ifwpCount)%pipediam(j)
+             internalFluxBoundariesWithPipes(ifwpCount)%xdmf_nodes(j) =              &
+                            internalFluxBoundariesWithPipes(ifwpCount)%nodes(j) - 1
+             internalFluxBoundariesWithPipes(ifwpCount)%xdmf_ibconn(j) = 
+                            internalFluxBoundariesWithPipes(ifwpCount)%ibconn(j) - 1
+             lineNum = lineNum + 1                                           
+          end do
+          ifwpCount = ifwpCount + 1
+       case default
+          scratchFormat = '("IBTYPE ",i0," is not allowed.")'
+          write(scratchMessage, scratchFormat) ibtype_orig(k)
+          call allMessage(ERROR,scratchFormat)
+          call terminate()
+       end select
     end do
     close(14)
-
-! populate the adcirc arrays that are used during execution
+    !
+    ! populate the adcirc arrays that are used during execution
     call populateADCIRCNativeArrays()
-
+    !
     call logMessage(INFO,'Finished reading mesh file coordinates, ' &
-    // 'connectivity, and boundary data.')
+     // 'connectivity, and boundary data.')
 
 #if defined(MESH_TRACE) || defined(ALL_TRACE)
     call allMessage(DEBUG,"Return.")

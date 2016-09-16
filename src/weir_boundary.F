@@ -37,7 +37,7 @@
     REAL(SZ),ALLOCATABLE     :: RBARWL1AVG(:),RBARWL2AVG(:)
     REAL(SZ),ALLOCATABLE     :: RPIPEWL1AVG(:),RPIPEWL2AVG(:)
     REAL(SZ),PARAMETER       :: BARAVGWT = 0.0D0
-    INTEGER :: IBSTART
+    INTEGER ::                  :: IBSTART
 #endif
                 
     LOGICAL                  :: EXT_TVW = .FALSE. !...If there are external barrier TVW present, avoids checking an unallocated array
@@ -62,7 +62,7 @@
     IMPLICIT NONE
 
     CALL setMessageSource("ALLOCATE_WEIRS")
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
 
@@ -83,7 +83,7 @@
     BARLANHT1(1:NVEL) = BARLANHT(1:NVEL)
     BARLANHT2(1:NVEL) = BARLANHT(1:NVEL)
 
-#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Return")
 #endif
     CALL unsetMessageSource()
@@ -145,8 +145,8 @@
 
 !...........CHARACTERIZES THE SCHEDULE. BASED ON NUMBER OF FILES
     TYPE BARRIER_SCHEDULE_T
-    INTEGER :: SID        !...Unique ID corresponding to this schedule
-    INTEGER :: NSECTIONS  !...Number of sections in the schedule
+    INTEGER ::                         :: SID        !...Unique ID corresponding to this schedule
+    INTEGER ::                         :: NSECTIONS  !...Number of sections in the schedule
     TYPE(BSCHED),ALLOCATABLE        :: SECTION(:) !...List of all the schedule sections
     END TYPE
 
@@ -154,11 +154,11 @@
 !           AND IS BASED UPON THE INDIVIDUAL BOUNDARY NODE
     TYPE BARRIER_SCHEDULE_P
     CHARACTER(1024),POINTER  :: MYFILE        !...File used for this schedule
-    INTEGER :: SID           !...SID that has a pointer back to SCHEDULE(:)
-    INTEGER :: MYSEC         !...The current section this node is operating in
-    INTEGER :: LOOP          !...Should this schedule loop?
-    INTEGER :: NLOOPS        !...How many times should it loop
-    INTEGER :: LOOPSCOMPLETE !...How many loops we've completed
+    INTEGER ::                  :: SID           !...SID that has a pointer back to SCHEDULE(:)
+    INTEGER ::                  :: MYSEC         !...The current section this node is operating in
+    INTEGER ::                  :: LOOP          !...Should this schedule loop?
+    INTEGER ::                  :: NLOOPS        !...How many times should it loop
+    INTEGER ::                  :: LOOPSCOMPLETE !...How many loops we've completed
     INTEGER,POINTER          :: NSECTIONS     !...How many sections are in the schedule
     REAL(SZ)                 :: PREVEND       !...Previous schedule end
     REAL(SZ)                 :: BARHT_START   !...Starting barrier height
@@ -179,10 +179,10 @@
     REAL(SZ) :: FailureDurationDay,FailureDurationHour
     REAL(SZ) :: FailureDurationMin,FailureDurationSec
     REAL(SZ) :: HOTADD
-    INTEGER :: VaryType,HOT
-    INTEGER :: LOOP,NLOOPS
+    INTEGER ::  :: VaryType,HOT
+    INTEGER ::  :: LOOP,NLOOPS
 
-    INTEGER :: NSCHEDULES
+    INTEGER ::  :: NSCHEDULES
 
 !...........THE TIME VARYING WEIR NAMELIST
     NAMELIST /TimeVaryingWeir/ &
@@ -227,6 +227,11 @@
     SUBROUTINE WEIR_SETUP()
     USE BOUNDARIES,ONLY:NFLUXIB,NFLUXIBP,NFLUXB
     IMPLICIT NONE
+                    
+    CALL setMessageSource("WEIR_SETUP")
+#if defined(TVW_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
+    CALL allMessage(DEBUG,"Enter")
+#endif
     IF((NFLUXIB == 1) .OR. (NFLUXIBP == 1) .OR. (NFLUXB == 1))THEN
                 
     !...Allocate the new weir arrays at both time levels
@@ -239,6 +244,10 @@
 
     ENDIF
 
+#if defined(TVW_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
+    CALL allMessage(DEBUG,"Return")
+#endif
+    CALL unsetMessageSource()
     RETURN
 
 !-----------------------------------------------------------------------
@@ -269,7 +278,7 @@
     INTEGER :: IDX
 
     CALL setMessageSource("ALLOCATE_TIMEVARYINGWEIRS")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
 
@@ -340,7 +349,7 @@
 #endif
 
 
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Return")
 #endif
     CALL unsetMessageSource()
@@ -379,7 +388,7 @@
     TYPE(KDTREE2_RESULT) :: KDRESULTS(SEARCHDEPTH)
                     
     CALL setMessageSource("FIND_BOUNDARY_NODES")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
 
@@ -423,7 +432,7 @@
             CALL ADCIRC_TERMINATE()
         ELSE
             IDX=-1
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
             CALL allMessage(DEBUG,"Return")
 #endif
             CALL unsetMessageSource()
@@ -443,7 +452,7 @@
 
     IDX = INT(BAR_LOCATIONS(3,KDRESULTS(1)%IDX))
 
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Return")
 #endif
     CALL unsetMessageSource()
@@ -477,7 +486,7 @@
     REAL(SZ),INTENT(OUT) :: BAR_HEIGHT
 
     CALL setMessageSource("COMPUTE_BARRIER_HEIGHT")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
 
@@ -548,7 +557,7 @@
     ' CHANGING AT TIME = ',E15.8,' AT NODE = ', &
     I7)
 
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Return")
 #endif
     CALL unsetMessageSource()
@@ -590,7 +599,7 @@
 
 
     CALL setMessageSource("COMPUTE_BARRIER_HEIGHT_LINEAR")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
 
@@ -602,7 +611,7 @@
     IF(BAR_VARYTYPE(MYIDX) == 1)THEN
         IF( (BAR_DEG_START(MYIDX) > TIME) .OR. &
         (BAR_DEG_END(MYIDX)  < TIME)    )THEN
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
             CALL allMessage(DEBUG,"Return")
 #endif
             CALL unsetMessageSource()
@@ -629,7 +638,7 @@
         CASE DEFAULT
         CALL allMessage(WARNING, &
         "INVALID BOUNDARY CONDITION SPECIFIED")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
         CALL allMessage(DEBUG,"Return")
 #endif
         CALL unsetMessageSource()
@@ -646,8 +655,8 @@
         TIME ) / BAR_DT ))
     ENDIF
 
-!...............CHECK AGAINST BATHYMETRY, DO NOT LET WEIR ELEVATION DECREASE BELOW
-!               PREVAILING GROUND. CHECK NODE ACROSS BOUNDARY AS WELL AS LOCAL NODE
+!...CHECK AGAINST BATHYMETRY, DO NOT LET WEIR ELEVATION DECREASE BELOW
+!   PREVAILING GROUND. CHECK NODE ACROSS BOUNDARY AS WELL AS LOCAL NODE
     DEPTH = MAX(-DP(NBV(MYIDX)),-DP(IBCONN(MYIDX)))
     IF(BAR_HEIGHT < DEPTH)THEN
     !...WE'RE TOO LOW, SHUT DOWN BARRIER, SET TO MINIMUM
@@ -683,7 +692,7 @@
     '      BARRIER SET TO MINIMUM VALUE AT ', &
     ' TIME = ',E15.8,' NODE = ',I7)
 
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Return")
 #endif
     CALL unsetMessageSource()
@@ -721,7 +730,7 @@
     REAL(SZ)               :: DEPTH
 
     CALL setMessageSource("COMPUTE_BARRIER_HEIGHT_ETAMAX")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
 
@@ -735,7 +744,7 @@
     !                   THEY REMAIN IN SYNC
         IF(NNODECODE(NBV(MYIDX)) /= 1 .AND. &
         NNODECODE(IBCONN(MYIDX)) /= 1)THEN
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
             CALL allMessage(DEBUG,"Return")
 #endif
             CALL unsetMessageSource()
@@ -743,7 +752,7 @@
         ENDIF
         IF(ETA2(NBV(MYIDX)) <= BAR_ETA_MAX(MYIDX) .AND. &
         ETA2(IBCONN(MYIDX)) <= BAR_ETA_MAX(MYIDX))THEN
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
             CALL allMessage(DEBUG,"Return")
 #endif
             CALL unsetMessageSource()
@@ -761,7 +770,7 @@
 !               IS DEGRADING AS PRESCRIBED
     CALL COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,TIME, &
     BAR_HEIGHT_CURRENT,BAR_HEIGHT)
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Return")
 #endif
     CALL unsetMessageSource()
@@ -793,11 +802,11 @@
     REAL(SZ)             :: PREVEND
     REAL(SZ)             :: BARHT_START
     REAL(SZ)             :: OFFSET
-    INTEGER :: MYSEC
-    INTEGER :: NNBB1,NNBB2
+    INTEGER ::              :: MYSEC
+    INTEGER ::              :: NNBB1,NNBB2
 
     CALL setMessageSource("COMPUTE_BARRIER_HEIGHT_SCHEDULE")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
 
@@ -807,7 +816,7 @@
 !...............Check if we have reached the offset time yet
 !               (Time added to beginning of a schedule)
     IF(TIME < BAR_SCHEDULE(MYIDX)%OFFSET)THEN
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
         CALL allMessage(DEBUG,"Return")
 #endif
         CALL unsetMessageSource()
@@ -983,7 +992,7 @@
     ENDIF
                     
 
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Return")
 #endif
     CALL unsetMessageSource()
@@ -1025,14 +1034,14 @@
     CHARACTER(2000)  :: InputString,modifiedString
     CHARACTER(1024),ALLOCATABLE :: SCHEDULE_LIST_RAW(:)
     REAL(SZ) :: OFFSET
-    INTEGER :: IDX,IDX2
-    INTEGER :: I,IOS
-    INTEGER :: NTIMEVARYINGWEIRS
-    INTEGER :: NSCHEDULES_RAW
+    INTEGER ::  :: IDX,IDX2
+    INTEGER ::  :: I,IOS
+    INTEGER ::  :: NTIMEVARYINGWEIRS
+    INTEGER ::  :: NSCHEDULES_RAW
 
 
     CALL setMessageSource("PARSE_TIME_VARYING_WEIR_INFO")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
                     
@@ -1409,7 +1418,7 @@
     CHARACTER(500) :: origLine,modLine
     REAL(SZ) :: BAR_DEG_START,BAR_DEG_END
     REAL(SZ) :: DELTA,HOTSEC
-    INTEGER :: I
+    INTEGER ::  :: I
     LOGICAL  :: exists
 
     NAMELIST /SCHEDULE/ &
@@ -1418,7 +1427,7 @@
     TimeEndMin,TimeEndSec,ZF,DELTA,HOT
                     
     CALL setMessageSource("PARSE_SCHEDULE")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
+#if defined(TVW_TRACE)|| defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
 
@@ -1522,10 +1531,10 @@
     INTEGER,INTENT(IN)          :: VAR
     INTEGER,INTENT(IN)          :: INDEX1
     INTEGER,INTENT(IN),OPTIONAL :: INDEX2
-    INTEGER :: I
+    INTEGER ::                     :: I
                     
     CALL setMessageSource("ASSIGN_TVW_TIMING")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
     IF(VAR == 1)THEN
@@ -1610,7 +1619,7 @@
         ENDDO
     ENDIF
                     
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Return")
 #endif
     CALL unsetMessageSource()
@@ -1634,6 +1643,11 @@
     INTEGER,INTENT(IN),OPTIONAL      :: I
     CHARACTER(*),INTENT(IN),OPTIONAL :: S
     REAL(SZ)            :: EPS
+                    
+    CALL setMessageSource("ISNULL")
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
+    CALL allMessage(DEBUG,"Enter")
+#endif
 
     IF(PRESENT(R))THEN
         EPS = EPSILON(1.0D0)
@@ -1656,6 +1670,10 @@
         null.")
         CALL ADCIRC_TERMINATE()
     ENDIF
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
+    CALL allMessage(DEBUG,"Return")
+#endif
+    CALL unsetMessageSource()
 !-----------------------------------------------------------------------
     END FUNCTION ISNULL
 !-----------------------------------------------------------------------
@@ -1668,6 +1686,13 @@
 !  SO THEY CAN BE CHECKED FOR MODIFICATION LATER
 !-----------------------------------------------------------------------
     SUBROUTINE NULLIFY_TVW_NML()
+    IMPLICIT NONE
+
+    CALL setMessageSource("NULLIFY_TVW_NML")
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
+    CALL allMessage(DEBUG,"Enter")
+#endif
+
     X1                         = -99999D0
     X2                         = -99999D0
     Y1                         = -99999D0
@@ -1691,6 +1716,11 @@
     LOOP                       = -99999
     NLOOPS                     = -99999
     ScheduleFile               = "NOFILE"
+
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
+    CALL allMessage(DEBUG,"Return")
+#endif
+    CALL unsetMessageSource()
     RETURN
 !-----------------------------------------------------------------------
     END SUBROUTINE NULLIFY_TVW_NML
@@ -1710,7 +1740,7 @@
     INTEGER :: I,J,K
 
     CALL setMessageSource("ALPHABETIZE")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
     DO I = 1,SIZE(MYCHAR)
@@ -1737,7 +1767,7 @@
             ENDDO SORTING
         ENDDO
     ENDDO
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Return")
 #endif
     CALL unsetMessageSource()
@@ -1760,16 +1790,20 @@
     INTEGER,INTENT(OUT)                  :: NUNIQUE
 
     CHARACTER(1024)                      :: PREV,CURR
-    INTEGER :: I,J
+    INTEGER ::                              :: I,J
 
     CALL setMessageSource("UNIQUE_NAMES")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
     IF(SIZE(RAW_LIST) < 2)THEN
         NUNIQUE = 1
         ALLOCATE(UNIQUE_LIST(1:SIZE(RAW_LIST)))
         UNIQUE_LIST = RAW_LIST
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
+        CALL allMessage(DEBUG,"Return")
+#endif
+        CALL unsetMessageSource()
         RETURN
     ENDIF
 
@@ -1795,7 +1829,7 @@
         ENDIF
     ENDDO
 
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Return")
 #endif
     CALL unsetMessageSource()
@@ -1841,13 +1875,13 @@
     USE BOUNDARIES,ONLY: BARLANCFSP,BARLANHT
     IMPLICIT NONE
     INTEGER,INTENT(IN)     :: BARRIER_INDEX
-    INTEGER :: NNBB
+    INTEGER ::                :: NNBB
     REAL(SZ),INTENT(IN)    :: TIMELOC
     REAL(SZ),INTENT(OUT)   :: FLUX
     REAL(SZ)               :: RBARWL
 
     CALL setMessageSource("COMPUTE_EXTERNAL_BOUNDARY_FLUX")
-#if defined(WEIR_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
 
@@ -1870,7 +1904,7 @@
     ELSE
         FLUX = 0.0D0
     ENDIF
-#if defined(WEIR_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Return")
 #endif
     CALL unsetMessageSource()
@@ -1903,15 +1937,15 @@
     REAL(SZ),INTENT(IN)         :: TIMELOC
     REAL(SZ),INTENT(OUT)        :: FLUX
 
-    INTEGER :: NNBB1,NNBB2
-    INTEGER :: NNBB1WN,NNBB2WN
-    INTEGER :: FLOWDIR
+    INTEGER ::                     :: NNBB1,NNBB2
+    INTEGER ::                     :: NNBB1WN,NNBB2WN
+    INTEGER ::                     :: FLOWDIR
     INTEGER,POINTER             :: I,J,K
     REAL(SZ)                    :: RBARWL1,RBARWL2
     REAL(SZ)                    :: RBARWL1F,RBARWL2F
 
     CALL setMessageSource("COMPUTE_INTERNAL_BOUNDARY_FLUX")
-#if defined(WEIR_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
 
@@ -1927,6 +1961,10 @@
 #ifdef ORIGWEIR
     CALL COMPUTE_INTERNAL_BOUNDARY_FLUX_ORIG(I,J,K, &
     TIMELOC,FLUX)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+    CALL allMessage(DEBUG,"Return")
+#endif
+    CALL unsetMessageSource()
     RETURN
 #endif
 
@@ -2059,7 +2097,7 @@
         FLUX=0
     ENDIF
                    
-#if defined(WEIR_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Return")
 #endif
     CALL unsetMessageSource()
@@ -2085,14 +2123,14 @@
     REAL(SZ),INTENT(IN)    :: TIMELOC
     REAL(SZ),INTENT(OUT)   :: FLUX
 
-    INTEGER :: NNBB1
-    INTEGER :: NNBB2
+    INTEGER ::                :: NNBB1
+    INTEGER ::                :: NNBB2
 
     REAL(SZ)               :: RBARWL1
     REAL(SZ)               :: RBARWL2
                     
     CALL setMessageSource("COMPUTE_CROSS_BARRIER_PIPE_FLUX")
-#if defined(WEIR_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
 
@@ -2119,11 +2157,19 @@
     IF((RBARWL1 < 0.D0) .AND. (RBARWL2 < 0.D0)) THEN
     !...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW PIPE -> CASE 1
         FLUX=0.D0
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+        CALL allMessage(DEBUG,"Return")
+#endif
+        CALL unsetMessageSource()
         RETURN
     ENDIF
     IF(ABS(RBARWL1-RBARWL2) < BARMIN) THEN
     !...............WATER LEVEL EQUAL ON BOTH SIDES OF PIPE -> CASE 2
         FLUX=0.D0
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
+        CALL allMessage(DEBUG,"Return")
+#endif
+        CALL unsetMessageSource()
         RETURN
     ENDIF
     IF((RBARWL1 > RBARWL2) .AND. (RBARWL1 > BARMIN)) THEN
@@ -2152,6 +2198,10 @@
                 *0.25D0*PI*(PIPEDIAM(IDX))**2 &
                 *(2.D0*G*(RBARWL1-RBARWL2)/PIPECOEF(IDX))**0.5D0
             ENDIF
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+            CALL allMessage(DEBUG,"Return")
+#endif
+            CALL unsetMessageSource()
             RETURN
         ENDIF
     ENDIF
@@ -2185,10 +2235,14 @@
                 NIBNODECODE(NNBB1)=1
             ENDIF
         ENDIF
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+        CALL allMessage(DEBUG,"Return")
+#endif
+        CALL unsetMessageSource()
         RETURN
     ENDIF
 
-#if defined(WEIR_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Return")
 #endif
     CALL unsetMessageSource()
@@ -2217,16 +2271,16 @@
     REAL(SZ),INTENT(IN)         :: TIMELOC
     REAL(SZ),INTENT(OUT)        :: FLUX
 
-    INTEGER :: NNBB1,NNBB2
-    INTEGER :: NNBB1WN,NNBB2WN
-    INTEGER :: FLOWDIR
+    INTEGER ::                     :: NNBB1,NNBB2
+    INTEGER ::                     :: NNBB1WN,NNBB2WN
+    INTEGER ::                     :: FLOWDIR
     INTEGER,POINTER             :: I,J,K
     REAL(SZ)                    :: RBARWL1,RBARWL2
     REAL(SZ)                    :: RBARWL1F,RBARWL2F
                     
                     
     CALL setMessageSource("COMPUTE_INTERNAL_BOUNDARY_FLUX")
-#if defined(WEIR_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Enter")
 #endif
 
@@ -2262,12 +2316,20 @@
     IF((RBARWL1 < 0.D0) .AND. (RBARWL2 < 0.D0)) THEN
     !...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW BARRIER -> CASE 1
         FLUX=0.D0
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+        CALL allMessage(DEBUG,"Return")
+#endif
+        CALL unsetMessageSource()
         RETURN
     ENDIF
     IF(ABS(RBARWL1-RBARWL2) < 0.01D0) THEN
     !...............WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
     !................TO WITHIN TOLERANCE BARMIN -> CASE 2
         FLUX=0.D0
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+        CALL allMessage(DEBUG,"Return")
+#endif
+        CALL unsetMessageSource()
         RETURN
     ENDIF
     IF((RBARWL1 > RBARWL2) .AND. (RBARWL1 > BARMIN)) THEN
@@ -2295,6 +2357,10 @@
                 (RBARWL1F*G)**0.5D0
             ENDIF
         ENDIF
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+        CALL allMessage(DEBUG,"Return")
+#endif
+        CALL unsetMessageSource()
         RETURN
     ENDIF
     IF((RBARWL2 > RBARWL1) .AND. (RBARWL2 > BARMIN)) THEN
@@ -2327,7 +2393,7 @@
         ENDIF
     ENDIF
 
-#if defined(WEIR_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
     CALL allMessage(DEBUG,"Return")
 #endif
     CALL unsetMessageSource()
