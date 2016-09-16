@@ -62,7 +62,7 @@ C-----------------------------------------------------------------------
                 IMPLICIT NONE
 
                 CALL setMessageSource("ALLOCATE_WEIRS")
-#if defined(WEIR_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
 #endif                
 
@@ -83,7 +83,7 @@ C-----------------------------------------------------------------------
                 BARLANHT1(1:NVEL) = BARLANHT(1:NVEL)
                 BARLANHT2(1:NVEL) = BARLANHT(1:NVEL)
 
-#if defined(WEIR_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
 #endif                
                 CALL unsetMessageSource()
@@ -229,7 +229,7 @@ C-----------------------------------------------------------------------
                 IMPLICIT NONE
                 
                 CALL setMessageSource("WEIR_SETUP")
-#if defined(TVW_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
 #endif                
                 IF((NFLUXIB.EQ.1).OR.(NFLUXIBP.EQ.1).OR.(NFLUXB.EQ.1))THEN
@@ -244,7 +244,7 @@ C-----------------------------------------------------------------------
 
                 ENDIF
 
-#if defined(TVW_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
 #endif                
                 CALL unsetMessageSource()
@@ -278,7 +278,7 @@ C-----------------------------------------------------------------------
                 INTEGER :: IDX
 
                 CALL setMessageSource("ALLOCATE_TIMEVARYINGWEIRS")
-#if defined(TVW_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
 #endif                
 
@@ -349,7 +349,7 @@ C...............DO THE SAME PROCESS FOR THE GHOST NODES
 #endif                
 
 
-#if defined(TVW_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
 #endif                
                 CALL unsetMessageSource()
@@ -1041,7 +1041,7 @@ C-----------------------------------------------------------------------
 
 
                 CALL setMessageSource("PARSE_TIME_VARYING_WEIR_INFO")
-#if defined(TVW_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
 #endif                
                 
@@ -2166,7 +2166,7 @@ C...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW PIPE -> CASE 1
                 IF(ABS(RBARWL1-RBARWL2).LT.BARMIN) THEN
 C...............WATER LEVEL EQUAL ON BOTH SIDES OF PIPE -> CASE 2
                   FLUX=0.D0
-#if defined(WEIR_TRACE) || defined(ALL_TRACE) || defined(ALL_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
                   CALL allMessage(DEBUG,"Return")
 #endif                
                   CALL unsetMessageSource()
