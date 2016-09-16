@@ -1,0 +1,4933 @@
+!******************************************************************************
+! PADCIRC VERSION 45.12 03/17/2006                                            *
+!  last changes in this file VERSION 45.07                                    *
+!                                                                             *
+!  mod history                                                                *
+!  v45.07     - 11/07/05 - jgf- from 45.06 - removed EP from hot start file   *
+!  v44.02     - 09/30/03 - rl - from 44.01 - additional changes associated    *
+!                                          with removing local variables from *
+!                                          global module.                     *
+!  v44.01     - 10/06/03 - rl - from 43.03 - changed names of load vectors in *
+!                                          2D solution                        *
+!  v43.03     - 05/20/03 - rl - from 43.02 - parallel wind stuff (m.brown)    *
+!                                          output buffer flush (m.cobb)       *
+!                                          3D fixes (k.dresback)              *
+!                                          drop MNPROC in fort.15 (t.campbell)*
+!                                          various bug fixes in RBCs          *
+!                                          ZSURFBUOY/BCPG calc                *
+!  v43.00a    - sum  /02 - tc - from 36.01 (3D) & 41.12? (2D), create F90/    *
+!                                               parallel unified 2D/3D source *
+!  v41.11     - 09/14/01 - rl - from 41.10 - added NWS = -2 capability        *
+!  v41.09     - 06/30/01 - jw - from 41.08 - minor mods per vp version 41.05  *
+!  v40.02m002 - 12/22 - jjw/vjp - Vic suggested to avoid compiler conflicts   *
+!  v40.02m001 - 12/21 - jjw - add cross barrier pipes cjjwm001                *
+!                                                                             *
+!******************************************************************************
+
+    SUBROUTINE HOTSTART()
+
+!**************************************************************************
+
+!     HOT START PROGRAM SETUP ROUTINE
+
+!**************************************************************************
+
+! SE, INTRINSIC :: IEEE_ARITHMETIC !jgfdebug ieee_is_nan()
+    USE SIZES, ONLY : inputDir, globalDir, mnproc
+    USE GLOBAL
+    USE MESH, ONLY : DP, ICS, X, Y, NE, SLAM, SFEA, AID4
+    USE BOUNDARIES, ONLY : NETA, NFLUXB, NFLUXF, NFLUXIB, NFLUXIBP, &
+    NOPE, NVEL, BndBCRiver, LBCODEI, NBV, BARLANHT, BARLANCFSP, &
+    IBCONN, BARINHT, BARINCFSP, BARINCFSB, PIPEHT, PIPECOEF, &
+    PIPEDIAM
+    USE GLOBAL_IO
+    USE GLOBAL_3DVS, ONLY: I3DSD, I3DSV, I3DST, I3DGD, I3DGV, I3DGT, &
+    qsurf, NFEN, DUU, DUV, DVV, UU, VV, BSX, BSY, Q, WZ, q20, l, &
+    SigT, Sal, Temp, N3DSD, I3DSDRec, N3DSV, I3DSVRec, N3DST, &
+    I3DSTRec, N3DGD, I3DGDRec, N3DGV, I3DGVRec, N3DGT, I3DGTRec, &
+    DUU_g, DUV_g, DVV_g, UU_g, VV_g, BSX_g, BSY_g, Q_g, WZ_g, &
+    q20_g, l_g, SigT_g, Sal_g, Temp_g, iy
+    USE SUBDOMAIN, ONLY : subdomainOn, enforceBN, readFort015, &
+    openFort019h
+#ifdef CMPI
+    USE MESSENGER,ONLY: COMM, IERR, UPDATER
+#endif
+    USE HARM, ONLY : IHARIND, IHABEG, ITHAS, NHAINC, ICHA, CHARMV, &
+    NHAGE, NHAGV, NHASE, NHASV, readBinaryHAHotstart, &
+    checkHAHotstart
+    USE ADCIRC_MOD, ONLY : ADCIRC_Terminate
+    USE WIND
+    USE OWIWIND,ONLY : NWS12INIT,NWS12GET   ! sb46.28sb01 added 09/xx/2006
+    USE OWI_ICE, ONLY : NCICE1_INIT, NCICE1_GET  !tcm v49.64.01
+    USE RS2,ONLY : RS2INIT,RS2GET           ! sb46.28sb01 added 09/xx/2006
+!     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
+#ifdef ADCNETCDF
+    USE NETCDFIO, ONLY : readNetCDFHotstart, &
+    readNetCDFHotstart3D, &
+    readNetCDFHotstartHarmonic, &
+    readNetCDFHotstartHarmonicMeansVariances
+#endif
+    USE NodalAttributes, ONLY : &
+    nolibf, nwp, tau0, cf, eslm, GeoidOffset, &
+    LoadDirEffRLen, LoadCanopyCoef, LoadGeoidOffset, &
+    ApplyDirectionalWindReduction, ApplyCanopyCoefficient, &
+    OutputTau0, &
+    LoadRiver_et_WSE, River_et_WSE
+    USE TIME_VARYING_WEIR_BOUNDARY,ONLY:WEIR_SETUP
+    USE WRITE_OUTPUT, ONLY : initInundationOutput, &
+    inundationTime, inundationTime_onset, maxInunDepth, &
+    maxInunDepth_time, outputNodeCode, outputNOFF
+    IMPLICIT NONE
+#ifdef CMPI
+#ifndef HAVE_MPI_MOD
+    include 'mpif.h'
+#endif
+#endif
+    interface
+    SUBROUTINE binaryRead2D(array, length, lun, counter)
+    USE SIZES, ONLY : SZ
+    REAL(SZ), intent(out) :: array(:) ! the data to read from the hotstart file
+    INTEGER, intent(in) :: length  ! the number of values to read
+    INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+    INTEGER, intent(inout) :: counter ! i/o position in the file
+    end subroutine
+    end interface
+    INTEGER :: IT
+    INTEGER :: I, J, NH, N              !local loop counters
+    INTEGER :: NCyc, NA, InputFileFmtVn
+    INTEGER :: sd_node_number,fd_node_number
+
+!   kmd48.33bc - add variable for timestep change
+    INTEGER :: NTHS
+
+    REAL(SZ) HollandTime
+    REAL(SZ) ArgT, ArgTP, ArgSAlt
+    REAL(SZ) H2
+    REAL(SZ) CCSFEA
+    REAL(SZ) QTRatio
+    REAL(SZ) SAltMul, S2SFEA
+    REAL(SZ) TPMul
+    REAL(SZ) WTRatio, WindX, WindY, WindMag, WDragCo
+    REAL(8) TimeLoc
+    REAL(SZ) PRDIFF,PRBCKGRND_MH2O     ! tcm v49.16 20100617 added
+
+!     jgf46.08 Fine grained ramp functions
+    REAL(SZ) RampExtFlux1   ! Ramp for external flux b.c.s @ITHS-1
+    REAL(SZ) RampExtFlux2   ! Ramp for external flux b.c.s @ITHS
+    REAL(SZ) RampIntFlux1   ! Ramp for internal flux b.c.s @ITHS-1
+    REAL(SZ) RampIntFlux2   ! Ramp for internal flux b.c.s @ITHS
+    REAL(SZ) RampTip2    ! Ramp for tidal potential @ITHS
+    REAL(SZ) RampMete2   ! Ramp for wind and atmospheric pressure @ITHS
+    REAL(SZ) RampWRad2   ! Ramp for wave radiation stress @ITHS
+!     jgf46.14 Check for file existence before attempting to open.
+    LOGICAL :: fileFound    ! .TRUE. if the the file exists
+    INTEGER :: ErrorIO      ! zero if file opened successfully
+    INTEGER :: NP_G_IN, NE_G_IN  ! Global and
+    INTEGER :: NP_A_IN, NE_A_IN  ! active number nodes, elements.
+    CHARACTER(len=7) :: hsfn  ! name of binary hotstart file
+
+!     jgf48.4628 Add capability to turn off solution if only met output
+!     was requested.
+    LOGICAL :: metOutputOn     ! .TRUE. if met output was requested
+    LOGICAL :: nonMetOutputOff ! .TRUE. no other output was requested
+
+!     jgf48.4636 Add capability to read min/max files upon hotstart,
+!     if they are available
+    CHARACTER(len=12) minMaxFN ! name of the min or max file to read in
+    INTEGER :: node               ! node number of the min/max data
+    CHARACTER(len=80) skipline ! dummy variable for min/max header data
+    INTEGER :: numLinesInMinMaxFile ! count the lines to report to log file
+    LOGICAL :: tooFewMinMaxLines  ! true if couldn't read enough lines from file
+
+!     kmd48.33bc - add variables for heat flux
+    INTEGER :: NOD
+    REAL(SZ),ALLOCATABLE :: TMP(:,:)
+    REAL(SZ) :: CD, CDQ, QWIND
+    CHARACTER(80) :: CDUM80
+    REAL(SZ) :: RNDAYHS
+    REAL(SZ),ALLOCATABLE :: RealQ_Tmp(:,:)
+    REAL(SZ),ALLOCATABLE :: ImQ_Tmp(:,:)
+    INTEGER :: IDenHS
+    REAL(8) :: dtChange ! difference in time step size (sec) between
+! current run and the one we're hotstarting from
+
+!     jgf49.44: Add variables for reading fulldomain binary hotstart file
+!     in parallel.
+    INTEGER :: subdomainNode  ! subdomain node number to map fulldomain data to
+    INTEGER :: fulldomainNode ! fulldomain node number from hotstart file
+    INTEGER :: subdomainElement ! subdomain element num to map fulldoman data to
+    INTEGER :: fulldomainElement ! fulldomain element number from hotstart file
+
+!     tcm v49.64.01 -- ADDED variables for Ice concentration fields
+    REAL(SZ) PIC,CICE_TRatio  !ICE VARIABLES
+
+!     tcm v50.66.01 added variables for time varying bathymetry
+    real(sz) DPTMP,BTRatio
+    integer :: IJK
+
+!     jgf49.1001 Added for blending NWS19 and NWS12 (from NAM) met data
+    REAL(SZ) bf ! blending factor for the two wind data types
+
+!     kmd -- Added variables for initial conditions
+    CHARACTER(80) :: gridinfo
+
+    INTEGER :: moderbin ! determines whether in binary or real
+    INTEGER :: ncHundreds ! hundreds place of IHOT, used for netcdf hs file
+
+    call setMessageSource("hotstart")
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Enter.")
+#endif
+
+    metOutputOn = .FALSE. 
+    nonMetOutputOff = .FALSE. 
+
+! In order to produce inundation output, we need to compute the
+! areas that were initially dry at cold start.
+    if (inundationOutput.eqv. .TRUE. ) then
+        call setColdWetDryStateAndWaterSurfaceElevation()
+    
+    ! jgf52.08.01: This can only be called after nnodecode has been set
+    ! via setColdWetDryState().
+        call initInundationOutput()
+    endif
+
+
+! NCSU Subdomain Modeling
+    if (subdomainOn) then
+        call readFort015()
+    endif
+
+!     -----------------------------------
+
+!     R E A D   H O T S T A R T   F I L E
+
+!     -----------------------------------
+!     The value of IHOT indicates the type of
+!     the file as well as the file name.
+    SELECT CASE(IHOT)
+
+    CASE(17) ! initial conditions or ascii hot start
+
+!      kmd49.49 - redo case(67,68) for initial conditions or ascii
+!                 format for hot start.
+!...
+!...     READ IN 2DDI HOT START INITIAL CONDITION OVER WHOLE DOMAIN
+!...
+!        Determine if the hot start file exists.
+    fileFound= .FALSE. 
+    IF (IHOT == 17) THEN
+        hsfn = "fort.17"
+    ENDIF
+    IF ((MNPROC == 1) .OR. &
+    (READ_LOCAL_HOT_START_FILES.eqv. .TRUE. )) THEN
+        INQUIRE(FILE=trim(inputDir)//'/'//hsfn, EXIST=fileFound)
+    ELSE
+    ! look for fulldomain hotstart file
+        INQUIRE(FILE=TRIM(GBLINPUTDIR)//'/'//hsfn, &
+        EXIST=fileFound)
+    ENDIF
+
+    IF (fileFound.eqv. .FALSE. ) THEN
+        WRITE(16,1701)         ! hot start file
+        WRITE(16,1711)         ! was not found.
+        WRITE(16,9773)         ! execution terminated
+        IF (NScreen /= 0 .AND. MyProc == 0) THEN
+            WRITE(ScreenUnit,1701)
+            WRITE(ScreenUnit,1711)
+            WRITE(16,9773)      ! execution terminated
+        ENDIF
+        CALL ADCIRC_Terminate()
+    ENDIF
+!        start reading ascii initial conditions file
+    WRITE(16,1740)
+    1740 FORMAT(/,9X, &
+    'Initial condition or ascii hot start file was found.', &
+    ' Opening file.')
+
+    IF ((MNPROC == 1) .OR. &
+    (READ_LOCAL_HOT_START_FILES.eqv. .TRUE. )) THEN
+        OPEN(IHOT,FILE=TRIM(INPUTDIR)//'/'//hsfn,ACTION='READ', &
+        ACCESS='SEQUENTIAL',RECL=8,IOSTAT=ErrorIO,STATUS='OLD')
+    ELSE
+    ! fulldomain hotstart file
+        OPEN(IHOT,FILE=TRIM(GBLINPUTDIR)//'/'//hsfn,ACTION='READ', &
+        ACCESS='SEQUENTIAL',RECL=8,IOSTAT=ErrorIO,STATUS='OLD')
+    ENDIF
+
+    IF (ErrorIO > 0) THEN
+        WRITE(16,1701)         ! hot start file
+        WRITE(16,1705)         ! exists but can't be opened
+        WRITE(16,9773)         ! execution terminated
+        IF (NScreen /= 0 .AND. MyProc == 0) THEN
+            WRITE(ScreenUnit,1701)
+            WRITE(ScreenUnit,1705)
+            WRITE(ScreenUnit,9773)
+        ENDIF
+#ifdef CMPI
+        CALL MSG_FINI()
+#endif
+        STOP                   ! We're toast.
+    ENDIF
+
+    1701 FORMAT('ERROR: The initial condition or ascii hot start file')
+    1711 FORMAT('was not found.')
+    1712 FORMAT('was a nonmatching version')
+    1705 FORMAT('exists but cannot be opened.')
+    9773 FORMAT(/,1X,'!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!',//)
+
+!        Now read the readable initial condition or hot start file.
+    moderbin=2
+    IHOTSTP=1
+    READ(IHOT,*) gridinfo
+    READ(IHOT,*) IMHS
+    READ(IHOT,*) TimeLoc
+    READ(IHOT,*) ITHS
+
+    READ(IHOT,*) NP_G_IN
+    READ(IHOT,*) NE_G_IN
+    READ(IHOT,*) NP_A_IN
+    READ(IHOT,*) NE_A_IN
+
+!        jgf49.44: Add capability to read fulldomain binary hotstart
+!        file in parallel.
+    CALL readAndMapToSubdomain2D(ETA1, IHOT, IHOTSTP, moderbin)
+    CALL readAndMapToSubdomain2D(ETA2, IHOT, IHOTSTP, moderbin)
+!        jgf46.34 Added support for IBTYPE=52.
+    CALL readAndMapToSubdomain2D(ETADisc, IHOT, IHOTSTP, moderbin)
+    CALL readAndMapToSubdomain2D(UU2, IHOT, IHOTSTP, moderbin)
+    CALL readAndMapToSubdomain2D(VV2, IHOT, IHOTSTP, moderbin)
+    IF(IMHS == 10) THEN
+        CALL readAndMapToSubdomain2D(CH1, IHOT, IHOTSTP, moderbin)
+    ENDIF
+    CALL readAndMapToSubdomainInt2D(NNODECODE, IHOT, IHOTSTP, moderbin)
+! jgf52.08.01: subroutine timestep() uses nodecode. Set it here.
+    nodecode(:) = nnodecode(:)
+    CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
+
+    READ(IHOT,*) IESTP
+    READ(IHOT,*) NSCOUE
+    READ(IHOT,*) IVSTP
+    READ(IHOT,*) NSCOUV
+    READ(IHOT,*) ICSTP
+    READ(IHOT,*) NSCOUC
+    READ(IHOT,*) IPSTP
+    READ(IHOT,*) IWSTP
+    READ(IHOT,*) NSCOUM
+    READ(IHOT,*) IGEP
+    READ(IHOT,*) NSCOUGE
+    READ(IHOT,*) IGVP
+    READ(IHOT,*) NSCOUGV
+    READ(IHOT,*) IGCP
+    READ(IHOT,*) NSCOUGC
+    READ(IHOT,*) IGPP
+    READ(IHOT,*) IGWP
+    READ(IHOT,*) NSCOUGW
+
+!     R E A D   3 D   H O T S T A R T   D A T A
+
+    IF (C3D) THEN
+        READ(IHOT,*) IDenHS
+    ! D station density output time counter
+        READ(IHOT,*) N3DSD
+        READ(IHOT,*) I3DSDRec
+    ! D station velocity output time counter
+        READ(IHOT,*) N3DSV
+        READ(IHOT,*) I3DSVRec
+    ! D station turbulence output time counter
+        READ(IHOT,*) N3DST
+        READ(IHOT,*) I3DSTRec
+        READ(IHOT,*) N3DGD
+        READ(IHOT,*) I3DGDRec
+        READ(IHOT,*) N3DGV
+        READ(IHOT,*) I3DGVRec
+        READ(IHOT,*) N3DGT
+        READ(IHOT,*) I3DGTRec
+    !           kmd48.33bc - changed to the format used with the global IO
+    !           jgf49.44: Add capability to read fulldomain 3D binary hotstart
+    !           file in parallel.
+        CALL readAndMapToSubdomain2D(DUU, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain2D(DUV, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain2D(DVV, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain2D(UU, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain2D(VV, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain2D(BSX, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain2D(BSY, IHOT, IHOTSTP, moderbin)
+    !           kmd48.33bc - allocate realQ_tmp
+        ALLOCATE(RealQ_Tmp(NP,NFEN))
+        ALLOCATE(ImQ_Tmp(NP,NFEN))
+    !           kmd48.33bc - changed to format used in global IO, layer output
+        CALL readAndMapToSubdomain3D(RealQ_Tmp, NFEN, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain3D(ImQ_Tmp, NFEN, IHOT, IHOTSTP, moderbin)
+        Q = RealQ_Tmp + iy*ImQ_Tmp ! reconstruct Q matrix from parts
+        DEALLOCATE(RealQ_Tmp, ImQ_Tmp)
+        CALL readAndMapToSubdomain3D(WZ, NFEN, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain3D(q20, NFEN, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain3D(l, NFEN, IHOT, IHOTSTP, moderbin)
+    !           kmd48.33bc - need to determine if IDEN parameter in hotstart
+    !           is different than IDEN from fort.15 file. If so, determine which
+    !           one should be used in the simulation.
+        IF (IDenHS /= IDEN) THEN
+            IF ((CBAROCLINIC) .AND. (RES_BC_FLAG >= 1)) THEN
+            ! IDEN value from fort.15 should be used
+            ELSE IF ((CBAROCLINIC) .AND. (RES_BC_FLAG <= 0)) THEN
+                IDEN=IDenHS
+            END IF
+        END IF
+        SELECT CASE(ABS(IDen))
+        CASE(0)
+        CALL logMessage(INFO, &
+        "IDEN=0; This is a barotropic model run.")
+        CASE(1)
+        CALL readAndMapToSubdomain3D(SigT, NFEN, IHOT, IHOTSTP, moderbin)
+        CASE(2)
+        CALL readAndMapToSubdomain3D(Sal, NFEN, IHOT, IHOTSTP, moderbin)
+        CASE(3)
+        CALL readAndMapToSubdomain3D(Temp, NFEN, IHOT, IHOTSTP, moderbin)
+        CASE(4)
+        CALL readAndMapToSubdomain3D(Sal, NFEN, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain3D(Temp, NFEN, IHOT, IHOTSTP, moderbin)
+        CASE DEFAULT
+    ! should not happen
+        WRITE(scratchMessage,1722) IDEN
+        CALL allMessage(ERROR,scratchMessage)
+        1722 FORMAT("IDEN is ",I2, &
+        " but the valid range is +/- 0 to 4.")
+        END SELECT
+    ENDIF  ! C3D
+!...
+!......  HOT START INFORMATION FOR HARMONIC ANALYSIS
+!...
+!         IF(IHARIND.EQ.1) THEN
+!            IHABEG=ITHAS+NHAINC
+!...
+!........   IF HARMONIC ANALYSIS HAS ALREADY BEGUN, READ IN HOT START
+!........   HARMONIC ANALYSIS, MEAN AND SQUARE INFO
+!...
+!            IF(ITHS.GT.ITHAS) THEN
+!               READ(IHOT,REC=IHOTSTP) ICHA
+!            ENDIF
+!            IF(ITHS.GE.IHABEG) THEN
+!               CALL readBinaryHAHotstart(IHOT, IHOTSTP)
+!            ENDIF
+!         ENDIF    !IHARIND
+    CLOSE(IHOT)  ! close portable ascii hotstart file
+
+
+    CASE(67,68) ! non-portable binary file format
+
+!...
+!...     READ IN 2DDI HOT START INITIAL CONDITION OVER WHOLE DOMAIN
+!...     THIS FILE ALWAYS HAS A RECL=8 BECAUSE IT IS ASSUMED THAT THE HARMONIC
+!...     ANALYSIS IS ALWAYS DONE IN 64 BITS, EVEN ON A WORKSTATION
+!...
+!        Determine if the hot start file exists.
+    fileFound= .FALSE. 
+    IF (IHOT == 67) THEN
+        hsfn = "fort.67"
+    ELSE
+        hsfn = "fort.68"
+    ENDIF
+    IF ((MNPROC == 1) .OR. &
+    (READ_LOCAL_HOT_START_FILES.eqv. .TRUE. )) THEN
+        INQUIRE(FILE=TRIM(INPUTDIR)//'/'//hsfn, &
+        EXIST=fileFound)
+    ELSE
+    ! look for fulldomain hotstart file
+        INQUIRE(FILE=TRIM(GBLINPUTDIR)//'/'//hsfn, &
+        EXIST=fileFound)
+    ENDIF
+
+    IF (fileFound.eqv. .FALSE. ) THEN
+        WRITE(16,1001)         ! hot start file
+        WRITE(16,1011)         ! was not found.
+        WRITE(16,9973)         ! execution terminated
+        IF (NScreen /= 0 .AND. MyProc == 0) THEN
+            WRITE(ScreenUnit,1001)
+            WRITE(ScreenUnit,1011)
+            WRITE(16,9973)      ! execution terminated
+        ENDIF
+#ifdef CMPI
+        CALL MSG_FINI()
+#endif
+        STOP
+    ENDIF
+!        start reading binary hot start file
+    WRITE(16,240)
+    240 FORMAT(/,9X,'Hot start file was found.', &
+    ' Opening file.')
+
+    IF ((MNPROC == 1) .OR. &
+    (READ_LOCAL_HOT_START_FILES.eqv. .TRUE. )) THEN
+        OPEN(IHOT,FILE=TRIM(INPUTDIR)//'/'//hsfn,ACTION='READ', &
+        ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO,STATUS='OLD')
+    ELSE
+    ! fulldomain hotstart file
+        OPEN(IHOT,FILE=TRIM(GBLINPUTDIR)//'/'//hsfn,ACTION='READ', &
+        ACCESS='DIRECT',RECL=8,IOSTAT=ErrorIO,STATUS='OLD')
+    ENDIF
+
+    IF (ErrorIO > 0) THEN
+        WRITE(16,1001)         ! hot start file
+        WRITE(16,1005)         ! exists but can't be opened
+        WRITE(16,9973)         ! execution terminated
+        IF (NScreen /= 0 .AND. MyProc == 0) THEN
+            WRITE(ScreenUnit,1001)
+            WRITE(ScreenUnit,1005)
+            WRITE(ScreenUnit,9973)
+        ENDIF
+#ifdef CMPI
+        CALL MSG_FINI()
+#endif
+        STOP                   ! We're toast.
+    ENDIF
+
+    1001 FORMAT('ERROR: The hot start file')
+    1011 FORMAT('was not found.')
+    1012 FORMAT('was a nonmatching version')
+    1005 FORMAT('exists but cannot be opened.')
+    9973 FORMAT(/,1X,'!!!!! EXECUTION WILL NOW BE TERMINATED !!!!!',//)
+
+!        Now read the non-portable binary hot start file.
+    moderbin=1 ! kmd - sets the flag for the readAndMapToSubdomain subroutines
+    IHOTSTP=1
+    READ(IHOT,REC=IHOTSTP) InputFileFmtVn ; IHOTSTP = IHOTSTP + 1
+    if ( .NOT. &
+    CMP_VERSION_NUMBERS(InputFileFmtVn,FileFmtVersion))then
+        WRITE(16, 1001)
+        write(16, 1012)
+        write(16, 9973)
+        if (NScreen /= 0 .AND. myproc == 0) then
+            WRITE(ScreenUnit, 1001)
+            write(ScreenUnit, 1012)
+            write(ScreenUnit, 9973)
+        endif
+#ifdef CMPI
+        call msg_fini()
+#endif
+        stop
+    endif
+    READ(IHOT,REC=IHOTSTP) IMHS         ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) TimeLoc         ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) ITHS         ; IHOTSTP = IHOTSTP + 1
+
+    READ(IHOT,REC=IHOTSTP) NP_G_IN      ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) NE_G_IN      ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) NP_A_IN      ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) NE_A_IN      ; IHOTSTP = IHOTSTP + 1
+
+!        jgf49.44: Add capability to read fulldomain binary hotstart
+!        file in parallel.
+    CALL readAndMapToSubdomain2D(ETA1, IHOT, IHOTSTP, moderbin)
+    CALL readAndMapToSubdomain2D(ETA2, IHOT, IHOTSTP, moderbin)
+!        jgf46.34 Added support for IBTYPE=52.
+    CALL readAndMapToSubdomain2D(ETADisc, IHOT, IHOTSTP, moderbin)
+    CALL readAndMapToSubdomain2D(UU2, IHOT, IHOTSTP, moderbin)
+    CALL readAndMapToSubdomain2D(VV2, IHOT, IHOTSTP, moderbin)
+    IF(IMHS == 10) THEN
+        CALL readAndMapToSubdomain2D(CH1, IHOT, IHOTSTP, moderbin)
+    ENDIF
+    CALL readAndMapToSubdomainInt2D(NNODECODE, IHOT, IHOTSTP, moderbin)
+! jgf52.08.01: Subroutine timestep() uses nodecode. Set it here.
+    nodecode(:) = nnodecode(:)
+    CALL readAndMapEleToSubdomainInt2D(NOFF, IHOT, IHOTSTP, moderbin)
+
+    READ(IHOT,REC=IHOTSTP) IESTP ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) NSCOUE ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) IVSTP ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) NSCOUV ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) ICSTP ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) NSCOUC ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) IPSTP ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) IWSTP ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) NSCOUM ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) IGEP ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) NSCOUGE ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) IGVP ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) NSCOUGV ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) IGCP ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) NSCOUGC ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) IGPP ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) IGWP ; IHOTSTP = IHOTSTP + 1
+    READ(IHOT,REC=IHOTSTP) NSCOUGW ; IHOTSTP = IHOTSTP + 1
+
+!     R E A D   3 D   H O T S T A R T   D A T A
+
+    IF (C3D) THEN
+        READ(IHOT,REC=IHOTSTP) IDenHS
+        IHOTSTP=IHOTSTP+1
+    ! D station density output time counter
+        READ(IHOT,REC=IHOTSTP) N3DSD
+        IHOTSTP=IHOTSTP+1
+        READ(IHOT,REC=IHOTSTP) I3DSDRec
+        IHOTSTP=IHOTSTP+1
+    ! D station velocity output time counter
+        READ(IHOT,REC=IHOTSTP) N3DSV
+        IHOTSTP=IHOTSTP+1
+        READ(IHOT,REC=IHOTSTP) I3DSVRec
+        IHOTSTP=IHOTSTP+1
+    ! D station turbulence output time counter
+        READ(IHOT,REC=IHOTSTP) N3DST
+        IHOTSTP=IHOTSTP+1
+        READ(IHOT,REC=IHOTSTP) I3DSTRec
+        IHOTSTP=IHOTSTP+1
+        READ(IHOT,REC=IHOTSTP) N3DGD
+        IHOTSTP=IHOTSTP+1
+        READ(IHOT,REC=IHOTSTP) I3DGDRec
+        IHOTSTP=IHOTSTP+1
+        READ(IHOT,REC=IHOTSTP) N3DGV
+        IHOTSTP=IHOTSTP+1
+        READ(IHOT,REC=IHOTSTP) I3DGVRec
+        IHOTSTP=IHOTSTP+1
+        READ(IHOT,REC=IHOTSTP) N3DGT
+        IHOTSTP=IHOTSTP+1
+        READ(IHOT,REC=IHOTSTP) I3DGTRec
+        IHOTSTP=IHOTSTP+1
+    !           kmd48.33bc - changed to the format used with the global IO
+    !           jgf49.44: Add capability to read fulldomain 3D binary hotstart
+    !           file in parallel.
+        CALL readAndMapToSubdomain2D(DUU, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain2D(DUV, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain2D(DVV, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain2D(UU, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain2D(VV, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain2D(BSX, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain2D(BSY, IHOT, IHOTSTP, moderbin)
+    !           kmd48.33bc - allocate realQ_tmp
+        ALLOCATE(RealQ_Tmp(NP,NFEN))
+        ALLOCATE(ImQ_Tmp(NP,NFEN))
+    !           kmd48.33bc - changed to format used in global IO, layer output
+        CALL readAndMapToSubdomain3D(RealQ_Tmp, NFEN, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain3D(ImQ_Tmp, NFEN, IHOT, IHOTSTP, moderbin)
+        Q = RealQ_Tmp + iy*ImQ_Tmp ! reconstruct Q matrix from parts
+        DEALLOCATE(RealQ_Tmp, ImQ_Tmp)
+        CALL readAndMapToSubdomain3D(WZ, NFEN, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain3D(q20, NFEN, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain3D(l, NFEN, IHOT, IHOTSTP, moderbin)
+    !           kmd48.33bc - need to determine if IDEN parameter in hotstart
+    !           is different than IDEN from fort.15 file. If so, determine which
+    !           one should be used in the simulation.
+        IF (MYPROC == 0) THEN
+            PRINT *, "IDEN = ", IDEN
+            PRINT *, "IDENHS = ", IDENHS
+        END IF
+        IF (IDenHS /= IDEN) THEN
+            IF ((CBAROCLINIC) .AND. (RES_BC_FLAG >= 1)) THEN
+            ! IDEN value from fort.15 should be used
+            ELSE IF ((CBAROCLINIC) .AND. (RES_BC_FLAG <= 0)) THEN
+                IDEN=IDenHS
+            END IF
+        END IF
+        SELECT CASE(ABS(IDen))
+        CASE(0)
+        CALL logMessage(INFO, &
+        "IDEN=0; This is a barotropic model run.")
+        CASE(1)
+        CALL readAndMapToSubdomain3D(SigT, NFEN, IHOT, IHOTSTP, moderbin)
+        CASE(2)
+        CALL readAndMapToSubdomain3D(Sal, NFEN, IHOT, IHOTSTP, moderbin)
+        CASE(3)
+        CALL readAndMapToSubdomain3D(Temp, NFEN, IHOT, IHOTSTP, moderbin)
+        CASE(4)
+        CALL readAndMapToSubdomain3D(Sal, NFEN, IHOT, IHOTSTP, moderbin)
+        CALL readAndMapToSubdomain3D(Temp, NFEN, IHOT, IHOTSTP, moderbin)
+        CASE DEFAULT
+    ! should not happen
+        WRITE(scratchMessage,12) IDEN
+        CALL allMessage(ERROR,scratchMessage)
+        12 FORMAT("IDEN is ",I2, &
+        " but the valid range is +/- 0 to 4.")
+        END SELECT
+    ENDIF  ! C3D
+!...
+!......  HOT START INFORMATION FOR HARMONIC ANALYSIS
+!...
+    IF(IHARIND == 1) THEN
+        IHABEG=ITHAS+NHAINC
+    !...
+    !........   IF HARMONIC ANALYSIS HAS ALREADY BEGUN, READ IN HOT START
+    !........   HARMONIC ANALYSIS, MEAN AND SQUARE INFO
+    !...
+        IF(ITHS > ITHAS) THEN
+            READ(IHOT,REC=IHOTSTP) ICHA
+        ENDIF
+        IF(ITHS >= IHABEG) THEN
+            CALL readBinaryHAHotstart(IHOT, IHOTSTP)
+        ENDIF
+    ENDIF    !IHARIND
+    CLOSE(IHOT)  ! close non-portable binary hotstart file
+
+
+#ifdef ADCNETCDF
+    CASE(367,368,567,568)  ! netcdf hotstart file
+    ncHundreds = 300
+    IF ((IHOT == 567) .OR. (IHOT == 568)) THEN
+        ncHundreds = 500
+    ENDIF
+    CALL readNetCDFHotstart(IHOT-ncHundreds, timeLoc)
+    IF (C3D) THEN
+        CALL readNetCDFHotstart3D(IHOT-ncHundreds)
+    ENDIF
+    IF ((IHARIND == 1) .AND. (ITHS > ITHAS)) THEN
+        CALL readNetCDFHotstartHarmonic(IHOT-ncHundreds)
+        IF (CHARMV.eqv. .TRUE. ) THEN
+            CALL readNetCDFHotstartHarmonicMeansVariances(IHOT &
+            -ncHundreds)
+        ENDIF
+    ENDIF
+#endif
+
+
+    CASE DEFAULT
+! This code should be unreachable since IHOT was already
+! checked to be sure that it is valid.
+    write(scratchMessage,'(A,I3,A)') "IHOT was set to '",IHOT, &
+    "' but this value of IHOT is not valid."
+    call allMessage(ERROR, scratchMessage)
+    call ADCIRC_Terminate()
+    END SELECT
+
+!     Compare the harmonic analysis data read in from the hotstart file
+!     with data from the fort.15 file to be sure that they are consistent.
+    IF((IHARIND == 1) .AND. (ITHS >= IHABEG)) THEN
+        CALL checkHAHotstart()
+    ENDIF
+
+!     ---------------------------------------------
+
+!     I N I T I A L I Z E   H O T S T A R T   R U N
+
+!     ---------------------------------------------
+! jgf51.01: Determine if there is a difference between the time
+! step size in the hotstart file, and the time step size for this
+! run (i.e, in the fort.15 file) ... if so, this affects any
+! calculation of time in seconds since cold start, and any
+! feature that counts time steps since cold start
+    DTDPHS=TimeLoc/ITHS  ! Set up time step information for hotstart file.
+    dtChange = DTDPHS - DTDP
+! we don't use .ne. for dtChange b/c of the limitations in machine precision
+    IF ( (abs(dtChange) > 1.0e-10) .OR. &
+    ( (IDEN >= 1) .AND. &
+    (C3D.eqv. .TRUE. ) .AND. &
+    (CBAROCLINIC.eqv. .TRUE. ) ) ) THEN
+        CHOTHS= .TRUE. 
+        IF (DTDPHS /= DTDP) THEN
+        ! must recalculate the ending time step number
+            RNDAYHS=TimeLoc/86400.d0
+            NTHS=INT((RNDAY-RNDAYHS)*(86400.d0/DTDP)+0.5d0)
+            NT=ITHS+NTHS
+            call logMessage(INFO,"The time step size is different "// &
+            "from the time step size listed in the hotstart file. "// &
+            "The total number of time steps in this "// &
+            "run has been recalculated accordingly.")
+            WRITE(scratchMessage, &
+            '("The ending time step number is now",I9,".")') NT
+            call logMessage(INFO,scratchMessage)
+        !           jgf51.14: Need to recalculate the starting and ending
+        !           times for output if time step size has changed
+            call recalculateStartingAndEndingTimestepsForOutput( &
+            TOUTSE,TOUTFE,NTCYSE,NTCYFE)
+            call recalculateStartingAndEndingTimestepsForOutput( &
+            TOUTSV,TOUTFV,NTCYSV,NTCYFV)
+            call recalculateStartingAndEndingTimestepsForOutput( &
+            TOUTSM,TOUTFM,NTCYSM,NTCYFM)
+            call recalculateStartingAndEndingTimestepsForOutput( &
+            TOUTSGE,TOUTFGE,NTCYSGE,NTCYFGE)
+            call recalculateStartingAndEndingTimestepsForOutput( &
+            TOUTSGV,TOUTFGV,NTCYSGV,NTCYFGV)
+            call recalculateStartingAndEndingTimestepsForOutput( &
+            TOUTSGW,TOUTFGW,NTCYSGW,NTCYFGW)
+            DO I=1,NP
+                ETA1(I)=ETA2(I) + DTDP*((ETA1(I)-ETA2(I))/DTDPHS)
+            END DO
+        END IF
+    END IF
+
+!     kmd48.33bc - added time and time step to be passed to the hotstart file
+    IF(C3D) THEN
+        CALL HOTSTART_3D(TimeLoc,ITHS)
+    ENDIF
+
+    DO I=1, NP
+        ETAS(I)=ETA2(I)-ETA1(I)
+        H2=DP(I)+IFNLFA*ETA2(I)
+        QX2(I)=UU2(I)*H2
+        QY2(I)=VV2(I)*H2
+    END DO
+!     jgf46.08 Fine grained ramp functions
+!     jgf46.21 Split flux into internal and external, added support
+!     for IBTYPE=52.
+! endra: Changed these to DTDPHS because if timestep is changed then
+!       the value of DTDP will not match with the ITHS.
+
+    IF (NRamp == 0) THEN
+        RampExtFlux1=1.0d0
+        RampExtFlux2=1.0d0
+        RampIntFlux1=1.0d0
+        RampIntFlux2=1.0d0
+        RampTip2=1.0d0
+        RampMete2=1.0d0
+        RampWRad2=1.0d0
+    ELSE
+        RampExtFlux1=TANH((2.D0*(ITHS-1)*DTDPHS/86400.D0)/DRampExtFlux)
+        RampExtFlux2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampExtFlux)
+        RampIntFlux1=TANH((2.D0*(ITHS-1)*DTDPHS/86400.D0)/DRampIntFlux)
+        RampIntFlux2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampIntFlux)
+        RampTip2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampTip)
+    ! Corbitt 1203022: Added Zach's Fix for Assigning a Start Time to Mete Ramping
+        RampMete2=TANH((2.D0*((ITHS)*DTDPHS/86400.D0-DUnRampMete))/DRampMete)
+        RampWRad2=TANH((2.D0*(ITHS)*DTDPHS/86400.D0)/DRampWRad)
+    ENDIF
+#ifdef IBM
+    FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS,KIND(0.0D0))
+#else
+    FluxSettlingIT=INT(FluxSettlingTime*86400.d0/DTDPHS)
+#endif
+    IF(ITHS < (FluxSettlingIT+10)) THEN
+        RampIntFlux1=0.0d0
+        RampIntFlux2=0.0d0
+        RampTip2=0.0d0
+        RampMete2=0.0d0
+        RampWRad2=0.0d0
+    ENDIF
+
+!     jgf48.4627 If user only requests meteorological output, then
+!     set a flag that turns off the calculation of the GWCE and
+!     momentum equations
+    IF (NWS /= 0) THEN
+        IF ((NOUTE == 0) .AND. (NOUTV == 0) .AND. (NOUTC == 0) .AND. &
+        (NOUTGE == 0) .AND. (NOUTGV == 0) .AND. (NOUTGC == 0 ) .AND. &
+        (I3DSD == 0) .AND. (I3DSV == 0) .AND. (I3DST == 0) .AND. &
+        (I3DGD == 0) .AND. (I3DGV == 0) .AND. (I3DGT == 0) .AND. &
+        (NHASE == 0) .AND. (NHASV == 0) .AND. &
+        (NHAGE == 0) .AND. (NHAGV == 0) ) &
+        THEN
+            nonMetOutputOff = .TRUE. 
+        ENDIF
+        IF ( (NOUTM /= 0) .OR. (NOUTGW /= 0) ) THEN
+            metOutputOn = .TRUE. 
+        ENDIF
+        IF ( (metOutputOn.eqv. .TRUE. ) .AND. &
+        (nonMetOutputOff.eqv. .TRUE. ) ) THEN
+            call allMessage(INFO,'Only meterological output was '// &
+            'requested. ADCIRC will not solve the GWCE or '// &
+            'momentum equations.')
+            METONLY = .TRUE. ! set flag
+        ENDIF
+    ENDIF
+
+!.....SETUP POSSIBILITY OF TIME VARIABLE WEIRS
+    CALL WEIR_SETUP()
+
+
+!.... SET POSITIONS IN BOUNDARY CONDITION, WIND AND OUTPUT FILES
+
+    WRITE(16,1112)
+    WRITE(16,1794)
+    1794 FORMAT(//,' INFORMATION ABOUT RE-STARTING THE TIME SERIES', &
+    ' OUTPUT FILES (UNITS 61-64,71-74,81,83),', &
+    /,' WIND/PRESSURE FILE (UNIT 22) AND FLOW BOUNDARY', &
+    ' CONDITION FILE (UNIT 20)',//)
+
+!......INITIALLY, ZERO OUT THE NORMAL FLOW ON ALL BOUNDARIES
+
+    DO I=1,NVEL
+        QN2(I)=0.D0
+        QN1(I)=0.D0
+        QN0(I)=0.D0
+    END DO
+
+!.... FIND THE PROPER PLACE IN THE APERIODIC ELEVATION SPECIFIED
+!.... BOUNDARY CONDITION FILE IF IT IS REQURIED.
+
+    if(subdomainOn .AND. enforceBN == 1) then ! NCSU Subdomain
+        call openFort019H(TimeLoc)          ! NCSU Subdomain
+    endif                                   ! NCSU Subdomain
+
+    IF((NOPE > 0) .AND. (NBFR == 0)) THEN
+        IF(NSCREEN /= 0 .AND. MYPROC == 0) WRITE(ScreenUnit,1112)
+        WRITE(16,1112)
+        IF(NSCREEN /= 0 .AND. MYPROC == 0) WRITE(ScreenUnit,1976)
+        WRITE(16,1976)
+        1976 FORMAT(/,1X,'LOCATING ELEVATION SPECIFIED INFORMATION IN ', &
+        'UNIT 19',/)
+
+        if ((subdomainOn.eqv. .FALSE. ) .OR. (enforceBN /= 1)) then ! NCSU Subdomain
+            OPEN(19,FILE=TRIM(INPUTDIR)//'/'//'fort.19')
+            READ(19,*) ETIMINC
+            ETIME1=STATIM*86400.D0
+            ETIME2=ETIME1+ETIMINC
+            DO J=1,NETA
+                READ(19,*) ESBIN1(J)
+            END DO
+            DO J=1,NETA
+                READ(19,*) ESBIN2(J)
+            END DO
+            DO IT=1,ITHS-1
+                TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
+                IF(TIMEIT > ETIME2) THEN
+                    ETIME1=ETIME2
+                    ETIME2=ETIME1+ETIMINC
+                    DO J=1,NETA
+                        ESBIN1(J)=ESBIN2(J)
+                        READ(19,*) ESBIN2(J)
+                    END DO
+                ENDIF
+            END DO
+            IF(TimeLoc > ETIME2) THEN
+                ETIME1=ETIME2
+                ETIME2=ETIME1+ETIMINC
+                DO J=1,NETA
+                    ESBIN1(J)=ESBIN2(J)
+                    READ(19,*) ESBIN2(J)
+                END DO
+            ENDIF
+            ETRATIO=(TIMEIT-ETIME1)/ETIMINC
+        ENDIF
+    ENDIF
+
+!......FIND PROPER PLACE IN THE APERIODIC NORMAL FLOW BOUNDARY CONDITION
+!......FILE IF IT IS REQUIRED
+
+    IF((NFLUXF == 1) .AND. (NFFR == 0)) THEN
+        IF(NSCREEN /= 0 .AND. MYPROC == 0) WRITE(ScreenUnit,1112)
+        WRITE(16,1112)
+        IF(NSCREEN /= 0 .AND. MYPROC == 0) WRITE(ScreenUnit,1978)
+        WRITE(16,1978)
+        1978 FORMAT(/,1X,'LOCATING NORMAL FLOW INFORMATION IN UNIT 20',/)
+        OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
+        READ(20,*) FTIMINC
+        QTIME1=STATIM*86400.D0
+        QTIME2=QTIME1+FTIMINC
+        DO J=1,NVEL
+            QNIN1(J)=0.D0
+            IF((LBCODEI(J) == 2) .OR. (LBCODEI(J) == 12) &
+             .OR. (LBCODEI(J) == 22) .OR. (LBCODEI(J) == 32)) &
+            READ(20,*) QNIN1(J)
+        END DO
+        DO J=1,NVEL
+            QNIN2(J)=0.D0
+            IF((LBCODEI(J) == 2) .OR. (LBCODEI(J) == 12) &
+             .OR. (LBCODEI(J) == 22) .OR. (LBCODEI(J) == 32)) &
+            READ(20,*) QNIN2(J)
+        END DO
+        DO IT=1,ITHS-1
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
+            IF(TIMEIT > QTIME2) THEN
+                QTIME1=QTIME2
+                QTIME2=QTIME2+FTIMINC
+                DO J=1,NVEL
+                    IF((LBCODEI(J) == 2) .OR. (LBCODEI(J) == 12) &
+                     .OR. (LBCODEI(J) == 22) .OR. (LBCODEI(J) == 32)) THEN
+                        QNIN1(J)=QNIN2(J)
+                        READ(20,*) QNIN2(J)
+                    ENDIF
+                END DO
+            ENDIF
+        END DO
+        QTRATIO=(TIMEIT-QTIME1)/FTIMINC
+        DO I=1,NVEL
+            QN1(I)=RampExtFlux1*(QNIN1(I)+QTRATIO*(QNIN2(I)-QNIN1(I)))
+        END DO
+        IF(TimeLoc > QTIME2) THEN
+            QTIME1=QTIME2
+            QTIME2=QTIME1+FTIMINC
+            DO J=1,NVEL
+                IF((LBCODEI(J) == 2) .OR. (LBCODEI(J) == 12) &
+                 .OR. (LBCODEI(J) == 22) .OR. (LBCODEI(J) == 32)) THEN
+                    QNIN1(J)=QNIN2(J)
+                    READ(20,*) QNIN2(J)
+                ENDIF
+            END DO
+        ENDIF
+        QTRATIO=(TimeLoc-QTIME1)/FTIMINC
+        DO I=1,NVEL
+            QN2(I)=RampExtFlux2*(QNIN1(I)+QTRATIO*(QNIN2(I)-QNIN1(I)))
+        END DO
+    ENDIF
+
+! kmd - added in a option to start the river information at the hot start time
+    IF((NFLUXF == 1) .AND. (NFFR == -1)) THEN
+        IF(NSCREEN /= 0 .AND. MYPROC == 0) WRITE(ScreenUnit,1112)
+        WRITE(16,1112)
+        IF(NSCREEN /= 0 .AND. MYPROC == 0) WRITE(ScreenUnit,1978)
+        WRITE(16,1978)
+    ! 1978    FORMAT(/,1X,'LOCATING NORMAL FLOW INFORMATION IN UNIT 20',/)
+    !         IF (MYPROC.EQ.7) THEN
+    !            PRINT *, "Made it to the reading in of the river file"
+    !         END IF
+        OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
+        READ(20,*) FTIMINC
+        QTIME1=TIMELOC
+        QTIME2=QTIME1+FTIMINC
+        DO J=1,NVEL
+            QNIN1(J)=0.D0
+            IF((LBCODEI(J) == 2) .OR. (LBCODEI(J) == 12) &
+             .OR. (LBCODEI(J) == 22) .OR. (LBCODEI(J) == 32)) &
+            READ(20,*) QNIN1(J)
+        END DO
+        DO J=1,NVEL
+            QNIN2(J)=0.D0
+            IF((LBCODEI(J) == 2) .OR. (LBCODEI(J) == 12) &
+             .OR. (LBCODEI(J) == 22) .OR. (LBCODEI(J) == 32)) &
+            READ(20,*) QNIN2(J)
+        END DO
+        QTRATIO=(TIMEIT-QTIME1)/FTIMINC
+        DO I=1,NVEL
+            QN1(I)=RampExtFlux1*(QNIN1(I)+QTRATIO*(QNIN2(I)-QNIN1(I)))
+        END DO
+        IF(TIMELOC > QTIME2) THEN
+            QTIME1=QTIME2
+            QTIME2=QTIME1+FTIMINC
+            DO J=1,NVEL
+                IF((LBCODEI(J) == 2) .OR. (LBCODEI(J) == 12) &
+                 .OR. (LBCODEI(J) == 22) .OR. (LBCODEI(J) == 32)) THEN
+                    QNIN1(J)=QNIN2(J)
+                    READ(20,*) QNIN2(J)
+                ENDIF
+            END DO
+        ENDIF
+        QTRATIO=(TIMELOC-QTIME1)/FTIMINC
+        DO I=1,NVEL
+            QN2(I)=RampExtFlux2*(QNIN1(I)+QTRATIO*(QNIN2(I)-QNIN1(I)))
+        END DO
+    ENDIF
+
+!......RESTART THE PERIODIC NORMAL FLOW BOUNDARY CONDITION
+
+    IF((NFLUXF == 1) .AND. (NFFR > 0)) THEN
+        DO J=1,NFFR
+            IF(FPER(J) == 0.) THEN
+                NCYC=0.
+            ELSE
+#ifdef IBM
+                NCYC=INT(TimeLoc/FPER(J),KIND(0.0d0))
+#else
+                NCYC=INT(TimeLoc/FPER(J))
+#endif
+            ENDIF
+            ARGJ1=FAMIG(J)*(TimeLoc-DTDPHS-NCYC*FPER(J))+FFACE(J) ! kmd48.33bc - changed from DTDP to DTDPHS
+            ARGJ2=FAMIG(J)*(TimeLoc-NCYC*FPER(J))+FFACE(J)
+            RFF1=FFF(J)*RampExtFlux1
+            RFF2=FFF(J)*RampExtFlux2
+            DO I=1,NVEL
+                ARG1=ARGJ1-QNPH(J,I)
+                ARG2=ARGJ2-QNPH(J,I)
+                QN1(I)=QN1(I)+QNAM(J,I)*RFF1*COS(ARG1)
+                QN2(I)=QN2(I)+QNAM(J,I)*RFF2*COS(ARG2)
+            END DO
+        END DO
+    ENDIF
+
+!...
+!...  RESTART SUPERCRITICAL OUTWARD NORMAL FLOW OVER SPECIFIED
+!.... EXTERNAL BARRIER BOUNDARY NODES
+!...
+    IF(NFLUXB == 1) THEN
+        DO I=1,NVEL
+            IF((LBCODEI(I) == 3) .OR. (LBCODEI(I) == 13) &
+             .OR. (LBCODEI(I) == 23)) THEN
+                NNBB=NBV(I)
+                RBARWL=2.D0*(ETA1(NNBB)-BARLANHT(I))/3.D0
+                IF(RBARWL > 0.0D0) THEN
+                    QN1(I)=-RampIntFlux1 &
+                    *BARLANCFSP(I)*RBARWL*(RBARWL*G)**0.5D0
+                ENDIF
+                RBARWL=2.D0*(ETA2(NNBB)-BARLANHT(I))/3.D0
+                IF(RBARWL > 0.0D0) THEN
+                    QN2(I)=-RampIntFlux2 &
+                    *BARLANCFSP(I)*RBARWL*(RBARWL*G)**0.5D0
+                ENDIF
+            ENDIF
+        END DO
+    ENDIF
+
+!...
+!...  RESTART INWARD/OUTWARD NORMAL FLOW OVER SPECIFIED
+! j   wm001 - modified/added the following 3 lines
+!.... INTERNAL BARRIERS AND FOR INTERNAL BARRIER BOUNDARIES
+!.... WITH CROSS BARRIER PIPES
+!.... THIS SECTION ONLY RESTARTS THE OVER BARRIER FLOW COMPONENT
+!...
+! j   wm001 - modified following line
+    IF(NFLUXIB == 1) THEN
+        DO I=1,NVEL
+        ! j   wm001 - modified following 2 lines
+            IF((LBCODEI(I) == 4) .OR. (LBCODEI(I) == 24) &
+             .OR. (LBCODEI(I) == 5) .OR. (LBCODEI(I) == 25)) THEN
+                NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
+                NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+            !.............RESET INFORMATION FOR K-1 TIME LEVEL
+                RBARWL1=ETA1(NNBB1)-BARINHT(I)
+                RBARWL2=ETA1(NNBB2)-BARINHT(I)
+                RBARWL1F=2.0D0*RBARWL1/3.0D0
+                RBARWL2F=2.0D0*RBARWL2/3.0D0
+                IF((RBARWL1 < 0.0) .AND. (RBARWL2 < 0.0)) THEN ! WATER LEVEL BELOW BARRIER
+                    QN1(I)=0.0D0  ! NO FLOW
+                    GOTO 1998
+                ENDIF
+                IF(RBARWL1 == RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
+                    QN1(I)=0.0D0  ! NO FLOW
+                    GOTO 1998
+                ENDIF
+                IF(RBARWL1 > RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF BARRIER
+                    IF(RBARWL2 > RBARWL1F) THEN ! OUTWARD SUBCRITICAL FLOW
+                        QN1(I)=-RampIntFlux1*BARINCFSB(I)*RBARWL2* &
+                        (2.d0*G*(RBARWL1-RBARWL2))**0.5D0
+                        GOTO 1998
+                    ELSE          ! OUTWARD SUPERCRITICAL FLOW
+                        QN1(I)=-RampIntFlux1 &
+                        *BARINCFSP(I)*RBARWL1F*(RBARWL1F*G)**0.5D0
+                        GOTO 1998
+                    ENDIF
+                ENDIF
+                IF(RBARWL2 > RBARWL1) THEN ! WATER LEVEL LOWER ON THIS SIDE OF BARRIER
+                    IF(RBARWL1 > RBARWL2F) THEN ! INWARD SUBCRITICAL FLOW
+                        QN1(I)=RampIntFlux1*BARINCFSB(I)*RBARWL1* &
+                        (2.d0*G*(RBARWL2-RBARWL1))**0.5D0
+                        GOTO 1998
+                    ELSE          ! INWARD SUPERCRITICAL FLOW
+                        QN1(I)=RampIntFlux1 &
+                        *BARINCFSP(I)*RBARWL2F*(RBARWL2F*G)**0.5D0
+                        GOTO 1998
+                    ENDIF
+                ENDIF
+                1998 CONTINUE
+            !.............RESET INFORMATION FOR K TIME LEVEL
+                RBARWL1=ETA2(NNBB1)-BARINHT(I)
+                RBARWL2=ETA2(NNBB2)-BARINHT(I)
+                RBARWL1F=2.0D0*RBARWL1/3.0D0
+                RBARWL2F=2.0D0*RBARWL2/3.0D0
+                IF((RBARWL1 < 0.0) .AND. (RBARWL2 < 0.0)) THEN ! WATER LEVEL BELOW BARRIER
+                    QN2(I)=0.0D0  ! NO FLOW
+                    GOTO 1999
+                ENDIF
+                IF(RBARWL1 == RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
+                    QN2(I)=0.0D0  ! NO FLOW
+                    GOTO 1999
+                ENDIF
+                IF(RBARWL1 > RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF BARRIER
+                    IF(RBARWL2 > RBARWL1F) THEN ! OUTWARD SUBCRITICAL FLOW
+                        QN2(I)=-RampIntFlux2*BARINCFSB(I)*RBARWL2* &
+                        (2.d0*G*(RBARWL1-RBARWL2))**0.5D0
+                        GOTO 1999
+                    ELSE          ! OUTWARD SUPERCRITICAL FLOW
+                        QN2(I)=-RampIntFlux2 &
+                        *BARINCFSP(I)*RBARWL1F*(RBARWL1F*G)**0.5D0
+                        GOTO 1999
+                    ENDIF
+                ENDIF
+                IF(RBARWL2 > RBARWL1) THEN !WATER LEVEL LOWER ON THIS SIDE OF BARRIER
+                    IF(RBARWL1 > RBARWL2F) THEN ! INWARD SUBCRITICAL FLOW
+                        QN2(I)=RampIntFlux2*BARINCFSB(I)*RBARWL1* &
+                        (2.d0*G*(RBARWL2-RBARWL1))**0.5D0
+                        GOTO 1999
+                    ELSE          ! INWARD SUPERCRITICAL FLOW
+                        QN2(I)=RampIntFlux2 &
+                        *BARINCFSP(I)*RBARWL2F*(RBARWL2F*G)**0.5D0
+                        GOTO 1999
+                    ENDIF
+                ENDIF
+                1999 CONTINUE
+            ENDIF
+        END DO
+    ENDIF
+
+! j   wm001 - start add
+!...
+!...  RESTART INWARD/OUTWARD NORMAL FLOW OVER SPECIFIED
+!.... INTERNAL BARRIERS WITH CROSS BARRIER PIPES
+!.... THIS SECTION RESTARTS THE PIPE FLOW COMPONENT
+!.... NOTE THAT PIPE FLOW COMPONENT IS ADDED INTO BARRIER FLOW COMPONENT
+!.... THAT WAS PREVIOUSLY SET
+!...
+    IF(NFLUXIBP == 1) THEN
+        DO I=1,NVEL
+            IF((LBCODEI(I) == 5) .OR. (LBCODEI(I) == 25)) THEN
+                NNBB1=NBV(I)     ! GLOBAL NODE NUMBER ON THIS SIDE OF BARRIER
+                NNBB2=IBCONN(I)  ! GLOBAL NODE NUMBER ON OPPOSITE SIDE OF BARRIER
+            !.............RESET INFORMATION FOR K-1 TIME LEVEL
+                RBARWL1=ETA1(NNBB1)-PIPEHT(I)
+                RBARWL2=ETA1(NNBB2)-PIPEHT(I)
+                IF((RBARWL1 < 0.0) .AND. (RBARWL2 < 0.0)) THEN ! WATER LEVEL BELOW PIPE
+                    QN1(I)=QN1(I)+0.0D0 ! NO FLOW
+                    GOTO 2002
+                ENDIF
+                IF(RBARWL1 == RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF PIPE
+                    QN1(I)=QN1(I)+0.0D0 ! NO FLOW
+                    GOTO 2002
+                ENDIF
+                IF(RBARWL1 > RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF PIPE
+                    IF(RBARWL2 <= 0) THEN ! OUTWARD FREE DISCHARGE
+                        QN1(I)=QN1(I)-RampIntFlux1 &
+                        *0.25D0*PI*(PIPEDIAM(I))**2 &
+                        *(2.D0*G*RBARWL1/(1+PIPECOEF(I)))**0.5D0
+                        GOTO 2002
+                    ELSE          ! OUTWARD SUBMERGED DISCHARGE
+                        QN1(I)=QN1(I)-RampIntFlux1 &
+                        *0.25D0*PI*(PIPEDIAM(I))**2 &
+                        *(2.D0*G*(RBARWL1-RBARWL2)/PIPECOEF(I))**0.5D0
+                        GOTO 2002
+                    ENDIF
+                ENDIF
+                IF(RBARWL2 > RBARWL1) THEN ! WATER LEVEL LOWER ON THIS SIDE OF PIPE
+                    IF(RBARWL1 <= 0) THEN ! INWARD FREE DISCHARGE
+                        QN1(I)=QN1(I)+RampIntFlux1 &
+                        *0.25D0*PI*(PIPEDIAM(I))**2 &
+                        *(2.D0*G*RBARWL2/(1+PIPECOEF(I)))**0.5D0
+                        GOTO 2002
+                    ELSE          ! INWARD SUBMERGED DISCHARGE
+                        QN1(I)=QN1(I)+RampIntFlux1 &
+                        *0.25D0*PI*(PIPEDIAM(I))**2 &
+                        *(2.D0*G*(RBARWL2-RBARWL1)/PIPECOEF(I))**0.5D0
+                        GOTO 2002
+                    ENDIF
+                ENDIF
+                2002 CONTINUE
+            !.............RESET INFORMATION FOR K TIME LEVEL
+                RBARWL1=ETA2(NNBB1)-PIPEHT(I)
+                RBARWL2=ETA2(NNBB2)-PIPEHT(I)
+                IF((RBARWL1 < 0.0) .AND. (RBARWL2 < 0.0)) THEN ! WATER LEVEL BELOW PIPE
+                    QN2(I)=QN2(I)+0.0D0 ! NO FLOW
+                    GOTO 2003
+                ENDIF
+                IF(RBARWL1 == RBARWL2) THEN ! WATER LEVEL EQUAL ON BOTH SIDES OF PIPE
+                    QN2(I)=QN2(I)+0.0D0 ! NO FLOW
+                    GOTO 2003
+                ENDIF
+                IF(RBARWL1 > RBARWL2) THEN ! WATER LEVEL GREATER ON THIS SIDE OF PIPE
+                    IF(RBARWL2 <= 0) THEN ! OUTWARD FREE DISCHARGE
+                        QN2(I)=QN2(I)-RampIntFlux2 &
+                        *0.25D0*PI*(PIPEDIAM(I))**2 &
+                        *(2.D0*G*RBARWL1/(1+PIPECOEF(I)))**0.5D0
+                        GOTO 2003
+                    ELSE          ! OUTWARD SUBMERGED DISCHARGE
+                        QN2(I)=QN2(I)-RampIntFlux2 &
+                        *0.25D0*PI*(PIPEDIAM(I))**2 &
+                        *(2.D0*G*(RBARWL1-RBARWL2)/PIPECOEF(I))**0.5D0
+                        GOTO 2003
+                    ENDIF
+                ENDIF
+                IF(RBARWL2 > RBARWL1) THEN !WATER LEVEL LOWER ON THIS SIDE OF PIPE
+                    IF(RBARWL1 <= 0) THEN ! INWARD FREE DISCHARGE
+                        QN2(I)=QN2(I)+RampIntFlux2 &
+                        *0.25D0*PI*(PIPEDIAM(I))**2 &
+                        *(2.D0*G*RBARWL2/(1+PIPECOEF(I)))**0.5D0
+                        GOTO 2003
+                    ELSE          ! INWARD SUBMERGED DISCHARGE
+                        QN2(I)=QN2(I)+RampIntFlux2 &
+                        *0.25D0*PI*(PIPEDIAM(I))**2 &
+                        *(2.D0*G*(RBARWL2-RBARWL1)/PIPECOEF(I))**0.5D0
+                        GOTO 2003
+                    ENDIF
+                ENDIF
+                2003 CONTINUE
+            ENDIF
+        END DO
+    ENDIF
+! jwm001 - end add
+
+!-------------------TIME VARYING BATHYMETRY FIELDS-------------------------
+!... update the time varying bathymetry if used
+!... tcm v50.66.01 added this section
+
+
+!     time varying bathymetry values are read in at all grid nodes
+!     at a time interval that does not equal the model time
+!     step. Interpolation in time is used to synchronize the
+!     bathymetry information with the model time step.
+    IF(Nddt == 1) THEN
+        OPEN(141,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
+        bTIME1 = STATIM*86400.D0
+        bTIME2 = bTIME1 + bTIMINC
+        BTIME_END = BTIME1 + BCHGTIMINC  !ending time for bathymetry changes during the btiminc interval
+        DP1(:) = DP(:)
+        DP2(:) = DP(:)
+        READ(141,*) (IJK,dp2(IJK),I=1,NP)
+    !...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+    !...     DEPTHS ARE > OR = TO H0.
+        IF ((NOLIFA == 0) .OR. (NOLIFA == 1)) THEN
+            DO I=1,NP
+                IF (DP2(I) < H0) DP2(I) = H0
+            ENDDO
+        ENDIF
+        DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            IF(TIMEIT > bTIME2) THEN
+                bTIME1=bTIME2
+                bTIME2=bTIME2+bTIMINC
+                BTIME_END = BTIME1 + BCHGTIMINC
+                dp1(:) = dp2(:)
+                DO I=1,NP
+                    READ(141,*) IJK,DP2(IJK)
+                END DO
+            !...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+            !...     DEPTHS ARE > OR = TO H0.
+                IF ((NOLIFA == 0) .OR. (NOLIFA == 1)) THEN
+                    DO I=1,NP
+                        IF (DP2(I) < H0) DP2(I) = H0
+                    ENDDO
+                ENDIF
+            ENDIF  !timeit
+        END DO  !IT
+
+    !.......If time is during the bathymetry change interval, then update bathymetry
+        IF(TIMEloc <= BTIME_END) THEN
+            bTRatio=(TIMEloc-bTIME1)/BCHGTIMINC ! interpolate
+            DO I=1,NP
+                DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry
+                DP(I) = DP1(I) + DPTMP           !updating bathymetry
+            ENDDO !I
+        ENDIF
+        IF(TIMEloc == BTIME_END) THEN
+            DO I=1,NP
+                DP(I) = DP2(I)         !updating bathymetry to final value
+            ENDDO !I
+        ENDIF
+    ENDIF
+
+    IF(NDDT == -1) THEN
+        OPEN(141,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
+        bTIME1 = timeLoc
+        bTIME2 = bTIME1 + bTIMINC
+        BTIME_END = BTIME1 + BCHGTIMINC
+        DP1(:) = DP(:)
+        DP2(:) = DP(:)
+        READ(141,*) (IJK,DP2(IJK),I=1,NP)
+    !...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+    !...     DEPTHS ARE > OR = TO H0.
+        IF ((NOLIFA == 0) .OR. (NOLIFA == 1)) THEN
+            DO I=1,NP
+                IF (DP2(I) < H0) DP2(I) = H0
+            ENDDO
+        ENDIF
+    !.......If time is during the bathymetry change interval, then update bathymetry
+        IF(TIMEloc <= BTIME_END) THEN
+            bTRatio=(Timeloc-bTIME1)/BCHGTIMINC ! interpolate
+            DO I=1,NP
+                DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry
+                DP(I) = DP1(I) + DPTMP           !updating bathymetry
+            ENDDO !I
+        endif
+        IF(TIMEloc == BTIME_END) THEN
+            DO I=1,NP
+                DP(I) = DP2(I)         !updating bathymetry to final value
+            ENDDO !I
+        ENDIF
+    ENDIF
+
+    IF(NDDT == 2) THEN
+        OPEN(141,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
+        bTIME1 = STATIM*86400.D0
+        bTIME2 = bTIME1 + bTIMINC
+        BTIME_END = BTIME1 + BCHGTIMINC  !ending time for bathymetry changes during the btiminc interval
+        DP1(:) = DP(:)
+        DP2(:) = DP(:)
+
+    !!!     go get first record for only some nodes, all
+    !!!     other nodes keep their current value
+        CALL NDDT2GET(141,DP2(:),-99999.d0 )
+    !...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+    !...     DEPTHS ARE > OR = TO H0.
+        IF ((NOLIFA == 0) .OR. (NOLIFA == 1)) THEN
+            DO I=1,NP
+                IF (DP2(I) < H0) DP2(I) = H0
+            ENDDO
+        ENDIF
+
+        DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            IF(TIMEIT > bTIME2) THEN
+                bTIME1=bTIME2
+                bTIME2=bTIME2+bTIMINC
+                BTIME_END = BTIME1 + BCHGTIMINC
+                DP1(:) = DP2(:)
+            !!!            go get next record for only some nodes, all
+            !!!            other nodes keep their current value
+                CALL NDDT2GET(141,DP2(:),-99999.d0 )
+            !...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+            !...     DEPTHS ARE > OR = TO H0.
+                IF ((NOLIFA == 0) .OR. (NOLIFA == 1)) THEN
+                    DO I=1,NP
+                        IF (DP2(I) < H0) DP2(I) = H0
+                    ENDDO
+                ENDIF
+            ENDIF
+        END DO  !IT
+
+    !.......If time is during the bathymetry change interval, then update bathymetry
+        IF(TIMEloc <= BTIME_END) THEN
+            bTRatio=(Timeloc-bTIME1)/BCHGTIMINC ! interpolate
+            DO I=1,NP
+                DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry
+                DP(I) = DP1(I) + DPTMP           !updating bathymetry
+            ENDDO !I
+        ENDIF
+        IF(timeloc == BTIME_END) THEN
+            DO I=1,NP
+                DP(I) = DP2(I)         !updating bathymetry to final value
+            ENDDO !I
+        ENDIF
+    ENDIF
+
+    IF(NDDT == -2) THEN
+        OPEN(141,FILE=TRIM(INPUTDIR)//'/'//'fort.141')
+        bTIME1 = timeLoc
+        bTIME2 = bTIME1 + bTIMINC
+        BTIME_END = BTIME1 + BCHGTIMINC
+        DP1(:) = DP(:)
+        DP2(:) = DP(:)
+
+    !!!     go get first record for only some nodes, all
+    !!!     other nodes keep their current value
+        CALL NDDT2GET(141,DP2(:),-99999.d0 )
+    !...     IF WETTING AND DRYING WILL NOT BE USED, MAKE SURE ALL BATHYMETRIC
+    !...     DEPTHS ARE > OR = TO H0.
+        IF ((NOLIFA == 0) .OR. (NOLIFA == 1)) THEN
+            DO I=1,NP
+                IF (DP2(I) < H0) DP2(I) = H0
+            ENDDO
+        ENDIF
+    !.......If time is during the bathymetry change interval, then update bathymetry
+        IF(TIMEloc <= BTIME_END) THEN
+            bTRatio=(Timeloc-bTIME1)/BCHGTIMINC ! interpolate
+            DO I=1,NP
+                DPTMP =  btratio*(DP2(I)-DP1(I))  !Determine incremental amount to adjust bathymetry
+                DP(I) = DP1(I) + DPTMP           !updating bathymetry
+            ENDDO !I
+        endif
+        IF(TIMEloc == BTIME_END) THEN
+            DO I=1,NP
+                DP(I) = DP2(I)         !updating bathymetry to final value
+            ENDDO !I
+        ENDIF
+    ENDIF
+
+
+!------------------------ICE FIELDS----------------------------------------
+!...  UPDATE THE ICE CONCENTRATION FIELDS FROM UNIT 25, 225, 227
+!...  TCM V49.64.01 ADDED THE ICE FIELDS SECTION
+
+    IF (NCICE == 12) THEN
+        CICE_TIME1 = STATIM*86400.D0
+        CICE_TIME2 = CICE_TIME1 + CICE_TIMINC
+    ! This just initializes some variables and might set CICE,etc...
+    ! if skipping ahead is used
+        CALL NCICE1_INIT(CICE1,NP)
+        CALL NCICE1_GET(CICE1,NP)
+        CALL NCICE1_GET(CICE2,NP)
+        DO IT=1,ITHS
+            TIMEIT=IT*DTDP + STATIM*86400.D0
+            IF(TIMEIT > CICE_TIME2) THEN
+                CICE_TIME1 = CICE_TIME2
+                CICE_TIME2 = CICE_TIME2 + CICE_TIMINC
+                DO I=1,NP
+                    CICE1(I)=CICE2(I)
+                END DO
+                CALL NCICE1_GET(CICE2,NP)
+            ENDIF
+        END DO
+    ENDIF
+
+
+
+!------------------------MET FORCING---------------------------------------
+
+!......RESTART WIND AND PRESSURE INFORMATION
+
+!.... tcm v49.16 20100617
+!.... convert background pressure from millibars to meters of water
+    PRBCKGRND_MH2O = 100.0D0*PRBCKGRND/(RHOWAT0*G)
+
+!     No wind, radiation stress or atmospheric pressure forcings are used.
+    IF(NWS == 1) THEN
+        OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+        DO J=1,ITHS
+            DO I=1,NP
+                READ(22,*) NHG,WSX2(I),WSY2(I),PR2(I)
+            END DO
+        END DO
+        DO I=1,NP
+            WSX2(I)=RampMete2*WSX2(I)
+            WSY2(I)=RampMete2*WSY2(I)
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*PR2(I)
+            PRDIFF = RampMete2*(PR2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+        END DO
+    ENDIF
+
+!     Wind stress and atmospheric pressure are read in at all grid nodes
+!     at a time interval that does not equal the model time
+!     step. Interpolation in time is used to synchronize the wind and
+!     pressure information with the model time step.
+    IF(NWS == 2) THEN
+        OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+        WTIME1 = STATIM*86400.D0
+        WTIME2 = WTIME1 + WTIMINC
+        READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
+        READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+        DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            IF(TIMEIT > WTIME2) THEN
+                WTIME1=WTIME2
+                WTIME2=WTIME2+WTIMINC
+                DO I=1,NP
+                    WVNX1(I)=WVNX2(I)
+                    WVNY1(I)=WVNY2(I)
+                    PRN1(I)=PRN2(I)
+                    READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
+                END DO
+            ENDIF
+        END DO
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WSX2(I) = RampMete2*WINDX
+            WSY2(I) = RampMete2*WINDY
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*(PRN1(I)+WTRatio*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I))) &
+            -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+        END DO
+    ENDIF
+
+    IF(NWS == -2) THEN
+        OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+        WTIME1 = TimeLoc
+        WTIME2 = WTIME1 + WTIMINC
+        READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+        READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+        DO I=1,NP
+            WSX2(I) = RampMete2*WVNX1(I)
+            WSY2(I) = RampMete2*WVNY1(I)
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*PRN1(I)
+            PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+        END DO
+    ENDIF
+
+!     Wind velocity in US Navy Fleet Numeric format interpolated in
+!     space onto the ADCIRC grid and in time to synchronize the wind and
+!     pressure information with the model time step. Garratt's formula
+!     is used to compute wind stress from the wind velocity.
+    IF(NWS == 3) THEN
+    !....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
+    !....                           to correspond with having only a global wind file.
+    !         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+        OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+        2223 CALL NWS3GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,IWTIME,IWYR,WTIMED,NP, &
+        NWLON,NWLAT,WLATMAX,WLONMIN,WLATINC,WLONINC,ICS, &
+        NScreen,ScreenUnit)
+        IF(IWYR /= IREFYR) THEN
+            IWTIMEP=IWTIME
+            DO I=1,NP
+                WVNX1(I)=WVNX2(I)
+                WVNY1(I)=WVNY2(I)
+            END DO
+            GOTO 2223
+        ENDIF
+        IF(WTIMED <= WREFTIM) THEN
+            IWTIMEP=IWTIME
+            DO I=1,NP
+                WVNX1(I)=WVNX2(I)
+                WVNY1(I)=WVNY2(I)
+            END DO
+            GOTO 2223
+        ENDIF
+        IF(NSCREEN /= 0 .AND. MYPROC == 0) &
+        WRITE(ScreenUnit,*)'FOUND WIND DATA AT TIME= ',IWTIMEP
+        WRITE(16,*) 'FOUND WIND DATA AT TIME =',IWTIMEP
+        IF(NSCREEN /= 0 .AND. MYPROC == 0) &
+        WRITE(ScreenUnit,*)'FOUND WIND DATA AT TIME= ',IWTIME
+        WRITE(16,*) 'FOUND WIND DATA AT TIME =',IWTIME
+        WTIME2=WTIMED-WREFTIM  !CAST INTO MODEL TIME REFERENCE
+        WTIME1=WTIME2-WTIMINC
+        DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            IF(TIMEIT > WTIME2) THEN
+                WTIME1=WTIME2
+                WTIME2=WTIME2+WTIMINC
+                DO I=1,NP
+                    WVNX1(I)=WVNX2(I)
+                    WVNY1(I)=WVNY2(I)
+                END DO
+                CALL NWS3GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,IWTIME, &
+                IWYR,WTIMED,NP,NWLON,NWLAT,WLATMAX,WLONMIN, &
+                WLATINC,WLONINC,ICS,NScreen,ScreenUnit)
+                IF(NSCREEN /= 0 .AND. MYPROC == 0) &
+                WRITE(ScreenUnit,*) &
+                'WIND FILE ADVANCED TO TIME',' = ', IWTIME
+                WRITE(16,*) 'WIND FILE ADVANCED TO TIME = ',IWTIME
+            ENDIF
+        END DO
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        DO I=1,NP              !INTERPOLATE IN TIME
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG=SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+        !     jgf46.01 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I)=RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I)=RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+        END DO
+    ENDIF
+
+!     Wind velocity and atmospheric pressure are read in (PBL/JAG
+!     format) at selected ADCIRC grid nodes. Interpolation in time is
+!     used to synchronize the wind and pressure information with the
+!     model time step. Garratt's formula is used to compute wind stress
+!     from wind velocity.
+    IF(NWS == 4) THEN
+        OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+        WTIME1 = STATIM*86400.D0
+        WTIME2 = WTIME1 + WTIMINC
+        CALL NWS4GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  !TCM v49.02 Added read for rec. 1
+        CALL NWS4GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+        DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            IF(TIMEIT > WTIME2) THEN
+                WTIME1=WTIME2
+                WTIME2=WTIME2+WTIMINC
+                DO I=1,NP
+                    WVNX1(I)=WVNX2(I)
+                    WVNY1(I)=WVNY2(I)
+                    PRN1(I)=PRN2(I)
+                END DO
+                CALL NWS4GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+            ENDIF
+        END DO
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+        !     jgf46.01 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I))) &
+            -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+        END DO
+    ENDIF
+
+    IF(NWS == -4) THEN
+        OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+        WTIME1 = TimeLoc
+        WTIME2 = WTIME1 + WTIMINC
+        CALL NWS4GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+        CALL NWS4GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+        DO I=1,NP
+            WINDX = WVNX1(I)
+            WINDY = WVNY1(I)
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+        !     jgf46.01 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*PRN1(I)
+            PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+        END DO
+    ENDIF
+
+!     Wind velocity and atmospheric pressure are read in at all grid
+!     nodes. Interpolation in time is used to synchronize the wind and
+!     pressure information with the model time step. Garratt's formula
+!     is used to compute wind stress from wind velocity.
+    IF(NWS == 5) THEN
+        OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+        WTIME1 = STATIM*86400.D0
+        WTIME2 = WTIME1 + WTIMINC
+        READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)  !TCM v49.02 Added read for rec. 1
+        READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+        DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            IF(TIMEIT > WTIME2) THEN
+                WTIME1=WTIME2
+                WTIME2=WTIME2+WTIMINC
+                DO I=1,NP
+                    WVNX1(I)=WVNX2(I)
+                    WVNY1(I)=WVNY2(I)
+                    PRN1(I)=PRN2(I)
+                    READ(22,*) NHG,WVNX2(I),WVNY2(I),PRN2(I)
+                END DO
+            ENDIF
+        END DO
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+        !     jgf46.01 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I))) &
+            -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+        !     jjw-42.06j wrote, jgf46.00 added following two lines:
+            WVNXOUT(I)=RampMete2*WINDX
+            WVNYOUT(I)=RampMete2*WINDY
+        END DO
+    ENDIF
+
+    IF(NWS == -5) THEN
+        OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+        WTIME1 = TimeLoc
+        WTIME2 = WTIME1 + WTIMINC
+        READ(22,*) (NHG,WVNX1(I),WVNY1(I),PRN1(I),I=1,NP)
+        READ(22,*) (NHG,WVNX2(I),WVNY2(I),PRN2(I),I=1,NP)
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC !jgf46.00 added
+        DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+        !     jgf46.01 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*PRN1(I)
+            PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WINDX !jgf46.00 added  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+            WVNYOUT(I)=RampMete2*WINDY !jgf46.00 added  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+        END DO
+    ENDIF
+
+!     Wind velocity and atmospheric pressure are read in for a
+!     rectangular grid (either in Longitude, Latitude or Cartesian
+!     coordinates, consistent with the grid coordinates) and
+!     interpolated in space onto the ADCIRC grid and in time to
+!     synchronize the wind and pressure information with the model time
+!     step. Garratt's formula is used to compute wind stress from the
+!     wind velocity.
+    IF(NWS == 6) THEN
+    !....    tcm_v49.04 20091124 -- Changed from local inputdir to global inputdir
+    !....                           to correspond with having only a global wind file.
+    !         OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+        OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22')
+    !     The following 3 lines are a hardwire to allow a non standard met
+    !     file to be read in at time zero in a hot start.  They should be
+    !     eliminated or commented out for normal operation
+    !     OPEN(199,FILE=TRIM(INPUTDIR)//'/'//'fort.199')
+    !     READ(199,*) (NHG,PRN1(I),WVNX1(I),WVNY1(I),I=1,NP)
+    !     CLOSE(199)
+    !     The following CALL statement should be uncommented for normal operation
+        CALL NWS6GET(X,Y,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,NWLON,NWLAT, &
+        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
+        CALL NWS6GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT, &
+        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
+        WTIME1=TimeLoc
+        WTIME2=WTIME1+WTIMINC
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+        !     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I))) &
+            -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+        END DO
+    ENDIF
+
+!     jgf46.01 New option to read in surface wind stress and atmospheric
+!     pressure for a rectangular grid (either in Longitude, Latitude or
+!     Cartesian coordinates, consistent with the grid coordinates) and
+!     interpolate in space onto the ADCIRC grid. Interpolation in time
+!     is used to synchronize the wind and pressure information with the
+!     model time step.
+
+    IF(NWS == 7) THEN
+        OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+        WTIME1 = STATIM*86400.D0
+        CALL NWS7GET(X,Y,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,NWLON,NWLAT, &
+        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)  !TCMv49.02 Changed (WVNX2,WVNY2,PRN2) to (WVNX1,WVNY1,PRN1)
+        CALL NWS7GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT, &
+        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
+        WTIME1=TimeLoc
+        WTIME2=WTIME1+WTIMINC
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WSX2(I) = RampMete2*WindX !apply ramp
+            WSY2(I) = RampMete2*WindY
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I))) &
+            -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            wvnxout(i)=WSX2(i) !for met recording sta. output
+            wvnyout(i)=WSY2(i)
+        END DO
+    ENDIF
+
+    IF(NWS == -7) THEN
+        OPEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+        WTIME1 = STATIM*86400.D0
+        CALL NWS7GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT, &
+        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
+        CALL NWS7GET(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,NWLON,NWLAT, &
+        WLATMAX,WLONMIN,WLATINC,WLONINC,ICS,RHOWAT0,G)
+        WTIME1=TimeLoc
+        WTIME2=WTIME1+WTIMINC
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+    !     jgfdebug46.01 How do we convert these marine wind stresses into
+    !     directional land surface stresses?
+        DO I=1,NP
+            WindX = WVNX1(I) + WTRatio*(WVNX2(I)-WVNX1(I))
+            WindY = WVNY1(I) + WTRatio*(WVNY2(I)-WVNY1(I))
+            WSX2(I) = RampMete2*WindX !apply ramp
+            WSY2(I) = RampMete2*WindY
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I))) &
+            -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            wvnxout(i)=WSX2(i) !for met recording sta. output
+            wvnyout(i)=WSY2(i)
+        END DO
+    ENDIF
+
+!     jgf46.02 New option to read in hurricane locations and generate
+!     generate hurricane winds from the Holland Wind Model.
+    IF(ABS(NWS) == 8) THEN
+    ! PEN(22,FILE=TRIM(INPUTDIR)//'/'//'fort.22')
+        HollandTime = TimeLoc
+        CALL HollandGet(X,Y,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP, &
+        ICS,RHOWAT0,G,HollandTime,NSCREEN,ScreenUnit)
+        DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*PRN2(I)
+            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WindX
+            WVNYOUT(I)=RampMete2*WindY
+        ENDDO
+    ENDIF
+
+!     rjw added nws = 19: asymmetric hurricane winds v2.0
+
+    IF(ABS(NWS) == 19) THEN
+        OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+        CALL NWS19GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)
+        DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*PRN2(I)
+            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WindX
+            WVNYOUT(I)=RampMete2*WindY
+        ENDDO
+    ENDIF
+          
+!     jie added nws = 20: generalized asymmetric vortex model
+
+    IF(ABS(NWS) == 20) THEN
+        OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'fort.22',STATUS='OLD')
+        CALL NWS20GET(SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,TimeLoc, ICS)
+        DO I=1,NP
+            WindX = WVNX2(I)
+            WindY = WVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDragCo*WindX*WindMag
+            WSY2(I) = RampMete2*0.001293d0*WDragCo*WindY*WindMag
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*PRN2(I)
+            PRDIFF = RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WindX
+            WVNYOUT(I)=RampMete2*WindY
+        ENDDO
+    ENDIF
+
+!     jgf49.1001 Added NWS29, asymmetric vortex winds (NWS19)
+!     embedded in an OWI basin scale gridded met field (NWS12)
+!     from NAM data
+    IF(NWS == 29) THEN
+        WTIME1 = STATIM*86400.D0
+        WTIME2 = WTIME1 + WTIMINC
+    !        This just initializes some variables and might
+    !        set WVNX1, etc ... if skipping ahead.
+        CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+    !        !TCM v49.02 Added read for rec. 1
+        CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+        CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+        DO IT=1,ITHS
+            TIMEIT=IT*DTDP + STATIM*86400.D0
+            IF(TIMEIT > WTIME2) THEN
+                WTIME1=WTIME2
+                WTIME2=WTIME2+WTIMINC
+                DO I=1,NP
+                    WVNX1(I)=WVNX2(I)
+                    WVNY1(I)=WVNY2(I)
+                    PRN1(I)=PRN2(I)
+                END DO
+                CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+            ENDIF
+        END DO
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+        ! jgf49.1001 NAM winds already contain wind reduction
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PR2(I) = RampMete2*PRN1(I)
+            WVNXOUT(I)=RampMete2*WINDX
+            WVNYOUT(I)=RampMete2*WINDY
+        END DO
+    ENDIF
+    IF(NWS == -29) THEN
+        WTIME1 = TimeLoc
+        WTIME2 = WTIME1 + WTIMINC
+        CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+        CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+        CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+        DO I=1,NP
+            WINDX = WVNX1(I)
+            WINDY = WVNY1(I)
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+        ! jgf49.1001 NAM winds already contain wind reduction
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PR2(I) = RampMete2*PRN1(I)
+            WVNXOUT(I)=RampMete*WINDX
+            WVNYOUT(I)=RampMete*WINDY
+        END DO
+    ENDIF
+!     Now blend in the vortex winds into the background OWI wind field.
+    IF(ABS(NWS) == 29) THEN
+        OPEN(22,FILE=TRIM(GBLINPUTDIR)//'/'//'NWS_19_fort.22', &
+        STATUS='OLD')
+        ALLOCATE(vortexWVNX2(NP),vortexWVNY2(NP),vortexPRN2(NP))
+        CALL NWS19GET(SLAM,SFEA,vortexWVNX2,vortexWVNY2,vortexPRN2, &
+        NP,TimeLoc, ICS)
+        DO I=1,NP
+            WindX = vortexWVNX2(I)
+            WindY = vortexWVNY2(I)
+            WindMag = SQRT(WindX*WindX+WindY*WindY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+            CALL getBlendFactor(I, SLAM, SFEA, bf)
+            WSX2(I) = bf*RampMete2*0.001293d0*WDragCo*WindX*WindMag &
+            +(1.0d0-bf)*WSX2(I)
+            WSY2(I) = bf*RampMete2*0.001293d0*WDragCo*WindY*WindMag &
+            +(1.0d0-bf)*WSY2(I)
+            PR2(I) = bf*RampMete2*vortexPRN2(I) &
+            +(1.0d0-bf)*PRN2(I)
+            WVNXOUT(I)=bf*RampMete2*WindX+(1.0d0-bf)*WVNXOUT(I)
+            WVNYOUT(I)=bf*RampMete2*WindY+(1.0d0-bf)*WVNYOUT(I)
+        ENDDO
+    ENDIF
+
+!     Wind velocity (10 m) and atmospheric pressure are read in from a
+!     sequence of National Weather Service (NWS) Aviation (AVN) model
+!     output files. Each AVN file is assumed to contain data on a
+!     Gaussian longitude, latitude grid at a single time. Consecutive
+!     files in the sequence are separated by N hours in time. Garratt's
+!     formula is used to compute wind stress from the wind velocity.
+    IF(NWS == 10) THEN
+        WTIME1=TimeLoc
+        WTIME2=WTIME1+WTIMINC
+        NWSGGWI=-1
+        CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,RHOWAT0,G, &
+        NWLON,NWLAT,WTIMINC)
+        NWSGGWI=0
+        CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP,RHOWAT0,G, &
+        NWLON,NWLAT,WTIMINC)
+        NWSGGWI=1
+        CALL NWS10GET(NWSGGWI,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP,RHOWAT0,G, &
+        NWLON,NWLAT,WTIMINC)
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+        !     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I))) &
+            -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+        END DO
+    ENDIF
+
+!     Wind velocity (10 m) and atmospheric pressure are read in from a
+!     sequence of stripped down National Weather Service (NWS) ETA 29km
+!     model output files. Each ETA file is assumed to contain data on an
+!     E grid for a single day (8 data sets, one every 3 hours, beginning
+!     @ 03:00 and continuing through 24:00 of the given day). The wind
+!     data is converted to an east-west, north-south coordinate system
+!     inside ADCIRC. Garratt's formula is used to compute wind stress
+!     from the wind velocity.
+    IF(NWS == 11) THEN
+        WTIME1=TimeLoc
+        WTIME2=WTIME1+WTIMINC
+        NWSEGWI=0
+        IDSETFLG=0
+        IF(NSCREEN /= 0 .AND. MYPROC == 0) WRITE(ScreenUnit,1197)
+        WRITE(16,1197)
+        CALL NWS11GET(NWSEGWI,IDSETFLG,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP, &
+        RHOWAT0,G)        !JUST COMPUTE INTERPOLATING FACTORS
+        IF(NSCREEN /= 0 .AND. MYPROC == 0) WRITE(ScreenUnit,1198)
+        WRITE(16,1198)
+        NWSEGWI=0
+        IDSETFLG=8
+        CALL NWS11GET(NWSEGWI,IDSETFLG,SLAM,SFEA,WVNX1,WVNY1,PRN1,NP, &
+        RHOWAT0,G)        !NOW COMPUTE HOTSTART WIND FILED
+        NWSEGWI=1
+        IDSETFLG=1
+        CALL NWS11GET(NWSEGWI,IDSETFLG,SLAM,SFEA,WVNX2,WVNY2,PRN2,NP, &
+        RHOWAT0,G)        !NOW COMPUTE NEXT WIND FIELD
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+        !     jgf46.00 Add directional wind reduction.
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*(PRN1(I)+WTRATIO*(PRN2(I)-PRN1(I)))
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I))) &
+            -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+        END DO
+    ENDIF
+
+!.....sb46.28sb01 NWS=12,-12 were added to deal with raw OWI files.  09/xx/2006
+    IF(NWS == 12) THEN
+        WTIME1 = STATIM*86400.D0
+        WTIME2 = WTIME1 + WTIMINC
+        CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  ! This just initializes some variables and might set WVNX1,etc... if skipping ahead.
+        CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)  !TCM v49.02 Added read for rec. 1
+        CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+        DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            IF(TIMEIT > WTIME2) THEN
+                WTIME1=WTIME2
+                WTIME2=WTIME2+WTIMINC
+                DO I=1,NP
+                    WVNX1(I)=WVNX2(I)
+                    WVNY1(I)=WVNY2(I)
+                    PRN1(I)=PRN2(I)
+                END DO
+                CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+            ENDIF
+        END DO
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+        !  tcm v49.16 20100617
+        !            PR2(I) = RampMete2*PRN1(I)
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I))) &
+            -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WINDX
+            WVNYOUT(I)=RampMete2*WINDY
+        END DO
+    ENDIF
+
+    IF(NWS == -12) THEN
+        WTIME1 = TimeLoc
+        WTIME2 = WTIME1 + WTIMINC
+        CALL NWS12INIT(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+        CALL NWS12GET(WVNX1,WVNY1,PRN1,NP,RHOWAT0,G)
+        CALL NWS12GET(WVNX2,WVNY2,PRN2,NP,RHOWAT0,G)
+        DO I=1,NP
+            WINDX = WVNX1(I)
+            WINDY = WVNY1(I)
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+        !  tcm v49.16 20100617
+        !            PR2(I)=RampMete2*PRN1(I)
+            PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WINDX  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+            WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+        END DO
+    ENDIF
+
+
+! jgf50.38.05: Added NWS=15 for reading HWind data
+    IF(ABS(NWS) == 15) THEN
+        CALL NWS15INIT(timeloc)
+        CALL NWS15GET(WVNX2,WVNY2,PRN2,timeloc)
+        DO I=1,NP
+            WDragCo = WindDrag(windSpeeds(i), i)
+            windx = wvnx2(i)
+            windy = wvny2(i)
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(i, WDragCo, &
+                windSpeeds(i), DP(I), ETA2(I), H0, G, &
+                windx, windy)
+                WindMag = SQRT(windx**2+windy**2)
+                WDragCo = WindDrag(WindMag, i)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(i,windx,windy)
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PR2(I) = PRBCKGRND_MH2O + RampMete2*(PRN2(I)-PRBCKGRND_MH2O)
+            WVNXOUT(I)=RampMete2*WINDX
+            WVNYOUT(I)=RampMete2*WINDY
+        END DO
+    ENDIF
+
+!.....tcm v51.06.02 NWS=16,-16 were added to deal with GFDL Met files.
+    IF(NWS == 16) THEN
+        WTIME1 = STATIM*86400.D0
+        WTIME2 = WTIME1 + WTIMINC
+        CALL INIT_GFDL(wtime1)  !this will read in the two time series
+        DO IT=1,ITHS
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed the DTDP to DTDPHS
+            IF(TIMEIT > WTIME2) THEN
+                WTIME1=WTIME2
+                WTIME2=WTIME2+WTIMINC
+                DO I=1,NP
+                    WVNX1(I)=WVNX2(I)
+                    WVNY1(I)=WVNY2(I)
+                    PRN1(I)=PRN2(I)
+                END DO
+                CALL NWS16GET(wtime2,WVNX2,WVNY2,PRN2)
+            ENDIF
+        END DO
+        WTRATIO=(TimeLoc-WTIME1)/WTIMINC
+        DO I=1,NP
+            WINDX = WVNX1(I) + WTRATIO*(WVNX2(I)-WVNX1(I))
+            WINDY = WVNY1(I) + WTRATIO*(WVNY2(I)-WVNY1(I))
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PRDIFF = RampMete2*((PRN1(I)+WTRatio*(PRN2(I)-PRN1(I))) &
+            -PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WINDX
+            WVNYOUT(I)=RampMete2*WINDY
+        END DO
+    ENDIF
+
+    IF(NWS == -16) THEN
+        WTIME1 = TimeLoc
+        WTIME2 = WTIME1 + WTIMINC
+        call INIT_GFDL(wtime1)  !this reads in the first two time series values
+        DO I=1,NP
+            WINDX = WVNX1(I)
+            WINDY = WVNY1(I)
+            WINDMAG = SQRT(WINDX*WINDX+WINDY*WINDY)
+            WDragCo = WindDrag(WindMag, I)
+            IF (LoadDirEffRLen) THEN
+                CALL ApplyDirectionalWindReduction(I, WDragCo, &
+                WindMag, DP(I), ETA2(I), H0, G, WindX, WindY)
+                WindMag = SQRT(WindX*WindX+WindY*WindY)
+                WDragCo = WindDrag(WindMag, I)
+            ENDIF
+            IF (LoadCanopyCoef) &
+            CALL ApplyCanopyCoefficient(I,WindX,WindY)
+        !    TCM V49.64.01 ADDED ICE EFFECTS ON WIND DRAG COEFF
+            IF(NCICE /= 0) THEN
+                CICE_TRatio = (TimeLoc-CICE_TIME1)/CICE_TIMINC
+                PIC = CICE1(I) + CICE_TRatio*(CICE2(I)-CICE1(I))
+                WDragCo = WindIceDrag(WDragCo,PIC)
+            ENDIF
+            WSX2(I) = RampMete2*0.001293d0*WDRAGCO*WINDX*WINDMAG
+            WSY2(I) = RampMete2*0.001293d0*WDRAGCO*WINDY*WINDMAG
+            PRDIFF = RampMete2*(PRN1(I)-PRBCKGRND_MH2O)
+            PR2(I) = PRBCKGRND_MH2O + PRDIFF
+            WVNXOUT(I)=RampMete2*WINDX  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+            WVNYOUT(I)=RampMete2*WINDY  ! tcm 20100618 v49.16 changed RampMete to RampMete2
+        END DO
+    ENDIF
+
+! jgf52.14: Implementing Casey's fix for uninitialized
+! wvnx1 and wvny1 arrays; they are not used/needed/initialized
+! by the parametric vortex meteorological models but are used in
+! the padcswan_init() subroutine to initialize the SWAN wind
+! velocities. Failure to initialize them causes NaNs in the
+! solution.
+    if ( (abs(nws) == 8) .OR. (abs(nws) == 19) .OR. (abs(nws) == 20)) then
+        WVNX1 = WVNX2
+        WVNY1 = WVNY2
+    endif
+
+
+
+
+!--------------------END MET FORCING---------------------------------------
+
+!......RESTART THE WAVE RADIATION STRESS
+            
+! jgf51.46: Fixed initialization issue due to mishandling the
+! cases where NRS.eq.3 (SWAN coupling) or NRS.eq.4 (STWAVE
+! coupling). The code was adding the wave radiation stresses
+! to wind stresses whenever NRS.gt.0, but in the case of
+! NRS.eq.3 or NRS.eq.4, the wave radiation stresses were
+! uninitialized. This resulted in NaNs getting into the solution
+! upon hotstarting. I fixed this by initializing RSNX1 and
+! RSNY1 to 0.0 immediately after the arrays are allocated.
+    IF(NRS >= 1) THEN ! sb46.28sb03
+        RSTIME1 = TimeLoc
+        RSTIME2 = RSTIME1 + RSTIMINC
+        SELECT CASE(NRS)
+        CASE(1)
+        OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
+        CALL RSGET(RSNX1,RSNY1)
+        CALL RSGET(RSNX2,RSNY2)
+        CASE(2)
+    ! NRS=2 was added. sb46.28sb03 09/xx/2006
+        CALL RS2INIT(RSNX1,RSNY1,NP)
+        CALL RS2GET(RSNX1,RSNY1,NP)
+        CALL RS2GET(RSNX2,RSNY2,NP)
+        CASE(3,4)
+    ! do nothing, initialization takes place in timestep.F
+        CASE DEFAULT
+        write(scratchMessage,'(a,i0,a)') &
+        'The NRS parameter cannot have the value ',NRS,'.'
+        call allMessage(ERROR,scratchMessage)
+        END SELECT
+    
+    ! Add wave radiation stress to the wind stress. RSNX1 and
+    ! RSNY1 were initialized to 0.0 for NRS.eq.3 and NRS.eq.4.
+        WSX2(:) = WSX2(:) + RampWRad2 * RSNX1(:)
+        WSY2(:) = WSY2(:) + RampWRad2 * RSNY1(:)
+    ENDIF
+
+!           IF(NRS.EQ.1) THEN
+!              OPEN(23,FILE=TRIM(INPUTDIR)//'/'//'fort.23')
+!              CALL RSGET(RSNX1,RSNY1,NP)
+!              CALL RSGET(RSNX2,RSNY2,NP)
+!          ENDIF
+!          IF(NRS.EQ.2) THEN
+!            ! NRS=2 was added. sb46.28sb03 09/xx/2006
+!            CALL RS2INIT(RSNX1,RSNY1,NP)
+!            CALL RS2GET(RSNX1,RSNY1,NP)
+!            CALL RS2GET(RSNX2,RSNY2,NP)
+!          ENDIF
+!          DO I=1,NP
+!            WSX2(I) = WSX2(I)+RampWRad2*RSNX1(I)
+!            WSY2(I) = WSY2(I)+RampWRad2*RSNY1(I)
+!          END DO
+
+    if (CTIP) then
+    ! romo 11-01-00  Initialize TIP2 for HOTSTART
+        DO I=1,NP
+            TIP2(I)=0.0
+        END DO
+    ! IP  LINES TO USE TIDAL POTENTIAL FORCING
+        IF(NTIP >= 1) THEN
+            DO J=1,NTIF
+                IF(PERT(J) == 0.) THEN
+                    NCYC=0
+                ELSE
+#ifdef IBM
+                    NCYC=INT(TimeLoc/PERT(J),KIND(0.0d0))
+#else
+                    NCYC=INT(TimeLoc/PERT(J))
+#endif
+                ENDIF
+                ARGT=AMIGT(J)*(TimeLoc-NCYC*PERT(J))+FACET(J)
+                TPMUL=RampTip2*ETRF(J)*TPK(J)*FFT(J)
+                SALTMUL=RampTip2*FFT(J)
+#ifdef IBM
+                NA=NINT(0.00014/AMIGT(J),KIND(0.0d0))
+#else
+                NA=NINT(0.00014/AMIGT(J))
+#endif
+                IF(NA == 1) THEN                        !SEMI-DIURNAL SPECIES
+                    DO I=1,NP
+                        ARGTP=ARGT+2.*SLAM(I)
+                        ARGSALT=ARGT-SALTPHA(J,I)
+                        CCSFEA=COS(SFEA(I))
+                        CCSFEA=CCSFEA*CCSFEA
+                        TIP2(I)=TIP2(I)+TPMUL*CCSFEA*COS(ARGTP) &
+                        +SALTMUL*SALTAMP(J,I)*COS(ARGSALT)
+                    END DO
+                ENDIF
+                IF(NA == 2) THEN
+                    DO I=1,NP
+                        ARGTP=ARGT+SLAM(I)
+                        ARGSALT=ARGT-SALTPHA(J,I)
+                    ! jw/vjpm002 - modified/added the following 5 lines
+#ifdef REAL8
+                        S2SFEA=SIN(2.d0*SFEA(I))
+#else
+                        S2SFEA=SIN(2.e0*SFEA(I))
+#endif
+                        TIP2(I)=TIP2(I)+TPMUL*S2SFEA*COS(ARGTP) &
+                        +SALTMUL*SALTAMP(J,I)*COS(ARGSALT)
+                    END DO
+                ENDIF
+            END DO
+        ENDIF
+    endif     !   CTIP
+
+!...
+!....SET UP TO RESTART TIMESERIES OUTPUT FILES
+!....
+!...
+    IF(NBYTE == 4) ITEMPSTP=20
+    IF(NBYTE == 8) ITEMPSTP=10
+
+!.... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
+!.... SET THE BATHY VARIABLES EQUAL TO THE ELVATION VALUES
+!.... FOR USE LATER ON
+    NTCYSB = NTCYSE
+    NTCYFB = NTCYFE
+    NSCOUB = NSCOUE
+    IBSTP = IESTP
+
+!...
+!....IF RESTARTING THE ELEVATION STATION OUTPUT FILE, GO TO THE PROPER PLACE
+!....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
+!...
+    WRITE(16,1040) IESTP,NSCOUE
+    1040 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN ELEVATION ', &
+    'STATION FILE BY THE TIME OF THE HOT START', &
+    /,8X,'SPOOL COUNTER = ',I6)
+
+    IF(NOUTE < 0) THEN
+        IESTP=0
+        NSCOUE=0
+        IF((NTCYSE < ITHS) .AND. (NSPOOLE > 0)) THEN
+            NTCYSE=NTCYSE+((REAL(ITHS)-REAL(NTCYSE))/ &
+            REAL(NSPOOLE))*REAL(NSPOOLE)
+            IF(NTCYSE < ITHS) NTCYSE=NTCYSE+NSPOOLE
+            IF(NSPOOLE /= 0) NTRSPE=(NTCYFE-NTCYSE)/NSPOOLE
+        ENDIF
+        WRITE(16,1041)
+        1041 FORMAT(//,' A NEW ELEVATION STATION FILE WILL BE STARTED')
+    ENDIF
+    IF(NOUTE == -2) THEN
+        OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61', &
+        ACCESS='DIRECT',RECL=NBYTE)
+        IF(NBYTE == 4) THEN
+            DO I=1,8
+                WRITE(61,REC=IESTP+I) RDES4(I)
+            ENDDO
+            IESTP=IESTP+8
+            DO I=1,6
+                WRITE(61,REC=IESTP+I) RID4(I)
+            ENDDO
+            IESTP=IESTP+6
+            DO I=1,6
+                WRITE(61,REC=IESTP+I) AID4(I)
+            ENDDO
+            IESTP=IESTP+6
+        ENDIF
+        IF(NBYTE == 8) THEN
+            DO I=1,4
+                WRITE(61,REC=IESTP+I) RDES8(I)
+            ENDDO
+            IESTP=IESTP+4
+            DO I=1,3
+                WRITE(61,REC=IESTP+I) RID8(I)
+            ENDDO
+            IESTP=IESTP+3
+            DO I=1,3
+                WRITE(61,REC=IESTP+I) AID8(I)
+            ENDDO
+            IESTP=IESTP+3
+        ENDIF
+        WRITE(61,REC=IESTP+1) NTRSPE
+        WRITE(61,REC=IESTP+2) NSTAE
+        WRITE(61,REC=IESTP+3) DT*NSPOOLE
+        WRITE(61,REC=IESTP+4) NSPOOLE
+        WRITE(61,REC=IESTP+5) 1
+        IESTP=IESTP+5
+        CLOSE(61)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+    IF(NOUTE == -1) THEN
+        if (write_local_files.eqv. .FALSE. ) then
+            CALL OPEN_GBL_FILE(61, TRIM(GLOBALDIR)//'/'//'fort.61', &
+            NSTAE_G, NSTAE, HEADER61)
+        else
+            CALL OPEN_GBL_FILE(61, TRIM(LOCALDIR)//'/'//'fort.61', &
+            NSTAE_G, NSTAE, HEADER61)
+        endif
+        IESTP=2
+    ENDIF
+
+    IF(NOUTE == 2) THEN
+        OPEN(61,FILE=TRIM(LOCALDIR)//'/'//'fort.61', &
+        ACCESS='DIRECT',RECL=NBYTE)
+    !       WRITE(61,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+        CLOSE(61)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+
+!...
+!....GO TO THE PROPER PLACE IN THE VELOCITY STATION OUTPUT FILE
+!...
+    WRITE(16,1042) IVSTP,NSCOUV
+    1042 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN VELOCITY ', &
+    'STATION FILE BY THE TIME OF THE HOT START', &
+    /,8X,'SPOOL COUNTER =',I6)
+
+    IF(NOUTV < 0) THEN
+        IVSTP=0
+        NSCOUV=0
+        IF((NTCYSV < ITHS) .AND. (NSPOOLV > 0)) THEN
+            NTCYSV=NTCYSV+((REAL(ITHS)-REAL(NTCYSV))/ &
+            REAL(NSPOOLV))*REAL(NSPOOLV)
+            IF(NTCYSV < ITHS) NTCYSV=NTCYSV+NSPOOLV
+            NTRSPV=(NTCYFV-NTCYSV)/NSPOOLV
+        ENDIF
+        WRITE(16,1043)
+        1043 FORMAT(//,' A NEW VELOCITY STATION FILE WILL BE STARTED')
+    ENDIF
+
+    IF(NOUTV == -2) THEN
+        OPEN(62,FILE=TRIM(LOCALDIR)//'/'//'fort.62', &
+        ACCESS='DIRECT',RECL=NBYTE)
+        IF(NBYTE == 4) THEN
+            DO I=1,8
+                WRITE(62,REC=IVSTP+I) RDES4(I)
+            ENDDO
+            IVSTP=IVSTP+8
+            DO I=1,6
+                WRITE(62,REC=IVSTP+I) RID4(I)
+            ENDDO
+            IVSTP=IVSTP+6
+            DO I=1,6
+                WRITE(62,REC=IVSTP+I) AID4(I)
+            ENDDO
+            IVSTP=IVSTP+6
+        ENDIF
+        IF(NBYTE == 8) THEN
+            DO I=1,4
+                WRITE(62,REC=IVSTP+I) RDES8(I)
+            ENDDO
+            IVSTP=IVSTP+4
+            DO I=1,3
+                WRITE(62,REC=IVSTP+I) RID8(I)
+            ENDDO
+            IVSTP=IVSTP+3
+            DO I=1,3
+                WRITE(62,REC=IVSTP+I) AID8(I)
+            ENDDO
+            IVSTP=IVSTP+3
+        ENDIF
+        WRITE(62,REC=IVSTP+1) NTRSPV
+        WRITE(62,REC=IVSTP+2) NSTAV
+        WRITE(62,REC=IVSTP+3) DT*NSPOOLV
+        WRITE(62,REC=IVSTP+4) NSPOOLV
+        WRITE(62,REC=IVSTP+5) 2
+        IVSTP=IVSTP+5
+        CLOSE(62)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+    IF(NOUTV == -1) THEN
+        if (write_local_files.eqv. .FALSE. ) then
+            CALL OPEN_GBL_FILE(62, TRIM(GLOBALDIR)//'/'//'fort.62', &
+            NSTAV_G, NSTAV, HEADER62)
+        else
+            CALL OPEN_GBL_FILE(62, TRIM(LOCALDIR)//'/'//'fort.62', &
+            NSTAV_G, NSTAV, HEADER62)
+        endif
+        IVSTP=2
+    ENDIF
+    IF(NOUTV == 2) THEN
+        OPEN(62,FILE=TRIM(LOCALDIR)//'/'//'fort.62', &
+        ACCESS='DIRECT',RECL=NBYTE)
+    !       WRITE(62,REC=ITEMPSTP+1) NTRSPV   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+        CLOSE(62)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+
+!...
+!....GO TO THE PROPER PLACE IN THE CONCENTRATION STATION OUTPUT FILE
+!...
+    WRITE(16,1044) ICSTP,NSCOUC
+    1044 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN CONCENTRATION ', &
+    'STATION FILE BY THE TIME OF THE HOT START', &
+    /,8X,'SPOOL COUNTER = ',I6)
+    IF(NOUTC < 0) THEN
+        ICSTP=0
+        NSCOUC=0
+        IF((NTCYSC < ITHS) .AND. (NSPOOLC > 0)) THEN
+            NTCYSC=NTCYSC+((REAL(ITHS)-REAL(NTCYSC))/ &
+            REAL(NSPOOLC))*REAL(NSPOOLC)
+            IF(NTCYSC < ITHS) NTCYSC=NTCYSC+NSPOOLC
+            NTRSPC=(NTCYFC-NTCYSC)/NSPOOLC
+        ENDIF
+        WRITE(16,1045)
+        1045 FORMAT(//,' A NEW CONCENTRATION STATION FILE WILL BE STARTED')
+    ENDIF
+
+    IF(NOUTC == -2) THEN
+        OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81', &
+        ACCESS='DIRECT',RECL=NBYTE)
+        IF(NBYTE == 4) THEN
+            DO I=1,8
+                WRITE(81,REC=ICSTP+I) RDES4(I)
+            ENDDO
+            ICSTP=ICSTP+8
+            DO I=1,6
+                WRITE(81,REC=ICSTP+I) RID4(I)
+            ENDDO
+            ICSTP=ICSTP+6
+            DO I=1,6
+                WRITE(81,REC=ICSTP+I) AID4(I)
+            ENDDO
+            ICSTP=ICSTP+6
+        ENDIF
+        IF(NBYTE == 8) THEN
+            DO I=1,4
+                WRITE(81,REC=ICSTP+I) RDES8(I)
+            ENDDO
+            ICSTP=ICSTP+4
+            DO I=1,3
+                WRITE(81,REC=ICSTP+I) RID8(I)
+            ENDDO
+            ICSTP=ICSTP+3
+            DO I=1,3
+                WRITE(81,REC=ICSTP+I) AID8(I)
+            ENDDO
+            ICSTP=ICSTP+3
+        ENDIF
+        WRITE(81,REC=ICSTP+1) NTRSPC
+        WRITE(81,REC=ICSTP+2) NSTAC
+        WRITE(81,REC=ICSTP+3) DT*NSPOOLC
+        WRITE(81,REC=ICSTP+4) NSPOOLC
+        WRITE(81,REC=ICSTP+5) 1
+        ICSTP=ICSTP+5
+        CLOSE(81)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+    IF(NOUTC == -1) THEN
+        if (write_local_files.eqv. .FALSE. ) then
+            CALL OPEN_GBL_FILE(81, TRIM(GLOBALDIR)//'/'//'fort.81', &
+            NSTAC_G, NSTAC, HEADER81)
+        else
+            CALL OPEN_GBL_FILE(81, TRIM(LOCALDIR)//'/'//'fort.81', &
+            NSTAC_G, NSTAC, HEADER81)
+        endif
+        ICSTP=2
+        CLOSE(81)
+    ENDIF
+    IF(NOUTC == 2) THEN
+        OPEN(81,FILE=TRIM(LOCALDIR)//'/'//'fort.81', &
+        ACCESS='DIRECT',RECL=NBYTE)
+    !       WRITE(81,REC=ITEMPSTP+1) NTRSPC   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+        CLOSE(81)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+
+!...
+!....GO TO THE PROPER PLACE IN THE METEOROLOGICAL STATION OUTPUT FILE
+!...
+!... v49.64.01 tcm -added support for ice stations
+    IF(NCICE == 0)  THEN
+        WRITE(16,1038) IWSTP,IPSTP,NSCOUM
+    ELSE
+        IICESTP = IPSTP  !SET TO THE SAME PLACE AS THE PRESSURE FILE
+        WRITE(16,2038) IWSTP,IPSTP,IICESTP,NSCOUM
+    ENDIF
+    WRITE(16,1038) IWSTP,IPSTP,NSCOUM
+    1038 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE WIND STATION', &
+    ' FILE BY THE TIME OF THE HOT START', &
+    /,1X,I6,' LINES OR RECORDS WRITTIN IN THE PRES STATION', &
+    ' FILE BY THE TIME OF THE HOT START', &
+    /,8X,'SPOOL COUNTER = ',I6)
+    2038 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE WIND STATION', &
+    ' FILE BY THE TIME OF THE HOT START', &
+    /,1X,I6,' LINES OR RECORDS WRITTEN IN THE PRES STATION', &
+    ' FILE BY THE TIME OF THE HOT START', &
+    /,1X,I6,' LINES OR RECORDS WRITTEN IN THE ICE STATION', &
+    ' FILE BY THE TIME OF THE HOT START', &
+    /,8X,'SPOOL COUNTER = ',I6)
+
+    IF(NOUTM < 0) THEN
+        IPSTP=0
+        IWSTP=0
+        IICESTP = 0  !v49.64.01 tcm added ice station
+        NSCOUM=0
+        IF((NTCYSM < ITHS) .AND. (NSPOOLM > 0)) THEN
+            NTCYSM=NTCYSM+((REAL(ITHS)-REAL(NTCYSM))/ &
+            REAL(NSPOOLM))*REAL(NSPOOLM)
+            IF(NTCYSM < ITHS) NTCYSM=NTCYSM+NSPOOLM
+            NTRSPM=(NTCYFM-NTCYSM)/NSPOOLM
+        ENDIF
+        WRITE(16,1039)
+        1039 FORMAT(//,' A NEW METEOROLOGICAL STATION FILE WILL BE STARTED')
+    ENDIF
+
+    IF(NOUTM == -2) THEN
+        OPEN(71,FILE=TRIM(LOCALDIR)//'/'//'fort.71', &
+        ACCESS='DIRECT',RECL=NBYTE)
+        OPEN(72,FILE=TRIM(LOCALDIR)//'/'//'fort.72', &
+        ACCESS='DIRECT',RECL=NBYTE)
+    !       v49.64.01 tcm added ice station
+        IF(NCICE /= 0) THEN
+            OPEN(91,FILE=TRIM(LOCALDIR)//'/'//'fort.91', &
+            ACCESS='DIRECT',RECL=NBYTE)
+        ENDIF
+        IF(NBYTE == 4) THEN
+            DO I=1,8
+                WRITE(71,REC=IPSTP+I) RDES4(I)
+                WRITE(72,REC=IWSTP+I) RDES4(I)
+                IF (NCICE /= 0) WRITE(91,REC=IICESTP+I) RDES4(I)
+            ENDDO
+            IPSTP=IPSTP+8
+            IWSTP=IWSTP+8
+            IF (NCICE /= 0) IICESTP = IICESTP+8
+            DO I=1,6
+                WRITE(71,REC=IPSTP+I) RID4(I)
+                WRITE(72,REC=IWSTP+I) RID4(I)
+                IF (NCICE /= 0) WRITE(91,REC=IICESTP+I) RID4(I)
+            ENDDO
+            IPSTP=IPSTP+6
+            IWSTP=IWSTP+6
+            IF (NCICE /= 0) IICESTP = IICESTP+6
+            DO I=1,6
+                WRITE(71,REC=IPSTP+I) AID4(I)
+                WRITE(72,REC=IWSTP+I) AID4(I)
+                IF (NCICE /= 0) WRITE(91,REC=IICESTP+I) AID4(I)
+            ENDDO
+            IPSTP=IPSTP+6
+            IWSTP=IWSTP+6
+            IF (NCICE /= 0) IICESTP = IICESTP+6
+        ENDIF
+        IF(NBYTE == 8) THEN
+            DO I=1,4
+                WRITE(71,REC=IPSTP+I) RDES8(I)
+                WRITE(72,REC=IWSTP+I) RDES8(I)
+                IF (NCICE /= 0) WRITE(91,REC=IICESTP+I) RDES8(I)
+            ENDDO
+            IPSTP=IPSTP+4
+            IWSTP=IWSTP+4
+            IF (NCICE /= 0) IICESTP = IICESTP+4
+            DO I=1,3
+                WRITE(71,REC=IPSTP+I) RID8(I)
+                WRITE(72,REC=IWSTP+I) RID8(I)
+                IF (NCICE /= 0) WRITE(91,REC=IICESTP+I) RID8(I)
+            ENDDO
+            IPSTP=IPSTP+3
+            IWSTP=IWSTP+3
+            IF (NCICE /= 0) IICESTP = IICESTP+3
+            DO I=1,3
+                WRITE(71,REC=IPSTP+I) AID8(I)
+                WRITE(72,REC=IWSTP+I) AID8(I)
+                IF (NCICE /= 0) WRITE(91,REC=IICESTP+I) AID8(I)
+            ENDDO
+            IPSTP=IPSTP+3
+            IWSTP=IWSTP+3
+            IF (NCICE /= 0) IICESTP = IICESTP+3
+        ENDIF
+        WRITE(71,REC=IPSTP+1) NTRSPM
+        WRITE(71,REC=IPSTP+2) NSTAM
+        WRITE(71,REC=IPSTP+3) DT*NSPOOLM
+        WRITE(71,REC=IPSTP+4) NSPOOLM
+        WRITE(71,REC=IPSTP+5) 1
+        WRITE(72,REC=IWSTP+1) NTRSPM
+        WRITE(72,REC=IWSTP+2) NSTAM
+        WRITE(72,REC=IWSTP+3) DT*NSPOOLM
+        WRITE(72,REC=IWSTP+4) NSPOOLM
+        WRITE(72,REC=IWSTP+5) 2
+        IPSTP=IPSTP+5
+        IWSTP=IWSTP+5
+        CLOSE(71)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+        CLOSE(72)
+    ! v49.64.01 tcm -- added ice stations
+        IF(NCICE /= 0) THEN
+            WRITE(91,REC=IICESTP+1) NTRSPM
+            WRITE(91,REC=IICESTP+2) NSTAM
+            WRITE(91,REC=IICESTP+3) DT*NSPOOLM
+            WRITE(91,REC=IICESTP+4) NSPOOLM
+            WRITE(91,REC=IICESTP+5) 1
+            IICESTP = IICESTP + 5
+            CLOSE(91)
+        ENDIF
+    ENDIF
+    IF(NOUTM == -1) THEN
+        if (write_local_files.eqv. .FALSE. ) then
+            CALL OPEN_GBL_FILE(71, TRIM(GLOBALDIR)//'/'//'fort.71', &
+            NSTAM_G, NSTAM, HEADER71)
+            IPSTP=2
+            CALL OPEN_GBL_FILE(72, TRIM(GLOBALDIR)//'/'//'fort.72', &
+            NSTAM_G, NSTAM, HEADER72)
+            IWSTP=2
+        !           v49.64.01 tcm added ice station support
+            IF(NCICE /= 0) THEN
+                CALL OPEN_GBL_FILE(91, TRIM(GLOBALDIR)//'/'//'fort.91', &
+                NSTAM_G, NSTAM, HEADER91)
+                IICESTP=2
+            ENDIF
+
+        else
+                     
+            CALL OPEN_GBL_FILE(71, TRIM(LOCALDIR)//'/'//'fort.71', &
+            NSTAM_G, NSTAM, HEADER71)
+            IPSTP=2
+            CALL OPEN_GBL_FILE(72, TRIM(LOCALDIR)//'/'//'fort.72', &
+            NSTAM_G, NSTAM, HEADER72)
+            IWSTP=2
+        !           v49.64.01 tcm added ice station support
+            IF(NCICE /= 0) THEN
+                CALL OPEN_GBL_FILE(91, TRIM(LOCALDIR)//'/'//'fort.91', &
+                NSTAM_G, NSTAM, HEADER91)
+                IICESTP=2
+            ENDIF
+                     
+        endif
+    ENDIF
+    IF(NOUTM == 2) THEN
+        OPEN(71,FILE=TRIM(LOCALDIR)//'/'//'fort.71', &
+        ACCESS='DIRECT',RECL=NBYTE)
+        OPEN(72,FILE=TRIM(LOCALDIR)//'/'//'fort.72', &
+        ACCESS='DIRECT',RECL=NBYTE)
+    !         WRITE(71,REC=ITEMPSTP+1) NTRSPM   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+    !         WRITE(72,REC=ITMEPSTP+1) NTRSPM
+        CLOSE(71)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+        CLOSE(72)
+    !       v49.64.01 tcm added ice station support
+        IF(NCICE /= 0) THEN
+            OPEN(91,FILE=TRIM(LOCALDIR)//'/'//'fort.91', &
+            ACCESS='DIRECT',RECL=NBYTE)
+            CLOSE(91)
+        ENDIF
+    ENDIF
+
+
+!... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
+!... THIS FILE IS CONTROLLED BY THE ELEVATION STATION DATA
+!...
+!....IF RESTARTING THE BATHYMETRY STATION OUTPUT FILE, GO TO THE PROPER PLACE
+!....IN THE FILE.  OTHERWISE ZERO OUT NSCOUE.
+!...
+
+    IF (NDDT /= 0) WRITE(16,1035) IBSTP,NSCOUB
+    1035 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN BATHYMETRY ', &
+    'STATION FILE BY THE TIME OF THE HOT START', &
+    /,8X,'SPOOL COUNTER = ',I6)
+
+    IF ((NDDT /= 0) .AND. (NOUTE < 0)) THEN
+        IBSTP=0
+        NSCOUB=0
+        IF((NTCYSB < ITHS) .AND. (NSPOOLE > 0)) THEN
+            NTCYSB=NTCYSB+((REAL(ITHS)-REAL(NTCYSB))/ &
+            REAL(NSPOOLE))*REAL(NSPOOLE)
+            IF(NTCYSB < ITHS) NTCYSB=NTCYSB+NSPOOLE
+            IF(NSPOOLE /= 0) NTRSPB=(NTCYFB-NTCYSB)/NSPOOLE
+        ENDIF
+        WRITE(16,1036)
+        1036 FORMAT(//,' A NEW BATHYMETRY STATION FILE WILL BE STARTED')
+    ENDIF
+    IF ((NDDT /= 0) .AND. (NOUTE == -2)) THEN
+        OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75', &
+        ACCESS='DIRECT',RECL=NBYTE)
+        IF(NBYTE == 4) THEN
+            DO I=1,8
+                WRITE(75,REC=IBSTP+I) RDES4(I)
+            ENDDO
+            IBSTP=IBSTP+8
+            DO I=1,6
+                WRITE(75,REC=IBSTP+I) RID4(I)
+            ENDDO
+            IBSTP=IBSTP+6
+            DO I=1,6
+                WRITE(75,REC=IBSTP+I) AID4(I)
+            ENDDO
+            IBSTP=IBSTP+6
+        ENDIF
+        IF(NBYTE == 8) THEN
+            DO I=1,4
+                WRITE(75,REC=IBSTP+I) RDES8(I)
+            ENDDO
+            IBSTP=IBSTP+4
+            DO I=1,3
+                WRITE(75,REC=IBSTP+I) RID8(I)
+            ENDDO
+            IBSTP=IBSTP+3
+            DO I=1,3
+                WRITE(75,REC=IBSTP+I) AID8(I)
+            ENDDO
+            IBSTP=IBSTP+3
+        ENDIF
+        WRITE(75,REC=IBSTP+1) NTRSPB
+        WRITE(75,REC=IBSTP+2) NSTAE
+        WRITE(75,REC=IBSTP+3) DT*NSPOOLE
+        WRITE(75,REC=IBSTP+4) NSPOOLE
+        WRITE(75,REC=IBSTP+5) 1
+        IBSTP=IBSTP+5
+        CLOSE(75)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+    IF ((NDDT /= 0) .AND. (NOUTE == -1)) THEN
+        if (write_local_files.eqv. .FALSE. ) then
+            CALL OPEN_GBL_FILE(75, TRIM(GLOBALDIR)//'/'//'fort.75', &
+            NSTAE_G, NSTAE, HEADER61)
+        else
+            CALL OPEN_GBL_FILE(75, TRIM(LOCALDIR)//'/'//'fort.75', &
+            NSTAE_G, NSTAE, HEADER61)
+        endif
+        IESTP=2
+    ENDIF
+
+    IF ((NDDT /= 0) .AND. (NOUTE == 2)) THEN
+        OPEN(75,FILE=TRIM(LOCALDIR)//'/'//'fort.75', &
+        ACCESS='DIRECT',RECL=NBYTE)
+    !       WRITE(75,REC=ITEMPSTP+1) NTRSPE   ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+        CLOSE(75)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+
+!...
+!....GO TO THE PROPER PLACE IN THE GLOBAL ELEVATION OUTPUT FILE
+!...
+    WRITE(16,1046) IGEP,NSCOUGE
+    1046 FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ', &
+    'ELEVATION FILE BY THE TIME OF THE HOT START', &
+    /,8X,'SPOOL COUNTER =',I8)
+
+!....   TCM V50.66.01 ADDITIONS FOR TIME VARYING BATYMETRY
+!....   SET THESE VARIABLES FOR USE LATER
+    IGBP = IGEP
+    NTCYSGB = NTCYSGE
+    NTCYFGB = NTCYFGE
+    NSCOUGB = NSCOUGE
+
+    IF(NOUTGE < 0) THEN
+        IGEP=0
+        NSCOUGE=0
+        IF((NTCYSGE < ITHS) .AND. (NSPOOLGE > 0)) THEN
+            NTCYSGE=NTCYSGE+((REAL(ITHS)-REAL(NTCYSGE))/ &
+            REAL(NSPOOLGE))*REAL(NSPOOLGE)
+            IF(NTCYSGE < ITHS) NTCYSGE=NTCYSGE+NSPOOLGE
+        !     kmd48.33bc - changed NDSETSE for use of new DTDPHS
+            IF(DTDP /= DTDPHS) THEN
+                NDSETSE=((NTCYFGE*DTDP)-(NTCYSGE*DTDPHS))/ &
+                (NSPOOLGE*DTDP)
+            ELSE
+                NDSETSE=(NTCYFGE-NTCYSGE)/NSPOOLGE
+            END IF
+        ENDIF
+        WRITE(16,1047)
+        1047 FORMAT(//,' A NEW GLOBAL ELEVATION FILE WILL BE STARTED')
+    ENDIF
+
+    IF(NOUTGE == -2) THEN
+        OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63', &
+        ACCESS='DIRECT',RECL=NBYTE)
+        IF(NBYTE == 4) THEN
+            DO I=1,8
+                WRITE(63,REC=IGEP+I) RDES4(I)
+            ENDDO
+            IGEP=IGEP+8
+            DO I=1,6
+                WRITE(63,REC=IGEP+I) RID4(I)
+            ENDDO
+            IGEP=IGEP+6
+            DO I=1,6
+                WRITE(63,REC=IGEP+I) AID4(I)
+            ENDDO
+            IGEP=IGEP+6
+        ENDIF
+        IF(NBYTE == 8) THEN
+            DO I=1,4
+                WRITE(63,REC=IGEP+I) RDES8(I)
+            ENDDO
+            IGEP=IGEP+4
+            DO I=1,3
+                WRITE(63,REC=IGEP+I) RID8(I)
+            ENDDO
+            IGEP=IGEP+3
+            DO I=1,3
+                WRITE(63,REC=IGEP+I) AID8(I)
+            ENDDO
+            IGEP=IGEP+3
+        ENDIF
+        WRITE(63,REC=IGEP+1) NDSETSE
+        WRITE(63,REC=IGEP+2) NP
+        WRITE(63,REC=IGEP+3) DT*NSPOOLGE
+        WRITE(63,REC=IGEP+4) NSPOOLGE
+        WRITE(63,REC=IGEP+5) 1
+        IGEP=IGEP+5
+        CLOSE(63)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+
+! Casey 090310: Added the possibility for NOUTGE = -4.
+    IF((NOUTGE == -1) .OR. (NOUTGE == -4)) THEN
+        if (write_local_files.eqv. .FALSE. ) then
+            CALL OPEN_GBL_FILE(63, TRIM(GLOBALDIR)//'/'//'fort.63', &
+            NP_G, NP, HEADER63)
+        
+        !        jgf47.06 Tau0 output is produced on the same schedule as
+        !        global elevation
+            IF (outputTau0.eqv. .TRUE. ) THEN
+            ! Casey 090310: Corrected the unit number from 10 to 90.
+                CALL writeDomainHeader(90, &
+                TRIM(GLOBALDIR)//'/'//'fort.90', &
+                NP_G, NP, 'Tau0      ')
+            ENDIF
+
+        ! kmd48.33bc - information for writing out the sponge layer
+            IF(OUTPUTSPONGE) THEN
+                CALL writeDomainHeader(92, &
+                TRIM(GLOBALDIR)//'/'//'fort.92', &
+                NP_G, NP, 'sponge      ')
+            END IF
+                      
+        else
+                      
+            CALL OPEN_GBL_FILE(63, TRIM(LOCALDIR)//'/'//'fort.63', &
+            NP_G, NP, HEADER63)
+        !             jgf47.06 Tau0 output is produced on the same schedule as
+        !              global elevation
+            IF (OUTPUTTAU0) THEN
+            ! Casey 090310: Corrected the unit number from 10 to 90.
+                CALL writeDomainHeader(90, &
+                TRIM(LOCALDIR)//'/'//'fort.90', &
+                NP_G, NP, 'Tau0      ')
+            ENDIF
+        ! kmd48.33bc - information for writing out the sponge layer
+            IF(OUTPUTSPONGE) THEN
+                CALL writeDomainHeader(92, &
+                TRIM(LOCALDIR)//'/'//'fort.92', &
+                NP_G, NP, 'sponge      ')
+            END IF
+
+        endif
+        IGEP=2
+    ENDIF
+    IF(NOUTGE == 2) THEN
+        OPEN(63,FILE=TRIM(LOCALDIR)//'/'//'fort.63', &
+        ACCESS='DIRECT',RECL=NBYTE)
+    !         WRITE(63,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+        CLOSE(63)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+
+!...
+!....GO TO THE PROPER PLACE IN THE GLOBAL VELOCITY OUTPUT FILE
+!...
+    WRITE(16,1048) IGVP,NSCOUGV
+    1048 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ', &
+    'VELOCITY FILE BY THE TIME OF THE HOT START', &
+    /,8X,'SPOOL COUNTER =',I6)
+    IF(NOUTGV < 0) THEN
+        IGVP=0
+        NSCOUGV=0
+        IF((NTCYSGV < ITHS) .AND. (NSPOOLGV > 0)) THEN
+            NTCYSGV=NTCYSGV+((REAL(ITHS)-REAL(NTCYSGV))/ &
+            REAL(NSPOOLGV))*REAL(NSPOOLGV)
+            IF(NTCYSGV < ITHS) NTCYSGV=NTCYSGV+NSPOOLGV
+        !  kmd48.33bc - change the NDSETSV for the change in the DTDP
+            IF(DTDP /= DTDPHS) THEN
+                NDSETSV=((NTCYFGV*DTDP)-(NTCYSGV*DTDPHS))/ &
+                (NSPOOLGV*DTDP)
+            ELSE
+                NDSETSV=(NTCYFGV-NTCYSGV)/NSPOOLGV
+            END IF
+        ENDIF
+        WRITE(16,1049)
+        1049 FORMAT(//,' A NEW GLOBAL VELOCITY FILE WILL BE STARTED')
+    ENDIF
+
+    IF(NOUTGV == -2) THEN
+        OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64', &
+        ACCESS='DIRECT',RECL=NBYTE)
+        IF(NBYTE == 4) THEN
+            DO I=1,8
+                WRITE(64,REC=IGVP+I) RDES4(I)
+            ENDDO
+            IGVP=IGVP+8
+            DO I=1,6
+                WRITE(64,REC=IGVP+I) RID4(I)
+            ENDDO
+            IGVP=IGVP+6
+            DO I=1,6
+                WRITE(64,REC=IGVP+I) AID4(I)
+            ENDDO
+            IGVP=IGVP+6
+        ENDIF
+        IF(NBYTE == 8) THEN
+            DO I=1,4
+                WRITE(64,REC=IGVP+I) RDES8(I)
+            ENDDO
+            IGVP=IGVP+4
+            DO I=1,3
+                WRITE(64,REC=IGVP+I) RID8(I)
+            ENDDO
+            IGVP=IGVP+3
+            DO I=1,3
+                WRITE(64,REC=IGVP+I) AID8(I)
+            ENDDO
+            IGVP=IGVP+3
+        ENDIF
+        WRITE(64,REC=IGVP+1) NDSETSV
+        WRITE(64,REC=IGVP+2) NP
+        WRITE(64,REC=IGVP+3) DT*NSPOOLGV
+        WRITE(64,REC=IGVP+4) NSPOOLGV
+        WRITE(64,REC=IGVP+5) 2
+        IGVP=IGVP+5
+        CLOSE(64)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+    IF((NOUTGV == -1) .OR. (NOUTGV == -4)) THEN
+        if (write_local_files.eqv. .FALSE. ) then
+            CALL OPEN_GBL_FILE(64, TRIM(GLOBALDIR)//'/'//'fort.64', &
+            NP_G, NP, HEADER64)
+        else
+            CALL OPEN_GBL_FILE(64, TRIM(LOCALDIR)//'/'//'fort.64', &
+            NP_G, NP, HEADER64)
+        endif
+        IGVP=2
+    ENDIF
+    IF(NOUTGV == 2) THEN
+        OPEN(64,FILE=TRIM(LOCALDIR)//'/'//'fort.64', &
+        ACCESS='DIRECT',RECL=NBYTE)
+    !         WRITE(64,REC=ITEMPSTP+1) NDSETSV  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+        CLOSE(64)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+
+
+
+! bell - Open the fort.77 (weir elevation change) if necessary
+    IF(NOUT_TVW < 0 .AND. USE_TVW) THEN
+        IG_TVW=0
+        NSCOU_TVW=0
+        IF((NTCYS_TVW < ITHS) .AND. (NSPOOL_TVW > 0)) THEN
+            NTCYS_TVW=NTCYS_TVW+((REAL(ITHS)-REAL(NTCYS_TVW))/ &
+            REAL(NSPOOL_TVW))*REAL(NSPOOL_TVW)
+            IF(NTCYS_TVW < ITHS) NTCYS_TVW=NTCYS_TVW+NSPOOL_TVW
+            IF(DTDP /= DTDPHS) THEN
+                NDSETS_TVW=((NTCYF_TVW*DTDP)-(NTCYS_TVW*DTDPHS))/ &
+                (NSPOOL_TVW*DTDP)
+            ELSE
+                NDSETS_TVW=(NTCYF_TVW-NTCYS_TVW)/NSPOOL_TVW
+            ENDIF
+        ENDIF
+        WRITE(16,1057)
+        1057 FORMAT(//,' A NEW WEIR ELEVATION FILE WILL BE STARTED')
+    ENDIF
+
+    IF(NOUT_TVW == -2) THEN
+        OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77', &
+        ACCESS='DIRECT',RECL=NBYTE)
+        IF(NBYTE == 4) THEN
+            DO I=1,8
+                WRITE(77,REC=IG_TVW+I) RDES4(I)
+            ENDDO
+            IG_TVW=IG_TVW+8
+            DO I=1,6
+                WRITE(77,REC=IG_TVW+I) RID4(I)
+            ENDDO
+            IG_TVW=IG_TVW+6
+            DO I=1,6
+                WRITE(77,REC=IG_TVW+I) AID4(I)
+            ENDDO
+            IG_TVW=IG_TVW+6
+        ENDIF
+        IF(NBYTE == 8) THEN
+            DO I=1,4
+                WRITE(77,REC=IG_TVW+I) RDES8(I)
+            ENDDO
+            IG_TVW=IG_TVW+4
+            DO I=1,3
+                WRITE(77,REC=IG_TVW+I) RID8(I)
+            ENDDO
+            IG_TVW=IG_TVW+3
+            DO I=1,3
+                WRITE(77,REC=IG_TVW+I) AID8(I)
+            ENDDO
+            IG_TVW=IG_TVW+3
+        ENDIF
+        WRITE(77,REC=IG_TVW+1) NDSETS_TVW
+        WRITE(77,REC=IG_TVW+2) NP
+        WRITE(77,REC=IG_TVW+3) DT*NSPOOL_TVW
+        WRITE(77,REC=IG_TVW+4) NSPOOL_TVW
+        WRITE(77,REC=IG_TVW+5) 1
+        IG_TVW=IG_TVW+5
+        CLOSE(77)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+    IF((NOUT_TVW == -1) .OR. (NOUT_TVW == -4)) THEN
+        CALL OPEN_GBL_FILE(77, TRIM(GLOBALDIR)//'/'//'fort.77', &
+        NP_G, NP, HEADER77)
+        IG_TVW=2
+    ENDIF
+    IF(NOUT_TVW == 2) THEN
+        OPEN(77,FILE=TRIM(LOCALDIR)//'/'//'fort.77', &
+        ACCESS='DIRECT',RECL=NBYTE)
+    !         WRITE(77,REC=ITEMPSTP+1) NDSETS_TVW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+        CLOSE(77)                           ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+
+!...
+!....GO TO THE PROPER PLACE IN THE GLOBAL CONCENTRATION OUTPUT FILE
+!...
+    WRITE(16,1053) IGCP,NSCOUGC
+    1053 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ', &
+    'CONCENTRATION FILE BY THE TIME OF THE HOT START', &
+    /,8X,'SPOOL COUNTER =',I6)
+
+    IF(NOUTGC < 0) THEN
+        IGCP=0
+        NSCOUGC=0
+        IF((NTCYSGC < ITHS) .AND. (NSPOOLGC > 0)) THEN
+            NTCYSGC=NTCYSGC+((REAL(ITHS)-REAL(NTCYSGC))/ &
+            REAL(NSPOOLGC))*REAL(NSPOOLGC)
+            IF(NTCYSGC < ITHS) NTCYSGC=NTCYSGC+NSPOOLGC
+        !  kmd48.33bc - change the NDSETSC for the change in the DTDP
+            IF(DTDP /= DTDPHS) THEN
+                NDSETSC=((NTCYFGC*DTDP)-(NTCYSGC*DTDPHS))/ &
+                (NSPOOLGC*DTDP)
+            ELSE
+                NDSETSC=(NTCYFGC-NTCYSGC)/NSPOOLGC
+            END IF
+        ENDIF
+        WRITE(16,1054)
+        1054 FORMAT(//,' A NEW GLOBAL CONCENTRATION FILE WILL BE STARTED')
+    ENDIF
+
+    IF(NOUTGC == -2) THEN
+        OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83', &
+        ACCESS='DIRECT',RECL=NBYTE)
+        IF(NBYTE == 4) THEN
+            DO I=1,8
+                WRITE(83,REC=IGCP+I) RDES4(I)
+            ENDDO
+            IGCP=IGCP+8
+            DO I=1,6
+                WRITE(83,REC=IGCP+I) RID4(I)
+            ENDDO
+            IGCP=IGCP+6
+            DO I=1,6
+                WRITE(83,REC=IGCP+I) AID4(I)
+            ENDDO
+            IGCP=IGCP+6
+        ENDIF
+        IF(NBYTE == 8) THEN
+            DO I=1,4
+                WRITE(83,REC=IGCP+I) RDES8(I)
+            ENDDO
+            IGCP=IGCP+4
+            DO I=1,3
+                WRITE(83,REC=IGCP+I) RID8(I)
+            ENDDO
+            IGCP=IGCP+3
+            DO I=1,3
+                WRITE(83,REC=IGCP+I) AID8(I)
+            ENDDO
+            IGCP=IGCP+3
+        ENDIF
+        WRITE(83,REC=IGCP+1) NDSETSC
+        WRITE(83,REC=IGCP+2) NP
+        WRITE(83,REC=IGCP+3) DT*NSPOOLGC
+        WRITE(83,REC=IGCP+4) NSPOOLGC
+        WRITE(83,REC=IGCP+5) 1
+        IGCP=IGCP+5
+        CLOSE(83)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+    IF(NOUTGC == -1) THEN
+        OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83')
+        WRITE(83,3220) RUNDES,RUNID,AGRID
+        WRITE(83,3645) NDSETSC,NP,DTDP*NSPOOLGC,NSPOOLGC,1
+        IGCP=2
+        CLOSE(83)
+    ENDIF
+    IF(NOUTGC == 1) THEN
+        OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83')
+        DO I=1,IGCP           !I DON'T KNOW OF A PRACTICAL WAY TO CHANGE NDSETSC
+            READ(83,1050)
+            1050 FORMAT(1X)
+        ENDDO
+        ENDFILE(83)
+        CLOSE(83)
+    ENDIF
+    IF(NOUTGC == 2) THEN
+        OPEN(83,FILE=TRIM(LOCALDIR)//'/'//'fort.83', &
+        ACCESS='DIRECT',RECL=NBYTE)
+    !         WRITE(83,REC=ITEMPSTP+1) NDSETSC  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+        CLOSE(83)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+
+!...
+!....GO TO THE PROPER PLACE IN THE GLOBAL METEOROLOGICAL OUTPUT FILES
+!...
+!       V49.64.01 TCM ADDED GLOBAL ICE CONCENTRATION FILES
+    IF(NCICE /= 0) THEN
+        WRITE(16,2055) IGWP,IGPP,IGIP,NSCOUGW
+    ELSE
+        WRITE(16,1055) IGWP,IGPP,NSCOUGW
+    ENDIF
+    1055 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ', &
+    'WIND FILE BY THE TIME OF THE HOT START', &
+    /,1X,I6,'LINES OR RECORDS WRITTEN IN THE GLOBAL ', &
+    'PRESSURE FILE BY THE TIME OF THE HOT START', &
+    /,8X,'SPOOL COUNTER =',I6)
+    2055 FORMAT(//,1X,I6,' LINES OR RECORDS WRITTEN IN THE GLOBAL ', &
+    'WIND FILE BY THE TIME OF THE HOT START', &
+    /,1X,I6,'LINES OR RECORDS WRITTEN IN THE GLOBAL ', &
+    'PRESSURE FILE BY THE TIME OF THE HOT START', &
+    /,1X,I6,'LINES OR RECORDS WRITTEN IN THE GLOBAL ', &
+    'ICE FILE BY THE TIME OF THE HOT START', &
+    /,8X,'SPOOL COUNTER =',I6)
+
+    IF(NOUTGW < 0) THEN
+        IGPP=0
+        IGWP=0
+        NSCOUGW=0
+        IGIP=0
+        IF((NTCYSGW < ITHS) .AND. (NSPOOLGW > 0)) THEN
+            NTCYSGW=NTCYSGW+((REAL(ITHS)-REAL(NTCYSGW))/ &
+            REAL(NSPOOLGW))*REAL(NSPOOLGW)
+            IF(NTCYSGW < ITHS) NTCYSGW=NTCYSGW+NSPOOLGW
+        !  kmd48.33bc - change the NDSETSC for the change in the DTDP
+            IF(DTDP /= DTDPHS) THEN
+                NDSETSW=((NTCYFGW*DTDP)-(NTCYSGW*DTDPHS))/ &
+                (NSPOOLGW*DTDP)
+            ELSE
+                NDSETSW=(NTCYFGW-NTCYSGW)/NSPOOLGW
+            END IF
+        ENDIF
+    ! TCM V49.64.01 -- ADDED ICE SUPPORT
+        IF(NCICE /= 0) THEN
+            WRITE(16,2056)
+        ELSE
+            WRITE(16,1056)
+        ENDIF
+        WRITE(16,1056)
+        1056 FORMAT(//,' NEW GLOBAL WIND & pressure FILEs WILL BE STARTED')
+        2056 FORMAT(//,' NEW GLOBAL WIND & pressure & Ice FILEs WILL BE STARTED')
+    ENDIF
+
+    IF(NOUTGW == -2) THEN
+        OPEN(73,file=trim(LOCALDIR)//'/'//'fort.73', &
+        access='DIRECT',recl=nbyte)
+        OPEN(74,FILE=TRIM(LOCALDIR)//'/'//'fort.74', &
+        ACCESS='DIRECT',RECL=NBYTE)
+    ! TCM V49.64.01 -- ADDED ICE SUPPORT
+        IF(NCICE /= 0) THEN
+            OPEN(93,FILE=TRIM(LOCALDIR)//'/'//'fort.93', &
+            ACCESS='DIRECT',RECL=NBYTE)
+        ENDIF
+        IF(NBYTE == 4) THEN
+            DO I=1,8
+                write(73,rec=igpp+i) rdes4(i)
+                WRITE(74,REC=IGWP+I) RDES4(I)
+                IF(NCICE /= 0) write(93,rec=igip+i) rdes4(i)
+            ENDDO
+            igpp=igpp+8
+            IGWP=IGWP+8
+            if(ncice /= 0) igip = igip+8
+            DO I=1,6
+                write(73,rec=igpp+i) rid4(i)
+                WRITE(74,REC=IGWP+I) RID4(I)
+                IF(NCICE /= 0) write(93,rec=igip+i) rid4(i)
+            ENDDO
+            igpp=igpp+6
+            IGWP=IGWP+6
+            if(ncice /= 0) igip = igip+6
+            DO I=1,6
+                write(73,rec=igpp+i) aid4(i)
+                WRITE(74,REC=IGWP+I) AID4(I)
+                IF(NCICE /= 0) write(93,rec=igip+i) aid4(i)
+            ENDDO
+            igpp=igpp+6
+            IGWP=IGWP+6
+            if(ncice /= 0) igip = igip+6
+        ENDIF
+        IF(NBYTE == 8) THEN
+            DO I=1,4
+                write(73,rec=igpp+i) rdes8(i)
+                WRITE(74,REC=IGWP+I) RDES8(I)
+                IF(NCICE /= 0) write(93,rec=igip+i) rdes8(i)
+            ENDDO
+            igpp=igpp+4
+            IGWP=IGWP+4
+            if(ncice /= 0) igip = igip+4
+            DO I=1,3
+                write(73,rec=igpp+i) rid8(i)
+                WRITE(74,REC=IGWP+I) RID8(I)
+                IF(NCICE /= 0) write(93,rec=igip+i) rid8(i)
+            ENDDO
+            igpp=igpp+3
+            IGWP=IGWP+3
+            if(ncice /= 0) igip = igip+3
+            DO I=1,3
+                write(73,rec=igpp+i) aid8(i)
+                WRITE(74,REC=IGWP+I) AID8(I)
+                IF(NCICE /= 0) write(93,rec=igip+i) aid8(i)
+            ENDDO
+            igpp=igpp+3
+            IGWP=IGWP+3
+            if(ncice /= 0) igip = igip+3
+        ENDIF
+        WRITE(73,rec=igpp+1) ndsetsw
+        WRITE(73,rec=igpp+2) np
+        WRITE(73,rec=igpp+3) dt*nspoolgw
+        WRITE(73,rec=igpp+4) nspoolgw
+        WRITE(73,rec=igpp+5) 2
+        IGPP=IGPP+5
+        CLOSE(73)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+        WRITE(74,REC=IGWP+1) NDSETSW
+        WRITE(74,REC=IGWP+2) NP
+        WRITE(74,REC=IGWP+3) DT*NSPOOLGW
+        WRITE(74,REC=IGWP+4) NSPOOLGW
+        WRITE(74,REC=IGWP+5) 2
+        IGWP=IGWP+5
+        CLOSE(74)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+    ! TCM V49.64.01 -- ADDED ICE SUPPORT
+        IF(NCICE /= 0) THEN
+            WRITE(93,REC=IGIP+1) NDSETSW
+            WRITE(93,REC=IGIP+2) NP
+            WRITE(93,REC=IGIP+3) DT*NSPOOLGW
+            WRITE(93,REC=IGIP+4) NSPOOLGW
+            WRITE(93,REC=IGIP+5) 2
+            IGIP=IGIP+5
+            CLOSE(93)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+        ENDIF
+    ENDIF
+
+! Casey 090310: Added the possibility for NOUTGW = -4.
+    IF((NOUTGW == -1) .OR. (NOUTGW == -4)) THEN
+        if (write_local_files.eqv. .FALSE. ) then
+            CALL OPEN_GBL_FILE(73, TRIM(GLOBALDIR)//'/'//'fort.73', &
+            NP_G, NP, HEADER73)
+            IGPP=2
+            CALL OPEN_GBL_FILE(74, TRIM(GLOBALDIR)//'/'//'fort.74', &
+            NP_G, NP, HEADER74)
+            IGWP=2
+        ! TCM V49.64.01 -- ADDED ICE SUPPORT
+            IF (NCICE /= 0) THEN
+                CALL OPEN_GBL_FILE(93, TRIM(GLOBALDIR)//'/'//'fort.93', &
+                NP_G, NP, HEADER93)
+                IGIP=2
+            ENDIF
+                        
+        else
+            CALL OPEN_GBL_FILE(73, TRIM(LOCALDIR)//'/'//'fort.73', &
+            NP_G, NP, HEADER73)
+            IGPP=2
+            CALL OPEN_GBL_FILE(74, TRIM(LOCALDIR)//'/'//'fort.74', &
+            NP_G, NP, HEADER74)
+            IGWP=2
+        ! TCM V49.64.01 -- ADDED ICE SUPPORT
+            IF (NCICE /= 0) THEN
+                CALL OPEN_GBL_FILE(93, TRIM(LOCALDIR)//'/'//'fort.93', &
+                NP_G, NP, HEADER93)
+                IGIP=2
+            ENDIF
+        endif
+                    
+    ENDIF
+
+! tcm v50.75 removed ifdef cswan and added test for nrs=3 or 4
+    IF ((ABS(NRS) == 3) .OR. (ABS(NRS) == 4)) THEN
+    ! ifdef CSWAN
+    ! Casey 090310: Added the output of radiation stress gradients.
+        IF(NOUTGW < 0)THEN
+            IGRadS=0
+        ENDIF
+        IF(NOUTGW == -2)THEN
+            OPEN(164,FILE=TRIM(LOCALDIR)//'/'//'rads.64', &
+            ACCESS='DIRECT',RECL=NBYTE)
+            IF(NBYTE == 4) THEN
+                DO I=1,8
+                    WRITE(164,REC=IGRadS+I) RDES4(I)
+                ENDDO
+                IGRadS=IGRadS+8
+                DO I=1,6
+                    WRITE(164,REC=IGRadS+I) RID4(I)
+                ENDDO
+                IGRadS=IGRadS+6
+                DO I=1,6
+                    WRITE(164,REC=IGRadS+I) AID4(I)
+                ENDDO
+                IGRadS=IGRadS+6
+            ENDIF
+            IF(NBYTE == 8) THEN
+                DO I=1,4
+                    WRITE(164,REC=IGRadS+I) RDES8(I)
+                ENDDO
+                IGRadS=IGRadS+4
+                DO I=1,3
+                    WRITE(164,REC=IGRadS+I) RID8(I)
+                ENDDO
+                IGRadS=IGRadS+3
+                DO I=1,3
+                    WRITE(164,REC=IGRadS+I) AID8(I)
+                ENDDO
+                IGRadS=IGRadS+3
+            ENDIF
+            WRITE(164,REC=IGRadS+1) NDSETSW
+            WRITE(164,REC=IGRadS+2) NP
+            WRITE(164,REC=IGRadS+3) DT*NSPOOLGW
+            WRITE(164,REC=IGRadS+4) NSPOOLGW
+            WRITE(164,REC=IGRadS+5) 2
+            IGRadS=IGRadS+5
+            CLOSE(164)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+        ENDIF
+        IF((NOUTGW == -1) .OR. (NOUTGW == -4)) THEN
+            if (write_local_files.eqv. .FALSE. ) then
+                CALL OPEN_GBL_FILE(164, TRIM(GLOBALDIR)//'/'//'rads.64', &
+                NP_G, NP, HEADER74)
+            else
+                CALL OPEN_GBL_FILE(164, TRIM(LOCALDIR)//'/'//'rads.64', &
+                NP_G, NP, HEADER74)
+            endif
+            IGRadS=2
+        ENDIF
+    ENDIF
+! endif
+
+    IF(NOUTGW == 2) THEN
+        open(73,file=TRIM(LOCALDIR)//'/'//'fort.73', &
+        access='DIRECT',recl=nbyte)
+    !         WRITE(73,REC=ITempStp+1) ndsetsw  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+        close(73)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+        OPEN(74,FILE=TRIM(LOCALDIR)//'/'//'fort.74', &
+        ACCESS='DIRECT',RECL=NBYTE)
+    !         WRITE(74,REC=ITEMPSTP+1) NDSETSW  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+        CLOSE(74)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+    ! TCM V49.64.01 -- ADDED ICE SUPPORT
+        IF(NCICE /= 0) THEN
+            OPEN(93,FILE=TRIM(LOCALDIR)//'/'//'fort.93', &
+            ACCESS='DIRECT',RECL=NBYTE)
+        !         WRITE(93,REC=ITempStp+1) ndsetsw  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+            CLOSE(93)                      ! DO THIS TO FLUSH THE WRITE BUFFER
+        ENDIF
+    ENDIF
+
+!... TCM V50.66.01 ADDITIONS FOR TIME VARYING BATHYMETRY
+!... THIS FILE IS CONTROLED BY THE ELEVATION OUTPUT OPTIONS
+!....GO TO THE PROPER PLACE IN THE GLOBAL BATHYMETRY OUTPUT FILE
+!...
+    IF (NDDT /= 0) WRITE(16,1051) IGBP,NSCOUGB
+    1051 FORMAT(//,1X,I8,' LINES OR RECORDS WRITTEN IN THE GLOBAL ', &
+    'BATHYMETRY FILE BY THE TIME OF THE HOT START', &
+    /,8X,'SPOOL COUNTER =',I8)
+
+    IF ((NDDT /= 0) .AND. (NOUTGE < 0)) THEN
+        IGBP=0
+        NSCOUGB=0
+        IF((NTCYSGB < ITHS) .AND. (NSPOOLGE > 0)) THEN
+            NTCYSGB=NTCYSGB+((REAL(ITHS)-REAL(NTCYSGB))/ &
+            REAL(NSPOOLGE))*REAL(NSPOOLGE)
+            IF(NTCYSGB < ITHS) NTCYSGB=NTCYSGB+NSPOOLGE
+            IF(DTDP /= DTDPHS) THEN
+                NDSETSB=((NTCYFGB*DTDP)-(NTCYSGB*DTDPHS))/ &
+                (NSPOOLGE*DTDP)
+            ELSE
+                NDSETSB=(NTCYFGB-NTCYSGB)/NSPOOLGE
+            ENDIF
+        ENDIF
+        WRITE(16,1052)
+        1052 FORMAT(//,' A NEW GLOBAL BATHYMETRY FILE WILL BE STARTED')
+    ENDIF
+
+    IF ((NDDT /= 0) .AND. (NOUTGE == -2)) THEN
+        OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76', &
+        ACCESS='DIRECT',RECL=NBYTE)
+        IF(NBYTE == 4) THEN
+            DO I=1,8
+                WRITE(76,REC=IGBP+I) RDES4(I)
+            ENDDO
+            IGBP=IGBP+8
+            DO I=1,6
+                WRITE(76,REC=IGBP+I) RID4(I)
+            ENDDO
+            IGBP=IGBP+6
+            DO I=1,6
+                WRITE(76,REC=IGBP+I) AID4(I)
+            ENDDO
+            IGBP=IGBP+6
+        ENDIF
+        IF(NBYTE == 8) THEN
+            DO I=1,4
+                WRITE(76,REC=IGBP+I) RDES8(I)
+            ENDDO
+            IGBP=IGBP+4
+            DO I=1,3
+                WRITE(76,REC=IGBP+I) RID8(I)
+            ENDDO
+            IGBP=IGBP+3
+            DO I=1,3
+                WRITE(76,REC=IGBP+I) AID8(I)
+            ENDDO
+            IGBP=IGBP+3
+        ENDIF
+        WRITE(76,REC=IGBP+1) NDSETSE
+        WRITE(76,REC=IGBP+2) NP
+        WRITE(76,REC=IGBP+3) DT*NSPOOLGE
+        WRITE(76,REC=IGBP+4) NSPOOLGE
+        WRITE(76,REC=IGBP+5) 1
+        IGBP=IGBP+5
+        CLOSE(76)                    ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+
+    IF ((NDDT /= 0) .AND. &
+    ((NOUTGE == -1) .OR. (NOUTGE == -4))) THEN
+        if (write_local_files.eqv. .FALSE. ) then
+            CALL OPEN_GBL_FILE(76, TRIM(GLOBALDIR)//'/'//'fort.76', &
+            NP_G, NP, HEADER63)
+        else
+            CALL OPEN_GBL_FILE(76, TRIM(LOCALDIR)//'/'//'fort.76', &
+            NP_G, NP, HEADER63)
+        endif
+        IGBP=2
+    ENDIF
+    IF ((NDDT /= 0) .AND. (NOUTGE == 2)) THEN
+        OPEN(76,FILE=TRIM(LOCALDIR)//'/'//'fort.76', &
+        ACCESS='DIRECT',RECL=NBYTE)
+    !          WRITE(76,REC=ITEMPSTP+1) NDSETSE  ! ALLOW ADDITIONAL OUTPUT DATA TO BE WRITTEN
+        CLOSE(76)                         ! DO THIS TO FLUSH THE WRITE BUFFER
+    ENDIF
+
+
+! jgf52.08.08: Create files for nodecode and noff output
+! (wet/dry state of nodes and wet/dry state of elements)
+    IF (ABS(NOUTGE) /= 0) then
+        if (outputNodeCode.eqv. .TRUE. ) then
+            if (write_local_files.eqv. .TRUE. ) then
+                call writeDomainHeader(101,trim(localdir)//'/'// &
+                'nodecode.63',NP_G, NP, 'nodecode    ')
+            else
+                call writeDomainHeader(101,trim(globaldir)//'/'// &
+                'nodecode.63',NP_G, NP, 'nodecode    ')
+            endif
+        endif
+        if (outputNOFF.eqv. .TRUE. ) then
+            if (write_local_files.eqv. .TRUE. ) then
+                call writeDomainHeader(102,trim(localdir)//'/'// &
+                'noff.100',NE_G, NE, 'noff       ')
+            else
+                call writeDomainHeader(102,trim(globaldir)//'/'// &
+                'noff.100',NE_G, NE, 'noff       ')
+            endif
+        endif
+    endif
+
+! jgf52.08.03: Reading of min/max data moved to initOutput2D()
+! subroutine in write_output module.
+          
+
+! tcmv51.27 20140502 Added to remove this nodal attribute
+! as it is only used at Cold Start but read at hot start as well
+    IF (LoadRiver_et_WSE) THEN
+        IF (ALLOCATED (River_et_WSE) ) THEN
+            DEALLOCATE (River_et_WSE)
+        ENDIF
+    ENDIF
+
+    1112 FORMAT(/,1X,79('_'))
+    1197 FORMAT(/,1X,'THE E29 MET GRID INTERPOLATING FACTORS ARE ', &
+    'BEING COMPUTED ')
+    1198 FORMAT(1X,'FINISHED COMPUTING E29 INTERPOLATING FACTORS',/)
+    3220 FORMAT(1X,A32,2X,A24,2X,A24)
+    3645 FORMAT(1X,I10,1X,I10,1X,E15.7,1X,I5,1X,I5)
+
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Return.")
+#endif
+    call unsetMessageSource()
+    RETURN
+    END SUBROUTINE HOTSTART
+
+!******************************************************************************
+!   Subroutine to initialize the 3D routines for a hot start including        *
+!   finding proper places in 3D output files.                                 *
+!                                                                             *
+!   jgf49.43: Had to move the reading of the 3D portion of the hotstart file
+!   to the hotstart() subroutine, to facilitate separation of the reading of
+!   the file from initialization. This is required if the file is to be read
+!   in various formats (e.g., netcdf).
+!                                                                             *
+!******************************************************************************
+
+    SUBROUTINE HOTSTART_3D(TimeLoc,ITHS)
+    USE GLOBAL_3DVS
+    USE MESH, ONLY : NP, AGRID
+    USE WRITE_OUTPUT, ONLY : initOutput3D
+    USE BOUNDARIES, ONLY : NOPE, NETA, NBD, totalbcrivernodes, &
+    BndBCRiver
+!   kmd48.33bc - variable information needed from the global.F file
+! kmd - added variables for river information
+    USE GLOBAL, ONLY : RES_BC_FLAG, RBCTIME1, RBCTIME2, &
+    RBCTIMEINC, SBCTIME1, SBCTIME2, &
+    SBCTIMEINC, TBCTIME1, TBCTIME2, &
+    TBCTIMEINC, BCSTATIM, RBCRATIO, &
+    LNM_BC1, LNM_BC2, TIMEIT, STATIM, &
+    SBCSTATIM, TBCSTATIM, SBCRATIO, &
+    TBCRATIO, DTDPHS, LNM_BC, &
+    BCFLAG_LNM, BCFLAG_TEMP, TTBCTIME1, &
+    TTBCTIME2, TTBCSTATIM, TTBCTIMEINC, &
+    q_heat1, q_heat2, HFLUX, TTBCRATIO, &
+    setMessageSource, unsetMessageSource, &
+    DEBUG, ECHO, INFO, WARNING, ERROR, &
+    allMessage, screenMessage, &
+    RIVBCTIMINC, RIVBCTIME1,RIVBCTIME2, &
+    BCRivRATIO, RIVBCSTATIM, NP_G
+    IMPLICIT NONE
+    INTEGER :: IRType                  !number of fields in output file
+    INTEGER :: NH, N                   !horizontal & vertical loop counters
+!      REAL(SZ) :: RealPartOfQ
+!  kmd48.33bc - new variables
+    INTEGER :: NumofBCNodes, J, NOD, IT
+    INTEGER, INTENT(IN) :: ITHS
+    REAL(SZ), INTENT(IN) :: TimeLoc
+
+    CHARACTER(80) :: CDUM80
+
+    INTEGER :: IINDX
+    INTEGER :: NumofNodes, K
+    REAL(SZ),ALLOCATABLE :: TMP(:,:)
+
+    REAL(SZ) :: tempp, temp1, temp2
+
+    call setMessageSource("hotstart_3D")
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Enter.")
+#endif
+!...
+!...  Define format statements used to initialize 3D output files
+!...
+    499 FORMAT(1X,A32,2X,A24,2X,A24)
+!.. RJW bug fix in format 498 (kendra found this)
+    498 FORMAT(1X,I10,1X,I10,1X,E15.7,I10,1X,I10,1X,I3)
+    497 FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE ASCII')
+    496 FORMAT(5X,'UNIT ',I2,' FORMAT WILL BE BINARY')
+
+!  kmd48.33bc - restart boundary condtions for baroclinic simulations
+    IF((RES_BC_FLAG > 0) .AND. (CBAROCLINIC)) THEN
+        IF ((ABS(RES_BC_FLAG) >= 1) .AND. (NOPE > 0)) THEN
+            IF (BCFLAG_LNM == 1) THEN
+                OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
+                RBCTIME1=BCSTATIM*86400.d0
+                RBCTIME2=RBCTIME1+RBCTIMEINC
+                READ(35,'(A)') CDUM80
+                DO NumofBCNodes=1,NETA
+                    READ(35,*) NOD,LNM_BC1(NumofBCNodes)
+                END DO
+                READ(35,'(A)') CDUM80
+                DO NumofBCNodes=1,NETA
+                    READ(35,*) NOD,LNM_BC2(NumofBCNodes)
+                END DO
+                DO IT=1,ITHS
+                    TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                    IF(TIMEIT > RBCTIME2) THEN
+                        RBCTIME1=RBCTIME2
+                        RBCTIME2=RBCTIME1+RBCTIMEINC
+                        READ(35,'(A)') CDUM80
+                        DO NumofBCNodes=1,NETA
+                            LNM_BC1(NumofBCNodes)=LNM_BC2(NumofBCNodes)
+                            READ(35,*) NOD,LNM_BC2(NumofBCNodes)
+                        END DO
+                    END IF
+                END DO
+                IF(TimeLoc > RBCTIME2) THEN
+                    RBCTIME1=RBCTIME2
+                    RBCTIME2=RBCTIME2+RBCTIMEINC
+                    READ(35,'(A)') CDUM80
+                    DO NumofBCNodes=1,NETA
+                        LNM_BC1(NumofBCNodes)=LNM_BC2(NumofBCNodes)
+                        READ(35,*) NOD,LNM_BC2(NumofBCNodes)
+                    END DO
+                END IF
+                RBCRATIO=(TIMEIT-RBCTIME1)/RBCTIMEINC
+            ELSE IF (BCFLAG_LNM == 2) THEN
+            ! to be added later but currently information
+            ! is taken in two ways from the HYCOM results
+            ELSE IF (BCFLAG_LNM == 3) THEN
+                DO NumofBCNodes=1,NETA
+                    IINDX=NBD(NumofBCNodes)
+                    LNM_BC1(NumofBCNodes)=ETA2(IINDX)
+                    LNM_BC2(NumofBCNodes)=LNM_BC1(NumofBCNodes)
+                END DO
+            END IF
+        END IF
+        IF ((ABS(RES_BC_FLAG) == 2) .OR. (ABS(RES_BC_FLAG) == 4)) THEN
+            IF (NOPE > 0) THEN
+                OPEN(36,FILE=TRIM(INPUTDIR)//'/'//'fort.36')
+                SBCTIME1=SBCSTATIM*86400.D0
+                SBCTIME2=SBCTIME1+SBCTIMEINC
+                READ(36,'(A)') CDUM80
+                DO NumofBCNodes=1,NETA
+                    READ(36,*) NOD,(RESSAL1(NumofBCNodes,J),J=1,NFEN)
+                END DO
+                READ(36,'(A)') CDUM80
+                DO NumofBCNodes=1,NETA
+                    READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+                END DO
+                DO IT=1,ITHS
+                    TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                    IF(TIMEIT > SBCTIME2) THEN
+                        SBCTIME1=SBCTIME2
+                        SBCTIME2=SBCTIME1+SBCTIMEINC
+                        READ(36,'(A)') CDUM80
+                        DO NumofBCNodes=1,NETA
+                            DO J=1,NFEN
+                                RESSAL1(NumofBCNodes,J)=RESSAL2(NumofBCNodes,J)
+                            END DO
+                            READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+                        END DO
+                    END IF
+                END DO
+                IF(TIMELOC > SBCTIME2) THEN
+                    SBCTIME1=SBCTIME2
+                    SBCTIME2=SBCTIME2+SBCTIMEINC
+                    READ(36,'(A)') CDUM80
+                    DO NumofBCNodes=1,NETA
+                        DO J=1,NFEN
+                            RESSAL1(NumofBCNodes,J)=RESSAL2(NumofBCNodes,J)
+                        END DO
+                        READ(36,*) NOD,(RESSAL2(NumofBCNodes,J),J=1,NFEN)
+                    END DO
+                END IF
+                SBCRATIO=(TIMEIT-SBCTIME1)/SBCTIMEINC
+            END IF
+        END IF
+        IF ((ABS(RES_BC_FLAG) == 3) .OR. &
+        (ABS(RES_BC_FLAG) == 4)) THEN
+            IF (NOPE > 0) THEN
+                OPEN(37,FILE=TRIM(INPUTDIR)//'/'//'fort.37')
+                TBCTIME1=TBCSTATIM*86400.D0
+                TBCTIME2=TBCTIME1+TBCTIMEINC
+                READ(37,'(A)') CDUM80
+                DO NumofBCNodes=1,NETA
+                    READ(37,*) NOD,(RESTEMP1(NumofBCNodes,J),J=1,NFEN)
+                END DO
+                READ(37,'(A)') CDUM80
+                DO NumofBCNodes=1,NETA
+                    READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+                END DO
+                DO IT=1,ITHS
+                    TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                    IF(TIMEIT > TBCTIME2) THEN
+                        TBCTIME1=TBCTIME2
+                        TBCTIME2=TBCTIME1+TBCTIMEINC
+                        READ(37,'(A)') CDUM80
+                        DO NumofBCNodes=1,NETA
+                            DO J=1,NFEN
+                                RESTEMP1(NumofBCNodes,J)=RESTEMP2(NumofBCNodes,J)
+                            END DO
+                            READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+                        END DO
+                    END IF
+                END DO
+                IF(TIMELOC > TBCTIME2) THEN
+                    TBCTIME1=TBCTIME2
+                    TBCTIME2=TBCTIME2+TBCTIMEINC
+                    READ(37,'(A)') CDUM80
+                    DO NumofBCNodes=1,NETA
+                        DO J=1,NFEN
+                            RESTEMP1(NumofBCNodes,J)=RESTEMP2(NumofBCNodes,J)
+                        END DO
+                        READ(37,*) NOD,(RESTEMP2(NumofBCNodes,J),J=1,NFEN)
+                    END DO
+                END IF
+                TBCRATIO=(TIMEIT-TBCTIME1)/TBCTIMEINC
+            END IF
+            IF (BCFLAG_TEMP == 1) THEN ! read in file with multiple values but no calcs
+                OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+                TTBCTIME1=TTBCSTATIM*86400.D0
+                TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+                DO NumofNodes=1,NP
+                    READ(38,*) NOD, q_heat1(Numofnodes)
+                END DO
+                DO NumofNodes=1,NP
+                    READ(38,*) NOD, q_heat2(NumofNodes)
+                END DO
+                DO IT=1,ITHS
+                    TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                    IF(TIMEIT > TTBCTIME2) THEN
+                        TTBCTIME1=TTBCTIME2
+                        TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+                        DO NumofNodes=1,NH
+                            q_heat1(NumofNodes)=q_heat2(NumofNodes)
+                            READ(38,*) NOD, q_heat2(NumofNodes)
+                        END DO
+                    END IF
+                END DO
+                TTBCRATIO=(TIMEIT-TTBCTIME1)/TTBCTIMEINC
+                DO NumofNodes=1,NP
+                    HFLUX(NumofNodes) = q_heat1(NumofNodes)+TTBCRATIO* &
+                    (q_heat2(NumofNodes)-q_heat1(NumofNodes))
+                    qsurf(NumofNodes)=-HFLUX(NumofNodes)
+                    qsurfkp1(NumofNodes)=-HFLUX(NumofNodes)
+                END DO
+            ELSE IF (BCFLAG_TEMP == 2) THEN ! read in from file with 6 components
+                ALLOCATE (TMP(NP,6))
+                OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+                TTBCTIME1=TTBCSTATIM*86400.D0
+                TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+                READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+                DO NumofNodes=1,NP
+                    q_heat1(NumofNodes)=-TMP(NumofNodes,1)- &
+                    TMP(NumofNodes,2)+TMP(NumofNodes,3)- &
+                    TMP(NumofNodes,5)+TMP(NumofNodes,4)- &
+                    TMP(NumofNodes,6)
+                END DO
+                READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+                DO NumofNodes=1,NP
+                    q_heat2(NumofNodes)=-TMP(NumofNodes,1)- &
+                    TMP(NumofNodes,2)+TMP(NumofNodes,3)- &
+                    TMP(NumofNodes,5)+TMP(NumofNodes,4)- &
+                    TMP(NumofNodes,6)
+                END DO
+                DO IT=1,ITHS
+                    TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                    IF(TIMEIT > TTBCTIME2) THEN
+                        TTBCTIME1=TTBCTIME2
+                        TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+                        DO NumofNodes=1,NP
+                            q_heat1(NumofNodes)=q_heat2(NumofNodes)
+                        END DO
+                        READ(38,*) (NOD,(TMP(K,J),J=1,6),K=1,NP)
+                        DO NumofNodes=1,NP
+                            q_heat2(NumofNodes)=-TMP(NumofNodes,1)- &
+                            TMP(NumofNodes,2)+TMP(NumofNodes,3)- &
+                            TMP(NumofNodes,5)+TMP(NumofNodes,4)- &
+                            TMP(NumofNodes,6)
+                        END DO
+                    END IF
+                END DO
+                TTBCRATIO=(TIMEIT-TTBCTIME1)/TTBCTIMEINC
+                DO NumofNodes=1,NP
+                    HFLUX(NumofNodes) = q_heat1(NumofNodes)+TTBCRATIO* &
+                    (q_heat2(NumofNodes)-q_heat1(NumofNodes))
+                    qsurf(NumofNodes)=-HFLUX(NumofNodes)
+                    qsurfkp1(NumofNodes)=-HFLUX(NumofNodes)
+                END DO
+                DEALLOCATE(TMP)
+            ELSE IF (BCFLAG_TEMP == 3) THEN ! read in from file with 4 components
+                ALLOCATE (TMP(NP,4))
+                OPEN(38,FILE=TRIM(INPUTDIR)//'/'//'fort.38')
+                TTBCTIME1=TTBCSTATIM*86400.D0
+                TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+                READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+                DO NumofNodes=1,NP
+                    q_heat1(NumofNodes)=TMP(NumofNodes,4)+ &
+                    TMP(NumofNodes,3)-TMP(NumofNodes,1)+ &
+                    TMP(NumofNodes,2)
+                END DO
+                READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+                DO NumofNodes=1,NP
+                    q_heat2(NumofNodes)=TMP(NumofNodes,4)+ &
+                    TMP(NumofNodes,3)-TMP(NumofNodes,1)+ &
+                    TMP(NumofNodes,2)
+                END DO
+                DO IT=1,ITHS
+                    TIMEIT=IT*DTDPHS + STATIM*86400.D0
+                    IF(TIMEIT > TTBCTIME2) THEN
+                        TTBCTIME1=TTBCTIME2
+                        TTBCTIME2=TTBCTIME1+TTBCTIMEINC
+                        DO NumofNodes=1,NP
+                            q_heat1(NumofNodes)=q_heat2(NumofNodes)
+                        END DO
+                        READ(38,*) (NOD,(TMP(K,J),J=1,4),K=1,NP)
+                        DO NumofNodes=1,NP
+                            q_heat2(NumofNodes)=TMP(NumofNodes,4)+ &
+                            TMP(NumofNodes,3)-TMP(NumofNodes,1)+ &
+                            TMP(NumofNodes,2)
+                        END DO
+                    END IF
+                END DO
+                TTBCRATIO=(TIMEIT-TTBCTIME1)/TTBCTIMEINC
+                DO NumofNodes=1,NP
+                    HFLUX(NumofNodes) = q_heat1(NumofNodes)+TTBCRATIO* &
+                    (q_heat2(NumofNodes)-q_heat1(NumofNodes))
+                    qsurf(NumofNodes)=-HFLUX(NumofNodes)
+                    qsurfkp1(NumofNodes)=-HFLUX(NumofNodes)
+                END DO
+                DEALLOCATE(TMP)
+            END IF ! end if for heat flux file
+        END IF ! end if for temperature boundary and heat flux
+    ELSE IF ((RES_BC_FLAG < 0) .AND. (CBAROCLINIC) .AND. (NOPE > 0)) THEN
+        IF (BCFLAG_LNM == 1) THEN
+            OPEN(35,FILE=TRIM(INPUTDIR)//'/'//'fort.35')
+            READ(35,'(A)') CDUM80
+            DO NumofBCNodes=1,NETA
+                READ(35,*) NOD,LNM_BC(NumofBCNodes)
+            END DO
+        ELSE IF (BCFLAG_LNM == 2) THEN
+        ! add later
+        ELSE IF (BCFLAG_LNM == 3) THEN
+            DO NumofBCNodes=1,NETA
+                IINDX=NBD(NumofBCNodes)
+                LNM_BC(NumofBCNodes)=ETA2(IINDX)
+            END DO
+        END IF
+    END IF
+
+! kmd - River information for boundary conditions
+    IF (BndBCRiver) THEN
+        OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
+        READ(39,*) RIVBCTIMINC, RIVBCSTATIM
+        RIVBCTIME1=RIVBCSTATIM*86400.d0
+        RIVBCTIME2=RIVBCTIME1+RIVBCTIMINC
+        DO J=1,totalbcrivernodes
+            IF (IDEN == 2) THEN
+                READ(39,*) (BCRivSalN1(J,K),K=1,NFEN)
+            ELSE IF (IDEN == 3) THEN
+                READ(39,*) (BCRivTempN1(J,K),K=1,NFEN)
+            ELSE IF (IDEN == 4) THEN
+                READ(39,*) (BCRivSalN1(J,K), BCRivTempN1(J,K),K=1,NFEN)
+            END IF
+        END DO
+        DO J=1,totalbcrivernodes
+            IF (IDEN == 2) THEN
+                READ(39,*) (BCRivSalN2(J,K),K=1,NFEN)
+            ELSE IF (IDEN == 3) THEN
+                READ(39,*) (BCRivTempN2(J,K),K=1,NFEN)
+            ELSE IF (IDEN == 4) THEN
+                READ(39,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
+            END IF
+        END DO
+        DO IT=1,ITHS-1
+            TIMEIT=IT*DTDPHS + STATIM*86400.D0 ! kmd48.33bc - changed DTDP to DTDPHS
+            IF(TIMEIT > RIVBCTIME2) THEN
+                RIVBCTIME1=RIVBCTIME2
+                RIVBCTIME2=RIVBCTIME2+RIVBCTIMINC
+                DO J=1,totalbcrivernodes
+                    IF (IDEN == 2) THEN
+                        DO K=1,NFEN
+                            BCRivSalN1(J,K)=BCRivSalN2(J,K)
+                        END DO
+                        READ(39,*) (BCRivSalN2(J,K),K=1,NFEN)
+                    ELSE IF (IDEN == 3) THEN
+                        DO K=1,NFEN
+                            BCRivTempN1(J,K)=BCRivTempN2(J,K)
+                        END DO
+                        READ(39,*) (BCRivTempN2(J,K),K=1,NFEN)
+                    ELSE IF (IDEN == 4) THEN
+                        DO K=1,NFEN
+                            BCRivSalN1(J,K)=BCRivSalN2(J,K)
+                            BCRivTempN1(J,K)=BCRivTempN2(J,K)
+                        END DO
+                        READ(39,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
+                    END IF
+                END DO
+            END IF
+        END DO
+        BCRivRATIO=(TIMEIT-RIVBCTIME1)/RIVBCTIMINC
+        DO J=1,totalbcrivernodes
+            IF (IDEN == 2) THEN
+                DO K=1,NFEN
+                    BCRivSal(J,K)=BCRivSalN1(J,K)+BCRivRATIO* &
+                    (BCRivSalN2(J,K)-BCRivSalN1(J,K))
+                END DO
+            ELSE IF (IDEN == 3) THEN
+                DO K=1,NFEN
+                    BCRivTemp(J,K)=BCRivTempN1(J,K)+BCRivRATIO* &
+                    (BCRivTempN2(J,K)-BCRivTempN1(J,K))
+                END DO
+            ELSE IF (IDEN == 4) THEN
+                DO K=1,NFEN
+                    BCRivSal(J,K)=BCRivSalN1(J,K)+BCRivRATIO* &
+                    (BCRivSalN2(J,K)-BCRivSalN1(J,K))
+                    BCRivTemp(J,K)=BCRivTempN1(J,K)+BCRivRATIO* &
+                    (BCRivTempN2(J,K)-BCRivTempN1(J,K))
+                END DO
+            END IF
+        END DO
+    END IF
+
+!.... Initialize the station 3D density output file
+! md48.33bc - added in the information in front of all
+!             the other output files for resetting the
+!             information.
+    IF (I3DSD < 0) THEN
+        CALL setOutputTiming(N3DSD, I3DSDRec, &
+        NTO3DSDS, NTO3DSDF, NSpo3DSD, NDSet3DSD, iths, dtdphs)
+    END IF
+
+
+    IF(IDen == 1) IRType=1
+    IF((IDen == 2) .OR. (IDen == 3)) IRType=2
+    IF(IDen == 4) IRType=3
+
+    CALL initOutput3D(41, I3DSD, NDSET3DSD, NSTA3DD, NSTA3DD_g, &
+    NSPO3DSD, IRType, I3DSDRec)
+
+!.... Initialize the 3D velocity station output file (Unit 42)
+! md48.33bc - added in the information in front of all
+!             the other output files for resetting the
+!             information.
+    IF (I3DSV < 0) THEN
+        CALL setOutputTiming(N3DSV, I3DSVRec, &
+        NTO3DSVS, NTO3DSVF, NSpo3DSV, NDSet3DSV, iths, dtdphs)
+    END IF
+
+    IRType=3
+
+    CALL initOutput3D(42, I3DSV, NDSET3DSV, NSTA3DV, NSTA3DV_g, &
+    NSPO3DSV, IRType, I3DSVRec)
+
+
+!.... Initialize the 3D turbulence station output file (Unit 43)
+! md48.33bc - added in the information in front of all
+!             the other output files for resetting the
+!             information.
+    IF (I3DST < 0) THEN
+        CALL setOutputTiming(N3DST, I3DSTRec, &
+        NTO3DSTS, NTO3DSTF, NSpo3DST, NDSet3DST, iths, dtdphs)
+    END IF
+
+    IRType=3
+
+!  kmd48.33bc - changed NDSet3DST to use DTDPHS
+    IF (DTDP /= DTDPHS) THEN
+        NDSet3DST=((NTO3DSTF*DTDP)-(NTO3DSTS*DTDPHS))/ &
+        (NSpo3DST*DTDP)
+    END IF
+
+    CALL initOutput3D(43, I3DST, NDSET3DST, NSTA3DT, NSTA3DT_g, &
+    NSPO3DST, IRType, I3DSTRec)
+
+!.... Initialize the global 3D density output file (Unit 44)
+
+!  kmd48.33bc - change NDSet3DGD to use DTDPHS
+    IF(I3DGD < 0) THEN
+        CALL setOutputTiming(N3DGD, I3DGDRec, &
+        NTO3DGDS, NTO3DGDF, NSpo3DGD, NDSet3DGD, iths, dtdphs)
+    END IF
+
+    IF(IDen == 1) IRType=1
+    IF((IDen == 2) .OR. (IDen == 3)) IRType=2
+    IF(IDen == 4) IRType=3
+!     jgf46.27 Replaced IRType with IDen
+! md48.33bc - added in the information to make a file with all the
+!             top temperature boundary condition information in
+
+    CALL initOutput3D(44, I3DGD, NDSET3DGD, NP, NP_g, &
+    NSPO3DGD, IRType, I3DGDRec)
+    IF(I3DGD == -1) THEN         !start a new ASCII file
+        IF((IDEN == 3) .OR. (IDEN == 4)) THEN
+            IF (BCFLAG_TEMP /= 0) THEN
+                OPEN(47,FILE=TRIM(LOCALDIR)//'/'//'fort.47')
+                WRITE(47,499) RUNDES,RUNID,AGRID
+                WRITE(47,498) NDSet3DGD,NP,DTDP*NSpo3DGD,NSpo3DGD,1
+                CLOSE(47)
+            END IF
+        END IF
+    ENDIF
+
+!.... Initialize the global 3D velocity output file (Unit 45)
+
+!  kmd48.33bc - changed NDSet3DGV to use DTDPHS and added REALs to
+!              calculation of the start time due to timestep change
+    IF(I3DGV < 0) THEN
+        CALL setOutputTiming(N3DGV, I3DGVRec, &
+        NTO3DGVS, NTO3DGVF, NSpo3DGV, NDSet3DGV, iths, dtdphs)
+    ENDIF
+
+    CALL initOutput3D(45, I3DGV, NDSET3DGV, NP, NP_g, &
+    NSPO3DGV, IRType, I3DGVRec)
+
+!.... Initialize the global 3D turbulence output file (Unit 46)
+
+!  kmd48.33bc - changed NDSet3DGT to use DTDPHS
+    IF(I3DGT < 0) THEN
+        CALL setOutputTiming(N3DGT, I3DGTRec, &
+        NTO3DGTS, NTO3DGTF, NSpo3DGT, NDSet3DGT, iths, dtdphs)
+    ENDIF
+
+    CALL initOutput3D(46, I3DGT, NDSET3DGT, NP, NP_g, &
+    NSPO3DGT, IRType, I3DGTRec)
+
+!.... Set up a few final odds and ends for a 3D run
+
+    CALL VSSTUP ()
+
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Return.")
+#endif
+    call unsetMessageSource()
+    RETURN
+!----------------------------------------------------------------------
+    END SUBROUTINE HOTSTART_3D
+!----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!     S U B R O U T I N E   S E T   O U T P U T   T I M I N G
+!-----------------------------------------------------------------------
+!     jgf49.48.04 For output files that start anew on hotstart, calculate
+!     the timing of outputs, taking into account that the run that wrote
+!     the hotstart file may have had a different time step than this run.
+!-----------------------------------------------------------------------
+    SUBROUTINE setOutputTiming(tsCounter, recCounter, &
+    startTS, endTS, tsPeriod, nSets, iths, dtdphs)
+    USE GLOBAL, ONLY : DTDP, setMessageSource, unsetMessageSource, &
+    screenMessage, DEBUG, allMessage, CHOTHS
+    IMPLICIT NONE
+    INTEGER, intent(out) :: tsCounter  ! time step counter btw outputs
+    INTEGER, intent(out) :: recCounter ! counts lines in the output file
+    INTEGER, intent(inout) :: startTS  ! time step for output to start
+    INTEGER, intent(inout) :: endTS    ! time step for output to end
+    INTEGER, intent(inout) :: tsPeriod ! period of time steps between outputs
+    INTEGER, intent(out) :: nSets      ! num data sets in output file
+    INTEGER, intent(in) :: iths
+    REAL(8), intent(in) :: dtdphs
+
+    call setMessageSource("setOutputTiming")
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Enter.")
+#endif
+    tsCounter=0
+    recCounter=0
+    IF ((startTS < ITHS) .AND. (tsPeriod > 0)) THEN
+        startTS=startTS+((REAL(ITHS)-REAL(startTS))/ &
+        REAL(tsPeriod))*REAL(tsPeriod)
+        IF (startTS < ITHS) startTS=startTS+tsPeriod
+        IF (CHOTHS.eqv. .TRUE. ) THEN
+            nSets=((endTS*DTDP)-(startTS*DTDPHS))/ &
+            (tsPeriod*DTDP)
+        ELSE
+            nSets=(endTS-startTS)/tsPeriod
+        END IF
+    END IF
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Return.")
+#endif
+    call unsetMessageSource()
+!----------------------------------------------------------------------
+    END SUBROUTINE setOutputTiming
+!----------------------------------------------------------------------
+
+
+!-----------------------------------------------------------------------
+!                  S U B R O U T I N E
+!       R E C A L C U L A T E   S T A R T I N G   A N D   E N D I N G
+!                T I M E S T E P S   F O R   O U T P U T
+!-----------------------------------------------------------------------
+!     jgf51.14 For runs where the hotstarted run has a different
+!     time step than the hotstarted run, we need to recalculate the
+!     starting and ending timesteps for output that were originally
+!     calculated in read_input.F, taking into account the different time
+!     step sizes.
+!-----------------------------------------------------------------------
+    SUBROUTINE recalculateStartingAndEndingTimestepsForOutput( &
+    outputStartDay, outputEndDay, &
+    outputStartTimeStep, OutputEndTimeStep )
+    USE GLOBAL, ONLY : DTDPHS, ITHS, STATIM, setMessageSource, &
+    unsetMessageSource, screenMessage, DEBUG, allMessage, INFO, &
+    logMessage
+    IMPLICIT NONE
+    REAL(8), intent(in) :: outputStartDay
+    REAL(8), intent(in) :: outputEndDay
+    INTEGER, intent(out) :: outputStartTimeStep
+    INTEGER, intent(out) :: outputEndTimeStep
+
+    REAL(8) secElapsed           ! prior to hotstart
+    REAL(8) outputStartSec
+    REAL(8) outputEndSec
+
+    call setMessageSource( &
+    'recalculateStartingAndEndingTimestepsForOutput')
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Enter.")
+#endif
+    secElapsed = DTDPHS * ITHS - STATIM * 86400.0d0
+    outputStartSec = (outputStartDay - STATIM) * 86400.0d0
+    if (outputStartSec > secElapsed) then
+        call calcTS(secElapsed, outputStartSec, outputStartTimeStep)
+    endif
+    outputEndSec = (outputEndDay - STATIM) * 86400.0d0
+    if (outputEndSec > secElapsed) then
+        call calcTS(secElapsed, outputEndSec, outputEndTimeStep)
+    endif
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Return.")
+#endif
+    call unsetMessageSource()
+!----------------------------------------------------------------------
+    END SUBROUTINE recalculateStartingAndEndingTimestepsForOutput
+!----------------------------------------------------------------------
+
+!     ----------------------------------------------------------------
+!      S U B R O U T I N E   C A L C   T S
+!     ----------------------------------------------------------------
+
+!     jgf51.14 Function to calculate the time step on which input
+!     or output should occur.
+
+!     ----------------------------------------------------------------
+    SUBROUTINE calcTS(elapsed, outputtime, ts)
+    USE GLOBAL, ONLY: iths, dtdp, setMessageSource, allMessage, &
+    DEBUG, unsetMessageSource
+
+    REAL(8), intent(in) :: elapsed    ! time (sec) that has elapsed so far
+    REAL(8), intent(in) :: outputtime ! time (sec) at which output should start or end
+    INTEGER, intent(out) :: ts       ! new number of time steps
+
+    INTEGER :: remainingTimeSteps ! number of steps to take at new
+! time step size
+
+    call setMessageSource('calcTS')
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Enter.")
+#endif
+          
+#ifdef IBM
+    remainingTimeSteps = INT((outputtime - elapsed + 0.5d0) &
+    / DTDP, KIND(0.0d0))
+#else
+    remainingTimeSteps = INT((outputtime - elapsed + 0.5d0) &
+    / DTDP, KIND(0.0d0))
+#endif
+    ts = ITHS + remainingTimeSteps
+
+#if defined(HOTSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Return.")
+#endif
+    call unsetMessageSource()
+!----------------------------------------------------------------------
+    END SUBROUTINE calcTS
+!----------------------------------------------------------------------
+
+
+!--------------------------------------------------------------------
+!     S U B R O U T I N E      B I N A R Y   R E A D   2 D
+!--------------------------------------------------------------------
+!     jgf49.44: Reads a real(sz) array with the specified length
+!     from a binary hotstart file; takes the file counter as an
+!     input argument and returns the new value of the file counter
+!     at the end of the read. Its called "2D" even though it reads
+!     a 1D fortran array because the array represents a 2D physical
+!     quantity in an unstructured mesh.
+!--------------------------------------------------------------------
+    SUBROUTINE binaryRead2D(array, length, lun, counter)
+    USE SIZES, ONLY : SZ
+    USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, &
+    allMessage, DEBUG
+    IMPLICIT NONE
+    INTEGER, intent(in) :: length
+    REAL(SZ), intent(out) :: array(length) ! the data to read from the hotstart file
+    INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+    INTEGER, intent(inout) :: counter ! i/o position in the file
+
+    INTEGER :: i      ! array index
+
+    call setMessageSource("binaryRead2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Enter.")
+#endif
+    DO i=1, length
+        READ(lun,REC=counter) array(i)
+        counter = counter + 1
+    END DO
+
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Return.")
+#endif
+    call unsetMessageSource()
+!--------------------------------------------------------------------
+    END SUBROUTINE binaryRead2D
+!--------------------------------------------------------------------
+
+!--------------------------------------------------------------------
+!     S U B R O U T I N E      R E A L   R E A D   2 D
+!--------------------------------------------------------------------
+!     kmd: Reads a real(sz) array with the specified length
+!     from an initial condition file in ascii format; it has the
+!     same format as the binary version but does not require the
+!     file counter.
+!--------------------------------------------------------------------
+    SUBROUTINE realRead2D(array, length, lun )
+    USE SIZES, ONLY : SZ
+    USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, &
+    allMessage, DEBUG
+    IMPLICIT NONE
+    REAL(SZ), intent(out), dimension(length) :: array ! the data to read from the hotstart file
+    INTEGER, intent(in) :: length  ! the number of values to read
+    INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+
+    INTEGER :: i      ! array index
+
+    call setMessageSource("realRead2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Enter.")
+#endif
+    DO i=1, length
+        READ(lun,*) array(i)
+    END DO
+
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Return.")
+#endif
+    call unsetMessageSource()
+!--------------------------------------------------------------------
+    END SUBROUTINE realRead2D
+!--------------------------------------------------------------------
+
+!--------------------------------------------------------------------
+!     S U B R O U T I N E      B I N A R Y   I N T   R E A D   2 D
+!--------------------------------------------------------------------
+!     jgf49.44: Same as binaryRead2D except it reads an integer.
+!--------------------------------------------------------------------
+    SUBROUTINE binaryIntRead2D(array, length, lun, counter)
+    USE SIZES, ONLY : SZ
+    USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, &
+    allMessage, DEBUG
+    IMPLICIT NONE
+    INTEGER, intent(out), dimension(length) :: array ! the data to read from the hotstart file
+    INTEGER, intent(in) :: length  ! the number of values to read
+    INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+    INTEGER, intent(inout) :: counter ! i/o position in the file
+
+    INTEGER :: i      ! array index
+
+    call setMessageSource("binaryIntRead2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Enter.")
+#endif
+
+    DO i=1, length
+        READ(lun,REC=counter) array(i)
+        counter = counter + 1
+    END DO
+
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Return.")
+#endif
+    call unsetMessageSource()
+!--------------------------------------------------------------------
+    END SUBROUTINE binaryIntRead2D
+!--------------------------------------------------------------------
+
+!--------------------------------------------------------------------
+!     S U B R O U T I N E      R E A L   I N T   R E A D   2 D
+!--------------------------------------------------------------------
+!     kmd: Same as realRead2D except it reads an integer.
+!--------------------------------------------------------------------
+    SUBROUTINE realIntRead2D(array, length, lun)
+    USE SIZES, ONLY : SZ
+    USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, &
+    allMessage, DEBUG
+    IMPLICIT NONE
+    INTEGER, intent(out), dimension(length) :: array ! the data to read from the hotstart file
+    INTEGER, intent(in) :: length  ! the number of values to read
+    INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+
+    INTEGER :: i      ! array index
+
+    call setMessageSource("realIntRead2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Enter.")
+#endif
+
+    DO i=1, length
+        READ(lun,*) array(i)
+    END DO
+
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Return.")
+#endif
+    call unsetMessageSource()
+!--------------------------------------------------------------------
+    END SUBROUTINE realIntRead2D
+!--------------------------------------------------------------------
+
+
+!--------------------------------------------------------------------
+!     S U B R O U T I N E      R E A L   R E A D   3 D
+!--------------------------------------------------------------------
+!     kmd: Same as realRead2D except it reads data with
+!     both horizontal and vertical lengths.
+!--------------------------------------------------------------------
+    SUBROUTINE realRead3D(array, iLength, jLength, lun)
+    USE SIZES, ONLY : SZ
+    USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, &
+    allMessage, DEBUG
+    IMPLICIT NONE
+    REAL(SZ), intent(out), dimension(ilength,jlength) :: array ! data to read from the hotstart file
+    INTEGER, intent(in) :: iLength  ! the number of horiz values to read
+    INTEGER, intent(in) :: jLength  ! the number of layers
+    INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+
+    INTEGER :: i,j      ! array indices
+
+    call setMessageSource("realRead3D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Enter.")
+#endif
+    DO j=1, jLength
+        DO i=1, iLength
+            READ(lun,*) array(i,j)
+        END DO
+    END DO
+
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Return.")
+#endif
+    call unsetMessageSource()
+!--------------------------------------------------------------------
+    END SUBROUTINE realRead3D
+!--------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!     S U B R O U T I N E
+!            R E A D  A N D  M A P  T O  S U B D O M A I N  2 D
+!-----------------------------------------------------------------------
+!     jgf49.48.04 Reads a fulldomain array in binary format and maps
+!     to a subdomain array.
+!     kmd: Updated to include a real format option
+!-----------------------------------------------------------------------
+    subroutine readAndMapToSubdomain2D(sd_array, lun, counter, method)
+    USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
+    USE GLOBAL, ONLY : ERROR, setMessageSource, allMessage, &
+    unsetMessageSource, DEBUG, NP_G, NODES_LG
+    USE MESH, ONLY : NP
+    IMPLICIT NONE
+
+    REAL(SZ), intent(out), dimension(np) :: sd_array ! subdomain array
+    INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+    INTEGER, intent(inout) :: counter ! i/o position in the file
+    INTEGER, intent(in) :: method  ! logical to determine binary or real
+    INTEGER :: sd_node_number
+    INTEGER :: fd_node_number
+
+    REAL(SZ), allocatable, dimension(:) :: fd_array ! full domain array
+
+    call setMessageSource("readAndMapToSubdomain2D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Enter.")
+#endif
+! serial
+    IF ((MNPROC == 1) .OR. (READ_LOCAL_HOT_START_FILES.eqv. .TRUE. )) THEN
+        IF (method == 1) THEN
+            CALL binaryRead2D(sd_array, NP, lun, counter)
+        ELSE IF (method == 2) THEN
+            CALL realRead2D(sd_array, NP, lun)
+        ELSE
+            call allMessage(ERROR, &
+            "Passing of binary or real information incorrect")
+            STOP
+        END IF
+    ! parallel
+    ELSE
+        IF (method == 1) THEN
+            allocate(fd_array(NP_G))
+            CALL binaryRead2D(fd_array, NP_G, lun, counter)
+        ! loop over subdomain nodes
+            DO sd_node_number=1,np
+            ! get the corresponding fulldomain node number
+                fd_node_number = ABS(NODES_LG(sd_node_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+                sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+        ELSE IF (method == 2) THEN
+            allocate(fd_array(NP_G))
+            CALL realRead2D(fd_array, NP_G, lun)
+        ! loop over subdomain nodes
+            DO sd_node_number=1,np
+            ! get the corresponding fulldomain node number
+                fd_node_number = ABS(NODES_LG(sd_node_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+                sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+        ELSE
+            WRITE(16,*) "Passing of binary or real &
+            information incorrect"
+            STOP
+        END IF
+    ENDIF
+
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Return.")
+#endif
+    call unsetMessageSource()
+!-----------------------------------------------------------------------
+    END SUBROUTINE readAndMapToSubdomain2D
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!     S U B R O U T I N E
+!            R E A D  A N D  M A P  T O  S U B D O M A I N  I N T  2 D
+!-----------------------------------------------------------------------
+!     jgf49.48.04 Reads a fulldomain array in binary format and maps
+!     to a subdomain array.
+!     kmd: Updated to include real format option
+!-----------------------------------------------------------------------
+    subroutine readAndMapToSubdomainInt2D(sd_array, lun, counter, method)
+    USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
+    USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, &
+    allMessage, DEBUG, NP_G, NODES_LG
+    USE MESH, ONLY : NP
+    IMPLICIT NONE
+
+    INTEGER, intent(out), dimension(np) :: sd_array ! subdomain array
+    INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+    INTEGER, intent(inout) :: counter ! i/o position in the file
+    INTEGER, intent(in) :: method ! logical to determine binary or real
+    INTEGER :: sd_node_number
+    INTEGER :: fd_node_number
+
+    INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
+
+    call setMessageSource("readAndMapToSubdomainInt2D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Enter.")
+#endif
+! serial
+    IF ((MNPROC == 1) .OR. (READ_LOCAL_HOT_START_FILES.eqv. .TRUE. )) THEN
+        IF (method == 1) THEN
+            CALL binaryIntRead2D(sd_array, NP, lun, counter)
+        ELSE IF (method == 2) THEN
+            CALL realIntRead2D(sd_array, NP, lun)
+        ELSE
+            WRITE(16,*) "Passing of binary or real &
+            information incorrect"
+            STOP
+        END IF
+    ! parallel
+    ELSE
+        IF (method == 1) THEN
+            allocate(fd_array(NP_G))
+            CALL binaryIntRead2D(fd_array, NP_G, lun, counter)
+        ! loop over subdomain nodes
+            DO sd_node_number=1,np
+            ! get the corresponding fulldomain node number
+                fd_node_number = ABS(NODES_LG(sd_node_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+                sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+        ELSE IF (method == 2) THEN
+            allocate(fd_array(NP_G))
+            CALL realIntRead2D(fd_array, NP_G, lun)
+        ! loop over subdomain nodes
+            DO sd_node_number=1,np
+            ! get the corresponding fulldomain node number
+                fd_node_number = ABS(NODES_LG(sd_node_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+                sd_array(sd_node_number) = fd_array(fd_node_number)
+            END DO
+            deallocate(fd_array)
+        ELSE
+            WRITE(16,*) "Passing of binary or real &
+            information incorrect"
+            STOP
+        END IF
+    ENDIF
+
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Return.")
+#endif
+    call unsetMessageSource()
+!-----------------------------------------------------------------------
+    END SUBROUTINE readAndMapToSubdomainInt2D
+!-----------------------------------------------------------------------
+
+!-----------------------------------------------------------------------
+!     S U B R O U T I N E
+!            R E A D  A N D  M A P  E L E
+!                 T O  S U B D O M A I N  I N T  2 D
+!-----------------------------------------------------------------------
+!     jgf49.48.04 Reads a fulldomain array in binary format and maps
+!     to a subdomain array (for elemental mappings as opposed to node
+!     mapping).
+!     kmd : Updated to include a real format option
+!-----------------------------------------------------------------------
+    subroutine readAndMapEleToSubdomainInt2D(sd_array, lun, counter,method)
+    USE SIZES, ONLY : MNPROC, READ_LOCAL_HOT_START_FILES
+    USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, &
+    allMessage, DEBUG, NE_G, IMAP_EL_LG
+    USE MESH, ONLY : NE
+    IMPLICIT NONE
+
+    INTEGER, intent(out), dimension(ne) :: sd_array ! subdomain array
+    INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+    INTEGER, intent(inout) :: counter ! i/o position in the file
+    INTEGER, intent(in) :: method ! logical to determine binary or real
+    INTEGER :: sd_ele_number
+    INTEGER :: fd_ele_number
+
+    INTEGER, allocatable, dimension(:) :: fd_array ! full domain array
+
+    call setMessageSource("readAndMapEleToSubdomainInt2D")
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Enter.")
+#endif
+! serial
+    IF ((MNPROC == 1) .OR. (READ_LOCAL_HOT_START_FILES.eqv. .TRUE. )) THEN
+        IF (method == 1) THEN
+            CALL binaryIntRead2D(sd_array, NE, lun, counter)
+        ELSE IF (method == 2) THEN
+            CALL realIntRead2D(sd_array, NE, lun)
+        ELSE
+            WRITE(16,*) "Passing of binary or real &
+            information incorrect"
+            STOP
+        END IF
+    ! parallel
+    ELSE
+        IF (method == 1) THEN
+            allocate(fd_array(NE_G))
+            CALL binaryIntRead2D(fd_array, NE_G, lun, counter)
+        ! loop over subdomain nodes
+            DO sd_ele_number=1,ne
+            ! get the corresponding fulldomain ele number
+                fd_ele_number = abs(IMAP_EL_LG(sd_ele_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+                sd_array(sd_ele_number) = fd_array(fd_ele_number)
+            END DO
+            deallocate(fd_array)
+        ELSE IF (method == 2) THEN
+            allocate(fd_array(NE_G))
+            CALL realIntRead2D(fd_array, NE_G, lun)
+        ! loop over subdomain nodes
+            DO sd_ele_number=1,ne
+            ! get the corresponding fulldomain ele number
+                fd_ele_number = abs(IMAP_EL_LG(sd_ele_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+                sd_array(sd_ele_number) = fd_array(fd_ele_number)
+            END DO
+            deallocate(fd_array)
+        ELSE
+            WRITE(16,*) "Passing of binary or real &
+            information incorrect"
+            STOP
+        END IF
+    ENDIF
+
+#if defined(GLOBAL_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Return.")
+#endif
+    call unsetMessageSource()
+!-----------------------------------------------------------------------
+    END SUBROUTINE readAndMapEleToSubdomainInt2D
+!-----------------------------------------------------------------------
+
+
+!-----------------------------------------------------------------------
+!     S U B R O U T I N E
+!            R E A D  A N D  M A P  T O  S U B D O M A I N  3 D
+!-----------------------------------------------------------------------
+!     jgf49.48.04 Reads a fulldomain array in binary format and maps
+!     to a subdomain array.
+!     kmd : Updated to include a real format option
+!-----------------------------------------------------------------------
+    subroutine readAndMapToSubdomain3D(sd_array, nfen, lun, counter,method)
+    USE SIZES, ONLY : SZ, MNPROC, READ_LOCAL_HOT_START_FILES
+    USE GLOBAL, ONLY : setMessageSource, unsetMessageSource, &
+    allMessage, DEBUG, NP_G, NODES_LG
+    USE MESH, ONLY : NP
+    USE HARM, ONLY : binaryRead3D
+    IMPLICIT NONE
+
+    REAL(SZ), intent(out), dimension(np,nfen) :: sd_array ! subdomain array
+    INTEGER, intent(in) :: nfen    ! number of vertical layers
+    INTEGER, intent(in) :: lun     ! fortran logical unit number to read from
+    INTEGER, intent(inout) :: counter ! i/o position in the file
+    INTEGER, intent(in) :: method ! logical to determine binary or real
+    INTEGER :: sd_node_number
+    INTEGER :: fd_node_number
+
+    REAL(SZ), allocatable, dimension(:,:) :: fd_array ! full domain array
+
+    call setMessageSource("readAndMapToSubdomain3D")
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Enter.")
+#endif
+! serial
+    IF ((MNPROC == 1) .OR. (READ_LOCAL_HOT_START_FILES.eqv. .TRUE. )) THEN
+        IF (method == 1) THEN
+            CALL binaryRead3D(sd_array, NP, NFEN, lun, counter)
+        ELSE IF (method == 2) THEN
+            CALL realRead3D(sd_array, NP, NFEN, lun)
+        ELSE
+            WRITE(16,*) "Passing of binary or real &
+            information incorrect"
+            STOP
+        END IF
+    ! parallel
+    ELSE
+        IF (method == 1) THEN
+            allocate(fd_array(NP_G,NFEN))
+            CALL binaryRead3D(fd_array, NP_G, NFEN, lun, counter)
+        ! loop over subdomain nodes
+            DO sd_node_number=1,np
+            ! get the corresponding fulldomain node number
+                fd_node_number = ABS(NODES_LG(sd_node_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+                sd_array(sd_node_number,:) = fd_array(fd_node_number,:)
+            END DO
+            deallocate(fd_array)
+        ELSE IF (method == 2) THEN
+            allocate(fd_array(NP_G,NFEN))
+            CALL realRead3D(fd_array, NP_G, NFEN, lun)
+        ! loop over subdomain nodes
+            DO sd_node_number=1,np
+            ! get the corresponding fulldomain node number
+                fd_node_number = ABS(NODES_LG(sd_node_number))
+            ! fill in the subdomain arrays with the corresponding
+            ! fulldomain values
+                sd_array(sd_node_number,:) = fd_array(fd_node_number,:)
+            END DO
+            deallocate(fd_array)
+        ELSE
+            WRITE(16,*) "Passing of binary or real &
+            information incorrect"
+            STOP
+        END IF
+    ENDIF
+
+
+#if defined(HSTART_TRACE) || defined(ALL_TRACE)
+    call allMessage(DEBUG,"Return.")
+#endif
+    call unsetMessageSource()
+!-----------------------------------------------------------------------
+    END SUBROUTINE readAndMapToSubdomain3D
+!-----------------------------------------------------------------------
