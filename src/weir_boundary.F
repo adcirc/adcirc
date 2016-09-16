@@ -244,6 +244,9 @@ C-----------------------------------------------------------------------
 
                 ENDIF
 
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
+                CALL allMessage(DEBUG,"Return")
+#endif                
                 CALL unsetMessageSource()
                 RETURN
 
@@ -385,7 +388,7 @@ C-----------------------------------------------------------------------
                 TYPE(KDTREE2_RESULT) :: KDRESULTS(SEARCHDEPTH)
                 
                 CALL setMessageSource("FIND_BOUNDARY_NODES")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
 #endif                
 
@@ -429,7 +432,7 @@ C.......................THIS IS NOT A GHOST NODE EITHER.
                         CALL ADCIRC_TERMINATE()
                     ELSE
                         IDX=-1
-#if defined(TVW_TRACE) 
+#if defined(TVW_TRACE) || defined(ALL_TRACE) 
                         CALL allMessage(DEBUG,"Return")
 #endif                
                         CALL unsetMessageSource()
@@ -449,7 +452,7 @@ C.......................THIS IS NOT A GHOST NODE EITHER.
 
                 IDX = INT(BAR_LOCATIONS(3,KDRESULTS(1)%IDX))
 
-#if defined(TVW_TRACE) 
+#if defined(TVW_TRACE) || defined(ALL_TRACE) 
                 CALL allMessage(DEBUG,"Return")
 #endif                
                 CALL unsetMessageSource()
@@ -483,7 +486,7 @@ C-----------------------------------------------------------------------
                 REAL(SZ),INTENT(OUT) :: BAR_HEIGHT
 
                 CALL setMessageSource("COMPUTE_BARRIER_HEIGHT")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
 #endif                
 
@@ -554,7 +557,7 @@ C...............WRITE SCREEN/UNIT 16 INFORMATION AT START/END
      &                      ' CHANGING AT TIME = ',E15.8,' AT NODE = ',
      &                      I7)
 
-#if defined(TVW_TRACE) 
+#if defined(TVW_TRACE) || defined(ALL_TRACE) 
                 CALL allMessage(DEBUG,"Return")
 #endif                
                 CALL unsetMessageSource()
@@ -596,7 +599,7 @@ C-----------------------------------------------------------------------
 
 
                 CALL setMessageSource("COMPUTE_BARRIER_HEIGHT_LINEAR")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
 #endif                
 
@@ -608,7 +611,7 @@ C...............GET OUT OF HERE AT THE FIRST OPPORTUNITY
                 IF(BAR_VARYTYPE(MYIDX).EQ.1)THEN
                     IF( (BAR_DEG_START(MYIDX).GT. TIME).OR.
      &                  (BAR_DEG_END(MYIDX)  .LT. TIME)    )THEN
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                          CALL allMessage(DEBUG,"Return")
 #endif
                          CALL unsetMessageSource()
@@ -635,7 +638,7 @@ C...............COMPUTE THE NEW BOUNDARY HEIGHT
                         CASE DEFAULT
                             CALL allMessage(WARNING,
      &                          "INVALID BOUNDARY CONDITION SPECIFIED")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                             CALL allMessage(DEBUG,"Return")
 #endif                        
                             CALL unsetMessageSource()
@@ -689,7 +692,7 @@ C               PREVAILING GROUND. CHECK NODE ACROSS BOUNDARY AS WELL AS LOCAL N
      &                 '      BARRIER SET TO MINIMUM VALUE AT ',
      &                 ' TIME = ',E15.8,' NODE = ',I7)
 
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
 #endif                
                 CALL unsetMessageSource()
@@ -727,7 +730,7 @@ C-----------------------------------------------------------------------
                 REAL(SZ)               :: DEPTH
 
                 CALL setMessageSource("COMPUTE_BARRIER_HEIGHT_ETAMAX")
-#if defined(TVW_TRACE) 
+#if defined(TVW_TRACE) || defined(ALL_TRACE) 
                 CALL allMessage(DEBUG,"Enter")
 #endif               
 
@@ -741,7 +744,7 @@ C                   CHECK BOTH SIDES OF WEIR FOR THE ELEVATION SO
 C                   THEY REMAIN IN SYNC
                     IF(NNODECODE(NBV(MYIDX)).NE.1.AND.
      &                  NNODECODE(IBCONN(MYIDX)).NE.1)THEN
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                         CALL allMessage(DEBUG,"Return")
 #endif
                         CALL unsetMessageSource()
@@ -749,7 +752,7 @@ C                   THEY REMAIN IN SYNC
                     ENDIF    
                     IF(ETA2(NBV(MYIDX)).LE.BAR_ETA_MAX(MYIDX).AND.
      &                 ETA2(IBCONN(MYIDX)).LE.BAR_ETA_MAX(MYIDX))THEN
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                         CALL allMessage(DEBUG,"Return")
 #endif                
                         CALL unsetMessageSource()
@@ -767,7 +770,7 @@ C...............IF WE ARE HERE, ETA_MAX WAS PREVIOUSLY EXCEEDED AND THE BARRIER
 C               IS DEGRADING AS PRESCRIBED
                 CALL COMPUTE_BARRIER_HEIGHT_LINEAR(MYIDX,TIME,
      &              BAR_HEIGHT_CURRENT,BAR_HEIGHT)
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
 #endif                
                 CALL unsetMessageSource()
@@ -803,7 +806,7 @@ C-----------------------------------------------------------------------
                 INTEGER              :: NNBB1,NNBB2
 
                 CALL setMessageSource("COMPUTE_BARRIER_HEIGHT_SCHEDULE")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
 #endif
 
@@ -813,7 +816,7 @@ C...............SET DEFAULT RETURN VALUE
 C...............Check if we have reached the offset time yet
 C               (Time added to beginning of a schedule)
                 IF(TIME.LT.BAR_SCHEDULE(MYIDX)%OFFSET)THEN
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                     CALL allMessage(DEBUG,"Return")
 #endif
                     CALL unsetMessageSource()
@@ -989,7 +992,7 @@ C               THE INTERPOLATION
                 ENDIF 
                 
 
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
 #endif
                 CALL unsetMessageSource()
@@ -1424,7 +1427,7 @@ C-----------------------------------------------------------------------
      &              TimeEndMin,TimeEndSec,ZF,DELTA,HOT
                 
                 CALL setMessageSource("PARSE_SCHEDULE")
-#if defined(TVW_TRACE) || defined(ALL_TRACE)
+#if defined(TVW_TRACE)|| defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
 #endif                
 
@@ -1531,7 +1534,7 @@ C-----------------------------------------------------------------------
                 INTEGER                     :: I
                 
                 CALL setMessageSource("ASSIGN_TVW_TIMING")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
 #endif                
                 IF(VAR.EQ.1)THEN
@@ -1616,7 +1619,7 @@ C-----------------------------------------------------------------------
                     ENDDO
                 ENDIF
                 
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
 #endif                
                 CALL unsetMessageSource()
@@ -1640,6 +1643,11 @@ C-----------------------------------------------------------------------
                 INTEGER,INTENT(IN),OPTIONAL      :: I
                 CHARACTER(*),INTENT(IN),OPTIONAL :: S
                 REAL(SZ)            :: EPS
+                
+                CALL setMessageSource("ISNULL")
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
+                CALL allMessage(DEBUG,"Enter")
+#endif                
 
                 IF(PRESENT(R))THEN
                     EPS = EPSILON(1.0D0)
@@ -1662,6 +1670,10 @@ C-----------------------------------------------------------------------
      &                   null.")
                     CALL ADCIRC_TERMINATE()
                 ENDIF
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
+                CALL allMessage(DEBUG,"Return")
+#endif                
+                CALL unsetMessageSource()
 C-----------------------------------------------------------------------
             END FUNCTION ISNULL
 C-----------------------------------------------------------------------
@@ -1705,6 +1717,9 @@ C-----------------------------------------------------------------------
                 NLOOPS                     = -99999
                 ScheduleFile               = "NOFILE"
 
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
+                CALL allMessage(DEBUG,"Return")
+#endif                
                 CALL unsetMessageSource()
                 RETURN
 C-----------------------------------------------------------------------
@@ -1725,7 +1740,7 @@ C-----------------------------------------------------------------------
                 INTEGER :: I,J,K                       
 
                 CALL setMessageSource("ALPHABETIZE")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
 #endif                
                 DO I = 1,SIZE(MYCHAR)
@@ -1752,7 +1767,7 @@ C-----------------------------------------------------------------------
                         ENDDO SORTING
                     ENDDO
                 ENDDO
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
 #endif               
                 CALL unsetMessageSource()
@@ -1778,13 +1793,16 @@ C-----------------------------------------------------------------------
                 INTEGER                              :: I,J
 
                 CALL setMessageSource("UNIQUE_NAMES")
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
 #endif                
                 IF(SIZE(RAW_LIST).LT.2)THEN
                     NUNIQUE = 1
                     ALLOCATE(UNIQUE_LIST(1:SIZE(RAW_LIST)))
                     UNIQUE_LIST = RAW_LIST
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
+                CALL allMessage(DEBUG,"Return")
+#endif                
                     CALL unsetMessageSource()
                     RETURN
                 ENDIF    
@@ -1811,7 +1829,7 @@ C-----------------------------------------------------------------------
                     ENDIF
                 ENDDO 
 
-#if defined(TVW_TRACE)
+#if defined(TVW_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
 #endif                
                 CALL unsetMessageSource()
@@ -1863,7 +1881,7 @@ C-----------------------------------------------------------------------
                 REAL(SZ)               :: RBARWL
 
                 CALL setMessageSource("COMPUTE_EXTERNAL_BOUNDARY_FLUX")
-#if defined(WEIR_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Enter")
 #endif                
 
@@ -1886,7 +1904,7 @@ C-----------------------------------------------------------------------
                 ELSE
                    FLUX = 0.0D0
                 ENDIF
-#if defined(WEIR_TRACE)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
                 CALL allMessage(DEBUG,"Return")
 #endif
                 CALL unsetMessageSource()
@@ -1927,7 +1945,7 @@ C-----------------------------------------------------------------------
                 REAL(SZ)                    :: RBARWL1F,RBARWL2F
 
                 CALL setMessageSource("COMPUTE_INTERNAL_BOUNDARY_FLUX")
-#if defined(WEIR_TRACE) 
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
                 CALL allMessage(DEBUG,"Enter")
 #endif                
 
@@ -1943,6 +1961,9 @@ C              THE DEFAULT FORMULATION
 #ifdef ORIGWEIR   
                CALL COMPUTE_INTERNAL_BOUNDARY_FLUX_ORIG(I,J,K,
      &              TIMELOC,FLUX)
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+               CALL allMessage(DEBUG,"Return")
+#endif                
                CALL unsetMessageSource()
                RETURN
 #endif
@@ -2076,7 +2097,7 @@ C..................INWARD SUPERCRITICAL FLOW -> CASE 6
                   FLUX=0
                ENDIF
                
-#if defined(WEIR_TRACE) 
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
                CALL allMessage(DEBUG,"Return")
 #endif
                CALL unsetMessageSource()
@@ -2109,7 +2130,7 @@ C-----------------------------------------------------------------------
                 REAL(SZ)               :: RBARWL2
                 
                 CALL setMessageSource("COMPUTE_CROSS_BARRIER_PIPE_FLUX")
-#if defined(WEIR_TRACE) 
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
                 CALL allMessage(DEBUG,"Enter")
 #endif                
 
@@ -2136,12 +2157,18 @@ C-----------------------------------------------------------------------
                 IF((RBARWL1.LT.0.D0).AND.(RBARWL2.LT.0.D0)) THEN
 C...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW PIPE -> CASE 1
                   FLUX=0.D0
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+                  CALL allMessage(DEBUG,"Return")
+#endif                
                   CALL unsetMessageSource()
                   RETURN
                 ENDIF
                 IF(ABS(RBARWL1-RBARWL2).LT.BARMIN) THEN
 C...............WATER LEVEL EQUAL ON BOTH SIDES OF PIPE -> CASE 2
                   FLUX=0.D0
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+                  CALL allMessage(DEBUG,"Return")
+#endif                
                   CALL unsetMessageSource()
                   RETURN 
                 ENDIF
@@ -2171,6 +2198,9 @@ C..................OUTWARD SUBMERGED DISCHARGE -> CASE 4
      &                       *0.25D0*PI*(PIPEDIAM(IDX))**2
      &                    *(2.D0*G*(RBARWL1-RBARWL2)/PIPECOEF(IDX))**0.5D0
                      ENDIF
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+                     CALL allMessage(DEBUG,"Return")
+#endif                
                      CALL unsetMessageSource()
                      RETURN
                   ENDIF
@@ -2205,11 +2235,14 @@ C..................INWARD SUBMERGED DISCHARGE -> CASE 6
                         NIBNODECODE(NNBB1)=1
                      ENDIF
                   ENDIF
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+                  CALL allMessage(DEBUG,"Return")
+#endif                
                   CALL unsetMessageSource()
                   RETURN
                ENDIF
 
-#if defined(WEIR_TRACE) 
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
                CALL allMessage(DEBUG,"Return")
 #endif
                CALL unsetMessageSource()
@@ -2247,7 +2280,7 @@ C-----------------------------------------------------------------------
                 
                 
                 CALL setMessageSource("COMPUTE_INTERNAL_BOUNDARY_FLUX")
-#if defined(WEIR_TRACE) 
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
                 CALL allMessage(DEBUG,"Enter")
 #endif                
 
@@ -2283,6 +2316,9 @@ C...............SIMPLIFY VARIABLES
                 IF((RBARWL1.LT.0.D0).AND.(RBARWL2.LT.0.D0)) THEN
 C...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW BARRIER -> CASE 1
                   FLUX=0.D0
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+                  CALL allMessage(DEBUG,"Return")
+#endif                
                   CALL unsetMessageSource()
                   RETURN
                 ENDIF
@@ -2290,6 +2326,9 @@ C...............WATER LEVEL ON BOTH SIDES OF BARRIER BELOW BARRIER -> CASE 1
 C...............WATER LEVEL EQUAL ON BOTH SIDES OF BARRIER
 C................TO WITHIN TOLERANCE BARMIN -> CASE 2
                   FLUX=0.D0
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+                  CALL allMessage(DEBUG,"Return")
+#endif                
                   CALL unsetMessageSource()
                   RETURN
                 ENDIF
@@ -2318,6 +2357,9 @@ C..................OUTWARD SUPERCRITICAL FLOW -> CASE 4
      &                    (RBARWL1F*G)**0.5D0
                      ENDIF
                   ENDIF
+#if defined(WEIR_TRACE) || defined(ALL_TRACE)
+                  CALL allMessage(DEBUG,"Return")
+#endif                
                   CALL unsetMessageSource()
                   RETURN
                ENDIF
@@ -2351,7 +2393,7 @@ C..................INWARD SUPERCRITICAL FLOW -> CASE 6
                   ENDIF
                ENDIF
 
-#if defined(WEIR_TRACE) 
+#if defined(WEIR_TRACE) || defined(ALL_TRACE) 
                CALL allMessage(DEBUG,"Return")
 #endif
                CALL unsetMessageSource()
