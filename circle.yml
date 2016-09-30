@@ -3,17 +3,18 @@ general:
 
 dependencies:
     cache_directories: 
-        - work/depend/hdf5_build
-        - work/depend/netcdf_cc_build
-        - work/depend/netcdf_fortran_build
-        - work/depend/xdmf_build
+        - depend/hdf5_build
+        - depend/netcdf_cc_build
+        - depend/netcdf_fortran_build
+        - depend/xdmf_build
     pre:
         - sudo apt-get update  -qq
         - sudo apt-get install -qq libopenmpi-dev libopenmpi-dbg bc cmake
-        - sudo ../circleci/installHdf5.sh
-        - sudo ../circleci/installnetCDF.sh
-        - sudo ../circleci/installnetCDF_fortran.sh
-        - sudo ../circleci/installXdmf.sh
+        - sudo bash /home/ubuntu/adcirc-cg/circleci/installHdf5.sh
+        - sudo bash /home/ubuntu/adcirc-cg/circleci/installnetCDF.sh
+        - sudo bash /home/ubuntu/adcirc-cg/circleci/installnetCDF_fortran.sh
+        - sudo bash /home/ubuntu/adcirc-cg/circleci/installXdmf.sh
+        - git clone https://github.com/adcirc/adcirc-cg-testsuite.git /home/ubuntu/adcirc-cg-testsuite
 
 test:
     override:

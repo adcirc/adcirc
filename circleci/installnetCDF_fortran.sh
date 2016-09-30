@@ -2,11 +2,13 @@
 
 installDirectory=/home/ubuntu/adcirc-cg/work/depend
 
-if [ ! -d $installDirectory ] ; then
-    mkdir $installDirectory
-fi
-
 if [ ! -d $installDirectory/netcdf_fortran_build ] ; then
+
+    if [ ! -d $installDirectory ] ; then
+        mkdir $installDirectory
+    fi
+
+    cd $installDirectory
     
     #...Get the netcdf-c source code
     wget ftp://ftp.unidata.ucar.edu/pub/netcdf/netcdf-fortran-4.4.4.tar.gz
@@ -28,5 +30,5 @@ fi
 
 #...Create links from the building directory back to
 #   the directory that is cached
-sudo ln -s $installDirectory/netcdf_fortran_build/include/* /usr/include/.
-sudo ln -s $installDirectory/netcdf_fortran_build/lib/* /usr/lib/.
+sudo ln -sf $installDirectory/netcdf_fortran_build/include/* /usr/include/.
+sudo ln -sf $installDirectory/netcdf_fortran_build/lib/lib* /usr/lib/.
