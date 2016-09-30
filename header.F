@@ -2,13 +2,20 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
-C  v52.30.11 - 09/15/2016 - Adding additional return logging to
+C  v52.30.12 - 09/30/2016 - jgf - Fixes issue #31: when using a netcdf hotstart
+C            file containing harmonic analysis data in parallel, a segmentation
+C            fault will occur if there are zero stations.
+C  v52.30.11 - 09/15/2016 - zc - Adding additional return logging to
              weir_boundary.F
-C  v52.30.10 - 09/15/2016 - Fixing bugs identified relating to weir
-C            boundaries. Issue #25. 
-C  v52.30.09 - 09/08/2016 - Fixed handling of storms with centers in 
+C  v52.30.10 - 09/15/2016 - zc - Fixing bugs identified relating to weir
+C            boundaries. Issue #25: incorrect variable name and incorrect
+C            array index names used for internal barrier boundaries with
+C            cross barrier pipes (types 5 and 25) as well as segmentation
+C            faults due to unbalanced code tracing (setMessageSource
+C            and unsetMessageSource 
+C  v52.30.09 - 09/08/2016 - jgf - Fixed handling of storms with centers in 
 C            degrees east longitude for the vortex models: nws=8,19,20. 
-C  v52.30.08 - 07/29/2016 - Added compiler flags for lonestar5 at TACC.
+C  v52.30.08 - 07/29/2016 - jgf - Added compiler flags for lonestar5 at TACC.
 C  v52.30.07 - 07/20/2016 - Applied tcm fix that originally went into
 C           v51.52.38 r1210 of v51release branch and includes makefile
 C           fixes for building XDMF support into libadc.a as well as: 
@@ -16,35 +23,35 @@ C           06/07/2016 - tcm - Added unsetMessageSource calls after the
 C           writer_main and hswriter_main calls in ADCIRC_Run, otherwise
 C           for coupled simulations where ADCIRC_Run is called multiple
 C           times, the Message number will run out of dimensions.
-C  v52.30.06 - 07/14/2016 - Fixed issue in adcprep where the finding of the
-C           time varying weirs list was erroneously reported. 
-C  v52.30.05 - 06/25/2016 - Extended workaround for the issue where ADCIRC
+C  v52.30.06 - 07/14/2016 - jgf - Fixed issue in adcprep where the finding of
+C           the time varying weirs list was erroneously reported. 
+C  v52.30.05 - 06/25/2016 - jgf - Extended workaround for the issue where ADCIRC
 C           opens i/o unit numbers currently in use by SWAN so that it covers
 C           any/all i/o unit numbers that ADCIRC might use (this issue was
 C           causing mysterious hangs in parallel); changed GFS read routine
 C           (NWS10) so that it always uses the same unit number to avoid
 C           collisions with SWAN. 
-C  v52.30.04 - 06/18/2016 - Enabled inverted barometer modification of 
+C  v52.30.04 - 06/18/2016 - jgf - Enabled inverted barometer modification of 
 C           elevation specified boundaries using metControl namelist in 
 C           fort.15 with invertedBarometerOnElevationBoundary=.true.
-C  v52.30.03 - 06/11/2016 - Fixed issue in reading levee boundaries with
+C  v52.30.03 - 06/11/2016 - jgf - Fixed issue in reading levee boundaries with
 C           cross barrier pipes (ibtypes 5 and 25) where the counter variable
 C           for these boundaries was not being incremented. 
-C  v52.30.02 - 06/07/2016 - Moved handling of rads.64 file outside of
+C  v52.30.02 - 06/07/2016 - jgf - Moved handling of rads.64 file outside of
 C           #ifdef CSWAN so that it could be written without SWAN coupling.
-C  v52.30.01 - 06/06/2016 - Fixed issue when reading min/max files in netCDF
-C           in parallel resulting from reading the ADCIRC time from the netCDF
-C           file into an unallocated array.
-C  v52.30 - 05/11/2016 - Resolved minor conflicts (mainly confined to 
+C  v52.30.01 - 06/06/2016 - jgf - Fixed issue when reading min/max files in
+C           netCDF in parallel resulting from reading the ADCIRC time from
+C           the netCDF file into an unallocated array.
+C  v52.30 - 05/11/2016 - jgf - Resolved minor conflicts (mainly confined to 
 C           USE statements) when merging the txout branch r1120:1202 
 C           to trunk. Changes in the too-long txout branch are as
 C           follows:
 C
-C  v52.08.30 - 05/01/2016 - Applied same fix as trunk version v52.29 (r1199:1201):
+C  v52.08.30 - 05/01/2016 - jgf - Applied same fix as trunk version v52.29 (r1199:1201):
 C              Added compiler flags for compiling with NetCDF support on Topaz
 C              at ERDC; modified makefile to support building aswip in its own 
 C              subdirectory.
-C  v52.08.29 - 04/30/2016 - Applied same fix as trunk version 
+C  v52.08.29 - 04/30/2016 - jgf - Applied same fix as trunk version 
 C              v52.28 (issue in reading IDEN in fort.15).
 C  v52.08.28 - 04/29/2016 - jgf - Fixed NetCDF metadata for velocity units 
 C              (wind, water current, max wind and water current, and swan 

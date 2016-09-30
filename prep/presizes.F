@@ -92,7 +92,7 @@ C  46.44 vjp added code for prep13-only command
 C----------------------------------------------------------------------------
 
       MODULE PRESIZES
-#ifdef ADCSWAN
+#if defined CSWAN || defined ADCSWAN
       USE GLOBAL, ONLY :
      &                   SWAN_OutputHS,SWAN_OutputDIR,SWAN_OutputTM01,
      &                   SWAN_OutputTPS,SWAN_OutputWIND,SWAN_OutputTM02,
