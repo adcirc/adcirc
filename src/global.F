@@ -142,7 +142,7 @@ C     for writing fulldomain hotstart files.
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time(:) 
       REAL(SZ),ALLOCATABLE, TARGET :: RSNMax_Time_G(:) 
      
-#ifdef CSWAN
+#if defined CSWAN || defined ADCSWAN
       !...Global SWAN Arrays
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut_g(:)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIROut_g(:)
@@ -221,7 +221,7 @@ c.
       REAL(SZ),ALLOCATABLE, TARGET ::  PrMin(:) ! v46.50 sb 11/11/2006
       REAL(SZ),ALLOCATABLE, TARGET ::  WVNOutMax(:) ! v46.50 sb 11/11/2006
       
-#ifdef CSWAN      
+#if defined CSWAN || defined ADCSWAN     
       !...Local SWAN Arrays
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_HSOut(:)
       REAL(SZ), ALLOCATABLE, TARGET      :: SWAN_DIROut(:)
