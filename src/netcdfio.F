@@ -1231,6 +1231,7 @@ C
 C
       INTEGER n    ! node counter
       INTEGER iret ! success or failure of netcdf call
+      REAL(SZ),ALLOCATABLE :: defaultValue(:)
       CHARACTER(len=1024) :: att_text  ! metadata
 C
       call setMessageSource("initNodalDataFile")
@@ -1248,6 +1249,8 @@ C
          dat%myMesh%nface_len = 3
       ENDIF
       ALLOCATE(dat%myTime%timenc(dat%myTime%timenc_len))
+      ALLOCATE(defaultValue(dat%myMesh%num_nodes))
+      defaultValue(:) = descript1%initial_value
 C
 C     Initialize netCDF output file, creating a new one if necessary.
       CALL createNetCDFOutputFile(dat%ncid, dat%myFile, dat%myTime,
@@ -3190,8 +3193,8 @@ C     write mesh to netcdf file
       ! we leave the max/min values uninitialized.   
       IF ( (dat%myFile%createFile.eqv..true.).and.
      &     (descript1%readMaxMin.eqv..true.)) THEN
-         iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
-     &          spread(descript1%initial_value,1,dat%myMesh%num_nodes))
+          iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,defaultValue)
+          CALL check_err(iret)
       ENDIF
 C
 C     now close the initialized netcdf file
@@ -3881,6 +3884,8 @@ C
       INTEGER kount3D(3), start3D(3)
       INTEGER iret ! success or failure of the netcdf call
       INTEGER num_values ! number of values in the array
+      INTEGER,ALLOCATABLE  :: tempIntArray(:)
+      REAL(SZ),ALLOCATABLE :: tempArray(:)
 C
       call setMessageSource("writeNodalData")
 #if defined(NETCDF_TRACE) || defined(ALL_TRACE)
@@ -4155,10 +4160,10 @@ C     Write the array values
       CASE(316,317,318,319,321,322)  !swan max/min
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
-               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
-     &            merge(descript1%array,
-     &                  spread(descript1%alternate_value,1,kount(1)),
-     &                         nodecode.gt.0))
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,tempArray)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
      &            descript1%array)
@@ -4172,16 +4177,15 @@ C     Write the array values
       CASE(311,313)  !adcirc max/min only
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
-               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
-     &            merge(descript1%array,
-     &                  spread(descript1%alternate_value,1,kount(1)),
-     &                         nodecode.gt.0))
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,tempArray)
                CALL check_err(iret)
-               iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id,
-     &            merge(descript1%array2,
-     &                  spread(descript1%alternate_value,1,kount(1)),
-     &                         nodecode.gt.0))
-                CALL check_err(iret)
+               tempArray = merge(descript1%array2,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id,tempArray)
+               CALL check_err(iret)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
      &            descript1%array)
@@ -4201,15 +4205,14 @@ C     Write the array values
       CASE(312,314,315,400,401,404)  !adcirc max/min
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
-               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
-     &              merge(descript1%array,
-     &                 spread(descript1%alternate_value,1,kount(1)),
-     &                       nodecode.gt.0))
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,tempArray)
                CALL check_err(iret)
-               iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id,
-     &              merge(descript1%array2,
-     &                 spread(descript1%alternate_value,1,kount(1)),
-     &                       nodecode.gt.0))
+               tempArray = merge(descript1%array2,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%time_max_nodal_data_id,tempArray)
                CALL check_err(iret)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
@@ -4230,10 +4233,11 @@ C     Write the array values
       CASE(320)  !swan max/min
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
-               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
-     &          merge(descript1%array,
-     &                spread(descript1%alternate_value,1,kount(1)),
-     &                       nodecode.gt.0))
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,tempArray)
+               CALL check_err(iret)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%max_nodal_data_id,
      &             descript1%array)
@@ -4247,11 +4251,10 @@ C     Write the array values
       CASE(47,63,73,77,90,301,302,303,304,306,307)
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
-               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
-     &            merge(descript1%array,
-     &                  spread(descript1%alternate_value,1,kount(1)),
-     &                         nodecode.gt.0),
-     &            start, kount)
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,tempArray,start,kount)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
      &            descript1%array, start, kount)
@@ -4265,16 +4268,14 @@ C     Write the array values
       CASE(64,74,164,305)
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
-               iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,
-     &          merge(descript1%array,
-     &                spread(descript1%alternate_value,1,kount(1)),
-     &                       nodecode.gt.0),
-     &          start, kount)
-               iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,
-     &          merge(descript1%array2,
-     &                spread(descript1%alternate_value,1,kount(1)),
-     &                       nodecode.gt.0),
-     &          start, kount)
+               allocate(tempArray(1:dat%myMesh%num_nodes))
+               tempArray = merge(descript1%array,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,tempArray,start,kount)
+               CALL check_err(iret)
+               tempArray = merge(descript1%array2,
+     &              spread(descript1%alternate_value,1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%v_nodal_data_id,tempArray,start,kount)
                CALL check_err(iret)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%u_nodal_data_id,
@@ -4295,11 +4296,10 @@ C     Write the array values
       CASE(402,403)  ! integers at nodes (e.g., initiallydry.63, endrisinginun.63)
          IF (MNPROC.eq.1) THEN ! SERIAL
             IF ( descript1%ConsiderWetDry.eqv..TRUE.) THEN
-               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
-     &            merge(descript1%iarray,
-     &                  spread(int(descript1%alternate_value),1,kount(1)),
-     &                         nodecode.gt.0),
-     &            start, kount)
+               allocate(tempIntArray(1:dat%myMesh%num_nodes))
+               tempIntArray = merge(descript1%iarray,
+     &              spread(int(descript1%alternate_value),1,kount(1)),nodecode.gt.0)
+               iret = nf90_put_var(dat%ncid, dat%nodal_data_id,tempIntArray,start,kount)
             ELSE
                iret = nf90_put_var(dat%ncid, dat%nodal_data_id,
      &            descript1%iarray, start, kount)

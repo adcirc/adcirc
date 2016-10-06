@@ -2,6 +2,7 @@ C***********************************************************************
 C           This file contains a log of changes made to (P)ADCIRC.      
 C                                                                       
 C  mod history
+C  v52.30.13 - 10/06/2016 - zc - Fixes #17, issues with large netCDF arrays
 C  v52.30.12 - 09/30/2016 - jgf - Fixes issue #31: when using a netcdf hotstart
 C            file containing harmonic analysis data in parallel, a segmentation
 C            fault will occur if there are zero stations.
