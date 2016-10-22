@@ -1524,13 +1524,13 @@ C     jie added NWS=20: generalized asymmetric vortex model
 C     sb46.28sb01 added NWS=12: OWI format
 C     jgf50.38.05: added NWS=15: HWind format
 C     tcm v51.06.02 added NWS=16: GFDL Met Data
+      ! jgf: Added NWS=30 (GAHM+OWI)
          IF ((ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.(ABS(NWS).EQ.45).OR.
      &        (ABS(NWS).EQ.5).OR.(ABS(NWS).EQ.6).OR.(ABS(NWS).EQ.8)
      &        .OR.(ABS(NWS).EQ.12).OR.(ABS(NWS).EQ.15)
-     &        .OR.(ABS(NWS).EQ.16)
-     &         .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29)
-     &        .OR.(NWS.EQ.10) !yf added to nws=10 GFS Met
-     &         .OR.(ABS(NWS).EQ.20))THEN
+     &        .OR.(ABS(NWS).EQ.16).OR.(NWS.eq.30)
+     &         .OR.(ABS(NWS).EQ.19).OR.(ABS(NWS).EQ.29).OR.
+     &          (ABS(NWS).EQ.20))THEN
             WRITE(15,80) WSMSG1
          ENDIF
          IF (NWS.EQ.3) THEN

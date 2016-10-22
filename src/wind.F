@@ -15,8 +15,8 @@ C
 #ifdef CMPI
       use messenger, only : msg_fini
 #endif
-      integer, parameter :: allowable_nws(17)
-     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,20,29/)
+      integer, parameter :: allowable_nws(18)
+     &      = (/0,1,2,3,4,5,6,7,8,10,11,12,15,16,19,20,29,30/)
       logical nwsOK     ! true if NWS value in fort.15 is allowed
 
       real(sz), allocatable :: wvnx1(:) ! wind velocity in x-dir at each node at prev ts

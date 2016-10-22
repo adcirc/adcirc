@@ -886,6 +886,21 @@ C.... tcm v48.4641 additions for ice
          END SELECT
       ENDIF
 
+      !jgf: Read WTIMINC line if NWS is 30 (GAHM + OWI)
+      IF ((ABS(NWS)).EQ.30) THEN
+         SELECT CASE(NRS)
+         CASE(0) ! no wave radiation stress
+                      ! YYYY  MM   DD HH24  StNum BLAdj GEOFACTOR 
+                      ! WTIMINC pureVortex pureBackgrnd
+            READ(15,*) IDUM,IDUM,IDUM,IDUM, IDUM, RDUM,   IDUM,  
+     &                  WTIMINC,   RDUM,      RDUM
+         CASE DEFAULT ! some kind of wave radiation stress
+                      ! YYYY MM DD HH24 StNum BLAdj GEOFACTOR WTIMINC RSTIMINC pureVortex pureBack
+            READ(15,*) IDUM,IDUM,IDUM,IDUM,IDUM,RDUM,IDUM,
+     &                 WTIMINC,RSTIMINC,RDUM,RDUM
+         END SELECT
+      ENDIF
+
       IF(NWS.EQ.3) THEN
         READ(15,*) IREFYR                          !SKIP THE REST OF THIS LINE
         READ(15,*) MNWLAT,MNWLON                   !SKIP THE REST OF THIS LINE

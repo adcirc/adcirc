@@ -353,6 +353,7 @@ C
       USE PRE_GLOBAL
       use sizes, only : naType, meshType, controlType, ASCII, XDMF,
      &   naFileName, meshFileName, controlFileName, formatString
+      use global, only : logMessage, INFO
       use mesh, only : readMeshXDMF
       use subprep, only : subdomainOn, enforceBN, subPrep020, subPrep021,
      &   subPrep019
@@ -668,14 +669,15 @@ C
 C     sb46.28sb01 NWS=12 doesn't need fort.22 decomposition
 C     tcm_v49.04 NWS=3 and NWS=6 no longer need fort.22 decomposition
 C     jgf49.0804 NWS=29 does not need fort.22 decomposition.
+C     jgf: Added NWS=30 and changed to select/case.
 C     tcm v51.06.02 added NWS=16 GFDL Met Data
-!         IF (NWS.NE.0.AND.ABS(NWS).NE.12)  THEN
-         IF ((NWS.NE.0).AND.(ABS(NWS).NE.3).AND.
-     &      (ABS(NWS).NE.6).AND.(ABS(NWS).NE.12)
-     &      .AND.(NWS.NE.10) !yf added for nws=10 GFS Met
-     &      .AND.(ABS(NWS).NE.16)
-     &      .AND.(ABS(NWS).NE.29))  THEN
-            print *, "Ready to Write Local UNIT 22 File for each PE"
+         select case(ABS(NWS))
+         case(3,6,12,16,29,30)
+            call logMessage(INFO,
+     &   'The meteorological data does not require domain decomposition')
+         case(1,2,4,5,45,7)
+            call logMessage(INFO,
+     &   'Ready to write subdomain fort.22 files.')
 C     jgf46.00 Added NWS=7
 C     jgfdebug46.02 Added NWS=45
 C     jgf46.02 Added NWS=8
@@ -684,14 +686,11 @@ C     cf & cm added NWS=9: asymmetric hurricane wind model
 C     rjw added NWS=19: asymmetric hurricane wind model v2.0
 C     jie added NWS=20: generalized asymmetric vortex model
 c     tcm_v49.04 NWS=3 and NWS=6 no longer need fort.22 decomposition
-            IF((NWS.EQ.1).OR.(ABS(NWS).EQ.2).OR.(ABS(NWS).EQ.4).OR.
-     &           (ABS(NWS).EQ.5).OR.(NWS.EQ.7).OR.
-     &           (ABS(NWS).EQ.45)) THEN
-               CALL PREP22()
-c           ELSEIF (NWS.EQ.10.OR.NWS.EQ.11) THEN
-c              CALL PREP200()
-            ENDIF
-         ENDIF
+            CALL PREP22()
+         case default
+            call logMessage(INFO,
+     &         'Subdomain fort.22 files will not be created.')
+         end select
       ENDIF
 C
 C-- If required write a Local Wave Stress file for each PE

@@ -38,7 +38,6 @@ C
       INTEGER NC1, NC2, NC3, NCELE
 
       REAL(SZ) HTOT
-      REAL(SZ) HollandTime, AsymmetricTime, GeneralAsymTime
 !kmd - Evan's updates for rivers above MSL
 !      REAL(SZ),ALLOCATABLE :: et_WSE(:)
       LOGICAL FOUND

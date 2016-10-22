@@ -102,8 +102,6 @@ C     Addition for netCDF by MCF 5/18/08 modified by jgf49.28
 
 C   kmd48.33bc - add variable for timestep change
       INTEGER NTHS
-      REAL(SZ) :: etratio
-      REAL(SZ) HollandTime
       REAL(SZ) ArgT, ArgTP, ArgSAlt
       REAL(SZ) H2
       REAL(SZ) CCSFEA
