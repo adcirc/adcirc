@@ -8832,70 +8832,6 @@ c     Start computing baroclinic terms
 c     Start computing baroclinic pressure gradient (computed in level
 c     coordinates) at each node in the vertical
 
-#ifdef CASEY
-Casey 140701: Debug.
-            DO k=1,NFEN
-               DBCPDX2A=0.d0
-               DBCPDY2A=0.d0
-               TotalBCPGArea2=0.d0
-               DO N=1,SIZE(NeiTabEle,2)
-                  NEle=NeiTabEle(NH,N)
-                  IF(NEle.EQ.0) CYCLE
-                  IF(NM(NEle,1).EQ.NH)THEN
-                     N1=NM(NEle,1)
-                     N2=NM(NEle,2)
-                     N3=NM(NEle,3)
-                  ELSEIF(NM(NEle,2).EQ.NH)THEN
-                     N1=NM(NEle,2)
-                     N2=NM(NEle,3)
-                     N3=NM(NEle,1)
-                  ELSEIF(NM(NEle,3).EQ.NH)THEN
-                     N1=NM(NEle,3)
-                     N2=NM(NEle,1)
-                     N3=NM(NEle,2)
-                  ENDIF
-                  ! For node of interest
-                  BCPN1=BCP(N1,k)
-                  Zk=HsOAMB*(Sigma(k)-B)-DP(N1)
-                  ! For first neighbor node
-                  HsN2=DP(N2)+IFNLFA*Eta2(N2)
-                  IF(HsN2.LT.H0) HsN2=H0
-                  SigmaNN=B+AMB*(Zk+DP(N2))/HsN2
-                 !PRINT*, "1: ",N2,DP(N2),Eta2(N2),HsN2,SigmaNN
-!!!!!!!!!            CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k)
-                  CALL ZSURFBUOY_p3(SigmaNN,BCPN2,N2,k)
-                  ! For second neighbor node
-                  HsN2=DP(N3)+IFNLFA*Eta2(N3)
-                  IF(HsN2.LT.H0) HsN2=H0
-                  SigmaNN=B+AMB*(Zk+DP(N3))/HsN2
-!!!!!!!!!            CALL ZSURFBUOY(SigmaNN,BCPN3,N3,k)
-                  CALL ZSURFBUOY_p3(SigmaNN,BCPN3,N3,k)
-                  ! Combine
-                  NCELE=NODECODE(N1)*NODECODE(N2)
-     &                 *NODECODE(N3)*NOFF(NEle)
-                  IF((BCPN2.NE.-999.).AND.(BCPN3.NE.-999.).AND.
-     &               (NCEle.NE.0))THEN
-                     TotalBCPGArea2=TotalBCPGArea2+Areas(NEle)
-                     SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
-                     a1= X(N3)-X(N2)
-                     a2= X(N1)-X(N3)
-                     a3= X(N2)-X(N1)
-                     b1=(Y(N2)-Y(N3))*SFacAvg
-                     b2=(Y(N3)-Y(N1))*SFacAvg
-                     b3=(Y(N1)-Y(N2))*SFacAvg
-                     DBCPDX2A=DBCPDX2A+(BCPN1*b1+BCPN2*b2+BCPN3*b3)
-                     DBCPDY2A=DBCPDY2A+(BCPN1*a1+BCPN2*a2+BCPN3*a3)
-                  ENDIF
-               ENDDO
-               IF(TotalBCPGArea2.EQ.0.) THEN
-                  BCPG(k)=(0.d0,0.d0)
-               ELSE
-                  BCPG(k)=(DBCPDX2A+iy*DBCPDY2A)/TotalBCPGArea2
-               ENDIF
-            ENDDO
-
-#else
-
             DO k=1,NFEN
 
                DBCPDX2A=0.d0
@@ -8996,21 +8932,6 @@ C    kmd48.33bc changed the BPG calculation for bottom boundary issues
                ENDIF
 
             ENDDO
-
-#endif
-
-C    kmd48.33bc added this to BPG
-#ifdef CASEY
-Casey 140701: Is this necessary?
-            CONTINUE
-#else
-! arash commented this out
-!            DO k=NFEN,1,-1
-!               IF ((BCPG(k).EQ.(0.d0,0.d0)).AND.(k.NE.NFEN)) THEN
-!                   BCPG(k)=BCPG(k+1)
-!               END IF
-!            END DO
-#endif
 
             DO k=1,NFEN
 Casey 150128: Debug.
@@ -9208,21 +9129,6 @@ C     jgf46.00 Explicitly declared the following variables
 #endif
       IDiag=0
 
-#ifdef CASEY
-Casey 140701
-      IF(SigmaNN.LT.b)THEN
-         SigBelo=-999
-         SigAbov=-999
-         BCPressNN=-999.
-         GOTO 100
-      ELSEIF(SigmaNN.EQ.b)THEN
-         LBelo=1
-         BCPressNN=BCP(NN,LBelo)
-         SigBelo=b
-         SigAbov=b
-         GOTO 100
-      ENDIF
-#else
       IF(SigmaNN.LE.1.0001*b) THEN !if into ground then skip
          SigBelo=-999
          SigAbov=-999
@@ -9236,7 +9142,7 @@ Casey 140701
          SigAbov=b
          GOTO 100
       ENDIF
-#endif
+      
       IF(SigmaNN.GE.a) THEN     !into air use surface
          LAbov=NFEN
          BCPressNN=BCP(NN,LAbov)
