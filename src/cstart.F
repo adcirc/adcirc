@@ -257,11 +257,28 @@ C
  1979    FORMAT(/,1X,'NORMAL FLOW INFORMATION READ FROM UNIT 20',/)
          OPEN(20,FILE=TRIM(INPUTDIR)//'/'//'fort.20')
          READ(20,*) FTIMINC
+
+         write(*,*)' file fort.20 opened.'
+
          DO J=1,NVEL
+
+!            write(*,*) 'inside the do loop: DO J=1,NVEL'
+!            write(*,*) 'NVEL =', NVEL
+
             QNIN1(J)=0.D0
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &          .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
+
+               write(*,*) 'qnin reading ...' 
+
+! arash: QNIN1 only has nonzero values if there is a flow boundary condition. 
+! arash: the rest of there values are read in timestep
                READ(20,*) QNIN1(J)
+
+                QNIN1(J) = 0.0 ! arash
+
+!               write(*,*) ' J, QNIN1 = ', J, QNIN1(J)
+              
             ENDIF
          END DO
          DO J=1,NVEL
@@ -269,6 +286,11 @@ C
             IF((LBCODEI(J).EQ.2).OR.(LBCODEI(J).EQ.12)
      &           .OR.(LBCODEI(J).EQ.22).OR.(LBCODEI(J).EQ.32)) THEN
                READ(20,*) QNIN2(J)
+
+                QNIN2(J) = 0.0 ! arash
+
+!               write(*,*) ' J, QNIN2 = ', J, QNIN2(J)
+
             ENDIF
          END DO
          QTIME1 = STATIM*86400.D0
@@ -1647,16 +1669,31 @@ C...  and baroclinic.
 C kmd - River information for boundary conditions in baroclinic simulation
       IF (BndBCRiver) THEN
         OPEN(39,FILE=TRIM(INPUTDIR)//'/'//'fort.39')
+
+!        write(*,*) 'file fort.39 opened.'
+
         READ(39,*) RIVBCTIMINC, RIVBCSTATIM
         RIVBCTIME1=RIVBCSTATIM*86400.d0
         RIVBCTIME2=RIVBCTIME1+RIVBCTIMINC
         DO J=1,totalbcrivernodes
+
+!         write(*,*) 'inside the DO J=1,totalbcrivernodes loop.'
+
          IF (IDEN.EQ.2) THEN
            READ(39,*) (BCRivSalN1(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.3) THEN
            READ(39,*) (BCRivTempN1(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.4) THEN
            READ(39,*) (BCRivSalN1(J,K), BCRivTempN1(J,K),K=1,NFEN)
+
+
+
+           ! arash debug
+           BCRivSalN1(:,:) = 0.0
+           BCRivTempN1(:,:) = 0.0
+
+
+
          END IF
         END DO
         DO J=1,totalbcrivernodes
@@ -1666,6 +1703,13 @@ C kmd - River information for boundary conditions in baroclinic simulation
            READ(39,*) (BCRivTempN2(J,K),K=1,NFEN)
          ELSE IF (IDEN.EQ.4) THEN
            READ(39,*) (BCRivSalN2(J,K), BCRivTempN2(J,K),K=1,NFEN)
+
+
+           ! arash debug
+           BCRivSalN2(:,:) = 0.0
+           BCRivTempN2(:,:) = 0.0
+
+
          END IF
         END DO
       END IF
@@ -1729,8 +1773,12 @@ C.... Initialize the global 3D density output file (Unit 44)
 C     jgf46.27 Replaced IRType with IDen in header.
 !kmd48.33bc - add in infomration for file containing the
 !            top temperature boundary condition information
+!      CALL initOutput3D(44, I3DGD, NDSET3DGD, NP, NP_G,
+!     &                  NSPO3DGD, IRType, I3DGDRec)
+! arash
       CALL initOutput3D(44, I3DGD, NDSET3DGD, NP, NP_G,
-     &                  NSPO3DGD, IRType, I3DGDRec)
+     &                  NSPO3DGD, IDen, I3DGDRec)
+
       IF (ABS(I3DGD).EQ.1) THEN
          IF ((MNPROC.EQ.1.).OR.(WRITE_LOCAL_FILES.eqv..true.)) THEN
             IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) THEN

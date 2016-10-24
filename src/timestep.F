@@ -118,6 +118,8 @@ Cjgfdebug      USE GLOBAL_3DVS, ONLY:
 Cjgfdebug     &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA
       USE GLOBAL_3DVS, ONLY:
      &     A, B, BSX, BSY, EVTOT, ISLIP, KP, Q, SIGMA, Z0B,NFEN
+! arash 1/20/2016
+     &     , BPG
 
 #ifdef CMPI
       USE MESSENGER
@@ -1493,6 +1495,8 @@ C              in once and used during the simulation. Note that there is
 C              no ramp utilized for this boundary condition.
       IF((C3D).AND.(RES_BC_FLAG.GT.0).AND.(CBAROCLINIC)) THEN
          IF ((ABS(RES_BC_FLAG).GE.1).AND.(NOPE.GT.0)) THEN
+Casey 140701: Added the following IF statement.
+           IF(BCFLAG_LNM.EQ.1)THEN
             IF(TimeLoc.GT.RBCTIME2) THEN
                RBCTIME1=RBCTIME2
                RBCTIME2=RBCTIME2+RBCTIMEINC
@@ -1508,6 +1512,8 @@ C              no ramp utilized for this boundary condition.
      &            RBCRATIO*(LNM_BC2(NumofBCNode)-
      &            LNM_BC1(NumofBCNode))
             END DO
+Casey 140701: Ending the IF statement.
+           ENDIF
          END IF
       END IF
 
@@ -1580,7 +1586,9 @@ cjgf45.06 TotalArea(J)=0.D0 ! What if CBaroclinic=F and nolifa=0?
          ENDDO                  !jgf45.06
 
 !     Kendra45.12 - Test placement of BPG
-         if (C3DVS) CALL BPG3D()
+         if (C3DVS) CALL BPG3D(IT)
+! arash 01/20/2016
+!         if (C3DVS) Call Gaussian_filter_complex_BPG ( X, Y, NeiTab, NNeigh, BPG, NP, NFEN, MNEI )
 
 c     jgf45.12 this algorithm only works in 2D
          if (C2DDI) then
@@ -1687,6 +1695,9 @@ C...
             END DO
           END DO
          END IF
+!---------------------------------------------------------------------------------------------------
+! arash wanted to debug, and everything seems to be fine.
+
          IF((NFFR.EQ.0).OR.(NFFR.EQ.-1)) THEN
             IF(TimeLoc.GT.QTIME2) THEN
                QTIME1=QTIME2
@@ -1696,15 +1707,30 @@ C...
      &                 .OR.(LBCODEI(J).EQ.22)) THEN
                      QNIN1(J)=QNIN2(J)
                      READ(20,*) QNIN2(J)
+
+!                     write(*,*) 'inside timestep: IT = ', IT
+!                     write(*,*) 'inside timestep: J, QNIN2 = ', J, QNIN2(J)
+!                      QNIN2 = 0.0d0  ! arash
+
                   ENDIF
                   IF(LBCODEI(J).EQ.32) THEN
                      QNIN1(J)=QNIN2(J)
                      ENIN1(J)=ENIN2(J)
                      READ(20,*) QNIN2(J),ENIN2(J)
+
+!                     write(*,*) 'inside timestep: IT = ', IT
+!                     write(*,*) 'inside timestep: we should not be here!'
+
                   ENDIF
                END DO
             ENDIF
+!---------------------------------------------------------------------------------------------------
             QTRATIO=(TimeLoc-QTIME1)/FTIMINC
+
+!            if (myproc == 12) write(*,*) 'QTRATIO = ', QTRATIO
+            !write(*,*) 'myproc =', myproc
+
+
             DO I=1,NVEL
                QN2(I)=RampExtFlux*(QNIN1(I)+QTRATIO*(QNIN2(I)-QNIN1(I)))
                EN2(I)=RampExtFlux*(ENIN1(I)+QTRATIO*(ENIN2(I)-ENIN1(I)))
@@ -4389,10 +4415,14 @@ C      END DO
 C   kmd48.33bc add information for the levels of no motion boundary conditions
 C              these are considered the steric adjustments.
       IF ((ABS(RES_BC_FLAG).GE.1).AND.(CBaroclinic).AND.(NOPE.GT.0))  THEN
+Casey 140701: Added the following IF statement.
+        IF(BCFLAG_LNM.GT.0)THEN
          DO I=1,NETA
            NBDI=NBD(I)
            ETA2(NBDI) = ETA2(NBDI) + LNM_BC(I)
          END DO
+Casey 140701: Ending the IF statement.
+        ENDIF
       END IF
 
 C...  IMPOSE NORMAL FLOW, RADIATION OR GRADIENT BOUNDARY CONDITIONS
@@ -4465,9 +4495,10 @@ C
             IF((LBCODEI(J).EQ.40).OR.(LBCODEI(J).EQ.41)) QFORCEJ=
      &        -(QN1(J)-QN0(J))/DT - TAU0VAR(NBDJ)*(QN1(J)+QN0(J))/2.d0
 
-
-            IF(LBCODEI(J).LE.29) QFORCEJ=(QN2(J)-QN0(J))/DT2+
-     &           Tau0VAR(NBDJ)*QN1(J)
+Casey 140701: This is redundant (see above) and can be deleted?
+C           IF(LBCODEI(J).LE.29) QFORCEJ=(QN2(J)-QN0(J))/DT2+
+C    &           Tau0VAR(NBDJ)*QN1(J)
+C
 C
 C     jgf46.21 Added IBTYPE=52
             IF(LBCODEI(J).EQ.52) THEN
@@ -8774,7 +8805,7 @@ c  BTP - total barotropic pressure (atmos press, water level, tidal potential)*
 c                 at time levels s+1/2                                        *
 c******************************************************************************
 
-      SUBROUTINE BPG3D()
+      SUBROUTINE BPG3D(IT)
 
 Casey: Added the following variable declarations from GLOBAL.
 C
@@ -8784,8 +8815,16 @@ C
      &      SFAC, setMessageSource, unsetMessageSource, allMessage,
      &      logMessage, DEBUG, ECHO, INFO, WARNING, ERROR,
      &      DP, ETA2, NEITAB, NNEIGH, AREAS, X, Y, NP, SIGT0
+Casey 140701: Added for H0.
+     &     ,H0
+! arash 150507
+     &     ,DTDP
+
       USE GLOBAL_3DVS, ONLY : BCP, BPG, NFEN, SIGT, SIGMA, IDEN,
      &      GORhoOAMB, AMB, B, IY
+! arash: this is not necessary. I just want to print this here
+     &     ,Sal
+
 #ifdef CMPI
       USE MESSENGER
       IMPLICIT NONE
@@ -8807,12 +8846,19 @@ C
       INTEGER :: N1,N2,N3,NNFirst !local node numbers used to compute gradients
       INTEGER :: NN             !output loop counter
 
-      REAL(8) :: Hs             !Total water depth at time level s
-      REAL(8) :: HsOAMB         !Hs/(a-b)
-      REAL(8) :: HsHsOAMBAMB    !(Hs/(a-b))^2
-      REAL(8) :: Hsp1           !Total water depth at time level s+1
-      REAL(8) :: Hsp1OAMB       !Hsp1/(a-b)
-      REAL(8) :: Hsp1Hsp1OAMBAMB !(Hsp1/(a-b))^2
+Casey 140701: Debug.
+!     REAL(8) :: Hs             !Total water depth at time level s
+!     REAL(8) :: HsOAMB         !Hs/(a-b)
+!     REAL(8) :: HsHsOAMBAMB    !(Hs/(a-b))^2
+!     REAL(8) :: Hsp1           !Total water depth at time level s+1
+!     REAL(8) :: Hsp1OAMB       !Hsp1/(a-b)
+!     REAL(8) :: Hsp1Hsp1OAMBAMB !(Hsp1/(a-b))^2
+      REAL(SZ) :: Hs             !Total water depth at time level s
+      REAL(SZ) :: HsOAMB         !Hs/(a-b)
+      REAL(SZ) :: HsHsOAMBAMB    !(Hs/(a-b))^2
+      REAL(SZ) :: Hsp1           !Total water depth at time level s+1
+      REAL(SZ) :: Hsp1OAMB       !Hsp1/(a-b)
+      REAL(SZ) :: Hsp1Hsp1OAMBAMB !(Hsp1/(a-b))^2
 
       REAL(SZ) :: Zk            !z depth of any node k in the vertical
       REAL(SZ) :: DelSig        ! sigma(k+1)-sigma(k)
@@ -8837,6 +8883,16 @@ C
       REAL(SZ) :: DBCPDY2A
       COMPLEX(SZ) :: BCPG(NFEN)   !baroclinic pressure gradient
       COMPLEX(SZ) :: VIBCPG         !baroclinic pressure gradient
+
+! af:
+      Integer      :: IT
+      Real(SZ)     :: time_local
+      Real(SZ)     ::  day_local
+      Real(Sz)     ::   diff_tol = 1.0d-5
+
+      Real(Sz)     :: SigT_mid_point, SigmaMP, f1, f2, f3
+      COMPLEX(SZ)  :: BCPG_mid_point
+
 C
       call setMessageSource("bpg3D")
 #if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
@@ -8867,11 +8923,60 @@ C
             Hs=DP(NH)+IFNLFA*Eta2(NH) !total depth at previous (s) timestep
             HGORhoOAMB=GORhoOAMB*Hs !(gravity/rho ref)*(H/(a-b))
             BCP(NH,NFEN)=0.d0
+! arash: this integration can be improved
             DO k=NFEN-1,1,-1    !loop over vertical nodes, starting at top and working down
                SigTAvg=(SigT(NH,k+1)+SigT(NH,k))/2.d0
                DelSig=Sigma(k+1)-Sigma(k)
                BCP(NH,k)=BCP(NH,k+1)+HGORhoOAMB*(SigTAvg-SigT0)*DelSig
             ENDDO
+!--------------------------------------------------------------------------------------------------
+! arash 21/1/2016: Simpson integration, using quadratic function interpolation.
+! arash 25/2/2016: fixed a bug.
+!------------------------------------------------------------------------------
+            ! 1. initialize
+            BCP (NH,NFEN) = 0.d0
+
+            ! 2. to compute the integral at node NFEN-1, we need the mid-point value, which we evaluate by using a quadratic
+            !    interpolation, using nodes NFEN, NFEN-1, and NFEN-2.
+            SigmaMP = ( Sigma(NFEN) + Sigma(NFEN-1) ) / 2.0d0
+
+            f1 = ( (SigmaMP       - Sigma(NFEN-1)) * (SigmaMP       - Sigma(NFEN-2)) )
+     &         / ( (Sigma(NFEN)   - Sigma(NFEN-1)) * (Sigma(NFEN)   - Sigma(NFEN-2)) )
+            f2 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-2)) ) 
+     &         / ( (Sigma(NFEN-1) - Sigma(NFEN))   * (Sigma(NFEN-1) - Sigma(NFEN-2)) )
+            f3 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-1)) ) 
+     &         / ( (Sigma(NFEN-2) - Sigma(NFEN))   * (Sigma(NFEN-2) - Sigma(NFEN-1)) )
+
+            SigT_mid_point = f1 * SigT(NH,NFEN) + f2 * SigT(NH,NFEN-1) + f3 * SigT(NH,NFEN-2)
+
+            ! 3. evaluate the integral at node NFEN-1
+            BCP (NH,NFEN-1) = (1.0/6.0) * ( Sigma(NFEN) - Sigma(NFEN-1) ) * HGORhoOAMB *
+     &                        ( (SigT(NH,NFEN)-SigT0) + 4.0d0 * (SigT_mid_point-SigT0) +  (SigT(NH,NFEN-1)-SigT0) )
+
+            ! 4. evaluate the integral at the rest of the vertical nodes
+            Do k = NFEN-2, 1, -1
+
+                ! 4.1. 
+               SigmaMP = ( Sigma(k+1) + Sigma(k) ) / 2.0d0
+
+               f1 = ( (SigmaMP    - Sigma(k+1)) * (SigmaMP    - Sigma(k)) )
+     &            / ( (Sigma(k+2) - Sigma(k+1)) * (Sigma(k+2) - Sigma(k)) )
+               f2 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k)) ) 
+     &            / ( (Sigma(k+1) - Sigma(k+2)) * (Sigma(k+1) - Sigma(k)) )
+               f3 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k+1)) ) 
+     &            / ( (Sigma(k)   - Sigma(k+2)) * (Sigma(k)   - Sigma(k+1)) )
+
+               SigT_mid_point = f1 * SigT(NH,k+2) + f2 * SigT(NH,k+1) + f3 * SigT(NH,k)
+
+                ! 4.2. evaluate the integral
+               BCP (NH,k) = BCP (NH,k+1) + (1.0/6.0) * ( Sigma(k+1) - Sigma(k) ) * HGORhoOAMB 
+     &                    * ( (SigT(NH,k+1)-SigT0) + 4.0d0 * (SigT_mid_point-SigT0) +  (SigT(NH,k)-SigT0) )
+
+            End Do
+
+            ! 5. let's hope we are better of now.
+
+!--------------------------------------------------------------------------------------------------
          ENDDO
 #ifdef CMPI
 C     Update BCP on ghost nodes
@@ -8909,6 +9014,70 @@ c     Start computing baroclinic terms
 c     Start computing baroclinic pressure gradient (computed in level
 c     coordinates) at each node in the vertical
 
+#ifdef CASEY
+Casey 140701: Debug.
+            DO k=1,NFEN
+               DBCPDX2A=0.d0
+               DBCPDY2A=0.d0
+               TotalBCPGArea2=0.d0
+               DO N=1,SIZE(NeiTabEle,2)
+                  NEle=NeiTabEle(NH,N)
+                  IF(NEle.EQ.0) CYCLE
+                  IF(NM(NEle,1).EQ.NH)THEN
+                     N1=NM(NEle,1)
+                     N2=NM(NEle,2)
+                     N3=NM(NEle,3)
+                  ELSEIF(NM(NEle,2).EQ.NH)THEN
+                     N1=NM(NEle,2)
+                     N2=NM(NEle,3)
+                     N3=NM(NEle,1)
+                  ELSEIF(NM(NEle,3).EQ.NH)THEN
+                     N1=NM(NEle,3)
+                     N2=NM(NEle,1)
+                     N3=NM(NEle,2)
+                  ENDIF
+                  ! For node of interest
+                  BCPN1=BCP(N1,k)
+                  Zk=HsOAMB*(Sigma(k)-B)-DP(N1)
+                  ! For first neighbor node
+                  HsN2=DP(N2)+IFNLFA*Eta2(N2)
+                  IF(HsN2.LT.H0) HsN2=H0
+                  SigmaNN=B+AMB*(Zk+DP(N2))/HsN2
+                 !PRINT*, "1: ",N2,DP(N2),Eta2(N2),HsN2,SigmaNN
+!!!!!!!!!            CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k)
+                  CALL ZSURFBUOY_p3(SigmaNN,BCPN2,N2,k)
+                  ! For second neighbor node
+                  HsN2=DP(N3)+IFNLFA*Eta2(N3)
+                  IF(HsN2.LT.H0) HsN2=H0
+                  SigmaNN=B+AMB*(Zk+DP(N3))/HsN2
+!!!!!!!!!            CALL ZSURFBUOY(SigmaNN,BCPN3,N3,k)
+                  CALL ZSURFBUOY_p3(SigmaNN,BCPN3,N3,k)
+                  ! Combine
+                  NCELE=NODECODE(N1)*NODECODE(N2)
+     &                 *NODECODE(N3)*NOFF(NEle)
+                  IF((BCPN2.NE.-999.).AND.(BCPN3.NE.-999.).AND.
+     &               (NCEle.NE.0))THEN
+                     TotalBCPGArea2=TotalBCPGArea2+Areas(NEle)
+                     SFacAvg=(SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+                     a1= X(N3)-X(N2)
+                     a2= X(N1)-X(N3)
+                     a3= X(N2)-X(N1)
+                     b1=(Y(N2)-Y(N3))*SFacAvg
+                     b2=(Y(N3)-Y(N1))*SFacAvg
+                     b3=(Y(N1)-Y(N2))*SFacAvg
+                     DBCPDX2A=DBCPDX2A+(BCPN1*b1+BCPN2*b2+BCPN3*b3)
+                     DBCPDY2A=DBCPDY2A+(BCPN1*a1+BCPN2*a2+BCPN3*a3)
+                  ENDIF
+               ENDDO
+               IF(TotalBCPGArea2.EQ.0.) THEN
+                  BCPG(k)=(0.d0,0.d0)
+               ELSE
+                  BCPG(k)=(DBCPDX2A+iy*DBCPDY2A)/TotalBCPGArea2
+               ENDIF
+            ENDDO
+
+#else
+
             DO k=1,NFEN
 
                DBCPDX2A=0.d0
@@ -8924,7 +9093,8 @@ Casey: Changed "NolIFA" to "IFNLFA."
 C
                HsN2=DP(N2)+IFNLFA*Eta2(N2)
                SigmaNN=B+AMB*(Zk+DP(N2))/HsN2 !equivalent sigma value at neighbor
-               CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
+               CALL ZSURFBUOY_p3(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
+!!!!!!!!!         CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
                NNFirst=N2       !save these values until end
                BCPNFirst=BCPN2  !save these values until end
 
@@ -8937,7 +9107,8 @@ Casey: Changed "NolIFA" to "IFNLFA."
 C
                   HsN2=DP(N2)+IFNLFA*Eta2(N2)
                   SigmaNN=B+AMB*(Zk+DP(N2))/HsN2 !equivalent sigma value at neighbor
-                  CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
+!!!!!!!!!            CALL ZSURFBUOY(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
+                  CALL ZSURFBUOY_p3(SigmaNN,BCPN2,N2,k) !interp BCP at neighbor
                   NEle=NeiTabEle(NH,N-2) !element # defined by nodes NH,NN2,NN1
                   ! jgf49.58: The NeiTabEle matrix is semi sparse; see
                   ! Casey's comments in vsmy.F. NOFF array lookups fail
@@ -9008,16 +9179,25 @@ C    kmd48.33bc changed the BPG calculation for bottom boundary issues
 
             ENDDO
 
-C    kmd48.33bc added this to BPG
-            DO k=NFEN,1,-1
-               IF ((BCPG(k).EQ.(0.d0,0.d0)).AND.(k.NE.NFEN)) THEN
-                   BCPG(k)=BCPG(k+1)
-               END IF
-            END DO
+#endif
 
+C    kmd48.33bc added this to BPG
+#ifdef CASEY
+Casey 140701: Is this necessary?
+            CONTINUE
+#else
+! arash commented this out
+!            DO k=NFEN,1,-1
+!               IF ((BCPG(k).EQ.(0.d0,0.d0)).AND.(k.NE.NFEN)) THEN
+!                   BCPG(k)=BCPG(k+1)
+!               END IF
+!            END DO
+#endif
 
             DO k=1,NFEN
+Casey 150128: Debug.
                BPG(NH,k) = BCPG(k)
+C              BPG(NH,k) = (0.D0,0.D0)
             END DO
 
 c     Finished computing baroclinic pressure gradient (computed in level
@@ -9030,11 +9210,57 @@ c     density field evolves in time, this calculation should be done
 c     after the new density field is computed.  In this case one would
 c     integrate over the vertical first and differentiate second.
 
+! this old scheme has been replaced by the new one below ...
             VIBCPG=(0.d0,0.d0)
             DO k=NFEN-1,1,-1
                VIBCPG=VIBCPG+0.5d0*(BCPG(k+1)+BCPG(k))
      &              *(Sigma(k+1)-Sigma(k))
             ENDDO
+!--------------------------------------------------------------------------------------------------
+! arash 25/2/2016: Simpson integration, using quadratic function interpolation.
+!------------------------------------------------------------------------------
+            ! 1. initialize
+            VIBCPG = ( 0.d0 , 0.d0 )
+
+            ! 2. to compute the integral at node NFEN-1, we need the mid-point value, which we evaluate by using a quadratic
+            !    interpolation, using nodes NFEN, NFEN-1, and NFEN-2.
+            SigmaMP = ( Sigma(NFEN) + Sigma(NFEN-1) ) / 2.0d0
+
+            f1 = ( (SigmaMP       - Sigma(NFEN-1)) * (SigmaMP       - Sigma(NFEN-2)) )
+     &         / ( (Sigma(NFEN)   - Sigma(NFEN-1)) * (Sigma(NFEN)   - Sigma(NFEN-2)) )
+            f2 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-2)) ) 
+     &         / ( (Sigma(NFEN-1) - Sigma(NFEN))   * (Sigma(NFEN-1) - Sigma(NFEN-2)) )
+            f3 = ( (SigmaMP       - Sigma(NFEN))   * (SigmaMP       - Sigma(NFEN-1)) ) 
+     &         / ( (Sigma(NFEN-2) - Sigma(NFEN))   * (Sigma(NFEN-2) - Sigma(NFEN-1)) )
+
+            BCPG_mid_point = f1 * BCPG(NFEN) + f2 * BCPG(NFEN-1) + f3 * BCPG(NFEN-2)
+
+            ! 3. evaluate the integral at node NFEN-1
+            VIBCPG = (1.0/6.0) * ( Sigma(NFEN) - Sigma(NFEN-1) ) * ( BCPG(NFEN) + 4.0d0 * BCPG_mid_point + BCPG(NFEN-1) )
+
+            ! 4. evaluate the integral at the rest of the vertical nodes
+            Do k = NFEN-2, 1, -1
+
+                ! 4.1. 
+               SigmaMP = ( Sigma(k+1) + Sigma(k) ) / 2.0d0
+
+               f1 = ( (SigmaMP    - Sigma(k+1)) * (SigmaMP    - Sigma(k)) )
+     &            / ( (Sigma(k+2) - Sigma(k+1)) * (Sigma(k+2) - Sigma(k)) )
+               f2 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k)) ) 
+     &            / ( (Sigma(k+1) - Sigma(k+2)) * (Sigma(k+1) - Sigma(k)) )
+               f3 = ( (SigmaMP    - Sigma(k+2)) * (SigmaMP    - Sigma(k+1)) ) 
+     &            / ( (Sigma(k)   - Sigma(k+2)) * (Sigma(k)   - Sigma(k+1)) )
+
+               BCPG_mid_point = f1 * BCPG(k+2) + f2 * BCPG(k+1) + f3 * BCPG(k)
+
+                ! 4.2. evaluate the integral
+               VIBCPG = VIBCPG + (1.0/6.0) * ( Sigma(k+1) - Sigma(k) ) * ( BCPG(k+1) + 4.0d0 * BCPG_mid_point + BCPG(k) )
+
+            End Do
+
+            ! 5. let's hope we are better of now.
+!------------------------------------------------------------------------------
+!------------------------------------------------------------------------------
             VIDBCPDXOH(NH)=REAL(VIBCPG)/AMB
             VIDBCPDYOH(NH)=AIMAG(VIBCPG)/AMB
 
@@ -9058,6 +9284,74 @@ C
       call allMessage(DEBUG,"Return.")
 #endif
       call unsetMessageSource()
+
+
+!----------------------------------------------------------------------------------------------------------------------------------------------------
+! arash - print out a vertical slice of the BPG
+!      Do NH = 1 , NP                             ! loop on all horizontal nodes
+!         If ( abs (Y(NH)) < 1.0d-6 ) Then     ! we are on the slice
+!             Hs = DP(NH) + IFNLFA * Eta2(NH)     !Total depth at current time step
+!             HsOAMB = Hs / AMB
+!             Do k = 1 , NFEN                     ! loop on vertical nodes
+!                Zk = HsOAMB * (Sigma(k)-B) - DP(NH)        !determine z corresponding to sigma level k
+!                Write(*,'(5E15.5E3)') X(NH), Y(NH), Zk, Real( BPG(NH,k) ), Aimag( BPG(NH,k) )
+!             End Do
+!         End if
+!      End Do
+!----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+!----------------------------------------------------------------------------------------------------------------------------------------------------
+! arash - print out a vertical slice of Salinity 
+! times for Kendra's problem: 1, 3.4, 4, 12, 20, 30
+!       time_local = IT * DTDP 
+!       day_local = time_local / ( 24.0d0 * 3600.0d0 )
+! Kendra's example:
+!      If ( (abs(time_local - 1.0d-3) < diff_tol) .or. 
+!     &     (abs(time_local - 1.0d0) < diff_tol) .or.
+!     &     (abs(time_local - 2.0d0) < diff_tol) .or.
+!     &     (abs(time_local - 3.0d0) < diff_tol) .or.
+!     &     (abs(time_local - 3.4d0) < diff_tol) .or.
+!     &     (abs(time_local - 4.0d0) < diff_tol) .or.   
+!     &     (abs(time_local - 8.0d0) < diff_tol) .or.
+!     &     (abs(time_local -12.0d0) < diff_tol) .or.   
+!     &     (abs(time_local -16.0d0) < diff_tol) .or.
+!     &     (abs(time_local -20.0d0) < diff_tol) .or.   
+!     &     (abs(time_local -25.0d0) < diff_tol) .or.
+!     &     (abs(time_local -30.0d0) < diff_tol) .or.
+!     &     (abs(time_local-100.0d0) < diff_tol) .or.
+!     &     (abs(time_local-300.0d0) < diff_tol)  
+!     &   ) Then
+
+! Casey's example
+!      If ( (abs(time_local  -   1.0d0) < diff_tol) .or. 
+!     &     (abs(time_local  - 300.0d0) < diff_tol) .or.
+!     &     (abs(time_local  -3600.0d0) < diff_tol) .or.   
+!     &     (abs(time_local -21600.0d0) < diff_tol) .or. ! 6 hours
+!     &     (abs(day_local -     1.0d0) < diff_tol) .or.   
+!     &     (abs(day_local -     4.0d0) < diff_tol) .or.   
+!     &     (abs(day_local -    10.0d0) < diff_tol) .or.   
+!     &     (abs(day_local -    40.0d0) < diff_tol) .or.   
+!     &     (abs(day_local -    100.0d0) < diff_tol) .or.   
+!     &     (abs(day_local -    180.0d0) < diff_tol) 
+!     &   ) Then
+
+!         Do NH = 1 , NP                             ! loop on all horizontal nodes
+!            If ( abs (Y(NH) - 0.05830d0 ) < 1.0d-3 ) Then     ! we are on the slice
+!                Hs = DP(NH) + IFNLFA * Eta2(NH)     !Total depth at current time step
+!                HsOAMB = Hs / AMB
+!                Do k = 1 , NFEN                     ! loop on vertical nodes
+!                   Zk = HsOAMB * (Sigma(k)-B) - DP(NH)        !determine z corresponding to sigma level k
+!                   Write(*,'(5E15.5E3)') X(NH), Y(NH), Zk, Sal(NH,k)
+!!                   Write(*,'(5E15.5E3)') X(NH), Y(NH), Zk, Real( BPG(NH,k) ), Aimag( BPG(NH,k) )
+!                End Do
+!            End if
+!         End Do
+
+!      End If
+!----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
       RETURN
 C***********************************************************************
       END SUBROUTINE BPG3D
@@ -9096,6 +9390,21 @@ C     jgf46.00 Explicitly declared the following variables
 #endif
       IDiag=0
 
+#ifdef CASEY
+Casey 140701
+      IF(SigmaNN.LT.b)THEN
+         SigBelo=-999
+         SigAbov=-999
+         BCPressNN=-999.
+         GOTO 100
+      ELSEIF(SigmaNN.EQ.b)THEN
+         LBelo=1
+         BCPressNN=BCP(NN,LBelo)
+         SigBelo=b
+         SigAbov=b
+         GOTO 100
+      ENDIF
+#else
       IF(SigmaNN.LE.1.0001*b) THEN !if into ground then skip
          SigBelo=-999
          SigAbov=-999
@@ -9109,6 +9418,7 @@ C     jgf46.00 Explicitly declared the following variables
          SigAbov=b
          GOTO 100
       ENDIF
+#endif
       IF(SigmaNN.GE.a) THEN     !into air use surface
          LAbov=NFEN
          BCPressNN=BCP(NN,LAbov)
@@ -9207,3 +9517,365 @@ C***********************************************************************
       END SUBROUTINE ADVECTLOCAL
 C***********************************************************************
 
+
+C*************************************************************************
+C     Subroutine to interpolate baroclinic pressure (BCP) to a specified
+C     sigma value (SigmaNN) given an initial guess of which sigma
+C     level is closest to the specified value.
+C
+C                                    R.L.  5/04/01
+C                                    R.L.  5.19/03
+C                                    a.f.  May 2015 - use cubic polynomials
+C*************************************************************************
+C
+      SUBROUTINE ZSURFBUOY_p3 (SigmaNN,BCPressNN,NN,J)
+
+      USE GLOBAL_3DVS
+      IMPLICIT NONE
+      REAL(SZ) :: BCPressNN
+      REAL(SZ) :: SigmaNN     !Sigma value of a neighbor node
+C     jgf46.00 Explicitly declared the following variables
+      INTEGER NN
+      INTEGER J
+!      INTEGER :: LBelo = -999
+!      INTEGER :: LAbov = -999
+      INTEGER LBelo
+      INTEGER LAbov
+      INTEGER LTry
+      INTEGER IDiag
+      REAL(SZ) SigBelo
+      REAL(SZ) SigAbov
+      REAL(SZ) SigTry
+! af: variables for cubic interpolation
+      Integer  :: k1, k2, k3, k4                 ! nodes used for cubic polynomial
+      REAL(SZ) :: f1, f2, f3, f4                 ! shape functions
+      REAL(SZ) :: top, bot
+      Integer  :: loop_situation = 0
+
+      call setMessageSource("zsurfbuoy_p3")
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      IDiag=0
+
+      IF(SigmaNN.LE.(1.00010d0*b)) THEN !if into ground then skip
+         SigBelo=-999
+         SigAbov=-999
+         BCPressNN=-999.
+!--------------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
+! try this Jan 20 2016: this is a bad idea
+!         LBelo=1
+!         BCPressNN=BCP(NN,LBelo)
+!         SigBelo=b
+!         SigAbov=b
+!--------------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
+         GOTO 100
+      ENDIF
+      IF((SigmaNN.GT.(1.0001d0*b)).AND.(SigmaNN.LE.b)) THEN !at bottom then use bottom
+         LBelo=1
+         BCPressNN=BCP(NN,LBelo)
+         SigBelo=b
+         SigAbov=b
+         GOTO 100
+      ENDIF
+
+! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
+! arash 150513
+      IF(SigmaNN.GE.(1.0001d0*a)) THEN            ! in the air - non-existent 
+         BCPressNN=-999.0d0
+!--------------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
+! try this Jan 20 2016: this is a bad idea >> instability
+!         LAbov=NFEN
+!         BCPressNN=BCP(NN,LAbov) ! this is zero
+!         SigBelo=a
+!         SigAbov=a
+!--------------------------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------------------------
+         GOTO 100
+      ENDIF
+      IF((SigmaNN.GE.a).and.(SigmaNN.LT.(1.0001d0*a))) THEN     ! surface
+         LAbov=NFEN
+         BCPressNN=BCP(NN,LAbov) ! this is zero
+         SigBelo=a
+         SigAbov=a
+         GOTO 100
+      ENDIF
+! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
+
+
+      LTry=J                    !start search for SIGABOV and SIGBELO
+      SigTry=Sigma(LTry)
+      IF(SigmaNN.GT.SigTry) THEN !too low
+         loop_situation = 1
+         SigBelo=SigTry         !SIGBELO may = SIGTRY
+         LBelo=LTry
+         LTry=LTry+1            !look at next level higher
+ 90      SigTry=Sigma(LTry)
+         IF(SigmaNN.GT.SigTry) THEN !still too low
+            SigBelo=SigTry
+            LBelo=LTry
+            LTry=LTry+1
+            GOTO 90
+         ENDIF
+         SigAbov=SigTry         !found upper bracketing sigma
+         LAbov=LTry
+         GOTO 99                !go interpolate
+      ENDIF
+
+      IF(SigmaNN.LE.SigTry) THEN !to high
+         loop_situation = 2
+         SigAbov=SigTry         !SIGABOV may = SIGTRY
+         LAbov=LTry
+         LTry=LTry-1            !look at next level lower
+ 91      SigTry=Sigma(LTry)
+         IF(SigmaNN.LE.SigTry) THEN !still too high
+            SigAbov=SigTry
+            LAbov=LTry
+            LTry=LTry-1
+            GOTO 91
+         ENDIF
+         SigBelo=SigTry         !found lower bracketing sigma
+         LBelo=LTry
+      ENDIF
+! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
+! linear interpolation
+! 99   BCPressNN=(BCP(NN,LAbov)-BCP(NN,LBelo)) !interpolation
+!     &     *(SigmaNN-SigBelo)/(SigAbov-SigBelo) + BCP(NN,LBelo)
+! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
+ 99   Continue
+
+! arash added this because of the terminations at the SURA model. 
+! this shouldn't be needed though.
+! 0.
+!      If ( loop_situation == 0 ) Then
+!         BCPressNN = -999.0d0
+!         GoTo 100
+!      End If
+! 1.
+!      If ( (LAbov == -999) .or. (LBelo == -999) ) Then
+!         BCPressNN = -999.0d0
+!         write(*,*) 'LAbov, LBelo = ', LAbov, LBelo
+!         write(*,*) 'SigBelo, SigAbov = ', SigBelo, SigAbov
+!         write(*,*) 'SigmaNN, J =', SigmaNN, J
+!         GoTo 100
+!      End If
+! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
+! arash - do some checking
+! 0.
+!      if ( J < 1 .or. J > NFEN ) then
+!         write(*,*) 'J - mistake'
+!         write(*,*) 'SigmaNN, J =', SigmaNN, J
+!         stop
+!      end if
+
+! 1.
+!      if ( LAbov == LBelo ) then
+!         write(*,*) 'LAbov == LBelo - mistake'
+!         write(*,*) 'LAbov, LBelo = ', LAbov, LBelo
+!         write(*,*) 'SigmaNN, J =', SigmaNN, J
+!         stop
+!      end if
+! 2.
+!      if ( LAbov < LBelo ) then
+!         write(*,*) 'LAbov < LBelo - mistake'
+!         write(*,*) 'LAbov, LBelo = ', LAbov, LBelo
+!         write(*,*) 'SigmaNN, J =', SigmaNN, J
+!         stop
+!      end if
+! 3.
+!      if ( SigBelo > SigAbov ) then
+!         write(*,*) 'SigBelo > SigAbov - mistake'
+!         write(*,*) 'SigBelo, SigAbov = ', SigBelo, SigAbov
+!         write(*,*) 'SigmaNN, J =', SigmaNN, J
+!         stop
+!      end if
+
+! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
+! use a cubic polynomial interpolation, instead of the above (99) linear interpolation
+! 1- decide which nodes to pick: k1:lowest, k2, k3, k4:top-most
+      If ( LAbov == NFEN ) Then
+         k4 = NFEN
+         k3 = NFEN - 1
+         k2 = NFEN - 2
+         k1 = NFEN - 3
+      Else If ( LBelo == 1 ) Then
+         k4 = 4
+         k3 = 3
+         k2 = 2
+         k1 = 1
+      Else
+         k4 = LAbov + 1
+         k3 = LAbov
+         k2 = LBelo
+         k1 = LBelo - 1
+      End If
+
+!      if ( (k1 == 0) .or. (k4 == nfen+1) ) then
+!         write(*,*) 'wrong in ZSURFBUOY_p3'
+!         write(*,*) 'Sig, BCPres, NN, J = ', SigmaNN, BCPressNN, NN, J
+!         write(*,*) 'k1, k2, k3, k4 = ', k1, k2, k3, k4
+!         write(*,*) 'LAbov, LBelo = ', LAbov, LBelo
+!      end if
+!      if (k2 == k3) then
+!!         write(*,*) 'wrong in ZSURFBUOY_p3'
+!          write(*,*) 'Sig, BCPres, NN, J = ', SigmaNN, BCPressNN, NN, J
+!         write(*,*) 'k1, k2, k3, k4 = ', k1, k2, k3, k4
+!         write(*,*) 'LAbov, LBelo = ', LAbov, LBelo
+!      end if
+
+! 2- compute the shape functions
+      top = ((SigmaNN - Sigma(k2)) * (SigmaNN - Sigma(k3)) * 
+     &       (SigmaNN - Sigma(k4))) 
+      bot = ((Sigma(k1)-Sigma(k2)) * (Sigma(k1)-Sigma(k3)) * 
+     &       (Sigma(k1)-Sigma(k4))) 
+      f1  = top / bot
+
+      top = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k3)) * 
+     &       (SigmaNN - Sigma(k4)))
+      bot = ((Sigma(k2)-Sigma(k1)) * (Sigma(k2)-Sigma(k3)) * 
+     &       (Sigma(k2)-Sigma(k4)))
+      f2  = top / bot
+
+      top = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k2)) * 
+     &       (SigmaNN - Sigma(k4)))
+      bot = ((Sigma(k3)-Sigma(k1)) * (Sigma(k3)-Sigma(k2)) * 
+     &       (Sigma(k3)-Sigma(k4)))
+      f3  = top / bot
+
+      top = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k2)) * 
+     &       (SigmaNN - Sigma(k3)))
+      bot = ((Sigma(k4)-Sigma(k1)) * (Sigma(k4)-Sigma(k2)) * 
+     &       (Sigma(k4)-Sigma(k3)))
+      f4  = top / bot
+
+! 3- interpolate
+      BCPressNN = f1 * BCP(NN,k1) + f2 * BCP(NN,k2) 
+     &          + f3 * BCP(NN,k3) + f4 * BCP(NN,k4)
+
+! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
+ 100  CONTINUE
+
+      IF(IDiag.EQ.2) THEN
+         WRITE(2,*) '******** ZSURFBUOY_p3 **********'
+         WRITE(2,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
+     &        '      BCPressNN'
+         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,BCPressNN
+ 777     FORMAT(I7,I5,3(F10.3),E14.5)
+      ENDIF
+
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
+      RETURN
+C**********************************************************************
+      END SUBROUTINE ZSURFBUOY_p3
+C**********************************************************************
+
+!******************************************************************************
+!    loop on all nodes, and apply a 1-layer Gaussian filter for BPG
+! arash: January 20 2016
+!******************************************************************************
+
+       Subroutine Gaussian_filter_complex_BPG ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
+
+       Use Global,      Only : IFNLFA, DP, ETA2
+       Use Global_3DVS, Only : SIGMA, AMB, B
+
+       Implicit none
+       Integer :: I, J, K
+       Integer :: Neighbor_Node
+       Integer :: MNEI, NP, NFEN
+       Real(8) :: sigma_Gauss, length, length_max, factor, value, numerator, denominator, sum_Weights
+       Real(8) :: velocity_magnitude
+       Real(8) :: velocity_magnitude_max_in_xy
+       Real(8) :: element_peclet_number
+       Real(8) :: constant_diffusivity = 50.0d0
+       Real(8) :: X(NP), Y(NP)
+       INTEGER :: NeiTab(NP,MNEI), NNeigh(NP)
+       REAL(8), ALLOCATABLE :: Weights(:)
+       ! velocities are stored as complex quantities: u+i*v
+       Complex(8), ALLOCATABLE :: quantity_smooth(:,:) 
+       Complex(8), ALLOCATABLE :: inarray_vertical (:)
+       Complex(8) :: quantity(NP,NFEN)
+       Complex(8) :: interpolated_value
+
+       REAL(8)  :: Hs, Hs_Neighbor_Node     !Total water depth at time level s
+       REAL(8)  :: HsOAMB                   !Hs/(a-b)
+       REAL(8)  :: Zk                       ! z depth of any node k in the vertical
+       Real(8)  :: SigmaNN
+
+       Allocate ( quantity_smooth(NP,NFEN) )
+       Allocate ( inarray_vertical(NFEN) )
+
+       quantity_smooth(:,:) = (0.0d0 , 0.0d0)
+
+       ! loop on all nodes, and apply the Gaussian filter
+       Do I = 1, NP
+          ! 1. compute maximum distance between the node of interest, and the neighbor nodes
+          !    this will be used to compute sigma2
+          length_max = 0.0d0
+          Do J = 2, NNeigh ( I ) ! also includes node I
+             Neighbor_Node = NeiTab ( I , J )
+             length = SQRT ( ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 )
+             If ( length > length_max ) length_max = length
+          End Do
+
+!----------------------------------------------------------------------------------------
+          factor = 0.18d0
+!----------------------------------------------------------------------------------------
+          sigma_Gauss = length_max * factor
+
+          ! 2. compute Gaussian filter weights
+          IF ( ALLOCATED(Weights) ) DEALLOCATE( Weights )
+          ALLOCATE( Weights( NNeigh ( I ) ) )
+          Weights = 0.0d0
+          Do J = 1, NNeigh ( I ) ! also includes node I
+             Neighbor_Node = NeiTab ( I , J )
+             numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 
+             denominator = 2.0d0 * sigma_Gauss**2
+             Weights (J) = exp ( -1.0 * numerator / denominator )
+          End Do
+          ! 2.1 normalize weights
+          sum_Weights = 0.0d0
+          Do J = 1, NNeigh ( I )
+             sum_Weights = sum_Weights + Weights (J)
+          End Do
+          If ( sum_Weights < 1.0d-6 ) Then
+             Write(*,*) 'Possible error in Gaussian filter - error code = 1'
+             Stop
+          End If
+         Weights (:) = Weights (:) / sum_Weights
+         ! 2.3 debug
+         !Write(*,'(I5,11f6.3)') NNeigh ( I ), weights(1:NNeigh ( I ))
+         !Pause
+         ! 2.4. compute elevation corresponding to this node
+         Hs = DP(I) + IFNLFA * Eta2(I)  !Total depth at current timestep - 'center' node
+         ! arash: not sure if the next line is necessary, but probably not. we aren't using it in the bpg routine either.
+         ! IF( Hs .LT. H0 ) Hs = H0
+         HsOAMB = Hs / AMB
+
+         ! 3. apply the Gaussian filter
+          Do J = 1, NNeigh ( I )
+             Neighbor_Node = NeiTab ( I , J )
+             inarray_vertical (:) = quantity( Neighbor_Node , : )
+             Do K = 1, NFEN
+                ! 3.0. obtain the z and sigma value corresponding to the 'center' node
+                Zk = HsOAMB * ( Sigma(K) - B ) - DP(I)
+                Hs_Neighbor_Node = DP(Neighbor_Node) + IFNLFA * Eta2(Neighbor_Node)
+                SigmaNN = B + AMB * ( Zk + DP(Neighbor_Node) ) / Hs_Neighbor_Node
+                ! 3.1. linearly interpolate surrounding BPG on the same horizontal plane
+                Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, interpolated_value, K )
+                quantity_smooth (I,K) = quantity_smooth (I,K) + Weights (J) * interpolated_value
+             End Do
+          End Do
+       End Do
+
+       ! transfer smooth bathymetry to the original array
+       quantity (:,:) = quantity_smooth (:,:)
+
+       End Subroutine

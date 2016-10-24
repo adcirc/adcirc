@@ -7,11 +7,11 @@ C  Note, input is read in READ_INPUT_3D located in module READ_INPUT          *
 C        initial conditions on density, temperature and/or salinity are read  *
 C        in for a cold start in subroutine COLDSTART_3D in module COLDSTART.  *
 C                                                                             *
-c******************************************************************************
+C******************************************************************************
 
 
       SUBROUTINE VSSTUP()
-C      USE GLOBAL, ONLY : ScreenUnit !jgfdebug
+c      USE GLOBAL, ONLY : ScreenUnit !jgfdebug
       USE GLOBAL_3DVS
       IMPLICIT NONE
       INTEGER :: NH, N
@@ -26,7 +26,6 @@ C...  TEMPERATURE AND SALINITY DEPENDING ON VALUE OF IDEN
 C...
 
       IF(ABS(IDen).GE.1) CALL CALC_SIGMAT_3D ()
-
 
 C...
 C...  COMPUTE THE DEPTH-AVERAGED Sigma T FIELD
@@ -88,7 +87,9 @@ c                                                                             *
 c  NP - number of nodes in horizontal grid                                    *
 c  NFEN - number of nodes in the vertical grid                                *
 c  BTP - total barotropic pressure (atmos press, water level, tidal potential)*
-c                 at time levels s+1/2                                        *
+c                 at time levels s+1/2            
+! arash:
+! Biharmonic_auxiliary_var(MNP,NFEN): since we need to compute the Laplacian twice, we need an auxiliary variable to store the first Laplacian for U and V.
 c******************************************************************************
 c                                                                             *
 c   THIS  PROGRAM MAPS THE TRUE Z-COORDINATE SYSTEM INTO A DIMENSIONLESS      *
@@ -108,8 +109,11 @@ c.RJW merged 08282008 Casey 071219: Added the following variable declarations fr
      &                   SBCRATIO, TBCRATIO, sponge,
      &                   BCFLAG_TEMP, SFAC, BCRivRATIO,
      &                   RIVBCTIMINC, RIVBCTIME1, RIVBCTIME2,
-     &                   totalbcrivernodes, NOPE
+     &                   totalbcrivernodes, NOPE,
+     &                   TK
 Cjgfdebug     &      , H0
+Casey 140701: Prevent depths from becoming negative in bottom roughness calculations.
+     &               , H0
 
       USE GLOBAL_3DVS
       USE NodalAttributes, ONLY: EVM,
@@ -209,6 +213,10 @@ Cjgfdebug      REAL(8) :: HsN2           !Total water depth at time level s at l
       REAL(8) :: Hsp1           !Total water depth at time level s+1
       REAL(8) :: Hsp1OAMB       !Hsp1/(a-b)
       REAL(8) :: Hsp1Hsp1OAMBAMB !(Hsp1/(a-b))^2
+Casey 140701: Prevent depths from becoming negative in bottom roughness calculations.
+      REAL(8) :: H1
+! arash 12/14/2015
+      Real(8) :: Biharmonic_viscosity
 
       COMPLEX(SZ) :: Fr(MNFEN)      !right side forcing vector
       COMPLEX(SZ) :: Frstar         !rotated right side forcing vector at flux boundary node
@@ -217,6 +225,9 @@ Cjgfdebug      REAL(8) :: HsN2           !Total water depth at time level s at l
       COMPLEX(SZ) :: Mkp1(MNFEN)    !3rd column (k+1) in left side cpmpact storage matrix
       COMPLEX(SZ) :: LAdvec(MNFEN)  !lateral advection term in momentum eqn
       COMPLEX(SZ) :: LStress(MNFEN) !lateral stress term in momentum eqn
+! arash 12/14/2015
+      COMPLEX(SZ) :: Biharmonic_LStress(MNFEN) !lateral stress term in momentum eqn - biharmonic viscosity
+
       COMPLEX(SZ) :: VAdvec(MNFEN)  !vertical advection term in momentum eqn
       COMPLEX(SZ) :: VStress(MNFEN) !vertical stress term in momentum eqn
 Cjgfdebug      COMPLEX(SZ) :: BCPG(MNFEN)    !baroclinic pressure gradient
@@ -228,9 +239,32 @@ Cjgfdebug      COMPLEX(SZ) :: BCPG(MNFEN)    !baroclinic pressure gradient
 Cjgfdebug      COMPLEX(SZ) :: UnDqDX,VnDqDY  !derivatives used in lateral advection
       COMPLEX(SZ) :: UnDqDX2A,VnDqDY2A !UnDqDX,UnDqDY)*2*Element Area
       COMPLEX(SZ) :: DqDXDPhiDX2A,DqDYDPhiDY2A !derivatives used in lateral stress calc.
+! arash 12/14/2015
+      COMPLEX(SZ) :: Biharmonic_DqDXDPhiDX2A, Biharmonic_DqDYDPhiDY2A !derivatives of Biharmonic auxiliary variables.
+      COMPLEX(SZ) :: Biharmonic_qn, Biharmonic_qN1, Biharmonic_qN2, Biharmonic_qN3, Biharmonic_qNFirst
+! arash 12/21/2015: modified Leith viscosity
+      COMPLEX(SZ) :: d_dx_q_element, d_dy_q_element
+      COMPLEX(SZ) :: d_dx_qNFirst, d_dy_qNFirst
+      COMPLEX(SZ) :: d2_dx2_q_element, d2_dy2_q_element, d2_dxy_q_element
+      COMPLEX(SZ) :: d_dx_qN1, d_dx_qN2, d_dx_qN3, d_dy_qN1, d_dy_qN2, d_dy_qN3
+      Real(8)     :: modified_Leith_delta_x, modified_Leith_Lambda_vorticity, modified_Leith_Lambda_divergence
+      Real(8)     :: modified_Leith_grad_vorticity, modified_Leith_grad_divergence
+! arash 01/04/2016: compute diffusion at z-levels
+      REAL(SZ)    :: Zk            !z depth of any node k in the vertical
+      REAL(SZ)    :: SigmaNN       !Sigma value of a neighbor node
+      REAL(8)     :: HsN2          !Total water depth at time level s at local node N2
+      COMPLEX(SZ) :: qN_z, qN1_z, qN2_z, qN3_z, qNFirst_z !nodal values of q at z-levels
+      COMPLEX(SZ) :: Biharmonic_qn_z, Biharmonic_qN1_z, Biharmonic_qN2_z, Biharmonic_qN3_z, Biharmonic_qNFirst_z
+      COMPLEX(SZ) :: d_dx_qN1_z, d_dx_qN2_z, d_dx_qN3_z, d_dy_qN1_z, d_dy_qN2_z, d_dy_qN3_z
+      COMPLEX(SZ) :: d_dx_qNFirst_z, d_dy_qNFirst_z
+      Complex(SZ) :: inarray_vertical(NFEN) 
+
       COMPLEX(SZ) :: DqDSigmakm1,DqDSigmakp1 !vertical deriv. of q from k-1,k and k,k+1
       COMPLEX(SZ) :: DqDX2A(MNFEN)  !horizontal derivatives of complex
       COMPLEX(SZ) :: DqDY2A(MNFEN)  !velocity used in w calc
+! arash Feb/18/2016
+      REAL(SZ)    :: length, length_max, Neighbor_Node
+      REAL(SZ)    :: velocity_magnitude, element_peclet_number
 
 C   kmd48.33bc added the following variables for boundary conditions
       INTEGER :: J, NumofBCNode
@@ -244,14 +278,11 @@ C   kmd48.33bc added the following variables for boundary conditions
 
 C***************************************************************************
 C     Set up several variables that are needed for 3D run
-
 C
 C     Zero out surface stress and stress forcing at top for case of no wind
 C
       WSXsNH=0.d0
       WSYsNH=0.d0
-
-
 C
 C     If a baroclinic run, compute the 3D baroclinic pressure field
 C     The buoyancy field is defined as
@@ -279,6 +310,156 @@ C      CALL UPDATER3D(BCP)  !!!!Don't know if this is needed at this time
 #endif
 C!      ENDIF
 
+! -------------------------------------------------------------------------------------------------
+! arash 12/14/2015: biharmonic diffusion for the momentum equation
+! before computing 3D horizontal velocities, we need to compute the inner laplacian of the biharmonic operator.
+! Del Del q = Del Biharmonic_auxiliary_var
+      Biharmonic_auxiliary_var (:,:) = ( 0.0d0 , 0.0d0 )
+      d_dx_q_nodes (:,:) = ( 0.0d0 , 0.0d0 )   ! spatial derivarievs to compute modified Leith viscosity
+      d_dy_q_nodes (:,:) = ( 0.0d0 , 0.0d0 )
+
+      ! save modified Leith viscosity parameter and use it later in the transport equations
+      Biharmonic_viscosity_modified_Leith (:,:) = 0.0d0
+
+      DO NH = 1, NP                      !loop over horizontal nodes
+         Hs = DP(NH) + IFNLFA * Eta1(NH) !Total depth at current timestep - 'center' node
+         HsOAMB = Hs / AMB
+         ! begin the vertical loop
+         DO k = 1, NFEN
+            DqDXDPhiDX2A = 0.d0    ! variables for computing the biharmonic operator
+            DqDYDPhiDY2A = 0.d0
+            TotalArea2   = 0.d0
+            d_dx_q_element = ( 0.0d0 , 0.0d0 ) ! to compute the viscosity constant
+            d_dy_q_element = ( 0.0d0 , 0.0d0 )
+            Zk = HsOAMB * ( Sigma(k) - B ) - DP(NH)
+
+            N1  = NH               !node 1 is always the central node
+            qN1 = q(N1,k)
+            qN1_z = qN1
+            N2  = NEITAB(NH,2)     !operate on 1st neighbor
+            qN2 = q(N2,k)
+! af 01/04/2016: interpolate it at the same z level as N1
+            HsN2 = DP(N2) + IFNLFA * Eta1(N2)
+            SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2 !equivalent sigma value at neighbor
+            inarray_vertical (:) = q(N2,:)
+            Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, qN2_z, k )
+
+            NNFirst = N2           !save these values until end
+            qNFirst = qN2
+! af 01/04/2016
+            qNFirst_z = qN2_z
+
+            DO N = 3, NNEIGH(NH)   !operate on rest of neighbors
+               N3  = N2            !shift previously computed values
+               qN3 = qN2
+! af 01/04/2016
+               qN3_z = qN2_z
+
+               N2  = NEITAB(NH,N)  !select new neighbor to work on
+               qN2 = q(N2,k)
+! af 01/04/2016: interpolate it at the same z level as N1
+               HsN2 = DP(N2) + IFNLFA * Eta1(N2)
+               SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2 !equivalent sigma value at neighbor
+               inarray_vertical (:) = q(N2,:)
+               Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, qN2_z, k )
+
+               NEle= NeiTabEle(NH,N-2) !element # defined by nodes N1,N2,N3
+               IF (NEle.eq.0) THEN
+                  CYCLE
+               ENDIF
+               IF((NEle.NE.0)) THEN    !if element is active, compute velocity grads
+                  NCELE = NODECODE(NH) * NODECODE(N2) *
+     &                 NODECODE(N3) * NOFF(NELE)
+                  IF (NCELE.NE.0) THEN !if element exists, compute terms
+                     TotalArea2 = TotalArea2 + Areas(NEle) !accumulate 2X total areas to complete calc.
+                     SFacAvg = (SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+                     !qn = (qN1+qN2+qN3)/3.d0
+                     !Un = REAL(qn)
+                     !Vn = AIMAG(qn)
+                     a1 = X(N3)-X(N2)
+                     a2 = X(N1)-X(N3)
+                     a3 = X(N2)-X(N1)
+                     b1 = (Y(N2)-Y(N3))*SFacAvg
+                     b2 = (Y(N3)-Y(N1))*SFacAvg
+                     b3 = (Y(N1)-Y(N2))*SFacAvg
+! iso-sigma:
+!                     DqDXDPhiDX2A = DqDXDPhiDX2A
+!     &                 + (qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
+!                     DqDYDPhiDY2A=DqDYDPhiDY2A
+!     &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
+                     ! variables for modified Leith viscosity parameter
+!                     d_dx_q_element = d_dx_q_element + qN1*b1+qN2*b2+qN3*b3
+!                     d_dy_q_element = d_dy_q_element + qN1*a1+qN2*a2+qN3*a3
+! z-level:
+                     DqDXDPhiDX2A = DqDXDPhiDX2A
+     &                 + (qN1_z*b1+qN2_z*b2+qN3_z*b3)*b1/Areas(NEle)
+                     DqDYDPhiDY2A=DqDYDPhiDY2A
+     &                 +(qN1_z*a1+qN2_z*a2+qN3_z*a3)*a1/Areas(NEle)
+                     ! variables for modified Leith viscosity parameter
+                     d_dx_q_element = d_dx_q_element + qN1_z*b1+qN2_z*b2+qN3_z*b3
+                     d_dy_q_element = d_dy_q_element + qN1_z*a1+qN2_Z*a2+qN3_z*a3
+                  ENDIF
+               ENDIF
+            ENDDO
+            N3  = N2               !wrap back to beginning to get final contribution
+            qN3 = qN2
+! af 01/04/2016
+            qN3_z = qN2_z
+
+            N2  = NNFIRST
+            qN2 = qNFirst
+! af 01/04/2016
+            qN2_z = qNFirst_z
+
+            NEle=NeiTabEle(NH,NNeigh(NH)-1)
+            IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
+               NCELE = NODECODE(NH) * NODECODE(N2) *
+     &              NODECODE(N3) * NOFF(NELE)
+               IF ((NCELE.NE.0)) THEN  !if element is active, compute velocity grads
+                  TotalArea2 = TotalArea2 + Areas(NEle) !accumulate 2X total areas to complete calc.
+                  SFacAvg = (SFAC(N1)+SFAC(N2)+SFAC(N3))/3.d0
+                  !qn = (qN1+qN2+qN3)/3.d0
+                  !Un = real(qn)
+                  !Vn = aimag(qn)
+                  a1 = X(N3)-X(N2)
+                  a2 = X(N1)-X(N3)
+                  a3 = X(N2)-X(N1)
+                  b1 = (Y(N2)-Y(N3))*SFacAvg
+                  b2 = (Y(N3)-Y(N1))*SFacAvg
+                  b3 = (Y(N1)-Y(N2))*SFacAvg
+! iso-sigma:
+!                  DqDXDPhiDX2A = DqDXDPhiDX2A
+!     &                 +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
+!                  DqDYDPhiDY2A = DqDYDPhiDY2A
+!     &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
+                  ! variables for modified Leith viscosity parameter - velocity derivatives at nodes
+!                  d_dx_q_element = d_dx_q_element + qN1*b1+qN2*b2+qN3*b3
+!                  d_dy_q_element = d_dy_q_element + qN1*a1+qN2*a2+qN3*a3
+! z-level:
+                     DqDXDPhiDX2A = DqDXDPhiDX2A
+     &                 + (qN1_z*b1+qN2_z*b2+qN3_z*b3)*b1/Areas(NEle)
+                     DqDYDPhiDY2A=DqDYDPhiDY2A
+     &                 +(qN1_z*a1+qN2_z*a2+qN3_z*a3)*a1/Areas(NEle)
+                     ! variables for modified Leith viscosity parameter
+                     d_dx_q_element = d_dx_q_element + qN1_z*b1+qN2_z*b2+qN3_z*b3
+                     d_dy_q_element = d_dy_q_element + qN1_z*a1+qN2_Z*a2+qN3_z*a3
+               ENDIF
+            ENDIF
+
+            IF(TotalArea2.EQ.0.) THEN
+               ! do nothing
+            ELSE
+               Biharmonic_auxiliary_var(NH,k) = -3.d0 * (DqDXDPhiDX2A+DqDYDPhiDY2A) / TotalArea2
+               ! variables for modified Leith viscosity parameter
+               d_dx_q_nodes (NH,k) = d_dx_q_element / TotalArea2
+               d_dy_q_nodes (NH,k) = d_dy_q_element / TotalArea2
+            ENDIF
+
+         END DO ! end vertical loop
+      End Do ! end horizontal loop
+
+! end computing Biharmonic_auxiliary_var(:,:)
+! -------------------------------------------------------------------------------------------------
 
 C***************************************************************************
 C     Compute 3D horizontal velocities
@@ -299,9 +480,13 @@ Corbitt 120328: Applies Advection Locally
 c     Set up some values at the node being worked on
 
          Hs  = DP(NH)+IFNLFA*Eta1(NH) !Total depth at previous (s) timestep
+Casey 140701: Check the total water depth.
+         IF(Hs.LT.H0) Hs = H0
          HsOAMB=Hs/AMB
          HsHsOAMBAMB=HsOAMB*HsOAMB
          Hsp1= DP(NH)+IFNLFA*Eta2(NH) !Total depth at present (s+1) timestep
+Casey 140701: Check the total water depth.
+         IF(Hsp1.LT.H0) Hsp1 = H0
          Hsp1OAMB=Hsp1/AMB
          Hsp1Hsp1OAMBAMB=Hsp1OAMB*Hsp1OAMB
 
@@ -320,15 +505,22 @@ C     from NEITABELE.
 C
          TEMPNCELE = 0
          TEMPSTOP = 0
-         DO K=1,NODELE(NH)
+Casey 140701: Debug.
+C        DO K=1,NODELE(NH)
+         DO K=1,SIZE(NEITABELE,2)
             IF(NEITABELE(NH,K).EQ.0)THEN
-               TEMPSTOP = TEMPSTOP + 1
+C              TEMPSTOP = TEMPSTOP + 1
+               CYCLE
             ENDIF
             TEMPNCELE = TEMPNCELE +
-     &      NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),1))*
-     &      NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),2))*
-     &      NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),3))*
-     &      NOFF(NEITABELE(NH,K+TEMPSTOP))
+C    &      NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),1))*
+C    &      NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),2))*
+C    &      NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),3))*
+C    &      NOFF(NEITABELE(NH,K+TEMPSTOP))
+     &      NODECODE(NM(NEITABELE(NH,K),1))*
+     &      NODECODE(NM(NEITABELE(NH,K),2))*
+     &      NODECODE(NM(NEITABELE(NH,K),3))*
+     &      NOFF(NEITABELE(NH,K))
          ENDDO
 
 Casey 071219: If TEMPNCELE is zero, then the current horizontal node is
@@ -336,6 +528,9 @@ C     not attached to any active elements.  Thus, the horizontal velocities
 C     must be zero, and we can set up the matrix immediately and skip to the
 C     tri-diagonal solver.
 C
+
+! arash: this means that we assign zero velocities to a dry node; right?
+
          IF(TEMPNCELE.EQ.0)THEN
             DO K=1,NFEN
                MKM1(K) = (0.D0,0.D0)
@@ -343,6 +538,8 @@ C
                MKP1(K) = (0.D0,0.D0)
                FR(K)   = (0.D0,0.D0)
             ENDDO
+Casey 140701: Need to set some variables for use later.
+            KSlip = 0.D0
             GOTO 999
          ENDIF
 c.....
@@ -374,8 +571,16 @@ C or as read in from nodal attributes
          IF(LoadZ0B_var) THEN
             Z0B1 = Z0B_var(NH)
          ELSEIF (LoadManningsN) THEN
-               Z0B1 = ( DP(NH)+IFNLFA*ETA2(NH) )* exp(-(1.0D0+
-     &             ( (0.41D0*( DP(NH)+IFNLFA*ETA2(NH))**(1.0D0/6.0D0) )/
+Casey 140701: Prevent depths from becoming negative.  Cannot raise a negative number
+C             to the 1/6 power.
+            H1 = DP(NH)+IFNLFA*ETA2(NH)
+            IF(H1.LT.H0) H1=H0
+!            Z0B1 = ( DP(NH)+IFNLFA*ETA2(NH) )* exp(-(1.0D0+
+!     &             ( (0.41D0*( DP(NH)+IFNLFA*ETA2(NH))**(1.0D0/6.0D0) )/
+!     &                              (ManningsN(NH)*sqrt(g)) ) ))
+! arash Sep 7 2015:
+            Z0B1 = ( H1 )* exp(-(1.0D0+
+     &             ( (0.41D0*( H1 )**(1.0D0/6.0D0) )/
      &                              (ManningsN(NH)*sqrt(g)) ) ))
          ELSE
             Z0B1 = Z0B
@@ -541,6 +746,17 @@ c     Compute the "sigma" vertical velocity from the "z" vertical velocity
 c     Start computing advection and stress terms in the momentum
 c     equation at each level in the vertical
 
+!--------------------------------------------------------------------------------------------------
+! arash: Feb/18/2016
+!     beginning of vertical integration
+         length_max = 0.0d0
+         Do J = 2, NNeigh ( NH )
+             Neighbor_Node = NeiTab ( NH , J )
+             length = SQRT ( ( X(Neighbor_Node) - X(NH) )**2 + ( Y(Neighbor_Node) - Y(NH) )**2 )
+             If ( length > length_max ) length_max = length
+         End Do
+! -------------------------------------------------------------------------------------------------
+
          DO k=1,NFEN
 
 c     Compute the vertical advection and vertical stress terms
@@ -572,27 +788,110 @@ c     Compute the vertical advection and vertical stress terms
             ENDIF
             VAdvec(k)=sponge(NH)*IFNLCT*VAdvec(k)
 
+!--------------------------------------------------------------------------------------------------
 c     Compute lateral advection and lateral stress terms
+! -------------------------------------------------------------------------------------------------
 
             UnDqDX2A=0.d0
             VnDqDY2A=0.d0
             DqDXDPhiDX2A=0.d0
             DqDYDPhiDY2A=0.d0
+! arash 12/14/2015: Biharmonic auxiliary variable derivatives
+            Biharmonic_DqDXDPhiDX2A =  ( 0.d0 , 0.0d0 )
+            Biharmonic_DqDYDPhiDY2A =  ( 0.d0 , 0.0d0 )
+! arash 12/21/2015: for modified Leith viscosity
+            d2_dx2_q_element = ( 0.d0 , 0.0d0 )
+            d2_dy2_q_element = ( 0.d0 , 0.0d0 )
+            d2_dxy_q_element = ( 0.d0 , 0.0d0 )
+
+            Zk = HsOAMB * ( Sigma(k) - B ) - DP(NH)
 
             N1=NH               !node 1 is always the central node
             qN1=q(N1,k)
+! af 01/04/2016
+            qN1_z = qN1
+! arash 12/14/2015
+            Biharmonic_qN1 = Biharmonic_auxiliary_var(N1,k)
+! af 01/04/2016
+            Biharmonic_qN1_z = Biharmonic_qN1
+! arash 12/21/2015
+            d_dx_qN1 = d_dx_q_nodes (N1,k)
+            d_dy_qN1 = d_dy_q_nodes (N1,k)
+! af 01/04/2016
+            d_dx_qN1_z = d_dx_qN1
+            d_dy_qN1_z = d_dy_qN1
 
             N2=NEITAB(NH,2)     !operate on 1st neighbor
             qN2=q(N2,k)
+! af 01/04/2016: interpolate it at the same z level as N1
+            HsN2 = DP(N2) + IFNLFA * Eta1(N2)
+            SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2 !equivalent sigma value at neighbor
+            inarray_vertical (:) = q(N2,:)
+            Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, qN2_z, k )
+
+! arash 12/14/2015
+            Biharmonic_qN2 = Biharmonic_auxiliary_var(N2,k)
+! af 01/04/2016: interpolate it at the same z level as N1
+            inarray_vertical (:) = Biharmonic_auxiliary_var(N2,:)
+            Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, Biharmonic_qN2_z, k )
+
+! arash 12/21/2015
+            d_dx_qN2 = d_dx_q_nodes (N2,k)
+            d_dy_qN2 = d_dy_q_nodes (N2,k)
+! af 01/04/2016: interpolate it at the same z level as N1
+            inarray_vertical (:) = d_dx_q_nodes(N2,:)
+            Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, d_dx_qN2_z, k )
+            inarray_vertical (:) = d_dy_q_nodes(N2,:)
+            Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, d_dy_qN2_z, k )
 
             NNFirst=N2          !save these values until end
             qNFirst=qN2
+! arash 12/14/2015
+            Biharmonic_qNFirst = Biharmonic_qN2
+! arash 12/21/2015
+            d_dx_qNFirst = d_dx_qN2
+            d_dy_qNFirst = d_dy_qN2
+! af 01/04/2016
+            qNFirst_z = qN2_z
+            Biharmonic_qNFirst_z = Biharmonic_qN2_z
+            d_dx_qNFirst_z = d_dx_qN2_z
+            d_dy_qNFirst_z = d_dy_qN2_z
 
-            DO N=3,NNEIGH(NH)   !operate on rest of neighbors
-               N3=N2            !shift previously computed values
-               qN3=qN2
-               N2=NEITAB(NH,N)  !select new neighbor to work on
-               qN2=q(N2,k)
+            DO N = 3, NNEIGH(NH)   !operate on rest of neighbors
+               N3  = N2            !shift previously computed values
+               qN3 = qN2
+! arash 12/22/2015
+               Biharmonic_qN3 = Biharmonic_qN2
+               d_dx_qN3 = d_dx_qN2
+               d_dy_qN3 = d_dy_qN2
+! af 01/04/2016
+               qN3_z = qN2_z
+               Biharmonic_qN3_z = Biharmonic_qN2_z
+               d_dx_qN3_z = d_dx_qN2_z
+               d_dy_qN3_z = d_dy_qN2_z
+
+               N2  = NEITAB(NH,N)  !select new neighbor to work on
+               qN2 = q(N2,k)
+! af 01/04/2016: interpolate it at the same z level as N1
+               HsN2 = DP(N2) + IFNLFA * Eta1(N2)
+               SigmaNN = B + AMB * ( Zk + DP(N2) ) / HsN2 !equivalent sigma value at neighbor
+               inarray_vertical (:) = q(N2,:)
+               Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, qN2_z, k )
+
+! arash 12/14/2015
+               Biharmonic_qN2 = Biharmonic_auxiliary_var(N2,k)
+! af 01/04/2016: interpolate it at the same z level as N1
+               inarray_vertical (:) = Biharmonic_auxiliary_var(N2,:)
+               Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, Biharmonic_qN2_z, k )
+! arash 12/21/2015
+               d_dx_qN2 = d_dx_q_nodes (N2,k)
+               d_dy_qN2 = d_dy_q_nodes (N2,k)
+! af 01/04/2016: interpolate it at the same z level as N1
+               inarray_vertical (:) = d_dx_q_nodes(N2,:)
+               Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, d_dx_qN2_z, k )
+               inarray_vertical (:) = d_dy_q_nodes(N2,:)
+               Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, d_dy_qN2_z, k )
+
                NEle=NeiTabEle(NH,N-2) !element # defined by nodes N1,N2,N3
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
                !jgf48.50 Avoid array out of bounds
@@ -616,19 +915,70 @@ C    kmd48.33bc added in spherical factors for 3D
                      b3=(Y(N1)-Y(N2))*SFacAvg
                      UnDqDX2A=UnDqDX2A+Un*(qN1*b1+qN2*b2+qN3*b3)
                      VnDqDY2A=VnDqDY2A+Vn*(qN1*a1+qN2*a2+qN3*a3)
+! iso-sigma:
+!                     DqDXDPhiDX2A=DqDXDPhiDX2A
+!     &                 +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
+!                     DqDYDPhiDY2A=DqDYDPhiDY2A
+!     &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
+! arash 12/14/2015
+!                     Biharmonic_DqDXDPhiDX2A = Biharmonic_DqDXDPhiDX2A
+!     &                 +(Biharmonic_qN1*b1+Biharmonic_qN2*b2+Biharmonic_qN3*b3)*b1/Areas(NEle)
+!                     Biharmonic_DqDYDPhiDY2A = Biharmonic_DqDYDPhiDY2A
+!     &                 +(Biharmonic_qN1*a1+Biharmonic_qN2*a2+Biharmonic_qN3*a3)*a1/Areas(NEle)
+! arash 12/21/2015
+!                     d2_dx2_q_element = d2_dx2_q_element + d_dx_qN1*b1+d_dx_qN2*b2+d_dx_qN3*b3
+!                     d2_dy2_q_element = d2_dy2_q_element + d_dy_qN1*a1+d_dy_qN2*a2+d_dy_qN3*a3
+!                     d2_dxy_q_element = d2_dxy_q_element + d_dy_qN1*b1+d_dy_qN2*b2+d_dy_qN3*b3
+! z-level
                      DqDXDPhiDX2A=DqDXDPhiDX2A
-     &                 +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
+     &                 +(qN1_z*b1+qN2_z*b2+qN3_z*b3)*b1/Areas(NEle)
                      DqDYDPhiDY2A=DqDYDPhiDY2A
-     &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
+     &                 +(qN1_z*a1+qN2_z*a2+qN3_z*a3)*a1/Areas(NEle)
+
+                     Biharmonic_DqDXDPhiDX2A = Biharmonic_DqDXDPhiDX2A
+     &                 +(Biharmonic_qN1_z*b1+Biharmonic_qN2_z*b2+Biharmonic_qN3_z*b3)*b1/Areas(NEle)
+                     Biharmonic_DqDYDPhiDY2A = Biharmonic_DqDYDPhiDY2A
+     &                 +(Biharmonic_qN1_z*a1+Biharmonic_qN2_z*a2+Biharmonic_qN3_z*a3)*a1/Areas(NEle)
+
+                     d2_dx2_q_element = d2_dx2_q_element + d_dx_qN1_z*b1+d_dx_qN2_z*b2+d_dx_qN3_z*b3
+                     d2_dy2_q_element = d2_dy2_q_element + d_dy_qN1_z*a1+d_dy_qN2_z*a2+d_dy_qN3_z*a3
+                     d2_dxy_q_element = d2_dxy_q_element + d_dy_qN1_z*b1+d_dy_qN2_z*b2+d_dy_qN3_z*b3
                   ENDIF
                ENDIF
             ENDDO
 
-            N3=N2               !wrap back to beginning to get final contribution
-            qN3=qN2
+            N3 = N2               !wrap back to beginning to get final contribution
+            qN3 = qN2
+! af 01/04/2016
+            qN3_z = qN2_z
+! arash 12/14/2015
+            Biharmonic_qN3 = Biharmonic_qN2
+! af 01/04/2016
+            Biharmonic_qN3_z = Biharmonic_qN2_z
+! arash 12/21/2015
+            d_dx_qN3 = d_dx_qN2
+            d_dy_qN3 = d_dy_qN2
+! af 01/04/2016
+            d_dx_qN3_z = d_dx_qN2_z
+            d_dy_qN3_z = d_dy_qN2_z
+
             N2=NNFIRST
             qN2=qNFirst
+! arash 12/14/2015
+            Biharmonic_qN2 = Biharmonic_qNFirst
+! arash 12/21/2015
+            d_dx_qN2 = d_dx_qNFirst
+            d_dy_qN2 = d_dy_qNFirst
+! af 01/04/2016
+            qN2_z = qNFirst_z
+            Biharmonic_qN2_z = Biharmonic_qNFirst_z
+            d_dx_qN2_z = d_dx_qNFirst_z
+            d_dy_qN2_z = d_dy_qNFirst_z
+
             NEle=NeiTabEle(NH,NNeigh(NH)-1)
+
+! arash Feb/18/2016
+            velocity_magnitude = 0.0d0
 c. RJW merged 08282008 Casey 071219: Added the computation of NCELE and the second half of the IF statement.
 c.RJW 06092009  modified to elimiate zero index NOFF
         IF((NEle.NE.0)) THEN  !if element is active, compute velocity grads
@@ -640,6 +990,9 @@ C    kmd48.33bc added in spherical factors for 3D
                   qn=(qN1+qN2+qN3)/3.d0
                   Un=real(qn)
                   Vn=aimag(qn)
+
+                  velocity_magnitude = sqrt( Un**2 + Vn**2 )
+
                   a1=X(N3)-X(N2)
                   a2=X(N1)-X(N3)
                   a3=X(N2)-X(N1)
@@ -648,66 +1001,144 @@ C    kmd48.33bc added in spherical factors for 3D
                   b3=(Y(N1)-Y(N2))*SFacAvg
                   UnDqDX2A=UnDqDX2A+Un*(qN1*b1+qN2*b2+qN3*b3)
                   VnDqDY2A=VnDqDY2A+Vn*(qN1*a1+qN2*a2+qN3*a3)
+! iso-sigma
+!                  DqDXDPhiDX2A=DqDXDPhiDX2A
+!     &                 +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
+!                  DqDYDPhiDY2A=DqDYDPhiDY2A
+!     &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
+! arash 12/14/2015
+!                  Biharmonic_DqDXDPhiDX2A = Biharmonic_DqDXDPhiDX2A
+!     &              +(Biharmonic_qN1*b1+Biharmonic_qN2*b2+Biharmonic_qN3*b3)*b1/Areas(NEle)
+!                  Biharmonic_DqDYDPhiDY2A = Biharmonic_DqDYDPhiDY2A
+!     &              +(Biharmonic_qN1*a1+Biharmonic_qN2*a2+Biharmonic_qN3*a3)*a1/Areas(NEle)
+! arash 12/21/2015
+!                  d2_dx2_q_element = d2_dx2_q_element + d_dx_qN1*b1+d_dx_qN2*b2+d_dx_qN3*b3
+!                  d2_dy2_q_element = d2_dy2_q_element + d_dy_qN1*a1+d_dy_qN2*a2+d_dy_qN3*a3
+!                  d2_dxy_q_element = d2_dxy_q_element + d_dy_qN1*b1+d_dy_qN2*b2+d_dy_qN3*b3
+! z-level
                   DqDXDPhiDX2A=DqDXDPhiDX2A
-     &                 +(qN1*b1+qN2*b2+qN3*b3)*b1/Areas(NEle)
+     &               +(qN1_z*b1+qN2_z*b2+qN3_z*b3)*b1/Areas(NEle)
                   DqDYDPhiDY2A=DqDYDPhiDY2A
-     &                 +(qN1*a1+qN2*a2+qN3*a3)*a1/Areas(NEle)
+     &              +(qN1_z*a1+qN2_z*a2+qN3_z*a3)*a1/Areas(NEle)
+
+                  Biharmonic_DqDXDPhiDX2A = Biharmonic_DqDXDPhiDX2A
+     &              +(Biharmonic_qN1_z*b1+Biharmonic_qN2_z*b2+Biharmonic_qN3_z*b3)*b1/Areas(NEle)
+                  Biharmonic_DqDYDPhiDY2A = Biharmonic_DqDYDPhiDY2A
+     &              +(Biharmonic_qN1_z*a1+Biharmonic_qN2_z*a2+Biharmonic_qN3_z*a3)*a1/Areas(NEle)
+
+                  d2_dx2_q_element = d2_dx2_q_element + d_dx_qN1_z*b1+d_dx_qN2_z*b2+d_dx_qN3_z*b3
+                  d2_dy2_q_element = d2_dy2_q_element + d_dy_qN1_z*a1+d_dy_qN2_z*a2+d_dy_qN3_z*a3
+                  d2_dxy_q_element = d2_dxy_q_element + d_dy_qN1_z*b1+d_dy_qN2_z*b2+d_dy_qN3_z*b3
                ENDIF
             ENDIF
 
             IF(TotalArea2.EQ.0.) THEN
                LAdvec(k)=(0.d0,0.d0)
                LStress(k)=(0.d0,0.d0)
+! arash 12/14/2015
+               Biharmonic_LStress(k)=(0.d0,0.d0)
             ELSE
-              LAdvec(k)=sponge(NH)*IFNLCT*(UnDqDX2A+VnDqDY2A)/TotalArea2
+               LAdvec(k)=sponge(NH)*IFNLCT*(UnDqDX2A+VnDqDY2A)/TotalArea2
                LStress(k)=3.d0*EVM(NH)*(DqDXDPhiDX2A+DqDYDPhiDY2A)
+     &              /TotalArea2
+! arash 12/21/2015: modified Leith viscosity
+               ! 0. preliminaries
+               modified_Leith_delta_x = sqrt ( TotalArea2 * 0.5d0 ) ! grid length
+               modified_Leith_Lambda_vorticity  = 2.5 !1.4d0 !             ! tuning constant O(1) ========================================================
+               modified_Leith_Lambda_divergence = 2.5 !1.4d0 !             ! the modification - see MITgcm manual ========================================
+               ! 1. nodal second derivatives: during the computations, we multiplied them by 2A.
+               d2_dx2_q_element = d2_dx2_q_element / TotalArea2
+               d2_dy2_q_element = d2_dy2_q_element / TotalArea2
+               d2_dxy_q_element = d2_dxy_q_element / TotalArea2
+               ! 2. magnitude of the gradient of divergence and vorticity
+               modified_Leith_grad_vorticity = sqrt( ( aimag(d2_dx2_q_element) - real(d2_dxy_q_element) )**2
+     &                                       +       ( aimag(d2_dxy_q_element) - real(d2_dy2_q_element) )**2 )
+               modified_Leith_grad_divergence= sqrt( (  real(d2_dx2_q_element) +aimag(d2_dxy_q_element) )**2
+     &                                       +       (  real(d2_dxy_q_element) +aimag(d2_dy2_q_element) )**2 )
+               ! 3. compute the modified Leith viscosity
+               Biharmonic_viscosity =   modified_Leith_delta_x**5 / ( 8.0d0 * 3.141592654d0**3 ) *
+     &                           sqrt ( modified_Leith_Lambda_vorticity**6  * modified_Leith_grad_vorticity**2
+     &                                + modified_Leith_Lambda_divergence**6 * modified_Leith_grad_divergence**2 )
+               ! 3.1. engineering
+               ! 3.1.1. minimum viscosity
+               If ( Biharmonic_viscosity < 1.0d-2 ) Biharmonic_viscosity = 1.0d-2
+
+               ! 3.1.2. maximum viscosity 
+               element_peclet_number = velocity_magnitude * length / Biharmonic_viscosity
+!               If ( element_peclet_number > 2.0 ) Then
+!                  Biharmonic_viscosity = velocity_magnitude * length / 2.0d0
+!               End If
+
+
+
+
+               ! 3.9. save the viscosity parameter for using in the transport equation
+                Biharmonic_viscosity_modified_Leith ( NH, k ) = Biharmonic_viscosity
+               ! 4. congratulations! we have computed modified Leith viscosity!
+               Biharmonic_LStress(k) = -3.d0 * Biharmonic_viscosity * (Biharmonic_DqDXDPhiDX2A+Biharmonic_DqDYDPhiDY2A)
      &              /TotalArea2
             ENDIF
 
          ENDDO
 
+! |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+! arash 12/14/2015: Use Biharmonic viscosity instead of a harmonic one
+! We may want to make this cleaner later by having an option in the fort.15 file
+         LStress(:) = Biharmonic_LStress(:)
+! |-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
+
+!--------------------------------------------------------------------------------------------------
 c     Finished computing advection and stress terms in the momentum
 c     equation at each level in the vertical
 
+! arash May 31 2016 commented (!!) this based on Rosemary's work
+!---------------------------------------------------------------------------------------------------
 c     Compute the equivalent linear slip coefficient
 C RJW 02252009 changed KP for ISlip =2
 C     For ISlip = 1, KP is the equivalent linear slip coefficient
 C     For ISlip = 2, KP is the minimum equivalent quadratic slip coefficient
 C     For ISlip = 3, KP is the quadratic slip coefficient
-         IF(ISlip.EQ.1) KSlip=KP
-         IF(ISlip.EQ.2) THEN
+!!         IF(ISlip.EQ.1) KSlip=KP
+!!         IF(ISlip.EQ.2) THEN
 c.RJW merged 08282008 Casey 071219: Let's get funky.
 c.RJW enable this modification
 C     and add the following to base the drag coefficient on the actual
 C     physics of the boundary layer.
 C ---
 
-            IF (ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
-     &                *(DP(NH)+IFNLFA*ETA2(NH)) )
-     &                        .LT. 1.D0 )THEN
+Casey 140701: Adjust for small depths.
+!!            Hsp1=DP(NH)+IFNLFA*ETA2(NH)
+!!            IF(Hsp1.LT.H0) Hsp1=H0
+!            IF (ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
+!     &                *(DP(NH)+IFNLFA*ETA2(NH)) )
+! arash
+!!            IF ( (ABS( ( ( SIGMA(2)-SIGMA(1) )/2.0d0 ) *Hsp1 ))
+!!     &                        .LT. 1.D0 )THEN
 
-
-                KSlip = (1.D0 / ( (1.D0/0.41D0) *
-     &                  LOG( (ABS( ( ( SIGMA(2)-SIGMA(1) )/2 )
-     &                     *( DP(NH)+IFNLFA*ETA2(NH) )) + Z0B1 )
-     &                  / Z0B1 ) ) )**2.D0
-     &                * ABS(Q(NH,1))
-            ELSE
-                KSlip = (1.D0 / ( (1.D0/0.41D0) *
-     &                  LOG( (1.D0+Z0B1)
-     &                  / (Z0B1) ) ) )**2.D0
-     &                * ABS(Q(NH,1))
-            ENDIF
-            IF(KSlip.GT.1.0d0* ABS(Q(NH,1))) KSlip=1.0d0*ABS(Q(NH,1))
+!!                KSlip = (1.D0 / ( (1.D0/0.41D0) *
+!!     &                  LOG( (ABS( ( ( SIGMA(2)-SIGMA(1) )/2.0d0 )
+!     &                     *( DP(NH)+IFNLFA*ETA2(NH) )) + Z0B1 )
+! arash
+!!     &                     * Hsp1 ) + Z0B1 )
+!!     &                  / Z0B1 ) ) )**2.D0
+!!     &                * ABS(Q(NH,1))
+!!            ELSE
+!!                KSlip = (1.D0 / ( (1.D0/0.41D0) *
+!!     &                  LOG( (1.D0+Z0B1)
+!!     &                  / (Z0B1) ) ) )**2.D0
+!!     &                * ABS(Q(NH,1))
+!!            ENDIF
+!!            IF(KSlip.GT.1.0d0* ABS(Q(NH,1))) KSlip=1.0d0*ABS(Q(NH,1))
 C          IF(KSlip.LT.0.0010d0*ABS(Q(NH,1))) KSlip=0.0010d0*ABS(Q(NH,1))
-            IF(KSlip.LT.KP*ABS(Q(NH,1))) KSlip=KP*ABS(Q(NH,1))
+!!            IF(KSlip.LT.KP*ABS(Q(NH,1))) KSlip=KP*ABS(Q(NH,1))
 
-         ENDIF
-         IF(ISlip.EQ.3) THEN
-            KSlip=KP*ABS(Q(NH,1))
-            IF(KSlip.GT.0.1d0) KSlip=0.1d0
-            IF(KSlip.LT.0.0d0) KSlip=0.0d0
-         ENDIF
+!!         ENDIF
+!!         IF(ISlip.EQ.3) THEN
+!!            KSlip=KP*ABS(Q(NH,1))
+!!            IF(KSlip.GT.0.1d0) KSlip=0.1d0
+!!            IF(KSlip.LT.0.0d0) KSlip=0.0d0
+!!         ENDIF
+!---------------------------------------------------------------------------------------------------
 c     Set up the RHS forcing vector Fr and LHS matrix in compact storage
 c     (Mkm1,Mk,Mkp1)
 
@@ -726,10 +1157,15 @@ c     (Mkm1,Mk,Mkp1)
      &           + (CCR*q(NH,2)
      &           -DelT*(LAdvec(2)  +LStress(2)  +BPG(NH,2)))*Inm(1,3)
      &           - DelT*(VAdvec(1)+BTPG*LVn(1))-DT1MAlp3*VStress(1)
-     &           - q(NH,1)*DT1MAlp2*KSlip/HsOAMB
+! arash May 31 2016 did this based on Rosemary's work 
+!     &           - q(NH,1)*DT1MAlp2*KSlip/HsOAMB
+     &           - q(NH,1)*DT1MAlp2*TK(NH)/HsOAMB
+
             Mkm1(1) = (0.d0,0.d0)
             Mk(1)   = CCL*Inm(1,2) + RCL*KVnm(1,2)
-     &           + DTAlp2*KSlip/Hsp1OAMB
+! arash May 31 2016 did this based on Rosemary's work 
+!     &           + DTAlp2*KSlip/Hsp1OAMB
+     &           + DTAlp2*TK(NH)/Hsp1OAMB
             Mkp1(1) = CCL*Inm(1,3) + RCL*KVnm(1,3)
          ENDIF
 
@@ -842,7 +1278,7 @@ C     Save the horizontal velocity and Eddy Viscosity solutions
 C   kmd48.33bc added the vertical diffusion term for the transport equation
 
          DO k=1,NFEN
-            qkp1(NH,k) = Gamma(k)
+            qkp1(NH,k) = Gamma(k)    ! arash: this seems to be the velocity at time step k+1
             EV(NH,k)=EVTot(k)
             DV(NH,k)=NTVTot(k)
          END DO
@@ -850,6 +1286,16 @@ C   kmd48.33bc added the vertical diffusion term for the transport equation
       ENDDO
 
 c     Finished computing horizontal velocities
+
+! -------------------------------------------------------------------------------------------------
+!                  G a u s s i a n    F i l t e r
+! -------------------------------------------------------------------------------------------------
+#ifdef CMPI
+      CALL UPDATEC3D(Qkp1)
+#endif
+! arash: apply a 1-layer Gaussian filter to the horizontal velocities
+       Call Gaussian_filter_complex ( X, Y, NeiTab, NNeigh, qkp1, NP, NFEN, MNEI )
+! -------------------------------------------------------------------------------------------------
 
 
 C****************************************************************************
@@ -884,8 +1330,11 @@ C     velocity dispersion
             BSY(NH) = EV(NH,1)*AIMAG(DUDS)
          ENDIF
          IF(ISlip.NE.0) THEN
-            BSX(NH) = KSlip*REAL(Qkp1(NH,1))
-            BSY(NH) = KSlip*AIMAG(Qkp1(NH,1))
+! arash May 31 2016 did this based on Rosemary's work 
+!            BSX(NH) = KSlip*REAL(Qkp1(NH,1))
+!            BSY(NH) = KSlip*AIMAG(Qkp1(NH,1))
+            BSX(NH) = TK(NH)*REAL(Qkp1(NH,1))
+            BSY(NH) = TK(NH)*AIMAG(Qkp1(NH,1))
          ENDIF
 
          DUU(NH) = 0.d0
@@ -921,15 +1370,22 @@ c. RJW merged 08282008 Casey 071219: Solve for TEMPNCELE, same as above.
 C
          TEMPNCELE = 0
          TEMPSTOP = 0
-         DO K=1,NODELE(NH)
+Casey 140701: Debug.
+C        DO K=1,NODELE(NH)
+         DO K=1,SIZE(NEITABELE,2)
             IF(NEITABELE(NH,K).EQ.0)THEN
-               TEMPSTOP = TEMPSTOP + 1
+C              TEMPSTOP = TEMPSTOP + 1
+               CYCLE
             ENDIF
             TEMPNCELE = TEMPNCELE +
-     &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),1))*
-     &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),2))*
-     &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),3))*
-     &         NOFF(NEITABELE(NH,K+TEMPSTOP))
+C    &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),1))*
+C    &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),2))*
+C    &         NODECODE(NM(NEITABELE(NH,K+TEMPSTOP),3))*
+C    &         NOFF(NEITABELE(NH,K+TEMPSTOP))
+     &         NODECODE(NM(NEITABELE(NH,K),1))*
+     &         NODECODE(NM(NEITABELE(NH,K),2))*
+     &         NODECODE(NM(NEITABELE(NH,K),3))*
+     &         NOFF(NEITABELE(NH,K))
          ENDDO
 
          IF(TEMPNCELE.EQ.NODELE(NH))THEN
@@ -943,6 +1399,8 @@ C
 c     Set up some values at the node being worked on
 
          Hsp1=DP(NH)+IFNLFA*Eta2(NH)
+Casey 140701: Adjust for small depths.
+         IF(Hsp1.LT.H0) Hsp1=H0
          Hsp1OAMB=Hsp1/AMB
 
 c     Compute time derivative of water surface position
@@ -1188,18 +1646,31 @@ C              boundary conditions
                   DO K=1,NFEN
                      BCRivSalN1(J,K)=BCRivSalN2(J,K)
                   END DO
-                  READ(39,*) NOD, (BCRivSalN2(J,K),K=1,NFEN)
+Casey 140701: Shouldn't read the vertex number.
+C                 READ(39,*) NOD, (BCRivSalN2(J,K),K=1,NFEN)
+                  READ(39,*) (BCRivSalN2(J,K),K=1,NFEN)
                ELSE IF (IDEN.EQ.3) THEN
                   DO K=1,NFEN
                      BCRivTempN1(J,K)=BCRivTempN2(J,K)
                   END DO
-                  READ(39,*) NOD, (BCRivTempN2(J,K),K=1,NFEN)
+Casey 140701: Shouldn't read the vertex number.
+C                 READ(39,*) NOD, (BCRivTempN2(J,K),K=1,NFEN)
+                  READ(39,*) (BCRivTempN2(J,K),K=1,NFEN)
                ELSE IF (IDEN.EQ.4) THEN
                   DO K=1,NFEN
                      BCRivSalN1(J,K)=BCRivSalN2(J,K)
                      BCRivTempN1(J,K)=BCRivTempN2(J,K)
                   END DO
-                  READ(39,*) NOD, (BCRivSalN2(J,K),BCRivTempN2(J,K),K=1,NFEN)
+Casey 140701: Shouldn't read the vertex number.
+C                 READ(39,*) NOD, (BCRivSalN2(J,K),BCRivTempN2(J,K),K=1,NFEN)
+                  READ(39,*) (BCRivSalN2(J,K),BCRivTempN2(J,K),K=1,NFEN)
+
+                  ! arash debug -----------------------------------------------------------------------------
+!                  BCRivSalN1(:,:) = 0.0
+!                  BCRivTempN1(:,:) = 0.0
+!                  BCRivSalN2(:,:) = 0.0
+!                  BCRivTempN2(:,:) = 0.0
+
                END IF
             END DO
          END IF
@@ -1238,6 +1709,56 @@ C           CALL 3D_SIGMAT_TRANS()
             CALL TRANS_3D(SAL,NLSD,NVSD,SALkp1,IDEN-2,TimeLoc)
             CALL TRANS_3D(TEMP,NLTD,NVTD,TEMPkp1,IDEN-1,TimeLoc)
         ENDIF
+
+! arash: clip negative salinity values and 04/01/2016 apply a Gaussian filter
+!-----------------------------------------------------------------------
+! clip
+! salinity at the Dead Sea is 40 psu, 35.5 psu at global ocean, and 15 psu at the mouth of rivers.
+        DO NH=1,NP
+           DO N=1,NFEN
+              IF (SALkp1(NH,N) .LT. 0.0d0) THEN
+                  SALkp1(NH,N) = 0.0d0
+              END IF
+              IF (SALkp1(NH,N) .GT. 40.0d0) THEN  
+                  SALkp1(NH,N) = 40.0d0
+              END IF
+           END DO
+        END DO
+
+! limit temperature values; very basic lower and upper bounds for now.
+        DO NH=1,NP
+           DO N=1,NFEN
+              IF (TEMPkp1(NH,N) .LT. 0.0d0) THEN
+                  TEMPkp1(NH,N) = 0.0d0
+              END IF
+              IF (TEMPkp1(NH,N) .GT. 100.0d0) THEN  
+                  TEMPkp1(NH,N) = 100.0d0
+              END IF
+           END DO
+        END DO
+
+
+! arash added this - not sure if necessary
+#ifdef CMPI
+C      CALL UPDATER3D(SIGT) !jgf45.12
+      IF((IDEN.EQ.3).OR.(IDEN.EQ.4)) CALL UPDATER3D(Tempkp1)
+      IF((IDEN.EQ.2).OR.(IDEN.EQ.4)) CALL UPDATER3D(Salkp1)
+#endif
+
+! Gausian filter
+      IF(IDEN.EQ.1) THEN
+         ELSE IF(IDEN.EQ.2) THEN
+            ! salinity:
+!            Call Gaussian_filter_real ( X, Y, NeiTab, NNeigh, SALkp1, NP, NFEN, MNEI )
+         ELSE IF(IDEN.EQ.3) THEN
+            ! temperature:
+!            Call Gaussian_filter_real ( X, Y, NeiTab, NNeigh, TEMPkp1, NP, NFEN, MNEI )
+         ELSE IF(IDEN.EQ.4) THEN
+            ! salinity & temperature:
+!            Call Gaussian_filter_real ( X, Y, NeiTab, NNeigh, SALkp1,  NP, NFEN, MNEI )
+!            Call Gaussian_filter_real ( X, Y, NeiTab, NNeigh, TEMPkp1, NP, NFEN, MNEI )
+      END IF
+!-----------------------------------------------------------------------
 C
 C     Update new temperature and salinity fields on ghost nodes
 C
@@ -1280,13 +1801,28 @@ C     Need to update and move results from the future time levels to the
 C     present time levels so we can advance in time.
       DO NH = 1,NP
          DO k = 1,NFEN
-            q(NH,k) = qkp1(NH,k)
-            WZ(NH,k) = WZkp1(NH,k)
+            ! arash 2016 Mar 22
+ !           qkm1(NH,k)  = q(NH,k)
+            q(NH,k)     = qkp1(NH,k)
+!            WZkm1(NH,k) = WZ(NH,k)
+            WZ(NH,k)    = WZkp1(NH,k)
          END DO
       END DO
 
+! arash 2016 Mar 22: apply an Asselin filter (see NCOM manual page 18)
+!      If ( time_step_counter == 0 )
+         ! do not apply the filter if you are in the first time step
+!      Else
+!         time_step_counter = time_step_counter + 1
+         ! apply the Asselin filter with nu = 0.05
+!         q = 0.05d0 * ( qkp1 + qkm1 )
+
+!      End If
+
 C     WRITE 3D MODEL OUTPUT
+!--------------------------------------------------------------------------------------------------
       CALL writeOutput3D(TimeLoc,IT) !jgf48_11 moved to write_output.F
+!--------------------------------------------------------------------------------------------------
 
 C     RETURN TO THE 2-D MODEL TO COMPUTE H AT NEXT TIME STEP
 
@@ -2473,6 +3009,7 @@ c     Kq(n)=Km(n)*Sq/Sm(n)                           !rog way
          Kh(n)=Sh(n)*qlprev ! kmd48.33bc changed Sh to an array
          if(Kh(n).lt.EVMIN) Kh(n)=EVMIN
          prod(n)=Km(n)*spgrad2(n)-Kh(n)*BVfreq2(n)
+         IF(B1*rmlen(n).EQ.0.d0) PRINT*, B1,rmlen(n)
          diss(n)=qprev/(B1*rmlen(n))
 c     diss(n)=q2prev(n)*Sm(n)/(Km(n)*B1)             !rog way
            if ((n.eq.nfen).and.(IEVC.eq.51)) then
@@ -3757,3 +4294,840 @@ C        with both salinity and temperature.
 C*****************************************************************************
       END SUBROUTINE CALC_SIGMAT_3D
 C*****************************************************************************
+
+!******************************************************************************
+!    loop on all nodes, and apply a 1-layer Gaussian filter for velocities
+! arash: December 9 2015
+!******************************************************************************
+
+       Subroutine Gaussian_filter_complex ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
+
+       Use Global,      Only : IFNLFA, DP, ETA2
+       Use Global_3DVS, Only : SIGMA, AMB, B, Biharmonic_viscosity_modified_Leith
+
+       Implicit none
+       Integer :: I, J, K
+       Integer :: Neighbor_Node
+       Integer :: MNEI, NP, NFEN
+       Real(8) :: sigma_Gauss, length, length_max, factor, value, numerator, denominator, sum_Weights
+       Real(8) :: velocity_magnitude
+       Real(8) :: velocity_magnitude_max_in_xy
+       Real(8) :: element_peclet_number
+       Real(8) :: constant_diffusivity = 50.0d0
+       Real(8) :: average_viscosity, average_velocity, average_element_peclet_number
+       Real(8) :: low_peclet_threshold, high_peclet_threshold, low_factor, high_factor
+       Real(8) :: X(NP), Y(NP)
+       INTEGER :: NeiTab(NP,MNEI), NNeigh(NP)
+       REAL(8), ALLOCATABLE :: Weights(:)
+       ! velocities are stored as complex quantities: u+i*v
+       Complex(8), ALLOCATABLE :: quantity_smooth(:,:) 
+       Complex(8), ALLOCATABLE :: inarray_vertical (:)
+       Complex(8) :: quantity(NP,NFEN)
+       Complex(8) :: interpolated_value
+
+       REAL(8)  :: Hs, Hs_Neighbor_Node     !Total water depth at time level s
+       REAL(8)  :: HsOAMB                   !Hs/(a-b)
+       REAL(8)  :: Zk                       ! z depth of any node k in the vertical
+       Real(8)  :: SigmaNN
+
+       Allocate ( quantity_smooth(NP,NFEN) )
+       Allocate ( inarray_vertical(NFEN) )
+
+!---------------------------------------------------------------------------------------------------
+! arash 21 July 2016: adaptive filtering, depending on local Peclet number
+! I tuned these parameters for the SURA/SL16 mesh based on trial and error, pain, and engineering judgment.
+       low_peclet_threshold  =  1.0d0;         low_factor = 0.15
+       high_peclet_threshold =  16.0d0;        high_factor = 0.185 ! filter 1
+!       high_peclet_threshold =  18.0d0;        high_factor = 0.185 ! filter 2
+!       high_peclet_threshold =  4.0d0;        high_factor = 0.185 ! filter 3
+!       high_peclet_threshold =  20.0d0;        high_factor = 0.185 ! filter 1
+!---------------------------------------------------------------------------------------------------
+
+       quantity_smooth(:,:) = (0.0d0 , 0.0d0)
+
+       ! loop on all nodes, and apply the Gaussian filter
+       Do I = 1, NP
+          ! 1. compute maximum distance between the node of interest, and the neighbor nodes
+          !    this will be used to compute sigma2
+          length_max = 0.0d0
+          Do J = 2, NNeigh ( I ) ! also includes node I
+             Neighbor_Node = NeiTab ( I , J )
+             length = SQRT ( ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 )
+             If ( length > length_max ) length_max = length
+          End Do
+          ! 1.2. compute the maximum velocity in the xy plane
+          velocity_magnitude_max_in_xy = 0.0d0
+          average_velocity = 0.0d0
+          Do K = 1, NFEN
+             velocity_magnitude = sqrt( (real ( quantity( I , K ) ))**2 + (aimag ( quantity( I , K ) ))**2 )
+             If ( velocity_magnitude > velocity_magnitude_max_in_xy ) velocity_magnitude_max_in_xy = velocity_magnitude
+             average_velocity = average_velocity + velocity_magnitude
+          End Do
+          average_velocity = average_velocity / NFEN
+          ! 1.3. compute the average viscosity in the xy plane
+          average_viscosity = 0.0d0
+          Do K = 1, NFEN
+             average_viscosity = average_viscosity + Biharmonic_viscosity_modified_Leith ( I, K )
+          End Do
+          average_viscosity = average_viscosity / NFEN
+
+          ! 1.3.1 compute the element Peclet number
+          element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity !constant_diffusivity !average_viscosity
+          !average_element_peclet_number = length_max * average_velocity / average_viscosity 
+          average_element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity 
+
+          ! 1.4. specify sigma - we want to do this adaptively.
+          ! I tuned this parameter for the SL16 mesh based on trial and error, pain, and engineering judgment.
+
+             If ( average_element_peclet_number < low_peclet_threshold ) Then
+                factor = low_factor
+             Else If ( average_element_peclet_number > high_peclet_threshold ) Then
+                factor = high_factor
+             Else
+                factor = low_factor + ( high_factor - low_factor ) * 
+     &           ( ( average_element_peclet_number - low_peclet_threshold ) / ( high_peclet_threshold - low_peclet_threshold ) )**0.5
+             End If
+   
+          If ( velocity_magnitude_max_in_xy > 1.80d0 ) factor = 0.19d0
+!----------------------------------------------------------------------------------------
+! 43_SL16
+!          If ( element_peclet_number >= 80. ) Then
+!             factor = 0.19d0
+!          Else If ( (element_peclet_number < 80.).And.(element_peclet_number >= 30.) ) Then
+!             factor = 0.18d0
+!          Else If ( (element_peclet_number < 30.).And.(element_peclet_number >= 10.) ) Then
+!             factor = 0.17d0
+!          Else If ( (element_peclet_number < 10.).And.(element_peclet_number >= 1.) ) Then
+!             factor = 0.16d0
+!          Else
+!             factor = 0.15d0
+!          End If
+!         ! arash: this may not be necessary
+!          If ( velocity_magnitude_max_in_xy > 1.80d0 ) factor = 0.19d0
+!----------------------------------------------------------------------------------------
+!----------------------------------------------------------------------------------------
+! 10-SURA6
+!          If ( element_peclet_number >= 40. ) Then
+!             factor = 0.19d0
+!          Else If ( (element_peclet_number < 40.).And.(element_peclet_number >= 20.) ) Then
+!             factor = 0.18d0
+!          Else If ( (element_peclet_number < 20.).And.(element_peclet_number >= 10.) ) Then
+!!             factor = 0.17d0
+!          Else If ( (element_peclet_number < 10.).And.(element_peclet_number >= 5.) ) Then
+!             factor = 0.16d0
+!          Else
+!             factor = 0.15d0
+!          End If
+!          ! arash: this may not be necessary
+!          If ( velocity_magnitude_max_in_xy > 1.80d0 ) factor = 0.19d0
+!----------------------------------------------------------------------------------------
+!----------------------------------------------------------------------------------------
+! 5,6-SURA6 poly
+!          If ( element_peclet_number >= 20. ) Then
+!             factor = 0.19d0
+!          Else If ( (element_peclet_number < 20.).And.(element_peclet_number >= 10.) ) Then
+!             factor = 0.18d0
+!          Else If ( (element_peclet_number < 10.).And.(element_peclet_number >= 5.) ) Then
+!             factor = 0.17d0
+!          Else If ( (element_peclet_number < 5.).And.(element_peclet_number >= 1.) ) Then
+!             factor = 0.16d0
+!          Else
+!             factor = 0.15d0
+!          End If
+         ! arash: this may not be necessary
+!          If ( velocity_magnitude_max_in_xy > 1.80d0 ) factor = 0.19d0
+!----------------------------------------------------------------------------------------
+          sigma_Gauss = length_max * factor
+
+          ! 2. compute Gaussian filter weights
+          IF ( ALLOCATED(Weights) ) DEALLOCATE( Weights )
+          ALLOCATE( Weights( NNeigh ( I ) ) )
+          Weights = 0.0d0
+          Do J = 1, NNeigh ( I ) ! also includes node I
+             Neighbor_Node = NeiTab ( I , J )
+             numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 
+             denominator = 2.0d0 * sigma_Gauss**2
+             Weights (J) = exp ( -1.0 * numerator / denominator )
+          End Do
+          ! 2.1 normalize weights
+          sum_Weights = 0.0d0
+          Do J = 1, NNeigh ( I )
+             sum_Weights = sum_Weights + Weights (J)
+          End Do
+          If ( sum_Weights < 1.0d-6 ) Then
+             Write(*,*) 'Possible error in Gaussian filter - error code = 1'
+             Stop
+          End If
+         Weights (:) = Weights (:) / sum_Weights
+         ! 2.3 debug
+         !Write(*,'(I5,11f6.3)') NNeigh ( I ), weights(1:NNeigh ( I ))
+         !Pause
+         ! 2.4. compute elevation corresponding to this node
+         Hs = DP(I) + IFNLFA * Eta2(I)  !Total depth at current timestep - 'center' node
+         ! arash: not sure if the next line is necessary, but probably not. we aren't using it in the bpg routine either.
+         ! IF( Hs .LT. H0 ) Hs = H0
+         HsOAMB = Hs / AMB
+
+         ! 3. apply the Gaussian filter
+          Do J = 1, NNeigh ( I )
+             Neighbor_Node = NeiTab ( I , J )
+             inarray_vertical (:) = quantity( Neighbor_Node , : )
+             Do K = 1, NFEN
+                ! 3.0. obtain the z and sigma value corresponding to the 'center' node
+                Zk = HsOAMB * ( Sigma(K) - B ) - DP(I)
+                Hs_Neighbor_Node = DP(Neighbor_Node) + IFNLFA * Eta2(Neighbor_Node)
+                SigmaNN = B + AMB * ( Zk + DP(Neighbor_Node) ) / Hs_Neighbor_Node
+                ! 3.1. linearly interpolate surrounding velocities on the same horizontal plane
+                Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, interpolated_value, K )
+                quantity_smooth (I,K) = quantity_smooth (I,K) + Weights (J) * interpolated_value
+             End Do
+          End Do
+       End Do
+
+       ! transfer smooth bathymetry to the original array
+       quantity (:,:) = quantity_smooth (:,:)
+
+       End Subroutine
+
+
+!******************************************************************************
+!    loop on all nodes, and apply a 1-layer Gaussian filter for velocities
+! arash: December 9 2015
+!******************************************************************************
+
+       Subroutine Gaussian_filter_complex_new ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
+
+       Use Global,      Only : IFNLFA, DP, ETA2
+       Use Global_3DVS, Only : SIGMA, AMB, B, Biharmonic_viscosity_modified_Leith
+
+       Implicit none
+       Integer :: I, J, K
+       Integer :: Neighbor_Node
+       Integer :: MNEI, NP, NFEN
+       !Real(8) :: sigma_Gauss, length, length_max, factor, value, numerator, denominator, sum_Weights
+       Real(8) :: length, length_max, numerator
+       Real(8) :: velocity_magnitude
+       Real(8) :: velocity_magnitude_max_in_xy
+!       Real(8) :: element_peclet_number
+       Real(8) :: average_viscosity
+       Real(8) :: low_peclet_threshold, high_peclet_threshold, low_factor, high_factor
+       Real(8) :: X(NP), Y(NP)
+       INTEGER :: NeiTab(NP,MNEI), NNeigh(NP)
+       REAL(8), ALLOCATABLE :: Weights(:,:)
+       REAL(8), ALLOCATABLE :: sigma_Gauss(:)
+       REAL(8), ALLOCATABLE :: factor(:)
+       REAL(8), ALLOCATABLE :: denominator(:)
+       REAL(8), ALLOCATABLE :: sum_Weights(:)
+       REAL(8), ALLOCATABLE :: element_peclet_number(:)
+       ! velocities are stored as complex quantities: u+i*v
+       Complex(8), ALLOCATABLE :: quantity_smooth(:,:) 
+       Complex(8), ALLOCATABLE :: inarray_vertical (:)
+       Complex(8) :: quantity(NP,NFEN)
+       Complex(8) :: interpolated_value
+
+       REAL(8)  :: Hs, Hs_Neighbor_Node     !Total water depth at time level s
+       REAL(8)  :: HsOAMB                   !Hs/(a-b)
+       REAL(8)  :: Zk                       ! z depth of any node k in the vertical
+       Real(8)  :: SigmaNN
+
+!---------------------------------------------------------------------------------------------------
+! arash 21 July 2016: adaptive filtering, depending on local Peclet number
+! I tuned these parameters for the SURA/SL16 mesh based on trial and error, pain, and engineering judgment.
+       low_peclet_threshold  =  1.0d0;         low_factor = 0.15
+       high_peclet_threshold =  10.0d0;        high_factor = 0.185
+!---------------------------------------------------------------------------------------------------
+
+       Allocate ( quantity_smooth(NP,NFEN) )
+       Allocate ( inarray_vertical(NFEN) )
+       Allocate ( sigma_Gauss(NFEN) )
+       Allocate ( factor(NFEN) )
+       Allocate ( denominator(NFEN) )
+       Allocate ( sum_Weights(NFEN) )
+       Allocate ( element_peclet_number(NFEN) )
+
+       quantity_smooth(:,:) = (0.0d0 , 0.0d0)
+
+       ! loop on all nodes, and apply the Gaussian filter
+       Do I = 1, NP
+          ! 1. compute maximum distance between the node of interest, and the neighbor nodes
+          !    this will be used to compute sigma2
+          length_max = 0.0d0
+          Do J = 2, NNeigh ( I ) ! also includes node I
+             Neighbor_Node = NeiTab ( I , J )
+             length = SQRT ( ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 )
+             If ( length > length_max ) length_max = length
+          End Do
+          ! 1.2. compute the following: maximum velocity in the xy plane
+          velocity_magnitude_max_in_xy = 0.0d0
+          average_viscosity = 0.0d0
+          Do K = 1, NFEN
+             velocity_magnitude = sqrt( (real ( quantity( I , K ) ))**2 + (aimag ( quantity( I , K ) ))**2 )
+             element_peclet_number(K) = length_max * velocity_magnitude / Biharmonic_viscosity_modified_Leith ( I, K )
+!             If ( velocity_magnitude > velocity_magnitude_max_in_xy ) velocity_magnitude_max_in_xy = velocity_magnitude
+!             average_viscosity = average_viscosity + Biharmonic_viscosity_modified_Leith ( I, K )
+!          End Do
+!          average_viscosity = average_viscosity / NFEN
+          ! 1.3. compute the avrage element Peclet number
+          !element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity
+          ! 1.4. specify sigma - we want to do this adaptively.
+!          Do K = 1, NFEN
+             If ( element_peclet_number(K) < low_peclet_threshold ) Then
+                factor(K) = low_factor
+             Else If ( element_peclet_number(K) > high_peclet_threshold ) Then
+                factor(K) = high_factor
+             Else
+                factor(K) = low_factor + ( high_factor - low_factor ) * 
+     &           ( ( element_peclet_number(K) - low_peclet_threshold ) / ( high_peclet_threshold - low_peclet_threshold ) )**0.5
+
+             End If
+             ! limit factor for high velocities -------------------------------
+             If ( velocity_magnitude > 1.8d0 ) factor(K) = high_factor
+             !-----------------------------------------------------------------
+             sigma_Gauss(K) = length_max * factor(K)
+          End Do
+
+          ! 2. compute Gaussian filter weights
+          IF ( ALLOCATED(Weights) ) DEALLOCATE( Weights )
+          ALLOCATE( Weights( NNeigh ( I ), NFEN ) )
+          Weights(:,:) = 0.0d0
+          Do K = 1, NFEN
+             Do J = 1, NNeigh ( I ) ! also includes node I
+                Neighbor_Node = NeiTab ( I , J )
+                numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 
+                denominator(K) = 2.0d0 * sigma_Gauss(K)**2
+                Weights (J,K) = exp ( -1.0 * numerator / denominator(K) )
+             End Do
+             ! 2.1 normalize weights
+             sum_Weights(:) = 0.0d0
+             Do J = 1, NNeigh ( I )
+                sum_Weights(K) = sum_Weights(K) + Weights (J,K)
+             End Do
+             If ( sum_Weights(K) < 1.0d-6 ) Then
+                Write(*,*) 'Possible error in Gaussian filter - error code = 1'
+                Stop
+             End If
+            Weights (:,K) = Weights (:,K) / sum_Weights(K)
+         End Do
+         ! 2.3 debug
+         !Write(*,'(I5,11f6.3)') NNeigh ( I ), weights(1:NNeigh ( I ))
+         !Pause
+         ! 2.4. compute elevation corresponding to this node
+         Hs = DP(I) + IFNLFA * Eta2(I)  !Total depth at current timestep - 'center' node
+         ! arash: not sure if the next line is necessary, but probably not. we aren't using it in the bpg routine either.
+         ! IF( Hs .LT. H0 ) Hs = H0
+         HsOAMB = Hs / AMB
+
+         ! 3. apply the Gaussian filter
+          Do J = 1, NNeigh ( I )
+             Neighbor_Node = NeiTab ( I , J )
+             inarray_vertical (:) = quantity( Neighbor_Node , : )
+             Do K = 1, NFEN
+                ! 3.0. obtain the z and sigma value corresponding to the 'center' node
+                Zk = HsOAMB * ( Sigma(K) - B ) - DP(I)
+                Hs_Neighbor_Node = DP(Neighbor_Node) + IFNLFA * Eta2(Neighbor_Node)
+                SigmaNN = B + AMB * ( Zk + DP(Neighbor_Node) ) / Hs_Neighbor_Node
+                ! 3.1. linearly interpolate surrounding velocities on the same horizontal plane
+                Call linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, interpolated_value, K )
+                quantity_smooth (I,K) = quantity_smooth (I,K) + Weights (J,K) * interpolated_value
+             End Do
+          End Do
+       End Do
+
+       ! transfer smooth bathymetry to the original array
+       quantity (:,:) = quantity_smooth (:,:)
+
+       DeAllocate ( quantity_smooth )
+
+       End Subroutine
+
+C*************************************************************************
+C     Subroutine to interpolate velocities to a specified
+C     sigma value (SigmaNN) given an initial guess of which sigma
+C     level is closest to the specified value.
+C     This subroutine is almost identical to SUBROUTINE ZSURFBUOY, written by R.L.
+C
+! please pay particular attention to what we are trying to interpolate, and for what purpose.
+! this subroutine is used to provide velocities for filtering (smoothing). Therefore, we oly use linear
+! interpolaton. Moreover, if we run into air, or, into the ground, we use the velocity value at the surface, or bottom.
+! in other words, we use our engineering judgment in the smoothing procedure as well.
+!
+C                                    a.f.  09/12/15
+! af 01/04/2016:
+!I use this subroutine to compute the biharmonic viscosity operator and modified Leith viscosity as well.
+!
+C*************************************************************************
+
+      Subroutine linear_vertical_interpolation_complex ( inarray_vertical, SigmaNN, interpolated_value, J )
+
+      USE GLOBAL_3DVS
+      IMPLICIT NONE
+      Complex(SZ) :: interpolated_value
+      REAL(SZ) :: SigmaNN     !Sigma value of a neighbor node
+
+      INTEGER NN
+      INTEGER J
+!      INTEGER :: LBelo = -999
+!      INTEGER :: LAbov = -999
+      INTEGER LBelo
+      INTEGER LAbov
+      INTEGER LTry
+      INTEGER IDiag
+      REAL(SZ) SigBelo
+      REAL(SZ) SigAbov
+      REAL(SZ) SigTry
+! af: variables for cubic interpolation
+!      Integer  :: k1, k2, k3, k4                 ! nodes used for cubic polynomial
+!      REAL(SZ) :: f1, f2, f3, f4                 ! shape functions
+!      REAL(SZ) :: top, bot
+!      Integer  :: loop_situation = 0
+
+      Complex(SZ) :: inarray_vertical
+      Dimension  inarray_vertical ( NFEN )
+
+      call setMessageSource("cubic_vertical_interpolation")
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      IDiag=0
+
+      IF(SigmaNN.LE.b) THEN !at bottom or lower, then use bottom
+         LBelo=1
+         interpolated_value = inarray_vertical(LBelo)
+         SigBelo=b
+         SigAbov=b
+         GOTO 100
+      ENDIF
+
+      IF(SigmaNN.GE.a) THEN ! surface or above, use surface
+         LAbov=NFEN
+         interpolated_value=inarray_vertical(LAbov)
+         SigBelo=a
+         SigAbov=a
+         GOTO 100
+      ENDIF
+! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
+
+
+      LTry=J                    !start search for SIGABOV and SIGBELO
+      SigTry=Sigma(LTry)
+      IF(SigmaNN.GT.SigTry) THEN !too low
+!         loop_situation = 1
+         SigBelo=SigTry         !SIGBELO may = SIGTRY
+         LBelo=LTry
+         LTry=LTry+1            !look at next level higher
+ 90      SigTry=Sigma(LTry)
+         IF(SigmaNN.GT.SigTry) THEN !still too low
+            SigBelo=SigTry
+            LBelo=LTry
+            LTry=LTry+1
+            GOTO 90
+         ENDIF
+         SigAbov=SigTry         !found upper bracketing sigma
+         LAbov=LTry
+         GOTO 99                !go interpolate
+      ENDIF
+
+      IF(SigmaNN.LE.SigTry) THEN !to high
+!         loop_situation = 2
+         SigAbov=SigTry         !SIGABOV may = SIGTRY
+         LAbov=LTry
+         LTry=LTry-1            !look at next level lower
+ 91      SigTry=Sigma(LTry)
+         IF(SigmaNN.LE.SigTry) THEN !still too high
+            SigAbov=SigTry
+            LAbov=LTry
+            LTry=LTry-1
+            GOTO 91
+         ENDIF
+         SigBelo=SigTry         !found lower bracketing sigma
+         LBelo=LTry
+      ENDIF
+! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
+99    Continue
+
+! use a cubic polynomial interpolation, instead of the above (99) linear interpolation
+! 1- decide which nodes to pick: k1:lowest, k2, k3, k4:top-most
+!      If ( LAbov == NFEN ) Then
+!         k4 = NFEN
+!         k3 = NFEN - 1
+!         k2 = NFEN - 2
+!         k1 = NFEN - 3
+!      Else If ( LBelo == 1 ) Then
+!         k4 = 4
+!         k3 = 3
+!         k2 = 2
+!         k1 = 1
+!      Else
+!         k4 = LAbov + 1
+!         k3 = LAbov
+!         k2 = LBelo
+!         k1 = LBelo - 1
+!      End If
+
+! 2- compute the shape functions
+!        f1 = ((SigmaNN - Sigma(k2)) * (SigmaNN - Sigma(k3)) * (SigmaNN - Sigma(k4)))
+!     &     / ((Sigma(k1)-Sigma(k2)) * (Sigma(k1)-Sigma(k3)) * (Sigma(k1)-Sigma(k4)))
+
+!        f2 = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k3)) * (SigmaNN - Sigma(k4)))
+!     &     / ((Sigma(k2)-Sigma(k1)) * (Sigma(k2)-Sigma(k3)) * (Sigma(k2)-Sigma(k4)))
+
+!        f3 = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k2)) * (SigmaNN - Sigma(k4)))
+!     &     / ((Sigma(k3)-Sigma(k1)) * (Sigma(k3)-Sigma(k2)) * (Sigma(k3)-Sigma(k4)))
+
+!        f4 = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k2)) * (SigmaNN - Sigma(k3)))
+!     &     / ((Sigma(k4)-Sigma(k1)) * (Sigma(k4)-Sigma(k2)) * (Sigma(k4)-Sigma(k3)))
+
+! 3- interpolate
+!      interpolated_value = f1 * inarray_vertical(k1) + f2 * inarray_vertical(k2) 
+!     &          + f3 * inarray_vertical(k3) + f4 * inarray_vertical(k4)
+
+! linear interpolation should be enough. the goal is to smooth the velocity
+      interpolated_value = (inarray_vertical(LAbov) - inarray_vertical(LBelo))
+     &     *(SigmaNN-SigBelo)/(SigAbov-SigBelo) + inarray_vertical(LBelo)
+
+! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
+ 100  CONTINUE
+
+      IF(IDiag.EQ.2) THEN
+         WRITE(2,*) '******** linear_vertical_interpolation **********'
+         WRITE(2,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
+     &        '      interpolated_value'
+         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,interpolated_value
+ 777     FORMAT(I7,I5,3(F10.3),E14.5)
+      ENDIF
+
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
+      RETURN
+C**********************************************************************
+      END SUBROUTINE linear_vertical_interpolation_complex
+C**********************************************************************
+
+!******************************************************************************
+!    loop on all nodes, and apply a 1-layer Gaussian filter for salinity/temperature
+! arash: 04/01/2016
+! arash: March 24 2016
+!******************************************************************************
+
+       Subroutine Gaussian_filter_real ( X, Y, NeiTab, NNeigh, quantity, NP, NFEN, MNEI )
+
+       Use Global,      Only : IFNLFA, DP, ETA2
+       Use Global_3DVS, Only : SIGMA, AMB, B, qkp1, Biharmonic_viscosity_modified_Leith
+
+       Implicit none
+       Integer :: I, J, K
+       Integer :: Neighbor_Node
+       Integer :: MNEI, NP, NFEN
+       Real(8) :: sigma_Gauss, length, length_max, factor, value, numerator, denominator, sum_Weights
+       Real(8) :: X(NP), Y(NP)
+       INTEGER :: NeiTab(NP,MNEI), NNeigh(NP)
+       REAL(8), ALLOCATABLE :: Weights(:)
+       ! velocities are stored as complex quantities: u+i*v
+       real(8), ALLOCATABLE :: quantity_smooth(:,:) 
+       real(8), ALLOCATABLE :: inarray_vertical (:)
+       real(8) :: quantity(NP,NFEN)
+       real(8) :: interpolated_value
+
+       Real(8) :: velocity_magnitude
+       Real(8) :: velocity_magnitude_max_in_xy
+       Real(8) :: element_peclet_number, average_element_peclet_number
+       Real(8) :: average_viscosity
+       Real(8) :: low_peclet_threshold, high_peclet_threshold, low_factor, high_factor
+
+       REAL(8)  :: Hs, Hs_Neighbor_Node     !Total water depth at time level s
+       REAL(8)  :: HsOAMB                   !Hs/(a-b)
+       REAL(8)  :: Zk                       ! z depth of any node k in the vertical
+       Real(8)  :: SigmaNN
+
+       Allocate ( quantity_smooth(NP,NFEN) )
+       Allocate ( inarray_vertical(NFEN) )
+
+!---------------------------------------------------------------------------------------------------
+! arash 21 July 2016: adaptive filtering, depending on local Peclet number
+! I tuned these parameters for the SURA/SL16 mesh based on trial and error, pain, and engineering judgment.
+       low_peclet_threshold  =  1.0d0;         low_factor = 0.15
+       high_peclet_threshold =  16.0d0;        high_factor = 0.185
+!---------------------------------------------------------------------------------------------------
+
+       quantity_smooth(:,:) = 0.0d0
+
+       ! loop on all nodes, and apply the Gaussian filter
+       Do I = 1, NP
+          ! 1. compute maximum distance between the node of interest, and the neighbor nodes
+          !    this will be used to compute sigma2
+          length_max = 0.0d0
+          Do J = 2, NNeigh ( I ) ! also includes node I
+             Neighbor_Node = NeiTab ( I , J )
+             length = SQRT ( ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 )
+             If ( length > length_max ) length_max = length
+          End Do
+          ! 1.2. compute the maximum velocity in the xy plane
+          velocity_magnitude_max_in_xy = 0.0d0
+          Do K = 1, NFEN
+             velocity_magnitude = sqrt( (real ( qkp1( I , K ) ))**2 + (aimag ( qkp1( I , K ) ))**2 )
+             If ( velocity_magnitude > velocity_magnitude_max_in_xy ) velocity_magnitude_max_in_xy = velocity_magnitude
+          End Do
+          ! 1.3. compute the average viscosity in the xy plane
+          average_viscosity = 0.0d0
+          Do K = 1, NFEN
+             average_viscosity = average_viscosity + Biharmonic_viscosity_modified_Leith ( I, K )
+          End Do
+          average_viscosity = average_viscosity / NFEN
+
+          ! 1.3.1 compute the element Peclet number
+                  element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity !constant_diffusivity !average_viscosity
+          average_element_peclet_number = length_max * velocity_magnitude_max_in_xy / average_viscosity 
+          ! 1.4. specify sigma - we want to do this adaptively.
+
+
+             If ( average_element_peclet_number < low_peclet_threshold ) Then
+                factor = low_factor
+             Else If ( average_element_peclet_number > high_peclet_threshold ) Then
+                factor = high_factor
+             Else
+                factor = low_factor + ( high_factor - low_factor ) * 
+     &           ( ( average_element_peclet_number - low_peclet_threshold ) / ( high_peclet_threshold - low_peclet_threshold ) )**0.5
+             End If
+   
+          If ( velocity_magnitude_max_in_xy > 1.80d0 ) factor = 0.19d0
+
+!----------------------------------------------------------------------------------------
+! 5,6-SURA6 poly
+!          If ( element_peclet_number >= 20. ) Then
+!             factor = 0.19d0
+!          Else If ( (element_peclet_number < 20.).And.(element_peclet_number >= 10.) ) Then
+!             factor = 0.18d0
+!          Else If ( (element_peclet_number < 10.).And.(element_peclet_number >= 5.) ) Then
+!             factor = 0.17d0
+!          Else If ( (element_peclet_number < 5.).And.(element_peclet_number >= 1.) ) Then
+!             factor = 0.16d0
+!          Else
+!             factor = 0.15d0
+!          End If
+         ! arash: this may not be necessary
+!          If ( velocity_magnitude_max_in_xy > 1.80d0 ) factor = 0.19d0
+!----------------------------------------------------------------------------------------
+
+
+          sigma_Gauss = length_max * factor
+
+
+          ! 2. compute Gaussian filter weights
+          IF ( ALLOCATED(Weights) ) DEALLOCATE( Weights )
+          ALLOCATE( Weights( NNeigh ( I ) ) )
+          Weights = 0.0d0
+          Do J = 1, NNeigh ( I ) ! also includes node I
+             Neighbor_Node = NeiTab ( I , J )
+             numerator = ( X(Neighbor_Node) - X(I) )**2 + ( Y(Neighbor_Node) - Y(I) )**2 
+             denominator = 2.0d0 * sigma_Gauss**2
+             Weights (J) = exp ( -1.0 * numerator / denominator )
+          End Do
+          ! 2.1 normalize weights
+          sum_Weights = 0.0d0
+          Do J = 1, NNeigh ( I )
+             sum_Weights = sum_Weights + Weights (J)
+          End Do
+          If ( sum_Weights < 1.0d-6 ) Then
+             Write(*,*) 'Possible error in Gaussian filter - error code = 1'
+             Stop
+          End If
+         Weights (:) = Weights (:) / sum_Weights
+         ! 2.3 debug
+         !Write(*,'(I5,11f6.3)') NNeigh ( I ), weights(1:NNeigh ( I ))
+         !Pause
+         ! 2.4. compute elevation corresponding to this node
+         Hs = DP(I) + IFNLFA * Eta2(I)  !Total depth at current timestep - 'center' node
+         ! arash: not sure if the next line is necessary, but probably not. we aren't using it in the bpg routine either.
+         ! IF( Hs .LT. H0 ) Hs = H0
+         HsOAMB = Hs / AMB
+
+         ! 3. apply the Gaussian filter
+          Do J = 1, NNeigh ( I )
+             Neighbor_Node = NeiTab ( I , J )
+             inarray_vertical (:) = quantity( Neighbor_Node , : )
+             Do K = 1, NFEN
+                ! 3.0. obtain the z and sigma value corresponding to the 'center' node
+                Zk = HsOAMB * ( Sigma(K) - B ) - DP(I)
+                Hs_Neighbor_Node = DP(Neighbor_Node) + IFNLFA * Eta2(Neighbor_Node)
+                SigmaNN = B + AMB * ( Zk + DP(Neighbor_Node) ) / Hs_Neighbor_Node
+                ! 3.1. linearly interpolate surrounding sal/temp on the same horizontal plane
+                Call linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, interpolated_value, K )
+                quantity_smooth (I,K) = quantity_smooth (I,K) + Weights (J) * interpolated_value
+             End Do
+          End Do
+       End Do
+
+       ! transfer smooth bathymetry to the original array
+       quantity (:,:) = quantity_smooth (:,:)
+
+       End Subroutine
+
+C*************************************************************************
+C     Subroutine to interpolate sal/temp to a specified
+C     sigma value (SigmaNN) given an initial guess of which sigma
+C     level is closest to the specified value.
+C     This subroutine is almost identical to SUBROUTINE ZSURFBUOY, written by R.L.
+C
+! please pay particular attention to what we are trying to interpolate, and for what purpose.
+! this subroutine is used to provide sal/temp for filtering (smoothing). Therefore, we oly use linear
+! interpolaton. Moreover, if we run into air, or, into the ground, we use the sal/temp value at the surface, or bottom.
+! in other words, we use our engineering judgment in the smoothing procedure as well.
+!
+C                                    a.f.  09/12/15
+! af 01/04/2016:
+!I use this subroutine to compute the biharmonic viscosity operator and modified Leith viscosity as well.
+!
+C*************************************************************************
+
+      Subroutine linear_vertical_interpolation_real ( inarray_vertical, SigmaNN, interpolated_value, J )
+
+      USE GLOBAL_3DVS
+      IMPLICIT NONE
+      real(SZ) :: interpolated_value
+      REAL(SZ) :: SigmaNN     !Sigma value of a neighbor node
+
+      INTEGER NN
+      INTEGER J
+!      INTEGER :: LBelo = -999
+!      INTEGER :: LAbov = -999
+      INTEGER LBelo
+      INTEGER LAbov
+      INTEGER LTry
+      INTEGER IDiag
+      REAL(SZ) SigBelo
+      REAL(SZ) SigAbov
+      REAL(SZ) SigTry
+! af: variables for cubic interpolation
+!      Integer  :: k1, k2, k3, k4                 ! nodes used for cubic polynomial
+!      REAL(SZ) :: f1, f2, f3, f4                 ! shape functions
+!      REAL(SZ) :: top, bot
+!      Integer  :: loop_situation = 0
+
+      real(SZ) :: inarray_vertical
+      Dimension  inarray_vertical ( NFEN )
+
+      call setMessageSource("linear_vertical_interpolation")
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Enter.")
+#endif
+      IDiag=0
+
+      IF(SigmaNN.LE.b) THEN !at bottom or lower, then use bottom
+         LBelo=1
+         interpolated_value = inarray_vertical(LBelo)
+         SigBelo=b
+         SigAbov=b
+         GOTO 100
+      ENDIF
+
+      IF(SigmaNN.GE.a) THEN ! surface or above, use surface
+         LAbov=NFEN
+         interpolated_value=inarray_vertical(LAbov)
+         SigBelo=a
+         SigAbov=a
+         GOTO 100
+      ENDIF
+! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
+
+
+      LTry=J                    !start search for SIGABOV and SIGBELO
+      SigTry=Sigma(LTry)
+      IF(SigmaNN.GT.SigTry) THEN !too low
+!         loop_situation = 1
+         SigBelo=SigTry         !SIGBELO may = SIGTRY
+         LBelo=LTry
+         LTry=LTry+1            !look at next level higher
+ 90      SigTry=Sigma(LTry)
+         IF(SigmaNN.GT.SigTry) THEN !still too low
+            SigBelo=SigTry
+            LBelo=LTry
+            LTry=LTry+1
+            GOTO 90
+         ENDIF
+         SigAbov=SigTry         !found upper bracketing sigma
+         LAbov=LTry
+         GOTO 99                !go interpolate
+      ENDIF
+
+      IF(SigmaNN.LE.SigTry) THEN !to high
+!         loop_situation = 2
+         SigAbov=SigTry         !SIGABOV may = SIGTRY
+         LAbov=LTry
+         LTry=LTry-1            !look at next level lower
+ 91      SigTry=Sigma(LTry)
+         IF(SigmaNN.LE.SigTry) THEN !still too high
+            SigAbov=SigTry
+            LAbov=LTry
+            LTry=LTry-1
+            GOTO 91
+         ENDIF
+         SigBelo=SigTry         !found lower bracketing sigma
+         LBelo=LTry
+      ENDIF
+! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
+99    Continue
+
+! use a cubic polynomial interpolation, instead of the above (99) linear interpolation
+! 1- decide which nodes to pick: k1:lowest, k2, k3, k4:top-most
+!      If ( LAbov == NFEN ) Then
+!         k4 = NFEN
+!         k3 = NFEN - 1
+!         k2 = NFEN - 2
+!         k1 = NFEN - 3
+!      Else If ( LBelo == 1 ) Then
+!         k4 = 4
+!         k3 = 3
+!         k2 = 2
+!         k1 = 1
+!      Else
+!         k4 = LAbov + 1
+!         k3 = LAbov
+!         k2 = LBelo
+!         k1 = LBelo - 1
+!      End If
+
+! 2- compute the shape functions
+!        f1 = ((SigmaNN - Sigma(k2)) * (SigmaNN - Sigma(k3)) * (SigmaNN - Sigma(k4)))
+!     &     / ((Sigma(k1)-Sigma(k2)) * (Sigma(k1)-Sigma(k3)) * (Sigma(k1)-Sigma(k4)))
+
+!        f2 = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k3)) * (SigmaNN - Sigma(k4)))
+!     &     / ((Sigma(k2)-Sigma(k1)) * (Sigma(k2)-Sigma(k3)) * (Sigma(k2)-Sigma(k4)))
+
+!        f3 = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k2)) * (SigmaNN - Sigma(k4)))
+!     &     / ((Sigma(k3)-Sigma(k1)) * (Sigma(k3)-Sigma(k2)) * (Sigma(k3)-Sigma(k4)))
+
+!        f4 = ((SigmaNN - Sigma(k1)) * (SigmaNN - Sigma(k2)) * (SigmaNN - Sigma(k3)))
+!     &     / ((Sigma(k4)-Sigma(k1)) * (Sigma(k4)-Sigma(k2)) * (Sigma(k4)-Sigma(k3)))
+
+! 3- interpolate
+!      interpolated_value = f1 * inarray_vertical(k1) + f2 * inarray_vertical(k2) 
+!     &          + f3 * inarray_vertical(k3) + f4 * inarray_vertical(k4)
+
+! linear interpolation should be enough. the goal is to smooth the velocity
+      interpolated_value = (inarray_vertical(LAbov) - inarray_vertical(LBelo))
+     &     *(SigmaNN-SigBelo)/(SigAbov-SigBelo) + inarray_vertical(LBelo)
+
+! /--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--/--
+ 100  CONTINUE
+
+      IF(IDiag.EQ.2) THEN
+         WRITE(2,*) '******** linear_vertical_interpolation **********'
+         WRITE(2,*) '     NH  NV  SigmaNN   SigBelo   SigAbov',
+     &        '      interpolated_value'
+         WRITE(2,777) NN,J,SigmaNN,SigBelo,SigAbov,interpolated_value
+ 777     FORMAT(I7,I5,3(F10.3),E14.5)
+      ENDIF
+
+#if defined(TIMESTEP_TRACE) || defined(ALL_TRACE)
+      call allMessage(DEBUG,"Return.")
+#endif
+      call unsetMessageSource()
+
+      RETURN
+C**********************************************************************
+      END SUBROUTINE linear_vertical_interpolation_real
+C**********************************************************************
+
